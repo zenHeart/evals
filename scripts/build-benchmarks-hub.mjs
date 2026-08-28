@@ -187,14 +187,16 @@ function main() {
     el.innerHTML=list.map(function(b,i){
       var c=cats[b.category]||{name:b.category,color:'#94a3b8'};
       var ad=b.adoption||[];
-      var adHtml=ad.length?
-        '<div class="adoption"><div class="adoption-title">🏢 厂商采用记录（发布时作为基准引用）</div>'+
+      var adHtml='<div class="adoption"><div class="adoption-title">🏢 厂商采用记录（发布时作为基准引用）</div>'+
+        (b.adoptionNote?'<div class="note" style="color:#64748b;font-size:12.5px;margin-bottom:6px;">📌 '+esc(b.adoptionNote)+'</div>':'')+
+        (ad.length?
         ad.map(function(a){
           return '<div class="adoption-item"><span class="model">'+esc(a.release)+'</span>'+
             (a.score&&a.score!=='-'?'<span class="score">'+esc(a.score)+'</span>':'')+
             (a.note?'<span class="note">'+esc(a.note)+'</span>':'')+'</div>';
-        }).join('')+'</div>'
-        :'<div class="adoption"><div class="adoption-title">🏢 厂商采用记录</div><div class="note" style="color:#94a3b8;font-size:13px;">暂无官方发布引用记录（社区驱动或垂域使用）</div></div>';
+        }).join('')
+        :'<div class="note" style="color:#94a3b8;font-size:13px;">暂无官方发布引用记录（社区驱动或垂域使用）</div>')+
+        '</div>';
       return '<div class="card">'+
         '<div class="card-head"><span class="rank">#'+(i+1)+'</span>'+
         '<div style="flex:1;min-width:0;">'+
