@@ -35,6 +35,10 @@ const DIST = join(REPO_ROOT, "dist");
 const META = join(REPO_ROOT, "book", "metadata.yaml");
 const SITE = "https://evals.zenheart.site";
 
+// 全局结构（main() 内填充），供章节页渲染左侧书目录
+let globalParts = [];
+let globalChaptersMeta = {};
+
 // ---------------------------------------------------------------- metadata
 
 function readPartStructure() {
@@ -289,6 +293,54 @@ body.dark .dark-toggle { border-color: rgba(255,255,255,.2); }
 
 .layout { display: grid; grid-template-columns: minmax(0,1fr) 240px; gap: 32px; max-width: 1160px; margin: 0 auto; padding: 0 20px; }
 @media (max-width: 1080px) { .layout { grid-template-columns: 1fr; } .toc-side { display: none !important; } }
+
+/* —— 书籍布局：左侧全书目录 + 右侧内容 —— */
+.book-layout { display: grid; grid-template-columns: 272px minmax(0,1fr); max-width: 1380px; margin: 0 auto; }
+.book-side {
+  position: sticky; top: 57px; height: calc(100vh - 57px); overflow-y: auto;
+  border-right: 1px solid rgba(0,0,0,.07); padding: 20px 12px 40px; font-size: 13.5px;
+  scrollbar-width: thin;
+}
+body.dark .book-side { border-right-color: rgba(255,255,255,.08); }
+.book-side::-webkit-scrollbar { width: 6px; }
+.book-side::-webkit-scrollbar-thumb { background: rgba(0,0,0,.15); border-radius: 3px; }
+.book-side .side-home { display:block; padding: 7px 12px; margin-bottom: 8px; border-radius: 8px; font-weight: 800; color: #2563eb; }
+body.dark .book-side .side-home { color: #60a5fa; }
+.book-side .side-home:hover { background: rgba(37,99,235,.06); text-decoration: none; }
+.side-part { margin: 14px 0 4px; padding: 0 12px; font-size: 11.5px; font-weight: 800; color: #94a3b8; letter-spacing: .05em; text-transform: uppercase; }
+.side-ch { display: block; padding: 5px 12px; border-radius: 7px; color: #475569; text-decoration: none; line-height: 1.45; }
+body.dark .side-ch { color: #9fb0c3; }
+.side-ch:hover { background: rgba(37,99,235,.06); color: inherit; text-decoration: none; }
+.side-ch.cur { background: rgba(37,99,235,.1); color: #2563eb; font-weight: 700; }
+body.dark .side-ch.cur { color: #60a5fa; background: rgba(96,165,250,.12); }
+.side-sec { display: block; padding: 3px 12px 3px 26px; font-size: 12.5px; color: #64748b; text-decoration: none; border-left: 2px solid rgba(0,0,0,.06); margin-left: 18px; }
+body.dark .side-sec { color: #7c8aa0; border-left-color: rgba(255,255,255,.08); }
+.side-sec:hover { color: #2563eb; text-decoration: none; }
+body.dark .side-sec:hover { color: #60a5fa; }
+.side-sec.active { color: #2563eb; border-left-color: #2563eb; font-weight: 700; }
+body.dark .side-sec.active { color: #60a5fa; }
+.chapter-main2 { padding: 30px 44px 90px; min-width: 0; max-width: 900px; }
+@media (max-width: 960px) {
+  .book-layout { grid-template-columns: 1fr; }
+  .book-side {
+    position: fixed; left: 0; top: 0; bottom: 0; height: 100vh; z-index: 200;
+    width: min(320px, 86vw); background: #fff; transform: translateX(-102%);
+    transition: transform .2s ease; box-shadow: 8px 0 30px rgba(0,0,0,.15);
+  }
+  body.dark .book-side { background: #0e1730; }
+  .book-side.drawer-open { transform: translateX(0); }
+  .drawer-mask { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 190; }
+  .drawer-mask.show { display: block; }
+  .toc-fab {
+    position: fixed; left: 14px; bottom: 18px; z-index: 150;
+    border: none; border-radius: 999px; padding: 11px 18px; cursor: pointer;
+    background: #2563eb; color: #fff; font-size: 14px; font-weight: 700;
+    box-shadow: 0 8px 22px rgba(37,99,235,.4);
+  }
+  .chapter-main2 { padding: 24px 20px 90px; }
+}
+@media (min-width: 961px) { .toc-fab, .drawer-mask { display: none !important; } }
+
 main.chapter-main { max-width: 820px; width: 100%; padding: 32px 0 80px; }
 
 .breadcrumb { font-size: 13px; color: #64748b; margin-bottom: 14px; }
@@ -388,10 +440,11 @@ body.dark .chapter-num { color: #60a5fa; }
 }
 .search-box input:focus { border-color: #2563eb; }
 .search-results {
-  position: absolute; left: 0; right: 0; top: calc(100% + 6px); z-index: 40;
+  position: absolute; left: 0; right: 0; top: calc(100% + 6px); z-index: 120;
   background: #fff; border: 1px solid rgba(0,0,0,.1); border-radius: 12px;
   max-height: 380px; overflow-y: auto; box-shadow: 0 12px 32px rgba(0,0,0,.12); display: none;
 }
+.search-results[style*="block"] { pointer-events: auto; }
 body.dark .search-results { background: #16213a; border-color: rgba(255,255,255,.12); }
 .search-results .sr-item { padding: 10px 16px; cursor: pointer; border-bottom: 1px solid rgba(0,0,0,.05); }
 .search-results .sr-item:hover { background: rgba(37,99,235,.06); }
@@ -461,14 +514,21 @@ const RUNTIME_JS = `
   });
   apply();
 })();
-// 代码复制
+// 代码复制（clipboard API 不可用时降级 execCommand）
 document.querySelectorAll('.code-block').forEach(function(b){
   var btn=b.querySelector('.copy-btn');
   btn.addEventListener('click',function(){
     var text=b.querySelector('pre').innerText;
-    navigator.clipboard.writeText(text).then(function(){
-      btn.textContent='已复制 ✓';setTimeout(function(){btn.textContent='复制';},1500);
-    });
+    function done(){btn.textContent='已复制 ✓';setTimeout(function(){btn.textContent='复制';},1500);}
+    if(navigator.clipboard&&window.isSecureContext){
+      navigator.clipboard.writeText(text).then(done);
+    }else{
+      var ta=document.createElement('textarea');
+      ta.value=text;ta.style.position='fixed';ta.style.opacity='0';
+      document.body.appendChild(ta);ta.select();
+      try{document.execCommand('copy');done();}catch(e){btn.textContent='复制失败';}
+      document.body.removeChild(ta);
+    }
   });
 });
 // 自测卡展开
@@ -515,6 +575,28 @@ function tocSide(sections) {
   return `<aside class="toc-side"><div class="toc-title">本页目录</div>${items}</aside>`;
 }
 
+function bookTocSidebar(parts, chaptersMeta, currentFile, currentSections) {
+  const out = ['<aside class="book-side" id="bookSide">'];
+  out.push(`<a class="side-home" href="../index.html">📚 Eval Handbook</a>`);
+  for (const p of parts) {
+    out.push(`<div class="side-part">${p.title}</div>`);
+    for (const f of p.items) {
+      const meta = chaptersMeta[f];
+      if (!meta) continue;
+      const isCur = f === currentFile;
+      const cleanTitle = meta.title.replace(/^\d+\.\s*/, "");
+      out.push(`<a class="side-ch${isCur ? " cur" : ""}" href="chapter-${meta.num}.html">${meta.num}. ${cleanTitle}</a>`);
+      if (isCur && currentSections) {
+        for (const s of currentSections) {
+          out.push(`<a class="side-sec" href="#${s.id}" data-sec="${s.id}">${s.title}</a>`);
+        }
+      }
+    }
+  }
+  out.push("</aside>");
+  return out.join("\n");
+}
+
 function chapterPage(chapterFile, prev, next, partTitle, chapterNum, searchExtra) {
   const md = readFileSync(join(CHAPTERS_DIR, chapterFile), "utf-8");
   const { title, sections, description } = mdToSections(md);
@@ -528,8 +610,10 @@ function chapterPage(chapterFile, prev, next, partTitle, chapterNum, searchExtra
 </head>
 <body>
 ${TOPBAR("../")}
-<div class="layout">
-<main class="chapter-main">
+<div class="book-layout">
+${bookTocSidebar(globalParts, globalChaptersMeta, chapterFile, sections)}
+<div class="drawer-mask" id="drawerMask"></div>
+<main class="chapter-main2">
   <div class="breadcrumb"><a href="../index.html">首页</a> / ${partTitle} / <b>第 ${chapterNumPretty} 章</b></div>
   <h1>${title}</h1>
   ${body}
@@ -538,10 +622,32 @@ ${TOPBAR("../")}
     ${nextHref ? `<a href="${nextHref}" style="text-align:right"><span class="pn-label">下一章 →</span>${next.title}</a>` : "<span></span>"}
   </nav>
 </main>
-${tocSide(sections)}
 </div>
+<button class="toc-fab" id="tocFab" type="button">☰ 目录</button>
 <footer class="page-foot"><a href="${SITE}">evals.zenheart.site</a> · MIT License · ZenHeart</footer>
 ${RUNTIME_JS}
+<script>
+(function(){
+  // 移动端目录抽屉
+  var side=document.getElementById('bookSide'),mask=document.getElementById('drawerMask'),fab=document.getElementById('tocFab');
+  if(fab){fab.addEventListener('click',function(){side.classList.add('drawer-open');mask.classList.add('show');});}
+  if(mask){mask.addEventListener('click',function(){side.classList.remove('drawer-open');mask.classList.remove('show');});}
+  // 侧栏小节滚动高亮
+  var secs=[].slice.call(document.querySelectorAll('.side-sec'));
+  if(secs.length){
+    var map={};secs.forEach(function(a){map[a.getAttribute('data-sec')]=a;});
+    var obs=new IntersectionObserver(function(es){
+      es.forEach(function(e){
+        if(e.isIntersecting){
+          secs.forEach(function(a){a.classList.remove('active');});
+          var a=map[e.target.id];if(a){a.classList.add('active');a.scrollIntoView({block:'nearest'});}
+        }
+      });
+    },{rootMargin:'-70px 0px -75% 0px'});
+    Object.keys(map).forEach(function(id){var el=document.getElementById(id);if(el)obs.observe(el);});
+  }
+})();
+</script>
 ${hasMermaid ? MERMAID_JS : ""}
 ${searchExtra || ""}
 </body>
@@ -661,6 +767,7 @@ async function main() {
 
   const parts = readPartStructure();
   const flat = readFlatChapters(parts);
+  globalParts = parts;
 
   // chapters meta
   const chaptersMeta = { __count: flat.length };
@@ -670,6 +777,7 @@ async function main() {
     const t = (md.match(/^#\s+(.+)$/m)?.[1] || f).replace(/^0\.\s*/, "");
     chaptersMeta[f] = { num, title: t };
   }
+  globalChaptersMeta = chaptersMeta;
 
   // chapter pages (with breadcrumb part titles)
   const chapterToPart = new Map();

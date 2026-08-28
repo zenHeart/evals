@@ -253,7 +253,7 @@ const PROMPT = (question: string) => `
 
 详见：第 20、27 章。
 
-## 0.4 进阶术语（11 个，遇到再翻）
+## 0.4 进阶术语（15 个，遇到再翻）
 
 **21. SFT（Supervised Fine-Tuning，监督微调）**
 
@@ -271,31 +271,47 @@ const PROMPT = (question: string) => `
 
 > 人类评估员一致性指标。> 0.7 = 高度一致。
 
-**25. Bradley-Terry**
+**25. hold-out（保留集）**
 
-> 比 Elo 更统计化的偏好评分模型。
+> 从测试集里再划出一块"从不给任何人看"的数据。评估分数再漂亮，最后都要在 hold-out 上验一次——它是防自欺的最后一道闸。
 
-**26. self-consistency**
+**26. cons@k（多数投票口径）**
 
-> 多次采样 + 投票。是 LLM 数学推理的常用技巧。
+> 让模型对同一道题生成 k 次，取出现最多的答案算正确率。与 pass@1（只做一次）口径不同——同一个模型 cons@64 的分数可能比 pass@1 高出一倍，读报告必看口径。
 
-**27. Top-p / Top-k**
+**27. n-gram 重叠检测**
+
+> 把文本切成 n 个连续词的窗口比对重合。13-gram 是污染检测的业界惯例（出自 GPT-3 论文）：评估题与训练语料共享任一 13-gram 即判为污染。
+
+**28. RAGAS**
+
+> RAG 评估的事实标准框架，四大指标：Faithfulness（忠于检索内容）、Answer Relevancy（切题）、Context Precision/Recall（检索质量）。详见第 20 章。
+
+**29. SWE-bench**
+
+> 真实 GitHub Issue 修复基准：给模型仓库和 Issue，它要提交能通过测试的补丁。代码 Agent 的金标准，详见第 7 章。
+
+**30. self-consistency**
+
+> 多次采样 + 投票取众数。是 LLM 数学推理的常用技巧（与 26 条的 cons@k 同族）。
+
+**31. Top-p / Top-k**
 
 > 采样策略。Top-p = 概率最高的 p 比例里选；Top-k = 概率最高 k 个里选。
 
-**28. CoT（Chain of Thought）**
+**32. CoT（Chain of Thought）**
 
 > 让模型"逐步思考"再给答案。提升数学/推理能力。
 
-**29. Few-shot / Zero-shot**
+**33. Few-shot / Zero-shot**
 
 > Zero-shot = 不给例子直接问。Few-shot = 给几个例子再问。
 
-**30. Hallucination（幻觉）**
+**34. Hallucination（幻觉）**
 
 > 模型"一本正经地胡说"。编造不存在的事实。
 
-**31. Jailbreak（越狱）**
+**35. Jailbreak（越狱）**
 
 > 用特殊 prompt 绕过模型的安全限制。
 
@@ -303,7 +319,7 @@ const PROMPT = (question: string) => `
 
 | 部分 | 章节 | 重点术语 |
 |---|---|---|
-| 术语速查 | 0 | 本书 20+11 个核心术语 |
+| 术语速查 | 0 | 本书 20+15 个核心术语 |
 | 1 评估的世界观 | 1-4 | 评估定义, 5W1H, 四步法, 指标/统计/人类一致性 |
 | 2 基准家族图谱 | 5-12 | 学科/数学/代码/多模态基准, 硬核新兴评测, 长上下文/安全/Agent, 行业垂直, 持续更新评测 |
 | 3 偏好与排行榜 | 13-15 | LLM-as-Judge, Arena Elo, 厂商报告解读, 榜单对账 |
