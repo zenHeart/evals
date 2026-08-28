@@ -32,7 +32,7 @@
 
 **2022，HELM，单分数的终结。** Stanford CRFM 认为单一总分是病根，提出约 42 个场景 × 7 个维度：准确性、校准（模型对自己答案的置信度是否可信）、鲁棒性、公平性、偏见、毒性、效率（来源：[HELM, arXiv:2211.09110](https://arxiv.org/pdf/2211.09110)、[CRFM 公告](https://crfm.stanford.edu/2022/11/17/helm.html)）。前端类比：**Lighthouse 从不给你一个数，而是给四张分卡**。HELM 之后，"多维度画像"成为评估报告的标准形态。
 
-**2023，Chatbot Arena，裁判换成人群。** ChatGPT 之后暴露评估真空：模型会背题、对话没有标准答案、RLHF 训练的模型针对"人更喜欢哪个"优化。LMSYS 的解法是匿名两两对战：用户投票选更好的回答，用 Elo（后改 Bradley-Terry 模型）排名，投票量后来到数百万级（来源：[LMSYS Arena 博客](https://lmsys.org/blog/2023-05-03-arena/)、[Zheng et al., arXiv:2306.05685](https://arxiv.org/abs/2306.05685)）。前端类比：**隐盲 A/B 测试 + 排位天梯**。优势是题目来自真实用户、无法背题；代价是大众问题偏简单，测不出专业知识。
+**2023，Chatbot Arena，裁判换成人群。** ChatGPT 之后暴露评估真空：模型会背题、对话没有标准答案、用人类偏好当老师训练出的模型（RLHF）针对"人更喜欢哪个"优化。LMSYS 的解法是匿名两两对战：用户投票选更好的回答，用国际象棋的 Elo 分（后改为 Bradley-Terry 统计模型）排名，投票量后来到数百万级（来源：[LMSYS Arena 博客](https://lmsys.org/blog/2023-05-03-arena/)、[Zheng et al., arXiv:2306.05685](https://arxiv.org/abs/2306.05685)）。前端类比：**隐盲 A/B 测试 + 排位天梯**。优势是题目来自真实用户、无法背题；代价是大众问题偏简单，测不出专业知识。
 
 **2024-2026，GSM1k 反刷榜与 Agent 环境评估。** Scale AI 请人力按同考纲重写小学数学新题 GSM1k（1000+ 道）：领先模型在旧题 GSM8K 与新题上的分差最高达 8 个百分点，且掉分与复述原题的概率正相关（Spearman r² = 0.36），指向**部分记忆了原题**（来源：[Zhang et al., GSM1k, arXiv:2405.00332](https://arxiv.org/abs/2405.00332)）。同年起评估重心转向 agent：SWE-bench 用真实 GitHub issue + Docker 沙箱 + 回归测试判分（来源：[arXiv:2310.06770](https://arxiv.org/abs/2310.06770)），Terminal-Bench、WebArena、OSWorld 把考场升级为终端、仿真网站、整台虚拟机（来源：[Terminal-Bench](https://www.tbench.ai/)、[WebArena](https://arxiv.org/abs/2307.13854)、[OSWorld](https://os-world.github.io/)）。为什么：agent 要多轮调用工具、修改环境状态，"一次输入一次输出"的题库测不出"能不能干成事"。
 
@@ -193,7 +193,7 @@ Accuracy: 100.0%
 | 推理正确率（GSM8K） | 用户满意度 |
 | 代码可执行性（HumanEval） | 可维护性 |
 | 指令遵循（IFEval） | 创造性 |
-| 安全性（红队攻防） | 长期任务可靠性 |
+| 安全性（攻防测试） | 长期任务可靠性 |
 
 > 一句关键话：**任何评估都只是真实世界的一个投影。** 投影越接近你的业务，越有用——这也是本书后面花大量篇幅讲"自建评估集"的原因。
 

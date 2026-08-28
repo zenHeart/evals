@@ -51,7 +51,7 @@
 |---|---|---|---|---|---|
 | **静态基准** | 固定题库 + 客观判分 | ★（极低，完全可复现） | 随时间衰减（污染 + 饱和） | 横向选型、快速回归 | MMLU、GSM8K、HumanEval |
 | **动态基准** | 题库滚动更新或按时间窗切片 | ★★ | 高（抗污染） | 长期追踪模型演进 | LiveBench、LiveCodeBench |
-| **成对偏好** | 匿名两两对战 + 排名统计 | ★★（单次低） | 取决于投票者；测偏好不测正确 | 通用对话质量 | Chatbot Arena |
+| **成对偏好** | 匿名两两对战，用户投票后做胜率排名统计 | ★★（单次低） | 取决于投票者；测偏好不测正确 | 通用对话质量 | Chatbot Arena |
 | **规则评分** | 精确匹配、单元测试、终态断言 | ★★（需环境） | 高但脆（会把合理变体判失败） | 一切可验证产出 | SWE-bench、τ-bench 判分 |
 | **LLM-as-Judge** | 强模型按评分细则打分或两两判优 | ★（可扩展） | 有已知偏差谱系，需人工校准 | 开放式产出 | MT-Bench、AlpacaEval |
 | **人类评估** | 专家评审、众包投票、一致性校验 | ★★★（最贵最慢） | 金标准，但人也会被表演欺骗 | 校准裁判、主观维度 | MT-Bench 的 3K 专家票 |
@@ -61,7 +61,7 @@
 flowchart TB
     STATIC["静态基准<br/>MMLU / GSM8K / HumanEval<br/>成本 ★ 可复现 ★★★ 抗污染 ★"]
     DYN["动态基准<br/>LiveBench / LiveCodeBench<br/>题库滚动更新 + 时间窗切片"]
-    PAIR["成对偏好<br/>Chatbot Arena<br/>匿名对战 + Bradley-Terry 排名"]
+    PAIR["成对偏好<br/>Chatbot Arena<br/>匿名对战 + 胜率排名"]
     RULE["规则评分<br/>精确匹配 / 单元测试 / DB 终态<br/>成本 ★★ 信度 ★★★ 但脆"]
     JUDGE["LLM-as-Judge<br/>强模型按评分细则判分<br/>偏差：位置 / 冗长 / 亲缘 / 能力天花板"]
     HUMAN["人类评估<br/>专家评审 / 众包投票<br/>金标准，谨防 ELIZA 效应"]
@@ -127,7 +127,7 @@ accuracy = (TP + TN) / (TP + TN + FP + FN)
 - 翻译/摘要：BLEU/ROUGE + 人类抽检
 - 代码：pass@k + 实际执行
 - 对话：Arena 胜率 + 人类标注
-- RAG：Faithfulness（答案是否忠于检索内容）+ Answer Relevance（RAGAS 框架的两项核心指标）
+- RAG：Faithfulness（答案是否忠于检索内容）+ Answer Relevance（回答是否切题），即开源 RAG 评估框架 RAGAS 的两项核心指标
 
 ## 4.6 统计置信：从"看起来好"到"真的好"
 
