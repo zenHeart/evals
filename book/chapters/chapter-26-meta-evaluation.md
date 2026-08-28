@@ -1,319 +1,319 @@
-# 26. 元评估：怎么知道你的评估是对的？
+# 26. 元评估：怎么知道你的评估是对的
 
-> **如果只读一节**：元评估 = 评估你的评估。**核心：与人类判断一致率 ≥ 80% 是门槛**。如果你的评估和人类判断不一致，要么改评估，要么改业务。
+> **如果只读一节**：读 26.4 的 Cohen's Kappa——**一致率 80% 听起来过了门槛，κ 可能只有 0.54（不合格）**。判官与人类的一致率必须扣除"碰巧一致"的部分，κ ≥ 0.7 才算与人类判断实质一致。元评估（评估你的评估）是整个第 5 部分的收口：前四章建起来的系统，用这一章的方法检验它自己。
 
-## 26.1 本章目标
+## 26.1 本章目标与读者
+
+到这里你已经有了：指标体系（第 22 章）、测试集（第 23 章）、流水线（第 24 章）、在线实验（第 25 章）。本章回答最后一个问题，也是最让人不安的一个：**"这套评估系统给出的分数，本身可信吗？"**
+
+这个问题不是哲学爱好。第 24 章的 L1 门禁凭一个 pass 率数字阻断 merge，第 25 章的发布决策凭一个 p 值——如果判官（LLM-as-Judge）自己打分随机、rubric 歧义、指标早就和业务脱钩，那么这套流水线的每一次红绿都在制造错误决策，而且是以"统计"的名义。评估系统是系统，系统需要验收。
+
+**前端类比**：元评估之于评估，就像"测试的可信度"之于测试套件——你的单测全绿，但这些测试本身能测出 bug 吗？把一个已知有 bug 的版本放进去，测试会红吗？永远不会红的测试等于没有测试。元评估就是把"已知答案"喂给评估系统，看它的反应对不对。
 
 读完后你能：
 
-- 知道为什么"评估评估"是必要的
-- 量化你的评估和人类的差距
-- 知道何时该重做评估
-- 避免"指标陷阱"
+- 用四个方法元评估一套评估系统（人类对比 / 黄金集 / 自一致性 / 业务反向验证）
+- 算 Cohen's Kappa，并解释为什么"一致率 ≥ 80%"必须配合 κ ≥ 0.7 使用
+- 搭起判官漂移监控：金标准集周期回归，一致率区间下界跌破 0.8 即告警
+- 说出该重做评估的 5 个触发条件与 4 类指标陷阱
 
-## 26.2 什么是元评估
+**前置知识**：第 17 章 17.7.2（金标准集回归判官）、第 18 章（判官偏差）、第 3 章 3.6.1（Wilson 区间）。本章统计代码零依赖，全部实跑验证。
 
-> 元评估 = 评估"评估方法本身"是否合理。
+## 26.2 概念引入：谁来评估评估者
 
-**场景**：
+元评估（meta-evaluation）= **把评估系统本身当作被测对象**。它检验的不是"模型好不好"，而是"我的分数能不能代表质量"。
 
-```
-你的 LLM-as-Judge 评分 vs 人类评分
-→ 一致率 70% → 还行
-→ 一致率 90% → 很好
-→ 一致率 50% → 必须重做评估
-```
+一条有用的思考链：评估产生分数，分数驱动决策（merge、发版、换模型），决策消耗真金白银。决策链上每一环都有失效模式，元评估盯的是**最上游也最隐蔽的一环**——分数与真实质量脱钩。它失效时的症状特别有欺骗性：流水线照常运转、报表照常更新、告警照常触发，没有任何东西"坏"给你看，只是所有数字都在回答一个错误的问题。自建评估团队里最常见的一种失效就是"判官即真理"——把判官分数当客观真值，从不与人工标注对齐（第 18 章讲了判官的已知偏差，本章负责给出检验它的流程）。
 
-**核心问题**：你怎么知道你的评估分数 = 真实质量？
+四个元评估方法，按成本从低到高、信号从弱到强：
 
-## 26.3 个元评估方法
+| 方法 | 回答的问题 | 成本 | 信号强度 |
+|---|---|---|---|
+| 自一致性 | 分数可复现吗 | 低（重跑 3 次） | 弱——只排除了随机性 |
+| 黄金集 | 已知对错它判对了吗 | 中（人工定标 50 条） | 中 |
+| 与人类对比 | 打分逻辑和人类一致吗 | 中高（50-100 条双标） | 强（本章主方法） |
+| 业务反向验证 | 分数变化和业务结果同向吗 | 高（要等业务数据） | 最强但最慢 |
 
-**方法 1：与人类对比**
+四个方法不是四选一，而是一条**升级链**：自一致性不过关的判官没必要做后面的校准；与人类对比通过了才有资格进 CI；业务反向验证是上线后的持续确认。
 
-```python
-# 比较 LLM-as-Judge 和人类标注
-from sklearn.metrics import cohen_kappa_score
+## 26.3 四个元评估方法
 
-human_scores = [5, 4, 3, 5, 2, 4, 5, 3]  # 100 个样本
-llm_scores = [5, 4, 4, 5, 2, 3, 5, 3]    # 100 个样本
+### 26.3.1 方法一：自一致性——分数可复现吗
 
-kappa = cohen_kappa_score(human_scores, llm_scores)
-print(f"Cohen's Kappa: {kappa:.3f}")
-# 0.85 = 高度一致
-# 0.50 = 一般
-# < 0.40 = 不可信
+同一批样本、同一版判官配置，跑 3 次看波动。温度 0 下波动应很小（pass 率极差 ≤ 2pp）；波动大说明判官输出不稳定，后面的校准没有意义。实测中即使温度 0，provider 侧仍可能有微小的采样抖动与 snapshot 变化，所以这是"健康检查"而不是"精确断言"。
+
+```text
+3 次夜跑 pass 率:0.86 / 0.83 / 0.87  → 极差 0.04
+判读:极差 4pp 在 500 题样本的噪声区间内,判官自身稳定,可进入下一步校准
 ```
 
-**方法 2：与黄金测试集对比**
+### 26.3.2 方法二：黄金集——已知对错它判对了吗
 
-```
-1. 准备 100 道"金标准"题（人类专家反复确认答案）
-2. 跑你的评估
-3. 你的分数 = 金标准答案的比例
-```
+人工定标一批"金标准"样本：每条带人工确认的 0/1 真值。把判官当被测物跑一遍，算它在这批样本上的"准确率"。第 17 章 17.7.2 的 50 条金标准集就是这个方法的最小实现；本节 26.5 会把它升级成持续监控。
 
-**示例**：
+黄金集的关键在**定标质量**：每条样本要两个人独立标注，分歧样本第三人仲裁；标注员不知道哪条会用于考核判官（盲标）。一条真值本身含糊的黄金集，会把判官的"合理分歧"误判为"判官错了"。
 
-```
-金标准：100 道题，每题有明确对错
-你的评估：85 道对，15 道错
-你的评估准确率：85%
-```
+### 26.3.3 方法三：与人类对比——本章主方法
 
-**方法 3：A/B 一致性**
+让判官与人类标注员评同一批样本，量化两者一致程度。它比黄金集强的地方在于：不只测"判官对了几条"，而是测**判官的打分逻辑是否与人类同构**——人类认为"答非所问"的样本，判官也认为差；人类认为"引用扎实"的样本，判官也认为好。
 
-```
-对同一批 1000 道题，跑 3 次你的评估
-→ 如果分数波动 > 5% → 评估不稳定
-```
+度量工具是 Cohen's Kappa（26.4 展开）。执行步骤：
 
-**对策**：固定 temperature=0，多次采样取平均。
+1. 从测试集分层抽 50-100 条（覆盖各类别与难度，别全抽 easy）；
+2. 两名标注员独立打分（先算人与人之间的 κ，人之间 κ < 0.6 说明 rubric 本身歧义，先修 rubric 再谈判官）；
+3. 分歧样本仲裁出"人类共识分"；
+4. 用判官对同批样本打分，与共识分算 κ；
+5. κ ≥ 0.7 通过；低于门槛按 26.4.3 的修复路径返工。
 
-**方法 4：业务指标反向验证**
+### 26.3.4 方法四：业务反向验证——分数与结果同向吗
 
-```
-业务：用户满意度上升
-你的评估：质量分数也上升
-→ 一致 ✓
+离线分数上涨的版本，线上业务指标（解决率、CSAT、转人工率）应当同向或不劣于基线。这是第 25 章 25.9 的反转率视角：偶发一次反转可能是噪声，**同一指标连续 2-3 次与业务结果反向，就是指标失效的实锤**——它在回答另一个问题，或者已经被刷穿。
 
-业务：用户满意度上升
-你的评估：质量分数下降
-→ 矛盾 ⚠️
-```
+## 26.4 Cohen's Kappa：为什么 80% 一致率还不够
 
-## 26.4 量化与人类一致率
+### 26.4.1 公式与直觉
+
+$$\kappa = \frac{p_o - p_e}{1 - p_e}$$
+
+> 📝 **在前端看来**：`p_o` 是观测一致率（判官和人类打了相同分的比例），`p_e` 是**碰巧一致**的期望概率——就算判官闭着眼睛乱打，只要两人的分数分布有重叠，也会有一部分"撞对"。κ 度量的是**扣掉运气之后的真实一致**：κ=1 完全一致，κ=0 等于随机，κ<0 比随机还糟。习惯分级（Landis & Koch，1977）：0.41-0.60 中等，0.61-0.80 高度一致，0.81-1.0 几乎完全一致；工程门槛取 **κ ≥ 0.7**（来源：Landis & Koch, *Biometrics*, 1977；门槛值为工程惯例）。
+
+### 26.4.2 两个实算例子：80% 一致率的陷阱
 
 ```typescript
-// 5 步评估你的 LLM-as-Judge
-async function validateJudge(
-  judgeFn: (input: string, output: string) => Promise<number>,
-  humanData: Array<{ input: string; output: string; humanScore: number }>
-): Promise<{ kappa: number; correlation: number; accuracy: number; mae: number }> {
-  // 1. 跑 LLM Judge
-  const llmScores = await Promise.all(
-    humanData.map(d => judgeFn(d.input, d.output))
-  );
-  
-  // 2. Cohen's Kappa（对分级评分）
-  const kappa = cohensKappa(llmScores, humanData.map(d => d.humanScore));
-  
-  // 3. Pearson 相关性
-  const correlation = pearsonCorrelation(llmScores, humanData.map(d => d.humanScore));
-  
-  // 4. 二元分类准确率（threshold 0.5）
-  const binaryHuman = humanData.map(d => d.humanScore >= 3 ? 1 : 0);
-  const binaryLlm = llmScores.map(s => s >= 0.5 ? 1 : 0);
-  const accuracy = binaryHuman.filter((h, i) => h === binaryLlm[i]).length / humanData.length;
-  
-  // 5. 平均绝对误差
-  const mae = llmScores.reduce((a, s, i) => a + Math.abs(s - humanData[i].humanScore), 0) / humanData.length;
-  
-  return { kappa, correlation, accuracy, mae };
+// kappa.ts —— Cohen's Kappa(零依赖,实算可复现)
+// 运行: npx tsx kappa.ts
+export function cohensKappa(pairs: Array<[number, number]>) { // [judgeScore, humanScore]
+  const labels = [...new Set(pairs.flatMap((p) => p))];
+  let po = 0;
+  for (const [j, h] of pairs) if (j === h) po++;
+  po /= pairs.length;
+  let pe = 0;
+  for (const k of labels) {                     // 期望一致率:两个边缘分布的乘积和
+    const pj = pairs.filter((p) => p[0] === k).length / pairs.length;
+    const ph = pairs.filter((p) => p[1] === k).length / pairs.length;
+    pe += pj * ph;
+  }
+  return { n: pairs.length, po: +po.toFixed(4), pe: +pe.toFixed(4),
+           kappa: +((po - pe) / (1 - pe)).toFixed(4) };
 }
+
+// 坏判官:100 条里 80 条一致(58 条双方都判好,22 条都判差)
+const bad: Array<[number, number]> = [];
+for (let i = 0; i < 58; i++) bad.push([1, 1]);
+for (let i = 0; i < 12; i++) bad.push([1, 0]);  // 判官放水,人判差
+for (let i = 0; i < 8;  i++) bad.push([0, 1]);  // 判官过严,人判好
+for (let i = 0; i < 22; i++) bad.push([0, 0]);
+console.log("坏判官(一致率 80%):", JSON.stringify(cohensKappa(bad)));
+
+// 好判官:100 条里 93 条一致,且分歧方向均衡
+const good: Array<[number, number]> = [];
+for (let i = 0; i < 68; i++) good.push([1, 1]);
+for (let i = 0; i < 4;  i++) good.push([1, 0]);
+for (let i = 0; i < 3;  i++) good.push([0, 1]);
+for (let i = 0; i < 25; i++) good.push([0, 0]);
+console.log("好判官(一致率 93%):", JSON.stringify(cohensKappa(good)));
+// 期望输出:
+// 坏判官(一致率 80%): {"n":100,"po":0.8,"pe":0.564,"kappa":0.5413}
+// 好判官(一致率 93%): {"n":100,"po":0.93,"pe":0.5924,"kappa":0.8283}
 ```
 
-## 26.5 元评估的 4 个门槛
+坏判官的数字值得盯着看：**一致率 80%——"≥ 80%"这个门槛它明明过了**——但期望一致率高达 56.4%（因为双方判"好"的比例都很高，撞车概率天然大），扣掉运气后 κ 只有 0.54，落在"中等一致"，不达标。它在 12 条人类判差的样本上放了水，靠基线的"撞对"把一致率撑到了 80%。
 
-| 指标 | 门槛 | 含义 |
+好判官一致率 93%，κ=0.83，进入"几乎完全一致"档——这才是有资格进 CI 门禁的判官。
+
+**为什么偏斜的分数分布会让一致率虚高**：判官与人类都倾向判"好"（这在评估系统里极常见——大家都愿意给及格），边缘分布的重叠推高 p_e。这正是 κ 存在的理由：它对**类别偏斜**免疫，而裸一致率会被偏斜系统地美化。业务越"健康"（大多数样本确实合格），裸一致率越不可信。
+
+### 26.4.3 κ 不达标时的修复路径
+
+按性价比排序：
+
+1. **修 rubric**——多数 κ < 0.6 的根因是评分标准歧义（"有帮助"没人能给出一致定义）。把抽象形容词换成可核验的具体断言（照第 18 章 18.4 的完整判官 prompt 重写评分维度），并配 few-shot 示例；
+2. **换任务形式**——开放打分（1-5 分）的一致性天然低于成对比较（A 比 B 好吗），把难校准的维度改成 pairwise；
+3. **换或加强判官模型**——rubric 无误后仍不达标，再考虑升级判官档位（第 17 章 17.8 的两段式：贴线样本用强模型复核）；
+4. **检查分歧的系统性**——把不一致样本按类别分组，若判官只在"多轮会话"类上崩，问题可能是判官拿不到会话上下文，是接入问题而不是模型问题。
+
+修复后重跑校准，**判官配置（rubric 版本 + 判官模型）任何变更都必须重跑元评估**——第 17 章把这条写进团队规范，这里给出它防的事故：有人改了一行判官 prompt 没留版本，一致率从 0.85 滑到 0.62，流水线照常运转了两周，期间所有红绿都是噪声。
+
+## 26.5 判官漂移监控：金标准集周期回归
+
+元评估不是一次性验收，是持续监控——因为判官是**会悄悄变坏的组件**。三个真实漂移源：provider 静默更换模型 snapshot（别名指向的模型变了）、判官 prompt 被人改动没留版本、判官模型被上游弃用（第 16 章的 OpenAI Evals 平台弃用就是同族事故）。
+
+防线是第 17 章 17.7.2 的金标准集，这里补上它的**告警阈值算法**——一致率要带 Wilson 区间看下界，不能看裸值：
+
+```typescript
+// judge-drift.ts —— 金标准集周期回归的告警判定(零依赖)
+// 运行: npx tsx judge-drift.ts
+function wilson(correct: number, n: number, z = 1.96): [number, number] {
+  const p = correct / n, z2 = z * z, d = 1 + z2 / n;
+  const ctr = (p + z2 / (2 * n)) / d;
+  const h = (z * Math.sqrt((p * (1 - p)) / n + z2 / (4 * n * n))) / d;
+  return [Math.max(0, ctr - h), Math.min(1, ctr + h)];
+}
+
+const GOLD_N = 50;          // 金标准集规模
+const GATE = 0.8;           // 告警线:一致率 95% 置信下界 < 0.8
+for (const c of [46, 43, 40]) {
+  const [lo, hi] = wilson(c, GOLD_N);
+  console.log(`金标准 50 条一致 ${c} (${(c / 50 * 100).toFixed(0)}%): ci95=[${lo.toFixed(4)}, ${hi.toFixed(4)}] 下界${lo < GATE ? "<" : ">="}0.80 -> ${lo < GATE ? "告警" : "通过"}`);
+}
+// 期望输出:
+// 金标准 50 条一致 46 (92%): ci95=[0.8116, 0.9685] 下界>=0.80 -> 通过
+// 金标准 50 条一致 43 (86%): ci95=[0.7381, 0.9305] 下界<0.80 -> 告警
+// 金标准 50 条一致 40 (80%): ci95=[0.6696, 0.8876] 下界<0.80 -> 告警
+```
+
+这个表的工程含义要划重点：50 条金标准下，**一致率掉到 86% 就该告警**，而不是掉到 80%——因为 86% 的 95% 置信下界已经是 0.738，无法排除"真实一致率已低于 0.8"。用裸值当告警线的团队，会在判官漂移两三周后才察觉。
+
+运行节奏（与第 24 章的流水线衔接）：
+
+1. **每周固定跑一次**金标准集（用第 17 章的 mini 框架本身跑，被测物换成判官）；
+2. 一致率 ci95 下界 < 0.8 → 告警进 Slack（复用第 24 章的去抖与消息模板）；
+3. **判官配置变更后必须立即重跑**，不等周节奏；
+4. 金标准集本身每季度轮换 30%（防止判官"背题"——判官 prompt 迭代时如果有人参考了金标准样本，监控会失效）；
+5. 告警触发后的归因顺序：先查判官 prompt 版本 → 再查判官模型 snapshot → 最后才是"模型能力真的变了"。
+
+## 26.6 何时该重做评估：5 个触发条件
+
+元评估发现问题时，小问题修 rubric、修判官；大问题是**整个评估方案过期**。五个触发条件，命中任何一个就该启动重做评审：
+
+| # | 触发条件 | 典型信号 |
 |---|---|---|
-| Cohen's Kappa | ≥ 0.7 | 与人类高度一致 |
-| Pearson r | ≥ 0.8 | 分数趋势一致 |
-| 准确率（threshold=0.5） | ≥ 85% | 多数情况判对 |
-| MAE | ≤ 0.3 | 平均误差小 |
+| 1 | 业务模式变化 | 客服 bot 加了下单能力，但测试集全是纯问答——评估范围已经不覆盖业务 |
+| 2 | 数据分布漂移 | 回流聚类出现全新意图簇占比 > 5%，而测试集没有对应类别（第 23 章飞轮的簇管理数据） |
+| 3 | 模型/架构升级 | 换了基座模型或加了检索层，旧指标测不了新失败模式（RAG 化后要加 faithfulness） |
+| 4 | 指标饱和 | 所有人都 98%+，版本间差异长期落在噪声区间内——指标失去区分度（第 3 章 3.3.2 的区分度思想在指标层的镜像） |
+| 5 | 业务反馈矛盾 | 元评估方法四连续 2-3 次反向：分数涨、业务指标跌（或反之） |
 
-**任何一项低于门槛 → 必须改进评估**。
+重做不是推倒重来，是一个受控流程：
 
-## 26.6 指标陷阱
-
-**陷阱 1：指标被刷**
-
-```
-例子：客服满意度指标
-客服话术优化：先道歉再说问题
-→ 满意度上升 → 但实际问题没解决
-```
-
-**陷阱 2：代理指标失效**
-
-```
-例子：用 MMLU 评估
-你的业务：客服对话
-→ MMLU 上升 ≠ 客服变好
+```text
+1. 收集证据:哪个触发条件、哪次业务反向、涉案样本
+2. 重写指标:只动失效的部分,保留仍然有效的维度(并列出新旧对照)
+3. 新旧并行跑 2-4 周:新指标说好的版本,旧指标怎么说?
+4. 交叉验证:新指标的结论与业务数据是否同向(方法四)
+5. 切换:新指标进门禁,旧指标降级为参考再保留一个季度
+6. 归档:旧指标的失效报告写进 CHANGELOG,防止半年后有人"恢复"它
 ```
 
-**陷阱 3：指标分布偏移**
+第 6 步最常被省略，然后最常被报复：没有失效记录的旧指标会在某次"优化"里被悄悄加回来，团队再次为它付费。
 
-```
-训练时 80% 答对
-3 个月后用户行为变化
-可能 60% 答对
-→ 指标没变 → 实际变差
-```
+## 26.7 指标陷阱四例
 
-**陷阱 4：评估与优化脱钩**
+元评估的"业务反向验证"抓到的失效，多数能归到下面四类：
 
-```
-评估说：新 prompt 更好
-但实际：用户没感觉
-→ 评估是"对的"，但脱离了用户感知
-```
+**陷阱一：指标被刷（Goodhart 效应）。**"先道歉再讲解决方案"的话术让 CSAT 评分类指标上涨，问题解决率没变——一旦指标成为优化目标，它就不再度量原本要度量的东西。对策：结果指标与过程指标配对使用（满意度 + 解决率），单独上涨的指标先怀疑被刷。
 
-## 26.7 何时该重做评估
+**陷阱二：代理指标失效。**用 MMLU 分数论证客服能力（第 22 章 22.11 错误一的镜像）：通用能力与业务表现的相关性在业务垂直化之后归零。对策：每个业务指标必须能追溯到四步法的倒推链（第 22 章 22.3），追不到的从门禁里下掉。
 
-**5 个触发条件**
+**陷阱三：指标分布漂移。**三个月前 pass 率 80%，现在还是 80%——但用户问的问题类型已经完全变了。指标数值没动，它度量的人群换了。对策：监控测试集与生产流量的分布距离（回流簇的意图占比对比），分布跑了再高的分数也不可比——这正是第 23 章要求回流占比只能升不能降的深层原因。
 
-1. **业务变化** — 业务模式调整
-2. **数据漂移** — 用户输入分布改变
-3. **模型升级** — 切换到新模型
-4. **指标饱和** — 所有人都得 99%
-5. **业务反馈矛盾** — 评估和业务不一致
+**陷阱四：评估与体感脱钩。**离线分数一路上涨，用户的抱怨类型三个月没变。可能是评估在优化它自己会测的东西（过拟合于测试集——hold-out 的 26.3.2 升级版：把 hold-out 分数与日常集分数的差值也监控起来，差值持续扩大就是在过拟合测试集）。
 
-**重做流程**
+## 26.8 实战：给客服 RAG 判官做一次元评估
 
-```
-1. 收集证据（评估和业务不一致）
-2. 重新设计评估
-3. 跑新评估
-4. 与业务交叉验证
-5. 部署新评估
-6. 旧评估保留作为对照
-```
+把本章组件拼成一次完整的元评估运行，产出可直接归档的报告：
 
-## 26.8 元评估的工程实现
+```typescript
+// meta-eval.ts —— 判官元评估(零依赖,cohensKappa/wilson 引自前两节)
+// 运行: npx tsx meta-eval.ts
+function wilsonLo(c: number, n: number): number { return +wilson(c, n)[0].toFixed(4); }
 
-```python
-# meta_eval.py
-import json
-from typing import List, Dict, Callable
-
-def run_meta_eval(
-    judge: Callable,
-    human_annotated: List[Dict],
-    primary_metric: str = "kappa"
-) -> Dict:
-    """运行元评估"""
-    
-    # 1. 跑 LLM Judge
-    llm_results = []
-    for sample in human_annotated:
-        score = judge(sample["input"], sample["output"])
-        llm_results.append(score)
-    
-    # 2. 提取人类评分
-    human_scores = [s["human_score"] for s in human_annotated]
-    
-    # 3. 计算多个指标
-    metrics = {
-        "kappa": cohens_kappa(llm_results, human_scores),
-        "pearson": pearson(llm_results, human_scores),
-        "spearman": spearman(llm_results, human_scores),
-        "accuracy_at_0.5": binary_accuracy(llm_results, human_scores, 0.5),
-        "accuracy_at_0.7": binary_accuracy(llm_results, human_scores, 0.7),
-        "mae": mean_absolute_error(llm_results, human_scores),
-    }
-    
-    # 4. 判定
-    metrics["passes_meta_eval"] = metrics["kappa"] >= 0.7
-    
-    return metrics
-```
-
-## 26.9 实战：评估你的 LLM-as-Judge
-
-```python
-# 准备 100 道人类标注样本
-gold_samples = [
-    {"input": "...", "output": "...", "human_score": 5, "category": "code"},
-    {"input": "...", "output": "...", "human_score": 3, "category": "code"},
-    # ... 100 条
-]
-
-# 跑元评估
-result = run_meta_eval(
-    judge=my_llm_judge,
-    human_annotated=gold_samples,
-)
-
-print(json.dumps(result, indent=2))
-```
-
-**输出示例**：
-
-```json
-{
-  "kappa": 0.78,
-  "pearson": 0.85,
-  "spearson": 0.83,
-  "accuracy_at_0.5": 0.89,
-  "accuracy_at_0.7": 0.82,
-  "mae": 0.42,
-  "passes_meta_eval": true
+export function metaEval(judgeScores: number[], humanScores: number[],
+                         { kappaGate = 0.7, ciLowerGate = 0.8 } = {}) {
+  const pairs = judgeScores.map((s, i) => [s, humanScores[i]] as [number, number]);
+  const { po, pe, kappa } = cohensKappa(pairs);
+  const agree = pairs.filter(([j, h]) => j === h).length;
+  const lo = wilsonLo(agree, pairs.length);
+  const mae = pairs.reduce((s, [j, h]) => s + Math.abs(j - h), 0) / pairs.length;
+  return {
+    n: pairs.length, rawAgreement: po, chanceAgreement: pe, kappa,
+    mae: +mae.toFixed(4), agreementCi95Lower: lo,
+    verdict: kappa >= kappaGate && lo >= ciLowerGate
+      ? "TRUSTWORTHY:可信,可进 CI 门禁"
+      : kappa >= kappaGate ? "BORDERLINE:κ 达标但一致率区间下界不足,先扩标注"
+      : "REJECT:与人类判断不一致,改 rubric 或换判官",
+  };
 }
+
+// 100 条人工共识标注(方法三的双标 + 仲裁产物)
+const judge: number[] = [...Array(72).fill(1), ...Array(3).fill(0), ...Array(25).fill(0)];
+const human: number[] = [...Array(68).fill(1), ...Array(4).fill(0), ...Array(3).fill(1), ...Array(25).fill(0)];
+console.log(JSON.stringify(metaEval(judge, human), null, 2));
+// 期望输出:
+// {
+//   "n": 100,
+//   "rawAgreement": 0.93,
+//   "chanceAgreement": 0.5924,
+//   "kappa": 0.8283,
+//   "mae": 0.07,
+//   "agreementCi95Lower": 0.8625,
+//   "verdict": "TRUSTWORTHY:可信,可进 CI 门禁"
+// }
 ```
 
-**解读**：
-- κ = 0.78：通过（≥ 0.7）
-- 相关性 0.85：很好
-- MAE 0.42：可接受
-- **可以信赖这个 LLM Judge**
+报告的六个字段各有消费者：`kappa` 与 `agreementCi95Lower` 是两个门禁条件（任一不达标进不了 CI）；`chanceAgreement` 是给未来读者的警示——它越高，裸一致率越不可信；`mae` 在多档评分时才有区分力（二值判官里它就是分歧率）；`verdict` 是给决策的：三种出口分别对应"收货 / 补样本 / 返工"。
 
-## 26.10 元评估的"元元"问题
+最后是那个"元元"问题：**标注员自己也要被元评估**。双人标注时先算人与人的 κ：人之间 κ < 0.6，说明 rubric 歧义在先，此时判官的 κ 低是"学生没错，是题目没出好"。把元评估再往上一层的过程理论上可以无穷递归（谁评估评估评估者？），工程上的停机规则是：**人的校准以 rubric 迭代收敛为终点，判官的校准以人的一致性为锚**——两层都达标即停，继续往上只会烧预算换不到信息。
 
-> "评估 LLM Judge 的人，也是要评估的吗？"
+## 26.9 验收自测
 
-是的，**人也是评估对象**。要：
-- 多人标注（避免个人偏差）
-- 培训 + 校准
-- Cohen's Kappa 检验
+1. **选择**：判官与人类一致率 80%，期望一致率（碰巧一致）56.4%，κ 约为？
+   - A. 0.80
+   - B. 0.68
+   - C. 0.54
+   - D. 0.24
 
-## 26.11 章节小结
+2. **选择**：金标准集 50 条，一致 43 条（86%），按 26.5 的规则应该？
+   - A. 通过——86% > 80%
+   - B. 告警——95% 置信下界 0.738 已低于 0.8
+   - C. 等下周再确认
+   - D. 把金标准集换成 100 条再说
 
-- **元评估 = 评估你的评估**
-- **与人类一致率 ≥ 80%** 是门槛
-- 4 个方法：人类对比 / 黄金集 / 一致性 / 业务验证
-- 评估饱和后必须重做
+3. **选择**：双人标注人与人之间 κ = 0.45，正确的第一步是？
+   - A. 直接部署判官
+   - B. 先修 rubric 歧义——人之间都不一致，判官校准无从谈起
+   - C. 换更强的判官模型
+   - D. 把 5 分制改成 3 分制
 
-## 26.12 验收自测
+4. **简答**：为什么"指标饱和"（人人 98%+）是重做评估的信号？用区分度的语言解释。
 
-1. **选择**：元评估的核心指标是？
-   - A. 准确率
-   - B. Cohen's Kappa
-   - C. P95 延迟
-   - D. 成本
+5. **简答**：判官漂移监控为什么必须看一致率的置信区间下界，而不是裸一致率？
 
-2. **简答**：为什么"指标饱和"是必须重做评估的信号？
+6. **实操**：给你现用的判官做一次完整元评估：抽 50 条样本双人标注并仲裁 → 跑 26.8 的 `metaEval` → 归档报告；若 κ < 0.7，按 26.4.3 的修复路径处理第 1 步（修 rubric）后复测。
 
-3. **实操**：用 50 道人类标注样本评估你的 LLM Judge。
-
-## 26.13 📋 本章 Cheat Sheet
+## 26.10 📋 本章 Cheat Sheet
 
 | 概念 | 一句话 | 详见 |
 |---|---|---|
-| 元评估 | 评估的评估 | §26.2 |
-| 与人类一致率 | ≥ 80% 才可信 | §26.4 |
-| 偏差检测 | 位置/长度/自偏好 | §26.3 |
-| Meta 失效 | Judge 也会有偏差 | §26.10 |
-| Adversarial 测试 | 边界用例暴露缺陷 | §26.3 |
+| 元评估 | 把评估系统当被测对象，检验分数与质量是否脱钩 | §26.2 |
+| 四方法 | 自一致性 → 黄金集 → 人类对比 → 业务反向，升级链逐级加严 | §26.3 |
+| Cohen's Kappa | κ = (po − pe)/(1 − pe)，扣掉碰巧一致后的真实一致 | §26.4.1 |
+| 80% 陷阱 | 一致率 80% 的 κ 可能只有 0.54——偏斜分布会美化裸一致率 | §26.4.2 |
+| 双门槛 | κ ≥ 0.7 且一致率 ci95 下界 ≥ 0.8，任一不达标不进门禁 | §26.8 |
+| 漂移监控 | 金标准集每周回归，86% 一致率（n=50）就该告警 | §26.5 |
+| 重做五触发 | 业务变化 / 分布漂移 / 模型升级 / 指标饱和 / 业务矛盾 | §26.6 |
+| 元元停机规则 | 人以 rubric 收敛为终点，判官以人的一致性为锚 | §26.8 |
 
+## 26.11 ⚠️ 5 个常见错误
 
-## 26.14 ⚠️ 5 个常见错误
+1. **只看裸一致率**——80% 的κ 可能只有 0.54（不合格）；必须同时算 κ 与一致率置信下界。
+2. **元评估一次完事**——判官会漂移（snapshot 更换、prompt 被改），金标准集必须每周回归，判官配置变更后立即重跑。
+3. **人之间不一致就怪判官**——标注员之间 κ < 0.6 说明 rubric 有歧义，先修题再考学生。
+4. **金标准集三年不换**——判官 prompt 迭代时参考过金标准样本，监控就被"背题"架空；每季度轮换 30%。
+5. **旧指标不归档就淘汰**——失效指标没有失效报告，半年后会被"恢复"回来继续消耗决策质量；重做流程的第 6 步不可省。
 
-1. **Judge 与人一致率 < 80% 还敢用** — 与人类一致率 < 0.7 的 Judge 不可信,先改进 Judge。
-2. **一次元评估完事** — 模型迭代 → Judge 也要迭代,每月跑一次元评估。
-3. **只看准确率不看偏差** — Judge 准但偏好长答案 = 不可信,看相关性 + 偏差。
-4. **Meta 的 Meta 没完** — 评估 Judge 的 Judge 也会有偏差,接受'够用就好'。
-5. **忽视边界用例** — 边缘案例最容易暴露 Judge 缺陷,必须有 adversarial 测试集。
+## 26.12 延伸阅读
 
-## 26.15 延伸阅读
+⭐⭐⭐（一手来源）
+- [Judging LLM-as-a-Judge with MT-Bench and Chatbot Arena（arXiv:2306.05685）](https://arxiv.org/abs/2306.05685)——判官与人类一致率的原始校准研究，"强判官一致率超 80%"的出处
+- [Cohen's Kappa（Wikipedia: Cohen's kappa）](https://en.wikipedia.org/wiki/Cohen%27s_kappa)——κ 的定义、边缘分布修正与分级惯例
+- [Landis & Koch (1977), Biometrics](https://doi.org/10.2307/2529310)——0.41/0.61/0.81 分级惯例的原始文献
 
-⭐⭐⭐
-- [Judging LLM-as-a-Judge (Zheng et al.)](https://arxiv.org/abs/2306.05685)
-- [Designing ML Evaluation Systems (Chip Huyen)](https://huyenchip.com/2023/05/15/designing-ml-evaluation-systems.html)
+⭐⭐（方法论）
+- [Designing ML Evaluation Systems（Chip Huyen）](https://huyenchip.com/2023/05/15/designing-ml-evaluation-systems.html)——评估系统自身的健康检查设计
+- [PandaLM](https://github.com/WeOpenML/PandaLM)——专门训练的判官模型，与其元评估基准
+- [Prometheus（KAIST AI）](https://github.com/kaistAI/Prometheus)——开源判官模型与 rubric 评分实践
 
-⭐⭐
-- [PandaLM](https://github.com/WeOpenML/PandaLM) — 训练专门 judge 的模型
-- [Prometheus](https://github.com/kaistAI/Prometheus) — 开源 LLM Judge
-
-⭐
-- [Cohen's Kappa 详解](https://en.wikipedia.org/wiki/Cohen%27s_kappa)
-- [Inter-Rater Reliability](https://en.wikipedia.org/wiki/Inter-rater_reliability)
+⭐（延伸）
+- [Inter-Rater Reliability（Wikipedia）](https://en.wikipedia.org/wiki/Inter-rater_reliability)——标注员一致性度量总览（κ 之外还有 Fleiss' κ、Krippendorff's α）
+- [Langfuse: LLM-as-a-Judge 用法](https://langfuse.com/docs/scores/model-based-evals)——平台侧的判官分数类型与人工对照
