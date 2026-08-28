@@ -343,7 +343,28 @@ const winner = await judge.pairwise("Q", "Answer A", "Answer B");
 
 3. **实操**：写一个交换位置的 pairwise judge 评估 50 道对话样本。
 
-## 18.12 延伸阅读
+## 18.12 📋 本章 Cheat Sheet
+
+| 概念 | 一句话 | 详见 |
+|---|---|---|
+| LLM-as-Judge | 用强 LLM 评弱 LLM | §18.2 |
+| 位置偏差 | 偏好第一个/最后一个 | §18.3 |
+| 长度偏差 | 偏好长答案 | §18.3 |
+| 自偏好 | GPT-4 偏好 GPT-4 | §18.3 |
+| 格式偏差 | 偏好 markdown/bullet | §18.3 |
+| Pairwise | A vs B 谁更好 | §18.6 |
+| CoT 评分 | 让 Judge 先思考再判 | §18.7 |
+
+
+## 18.13 ⚠️ 5 个常见错误
+
+1. **Judge 用同源模型** — GPT-4 评 GPT-4 = 自偏好偏差,换 Claude/Gemini。
+2. **位置固定** — A/B 顺序不交换 = 位置偏差,跑两次取一致结果。
+3. **不要求 JSON 输出** — 自由文本解析脆弱,强制 response_format: json_object。
+4. **温度不固定** — 温度 = 0 是稳定评分的前提,1.0 = 每次不同。
+5. **单题 Judge** — 开放式任务一条 prompt 评一条 = 不可信,加 CoT + 多次采样投票。
+
+## 18.14 延伸阅读
 
 ⭐⭐⭐
 - [Judging LLM-as-a-Judge (Zheng et al. 2023)](https://arxiv.org/abs/2306.05685) — 偏差研究必读

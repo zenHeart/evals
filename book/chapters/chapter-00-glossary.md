@@ -317,7 +317,30 @@ const PROMPT = (question: string) => `
 2. **简答**：Token 和"字"有什么区别？
 3. **简答**：RAG 里的"检索"是什么？
 
-## 0.7 延伸阅读
+## 0.7 📋 本章 Cheat Sheet
+
+| 概念 | 一句话 | 详见 |
+|---|---|---|
+| LLM | 大语言模型,通识 + 文字接龙 | §0.3 |
+| Token | 模型处理的最小文本单位 | §0.3 |
+| Prompt | 给模型的输入 | §0.3 |
+| Benchmark | 一组任务 + 评分规则 | §0.3 |
+| Metric | 具体评分规则 | §0.3 |
+| LLM-as-Judge | 用 LLM 评估 LLM | §0.3 |
+| RAG | 检索增强生成,开卷考试 | §0.3 |
+| Agent | 能调工具的 LLM 系统 | §0.3 |
+| Hallucination | 一本正经地胡说 | §0.4 |
+
+
+## 0.8 ⚠️ 5 个常见错误
+
+1. **把术语当口语用** — RLHF/Loss 都有精确含义,不要用'AI 训练得好'代替,区分术语和业务语言。
+2. **只看名词不看示例** — 首次出现必须配前端类比,只看定义等于没看。
+3. **跳过术语直接看代码** — 没理解 Token/Temperature 之前看代码会一直卡壳。
+4. **中英文混用术语** — 定下中文译法后在全章统一,避免一会 Token 一会标记。
+5. **把术语当万能解释** — MMLU 是基准不是任务,'用 MMLU 评估'这种说法是病句。
+
+## 0.9 延伸阅读
 
 - 本书各章内对应术语的深入讲解
 - [DeepLearning.AI: ChatGPT Prompt Engineering](https://www.deeplearning.ai/short-courses/chatgpt-prompt-engineering-for-developers/)

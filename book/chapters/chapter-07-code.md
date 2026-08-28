@@ -357,7 +357,28 @@ async function evalHumanEval(model: string) {
 
 3. **实操**：用 `lm-eval` 跑 HumanEval，输出 pass@1、pass@10。
 
-## 7.15 延伸阅读
+## 7.15 📋 本章 Cheat Sheet
+
+| 概念 | 一句话 | 详见 |
+|---|---|---|
+| HumanEval | 164 道 Python 函数题 | §7.3 |
+| MBPP | 974 道 Python 入门 | §7.4 |
+| LiveCodeBench | 持续更新算法题 | §7.5 |
+| SWE-bench | 真实 GitHub Issue 修复,金标准 | §7.6 |
+| pass@k | k 次里至少 1 次通过 | §7.3 |
+| Spider/BIRD | Text-to-SQL 专项 | §7.10 |
+| BFCL | 函数调用能力 | §7.11 |
+
+
+## 7.16 ⚠️ 5 个常见错误
+
+1. **只看 HumanEval pass@1** — pass@1 高 ≠ 真实工程强,SWE-bench 才是金标准。
+2. **用字符串匹配打分** — 代码必须真实执行,不是 stdout.trim() === expected。
+3. **不记录 pass@k** — pass@10 能反映'探索能力',只看 pass@1 浪费信息。
+4. **以为 SWE-bench Verified = 全** — SWE-bench Live 才是持续更新版,Verified 可能已污染。
+5. **Text-to-SQL 用 exact match** — SQL 等价才算对,大小写/空格差异要用执行验证。
+
+## 7.17 延伸阅读
 
 ⭐⭐⭐
 - [HumanEval 论文](https://arxiv.org/abs/2107.03374) — 编程题的开山之作

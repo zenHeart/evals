@@ -306,7 +306,27 @@ main().catch(console.error);
 
 3. **实操**：把上面 100 行的 TypeScript 跑通。准备 5 道简单数学题的 JSONL，跑一次评估，输出报告。
 
-## 3.10 延伸阅读
+## 3.10 📋 本章 Cheat Sheet
+
+| 概念 | 一句话 | 详见 |
+|---|---|---|
+| 四步法 | 数据集 → 推理 → 评分 → 报告 | §3.2 |
+| JSONL | 数据集存储格式,每行一个 JSON | §3.3 |
+| 数据泄露 leakage | 训练数据含测试题 | §3.3 |
+| pLimit | 并发控制,避免 API 限流 | §3.4 |
+| Wilson Score Interval | 置信区间计算方法 | §3.6 |
+| temperature = 0 | 评估必须固定 | §3.4 |
+
+
+## 3.11 ⚠️ 5 个常见错误
+
+1. **推理结果没缓存** — 1000 题重跑一次浪费 $50,所有推理结果必须落本地 JSONL。
+2. **评分时改了 prompt** — 模型 A 用 prompt X、模型 B 用 prompt Y → 分数不可比。
+3. **temperature 不固定** — 温度 0.7 跑 5 次平均 ≠ 温度 0,评估必须固定 temperature=0。
+4. **没看错误样例** — 只看总分 = 错的只看数字,错误样例的信息量大 10 倍。
+5. **代码 fence 没闭合** — 四步法写报告时 markdown 没闭合 → 下游解析炸。
+
+## 3.12 延伸阅读
 
 ⭐⭐⭐
 - [lm-evaluation-harness: Architecture](https://github.com/EleutherAI/lm-evaluation-harness/tree/main/lm_eval) — 工业级实现

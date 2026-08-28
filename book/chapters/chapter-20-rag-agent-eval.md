@@ -322,7 +322,27 @@ evaluate([test_case], [
 
 3. **实操**：用 RAGAS 评估你自己的 RAG 系统（100 个 query）。
 
-## 20.12 延伸阅读
+## 20.12 📋 本章 Cheat Sheet
+
+| 概念 | 一句话 | 详见 |
+|---|---|---|
+| RAG 4 维度 | Faithfulness/Relevance/Context/Answer | §20.2 |
+| RAGAS | RAG 评估框架 | §20.3 |
+| TruLens | RAG + Agent 评估 | §20.4 |
+| Agent 评估 | 拆步骤看每步正确率 | §20.5 |
+| LangSmith | trace 工具 | §20.7 |
+| 生产监控 | 实时告警 + 抽样 | §20.6 |
+
+
+## 20.13 ⚠️ 5 个常见错误
+
+1. **只看 RAGAS 总分** — Faithfulness/Relevance/Context Precision 分项看,总分掩盖问题。
+2. **不评估检索** — 检索召不回 = 模型再强也没用,先看 Recall@K。
+3. **Agent 评估只看 pass/fail** — Agent 任务可拆步骤,看每步正确率才能定位失败。
+4. **用真实 API 不限流** — Agent 跑 1000 题触发限流,失败率虚高,本地 mock 先跑通。
+5. **LangSmith 当监控** — LangSmith 是 trace 工具不是监控,生产监控要 Prometheus/Grafana。
+
+## 20.14 延伸阅读
 
 ⭐⭐⭐
 - [RAGAS 文档](https://docs.ragas.io/)

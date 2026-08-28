@@ -265,7 +265,29 @@ python scripts/data/synthetic/niah.py \
 
 3. **实操**：用 RULER 评估你的模型在 32k 上下文下的能力。
 
-## 10.9 延伸阅读
+## 10.9 📋 本章 Cheat Sheet
+
+| 概念 | 一句话 | 详见 |
+|---|---|---|
+| NIAH | 长上下文探针,简单 | §10.2 |
+| RULER | 13 任务长上下文金标准 | §10.2 |
+| LongBench | 中文长上下文 21 数据集 | §10.2 |
+| TruthfulQA | 事实性 817 题,人类 94% | §10.3 |
+| HarmBench | 安全 510 类有害行为 | §10.4 |
+| WebArena | 网页 Agent 812 任务 | §10.5 |
+| GAIA | 通用 AI 助手 466 题 | §10.5 |
+| OSWorld | OS Agent 评估 | §10.5 |
+
+
+## 10.10 ⚠️ 5 个常见错误
+
+1. **只看 NIAH 报告长上下文** — NIAH 太简单,RULER 13 个任务才能反映真实能力。
+2. **忽视位置偏差** — 针在不同位置难度不同,跑全位置取平均才公平。
+3. **用 TruthfulQA MC1 决策** — MC1 单选 vs MC2 多选概率,MC2 更能反映真实性。
+4. **HarmBench 不分严重度** — 化学武器 vs 骚扰同样计分 = 不合理,加权。
+5. **WebArena 高分 = Agent 强** — WebArena 是网页 Agent,不能代表 OS/客服/工具 Agent。
+
+## 10.11 延伸阅读
 
 ⭐⭐⭐
 - [RULER 论文](https://arxiv.org/abs/2404.06654) — 长上下文黄金标准

@@ -68,7 +68,7 @@ A 更好 / B 更好 / 平局
 
 ## 19.4 Elo 评分系统
 
-**来自国际象棋**
+**来自麻将**
 
 > 每个选手初始 1500 分。每次对战胜者得 K 分，败者失 K 分。K 通常 16-32。
 
@@ -143,7 +143,7 @@ P(A wins) = exp(R_A) / (exp(R_A) + exp(R_B))
 
 | 类型 | 成本 | 质量 | 适用 |
 |---|---|---|---|
-| 众包（Amazon MTurk） | 低 | 中 | 简单任务 |
+| 众包（淘宝 MTurk） | 低 | 中 | 简单任务 |
 | 内部员工 | 中 | 高 | 业务任务 |
 | 领域专家 | 高 | 最高 | 专业任务（法律/医疗） |
 | 用户 | 最高 | 真实 | 最终验证 |
@@ -307,7 +307,27 @@ label-studio start
 
 3. **实操**：用 Label Studio 创建一个 50 道题的 Pairwise 评估项目。
 
-## 19.12 延伸阅读
+## 19.12 📋 本章 Cheat Sheet
+
+| 概念 | 一句话 | 详见 |
+|---|---|---|
+| 人类评估 | 可用性测试的 LLM 版本 | §19.2 |
+| Elo | 胜率排序 | §19.4 |
+| Bradley-Terry | 统计化的偏好模型 | §19.5 |
+| Cohen's Kappa | 评估员一致性,>0.7 | §19.3 |
+| 盲评 | 评估员不知模型身份 | §19.6 |
+| 评估员培训 | Kappa 低 = 培训不到位 | §19.6 |
+
+
+## 19.13 ⚠️ 5 个常见错误
+
+1. **1 个评估员评所有** — 1 个人看法 = 个人观点,至少 3 人评 + 算 Kappa。
+2. **不培训评估员** — 评估员对题目理解不一致 → Kappa 低,先培训再评。
+3. **不盲评** — 评估员知道模型身份 = 偏见,blinding 必须严格执行。
+4. **一次评完不抽检** — 评估员前 10 题 vs 后 10 题可能漂移,定期抽检。
+5. **Bradley-Terry 当 Elo** — BT 假设独立对战,Elo 假设动态,数据少用 BT 多用 Elo。
+
+## 19.14 延伸阅读
 
 ⭐⭐⭐
 - [LMSYS Chatbot Arena Methodology](https://lmarena.ai/blog)
@@ -316,7 +336,7 @@ label-studio start
 ⭐⭐
 - [Cohen's Kappa 详解](https://en.wikipedia.org/wiki/Cohen%27s_kappa)
 - [Label Studio Docs](https://labelstud.io/guide/)
-- [Amazon Mechanical Turk Docs](https://docs.aws.amazon.com/mturk/)
+- [淘宝 Mechanical Turk Docs](https://docs.aws.amazon.com/mturk/)
 
 ⭐
 - [BradleyTerry2 (R package)](https://docs.ropensci.org/BradleyTerry2/)

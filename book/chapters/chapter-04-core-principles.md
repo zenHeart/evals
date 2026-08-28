@@ -244,7 +244,28 @@ LLM Judge temperature=0 vs 1.0 → 同输入可能给不同分数。**必须固�
 
 3. **实操**：用 TypeScript 写一个 McNemar 检验函数，输入两个模型的 boolean 数组，返回 p 值。
 
-## 4.11 延伸阅读
+## 4.11 📋 本章 Cheat Sheet
+
+| 概念 | 一句话 | 详见 |
+|---|---|---|
+| Accuracy | (TP+TN)/总数,不平衡会骗人 | §4.2 |
+| Precision | TP/(TP+FP),'说是'中对的 | §4.2 |
+| Recall | TP/(TP+FN),'真'中找出的 | §4.2 |
+| F1 | precision/recall 调和平均 | §4.2 |
+| 95% CI | 真值 95% 落进的区间 | §4.4 |
+| Cohen's Kappa | 人类一致性指标,>0.7 才信 | §4.5 |
+| ECE | 校准误差,<0.05 才信 | §4.8 |
+
+
+## 4.12 ⚠️ 5 个常见错误
+
+1. **只报点估计不报区间** — 必须给 95% CI + n,否则 80.5% vs 79.8% 的差异是噪声。
+2. **用 accuracy 评估不平衡数据** — 永远预测'否'就能 90% 准确率,改用 F1/AUC。
+3. **LLM Judge 不固定 temperature** — 温度变化导致分数波动,必须固定 0。
+4. **不检查 Cohen's Kappa** — 人类都不一致的题不能用,先算 Kappa 再用基准。
+5. **忽视校准** — 高 confidence 但错的 = 自信地胡说,ECE > 0.1 必须告警。
+
+## 4.13 延伸阅读
 
 ⭐⭐⭐
 - [Holistic Evaluation of Language Models (HELM)](https://arxiv.org/abs/2211.09110) — Stanford 的评估哲学

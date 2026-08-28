@@ -311,7 +311,28 @@ jobs:
 
 3. **实操**：用 Garak 扫描你的模型在 promptinject 上的安全水位。
 
-## 21.14 延伸阅读
+## 21.14 📋 本章 Cheat Sheet
+
+| 概念 | 一句话 | 详见 |
+|---|---|---|
+| 红队评估 | 渗透测试的 LLM 版本 | §21.2 |
+| OWASP LLM Top 10 | 10 类 LLM 安全风险 | §21.4 |
+| Garak | NVIDIA 红队框架 | §21.5 |
+| PyRIT | Microsoft 红队框架 | §21.6 |
+| Prompt Injection | 提示注入攻击 | §21.7 |
+| 中文安全 | CValues/SafetyBench/ToxiCN | §21.9 |
+| 红队持续化 | 随模型迭代 cron 跑 | §21.11 |
+
+
+## 21.15 ⚠️ 5 个常见错误
+
+1. **一次红队完事** — 模型迭代 = 红队也要持续化,Garak/Cybench 跑 cron。
+2. **只看是否拒答** — 拒答 ≠ 安全,要看拒答后的引导话术是否合理。
+3. **用单一工具** — Garak 偏静态,PyRIT 偏动态,DeepTeam 偏自动化,多工具交叉。
+4. **Prompt injection 当单元测试** — OWASP LLM Top 10 至少 6 类要测,不是只测 prompt injection。
+5. **忽视中文场景** — CValues/SafetyBench/ToxiCN 中文,英文安全 ≠ 中文安全。
+
+## 21.16 延伸阅读
 
 ⭐⭐⭐
 - [OWASP LLM Top 10](https://owasp.org/www-project-top-10-for-large-language-model-applications/)

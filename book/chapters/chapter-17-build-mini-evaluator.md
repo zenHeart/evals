@@ -326,7 +326,26 @@ console.log(`Tests passed: ${testsPassed}/${components.length}`);
 
 3. **实操**：把 30 行版本跑通你的业务问题（如"评估模型能否正确生成 React useState 代码"）。
 
-## 17.9 延伸阅读
+## 17.9 📋 本章 Cheat Sheet
+
+| 概念 | 一句话 | 详见 |
+|---|---|---|
+| Mini Evaluator | 题目 → 模型 → 评分 → 汇总 | §17.2 |
+| pLimit | 并发控制,默认 5-10 | §17.3 |
+| LRUCache | 缓存推理结果,省钱 | §17.3 |
+| 指数退避 | 重试间隔 1s/2s/4s | §17.3 |
+| GitHub Actions | PR 触发评估 | §17.6 |
+
+
+## 17.10 ⚠️ 5 个常见错误
+
+1. **30 行版本就发布** — 30 行只有单线程,加并发/缓存/重试才是工程级。
+2. **缓存 key 设计错** — 用 prompt 全文作 key 太长,改用 prompt hash 或 model+prompt。
+3. **重试无限循环** — retries=∞ 遇持续 5xx 会卡死,设上限 + 指数退避。
+4. **并发数无限制** — pLimit 不设上限会触发 API 限流,默认 5-10。
+5. **不存推理结果** — 内存跑完就丢,debug 时无法复盘。
+
+## 17.11 延伸阅读
 
 ⭐⭐⭐
 - [OpenAI Cookbook: Evaluation](https://cookbook.openai.com/examples/evaluation)

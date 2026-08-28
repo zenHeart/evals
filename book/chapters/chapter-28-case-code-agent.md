@@ -399,7 +399,26 @@ def eval_swe_bench(model, instances, timeout=300):
 
 3. **实操**：用 HumanEval 评估 50 个 Python 函数生成样本。
 
-## 28.10 延伸阅读
+## 28.10 📋 本章 Cheat Sheet
+
+| 概念 | 一句话 | 详见 |
+|---|---|---|
+| 3 层评估 | 自动(SWE-bench)/业务/人工 | §28.2 |
+| SWE-bench Verified | 500 题金标准 | §28.7 |
+| 业务 hold-out | 你仓库的真实 issue | §28.4 |
+| 人工 5 维度 | 正确性/可读性/安全/性能/风格 | §28.5 |
+| Lessons learned | 每次评估必写 | §28.7 |
+
+
+## 28.11 ⚠️ 5 个常见错误
+
+1. **只看 SWE-bench pass rate** — Pass 率 30% 不等于'能修你的 bug',看子集与你业务相似度。
+2. **不区分自动 vs 业务评估** — 自动评估便宜但粗,业务评估贵但准,3 层都要有。
+3. **人工评估不标维度** — 只给 1-5 分没信息,维度化(正确性/可读性/安全/性能)。
+4. **SWE-bench 风格评估本地跑不动** — SWE-bench Verified 需要 Docker 环境,本地要先 mock 5 题验证。
+5. **评估完不回归** — 新 prompt 上线不复盘 → 下次踩同一个坑,每次评估写 lessons learned。
+
+## 28.12 延伸阅读
 
 ⭐⭐⭐
 - [SWE-bench](https://www.swebench.com/)

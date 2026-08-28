@@ -254,7 +254,27 @@ Arena 不仅有总榜，还按类别：
 
 3. **实操**：用 4 个榜单（lmarena、Artificial、SEAL、OpenCompass）做一份你关心场景的选型对账报告。
 
-## 15.13 延伸阅读
+## 15.13 📋 本章 Cheat Sheet
+
+| 概念 | 一句话 | 详见 |
+|---|---|---|
+| LMSYS Arena | 真实人类盲评,实时 | §15.3 |
+| HF Open LLM v2 | 开源 6 基准 | §15.4 |
+| Artificial Analysis | 速度 + 成本 + 质量 | §15.5 |
+| SEAL | Scale AI 专家评估 | §15.6 |
+| OpenCompass | 中文榜单,100+ 模型 | §15.7 |
+| 对账 | 跨榜单交叉验证 | §15.8 |
+
+
+## 15.14 ⚠️ 5 个常见错误
+
+1. **只看一个榜单** — Arena/HF/AA/SEAL/OpenCompass 各有偏差,综合 3-5 个才对账。
+2. **跨榜单直接比分数** — 不同榜单题目/评分不同,排名能比,分数不能比。
+3. **用 HF 旧版** — Open LLM Leaderboard v1 已停更,2024 年后用 v2。
+4. **忽略速度成本** — 质量第一 ≠ 选最佳,Artificial Analysis 性价比榜要看。
+5. **专家评估当众包** — SEAL 是专家不是众包,测的是企业任务,不是 Arena 风格。
+
+## 15.15 延伸阅读
 
 ⭐⭐⭐
 - [LMSYS Chatbot Arena](https://lmarena.ai/) — 真实人类

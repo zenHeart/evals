@@ -400,7 +400,28 @@ promptfoo eval
 
 3. **实操**：用 lm-eval-harness 跑 100 道 MMLU（GPT-4o-mini）。
 
-## 16.22 延伸阅读
+## 16.22 📋 本章 Cheat Sheet
+
+| 概念 | 一句话 | 详见 |
+|---|---|---|
+| lm-eval-harness | EleutherAI 学术标准,200+ 任务 | §16.3 |
+| OpenCompass | 中文评估最强,上海 AI Lab | §16.4 |
+| HELM | Stanford 多指标综合 | §16.5 |
+| RAGAS | RAG 评估主流框架 | §16.8 |
+| DeepEval | 应用层 LLM 评估 | §16.9 |
+| Garak | NVIDIA 红队框架 | §16.15 |
+| PyRIT | Microsoft 红队框架 | §16.16 |
+
+
+## 16.23 ⚠️ 5 个常见错误
+
+1. **一上来就用 lm-eval-harness** — 中文场景先看 OpenCompass,RAG 先看 RAGAS,框架选错=重写。
+2. **用框架 = 不要自建** — 30 行自建能跑通再用框架,框架黑盒会掩盖 bug。
+3. **以为框架支持所有模型** — OpenAI/Anthropic 容易,自定义模型/HuggingFace 需适配。
+4. **不读框架源码** — 框架有 bug,你不知道评分逻辑 = 分数不可信。
+5. **红队评估用普通框架** — Garak/PyRIT 是专业红队,DeepEval 不能替代渗透测试。
+
+## 16.24 延伸阅读
 
 ⭐⭐⭐
 - [lm-eval-harness 文档](https://github.com/EleutherAI/lm-evaluation-harness)

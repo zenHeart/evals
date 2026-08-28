@@ -315,7 +315,27 @@ python fastchat/llm_judge/gen_judgment.py \
 
 3. **实操**：用 GPT-4 当 judge，写一个 pairwise 评估脚本评估两个模型。
 
-## 13.13 延伸阅读
+## 13.13 📋 本章 Cheat Sheet
+
+| 概念 | 一句话 | 详见 |
+|---|---|---|
+| MT-Bench | 8 类多轮对话 80 题 | §13.3 |
+| Chatbot Arena | 真实人类盲评,Elo 排序 | §13.4 |
+| AlpacaEval | 自动化 Arena,805 题 | §13.5 |
+| CompassRank | OpenCompass 中文偏好榜 | §13.6 |
+| Elo | 胜率排序,类似王者段位 | §13.4 |
+| LLM Judge 4 偏差 | 位置/长度/自偏好/格式 | §13.8 |
+
+
+## 13.14 ⚠️ 5 个常见错误
+
+1. **LLM Judge 不去偏** — 位置/长度/自偏好/格式 4 偏差不处理 = 分数虚高。
+2. **Arena 数据只看英文** — 投票者人群偏英文,中文应用直接看 Arena 会被误导。
+3. **AlpacaEval 不控制长度** — GPT-4 偏好长答案,LC Win Rate 才是控制长度的指标。
+4. **用单一 judge 模型** — GPT-4 评 GPT-4 = 自偏好,换 Claude/Gemini 多模型投票。
+5. **MT-Bench 80 题不够** — 样本量小方差大,MT-Bench++ 加难题才稳定。
+
+## 13.15 延伸阅读
 
 ⭐⭐⭐
 - [LMSYS Chatbot Arena](https://lmarena.ai/) — 实时排行榜
