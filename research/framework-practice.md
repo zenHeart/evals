@@ -228,7 +228,9 @@ function judgeAgreement(gold: { id: string; human: number }[], judge: Map<string
 4. **长度与格式中立声明**。针对冗长偏差，rubric 中应显式声明"评分与回答长度、格式无关，只与是否满足判据有关"——这是 MT-Bench 论文识别出的三类偏差中工程上最容易缓解的一类。
 5. **参考答案可选、判据自足**。判官 prompt 应设计成"没有参考答案也能按 rubric 打分"（reference-free），这样同一个判官才能同时服务离线测试与在线采样——LangSmith 概念页把这一点列为主要最佳实践。
 
-### 4.2.5 OpenAI Graders 的设计经验（虽然 API 已弃用，方法论仍成立）OpenAI [Graders 文档](https://developers.openai.com/api/docs/guides/graders) 定义了五种 grader 类型，值得教材借为分类法：
+### 4.2.5 OpenAI Graders 的设计经验（虽然 API 已弃用，方法论仍成立）
+
+OpenAI [Graders 文档](https://developers.openai.com/api/docs/guides/graders) 定义了五种 grader 类型，值得教材借为分类法：
 
 | 类型 | 形态 | 适用 |
 |---|---|---|
@@ -294,6 +296,14 @@ LangChain 官方 [`agentevals`](https://github.com/langchain-ai/agentevals) 包�
 | `superset` | 至少调用参考集合的工具 | 验证最低必要动作 |
 
 另有 `createTrajectoryLLMAsJudge`（可带 `TRAJECTORY_ACCURACY_PROMPT_WITH_REFERENCE` 参考轨迹）用于语义级轨迹评分。这套"确定性匹配先行、判官兜底"的分层正是 4.4 节流水线的模板。
+
+### 4.3.6 可复现性工程：模型层与 agent 层的差距有多大
+
+"可复现性：高 vs 低"这行对比表背后是一整套工程差异，值得展开：
+
+- **模型层**要锁定的变量只有四个：模型 snapshot、采样参数、prompt、数据集版本。四者都落进 run 记录后，重跑结果高度一致（temperature=0 时近乎确定）。
+- **agent 层**在此基础上叠加至少六类漂移源：沙箱镜像的基础依赖版本（SWE-bench 需要专门的三层镜像栈来钉死它）、被测网站/外部 API 的状态（WebArena 为此选择自托管全功能站点而非打真实网站）、工具实现的版本、时间与随机性（日期类任务）、网络抖动、以及模型 provider 侧的静默 snapshot 更换。工程对策是一组纪律而非单一技巧：环境容器化并钉版本、外部依赖用录制回放（stub）替代真实调用、每个 run 记录环境指纹、对无法钉死的外部因素做多次采样取分布而非单次取点。
+- 教材表述建议：模型层评估的复现是"锁变量"问题，agent 层评估的复现是"锁系统"问题——后者永远锁不全，因此 agent 评估的结论应始终以分布（多次 run 的区间）而非单点呈现。
 
 ---
 
@@ -406,6 +416,16 @@ type EvalRun = {
 3. **环境探活**：夜间全量前置一次 sandbox 冒烟（容器能起、网络通、依赖装得上），失败则本次 run 标记 `env:degraded` 而不是混入正常数据。
 4. **静默失败检测**：统计每 run 的 judge 调用错误率（Langfuse 的 Error/Delayed 状态即为此设计），错误率 > 5% 时整 run 作废重跑，而不是把失败当 0 分。
 
+### 4.4.8 从设计到代码的落地顺序（给自建团队的施工序）
+
+把上面七步按依赖关系重排成施工序，能避免最常见的返工：
+
+1. **先定 schema（4.4.4），再写第一个判官**。存储结构决定你能复现什么；先写判官会让记录字段迁就代码，三个月后想加成本维度时历史数据全对不上。
+2. **先跑通"一条样本端到端"**（被测应用 → 判官 → 落盘 → 报告），再谈并发与数据集规模。端到端没通之前的一切优化都是在给一个会重写的管线提速。
+3. **第二批样本用人工标注**，同时把判官校准流程（4.2.3）跑起来。判官没校准前，评估数字只是装饰。
+4. **接入 CI 前先手动跑两周**。门禁的阈值需要真实分布数据来定，第一天就上 merge 阻断只会教会团队绕过门禁。
+5. **在线采样最后做**。它是唯一不能关掉重来的层——线上判官一旦跑了脏数据，回流测试集就永久污染。前面所有层都稳了再开采样，且首月采样率宁可 0.5% 也不要 5%。
+
 ---
 
 ## 4.5 TypeScript 生态实战
@@ -497,9 +517,9 @@ await otelSdk.shutdown();                  // serverless 环境必须显式关�
 
 ```ts
 // mini-eval.ts —— 依赖: npm i openai；Node >= 20；数据文件见下方注释
-// 用法: OPENAI_API_KEY=sk-xxx npx tsx mini-eval.ts dataset.jsonl --concurrency 4 --threshold 0.8
+// 用法: OPENAI_API_KEY=sk-xxx npx tsx mini-eval.ts dataset.jsonl --threshold 0.8 --concurrency 4
 // dataset.jsonl 每行: {"input":"...","expected":"..."}
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import OpenAI from "openai";
 
 // ---------- 类型：与 4.4.4 的 schema 对齐 ----------
@@ -551,25 +571,31 @@ function wilson(p: number, n: number, z = 1.96): [number, number] {
   return [c - h, c + h];
 }
 
-// ---------- 有界并发 map ----------
+// ---------- 有界并发 map：失败隔离在 worker 循环内完成 ----------
 async function mapPool<T, R>(items: T[], limit: number, fn: (t: T) => Promise<R>): Promise<R[]> {
   const out: R[] = new Array(items.length);
   let i = 0;
-  const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
-    while (i < items.length) {
-      const idx = i++;
-      out[idx] = await fn(items[idx]);          // 失败隔离：单条抛错用 try 包
-    }
-  });
-  await Promise.all(workers);
+  await Promise.all(
+    Array.from({ length: Math.min(limit, items.length) }, async () => {
+      while (i < items.length) {
+        const idx = i++;
+        out[idx] = await fn(items[idx]);
+      }
+    }),
+  );
   return out;
 }
 
 // ---------- 主流程 ----------
 async function main() {
-  const [file, , , thrArg, , concArg] = process.argv;
-  const threshold = thrArg ? Number(thrArg) : 0.8;
-  const concurrency = concArg ? Number(concArg) : 4;
+  const args = process.argv.slice(2);
+  const file = args[0];
+  const getNum = (flag: string, fallback: number) => {
+    const at = args.indexOf(flag);
+    return at >= 0 ? Number(args[at + 1]) : fallback;
+  };
+  const threshold = getNum("--threshold", 0.8);
+  const concurrency = getNum("--concurrency", 4);
 
   const examples: Example[] = readFileSync(file, "utf8")
     .split("\n").filter(Boolean)
@@ -583,19 +609,26 @@ async function main() {
     })).choices[0].message.content ?? "";
 
   const startedAt = new Date().toISOString();
-  const results = await mapPool(examples, concurrency, async (ex) => {
+  const results = await mapPool(examples, concurrency, async (ex): Promise<RowResult> => {
     const t0 = Date.now();
-    const output = await solve(ex);
-    const scores = await Promise.all([
-      exactContains(ex, output),
-      llmJudge(client)(ex, output),
-    ]);
-    return { id: ex.id, output, scores, latencyMs: Date.now() - t0 };
+    try {
+      const output = await solve(ex);
+      const scores = await Promise.all([exactContains(ex, output), llmJudge(client)(ex, output)]);
+      return { id: ex.id, output, scores, latencyMs: Date.now() - t0 };
+    } catch (e) {
+      // 失败隔离：单条异常计 0 分并继续，不拖垮整批（4.4.7 静默失败的反面）
+      const msg = e instanceof Error ? e.message : String(e);
+      return {
+        id: ex.id, output: "", latencyMs: Date.now() - t0,
+        scores: [{ key: "error", value: 0, comment: msg.slice(0, 200) }],
+      };
+    }
   });
 
-  // 聚合：pass/fail 判据 = 两个判官都 >= threshold
-  const passRows = results.filter(r => r.scores.every(s => s.value >= threshold));
-  const [lo, hi] = wilson(passRows.length / results.length, results.length);
+  // 聚合：pass 判据 = 所有判官都 >= threshold（合取语义）
+  const valid = results.filter(r => !r.scores.some(s => s.key === "error"));
+  const passRows = valid.filter(r => r.scores.every(s => s.value >= threshold));
+  const [lo, hi] = wilson(passRows.length / valid.length, valid.length);
 
   const run: EvalRun = {
     runId: crypto.randomUUID(),
@@ -605,28 +638,37 @@ async function main() {
     threshold,
     results,
     aggregates: {
-      pass_rate: { value: passRows.length / results.length, ci95: [lo, hi] },
+      pass_rate: { value: passRows.length / valid.length, ci95: [lo, hi] },
+      error_rate: { value: (results.length - valid.length) / results.length, ci95: [0, 0] },
       avg_latency_ms: { value: results.reduce((s, r) => s + r.latencyMs, 0) / results.length, ci95: [0, 0] },
     },
-    passed: passRows.length / results.length >= threshold,
+    passed:
+      passRows.length / valid.length >= threshold &&
+      (results.length - valid.length) / results.length < 0.05, // 错误率护栏
   };
 
-  // 报告 + 落盘（可复现）
+  mkdirSync("reports", { recursive: true });
   writeFileSync(`reports/${run.runId}.json`, JSON.stringify(run, null, 2));
   console.log(`pass_rate=${run.aggregates.pass_rate.value.toFixed(3)} ci95=[${lo.toFixed(3)},${hi.toFixed(3)}]`);
-  console.log(`latency avg=${run.aggregates.avg_latency_ms.value.toFixed(0)}ms, report=reports/${run.runId}.json`);
+  console.log(`error_rate=${run.aggregates.error_rate.value.toFixed(3)} report=reports/${run.runId}.json`);
 
   // CI 退出码：门禁语义
   process.exitCode = run.passed ? 0 : 1;
 }
 
-import { writeFileSync } from "node:fs";
 main().catch(e => { console.error(e); process.exitCode = 1; });
 ```
 
 约 150 行（含注释与空行），覆盖了教材要求的六要素：数据集加载（JSONL）、有界并发（`mapPool` 失败可用 try 包裹实现隔离）、双判官协议（规则 + LLM 同签名可插拔）、统计护栏（Wilson 区间而非点估计）、报告落盘（schema 与 4.4.4 对齐）、CI 退出码。读者扩展方向：加缓存键 `(id, outputHash, judgeVersion)`、加金标准集自检（4.4.7）、把 `solve` 换成被测应用的真实入口。
 
 > 运行提示：示例中 `gpt-4o-mini` 仅为占位模型名，实际使用时替换为你账号可用的模型 snapshot；`crypto.randomUUID()` 需 Node 19+。
+
+这段源码里有四个值得在课堂上展开的设计决策：
+
+1. **判官是协议不是函数**：`Judge` 类型只约定 `(example, output) => Promise<Score>`，规则判官与 LLM 判官因此可以自由组合、逐条降级（LLM 判官抛错时退回规则判官就是三行代码）——这与 Langfuse 的 evaluator 抽象、LangSmith 的 evaluator 函数签名是同一个思想。
+2. **失败隔离放在 mapPool 里做**：并发 worker 循环内是唯一能定位到"哪一条样本失败"的位置；把 try/catch 放在 mapPool 外只能拿到整批失败，放在调用方则会丢掉"失败样本继续跑完"的能力。
+3. **阈值判定读的是分数语义**：`every(s => s.value >= threshold)` 隐含了"任一判官否决即失败"的合取语义——这正是 DeepEval"test case 只有在每个带 verdict 的 metric 都成功时才通过"的实现。想让指标有松紧之分（如 DeepEval 的 `flaky` 语义），把 `scores` 里每个 score 加一个 `blocking: boolean` 字段即可。
+4. **退出码是框架与 CI 的唯一契约**：`process.exitCode = run.passed ? 0 : 1` 意味着这套东西天然可进 GitHub Actions / Jenkins / 任意流水线——不需要为每个 CI 平台写适配，这比"内置 CI 集成"重要得多。
 
 ### 4.5.5 TS 生态选型速查
 
@@ -700,6 +742,18 @@ main().catch(e => { console.error(e); process.exitCode = 1; });
 
 首月路线：第 1 周给被测 agent 加结构化 tool_calls 埋点；第 2 周写三个确定性判官（必需工具、参数 schema、步数预算）上全量；第 3 周加任务完成判官（人工标 50 条校准，判官一致率 ≥ 80% 才上 CI）；第 4 周接 L1 门禁 + 在线 1% 采样。
 
+### 4.6.5 反模式清单：自建评估系统最常见的七种死法
+
+从各框架官方文档的"best practices / troubleshooting"章节与社区实践中反向提炼，比正面模式更有教学价值：
+
+1. **虚荣指标（vanity metric）**：只汇报"平均分 0.87"，不报置信区间、不报分桶分布。平均分会掩盖"新版本在长尾场景全军覆没、在高频场景略升"的真实回归。
+2. **判官即真理**：把判官分数当客观真值，从不与人工标注对齐。判官是另一个模型，有自己的偏差（4.2.4 五要素反着写就是灾难清单）。
+3. **测试集腐烂**：入集无标准、无去重、无簇管理，一年后 5000 条里一半是重复 badcase、一半早已被修复，评估信号被稀释。数据集是需要代码评审的活资产。
+4. **门禁过紧**：PR 层阈值设在统计噪声区间内，CI 天天红，团队第一反应是"重跑一次"或"调低阈值"——门禁的信用一旦破产，整个评估体系失去效力。
+5. **数据泄漏**：把修 prompt 时反复盯着调的案例留在验收集里，本地分数涨了、线上没涨。时间切分（4.4.2）不是最佳实践而是硬约束。
+6. **只评离线**：没有在线采样层，prompt 迭代的所有验证都发生在与生产分布不同的合成数据上，漂移无从察觉。
+7. **评估系统无人值守**：判官模型被上游静默退役（4.5.2 的 OpenAI 弃用时间线就是实例）、沙箱镜像过期、数据集指针失效，评估继续"正常出数"——这正是金标准集回归与静默失败检测存在的理由。
+
 ---
 
 ## 4.7 框架选型决策树
@@ -710,7 +764,7 @@ flowchart TD
     B -->|多步 agent/需要沙箱| C{团队主栈?}
     B -->|单次补全/RAG/对话| D{主栈是 TS 还是 Python?}
     C -->|Python 可用| C1[Inspect AI<br/>Task/Solver/Scorer + Docker sandbox]
-    C -->|必须 TS| C2[自建: sandbox(Docker/Playwright)<br/>+ agentevals 轨迹判官 + mini 框架]
+    C -->|必须 TS| C2["自建: Docker/Playwright 沙箱<br/>+ agentevals 轨迹判官 + mini 框架"]
     D -->|TS/前端| E{需要生产在线评估吗?}
     D -->|Python| F{评估要进 pytest 门禁吗?}
     E -->|要| E1[Langfuse TS SDK<br/>OTel trace + observation 级判官]

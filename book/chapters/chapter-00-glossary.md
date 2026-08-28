@@ -45,7 +45,7 @@
 
 **为什么重要**：API 按 token 收费；上下文窗口按 token 计数。
 
-详见：第 4、9 章。
+详见：第 4、10 章。
 
 **3. Prompt（提示）**
 
@@ -94,7 +94,7 @@ const PROMPT = (question: string) => `
 "飞机" → [-0.45, 0.12, 0.89, ...] (距离远)
 ```
 
-详见：第 17、20 章。
+详见：第 20、23 章。
 
 **6. RAG（Retrieval-Augmented Generation，检索增强生成）**
 
@@ -108,7 +108,7 @@ const PROMPT = (question: string) => `
 [用户问题] → [检索文档库] → [找到相关文档] → [问题+文档给模型] → [答案]
 ```
 
-详见：第 17、24 章。
+详见：第 20、27 章。
 
 **7. Chunk（分块）**
 
@@ -118,7 +118,7 @@ const PROMPT = (question: string) => `
 
 **为什么需要**：模型上下文窗口有限，必须切块。
 
-详见：第 17 章。
+详见：第 20 章。
 
 **8. Temperature（温度）**
 
@@ -146,7 +146,7 @@ const PROMPT = (question: string) => `
 [Agent] "我需要查天气" → 调用天气 API → 拿到数据 → 生成回答
 ```
 
-详见：第 9、17、25 章。
+详见：第 9、10、20 章。
 
 **10. Tool Use（工具使用）**
 
@@ -169,7 +169,7 @@ const PROMPT = (question: string) => `
 }
 ```
 
-详见：第 7、17 章。
+详见：第 7、20 章。
 
 **11. Judge（评分器）**
 
@@ -177,7 +177,7 @@ const PROMPT = (question: string) => `
 
 具体：给模型输出打分的程序或模型。可以是规则（exact match），也可以是另一个 LLM（LLM-as-Judge）。
 
-详见：第 3、15、23 章。
+详见：第 3、18、26 章。
 
 **12. LLM-as-Judge（用 LLM 当评分器）**
 
@@ -185,7 +185,7 @@ const PROMPT = (question: string) => `
 
 具体：用更强的 LLM 评估另一个 LLM 的输出。便宜、可扩展，但有偏差。
 
-详见：第 10、15 章。
+详见：第 13、18 章。
 
 **13. Benchmark（基准）**
 
@@ -195,7 +195,7 @@ const PROMPT = (question: string) => `
 
 **示例**：MMLU（57 学科 14k 多选题）、HumanEval（164 道编程题）。
 
-详见：第 1、5-9 章。
+详见：第 1、5-12 章。
 
 **14. Metric（指标）**
 
@@ -219,7 +219,7 @@ const PROMPT = (question: string) => `
 
 具体：偏好类评估的评分系统。模型 A 胜 B → A 加分 B 减分。
 
-详见：第 10 章。
+详见：第 13 章。
 
 **17. Context Window（上下文窗口）**
 
@@ -227,7 +227,7 @@ const PROMPT = (question: string) => `
 
 具体：模型一次能"看到"的最大 token 数。GPT-4o = 128k；Claude 3.5 = 200k；Gemini 1.5 Pro = 1M。
 
-详见：第 9 章。
+详见：第 10 章。
 
 **18. Fine-tuning（微调）**
 
@@ -235,7 +235,7 @@ const PROMPT = (question: string) => `
 
 具体：在基础模型上用自己的数据再训练，让模型擅长某个垂直领域。
 
-详见：第 11 章。
+详见：第 14 章。
 
 **19. RLHF（Reinforcement Learning from Human Feedback）**
 
@@ -243,7 +243,7 @@ const PROMPT = (question: string) => `
 
 具体：用人类对模型输出的偏好数据训练奖励模型，再用奖励模型优化 LLM。
 
-详见：第 1、11 章。
+详见：第 1、14 章。
 
 **20. Retrieval（检索）**
 
@@ -251,7 +251,7 @@ const PROMPT = (question: string) => `
 
 具体：从文档库中找与查询最相关的文档（通常用 embedding 余弦相似度）。
 
-详见：第 17、24 章。
+详见：第 20、27 章。
 
 ## 0.4 进阶术语（10 个，遇到再翻）
 
@@ -297,19 +297,16 @@ const PROMPT = (question: string) => `
 
 ## 0.5 全书术语地图
 
-| 章节 | 重点术语 |
-|---|---|
-| 1 | LLM, 评估, Benchmark, Metric |
-| 2 | 5W1H, 业务目标, 能力, 指标 |
-| 3 | 数据集, 推理, 评分, 报告 |
-| 4 | Token, 概率, 准确率, F1, Elo |
-| 5-9 | 各类 Benchmark, SOTA |
-| 10 | LLM-as-Judge, Pairwise, Elo, Bradley-Terry |
-| 11-12 | 厂商报告, 排行榜 |
-| 13-18 | 评估框架, RAG, Agent, Red Team |
-| 19-23 | 自定义评估, CI/CD, A/B, 元评估 |
-| 24-26 | 实战案例 |
-| 27-28 | 资源, 自测 |
+| 部分 | 章节 | 重点术语 |
+|---|---|---|
+| 术语速查 | 0 | 本书 20+10 个核心术语 |
+| 1 评估的世界观 | 1-4 | 评估定义, 5W1H, 四步法, 指标/统计/人类一致性 |
+| 2 基准家族图谱 | 5-12 | 学科/数学/代码/多模态基准, 硬核新兴评测, 长上下文/安全/Agent, 行业垂直, 持续更新评测 |
+| 3 偏好与排行榜 | 13-15 | LLM-as-Judge, Arena Elo, 厂商报告解读, 榜单对账 |
+| 4 评估工程实践 | 16-21 | 框架全景, 自建 evaluator, Judge 工程化, 人类评估, RAG/Agent 评估, 红队 |
+| 5 自定义评估设计 | 22-26 | 能力拆解, 测试集构建, CI/CD 流水线, A/B 实验, 元评估 |
+| 6 实战案例 | 27-29 | 客服 RAG, 代码 Agent, 多模态 App |
+| 7 资源与自测 | 30-31 | 80+ 基准速查, 术语表, Cheat Sheet, 结课自测, FAQ |
 
 ## 0.6 验收自测
 
