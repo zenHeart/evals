@@ -25,7 +25,7 @@ const SITE = "https://evals.zenheart.site";
 const PAGE_CSS = `
 :root { color-scheme: light dark; }
 * { box-sizing: border-box; }
-body { margin:0; font-family: ui-sans-serif,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif; background:#f6f7fb; color:#0f172a; line-height:1.7; }
+body { margin:0; font-family: ui-sans-serif,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif; background:#f6f7fb; color:#0f172a; line-height:1.7; overflow-x:hidden; }
 body.dark { background:#0b1224; color:#e2e8f0; }
 .topbar { display:flex; align-items:center; justify-content:space-between; padding:12px 20px; border-bottom:1px solid rgba(0,0,0,.08); position:sticky; top:0; background:rgba(246,247,251,.94); backdrop-filter:blur(8px); z-index:60; }
 body.dark .topbar { background:rgba(11,18,36,.94); border-bottom-color:rgba(255,255,255,.08); }
@@ -57,10 +57,11 @@ body.dark select { background:#111a2e; border-color:rgba(255,255,255,.18); }
 body.dark .stats { color:#94a3b8; }
 
 /* ---------- 卡片 ---------- */
-.card { border:1px solid rgba(0,0,0,.09); border-radius:16px; margin:14px 0; background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.04); overflow:visible; transition: box-shadow .15s; }
+.card { border:1px solid rgba(0,0,0,.09); border-radius:16px; margin:14px 0; background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.04); overflow:visible; transition: box-shadow .15s; overflow-wrap:anywhere; }
 body.dark .card { background:#111a2e; border-color:rgba(255,255,255,.09); }
 .card:hover { box-shadow:0 6px 20px rgba(0,0,0,.08); }
 .card-main { padding:16px 20px; cursor:pointer; }
+.card-main:focus-visible { outline:3px solid #2563eb; outline-offset:2px; border-radius:16px; }
 .card-head { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
 .card-title { font-size:18.5px; font-weight:800; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
 .cat-tag { font-size:11.5px; font-weight:800; padding:2px 11px; border-radius:999px; color:#fff; }
@@ -152,8 +153,9 @@ function main() {
   <a class="logo" href="../index.html">📚 Eval Handbook</a>
   <nav>
     <a href="../index.html">首页</a>
-    <a href="../web/chapter-01.html">开始阅读</a>
+    <a href="./index.html" style="color:#2563eb;font-weight:700;">评估大全</a>
     <a href="../research/benchmarks.html">基准图谱</a>
+    <a href="../research/frameworks.html">框架工具</a>
     <a href="../evals.epub">下载 EPUB</a>
     <button class="dark-toggle" id="themeToggle" type="button" title="切换暗色模式">🌙</button>
   </nav>
@@ -238,7 +240,7 @@ function main() {
       var c=cats[b.category]||{name:b.category,color:'#94a3b8'};
       var ad=(b.adoption||[]).filter(function(a){return a.release&&a.release.indexOf('（')!==0;});
       return '<div class="card" data-id="'+esc(b.id)+'">'+
-        '<div class="card-main">'+
+        '<div class="card-main" tabindex="0" role="button" aria-expanded="false">'+
           '<div class="card-head">'+
             '<span class="rank" style="font-family:ui-monospace,monospace;font-size:12px;font-weight:800;color:#94a3b8;min-width:30px;">#'+(i+1)+'</span>'+
             '<span class="card-title">'+esc(b.name)+
@@ -273,11 +275,19 @@ function main() {
       '</div>';
     }).join('');
 
-    // 点击卡片展开/收起（引用徽章的悬浮与链接不受影响）
+    // 点击卡片展开/收起（引用徽章的悬浮与链接不受影响）；支持键盘 Enter/Space
     el.querySelectorAll('.card-main').forEach(function(m){
+      function toggle(){
+        var card=m.closest('.card');
+        card.classList.toggle('open');
+        m.setAttribute('aria-expanded', card.classList.contains('open')?'true':'false');
+      }
       m.addEventListener('click',function(e){
         if(e.target.closest('.cite-badge')||e.target.closest('a'))return;
-        m.closest('.card').classList.toggle('open');
+        toggle();
+      });
+      m.addEventListener('keydown',function(e){
+        if((e.key==='Enter'||e.key===' ')&&e.target===m){e.preventDefault();toggle();}
       });
     });
   }

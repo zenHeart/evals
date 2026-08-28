@@ -22,7 +22,7 @@
  *   dist/styles.css  dist/search-data.js  dist/favicon.svg
  */
 
-import { existsSync, readFileSync, writeFileSync, readdirSync, mkdirSync, copyFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync, readdirSync, mkdirSync, copyFileSync, rmSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -471,7 +471,7 @@ footer.page-foot { text-align: center; color: #94a3b8; font-size: 13px; padding:
 }
 `;
 
-const COMMON_HEAD = (rel, title, desc) => `<!doctype html>
+const COMMON_HEAD = (rel, title, desc, path = "") => `<!doctype html>
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
@@ -482,11 +482,12 @@ const COMMON_HEAD = (rel, title, desc) => `<!doctype html>
 <meta property="og:description" content="${desc.replace(/"/g, "&quot;")}">
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="大模型评估入门">
-<link rel="canonical" href="${SITE}/">
+<meta property="og:image" content="${SITE}/cover.svg">
+<link rel="canonical" href="${SITE}/${path}">
 <link rel="icon" type="image/svg+xml" href="${rel}favicon.svg">
 <link rel="stylesheet" href="${rel}styles.css">
 <script>
-(function(){try{var t=localStorage.getItem('theme');if(t==='dark'||(!t&&matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();
+(function(){try{var t=localStorage.getItem('theme');if(t==='dark'||(!t&&matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.setAttribute('data-theme','dark');document.addEventListener('DOMContentLoaded',function(){document.body.classList.add('dark');});}}catch(e){}})();
 </script>
 <style>html[data-theme="dark"] body{background:#0b1224;color:#e2e8f0;}</style>
 `;
@@ -612,7 +613,7 @@ function chapterPage(chapterFile, prev, next, partTitle, chapterNum, searchExtra
   const hasMermaid = body.includes('class="mermaid"');
   const prevHref = prev ? `chapter-${prev.num}.html` : null;
   const nextHref = next ? `chapter-${next.num}.html` : null;
-  return `${COMMON_HEAD("../", fullTitle, description)}
+  return `${COMMON_HEAD("../", fullTitle, description, `web/chapter-${chapterNum}.html`)}
 </head>
 <body>
 ${TOPBAR("../")}
@@ -670,7 +671,7 @@ function indexPage(parts, chaptersMeta) {
     return `<div class="part-group">${p.title}</div><ul class="chapter-list">${items}</ul>`;
   }).join("\n");
   const desc = "从前端工程师视角看 Eval。理解厂商报告里的每一行数字、选对合适的基准、从零搭建自己的评估流水线。";
-  return `${COMMON_HEAD("", "大模型评估入门 · Eval Handbook", desc)}
+  return `${COMMON_HEAD("", "大模型评估入门 · Eval Handbook", desc, "")}
 </head>
 <body>
 ${TOPBAR("")}
@@ -742,15 +743,17 @@ function researchPage(mdFile, title, rel) {
   const { sections, description } = mdToSections(md);
   const body = sections.map(sectionHtml).join("\n");
   const hasMermaid = body.includes('class="mermaid"');
-  return `${COMMON_HEAD(rel, `${title} · 大模型评估入门`, description || title)}
+  return `${COMMON_HEAD(rel, `${title} · 大模型评估入门`, description || title, `research/${mdFile.split(/[\\/]/).pop().replace(/\.md$/, ".html")}`)}
 </head>
 <body>
 ${TOPBAR(rel)}
-<div class="layout" style="grid-template-columns:1fr;">
+<div class="layout">
 <main class="chapter-main">
+  <div class="breadcrumb"><a href="${rel}index.html">首页</a> / <b>${title}</b></div>
   <h1>${title}</h1>
   ${body}
 </main>
+${tocSide(sections)}
 </div>
 <footer class="page-foot"><a href="${SITE}">evals.zenheart.site</a> · MIT License · ZenHeart</footer>
 ${RUNTIME_JS}
@@ -798,9 +801,9 @@ async function main() {
     const html = chapterPage(f, prev, next, chapterToPart.get(f) || "", num);
     writeFileSync(join(DIST, "web", `chapter-${num}.html`), html, "utf-8");
 
-    // search index (title + section titles + plain text sample)
+    // search index（保留连字符：保证 "SWE-bench" 可搜；正文全量入索引）
     const md = readFileSync(join(CHAPTERS_DIR, f), "utf-8");
-    const plain = stripMd(md.replace(/```[\s\S]*?```/g, " ").replace(/[#>*|`\[\]()-]/g, " ").replace(/\s+/g, " ")).slice(0, 4000);
+    const plain = stripMd(md.replace(/```[\s\S]*?```/g, " ").replace(/[#>*|`[\]]/g, " ").replace(/\s+/g, " "));
     searchData.push({
       n: num,
       t: chaptersMeta[f].title,
@@ -816,8 +819,11 @@ async function main() {
   writeFileSync(join(DIST, "search-data.js"), `window.EVALS_SEARCH=${JSON.stringify(searchData)};`, "utf-8");
   console.log("[evals-web] Built index.html + search-data.js");
 
-  // research pages — all md files
-  const researchFiles = readdirSync(RESEARCH_DIR).filter(f => f.endsWith(".md"));
+  // research pages — public docs only（内部评审/审计文档不上站；先清理旧产物防残留）
+  const INTERNAL = /^(review-|audit-|site-content-review|zzz-)/;
+  rmSync(join(DIST, "research"), { recursive: true, force: true });
+  mkdirSync(join(DIST, "research"), { recursive: true });
+  const researchFiles = readdirSync(RESEARCH_DIR).filter(f => f.endsWith(".md") && !INTERNAL.test(f));
   for (const f of researchFiles) {
     const title = f.replace(/\.md$/, "").split("-").map(w => ({ benchmarks: "基准图谱", frameworks: "框架工具", "academic-history": "评估学术史", "methodology-deep": "评估方法论", "vendor-blog-evals": "厂商报告拆解", "framework-practice": "框架实战" }[f.replace(/\.md$/, "")] || f.replace(/\.md$/, "")));
     const html = researchPage(join(RESEARCH_DIR, f), title, "../");

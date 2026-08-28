@@ -1,379 +1,386 @@
-# 25. 在线评估与 A/B 实验
+# 25. 在线评估与 A/B 实验：从分流到显著性
 
-> **如果只读一节**：离线评估告诉你"理论上好不好"，在线 A/B 告诉你"用户认不认"。**两者缺一不可**。在线评估的核心是分流 + 指标 + 显著性检验。
+> **如果只读一节**：读 25.4 的最小样本量——基线 5%、想检测 1 个百分点的绝对提升、α=0.05、功效 0.80，每组需要 **8146** 个用户。直觉往往猜 1000-3000，低估约 3-8 倍；这一节给你公式、可运行代码和"直觉为什么会错"的完整解释。
 
-## 25.1 本章目标
+## 25.1 本章目标与读者
+
+第 24 章的 L4 层把评估接到了生产流量上，但它回答的是"系统有没有变坏"。这一章回答下一个问题：**"新版本到底比旧版本好多少——好到值得全量发布吗？"**这是离线评估永远答不了的题：测试集上的分数是"在 500 道固定题上的表现"，不是"在 10 万个真实用户身上的表现"。
+
+它与第 3 章 3.6 的分工：那一节讲**离线统计**——同一份测试集上两个模型配对比较（Wilson 区间、McNemar、bootstrap）；本章讲**在线实验**——两组真实用户各看一个版本，比较的是"用户行为"这个更贵也更诚实的指标。工具完全不同：离线是配对检验，在线是两独立样本的比例检验。
 
 读完后你能：
 
-- 设计一个生产级 A/B 实验
-- 计算统计显著性
-- 知道在线评估的 4 大陷阱
-- 区分曝光指标 vs 转化指标
+- 写出一个稳定分流函数：同一用户永远看到同一版本，扩量时不重排
+- 用公式算出实验需要的最小样本量，并解释为什么直觉总是低估
+- 跑双比例 z 检验，把"提升了 1%"翻译成"这个提升是噪声的概率有多大"
+- 识别辛普森悖论、新颖性效应、样本污染、过早停止四个经典陷阱
 
-## 25.2 离线 vs 在线
+**前置知识**：第 3 章 3.6（Wilson 区间与假设检验的直觉）、第 24 章（L4 在线采样）。本章统计代码全部零依赖 TypeScript，每个数字都经 Node 实跑验证。
+
+## 25.2 概念引入：离线告诉你"理论上好不好"，在线告诉你"用户认不认"
+
+**前端类比**：离线评估是本地跑的单元测试套件——固定输入、可重复、便宜；在线 A/B 是灰度发布加生产监控——真实流量、不可重复、回答的是"用户行为变了没有"。本地全绿不代表线上没人报障，反之亦然。
 
 | 维度 | 离线评估 | 在线 A/B |
 |---|---|---|
-| 数据 | 固定测试集 | 真实用户 |
-| 速度 | 快 | 慢（需累积流量） |
-| 成本 | 低 | 高（用户体验风险） |
-| 真实性 | 中 | 高 |
-| 适合 | 回归、选型 | 决策发布 |
+| 数据 | 固定测试集（500 题量级） | 真实用户分流 |
+| 速度 | 分钟到小时 | 天到周（等流量累积） |
+| 成本 | API 费用（几美元/晚） | 用户体验风险 + 机会成本 |
+| 统计工具 | 配对检验（同题两模型） | 两独立样本比例检验（两组用户） |
+| 回答的问题 | 这个版本对不对 | 用户认不认 |
 
-**金科玉律**：离线胜出 → 上线 5% 灰度 → A/B 胜出 → 全量。
+金科玉律一句话：**离线胜出 → 上线灰度 → 在线显著胜出 → 全量**。跳过中间两步的团队，等于拿 500 道题的分数去赌全部用户的体验。
 
-## 25.3 A/B 实验设计
+## 25.3 分流：一致性哈希分桶
 
-**5 个关键问题**
+A/B 的第一块基石不是统计，是**分流**：哪些用户看新版本，哪些看旧版本。分流的全部要求浓缩成三条：
 
-1. **指标**：评估什么？
-2. **最小样本量**：多少用户才有结论？
-3. **流量分配**：50/50？90/10？
-4. **实验周期**：跑多久？
-5. **判定标准**：多少提升算显著？
+1. **稳定**：同一用户每次来都看到同一版本（体验一致性，也是统计的前提）；
+2. **均匀**：两组用户特征分布大致相同（否则比较没有意义）；
+3. **可扩量**：从 5% 扩到 50% 时，已在新版本里的用户不迁移。
 
-**最小样本量计算**
+工程实现是哈希分桶——把"实验名 + 用户 ID"哈希成 0-999 的桶号，桶号小于流量百分比就进实验组：
 
 ```typescript
-// 假设：基线转化率 5%，希望检测到 1% 绝对提升（5% → 6%）
-// 显著性水平 α = 0.05（5% 误报率）
-// 检验功效 1-β = 0.80（80% 检测到真实差异）
+// assign.ts —— 一致性哈希分流(零依赖)
+// 运行: npx tsx assign.ts
+import { createHash } from "node:crypto";
 
-function calculateSampleSize(
-  baselineRate: number,  // 基线转化率
-  mde: number,            // 最小可检测效应（绝对值）
-  alpha = 0.05,
-  power = 0.80
-): number {
-  // 用简化公式
-  // n = (Z_alpha/2 + Z_beta)^2 * (p1(1-p1) + p2(1-p2)) / (p2-p1)^2
-  const p1 = baselineRate;
-  const p2 = baselineRate + mde;
-  const zAlpha = 1.96;  // for alpha=0.05
-  const zBeta = 0.84;   // for power=0.80
-  
-  const numerator = Math.pow(zAlpha + zBeta, 2) * (p1 * (1 - p1) + p2 * (1 - p2));
-  const denominator = Math.pow(p2 - p1, 2);
-  
-  return Math.ceil(numerator / denominator);
+export function bucketOf(experiment: string, userId: string, buckets = 1000): number {
+  const h = createHash("md5").update(`${experiment}:${userId}`).digest();
+  return h.readUInt32BE(0) % buckets;
+}
+export function variantOf(experiment: string, userId: string, trafficPct = 50) {
+  return bucketOf(experiment, userId) < trafficPct * 10 ? "treatment" : "control";
 }
 
-// 示例：基线 5%，想检测 1% 提升
-console.log(calculateSampleSize(0.05, 0.01)); // ~3000
-```
-
-**实验周期估算**
-
-```typescript
-// 假设：每天 1000 用户，转化率 5%
-// 3000 / 1000 = 3 天
-
-function estimateDaysToResult(
-  dailyTraffic: number,
-  sampleSize: number
-): number {
-  return Math.ceil(sampleSize / dailyTraffic);
+for (const u of ["u-1001", "u-1002", "u-1003", "u-1004", "u-1005"]) {
+  console.log(u, "bucket=", bucketOf("cs-bot-v2", u),
+    "variant@50%=", variantOf("cs-bot-v2", u), "variant@20%=", variantOf("cs-bot-v2", u, 20));
 }
+// 期望输出:
+// u-1001 bucket= 72 variant@50%= treatment variant@20%= treatment
+// u-1002 bucket= 928 variant@50%= control variant@20%= control
+// u-1003 bucket= 837 variant@50%= control variant@20%= control
+// u-1004 bucket= 487 variant@50%= treatment variant@20%= control
+// u-1005 bucket= 176 variant@50%= treatment variant@20%= treatment
 ```
 
-## 25.4 流量分配
+三个设计要点，每个都对应一条分流要求：
 
-**50/50（标准 A/B）**
+**实验名参与哈希。**`cs-bot-v2:u-1004` 而不是裸 `u-1004`——不同实验天然互相打乱，避免所有实验都命中同一批用户。代价是改实验名等于重新洗牌（`cs-bot-v2` 改成 `cs-bot-v3`，全部分组重排），所以实验名一旦开跑不能改。
 
-```
-[100% 流量] → 50% 旧版本 / 50% 新版本
-```
+**阈值比较用"桶号 < 流量"而不是"随机数 < 流量"。**桶号是永久的，所以从 20% 扩到 50% 时，u-1001（桶 72）和 u-1005（桶 176）留在 treatment，u-1004（桶 487）从 control 迁入 treatment——**只进不出**，已体验新版的用户不会被"踢回"旧版。若用 `Math.random()` 现场抽，同一用户随机漂移，实验数据全部作废。
 
-**适合**：成熟产品，转化稳定。
+**用户 ID 而不是会话 ID。**用会话 ID 分流，同一用户刷新一次就换版本；用设备 ID 会把同一人的双端设备算成两人。选哪个 ID 是实验设计决策，不是实现细节。
 
-**90/10（新功能灰度）**
+## 25.4 最小样本量：公式、实算与直觉陷阱
 
-```
-[100% 流量] → 90% 旧版本 / 10% 新版本
-```
+这是在线实验最容易被拍脑袋糊弄过去的一步："先跑两天看看？"——两天后的结论大概率是噪声。样本量在实验**开始前**算定，它是"跑多久"的唯一答案。
 
-**适合**：风险大的新功能，验证稳定性。
+### 25.4.1 公式
 
-**95/5（Canary）**
+比较两组转化率（基线 p₁，期望提升到 p₂ = p₁ + MDE），每组所需样本量：
 
-```
-[100% 流量] → 95% 旧版本 / 5% 新版本
-```
+$$n = \frac{(z_{\alpha/2} + z_{\beta})^2 \times (p_1(1-p_1) + p_2(1-p_2))}{(p_2 - p_1)^2}$$
 
-**适合**：监控告警，不追求统计显著。
+> 📝 **在前端看来**：分子里的 `p(1-p)` 是二项分布的方差（p=0.5 时最大——"半对半错"最难下结论），`(z_{α/2} + z_β)²` 是你为"少误报 + 能检出"两件事共同付出的常数（α=0.05、功效 0.80 时约 7.84）；分母是你要检测的差值的平方。**差值越小，分母越小，n 越大**——检测越细微的差异，代价是平方级增长的样本量。
 
-## 25.5 在线指标分类
+四个参数的业务含义，每一个都要在实验前和业务方确认：
 
-**1. 曝光指标**
-
-| 指标 | 含义 |
-|---|---|
-| 触达用户 | 实验看到的人 |
-| 曝光次数 | 实验展示的次数 |
-| 首次曝光时间 | 第一次看到实验的时间 |
-
-**2. 转化指标**
-
-| 指标 | 含义 |
-|---|---|
-| 点击率 (CTR) | 点击 / 曝光 |
-| 转化率 (CVR) | 转化 / 点击 |
-| 完成率 | 完成 / 开始 |
-| 留存率 | 次日 / 当日 |
-
-**3. 业务指标**
-
-| 指标 | 含义 |
-|---|---|
-| GMV | 商品交易总额 |
-| 客单价 | 平均订单金额 |
-| 退款率 | 退款 / 订单 |
-| 满意度 (CSAT) | 5 分制评分 |
-
-**4. 护栏指标（Guardrail）**
-
-| 指标 | 含义 | 阈值 |
+| 参数 | 含义 | 本章取值 |
 |---|---|---|
-| 错误率 | 错误 / 请求 | < 1% |
-| P95 延迟 | 95% 请求的延迟 | < 3s |
-| 投诉率 | 投诉 / 订单 | < 0.5% |
-| 安全事件 | 违规 / 总数 | = 0 |
+| p₁（基线） | 当前版本的转化率 | 5% |
+| MDE（最小可检测效应） | "提升多少才值得发布"，绝对值 | 1 个百分点（5% → 6%） |
+| α（显著性水平） | 真没差异却误判"有差异"的概率上限 | 0.05 |
+| power（检验功效，1-β） | 真有 MDE 那么大的差异时，能检出的概率 | 0.80 |
 
-**护栏指标超阈值 → 立即停止实验**。
+MDE 是四个参数里最需要业务表态的一个：它不是"我们期望提升多少"，而是"提升多少以下你不在乎"。问错了问题，算出来的样本量毫无意义。
 
-## 25.6 显著性检验
+### 25.4.2 可运行实现与实算
 
 ```typescript
-// 双比例 Z 检验
-function twoProportionZTest(
-  successesA: number, trialsA: number,
-  successesB: number, trialsB: number
-): { z: number; pValue: number; significant: boolean } {
-  const pA = successesA / trialsA;
-  const pB = successesB / trialsB;
-  const pPool = (successesA + successesB) / (trialsA + trialsB);
-  
-  const se = Math.sqrt(pPool * (1 - pPool) * (1/trialsA + 1/trialsB));
-  const z = (pB - pA) / se;
-  
-  // 简化：Z > 1.96 = p < 0.05 (双尾)
-  // 这里用单尾（B 优于 A）
-  const pValue = 1 - normalCdf(z);
-  const significant = pValue < 0.05;
-  
-  return { z, pValue, significant };
+// sample-size.ts —— 最小样本量(零依赖,实算可复现)
+// 运行: npx tsx sample-size.ts
+function minSampleSize(p1: number, mde: number, alpha = 0.05, power = 0.8): number {
+  const Z_ALPHA = 1.96; // alpha=0.05 双侧对应的 z 值
+  const Z_BETA = 0.84;  // power=0.80 对应的 z 值
+  if (alpha !== 0.05 || power !== 0.8) throw new Error("示例只支持 alpha=0.05 / power=0.8");
+  const p2 = p1 + mde;
+  return Math.ceil(((Z_ALPHA + Z_BETA) ** 2 * (p1 * (1 - p1) + p2 * (1 - p2))) / mde ** 2);
 }
 
-function normalCdf(z: number): number {
-  // 标准正态分布 CDF 近似
-  return 0.5 * (1 + erf(z / Math.sqrt(2)));
-}
+console.log("minSampleSize(0.05, 0.01)  =", minSampleSize(0.05, 0.01));
+console.log("minSampleSize(0.05, 0.02)  =", minSampleSize(0.05, 0.02));
+console.log("minSampleSize(0.05, 0.005) =", minSampleSize(0.05, 0.005));
+console.log("minSampleSize(0.10, 0.01)  =", minSampleSize(0.10, 0.01));
+// 期望输出:
+// minSampleSize(0.05, 0.01)  = 8146
+// minSampleSize(0.05, 0.02)  = 2207
+// minSampleSize(0.05, 0.005) = 31196
+// minSampleSize(0.10, 0.01)  = 14732
+```
 
+实算核对一遍分子分母：`(1.96 + 0.84)² = 7.84`；`p₁(1-p₁) + p₂(1-p₂) = 0.05×0.95 + 0.06×0.94 = 0.1039`；分子 `7.84 × 0.1039 = 0.8146`；分母 `(0.01)² = 0.0001`；`0.8146 / 0.0001 = 8145.76`，向上取整得 **8146（每组）**。（若用未圆整的精确 z 值 z₀.₉₇₅=1.9600、z₀.₈₀=0.8416，得每组 8155——同一量级，本书统一取圆整版 8146 便于复算。）
+
+四行输出每行都是一个实验设计决策：
+
+- **MDE 从 1% 放宽到 2%**，样本量从 8146 降到 2207——差值平方在分母，效应量翻倍样本量缩到约 1/4；
+- **MDE 收紧到 0.5%**，样本量暴涨到 31196——如果你的日流量撑不起这个数，说明这个实验设计不成立，该改的是 MDE 而不是硬跑；
+- **基线从 5% 提到 10%**，同样 1 个百分点的 MDE 需要的样本量反而升到 14732——p(1-p) 在 p 越接近 0.5 时越大，**基线越高，相同绝对提升越难检出**。
+
+实验周期随之确定：日活 1000、50/50 分流时每组每天进 500 人，8146 / 500 ≈ 17 天。再叠加"必须跑满整数周"（25.7 的新颖性效应），这个实验的合理工期是 **3 周左右**——比多数人预期的"跑两天"长一个数量级。算不出 3 周流量的实验，要么放宽 MDE，要么换更强的驱动指标（比如"会话解决率"比"购买转化"基数更大）。
+
+### 25.4.3 为什么直觉会低估 3-8 倍
+
+把最常见的直觉拿出来解剖。基线 5%、提升 1%："每天 500 人进实验组，一周就是 3500 人，转化从 25 个涨到 30 个——差异不是看得见吗？"
+
+这个直觉错在把"**看见了差异**"当成了"**差异可信**"。拆成三步看：
+
+**第一步：算噪声地板。**两组各 n 人时，转化率差值的标准误在 n=1000/组 时约为：
+
+```text
+se = √(p̄(1-p̄) × (1/n₁ + 1/n₂)) = √(0.055 × 0.945 × 2/1000) ≈ 1.02 个百分点
+```
+
+也就是说，即使两个版本**完全一样**，仅凭抽样运气，观测到的差值也会以 ±1 个百分点的幅度晃动。你想要的 1 个百分点提升，和噪声地板一样高——观测到 1pp 差异的情形下，真实差异为零的可能性大到无法排除。
+
+**第二步：算信号要站多高。**要在 5% 误报率下宣告差异，差异要超过约 2 个标准误；要有 80% 的把握检出（功效），还要再留 0.84 个标准误的余量。合计信号要站在噪声地板上方约 **2.8 倍标准误**处。1pp ÷ 2.8 ≈ 0.36pp——噪声地板必须被压到 0.36pp 以下，这个实验才成立。
+
+**第三步：算需要多大样本。**标准误按 1/√n 缩小。从 1.02pp 压到 0.36pp 需要把 n 扩大 (1.02/0.36)² ≈ **8 倍**，即约 8000/组——与公式的 8146 对上了（两种算法的 8153 与 8146 的微小差别来自合并标准误的圆整）。
+
+直觉低估的根因可以浓缩成一句话：**人对"差异"敏感，对"噪声随样本量平方根级缓慢衰减"不敏感**。从 1000 到 8000 人，样本量翻了 8 倍，噪声地板只缩到原来的 35%——这是反直觉的慢。检查清单化之后，直觉错误是可以被流程拦住的：实验开跑前必须能回答"p₁、MDE、α、power 各是多少、算出来每组多少人、要跑几天"，答不出任何一项就先不开发版计划。
+
+## 25.5 显著性检验：双比例 Z 检验
+
+实验跑够样本量后，用双比例 z 检验把观测差异翻译成"这差异是噪声的概率"：
+
+$$z = \frac{p_B - p_A}{\sqrt{\bar{p}(1-\bar{p})\left(\frac{1}{n_A} + \frac{1}{n_B}\right)}}$$
+
+> 📝 **在前端看来**：分子是观测到的差值；分母是"如果两版本其实一样，差值纯粹因为抽样而晃动的典型幅度"（用合并比例 p̄ 估计）。z 就是"信号是噪声的几倍"——z=3 表示观测差异是抽样晃动的 3 倍，靠运气晃出这么大的差，概率不到 0.3%。
+
+```typescript
+// z-test.ts —— 双比例 z 检验(零依赖,erf 用 Abramowitz-Stegun 近似,误差 < 1.5e-7)
+// 运行: npx tsx z-test.ts
 function erf(x: number): number {
-  // 误差函数近似
-  const a1 =  0.254829592;
-  const a2 = -0.284496736;
-  const a3 =  1.421413741;
-  const a4 = -1.453152027;
-  const a5 =  1.061405429;
-  const p  =  0.3275911;
-  
-  const sign = x < 0 ? -1 : 1;
-  x = Math.abs(x);
-  const t = 1.0 / (1.0 + p * x);
-  const y = 1.0 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * Math.exp(-x * x);
-  return sign * y;
+  const a1=0.254829592,a2=-0.284496736,a3=1.421413741,
+        a4=-1.453152027,a5=1.061405429,p=0.3275911;
+  const s = x < 0 ? -1 : 1; x = Math.abs(x);
+  const t = 1 / (1 + p * x);
+  const y = 1 - ((((a5*t+a4)*t+a3)*t+a2)*t+a1)*t*Math.exp(-x*x);
+  return s * y;
+}
+function normalCdf(z: number): number { return 0.5 * (1 + erf(z / Math.SQRT2)); }
+
+export function twoProportionZTest(
+  successesA: number, trialsA: number,
+  successesB: number, trialsB: number,
+) {
+  const pa = successesA / trialsA, pb = successesB / trialsB;
+  const pool = (successesA + successesB) / (trialsA + trialsB); // 合并比例:零假设下的共同 p
+  const se = Math.sqrt(pool * (1 - pool) * (1 / trialsA + 1 / trialsB));
+  const z = (pb - pa) / se;
+  const pValue = 2 * (1 - normalCdf(Math.abs(z)));              // 双侧 p 值
+  return { pa, pb, z: +z.toFixed(4), pValue: +pValue.toFixed(5), significant: pValue < 0.05 };
 }
 
-// 示例：
-// A: 转化 500/10000 = 5%
-// B: 转化 600/10000 = 6%
-const result = twoProportionZTest(500, 10000, 600, 10000);
-console.log(result); // { z: 2.94, pValue: 0.0016, significant: true }
+console.log("A=500/10000 B=600/10000:", JSON.stringify(twoProportionZTest(500, 10000, 600, 10000)));
+console.log("A=50/1000  B=60/1000:  ", JSON.stringify(twoProportionZTest(50, 1000, 60, 1000)));
+// 期望输出:
+// A=500/10000 B=600/10000: {"pa":0.05,"pb":0.06,"z":3.1016,"pValue":0.00192,"significant":true}
+// A=50/1000  B=60/1000:   {"pa":0.05,"pb":0.06,"z":0.9808,"pValue":0.32668,"significant":false}
 ```
 
-## 25.7 在线评估的 4 大陷阱
+同样"5% → 6%"的相对提升（1 个百分点），万级样本给出 z=3.10、p=0.0019——差异是噪声的概率不到 0.2%，可以下结论；千级样本给出 z=0.98、p=0.33——完全无法区分"真提升"与"抽样运气"。**z 值与 √n 成正比**：样本量扩 10 倍，z 从 0.98 涨到 3.10（≈ 0.98 × √10 = 3.10，精确吻合）。这从另一个方向印证了 25.4 的样本量公式：要检出 1pp，z 必须站上约 2.8，n 就得是 1000 的 8 倍多。
 
-**陷阱 1：辛普森悖论**
+两个实现细节，错了结果会悄悄偏移：
 
-```
-整体：新版本转化率低
-细分：每个用户群都是新版本高
+**标准误用合并比例 `pool`，不用两组各自的比例。**零假设是"两版本相同"，在这个前提下两组共享同一个 p，用合并估计更稳。分母用 `pB(1-pB)` 或未合并形式会让 z 有轻微偏差，临界情形（p 恰好在 0.05 边缘）可能翻转结论。
 
-→ 流量分配不均导致
-```
+**p 值是双尾的。**我们检验的是"有差异"（不分方向），所以 `2 × (1-Φ(|z|))`。只有当实验**预注册**时声明了单向假设（"B 只会更好，更差直接放弃"）才用单尾——事后把双尾改单尾来"救活"一个 p=0.06 的结果，是最常见的统计作弊，第 3 章 3.6.4 的多重比较问题与它同源。
 
-**对策**：分层分析，按用户群分别看。
+## 25.6 指标体系：北极星、驱动与护栏
 
-**陷阱 2：新颖性效应**
+一次实验只能有一个决策指标（北极星的代理），若干个解释性驱动指标，和一组**护栏指标**：
 
-```
-新功能上线前 3 天，转化率虚高
-之后回归正常
-```
+| 类别 | 例子 | 在决策里的角色 |
+|---|---|---|
+| 北极星代理 | 会话解决率 / 购买转化率 | 显著且超过 MDE → 候选发布 |
+| 驱动指标 | 首响时间、答案长度、追问率 | 解释"为什么涨/跌"，不做决策 |
+| 护栏指标 | 错误率、P95 延迟、投诉率、合规违规数 | **超阈值 → 立即停止实验**，无论正向指标多好看 |
 
-**对策**：跑 ≥ 7 天，包含完整周期。
+护栏指标的优先级高于一切：客服 bot 换新模型后"会话解决率 +2pp"但"错误率从 0.8% 涨到 2%"，这不是成功的实验，是带病上线。护栏阈值要在实验开始前定死（例如"错误率相对恶化超 50% 即停"），并在监控里做成自动停投——人值守的护栏等于没有护栏（凌晨三点没人想爬起来看仪表盘）。
 
-**陷阱 3：样本污染**
+## 25.7 四大陷阱
 
-```
-实验 A 的用户也被算到实验 B
-```
+### 25.7.1 辛普森悖论：整体与分层结论相反
 
-**对策**：用 user_id 哈希分桶，严格不重叠。
+最阴险的陷阱：**总体上新版本更差，但每个用户群里新版本都更好**。一组实算数字：
 
-**陷阱 4：过早停止**
-
-```
-实验跑 1 天，看到差异显著就停
+```text
+           旧版本                新版本
+老用户   60/500  = 12.0%      30/200  = 15.0%   ← 新版更好
+新用户   10/500  =  2.0%      54/1800 =  3.0%   ← 新版更好
+─────────────────────────────────────────────
+合计     70/1000 =  7.0%      84/2000 =  4.2%   ← 旧版反而"更好"
 ```
 
-**对策**：事先定样本量，达到才看。
+原因一眼可见：新版本把 90% 的流量分给了"新用户"这个低转化群体（1800/2000），旧版本只分了 50%。加权结构不同，合计率就失去了可比性。**对策**：实验报告必须带分层视图（新老用户、平台、渠道三个维度起步）；分流时检查关键维度的分布是否均衡（25.3 的哈希分桶保证随机，不保证各维度配额一致——低频维度要做分层抽样或 AA 校验）。看到整体结论与任一分层结论方向相反时，先查流量结构再谈版本优劣。
 
-## 25.8 实战：完整的 A/B 实验
+### 25.7.2 新颖性效应：前几天的虚高
 
-```python
-# ab_test.py
-import hashlib
-from datetime import datetime, timedelta
+用户对新界面、新话术的反应带有新鲜感溢价，通常一到两周内衰减回真实水平。只跑三天的实验，大概率把"新鲜感"当成了"提升"。**对策**：实验至少跑满一个完整周（覆盖工作日/周末行为差异），通常两周起步；观察指标随时间的曲线而不是只看累计均值——真实的提升应该站稳，新颖性驱动的高峰会回落。
 
-class ABTest:
-    def __init__(self, name, variants, traffic_split):
-        self.name = name
-        self.variants = variants  # ['control', 'treatment']
-        self.traffic_split = traffic_split  # {'control': 0.5, 'treatment': 0.5}
-        self.start_date = datetime.now()
-        self.target_samples = 3000  # 预计算
-    
-    def assign(self, user_id: str) -> str:
-        """用 user_id 哈希分桶，确保稳定"""
-        h = int(hashlib.md5(f"{self.name}:{user_id}".encode()).hexdigest(), 16)
-        bucket = (h % 1000) / 1000
-        
-        cumulative = 0
-        for variant, ratio in self.traffic_split.items():
-            cumulative += ratio
-            if bucket < cumulative:
-                return variant
-        return self.variants[-1]
-    
-    def track(self, user_id, variant, event):
-        # 记录到分析系统
-        analytics.track(
-            user_id=user_id,
-            experiment=self.name,
-            variant=variant,
-            event=event,
-            timestamp=datetime.now(),
-        )
-    
-    def analyze(self):
-        # 1. 拉数据
-        control_data = analytics.query(
-            experiment=self.name, variant='control', event='conversion'
-        )
-        treatment_data = analytics.query(
-            experiment=self.name, variant='treatment', event='conversion'
-        )
-        
-        # 2. 显著性检验
-        result = two_proportion_z_test(
-            successesA=control_data['success'],
-            trialsA=control_data['total'],
-            successesB=treatment_data['success'],
-            trialsB=treatment_data['total'],
-        )
-        
-        # 3. 决策
-        if not result['significant']:
-            return "继续实验（不显著）"
-        if treatment_data['rate'] > control_data['rate']:
-            return "新版本胜出，发布"
-        else:
-            return "旧版本胜出，保留"
+### 25.7.3 样本污染：两组之间互相渗透
+
+同一用户在两个版本间漂移（会话级分流、多设备登录、实验名变更导致重排），两组的"处理"就不再纯净，效应被稀释或扭曲。**对策**：用用户级稳定哈希（25.3）；实验期间冻结实验名与分流配置；上线前跑一次 **AA 测试**——两组都跑旧版本，验证分流本身不产生虚假差异（AA 测试都能"显著"的分流体系，后续所有结论都不可信）。
+
+### 25.7.4 过早停止：偷看造成的假显著
+
+每天看一次结果，看到 p < 0.05 就停——这个"偷看"（peeking）会大幅抬高误报率：样本量 8000 的实验若每天检验一次，实际误报率可以从 5% 涨到 20% 以上（检验次数越多越高，量级估算）。原因是 25.4 算的 5% 误报率只对"跑够样本量后**检验一次**"成立，每多看一次就多一次碰上噪声的机会。**对策**：实验开始前定死样本量与结束日期，达标后才做唯一一次正式检验；中途数据只许看趋势不许做停止决策；确需提前停止（护栏爆了、业务方强制）走序贯检验的修正阈值，不要直接拿 0.05 当线。
+
+## 25.8 多变量实验与多重比较
+
+A/B 是两版本，多变量（MVT）是 N 个版本同时比较，例如"prompt A/B × temperature 0/0.7"共四个变体。MVT 的价值是能看**交互效应**（"prompt A 配低温才好"这种组合结论），代价是样本量与比较次数同时膨胀：4 个变体两两比较共 6 次，5% 误报率下"至少一次假阳性"的概率是 `1 - 0.95⁶ ≈ 26.5%`（第 3 章 3.6.4 的多重比较问题）；用 Bonferroni 修正把显著线收紧到 0.05/6 ≈ 0.0083，z 阈值从 1.96 升到约 2.64，每组样本量升到约 **12569**（25.4 公式实算，是单次比较 8146 的 1.54 倍）；同时每个变体只分到 1/N 的流量，积累速度等比例变慢。
+
+实操建议：前端团队的资源通常撑不起严谨的 MVT。变体控制在 2-3 个、且只在"离线评估已证明方向正确"的候选之间做在线比较（25.9），比摊大饼式的四变体实验产出一个可用结论的概率更高。
+
+## 25.9 离线-在线落差：30%-50% 的反转
+
+一个需要提前接受的事实：**离线评估胜出的版本，在线实验翻车的比例相当可观**——从业团队的经验区间是 30%-50%（经验值；佐证：Kohavi 等在微软的实验总结是"约三分之一的想法能改善目标指标，三分之一无效果，三分之一为负"，来源：Kohavi et al., *Trustworthy Online Controlled Experiments*, 2020）。第 27 章的客服 RAG 案例按这个区间做迭代预算。
+
+反转的三个来源，各有对应的缓解动作：
+
+| 来源 | 机理 | 缓解 |
+|---|---|---|
+| 测试集分布 ≠ 生产分布 | 合成题与人工题偏"干净"，真实输入更脏 | 第 23 章回流占比 ≥ 30%，持续校准 |
+| 测试集测的是"答对"，用户要的是"有用" | 答对但太长、太慢、不给出处 | 指标体系里加体验维度（第 22 章 22.5） |
+| 离线是配对比较，在线是用户行为 | 用户还受延迟、界面、上下文影响 | 在线实验里监控驱动指标归因 |
+
+反转率高不是离线评估失败的证据，而是它的边界：离线评估负责**便宜地筛掉 80% 的坏想法**，在线实验负责**昂贵地确认剩下 20%**。把两层的分工写进发布流程（第 24 章的四层流水线），反转就变成了可预算的成本而不是事故。
+
+反过来，反转案例是最值钱的测试集素材：每次"离线赢了在线输了"，把涉案样本回流（第 24 章 24.8），测试集就往真实分布又靠近了一步。
+
+## 25.10 实战：客服 bot 换模型的完整实验
+
+把本章组件拼成端到端的分析代码。场景：客服 bot 准备把对话模型从 A 换成 B，离线评估 B 胜出，进入 50/50 在线实验。决策指标是会话转化率，护栏是错误率。
+
+```typescript
+// ab-analyze.ts —— 端到端分析(零依赖)
+// 运行: npx tsx ab-analyze.ts
+// twoProportionZTest 引自 25.5 的 z-test.ts
+type Record = { variant: string; converted: boolean; error: boolean };
+
+function analyze(records: Record[], minDelta = 0.01) {
+  const group = (v: string) => {
+    const rows = records.filter((r) => r.variant === v);
+    return {
+      total: rows.length,
+      converted: rows.filter((r) => r.converted).length,
+      errors: rows.filter((r) => r.error).length,
+    };
+  };
+  const control = group("control"), treatment = group("treatment");
+  const errRateC = control.errors / control.total, errRateT = treatment.errors / treatment.total;
+  const guardrailBreached = errRateT > errRateC * 1.5;   // 护栏:错误率恶化超 50%
+  const zt = twoProportionZTest(control.converted, control.total,
+                                treatment.converted, treatment.total);
+  const lift = +(zt.pb - zt.pa).toFixed(4); // 先圆整再比较,避开浮点陷阱(0.065-0.055 ≠ 0.01)
+  let decision: string;
+  if (guardrailBreached)   decision = "STOP:护栏指标超限,立即停止实验";
+  else if (!zt.significant) decision = "CONTINUE:差异不显著,继续积累样本";
+  else if (lift >= minDelta) decision = "SHIP:显著且超过最小可感知差值,发布";
+  else decision = "SKIP:显著但提升太小,不值得承担切换成本";
+  return {
+    control: { rate: +zt.pa.toFixed(4), n: control.total, errRate: +errRateC.toFixed(4) },
+    treatment: { rate: +zt.pb.toFixed(4), n: treatment.total, errRate: +errRateT.toFixed(4) },
+    lift, z: zt.z, pValue: zt.pValue, decision,
+  };
+}
+
+// 周期 1: 每组 2000 人(低于 25.4 算出的 8146)
+const early: Record[] = [];
+for (let i = 0; i < 2000; i++) {
+  early.push({ variant: "control", converted: i < 110, error: i < 16 });   // 5.5%
+  early.push({ variant: "treatment", converted: i < 130, error: i < 20 }); // 6.5%
+}
+console.log("周期1(2000/arm):", JSON.stringify(analyze(early)));
+
+// 周期 2: 每组 10000 人(达到样本量要求后)
+const full: Record[] = [];
+for (let i = 0; i < 10000; i++) {
+  full.push({ variant: "control", converted: i < 550, error: i < 80 });    // 5.5%
+  full.push({ variant: "treatment", converted: i < 650, error: i < 100 }); // 6.5%
+}
+console.log("周期2(10000/arm):", JSON.stringify(analyze(full)));
+
+// 期望输出:
+// 周期1(2000/arm): {"control":{"rate":0.055,"n":2000,"errRate":0.008},"treatment":{"rate":0.065,"n":2000,"errRate":0.01},"lift":0.01,"z":1.3316,"pValue":0.18301,"decision":"CONTINUE:差异不显著,继续积累样本"}
+// 周期2(10000/arm): {"control":{"rate":0.055,"n":10000,"errRate":0.008},"treatment":{"rate":0.065,"n":10000,"errRate":0.01},"lift":0.01,"z":2.9775,"pValue":0.00291,"decision":"SHIP:显著且超过最小可感知差值,发布"}
 ```
 
-## 25.9 多变量测试（MVT）
+决策链的顺序就是本章的顺序：**护栏 → 显著性 → 效应量**。周期 1 的教训是"样本不足时什么都别下"——1 个百分点的提升在 2000 人/组时 p=0.18，此时"感觉 B 更好"和"感觉没差别"都是噪声；周期 2 达到样本量后同一个差异给出 z=2.98、p=0.0029，且护栏未触发，才轮到发布决策。
 
-> A/B 是 2 个版本，MVT 是 N 个。
+顺带一提代码里那行"先圆整再比较"的注释：`0.065 - 0.055` 在浮点数里是 `0.009999999999999997`，直接与 0.01 比较会走进 SKIP 分支——统计系统里的浮点陷阱不会报错，只会悄悄改变决策。
 
-```
-变体 1：prompt A + temperature 0
-变体 2：prompt A + temperature 0.7
-变体 3：prompt B + temperature 0
-变体 4：prompt B + temperature 0.7
-```
+## 25.11 验收自测
 
-**优点**：可分析交互效应
-**缺点**：需要更大样本量（变体越多，每变体样本越少）
+1. **选择**：基线 5%、MDE 1pp、α=0.05、power=0.80 时，每组最小样本量是？
+   - A. 约 1000
+   - B. 约 3000
+   - C. 8146
+   - D. 81460
 
-## 25.10 与离线评估的结合
+2. **选择**：从 20% 流量扩到 50% 时，一致性哈希分桶保证什么？
+   - A. 所有用户重新随机分组
+   - B. 已在实验组的用户留在实验组，只进不出
+   - C. 两组人数恰好按比例
+   - D. 新用户优先进实验组
 
-```
-[离线评估] 5 个版本 → 选 2 个最优
-   ↓
-[A/B 实验] 2 个版本 → 选 1 个胜出
-   ↓
-[全量发布]
-```
+3. **选择**：实验跑了 2 天，p=0.04，正确的做法是？
+   - A. 立即发布
+   - B. 停止实验但不上线
+   - C. 继续跑到达定样本量与完整周期——2 天的偷看检验不可信
+   - D. 把双尾改单尾让 p 更小
 
-**离线胜出 ≠ 在线胜出**（约 30-50% 的情况）。
+4. **简答**：为什么基线从 5% 提高到 10% 后，检测同样的 1 个百分点绝对提升反而需要更多样本？
 
-原因：
-- 离线测试集不够全面
-- 用户行为 ≠ 测试集预期
-- 真实场景有意外
+5. **简答**：总体上新版本转化率更低、但每个用户分层里新版本都更高——这是什么现象、成因是什么、第一步该查什么？
 
-## 25.11 章节小结
+6. **实操**：用 25.4.2 的代码算出你自己业务的最小样本量（先和业务方确认 p₁ 与 MDE），再用 25.3 的分流函数在 20 个测试用户 ID 上验证"20%→50% 扩量不重排"；最后跑 AA 测试（两组同版本）确认分流不产生虚假差异。
 
-- **离线胜出 → 灰度 5% → 显著胜出 → 全量**
-- 显著性检验是基础
-- 护栏指标防止灾难
-- 在线胜出 ≠ 离线胜出（约 30-50% 反转）
-
-## 25.12 验收自测
-
-1. **选择**：A/B 实验中"立即停止"的指标是？
-   - A. 转化率
-   - B. 护栏指标
-   - C. CTR
-   - D. 客单价
-
-2. **简答**：为什么"辛普森悖论"在 A/B 实验中危险？
-
-3. **实操**：计算你业务的最小样本量（基线 5%，MDE 1%，α=0.05，power=0.8）。
-
-## 25.13 📋 本章 Cheat Sheet
+## 25.12 📋 本章 Cheat Sheet
 
 | 概念 | 一句话 | 详见 |
 |---|---|---|
-| A/B 实验 | 在线评估金标准 | §25.3 |
-| 流量分配 | 1% 灰度起步 | §25.4 |
-| 显著性检验 | p < 0.05 才决策 | §25.6 |
-| P50/P90/P99 | 长尾问题看 P99 | §25.5 |
-| 4 大陷阱 | 辛普森悖论/新奇效应/瓶中效应/存活偏差 | §25.7 |
-| MVT | 多变量测试 | §25.9 |
+| 一致性哈希分流 | 实验名 + 用户 ID 哈希分桶，扩量只进不出 | §25.3 |
+| 最小样本量 | (z_α/2+z_β)² × Σp(1-p) / MDE²，基线 5% MDE 1pp = 8146/组 | §25.4 |
+| 直觉陷阱 | 噪声按 1/√n 衰减，压噪声地板到 MDE/2.8 需要平方级样本 | §25.4.3 |
+| 双比例 z 检验 | z = 差值 / 合并标准误；1pp@万人 z=3.10 p=0.0019 | §25.5 |
+| 指标三层 | 北极星代理做决策、驱动指标做归因、护栏超限立即停 | §25.6 |
+| 辛普森悖论 | 整体与分层结论相反 = 流量结构不均，先查结构再谈优劣 | §25.7.1 |
+| 偷看(peeking) | 未达样本量就检验会抬高误报率，结束日期开跑前定死 | §25.7.4 |
+| 离线-在线反转 | 30%-50% 反转率是预算内成本，反转样本回流测试集 | §25.9 |
 
+## 25.13 ⚠️ 5 个常见错误
 
-## 25.14 ⚠️ 5 个常见错误
+1. **样本量拍脑袋**——"跑两天看看"的结论大概率是噪声；开跑前用公式算定每组样本量（基线 5%、MDE 1pp 时是 8146，不是 3000）。
+2. **分流用会话 ID 或 `Math.random`**——同一用户漂移于两版本之间，效应被稀释；用用户 ID + 实验名的稳定哈希。
+3. **只看转化率不看护栏**——错误率翻倍的"成功实验"是带病上线；护栏阈值开跑前定死，超限自动停投。
+4. **每天偷看结果**——多看一次多一次撞上噪声的机会，5% 误报率只在"达标后检验一次"时成立。
+5. **只报整体均值**——辛普森悖论藏在新老用户、平台、渠道的加权结构里；实验报告必须带分层视图。
 
-1. **A/B 实验只看转化率** — 延迟/留存/差评也要看,综合指标才不片面。
-2. **流量分配 50/50** — 新模型 50% 风险大,先 1% 灰度再扩。
-3. **不计算显著性** — 1% 提升可能是噪声,p < 0.05 才决策。
-4. **只看均值不看分布** — P50/P90/P99 三档都看,长尾问题才暴露。
-5. **在线评估 = 离线放弃** — 在线离线互为补充,不是替代,见 §25.10。
+## 25.14 延伸阅读
 
-## 25.15 延伸阅读
+⭐⭐⭐（一手来源）
+- [Trustworthy Online Controlled Experiments（Kohavi, Tang & Xu, 2020）](https://experimentguide.com/)——在线实验工程的书级参考，A/B 陷阱与平台设计的一手来源
+- [Evan Miller: A/B Testing 统计工具集](https://www.evanmiller.org/ab-testing/)——样本量与显著性计算的经典在线工具，公式核对用
+- [LMSYS: 从 Elo 到 Bradley-Terry（2023-12-07）](https://www.lmsys.org/blog/2023-12-07-leaderboard)——在线偏好数据的统计建模，与本章 z 检验互补（离线侧见第 3 章 3.6.3）
 
-⭐⭐⭐
-- [Trustworthy Online Controlled Experiments (Kohavi et al.)](https://www.amazon.science/publications/trustworthy-online-controlled-experiments-a-practical-guide-to-a-b-testing)
-- [A/B Testing 完整指南 (Evan Miller)](https://www.evanmiller.org/ab-testing/)
+⭐⭐（工具文档）
+- [GrowthBook: 统计方法文档](https://docs.growthbook.io/statistics/overview)——开源实验平台对样本量、序贯检验的实现口径
+- [Statsig: A/B Testing Guide](https://docs.statsig.com/experiments-plus/ab-tests/)——分流分层与护栏指标的平台实践
 
-⭐⭐
-- [Statsig A/B Testing Guide](https://docs.statsig.com/)
-- [GrowthBook (Open Source)](https://docs.growthbook.io/)
-
-⭐
-- [PostHog Experiments](https://posthog.com/docs/experiments)
-- [Eppo A/B Testing](https://www.geteppo.com/)
+⭐（延伸）
+- [PostHog: Experiments 文档](https://posthog.com/docs/experiments)——开源栈里跑 A/B 的最小实现
+- [Eppo: 实验统计方法](https://www.geteppo.com/blog)——CUPED 等方差缩减技术的入门材料
