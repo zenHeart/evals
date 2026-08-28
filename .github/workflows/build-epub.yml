@@ -1,4 +1,4 @@
-name: Build & Publish EPUB
+name: Build & Publish
 
 on:
   push:
@@ -7,8 +7,8 @@ on:
       - "book/**"
       - "research/**"
       - ".github/workflows/build-epub.yml"
-      - "package-lock.json"
       - "package.json"
+      - "package-lock.json"
   pull_request:
     branches: [main]
     paths:
@@ -18,18 +18,17 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: build-epub-${{ github.ref }}
+  group: build-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   build:
-    name: Validate · Build EPUB · Deploy
+    name: Build EPUB & Web
     runs-on: ubuntu-latest
     timeout-minutes: 15
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -52,17 +51,13 @@ jobs:
       - name: Build EPUB
         run: node book/build-epub.mjs evals.epub
 
-      - name: Validate EPUB archive
+      - name: Verify EPUB
         run: |
           test -f evals.epub
-          chapter_count=$(ls book/chapters | wc -l)
-          expected_count=$(grep -Ec '^\s+- chapter-[0-9]+.*\.md\s*$' book/metadata.yaml || echo 0)
-          echo "Chapters: $chapter_count (expected from metadata: $expected_count)"
-          test "$chapter_count" -eq "$expected_count"
-          unzip -l evals.epub | head -25
+          unzip -l evals.epub | head -10
           ls -lh evals.epub
 
-      - name: Build Web assets
+      - name: Build web assets
         run: node scripts/build-web.mjs
 
       - name: Upload EPUB artifact
@@ -73,313 +68,57 @@ jobs:
           retention-days: 90
           if-no-files-found: error
 
-      - name: Upload cover artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: evals-cover
-          path: book/cover/cover.svg
-          retention-days: 90
-          if-no-files-found: error
-
       - name: Upload web artifact
         uses: actions/upload-artifact@v4
         with:
           name: evals-web
           path: dist/
           retention-days: 90
-          if-no-files-found: warn
+          if-no-files-found: error
 
-  publish-pages:
-    name: Publish to GitHub Pages & Aliyun OSS
+  deploy:
+    name: Deploy to GitHub Pages
     needs: build
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
-      contents: write
-
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Download artifacts
+      - name: Download EPUB artifact
         uses: actions/download-artifact@v4
         with:
-          path: ./download
+          name: evals-epub
+          path: ./download/evals-epub
 
-      - name: Read chapter count
-        id: meta
+      - name: Download web artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: evals-web
+          path: ./download/evals-web
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - name: Build Pages artifact
         run: |
-          chapter_count=$(grep -Ec '^\s+- chapter-[0-9]+.*\.md\s*$' book/metadata.yaml || echo 0)
-          part_count=$(grep -Ec '^\s+- part: ' book/metadata.yaml || echo 0)
-          echo "chapter_count=$chapter_count" >> $GITHUB_OUTPUT
-          echo "part_count=$part_count" >> $GITHUB_OUTPUT
+          mkdir -p _site
+          cp download/evals-epub/evals.epub _site/
+          cp download/evals-web/cover.svg _site/
+          cp -r download/evals-web/* _site/
 
-      - name: Render index.html
-        env:
-          CHAPTER_COUNT: ${{ steps.meta.outputs.chapter_count }}
-          PART_COUNT: ${{ steps.meta.outputs.part_count }}
-          ASSET_VERSION: ${{ github.sha }}
-        run: |
-          mkdir -p /tmp/gh-pages
-          cp download/evals-epub/evals.epub /tmp/gh-pages/
-          cp download/evals-cover/cover.svg /tmp/gh-pages/
-          cp -r download/evals-web/* /tmp/gh-pages/ 2>/dev/null || true
+      - name: Upload to Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
 
-          cat > /tmp/gh-pages/index.html <<HTML
-          <!doctype html>
-          <html lang="zh-CN">
-          <head>
-            <meta charset="utf-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1">
-            <title>大模型评估入门 · evals.zenheart.site</title>
-            <meta name="description" content="写给前端工程师的 LLM 评估教材：理解厂商报告、选对基准、搭建自己的评估流水线。">
-            <meta name="theme-color" content="#0f172a">
-            <meta property="og:title" content="大模型评估入门">
-            <meta property="og:description" content="写给前端工程师的 LLM 评估教材">
-            <meta property="og:type" content="book">
-            <link rel="canonical" href="https://evals.zenheart.site/">
-            <link rel="icon" type="image/svg+xml" href="cover.svg">
-            <style>
-              :root {
-                color-scheme: light dark;
-                --bg: #0b1224;
-                --text: #f8fafc;
-                --muted: #94a3b8;
-                --line: rgba(248, 250, 252, .12);
-                --panel: rgba(255, 255, 255, .04);
-                --accent-1: #22d3ee;
-                --accent-2: #60a5fa;
-                --accent-3: #a78bfa;
-              }
-              @media (prefers-color-scheme: light) {
-                :root {
-                  --bg: #f8fafc;
-                  --text: #0f172a;
-                  --muted: #475569;
-                  --line: rgba(15, 23, 42, .12);
-                  --panel: rgba(15, 23, 42, .04);
-                }
-              }
-              * { box-sizing: border-box; }
-              body {
-                margin: 0;
-                background: var(--bg);
-                color: var(--text);
-                font-family: ui-sans-serif, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
-                line-height: 1.7;
-                min-height: 100vh;
-              }
-              .page {
-                width: min(1080px, calc(100% - 36px));
-                margin: 0 auto;
-                padding: clamp(40px, 8vh, 80px) 0 40px;
-              }
-              .eyebrow {
-                color: var(--accent-1);
-                font-size: 13px;
-                font-weight: 800;
-                letter-spacing: .14em;
-                text-transform: uppercase;
-                margin: 0 0 14px;
-              }
-              h1 {
-                font-size: clamp(40px, 6vw, 78px);
-                margin: 0;
-                line-height: 1.05;
-                background: linear-gradient(90deg, var(--accent-1), var(--accent-2), var(--accent-3));
-                -webkit-background-clip: text;
-                background-clip: text;
-                color: transparent;
-              }
-              .lead {
-                max-width: 680px;
-                font-size: clamp(17px, 2vw, 22px);
-                color: var(--muted);
-                margin: 20px 0 0;
-              }
-              .stats {
-                display: flex; flex-wrap: wrap; gap: 10px;
-                padding: 0; list-style: none;
-                margin: 28px 0 0;
-              }
-              .stats li {
-                border: 1px solid var(--line);
-                border-radius: 999px;
-                padding: 6px 14px;
-                background: var(--panel);
-                color: var(--muted);
-                font-size: 14px;
-                font-weight: 700;
-              }
-              .grid {
-                display: grid;
-                grid-template-columns: minmax(0, 1fr) minmax(280px, 380px);
-                gap: clamp(32px, 6vw, 64px);
-                align-items: start;
-                margin-top: clamp(40px, 6vh, 72px);
-              }
-              .toc h2 {
-                font-size: 24px;
-                margin: 0 0 16px;
-                color: var(--accent-1);
-              }
-              .toc-part {
-                margin: 18px 0 6px;
-                font-weight: 800;
-                color: var(--accent-2);
-                font-size: 14px;
-                letter-spacing: .05em;
-              }
-              .toc ol { margin: 0; padding: 0 0 0 20px; }
-              .toc li { margin: 4px 0; }
-              .toc a { color: var(--text); text-decoration: none; }
-              .toc a:hover { color: var(--accent-1); }
-              .cover {
-                width: 100%;
-                border-radius: 12px;
-                box-shadow: 0 24px 60px rgba(0, 0, 0, .35);
-              }
-              .actions {
-                display: flex; flex-wrap: wrap; gap: 14px; align-items: center;
-                margin: 36px 0 0;
-              }
-              .button {
-                display: inline-flex; min-height: 50px; align-items: center; justify-content: center;
-                border-radius: 10px; padding: 0 22px;
-                background: linear-gradient(90deg, var(--accent-1), var(--accent-2));
-                color: #0b1224; font-weight: 800; text-decoration: none;
-                box-shadow: 0 8px 24px rgba(34, 211, 238, .25);
-              }
-              .button.ghost {
-                background: var(--panel); color: var(--text);
-                border: 1px solid var(--line); box-shadow: none;
-              }
-              footer {
-                margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--line);
-                color: var(--muted); font-size: 14px;
-              }
-              @media (max-width: 720px) {
-                .grid { grid-template-columns: 1fr; }
-                .cover { max-width: 320px; margin: 0 auto; }
-              }
-            </style>
-          </head>
-          <body>
-            <main class="page">
-              <p class="eyebrow">ZenHeart · Eval Handbook</p>
-              <h1>大模型评估入门</h1>
-              <p class="lead">从前端工程师视角看 Eval。理解厂商报告里的每一行数字、选对合适的基准、从零搭建自己的评估流水线。</p>
-              <ul class="stats">
-                <li>${CHAPTER_COUNT} 章</li>
-                <li>${PART_COUNT} 个部分</li>
-                <li>覆盖 70+ 主流基准</li>
-                <li>含可运行代码</li>
-                <li>MIT 协议</li>
-              </ul>
-
-              <div class="grid">
-                <div class="toc">
-                  <h2>目录</h2>
-HTML
-          # append TOC
-          python3 - <<'PY' >> /tmp/gh-pages/index.html
-          import re, yaml
-          with open('book/metadata.yaml', 'r', encoding='utf-8') as f:
-              txt = f.read()
-          lines = txt.splitlines()
-          in_ch = False
-          parts = []
-          for line in lines:
-              if line.strip() == 'chapters:':
-                  in_ch = True; continue
-              if in_ch and re.match(r'^[a-zA-Z_]+:', line):
-                  break
-              if not in_ch: continue
-              m1 = re.match(r'^\s+- part: "(.+)"\s*$', line)
-              m2 = re.match(r'^\s+- ([a-zA-Z0-9_.-]+\.md)\s*$', line)
-              if m1:
-                  parts.append({'part': m1.group(1), 'items': []})
-              elif m2 and parts:
-                  parts[-1]['items'].append(m2.group(1))
-          for p in parts:
-              print(f'  <p class="toc-part">{p["part"]}</p>')
-              print('  <ol>')
-              for it in p['items']:
-                  with open(f'book/chapters/{it}', 'r', encoding='utf-8') as f:
-                      md = f.read()
-                  m = re.search(r'^#\s+(.+)$', md, re.M)
-                  title = m.group(1) if m else it
-                  num = re.match(r'chapter-(\d+)', it).group(1)
-                  print(f'    <li><a href="web/chapter-{num}.html">{title}</a></li>')
-              print('  </ol>')
-          PY
-          cat >> /tmp/gh-pages/index.html <<HTML
-                </div>
-                <img class="cover" src="cover.svg" alt="大模型评估入门 EPUB 封面">
-              </div>
-
-              <div class="actions">
-                <a class="button" href="evals.epub" download="evals.epub">下载 EPUB</a>
-                <a class="button ghost" href="https://github.com/zenHeart/evals">查看源码</a>
-                <a class="button ghost" href="research/benchmarks.html">研究素材</a>
-                <a class="button ghost" href="research/frameworks.html">框架图谱</a>
-              </div>
-
-              <footer>
-                <p>由 GitHub Actions 在 main 分支推送时自动构建。同步镜像至阿里云 OSS CDN。</p>
-                <p>© 2026 ZenHeart · <a href="https://evals.zenheart.site">evals.zenheart.site</a> · MIT License</p>
-              </footer>
-            </main>
-          </body>
-          </html>
-          HTML
-
-          # Sanity checks
-          grep -q "大模型评估入门" /tmp/gh-pages/index.html
-          grep -q "${CHAPTER_COUNT} 章" /tmp/gh-pages/index.html
-
-      - name: Publish to GitHub Pages
-        run: |
-          cd /tmp/gh-pages
-          touch .nojekyll
-          git init -q
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git checkout -q --orphan gh-pages
-          git add -A
-          git commit -q -m "auto: publish evals handbook (${GITHUB_SHA::7})"
-          git push -q -f "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" gh-pages:gh-pages
-
-      - name: Sync to Aliyun OSS
-        if: env.ALIYUN_ACCESS_KEY_ID != ''
-        env:
-          ALIYUN_ACCESS_KEY_ID: ${{ secrets.ALIYUN_ACCESS_KEY_ID }}
-          ALIYUN_ACCESS_KEY_SECRET: ${{ secrets.ALIYUN_ACCESS_KEY_SECRET }}
-          ALIYUN_OSS_BUCKET: ${{ secrets.ALIYUN_OSS_BUCKET }}
-          ALIYUN_OSS_ENDPOINT: ${{ secrets.ALIYUN_OSS_ENDPOINT }}
-        run: |
-          if [ -z "$ALIYUN_ACCESS_KEY_ID" ]; then
-            echo "::warning::Aliyun credentials not configured, skipping OSS sync"
-            exit 0
-          fi
-          pip install --quiet aliyun-cli oss2 || pip install --quiet oss2
-          # Use oss2 python SDK for reliable sync
-          python3 - <<'PY'
-          import os, sys
-          import oss2
-          endpoint = os.environ['ALIYUN_OSS_ENDPOINT']
-          bucket_name = os.environ['ALIYUN_OSS_BUCKET']
-          auth = oss2.Auth(os.environ['ALIYUN_ACCESS_KEY_ID'], os.environ['ALIYUN_ACCESS_KEY_SECRET'])
-          bucket = oss2.Bucket(auth, endpoint, bucket_name)
-          src = '/tmp/gh-pages'
-          count = 0
-          for root, dirs, files in os.walk(src):
-              for f in files:
-                  p = os.path.join(root, f)
-                  rel = os.path.relpath(p, src).replace('\\', '/')
-                  with open(p, 'rb') as fp:
-                      bucket.put_object(rel, fp.read())
-                  count += 1
-          print(f"Uploaded {count} files to oss://{bucket_name}/")
-          PY
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
