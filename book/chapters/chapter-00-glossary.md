@@ -253,45 +253,49 @@ const PROMPT = (question: string) => `
 
 详见：第 20、27 章。
 
-## 0.4 进阶术语（10 个，遇到再翻）
+## 0.4 进阶术语（11 个，遇到再翻）
 
-**21. BLEU / ROUGE**
+**21. SFT（Supervised Fine-Tuning，监督微调）**
+
+> SFT ≈ 用"标准问答范例"做岗前培训：拿人工写好的高质量问答对微调模型，让它学会按指令对话。通常发生在 RLHF 之前。
+
+**22. BLEU / ROUGE**
 
 > 翻译/摘要评估指标。BLEU 测 n-gram 精度，ROUGE 测召回率。
 
-**22. BERTScore**
+**23. BERTScore**
 
 > 用 BERT embedding 算语义相似度，比 BLEU/ROUGE 更智能。
 
-**23. Cohen's Kappa**
+**24. Cohen's Kappa**
 
 > 人类评估员一致性指标。> 0.7 = 高度一致。
 
-**24. Bradley-Terry**
+**25. Bradley-Terry**
 
 > 比 Elo 更统计化的偏好评分模型。
 
-**25. self-consistency**
+**26. self-consistency**
 
 > 多次采样 + 投票。是 LLM 数学推理的常用技巧。
 
-**26. Top-p / Top-k**
+**27. Top-p / Top-k**
 
 > 采样策略。Top-p = 概率最高的 p 比例里选；Top-k = 概率最高 k 个里选。
 
-**27. CoT（Chain of Thought）**
+**28. CoT（Chain of Thought）**
 
 > 让模型"逐步思考"再给答案。提升数学/推理能力。
 
-**28. Few-shot / Zero-shot**
+**29. Few-shot / Zero-shot**
 
 > Zero-shot = 不给例子直接问。Few-shot = 给几个例子再问。
 
-**29. Hallucination**
+**30. Hallucination（幻觉）**
 
 > 模型"一本正经地胡说"。编造不存在的事实。
 
-**30. Jailbreak**
+**31. Jailbreak（越狱）**
 
 > 用特殊 prompt 绕过模型的安全限制。
 
@@ -299,7 +303,7 @@ const PROMPT = (question: string) => `
 
 | 部分 | 章节 | 重点术语 |
 |---|---|---|
-| 术语速查 | 0 | 本书 20+10 个核心术语 |
+| 术语速查 | 0 | 本书 20+11 个核心术语 |
 | 1 评估的世界观 | 1-4 | 评估定义, 5W1H, 四步法, 指标/统计/人类一致性 |
 | 2 基准家族图谱 | 5-12 | 学科/数学/代码/多模态基准, 硬核新兴评测, 长上下文/安全/Agent, 行业垂直, 持续更新评测 |
 | 3 偏好与排行榜 | 13-15 | LLM-as-Judge, Arena Elo, 厂商报告解读, 榜单对账 |
