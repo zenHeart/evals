@@ -233,6 +233,12 @@ function mdToSections(md) {
       continue;
     }
     if (/^---+$/.test(trimmed)) { flushPara(); cur.html.push("<hr/>"); continue; }
+    // 原生 HTML 折叠块透传：整行仅为 <details>/<summary> 相关标签时原样输出，供"参考答案折叠"
+    if (/^(<\/?(details|summary)(\s[^>]*)?>|<summary(\s[^>]*)?>[^<]*<\/summary>)$/.test(trimmed)) {
+      flushPara();
+      cur.html.push(trimmed);
+      continue;
+    }
     paraBuf.push(trimmed);
   }
   flushPara();
