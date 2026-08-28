@@ -23,11 +23,11 @@
 
 ## 7.3 HumanEval — 编程入门
 
-### 一句话定义
+**一句话定义**
 
 > 164 道手写 Python 函数题。**让模型补全函数体。**
 
-### 真实样例（HumanEval/0）
+**真实样例（HumanEval/0）**
 
 ```python
 def has_close_elements(numbers: List[float], threshold: float) -> bool:
@@ -40,7 +40,7 @@ def has_close_elements(numbers: List[float], threshold: float) -> bool:
     """
 ```
 
-### 评分方式
+**评分方式**
 
 ```typescript
 import { exec } from "child_process";
@@ -72,7 +72,7 @@ async function humanevalScore(
 
 **关键**：**真的执行代码**，不是字符串匹配。
 
-### pass@k 指标
+**pass@k 指标**
 
 > pass@k = 尝试 k 次，至少 1 次通过的概率。
 
@@ -87,7 +87,7 @@ function passAtK(n: number, c: number, k: number): number {
 `pass@1`（一次就对）= 主流指标。
 `pass@10`（10 次里 1 次对）= 反映"探索能力"。
 
-### 当前 SOTA
+**当前 SOTA**
 
 | 模型 | HumanEval pass@1 |
 |---|---|
@@ -101,7 +101,7 @@ function passAtK(n: number, c: number, k: number): number {
 
 ## 7.4 MBPP — Mostly Basic Python Problems
 
-### 一句话定义
+**一句话定义**
 
 > 974 道 Python 入门题，更接近"真实编程课作业"。
 
@@ -113,14 +113,14 @@ function passAtK(n: number, c: number, k: number): number {
 | 164 题 | 974 题 |
 | 风格学术 | 风格实用 |
 
-### 样例
+**样例**
 
 > **题目**：编写一个 Python 函数 `count_vowels(s)`，返回字符串 `s` 中元音字母的个数。
 > **测试**：`assert count_vowels("hello") == 2`
 
 ## 7.5 LiveCodeBench — 持续更新的编程题
 
-### 为什么需要
+**为什么需要**
 
 > HumanEval/MBPP 训练数据里**大量存在**（2021 年前的题），分数虚高。
 
@@ -129,13 +129,13 @@ function passAtK(n: number, c: number, k: number): number {
 - 每月更新
 - 题目时间戳标注 → 防止"训练在测试之后"
 
-### 规模与频率
+**规模与频率**
 
 - 题目数：~500+
 - 来源：LeetCode Weekly, Codeforces Round, AtCoder
 - 更新频率：每月
 
-### 当前 SOTA（2026 年初）
+**当前 SOTA（2026 年初）**
 
 | 模型 | LiveCodeBench pass@1 |
 |---|---|
@@ -146,11 +146,11 @@ function passAtK(n: number, c: number, k: number): number {
 
 ## 7.6 SWE-bench — 真实 GitHub Issue 修复
 
-### 一句话定义
+**一句话定义**
 
 > 给定一个 GitHub Issue，模型要从代码库中**修改多个文件**来修复它。**当前代码评估的金标准。**
 
-### 流程
+**流程**
 
 ```
 1. 选一个 GitHub 仓库（如 Django）
@@ -163,7 +163,7 @@ function passAtK(n: number, c: number, k: number): number {
 8. 看测试是否通过
 ```
 
-### 真实样例（Django 框架）
+**真实样例（Django 框架）**
 
 > **Issue**：DateInput widget 在显示非 ISO 格式时崩溃
 > **模型要做的**：
@@ -173,7 +173,7 @@ function passAtK(n: number, c: number, k: number): number {
 > 4. 生成 patch
 > 5. 跑测试 `tests/forms_tests/field_tests/test_datefield.py`
 
-### 评分
+**评分**
 
 ```typescript
 async function sweBenchScore(
@@ -202,7 +202,7 @@ async function sweBenchScore(
 }
 ```
 
-### 变体
+**变体**
 
 | 变体 | 题目数 | 难度 |
 |---|---|---|
@@ -210,7 +210,7 @@ async function sweBenchScore(
 | SWE-bench Verified | 500 | 人类验证过 |
 | SWE-bench Multilingual | 300+ | 多语言（JS/Java/Go/Rust） |
 
-### 当前 SOTA（SWE-bench Verified）
+**当前 SOTA（SWE-bench Verified）**
 
 | 模型 | Verified |
 |---|---|
@@ -224,11 +224,11 @@ async function sweBenchScore(
 
 ## 7.7 APPS — 算法竞赛
 
-### 一句话
+**一句话**
 
 > 10,000 道竞赛编程题，难度从入门到 NOI/IOI 级别。
 
-### 难度
+**难度**
 
 - **Introductory**（1,000 题）：入门
 - **Interview**（5,000 题）：面试级别
@@ -236,33 +236,33 @@ async function sweBenchScore(
 
 ## 7.8 BigCodeBench — 真实工具调用
 
-### 一句话
+**一句话**
 
 > 139 个库 × 7 个任务 = 1140 个测试。**测"调用真实 Python 库"的能力。**
 
-### 样例
+**样例**
 
 > 任务：用 `pandas` 读取 CSV 并绘制折线图
 > 评测：执行代码，检查输出 PNG 是否正确生成
 
 ## 7.9 DS-1000 — 数据科学
 
-### 一句话
+**一句话**
 
 > 1,000 道 NumPy/Pandas/SciPy/Matplotlib/PyTorch 题目。**测"使用数据科学库"的能力。**
 
-### 与 HumanEval 区别
+**与 HumanEval 区别**
 
 - HumanEval：纯算法，标准库
 - DS-1000：调用科学计算库，需要"知道 API"
 
 ## 7.10 Spider & BIRD — Text-to-SQL
 
-### Spider 1.0
+**Spider 1.0**
 
 > 10,181 个自然语言问题 + 5,693 个 SQL。**跨领域、跨数据库。**
 
-### 样例
+**样例**
 
 > **自然语言问题**：列出所有学生的人数，按专业分组。
 > **SQL**：
@@ -270,17 +270,17 @@ async function sweBenchScore(
 > SELECT major, COUNT(*) FROM student GROUP BY major;
 > ```
 
-### BIRD
+**BIRD**
 
 > 95 个大型数据库，12,751 题。**更复杂、更真实，含脏数据。**
 
 ## 7.11 BFCL — Berkeley Function Calling Leaderboard
 
-### 一句话
+**一句话**
 
 > 测"模型调用函数"的能力。**Agent 时代的核心评估。**
 
-### 维度
+**维度**
 
 - **Simple**：单个函数调用
 - **Multiple**：多个函数（模型选哪个）
@@ -288,7 +288,7 @@ async function sweBenchScore(
 - **Nested**：嵌套调用（A 调 B 的结果再调 C）
 - **Live**：真实用户请求（持续更新）
 
-### 当前 SOTA（BFCL Live）
+**当前 SOTA（BFCL Live）**
 
 | 模型 | Overall |
 |---|---|

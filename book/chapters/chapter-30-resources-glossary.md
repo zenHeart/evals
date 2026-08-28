@@ -1,10 +1,10 @@
-# 27. 资源、术语表与 Cheat Sheet
+# 30. 资源、术语表与 Cheat Sheet
 
 > **如果只读一节**：本章节是"工具书"——遇到不懂的术语回来翻。**Cheat Sheet 是 1 页速查卡**，打印贴墙。
 
-## 27.1 核心基准速查
+## 30.1 核心基准速查
 
-### 学科 / 知识
+**学科 / 知识**
 
 | 基准 | 规模 | 测什么 | 关键链接 |
 |---|---|---|---|
@@ -18,7 +18,7 @@
 | WinoGrande | 44k | 代词 | [论文](https://arxiv.org/abs/1907.10641) |
 | ARC-AGI | 1k | 抽象推理 | [官网](https://arcprize.org/) |
 
-### 数学 / 逻辑
+**数学 / 逻辑**
 
 | 基准 | 规模 | 测什么 | 关键链接 |
 |---|---|---|---|
@@ -30,7 +30,7 @@
 | GPQA | 450 | 博士级 | [论文](https://arxiv.org/abs/2311.12022) |
 | MathVista | 6k | 视觉+数学 | [论文](https://arxiv.org/abs/2310.08955) |
 
-### 代码
+**代码**
 
 | 基准 | 规模 | 测什么 | 关键链接 |
 |---|---|---|---|
@@ -45,7 +45,7 @@
 | BIRD | 12.7k | Text-to-SQL | [官网](https://bird-bench.github.io/) |
 | BFCL | 2k+ | 函数调用 | [官网](https://gorilla.cs.berkeley.edu/leaderboard.html) |
 
-### 多模态
+**多模态**
 
 | 基准 | 规模 | 测什么 | 关键链接 |
 |---|---|---|---|
@@ -58,7 +58,7 @@
 | POPE | 9k | 视觉幻觉 | [论文](https://arxiv.org/abs/2305.10355) |
 | HallusionBench | 460 | 复杂幻觉 | [GitHub](https://github.com/open-compass/HallusionBench) |
 
-### 长上下文
+**长上下文**
 
 | 基准 | 长度 | 测什么 | 关键链接 |
 |---|---|---|---|
@@ -67,7 +67,7 @@
 | LongBench | 0.5k-32k | 中文长上下文 | [GitHub](https://github.com/THUDM/LongBench) |
 | Multi-needle | 8k-1M | 多针 | 通用 |
 
-### 事实性 / 幻觉
+**事实性 / 幻觉**
 
 | 基准 | 规模 | 测什么 | 关键链接 |
 |---|---|---|---|
@@ -76,7 +76,7 @@
 | SimpleQA | 4326 | 短答案事实 | OpenAI |
 | FreshQA | - | 时效性 | 持续更新 |
 
-### 安全
+**安全**
 
 | 基准 | 规模 | 测什么 | 关键链接 |
 |---|---|---|---|
@@ -86,7 +86,7 @@
 | RealToxicityPrompts | 100k | 毒性 | [论文](https://arxiv.org/abs/2009.11462) |
 | SafetyBench | - | 中文安全 | [GitHub](https://github.com/THUDM/SafetyBench) |
 
-### Agent
+**Agent**
 
 | 基准 | 任务 | 测什么 | 关键链接 |
 |---|---|---|---|
@@ -98,7 +98,7 @@
 | τ-bench | 165 | 客服 | [官网](https://taubench.com/) |
 | AgentBench | 8 环境 | 综合 | [GitHub](https://github.com/THUDM/AgentBench) |
 
-### 偏好 / 排行榜
+**偏好 / 排行榜**
 
 | 基准 | 风格 | 题目 | 关键链接 |
 |---|---|---|---|
@@ -110,7 +110,7 @@
 | SEAL | 专家 | 5000+ | [官网](https://scale.com/leaderboard) |
 | OpenCompass | 综合 | 100+ | [官网](https://opencompass.org.cn/) |
 
-## 27.2 框架速查
+## 30.2 框架速查
 
 | 框架 | 类别 | 安装 | 关键命令 |
 |---|---|---|---|
@@ -130,7 +130,7 @@
 | PyRIT | 红队 | `pip install pyrit` | `python attack.py` |
 | Promptfoo | Prompt | `npm install -g promptfoo` | `promptfoo eval` |
 
-## 27.3 关键指标速查
+## 30.3 关键指标速查
 
 | 指标 | 公式 | 适用 |
 |---|---|---|
@@ -147,7 +147,7 @@
 | Elo | 对战分数 | 偏好 |
 | Wilson CI | 二项置信区间 | 准确率 |
 
-## 27.4 关键概念速查
+## 30.4 关键概念速查
 
 | 概念 | 定义 |
 |---|---|
@@ -173,7 +173,7 @@
 | Hallucination | 编造内容 |
 | Calibration | 概率与准确性匹配 |
 
-## 27.5 LLM 厂商 API 速查
+## 30.5 LLM 厂商 API 速查
 
 | 厂商 | 模型 | API | 备注 |
 |---|---|---|---|
@@ -188,9 +188,9 @@
 | Cohere | command-r-plus | api.cohere.com | 企业 |
 | Ollama | 本地 | ollama.ai | 自部署 |
 
-## 27.6 必读论文清单
+## 30.6 必读论文清单
 
-### L0 必读（5 篇）
+**L0 必读（5 篇）**
 
 1. [MMLU 论文 (Hendrycks et al. 2021)](https://arxiv.org/abs/2009.03300)
 2. [HumanEval 论文 (Chen et al. 2021)](https://arxiv.org/abs/2107.03374)
@@ -198,7 +198,7 @@
 4. [Judging LLM-as-a-Judge (Zheng et al. 2023)](https://arxiv.org/abs/2306.05685)
 5. [HELM (Liang et al. 2022)](https://arxiv.org/abs/2211.09110)
 
-### L1 推荐（10 篇）
+**L1 推荐（10 篇）**
 
 - TruthfulQA
 - HellaSwag
@@ -211,12 +211,12 @@
 - Garak (红队)
 - DeepEval
 
-### L2 进阶（按需）
+**L2 进阶（按需）**
 
 - 各基准原始论文
 - 厂商技术报告（GPT-4o、Claude 3.5、Gemini 1.5、DeepSeek-V3）
 
-## 27.7 必看博客
+## 30.7 必看博客
 
 - [Designing ML Evaluation Systems (Chip Huyen)](https://huyenchip.com/2023/05/15/designing-ml-evaluation-systems.html) — 必读长文
 - [How to Read a LLM Paper (Sebastian Raschka)](https://magazine.sebastianraschka.com/p/llm-research-papers-2024) — 论文阅读
@@ -224,7 +224,7 @@
 - [OpenAI Engineering Blog](https://openai.com/blog/engineering/)
 - [Chip Huyen's Blog](https://huyenchip.com/blog/)
 
-## 27.8 必用工具
+## 30.8 必用工具
 
 | 工具 | 用途 |
 |---|---|
@@ -239,7 +239,7 @@
 | LangSmith | LangChain 调试 |
 | DeepEval | 应用测试 |
 
-## 27.9 数据集下载源
+## 30.9 数据集下载源
 
 | 平台 | 链接 |
 |---|---|
@@ -248,7 +248,7 @@
 | GitHub Topic | github.com/topics/benchmark-dataset |
 | 学术平台 | arXiv.org |
 
-## 27.10 1 页 Cheat Sheet（速查卡）
+## 30.10 1 页 Cheat Sheet（速查卡）
 
 ```
 ┌────────────────────────────────────────────┐
@@ -289,7 +289,7 @@
 └────────────────────────────────────────────┘
 ```
 
-## 27.11 章节小结
+## 30.11 章节小结
 
 - 80+ 基准速查
 - 15 个框架速查
@@ -298,7 +298,7 @@
 - 10 个 LLM 厂商 API
 - 5 + 10 + N 篇论文推荐
 
-## 27.12 验收自测
+## 30.12 验收自测
 
 1. **选择**：下面哪个基准测"博士级科学推理"？
    - A. MMLU
@@ -310,7 +310,7 @@
 
 3. **实操**：从本章 80+ 基准中选 3 个，跑你模型的评估。
 
-## 27.13 延伸阅读
+## 30.13 延伸阅读
 
 ⭐⭐⭐
 - [Awesome LLM Evaluation (GitHub)](https://github.com/MLGroupJ/awesome-llm-evaluation)

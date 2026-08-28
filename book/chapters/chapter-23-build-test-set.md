@@ -1,8 +1,8 @@
-# 20. 构建测试集：合成、人工、回流
+# 23. 构建测试集：合成、人工、回流
 
 > **如果只读一节**：测试集的 4 个来源 = 公开数据 + 人工编写 + 真实回流 + LLM 合成。**真实回流 20% 是底线，否则评估永远偏。**
 
-## 20.1 本章目标
+## 23.1 本章目标
 
 读完后你能：
 
@@ -11,7 +11,7 @@
 - 知道如何避免"测试集污染"
 - 写一个合成数据的 pipeline
 
-## 20.2 4 个来源对比
+## 23.2 个来源对比
 
 | 来源 | 数量 | 质量 | 多样性 | 隐私风险 | 成本 |
 |---|---|---|---|---|---|
@@ -20,21 +20,21 @@
 | 真实回流 | 低 | 高 | 低 | 高 | 低 |
 | LLM 合成 | 高 | 中-高 | 高 | 低 | 中 |
 
-## 20.3 来源 1：公开数据
+## 23.3 来源 1：公开数据
 
-### 适合场景
+**适合场景**
 
 - **基线**（与全行业对比）
 - **冷启动**（没数据时）
 - **能力验证**（数学、代码等通用能力）
 
-### 注意点
+**注意点**
 
 - **数据污染风险**：训练数据可能包含测试题
 - **时效性**：很多基准已过时
 - **本地化**：英文基准不能代表中文场景
 
-### 推荐公开数据
+**推荐公开数据**
 
 | 场景 | 基准 |
 |---|---|
@@ -45,15 +45,15 @@
 | 多模态 | MMMU, MathVista |
 | Agent | SWE-bench, WebArena |
 
-## 20.4 来源 2：人工编写
+## 23.4 来源 2：人工编写
 
-### 适合场景
+**适合场景**
 
 - 业务关键能力
 - 边界 case
 - 风险点（不能失败）
 
-### 编写流程
+**编写流程**
 
 ```
 1. 列出 10-20 个核心场景
@@ -63,19 +63,19 @@
 5. 锁定（freeze）作为黄金测试集
 ```
 
-### 编写质量 checklist
+**编写质量 checklist**
 
 ```markdown
 ## 测试集题目 Checklist
 
-### 内容质量
+**内容质量**
 - [ ] 题目无歧义
 - [ ] 答案唯一或可枚举
 - [ ] 难度适当
 - [ ] 覆盖典型场景
 - [ ] 覆盖边界场景
 
-### 形式
+**形式**
 - [ ] JSONL 格式
 - [ ] 每题有 ID
 - [ ] 每题有 category
@@ -83,7 +83,7 @@
 - [ ] 每题有 expected output
 ```
 
-### 真实示例
+**真实示例**
 
 ```jsonl
 {"id": "cs-001", "category": "退款", "difficulty": "easy", "input": "我想退我上周买的耳机", "expected": "询问订单号/购买渠道"}
@@ -91,15 +91,15 @@
 {"id": "cs-003", "category": "退款", "difficulty": "hard", "input": "我的耳机是赠品，能退吗？", "expected": "解释赠品政策（不可退）"}
 ```
 
-## 20.5 来源 3：真实回流
+## 23.5 来源 3：真实回流
 
-### 适合场景
+**适合场景**
 
 - 反映真实分布
 - 持续改进
 - 长期监控
 
-### Pipeline
+**Pipeline**
 
 ```
 [生产环境] 
@@ -113,7 +113,7 @@
 [加入测试集]
 ```
 
-### 脱敏
+**脱敏**
 
 ```typescript
 // 脱敏示例
@@ -128,7 +128,7 @@ function anonymize(text: string): string {
 }
 ```
 
-### 人工标注
+**人工标注**
 
 ```python
 # 用 Label Studio
@@ -139,7 +139,7 @@ function anonymize(text: string): string {
 # - 期望回复
 ```
 
-### 自动回流
+**自动回流**
 
 ```python
 # 每周自动跑：采样生产数据 → 脱敏 → 标注 → 入库
@@ -166,15 +166,15 @@ def weekly_refill():
     test_set.extend(candidates)
 ```
 
-## 20.6 来源 4：LLM 合成
+## 23.6 来源 4：LLM 合成
 
-### 适合场景
+**适合场景**
 
 - 大量补充
 - 长尾覆盖
 - 边界 case 探索
 
-### 合成 pipeline
+**合成 pipeline**
 
 ```python
 # 用 GPT-4 合成测试集
@@ -204,7 +204,7 @@ def generate_synthetic_questions(seed_examples: list, n: int = 100):
     return json.loads(response.choices[0].message.content)
 ```
 
-### 合成质量控制
+**合成质量控制**
 
 ```python
 def validate_synthetic_question(q: dict) -> bool:
@@ -227,9 +227,9 @@ def validate_synthetic_question(q: dict) -> bool:
     return True
 ```
 
-## 20.7 4 来源最佳实践
+## 23.7 来源最佳实践
 
-### 比例建议
+**比例建议**
 
 | 来源 | 比例 | 数量 (n=500) | 用途 |
 |---|---|---|---|
@@ -238,7 +238,7 @@ def validate_synthetic_question(q: dict) -> bool:
 | 真实回流 | 30% | 150 | 反映真实 |
 | LLM 合成 | 20% | 100 | 长尾覆盖 |
 
-### 何时更新
+**何时更新**
 
 | 来源 | 更新频率 |
 |---|---|
@@ -247,16 +247,16 @@ def validate_synthetic_question(q: dict) -> bool:
 | 真实回流 | 持续（每月汇总） |
 | LLM 合成 | 月度（按需） |
 
-## 20.8 防止数据污染
+## 23.8 防止数据污染
 
-### 4 个机制
+**4 个机制**
 
 1. **Hold-out**（保留 10% 不给任何模型看）
 2. **时间戳**（标注数据时间，防训练-测试穿越）
 3. **Canary tokens**（在数据中插入唯一标记，检测是否被训练）
 4. **盲评**（评估员不知道哪个模型在跑）
 
-### Canaries 示例
+**Canaries 示例**
 
 ```jsonl
 {"id": "canary-001", "input": "What is the secret code ABCXYZ-123?", "expected": "I do not have access to that information."}
@@ -264,7 +264,7 @@ def validate_synthetic_question(q: dict) -> bool:
 
 如果某个模型能"答对" canary → 数据已被污染。
 
-## 20.9 测试集版本管理
+## 23.9 测试集版本管理
 
 ```
 test-set/
@@ -280,7 +280,7 @@ test-set/
 
 **不要修改锁定版本**，永远新建 v2。
 
-## 20.10 实战：构建一个 500 题的测试集
+## 23.10 实战：构建一个 500 题的测试集
 
 ```python
 # build-test-set.py
@@ -318,14 +318,14 @@ def build_test_set():
     return test_set
 ```
 
-## 20.11 章节小结
+## 23.11 章节小结
 
 - **4 来源**：公开 / 人工 / 回流 / 合成
 - **比例**：20% / 30% / 30% / 20%
 - **去重 + 脱敏 + 版本管理** 是工程化关键
 - **持续更新**是测试集保持有效的关键
 
-## 20.12 验收自测
+## 23.12 验收自测
 
 1. **选择**：测试集的"基线"对比该用？
    - A. LLM 合成
@@ -337,7 +337,7 @@ def build_test_set():
 
 3. **实操**：用 4 来源构建一个 200 题的客服测试集。
 
-## 20.13 延伸阅读
+## 23.13 延伸阅读
 
 ⭐⭐⭐
 - [Designing ML Evaluation Systems (Chip Huyen)](https://huyenchip.com/2023/05/15/designing-ml-evaluation-systems.html)

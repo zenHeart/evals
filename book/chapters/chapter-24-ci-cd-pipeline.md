@@ -1,8 +1,8 @@
-# 21. 评估流水线工程：CI/CD、回归、灰度
+# 24. 评估流水线工程：CI/CD、回归、灰度
 
 > **如果只读一节**：评估必须集成到 CI/CD。每次 PR 跑回归，每天定时跑全量，发版前跑红队。**没有 CI 的评估 = 不会被使用的评估**。
 
-## 21.1 本章目标
+## 24.1 本章目标
 
 读完后你能：
 
@@ -11,7 +11,7 @@
 - 知道评估的"3 个时机"（PR / 定时 / 发版）
 - 知道评估结果的呈现方式
 
-## 21.2 评估的 3 个时机
+## 24.2 评估的 3 个时机
 
 | 时机 | 范围 | 速度 | 触发 |
 |---|---|---|---|
@@ -19,7 +19,7 @@
 | **每日定时** | 完整评估 | 1-2 小时 | cron |
 | **发版前** | 红队 + 全量 | 数小时 | workflow_dispatch |
 
-## 21.3 PR 时的快速回归
+## 24.3 PR 时的快速回归
 
 ```yaml
 # .github/workflows/eval-pr.yml
@@ -60,7 +60,7 @@ jobs:
           # 如果准确率下降 > 2%，PR 不通过
 ```
 
-## 21.4 每日定时全量
+## 24.4 每日定时全量
 
 ```yaml
 # .github/workflows/eval-daily.yml
@@ -113,7 +113,7 @@ jobs:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
 ```
 
-## 21.5 回归检测算法
+## 24.5 回归检测算法
 
 ```typescript
 // scripts/check-regression.ts
@@ -155,9 +155,9 @@ function detectRegression(
 }
 ```
 
-## 21.6 灰度评估
+## 24.6 灰度评估
 
-### 灰度发布中的评估
+**灰度发布中的评估**
 
 ```
 [新版本]
@@ -174,7 +174,7 @@ function detectRegression(
 [判定：扩大 / 缩小 / 回滚]
 ```
 
-### 评估代码
+**评估代码**
 
 ```typescript
 // canary-eval.ts
@@ -214,9 +214,9 @@ async function canaryEval(
 }
 ```
 
-## 21.7 评估结果展示
+## 24.7 评估结果展示
 
-### 报告生成
+**报告生成**
 
 ```typescript
 // generate-report.ts
@@ -251,7 +251,7 @@ ${results
 }
 ```
 
-### Slack 通知
+**Slack 通知**
 
 ```typescript
 async function notifySlack(results: any) {
@@ -269,7 +269,7 @@ async function notifySlack(results: any) {
 }
 ```
 
-## 21.8 评估流水线架构
+## 24.8 评估流水线架构
 
 ```
                     ┌────────────────┐
@@ -303,7 +303,7 @@ async function notifySlack(results: any) {
               └──────────────────────────────┘
 ```
 
-## 21.9 实战：把评估集成到 React 项目
+## 24.9 实战：把评估集成到 React 项目
 
 ```json
 // package.json
@@ -352,7 +352,7 @@ async function main() {
 main();
 ```
 
-## 21.10 验收自测
+## 24.10 验收自测
 
 1. **选择**：评估的 3 个时机不包括？
    - A. 每次 PR
@@ -364,7 +364,7 @@ main();
 
 3. **实操**：把 eval-quick 集成到你的 GitHub Actions。
 
-## 21.11 延伸阅读
+## 24.11 延伸阅读
 
 ⭐⭐⭐
 - [GitHub Actions: AI/ML Workflows](https://docs.github.com/en/actions/guides)

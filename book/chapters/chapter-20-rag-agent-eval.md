@@ -1,8 +1,8 @@
-# 17. RAG / Agent / 应用层评估
+# 20. RAG / Agent / 应用层评估
 
 > **如果只读一节**：RAG 评估 = RAGAS（4 大指标）。Agent 评估 = 任务完成率 + 工具调用准确率。生产监控 = Phoenix / LangSmith。
 
-## 17.1 本章目标
+## 20.1 本章目标
 
 读完后你能：
 
@@ -11,9 +11,9 @@
 - 知道生产环境监控的关键指标
 - 选对应用层评估工具
 
-## 17.2 RAG 评估的 4 大维度
+## 20.2 RAG 评估的 4 大维度
 
-### 维度 1：检索质量
+**维度 1：检索质量**
 
 **指标**：
 - **Context Precision**：检索的内容里"有用"的比例
@@ -21,35 +21,35 @@
 - **MRR** (Mean Reciprocal Rank)：第一个相关结果的排名
 - **NDCG**：归一化折损累积增益
 
-### 维度 2：生成质量
+**维度 2：生成质量**
 
 **指标**：
 - **Faithfulness**：答案是否忠于检索内容（不幻觉）
 - **Answer Relevancy**：答案是否切题
 - **Answer Correctness**：答案是否正确（vs 参考）
 
-### 维度 3：端到端
+**维度 3：端到端**
 
 **指标**：
 - **Answer similarity**：与参考答案的相似度
 - **Human evaluation**：人工评分
 
-### 维度 4：性能
+**维度 4：性能**
 
 **指标**：
 - **Latency**：端到端延迟
 - **Cost per query**：单次查询成本
 - **Throughput**：每秒查询数
 
-## 17.3 RAGAS 实战
+## 20.3 RAGAS 实战
 
-### 安装
+**安装**
 
 ```bash
 pip install ragas
 ```
 
-### 4 大核心指标
+**4 大核心指标**
 
 ```python
 from ragas import evaluate
@@ -93,7 +93,7 @@ print(result)
 # {'faithfulness': 0.95, 'answer_relevancy': 0.88, 'context_precision': 0.85, 'context_recall': 0.90}
 ```
 
-### 解读
+**解读**
 
 | 分数 | 含义 | 行动 |
 |---|---|---|
@@ -102,7 +102,7 @@ print(result)
 | Context Precision < 0.7 | 检索内容含噪 | 改 embedding / rerank |
 | Context Recall < 0.7 | 检索不全 | 改 chunk size / 检索数量 |
 
-## 17.4 TruLens 实战
+## 20.4 TruLens 实战
 
 ```python
 from trulens.core import Tru
@@ -131,9 +131,9 @@ with tru_recorder as recording:
 tru.run_dashboard()
 ```
 
-## 17.5 Agent 评估
+## 20.5 Agent 评估
 
-### Agent 能力的 3 个层次
+**Agent 能力的 3 个层次**
 
 | 层次 | 测什么 | 评估方式 |
 |---|---|---|
@@ -141,7 +141,7 @@ tru.run_dashboard()
 | L2：多步推理 | 多轮思考 + 行动 | AgentBench |
 | L3：真实任务 | 端到端任务完成 | SWE-bench、WebArena、OSWorld |
 
-### 单步工具调用评估（BFCL）
+**单步工具调用评估（BFCL）**
 
 ```python
 from bfcl import BFCL
@@ -160,7 +160,7 @@ for sample in dataset:
     is_correct = BFCL.score(tool_call, sample["expected_call"])
 ```
 
-### 多步 Agent 评估
+**多步 Agent 评估**
 
 ```python
 # 用 Inspect AI 跑 Agent 评估
@@ -182,7 +182,7 @@ task = Task(
 results = eval([task], model="gpt-4o")
 ```
 
-### 关键指标
+**关键指标**
 
 | 指标 | 含义 |
 |---|---|
@@ -192,9 +192,9 @@ results = eval([task], model="gpt-4o")
 | Step efficiency | 完成任务用的步数 |
 | Recovery rate | 失败后能否恢复 |
 
-## 17.6 生产环境监控
+## 20.6 生产环境监控
 
-### 关键指标
+**关键指标**
 
 | 类别 | 指标 |
 |---|---|
@@ -204,7 +204,7 @@ results = eval([task], model="gpt-4o")
 | **稳定性** | 错误率、超时率 |
 | **安全** | 拒绝率、有害内容率 |
 
-### Phoenix 实战
+**Phoenix 实战**
 
 ```python
 import phoenix as px
@@ -230,7 +230,7 @@ hallucination = HallucinationEvaluator(model)
 results = hallucination.evaluate(dataframe)
 ```
 
-## 17.7 LangSmith 实战
+## 20.7 LangSmith 实战
 
 ```python
 from langsmith import traceable
@@ -250,7 +250,7 @@ results = evaluate(
 )
 ```
 
-## 17.8 DeepEval 实战
+## 20.8 DeepEval 实战
 
 ```python
 from deepeval import evaluate
@@ -276,7 +276,7 @@ evaluate([test_case], [
 ])
 ```
 
-## 17.9 应用层评估 checklist
+## 20.9 应用层评估 checklist
 
 ```markdown
 ## RAG 评估 Checklist
@@ -303,14 +303,14 @@ evaluate([test_case], [
 - [ ] 用户反馈收集
 ```
 
-## 17.10 章节小结
+## 20.10 章节小结
 
 - **RAG**: RAGAS 4 大指标
 - **Agent**: BFCL + AgentBench + SWE-bench
 - **生产监控**: Phoenix / LangSmith / TruLens
 - **测试驱动**: DeepEval
 
-## 17.11 验收自测
+## 20.11 验收自测
 
 1. **选择**：RAG 评估最该用？
    - A. lm-eval-harness
@@ -322,7 +322,7 @@ evaluate([test_case], [
 
 3. **实操**：用 RAGAS 评估你自己的 RAG 系统（100 个 query）。
 
-## 17.12 延伸阅读
+## 20.12 延伸阅读
 
 ⭐⭐⭐
 - [RAGAS 文档](https://docs.ragas.io/)

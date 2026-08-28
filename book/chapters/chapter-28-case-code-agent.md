@@ -1,8 +1,8 @@
-# 25. 案例研究（二）：评估一个代码生成 Agent
+# 28. 案例研究（二）：评估一个代码生成 Agent
 
 > **如果只读一节**：代码 Agent 评估 = HumanEval 单元测试 + SWE-bench 真实 Issue + 用户接受率。**自动 + 人工 + 业务** 三层评估缺一不可。
 
-## 25.1 业务背景
+## 28.1 业务背景
 
 **公司**：XX SaaS
 **产品**：AI 代码助手（VS Code 插件）
@@ -15,7 +15,7 @@
 - 代码解释
 - 重构建议
 
-## 25.2 评估的 3 层
+## 28.2 评估的 3 层
 
 ```
 [第 1 层：自动评估]
@@ -33,9 +33,9 @@
   - 安全性
 ```
 
-## 25.3 第 1 层：自动评估
+## 28.3 第 1 层：自动评估
 
-### 测试集
+**测试集**
 
 | 来源 | 数量 | 类型 |
 |---|---|---|
@@ -45,7 +45,7 @@
 | 自建（TypeScript） | 200 | 前端 |
 | 自建（React） | 200 | 组件生成 |
 
-### 代码
+**代码**
 
 ```python
 # eval_code_agent.py
@@ -85,7 +85,7 @@ def eval_humaneval(model, samples):
     return passed / len(samples)
 ```
 
-### TypeScript 专项
+**TypeScript 专项**
 
 ```typescript
 // eval-ts.ts
@@ -142,9 +142,9 @@ ${t.test}
 }
 ```
 
-## 25.4 第 2 层：业务评估
+## 28.4 第 2 层：业务评估
 
-### 真实 React 组件测试
+**真实 React 组件测试**
 
 ```python
 # eval_react.py
@@ -180,7 +180,7 @@ def eval_react_component(model):
     return passed / len(react_tasks)
 ```
 
-### 用户接受率（关键业务指标）
+**用户接受率（关键业务指标）**
 
 ```python
 # 从生产数据计算
@@ -200,7 +200,7 @@ def user_acceptance_rate():
     }
 ```
 
-### 编辑距离（接受后改了多少）
+**编辑距离（接受后改了多少）**
 
 ```python
 def edit_distance_metric():
@@ -220,37 +220,37 @@ def edit_distance_metric():
     }
 ```
 
-## 25.5 第 3 层：人工评估
+## 28.5 第 3 层：人工评估
 
-### Rubric
+**Rubric**
 
 ```markdown
 # 代码生成人工评估 Rubric
 
 ## 评估维度（每项 1-5 分）
 
-### 1. 正确性
+**1. 正确性**
 - 5：完全正确，无 bug
 - 4：基本正确，有 1-2 个小 bug
 - 3：能跑但有 bug
 - 2：编译/类型错
 - 1：完全不能跑
 
-### 2. 风格
+**2. 风格**
 - 5：与现有代码风格一致
 - 4：风格基本一致
 - 3：可接受
 - 2：风格不一致
 - 1：风格很差
 
-### 3. 可读性
+**3. 可读性**
 - 5：清晰、有注释、命名好
 - 4：清晰
 - 3：可读
 - 2：难读
 - 1：完全难懂
 
-### 4. 安全性
+**4. 安全性**
 - 5：安全的最佳实践
 - 4：基本安全
 - 3：中等
@@ -258,7 +258,7 @@ def edit_distance_metric():
 - 1：严重安全风险
 ```
 
-### 抽检流程
+**抽检流程**
 
 ```python
 # 每周抽 50 个建议，3 个工程师评估
@@ -282,9 +282,9 @@ def weekly_review():
     return aggregate_quality(suggestions)
 ```
 
-## 25.6 评估结果
+## 28.6 评估结果
 
-### 第 1 轮
+**第 1 轮**
 
 | 指标 | 值 | 目标 | 状态 |
 |---|---|---|---|
@@ -294,7 +294,7 @@ def weekly_review():
 | 用户接受率 | 35% | > 50% | ❌ |
 | 编辑距离 | 0.25 | < 0.15 | ❌ |
 
-### 改进方向
+**改进方向**
 
 ```
 1. HumanEval 低 → 改用更强模型（GPT-4o → Claude 3.5 Sonnet）
@@ -303,7 +303,7 @@ def weekly_review():
 4. 编辑距离高 → 改进建议的"用户风格匹配"
 ```
 
-### 改进后第 2 轮
+**改进后第 2 轮**
 
 | 指标 | 值 | 目标 | 状态 |
 |---|---|---|---|
@@ -313,7 +313,7 @@ def weekly_review():
 | 用户接受率 | 55% | > 50% | ✅ |
 | 编辑距离 | 0.12 | < 0.15 | ✅ |
 
-## 25.7 SWE-bench 风格评估
+## 28.7 SWE-bench 风格评估
 
 ```python
 # eval_swe.py
@@ -379,7 +379,7 @@ def eval_swe_bench(model, instances, timeout=300):
     return results
 ```
 
-## 25.8 章节小结
+## 28.8 章节小结
 
 - **3 层评估**：自动 + 业务 + 人工
 - **HumanEval / MBPP / LiveCodeBench** 是基础
@@ -387,7 +387,7 @@ def eval_swe_bench(model, instances, timeout=300):
 - **SWE-bench 风格** 测真实 Issue 修复
 - **每周人工抽检** 保证质量
 
-## 25.9 验收自测
+## 28.9 验收自测
 
 1. **选择**：代码 Agent 评估的关键业务指标是？
    - A. HumanEval 分数
@@ -399,7 +399,7 @@ def eval_swe_bench(model, instances, timeout=300):
 
 3. **实操**：用 HumanEval 评估 50 个 Python 函数生成样本。
 
-## 25.10 延伸阅读
+## 28.10 延伸阅读
 
 ⭐⭐⭐
 - [SWE-bench](https://www.swebench.com/)

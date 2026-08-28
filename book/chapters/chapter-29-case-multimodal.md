@@ -1,8 +1,8 @@
-# 26. 案例研究（三）：评估一个多模态应用
+# 29. 案例研究（三）：评估一个多模态应用
 
 > **如果只读一节**：多模态评估 = (1) MMMU 综合 + (2) 业务子任务 + (3) OCR 准确率 + (4) 视觉幻觉检测。**OCR 和幻觉是单独的难题**。
 
-## 26.1 业务背景
+## 29.1 业务背景
 
 **公司**：XX 教育
 **产品**：AI 拍照解题 App
@@ -15,7 +15,7 @@
 - 多语言（中英日韩）
 - 解题（数学、物理、化学）
 
-## 26.2 评估维度
+## 29.2 评估维度
 
 | 维度 | 指标 | 目标 |
 |---|---|---|
@@ -27,9 +27,9 @@
 | 多语言 OCR | 各语言 F1 | > 90% |
 | 速度 | P95 延迟 | < 3s |
 
-## 26.3 测试集
+## 29.3 测试集
 
-### 来源 1：公开数据
+**来源 1：公开数据**
 
 | 基准 | 测什么 |
 |---|---|
@@ -39,7 +39,7 @@
 | DocVQA | 文档 |
 | OCRBench | OCR 综合 |
 
-### 来源 2：业务数据（10,000 道真实题）
+**来源 2：业务数据（10,000 道真实题）**
 
 ```jsonl
 {"id": "math-001", "image": "math_001.jpg", "type": "math_equation", "expected_latex": "x^2 + 5x + 6 = 0", "expected_solution": "x = -2 or x = -3"}
@@ -47,7 +47,7 @@
 {"id": "chem-001", "image": "chem_001.jpg", "type": "chemistry_formula", "expected_formula": "H2SO4", "expected_name": "硫酸"}
 ```
 
-### 来源 3：合成数据
+**来源 3：合成数据**
 
 ```python
 # 用 LaTeX 渲染器合成几何题
@@ -81,7 +81,7 @@ def generate_geometry_questions(n=100):
     return questions
 ```
 
-## 26.4 OCR 评估
+## 29.4 OCR 评估
 
 ```python
 # eval_ocr.py
@@ -142,7 +142,7 @@ def word_level_f1(predicted, expected):
     return f1
 ```
 
-## 26.5 公式识别评估
+## 29.5 公式识别评估
 
 ```python
 # eval_formula.py
@@ -179,7 +179,7 @@ def math_equivalent(latex1, latex2):
         return False
 ```
 
-## 26.6 视觉幻觉评估
+## 29.6 视觉幻觉评估
 
 ```python
 # eval_hallucination.py
@@ -221,7 +221,7 @@ def eval_visual_hallucination(model, samples):
     }
 ```
 
-## 26.7 多语言 OCR
+## 29.7 多语言 OCR
 
 ```python
 # eval_multilingual_ocr.py
@@ -255,7 +255,7 @@ def eval_multilingual_ocr(model, samples):
     return results
 ```
 
-## 26.8 综合评估 Pipeline
+## 29.8 综合评估 Pipeline
 
 ```python
 # full_eval.py
@@ -290,7 +290,7 @@ def run_full_evaluation(model, test_set_path):
     }
 ```
 
-## 26.9 评估结果
+## 29.9 评估结果
 
 | 指标 | 值 | 目标 | 状态 |
 |---|---|---|---|
@@ -303,7 +303,7 @@ def run_full_evaluation(model, test_set_path):
 | 日文 OCR F1 | 0.85 | > 0.90 | ⚠️ |
 | 韩文 OCR F1 | 0.80 | > 0.90 | ❌ |
 
-### 改进方向
+**改进方向**
 
 ```
 1. OCR → 切换更强 OCR 模型
@@ -312,7 +312,7 @@ def run_full_evaluation(model, test_set_path):
 4. 日韩 → 收集更多日韩训练数据
 ```
 
-## 26.10 章节小结
+## 29.10 章节小结
 
 - **多模态评估 = OCR + 公式 + 几何 + 解题 + 幻觉**
 - **每种能力有专门指标**
@@ -320,7 +320,7 @@ def run_full_evaluation(model, test_set_path):
 - **幻觉检测** 用 POPE 类问题
 - **合成数据** 解决长尾场景
 
-## 26.11 验收自测
+## 29.11 验收自测
 
 1. **选择**：多模态评估最难的是？
    - A. OCR
@@ -332,7 +332,7 @@ def run_full_evaluation(model, test_set_path):
 
 3. **实操**：用 MMMU 跑 100 道多模态题评估你的模型。
 
-## 26.12 延伸阅读
+## 29.12 延伸阅读
 
 ⭐⭐⭐
 - [MMMU 论文](https://arxiv.org/abs/2311.16502)

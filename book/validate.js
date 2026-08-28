@@ -78,7 +78,7 @@ function validateHeading(file, lineNo, line, chapterNumber, expectedH2) {
     fail(`${file}:${lineNo} H2 must use sequential section prefix "${chapterNumber}.${expectedH2}" — got: "${h2[1]}"`);
   }
   const h3 = line.match(/^### (.+)$/);
-  if (h3 && !/^[0-9]+\.[0-9]+ /.test(h3[1])) {
+  if (h3 && !/^[0-9]+\.[0-9]+(\.[0-9]+)? /.test(h3[1])) {
     fail(`${file}:${lineNo} H3 must start with numeric section prefix (e.g. "1.1.1") — got: "${h3[1]}"`);
   }
 }
@@ -156,7 +156,7 @@ function main() {
       let inFence = false;
       let expectedH2 = 1;
       const chapterNumber = Number(file.match(/^chapter-(\d+)/)?.[1]);
-      if (!chapterNumber) {
+      if (chapterNumber === undefined || chapterNumber === null) {
         fail(`${file} filename must start with "chapter-NN-"`);
         continue;
       }

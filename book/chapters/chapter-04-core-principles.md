@@ -15,7 +15,7 @@
 
 ## 4.2 指标设计：4 个基础
 
-### Accuracy（准确率）
+**Accuracy（准确率）**
 
 ```
 accuracy = (TP + TN) / (TP + TN + FP + FN)
@@ -32,7 +32,7 @@ accuracy = (TP + TN) / (TP + TN + FP + FN)
 
 → 这时该用 **precision / recall / F1**。
 
-### Precision（精确率）
+**Precision（精确率）**
 
 ```
 precision = TP / (TP + FP)
@@ -40,7 +40,7 @@ precision = TP / (TP + FP)
 
 > "模型说'是'的里面，多少真对了？"
 
-### Recall（召回率）
+**Recall（召回率）**
 
 ```
 recall = TP / (TP + FN)
@@ -48,7 +48,7 @@ recall = TP / (TP + FN)
 
 > "真正'是'的里面，模型找出了多少？"
 
-### F1 Score
+**F1 Score**
 
 ```
 F1 = 2 * precision * recall / (precision + recall)
@@ -56,7 +56,7 @@ F1 = 2 * precision * recall / (precision + recall)
 
 > precision 和 recall 的调和平均。**综合指标**。
 
-### 多分类与多标签
+**多分类与多标签**
 
 - 多分类：macro-F1（各类平等）/ weighted-F1（按样本量加权）
 - 多标签：每个标签独立算，再平均
@@ -82,13 +82,13 @@ F1 = 2 * precision * recall / (precision + recall)
 
 ## 4.4 统计置信：从"看起来好"到"真的好"
 
-### 核心问题
+**核心问题**
 
 > 模型 A 准确率 80.5%，模型 B 准确率 79.8%。A 真的更好吗？
 
 **答案**：要看置信区间和样本量。
 
-### 置信区间（CI）
+**置信区间（CI）**
 
 95% 置信区间 = "如果重复这个实验 100 次，大约 95 次真值落在这个区间里"。
 
@@ -102,7 +102,7 @@ F1 = 2 * precision * recall / (precision + recall)
 
 **前端类比**：A/B 测试的 p 值 ≥ 0.05 = "差异可能来自随机"。
 
-### 显著性检验
+**显著性检验**
 
 ```typescript
 // 配对卡方检验：同一道题上 A 和 B 哪个对的更多
@@ -126,7 +126,7 @@ function pairedMcNemar(aResults: boolean[], bResults: boolean[]): number {
 
 ## 4.5 人类一致性：评估的黄金标准
 
-### 核心洞见
+**核心洞见**
 
 > 如果两个标注员对同一道题看法不一致，**那么这道题就不该用来评估模型**。
 
@@ -143,7 +143,7 @@ function pairedMcNemar(aResults: boolean[], bResults: boolean[]): number {
 
 **如果人类自己都不一致，模型怎么可能"对"？**
 
-### LLM-as-Judge 与人类的一致性
+**LLM-as-Judge 与人类的一致性**
 
 理想情况：LLM Judge 和人类标注的一致率 ≥ 80%。
 
@@ -153,7 +153,7 @@ function pairedMcNemar(aResults: boolean[], bResults: boolean[]): number {
 3. 用 chain-of-thought（让 judge 先思考再判分）
 4. 多次采样投票
 
-## 4.6 4 个评估原则（可复现的金标准）
+## 4.6 个评估原则（可复现的金标准）
 
 | 原则 | 含义 | 检查方法 |
 |---|---|---|
@@ -215,20 +215,20 @@ function ece(predictions: { confidence: number; correct: boolean }[], nBins = 10
 
 ## 4.9 实战与陷阱
 
-### 陷阱 1：只报点估计，不报区间
+**陷阱 1：只报点估计，不报区间**
 
 > "模型 A 准确率 85.3%"
 > ❌ 缺信息
 > "模型 A 准确率 85.3% ± 1.2%（95% CI, n=2000）"
 > ✓ 完整
 
-### 陷阱 2：用 accuracy 评估不平衡数据
+**陷阱 2：用 accuracy 评估不平衡数据**
 
 90% 是负样本时，永远预测"负"就能 90% 准确率。
 
 → 改用 F1、AUC。
 
-### 陷阱 3：LLM Judge 没说 temperature
+**陷阱 3：LLM Judge 没说 temperature**
 
 LLM Judge temperature=0 vs 1.0 → 同输入可能给不同分数。**必须固定 temperature=0**。
 

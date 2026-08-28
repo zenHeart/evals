@@ -1,8 +1,8 @@
-# 15. LLM-as-Judge 工程化：从 prompt 到偏差控制
+# 18. LLM-as-Judge 工程化：从 prompt 到偏差控制
 
 > **如果只读一节**：LLM-as-Judge = 用一个 LLM 评另一个 LLM 的输出。**关键 = (1) 用强模型 (2) CoT prompt (3) 缓解 4 大偏差 (4) 多次采样**。
 
-## 15.1 本章目标
+## 18.1 本章目标
 
 读完后你能：
 
@@ -11,9 +11,9 @@
 - 知道何时 LLM-as-Judge 可信、何时不可信
 - 知道用其他 LLM 评自己的反偏见做法
 
-## 15.2 为什么需要 LLM-as-Judge
+## 18.2 为什么需要 LLM-as-Judge
 
-### 传统评分的痛点
+**传统评分的痛点**
 
 ```
 开放式问题："请评价这段代码的风格"
@@ -27,9 +27,9 @@
 - 便宜快速
 - 可扩展
 
-## 15.3 4 大已知偏差
+## 18.3 大已知偏差
 
-### 偏差 1：位置偏差
+**偏差 1：位置偏差**
 
 **实验**：让 GPT-4 当 judge，比较 A/B 两个答案。多次交换 A/B 位置，统计胜率。
 
@@ -40,25 +40,25 @@
 
 **原因**：GPT-4 系统性偏好"在前面"或"在后面"的答案。
 
-### 偏差 2：长度偏差
+**偏差 2：长度偏差**
 
 **实验**：长答案 vs 短答案，胜率 60-40。
 
 **原因**：长的答案"看起来"更详细 = 更好。
 
-### 偏差 3：自偏好
+**偏差 3：自偏好**
 
 **实验**：GPT-4 评 GPT-4 vs Claude 的答案 → GPT-4 胜率 60%+。
 
 **原因**：模型对自己生成的文本"更熟悉"。
 
-### 偏差 4：格式偏差
+**偏差 4：格式偏差**
 
 **实验**：Markdown / bullet point / 长段落 vs 简单回答。
 
 **原因**：训练时 markdown 评分更高。
 
-## 15.4 一个完整的 LLM-as-Judge Prompt
+## 18.4 一个完整的 LLM-as-Judge Prompt
 
 ```typescript
 const JUDGE_PROMPT = `
@@ -96,9 +96,9 @@ Provide your evaluation in this exact JSON format:
 `;
 ```
 
-## 15.5 缓解偏差的 4 个技巧
+## 18.5 缓解偏差的 4 个技巧
 
-### 技巧 1：交换位置 + 取一致
+**技巧 1：交换位置 + 取一致**
 
 ```typescript
 async function judgeDebiased(
@@ -119,7 +119,7 @@ async function judgeDebiased(
 }
 ```
 
-### 技巧 2：长度归一化
+**技巧 2：长度归一化**
 
 ```typescript
 // 截断到相同长度
@@ -131,7 +131,7 @@ function normalizeLength(a: string, b: string): [string, string] {
 }
 ```
 
-### 技巧 3：交叉评估
+**技巧 3：交叉评估**
 
 ```typescript
 // 用 Claude 评 GPT-4，用 GPT-4 评 Claude
@@ -144,7 +144,7 @@ async function crossJudge(
 }
 ```
 
-### 技巧 4：Multi-judge 投票
+**技巧 4：Multi-judge 投票**
 
 ```typescript
 async function ensembleJudge(
@@ -164,9 +164,9 @@ async function ensembleJudge(
 }
 ```
 
-## 15.6 Pairwise vs Single Rating
+## 18.6 Pairwise vs Single Rating
 
-### Pairwise（A vs B）
+**Pairwise（A vs B）**
 
 ```
 "Which is better: A or B?"
@@ -182,7 +182,7 @@ async function ensembleJudge(
 - 需要两个答案
 - 难扩展到 N 个模型
 
-### Single Rating（给 A 打分）
+**Single Rating（给 A 打分）**
 
 ```
 "Rate A on scale 1-10"
@@ -199,9 +199,9 @@ async function ensembleJudge(
 
 **经验**：能用 pairwise 就用 pairwise。
 
-## 15.7 CoT（Chain-of-Thought）评分
+## 18.7 CoT（Chain-of-Thought）评分
 
-### 加与不加 CoT 的对比
+**加与不加 CoT 的对比**
 
 ```
 无 CoT:  "A is better"  (50% 一致)
@@ -222,7 +222,7 @@ Before deciding, walk through these steps:
 `;
 ```
 
-## 15.8 Reference-Based Grading
+## 18.8 Reference-Based Grading
 
 **当有参考答案时**：
 
@@ -253,7 +253,7 @@ Compare the model's response to the reference answer.
 `;
 ```
 
-## 15.9 何时 LLM-as-Judge 不可信
+## 18.9 何时 LLM-as-Judge 不可信
 
 | 任务 | 可靠性 |
 |---|---|
@@ -267,7 +267,7 @@ Compare the model's response to the reference answer.
 
 **金科玉律**：能用规则评的，不用 LLM。
 
-## 15.10 实战：写一个 Prompt-as-a-Service Judge
+## 18.10 实战：写一个 Prompt-as-a-Service Judge
 
 ```typescript
 // judge-service.ts — 可复用的 judge 服务
@@ -331,7 +331,7 @@ const score = await judge.score("What's 2+2?", "4", "4"); // 5
 const winner = await judge.pairwise("Q", "Answer A", "Answer B");
 ```
 
-## 15.11 验收自测
+## 18.11 验收自测
 
 1. **选择**：哪个是 LLM-as-Judge 的已知偏差？
    - A. 时间偏差
@@ -343,7 +343,7 @@ const winner = await judge.pairwise("Q", "Answer A", "Answer B");
 
 3. **实操**：写一个交换位置的 pairwise judge 评估 50 道对话样本。
 
-## 15.12 延伸阅读
+## 18.12 延伸阅读
 
 ⭐⭐⭐
 - [Judging LLM-as-a-Judge (Zheng et al. 2023)](https://arxiv.org/abs/2306.05685) — 偏差研究必读

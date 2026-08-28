@@ -1,8 +1,8 @@
-# 13. 评估框架全景图：选对你的工具
+# 16. 评估框架全景图：选对你的工具
 
 > **如果只读一节**：学术用 lm-eval-harness，中文用 OpenCompass，应用层用 RAGAS/DeepEval，Agent 用 Inspect AI，红队用 Garak。**没特别需求时，先用 lm-eval-harness。**
 
-## 13.1 本章目标
+## 16.1 本章目标
 
 读完后你能：
 
@@ -11,7 +11,7 @@
 - 选对你场景的工具
 - 安装并跑通一个 lm-eval-harness 任务
 
-## 13.2 框架分类法
+## 16.2 框架分类法
 
 按用途分 5 类：
 
@@ -23,19 +23,19 @@
 | **代码/SWE** | 真实工程 | SWE-bench、LiveCodeBench |
 | **安全/红队** | 攻击防御 | Garak、PyRIT、DeepTeam |
 
-## 13.3 lm-eval-harness（EleutherAI）
+## 16.3 lm-eval-harness（EleutherAI）
 
-### 一句话
+**一句话**
 
 > 学术评估的**事实标准**。**200+ 任务**，覆盖几乎所有公开基准。
 
-### 安装
+**安装**
 
 ```bash
 pip install lm-eval
 ```
 
-### 最小可运行示例
+**最小可运行示例**
 
 ```bash
 # 跑 MMLU（5-shot）
@@ -53,96 +53,96 @@ lm_eval --model openai-completions \
     --output_path ./results
 ```
 
-### 关键特性
+**关键特性**
 
 - 支持 200+ 任务
 - HuggingFace、OpenAI、Anthropic、自定义模型
 - 完整文档
 - 社区活跃
 
-### 当前版本
+**当前版本**
 
 - v0.4.x（2026）
 
-## 13.4 OpenCompass（书生·浦语）
+## 16.4 OpenCompass（书生·浦语）
 
-### 一句话
+**一句话**
 
 > 上海 AI Lab 出品，**中文评估**最强。覆盖 100+ 数据集 + 50+ 模型。
 
-### 安装
+**安装**
 
 ```bash
 pip install opencompass
 ```
 
-### 跑中文评估
+**跑中文评估**
 
 ```bash
 opencompass --models hf_qwen2_5_7b_instruct --datasets cmmlu ceval
 ```
 
-### 特色
+**特色**
 
 - **中文领先**：CMMLU、C-Eval、CLUE 等
 - 模型支持广泛
 - 自带可视化
 
-## 13.5 HELM（Stanford CRFM）
+## 16.5 HELM（Stanford CRFM）
 
-### 一句话
+**一句话**
 
 > Stanford 的**多指标综合评估**。同时测准确性、稳健性、公平性、偏见、效率等。
 
-### 特点
+**特点**
 
 - **多维度**而非单分
 - 强调透明度
 - 包含 toxicity、bias、robustness
 
-### 当前状况
+**当前状况**
 
 - HELM Lite：精简版
 - HELM v1.0：完整版
 
-## 13.6 LightEval（Hugging Face）
+## 16.6 LightEval（Hugging Face）
 
-### 一句话
+**一句话**
 
 > HuggingFace 出品的现代轻量评估框架，**支持最新的多模态模型**。
 
-### 优势
+**优势**
 
 - 与 Transformers 深度集成
 - 速度快
 - 多 GPU 友好
 
-## 13.7 Inspect AI（UK AISI）
+## 16.7 Inspect AI（UK AISI）
 
-### 一句话
+**一句话**
 
 > 英国 AI Safety Institute 出品，**Agent 评估的最强框架**。
 
-### 特点
+**特点**
 
 - Python-first
 - Agent task 友好
 - 可视化好
 - 内置 SWE-bench、GAIA、MMLU
 
-### 安装
+**安装**
 
 ```bash
 pip install inspect-ai
 ```
 
-## 13.8 RAGAS
+## 16.8 RAGAS
 
-### 一句话
+**一句话**
 
 > RAG 评估的事实标准。**4 大核心指标**。
 
-### 4 大指标
+**4 大指标**
 
 | 指标 | 测什么 |
 |---|---|
@@ -151,7 +151,7 @@ pip install inspect-ai
 | Context Precision | 检索内容是否精准 |
 | Context Recall | 检索是否召回所有相关信息 |
 
-### 最小示例
+**最小示例**
 
 ```python
 from ragas import evaluate
@@ -169,19 +169,19 @@ result = evaluate(dataset, metrics=[faithfulness, answer_relevancy])
 print(result)
 ```
 
-## 13.9 DeepEval
+## 16.9 DeepEval
 
-### 一句话
+**一句话**
 
 > LLM 评估的"Pytest"。**测试驱动 LLM 应用**。
 
-### 特点
+**特点**
 
 - Pytest 风格
 - 20+ 内置指标
 - 与 CI 集成友好
 
-### 指标
+**指标**
 
 - G-Eval（自定义）
 - Hallucination
@@ -190,47 +190,47 @@ print(result)
 - Answer Relevancy
 - 等
 
-## 13.10 TruLens
+## 16.10 TruLens
 
-### 一句话
+**一句话**
 
 > 评估 + 可观测性。**追踪 + 评分**。
 
-### 特点
+**特点**
 
 - 实时追踪
 - 反馈函数
 - 与 LangChain 集成
 
-## 13.11 Phoenix（Arize）
+## 16.11 Phoenix（Arize）
 
-### 一句话
+**一句话**
 
 > 开源 LLM 可观测 + 评估。**生产环境监控**。
 
-### 特点
+**特点**
 
 - 实时监控
 - Drift detection
 - 嵌入可视化
 - 与多种 LLM 框架集成
 
-## 13.12 LangSmith
+## 16.12 LangSmith
 
-### 一句话
+**一句话**
 
 > LangChain 官方的评估 + 调试平台。**LangChain 应用最佳搭档**。
 
-### 特点
+**特点**
 
 - 追踪 + 评估
 - 数据集管理
 - 在线评估
 - 收费（但基础版免费）
 
-## 13.13 SWE-bench 评估框架
+## 16.13 SWE-bench 评估框架
 
-### 仓库
+**仓库**
 
 [swebench.com](https://www.swebench.com/) 提供官方评估脚本
 
@@ -241,13 +241,13 @@ python -m swebench.harness.run_evaluation \
     --predictions_path ./model_patch.jsonl
 ```
 
-## 13.14 VLMEvalKit
+## 16.14 VLMEvalKit
 
-### 一句话
+**一句话**
 
 > **多模态评估**的事实标准。**80+ 多模态基准，100+ 模型**。
 
-### 安装
+**安装**
 
 ```bash
 git clone https://github.com/open-compass/VLMEvalKit
@@ -255,19 +255,19 @@ cd VLMEvalKit
 pip install -e .
 ```
 
-### 跑 MMMU
+**跑 MMMU**
 
 ```bash
 python run.py --model Qwen2.5-VL-72B --data MMMU_DEV_VAL
 ```
 
-## 13.15 Garak（NVIDIA）
+## 16.15 Garak（NVIDIA）
 
-### 一句话
+**一句话**
 
 > **红队扫描**。**自动探测 LLM 漏洞**。
 
-### 攻击类别
+**攻击类别**
 
 - Prompt injection
 - Jailbreak
@@ -276,33 +276,33 @@ python run.py --model Qwen2.5-VL-72B --data MMMU_DEV_VAL
 - Toxicity
 - Misinformation
 
-### 跑扫描
+**跑扫描**
 
 ```bash
 pip install garak
 garak --model_type openai --model_name gpt-4o
 ```
 
-## 13.16 PyRIT（Microsoft）
+## 16.16 PyRIT（Microsoft）
 
-### 一句话
+**一句话**
 
 > Microsoft 的**AI 红队框架**。**Python + 策略驱动**。
 
-### 特点
+**特点**
 
 - 多种攻击策略
 - 转换器（transformer）
 - 评分器
 - 与 Azure AI 集成
 
-## 13.17 Promptfoo
+## 16.17 Promptfoo
 
-### 一句话
+**一句话**
 
 > **Prompt 红队 + A/B 评估**。**YAML 驱动的 LLM 评估**。
 
-### 最小示例
+**最小示例**
 
 ```yaml
 # promptfooconfig.yaml
@@ -325,7 +325,7 @@ tests:
 npx promptfoo eval
 ```
 
-## 13.18 框架选型决策树
+## 16.18 框架选型决策树
 
 ```
 你要评估什么？
@@ -343,7 +343,7 @@ npx promptfoo eval
 └─ 自定义评测 → 自己写（参考第 14 章）
 ```
 
-## 13.19 章节汇总
+## 16.19 章节汇总
 
 | 框架 | 类别 | 安装 | 关键命令 |
 |---|---|---|---|
@@ -363,9 +363,9 @@ npx promptfoo eval
 | PyRIT | 红队 | pip | `python attack.py` |
 | Promptfoo | Prompt | npm | `npx promptfoo eval` |
 
-## 13.20 实战：3 个框架跑通
+## 16.20 实战：3 个框架跑通
 
-### 1. lm-eval-harness
+**1. lm-eval-harness**
 
 ```bash
 pip install lm-eval
@@ -373,14 +373,14 @@ lm_eval --model openai-completions --model_args model=gpt-4o-mini --tasks mmlu -
 # 输出：{'mmlu': 0.85}
 ```
 
-### 2. RAGAS
+**2. RAGAS**
 
 ```bash
 pip install ragas
 python -c "from ragas import evaluate; print('OK')"
 ```
 
-### 3. Promptfoo
+**3. Promptfoo**
 
 ```bash
 npm install -g promptfoo
@@ -388,7 +388,7 @@ promptfoo init
 promptfoo eval
 ```
 
-## 13.21 验收自测
+## 16.21 验收自测
 
 1. **选择**：评估 RAG 系统最该用？
    - A. lm-eval-harness
@@ -400,7 +400,7 @@ promptfoo eval
 
 3. **实操**：用 lm-eval-harness 跑 100 道 MMLU（GPT-4o-mini）。
 
-## 13.22 延伸阅读
+## 16.22 延伸阅读
 
 ⭐⭐⭐
 - [lm-eval-harness 文档](https://github.com/EleutherAI/lm-evaluation-harness)

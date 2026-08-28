@@ -1,8 +1,8 @@
-# 10. 人类偏好、LLM-as-Judge 与 Arena 生态
+# 13. 人类偏好、LLM-as-Judge 与 Arena 生态
 
 > **如果只读一节**：MT-Bench = 8 类对话任务的多轮评测；Chatbot Arena = 真实人类盲评；AlpacaEval = 自动化 Arena；CompassRank = 中文偏好榜单。
 
-## 10.1 本章目标
+## 13.1 本章目标
 
 读完后你能：
 
@@ -11,9 +11,9 @@
 - 知道 LLM-as-Judge 的实现与偏差
 - 读懂 LMSYS Chatbot Arena 排行榜
 
-## 10.2 为什么需要"偏好"评估
+## 13.2 为什么需要"偏好"评估
 
-### 传统评估的局限
+**传统评估的局限**
 
 ```
 MMLU：4 选 1，不能测"对话质量"
@@ -29,13 +29,13 @@ GSM8K：1 个数字，不能测"推理过程"
 
 **这些只能用"偏好"评估**。
 
-## 10.3 MT-Bench / MT-Bench++
+## 13.3 MT-Bench / MT-Bench++
 
-### 一句话
+**一句话**
 
 > 80 道多轮对话，8 大类，**测"多轮对话能力"**。
 
-### 8 大类
+**8 大类**
 
 | 类别 | 示例 |
 |---|---|
@@ -48,18 +48,18 @@ GSM8K：1 个数字，不能测"推理过程"
 | Humanities | "分析这首诗" |
 | Coding | "实现一个 LRU cache" |
 
-### 评分
+**评分**
 
 - LLM-as-Judge（GPT-4 当裁判）
 - 打分 1-10
 - **pairwise comparison**（A vs B 谁更好）
 
-### MT-Bench++
+**MT-Bench++**
 
 - 加入了更难的数学/推理题
 - 避免被针对性训练刷分
 
-### 当前 SOTA
+**当前 SOTA**
 
 | 模型 | MT-Bench（GPT-4 Judge） |
 |---|---|
@@ -70,13 +70,13 @@ GSM8K：1 个数字，不能测"推理过程"
 | Qwen2.5-72B | 8.80 |
 | Llama 3.1-405B | 8.92 |
 
-## 10.4 Chatbot Arena（LMSYS）
+## 13.4 Chatbot Arena（LMSYS）
 
-### 一句话
+**一句话**
 
 > 真实人类盲评的 LLM 对战平台。**Elo 评分系统。**
 
-### 工作原理
+**工作原理**
 
 ```
 1. 用户输入问题
@@ -87,13 +87,13 @@ GSM8K：1 个数字，不能测"推理过程"
 6. 投票达到阈值后，公布排行榜
 ```
 
-### 数据规模
+**数据规模**
 
 - 投票数：> 2,000,000（截至 2026）
 - 参与的模型：> 200
 - 平台：lmarena.ai
 
-### Elo 算法
+**Elo 算法**
 
 ```typescript
 // Elo 更新公式
@@ -108,7 +108,7 @@ function updateElo(ratingA: number, ratingB: number, scoreA: number, k = 32): { 
 // scoreA: 1=A 胜, 0.5=平, 0=A 输
 ```
 
-### 当前 SOTA（2026）
+**当前 SOTA（2026）**
 
 | 排名 | 模型 | Elo |
 |---|---|---|
@@ -118,7 +118,7 @@ function updateElo(ratingA: number, ratingB: number, scoreA: number, k = 32): { 
 | 4 | DeepSeek-V3 | 1256 |
 | 5 | Qwen2.5-72B | 1245 |
 
-### 优势 vs 局限
+**优势 vs 局限**
 
 | 优势 | 局限 |
 |---|---|
@@ -127,13 +127,13 @@ function updateElo(ratingA: number, ratingB: number, scoreA: number, k = 32): { 
 | 实时更新 | 题目分布不均 |
 | 包含多语言 | 难以复现（每次投票都不同） |
 
-## 10.5 AlpacaEval & AlpacaEval 2.0
+## 13.5 AlpacaEval & AlpacaEval 2.0
 
-### 一句话
+**一句话**
 
 > 自动化版的"Arena"。**用 GPT-4 当 judge 跑 800+ 题。**
 
-### 流程
+**流程**
 
 ```
 1. 准备 805 道题（来自 AlpacaEval 集）
@@ -142,7 +142,7 @@ function updateElo(ratingA: number, ratingB: number, scoreA: number, k = 32): { 
 4. 输出 Win Rate（被测模型胜率）
 ```
 
-### 与 Arena 的区别
+**与 Arena 的区别**
 
 | Arena | AlpacaEval |
 |---|---|
@@ -151,7 +151,7 @@ function updateElo(ratingA: number, ratingB: number, scoreA: number, k = 32): { 
 | 题目开放 | 题目固定 |
 | 受人群偏差 | 受 GPT-4 偏差 |
 
-### 当前 SOTA
+**当前 SOTA**
 
 | 模型 | AlpacaEval 2.0 LC Win Rate |
 |---|---|
@@ -163,25 +163,25 @@ function updateElo(ratingA: number, ratingB: number, scoreA: number, k = 32): { 
 
 **LC** = Length-Controlled（控制回答长度后的胜率，因为 GPT-4 偏长答案）。
 
-## 10.6 CompassRank（OpenCompass）
+## 13.6 CompassRank（OpenCompass）
 
-### 一句话
+**一句话**
 
 > OpenCompass 出的中文偏好榜单，**含中英双语**。
 
-### 特色
+**特色**
 
 - 覆盖 100+ 模型
 - 中英文混合
 - 多维度（学科、推理、Agent、安全、对话）
 
-## 10.7 Hugging Face Open LLM Leaderboard
+## 13.7 Hugging Face Open LLM Leaderboard
 
-### 一句话
+**一句话**
 
 > Hugging Face 维护的开源模型榜单。**基于 6 个核心基准。**
 
-### 6 个核心基准
+**6 个核心基准**
 
 | 基准 | 测什么 |
 |---|---|
@@ -192,15 +192,15 @@ function updateElo(ratingA: number, ratingB: number, scoreA: number, k = 32): { 
 | Winogrande | 代词 |
 | GSM8K | 数学 |
 
-### 局限
+**局限**
 
 - 已被刷到 90%+，区分度差
 - 已停止更新（2024 年）
 - 后续：v2 版本（IFEval、BBH、MATH、GPQA、MUSR、MMLU-Pro）
 
-## 10.8 LLM-as-Judge 工程实现
+## 13.8 LLM-as-Judge 工程实现
 
-### 基础版
+**基础版**
 
 ```typescript
 async function judgeWithLLM(question: string, answerA: string, answerB: string): Promise<'A' | 'B' | 'tie'> {
@@ -224,7 +224,7 @@ Output JSON: {"winner": "A" | "B" | "tie", "reason": "..."}`;
 }
 ```
 
-### 高级版：位置偏差缓解
+**高级版：位置偏差缓解**
 
 ```typescript
 async function judgeDebiased(question: string, answerA: string, answerB: string): Promise<'A' | 'B' | 'tie'> {
@@ -240,7 +240,7 @@ async function judgeDebiased(question: string, answerA: string, answerB: string)
 }
 ```
 
-### Multi-judge 投票
+**Multi-judge 投票**
 
 ```typescript
 async function judgeEnsemble(question: string, answerA: string, answerB: string): Promise<'A' | 'B' | 'tie'> {
@@ -254,26 +254,26 @@ async function judgeEnsemble(question: string, answerA: string, answerB: string)
 }
 ```
 
-## 10.9 WildBench / Arena Hard / AlpacaEval 3.0
+## 13.9 WildBench / Arena Hard / AlpacaEval 3.0
 
-### WildBench
+**WildBench**
 
 - 真实用户 1k+ 任务
 - GPT-4 评分
 - **任务真实，难度高**
 
-### Arena Hard
+**Arena Hard**
 
 - LMSYS 出的"硬题"版本
 - 5,000 道从 Arena 抽出的难题
 - **比 MT-Bench 难 3x**
 
-### AlpacaEval 3.0
+**AlpacaEval 3.0**
 
 - 加入更长、更复杂的题目
 - 用 Claude 3 当 judge（减少自偏好）
 
-## 10.10 章节汇总
+## 13.10 章节汇总
 
 | 基准 | 评分方式 | 题目数 | 当前 SOTA 模型 |
 |---|---|---|---|
@@ -285,7 +285,7 @@ async function judgeEnsemble(question: string, answerA: string, answerB: string)
 | WildBench | LLM Judge | 1k | GPT-4o |
 | Arena Hard | LLM Judge | 5k | Claude 3.5 (90%) |
 
-## 10.11 实战：跑 MT-Bench
+## 13.11 实战：跑 MT-Bench
 
 ```bash
 # 用 FastChat
@@ -303,7 +303,7 @@ python fastchat/llm_judge/gen_judgment.py \
   --judge-model gpt-4o
 ```
 
-## 10.12 验收自测
+## 13.12 验收自测
 
 1. **选择**：哪个基准用真实人类盲评？
    - A. MT-Bench
@@ -315,7 +315,7 @@ python fastchat/llm_judge/gen_judgment.py \
 
 3. **实操**：用 GPT-4 当 judge，写一个 pairwise 评估脚本评估两个模型。
 
-## 10.13 延伸阅读
+## 13.13 延伸阅读
 
 ⭐⭐⭐
 - [LMSYS Chatbot Arena](https://lmarena.ai/) — 实时排行榜

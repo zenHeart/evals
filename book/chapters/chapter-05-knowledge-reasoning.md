@@ -13,13 +13,13 @@
 
 ## 5.2 MMLU — Massive Multitask Language Understanding
 
-### 一句话定义
+**一句话定义**
 
 > MMLU = 57 个学科 × 14,042 道多选题。测模型的"通识教育水平"。
 
 **前端类比**：SAT + GRE + 律师 + 医生资格考试的迷你版。
 
-### 数据集结构
+**数据集结构**
 
 ```json
 {
@@ -29,7 +29,7 @@
 }
 ```
 
-### 学科分布（57 个）
+**学科分布（57 个）**
 
 | 类别 | 学科示例 | 数量 |
 |---|---|---|
@@ -38,7 +38,7 @@
 | 社会科学 | 经济、心理、社会学、地理 | ~2,000 |
 | 其他 | 商业、法律、医学、其他专业 | ~2,000 |
 
-### 评分方式
+**评分方式**
 
 ```typescript
 function mmluScoring(modelOutput: string, correctAnswer: string): boolean {
@@ -50,14 +50,14 @@ function mmluScoring(modelOutput: string, correctAnswer: string): boolean {
 
 简单：选对 = 1 分，选错 = 0 分。**没有"接近对"的概念**。
 
-### 局限性
+**局限性**
 
 1. **数据污染严重** — 训练数据可能包含 MMLU 题目
 2. **多选题形式简化** — 真实任务多是开放式
 3. **学科分布偏美国** — 美国学生熟悉的学科
 4. **没有推理过程** — 选对不等于真懂
 
-### 当前 SOTA（2026 年）
+**当前 SOTA（2026 年）**
 
 | 模型 | MMLU 分数 |
 |---|---|
@@ -72,7 +72,7 @@ function mmluScoring(modelOutput: string, correctAnswer: string): boolean {
 
 ## 5.3 MMLU-Pro — 强化版
 
-### 解决什么问题
+**解决什么问题**
 
 MMLU 已被刷到 88%+，区分度下降。MMLU-Pro 做了 3 件事：
 
@@ -80,7 +80,7 @@ MMLU 已被刷到 88%+，区分度下降。MMLU-Pro 做了 3 件事：
 2. **移除简单噪声题**（让真正难的留下）
 3. **强调 CoT 推理**（必须写思考过程）
 
-### 难度提升
+**难度提升**
 
 | 基准 | 选项数 | 题目数 | GPT-4o 分数 |
 |---|---|---|---|
@@ -91,21 +91,21 @@ MMLU 已被刷到 88%+，区分度下降。MMLU-Pro 做了 3 件事：
 
 ## 5.4 CMMLU & C-Eval — 中文版 MMLU
 
-### CMMLU
+**CMMLU**
 
 > 67 个学科，11,528 题，简体中文。
 
 - 包含中国高考、公务员考试、医学院考试风格题目
 - 适合评估中文模型的"中国通识"能力
 
-### C-Eval
+**C-Eval**
 
 > 52 个学科，13,948 题，涵盖初中到专业级。
 
 - 与 CMMLU 高度重合
 - 提供 4 个难度等级：初中/高中/大学/专业
 
-### 中英文对比样例
+**中英文对比样例**
 
 **MMLU（英文）**：
 > "The first law of thermodynamics states that:"
@@ -121,7 +121,7 @@ MMLU 已被刷到 88%+，区分度下降。MMLU-Pro 做了 3 件事：
 > C) 光合作用不需要光
 > D) 光合作用消耗氧气
 
-### 实操：在 OpenCompass 上跑 CMMLU
+**实操：在 OpenCompass 上跑 CMMLU**
 
 ```bash
 # 安装
@@ -137,13 +137,13 @@ cmmlu          3c8d70     accuracy gen                 72.43
 
 ## 5.5 AGIEval — 大学入学考试风格
 
-### 一句话定义
+**一句话定义**
 
 > 用真实的中国高考、美国 SAT、律师资格考试、数学竞赛等题目评估模型。
 
 **特点**：题目是**真实考题**，不是合成的。
 
-### 包含的考试
+**包含的考试**
 
 | 考试 | 国家 | 题目数 |
 |---|---|---|
@@ -156,13 +156,13 @@ cmmlu          3c8d70     accuracy gen                 72.43
 
 ## 5.6 HellaSwag — 常识推理
 
-### 一句话定义
+**一句话定义**
 
 > 给你一个场景描述，从 4 个结尾里选"最合理"的。
 
 **前端类比**：next.js / eslint 等工具的"智能补全"——给前文选最自然的续写。
 
-### 样例
+**样例**
 
 > 场景：一个人走到厨房，打开冰箱，拿出…
 > A) 一本数学书
@@ -172,7 +172,7 @@ cmmlu          3c8d70     accuracy gen                 72.43
 
 正确答案 **B**。人类 95%+ 正确，GPT-4o 95%+ 正确。
 
-### 评分
+**评分**
 
 ```typescript
 // 4 选 1，正确率
@@ -181,7 +181,7 @@ function hellaswagScoring(modelChoice: string, correctChoice: string): boolean {
 }
 ```
 
-### 局限性
+**局限性**
 
 - 题目是 2019 年的，可能已污染
 - 场景偏英文北美生活
@@ -189,11 +189,11 @@ function hellaswagScoring(modelChoice: string, correctChoice: string): boolean {
 
 ## 5.7 PIQA — 物理常识
 
-### 一句话定义
+**一句话定义**
 
 > 测"物理常识"——日常生活中的物理直觉。
 
-### 样例
+**样例**
 
 > 目标：把水从杯子里倒到碗里
 > A) 倾斜杯子，让水从杯口流出
@@ -201,7 +201,7 @@ function hellaswagScoring(modelChoice: string, correctChoice: string): boolean {
 
 正确答案 **A**。模型要"理解"重力。
 
-### 数据规模
+**数据规模**
 
 - 训练集：16,000 题
 - 测试集：2,000 题
@@ -209,11 +209,11 @@ function hellaswagScoring(modelChoice: string, correctChoice: string): boolean {
 
 ## 5.8 WinoGrande — 代词消歧
 
-### 一句话定义
+**一句话定义**
 
 > 测"常识推理"中的代词指代理解。
 
-### 样例
+**样例**
 
 > 房子比车库大，因为**它**是用石头建的。
 > A) 房子
@@ -221,18 +221,18 @@ function hellaswagScoring(modelChoice: string, correctChoice: string): boolean {
 
 **陷阱**：语法上"它"可指两者，但常识说"石头建造的是房子"。
 
-### 规模
+**规模**
 
 - 44,000 题
 - 专门为对抗大型 LM 数据污染设计
 
 ## 5.9 ARC-AGI — 抽象推理新挑战
 
-### 一句话定义
+**一句话定义**
 
 > 图形抽象推理，类似"瑞文推理测验"。**当前 LLM 仍远低于人类**。
 
-### 样例（文字描述）
+**样例（文字描述）**
 
 ```
 输入网格：
@@ -247,7 +247,7 @@ function hellaswagScoring(modelChoice: string, correctChoice: string): boolean {
 规则：取对角线
 ```
 
-### 与传统基准的本质区别
+**与传统基准的本质区别**
 
 | 传统基准 | ARC-AGI |
 |---|---|
@@ -256,7 +256,7 @@ function hellaswagScoring(modelChoice: string, correctChoice: string): boolean {
 | 题型单一（多选） | 题型多样（图案变换） |
 | 已被刷到 90%+ | 当前 SOTA 40-60% |
 
-### 当前 SOTA
+**当前 SOTA**
 
 - 人类：~76%
 - GPT-4o：~40%

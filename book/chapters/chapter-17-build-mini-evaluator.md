@@ -1,8 +1,8 @@
-# 14. 用 Node.js 30 行自建 Mini Evaluator
+# 17. 用 Node.js 30 行自建 Mini Evaluator
 
 > **如果只读一节**：评估就是 (1) 题目 (2) 模型 (3) 评分 (4) 汇总。30 行 TypeScript 跑通一个完整流程。
 
-## 14.1 本章目标
+## 17.1 本章目标
 
 读完后你能：
 
@@ -11,7 +11,7 @@
 - 200 行代码支持多种 metric
 - 知道什么时候该用框架 vs 自建
 
-## 14.2 30 行版本
+## 17.2 30 行版本
 
 ```typescript
 import OpenAI from "openai";
@@ -35,7 +35,7 @@ console.log(`Accuracy: ${(correct / tasks.length * 100).toFixed(1)}%`);
 
 **这就是完整评估的最小可行版本。**
 
-## 14.3 100 行版本：工程化
+## 17.3 100 行版本：工程化
 
 ```typescript
 // mini-eval.ts — 支持并发、缓存、重试、报告
@@ -118,7 +118,7 @@ fs.writeFileSync("results.jsonl", results.map(r => JSON.stringify(r)).join("\n")
 - 分类报告（洞察）
 - 原始结果保存（可分析）
 
-## 14.4 200 行版本：多 metric + 多 provider
+## 17.4 200 行版本：多 metric + 多 provider
 
 ```typescript
 // 支持多 metric + 多 LLM provider
@@ -216,7 +216,7 @@ const results = await Promise.all([
 console.table(results);
 ```
 
-## 14.5 vs 框架：什么时候用哪个
+## 17.5 vs 框架：什么时候用哪个
 
 | 场景 | 用什么 |
 |---|---|
@@ -233,7 +233,7 @@ console.table(results);
 3. **需要嵌入 CI/CD**（轻量集成）
 4. **学习原理**（造轮子才能理解轮子）
 
-## 14.6 集成 GitHub Actions
+## 17.6 集成 GitHub Actions
 
 ```yaml
 # .github/workflows/eval.yml
@@ -261,7 +261,7 @@ jobs:
           path: eval-report.json
 ```
 
-## 14.7 实战：把它接入到 React 项目
+## 17.7 实战：把它接入到 React 项目
 
 ```typescript
 // eval.ts - 评估"前端代码生成质量"
@@ -314,7 +314,7 @@ console.log(`TypeScript compile: ${components.length - compileErrors}/${componen
 console.log(`Tests passed: ${testsPassed}/${components.length}`);
 ```
 
-## 14.8 验收自测
+## 17.8 验收自测
 
 1. **选择**：30 行评估代码最少需要哪 3 个组件？
    - A. 数据集 + 评分函数 + 报告
@@ -326,7 +326,7 @@ console.log(`Tests passed: ${testsPassed}/${components.length}`);
 
 3. **实操**：把 30 行版本跑通你的业务问题（如"评估模型能否正确生成 React useState 代码"）。
 
-## 14.9 延伸阅读
+## 17.9 延伸阅读
 
 ⭐⭐⭐
 - [OpenAI Cookbook: Evaluation](https://cookbook.openai.com/examples/evaluation)

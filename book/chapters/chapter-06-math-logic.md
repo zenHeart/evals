@@ -26,11 +26,11 @@
 
 ## 6.3 GSM8K — 小学数学
 
-### 一句话定义
+**一句话定义**
 
 > 8,500 道小学数学应用题。**CoT 推理的代表作**。
 
-### 真实样例
+**真实样例**
 
 > **题目**：Natalia 在 4 月份卖给了客户 48 个发夹。5 月份，她的销量是 4 月份的一半。**6 月份，她的销量是 5 月份的 3 倍**。Natalia 6 月份卖了多少个发夹？
 >
@@ -39,7 +39,7 @@
 > Natalia 6 月份卖了 24 × 3 = **72** 个发夹。
 > 答案：72
 
-### 评分方式
+**评分方式**
 
 ```typescript
 function gsm8kScoring(modelOutput: string, groundTruth: string): boolean {
@@ -55,7 +55,7 @@ function gsm8kScoring(modelOutput: string, groundTruth: string): boolean {
 }
 ```
 
-### 当前 SOTA
+**当前 SOTA**
 
 | 模型 | GSM8K (8-shot) |
 |---|---|
@@ -72,11 +72,11 @@ function gsm8kScoring(modelOutput: string, groundTruth: string): boolean {
 
 ## 6.4 MATH — 高中竞赛
 
-### 一句话定义
+**一句话定义**
 
 > 12,500 道高中数学竞赛题。**比 GSM8K 难一个量级**。
 
-### 难度分布
+**难度分布**
 
 | 等级 | 题目数 | 描述 |
 |---|---|---|
@@ -86,7 +86,7 @@ function gsm8kScoring(modelOutput: string, groundTruth: string): boolean {
 | Level 4 | ~3,000 | 奥赛 |
 | Level 5 | ~1,000 | 奥赛高级 |
 
-### 真实样例（Level 3）
+**真实样例（Level 3）**
 
 > **题目**：求满足 $x^2 + y^2 = z^2$ 的所有**正整数**三元组 $(x, y, z)$，其中 $x$ 和 $y$ 互质，且 $x$ 是奇数。证明这样的三元组有无穷多个。
 >
@@ -94,7 +94,7 @@ function gsm8kScoring(modelOutput: string, groundTruth: string): boolean {
 > 证明：设 $x = 2k+1$，$y = 2m$，$z = 2n$。通过 Pell 方程可证有无穷解。
 > [详细步骤略]
 
-### 评分方式
+**评分方式**
 
 ```typescript
 function mathScoring(modelOutput: string, groundTruth: string): boolean {
@@ -120,7 +120,7 @@ function isMathematicallyEqual(a: string, b: string): boolean {
 }
 ```
 
-### 当前 SOTA
+**当前 SOTA**
 
 | 模型 | MATH (4-shot) |
 |---|---|
@@ -134,7 +134,7 @@ function isMathematicallyEqual(a: string, b: string): boolean {
 
 ## 6.5 MATH-500 — 精简版
 
-### 一句话
+**一句话**
 
 > 从 MATH 中精选 500 题，OpenAI 用来做 GPT-4 评估的子集。
 
@@ -142,23 +142,23 @@ function isMathematicallyEqual(a: string, b: string): boolean {
 
 ## 6.6 AIME 2024/2025 — 美国数学邀请赛
 
-### 一句话
+**一句话**
 
 > 每年 30 题，限时 3 小时，**美国高中奥赛最难级别**。
 
-### 真实样例（AIME 2024 I 第 6 题）
+**真实样例（AIME 2024 I 第 6 题）**
 
 > 求满足以下条件的三位数 $\overline{abc}$ 的个数：$a + b + c$ 能被 7 整除，且 $a - b$ 是质数。
 
 **参考答案**：75
 
-### 为什么 AIME 重要
+**为什么 AIME 重要**
 
 - **题目数量少**（30 题/年）→ 高方差
 - **难度大** → 区分推理能力
 - **真实奥赛** → 比合成题更能测真实水平
 
-### 当前 SOTA（AIME 2024）
+**当前 SOTA（AIME 2024）**
 
 | 模型 | AIME 2024 |
 |---|---|
@@ -169,40 +169,40 @@ function isMathematicallyEqual(a: string, b: string): boolean {
 
 ## 6.7 FrontierMath — 研究级数学
 
-### 一句话
+**一句话**
 
 > Epoch AI 出品的"研究级数学"，**目前 LLM 几乎做不对**。
 
-### 难度
+**难度**
 
 - 需要数论、代数几何、组合数学等研究生级数学
 - 题目由专业数学家设计
 - **任何 LLM 当前都 < 5%**（截至 2026）
 
-### 设计哲学
+**设计哲学**
 
 > "We need benchmarks that distinguish between models that are merely competent at math and models that can do original research."
 
 > 我们需要能区分"数学熟练"和"原创研究"的基准。
 
-### 价值
+**价值**
 
 > FrontierMath 是 **AGI 在数学领域的最强信号**。能做对 FrontierMath = 接近 AGI。
 
 ## 6.8 GPQA — 专家级科学问答
 
-### 一句话
+**一句话**
 
 > Google Research 出品，物理学/化学/生物学**博士级**多选题。**人类博士也只有 65%。**
 
-### 学科
+**学科**
 
 - Physics（148 题）
 - Chemistry（148 题）
 - Biology（148 题）
 - 总计 ~450 题
 
-### 真实样例（GPQA Physics）
+**真实样例（GPQA Physics）**
 
 > Which of the following is the most likely cause of the cosmic microwave background (CMB) acoustic peak structure?
 > A) Primordial gravitational waves
@@ -212,7 +212,7 @@ function isMathematicallyEqual(a: string, b: string): boolean {
 
 **正确答案**：B
 
-### 当前 SOTA
+**当前 SOTA**
 
 | 模型 | GPQA (Diamond) |
 |---|---|
@@ -226,18 +226,18 @@ function isMathematicallyEqual(a: string, b: string): boolean {
 
 ## 6.9 MathVista — 多模态数学
 
-### 一句话
+**一句话**
 
 > 数学题 + 图片（几何图形、统计图表）。**测视觉 + 数学的联合能力。**
 
-### 题型
+**题型**
 
 - 几何题（看图求角度、面积）
 - 统计图（看柱状图回答问题）
 - 表格理解
 - 公式识别
 
-### 当前 SOTA
+**当前 SOTA**
 
 | 模型 | MathVista |
 |---|---|
