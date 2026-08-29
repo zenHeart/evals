@@ -118,7 +118,7 @@ const PROMPT = (question: string) => `
 
 **为什么需要**：模型上下文窗口有限，必须切块。
 
-详见：第 20 章。
+详见：第 21 章。
 
 **8. Temperature（温度）**
 
@@ -203,7 +203,7 @@ const PROMPT = (question: string) => `
 
 具体：打分的具体规则。常见：accuracy、F1、pass@k、Elo。
 
-详见：第 4 章。
+详见：第 3 章。
 
 **15. Pass@k**
 
@@ -211,7 +211,7 @@ const PROMPT = (question: string) => `
 
 具体：代码生成评估指标。pass@1 = 一次就对；pass@10 = 10 次里至少 1 次对。
 
-详见：第 7 章。
+详见：第 11 章。
 
 **16. Elo / Bradley-Terry**
 
@@ -219,7 +219,7 @@ const PROMPT = (question: string) => `
 
 具体：偏好类评估的评分系统。模型 A 胜 B → A 加分 B 减分。
 
-详见：第 13 章。
+详见：第 17 章。
 
 **17. Context Window（上下文窗口）**
 
@@ -227,7 +227,7 @@ const PROMPT = (question: string) => `
 
 具体：模型一次能"看到"的最大 token 数。GPT-4o = 128k；Claude 3.5 = 200k；Gemini 1.5 Pro = 1M。
 
-详见：第 10 章。
+详见：第 14 章。
 
 **18. Fine-tuning（微调）**
 
@@ -235,7 +235,7 @@ const PROMPT = (question: string) => `
 
 具体：在基础模型上用自己的数据再训练，让模型擅长某个垂直领域。
 
-详见：第 14 章。
+详见：第 8 章。
 
 **19. RLHF（Reinforcement Learning from Human Feedback）**
 
@@ -285,11 +285,11 @@ const PROMPT = (question: string) => `
 
 **28. RAGAS**
 
-> RAG 评估的事实标准框架，四大指标：Faithfulness（忠于检索内容）、Answer Relevancy（切题）、Context Precision/Recall（检索质量）。详见第 20 章。
+> RAG 评估的事实标准框架，四大指标：Faithfulness（忠于检索内容）、Answer Relevancy（切题）、Context Precision/Recall（检索质量）。详见第 21 章。
 
 **29. SWE-bench**
 
-> 真实 GitHub Issue 修复基准：给模型仓库和 Issue，它要提交能通过测试的补丁。代码 Agent 的金标准，详见第 7 章。
+> 真实 GitHub Issue 修复基准：给模型仓库和 Issue，它要提交能通过测试的补丁。代码 Agent 的金标准，详见第 11 章。
 
 **30. self-consistency**
 

@@ -1,10 +1,10 @@
-# 16. 评估框架全景图：用设计哲学选对你的工具
+# 19. 评估框架全景图：用设计哲学选对你的工具
 
 > **如果只读一节**：读 16.4.5 的四框架横向对比与"选型三问"。选框架前先回答三个问题——被测物是"函数"还是"轨迹"？评估要陪开发还是陪生产？数据能不能出境？功能清单会过时，抽象不会。
 
-> **前置知识**：建议先读第 3 章（标准评估流水线）与第 13 章（LLM-as-Judge）。本章代码默认 Node.js 20+ 与一个 OpenAI 兼容 API Key；涉及 Python 的部分会明确标注。文中各框架的官方描述抓取于 2026-08-28。
+> **前置知识**：建议先读第 4 章（标准评估流水线）与第 17 章（LLM-as-Judge）。本章代码默认 Node.js 20+ 与一个 OpenAI 兼容 API Key；涉及 Python 的部分会明确标注。文中各框架的官方描述抓取于 2026-08-28。
 
-## 16.1 本章目标与读者
+## 19.1 本章目标与读者
 
 上一章读完厂商报告，你已经能看懂"分数"。这一章解决下一个问题：**当你自己要评估一个 LLM 应用时，用什么工具来跑**。
 
@@ -17,13 +17,13 @@
 - 用一张决策树在 5 分钟内选出你团队该用的框架
 - 跑通至少一个框架的最小示例
 
-## 16.2 概念引入：评估框架是给 AI 应用造的测试基建
+## 19.2 概念引入：评估框架是给 AI 应用造的测试基建
 
 **前端类比**：评估框架之于 LLM 应用，约等于 Jest/Vitest 之于前端应用——都是"给定输入，断言输出，汇总结果，接入 CI"。区别在于：前端函数的输出是确定的，`expect(sum(1,2)).toBe(3)` 写一次永远成立；LLM 应用的输出是概率性的，同一个 prompt 两次调用可能给出措辞不同的答案，所以评估框架必须多解决两件事：**评分方式**（什么叫"对"）和**结果可比**（这次跑和上次跑怎么对比）。
 
 把这两个差异记住，四大框架的所有设计决策都能看懂：它们都在回答"概率性输出怎么断言"和"结果怎么沉淀成可比数据"。
 
-一个最小的三段式长这样（完整可运行版在第 17 章展开，这里只看形状）：
+一个最小的三段式长这样（完整可运行版在第 20 章展开，这里只看形状）：
 
 ```typescript
 // 概念示意：评估 = 数据集 × 被测物 × 判官 × 汇总（无需运行）
@@ -43,7 +43,7 @@ async function runEval(dataset: Example[], solve: (input: string) => Promise<str
 
 四行核心：数据集是题目列表，被测物是一个 `solve` 函数，判官是一个打分函数，汇总是一个平均数。**所有评估框架都是这四行的工程化包装**——包装的方向不同，就是它们的设计哲学差异。
 
-## 16.3 行业共同抽象：Dataset × 被测物 × Evaluator
+## 19.3 行业共同抽象：Dataset × 被测物 × Evaluator
 
 在拆解各家之前，先看它们**共同收敛**到的东西。四大框架的核心抽象可以放进同一张表：
 
@@ -58,7 +58,7 @@ async function runEval(dataset: Example[], solve: (input: string) => Promise<str
 
 三家不同公司、两种语言栈，收敛到同一个三段式：**数据集、执行、打分**，外加同一个承诺——评估结果是可查询、可回流的一等数据。这说明行业已经找到问题的正确形状，**具体 API 用哪家都行，抽象学会了就是可迁移资产**。
 
-### 16.3.1 一个反例教学：OpenAI Evals 平台的弃用
+### 19.3.1 一个反例教学：OpenAI Evals 平台的弃用
 
 为什么强调"学抽象而不是背 API"？因为评估平台的生命周期可能比你想象短。OpenAI 在 2025-04 推出 Evals 平台（API 形态的托管评估），2026-06-03 官方宣布弃用：2026-10-31 起存量 evals 变为只读，2026-11-30 控制台与 API 计划关停，官方迁移指引指向 Promptfoo（来源：OpenAI Deprecations 页 https://developers.openai.com/api/docs/deprecations ，抓取于 2026-08-28）。
 
@@ -76,9 +76,9 @@ async function runEval(dataset: Example[], solve: (input: string) => Promise<str
 
 记住这张表，16.4 到 16.7 的所有框架判官你都能对号入座。
 
-## 16.4 四大框架设计哲学深度拆解
+## 19.4 四大框架设计哲学深度拆解
 
-### 16.4.1 LangSmith：把评估挂在 trace 上的 SaaS 全家桶
+### 19.4.1 LangSmith：把评估挂在 trace 上的 SaaS 全家桶
 
 **一句话定位**：LangChain 官方的评估 + 调试平台，商业 SaaS。**核心主张：评估不是一个独立动作，而是长在执行轨迹（trace）上的一层反馈。**
 
@@ -104,13 +104,13 @@ async function runEval(dataset: Example[], solve: (input: string) => Promise<str
 
 **锁风险**：中。数据与 experiment 历史沉淀在 SaaS，判官是 workspace 级资源，跨工作区复用依赖导出；未查证到官方自托管方案（截至 2026-08-28）。
 
-### 16.4.2 Langfuse：开源可自托管、TS 一等公民
+### 19.4.2 Langfuse：开源可自托管、TS 一等公民
 
 **一句话定位**：开源（核心 MIT）+ 云双形态的 LLM 可观测与评估平台。**核心主张：评分（score）可以挂在观测树的任意一层。**
 
 它和 LangSmith 最本质的差异在**数据模型**而不是功能清单。Langfuse 的核心实体是 `trace → observation（span/generation）→ score`，score 可挂 trace、observation、session、experiment run 任意一层。两个架构后果：
 
-1. **评估粒度可下钻到单次操作**。2026-02 起，LLM-as-Judge 评估目标从 trace 级迁移到 observation 级——LLM 调用、检索、工具执行各自可独立评估（来源：Langfuse changelog https://langfuse.com/changelog/2026-02-13-observation-level-evals ）；官方 agent 评估指南明确"trace-level 判官是 legacy"，推荐目标是 root observation。对照 LangSmith"一个判官吃整条 run"，Langfuse 选择"判官瞄准树上的具体节点"——这在 RAG 场景里意味着**可以只评检索、不评生成**（第 20 章会展开分步归因）。
+1. **评估粒度可下钻到单次操作**。2026-02 起，LLM-as-Judge 评估目标从 trace 级迁移到 observation 级——LLM 调用、检索、工具执行各自可独立评估（来源：Langfuse changelog https://langfuse.com/changelog/2026-02-13-observation-level-evals ）；官方 agent 评估指南明确"trace-level 判官是 legacy"，推荐目标是 root observation。对照 LangSmith"一个判官吃整条 run"，Langfuse 选择"判官瞄准树上的具体节点"——这在 RAG 场景里意味着**可以只评检索、不评生成**（第 21 章会展开分步归因）。
 2. **评分类型系统显式化**。score 有四种 data type：`NUMERIC`（连续量）、`CATEGORICAL`（标签集合）、`BOOLEAN`、`TEXT`（自由笔记）（来源：Langfuse Scores 文档 https://langfuse.com/docs/evaluation/scores/overview ）。设计自定义指标时可直接借用这套四分类——先决定"这个指标是哪类"，能避免一半的指标设计争论。
 
 **数据流**：应用经 v4 SDK 上报——v4 基于 OpenTelemetry 重构，trace 上报即 OTel span 上报（来源：Langfuse Experiments via SDK https://langfuse.com/docs/evaluation/experiments/experiments-via-sdk ）→ 判官按 Evaluation Rule（过滤条件 + 采样率 + 挂载的判官）执行 → score 落到对应节点 → experiment runner 产出可对比的 dataset run。
@@ -121,7 +121,7 @@ async function runEval(dataset: Example[], solve: (input: string) => Promise<str
 
 **锁风险**：低。自托管需维护 OTel/存储栈；evaluator 配置的版本管理要自己接 API 做（官方提供稳定版 Evaluators / Evaluation Rules API 支持把配置纳入版本控制）。
 
-### 16.4.3 Inspect AI：Task / Solver / Scorer 与沙箱
+### 19.4.3 Inspect AI：Task / Solver / Scorer 与沙箱
 
 **一句话定位**：英国 AI Security Institute（政府研究机构）出品的 Python 评估框架，Apache-2.0 开源。**核心主张：被测对象不是"一个函数"，而是可组合的 solver 流水线。**
 
@@ -152,7 +152,7 @@ Task = dataset + solver 链 + scorer
 
 **锁风险**：几乎无。Apache-2.0 开源（https://github.com/UKGovernmentBEIS/inspect_ai ），本地库形态，无厂商锁定。
 
-### 16.4.4 DeepEval：把 LLM 评估做成 pytest
+### 19.4.4 DeepEval：把 LLM 评估做成 pytest
 
 **一句话定位**：Confident AI 出品的开源（Apache-2.0）Python 评估库。**核心主张：评估就是单元测试，分数应该能变成 assert。**
 
@@ -189,7 +189,7 @@ def test_customer_chatbot(test_case: LLMTestCase):
 
 **锁风险**：低。本地优先开源，云平台 Confident AI 纯可选。
 
-### 16.4.5 横向对比表与选型三问
+### 19.4.5 横向对比表与选型三问
 
 把四家放进一张表（来源：各框架官方文档，抓取于 2026-08-28）：
 
@@ -212,13 +212,13 @@ def test_customer_chatbot(test_case: LLMTestCase):
 2. **评估要陪生产还是只陪开发？** 陪生产——选带在线评估的 LangSmith/Langfuse；只陪开发——本地库足够。
 3. **能接受的数据与模型边界是什么？** 不能出境——自托管 Langfuse 或纯本地库（Inspect/DeepEval/Evalite）。
 
-前端团队快速结论：**Langfuse TS SDK（要 trace + 评估一体）或 Evalite / 自建 mini 框架（第 17 章，要轻量本地起步）**，除非你的团队已深度绑定 LangChain，才优先看 LangSmith。
+前端团队快速结论：**Langfuse TS SDK（要 trace + 评估一体）或 Evalite / 自建 mini 框架（第 20 章，要轻量本地起步）**，除非你的团队已深度绑定 LangChain，才优先看 LangSmith。
 
-## 16.5 模型层评估 vs Agent 层评估：两套工程，别混着买
+## 19.5 模型层评估 vs Agent 层评估：两套工程，别混着买
 
 前面四家框架都能评"应用"，但评估对象还有一个更根本的分叉：你评的是**一次补全**还是**一条多步轨迹**。这两个物种的工程形态差异，比任何两家框架之间的差异都大。
 
-### 16.5.1 八维对比表
+### 19.5.1 八维对比表
 
 | 维度 | 模型层评估（lm-eval 风格） | Agent 层评估（Inspect / SWE-bench / WebArena 风格） |
 |---|---|---|
@@ -260,7 +260,7 @@ flowchart LR
 
 翻译：这几个维度是**独立失败**的——agent 可以用浪费的轨迹（两次调用够用却调了十二次）完成任务；也可以轨迹干净却没达成目标。工具调用错误在最终答案里经常不可见：agent 恢复了，但重试烧掉的 token 和时间是你付钱的。**只看最终答案，这三个失败模式全部隐身**——这就是 agent 评估必须看轨迹的原因。
 
-### 16.5.2 Sandbox：Agent 评估的工程骨架
+### 19.5.2 Sandbox：Agent 评估的工程骨架
 
 Agent 层评估的"环境依赖"不是可选项，而是工程骨架。三个代表实现：
 
@@ -268,9 +268,9 @@ Agent 层评估的"环境依赖"不是可选项，而是工程骨架。三个代
 - **SWE-bench harness**：三层 Docker 镜像（Base 管语言与工具链 → Environment 管仓库依赖 → Instance 管具体任务配置）；SWE-bench Lite 全量约 120GB 磁盘、16 核 12 workers 约 30 分钟（来源：SWE-bench harness 官方文档 https://www.swebench.com/SWE-bench/reference/harness/ ，抓取于 2026-08-28）。它还有一个所有自建 agent 评估都该学的动作：**用 golden patch 验证 harness 本身**——把已知正确答案喂进完整流水线，必须得满分。
 - **WebArena**：自托管的四个真实网站集群（电商 / GitLab / 内容站 / 地图），812 个任务，奖励基于功能正确性（目标状态达成）而非文本比对（来源：WebArena 论文 arXiv:2307.13854）。
 
-### 16.5.3 为什么"用 MMLU 分数预测 Agent 能力"基本无效
+### 19.5.3 为什么"用 MMLU 分数预测 Agent 能力"基本无效
 
-这是本章最重要的结论之一，直接决定你看厂商报告的方式（第 14 章）与选基准的方式。
+这是本章最重要的结论之一，直接决定你看厂商报告的方式（第 8 章）与选基准的方式。
 
 **机制层面**：MMLU 测量的是无状态单轮知识问答；前沿模型在该基准已普遍进入高分饱和区，分数差异被压入统计噪声（来源：Algolia agent 评估综述 https://www.algolia.com/blog/ai/ai-agent-evaluation-frameworks-metrics-testing-strategies ，抓取于 2026-08-28）。而 agent 能力由轨迹规划、工具使用、错误恢复、环境交互**复合**决定——两者测量的是不同构念。第三方对比数据显示，MMLU 同档（86–88 分区间）的模型在 SWE-Bench 上可相差约 30 个百分点（来源：ResearchGate 对比图，第三方数据，抓取于 2026-08-28）——同档通用分对 agent 表现几乎没有区分度。
 
@@ -280,7 +280,7 @@ Agent 层评估的"环境依赖"不是可选项，而是工程骨架。三个代
 
 **前端类比**：MMLU 分之于 agent 能力，约等于 LeetCode 刷题量之于真实项目交付能力——它保证一个下限（这人确实会写代码），但预测不了他能不能在遗留系统里安全地重构一个模块。
 
-### 16.5.4 轨迹判官的即用词汇表：agentevals
+### 19.5.4 轨迹判官的即用词汇表：agentevals
 
 评 agent 轨迹不必从零发明词汇。LangChain 官方 `agentevals` 包（https://github.com/langchain-ai/agentevals ）给出四种轨迹对比模式，可直接借用为你的判官分层设计：
 
@@ -293,11 +293,11 @@ Agent 层评估的"环境依赖"不是可选项，而是工程骨架。三个代
 
 另有 `createTrajectoryLLMAsJudge`（可带参考轨迹）做语义级轨迹评分。"确定性匹配先行、判官兜底"的分层正是低成本轨迹评估的标准模板。
 
-## 16.6 LLM-as-Judge 的框架级实现
+## 19.6 LLM-as-Judge 的框架级实现
 
-第 13 章讲了判官的方法论与偏差，本节看**框架怎么把判官工程化**——判官代码长什么样、结果落到哪、配置怎么版本化。（判官自身的偏差与校准方法，第 18 章会完整展开。）
+第 17 章讲了判官的方法论与偏差，本节看**框架怎么把判官工程化**——判官代码长什么样、结果落到哪、配置怎么版本化。（判官自身的偏差与校准方法，第 5 章会完整展开。）
 
-### 16.6.1 LangSmith：TS 判官长什么样
+### 19.6.1 LangSmith：TS 判官长什么样
 
 LangSmith 把评估技术分四类：Human / Code / LLM-as-judge / Pairwise（来源：LangSmith 评估概念文档）。TS 侧的自定义判官就是**一个普通异步函数，返回 `{ key, score }`**。以下是官方 Vitest 集成文档的代码骨架（依赖：`npm i openai langsmith vitest`；环境变量 `OPENAI_API_KEY`、`LANGSMITH_API_KEY`、`LANGSMITH_TRACING=true`）：
 
@@ -366,7 +366,7 @@ ls.describe("generate sql demo", () => {
 2. offline 判官的固定输入是 `{ example, run }`；online 判官只有 `{ run }`（没有参考答案）。**同一个判官想同时用于离线和在线，必须写成 reference-free 版本**——官方明确推荐这一点，换来离线/在线行为一致。
 3. 判官 prompt 里放 few-shot 示例（输入 / 输出 / 期望等级）通常能提升判官表现。
 
-### 16.6.2 Langfuse：Evaluator 与 Evaluation Rule 两层配置
+### 19.6.2 Langfuse：Evaluator 与 Evaluation Rule 两层配置
 
 Langfuse 把 model-based eval 拆成两层配置实体（来源：https://langfuse.com/docs/evaluation/evaluation-methods/llm-as-a-judge ）：
 
@@ -388,7 +388,7 @@ await langfuse.score({
 
 每次判官执行本身也生成完整 trace（environment 标记 `langfuse-llm-as-a-judge`），可查 token 用量与执行状态。官方 FAQ 给出两组量级数字：强判官（GPT-5 级）与人工在多数质量维度上达成 80–90% 一致；单次评估成本约 0.01–0.10 美元（来源：Langfuse 文档自述，非独立研究复现值，抓取于 2026-08-28）。
 
-### 16.6.3 判官 prompt 设计五要素
+### 19.6.3 判官 prompt 设计五要素
 
 写一个"能用"的判官 prompt 很容易，写一个"能被信任"的很难。综合各框架官方文档反复出现的要素，可归纳为五条：
 
@@ -400,9 +400,9 @@ await langfuse.score({
 | 4. 长度与格式中立声明 | rubric 显式声明"评分与长度、格式无关" | 默认不写（冗长偏差乘虚而入） |
 | 5. 判据自足（reference-free） | 没有参考答案也能按 rubric 打分 | 判官强依赖参考答案，无法上线上 |
 
-第 1 条的正面示例（Langfuse 官方风格）："Score 1 if the answer is factually incorrect, 5 if fully accurate and well-sourced"——每一档都可核验。第 5 条是 16.6.1 提到的离线/在线复用前提。四类已知偏差（位置、冗长、自我偏好等）的缓解手段，见第 18 章。
+第 1 条的正面示例（Langfuse 官方风格）："Score 1 if the answer is factually incorrect, 5 if fully accurate and well-sourced"——每一档都可核验。第 5 条是 16.6.1 提到的离线/在线复用前提。四类已知偏差（位置、冗长、自我偏好等）的缓解手段，见第 5 章。
 
-## 16.7 传统评估器速查：全景图的另一半
+## 19.7 传统评估器速查：全景图的另一半
 
 四大框架之外，还有一批面向**公开基准**与**专项**的评估器。它们不是你的应用评估平台，而是"测模型本身"的工具——读厂商报告、横向选型时会反复遇到。一表收拢（来源：各项目官方文档，抓取于 2026-08-28）：
 
@@ -423,7 +423,7 @@ await langfuse.score({
 
 选型直觉：**测模型本身**（做选型对比、读报告复现）→ 上半部分；**测你的应用**（RAG 质量红队、prompt 对比）→ 下半部分 + 16.4 的四大框架。两者不互相替代。
 
-## 16.8 框架选型决策树
+## 19.8 框架选型决策树
 
 把 16.4 与 16.5 的判断依据收拢成一张可执行的决策图：
 
@@ -433,11 +433,11 @@ flowchart TD
     B -->|"多步 Agent / 需要沙箱"| C{"团队主栈?"}
     B -->|"单次补全 / RAG / 对话"| D{"主栈是 TS 还是 Python?"}
     C -->|"Python 可用"| C1["Inspect AI<br/>Task / Solver / Scorer + Docker 沙箱"]
-    C -->|"必须 TS"| C2["自建：Docker / Playwright 沙箱<br/>+ agentevals 轨迹判官 + 第 17 章 mini 框架"]
+    C -->|"必须 TS"| C2["自建：Docker / Playwright 沙箱<br/>+ agentevals 轨迹判官 + 第 20 章 mini 框架"]
     D -->|"TS / 前端"| E{"需要生产在线评估吗?"}
     D -->|"Python"| F{"评估要进 pytest 门禁吗?"}
     E -->|"要"| E1["Langfuse TS SDK<br/>OTel trace + 观测级判官"]
-    E -->|"本地轻量起步"| E2["Evalite 或第 17 章 mini 框架"]
+    E -->|"本地轻量起步"| E2["Evalite 或第 20 章 mini 框架"]
     E -->|"要 SaaS 沉淀与实验对比"| E3["LangSmith Vitest 集成"]
     F -->|"要"| F1["DeepEval：assert_test + deepeval test run"]
     F -->|"要跑通用公开基准"| F2["lm-evaluation-harness"]
@@ -454,9 +454,9 @@ flowchart TD
 
 读法：先按被测对象分流（函数还是轨迹），再按语言栈，再按"陪不陪生产"，最后过一遍数据边界。任何一条路径的终点都对应本章某节的可运行方案。
 
-## 16.9 实战与陷阱：三个最小可运行示例
+## 19.9 实战与陷阱：三个最小可运行示例
 
-### 16.9.1 Promptfoo：前端工程师的最快路径
+### 19.9.1 Promptfoo：前端工程师的最快路径
 
 Promptfoo 是 YAML 驱动的声明式评估 CLI（开源，本地运行，支持 50+ provider），零代码即可对比多个模型的输出质量（来源：https://www.promptfoo.dev/docs/intro/ ）：
 
@@ -488,7 +488,7 @@ npx promptfoo eval
 npx promptfoo view   # 打开浏览器看对比结果
 ```
 
-### 16.9.2 lm-eval-harness：复现公开基准分数
+### 19.9.2 lm-eval-harness：复现公开基准分数
 
 读厂商报告时想验证某个分数，最短路径（Python 环境）：
 
@@ -501,13 +501,13 @@ lm_eval --model openai-completions --model_args model=gpt-4o-mini \
 
 注意 `--limit 100` 是抽样跑，结果与全量不可直接比——它的用途是**验证管线通不通**，不是复现榜单。
 
-### 16.9.3 陷阱清单
+### 19.9.3 陷阱清单
 
 - **用应用评估框架跑公开基准**：lm-eval-harness 的价值在 200+ 任务的标准化实现（few-shot 模板、答案抽取规则），用 LangSmith 手搓一个 MMLU 会引入你自己的实现偏差。
-- **把判官分数当唯一真相**：判官是另一个模型，有自己的偏差；上 CI 前先做人机一致率校准（第 18 章、第 26 章）。
+- **把判官分数当唯一真相**：判官是另一个模型，有自己的偏差；上 CI 前先做人机一致率校准（第 5 章、第 7 章）。
 - **选型只看功能表**：两家框架功能表重合度 80% 时，差异全在数据模型与部署形态——回到 16.4.5 的三问。
 
-## 16.10 验收自测
+## 19.10 验收自测
 
 1. **选择**：你的团队是纯前端 + Node.js 栈，要评估一个客服 RAG 应用，需要生产环境的持续质量监控，且业务数据不能出境。最合适的组合是？
    - A. LangSmith SaaS
@@ -533,30 +533,30 @@ lm_eval --model openai-completions --model_args model=gpt-4o-mini \
 
 6. **实操**：用 `npx promptfoo eval` 跑通 16.9.1 的 YAML（把 provider 换成你有 Key 的模型），再打开 `promptfoo view` 找到两个测试用例的对比结果页。
 
-## 16.11 本章 Cheat Sheet
+## 19.11 本章 Cheat Sheet
 
 | 概念 | 一句话 | 详见 |
 |---|---|---|
-| Dataset × 被测物 × Evaluator | 四大框架收敛的共同抽象 | §16.3 |
-| LangSmith | trace 挂评估的 SaaS，在线采样一等公民 | §16.4.1 |
-| Langfuse | score 挂任意观测层，开源可自托管，TS 一等公民 | §16.4.2 |
-| Inspect AI | Task/Solver/Scorer + Docker 沙箱，Python only | §16.4.3 |
-| DeepEval | pytest 哲学，pass/fail 语义严格 | §16.4.4 |
-| 选型三问 | 函数还是轨迹？陪不陪生产？数据能不能出境？ | §16.4.5 |
-| 模型层 vs Agent 层 | 单轮比对 vs 沙箱轨迹，失败模式完全不同 | §16.5 |
-| MMLU ≠ agent 能力 | 通用分是下限参考，不是表现预测器 | §16.5.3 |
-| agentevals 四模式 | strict / unordered / subset / superset | §16.5.4 |
-| 判官五要素 | rubric / few-shot / 结构化理由 / 长度中立 / reference-free | §16.6.3 |
+| Dataset × 被测物 × Evaluator | 四大框架收敛的共同抽象 | §19.3 |
+| LangSmith | trace 挂评估的 SaaS，在线采样一等公民 | §19.4.1 |
+| Langfuse | score 挂任意观测层，开源可自托管，TS 一等公民 | §19.4.2 |
+| Inspect AI | Task/Solver/Scorer + Docker 沙箱，Python only | §19.4.3 |
+| DeepEval | pytest 哲学，pass/fail 语义严格 | §19.4.4 |
+| 选型三问 | 函数还是轨迹？陪不陪生产？数据能不能出境？ | §19.4.5 |
+| 模型层 vs Agent 层 | 单轮比对 vs 沙箱轨迹，失败模式完全不同 | §19.5 |
+| MMLU ≠ agent 能力 | 通用分是下限参考，不是表现预测器 | §19.5.3 |
+| agentevals 四模式 | strict / unordered / subset / superset | §19.5.4 |
+| 判官五要素 | rubric / few-shot / 结构化理由 / 长度中立 / reference-free | §19.6.3 |
 
-## 16.12 5 个常见错误
+## 19.12 5 个常见错误
 
 1. **一上手就买 SaaS**——先确认数据能不能出境、团队能不能维护自托管；数据边界是第一约束，功能是第二约束。
 2. **用模型层框架评 agent**——单轮比对框架评不了轨迹，步数浪费与工具误用在最终答案里全部隐身；评 agent 至少要沙箱 + 轨迹判官。
 3. **把 MMLU 分数当 agent 能力预测器**——同档通用分在 SWE-Bench 上可差约 30 个百分点（来源：ResearchGate 第三方对比图，抓取于 2026-08-28）；通用分只当下限参考。
 4. **判官 prompt 没有 rubric 只有形容词**——"评估回答质量"这类判官产出的是噪声；每一档都要有可核验的证据条件。
-5. **把评估体系绑死在单一厂商平台 API 上**——OpenAI Evals 平台从发布到宣布关停约一年半（来源：OpenAI Deprecations 页，抓取于 2026-08-28）；学抽象、用开源形态或自建（第 17 章），把迁移成本留在自己手里。
+5. **把评估体系绑死在单一厂商平台 API 上**——OpenAI Evals 平台从发布到宣布关停约一年半（来源：OpenAI Deprecations 页，抓取于 2026-08-28）；学抽象、用开源形态或自建（第 20 章），把迁移成本留在自己手里。
 
-## 16.13 延伸阅读
+## 19.13 延伸阅读
 
 ⭐⭐⭐（官方一手）
 - [LangSmith Evaluation concepts](https://docs.langchain.com/langsmith/evaluation-concepts) / [Vitest 集成](https://docs.langchain.com/langsmith/vitest-jest)

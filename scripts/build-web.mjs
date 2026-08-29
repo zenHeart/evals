@@ -87,6 +87,9 @@ function mdToSections(md) {
   const sections = [];
   let cur = null;          // 当前 H2 section
   const paraBuf = [];
+  // H1 与第一个 H2 之间的内容（引言引用块/段落）→ lead 区块，不再丢弃
+  const lead = { id: "lead", title: "", html: [], quiz: false, lead: true };
+  let leadStarted = false;
 
   function escapeHtml(s) {
     return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
@@ -159,8 +162,31 @@ function mdToSections(md) {
       continue;
     }
     if (!cur) {
-      // H1 与第一个 H2 之间的引言 → description 候选
-      if (trimmed && !trimmed.startsWith(">")) paraBuf.push(trimmed);
+      // H1 与第一个 H2 之间的引言：引用块渲染为 lead blockquote，段落正常渲染
+      if (/^>\s?/.test(trimmed)) {
+        if (paraBuf.length) { lead.html.push(`<p>${inlineMd(stripMd(paraBuf.join(" ")))}</p>`); paraBuf.length = 0; }
+        const buf = [];
+        let j = i;
+        while (j < lines.length) {
+          const l = lines[j].trim();
+          if (/^>\s?/.test(l)) { buf.push(l.replace(/^>\s?/, "")); j++; }
+          else if (l === "") { break; }
+          else break;
+        }
+        i = j - 1;
+        const content = buf.filter(Boolean).join(" ");
+        if (content) { lead.html.push(`<blockquote><p>${inlineMd(content)}</p></blockquote>`); leadStarted = true; }
+        continue;
+      }
+      if (trimmed) {
+        paraBuf.push(trimmed);
+        leadStarted = true;
+        continue;
+      }
+      if (paraBuf.length && leadStarted) {
+        lead.html.push(`<p>${inlineMd(stripMd(paraBuf.join(" ")))}</p>`);
+        paraBuf.length = 0;
+      }
       continue;
     }
     if (!trimmed) { flushPara(); continue; }
@@ -251,6 +277,8 @@ function mdToSections(md) {
     const m = s.title.match(/^(\d+(?:\.\d+)*)\s/);
     s.id = m ? `sec-${m[1].replace(/\./g, "-")}` : `sec-${++n}`;
   }
+  // 引言区块（若有内容）插到最前；空 lead 不加入
+  if (lead.html.length) sections.unshift(lead);
   return { title, sections, description };
 }
 
@@ -373,6 +401,8 @@ pre code { background: transparent; padding: 0; color: inherit; overflow-wrap: n
 .copy-btn:hover { background: rgba(255,255,255,.18); }
 blockquote { border-left: 4px solid #93c5fd; background: rgba(96,165,250,.06); padding: 10px 16px; color: #475569; margin: 16px 0; border-radius: 0 8px 8px 0; }
 body.dark blockquote { border-left-color: #38537a; color: #94a3b8; background: rgba(96,165,250,.05); }
+.lead-block blockquote { font-size: 15.5px; background: rgba(34,211,238,.07); border-left-color: #22d3ee; }
+body.dark .lead-block blockquote { background: rgba(34,211,238,.06); }
 .table-wrap { overflow-x: auto; margin: 16px 0; border-radius: 8px; border: 1px solid rgba(0,0,0,.08); }
 body.dark .table-wrap { border-color: rgba(255,255,255,.1); }
 table { border-collapse: collapse; width: 100%; margin: 0; font-size: 14.5px; min-width: 480px; }
@@ -498,8 +528,6 @@ const TOPBAR = (rel) => `
   <nav>
     <a href="${rel}index.html">首页</a>
     <a href="${rel}benchmarks/index.html">评估大全</a>
-    <a href="${rel}research/benchmarks.html">基准图谱</a>
-    <a href="${rel}research/frameworks.html">框架工具</a>
     <a href="${rel}evals.epub">下载 EPUB</a>
     <button class="dark-toggle" id="themeToggle" type="button" title="切换暗色模式">🌙</button>
   </nav>
@@ -570,6 +598,7 @@ const MERMAID_JS = `
 // ---------------------------------------------------------------- pages
 
 function sectionHtml(s) {
+  if (s.lead) return `<div class="lead-block">${s.html.join("\n")}</div>`;
   const head = `<h2 id="${s.id}">${s.title}</h2>`;
   if (s.quiz) {
     return `<div class="quiz-card">${head}<button class="quiz-reveal" type="button">👆 点击展开自测（先作答再对照）</button><div class="quiz-body">${s.html.join("\n")}</div></div>`;
@@ -578,7 +607,7 @@ function sectionHtml(s) {
 }
 
 function tocSide(sections) {
-  const items = sections.map(s => `<a href="#${s.id}">${s.title}</a>`).join("");
+  const items = sections.filter(s => !s.lead).map(s => `<a href="#${s.id}">${s.title}</a>`).join("");
   return `<aside class="toc-side"><div class="toc-title">本页目录</div>${items}</aside>`;
 }
 
@@ -594,7 +623,7 @@ function bookTocSidebar(parts, chaptersMeta, currentFile, currentSections) {
       const cleanTitle = meta.title.replace(/^\d+\.\s*/, "");
       out.push(`<a class="side-ch${isCur ? " cur" : ""}" href="chapter-${meta.num}.html">${meta.num}. ${cleanTitle}</a>`);
       if (isCur && currentSections) {
-        for (const s of currentSections) {
+        for (const s of currentSections.filter(x => !x.lead)) {
           out.push(`<a class="side-sec" href="#${s.id}" data-sec="${s.id}">${s.title}</a>`);
         }
       }
@@ -819,17 +848,8 @@ async function main() {
   writeFileSync(join(DIST, "search-data.js"), `window.EVALS_SEARCH=${JSON.stringify(searchData)};`, "utf-8");
   console.log("[evals-web] Built index.html + search-data.js");
 
-  // research pages — public docs only（内部评审/审计文档不上站；先清理旧产物防残留）
-  const INTERNAL = /^(review-|audit-|site-content-review|zzz-)/;
+  // research/*.md 仅作为书籍素材源文件保留在仓库，不再发布为站点页面
   rmSync(join(DIST, "research"), { recursive: true, force: true });
-  mkdirSync(join(DIST, "research"), { recursive: true });
-  const researchFiles = readdirSync(RESEARCH_DIR).filter(f => f.endsWith(".md") && !INTERNAL.test(f));
-  for (const f of researchFiles) {
-    const title = f.replace(/\.md$/, "").split("-").map(w => ({ benchmarks: "基准图谱", frameworks: "框架工具", "academic-history": "评估学术史", "methodology-deep": "评估方法论", "vendor-blog-evals": "厂商报告拆解", "framework-practice": "框架实战" }[f.replace(/\.md$/, "")] || f.replace(/\.md$/, "")));
-    const html = researchPage(join(RESEARCH_DIR, f), title, "../");
-    if (html) writeFileSync(join(DIST, "research", f.replace(/\.md$/, ".html")), html, "utf-8");
-  }
-  console.log(`[evals-web] Built ${researchFiles.length} research pages`);
 
   console.log(`[evals-web] Web build complete → ${DIST}`);
 

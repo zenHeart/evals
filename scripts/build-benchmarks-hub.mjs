@@ -37,6 +37,9 @@ body.dark .topbar nav a { color:#94a3b8; }
 .dark-toggle { border:1px solid rgba(0,0,0,.15); background:transparent; border-radius:8px; padding:4px 10px; cursor:pointer; margin-left:10px; color:inherit; }
 body.dark .dark-toggle { border-color:rgba(255,255,255,.2); }
 .wrap { max-width:1100px; margin:0 auto; padding:28px 20px 90px; }
+.grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(min(100%, 460px)), 1fr); gap:16px; align-items:start; }
+.grid .card { margin:0; max-width:640px; width:100%; }
+@media (min-width:1500px) { .grid { grid-template-columns:repeat(auto-fill, minmax(min(100%, 520px)), 1fr); } .grid .card { max-width:640px; } }
 h1 { font-size:clamp(26px,4vw,36px); margin:0 0 6px; }
 .sub { color:#64748b; font-size:14.5px; margin-bottom:18px; }
 body.dark .sub { color:#94a3b8; }
@@ -154,8 +157,7 @@ function main() {
   <nav>
     <a href="../index.html">首页</a>
     <a href="./index.html" style="color:#2563eb;font-weight:700;">评估大全</a>
-    <a href="../research/benchmarks.html">基准图谱</a>
-    <a href="../research/frameworks.html">框架工具</a>
+    <a href="../web/chapter-01.html">书籍阅读</a>
     <a href="../evals.epub">下载 EPUB</a>
     <button class="dark-toggle" id="themeToggle" type="button" title="切换暗色模式">🌙</button>
   </nav>
@@ -173,7 +175,7 @@ function main() {
   </div>
   <div class="controls" id="chips" style="margin-top:0;"></div>
   <div class="stats" id="stats"></div>
-  <div id="list"></div>
+  <div id="list" class="grid"></div>
 </div>
 <footer><a href="${SITE}">evals.zenheart.site</a> · 引用数据来自 13 家厂商发布材料真实抓取 · MIT License</footer>
 <script src="../benchmarks-data.js"></script>
