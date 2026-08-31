@@ -117,11 +117,13 @@ export function loadBenchData() {
   }
 
   // ---- release 时间轴视图（厂商 → 版本 → blog 证据结构）
+  const vendorRegion = Object.fromEntries((vendors.vendors || vendors || []).map(v => [v.id, v.region ?? null]));
   const releaseViews = collectReleases().map(r => {
     const evidence = (r.benchmark_evidence || []).map(e => ({
       benchmark_id: e.benchmark_id,
       variant: e.benchmark_variant ?? null,
       display: e.reported_score?.display ?? null,
+      value: typeof e.reported_score?.value === "number" ? e.reported_score.value : null,
       status: e.status ?? "pending",
       harness: e.protocol?.harness ?? null,
       effort: e.protocol?.reasoning_effort ?? null,
@@ -134,6 +136,7 @@ export function loadBenchData() {
       id: r.id,
       vendor_id: r.vendor_id ?? null,
       vendor_label: vendorNames[r.vendor_id] || r.vendor_id || "未知厂商",
+      region: vendorRegion[r.vendor_id] ?? null,
       release_title: r.release_title ?? r.id,
       release_date: r.release_date ?? null,
       models: (r.models || []).map(m => m.name || m.id).filter(Boolean),

@@ -394,13 +394,45 @@ ${SHELL_JS}
 </html>`;
 }
 
-// ---------------------------------------------------------------- 发布时间轴页
+// ---------------------------------------------------------------- 发布时间轴页（交互式 v2）
 
 const TIMELINE_CSS = `
 .tl-wrap { max-width:1080px; margin:0 auto; padding:28px 0 70px; }
-.tl-note { font-size:13.5px; color:#64748b; margin:8px 0 26px; }
+.tl-note { font-size:13.5px; color:#64748b; margin:8px 0 18px; }
 body.dark .tl-note { color:#94a3b8; }
-.tl-vendor { margin:34px 0 10px; font-size:20px; font-weight:800; display:flex; align-items:center; gap:10px; }
+/* 覆盖条 */
+.tl-cov { display:flex; flex-wrap:wrap; gap:6px; margin:0 0 18px; font-size:12px; }
+.tl-cov .cov { border:1px solid rgba(0,0,0,.12); border-radius:999px; padding:2px 10px; color:#64748b; }
+body.dark .tl-cov .cov { border-color:rgba(255,255,255,.16); color:#94a3b8; }
+.tl-cov .cov b { color:inherit; }
+/* 控制区 */
+.tl-controls { border:1px solid rgba(0,0,0,.1); border-radius:14px; padding:12px 14px; margin:0 0 20px; background:#fff; display:flex; flex-direction:column; gap:10px; }
+body.dark .tl-controls { background:#111a2e; border-color:rgba(255,255,255,.1); }
+.tl-row { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+.tl-seg { display:inline-flex; border:1.5px solid rgba(37,99,235,.35); border-radius:10px; overflow:hidden; }
+.tl-seg button { border:none; background:transparent; color:#2563eb; padding:6px 14px; font-size:13px; font-weight:700; cursor:pointer; }
+body.dark .tl-seg button { color:#60a5fa; }
+.tl-seg button.on { background:#2563eb; color:#fff; }
+body.dark .tl-seg button.on { background:#60a5fa; color:#0b1224; }
+.tl-label { font-size:12px; font-weight:800; color:#94a3b8; letter-spacing:.05em; }
+.tl-controls select, .tl-controls input[type=search], .tl-controls input[type=number] {
+  padding:6px 10px; border-radius:9px; border:1.5px solid rgba(0,0,0,.14); background:#fff; color:inherit; font-size:13px;
+}
+body.dark .tl-controls select, body.dark .tl-controls input { background:#0e1730; border-color:rgba(255,255,255,.16); }
+.tl-controls input[type=number] { width:86px; }
+.tl-btn { border:1.5px solid rgba(37,99,235,.4); background:transparent; color:#2563eb; border-radius:9px; padding:6px 12px; font-size:13px; font-weight:700; cursor:pointer; }
+body.dark .tl-btn { color:#60a5fa; border-color:rgba(96,165,250,.4); }
+.tl-btn:hover { background:rgba(37,99,235,.07); }
+.tl-vchip { border:1.5px solid rgba(0,0,0,.14); background:transparent; color:inherit; border-radius:999px; padding:4px 12px; font-size:12.5px; font-weight:600; cursor:pointer; }
+body.dark .tl-vchip { border-color:rgba(255,255,255,.18); }
+.tl-vchip.on { background:#2563eb; border-color:#2563eb; color:#fff; }
+.tl-fchip { display:inline-flex; align-items:center; gap:6px; border:1.5px solid rgba(180,83,9,.5); background:rgba(245,158,11,.1); color:#b45309; border-radius:999px; padding:4px 12px; font-size:12.5px; font-weight:700; }
+body.dark .tl-fchip { color:#fbbf24; border-color:rgba(251,191,36,.4); background:rgba(251,191,36,.08); }
+.tl-fchip button { border:none; background:transparent; color:inherit; cursor:pointer; font-size:13px; padding:0; line-height:1; }
+.tl-count { font-size:13px; color:#64748b; margin:0 0 14px; }
+body.dark .tl-count { color:#94a3b8; }
+/* 时间轴主体 */
+.tl-vendor { margin:30px 0 10px; font-size:20px; font-weight:800; display:flex; align-items:center; gap:10px; }
 .tl-vendor::after { content:""; flex:1; height:1px; background:rgba(0,0,0,.08); }
 body.dark .tl-vendor::after { background:rgba(255,255,255,.1); }
 .tl-region { font-size:11px; font-weight:800; color:#94a3b8; letter-spacing:.08em; }
@@ -426,24 +458,59 @@ body.dark .tl-meta { color:#a8b6c8; }
   color:#2563eb; text-decoration:none; background:rgba(37,99,235,.05);
 }
 body.dark .tl-chip { color:#60a5fa; border-color:rgba(96,165,250,.35); background:rgba(96,165,250,.08); }
-.tl-chip:hover { text-decoration:none; border-color:#2563eb; }
+a.tl-chip:hover { text-decoration:none; border-color:#2563eb; }
 .tl-chip.pending { border-style:dashed; color:#94a3b8; border-color:rgba(0,0,0,.2); background:transparent; }
 body.dark .tl-chip.pending { color:#94a3b8; border-color:rgba(255,255,255,.2); }
 .tl-chip b { font-weight:800; }
+.tl-chip.focus { outline:2px solid #2563eb; outline-offset:1px; }
+body.dark .tl-chip.focus { outline-color:#60a5fa; }
 .tl-src { font-size:13px; }
 .tl-src a { color:#2563eb; }
 body.dark .tl-src a { color:#60a5fa; }
 .tl-empty { color:#94a3b8; font-size:14px; padding:20px 0; }
 `;
 
-function releasesTimelinePage(db) {
-  // 窗口由 loader 统一定义（单一口径，视图只消费）
-  const cutoff = db.cutoff;
-  const inWindow = db.releases.filter(r => r.release_date && r.release_date >= cutoff);
-  const noDate = db.releases.filter(r => !r.release_date);
-  const knownVendors = new Set(db.vendors.map(v => v.id));
+/** 时间轴节点 HTML（服务端静态视图与客户端渲染共用同一结构） */
+function tlNodeHtml(db, r, focusBench) {
+  const chips = r.evidence.map(e => {
+    const known = db.benchmarks.some(b => b.id === e.benchmark_id);
+    const score = e.display ? ` <b>${esc(e.display)}</b>` : "";
+    const cls = e.status === "verified" ? "" : " pending";
+    const focus = focusBench && e.benchmark_id === focusBench ? " focus" : "";
+    const inner = `${esc(e.benchmark_id)}${e.variant ? " " + esc(e.variant) : ""}${score}`;
+    return known
+      ? `<a class="tl-chip${cls}${focus}" href="../${esc(e.benchmark_id)}/" title="${e.harness ? "harness: " + esc(e.harness) : ""}">${inner}</a>`
+      : `<span class="tl-chip${cls}${focus}" title="新 benchmark，实体页待建">${inner}</span>`;
+  }).join("");
+  const proto = [
+    r.evidence.find(e => e.harness)?.harness ? `harness: ${esc(r.evidence.find(e => e.harness).harness)}` : null,
+    r.evidence.find(e => e.effort)?.effort ? `effort: ${esc(r.evidence.find(e => e.effort).effort)}` : null,
+  ].filter(Boolean).join(" · ");
+  return `<div class="tl-item">
+    <div class="tl-date">${r.release_date ? esc(r.release_date) : "日期待核验"}</div>
+    <div class="tl-title">${esc(r.release_title)}</div>
+    ${r.models.length ? `<div class="tl-models">模型：${esc(r.models.join(" / "))}</div>` : ""}
+    <div class="tl-meta">benchmark 证据 ${r.evidence.length} 条（已核验 ${r.verified} · 待核验 ${r.pending}）${proto ? " · " + proto : ""}</div>
+    <div class="tl-chips">${chips}</div>
+    ${r.source_url ? `<div class="tl-src"><a href="${esc(r.source_url)}" target="_blank" rel="noopener">📄 官方发布原文 ↗</a>${r.source_kind ? ` <span style="color:#94a3b8;font-size:12px;">(${esc(r.source_kind)})</span>` : ""}</div>` : ""}
+  </div>`;
+}
 
-  // 厂商分组：国际 → 国内 → 其他，组内按日期倒序
+function releasesTimelinePage(db) {
+  const cutoff = db.cutoff;
+
+  // 覆盖条：已收录厂商 × 发布数（从数据派生，不手写）
+  const covCounts = new Map();
+  for (const r of db.releases) covCounts.set(r.vendor_id, (covCounts.get(r.vendor_id) || 0) + 1);
+  const cov = [...covCounts.entries()].sort((a, b) => b[1] - a[1])
+    .map(([vid, n]) => {
+      const v = db.vendors.find(x => x.id === vid);
+      return `<span class="cov">${esc(v?.display_name || v?.name || vid)} <b>${n}</b></span>`;
+    }).join("");
+
+  // noscript 静态默认视图：近三年 + 按厂商
+  const inWindow = db.releases.filter(r => r.release_date && r.release_date >= cutoff);
+  const knownVendors = new Set(db.vendors.map(v => v.id));
   const regionOf = v => (v.region === "CN" ? 1 : 0);
   const vendorRank = Object.fromEntries(db.vendors.map((v, i) => [v.id, regionOf(v) * 1000 + i]));
   const groups = new Map();
@@ -452,59 +519,200 @@ function releasesTimelinePage(db) {
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key).push(r);
   }
-  const ordered = [...groups.entries()].sort((a, b) => {
+  const staticSections = [...groups.entries()].sort((a, b) => {
     const ra = a[0] === "_other" ? 9999 : (vendorRank[a[0]] ?? 5000);
     const rb = b[0] === "_other" ? 9999 : (vendorRank[b[0]] ?? 5000);
     return ra - rb;
-  });
-
-  const regionLabel = key => {
-    const v = db.vendors.find(x => x.id === key);
-    if (key === "_other") return "";
-    return v?.region === "CN" ? "国内" : "国际";
-  };
-  const vendorSections = ordered.map(([key, rels]) => {
-    const label = key === "_other" ? "其他厂商" : (db.vendors.find(v => v.id === key)?.display_name || db.vendors.find(v => v.id === key)?.name || key);
-    const items = rels.map(r => {
-      const chips = r.evidence.map(e => {
-        const known = db.benchmarks.some(b => b.id === e.benchmark_id);
-        const score = e.display ? ` <b>${esc(e.display)}</b>` : "";
-        const cls = e.status === "verified" ? "" : " pending";
-        const inner = `${esc(e.benchmark_id)}${e.variant ? " " + esc(e.variant) : ""}${score}`;
-        return known
-          ? `<a class="tl-chip${cls}" href="../${esc(e.benchmark_id)}/" title="${e.harness ? "harness: " + esc(e.harness) : ""}">${inner}</a>`
-          : `<span class="tl-chip${cls}" title="新 benchmark，实体页待建">${inner}</span>`;
-      }).join("");
-      const proto = [
-        r.evidence.find(e => e.harness)?.harness ? `harness: ${esc(r.evidence.find(e => e.harness).harness)}` : null,
-        r.evidence.find(e => e.effort)?.effort ? `effort: ${esc(r.evidence.find(e => e.effort).effort)}` : null,
-      ].filter(Boolean).join(" · ");
-      return `<div class="tl-item">
-        <div class="tl-date">${esc(r.release_date)}</div>
-        <div class="tl-title">${esc(r.release_title)}</div>
-        ${r.models.length ? `<div class="tl-models">模型：${esc(r.models.join(" / "))}</div>` : ""}
-        <div class="tl-meta">benchmark 证据 ${r.evidence.length} 条（已核验 ${r.verified} · 待核验 ${r.pending}）${proto ? " · " + proto : ""}</div>
-        <div class="tl-chips">${chips}</div>
-        ${r.source_url ? `<div class="tl-src"><a href="${esc(r.source_url)}" target="_blank" rel="noopener">📄 官方发布原文 ↗</a>${r.source_kind ? ` <span style="color:#94a3b8;font-size:12px;">(${esc(r.source_kind)})</span>` : ""}</div>` : ""}
-      </div>`;
-    }).join("");
-    return `<div class="tl-vendor">${esc(label)} <span class="tl-region">${regionLabel(key)}</span></div><div class="tl">${items}</div>`;
+  }).map(([key, rels]) => {
+    const label = key === "_other" ? "其他厂商" : (db.vendors.find(v => v.id === key)?.display_name || key);
+    const region = key === "_other" ? "" : (db.vendors.find(v => v.id === key)?.region === "CN" ? "国内" : "国际");
+    return `<div class="tl-vendor">${esc(label)} <span class="tl-region">${region}</span></div><div class="tl">${rels.map(r => tlNodeHtml(db, r, null)).join("")}</div>`;
   }).join("");
 
-  const desc = `按厂商与发布时间罗列近三年（${cutoff} 之后）主流模型发布的 benchmark 证据：每次发布对应官方 blog、模型版本、协议要点与逐条证据链接。`;
-  return `${shellHead({ rel: "../../", title: "模型发布时间轴 · 评估大全", desc, path: "benchmarks/releases/", extra: `<style>${SHELL_CSS}${PAGE_CSS}${TIMELINE_CSS}</style>` })}
+  // 客户端数据：全量 release + benchmark/vendor 维度
+  const tlData = {
+    cutoff,
+    benchmarks: db.benchmarks.map(b => ({ id: b.id, name: b.name })).sort((a, b) => a.id.localeCompare(b.id)),
+    vendors: db.vendors.map(v => ({ id: v.id, label: v.display_name || v.name, region: v.region ?? "" })),
+    releases: db.releases,
+  };
+
+  const desc = `大模型评测变迁时间轴：覆盖国内外主流厂商的发布 blog，每个时间节点显示哪个模型发布、引用了哪些评测及该模型分数，可点击进入对应评测介绍页；支持按厂商、按评测分类与分数阈值过滤。`;
+  return `${shellHead({ rel: "../../", title: "模型评测变迁时间轴 · 评估大全", desc, path: "benchmarks/releases/", extra: `<style>${SHELL_CSS}${PAGE_CSS}${TIMELINE_CSS}</style>` })}
 </head>
 <body>
 ${shellTopbar("../../", "benchmarks")}
 <div class="tl-wrap bm-container">
   <nav class="breadcrumb"><a href="../../index.html">首页</a> / <a href="../">评估大全</a> / <b>发布时间轴</b></nav>
-  <h1>模型发布时间轴</h1>
-  <div class="tl-note">${esc(desc)}<br>绿色实心 chip = 已核验证据（可点入 benchmark 详情页）；虚线 chip = 待核验（分数在图片表格中）。<a href="../">← 返回评估大全</a></div>
-  ${vendorSections.length ? vendorSections : `<div class="tl-empty">时间窗口内暂无已收录发布。</div>`}
-  ${noDate.length ? `<div class="tl-empty">另有 ${noDate.length} 条历史引用因发布日期缺失未进入时间轴（见各 benchmark 详情页「待核验」区）。</div>` : ""}
+  <h1>模型评测变迁时间轴</h1>
+  <div class="tl-note">${esc(desc)}<br>实心 chip = 已核验证据，虚线 = 待核验；chip 可点击进入对应评测介绍页。<a href="../">← 返回评估大全</a></div>
+  <div class="tl-cov"><span class="tl-label">已收录覆盖</span>${cov}</div>
+
+  <div class="tl-controls" id="tlControls" hidden>
+    <div class="tl-row">
+      <span class="tl-label">窗口</span>
+      <span class="tl-seg" id="tlWindow"><button type="button" data-v="fresh" class="on">近三年</button><button type="button" data-v="all">全部历史</button></span>
+      <span class="tl-label" style="margin-left:10px;">分类</span>
+      <span class="tl-seg" id="tlGroup"><button type="button" data-v="vendor" class="on">按厂商</button><button type="button" data-v="benchmark">按评测</button></span>
+      <input type="search" id="tlQ" placeholder="搜索模型 / 发布标题…" style="flex:1;min-width:160px;" aria-label="搜索时间轴">
+    </div>
+    <div class="tl-row" id="tlVendorRow"><span class="tl-label">厂商</span></div>
+    <div class="tl-row">
+      <span class="tl-label">分数过滤</span>
+      <select id="tlBench" aria-label="选择评测"></select>
+      <span style="font-size:13px;color:#94a3b8">分数 ≥</span>
+      <input type="number" id="tlMin" step="any" placeholder="如 70" aria-label="最低分数">
+      <button class="tl-btn" id="tlAddScore" type="button">添加过滤</button>
+      <span id="tlFilters" style="display:inline-flex;gap:6px;flex-wrap:wrap;"></span>
+    </div>
+  </div>
+  <div class="tl-count" id="tlCount" hidden></div>
+
+  <noscript><div id="tlStatic">${staticSections || '<div class="tl-empty">暂无数据。</div>'}</div></noscript>
+  <div id="tlStatic">${staticSections || '<div class="tl-empty">暂无数据。</div>'}</div>
+  <div id="tlApp" hidden></div>
 </div>
 <footer class="site-foot"><a href="${SITE}">evals.zenheart.site</a> · MIT License · ZenHeart</footer>
 ${SHELL_JS}
+<script>
+window.EVALS_TL = ${JSON.stringify(tlData)};
+</script>
+<script>
+(function(){
+  var D=window.EVALS_TL;
+  var app=document.getElementById('tlApp'),staticEl=document.getElementById('tlStatic');
+  if(!app||!D){return;}
+  var state={win:'fresh',group:'vendor',vendors:[],bench:null,filters:[],q:''};
+  var benchName={}; D.benchmarks.forEach(function(b){benchName[b.id]=b.name;});
+  function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+
+  function nodeHtml(r){
+    var chips=r.evidence.map(function(e){
+      var score=e.display?' <b>'+esc(e.display)+'</b>':'';
+      var cls=e.status==='verified'?'':' pending';
+      var focus=(state.bench===e.benchmark_id||state.filters.some(function(f){return f.bench===e.benchmark_id;}))?' focus':'';
+      var inner=esc(e.benchmark_id)+(e.variant?' '+esc(e.variant):'')+score;
+      var known=D.benchmarks.some(function(b){return b.id===e.benchmark_id;});
+      var tip=e.harness?(' harness: '+esc(e.harness)):'';
+      return known?'<a class="tl-chip'+cls+focus+'" href="../'+esc(e.benchmark_id)+'/"'+(tip?' title="'+tip+'"':'')+'>'+inner+'</a>'
+                  :'<span class="tl-chip'+cls+focus+'" title="新 benchmark，实体页待建">'+inner+'</span>';
+    }).join('');
+    var proto=[];
+    for(var i=0;i<r.evidence.length;i++){var e=r.evidence[i];
+      if(e.harness&&!proto.h)proto.h='harness: '+esc(e.harness);
+      if(e.effort&&!proto.e)proto.e='effort: '+esc(e.effort);}
+    var meta=[proto.h,proto.e].filter(Boolean).join(' · ');
+    return '<div class="tl-item">'+
+      '<div class="tl-date">'+(r.release_date?esc(r.release_date):'日期待核验')+'</div>'+
+      '<div class="tl-title">'+esc(r.release_title)+'</div>'+
+      (r.models.length?'<div class="tl-models">模型：'+esc(r.models.join(' / '))+'</div>':'')+
+      '<div class="tl-meta">benchmark 证据 '+r.evidence.length+' 条（已核验 '+r.verified+' · 待核验 '+r.pending+'）'+(meta?' · '+meta:'')+'</div>'+
+      '<div class="tl-chips">'+chips+'</div>'+
+      (r.source_url?'<div class="tl-src"><a href="'+esc(r.source_url)+'" target="_blank" rel="noopener">📄 官方发布原文 ↗</a>'+(r.source_kind?' <span style="color:#94a3b8;font-size:12px;">('+esc(r.source_kind)+')</span>':'')+'</div>':'')+
+      '</div>';
+  }
+
+  function pass(r){
+    if(state.win==='fresh'){if(!(r.release_date&&r.release_date>=D.cutoff))return false;}
+    if(state.vendors.length&&state.vendors.indexOf(r.vendor_id)<0)return false;
+    if(state.bench&&!r.evidence.some(function(e){return e.benchmark_id===state.bench;}))return false;
+    for(var i=0;i<state.filters.length;i++){var f=state.filters[i];
+      var ok=r.evidence.some(function(e){return e.benchmark_id===f.bench&&e.value!==null&&e.value>=f.min;});
+      if(!ok)return false;}
+    if(state.q){
+      var hay=(r.release_title+' '+(r.models||[]).join(' ')+' '+r.vendor_label).toLowerCase();
+      if(hay.indexOf(state.q)<0)return false;
+    }
+    return true;
+  }
+
+  function groupSections(list){
+    var html='',out=[];
+    if(state.group==='vendor'){
+      var rank={}; D.vendors.forEach(function(v,i){rank[v.id]=(v.region==='CN'?1000:0)+i;});
+      var g={};
+      list.forEach(function(r){var k=r.vendor_id||'_other';(g[k]=g[k]||[]).push(r);});
+      out=Object.keys(g).sort(function(a,b){
+        var ra=a==='_other'?99999:(rank[a]!==undefined?rank[a]:5000);
+        var rb=b==='_other'?99999:(rank[b]!==undefined?rank[b]:5000);
+        return ra-rb;}).map(function(k){
+        var v=D.vendors.find(function(x){return x.id===k;});
+        var label=k==='_other'?'其他厂商':(v?v.label:k);
+        var region=(v&&v.region==='CN')?'国内':'国际';
+        g[k].sort(function(a,b){return (b.release_date||'').localeCompare(a.release_date||'');});
+        return '<div class="tl-vendor">'+esc(label)+' <span class="tl-region">'+region+'</span></div><div class="tl">'+g[k].map(nodeHtml).join('')+'</div>';});
+    }else{
+      var bg={};
+      list.forEach(function(r){r.evidence.forEach(function(e){
+        if(state.bench&&e.benchmark_id!==state.bench)return;
+        (bg[e.benchmark_id]=bg[e.benchmark_id]||[]).push({r:r,e:e});});});
+      out=Object.keys(bg).sort(function(a,b){return bg[b].length-bg[a].length||a.localeCompare(b);}).map(function(bid){
+        var rows=bg[bid].sort(function(a,b){return (b.r.release_date||'').localeCompare(a.r.release_date||'');});
+        var known=D.benchmarks.some(function(b){return b.id===bid;});
+        var head=known?'<a href="../'+esc(bid)+'/">'+esc(benchName[bid]||bid)+' ↗</a>':esc(bid)+'（实体页待建）';
+        var items=rows.map(function(x){
+          var e=x.e,score=e.display?' <b>'+esc(e.display)+'</b>':'（未公布）';
+          return '<div class="tl-item" style="padding-bottom:14px;">'+
+            '<div class="tl-date">'+(x.r.release_date?esc(x.r.release_date):'日期待核验')+' · '+esc(x.r.vendor_label)+'</div>'+
+            '<div class="tl-title">'+esc(x.r.release_title)+'</div>'+
+            '<div class="tl-meta">'+esc(bid)+(e.variant?' '+esc(e.variant):'')+' 分数：'+score+(e.status!=='verified'?' <span style="color:#94a3b8">（待核验）</span>':'')+'</div>'+
+            '</div>';});
+        return '<div class="tl-vendor">'+head+' <span class="tl-region">'+rows.length+' 次发布引用</span></div><div class="tl">'+items.join('')+'</div>';});
+    }
+    html=out.join('');
+    return html||'<div class="tl-empty">没有匹配的发布——试试放宽窗口、清除厂商或分数过滤。</div>';
+  }
+
+  function render(){
+    var list=D.releases.filter(pass);
+    app.innerHTML=groupSections(list);
+    var ev=0;list.forEach(function(r){ev+=r.evidence.length;});
+    document.getElementById('tlCount').textContent='共 '+list.length+' 次发布 · '+ev+' 条 benchmark 证据'+
+      (state.win==='fresh'?'（近三年，起点 '+D.cutoff+'）':'（全部历史）');
+  }
+
+  function renderFilters(){
+    var el=document.getElementById('tlFilters');
+    el.innerHTML=state.filters.map(function(f,i){
+      return '<span class="tl-fchip">'+esc(f.bench)+' ≥ '+esc(f.min)+
+        '<button type="button" data-i="'+i+'" aria-label="移除过滤">✕</button></span>';}).join('');
+  }
+
+  // 初始化控件
+  var controls=document.getElementById('tlControls'),count=document.getElementById('tlCount');
+  controls.hidden=false;count.hidden=false;staticEl.hidden=true;app.hidden=false;
+  var vr=document.getElementById('tlVendorRow');
+  D.vendors.filter(function(v){return D.releases.some(function(r){return r.vendor_id===v.id;});})
+    .forEach(function(v){
+      var b=document.createElement('button');b.type='button';b.className='tl-vchip';b.textContent=v.label;b.setAttribute('data-v',v.id);
+      vr.appendChild(b);});
+  var benchSel=document.getElementById('tlBench');
+  benchSel.innerHTML='<option value="">选择评测…</option>'+D.benchmarks.map(function(b){return '<option value="'+esc(b.id)+'">'+esc(b.id+' · '+b.name)+'</option>';}).join('');
+
+  document.getElementById('tlWindow').addEventListener('click',function(e){
+    var b=e.target.closest('button');if(!b)return;state.win=b.getAttribute('data-v');
+    this.querySelectorAll('button').forEach(function(x){x.classList.toggle('on',x===b);});render();});
+  document.getElementById('tlGroup').addEventListener('click',function(e){
+    var b=e.target.closest('button');if(!b)return;state.group=b.getAttribute('data-v');
+    this.querySelectorAll('button').forEach(function(x){x.classList.toggle('on',x===b);});render();});
+  vr.addEventListener('click',function(e){
+    var b=e.target.closest('.tl-vchip');if(!b)return;
+    var v=b.getAttribute('data-v'),i=state.vendors.indexOf(v);
+    if(i<0)state.vendors.push(v);else state.vendors.splice(i,1);
+    b.classList.toggle('on',i<0);render();});
+  document.getElementById('tlAddScore').addEventListener('click',function(){
+    var bid=benchSel.value,min=parseFloat(document.getElementById('tlMin').value);
+    if(!bid||isNaN(min))return;
+    var dup=state.filters.some(function(f){return f.bench===bid&&f.min===min;});
+    if(!dup){state.filters.push({bench:bid,min:min});renderFilters();render();}});
+  document.getElementById('tlFilters').addEventListener('click',function(e){
+    var b=e.target.closest('button[data-i]');if(!b)return;
+    state.filters.splice(parseInt(b.getAttribute('data-i'),10),1);renderFilters();render();});
+  document.getElementById('tlQ').addEventListener('input',function(e){state.q=e.target.value.trim().toLowerCase();render();});
+
+  render();
+})();
+</script>
 </body>
 </html>`;
 }
