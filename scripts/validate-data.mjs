@@ -137,7 +137,7 @@ export function validateReleaseEdge(e, ctx) {
   const out = [];
   const tag = e.id ?? "(no-id)";
   if (!e.id || !EDGE_ID.test(e.id)) out.push(`${tag}: edge id 缺失或不符合 -- 分隔约定（如 vendor-release--benchmark）`);
-  if (typeof e.benchmark_id !== "string" || !ctx.benchmarkIds.has(e.benchmark_id))
+  if (typeof e.benchmark_id !== "string" || (!ctx.benchmarkIds.has(e.benchmark_id) && !ctx.candidateBenchmarkIds.has(e.benchmark_id)))
     out.push(`${tag}: benchmark_id 外键不存在：${JSON.stringify(e.benchmark_id)}`);
   if (typeof e.vendor_id !== "string" || !ctx.vendorIds.has(e.vendor_id))
     out.push(`${tag}: vendor_id 外键不存在：${JSON.stringify(e.vendor_id)}`);
@@ -179,7 +179,7 @@ export function validateReleaseEdge(e, ctx) {
 
 export function validateRelease(r, ctx) {
   const out = [];
-  const file = `model-releases/legacy/${r.id ?? "(no-id)"}.json`;
+  const file = r.__file ? `model-releases/${r.__file}` : `model-releases/legacy/${r.id ?? "(no-id)"}.json`;
   if (!r.id || !KEBAB.test(r.id)) out.push(`${file}: id 缺失或非 kebab-case`);
   if (typeof r.vendor_id !== "string" || !ctx.vendorIds.has(r.vendor_id))
     out.push(`${file}: vendor_id 外键不存在：${JSON.stringify(r.vendor_id)}`);
@@ -269,10 +269,20 @@ for (const [file, b] of benchData) {
   forbidDash(file, b);
 }
 
-const relDir = path.join(DATA, "model-releases", "legacy");
-const relFiles = jsonFiles(relDir);
+const releasesRoot = path.join(DATA, "model-releases");
+// 递归收集 legacy/ 与 official/<vendor>/ 等所有层级（official 是一等公民，必须同样过门禁）
+const relFiles = (function walkReleases(dir, acc = []) {
+  if (!fs.existsSync(dir)) return acc;
+  for (const name of fs.readdirSync(dir)) {
+    const p = path.join(dir, name);
+    if (fs.statSync(p).isDirectory()) walkReleases(p, acc);
+    else if (name.endsWith(".json")) acc.push(p);
+  }
+  return acc;
+})(releasesRoot);
 const edgeIds = new Set();
 const relData = new Map();
+let officialCount = 0;
 for (const file of relFiles) {
   const r = readJson(file);
   if (!r.ok) continue;
@@ -284,6 +294,7 @@ for (const file of relFiles) {
     if (ctx.releaseIds.has(rel.id)) err(file, `release id 重复：${rel.id}`);
     ctx.releaseIds.add(rel.id);
   }
+  if (file.includes(`${path.sep}official${path.sep}`)) officialCount++;
   for (const e of rel.benchmark_evidence ?? []) {
     if (e.id) {
       if (edgeIds.has(e.id)) err(file, `evidence edge id 重复：${e.id}`);
@@ -291,8 +302,30 @@ for (const file of relFiles) {
     }
   }
 }
+// 未知 benchmark_id 候选集：官方证据先行（evidence-first），同一 id 在任一边标注过 new-benchmark 即登记
+const candidateBenchmarkIds = new Set();
+for (const [file, rel] of relData) {
+  const isOfficial = file.includes(`${path.sep}official${path.sep}`);
+  if (!isOfficial) continue;
+  for (const e of rel.benchmark_evidence ?? []) {
+    const bid = e.benchmark_id;
+    if (bid && !ctx.benchmarkIds.has(bid) && (e.notes ?? "").includes("new-benchmark")) {
+      candidateBenchmarkIds.add(bid);
+    }
+  }
+}
+ctx.candidateBenchmarkIds = candidateBenchmarkIds;
+
 // 全部 release id 就绪后再做完整校验（含 edge 外键）
 for (const [file, rel] of relData) {
+  const isOfficial = file.includes(`${path.sep}official${path.sep}`);
+  if (!isOfficial) {
+    for (const e of rel.benchmark_evidence ?? []) {
+      if (e.benchmark_id && !ctx.benchmarkIds.has(e.benchmark_id) && !candidateBenchmarkIds.has(e.benchmark_id))
+        err(file, `legacy edge 引用了未知且未登记的 benchmark_id：${JSON.stringify(e.benchmark_id)}`);
+    }
+  }
+  rel.__file = path.relative(path.join(DATA, "model-releases"), file);
   for (const m of validateRelease(rel, ctx)) err(file, m);
   forbidDash(file, rel);
 }
@@ -303,19 +336,24 @@ const rep = readJson(repFile);
 if (rep.ok) {
   const r = rep.data;
   const diskBench = benchFiles.length;
-  const diskRel = relFiles.length;
-  const diskEdges = edgeIds.size;
+  const legacyFiles = relFiles.filter((f) => f.includes(`${path.sep}legacy${path.sep}`));
+  const diskRel = legacyFiles.length;
+  const diskEdges = new Set();
+  for (const f of legacyFiles) {
+    const rr = readJson(f);
+    if (rr.ok) for (const e of rr.data.benchmark_evidence ?? []) if (e.id) diskEdges.add(e.id);
+  }
   if (!r.benchmarks || r.benchmarks.before !== r.benchmarks.after || r.benchmarks.after !== diskBench)
     err(repFile, `benchmark 数对账失败：报告 ${r.benchmarks?.after} vs 磁盘 ${diskBench}`);
   if (r.releases?.total !== diskRel)
     err(repFile, `release 数对账失败：报告 ${r.releases?.total} vs 磁盘 ${diskRel}`);
-  if (r.evidence_edges?.total !== diskEdges)
+  if (r.evidence_edges?.total !== diskEdges.size)
     err(repFile, `evidence edge 数对账失败：报告 ${r.evidence_edges?.total} vs 磁盘 ${diskEdges}`);
   const a = r.adoption_entries;
   if (!a || a.mapped_to_evidence + a.rejected !== a.total)
     err(repFile, "adoption_entries 对账失败：mapped + rejected ≠ total");
-  if (a && a.mapped_to_evidence !== diskEdges)
-    err(repFile, `mapped_to_evidence（${a.mapped_to_evidence}）≠ 磁盘 edge 数（${diskEdges}）`);
+  if (a && a.mapped_to_evidence !== diskEdges.size)
+    err(repFile, `mapped_to_evidence（${a.mapped_to_evidence}）≠ 磁盘 edge 数（${diskEdges.size}）`);
   if (!Array.isArray(r.rejected) || a.rejected !== r.rejected.length)
     err(repFile, "rejected 清单与计数不一致");
 }
@@ -324,6 +362,7 @@ if (rep.ok) {
 // fixture 自测：一好一坏，坏样例必须失败
 // ---------------------------------------------------------------------------
 const testCtx = {
+  candidateBenchmarkIds: new Set(),
   categoryIds: new Set(["coding"]),
   benchmarkIds: new Set(["fixture-bench"]),
   vendorIds: new Set(["fixture-vendor"]),
@@ -401,4 +440,4 @@ if (errors.length > 0) {
   for (const e of errors) console.error(`  - ${e}`);
   process.exit(1);
 }
-console.log(`[validate-data] PASS — taxonomy 9 类 / vendors ${ctx.vendorIds.size} / benchmarks ${ctx.benchmarkIds.size} / legacy releases ${ctx.releaseIds.size} / evidence edges ${edgeIds.size}`);
+console.log(`[validate-data] PASS — taxonomy 9 类 / vendors ${ctx.vendorIds.size} / benchmarks ${ctx.benchmarkIds.size} / releases ${ctx.releaseIds.size}（official ${officialCount}）/ evidence edges ${edgeIds.size}`);
