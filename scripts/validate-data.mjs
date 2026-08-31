@@ -201,6 +201,12 @@ export function validateRelease(r, ctx) {
   if (!ENUMS.release_status.includes(r.status))
     out.push(`${file}: status 非法（${JSON.stringify(r.status)}）`);
   if (!ISO_DATE.test(r.last_verified_at ?? "")) out.push(`${file}: last_verified_at 必须为 YYYY-MM-DD`);
+  // 勘误留痕（goal §18.3：修订/撤回必须保留历史，不静默覆盖）
+  for (const [i, rev] of (r.revisions ?? []).entries()) {
+    if (!rev || !ISO_DATE.test(rev.date ?? "")) out.push(`${file}: revisions[${i}].date 必须为 YYYY-MM-DD`);
+    if (!rev.reason || typeof rev.reason !== "string") out.push(`${file}: revisions[${i}].reason 必填（勘误原因）`);
+    if (!rev.field) out.push(`${file}: revisions[${i}].field 必填（被修订的字段名）`);
+  }
   return out;
 }
 

@@ -59,3 +59,16 @@
 ## 本轮未覆盖（goal.md §25.2 种子中剩余）
 
 Claude Opus 4.6、Gemini 3 / 3 Deep Think、Mistral Devstral 2 / Mistral 3、Kimi K2 Thinking、MiniMax、Qwen3 / Qwen3-Coder、ByteDance Seed2.1 / Seed1.8 — 均留待下一批抽取，本目录结构已可作为录入 fixture。
+
+---
+
+## 账本契约（增量更新规则）
+
+记录模式（本目录 JSON 的 schema）冻结不变；更新只发生在时间维度上：
+
+1. **新增发布** = 新增一个 `<vendor>/<release-id>.json`，不修改任何既有文件。
+2. **核验完成** = 只翻转对应 evidence 的 `status`（pending → verified）并补齐 `locator` / `reported_score`。
+3. **勘误** = 修订字段值的同时，在该 release 顶层 `revisions[]` 追加 `{ date, field, from, to, reason }`；`validate:data` 校验其完整性，禁止静默覆盖。
+
+所有视图（时间轴、详情页采用表、引用计数）由 `scripts/load-data.mjs` 构建时现算；
+公开计数只统计「状态 verified ∧ 发布日期在近三年窗口内」的 evidence（窗口见 loader 的 `FRESH_WINDOW_YEARS`）。

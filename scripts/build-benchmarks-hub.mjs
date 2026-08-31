@@ -33,15 +33,18 @@ function truncate(s, n) {
   return s.length > n ? s.slice(0, n - 1) + "…" : s;
 }
 
-/** 引用计数徽章文案：verified 公开计数，pending 显式展示不混入（goal §12.2） */
+/** 引用计数徽章：只统计近三年窗口（fresh）；窗口外/日期缺失归入档案降级展示（goal §12.2/§12.7） */
 function citeBadge(b) {
-  if (b._verified > 0) {
-    return b._pending > 0
-      ? `已核验 ${b._verified} 次官方发布引用 · 另 ${b._pending} 条待核验`
-      : `已核验 ${b._verified} 次官方发布引用`;
+  const parts = [];
+  if (b._verified > 0) parts.push(`已核验 ${b._verified} 次近三年官方发布引用`);
+  if (b._pending > 0) parts.push(`${b._pending} 条待核验`);
+  if (!parts.length) {
+    return b._archived > 0
+      ? `暂无近三年已核验引用 · 档案 ${b._archived} 条`
+      : "社区驱动 · 暂无官方发布引用";
   }
-  if (b._pending > 0) return `${b._pending} 条发布引用待核验（定位材料为图表/图片）`;
-  return "社区驱动 · 暂无官方发布引用";
+  if (b._archived > 0) parts.push(`档案 ${b._archived} 条`);
+  return parts.join(" · ");
 }
 
 /** 卡片/详情页共用的引用提示行：前 3 家 + 「+N」（仅已核验优先） */
@@ -297,8 +300,10 @@ function statusBadge(status) {
 
 function detailPage(db, b, cat, related) {
   const cite = b.adoption || [];
-  const verified = cite.filter(a => a.status === "verified");
-  const pending = cite.filter(a => a.status !== "verified");
+  // 统一窗口语义：fresh 进主视图，archive（窗口外/日期缺失）降级为折叠历史区
+  const verified = cite.filter(a => a.status === "verified" && a.fresh);
+  const pending = cite.filter(a => a.status !== "verified" && a.fresh);
+  const archived = cite.filter(a => !a.fresh);
   const title = `${b.name} · 评测是什么、分数怎么看 · 评估大全`;
   const desc = truncate(`${b.name}：${b.tests || ""}${b.meaning ? " " + b.meaning : ""}`, 150);
 
@@ -320,13 +325,17 @@ function detailPage(db, b, cat, related) {
   if (!cite.length) {
     adoptBlock = `<p style="color:#94a3b8;font-size:14px;">暂无官方模型发布引用记录——社区驱动或垂域使用。${b.adoptionNote ? esc(b.adoptionNote) : ""}</p>`;
   } else {
+    const archivedBlock = archived.length
+      ? `<details style="margin:14px 0;"><summary style="cursor:pointer;font-weight:700;font-size:14px;color:#64748b;">档案引用（${archived.length} 条 · 近三年窗口之外或发布日期待核，仅作背景参考）</summary>${adoptTable(archived.map(adoptRow))}</details>`
+      : "";
     adoptBlock =
       (verified.length
-        ? `<p style="font-weight:700;margin:8px 0 4px;">已核验（${verified.length}）<span style="font-weight:400;color:#94a3b8;font-size:13px;"> — 已定位到发布页原文</span></p>${adoptTable(verified.map(adoptRow))}`
+        ? `<p style="font-weight:700;margin:8px 0 4px;">已核验（${verified.length}）<span style="font-weight:400;color:#94a3b8;font-size:13px;"> — 近三年窗口内，已定位到发布页原文</span></p>${adoptTable(verified.map(adoptRow))}`
         : "") +
       (pending.length
         ? `<p style="font-weight:700;margin:16px 0 4px;">待核验（${pending.length}）<span style="font-weight:400;color:#94a3b8;font-size:13px;"> — 分数在图片表格中或定位待人工确认，暂不计入公开引用数</span></p>${adoptTable(pending.map(adoptRow))}`
-        : "");
+        : "") +
+      archivedBlock;
   }
 
   return `${shellHead({ rel: "../../", title, desc, path: `benchmarks/${b.id}/`, extra: `<style>${SHELL_CSS}${PAGE_CSS}</style>` })}
@@ -353,7 +362,7 @@ ${shellTopbar("../../", "benchmarks")}
   <div class="callout warn"><b>可比性提示：</b>同一 benchmark 的分数是「实验配置」的产物——benchmark variant、harness、reasoning effort、tools、采样参数、run 次数与聚合方式任一不同，数字都不能直接横向比较。下表各厂商分数如未披露协议细节，请只作方向性参考。</div>
 
   <h2 class="detail-sec" id="adoption">厂商采用记录（模型发布时作为基准引用）</h2>
-  <p class="refs">共 ${cite.length} 条（已核验 ${verified.length} · 待核验 ${pending.length}）${db.updated ? ` · 数据更新于 ${esc(db.updated)}` : ""}</p>
+  <p class="refs">共 ${cite.length} 条（近三年：已核验 ${verified.length} · 待核验 ${pending.length}${archived.length ? ` · 档案 ${archived.length}` : ""}）${db.updated ? ` · 数据更新于 ${esc(db.updated)}` : ""} · 窗口起点 ${esc(db.cutoff)}</p>
   ${adoptBlock}
 
   <h2 class="detail-sec" id="gaps">数据缺口（本页暂未收录）</h2>
@@ -428,8 +437,8 @@ body.dark .tl-src a { color:#60a5fa; }
 `;
 
 function releasesTimelinePage(db) {
-  // 最近 3 年窗口（构建时动态计算）
-  const cutoff = new Date(Date.now() - 3 * 365 * 24 * 3600 * 1000).toISOString().slice(0, 10);
+  // 窗口由 loader 统一定义（单一口径，视图只消费）
+  const cutoff = db.cutoff;
   const inWindow = db.releases.filter(r => r.release_date && r.release_date >= cutoff);
   const noDate = db.releases.filter(r => !r.release_date);
   const knownVendors = new Set(db.vendors.map(v => v.id));

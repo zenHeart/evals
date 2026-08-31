@@ -103,12 +103,26 @@ CI（`.github/workflows/build-epub.yml`）在 `main` 分支推送时自动：
 2. 未核验的信息留 `null`，不编造。
 3. 跑 `npm run build`。`validate:data` 校验 schema/外键/枚举，`validate:site` 校验详情页与内部链接，不通过则构建失败。
 
+## 数据源逻辑（账本模型：记录冻结 + 窗口视图）
+
+- **记录模式冻结**：release 与 evidence edge 的 schema 保持稳定，历史记录永不改形、不重写。
+- **时间轴是视图不是数据**：`/benchmarks/releases/` 与各详情页的采用表、引用计数，全部由 `scripts/load-data.mjs` 在构建时从记录现算，无任何手写副本。
+- **统一新鲜度窗口**：只有「发布日期可知 ∧ 在近三年窗口内（fresh）」的证据进入公开计数与主视图；窗口外或日期缺失的归入历史引用，折叠降级展示（不丢不删）。时间推进自动完成新旧分离，无需迁移。
+- 后续更新只有三种动作，互不干扰：
+
+| 动作 | 操作 | 波及面 |
+|---|---|---|
+| 新发布 | 新增 1 个 release JSON（含 evidence） | 零改动，所有视图自动长出 |
+| 核验完成 | 只翻转对应 evidence 的 `status` + 补 `locator` | 该条进入公开计数 |
+| 厂商勘误 | 修订字段值，同时在 release 的 `revisions[]` 追加 `{ date, field, from, to, reason }` | 留痕，不静默覆盖（goal §18.3） |
+
 ## 如何补模型发布证据
 
 1. 新建 `data/model-releases/official/<vendor>/<release-id>.json`（结构见 `_docs/goal.md` §11.4/§11.5）：release 记录 + 每个被引用 benchmark 一条 `benchmark_evidence`（含 `benchmark_id`、`source_tier`、`locator`、`reported_score`、`protocol`）。
 2. 证据纪律：分数在图片表格读不出 → `status: "pending"` 且不计入公开引用数；未公布分数 → `reported_score.value: null`，禁止 `"-"`；厂商引用竞品的行标 `attribution_type: "comparison_cited"`。
-3. 新厂商先在 `data/vendors.json` 登记注册表条目。
-4. 跑 `npm run build`，两个 validator 把关。
+3. 勘误已有记录时：改值 + 在该 release 的 `revisions[]` 追加一条 `{ date, field, from, to, reason }`，`validate:data` 会校验其完整性。
+4. 新厂商先在 `data/vendors.json` 登记注册表条目。
+5. 跑 `npm run build`，两个 validator 把关。
 
 ## 引用本书
 

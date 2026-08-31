@@ -36,8 +36,19 @@ function collectReleases(dir = join(DATA, "model-releases"), out = []) {
 
 let cache = null;
 
+/**
+ * 新鲜度窗口（goal §12.7 / 站点口径）：只有窗口内的 dated 证据进入公开计数与主视图；
+ * 窗口外与日期缺失的证据归入 archive（历史引用），不丢不删、降级展示。
+ * 记录模式本身冻结不变——时间推进自动完成新旧分离，无需迁移。
+ */
+export const FRESH_WINDOW_YEARS = 3;
+export function freshCutoff() {
+  return new Date(Date.now() - FRESH_WINDOW_YEARS * 365 * 24 * 3600 * 1000).toISOString().slice(0, 10);
+}
+
 export function loadBenchData() {
   if (cache) return cache;
+  const cutoff = freshCutoff();
 
   const taxonomy = readJson(join(DATA, "taxonomy.json"));
   const vendors = existsSync(join(DATA, "vendors.json")) ? readJson(join(DATA, "vendors.json")) : [];
@@ -67,6 +78,7 @@ export function loadBenchData() {
         adoption: [],
         _verified: 0,
         _pending: 0,
+        _archived: 0,
       };
     });
   const byId = Object.fromEntries(benchmarks.map(b => [b.id, b]));
@@ -85,6 +97,8 @@ export function loadBenchData() {
       const label = e.model_name && !vendorLabel.includes(e.model_name)
         ? `${vendorLabel} · ${e.model_name}`
         : vendorLabel;
+      // fresh = 日期可知且在窗口内；窗口外/日期缺失 → archive（历史引用，降级展示）
+      const fresh = Boolean(r.release_date) && r.release_date >= cutoff;
       b.adoption.push({
         release: label,
         score: score.display ?? null,
@@ -94,9 +108,11 @@ export function loadBenchData() {
         tier: e.source_tier ?? null,
         variant: e.benchmark_variant ?? null,
         date: r.release_date ?? null,
+        fresh,
       });
-      if (verified) b._verified++;
-      else b._pending++;
+      if (verified && fresh) b._verified++;
+      else if (fresh) b._pending++;
+      else b._archived++;
     }
   }
 
@@ -139,6 +155,7 @@ export function loadBenchData() {
 
   cache = {
     updated,
+    cutoff,
     categories: taxonomy.categories || [],
     vendors: vendors.vendors || vendors || [],
     benchmarks,
