@@ -342,3 +342,45 @@ goal.md §12.6 Tier 1 国内缺口厂商补齐：Alibaba/Qwen 两条、MiniMax �
 2. **xAI Grok 4.1（约 2025-11-17）缺**，同属静默代际；连同 grok-4-3/4-20 一起，xAI 建议按 release-inventory `checked, no benchmark page` 口径收口。
 3. **未抓的 tier-A 补充源**：deepmind.google 3.7 model card 与 3.6 model page（两页均有 DOM 明文大表，含 Muse Spark 1.2 / Grok 4.5 竞品列）、Meta Spark 1.2 Evaluation Methodology 页、Gemini 2.5 家族帖引用的 technical report——均为下一批现成来源。
 4. gemini-3-1-flash-lite 的 0 行不是遗漏：官方 GA 页确无 benchmark，二级数字（GPQA 86.9 等）按铁律未转录为行。
+
+---
+
+## 历代补齐第六批（2026-08-31，收官批）：残余盲区 — Gemini 3.1 / Grok 4.1 / Spark 1.2 方法论页
+
+按第五批遗留清单收口：Google 3.1 系列、xAI Grok 4.1、Meta Spark 1.2 Evaluation Methodology 页。本批新增 2 个 release、升级 2 个既有 release，此后 Google/xAI/Meta 三家在覆盖窗口内的历代主线全部有档。
+
+| 指标 | 本批值 |
+|---|---:|
+| 新增 release 文件 | 2（gemini-3-1-pro / grok-4-1） |
+| 升级既有 release | 2（gemini-3-1-flash-lite 补 3 行 verified；muse-spark-1-2 三行 pending→verified + 新增 2 行第三方行） |
+| 新增 evidence 行 | 29（gemini-3-1-pro 19 + grok-4-1 5 + flash-lite 3 + spark-1-2 新 2） |
+| 行 status=verified | 28（spark-1-2 的 3 行由 pending 翻转，不计入新增） |
+| 行 status=pending | 1（grok-4-1 的 EQ-Bench3/CreativeWriting v3/FActScore 中…实为 3 条 pending） |
+| third_party_reported（不计自报总数） | 2（Spark 1.2 的 GDPVal-AA v2 @AA / MCP Atlas @Scale AI） |
+
+> 更正上表：grok-4-1 为 2 verified + 3 pending；行级合计 29 新增中 26 verified + 3 pending。
+
+### 逐项清单
+
+| 项 | 发布日（依据） | 行数 | 要点 |
+|---|---|---:|---|
+| `google/gemini-3-1-pro.json` | 2026-02-19（blog.google 官宣 publishedTime） | 19 全 verified | 主证据源是 **deepmind.google/models/gemini/pro/ 产品页的 DOM 明文大表**（我方直读，无图片依赖）：HLE 双条件（无工具 44.4 / Search+Code 51.4）、ARC-AGI-2 ARC Prize Verified 77.1、GPQA 94.3 无工具、TB 2.0 Terminus-2 68.5、SWE-Verified 单次 80.6、SWE-Pro Public 54.2、**LCB Pro Elo 2887**（竞赛 Elo 版，与 pass 率窗口不同度量）、SciCode 59、APEX-Agents 33.5、GDPval-AA 1317、τ2 Retail 90.8/Telecom 99.3、MCP Atlas 69.2、BrowseComp 85.9（Search+Python+Browse）、MMMU-Pro 80.5、MMMLU 92.6、MRCR v2 128k 84.9/1M 26.3。竞品列（3 Pro/Sonnet 4.6/Opus 4.6/GPT-5.2/GPT-5.3-Codex，注意各列 Thinking 深度不同：High vs Max vs xhigh）照旧进 notes，不拆 comparison_cited。 |
+| `google/gemini-3-1-flash-lite.json`（升级） | 2026-05-08 GA（保持不变） | +3 verified | 找到官方 **preview 宣告帖（2026-03-03，blog.google/deepmind）**：Arena.ai 1432 Elo / GPQA Diamond 86.9% / MMMU Pro 76.8% 全在散文——第五批标为"二级来源不录"的数字其实有 tier-A 载体，已补录并加 revisions[] 留痕。 |
+| `xai/grok-4-1.json` | 2025-11-17（页头+publishedTime，与派单估计一致） | 2 verified + 3 pending | 风格/人格向发布：LMArena Text **Thinking 1483 Elo #1**（quasarflux）与**非思考 1465 Elo #2**（tensor）散文可证；EQ-Bench3 / Creative Writing v3 / FActScore 散文给了完整方法论（EQ-Bench3 判官=Claude Sonnet 3.7、官方仓库、默认采样；FActScore=500 传记题、越低越好、非思考+搜索工具）但分数在图 → 3 行 pending。11-01~14 静默灰度 + 64.78% 盲测偏好为内部 A/B，只进 notes。 |
+| `meta/muse-spark-1-2.json`（升级） | 2026-08-05（不变） | 3 翻 verified + 2 新 third_party | **方法论页是 PDF（research.meta.ai/static/muse-spark-1-2-methodology）且全文可机读**，但只有协议没有分数：TB 2.1（89 题/5 次/pass@1/Daytona/可执行验证器）、DeepSWE 1.1（113 题 91 仓 5 语言/Harbor/Pier v0.3.0/断网）协议据此精化，3 行按"点名+协议可证"口径翻 verified（分数仍 not_extracted，82.9/59.3/70.6 留 notes）。方法论同时披露 **GDPVal-AA v2 与 MCP Atlas 的结果分别由 Artificial Analysis 与 Scale AI 产出** → 新增 2 行 third_party_reported（AA Stirrup harness/人类基线 1000；MCP Atlas 1000 题 36 服务器/覆盖度≥0.75）。 |
+
+### 本批新增 benchmark id（notes 标 new-benchmark）
+
+`eq-bench3`、`creative-writing-v3`、`factscore`、`mmmlu`（Multilingual MMLU——与 `global-mmlu-lite`、`multilingual-mmlu` 构成三个多语言 MMLU 姊妹 id，迁移时须分立或显式版本化）。复用已登记：`apex-agents`、`browsecomp`、`scicode`、`swebench-pro`（Public 记 variant）、`mcp-atlas`、`gdpval-aa`、`mrcr`（v2 8-needle 记 variant）；映射既有：`hlehle`（双条件分行）、`arc-agi`（2 + ARC Prize Verified）、`gpqa`、`terminalbench`、`swebench`、`lcb`（**Pro Elo 版记 variant——Elo 与 pass 率永不合并**）、`tau-bench`（τ2 Retail/Telecom）、`mmmu`（Pro）、`arena`。
+
+### 收官状态：三家覆盖窗口内主线（2023-09 后）
+
+- **Google**：2.0 → 2.5 Pro → 2.5 Flash → 3 Pro/Deep Think（前批）→ 3 Flash → 3.1 Pro → 3.1 Flash-Lite → 3.5 Flash → 3.6 Flash(+3.5 Flash-Lite/Cyber) → 3.7 Flash，全部有档。**已证实不存在独立 "Gemini 3.1 Flash" 文本模型**（3.1 Flash 层只出了 Flash-Lite/Live/TTS/Image 变体，Vertex 版本表佐证）——该"缺口"以 gemini-3-1-pro 的 notes 记录结论而非造文件。3.5 Pro 在 7 月帖中"still testing"，发布后补。
+- **xAI**：Grok 3 → 4 → 4.1 → 4.20（pending 占位）→ 4.3（pending 占位）→ 4.5 → 4.6（第一批），全部有档；4.20/4.3 维持 `checked, no benchmark page` 口径。
+- **Meta**：Llama 3.1 → Llama 4 → Muse Spark 1.1（前批）→ Spark 1.2 → Glimmer 30B，全部有档；Spark 1.2 开源权重版"coming weeks"发布后补。
+
+### 收官遗留（供主线排期，不再扩大）
+
+1. 三家各有"分数在图片"的 pending 行（Google GIF 表、Meta launch 图表、xAI EQ/CW/FActScore 图）——升级路径均为人工读图，非抓取问题。
+2. deepmind.google 的 3.7 model card 与 evals-methodology/gemini-3-1-pro 页仍是两个未抓的 DOM 明文源（前者含 Muse Spark 1.2 / Grok 4.5 竞品列）。
+3. `mmmlu` / `global-mmlu-lite` / `multilingual-mmlu` 三 id 待主线裁定合并策略；`gdpval-aa` 的 v2/非 v2 混用已按 variant 隔离，迁移时保持。
