@@ -195,7 +195,7 @@ function explorerPage(db, cards) {
 ${shellTopbar("../", "benchmarks")}
 <div class="bm-container">
   <h1>评估体系大全</h1>
-  <div class="sub">严谨、可查询、可追溯的 benchmark reference：每张卡片是一个评测的<b>索引入口</b>，点击进入独立详情页看测什么、分数怎么看、谁家发布引用过。不懂评测？只读卡片就够。<br><a href="releases/">🕐 模型发布时间轴：按厂商与版本浏览近三年官方发布证据 →</a></div>
+  <div class="sub">严谨、可查询、可追溯的 benchmark reference：每张卡片是一个评测的<b>索引入口</b>，点击进入独立详情页看测什么、分数怎么看、谁家发布引用过。不懂评测？只读卡片就够。<br><a href="../releases/">🕐 模型发布时间轴：浏览各厂商历年核心模型发布与评测证据 →</a></div>
   <div class="controls">
     <div class="search"><input id="q" type="search" placeholder="搜索：名称 / 用途 / 引用厂商…" aria-label="搜索评估体系"></div>
     <select id="sort" aria-label="排序方式">
@@ -502,7 +502,7 @@ a.bchip:hover { text-decoration:none; border-color:var(--pin); }
 `;
 
 /** 时间轴事件卡（服务端静态与客户端渲染共用同一 HTML 结构） */
-function tlEvtHtml(db, r, focusSet) {
+function tlEvtHtml(db, r, focusSet, rel = "../../") {
   const trust = r.verified === 0 ? "none" : r.pending === 0 ? "full" : "part";
   const region = r.region === "CN" ? "国内" : "国际";
   const chips = r.evidence.map(e => {
@@ -514,7 +514,7 @@ function tlEvtHtml(db, r, focusSet) {
     const tip = [e.harness ? `harness: ${e.harness}` : null, e.effort ? `effort: ${e.effort}` : null]
       .filter(Boolean).join(" · ");
     return known
-      ? `<a class="bchip ${cls}${focus}" href="../${esc(e.benchmark_id)}/"${tip ? ` title="${esc(tip)}"` : ""}>${inner}</a>`
+      ? `<a class="bchip ${cls}${focus}" href="${rel}benchmarks/${esc(e.benchmark_id)}/"${tip ? ` title="${esc(tip)}"` : ""}>${inner}</a>`
       : `<span class="bchip plain${focus}" title="新 benchmark，实体页待建">${inner}</span>`;
   }).join("");
   const proto = [];
@@ -544,7 +544,7 @@ function tlGroupHeader(name, meta, href) {
   return `<div class="grp"><span class="g-name">${nameHtml}</span><span class="g-line"></span><span class="g-meta">${esc(meta)}</span></div>`;
 }
 
-function releasesTimelinePage(db) {
+function releasesTimelinePage(db, rel = "../../") {
   const cutoff = db.cutoff;
 
   // 覆盖条：厂商 × 发布数（数据派生）
@@ -564,7 +564,7 @@ function releasesTimelinePage(db) {
   for (const r of inWindow) {
     const y = r.release_date ? r.release_date.slice(0, 4) : null;
     if (y && y !== prevYear) { staticParts.push(`<div class="yrm"><b>${esc(y)}</b></div>`); prevYear = y; }
-    staticParts.push(tlEvtHtml(db, r, null));
+    staticParts.push(tlEvtHtml(db, r, null, rel));
   }
   const staticFeed = `<div class="feed">${staticParts.join("") || '<div class="tl-empty">暂无数据。</div>'}</div>`;
 
@@ -576,15 +576,15 @@ function releasesTimelinePage(db) {
   };
 
   const desc = `按时间刻度罗列国内外主流大厂的核心模型发布：每个时间结点显示哪个模型发布、引用了哪些评测及该模型分数，点击进入对应评测介绍页；支持按厂商过滤、指定评测聚焦、分数阈值与关键字过滤。`;
-  return `${shellHead({ rel: "../../", title: "模型发布时间轴 · 评估大全", desc, path: "benchmarks/releases/", extra: `<style>${SHELL_CSS}${PAGE_CSS}${TIMELINE_CSS}</style>` })}
+  return `${shellHead({ rel, title: "模型发布时间轴 · 评估大全", desc, path: "benchmarks/releases/", extra: `<style>${SHELL_CSS}${PAGE_CSS}${TIMELINE_CSS}</style>` })}
 </head>
 <body class="tlr-page">
-${shellTopbar("../../", "benchmarks")}
+${shellTopbar(rel, "releases")}
 <div class="tlr">
-  <nav class="breadcrumb" style="margin-bottom:18px;"><a href="../../index.html">首页</a> / <a href="../">评估大全</a> / <b>发布时间轴</b></nav>
+  <nav class="breadcrumb" style="margin-bottom:18px;"><a href="${rel}index.html">首页</a> / <b>模型发布</b></nav>
   <p class="eyebrow">Evaluation Ledger · 2023 — 2026</p>
   <h1>模型发布时间轴</h1>
-  <p class="sub">${esc(desc)}引脚形状即证据可信度：<b>●</b> 全部已核验、<b>◐</b> 部分核验、<b>○</b> 待核验。<a href="../">← 返回评估大全</a></p>
+  <p class="sub">${esc(desc)}引脚形状即证据可信度：<b>●</b> 全部已核验、<b>◐</b> 部分核验、<b>○</b> 待核验。<a href="${rel}benchmarks/">← 返回评估大全</a></p>
   <div class="cov-strip"><span class="cov-label">已收录覆盖</span>${cov}</div>
 
   <div class="console" id="tlControls" hidden>
@@ -613,10 +613,12 @@ ${shellTopbar("../../", "benchmarks")}
 ${SHELL_JS}
 <script>
 window.EVALS_TL = ${JSON.stringify(tlData)};
+window.EVALS_TL_REL = ${JSON.stringify(rel)};
 </script>
 <script>
 (function(){
   var D=window.EVALS_TL;
+  var REL=window.EVALS_TL_REL||'../../';
   var app=document.getElementById('tlApp'),staticEl=document.getElementById('tlStatic');
   if(!app||!D)return;
   var state={win:'fresh',vendors:[],bench:null,filters:[],q:''};
@@ -781,10 +783,25 @@ function main() {
 
   writeFileSync(join(dir, "index.html"), explorerPage(db, cards), "utf-8");
 
-  // 模型发布时间轴（厂商 → 版本 → blog 证据，近 3 年窗口）
+  // 模型发布时间轴：一级路由 /releases/（主导航「模型发布」）+ 旧深层路径重定向
+  const relTop = join(DIST, "releases");
+  mkdirSync(relTop, { recursive: true });
+  writeFileSync(join(relTop, "index.html"), releasesTimelinePage(db, "../"), "utf-8");
   const relDir = join(dir, "releases");
   mkdirSync(relDir, { recursive: true });
-  writeFileSync(join(relDir, "index.html"), releasesTimelinePage(db), "utf-8");
+  writeFileSync(join(relDir, "index.html"),
+    `<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>页面已迁移 · 模型发布时间轴</title>
+<meta http-equiv="refresh" content="0; url=../../releases/">
+<script>location.replace("../../releases/");</script>
+</head>
+<body>
+<p>时间轴已升级为一级入口，跳转到 <a href="../../releases/">/releases/</a>。</p>
+</body>
+</html>`, "utf-8");
 
   // 每个 benchmark 的独立详情页
   for (const b of db.benchmarks) {

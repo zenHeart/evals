@@ -713,6 +713,7 @@ function indexPage(parts, chaptersMeta, bench) {
   const entries = [
     ["系统学习", "32 章从认知到实战的完整路径，每章带自测", "book/"],
     ["评估大全", `${bench.count} 个评测的参考库：测什么、分数怎么读、谁家引用过`, "benchmarks/"],
+    ["模型发布", "按时间轴浏览各家核心模型发布与逐条评测证据", "releases/"],
     ["动手搭建", "四步把评估体系搬进你的项目，直到 CI 门禁", "build/"],
   ].map(([t, s, href]) => `<a class="entry-card" href="${href}"><div class="e-title">${t}</div><div class="e-sub">${s}</div></a>`).join("");
   const featured = bench.featured.map(b => `
@@ -953,6 +954,7 @@ ${TOPBAR("", "")}
     <a class="read-cta" href="index.html">🏠 回首页</a>
     <a class="read-cta" href="book/">系统学习</a>
     <a class="read-cta" href="benchmarks/">评估大全</a>
+    <a class="read-cta" href="releases/">模型发布</a>
     <a class="read-cta" href="build/">动手搭建</a>
   </p>
 </main>
@@ -1046,7 +1048,7 @@ async function main() {
   console.log("[evals-web] Built index / book / build / 404 / search-data.js");
 
   const today = new Date().toISOString().slice(0, 10);
-  const urls = ["/", "/book/", ...flat.map(f => `/book/chapter-${chaptersMeta[f].num}/`), "/build/", "/benchmarks/", "/benchmarks/releases/"];
+  const urls = ["/", "/book/", ...flat.map(f => `/book/chapter-${chaptersMeta[f].num}/`), "/build/", "/benchmarks/", "/releases/"];
   // benchmark 详情 URL 集由 hub 构建写入 dist/benchmarks/；sitemap 直接扫描同源数据保证一致
   if (existsSync(benchDataPath)) {
     for (const b of loadBenchData().benchmarks) urls.push(`/benchmarks/${b.id}/`);

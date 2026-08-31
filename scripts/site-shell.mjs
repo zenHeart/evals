@@ -20,6 +20,7 @@ export const SITE = "https://evals.zenheart.site";
 export const PRIMARY_NAV = [
   { key: "book", label: "系统学习", href: "book/" },
   { key: "benchmarks", label: "评估大全", href: "benchmarks/" },
+  { key: "releases", label: "模型发布", href: "releases/" },
   { key: "build", label: "动手搭建", href: "build/" },
 ];
 
