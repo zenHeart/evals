@@ -345,15 +345,16 @@ if (rep.ok) {
   }
   if (!r.benchmarks || r.benchmarks.before !== r.benchmarks.after || r.benchmarks.after !== diskBench)
     err(repFile, `benchmark 数对账失败：报告 ${r.benchmarks?.after} vs 磁盘 ${diskBench}`);
-  if (r.releases?.total !== diskRel)
-    err(repFile, `release 数对账失败：报告 ${r.releases?.total} vs 磁盘 ${diskRel}`);
-  if (r.evidence_edges?.total !== diskEdges.size)
-    err(repFile, `evidence edge 数对账失败：报告 ${r.evidence_edges?.total} vs 磁盘 ${diskEdges}`);
+  // 对账语义：迁移报告是 v1→v2 时刻快照；此后 legacy 只允许因数据卫生（双计去重）减少，不允许增加
+  if ((r.releases?.total ?? 0) < diskRel)
+    err(repFile, `legacy release 数超出迁移基线（报告 ${r.releases?.total} < 磁盘 ${diskRel}）——不得向 legacy 追加`);
+  if ((r.evidence_edges?.total ?? 0) < diskEdges.size)
+    err(repFile, `legacy edge 数超出迁移基线（报告 ${r.evidence_edges?.total} < 磁盘 ${diskEdges.size}）——不得向 legacy 追加`);
   const a = r.adoption_entries;
   if (!a || a.mapped_to_evidence + a.rejected !== a.total)
     err(repFile, "adoption_entries 对账失败：mapped + rejected ≠ total");
-  if (a && a.mapped_to_evidence !== diskEdges.size)
-    err(repFile, `mapped_to_evidence（${a.mapped_to_evidence}）≠ 磁盘 edge 数（${diskEdges.size}）`);
+  if (a && a.mapped_to_evidence < diskEdges.size)
+    err(repFile, `legacy edge 超出迁移映射基线（${a.mapped_to_evidence} < ${diskEdges.size}）`);
   if (!Array.isArray(r.rejected) || a.rejected !== r.rejected.length)
     err(repFile, "rejected 清单与计数不一致");
 }
