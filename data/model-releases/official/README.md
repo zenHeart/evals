@@ -124,3 +124,54 @@ Claude Opus 4.6、Gemini 3 / 3 Deep Think、Mistral Devstral 2 / Mistral 3、Kim
 1. 本批校验脚本对全目录扫描发现**第一批既有行**存在两类与 §11.6 措辞不一致处：约 20 条 `new-benchmark` 标注写在 release 级 notes 或未写（anthropic/deepseek/glm/kimi/openai/xai 各有），以及竞品 `comparison_cited` 行的 `model_id`（如 `gpt-5-5`、`claude-fable-5`）不在本 release `models` 列表 —— 属第一批既定口径，按账本契约「不修改既有文件」未动，留给主线裁定是否批量补标。
 2. Gemini 3 页的 evaluation 表格为 GIF 图片，竞品列未机读；Deep Think 另有 "evaluation methodology" 独立页未抓取，为潜在补充来源。
 3. Mistral 3 页的 GPQA Diamond 图（Ministral）为图片，Ministral 系列的 GPQA 数值待人工读图。
+
+---
+
+## 2026-08-31 第二批：国内厂商缺口覆盖（qwen / minimax / doubao）
+
+goal.md §12.6 Tier 1 国内缺口厂商补齐：Alibaba/Qwen 两条、MiniMax 一条、ByteDance Seed 两条（vendor_id 归 `doubao`，与 data/vendors.json 一致）。本节只追加，不改动上方第一批/国际批内容。
+
+| 文件 | 来源 URL | 条数 | verified | pending | 抓取路径 |
+|---|---|---:|---:|---:|---|
+| `qwen/qwen3.json` | qwenlm.github.io/blog/qwen3/ | 18 | 0 | 18 | web reader 一次成功（正文无表格）；**两张分数图（qwen3-235a22.jpg / qwen3-30a3.jpg）内含全部数值与脚注** → 全部 pending，视觉转写只进 notes；图内脚注（AIME 64 次采样 / Aider 非 thinking / BFCL FC 格式）为视觉读出 |
+| `qwen/qwen3-coder.json` | qwenlm.github.io/blog/qwen3-coder/ | 15 | 0 | 15 | web reader 成功；主分数图 qwen3-coder-main.jpg（Agentic Coding / Browser Use / Tool Use 三组 15 行）全为图片 → 全部 pending；无任何协议明示，protocol 全 null；散文 SOTA 论断并入 swebench 行 notes |
+| `minimax/minimax-m3.json` | minimax.io/blog/minimax-m3 | 35 | 10 | 25 | web reader 成功但漏一图 → **无头浏览器（Playwright）DOM 扫描发现 Evaluation Methodology 前的 2584×3766 结果大表**；5 条散文分数（SWE-Bench Pro 59.0 / TB 2.1 66.0 / SWE-fficiency 34.8 / KernelBench Hard 28.8 / MCP Atlas 74.2）+ OSWorld-Verified 70.06 与 Video-MME 84.6@512f（methodology 散文）+ PostTrainBench 0.37（散文，竞品 0.42/0.39 拆 comparison_cited）共 10 条 verified；其余 25 条表格行 pending；**该页附 30 条 Evaluation Methodology 协议逐条捕获** |
+| `doubao/seed-2-1.json` | seed.bytedance.com/en/blog/seed2-1-officially-released-advancing-ai-productivity | 59 | 27 | 32 | web reader 成功（正文仅论断无分数）；13 张分数图全部视觉转写 → 图内数值只进 notes；**正文点名 + 有明确论断的 benchmark 行记 verified + not_extracted**（Anthropic Opus 5 先例口径）；Code Arena: Frontend 行散文含明文 rank 8 / 1539 → verified + reported，attribution = benchmark_owner_reported（第三方榜单） |
+| `doubao/seed-1-8.json` | seed.bytedance.com/en/blog/official-release-of-seed1-8-a-generalized-agentic-model | 75 | 7 | 68 | web reader 成功；**散文 5 个明文分数 verified + reported**（BrowseComp-en 67.6 / WorldTravel 多模态 47.2 best-of-5 / ZeroBench main 11.0 / VLMsAreBiased 62.0 / VideoMME 87.8 含字幕且启用 VideoCut 工具）+ FinSearchComp、XpertBench 两条散文点名行 verified + not_extracted；其余 11 张图全部 pending |
+
+**本批小计：202 条 = 44 verified + 158 pending。** 目录截至本批完成：17 个 release 文件 / 334 条（142 verified + 192 pending），含并行国际批（google/meta/mistral）。
+
+### 本批抓取与降级路径记录
+
+1. 两个 qwenlm.github.io 页与 seed.bytedance.com 两个英文页：web reader 一次成功；MiniMax M3 页 web reader 内容完整但**漏掉一张关键大表图片**，由 Playwright DOM 扫描（`document.querySelectorAll('img')` + 尺寸过滤）找回 —— 后续遇到"有 Evaluation Methodology 却无对应分数"的页面应先怀疑漏图。
+2. 视觉辅助（MiniMax understand_image）用于：Qwen3 ×2 图、Qwen3-Coder ×2 图、M3 大表 + hero 图 + 定价图、Seed 2.1 ×12 图、Seed 1.8 ×12 图。所有 OCR 数值仅写入 notes，未翻转任何行为 verified（goal.md §12.5）。
+3. 交叉验证：M3 的 5 条散文分数与大表视觉读数一致；Seed 1.8 的 5 条散文分数与对应图读数一致；Seed 2.1 GDPVal / MobileWorld "最高分"论断与图读数一致。
+4. Seed 1.8 页面不印日期 → `release_date: 2025-12` + `date_precision: month`，依据第三方聚合站（theresanaiforthat.com，2025-12-18）且与 Seed 2.0（2026-02-14）时序一致，来源等级 D 仅作日期线索，已在 release notes 声明。
+
+### 本批关键协议字段捕获（协议明示才记录，其余 null）
+
+- MiniMax M3（Evaluation Methodology 逐条）：SWE-bench Verified = Claude Code scaffold / 4 次取均值；Terminal-Bench 2.1 = Terminus 2 / 8C16G / 2h / max output 128K；NL2Repo = 1C2G / 4h / 防 hack 约束（禁 git clone、Bash 监控拦截）；OSWorld-Verified = 相对坐标 0–1000 / 1920×1080 / max steps 200（100→200：68.70→70.06）；VideoMMMU/Video-MME = 1 FPS / LLM-as-a-Judge / M3 temp 1.0 top_p 0.95（外部模型 0.7，非同配置）；IMO 2025 & USAMO 2026 = MathArena 对齐 / 双裁判取 min / TTS ≤10 迭代；BrowseComp = WebExplorer 框架 / 超 64K 弃史；YC-Bench metric = final assets (fund)，单位记 `usd_fund` 非百分比。
+- Qwen3（图内脚注，视觉读出）：AIME 24/25 = 64 次采样取均值；Aider = 非 thinking 模式；BFCL = Qwen3 用 FC 格式、基线取 FC/prompt 最优（竞品行非同协议）。
+- Seed 1.8：WorldTravel = best of five attempts（run_count 5）；VideoMME = 字幕条件（‡）+ VideoCut 工具启用；图内 `*` = 竞品分数引自公开技术报告（comparison_cited 性质，已写入 notes）。
+- Seed 2.1：全页无协议明示，protocol 全 null（页面自述"prioritize model performance in live workflows over static benchmark scores"）。
+
+### 本批新增 benchmark id（notes 均标 `new-benchmark`，待迁入主数据）
+
+108 个：`agent-startup-bench`、`ainstein-swe-bench`、`amo-bench`、`bankertoolbench`、`beyondaime`、`biobench`、`blink`、`cgbench`、`cl-bench`、`claw-eval`、`clawbench`、`code-arena-frontend`、`codeforces`、`collie`、`countix`、`creativework`、`cv-bench`、`da-2k`、`doubao-multi-turn-bench`、`draco`、`dyna-math`、`egotempo`、`eifbench`、`embspatial-bench`、`emma`、`erqa`、`finance-agent`、`finsearchcomp`、`frontier-science-olympiad`、`frontier-science-research`、`frontiercs`、`gameworld`、`gdpval`、`gdpval-rubrics`、`hallusionbench`、`hmmt25`、`horizonmath`、`image2floorplan`、`imo-2025`、`imo-answerbench`、`inverse-ifeval`、`kina`、`kor-bench`、`livesqlbench`、`loca-bench`、`logicvista`、`longvideobench`、`lpfqa`、`lvbench`、`mars-bench`、`mathvision`、`measurebench`、`mind2web`、`mm-browsecomp`、`mmbench`、`mme-cc`、`mmlongbench`、`mmsi-bench`、`mmstar`、`mmvp`、`mobileworld`、`motionbench`、`msqa`、`muirbench`、`multi-swebench`、`multichallenge`、`multiif`、`omnidocbench`、`one-million-bench`、`online-mind2web`、`ovbench`、`ovobench`、`paperbench`、`phybench`、`present-bench`、`realbench`、`realworldqa`、`refspatialbench`、`scicode`、`sfe`、`simplevqa`、`spider2`、`supergpqa`、`svg-bench`、`swe-atlas`、`swe-atlas-codebase-qna`、`swe-atlas-test-writing`、`swe-fficiency`、`swebench-live`、`swebench-multilingual`、`swebench-pro`、`tempcompass`、`tomato`、`tvbench`、`u-artifacts`、`usamo-2026`、`vibe-v2`、`video-mme`、`vlmsarebiased`、`vlmsareblind`、`vpct`、`widesearch`、`wildclawbench`、`workspace-bench`、`worldtravel`、`xdailybench`、`xpertbench`、`yc-bench`。
+
+映射既有 id：`arenahard`、`aime24`、`aime-25`、`lcb`、`aider`、`livebench`、`bfcl`、`gpqa`、`terminalbench`（2.0/2.1 记 variant）、`swebench`（harness/turns 记 variant）、`webarena`、`tau-bench`（retail/airline）、`osworld`、`mmmu`（Pro 记 variant）、`arc-agi`（1 记 variant）、`gaia`、`androidworld`、`mmlu`、`mmlu-pro`、`mathvista`、`korb`（Hard 记 variant）、`hlehle`（Verified / text-only / VL 记 variant）。复用前两批已引入的 `agents-last-exam`、`apex-agents`、`babyvision`、`browsecomp`、`charxiv-reasoning`、`cybergym`、`deepswe`、`mcp-atlas`、`nl2repo`、`officeqa-pro`、`posttrain-bench`、`program-bench`、`spreadsheetbench`、`toolathlon`、`zerobench`。
+
+### 跨批 id 对齐
+
+- AIME 2025 届：国际批已记 `aime-25`，本批 qwen3 / seed-1-8 原拟 `aime25`，**已改用 `aime-25`** 保持单一 id。
+- Video-MMMU：国际批已记 `video-mmmu`，本批 minimax-m3 原拟 `videommmu`，**已改用 `video-mmmu`**。
+- `swebench-pro` 两批不谋而合，无需对齐。
+
+### 本批待人工核验清单（pending 升级路径）
+
+1. Qwen3 两张图 18 行 + Qwen3-Coder 主图 15 行：人工读图确认视觉转写数值后逐行翻 verified。
+2. MiniMax M3 大表 25 行 + hero 图：人工读图确认；两处冲突需裁定 —— (a) hero 图 OSWorld-Verified 视觉读数 75.2 vs 散文+大表双重确认的 70.06；(b) IMO/USAMO 竞品行混用 points 与 percent 单位。
+3. Seed 2.1 的 13 张图 32 条 pending 行：人工读图；注意 OVOBench（流式）与 OVBench 是两个不同 benchmark，prose 只点名 OVBench。
+4. MiniMax M3 VideoMME 双条件（85.4 含字幕 vs 84.6@512 帧）与 PostTrainBench 双记法（0.37 vs 37.1）已分行/已注明，合并前必须按 variant 区分。
+5. Seed 1.8 的 11 张图 68 条 pending 行：人工读图；Seed 1.8 与 Seed 2.1 的 PostTrainBench 数值（16.5/18.3 vs 37.1）不可直接比较，协议不同。
+6. 未转行的两个图（有意跳过，已写入 release notes）：Seed 1.8 的"高经济价值场景"无名内场景板（Education / Customer Support Q&A 等 6 行，无 benchmark 名）、Seed 2.1 的众包开发者评估图（匿名模型对比）。

@@ -397,109 +397,155 @@ ${SHELL_JS}
 // ---------------------------------------------------------------- 发布时间轴页（交互式 v2）
 
 const TIMELINE_CSS = `
-.tl-wrap { max-width:1080px; margin:0 auto; padding:28px 0 70px; }
-.tl-note { font-size:13.5px; color:#64748b; margin:8px 0 18px; }
-body.dark .tl-note { color:#94a3b8; }
+/* ============ 模型发布时间轴 · 独立设计（仪器纸 / 刻度尺脊线 / 可信度引脚） ============ */
+body.tlr-page { background:#F7F8F6; color:#17212E; }
+body.tlr-page.dark { background:#0E1622; color:#E4E9EF; }
+.tlr {
+  --paper:#F7F8F6; --ink:#17212E; --graphite:#5C6B7C; --rule:#D9DEE3;
+  --pin:#D14A24; --ok:#0E7A4E; --warn:#A16207; --card:#FFFFFF;
+  max-width:1120px; margin:0 auto; padding:28px 0 70px;
+}
+body.dark .tlr, body.tlr-page.dark .tlr {
+  --paper:#0E1622; --ink:#E4E9EF; --graphite:#93A1B3; --rule:#263241;
+  --pin:#FF7A50; --ok:#3DC98A; --warn:#D9A441; --card:#131E30;
+}
+.tlr .eyebrow { font:700 11.5px/1 ui-monospace,SFMono-Regular,Consolas,monospace; letter-spacing:.18em; color:var(--pin); text-transform:uppercase; margin:0 0 10px; }
+.tlr h1 { font-family:Georgia,"Songti SC","STSong","SimSun",serif; font-size:clamp(30px,5vw,44px); font-weight:700; line-height:1.15; margin:0 0 10px; letter-spacing:.01em; }
+.tlr .sub { font-size:14.5px; color:var(--graphite); max-width:72ch; margin:0 0 8px; }
+.tlr .sub a { color:var(--ink); text-decoration:underline; text-underline-offset:3px; }
 /* 覆盖条 */
-.tl-cov { display:flex; flex-wrap:wrap; gap:6px; margin:0 0 18px; font-size:12px; }
-.tl-cov .cov { border:1px solid rgba(0,0,0,.12); border-radius:999px; padding:2px 10px; color:#64748b; }
-body.dark .tl-cov .cov { border-color:rgba(255,255,255,.16); color:#94a3b8; }
-.tl-cov .cov b { color:inherit; }
-/* 控制区 */
-.tl-controls { border:1px solid rgba(0,0,0,.1); border-radius:14px; padding:12px 14px; margin:0 0 20px; background:#fff; display:flex; flex-direction:column; gap:10px; }
-body.dark .tl-controls { background:#111a2e; border-color:rgba(255,255,255,.1); }
-.tl-row { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
-.tl-seg { display:inline-flex; border:1.5px solid rgba(37,99,235,.35); border-radius:10px; overflow:hidden; }
-.tl-seg button { border:none; background:transparent; color:#2563eb; padding:6px 14px; font-size:13px; font-weight:700; cursor:pointer; }
-body.dark .tl-seg button { color:#60a5fa; }
-.tl-seg button.on { background:#2563eb; color:#fff; }
-body.dark .tl-seg button.on { background:#60a5fa; color:#0b1224; }
-.tl-label { font-size:12px; font-weight:800; color:#94a3b8; letter-spacing:.05em; }
-.tl-controls select, .tl-controls input[type=search], .tl-controls input[type=number] {
-  padding:6px 10px; border-radius:9px; border:1.5px solid rgba(0,0,0,.14); background:#fff; color:inherit; font-size:13px;
+.cov-strip { display:flex; flex-wrap:wrap; gap:0 18px; row-gap:6px; margin:18px 0 22px; padding:10px 0; border-top:1px solid var(--rule); border-bottom:1px solid var(--rule); }
+.cov-strip .cov { font:400 12.5px/1.6 ui-monospace,monospace; color:var(--graphite); }
+.cov-strip .cov b { font-weight:700; color:var(--ink); font-size:14px; }
+.cov-strip .cov-label { font:700 11px/1.8 ui-monospace,monospace; letter-spacing:.14em; color:var(--pin); }
+/* 控制台 */
+.console { border:1px solid var(--rule); background:var(--card); border-radius:8px; padding:14px 16px; margin:0 0 8px; display:flex; flex-direction:column; gap:10px; }
+.console .row { display:flex; flex-wrap:wrap; gap:8px 14px; align-items:center; }
+.console .lab { font:700 10.5px/1 ui-monospace,monospace; letter-spacing:.16em; color:var(--graphite); text-transform:uppercase; min-width:56px; }
+.seg { display:inline-flex; border:1px solid var(--rule); border-radius:6px; overflow:hidden; }
+.seg button { border:none; background:transparent; color:var(--graphite); padding:7px 16px; font:600 13px/1.2 inherit; cursor:pointer; }
+.seg button + button { border-left:1px solid var(--rule); }
+.seg button.on { background:var(--ink); color:var(--paper); }
+.console select, .console input[type=search], .console input[type=number] {
+  padding:7px 10px; border-radius:6px; border:1px solid var(--rule); background:var(--card); color:inherit; font:400 13px/1.4 inherit;
 }
-body.dark .tl-controls select, body.dark .tl-controls input { background:#0e1730; border-color:rgba(255,255,255,.16); }
-.tl-controls input[type=number] { width:86px; }
-.tl-btn { border:1.5px solid rgba(37,99,235,.4); background:transparent; color:#2563eb; border-radius:9px; padding:6px 12px; font-size:13px; font-weight:700; cursor:pointer; }
-body.dark .tl-btn { color:#60a5fa; border-color:rgba(96,165,250,.4); }
-.tl-btn:hover { background:rgba(37,99,235,.07); }
-.tl-vchip { border:1.5px solid rgba(0,0,0,.14); background:transparent; color:inherit; border-radius:999px; padding:4px 12px; font-size:12.5px; font-weight:600; cursor:pointer; }
-body.dark .tl-vchip { border-color:rgba(255,255,255,.18); }
-.tl-vchip.on { background:#2563eb; border-color:#2563eb; color:#fff; }
-.tl-fchip { display:inline-flex; align-items:center; gap:6px; border:1.5px solid rgba(180,83,9,.5); background:rgba(245,158,11,.1); color:#b45309; border-radius:999px; padding:4px 12px; font-size:12.5px; font-weight:700; }
-body.dark .tl-fchip { color:#fbbf24; border-color:rgba(251,191,36,.4); background:rgba(251,191,36,.08); }
-.tl-fchip button { border:none; background:transparent; color:inherit; cursor:pointer; font-size:13px; padding:0; line-height:1; }
-.tl-count { font-size:13px; color:#64748b; margin:0 0 14px; }
-body.dark .tl-count { color:#94a3b8; }
-/* 时间轴主体 */
-.tl-vendor { margin:30px 0 10px; font-size:20px; font-weight:800; display:flex; align-items:center; gap:10px; }
-.tl-vendor::after { content:""; flex:1; height:1px; background:rgba(0,0,0,.08); }
-body.dark .tl-vendor::after { background:rgba(255,255,255,.1); }
-.tl-region { font-size:11px; font-weight:800; color:#94a3b8; letter-spacing:.08em; }
-.tl { border-left:2px solid rgba(37,99,235,.25); margin-left:8px; padding-left:22px; }
-body.dark .tl { border-left-color:rgba(96,165,250,.3); }
-.tl-item { position:relative; padding:0 0 26px; }
-.tl-item:last-child { padding-bottom:4px; }
-.tl-item::before {
-  content:""; position:absolute; left:-29px; top:6px; width:12px; height:12px; border-radius:50%;
-  background:#2563eb; border:2.5px solid #f6f7fb; box-shadow:0 0 0 2px rgba(37,99,235,.35);
+.console input[type=search] { flex:1; min-width:170px; }
+.console input[type=number] { width:88px; font-family:ui-monospace,monospace; }
+.ghost-btn { border:1px solid var(--pin); background:transparent; color:var(--pin); border-radius:6px; padding:7px 14px; font:700 12.5px/1.2 inherit; cursor:pointer; }
+.ghost-btn:hover { background:color-mix(in srgb, var(--pin) 8%, transparent); }
+.vchip { border:1px solid var(--rule); background:transparent; color:var(--ink); border-radius:4px; padding:5px 12px; font:600 12.5px/1.3 inherit; cursor:pointer; }
+.vchip.on { background:var(--ink); border-color:var(--ink); color:var(--paper); }
+.fchip { display:inline-flex; align-items:center; gap:8px; border:1px solid var(--pin); color:var(--pin); border-radius:4px; padding:5px 10px; font:700 12.5px/1.2 ui-monospace,monospace; }
+.fchip button { border:none; background:transparent; color:inherit; cursor:pointer; font-size:13px; padding:0; line-height:1; }
+.tl-count { font:400 12.5px/1.6 ui-monospace,monospace; color:var(--graphite); margin:10px 2px 22px; }
+/* ---- 刻度尺脊线 + 事件 ---- */
+.feed { position:relative; padding-left:58px; }
+.feed::before { content:""; position:absolute; left:22px; top:4px; bottom:4px; width:2px;
+  background:repeating-linear-gradient(180deg, var(--rule) 0 9px, transparent 9px 13px); transform-origin:top; }
+@media (prefers-reduced-motion: no-preference) {
+  .feed.animate::before { animation:ruleDraw .8s ease-out both; }
+  .feed.animate .evt { animation:evtIn .5s ease-out both; }
+  @keyframes ruleDraw { from { transform:scaleY(0); } to { transform:scaleY(1); } }
+  @keyframes evtIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
 }
-body.dark .tl-item::before { background:#60a5fa; border-color:#0b1224; box-shadow:0 0 0 2px rgba(96,165,250,.4); }
-.tl-date { font-family:ui-monospace,monospace; font-size:13px; font-weight:800; color:#2563eb; }
-body.dark .tl-date { color:#60a5fa; }
-.tl-title { font-size:17px; font-weight:800; margin:2px 0 2px; }
-.tl-models { font-size:13px; color:#64748b; }
-body.dark .tl-models { color:#94a3b8; }
-.tl-meta { font-size:13px; color:#475569; margin:4px 0 8px; }
-body.dark .tl-meta { color:#a8b6c8; }
-.tl-chips { display:flex; flex-wrap:wrap; gap:6px; margin:6px 0; }
-.tl-chip {
-  font-size:12px; padding:2px 10px; border-radius:999px; border:1px solid rgba(37,99,235,.3);
-  color:#2563eb; text-decoration:none; background:rgba(37,99,235,.05);
+/* 年份刻度：跨年时浮出的衬线数字 */
+.yrm { position:relative; margin:26px 0 14px; height:26px; }
+.yrm::after { content:""; position:absolute; left:0; right:0; top:50%; height:1px; background:var(--rule); }
+.yrm b { position:absolute; left:-58px; width:46px; text-align:center; top:50%; transform:translateY(-50%); white-space:nowrap;
+  font:700 19px/1 Georgia,"Songti SC","STSong","SimSun",serif; color:var(--pin); background:var(--paper); padding:3px 0; }
+/* 事件卡 */
+.evt { position:relative; margin:0 0 18px; border:1px solid var(--rule); border-radius:8px; background:var(--card); padding:13px 18px 12px; }
+.evt:hover { border-color:var(--graphite); }
+.evt .pin-dot { position:absolute; left:-42px; top:17px; width:13px; height:13px; border-radius:50%; }
+.evt[data-trust="full"] .pin-dot { background:var(--ok); box-shadow:0 0 0 1.5px var(--ok), 0 0 0 4px var(--paper); }
+.evt[data-trust="part"] .pin-dot { background:conic-gradient(var(--ok) 0 50%, var(--card) 50% 100%); box-shadow:0 0 0 1.5px var(--ok), 0 0 0 4px var(--paper); }
+.evt[data-trust="none"] .pin-dot { background:var(--card); box-shadow:0 0 0 1.5px var(--graphite), 0 0 0 4px var(--paper); }
+.evt-head { display:flex; align-items:baseline; gap:12px; flex-wrap:wrap; }
+.evt-date { font:700 13px/1 ui-monospace,monospace; color:var(--pin); }
+.evt-vendor { font:700 10.5px/1 ui-monospace,monospace; letter-spacing:.14em; color:var(--graphite); text-transform:uppercase; }
+.evt-vendor i { font-style:normal; color:var(--rule); margin:0 5px; }
+.evt-title { font-size:16.5px; font-weight:800; margin:6px 0 2px; line-height:1.4; }
+.evt-models { font-size:13px; color:var(--graphite); margin:0 0 6px; }
+.evt-meta { font:400 12px/1.7 ui-monospace,monospace; color:var(--graphite); margin:0 0 8px; }
+.evt-meta b { color:var(--ok); font-weight:700; }
+.evt-meta i { color:var(--warn); font-style:normal; }
+.evt-chips { display:flex; flex-wrap:wrap; gap:6px; margin:0 0 8px; }
+.bchip { font:400 12px/1.4 ui-monospace,monospace; padding:2px 10px; border-radius:4px; text-decoration:none; }
+.bchip b { font-weight:700; }
+.bchip.ok { border:1px solid color-mix(in srgb, var(--ok) 55%, transparent); color:var(--ink); background:color-mix(in srgb, var(--ok) 7%, transparent); }
+.bchip.ok b { color:var(--ok); }
+.bchip.pd { border:1px dashed color-mix(in srgb, var(--warn) 70%, transparent); color:var(--graphite); background:transparent; }
+.bchip.pd b { color:var(--warn); }
+a.bchip:hover { text-decoration:none; border-color:var(--pin); }
+.bchip.focus { outline:1.5px solid var(--pin); outline-offset:1px; }
+.bchip.plain { border:1px dashed var(--rule); color:var(--graphite); }
+.evt-src { font-size:12.5px; }
+.evt-src a { color:var(--graphite); text-decoration:underline; text-underline-offset:3px; }
+.evt-src a:hover { color:var(--pin); }
+.evt-src .kind { color:var(--graphite); font:400 11px/1 ui-monospace,monospace; margin-left:6px; }
+/* 分组标头 */
+.grp { margin:34px 0 14px; display:flex; align-items:baseline; gap:12px; }
+.grp .g-name { font-family:Georgia,"Songti SC","STSong","SimSun",serif; font-size:23px; font-weight:700; color:var(--ink); }
+.grp .g-name a { color:inherit; text-decoration:none; }
+.grp .g-name a:hover { color:var(--pin); }
+.grp .g-meta { font:400 12px/1.4 ui-monospace,monospace; color:var(--graphite); }
+.grp .g-line { flex:1; height:1px; background:var(--rule); align-self:center; }
+.tl-empty { color:var(--graphite); font-size:14px; padding:26px 0; }
+@media (max-width:640px) {
+  .feed { padding-left:30px; }
+  .feed::before { left:8px; }
+  .yrm b { left:-40px; width:36px; font-size:18px; }
+  .evt .pin-dot { left:-28px; width:11px; height:11px; }
 }
-body.dark .tl-chip { color:#60a5fa; border-color:rgba(96,165,250,.35); background:rgba(96,165,250,.08); }
-a.tl-chip:hover { text-decoration:none; border-color:#2563eb; }
-.tl-chip.pending { border-style:dashed; color:#94a3b8; border-color:rgba(0,0,0,.2); background:transparent; }
-body.dark .tl-chip.pending { color:#94a3b8; border-color:rgba(255,255,255,.2); }
-.tl-chip b { font-weight:800; }
-.tl-chip.focus { outline:2px solid #2563eb; outline-offset:1px; }
-body.dark .tl-chip.focus { outline-color:#60a5fa; }
-.tl-src { font-size:13px; }
-.tl-src a { color:#2563eb; }
-body.dark .tl-src a { color:#60a5fa; }
-.tl-empty { color:#94a3b8; font-size:14px; padding:20px 0; }
 `;
 
-/** 时间轴节点 HTML（服务端静态视图与客户端渲染共用同一结构） */
-function tlNodeHtml(db, r, focusBench) {
+/** 时间轴事件卡（服务端静态与客户端渲染共用同一 HTML 结构） */
+function tlEvtHtml(db, r, focusSet) {
+  const trust = r.verified === 0 ? "none" : r.pending === 0 ? "full" : "part";
+  const region = r.region === "CN" ? "国内" : "国际";
   const chips = r.evidence.map(e => {
     const known = db.benchmarks.some(b => b.id === e.benchmark_id);
     const score = e.display ? ` <b>${esc(e.display)}</b>` : "";
-    const cls = e.status === "verified" ? "" : " pending";
-    const focus = focusBench && e.benchmark_id === focusBench ? " focus" : "";
+    const cls = e.status === "verified" ? "ok" : "pd";
+    const focus = focusSet && focusSet.has(e.benchmark_id) ? " focus" : "";
     const inner = `${esc(e.benchmark_id)}${e.variant ? " " + esc(e.variant) : ""}${score}`;
+    const tip = [e.harness ? `harness: ${e.harness}` : null, e.effort ? `effort: ${e.effort}` : null]
+      .filter(Boolean).join(" · ");
     return known
-      ? `<a class="tl-chip${cls}${focus}" href="../${esc(e.benchmark_id)}/" title="${e.harness ? "harness: " + esc(e.harness) : ""}">${inner}</a>`
-      : `<span class="tl-chip${cls}${focus}" title="新 benchmark，实体页待建">${inner}</span>`;
+      ? `<a class="bchip ${cls}${focus}" href="../${esc(e.benchmark_id)}/"${tip ? ` title="${esc(tip)}"` : ""}>${inner}</a>`
+      : `<span class="bchip plain${focus}" title="新 benchmark，实体页待建">${inner}</span>`;
   }).join("");
-  const proto = [
-    r.evidence.find(e => e.harness)?.harness ? `harness: ${esc(r.evidence.find(e => e.harness).harness)}` : null,
-    r.evidence.find(e => e.effort)?.effort ? `effort: ${esc(r.evidence.find(e => e.effort).effort)}` : null,
-  ].filter(Boolean).join(" · ");
-  return `<div class="tl-item">
-    <div class="tl-date">${r.release_date ? esc(r.release_date) : "日期待核验"}</div>
-    <div class="tl-title">${esc(r.release_title)}</div>
-    ${r.models.length ? `<div class="tl-models">模型：${esc(r.models.join(" / "))}</div>` : ""}
-    <div class="tl-meta">benchmark 证据 ${r.evidence.length} 条（已核验 ${r.verified} · 待核验 ${r.pending}）${proto ? " · " + proto : ""}</div>
-    <div class="tl-chips">${chips}</div>
-    ${r.source_url ? `<div class="tl-src"><a href="${esc(r.source_url)}" target="_blank" rel="noopener">📄 官方发布原文 ↗</a>${r.source_kind ? ` <span style="color:#94a3b8;font-size:12px;">(${esc(r.source_kind)})</span>` : ""}</div>` : ""}
-  </div>`;
+  const proto = [];
+  for (const e of r.evidence) {
+    if (!proto.h && e.harness) proto.h = `harness ${esc(e.harness)}`;
+    if (!proto.e && e.effort) proto.e = `effort ${esc(e.effort)}`;
+  }
+  const metaBits = [`证据 <b>${r.verified}</b>·<i>${r.pending}</i> / ${r.evidence.length}`, proto.h, proto.e]
+    .filter(Boolean).join(" · ");
+  return `<article class="evt" data-trust="${trust}">
+    <span class="pin-dot" aria-hidden="true"></span>
+    <div class="evt-head">
+      <span class="evt-date">${r.release_date ? esc(r.release_date) : "日期待核验"}</span>
+      <span class="evt-vendor">${esc(r.vendor_label)}<i>·</i>${region}</span>
+    </div>
+    <h3 class="evt-title">${esc(r.release_title)}</h3>
+    ${r.models.length ? `<div class="evt-models">${esc(r.models.join(" / "))}</div>` : ""}
+    <div class="evt-meta">${metaBits}</div>
+    <div class="evt-chips">${chips}</div>
+    ${r.source_url ? `<div class="evt-src"><a href="${esc(r.source_url)}" target="_blank" rel="noopener">官方发布原文 ↗</a><span class="kind">${esc(r.source_kind || "")}</span></div>` : ""}
+  </article>`;
+}
+
+/** 分组标头（厂商模式 / 评测模式共用） */
+function tlGroupHeader(name, meta, href) {
+  const nameHtml = href ? `<a href="${esc(href)}">${esc(name)} ↗</a>` : esc(name);
+  return `<div class="grp"><span class="g-name">${nameHtml}</span><span class="g-line"></span><span class="g-meta">${esc(meta)}</span></div>`;
 }
 
 function releasesTimelinePage(db) {
   const cutoff = db.cutoff;
 
-  // 覆盖条：已收录厂商 × 发布数（从数据派生，不手写）
+  // 覆盖条：厂商 × 发布数（数据派生）
   const covCounts = new Map();
   for (const r of db.releases) covCounts.set(r.vendor_id, (covCounts.get(r.vendor_id) || 0) + 1);
   const cov = [...covCounts.entries()].sort((a, b) => b[1] - a[1])
@@ -508,11 +554,10 @@ function releasesTimelinePage(db) {
       return `<span class="cov">${esc(v?.display_name || v?.name || vid)} <b>${n}</b></span>`;
     }).join("");
 
-  // noscript 静态默认视图：近三年 + 按厂商
+  // noscript 静态默认视图：近三年 + 按厂商 + 年份刻度
   const inWindow = db.releases.filter(r => r.release_date && r.release_date >= cutoff);
   const knownVendors = new Set(db.vendors.map(v => v.id));
-  const regionOf = v => (v.region === "CN" ? 1 : 0);
-  const vendorRank = Object.fromEntries(db.vendors.map((v, i) => [v.id, regionOf(v) * 1000 + i]));
+  const vendorRank = Object.fromEntries(db.vendors.map((v, i) => [v.id, (v.region === "CN" ? 1000 : 0) + i]));
   const groups = new Map();
   for (const r of inWindow) {
     const key = knownVendors.has(r.vendor_id) ? r.vendor_id : "_other";
@@ -520,16 +565,18 @@ function releasesTimelinePage(db) {
     groups.get(key).push(r);
   }
   const staticSections = [...groups.entries()].sort((a, b) => {
-    const ra = a[0] === "_other" ? 9999 : (vendorRank[a[0]] ?? 5000);
-    const rb = b[0] === "_other" ? 9999 : (vendorRank[b[0]] ?? 5000);
+    const ra = a[0] === "_other" ? 99999 : (vendorRank[a[0]] ?? 5000);
+    const rb = b[0] === "_other" ? 99999 : (vendorRank[b[0]] ?? 5000);
     return ra - rb;
   }).map(([key, rels]) => {
-    const label = key === "_other" ? "其他厂商" : (db.vendors.find(v => v.id === key)?.display_name || key);
-    const region = key === "_other" ? "" : (db.vendors.find(v => v.id === key)?.region === "CN" ? "国内" : "国际");
-    return `<div class="tl-vendor">${esc(label)} <span class="tl-region">${region}</span></div><div class="tl">${rels.map(r => tlNodeHtml(db, r, null)).join("")}</div>`;
+    const v = db.vendors.find(x => x.id === key);
+    const label = key === "_other" ? "其他厂商" : (v?.display_name || key);
+    const region = v?.region === "CN" ? "国内" : "国际";
+    const body = rels.sort((a, b) => (b.release_date || "").localeCompare(a.release_date || ""))
+      .map(r => tlEvtHtml(db, r, null)).join("");
+    return tlGroupHeader(label, `${region} · ${rels.length} 次发布`, null) + `<div class="feed">${body}</div>`;
   }).join("");
 
-  // 客户端数据：全量 release + benchmark/vendor 维度
   const tlData = {
     cutoff,
     benchmarks: db.benchmarks.map(b => ({ id: b.id, name: b.name })).sort((a, b) => a.id.localeCompare(b.id)),
@@ -537,40 +584,41 @@ function releasesTimelinePage(db) {
     releases: db.releases,
   };
 
-  const desc = `大模型评测变迁时间轴：覆盖国内外主流厂商的发布 blog，每个时间节点显示哪个模型发布、引用了哪些评测及该模型分数，可点击进入对应评测介绍页；支持按厂商、按评测分类与分数阈值过滤。`;
-  return `${shellHead({ rel: "../../", title: "模型评测变迁时间轴 · 评估大全", desc, path: "benchmarks/releases/", extra: `<style>${SHELL_CSS}${PAGE_CSS}${TIMELINE_CSS}</style>` })}
+  const desc = `按时间刻度罗列国内外主流大厂的核心模型发布：每个时间结点显示哪个模型发布、引用了哪些评测及该模型分数，点击进入对应评测介绍页；支持按厂商、按评测分类与分数阈值过滤。`;
+  return `${shellHead({ rel: "../../", title: "模型发布时间轴 · 评估大全", desc, path: "benchmarks/releases/", extra: `<style>${SHELL_CSS}${PAGE_CSS}${TIMELINE_CSS}</style>` })}
 </head>
-<body>
+<body class="tlr-page">
 ${shellTopbar("../../", "benchmarks")}
-<div class="tl-wrap bm-container">
-  <nav class="breadcrumb"><a href="../../index.html">首页</a> / <a href="../">评估大全</a> / <b>发布时间轴</b></nav>
-  <h1>模型评测变迁时间轴</h1>
-  <div class="tl-note">${esc(desc)}<br>实心 chip = 已核验证据，虚线 = 待核验；chip 可点击进入对应评测介绍页。<a href="../">← 返回评估大全</a></div>
-  <div class="tl-cov"><span class="tl-label">已收录覆盖</span>${cov}</div>
+<div class="tlr">
+  <nav class="breadcrumb" style="margin-bottom:18px;"><a href="../../index.html">首页</a> / <a href="../">评估大全</a> / <b>发布时间轴</b></nav>
+  <p class="eyebrow">Evaluation Ledger · 2023 — 2026</p>
+  <h1>模型发布时间轴</h1>
+  <p class="sub">${esc(desc)}引脚形状即证据可信度：<b>●</b> 全部已核验、<b>◐</b> 部分核验、<b>○</b> 待核验。<a href="../">← 返回评估大全</a></p>
+  <div class="cov-strip"><span class="cov-label">已收录覆盖</span>${cov}</div>
 
-  <div class="tl-controls" id="tlControls" hidden>
-    <div class="tl-row">
-      <span class="tl-label">窗口</span>
-      <span class="tl-seg" id="tlWindow"><button type="button" data-v="fresh" class="on">近三年</button><button type="button" data-v="all">全部历史</button></span>
-      <span class="tl-label" style="margin-left:10px;">分类</span>
-      <span class="tl-seg" id="tlGroup"><button type="button" data-v="vendor" class="on">按厂商</button><button type="button" data-v="benchmark">按评测</button></span>
-      <input type="search" id="tlQ" placeholder="搜索模型 / 发布标题…" style="flex:1;min-width:160px;" aria-label="搜索时间轴">
+  <div class="console" id="tlControls" hidden>
+    <div class="row">
+      <span class="lab">窗口</span>
+      <span class="seg" id="tlWindow"><button type="button" data-v="fresh" class="on">近三年</button><button type="button" data-v="all">全部历史</button></span>
+      <span class="lab">分类</span>
+      <span class="seg" id="tlGroup"><button type="button" data-v="vendor" class="on">按厂商</button><button type="button" data-v="benchmark">按评测</button></span>
+      <input type="search" id="tlQ" placeholder="搜索模型 / 发布标题 / 厂商…" aria-label="搜索时间轴">
     </div>
-    <div class="tl-row" id="tlVendorRow"><span class="tl-label">厂商</span></div>
-    <div class="tl-row">
-      <span class="tl-label">分数过滤</span>
+    <div class="row" id="tlVendorRow"><span class="lab">厂商</span></div>
+    <div class="row">
+      <span class="lab">分数过滤</span>
       <select id="tlBench" aria-label="选择评测"></select>
-      <span style="font-size:13px;color:#94a3b8">分数 ≥</span>
+      <span class="lab" style="min-width:auto">≥</span>
       <input type="number" id="tlMin" step="any" placeholder="如 70" aria-label="最低分数">
-      <button class="tl-btn" id="tlAddScore" type="button">添加过滤</button>
+      <button class="ghost-btn" id="tlAddScore" type="button">添加过滤</button>
       <span id="tlFilters" style="display:inline-flex;gap:6px;flex-wrap:wrap;"></span>
     </div>
   </div>
   <div class="tl-count" id="tlCount" hidden></div>
 
-  <noscript><div id="tlStatic">${staticSections || '<div class="tl-empty">暂无数据。</div>'}</div></noscript>
+  <noscript><div>${staticSections || '<div class="tl-empty">暂无数据。</div>'}</div></noscript>
   <div id="tlStatic">${staticSections || '<div class="tl-empty">暂无数据。</div>'}</div>
-  <div id="tlApp" hidden></div>
+  <div id="tlApp" class="feed" hidden></div>
 </div>
 <footer class="site-foot"><a href="${SITE}">evals.zenheart.site</a> · MIT License · ZenHeart</footer>
 ${SHELL_JS}
@@ -581,35 +629,48 @@ window.EVALS_TL = ${JSON.stringify(tlData)};
 (function(){
   var D=window.EVALS_TL;
   var app=document.getElementById('tlApp'),staticEl=document.getElementById('tlStatic');
-  if(!app||!D){return;}
+  if(!app||!D)return;
   var state={win:'fresh',group:'vendor',vendors:[],bench:null,filters:[],q:''};
   var benchName={}; D.benchmarks.forEach(function(b){benchName[b.id]=b.name;});
   function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
 
+  function focusSet(){
+    var s={};
+    if(state.bench)s[state.bench]=1;
+    state.filters.forEach(function(f){s[f.bench]=1;});
+    return s;
+  }
+
   function nodeHtml(r){
+    var fs=focusSet();
+    var trust=r.verified===0?'none':(r.pending===0?'full':'part');
+    var region=r.region==='CN'?'国内':'国际';
     var chips=r.evidence.map(function(e){
-      var score=e.display?' <b>'+esc(e.display)+'</b>':'';
-      var cls=e.status==='verified'?'':' pending';
-      var focus=(state.bench===e.benchmark_id||state.filters.some(function(f){return f.bench===e.benchmark_id;}))?' focus':'';
-      var inner=esc(e.benchmark_id)+(e.variant?' '+esc(e.variant):'')+score;
       var known=D.benchmarks.some(function(b){return b.id===e.benchmark_id;});
-      var tip=e.harness?(' harness: '+esc(e.harness)):'';
-      return known?'<a class="tl-chip'+cls+focus+'" href="../'+esc(e.benchmark_id)+'/"'+(tip?' title="'+tip+'"':'')+'>'+inner+'</a>'
-                  :'<span class="tl-chip'+cls+focus+'" title="新 benchmark，实体页待建">'+inner+'</span>';
+      var score=e.display?' <b>'+esc(e.display)+'</b>':'';
+      var cls=e.status==='verified'?'ok':'pd';
+      var focus=fs[e.benchmark_id]?' focus':'';
+      var inner=esc(e.benchmark_id)+(e.variant?' '+esc(e.variant):'')+score;
+      var tip=[];if(e.harness)tip.push('harness: '+esc(e.harness));if(e.effort)tip.push('effort: '+esc(e.effort));
+      return known?'<a class="bchip '+cls+focus+'" href="../'+esc(e.benchmark_id)+'/"'+(tip.length?' title="'+tip.join(' · ')+'"':'')+'>'+inner+'</a>'
+                  :'<span class="bchip plain'+focus+'" title="新 benchmark，实体页待建">'+inner+'</span>';
     }).join('');
-    var proto=[];
+    var h='',ef='';
     for(var i=0;i<r.evidence.length;i++){var e=r.evidence[i];
-      if(e.harness&&!proto.h)proto.h='harness: '+esc(e.harness);
-      if(e.effort&&!proto.e)proto.e='effort: '+esc(e.effort);}
-    var meta=[proto.h,proto.e].filter(Boolean).join(' · ');
-    return '<div class="tl-item">'+
-      '<div class="tl-date">'+(r.release_date?esc(r.release_date):'日期待核验')+'</div>'+
-      '<div class="tl-title">'+esc(r.release_title)+'</div>'+
-      (r.models.length?'<div class="tl-models">模型：'+esc(r.models.join(' / '))+'</div>':'')+
-      '<div class="tl-meta">benchmark 证据 '+r.evidence.length+' 条（已核验 '+r.verified+' · 待核验 '+r.pending+'）'+(meta?' · '+meta:'')+'</div>'+
-      '<div class="tl-chips">'+chips+'</div>'+
-      (r.source_url?'<div class="tl-src"><a href="'+esc(r.source_url)+'" target="_blank" rel="noopener">📄 官方发布原文 ↗</a>'+(r.source_kind?' <span style="color:#94a3b8;font-size:12px;">('+esc(r.source_kind)+')</span>':'')+'</div>':'')+
-      '</div>';
+      if(!h&&e.harness)h='harness '+esc(e.harness);
+      if(!ef&&e.effort)ef='effort '+esc(e.effort);}
+    var meta='证据 <b>'+r.verified+'</b>·<i>'+r.pending+'</i> / '+r.evidence.length;
+    if(h)meta+=' · '+h; if(ef)meta+=' · '+ef;
+    return '<article class="evt" data-trust="'+trust+'">'+
+      '<span class="pin-dot" aria-hidden="true"></span>'+
+      '<div class="evt-head"><span class="evt-date">'+(r.release_date?esc(r.release_date):'日期待核验')+'</span>'+
+      '<span class="evt-vendor">'+esc(r.vendor_label)+'<i>·</i>'+region+'</span></div>'+
+      '<h3 class="evt-title">'+esc(r.release_title)+'</h3>'+
+      (r.models.length?'<div class="evt-models">'+esc(r.models.join(' / '))+'</div>':'')+
+      '<div class="evt-meta">'+meta+'</div>'+
+      '<div class="evt-chips">'+chips+'</div>'+
+      (r.source_url?'<div class="evt-src"><a href="'+esc(r.source_url)+'" target="_blank" rel="noopener">官方发布原文 ↗</a><span class="kind">'+esc(r.source_kind||'')+'</span></div>':'')+
+      '</article>';
   }
 
   function pass(r){
@@ -626,65 +687,75 @@ window.EVALS_TL = ${JSON.stringify(tlData)};
     return true;
   }
 
-  function groupSections(list){
-    var html='',out=[];
+  function yearMarkers(list){
+    var out=[],prev=null;
+    list.forEach(function(r){
+      var y=r.release_date?r.release_date.slice(0,4):null;
+      if(y&&y!==prev){out.push('<div class="yrm"><b>'+esc(y)+'</b></div>');prev=y;}
+      out.push(nodeHtml(r));
+    });
+    return out;
+  }
+
+  function render(){
+    var list=D.releases.filter(pass).sort(function(a,b){return (b.release_date||'').localeCompare(a.release_date||'');});
+    var parts=[];
     if(state.group==='vendor'){
       var rank={}; D.vendors.forEach(function(v,i){rank[v.id]=(v.region==='CN'?1000:0)+i;});
       var g={};
       list.forEach(function(r){var k=r.vendor_id||'_other';(g[k]=g[k]||[]).push(r);});
-      out=Object.keys(g).sort(function(a,b){
+      Object.keys(g).sort(function(a,b){
         var ra=a==='_other'?99999:(rank[a]!==undefined?rank[a]:5000);
         var rb=b==='_other'?99999:(rank[b]!==undefined?rank[b]:5000);
-        return ra-rb;}).map(function(k){
+        return ra-rb;}).forEach(function(k){
         var v=D.vendors.find(function(x){return x.id===k;});
         var label=k==='_other'?'其他厂商':(v?v.label:k);
         var region=(v&&v.region==='CN')?'国内':'国际';
-        g[k].sort(function(a,b){return (b.release_date||'').localeCompare(a.release_date||'');});
-        return '<div class="tl-vendor">'+esc(label)+' <span class="tl-region">'+region+'</span></div><div class="tl">'+g[k].map(nodeHtml).join('')+'</div>';});
+        parts.push('<div class="grp"><span class="g-name">'+esc(label)+'</span><span class="g-line"></span>'+
+          '<span class="g-meta">'+region+' · '+g[k].length+' 次发布</span></div>');
+        parts=parts.concat(yearMarkers(g[k]));
+      });
     }else{
       var bg={};
       list.forEach(function(r){r.evidence.forEach(function(e){
         if(state.bench&&e.benchmark_id!==state.bench)return;
         (bg[e.benchmark_id]=bg[e.benchmark_id]||[]).push({r:r,e:e});});});
-      out=Object.keys(bg).sort(function(a,b){return bg[b].length-bg[a].length||a.localeCompare(b);}).map(function(bid){
+      Object.keys(bg).sort(function(a,b){return bg[b].length-bg[a].length||a.localeCompare(b);}).forEach(function(bid){
         var rows=bg[bid].sort(function(a,b){return (b.r.release_date||'').localeCompare(a.r.release_date||'');});
         var known=D.benchmarks.some(function(b){return b.id===bid;});
         var head=known?'<a href="../'+esc(bid)+'/">'+esc(benchName[bid]||bid)+' ↗</a>':esc(bid)+'（实体页待建）';
-        var items=rows.map(function(x){
-          var e=x.e,score=e.display?' <b>'+esc(e.display)+'</b>':'（未公布）';
-          return '<div class="tl-item" style="padding-bottom:14px;">'+
-            '<div class="tl-date">'+(x.r.release_date?esc(x.r.release_date):'日期待核验')+' · '+esc(x.r.vendor_label)+'</div>'+
-            '<div class="tl-title">'+esc(x.r.release_title)+'</div>'+
-            '<div class="tl-meta">'+esc(bid)+(e.variant?' '+esc(e.variant):'')+' 分数：'+score+(e.status!=='verified'?' <span style="color:#94a3b8">（待核验）</span>':'')+'</div>'+
-            '</div>';});
-        return '<div class="tl-vendor">'+head+' <span class="tl-region">'+rows.length+' 次发布引用</span></div><div class="tl">'+items.join('')+'</div>';});
+        parts.push('<div class="grp"><span class="g-name">'+head+'</span><span class="g-line"></span>'+
+          '<span class="g-meta">'+rows.length+' 次发布引用</span></div>');
+        rows.forEach(function(x){
+          var e=x.e,score=e.display?'<b>'+esc(e.display)+'</b>':'（未公布）';
+          parts.push('<article class="evt" data-trust="'+(e.status==='verified'?'full':'none')+'">'+
+            '<span class="pin-dot" aria-hidden="true"></span>'+
+            '<div class="evt-head"><span class="evt-date">'+(x.r.release_date?esc(x.r.release_date):'日期待核验')+'</span>'+
+            '<span class="evt-vendor">'+esc(x.r.vendor_label)+'</span></div>'+
+            '<h3 class="evt-title">'+esc(x.r.release_title)+'</h3>'+
+            '<div class="evt-meta">'+esc(bid)+(e.variant?' '+esc(e.variant):'')+' 分数：'+score+(e.status!=='verified'?' <i>（待核验）</i>':'')+'</div>'+
+            '</article>');
+        });
+      });
     }
-    html=out.join('');
-    return html||'<div class="tl-empty">没有匹配的发布——试试放宽窗口、清除厂商或分数过滤。</div>';
-  }
-
-  function render(){
-    var list=D.releases.filter(pass);
-    app.innerHTML=groupSections(list);
+    app.innerHTML=parts.join('')||'<div class="tl-empty">没有匹配的发布——试试放宽窗口、清除厂商或分数过滤。</div>';
     var ev=0;list.forEach(function(r){ev+=r.evidence.length;});
     document.getElementById('tlCount').textContent='共 '+list.length+' 次发布 · '+ev+' 条 benchmark 证据'+
       (state.win==='fresh'?'（近三年，起点 '+D.cutoff+'）':'（全部历史）');
   }
 
   function renderFilters(){
-    var el=document.getElementById('tlFilters');
-    el.innerHTML=state.filters.map(function(f,i){
-      return '<span class="tl-fchip">'+esc(f.bench)+' ≥ '+esc(f.min)+
+    document.getElementById('tlFilters').innerHTML=state.filters.map(function(f,i){
+      return '<span class="fchip">'+esc(f.bench)+' ≥ '+esc(f.min)+
         '<button type="button" data-i="'+i+'" aria-label="移除过滤">✕</button></span>';}).join('');
   }
 
-  // 初始化控件
   var controls=document.getElementById('tlControls'),count=document.getElementById('tlCount');
-  controls.hidden=false;count.hidden=false;staticEl.hidden=true;app.hidden=false;
+  controls.hidden=false;count.hidden=false;staticEl.hidden=true;app.hidden=false;app.classList.add('animate');
   var vr=document.getElementById('tlVendorRow');
   D.vendors.filter(function(v){return D.releases.some(function(r){return r.vendor_id===v.id;});})
     .forEach(function(v){
-      var b=document.createElement('button');b.type='button';b.className='tl-vchip';b.textContent=v.label;b.setAttribute('data-v',v.id);
+      var b=document.createElement('button');b.type='button';b.className='vchip';b.textContent=v.label;b.setAttribute('data-v',v.id);
       vr.appendChild(b);});
   var benchSel=document.getElementById('tlBench');
   benchSel.innerHTML='<option value="">选择评测…</option>'+D.benchmarks.map(function(b){return '<option value="'+esc(b.id)+'">'+esc(b.id+' · '+b.name)+'</option>';}).join('');
@@ -696,7 +767,7 @@ window.EVALS_TL = ${JSON.stringify(tlData)};
     var b=e.target.closest('button');if(!b)return;state.group=b.getAttribute('data-v');
     this.querySelectorAll('button').forEach(function(x){x.classList.toggle('on',x===b);});render();});
   vr.addEventListener('click',function(e){
-    var b=e.target.closest('.tl-vchip');if(!b)return;
+    var b=e.target.closest('.vchip');if(!b)return;
     var v=b.getAttribute('data-v'),i=state.vendors.indexOf(v);
     if(i<0)state.vendors.push(v);else state.vendors.splice(i,1);
     b.classList.toggle('on',i<0);render();});
