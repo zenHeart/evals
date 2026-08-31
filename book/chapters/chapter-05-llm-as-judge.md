@@ -86,7 +86,7 @@ export type Rubric = {
   examples?: {                         // 要素 3：判例（few-shot，含边界案例）
     question: string; answer: string; expected: Record<string, number>;
   }[];
-  neutrality: string[];                // 反偏差声明（长度、格式中立，见 18.6.3）
+  neutrality: string[];                // 反偏差声明（长度、格式中立，见 5.6.3）
   scale: [number, number];
 };
 
@@ -195,7 +195,7 @@ export function passes(res: ScoreResult, gate: typeof GATE_V1): boolean | "inval
 
 这段代码有三个值得注意的设计决策：
 
-1. **rubric 是数据不是字符串拼接**。`Rubric` 对象可序列化、可算哈希、可进 git——第 20 章 17.5 的判官版本管理（`rubricVersion` 字段）就是靠它落地。
+1. **rubric 是数据不是字符串拼接**。`Rubric` 对象可序列化、可算哈希、可进 git——第 20 章 20.5 的判官版本管理（`rubricVersion` 字段）就是靠它落地。
 2. **`parse_error` 是独立状态而不是 0 分**。判官输出坏了应该被观测到（错误率进报告），而不是悄悄把样本判成最低分——这是答案抽取"静默失败"教训（来源：research/methodology-deep.md §2.3.5）在判官上的翻版。
 3. **阈值是合取语义**：`blocking` 维度不达标则整体失败，与 DeepEval"每个带判决的指标都成功用例才通过"的语义一致（来源：deepeval.com/docs/introduction）。
 
@@ -242,7 +242,7 @@ export const semanticEquivalent = async (params: {
 
 ### 5.4.1 为什么优先 pairwise
 
-单答案打分要求判官内化一把"绝对的尺"——3 分到底什么样，两次调用可能给得不一样；pairwise 只要求判"哪个更好"，判断空间小得多，这也是人类评估选 pairwise 的同一个理由（第 6 章 19.3）。代价是需要两个答案、且会撞上位置偏差——所以下面的实现把交换协议直接做进代码。
+单答案打分要求判官内化一把"绝对的尺"——3 分到底什么样，两次调用可能给得不一样；pairwise 只要求判"哪个更好"，判断空间小得多，这也是人类评估选 pairwise 的同一个理由（第 6 章 6.3）。代价是需要两个答案、且会撞上位置偏差——所以下面的实现把交换协议直接做进代码。
 
 ### 5.4.2 交换协议完整实现
 
@@ -256,7 +256,7 @@ type Outcome = "A_win" | "B_win" | "position_split" | "double_tie";
 
 async function pairwiseOnce(q: string, first: string, second: string): Promise<Verdict> {
   const r = await client.chat.completions.create({
-    model: "gpt-4o-2024-08-06",          // pairwise 判别用强模型（锚点见 18.4.3）
+    model: "gpt-4o-2024-08-06",          // pairwise 判别用强模型（锚点见 5.4.3）
     temperature: 0,
     response_format: { type: "json_object" },
     messages: [{
@@ -301,7 +301,7 @@ export async function ensembleJudge(
   q: string, a: string, b: string,
   judges: string[] = ["gpt-4o-2024-08-06", "claude-3-5-sonnet-20241022", "gemini-1.5-pro-002"],
 ): Promise<"A" | "B" | "tie"> {
-  // pairwiseOnceWithModel = 18.4.2 的 pairwiseOnce 加一个 model 参数，逻辑完全一致
+  // pairwiseOnceWithModel = 5.4.2 的 pairwiseOnce 加一个 model 参数，逻辑完全一致
   const votes = await Promise.all(judges.map(m => pairwiseOnceWithModel(m, q, a, b)));
   const aWins = votes.filter(v => v === "A").length;
   const bWins = votes.filter(v => v === "B").length;
@@ -309,7 +309,7 @@ export async function ensembleJudge(
 }
 ```
 
-三个判官必须异源（不同厂商或至少不同家族），否则"三个裁判来自同一家"只是把自增强偏差投了三票。成本按倍数涨，实践中只在低置信样本上启用——18.7 的两段式会把它接到分流条件里。
+三个判官必须异源（不同厂商或至少不同家族），否则"三个裁判来自同一家"只是把自增强偏差投了三票。成本按倍数涨，实践中只在低置信样本上启用——5.7 的两段式会把它接到分流条件里。
 
 ## 5.5 校准：判官上线前的验收流程
 
@@ -361,32 +361,32 @@ flowchart TD
     L --> M["投入评估流水线<br/>rubric 任何改动 → 回到重新验收"]
 ```
 
-样本量依据：一致性校准最少需要约 50 条人工标注，正式验收建议 100-300 条（来源：research/framework-practice.md §3.4.5；research/methodology-deep.md §2.4.3）。锁版本的依据：判官是"prompt + 模型 + 参数"的组合，三者任一变化都可能改变判分分布——判官配置变更后必须重跑金标准集回归（第 20 章 17.7.2 的判官健康检查），报告里也要留 `judge_calibration_kappa` 字段（research/methodology-deep.md §2.6.3 的运行记录 schema）。
+样本量依据：一致性校准最少需要约 50 条人工标注，正式验收建议 100-300 条（来源：research/framework-practice.md §3.4.5；research/methodology-deep.md §2.4.3）。锁版本的依据：判官是"prompt + 模型 + 参数"的组合，三者任一变化都可能改变判分分布——判官配置变更后必须重跑金标准集回归（第 20 章 20.7.2 的判官健康检查），报告里也要留 `judge_calibration_kappa` 字段（research/methodology-deep.md §2.6.3 的运行记录 schema）。
 
 
 ## 5.6 四大偏差的工程对策
 
 ### 5.6.1 对照表
 
-四大偏差的正典数据来自 Zheng et al. 2023（来源：arXiv:2306.05685 v4，与第 3 章 4.9、第 17 章 13.4 同一口径）：
+四大偏差的正典数据来自 Zheng et al. 2023（来源：arXiv:2306.05685 v4，与第 3 章 3.9、第 17 章 17.4 同一口径）：
 
 | 偏差 | 论文实验数据 | 一句话 | 本章对策 |
 |---|---|---|---|
-| 位置偏差 | 所有被测裁判都表现出强位置偏差，多数偏爱第一个位置；只有 GPT-4 能在 60% 以上对调中给出一致判决 | 判决跟着谁在前走 | 交换协议（18.4.2）或改单答案打分 |
-| 冗长偏差 | "重复列表攻击"下 GPT-3.5 与 Claude-v1 被攻破，GPT-4 识别了该攻击 | 写长就赢 | rubric 中立声明 + 长度相关性探针（18.6.3） |
-| 自我增强偏差 | GPT-4 裁判给自家回答的胜率高出约 10%，Claude-v1 约 25%（论文注明样本量小、未定论） | 运动员兼裁判 | 异源判官 + 多判官投票 + 披露（18.6.4） |
-| 判分能力天花板 | 10 道数学题上判断"错误答案是否正确"：Claude-v1 与 GPT-3.5 失败率均 91.3%，GPT-4 为 8.7% | 裁判能力是评估的天花板 | 有真值任务不进判官 + 判官自测门禁（18.6.5） |
+| 位置偏差 | 所有被测裁判都表现出强位置偏差，多数偏爱第一个位置；只有 GPT-4 能在 60% 以上对调中给出一致判决 | 判决跟着谁在前走 | 交换协议（5.4.2）或改单答案打分 |
+| 冗长偏差 | "重复列表攻击"下 GPT-3.5 与 Claude-v1 被攻破，GPT-4 识别了该攻击 | 写长就赢 | rubric 中立声明 + 长度相关性探针（5.6.3） |
+| 自我增强偏差 | GPT-4 裁判给自家回答的胜率高出约 10%，Claude-v1 约 25%（论文注明样本量小、未定论） | 运动员兼裁判 | 异源判官 + 多判官投票 + 披露（5.6.4） |
+| 判分能力天花板 | 10 道数学题上判断"错误答案是否正确"：Claude-v1 与 GPT-3.5 失败率均 91.3%，GPT-4 为 8.7% | 裁判能力是评估的天花板 | 有真值任务不进判官 + 判官自测门禁（5.6.5） |
 
 ### 5.6.2 位置偏差：交换协议或改单答案
 
 代码在 18.4.2。两个补充判断：
 
 - **交换协议让调用量翻倍**。预算紧时，另一个根除方案是放弃 pairwise、改用单答案独立打分——FastChat 的 MT-Bench 官方实现正是这么做的，理由就是从根上消除顺序效应（来源：github.com/lm-sys/FastChat llm_judge 文档）。
-- 交换一致率（18.4.3）是位置偏差的监控探针，建议每次跑批量评估都顺带输出。
+- 交换一致率（5.4.3）是位置偏差的监控探针，建议每次跑批量评估都顺带输出。
 
 ### 5.6.3 冗长偏差：中立声明 + 长度相关性探针
 
-两层对策。第一层是 prompt 层：rubric 里写明长度中立（18.3.2 的 `neutrality` 字段），这是四条偏差里工程上最容易缓解的一条（来源：research/framework-practice.md §3.2.4）。
+两层对策。第一层是 prompt 层：rubric 里写明长度中立（5.3.2 的 `neutrality` 字段），这是四条偏差里工程上最容易缓解的一条（来源：research/framework-practice.md §3.2.4）。
 
 第二层是监控层：在批量评估报告里加一个"分数与长度的相关性"探针。如果判官分数和回答长度强正相关，你的 rubric 中立声明就没起作用：
 
@@ -412,15 +412,15 @@ console.log(spearman(scores, lengths).toFixed(2));
 // 期望输出：0.94 —— 强正相关：这个判官在给"长"加分，rubric 中立声明失效
 ```
 
-工程阈值（本书经验法则）：Spearman 相关绝对值持续超过 0.7 时报警，先人工抽 10 条最高分长回答确认是否"长而空洞"。产业界的根治方案是统计控制——AlpacaEval 2.0 的长度控制胜率与 Arena 的风格控制都属此类（第 17 章 13.6、13.5.4），自建评估里最实用的等价物就是上面的探针加人工抽查。
+工程阈值（本书经验法则）：Spearman 相关绝对值持续超过 0.7 时报警，先人工抽 10 条最高分长回答确认是否"长而空洞"。产业界的根治方案是统计控制——AlpacaEval 2.0 的长度控制胜率与 Arena 的风格控制都属此类（第 17 章 17.6、17.5.4），自建评估里最实用的等价物就是上面的探针加人工抽查。
 
 ### 5.6.4 自我增强偏差：异源判官与披露
 
 方向上明确的结论是：裁判与被评模型同源时，偏向自家的风险真实存在（GPT-4 偏自家约 10%、Claude-v1 约 25%，样本量小未定论，来源：arXiv:2306.05685）。对策按成本从低到高：
 
 1. **异源判官**：判官模型与被评对象来自不同厂商或不同模型家族——选型阶段一条配置的事；
-2. **多判官投票**（18.4.4）：异源判官各判一次取多数，稀释单一判官的亲缘倾向；
-3. **披露**：评估报告里写明判官身份及其与被评对象的关系。第 17 章 13.9 的陷阱 1 说过：做不到异源时，"报告里写清楚"是底线。
+2. **多判官投票**（5.4.4）：异源判官各判一次取多数，稀释单一判官的亲缘倾向；
+3. **披露**：评估报告里写明判官身份及其与被评对象的关系。第 17 章 17.9 的陷阱 1 说过：做不到异源时，"报告里写清楚"是底线。
 
 ### 5.6.5 判分能力天花板：路由与判官自测
 
@@ -434,7 +434,7 @@ export type Route = "rule" | "judge";
 export function routeGrader(item: { kind: "math" | "code" | "fact" | "open" }): Route {
   if (item.kind === "math")  return "rule";  // 精确匹配或符号等价（SymPy 类）
   if (item.kind === "code")  return "rule";  // 单元测试
-  if (item.kind === "fact")  return "rule";  // 参考答案 + 0/1 语义等价（18.3.3）
+  if (item.kind === "fact")  return "rule";  // 参考答案 + 0/1 语义等价（5.3.3）
   return "judge";                            // 只有开放式产出进判官
 }
 ```
@@ -514,13 +514,13 @@ export async function twoStageJudge(q: string, answer: string, ctx: string) {
 
 ## 5.8 实战与陷阱
 
-**陷阱 1：解析失败记 0 分（静默失败）**。判官输出坏 JSON、被截断、带了前后缀文字，解析失败后随手记 0 分——错误被淹没在低分里，你以为是模型变差了。对策：`parse_error` 独立状态 + 错误率进报告（18.3.2 已实现），错误率超过 5% 时整批作废重跑而不是硬出分（来源：research/framework-practice.md §3.4.7）。
+**陷阱 1：解析失败记 0 分（静默失败）**。判官输出坏 JSON、被截断、带了前后缀文字，解析失败后随手记 0 分——错误被淹没在低分里，你以为是模型变差了。对策：`parse_error` 独立状态 + 错误率进报告（5.3.2 已实现），错误率超过 5% 时整批作废重跑而不是硬出分（来源：research/framework-practice.md §3.4.7）。
 
-**陷阱 2：判官版本漂移**。两个来源：模型用漂浮别名（厂商静默更新底层权重，你的判分分布变了），rubric 改了一行没有重新校准。对策：pin 快照版本 + prompt 哈希 + rubric 版本号三件套（18.5.3），判官配置变更必跑金标准集。
+**陷阱 2：判官版本漂移**。两个来源：模型用漂浮别名（厂商静默更新底层权重，你的判分分布变了），rubric 改了一行没有重新校准。对策：pin 快照版本 + prompt 哈希 + rubric 版本号三件套（5.5.3），判官配置变更必跑金标准集。
 
-**陷阱 3：被评对象当裁判**。评估自家模型时顺手用同家族模型当判官，自增强偏差直接进分数。对策：异源判官 + 报告披露（18.6.4）。
+**陷阱 3：被评对象当裁判**。评估自家模型时顺手用同家族模型当判官，自增强偏差直接进分数。对策：异源判官 + 报告披露（5.6.4）。
 
-**陷阱 4：数学与代码进判官**。有客观真值的任务交给任何 LLM 判官都是在付钱买噪声（判分失败率可达 91.3%）。对策：路由规则先行（18.6.5）。
+**陷阱 4：数学与代码进判官**。有客观真值的任务交给任何 LLM 判官都是在付钱买噪声（判分失败率可达 91.3%）。对策：路由规则先行（5.6.5）。
 
 **陷阱 5：只有总分没有理由留存**。分数异常时无据可查。理由字段是调试判官的入口，也是给人复核成本最低的材料——OpenAI Graders 的结构化输出 `{ result, steps }` 就是这个思路的官方实现（来源：developers.openai.com/api/docs/guides/graders，转引自 research/framework-practice.md §3.2.5）。
 

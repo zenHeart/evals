@@ -1,10 +1,10 @@
 # 13. 硬核新兴评测：当 AI 被扔进真实环境
 
-> **如果只读一节**：读 9.9 的"设计光谱"大图。2024–2025 出现的六个硬核评测（Terminal-Bench、SWE-Lancer、Cybench、KernelBench、MLE-bench、AppWorld）不是六个孤立的榜单，而是同一条演化曲线上的六个采样点：**环境越开放，评测越接近真实工程，也越贵、越难复现**。
+> **如果只读一节**：读 13.9 的"设计光谱"大图。2024–2025 出现的六个硬核评测（Terminal-Bench、SWE-Lancer、Cybench、KernelBench、MLE-bench、AppWorld）不是六个孤立的榜单，而是同一条演化曲线上的六个采样点：**环境越开放，评测越接近真实工程，也越贵、越难复现**。
 
 ## 13.1 本章目标与读者
 
-**前置知识**：第 1–7 章。7.5（SWE-bench）与 7.5.7（ABC 论文）是本章的直接前置——本章反复使用"环境化评测""评分器缺陷"两组概念。
+**前置知识**：第 1–7 章。11.5（SWE-bench）与 11.5.7（ABC 论文）是本章的直接前置——本章反复使用"环境化评测""评分器缺陷"两组概念。
 
 读完后你能：
 
@@ -21,7 +21,7 @@
 为什么环境化评测集中在 2024–2025 出现？三个条件在同一时间窗口成熟：
 
 1. **静态基准饱和**。GSM8K 刷到 95%+、MMLU 头部 88%+，头部模型之间的分差落入测量噪声（来源：第 10 章各厂商报告数据）。饱和的基准给不出叙事，厂商需要新战场。
-2. **通用分与工程表现弱相关**。同档 MMLU 分数的模型在 SWE-bench 上可相差 30 个百分点（来源：第三方对比研究，经调研综述 framework-practice.md 引用）；ABC 论文进一步证明基准本身还有系统性缺陷（7.5.7）。"知识分数高"推不出"活干得好"。
+2. **通用分与工程表现弱相关**。同档 MMLU 分数的模型在 SWE-bench 上可相差 30 个百分点（来源：第三方对比研究，经调研综述 framework-practice.md 引用）；ABC 论文进一步证明基准本身还有系统性缺陷（11.5.7）。"知识分数高"推不出"活干得好"。
 3. **Agent 脚手架与容器技术就绪**。Docker 标准化 + Claude Code / Devin / OpenHands 这类 coding agent 成熟，让"给模型一个真实环境跑几个小时"从研究 Demo 变成可量产的评测基建。
 
 厂商叙事同步转向。Anthropic 在 Claude 3.7 Sonnet 发布文里写得很直白：
@@ -152,7 +152,7 @@ Terminal-Bench 迭代很快：1.0（80 题）→ 2.0（89 题）→ 2.1 → 3.0�
 
 ### 13.4.5 局限与厂商采用记录
 
-局限：任务复杂度整体偏低（多数千行以内）；"与客户沟通"环节无法客观评分；隐藏测试同样存在 7.5.7 说的测试充分性问题；美元标价反映的是当时平台供需，不等于长期市场价格。
+局限：任务复杂度整体偏低（多数千行以内）；"与客户沟通"环节无法客观评分；隐藏测试同样存在 11.5.7 说的测试充分性问题；美元标价反映的是当时平台供需，不等于长期市场价格。
 
 厂商采用记录：OpenAI（o3/o4-mini 发布文更新记录）；Anthropic 在 Claude 3.7 时期被社区广泛对读（来源：调研覆盖矩阵，13 家中约 2 家引用，属"首发引用期"评测）。Google / DeepSeek / Qwen 旗舰发布正文未引用。
 
@@ -430,7 +430,7 @@ ls ./tb-results && cat ./tb-results/*/result.json
 ⭐⭐
 - [Anthropic Claude 4 发布文](https://www.anthropic.com/news/claude-4) — SWE-bench + Terminal-bench 双榜并报的首个旗舰样本
 - [Anthropic Claude 3.7 发布文](https://www.anthropic.com/news/claude-3-7-sonnet) — "从竞赛题转向真实任务"的叙事转折点
-- [ABC：建立严格的 agentic 基准](https://arxiv.org/abs/2507.02825) — 环境化评测的缺陷审计（第 11 章 7.5.7 的方法论）
+- [ABC：建立严格的 agentic 基准](https://arxiv.org/abs/2507.02825) — 环境化评测的缺陷审计（第 11 章 11.5.7 的方法论）
 
 ⭐
 - [OpenAI o3/o4-mini 发布文](https://openai.com/index/introducing-o3-and-o4-mini/) — SWE-Lancer 更新记录与协议脚注

@@ -171,7 +171,7 @@ R1 报告是本次抓取中**协议披露最完整**的一份：温度 0.6、top
 >
 > **第二问：采样了几次？**
 > pass@1、pass@k、cons@64 还是"32 次平均"？
-> *实例*：Grok 3（Think）AIME 2025 的 93.3% 是 cons@64【正文】；DeepSeek-R1 的 79.8% 是 temp 0.6 的 pass@1【正文】。两者差 13.5 个点，但都叫"AIME 成绩"（详见 14.6）。
+> *实例*：Grok 3（Think）AIME 2025 的 93.3% 是 cons@64【正文】；DeepSeek-R1 的 79.8% 是 temp 0.6 的 pass@1【正文】。两者差 13.5 个点，但都叫"AIME 成绩"（详见 10.6）。
 >
 > **第三问：测的是全集还是子集？**
 > SWE-bench 是全 500 还是 n=477？HLE 是 full set 还是 text-only？Aider 是 Polyglot 还是全量？

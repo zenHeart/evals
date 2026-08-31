@@ -6,6 +6,8 @@
 > 3. 校验门禁（CI 必过）
 > 4. 工具与文件归属
 
+> **执行合同**：本仓的站点优化执行合同在 [`_docs/goal.md`](_docs/goal.md)；冲突时事实与任务目标以 goal.md 最新版为准，写作风格与章节结构规范以本文件为准。
+
 ---
 
 ## 1. 读者画像（强约束）
@@ -62,7 +64,7 @@
 
 ### 3.1 文件命名
 
-- `book/chapters/chapter-XX-slug.md`（XX 为两位数字，01-28）
+- `book/chapters/` 下为 chapter-00 到 chapter-31 共 32 章
 - 顺序由 `book/metadata.yaml` 控制，不靠字母序
 
 ### 3.2 标题层级

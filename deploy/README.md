@@ -1,97 +1,64 @@
 # 部署文档
 
-evals.zenheart.site 的部署由 GitHub Actions 全自动完成（`.github/workflows/build-epub.yml`）。
+evals.zenheart.site 的部署由 GitHub Actions 全自动完成：`.github/workflows/build-epub.yml`。
 
-## 流程
+## 流程（当前真实链路）
 
 ```
-push to main
-  → CI: validate
-  → CI: preprocess
-  → CI: build evals.epub
-  → CI: build web dist/
-  → CI: push to gh-pages branch
-  → CI (optional): sync to Aliyun OSS
+push to main（PR 仅构建不部署）
+  → CI: node book/validate.js          # 书籍结构门禁
+  → CI: data 层校验（脚本存在时执行）
+  → CI: preprocess + build evals.epub
+  → CI: node scripts/build-web.mjs     # 生成 dist/（书籍 + 评估大全 + 详情页）
+  → CI: node scripts/validate-site.mjs # 站点门禁（封面/交叉引用/schema/链接/隐私）
+  → upload artifacts（evals-epub / evals-web）
+  → deploy job（仅 main）：
+      mkdir _site
+      cp evals.epub → _site/
+      cp -r dist/* → _site/
+      echo "evals.zenheart.site" > _site/CNAME
+      touch _site/.nojekyll
+      actions/deploy-pages 上传
 ```
+
+Source 是 **GitHub Actions（deploy-pages）**，不是 gh-pages 分支；无 OSS/CDN 同步步骤。
 
 ## 域名
 
-- 主域：`evals.zenheart.site`
+- 自定义域：`evals.zenheart.site`（由部署时的 `CNAME` 文件声明）
 - DNS：在域名解析商将 `evals` CNAME 指向 `<owner>.github.io`
-- 阿里云 CDN（可选）：将 `evals.zenheart.site` CNAME 指向 OSS bucket 的 CDN 加速域名
+- HTTPS：仓库 Pages 设置中 Enforce HTTPS
 
-## GitHub Pages 启用
+## GitHub Pages 设置
 
 1. GitHub 仓库 → Settings → Pages
-2. Source: `gh-pages` branch
-3. Custom domain: `evals.zenheart.site`
-4. Enforce HTTPS: 勾选
-
-## 阿里云 OSS 同步（可选）
-
-需要在 GitHub 仓库 Settings → Secrets 配置以下 secret：
-
-| Secret | 说明 |
-|---|---|
-| `ALIYUN_ACCESS_KEY_ID` | RAM 子账号 AccessKey ID |
-| `ALIYUN_ACCESS_KEY_SECRET` | RAM 子账号 AccessKey Secret |
-| `ALIYUN_OSS_BUCKET` | OSS bucket 名称（如 `evals-zenheart`） |
-| `ALIYUN_OSS_ENDPOINT` | OSS endpoint（如 `oss-cn-hangzhou.aliyuncs.com`） |
-
-### 创建只读 + 写 bucket 权限的 RAM 子账号
-
-```json
-{
-  "Version": "1",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": [
-        "oss:PutObject",
-        "oss:PutObjectAcl",
-        "oss:GetObject"
-      ],
-      "Resource": [
-        "acs:oss:*:*:evals-zenheart",
-        "acs:oss:*:*:evals-zenheart/*"
-      ]
-    }
-  ]
-}
-```
-
-### CDN 配置
-
-- CDN 加速域名：`cdn.evals.zenheart.site` 或直接 `evals.zenheart.site`
-- 回源 OSS bucket
-- HTTPS 证书
-- 缓存策略：HTML 5 分钟，EPUB/Cover 30 天，CSS/JS 30 天
+2. Source: **GitHub Actions**
+3. Custom domain: `evals.zenheart.site`（如未自动带上，手动填一次）
 
 ## 本地预览
 
 ```bash
-npm run build:web
-npx serve dist
-# 打开 http://localhost:3000
+npm run build          # validate → EPUB → web → validate:site
+npx serve dist         # 或 npx http-server dist
 ```
 
 ## 故障排查
 
-### CI 失败：validate
+### CI 失败：book/validate.js
 
 ```bash
 npm run validate
-# 按报错修正 chapter 编号或链接
+# 按报错修正章节编号、标题层级或链接
 ```
 
-### CI 失败：build-epub
+### CI 失败：validate-site
 
 ```bash
-npm run preprocess
-npm run build:epub:official
-# 检查 evals.epub 能否用 Calibre / Apple Books 打开
+npm run validate:site
+# 常见：封面章数与 metadata 不一致 / 交叉引用旧编号 / dist 内部死链
+# 修复源文件（book/ data/ scripts/）后重新构建，不要手改 dist/
 ```
 
 ### 部署后样式丢失
 
-检查 `dist/styles.css` 是否在 commit 内，并确认 `.nojekyll` 文件存在（`gh-pages` 根目录）。
+`.nojekyll` 由部署步骤自动写入 `_site/`；确认 deploy job 没被跳过（只有 main push 触发部署）。

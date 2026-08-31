@@ -2,7 +2,7 @@
 
 > **如果只读一节**：拍照解题是"识别 → 公式 → 推理 → 讲解"四级流水线，每一级要有自己的测试集、自己的指标、自己的失败模式。**识别错但解对、识别对但解错，是两个完全不同的事故**——分层归因是多模态评估区别于纯文本评估的核心。基准知识在 [第 12 章](https://evals.zenheart.site/web/chapter-08.html)，本章讲把它装进一条真实管道。
 
-**前置知识**：第 12 章（MMMU / MathVista / POPE）、第 10 章 6.10（MathVista 的协议敏感性）、第 20 章（评估 harness）、第 24 章（测试集构建）。本章代码全部为 TypeScript。
+**前置知识**：第 12 章（MMMU / MathVista / POPE）、第 12 章 12.4（MathVista 的协议敏感性）、第 20 章（评估 harness）、第 24 章（测试集构建）。本章代码全部为 TypeScript。
 
 ## 29.1 本章目标与读者
 
@@ -47,7 +47,7 @@ export interface PipelineTrace extends Record<string, unknown> {
   costUsd: number;
 }
 
-// 预算断言：管道层有延迟与成本预算，评估 harness 里强制执行（第 20 章 17.6.4 的思想）
+// 预算断言：管道层有延迟与成本预算，评估 harness 里强制执行（第 20 章 20.6 的思想）
 export const BUDGET = {
   ocrP95Ms: 800,
   solveP95Ms: 2200,
@@ -89,7 +89,7 @@ export const BUDGET = {
 | 公开基准 | MathVista / MMMU / ChartQA / DocVQA / OCRBench | 与外部模型对齐的锚 | 口径见第 12 章 |
 | 合成数据 | 几何 200 + 手写变形 200 | 长尾覆盖，带精确真值 | 程序化生成，见 29.4.2 |
 
-公开基准的引用统一使用正典编号：MathVista 是 arXiv:2310.02255（6,141 道视觉情境数学题，7 类任务——见第 12 章 8.4）；POPE 是 arXiv:2305.10355。**引用编号写错的代价**是审稿与复现者找不到论文——多模态基准数量多、编号相近，团队内部要有唯一的"基准 → 论文编号"对照表（本章 29.15 的延伸阅读即是本案例的对照表）。
+公开基准的引用统一使用正典编号：MathVista 是 arXiv:2310.02255（6,141 道视觉情境数学题，7 类任务——见第 12 章 12.4）；POPE 是 arXiv:2305.10355。**引用编号写错的代价**是审稿与复现者找不到论文——多模态基准数量多、编号相近，团队内部要有唯一的"基准 → 论文编号"对照表（本章 29.15 的延伸阅读即是本案例的对照表）。
 
 ### 29.4.2 几何合成数据生成器（可运行、带精确真值）
 
@@ -108,7 +108,7 @@ interface GeoSample {
 }
 
 function triangleAngle(seed: number): GeoSample {
-  // 固定种子保证可复现：同一 seed 永远生成同一道题（第 4 章 3.7 可复现性）
+  // 固定种子保证可复现：同一 seed 永远生成同一道题（第 4 章 4.7 可复现性）
   let s = seed;
   const rand = (lo: number, hi: number) => (s = (s * 1103515245 + 12345) % 2147483648) / 2147483648 * (hi - lo) + lo;
   const a = Math.round(rand(30, 80)), b = Math.round(rand(30, 80));
@@ -127,7 +127,7 @@ writeFileSync(outPath, samples.map(s => JSON.stringify(s)).join("\n"));
 console.log(`generated ${samples.length} samples → ${outPath}`);
 ```
 
-合成数据的纪律（第 24 章 23.6 的原则）：合成题必须经过与真实题相同的判分路径；每批合成数据记录生成器版本（`genVersion`），生成器升级后旧批次的分数不可与新批次直接对比。
+合成数据的纪律（第 24 章 24.7 的原则）：合成题必须经过与真实题相同的判分路径；每批合成数据记录生成器版本（`genVersion`），生成器升级后旧批次的分数不可与新批次直接对比。
 
 ## 29.5 识别层（一）：OCR 字符 F1 与归一化
 
@@ -288,7 +288,7 @@ console.log(await runPope(items));
 // 期望输出示例：{ f1: 0.912, hallucinationRate: 0.043, yesRate: 0.51 }
 ```
 
-两个读数纪律：**yesRate 必须接近 0.5**——正负样本各半的设计下，yesRate 偏离意味着模型有应答偏置，此时 F1 不可信；**幻觉率单独报告**，不要藏在 accuracy 里（第 12 章 8.7 的坑）。
+两个读数纪律：**yesRate 必须接近 0.5**——正负样本各半的设计下，yesRate 偏离意味着模型有应答偏置，此时 F1 不可信；**幻觉率单独报告**，不要藏在 accuracy 里（第 12 章 12.7 的坑）。
 
 ## 29.8 多语言分层
 
@@ -313,7 +313,7 @@ K12 场景的多语言不是"翻译质量"，而是"同一道题在不同语言�
 | 解题推理 | 2200ms | $0.008 | 换轻量模型 + 结果缓存 |
 | 端到端 | 3000ms | $0.010 | 首字先行：先出"识别中 → 思考中"占位 |
 
-预算在评估 harness 里是断言不是建议（第 20 章 17.6.1 的成本工程）：
+预算在评估 harness 里是断言不是建议（第 20 章 20.8 的成本工程）：
 
 ```typescript
 // photo-solve/budget.ts —— 预算断言：超预算的 run 直接失败（本地运行，无需联网）

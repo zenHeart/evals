@@ -48,7 +48,7 @@ flowchart TB
 | ⑧ 应用层 CI | prompt / RAG / 工具链回归 | 每次变更 | 100-1000 条业务样本 | 上线、回滚 |
 | ⑨ 生产 | 用户反馈、A/B、抽检 | 持续 | 真实流量 | 灰度、迭代方向 |
 
-（量级口径综合自：[RewardBench](https://github.com/allenai/reward-bench)、[Anthropic 工程博客](https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents)、本仓调研笔记 [research/methodology-deep.md](research/methodology-deep.md)。）
+（量级口径综合自：[RewardBench](https://github.com/allenai/reward-bench)、[Anthropic 工程博客](https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents)、本仓调研笔记 [research/methodology-deep.md](https://github.com/zenHeart/evals/blob/main/research/methodology-deep.md)。）
 
 前端类比把整张图串起来：**这是一条 CI/CD 流水线**——①②③ 是 `lint + 单元测试`（每个 commit 都跑），⑥ 是发布门禁（release gate），⑧ 是 PR 的 CI 门禁，⑨ 是灰度后的真实流量监控。同一个"测试"概念在不同阶段挂载不同的检查器。
 

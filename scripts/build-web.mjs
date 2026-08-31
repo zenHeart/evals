@@ -25,6 +25,8 @@
 import { existsSync, readFileSync, writeFileSync, readdirSync, mkdirSync, copyFileSync, rmSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { SITE, SHELL_CSS, shellHead, shellTopbar, shellFooter, SHELL_JS } from "./site-shell.mjs";
+import { loadBenchData } from "./load-data.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = join(__dirname, "..");
@@ -33,7 +35,6 @@ const RESEARCH_DIR = join(REPO_ROOT, "research");
 const COVER_DIR = join(REPO_ROOT, "book", "cover");
 const DIST = join(REPO_ROOT, "dist");
 const META = join(REPO_ROOT, "book", "metadata.yaml");
-const SITE = "https://evals.zenheart.site";
 
 // 全局结构（main() 内填充），供章节页渲染左侧书目录
 let globalParts = [];
@@ -307,23 +308,7 @@ a { color: #2563eb; text-decoration: none; }
 body.dark a { color: #60a5fa; }
 a:hover { text-decoration: underline; }
 
-.topbar {
-  display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  padding: 12px 20px; border-bottom: 1px solid rgba(0,0,0,.08);
-  position: sticky; top: 0; background: rgba(253,253,251,.94);
-  backdrop-filter: blur(8px); z-index: 50;
-}
-body.dark .topbar { background: rgba(11,18,36,.94); border-bottom-color: rgba(255,255,255,.08); }
-.logo { font-weight: 800; font-size: 17px; white-space: nowrap; }
-.topbar nav { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
-.topbar nav a { margin-left: 8px; color: #475569; font-size: 14px; white-space: nowrap; }
-body.dark .topbar nav a { color: #94a3b8; }
-.topbar nav a:hover { color: #2563eb; }
-.dark-toggle {
-  border: 1px solid rgba(0,0,0,.15); background: transparent; border-radius: 8px;
-  padding: 4px 10px; cursor: pointer; font-size: 14px; color: inherit; margin-left: 10px;
-}
-body.dark .dark-toggle { border-color: rgba(255,255,255,.2); }
+/* topbar / 主题 / 页脚由 scripts/site-shell.mjs 统一提供（SHELL_CSS），此处不再定义 */
 
 .layout { display: grid; grid-template-columns: minmax(0,1fr) 240px; gap: 32px; max-width: 1160px; margin: 0 auto; padding: 0 20px; }
 @media (max-width: 1080px) { .layout { grid-template-columns: 1fr; } .toc-side { display: none !important; } }
@@ -331,7 +316,7 @@ body.dark .dark-toggle { border-color: rgba(255,255,255,.2); }
 /* —— 书籍布局：左侧全书目录 + 右侧内容 —— */
 .book-layout { display: grid; grid-template-columns: 272px minmax(0,1fr); max-width: 1380px; margin: 0 auto; }
 .book-side {
-  position: sticky; top: 57px; height: calc(100vh - 57px); overflow-y: auto;
+  position: sticky; top: 56px; height: calc(100vh - 56px); overflow-y: auto;
   border-right: 1px solid rgba(0,0,0,.07); padding: 20px 12px 40px; font-size: 13.5px;
   scrollbar-width: thin;
 }
@@ -454,6 +439,62 @@ body.dark .toc-side a.active { color: #60a5fa; }
 .hero p.lead { color: #cbd5e1; font-size: 18px; max-width: 640px; }
 .eyebrow { color: #22d3ee; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; font-size: 12px; margin: 0 0 8px; }
 .hero-cover { width: 100%; border-radius: 12px; box-shadow: 0 20px 50px rgba(0,0,0,.4); }
+.hero-ctas { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 22px; }
+.cta {
+  display: inline-block; padding: 12px 26px; border-radius: 12px; font-size: 15.5px;
+  font-weight: 800; text-decoration: none; transition: transform .15s, box-shadow .15s;
+}
+.cta:hover { text-decoration: none; transform: translateY(-1px); }
+.cta-primary { background: linear-gradient(90deg, #22d3ee, #60a5fa); color: #0b1224; box-shadow: 0 8px 24px rgba(34,211,238,.35); }
+.cta-secondary { border: 1.5px solid rgba(248,250,252,.35); color: #f8fafc; }
+.cta-secondary:hover { border-color: #22d3ee; color: #22d3ee; }
+/* 能力承诺三卡 */
+.promise-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 16px; margin: 34px 0 10px; }
+.promise {
+  border: 1px solid rgba(0,0,0,.09); border-radius: 14px; padding: 18px 20px;
+  background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.04);
+}
+body.dark .promise { background: #111a2e; border-color: rgba(255,255,255,.09); }
+.promise h3 { margin: 0 0 6px; font-size: 16.5px; color: #2563eb; }
+body.dark .promise h3 { color: #60a5fa; }
+.promise p { margin: 0; font-size: 13.8px; color: #475569; line-height: 1.7; }
+body.dark .promise p { color: #a8b6c8; }
+.promise-eyebrow { font-size: 11.5px; font-weight: 800; letter-spacing: .1em; color: #94a3b8; text-transform: uppercase; margin: 0 0 14px; }
+/* /book/ 学习台与 /build/ 入口 */
+.read-cta {
+  display: inline-block; margin: 4px 8px 4px 0; padding: 9px 18px; border-radius: 10px;
+  border: 1.5px solid rgba(37,99,235,.4); color: #2563eb; font-weight: 700; font-size: 14px;
+}
+body.dark .read-cta { color: #60a5fa; border-color: rgba(96,165,250,.4); }
+.read-cta:hover { background: rgba(37,99,235,.07); text-decoration: none; }
+.part-goal { margin: 0 0 8px; color: #64748b; font-size: 14px; }
+body.dark .part-goal { color: #94a3b8; }
+.chapter-list.book-console li { display: flex; align-items: baseline; gap: 8px; }
+.chapter-list.book-console li a { flex: 1; }
+.chapter-list.book-console .est { flex: none; font-size: 12px; color: #94a3b8; font-family: ui-monospace, monospace; }
+.step-links { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; font-size: 14px; }
+.step-links-col { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 8px; }
+/* 精选评测卡片（首页） */
+.feat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr)); gap: 12px; margin: 14px 0 8px; }
+.feat-card {
+  display: block; border: 1px solid rgba(0,0,0,.09); border-radius: 12px; padding: 12px 15px;
+  color: inherit; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.04);
+}
+body.dark .feat-card { background: #111a2e; border-color: rgba(255,255,255,.09); }
+.feat-card:hover { border-color: rgba(37,99,235,.4); text-decoration: none; }
+.feat-card .f-name { font-weight: 800; font-size: 15px; }
+.feat-card .f-desc { font-size: 12.5px; color: #64748b; margin-top: 3px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+body.dark .feat-card .f-desc { color: #94a3b8; }
+.feat-card .f-cite { font-size: 11.5px; color: #2563eb; font-weight: 700; margin-top: 6px; }
+body.dark .feat-card .f-cite { color: #60a5fa; }
+.entry-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 14px; margin: 16px 0 6px; }
+.entry-card { display: block; border: 1px solid rgba(0,0,0,.09); border-radius: 14px; padding: 16px 18px; color: inherit; background: #fff; }
+body.dark .entry-card { background: #111a2e; border-color: rgba(255,255,255,.09); }
+.entry-card:hover { border-color: rgba(37,99,235,.4); text-decoration: none; }
+.entry-card .e-title { font-weight: 800; font-size: 16px; color: #2563eb; }
+body.dark .entry-card .e-title { color: #60a5fa; }
+.entry-card .e-sub { font-size: 13px; color: #64748b; margin-top: 4px; line-height: 1.6; }
+body.dark .entry-card .e-sub { color: #94a3b8; }
 .part-group { margin: 28px 0 8px; font-size: 17px; font-weight: 800; color: #1e293b; display: flex; align-items: center; gap: 10px; }
 body.dark .part-group { color: #e2e8f0; }
 .part-group::after { content: ""; flex: 1; height: 1px; background: rgba(0,0,0,.08); }
@@ -501,54 +542,14 @@ footer.page-foot { text-align: center; color: #94a3b8; font-size: 13px; padding:
 }
 `;
 
-const COMMON_HEAD = (rel, title, desc, path = "") => `<!doctype html>
-<html lang="zh-CN">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${title}</title>
-<meta name="description" content="${desc.replace(/"/g, "&quot;")}">
-<meta property="og:title" content="${title.replace(/"/g, "&quot;")}">
-<meta property="og:description" content="${desc.replace(/"/g, "&quot;")}">
-<meta property="og:type" content="article">
-<meta property="og:site_name" content="大模型评估入门">
-<meta property="og:image" content="${SITE}/cover.svg">
-<link rel="canonical" href="${SITE}/${path}">
-<link rel="icon" type="image/svg+xml" href="${rel}favicon.svg">
-<link rel="stylesheet" href="${rel}styles.css">
-<script>
-(function(){try{var t=localStorage.getItem('theme');if(t==='dark'||(!t&&matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.setAttribute('data-theme','dark');document.addEventListener('DOMContentLoaded',function(){document.body.classList.add('dark');});}}catch(e){}})();
-</script>
-<style>html[data-theme="dark"] body{background:#0b1224;color:#e2e8f0;}</style>
-`;
+// head / topbar / 页脚 / 主题均来自共享 site-shell；这里只组装书籍站点专属部分
+const COMMON_HEAD = (rel, title, desc, path = "") =>
+  shellHead({ rel, title, desc, path, extra: `<style>${SHELL_CSS}</style>` });
 
-const TOPBAR = (rel) => `
-<header class="topbar">
-  <a class="logo" href="${rel}index.html">📚 Eval Handbook</a>
-  <nav>
-    <a href="${rel}index.html">首页</a>
-    <a href="${rel}benchmarks/index.html">评估大全</a>
-    <a href="${rel}evals.epub">下载 EPUB</a>
-    <button class="dark-toggle" id="themeToggle" type="button" title="切换暗色模式">🌙</button>
-  </nav>
-</header>
-`;
+const TOPBAR = (rel, active = "") => shellTopbar(rel, active);
 
 const RUNTIME_JS = `
 <script>
-// 主题
-(function(){
-  var btn=document.getElementById('themeToggle');
-  function apply(){var dark=document.documentElement.getAttribute('data-theme')==='dark';btn.textContent=dark?'☀️':'🌙';}
-  btn.addEventListener('click',function(){
-    var dark=document.documentElement.getAttribute('data-theme')==='dark';
-    document.documentElement.setAttribute('data-theme',dark?'light':'dark');
-    document.body.classList.toggle('dark',!dark);
-    try{localStorage.setItem('theme',dark?'light':'dark');}catch(e){}
-    apply();
-  });
-  apply();
-})();
 // 代码复制（clipboard API 不可用时降级 execCommand）
 document.querySelectorAll('.code-block').forEach(function(b){
   var btn=b.querySelector('.copy-btn');
@@ -613,7 +614,7 @@ function tocSide(sections) {
 
 function bookTocSidebar(parts, chaptersMeta, currentFile, currentSections) {
   const out = ['<aside class="book-side" id="bookSide">'];
-  out.push(`<a class="side-home" href="../index.html">📚 Eval Handbook</a>`);
+  out.push(`<a class="side-home" href="../../index.html">📚 Eval Handbook</a>`);
   for (const p of parts) {
     out.push(`<div class="side-part">${p.title}</div>`);
     for (const f of p.items) {
@@ -621,7 +622,7 @@ function bookTocSidebar(parts, chaptersMeta, currentFile, currentSections) {
       if (!meta) continue;
       const isCur = f === currentFile;
       const cleanTitle = meta.title.replace(/^\d+\.\s*/, "");
-      out.push(`<a class="side-ch${isCur ? " cur" : ""}" href="chapter-${meta.num}.html">${meta.num}. ${cleanTitle}</a>`);
+      out.push(`<a class="side-ch${isCur ? " cur" : ""}" href="../chapter-${meta.num}/">${meta.num}. ${cleanTitle}</a>`);
       if (isCur && currentSections) {
         for (const s of currentSections.filter(x => !x.lead)) {
           out.push(`<a class="side-sec" href="#${s.id}" data-sec="${s.id}">${s.title}</a>`);
@@ -640,17 +641,17 @@ function chapterPage(chapterFile, prev, next, partTitle, chapterNum, searchExtra
   const chapterNumPretty = String(Number(chapterNum));
   const body = sections.map(sectionHtml).join("\n");
   const hasMermaid = body.includes('class="mermaid"');
-  const prevHref = prev ? `chapter-${prev.num}.html` : null;
-  const nextHref = next ? `chapter-${next.num}.html` : null;
-  return `${COMMON_HEAD("../", fullTitle, description, `web/chapter-${chapterNum}.html`)}
+  const prevHref = prev ? `../chapter-${prev.num}/` : null;
+  const nextHref = next ? `../chapter-${next.num}/` : null;
+  return `${COMMON_HEAD("../../", fullTitle, description, `book/chapter-${chapterNum}/`)}
 </head>
 <body>
-${TOPBAR("../")}
+${TOPBAR("../../", "book")}
 <div class="book-layout">
 ${bookTocSidebar(globalParts, globalChaptersMeta, chapterFile, sections)}
 <div class="drawer-mask" id="drawerMask"></div>
 <main class="chapter-main2">
-  <div class="breadcrumb"><a href="../index.html">首页</a> / ${partTitle} / <b>第 ${chapterNumPretty} 章</b></div>
+  <div class="breadcrumb"><a href="../../index.html">首页</a> / <a href="../">系统学习</a> / ${partTitle} / <b>第 ${chapterNumPretty} 章</b></div>
   <h1>${title}</h1>
   ${body}
   <nav class="prevnext">
@@ -660,10 +661,13 @@ ${bookTocSidebar(globalParts, globalChaptersMeta, chapterFile, sections)}
 </main>
 </div>
 <button class="toc-fab" id="tocFab" type="button">☰ 目录</button>
-<footer class="page-foot"><a href="${SITE}">evals.zenheart.site</a> · MIT License · ZenHeart</footer>
+${shellFooter()}
+${SHELL_JS}
 ${RUNTIME_JS}
 <script>
 (function(){
+  // 记录最近阅读章节（仅存本地，供 /book/ 继续阅读）
+  try{localStorage.setItem('evals-last-chapter','${chapterNum}');}catch(e){}
   // 移动端目录抽屉
   var side=document.getElementById('bookSide'),mask=document.getElementById('drawerMask'),fab=document.getElementById('tocFab');
   if(fab){fab.addEventListener('click',function(){side.classList.add('drawer-open');mask.classList.add('show');});}
@@ -690,16 +694,33 @@ ${searchExtra || ""}
 </html>`;
 }
 
-function indexPage(parts, chaptersMeta) {
+function indexPage(parts, chaptersMeta, bench) {
   const groups = parts.map(p => {
     const items = p.items.map(f => {
       const meta = chaptersMeta[f];
       if (!meta) return "";
-      return `<li><a href="web/chapter-${meta.num}.html"><span class="chapter-num">${meta.num}</span><span>${meta.title}</span></a></li>`;
+      return `<li><a href="book/chapter-${meta.num}/"><span class="chapter-num">${meta.num}</span><span>${meta.title}</span></a></li>`;
     }).join("");
     return `<div class="part-group">${p.title}</div><ul class="chapter-list">${items}</ul>`;
   }).join("\n");
-  const desc = "从前端工程师视角看 Eval。理解厂商报告里的每一行数字、选对合适的基准、从零搭建自己的评估流水线。";
+  const desc = "给会 JavaScript / TypeScript，但还不懂 LLM Eval 的工程师：看懂模型发布里的 benchmark、理解分数真正代表什么，并从零搭建自己的评估体系。";
+  const metaLine = `${chaptersMeta.__count} 章 · ${parts.length} 个部分 · ${bench.count} 个评测参考 · 数据更新于 ${bench.updated}`;
+  const promises = [
+    ["看懂发布报告", "知道 MMLU、GPQA、AIME、SWE-bench、Terminal-Bench 到底测什么，以及不同厂商的数字为什么不能直接比。"],
+    ["理解评估方法", "掌握数据集、协议、判官、指标、统计、污染、饱和、Agent 环境等核心问题——分数背后是一次完整实验。"],
+    ["自己搭评估体系", "从 JSONL 数据集开始，逐步做出 scorer、LLM judge、缓存、并发、CI gate 与线上 eval。"],
+  ].map(([h, p]) => `<div class="promise"><h3>${h}</h3><p>${p}</p></div>`).join("");
+  const entries = [
+    ["系统学习", "32 章从认知到实战的完整路径，每章带自测", "book/"],
+    ["评估大全", `${bench.count} 个评测的参考库：测什么、分数怎么读、谁家引用过`, "benchmarks/"],
+    ["动手搭建", "四步把评估体系搬进你的项目，直到 CI 门禁", "build/"],
+  ].map(([t, s, href]) => `<a class="entry-card" href="${href}"><div class="e-title">${t}</div><div class="e-sub">${s}</div></a>`).join("");
+  const featured = bench.featured.map(b => `
+    <a class="feat-card" href="benchmarks/${b.id}/">
+      <div class="f-name">${b.name}</div>
+      <div class="f-desc">${b.tests}</div>
+      <div class="f-cite">${b._verified ? `已核验 ${b._verified} 次官方发布引用` : "官方发布引用核验中"}</div>
+    </a>`).join("");
   return `${COMMON_HEAD("", "大模型评估入门 · Eval Handbook", desc, "")}
 </head>
 <body>
@@ -710,12 +731,23 @@ ${TOPBAR("")}
       <p class="eyebrow">ZenHeart · Eval Handbook</p>
       <h1>大模型评估入门</h1>
       <p class="lead">${desc}</p>
-      <p class="lead" style="font-size:15px;color:#94a3b8;">${chaptersMeta.__count} 章 · 学术史 → 方法论 → 厂商报告拆解 → 框架实战</p>
+      <p class="lead" style="font-size:15px;color:#94a3b8;">${metaLine}</p>
+      <div class="hero-ctas">
+        <a class="cta cta-primary" href="book/chapter-01/">开始学习</a>
+        <a class="cta cta-secondary" href="benchmarks/">浏览评估大全</a>
+      </div>
     </div>
-    <img class="hero-cover" src="cover.svg" alt="大模型评估入门封面" loading="eager">
+    <img class="hero-cover" src="cover.svg" alt="大模型评估入门封面" loading="eager" width="600" height="900" style="width:100%;height:auto;">
   </div>
 </section>
 <main style="max-width:1080px;margin:0 auto;padding:32px 24px 80px;">
+  <p class="promise-eyebrow">三个入口</p>
+  <div class="entry-grid">${entries}</div>
+  <p class="promise-eyebrow" style="margin-top:34px;">学完你将能够</p>
+  <div class="promise-grid">${promises}</div>
+  <div class="part-group" style="margin-top:34px;">评估大全精选</div>
+  <p class="part-goal">按厂商引用量倒排的高价值评测，点击进入独立详情页 · <a href="benchmarks/">查看全部 ${bench.count} 个 →</a></p>
+  <div class="feat-grid">${featured}</div>
   <div class="search-box">
     <input id="searchInput" type="search" placeholder="🔍 搜索全书：如 SWE-bench、置信区间、LLM-as-Judge…" autocomplete="off" aria-label="搜索全书">
     <div class="search-results" id="searchResults"></div>
@@ -724,6 +756,7 @@ ${TOPBAR("")}
   <p style="margin-top:32px;"><a href="evals.epub" download>⬇️ 下载 EPUB 离线版</a> · <a href="https://github.com/zenHeart/evals" target="_blank" rel="noopener">GitHub 源码</a></p>
 </main>
 <footer class="page-foot">由 GitHub Actions 自动构建部署 · © 2026 ZenHeart · MIT License</footer>
+${SHELL_JS}
 ${RUNTIME_JS}
 <script src="search-data.js"></script>
 <script>
@@ -791,33 +824,176 @@ ${hasMermaid ? MERMAID_JS : ""}
 </html>`;
 }
 
+// ---------------------------------------------------------------- book / build / 404 / sitemap
+
+function estMinutes(text) {
+  return Math.max(3, Math.round(text.replace(/\s+/g, "").length / 600));
+}
+
+/** /book/ 学习控制台（不直接丢进正文） */
+function bookIndexPage(parts, chaptersMeta) {
+  const partGoals = {
+    "第 0 部分": "15 分钟扫完高频术语，后续章节不再被名词卡住。",
+    "第 1 部分": "知道评估是什么、解决什么问题、方法家族长什么样。",
+    "第 2 部分": "掌握数据集 → 推理 → 评分 → 报告的完整工程流程。",
+    "第 3 部分": "看懂厂商发布会上的每一行数字，判断分数能否比较。",
+    "第 4 部分": "从零搭起自己的评估流水线，并接入 CI 门禁。",
+  };
+  const sections = parts.map(p => {
+    const key = p.title.slice(0, 5);
+    const items = p.items.map(f => {
+      const meta = chaptersMeta[f];
+      if (!meta) return "";
+      return `<li><a href="chapter-${meta.num}/"><span class="chapter-num">${meta.num}</span><span>${meta.title}</span></a><span class="est">${meta._minutes} 分钟</span></li>`;
+    }).join("");
+    return `<div class="part-group">${p.title}</div>
+    ${partGoals[key] ? `<p class="part-goal">${partGoals[key]}</p>` : ""}
+    <ul class="chapter-list book-console">${items}</ul>`;
+  }).join("\n");
+  const desc = "《大模型评估入门》32 章学习控制台：适合会 JS/TS 但不懂 LLM Eval 的前端工程师；建议按 术语速查 → 认知 → 方法论 → 厂商全景 → 实战 顺序学习。";
+  return `${COMMON_HEAD("../", "系统学习 · 大模型评估入门", desc, "book/")}
+</head>
+<body>
+${TOPBAR("../", "book")}
+<div class="layout" style="display:block;max-width:1080px;margin:0 auto;padding:32px 24px 80px;">
+  <div class="breadcrumb"><a href="../index.html">首页</a> / <b>系统学习</b></div>
+  <h1>系统学习</h1>
+  <p class="sub" style="max-width:72ch;"><b>适合谁</b>：会 JavaScript / TypeScript / Node.js，但没接触过模型训练与 LLM 评估的前端工程师。<br><b>不适合</b>：想学训练侧数学细节（梯度、RLHF 推导）的读者——本书刻意不覆盖。<br><b>建议路径</b>：先读第 0 章术语速查，再按四大块顺序推进；每章结尾有自测。</p>
+  <p style="margin:18px 0;"><a class="read-cta" id="continueReading" href="chapter-01/" hidden>📍 继续上次阅读</a>
+  <a class="read-cta" href="chapter-00/">从第 0 章（术语速查）开始 →</a>
+  <a class="read-cta" href="chapter-01/">跳过速查，从第 1 章开始 →</a></p>
+  ${sections}
+</div>
+${shellFooter()}
+${SHELL_JS}
+<script>
+(function(){
+  try{
+    var last=localStorage.getItem('evals-last-chapter');
+    if(last){var a=document.getElementById('continueReading');a.href='chapter-'+last+'/';a.hidden=false;}
+  }catch(e){}
+})();
+</script>
+</body>
+</html>`;
+}
+
+/** /build/ 动手搭建入口（任务导向，链接到现有章节，不复制正文） */
+function buildIndexPage(chaptersMeta) {
+  const link = (num) => `../book/chapter-${num}/`;
+  const steps = [
+    ["① 设计目标：评估什么", "把业务目标拆成能力、指标与失败分类", [23], chaptersMeta],
+    ["② 建测试集", "四来源混合、脱敏、版本锁定与数据飞轮", [24], chaptersMeta],
+    ["③ 实现评分器与流水线", "框架选型 + 用 Node.js 自建 Mini Evaluator（scorer / judge / 缓存 / 并发）", [19, 20], chaptersMeta],
+    ["④ 接入 CI 门禁", "PR 快速回归 / 夜间全量 / 发版安全集四层流水线", [25], chaptersMeta],
+  ].map(([title, sub, nums]) => {
+    const links = nums.map(n => {
+      const f = Object.keys(chaptersMeta).find(k => chaptersMeta[k].num === String(n));
+      return `<a href="${link(n)}">第 ${n} 章 · ${chaptersMeta[f] ? chaptersMeta[f].title.replace(/^\d+\.\s*/, "") : ""}</a>`;
+    }).join("");
+    return `<div class="promise"><h3>${title}</h3><p>${sub}</p><div class="step-links">${links}</div></div>`;
+  }).join("");
+  const advanced = [
+    [21, "RAG / Agent / 应用层评估"],
+    [22, "红队与安全评估"],
+    [26, "在线评估与 A/B 实验"],
+    [30, "资源速查：按场景查基准与框架"],
+  ].map(([n, label]) => `<a href="${link(n)}">第 ${n} 章 · ${label}</a>`).join("");
+  const cases = [27, 28, 29].map(n => {
+    const f = Object.keys(chaptersMeta).find(k => chaptersMeta[k].num === String(n));
+    return `<a href="${link(n)}">第 ${n} 章 · ${chaptersMeta[f] ? chaptersMeta[f].title.replace(/^\d+\.\s*/, "") : ""}</a>`;
+  }).join("");
+  const desc = "从零搭建评估体系的四步实战路径：设计目标 → 建测试集 → 评分器与流水线 → CI 门禁；附 RAG/Agent/红队/A-B 进阶与三个完整案例。";
+  return `${COMMON_HEAD("../", "动手搭建 · 大模型评估入门", desc, "build/")}
+</head>
+<body>
+${TOPBAR("../", "build")}
+<main style="max-width:1080px;margin:0 auto;padding:32px 24px 80px;">
+  <div class="breadcrumb"><a href="../index.html">首页</a> / <b>动手搭建</b></div>
+  <h1>动手搭建</h1>
+  <p class="sub" style="max-width:72ch;">读完就能落地：按四步路径把评估体系搬进你自己的项目，全部链接指向书中可运行代码章节。</p>
+  <div class="promise-grid">${steps}</div>
+  <div class="part-group" style="margin-top:34px;">进阶专题</div>
+  <div class="step-links step-links-col">${advanced}</div>
+  <div class="part-group" style="margin-top:24px;">三个完整案例（业务目标 → 数据 → 指标 → 上线）</div>
+  <div class="step-links step-links-col">${cases}</div>
+  <p style="margin-top:26px;"><a href="../book/chapter-31/">结课自测：检验三大能力 →</a></p>
+</main>
+${shellFooter()}
+${SHELL_JS}
+</body>
+</html>`;
+}
+
+function redirectStub(fromRel, toUrl, sitePath) {
+  return `<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>页面已迁移 · 大模型评估入门</title>
+<link rel="canonical" href="${SITE}/${sitePath}">
+<meta http-equiv="refresh" content="0; url=${toUrl}">
+<script>location.replace("${toUrl}");</script>
+</head>
+<body>
+<p>本章已迁移到 <a href="${toUrl}">${SITE}/${sitePath}</a>（旧链接 ${fromRel} 将持续重定向）。</p>
+</body>
+</html>`;
+}
+
+function notFoundPage() {
+  return `${COMMON_HEAD("", "页面不存在 · 大模型评估入门", "404：页面不存在。从首页、系统学习、评估大全或动手搭建入口继续。", "404.html")}
+</head>
+<body>
+${TOPBAR("", "")}
+<main style="max-width:720px;margin:0 auto;padding:64px 24px;">
+  <h1>404 · 页面不存在</h1>
+  <p class="sub">你要找的页面不存在或已迁移。可以从下面任意入口继续：</p>
+  <p>
+    <a class="read-cta" href="index.html">🏠 回首页</a>
+    <a class="read-cta" href="book/">系统学习</a>
+    <a class="read-cta" href="benchmarks/">评估大全</a>
+    <a class="read-cta" href="build/">动手搭建</a>
+  </p>
+</main>
+${shellFooter()}
+${SHELL_JS}
+</body>
+</html>`;
+}
+
 // ---------------------------------------------------------------- main
 
 async function main() {
-  mkdirSync(join(DIST, "web"), { recursive: true });
-  mkdirSync(join(DIST, "research"), { recursive: true });
+  mkdirSync(join(DIST, "book"), { recursive: true });
+  mkdirSync(join(DIST, "web"), { recursive: true }); // 仅容纳旧路由重定向页
+  mkdirSync(join(DIST, "build"), { recursive: true });
 
   writeFileSync(join(DIST, "styles.css"), CSS, "utf-8");
   writeFileSync(join(DIST, "favicon.svg"), FAVICON, "utf-8");
   if (existsSync(join(COVER_DIR, "cover.svg"))) {
     copyFileSync(join(COVER_DIR, "cover.svg"), join(DIST, "cover.svg"));
   }
+  // EPUB 拷入 dist：站点链接 ../evals.epub 指向它，dist 因此自包含（CI 中 Build EPUB 先于本脚本）
+  if (existsSync(join(REPO_ROOT, "evals.epub"))) {
+    copyFileSync(join(REPO_ROOT, "evals.epub"), join(DIST, "evals.epub"));
+  }
 
   const parts = readPartStructure();
   const flat = readFlatChapters(parts);
   globalParts = parts;
 
-  // chapters meta
+  // chapters meta（含派生的预计阅读时长）
   const chaptersMeta = { __count: flat.length };
   for (const f of flat) {
     const num = f.match(/^chapter-(\d+)/)?.[1] || "00";
     const md = readFileSync(join(CHAPTERS_DIR, f), "utf-8");
     const t = (md.match(/^#\s+(.+)$/m)?.[1] || f).replace(/^0\.\s*/, "");
-    chaptersMeta[f] = { num, title: t };
+    chaptersMeta[f] = { num, title: t, _minutes: estMinutes(md) };
   }
   globalChaptersMeta = chaptersMeta;
 
-  // chapter pages (with breadcrumb part titles)
+  // chapter pages → /book/chapter-NN/（clean route）+ 旧 /web/chapter-NN.html 重定向
   const chapterToPart = new Map();
   for (const p of parts) for (const f of p.items) chapterToPart.set(f, p.title);
 
@@ -828,7 +1004,11 @@ async function main() {
     const prev = idx > 0 ? { file: flat[idx - 1], ...chaptersMeta[flat[idx - 1]] } : null;
     const next = idx < flat.length - 1 ? { file: flat[idx + 1], ...chaptersMeta[flat[idx + 1]] } : null;
     const html = chapterPage(f, prev, next, chapterToPart.get(f) || "", num);
-    writeFileSync(join(DIST, "web", `chapter-${num}.html`), html, "utf-8");
+    const outDir = join(DIST, "book", `chapter-${num}`);
+    mkdirSync(outDir, { recursive: true });
+    writeFileSync(join(outDir, "index.html"), html, "utf-8");
+    writeFileSync(join(DIST, "web", `chapter-${num}.html`),
+      redirectStub(`/web/chapter-${num}.html`, `../book/chapter-${num}/`, `book/chapter-${num}/`), "utf-8");
 
     // search index（保留连字符：保证 "SWE-bench" 可搜；正文全量入索引）
     const md = readFileSync(join(CHAPTERS_DIR, f), "utf-8");
@@ -837,23 +1017,55 @@ async function main() {
       n: num,
       t: chaptersMeta[f].title,
       p: (chapterToPart.get(f) || "").replace(/^第 \d+ 部分：/, ""),
-      u: `web/chapter-${num}.html`,
+      u: `book/chapter-${num}/`,
       c: plain,
     });
   }
-  console.log(`[evals-web] Built ${flat.length} chapter pages`);
+  console.log(`[evals-web] Built ${flat.length} chapter pages → /book/chapter-NN/ (+${flat.length} redirects)`);
 
-  // index
-  writeFileSync(join(DIST, "index.html"), indexPage(parts, chaptersMeta), "utf-8");
+  // benchmark 数据（首页精选与统计用；目录与详情页由 build-benchmarks-hub.mjs 生成）
+  let bench = { count: 0, updated: "", featured: [] };
+  const benchDataPath = join(REPO_ROOT, "data", "benchmarks");
+  if (existsSync(benchDataPath)) {
+    const db = loadBenchData();
+    const valid = db.benchmarks.filter(b => b.tests && b.tests !== "-" && b.tests.indexOf("见 ") !== 0);
+    bench = {
+      count: valid.length,
+      updated: db.updated || "",
+      featured: valid.map(b => ({ id: b.id, name: b.name, tests: b.tests, _cite: (b._verified || 0) * 1000 + (b._pending || 0), _verified: b._verified || 0 }))
+        .sort((a, b) => b._cite - a._cite).slice(0, 8),
+    };
+  }
+
+  // index / book / build / 404 / search / sitemap / robots
+  writeFileSync(join(DIST, "index.html"), indexPage(parts, chaptersMeta, bench), "utf-8");
+  writeFileSync(join(DIST, "book", "index.html"), bookIndexPage(parts, chaptersMeta), "utf-8");
+  writeFileSync(join(DIST, "build", "index.html"), buildIndexPage(chaptersMeta), "utf-8");
+  writeFileSync(join(DIST, "404.html"), notFoundPage(), "utf-8");
   writeFileSync(join(DIST, "search-data.js"), `window.EVALS_SEARCH=${JSON.stringify(searchData)};`, "utf-8");
-  console.log("[evals-web] Built index.html + search-data.js");
+  console.log("[evals-web] Built index / book / build / 404 / search-data.js");
+
+  const today = new Date().toISOString().slice(0, 10);
+  const urls = ["/", "/book/", ...flat.map(f => `/book/chapter-${chaptersMeta[f].num}/`), "/build/", "/benchmarks/", "/benchmarks/releases/"];
+  // benchmark 详情 URL 集由 hub 构建写入 dist/benchmarks/；sitemap 直接扫描同源数据保证一致
+  if (existsSync(benchDataPath)) {
+    for (const b of loadBenchData().benchmarks) urls.push(`/benchmarks/${b.id}/`);
+  }
+  const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${urls.map(u => `  <url><loc>${SITE}${u}</loc><lastmod>${today}</lastmod></url>`).join("\n")}
+</urlset>
+`;
+  writeFileSync(join(DIST, "sitemap.xml"), sitemap, "utf-8");
+  writeFileSync(join(DIST, "robots.txt"), `User-agent: *\nAllow: /\nDisallow: /web/\n\nSitemap: ${SITE}/sitemap.xml\n`, "utf-8");
+  console.log(`[evals-web] sitemap.xml (${urls.length} URLs) + robots.txt`);
 
   // research/*.md 仅作为书籍素材源文件保留在仓库，不再发布为站点页面
   rmSync(join(DIST, "research"), { recursive: true, force: true });
 
   console.log(`[evals-web] Web build complete → ${DIST}`);
 
-  // 评估体系汇集站
+  // 评估体系汇集站（explorer + 详情页）
   try {
     await import("./build-benchmarks-hub.mjs");
   } catch (e) {

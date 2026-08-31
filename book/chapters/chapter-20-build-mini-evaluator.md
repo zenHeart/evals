@@ -300,7 +300,7 @@ main().catch((e) => { console.error(e); process.exitCode = 1; });
 
 **决策 1：判官是一个统一签名的函数类型。** `type Judge = (ex, output) => Promise<Score>` 让规则判官与 LLM 判官可插拔、可组合——`Promise.all([exactContains, llmJudge])` 就是"规则先筛、判官兜底"的分层维形。这正是 16.3 那张共同抽象表里"Evaluator"一列的自建版：**判官是数据，不是硬编码**。
 
-**决策 2：LLM 判官强制结构化输出 + 分数截断。** `response_format: json_object` 保证能解析；`Math.min(1, Math.max(0, ...))` 防判官模型输出 1.2 或 -0.3 这种越界分数污染统计；`comment` 存理由字段——它既是调试判官的入口，也是人工复核成本最低的材料（判官五要素之"结构化输出 + 理由"，见 16.6.3）。
+**决策 2：LLM 判官强制结构化输出 + 分数截断。** `response_format: json_object` 保证能解析；`Math.min(1, Math.max(0, ...))` 防判官模型输出 1.2 或 -0.3 这种越界分数污染统计；`comment` 存理由字段——它既是调试判官的入口，也是人工复核成本最低的材料（判官五要素之"结构化输出 + 理由"，见 19.6.3）。
 
 **决策 3：mapPool 而不是无限 `Promise.all`。** `tasks.map(async ...)` 加 `Promise.all` 会把全部请求同时打出去，遇到限流就是成片的 429，夜间任务会**静默丢数据**。mapPool 只开 `limit` 个 worker，用共享游标 `i++` 领任务——相当于自己写了一个 20 行的 p-limit，顺便看清了它的原理。
 

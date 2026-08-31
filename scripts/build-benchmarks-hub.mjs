@@ -1,50 +1,74 @@
 #!/usr/bin/env node
 /**
- * build-benchmarks-hub.mjs — 生成"评估体系汇集站"（v2 卡片式交互）
+ * build-benchmarks-hub.mjs — 生成"评估大全"：Explorer 索引页 + 每个 benchmark 独立详情页
  *
  * 数据源: data/benchmarks.json
- * 输出:   dist/benchmarks/index.html + dist/benchmarks-data.js
+ * 输出:
+ *   dist/benchmarks/index.html            # Explorer：高扫描效率卡片网格（搜索/筛选/排序为渐进增强）
+ *   dist/benchmarks/<id>/index.html       # 每个 benchmark 的独立可分享详情页（静态 HTML，含 SEO）
  *
- * v2 交互:
- *   - 每个评测 = 一张卡片：名称 + 类别 + 引用数徽章 + 测什么 + 分数含义
- *   - 悬浮引用数徽章 → 浮层列出全部引用该评测的模型发布（可点回原文）
- *   - 点击卡片 → 展开详情（评分协议 / 厂商采用记录表 / 官网与论文链接）
- *   - 类别筛选 chips + 搜索 + 排序（引用量倒排默认）
+ * v3 架构（依据 _docs/evals-goal.md P0 项）:
+ *   - Card 退回"索引入口"：整卡一个链接直达详情页；删除 hover 引用浮层与卡片内展开
+ *   - 网格响应式目标：手机 1 列 / 平板 2 列 / 普通桌面 3 列 / 宽屏 4 列
+ *   - Site Shell 共享自 scripts/site-shell.mjs，不再自维护导航与主题
+ *   - 详情页职责"理解"：Identity / 30秒看懂 / 协议 / 采用记录 / 复现 / 相关 / 引用
+ *     数据缺失字段显式标注，不用 hover 或折叠藏信息，不虚构数字
  */
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync, rmSync, readdirSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { SITE, SHELL_CSS, shellHead, shellTopbar, shellFooter, SHELL_JS } from "./site-shell.mjs";
+import { loadBenchData } from "./load-data.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = join(__dirname, "..");
-const DATA = join(REPO_ROOT, "data", "benchmarks.json");
 const DIST = join(REPO_ROOT, "dist");
-const SITE = "https://evals.zenheart.site";
+
+function esc(s) {
+  return String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+}
+function truncate(s, n) {
+  s = String(s || "");
+  return s.length > n ? s.slice(0, n - 1) + "…" : s;
+}
+
+/** 引用计数徽章文案：verified 公开计数，pending 显式展示不混入（goal §12.2） */
+function citeBadge(b) {
+  if (b._verified > 0) {
+    return b._pending > 0
+      ? `已核验 ${b._verified} 次官方发布引用 · 另 ${b._pending} 条待核验`
+      : `已核验 ${b._verified} 次官方发布引用`;
+  }
+  if (b._pending > 0) return `${b._pending} 条发布引用待核验（定位材料为图表/图片）`;
+  return "社区驱动 · 暂无官方发布引用";
+}
+
+/** 卡片/详情页共用的引用提示行：前 3 家 + 「+N」（仅已核验优先） */
+function vendorHint(b) {
+  const sorted = [...(b.adoption || [])].sort((a, x) => (a.status === "verified" ? -1 : 1) - (x.status === "verified" ? -1 : 1));
+  const names = sorted.map(a => a.release).filter(Boolean);
+  const head = names.slice(0, 3).join(" · ");
+  return names.length > 3 ? `${head} +${names.length - 3}` : head;
+}
+
+// ---------------------------------------------------------------- 页面 CSS
 
 const PAGE_CSS = `
-:root { color-scheme: light dark; }
 * { box-sizing: border-box; }
-body { margin:0; font-family: ui-sans-serif,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif; background:#f6f7fb; color:#0f172a; line-height:1.7; overflow-x:hidden; }
+body { margin:0; font-family: ui-sans-serif,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif; background:#f6f7fb; color:#0f172a; line-height:1.7; overflow-x:hidden; word-break:break-word; }
 body.dark { background:#0b1224; color:#e2e8f0; }
-.topbar { display:flex; align-items:center; justify-content:space-between; padding:12px 20px; border-bottom:1px solid rgba(0,0,0,.08); position:sticky; top:0; background:rgba(246,247,251,.94); backdrop-filter:blur(8px); z-index:60; }
-body.dark .topbar { background:rgba(11,18,36,.94); border-bottom-color:rgba(255,255,255,.08); }
-.logo { font-weight:800; font-size:17px; text-decoration:none; color:#2563eb; white-space:nowrap; }
-body.dark .logo { color:#60a5fa; }
-.topbar nav { display:flex; align-items:center; flex-wrap:wrap; gap:2px; }
-.topbar nav a { margin-left:14px; color:#475569; text-decoration:none; font-size:14px; white-space:nowrap; }
-body.dark .topbar nav a { color:#94a3b8; }
-.dark-toggle { border:1px solid rgba(0,0,0,.15); background:transparent; border-radius:8px; padding:4px 10px; cursor:pointer; margin-left:10px; color:inherit; }
-body.dark .dark-toggle { border-color:rgba(255,255,255,.2); }
-.wrap { max-width:1100px; margin:0 auto; padding:28px 20px 90px; }
-.grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(min(100%, 460px)), 1fr); gap:16px; align-items:start; }
-.grid .card { margin:0; max-width:640px; width:100%; }
-@media (min-width:1500px) { .grid { grid-template-columns:repeat(auto-fill, minmax(min(100%, 520px)), 1fr); } .grid .card { max-width:640px; } }
+a { color:#2563eb; text-decoration:none; }
+body.dark a { color:#60a5fa; }
+a:hover { text-decoration:underline; }
+.bm-container { width:min(100% - 32px, 1504px); margin-inline:auto; }
 h1 { font-size:clamp(26px,4vw,36px); margin:0 0 6px; }
 .sub { color:#64748b; font-size:14.5px; margin-bottom:18px; }
 body.dark .sub { color:#94a3b8; }
 .sub b { color:#2563eb; }
 body.dark .sub b { color:#60a5fa; }
+
+/* ---------- 控制区 ---------- */
 .controls { display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin:16px 0 8px; }
 .chip { border:1.5px solid rgba(0,0,0,.12); background:transparent; color:inherit; border-radius:999px; padding:5px 14px; font-size:13.5px; cursor:pointer; font-weight:600; transition:.15s; }
 body.dark .chip { border-color:rgba(255,255,255,.18); }
@@ -58,249 +82,478 @@ select { padding:9px 12px; border-radius:10px; border:1.5px solid rgba(0,0,0,.12
 body.dark select { background:#111a2e; border-color:rgba(255,255,255,.18); }
 .stats { font-size:13px; color:#64748b; margin:8px 0 16px; }
 body.dark .stats { color:#94a3b8; }
-
-/* ---------- 卡片 ---------- */
-.card { border:1px solid rgba(0,0,0,.09); border-radius:16px; margin:14px 0; background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.04); overflow:visible; transition: box-shadow .15s; overflow-wrap:anywhere; }
-body.dark .card { background:#111a2e; border-color:rgba(255,255,255,.09); }
-.card:hover { box-shadow:0 6px 20px rgba(0,0,0,.08); }
-.card-main { padding:16px 20px; cursor:pointer; }
-.card-main:focus-visible { outline:3px solid #2563eb; outline-offset:2px; border-radius:16px; }
-.card-head { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
-.card-title { font-size:18.5px; font-weight:800; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
-.cat-tag { font-size:11.5px; font-weight:800; padding:2px 11px; border-radius:999px; color:#fff; }
-.cite-badge { position:relative; font-size:12.5px; font-weight:800; color:#2563eb; border:1.5px solid rgba(37,99,235,.35); background:rgba(37,99,235,.06); padding:3px 12px; border-radius:999px; cursor:help; user-select:none; white-space:nowrap; }
-body.dark .cite-badge { color:#60a5fa; border-color:rgba(96,165,250,.4); background:rgba(96,165,250,.08); }
-.cite-badge.zero { color:#94a3b8; border-color:rgba(0,0,0,.14); background:transparent; }
-body.dark .cite-badge.zero { border-color:rgba(255,255,255,.16); }
-.card p { margin:8px 0 0; font-size:14.5px; }
-.row { display:flex; gap:8px; align-items:baseline; }
-.row .k { flex:none; font-weight:800; font-size:12.5px; color:#94a3b8; letter-spacing:.06em; padding-top:2px; }
-.hint { font-size:12px; color:#b0b7c3; margin-top:10px; user-select:none; }
-.card.open .hint { display:none; }
-
-/* 引用悬浮浮层 */
-.cite-pop {
-  position:absolute; bottom:calc(100% + 8px); left:50%; transform:translateX(-50%);
-  width:min(430px, 78vw); background:#0f172a; color:#e2e8f0; border-radius:12px;
-  padding:12px 14px; box-shadow:0 14px 40px rgba(0,0,0,.3); font-size:13px; line-height:1.55;
-  opacity:0; pointer-events:none; transition:opacity .12s; z-index:70; text-align:left;
-}
-.cite-badge:hover .cite-pop, .cite-badge:focus .cite-pop { opacity:1; pointer-events:auto; }
-.cite-pop h4 { margin:0 0 8px; font-size:12px; color:#94a3b8; font-weight:700; letter-spacing:.06em; }
-.cite-pop .cp-item { display:flex; gap:8px; padding:4px 0; border-top:1px dashed rgba(255,255,255,.1); flex-wrap:wrap; align-items:baseline; }
-.cite-pop .cp-item:first-of-type { border-top:none; }
-.cite-pop a { color:#7dd3fc; text-decoration:none; }
-.cite-pop a:hover { text-decoration:underline; }
-.cite-pop .cp-score { color:#6ee7b7; font-family:ui-monospace,monospace; font-size:12px; }
-.cite-pop .cp-note { color:#94a3b8; font-size:12px; }
-.cite-pop .cp-none { color:#94a3b8; }
-
-/* 展开详情 */
-.card-detail { display:none; border-top:1px dashed rgba(0,0,0,.1); padding:14px 20px 18px; }
-body.dark .card-detail { border-top-color:rgba(255,255,255,.1); }
-.card.open .card-detail { display:block; }
-.card.open { border-color:rgba(37,99,235,.35); }
-.detail-block { margin:10px 0; }
-.detail-block h4 { margin:0 0 6px; font-size:12.5px; color:#64748b; font-weight:800; letter-spacing:.06em; }
-body.dark .detail-block h4 { color:#94a3b8; }
-.adopt-table { width:100%; border-collapse:collapse; font-size:13.5px; }
-.adopt-table td { border:none; border-bottom:1px dashed rgba(0,0,0,.08); padding:6px 8px 6px 0; vertical-align:top; }
-body.dark .adopt-table td { border-bottom-color:rgba(255,255,255,.08); }
-.adopt-table tr:last-child td { border-bottom:none; }
-.adopt-table .m { font-weight:700; min-width:150px; display:inline-block; }
-.adopt-table .s { color:#059669; font-weight:800; font-family:ui-monospace,monospace; }
-body.dark .adopt-table .s { color:#6ee7b7; }
-.adopt-table .nt { color:#94a3b8; font-size:12.5px; }
-.adopt-table a { color:#2563eb; text-decoration:none; }
-body.dark .adopt-table a { color:#60a5fa; }
-.adopt-table a:hover { text-decoration:underline; }
-.ext-links { display:flex; gap:16px; flex-wrap:wrap; }
-.ext-links a { color:#2563eb; font-size:13.5px; text-decoration:none; }
-body.dark .ext-links a { color:#60a5fa; }
-.ext-links a:hover { text-decoration:underline; }
 .empty { text-align:center; color:#94a3b8; padding:48px 0; }
-footer { text-align:center; color:#94a3b8; font-size:13px; padding:30px 0 40px; }
+
+/* ---------- Explorer 网格：goal.md §9.4 显式断点 360=1 / 640=2 / 1024=3 / 1440=4 ---------- */
+.grid { display:grid; grid-template-columns:1fr; gap:1rem; align-items:stretch; }
+@media (min-width:640px)  { .grid { grid-template-columns:repeat(2, minmax(0, 1fr)); } }
+@media (min-width:1024px) { .grid { grid-template-columns:repeat(3, minmax(0, 1fr)); } }
+@media (min-width:1440px) { .grid { grid-template-columns:repeat(4, minmax(0, 1fr)); } }
+
+/* ---------- 卡片：纯索引入口，整卡一个链接 ---------- */
+.card {
+  display:flex; flex-direction:column; gap:8px; margin:0;
+  border:1px solid rgba(0,0,0,.09); border-radius:16px; background:#fff;
+  box-shadow:0 1px 3px rgba(0,0,0,.04); padding:16px 18px; color:inherit;
+  text-decoration:none; transition:box-shadow .15s, border-color .15s, transform .15s;
+  overflow-wrap:anywhere;
+}
+body.dark .card { background:#111a2e; border-color:rgba(255,255,255,.09); }
+.card:hover { box-shadow:0 6px 20px rgba(0,0,0,.08); border-color:rgba(37,99,235,.35); text-decoration:none; transform:translateY(-1px); }
+.card-head { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
+.card-title { font-size:17px; font-weight:800; line-height:1.35; }
+.cat-tag { flex:none; font-size:11px; font-weight:800; padding:2px 10px; border-radius:999px; color:#fff; margin-top:2px; }
+.card-desc { margin:0; font-size:13.5px; color:#475569; line-height:1.6; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+body.dark .card-desc { color:#a8b6c8; }
+.card-protocol { font-size:12px; color:#94a3b8; font-family:ui-monospace,monospace; }
+.card-cite { font-size:12.5px; font-weight:700; color:#2563eb; }
+body.dark .card-cite { color:#60a5fa; }
+.card-cite.zero { color:#94a3b8; font-weight:600; }
+.card-vendors { font-size:12px; color:#94a3b8; }
+.card-go { margin-top:auto; font-size:13px; font-weight:700; color:#2563eb; padding-top:6px; border-top:1px dashed rgba(0,0,0,.08); }
+body.dark .card-go { color:#60a5fa; border-top-color:rgba(255,255,255,.1); }
+.card[hidden] { display:none; }
+
+/* ---------- 详情页 ---------- */
+.detail-main { max-width:900px; margin:0 auto; padding:28px 0 70px; }
+.breadcrumb { font-size:13px; color:#64748b; margin-bottom:14px; }
+body.dark .breadcrumb { color:#94a3b8; }
+.breadcrumb b { color:#2563eb; }
+body.dark .breadcrumb b { color:#60a5fa; }
+.detail-head { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:4px; }
+.detail-head h1 { margin:0; }
+.status-badge { font-size:12px; font-weight:800; padding:3px 12px; border-radius:999px; }
+.status-active { background:rgba(5,150,105,.12); color:#059669; }
+.status-rolling { background:rgba(37,99,235,.12); color:#2563eb; }
+.status-saturation { background:rgba(217,119,6,.14); color:#b45309; }
+.status-retired { background:rgba(100,116,139,.14); color:#64748b; }
+body.dark .status-saturation { color:#fbbf24; }
+h2.detail-sec { font-size:20px; margin:30px 0 10px; padding-bottom:6px; border-bottom:1px solid rgba(0,0,0,.08); scroll-margin-top:70px; }
+body.dark h2.detail-sec { border-bottom-color:rgba(255,255,255,.1); }
+.kv { display:grid; grid-template-columns:110px 1fr; gap:6px 14px; font-size:14.5px; margin:10px 0; }
+.kv .k { font-weight:800; font-size:12.5px; color:#94a3b8; letter-spacing:.05em; padding-top:3px; }
+@media (max-width:560px) { .kv { grid-template-columns:1fr; } .kv .k { padding-top:0; } }
+.callout { border-left:4px solid #93c5fd; background:rgba(96,165,250,.07); padding:10px 16px; border-radius:0 8px 8px 0; margin:14px 0; font-size:14px; }
+body.dark .callout { border-left-color:#38537a; background:rgba(96,165,250,.06); }
+.callout.warn { border-left-color:#f59e0b; background:rgba(245,158,11,.08); }
+body.dark .callout.warn { border-left-color:#92600a; background:rgba(245,158,11,.07); }
+.gap-list { margin:8px 0; padding-left:20px; font-size:14px; color:#64748b; }
+body.dark .gap-list { color:#94a3b8; }
+.gap-list li { margin:4px 0; }
+.adopt-table { width:100%; border-collapse:collapse; font-size:14px; }
+.adopt-table th, .adopt-table td { border-bottom:1px dashed rgba(0,0,0,.08); padding:8px 10px 8px 0; vertical-align:top; text-align:left; }
+body.dark .adopt-table th, body.dark .adopt-table td { border-bottom-color:rgba(255,255,255,.08); }
+.adopt-table th { font-size:12px; letter-spacing:.05em; color:#94a3b8; }
+.adopt-table .score { color:#059669; font-weight:800; font-family:ui-monospace,monospace; white-space:nowrap; }
+body.dark .adopt-table .score { color:#6ee7b7; }
+.adopt-table .note { color:#94a3b8; font-size:13px; }
+.related { display:grid; grid-template-columns:repeat(auto-fill, minmax(min(100%, 220px), 1fr)); gap:10px; margin:12px 0; }
+.related a { display:block; border:1px solid rgba(0,0,0,.09); border-radius:12px; padding:10px 14px; color:inherit; font-size:13.5px; }
+body.dark .related a { border-color:rgba(255,255,255,.1); }
+.related a:hover { border-color:rgba(37,99,235,.4); text-decoration:none; }
+.related .r-name { font-weight:800; }
+.ext-links { display:flex; gap:16px; flex-wrap:wrap; margin:10px 0; }
+.ext-links a { font-size:14px; }
+.refs { font-size:13.5px; color:#64748b; }
+body.dark .refs { color:#94a3b8; }
+footer.site-foot { text-align:center; color:#94a3b8; font-size:13px; padding:26px 0 40px; }
+footer.site-foot a { color:inherit; }
 `;
 
-function esc(s) {
-  return String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-}
+// ---------------------------------------------------------------- Explorer 页
 
-function main() {
-  if (!existsSync(DATA)) {
-    console.error("[hub] data/benchmarks.json not found");
-    process.exit(1);
-  }
-  const db = JSON.parse(readFileSync(DATA, "utf-8"));
-  mkdirSync(join(DIST, "benchmarks"), { recursive: true });
+function explorerPage(db, cards) {
+  const chips = [{ id: "all", name: "全部" }, ...db.categories]
+    .map(c => {
+      const n = c.id === "all" ? cards.filter(x => x.show).length : cards.filter(x => x.show && x.b.category === c.id).length;
+      return `<button class="chip${c.id === "all" ? " active" : ""}" type="button" data-cat="${esc(c.id)}">${esc(c.name)} <span style="opacity:.6">${n}</span></button>`;
+    })
+    .join("");
 
-  writeFileSync(join(DIST, "benchmarks-data.js"), `window.BENCH_DB=${JSON.stringify(db)};`, "utf-8");
+  const cardHtml = cards.map(({ b, show, cat, cite, badge, vendors }) => `
+    <a class="card" href="${esc(b.id)}/" data-cat="${esc(b.category)}" data-cite="${cite}" data-name="${esc(b.name)}" data-hay="${esc((b.name + " " + (b.tests || "") + " " + (b.meaning || "") + " " + (b.protocol || "") + " " + vendors).toLowerCase())}"${show ? "" : " hidden"}>
+      <div class="card-head">
+        <span class="card-title">${esc(b.name)}</span>
+        <span class="cat-tag" style="background:${esc(cat.color)}">${esc(cat.name)}</span>
+      </div>
+      <p class="card-desc">${esc(truncate(b.tests, 120))}</p>
+      ${b.protocol ? `<div class="card-protocol">${esc(truncate(b.protocol, 60))}</div>` : ""}
+      <div class="card-cite${(b._verified || 0) + (b._pending || 0) ? "" : " zero"}">${esc(badge)}</div>
+      ${vendors ? `<div class="card-vendors">${esc(vendors)}</div>` : ""}
+      <div class="card-go">查看详情 →</div>
+    </a>`).join("");
 
-  const html = `<!doctype html>
-<html lang="zh-CN">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>评估体系大全 · 按厂商引用量倒排 · 大模型评估入门</title>
-<meta name="description" content="LLM 评估体系卡片集：65+ 主流评测，每张卡片讲清它测什么、分数什么含义、被哪些模型发布引用（悬浮看全部引用原文）。">
-<link rel="canonical" href="${SITE}/benchmarks/">
-<link rel="icon" type="image/svg+xml" href="../favicon.svg">
-<link rel="stylesheet" href="../styles.css">
-<style>${PAGE_CSS}</style>
-<script>
-(function(){try{var t=localStorage.getItem('theme');if(t==='dark'||(!t&&matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.setAttribute('data-theme','dark');document.body.classList.add('dark');}}catch(e){}})();
-</script>
+  const title = "评估体系大全 · 65+ 主流大模型评测参考";
+  const desc = "LLM 评估参考数据库：每个评测有独立详情页，讲清它测什么、分数什么含义、被哪些模型发布引用、协议如何解读。";
+
+  return `${shellHead({ rel: "../", title, desc, path: "benchmarks/", extra: `<style>${SHELL_CSS}${PAGE_CSS}</style>` })}
 </head>
 <body>
-<header class="topbar">
-  <a class="logo" href="../index.html">📚 Eval Handbook</a>
-  <nav>
-    <a href="../index.html">首页</a>
-    <a href="./index.html" style="color:#2563eb;font-weight:700;">评估大全</a>
-    <a href="../web/chapter-01.html">书籍阅读</a>
-    <a href="../evals.epub">下载 EPUB</a>
-    <button class="dark-toggle" id="themeToggle" type="button" title="切换暗色模式">🌙</button>
-  </nav>
-</header>
-<div class="wrap">
+${shellTopbar("../", "benchmarks")}
+<div class="bm-container">
   <h1>评估体系大全</h1>
-  <div class="sub">每张卡片 = 一个评测：<b>它测什么 · 分数什么含义 · 谁家发布引用过</b>。<br>悬浮右侧「N 家引用」徽章可看全部引用原文；点击卡片展开协议与采用详情。不懂评测？只读卡片就够。</div>
+  <div class="sub">严谨、可查询、可追溯的 benchmark reference：每张卡片是一个评测的<b>索引入口</b>，点击进入独立详情页看测什么、分数怎么看、谁家发布引用过。不懂评测？只读卡片就够。<br><a href="releases/">🕐 模型发布时间轴：按厂商与版本浏览近三年官方发布证据 →</a></div>
   <div class="controls">
-    <div class="search"><input id="q" type="search" placeholder="搜索：名称 / 用途 / 引用模型…" aria-label="搜索评估体系"></div>
+    <div class="search"><input id="q" type="search" placeholder="搜索：名称 / 用途 / 引用厂商…" aria-label="搜索评估体系"></div>
     <select id="sort" aria-label="排序方式">
-      <option value="cite">按厂商引用量 ↓（倒排）</option>
+      <option value="cite">按厂商引用量 ↓</option>
       <option value="name">按名称 A-Z</option>
       <option value="cat">按类别</option>
     </select>
   </div>
-  <div class="controls" id="chips" style="margin-top:0;"></div>
-  <div class="stats" id="stats"></div>
-  <div id="list" class="grid"></div>
+  <div class="controls" id="chips" style="margin-top:0;">${chips}</div>
+  <div class="stats"><span id="statsText"></span> <button id="clearFilters" type="button" class="chip" hidden>✕ 清除全部筛选</button></div>
+  <div id="list" class="grid">${cardHtml}</div>
+  <div id="emptyState" class="empty" hidden>没有匹配的评测——可能是筛选或搜索词太窄。<button type="button" class="chip" onclick="document.getElementById('clearFilters').click()">清除筛选恢复全部 ${cards.filter(c => c.show).length} 个</button></div>
 </div>
-<footer><a href="${SITE}">evals.zenheart.site</a> · 引用数据来自 13 家厂商发布材料真实抓取 · MIT License</footer>
-<script src="../benchmarks-data.js"></script>
+<footer class="site-foot"><a href="${SITE}">evals.zenheart.site</a> · 引用数据来自厂商发布材料真实抓取 · MIT License</footer>
+${SHELL_JS}
 <script>
 (function(){
-  var db=window.BENCH_DB;
-  function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
-  var cats={}; db.categories.forEach(function(c){cats[c.id]=c;});
-  var state={cat:'all', q:'', sort:'cite'};
-  var all=db.benchmarks.filter(function(b){return b.tests!=='-'&&b.tests.indexOf('见 ')!==0;});
-  all.forEach(function(b){ b._cite=(b.adoption||[]).filter(function(a){return a.release&&a.release.indexOf('（')!==0;}).length; });
-
-  var chipsEl=document.getElementById('chips');
-  chipsEl.innerHTML=[{id:'all',name:'全部'}].concat(db.categories)
-    .map(function(c){var n=c.id==='all'?all.length:all.filter(function(b){return b.category===c.id;}).length;
-      return '<button class="chip'+(c.id==='all'?' active':'')+'" data-cat="'+c.id+'">'+c.name+' <span style="opacity:.6">'+n+'</span></button>';}).join('');
-  chipsEl.addEventListener('click',function(e){
+  var cards=[].slice.call(document.querySelectorAll('#list .card'));
+  var params=new URLSearchParams(location.search);
+  var state={
+    cat:params.get('cat')||'all',
+    q:(params.get('q')||'').toLowerCase(),
+    sort:params.get('sort')||'cite'
+  };
+  function citeOf(c){return parseInt(c.getAttribute('data-cite'),10)||0;}
+  function nameOf(c){return c.getAttribute('data-name');}
+  function catOf(c){return c.getAttribute('data-cat');}
+  function syncUrl(){
+    var p=new URLSearchParams();
+    if(state.cat!=='all')p.set('cat',state.cat);
+    if(state.q)p.set('q',state.q);
+    if(state.sort!=='cite')p.set('sort',state.sort);
+    var qs=p.toString();
+    history.replaceState(null,'',qs?('?'+qs):location.pathname);
+  }
+  function apply(){
+    var shown=0;
+    cards.forEach(function(c){
+      var ok=(state.cat==='all'||catOf(c)===state.cat)&&(!state.q||c.getAttribute('data-hay').indexOf(state.q)>=0);
+      c.hidden=!ok; if(ok)shown++;
+    });
+    var sorted=cards.filter(function(c){return !c.hidden;});
+    if(state.sort==='cite')sorted.sort(function(a,b){return citeOf(b)-citeOf(a)||nameOf(a).localeCompare(nameOf(b));});
+    else if(state.sort==='name')sorted.sort(function(a,b){return nameOf(a).localeCompare(nameOf(b));});
+    else sorted.sort(function(a,b){return catOf(a).localeCompare(catOf(b))||citeOf(b)-citeOf(a);});
+    var list=document.getElementById('list');
+    sorted.forEach(function(c){list.appendChild(c);});
+    document.getElementById('statsText').textContent='共 '+shown+' 个评测${db.updated ? " · 数据更新于 " + esc(db.updated) : ""}';
+    var filtered=state.cat!=='all'||state.q||state.sort!=='cite';
+    document.getElementById('clearFilters').hidden=!filtered;
+    var empty=document.getElementById('emptyState');
+    if(empty)empty.hidden=shown>0;
+    syncUrl();
+  }
+  function restoreControls(){
+    document.querySelectorAll('#chips .chip').forEach(function(x){
+      x.classList.toggle('active',x.getAttribute('data-cat')===state.cat);
+    });
+    var sort=document.getElementById('sort'); if(sort)sort.value=state.sort;
+    var q=document.getElementById('q'); if(q&&state.q)q.value=state.q;
+  }
+  document.getElementById('chips').addEventListener('click',function(e){
     var b=e.target.closest('.chip'); if(!b)return;
     state.cat=b.getAttribute('data-cat');
-    chipsEl.querySelectorAll('.chip').forEach(function(x){x.classList.toggle('active',x===b);});
-    render();
+    document.querySelectorAll('#chips .chip').forEach(function(x){x.classList.toggle('active',x===b);});
+    apply();
   });
-  document.getElementById('sort').addEventListener('change',function(e){state.sort=e.target.value;render();});
-  document.getElementById('q').addEventListener('input',function(e){state.q=e.target.value.trim().toLowerCase();render();});
-  document.getElementById('themeToggle').addEventListener('click',function(){
-    var dark=document.documentElement.getAttribute('data-theme')==='dark';
-    document.documentElement.setAttribute('data-theme',dark?'light':'dark');
-    document.body.classList.toggle('dark',!dark);
-    try{localStorage.setItem('theme',dark?'light':'dark');}catch(err){}
-    this.textContent=dark?'🌙':'☀️';
+  document.getElementById('sort').addEventListener('change',function(e){state.sort=e.target.value;apply();});
+  document.getElementById('q').addEventListener('input',function(e){state.q=e.target.value.trim().toLowerCase();apply();});
+  document.getElementById('clearFilters').addEventListener('click',function(){
+    state={cat:'all',q:'',sort:'cite'};
+    restoreControls();
+    apply();
+    document.getElementById('q').focus();
   });
-
-  function filtered(){
-    var list=all.filter(function(b){
-      if(state.cat!=='all'&&b.category!==state.cat)return false;
-      if(!state.q)return true;
-      var hay=(b.name+' '+(b.tests||'')+' '+(b.meaning||'')+' '+(b.adoption||[]).map(function(a){return a.release;}).join(' ')).toLowerCase();
-      return hay.indexOf(state.q)>=0;
-    });
-    if(state.sort==='cite')list.sort(function(a,b){return b._cite-a._cite||a.name.localeCompare(b.name);});
-    else if(state.sort==='name')list.sort(function(a,b){return a.name.localeCompare(b.name);});
-    else list.sort(function(a,b){return a.category.localeCompare(b.category)||b._cite-a._cite;});
-    return list;
-  }
-
-  function citePop(b){
-    var ad=(b.adoption||[]).filter(function(a){return a.release&&a.release.indexOf('（')!==0;});
-    if(!ad.length) return '<span class="cite-pop"><h4>厂商采用记录</h4><span class="cp-none">暂无官方发布引用——社区驱动或垂域使用' + (b.adoptionNote? '。'+esc(b.adoptionNote):'') + '</span></span>';
-    return '<span class="cite-pop"><h4>引用它的模型发布（'+ad.length+'）</h4>'+
-      ad.map(function(a){
-        var name=a.url? '<a href="'+esc(a.url)+'" target="_blank" rel="noopener">'+esc(a.release)+' ↗</a>' : esc(a.release);
-        return '<span class="cp-item"><span>'+name+'</span>'+
-          (a.score&&a.score!=='-'?'<span class="cp-score">'+esc(a.score)+'</span>':'')+
-          (a.note?'<span class="cp-note">'+esc(a.note)+'</span>':'')+'</span>';
-      }).join('')+'</span>';
-  }
-
-  function render(){
-    var list=filtered();
-    document.getElementById('stats').textContent='共 '+list.length+' 个评测 · 数据更新于 '+db.updated;
-    var el=document.getElementById('list');
-    if(!list.length){el.innerHTML='<div class="empty">无匹配结果</div>';return;}
-    el.innerHTML=list.map(function(b,i){
-      var c=cats[b.category]||{name:b.category,color:'#94a3b8'};
-      var ad=(b.adoption||[]).filter(function(a){return a.release&&a.release.indexOf('（')!==0;});
-      return '<div class="card" data-id="'+esc(b.id)+'">'+
-        '<div class="card-main" tabindex="0" role="button" aria-expanded="false">'+
-          '<div class="card-head">'+
-            '<span class="rank" style="font-family:ui-monospace,monospace;font-size:12px;font-weight:800;color:#94a3b8;min-width:30px;">#'+(i+1)+'</span>'+
-            '<span class="card-title">'+esc(b.name)+
-              '<span class="cat-tag" style="background:'+c.color+'">'+esc(c.name)+'</span>'+
-            '</span>'+
-            (b._cite>0
-              ? '<span class="cite-badge" tabindex="0">'+b._cite+' 家引用'+citePop(b)+'</span>'
-              : '<span class="cite-badge zero" tabindex="0">社区驱动'+citePop(b)+'</span>')+
-          '</div>'+
-          '<div class="row"><span class="k">测什么</span><span>'+esc(b.tests||'-')+'</span></div>'+
-          (b.meaning? '<div class="row"><span class="k">分数含义</span><span>'+esc(b.meaning)+'</span></div>':'')+
-          '<div class="hint">▼ 点击卡片展开：评分协议 / 采用详情 / 原文链接</div>'+
-        '</div>'+
-        '<div class="card-detail">'+
-          (b.protocol&&b.protocol!=='-'?'<div class="detail-block"><h4>评分协议</h4>'+esc(b.protocol)+'</div>':'')+
-          (b.adoptionNote?'<div class="detail-block"><h4>采用格局</h4>'+esc(b.adoptionNote)+'</div>':'')+
-          '<div class="detail-block"><h4>厂商采用记录（发布时作为基准引用）</h4>'+
-            (ad.length? '<table class="adopt-table">'+ad.map(function(a){
-              var name=a.url? '<a href="'+esc(a.url)+'" target="_blank" rel="noopener">'+esc(a.release)+' ↗</a>' : esc(a.release);
-              return '<tr><td><span class="m">'+name+'</span></td><td>'+
-                (a.score&&a.score!=='-'?'<span class="s">'+esc(a.score)+'</span> ':'')+
-                (a.note?'<span class="nt">'+esc(a.note)+'</span>':'')+'</td></tr>';
-            }).join('')+'</table>'
-            : '<span style="color:#94a3b8;font-size:13.5px;">暂无官方发布引用记录（社区驱动或垂域使用）</span>')+
-          '</div>'+
-          '<div class="detail-block ext-links">'+
-            '<a href="'+esc(b.url)+'" target="_blank" rel="noopener">🏠 官网 / 数据集</a>'+
-            (b.paper&&b.paper!=='-'?'<a href="'+esc(b.paper)+'" target="_blank" rel="noopener">📄 论文</a>':'')+
-            '<a href="../index.html">← 返回全书</a>'+
-          '</div>'+
-        '</div>'+
-      '</div>';
-    }).join('');
-
-    // 点击卡片展开/收起（引用徽章的悬浮与链接不受影响）；支持键盘 Enter/Space
-    el.querySelectorAll('.card-main').forEach(function(m){
-      function toggle(){
-        var card=m.closest('.card');
-        card.classList.toggle('open');
-        m.setAttribute('aria-expanded', card.classList.contains('open')?'true':'false');
-      }
-      m.addEventListener('click',function(e){
-        if(e.target.closest('.cite-badge')||e.target.closest('a'))return;
-        toggle();
-      });
-      m.addEventListener('keydown',function(e){
-        if((e.key==='Enter'||e.key===' ')&&e.target===m){e.preventDefault();toggle();}
-      });
-    });
-  }
-  render();
+  restoreControls();
+  apply();
 })();
 </script>
 </body>
 </html>`;
+}
 
-  writeFileSync(join(DIST, "benchmarks", "index.html"), html, "utf-8");
-  console.log(`[evals-hub] Built card-based benchmarks hub (${db.benchmarks.length} benchmarks)`);
+// ---------------------------------------------------------------- 详情页
+
+const STATUS_LABEL = {
+  active: "Active · 主流在用",
+  rolling: "Live / Rolling · 持续更新",
+  "near-saturation": "Near saturation · 接近饱和",
+  historical: "Historical classic · 历史经典",
+  superseded: "Superseded · 已被替代",
+  deprecated: "Deprecated · 已弃用",
+};
+
+function statusBadge(status) {
+  if (!status) return "";
+  const label = STATUS_LABEL[status] || status;
+  const cls = status === "rolling" ? "rolling" : status === "near-saturation" ? "saturation"
+    : status === "superseded" || status === "deprecated" ? "retired" : "active";
+  return `<span class="status-badge status-${cls}">${esc(label)}</span>`;
+}
+
+function detailPage(db, b, cat, related) {
+  const cite = b.adoption || [];
+  const verified = cite.filter(a => a.status === "verified");
+  const pending = cite.filter(a => a.status !== "verified");
+  const title = `${b.name} · 评测是什么、分数怎么看 · 评估大全`;
+  const desc = truncate(`${b.name}：${b.tests || ""}${b.meaning ? " " + b.meaning : ""}`, 150);
+
+  const identityRows = [
+    ["类别", `<span class="cat-tag" style="background:${esc(cat.color)}">${esc(cat.name)}</span>`],
+    b.status ? ["状态", statusBadge(b.status)] : null,
+    ["官网 / 数据集", b.url ? `<a href="${esc(b.url)}" target="_blank" rel="noopener">${esc(b.url)}</a>` : "—"],
+    b.paper ? ["论文", `<a href="${esc(b.paper)}" target="_blank" rel="noopener">${esc(b.paper)}</a>`] : null,
+  ].filter(Boolean).map(([k, v]) => `<div class="k">${k}</div><div>${v}</div>`).join("");
+
+  const adoptRow = a => `<tr>
+      <td>${a.url ? `<a href="${esc(a.url)}" target="_blank" rel="noopener">${esc(a.release)} ↗</a>` : esc(a.release)}${a.date ? `<br><span style="color:#94a3b8;font-size:12px;font-family:ui-monospace,monospace;">${esc(a.date)}</span>` : ""}</td>
+      <td>${a.score ? `<span class="score">${esc(a.score)}</span>` : '<span style="color:#94a3b8">未公布</span>'}</td>
+      <td>${a.note ? `<span class="note">${esc(a.note)}</span>` : ""}</td>
+    </tr>`;
+  const adoptTable = rows => `<table class="adopt-table"><thead><tr><th>模型发布</th><th>报告分数</th><th>备注</th></tr></thead><tbody>${rows.join("")}</tbody></table>`;
+
+  let adoptBlock;
+  if (!cite.length) {
+    adoptBlock = `<p style="color:#94a3b8;font-size:14px;">暂无官方模型发布引用记录——社区驱动或垂域使用。${b.adoptionNote ? esc(b.adoptionNote) : ""}</p>`;
+  } else {
+    adoptBlock =
+      (verified.length
+        ? `<p style="font-weight:700;margin:8px 0 4px;">已核验（${verified.length}）<span style="font-weight:400;color:#94a3b8;font-size:13px;"> — 已定位到发布页原文</span></p>${adoptTable(verified.map(adoptRow))}`
+        : "") +
+      (pending.length
+        ? `<p style="font-weight:700;margin:16px 0 4px;">待核验（${pending.length}）<span style="font-weight:400;color:#94a3b8;font-size:13px;"> — 分数在图片表格中或定位待人工确认，暂不计入公开引用数</span></p>${adoptTable(pending.map(adoptRow))}`
+        : "");
+  }
+
+  return `${shellHead({ rel: "../../", title, desc, path: `benchmarks/${b.id}/`, extra: `<style>${SHELL_CSS}${PAGE_CSS}</style>` })}
+</head>
+<body>
+${shellTopbar("../../", "benchmarks")}
+<main class="detail-main bm-container">
+  <nav class="breadcrumb"><a href="../../index.html">首页</a> / <a href="../">评估大全</a> / <b>${esc(b.name)}</b></nav>
+  <div class="detail-head">
+    <h1>${esc(b.name)}</h1>
+    ${statusBadge(b.status)}
+  </div>
+  ${b.tests ? `<p style="font-size:15.5px;color:#475569;margin:6px 0 0;">${esc(b.tests)}</p>` : ""}
+
+  <h2 class="detail-sec" id="identity">基本信息</h2>
+  <div class="kv">${identityRows}</div>
+
+  <h2 class="detail-sec" id="quick">30 秒看懂</h2>
+  ${b.meaning ? `<p>${esc(b.meaning)}</p>` : `<p style="color:#94a3b8">分数含义解读待补。</p>`}
+  ${b.adoptionNote ? `<div class="callout"><b>采用格局：</b>${esc(b.adoptionNote)}</div>` : ""}
+
+  <h2 class="detail-sec" id="protocol">评分协议</h2>
+  ${b.protocol ? `<p>${esc(b.protocol)}</p>` : `<p style="color:#94a3b8">协议信息待收录。</p>`}
+  <div class="callout warn"><b>可比性提示：</b>同一 benchmark 的分数是「实验配置」的产物——benchmark variant、harness、reasoning effort、tools、采样参数、run 次数与聚合方式任一不同，数字都不能直接横向比较。下表各厂商分数如未披露协议细节，请只作方向性参考。</div>
+
+  <h2 class="detail-sec" id="adoption">厂商采用记录（模型发布时作为基准引用）</h2>
+  <p class="refs">共 ${cite.length} 条（已核验 ${verified.length} · 待核验 ${pending.length}）${db.updated ? ` · 数据更新于 ${esc(db.updated)}` : ""}</p>
+  ${adoptBlock}
+
+  <h2 class="detail-sec" id="gaps">数据缺口（本页暂未收录）</h2>
+  <ul class="gap-list">
+    <li>benchmark variant / 版本（如 Diamond 子集、Verified 子集）与 dataset 规模</li>
+    <li>各厂商使用的 harness / scaffold 与 agent 工具配置</li>
+    <li>reasoning effort、采样参数（temperature / top-p）、run 次数与聚合方式</li>
+    <li>metric 的 chance baseline 与人类 baseline 实验条件</li>
+    <li>污染检测与饱和状态的结构化标注</li>
+  </ul>
+  <p class="refs">以上字段缺失时，本页<b>不虚构数字</b>；后续按 release 级证据逐步补齐并标注来源。</p>
+
+  <h2 class="detail-sec" id="reproduce">复现入口</h2>
+  <div class="ext-links">
+    ${b.url && b.url !== "-" ? `<a href="${esc(b.url)}" target="_blank" rel="noopener">🏠 官网 / 数据集</a>` : ""}
+    ${b.paper && b.paper !== "-" ? `<a href="${esc(b.paper)}" target="_blank" rel="noopener">📄 论文</a>` : ""}
+    <a href="../">← 返回评估大全</a>
+  </div>
+
+  ${related.length ? `<h2 class="detail-sec" id="related">相关评测（同类别）</h2>
+  <div class="related">${related.map(r => `<a href="../${esc(r.id)}/"><span class="r-name">${esc(r.name)}</span><br><span style="color:#94a3b8">${esc(truncate(r.tests, 40))}</span></a>`).join("")}</div>` : ""}
+
+  <h2 class="detail-sec" id="refs">引用</h2>
+  <p class="refs">本页数据更新于 ${esc(db.updated)}，依据厂商发布材料真实抓取；发现数据问题欢迎在 <a href="https://github.com/zenHeart/evals" target="_blank" rel="noopener">GitHub</a> 提 Issue。</p>
+</main>
+<footer class="site-foot"><a href="${SITE}">evals.zenheart.site</a> · MIT License · ZenHeart</footer>
+${SHELL_JS}
+</body>
+</html>`;
+}
+
+// ---------------------------------------------------------------- 发布时间轴页
+
+const TIMELINE_CSS = `
+.tl-wrap { max-width:1080px; margin:0 auto; padding:28px 0 70px; }
+.tl-note { font-size:13.5px; color:#64748b; margin:8px 0 26px; }
+body.dark .tl-note { color:#94a3b8; }
+.tl-vendor { margin:34px 0 10px; font-size:20px; font-weight:800; display:flex; align-items:center; gap:10px; }
+.tl-vendor::after { content:""; flex:1; height:1px; background:rgba(0,0,0,.08); }
+body.dark .tl-vendor::after { background:rgba(255,255,255,.1); }
+.tl-region { font-size:11px; font-weight:800; color:#94a3b8; letter-spacing:.08em; }
+.tl { border-left:2px solid rgba(37,99,235,.25); margin-left:8px; padding-left:22px; }
+body.dark .tl { border-left-color:rgba(96,165,250,.3); }
+.tl-item { position:relative; padding:0 0 26px; }
+.tl-item:last-child { padding-bottom:4px; }
+.tl-item::before {
+  content:""; position:absolute; left:-29px; top:6px; width:12px; height:12px; border-radius:50%;
+  background:#2563eb; border:2.5px solid #f6f7fb; box-shadow:0 0 0 2px rgba(37,99,235,.35);
+}
+body.dark .tl-item::before { background:#60a5fa; border-color:#0b1224; box-shadow:0 0 0 2px rgba(96,165,250,.4); }
+.tl-date { font-family:ui-monospace,monospace; font-size:13px; font-weight:800; color:#2563eb; }
+body.dark .tl-date { color:#60a5fa; }
+.tl-title { font-size:17px; font-weight:800; margin:2px 0 2px; }
+.tl-models { font-size:13px; color:#64748b; }
+body.dark .tl-models { color:#94a3b8; }
+.tl-meta { font-size:13px; color:#475569; margin:4px 0 8px; }
+body.dark .tl-meta { color:#a8b6c8; }
+.tl-chips { display:flex; flex-wrap:wrap; gap:6px; margin:6px 0; }
+.tl-chip {
+  font-size:12px; padding:2px 10px; border-radius:999px; border:1px solid rgba(37,99,235,.3);
+  color:#2563eb; text-decoration:none; background:rgba(37,99,235,.05);
+}
+body.dark .tl-chip { color:#60a5fa; border-color:rgba(96,165,250,.35); background:rgba(96,165,250,.08); }
+.tl-chip:hover { text-decoration:none; border-color:#2563eb; }
+.tl-chip.pending { border-style:dashed; color:#94a3b8; border-color:rgba(0,0,0,.2); background:transparent; }
+body.dark .tl-chip.pending { color:#94a3b8; border-color:rgba(255,255,255,.2); }
+.tl-chip b { font-weight:800; }
+.tl-src { font-size:13px; }
+.tl-src a { color:#2563eb; }
+body.dark .tl-src a { color:#60a5fa; }
+.tl-empty { color:#94a3b8; font-size:14px; padding:20px 0; }
+`;
+
+function releasesTimelinePage(db) {
+  // 最近 3 年窗口（构建时动态计算）
+  const cutoff = new Date(Date.now() - 3 * 365 * 24 * 3600 * 1000).toISOString().slice(0, 10);
+  const inWindow = db.releases.filter(r => r.release_date && r.release_date >= cutoff);
+  const noDate = db.releases.filter(r => !r.release_date);
+  const knownVendors = new Set(db.vendors.map(v => v.id));
+
+  // 厂商分组：国际 → 国内 → 其他，组内按日期倒序
+  const regionOf = v => (v.region === "CN" ? 1 : 0);
+  const vendorRank = Object.fromEntries(db.vendors.map((v, i) => [v.id, regionOf(v) * 1000 + i]));
+  const groups = new Map();
+  for (const r of inWindow) {
+    const key = knownVendors.has(r.vendor_id) ? r.vendor_id : "_other";
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(r);
+  }
+  const ordered = [...groups.entries()].sort((a, b) => {
+    const ra = a[0] === "_other" ? 9999 : (vendorRank[a[0]] ?? 5000);
+    const rb = b[0] === "_other" ? 9999 : (vendorRank[b[0]] ?? 5000);
+    return ra - rb;
+  });
+
+  const regionLabel = key => {
+    const v = db.vendors.find(x => x.id === key);
+    if (key === "_other") return "";
+    return v?.region === "CN" ? "国内" : "国际";
+  };
+  const vendorSections = ordered.map(([key, rels]) => {
+    const label = key === "_other" ? "其他厂商" : (db.vendors.find(v => v.id === key)?.display_name || db.vendors.find(v => v.id === key)?.name || key);
+    const items = rels.map(r => {
+      const chips = r.evidence.map(e => {
+        const known = db.benchmarks.some(b => b.id === e.benchmark_id);
+        const score = e.display ? ` <b>${esc(e.display)}</b>` : "";
+        const cls = e.status === "verified" ? "" : " pending";
+        const inner = `${esc(e.benchmark_id)}${e.variant ? " " + esc(e.variant) : ""}${score}`;
+        return known
+          ? `<a class="tl-chip${cls}" href="../${esc(e.benchmark_id)}/" title="${e.harness ? "harness: " + esc(e.harness) : ""}">${inner}</a>`
+          : `<span class="tl-chip${cls}" title="新 benchmark，实体页待建">${inner}</span>`;
+      }).join("");
+      const proto = [
+        r.evidence.find(e => e.harness)?.harness ? `harness: ${esc(r.evidence.find(e => e.harness).harness)}` : null,
+        r.evidence.find(e => e.effort)?.effort ? `effort: ${esc(r.evidence.find(e => e.effort).effort)}` : null,
+      ].filter(Boolean).join(" · ");
+      return `<div class="tl-item">
+        <div class="tl-date">${esc(r.release_date)}</div>
+        <div class="tl-title">${esc(r.release_title)}</div>
+        ${r.models.length ? `<div class="tl-models">模型：${esc(r.models.join(" / "))}</div>` : ""}
+        <div class="tl-meta">benchmark 证据 ${r.evidence.length} 条（已核验 ${r.verified} · 待核验 ${r.pending}）${proto ? " · " + proto : ""}</div>
+        <div class="tl-chips">${chips}</div>
+        ${r.source_url ? `<div class="tl-src"><a href="${esc(r.source_url)}" target="_blank" rel="noopener">📄 官方发布原文 ↗</a>${r.source_kind ? ` <span style="color:#94a3b8;font-size:12px;">(${esc(r.source_kind)})</span>` : ""}</div>` : ""}
+      </div>`;
+    }).join("");
+    return `<div class="tl-vendor">${esc(label)} <span class="tl-region">${regionLabel(key)}</span></div><div class="tl">${items}</div>`;
+  }).join("");
+
+  const desc = `按厂商与发布时间罗列近三年（${cutoff} 之后）主流模型发布的 benchmark 证据：每次发布对应官方 blog、模型版本、协议要点与逐条证据链接。`;
+  return `${shellHead({ rel: "../../", title: "模型发布时间轴 · 评估大全", desc, path: "benchmarks/releases/", extra: `<style>${SHELL_CSS}${PAGE_CSS}${TIMELINE_CSS}</style>` })}
+</head>
+<body>
+${shellTopbar("../../", "benchmarks")}
+<div class="tl-wrap bm-container">
+  <nav class="breadcrumb"><a href="../../index.html">首页</a> / <a href="../">评估大全</a> / <b>发布时间轴</b></nav>
+  <h1>模型发布时间轴</h1>
+  <div class="tl-note">${esc(desc)}<br>绿色实心 chip = 已核验证据（可点入 benchmark 详情页）；虚线 chip = 待核验（分数在图片表格中）。<a href="../">← 返回评估大全</a></div>
+  ${vendorSections.length ? vendorSections : `<div class="tl-empty">时间窗口内暂无已收录发布。</div>`}
+  ${noDate.length ? `<div class="tl-empty">另有 ${noDate.length} 条历史引用因发布日期缺失未进入时间轴（见各 benchmark 详情页「待核验」区）。</div>` : ""}
+</div>
+<footer class="site-foot"><a href="${SITE}">evals.zenheart.site</a> · MIT License · ZenHeart</footer>
+${SHELL_JS}
+</body>
+</html>`;
+}
+
+// ---------------------------------------------------------------- main
+
+function main() {
+  const db = loadBenchData();
+  const cats = Object.fromEntries(db.categories.map(c => [c.id, c]));
+
+  // 数据健全性：id 必须是 URL 安全 slug（详情页路径依赖它）
+  for (const b of db.benchmarks) {
+    if (!/^[a-z0-9][a-z0-9-]*$/.test(b.id)) {
+      console.error(`[hub] 非法 benchmark id（会生成非法路径）: "${b.id}"`);
+      process.exit(1);
+    }
+  }
+
+  const dir = join(DIST, "benchmarks");
+  mkdirSync(dir, { recursive: true });
+  // 清理上一代构建的陈旧产物（旧数据 JS / 已删除 benchmark 的详情目录）
+  rmSync(join(DIST, "benchmarks-data.js"), { force: true });
+  const validIds = new Set(db.benchmarks.map(b => b.id));
+  for (const name of readdirSync(dir)) {
+    if (statSync(join(dir, name)).isDirectory() && !validIds.has(name)) {
+      rmSync(join(dir, name), { recursive: true, force: true });
+    }
+  }
+
+  // Explorer 卡片数据（含占位过滤：tests 为空或「见 …」引用占位的不上卡片）
+  const cards = db.benchmarks.map(b => {
+    const cite = (b._verified || 0) * 1000 + (b._pending || 0);
+    return {
+      b,
+      show: b.tests && b.tests !== "-" && b.tests.indexOf("见 ") !== 0,
+      cat: cats[b.category] || { name: b.category, color: "#94a3b8" },
+      cite,
+      badge: citeBadge(b),
+      vendors: vendorHint(b),
+    };
+  });
+
+  writeFileSync(join(dir, "index.html"), explorerPage(db, cards), "utf-8");
+
+  // 模型发布时间轴（厂商 → 版本 → blog 证据，近 3 年窗口）
+  const relDir = join(dir, "releases");
+  mkdirSync(relDir, { recursive: true });
+  writeFileSync(join(relDir, "index.html"), releasesTimelinePage(db), "utf-8");
+
+  // 每个 benchmark 的独立详情页
+  for (const b of db.benchmarks) {
+    const sameCat = db.benchmarks.filter(x => x.category === b.category && x.id !== b.id && x.tests && x.tests !== "-");
+    const outDir = join(dir, b.id);
+    mkdirSync(outDir, { recursive: true });
+    writeFileSync(join(outDir, "index.html"), detailPage(db, b, cats[b.category] || { name: b.category, color: "#94a3b8" }, sameCat.slice(0, 6)), "utf-8");
+  }
+
+  console.log(`[evals-hub] Built explorer + ${db.benchmarks.length} detail pages → dist/benchmarks/`);
 }
 
 main();
