@@ -178,6 +178,62 @@ goal.md §12.6 Tier 1 国内缺口厂商补齐：Alibaba/Qwen 两条、MiniMax �
 
 ---
 
+## 历代补齐（2026-08-31 第四批）：Google / xAI / Meta 近三年历代核心模型
+
+补齐 goal.md §12.6 Tier 1 三家在覆盖窗口内的历代旗舰：Google Gemini 2.0 → 2.5 Pro → 2.5 Flash（3.5/3 已由前批覆盖）、xAI Grok 3 → Grok 4（4.6 已由第一批覆盖）、Meta Llama 3.1 → Llama 4。发布日期全部取自官方页面自身时间（publishedTime 元数据或页头日期），精确到日。
+
+| 指标 | 本批值 |
+|---|---:|
+| 新增 release 文件 | 7 |
+| benchmark_evidence 条数 | 113 |
+| 行 status=verified | 41 |
+| 行 status=pending | 72 |
+| release status=verified | 7 |
+| verified ∧ vendor_reported（可计入官方发布引用数） | 39 |
+| comparison_cited（xAI 散文明文引用 Claude Opus 4） | 2 |
+
+### 逐 Release 清单
+
+| 文件 | 来源 URL | 发布日（页面依据） | 条数 | verified | pending | 抓取路径 |
+|---|---|---:|---:|---:|---:|---|
+| `google/gemini-2-0.json` | blog.google/…/google-gemini-ai-update-december-2024/ | 2024-12-11（publishedTime） | 14 | 1 | 13 | web reader；散文唯一分数是 Project Mariner 的 WebVoyager 83.5%（single agent setup）；2.0 Flash 全部分数在 GIF 图（gemini_benchmarks_narrow_light2x.gif）→ 13 行 pending，视觉读数只进 notes |
+| `google/gemini-2-5-pro.json` | blog.google/…/gemini-model-thinking-updates-march-2025 | 2025-03-25（publishedTime；页内注 03-26 更新 MRCR） | 13 | 6 | 7 | web reader；HLE 18.8% 无工具 / SWE-bench Verified 63.8% custom agent setup 两处散文分数 + GPQA/AIME 2025/LMArena/MRCR 四处点名行 verified；主表为 GIF → 7 行 pending |
+| `google/gemini-2-5-flash.json` | blog.google/…/gemini-2-5-model-family-expands/ | 2025-06-17（publishedTime + 页头） | 14 | 0 | 14 | web reader；**正文零 benchmark 点名零分数**，唯一评估物是 2.5 家族表 GIF（含 Flash thinking/non-thinking、Flash-Lite、Pro 五列）→ 全部 pending；表内协议脚注（pass@1 / AI Studio API 默认采样 / Aider 3 次均值 / Vibe-Eval Gemini 自评）已逐字段捕获 |
+| `xai/grok-3.json` | x.ai/news/grok-3 | 2025-02-19（页头 + publishedTime） | 14 | 14 | 0 | web reader；Think 散文 4 分（AIME'25 93.3 cons@64 / GPQA 84.6 / LCB 79.4 / mini 95.8+80.4）+ Arena 1402 Elo + 非推理 DOM 数值表 8 行全部机读 verified |
+| `xai/grok-4.json` | x.ai/news/grok-4 | 2025-07-09（publishedTime） | 17 | 17 | 0 | web reader + 无头浏览器双路径；web reader 漏掉 GPQA / AIME'25 两个图表区，由渲染 SVG DOM 文本找回（与第一批 grok-4-6 同一 verified 路径，非图片 OCR）；HLE 全集（44.4/38.6，w/ Python+Internet）与 text-only（Heavy 50.7）分开记 variant；2 条 comparison_cited（Claude Opus 4 ARC-AGI-2 ~8.6 / Vending-Bench $2077.41） |
+| `meta/llama-3-1.json` | ai.meta.com/blog/meta-Llama-3-1/ | 2024-07-23（页头） | 15 | 0 | 15 | ai.meta.com 拒两个 web reader → Playwright 读 DOM；**正文零 benchmark 名零分数**；两张 fbcdn PNG 表格图，405B 表 15 行 pending（shots/CoT 条件写在行名里已捕获），8B/70B 表数值整表进 release notes 供后续补行 |
+| `meta/llama-4.json` | ai.meta.com/blog/llama-4-multimodal-intelligence/ | 2025-04-05（页头） | 26 | 3 | 23 | 同上 Playwright 路径（注意：派单 URL /llama-4-maverick-scout/ 已 404，真实 slug 是 /llama-4-multimodal-intelligence/）；散文仅 LMArena Elo 1417（明示 experimental chat version）+ Behemoth 的 MATH-500/GPQA Diamond 点名；Maverick/Scout/Behemoth 三表全图 → 23 行 pending |
+
+### 本批关键协议字段捕获（协议明示才记录，其余 null）
+
+- **Grok 3**：AIME'25 Think 行明示 **cons@64（64 次采样共识）**；非推理表整表标注 reasoning off；LCB 窗口 10/1/2024-2/1/2025。
+- **Grok 4**：HLE 分 **text-only（50.7）与 full set 2025-04-03（w/ Python+Internet 44.4）** 两种 variant；GPQA/LCB/HMMT/AIME'25/USAMO 图表按 **w/ Python / w/ Python+Internet / 无工具** 分条件记录；Vending-Bench 明示 **5 次运行取均值**。
+- **Gemini 2.5 家族表脚注（6/17 页）**：全部 Gemini 分数为 **pass@1 单次尝试、AI Studio API 默认采样**；SWE-bench multiple attempts = Google scaffolding 多轨迹 + 模型自评重打分；Aider = 3 次均值且设置非默认；Vibe-Eval 用 Gemini 当裁判；外部数字取自 leaderboard（agi.safe.ai / scale.com / livecodebench / aider.chat / kaggle FACTS）。
+- **Gemini 2.5 Pro（3/25 页）**：HLE 明示 **无工具**（tools: []）；SWE-bench 明示 **custom agent setup**；GPQA/AIME 明示**排除 majority voting**。
+- **Llama 4 表格脚注**：Maverick 行 = **1-shot temp 0**，Scout 行 = **0-shot temp 0**（同家族两表协议不同！）；高方差 benchmark（GPQA Diamond / LCB）多次生成取均值；Behemoth = "current best internal runs"（预览期快照）；非 Llama 列均取"最高可复现自报值"。
+- **Llama 3.1 表**：行内直接写明 shots/CoT（MMLU 5-shot CoT / GSM8K 8-shot CoT / GPQA 8-shot CoT / HumanEval 0-shot 等），已逐行进 protocol。
+
+### 本批新增 benchmark id（notes 均标 `new-benchmark`，待迁入主数据）
+
+`webvoyager`、`natural2code`、`bird-sql`、`math`（Hendrycks 全集，与 `math500` 分立）、`hiddenmath`、`mrcr`、`covost2`、`egoschema`、`vibe-eval`、`global-mmlu-lite`、`loft`、`usamo-2025`（对齐 `usamo-2026`/`aime-25` 命名）、`vending-bench`（与 `vending-bench-2` 分立）、`mbpp-evalplus`、`arc-challenge`（AllenAI，与 `arc-agi` 无关）、`nexus`、`zeroscrolls-quality`、`infinitebench-en-mc`、`multilingual-mmlu`、`mtob`；复用已登记候选 `aime-25`、`hmmt25`（沿用第三批无连字符拼写，未另铸新 id）。映射既有 id：`mmlu`、`mmlu-pro`、`ifeval`、`humaneval`、`gsm8k`、`gpqa`、`bfcl`、`mgsm`、`niah`（NIH/Multi-needle 记 variant）、`aime24`、`lcb`（各窗口记 variant）、`simpleqa`、`mmmu`、`chartqa`、`docvqa`、`mathvista`、`arena`、`swebench`（single/multiple attempts 记 variant）、`aider`、`factsg`、`math500`、`arc-agi`（2 记 variant）。
+
+### 待人工核验清单（pending 升级路径）
+
+1. Gemini 2.0 GIF 图 13 行、2.5 Pro GIF 表 7 行、2.5 Flash 家族表 14 行：人工读图确认视觉转写数值后逐行翻 verified（GIF 已在无头浏览器中稳定帧截图辅助）。
+2. Llama 3.1 405B 表 15 行 + 8B/70B 表（数值在 release notes）：人工读图翻 verified / 补行。
+3. Llama 4 三表 23 行：人工读图；注意 Maverick（1-shot）与 Scout（0-shot）协议不同；Behemoth 为训练中快照。
+4. Gemini 2.5 Pro 页伴生技术报告（页内 "latest Gemini technical report" 链接）与 Deep Think 独立方法论页（第一批遗留）为潜在补充来源。
+
+### 本批遗留 / 观察（不改动既有文件，仅报告）
+
+1. **legacy `xai-grok-3.json` 与本批 `official/xai/grok-3.json` 指向同一次真实发布**：legacy 桩无日期、无分数、全 pending。按账本契约未删 legacy 文件，建议主线将其移出 legacy 或标记 superseded，避免同一发布被计两次。
+2. Llama 4 的 LMArena 1417 Elo 页面自述属于 **experimental chat version**，与同期发布的开源权重不是同一提交快照 —— 跨厂商对比时须按 variant 处理（页内原文已引用，无外部信息）。
+3. x.ai 页面对 web reader 与真实 DOM 的内容不一致（GPQA / AIME'25 区块只在渲染后出现）：后续抓 x.ai 图表页应默认走无头浏览器并扫 SVG text。
+4. Google 三批 GIF 表格均为动画图：本批用"浏览器直开 GIF + 稳定帧截图 + 视觉转写"路径，数值只进 notes；如后续要翻 verified，仍需人工读图（§12.5）。
+5. `hmmt25`（第三批）与 `usamo-2026`/`aime-25`（第二/三批）命名不一致为既有事实，本批未统一，留给主线批量裁定。
+
+---
+
 ## 2026-08-31 第三批：国内厂商历代补齐（kimi / deepseek / glm / qwen / minimax）
 
 近三年窗口内国内 Tier 1 厂商核心模型发布补齐，8 个 release。**发布日期全部精确到日**（来源：官方 blog 索引/页面印刷日期/publishedTime 元数据/news slug + HuggingFace 官方 org repo createdAt 双重印证，详见各文件 notes）。本节只追加，不改动既有批次内容。
