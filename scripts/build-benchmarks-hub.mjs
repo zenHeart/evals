@@ -465,7 +465,9 @@ body.dark .tlr, body.tlr-page.dark .tlr {
 .evt-vendor { font:700 10.5px/1 ui-monospace,monospace; letter-spacing:.14em; color:var(--graphite); text-transform:uppercase; }
 .evt-vendor i { font-style:normal; color:var(--rule); margin:0 5px; }
 .evt-title { font-size:16.5px; font-weight:800; margin:6px 0 2px; line-height:1.4; }
-.evt-models { font-size:13px; color:var(--graphite); margin:0 0 6px; }
+.evt-blog { font-size:12.5px; color:var(--graphite); margin:0 0 6px; }
+.evt-blog a { color:var(--graphite); text-decoration:underline; text-underline-offset:3px; }
+.evt-blog a:hover { color:var(--pin); }
 .evt-meta { font:400 12px/1.7 ui-monospace,monospace; color:var(--graphite); margin:0 0 8px; }
 .evt-meta b { color:var(--ok); font-weight:700; }
 .evt-meta i { color:var(--warn); font-style:normal; }
@@ -528,11 +530,11 @@ function tlEvtHtml(db, r, focusSet) {
       <span class="evt-date">${r.release_date ? esc(r.release_date) : "日期待核验"}</span>
       <span class="evt-vendor">${esc(r.vendor_label)}<i>·</i>${region}</span>
     </div>
-    <h3 class="evt-title">${esc(r.release_title)}</h3>
-    ${r.models.length ? `<div class="evt-models">${esc(r.models.join(" / "))}</div>` : ""}
+    <h3 class="evt-title">${esc(r.models.length ? r.models.join(" / ") : r.release_title)}</h3>
+    ${r.models.length ? `<div class="evt-blog">发布文：${r.source_url ? `<a href="${esc(r.source_url)}" target="_blank" rel="noopener">${esc(r.release_title)}</a>` : esc(r.release_title)}</div>` : ""}
     <div class="evt-meta">${metaBits}</div>
     <div class="evt-chips">${chips}</div>
-    ${r.source_url ? `<div class="evt-src"><a href="${esc(r.source_url)}" target="_blank" rel="noopener">官方发布原文 ↗</a><span class="kind">${esc(r.source_kind || "")}</span></div>` : ""}
+    ${r.source_url && !r.models.length ? `<div class="evt-src"><a href="${esc(r.source_url)}" target="_blank" rel="noopener">官方发布原文 ↗</a><span class="kind">${esc(r.source_kind || "")}</span></div>` : ""}
   </article>`;
 }
 
@@ -554,28 +556,17 @@ function releasesTimelinePage(db) {
       return `<span class="cov">${esc(v?.display_name || v?.name || vid)} <b>${n}</b></span>`;
     }).join("");
 
-  // noscript 静态默认视图：近三年 + 按厂商 + 年份刻度
-  const inWindow = db.releases.filter(r => r.release_date && r.release_date >= cutoff);
-  const knownVendors = new Set(db.vendors.map(v => v.id));
-  const vendorRank = Object.fromEntries(db.vendors.map((v, i) => [v.id, (v.region === "CN" ? 1000 : 0) + i]));
-  const groups = new Map();
+  // noscript 静态默认视图：单一时间轴（近三年），结点=模型名称，年份刻度
+  const inWindow = db.releases.filter(r => r.release_date && r.release_date >= cutoff)
+    .sort((a, b) => (b.release_date || "").localeCompare(a.release_date || ""));
+  let prevYear = null;
+  const staticParts = [];
   for (const r of inWindow) {
-    const key = knownVendors.has(r.vendor_id) ? r.vendor_id : "_other";
-    if (!groups.has(key)) groups.set(key, []);
-    groups.get(key).push(r);
+    const y = r.release_date ? r.release_date.slice(0, 4) : null;
+    if (y && y !== prevYear) { staticParts.push(`<div class="yrm"><b>${esc(y)}</b></div>`); prevYear = y; }
+    staticParts.push(tlEvtHtml(db, r, null));
   }
-  const staticSections = [...groups.entries()].sort((a, b) => {
-    const ra = a[0] === "_other" ? 99999 : (vendorRank[a[0]] ?? 5000);
-    const rb = b[0] === "_other" ? 99999 : (vendorRank[b[0]] ?? 5000);
-    return ra - rb;
-  }).map(([key, rels]) => {
-    const v = db.vendors.find(x => x.id === key);
-    const label = key === "_other" ? "其他厂商" : (v?.display_name || key);
-    const region = v?.region === "CN" ? "国内" : "国际";
-    const body = rels.sort((a, b) => (b.release_date || "").localeCompare(a.release_date || ""))
-      .map(r => tlEvtHtml(db, r, null)).join("");
-    return tlGroupHeader(label, `${region} · ${rels.length} 次发布`, null) + `<div class="feed">${body}</div>`;
-  }).join("");
+  const staticFeed = `<div class="feed">${staticParts.join("") || '<div class="tl-empty">暂无数据。</div>'}</div>`;
 
   const tlData = {
     cutoff,
@@ -584,7 +575,7 @@ function releasesTimelinePage(db) {
     releases: db.releases,
   };
 
-  const desc = `按时间刻度罗列国内外主流大厂的核心模型发布：每个时间结点显示哪个模型发布、引用了哪些评测及该模型分数，点击进入对应评测介绍页；支持按厂商、按评测分类与分数阈值过滤。`;
+  const desc = `按时间刻度罗列国内外主流大厂的核心模型发布：每个时间结点显示哪个模型发布、引用了哪些评测及该模型分数，点击进入对应评测介绍页；支持按厂商过滤、指定评测聚焦、分数阈值与关键字过滤。`;
   return `${shellHead({ rel: "../../", title: "模型发布时间轴 · 评估大全", desc, path: "benchmarks/releases/", extra: `<style>${SHELL_CSS}${PAGE_CSS}${TIMELINE_CSS}</style>` })}
 </head>
 <body class="tlr-page">
@@ -600,8 +591,6 @@ ${shellTopbar("../../", "benchmarks")}
     <div class="row">
       <span class="lab">窗口</span>
       <span class="seg" id="tlWindow"><button type="button" data-v="fresh" class="on">近三年</button><button type="button" data-v="all">全部历史</button></span>
-      <span class="lab">分类</span>
-      <span class="seg" id="tlGroup"><button type="button" data-v="vendor" class="on">按厂商</button><button type="button" data-v="benchmark">按评测</button></span>
       <input type="search" id="tlQ" placeholder="搜索模型 / 发布标题 / 厂商…" aria-label="搜索时间轴">
     </div>
     <div class="row" id="tlVendorRow"><span class="lab">厂商</span></div>
@@ -616,8 +605,8 @@ ${shellTopbar("../../", "benchmarks")}
   </div>
   <div class="tl-count" id="tlCount" hidden></div>
 
-  <noscript><div>${staticSections || '<div class="tl-empty">暂无数据。</div>'}</div></noscript>
-  <div id="tlStatic">${staticSections || '<div class="tl-empty">暂无数据。</div>'}</div>
+  <noscript><div>${staticFeed || '<div class="tl-empty">暂无数据。</div>'}</div></noscript>
+  <div id="tlStatic">${staticFeed || '<div class="tl-empty">暂无数据。</div>'}</div>
   <div id="tlApp" class="feed" hidden></div>
 </div>
 <footer class="site-foot"><a href="${SITE}">evals.zenheart.site</a> · MIT License · ZenHeart</footer>
@@ -630,7 +619,7 @@ window.EVALS_TL = ${JSON.stringify(tlData)};
   var D=window.EVALS_TL;
   var app=document.getElementById('tlApp'),staticEl=document.getElementById('tlStatic');
   if(!app||!D)return;
-  var state={win:'fresh',group:'vendor',vendors:[],bench:null,filters:[],q:''};
+  var state={win:'fresh',vendors:[],bench:null,filters:[],q:''};
   var benchName={}; D.benchmarks.forEach(function(b){benchName[b.id]=b.name;});
   function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
 
@@ -665,11 +654,11 @@ window.EVALS_TL = ${JSON.stringify(tlData)};
       '<span class="pin-dot" aria-hidden="true"></span>'+
       '<div class="evt-head"><span class="evt-date">'+(r.release_date?esc(r.release_date):'日期待核验')+'</span>'+
       '<span class="evt-vendor">'+esc(r.vendor_label)+'<i>·</i>'+region+'</span></div>'+
-      '<h3 class="evt-title">'+esc(r.release_title)+'</h3>'+
-      (r.models.length?'<div class="evt-models">'+esc(r.models.join(' / '))+'</div>':'')+
+      '<h3 class="evt-title">'+esc(r.models.length?r.models.join(' / '):r.release_title)+'</h3>'+
+      (r.models.length?'<div class="evt-blog">发布文：'+(r.source_url?'<a href="'+esc(r.source_url)+'" target="_blank" rel="noopener">'+esc(r.release_title)+'</a>':esc(r.release_title))+'</div>':'')+
       '<div class="evt-meta">'+meta+'</div>'+
       '<div class="evt-chips">'+chips+'</div>'+
-      (r.source_url?'<div class="evt-src"><a href="'+esc(r.source_url)+'" target="_blank" rel="noopener">官方发布原文 ↗</a><span class="kind">'+esc(r.source_kind||'')+'</span></div>':'')+
+      (r.source_url&&!r.models.length?'<div class="evt-src"><a href="'+esc(r.source_url)+'" target="_blank" rel="noopener">官方发布原文 ↗</a><span class="kind">'+esc(r.source_kind||'')+'</span></div>':'')+
       '</article>';
   }
 
@@ -699,45 +688,12 @@ window.EVALS_TL = ${JSON.stringify(tlData)};
 
   function render(){
     var list=D.releases.filter(pass).sort(function(a,b){return (b.release_date||'').localeCompare(a.release_date||'');});
-    var parts=[];
-    if(state.group==='vendor'){
-      var rank={}; D.vendors.forEach(function(v,i){rank[v.id]=(v.region==='CN'?1000:0)+i;});
-      var g={};
-      list.forEach(function(r){var k=r.vendor_id||'_other';(g[k]=g[k]||[]).push(r);});
-      Object.keys(g).sort(function(a,b){
-        var ra=a==='_other'?99999:(rank[a]!==undefined?rank[a]:5000);
-        var rb=b==='_other'?99999:(rank[b]!==undefined?rank[b]:5000);
-        return ra-rb;}).forEach(function(k){
-        var v=D.vendors.find(function(x){return x.id===k;});
-        var label=k==='_other'?'其他厂商':(v?v.label:k);
-        var region=(v&&v.region==='CN')?'国内':'国际';
-        parts.push('<div class="grp"><span class="g-name">'+esc(label)+'</span><span class="g-line"></span>'+
-          '<span class="g-meta">'+region+' · '+g[k].length+' 次发布</span></div>');
-        parts=parts.concat(yearMarkers(g[k]));
-      });
-    }else{
-      var bg={};
-      list.forEach(function(r){r.evidence.forEach(function(e){
-        if(state.bench&&e.benchmark_id!==state.bench)return;
-        (bg[e.benchmark_id]=bg[e.benchmark_id]||[]).push({r:r,e:e});});});
-      Object.keys(bg).sort(function(a,b){return bg[b].length-bg[a].length||a.localeCompare(b);}).forEach(function(bid){
-        var rows=bg[bid].sort(function(a,b){return (b.r.release_date||'').localeCompare(a.r.release_date||'');});
-        var known=D.benchmarks.some(function(b){return b.id===bid;});
-        var head=known?'<a href="../'+esc(bid)+'/">'+esc(benchName[bid]||bid)+' ↗</a>':esc(bid)+'（实体页待建）';
-        parts.push('<div class="grp"><span class="g-name">'+head+'</span><span class="g-line"></span>'+
-          '<span class="g-meta">'+rows.length+' 次发布引用</span></div>');
-        rows.forEach(function(x){
-          var e=x.e,score=e.display?'<b>'+esc(e.display)+'</b>':'（未公布）';
-          parts.push('<article class="evt" data-trust="'+(e.status==='verified'?'full':'none')+'">'+
-            '<span class="pin-dot" aria-hidden="true"></span>'+
-            '<div class="evt-head"><span class="evt-date">'+(x.r.release_date?esc(x.r.release_date):'日期待核验')+'</span>'+
-            '<span class="evt-vendor">'+esc(x.r.vendor_label)+'</span></div>'+
-            '<h3 class="evt-title">'+esc(x.r.release_title)+'</h3>'+
-            '<div class="evt-meta">'+esc(bid)+(e.variant?' '+esc(e.variant):'')+' 分数：'+score+(e.status!=='verified'?' <i>（待核验）</i>':'')+'</div>'+
-            '</article>');
-        });
-      });
-    }
+    var parts=[],prev=null;
+    list.forEach(function(r){
+      var y=r.release_date?r.release_date.slice(0,4):null;
+      if(y&&y!==prev){parts.push('<div class="yrm"><b>'+esc(y)+'</b></div>');prev=y;}
+      parts.push(nodeHtml(r));
+    });
     app.innerHTML=parts.join('')||'<div class="tl-empty">没有匹配的发布——试试放宽窗口、清除厂商或分数过滤。</div>';
     var ev=0;list.forEach(function(r){ev+=r.evidence.length;});
     document.getElementById('tlCount').textContent='共 '+list.length+' 次发布 · '+ev+' 条 benchmark 证据'+
@@ -762,9 +718,6 @@ window.EVALS_TL = ${JSON.stringify(tlData)};
 
   document.getElementById('tlWindow').addEventListener('click',function(e){
     var b=e.target.closest('button');if(!b)return;state.win=b.getAttribute('data-v');
-    this.querySelectorAll('button').forEach(function(x){x.classList.toggle('on',x===b);});render();});
-  document.getElementById('tlGroup').addEventListener('click',function(e){
-    var b=e.target.closest('button');if(!b)return;state.group=b.getAttribute('data-v');
     this.querySelectorAll('button').forEach(function(x){x.classList.toggle('on',x===b);});render();});
   vr.addEventListener('click',function(e){
     var b=e.target.closest('.vchip');if(!b)return;
