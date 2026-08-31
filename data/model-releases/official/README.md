@@ -293,3 +293,52 @@ goal.md §12.6 Tier 1 国内缺口厂商补齐：Alibaba/Qwen 两条、MiniMax �
 1. 既有 `kimi/kimi-k3.json` 记 `release_date: 2026-07` + month 精度；本批从官方 blog 索引读到 "Kimi K3 | 2026-07-16"，按账本契约未改既有文件，主线可据此前置日期精度。
 2. Kimi K2 页首 "Update(0905)" 指向 2025-09-05 的 K2 0905 权重更新（增强 agentic coding + 256K 上下文）；该版本作为竞品列出现在 K2 Thinking 表中，未单独立文件，如需独立 release 可后续补。
 3. Kimi blog 索引还可见 K2.5（2026-01-27）/ K2.6（2026-04-20）/ PerceptionBench（2026-07-16）等发布，属近 24 个月窗口内 Kimi 主线，本批任务范围外，留待主线排期。
+
+---
+
+## 历代补齐第五批（2026-08-31）：OpenRouter 交叉核对缺口 — Google / xAI / Meta
+
+来源：OpenRouter 官方模型目录交叉核对给出的缺口清单（OpenRouter created 仅作旁证，发布日期一律以官方页面自身时间为准）。本批新增 10 个 release，另把派单外发现的 `gemini-3-flash`（2025-12-17，官方 blog 有 4 个散文明文分数）一并补入（宁全勿缺）。
+
+| 指标 | 本批值 |
+|---|---:|
+| 新增 release 文件 | 10 |
+| benchmark_evidence 条数 | 55 |
+| 行 status=verified | 52 |
+| 行 status=pending | 3 |
+| release status=verified | 8 |
+| release status=pending（占位，无官方页） | 2（grok-4-3 / grok-4-20） |
+| verified ∧ vendor_reported | 52 |
+
+### 逐 Release 清单
+
+| 文件 | 发布日（依据） | 条数 | v/p | 抓取路径与要点 |
+|---|---|---:|---|---|
+| `google/gemini-3-flash.json` | 2025-12-17（publishedTime；派单外新发现） | 5 | 5/0 | web reader；GPQA 90.4 / HLE 33.7 无工具 / MMMU Pro 81.2 / SWE-bench Verified 78 / LMArena 点名行全散文明文 |
+| `google/gemini-3-1-flash-lite.json` | 2026-05-08（Google Cloud blog publishedTime；=05-07 PT，与 OpenRouter 05-07 一致） | 0 | 0/0 | **GA 页零 benchmark**，全是企业客户生产指标（Gladly p95/成功率等非 benchmark）→ 不建行不臆造；GPQA 86.9 等二级来源数字只进 notes |
+| `google/gemini-3-5-flash.json` | 2026-05-19（I/O 2026，publishedTime） | 4 | 4/0 | web reader；TB 2.1 76.2 / GDPval-AA 1656 Elo / MCP Atlas 83.6 / CharXiv 84.2，基线 Gemini 3.1 Pro |
+| `google/gemini-3-6-flash.json` | 2026-07-21（publishedTime） | 10 | 10/0 | 一帖三模型（3.6 Flash + 3.5 Flash-Lite + 3.5 Flash Cyber）；3.6 四分 + Flash-Lite 五分 + Cyber CyberGym 点名行（not_reported）；帖内还首发了 3.1 Flash-Lite 的官方基线值（TB 31 / MRCR 60.1 / GDPVal 642） |
+| `google/gemini-3-7-flash.json` | 2026-08-13（publishedTime，与 OpenRouter 一致） | 5 | 5/0 | web reader；FrontierCode 1.1 43.6 / DeepSWE v1.1 65.3 / WebDev Arena 1588 / GDP.pdf 34.0 / AutomationBench 30.4 全散文 |
+| `xai/grok-4-5.json` | 2026-07-16（官方 blog publishedTime；OpenRouter 07-08 / 部分跟踪站 07-09 应为 API 先行，官方日期为准） | 6 | 6/0 | web reader；**基准值以图表无障碍文本形式内嵌 DOM**（与 grok-4-6 同类机读路径）：DeepSWE 1.0 62.0 / 1.1 53 / SWE-Marathon 29.0 pass@1 / TB 2.1 83.3 / SWE-Bench Pro 64.7 + token 效率 15,954 avg tokens/task |
+| `xai/grok-4-3.json` | 2026-04-30（OpenRouter created + 多源一致；无官方页） | 0 | 0/0 | **静默发布占位**：x.ai/news/grok-4-3 404；二级来源的 τ²-Bench 98% / GDPval-AA 1500 等一律不记（tier D） |
+| `xai/grok-4-20.json` | 2026-03-31（OpenRouter created 旁证；无官方页） | 0 | 0/0 | 同上静默占位；前代 Grok 4.1（2025-11-17 二级线索）也缺，待 xAI 盘点补 |
+| `meta/muse-spark-1-2.json` | 2026-08-05（research.meta.ai 页头日期） | 3 | 0/3 | web reader 挂 → Playwright；launch 帖基准值全在图片 → 3 行 pending，二级转写值（TB 2.1 82.9 / DeepSWE 1.1 59.3 / 内部 Coding Bench 70.6）只进 notes；协议细节（89 题 pass@1×5、113 题/91 仓、440 内部题、Daytona 沙箱）已捕获 |
+| `meta/muse-glimmer-30b.json` | 2026-08-10（HF model card publishedTime + 官方 blog；OpenRouter 旁证 08-09 早一天） | 22 | 22/0 | HF 官方 model card **DOM 明文大表**（tier A model card）：MCP Atlas Public 75.5 / DeepSearch QA 74.6 / τ3-Banking 23.5 / WildClawBench 47.6 / GDPVal-AA v2 953 / Gaia2 43.3 / SkillsBench 44.3 / OSWorld 65.9 / SWE-Pro 51.2 / SWE-Verified 76.0 / TB 2.1(terminus2) 51.7 / SciCode 43.6 / CharXiv 78.8 / ScreenSpot Pro 75.4 / OmniDocBench v1.5 75.8 / MMMU Pro 74 / IFBench 77.0 / AIME 2026 94.7 / GPQA(AA) 83.5 / HLE Text(AA) 22.0 / AA-LCR 80.0 / Beam128K 65.1；推荐采样（temp 1.0/top_p 0.95/top_k 64）逐行入 protocol |
+
+### 本批新增 benchmark id（notes 标 new-benchmark）
+
+`gdp-pdf`、`tau3-banking`、`gaia2`、`skillsbench`、`screenspot-pro`、`ifbench`、`aime-26`（对齐 aime-25 拼法）、`aa-lcr`、`beam128k`、`meta-internal-coding-bench`。复用已登记候选：`deepswe`、`swe-marathon`、`frontier-code`、`webdev-arena`、`automationbench`、`mcp-atlas`、`gdpval-aa`（v2 记 variant）、`swebench-pro`、`cybergym`、`deepsearchqa`、`wildclawbench`、`omnidocbench`、`scicode`、`charxiv-reasoning`、`mrcr`（GDM-MRCR v2 记 variant）；映射既有 id：`gpqa`（AA 记 variant）、`hlehle`（Text/AA 记 variant）、`terminalbench`、`osworld`、`swebench`、`mmmu`（Pro）、`mlebench`、`aime`系。
+
+### 跨厂商可比性提示（本批实测）
+
+1. **DeepSWE 三家同月不同 harness**：Google 3.7 Flash 65.3%（自跑）/ xAI Grok 4.5 53%（mini-swe-agent，Datacurve 统一跑）/ Meta Spark 1.2 59.3%（Muse Code 自跑）——同名 benchmark、三种 harness，禁止直接横排。
+2. **GDPval-AA 变体混用**：May 帖写 `GDPval-AA`（1656），7/8 月帖写 `GDPVal-AA v2`（1421/1525/953）——已按 variant 分开，迁移主数据时不得合并。
+3. **TB 2.1 harness 信息不均**：只有 Muse Glimmer（terminus2）与 Google 3.6 model page（Terminus-2）明示 harness；xAI Grok 4.5 83.3 未明示——跨厂商比较只在该字段对齐时成立。
+4. **AA 运行车道**：Muse Glimmer 卡上 GPQA/HLE/AA-LCR 带 (AA) 后缀（第三方 Artificial Analysis 跑分）——与厂商自跑车道分开记 variant。
+
+### 本批遗留 / 待跟进
+
+1. **Google 3.1 系列仍是盲区**：3.5 Flash 帖以 `Gemini 3.1 Pro` 为基线、7 月帖给 3.1 Flash-Lite 基线值，说明 2025-12→2026-05 间存在 3.1 Pro/Flash 发布，OpenRouter 清单未列出，需要一次 Google 3.1 系列盘点。
+2. **xAI Grok 4.1（约 2025-11-17）缺**，同属静默代际；连同 grok-4-3/4-20 一起，xAI 建议按 release-inventory `checked, no benchmark page` 口径收口。
+3. **未抓的 tier-A 补充源**：deepmind.google 3.7 model card 与 3.6 model page（两页均有 DOM 明文大表，含 Muse Spark 1.2 / Grok 4.5 竞品列）、Meta Spark 1.2 Evaluation Methodology 页、Gemini 2.5 家族帖引用的 technical report——均为下一批现成来源。
+4. gemini-3-1-flash-lite 的 0 行不是遗漏：官方 GA 页确无 benchmark，二级数字（GPQA 86.9 等）按铁律未转录为行。
