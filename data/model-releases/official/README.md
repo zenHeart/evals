@@ -175,3 +175,65 @@ goal.md §12.6 Tier 1 国内缺口厂商补齐：Alibaba/Qwen 两条、MiniMax �
 4. MiniMax M3 VideoMME 双条件（85.4 含字幕 vs 84.6@512 帧）与 PostTrainBench 双记法（0.37 vs 37.1）已分行/已注明，合并前必须按 variant 区分。
 5. Seed 1.8 的 11 张图 68 条 pending 行：人工读图；Seed 1.8 与 Seed 2.1 的 PostTrainBench 数值（16.5/18.3 vs 37.1）不可直接比较，协议不同。
 6. 未转行的两个图（有意跳过，已写入 release notes）：Seed 1.8 的"高经济价值场景"无名内场景板（Education / Customer Support Q&A 等 6 行，无 benchmark 名）、Seed 2.1 的众包开发者评估图（匿名模型对比）。
+
+---
+
+## 2026-08-31 第三批：国内厂商历代补齐（kimi / deepseek / glm / qwen / minimax）
+
+近三年窗口内国内 Tier 1 厂商核心模型发布补齐，8 个 release。**发布日期全部精确到日**（来源：官方 blog 索引/页面印刷日期/publishedTime 元数据/news slug + HuggingFace 官方 org repo createdAt 双重印证，详见各文件 notes）。本节只追加，不改动既有批次内容。
+
+| 文件 | 发布日期（来源） | 条数 | verified | pending | 抓取路径 |
+|---|---|---:|---:|---:|---|
+| `kimi/kimi-k2.json` | 2025-07-11（官方 blog 索引 "Kimi K2 \| 2025-07-11" + HF moonshotai/Kimi-K2-Instruct createdAt 2025-07-11T00:55Z） | 32 | 32 | 0 | web reader 拿到正文但 Benchmark 区表格缺失 → **Playwright DOM 扫描发现唯一 DOM 表格**，40 行 × 7 列全机读 → 全部 verified；聚合方式取自表内 Intro 列（Pass@1 / Avg@4/8/16/32/64 / EM / Prompt Strict） |
+| `kimi/kimi-k2-thinking.json` | 2025-11-06（官方 blog 索引；HF createdAt 2025-11-04 权重先行两天） | 27 | 27 | 0 | web reader 一次成功，Full Evaluations 为 **DOM 表格**（25 benchmark 行，HLE/AIME/HMMT 各 3 种条件分行）→ 全部 verified；页脚 6 组协议脚注逐条捕获（temp 1.0/256k/INT4/预算 96k/128k/32k/avg@32/16/8/4/编码 5 次均值/o3-mini 裁判/Terminus-2/封锁 HF 披露 51.3） |
+| `deepseek/deepseek-v3-1.json` | 2025-08-21（slug news250821 + HF createdAt 2025-08-21T02:37Z） | 13 | 4 | 9 | web reader 成功；**全部分数在 3 张 webp 图内**（编程/搜索/思考效率三图）→ 正文点名 + 明确论断的 4 行（SWE/Terminal-Bench/browsecomp/HLE）按 Seed 2.1 先例 verified + not_extracted；其余 9 行 pending，视觉转写只进 notes |
+| `deepseek/deepseek-v3-2-exp.json` | 2025-09-29（slug news250929 + HF createdAt 2025-09-29T06:07Z） | 14 | 0 | 14 | web reader 成功；整页只有一张 benchmark 对比图（vs V3.1-Terminus）且正文只给"基本持平"总结论 → 全部 pending；发布定位是效率版（DSA 稀疏注意力 + 训练设置严格对齐），**不是前沿分数发布** |
+| `glm/glm-4-6.json` | 2025-09-30（HF zai-org/GLM-4.6 createdAt 2025-09-29T18:22Z = 北京时间 09-30 凌晨；blog 不印日期） | 9 | 1 | 8 | web reader 一次成功；8 个公开 benchmark 全在 coding_benchmark.png 内（AIME25/GPQA/LCB v6/HLE 双条件 base/w-tools）→ pending；**CC-Bench 48.6% win rate vs Claude Sonnet 4 为正文明文** → verified + reported（人类评审/隔离 Docker/轨迹开源） |
+| `qwen/qwen2-5.json` | 2024-09-19（article:published_time 元数据 2024-09-19T00:00:04+08:00） | 28 | 1 | 27 | web reader 成功；家族发布（LLM/Coder/Math），7 张分数图覆盖 72B-Instruct 14 行 + Coder-7B 11 行 + Math 散点 3 行 → 仅 Math-72B 正文论断 verified + not_extracted，其余 pending；legacy/qwen2-5-72b.json 无日期且只覆盖 72B，本文件补齐日期与 Coder/Math |
+| `qwen/qwen3-max.json` | 2025-09-24（页面印刷 2025/09/24） | 9 | 4 | 5 | **域名迁移：qwenlm.github.io/blog/qwen3-max/ 已 404**，WebSearch 定位到 qwen.ai/blog?id=qwen3-max（中文版）→ Playwright 渲染成功；4 个正文明文分数 verified（SWE-V 69.6 / Tau2 74.8 / Thinking-Heavy AIME25 与 HMMT 满分）；图表值 pending |
+| `minimax/minimax-m2.json` | 2025-10-27（页面印刷日期；免费期延至 11-07 UTC 佐证） | 9 | 1 | 8 | **旧 URL minimax.io/blog/minimax-m2 已 404**，实际 slug 为 minimax-m2-en-1748600000（URL 数字后缀不是发布时间戳，以页面日期为准）；Next.js 渲染 → web reader 只回站点壳，Playwright DOM 扫描成功；8 个 benchmark 全在 8676×3593 大表图内（无 M3 那样的 Evaluation Methodology 区）→ pending；AA 榜单 top-five 论断 third_party_reported verified |
+
+**本批小计：141 条 = 70 verified + 71 pending。** 目录截至本批：25 个 release 文件 / 616 条 evidence（`validate-data` PASS：official 29 个 release、47 total）。两个 Kimi 文件因 DOM 表格机读成为全库 verified 密度最高的 release。
+
+### 本批抓取与降级路径记录
+
+1. **旧 URL 大面积失效**：`qwenlm.github.io/blog/qwen3-max/` 与 `minimax.io/blog/minimax-m2` 均 404（Qwen 博客整体迁至 qwen.ai，MiniMax 改用带时间戳后缀的新 slug）；`api-docs.deepseek.com/news/news0821`（裸格式）重定向到文档首页，正确 slug 为 `news250821`/`news250929`（含世纪前缀）。后续 Agent 录入旧发布前应先确认 slug 存活。
+2. **web reader 漏表格两例**：Kimi K2 的 benchmark 表格与 MiniMax M2 全页（JS 渲染）在 web reader 输出中缺失，均由 Playwright DOM 扫描找回——与本批 M3 的漏图教训同源：**"正文有 Evaluations 章节却无分数"先怀疑渲染遗漏**。
+3. 视觉辅助（MiniMax understand_image）用于：DeepSeek V3.1 ×3 图、V3.2-Exp ×1 图、GLM-4.6 ×1 图、Qwen3-Max ×3 图、MiniMax M2 ×2 图、Qwen2.5 ×3 图。OCR 数值一律只进 notes，未翻转任何行为 verified（goal.md §12.5）。
+4. 交叉验证：DeepSeek V3.2-Exp 图读数与 GLM-4.6 / Kimi K2 Thinking 两页印出的 DeepSeek-V3.2 竞品列一致（SWE-V 67.8 / Terminal-Bench 37.7 / AIME25 89.3 / BrowseComp-zh 47.9）；Kimi K2 Thinking 的 DeepSeek-V3.2 列与 DeepSeek 自报图一致。三方互证增强图读数可信度，但仍不据此翻 verified。
+
+### 本批日期取证口径（发布日精确到日的四条路径）
+
+1. **页面自印日期**：MiniMax M2（2025-10-27）、Qwen3-Max（2025/09/24）。
+2. **元数据 publishedTime**：Qwen2.5（article:published_time，页面正文不印日期）。
+3. **官方 blog 索引列表日期**：Kimi K2 / K2 Thinking（kimi.ai/blog/ 索引卡片，同页与 HF createdAt 互证）。
+4. **slug + HF 官方 org createdAt 双证据**：DeepSeek V3.1（08-21）/ V3.2-Exp（09-29）/ GLM-4.6（HF createdAt UTC 09-29 18:22 = 北京 09-30 02:22，取北京日）。
+
+### 本批关键协议字段捕获（协议明示才记录，其余 null）
+
+- **Kimi K2**（DOM 表 Intro 列即聚合协议）：SWE-bench Verified 三行三协议（Agentless 单补丁不跑测试 51.8 / Agentic 单次 65.8 / Agentic 多次 71.6）**不可互换**；TerminalBench 双 harness（自研框架 30.0 / Terminus 25.0）；AIME Avg@64、HMMT Avg@32、CNMO Avg@16、GPQA Avg@8、Tau2 Avg@4；LiveBench 锁 2024/11/25 快照。竞品格星号（*）页面上**无脚注解释**，语义未证实 → 竞品值只进 notes。
+- **Kimi K2 Thinking**：全局 temp 1.0 + 256k + INT4（QAT 后训练量化，所有成绩在 INT4 精度下报告）；思考预算分档 96k/128k/32k；编码任务全部 5 次运行取均值；HLE w/tools 裁判 o3-mini（官方提示词逐字复用）+ 步数上限 120；agentic search 步数上限 300；**封锁 HuggingFace 防污染（不封锁 HLE 51.3 vs 报告值 44.9）**；Heavy Mode = 8 轨迹并行 + 反思聚合（GPT-5 heavy 列 = 官方 GPT-5 Pro 分）。
+- **GLM-4.6**：上下文 200K 但评测在 **128K** 下进行（图注明示）；CC-Bench 人类评审 + 隔离 Docker + 多轮真实任务，win rate 是对 Claude Sonnet 4 的相对值不是绝对正确率。
+- **Qwen3-Max**：Thinking-Heavy 满分（AIME25/HMMT 100%）带"工具 + 并行测试时计算"协议，与 Instruct 无工具 81.6 是**不同模型不同协议**，已分行。
+- **MiniMax M2**：页面无 Evaluation Methodology（与 M3 不同），protocol 全 null；temp 1.0/top_p 0.95/top_k 20 是**部署建议非评测协议**，按 Devstral 2 先例记 null。
+- **Qwen2.5**：2024 年代发布帖特征——全页无任何协议脚注，shots/采样未披露。
+
+### 本批新增 benchmark id（notes 均标 `new-benchmark`，待迁入主数据）
+
+`ojbench`、`multipl-e`、`acebench`、`cnmo-2024`、`polymath-en`、`zebralogic`、`autologi`、`longform-writing`、`healthbench`、`browsecomp-zh`、`seal-0`、`frames`、`xbench-deepsearch`、`cc-bench`、`artifactsbench`、`math`（Hendrycks MATH 全集，与 math500 子集分立）、`mbpp`、`evalplus`、`spider`、`bird-sql`、`mceval`、`cruxeval`、`alignbench`。
+
+复用既有 data/benchmarks/ id：`lcb`（v6/窗口记 variant）、`swebench`（Verified/Agentless/Agentic 记 variant）、`terminalbench`（harness 记 variant）、`aider`（Polyglot 记 variant）、`tau-bench`（2/域/weighted 记 variant）、`aime24`、`aime-25`、`math500`、`hmmt25`、`gpqa`（Diamond 记 variant）、`mmlu`、`mmlu-redux`、`mmlu-pro`、`ifeval`、`simpleqa`、`livebench`（日期快照记 variant）、`humaneval`、`gsm8k`、`arenahard`、`mtbench`、`bigcodebench`、`gaia`（text only 记 variant）、`arena`（LMArena text）。复用前批已引入 id：`swebench-multilingual`、`multi-swe-bench`、`scicode`、`supergpqa`、`imo-answerbench`、`finsearchcomp`（T3/global 分立）、`codeforces`（Div1，Elo 单位）、`browsecomp`、`aa-intelligence-index`。
+
+### 本批待人工核验清单（pending 升级路径）
+
+1. DeepSeek V3.1 三图 9 行 + V3.2-Exp 一图 14 行：人工读图确认视觉转写后翻 verified（V3.2-Exp 已有 GLM/Kimi 两页竞品列三方互证）。
+2. GLM-4.6 coding_benchmark.png 8 行：人工读图；注意 AIME25/GPQA/LCB/HLE 四行各有 base 与 w/ tools 双值，升级时应**拆成 variant 两行**。
+3. Qwen2.5 七图 27 行：人工读图；AlignBench/MT-bench 是 1-10 分制非百分比，勿混排。
+4. Qwen3-Max 三图 5 行 + MiniMax M2 大表 8 行：人工读图。
+5. Kimi K2 竞品格星号语义：页面上无脚注；如后续在 K2 HF model card 或技术报告中找到定义，回填各 verified 行 notes。
+
+### 跨批遗留观察（不改动既有文件，仅报告）
+
+1. 既有 `kimi/kimi-k3.json` 记 `release_date: 2026-07` + month 精度；本批从官方 blog 索引读到 "Kimi K3 | 2026-07-16"，按账本契约未改既有文件，主线可据此前置日期精度。
+2. Kimi K2 页首 "Update(0905)" 指向 2025-09-05 的 K2 0905 权重更新（增强 agentic coding + 256K 上下文）；该版本作为竞品列出现在 K2 Thinking 表中，未单独立文件，如需独立 release 可后续补。
+3. Kimi blog 索引还可见 K2.5（2026-01-27）/ K2.6（2026-04-20）/ PerceptionBench（2026-07-16）等发布，属近 24 个月窗口内 Kimi 主线，本批任务范围外，留待主线排期。
