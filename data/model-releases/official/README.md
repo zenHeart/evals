@@ -178,62 +178,6 @@ goal.md §12.6 Tier 1 国内缺口厂商补齐：Alibaba/Qwen 两条、MiniMax �
 
 ---
 
-## 历代补齐（2026-08-31 第四批）：Google / xAI / Meta 近三年历代核心模型
-
-补齐 goal.md §12.6 Tier 1 三家在覆盖窗口内的历代旗舰：Google Gemini 2.0 → 2.5 Pro → 2.5 Flash（3.5/3 已由前批覆盖）、xAI Grok 3 → Grok 4（4.6 已由第一批覆盖）、Meta Llama 3.1 → Llama 4。发布日期全部取自官方页面自身时间（publishedTime 元数据或页头日期），精确到日。
-
-| 指标 | 本批值 |
-|---|---:|
-| 新增 release 文件 | 7 |
-| benchmark_evidence 条数 | 113 |
-| 行 status=verified | 41 |
-| 行 status=pending | 72 |
-| release status=verified | 7 |
-| verified ∧ vendor_reported（可计入官方发布引用数） | 39 |
-| comparison_cited（xAI 散文明文引用 Claude Opus 4） | 2 |
-
-### 逐 Release 清单
-
-| 文件 | 来源 URL | 发布日（页面依据） | 条数 | verified | pending | 抓取路径 |
-|---|---|---:|---:|---:|---:|---|
-| `google/gemini-2-0.json` | blog.google/…/google-gemini-ai-update-december-2024/ | 2024-12-11（publishedTime） | 14 | 1 | 13 | web reader；散文唯一分数是 Project Mariner 的 WebVoyager 83.5%（single agent setup）；2.0 Flash 全部分数在 GIF 图（gemini_benchmarks_narrow_light2x.gif）→ 13 行 pending，视觉读数只进 notes |
-| `google/gemini-2-5-pro.json` | blog.google/…/gemini-model-thinking-updates-march-2025 | 2025-03-25（publishedTime；页内注 03-26 更新 MRCR） | 13 | 6 | 7 | web reader；HLE 18.8% 无工具 / SWE-bench Verified 63.8% custom agent setup 两处散文分数 + GPQA/AIME 2025/LMArena/MRCR 四处点名行 verified；主表为 GIF → 7 行 pending |
-| `google/gemini-2-5-flash.json` | blog.google/…/gemini-2-5-model-family-expands/ | 2025-06-17（publishedTime + 页头） | 14 | 0 | 14 | web reader；**正文零 benchmark 点名零分数**，唯一评估物是 2.5 家族表 GIF（含 Flash thinking/non-thinking、Flash-Lite、Pro 五列）→ 全部 pending；表内协议脚注（pass@1 / AI Studio API 默认采样 / Aider 3 次均值 / Vibe-Eval Gemini 自评）已逐字段捕获 |
-| `xai/grok-3.json` | x.ai/news/grok-3 | 2025-02-19（页头 + publishedTime） | 14 | 14 | 0 | web reader；Think 散文 4 分（AIME'25 93.3 cons@64 / GPQA 84.6 / LCB 79.4 / mini 95.8+80.4）+ Arena 1402 Elo + 非推理 DOM 数值表 8 行全部机读 verified |
-| `xai/grok-4.json` | x.ai/news/grok-4 | 2025-07-09（publishedTime） | 17 | 17 | 0 | web reader + 无头浏览器双路径；web reader 漏掉 GPQA / AIME'25 两个图表区，由渲染 SVG DOM 文本找回（与第一批 grok-4-6 同一 verified 路径，非图片 OCR）；HLE 全集（44.4/38.6，w/ Python+Internet）与 text-only（Heavy 50.7）分开记 variant；2 条 comparison_cited（Claude Opus 4 ARC-AGI-2 ~8.6 / Vending-Bench $2077.41） |
-| `meta/llama-3-1.json` | ai.meta.com/blog/meta-Llama-3-1/ | 2024-07-23（页头） | 15 | 0 | 15 | ai.meta.com 拒两个 web reader → Playwright 读 DOM；**正文零 benchmark 名零分数**；两张 fbcdn PNG 表格图，405B 表 15 行 pending（shots/CoT 条件写在行名里已捕获），8B/70B 表数值整表进 release notes 供后续补行 |
-| `meta/llama-4.json` | ai.meta.com/blog/llama-4-multimodal-intelligence/ | 2025-04-05（页头） | 26 | 3 | 23 | 同上 Playwright 路径（注意：派单 URL /llama-4-maverick-scout/ 已 404，真实 slug 是 /llama-4-multimodal-intelligence/）；散文仅 LMArena Elo 1417（明示 experimental chat version）+ Behemoth 的 MATH-500/GPQA Diamond 点名；Maverick/Scout/Behemoth 三表全图 → 23 行 pending |
-
-### 本批关键协议字段捕获（协议明示才记录，其余 null）
-
-- **Grok 3**：AIME'25 Think 行明示 **cons@64（64 次采样共识）**；非推理表整表标注 reasoning off；LCB 窗口 10/1/2024-2/1/2025。
-- **Grok 4**：HLE 分 **text-only（50.7）与 full set 2025-04-03（w/ Python+Internet 44.4）** 两种 variant；GPQA/LCB/HMMT/AIME'25/USAMO 图表按 **w/ Python / w/ Python+Internet / 无工具** 分条件记录；Vending-Bench 明示 **5 次运行取均值**。
-- **Gemini 2.5 家族表脚注（6/17 页）**：全部 Gemini 分数为 **pass@1 单次尝试、AI Studio API 默认采样**；SWE-bench multiple attempts = Google scaffolding 多轨迹 + 模型自评重打分；Aider = 3 次均值且设置非默认；Vibe-Eval 用 Gemini 当裁判；外部数字取自 leaderboard（agi.safe.ai / scale.com / livecodebench / aider.chat / kaggle FACTS）。
-- **Gemini 2.5 Pro（3/25 页）**：HLE 明示 **无工具**（tools: []）；SWE-bench 明示 **custom agent setup**；GPQA/AIME 明示**排除 majority voting**。
-- **Llama 4 表格脚注**：Maverick 行 = **1-shot temp 0**，Scout 行 = **0-shot temp 0**（同家族两表协议不同！）；高方差 benchmark（GPQA Diamond / LCB）多次生成取均值；Behemoth = "current best internal runs"（预览期快照）；非 Llama 列均取"最高可复现自报值"。
-- **Llama 3.1 表**：行内直接写明 shots/CoT（MMLU 5-shot CoT / GSM8K 8-shot CoT / GPQA 8-shot CoT / HumanEval 0-shot 等），已逐行进 protocol。
-
-### 本批新增 benchmark id（notes 均标 `new-benchmark`，待迁入主数据）
-
-`webvoyager`、`natural2code`、`bird-sql`、`math`（Hendrycks 全集，与 `math500` 分立）、`hiddenmath`、`mrcr`、`covost2`、`egoschema`、`vibe-eval`、`global-mmlu-lite`、`loft`、`usamo-2025`（对齐 `usamo-2026`/`aime-25` 命名）、`vending-bench`（与 `vending-bench-2` 分立）、`mbpp-evalplus`、`arc-challenge`（AllenAI，与 `arc-agi` 无关）、`nexus`、`zeroscrolls-quality`、`infinitebench-en-mc`、`multilingual-mmlu`、`mtob`；复用已登记候选 `aime-25`、`hmmt25`（沿用第三批无连字符拼写，未另铸新 id）。映射既有 id：`mmlu`、`mmlu-pro`、`ifeval`、`humaneval`、`gsm8k`、`gpqa`、`bfcl`、`mgsm`、`niah`（NIH/Multi-needle 记 variant）、`aime24`、`lcb`（各窗口记 variant）、`simpleqa`、`mmmu`、`chartqa`、`docvqa`、`mathvista`、`arena`、`swebench`（single/multiple attempts 记 variant）、`aider`、`factsg`、`math500`、`arc-agi`（2 记 variant）。
-
-### 待人工核验清单（pending 升级路径）
-
-1. Gemini 2.0 GIF 图 13 行、2.5 Pro GIF 表 7 行、2.5 Flash 家族表 14 行：人工读图确认视觉转写数值后逐行翻 verified（GIF 已在无头浏览器中稳定帧截图辅助）。
-2. Llama 3.1 405B 表 15 行 + 8B/70B 表（数值在 release notes）：人工读图翻 verified / 补行。
-3. Llama 4 三表 23 行：人工读图；注意 Maverick（1-shot）与 Scout（0-shot）协议不同；Behemoth 为训练中快照。
-4. Gemini 2.5 Pro 页伴生技术报告（页内 "latest Gemini technical report" 链接）与 Deep Think 独立方法论页（第一批遗留）为潜在补充来源。
-
-### 本批遗留 / 观察（不改动既有文件，仅报告）
-
-1. **legacy `xai-grok-3.json` 与本批 `official/xai/grok-3.json` 指向同一次真实发布**：legacy 桩无日期、无分数、全 pending。按账本契约未删 legacy 文件，建议主线将其移出 legacy 或标记 superseded，避免同一发布被计两次。
-2. Llama 4 的 LMArena 1417 Elo 页面自述属于 **experimental chat version**，与同期发布的开源权重不是同一提交快照 —— 跨厂商对比时须按 variant 处理（页内原文已引用，无外部信息）。
-3. x.ai 页面对 web reader 与真实 DOM 的内容不一致（GPQA / AIME'25 区块只在渲染后出现）：后续抓 x.ai 图表页应默认走无头浏览器并扫 SVG text。
-4. Google 三批 GIF 表格均为动画图：本批用"浏览器直开 GIF + 稳定帧截图 + 视觉转写"路径，数值只进 notes；如后续要翻 verified，仍需人工读图（§12.5）。
-5. `hmmt25`（第三批）与 `usamo-2026`/`aime-25`（第二/三批）命名不一致为既有事实，本批未统一，留给主线批量裁定。
-
----
-
 ## 2026-08-31 第三批：国内厂商历代补齐（kimi / deepseek / glm / qwen / minimax）
 
 近三年窗口内国内 Tier 1 厂商核心模型发布补齐，8 个 release。**发布日期全部精确到日**（来源：官方 blog 索引/页面印刷日期/publishedTime 元数据/news slug + HuggingFace 官方 org repo createdAt 双重印证，详见各文件 notes）。本节只追加，不改动既有批次内容。
@@ -296,6 +240,132 @@ goal.md §12.6 Tier 1 国内缺口厂商补齐：Alibaba/Qwen 两条、MiniMax �
 
 ---
 
+## 2026-08-31 第三批：历代补齐（OpenAI / Anthropic）
+
+补齐两家 Tier 1 厂商近三年核心模型发布，7 个 release / 261 条 evidence（233 verified + 28 pending，其中 123 条为 comparison_cited 竞品列）。**发布日期全部精确到日**。
+
+| 文件 | 来源页 | 条数 | verified | pending | 发布日期来源 |
+|---|---|---:|---:|---:|---|
+| `openai/o3-o4-mini.json` | openai.com/index/introducing-o3-and-o4-mini/ | 49 | 49 | 0 | 页面正文日期 2025-04-16 |
+| `openai/gpt-5.json` | openai.com/index/introducing-gpt-5/ | 59 | 59 | 0 | 页面正文日期 2025-08-07 |
+| `openai/gpt-5-5.json` | openai.com/index/introducing-gpt-5-5/ | 111 | 111 | 0 | 页面正文日期 2026-04-23 |
+| `anthropic/claude-4.json` | anthropic.com/news/claude-4 | 4 | 4 | 0 | 官方 newsroom 索引 "May 22, 2025"（页面不印日期）+ snapshot `claude-opus-4-20250514` |
+| `anthropic/claude-sonnet-4-5.json` | anthropic.com/news/claude-sonnet-4-5 | 10 | 3 | 7 | newsroom "Sep 29, 2025" + platform.claude.com docs "Released September 29, 2025" + snapshot `claude-sonnet-4-5-20250929` |
+| `anthropic/claude-opus-4-6.json` | anthropic.com/news/claude-opus-4-6 | 17 | 7 | 10 | newsroom "Feb 5, 2026" + docs "Released February 5, 2026"（**不是** 2025-12） |
+| `anthropic/claude-haiku-4-5.json` | anthropic.com/news/claude-haiku-4-5 | 11 | 0 | 11 | newsroom "Oct 15, 2025" + docs "Released October 15, 2025" + snapshot `claude-haiku-4-5-20251001` |
+
+### 本批抓取与降级路径记录
+
+1. **OpenAI 三页全部走降级链**：WebFetch 403 → web-reader 返回软 404（haiku 诗占位页）→ **Playwright 无头浏览器成功**。注意团队简报中的旧 slug `openai-o3-and-o4-mini` / `gpt-5` 已 404，canonical slug 以 `openai.com/sitemap.xml/release/` 为准：`introducing-o3-and-o4-mini`、`introducing-gpt-5`、`introducing-gpt-5-5`。
+2. **OpenAI 分数提取方法（本批关键工艺）**：页面 benchmark 图表为 vega-lite 组件，数值以 JSON 形式嵌在 RSC payload（`self.__next_f.push` chunk）里。用平衡括号法逐个解析完整 `vegaSpec` 对象后 `JSON.parse` 取 `title + data.values`——这是**机器可读**（非 OCR、非读图）。堆叠柱状图的 `value` 是分段值、`labelValue` 是显示总值，须以 labelValue 为准并用正文数字锚定校验（锚点全中：AIME 94.6 / GPQA pro 88.4 / SWE 74.9 / HealthBench Hard 46.2；o3 系列与 o3 页面交叉全中：98.4/88.9/83.3/69.1/82.9/78.6/49.7）。**教训**：简单正则按 title 向后找最近 values 会错位一位，GPT-5 页首轮即错，重新用平衡 JSON 解析后修正。
+3. **GPT-5.5 页有全文本 DOM 表**（编码/专业/计算机使用与视觉/工具/学术/网络安全/长上下文/抽象推理 8 组，列为 GPT-5.5 / GPT-5.4 / GPT-5.5 Pro / GPT-5.4 Pro / Opus 4.7 / Gemini 3.1 Pro），整表机器可读，页内 `-` 空格一律不落行。脚注四条全捕：SWE-Bench Pro 存在 memorization 证据、MCP Atlas 为 Scale AI 2026-04 更新版、Tau2-bench Telecom 用原始提示词（GPT-4.1 作用户模拟器）且刻意忽略他厂调参结果、内部 CTF 在系统卡最难集上扩展。
+4. **Anthropic 四页 web-reader 一次成功**，但全部 benchmark 数值在图片里（与 OpenAI 相反）。发布日期页面不印：日期证据链 = 官方 newsroom 索引逐条日期（与既有 claude-opus-5.json 的 2026-07-24 校验一致）+ platform.claude.com 模型页 "Released" 行 + API snapshot ID，三源互证。
+5. **Anthropic 图片表用视觉辅助（MiniMax understand_image）转写 4 张关键图**（sonnet-4-5 表 / opus-4-6 表 / haiku-4-5 表 / claude-4 SWE 图）：OCR 数值一律只进 notes（goal.md §12.5），图片行保持 pending。多个跨厂锚点交叉命中（GPT-5 列 94.6/99.6/85.7/84.2 与 OpenAI 自家 GPT-5 页完全一致；Opus 4.6 GDPval-AA Elo 读数 1606/1462/1416 与正文 delta +144/+190 精确吻合）。
+
+### 本批口径要点
+
+- **正文点名 + 有明确论断但数值在图里 → verified + not_extracted**（沿用 Opus 5 先例）：Opus 4.6 的 Terminal-Bench 2.0 / HLE / GDPval-AA / BrowseComp 四行。
+- **正文无数值、名字只在图片 alt/表头 → pending**：Haiku 4.5 全部 11 行、Sonnet 4.5 表内 7 行、Opus 4.6 表内 10 行。升级路径 = 人工读图确认 notes 中的视觉转写值。
+- **同 benchmark 跨页冲突不调和**：o3 的 HLE 无工具值在 o3 页为 20.32、在 GPT-5 页为 14.7（Full Set 口径）；MultiChallenge o3 在两页分别为 56.51 / 60.4。各页各记一行，notes 标注冲突待裁定。
+- **mrcr 跨厂统一**：Anthropic Opus 4.6（1M 档 76/18.5）与 OpenAI GPT-5.5（8 个 token 带，512K-1M 74.0）同用 `mrcr` id + variant 区分，两家页面互为对方 benchmark 的引用源。
+
+### 本批新增 benchmark id（notes 均标 `new-benchmark`，待迁入主数据）
+
+10 个：`expert-swe`（OpenAI 内部长周期编程）、`genebench`（遗传/定量生物多阶段分析）、`bixbench`（真实生物信息学）、`graphwalks`（长上下文图游走，BFS/parents × 256k/1mil 四变体）、`mrcr`（OpenAI MRCR v2 8-needle，跨厂）、`tau2-bench`（t2-bench，区别于既有 `tau-bench`，Retail/Airline/Telecom 变体）、`mmmlu`（多语言 MMLU，区别于 `mmlu`）、`healthbench`（真实健康对话，OpenAI/医生定义 rubric；Hard 变体）、`mmmu-pro`（视觉研究生级；标准+视觉任务平均口径脚注）、`biglaw-bench`（Harvey 法律，third_party 行）、`deepsearchqa`（Opus 4.6 图表 alt 命名，未读数）。
+
+复用前批 id：`codeforces`、`aime-25`、`hmmt25`、`multichallenge`、`collie`、`erqa`、`gdpval`、`finance-agent`、`swebench-pro`、`video-mmmu`、`browsecomp`、`charxiv-reasoning`、`cybergym`、`mcp-atlas`、`toolathlon`、`aa-intelligence-index`、`officeqa-pro`。映射既有 id：`swebench`（Verified 记 variant；OpenAI n=477 固定子集脚注）、`terminalbench`（2.0 记 variant；Claude 4 页未标版本记 unspecified）、`gpqa`（Diamond）、`hlehle`（Full Set / no-tools / with-tools 记 variant）、`frontiermath`（Tier 1-3 / Tier 4 记 variant）、`arc-agi`（1/2 Verified 记 variant）、`aider`（Polyglot）、`swe-lancer`（IC SWE Diamond，单位 usd）。
+
+### 待人工核验清单（pending 升级路径）
+
+1. Anthropic 28 条 pending 行：按 notes 内视觉转写值逐条人工读图确认后翻 verified（三张大表 + claude-4 平行计算图）。
+2. GPT-5 页 o3 HLE（14.7 vs o3 页 20.32）与 o3 MultiChallenge（60.4 vs 56.51）两处跨页冲突需主线裁定口径。
+3. o3/o4-mini 页 Aider Polyglot 图的 payload 分段含未解释第二序列，未落行；GPQA-Pass / AIME-with-tools 两张静态 PNG 图未读。
+
+## 历代补齐（2026-08-31 第四批）：Google / xAI / Meta 近三年历代核心模型
+
+补齐 goal.md §12.6 Tier 1 三家在覆盖窗口内的历代旗舰：Google Gemini 2.0 → 2.5 Pro → 2.5 Flash（3.5/3 已由前批覆盖）、xAI Grok 3 → Grok 4（4.6 已由第一批覆盖）、Meta Llama 3.1 → Llama 4。发布日期全部取自官方页面自身时间（publishedTime 元数据或页头日期），精确到日。
+
+| 指标 | 本批值 |
+|---|---:|
+| 新增 release 文件 | 7 |
+| benchmark_evidence 条数 | 113 |
+| 行 status=verified | 41 |
+| 行 status=pending | 72 |
+| release status=verified | 7 |
+| verified ∧ vendor_reported（可计入官方发布引用数） | 39 |
+| comparison_cited（xAI 散文明文引用 Claude Opus 4） | 2 |
+
+### 逐 Release 清单
+
+| 文件 | 来源 URL | 发布日（页面依据） | 条数 | verified | pending | 抓取路径 |
+|---|---|---:|---:|---:|---:|---|
+| `google/gemini-2-0.json` | blog.google/…/google-gemini-ai-update-december-2024/ | 2024-12-11（publishedTime） | 14 | 1 | 13 | web reader；散文唯一分数是 Project Mariner 的 WebVoyager 83.5%（single agent setup）；2.0 Flash 全部分数在 GIF 图（gemini_benchmarks_narrow_light2x.gif）→ 13 行 pending，视觉读数只进 notes |
+| `google/gemini-2-5-pro.json` | blog.google/…/gemini-model-thinking-updates-march-2025 | 2025-03-25（publishedTime；页内注 03-26 更新 MRCR） | 13 | 6 | 7 | web reader；HLE 18.8% 无工具 / SWE-bench Verified 63.8% custom agent setup 两处散文分数 + GPQA/AIME 2025/LMArena/MRCR 四处点名行 verified；主表为 GIF → 7 行 pending |
+| `google/gemini-2-5-flash.json` | blog.google/…/gemini-2-5-model-family-expands/ | 2025-06-17（publishedTime + 页头） | 14 | 0 | 14 | web reader；**正文零 benchmark 点名零分数**，唯一评估物是 2.5 家族表 GIF（含 Flash thinking/non-thinking、Flash-Lite、Pro 五列）→ 全部 pending；表内协议脚注（pass@1 / AI Studio API 默认采样 / Aider 3 次均值 / Vibe-Eval Gemini 自评）已逐字段捕获 |
+| `xai/grok-3.json` | x.ai/news/grok-3 | 2025-02-19（页头 + publishedTime） | 14 | 14 | 0 | web reader；Think 散文 4 分（AIME'25 93.3 cons@64 / GPQA 84.6 / LCB 79.4 / mini 95.8+80.4）+ Arena 1402 Elo + 非推理 DOM 数值表 8 行全部机读 verified |
+| `xai/grok-4.json` | x.ai/news/grok-4 | 2025-07-09（publishedTime） | 17 | 17 | 0 | web reader + 无头浏览器双路径；web reader 漏掉 GPQA / AIME'25 两个图表区，由渲染 SVG DOM 文本找回（与第一批 grok-4-6 同一 verified 路径，非图片 OCR）；HLE 全集（44.4/38.6，w/ Python+Internet）与 text-only（Heavy 50.7）分开记 variant；2 条 comparison_cited（Claude Opus 4 ARC-AGI-2 ~8.6 / Vending-Bench $2077.41） |
+| `meta/llama-3-1.json` | ai.meta.com/blog/meta-Llama-3-1/ | 2024-07-23（页头） | 15 | 0 | 15 | ai.meta.com 拒两个 web reader → Playwright 读 DOM；**正文零 benchmark 名零分数**；两张 fbcdn PNG 表格图，405B 表 15 行 pending（shots/CoT 条件写在行名里已捕获），8B/70B 表数值整表进 release notes 供后续补行 |
+| `meta/llama-4.json` | ai.meta.com/blog/llama-4-multimodal-intelligence/ | 2025-04-05（页头） | 26 | 3 | 23 | 同上 Playwright 路径（注意：派单 URL /llama-4-maverick-scout/ 已 404，真实 slug 是 /llama-4-multimodal-intelligence/）；散文仅 LMArena Elo 1417（明示 experimental chat version）+ Behemoth 的 MATH-500/GPQA Diamond 点名；Maverick/Scout/Behemoth 三表全图 → 23 行 pending |
+
+### 本批关键协议字段捕获（协议明示才记录，其余 null）
+
+- **Grok 3**：AIME'25 Think 行明示 **cons@64（64 次采样共识）**；非推理表整表标注 reasoning off；LCB 窗口 10/1/2024-2/1/2025。
+- **Grok 4**：HLE 分 **text-only（50.7）与 full set 2025-04-03（w/ Python+Internet 44.4）** 两种 variant；GPQA/LCB/HMMT/AIME'25/USAMO 图表按 **w/ Python / w/ Python+Internet / 无工具** 分条件记录；Vending-Bench 明示 **5 次运行取均值**。
+- **Gemini 2.5 家族表脚注（6/17 页）**：全部 Gemini 分数为 **pass@1 单次尝试、AI Studio API 默认采样**；SWE-bench multiple attempts = Google scaffolding 多轨迹 + 模型自评重打分；Aider = 3 次均值且设置非默认；Vibe-Eval 用 Gemini 当裁判；外部数字取自 leaderboard（agi.safe.ai / scale.com / livecodebench / aider.chat / kaggle FACTS）。
+- **Gemini 2.5 Pro（3/25 页）**：HLE 明示 **无工具**（tools: []）；SWE-bench 明示 **custom agent setup**；GPQA/AIME 明示**排除 majority voting**。
+- **Llama 4 表格脚注**：Maverick 行 = **1-shot temp 0**，Scout 行 = **0-shot temp 0**（同家族两表协议不同！）；高方差 benchmark（GPQA Diamond / LCB）多次生成取均值；Behemoth = "current best internal runs"（预览期快照）；非 Llama 列均取"最高可复现自报值"。
+- **Llama 3.1 表**：行内直接写明 shots/CoT（MMLU 5-shot CoT / GSM8K 8-shot CoT / GPQA 8-shot CoT / HumanEval 0-shot 等），已逐行进 protocol。
+
+### 本批新增 benchmark id（notes 均标 `new-benchmark`，待迁入主数据）
+
+`webvoyager`、`natural2code`、`bird-sql`、`math`（Hendrycks 全集，与 `math500` 分立）、`hiddenmath`、`mrcr`、`covost2`、`egoschema`、`vibe-eval`、`global-mmlu-lite`、`loft`、`usamo-2025`（对齐 `usamo-2026`/`aime-25` 命名）、`vending-bench`（与 `vending-bench-2` 分立）、`mbpp-evalplus`、`arc-challenge`（AllenAI，与 `arc-agi` 无关）、`nexus`、`zeroscrolls-quality`、`infinitebench-en-mc`、`multilingual-mmlu`、`mtob`；复用已登记候选 `aime-25`、`hmmt25`（沿用第三批无连字符拼写，未另铸新 id）。映射既有 id：`mmlu`、`mmlu-pro`、`ifeval`、`humaneval`、`gsm8k`、`gpqa`、`bfcl`、`mgsm`、`niah`（NIH/Multi-needle 记 variant）、`aime24`、`lcb`（各窗口记 variant）、`simpleqa`、`mmmu`、`chartqa`、`docvqa`、`mathvista`、`arena`、`swebench`（single/multiple attempts 记 variant）、`aider`、`factsg`、`math500`、`arc-agi`（2 记 variant）。
+
+### 待人工核验清单（pending 升级路径）
+
+1. Gemini 2.0 GIF 图 13 行、2.5 Pro GIF 表 7 行、2.5 Flash 家族表 14 行：人工读图确认视觉转写数值后逐行翻 verified（GIF 已在无头浏览器中稳定帧截图辅助）。
+2. Llama 3.1 405B 表 15 行 + 8B/70B 表（数值在 release notes）：人工读图翻 verified / 补行。
+3. Llama 4 三表 23 行：人工读图；注意 Maverick（1-shot）与 Scout（0-shot）协议不同；Behemoth 为训练中快照。
+4. Gemini 2.5 Pro 页伴生技术报告（页内 "latest Gemini technical report" 链接）与 Deep Think 独立方法论页（第一批遗留）为潜在补充来源。
+
+### 本批遗留 / 观察（不改动既有文件，仅报告）
+
+1. **legacy `xai-grok-3.json` 与本批 `official/xai/grok-3.json` 指向同一次真实发布**：legacy 桩无日期、无分数、全 pending。按账本契约未删 legacy 文件，建议主线将其移出 legacy 或标记 superseded，避免同一发布被计两次。
+2. Llama 4 的 LMArena 1417 Elo 页面自述属于 **experimental chat version**，与同期发布的开源权重不是同一提交快照 —— 跨厂商对比时须按 variant 处理（页内原文已引用，无外部信息）。
+3. x.ai 页面对 web reader 与真实 DOM 的内容不一致（GPQA / AIME'25 区块只在渲染后出现）：后续抓 x.ai 图表页应默认走无头浏览器并扫 SVG text。
+4. Google 三批 GIF 表格均为动画图：本批用"浏览器直开 GIF + 稳定帧截图 + 视觉转写"路径，数值只进 notes；如后续要翻 verified，仍需人工读图（§12.5）。
+5. `hmmt25`（第三批）与 `usamo-2026`/`aime-25`（第二/三批）命名不一致为既有事实，本批未统一，留给主线批量裁定。
+
+---
+
+## 2026-08-31 第四批：OpenRouter 交叉核对补齐（OpenAI / Anthropic 旗舰缺口）
+
+来源交叉链：**OpenRouter `/api/v1/models` created 时间戳作旁证（D 级，上架≠发布），release_date 一律以官方 blog/newsroom 为准**。本批旁证质量：o3/o4-mini、GPT-5.4、Opus 4.7、Fable 5、Sonnet 5 上架日=发布日；GPT-5.5 滞后 1 天；**Opus 4.8 上架 05-27 / 官方发布 05-28**。6 个 release / 74 条 evidence（35 verified + 39 pending）。
+
+| 文件 | 来源页 | 条数 | verified | pending | 发布日期来源 |
+|---|---|---:|---:|---:|---|
+| `openai/gpt-5-4.json` | openai.com/index/introducing-gpt-5-4/ | 24 | 24 | 0 | 页面正文日期 2026-03-05（= OpenRouter 5.4/5.4-pro 上架日） |
+| `openai/gpt-5-4-mini-nano.json` | 无官方发布页 | 0 | 0 | 0 | **占位 pending**：OpenRouter 上架 2026-03-17，release sitemap 无独立页，主发布页未提及 mini/nano |
+| `anthropic/claude-opus-4-7.json` | anthropic.com/news/claude-opus-4-7 | 17 | 5 | 12 | newsroom "Apr 16, 2026"（= OpenRouter 04-16） |
+| `anthropic/claude-opus-4-8.json` | anthropic.com/news/claude-opus-4-8 | 9 | 2 | 7 | newsroom "May 28, 2026"（OpenRouter 上架 05-27，滞后 1 天） |
+| `anthropic/claude-fable-5.json` | anthropic.com/news/claude-fable-5-mythos-5 | 16 | 2 | 14 | newsroom "Jun 9, 2026"（联合发布 Fable 5 + Mythos 5；= OpenRouter 06-09） |
+| `anthropic/claude-sonnet-5.json` | anthropic.com/news/claude-sonnet-5 | 8 | 2 | 6 | newsroom "Jun 30, 2026"（= OpenRouter 06-30） |
+
+### 本批抓取与口径记录
+
+1. **GPT-5.4 页延续第三批工艺**：顶部文本表 + RSC vega payload 双通道机器读取，全部 verified、零 pending。捕获一处**页内分数修订**：GPT-5.3-Codex OSWorld-Verified 64.7% → 74.0%（新 API 参数保留原始图像分辨率，页脚注明）；捕获 effort 曲线协议（SWE-Bench Pro / Toolathlon / OSWorld / GDPval 按 none→xhigh 全档）与 BrowseComp 搜索黑名单协议说明。
+2. **Anthropic 新四页**：正文绝对分数稀缺（Opus 4.7 两句 SOTA、Sonnet 5 一句 Firefox-147 0.0%、Fable 5 两句第三方榜首），其余全在图表 → pending + 视觉转写入 notes。**跨厂锚点全部命中**：Opus 4.7 表的 GPT-5.4/5.5 列与 OpenAI 自家页完全一致（57.7/75.1/89.3/94.4 等），Fable 5 表的 Opus 4.8/GPT 5.5 列与各自官方页一致。
+3. **跨页冲突（不调和，均已入 notes 待裁定）**：(a) MCP Atlas Opus 4.7 = 77.3（4.7 页）vs 79.1（GPT-5.5 页，脚注 Scale AI 2026-04 更新）——不同快照；(b) Terminal-Bench 2.1 Opus 4.8 = 74.6 / GPT-5.5 = 78.2（4.8 自家页）vs 82.7 / 83.4 Codex CLI（Fable 5 与 Sonnet 5 页）——疑似分数修订或 harness 差异；(c) GDPval-AA 版本标注不一（4.8 页无版本、Sonnet 5 页标 v2 且 Opus 4.8 值不同 1890 vs 1615）。
+4. **fast 变体归属**：claude-opus-4.7-fast（上架 05-12）无独立新闻条目 → 并入 claude-opus-4-7.json 作 model + notes；4.8-fast 在 4.8 页正文有定价（2.5 倍速、比以往快档便宜 3 倍）→ 同法并入。
+5. **Fable 5 部署时间线**（页顶更新，入 notes）：06-09 发布 → 06-12 按美国政府指令暂停 → 07-01 恢复；表内带星行 = Fable 受安全回退影响接近 Opus 4.8（方法学脚注已全文抄录）。
+6. **Sonnet 5 协议修订记录**（6-30 changelog）：BrowseComp 成本-性能图原方法学低估 Sonnet 5，已替换为系统卡方法学（10M token 预算 + compaction + 程序化工具调用）；8-10 定价修订：$2/$10 转永久。
+
+### 本批新增 benchmark id（notes 均标 `new-benchmark`）
+
+7 个：`frontiercode`（Cognition，页内命名不一致 FrontierCode/FrontierBench 已注）、`hebbia-finance-benchmark`、`gdr-pdf`、`blueprint-bench-2`、`automationbench`、`biomysterybench`（hard / human-solved 两变体）、`legal-agent-benchmark`（Harvey）、`firefox-147-exploit`（Mozilla 协作，已修补于 148）。复用/映射：`omnidocbench`、`online-mind2web`、`webarena`（Verified 变体）、`cursor-bench`、`exploitbench`（注意 Anthropic 记 Cap%、OpenAI 记 pass 率，同族不同口径）、`healthbench`（Professional 变体）、`mmmu-pro`、`tau2-bench`（本批未落行，注记）。
+
+### 交叉核对新发现的剩余缺口（未覆盖，待派单）
+
+OpenRouter 目录里仍无 release 文件的旗舰线（均有官方页或 newsroom 条目，2025-08～2026-02 窗口）：**Anthropic** claude-opus-4.1（2025-08-05）、claude-opus-4.5（2025-11-24）、claude-sonnet-4.6（2026-02-17）；**OpenAI** gpt-5.1（sitemap 见 /index/gpt-5-1/ 及 gpt-5-1-codex-max）、gpt-5.2（2025-12-10 上架，GPT-5.5 页引用其 12 月网安护栏）、gpt-5.3 系（introducing-gpt-5-3-codex / codex-spark / gpt-5-3-instant）、gpt-5.5-instant。另 `gpt-5-4-pro` 上架日与主发布同日已并入 gpt-5-4.json，无需独立文件。
 ## 历代补齐第五批（2026-08-31）：OpenRouter 交叉核对缺口 — Google / xAI / Meta
 
 来源：OpenRouter 官方模型目录交叉核对给出的缺口清单（OpenRouter created 仅作旁证，发布日期一律以官方页面自身时间为准）。本批新增 10 个 release，另把派单外发现的 `gemini-3-flash`（2025-12-17，官方 blog 有 4 个散文明文分数）一并补入（宁全勿缺）。
@@ -385,73 +455,60 @@ goal.md §12.6 Tier 1 国内缺口厂商补齐：Alibaba/Qwen 两条、MiniMax �
 2. deepmind.google 的 3.7 model card 与 evals-methodology/gemini-3-1-pro 页仍是两个未抓的 DOM 明文源（前者含 Muse Spark 1.2 / Grok 4.5 竞品列）。
 3. `mmmlu` / `global-mmlu-lite` / `multilingual-mmlu` 三 id 待主线裁定合并策略；`gdpval-aa` 的 v2/非 v2 混用已按 variant 隔离，迁移时保持。
 
-## 2026-08-31 第三批：历代补齐（OpenAI / Anthropic）
+## 2026-08-31 第四批：旗舰历代全量补齐（OpenRouter 交叉核对增补）
 
-补齐两家 Tier 1 厂商近三年核心模型发布，7 个 release / 261 条 evidence（233 verified + 28 pending，其中 123 条为 comparison_cited 竞品列）。**发布日期全部精确到日**。
+OpenRouter 官方模型目录交叉核对发现的旗舰缺口，19 个 release 文件、286 条 evidence（212 verified + 74 pending）+ 5 个零行占位。OpenRouter created 仅作旁证，发布日期以官方页为准（本批有多处修正，见下）。本节只追加，不改动既有批次内容。
 
-| 文件 | 来源页 | 条数 | verified | pending | 发布日期来源 |
+| 文件 | 发布日期（来源） | 条数 | verified | pending | 抓取路径与要点 |
 |---|---|---:|---:|---:|---|
-| `openai/o3-o4-mini.json` | openai.com/index/introducing-o3-and-o4-mini/ | 49 | 49 | 0 | 页面正文日期 2025-04-16 |
-| `openai/gpt-5.json` | openai.com/index/introducing-gpt-5/ | 59 | 59 | 0 | 页面正文日期 2025-08-07 |
-| `openai/gpt-5-5.json` | openai.com/index/introducing-gpt-5-5/ | 111 | 111 | 0 | 页面正文日期 2026-04-23 |
-| `anthropic/claude-4.json` | anthropic.com/news/claude-4 | 4 | 4 | 0 | 官方 newsroom 索引 "May 22, 2025"（页面不印日期）+ snapshot `claude-opus-4-20250514` |
-| `anthropic/claude-sonnet-4-5.json` | anthropic.com/news/claude-sonnet-4-5 | 10 | 3 | 7 | newsroom "Sep 29, 2025" + platform.claude.com docs "Released September 29, 2025" + snapshot `claude-sonnet-4-5-20250929` |
-| `anthropic/claude-opus-4-6.json` | anthropic.com/news/claude-opus-4-6 | 17 | 7 | 10 | newsroom "Feb 5, 2026" + docs "Released February 5, 2026"（**不是** 2025-12） |
-| `anthropic/claude-haiku-4-5.json` | anthropic.com/news/claude-haiku-4-5 | 11 | 0 | 11 | newsroom "Oct 15, 2025" + docs "Released October 15, 2025" + snapshot `claude-haiku-4-5-20251001` |
+| `kimi/kimi-k2-6.json` | 2026-04-20（官方 blog 索引） | 13 | 5 | 8 | web reader 拿到正文+6 组脚注；摘要 DOM 表（后被追加 K3 列）5 行机读 verified；Full Benchmark 各节值在非 DOM 组件 → 8 行 pending（节标题定位）。**编码分 = 10 次运行均值**（非早期 Kimi 的 5 次）；temp 1.0 / top-p 1.0 / 262,144 ctx |
+| `kimi/kimi-k2-5.json` | 2026-01-27（官方 blog 索引；statics 资产 0126/0127 佐证） | 24 | 5 | 19 | web reader 全文+7 组脚注；附录 benchmark 表非 DOM（唯一 DOM 表是迷宫演示）→ 仅脚注明文的 4 个 HLE 值（31.5/21.3/51.8/39.8，全集 text×image×工具 四条件）verified；其余 19 行 pending。**top-p 0.95**（与 K2/K2.6 的 1.0 不同）；正文 59.3%/24.3% 与图 alt 71.2%/39.0% 冲突已记录 |
+| `kimi/kimi-k2-0905.json` | 2025-09-05（官方 blog 索引；HF createdAt 09-03 权重先行；OpenRouter 09-04 近似） | 5 | 5 | 0 | 博客正文页 slug 已从索引摘链 → **以 HF 官方 model card 为 A 级源**（README 表格机读）；罕见的 **mean±std over 5 全量运行** + 仓库 Git 对象剪枝防泄漏协议 |
+| `deepseek/deepseek-v3-2.json` | 2025-12-01（官方新闻侧栏 + slug + HF createdAt 三证） | 16 | 4 | 12 | web reader 成功；三张 webp 图（表1 含每格 token 消耗）→ 12 行 pending 视觉转写只进 notes；**V3.2-Speciale 四大奥赛金牌论断（IMO/CMO/ICPC WF/IOI 2025）正文 verified**。V3.2 图读数与 GLM-4.7/5/5.1、Kimi K2.5 四页竞品列互证一致 |
+| `deepseek/deepseek-v4.json` | 2026-04-24（官方新闻侧栏 + slug；OpenRouter 同日） | 22 | 0 | 22 | 预览版；两图（summary + 全表含 V4-Flash 列）全 pending；图读数与 GLM-5.2 的 DeepSeek-V4-Pro 竞品列逐项一致（HLE 37.7 / GPQA 90.1 / SWE-Pro 55.4 / MCP-Atlas 73.6 / Tool-Decathlon 52.8） |
+| `glm/glm-5-2.json` | 2026-06-16（HF createdAt + 页面资产时间戳 + OpenRouter 三证） | 19 | 19 | 0 | web reader 一次成功，**完整 DOM 表 + 每 benchmark 独立协议脚注**（temp/top_p/max_tokens/harness/超时逐项）→ 全 verified；FrontierSWE/PostTrainBench/SWE-Marathon 三行标 third_party（Proximal/PostTrainBench org/Abundant AI 代跑） |
+| `glm/glm-5-1.json` | 2026-04-07（页面资产 20260407 + OpenRouter；HF 04-03 权重先行） | 18 | 18 | 0 | 同上全 DOM 表 verified；τ³-bench（新 benchmark）、Vending Bench 2 美元行（Andon Labs 代跑）、KernelBench L3 带防作弊审计协议（Opus 4.6 + GPT-5.4 双审计取低值 + 50x 硬帽） |
+| `glm/glm-5.json` | 2026-02-11（HF createdAt + 资产时间戳） | 18 | 18 | 0 | 全列 Thinking 模式；TB 2.0 自带 dagger = 厂商自建 "verified" 修订数据集（HF: zai-org/terminal-bench-2-verified），数据集变体已披露 |
+| `glm/glm-4-7.json` | 2025-12-22（HF createdAt + OpenRouter；资产 12-23 00:44 为北京深夜续作） | 17 | 17 | 0 | 全 DOM 表 verified；三组协议档（默认 / Terminal+SWE temp 0.7 / τ²-Bench temp 0 + Preserved Thinking） |
+| `qwen/qwen3-8-max.json` | 2026-08-03（官方 research 索引卡 + OpenRouter） | 31 | 31 | 0 | qwen.ai（id=qwen3.8）DOM 表 1 全 verified；**表 2（61 行多模态，同为 DOM 机读）本批未转录**——已在 release notes 定位标记，留待后续补行；1M 上下文 SOTA 论断 + 长程演示带可验证数字（16 天自治仓库 265 commits / 125 小时论文复现+超越 / 24h 竞赛 0.853 胜 458 队） |
+| `qwen/qwen3-8-flash.json` | 2026-08-26（官方 research 索引卡"Qwen3.8-Flash-Next"；OpenRouter qwen3.8-flash 同日） | 36 | 36 | 0 | **三张 DOM 表全 verified**（instruct 12 + 多模态 10 + base 12）；架构预览定位（Qwen4 先导）；训练成本 ≈ Qwen3.7-Plus 的 1/9 论断 |
+| `qwen/qwen3-7-max.json` | 2026-05（**月精度**：正文引用块只给 month=May；OpenRouter 05-21 旁证） | 41 | 41 | 0 | id=qwen3.7 DOM 表（41 行 × 6 模型）全 verified；Kernel Bench L3 速度比/正确率双值、QwenWebDev/QwenSVG Elo 值；与 GLM-5.2 的 Qwen3.7-Max 竞品列互证一致（SWE-Pro 60.6 / NL2Repo 47.2 / MCP-Atlas 76.4 / HLE 41.4 等 7 项） |
+| `qwen/qwen3-7-flash.json` | 2026-07-27（OpenRouter 旁证） | 0 | 0 | 0 | **占位 pending**：官方 blog 未定位（id 猜测空壳 / 旧域 500 / sitemap 只收 qwen3.8 / 索引分页未露出）；日期为 OpenRouter created，非官方 |
+| `qwen/qwen3-6-flash.json` | 2026-04-27（OpenRouter 旁证） | 0 | 0 | 0 | **占位 pending**，同上；Qwen3.6-Plus 已作为竞品列出现在本批两个 DOM 表中可作代际参照 |
+| `minimax/minimax-m2-7.json` | 2026-03-18（**页面印刷日期**；OpenRouter 同日；HF 04-09 为后上传——冲突以官方页为准） | 10 | 10 | 0 | JS 渲染 news 页，Playwright 提取；全部分数为正文论断 → verified；页面拼写 "Toolathon" 46.3 与 GLM-5.1 的 Tool-Decathlon M2.7 列完全一致（跨厂商互证映射）；MLE-Bench Lite 奖牌率 66.6%（3×24h 协议） |
+| `minimax/minimax-m2-5.json` | 2026.2.12（页面印刷 + HF createdAt 同日） | 8 | 8 | 0 | 同上 Playwright；**同 benchmark 双 harness 敏感性**：SWE-V 默认 80.2 / Droid 79.7 / OpenCode 76.1（≈4 分 harness 效应）+ 每任务 3.52M tokens / 22.8 分钟经济学披露；GDPval-MM 59.0% win rate（内部结对评审） |
+| `doubao/seed-1-6.json` | **2025-06-25（官方页印刷；修正任务输入的 2025-12-23**——OpenRouter 时间戳疑为后续变体上架**）** | 0 | 0 | 0 | JS 渲染 model 页；无任何机读分数（Base LLM 评测表在非 DOM 组件且竞品列注明引自 Qwen 技术报告）→ release pending 占位；三阶段续训 + AdaCoT 协议披露入 notes |
+| `doubao/seed-2-0-mini.json` | 2026-02-26（OpenRouter 旁证） | 0 | 0 | 0 | **占位 pending**（变体层级）；官方页未定位，Seed 站点模型列表从 1.x 直接跳 2.1 |
+| `doubao/seed-2-0-lite.json` | 2026-03-10（OpenRouter 旁证） | 0 | 0 | 0 | **占位 pending**（变体层级），同上 |
 
-### 本批抓取与降级路径记录
+**本批小计：286 条 = 212 verified + 74 pending；另有 5 个零行占位 release（qwen3-7-flash / qwen3.6-flash / seed-1-6 / seed-2.0-mini / seed-2.0-lite，status=pending，不计入公开覆盖计数）。** `validate-data` PASS。
 
-1. **OpenAI 三页全部走降级链**：WebFetch 403 → web-reader 返回软 404（haiku 诗占位页）→ **Playwright 无头浏览器成功**。注意团队简报中的旧 slug `openai-o3-and-o4-mini` / `gpt-5` 已 404，canonical slug 以 `openai.com/sitemap.xml/release/` 为准：`introducing-o3-and-o4-mini`、`introducing-gpt-5`、`introducing-gpt-5-5`。
-2. **OpenAI 分数提取方法（本批关键工艺）**：页面 benchmark 图表为 vega-lite 组件，数值以 JSON 形式嵌在 RSC payload（`self.__next_f.push` chunk）里。用平衡括号法逐个解析完整 `vegaSpec` 对象后 `JSON.parse` 取 `title + data.values`——这是**机器可读**（非 OCR、非读图）。堆叠柱状图的 `value` 是分段值、`labelValue` 是显示总值，须以 labelValue 为准并用正文数字锚定校验（锚点全中：AIME 94.6 / GPQA pro 88.4 / SWE 74.9 / HealthBench Hard 46.2；o3 系列与 o3 页面交叉全中：98.4/88.9/83.3/69.1/82.9/78.6/49.7）。**教训**：简单正则按 title 向后找最近 values 会错位一位，GPT-5 页首轮即错，重新用平衡 JSON 解析后修正。
-3. **GPT-5.5 页有全文本 DOM 表**（编码/专业/计算机使用与视觉/工具/学术/网络安全/长上下文/抽象推理 8 组，列为 GPT-5.5 / GPT-5.4 / GPT-5.5 Pro / GPT-5.4 Pro / Opus 4.7 / Gemini 3.1 Pro），整表机器可读，页内 `-` 空格一律不落行。脚注四条全捕：SWE-Bench Pro 存在 memorization 证据、MCP Atlas 为 Scale AI 2026-04 更新版、Tau2-bench Telecom 用原始提示词（GPT-4.1 作用户模拟器）且刻意忽略他厂调参结果、内部 CTF 在系统卡最难集上扩展。
-4. **Anthropic 四页 web-reader 一次成功**，但全部 benchmark 数值在图片里（与 OpenAI 相反）。发布日期页面不印：日期证据链 = 官方 newsroom 索引逐条日期（与既有 claude-opus-5.json 的 2026-07-24 校验一致）+ platform.claude.com 模型页 "Released" 行 + API snapshot ID，三源互证。
-5. **Anthropic 图片表用视觉辅助（MiniMax understand_image）转写 4 张关键图**（sonnet-4-5 表 / opus-4-6 表 / haiku-4-5 表 / claude-4 SWE 图）：OCR 数值一律只进 notes（goal.md §12.5），图片行保持 pending。多个跨厂锚点交叉命中（GPT-5 列 94.6/99.6/85.7/84.2 与 OpenAI 自家 GPT-5 页完全一致；Opus 4.6 GDPval-AA Elo 读数 1606/1462/1416 与正文 delta +144/+190 精确吻合）。
+### 本批日期修正与冲突裁定（OpenRouter created ≠ 官方发布日的三个实例）
 
-### 本批口径要点
+1. **seed-1-6**：任务输入 2025-12-23（OpenRouter）→ 官方页印刷 **2025-06-25**，取官方。
+2. **minimax-m2-7**：HF createdAt 2026-04-09 vs 官方页 2026-03-18 vs OpenRouter 2026-03-18 → 取官方页（HF 为开源权重后上传）。
+3. **kimi-k2-0905**：OpenRouter 09-04 vs 官方索引 09-05 vs HF 09-03 → 取官方索引（HF 权重先行、OpenRouter 居中，三者相差 ≤2 天）。
+4. **glm-5-1**：HF 04-03（权重）vs 页面资产/OpenRouter 04-07（blog）→ 取 blog 日，HF 先行已注明。
+5. **qwen3-7-max**：官方只给到月（引用块 month=May）→ 按规则记 YYYY-MM + month 精度，OpenRouter 05-21 写入 notes 作升级线索。
 
-- **正文点名 + 有明确论断但数值在图里 → verified + not_extracted**（沿用 Opus 5 先例）：Opus 4.6 的 Terminal-Bench 2.0 / HLE / GDPval-AA / BrowseComp 四行。
-- **正文无数值、名字只在图片 alt/表头 → pending**：Haiku 4.5 全部 11 行、Sonnet 4.5 表内 7 行、Opus 4.6 表内 10 行。升级路径 = 人工读图确认 notes 中的视觉转写值。
-- **同 benchmark 跨页冲突不调和**：o3 的 HLE 无工具值在 o3 页为 20.32、在 GPT-5 页为 14.7（Full Set 口径）；MultiChallenge o3 在两页分别为 56.51 / 60.4。各页各记一行，notes 标注冲突待裁定。
-- **mrcr 跨厂统一**：Anthropic Opus 4.6（1M 档 76/18.5）与 OpenAI GPT-5.5（8 个 token 带，512K-1M 74.0）同用 `mrcr` id + variant 区分，两家页面互为对方 benchmark 的引用源。
+### 本批方法论新沉淀
 
-### 本批新增 benchmark id（notes 均标 `new-benchmark`，待迁入主数据）
+1. **qwen.ai 的 id 体系不规律**：qwen3-max / qwen3.8 / qwen3.7 / qwen3.8-flash-next 各自成立，qwen3.7-max / qwen3.7-flash / qwen3.6-flash 空壳；sitemap 只索引最新一篇。旧域 qwenlm.github.io 部分旧文仍活（qwen2.5）部分 500（3.6/3.7-flash）。后续应从 research 索引分页拿 id，勿猜。
+2. **MiniMax 新闻页域名从 /blog/ 迁到 /news/**，slug 不再带时间戳后缀（m27/m25 直接可用）；M2 旧 blog slug 仍带后缀。
+3. **Kimi 官方索引只挂最近 9 篇的链接**，更早条目（K2-0905 及之前）卡片在列但无 href → 老发布走 HF model card（A 级）或 web.archive.org。
+4. **规范生成器**：本批 19 个文件由统一 spec→JSON 生成器产出（字段默认值集中管理，杜绝手写漏字段），生成器与 spec 暂存于系统临时目录未入库；如需固化为仓库工具请主线决定。
+5. **表格后挂 K3 列的 K2.6 页**：厂商会回填旧发布页做新版导流（K2.6 页的表被插入 K3 列 + 结论句），取证时以"自家列"取值、注意页面可能非发布时原文。
 
-10 个：`expert-swe`（OpenAI 内部长周期编程）、`genebench`（遗传/定量生物多阶段分析）、`bixbench`（真实生物信息学）、`graphwalks`（长上下文图游走，BFS/parents × 256k/1mil 四变体）、`mrcr`（OpenAI MRCR v2 8-needle，跨厂）、`tau2-bench`（t2-bench，区别于既有 `tau-bench`，Retail/Airline/Telecom 变体）、`mmmlu`（多语言 MMLU，区别于 `mmlu`）、`healthbench`（真实健康对话，OpenAI/医生定义 rubric；Hard 变体）、`mmmu-pro`（视觉研究生级；标准+视觉任务平均口径脚注）、`biglaw-bench`（Harvey 法律，third_party 行）、`deepsearchqa`（Opus 4.6 图表 alt 命名，未读数）。
+### 本批新增 benchmark id（notes 均标 new-benchmark，待迁主数据）
 
-复用前批 id：`codeforces`、`aime-25`、`hmmt25`、`multichallenge`、`collie`、`erqa`、`gdpval`、`finance-agent`、`swebench-pro`、`video-mmmu`、`browsecomp`、`charxiv-reasoning`、`cybergym`、`mcp-atlas`、`toolathlon`、`aa-intelligence-index`、`officeqa-pro`。映射既有 id：`swebench`（Verified 记 variant；OpenAI n=477 固定子集脚注）、`terminalbench`（2.0 记 variant；Claude 4 页未标版本记 unspecified）、`gpqa`（Diamond）、`hlehle`（Full Set / no-tools / with-tools 记 variant）、`frontiermath`（Tier 1-3 / Tier 4 记 variant）、`arc-agi`（1/2 Verified 记 variant）、`aider`（Polyglot）、`swe-lancer`（IC SWE Diamond，单位 usd）。
+`aime-26`、`hmmt-26`、`critpt`、`tool-decathlon`、`tau3-bench`、`vstar`、`widesearch`、`worldvqa`、`aa-lcr`、`ai-office-bench`、`omnidocbench`、`longvideobench`、`swe-dev`、`vibe-pro`、`mm-claw`、`rise`、`gdpval-mm`、`mcp-universe`、`mcp-mark`、`cmo-2025`、`icpc-world-finals-2025`、`ioi-2025`、`simpleqa-verified`、`chinese-simpleqa`、`apex`、`apex-shortlist`、`mrcr-1m`、`corpusqa-1m`、`androidbench`、`qwen-swe-bench`、`qwen-qoder-bench`、`qwen-react-bench`、`qwen-svg-bench`、`qwen-claw`、`claweval`、`skillsbench`、`qwen-webdev-bench`、`qwen-world-bench`、`vitabench`、`kernelbench`、`ifbench`、`plawbench`、`prbench-legal`、`prbench-finance`、`mrcr-v2`、`bbh`、`mmmlu`、`mmlu-prox`、`nova-63`、`include`、`global-piqa`、`wmt24`、`maxife`、`claweval-mm`、`vision2web`、`erqa`、`lvbench`、`realworldqa`（部分与第三批重复引入，合并时按 id 去重）。
 
-### 待人工核验清单（pending 升级路径）
+### 本批待人工核验清单（pending 升级路径）
 
-1. Anthropic 28 条 pending 行：按 notes 内视觉转写值逐条人工读图确认后翻 verified（三张大表 + claude-4 平行计算图）。
-2. GPT-5 页 o3 HLE（14.7 vs o3 页 20.32）与 o3 MultiChallenge（60.4 vs 56.51）两处跨页冲突需主线裁定口径。
-3. o3/o4-mini 页 Aider Polyglot 图的 payload 分段含未解释第二序列，未落行；GPQA-Pass / AIME-with-tools 两张静态 PNG 图未读。
+1. **qwen3-8-max 表 2**（61 行多模态 DOM 表）：值与表 1 同样机读，本批未转录——最高优先级的低成本补行机会（locator: 页面"模型表现"第二张表）。
+2. Kimi K2.6 非 DOM benchmark 组件 8 行 + K2.5 附录表 19 行：从技术报告（arXiv 2602.02276）或页面渲染组件补值。
+3. DeepSeek V3.2 三图 12 行 + V4 两图 22 行：人工读图（两文件均有跨厂商互证背书）。
+4. 三个 Kimi 5 个协议档案（K2.6 10 次均值 / K2.5 top-p 0.95 + 非思考 SWE / K2-0905 Git 剪枝）如需进 benchmark 详情页的 Protocol Fingerprint 样例，可直接引用。
 
-## 2026-08-31 第四批：OpenRouter 交叉核对补齐（OpenAI / Anthropic 旗舰缺口）
+---
 
-来源交叉链：**OpenRouter `/api/v1/models` created 时间戳作旁证（D 级，上架≠发布），release_date 一律以官方 blog/newsroom 为准**。本批旁证质量：o3/o4-mini、GPT-5.4、Opus 4.7、Fable 5、Sonnet 5 上架日=发布日；GPT-5.5 滞后 1 天；**Opus 4.8 上架 05-27 / 官方发布 05-28**。6 个 release / 74 条 evidence（35 verified + 39 pending）。
-
-| 文件 | 来源页 | 条数 | verified | pending | 发布日期来源 |
-|---|---|---:|---:|---:|---|
-| `openai/gpt-5-4.json` | openai.com/index/introducing-gpt-5-4/ | 24 | 24 | 0 | 页面正文日期 2026-03-05（= OpenRouter 5.4/5.4-pro 上架日） |
-| `openai/gpt-5-4-mini-nano.json` | 无官方发布页 | 0 | 0 | 0 | **占位 pending**：OpenRouter 上架 2026-03-17，release sitemap 无独立页，主发布页未提及 mini/nano |
-| `anthropic/claude-opus-4-7.json` | anthropic.com/news/claude-opus-4-7 | 17 | 5 | 12 | newsroom "Apr 16, 2026"（= OpenRouter 04-16） |
-| `anthropic/claude-opus-4-8.json` | anthropic.com/news/claude-opus-4-8 | 9 | 2 | 7 | newsroom "May 28, 2026"（OpenRouter 上架 05-27，滞后 1 天） |
-| `anthropic/claude-fable-5.json` | anthropic.com/news/claude-fable-5-mythos-5 | 16 | 2 | 14 | newsroom "Jun 9, 2026"（联合发布 Fable 5 + Mythos 5；= OpenRouter 06-09） |
-| `anthropic/claude-sonnet-5.json` | anthropic.com/news/claude-sonnet-5 | 8 | 2 | 6 | newsroom "Jun 30, 2026"（= OpenRouter 06-30） |
-
-### 本批抓取与口径记录
-
-1. **GPT-5.4 页延续第三批工艺**：顶部文本表 + RSC vega payload 双通道机器读取，全部 verified、零 pending。捕获一处**页内分数修订**：GPT-5.3-Codex OSWorld-Verified 64.7% → 74.0%（新 API 参数保留原始图像分辨率，页脚注明）；捕获 effort 曲线协议（SWE-Bench Pro / Toolathlon / OSWorld / GDPval 按 none→xhigh 全档）与 BrowseComp 搜索黑名单协议说明。
-2. **Anthropic 新四页**：正文绝对分数稀缺（Opus 4.7 两句 SOTA、Sonnet 5 一句 Firefox-147 0.0%、Fable 5 两句第三方榜首），其余全在图表 → pending + 视觉转写入 notes。**跨厂锚点全部命中**：Opus 4.7 表的 GPT-5.4/5.5 列与 OpenAI 自家页完全一致（57.7/75.1/89.3/94.4 等），Fable 5 表的 Opus 4.8/GPT 5.5 列与各自官方页一致。
-3. **跨页冲突（不调和，均已入 notes 待裁定）**：(a) MCP Atlas Opus 4.7 = 77.3（4.7 页）vs 79.1（GPT-5.5 页，脚注 Scale AI 2026-04 更新）——不同快照；(b) Terminal-Bench 2.1 Opus 4.8 = 74.6 / GPT-5.5 = 78.2（4.8 自家页）vs 82.7 / 83.4 Codex CLI（Fable 5 与 Sonnet 5 页）——疑似分数修订或 harness 差异；(c) GDPval-AA 版本标注不一（4.8 页无版本、Sonnet 5 页标 v2 且 Opus 4.8 值不同 1890 vs 1615）。
-4. **fast 变体归属**：claude-opus-4.7-fast（上架 05-12）无独立新闻条目 → 并入 claude-opus-4-7.json 作 model + notes；4.8-fast 在 4.8 页正文有定价（2.5 倍速、比以往快档便宜 3 倍）→ 同法并入。
-5. **Fable 5 部署时间线**（页顶更新，入 notes）：06-09 发布 → 06-12 按美国政府指令暂停 → 07-01 恢复；表内带星行 = Fable 受安全回退影响接近 Opus 4.8（方法学脚注已全文抄录）。
-6. **Sonnet 5 协议修订记录**（6-30 changelog）：BrowseComp 成本-性能图原方法学低估 Sonnet 5，已替换为系统卡方法学（10M token 预算 + compaction + 程序化工具调用）；8-10 定价修订：$2/$10 转永久。
-
-### 本批新增 benchmark id（notes 均标 `new-benchmark`）
-
-7 个：`frontiercode`（Cognition，页内命名不一致 FrontierCode/FrontierBench 已注）、`hebbia-finance-benchmark`、`gdr-pdf`、`blueprint-bench-2`、`automationbench`、`biomysterybench`（hard / human-solved 两变体）、`legal-agent-benchmark`（Harvey）、`firefox-147-exploit`（Mozilla 协作，已修补于 148）。复用/映射：`omnidocbench`、`online-mind2web`、`webarena`（Verified 变体）、`cursor-bench`、`exploitbench`（注意 Anthropic 记 Cap%、OpenAI 记 pass 率，同族不同口径）、`healthbench`（Professional 变体）、`mmmu-pro`、`tau2-bench`（本批未落行，注记）。
-
-### 交叉核对新发现的剩余缺口（未覆盖，待派单）
-
-OpenRouter 目录里仍无 release 文件的旗舰线（均有官方页或 newsroom 条目，2025-08～2026-02 窗口）：**Anthropic** claude-opus-4.1（2025-08-05）、claude-opus-4.5（2025-11-24）、claude-sonnet-4.6（2026-02-17）；**OpenAI** gpt-5.1（sitemap 见 /index/gpt-5-1/ 及 gpt-5-1-codex-max）、gpt-5.2（2025-12-10 上架，GPT-5.5 页引用其 12 月网安护栏）、gpt-5.3 系（introducing-gpt-5-3-codex / codex-spark / gpt-5-3-instant）、gpt-5.5-instant。另 `gpt-5-4-pro` 上架日与主发布同日已并入 gpt-5-4.json，无需独立文件。
