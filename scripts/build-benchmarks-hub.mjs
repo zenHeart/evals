@@ -37,14 +37,14 @@ function truncate(s, n) {
 /** 引用计数徽章：只统计近三年窗口（fresh）；窗口外/日期缺失归入档案降级展示（goal §12.2/§12.7） */
 function citeBadge(b) {
   const parts = [];
-  if (b._verified > 0) parts.push(`已核验 ${b._verified} 次近三年官方发布引用`);
-  if (b._pending > 0) parts.push(`${b._pending} 条待核验`);
+  if (b._verified > 0) parts.push(`近三年官方发布引用已核验 ${b._verified} 条`);
+  if (b._pending > 0) parts.push(`待核验 ${b._pending} 条`);
   if (!parts.length) {
     return b._archived > 0
-      ? `暂无近三年已核验引用 · 档案 ${b._archived} 条`
+      ? `近三年暂无已核验引用 · 更早/日期不明的历史引用 ${b._archived} 条`
       : "社区驱动 · 暂无官方发布引用";
   }
-  if (b._archived > 0) parts.push(`档案 ${b._archived} 条`);
+  if (b._archived > 0) parts.push(`另有 ${b._archived} 条更早/日期不明的历史引用`);
   return parts.join(" · ");
 }
 
@@ -53,7 +53,7 @@ function vendorHint(b) {
   const sorted = [...(b.adoption || [])].sort((a, x) => (a.status === "verified" ? -1 : 1) - (x.status === "verified" ? -1 : 1));
   const names = sorted.map(a => a.release).filter(Boolean);
   const head = names.slice(0, 3).join(" · ");
-  return names.length > 3 ? `${head} +${names.length - 3}` : head;
+  return names.length > 3 ? `${head} 等 ${names.length} 家` : head;
 }
 
 // ---------------------------------------------------------------- 页面 CSS
@@ -167,7 +167,8 @@ function explorerPage(db, cards, autoIds = []) {
       <div class="card-go">查看详情 →</div>
     </a>`).join("");
 
-  const title = "评估体系大全 · 65+ 主流大模型评测参考";
+  const shownCount = cards.filter(c => c.show).length;
+  const title = `评估体系大全 · ${shownCount} 个大模型评测参考`;
   const desc = "LLM 评估参考数据库：每个评测有独立详情页，讲清它测什么、分数什么含义、被哪些模型发布引用、协议如何解读。";
 
   return `${shellHead({ rel: "../", title, desc, path: "benchmarks/", extra: `<style>${SHELL_CSS}${PAGE_CSS}</style>` })}
@@ -176,11 +177,11 @@ function explorerPage(db, cards, autoIds = []) {
 ${shellTopbar("../", "benchmarks")}
 <div class="bm-container" id="main-content">
   <h1>评估体系大全</h1>
-  <div class="sub">严谨、可查询、可追溯的 benchmark reference：每张卡片是一个评测的<b>索引入口</b>，点击进入独立详情页看测什么、分数怎么看、谁家发布引用过。不懂评测？只读卡片就够。<br><a href="../releases/">🕐 模型发布时间轴：浏览各厂商历年核心模型发布与评测证据 →</a></div>
+  <div class="sub">这是一份可检索的大模型评测参考库：每张卡片是一个评测的<b>索引入口</b>，点进独立详情页可以看到它测什么、分数怎么读、哪些厂商在发布模型时引用过它。卡片上的引用数字统计近三年（自 ${esc(db.cutoff)} 起）的官方发布；更早或日期不明的引用会标注为「历史引用」。<br><a href="../releases/">🕐 模型发布时间轴：浏览各厂商历年核心模型发布与评测证据 →</a></div>
   <div class="controls">
     <div class="search"><input id="q" type="search" placeholder="搜索：名称 / 用途 / 引用厂商…" aria-label="搜索评估体系"></div>
     <select id="sort" aria-label="排序方式">
-      <option value="cite">按厂商引用量 ↓</option>
+      <option value="cite">按厂商引用量从高到低</option>
       <option value="name">按名称 A-Z</option>
       <option value="cat">按类别</option>
     </select>
@@ -189,9 +190,9 @@ ${shellTopbar("../", "benchmarks")}
   <div class="stats"><span id="statsText"></span> <button id="clearFilters" type="button" class="chip" hidden>✕ 清除全部筛选</button></div>
   <div id="list" class="grid">${cardHtml}</div>
   <div id="emptyState" class="empty" hidden>没有匹配的评测——可能是筛选或搜索词太窄。<button type="button" class="chip" onclick="document.getElementById('clearFilters').click()">清除筛选恢复全部 ${cards.filter(c => c.show).length} 个</button></div>
-  ${autoIds.length ? `<div class="part-group" style="margin-top:34px;">证据自动建档评测（${autoIds.length}）</div>
-  <p class="part-goal">以下评测出现在官方模型发布的证据账本中、尚未建立完整实体档——已按「罗列已知信息、缺口显式标注」原则生成可点击页面：</p>
-  <details style="margin:8px 0 4px;"><summary style="cursor:pointer;font-weight:700;font-size:13.5px;color:#64748b;">展开 ${autoIds.length} 个评测（按引用次数倒排）</summary>
+  ${autoIds.length ? `<div class="part-group" style="margin-top:34px;">来自发布记录、暂无完整介绍的评测（${autoIds.length}）</div>
+  <p class="part-goal">下面这些评测在各厂商的官方发布里被引用过，但我们还没为它们整理出完整介绍。每个名字都可以点进一个自动生成的页面——页面只罗列已知信息，缺什么会明确标注：</p>
+  <details style="margin:8px 0 4px;"><summary style="cursor:pointer;font-weight:700;font-size:13.5px;color:#64748b;">展开 ${autoIds.length} 个评测（按被引用次数从多到少）</summary>
   <div class="auto-cloud">${autoIds.map(a => `<a href="${esc(a.id)}/" title="被 ${a.n} 次发布引用">${esc(a.id)} <b>${a.n}</b></a>`).join("")}</div>
   </details>` : ""}
 </div>
@@ -308,7 +309,7 @@ function detailPage(db, b, cat, related) {
   };
   let adoptBlock;
   if (!cite.length) {
-    adoptBlock = `<p style="color:var(--graphite);font-size:14px;">暂无官方模型发布引用记录——社区驱动或垂域使用。${b.adoptionNote ? esc(b.adoptionNote) : ""}</p>`;
+    adoptBlock = `<p style="color:var(--graphite);font-size:14px;">暂无官方模型发布引用记录——多由社区或垂直领域使用。${b.adoptionNote ? esc(b.adoptionNote) : ""}</p>`;
   } else if (hasReleaseRefs) {
     const fv = cite.filter(a => a.status === "verified" && a.fresh);
     const fp = cite.filter(a => a.status !== "verified" && a.fresh);
@@ -316,9 +317,9 @@ function detailPage(db, b, cat, related) {
     const sec = (title, note, rows) => `<p style="font-weight:700;margin:14px 0 4px;">${title}（${rows.length}）<span style="font-weight:400;color:var(--graphite);font-size:13px;"> — ${note}</span></p>` +
       `<div class="feed" style="padding-left:26px;">${rows.map(cardFor).join("")}</div>`;
     adoptBlock =
-      (fv.length ? sec("已核验", "近三年窗口内，已定位到发布页原文", fv) : "") +
-      (fp.length ? sec("待核验", "分数在图片表格中或定位待人工确认，暂不计入公开引用数", fp) : "") +
-      (ar.length ? `<details style="margin:14px 0;"><summary style="cursor:pointer;font-weight:700;font-size:14px;color:#64748b;">档案引用（${ar.length} 条 · 近三年窗口之外或发布日期待核，仅作背景参考）</summary><div class="feed" style="padding-left:26px;">${ar.map(cardFor).join("")}</div></details>` : "");
+      (fv.length ? sec("已核验", "近三年内，我们已在发布页原文中定位到这条分数", fv) : "") +
+      (fp.length ? sec("待核验", "分数在图片或表格中、暂无法定位到原文，因此不计入公开引用数", fp) : "") +
+      (ar.length ? `<details style="margin:14px 0;"><summary style="cursor:pointer;font-weight:700;font-size:14px;color:#64748b;">历史引用（${ar.length} 条 · 发布时间在近三年之外或日期不明，仅作背景参考）</summary><div class="feed" style="padding-left:26px;">${ar.map(cardFor).join("")}</div></details>` : "");
   } else {
     const row = a => `<tr>
       <td>${a.url ? `<a href="${esc(a.url)}" target="_blank" rel="noopener">${esc(a.release)} ↗</a>` : esc(a.release)}${a.date ? `<br><span style="color:var(--graphite);font-size:12px;font-family:ui-monospace,monospace;">${esc(a.date)}</span>` : ""}</td>
@@ -353,22 +354,22 @@ ${shellTopbar("../../", "benchmarks")}
   ${b.adoptionNote ? `<div class="callout"><b>采用格局：</b>${esc(b.adoptionNote)}</div>` : ""}
 
   <h2 class="detail-sec" id="protocol">评分协议</h2>
-  ${b.protocol ? `<p>${esc(b.protocol)}</p>` : `<p style="color:var(--graphite)">基准级统一协议待收录——各厂商实际使用的 harness / effort 已逐条记在下方引用卡中。</p>`}
-  <div class="callout warn"><b>可比性提示：</b>同一 benchmark 的分数是「实验配置」的产物——benchmark variant、harness、reasoning effort、tools、采样参数、run 次数与聚合方式任一不同，数字都不能直接横向比较。下表各厂商分数如未披露协议细节，请只作方向性参考。</div>
+  ${b.protocol ? `<p>${esc(b.protocol)}</p>` : `<p style="color:var(--graphite)">这个评测的官方统一评分协议还没收录到本页；各厂商实际使用的执行框架（harness）与推理档位（effort）已逐条写在下方引用卡里。</p>`}
+  <div class="callout warn"><b>可比性提示：</b>同一评测的分数是「实验配置」的产物：只要评测版本（variant）、执行框架（harness）、推理档位（reasoning effort）、工具、采样参数、运行次数或聚合方式有任何一项不同，数字就不能直接横向比较。下方各厂商的分数如未写明协议细节，请只当作方向参考。</div>
 
   <h2 class="detail-sec" id="adoption">厂商采用记录（模型发布时作为基准引用）</h2>
-  <p class="refs">共 ${cite.length} 条（近三年：已核验 ${freshV.length} · 待核验 ${freshP.length}${archived.length ? ` · 档案 ${archived.length}` : ""}）${db.updated ? ` · 数据更新于 ${esc(db.updated)}` : ""} · 窗口起点 ${esc(db.cutoff)}</p>
+  <p class="refs">共 ${cite.length} 条 · 近三年已核验 ${freshV.length} · 待核验 ${freshP.length}${archived.length ? ` · 更早/日期不明 ${archived.length}` : ""}${db.updated ? ` · 数据更新于 ${esc(db.updated)}` : ""} · 近三年自 ${esc(db.cutoff)} 起算</p>
   ${adoptBlock}
 
   <h2 class="detail-sec" id="gaps">数据缺口（本页暂未收录）</h2>
   <ul class="gap-list">
-    <li>benchmark variant / 版本（如 Diamond 子集、Verified 子集）与 dataset 规模</li>
-    <li>各厂商使用的 harness / scaffold 与 agent 工具配置</li>
-    <li>reasoning effort、采样参数（temperature / top-p）、run 次数与聚合方式</li>
-    <li>metric 的 chance baseline 与人类 baseline 实验条件</li>
-    <li>污染检测与饱和状态的结构化标注</li>
+    <li>评测版本与子集（例如部分评测有 Diamond、Verified 等官方变体）以及数据集规模</li>
+    <li>各厂商使用的执行框架（harness / scaffold）与 Agent 工具配置</li>
+    <li>推理档位（reasoning effort）、采样参数（temperature / top-p）、运行次数与分数聚合方式</li>
+    <li>指标对应的随机猜测基线（chance baseline）与人类基线的实验条件</li>
+    <li>测试集污染检测结论，以及是否已饱和的结构化标注</li>
   </ul>
-  <p class="refs">以上字段缺失时，本页<b>不虚构数字</b>；后续按 release 级证据逐步补齐并标注来源。</p>
+  <p class="refs">以上字段暂缺时，本页<b>不虚构数字</b>；后续会依据每一次发布的证据逐条补齐并标注来源。</p>
 
   <h2 class="detail-sec" id="reproduce">复现入口</h2>
   <div class="ext-links">
@@ -515,7 +516,7 @@ function tlEvtHtml(db, r, opts = {}) {
   const chips = (benchMode && benchRow) ? (() => {
     const cls = benchRow.status === "verified" ? "ok" : "pd";
     const others = r.evidence.length - 1;
-    const tip = [benchRow.harness ? `harness: ${benchRow.harness}` : null, benchRow.effort ? `effort: ${benchRow.effort}` : null]
+    const tip = [benchRow.harness ? `执行框架（harness）：${benchRow.harness}` : null, benchRow.effort ? `推理档位（effort）：${benchRow.effort}` : null]
       .filter(Boolean).join(" · ");
     return `<a class="bchip ${cls} focus" href="${chipBase}${esc(benchRow.benchmark_id)}/"${tip ? ` title="${esc(tip)}"` : ""}>${esc(benchRow.benchmark_id)}${benchRow.variant ? " " + esc(benchRow.variant) : ""} <b>${esc(benchRow.display || "未公布")}</b></a>` +
       (others > 0 ? `<span class="bchip plain" title="本次发布同时引用的其他评测">+ ${others} 个其他评测</span>` : "");
@@ -525,14 +526,14 @@ function tlEvtHtml(db, r, opts = {}) {
     const cls = e.status === "verified" ? "ok" : "pd";
     const focus = focusSet && focusSet[e.benchmark_id] ? " focus" : "";
     const inner = `${esc(e.benchmark_id)}${e.variant ? " " + esc(e.variant) : ""}${score}`;
-    const tip = [e.harness ? `harness: ${e.harness}` : null, e.effort ? `effort: ${e.effort}` : null]
+    const tip = [e.harness ? `执行框架（harness）：${e.harness}` : null, e.effort ? `推理档位（effort）：${e.effort}` : null]
       .filter(Boolean).join(" · ");
     return `<a class="bchip ${cls}${focus}" href="${chipBase}${esc(e.benchmark_id)}/"${tip ? ` title="${esc(tip)}"` : ""}>${inner}</a>`;
   }).join("");
   const proto = [];
   for (const e of r.evidence) {
-    if (!proto.h && e.harness) proto.h = `harness ${esc(e.harness)}`;
-    if (!proto.e && e.effort) proto.e = `effort ${esc(e.effort)}`;
+    if (!proto.h && e.harness) proto.h = `执行框架 ${esc(e.harness)}`;
+    if (!proto.e && e.effort) proto.e = `推理档位 ${esc(e.effort)}`;
   }
   const metaBits = [`<b>已核验 ${r.verified}</b> / 待核验 ${r.pending} / 共 ${r.evidence.length} 条证据`, proto.h, proto.e]
     .filter(Boolean).join(" · ");
@@ -588,7 +589,7 @@ function releasesTimelinePage(db, rel = "../../") {
     releases: db.releases,
   };
 
-  const desc = `按时间刻度罗列国内外主流大厂的核心模型发布：每个时间结点显示哪个模型发布、引用了哪些评测及该模型分数，点击进入对应评测介绍页；支持按厂商过滤、指定评测聚焦、分数阈值与关键字过滤。`;
+  const desc = `按时间顺序罗列国内外主流厂商的核心模型发布：每个节点是一次模型发布，显示它引用了哪些评测以及该模型的分数，点击可进入对应评测介绍页；支持按厂商筛选、聚焦某个评测、按分数阈值和关键字过滤。`;
   return `${shellHead({ rel, title: "模型发布时间轴 · 评估大全", desc, path: "benchmarks/releases/", extra: `<style>${SHELL_CSS}${PAGE_CSS}${EVT_CSS}${TIMELINE_CSS}</style>` })}
 </head>
 <body class="tlr-page">
@@ -597,12 +598,12 @@ ${shellTopbar(rel, "releases")}
   <nav class="breadcrumb" style="margin-bottom:18px;"><a href="${rel}index.html">首页</a> / <b>模型发布</b></nav>
   <p class="eyebrow">Evaluation Ledger · 2023 — 2026</p>
   <h1>模型发布时间轴</h1>
-  <p class="sub">${esc(desc)}引脚形状即证据可信度：<b>●</b> 全部已核验、<b>◐</b> 部分核验、<b>○</b> 待核验。<a href="${rel}benchmarks/">← 返回评估大全</a></p>
-  <div class="cov-strip"><span class="cov-label">已收录覆盖</span>${cov}</div>
+  <p class="sub">${esc(desc)}每张事件卡左侧引脚的颜色代表这次发布的证据核验程度：<b>绿色</b> 引用的评测全部已核验、<b>琥珀色</b> 部分已核验、<b>灰色</b> 暂无已核验。<a href="${rel}benchmarks/">← 返回评估大全</a></p>
+  <div class="cov-strip"><span class="cov-label">收录的厂商与发布数</span>${cov}</div>
 
   <div class="console" id="tlControls" hidden>
     <div class="row">
-      <span class="lab">窗口</span>
+      <span class="lab">时间范围</span>
       <span class="seg" id="tlWindow"><button type="button" data-v="fresh" class="on">近三年</button><button type="button" data-v="all">全部历史</button></span>
       <input type="search" id="tlQ" placeholder="搜索模型 / 发布标题 / 厂商…" aria-label="搜索时间轴">
     </div>
@@ -664,13 +665,13 @@ window.EVALS_TL_REL = ${JSON.stringify(rel)};
       var cls=e.status==='verified'?'ok':'pd';
       var focus=fs[e.benchmark_id]?' focus':'';
       var inner=esc(e.benchmark_id)+(e.variant?' '+esc(e.variant):'')+score;
-      var tip=[];if(e.harness)tip.push('harness: '+esc(e.harness));if(e.effort)tip.push('effort: '+esc(e.effort));
+      var tip=[];if(e.harness)tip.push('执行框架（harness）：'+esc(e.harness));if(e.effort)tip.push('推理档位（effort）：'+esc(e.effort));
       return '<a class="bchip '+cls+focus+'" href="'+REL+'benchmarks/'+esc(e.benchmark_id)+'/"'+(tip.length?' title="'+tip.join(' · ')+'"':'')+'>'+inner+'</a>';
     }).join('');
     var h='',ef='';
     for(var i=0;i<r.evidence.length;i++){var e=r.evidence[i];
-      if(!h&&e.harness)h='harness '+esc(e.harness);
-      if(!ef&&e.effort)ef='effort '+esc(e.effort);}
+      if(!h&&e.harness)h='执行框架 '+esc(e.harness);
+      if(!ef&&e.effort)ef='推理档位 '+esc(e.effort);}
     var meta='<b>已核验 '+r.verified+'</b> / 待核验 '+r.pending+' / 共 '+r.evidence.length+' 条证据';
     if(h)meta+=' · '+h; if(ef)meta+=' · '+ef;
     var pin=pinLogo(r.vendor_id,trust);
@@ -718,10 +719,10 @@ window.EVALS_TL_REL = ${JSON.stringify(rel)};
       if(y&&y!==prev){parts.push('<div class="yrm"><b>'+esc(y)+'</b></div>');prev=y;}
       parts.push(nodeHtml(r));
     });
-    app.innerHTML=parts.join('')||'<div class="tl-empty">没有匹配的发布——试试放宽窗口、清除厂商或分数过滤。</div>';
+    app.innerHTML=parts.join('')||'<div class="tl-empty">没有匹配的发布——试试把时间范围切成「全部历史」，或清除厂商与分数过滤。</div>';
     var ev=0;list.forEach(function(r){ev+=r.evidence.length;});
-    document.getElementById('tlCount').textContent='共 '+list.length+' 次发布 · '+ev+' 条 benchmark 证据'+
-      (state.win==='fresh'?'（近三年，起点 '+D.cutoff+'）':'（全部历史）');
+    document.getElementById('tlCount').textContent='共 '+list.length+' 次发布 · '+ev+' 条评测引用'+
+      (state.win==='fresh'?'（近三年，自 '+D.cutoff+' 起算）':'（全部历史）');
   }
 
   function renderFilters(){
@@ -787,23 +788,23 @@ function autoBenchmarkPage(db, id, rows) {
   const sec = (title, note, list) => `<p style="font-weight:700;margin:14px 0 4px;">${title}（${list.length}）<span style="font-weight:400;color:var(--graphite);font-size:13px;"> — ${note}</span></p>` +
     `<div class="feed" style="padding-left:26px;">${list.map(cardFor).join("")}</div>`;
   const adopt =
-    (verified.length ? sec("已核验", "近三年窗口内，已定位到发布页原文", verified) : "") +
-    (freshPending.length ? sec("待核验", "分数在图片表格中或定位待人工确认", freshPending) : "") +
-    (archived.length ? `<details style="margin:14px 0;"><summary style="cursor:pointer;font-weight:700;font-size:14px;color:#64748b;">档案引用（${archived.length} 条）</summary><div class="feed" style="padding-left:26px;">${archived.map(cardFor).join("")}</div></details>` : "");
-  const title = `${id} · 评测参考（证据自动建档） · 评估大全`;
-  const desc = truncate(`${id}：出现在 ${rows.length} 次主流模型官方发布引用中（${vendors.join("、")}）。本页由证据账本自动建档，罗列每次引用的分数、协议与原文；完整定义与数据集资料深度研究补全中。`, 150);
+    (verified.length ? sec("已核验", "近三年内，我们已在发布页原文中定位到这条分数", verified) : "") +
+    (freshPending.length ? sec("待核验", "分数在图片或表格中、暂无法定位到原文", freshPending) : "") +
+    (archived.length ? `<details style="margin:14px 0;"><summary style="cursor:pointer;font-weight:700;font-size:14px;color:#64748b;">历史引用（${archived.length} 条 · 发布时间在近三年之外或日期不明）</summary><div class="feed" style="padding-left:26px;">${archived.map(cardFor).join("")}</div></details>` : "");
+  const title = `${id} · 评测参考（由发布引用自动生成） · 评估大全`;
+  const desc = truncate(`${id}：在 ${rows.length} 次主流模型官方发布中被引用（${vendors.join("、")}）。本页由这些发布引用自动生成，逐条列出分数、协议与原文；完整定义与数据集介绍补全中。`, 150);
   return `${shellHead({ rel: "../../", title, desc, path: `benchmarks/${id}/`, extra: `<style>${SHELL_CSS}${PAGE_CSS}${EVT_CSS}</style>` })}
 </head>
 <body>
 ${shellTopbar("../../", "benchmarks")}
 <main id="main-content" class="detail-main bm-container">
   <nav class="breadcrumb"><a href="../../index.html">首页</a> / <a href="../">评估大全</a> / <b>${esc(id)}</b></nav>
-  <div class="detail-head"><h1>${esc(id)}</h1><span class="status-badge status-saturation">证据自动建档</span></div>
-  <p style="font-size:15.5px;color:#475569;margin:6px 0 0;">该评测出现在 <b>${rows.length}</b> 次官方模型发布引用中（${esc(vendors.join("、"))}）。本页由证据账本自动生成：罗列每次引用的分数、协议与原文；完整定义、数据集与指标资料正在深度研究补全，缺失信息不编造。</p>
-  <div class="callout">下方每次「发布」卡片即一次真实引用：朱砂描边的 chip 是<b>本评测在该发布中的报告分数</b>，其余 chip 是同一次发布引用的其他评测。点击卡片里的评测名可进入对应介绍页。</div>
+  <div class="detail-head"><h1>${esc(id)}</h1><span class="status-badge status-saturation">由发布引用自动生成</span></div>
+  <p style="font-size:15.5px;color:#475569;margin:6px 0 0;">这个评测在官方模型发布中被引用了 <b>${rows.length}</b> 次（来自${esc(vendors.join("、"))}）。本页由这些发布引用自动生成：逐条列出每次引用的分数、协议与原文链接；完整的评测定义、数据集与指标介绍仍在补全，缺失的信息不会编造。</p>
+  <div class="callout">下面每张「发布」卡片就是一次真实引用：描边高亮的那一项是<b>本评测在该次发布中的报告分数</b>，其余项是同一次发布还引用的其他评测。点击卡片里的评测名可进入对应介绍页。</div>
 
   <h2 class="detail-sec" id="adoption">官方发布引用记录</h2>
-  <p class="refs">共 ${rows.length} 条（已核验 ${verified.length} · 待核验 ${freshPending.length}${archived.length ? ` · 档案 ${archived.length}` : ""}）${db.updated ? ` · 数据更新于 ${esc(db.updated)}` : ""}</p>
+  <p class="refs">共 ${rows.length} 条 · 已核验 ${verified.length} · 待核验 ${freshPending.length}${archived.length ? ` · 更早/日期不明 ${archived.length}` : ""}${db.updated ? ` · 数据更新于 ${esc(db.updated)}` : ""}</p>
   ${adopt}
 
   <h2 class="detail-sec" id="sources">来源</h2>
@@ -883,7 +884,7 @@ function main() {
 <script>location.replace("../../releases/");</script>
 </head>
 <body>
-<p>时间轴已升级为一级入口，跳转到 <a href="../../releases/">/releases/</a>。</p>
+<p>模型发布时间轴已迁移到 <a href="../../releases/">/releases/</a>。</p>
 </body>
 </html>`, "utf-8");
 

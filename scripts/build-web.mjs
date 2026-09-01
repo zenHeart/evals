@@ -634,7 +634,7 @@ function sectionHtml(s) {
       const shorts = (s.shorts || []).map(q => {
         const a = answers[q.num] || {};
         const body = a.points
-          ? `<div class="qq-points"><b>参考要点</b>（由正文推导）：${esc(a.points)}</div>`
+          ? `<div class="qq-points"><b>参考要点</b>（整理自正文）：${esc(a.points)}</div>`
           : `<div class="qq-points">作答后回到正文对应小节自检。</div>`;
         return `<div class="qq qq-short"><div class="qq-stem"><span class="qq-tag">${esc(q.kind)}</span>${esc(q.num)}. ${esc(q.stem)}</div><details><summary>参考要点</summary>${body}</details></div>`;
       }).join("");
@@ -762,20 +762,20 @@ function indexPage(parts, chaptersMeta, bench) {
   const metaLine = `${chaptersMeta.__count} 章 · ${parts.length} 个部分 · ${bench.count} 个评测参考 · 数据更新于 ${bench.updated}`;
   const promises = [
     ["看懂发布报告", "知道 MMLU、GPQA、AIME、SWE-bench、Terminal-Bench 到底测什么，以及不同厂商的数字为什么不能直接比。"],
-    ["理解评估方法", "掌握数据集、协议、判官、指标、统计、污染、饱和、Agent 环境等核心问题——分数背后是一次完整实验。"],
-    ["自己搭评估体系", "从 JSONL 数据集开始，逐步做出 scorer、LLM judge、缓存、并发、CI gate 与线上 eval。"],
+    ["理解评估方法", "掌握数据集、协议、LLM 判官、指标、统计、污染、饱和、Agent 环境等核心问题——每个分数背后都是一次完整实验。"],
+    ["自己搭评估体系", "从 JSONL 数据集开始，逐步做出评分器（scorer）、LLM 判官（judge）、缓存、并发控制、CI 门禁与线上评估。"],
   ].map(([h, p]) => `<div class="promise"><h3>${h}</h3><p>${p}</p></div>`).join("");
   const entries = [
     ["系统学习", "32 章从认知到实战的完整路径，每章带自测", "book/"],
     ["评估大全", `${bench.count} 个评测的参考库：测什么、分数怎么读、谁家引用过`, "benchmarks/"],
     ["模型发布", "按时间轴浏览各家核心模型发布与逐条评测证据", "releases/"],
-    ["动手搭建", "四步把评估体系搬进你的项目，直到 CI 门禁", "build/"],
+    ["动手搭建", "四步把评估体系搬进你的项目，最后接入 CI 门禁", "build/"],
   ].map(([t, s, href]) => `<a class="entry-card" href="${href}"><div class="e-title">${t}</div><div class="e-sub">${s}</div></a>`).join("");
   const featured = bench.featured.map(b => `
     <a class="feat-card" href="benchmarks/${b.id}/">
       <div class="f-name">${b.name}</div>
       <div class="f-desc">${b.tests}</div>
-      <div class="f-cite">${b._verified ? `近三年已核验 ${b._verified} 次官方发布引用` : "官方发布引用核验中"}</div>
+      <div class="f-cite">${b._verified ? `近三年已核验 ${b._verified} 次官方发布引用` : "暂无近三年已核验的官方发布引用"}</div>
     </a>`).join("");
   return `${COMMON_HEAD("", "大模型评估入门 · Eval Handbook", desc, "")}
 </head>
@@ -903,7 +903,7 @@ function bookIndexPage(parts, chaptersMeta) {
     ${partGoals[key] ? `<p class="part-goal">${partGoals[key]}</p>` : ""}
     <ul class="chapter-list book-console">${items}</ul>`;
   }).join("\n");
-  const desc = "《大模型评估入门》32 章学习控制台：适合会 JS/TS 但不懂 LLM Eval 的前端工程师；建议按 术语速查 → 认知 → 方法论 → 厂商全景 → 实战 顺序学习。";
+  const desc = "《大模型评估入门》32 章学习目录：适合会 JS/TS 但不懂 LLM Eval 的前端工程师；建议按 术语速查 → 认知 → 方法论 → 厂商全景 → 实战 顺序学习。";
   return `${COMMON_HEAD("../", "系统学习 · 大模型评估入门", desc, "book/")}
 </head>
 <body>
@@ -938,7 +938,7 @@ function buildIndexPage(chaptersMeta) {
     ["① 设计目标：评估什么", "把业务目标拆成能力、指标与失败分类", [23], chaptersMeta],
     ["② 建测试集", "四来源混合、脱敏、版本锁定与数据飞轮", [24], chaptersMeta],
     ["③ 实现评分器与流水线", "框架选型 + 用 Node.js 自建 Mini Evaluator（scorer / judge / 缓存 / 并发）", [19, 20], chaptersMeta],
-    ["④ 接入 CI 门禁", "PR 快速回归 / 夜间全量 / 发版安全集四层流水线", [25], chaptersMeta],
+    ["④ 接入 CI 门禁", "PR 快集 / 夜间全量 / 发版安全集 / 在线采样，四层流水线", [25], chaptersMeta],
   ].map(([title, sub, nums]) => {
     const links = nums.map(n => {
       const f = Object.keys(chaptersMeta).find(k => chaptersMeta[k].num === String(n));
@@ -964,7 +964,7 @@ ${TOPBAR("../", "build")}
 <main id="main-content" style="max-width:1080px;margin:0 auto;padding:32px 24px 80px;">
   <div class="breadcrumb"><a href="../index.html">首页</a> / <b>动手搭建</b></div>
   <h1>动手搭建</h1>
-  <p class="sub" style="max-width:72ch;">读完就能落地：按四步路径把评估体系搬进你自己的项目，全部链接指向书中可运行代码章节。</p>
+  <p class="sub" style="max-width:72ch;">按四步路径把评估体系搬进你自己的项目；每一步都链接到书中对应的实现章节，读完即可照做。</p>
   <div class="promise-grid">${steps}</div>
   <div class="part-group" style="margin-top:34px;">进阶专题</div>
   <div class="step-links step-links-col">${advanced}</div>
