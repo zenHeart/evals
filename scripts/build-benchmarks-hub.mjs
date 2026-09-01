@@ -169,7 +169,7 @@ function explorerPage(db, cards) {
 </head>
 <body>
 ${shellTopbar("../", "benchmarks")}
-<div class="bm-container">
+<div class="bm-container" id="main-content">
   <h1>评估体系大全</h1>
   <div class="sub">严谨、可查询、可追溯的 benchmark reference：每张卡片是一个评测的<b>索引入口</b>，点击进入独立详情页看测什么、分数怎么看、谁家发布引用过。不懂评测？只读卡片就够。<br><a href="../releases/">🕐 模型发布时间轴：浏览各厂商历年核心模型发布与评测证据 →</a></div>
   <div class="controls">
@@ -236,7 +236,7 @@ ${SHELL_JS}
   document.getElementById('chips').addEventListener('click',function(e){
     var b=e.target.closest('.chip'); if(!b)return;
     state.cat=b.getAttribute('data-cat');
-    document.querySelectorAll('#chips .chip').forEach(function(x){x.classList.toggle('active',x===b);});
+    document.querySelectorAll('#chips .chip').forEach(function(x){x.classList.toggle('active',x===b);x.setAttribute('aria-pressed',x===b?'true':'false');});
     apply();
   });
   document.getElementById('sort').addEventListener('change',function(e){state.sort=e.target.value;apply();});
@@ -710,7 +710,7 @@ window.EVALS_TL_REL = ${JSON.stringify(rel)};
     var b=e.target.closest('.vchip');if(!b)return;
     var v=b.getAttribute('data-v'),i=state.vendors.indexOf(v);
     if(i<0)state.vendors.push(v);else state.vendors.splice(i,1);
-    b.classList.toggle('on',i<0);render();});
+    b.classList.toggle('on',i<0);b.setAttribute('aria-pressed',i<0?'true':'false');render();});
   document.getElementById('tlAddScore').addEventListener('click',function(){
     var bid=benchSel.value,min=parseFloat(document.getElementById('tlMin').value);
     if(!bid||isNaN(min))return;
