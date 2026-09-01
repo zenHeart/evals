@@ -496,11 +496,11 @@ body.dark .tlr {
 .tl-count { font:400 12.5px/1.6 ui-monospace,monospace; color:var(--graphite); margin:10px 2px 22px; }
 .tl-empty { color:var(--graphite); font-size:14px; padding:26px 0; }
 @media (max-width:640px) {
-  .feed { padding-left:30px; }
-  .feed::before { left:8px; }
-  .yrm b { left:-40px; width:36px; font-size:18px; }
-  .evt .pin-logo { left:-34px; width:24px; height:24px; }
-  .pin-logo svg { width:13px; height:13px; }
+  .feed { padding-left:46px; }
+  .feed::before { left:29px; }
+  .yrm b { left:-36px; width:36px; font-size:18px; }
+  .evt .pin-logo { left:-31px; width:30px; height:30px; top:12px; }
+  .pin-logo svg { width:15px; height:15px; }
 }
 `;
 
