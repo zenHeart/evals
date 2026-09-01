@@ -516,3 +516,39 @@ OpenRouter 官方模型目录交叉核对发现的旗舰缺口，19 个 release 
 
 ---
 
+
+## 2026-09-01 第七批：腾讯混元 + 阶跃星辰（Tier 2 首批入库）
+
+两家 Tier 2 厂商首批入库，7 个 release 文件、196 条 evidence（101 verified + 95 pending）。全部为官方一级来源（GitHub 官方 model 仓 / 官方 research blog / 官方 model blog 页），发布日期全部为官方页印刷日或官方仓创建时间戳（day 精度），OpenRouter created 仅作旁证（hy3 / hy4-preview 与官方完全同日）。本节只追加，不改动既有批次内容。
+
+| 文件 | 发布日期（来源） | 条数 | verified | pending | 抓取路径与要点 |
+|---|---|---:|---:|---:|---|
+| `tencent/hunyuan-t1.json` | 2025-03-21（腾讯新闻官方通稿 dated 20250321；官方仓 Tencent/llm.hunyuan.T1 创建 2025-03-20T03:33Z，页内不印日期） | 14 | 5 | 9 | README 正文散文 5 个分数机读 verified（MMLU-Pro 87.2 / GPQA-Diamond 69.3 / LCB 64.9 / MATH-500 96.2 / ArenaHard 91.9）；两张 benchmark 表为第三方镜像图床图片（ronggan123/image，官方 README 热链）→ 9 行 pending（视觉转写值进 notes）。README 协议注：竞品列来自官方评测结果、缺项来自混元内部评测平台 → 竞品行不拆。 |
+| `tencent/hunyuan-a13b.json` | 2025-06-27（README "Related News" 印刷 2025.6.27；官方仓同日创建） | 44 | 44 | 0 | 全部三张 DOM 机读表 verified：base 表 14 行（TRT-LLM-backend 注明）+ Instruct 表 21 行 + FP8/Int4 量化表 9 行（量化 checkpoint 记 model_variant）。慢思考默认、`/think` `/no_think` 开关披露；竞品列（o1-1217/R1/Qwen3-A22B 等）留 notes。 |
+| `tencent/hy3.json` | 2026-07-06（官方 blog 页印刷 2026年7月6日；OpenRouter hy3 同日互证） | 42 | 2 | 40 | JS 渲染 SPA，Playwright 渲染后直读：正文 MRCR 75.1%（preview 42.9% → 75.1%）verified + SWE Bench Verified 仅提及跨脚手架 std≤4pp（not_reported）verified；附录"模型得分"为整图 → 40 行 pending（视觉转写值逐行进 notes，含完整协议注：全模型最高 reasoning tier、SWE 系 swe-agent、TB2.1 Terminus-2、DeepSWE mini-swe-agent、NL2repo Claude Code 250 轮、MCP-Atlas Scale 2026-04 法 100 工具调用 Gemini 2.5 Pro 判官、ClawEval 105 题 Gemini-3.5-flash 判官）。 |
+| `tencent/hy4-preview.json` | 2026-08-28（官方 blog 页印刷 2026年8月28日；OpenRouter hy4-preview 同日互证） | 46 | 0 | 46 | 770B/49B、1M 上下文、Apache 2.0。页内无任何机读分数：附录为 4960×10840 单图，46 行全部 pending（视觉转写值进 notes；裁切线上方一行无法辨认、注明未转录）。协议注同样极完整（TB2.1 Claude Code 500 轮 12h、ALE-CLI 官方评测器、SWE-Atlas 256 轮+网络白名单、BioMystery Kimi-K3 判官等）。**release 级 status=pending**（无机读分数）。正文披露：163 专家 203 任务盲测 Hy4 2.99/4 vs GLM 5.3 2.92/4 vs Kimi K3 2.94/4（内部人评，仅 notes）。 |
+| `stepfun/step-3.json` | 2025-07-31（官方 research blog 印刷 "July 31th, 2025"；发布会 2025-07-25 与官方仓创建同日，arXiv 2507.19427） | 11 | 11 | 0 | stepfun.ai/research/step3 DOM 大表直读 11 行全 verified（MMMU 74.2 / MathVision 64.8 / SimpleVQA 62.2 / HallusionBench 64.2 / ZeroBench-sub 23.0 / DynaMath 50.1 / AIME25 82.9 / GPQA-D 73.0 / LCB 67.1 / HMMT25 70.0 / CNMO24 83.7）。表注：`*` = 同条件复现；竞品列（o3/Grok 4/Gemini 2.5/R1-0528 等）复现/引用语义已在 notes 区分，不拆行。GitHub README 的 Evaluation Results 是图片（blog DOM 表为同一组数的机读源）。 |
+| `stepfun/step-3-5-flash.json` | 2026-01-31（官方仓创建 2026-01-31T02:57Z；OpenRouter 2026-01-29，先行 2 天已注明） | 16 | 16 | 0 | 官方 GitHub model 仓 "Detailed Benchmarks" DOM 表 16 行全 verified（τ²-Bench 88.2 / BrowseComp 51.6 与 69.0 双条件 / BC-ZH 66.9 与 73.7 / GAIA 84.5 / xbench-DeepSearch 2025.05 83.7 与 2025.10 56.3 / ResearchRubrics 65.3 / AIME25 97.3 / HMMT25 Feb 98.4 Nov 94.0 / IMOAnswerBench 85.4 / LCB-V6 86.4 / SWE-V 74.4 / TB2.0 51.0）。表注：`*` = 原始分不可得或低于复现值，按同条件复现报告；Context Manager 语义披露。 |
+| `stepfun/step-3-7-flash.json` | 2026-05-29（官方 model blog 页 static.stepfun.com/blog/step-3.7-flash/ 印刷；官方仓 2026-05-27、OpenRouter 2026-05-28） | 23 | 23 | 0 | 官方 blog 三张 DOM 表 + 散文全机读：主表 12 行（HLE w.tool 47.2/text-only 49.7、BrowseComp 75.8、DeepSearchQA F1 92.8 + acc 81.7、ResearchRubrics 71.7、Toolathlon 49.5、ClawEval-v1.1 67.1、SWE-MTLG 72.4、SWE-Pro 56.3、SWE-V 76.5、TB2.1 59.6、AA-LCR avg@16 63.9）+ GDPval 双口径 2 行（Stirrup Elo 1415.8 / 内部结对 ii 45.8%）+ 视觉表 7 行（SimpleVQA 79.16、WorldVQA 58.10、BC-VL 58.96、V* 95.29、HR-Bench 4K 89.13 / 8K 86.34、VisualProbe 65.05）+ 自建 Step-SWE-Bench 六脚手架 avg 67.08 + τ² Telecom 散文">98%"（精确值缺失 → not_reported）。已记录：README 散文 TB2.1 59.5 与 blog 表 59.6 的 0.1 厂内不一致；NVFP4+MTP GPQA 消融 77.81/78.41 留 notes。 |
+
+### 本批关键判定与坑
+
+1. **图片附录 ≠ 不能读**：腾讯 hy.tencent.com 两篇（hy3 / hy4-preview）附录"模型得分"是整图且高达 4960×10840，按库规一律 pending + 视觉转写值进 notes（升级路径=人工读图确认）。但页面正文散文里的分数（hy3 MRCR 75.1）是 DOM 明文 → 直接 verified。JS 渲染站走 Playwright 渲染后 `innerText` 即可全文直读，web-reader 只能拿到 "Loading..."。
+2. **日期三源裁定**：hy3 / hy4-preview 官方页印刷日与 OpenRouter created 完全同日（罕见互证）；A13B 官方 README 直接印刷 2025.6.27；T1 页内不印日期，取腾讯新闻官方通稿日期 2025-03-21（官方仓创建 2025-03-20 比 media 早一天，已注明）；step-3-5-flash 无 blog 页，取官方仓创建时间戳（OpenRouter 先行 2 天）。
+3. **量化/变体行的归属**：A13B 的 FP8/Int4 量化表按 model_variant 记为独立行（同一 release 内的 checkpoint 变体），不与 BF16 主行合并；step-3.7-flash 的 NVFP4+MTP GPQA 消融只进 notes（是量化 checkpoint 的工程消融，非发布模型主协议成绩）。
+4. **同库双证据不许互混**：hy3 页内 TB2.1=71.7 vs hy4 附录复测 Hy3=70.8——腾讯自己注明"因评测 harness/判官/anti-hacking 更新，Hy3 部分分数与此前报告不同"。两值各自留在各自 release，未合并。
+5. **step-2 系（含 step-2-16k）未建档**：官方 GitHub org 无 Step-2 仓，开放平台文档已无 step-2-16k 模型页（legacy 下线），现存可查仅媒体转述（tier D，不作证据）且无 OpenRouter 现存记录 → 按库规"无一级来源不建档"，留待 wayback 人工核验后再补占位。本批 stepfun 以 step-3 + step-3.5-flash + step-3.7-flash 三个 release 达成 ≥2 覆盖。
+6. **Hy-MT2 / Hy Vision 2.0 / Hyra 等垂直与研究线**：翻译（Hy-MT2，2026-05-21 blog）、视觉、音频、科学智能体（Hyra）不在本批通用 LLM 发布范围，未建档；Hy4 正式版与 Hy3 preview（2026-04-23/22）可作后续增补候选。
+
+### 本批新增 benchmark id（notes 均标 new-benchmark，待迁主数据）
+
+`tencent`: `cfbench`、`cello`、`t-eval`、`crux-i`、`crux-o`（疑为 CRUXEval 输入/输出预测子任务，待人工确认与 cruxeval 的关系）、`cmath`、`olympiadbench`、`fullstackbench`、`sysbench`、`lengthctrl`、`insctrl`、`complexnlu`、`word-task`、`complexfuncbench`、`c3-bench`、`matharena-apex`、`arxivmath`、`cmt-benchmark`、`superchem`、`brokenarxiv`、`harbor-index`、`swe-atlas-refactoring`，及腾讯自建内部集 `hy-backend-2-0`、`hy-swe-max`、`hy-companybench`、`e-bench`、`e-bench-code`、`hy-finagentbench`、`hy-finmodelbench`、`hy-lifesearch`、`hy-browsecomp-pro2`、`hy-euler-pro`、`hy-skillsworld`、`hy-math`；
+`stepfun`: `researchrubrics`、`swe-mtlg`（页面缩写，疑同 SWE-bench Multilingual，待人工确认合并）、`bc-vl`（疑 BrowseComp-VL）、`hr-bench`、`visualprobe`、`step-swe-bench`（阶跃自建）。
+复用已登记 id 映射：`tau2-bench`（τ²-Bench）、`hlehle`（HLE 双条件分行）、`lcb`（202408-202505 / V6 记 variant）、`mrcr`、`cl-bench`（life 记 variant）、`horizonmath`（pass@12 / pass@4 分 variant）、`claw-eval`（v1.1 / pass^3 记 variant）、`gdpval-aa`（V2 Elo / Stirrup / 内部结对分 variant）、`toolathlon`（Verified 记 variant）、`swe-atlas-codebase-qna` / `swe-atlas-test-writing`、`one-million-bench`、`agents-last-exam`、`critpt`、`biomysterybench`、`bankertoolbench`、`jobbench`、`workspace-bench`、`automationbench`（v1.0.6）、`cybergym`、`program-bench`、`posttrain-bench`（V1.1）、`draco`、`zerobench`（sub）、`dyna-math`、`hmmt25`（Feb / Nov）、`cnmo-2024`、`mathvision`、`hallusionbench`、`simplevqa`、`worldvqa`、`vstar`、`aa-lcr`、`skillsbench`、`wildclawbench`、`apex-agents`、`mcp-atlas`、`widesearch`、`deepsearchqa`、`browsecomp(-zh)`、`gaia`、`xbench-deepsearch`、`ifeval`、`officeqa-pro`、`usamo-2026`、`frontier-science-research` / `frontier-science-olympiad`、`phybench`、`imo-answerbench`、`supergpqa`、`mmlu-redux`、`multipl-e`、`evalplus`、`mbpp`、`bbh`、`drop`（F1）、`zebralogic`、`chinese-simpleqa`、`ceval`、`cmmlu`、`aime24` / `aime-25`、`math500`、`math`、`gsm8k`、`gpqa`、`mmlu` / `mmlu-pro`、`bfcl`（v3）、`tau-bench`、`artifactsbench`、`mmmu`、`arenahard`、`swebench(-multilingual/-pro)`、`terminalbench`、`nl2repo`、`deepswe`。
+
+### 本批待人工核验清单（pending 升级路径）
+
+1. **腾讯 hy3 附录图 40 行 + hy4-preview 附录图 46 行**：视觉转写值已逐行写入 notes（含每行协议），人工读图确认后即可翻 verified——两个文件均有完整协议注背书，是最高性价比的补 verified 机会。
+2. **Hunyuan T1 表图 9 行**：官方 README 热链的第三方镜像图床（ronggan123/image），转写值在 notes；确认后翻 verified。
+3. **`crux-i`/`crux-o`/`swe-mtlg`/`bc-vl` 四个疑似等价 id**：与 `cruxeval` / `swebench-multilingual` / BrowseComp-VL 的合并关系待主线裁定。
+4. **step-2 系**：wayback 核验后决定是否建占位（当前无一级来源，未建）。
