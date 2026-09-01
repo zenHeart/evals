@@ -20,7 +20,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { SITE, SHELL_CSS, shellHead, shellTopbar, shellFooter, SHELL_JS } from "./site-shell.mjs";
 import { loadBenchData } from "./load-data.mjs";
-import { vendorMark, VENDOR_SVG, VENDOR_LETTER } from "./vendor-logos.mjs";
+import { VENDOR_SVG, VENDOR_LETTER } from "./vendor-logos.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = join(__dirname, "..");
@@ -410,10 +410,18 @@ const EVT_CSS = `
 /* 事件卡 */
 .evt { position:relative; margin:0 0 18px; border:1px solid var(--rule); border-radius:8px; background:var(--card); padding:13px 18px 12px; }
 .evt:hover { border-color:var(--graphite); }
-.evt .pin-dot { position:absolute; left:-42px; top:17px; width:13px; height:13px; border-radius:50%; }
-.evt[data-trust="full"] .pin-dot { background:var(--ok); box-shadow:0 0 0 1.5px var(--ok), 0 0 0 4px var(--paper); }
-.evt[data-trust="part"] .pin-dot { background:conic-gradient(var(--ok) 0 50%, var(--card) 50% 100%); box-shadow:0 0 0 1.5px var(--ok), 0 0 0 4px var(--paper); }
-.evt[data-trust="none"] .pin-dot { background:var(--card); box-shadow:0 0 0 1.5px var(--graphite), 0 0 0 4px var(--paper); }
+.evt .pin-logo {
+  position:absolute; left:-44px; top:12px; width:30px; height:30px; border-radius:8px;
+  background:var(--card); border:1.5px solid var(--rule);
+  display:inline-flex; align-items:center; justify-content:center;
+}
+.evt[data-trust="full"] .pin-logo { border-color: var(--ok); }
+.evt[data-trust="part"] .pin-logo { border-color: var(--warn); }
+.evt[data-trust="none"] .pin-logo { border-color: var(--rule); }
+.vmark-l, .vmark-d { display:inline-flex; align-items:center; justify-content:center; }
+.vmark-d { display:none; }
+body.dark .vmark-l { display:none; }
+body.dark .vmark-d { display:inline-flex; }
 .evt-head { display:flex; align-items:baseline; gap:12px; flex-wrap:wrap; }
 .evt-date { font:700 13px/1 ui-monospace,monospace; color:var(--pin); }
 .evt-vendor { font:700 10.5px/1 ui-monospace,monospace; letter-spacing:.14em; color:var(--graphite); text-transform:uppercase; }
@@ -493,7 +501,8 @@ body.dark .tlr {
   .feed { padding-left:30px; }
   .feed::before { left:8px; }
   .yrm b { left:-40px; width:36px; font-size:18px; }
-  .evt .pin-dot { left:-28px; width:11px; height:11px; }
+  .evt .pin-logo { left:-32px; width:24px; height:24px; }
+  .pin-logo svg { width:13px; height:13px; }
 }
 `;
 
@@ -531,10 +540,10 @@ function tlEvtHtml(db, r, opts = {}) {
   const metaBits = [`证据 <b>${r.verified}</b>·<i>${r.pending}</i> / ${r.evidence.length}`, proto.h, proto.e]
     .filter(Boolean).join(" · ");
   return `<article class="evt" data-trust="${trust}">
-    <span class="pin-dot" aria-hidden="true"></span>
+    ${pinLogo(r.vendor_id, trust)}
     <div class="evt-head">
       <span class="evt-date">${r.release_date ? esc(r.release_date) : "日期待核验"}</span>
-      <span class="evt-vendor">${vendorMark(r.vendor_id, 13)} ${esc(r.vendor_label)}<i>·</i>${region}</span>
+      <span class="evt-vendor">${vendorLogoDual(r.vendor_id, 13)} ${esc(r.vendor_label)}<i>·</i>${region}</span>
     </div>
     <h3 class="evt-title">${esc(r.models.length ? r.models.join(" / ") : r.release_title)}</h3>
     ${r.models.length ? `<div class="evt-blog">发布文：${r.source_url ? `<a href="${esc(r.source_url)}" target="_blank" rel="noopener">${esc(r.release_title)}</a>` : esc(r.release_title)}</div>` : ""}
@@ -559,7 +568,7 @@ function releasesTimelinePage(db, rel = "../../") {
   const cov = [...covCounts.entries()].sort((a, b) => b[1] - a[1])
     .map(([vid, n]) => {
       const v = db.vendors.find(x => x.id === vid);
-      return `<span class="cov">${vendorMark(vid, 12)} ${esc(v?.display_name || v?.name || vid)} <b>${n}</b></span>`;
+      return `<span class="cov">${vendorLogoDual(vid, 12)} ${esc(v?.display_name || v?.name || vid)} <b>${n}</b></span>`;
     }).join("");
 
   // noscript 静态默认视图：单一时间轴（近三年），结点=模型名称，年份刻度
@@ -631,6 +640,20 @@ window.EVALS_TL_REL = ${JSON.stringify(rel)};
   if(!app||!D)return;
   var state={win:'fresh',vendors:[],bench:null,filters:[],q:''};
   var benchName={}; D.benchmarks.forEach(function(b){benchName[b.id]=b.name;});
+  function pinLogo(vid,trust){
+    var svg=D.vendorSvg&&D.vendorSvg[vid];
+    var L=D.vendorLetter&&D.vendorLetter[vid];
+    var inner='';
+    var dark=document.body.classList.contains('dark');
+    if(svg){
+      var color=dark?(svg.dark||svg.brand):svg.brand;
+      inner='<span class="vmark-l"><svg width="16" height="16" viewBox="'+svg.viewBox+'" fill="'+color+'" aria-hidden="true"><path d="'+svg.path+'"/></svg></span>';
+    }else if(L){
+      var c=dark?(L.cd||L.c):L.c;
+      inner='<span class="vmark-l"><b style="color:'+c+'">'+L.t+'</b></span>';
+    }else{inner='<span class="vmark-l"><b style="color:var(--graphite)">·</b></span>';}
+    return '<span class="pin-logo pin-'+trust+'" aria-hidden="true">'+inner+'</span>';
+  }
   function vendorMark(vid,size){
     var svg=D.vendorSvg&&D.vendorSvg[vid];
     if(svg)return '<svg class="vlogo" width="'+size+'" height="'+size+'" viewBox="'+svg.viewBox+'" fill="currentColor" aria-hidden="true"><path d="'+svg.path+'"/></svg>';
@@ -665,8 +688,9 @@ window.EVALS_TL_REL = ${JSON.stringify(rel)};
       if(!ef&&e.effort)ef='effort '+esc(e.effort);}
     var meta='证据 <b>'+r.verified+'</b>·<i>'+r.pending+'</i> / '+r.evidence.length;
     if(h)meta+=' · '+h; if(ef)meta+=' · '+ef;
+    var pin=pinLogo(r.vendor_id,trust);
     return '<article class="evt" data-trust="'+trust+'">'+
-      '<span class="pin-dot" aria-hidden="true"></span>'+
+      pin+
       '<div class="evt-head"><span class="evt-date">'+(r.release_date?esc(r.release_date):'日期待核验')+'</span>'+
       '<span class="evt-vendor">'+vendorMark(r.vendor_id,13)+' '+esc(r.vendor_label)+'<i>·</i>'+region+'</span></div>'+
       '<h3 class="evt-title">'+esc(r.models.length?r.models.join(' / '):r.release_title)+'</h3>'+
@@ -754,6 +778,36 @@ window.EVALS_TL_REL = ${JSON.stringify(rel)};
 </script>
 </body>
 </html>`;
+}
+
+
+/** 刻度尺结点：厂商品牌色 logo 徽章（明暗双变体，信任等级由描边色表达） */
+/** 行内厂商 logo（明暗双变体，跟随主题切换） */
+function vendorLogoDual(vid, size = 13) {
+  const svg = VENDOR_SVG[vid];
+  const L = VENDOR_LETTER[vid];
+  if (svg) {
+    return `<span class="vmark-l"><svg width="${size}" height="${size}" viewBox="${svg.viewBox}" fill="${svg.brand}" aria-hidden="true"><path d="${svg.path}"/></svg></span><span class="vmark-d"><svg width="${size}" height="${size}" viewBox="${svg.viewBox}" fill="${svg.dark || svg.brand}" aria-hidden="true"><path d="${svg.path}"/></svg></span>`;
+  }
+  if (L) {
+    return `<span class="vmark-l"><b style="color:${L.c}">${L.t}</b></span><span class="vmark-d"><b style="color:${L.cd || L.c}">${L.t}</b></span>`;
+  }
+  return "";
+}
+
+function pinLogo(vid, trust) {
+  const svg = VENDOR_SVG[vid];
+  const L = VENDOR_LETTER[vid];
+  let inner = "";
+  if (svg) {
+    inner = `<span class="vmark-l"><svg width="16" height="16" viewBox="${svg.viewBox}" fill="${svg.brand}" aria-hidden="true"><path d="${svg.path}"/></svg></span>` +
+      `<span class="vmark-d"><svg width="16" height="16" viewBox="${svg.viewBox}" fill="${svg.dark || svg.brand}" aria-hidden="true"><path d="${svg.path}"/></svg></span>`;
+  } else if (L) {
+    inner = `<span class="vmark-l"><b style="color:${L.c}">${L.t}</b></span><span class="vmark-d"><b style="color:${L.cd || L.c}">${L.t}</b></span>`;
+  } else {
+    inner = `<span class="vmark-l"><b style="color:var(--graphite)">·</b></span>`;
+  }
+  return `<span class="pin-logo pin-${trust}" aria-hidden="true">${inner}</span>`;
 }
 
 // ---------- 证据自动建档页：账本里出现、但尚无正式实体的评测（罗列已知信息，缺失不编造） ----------
