@@ -74,7 +74,7 @@ h1 { font-size:clamp(26px,4vw,36px); margin:0 0 6px; }
 .search input:focus { border-color:var(--pin); }
 select { padding:9px 12px; border-radius:6px; border:1.5px solid var(--rule); background:var(--card); color:inherit; font-size:13.5px; cursor:pointer; }
 .stats { font:400 12.5px/1.6 var(--mono); color:var(--graphite); margin:8px 0 16px; }
-.empty { text-align:center; color:#94a3b8; padding:48px 0; }
+.empty { text-align:center; color:var(--graphite); padding:48px 0; }
 .auto-cloud { display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
 .auto-cloud a { font:400 12.5px/1.5 var(--mono); border:1px solid var(--rule); border-radius:4px; padding:3px 10px; color:var(--graphite); text-decoration:none; }
 .auto-cloud a b { color:var(--ink); }
@@ -97,7 +97,7 @@ select { padding:9px 12px; border-radius:6px; border:1.5px solid var(--rule); ba
 .card:hover { border-color:var(--pin); transform:translateY(-1px); }
 .card-head { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
 .card-title { font-size:17px; font-weight:800; line-height:1.35; }
-.cat-tag { flex:none; font-size:11px; font-weight:800; padding:2px 10px; border-radius:4px; color:#fff; margin-top:2px; }
+.cat-tag { flex:none; font-size:11px; font-weight:800; padding:2px 10px; border-radius:4px; margin-top:2px; }
 .card-desc { margin:0; font-size:13.5px; color:var(--graphite); line-height:1.6; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
 .card-protocol { font:400 12px/1.5 var(--mono); color:var(--graphite); }
 .card-cite { font:700 12px/1.5 var(--mono); color:var(--pin); }
@@ -129,7 +129,7 @@ h2.detail-sec::before { content:""; position:absolute; left:0; bottom:-1px; widt
 .adopt-table { width:100%; border-collapse:collapse; font-size:14px; }
 .adopt-table th, .adopt-table td { border-bottom:1px dashed rgba(0,0,0,.08); padding:8px 10px 8px 0; vertical-align:top; text-align:left; }
 body.dark .adopt-table th, body.dark .adopt-table td { border-bottom-color:rgba(255,255,255,.08); }
-.adopt-table th { font-size:12px; letter-spacing:.05em; color:#94a3b8; }
+.adopt-table th { font-size:12px; letter-spacing:.05em; color:var(--graphite); }
 .adopt-table .score { color:var(--ok); font-weight:700; font-family:var(--mono); white-space:nowrap; }
 .adopt-table .note { color:var(--graphite); font-size:13px; }
 .related { display:grid; grid-template-columns:repeat(auto-fill, minmax(min(100%, 220px), 1fr)); gap:10px; margin:12px 0; }
@@ -139,7 +139,7 @@ body.dark .adopt-table th, body.dark .adopt-table td { border-bottom-color:rgba(
 .ext-links { display:flex; gap:16px; flex-wrap:wrap; margin:10px 0; }
 .ext-links a { font-size:14px; }
 .refs { font:400 12.5px/1.7 var(--mono); color:var(--graphite); }
-footer.site-foot { text-align:center; color:#94a3b8; font-size:13px; padding:26px 0 40px; }
+footer.site-foot { text-align:center; color:var(--graphite); font-size:13px; padding:26px 0 40px; }
 footer.site-foot a { color:inherit; }
 `;
 
@@ -157,7 +157,7 @@ function explorerPage(db, cards, autoIds = []) {
     <a class="card" href="${esc(b.id)}/" data-cat="${esc(b.category)}" data-cite="${cite}" data-name="${esc(b.name)}" data-hay="${esc((b.name + " " + (b.tests || "") + " " + (b.meaning || "") + " " + (b.protocol || "") + " " + vendors).toLowerCase())}"${show ? "" : " hidden"}>
       <div class="card-head">
         <span class="card-title">${esc(b.name)}</span>
-        <span class="cat-tag" style="background:${esc(cat.color)}">${esc(cat.name)}</span>
+        <span class="cat-tag" style="background:color-mix(in srgb, ${esc(cat.color)} 15%, transparent); color:${esc(cat.color)}">${esc(cat.name)}</span>
       </div>
       <p class="card-desc">${esc(truncate(b.tests, 120))}</p>
       ${b.protocol ? `<div class="card-protocol">${esc(truncate(b.protocol, 60))}</div>` : ""}
@@ -293,7 +293,7 @@ function detailPage(db, b, cat, related) {
   const desc = truncate(`${b.name}：${b.tests || ""}${b.meaning ? " " + b.meaning : ""}`, 150);
 
   const identityRows = [
-    ["类别", `<span class="cat-tag" style="background:${esc(cat.color)}">${esc(cat.name)}</span>`],
+    ["类别", `<span class="cat-tag" style="background:color-mix(in srgb, ${esc(cat.color)} 15%, transparent); color:${esc(cat.color)}">${esc(cat.name)}</span>`],
     b.status ? ["状态", statusBadge(b.status)] : null,
     ["官网 / 数据集", b.url ? `<a href="${esc(b.url)}" target="_blank" rel="noopener">${esc(b.url)}</a>` : "—"],
     b.paper ? ["论文", `<a href="${esc(b.paper)}" target="_blank" rel="noopener">${esc(b.paper)}</a>`] : null,
@@ -307,12 +307,12 @@ function detailPage(db, b, cat, related) {
   };
   let adoptBlock;
   if (!cite.length) {
-    adoptBlock = `<p style="color:#94a3b8;font-size:14px;">暂无官方模型发布引用记录——社区驱动或垂域使用。${b.adoptionNote ? esc(b.adoptionNote) : ""}</p>`;
+    adoptBlock = `<p style="color:var(--graphite);font-size:14px;">暂无官方模型发布引用记录——社区驱动或垂域使用。${b.adoptionNote ? esc(b.adoptionNote) : ""}</p>`;
   } else if (hasReleaseRefs) {
     const fv = cite.filter(a => a.status === "verified" && a.fresh);
     const fp = cite.filter(a => a.status !== "verified" && a.fresh);
     const ar = cite.filter(a => !a.fresh);
-    const sec = (title, note, rows) => `<p style="font-weight:700;margin:14px 0 4px;">${title}（${rows.length}）<span style="font-weight:400;color:#94a3b8;font-size:13px;"> — ${note}</span></p>` +
+    const sec = (title, note, rows) => `<p style="font-weight:700;margin:14px 0 4px;">${title}（${rows.length}）<span style="font-weight:400;color:var(--graphite);font-size:13px;"> — ${note}</span></p>` +
       `<div class="feed" style="padding-left:26px;">${rows.map(cardFor).join("")}</div>`;
     adoptBlock =
       (fv.length ? sec("已核验", "近三年窗口内，已定位到发布页原文", fv) : "") +
@@ -320,11 +320,11 @@ function detailPage(db, b, cat, related) {
       (ar.length ? `<details style="margin:14px 0;"><summary style="cursor:pointer;font-weight:700;font-size:14px;color:#64748b;">档案引用（${ar.length} 条 · 近三年窗口之外或发布日期待核，仅作背景参考）</summary><div class="feed" style="padding-left:26px;">${ar.map(cardFor).join("")}</div></details>` : "");
   } else {
     const row = a => `<tr>
-      <td>${a.url ? `<a href="${esc(a.url)}" target="_blank" rel="noopener">${esc(a.release)} ↗</a>` : esc(a.release)}${a.date ? `<br><span style="color:#94a3b8;font-size:12px;font-family:ui-monospace,monospace;">${esc(a.date)}</span>` : ""}</td>
-      <td>${a.score ? `<span class="score">${esc(a.score)}</span>` : '<span style="color:#94a3b8">未公布</span>'}</td>
+      <td>${a.url ? `<a href="${esc(a.url)}" target="_blank" rel="noopener">${esc(a.release)} ↗</a>` : esc(a.release)}${a.date ? `<br><span style="color:var(--graphite);font-size:12px;font-family:ui-monospace,monospace;">${esc(a.date)}</span>` : ""}</td>
+      <td>${a.score ? `<span class="score">${esc(a.score)}</span>` : '<span style="color:var(--graphite)">未公布</span>'}</td>
       <td>${a.note ? `<span class="note">${esc(a.note)}</span>` : ""}</td>
     </tr>`;
-    const tbl = rows => `<table class="adopt-table"><thead><tr><th>模型发布</th><th>报告分数</th><th>备注</th></tr></thead><tbody>${rows.join("")}</tbody></table>`;
+    const tbl = rows => `<div class="table-wrap"><table class="adopt-table"><thead><tr><th>模型发布</th><th>报告分数</th><th>备注</th></tr></thead><tbody>${rows.join("")}</tbody></table></div>`;
     const v = cite.filter(a => a.status === "verified");
     const pd = cite.filter(a => a.status !== "verified");
     adoptBlock =
@@ -348,11 +348,11 @@ ${shellTopbar("../../", "benchmarks")}
   <div class="kv">${identityRows}</div>
 
   <h2 class="detail-sec" id="quick">30 秒看懂</h2>
-  ${b.meaning ? `<p>${esc(b.meaning)}</p>` : `<p style="color:#94a3b8">分数含义解读待补。</p>`}
+  ${b.meaning ? `<p>${esc(b.meaning)}</p>` : `<p style="color:var(--graphite)">分数含义解读待补。</p>`}
   ${b.adoptionNote ? `<div class="callout"><b>采用格局：</b>${esc(b.adoptionNote)}</div>` : ""}
 
   <h2 class="detail-sec" id="protocol">评分协议</h2>
-  ${b.protocol ? `<p>${esc(b.protocol)}</p>` : `<p style="color:#94a3b8">协议信息待收录。</p>`}
+  ${b.protocol ? `<p>${esc(b.protocol)}</p>` : `<p style="color:var(--graphite)">协议信息待收录。</p>`}
   <div class="callout warn"><b>可比性提示：</b>同一 benchmark 的分数是「实验配置」的产物——benchmark variant、harness、reasoning effort、tools、采样参数、run 次数与聚合方式任一不同，数字都不能直接横向比较。下表各厂商分数如未披露协议细节，请只作方向性参考。</div>
 
   <h2 class="detail-sec" id="adoption">厂商采用记录（模型发布时作为基准引用）</h2>
@@ -377,7 +377,7 @@ ${shellTopbar("../../", "benchmarks")}
   </div>
 
   ${related.length ? `<h2 class="detail-sec" id="related">相关评测（同类别）</h2>
-  <div class="related">${related.map(r => `<a href="../${esc(r.id)}/"><span class="r-name">${esc(r.name)}</span><br><span style="color:#94a3b8">${esc(truncate(r.tests, 40))}</span></a>`).join("")}</div>` : ""}
+  <div class="related">${related.map(r => `<a href="../${esc(r.id)}/"><span class="r-name">${esc(r.name)}</span><br><span style="color:var(--graphite)">${esc(truncate(r.tests, 40))}</span></a>`).join("")}</div>` : ""}
 
   <h2 class="detail-sec" id="refs">引用</h2>
   <p class="refs">本页数据更新于 ${esc(db.updated)}，依据厂商发布材料真实抓取；发现数据问题欢迎在 <a href="https://github.com/zenHeart/evals" target="_blank" rel="noopener">GitHub</a> 提 Issue。</p>
@@ -747,7 +747,7 @@ function autoBenchmarkPage(db, id, rows) {
   const vendors = [...new Set(rows.map(x => x.r.vendor_label))];
   const rel = "../";
   const cardFor = (x) => tlEvtHtml(db, x.r, { focusSet: { [id]: 1 }, chipBase: "../" });
-  const sec = (title, note, list) => `<p style="font-weight:700;margin:14px 0 4px;">${title}（${list.length}）<span style="font-weight:400;color:#94a3b8;font-size:13px;"> — ${note}</span></p>` +
+  const sec = (title, note, list) => `<p style="font-weight:700;margin:14px 0 4px;">${title}（${list.length}）<span style="font-weight:400;color:var(--graphite);font-size:13px;"> — ${note}</span></p>` +
     `<div class="feed" style="padding-left:26px;">${list.map(cardFor).join("")}</div>`;
   const adopt =
     (verified.length ? sec("已核验", "近三年窗口内，已定位到发布页原文", verified) : "") +

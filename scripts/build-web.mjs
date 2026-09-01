@@ -337,11 +337,11 @@ body.dark .book-side { border-right-color: rgba(255,255,255,.08); }
 .book-side::-webkit-scrollbar-thumb { background: rgba(0,0,0,.15); border-radius: 3px; }
 .book-side .side-home { display:block; padding: 7px 12px; margin-bottom: 8px; border-radius: 8px; font-weight: 800; color: var(--pin); }
 body.dark .book-side .side-home { color: var(--pin); }
-.book-side .side-home:hover { background: rgba(37,99,235,.06); text-decoration: none; }
+.book-side .side-home:hover { background: var(--pin-soft); text-decoration: none; }
 .side-part { margin: 14px 0 4px; padding: 0 12px; font-size: 11.5px; font-weight: 800; color: #94a3b8; letter-spacing: .05em; text-transform: uppercase; }
-.side-ch { display: block; padding: 5px 12px; border-radius: 7px; color: #475569; text-decoration: none; line-height: 1.45; }
+.side-ch { display: block; padding: 5px 12px; border-radius: 6px; color: var(--graphite); text-decoration: none; line-height: 1.45; }
 body.dark .side-ch { color: #9fb0c3; }
-.side-ch:hover { background: rgba(37,99,235,.06); color: inherit; text-decoration: none; }
+.side-ch:hover { background: var(--pin-soft); color: inherit; text-decoration: none; }
 .side-ch.cur { background: var(--pin-soft); color: var(--pin); font-weight: 700; }
 body.dark .side-ch.cur { color: var(--pin); }
 .side-sec { display: block; padding: 3px 12px 3px 26px; font-size: 12.5px; color: #64748b; text-decoration: none; border-left: 2px solid rgba(0,0,0,.06); margin-left: 18px; }
@@ -364,7 +364,7 @@ body.dark .side-sec { color: #7c8aa0; border-left-color: rgba(255,255,255,.08); 
     position: fixed; left: 14px; bottom: 18px; z-index: 150;
     border: none; border-radius: 999px; padding: 11px 18px; cursor: pointer;
     background: var(--pin, #D14A24); color: #fff; font-size: 14px; font-weight: 700;
-    box-shadow: 0 8px 22px rgba(37,99,235,.4);
+    box-shadow: 0 8px 22px rgba(209,74,36,.4);
   }
   .chapter-main2 { padding: 24px 20px 90px; }
 }
@@ -391,7 +391,7 @@ pre code { background: transparent; padding: 0; color: inherit; overflow-wrap: n
   border: 1px solid rgba(255,255,255,.25); background: rgba(255,255,255,.08); color: #cbd5e1;
   border-radius: 6px; padding: 3px 10px; font-size: 12px; cursor: pointer; opacity: 0; transition: opacity .15s;
 }
-.code-block:hover .copy-btn { opacity: 1; }
+.code-block:hover .copy-btn, .code-block:focus-within .copy-btn { opacity: 1; }
 .copy-btn:hover { background: rgba(255,255,255,.18); }
 blockquote { border-left:3px solid var(--pin); background:var(--pin-soft); padding:10px 16px; color:var(--ink); margin:16px 0; border-radius:0 6px 6px 0; }
 .lead-block blockquote { font-size: 15.5px; border-left-color: var(--pin); background: var(--pin-soft); }
@@ -428,10 +428,10 @@ body.dark .mermaid { background: #f8fafc; }
 .qq-opt:hover { border-color: var(--pin); }
 .qq.answered .qq-opt { cursor: default; }
 .qq-opt.right { border-color: var(--ok); background: color-mix(in srgb, var(--ok) 10%, transparent); color: var(--ok); font-weight: 700; }
-.qq-opt.wrong { border-color: #c0392b; background: rgba(192, 57, 43, .08); color: #c0392b; }
+.qq-opt.wrong { border-color: var(--bad); background: color-mix(in srgb, var(--bad) 10%, transparent); color: var(--bad); }
 .qq-fb { margin-top: 8px; font-size: 13.5px; }
 .qq-fb .ok { color: var(--ok); }
-.qq-fb .bad { color: #c0392b; }
+.qq-fb .bad { color: var(--bad); }
 .qq-short details { margin-top: 6px; }
 .qq-short summary { cursor: pointer; font-weight: 700; font-size: 13.5px; color: var(--graphite); }
 .qq-points { font-size: 13.5px; color: var(--graphite); padding: 8px 12px; background: var(--pin-soft); border-radius: 6px; margin-top: 6px; }
@@ -455,14 +455,14 @@ body.dark .toc-side a { color: #94a3b8; }
 .hero-cover { width: 100%; border-radius: 12px; box-shadow: 0 20px 50px rgba(0,0,0,.4); }
 .hero-ctas { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 22px; }
 .cta {
-  display: inline-block; padding: 12px 26px; border-radius: 12px; font-size: 15.5px;
+  display: inline-block; padding: 12px 26px; border-radius: 8px; font-size: 15.5px;
   font-weight: 800; text-decoration: none; transition: transform .15s, box-shadow .15s;
 }
 .cta { text-decoration:none; }
 .cta:hover { text-decoration:none; transform:translateY(-1px); }
 .cta-primary { background: #D14A24; color:#fff; box-shadow:0 8px 24px rgba(209,74,36,.35); }
 .cta-secondary { border: 1.5px solid rgba(248,250,252,.35); color: #f8fafc; }
-.cta-secondary:hover { border-color: #22d3ee; color: #22d3ee; }
+.cta-secondary:hover { border-color: #FF7A50; color: #FF7A50; }
 /* 能力承诺三卡 */
 .promise-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 16px; margin: 34px 0 10px; }
 .promise { border:1px solid var(--rule); border-radius:8px; padding:18px 20px; background:var(--card); }
@@ -503,7 +503,7 @@ body.dark .feat-card .f-desc { color: #94a3b8; }
   display: flex; gap: 10px; padding: 9px 12px; border-radius: 8px; color: inherit;
   border: 1px solid transparent;
 }
-.chapter-list li a:hover { background: rgba(37,99,235,.05); border-color: rgba(37,99,235,.15); text-decoration: none; }
+.chapter-list li a:hover { background: var(--pin-soft); border-color: var(--rule); text-decoration: none; }
 .chapter-num { font-family: var(--mono); font-size: 12px; font-weight: 700; color: var(--pin); min-width: 26px; padding-top: 2px; }
 
 /* 搜索 */
@@ -512,14 +512,14 @@ body.dark .feat-card .f-desc { color: #94a3b8; }
   width:100%; padding:12px 18px; font-size:15px; border-radius:8px;
   border:1.5px solid var(--rule); background:var(--card); color:inherit; outline:none;
 }
-.search-box input:focus { border-color:var(--pin); }
+.search-box input:focus { border-color:var(--pin); box-shadow:0 0 0 3px color-mix(in srgb,var(--pin) 25%,transparent); }
 .search-results {
   position:absolute; left:0; right:0; top:calc(100% + 6px); z-index:120;
   background:var(--card); border:1px solid var(--rule); border-radius:8px;
   max-height:380px; overflow-y:auto; box-shadow:0 12px 32px rgba(23,33,46,.14); display:none;
 }
 .search-results[style*="block"] { pointer-events: auto; }
-.search-results .sr-item { padding: 10px 16px; cursor: pointer; border-bottom: 1px solid rgba(0,0,0,.05); }
+.search-results .sr-item { display:block; padding: 10px 16px; cursor: pointer; border-bottom: 1px solid var(--rule); color:inherit; text-decoration:none; }
 .search-results .sr-item:hover { background:var(--pin-soft); }
 .search-results .sr-title { font-weight: 700; font-size: 14px; }
 .search-results .sr-snip { font-size: 12.5px; color: #64748b; margin-top: 2px; }
@@ -573,8 +573,8 @@ document.querySelectorAll('.qq[data-a] .qq-opt').forEach(function(btn){
     box.classList.add('answered');
     var k=btn.getAttribute('data-k'),a=box.getAttribute('data-a'),why=box.getAttribute('data-why')||'';
     var fb=box.querySelector('.qq-fb');
-    if(k===a){btn.classList.add('right');fb.innerHTML='<b class="ok">✓ 答对了</b>';}
-    else{btn.classList.add('wrong');box.querySelectorAll('.qq-opt').forEach(function(o){if(o.getAttribute('data-k')===a)o.classList.add('right');});fb.innerHTML='<b class="bad">✗ 正确答案是 '+a+'</b>';}
+    if(k===a){btn.classList.add('right');btn.textContent='✓ '+btn.textContent;fb.innerHTML='<b class="ok">✓ 答对了</b>';}
+    else{btn.classList.add('wrong');btn.textContent='✗ '+btn.textContent;box.querySelectorAll('.qq-opt').forEach(function(o){if(o.getAttribute('data-k')===a){o.classList.add('right');o.textContent='✓ '+o.textContent;}});fb.innerHTML='<b class="bad">✗ 正确答案是 '+a+'</b>';}
     if(why){var w=document.createElement('span');w.textContent=' — '+why;fb.appendChild(w);}
     fb.hidden=false;
   });
@@ -627,7 +627,7 @@ function sectionHtml(s) {
         return `<div class="qq"${a.a ? ` data-a="${a.a}"` : ""}${why ? ` data-why="${why.replace(/"/g, "&quot;")}"` : ""}>
           <div class="qq-stem"><span class="qq-tag">选择</span>${esc(q.num)}. ${esc(q.stem)}</div>
           <div class="qq-opts">${opts}</div>
-          <div class="qq-fb" hidden></div>
+          <div class="qq-fb" role="status" aria-live="polite" hidden></div>
         </div>`;
       }).join("");
       const shorts = (s.shorts || []).map(q => {
@@ -720,6 +720,13 @@ ${RUNTIME_JS}
   if(fab){fab.addEventListener('click',function(){side.classList.add('drawer-open');mask.classList.add('show');});}
   if(mask){mask.addEventListener('click',function(){side.classList.remove('drawer-open');mask.classList.remove('show');});}
   // 侧栏小节滚动高亮
+  if(fab){fab.setAttribute('aria-expanded','false');fab.setAttribute('aria-controls','bookSide');}
+  document.addEventListener('keydown',function(e){
+    if(e.key==='Escape'&&side&&side.classList.contains('drawer-open')){
+      side.classList.remove('drawer-open');mask.classList.remove('show');
+      if(fab){fab.setAttribute('aria-expanded','false');fab.focus();}
+    }
+  });
   var secs=[].slice.call(document.querySelectorAll('.side-sec'));
   if(secs.length){
     var map={};secs.forEach(function(a){map[a.getAttribute('data-sec')]=a;});
@@ -830,16 +837,13 @@ ${RUNTIME_JS}
     hits.sort(function(a,b){return (a.ti<0?999:a.ti)-(b.ti<0?999:b.ti);});
     if(!hits.length){box.innerHTML='<div class="sr-item"><div class="sr-snip">无匹配结果</div></div>';box.style.display='block';return;}
     box.innerHTML=hits.map(function(h){
-      return '<div class="sr-item" data-u="'+h.url+'">'+
+      return '<a class="sr-item" href="'+h.url+'">'+
         '<div class="sr-title">'+hl(h.t,q)+' <span style="color:#94a3b8;font-weight:400">· '+h.part+' 第 '+h.num+' 章</span></div>'+
-        (h.snip?'<div class="sr-snip">…'+esc(h.snip)+'…</div>':'')+'</div>';
+        (h.snip?'<div class="sr-snip">…'+esc(h.snip)+'…</div>':'')+'</a>';
     }).join('');
     box.style.display='block';
   });
-  box.addEventListener('click',function(e){
-    var it=e.target.closest('.sr-item');
-    if(it&&it.getAttribute('data-u'))location.href=it.getAttribute('data-u');
-  });
+
   document.addEventListener('click',function(e){if(!e.target.closest('.search-box'))box.style.display='none';});
 })();
 </script>
