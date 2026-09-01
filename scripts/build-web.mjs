@@ -38,7 +38,9 @@ const META = join(REPO_ROOT, "book", "metadata.yaml");
 
 // 全局结构（main() 内填充），供章节页渲染左侧书目录
 let globalParts = [];
+let CURRENT_QUIZ_ANSWERS = {};
 let globalChaptersMeta = {};
+let QUIZ_ANSWERS = {};
 
 // ---------------------------------------------------------------- metadata
 
@@ -161,6 +163,28 @@ function mdToSections(md) {
       flushPara();
       cur?.html.push(`<h3 id="h-${slugify(h3[1])}">${inlineMd(h3[1])}</h3>`);
       continue;
+    }
+    // 验收自测节：把选择题/简答题解析为结构化数据（渲染成交互组件，选项不再走通用列表）
+    if (cur && cur.quiz) {
+      let mq;
+      if ((mq = trimmed.match(/^(\d+)\.\s+\*\*选择\*\*：(.*)$/))) {
+        flushPara();
+        cur.questions = cur.questions || [];
+        cur.qCur = { num: mq[1], stem: mq[2], options: [] };
+        cur.questions.push(cur.qCur);
+        continue;
+      }
+      if ((mq = trimmed.match(/^([-*])\s+\[?([A-D])\]?[.、．]?\s*(.*)$/)) && cur.qCur) {
+        cur.qCur.options.push(mq[2] + ". " + mq[3]);
+        continue;
+      }
+      if ((mq = trimmed.match(/^(\d+)\.\s+\*\*(简答|实操)\*\*：(.*)$/))) {
+        flushPara();
+        cur.shorts = cur.shorts || [];
+        cur.shorts.push({ num: mq[1], kind: mq[2], stem: mq[3] });
+        cur.qCur = null;
+        continue;
+      }
     }
     if (!cur) {
       // H1 与第一个 H2 之间的引言：引用块渲染为 lead blockquote，段落正常渲染
@@ -370,8 +394,8 @@ pre code { background: transparent; padding: 0; color: inherit; overflow-wrap: n
 .code-block:hover .copy-btn { opacity: 1; }
 .copy-btn:hover { background: rgba(255,255,255,.18); }
 blockquote { border-left:3px solid var(--pin); background:var(--pin-soft); padding:10px 16px; color:var(--ink); margin:16px 0; border-radius:0 6px 6px 0; }
-.lead-block blockquote { font-size: 15.5px; background: rgba(34,211,238,.07); border-left-color: #22d3ee; }
-body.dark .lead-block blockquote { background: rgba(34,211,238,.06); }
+.lead-block blockquote { font-size: 15.5px; border-left-color: var(--pin); background: var(--pin-soft); }
+.lead-block blockquote p { color: var(--ink); }
 .table-wrap { overflow-x:auto; margin:16px 0; border-radius:6px; border:1px solid var(--rule); }
 table { border-collapse: collapse; width: 100%; margin: 0; font-size: 14.5px; min-width: 480px; }
 th, td { border:1px solid var(--rule); padding:8px 12px; text-align:left; vertical-align:top; }
@@ -396,6 +420,21 @@ body.dark .mermaid { background: #f8fafc; }
 }
 .quiz-reveal:hover { filter: brightness(1.08); }
 .quiz-body { display: none; }
+.qq { border: 1px solid var(--rule); border-radius: 6px; padding: 12px 16px; margin: 12px 0; background: var(--card); }
+.qq-stem { font-weight: 700; margin-bottom: 8px; }
+.qq-tag { font: 700 11px/1 var(--mono); color: var(--pin); border: 1px solid var(--pin); border-radius: 4px; padding: 2px 6px; margin-right: 8px; }
+.qq-opts { display: flex; flex-direction: column; gap: 6px; }
+.qq-opt { text-align: left; padding: 8px 12px; border: 1px solid var(--rule); border-radius: 6px; background: transparent; color: inherit; cursor: pointer; font-size: 14px; font-family: inherit; }
+.qq-opt:hover { border-color: var(--pin); }
+.qq.answered .qq-opt { cursor: default; }
+.qq-opt.right { border-color: var(--ok); background: color-mix(in srgb, var(--ok) 10%, transparent); color: var(--ok); font-weight: 700; }
+.qq-opt.wrong { border-color: #c0392b; background: rgba(192, 57, 43, .08); color: #c0392b; }
+.qq-fb { margin-top: 8px; font-size: 13.5px; }
+.qq-fb .ok { color: var(--ok); }
+.qq-fb .bad { color: #c0392b; }
+.qq-short details { margin-top: 6px; }
+.qq-short summary { cursor: pointer; font-weight: 700; font-size: 13.5px; color: var(--graphite); }
+.qq-points { font-size: 13.5px; color: var(--graphite); padding: 8px 12px; background: var(--pin-soft); border-radius: 6px; margin-top: 6px; }
 .quiz-card.open .quiz-body { display: block; }
 .quiz-card.open .quiz-reveal { display: none; }
 
@@ -526,6 +565,20 @@ document.querySelectorAll('.code-block').forEach(function(b){
 document.querySelectorAll('.quiz-reveal').forEach(function(btn){
   btn.addEventListener('click',function(){btn.closest('.quiz-card').classList.add('open');});
 });
+// 自测选择题：点选即判
+document.querySelectorAll('.qq[data-a] .qq-opt').forEach(function(btn){
+  btn.addEventListener('click',function(){
+    var box=btn.closest('.qq');
+    if(box.classList.contains('answered'))return;
+    box.classList.add('answered');
+    var k=btn.getAttribute('data-k'),a=box.getAttribute('data-a'),why=box.getAttribute('data-why')||'';
+    var fb=box.querySelector('.qq-fb');
+    if(k===a){btn.classList.add('right');fb.innerHTML='<b class="ok">✓ 答对了</b>';}
+    else{btn.classList.add('wrong');box.querySelectorAll('.qq-opt').forEach(function(o){if(o.getAttribute('data-k')===a)o.classList.add('right');});fb.innerHTML='<b class="bad">✗ 正确答案是 '+a+'</b>';}
+    if(why){var w=document.createElement('span');w.textContent=' — '+why;fb.appendChild(w);}
+    fb.hidden=false;
+  });
+});
 // TOC scrollspy
 (function(){
   var links=[].slice.call(document.querySelectorAll('.toc-side a'));
@@ -553,10 +606,48 @@ const MERMAID_JS = `
 
 // ---------------------------------------------------------------- pages
 
+function esc(s) {
+  return String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+}
+
 function sectionHtml(s) {
   if (s.lead) return `<div class="lead-block">${s.html.join("\n")}</div>`;
   const head = `<h2 id="${s.id}">${s.title}</h2>`;
   if (s.quiz) {
+    const answers = CURRENT_QUIZ_ANSWERS;
+    const hasMc = (s.questions || []).some(q => (answers[q.num] || {}).a);
+    if (hasMc || (s.questions || []).length) {
+      const interactive = s.questions.map(q => {
+        const a = answers[q.num] || {};
+        const opts = q.options.map(o => {
+          const k = o.slice(0, 1);
+          return `<button type="button" class="qq-opt" data-k="${k}">${esc(o)}</button>`;
+        }).join("");
+        const why = a.why ? esc(a.why) : "";
+        return `<div class="qq"${a.a ? ` data-a="${a.a}"` : ""}${why ? ` data-why="${why.replace(/"/g, "&quot;")}"` : ""}>
+          <div class="qq-stem"><span class="qq-tag">选择</span>${esc(q.num)}. ${esc(q.stem)}</div>
+          <div class="qq-opts">${opts}</div>
+          <div class="qq-fb" hidden></div>
+        </div>`;
+      }).join("");
+      const shorts = (s.shorts || []).map(q => {
+        const a = answers[q.num] || {};
+        const body = a.points
+          ? `<div class="qq-points"><b>参考要点</b>（由正文推导）：${esc(a.points)}</div>`
+          : `<div class="qq-points">作答后回到正文对应小节自检。</div>`;
+        return `<div class="qq qq-short"><div class="qq-stem"><span class="qq-tag">${esc(q.kind)}</span>${esc(q.num)}. ${esc(q.stem)}</div><details><summary>参考要点</summary>${body}</details></div>`;
+      }).join("");
+      const plain = [
+        ...(s.questions || []).map(q => `<p><b>${esc(q.num)}. ${esc(q.stem)}</b></p><ul>${q.options.map(o => `<li>${esc(o)}</li>`).join("")}</ul>`),
+        ...(s.shorts || []).map(q => `<p><b>${esc(q.num)}.（${esc(q.kind)}）${esc(q.stem)}</b></p>`),
+      ].join("");
+      const extraHtml = s.html.join("\n");
+      return `<div class="quiz-card">${head}
+        <div class="qq-list">${interactive}${shorts}</div>
+        ${extraHtml ? `<div>${extraHtml}</div>` : ""}
+        <noscript><div style="padding:8px 4px;"><p style="font-weight:700;margin:0 0 6px;">（未启用脚本，以下为题目文本）</p>${plain}</div></noscript>
+      </div>`;
+    }
     return `<div class="quiz-card">${head}<button class="quiz-reveal" type="button">👆 点击展开自测（先作答再对照）</button><div class="quiz-body">${s.html.join("\n")}</div></div>`;
   }
   return head + s.html.join("\n");
@@ -590,6 +681,7 @@ function bookTocSidebar(parts, chaptersMeta, currentFile, currentSections) {
 }
 
 function chapterPage(chapterFile, prev, next, partTitle, chapterNum, searchExtra) {
+  CURRENT_QUIZ_ANSWERS = QUIZ_ANSWERS[String(Number(chapterNum))] || {};
   const md = readFileSync(join(CHAPTERS_DIR, chapterFile), "utf-8");
   const { title, sections, description } = mdToSections(md);
   const fullTitle = `${title} · 大模型评估入门`;
@@ -605,7 +697,7 @@ ${TOPBAR("../../", "book")}
 <div class="book-layout">
 ${bookTocSidebar(globalParts, globalChaptersMeta, chapterFile, sections)}
 <div class="drawer-mask" id="drawerMask"></div>
-<main class="chapter-main2">
+<main id="main-content" class="chapter-main2">
   <div class="breadcrumb"><a href="../../index.html">首页</a> / <a href="../">系统学习</a> / ${partTitle} / <b>第 ${chapterNumPretty} 章</b></div>
   <h1>${title}</h1>
   ${body}
@@ -696,7 +788,7 @@ ${TOPBAR("")}
     <img class="hero-cover" src="cover.svg" alt="大模型评估入门封面" loading="eager" width="600" height="900" style="width:100%;height:auto;">
   </div>
 </section>
-<main style="max-width:1080px;margin:0 auto;padding:32px 24px 80px;">
+<main id="main-content" style="max-width:1080px;margin:0 auto;padding:32px 24px 80px;">
   <p class="promise-eyebrow">三个入口</p>
   <div class="entry-grid">${entries}</div>
   <p class="promise-eyebrow" style="margin-top:34px;">学完你将能够</p>
@@ -864,7 +956,7 @@ function buildIndexPage(chaptersMeta) {
 </head>
 <body>
 ${TOPBAR("../", "build")}
-<main style="max-width:1080px;margin:0 auto;padding:32px 24px 80px;">
+<main id="main-content" style="max-width:1080px;margin:0 auto;padding:32px 24px 80px;">
   <div class="breadcrumb"><a href="../index.html">首页</a> / <b>动手搭建</b></div>
   <h1>动手搭建</h1>
   <p class="sub" style="max-width:72ch;">读完就能落地：按四步路径把评估体系搬进你自己的项目，全部链接指向书中可运行代码章节。</p>
@@ -936,6 +1028,8 @@ async function main() {
     copyFileSync(join(REPO_ROOT, "evals.epub"), join(DIST, "evals.epub"));
   }
 
+  try { QUIZ_ANSWERS = JSON.parse(readFileSync(join(REPO_ROOT, "book", "quiz-answers.json"), "utf-8")); console.log(`[evals-web] quiz answers: ${Object.keys(QUIZ_ANSWERS).length} chapters`); } catch { QUIZ_ANSWERS = {}; }
+
   const parts = readPartStructure();
   const flat = readFlatChapters(parts);
   globalParts = parts;
@@ -1001,6 +1095,19 @@ async function main() {
   writeFileSync(join(DIST, "404.html"), notFoundPage(), "utf-8");
   writeFileSync(join(DIST, "search-data.js"), `window.EVALS_SEARCH=${JSON.stringify(searchData)};`, "utf-8");
   console.log("[evals-web] Built index / book / build / 404 / search-data.js");
+
+  // 搜索索引扩展：评估大全实体 + 证据自动建档页 + 模型发布（读者搜 SWE-bench 应直达详情页而非仅书章节）
+  try {
+    const db = loadBenchData();
+    for (const b of db.benchmarks) {
+      searchData.push({ n: "评测", t: b.name, p: "评估大全", u: `benchmarks/${b.id}/`,
+        c: stripMd(`${b.name} ${b.tests || ""} ${b.meaning || ""} ${b.protocol || ""}`) });
+    }
+    for (const r of db.releases) {
+      searchData.push({ n: "发布", t: r.models.length ? r.models.join(" / ") : r.release_title, p: "模型发布 · " + r.vendor_label,
+        u: "releases/", c: `${r.release_title} ${r.models.join(" ")} ${r.vendor_label}` });
+    }
+  } catch (e) { console.warn("[evals-web] search index benchmark merge skipped:", e.message); }
 
   const today = new Date().toISOString().slice(0, 10);
   const urls = ["/", "/book/", ...flat.map(f => `/book/chapter-${chaptersMeta[f].num}/`), "/build/", "/benchmarks/", "/releases/"];

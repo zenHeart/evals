@@ -145,7 +145,7 @@ function explorerPage(db, cards) {
   const chips = [{ id: "all", name: "全部" }, ...db.categories]
     .map(c => {
       const n = c.id === "all" ? cards.filter(x => x.show).length : cards.filter(x => x.show && x.b.category === c.id).length;
-      return `<button class="chip${c.id === "all" ? " active" : ""}" type="button" data-cat="${esc(c.id)}">${esc(c.name)} <span style="opacity:.6">${n}</span></button>`;
+      return `<button class="chip${c.id === "all" ? " active" : ""}" type="button" aria-pressed="${c.id === "all"}" data-cat="${esc(c.id)}">${esc(c.name)} <span style="opacity:.6">${n}</span></button>`;
     })
     .join("");
 
@@ -277,8 +277,8 @@ function statusBadge(status) {
 function detailPage(db, b, cat, related) {
   const cite = b.adoption || [];
   // 统一窗口语义：fresh 进主视图，archive（窗口外/日期缺失）降级为折叠历史区
-  const verified = cite.filter(a => a.status === "verified" && a.fresh);
-  const pending = cite.filter(a => a.status !== "verified" && a.fresh);
+  const freshV = cite.filter(a => a.status === "verified" && a.fresh);
+  const freshP = cite.filter(a => a.status !== "verified" && a.fresh);
   const archived = cite.filter(a => !a.fresh);
   const title = `${b.name} · 评测是什么、分数怎么看 · 评估大全`;
   const desc = truncate(`${b.name}：${b.tests || ""}${b.meaning ? " " + b.meaning : ""}`, 150);
@@ -290,35 +290,44 @@ function detailPage(db, b, cat, related) {
     b.paper ? ["论文", `<a href="${esc(b.paper)}" target="_blank" rel="noopener">${esc(b.paper)}</a>`] : null,
   ].filter(Boolean).map(([k, v]) => `<div class="k">${k}</div><div>${v}</div>`).join("");
 
-  const adoptRow = a => `<tr>
+  // 采用记录 = release 事件卡流（与 /releases/ 时间轴同一组件，过滤为本评测）
+  const hasReleaseRefs = (db.releases || []).length > 0 && cite.every(a => a.release_id);
+  const cardFor = (a) => {
+    const rel = db.releases.find(x => x.id === a.release_id);
+    return rel ? tlEvtHtml(db, rel, { focusSet: { [b.id]: 1 }, chipBase: "../" }) : "";
+  };
+  let adoptBlock;
+  if (!cite.length) {
+    adoptBlock = `<p style="color:#94a3b8;font-size:14px;">暂无官方模型发布引用记录——社区驱动或垂域使用。${b.adoptionNote ? esc(b.adoptionNote) : ""}</p>`;
+  } else if (hasReleaseRefs) {
+    const fv = cite.filter(a => a.status === "verified" && a.fresh);
+    const fp = cite.filter(a => a.status !== "verified" && a.fresh);
+    const ar = cite.filter(a => !a.fresh);
+    const sec = (title, note, rows) => `<p style="font-weight:700;margin:14px 0 4px;">${title}（${rows.length}）<span style="font-weight:400;color:#94a3b8;font-size:13px;"> — ${note}</span></p>` +
+      `<div class="feed" style="padding-left:26px;">${rows.map(cardFor).join("")}</div>`;
+    adoptBlock =
+      (fv.length ? sec("已核验", "近三年窗口内，已定位到发布页原文", fv) : "") +
+      (fp.length ? sec("待核验", "分数在图片表格中或定位待人工确认，暂不计入公开引用数", fp) : "") +
+      (ar.length ? `<details style="margin:14px 0;"><summary style="cursor:pointer;font-weight:700;font-size:14px;color:#64748b;">档案引用（${ar.length} 条 · 近三年窗口之外或发布日期待核，仅作背景参考）</summary><div class="feed" style="padding-left:26px;">${ar.map(cardFor).join("")}</div></details>` : "");
+  } else {
+    const row = a => `<tr>
       <td>${a.url ? `<a href="${esc(a.url)}" target="_blank" rel="noopener">${esc(a.release)} ↗</a>` : esc(a.release)}${a.date ? `<br><span style="color:#94a3b8;font-size:12px;font-family:ui-monospace,monospace;">${esc(a.date)}</span>` : ""}</td>
       <td>${a.score ? `<span class="score">${esc(a.score)}</span>` : '<span style="color:#94a3b8">未公布</span>'}</td>
       <td>${a.note ? `<span class="note">${esc(a.note)}</span>` : ""}</td>
     </tr>`;
-  const adoptTable = rows => `<table class="adopt-table"><thead><tr><th>模型发布</th><th>报告分数</th><th>备注</th></tr></thead><tbody>${rows.join("")}</tbody></table>`;
-
-  let adoptBlock;
-  if (!cite.length) {
-    adoptBlock = `<p style="color:#94a3b8;font-size:14px;">暂无官方模型发布引用记录——社区驱动或垂域使用。${b.adoptionNote ? esc(b.adoptionNote) : ""}</p>`;
-  } else {
-    const archivedBlock = archived.length
-      ? `<details style="margin:14px 0;"><summary style="cursor:pointer;font-weight:700;font-size:14px;color:#64748b;">档案引用（${archived.length} 条 · 近三年窗口之外或发布日期待核，仅作背景参考）</summary>${adoptTable(archived.map(adoptRow))}</details>`
-      : "";
+    const tbl = rows => `<table class="adopt-table"><thead><tr><th>模型发布</th><th>报告分数</th><th>备注</th></tr></thead><tbody>${rows.join("")}</tbody></table>`;
+    const v = cite.filter(a => a.status === "verified");
+    const pd = cite.filter(a => a.status !== "verified");
     adoptBlock =
-      (verified.length
-        ? `<p style="font-weight:700;margin:8px 0 4px;">已核验（${verified.length}）<span style="font-weight:400;color:#94a3b8;font-size:13px;"> — 近三年窗口内，已定位到发布页原文</span></p>${adoptTable(verified.map(adoptRow))}`
-        : "") +
-      (pending.length
-        ? `<p style="font-weight:700;margin:16px 0 4px;">待核验（${pending.length}）<span style="font-weight:400;color:#94a3b8;font-size:13px;"> — 分数在图片表格中或定位待人工确认，暂不计入公开引用数</span></p>${adoptTable(pending.map(adoptRow))}`
-        : "") +
-      archivedBlock;
+      (v.length ? `<p style="font-weight:700;margin:8px 0 4px;">已核验（${v.length}）</p>${tbl(v.map(row))}` : "") +
+      (pd.length ? `<p style="font-weight:700;margin:16px 0 4px;">待核验（${pd.length}）</p>${tbl(pd.map(row))}` : "");
   }
 
-  return `${shellHead({ rel: "../../", title, desc, path: `benchmarks/${b.id}/`, extra: `<style>${SHELL_CSS}${PAGE_CSS}</style>` })}
+  return `${shellHead({ rel: "../../", title, desc, path: `benchmarks/${b.id}/`, extra: `<style>${SHELL_CSS}${PAGE_CSS}${EVT_CSS}</style>` })}
 </head>
 <body>
 ${shellTopbar("../../", "benchmarks")}
-<main class="detail-main bm-container">
+<main id="main-content" class="detail-main bm-container">
   <nav class="breadcrumb"><a href="../../index.html">首页</a> / <a href="../">评估大全</a> / <b>${esc(b.name)}</b></nav>
   <div class="detail-head">
     <h1>${esc(b.name)}</h1>
@@ -338,7 +347,7 @@ ${shellTopbar("../../", "benchmarks")}
   <div class="callout warn"><b>可比性提示：</b>同一 benchmark 的分数是「实验配置」的产物——benchmark variant、harness、reasoning effort、tools、采样参数、run 次数与聚合方式任一不同，数字都不能直接横向比较。下表各厂商分数如未披露协议细节，请只作方向性参考。</div>
 
   <h2 class="detail-sec" id="adoption">厂商采用记录（模型发布时作为基准引用）</h2>
-  <p class="refs">共 ${cite.length} 条（近三年：已核验 ${verified.length} · 待核验 ${pending.length}${archived.length ? ` · 档案 ${archived.length}` : ""}）${db.updated ? ` · 数据更新于 ${esc(db.updated)}` : ""} · 窗口起点 ${esc(db.cutoff)}</p>
+  <p class="refs">共 ${cite.length} 条（近三年：已核验 ${freshV.length} · 待核验 ${freshP.length}${archived.length ? ` · 档案 ${archived.length}` : ""}）${db.updated ? ` · 数据更新于 ${esc(db.updated)}` : ""} · 窗口起点 ${esc(db.cutoff)}</p>
   ${adoptBlock}
 
   <h2 class="detail-sec" id="gaps">数据缺口（本页暂未收录）</h2>
@@ -372,46 +381,7 @@ ${SHELL_JS}
 
 // ---------------------------------------------------------------- 发布时间轴页（交互式 v2）
 
-const TIMELINE_CSS = `
-/* ============ 模型发布时间轴 · 独立设计（仪器纸 / 刻度尺脊线 / 可信度引脚） ============ */
-.tlr {
-  --paper:#F7F8F6; --ink:#17212E; --graphite:#5C6B7C; --rule:#D9DEE3;
-  --pin:#D14A24; --ok:#0E7A4E; --warn:#A16207; --card:#FFFFFF;
-  max-width:1120px; margin:0 auto; padding:28px 0 70px;
-}
-body.dark .tlr {
-  --paper:#0E1622; --ink:#E4E9EF; --graphite:#93A1B3; --rule:#263241;
-  --pin:#FF7A50; --ok:#3DC98A; --warn:#D9A441; --card:#131E30;
-}
-.tlr .eyebrow { font:700 11.5px/1 ui-monospace,SFMono-Regular,Consolas,monospace; letter-spacing:.18em; color:var(--pin); text-transform:uppercase; margin:0 0 10px; }
-.tlr h1 { font-family:Georgia,"Songti SC","STSong","SimSun",serif; font-size:clamp(30px,5vw,44px); font-weight:700; line-height:1.15; margin:0 0 10px; letter-spacing:.01em; }
-.tlr .sub { font-size:14.5px; color:var(--graphite); max-width:72ch; margin:0 0 8px; }
-.tlr .sub a { color:var(--ink); text-decoration:underline; text-underline-offset:3px; }
-/* 覆盖条 */
-.cov-strip { display:flex; flex-wrap:wrap; gap:0 18px; row-gap:6px; margin:18px 0 22px; padding:10px 0; border-top:1px solid var(--rule); border-bottom:1px solid var(--rule); }
-.cov-strip .cov { font:400 12.5px/1.6 ui-monospace,monospace; color:var(--graphite); }
-.cov-strip .cov b { font-weight:700; color:var(--ink); font-size:14px; }
-.cov-strip .cov-label { font:700 11px/1.8 ui-monospace,monospace; letter-spacing:.14em; color:var(--pin); }
-/* 控制台 */
-.console { border:1px solid var(--rule); background:var(--card); border-radius:8px; padding:14px 16px; margin:0 0 8px; display:flex; flex-direction:column; gap:10px; }
-.console .row { display:flex; flex-wrap:wrap; gap:8px 14px; align-items:center; }
-.console .lab { font:700 10.5px/1 ui-monospace,monospace; letter-spacing:.16em; color:var(--graphite); text-transform:uppercase; min-width:56px; }
-.seg { display:inline-flex; border:1px solid var(--rule); border-radius:6px; overflow:hidden; }
-.seg button { border:none; background:transparent; color:var(--graphite); padding:7px 16px; font:600 13px/1.2 inherit; cursor:pointer; }
-.seg button + button { border-left:1px solid var(--rule); }
-.seg button.on { background:var(--ink); color:var(--paper); }
-.console select, .console input[type=search], .console input[type=number] {
-  padding:7px 10px; border-radius:6px; border:1px solid var(--rule); background:var(--card); color:inherit; font:400 13px/1.4 inherit;
-}
-.console input[type=search] { flex:1; min-width:170px; }
-.console input[type=number] { width:88px; font-family:ui-monospace,monospace; }
-.ghost-btn { border:1px solid var(--pin); background:transparent; color:var(--pin); border-radius:6px; padding:7px 14px; font:700 12.5px/1.2 inherit; cursor:pointer; }
-.ghost-btn:hover { background:color-mix(in srgb, var(--pin) 8%, transparent); }
-.vchip { border:1px solid var(--rule); background:transparent; color:var(--ink); border-radius:4px; padding:5px 12px; font:600 12.5px/1.3 inherit; cursor:pointer; }
-.vchip.on { background:var(--ink); border-color:var(--ink); color:var(--paper); }
-.fchip { display:inline-flex; align-items:center; gap:8px; border:1px solid var(--pin); color:var(--pin); border-radius:4px; padding:5px 10px; font:700 12.5px/1.2 ui-monospace,monospace; }
-.fchip button { border:none; background:transparent; color:inherit; cursor:pointer; font-size:13px; padding:0; line-height:1; }
-.tl-count { font:400 12.5px/1.6 ui-monospace,monospace; color:var(--graphite); margin:10px 2px 22px; }
+const EVT_CSS = `
 /* ---- 刻度尺脊线 + 事件 ---- */
 .feed { position:relative; padding-left:58px; }
 .feed::before { content:""; position:absolute; left:22px; top:4px; bottom:4px; width:2px;
@@ -466,6 +436,48 @@ a.bchip:hover { text-decoration:none; border-color:var(--pin); }
 .grp .g-name a:hover { color:var(--pin); }
 .grp .g-meta { font:400 12px/1.4 ui-monospace,monospace; color:var(--graphite); }
 .grp .g-line { flex:1; height:1px; background:var(--rule); align-self:center; }
+`;
+
+const TIMELINE_CSS = `
+/* ============ 模型发布时间轴 · 独立设计（仪器纸 / 刻度尺脊线 / 可信度引脚） ============ */
+.tlr {
+  --paper:#F7F8F6; --ink:#17212E; --graphite:#5C6B7C; --rule:#D9DEE3;
+  --pin:#D14A24; --ok:#0E7A4E; --warn:#A16207; --card:#FFFFFF;
+  max-width:1120px; margin:0 auto; padding:28px clamp(16px, 4vw, 32px) 70px;
+}
+body.dark .tlr {
+  --paper:#0E1622; --ink:#E4E9EF; --graphite:#93A1B3; --rule:#263241;
+  --pin:#FF7A50; --ok:#3DC98A; --warn:#D9A441; --card:#131E30;
+}
+.tlr .eyebrow { font:700 11.5px/1 ui-monospace,SFMono-Regular,Consolas,monospace; letter-spacing:.18em; color:var(--pin); text-transform:uppercase; margin:0 0 10px; }
+.tlr h1 { font-family:Georgia,"Songti SC","STSong","SimSun",serif; font-size:clamp(30px,5vw,44px); font-weight:700; line-height:1.15; margin:0 0 10px; letter-spacing:.01em; }
+.tlr .sub { font-size:14.5px; color:var(--graphite); max-width:72ch; margin:0 0 8px; }
+.tlr .sub a { color:var(--ink); text-decoration:underline; text-underline-offset:3px; }
+/* 覆盖条 */
+.cov-strip { display:flex; flex-wrap:wrap; gap:0 18px; row-gap:6px; margin:18px 0 22px; padding:10px 0; border-top:1px solid var(--rule); border-bottom:1px solid var(--rule); }
+.cov-strip .cov { font:400 12.5px/1.6 ui-monospace,monospace; color:var(--graphite); }
+.cov-strip .cov b { font-weight:700; color:var(--ink); font-size:14px; }
+.cov-strip .cov-label { font:700 11px/1.8 ui-monospace,monospace; letter-spacing:.14em; color:var(--pin); }
+/* 控制台 */
+.console { border:1px solid var(--rule); background:var(--card); border-radius:8px; padding:14px 16px; margin:0 0 8px; display:flex; flex-direction:column; gap:10px; }
+.console .row { display:flex; flex-wrap:wrap; gap:8px 14px; align-items:center; }
+.console .lab { font:700 10.5px/1 ui-monospace,monospace; letter-spacing:.16em; color:var(--graphite); text-transform:uppercase; min-width:56px; }
+.seg { display:inline-flex; border:1px solid var(--rule); border-radius:6px; overflow:hidden; }
+.seg button { border:none; background:transparent; color:var(--graphite); padding:7px 16px; font:600 13px/1.2 inherit; cursor:pointer; }
+.seg button + button { border-left:1px solid var(--rule); }
+.seg button.on { background:var(--ink); color:var(--paper); }
+.console select, .console input[type=search], .console input[type=number] {
+  padding:7px 10px; border-radius:6px; border:1px solid var(--rule); background:var(--card); color:inherit; font:400 13px/1.4 inherit;
+}
+.console input[type=search] { flex:1; min-width:170px; }
+.console input[type=number] { width:88px; font-family:ui-monospace,monospace; }
+.ghost-btn { border:1px solid var(--pin); background:transparent; color:var(--pin); border-radius:6px; padding:7px 14px; font:700 12.5px/1.2 inherit; cursor:pointer; }
+.ghost-btn:hover { background:color-mix(in srgb, var(--pin) 8%, transparent); }
+.vchip { border:1px solid var(--rule); background:transparent; color:var(--ink); border-radius:4px; padding:5px 12px; font:600 12.5px/1.3 inherit; cursor:pointer; }
+.vchip.on { background:var(--ink); border-color:var(--ink); color:var(--paper); }
+.fchip { display:inline-flex; align-items:center; gap:8px; border:1px solid var(--pin); color:var(--pin); border-radius:4px; padding:5px 10px; font:700 12.5px/1.2 ui-monospace,monospace; }
+.fchip button { border:none; background:transparent; color:inherit; cursor:pointer; font-size:13px; padding:0; line-height:1; }
+.tl-count { font:400 12.5px/1.6 ui-monospace,monospace; color:var(--graphite); margin:10px 2px 22px; }
 .tl-empty { color:var(--graphite); font-size:14px; padding:26px 0; }
 @media (max-width:640px) {
   .feed { padding-left:30px; }
@@ -476,20 +488,20 @@ a.bchip:hover { text-decoration:none; border-color:var(--pin); }
 `;
 
 /** 时间轴事件卡（服务端静态与客户端渲染共用同一 HTML 结构） */
-function tlEvtHtml(db, r, focusSet, rel = "../../") {
+function tlEvtHtml(db, r, opts = {}) {
+  const focusSet = opts.focusSet || null;
+  const chipBase = opts.chipBase !== undefined ? opts.chipBase : "../benchmarks/";
   const trust = r.verified === 0 ? "none" : r.pending === 0 ? "full" : "part";
   const region = r.region === "CN" ? "国内" : "国际";
   const chips = r.evidence.map(e => {
-    const known = db.benchmarks.some(b => b.id === e.benchmark_id);
+    // 账本中出现的每个评测都有详情页（正式实体或证据自动建档）——chip 一律可点
     const score = e.display ? ` <b>${esc(e.display)}</b>` : "";
     const cls = e.status === "verified" ? "ok" : "pd";
-    const focus = focusSet && focusSet.has(e.benchmark_id) ? " focus" : "";
+    const focus = focusSet && focusSet[e.benchmark_id] ? " focus" : "";
     const inner = `${esc(e.benchmark_id)}${e.variant ? " " + esc(e.variant) : ""}${score}`;
     const tip = [e.harness ? `harness: ${e.harness}` : null, e.effort ? `effort: ${e.effort}` : null]
       .filter(Boolean).join(" · ");
-    return known
-      ? `<a class="bchip ${cls}${focus}" href="${rel}benchmarks/${esc(e.benchmark_id)}/"${tip ? ` title="${esc(tip)}"` : ""}>${inner}</a>`
-      : `<span class="bchip plain${focus}" title="新 benchmark，实体页待建">${inner}</span>`;
+    return `<a class="bchip ${cls}${focus}" href="${chipBase}${esc(e.benchmark_id)}/"${tip ? ` title="${esc(tip)}"` : ""}>${inner}</a>`;
   }).join("");
   const proto = [];
   for (const e of r.evidence) {
@@ -538,7 +550,7 @@ function releasesTimelinePage(db, rel = "../../") {
   for (const r of inWindow) {
     const y = r.release_date ? r.release_date.slice(0, 4) : null;
     if (y && y !== prevYear) { staticParts.push(`<div class="yrm"><b>${esc(y)}</b></div>`); prevYear = y; }
-    staticParts.push(tlEvtHtml(db, r, null, rel));
+    staticParts.push(tlEvtHtml(db, r, { chipBase: rel + "benchmarks/" }));
   }
   const staticFeed = `<div class="feed">${staticParts.join("") || '<div class="tl-empty">暂无数据。</div>'}</div>`;
 
@@ -550,11 +562,11 @@ function releasesTimelinePage(db, rel = "../../") {
   };
 
   const desc = `按时间刻度罗列国内外主流大厂的核心模型发布：每个时间结点显示哪个模型发布、引用了哪些评测及该模型分数，点击进入对应评测介绍页；支持按厂商过滤、指定评测聚焦、分数阈值与关键字过滤。`;
-  return `${shellHead({ rel, title: "模型发布时间轴 · 评估大全", desc, path: "benchmarks/releases/", extra: `<style>${SHELL_CSS}${PAGE_CSS}${TIMELINE_CSS}</style>` })}
+  return `${shellHead({ rel, title: "模型发布时间轴 · 评估大全", desc, path: "benchmarks/releases/", extra: `<style>${SHELL_CSS}${PAGE_CSS}${EVT_CSS}${TIMELINE_CSS}</style>` })}
 </head>
 <body class="tlr-page">
 ${shellTopbar(rel, "releases")}
-<div class="tlr">
+<div class="tlr" id="main-content">
   <nav class="breadcrumb" style="margin-bottom:18px;"><a href="${rel}index.html">首页</a> / <b>模型发布</b></nav>
   <p class="eyebrow">Evaluation Ledger · 2023 — 2026</p>
   <h1>模型发布时间轴</h1>
@@ -611,7 +623,6 @@ window.EVALS_TL_REL = ${JSON.stringify(rel)};
     var trust=r.verified===0?'none':(r.pending===0?'full':'part');
     var region=r.region==='CN'?'国内':'国际';
     var chips=r.evidence.map(function(e){
-      var known=D.benchmarks.some(function(b){return b.id===e.benchmark_id;});
       var score=e.display?' <b>'+esc(e.display)+'</b>':'';
       var cls=e.status==='verified'?'ok':'pd';
       var focus=fs[e.benchmark_id]?' focus':'';
@@ -717,6 +728,48 @@ window.EVALS_TL_REL = ${JSON.stringify(rel)};
 </html>`;
 }
 
+// ---------- 证据自动建档页：账本里出现、但尚无正式实体的评测（罗列已知信息，缺失不编造） ----------
+
+function autoBenchmarkPage(db, id, rows) {
+  const verified = rows.filter(x => x.e.status === "verified" && x.fresh);
+  const freshPending = rows.filter(x => x.e.status !== "verified" && x.fresh);
+  const archived = rows.filter(x => !x.fresh);
+  const sources = [...new Set(rows.map(x => x.e.url).filter(Boolean))];
+  const vendors = [...new Set(rows.map(x => x.r.vendor_label))];
+  const rel = "../";
+  const cardFor = (x) => tlEvtHtml(db, x.r, { focusSet: { [id]: 1 }, chipBase: "../" });
+  const sec = (title, note, list) => `<p style="font-weight:700;margin:14px 0 4px;">${title}（${list.length}）<span style="font-weight:400;color:#94a3b8;font-size:13px;"> — ${note}</span></p>` +
+    `<div class="feed" style="padding-left:26px;">${list.map(cardFor).join("")}</div>`;
+  const adopt =
+    (verified.length ? sec("已核验", "近三年窗口内，已定位到发布页原文", verified) : "") +
+    (freshPending.length ? sec("待核验", "分数在图片表格中或定位待人工确认", freshPending) : "") +
+    (archived.length ? `<details style="margin:14px 0;"><summary style="cursor:pointer;font-weight:700;font-size:14px;color:#64748b;">档案引用（${archived.length} 条）</summary><div class="feed" style="padding-left:26px;">${archived.map(cardFor).join("")}</div></details>` : "");
+  const title = `${id} · 评测参考（证据自动建档） · 评估大全`;
+  const desc = truncate(`${id}：出现在 ${rows.length} 次主流模型官方发布引用中（${vendors.join("、")}）。本页由证据账本自动建档，罗列每次引用的分数、协议与原文；完整定义与数据集资料深度研究补全中。`, 150);
+  return `${shellHead({ rel: "../../", title, desc, path: `benchmarks/${id}/`, extra: `<style>${SHELL_CSS}${PAGE_CSS}${EVT_CSS}</style>` })}
+</head>
+<body>
+${shellTopbar("../../", "benchmarks")}
+<main id="main-content" class="detail-main bm-container">
+  <nav class="breadcrumb"><a href="../../index.html">首页</a> / <a href="../">评估大全</a> / <b>${esc(id)}</b></nav>
+  <div class="detail-head"><h1>${esc(id)}</h1><span class="status-badge status-saturation">证据自动建档</span></div>
+  <p style="font-size:15.5px;color:#475569;margin:6px 0 0;">该评测出现在 <b>${rows.length}</b> 次官方模型发布引用中（${esc(vendors.join("、"))}）。本页由证据账本自动生成：罗列每次引用的分数、协议与原文；完整定义、数据集与指标资料正在深度研究补全，缺失信息不编造。</p>
+  <div class="callout">下方每次「发布」卡片即一次真实引用：朱砂描边的 chip 是<b>本评测在该发布中的报告分数</b>，其余 chip 是同一次发布引用的其他评测。点击卡片里的评测名可进入对应介绍页。</div>
+
+  <h2 class="detail-sec" id="adoption">官方发布引用记录</h2>
+  <p class="refs">共 ${rows.length} 条（已核验 ${verified.length} · 待核验 ${freshPending.length}${archived.length ? ` · 档案 ${archived.length}` : ""}）${db.updated ? ` · 数据更新于 ${esc(db.updated)}` : ""}</p>
+  ${adopt}
+
+  <h2 class="detail-sec" id="sources">来源</h2>
+  <div class="ext-links">${sources.map(u => `<a href="${esc(u)}" target="_blank" rel="noopener">${esc(u.length > 60 ? u.slice(0, 57) + "…" : u)}</a>`).join("")}</div>
+  <p class="refs" style="margin-top:14px;">发现本页数据问题？欢迎在 <a href="https://github.com/zenHeart/evals" target="_blank" rel="noopener">GitHub</a> 提 Issue。</p>
+</main>
+<footer class="site-foot"><a href="${SITE}">evals.zenheart.site</a> · MIT License · ZenHeart</footer>
+${SHELL_JS}
+</body>
+</html>`;
+}
+
 // ---------------------------------------------------------------- main
 
 function main() {
@@ -785,7 +838,26 @@ function main() {
     writeFileSync(join(outDir, "index.html"), detailPage(db, b, cats[b.category] || { name: b.category, color: "#94a3b8" }, sameCat.slice(0, 6)), "utf-8");
   }
 
-  console.log(`[evals-hub] Built explorer + ${db.benchmarks.length} detail pages → dist/benchmarks/`);
+  // 证据自动建档页：账本中出现但无实体档的评测 100% 有可分享详情页
+  const entityIds = new Set(db.benchmarks.map(b => b.id));
+  const evidenceById = new Map();
+  for (const r of db.releases) {
+    for (const e of r.evidence) {
+      if (entityIds.has(e.benchmark_id)) continue;
+      if (!evidenceById.has(e.benchmark_id)) evidenceById.set(e.benchmark_id, []);
+      const fresh = Boolean(r.release_date) && r.release_date >= db.cutoff;
+      evidenceById.get(e.benchmark_id).push({ r, e, fresh });
+    }
+  }
+  let autoCount = 0;
+  for (const [id, rows] of evidenceById) {
+    const outDir = join(dir, id);
+    mkdirSync(outDir, { recursive: true });
+    writeFileSync(join(outDir, "index.html"), autoBenchmarkPage(db, id, rows), "utf-8");
+    autoCount++;
+  }
+
+  console.log(`[evals-hub] Built explorer + ${db.benchmarks.length} entity pages + ${autoCount} auto-evidence pages → dist/benchmarks/`);
 }
 
 main();

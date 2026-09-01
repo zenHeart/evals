@@ -55,6 +55,8 @@ h1 { font-family: var(--serif); }
   position: sticky; top: 0; background: color-mix(in srgb, var(--paper) 94%, transparent);
   backdrop-filter: blur(8px); z-index: 100;
 }
+.skip-link { position:absolute; left:-9999px; top:8px; z-index:300; background:var(--pin,#D14A24); color:#fff; padding:8px 16px; border-radius:6px; font-size:14px; text-decoration:none; }
+.skip-link:focus { left:8px; }
 .logo { font-family:var(--serif); font-weight:700; font-size:17.5px; white-space:nowrap; text-decoration:none; color:var(--ink); }
 .logo b { color:var(--pin); }
 .topbar nav { display: flex; align-items: center; gap: 2px; flex-wrap: nowrap; min-width: 0; }
@@ -138,7 +140,8 @@ export function shellTopbar(rel = "", active = "") {
     const isCur = item.key === active;
     return `<a class="nav-item${isCur ? " active" : ""}" href="${rel}${item.href}"${isCur ? ' aria-current="page"' : ""}>${item.label}</a>`;
   }).join("\n    ");
-  return `<header class="topbar">
+  return `<a class="skip-link" href="#main-content">跳到主内容</a>
+<header class="topbar">
   <a class="logo" href="${rel}index.html">📚 <b>Eval Handbook</b></a>
   <nav aria-label="主导航">
     ${nav}
