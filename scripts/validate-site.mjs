@@ -180,6 +180,14 @@ function checkDist() {
   const leaked = files.filter(f => relative(dist, f).replace(/\\/g, "/").startsWith("research/"));
   if (leaked.length) err(`[privacy] dist 中发现内部 research 产物 ${leaked.length} 个（示例：${relative(dist, leaked[0])}）`);
 
+  // 5b. 占位文案：dist 中不得残留「待补」类未完成标记
+  for (const f of htmlFiles) {
+    const html = readFileSync(f, "utf-8");
+    for (const pat of ["解读待补", "待收录", "待建"]) {
+      if (html.includes(pat)) err(`[placeholder] ${relative(dist, f)} 残留占位文案「${pat}」`);
+    }
+  }
+
   // 4. 内部链接
   let checked = 0;
   for (const f of htmlFiles) {
