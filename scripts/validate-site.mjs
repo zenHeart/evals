@@ -190,7 +190,7 @@ function checkDist() {
     for (const m of html.matchAll(/(?:href|src)="([^"#]+)(#[^"]*)?"/g)) {
       const raw = m[1];
       if (/^(https?:|mailto:|data:|javascript:)/.test(raw)) continue;
-      const target = resolve(base, raw);
+      const target = raw.startsWith("/") ? join(dist, raw) : resolve(base, raw);
       const rel = relative(dist, target).replace(/\\/g, "/");
       if (rel.startsWith("..")) { err(`[link] ${relative(dist, f)} → "${raw}" 越出 dist`); continue; }
       checked++;

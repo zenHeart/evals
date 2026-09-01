@@ -1032,6 +1032,12 @@ async function main() {
   if (existsSync(join(REPO_ROOT, "evals.epub"))) {
     copyFileSync(join(REPO_ROOT, "evals.epub"), join(DIST, "evals.epub"));
   }
+  // 厂商 logo 资产拷入 dist（事件卡厂商行/覆盖条/结点徽章引用）
+  const logosSrc = join(REPO_ROOT, "assets", "logos");
+  if (existsSync(logosSrc)) {
+    mkdirSync(join(DIST, "assets", "logos"), { recursive: true });
+    for (const f of readdirSync(logosSrc)) copyFileSync(join(logosSrc, f), join(DIST, "assets", "logos", f));
+  }
 
   try { QUIZ_ANSWERS = JSON.parse(readFileSync(join(REPO_ROOT, "book", "quiz-answers.json"), "utf-8")); console.log(`[evals-web] quiz answers: ${Object.keys(QUIZ_ANSWERS).length} chapters`); } catch { QUIZ_ANSWERS = {}; }
 

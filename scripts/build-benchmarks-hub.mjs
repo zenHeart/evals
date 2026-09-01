@@ -20,7 +20,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { SITE, SHELL_CSS, shellHead, shellTopbar, shellFooter, SHELL_JS } from "./site-shell.mjs";
 import { loadBenchData } from "./load-data.mjs";
-import { VENDOR_SVG, VENDOR_LETTER } from "./vendor-logos.mjs";
+import { vendorMark, LOGO_EXT } from "./vendor-logos.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = join(__dirname, "..");
@@ -418,10 +418,7 @@ const EVT_CSS = `
 .evt[data-trust="full"] .pin-logo { border-color: var(--ok); }
 .evt[data-trust="part"] .pin-logo { border-color: var(--warn); }
 .evt[data-trust="none"] .pin-logo { border-color: var(--rule); }
-.vmark-l, .vmark-d { display:inline-flex; align-items:center; justify-content:center; }
-.vmark-d { display:none; }
-body.dark .vmark-l { display:none; }
-body.dark .vmark-d { display:inline-flex; }
+.vlogo-img { display:inline-block; vertical-align:-3px; border-radius:4px; background:var(--card); }
 .evt-head { display:flex; align-items:baseline; gap:12px; flex-wrap:wrap; }
 .evt-date { font:700 13px/1 ui-monospace,monospace; color:var(--pin); }
 .evt-vendor { font:700 10.5px/1 ui-monospace,monospace; letter-spacing:.14em; color:var(--graphite); text-transform:uppercase; }
@@ -543,7 +540,7 @@ function tlEvtHtml(db, r, opts = {}) {
     ${pinLogo(r.vendor_id, trust)}
     <div class="evt-head">
       <span class="evt-date">${r.release_date ? esc(r.release_date) : "日期待核验"}</span>
-      <span class="evt-vendor">${vendorLogoDual(r.vendor_id, 13)} ${esc(r.vendor_label)}<i>·</i>${region}</span>
+      <span class="evt-vendor">${vendorMark(r.vendor_id, 14)} ${esc(r.vendor_label)}<i>·</i>${region}</span>
     </div>
     <h3 class="evt-title">${esc(r.models.length ? r.models.join(" / ") : r.release_title)}</h3>
     ${r.models.length ? `<div class="evt-blog">发布文：${r.source_url ? `<a href="${esc(r.source_url)}" target="_blank" rel="noopener">${esc(r.release_title)}</a>` : esc(r.release_title)}</div>` : ""}
@@ -568,7 +565,7 @@ function releasesTimelinePage(db, rel = "../../") {
   const cov = [...covCounts.entries()].sort((a, b) => b[1] - a[1])
     .map(([vid, n]) => {
       const v = db.vendors.find(x => x.id === vid);
-      return `<span class="cov">${vendorLogoDual(vid, 12)} ${esc(v?.display_name || v?.name || vid)} <b>${n}</b></span>`;
+      return `<span class="cov">${vendorMark(vid, 14)} ${esc(v?.display_name || v?.name || vid)} <b>${n}</b></span>`;
     }).join("");
 
   // noscript 静态默认视图：单一时间轴（近三年），结点=模型名称，年份刻度
@@ -585,8 +582,7 @@ function releasesTimelinePage(db, rel = "../../") {
 
   const tlData = {
     cutoff,
-    vendorSvg: VENDOR_SVG,
-    vendorLetter: VENDOR_LETTER,
+    logoExt: LOGO_EXT,
     benchmarks: db.benchmarks.map(b => ({ id: b.id, name: b.name })).sort((a, b) => a.id.localeCompare(b.id)),
     vendors: db.vendors.map(v => ({ id: v.id, label: v.display_name || v.name, region: v.region ?? "" })),
     releases: db.releases,
@@ -641,25 +637,14 @@ window.EVALS_TL_REL = ${JSON.stringify(rel)};
   var state={win:'fresh',vendors:[],bench:null,filters:[],q:''};
   var benchName={}; D.benchmarks.forEach(function(b){benchName[b.id]=b.name;});
   function pinLogo(vid,trust){
-    var svg=D.vendorSvg&&D.vendorSvg[vid];
-    var L=D.vendorLetter&&D.vendorLetter[vid];
-    var inner='';
-    var dark=document.body.classList.contains('dark');
-    if(svg){
-      var color=dark?(svg.dark||svg.brand):svg.brand;
-      inner='<span class="vmark-l"><svg width="16" height="16" viewBox="'+svg.viewBox+'" fill="'+color+'" aria-hidden="true"><path d="'+svg.path+'"/></svg></span>';
-    }else if(L){
-      var c=dark?(L.cd||L.c):L.c;
-      inner='<span class="vmark-l"><b style="color:'+c+'">'+L.t+'</b></span>';
-    }else{inner='<span class="vmark-l"><b style="color:var(--graphite)">·</b></span>';}
-    return '<span class="pin-logo pin-'+trust+'" aria-hidden="true">'+inner+'</span>';
+    var ext=D.logoExt&&D.logoExt[vid];
+    var img=ext?'<img class="vlogo-img" src="'+REL+'assets/logos/'+vid+'.'+ext+'" width="17" height="17" alt="">':'<b style="color:var(--graphite)">·</b>';
+    return '<span class="pin-logo pin-'+trust+'" aria-hidden="true">'+img+'</span>';
   }
   function vendorMark(vid,size){
-    var svg=D.vendorSvg&&D.vendorSvg[vid];
-    if(svg)return '<svg class="vlogo" width="'+size+'" height="'+size+'" viewBox="'+svg.viewBox+'" fill="currentColor" aria-hidden="true"><path d="'+svg.path+'"/></svg>';
-    var L=D.vendorLetter&&D.vendorLetter[vid];
-    if(L)return '<span class="vlogo-letter" style="width:'+(size+2)+'px;height:'+(size+2)+'px;color:'+L.c+';font-size:'+Math.round(size*0.72)+'px" aria-hidden="true">'+L.t+'</span>';
-    return '';
+    var ext=D.logoExt&&D.logoExt[vid];
+    if(!ext)return '';
+    return '<img class="vlogo-img" src="'+REL+'assets/logos/'+vid+'.'+ext+'" width="'+size+'" height="'+size+'" alt="" loading="lazy">';
   }
   function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
 
@@ -783,34 +768,13 @@ window.EVALS_TL_REL = ${JSON.stringify(rel)};
 
 /** 刻度尺结点：厂商品牌色 logo 徽章（明暗双变体，信任等级由描边色表达） */
 /** 行内厂商 logo（明暗双变体，跟随主题切换） */
-function vendorLogoDual(vid, size = 13) {
-  const svg = VENDOR_SVG[vid];
-  const L = VENDOR_LETTER[vid];
-  if (svg) {
-    return `<span class="vmark-l"><svg width="${size}" height="${size}" viewBox="${svg.viewBox}" fill="${svg.brand}" aria-hidden="true"><path d="${svg.path}"/></svg></span><span class="vmark-d"><svg width="${size}" height="${size}" viewBox="${svg.viewBox}" fill="${svg.dark || svg.brand}" aria-hidden="true"><path d="${svg.path}"/></svg></span>`;
-  }
-  if (L) {
-    return `<span class="vmark-l"><b style="color:${L.c}">${L.t}</b></span><span class="vmark-d"><b style="color:${L.cd || L.c}">${L.t}</b></span>`;
-  }
-  return "";
-}
-
 function pinLogo(vid, trust) {
-  const svg = VENDOR_SVG[vid];
-  const L = VENDOR_LETTER[vid];
-  let inner = "";
-  if (svg) {
-    inner = `<span class="vmark-l"><svg width="16" height="16" viewBox="${svg.viewBox}" fill="${svg.brand}" aria-hidden="true"><path d="${svg.path}"/></svg></span>` +
-      `<span class="vmark-d"><svg width="16" height="16" viewBox="${svg.viewBox}" fill="${svg.dark || svg.brand}" aria-hidden="true"><path d="${svg.path}"/></svg></span>`;
-  } else if (L) {
-    inner = `<span class="vmark-l"><b style="color:${L.c}">${L.t}</b></span><span class="vmark-d"><b style="color:${L.cd || L.c}">${L.t}</b></span>`;
-  } else {
-    inner = `<span class="vmark-l"><b style="color:var(--graphite)">·</b></span>`;
-  }
-  return `<span class="pin-logo pin-${trust}" aria-hidden="true">${inner}</span>`;
+  const ext = LOGO_EXT[vid];
+  const img = ext
+    ? `<img class="vlogo-img" src="/assets/logos/${vid}.${ext}" width="17" height="17" alt="">`
+    : `<b style="color:var(--graphite)">·</b>`;
+  return `<span class="pin-logo pin-${trust}" aria-hidden="true">${img}</span>`;
 }
-
-// ---------- 证据自动建档页：账本里出现、但尚无正式实体的评测（罗列已知信息，缺失不编造） ----------
 
 function autoBenchmarkPage(db, id, rows) {
   const verified = rows.filter(x => x.e.status === "verified" && x.fresh);
