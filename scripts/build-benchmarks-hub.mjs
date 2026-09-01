@@ -303,7 +303,7 @@ function detailPage(db, b, cat, related) {
   const hasReleaseRefs = (db.releases || []).length > 0 && cite.every(a => a.release_id);
   const cardFor = (a) => {
     const rel = db.releases.find(x => x.id === a.release_id);
-    return rel ? tlEvtHtml(db, rel, { focusSet: { [b.id]: 1 }, chipBase: "../" }) : "";
+    return rel ? tlEvtHtml(db, rel, { benchId: b.id, chipBase: "../" }) : "";
   };
   let adoptBlock;
   if (!cite.length) {
@@ -500,9 +500,19 @@ body.dark .tlr {
 function tlEvtHtml(db, r, opts = {}) {
   const focusSet = opts.focusSet || null;
   const chipBase = opts.chipBase !== undefined ? opts.chipBase : "../benchmarks/";
+  // bench 语境（评测详情页引用卡）：只讲「哪个模型、本次报告多少分」，其余评测折叠为计数
+  const benchMode = Boolean(opts.benchId);
+  const benchRow = benchMode ? r.evidence.find(e => e.benchmark_id === opts.benchId) : null;
   const trust = r.verified === 0 ? "none" : r.pending === 0 ? "full" : "part";
   const region = r.region === "CN" ? "国内" : "国际";
-  const chips = r.evidence.map(e => {
+  const chips = (benchMode && benchRow) ? (() => {
+    const cls = benchRow.status === "verified" ? "ok" : "pd";
+    const others = r.evidence.length - 1;
+    const tip = [benchRow.harness ? `harness: ${benchRow.harness}` : null, benchRow.effort ? `effort: ${benchRow.effort}` : null]
+      .filter(Boolean).join(" · ");
+    return `<a class="bchip ${cls} focus" href="${chipBase}${esc(benchRow.benchmark_id)}/"${tip ? ` title="${esc(tip)}"` : ""}>${esc(benchRow.benchmark_id)}${benchRow.variant ? " " + esc(benchRow.variant) : ""} <b>${esc(benchRow.display || "未公布")}</b></a>` +
+      (others > 0 ? `<span class="bchip plain" title="本次发布同时引用的其他评测">+ ${others} 个其他评测</span>` : "");
+  })() : r.evidence.map(e => {
     // 账本中出现的每个评测都有详情页（正式实体或证据自动建档）——chip 一律可点
     const score = e.display ? ` <b>${esc(e.display)}</b>` : "";
     const cls = e.status === "verified" ? "ok" : "pd";
@@ -637,8 +647,7 @@ window.EVALS_TL_REL = ${JSON.stringify(rel)};
       var focus=fs[e.benchmark_id]?' focus':'';
       var inner=esc(e.benchmark_id)+(e.variant?' '+esc(e.variant):'')+score;
       var tip=[];if(e.harness)tip.push('harness: '+esc(e.harness));if(e.effort)tip.push('effort: '+esc(e.effort));
-      return known?'<a class="bchip '+cls+focus+'" href="../'+esc(e.benchmark_id)+'/"'+(tip.length?' title="'+tip.join(' · ')+'"':'')+'>'+inner+'</a>'
-                  :'<span class="bchip plain'+focus+'" title="新 benchmark，实体页待建">'+inner+'</span>';
+      return '<a class="bchip '+cls+focus+'" href="'+REL+'benchmarks/'+esc(e.benchmark_id)+'/"'+(tip.length?' title="'+tip.join(' · ')+'"':'')+'>'+inner+'</a>';
     }).join('');
     var h='',ef='';
     for(var i=0;i<r.evidence.length;i++){var e=r.evidence[i];
@@ -746,7 +755,7 @@ function autoBenchmarkPage(db, id, rows) {
   const sources = [...new Set(rows.map(x => x.e.url).filter(Boolean))];
   const vendors = [...new Set(rows.map(x => x.r.vendor_label))];
   const rel = "../";
-  const cardFor = (x) => tlEvtHtml(db, x.r, { focusSet: { [id]: 1 }, chipBase: "../" });
+  const cardFor = (x) => tlEvtHtml(db, x.r, { benchId: id, chipBase: "../" });
   const sec = (title, note, list) => `<p style="font-weight:700;margin:14px 0 4px;">${title}（${list.length}）<span style="font-weight:400;color:var(--graphite);font-size:13px;"> — ${note}</span></p>` +
     `<div class="feed" style="padding-left:26px;">${list.map(cardFor).join("")}</div>`;
   const adopt =
