@@ -7,7 +7,7 @@
 > 4. 工具与文件归属
 
 > **执行合同**：本仓的站点优化执行合同在 [`_docs/goal.md`](_docs/goal.md)；冲突时事实与任务目标以 goal.md 最新版为准，写作风格与章节结构规范以本文件为准。
-> **站点验收**：任何页面/功能交付前，按 [`_docs/site-review-checklist.md`](_docs/site-review-checklist.md) 的四视角读者任务矩阵实测（学习者/查询者/UI 新人/工程师），覆盖对账以证据账本 id 为准。
+> **站点验收**：任何页面/功能交付前，按 [`docs/site-review-checklist.md`](docs/site-review-checklist.md) 的四视角读者任务矩阵实测（学习者/查询者/UI 新人/工程师），覆盖对账以证据账本 id 为准。
 
 ---
 
