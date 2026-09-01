@@ -411,7 +411,7 @@ const EVT_CSS = `
 .evt { position:relative; margin:0 0 18px; border:1px solid var(--rule); border-radius:8px; background:var(--card); padding:13px 18px 12px; }
 .evt:hover { border-color:var(--graphite); }
 .evt .pin-logo {
-  position:absolute; left:-44px; top:12px; width:30px; height:30px; border-radius:8px;
+  position:absolute; left:-51px; top:12px; width:30px; height:30px; border-radius:8px;
   background:var(--card); border:1.5px solid var(--rule);
   display:inline-flex; align-items:center; justify-content:center;
 }
@@ -501,7 +501,7 @@ body.dark .tlr {
   .feed { padding-left:30px; }
   .feed::before { left:8px; }
   .yrm b { left:-40px; width:36px; font-size:18px; }
-  .evt .pin-logo { left:-32px; width:24px; height:24px; }
+  .evt .pin-logo { left:-34px; width:24px; height:24px; }
   .pin-logo svg { width:13px; height:13px; }
 }
 `;
