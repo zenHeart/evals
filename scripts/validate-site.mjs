@@ -87,7 +87,19 @@ function checkCrossReferences(parts) {
     if (!existsSync(mdPath)) continue;
     const md = readFileSync(mdPath, "utf-8").replace(/```[\s\S]*?```/g, " ").replace(/`[^`]*`/g, " ");
     const lines = md.split(/\r?\n/);
+    // 自测节内引用其他章节的小节 = 高危旧编号残留信号（自测通常引用本章）；仅警告不阻断
+    let inQuiz = false;
+    const curNum = f.match(/chapter-(\d+)/)?.[1] ?? null;
     lines.forEach((line, i) => {
+      if (/^##\s/.test(line.trim())) inQuiz = /自测/.test(line);
+      if (inQuiz && curNum) {
+        for (const m of line.matchAll(/(?:见|读|对应|参见|详见|回顾)\s*(\d+\.\d+)/g)) {
+          const refCh = m[1].split(".")[0];
+          if (refCh !== curNum && chapterNums.has(refCh)) {
+            warn.push(`[xref-suspect] ${f}:${i + 1} 自测节引用了其他章小节「${m[1]}」——可能是章节重排前的旧编号（同章常为 ${curNum}.${m[1].split(".").slice(1).join(".")}），请人工确认`);
+          }
+        }
+      }
       for (const m of line.matchAll(/第\s*(\d+)\s*章/g)) {
         if (!chapterNums.has(m[1])) err(`[xref] ${f}:${i + 1} 引用了不存在的「第 ${m[1]} 章」→ "${line.trim().slice(0, 60)}"`);
       }

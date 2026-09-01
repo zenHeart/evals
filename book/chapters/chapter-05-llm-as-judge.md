@@ -546,7 +546,7 @@ export async function twoStageJudge(q: string, answer: string, ctx: string) {
 
 4. **简答**：为什么"永远输出 correct"的判官在一批 70% 正确的数据上能拿到 70% 观察一致率，但 kappa 为 0？
 
-5. **实操**：把 18.3.2 的 score-judge 跑在你业务的 20 条真实样本上；双人独立人工标注后算 kappa；改动一处判据锚点再跑一次，记录修改前后的 kappa 变化，把两次结果写进你的判官版本记录。
+5. **实操**：把 5.3.2 的 score-judge 跑在你业务的 20 条真实样本上；双人独立人工标注后算 kappa；改动一处判据锚点再跑一次，记录修改前后的 kappa 变化，把两次结果写进你的判官版本记录。
 
 ## 5.10 本章 Cheat Sheet
 

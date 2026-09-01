@@ -344,7 +344,7 @@ drift 检测最容易踩的坑是**只盯分数不盯输入分布**。判官分�
 
 5. **简答**：为什么生产在线判官必须写成 reference-free 版本？如果它依赖参考答案会发生什么？
 
-6. **实操**：跑通 20.5 的 `mini-rag-eval.ts`：造 5 条 case（至少 1 条让答案故意写一个 contexts 里不存在的数字），观察 `faithfulness` 是否明显低于其他 case 并确认修复提示输出；再给一条答案加指向错误 chunk 的 `[2]` 标注，验证 `citation_precision` 掉分。
+6. **实操**：跑通 21.5 的 `mini-rag-eval.ts`：造 5 条 case（至少 1 条让答案故意写一个 contexts 里不存在的数字），观察 `faithfulness` 是否明显低于其他 case 并确认修复提示输出；再给一条答案加指向错误 chunk 的 `[2]` 标注，验证 `citation_precision` 掉分。
 
 ## 21.10 本章 Cheat Sheet
 

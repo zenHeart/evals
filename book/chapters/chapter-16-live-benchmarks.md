@@ -258,7 +258,7 @@ async function runMonthly(tasks: LiveTask[], cutoff: string): Promise<MonthlyRep
 
 5. **简答**：为什么"持续评测停止更新的那一刻，它比普通静态基准更糟"？用信任溢价解释。
 
-6. **实操**：按 12.7 三步法搭一条月度评测流水线：从你的业务日志抽 100 道题打时间戳，跑一次并输出 `newTaskScore / anchorScore / drift / highRiskBlocked` 四个数；然后人为把锚点题难度调高，观察 drift 的变化并解释它揭示了什么。
+6. **实操**：按 16.7 三步法搭一条月度评测流水线：从你的业务日志抽 100 道题打时间戳，跑一次并输出 `newTaskScore / anchorScore / drift / highRiskBlocked` 四个数；然后人为把锚点题难度调高，观察 drift 的变化并解释它揭示了什么。
 
 ## 16.9 📋 本章 Cheat Sheet
 

@@ -531,7 +531,7 @@ lm_eval --model openai-completions --model_args model=gpt-4o-mini \
 
 5. **简答**：厂商报告说"我们模型 MMLU 88 分，所以 agent 能力领先"，你会用本章哪两个证据质疑这个推理？
 
-6. **实操**：用 `npx promptfoo eval` 跑通 16.9.1 的 YAML（把 provider 换成你有 Key 的模型），再打开 `promptfoo view` 找到两个测试用例的对比结果页。
+6. **实操**：用 `npx promptfoo eval` 跑通 19.9 的 YAML（把 provider 换成你有 Key 的模型），再打开 `promptfoo view` 找到两个测试用例的对比结果页。
 
 ## 19.11 本章 Cheat Sheet
 

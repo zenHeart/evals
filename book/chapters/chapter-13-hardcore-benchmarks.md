@@ -394,7 +394,7 @@ ls ./tb-results && cat ./tb-results/*/result.json
 
 5. **简答**：MLE-bench 用"Kaggle 奖牌"做汇总指标，相比"平均分"好在哪里？又引入了什么新问题？
 
-6. **实操**：按 9.11.1 跑 Terminal-Bench 的 5 道题，记录每题 PASS/FAIL、耗时与失败轨迹；把失败题按"环境问题 / 任务理解问题 / 工具误用"归因，各至少给出一个例子。
+6. **实操**：按 13.11 跑 Terminal-Bench 的 5 道题，记录每题 PASS/FAIL、耗时与失败轨迹；把失败题按"环境问题 / 任务理解问题 / 工具误用"归因，各至少给出一个例子。
 
 ## 13.13 本章 Cheat Sheet
 

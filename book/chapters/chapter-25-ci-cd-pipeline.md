@@ -416,7 +416,7 @@ console.log(`backflow: ${failing.length} items -> ${poolPath}`);
 
 5. **简答**：L4 为什么不在 CI 里跑？它的采样率、花费上限、判官错误率上限为什么要做成配置？
 
-6. **实操**：把 24.5.2 的 `check-regression.mjs` 跑一遍，然后用 `--total 50` 与 `--total 500` 各构造一组 86%→80% 的数据，对比 `regressed` 的差异；再把自己的告警消息模板（24.6.2）发到一个测试频道，检查五字段是否齐全。
+6. **实操**：把 25.5.2 的 `check-regression.mjs` 跑一遍，然后用 `--total 50` 与 `--total 500` 各构造一组 86%→80% 的数据，对比 `regressed` 的差异；再把自己的告警消息模板（25.6.2）发到一个测试频道，检查五字段是否齐全。
 
 ## 25.11 📋 本章 Cheat Sheet
 

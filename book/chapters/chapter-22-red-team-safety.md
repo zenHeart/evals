@@ -395,7 +395,7 @@ process.exitCode = failed ? 1 : 0; // 与第 20 章同一个门禁契约：过�
 
 5. **简答**：Garak 的进程退出码为什么不直接用于 CI 门禁？`redteam-gate.mjs` 补上了什么？
 
-6. **实操**：跑通 21.6 的 `injection-suite.ts`：先只保留 `direct-basic` 与 `indirect-rag` 两条，观察间接注入是否更容易击穿；再加两条良性对照（表面相似但无害），统计"误拒数"，体验 ASR 与误拒率的跷跷板。
+6. **实操**：跑通 22.6 的 `injection-suite.ts`：先只保留 `direct-basic` 与 `indirect-rag` 两条，观察间接注入是否更容易击穿；再加两条良性对照（表面相似但无害），统计"误拒数"，体验 ASR 与误拒率的跷跷板。
 
 ## 22.11 本章 Cheat Sheet
 
