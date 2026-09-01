@@ -534,7 +534,7 @@ function tlEvtHtml(db, r, opts = {}) {
     if (!proto.h && e.harness) proto.h = `harness ${esc(e.harness)}`;
     if (!proto.e && e.effort) proto.e = `effort ${esc(e.effort)}`;
   }
-  const metaBits = [`证据 <b>${r.verified}</b>·<i>${r.pending}</i> / ${r.evidence.length}`, proto.h, proto.e]
+  const metaBits = [`<b>已核验 ${r.verified}</b> / 待核验 ${r.pending} / 共 ${r.evidence.length} 条证据`, proto.h, proto.e]
     .filter(Boolean).join(" · ");
   return `<article class="evt" data-trust="${trust}">
     ${pinLogo(r.vendor_id, trust)}
@@ -671,7 +671,7 @@ window.EVALS_TL_REL = ${JSON.stringify(rel)};
     for(var i=0;i<r.evidence.length;i++){var e=r.evidence[i];
       if(!h&&e.harness)h='harness '+esc(e.harness);
       if(!ef&&e.effort)ef='effort '+esc(e.effort);}
-    var meta='证据 <b>'+r.verified+'</b>·<i>'+r.pending+'</i> / '+r.evidence.length;
+    var meta='<b>已核验 '+r.verified+'</b> / 待核验 '+r.pending+' / 共 '+r.evidence.length+' 条证据';
     if(h)meta+=' · '+h; if(ef)meta+=' · '+ef;
     var pin=pinLogo(r.vendor_id,trust);
     return '<article class="evt" data-trust="'+trust+'">'+
