@@ -352,7 +352,7 @@ ${shellTopbar("../../", "benchmarks")}
   ${b.adoptionNote ? `<div class="callout"><b>采用格局：</b>${esc(b.adoptionNote)}</div>` : ""}
 
   <h2 class="detail-sec" id="protocol">评分协议</h2>
-  ${b.protocol ? `<p>${esc(b.protocol)}</p>` : `<p style="color:var(--graphite)">协议信息待收录。</p>`}
+  ${b.protocol ? `<p>${esc(b.protocol)}</p>` : `<p style="color:var(--graphite)">基准级统一协议待收录——各厂商实际使用的 harness / effort 已逐条记在下方引用卡中。</p>`}
   <div class="callout warn"><b>可比性提示：</b>同一 benchmark 的分数是「实验配置」的产物——benchmark variant、harness、reasoning effort、tools、采样参数、run 次数与聚合方式任一不同，数字都不能直接横向比较。下表各厂商分数如未披露协议细节，请只作方向性参考。</div>
 
   <h2 class="detail-sec" id="adoption">厂商采用记录（模型发布时作为基准引用）</h2>

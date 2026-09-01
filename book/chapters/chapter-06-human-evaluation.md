@@ -17,7 +17,7 @@
 - 用 Cohen's kappa 量化评估员一致性，把金标准样本埋进任务流做过程监控
 - 用 Label Studio 落地一场带盲评与随机化的 pairwise 评估
 
-人类评估在方法家族里是成本最高的一档（来源：research/academic-history.md §C 方法家族地图），所以这章的重心是"别浪费"：该上人类的时候上对范式、招对人、量对一致性；不该上人类的时候坚决走自动化。
+人类评估在方法家族里是成本最高的一档（来源：https://github.com/zenHeart/evals/blob/main/research/academic-history.md §C 方法家族地图），所以这章的重心是"别浪费"：该上人类的时候上对范式、招对人、量对一致性；不该上人类的时候坚决走自动化。
 
 ## 6.2 何时必须上人类：决策树
 

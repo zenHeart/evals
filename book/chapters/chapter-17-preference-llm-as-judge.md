@@ -18,7 +18,7 @@
 
 ### 17.2.1 学术基准的结构性盲区
 
-MMLU 是四选一,GSM8K 答案是一个数字,HumanEval 靠单元测试判分——它们的共同前提是:**存在唯一正确的答案**。但 2022 年 11 月 ChatGPT 上线后,评估对象突然变成了对话模型,三个问题随之暴露(来源:research/academic-history.md §9.1):
+MMLU 是四选一,GSM8K 答案是一个数字,HumanEval 靠单元测试判分——它们的共同前提是:**存在唯一正确的答案**。但 2022 年 11 月 ChatGPT 上线后,评估对象突然变成了对话模型,三个问题随之暴露(来源:https://github.com/zenHeart/evals/blob/main/research/academic-history.md §9.1):
 
 1. **模型会背题**:开放模型在互联网文本上训练,而 GLUE/MMLU 的题目就在互联网上;
 2. **对话质量没有标准答案**:用户问"帮我写封道歉邮件",不存在一个 n-gram 参考答案,BLEU/ROUGE 这类字符串重叠指标完全失效;
@@ -83,13 +83,13 @@ MMLU 是四选一,GSM8K 答案是一个数字,HumanEval 靠单元测试判分—
 
 ### 17.3.3 历史地位:从标配到退场
 
-MT-Bench 是 Vicuna 时代的发布标配:2023 年开源对话模型几乎人手一个 MT-Bench 分数,就像今天人人报 GPQA(来源:research/vendor-blog-evals.md §4.0 生命周期框架)。但它的有效寿命很短:
+MT-Bench 是 Vicuna 时代的发布标配:2023 年开源对话模型几乎人手一个 MT-Bench 分数,就像今天人人报 GPQA(来源:https://github.com/zenHeart/evals/blob/main/research/vendor-blog-evals.md §4.0 生命周期框架)。但它的有效寿命很短:
 
 - 80 题样本量小,单题分数方差大;
 - 题目公开后进入训练语料的风险与日俱增;
 - 位置被 **AlpacaEval 2.0 LC**(805 题长度控制,见 17.6)与 **ArenaHard**(500 道真实难题,见 17.7)接管。
 
-证据:2026-08-28 抓取的 13 家头部厂商旗舰发布材料中,没有任何一家在评测表里引用 MT-Bench;DeepSeek-R1(2025-01)的偏好类评测用的是 AlpacaEval 2.0 LC 与 ArenaHard(来源:research/vendor-blog-evals.md §4.2 覆盖矩阵与 arXiv:2501.12948 主表)。
+证据:2026-08-28 抓取的 13 家头部厂商旗舰发布材料中,没有任何一家在评测表里引用 MT-Bench;DeepSeek-R1(2025-01)的偏好类评测用的是 AlpacaEval 2.0 LC 与 ArenaHard(来源:https://github.com/zenHeart/evals/blob/main/research/vendor-blog-evals.md §4.2 覆盖矩阵与 arXiv:2501.12948 主表)。
 
 它真正的遗产不在榜单,而在方法:四大偏差实验让整个行业第一次量化地知道"用 LLM 当裁判会错在哪"。
 
@@ -183,7 +183,7 @@ async function callJudge(q: string, first: string, second: string): Promise<"A" 
 
 ## 17.5 Chatbot Arena 机制深拆
 
-**一句话**:真实人类匿名盲评 + 统计模型排名。它测的是"真实用户在真实提问分布下的偏好",这是唯一一个厂商无法自控评测集的活榜单(来源:research/vendor-blog-evals.md §G)。
+**一句话**:真实人类匿名盲评 + 统计模型排名。它测的是"真实用户在真实提问分布下的偏好",这是唯一一个厂商无法自控评测集的活榜单(来源:https://github.com/zenHeart/evals/blob/main/research/vendor-blog-evals.md §G)。
 
 先看数据流全景,再逐层拆:
 
@@ -328,7 +328,7 @@ console.log(bootstrapWinRate(battles));
 
 Arena 最大的方法论升级是**风格控制(style control)**。
 
-**机制**:在 BT 模型中加入**风格协变量**——回答长度、加粗密度、列表数量等表面特征——重新拟合强度。本质是问一个反事实问题:"如果两个模型输出同样的长度、同样的排版,谁会赢?"(来源:lmsys.org 博客系列;arXiv:2507.08983 对该流程的描述;research/vendor-blog-evals.md §G)
+**机制**:在 BT 模型中加入**风格协变量**——回答长度、加粗密度、列表数量等表面特征——重新拟合强度。本质是问一个反事实问题:"如果两个模型输出同样的长度、同样的排版,谁会赢?"(来源:lmsys.org 博客系列;arXiv:2507.08983 对该流程的描述;https://github.com/zenHeart/evals/blob/main/research/vendor-blog-evals.md §G)
 
 ```mermaid
 flowchart LR
@@ -362,7 +362,7 @@ flowchart LR
 
 **一句话**:自动化版的 Arena——805 条固定指令,GPT-4 当裁判,输出长度控制(LC)后的胜率。
 
-- 时间:AlpacaEval 2023-03(Stanford,805 条指令集,默认与 text-davinci-003 比较);2.0 长度控制版 2024-04(arXiv:2404.04475)(来源:research/academic-history.md §9.1);
+- 时间:AlpacaEval 2023-03(Stanford,805 条指令集,默认与 text-davinci-003 比较);2.0 长度控制版 2024-04(arXiv:2404.04475)(来源:https://github.com/zenHeart/evals/blob/main/research/academic-history.md §9.1);
 - 与 Arena 的区别:题目固定可复现,但裁判是模型,继承 13.4 的全部偏差。
 
 **LC 胜率的原理**:把"回答长度"等特征作为回归协变量,估计"**如果两个模型的输出一样长,谁会赢**"。前端类比:把"代码行数"放进回归,回答"如果两个 PR 行数相同,哪个更容易被 approve"——先剥离工作量差异,再看真实质量。
@@ -392,7 +392,7 @@ Arena 的痛点是**不可复现**:每次投票分布都不同,你无法在 CI �
 
 ### 17.7.1 ArenaHard
 
-- **构成**:500 个从真实用户问题中筛出的困难问题 + GPT-4-1106 当裁判(来源:research/vendor-blog-evals.md §G);
+- **构成**:500 个从真实用户问题中筛出的困难问题 + GPT-4-1106 当裁判(来源:https://github.com/zenHeart/evals/blob/main/research/vendor-blog-evals.md §G);
 - **动机**:固定题集 + 固定裁判 = 可复现的 Arena 代理;题目难度对齐"真实难题"分布,避免 MT-Bench 那种人人 9 分的饱和;
 - **厂商采用记录**:DeepSeek-V3/R1 主表(85.5 / 92.3)、o1-mini 92.0、Claude-3.5-Sonnet-1022 85.2、GPT-4o-0513 80.4(来源:arXiv:2501.12948 表 4)。R1 与 o1-mini 在 ArenaHard 上基本打平,但在 AlpacaEval LC 上相差近 30 分——同是 LLM 裁判榜单,题目分布(困难真实问题 vs 开放指令)与裁判版本不同,结论就能差这么多。
 

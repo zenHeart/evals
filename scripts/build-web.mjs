@@ -167,7 +167,7 @@ function mdToSections(md) {
     // 验收自测节：把选择题/简答题解析为结构化数据（渲染成交互组件，选项不再走通用列表）
     if (cur && cur.quiz) {
       let mq;
-      if ((mq = trimmed.match(/^(\d+)\.\s+\*\*选择\*\*：(.*)$/))) {
+      if ((mq = trimmed.match(/^(\d+)\.\s+\*\*选择\*\*[：:](.*)$/))) {
         flushPara();
         cur.questions = cur.questions || [];
         cur.qCur = { num: mq[1], stem: mq[2], options: [] };
@@ -178,7 +178,7 @@ function mdToSections(md) {
         cur.qCur.options.push(mq[2] + ". " + mq[3]);
         continue;
       }
-      if ((mq = trimmed.match(/^(\d+)\.\s+\*\*(简答|实操)\*\*：(.*)$/))) {
+      if ((mq = trimmed.match(/^(\d+)\.\s+\*\*(简答|实操)\*\*[：:](.*)$/))) {
         flushPara();
         cur.shorts = cur.shorts || [];
         cur.shorts.push({ num: mq[1], kind: mq[2], stem: mq[3] });
@@ -616,8 +616,9 @@ function sectionHtml(s) {
   if (s.quiz) {
     const answers = CURRENT_QUIZ_ANSWERS;
     const hasMc = (s.questions || []).some(q => (answers[q.num] || {}).a);
-    if (hasMc || (s.questions || []).length) {
-      const interactive = s.questions.map(q => {
+    const hasShorts = (s.shorts || []).length > 0;
+    if (hasMc || (s.questions || []).length || hasShorts) {
+      const interactive = (s.questions || []).map(q => {
         const a = answers[q.num] || {};
         const opts = q.options.map(o => {
           const k = o.slice(0, 1);
@@ -1093,13 +1094,6 @@ async function main() {
   }
 
   // index / book / build / 404 / search / sitemap / robots
-  writeFileSync(join(DIST, "index.html"), indexPage(parts, chaptersMeta, bench), "utf-8");
-  writeFileSync(join(DIST, "book", "index.html"), bookIndexPage(parts, chaptersMeta), "utf-8");
-  writeFileSync(join(DIST, "build", "index.html"), buildIndexPage(chaptersMeta), "utf-8");
-  writeFileSync(join(DIST, "404.html"), notFoundPage(), "utf-8");
-  writeFileSync(join(DIST, "search-data.js"), `window.EVALS_SEARCH=${JSON.stringify(searchData)};`, "utf-8");
-  console.log("[evals-web] Built index / book / build / 404 / search-data.js");
-
   // 搜索索引扩展：评估大全实体 + 证据自动建档页 + 模型发布（读者搜 SWE-bench 应直达详情页而非仅书章节）
   try {
     const db = loadBenchData();
@@ -1112,6 +1106,13 @@ async function main() {
         u: "releases/", c: `${r.release_title} ${r.models.join(" ")} ${r.vendor_label}` });
     }
   } catch (e) { console.warn("[evals-web] search index benchmark merge skipped:", e.message); }
+
+  writeFileSync(join(DIST, "index.html"), indexPage(parts, chaptersMeta, bench), "utf-8");
+  writeFileSync(join(DIST, "book", "index.html"), bookIndexPage(parts, chaptersMeta), "utf-8");
+  writeFileSync(join(DIST, "build", "index.html"), buildIndexPage(chaptersMeta), "utf-8");
+  writeFileSync(join(DIST, "404.html"), notFoundPage(), "utf-8");
+  writeFileSync(join(DIST, "search-data.js"), `window.EVALS_SEARCH=${JSON.stringify(searchData)};`, "utf-8");
+  console.log("[evals-web] Built index / book / build / 404 / search-data.js");
 
   const today = new Date().toISOString().slice(0, 10);
   const urls = ["/", "/book/", ...flat.map(f => `/book/chapter-${chaptersMeta[f].num}/`), "/build/", "/benchmarks/", "/releases/"];

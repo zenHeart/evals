@@ -23,7 +23,7 @@
 3. **难度可以无限抬升**——从小学算术到研究级数学，题源永不枯竭；
 4. **与训练数据弱相关**——越新的题越难背（这条后来被证明只对了一半，见 10.4 的 GSM1k）。
 
-所以数学基准成了推理能力的"主刻度尺"：模型厂商每发布一个推理模型（o1、R1、Grok 3、QwQ……），AIME 和 MATH 分数都是必报项。抓取的 13 家厂商旗舰发布中，AIME 出现在 9 家，是仅次于 GPQA Diamond 的高频评测（来源：research/vendor-blog-evals.md 覆盖矩阵）。
+所以数学基准成了推理能力的"主刻度尺"：模型厂商每发布一个推理模型（o1、R1、Grok 3、QwQ……），AIME 和 MATH 分数都是必报项。抓取的 13 家厂商旗舰发布中，AIME 出现在 9 家，是仅次于 GPQA Diamond 的高频评测（来源：https://github.com/zenHeart/evals/blob/main/research/vendor-blog-evals.md 覆盖矩阵）。
 
 ## 10.3 难度阶梯：每两年换一次考卷
 

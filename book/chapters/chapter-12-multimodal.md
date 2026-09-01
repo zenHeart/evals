@@ -132,7 +132,7 @@ MMMU 的判分流程：模型输出一段文字 → 正则抽取答案字母 →
 
 ### 12.3.5 厂商采用记录
 
-MMMU 是多模态类唯一进入多家旗舰发布正文的共识基准（来源：2026-08-28 抓取的 13 家厂商发布材料统计，research/vendor-blog-evals.md H 节）：
+MMMU 是多模态类唯一进入多家旗舰发布正文的共识基准（来源：2026-08-28 抓取的 13 家厂商发布材料统计，https://github.com/zenHeart/evals/blob/main/research/vendor-blog-evals.md H 节）：
 
 | 模型 | 发布 | MMMU 分数（口径） | 出处 |
 |---|---|---|---|

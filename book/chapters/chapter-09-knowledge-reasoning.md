@@ -141,7 +141,7 @@ MMLU 的题目全部来自互联网公开材料，而现代模型在互联网语
 | Qwen2.5 | 2024-09 | "85+" | qwenlm.github.io/blog/qwen2.5/ |
 | Claude 3.5 Sonnet | 2024-06 | 正文点名 MMLU，数值在图 | anthropic.com/news/claude-3-5-sonnet |
 
-**退场信号**：对 13 家厂商旗舰发布的抓取统计显示，2024 年后新旗舰正文报 MMLU-Pro 的越来越多、报 MMLU 的越来越少；Grok 3（2025-02）与 MiniMax-M1（2025-06）的知识榜已只见 MMLU-Pro（来源：research/vendor-blog-evals.md 覆盖矩阵）。一个基准从"共识门面"到"无人引用"，HumanEval 用了不到一年，MMLU 慢一些，但方向相同。
+**退场信号**：对 13 家厂商旗舰发布的抓取统计显示，2024 年后新旗舰正文报 MMLU-Pro 的越来越多、报 MMLU 的越来越少；Grok 3（2025-02）与 MiniMax-M1（2025-06）的知识榜已只见 MMLU-Pro（来源：https://github.com/zenHeart/evals/blob/main/research/vendor-blog-evals.md 覆盖矩阵）。一个基准从"共识门面"到"无人引用"，HumanEval 用了不到一年，MMLU 慢一些，但方向相同。
 
 ## 9.3 MMLU-Pro：10 选项与强制 CoT
 

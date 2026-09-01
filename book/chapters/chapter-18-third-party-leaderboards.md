@@ -58,7 +58,7 @@ flowchart TB
 - **机制**:匿名双盲对战 + Bradley-Terry 拟合 + bootstrap 置信区间,完整数据流见第 17 章 17.5;
 - **更新频率**:投票持续累积,排名定期刷新——它不是一个"发布周期"产品,而是流动的快照;
 - **如何上榜**:模型接入平台匿名收集投票;进入正式排名需要足够票量,可参照的量级是 Kimi K2 上榜引用时已有 3000+ 票(2025-07-17,开源第 1、总榜第 5,来源:arXiv:2507.20534 正文);
-- **被谁引用**:2026-08-28 抓取的 13 家厂商发布材料中,Arena/LMArena 的引用分布是——Google ✓(Gemini 2.5 Pro 宣布空降第一)、xAI ✓(Grok 3 自报 Elo 1402)、Kimi ✓(K2 开源第一)、OpenAI ○(仅提及)、Anthropic / DeepSeek / Qwen / GLM / MiniMax / 字节 / 小米 均未在旗舰发布正文引用(来源:research/vendor-blog-evals.md §4.2 覆盖矩阵)。它是唯一一个厂商无法自控评测集的活榜单,因此引用它常与自建表并列出现,互为信用背书;
+- **被谁引用**:2026-08-28 抓取的 13 家厂商发布材料中,Arena/LMArena 的引用分布是——Google ✓(Gemini 2.5 Pro 宣布空降第一)、xAI ✓(Grok 3 自报 Elo 1402)、Kimi ✓(K2 开源第一)、OpenAI ○(仅提及)、Anthropic / DeepSeek / Qwen / GLM / MiniMax / 字节 / 小米 均未在旗舰发布正文引用(来源:https://github.com/zenHeart/evals/blob/main/research/vendor-blog-evals.md §4.2 覆盖矩阵)。它是唯一一个厂商无法自控评测集的活榜单,因此引用它常与自建表并列出现,互为信用背书;
 - **局限**:测偏好不测正确;题目分布偏简单大众;投票人群偏英文;可被定向刷票(arXiv:2501.17858);同一份榜单存在"原始榜"与"风格控制榜"两个口径(第 17 章 17.5.4)。
 
 ### 18.2.2 客观动态榜:LiveBench
@@ -66,8 +66,8 @@ flowchart TB
 - **机制**:题目**按月更新**,全部有客观可验证的标准答案,**不依赖 LLM 裁判**——同时规避了背题与"难题上裁判崩坏"两个问题(来源:arXiv:2406.19314;官网 livebench.ai;机制细节见第 16 章);
 - **更新频率**:月度换题;
 - **如何上榜**:主办方统一接入评测,厂商不能自己报分;
-- **被谁引用**:典型样本是阶跃星辰——其 Step-2 旗舰**没有自建评测表**,成绩全部来自 LiveBench 转载:综合全球第五、国产第一、当时前十唯一中国模型;指令跟随(IF)子榜 86.57 全榜第一,对比 gemini-1.5-flash-002 的 84.55 与 o1-preview 的 77.72(来源:research/vendor-blog-evals.md §16,标注:分数经第三方榜单与媒体转载,未抓取到厂商官方原文);
-- **局限**:竞赛/考试型题型占比高,工程与 agent 能力覆盖有限;官网任务计数随更新变动(抓取时为 7 类 23 任务,来源:research/academic-history.md §10.3)。
+- **被谁引用**:典型样本是阶跃星辰——其 Step-2 旗舰**没有自建评测表**,成绩全部来自 LiveBench 转载:综合全球第五、国产第一、当时前十唯一中国模型;指令跟随(IF)子榜 86.57 全榜第一,对比 gemini-1.5-flash-002 的 84.55 与 o1-preview 的 77.72(来源:https://github.com/zenHeart/evals/blob/main/research/vendor-blog-evals.md §16,标注:分数经第三方榜单与媒体转载,未抓取到厂商官方原文);
+- **局限**:竞赛/考试型题型占比高,工程与 agent 能力覆盖有限;官网任务计数随更新变动(抓取时为 7 类 23 任务,来源:https://github.com/zenHeart/evals/blob/main/research/academic-history.md §10.3)。
 
 **路线对照**:阶跃代表"借榜发声"(用第三方防污染榜单做官方营销主战场,自己不发分数表),DeepSeek 代表"自建协议"(自建表 + 完整采样协议披露)。两条路线的可信度形态不同:前者无法被指责自导自演但展示不了协议细节,后者协议透明但无法排除自选有利基准的嫌疑。
 
@@ -98,9 +98,9 @@ flowchart TB
 | 可复核性 | 框架开源,分数可复核 | 依赖主办方披露 |
 | 被谁引用 | 国产厂商长期使用其框架与基准体系 | 媒体引用广泛,厂商发布正文不自引 |
 
-(来源:research/vendor-blog-evals.md §F 与 §15;opencompass.org.cn)
+(来源:https://github.com/zenHeart/evals/blob/main/research/vendor-blog-evals.md §F 与 §15;opencompass.org.cn)
 
-配套的现实是:**中文基准的主场在国产厂商自建表里**。DeepSeek-R1 报 C-Eval 91.8(vs DeepSeek-V3 86.5、Claude-3.5-Sonnet-1022 76.7、GPT-4o-0513 76.0)、CLUEWSC 92.8、C-SimpleQA 63.7;字节 Doubao-1.5-pro 同时引用 CMMLU 与 C-Eval;而 OpenAI / Anthropic / Google / xAI 的旗舰发布正文都不采用中文榜(来源:arXiv:2501.12948 表 4;research/vendor-blog-evals.md §F 与 §4.2)。中文选型的正确组合是:CompassRank/OpenCompass 看横评 + 国产厂商自建中文表看口径 + 自建中文业务样本做终审。
+配套的现实是:**中文基准的主场在国产厂商自建表里**。DeepSeek-R1 报 C-Eval 91.8(vs DeepSeek-V3 86.5、Claude-3.5-Sonnet-1022 76.7、GPT-4o-0513 76.0)、CLUEWSC 92.8、C-SimpleQA 63.7;字节 Doubao-1.5-pro 同时引用 CMMLU 与 C-Eval;而 OpenAI / Anthropic / Google / xAI 的旗舰发布正文都不采用中文榜(来源:arXiv:2501.12948 表 4;https://github.com/zenHeart/evals/blob/main/research/vendor-blog-evals.md §F 与 §4.2)。中文选型的正确组合是:CompassRank/OpenCompass 看横评 + 国产厂商自建中文表看口径 + 自建中文业务样本做终审。
 
 ### 18.2.6 开源榜:Hugging Face Open LLM Leaderboard v1 → v2
 
@@ -111,7 +111,7 @@ flowchart TB
 
 ## 18.3 厂商引用证据:谁在引用哪个榜
 
-把 2026-08-28 抓取的 11 家厂商旗舰发布材料做成覆盖矩阵(✓ = 发布正文或技术报告表格引用;○ = 仅图表/提及;空 = 未出现。来源:research/vendor-blog-evals.md §4.2,抓取自各厂商官方页面与 arXiv 技术报告):
+把 2026-08-28 抓取的 11 家厂商旗舰发布材料做成覆盖矩阵(✓ = 发布正文或技术报告表格引用;○ = 仅图表/提及;空 = 未出现。来源:https://github.com/zenHeart/evals/blob/main/research/vendor-blog-evals.md §4.2,抓取自各厂商官方页面与 arXiv 技术报告):
 
 | 评测 | OpenAI | Anthropic | Google | xAI | DeepSeek | Qwen | GLM | Kimi | MiniMax | 字节 | 小米 |
 |---|---|---|---|---|---|---|---|---|---|---|---|
@@ -126,9 +126,9 @@ flowchart TB
 
 1. **共识榜**:GPQA Diamond 在 11/11 家出现,是本次抓取中覆盖率第一的单一评测;LiveCodeBench、MMLU-Pro 构成推理模型时代的通用语言。共识榜的好处是可比性最强,坏处是刷分动机也最强;
 2. **差异化营销榜**:Arena 是"产品体验叙事"厂商的选择(Google/xAI/Kimi),中文榜是国产主场,LiveCodeBench 是推理模型标配——厂商挑自己赢面大的战场,这是理解任何一张发布评测表的第一原则(第 8 章的锚点策略四原型是同一件事的另一种表述);
-3. **回避榜**:本次抓取范围内,WebArena、OSWorld、GAIA 等环境化评测没有出现在任何一家旗舰发布正文(来源:research/vendor-blog-evals.md §D)——"不可控环境 + 不可复现分数"的评测,厂商发布引用仍然谨慎。**缺席名单有时比在场名单信息量更大**。
+3. **回避榜**:本次抓取范围内,WebArena、OSWorld、GAIA 等环境化评测没有出现在任何一家旗舰发布正文(来源:https://github.com/zenHeart/evals/blob/main/research/vendor-blog-evals.md §D)——"不可控环境 + 不可复现分数"的评测,厂商发布引用仍然谨慎。**缺席名单有时比在场名单信息量更大**。
 
-还有一类值得单独点名的引用姿势:**合成总分**。GLM-4.5 发布时给的是"12 项行业标准基准综合 63.2、全模型第三"——一个数字一个名次,但 12 项是哪 12 项、各自权重、思考模式口径均未披露(来源:huggingface.co/zai-org/GLM-4.5 与 github.com/zai-org/GLM-4.5,research/vendor-blog-evals.md §11)。合成总分的传播效率极高,复核成本也极高——它把验证成本转嫁给了读者。同仓库的 GLM-4.7 改为逐项分数 + 逐项增幅,说明披露标准本身在随行业水位上移。
+还有一类值得单独点名的引用姿势:**合成总分**。GLM-4.5 发布时给的是"12 项行业标准基准综合 63.2、全模型第三"——一个数字一个名次,但 12 项是哪 12 项、各自权重、思考模式口径均未披露(来源:huggingface.co/zai-org/GLM-4.5 与 github.com/zai-org/GLM-4.5,https://github.com/zenHeart/evals/blob/main/research/vendor-blog-evals.md §11)。合成总分的传播效率极高,复核成本也极高——它把验证成本转嫁给了读者。同仓库的 GLM-4.7 改为逐项分数 + 逐项增幅,说明披露标准本身在随行业水位上移。
 
 ## 18.4 交叉验证:从单榜偏差到多榜对账
 
@@ -196,7 +196,7 @@ flowchart TD
 
 三个名次都真实,但它们是三份不同的测量(不同日期、不同对手池、可能不同的口径)。**任何"XX 是当前第一"的陈述,必须绑定抓取日期才成立**;跨厂商引用 Arena 时,还要核对各自用的是原始榜还是风格控制榜。
 
-另一个生态注脚:腾讯混元团队在 2025 年 12 月重组后公开表示"从过度关注外部榜单转向以产品用户体验为核心指标"(来源:research/vendor-blog-evals.md §15,标注:转述自公开资料,未抓取官方原文)。厂商自己都在给"榜单依赖"降温——这与本章的立场一致:**榜单是初筛工具,不是终审**。
+另一个生态注脚:腾讯混元团队在 2025 年 12 月重组后公开表示"从过度关注外部榜单转向以产品用户体验为核心指标"(来源:https://github.com/zenHeart/evals/blob/main/research/vendor-blog-evals.md §15,标注:转述自公开资料,未抓取官方原文)。厂商自己都在给"榜单依赖"降温——这与本章的立场一致:**榜单是初筛工具,不是终审**。
 
 ## 18.5 从分数到决策:场景矩阵与名次聚合
 
@@ -257,7 +257,7 @@ console.log(
 
 **信号 2:评测机构与受益厂商的利益关系未披露**
 
-- 案例:FrontierMath(数学家出题、题目私有的极端防污染基准)。OpenAI 在 2024-12 预告 o3 得分超过 25%("其他产品不足 2%");Epoch AI 随后独立复测公开版 o3 约 10%;2025-01 曝出 OpenAI 曾资助该基准并拥有大部分题目访问权、参与命题的数学家事先不知情(来源:research/vendor-blog-evals.md §B FrontierMath 节与 research/academic-history.md §10.4,含双方当事人公开表态;部分细节为二手转述);
+- 案例:FrontierMath(数学家出题、题目私有的极端防污染基准)。OpenAI 在 2024-12 预告 o3 得分超过 25%("其他产品不足 2%");Epoch AI 随后独立复测公开版 o3 约 10%;2025-01 曝出 OpenAI 曾资助该基准并拥有大部分题目访问权、参与命题的数学家事先不知情(来源:https://github.com/zenHeart/evals/blob/main/research/vendor-blog-evals.md §B FrontierMath 节与 https://github.com/zenHeart/evals/blob/main/research/academic-history.md §10.4,含双方当事人公开表态;部分细节为二手转述);
 - 识别动作:看到"独家电台式"的高分(唯一厂商引用、其他厂商集体回避),先查评测方的资金与题目访问关系是否披露。此后主流厂商发布文均不再引用 FrontierMath——共同回避本身就是行业给出的评级。
 
 **信号 3:单榜第一但跨榜不一致,或只有合成总分不给子项与协议**
