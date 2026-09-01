@@ -9,6 +9,8 @@ fetched_at: 2026-09-01
 
 # Introducing Muse Spark 1.1
 
+> **警示（2026-09-01 审计确认）：本页 DOM 的 `alt` 字段不可信。** Meta 页面自身 bug：包括主基准表在内的多张评测图 alt 均误标为同一句 "Inference-time compute scaling chart for Muse Image"，与实际内容无关（`images/02.png` 实图为 Spark 1.1 主基准表）。图片内容以实图为准，勿以 alt/manifest 的 alt 字段判读；`manifest.json` 的 alt 仅为页面 DOM 原样留档。
+
 ## 评测数据（转录）
 
 > 本页 benchmark 数值全部以图片图表呈现（`images/02.png`–`images/10.png`），因此全部行均为视觉转写；`images/03.png`、`images/04.png` 为 JobBench、MCP Atlas 的条形图渲染，与主表数值一致。
