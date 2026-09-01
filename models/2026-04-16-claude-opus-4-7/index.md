@@ -76,6 +76,7 @@ fetched_at: 2026-09-01
 | Multilingual Q&A — MMMLU | 91.1% | Claude Opus 4.6（视觉转写） |
 | Multilingual Q&A — MMMLU | 92.6% | Gemini 3.1 Pro（视觉转写） |
 | Knowledge work — GDPval-AA（Elo） | 1753 | Claude Opus 4.7（视觉转写自 images/03.webp 柱状图；Opus 4.6 1619 / GPT-5.4 1674 / Gemini 3.1 Pro 1314） |
+| Cursor Bench | 70% | Claude Opus 4.7（页面正文，Cursor 客户引述；同源对照 Opus 4.6 58%） |
 
 ## 协议脚注
 

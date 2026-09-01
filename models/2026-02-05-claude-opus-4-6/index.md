@@ -38,6 +38,8 @@ fetched_at: 2026-09-01
 | Cybersecurity vulnerability reproduction — CyberGym | — | 66.6%（images/13.webp 柱状图） | verified |
 | Computational biology — BioPipelineBench | — | 53.1%（images/14.webp 柱状图） | verified |
 | Agentic search — DeepSearchQA | — | 无法辨认（页面 alt 标注与实际图片内容矛盾，详见脚注） | pending |
+| Long-context retrieval — MCR v2 (8-needle, 1M) | 18.5% | Claude Sonnet 4.5（视觉转写 images/08.webp 对照列；同图 Opus 4.6 256k 93.0 / 1M 76.0） |
+| BigLaw Bench | 90.2% | Claude Opus 4.6（页面正文 prose，Harvey 客户引述） |
 
 对照列参考（总表原文值）：Opus 4.5 — 59.8 / 80.9 / 66.3 / 88.9·98.2 / 62.3 / 67.8 / 30.8·43.4 / 55.9 / 1416 / 37.6 / 87.0 / 70.6·73.9 / 90.8；Sonnet 4.5 — 51.0 / 77.2 / 61.4 / 86.2·98.0 / 43.8 / 43.9 / 17.7·33.6 / 54.2 / 1277 / 13.6 / 83.4 / 63.4·68.9 / 89.5；Gemini 3 Pro — 56.2（54.2 self-reported）/ 76.2 / — / 85.3·98.0 / 54.1 / 59.2（Deep Research）/ 37.5·45.8 / 44.1 / 1195 / 45.1（Deep Thinking）/ 91.9 / 81.0·— / 91.8；GPT-5.2 — 64.7（64.0 self-reported，Codex CLI）/ 80.0 / — / 82.0·98.7 / 60.6 / 77.9（Pro）/ 36.6·50.0（Pro）/ 56.6（5.1）/ 1462 / 54.2（Pro）/ 93.2（Pro）/ 79.5·80.4 / 89.6。
 
