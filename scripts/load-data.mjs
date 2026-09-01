@@ -93,19 +93,22 @@ export function loadBenchData() {
   const unmatched = new Set();
   for (const r of releases) {
     for (const e of r.benchmark_evidence || []) {
-      const b = byId[e.benchmark_id];
-      if (!b) { unmatched.add(e.benchmark_id); continue; }
+      const benchId = canon(e.benchmark_id);
+      const b = byId[benchId];
+      if (!b) { unmatched.add(benchId); continue; }
       const verified = e.status === "verified";
       const score = e.reported_score || {};
       const vendorLabel = vendorNames[e.vendor_id] || r.release_title;
-      // model_name 与厂商名重复时（如 "智谱 GLM"）不重复拼接
-      const label = e.model_name && !vendorLabel.includes(e.model_name)
-        ? `${vendorLabel} · ${e.model_name}`
+      const modelLabel = e.model_name || e.model_id || null;
+      // model_name/model_id 与厂商名重复时（如 "智谱 GLM"）不重复拼接
+      const label = modelLabel && !vendorLabel.includes(modelLabel)
+        ? `${vendorLabel} · ${modelLabel}`
         : vendorLabel;
       // fresh = 日期可知且在窗口内；窗口外/日期缺失 → archive（历史引用，降级展示）
       const fresh = Boolean(r.release_date) && r.release_date >= cutoff;
       b.adoption.push({
         release: label,
+        release_id: r.id ?? null,
         score: score.display ?? null,
         url: e.source_url ?? null,
         note: e.protocol?.harness ? `harness: ${e.protocol.harness}` : (e.model_variant || null),

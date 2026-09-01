@@ -322,7 +322,7 @@ function detailPage(db, b, cat, related) {
     const row = a => `<tr>
       <td>${a.url ? `<a href="${esc(a.url)}" target="_blank" rel="noopener">${esc(a.release)} ↗</a>` : esc(a.release)}${a.date ? `<br><span style="color:var(--graphite);font-size:12px;font-family:ui-monospace,monospace;">${esc(a.date)}</span>` : ""}</td>
       <td>${a.score ? `<span class="score">${esc(a.score)}</span>` : '<span style="color:var(--graphite)">未公布</span>'}</td>
-      <td>${a.note ? `<span class="note">${esc(a.note)}</span>` : ""}</td>
+      <td>${a.note ? `<span class="note">${esc(a.note)}</span>` : ""}${a.variant && !a.note ? `<span class="note">variant: ${esc(a.variant)}</span>` : ""}</td>
     </tr>`;
     const tbl = rows => `<div class="table-wrap"><table class="adopt-table"><thead><tr><th>模型发布</th><th>报告分数</th><th>备注</th></tr></thead><tbody>${rows.join("")}</tbody></table></div>`;
     const v = cite.filter(a => a.status === "verified");
@@ -876,6 +876,13 @@ function main() {
     writeFileSync(join(outDir, "index.html"), autoBenchmarkPage(db, id, rows), "utf-8");
     autoCount++;
   }
+
+  // 刷新自动建档清单（单一事实来源：构建时重算，供研究 agent 与对账使用）
+  const genDir = join(REPO_ROOT, "data", "generated");
+  mkdirSync(genDir, { recursive: true });
+  const autoRows = [...evidenceById.entries()].map(([id, rows]) => ({ id, evidenceCount: rows.length })).sort((a, b) => b.evidenceCount - a.evidenceCount);
+  writeFileSync(join(genDir, "auto-benchmark-ids.json"),
+    JSON.stringify({ updated: new Date().toISOString().slice(0, 10), total: autoRows.length, ids: autoRows }, null, 1), "utf-8");
 
   console.log(`[evals-hub] Built explorer + ${db.benchmarks.length} entity pages + ${autoCount} auto-evidence pages → dist/benchmarks/`);
 }

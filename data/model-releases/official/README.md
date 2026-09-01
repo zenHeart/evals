@@ -4,6 +4,8 @@
 
 ## 汇总
 
+> **当前总量检查点（2026-09-01）**：92 releases = 76 official + 16 legacy · 1356 evidence edges · 819 verified。每批落地后更新此行。
+
 | 指标 | 值 |
 |---|---:|
 | Release 文件 | 7 |
@@ -33,6 +35,8 @@
 4. Kimi K3 与 DeepSeek 的图片表格：按 goal.md §12.5，OCR/视觉辅助不能作为唯一证据 → 行保持 pending，图片定位写入 `locator.figure`，OCR 读数只进 `notes`。
 
 ## 抽取口径（后续 Agent 必须沿用）
+
+> DOM 表机读行（heading+row 可定位）可免 quote_snippet；图片/图表行必须 pending。
 
 - **一个 benchmark 行 = 一条 evidence**，取 release 自家模型列；同一表格行中的竞品列写进该行 `notes`，不拆成独立行。
 - 竞品分数的**独立明文引用**（散文中直接印出对方分数）→ 单独一条 `attribution_type: comparison_cited`（GLM-5.3 ×5、GPT-5.6 ×3、Kimi BrowseComp ×4）。
@@ -193,7 +197,7 @@ goal.md §12.6 Tier 1 国内缺口厂商补齐：Alibaba/Qwen 两条、MiniMax �
 | `qwen/qwen3-max.json` | 2025-09-24（页面印刷 2025/09/24） | 9 | 4 | 5 | **域名迁移：qwenlm.github.io/blog/qwen3-max/ 已 404**，WebSearch 定位到 qwen.ai/blog?id=qwen3-max（中文版）→ Playwright 渲染成功；4 个正文明文分数 verified（SWE-V 69.6 / Tau2 74.8 / Thinking-Heavy AIME25 与 HMMT 满分）；图表值 pending |
 | `minimax/minimax-m2.json` | 2025-10-27（页面印刷日期；免费期延至 11-07 UTC 佐证） | 9 | 1 | 8 | **旧 URL minimax.io/blog/minimax-m2 已 404**，实际 slug 为 minimax-m2-en-1748600000（URL 数字后缀不是发布时间戳，以页面日期为准）；Next.js 渲染 → web reader 只回站点壳，Playwright DOM 扫描成功；8 个 benchmark 全在 8676×3593 大表图内（无 M3 那样的 Evaluation Methodology 区）→ pending；AA 榜单 top-five 论断 third_party_reported verified |
 
-**本批小计：141 条 = 70 verified + 71 pending。** 目录截至本批：25 个 release 文件 / 616 条 evidence（`validate-data` PASS：official 29 个 release、47 total）。两个 Kimi 文件因 DOM 表格机读成为全库 verified 密度最高的 release。
+**本批小计：141 条 = 70 verified + 71 pending。** 目录截至本批：25 个 release 文件 / 616 条 evidence（历史快照数字，与并行批交错，总量以顶部当前总量行为准）（`validate-data` PASS：official 29 个 release、47 total）。两个 Kimi 文件因 DOM 表格机读成为全库 verified 密度最高的 release。
 
 ### 本批抓取与降级路径记录
 
