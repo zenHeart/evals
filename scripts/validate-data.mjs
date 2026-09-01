@@ -276,7 +276,7 @@ const relFiles = (function walkReleases(dir, acc = []) {
   for (const name of fs.readdirSync(dir)) {
     const p = path.join(dir, name);
     if (fs.statSync(p).isDirectory()) walkReleases(p, acc);
-    else if (name.endsWith(".json")) acc.push(p);
+    else if (name.endsWith(".json") && name !== "manifest.json") acc.push(p);
   }
   return acc;
 })(releasesRoot);
