@@ -75,6 +75,10 @@ h1 { font-size:clamp(26px,4vw,36px); margin:0 0 6px; }
 select { padding:9px 12px; border-radius:6px; border:1.5px solid var(--rule); background:var(--card); color:inherit; font-size:13.5px; cursor:pointer; }
 .stats { font:400 12.5px/1.6 var(--mono); color:var(--graphite); margin:8px 0 16px; }
 .empty { text-align:center; color:#94a3b8; padding:48px 0; }
+.auto-cloud { display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
+.auto-cloud a { font:400 12.5px/1.5 var(--mono); border:1px solid var(--rule); border-radius:4px; padding:3px 10px; color:var(--graphite); text-decoration:none; }
+.auto-cloud a b { color:var(--ink); }
+.auto-cloud a:hover { border-color:var(--pin); color:var(--ink); text-decoration:none; }
 
 /* ---------- Explorer 网格：goal.md §9.4 显式断点 360=1 / 640=2 / 1024=3 / 1440=4 ---------- */
 .grid { display:grid; grid-template-columns:1fr; gap:1rem; align-items:stretch; }
@@ -141,7 +145,7 @@ footer.site-foot a { color:inherit; }
 
 // ---------------------------------------------------------------- Explorer 页
 
-function explorerPage(db, cards) {
+function explorerPage(db, cards, autoIds = []) {
   const chips = [{ id: "all", name: "全部" }, ...db.categories]
     .map(c => {
       const n = c.id === "all" ? cards.filter(x => x.show).length : cards.filter(x => x.show && x.b.category === c.id).length;
@@ -184,6 +188,11 @@ ${shellTopbar("../", "benchmarks")}
   <div class="stats"><span id="statsText"></span> <button id="clearFilters" type="button" class="chip" hidden>✕ 清除全部筛选</button></div>
   <div id="list" class="grid">${cardHtml}</div>
   <div id="emptyState" class="empty" hidden>没有匹配的评测——可能是筛选或搜索词太窄。<button type="button" class="chip" onclick="document.getElementById('clearFilters').click()">清除筛选恢复全部 ${cards.filter(c => c.show).length} 个</button></div>
+  ${autoIds.length ? `<div class="part-group" style="margin-top:34px;">证据自动建档评测（${autoIds.length}）</div>
+  <p class="part-goal">以下评测出现在官方模型发布的证据账本中、尚未建立完整实体档——已按「罗列已知信息、缺口显式标注」原则生成可点击页面：</p>
+  <details style="margin:8px 0 4px;"><summary style="cursor:pointer;font-weight:700;font-size:13.5px;color:#64748b;">展开 ${autoIds.length} 个评测（按引用次数倒排）</summary>
+  <div class="auto-cloud">${autoIds.map(a => `<a href="${esc(a.id)}/" title="被 ${a.n} 次发布引用">${esc(a.id)} <b>${a.n}</b></a>`).join("")}</div>
+  </details>` : ""}
 </div>
 <footer class="site-foot"><a href="${SITE}">evals.zenheart.site</a> · 引用数据来自厂商发布材料真实抓取 · MIT License</footer>
 ${SHELL_JS}
@@ -795,6 +804,17 @@ function main() {
     }
   }
 
+  // 证据自动建档清单（explorer 底部罗列用；先于 explorer 渲染计算）
+  const entityIdsPre = new Set(db.benchmarks.map(b => b.id));
+  const evidenceCountPre = new Map();
+  for (const r of db.releases) {
+    for (const e of r.evidence) {
+      if (entityIdsPre.has(e.benchmark_id)) continue;
+      evidenceCountPre.set(e.benchmark_id, (evidenceCountPre.get(e.benchmark_id) || 0) + 1);
+    }
+  }
+  const autoIds = [...evidenceCountPre.entries()].map(([id, n]) => ({ id, n })).sort((a, b) => b.n - a.n);
+
   // Explorer 卡片数据（含占位过滤：tests 为空或「见 …」引用占位的不上卡片）
   const cards = db.benchmarks.map(b => {
     const cite = (b._verified || 0) * 1000 + (b._pending || 0);
@@ -808,7 +828,7 @@ function main() {
     };
   });
 
-  writeFileSync(join(dir, "index.html"), explorerPage(db, cards), "utf-8");
+  writeFileSync(join(dir, "index.html"), explorerPage(db, cards, autoIds), "utf-8");
 
   // 模型发布时间轴：一级路由 /releases/（主导航「模型发布」）+ 旧深层路径重定向
   const relTop = join(DIST, "releases");
