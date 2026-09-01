@@ -20,6 +20,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { SITE, SHELL_CSS, shellHead, shellTopbar, shellFooter, SHELL_JS } from "./site-shell.mjs";
 import { loadBenchData } from "./load-data.mjs";
+import { vendorMark, VENDOR_SVG, VENDOR_LETTER } from "./vendor-logos.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = join(__dirname, "..");
@@ -533,7 +534,7 @@ function tlEvtHtml(db, r, opts = {}) {
     <span class="pin-dot" aria-hidden="true"></span>
     <div class="evt-head">
       <span class="evt-date">${r.release_date ? esc(r.release_date) : "日期待核验"}</span>
-      <span class="evt-vendor">${esc(r.vendor_label)}<i>·</i>${region}</span>
+      <span class="evt-vendor">${vendorMark(r.vendor_id, 13)} ${esc(r.vendor_label)}<i>·</i>${region}</span>
     </div>
     <h3 class="evt-title">${esc(r.models.length ? r.models.join(" / ") : r.release_title)}</h3>
     ${r.models.length ? `<div class="evt-blog">发布文：${r.source_url ? `<a href="${esc(r.source_url)}" target="_blank" rel="noopener">${esc(r.release_title)}</a>` : esc(r.release_title)}</div>` : ""}
@@ -558,7 +559,7 @@ function releasesTimelinePage(db, rel = "../../") {
   const cov = [...covCounts.entries()].sort((a, b) => b[1] - a[1])
     .map(([vid, n]) => {
       const v = db.vendors.find(x => x.id === vid);
-      return `<span class="cov">${esc(v?.display_name || v?.name || vid)} <b>${n}</b></span>`;
+      return `<span class="cov">${vendorMark(vid, 12)} ${esc(v?.display_name || v?.name || vid)} <b>${n}</b></span>`;
     }).join("");
 
   // noscript 静态默认视图：单一时间轴（近三年），结点=模型名称，年份刻度
@@ -575,6 +576,8 @@ function releasesTimelinePage(db, rel = "../../") {
 
   const tlData = {
     cutoff,
+    vendorSvg: VENDOR_SVG,
+    vendorLetter: VENDOR_LETTER,
     benchmarks: db.benchmarks.map(b => ({ id: b.id, name: b.name })).sort((a, b) => a.id.localeCompare(b.id)),
     vendors: db.vendors.map(v => ({ id: v.id, label: v.display_name || v.name, region: v.region ?? "" })),
     releases: db.releases,
@@ -628,6 +631,13 @@ window.EVALS_TL_REL = ${JSON.stringify(rel)};
   if(!app||!D)return;
   var state={win:'fresh',vendors:[],bench:null,filters:[],q:''};
   var benchName={}; D.benchmarks.forEach(function(b){benchName[b.id]=b.name;});
+  function vendorMark(vid,size){
+    var svg=D.vendorSvg&&D.vendorSvg[vid];
+    if(svg)return '<svg class="vlogo" width="'+size+'" height="'+size+'" viewBox="'+svg.viewBox+'" fill="currentColor" aria-hidden="true"><path d="'+svg.path+'"/></svg>';
+    var L=D.vendorLetter&&D.vendorLetter[vid];
+    if(L)return '<span class="vlogo-letter" style="width:'+(size+2)+'px;height:'+(size+2)+'px;color:'+L.c+';font-size:'+Math.round(size*0.72)+'px" aria-hidden="true">'+L.t+'</span>';
+    return '';
+  }
   function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
 
   function focusSet(){
@@ -658,7 +668,7 @@ window.EVALS_TL_REL = ${JSON.stringify(rel)};
     return '<article class="evt" data-trust="'+trust+'">'+
       '<span class="pin-dot" aria-hidden="true"></span>'+
       '<div class="evt-head"><span class="evt-date">'+(r.release_date?esc(r.release_date):'日期待核验')+'</span>'+
-      '<span class="evt-vendor">'+esc(r.vendor_label)+'<i>·</i>'+region+'</span></div>'+
+      '<span class="evt-vendor">'+vendorMark(r.vendor_id,13)+' '+esc(r.vendor_label)+'<i>·</i>'+region+'</span></div>'+
       '<h3 class="evt-title">'+esc(r.models.length?r.models.join(' / '):r.release_title)+'</h3>'+
       (r.models.length?'<div class="evt-blog">发布文：'+(r.source_url?'<a href="'+esc(r.source_url)+'" target="_blank" rel="noopener">'+esc(r.release_title)+'</a>':esc(r.release_title))+'</div>':'')+
       '<div class="evt-meta">'+meta+'</div>'+
