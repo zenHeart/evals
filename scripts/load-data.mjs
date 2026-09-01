@@ -51,6 +51,11 @@ export function loadBenchData() {
   const cutoff = freshCutoff();
 
   const taxonomy = readJson(join(DATA, "taxonomy.json"));
+  let ALIAS = {};
+  try {
+    ALIAS = readJson(join(DATA, "generated", "benchmark-aliases.json")).aliases || {};
+  } catch { /* 别名文件可选 */ }
+  const canon = id => ALIAS[id] || id;
   const vendors = existsSync(join(DATA, "vendors.json")) ? readJson(join(DATA, "vendors.json")) : [];
   const vendorNames = Object.fromEntries((vendors.vendors || vendors || []).map(v => [v.id, v.display_name || v.name]));
 
@@ -120,7 +125,7 @@ export function loadBenchData() {
   const vendorRegion = Object.fromEntries((vendors.vendors || vendors || []).map(v => [v.id, v.region ?? null]));
   const releaseViews = collectReleases().map(r => {
     const evidence = (r.benchmark_evidence || []).map(e => ({
-      benchmark_id: e.benchmark_id,
+      benchmark_id: canon(e.benchmark_id),
       variant: e.benchmark_variant ?? null,
       display: e.reported_score?.display ?? null,
       value: typeof e.reported_score?.value === "number" ? e.reported_score.value : null,

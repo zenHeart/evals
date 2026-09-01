@@ -343,8 +343,11 @@ if (rep.ok) {
     const rr = readJson(f);
     if (rr.ok) for (const e of rr.data.benchmark_evidence ?? []) if (e.id) diskEdges.add(e.id);
   }
-  if (!r.benchmarks || r.benchmarks.before !== r.benchmarks.after || r.benchmarks.after !== diskBench)
-    err(repFile, `benchmark 数对账失败：报告 ${r.benchmarks?.after} vs 磁盘 ${diskBench}`);
+  // 对账语义：迁移基线 65 个实体是下限——实体只允许增长（研究建档），不允许减少
+  if (!r.benchmarks || r.benchmarks.before !== r.benchmarks.after)
+    err(repFile, 'benchmark 迁移前后不一致（报告内部）');
+  if ((r.benchmarks?.after ?? 0) > diskBench)
+    err(repFile, `实体数低于迁移基线（报告 ${r.benchmarks?.after} > 磁盘 ${diskBench}）——实体不得丢失`);
   // 对账语义：迁移报告是 v1→v2 时刻快照；此后 legacy 只允许因数据卫生（双计去重）减少，不允许增加
   if ((r.releases?.total ?? 0) < diskRel)
     err(repFile, `legacy release 数超出迁移基线（报告 ${r.releases?.total} < 磁盘 ${diskRel}）——不得向 legacy 追加`);
