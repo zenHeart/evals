@@ -37,18 +37,18 @@ function truncate(s, n) {
 /** 引用计数徽章：只统计近三年窗口（fresh）；窗口外/日期缺失归入档案降级展示（goal §12.2/§12.7） */
 function citeBadge(b) {
   const parts = [];
-  if (b._verified > 0) parts.push(`近三年官方发布引用已核验 ${b._verified} 条`);
-  if (b._pending > 0) parts.push(`待核验 ${b._pending} 条`);
+  if (b._verified > 0) parts.push(`近三年官方发布引用 ${b._verified} 条`);
+  if (b._pending > 0) parts.push(`图表读数 ${b._pending} 条`);
   if (!parts.length) {
     return b._archived > 0
-      ? `近三年暂无已核验引用 · 更早/日期不明的历史引用 ${b._archived} 条`
+      ? `近三年暂无官方发布引用 · 历史记录 ${b._archived} 条`
       : "社区驱动 · 暂无官方发布引用";
   }
   if (b._archived > 0) parts.push(`另有 ${b._archived} 条更早/日期不明的历史引用`);
   return parts.join(" · ");
 }
 
-/** 卡片/详情页共用的引用提示行：前 3 家 + 「+N」（仅已核验优先） */
+/** 卡片/详情页共用的引用提示行：前 3 家 + 「+N」（官方表格数值优先） */
 function vendorHint(b) {
   const sorted = [...(b.adoption || [])].sort((a, x) => (a.status === "verified" ? -1 : 1) - (x.status === "verified" ? -1 : 1));
   const names = sorted.map(a => a.release).filter(Boolean);
@@ -317,8 +317,8 @@ function detailPage(db, b, cat, related) {
     const sec = (title, note, rows) => `<p style="font-weight:700;margin:14px 0 4px;">${title}（${rows.length}）<span style="font-weight:400;color:var(--graphite);font-size:13px;"> — ${note}</span></p>` +
       `<div class="feed" style="padding-left:26px;">${rows.map(cardFor).join("")}</div>`;
     adoptBlock =
-      (fv.length ? sec("已核验", "近三年内，我们已在发布页原文中定位到这条分数", fv) : "") +
-      (fp.length ? sec("待核验", "分数在图片或表格中、暂无法定位到原文，因此不计入公开引用数", fp) : "") +
+      (fv.length ? sec("官方表格数值", "分数出自发布页的表格或正文原文", fv) : "") +
+      (fp.length ? sec("图表读数", "数值读自发布页的图表，可能与精确值有微小出入", fp) : "") +
       (ar.length ? `<details style="margin:14px 0;"><summary style="cursor:pointer;font-weight:700;font-size:14px;color:#64748b;">历史引用（${ar.length} 条 · 发布时间在近三年之外或日期不明，仅作背景参考）</summary><div class="feed" style="padding-left:26px;">${ar.map(cardFor).join("")}</div></details>` : "");
   } else {
     const row = a => `<tr>
@@ -330,8 +330,8 @@ function detailPage(db, b, cat, related) {
     const v = cite.filter(a => a.status === "verified");
     const pd = cite.filter(a => a.status !== "verified");
     adoptBlock =
-      (v.length ? `<p style="font-weight:700;margin:8px 0 4px;">已核验（${v.length}）</p>${tbl(v.map(row))}` : "") +
-      (pd.length ? `<p style="font-weight:700;margin:16px 0 4px;">待核验（${pd.length}）</p>${tbl(pd.map(row))}` : "");
+      (v.length ? `<p style="font-weight:700;margin:8px 0 4px;">官方表格数值（${v.length}）</p>${tbl(v.map(row))}` : "") +
+      (pd.length ? `<p style="font-weight:700;margin:16px 0 4px;">图表读数（${pd.length}）</p>${tbl(pd.map(row))}` : "");
   }
 
   return `${shellHead({ rel: "../../", title, desc, path: `benchmarks/${b.id}/`, extra: `<style>${SHELL_CSS}${PAGE_CSS}${EVT_CSS}</style>` })}
@@ -358,7 +358,7 @@ ${shellTopbar("../../", "benchmarks")}
   <div class="callout warn"><b>可比性提示：</b>同一评测的分数是「实验配置」的产物：只要评测版本（variant）、执行框架（harness）、推理档位（reasoning effort）、工具、采样参数、运行次数或聚合方式有任何一项不同，数字就不能直接横向比较。下方各厂商的分数如未写明协议细节，请只当作方向参考。</div>
 
   <h2 class="detail-sec" id="adoption">厂商采用记录（模型发布时作为基准引用）</h2>
-  <p class="refs">共 ${cite.length} 条 · 近三年已核验 ${freshV.length} · 待核验 ${freshP.length}${archived.length ? ` · 更早/日期不明 ${archived.length}` : ""}${db.updated ? ` · 数据更新于 ${esc(db.updated)}` : ""} · 近三年自 ${esc(db.cutoff)} 起算</p>
+  <p class="refs">共 ${cite.length} 条 · 官方表格数值 ${freshV.length} · 图表读数 ${freshP.length}${archived.length ? ` · 更早/日期不明 ${archived.length}` : ""}${db.updated ? ` · 数据更新于 ${esc(db.updated)}` : ""} · 近三年自 ${esc(db.cutoff)} 起算</p>
   ${adoptBlock}
 
   <h2 class="detail-sec" id="gaps">数据缺口（本页暂未收录）</h2>
@@ -535,12 +535,12 @@ function tlEvtHtml(db, r, opts = {}) {
     if (!proto.h && e.harness) proto.h = `执行框架 ${esc(e.harness)}`;
     if (!proto.e && e.effort) proto.e = `推理档位 ${esc(e.effort)}`;
   }
-  const metaBits = [`<b>已核验 ${r.verified}</b> / 待核验 ${r.pending} / 共 ${r.evidence.length} 条证据`, proto.h, proto.e]
+  const metaBits = [`共 ${r.evidence.length} 项评测数据`, proto.h, proto.e]
     .filter(Boolean).join(" · ");
   return `<article class="evt" data-trust="${trust}">
     ${pinLogo(r.vendor_id, trust)}
     <div class="evt-head">
-      <span class="evt-date">${r.release_date ? esc(r.release_date) : "日期待核验"}</span>
+      <span class="evt-date">${r.release_date ? esc(r.release_date) : "日期不明"}</span>
       <span class="evt-vendor">${vendorMark(r.vendor_id, 14)} ${esc(r.vendor_label)}<i>·</i>${region}</span>
     </div>
     <h3 class="evt-title">${esc(r.models.length ? r.models.join(" / ") : r.release_title)}</h3>
@@ -598,7 +598,7 @@ ${shellTopbar(rel, "releases")}
   <nav class="breadcrumb" style="margin-bottom:18px;"><a href="${rel}index.html">首页</a> / <b>模型发布</b></nav>
   <p class="eyebrow">Evaluation Ledger · 2023 — 2026</p>
   <h1>模型发布时间轴</h1>
-  <p class="sub">${esc(desc)}每张事件卡左侧引脚的颜色代表这次发布的证据核验程度：<b>绿色</b> 引用的评测全部已核验、<b>琥珀色</b> 部分已核验、<b>灰色</b> 暂无已核验。<a href="${rel}benchmarks/">← 返回评估大全</a></p>
+  <p class="sub">${esc(desc)}每张事件卡左侧徽章的颜色代表数据来源：<b>绿色</b> 数值出自官方表格原文、<b>琥珀色</b> 数值读自图表、<b>灰色</b> 该发布未报告评测数值。<a href="${rel}benchmarks/">← 返回评估大全</a></p>
   <div class="cov-strip"><span class="cov-label">收录的厂商与发布数</span>${cov}</div>
 
   <div class="console" id="tlControls" hidden>
@@ -672,12 +672,12 @@ window.EVALS_TL_REL = ${JSON.stringify(rel)};
     for(var i=0;i<r.evidence.length;i++){var e=r.evidence[i];
       if(!h&&e.harness)h='执行框架 '+esc(e.harness);
       if(!ef&&e.effort)ef='推理档位 '+esc(e.effort);}
-    var meta='<b>已核验 '+r.verified+'</b> / 待核验 '+r.pending+' / 共 '+r.evidence.length+' 条证据';
+    var meta='共 '+r.evidence.length+' 项评测数据';
     if(h)meta+=' · '+h; if(ef)meta+=' · '+ef;
     var pin=pinLogo(r.vendor_id,trust);
     return '<article class="evt" data-trust="'+trust+'">'+
       pin+
-      '<div class="evt-head"><span class="evt-date">'+(r.release_date?esc(r.release_date):'日期待核验')+'</span>'+
+      '<div class="evt-head"><span class="evt-date">'+(r.release_date?esc(r.release_date):'日期不明')+'</span>'+
       '<span class="evt-vendor">'+vendorMark(r.vendor_id,13)+' '+esc(r.vendor_label)+'<i>·</i>'+region+'</span></div>'+
       '<h3 class="evt-title">'+esc(r.models.length?r.models.join(' / '):r.release_title)+'</h3>'+
       (r.models.length?'<div class="evt-blog">发布文：'+(r.source_url?'<a href="'+esc(r.source_url)+'" target="_blank" rel="noopener">'+esc(r.release_title)+'</a>':esc(r.release_title))+'</div>':'')+
@@ -788,8 +788,8 @@ function autoBenchmarkPage(db, id, rows) {
   const sec = (title, note, list) => `<p style="font-weight:700;margin:14px 0 4px;">${title}（${list.length}）<span style="font-weight:400;color:var(--graphite);font-size:13px;"> — ${note}</span></p>` +
     `<div class="feed" style="padding-left:26px;">${list.map(cardFor).join("")}</div>`;
   const adopt =
-    (verified.length ? sec("已核验", "近三年内，我们已在发布页原文中定位到这条分数", verified) : "") +
-    (freshPending.length ? sec("待核验", "分数在图片或表格中、暂无法定位到原文", freshPending) : "") +
+    (verified.length ? sec("官方表格数值", "分数出自发布页的表格或正文原文", verified) : "") +
+    (freshPending.length ? sec("图表读数", "数值读自发布页的图表，可能与精确值有微小出入", freshPending) : "") +
     (archived.length ? `<details style="margin:14px 0;"><summary style="cursor:pointer;font-weight:700;font-size:14px;color:#64748b;">历史引用（${archived.length} 条 · 发布时间在近三年之外或日期不明）</summary><div class="feed" style="padding-left:26px;">${archived.map(cardFor).join("")}</div></details>` : "");
   const title = `${id} · 评测参考（由发布引用自动生成） · 评估大全`;
   const desc = truncate(`${id}：在 ${rows.length} 次主流模型官方发布中被引用（${vendors.join("、")}）。本页由这些发布引用自动生成，逐条列出分数、协议与原文；完整定义与数据集介绍补全中。`, 150);
@@ -804,7 +804,7 @@ ${shellTopbar("../../", "benchmarks")}
   <div class="callout">下面每张「发布」卡片就是一次真实引用：描边高亮的那一项是<b>本评测在该次发布中的报告分数</b>，其余项是同一次发布还引用的其他评测。点击卡片里的评测名可进入对应介绍页。</div>
 
   <h2 class="detail-sec" id="adoption">官方发布引用记录</h2>
-  <p class="refs">共 ${rows.length} 条 · 已核验 ${verified.length} · 待核验 ${freshPending.length}${archived.length ? ` · 更早/日期不明 ${archived.length}` : ""}${db.updated ? ` · 数据更新于 ${esc(db.updated)}` : ""}</p>
+  <p class="refs">共 ${rows.length} 条 · 官方表格数值 ${verified.length} · 图表读数 ${freshPending.length}${archived.length ? ` · 更早/日期不明 ${archived.length}` : ""}${db.updated ? ` · 数据更新于 ${esc(db.updated)}` : ""}</p>
   ${adopt}
 
   <h2 class="detail-sec" id="sources">来源</h2>

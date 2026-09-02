@@ -775,7 +775,7 @@ function indexPage(parts, chaptersMeta, bench) {
     <a class="feat-card" href="benchmarks/${b.id}/">
       <div class="f-name">${b.name}</div>
       <div class="f-desc">${b.tests}</div>
-      <div class="f-cite">${b._verified ? `近三年已核验 ${b._verified} 次官方发布引用` : "暂无近三年已核验的官方发布引用"}</div>
+      <div class="f-cite">${b._verified ? `近三年官方发布引用 ${b._verified} 次` : "暂无近三年官方发布引用记录"}</div>
     </a>`).join("");
   return `${COMMON_HEAD("", "大模型评估入门 · Eval Handbook", desc, "")}
 </head>
