@@ -425,12 +425,17 @@ const EVT_CSS = `
 .evt-vendor { font:700 10.5px/1 ui-monospace,monospace; letter-spacing:.14em; color:var(--graphite); text-transform:uppercase; }
 .evt-vendor i { font-style:normal; color:var(--rule); margin:0 5px; }
 .evt-title { font-size:16.5px; font-weight:800; margin:6px 0 2px; line-height:1.4; }
-.evt-blog { font-size:12.5px; color:var(--graphite); margin:0 0 6px; }
+.evt-title a { color:inherit; text-decoration:none; }
+.evt-title a:hover { color:var(--pin); }
+.evt-specs { display:flex; flex-wrap:wrap; gap:3px 16px; font:400 12px/1.8 ui-monospace,monospace; color:var(--ink); margin:3px 0 6px; }
+.evt-specs .sp-k { color:var(--graphite); font-size:11px; letter-spacing:.05em; margin-right:5px; }
+.evt-specs b { font-weight:700; }
+.evt-specs .sp-note { color:var(--graphite); font-weight:400; }
+.evt-overview { font-size:13.5px; line-height:1.75; color:var(--ink); margin:0 0 7px; }
+.evt-traits { display:flex; flex-wrap:wrap; gap:6px; margin:0 0 9px; }
+.tchip { font:600 11.5px/1.6 ui-monospace,monospace; border:1px solid var(--rule); border-radius:4px; padding:1px 9px; color:var(--graphite); background:var(--pin-soft); }
 .evt-blog a { color:var(--graphite); text-decoration:underline; text-underline-offset:3px; }
 .evt-blog a:hover { color:var(--pin); }
-.evt-meta { font:400 12px/1.7 ui-monospace,monospace; color:var(--graphite); margin:0 0 8px; }
-.evt-meta b { color:var(--ok); font-weight:700; }
-.evt-meta i { color:var(--warn); font-style:normal; }
 .evt-chips { display:flex; flex-wrap:wrap; gap:6px; margin:0 0 8px; }
 .bchip { font:400 12px/1.4 ui-monospace,monospace; padding:2px 10px; border-radius:4px; text-decoration:none; }
 .bchip b { font-weight:700; }
@@ -504,6 +509,38 @@ body.dark .tlr {
 }
 `;
 
+/** 规格行（参数 / 上下文 / 价格 / 模态）：取第一个带规格的模型；无规格不渲染 */
+function evtSpecsHtml(r) {
+  const m0 = (r.model_specs || []).find(m => m && (m.params || m.context_window || m.pricing || (m.modalities && m.modalities.length)));
+  if (!m0) return "";
+  const bits = [];
+  if (m0.params) bits.push(`<span><span class="sp-k">参数</span><b>${esc(m0.params)}</b></span>`);
+  if (m0.context_window) bits.push(`<span><span class="sp-k">上下文</span><b>${esc(m0.context_window)}</b></span>`);
+  const p = m0.pricing;
+  if (p && (p.input_per_m != null || p.output_per_m != null)) {
+    const cur = p.currency === "CNY" ? "¥" : "$";
+    const pair = `${p.input_per_m != null ? cur + p.input_per_m : "—"}/${p.output_per_m != null ? cur + p.output_per_m : "—"}`;
+    bits.push(`<span><span class="sp-k">价格</span><b>${pair}</b><span class="sp-note"> 每百万 tokens${p.note ? " · " + esc(p.note) : ""}</span></span>`);
+  }
+  if (m0.modalities && m0.modalities.length) bits.push(`<span><span class="sp-k">模态</span><b>${esc(m0.modalities.join("·"))}</b></span>`);
+  return bits.length ? `<div class="evt-specs">${bits.join("")}</div>` : "";
+}
+
+/** 能力概述 + 核心特点：优先入库撰写的 capability_summary，否则用派生评测画像兜底（零虚构） */
+function evtOverviewHtml(r) {
+  const m0 = (r.model_specs || []).find(m => m && m.capability_summary);
+  const traits = (m0?.key_traits || []).map(t => `<span class="tchip">${esc(t)}</span>`).join("");
+  const overview = m0?.capability_summary
+    ? `<p class="evt-overview">${esc(m0.capability_summary)}</p>`
+    : (() => {
+        const n = r.profile?.evidence_count ?? r.evidence.length;
+        if (!n) return `<p class="evt-overview">本次发布未报告评测数值。</p>`;
+        const cats = (r.profile?.categories || []).map(c => `${esc(c.name)} ×${c.count}`).join(" · ");
+        return `<p class="evt-overview">从官方发布收录 ${n} 项评测${cats ? `，主要覆盖：${cats}` : ""}。</p>`;
+      })();
+  return overview + (traits ? `<div class="evt-traits">${traits}</div>` : "");
+}
+
 /** 时间轴事件卡（服务端静态与客户端渲染共用同一 HTML 结构） */
 function tlEvtHtml(db, r, opts = {}) {
   const focusSet = opts.focusSet || null;
@@ -530,22 +567,19 @@ function tlEvtHtml(db, r, opts = {}) {
       .filter(Boolean).join(" · ");
     return `<a class="bchip ${cls}${focus}" href="${chipBase}${esc(e.benchmark_id)}/"${tip ? ` title="${esc(tip)}"` : ""}>${inner}</a>`;
   }).join("");
-  const proto = [];
-  for (const e of r.evidence) {
-    if (!proto.h && e.harness) proto.h = `执行框架 ${esc(e.harness)}`;
-    if (!proto.e && e.effort) proto.e = `推理档位 ${esc(e.effort)}`;
-  }
-  const metaBits = [`共 ${r.evidence.length} 项评测数据`, proto.h, proto.e]
-    .filter(Boolean).join(" · ");
+  const modelTitle = r.models.length ? r.models.join(" / ") : r.release_title;
+  const titleInner = r.source_url
+    ? `<a href="${esc(r.source_url)}" target="_blank" rel="noopener" title="阅读官方发布文：${esc(r.release_title)}">${esc(modelTitle)}</a>`
+    : esc(modelTitle);
   return `<article class="evt" data-trust="${trust}">
     ${pinLogo(r.vendor_id, trust)}
     <div class="evt-head">
       <span class="evt-date">${r.release_date ? esc(r.release_date) : "日期不明"}</span>
       <span class="evt-vendor">${vendorMark(r.vendor_id, 14)} ${esc(r.vendor_label)}<i>·</i>${region}</span>
     </div>
-    <h3 class="evt-title">${esc(r.models.length ? r.models.join(" / ") : r.release_title)}</h3>
-    ${r.models.length ? `<div class="evt-blog">发布文：${r.source_url ? `<a href="${esc(r.source_url)}" target="_blank" rel="noopener">${esc(r.release_title)}</a>` : esc(r.release_title)}</div>` : ""}
-    <div class="evt-meta">${metaBits}</div>
+    <h3 class="evt-title">${titleInner}</h3>
+    ${evtSpecsHtml(r)}
+    ${benchMode ? "" : evtOverviewHtml(r)}
     <div class="evt-chips">${chips}</div>
     ${r.source_url && !r.models.length ? `<div class="evt-src"><a href="${esc(r.source_url)}" target="_blank" rel="noopener">官方发布原文 ↗</a><span class="kind">${esc(r.source_kind || "")}</span></div>` : ""}
   </article>`;
@@ -656,6 +690,38 @@ window.EVALS_TL_REL = ${JSON.stringify(rel)};
     return s;
   }
 
+  function specsHtml(r){
+    var m0=null,specs=r.model_specs||[];
+    for(var i=0;i<specs.length;i++){var m=specs[i];
+      if(m&&(m.params||m.context_window||m.pricing||(m.modalities&&m.modalities.length))){m0=m;break;}}
+    if(!m0)return '';
+    var bits=[];
+    if(m0.params)bits.push('<span><span class="sp-k">参数</span><b>'+esc(m0.params)+'</b></span>');
+    if(m0.context_window)bits.push('<span><span class="sp-k">上下文</span><b>'+esc(m0.context_window)+'</b></span>');
+    var p=m0.pricing;
+    if(p&&(p.input_per_m!=null||p.output_per_m!=null)){
+      var cur=p.currency==='CNY'?'¥':'$';
+      var pair=(p.input_per_m!=null?cur+p.input_per_m:'—')+'/'+(p.output_per_m!=null?cur+p.output_per_m:'—');
+      bits.push('<span><span class="sp-k">价格</span><b>'+pair+'</b><span class="sp-note"> 每百万 tokens'+(p.note?' · '+esc(p.note):'')+'</span></span>');
+    }
+    if(m0.modalities&&m0.modalities.length)bits.push('<span><span class="sp-k">模态</span><b>'+esc(m0.modalities.join('·'))+'</b></span>');
+    return bits.length?'<div class="evt-specs">'+bits.join('')+'</div>':'';
+  }
+  function overviewHtml(r){
+    var summary=null,traits=[],specs=r.model_specs||[];
+    for(var i=0;i<specs.length;i++){if(specs[i]&&specs[i].capability_summary){summary=specs[i].capability_summary;traits=specs[i].key_traits||[];break;}}
+    var ov;
+    if(summary){ov='<p class="evt-overview">'+esc(summary)+'</p>';}
+    else{
+      var n=r.profile?r.profile.evidence_count:r.evidence.length;
+      if(!n){ov='<p class="evt-overview">本次发布未报告评测数值。</p>';}
+      else{
+        var cats=(r.profile&&r.profile.categories||[]).map(function(c){return esc(c.name)+' ×'+c.count;}).join(' · ');
+        ov='<p class="evt-overview">从官方发布收录 '+n+' 项评测'+(cats?'，主要覆盖：'+cats:'')+'。</p>';
+      }
+    }
+    return ov+(traits.length?'<div class="evt-traits">'+traits.map(function(t){return '<span class="tchip">'+esc(t)+'</span>';}).join('')+'</div>':'');
+  }
   function nodeHtml(r){
     var fs=focusSet();
     var trust=r.verified===0?'none':(r.pending===0?'full':'part');
@@ -668,20 +734,18 @@ window.EVALS_TL_REL = ${JSON.stringify(rel)};
       var tip=[];if(e.harness)tip.push('执行框架（harness）：'+esc(e.harness));if(e.effort)tip.push('推理档位（effort）：'+esc(e.effort));
       return '<a class="bchip '+cls+focus+'" href="'+REL+'benchmarks/'+esc(e.benchmark_id)+'/"'+(tip.length?' title="'+tip.join(' · ')+'"':'')+'>'+inner+'</a>';
     }).join('');
-    var h='',ef='';
-    for(var i=0;i<r.evidence.length;i++){var e=r.evidence[i];
-      if(!h&&e.harness)h='执行框架 '+esc(e.harness);
-      if(!ef&&e.effort)ef='推理档位 '+esc(e.effort);}
-    var meta='共 '+r.evidence.length+' 项评测数据';
-    if(h)meta+=' · '+h; if(ef)meta+=' · '+ef;
+    var modelTitle=r.models.length?r.models.join(' / '):r.release_title;
+    var titleInner=r.source_url
+      ?'<a href="'+esc(r.source_url)+'" target="_blank" rel="noopener" title="阅读官方发布文：'+esc(r.release_title)+'">'+esc(modelTitle)+'</a>'
+      :esc(modelTitle);
     var pin=pinLogo(r.vendor_id,trust);
     return '<article class="evt" data-trust="'+trust+'">'+
       pin+
       '<div class="evt-head"><span class="evt-date">'+(r.release_date?esc(r.release_date):'日期不明')+'</span>'+
       '<span class="evt-vendor">'+vendorMark(r.vendor_id,13)+' '+esc(r.vendor_label)+'<i>·</i>'+region+'</span></div>'+
-      '<h3 class="evt-title">'+esc(r.models.length?r.models.join(' / '):r.release_title)+'</h3>'+
-      (r.models.length?'<div class="evt-blog">发布文：'+(r.source_url?'<a href="'+esc(r.source_url)+'" target="_blank" rel="noopener">'+esc(r.release_title)+'</a>':esc(r.release_title))+'</div>':'')+
-      '<div class="evt-meta">'+meta+'</div>'+
+      '<h3 class="evt-title">'+titleInner+'</h3>'+
+      specsHtml(r)+
+      overviewHtml(r)+
       '<div class="evt-chips">'+chips+'</div>'+
       (r.source_url&&!r.models.length?'<div class="evt-src"><a href="'+esc(r.source_url)+'" target="_blank" rel="noopener">官方发布原文 ↗</a><span class="kind">'+esc(r.source_kind||'')+'</span></div>':'')+
       '</article>';

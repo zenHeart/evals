@@ -552,3 +552,13 @@ OpenRouter 官方模型目录交叉核对发现的旗舰缺口，19 个 release 
 2. **Hunyuan T1 表图 9 行**：官方 README 热链的第三方镜像图床（ronggan123/image），转写值在 notes；确认后翻 verified。
 3. **`crux-i`/`crux-o`/`swe-mtlg`/`bc-vl` 四个疑似等价 id**：与 `cruxeval` / `swebench-multilingual` / BrowseComp-VL 的合并关系待主线裁定。
 4. **step-2 系**：wayback 核验后决定是否建占位（当前无一级来源，未建）。
+
+---
+
+## 账本契约修订（2026-09-02）：models[] 规格与能力概述字段
+
+时间轴事件卡升级为「标题直链发布文 + 规格行（参数/上下文/价格/模态）+ 能力概述 + 核心特点标签 + 评测 chips」结构。为此 `models[]` 条目新增**可选**字段：`params` / `context_window` / `pricing{input_per_m, output_per_m, currency, note}` / `modalities` / `capability_summary` / `key_traits`。
+
+- 扩展为增量可选：不改变任何既有证据字段的语义；`validate-data` 不拒未知键，无需改校验器。
+- 存量 82 个 release 允许做「**仅新增 models[] 字段**」的补全（规格与概述只写发布文/归档明示内容），不触碰 `benchmark_evidence`——此为本契约唯一的存量扩展例外。
+- `capability_summary` 由入库流程结合发布文定位与已收录评测数据撰写（口径见 `.claude/skills/ingest-releases/references/release-schema.md`）；构建期对无概述的存量发布自动派生「领域分布」兜底句，保证卡片永远有可读概述。

@@ -126,6 +126,7 @@ export function loadBenchData() {
 
   // ---- release 时间轴视图（厂商 → 版本 → blog 证据结构）
   const vendorRegion = Object.fromEntries((vendors.vendors || vendors || []).map(v => [v.id, v.region ?? null]));
+  const catNames = Object.fromEntries(taxonomy.categories.map(c => [c.id, c.name]));
   const releaseViews = collectReleases().map(r => {
     const evidence = (r.benchmark_evidence || []).map(e => ({
       benchmark_id: canon(e.benchmark_id),
@@ -140,6 +141,25 @@ export function loadBenchData() {
       attribution: e.attribution_type ?? null,
       url: e.source_url ?? null,
     }));
+    // 模型规格与能力概述：入库时写入 models[]（ingest-releases 技能负责）；
+    // 构建期只做派生兜底画像（评测领域分布），保证存量发布也有可读概述。
+    const catCount = new Map();
+    for (const e of evidence) {
+      const cid = byId[e.benchmark_id]?.category;
+      if (cid) catCount.set(cid, (catCount.get(cid) || 0) + 1);
+    }
+    const profileCategories = [...catCount.entries()]
+      .sort((a, b) => b[1] - a[1]).slice(0, 4)
+      .map(([cid, n]) => ({ id: cid, name: catNames[cid] || cid, count: n }));
+    const modelSpecs = (r.models || []).map(m => ({
+      name: m.name || m.id || null,
+      params: m.params ?? null,
+      context_window: m.context_window ?? null,
+      pricing: m.pricing ?? null,
+      modalities: m.modalities ?? null,
+      capability_summary: m.capability_summary ?? null,
+      key_traits: m.key_traits ?? [],
+    }));
     return {
       id: r.id,
       vendor_id: r.vendor_id ?? null,
@@ -148,6 +168,8 @@ export function loadBenchData() {
       release_title: r.release_title ?? r.id,
       release_date: r.release_date ?? null,
       models: (r.models || []).map(m => m.name || m.id).filter(Boolean),
+      model_specs: modelSpecs,
+      profile: { evidence_count: evidence.length, categories: profileCategories },
       source_url: (r.primary_sources || [])[0]?.url ?? null,
       source_kind: (r.primary_sources || [])[0]?.kind ?? null,
       status: r.status ?? "pending",
