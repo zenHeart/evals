@@ -20,6 +20,7 @@ export const LOGO_EXT = {
   xiaomi: "png",
   tencent: "png",
   stepfun: "png",
+  microsoft: "png",
 };
 
 /** 厂商彩色 logo <img>。logoBase 形如 "assets/logos/"（构建方传入相对前缀）。 */

@@ -562,3 +562,35 @@ OpenRouter 官方模型目录交叉核对发现的旗舰缺口，19 个 release 
 - 扩展为增量可选：不改变任何既有证据字段的语义；`validate-data` 不拒未知键，无需改校验器。
 - 存量 82 个 release 允许做「**仅新增 models[] 字段**」的补全（规格与概述只写发布文/归档明示内容），不触碰 `benchmark_evidence`——此为本契约唯一的存量扩展例外。
 - `capability_summary` 由入库流程结合发布文定位与已收录评测数据撰写（口径见 `.claude/skills/ingest-releases/references/release-schema.md`）；构建期对无概述的存量发布自动派生「领域分布」兜底句，保证卡片永远有可读概述。
+
+---
+
+## 2026-09-02 第八批：首次增量入库（ingest-releases 技能首次实战）+ Microsoft 新厂商接入
+
+技能驱动批次：窗口 = 检查点锚点 2026-08-28 回退 14 天重叠 → 2026-09-02（首批检查点同步建立：`data/generated/ingest-checkpoint.json`）。5 个 release / 34 条 evidence（21 verified + 13 pending）。发布日期全部精确到日。**Microsoft（MAI 线）为新增厂商**：vendors.json 注册（Tier 2）+ 官方四色方块 logo（microsoft.com favicon 128×128）+ LOGO_EXT/DOMAINS/渠道表四登记。
+
+| 文件 | 发布日期（来源） | 条数 | verified | pending | 要点 |
+|---|---|---:|---:|---:|---|
+| `anthropic/claude-fable-5-1.json` | 2026-09-01（newsroom 索引印刷 Sep 1 + Anthropic statement） | 10 | 10 | 0 | **benchmark 表为 DOM 机读（与 Fable 5 代"总表是图片"相反），全行 verified 零 OCR**；Fable 5.1（GA）+ Mythos 5.1（同模型 trusted-access 档，TB 4.0 60.9 独立边）；TBS 52.6（vs Fable 5 的 24.7）、GDPval-AA v2 1853、OSWorld 2.0 77.9/41.7 双划分、CursorBench 3.2.0 73.4、AutomationBench 31.4、HLE 双条件 65.0/60.9（no-tools 行 tools=[]）；定价 $10/$50 + 缓存读 $0.25（页明文）；platform.claude.com 区域屏蔽致 1M 上下文/128K 输出未能二次独立复核（specs_provenance 留痕） |
+| `deepseek/deepseek-v4-pro.json` | 2026-08-13（slug 260813 + Change Log） | 10 | 0 | 10 | GA 正式版（与 04-24 预览 deepseek-v4.json 分立）；**benchmark 表整图 → 全 pending**，视觉转写双路径逐行一致且三处跨档互证（HLE 37.7/48.2 = 预览版 verified 值；TB2.1 Flash-0731 82.7 = 260821 表；DeepSWE Kimi-K3 67.5 = GLM-5.2 页）；表注 Code Agent 协议（Harness 极简/max/topp 0.95/temp 1.0）只写入 4 个明示行；Responses API + 思考三档 + 峰谷定价（08-17 生效，价格为图未结构化）；新实体 dsbench-fullstack |
+| `qwen/qwen3-8-max-0902.json` | 2026-09-02（官方微博文章 publishedTime 11:22 + 平台别名 qwen3.8-max-2026-09-02 双 A 级互证） | 1 | 1 | 0 | Coding/Cowork 后训练更新（kimi-k2-0905 独立建档先例）；CodeArena 1691（提升 22 夺冠，benchmark_owner_reported 第三方榜单口径）；模型页 DOM 机读定价 ¥12/¥36 每百万 tokens 入结构字段（公告 $5/M 综合均价并存 notes）；公告图 3 为 17 行完整对比表 → 按红线未入账本，已标记为最高优先级人工读图补行机会 |
+| `microsoft/mai-thinking-1.json` | 2026-08-12（publishedTime 16:00Z + 页头 Updated as of） | 8 | 3 | 5 | 新厂商首个 release；散文 AIME25 97.0 / AIME26 94.5 verified + SWE-Pro "toe-to-toe with Opus 4.6"（not_reported，Opus 5 先例）；Table 1 整图 → 5 行 pending（hmmt-26/gpqa Diamond/lcb v6/TB 2.0/SWE-V），转写只进 notes 且跨厂锚点命中（GPT 5.4 SWE-Pro 57.7 / TB 75.1 = OpenAI 自报值）；specs：~1T 总参 35B 激活 MoE、256K；散文/图表同事实双行已归并（3 个 -table 边并入基准行，转写保留） |
+| `microsoft/mai-code-1-1-flash.json` | 2026-08-11（GitHub changelog + 发布文页头 + 卡 Release date 三证） | 5 | 5 | 0 | Model Card PDF 文本层干净（pypdf 无粘连）→ SWE-V 72.6 / TB2.1 62.9 全 verified（同 Copilot harness 自报，1.0 基线 71.6/51.7 入 notes）；内部视觉三行 text2webapp 74.1 / screenshot2webapp 42.1 → new-benchmark 候选未建实体（vendor-internal 无公开定义）；vision2web L3 映射既有实体（置信度中，notes 声明复核路径）；定价 $0.20/$1.20（docs.github.com tier A）+ 缓存 $0.02；1.0 版 09-10 退役 |
+
+### 本批待人工核验清单（pending 升级路径）
+
+1. **DeepSeek V4-Pro GA 表 10 行**：视觉转写已双路径一致 + 三处跨档互证，人工读图确认后逐行翻 verified——本批性价比最高的升级机会。
+2. **MAI-Thinking-1 Table 1 五行**：转写在 notes（GPQA Diamond 行 MAI 84.2 垫底与页面 "leads" 表述张力最大，需优先复核）；图内脚注协议（agentic 256k 上下文 / 其余 max output 256k）确认后回填 protocol.token_budget。
+3. **Qwen 0902 公告图 3（17 行完整对比表 + 12 条协议脚注）**：最高优先级补行机会（locator 已标记）；榜单名口径（CodeArena 前端总榜 vs 图题 WebDev）待裁定。
+4. 跨页冲突待裁定：Fable 5 的 GDPval-AA（本页 v2 1723 vs 06-09 页 1932 未标版本）；DeepSWE Kimi-K3 列 67.5 vs Kimi 脚注 67.3（既有冲突）。
+5. specs 局限：Fable 5.1 的 1M 上下文/128K 输出经 platform.claude.com 区域屏蔽未能二次独立复核（manifest.specs_provenance 留痕）。
+
+### 本批跳过清单
+
+GLM-5.3-Max（既有 GLM-5.3 展示名非独立发布）；GLM-5.3 开源权重（既有 release 属性事件，走 revisions[] 待补）；Kimi K3-Max（launch 变体）；Gemini 3.8 Flash（内测）；xAI Grok 4.7（未发布无一级来源）；OpenAI Astra（官宣未发布）；Qwen4 架构预览（结构预告非模型发布）；Google Omni 1.1 Flash / Gemini 3.5 Transcribe（音视频垂直）；MiniMax H3 Max / Music 3.0（视频/音乐垂直）。
+
+### 本批新沉淀（技能回写点）
+
+- **DOM 表会代际变化**：Anthropic 新发布页已改用 DOM 机读表格——不能凭厂商历史形态预设图片行，逐页实抓判定（本批若按旧预设全部记 pending 将错失 10 个 verified）。
+- 「散文+图表同事实双行」按「一个 benchmark 行 = 一条 evidence」归并进基准行（转写保留于 notes）。
+- 模型页/定价页 DOM 明示优先于 null（Qwen ¥12/¥36 定价入结构字段，综合均价口径并存 notes）。

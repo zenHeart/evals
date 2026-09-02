@@ -24,6 +24,7 @@ const DOMAINS = {
   xiaomi: ["www.mi.com", "hyperos.mi.com"],
   tencent: ["hy.tencent.com", "cloud.tencent.com", "www.tencent.com"],
   stepfun: ["stepfun.ai", "www.stepfun.com", "platform.stepfun.com"],
+  microsoft: ["www.microsoft.com", "microsoft.ai"],
 };
 
 const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126 Safari/537.36";

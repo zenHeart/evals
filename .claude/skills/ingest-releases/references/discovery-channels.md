@@ -32,6 +32,7 @@
 |---|---|---|
 | tencent | hy.tencent.com（blog，SPA 需渲染）；腾讯新闻官方通稿可作日期证据；官方 GitHub 仓 Tencent/*（README DOM 表） | 附录"模型得分"是整图 → pending；正文散文分数可 verified |
 | stepfun | stepfun.ai/research/（DOM 大表）；static.stepfun.com/blog/<model>/；官方 GitHub 仓（createdAt 作日期证据） | 表注 `*` = 同条件复现语义；自建内部集照录并注明 |
+| microsoft | microsoft.ai/news/（publishedTime 元数据）；platform.claude.com 类似的 docs 变更日志可佐证 | 2026-09-02 首次接入：MAI 模型线；正文散文明文分数可 verified，对比表多为整图 → pending；规格（参数/上下文）常在正文段落直接印出 |
 | xiaomi | 官方 blog / MiLLM 发布页 | 尚无 release 落库；首次录入时回写本行 |
 
 ## 旁证与交叉核对（仅作线索，日期与数值一律以官方页为准）
