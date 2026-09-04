@@ -95,7 +95,7 @@ Context Precision@K = Σ( precision@k × v_k ) / Top-K 中相关条目总数
 
 关键工程差异：**Recall 需要参考答案，Precision 不需要**——Recall 只能离线跑（先人工准备 ground truth），Precision 可直接对无参考的生产流量跑。
 
-### 21.3.5 分数低时的修复路径
+### 21.3.5 分数低时的修复路径与鉴别诊断决策树
 
 理解计算原理后，"分数低"不再是笼统的"效果不好"，而是可映射到具体修复动作的信号：
 
@@ -110,7 +110,70 @@ Context Precision@K = Σ( precision@k × v_k ) / Top-K 中相关条目总数
 
 （归因框架综合自 Langfuse agent 评估指南的 RAG 分步归因与 RAGAS 指标文档，抓取于 2026-08-28）
 
-这张表是本章操作核心。**每个指标必须配一条"分数低时做什么"**——一个没有修复路径的指标，团队三个月后就会停止看它。
+**工业界实战：RAG 错题鉴别诊断树（Differential Diagnosis）**
+
+在真实业务复盘会上，研发团队最容易陷入的内耗是"RAG 错题一出来，算法怪数据、工程怪模型、PM 改 prompt"。通过**单因素隔离测试**，两步即可精准定责：
+
+```mermaid
+flowchart TD
+    FAIL["RAG 错题样本<br/>（端到端答案不及格）"] --> STEP1{"步骤 1：金标切片检索命中？<br/>Top-K contexts 包含 Gold Chunk 吗？"}
+    STEP1 -->|否 NO| RET_ERR["【纯检索层故障】<br/>模型根本没拿到材料！<br/>排查：调小 chunk 分块 / 换 Embedding / 加 Reranker<br/>⚠️ 严禁此时盲目修改 LLM prompt"]
+    STEP1 -->|是 YES| STEP2{"步骤 2：隔离生成测试（Isolated Gen）<br/>绕过检索器，仅将 Gold Chunk<br/>直接喂给模型，模型答对了吗？"}
+    STEP2 -->|是 YES| CTX_ERR["【上下文纯度/噪声干扰】<br/>模型具备回答能力，但被召回的噪声段落带偏！<br/>排查：提高 Context Precision / 缩小 Top-K / 强化重排过滤"]
+    STEP2 -->|否 NO| GEN_ERR["【生成端能力/Prompt 缺陷】<br/>提供完美标准上下文依然回答错误！<br/>排查：优化 system prompt 严格遵从约束 / 升级模型推理能力"]
+    style RET_ERR fill:#fee2e2,stroke:#dc2626
+    style CTX_ERR fill:#fef3c7,stroke:#ca8a04
+    style GEN_ERR fill:#ede9fe,stroke:#7c3aed
+```
+
+将该决策逻辑固化为 TypeScript 诊断函数，挂入回归管线自动输出定位结论：
+
+```typescript
+// rag-diagnosis.ts —— RAG 错题单因素隔离鉴别诊断
+export type FaultDomain = "RETRIEVAL" | "CONTEXT_PRECISION" | "GENERATION";
+
+export interface DiagnosisInput {
+  question: string;
+  goldChunk: string;              // 包含标准答案的金标知识切片
+  retrievedChunks: string[];      // 线上实际召回的 Top-K 切片
+  groundTruth: string;            // 标准期望答案
+  // 注入被测生成函数与评分函数
+  generate: (q: string, ctx: string[]) => Promise<string>;
+  judgeAccuracy: (pred: string, truth: string) => Promise<boolean>;
+}
+
+export async function diagnoseRagFailure(input: DiagnosisInput): Promise<{
+  fault: FaultDomain;
+  action: string;
+}> {
+  // 步骤 1：检索命中检查（字符指纹或相似度覆盖）
+  const hit = input.retrievedChunks.some((c) => c.includes(input.goldChunk.trim().slice(0, 30)));
+  if (!hit) {
+    return {
+      fault: "RETRIEVAL",
+      action: "金标切片未被召回：请优化分块 chunk 策略、微调 Embedding 或引入 Reranker 重排，严禁修改 Prompt",
+    };
+  }
+
+  // 步骤 2：单因素隔离生成测试（跳过检索器，仅喂金标切片）
+  const isolatedOutput = await input.generate(input.question, [input.goldChunk]);
+  const passed = await input.judgeAccuracy(isolatedOutput, input.groundTruth);
+
+  if (passed) {
+    return {
+      fault: "CONTEXT_PRECISION",
+      action: "模型在纯净金标下能答对：故障出在 Top-K 噪声干扰，请调小 Top-K 或增强重排器过滤低分段落",
+    };
+  }
+
+  return {
+    fault: "GENERATION",
+    action: "模型在完美金标下依然答错：生成端遵从能力不足或 Prompt 缺乏边界约束，需升级模型或重写 System Prompt",
+  };
+}
+```
+
+这张表与鉴别诊断树是本章操作核心。**每个指标必须配一条"分数低时做什么"**——一个没有修复路径的指标，团队三个月后就会停止看它。
 
 ## 21.4 引用准确性与拒答评估
 
