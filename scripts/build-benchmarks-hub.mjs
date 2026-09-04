@@ -51,9 +51,9 @@ function citeBadge(b) {
 /** 卡片/详情页共用的引用提示行：前 3 家 + 「+N」（官方表格数值优先） */
 function vendorHint(b) {
   const sorted = [...(b.adoption || [])].sort((a, x) => (a.status === "verified" ? -1 : 1) - (x.status === "verified" ? -1 : 1));
-  const names = sorted.map(a => a.release).filter(Boolean);
+  const names = [...new Set(sorted.map(a => a.release).filter(Boolean))];
   const head = names.slice(0, 3).join(" · ");
-  return names.length > 3 ? `${head} 等 ${names.length} 家` : head;
+  return names.length > 3 ? `${head} 等 ${names.length} 场发布` : head;
 }
 
 // ---------------------------------------------------------------- 页面 CSS
@@ -303,9 +303,17 @@ function detailPage(db, b, cat, related) {
 
   // 采用记录 = release 事件卡流（与 /releases/ 时间轴同一组件，过滤为本评测）
   const hasReleaseRefs = (db.releases || []).length > 0 && cite.every(a => a.release_id);
-  const cardFor = (a) => {
-    const rel = db.releases.find(x => x.id === a.release_id);
-    return rel ? tlEvtHtml(db, rel, { benchId: b.id, chipBase: "../" }) : "";
+  const uniqReleasesFor = (items) => {
+    const seen = new Set();
+    const rels = [];
+    for (const a of items) {
+      if (!seen.has(a.release_id)) {
+        seen.add(a.release_id);
+        const rel = db.releases.find(x => x.id === a.release_id);
+        if (rel) rels.push(rel);
+      }
+    }
+    return rels;
   };
   let adoptBlock;
   if (!cite.length) {
@@ -314,12 +322,22 @@ function detailPage(db, b, cat, related) {
     const fv = cite.filter(a => a.status === "verified" && a.fresh);
     const fp = cite.filter(a => a.status !== "verified" && a.fresh);
     const ar = cite.filter(a => !a.fresh);
-    const sec = (title, note, rows) => `<p style="font-weight:700;margin:14px 0 4px;">${title}（${rows.length}）<span style="font-weight:400;color:var(--graphite);font-size:13px;"> — ${note}</span></p>` +
-      `<div class="feed" style="padding-left:26px;">${rows.map(cardFor).join("")}</div>`;
+    const sec = (title, note, items) => {
+      const rels = uniqReleasesFor(items);
+      const countLabel = items.length > rels.length
+        ? `${rels.length} 场发布 · 共 ${items.length} 项分值`
+        : `${rels.length}`;
+      return `<p style="font-weight:700;margin:14px 0 4px;">${title}（${countLabel}）<span style="font-weight:400;color:var(--graphite);font-size:13px;"> — ${note}</span></p>` +
+        `<div class="feed" style="padding-left:26px;">${rels.map(rel => tlEvtHtml(db, rel, { benchId: b.id, chipBase: "../" })).join("")}</div>`;
+    };
+    const arRels = uniqReleasesFor(ar);
+    const arCountLabel = ar.length > arRels.length
+      ? `${arRels.length} 场发布 · 共 ${ar.length} 项分值`
+      : `${ar.length} 条`;
     adoptBlock =
       (fv.length ? sec("官方表格数值", "分数出自发布页的表格或正文原文", fv) : "") +
       (fp.length ? sec("图表读数", "数值读自发布页的图表，可能与精确值有微小出入", fp) : "") +
-      (ar.length ? `<details style="margin:14px 0;"><summary style="cursor:pointer;font-weight:700;font-size:14px;color:#64748b;">历史引用（${ar.length} 条 · 发布时间在近三年之外或日期不明，仅作背景参考）</summary><div class="feed" style="padding-left:26px;">${ar.map(cardFor).join("")}</div></details>` : "");
+      (ar.length ? `<details style="margin:14px 0;"><summary style="cursor:pointer;font-weight:700;font-size:14px;color:#64748b;">历史引用（${arCountLabel} · 发布时间在近三年之外或日期不明，仅作背景参考）</summary><div class="feed" style="padding-left:26px;">${arRels.map(rel => tlEvtHtml(db, rel, { benchId: b.id, chipBase: "../" })).join("")}</div></details>` : "");
   } else {
     const row = a => `<tr>
       <td>${a.url ? `<a href="${esc(a.url)}" target="_blank" rel="noopener">${esc(a.release)} ↗</a>` : esc(a.release)}${a.date ? `<br><span style="color:var(--graphite);font-size:12px;font-family:ui-monospace,monospace;">${esc(a.date)}</span>` : ""}</td>
@@ -358,7 +376,12 @@ ${shellTopbar("../../", "benchmarks")}
   <div class="callout warn"><b>可比性提示：</b>同一评测的分数是「实验配置」的产物：只要评测版本（variant）、执行框架（harness）、推理档位（reasoning effort）、工具、采样参数、运行次数或聚合方式有任何一项不同，数字就不能直接横向比较。下方各厂商的分数如未写明协议细节，请只当作方向参考。</div>
 
   <h2 class="detail-sec" id="adoption">厂商采用记录（模型发布时作为基准引用）</h2>
-  <p class="refs">共 ${cite.length} 条 · 官方表格数值 ${freshV.length} · 图表读数 ${freshP.length}${archived.length ? ` · 更早/日期不明 ${archived.length}` : ""}${db.updated ? ` · 数据更新于 ${esc(db.updated)}` : ""} · 近三年自 ${esc(db.cutoff)} 起算</p>
+  <p class="refs">共 ${(() => {
+    const uniqRelsAll = new Set(cite.map(a => a.release_id).filter(Boolean));
+    return (hasReleaseRefs && cite.length > uniqRelsAll.size)
+      ? `${uniqRelsAll.size} 场模型发布（收录 ${cite.length} 项分值）`
+      : `${cite.length} 条`;
+  })()} · 官方表格数值 ${freshV.length} · 图表读数 ${freshP.length}${archived.length ? ` · 更早/日期不明 ${archived.length}` : ""}${db.updated ? ` · 数据更新于 ${esc(db.updated)}` : ""} · 近三年自 ${esc(db.cutoff)} 起算</p>
   ${adoptBlock}
 
   <h2 class="detail-sec" id="gaps">数据缺口（本页暂未收录）</h2>
@@ -547,16 +570,18 @@ function tlEvtHtml(db, r, opts = {}) {
   const chipBase = opts.chipBase !== undefined ? opts.chipBase : "../benchmarks/";
   // bench 语境（评测详情页引用卡）：只讲「哪个模型、本次报告多少分」，其余评测折叠为计数
   const benchMode = Boolean(opts.benchId);
-  const benchRow = benchMode ? r.evidence.find(e => e.benchmark_id === opts.benchId) : null;
+  const benchRows = benchMode ? r.evidence.filter(e => e.benchmark_id === opts.benchId) : [];
   const trust = r.verified === 0 ? "none" : r.pending === 0 ? "full" : "part";
   const region = r.region === "CN" ? "国内" : "国际";
-  const chips = (benchMode && benchRow) ? (() => {
-    const cls = benchRow.status === "verified" ? "ok" : "pd";
-    const others = r.evidence.length - 1;
-    const tip = [benchRow.harness ? `执行框架（harness）：${benchRow.harness}` : null, benchRow.effort ? `推理档位（effort）：${benchRow.effort}` : null]
-      .filter(Boolean).join(" · ");
-    return `<a class="bchip ${cls} focus" href="${chipBase}${esc(benchRow.benchmark_id)}/"${tip ? ` title="${esc(tip)}"` : ""}>${esc(benchRow.benchmark_id)}${benchRow.variant ? " " + esc(benchRow.variant) : ""} <b>${esc(benchRow.display || "未公布")}</b></a>` +
-      (others > 0 ? `<span class="bchip plain" title="本次发布同时引用的其他评测">+ ${others} 个其他评测</span>` : "");
+  const chips = (benchMode && benchRows.length > 0) ? (() => {
+    const benchChips = benchRows.map(benchRow => {
+      const cls = benchRow.status === "verified" ? "ok" : "pd";
+      const tip = [benchRow.harness ? `执行框架（harness）：${benchRow.harness}` : null, benchRow.effort ? `推理档位（effort）：${benchRow.effort}` : null]
+        .filter(Boolean).join(" · ");
+      return `<a class="bchip ${cls} focus" href="${chipBase}${esc(benchRow.benchmark_id)}/"${tip ? ` title="${esc(tip)}"` : ""}>${esc(benchRow.benchmark_id)}${benchRow.variant ? " " + esc(benchRow.variant) : ""} <b>${esc(benchRow.display || "未公布")}</b></a>`;
+    }).join("");
+    const others = r.evidence.length - benchRows.length;
+    return benchChips + (others > 0 ? `<span class="bchip plain" title="本次发布同时引用的其他评测">+ ${others} 个其他评测</span>` : "");
   })() : r.evidence.map(e => {
     // 账本中出现的每个评测都有详情页（正式实体或证据自动建档）——chip 一律可点
     const score = e.display ? ` <b>${esc(e.display)}</b>` : "";
@@ -848,15 +873,39 @@ function autoBenchmarkPage(db, id, rows) {
   const sources = [...new Set(rows.map(x => x.e.url).filter(Boolean))];
   const vendors = [...new Set(rows.map(x => x.r.vendor_label))];
   const rel = "../";
-  const cardFor = (x) => tlEvtHtml(db, x.r, { benchId: id, chipBase: "../" });
-  const sec = (title, note, list) => `<p style="font-weight:700;margin:14px 0 4px;">${title}（${list.length}）<span style="font-weight:400;color:var(--graphite);font-size:13px;"> — ${note}</span></p>` +
-    `<div class="feed" style="padding-left:26px;">${list.map(cardFor).join("")}</div>`;
+  const uniqInList = (list) => {
+    const seen = new Set();
+    const rels = [];
+    for (const x of list) {
+      if (!seen.has(x.r.id)) {
+        seen.add(x.r.id);
+        rels.push(x.r);
+      }
+    }
+    return rels;
+  };
+  const sec = (title, note, list) => {
+    const rels = uniqInList(list);
+    const countLabel = list.length > rels.length
+      ? `${rels.length} 场发布 · 共 ${list.length} 项分值`
+      : `${rels.length}`;
+    return `<p style="font-weight:700;margin:14px 0 4px;">${title}（${countLabel}）<span style="font-weight:400;color:var(--graphite);font-size:13px;"> — ${note}</span></p>` +
+      `<div class="feed" style="padding-left:26px;">${rels.map(r => tlEvtHtml(db, r, { benchId: id, chipBase: "../" })).join("")}</div>`;
+  };
+  const archivedRels = uniqInList(archived);
+  const archivedCountLabel = archived.length > archivedRels.length
+    ? `${archivedRels.length} 场发布 · 共 ${archived.length} 项分值`
+    : `${archived.length} 条`;
   const adopt =
     (verified.length ? sec("官方表格数值", "分数出自发布页的表格或正文原文", verified) : "") +
     (freshPending.length ? sec("图表读数", "数值读自发布页的图表，可能与精确值有微小出入", freshPending) : "") +
-    (archived.length ? `<details style="margin:14px 0;"><summary style="cursor:pointer;font-weight:700;font-size:14px;color:#64748b;">历史引用（${archived.length} 条 · 发布时间在近三年之外或日期不明）</summary><div class="feed" style="padding-left:26px;">${archived.map(cardFor).join("")}</div></details>` : "");
+    (archived.length ? `<details style="margin:14px 0;"><summary style="cursor:pointer;font-weight:700;font-size:14px;color:#64748b;">历史引用（${archivedCountLabel} · 发布时间在近三年之外或日期不明）</summary><div class="feed" style="padding-left:26px;">${archivedRels.map(r => tlEvtHtml(db, r, { benchId: id, chipBase: "../" })).join("")}</div></details>` : "");
+  const uniqAllRels = new Set(rows.map(x => x.r.id));
+  const relCountStr = rows.length > uniqAllRels.size
+    ? `${uniqAllRels.size} 场主流模型官方发布（共 ${rows.length} 项分值）`
+    : `${rows.length} 次主流模型官方发布`;
   const title = `${id} · 评测参考（由发布引用自动生成） · 评估大全`;
-  const desc = truncate(`${id}：在 ${rows.length} 次主流模型官方发布中被引用（${vendors.join("、")}）。本页由这些发布引用自动生成，逐条列出分数、协议与原文；完整定义与数据集介绍补全中。`, 150);
+  const desc = truncate(`${id}：在 ${relCountStr}中被引用（${vendors.join("、")}）。本页由这些发布引用自动生成，逐条列出分数、协议与原文；完整定义与数据集介绍补全中。`, 150);
   return `${shellHead({ rel: "../../", title, desc, path: `benchmarks/${id}/`, extra: `<style>${SHELL_CSS}${PAGE_CSS}${EVT_CSS}</style>` })}
 </head>
 <body>
@@ -864,11 +913,11 @@ ${shellTopbar("../../", "benchmarks")}
 <main id="main-content" class="detail-main bm-container">
   <nav class="breadcrumb"><a href="../../index.html">首页</a> / <a href="../">评估大全</a> / <b>${esc(id)}</b></nav>
   <div class="detail-head"><h1>${esc(id)}</h1><span class="status-badge status-saturation">由发布引用自动生成</span></div>
-  <p style="font-size:15.5px;color:#475569;margin:6px 0 0;">这个评测在官方模型发布中被引用了 <b>${rows.length}</b> 次（来自${esc(vendors.join("、"))}）。本页由这些发布引用自动生成：逐条列出每次引用的分数、协议与原文链接；完整的评测定义、数据集与指标介绍仍在补全，缺失的信息不会编造。</p>
+  <p style="font-size:15.5px;color:#475569;margin:6px 0 0;">这个评测在官方模型发布中被引用了 <b>${uniqAllRels.size}</b> 场发布${rows.length > uniqAllRels.size ? `（共 <b>${rows.length}</b> 项分值）` : ""}（来自${esc(vendors.join("、"))}）。本页由这些发布引用自动生成：逐条列出每次引用的分数、协议与原文链接；完整的评测定义、数据集与指标介绍仍在补全，缺失的信息不会编造。</p>
   <div class="callout">下面每张「发布」卡片就是一次真实引用：描边高亮的那一项是<b>本评测在该次发布中的报告分数</b>，其余项是同一次发布还引用的其他评测。点击卡片里的评测名可进入对应介绍页。</div>
 
   <h2 class="detail-sec" id="adoption">官方发布引用记录</h2>
-  <p class="refs">共 ${rows.length} 条 · 官方表格数值 ${verified.length} · 图表读数 ${freshPending.length}${archived.length ? ` · 更早/日期不明 ${archived.length}` : ""}${db.updated ? ` · 数据更新于 ${esc(db.updated)}` : ""}</p>
+  <p class="refs">共 ${rows.length > uniqAllRels.size ? `${uniqAllRels.size} 场模型发布（收录 ${rows.length} 项分值）` : `${rows.length} 条`} · 官方表格数值 ${verified.length} · 图表读数 ${freshPending.length}${archived.length ? ` · 更早/日期不明 ${archived.length}` : ""}${db.updated ? ` · 数据更新于 ${esc(db.updated)}` : ""}</p>
   ${adopt}
 
   <h2 class="detail-sec" id="sources">来源</h2>
