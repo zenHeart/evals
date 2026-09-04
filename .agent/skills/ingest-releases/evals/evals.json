@@ -1,0 +1,40 @@
+{
+  "skill_name": "ingest-releases",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "跑一次增量入库的 dry-run：只告诉我自上个时间结点以来有哪些新模型发布值得入库，先不要写任何文件。",
+      "expected_output": "执行 checkpoint status 得到窗口；按厂商渠道检索窗口内发布；输出候选清单（厂商/模型/官方URL/日期证据）与跳过清单；git 工作区保持干净，未写入任何文件。",
+      "files": [],
+      "assertions": [
+        "运行后 git status 显示除既有未跟踪项外无新增变更（未写 release JSON、未写 models/、未写 checkpoint）",
+        "输出包含明确的增量窗口起止日期且窗口起点不晚于账本最新发布日",
+        "每条候选均给出官方一级来源 URL 与发布日期证据，纯聚合站线索被排除或标注不入账"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "我看到 <某在册厂商> 昨天发布了新模型，把它按照时间轴的模板入库，完成后推送更新。",
+      "expected_output": "归档发布文到 models/YYYY-MM-DD-<slug>/，写 official/<vendor>/<release>.json（edge id 双连字符、protocol 12 键、缺失为 null），过 validate-data + npm run build 门禁，checkpoint commit，README 追加批次节，commit+push，交付结构化报告。",
+      "files": [],
+      "assertions": [
+        "node scripts/validate-data.mjs 通过",
+        "npm run build 全绿（含 validate-site 无占位文案/死链）",
+        "新建 release JSON 的 edge id 均符合 vendor-release--benchmark 双连字符约定且 score 无 \"-\" 占位",
+        "models/YYYY-MM-DD-*/ 目录含 page.html、images/、index.md（frontmatter 六键）",
+        "交付报告含 verified/pending 计数与待人工核验清单；图表行未被自动标记 verified"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "时间轴上没有 <某未注册厂商> 的模型，帮我把它们家的发布也补进来。",
+      "expected_output": "识别为新厂商：vendors.json 注册（coverage_tier 2）、fetch-logos DOMAINS 增加域名并抓取真实彩色 logo、vendor-logos LOGO_EXT 登记扩展名、discovery-channels.md Tier2 加行，然后按 Step 2 建档。",
+      "files": [],
+      "assertions": [
+        "data/vendors.json 新增条目字段完整（id/name/display_name/region/coverage_tier/active）",
+        "assets/logos/ 出现该厂商真实品牌图（非字母占位）且 vendor-logos.mjs LOGO_EXT 已登记",
+        "若无官方一级发布文则拒绝建档并在报告跳过清单说明，不引入聚合站数值"
+      ]
+    }
+  ]
+}

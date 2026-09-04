@@ -8,6 +8,7 @@
 
 > **执行合同**：本仓的站点优化执行合同在 [`_docs/goal.md`](_docs/goal.md)；冲突时事实与任务目标以 goal.md 最新版为准，写作风格与章节结构规范以本文件为准。
 > **站点验收**：任何页面/功能交付前，按 [`docs/site-review-checklist.md`](docs/site-review-checklist.md) 的四视角读者任务矩阵实测（学习者/查询者/UI 新人/工程师），覆盖对账以证据账本 id 为准。
+> **Agent 技能**：项目技能 canonical 在 `.claude/skills/`（Claude Code 发现目录）；`.agent/skills/` 是给 Antigravity 等读取 `.agent/skills/` 的 agent 的**单向镜像**（`npm run sync:skills` 生成，勿手改）。当前技能：`ingest-releases`——模型发布增量入库（发现窗口内新发布 → 归档 models/ → 写证据账本 → 门禁 → 推送）。
 
 ---
 
