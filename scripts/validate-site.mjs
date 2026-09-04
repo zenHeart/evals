@@ -224,11 +224,11 @@ function checkTimelineMonotonicity() {
 
   for (const f of files) {
     const html = readFileSync(f, "utf-8");
-    const parts = html.split('<div class="feed"');
+    const parts = html.split(/<div class="feed[^"]*"/);
     if (parts.length <= 1) continue;
 
     for (let i = 1; i < parts.length; i++) {
-      const feedChunk = parts[i].split("</main>")[0].split('<div class="feed"')[0];
+      const feedChunk = parts[i].split("</main>")[0].split(/<div class="feed[^"]*"/)[0];
       const dates = [...feedChunk.matchAll(/<span class="evt-date">([^<]+)<\/span>/g)].map(m => m[1].trim());
       if (dates.length <= 1) continue;
       checkedFeeds++;
