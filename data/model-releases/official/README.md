@@ -594,3 +594,22 @@ GLM-5.3-Max（既有 GLM-5.3 展示名非独立发布）；GLM-5.3 开源权重�
 - **DOM 表会代际变化**：Anthropic 新发布页已改用 DOM 机读表格——不能凭厂商历史形态预设图片行，逐页实抓判定（本批若按旧预设全部记 pending 将错失 10 个 verified）。
 - 「散文+图表同事实双行」按「一个 benchmark 行 = 一条 evidence」归并进基准行（转写保留于 notes）。
 - 模型页/定价页 DOM 明示优先于 null（Qwen ¥12/¥36 定价入结构字段，综合均价口径并存 notes）。
+
+
+---
+
+## 2026-09-04 第九批：前沿模型增量入库（Google Gemini 3.8 Flash + OpenAI GPT-6 Astra）
+
+基于 /ingest-releases 技能扫描窗口（2026-08-19 ~ 2026-09-04）及 WebSearch 深度核验，增量收录两家 Tier 1 厂商最新发布：2 个 release / 6 条 evidence（全部为 verified）。发布日期全部精确到日，官方一级来源。
+
+| 文件 | 发布日期（来源） | 条数 | verified | pending | 要点 |
+|---|---|---:|---:|---:|---|
+| `google/gemini-3-8-flash.json` | 2026-09-02（blog.google 印刷 Sep 2, 2026 + AI Studio / API 发布公告） | 3 | 3 | 0 | **Gemini 3.8 Flash + 3.8 Flash Cyber 专精安全双模型发布**；Terminal-Bench 2.1 达到 90.8%（较 3.7 Flash 提升 9.2pp）、SWE-Bench Pro 61.6%、SWE-Atlas 51.9%；维持 $0.75/$3.75 促销定价平价升级；Cyber 变体面向 Fairwind 计划认证受信任防御团队受控分发。 |
+| `openai/gpt-6-astra.json` | 2026-09-03（openai.com/index/gpt-6-astra/ 官方博文 + Preparedness 框架 Critical 等级披露） | 3 | 3 | 0 | **OpenAI 首款 Preparedness 评定达 Critical 级别的旗舰前沿模型**；主打原生计算机操作（GUI 像素/键鼠直接控制）、长程自主 Agent 与零日漏洞分析（Daybreak 计划受限保护）；ARC-AGI-3 报告 99.9% 饱和得分（官方注明使用带 retained reasoning 与 compaction 的 Agentic Harness，标准官方 harness 评测约为 62.7%，两者协议不可互换）；FrontierMath Tier 4 97.6%；ExploitBench 达成 16 级完整利用阶梯 100% 推进；定价 $10/$50 每百万 tokens。 |
+
+### 本批关键判定与说明
+1. **ARC-AGI-3 协议差异**：Astra 报告的 99.9% 明确绑定 OpenAI 自研带有 retained reasoning 与 compaction 的 agentic harness，标准官方 harness 值为 62.7%。根据仓库纪律，自报值如实记录，并在 notes 和 protocol 字段中详尽披露，禁止与标准 harness 直接混比。
+2. **安全双刃剑评测**：Astra 在 ExploitBench 达到 100% 推进，同时 Preparedness 评级达到 Critical，相关攻击性利用能力受到严格的受限访问机制控制，反映了 2026 年下半年大模型评测从纯功能评测向安全防护双重评估演进的特征。
+
+### 本批跳过清单
+MiniMax humain-m3（阿语垂直区域合作模型）；WeatherNext 3（天气物理垂直模型）；其余在册厂商在此窗口内无新通用前沿模型发布。

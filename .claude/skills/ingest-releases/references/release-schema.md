@@ -86,6 +86,22 @@
 }
 ```
 
+### 根级强校验门禁字段（缺一不可）
+
+`validate-data.mjs` 强制要求 Release 顶层必须包含以下 5 个字段：
+1. `retrieved_at`: 首次抓取/建档日期（YYYY-MM-DD）
+2. `last_verified_at`: 最近一次对账核验日期（YYYY-MM-DD）
+3. `status`: `"verified"`（有 verified 行）或 `"pending"`（纯图表/未披露分数）
+4. `notes`: 字符串，发布日依据、特殊协议与待核验清单
+5. `revisions`: 数组（初始为空 `[]`），勘误时追加历史记录
+
+### Agentic Harness 与前沿自主评测协议隔离（关键红线）
+
+随着模型向 Agent 与自主长程任务演进（如 ARC-AGI-3、Terminal-Bench 2.1、SWE-Atlas、ExploitBench 等），各家技术报告越来越多地引入「自定义 Agentic 脚手架」（如 retained reasoning、上下文 compaction、代码执行多轮纠错、自定义 tool scaffolding）：
+- **必须结构化记录脚手架**：若厂商自报分数使用了 Agent 脚手架，必须在 `protocol.harness` 显式注明（如 `"agentic_custom_compaction"`、`"agentic_scaffold_pass1"`），在 `protocol.tools` 写入调用的外部能力（如 `["code_execution", "bash"]`）。
+- **必须在 notes 披露协议落差**：必须在 `notes` 中明确记录自报值与官方标准单轮基准（Standard Harness）的数值落差（例如：`OpenAI 自报 99.9% 绑定制化 Agentic 压缩脚手架，官方标准单轮 harness 测得 62.7%`）。
+- **设置 comparison_scope**：统一设为 `"only_same_protocol"`，防止横向直比误导读者。
+
 ### capability_summary 撰写口径（时间轴卡片的核心文案）
 
 事件卡把它渲染为卡片正文的概述段，目标是**用户只读这一句就知道模型是什么、擅长什么**。写法：

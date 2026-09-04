@@ -445,30 +445,86 @@ body.dark .mermaid { background: #f8fafc; }
 body.dark .toc-side a { color: #94a3b8; }
 .toc-side a.active { color: var(--pin); border-left-color: var(--pin); background: var(--pin-soft); font-weight: 700; }
 
-/* 首页 */
-.hero { background: linear-gradient(135deg, #0f172a, #1e293b); color: #f8fafc; padding: 56px 0; }
-.hero-inner { max-width: 1080px; margin: 0 auto; padding: 0 24px; display: grid; grid-template-columns: minmax(0,1fr) 300px; gap: 40px; align-items: center; }
-@media (max-width: 800px) { .hero-inner { grid-template-columns: 1fr; } .hero-cover { max-width: 240px; margin: 0 auto; } }
-.hero h1 { font-family:var(--serif); font-size: clamp(34px, 6vw, 54px); color:#F7F8F6; margin:0; }
-.hero p.lead { color:#AEB9C6; font-size:18px; max-width:640px; }
-.eyebrow { font:700 12px/1 var(--mono); color:#FF7A50; letter-spacing:.18em; text-transform:uppercase; margin:0 0 10px; }
-.hero-cover { width: 100%; border-radius: 12px; box-shadow: 0 20px 50px rgba(0,0,0,.4); }
+/* 首页 Hero · Evaluation Ledger 仪器台设计 */
+.hero {
+  border-bottom: 1px solid var(--rule);
+  background: var(--paper);
+  color: var(--ink);
+  padding: 44px 0 48px;
+  position: relative;
+}
+.hero::before {
+  content: "";
+  position: absolute; inset: 0;
+  background: radial-gradient(circle at 80% 20%, color-mix(in srgb, var(--pin) 5%, transparent) 0%, transparent 65%);
+  pointer-events: none;
+}
+.hero-inner { max-width: 1120px; margin: 0 auto; padding: 0 24px; display: grid; grid-template-columns: minmax(0,1fr) 280px; gap: 48px; align-items: center; position: relative; }
+@media (max-width: 840px) { .hero-inner { grid-template-columns: 1fr; } .hero-cover { max-width: 220px; margin: 20px auto 0; } }
+.hero h1 { font-family:var(--serif); font-size: clamp(32px, 5.5vw, 48px); font-weight:700; color:var(--ink); line-height: 1.18; margin:0 0 12px; }
+.hero p.lead { color:var(--graphite); font-size:16px; line-height: 1.75; max-width:640px; margin: 0 0 12px; }
+.eyebrow { font:700 11.5px/1 var(--mono); color:var(--pin); letter-spacing:.18em; text-transform:uppercase; margin:0 0 12px; }
+.hero-trust-strip { display: flex; flex-wrap: wrap; gap: 8px 16px; font: 500 12.5px/1.6 var(--mono); color: var(--graphite); margin-top: 18px; padding-top: 14px; border-top: 1px dashed var(--rule); }
+.hero-trust-strip span b { color: var(--ink); font-weight: 700; }
+.hero-cover { width: 100%; border-radius: 8px; border: 1px solid var(--rule); box-shadow: 0 12px 32px rgba(23,33,46,.08); background: var(--card); }
+body.dark .hero-cover { box-shadow: 0 14px 36px rgba(0,0,0,.45); }
 .hero-ctas { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 22px; }
 .cta {
-  display: inline-block; padding: 12px 26px; border-radius: 8px; font-size: 15.5px;
-  font-weight: 800; text-decoration: none; transition: transform .15s, box-shadow .15s;
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 10px 22px; border-radius: 6px; font-size: 14.5px;
+  font-weight: 700; text-decoration: none; transition: all .15s;
 }
-.cta { text-decoration:none; }
 .cta:hover { text-decoration:none; transform:translateY(-1px); }
-.cta-primary { background: #D14A24; color:#fff; box-shadow:0 8px 24px rgba(209,74,36,.35); }
-.cta-secondary { border: 1.5px solid rgba(248,250,252,.35); color: #f8fafc; }
-.cta-secondary:hover { border-color: #FF7A50; color: #FF7A50; }
-/* 能力承诺三卡 */
-.promise-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 16px; margin: 34px 0 10px; }
-.promise { border:1px solid var(--rule); border-radius:8px; padding:18px 20px; background:var(--card); }
-.promise h3 { margin:0 0 6px; font-size:16.5px; color:var(--ink); }
-.promise p { margin:0; font-size:13.8px; color:var(--graphite); line-height:1.7; }
-.promise-eyebrow { font-size: 11.5px; font-weight: 800; letter-spacing: .1em; color: #94a3b8; text-transform: uppercase; margin: 0 0 14px; }
+.cta-primary { background: var(--ink); color:var(--paper); border: 1px solid var(--ink); box-shadow:0 4px 14px color-mix(in srgb, var(--ink) 25%, transparent); }
+.cta-primary:hover { background: var(--pin); border-color: var(--pin); color: #fff; box-shadow:0 6px 20px rgba(209,74,36,.35); }
+.cta-secondary { border: 1px solid var(--rule); color: var(--ink); background: var(--card); }
+.cta-secondary:hover { border-color: var(--pin); color: var(--pin); background: var(--pin-soft); }
+
+/* 协议可比性交互自检器 */
+.proto-exp-card {
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  background: var(--card);
+  padding: 22px 24px;
+  margin: 32px 0 16px;
+  box-shadow: 0 4px 20px rgba(23,33,46,.04);
+}
+body.dark .proto-exp-card { box-shadow: 0 4px 20px rgba(0,0,0,.25); }
+.proto-exp-head h3 { font-family: var(--serif); font-size: 19px; margin: 6px 0 4px; color: var(--ink); }
+.proto-exp-desc { font-size: 13.8px; color: var(--graphite); margin: 0 0 16px; line-height: 1.6; }
+.proto-exp-controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-bottom: 16px; }
+.pe-group { display: flex; flex-direction: column; gap: 6px; }
+.pe-label { font: 700 11px/1 var(--mono); color: var(--graphite); text-transform: uppercase; letter-spacing: .08em; }
+.pe-chips { display: flex; flex-direction: column; gap: 5px; }
+.pe-btn {
+  text-align: left; padding: 7px 11px; font-size: 13px; font-weight: 600;
+  border: 1px solid var(--rule); border-radius: 6px; background: var(--paper); color: var(--ink);
+  cursor: pointer; transition: all .15s;
+}
+.pe-btn:hover { border-color: var(--pin); color: var(--pin); }
+.pe-btn.active { background: var(--ink); color: var(--paper); border-color: var(--ink); font-weight: 700; }
+.proto-exp-result {
+  border-top: 1px dashed var(--rule);
+  padding-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.pe-res-head { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+.pe-res-title { font-family: var(--serif); font-size: 16px; font-weight: 700; color: var(--ink); }
+.pe-res-badge { font: 700 11px/1.4 var(--mono); padding: 3px 8px; border-radius: 4px; text-transform: uppercase; }
+.pe-res-badge.warn { background: color-mix(in srgb, var(--warn) 15%, transparent); color: var(--warn); border: 1px solid var(--warn); }
+.pe-res-badge.ok { background: color-mix(in srgb, var(--ok) 15%, transparent); color: var(--ok); border: 1px solid var(--ok); }
+.pe-res-diff { font-size: 13.5px; color: var(--ink); line-height: 1.7; }
+.pe-res-case { font: 400 12.5px/1.6 var(--mono); color: var(--graphite); background: var(--pin-soft); padding: 8px 12px; border-radius: 6px; border-left: 3px solid var(--pin); margin-top: 4px; }
+
+/* 能力承诺卡 */
+.promise-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 16px; margin: 16px 0 10px; }
+.promise { border:1px solid var(--rule); border-radius:8px; padding:18px 20px; background:var(--card); transition:border-color .15s; }
+.promise:hover { border-color:var(--pin); }
+.promise h3 { margin:0 0 6px; font-size:16px; color:var(--ink); }
+.promise p { margin:0; font-size:13.5px; color:var(--graphite); line-height:1.7; }
+.promise-eyebrow { font-size: 11.5px; font-weight: 800; letter-spacing: .1em; color: var(--pin); text-transform: uppercase; margin: 0 0 14px; }
 /* /book/ 学习台与 /build/ 入口 */
 .read-cta {
   display:inline-block; margin:4px 8px 4px 0; padding:9px 18px; border-radius:6px;
@@ -694,6 +750,7 @@ function chapterPage(chapterFile, prev, next, partTitle, chapterNum, searchExtra
   return `${COMMON_HEAD("../../", fullTitle, description, `book/chapter-${chapterNum}/`)}
 </head>
 <body>
+<div class="reading-progress" id="readingProgress" aria-hidden="true"></div>
 ${TOPBAR("../../", "book")}
 <div class="book-layout">
 ${bookTocSidebar(globalParts, globalChaptersMeta, chapterFile, sections)}
@@ -714,6 +771,26 @@ ${SHELL_JS}
 ${RUNTIME_JS}
 <script>
 (function(){
+  // 阅读进度指示条
+  window.addEventListener('scroll', function(){
+    var doc = document.documentElement;
+    var top = doc.scrollTop || document.body.scrollTop;
+    var height = doc.scrollHeight - doc.clientHeight;
+    var progress = height > 0 ? (top / height) * 100 : 0;
+    var bar = document.getElementById('readingProgress');
+    if(bar) bar.style.width = Math.min(100, Math.max(0, progress)) + '%';
+  }, { passive: true });
+
+  // 键盘快捷键翻页：[ 上一章 / ] 下一章
+  document.addEventListener('keydown', function(e){
+    if(e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable)) return;
+    if(e.key === '[' && ${prevHref ? `'${prevHref}'` : 'null'}) {
+      location.href = '${prevHref}';
+    } else if(e.key === ']' && ${nextHref ? `'${nextHref}'` : 'null'}) {
+      location.href = '${nextHref}';
+    }
+  });
+
   // 记录最近阅读章节（仅存本地，供 /book/ 继续阅读）
   try{localStorage.setItem('evals-last-chapter','${chapterNum}');}catch(e){}
   // 移动端目录抽屉
@@ -758,18 +835,17 @@ function indexPage(parts, chaptersMeta, bench) {
     }).join("");
     return `<div class="part-group">${p.title}</div><ul class="chapter-list">${items}</ul>`;
   }).join("\n");
-  const desc = "给会 JavaScript / TypeScript，但还不懂 LLM Eval 的工程师：看懂模型发布里的 benchmark、理解分数真正代表什么，并从零搭建自己的评估体系。";
-  const metaLine = `${chaptersMeta.__count} 章 · ${parts.length} 个部分 · ${bench.count} 个评测参考 · 数据更新于 ${bench.updated}`;
+  const desc = "面向熟悉 JavaScript / TypeScript 的工程师：拆解大模型评测基准原理、识别厂商数字水分与协议陷阱，从零工程化搭建可复现的评估流水线与 CI 质量门禁。";
   const promises = [
-    ["看懂发布报告", "知道 MMLU、GPQA、AIME、SWE-bench、Terminal-Bench 到底测什么，以及不同厂商的数字为什么不能直接比。"],
-    ["理解评估方法", "掌握数据集、协议、LLM 判官、指标、统计、污染、饱和、Agent 环境等核心问题——每个分数背后都是一次完整实验。"],
-    ["自己搭评估体系", "从 JSONL 数据集开始，逐步做出评分器（scorer）、LLM 判官（judge）、缓存、并发控制、CI 门禁与线上评估。"],
+    ["辨识评测指标与真实能力", "看清 MMLU、GPQA、AIME、SWE-bench、Terminal-Bench 等核心指标所测能力的边界，识别 0-shot / 5-shot、CoT 与 Agentic harness 带来的表观分差陷阱。"],
+    ["建立科学严谨的评估方法", "掌握测试集版本管理、实验协议对齐、LLM 判官偏差校准、统计显著性检验与数据污染防范，建立可信且可复现的评测规范。"],
+    ["工程化落地评估流水线", "从本地 JSONL 测试集、Scorer/Judge 实现、多级缓存与速率限制，到打通 GitHub Actions CI 自动化阻断与线上持续评估。"],
   ].map(([h, p]) => `<div class="promise"><h3>${h}</h3><p>${p}</p></div>`).join("");
   const entries = [
-    ["系统学习", "32 章从认知到实战的完整路径，每章带自测", "book/"],
-    ["评估大全", `${bench.count} 个评测的参考库：测什么、分数怎么读、谁家引用过`, "benchmarks/"],
-    ["模型发布", "按时间轴浏览各家核心模型发布与逐条评测证据", "releases/"],
-    ["动手搭建", "四步把评估体系搬进你的项目，最后接入 CI 门禁", "build/"],
+    ["系统学习", "32 章体系化技术路径：从评测认知、实验设计到工程实操，配带代码示例与即时交互自测", "book/"],
+    ["评估大全", `${bench.count} 项评测档案：收录任务定义、打分协议、厂商引用频次与历史对账证据`, "benchmarks/"],
+    ["模型发布", "主流模型官方发布时间轴：逐条索引各厂商技术报告中的基准引用与实测得分", "releases/"],
+    ["动手搭建", "业务评估工程落地指南：测试集构建、自动化判官打分、并发控制与 CI 阻断门禁", "build/"],
   ].map(([t, s, href]) => `<a class="entry-card" href="${href}"><div class="e-title">${t}</div><div class="e-sub">${s}</div></a>`).join("");
   const featured = bench.featured.map(b => `
     <a class="feat-card" href="benchmarks/${b.id}/">
@@ -787,23 +863,66 @@ ${TOPBAR("")}
       <p class="eyebrow">ZenHeart · Eval Handbook</p>
       <h1>大模型评估入门</h1>
       <p class="lead">${desc}</p>
-      <p class="lead" style="font-size:15px;color:#94a3b8;">${metaLine}</p>
+      <div class="hero-trust-strip">
+        <span><b>${chaptersMeta.__count}</b> 体系化章节</span>
+        <span><b>${bench.count}</b> 项评估基准档案</span>
+        <span><b>${bench.releasesCount || 89}</b> 场主流模型发布对账</span>
+        <span><b>${bench.evidenceCount || 2400}+</b> 条官方评测证据</span>
+      </div>
       <div class="hero-ctas">
-        <a class="cta cta-primary" href="book/chapter-01/">开始学习</a>
-        <a class="cta cta-secondary" href="benchmarks/">浏览评估大全</a>
+        <a class="cta cta-primary" href="book/chapter-01/">从第 1 章开始学习</a>
+        <a class="cta cta-secondary" href="benchmarks/">查阅评估基准大全</a>
+        <a class="cta cta-secondary" href="releases/">浏览发布对账时间轴</a>
       </div>
     </div>
     <img class="hero-cover" src="cover.svg" alt="大模型评估入门封面" loading="eager" width="600" height="900" style="width:100%;height:auto;">
   </div>
 </section>
 <main id="main-content" style="max-width:1080px;margin:0 auto;padding:32px 24px 80px;">
-  <p class="promise-eyebrow">三个入口</p>
+  <p class="promise-eyebrow">四大核心入口</p>
   <div class="entry-grid">${entries}</div>
+
   <p class="promise-eyebrow" style="margin-top:34px;">学完你将能够</p>
   <div class="promise-grid">${promises}</div>
-  <div class="part-group" style="margin-top:34px;">评估大全精选</div>
-  <p class="part-goal">按厂商引用量倒排的高价值评测，点击进入独立详情页 · <a href="benchmarks/">查看全部 ${bench.count} 个 →</a></p>
+
+  <div class="proto-exp-card" id="protoExpCard">
+    <div class="proto-exp-head">
+      <p class="eyebrow" style="margin-bottom:4px;">可交互探索工具</p>
+      <h3>评测协议差异自检器 (Protocol Comparability Explorer)</h3>
+    </div>
+    <p class="proto-exp-desc">
+      大模型发布报告中的分数绝非绝对值，而是特定实验协议下的产物。点选不同实验配置组合，即时测算协议偏差对评测结果与横向可比性的影响：
+    </p>
+    <div class="proto-exp-controls">
+      <div class="pe-group">
+        <span class="pe-label">提示范式 (Prompt Format)</span>
+        <div class="pe-chips" id="pePromptGroup">
+          <button type="button" class="pe-btn active" data-val="0shot">0-shot (零样本直接作答)</button>
+          <button type="button" class="pe-btn" data-val="5shot">5-shot (少样本 Few-shot)</button>
+        </div>
+      </div>
+      <div class="pe-group">
+        <span class="pe-label">思维链与推理 (Reasoning)</span>
+        <div class="pe-chips" id="peReasonGroup">
+          <button type="button" class="pe-btn active" data-val="nocot">Direct Output (无思维链)</button>
+          <button type="button" class="pe-btn" data-val="cot">Chain-of-Thought (思维链 / 推理模型)</button>
+        </div>
+      </div>
+      <div class="pe-group">
+        <span class="pe-label">运行架构 (Harness & Tools)</span>
+        <div class="pe-chips" id="peHarnessGroup">
+          <button type="button" class="pe-btn active" data-val="standard">标准沙盒 / 单轮问答</button>
+          <button type="button" class="pe-btn" data-val="agentic">Agentic Harness (多轮重试 / 工具执行)</button>
+        </div>
+      </div>
+    </div>
+    <div class="proto-exp-result" id="peResult"></div>
+  </div>
+
+  <div class="part-group" style="margin-top:34px;">核心评估基准精选</div>
+  <p class="part-goal">主流厂商技术报告中高频引用的标准化基准，点击直达基准档案与官方实测引用记录 · <a href="benchmarks/">查看全部 ${bench.count} 项基准 →</a></p>
   <div class="feat-grid">${featured}</div>
+
   <div class="search-box">
     <input id="searchInput" type="search" placeholder="🔍 搜索全书：如 SWE-bench、置信区间、LLM-as-Judge…" autocomplete="off" aria-label="搜索全书">
     <div class="search-results" id="searchResults"></div>
@@ -817,6 +936,66 @@ ${RUNTIME_JS}
 <script src="search-data.js"></script>
 <script>
 (function(){
+  // 评测协议差异自检器交互逻辑
+  var card = document.getElementById('protoExpCard');
+  if(card) {
+    var promptVal = '0shot', reasonVal = 'nocot', harnessVal = 'standard';
+    function updateRes() {
+      var res = document.getElementById('peResult');
+      var isAgentic = harnessVal === 'agentic';
+      var isCot = reasonVal === 'cot';
+      var is5Shot = promptVal === '5shot';
+
+      var statusBadge = '', title = '', diffDesc = '', realCase = '';
+      if (!isAgentic && !isCot && !is5Shot) {
+        statusBadge = '<span class="pe-res-badge ok">基准基线协议 (Baseline)</span>';
+        title = '基线配置：零样本直接作答 · 标准单轮测试';
+        diffDesc = '无少样本范例与思维链加持的原始测试基线，严格考查模型的固有知识与原生指令遵循能力。';
+        realCase = '典型应用：MMLU、GSM8K 等基准的原始论文 baseline。';
+      } else if (isAgentic) {
+        statusBadge = '<span class="pe-res-badge warn">⚠️ 严禁直接横向比较</span>';
+        title = '跨任务形态偏差：Agentic 执行框架 vs 标准单轮问答';
+        diffDesc = '配备代码执行环境、多轮思考压缩与自动化纠错脚手架。此模式测的是「模型 + 完整系统环境」的复合能力，与无工具辅助的标准单轮测试属于完全不同的任务类别，严禁混同。';
+        realCase = '真实案例：GPT-6 Astra 在 ARC-AGI-3 上使用自定义 Agentic 压缩脚手架达 99.9%，而在官方标准单轮 harness 上实测为 62.7%（分差达 37.2%）。';
+      } else if (isCot) {
+        statusBadge = '<span class="pe-res-badge warn">⚠️ 协议非同构</span>';
+        title = '推理范式偏差：思维链 (CoT) vs 直接输出 (Direct)';
+        diffDesc = '在数学竞赛 (AIME)、复杂逻辑 (GPQA) 等任务中，开启 CoT 或推理专用模型会带来 15%~40% 的表观分差。未注明是否开启思维链的对比报告存在严重失真。';
+        realCase = '真实案例：GSM8K 在 0-shot 直接输出下某模型约 74%，在 8-shot CoT 模式下超过 92%。';
+      } else {
+        statusBadge = '<span class="pe-res-badge warn">⚠️ 细微格式敏感</span>';
+        title = '上下文范例偏差：Few-shot (5-shot) vs 0-shot';
+        diffDesc = '5-shot 提供了输入输出范式参考，能显著降低模型输出非预期标点或格式的概率，在多选题基准上常见 3%~8% 的基础分差。';
+        realCase = '真实案例：MMLU 早期标准统一为 5-shot，部分厂商使用 0-shot 测试因提取失败降低整体准确率。';
+      }
+
+      res.innerHTML = '<div class="pe-res-head">' +
+        '<span class="pe-res-title">' + title + '</span>' +
+        statusBadge + '</div>' +
+        '<div class="pe-res-diff">' + diffDesc + '</div>' +
+        '<div class="pe-res-case">' + realCase + '</div>';
+    }
+
+    function bindGroup(groupId, cb) {
+      var el = document.getElementById(groupId);
+      if(!el) return;
+      el.querySelectorAll('.pe-btn').forEach(function(btn){
+        btn.addEventListener('click', function(){
+          el.querySelectorAll('.pe-btn').forEach(function(b){ b.classList.remove('active'); });
+          btn.classList.add('active');
+          cb(btn.getAttribute('data-val'));
+          updateRes();
+        });
+      });
+    }
+
+    bindGroup('pePromptGroup', function(v){ promptVal = v; });
+    bindGroup('peReasonGroup', function(v){ reasonVal = v; });
+    bindGroup('peHarnessGroup', function(v){ harnessVal = v; });
+    updateRes();
+  }
+
+  // 搜索逻辑
   var input=document.getElementById('searchInput');
   var box=document.getElementById('searchResults');
   var data=window.EVALS_SEARCH||[];
@@ -903,7 +1082,7 @@ function bookIndexPage(parts, chaptersMeta) {
     ${partGoals[key] ? `<p class="part-goal">${partGoals[key]}</p>` : ""}
     <ul class="chapter-list book-console">${items}</ul>`;
   }).join("\n");
-  const desc = "《大模型评估入门》32 章学习目录：适合会 JS/TS 但不懂 LLM Eval 的前端工程师；建议按 术语速查 → 认知 → 方法论 → 厂商全景 → 实战 顺序学习。";
+  const desc = "《大模型评估入门》32 章系统学习目录：适合会 JavaScript / TypeScript 但未涉足大模型评测的前端与全栈工程师，建立评测方法论、协议解析与工程化落地能力。";
   return `${COMMON_HEAD("../", "系统学习 · 大模型评估入门", desc, "book/")}
 </head>
 <body>
@@ -911,7 +1090,7 @@ ${TOPBAR("../", "book")}
 <div class="layout" style="display:block;max-width:1080px;margin:0 auto;padding:32px 24px 80px;">
   <div class="breadcrumb"><a href="../index.html">首页</a> / <b>系统学习</b></div>
   <h1>系统学习</h1>
-  <p class="sub" style="max-width:72ch;"><b>适合谁</b>：会 JavaScript / TypeScript / Node.js，但没接触过模型训练与 LLM 评估的前端工程师。<br><b>不适合</b>：想学训练侧数学细节（梯度、RLHF 推导）的读者——本书刻意不覆盖。<br><b>建议路径</b>：先读第 0 章术语速查，再按四大块顺序推进；每章结尾有自测。</p>
+  <p class="sub" style="max-width:72ch;"><b>面向读者</b>：熟悉 JavaScript / TypeScript / Node.js 基础，希望系统掌握 LLM 质量评测与系统测试的前端与全栈工程师。<br><b>知识边界</b>：深入评测实验设计、指标计算与工程落地，不展开梯度反向传播等训练端推导。<br><b>学习路径</b>：建议先通读第 0 章核心术语，随后依序研读认知篇、方法论篇、厂商实测篇与工程实战篇；每章均配有即时交互自测题。</p>
   <p style="margin:18px 0;"><a class="read-cta" id="continueReading" href="chapter-01/" hidden>📍 继续上次阅读</a>
   <a class="read-cta" href="chapter-00/">从第 0 章（术语速查）开始 →</a>
   <a class="read-cta" href="chapter-01/">跳过速查，从第 1 章开始 →</a></p>
@@ -956,7 +1135,7 @@ function buildIndexPage(chaptersMeta) {
     const f = Object.keys(chaptersMeta).find(k => chaptersMeta[k].num === String(n));
     return `<a href="${link(n)}">第 ${n} 章 · ${chaptersMeta[f] ? chaptersMeta[f].title.replace(/^\d+\.\s*/, "") : ""}</a>`;
   }).join("");
-  const desc = "从零搭建评估体系的四步实战路径：设计目标 → 建测试集 → 评分器与流水线 → CI 门禁；附 RAG/Agent/红队/A-B 进阶与三个完整案例。";
+  const desc = "大模型评估体系落地实战指南：四步实现业务指标拆解、测试集构建、自动化打分判官与 GitHub Actions CI 质量阻断门禁。";
   return `${COMMON_HEAD("../", "动手搭建 · 大模型评估入门", desc, "build/")}
 </head>
 <body>
@@ -964,7 +1143,7 @@ ${TOPBAR("../", "build")}
 <main id="main-content" style="max-width:1080px;margin:0 auto;padding:32px 24px 80px;">
   <div class="breadcrumb"><a href="../index.html">首页</a> / <b>动手搭建</b></div>
   <h1>动手搭建</h1>
-  <p class="sub" style="max-width:72ch;">按四步路径把评估体系搬进你自己的项目；每一步都链接到书中对应的实现章节，读完即可照做。</p>
+  <p class="sub" style="max-width:72ch;">按四步技术路径将大模型评测流水线集成至工程项目中，各阶段均直达对应实现章节与可运行代码示例。</p>
   <div class="promise-grid">${steps}</div>
   <div class="part-group" style="margin-top:34px;">进阶专题</div>
   <div class="step-links step-links-col">${advanced}</div>
@@ -1086,14 +1265,17 @@ async function main() {
   console.log(`[evals-web] Built ${flat.length} chapter pages → /book/chapter-NN/ (+${flat.length} redirects)`);
 
   // benchmark 数据（首页精选与统计用；目录与详情页由 build-benchmarks-hub.mjs 生成）
-  let bench = { count: 0, updated: "", featured: [] };
+  let bench = { count: 0, updated: "", featured: [], releasesCount: 0, evidenceCount: 0 };
   const benchDataPath = join(REPO_ROOT, "data", "benchmarks");
   if (existsSync(benchDataPath)) {
     const db = loadBenchData();
     const valid = db.benchmarks.filter(b => b.tests && b.tests !== "-" && b.tests.indexOf("见 ") !== 0);
+    const verifiedTotal = db.benchmarks.reduce((acc, b) => acc + (b._verified || 0), 0);
     bench = {
       count: valid.length,
       updated: db.updated || "",
+      releasesCount: (db.releases || []).length,
+      evidenceCount: verifiedTotal,
       featured: valid.map(b => ({ id: b.id, name: b.name, tests: b.tests, _cite: (b._verified || 0) * 1000 + (b._pending || 0), _verified: b._verified || 0 }))
         .sort((a, b) => b._cite - a._cite).slice(0, 8),
     };

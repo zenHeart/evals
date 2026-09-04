@@ -177,7 +177,7 @@ function explorerPage(db, cards, autoIds = []) {
 ${shellTopbar("../", "benchmarks")}
 <div class="bm-container" id="main-content">
   <h1>评估体系大全</h1>
-  <div class="sub">这是一份可检索的大模型评测参考库：每张卡片是一个评测的<b>索引入口</b>，点进独立详情页可以看到它测什么、分数怎么读、哪些厂商在发布模型时引用过它。卡片上的引用数字统计近三年（自 ${esc(db.cutoff)} 起）的官方发布；更早或日期不明的引用会标注为「历史引用」。<br><a href="../releases/">🕐 模型发布时间轴：浏览各厂商历年核心模型发布与评测证据 →</a></div>
+  <div class="sub">收录主流大模型技术报告与学术界广泛采用的评测基准体系，按测试任务、评测协议、计分标准与官方发布引用记录建立标准化档案。引用计数统计近三年（自 ${esc(db.cutoff)} 起）各厂商官方发布报告证据。<br><a href="../releases/">🕐 模型发布时间轴：查阅主流模型发布证据与评测得分 →</a></div>
   <div class="controls">
     <div class="search"><input id="q" type="search" placeholder="搜索：名称 / 用途 / 引用厂商…" aria-label="搜索评估体系"></div>
     <select id="sort" aria-label="排序方式">
@@ -190,9 +190,9 @@ ${shellTopbar("../", "benchmarks")}
   <div class="stats"><span id="statsText"></span> <button id="clearFilters" type="button" class="chip" hidden>✕ 清除全部筛选</button></div>
   <div id="list" class="grid">${cardHtml}</div>
   <div id="emptyState" class="empty" hidden>没有匹配的评测——可能是筛选或搜索词太窄。<button type="button" class="chip" onclick="document.getElementById('clearFilters').click()">清除筛选恢复全部 ${cards.filter(c => c.show).length} 个</button></div>
-  ${autoIds.length ? `<div class="part-group" style="margin-top:34px;">来自发布记录、暂无完整介绍的评测（${autoIds.length}）</div>
-  <p class="part-goal">下面这些评测在各厂商的官方发布里被引用过，但我们还没为它们整理出完整介绍。每个名字都可以点进一个自动生成的页面——页面只罗列已知信息，缺什么会明确标注：</p>
-  <details style="margin:8px 0 4px;"><summary style="cursor:pointer;font-weight:700;font-size:13.5px;color:#64748b;">展开 ${autoIds.length} 个评测（按被引用次数从多到少）</summary>
+  ${autoIds.length ? `<div class="part-group" style="margin-top:34px;">厂商发布报告引用的其他基准（${autoIds.length}）</div>
+  <p class="part-goal">在官方模型发布技术报告中出现、已提取引用关联但尚未建立独立百科条目的基准列表：</p>
+  <details style="margin:8px 0 4px;"><summary style="cursor:pointer;font-weight:700;font-size:13.5px;color:#64748b;">展开 ${autoIds.length} 个评测基准（按被引用次数倒序）</summary>
   <div class="auto-cloud">${autoIds.map(a => `<a href="${esc(a.id)}/" title="被 ${a.n} 次发布引用">${esc(a.id)} <b>${a.n}</b></a>`).join("")}</div>
   </details>` : ""}
 </div>
@@ -623,7 +623,7 @@ function releasesTimelinePage(db, rel = "../../") {
     releases: db.releases,
   };
 
-  const desc = `按时间顺序罗列国内外主流厂商的核心模型发布：每个节点是一次模型发布，显示它引用了哪些评测以及该模型的分数，点击可进入对应评测介绍页；支持按厂商筛选、聚焦某个评测、按分数阈值和关键字过滤。`;
+  const desc = `收录 2023 年至今国内外主流厂商核心模型的官方发布档案与实测评测数据，逐条对账技术报告中的基准引用、实测得分与评测协议。`;
   return `${shellHead({ rel, title: "模型发布时间轴 · 评估大全", desc, path: "benchmarks/releases/", extra: `<style>${SHELL_CSS}${PAGE_CSS}${EVT_CSS}${TIMELINE_CSS}</style>` })}
 </head>
 <body class="tlr-page">
@@ -632,7 +632,7 @@ ${shellTopbar(rel, "releases")}
   <nav class="breadcrumb" style="margin-bottom:18px;"><a href="${rel}index.html">首页</a> / <b>模型发布</b></nav>
   <p class="eyebrow">Evaluation Ledger · 2023 — 2026</p>
   <h1>模型发布时间轴</h1>
-  <p class="sub">${esc(desc)}每张事件卡左侧徽章的颜色代表数据来源：<b>绿色</b> 数值出自官方表格原文、<b>琥珀色</b> 数值读自图表、<b>灰色</b> 该发布未报告评测数值。<a href="${rel}benchmarks/">← 返回评估大全</a></p>
+  <p class="sub">${esc(desc)}<br>证据数据来源标识：<b>绿色</b> 官方表格原始数据、<b>琥珀色</b> 图表数据采点、<b>灰色</b> 未披露量化分值的评测提及。支持按厂商、基准名称与分值阈值快速检索。<a href="${rel}benchmarks/" style="margin-left:8px;">← 返回评估大全</a></p>
   <div class="cov-strip"><span class="cov-label">收录的厂商与发布数</span>${cov}</div>
 
   <div class="console" id="tlControls" hidden>

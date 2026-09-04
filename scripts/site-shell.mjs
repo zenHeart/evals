@@ -42,27 +42,31 @@ body.dark {
   --pin:#FF7A50; --pin-soft:rgba(255,122,80,.1); --ok:#3DC98A; --warn:#D9A441;
   --card:#131E30;
 }
-body { background:var(--paper); color:var(--ink); }
-a { color:inherit; text-decoration:underline; text-decoration-color:color-mix(in srgb,var(--graphite) 45%,transparent); text-underline-offset:3px; }
+body { background:var(--paper); color:var(--ink); -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; }
+:focus-visible { outline: 2px solid var(--pin); outline-offset: 2px; }
+a { color:inherit; text-decoration:underline; text-decoration-color:color-mix(in srgb,var(--graphite) 45%,transparent); text-underline-offset:3px; transition: color .15s, text-decoration-color .15s; }
 a:hover { color:var(--pin); text-decoration-color:var(--pin); }
 .eyebrow-mono { font:700 11.5px/1 var(--mono); letter-spacing:.18em; color:var(--pin); text-transform:uppercase; }
 h1 { font-family: var(--serif); }
+.reading-progress { position:fixed; top:0; left:0; height:3px; background:var(--pin); z-index:9999; width:0%; transition:width .08s ease-out; pointer-events:none; }
 
 /* ---------- Topbar：单行，4 内容导航 + utility ---------- */
 .topbar {
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
   padding: 0 20px; height: 56px; border-bottom: 1px solid var(--rule);
-  position: sticky; top: 0; background: color-mix(in srgb, var(--paper) 94%, transparent);
-  backdrop-filter: blur(8px); z-index: 100;
+  position: sticky; top: 0; background: color-mix(in srgb, var(--paper) 92%, transparent);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); z-index: 100;
+  transition: background .2s, border-color .2s;
 }
 .skip-link { position:absolute; left:-9999px; top:8px; z-index:300; background:var(--pin,#D14A24); color:#fff; padding:8px 16px; border-radius:6px; font-size:14px; text-decoration:none; }
 .skip-link:focus { left:8px; }
-.logo { font-family:var(--serif); font-weight:700; font-size:17.5px; white-space:nowrap; text-decoration:none; color:var(--ink); }
+.logo { font-family:var(--serif); font-weight:700; font-size:17.5px; white-space:nowrap; text-decoration:none; color:var(--ink); transition:opacity .15s; }
+.logo:hover { opacity:.9; }
 .logo b { color:var(--pin); }
-.topbar nav { display: flex; align-items: center; gap: 2px; flex-wrap: nowrap; min-width: 0; }
+.topbar nav { display: flex; align-items: center; gap: 4px; flex-wrap: nowrap; min-width: 0; }
 .topbar nav a.nav-item {
-  color:var(--graphite); text-decoration:none; font-size:14px; white-space:nowrap;
-  padding: 6px 10px; border-radius:6px;
+  color:var(--graphite); text-decoration:none; font-size:14px; font-weight:500; white-space:nowrap;
+  padding: 6px 11px; border-radius:6px; transition: color .15s, background .15s;
 }
 .topbar nav a.nav-item:hover { color:var(--ink); background:color-mix(in srgb,var(--graphite) 10%,transparent); text-decoration:none; }
 .topbar nav a.nav-item.active {
@@ -70,15 +74,17 @@ h1 { font-family: var(--serif); }
 }
 .nav-util { display: flex; align-items: center; gap: 6px; flex: none; }
 .nav-util a.nav-util-link {
-  color:var(--graphite); text-decoration:none; font-size:13.5px; white-space:nowrap;
-  padding: 5px 10px; border-radius:6px; border: 1px solid var(--rule);
+  color:var(--graphite); text-decoration:none; font-size:13px; font-weight:600; white-space:nowrap;
+  padding: 5px 10px; border-radius:6px; border: 1px solid var(--rule); background:var(--card);
+  transition: all .15s;
 }
-.nav-util a.nav-util-link:hover { color:var(--pin); border-color:var(--pin); text-decoration:none; }
+.nav-util a.nav-util-link:hover { color:var(--pin); border-color:var(--pin); background:var(--pin-soft); text-decoration:none; }
 .dark-toggle {
-  border: 1px solid var(--rule); background: transparent; border-radius: 6px;
-  padding: 4px 10px; cursor: pointer; font-size: 14px; color: inherit;
+  border: 1px solid var(--rule); background: var(--card); border-radius: 6px;
+  padding: 4px 10px; cursor: pointer; font-size: 14px; color: inherit; transition: all .15s;
 }
-.nav-menu-btn { display: none; border: 1px solid var(--rule); background: transparent; border-radius: 6px; padding: 4px 10px; cursor: pointer; font-size: 14px; color: inherit; }
+.dark-toggle:hover { border-color:var(--pin); color:var(--pin); }
+.nav-menu-btn { display: none; border: 1px solid var(--rule); background: var(--card); border-radius: 6px; padding: 4px 10px; cursor: pointer; font-size: 14px; color: inherit; }
 .nav-menu-panel {
   display: none; position: absolute; top: 56px; right: 12px; z-index: 110;
   background: var(--card); border: 1px solid var(--rule); border-radius: 8px;

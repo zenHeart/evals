@@ -49,11 +49,13 @@ dry-run 到此为止：输出候选清单后结束。
    逐字段模板、edge id 双连字符约定、protocol 12 键全列见 `references/release-schema.md` §1。
    **models[] 必须带全规格与概述字段**（params / context_window / pricing / modalities / capability_summary / key_traits）——
    时间轴卡片直接渲染它们；capability_summary 按 schema 文档的撰写口径结合评估数据写成读者能懂的一两句。
+   **Release 顶层 5 大强校验门禁字段**必须全齐：`retrieved_at`、`last_verified_at`、`status`、`notes`、`revisions: []`。
    关键纪律（README 口径的执行摘要）：
    - 一个 benchmark 行 = 一条 evidence，取**自家模型列**；竞品列进该行 notes。
    - 散文/DOM 表明文 → `verified`；图表图片行 → `pending` + 视觉转写只进 notes（OCR 不翻 verified）；
      正文点名但无数值 → verified + `score_status:"not_extracted"`。
    - 缺失一律 `null` + score_status，全库禁止 `"-"` 占位（校验器强制）。
+   - **Agentic Harness 与协议隔离**：自报高分若使用了自定义 Agentic 脚手架（如 retained reasoning、compaction、测试期纠错循环），必须在 `protocol.harness` 和 `protocol.tools` 明示，在 `notes` 交代与官方标准单轮基线的差距，并标 `comparison_scope:"only_same_protocol"`，严禁混淆。
    - 协议字段只记页面明示值，未写即 null；部署建议不是评测协议。
    - 同一 benchmark 不同条件/版本 → 拆 variant 行；跨页冲突不调和，各自记行 + notes 标注。
 4. **benchmark id 三步判定**（既有实体 → 别名表归并 → 新铸 id 标 `new-benchmark`）见 `references/release-schema.md`；
@@ -66,6 +68,8 @@ dry-run 到此为止：输出候选清单后结束。
 node scripts/validate-data.mjs    # 数据层：外键、枚举、edge id、对账不变量
 npm run build                     # 书校验 + EPUB + 全站构建 + validate-site（含占位文案与死链）
 ```
+
+> **环境提示**：在 Windows PowerShell 下调试执行脚本时，避免在命令行直接拼接含反引号或复杂 JSON 的命令，建议写入临时 `.mjs` 或通过参数文件运行；系统维护时严禁使用广谱杀进程命令。
 
 然后本地起服务（如 `npx serve dist` 或既有预览方式）抽查：
 
@@ -81,9 +85,15 @@ npm run build                     # 书校验 + EPUB + 全站构建 + validate-s
 node .claude/skills/ingest-releases/scripts/checkpoint.mjs commit --max-release-date <本批最大发布日>
 ```
 
-2. 在 `data/model-releases/official/README.md` **末尾追加**本批报告节（只追加，不改既有批次内容；格式沿用既有批次）。
-3. 提交并推送：commit message 沿用仓内风格（中文、`feat:`/`fix:` 前缀、一行说清本批增量），push 到 main，等 CI 绿。
-4. 向用户交付报告。
+2. 若更新或优化了 `.claude/skills/` 下的技能定义或脚本，执行：
+
+```bash
+npm run sync:skills               # 自动单向同步镜像至 .agent/skills/
+```
+
+3. 在 `data/model-releases/official/README.md` **末尾追加**本批报告节（只追加，不改既有批次内容；格式沿用既有批次）。
+4. 提交并推送：commit message 沿用仓内风格（中文、`feat:`/`fix:` 前缀、一行说清本批增量），push 到 main，等 CI 绿。
+5. 向用户交付报告。
 
 ## 交付报告模板
 
