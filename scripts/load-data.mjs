@@ -23,15 +23,19 @@ function readJson(p) {
   return JSON.parse(readFileSync(p, "utf-8"));
 }
 
-/** 递归收集 model-releases 下的 release JSON（legacy/、official/<vendor>/ 等任意层级） */
-function collectReleases(dir = join(DATA, "model-releases"), out = []) {
-  if (!existsSync(dir)) return out;
-  for (const name of readdirSync(dir)) {
-    const p = join(dir, name);
-    if (statSync(p).isDirectory()) collectReleases(p, out);
-    else if (name.endsWith(".json")) out.push(readJson(p));
+/** 递归收集 model-releases 下的 release JSON（legacy/、official/<vendor>/ 等任意层级），保证按发布日期倒序排序 */
+function collectReleases(dir = join(DATA, "model-releases")) {
+  const out = [];
+  function walk(d) {
+    if (!existsSync(d)) return;
+    for (const name of readdirSync(d)) {
+      const p = join(d, name);
+      if (statSync(p).isDirectory()) walk(p);
+      else if (name.endsWith(".json")) out.push(readJson(p));
+    }
   }
-  return out;
+  walk(dir);
+  return out.sort((a, b) => (b.release_date || "").localeCompare(a.release_date || "") || (a.id || "").localeCompare(b.id || ""));
 }
 
 let cache = null;
@@ -122,6 +126,11 @@ export function loadBenchData() {
       else if (fresh) b._pending++;
       else b._archived++;
     }
+  }
+
+  // 保证每个 benchmark 的 adoption 记录无论数据源遍历顺序如何，一律按 release 日期严格倒序
+  for (const b of benchmarks) {
+    b.adoption.sort((a, b) => (b.date || "").localeCompare(a.date || "") || (a.release_id || "").localeCompare(b.release_id || ""));
   }
 
   // ---- release 时间轴视图（厂商 → 版本 → blog 证据结构）

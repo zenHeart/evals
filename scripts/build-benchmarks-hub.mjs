@@ -313,7 +313,7 @@ function detailPage(db, b, cat, related) {
         if (rel) rels.push(rel);
       }
     }
-    return rels;
+    return rels.sort((a, b) => (b.release_date || "").localeCompare(a.release_date || "") || (a.id || "").localeCompare(b.id || ""));
   };
   let adoptBlock;
   if (!cite.length) {
@@ -578,7 +578,10 @@ function tlEvtHtml(db, r, opts = {}) {
       const cls = benchRow.status === "verified" ? "ok" : "pd";
       const tip = [benchRow.harness ? `执行框架（harness）：${benchRow.harness}` : null, benchRow.effort ? `推理档位（effort）：${benchRow.effort}` : null]
         .filter(Boolean).join(" · ");
-      return `<a class="bchip ${cls} focus" href="${chipBase}${esc(benchRow.benchmark_id)}/"${tip ? ` title="${esc(tip)}"` : ""}>${esc(benchRow.benchmark_id)}${benchRow.variant ? " " + esc(benchRow.variant) : ""} <b>${esc(benchRow.display || "未公布")}</b></a>`;
+      const benchName = db.benchmarks.find(x => x.id === benchRow.benchmark_id)?.name;
+      const shortName = benchName ? (benchName.split(":")[0]?.trim() || benchName) : benchRow.benchmark_id;
+      const label = benchRow.variant ? esc(benchRow.variant) : esc(shortName);
+      return `<a class="bchip ${cls} focus" href="${chipBase}${esc(benchRow.benchmark_id)}/"${tip ? ` title="${esc(tip)}"` : ""}>${label} <b>${esc(benchRow.display || "未公布")}</b></a>`;
     }).join("");
     const others = r.evidence.length - benchRows.length;
     return benchChips + (others > 0 ? `<span class="bchip plain" title="本次发布同时引用的其他评测">+ ${others} 个其他评测</span>` : "");
@@ -882,7 +885,7 @@ function autoBenchmarkPage(db, id, rows) {
         rels.push(x.r);
       }
     }
-    return rels;
+    return rels.sort((a, b) => (b.release_date || "").localeCompare(a.release_date || "") || (a.id || "").localeCompare(b.id || ""));
   };
   const sec = (title, note, list) => {
     const rels = uniqInList(list);

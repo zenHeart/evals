@@ -11,6 +11,7 @@
  *   3. benchmark 数据 schema —— 必填字段、id 路径安全、status/evidence 枚举
  *   4. dist 内部链接完整性 —— 相对 href/src 目标必须存在（构建后运行）
  *   5. 构建产物隐私 —— dist 不得包含 research/ 等内部素材
+ *   6. 时间轴时序单调性 —— 所有页面 .feed 内的 .evt-date 必须严格单调倒序
  */
 
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
@@ -212,6 +213,42 @@ function checkDist() {
   console.log(`  [dist] 链接检查 ${htmlFiles.length} 个 HTML / ${checked} 个内部引用`);
 }
 
+// ---------------------------------------------------------------- 6. 时间轴时序单调性门禁（goal.md 原则：已发生过的结构性错误必须转为 validator）
+
+function checkTimelineMonotonicity() {
+  const dist = join(ROOT, "dist");
+  if (!existsSync(join(dist, "index.html"))) return;
+  const files = walk(dist).filter(f => f.endsWith(".html"));
+  let checkedFeeds = 0;
+  let checkedEvents = 0;
+
+  for (const f of files) {
+    const html = readFileSync(f, "utf-8");
+    const parts = html.split('<div class="feed"');
+    if (parts.length <= 1) continue;
+
+    for (let i = 1; i < parts.length; i++) {
+      const feedChunk = parts[i].split("</main>")[0].split('<div class="feed"')[0];
+      const dates = [...feedChunk.matchAll(/<span class="evt-date">([^<]+)<\/span>/g)].map(m => m[1].trim());
+      if (dates.length <= 1) continue;
+      checkedFeeds++;
+      checkedEvents += dates.length;
+
+      for (let j = 1; j < dates.length; j++) {
+        const prev = dates[j - 1];
+        const curr = dates[j];
+        if (prev === "日期不明" || curr === "日期不明") continue;
+        // 严格要求时间必须单调倒序（prev >= curr）
+        if (prev.localeCompare(curr) < 0) {
+          err(`[timeline-monotonicity] ${relative(dist, f)} 时间轴时序错乱：第 ${j} 项「${prev}」早于第 ${j + 1} 项「${curr}」，未严格按发布时间倒序排列！`);
+          break;
+        }
+      }
+    }
+  }
+  console.log(`  [timeline] 时序单调性检查 ${checkedFeeds} 个时间轴 / ${checkedEvents} 个事件卡片`);
+}
+
 // ---------------------------------------------------------------- main
 
 const parts = readPartStructure();
@@ -220,6 +257,7 @@ checkCoverConsistency(parts);
 checkCrossReferences(parts);
 checkBenchmarkSchema();
 checkDist();
+checkTimelineMonotonicity();
 
 if (warn.length) warn.forEach(w => console.log(`  ⚠ ${w}`));
 if (errors.length) {
