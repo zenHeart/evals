@@ -1,6 +1,6 @@
 # 28. 案例研究（二）：代码 Agent 的三层评估落地
 
-> **如果只读一节**：代码 Agent 的评估 = 自动层（HumanEval+ / LiveCodeBench 跑分）+ 业务层（接受率、修改距离、自建 SWE-bench 风格内测集）+ 人工层（每周 rubric 抽检）。三层各答一个问题：**能不能做题、有没有人用、用着舒不舒服**。基准知识在 [第 11 章](https://evals.zenheart.site/web/chapter-07.html)，本章讲三层怎么在一个真实团队里落地。
+> **核心导读与精读建议**：代码 Agent 评估由自动跑分层（做题能力）、业务埋点层（接受率与修改距离）与人工评审层（体验反馈）构成，三者互为校准。建议重点精读：§28.3 三层评估的蓝图与 §28.6 业务层：SWE-bench 风格内测集（基准知识参考 [第 11 章](https://evals.zenheart.site/web/chapter-11.html)）。
 
 **前置知识**：第 11 章（代码基准）、第 20 章（mini evaluator 与沙箱）、第 6 章（人类评估与 Kappa）、第 25 章（CI 门禁）。本章代码全部为 TypeScript。
 
