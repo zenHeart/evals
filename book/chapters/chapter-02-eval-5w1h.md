@@ -213,6 +213,38 @@ flowchart TB
       └─ 否 → LLM-as-Judge + 多模型投票
 ```
 
+### 2.7.1 工程落地：用 TypeScript 固化 5W1H 配置
+
+在真实前端工程中，你可以像配置 `playwright.config.ts` 一样，用一个 `eval.config.ts` 将 5W1H 转化为 CI 可执行的类型定义：
+
+```typescript
+// eval.config.ts — 5W1H 的工程化类型契约
+export interface EvalPipelineConfig {
+  why: "model_selection" | "regression_test" | "prompt_iteration";
+  what: {
+    dataset: string;           // 题目集路径，如 "./evals/refund-qa-200.jsonl"
+    metrics: ("exact_match" | "llm_judge_score" | "latency_p95")[];
+    thresholds: { passRate: number; maxLatencyMs: number }; // 门禁线：如通过率 ≥ 85%
+  };
+  who: {
+    evaluator: "rule" | "llm_as_judge" | "human_expert";
+    judgeModel?: string;       // 如 "gpt-4o"
+  };
+  when: "pre_commit" | "nightly_ci" | "release_gate";
+  where: {
+    isolation: "docker_sandbox" | "memory_clean";
+    mockExternalTools: boolean;
+  };
+}
+
+// 模拟 CI 门禁消费配置
+export function runGateCheck(actualScore: number, config: EvalPipelineConfig): boolean {
+  const isPass = actualScore >= config.what.thresholds.passRate;
+  console.log(`[Eval CI] 目标: ${config.why} | 当前得分: ${(actualScore * 100).toFixed(1)}% | 门禁: ${isPass ? "通过 ✓" : "阻断 ✗"}`);
+  return isPass;
+}
+```
+
 ## 2.8 实战与陷阱
 
 **陷阱 1：评估"了"但没"用"。** 跑 10 个基准 → 写报告 → 归档 → 模型还是凭感觉选。对策：每份评估报告必须含 1 个明确决策（"基于 X 集 Y 分，选模型 A"）。

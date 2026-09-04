@@ -19,7 +19,7 @@
 
 ## 21.2 概念引入：应用层评估是给你自己系统做的集成测试
 
-**前端类比**：公开基准评估 ≈ 标准化考试（考纲公开、题目固定）；应用层评估 ≈ 你给自家业务写的**集成测试 + 生产监控**——没有现成题库，要自己造 fixture、自己定义什么叫"对"、自己决定哪层门禁硬到能阻断发布。你不会拿高考卷验收一个支付功能，同样不能拿 MMLU 验收客服机器人。
+> **前端类比**：公开基准评估 ≈ 标准化考试（考纲公开、题目固定）；应用层评估 ≈ 你给自家业务写的**集成测试 + 生产监控**——没有现成题库，要自己造 fixture、自己定义什么叫"对"、自己决定哪层门禁硬到能阻断发布。你绝不会拿高考全国卷去验收一个支付结算功能，同样绝不能拿 MMLU 做题分去验收客服业务机器人。
 
 第 19 章 19.5.1 的八维差异表是本章的理论地基，这里只引用不重复。回忆表中最关键的一行：模型层评估的失败模式是幻觉与知识错误，**Agent 层的失败模式是卡死、死循环、工具误用、环境破坏**——这些失败在最终答案里全部隐身。RAG 介于两者之间："检索 + 生成"两步流水线，每一步都可能独立失败，且**失败的层不同，修复动作完全不同**。应用层评估的第一原则由此而来：**不要只评端到端结果，要给流水线的每一段挂上指标**。
 
@@ -40,7 +40,7 @@ flowchart LR
     M2["Context Recall<br/>contexts × 参考答案<br/>该召回的都召回了吗"] -.-> CTX
     M3["Faithfulness<br/>answer × contexts<br/>每条论断被支持了吗"] -.-> ANS
     M4["Answer Relevancy<br/>answer × question<br/>答案是否切题"] -.-> ANS
-    M5["Citation Precision<br/>引用标记 × 被引 chunk<br/>（20.4.1 展开）"] -.-> ANS
+    M5["Citation Precision<br/>引用标记 × 被引 chunk<br/>（§21.4.1 展开）"] -.-> ANS
     style M1 fill:#dbeafe,stroke:#2563eb
     style M2 fill:#dbeafe,stroke:#2563eb
     style M3 fill:#ede9fe,stroke:#7c3aed
@@ -106,7 +106,7 @@ Context Precision@K = Σ( precision@k × v_k ) / Top-K 中相关条目总数
 | Context Precision 低 | 相关内容混在噪声里、排位差 | 加重排（rerank）；调小 chunk 提升纯度 |
 | Context Recall 低 | 该召回的没召回 | 调大 top-K；调 chunk 策略；补索引覆盖缺口 |
 | Answer Relevancy 低 | 答非所问 | 检查 query 改写与意图路由；检查是否被无关检索内容带偏 |
-| 检索根本没触发 | Agent 场景下的工具选择失败 | 检查工具描述与路由逻辑（20.6 轨迹评估接手） |
+| 检索根本没触发 | Agent 场景下的工具选择失败 | 检查工具描述与路由逻辑（§21.6 轨迹评估接手） |
 
 （归因框架综合自 Langfuse agent 评估指南的 RAG 分步归因与 RAGAS 指标文档，抓取于 2026-08-28）
 
@@ -122,7 +122,7 @@ Context Precision@K = Σ( precision@k × v_k ) / Top-K 中相关条目总数
 2. 对每条句子，判官验证"是否被 `[n]` 指向的 chunk 支持"；
 3. Citation Precision = 被支持的引用数 / 引用总数。
 
-它与 Faithfulness 的分工：Faithfulness 管"答案整体没编造"，Citation Precision 管"逐句溯源指对了地方"。用户点开引用发现对不上时，破坏的是产品信任——这类故障 Faithfulness 分数完全看不见。20.5 的 mini 评估器同时实现两个指标。
+它与 Faithfulness 的分工：Faithfulness 管"答案整体没编造"，Citation Precision 管"逐句溯源指对了地方"。用户点开引用发现对不上时，破坏的是产品信任——这类故障 Faithfulness 分数完全看不见。§21.5 的 mini 评估器同时实现两个指标。
 
 ### 21.4.2 拒答率与边界问题：知识助手必须会"说不知道"
 
@@ -163,7 +163,7 @@ async function jsonCall(system: string, user: string) {
 const SPLIT = `把 ANSWER 拆成不可再分、可单独验证真伪的论断（一个数字/日期/政策条款各算一条）。只输出 JSON {"claims": string[]}`;
 const VERIFY = `判断 CLAIM 是否能从 CONTEXTS 推断出来，不支持即 false。只输出 JSON {"supported": boolean, "reason": string}`;
 
-// ---- 指标 1：Faithfulness = 支持的 claim 数 / 总 claim 数（20.3.2 两步法）----
+// ---- 指标 1：Faithfulness = 支持的 claim 数 / 总 claim 数（§21.3.2 两步法）----
 async function faithfulness(c: Case): Promise<Score> {
   const { claims } = await jsonCall(SPLIT, `ANSWER: ${c.answer}`);
   if (!claims?.length) return { key: "faithfulness", value: 1, comment: "无可拆分论断" };
@@ -174,7 +174,7 @@ async function faithfulness(c: Case): Promise<Score> {
   return { key: "faithfulness", value: supported.filter(Boolean).length / claims.length, comment: "不支持: " + bad };
 }
 
-// ---- 指标 2：Citation Precision = 被支持的引用 / 引用总数（20.4.1）----
+// ---- 指标 2：Citation Precision = 被支持的引用 / 引用总数（§21.4.1）----
 async function citationPrecision(c: Case): Promise<Score> {
   const sentences = c.answer.split(/(?<=[。.!?！？])\s*/).filter((s) => /\[\d+\]/.test(s));
   if (!sentences.length) return { key: "citation_precision", value: 1, comment: "无引用标注" };
@@ -187,7 +187,7 @@ async function citationPrecision(c: Case): Promise<Score> {
   return { key: "citation_precision", value: ok.filter(Boolean).length / sentences.length };
 }
 
-// ---- 修复路径：把 20.3.5 的归因表编进代码，分数直接映射行动 ----
+// ---- 修复路径：把 §21.3.5 的归因表编进代码，分数直接映射行动 ----
 function repairHint(scores: Score[]): string[] {
   const get = (k: string) => scores.find((s) => s.key === k)?.value ?? 1;
   const hints: string[] = [];
@@ -252,7 +252,7 @@ function withinWhitelist(traj: Trajectory, allowed: Set<string>): boolean {
   return traj.steps.flatMap((s) => s.toolCalls ?? []).every((c) => allowed.has(c.name));
 }
 
-// 判官 B：步数预算——步数不超过最优步数的 2 倍（模板目标值，见 20.6.3）
+// 判官 B：步数预算——步数不超过最优步数的 2 倍（模板目标值，见 §21.6.3）
 function withinStepBudget(traj: Trajectory, optimal: number, budget = 2): boolean {
   const used = traj.steps.filter((s) => s.toolCalls?.length).length;
   return used > 0 && used <= optimal * budget;
@@ -289,9 +289,9 @@ function hasDeadLoop(traj: Trajectory): boolean {
 
 离线评估再完善，也覆盖不了真实流量的分布漂移——用户会问出测试集里没有的问题形态。生产监控层三个部件：
 
-**第一件：在线采样判官。** 按采样率（首月建议 0.5%–1%，来源：第 20 章 20.6.1 四层流水线）挂 reference-free 判官——离线/在线复用同一判官的前提是不依赖参考答案（19.6.1）。LangSmith 与 Langfuse 均支持按 project 配采样率、过滤条件与花费上限（来源：两平台官方文档，抓取于 2026-08-28）。
+**第一件：在线采样判官。** 按采样率（首月建议 0.5%–1%，来源：第 20 章 §20.6.1 四层流水线）挂 reference-free 判官——离线/在线复用同一判官的前提是不依赖参考答案（§19.6.1）。LangSmith 与 Langfuse 均支持按 project 配采样率、过滤条件与花费上限（来源：两平台官方文档，抓取于 2026-08-28）。
 
-**第二件：100% 确定性扫描。** 合规红线类检查（引用编号存在性、格式、命中拒答标记、成本超预算）零 LLM 成本，**全量跑**——0 容忍的事不能交给采样（17.6.2）。
+**第二件：100% 确定性扫描。** 合规红线类检查（引用编号存在性、格式、命中拒答标记、成本超预算）零 LLM 成本，**全量跑**——0 容忍的事不能交给采样（第 20 章 §20.6.2）。
 
 **第三件：drift 检测。** 判官分数按时间窗口聚合，与历史基线的**区间**比较（不是绝对值），越界即告警并回流样本：
 
@@ -361,7 +361,7 @@ drift 检测最容易踩的坑是**只盯分数不盯输入分布**。判官分�
 
 ## 21.11 5 个常见错误
 
-1. **把 RAGAS 四个分数当四个独立 KPI 汇报**——它们是联合诊断工具，单独看任何一个都会误诊；修复路径表（20.3.5）必须一起贴。
+1. **把 RAGAS 四个分数当四个独立 KPI 汇报**——它们是联合诊断工具，单独看任何一个都会误诊；修复路径表（§21.3.5）必须一起贴。
 2. **判官 rubric 不写 claim 拆分粒度**——拆分粒度直接决定分数高低，不定版的判官产出的历史曲线没有可比性。
 3. **Agent 评估只报任务完成率**——过程质量（步数/工具选择/恢复）独立失败且在最终答案里隐身；完成率 80% 可能是靠三倍 token 硬烧出来的。
 4. **生产监控只盯质量分**——输入分布漂移比分数劣化早一两周出现；意图计数是最便宜的先行指标。

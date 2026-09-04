@@ -20,7 +20,7 @@
 
 ## 5.2 概念引入：判官是一个"异步断言函数"
 
-**前端类比**：LLM-as-Judge 相当于把人工 code review 外包给一个自动 review bot——单次调用就是一个 async 断言函数：输入被评内容，输出 `{ score, reason }`。它与 `expect()` 的本质区别只有一条：这个断言自己也是一个概率系统，所以你必须像审查 review 工具一样审查它。
+> **前端类比**：LLM-as-Judge 相当于把人工 code review 外包给一个自动 review bot——单次调用就是一个 async 断言函数：输入被评内容，输出 `{ score, reason }`。它与 `expect()` 的本质区别只有一条：这个断言自己也是一个概率系统，必须像审查静态分析插件一样做规则标定与偏差防御。
 
 最小可用判官只要十行：
 
@@ -52,7 +52,7 @@ export async function isRelevant(question: string, answer: string): Promise<bool
 
 ### 5.3.1 五要素
 
-综合 LangSmith、Langfuse、OpenAI Graders 三家官方文档反复出现的要素，可以归纳为五条（来源：https://github.com/zenHeart/evals/blob/main/research/framework-practice.md §3.2.4）：
+综合 LangSmith、Langfuse、OpenAI Graders 三家官方最佳实践指南反复出现的要素，可以归纳为五条工程准则：
 
 | 要素 | 解决什么问题 | 反面教材 |
 |---|---|---|
@@ -193,10 +193,10 @@ export function passes(res: ScoreResult, gate: typeof GATE_V1): boolean | "inval
 }
 ```
 
-这段代码有三个值得注意的设计决策：
+这段代码包含三个关键设计决策：
 
 1. **rubric 是数据不是字符串拼接**。`Rubric` 对象可序列化、可算哈希、可进 git——第 20 章 20.5 的判官版本管理（`rubricVersion` 字段）就是靠它落地。
-2. **`parse_error` 是独立状态而不是 0 分**。判官输出坏了应该被观测到（错误率进报告），而不是悄悄把样本判成最低分——这是答案抽取"静默失败"教训（来源：https://github.com/zenHeart/evals/blob/main/research/methodology-deep.md §2.3.5）在判官上的翻版。
+2. **`parse_error` 是独立状态而不是 0 分**。判官输出坏了应该被观测到（错误率进报告），而不是悄悄把样本判成最低分——这是答案抽取"静默失败"教训在判官上的翻版。
 3. **阈值是合取语义**：`blocking` 维度不达标则整体失败，与 DeepEval"每个带判决的指标都成功用例才通过"的语义一致（来源：deepeval.com/docs/introduction）。
 
 ### 5.3.3 有参考答案时：reference-based 判官
@@ -361,7 +361,7 @@ flowchart TD
     L --> M["投入评估流水线<br/>rubric 任何改动 → 回到重新验收"]
 ```
 
-样本量依据：一致性校准最少需要约 50 条人工标注，正式验收建议 100-300 条（来源：https://github.com/zenHeart/evals/blob/main/research/framework-practice.md §3.4.5；https://github.com/zenHeart/evals/blob/main/research/methodology-deep.md §2.4.3）。锁版本的依据：判官是"prompt + 模型 + 参数"的组合，三者任一变化都可能改变判分分布——判官配置变更后必须重跑金标准集回归（第 20 章 20.7.2 的判官健康检查），报告里也要留 `judge_calibration_kappa` 字段（https://github.com/zenHeart/evals/blob/main/research/methodology-deep.md §2.6.3 的运行记录 schema）。
+样本量依据：一致性校准最少需要约 50 条人工标注，正式验收建议 100-300 条（来源：LangSmith / OpenAI 官方评估指南推荐口径）。锁版本的依据：判官是"prompt + 模型 + 参数"的组合，三者任一变化都可能改变判分分布——判官配置变更后必须重跑金标准集回归（第 20 章 20.7.2 的判官健康检查），报告里也要留 `judge_calibration_kappa` 字段记录一致性。
 
 
 ## 5.6 四大偏差的工程对策
@@ -379,14 +379,14 @@ flowchart TD
 
 ### 5.6.2 位置偏差：交换协议或改单答案
 
-代码在 18.4.2。两个补充判断：
+代码实现见 §5.4.2。两个补充判断：
 
 - **交换协议让调用量翻倍**。预算紧时，另一个根除方案是放弃 pairwise、改用单答案独立打分——FastChat 的 MT-Bench 官方实现正是这么做的，理由就是从根上消除顺序效应（来源：github.com/lm-sys/FastChat llm_judge 文档）。
 - 交换一致率（5.4.3）是位置偏差的监控探针，建议每次跑批量评估都顺带输出。
 
 ### 5.6.3 冗长偏差：中立声明 + 长度相关性探针
 
-两层对策。第一层是 prompt 层：rubric 里写明长度中立（5.3.2 的 `neutrality` 字段），这是四条偏差里工程上最容易缓解的一条（来源：https://github.com/zenHeart/evals/blob/main/research/framework-practice.md §3.2.4）。
+两层对策。第一层是 prompt 层：rubric 里写明长度中立（5.3.2 的 `neutrality` 字段），这是四条偏差里工程上最容易缓解的一条。
 
 第二层是监控层：在批量评估报告里加一个"分数与长度的相关性"探针。如果判官分数和回答长度强正相关，你的 rubric 中立声明就没起作用：
 
@@ -467,7 +467,7 @@ export function stripMarkdown(s: string): string {
 
 ### 5.7.1 成本量级
 
-判官是评估流水线里唯一按次付费的评分器。量级参考：Langfuse 官方 FAQ 自述强判官与人工在多数质量维度上达成 80-90% 一致，单次评估成本约 0.01-0.10 美元（来源：Langfuse 官方文档自述，非独立复现值，见 https://github.com/zenHeart/evals/blob/main/research/framework-practice.md §3.2.2）。按这个量级，日均十万会话、1% 采样、每次两次调用，日成本约 20-200 美元；如果全量跑强模型还要再乘一个数量级。
+判官是评估流水线里唯一按次付费的评分器。量级参考：Langfuse 官方 FAQ 自述强判官与人工在多数质量维度上达成 80-90% 一致，单次评估成本约 0.01-0.10 美元（来源：Langfuse 官方文档 FAQ 自述）。按这个量级，日均十万会话、1% 采样、每次两次调用，日成本约 20-200 美元；如果全量跑强模型还要再乘一个数量级。
 
 ### 5.7.2 两段式：便宜判官初筛 + 贵判官复核
 
@@ -485,7 +485,7 @@ flowchart LR
 
 ```typescript
 // two-stage-judge.ts —— 两段式判官：分流条件决定谁复核
-// 依赖 18.3.2 的 judgeOnce 与 RUBRIC
+// 依赖 §5.3.2 的 judgeOnce 与 RUBRIC_V1
 const CHEAP = "gpt-4o-mini-2024-07-18";
 const STRONG = "gpt-4o-2024-08-06";
 const NEAR = 0.5; // 距阈值多近算"贴近"（本书经验值，按业务调）
@@ -505,8 +505,8 @@ export async function twoStageJudge(q: string, answer: string, ctx: string) {
 
 效果：大多数"明显好 / 明显差"的样本一次调用解决，只有中间带和高风险样本花第二次。两个配套动作：
 
-1. **缓存**：判官结果按 `(itemId, 输出内容哈希, rubric 版本, 判官模型)` 缓存——温度 0 下同一输入重判是纯浪费（来源：https://github.com/zenHeart/evals/blob/main/research/framework-practice.md §3.4.6）。
-2. **批处理**：夜间全量走供应商的 batch API（价格减半，接受小时级延迟）；并发用有界并发池，拒绝无限 `Promise.all`（来源：https://github.com/zenHeart/evals/blob/main/research/framework-practice.md §3.4.6）。
+1. **缓存**：判官结果按 `(itemId, 输出内容哈希, rubric 版本, 判官模型)` 缓存——温度 0 下同一输入重判是纯浪费。
+2. **批处理**：夜间全量走供应商的 batch API（价格减半，接受小时级延迟）；并发用有界并发池，拒绝无限 `Promise.all`。
 
 ### 5.7.3 什么时候不该用两段式
 
@@ -514,7 +514,7 @@ export async function twoStageJudge(q: string, answer: string, ctx: string) {
 
 ## 5.8 实战与陷阱
 
-**陷阱 1：解析失败记 0 分（静默失败）**。判官输出坏 JSON、被截断、带了前后缀文字，解析失败后随手记 0 分——错误被淹没在低分里，你以为是模型变差了。对策：`parse_error` 独立状态 + 错误率进报告（5.3.2 已实现），错误率超过 5% 时整批作废重跑而不是硬出分（来源：https://github.com/zenHeart/evals/blob/main/research/framework-practice.md §3.4.7）。
+**陷阱 1：解析失败记 0 分（静默失败）**。判官输出坏 JSON、被截断、带了前后缀文字，解析失败后随手记 0 分——错误被淹没在低分里，你以为是模型变差了。对策：`parse_error` 独立状态 + 错误率进报告（5.3.2 已实现），错误率超过 5% 时整批作废重跑而不是硬出分。
 
 **陷阱 2：判官版本漂移**。两个来源：模型用漂浮别名（厂商静默更新底层权重，你的判分分布变了），rubric 改了一行没有重新校准。对策：pin 快照版本 + prompt 哈希 + rubric 版本号三件套（5.5.3），判官配置变更必跑金标准集。
 
@@ -522,7 +522,7 @@ export async function twoStageJudge(q: string, answer: string, ctx: string) {
 
 **陷阱 4：数学与代码进判官**。有客观真值的任务交给任何 LLM 判官都是在付钱买噪声（判分失败率可达 91.3%）。对策：路由规则先行（5.6.5）。
 
-**陷阱 5：只有总分没有理由留存**。分数异常时无据可查。理由字段是调试判官的入口，也是给人复核成本最低的材料——OpenAI Graders 的结构化输出 `{ result, steps }` 就是这个思路的官方实现（来源：developers.openai.com/api/docs/guides/graders，转引自 https://github.com/zenHeart/evals/blob/main/research/framework-practice.md §3.2.5）。
+**陷阱 5：只有总分没有理由留存**。分数异常时无据可查。理由字段是调试判官的入口，也是给人复核成本最低的材料——OpenAI Graders 的结构化输出 `{ result, steps }` 就是这个思路的官方实现（来源：OpenAI API Guides: Graders）。
 
 ## 5.9 验收自测
 

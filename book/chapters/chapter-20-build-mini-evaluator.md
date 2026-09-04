@@ -17,9 +17,9 @@
 
 ## 20.2 概念引入：评估器的最小闭环
 
-**前端类比**：一个评估器约等于 `jest --runInBand` 的极简版——遍历测试用例、调用被测函数、断言、汇总报告。区别在于"断言"经常是概率性的（判官打分），而且每次"跑测试"都要花钱，所以工程重点从"写断言"变成了**控制成本与统计噪声**。
+> **前端类比**：一个自研评估器，约等于 `jest --runInBand` 的轻量极简版——遍历测试用例、调用被测函数、执行断言、汇总报告。区别在于"断言"往往是概率性的（需要裁判模型按 Rubric 打分），而且每次"跑测试"都要消耗真实 Token 成本，因此工程重点从"单纯写断言"转变为**控制调用成本与统计噪声**。
 
-最小闭环四个部件，对应 16.3 的行业共同抽象：
+最小闭环四个部件，对应 §19.3 的行业共同抽象：
 
 ```text
 数据集(JSONL) → 被测物(solve 函数) → 判官(规则/LLM) → 汇总(指标+报告)
@@ -298,19 +298,19 @@ main().catch((e) => { console.error(e); process.exitCode = 1; });
 
 ### 20.5.2 七个设计决策逐块讲解
 
-**决策 1：判官是一个统一签名的函数类型。** `type Judge = (ex, output) => Promise<Score>` 让规则判官与 LLM 判官可插拔、可组合——`Promise.all([exactContains, llmJudge])` 就是"规则先筛、判官兜底"的分层维形。这正是 16.3 那张共同抽象表里"Evaluator"一列的自建版：**判官是数据，不是硬编码**。
+**决策 1：判官是一个统一签名的函数类型。** `type Judge = (ex, output) => Promise<Score>` 让规则判官与 LLM 判官可插拔、可组合——`Promise.all([exactContains, llmJudge])` 就是"规则先筛、判官兜底"的分层雏形。这正是 §19.3 那张共同抽象表里"Evaluator"一列的自建版：**判官是数据，不是硬编码**。
 
-**决策 2：LLM 判官强制结构化输出 + 分数截断。** `response_format: json_object` 保证能解析；`Math.min(1, Math.max(0, ...))` 防判官模型输出 1.2 或 -0.3 这种越界分数污染统计；`comment` 存理由字段——它既是调试判官的入口，也是人工复核成本最低的材料（判官五要素之"结构化输出 + 理由"，见 19.6.3）。
+**决策 2：LLM 判官强制结构化输出 + 分数截断。** `response_format: json_object` 保证能解析；`Math.min(1, Math.max(0, ...))` 防判官模型输出 1.2 或 -0.3 这种越界分数污染统计；`comment` 存理由字段——它既是调试判官的入口，也是人工复核成本最低的材料（判官五要素之"结构化输出 + 理由"，见 §19.6.3 与第 5 章）。
 
 **决策 3：mapPool 而不是无限 `Promise.all`。** `tasks.map(async ...)` 加 `Promise.all` 会把全部请求同时打出去，遇到限流就是成片的 429，夜间任务会**静默丢数据**。mapPool 只开 `limit` 个 worker，用共享游标 `i++` 领任务——相当于自己写了一个 20 行的 p-limit，顺便看清了它的原理。
 
 **决策 4：失败隔离，单条报错不拖垮整个 run。** 夜间全量 500 题跑到最后一条遇到 5xx，你不能让前 499 条的结果一起蒸发。每条样本包一层 try，失败的记 `key: "error"` 0 分并留痕——它天然过不了 `every(s => s.value >= threshold)` 的通过判据，所以不会被漏计为"通过"。
 
-**决策 5：Wilson 置信区间而不是裸百分数。** `pass_rate=0.8` 和 `pass_rate=0.8, ci95=[0.67, 0.89]` 是两个信息量完全不同的输出——后者告诉你"50 题样本上这个分数的真实区间很宽，别急着下结论"。实现只有 7 行（`wilson` 函数），却能拦住大部分"CI 天天误红"的事故（17.7 展开）。
+**决策 5：Wilson 置信区间而不是裸百分数。** `pass_rate=0.8` 和 `pass_rate=0.8, ci95=[0.67, 0.89]` 是两个信息量完全不同的输出——后者告诉你"50 题样本上这个分数的真实区间很宽，别急着下结论"。实现只有 7 行（`wilson` 函数），却能拦住大部分"CI 天天误红"的事故（第 4 章 §4.6.1 展开）。
 
-**决策 6：EvalRun 整体落盘，一 run 一快照。** `results` 里冗余存了 `output` 与每条 `scores`，`runId` 是 `crypto.randomUUID()`——三个月后复盘"上次为什么过这次为什么挂"，你有原始材料。可复现四要素（被测物版本 / 数据集版本 / 判官版本 / 环境）在这里先打了地基，ch22 会把 schema 补全。
+**决策 6：EvalRun 整体落盘，一 run 一快照。** `results` 里冗余存了 `output` 与每条 `scores`，`runId` 是 `crypto.randomUUID()`——三个月后复盘"上次为什么过这次为什么挂"，你有原始材料。可复现四要素（被测物版本 / 数据集版本 / 判官版本 / 环境）在这里先打了地基，后续第 24–25 章会把完整 schema 与 CI 门禁补全。
 
-**决策 7：`process.exitCode` 是门禁的全部接口。** 评估脚本接入 CI 不需要任何框架特性——过则 0、挂则 1，GitHub Actions / Jenkins / GitLab CI 全都认这个语义。16.4 里 DeepEval 的 `deepeval test run`、Langfuse 的 GitHub Action（分数越界抛 `RegressionError` 使 workflow 失败），本质都是这一个接口。
+**决策 7：`process.exitCode` 是门禁的全部接口。** 评估脚本接入 CI 不需要任何框架特性——过则 0、挂则 1，GitHub Actions / Jenkins / GitLab CI 全都认这个语义。§19.4 里 DeepEval 的 `deepeval test run`、Langfuse 的 GitHub Action（分数越界抛 `RegressionError` 使 workflow 失败），本质都是这一个接口。
 
 一个真实的坑：初版实现用 `process.argv` 的**固定位置索引**取参数（`argv[3]` 当 threshold），一旦有人把参数顺序写反或加了新参数，阈值会静默变成 `NaN`，所有样本全部判挂——CI 天天红还查不出原因。改成 `parseArgs` 的命名参数查找后，参数顺序无关、缺省有默认值。**评估工具自身的健壮性和被测物一样重要**。
 
@@ -372,7 +372,7 @@ L4 还有一条分层原则：**合规红线类指标走全量确定性扫描（
 
 ### 20.7.2 判官健康检查：金标准集定期回归判官本身
 
-评估系统自己也是系统，也会坏。判官是最会悄悄坏的那个：provider 静默更换模型 snapshot、有人改了判官 prompt 没留版本、judge 模型被上游弃用（16.3 的 OpenAI Evals 弃用就是同类事故的镜像）。防线是**金标准集**：人工定标 50 条（每条带人工给的 0/1 真值），定期用固定判官配置跑一遍，一致率掉出区间即告警。
+评估系统自己也是系统，也会坏。判官是最会悄悄坏的那个：provider 静默更换模型 snapshot、有人改了判官 prompt 没留版本、judge 模型被上游弃用（§19.3 的 OpenAI Evals 弃用就是同类事故的镜像）。防线是**金标准集**：人工定标 50 条（每条带人工给的 0/1 真值），定期用固定判官配置跑一遍，一致率掉出区间即告警。
 
 ```typescript
 // judge-health.ts —— 判官一致率计算（自写，无框架依赖）
@@ -425,7 +425,7 @@ async function tieredJudge(ex: Example, output: string) {
 
 ## 20.9 接入 Langfuse：从本地脚本到可观测系统
 
-mini 框架跑到 150 行后，下一步升级不是继续加功能，而是把结果**接进可查询的评估平台**。Langfuse 的 TS SDK 是前端团队最顺的路径（16.4.2）。依赖：`npm i @langfuse/client @langfuse/otel @langfuse/openai openai @opentelemetry/sdk-node`（v4 OTel 原生架构）。
+mini 框架跑到 150 行后，下一步升级不是继续加功能，而是把结果**接进可查询的评估平台**。Langfuse 的 TS SDK 是前端团队最顺的路径（§19.4.2）。依赖：`npm i @langfuse/client @langfuse/otel @langfuse/openai openai @opentelemetry/sdk-node`（v4 OTel 原生架构）。
 
 ```typescript
 // langfuse-experiment.ts —— 官方 experiment runner 用法（整理注释）
@@ -539,7 +539,7 @@ jobs:
           path: reports/
 ```
 
-关键差异：L1 无 artifact（快进快出，红绿即结论），L2 留存 `reports/` 供趋势对比；L1 阈值语义是"门禁"（`process.exitCode` 直接触发红），L2 阈值语义是"警报"（红了发通知拉明细，不阻断任何东西）。L3 发版安全集复用 L1 的 job 模板、换成 `on: push: tags` 与 0 容忍数据集；L4 在线采样不在 CI 里跑，而在服务端挂 Langfuse/LangSmith 的采样规则（16.4.1、16.4.2）。
+关键差异：L1 无 artifact（快进快出，红绿即结论），L2 留存 `reports/` 供趋势对比；L1 阈值语义是"门禁"（`process.exitCode` 直接触发红），L2 阈值语义是"警报"（红了发通知拉明细，不阻断任何东西）。L3 发版安全集复用 L1 的 job 模板、换成 `on: push: tags` 与 0 容忍数据集；L4 在线采样不在 CI 里跑，而在服务端挂 Langfuse/LangSmith 的采样规则（§19.4.1、§19.4.2）。
 
 ## 20.11 自建还是框架：判断与施工顺序
 

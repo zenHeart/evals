@@ -166,7 +166,7 @@ M1（第 1 月）指标登记表 + 50 题核心集 + 判官校准，验收 = 一
 <details>
 <summary>查看参考答案</summary>
 
-按想检测的最小效应量估（第 3 章与 17.7.1 的经验法则，量级估算）：5 个百分点的差异要数百条；稳到 ±2 个百分点要 2,000+ 条；判官校准至少 50 条人工标注。比规模更重要的是分桶覆盖（高频 + 边界 + 对抗）、时间切分防泄漏、版本化（第 24 章）。
+按想检测的最小效应量估（第 3 章 3.4 与第 17 章 17.5.3 的经验法则，量级估算）：5 个百分点的差异要数百条；稳到 ±2 个百分点要 2,000+ 条；判官校准至少 50 条人工标注。比规模更重要的是分桶覆盖（高频 + 边界 + 对抗）、时间切分防泄漏、版本化（第 24 章）。
 
 </details>
 
@@ -327,7 +327,7 @@ MTEB 榜缩圈，但必须用自己的检索集复测：100 条真实查询 + �
 
 **第 1 周（跑通基础）**：装 lm-eval-harness 跑 MMLU 与 GSM8K 各一次，读懂口径与样本量；用第 1 章 1.7 的 30 行脚本自建一个 10 题业务小集。
 
-**第 2-4 周（自建评估）**：选一个业务场景拆能力（第 23 章）→ 造 100-200 题测试集（第 24 章）→ 接判官并校准一致率（第 18、26 章）→ 挂进 CI（第 25 章）。
+**第 2-4 周（自建评估）**：选一个业务场景拆能力（第 23 章）→ 造 100-200 题测试集（第 24 章）→ 接判官并校准一致率（第 5、7 章）→ 挂进 CI（第 25 章）。
 
 **第 2-3 月（完整流水线）**：补齐 L1-L4 四层（第 20 章 20.6）→ 接在线采样与坏例回流 → 做第一次灰度发布（第 27 章 27.8 模板）。
 
@@ -337,7 +337,7 @@ MTEB 榜缩圈，但必须用自己的检索集复测：100 条真实查询 + �
 
 ## 31.5 推荐学习资源
 
-**入门**：本书第 0、1、2、4、3 章；[Designing ML Evaluation Systems（Chip Huyen）](https://huyenchip.com/2023/05/15/designing-ml-evaluation-systems.html)；[lm-evaluation-harness](https://github.com/EleutherAI/lm-evaluation-harness)。
+**入门**：本书第 0、1、2、3、4 章；[Designing ML Evaluation Systems（Chip Huyen）](https://huyenchip.com/2023/05/15/designing-ml-evaluation-systems.html)；[lm-evaluation-harness](https://github.com/EleutherAI/lm-evaluation-harness)。
 
 **进阶**：第 30 章 L0/L1 论文清单；[Anthropic Engineering Blog](https://www.anthropic.com/engineering)；[OpenAI Cookbook](https://cookbook.openai.com/)。
 

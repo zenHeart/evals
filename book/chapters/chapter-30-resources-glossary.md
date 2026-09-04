@@ -131,7 +131,7 @@
 |---|---|---|---|
 | **TruthfulQA** | 817 道对抗事实题，测一本正经胡说倾向 | [github.com/sylinrl/TruthfulQA](https://github.com/sylinrl/TruthfulQA) | 第 14 章 |
 | **SimpleQA** | 短事实问答，测知识边界与幻觉率 | [github.com/openai/simple-evals](https://github.com/openai/simple-evals) | 第 14 章 |
-| **HarmBench** | 标准化有害行为红队（攻击成功率越低越好） | [www.harmbench.org](https://www.harmbench.org/) | 第 10/21 章 |
+| **HarmBench** | 标准化有害行为红队（攻击成功率越低越好） | [www.harmbench.org](https://www.harmbench.org/) | 第 14/22 章 |
 | **FACTS Grounding** | 答案必须基于给定文档的 grounding 评估 | [www.kaggle.com/facts-leaderboard](https://www.kaggle.com/facts-leaderboard) | 第 21 章 |
 
 **表外补充（应用层常用但未入 65 项总表）**：AdvBench（来源：GCG 越狱论文 arXiv:2307.15043）——约 **520 个有害行为描述 + 100 个对抗 prompt**，是最常用的越狱成功率测试底座，与第 14 章 14.5、第 22 章口径一致；另注意它测的是"攻击底座"，需要自行定义成功率判分。
@@ -151,8 +151,8 @@
 | DeepEval | Python | pytest 风格应用评估 | `pip install deepeval` | `deepeval test run` |
 | TruLens | Python | RAG 追踪 + 三元组反馈 | `pip install trulens` | `tru.run_dashboard()` |
 | Phoenix (Arize) | Python/TS | 可观测 + 在线评估 | `pip install arize-phoenix` | `phoenix serve` |
-| LangSmith | SaaS | LangChain 生态 trace + 评估 | web | vitest 集成（第 20 章） |
-| Langfuse | TS/Python | 开源可自托管可观测 | `npm i langfuse` | OTel SDK（第 20 章） |
+| LangSmith | SaaS | LangChain 生态 trace + 评估 | web | vitest 集成（第 19/20 章） |
+| Langfuse | TS/Python | 开源可自托管可观测 | `npm i langfuse` | OTel SDK（第 19/20 章） |
 | SWE-bench harness | Python | 仓库级修复评测 | `pip install swebench` | `python -m swebench.harness.run_evaluation` |
 | VLMEvalKit | Python | 多模态评测套件 | `pip install vlmeval` | `python run.py --model ... --data MMMU` |
 | Garak | Python | LLM 漏洞扫描（红队） | `pip install garak` | `garak --model_type openai`（第 22 章） |
@@ -180,7 +180,7 @@
 | Cohen's Kappa | 校正了随机一致的一致率 | 多人标注一致性 | 第 6 章 |
 | ECE | 预测置信与实际正确率的校准误差 | 模型自报信心时 | 第 3 章 |
 | Elo / Bradley-Terry | 对战胜率拟合的相对强度 | 偏好排名（Arena） | 第 17 章 |
-| Wilson 区间 | 二项比例的置信区间 | 一切 pass 率类读数必带 | 第 20 章 |
+| Wilson 区间 | 二项比例的置信区间 | 一切 pass 率类读数必带 | 第 4/20 章 |
 
 ## 30.5 术语：一律回第 0 章查
 
@@ -188,22 +188,22 @@
 
 | 术语 | 第 0 章条目 | 深入章节 |
 |---|---|---|
-| Benchmark / Metric / Judge | #13 / #14 / #11 | 第 1、3 章 |
-| LLM-as-Judge | #12 | 第 13、18 章 |
-| Pass@k / cons@k | #15 / #26 | 第 6、7 章 |
-| Elo / Bradley-Terry | #16 | 第 17 章 |
+| Benchmark / Metric / Judge | #13 / #14 / #11 | 第 1、3、5 章 |
+| LLM-as-Judge | #12 | 第 5、17 章 |
+| Pass@k / cons@k | #15 / #26 | 第 10、11 章 |
+| Elo / Bradley-Terry | #16 | 第 6、17 章 |
 | RAG / Retrieval / Chunk | #6 / #20 / #7 | 第 21 章 |
 | Temperature / CoT / Few-shot | #8 / #32 / #33 | 第 3、4 章 |
-| Hallucination / Jailbreak | #34 / #35 | 第 10、21 章 |
-| RAGAS / SWE-bench | #28 / #29 | 第 20、7 章 |
-| hold-out / n-gram 污染检测 | #25 / #27 | 第 24 章 |
-| Cohen's Kappa | #24 | 第 19、26 章 |
+| Hallucination / Jailbreak | #34 / #35 | 第 12、14、22 章 |
+| RAGAS / SWE-bench | #28 / #29 | 第 21、11 章 |
+| hold-out / n-gram 污染检测 | #25 / #27 | 第 4、24 章 |
+| Cohen's Kappa | #24 | 第 6、7 章 |
 | Faithfulness（忠于上下文） | —（第 0 章未收） | 第 21 章 21.3 |
 | Context Precision / Recall | — | 第 21 章 21.3 |
 | Prompt Injection（注入） | — | 第 22 章 22.3 |
 | Red Team（红队） | — | 第 22 章 |
-| Wilson 置信区间 | — | 第 20 章 20.7.1 |
-| 分层评估（L1-L4） | — | 第 20 章 20.6 |
+| Wilson 置信区间 | — | 第 4 章 4.6.1、第 20 章 20.7.1 |
+| 分层评估（L1-L4） | — | 第 20 章 20.6、第 25 章 25.3 |
 
 ## 30.6 生态速查：工具、平台与数据源
 
@@ -265,9 +265,9 @@
 │ 黄金公式：业务 → 能力 → 指标 → 测试集（第 23 章）     │
 │                                                      │
 │ 必看 4 类基准：                                       │
-│   学科 MMLU-Pro · 推理 GPQA Diamond                  │
-│   代码 LiveCodeBench + SWE-bench Verified            │
-│   偏好 Arena Elo（来源：第 5/6/7/13 章）             │
+│   学科 MMLU-Pro（第 9 章）· 推理 GPQA（第 10 章）     │
+│   代码 LiveCodeBench + SWE-bench（第 11 章）          │
+│   偏好 Arena Elo（第 17 章）                          │
 │                                                      │
 │ 判官 4 偏差（来源：arXiv:2306.05685）：              │
 │   位置 · 冗长 · 自增强 · 能力天花板                  │
@@ -283,7 +283,7 @@
 │                                                      │
 │ 安全底座：HarmBench（标准化红队）·                    │
 │   AdvBench = 520 有害行为 + 100 对抗 prompt           │
-│   （来源：arXiv:2307.15043，第 10/21 章）             │
+│   （来源：arXiv:2307.15043，第 14/22 章）             │
 │                                                      │
 │ 核心指标：Accuracy / F1 / pass@k /                    │
 │           Elo / Cohen's κ / Wilson 区间               │
