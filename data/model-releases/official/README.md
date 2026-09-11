@@ -613,3 +613,22 @@ GLM-5.3-Max（既有 GLM-5.3 展示名非独立发布）；GLM-5.3 开源权重�
 
 ### 本批跳过清单
 MiniMax humain-m3（阿语垂直区域合作模型）；WeatherNext 3（天气物理垂直模型）；其余在册厂商在此窗口内无新通用前沿模型发布。
+
+---
+
+## 2026-09-11 第十批：前沿与轻量模型增量入库（Meta Muse Spark 1.3 + DeepSeek-V4.1-Flash）
+
+基于 /ingest-releases 技能扫描窗口（2026-08-20 ~ 2026-09-11）及全在册厂商（Tier 1 与 Tier 2）官方渠道深度核验，增量收录两家 Tier 1 厂商最新发布：2 个 release / 11 条 evidence（全部为 verified）。发布日期全部精确到日，官方一级来源。
+
+| 文件 | 发布日期（来源） | 条数 | verified | pending | 要点 |
+|---|---|---:|---:|---:|---|
+| `meta/muse-spark-1-3.json` | 2026-09-02（research.meta.ai 官方博文 + Cursor / API 上线公告） | 4 | 4 | 0 | **Meta 专为长程软件工程与智能体工作流优化的多模态前沿模型**；较 1.2 版本减少 20% 工具调用与 25% 输出 token；DeepSWE v1.1 75.4%、Terminal-Bench 2.1 88.8%、SWE-Atlas Codebase QnA 59.4%、1M 上下文 MRCR v2 98.1%；首个入驻 Cursor IDE 的 Meta 模型；定价 $1.25 / $4.25 每百万 tokens。 |
+| `deepseek/deepseek-v4-1-flash.json` | 2026-09-10（api-docs.deepseek.com news260910 官方文档公告 + Hugging Face 官方 Model Card） | 7 | 7 | 0 | **DeepSeek 全新因果编解码器（Causal Encoder-Decoder）架构首款 MoE 模型**；总参 552B 仅激活 8B 输入与 16B 输出，KV Cache 显存需求降至 1/4；Terminal-Bench 2.1 90.6%、GPQA Diamond 90.9%、DeepSWE v1.1 74.2%、CyberGym 88.1%、MathArena Apex 65.6%、HLE (w/ tools) 63.9%、Automation-Bench 54.8%；全面接管并下线 V4-Pro，维持峰谷减半优惠定价。 |
+
+### 本批关键判定与说明
+1. **CED 架构与长程智能体评测演进**：DeepSeek-V4.1-Flash 作为新架构首发，将重点从单纯纯文本参数竞赛转向极致端到端推理经济性与智能体长程闭环，在 Terminal-Bench 2.1（90.6%）与 DeepSWE v1.1（74.2%）上均达到同等规模顶尖水平，且直接宣布替代下线旧旗舰 V4-Pro，是业内罕见的"轻量模型逆袭旗舰"实例。
+2. **Meta Muse 编码专精迭代**：Muse Spark 1.3 延续 Meta 在终端编码代理（Muse Code）领域的自研 harness 协同调优，官方披露的 20% 工具调用缩减与 25% token 节约直接反映在 SWE 评测的完成率与效率指标上。
+3. **新增候选 benchmark id**：`matharena-apex` 标注 `new-benchmark`，在未正式建实体前通过候选机制参与外键校验与对账。
+
+### 本批跳过清单
+OpenAI GPT-Live-1（2026-09-10 语音垂直 API 模型）；Google Lyria 3.5（音乐模型）；xAI Grok Bot Enterprise / Haggle Bot（企业应用层无新模型发布）；MiniMax humain-m3（阿语垂直合作模型）与 H3 Max Turbo（视频预览）；字节跳动豆包手机与输入法（端侧硬件/工具更新，豆包 2.2 推迟）；小米 MiMo-X Preview（邀测无公开基准页）；Mistral Shieldstral（安全分类器）。其余在册厂商在此窗口内无新通用大模型发布。
