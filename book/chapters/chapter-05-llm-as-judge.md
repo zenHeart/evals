@@ -20,7 +20,7 @@
 
 ## 5.2 概念引入：判官是一个"异步断言函数"
 
-> **前端类比**：LLM-as-Judge 相当于把人工 code review 外包给一个自动 review bot——单次调用就是一个 async 断言函数：输入被评内容，输出 `{ score, reason }`。它与 `expect()` 的本质区别只有一条：这个断言自己也是一个概率系统，必须像审查静态分析插件一样做规则标定与偏差防御。
+> **评测第一性原理**：LLM-as-Judge（大模型裁判）本质上是将先进基础模型的语义泛化理解能力操作化为自动化评分仪器（Measurement Instrument）。与确定性布尔断言不同，裁判模型本身是一个具有认知偏置与随机扰动的概率系统，因此必须构建包含操作化量规（Rubric）、反向次序去偏与一致性标定在内的全套元评估防御工程。
 
 最小可用判官只要十行：
 
@@ -317,7 +317,7 @@ export async function ensembleJudge(
 
 判官上线前必须回答一个问题：它和人工判断差多少？最直觉的指标是观察一致率（percent agreement），但它有一个致命盲区——**没有扣除"瞎蒙也能蒙对"的部分**。一个永远输出"correct"的判官，在一批 70% 答案正确的数据上有 70% 的观察一致率，却毫无判别力（来源：AWS Cohen's Kappa for LLM Judges 指南，github.com/aws-samples/sample-GEDD）。
 
-正确指标是 Cohen's kappa：从观察一致率里扣掉机遇一致率。它的杀伤力有实测证据：一项研究发现，不同判官模型在观察一致率接近的情况下，kappa 相差可达 53 个点（来源：arXiv:2406.12624，转引自 https://github.com/zenHeart/evals/blob/main/research/methodology-deep.md §2.4.3）——只报一致率会严重高估判官质量。
+正确指标是 Cohen's kappa：从观察一致率里扣掉机遇一致率。它的杀伤力有实测证据：一项研究发现，不同判官模型在观察一致率接近的情况下，kappa 相差可达 53 个点（来源：arXiv:2406.12624，转引自 [调研笔记](https://github.com/zenHeart/evals/blob/main/research/methodology-deep.md) §2.4.3）——只报一致率会严重高估判官质量。
 
 ### 5.5.2 Cohen's kappa 实现
 
@@ -471,7 +471,7 @@ export function stripMarkdown(s: string): string {
 
 ### 5.7.2 两段式：便宜判官初筛 + 贵判官复核
 
-思路与前端监控的分级告警同构：便宜的探针跑全量，可疑样本才升级人工（这里是升级强模型）。关键在分流条件——不是"便宜判官说不行"才升级，而是"便宜判官没把握"就升级：
+多级级联判分架构（Tiered Cascading Evaluation）：该策略遵循测量经济学最优原则——由轻量高速的小模型承担全量初筛与高确定度判别，仅将处于不确定性边缘（Uncertainty Margin）的争议样本路由至高阶模型裁判。分流的判断准则是模型的「后验置信度」而非单纯的二元得分，从而在严格约束算力成本的同时逼近全量强模型的测量精度：
 
 ```mermaid
 flowchart LR

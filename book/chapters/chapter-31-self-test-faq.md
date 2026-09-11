@@ -12,12 +12,12 @@
 
 每题 5 分，建议总用时 90 分钟，先作答再展开。
 
-**题目 1（概念表达）**：产品经理在评审会上问："我们花两周建评估，到底是在干什么？"用 30 秒说清楚，要求包含一个前端类比和一个反面案例。
+**题目 1（概念表达）**：业务负责人在技术评审会上问："我们投入资源搭建评估流水线，到底在解决什么核心问题？"用 30 秒说清楚，要求包含评估的第一性原理定义和一个缺乏评估导致严重业务损失的反面案例。
 
 <details>
 <summary>查看参考答案</summary>
 
-评估 = 用固定的题目 + 固定的规则，反复给模型打分。前端类比：单测 + 性能预算 + 灰度监控三件套，只是被测对象每次可能返回不同答案（第 1 章 1.7）。反面案例：没有评估时，换模型、改 prompt 全靠"看几个例子感觉不错"——GSM1k 实验证明模型可能在旧基准上靠记忆得分（来源：arXiv:2405.00332），"感觉"在评估缺席时是系统性失真的。
+参考回答：评估系统是将大语言模型概率性、非确定性的自回归生成，转化为具备统计置信度与因果可解释性的标量度量衡。它通过标准化的受控任务集与操作化量规，充当算法迭代与模型选型中不可或缺的质量门禁与安全护栏。反面案例：缺乏系统评估时，优化 Prompt 或切换模型只能依赖人工随机抽查的局部主观好感——GSM1k 研究已明确证实，模型极易在静态基准上由于记忆过拟合表现出虚高分数（来源：arXiv:2405.00332），脱离科学评估体系的"肉眼直觉"在统计学上存在灾难性的系统失真。
 
 </details>
 
@@ -351,7 +351,7 @@ MTEB 榜缩圈，但必须用自己的检索集复测：100 条真实查询 + �
 <details>
 <summary>查看参考答案</summary>
 
-不算，这是把"可观测性（Tracing）"与"质量评估（Evaluation）"混为一谈了。前端类比：LangSmith / Langfuse 相当于 Sentry 与 Chrome 开发者工具的 Network 面板，忠实记录线上"发生了什么"（接口耗时多少毫秒、输入输出 payload 是什么、消耗多少 token、调用栈瀑布流）；而 Evaluation 相当于 Vitest / Jest 单元测试与端到端自动化断言，判定"做得对不对"（输出是否切题、是否发生事实幻觉、超纲问题是否正确拒答）。可观测性平台是提供数据的传感器底座，但评估指标（Metrics）、判官提示词（Rubric）、人类金标准校准集和 CI 门禁仍然必须团队自行工程化实现（第 21 章 21.7）。
+不算，这是把"运行时可观测性（Runtime Tracing）"与"内在质量评估（Quality Evaluation）"混为一谈了。架构区分：LangSmith / Langfuse 等分布式追踪平台充当数据采集的底层传感器系统，忠实记录运行期的微观行为（请求延迟、Token 吞吐、调用拓扑与上下文负载）；而评估系统（Evaluation）承担判定与推断职能，解决"系统表现是否合规与正确"（如语义相关性、事实忠实度、幻觉抑制与对抗鲁棒性）。可观测性平台提供了必要的数据观测底座，但操作化指标体系（Metrics）、高阶判官提示词（Rubrics）、人类专家黄金校准集以及持续集成门禁，必须依托严谨的评测工程独立构建（第 21 章 21.7）。
 
 </details>
 
@@ -378,7 +378,7 @@ MTEB 榜缩圈，但必须用自己的检索集复测：100 条真实查询 + �
 
 ## 31.5 推荐学习资源
 
-**入门**：本书第 0、1、2、3、4 章；[Designing ML Evaluation Systems（Chip Huyen）](https://huyenchip.com/2023/05/15/designing-ml-evaluation-systems.html)；[lm-evaluation-harness](https://github.com/EleutherAI/lm-evaluation-harness)。
+**入门**：本书第 0、1、2、3、4 章；[Designing ML Evaluation Systems（Chip Huyen）](https://huyenchip.com/2023/04/11/llm-engineering.html)；[lm-evaluation-harness](https://github.com/EleutherAI/lm-evaluation-harness)。
 
 **进阶**：第 30 章 L0/L1 论文清单；[Anthropic Engineering Blog](https://www.anthropic.com/engineering)；[OpenAI Cookbook](https://cookbook.openai.com/)。
 
@@ -426,7 +426,7 @@ MTEB 榜缩圈，但必须用自己的检索集复测：100 条真实查询 + �
 ## 31.10 延伸阅读
 
 ⭐⭐⭐
-- [Designing ML Evaluation Systems（Chip Huyen）](https://huyenchip.com/2023/05/15/designing-ml-evaluation-systems.html)
+- [Designing ML Evaluation Systems（Chip Huyen）](https://huyenchip.com/2023/04/11/llm-engineering.html)
 - [Judging LLM-as-a-Judge（arXiv:2306.05685）](https://arxiv.org/abs/2306.05685)
 - [HELM](https://crfm.stanford.edu/helm/latest/)
 

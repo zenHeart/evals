@@ -19,7 +19,7 @@
 
 ## 23.2 概念引入：评估系统的"需求文档"
 
-> **前端类比**：业务目标 → 能力 → 指标 → 测试集的拆解过程，就像给大模型评估系统编写一份严谨的软件需求规格说明书（PRD）。业务目标是"用户要什么商业价值"，能力维度是"系统划分了哪些功能子模块"，指标是每个模块的验收标准（Acceptance Criteria），测试集则是端到端自动化测试用例（Test Fixtures）。跳过拆解直接写测试用例的团队，和跳过架构设计直接狂写业务代码的团队，结局完全一样——陷入无休止的推倒返工。
+> **评估需求分解第一性原理（Goal-to-Evaluation Alignment）**：建立工业级大模型评估体系必须遵循严格的四级分解框架：业务价值目标（Business Objectives）→ 系统能力维度（System Capabilities）→ 操作化度量指标（Operational Metrics）→ 代表性测试样本空间（Test Suites）。跳过中间架构层级直接编写测试集的做法，必然导致指标与真实商业诉求彻底脱节。
 
 一张图先建立全局心智模型：
 
@@ -388,14 +388,14 @@ flowchart LR
 ## 23.12 延伸阅读
 
 ⭐⭐⭐（方法论一手）
-- [Designing ML Evaluation Systems（Chip Huyen）](https://huyenchip.com/2023/05/15/designing-ml-evaluation-systems.html)——从业务目标到指标体系的设计框架，本章四步法的同源思路
+- [Designing ML Evaluation Systems（Chip Huyen）](https://huyenchip.com/2023/04/11/llm-engineering.html)——从业务目标到指标体系的设计框架，本章四步法的同源思路
 - [Langfuse: Evals 官方指南](https://langfuse.com/docs/scores/evals)——指标分层与"没有消费方的指标就是噪音"原则出处
 
 ⭐⭐（工程实践）
-- [Anthropic: Building Effective Agents](https://docs.anthropic.com/en/docs/build-with-claude/building-effective-agents)——能力拆解与评估锚点的官方实践
+- [Anthropic: Building Effective Agents](https://www.anthropic.com/research/building-effective-agents)——能力拆解与评估锚点的官方实践
 - [OpenAI: Building evals](https://platform.openai.com/docs/guides/evals)——官方 evals 指南，数据源 × 判官的抽象
 - [RAGAS 文档: Faithfulness metric](https://docs.ragas.io/en/stable/concepts/metrics/available_metrics/faithfulness/)——faithfulness 的逐论断核验定义，模板二 P0 指标的出处
 
 ⭐（延伸）
-- [Vellum: LLM Evaluation Framework](https://www.vellum.ai/blog/llm-evaluation-framework)——商业平台视角的能力模板
+- [Vellum: LLM Evaluation Framework](https://www.vellum.ai/blog/how-to-evaluate-an-llm-evaluation-framework)——商业平台视角的能力模板
 - [DeepEval: Custom Metrics](https://docs.confident-ai.com/docs/metrics-introduction)——DeepEval 的指标分类视角

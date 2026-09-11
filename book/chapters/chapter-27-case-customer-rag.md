@@ -18,7 +18,7 @@
 
 ## 27.2 概念引入：评估是一次"研发排期"，不是一次"跑分"
 
-> **前端类比**：为客服 RAG 建评估体系 ≈ 为核心组件建立"单测 + 视觉回归 + 性能预算 + 灰度发布"四件套。你不会在上线前一天才写单测，也不会靠"看了眼效果不错"决定发不发版——评估体系就是这套基础设施，只是被测对象换成了会调用大模型的检索管道。
+> **业务级 RAG 评测体系架构第一性原理**：构建客服 RAG 评估体系是一项复杂的系统工程。它要求对检索环节的召回率（Recall@k）、重排精度（MRR / NDCG）、生成环节的事实忠实度（Faithfulness）、意图匹配度（Answer Relevance）以及兜底拒答的准确率构建端到端可量化、可审计的度量闭环。
 
 第一个要写下的决定：**被测对象是一个带观测的函数，不是一段 prompt**。第 20 章 20.5 节的判官协议原样适用，先给它一个 RAG 特化的形状：
 
@@ -470,4 +470,4 @@ flowchart TD
 - [DeepEval 文档](https://deepeval.com/docs/introduction) — pytest 风格的 RAG 指标替代实现
 
 ⭐
-- [Anthropic: Building Effective Agents](https://www.anthropic.com/news/building-effective-agents) — 何时该用 RAG、何时该上 Agent
+- [Anthropic: Building Effective Agents](https://www.anthropic.com/research/building-effective-agents) — 何时该用 RAG、何时该上 Agent

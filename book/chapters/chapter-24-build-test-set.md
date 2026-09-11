@@ -19,7 +19,7 @@
 
 ## 24.2 概念引入：测试集是你业务的测试夹具
 
-> **前端类比**：测试集就是前端工程中的 Test Fixtures——自动化测试套件的价值完全取决于你的 Mock 数据和 Fixtures 是否真实反映了线上运行场景。如果 Fixtures 全是工程师闭门造车的理想输入，单测全绿但生产环境照样频频崩溃；模型评估亦然：测试集与真实生产流量脱节，离线分数再高也只是"在想象的业务里自我感动"。
+> **测试数据集代表性第一性原理（Representativeness）**：评估数据集是整套测量系统的核心物理基石。评估体系的有效性完全取决于测试集是否无偏且全面地覆盖了生产环境的输入分布。若测试集脱离真实流量分布、充斥工程师主观臆造的理想化样本，离线基准测试的高分将沦为无法转化为业务收益的数字游戏。
 
 一份业务测试集要同时满足四个互相拉扯的要求：
 
@@ -83,7 +83,7 @@
 6. 定版冻结:写版本号 + 内容哈希
 ```
 
-第 5 步"试测淘汰"借用了第 4 章 4.3.2 的区分度思想：一道所有模型都对（或都错）的题区分度为零，占样本容量不贡献统计信息。前端类比：一个永远绿的测试用例跑一百遍也不告诉你任何事，还消耗 CI 时间。
+基于项目反应理论的试题筛选：测试集构建阶段必须淘汰区分度（Discrimination）为零的样本。如果一道试题在所有候选模型上的通过率均为 100%（无区分度的极简题）或均为 0%（无区分度的错误题/超纲题），该试题在统计学上无法提供任何关于模型相对能力排名的 Fisher 信息量，仅会徒增推理开销与评估延迟。
 
 ### 24.5.2 题目 schema 与真实示例
 
@@ -451,7 +451,7 @@ mixReport({ public: 100, human: 150, reflow: 148, synthetic: 102 });
 
 ⭐⭐（方法论）
 - [Data Contamination Report from the 2024 CONDA Workshop（arXiv:2402.08760）](https://arxiv.org/abs/2402.08760)——污染检测方法学的 workshop 报告
-- [Langfuse: Datasets for Evals](https://langfuse.com/docs/dataset-runs)——dataset run 与版本语义的平台实现
+- [Langfuse: Datasets for Evals](https://langfuse.com/docs/datasets)——dataset run 与版本语义的平台实现
 - [Label Studio](https://labelstud.io/)——回流标注环节的开源工具
 
 ⭐（延伸）

@@ -8,7 +8,7 @@
 
 这个问题不是哲学爱好。如果 CI 流水线凭一个 pass 率阻断 merge，发布决策凭评估分数——而如果判官（LLM-as-Judge）自己打分随机、rubric 歧义、指标与业务脱钩，那么整条流水线的每一次红绿都在制造错误决策，而且是以"量化科学"的名义。评估系统本身也是软件系统，系统就必须做验收与测试。
 
-> **前端类比**：元评估之于评估，就像「测试代码的测试（Mutation Testing / 变异测试）」之于单元测试套件——你的单测全绿，但这些测试本身真的能测出 bug 吗？如果故意注入一个语法或逻辑错误，测试套件会红吗？永远不会红的测试等于没有测试。元评估就是把「已知答案的标准样本」喂给评估系统，检验它的评判反应究竟对不对。
+> **元评估第一性原理**：元评估（Meta-Evaluation）是针对「度量仪器本身」的信度与效度审计（Who Evaluates the Evaluator）。如果一套评估系统在面对已知缺陷样本时无法识别，或在多次重复测试中输出严重漂移，该系统给出的任何业务决策依据均丧失了测量学合法性。
 
 读完后你能：
 
@@ -75,7 +75,7 @@
 
 $$\kappa = \frac{p_o - p_e}{1 - p_e}$$
 
-> 📝 **在前端看来**：`p_o` 是观测一致率（判官和人类打了相同分的比例），`p_e` 是**碰巧一致**的期望概率——就算判官闭着眼睛乱打，只要两人的分数分布有重叠，也会有一部分"撞对"。κ 度量的是**扣掉运气之后的真实一致**：κ=1 完全一致，κ=0 等于随机，κ<0 比随机还糟。习惯分级（Landis & Koch，1977）：0.41-0.60 中等，0.61-0.80 高度一致，0.81-1.0 几乎完全一致；工程门槛取 **κ ≥ 0.7**（来源：Landis & Koch, *Biometrics*, 1977；门槛值为工程惯例）。
+> 📝 **统计学机理深入**：$p_o$ 为观测一致率，$p_e$ 为在边缘分布独立假设下的偶然一致概率。即使判官完全随机掷骰，只要其打分边际分布与真实标签分布存在先验重合，便会存在虚高的观测重合率。Cohen's Kappa 系数通过精确剥离机遇成分，衡量超越偶然性的纯粹测量一致性。按照 Landis & Koch（1977）分级标准：0.41–0.60 为中度一致，0.61–0.80 为高度一致，0.81–1.0 为几乎完全一致；工业级判官准入的硬门槛通常取 **κ ≥ 0.70**（来源：Landis & Koch, *Biometrics*, 1977）。
 
 ### 7.4.2 两个实算例子：80% 一致率的陷阱
 
@@ -310,7 +310,7 @@ console.log(JSON.stringify(metaEval(judge, human), null, 2));
 - [Landis & Koch (1977), Biometrics](https://doi.org/10.2307/2529310)——0.41/0.61/0.81 分级惯例的原始文献
 
 ⭐⭐（方法论）
-- [Designing ML Evaluation Systems（Chip Huyen）](https://huyenchip.com/2023/05/15/designing-ml-evaluation-systems.html)——评估系统自身的健康检查设计
+- [Designing ML Evaluation Systems（Chip Huyen）](https://huyenchip.com/2023/04/11/llm-engineering.html)——评估系统自身的健康检查设计
 - [PandaLM](https://github.com/WeOpenML/PandaLM)——专门训练的判官模型，与其元评估基准
 - [Prometheus（KAIST AI）](https://github.com/kaistAI/Prometheus)——开源判官模型与 rubric 评分实践
 

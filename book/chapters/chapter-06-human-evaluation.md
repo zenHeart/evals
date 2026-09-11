@@ -21,7 +21,7 @@
 
 ## 6.2 何时必须上人类：决策树
 
-> **前端类比**：人类评估相当于前端开发中的“真实用户可用性走查（Usability Testing）”——单元测试测函数（规则判分）、Lighthouse 测性能（自动判官），而复杂的交互体验与视觉美感，最终必须由真实用户坐在屏幕前给出直观判断。各管一段，谁也无法彻底取代谁。
+> **黄金标尺第一性原理**：人类专家评估（Human Evaluation）是大模型评测体系的终极真值锚点（Ground Truth Anchor）。自动化基准与模型裁判的高效扩展性，最终必须经过跨标注者一致性（Inter-Annotator Agreement, 如 Krippendorff's Alpha）的严格审计，确保算法度量没有偏离人类真实的高阶认知与对齐目标。
 
 ```mermaid
 flowchart TD

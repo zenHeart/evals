@@ -30,11 +30,11 @@
 |---|---|---|---|
 | **MMLU** | 57 学科四选一，测通识知识覆盖面（已近饱和） | [huggingface.co/datasets/cais/mmlu](https://huggingface.co/datasets/cais/mmlu) | 第 9 章 |
 | **MMLU-Pro** | 10 选项 + 强制 CoT 的 MMLU 强化版，抗猜测与饱和 | [huggingface.co/datasets/TIGER-Lab/MMLU-Pro](https://huggingface.co/datasets/TIGER-Lab/MMLU-Pro) | 第 9 章 |
-| **MMLU-Redux** | 人工修订 MMLU 错标注子集，修复噪声标签 | [github.com/Felhof/MMLU-Redux](https://github.com/Felhof/MMLU-Redux) | 第 9 章 |
+| **MMLU-Redux** | 人工修订 MMLU 错标注子集，修复噪声标签 | [github.com/Felhof/MMLU-Redux](https://arxiv.org/abs/2406.04127) | 第 9 章 |
 | **WinoGrande** | 44k 代词消歧常识题 | [leaderboard.allenai.org/winogrande](https://leaderboard.allenai.org/winogrande) | 第 9 章 |
 | **HellaSwag** | 情境续写常识推理（已饱和 95%+） | [rowanzellers.com/hellaswag](https://rowanzellers.com/hellaswag/) | 第 9 章 |
 | **DROP** | 段落阅读 + 数值推理（计数/排序/算术） | [allenai.org/data/drop](https://allenai.org/data/drop) | 第 9 章 |
-| **GPQA 主站** | GPQA 官方主站与论文入口 | [gpqa.github.io](https://gpqa.github.io/) | 第 10 章 |
+| **GPQA 主站** | GPQA 官方主站与论文入口 | [gpqa.github.io](https://github.com/idavidrein/gpqa) | 第 10 章 |
 | **MedQA (USMLE)** | 美国医师执照考试题，医疗 AI 入场券 | [github.com/jind11/MedQA](https://github.com/jind11/MedQA) | 第 15 章 |
 | **LegalBench** | 162 个真实法律任务（合同/IRAC/条款检索） | [huggingface.co/datasets/nguha/legalbench](https://huggingface.co/datasets/nguha/legalbench) | 第 15 章 |
 
@@ -59,7 +59,7 @@
 | **HumanEval** | 164 道 Python 函数补全，代码评估起点（已饱和） | [github.com/openai/human-eval](https://github.com/openai/human-eval) | 第 11 章 |
 | **LiveCodeBench** | 持续收录竞赛新题，按时间窗切分防污染 | [livecodebench.github.io](https://livecodebench.github.io/) | 第 11 章 |
 | **SWE-bench Verified** | 500 个真实 GitHub Issue 修复，代码 Agent 金标准 | [www.swebench.com](https://www.swebench.com/) | 第 11 章 |
-| **SWE-Lancer** | 用真实外包任务定价衡量代码价值（美元计） | [github.com/openai/swelancer](https://github.com/openai/swelancer) | 第 11 章 |
+| **SWE-Lancer** | 用真实外包任务定价衡量代码价值（美元计） | [github.com/openai/swelancer](https://arxiv.org/abs/2411.09653) | 第 11 章 |
 | **Aider Polyglot** | 多语言 Exercism 题，真实编辑器 diff 工作流 | [aider.chat/docs/leaderboards](https://aider.chat/docs/leaderboards/) | 第 11 章 |
 | **HumanEval+** | HumanEval 增强 80 倍测试用例，防漏判 | [github.com/evalplus/evalplus](https://github.com/evalplus/evalplus) | 第 11 章 |
 | **APPS** | 10k 编程竞赛题（入门→IOI） | [huggingface.co/datasets/codeparrot/apps](https://huggingface.co/datasets/codeparrot/apps) | 第 11 章 |
@@ -79,7 +79,7 @@
 | **BFCL v3** | 函数调用能力专项（单/并行/嵌套/多轮） | [gorilla.cs.berkeley.edu/leaderboard.html](https://gorilla.cs.berkeley.edu/leaderboard.html) | 第 11 章 |
 | **MLE-bench** | 75 个 Kaggle 真实比赛端到端 | [github.com/openai/mle-bench](https://github.com/openai/mle-bench) | 第 14 章 |
 | **Cybench** | 40 个真实 CTF 网络安全任务 | [cybench.cs.berkeley.edu](https://cybench.cs.berkeley.edu/) | 第 14 章 |
-| **AndroidWorld** | Android 真机 / 模拟器 116 任务 | [android-world.github.io](https://android-world.github.io/) | 第 14 章 |
+| **AndroidWorld** | Android 真机 / 模拟器 116 任务 | [android-world.github.io](https://github.com/google-research/android_world) | 第 14 章 |
 | **AgentBench** | 8 环境综合 Agent 评测（OS/DB/网页/游戏） | [github.com/THUDM/AgentBench](https://github.com/THUDM/AgentBench) | 第 14 章 |
 
 ### 30.2.5 多模态（7 项）
@@ -100,7 +100,7 @@
 |---|---|---|---|
 | **Needle-in-a-Haystack** | 长文检索单针测试——营销常用但只测检索一维 | [github.com/gkamradt/LLMTest_NeedleInAHaystack](https://github.com/gkamradt/LLMTest_NeedleInAHaystack) | 第 14 章 |
 | **RULER** | 13 任务长上下文有效长度，比 NIAH 严格 | [github.com/NVIDIA/RULER](https://github.com/NVIDIA/RULER) | 第 14 章 |
-| **LongBench** | 中英双语 21 任务长文理解 | [longbench.github.io](https://longbench.github.io/) | 第 14 章 |
+| **LongBench** | 中英双语 21 任务长文理解 | [longbench.github.io](https://github.com/THUDM/LongBench) | 第 14 章 |
 
 ### 30.2.7 中文特色（7 项）
 
@@ -112,7 +112,7 @@
 | **CompassRank (OpenCompass)** | 上海 AI Lab 中英综合榜单 | [rank.opencompass.org.cn](https://rank.opencompass.org.cn/) | 第 18 章 |
 | **MGSM** | GSM8K 多语言版（含中文），跨语言数学推理 | [huggingface.co/datasets/juletxara/mgsm](https://huggingface.co/datasets/juletxara/mgsm) | 第 15 章 |
 | **Flores-200** | 200 语言翻译质量 | [huggingface.co/datasets/facebook/flores](https://huggingface.co/datasets/facebook/flores) | 第 15 章 |
-| **FinBen** | 金融任务全景（财报/风控/量化） | [github.com/TheFINBench/FinBen](https://github.com/TheFINBench/FinBen) | 第 15 章 |
+| **FinBen** | 金融任务全景（财报/风控/量化） | [github.com/TheFINBench/FinBen](https://github.com/The-FinAI/FinBen) | 第 15 章 |
 
 ### 30.2.8 偏好与排行（6 项）
 
@@ -121,7 +121,7 @@
 | **Chatbot Arena** | 真实人类盲评对战，Bradley-Terry 排名 | [lmarena.ai](https://lmarena.ai/) | 第 17 章 |
 | **MT-Bench** | 80 道多轮对话题，强模型当裁判打分 | [github.com/lm-sys/FastChat](https://github.com/lm-sys/FastChat) | 第 17 章 |
 | **AlpacaEval 2.0** | 805 题 vs 参考答案的胜率（LC 控制长度偏倚） | [tatsu-lab.github.io/alpaca_eval](https://tatsu-lab.github.io/alpaca_eval/) | 第 17 章 |
-| **IFEval** | 可验证指令遵循（字数/格式/关键词约束） | [github.com/google-research/instruction-following-eval](https://github.com/google-research/instruction-following-eval) | 第 16 章 |
+| **IFEval** | 可验证指令遵循（字数/格式/关键词约束） | [github.com/google-research/instruction-following-eval](https://arxiv.org/abs/2311.07911) | 第 16 章 |
 | **Arena Hard** | 从 Arena 真实难题抽 500 道，判官离线复现 | [github.com/lm-sys/arena-hard](https://github.com/lm-sys/arena-hard) | 第 17 章 |
 | **WildBench** | 真实用户难任务 1k 条，多判官聚合 | [github.com/allenai/WildBench](https://github.com/allenai/WildBench) | 第 16 章 |
 
@@ -252,7 +252,7 @@
 - [Gemini 1.5（2024）](https://arxiv.org/abs/2403.05530) — 长上下文与多模态叙事
 - [Kimi k1.5（2025）](https://arxiv.org/abs/2501.12599) — RL 与多模态评测口径
 
-必读长文（博客级但含金量高）：[Designing ML Evaluation Systems（Chip Huyen）](https://huyenchip.com/2023/05/15/designing-ml-evaluation-systems.html)；[Anthropic Engineering Blog](https://www.anthropic.com/engineering)；[OpenAI Cookbook](https://cookbook.openai.com/)。
+必读长文（博客级但含金量高）：[Designing ML Evaluation Systems（Chip Huyen）](https://huyenchip.com/2023/04/11/llm-engineering.html)；[Anthropic Engineering Blog](https://www.anthropic.com/engineering)；[OpenAI Cookbook](https://cookbook.openai.com/)。
 
 ## 30.8 一页 Cheat Sheet（速查卡）
 
@@ -351,9 +351,9 @@
 - [站点评估大全](https://evals.zenheart.site/benchmarks/) — 本章总表的交互版
 
 ⭐⭐（方法论）
-- [Designing ML Evaluation Systems（Chip Huyen）](https://huyenchip.com/2023/05/15/designing-ml-evaluation-systems.html) — 评估系统设计的长文
-- [Confident AI: LLM Evaluation Guide](https://www.confident-ai.com/blog/llm-evaluation-guide) — 框架视角的综述
-- [Vellum: LLM Evaluation Frameworks](https://www.vellum.ai/blog/llm-evaluation-framework) — 框架横评
+- [Designing ML Evaluation Systems（Chip Huyen）](https://huyenchip.com/2023/04/11/llm-engineering.html) — 评估系统设计的长文
+- [Confident AI: LLM Evaluation Guide](https://docs.confident-ai.com/) — 框架视角的综述
+- [Vellum: LLM Evaluation Frameworks](https://www.vellum.ai/blog/how-to-evaluate-an-llm-evaluation-framework) — 框架横评
 
 ⭐
 - [LMArena Blog](https://news.lmarena.ai/) — 榜单方法论的持续更新

@@ -1,4 +1,4 @@
-# 1. 什么是评估：从前端工程师视角看 Eval
+# 1. 什么是评估：大模型评测第一性原理与度量演进
 
 > **概览**：大模型评估是为概率性黑盒系统建立确定性质量锚点，由推理协议、评分器与置信区间构成。核心节次：§1.3 三维评估矩阵、§1.7 最小 TypeScript 评估器。
 
@@ -22,17 +22,17 @@
 
 **1966，ELIZA 与第一次评估失灵。** MIT 的 Weizenbaum 写了个只有关键词匹配加模板替换的程序（约 200 行），大量用户却把它当成真的理解自己，他本人深感不安（来源：[ELIZA, CACM 1966](https://dl.acm.org/doi/10.1145/365153.365168)）。这就是 **ELIZA 效应**：人类会向简陋的程序投射理解与共情——人类主观评估第一次被记录为系统性失灵：**评估者会被被评估对象欺骗，而骗术成本极低**。这颗雷到 1.5 节还会再炸一次。
 
-**2002，BLEU，第一把自动尺子。** 在 BLEU 之前，翻译质量靠专业译员人工打分：一次评测数周、按小时计费、换一批人分数就漂移。IBM 的 Papineni 等人发明 BLEU——机器译文与多份参考译文做 n-gram 重叠统计，输出 0-100 分，目标是"快速、廉价、与人工评审高度相关"（来源：[Papineni et al., BLEU, ACL 2002](https://aclanthology.org/P02-1040/)）。前端类比：**快照测试 + 相似度断言**。代价也一样：同义改写被扣分——它测"和参考答案像不像"，不测"对不对"。
+**2002，BLEU，第一把自动尺子。** 在 BLEU 之前，翻译质量靠专业译员人工打分：一次评测数周、按小时计费、换一批人分数就漂移。IBM 的 Papineni 等人发明 BLEU——机器译文与多份参考译文做 n-gram 重叠统计，输出 0-100 分，目标是"快速、廉价、与人工评审高度相关"（来源：[Papineni et al., BLEU, ACL 2002](https://aclanthology.org/P02-1040/)）。度量学局限：n-gram 词面统计测量的是生成文本与黄金参考答案的**表面重合度**，而非语义等价性与事实忠实度。这也导致 BLEU 对同义替换、语序重构等高质量改写具有系统性惩罚，暴露出基于词表刚性匹配度量语义的根本缺陷。
 
 **2018，GLUE，把九个任务装进一个总分。** 此前是碎片化时代：翻译看 WMT+BLEU、摘要看 ROUGE、问答看 SQuAD，各论文的 SOTA 彼此不可比，没人能回答"这个模型总体更强吗"。GLUE 把 9 个理解任务打包、统一口径、提供公开榜（来源：[Wang et al., GLUE, arXiv:1804.07461](https://arxiv.org/abs/1804.07461)），相当于合成一个 **Lighthouse 总分**。结局极快：2019 年最强模型 80.2 逼近人类基线 87.1，年底 T5 达 90.3，榜首差距缩到噪声级，GLUE 失去区分度（来源：[SuperGLUE, NeurIPS 2019](https://w4ngatang.github.io/static/papers/superglue.pdf)）。行业第一次完整看到**基准生命周期**：提出 → 爬升 → 饱和 → 失效 → 被更难的替代。
 
 **2020，GPT-3 few-shot，评估对象换了。** 此前的协议是"预训练 → 微调 → 上榜"。GPT-3（1750 亿参数）证明不微调、只在提示里给几个示例（few-shot）就能做新任务，并在二十多个数据集上横向对比（来源：[Brown et al., arXiv:2005.14165](https://arxiv.org/abs/2005.14165)）。评估从此变成"设计提示去引出模型已有能力"。副作用延续至今：**分数不只反映模型，还反映你调用它的方式**。
 
-**2021，MMLU，把知识面变成考分。** Hendrycks 等人从 GRE、USMLE、MCAT 等真实考试练习题收集了 57 学科、约 1.4 万道四选题（来源：[Hendrycks et al., MMLU, arXiv:2009.03300](https://arxiv.org/abs/2009.03300)）。首测 GPT-3 仅 43.9%（随机 25%），人类专家约 89.8%；2023 年 GPT-4 达 86.4%，官方口径"人类水平表现"（来源：[GPT-4 Technical Report, arXiv:2303.08774](https://arxiv.org/abs/2303.08774)）。前端类比：一张**闭卷认证考试卷**——四选一，打分完全客观。
+**2021，MMLU，把知识面变成考分。** Hendrycks 等人从 GRE、USMLE、MCAT 等真实考试练习题收集了 57 学科、约 1.4 万道四选题（来源：[Hendrycks et al., MMLU, arXiv:2009.03300](https://arxiv.org/abs/2009.03300)）。首测 GPT-3 仅 43.9%（随机 25%），人类专家约 89.8%；2023 年 GPT-4 达 86.4%，官方口径"人类水平表现"（来源：[GPT-4 Technical Report, arXiv:2303.08774](https://arxiv.org/abs/2303.08774)）。评测范式解析：多项选择题（MCQ）范式实现了判分逻辑的完全符号化与确定性计算，但同时也引入了选项提示敏感性、选择肢偏置（Position Bias）与表层知识记忆欺骗性。
 
-**2022，HELM，单分数的终结。** Stanford CRFM 认为单一总分是病根，提出约 42 个场景 × 7 个维度：准确性、校准（模型对自己答案的置信度是否可信）、鲁棒性、公平性、偏见、毒性、效率（来源：[HELM, arXiv:2211.09110](https://arxiv.org/pdf/2211.09110)、[CRFM 公告](https://crfm.stanford.edu/2022/11/17/helm.html)）。前端类比：**Lighthouse 从不给你一个数，而是给四张分卡**。HELM 之后，"多维度画像"成为评估报告的标准形态。
+**2022，HELM，单分数的终结。** Stanford CRFM 认为单一总分是病根，提出约 42 个场景 × 7 个维度：准确性、校准（模型对自己答案的置信度是否可信）、鲁棒性、公平性、偏见、毒性、效率（来源：[HELM, arXiv:2211.09110](https://arxiv.org/pdf/2211.09110)、[CRFM 公告](https://crfm.stanford.edu/2022/11/17/helm.html)）。度量衡范式演进：多维全景剖析架构（Multi-metric Profiling）彻底打破了单一标量分数的迷思。HELM 确立了评估必须涵盖准确性、校准度、鲁棒性、公平性等多维正交指标，使模型综合体检报告成为工业共识。
 
-**2023，Chatbot Arena，裁判换成人群。** ChatGPT 之后暴露评估真空：模型会背题、对话没有标准答案、用人类偏好当老师训练出的模型（RLHF）针对"人更喜欢哪个"优化。LMSYS 的解法是匿名两两对战：用户投票选更好的回答，用国际象棋的 Elo 分（后改为 Bradley-Terry 统计模型）排名，投票量后来到数百万级（来源：[LMSYS Arena 博客](https://lmsys.org/blog/2023-05-03-arena/)、[Zheng et al., arXiv:2306.05685](https://arxiv.org/abs/2306.05685)）。前端类比：**隐盲 A/B 测试 + 排位天梯**。优势是题目来自真实用户、无法背题；代价是大众问题偏简单，测不出专业知识。
+**2023，Chatbot Arena，裁判换成人群。** ChatGPT 之后暴露评估真空：模型会背题、对话没有标准答案、用人类偏好当老师训练出的模型（RLHF）针对"人更喜欢哪个"优化。LMSYS 的解法是匿名两两对战：用户投票选更好的回答，用国际象棋的 Elo 分（后改为 Bradley-Terry 统计模型）排名，投票量后来到数百万级（来源：[LMSYS Arena 博客](https://lmsys.org/blog/2023-05-03-arena/)、[Zheng et al., arXiv:2306.05685](https://arxiv.org/abs/2306.05685)）。众包偏好范式：基于 Bradley-Terry 概率图模型的双盲对战排位机制，绕过了非结构化开放式文本缺失黄金参考答案（Ground Truth）的困境，直接在潜空间中估计模型间的胜率相对偏序。其代价则是长尾高难度专业学科的区分度偏低。
 
 **2024-2026，GSM1k 反刷榜与 Agent 环境评估。** Scale AI 请人力按同考纲重写小学数学新题 GSM1k（1000+ 道）：领先模型在旧题 GSM8K 与新题上的分差最高达 8 个百分点，且掉分与复述原题的概率正相关（Spearman r² = 0.36），指向**部分记忆了原题**（来源：[Zhang et al., GSM1k, arXiv:2405.00332](https://arxiv.org/abs/2405.00332)）。同年起评估重心转向 agent：SWE-bench 用真实 GitHub issue + Docker 沙箱 + 回归测试判分（来源：[arXiv:2310.06770](https://arxiv.org/abs/2310.06770)），Terminal-Bench、WebArena、OSWorld 把考场升级为终端、仿真网站、整台虚拟机（来源：[Terminal-Bench](https://www.tbench.ai/)、[WebArena](https://arxiv.org/abs/2307.13854)、[OSWorld](https://os-world.github.io/)）。为什么：agent 要多轮调用工具、修改环境状态，"一次输入一次输出"的题库测不出"能不能干成事"。
 
@@ -55,13 +55,13 @@ flowchart LR
 
 回到工程现场。评估不是仪式动作，它解决 5 类真金白银的商业问题。
 
-**1. 不确定性管理——概率输出唯一的确定性锚点。** LLM 输出是概率采样：同一段 prompt 跑 10 次可能得到 10 个答案，"对不对"从布尔量变成分布。评估把分布坍缩成一个**可比较、可追踪的数字**（Anthropic 的定义：给 AI 一个输入，对输出应用判分逻辑以衡量成功，来源：[Anthropic 工程博客](https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents)）。前端类比：普通代码是纯函数，`expect(fn(x)).toBe(y)` 终身有效；LLM 是每次调用都可能漂移的服务，**评估是你唯一能写进 CI 的断言**。商业案例：客服机器人上线前只靠人工试聊 10 次拍板，"退款政策"类的幻觉回答根本不会在这 10 次里出现——上线后被用户截图挂上社交媒体，公关成本远超提前建评估集。
+**1. 不确定性管理——概率输出唯一的确定性锚点。** LLM 输出是概率采样：同一段 prompt 跑 10 次可能得到 10 个答案，"对不对"从布尔量变成分布。评估把分布坍缩成一个**可比较、可追踪的数字**（Anthropic 的定义：给 AI 一个输入，对输出应用判分逻辑以衡量成功，来源：[Anthropic 工程博客](https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents)）。确定性锚点：传统软件系统具有确定的状态转移，而自回归大语言模型本质是高维词表上的条件概率采样器。面对非确定性输出，评估系统是将随机性采样坍缩为具有统计置信度（Confidence Interval）的定量度量衡的基础设施。商业案例：客服机器人上线前若仅凭人工试聊 10 次便拍板，长尾的政策幻觉与逻辑漏洞根本无法被抽样捕获——上线后的业务资损与公关代价远超前置评估体系建设成本。
 
 **2. 模型选择。** 每年数十个新模型，选型的本质是"在我的任务分布上谁期望回报更高"，公开基准只覆盖通用分布。Anthropic 的真实对照：没有自建评估的团队换新模型要数周人工测试，有评估的团队"几天内完成强弱评估、调优提示并升级"（来源：[Anthropic 工程博客](https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents)）。商业案例：5 人团队选型，无评估集 = 2 周人力盲测；建 300 题业务评估集 = 一次性 2 天，此后每次选型复用。
 
-**3. 回归防护。** Anthropic 把评估分两类：**能力评估**（capability，通过率应低，是你要爬的坡）与**回归评估**（regression，通过率应接近 100%，防退化）；能力评估跑出高分后"毕业"为常驻回归套件（来源：[Anthropic 工程博客](https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents)）。前端类比：能力评估是"新功能测试"，回归评估是"上线前全量回归套件"。商业案例：客服 prompt 改一个词，"无法登录"类问题的拒答率从 2% 涨到 15%——有 50 条固定回归集的团队当晚 CI 变红就能发现，没有的要等用户投诉周报。
+**3. 回归防护。** Anthropic 把评估分两类：**能力评估**（capability，通过率应低，是你要爬的坡）与**回归评估**（regression，通过率应接近 100%，防退化）；能力评估跑出高分后"毕业"为常驻回归套件（来源：[Anthropic 工程博客](https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents)）。双轨度量防线：能力评估（Capability Evals）以高难度前沿试题探索模型的能力上限（期望通过率较低）；回归评估（Regression Evals）则以冻结的业务黄金集监控系统基线与防御退化（期望通过率接近 100%）。商业案例：Prompt 模板仅微调一句话，身份认证类意图的误拒率便从 2% 飙升至 15%——具备严密回归流水线的工程团队在预发门禁即可阻断，而缺乏回归集的团队只能被动等待生产报警。
 
-**4. 能力边界测量。** 产品承诺需要边界证据：GAIA 给出 2023 年的刻度——人类答对率 92%，带插件的 GPT-4 仅约 15%（来源：[Mialon et al., GAIA, arXiv:2311.12983](https://arxiv.org/pdf/2311.12983)）。前端类比：**边界数字决定你能接什么需求**。商业案例：销售想承诺"AI 自动处理 80% 工单"，评估数据支持的是"简单退款类 85%、跨系统排障类 30%"，SLA 与人工兜底就该按后者设计。
+**4. 能力边界测量。** 产品承诺需要边界证据：GAIA 给出 2023 年的刻度——人类答对率 92%，带插件的 GPT-4 仅约 15%（来源：[Mialon et al., GAIA, arXiv:2311.12983](https://arxiv.org/pdf/2311.12983)）。操作运行域标定：评估指标精确界定了系统的操作运行域（Operational Design Domain, ODD）。商业案例：业务部门承诺"AI 自动处理 80% 工单"，但严格的分层评估揭示简单查询类准确率为 85%，而跨系统复杂排障类仅为 30%——系统的 SLA 承诺、兜底路由与人机协作（Human-in-the-loop）接管策略必须建立在此类硬核数据边界之上。
 
 **5. 对外承诺——营销与科学的分界。** 厂商分数同时是科学声明与营销素材，而 FrontierMath 事件展示了当评估的生产方与获益方重合时会发生什么：Epoch AI 接受 OpenAI 资助（委托其制作 300 道题），在发布 o3 结果时未披露资助关系，参与命题的数学家事先不知情（来源：[Epoch AI 官方澄清](https://epoch.ai/latest/openai-and-frontiermath)、[TechCrunch 报道](https://techcrunch.com/2025/01/19/ai-benchmarking-organization-criticized-for-waiting-to-disclose-funding-from-openai/)）。本书立场：**对外榜单数字是"厂商声称"，须降级处理；自建评估才是可审计证据**。
 
@@ -77,7 +77,7 @@ flowchart LR
 
 为什么是瓶颈？把改进循环摊开：**改 prompt / 换模型 → 跑评估 → 对比分数 → 决定保留或回滚**。唯一不可跳过的环节是评估。没有评估的团队，每轮改进退化成"改完感觉好一些"——而 LLM 的概率性恰恰让"感觉"最不可靠（OpenAI 侧也有同方向表述：CPO Kevin Weil 被转述为"Evals are the bottleneck"，属二手转述、未检索到官方一手原文，此处仅作旁证）。
 
-前端同构物你天天在用：**没有测试覆盖的代码库，重构只能靠祈祷**。评估之于 LLM 工程，等于测试之于重构——它不是让模型变好的魔法，而是让"变好"可验证、可重复、可加速的基础设施。Anthropic 自己就是这么用的：为 Claude Code 建立"简洁性、文件编辑、过度工程化"等专项评估，用评估结论指导每轮改进（来源：[Anthropic 工程博客](https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents)）。
+工程第一性原理：**缺乏量化评估的 Prompt 调优与模型微调，无异于盲人摸象**。评估体系不是提升模型能力的直接算法，而是让算法与架构的每次改进具备可观测性、可度量性与统计显著性（Statistical Significance）的护栏。Anthropic 在研发 Claude Code 时即建立了覆盖代码简洁性、文件编辑准确率与过度工程化倾向的多维量规，以评测闭环驱动模型演进（来源：[Anthropic 工程博客](https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents)）。
 
 一个工程细节值得记住：评估本身也会出错，修起来很贵。Anthropic 记录：Opus 4.5 在 CORE-Bench 上最初只得 42%，排查发现是判分过严（把 96.12 与 96.124991… 判成不等）、任务歧义与随机性不可复现，更换判分脚手架后跳到 95%——**这次"评估调试"花了人力周级成本**（来源：[Anthropic 工程博客](https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents)）。正确姿势是趁早建小评估集（100 题以内也能起步），而不是等成了瓶颈再补一个庞大的。
 
@@ -89,7 +89,7 @@ Goodhart 定律：**当一个测量变成优化目标，它就不再是好的测
 
 **案例 2：GSM1k 量化的"记忆分"（2024）。** 当行业向 GSM8K 优化推理时，同考纲换新卷：分差最高 8 个百分点，Mistral 与 Phi 家族接近 10%，且掉分与复述原题概率正相关（来源：[arXiv:2405.00332](https://arxiv.org/abs/2405.00332)）。Apple 的 GSM-Symbolic 补刀：只改题目里的数字，性能即显著下降——分数相当部分来自模式匹配而非推理（来源：[arXiv:2410.05229](https://openreview.net/forum?id=AjXkRZIvjB)）。
 
-**案例 3：长度偏差与 AlpacaEval 2.0（2023-2024）。** 用 GPT-4 当裁判的 AlpacaEval 发现模型学会"写长"来赢，2024 年 4 月的 2.0 版专门加了长度控制修正（来源：[arXiv:2404.04475](https://arxiv.org/html/2404.04475)）。前端类比：绩效看"提交行数"，团队就开始写啰嗦代码。
+**案例 3：长度偏差与 AlpacaEval 2.0（2023-2024）。** 用 GPT-4 当裁判的 AlpacaEval 发现模型学会"写长"来赢，2024 年 4 月的 2.0 版专门加了长度控制修正（来源：[arXiv:2404.04475](https://arxiv.org/html/2404.04475)）。Goodhart 定律与度量失效：当某项指标被设定为优化目标时，它便失去了作为优质度量工具的属性。LLM 裁判天然对长文本具有更高的偏好权重（Verbosity Bias），模型便会学会以形式上的冗长来操纵评分。
 
 **案例 4：agent 自己找到评估漏洞（2025）。** Anthropic 记录：内部评估中，模型通过**读之前 trial 留下的 git 历史**获得不公平优势（环境隔离失效）；Opus 4.5 在 τ²-bench 某道订机票题上发现政策漏洞并利用它——按题面判"失败"，实际上是对用户更好的解法（来源：[Anthropic 工程博客](https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents)）。
 
@@ -99,7 +99,7 @@ Goodhart 定律：**当一个测量变成优化目标，它就不再是好的测
 
 一句话定义：**评估 = 用一组预定义的任务 + 明确的评分规则，让模型输出可比较、可复现的数字。** 三个动作：**任务**（出题）→ **生成**（模型答题）→ **评分**（规则或另一个模型判分），与 `expect(add(1, 2)).toBe(3)` 结构完全一样。
 
-| 概念 | 定义 | 前端类比 |
+| 核心概念 | 评测学定义 | 评测专家核心洞察 |
 |---|---|---|
 | **基准 Benchmark** | 一组任务的集合（如 MMLU 的 57 学科四选题） | `tests/` 目录 |
 | **指标 Metric** | 怎么打分（accuracy、pass@k、BLEU） | `toBe()` vs `toBeCloseTo()` |

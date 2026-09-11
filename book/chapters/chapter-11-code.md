@@ -21,7 +21,7 @@
 
 ### 11.2.1 为什么字符串匹配注定失败
 
-> **前端类比**：字符串匹配评分 ≈ Jest 快照测试——只验证"输出长得和上次一模一样"，不验证"逻辑是否正确"。代码评估要的是单元测试：真跑一遍解释器，断言通过才算过。
+> **代码评测第一性原理**：代码生成的质量度量必须基于**动态执行验证（Execution-based Verification）**。静态文本匹配（如 BLEU / CodeBLEU）无法检测运行期语法错误、状态逻辑分支与边界条件崩溃；只有在受控沙箱中执行真实测试用例断言并捕获退出码，才能获得无偏的功能正确性（Functional Correctness）度量。
 
 同一个需求可以有两种完全不同但都正确的写法：
 
@@ -87,7 +87,7 @@ export async function scoreProblem(p: Problem, completion: string): Promise<bool
 
 ### 11.2.3 pass@k：一次做对与 k 次里对一次
 
-**前端类比**：pass@1 是"CI 一次通过"，pass@k 是"点 k 次重试按钮，只要有一次绿就算过"——衡量的是模型分布里"有没有正确解"，而 pass@1 衡量"你交到用户手上那一次对不对"。
+**无偏 Pass@k 统计估计量**：Pass@1 测量模型在单次贪心推断下的开箱正确率；无偏 Pass@k 估计量（Chen et al., 2021）则利用超几何分布从 $n \ge k$ 次采样中计算期望组合概率，精确度量模型策略分布中至少生成一个有效解的概率，衡量策略分布中潜在解空间（Solution Space）的丰富度。
 
 定义：对同一道题采样 n 次，其中 c 次通过，则"k 次采样里至少一次通过"的无偏估计为
 
@@ -184,7 +184,7 @@ EvalPlus 团队（2023）的做法不是换题，而是**给同一批题补测�
 - HumanEval+：在原题上把测试用例扩充到平均约 80 倍（来源：EvalPlus 论文 arXiv:2305.01210）
 - MBPP+：把每题约 3 个断言扩到数十个，覆盖空列表、负数、Unicode、None 等边界（来源：EvalPlus 官方仓库 github.com/evalplus/evalplus）
 
-**前端类比**：不改需求文档、只把测试覆盖率从 30% 拉到 90%——分数会掉，但掉下来的部分才是真实的 bug。
+**测试密度与表面正确性剥离**：EvalPlus 等研究系统证明，原始 HumanEval 由于单题测试用例密度过低，导致大量存在边界漏洞的代码被判定为正确。通过差分与突变合成大规模测试用例，EvalPlus 剔除了虚假的表面通过率，还原了模型在真实边界上的严谨性。
 
 效果：同一模型在 HumanEval+ 上的分数通常比 HumanEval 低几个点（来源：EvalPlus 官方榜单），而两个榜单的**相对排序会发生变化**——测试越密，"靠记忆写对主流路径"的模型越吃亏。这一节请记住一个可迁移的判断：**当你自建代码评估时，题目质量的上限由测试密度决定；测试密度不够，评分就是抽签**（ABC 论文在 11.5.7 会把这个教训推到极致）。
 
@@ -194,7 +194,7 @@ EvalPlus 团队（2023）的做法不是换题，而是**给同一批题补测�
 
 HumanEval 们还有一个结构性缺陷：题目是 2021 年之前公开的，而模型的预训练语料抓取于此后——**题目本身大概率就在训练数据里**。模型答对，可能是因为"见过"，不是"会做"。
 
-**前端类比**：用上周讲过的原题做期末考——考出来的 95 分说明不了任何能力。
+**基准污染与记忆化退化（Data Contamination）**：测试用例代码一旦泄漏入预训练或微调语料，模型就会退化为单纯的参数记忆与检索查找，彻底丧失作为泛化能力衡量标尺的效度。
 
 ### 11.4.2 三窗口设计：把"发布时间"变成防污染机制
 
@@ -251,7 +251,7 @@ MiMo 那一行最有意思：同一份报告里同时报 v5 和 v6 两个窗口�
 
 > SWE-bench（2023，普林斯顿）= 从 12 个真实开源 Python 仓库抽取 2,294 个 GitHub Issue，要求模型产出补丁并通过仓库真实测试（来源：论文 arXiv:2310.06770）。
 
-> **前端类比**：HumanEval 是"白板手写简单函数"，SWE-bench 则是"接手一个别人维护了十年的开源大型仓库，照着用户的 GitHub Issue 报障把 bug 修复并确保全量 CI 测试用例跑通"。它考的不是简单语法生成，而是"读懂陌生代码 + 定位故障 + 产出有效补丁 + 保证不产生回归破坏"的完整软件工程闭环。
+> **工业级软件工程基准第一性原理**：SWE-bench 实现了从「算法函数级合成」向「全生命周期工程维护」的范式跃迁。被测智能体必须在包含成百上千文件的开源生产仓库中，依据非结构化的 GitHub Issue 文本定位缺陷根因、生成精确的 Patch 补丁，并确保整个工程的测试套件（Fail-to-Pass 与 Pass-to-Pass）全部通过，测量的是全链路工程自主解决能力。
 
 **真实样例（Django 仓库，改写自数据集公开任务描述）**
 
@@ -294,13 +294,13 @@ flowchart TD
     I --> R["评估容器<br/>应用模型补丁 → 应用 test patch<br/>→ 跑 FAIL_TO_PASS + PASS_TO_PASS"]
 ```
 
-分层的目的和前端构建里"基础镜像层缓存"完全一致：Base/Environment 层在同仓库的几百道题之间复用，只有 Instance 层是每题独有。成本数据来自官方文档：跑 SWE-bench Lite 全量约需 120GB 磁盘，16 核机器开 12 个 worker 约 30 分钟；四档缓存（none/base/env/instance）全开时镜像总量约 2000GB，用磁盘换时间（来源：SWE-bench harness 官方文档，2025 口径）。
+评测容器的多级分层缓存架构：SWE-bench harness 采用 OCI 容器镜像的多级分层设计（Base OS 层 → 仓库环境依赖 Environment 层 → 单题实例 Instance 层），使同仓库的大量测试用例能够共享底层环境镜像，在保证严格运行期隔离的同时大幅减少拉取与构建开销（来源：SWE-bench harness 官方文档，2025 口径）。
 
 ### 11.5.4 评分五步与 golden patch 自检
 
 harness 的评估流程是固定的五步：Setup（起容器）→ Patch Application（应用模型补丁）→ Test Execution（跑测试）→ Grading（比对两个测试集合）→ Reporting。其中最值得抄回自己团队的一条工程纪律是：**先用 gold patch 验证 harness 本身**——官方提供 `--predictions_path gold`，把人类标准答案喂进整条流水线，必须得满分；把已知错误答案喂进去，必须得零分。
 
-**前端类比**：上线一个自动化测试平台前，先拿一个"确认有 bug 的旧版本"跑一遍，确认测试真的会红——评分器自己也是需要被测试的代码。
+**元测试与判决有效性验证（Meta-testing）**：在正式执行基准测试前，必须通过变异缺陷注入（Mutation Testing）验证测试环境与断言脚本自身的敏感度，确保有缺陷的代码必定能够触发断言失败，杜绝测试环境静默放行。
 
 ### 11.5.5 "50%" 到底意味着什么
 
@@ -352,7 +352,7 @@ SWE-bench Verified（2024-08，OpenAI 联合原作者从 2,294 题中人工筛�
 
 论文提出了一套名为 ABC（Agentic Benchmark Checklist）的检查清单，覆盖"任务是否可解、奖励是否可被钻空子、结果验证是否可靠"三个方向；把它应用到 CVE-Bench（网络安全 agent 基准）后，**将性能高估削减了 33%**（来源：arXiv:2507.02825）。
 
-**前端类比**：这就是"假绿的 CI"——流水线显示全绿，不是因为代码没问题，而是因为测试写得不够、或者流水线把跳过的任务记成了通过。修法不是改代码，是修测试和修流水线。
+**静默假阳性与执行状态校验**：必须在评测框架中引入细粒度的进程追踪与返回值断言，严防由于环境缺失、超时退出或执行器静默跳过（Skipped）导致的虚假通过率。
 
 对任何要自建代码/agent 评估的团队，从 ABC 论文提炼出三条可执行的动作：
 
@@ -389,7 +389,7 @@ SWE-bench Verified 是代码类厂商覆盖率最高的工程基准（来源：2
 
 > Aider Polyglot = Aider（流行的 AI 结对编程工具）官方维护的榜单：225 道 Exercism 练习，横跨 C++、Go、Java、JavaScript、Python、Rust 六种语言，模型拿到题目与现有代码，**以编辑的方式**让全部测试通过（来源：aider.chat/docs/leaderboards）。
 
-**前端类比**：HumanEval 考"从零写一个 `useFetch`"，Aider 考"在这个已有 200 行的 hook 里改三行并保证其他调用点不炸"——后者才是日常。
+**存量上下文最小侵入性编辑**：Aider 等基准专注于评估模型在既有长程代码上下文中的局部增量修改能力，测量的是模型对已有架构约束的理解力以及生成精简有效 Diff 的准确度。
 
 与 SWE-bench 的差异在于编辑粒度与上下文形态：
 
@@ -434,7 +434,7 @@ Aider 的核心考点其实是"模型能否以可被编辑器消费的格式输�
 
 Agent 时代，模型的输出经常不是文本而是**工具调用 JSON**（function calling）。调用错了参数名、漏了必填字段、该调不调、不该调乱调——这些错误在文本基准上完全不可见。BFCL（Berkeley Function Calling Leaderboard，UC Berkeley）就是这一层的专项考试（来源：gorilla.cs.berkeley.edu/leaderboard）。
 
-**前端类比**：BFCL 之于 agent，相当于"API 契约测试"之于前端服务层——不看你业务逻辑写得好不好，只看你按没按 schema 调对接口。
+**函数调用契约依从性（BFCL）**：伯克利函数调用基准（BFCL）测量智能体在复杂的函数定义、模式约束、多步骤编排及参数异常场景下的结构化生成与协议依从性。
 
 ### 11.8.2 任务分类与判分
 
@@ -628,7 +628,7 @@ console.log(`pass@${K} = ${((passed / problems.length) * 100).toFixed(1)}% (${pr
 ⭐⭐
 - [LiveCodeBench 官网](https://livecodebench.github.io/) — 时间窗机制的官方说明
 - [Aider 榜单](https://aider.chat/docs/leaderboards) — 编辑格式变量的实证场
-- [BigCodeBench](https://bigcode-bench.github.io/) / [DS-1000](https://ds1000-code-llm.github.io/) — 库调用维度
+- [BigCodeBench](https://bigcode-bench.github.io/) / [DS-1000](https://github.com/HKUNLP/DS-1000) — 库调用维度
 - [BFCL](https://gorilla.cs.berkeley.edu/leaderboard.html) — 函数调用分类与判分协议
 - [BIRD](https://bird-bench.github.io/) — 真实脏数仓上的 Text-to-SQL
 
