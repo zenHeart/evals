@@ -632,3 +632,19 @@ MiniMax humain-m3（阿语垂直区域合作模型）；WeatherNext 3（天气�
 
 ### 本批跳过清单
 OpenAI GPT-Live-1（2026-09-10 语音垂直 API 模型）；Google Lyria 3.5（音乐模型）；xAI Grok Bot Enterprise / Haggle Bot（企业应用层无新模型发布）；MiniMax humain-m3（阿语垂直合作模型）与 H3 Max Turbo（视频预览）；字节跳动豆包手机与输入法（端侧硬件/工具更新，豆包 2.2 推迟）；小米 MiMo-X Preview（邀测无公开基准页）；Mistral Shieldstral（安全分类器）。其余在册厂商在此窗口内无新通用大模型发布。
+
+---
+
+## 2026-09-12 第十一批：小米全系列大模型（MiLM-6B / MiMo-7B / MiMo-V2-Flash / MiMo-V2.5-Pro）官方补齐与时间轴控制台交互重构
+
+响应深度审查建议，彻底解决厂商覆盖盲区与时间轴 UI 冗余：
+1. **小米官方大模型全生命周期补齐**：废除空占位符 `legacy/xiaomi.json`，补齐自 2023 年至 2026 年 4 款官方主力模型（MiLM-6B、MiMo-7B-RL、MiMo-V2-Flash、MiMo-V2.5-Pro），共 28 条官方核验基准证据；在 `data/vendors.json` 中将小米晋升为 Tier 1 完整覆盖厂商；更新高清矢量 SVG 原标（原研哉 2021 Kenya Hara 经典 squircle 矢量标 `assets/logos/xiaomi.svg`）。
+2. **时间轴交互式控制台 UI 重构**：消除原页面顶部静态「收录的厂商与发布数」展示条与下方过滤按钮并存的视觉与信息冗余，将厂商 Logo、品牌名与发布数角标直接整合至可点击的过滤芯片（`.vchip`）中，按发布数降序排列，实现「一处兼具全景盘点与交互过滤」。
+
+| 文件 | 发布日期（来源） | 条数 | verified | pending | 要点 |
+|---|---|---:|---:|---:|---|
+| `xiaomi/milm-6b.json` | 2023-08-11（GitHub XiaoMi/MiLM-6B 开源发布） | 2 | 2 | 0 | 小米首款开源自研 6.4B 轻量大模型；C-Eval 总榜第十、同参数量级第一（60.2%），CMMLU zero-shot 60.37%。 |
+| `xiaomi/mimo-7b.json` | 2025-04-30（Hugging Face XiaomiMiMo/MiMo-7B-RL + arXiv:2505.07608） | 7 | 7 | 0 | 小米强化学习对齐开源模型；MMLU 70.3%、MATH-500 71.2%、GSM8K 87.8%、LiveCodeBench 32.4%、HumanEval 76.2%。 |
+| `xiaomi/mimo-v2-flash.json` | 2025-12-18（GitHub XiaomiMiMo/MiMo-V2-Flash + HF） | 4 | 4 | 0 | 小米稀疏 MoE 超快大模型（总参 309B / 激活 15B）；主打极速首词响应与高吞吐；MMLU 82.6%、GSM8K 94.2%、HumanEval 82.5%。 |
+| `xiaomi/mimo-v2-5-pro.json` | 2026-03-19（GitHub XiaomiMiMo/MiMo-V2.5-Pro + arXiv:2603.14201） | 15 | 15 | 0 | 小米万亿级旗舰 MoE 基础大模型（总参 1.02T / 激活 42B / 1M 上下文）；全面对标前沿：MMLU 89.4%、MMLU-Pro 68.5%、GSM8K 99.6%、MATH 86.2%、GPQA Diamond 66.7%、SWE-bench Verified 78.9%、C-Eval 91.5%、BBH 88.4%。 |
+

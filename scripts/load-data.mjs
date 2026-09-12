@@ -31,7 +31,7 @@ function collectReleases(dir = join(DATA, "model-releases")) {
     for (const name of readdirSync(d)) {
       const p = join(d, name);
       if (statSync(p).isDirectory()) walk(p);
-      else if (name.endsWith(".json")) out.push(readJson(p));
+      else if (name.endsWith(".json") && name !== "manifest.json") out.push(readJson(p));
     }
   }
   walk(dir);

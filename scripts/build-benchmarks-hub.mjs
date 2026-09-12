@@ -495,14 +495,9 @@ body.dark .tlr {
 .tlr h1 { font-family:Georgia,"Songti SC","STSong","SimSun",serif; font-size:clamp(30px,5vw,44px); font-weight:700; line-height:1.15; margin:0 0 10px; letter-spacing:.01em; }
 .tlr .sub { font-size:14.5px; color:var(--graphite); max-width:72ch; margin:0 0 8px; }
 .tlr .sub a { color:var(--ink); text-decoration:underline; text-underline-offset:3px; }
-/* 覆盖条 */
-.cov-strip { display:flex; flex-wrap:wrap; gap:0 18px; row-gap:6px; margin:18px 0 22px; padding:10px 0; border-top:1px solid var(--rule); border-bottom:1px solid var(--rule); }
-.cov-strip .cov { font:400 12.5px/1.6 ui-monospace,monospace; color:var(--graphite); }
-.cov-strip .cov b { font-weight:700; color:var(--ink); font-size:14px; }
-.cov-strip .cov-label { font:700 11px/1.8 ui-monospace,monospace; letter-spacing:.14em; color:var(--pin); }
-/* 控制台 */
-.console { border:1px solid var(--rule); background:var(--card); border-radius:8px; padding:14px 16px; margin:0 0 8px; display:flex; flex-direction:column; gap:10px; }
-.console .row { display:flex; flex-wrap:wrap; gap:8px 14px; align-items:center; }
+/* 控制台与厂商过滤 */
+.console { border:1px solid var(--rule); background:var(--card); border-radius:8px; padding:14px 16px; margin:16px 0 8px; display:flex; flex-direction:column; gap:12px; }
+.console .row { display:flex; flex-wrap:wrap; gap:8px 12px; align-items:center; }
 .console .lab { font:700 10.5px/1 ui-monospace,monospace; letter-spacing:.16em; color:var(--graphite); text-transform:uppercase; min-width:56px; }
 .seg { display:inline-flex; border:1px solid var(--rule); border-radius:6px; overflow:hidden; }
 .seg button { border:none; background:transparent; color:var(--graphite); padding:7px 16px; font:600 13px/1.2 inherit; cursor:pointer; }
@@ -515,8 +510,13 @@ body.dark .tlr {
 .console input[type=number] { width:88px; font-family:ui-monospace,monospace; }
 .ghost-btn { border:1px solid var(--pin); background:transparent; color:var(--pin); border-radius:6px; padding:7px 14px; font:700 12.5px/1.2 inherit; cursor:pointer; }
 .ghost-btn:hover { background:color-mix(in srgb, var(--pin) 8%, transparent); }
-.vchip { border:1px solid var(--rule); background:transparent; color:var(--ink); border-radius:4px; padding:5px 12px; font:600 12.5px/1.3 inherit; cursor:pointer; }
+.vchip { display:inline-flex; align-items:center; gap:6px; border:1px solid var(--rule); background:var(--paper); color:var(--ink); border-radius:6px; padding:5px 10px; font:600 12px/1.3 inherit; cursor:pointer; transition:all .15s ease; user-select:none; }
+.vchip:hover { border-color:var(--pin); background:color-mix(in srgb, var(--pin) 4%, var(--paper)); }
 .vchip.on { background:var(--ink); border-color:var(--ink); color:var(--paper); }
+.vchip .vmark { display:inline-flex; align-items:center; justify-content:center; flex-shrink:0; width:15px; height:15px; }
+.vchip .vmark img { width:15px; height:15px; object-fit:contain; vertical-align:middle; border-radius:2px; }
+.vchip-n { font:700 11px/1.2 ui-monospace,monospace; padding:1px 6px; border-radius:10px; background:var(--rule); color:var(--graphite); }
+.vchip.on .vchip-n { background:rgba(255,255,255,.22); color:var(--paper); }
 .fchip { display:inline-flex; align-items:center; gap:8px; border:1px solid var(--pin); color:var(--pin); border-radius:4px; padding:5px 10px; font:700 12.5px/1.2 ui-monospace,monospace; }
 .fchip button { border:none; background:transparent; color:inherit; cursor:pointer; font-size:13px; padding:0; line-height:1; }
 .tl-count { font:400 12.5px/1.6 ui-monospace,monospace; color:var(--graphite); margin:10px 2px 22px; }
@@ -628,13 +628,15 @@ function tlGroupHeader(name, meta, href) {
 function releasesTimelinePage(db, rel = "../../") {
   const cutoff = db.cutoff;
 
-  // 覆盖条：厂商 × 发布数（数据派生）
+  // 厂商发布数统计与排序（按发布数倒序，直接融合于控制台厂商过滤按钮，彻底消除静态条冗余）
   const covCounts = new Map();
   for (const r of db.releases) covCounts.set(r.vendor_id, (covCounts.get(r.vendor_id) || 0) + 1);
-  const cov = [...covCounts.entries()].sort((a, b) => b[1] - a[1])
+  const vendorChips = [...covCounts.entries()].sort((a, b) => b[1] - a[1])
     .map(([vid, n]) => {
       const v = db.vendors.find(x => x.id === vid);
-      return `<span class="cov">${vendorMark(vid, 14)} ${esc(v?.display_name || v?.name || vid)} <b>${n}</b></span>`;
+      const label = v?.display_name || v?.name || vid;
+      const mark = vendorMark(vid, 14, rel + "assets/logos/");
+      return `<button type="button" class="vchip" data-v="${esc(vid)}" aria-pressed="false">${mark ? `<span class="vmark">${mark}</span>` : ""}<span>${esc(label)}</span><span class="vchip-n">${n}</span></button>`;
     }).join("");
 
   // noscript 静态默认视图：单一时间轴（近三年），结点=模型名称，年份刻度
@@ -667,7 +669,6 @@ ${shellTopbar(rel, "releases")}
   <p class="eyebrow">Evaluation Ledger · 2023 — 2026</p>
   <h1>模型发布时间轴</h1>
   <p class="sub">${esc(desc)}<br>证据数据来源标识：<b>绿色</b> 官方表格原始数据、<b>琥珀色</b> 图表数据采点、<b>灰色</b> 未披露量化分值的评测提及。支持按厂商、基准名称与分值阈值快速检索。<a href="${rel}benchmarks/" style="margin-left:8px;">← 返回评估大全</a></p>
-  <div class="cov-strip"><span class="cov-label">收录的厂商与发布数</span>${cov}</div>
 
   <div class="console" id="tlControls" hidden>
     <div class="row">
@@ -675,7 +676,7 @@ ${shellTopbar(rel, "releases")}
       <span class="seg" id="tlWindow"><button type="button" data-v="fresh" class="on">近三年</button><button type="button" data-v="all">全部历史</button></span>
       <input type="search" id="tlQ" placeholder="搜索模型 / 发布标题 / 厂商…" aria-label="搜索时间轴">
     </div>
-    <div class="row" id="tlVendorRow"><span class="lab">厂商</span></div>
+    <div class="row" id="tlVendorRow"><span class="lab">厂商</span>${vendorChips}</div>
     <div class="row">
       <span class="lab">分数过滤</span>
       <select id="tlBench" aria-label="选择评测"></select>
@@ -832,10 +833,18 @@ window.EVALS_TL_REL = ${JSON.stringify(rel)};
   var controls=document.getElementById('tlControls'),count=document.getElementById('tlCount');
   controls.hidden=false;count.hidden=false;staticEl.hidden=true;app.hidden=false;app.classList.add('animate');
   var vr=document.getElementById('tlVendorRow');
-  D.vendors.filter(function(v){return D.releases.some(function(r){return r.vendor_id===v.id;});})
-    .forEach(function(v){
-      var b=document.createElement('button');b.type='button';b.className='vchip';b.textContent=v.label;b.setAttribute('data-v',v.id);
-      vr.appendChild(b);});
+  if(!vr.querySelector('.vchip')){
+    var counts={};
+    D.releases.forEach(function(r){counts[r.vendor_id]=(counts[r.vendor_id]||0)+1;});
+    D.vendors.filter(function(v){return (counts[v.id]||0)>0;})
+      .sort(function(a,b){return (counts[b.id]||0)-(counts[a.id]||0);})
+      .forEach(function(v){
+        var b=document.createElement('button');b.type='button';b.className='vchip';b.setAttribute('data-v',v.id);b.setAttribute('aria-pressed','false');
+        var mark=vendorMark(v.id,14);var n=counts[v.id]||0;
+        b.innerHTML=(mark?'<span class="vmark">'+mark+'</span>':'')+'<span>'+esc(v.label)+'</span><span class="vchip-n">'+n+'</span>';
+        vr.appendChild(b);
+      });
+  }
   var benchSel=document.getElementById('tlBench');
   benchSel.innerHTML='<option value="">选择评测…</option>'+D.benchmarks.map(function(b){return '<option value="'+esc(b.id)+'">'+esc(b.id+' · '+b.name)+'</option>';}).join('');
 

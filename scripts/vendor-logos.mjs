@@ -17,15 +17,15 @@ export const LOGO_EXT = {
   minimax: "png",
   qwen: "png",
   doubao: "png",
-  xiaomi: "png",
+  xiaomi: "svg",
   tencent: "png",
   stepfun: "png",
   microsoft: "png",
 };
 
-/** 厂商彩色 logo <img>。logoBase 形如 "assets/logos/"（构建方传入相对前缀）。 */
-export function vendorMark(vendorId, size = 16) {
+export function vendorMark(vendorId, size = 16, logoBase = "/assets/logos/") {
   const ext = LOGO_EXT[vendorId];
   if (!ext) return "";
-  return `<img class="vlogo-img" src="/assets/logos/${vendorId}.${ext}" width="${size}" height="${size}" alt="" loading="lazy">`;
+  const base = logoBase.endsWith("/") ? logoBase : logoBase + "/";
+  return `<img class="vlogo-img" src="${base}${vendorId}.${ext}" width="${size}" height="${size}" alt="" loading="lazy">`;
 }
