@@ -108,8 +108,7 @@ export function loadBenchData() {
       const label = modelLabel && !vendorLabel.includes(modelLabel)
         ? `${vendorLabel} · ${modelLabel}`
         : vendorLabel;
-      // fresh = 日期可知且在窗口内；窗口外/日期缺失 → archive（历史引用，降级展示）
-      const fresh = Boolean(r.release_date) && r.release_date >= cutoff;
+      // 全历史收录：所有官方核验证据均记入 _verified
       b.adoption.push({
         release: label,
         release_id: r.id ?? null,
@@ -120,11 +119,10 @@ export function loadBenchData() {
         tier: e.source_tier ?? null,
         variant: e.benchmark_variant ?? null,
         date: r.release_date ?? null,
-        fresh,
+        fresh: true,
       });
-      if (verified && fresh) b._verified++;
-      else if (fresh) b._pending++;
-      else b._archived++;
+      if (verified) b._verified++;
+      else b._pending++;
     }
   }
 

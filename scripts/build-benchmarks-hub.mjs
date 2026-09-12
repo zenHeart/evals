@@ -34,17 +34,17 @@ function truncate(s, n) {
   return s.length > n ? s.slice(0, n - 1) + "…" : s;
 }
 
-/** 引用计数徽章：只统计近三年窗口（fresh）；窗口外/日期缺失归入档案降级展示（goal §12.2/§12.7） */
+/** 引用计数徽章：统计官方发布引用（goal §12.2/§12.7） */
 function citeBadge(b) {
   const parts = [];
-  if (b._verified > 0) parts.push(`近三年官方发布引用 ${b._verified} 条`);
+  if (b._verified > 0) parts.push(`官方发布引用 ${b._verified} 条`);
   if (b._pending > 0) parts.push(`图表读数 ${b._pending} 条`);
   if (!parts.length) {
     return b._archived > 0
-      ? `近三年暂无官方发布引用 · 历史记录 ${b._archived} 条`
+      ? `历史记录 ${b._archived} 条`
       : "社区驱动 · 暂无官方发布引用";
   }
-  if (b._archived > 0) parts.push(`另有 ${b._archived} 条更早/日期不明的历史引用`);
+  if (b._archived > 0) parts.push(`另有 ${b._archived} 条历史记录`);
   return parts.join(" · ");
 }
 
@@ -177,7 +177,7 @@ function explorerPage(db, cards, autoIds = []) {
 ${shellTopbar("../", "benchmarks")}
 <div class="bm-container" id="main-content">
   <h1>评估体系大全</h1>
-  <div class="sub">收录主流大模型技术报告与学术界广泛采用的评测基准体系，按测试任务、评测协议、计分标准与官方发布引用记录建立标准化档案。引用计数统计近三年（自 ${esc(db.cutoff)} 起）各厂商官方发布报告证据。<br><a href="../releases/">🕐 模型发布时间轴：查阅主流模型发布证据与评测得分 →</a></div>
+  <div class="sub">收录主流大模型技术报告与学术界广泛采用的评测基准体系，按测试任务、评测协议、计分标准与官方发布引用记录建立标准化档案。引用计数统计各厂商官方发布报告证据与全量评测档案。<br><a href="../releases/">🕐 模型发布时间轴：查阅主流模型发布证据与评测得分 →</a></div>
   <div class="controls">
     <div class="search"><input id="q" type="search" placeholder="搜索：名称 / 用途 / 引用厂商…" aria-label="搜索评估体系"></div>
     <select id="sort" aria-label="排序方式">
@@ -639,12 +639,11 @@ function releasesTimelinePage(db, rel = "../../") {
       return `<button type="button" class="vchip" data-v="${esc(vid)}" aria-pressed="false">${mark ? `<span class="vmark">${mark}</span>` : ""}<span>${esc(label)}</span><span class="vchip-n">${n}</span></button>`;
     }).join("");
 
-  // noscript 静态默认视图：单一时间轴（近三年），结点=模型名称，年份刻度
-  const inWindow = db.releases.filter(r => r.release_date && r.release_date >= cutoff)
-    .sort((a, b) => (b.release_date || "").localeCompare(a.release_date || ""));
+  // noscript 静态默认视图：全量时间轴，结点=模型名称，年份刻度
+  const allReleases = [...db.releases].sort((a, b) => (b.release_date || "").localeCompare(a.release_date || ""));
   let prevYear = null;
   const staticParts = [];
-  for (const r of inWindow) {
+  for (const r of allReleases) {
     const y = r.release_date ? r.release_date.slice(0, 4) : null;
     if (y && y !== prevYear) { staticParts.push(`<div class="yrm"><b>${esc(y)}</b></div>`); prevYear = y; }
     staticParts.push(tlEvtHtml(db, r, { chipBase: rel + "benchmarks/" }));
@@ -659,22 +658,21 @@ function releasesTimelinePage(db, rel = "../../") {
     releases: db.releases,
   };
 
-  const desc = `收录 2023 年至今国内外主流厂商核心模型的官方发布档案与实测评测数据，逐条对账技术报告中的基准引用、实测得分与评测协议。`;
+  const desc = `收录 2022 年至今国内外主流厂商核心模型的官方发布档案与实测评测数据，逐条对账技术报告中的基准引用、实测得分与评测协议；对未披露量化评测的模型同样建立规范档案并提供官方出处与架构说明。`;
   return `${shellHead({ rel, title: "模型发布时间轴 · 评估大全", desc, path: "benchmarks/releases/", extra: `<style>${SHELL_CSS}${PAGE_CSS}${EVT_CSS}${TIMELINE_CSS}</style>` })}
 </head>
 <body class="tlr-page">
 ${shellTopbar(rel, "releases")}
 <div class="tlr" id="main-content">
   <nav class="breadcrumb" style="margin-bottom:18px;"><a href="${rel}index.html">首页</a> / <b>模型发布</b></nav>
-  <p class="eyebrow">Evaluation Ledger · 2023 — 2026</p>
+  <p class="eyebrow">Evaluation Ledger · 2022 — 2026</p>
   <h1>模型发布时间轴</h1>
   <p class="sub">${esc(desc)}<br>证据数据来源标识：<b>绿色</b> 官方表格原始数据、<b>琥珀色</b> 图表数据采点、<b>灰色</b> 未披露量化分值的评测提及。支持按厂商、基准名称与分值阈值快速检索。<a href="${rel}benchmarks/" style="margin-left:8px;">← 返回评估大全</a></p>
 
   <div class="console" id="tlControls" hidden>
     <div class="row">
-      <span class="lab">时间范围</span>
-      <span class="seg" id="tlWindow"><button type="button" data-v="fresh" class="on">近三年</button><button type="button" data-v="all">全部历史</button></span>
-      <input type="search" id="tlQ" placeholder="搜索模型 / 发布标题 / 厂商…" aria-label="搜索时间轴">
+      <span class="lab">搜索</span>
+      <input type="search" id="tlQ" placeholder="搜索模型 / 发布标题 / 厂商…" aria-label="搜索时间轴" style="max-width:460px;">
     </div>
     <div class="row" id="tlVendorRow"><span class="lab">厂商</span>${vendorChips}</div>
     <div class="row">
@@ -704,7 +702,7 @@ window.EVALS_TL_REL = ${JSON.stringify(rel)};
   var REL=window.EVALS_TL_REL||'../../';
   var app=document.getElementById('tlApp'),staticEl=document.getElementById('tlStatic');
   if(!app||!D)return;
-  var state={win:'fresh',vendors:[],bench:null,filters:[],q:''};
+  var state={vendors:[],bench:null,filters:[],q:''};
   var benchName={}; D.benchmarks.forEach(function(b){benchName[b.id]=b.name;});
   function pinLogo(vid,trust){
     var ext=D.logoExt&&D.logoExt[vid];
@@ -749,7 +747,7 @@ window.EVALS_TL_REL = ${JSON.stringify(rel)};
     if(summary){ov='<p class="evt-overview">'+esc(summary)+'</p>';}
     else{
       var n=r.profile?r.profile.evidence_count:r.evidence.length;
-      if(!n){ov='<p class="evt-overview">本次发布未报告评测数值。</p>';}
+      if(!n){ov='<p class="evt-overview">官方首发未披露量化基准测试表（无公开跑分）。</p>';}
       else{
         var cats=(r.profile&&r.profile.categories||[]).map(function(c){return esc(c.name)+' ×'+c.count;}).join(' · ');
         ov='<p class="evt-overview">从官方发布收录 '+n+' 项评测'+(cats?'，主要覆盖：'+cats:'')+'。</p>';
@@ -782,12 +780,11 @@ window.EVALS_TL_REL = ${JSON.stringify(rel)};
       specsHtml(r)+
       overviewHtml(r)+
       '<div class="evt-chips">'+chips+'</div>'+
-      (r.source_url&&!r.models.length?'<div class="evt-src"><a href="'+esc(r.source_url)+'" target="_blank" rel="noopener">官方发布原文 ↗</a><span class="kind">'+esc(r.source_kind||'')+'</span></div>':'')+
+      (r.source_url?'<div class="evt-src"><a href="'+esc(r.source_url)+'" target="_blank" rel="noopener">官方发布原文 ↗</a>'+(r.source_kind?'<span class="kind">'+esc(r.source_kind)+'</span>':'')+'</div>':'')+
       '</article>';
   }
 
   function pass(r){
-    if(state.win==='fresh'){if(!(r.release_date&&r.release_date>=D.cutoff))return false;}
     if(state.vendors.length&&state.vendors.indexOf(r.vendor_id)<0)return false;
     if(state.bench&&!r.evidence.some(function(e){return e.benchmark_id===state.bench;}))return false;
     for(var i=0;i<state.filters.length;i++){var f=state.filters[i];
@@ -818,10 +815,9 @@ window.EVALS_TL_REL = ${JSON.stringify(rel)};
       if(y&&y!==prev){parts.push('<div class="yrm"><b>'+esc(y)+'</b></div>');prev=y;}
       parts.push(nodeHtml(r));
     });
-    app.innerHTML=parts.join('')||'<div class="tl-empty">没有匹配的发布——试试把时间范围切成「全部历史」，或清除厂商与分数过滤。</div>';
+    app.innerHTML=parts.join('')||'<div class="tl-empty">没有匹配的发布——试试清除厂商、搜索或分数过滤。</div>';
     var ev=0;list.forEach(function(r){ev+=r.evidence.length;});
-    document.getElementById('tlCount').textContent='共 '+list.length+' 次发布 · '+ev+' 条评测引用'+
-      (state.win==='fresh'?'（近三年，自 '+D.cutoff+' 起算）':'（全部历史）');
+    document.getElementById('tlCount').textContent='共 '+list.length+' 次发布 · '+ev+' 条评测引用';
   }
 
   function renderFilters(){
@@ -848,9 +844,6 @@ window.EVALS_TL_REL = ${JSON.stringify(rel)};
   var benchSel=document.getElementById('tlBench');
   benchSel.innerHTML='<option value="">选择评测…</option>'+D.benchmarks.map(function(b){return '<option value="'+esc(b.id)+'">'+esc(b.id+' · '+b.name)+'</option>';}).join('');
 
-  document.getElementById('tlWindow').addEventListener('click',function(e){
-    var b=e.target.closest('button');if(!b)return;state.win=b.getAttribute('data-v');
-    this.querySelectorAll('button').forEach(function(x){x.classList.toggle('on',x===b);});render();});
   vr.addEventListener('click',function(e){
     var b=e.target.closest('.vchip');if(!b)return;
     var v=b.getAttribute('data-v'),i=state.vendors.indexOf(v);
