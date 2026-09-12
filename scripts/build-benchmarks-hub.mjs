@@ -558,14 +558,10 @@ function evtOverviewHtml(r, benchMode = false) {
     overview = r.release_title && r.release_title !== (r.models.length ? r.models.join(" / ") : "")
       ? `<p class="evt-overview">${esc(r.release_title)}</p>`
       : "";
+  } else if (r.release_title) {
+    overview = `<p class="evt-overview">${esc(r.release_title)}</p>`;
   } else {
-    const n = r.profile?.evidence_count ?? r.evidence.length;
-    if (!n) {
-      overview = `<p class="evt-overview">本次发布未报告评测数值。</p>`;
-    } else {
-      const cats = (r.profile?.categories || []).map(c => `${esc(c.name)} ×${c.count}`).join(" · ");
-      overview = `<p class="evt-overview">从官方发布收录 ${n} 项评测${cats ? `，主要覆盖：${cats}` : ""}。</p>`;
-    }
+    overview = "";
   }
   return (overview || "") + (traits ? `<div class="evt-traits">${traits}</div>` : "");
 }
@@ -658,7 +654,7 @@ function releasesTimelinePage(db, rel = "../../") {
     releases: db.releases,
   };
 
-  const desc = `收录 2022 年至今国内外主流厂商核心模型的官方发布档案与实测评测数据，逐条对账技术报告中的基准引用、实测得分与评测协议；对未披露量化评测的模型同样建立规范档案并提供官方出处与架构说明。`;
+  const desc = `收录 2022 年至今国内外主流厂商核心模型的官方发布档案与实测评测数据，逐条对账技术报告中的基准引用、实测得分与评测协议；全面覆盖核心里程碑模型并提供官方出处与架构规格说明。`;
   return `${shellHead({ rel, title: "模型发布时间轴 · 评估大全", desc, path: "benchmarks/releases/", extra: `<style>${SHELL_CSS}${PAGE_CSS}${EVT_CSS}${TIMELINE_CSS}</style>` })}
 </head>
 <body class="tlr-page">
@@ -743,16 +739,9 @@ window.EVALS_TL_REL = ${JSON.stringify(rel)};
   function overviewHtml(r){
     var summary=null,traits=[],specs=r.model_specs||[];
     for(var i=0;i<specs.length;i++){if(specs[i]&&specs[i].capability_summary){summary=specs[i].capability_summary;traits=specs[i].key_traits||[];break;}}
-    var ov;
+    var ov='';
     if(summary){ov='<p class="evt-overview">'+esc(summary)+'</p>';}
-    else{
-      var n=r.profile?r.profile.evidence_count:r.evidence.length;
-      if(!n){ov='<p class="evt-overview">官方首发未披露量化基准测试表（无公开跑分）。</p>';}
-      else{
-        var cats=(r.profile&&r.profile.categories||[]).map(function(c){return esc(c.name)+' ×'+c.count;}).join(' · ');
-        ov='<p class="evt-overview">从官方发布收录 '+n+' 项评测'+(cats?'，主要覆盖：'+cats:'')+'。</p>';
-      }
-    }
+    else if(r.release_title){ov='<p class="evt-overview">'+esc(r.release_title)+'</p>';}
     return ov+(traits.length?'<div class="evt-traits">'+traits.map(function(t){return '<span class="tchip">'+esc(t)+'</span>';}).join('')+'</div>':'');
   }
   function nodeHtml(r){
@@ -779,7 +768,7 @@ window.EVALS_TL_REL = ${JSON.stringify(rel)};
       '<h3 class="evt-title">'+titleInner+'</h3>'+
       specsHtml(r)+
       overviewHtml(r)+
-      '<div class="evt-chips">'+chips+'</div>'+
+      (chips?'<div class="evt-chips">'+chips+'</div>':'')+
       (r.source_url?'<div class="evt-src"><a href="'+esc(r.source_url)+'" target="_blank" rel="noopener">官方发布原文 ↗</a>'+(r.source_kind?'<span class="kind">'+esc(r.source_kind)+'</span>':'')+'</div>':'')+
       '</article>';
   }
