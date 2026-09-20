@@ -777,3 +777,85 @@ OpenAI GPT-Live-1（2026-09-10 语音垂直 API 模型）；Google Lyria 3.5（�
 2. 8 家新厂商（IBM Granite / Inception / Sakana / Inclusion AI / Nex AGI / PrismML / Unbiased / Inference.net）首次出现于 OpenRouter 目录但未在 vendors.json 注册——本批维持留待主线单独批次接入，建议新增批次按 `references/discovery-channels.md` 末节"新厂商接入"流程执行（vendors.json + 真实彩色 logo + DOMAINS + LOGO_EXT + 渠道表）。
 3. xAI Grok 4.7 推迟状态未知；本体批 web reader 直读 x.ai/news 仅见 Grok Voice Transcribe 2.0 与产品功能，无新通用前沿发布。
 4. **本批新增观察（HF `createdAt` 反查工艺）**：对全 14 家在册厂商 HF org 调用 `api/models?author=<org>&full=true&limit=N` 拉取 createdAt 倒序前 N → 筛窗口内 → 按"通用 + 一级来源"双门禁过滤，可作为窗口扫描的二次复核手段。本批应用该工艺确认无新增；建议技能脚本 `ingest-releases/scripts/checkpoint.mjs` 后续扩展 `hf-since` 子命令（仅作交叉核对、不写账本）。
+
+---
+
+## 2026-09-20 第十四批：Step 5 Preview 增量入库 + 历史 8 条一级源合规审计与修复
+
+> **核心变化**：本批在第十三批零入库基础上，**新增 1 个真实发布的旗舰模型**（StepFun Step 5 Preview）；同时按用户反馈"历史数据获取逻辑只有真实有 blog 和发布说明才算"，对全 129 条官方账本做反向审计，发现 **12 条 release 在 `primary_sources` 上违反"无官方一级来源不建档"红线**，其中 4 条（grok-4-3 / grok-4-20 / qwen3-6-flash / qwen3-7-flash）已是 xAI 静默代际先例下的 pending 零行占位（合规），8 条仍带 homepage URL 或归属已不存在 — 全部按既定先例在 `revisions[]` 留痕下处置。
+
+### 增量入库：StepFun Step 5 Preview（2026-09-19）
+
+#### 来源与抓取
+
+- **官方一级页**：`https://www.stepfun.com/step-5-preview`（Next.js SPA；WebFetch 仅返回站壳 "阶跃星辰"，Playwright DOM 渲染后读全文）。
+- **官方开发者文档**：`https://platform.stepfun.com/docs/zh/guides/models/step-5-preview`。
+- **模型规格（页面上明示）**：稀疏 MoE / 600B 总参 / 27B 激活 / 1M Token 上下文 / 文本 + 视觉输入 / 开源时间 2026-10-15。
+- **AA Intelligence Index**：44。
+- **归档**：`models/2026-09-20-step-5-preview/{page.html, index.md, manifest.json}`（HTML 全文 DOM 转录，4 节表格 + 8 项脚注 + 长程案例文字）。
+
+#### evidence 收口
+
+| 项 | 数 |
+|---|---:|
+| 评测行（DOM 表机读，非图表） | 40 |
+| verified | 40 |
+| pending | 0 |
+| benchmark 个体数 | 32（其中 frontierfinance 为本批新建实体） |
+
+> 表内 8 个对比对手列（GLM-5.3 / Kimi K3 / GPT-6 Astra / Claude Fable 5.1 / Claude Opus 5 / DeepSeek V4.1 Flash）的散文明示分数按 `comparison_cited` 单独行处理（如已存在则不重复入账）；GDPval-AA v2 与 AA-Briefcase 按厂商脚注口径"采用 Artificial Analysis 截至 2026-09-19 最新结果"记 `third_party_reported` 而非 vendor_reported。
+
+#### 协议字段说明
+
+- **DeepSWE v1.1** 行 page 注明用 **SWE-agent harness**、**temperature=1.0**、**top_p=0.95**，已结构化写入 `protocol.harness` / `temperature` / `top_p`，`comparison_scope:"only_same_protocol"`。
+- **HLE w/ tools** 行 page 脚注明示 Step 5 Preview (High) 与 GLM-5.3 (Max) 在**纯文本子集**上评测、其余模型在完整数据集上评测——不同评测设置不直接可比，已在每行 `notes` 与 release 级 `notes` 注明，并写 `protocol.tools: ["browser", "code_execution"]` 锁定 harness 范围。
+
+#### 新增 benchmark 候选（标记 `new-benchmark`，兜底页自动生成）
+
+`roadmapbench`、`stepcodebench`（含 Daily / General 子集）、`finstepbench-livesearch`、`finstepbench-corporatevaluation`、`finstepbench-financedr`、`frontierfinance`（**本批同步新建 benchmark 主数据 `data/benchmarks/frontierfinance.json`**，因为页面给出 220 题 / 11,543 项评估标准的完整定义，足够写 `interpretation`）、`gdp-pdf`。其余 6 个新候选仅留 evidence 行的 `new-benchmark:` 标记，待证据充足时再升格实体。
+
+### 历史账本反向审计（129 → 130）
+
+> 用户在第十四批启动时反馈："你看下历史数据获取逻辑只有真实有 blog 和发布说明才算 比如 stepfun"——按此口径对全 129 条 official release 做 `primary_sources` 字段反向扫描，发现 **12 条违反"无官方一级来源不建档"红线**。
+
+#### 12 条问题 release 分类
+
+| 厂商 | release | 状态 | 处置 |
+|---|---|---|---|
+| xai | grok-4-3 | 已有 pending 零行占位（README 已说明） | 合规 |
+| xai | grok-4-20 | 已有 pending 零行占位（README 已说明） | 合规 |
+| qwen | qwen3-6-flash | 已有 pending 零行占位 | 合规 |
+| qwen | qwen3-7-flash | 已有 pending 零行占位 | 合规 |
+| glm | glm-4 (2024-01-16) | `primary_sources` 用了 `https://zhipuai.cn/`（首页） | **REPAIR-URL-NO-EVIDENCE**：URL 改为 `https://www.zhipuai.cn/zh/news/8`（首届智谱 AI 技术开放日成功举办，Playwright 确认存在），但该页是发布会回顾**未列出 MMLU/GSM8K/HumanEval/MATH/C-Eval 等具体分数**，所有 evidence 行标 `not_extracted` + `status:"pending"` |
+| kimi | kimi-chat-200k (2023-10-09) | `primary_sources` 用了 `https://www.moonshot.cn/`（首页） | **REPAIR-URL-NO-EVIDENCE**：URL 改为 `https://www.moonshot.ai/blog/kimi-200k-context-release`（WebFetch 确认为官方 200k 发布文），但 evidence 行未列具体分数，全部标 `not_extracted` + `status:"pending"` |
+| stepfun | step-1 (2024-03-23) | `primary_sources` 用了 `https://www.stepfun.com/`（首页） | **NO-SOURCE**（Playwright 访问 `stepfun.com/step-1` 返回 404"页面不存在"）：按 xAI 静默代际先例转为 pending 零行占位 |
+| stepfun | step-2 (2024-07-04) | `primary_sources` 用了 `https://www.stepfun.com/`（首页） | **NO-SOURCE**（Playwright 访问 `stepfun.com/step-2` 返回 404"页面不存在"）：同上 |
+| kimi | kimi-k0-math (2024-10-11) | `primary_sources` 用了 `https://www.moonshot.cn/`（首页） | **NO-SOURCE**（moonshot.cn/blog 与 moonshot.ai/blog 均无对应 slug）：同上 |
+| minimax | minimax-abab-6 (2024-01-16) | `primary_sources` 用了 `https://www.minimaxi.com/`（首页） | **NO-SOURCE**：同上 |
+| minimax | minimax-text-01 (2025-01-16) | `primary_sources` 用了 `https://www.minimaxi.com/`（首页） | **NO-SOURCE**：同上 |
+| doubao | doubao-1-5-pro (2024-12-20) | `primary_sources` 用了 `https://www.volcengine.com/`（首页） | **NO-SOURCE**（seed.bytedance.com/blog 无匹配 slug）：同上 |
+
+#### 处置语义（两种标准模式）
+
+- **REPAIR-URL-NO-EVIDENCE**（glm-4 / kimi-chat-200k）：URL 改为官方一级发布文，但页面正文不含 evidence 行所引用的具体评测分数；所有 evidence 行的 `value` 改 `null`、`display` 改 `"—"`、`score_status` 改 `"not_extracted"`、`status` 改 `"pending"`、`source_url` 同步更新、`last_verified_at` 同步到 2026-09-20。release 级 `status` 同步转 `pending`。
+- **NO-SOURCE**（6 条）：Playwright 实测 `<vendor>/<slug>` 预测 URL 返回 404 或不存在；以 xAI 静默代际先例处置：`primary_sources = []`、`benchmark_evidence = []`、`status = "pending"`、`last_verified_at = 2026-09-20`。
+
+#### 全部变更走 `revisions[]` 留痕（账本契约「只追加」）
+
+每条处置都在对应 release 的 `revisions[]` 追加 `{date: "2026-09-20", field, from, to, reason}`，明确记录"主页 URL → 真实发布文 / 或 pending 占位"的迁移路径与原因，未直接删除任何 release / benchmark 文件。
+
+### 动作与门禁
+
+- **release 文件变更**：新增 1（step-5-preview）；修改 8（审计处置，全部走 revisions[]）；删除 0。账本契约「只追加」严格执行。
+- **新增 benchmark 实体**：1（`frontierfinance.json`）。
+- **新 benchmark 候选（仅 `new-benchmark` 标记，未建实体）**：7（`roadmapbench` / `stepcodebench` 三变体 / `finstepbench-livesearch` / `finstepbench-corporatevaluation` / `finstepbench-financedr` / `gdp-pdf`）。
+- **vendor 注册变更**：无。
+- **checkpoint**：账本最大 release_date 推进至 **2026-09-19**（Step 5 Preview）；下次扫描窗口仍为 2026-08-27 ~ 下次扫描日（窗口起点回退 14 天重叠）。
+- **门禁**：`validate-data` PASS（taxonomy 9 类 / vendors 16 / benchmarks 461 / releases 144（official 130）/ evidence edges 2572）；`npm run build` PASS（32 章 / EPUB / 461 benchmark 实体页 + 7 auto-evidence 页 / sitemap 498 URLs / validate-site 全绿）；CI 待 push 后查。
+
+### 跨批遗留观察（不改动既有文件，仅报告）
+
+1. **审计工艺沉淀**：本批发现 `primary_sources` 反向扫描是低成本高收益的合规工具（一次扫描 129 条 release 仅 12 条违规，命中率 9% 但都是高危）。建议加入 `ingest-releases/scripts/checkpoint.mjs` 作为 `audit-sources` 子命令，每次扫描自动执行。
+2. **首页 URL 反查规律**：用户提示的 `<vendor-domain>/<model-slug>` URL 模式对部分厂商适用（如 stepfun.com/step-5-preview、stepfun.com/step-1/2 反例）；不适用时依赖官方 newsroom 索引或 RSS 互证。建议把"URL 预测 → 404 验证 → 切下一渠道"的失败级联逻辑沉淀进 `references/discovery-channels.md`。
+3. **8 条历史 pending 占位的恢复路径**：6 条 NO-SOURCE 当前无任何可发布物，按现有结构保持；2 条 REPAIR-URL-NO-EVIDENCE（glm-4 / kimi-chat-200k）的具体评测分数可能在厂商技术报告 / 论文中可考，未来若取得真实来源，再走 `revisions[]` 翻 verified。
+4. **`reference` JSON 字段统一**：本批 step-5-preview.json 在 evidence 行的 `metric` 字段做了一致化尝试（accuracy / pass_rate / partial_score / index），与既有 `mmlu` / `cybergym` 等 evidence 行的 `metric:"accuracy"` 约定一致；建议技能 schema 文档补一句"`metric` 必填且与 ENUM 对齐"。
