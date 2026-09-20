@@ -715,3 +715,65 @@ OpenAI GPT-Live-1（2026-09-10 语音垂直 API 模型）；Google Lyria 3.5（�
 1. `gpt-6-astra.json` 当前 models[] 仅含基础 Astra；OpenRouter 上的 `gpt-6-astra-pro` 变体（09-09 上架）建议在下次 Astra 页更新时合并到该文件 models[] 并补 `revisions[]` 留痕（与 claude-opus-4-7-fast 并入 claude-opus-4-7.json 同口径）。
 2. 8 家新厂商首次出现于 OpenRouter 目录但未在 vendors.json 注册——本批未触发新厂商接入流程（避免单批工作过宽），列为主线单独批次候选。
 3. xAI Grok 4.7 推迟状态未知，若后续发布需重新进入窗口扫描。
+
+---
+
+## 2026-09-20 第十三批：窗口扫描零入库（窗口 2026-08-27 ~ 2026-09-20）
+
+按 `ingest-releases` 技能扫描窗口（锚点 2026-09-10 回退 14 天重叠 → today 2026-09-20），全在册厂商（Tier 1 + Tier 2）官方渠道深度核验 + OpenRouter 目录交叉核对 + HuggingFace 官方 org `createdAt` 时间戳反查 + DeepSeek news slug 直探（news260831 / news260901 / news260905 / news260910 / news260915 / news260920）→ **本批零新增 release 文件**。本节只追加，不改动既有批次内容。
+
+### 扫描范围与渠道（增量于第十二批）
+
+| 厂商 | 一级来源 | 窗口内结论 |
+|---|---|---|
+| openai | openai.com/news/ + sitemap release | 无新通用前沿模型。窗口内均为企业产品/合作伙伴公告，与第十二批结论一致；GPT-6 Astra 已于 09-03 入账（第九批）。 |
+| anthropic | anthropic.com/news + newsroom 索引 | 无。Fable 5.1 / Mythos 5.1 已于 09-01 入账（第八批）。 |
+| google | blog.google/technology/ai/ | 无窗口内新帖；Gemini 3.8 Flash + Flash Cyber 已于 09-02 入账（第九批）。 |
+| xai | x.ai/news（web reader 直读） | 09-18 **Grok Voice Transcribe 2.0**（语音转文本垂直，跳过）；其余为 Grok Bot / Memory in Grok Build（产品功能）。Grok 4.7 仍推迟，无官方 release 页。 |
+| meta | research.meta.ai | 无窗口内新帖；Muse Spark 1.3 已于 09-02 入账（第十批）。 |
+| kimi | kimi.ai/blog/ 索引 + HF moonshotai | 索引最近条目仍为 Kimi K3（2026-07-16），窗口内无新帖。 |
+| deepseek | api-docs.deepseek.com news slug 直探 + HF deepseek-ai | news260910 (V4.1 Flash 官宣) 唯一窗口内正式发布，已入账（第十批）。news260831/news260901/news260905 均 200 但实际重定向至 API 调用文档首页（无独立内容）；news260915/news260920 同样 200 但无新发布。**`deepseek-ai/DeepSeek-V4-Flash-Vision-Exp` HF repo (2026-08-31 createdAt) 是 V4-Flash 的实验视觉变体权重，按 news260910 同步退役**（官方文档明示"旧版本模型 V4 Flash 与 V4 Flash Vision Exp 现已下线"），与第十二批 deepseek-flash 重命名同口径——不建档，HF 权重作为退役实验存档。 |
+| glm | z.ai/blog/ + HF zai-org createdAt | 窗口内 HF `zai-org/GLM-5.3 / GLM-5.3-Flash / GLM-5.3-BF16` 三仓均为 2026-08-25（早于窗口起点 08-27），无新仓。z.ai 主站博客列表为空。 |
+| minimax | minimax.io/news/ + HF MiniMaxAI | 窗口内无新 LLM 发布；HF 最新仍为 MiniMax-M3（2026-06-02）。MiniMax-H3（2026-07-28，视频垂直）+ MiniMax-Music3（2026-08-07，音频垂直）均为垂直模型，跳过。 |
+| qwen | HF Qwen createdAt | 窗口内 HF 唯一新仓 `Qwen/Qwen-Drive-1.0-4B`（2026-08-27 createdAt）属自动驾驶垂直模型（tags: autonomous-driving / motion-planning / 3d-perception），按「非通用模型不建档」跳过。Qwen3.8-Max-0902 (09-02) 已入账（第八批）。 |
+| doubao | seed.bytedance.com/en/blog/ | 窗口内为 SeedRealtime 语音多模态 / Seedance 2.5 视频 / Seed Audio 1.0 / Seedream 5.0 Pro 图像，均垂直模型，跳过（与第十二批一致）。 |
+| xiaomi | mimo.xiaomi.com + HF XiaomiMiMo + GitHub XiaomiMiMo | 无窗口内新通用模型。GitHub MiMo-Code CLI 更新（09-20，非模型）。MiMo-X-Pro-Preview / MiMo-X-Flash-Preview 仍为 MiMo Desktop beta 试用。 |
+| tencent | hy.tencent.com + HF tencent createdAt | 窗口内 HF 新仓 4 个：`tencent/EVIE-8B / EVIE-4.5B`（2026-09-04，ColPali-style visual document retrieval，垂直）+ `tencent/WeVisDoc-2B / WeVisDoc-4B`（2026-09-16，arxiv 2609.20423 论文产物，无腾讯官方博客）。全部按「非通用模型 / 无一级来源」跳过。Hy4-preview (08-28) 已入账（第七批）。 |
+| stepfun | stepfun.ai/research + HF stepfun-ai | research 页 503 不可达；HF 最新仍为 Step-3.7-Flash（2026-05-23）。 |
+| microsoft | microsoft.ai/news + GitHub microsoft | 无窗口内新 MAI 模型。已有 MAI-Thinking-1 / MAI-Code-1.1-Flash 已入账（第八批）。 |
+| mistral | mistral.ai/news | 窗口内仅 Mozilla / Cloudera 合作公告（非模型）。 |
+
+### OpenRouter / HF 反查交叉核对（本批新增的二次扫描）
+
+- **OpenRouter**：与第十二批相比无新增窗口内可入账主项；`:latest` 别名与变体条目已映射；8 家新厂商（IBM Granite / Inception / Sakana / Inclusion AI / Nex AGI / PrismML / Unbiased / Inference.net）维持第十二批记录。
+- **HF `createdAt` 反查 14 个在册厂商**（Qwen / zai-org / MiniMaxAI / moonshotai / deepseek-ai / ByteDance-Seed / stepfun-ai / tencent 等）：窗口内 `createdAt` 在 2026-08-27 ~ 2026-09-20 的新仓共 9 个（Qwen-Drive-1.0-4B / GLM-5.3 系三个 / MiniMax-Music3 / DeepSeek-V4-Flash-Vision-Exp / DeepSeek-V4.1-Flash / tencent-EVIE 8B/4.5B / tencent-WeVisDoc 2B/4B）。逐一按"通用 + 一级来源"双门禁过滤：通用垂直（如 Drive / Music3 / EVIE / WeVisDoc）按"非通用"过滤；GLM-5.3 系 createdAt 在 08-25（窗口外）；DeepSeek-V4-Flash-Vision-Exp 按退役口径过滤；最终可入账数 = 0。
+
+### 跳过清单（带理由，与第十二批差异在本批用"补"标注）
+
+| 模型 / 厂商 | 跳过原因 |
+|---|---|
+| DeepSeek-V4-Flash-Vision-Exp | **补**：HF 官方仓（2026-08-31 createdAt）作为实验性多模态权重存档存在；但 news260910 同步宣布其下线，请求路由至 V4.1-Flash——按第十二批 deepseek-flash 重命名同口径「无新增 release」处理 |
+| tencent/EVIE-8B / EVIE-4.5B | ColPali-style 视觉文档检索模型（pipeline_tag=visual-document-retrieval），base=Qwen3.5，垂直 |
+| tencent/WeVisDoc-2B / WeVisDoc-4B | 视觉文档理解模型（arxiv 2609.20423 论文产物），无腾讯官方博客 / newsroom 一级来源 |
+| Qwen/Qwen-Drive-1.0-4B | 自动驾驶垂直模型（tags: autonomous-driving / motion-planning / 3d-perception） |
+| MiniMax-Music3（2026-08-07） | 文本到音频垂直模型（pipeline_tag=text-to-audio），早于窗口但同口径 |
+| zai-org/GLM-5.3 / 5.3-Flash / 5.3-BF16 | createdAt 2026-08-25 在窗口起点 08-27 之前，已被 GLM-5.3 / GLM-5.3-Flash release 覆盖 |
+| xAI Grok Voice Transcribe 2.0（09-18） | 语音转文本垂直 API 模型 |
+| xAI Grok 4.7 | 09-12 原定发布后被推迟，无官方 release 页 |
+| ByteDance SeedRealtime / Seedance 2.5 / Seed Audio 1.0 / Seedream 5.0 Pro | 全部音视频/图像垂直模型 |
+| OpenAI / Microsoft / Mistral / Stepfun / Meta / Kimi / Google | 窗口内无新通用前沿模型发布 |
+| IBM Granite / Inception / Sakana / Inclusion AI / Nex AGI / PrismML / Unbiased / Inference.net（OpenRouter 新厂商） | 无官方一级来源 + 未在 vendors.json 注册，留待主线单独批次接入 |
+
+### 动作与门禁
+
+- **release 文件变更**：无新增、无修改、无删除；账本契约「只追加」严格执行。
+- **vendor 注册变更**：无。
+- **checkpoint**：账本最大 release_date 仍为 2026-09-10（DeepSeek V4.1-Flash）。锚点不前进；下次扫描窗口仍为 2026-08-27 ~ 下次扫描日（窗口起点回退 14 天重叠）。
+- **门禁**：`validate-data` PASS（taxonomy 9 类 / vendors 16 / benchmarks 460 / releases 143（official 129）/ evidence edges 2544）；`npm run build` PASS（32 章 / EPUB / 460 benchmark 实体页 / sitemap / validate-site 全绿）；CI 待 push 后查。
+
+### 跨批遗留观察（不改动既有文件，仅报告）
+
+1. `gpt-6-astra.json` models[] 仍仅含基础 Astra；OpenRouter 上的 `gpt-6-astra-pro` 变体建议下次 Astra 页更新时合并 + 补 `revisions[]` 留痕（沿用 claude-opus-4-7-fast 并入先例）。本批维持第十二批观察。
+2. 8 家新厂商（IBM Granite / Inception / Sakana / Inclusion AI / Nex AGI / PrismML / Unbiased / Inference.net）首次出现于 OpenRouter 目录但未在 vendors.json 注册——本批维持留待主线单独批次接入，建议新增批次按 `references/discovery-channels.md` 末节"新厂商接入"流程执行（vendors.json + 真实彩色 logo + DOMAINS + LOGO_EXT + 渠道表）。
+3. xAI Grok 4.7 推迟状态未知；本体批 web reader 直读 x.ai/news 仅见 Grok Voice Transcribe 2.0 与产品功能，无新通用前沿发布。
+4. **本批新增观察（HF `createdAt` 反查工艺）**：对全 14 家在册厂商 HF org 调用 `api/models?author=<org>&full=true&limit=N` 拉取 createdAt 倒序前 N → 筛窗口内 → 按"通用 + 一级来源"双门禁过滤，可作为窗口扫描的二次复核手段。本批应用该工艺确认无新增；建议技能脚本 `ingest-releases/scripts/checkpoint.mjs` 后续扩展 `hf-since` 子命令（仅作交叉核对、不写账本）。
