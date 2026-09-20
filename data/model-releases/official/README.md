@@ -648,3 +648,70 @@ OpenAI GPT-Live-1（2026-09-10 语音垂直 API 模型）；Google Lyria 3.5（�
 | `xiaomi/mimo-v2-flash.json` | 2025-12-18（GitHub XiaomiMiMo/MiMo-V2-Flash + HF） | 4 | 4 | 0 | 小米稀疏 MoE 超快大模型（总参 309B / 激活 15B）；主打极速首词响应与高吞吐；MMLU 82.6%、GSM8K 94.2%、HumanEval 82.5%。 |
 | `xiaomi/mimo-v2-5-pro.json` | 2026-03-19（GitHub XiaomiMiMo/MiMo-V2.5-Pro + arXiv:2603.14201） | 15 | 15 | 0 | 小米万亿级旗舰 MoE 基础大模型（总参 1.02T / 激活 42B / 1M 上下文）；全面对标前沿：MMLU 89.4%、MMLU-Pro 68.5%、GSM8K 99.6%、MATH 86.2%、GPQA Diamond 66.7%、SWE-bench Verified 78.9%、C-Eval 91.5%、BBH 88.4%。 |
 
+
+---
+
+## 2026-09-20 第十二批：窗口扫描零入库（窗口 2026-09-11 ~ 2026-09-20）
+
+按 `ingest-releases` 技能扫描窗口（锚点 2026-09-10 回退 14 天重叠 → 2026-09-20 today），全在册厂商（Tier 1 + Tier 2）官方渠道深度核验 + OpenRouter 目录交叉核对，结果：**本批零新增 release 文件**。下方列出已检索的渠道与结论以备主线核对。
+
+### 扫描范围与渠道
+
+| 厂商 | 一级来源 | 窗口内结论 |
+|---|---|---|
+| openai | openai.com/news/ + sitemap release | 无。09-11 ~ 09-20 期间均为企业产品 / 合作伙伴公告（Astra for Law / Australian Youth Safety Blueprint / ChatGPT for Financial Services / Scaling Storage 1B+ Users 等），无新通用前沿模型。GPT-6 Astra 已于 09-03 入账（第十批）。 |
+| anthropic | anthropic.com/news + newsroom 索引 | 无。09-11 ~ 09-20 期间为 partner / program 公告（Accenture 嵌入式评测合作 Sep 18 / Life Sciences Verification Program Sep 17 / Frontier AI Development Metrics Sep 17），Fable 5.1 / Mythos 5.1 已于 09-01 入账（第八批）。 |
+| google | blog.google/technology/ai/ | 无窗口内新帖；Gemini 3.8 Flash + Flash Cyber 已于 09-02 入账（第九批）。 |
+| xai | x.ai/news | 09-18 Grok Voice Transcribe 2.0（语音转文本，垂直模型，跳过）；其余为 Grok Bot / Memory in Grok Build（产品功能，非模型发布）。Grok 4.7 原定 09-12 发布后被推迟，无官方 release 页。 |
+| meta | research.meta.ai | 无窗口内新帖；Muse Spark 1.3 已于 09-02 入账（第十批）。 |
+| kimi | kimi.ai/blog/ 索引 + HF moonshotai | 索引最近条目为 Kimi K3（2026-07-16），窗口内无新帖。 |
+| deepseek | api-docs.deepseek.com/zh-cn/news/ + HF | 窗口内无新 slug（slug 含日期 `news250910` 即 V4.1-Flash 已于 09-10 入账）；官方文档首页明示 `deepseek-flash` = DeepSeek-V4.1-Flash 重命名（第八批验证：旧名 `deepseek-v4-flash` / `deepseek-v4-flash-vision-exp` 已退役，请求由 V4.1-Flash 服务）。 |
+| glm | z.ai/blog/ | z.ai 主站最近为空（首页博客列表最近条目为远古占位）；HF `zai-org` 仅有 GLM-5.3 / GLM-5.3-Flash / GLM-5.3-Flash-BF16，无 FlashX 新模型仓。 |
+| minimax | minimax.io/news/ | 窗口内无新 LLM 发布；最新 LLM 仍为 M3，新闻条目为 08-26 First Half 2026 Financial Results / 08-03 H3 开源（视频垂直）。 |
+| qwen | qwen.ai/research + HF Qwen | 索引页抓取异常（响应过大未返具体项）；HF 列表最近条目为 MiMo 系或 Qwen3.8 系已入账；OpenRouter 旁证 `qwen/qwen3-coder-flash`（09-17）无可溯源发布页，跳过。 |
+| doubao | seed.bytedance.com/en/blog/ | 窗口内为 SeedRealtime 语音多模态 / Seedance 2.5 视频 / Seed Audio 1.0 / Seedream 5.0 Pro 图像，均垂直模型，按规则跳过。 |
+| xiaomi | mimo.xiaomi.com + HF XiaomiMiMo + GitHub XiaomiMiMo | 无窗口内新模型。GitHub `XiaomiMiMo/MiMo-Code`（CLI 工具，非模型）09-20 更新；HF 模型列表最近仍为 MiMo-V2.5 / V2-Flash（07-09）。README 中提及的「MiMo-X-Pro-Preview / MiMo-X-Flash-Preview」属 MiMo Desktop beta 试用，非公开通用发布。 |
+| tencent | hy.tencent.com（JS SPA） | 无窗口内新发布（hy4-preview 2026-08-28 + hy3 2026-07-06 已入账）。 |
+| stepfun | stepfun.ai/research（503）+ HF stepfun-ai | research 页 503 不可达；HF stepfun-ai 仓目录最近条目 step-3.7-flash 已入账。 |
+| microsoft | microsoft.ai/news + GitHub microsoft | 无窗口内新 MAI 模型。已有 MAI-Thinking-1 / MAI-Code-1.1-Flash 已入账（第八批）。 |
+| mistral | mistral.ai/news | 窗口内仅 Mozilla / Cloudera 合作公告（非模型），最新模型发布仍为 Devstral 2 / Mistral 3（前批入账）。 |
+
+### OpenRouter 旁证窗口（2026-08-27 ~ 2026-09-20 全部 created 时间戳）
+
+36 个上架条目按 vendor 分布：
+
+- **已入账主项**（已映射到现有 release）：claude-fable-5.1 / gemini-3.8-flash / muse-spark-1.3 / muse-spark-1-3-contributor / qwen3.8-max-0902 / gpt-6-astra / gpt-6-astra-pro / deepseek-v4.1-flash / hy4-preview —— 9 条
+- **变体 / alias 条目**（已并入既有 release 的 `models[]`）：`~z-ai/glm-flash-latest`、`~openai/gpt-{luna,terra,sol,astra}-latest`、`~deepseek/deepseek-{flash,pro}-latest` —— 6 条
+- **新厂商但未达一级来源门槛**：ibm-granite/granite-4.2-8b（IBM Granite）、inception/mercury-2.5、sakana/fugu-max + sakana/fugu-ultra-v2、inclusionai/ling-3.0-flash-{fin,sante,vl}、nex-agi/nex-n2.5-{pro,mini}、prism-ml/ternary-bonsai-2-27b、unbiased/pareto、inference-net/schematron-v2-{small,turbo} —— 12 条
+- **Tier 1 已注册但无官方页**：z-ai/glm-5.3-flashx（GLM 5.3 Flash 增量变体，无官方博客 / HF 仓）—— 1 条
+- **垂直 / 非通用**：OpenAI `:batch` 系列（5 条）—— 5 条
+
+### 跳过清单（带理由）
+
+| 模型 / 厂商 | 跳过原因 |
+|---|---|
+| GLM 5.3 FlashX | OpenRouter 上架（1789744020 = 2026-09-17）但无 z.ai 官方博客 / HF zai-org 仓；属「无一级来源不建档」 |
+| OpenAI GPT-6 Astra Pro | OpenRouter 上架（09-09）但 openai.com/index/gpt-6-astra-pro/ 404；视为 Astra 系列变体，已在 `openai/gpt-6-astra.json` 中以 `models[]` 形式覆盖（待主线追加 `revisions[]` 留痕） |
+| xAI Grok 4.7 | 原定 09-12 发布后被推迟（Elon Musk X 帖说明 RL response-length penalty / verification rigor 不足），x.ai/news 无条目；二级数字（τ²-Bench 98% / GDPval-AA 1500 等）按 tier D 不录 |
+| Grok Voice Transcribe 2.0 | xAI 09-18 发布，语音转文本垂直模型，不建 release 档 |
+| ByteDance SeedRealtime / Seedance 2.5 / Seed Audio 1.0 / Seedream 5.0 Pro | 全部为音视频 / 图像垂直模型，按「非通用模型不建档」规则跳过 |
+| IBM Granite 4.2-8B | 未注册厂商（需新厂商接入：vendors.json + 真实彩色 logo + DOMAINS + LOGO_EXT + Tier 2 渠道登记），留待主线排期 |
+| Inception Mercury 2.5 / Sakana Fugu Max + Ultra v2 / Inclusion AI Ling 3.0 Flash 三个变体 / Nex AGI Nex-N2.5 Pro + Mini / PrismML Ternary Bonsai 2 27B / Unbiased Pareto / Inference.net Schematron V2 Small + Turbo | 全部为新厂商，无官方一级来源页 + 未在 vendors.json 注册；按「无一级来源不建档」+ 「新厂商接入需人工核验」双重规则跳过 |
+| MiniMax H3 / Music 3.0 / Speech 2.8 / Code / Design | MiniMax 窗口内仅有视频 / 音乐 / 语音垂直 + 工具产品，非通用 LLM 发布 |
+| OpenAI GPT Luna / Terra / Sol / Astra :latest | `:latest` 别名条目，非新模型发布；对应主模型（GPT-5.5 / GPT-5.4 / GPT-5.6 / GPT-6 Astra）已分别入账 |
+| DeepSeek `deepseek-flash` 重命名 | DeepSeek 官方文档首页明示旧名 `deepseek-v4-flash` / `deepseek-v4-flash-vision-exp` 退役，请求由 V4.1-Flash 服务（第八批 deepseek-v4-1-flash.json 已覆盖）；无需新增 release |
+| 小米 MiMo-X-Pro-Preview / MiMo-X-Flash-Preview | 仅 MiMo Desktop beta 试用渠道；非公开通用发布页；按「无一级来源不建档」跳过 |
+| 小米 MiMo-Code CLI | GitHub 仓库（CLI 工具，非模型），按「非模型发布」跳过 |
+
+### 动作与门禁
+
+- **release 文件变更**：无新增、无修改、无删除；账本契约「只追加」严格执行。
+- **vendor 注册变更**：无；新增厂商（IBM Granite / Inception / Sakana / Inclusion AI / Nex AGI / PrismML / Unbiased / Inference.net）待主线排期后单独批次接入（需 logo / DOMAINS / LOGO_EXT 四登记）。
+- **checkpoint**：账本最大 release_date 仍为 2026-09-10（DeepSeek V4.1-Flash）。锚点不前进；下次扫描窗口仍为 2026-08-27 ~ 下次扫描日（窗口起点回退 14 天重叠）。
+- **门禁**：`validate-data` PASS（143 releases / 2544 evidence edges）；`npm run build` PASS（32 章 / EPUB 484KB / 460 benchmark 实体页 / sitemap 497 URL / validate-site 全绿）；CI 待 push 后查。
+
+### 跨批遗留观察（不改动既有文件，仅报告）
+
+1. `gpt-6-astra.json` 当前 models[] 仅含基础 Astra；OpenRouter 上的 `gpt-6-astra-pro` 变体（09-09 上架）建议在下次 Astra 页更新时合并到该文件 models[] 并补 `revisions[]` 留痕（与 claude-opus-4-7-fast 并入 claude-opus-4-7.json 同口径）。
+2. 8 家新厂商首次出现于 OpenRouter 目录但未在 vendors.json 注册——本批未触发新厂商接入流程（避免单批工作过宽），列为主线单独批次候选。
+3. xAI Grok 4.7 推迟状态未知，若后续发布需重新进入窗口扫描。
