@@ -10,7 +10,7 @@
 |---|---|---|
 | openai | openai.com/news/；sitemap：`openai.com/sitemap.xml/release/`（slug 权威） | WebFetch 常报错→走 web reader；数值多在 vega-lite 组件，从 RSC payload（`self.__next_f.push`）平衡括号解析 `vegaSpec` 取 `title+data.values`，以 `labelValue` 为准并用正文锚点校验；旧 slug 易 404，以 sitemap 为准 |
 | anthropic | anthropic.com/news/（newsroom 索引带日期） | 数值几乎全在图片：图片行 pending + 视觉转写进 notes；日期三源互证 = newsroom 索引 + platform.claude.com "Released" 行 + API snapshot id（`claude-x-YYYYMMDD`） |
-| google | blog.google/technology/ai/（publishedTime 元数据）；产品页 deepmind.google/models/gemini/*（DOM 明文大表） | 早期帖的对比表是 GIF：无头浏览器开 GIF 取稳定帧截图 + 视觉转写；一帖多模型常见（Flash/Lite/Cyber 并发） |
+| google | blog.google/technology/ai/（publishedTime 元数据）；开发者入口 blog.google/innovation-and-ai/technology/developers-tools/（Gemma 等）；产品页 deepmind.google/models/gemini/*（DOM 明文大表） | 早期帖的对比表是 GIF：无头浏览器开 GIF 取稳定帧截图 + 视觉转写；一帖多模型常见（Flash/Lite/Cyber 并发） |
 | xai | x.ai/news/ | 页面对 reader 与真实 DOM 内容不一致：默认无头浏览器渲染后扫 SVG `<text>`（图表值以无障碍文本内嵌） |
 | meta | ai.meta.com/blog/；research.meta.ai | ai.meta.com 拒多数 reader → Playwright 直读 DOM；伴随 Evaluation Report PDF 常为 tier-A 补充源（文本可机读但表格易粘连，按口径处理） |
 | mistral | mistral.ai/news/ + 官方 RSS（pubDate 可作日期证据） | 页面常不印日期 → RSS pubDate 取证 |
@@ -19,12 +19,12 @@
 
 | vendor_id | 官方发布渠道 | 站点脾气 / 已知坑 |
 |---|---|---|
-| kimi | kimi.ai/blog/（索引卡片带日期）；历史发布走 HF model card（moonshotai org，A 级） | 索引只挂最近 ~9 篇链接；表格有时非 DOM 组件（正文有 Evaluations 却无分数 → 先怀疑渲染遗漏，Playwright DOM 扫描 `table` 与 `img`） |
+| kimi | www.kimi.com/en/blog/ + www.kimi.com/code/docs/en/kimi-code/whats-new.html（预览版也在此发布）；历史发布走 HF model card（moonshotai org，A 级） | 索引只挂最近 ~9 篇链接；表格有时非 DOM 组件（正文有 Evaluations 却无分数 → 先怀疑渲染遗漏，Playwright DOM 扫描 `table` 与 `img`） |
 | deepseek | api-docs.deepseek.com/zh-cn/news/（slug 含日期如 `news250821`） | 分数常在 webp 图：图行 pending + 视觉转写进 notes；slug 裸格式会重定向到文档首页 |
 | glm | z.ai/blog/ | 完整 DOM 表 + 每表独立协议脚注是常见形态（verified 密度最高的来源）；无头浏览器兜底 |
 | minimax | minimax.io/news/（新版）；旧 /blog/ slug 带时间戳后缀（后缀≠发布时间戳） | JS 渲染站：web reader 只回站点壳 → Playwright DOM 扫描；大结果表是整图（数千 px）→ pending |
-| qwen | qwen.ai/?id=<model>（research 索引分页找 id，勿猜）；旧域 qwenlm.github.io 部分存活 | id 体系不规律（qwen3.8 / qwen3-max 并存，qwen3.7-max 空壳）；DOM 表多且机读；DOM 表必须逐张转录（曾漏表 2 共 61 行） |
-| doubao | seed.bytedance.com/en/blog/ | 散文少分数、分数图多（十余张）：图行 pending；正文"点名+明确论断"行可 verified + not_extracted（Opus 5 先例口径） |
+| qwen | qwen.ai/blog?id=<model>（research 索引分页找 id，勿猜）；旧域 qwenlm.github.io 部分存活 | id 体系不规律（qwen3.8 / qwen3-max 并存，qwen3.7-max 空壳）；DOM 表多且机读；DOM 表必须逐张转录（曾漏表 2 共 61 行） |
+| doubao | seed.bytedance.com/en/blog/ + seed.bytedance.com/en/ 模型 landing pages（Seedance / Seedream / SeedRealtime / Seed Audio） | 散文少分数、分数图多（十余张）：图行 pending；正文"点名+明确论断"行可 verified + not_extracted（Opus 5 先例口径） |
 
 ## Tier 2（扫但预期低频）
 
@@ -33,7 +33,7 @@
 | tencent | hy.tencent.com（blog，SPA 需渲染）；腾讯新闻官方通稿可作日期证据；官方 GitHub 仓 Tencent/*（README DOM 表） | 附录"模型得分"是整图 → pending；正文散文分数可 verified |
 | stepfun | stepfun.ai/research/（DOM 大表）；static.stepfun.com/blog/<model>/；官方 GitHub 仓（createdAt 作日期证据） | 表注 `*` = 同条件复现语义；自建内部集照录并注明 |
 | microsoft | microsoft.ai/news/（publishedTime 元数据）；platform.claude.com 类似的 docs 变更日志可佐证 | 2026-09-02 首次接入：MAI 模型线；正文散文明文分数可 verified，对比表多为整图 → pending；规格（参数/上下文）常在正文段落直接印出 |
-| xiaomi | 官方 blog / MiLLM 发布页 | 尚无 release 落库；首次录入时回写本行 |
+| xiaomi | mimo.xiaomi.com/ | MiMo-V2.6 已入库；首页为发现入口，规格与日期仍逐页取证 |
 
 ## 旁证与交叉核对（仅作线索，日期与数值一律以官方页为准）
 

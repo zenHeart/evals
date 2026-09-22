@@ -969,3 +969,24 @@ OpenAI GPT-Live-1（2026-09-10 语音垂直 API 模型）；Google Lyria 3.5（�
 1. 发布页柱状图替代文本把 AA Intelligence Index 写成 46，正文是 46.32。收录正文数字，图不另记。
 2. 模型卡 DeepSWE 的 GPT-5.6 Sol 列为 73.0，发布页附录该列为空。竞品列写在该行备注里，不另建 evidence。
 
+
+## 第十七批：需求选型与专项模型回填（2026-09-23）
+
+关联 Issue #1 / #2。增量窗口为 2026-09-08～2026-09-23，同时独立回填历史官方链接；旧批次跳过记录保留为历史，不再作为现行排除规则。
+
+| 发布 | 官方发布日期 | 新增 evidence | 取证说明 |
+|---|---|---|---|
+| Gemma 4 | 2026-04-02 | 60 verified | 公告的 E2B/E4B/26B MoE/31B Dense 四变体；分数来自本次模型卡快照，不冒充首发日数据；后增 12B Unified 独立留在回填队列 |
+| Seedance 2.5 | 2026-07-31 | 0 | landing page 与官方博客互证；保留 pending 档案，不臆造基准 |
+| Kimi K2.8 Preview | 2026-09-11 | 0 | Kimi Code 更新日志；版本档案与 kimi-for-coding 服务别名分开 |
+| Grok Voice Transcribe 2.0 | 2026-09-18 | 1 verified | 正文短语集 WER 6.8%，自建集、越低越好；小时价格不混入 token 价格 |
+| Qwen-Image-2.1 | 2026-09-20 | 1 pending | 实际浏览器读取动态正文；7B 只指视觉生成组件；评测图未转录为数值，资源抓取 9 项失败有记录 |
+| Claude Opus 5.5 | 2026-09-22 | 11 verified | 官方 DOM 表及正文；max/xhigh/medium 条件分行，注明安全策略介入后的回退模型；客户轶事不作公开基准 |
+
+本批新增 **6 releases、73 evidence = 72 verified + 1 pending**。数据总量 **154 releases（official 140）/ 2700 evidence**；既有 release 未改写。新 benchmark id：`bbeh`、`covost`、`qwen-image-bench`、`grok-short-phrases`，沿用自动证据页；AIME 2026 和 MedXPertQA MM 归入既有 `aime-26` / `medxpertqa-mm`。CoVoST 未明确版本，不能猜成 CoVoST2。
+
+每家 active vendor 的入口、HTTP/渲染失败、发现候选、已有 release 对应和后续回填状态写入 `data/model-coverage.json`。这是可复现的入口覆盖审计，**不是“全部历史模型已经入库”**：动态索引、历史分页、官方组织页的线索和尚未核验模型仍显式列为缺口。垂直分类不再阻止建档；产品候选也不会仅凭标题自动认定为模型。
+
+归档均在 `models/`，manifest 包含相对路径与 SHA-256；新增回归测试会检查所有本批文件哈希。四个 Gemma 变体按 `model_id` 绑定分数，Qwen pending 成绩不能进入分数筛选；未完整披露协议的证据不进入跨模型综合排序。
+
+门禁：本地测试、数据校验、书籍校验、EPUB/站点构建及站点链接校验通过；真实浏览器完成四视角复核，修复单次清除、解析后状态同步、多变体标识与窄屏溢出。最终测试数、构建计数与远端状态见 `docs/issues-1-2-acceptance.md`，本地通过不等同远端 CI 或部署通过。

@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { buildModelPages } from "./build-model-pages.mjs";
 /**
  * build-web.mjs — 构建 Web 版（dist/）供 GitHub Pages 部署。
  *
@@ -1291,7 +1292,7 @@ async function main() {
     }
     for (const r of db.releases) {
       searchData.push({ n: "发布", t: r.models.length ? r.models.join(" / ") : r.release_title, p: "模型发布 · " + r.vendor_label,
-        u: "releases/", c: `${r.release_title} ${r.models.join(" ")} ${r.vendor_label}` });
+        u: `models/${r.id}/`, c: `${r.release_title} ${r.models.join(" ")} ${r.vendor_label}` });
     }
   } catch (e) { console.warn("[evals-web] search index benchmark merge skipped:", e.message); }
 
@@ -1308,6 +1309,7 @@ async function main() {
   if (existsSync(benchDataPath)) {
     for (const b of loadBenchData().benchmarks) urls.push(`/benchmarks/${b.id}/`);
   }
+  urls.push(...buildModelPages(loadBenchData(), DIST));
   const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${urls.map(u => `  <url><loc>${SITE}${u}</loc><lastmod>${today}</lastmod></url>`).join("\n")}
@@ -1326,7 +1328,7 @@ ${urls.map(u => `  <url><loc>${SITE}${u}</loc><lastmod>${today}</lastmod></url>`
   try {
     await import("./build-benchmarks-hub.mjs");
   } catch (e) {
-    console.warn("[evals-web] benchmarks hub build skipped:", e.message);
+    throw new Error("benchmarks hub build failed", { cause: e });
   }
 }
 

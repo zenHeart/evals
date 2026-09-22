@@ -24,7 +24,7 @@ function readJson(p) {
 }
 
 /** 递归收集 model-releases 下的 release JSON（legacy/、official/<vendor>/ 等任意层级），保证按发布日期倒序排序 */
-function collectReleases(dir = join(DATA, "model-releases")) {
+export function collectReleases(dir = join(DATA, "model-releases")) {
   const out = [];
   function walk(d) {
     if (!existsSync(d)) return;
@@ -136,7 +136,19 @@ export function loadBenchData() {
   const catNames = Object.fromEntries(taxonomy.categories.map(c => [c.id, c.name]));
   const releaseViews = collectReleases().map(r => {
     const evidence = (r.benchmark_evidence || []).map(e => ({
+      id: e.id,
+      model_id: e.model_id ?? null,
       benchmark_id: canon(e.benchmark_id),
+      metric: e.reported_score?.metric ?? null,
+      unit: e.reported_score?.unit ?? null,
+      score_status: e.reported_score?.score_status ?? null,
+      protocol: e.protocol ?? {},
+      comparison_scope: e.comparison_scope ?? null,
+      source_tier: e.source_tier ?? null,
+      locator: e.locator ?? null,
+      retrieved_at: e.retrieved_at ?? null,
+      last_verified_at: e.last_verified_at ?? null,
+      notes: e.notes ?? null,
       variant: e.benchmark_variant ?? null,
       display: e.reported_score?.display ?? null,
       value: typeof e.reported_score?.value === "number" ? e.reported_score.value : null,
@@ -159,6 +171,8 @@ export function loadBenchData() {
       .sort((a, b) => b[1] - a[1]).slice(0, 4)
       .map(([cid, n]) => ({ id: cid, name: catNames[cid] || cid, count: n }));
     const modelSpecs = (r.models || []).map(m => ({
+      id: m.id,
+      variant: m.variant ?? null,
       name: m.name || m.id || null,
       params: m.params ?? null,
       context_window: m.context_window ?? null,
@@ -174,6 +188,7 @@ export function loadBenchData() {
       region: vendorRegion[r.vendor_id] ?? null,
       release_title: r.release_title ?? r.id,
       release_date: r.release_date ?? null,
+      date_precision: r.date_precision ?? null,
       models: (r.models || []).map(m => m.name || m.id).filter(Boolean),
       model_specs: modelSpecs,
       profile: { evidence_count: evidence.length, categories: profileCategories },
@@ -200,6 +215,8 @@ export function loadBenchData() {
     vendors: vendors.vendors || vendors || [],
     benchmarks,
     releases: releaseViews,
+    useCase: readJson(join(DATA, "use-cases", "chinese-longform-writing.json")),
+    coverage: readJson(join(DATA, "model-coverage.json")),
     _unmatchedEvidenceIds: [...unmatched],
   };
   return cache;

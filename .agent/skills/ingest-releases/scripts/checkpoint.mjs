@@ -28,7 +28,7 @@ const CHECKPOINT = join(ROOT, "data", "generated", "ingest-checkpoint.json");
 const OVERLAP_DAYS = 14;
 const FIRST_RUN_FALLBACK_DAYS = 90;
 
-const ISO_DATE = /^\d{4}-\d{2}-\d{2}/;
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 function today() {
   return new Date().toISOString().slice(0, 10);
@@ -113,12 +113,13 @@ function commit(args) {
     process.exit(1);
   }
   const prev = readCheckpoint() ?? {};
+  const anchor = [value, prev.last_max_release_date].filter(Boolean).sort().pop();
   writeFileSync(CHECKPOINT, JSON.stringify({
     last_scan_at: today(),
-    last_max_release_date: value,
+    last_max_release_date: anchor,
     _comment: "ingest-releases 技能的扫描检查点：last_max_release_date 是下次增量窗口的锚点（自动回退重叠天数）。由 checkpoint.mjs commit 维护，勿手改。",
   }, null, 2) + "\n", "utf-8");
-  console.log(`[checkpoint] 已记录：last_scan_at=${today()} last_max_release_date=${value}`);
+  console.log(`[checkpoint] 已记录：last_scan_at=${today()} last_max_release_date=${anchor}`);
 }
 
 const [, , cmd, ...args] = process.argv;
