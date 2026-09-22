@@ -4,7 +4,7 @@
 
 ## 汇总
 
-> **当前总量检查点（2026-09-01）**：92 releases = 76 official + 16 legacy · 1356 evidence edges · 819 verified。每批落地后更新此行。
+> **当前总量检查点（2026-09-22）**：147 releases = 133 official + 14 legacy · 2590 evidence edges。每批落地后更新此行。
 
 | 指标 | 值 |
 |---|---:|
@@ -859,3 +859,48 @@ OpenAI GPT-Live-1（2026-09-10 语音垂直 API 模型）；Google Lyria 3.5（�
 2. **首页 URL 反查规律**：用户提示的 `<vendor-domain>/<model-slug>` URL 模式对部分厂商适用（如 stepfun.com/step-5-preview、stepfun.com/step-1/2 反例）；不适用时依赖官方 newsroom 索引或 RSS 互证。建议把"URL 预测 → 404 验证 → 切下一渠道"的失败级联逻辑沉淀进 `references/discovery-channels.md`。
 3. **8 条历史 pending 占位的恢复路径**：6 条 NO-SOURCE 当前无任何可发布物，按现有结构保持；2 条 REPAIR-URL-NO-EVIDENCE（glm-4 / kimi-chat-200k）的具体评测分数可能在厂商技术报告 / 论文中可考，未来若取得真实来源，再走 `revisions[]` 翻 verified。
 4. **`reference` JSON 字段统一**：本批 step-5-preview.json 在 evidence 行的 `metric` 字段做了一致化尝试（accuracy / pass_rate / partial_score / index），与既有 `mmlu` / `cybergym` 等 evidence 行的 `metric:"accuracy"` 约定一致；建议技能 schema 文档补一句"`metric` 必填且与 ENUM 对齐"。
+
+---
+
+## 第十五批（2026-09-22 增量入库）：前沿自主 Agentic 与全模态语音交互 — xAI / 阿里通义千问 / Google DeepMind
+
+> 本批入库扫描窗口自 2026-09-05 至 2026-09-22，覆盖 3 家主流厂商共 3 场最新官方模型发布，共入库 18 项基准评测证据（18 项 verified，0 项 pending），将官方发布时间轴推进至 **2026-09-21**。
+
+| 指标 | 本批值 |
+|---|---:|
+| 新增 release 文件 | 3 |
+| benchmark_evidence 条数 | 18 |
+| 行 status=verified | 18 |
+| 行 status=pending | 0 |
+| release status=verified | 3 |
+| verified ∧ vendor_reported（计入自报） | 15 |
+| third_party_reported（榜单转述） | 3（Grok AA-Briefcase / LatchBio、Gemini AA-Speech-to-Speech） |
+
+### 逐 Release 清单
+
+| 文件 | 来源 URL | 条数 | verified | pending | release status | 抓取路径与说明 |
+|---|---|---:|---:|---:|---|---|
+| `xai/grok-4-7.json` | x.ai/news/grok-4-7 | 9 | 9 | 0 | verified | 官方新闻页 DOM 表格机读，披露 2.1T 参数、500K 上下文及长程强化学习自主任务分数（CursorBench 4.0 46.3%、DeepSWE v1.1 71.0%、Terminal-Bench 4.0 38.0% 等） |
+| `qwen/qwen3-8-omni-flash.json` | qwen.ai/blog?id=qwen3.8-omni-flash | 5 | 5 | 0 | verified | 官方发布文披露原生全模态与 Agentic 评测分值（UniClawBench 69.6、OmniVideoBench Agentic 67.8 / Static 63.4、WildClawBench-MM +36.5、AgenticVBench +22.3） |
+| `google/gemini-3-8-live.json` | blog.google/technology/ai/gemini-3-8-live/ | 4 | 4 | 0 | verified | 官方发布文披露原生语音对话与 Extended Thinking 后台推理评测（AA Speech-to-Speech Index 82.6 #1、Tau-Voice 68.6%、Sierra Banking 35.1%、BigBench Audio 97.7%） |
+
+### 新增 benchmark 候选（标记 `new-benchmark`，兜底页自动生成）
+
+- `eebench`：EEBench 电气工程学科领域推理基准
+- `latchbio`：LatchBio 生物安全能力基准
+- `hackerbench`：HackerBench v0.3 双重用途网络攻击风险测试
+- `uniclawbench`：UniClawBench 原生全模态智能体任务基准
+- `wildclawbench-mm`：WildClawBench-MM 音视频交互复杂评测
+- `agenticvbench`：AgenticVBench 长程视频智能体基准
+- `aa-speech-to-speech`：Artificial Analysis Speech-to-Speech Quality Index 语音对话质量指数
+- `tau-voice`：Tau-Voice 语音智能体任务完成率基准
+- `tau-voice-banking`：Sierra 银行电话客服高合规自主任务基准
+- `bigbench-audio`：Big Bench Audio 复杂音频推理与理解基准
+
+### 动作与门禁
+
+- **release 文件变更**：新增 3（grok-4-7、qwen3-8-omni-flash、gemini-3-8-live）；修改 0；删除 0。账本契约「只追加」严格执行。
+- **vendor 注册变更**：无（三家均为既有 Tier 1 注册厂商）。
+- **checkpoint**：账本最大 release_date 推进至 **2026-09-21**（Grok 4.7）；checkpoint 检查点已 commit。
+- **门禁**：`validate-data` PASS（taxonomy 9 类 / vendors 16 / benchmarks 461 / releases 147（official 133）/ evidence edges 2590）；`npm run build` PASS（32 章 / EPUB / 461 benchmark 实体页 + 17 auto-evidence 页 / validate-site 225 时间轴 1843 事件全绿）。
+
