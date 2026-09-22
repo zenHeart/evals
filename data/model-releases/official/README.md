@@ -4,7 +4,7 @@
 
 ## 汇总
 
-> **当前总量检查点（2026-09-22）**：147 releases = 133 official + 14 legacy · 2590 evidence edges。每批落地后更新此行。
+> **当前总量检查点（2026-09-22）**：148 releases = 134 official + 14 legacy · 2627 evidence edges。每批落地后更新此行。
 
 | 指标 | 值 |
 |---|---:|
@@ -903,4 +903,69 @@ OpenAI GPT-Live-1（2026-09-10 语音垂直 API 模型）；Google Lyria 3.5（�
 - **vendor 注册变更**：无（三家均为既有 Tier 1 注册厂商）。
 - **checkpoint**：账本最大 release_date 推进至 **2026-09-21**（Grok 4.7）；checkpoint 检查点已 commit。
 - **门禁**：`validate-data` PASS（taxonomy 9 类 / vendors 16 / benchmarks 461 / releases 147（official 133）/ evidence edges 2590）；`npm run build` PASS（32 章 / EPUB / 461 benchmark 实体页 + 17 auto-evidence 页 / validate-site 225 时间轴 1843 事件全绿）。
+
+---
+
+## 第十六批（2026-09-22 增量入库）：小米 MiMo-V2.6 系列
+
+> 扫描窗口 2026-09-07 ~ 2026-09-22（锚点 2026-09-21 回退 14 天）。第十五批已入库 Grok 4.7 / Qwen3.8-Omni-Flash / Gemini 3.8 Live。本批新增 1 个 release。
+
+| 指标 | 本批值 |
+|---|---:|
+| 新增 release 文件 | 1 |
+| benchmark_evidence 条数 | 37 |
+| 行 status=verified | 37 |
+| 行 status=pending | 0 |
+| release status=verified | 1 |
+| verified ∧ vendor_reported | 35 |
+| third_party_reported | 2（AA Intelligence Index v4.3 46.32；GDPVal 2.1 AA Elo 1673） |
+
+### 逐 Release 清单
+
+| 文件 | 来源 URL | 条数 | verified | pending | release status | 抓取路径与说明 |
+|---|---|---:|---:|---:|---|---|
+| `xiaomi/mimo-v2-6.json` | mimo.xiaomi.com/mimo-v2-6 | 37 | 37 | 0 | verified | 外壳页只有 iframe。正文在 `/mimo-v2-6/article.html`。附录表由同页 `bench.js` 渲染进 DOM（脚本头注明快照 2026-09-22），按表内 Pro / Flash 两列逐行收录。发布日以页眉 `<time datetime="2026-09-22">` 为准，与开放平台更新日志同日；HF publishedTime 与 OpenRouter created 为 2026-09-21T20:36Z，对应北京时间 9 月 22 日 |
+
+### 规格与协议
+
+- 参数与上下文不在发布正文里，取发布页链接的官方模型卡：Pro `1.02T` 总参 / `42B` 激活，Flash `309B` 总参 / `15B` 激活，上下文都是 `1M`，模态为文本、图像、视频、音频。
+- 定价取发布页表格（美元 / 百万 token，cache miss）：Flash `$0.14 / $0.28`，Pro `$0.435 / $0.87`，UltraSpeed `$4.35 / $8.7`。UltraSpeed 是 Pro 的高速输出模式（页面写同等质量、最高约 20 倍），没有单独分数。
+- 评测表没有逐行协议。模型卡部署建议 `temperature=1.0`、`top_p=0.95` 不写入 protocol。
+- DeepSWE v1.1 正文训练终点（Pro 72.57、Flash 65.68）与附录表（71.9、67.9）分开记行。
+- MiMo Cyber Bench 的 Pro 列：附录表 81.7，Pro-RL / Flash-RL 两张模型卡都印 80.2，各记一行。Flash 两边都是 77.2，不重复。
+- `bench.js` 里 GLM 5.3 列标了 `table: false`，没有渲染进附录表，不转录。
+
+### 新增 benchmark 候选（标记 `new-benchmark`，兜底页自动生成）
+
+- `mimo-code-bench`：页面标注 in-house 的编码集
+- `mimo-visual-coding`：页面标注 in-house 的视觉编码集
+- `mimo-cyber-bench`：页面标注 in-house 的安全集
+
+三页都没有足够的题量、切分和计分定义，本批不建 benchmark 实体。
+
+### 跳过清单
+
+| 模型 / 厂商 | 跳过原因 |
+|---|---|
+| GLM-5.3-FlashX（2026-09-18） | 官方文档写成 Flash 的高速服务档（同权重、约 200 token/s），不是新模型 |
+| GPT-Live-1（2026-09-10） | 语音对话模型，垂直 |
+| Qwen 实时语音 / Qwen-Image-2.1 / LiveTranslate | 语音或图像垂直；Qwen3.8-Omni-Flash 已在第十五批 |
+| Grok 4.7、Gemini 3.8 Live、Step 5 Preview、DeepSeek V4.1 Flash | 已在账本 |
+| OpenAI / DeepSeek 的 `*-latest` 别名 | 路由别名，不是新发布 |
+| Kimi | 博客索引与开放平台更新日志在窗口内只有 Web Search API 等产品变更，没有新模型发布文 |
+| MiniMax | 厂商页最新模型发布仍是 2026-06 的 M3 |
+| MiMo-V2.6-Distill-Qwen-9B | 同日出现在 HF collection，发布文未列，不单建档 |
+| PrismML / Unbiased / Sakana / InclusionAI / Inception / Nex AGI / Inference.net / Atria / TypeSafe / Wispr / Cognition | OpenRouter 或聚合站在窗口内有条目，厂商未在 `vendors.json` 注册。沿第十三批，留待单独接入，本批不建档 |
+
+### 动作与门禁
+
+- **release 文件变更**：新增 1（mimo-v2-6）；修改 0；删除 0。
+- **vendor 注册变更**：无（xiaomi 已是 Tier 1，徽章用既有彩色 `xiaomi.svg`）。
+- **checkpoint**：账本最大 release_date 推进至 **2026-09-22**（MiMo-V2.6）。
+- **门禁**：`validate-data` PASS（taxonomy 9 类 / vendors 16 / benchmarks 461 / releases 148（official 134）/ evidence edges 2627）；`npm run build` PASS（32 章 / EPUB / 461 benchmark 实体页 + 20 auto-evidence 页 / sitemap 498 URLs / validate-site 226 时间轴 1860 事件全绿）。
+
+### 跨批遗留观察
+
+1. 发布页柱状图替代文本把 AA Intelligence Index 写成 46，正文是 46.32。收录正文数字，图不另记。
+2. 模型卡 DeepSWE 的 GPT-5.6 Sol 列为 73.0，发布页附录该列为空。竞品列写在该行备注里，不另建 evidence。
 
