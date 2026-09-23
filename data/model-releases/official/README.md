@@ -4,7 +4,7 @@
 
 ## 汇总
 
-> **当前总量检查点（2026-09-22）**：148 releases = 134 official + 14 legacy · 2627 evidence edges。每批落地后更新此行。
+> **当前总量检查点（2026-09-23）**：163 releases = 149 official + 14 legacy · 2716 evidence edges。每批落地后更新此行。
 
 | 指标 | 值 |
 |---|---:|
@@ -1031,4 +1031,58 @@ OpenAI GPT-Live-1（2026-09-10 语音垂直 API 模型）；Google Lyria 3.5（�
 - **自动化测试**：`node --test tests/*.test.mjs` 19 项测试全通过。
 - **数据层校验**：`node scripts/validate-data.mjs` PASS。
 - **全站构建与校验**：`npm run build` PASS（32 章 / EPUB / 721 个 HTML 页面 / 32431 个内部引用无死链 / 228 个时间轴 / 1913 个事件卡片校验全部通过）。
+
+## 第十九批（2026-09-23 增量入库）：OpenAI GPT-6 Sol 与 GPT-6 Luna 官方发布
+
+> 本批入库扫描窗口自 2026-09-08 至 2026-09-23，聚焦 OpenAI 于 2026-09-22 发布的 GPT-6 家族核心扩展模型 GPT-6 Sol 与 GPT-6 Luna。共入库 1 个官方 release、16 项基准评测证据（16 项 verified，0 项 pending），将官方发布时间轴推进至 **2026-09-22**。
+
+| 指标 | 本批值 |
+|---|---:|
+| 新增 release 文件 | 1（`openai/gpt-6-sol-and-luna.json`） |
+| benchmark_evidence 条数 | 16 |
+| 行 status=verified | 16 |
+| 行 status=pending | 0 |
+| release status=verified | 1 |
+| verified ∧ vendor_reported（计入自报） | 16 |
+
+### 逐 Release 清单
+
+| 文件 | 来源 URL | 条数 | verified | pending | release status | 抓取路径与说明 |
+|---|---|---:|---:|---:|---|---|
+| `openai/gpt-6-sol-and-luna.json` | `https://openai.com/index/introducing-gpt-6-sol-and-luna/` | 16 | 16 | 0 | verified | 官方博客发布正文散文与无障碍 DOM SVG 矢量图表数据双向对账；披露 1.05M 上下文、API 降价 50%（Sol $2/$10、Luna $0.10/$0.50）与 90% 提示词缓存折扣。自动化评测覆盖企业流程（AutomationBench）、专业长程工作流（Agents' Last Exam）、真实代码合并（FrontierCode）、软件工程（DeepSWE）、真实 GUI 计算机操作（OSWorld）与内部对齐/事实性 |
+
+### 规格与协议
+
+- **双模型差异化定位**：GPT-6 Sol 定位为高性价比工作马模型（面向日常复杂编码、长流程自主 Agent 与专业工作流）；GPT-6 Luna 定位为超高吞吐、极致低成本轻量模型（面向路由、提取、分类与高频摘要）。两模型均支持 1.05M 上下文。
+- **评测成绩亮点**：
+  - **AutomationBench 1.0.6**：GPT-6 Sol (xhigh) 达到 33.2%（成本 $0.27），超越 Claude Opus 5 max effort (26.9%, $3.05) 与 Claude Fable 5.1 w/ fallback (31.4%, $2.45)，成本仅为其约 9%；GPT-6 Luna (high) 达到 14.5%（成本 $0.021），max 达到 20.7%（成本 $0.037）。
+  - **Agents' Last Exam V1**：GPT-6 Sol (max) 达到 56.4%（成本 $2.93），超越 Claude Opus 5 峰值 (55.9%, $7.29)；Luna (max) 达 50.9%（成本 $0.15）。
+  - **DeepSWE 1.1**：GPT-6 Sol (max) 达 68.8%（成本 $2.74），距 Claude Fable 5 峰值 (69.9% at xhigh, $13.41) 仅差 1.1 个百分点且成本降低约 80%；Luna (max) 达 66.6%（成本 $0.22），匹敌 Opus 5 与 Fable 5 的 medium effort 表现。
+  - **FrontierCode 1.1 Main**：GPT-6 Sol (max) 达 49.3%（成本 $2.14），xhigh 达 48.4%（成本 $1.37），以远低于 Claude Fable 5.1 xhigh ($9.27, 48.7%) 的成本匹敌其表现；Luna 达 42.4%。
+  - **OSWorld 2.0 offline**：GPT-6 Sol (xhigh) 达 60.5%（成本 $2.21），匹敌 Claude Opus 5 medium (60.3%, $12.67) 且成本降低约 80%，max 达 64.4%（成本 $3.25）；Luna (max) 达 52.7%（成本 $0.27），超前代主力 GPT-5.6 Sol medium (49.7%, $2.73) 且成本仅为其十分之一。
+  - **事实性与对齐**：Internal Factuality 错误率 Sol 为 4.5%（较 GPT-5.6 Sol 8.4% 减半）、Luna 为 7.6%（低成本匹敌前代 Sol）；Internal Coding Deception 欺瞒率 Sol 为 1.3%、Luna 为 2.8%（显著低于前代 10.4% / 9.5%）。
+
+### 新增 benchmark 候选（标记 `new-benchmark`，兜底页自动生成）
+
+- `openai-factuality`：OpenAI 官方内部事实准确度评测（用户反馈标记错误对话集，衡量含事实错误回答比例，越低越好）
+- `openai-coding-deception`：OpenAI 官方对齐评测（内部编码欺瞒率，刻意诱导不诚实任务下的欺瞒率，越低越好）
+
+### 跳过清单
+
+| 模型 / 厂商 | 跳过原因 |
+|---|---|
+| 腾讯混元图像 3.5 预览版（Hy Image 3.5 Preview，2026-09-22） | 图像垂直生图模型，官方通稿披露设计师 GSB 盲测提升 30% 与 API 定价，未披露外部公开定量基准分数 |
+| Mistral | 9 月无新基础模型发布，主要为 30 亿欧元 D 轮融资与 Mozilla 合作 |
+| DeepSeek | 9 月 10 日发布 V4.1 Flash 之后无新发布（V4.1 Pro 筹备中） |
+| GLM / 智谱 | GLM-5.3-FlashX 为生产推理加速服务档（同权重、约 200 token/s），非新基座模型（第十六批已记跳过） |
+| ByteDance | 豆包 / Seed 体系持续动态迭代，9 月无新代际发布 |
+| Meta | Muse Spark 1.3（09-02）已在先前批次捕获，窗口内无新增基座 |
+
+### 动作与门禁
+
+- **release 文件变更**：新增 1（`openai/gpt-6-sol-and-luna.json`）；修改 0；删除 0。账本契约「只追加」严格执行。
+- **vendor 注册变更**：无（OpenAI 为既有 Tier 1 注册厂商）。
+- **checkpoint**：账本最大 release_date 推进至 **2026-09-22**（GPT-6 Sol / Luna）；checkpoint 检查点已 commit。
+- **门禁**：`validate-data` PASS（taxonomy 9 类 / vendors 16 / benchmarks 461 / releases 163（official 149）/ evidence edges 2716）；`npm run build` PASS（32 章 / EPUB / 724 个 HTML 页面 / 32569 个内部引用无死链 / 228 个时间轴 / 1920 个事件卡片校验全部通过）。
+
 
