@@ -26,6 +26,7 @@ export function reconcileCoverage(data,releases,archives){
    c.release_id=r.id;c.family=r.models.map(m=>m.name||m.id).join(' / ')||r.release_title;
    c.archive_path=archives[r.id]||c.archive_path||null;c.archive_status=c.archive_path?'archived':'not_archived';
    c.evidence_status=r.benchmark_evidence.some(e=>e.status==='verified'&&e.reported_score?.score_status==='reported')?'reported':r.benchmark_evidence.length?'not_extracted':'not_reported';
+   c.exclusion_reason=null;
    c.next_backfill_at=null;
   }
  out.candidates=mergeCandidates([],out.candidates);return out;

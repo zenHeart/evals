@@ -28,7 +28,15 @@ test('真实加载路径按 model_id 绑定证据，不向家族复制',async()=
  assert.equal(gemma.find(m=>m.id==='gemma-4-e2b').context_window,'128K');
  assert.ok(!gemma.find(m=>m.id==='gemma-4-31b').modalities.includes('音频'));
  assert.ok(data.models.find(m=>m.release_id==='qwen-image-2-1').evidence.every(e=>e.status==='pending'&&e.value===null));
- assert.ok(db.coverage.candidates.find(c=>c.id==='gemma-4-12b-unified').release_id===null);
+ const gemma12b = db.coverage.candidates.find(c=>c.id==='gemma-4-12b-unified');
+ assert.ok(gemma12b.release_id===null && typeof gemma12b.exclusion_reason === 'string' && gemma12b.exclusion_reason.length > 0);
+ const {MODEL_FIXTURE_URLS} = await import('../scripts/validate-model-coverage.mjs');
+ for (const fixUrl of MODEL_FIXTURE_URLS) {
+  const targetKey = canonicalURL(fixUrl);
+  const cand = db.coverage.candidates.find(c => (c.official_urls||[]).some(u => canonicalURL(u) === targetKey));
+  assert.ok(cand, '夹具 URL 必须存在于候选列表: ' + fixUrl);
+  assert.ok(cand.release_id || cand.exclusion_reason, '夹具候选必须有 release 或排除原因: ' + fixUrl);
+ }
 });
 test('覆盖状态校验拒绝模型外键错误、空证据假通过和坏精度',async()=>{
  const {validateCoverage}=await import('../scripts/validate-model-coverage.mjs');
@@ -37,6 +45,9 @@ test('覆盖状态校验拒绝模型外键错误、空证据假通过和坏精�
  const data={vendors:[{vendor_id:'v',allowed_hosts:['example.com'],entries:[{url:'https://example.com',status:'not_scanned'}]}],candidates:[c]};
  const errs=validateCoverage(data,vendors,[r]);assert.ok(errs.some(x=>x.includes('空证据')));assert.ok(errs.some(x=>x.includes('日期精度')));
  r.benchmark_evidence=[{id:'v-r--b',model_id:'ghost',status:'pending',reported_score:{value:4},locator:{row:'b'}}];assert.ok(validateCoverage(data,vendors,[r]).some(x=>x.includes('model 外键')));
+ const unhandledC = {id:'unhandled', vendor_id:'v', family:'f', classification:'general', official_urls:['https://example.com/unhandled'], archive_status:'not_archived', evidence_status:'not_reported', release_id:null, exclusion_reason:null};
+ const dataUnhandled = {vendors:[{vendor_id:'v', allowed_hosts:['example.com'], entries:[{url:'https://example.com', status:'not_scanned'}]}], candidates:[unhandledC]};
+ assert.ok(validateCoverage(dataUnhandled, vendors, []).some(x=>x.includes('既无 release 也无 exclusion_reason')));
 });
 test('覆盖对账幂等，后增变体不因共享模型卡并入首发',async()=>{
  const {reconcileCoverage}=await import('../scripts/reconcile-coverage.mjs');

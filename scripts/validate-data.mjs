@@ -334,14 +334,16 @@ for (const [file, rel] of relData) {
 const coverageFile = path.join(DATA, "model-coverage.json");
 const coverage = readJson(coverageFile);
 if (coverage.ok && ven.ok) errors.push(...validateCoverage(coverage.data, ven.data.vendors, [...relData.values()], ROOT));
-const useCaseFile = path.join(DATA, "use-cases", "chinese-longform-writing.json");
-const useCase = readJson(useCaseFile);
-if (useCase.ok) {
-  const ids = new Set();
-  for (const d of useCase.data.dimensions || []) {
-    if (ids.has(d.id) || !Number.isFinite(d.weight) || d.weight < 0 || d.weight > 10) err(useCaseFile, "维度重复或权重非法：" + d.id);
-    ids.add(d.id);
-    for (const id of d.benchmarks) if (!ctx.benchmarkIds.has(id) || !useCase.data.benchmarks[id]) err(useCaseFile, "评测映射不存在：" + id);
+const useCasesDir = path.join(DATA, "use-cases");
+for (const useCaseFile of jsonFiles(useCasesDir)) {
+  const useCase = readJson(useCaseFile);
+  if (useCase.ok) {
+    const ids = new Set();
+    for (const d of useCase.data.dimensions || []) {
+      if (ids.has(d.id) || !Number.isFinite(d.weight) || d.weight < 0 || d.weight > 10) err(useCaseFile, "维度重复或权重非法：" + d.id);
+      ids.add(d.id);
+      for (const id of d.benchmarks) if (!ctx.benchmarkIds.has(id) || !useCase.data.benchmarks[id]) err(useCaseFile, "评测映射不存在：" + id);
+    }
   }
 }
 

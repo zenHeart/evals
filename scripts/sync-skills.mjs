@@ -12,7 +12,7 @@
  *
  * 用法：node scripts/sync-skills.mjs   （npm run sync:skills）
  */
-import { cpSync, existsSync, mkdirSync, readdirSync, rmSync, statSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -24,10 +24,68 @@ if (!existsSync(SRC)) {
   console.error(`[sync-skills] canonical 目录不存在：${SRC}`);
   process.exit(1);
 }
+
+function getAllFiles(dir, base = "") {
+  let results = [];
+  if (!existsSync(dir)) return results;
+  const entries = readdirSync(dir, { withFileTypes: true });
+  for (const entry of entries) {
+    const fullPath = join(dir, entry.name);
+    const relPath = base ? `${base}/${entry.name}` : entry.name;
+    if (entry.isDirectory()) {
+      results = results.concat(getAllFiles(fullPath, relPath));
+    } else if (entry.isFile()) {
+      results.push(relPath);
+    }
+  }
+  return results;
+}
+
+const isCheck = process.argv.includes("--check");
+
+if (isCheck) {
+  if (!existsSync(DST)) {
+    console.error(`[sync-skills] 错误：镜像目录不存在：${DST}`);
+    process.exit(1);
+  }
+  const srcFiles = new Set(getAllFiles(SRC));
+  const dstFiles = new Set(getAllFiles(DST));
+  let hasDiff = false;
+
+  for (const file of srcFiles) {
+    if (!dstFiles.has(file)) {
+      console.error(`[sync-skills] 漂移：镜像缺失文件 ${file}`);
+      hasDiff = true;
+    } else {
+      const srcBuf = readFileSync(join(SRC, file));
+      const dstBuf = readFileSync(join(DST, file));
+      if (!srcBuf.equals(dstBuf)) {
+        console.error(`[sync-skills] 漂移：内容不一致 ${file}`);
+        hasDiff = true;
+      }
+    }
+  }
+
+  for (const file of dstFiles) {
+    if (!srcFiles.has(file)) {
+      console.error(`[sync-skills] 漂移：镜像存在多余文件 ${file}`);
+      hasDiff = true;
+    }
+  }
+
+  if (hasDiff) {
+    console.error("[sync-skills] 失败：.agent/skills/ 与 .claude/skills/ 存在漂移。请运行 `npm run sync:skills` 重新同步后提交。");
+    process.exit(1);
+  }
+
+  console.log("[sync-skills] ✓ 技能镜像无漂移，与 canonical 完全一致");
+  process.exit(0);
+}
+
 mkdirSync(DST, { recursive: true });
 
 const names = readdirSync(SRC).filter(n => statSync(join(SRC, n)).isDirectory());
-let copied = 0, refreshed = 0, removed = 0;
+let copied = 0, removed = 0;
 
 // 全量复制（cpSync 递归覆盖）
 for (const name of names) {
@@ -48,3 +106,4 @@ for (const name of readdirSync(DST)) {
 
 if (copied === 0 && removed === 0) console.log("[sync-skills] 无技能目录，未做任何变更");
 else console.log(`[sync-skills] 完成：镜像 ${copied} 个技能，清除 ${removed} 个陈旧镜像`);
+

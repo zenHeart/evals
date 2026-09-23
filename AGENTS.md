@@ -8,7 +8,7 @@
 
 > **执行合同**：本仓的站点优化执行合同在 [`_docs/goal.md`](_docs/goal.md)；冲突时事实与任务目标以 goal.md 最新版为准，写作风格与章节结构规范以本文件为准。
 > **站点验收**：任何页面/功能交付前，按 [`docs/site-review-checklist.md`](docs/site-review-checklist.md) 的四视角读者任务矩阵实测（学习者/查询者/UI 新人/工程师），覆盖对账以证据账本 id 为准。
-> **Agent 技能**：项目技能 canonical 在 `.claude/skills/`（Claude Code 发现目录）；`.agent/skills/` 是给 Antigravity 等读取 `.agent/skills/` 的 agent 的**单向镜像**（`npm run sync:skills` 生成，勿手改）。当前技能：`ingest-releases`——模型发布增量入库（发现窗口内新发布 → 归档 models/ → 写证据账本 → 门禁 → 推送）。
+> **Agent 技能**：项目技能 canonical 在 `.claude/skills/`（Claude Code 发现目录，唯一事实源）；`.agent/skills/` 是给 Antigravity 等读取 `.agent/skills/` 的 agent 的**单向镜像**（`npm run sync:skills` 生成，勿手改）。严禁在 `.agent/skills/` 中手改代码；CI 通过 `npm run sync:skills:check`（`node scripts/sync-skills.mjs --check`）实施零漂移校验。当前技能：`ingest-releases`——模型发布增量入库（发现窗口内新发布 → 归档 models/ → 写证据账本 → 门禁 → 推送）。
 
 ---
 
@@ -113,7 +113,7 @@
 
 ## 4. 校验门禁（CI 必过）
 
-`npm run validate` 会执行：
+`npm run validate` 与 CI 管线会执行：
 
 1. **章节完整性** — `metadata.yaml` 列出的所有 `.md` 文件都存在
 2. **标题层级** — H1/H2/H3 必须数字前缀、顺序递增
@@ -122,6 +122,8 @@
 5. **代码 fence 闭合** — 未闭合即失败
 6. **TODO 标记** — 包含 `TODO` / `FIXME` / `XXX` 关键字的章节门禁失败
 7. **数据引用** — 含数字但未标 `（来源：...）` 的句子门禁失败（白名单：年份/版本号）
+8. **技能镜像零漂移** — `npm run sync:skills:check` 验证 `.agent/skills/` 与 `.claude/skills/` 严格一致
+9. **数据层契约** — `npm run validate:data` 验证模型与发布覆盖矩阵
 
 **不通过则无法 merge。**
 
@@ -135,7 +137,10 @@
 | 大纲 | `book/outline.md` | 本书 |
 | 元数据 | `book/metadata.yaml` | 本书 |
 | 封面 SVG | `book/cover/cover.svg` | 本书 |
+| 静态资源与 Logo | `assets/` | 本书 / 第三方商标归属 |
 | 调研素材 | `research/` | 本书 |
+| Canonical 技能 | `.claude/skills/` | 本书（唯一技能事实源） |
+| 镜像技能 | `.agent/skills/` | 本书（只读单向镜像，CI 校验漂移） |
 | 部署脚本 | `deploy/` | 本书 |
 | 第三方厂商 logo | 仅在文末 References 中使用，引用即署名 | 第三方 |
 

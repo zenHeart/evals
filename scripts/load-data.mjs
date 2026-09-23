@@ -50,6 +50,20 @@ export function freshCutoff() {
   return new Date(Date.now() - FRESH_WINDOW_YEARS * 365 * 24 * 3600 * 1000).toISOString().slice(0, 10);
 }
 
+export function loadUseCases() {
+  const dir = join(DATA, "use-cases");
+  const map = {};
+  if (existsSync(dir)) {
+    for (const f of readdirSync(dir)) {
+      if (f.endsWith(".json")) {
+        const u = readJson(join(dir, f));
+        if (u && u.id) map[u.id] = u;
+      }
+    }
+  }
+  return map;
+}
+
 export function loadBenchData() {
   if (cache) return cache;
   const cutoff = freshCutoff();
@@ -208,6 +222,8 @@ export function loadBenchData() {
     .sort()
     .pop() || null;
 
+  const useCases = loadUseCases();
+
   cache = {
     updated,
     cutoff,
@@ -215,7 +231,8 @@ export function loadBenchData() {
     vendors: vendors.vendors || vendors || [],
     benchmarks,
     releases: releaseViews,
-    useCase: readJson(join(DATA, "use-cases", "chinese-longform-writing.json")),
+    useCase: useCases["chinese-longform-writing"] || readJson(join(DATA, "use-cases", "chinese-longform-writing.json")),
+    useCases,
     coverage: readJson(join(DATA, "model-coverage.json")),
     _unmatchedEvidenceIds: [...unmatched],
   };

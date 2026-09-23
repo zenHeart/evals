@@ -1,9 +1,24 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import {canonicalURL} from './release-discovery.mjs';
+export const MODEL_FIXTURE_URLS = [
+  'https://seed.bytedance.com/en/seedance2_5',
+  'https://qwen.ai/blog?id=qwen-image-2.1',
+  'https://blog.google/innovation-and-ai/technology/developers-tools/gemma-4/',
+  'https://ai.google.dev/gemma/docs/core/model_card_4',
+];
+
 export function validateCoverage(data,vendors,releases,root){
  const errors=[],ids=new Set(),urls=new Set();
  const byRelease=new Map(releases.map(r=>[r.id,r]));
+ if(root){
+  for(const fixUrl of MODEL_FIXTURE_URLS){
+   const targetKey=canonicalURL(fixUrl);
+   const cand=data.candidates.find(c=>(c.official_urls||[]).some(u=>canonicalURL(u)===targetKey));
+   if(!cand)errors.push('夹具 URL 未在候选列表中建档: '+fixUrl);
+   else if(!cand.release_id&&!cand.exclusion_reason)errors.push('夹具模型未关联 release 且无排除原因: '+fixUrl);
+  }
+ }
  for(const vendor of vendors.filter(v=>v.active)){
   const entries=data.vendors.filter(v=>v.vendor_id===vendor.id);
   if(entries.length!==1||!entries[0].entries?.length)errors.push(vendor.id+': 需要唯一的覆盖入口记录');
@@ -29,7 +44,8 @@ export function validateCoverage(data,vendors,releases,root){
   const r=byRelease.get(c.release_id);
   if(c.release_id&&!r)errors.push(c.id+': release 外键不存在');
   if(r&&r.vendor_id!==c.vendor_id)errors.push(c.id+': release 厂商不一致');
-  if(c.classification==='vertical'&&c.exclusion_reason)errors.push(c.id+': 专项模型不能因分类被排除');
+  if(['general','vertical'].includes(c.classification)&&!c.release_id&&!c.exclusion_reason)errors.push(c.id+': general/vertical 候选既无 release 也无 exclusion_reason');
+  if(c.classification==='vertical'&&/分类|垂直/i.test(c.exclusion_reason||''))errors.push(c.id+': 专项模型不能因分类被排除');
   if(c.archive_status==='archived'&&root){
    const p=path.resolve(root,c.archive_path||'');if(!p.startsWith(path.resolve(root,'models')+path.sep)||!fs.existsSync(path.join(p,'index.md')))errors.push(c.id+': 归档路径缺失或越界');
   }

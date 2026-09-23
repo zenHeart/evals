@@ -10,7 +10,7 @@ export function mergeCandidates(existing, discovered) {
   return [...byURL.values()].sort((a,b)=>a.id.localeCompare(b.id));
 }
 export function classifyTitle(title){
-  if(/studio|enterprise|cli\b|desktop|pricing|program|console|solution|toolkit|workspace|sdk\b/i.test(title))return 'product';
+  if(/raises|funding|series [a-z]|partner|join|hackathon|license|blueprint|safety standard|environmental|energy|manufacturing|compute|caching|prompt caching|cpp|pytorch|tensor|quantization|compiler|infra|sdk\b|cli\b|api\b|platform|la plateforme|le chat|app\b|desktop|workspace|chatgpt|searchgpt|canvas|studio|enterprise|pricing|program|console|solution|toolkit|memory|connectors|fine-tuning|customization|stargazers|forks|pulls|issues|conduct|consultation|public sector|finance|workflows|in-region|regional|ki für|about mistral|bring.*browser|notebook|read docs|images\b|ollama|pairing|gemini models|claude.*constitution|watermark|countering|corps|claude code|kimi business|kimi code|kimi browser|kimi vendor|kimi work|try kimi|keynote|ode poetry|agentic search/i.test(title))return 'product';
   if(/image|video|audio|speech|sound|voice|transcri|seedance|seedream|seedrealtime|lyria|veo|sora|ocr|doc|robot|agent|coder?|devstral|robostral|图像|视频|语音|视觉|多模态/i.test(title))return 'vertical';
   if(/gemma|llama|gpt|claude|gemini|deepseek|mistral|mixtral|glm|kimi|qwen|step|mimo|phi|hunyuan/i.test(title))return 'general';
   return 'unknown';
@@ -22,7 +22,7 @@ export function discoverLinks(html, base) {
     let title=m[2].replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim();
     try{
       const u=new URL(m[1].replace(/&amp;/g,'&'),base);
-      if(u.protocol!=='https:'||/login|signup|download|privacy|terms|cookie/i.test(u.pathname))continue;
+      if(u.protocol!=='https:'||/login|signup|download|privacy|terms|cookie|stargazers|forks|pulls|issues/i.test(u.pathname))continue;
       const slug=u.pathname.split('/').filter(Boolean).pop()||'';
       const isGenericTitle=!title||/^(learn more|read more|read post|view post|details|link|more|click here|arrow|see all)$/i.test(title);
       if(isGenericTitle&&RE_KEYWORD.test(slug)){
