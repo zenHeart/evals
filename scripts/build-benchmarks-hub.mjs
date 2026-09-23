@@ -20,6 +20,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { SITE, SHELL_CSS, shellHead, shellTopbar, shellFooter, SHELL_JS } from "./site-shell.mjs";
 import { loadBenchData } from "./load-data.mjs";
+import { benchmarkScopeHTML, evidenceScoreLabel } from "./model-ui.mjs";
 import { vendorMark, LOGO_EXT } from "./vendor-logos.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -360,6 +361,7 @@ ${shellTopbar("../../", "benchmarks")}
   ${b.meaning ? `<p>${esc(b.meaning)}</p>` : `<p style="color:var(--graphite)">分数含义解读待补。</p>`}
   ${b.adoptionNote ? `<div class="callout"><b>采用格局：</b>${esc(b.adoptionNote)}</div>` : ""}
 
+  ${benchmarkScopeHTML(b.id, db.useCase)}
   <h2 class="detail-sec" id="protocol">评分协议</h2>
   ${b.protocol ? `<p>${esc(b.protocol)}</p>` : `<p style="color:var(--graphite)">这个评测的官方统一评分协议还没收录到本页；各厂商实际使用的执行框架（harness）与推理档位（effort）已逐条写在下方引用卡里。</p>`}
   <div class="callout warn"><b>可比性提示：</b>同一评测的分数是「实验配置」的产物：只要评测版本（variant）、执行框架（harness）、推理档位（reasoning effort）、工具、采样参数、运行次数或聚合方式有任何一项不同，数字就不能直接横向比较。下方各厂商的分数如未写明协议细节，请只当作方向参考。</div>
@@ -507,6 +509,7 @@ body.dark .tlr {
   padding:7px 10px; border-radius:6px; border:1px solid var(--rule); background:var(--card); color:inherit; font:400 13px/1.4 inherit;
 }
 .console input[type=search] { flex:1; min-width:170px; }
+.console select { max-width:100%; min-width:0; }
 .console input[type=number] { width:88px; font-family:ui-monospace,monospace; }
 .ghost-btn { border:1px solid var(--pin); background:transparent; color:var(--pin); border-radius:6px; padding:7px 14px; font:700 12.5px/1.2 inherit; cursor:pointer; }
 .ghost-btn:hover { background:color-mix(in srgb, var(--pin) 8%, transparent); }
@@ -584,15 +587,15 @@ function tlEvtHtml(db, r, opts = {}) {
         .filter(Boolean).join(" · ");
       const benchName = db.benchmarks.find(x => x.id === benchRow.benchmark_id)?.name;
       const shortName = benchName ? (benchName.split(":")[0]?.trim() || benchName) : benchRow.benchmark_id;
-      const label = benchRow.variant ? esc(benchRow.variant) : esc(shortName);
-      return `<span class="bchip ${cls} focus"${tip ? ` title="${esc(tip)}"` : ""}>${label} <b>${esc(benchRow.display || "未公布")}</b></span>`;
+      const label = (r.models.length > 1 ? esc(r.model_specs.find(m => m.id === benchRow.model_id)?.name || benchRow.model_id || "模型未说明") + " · " : "") + (benchRow.variant ? esc(benchRow.variant) : esc(shortName));
+      return `<span class="bchip ${cls} focus"${tip ? ` title="${esc(tip)}"` : ""}>${label} <b>${esc(evidenceScoreLabel(benchRow))}</b></span>`;
     }).join("");
   })() : r.evidence.map(e => {
     // 账本中出现的每个评测都有详情页（正式实体或证据自动建档）——chip 一律可点
-    const score = e.display ? ` <b>${esc(e.display)}</b>` : "";
+    const score = ` <b>${esc(evidenceScoreLabel(e))}</b>`;
     const cls = e.status === "verified" ? "ok" : "pd";
     const focus = focusSet && focusSet[e.benchmark_id] ? " focus" : "";
-    const inner = `${esc(e.benchmark_id)}${e.variant ? " " + esc(e.variant) : ""}${score}`;
+    const inner = `${r.models.length > 1 ? esc(r.model_specs.find(m => m.id === e.model_id)?.name || e.model_id || "模型未说明") + " · " : ""}${esc(e.benchmark_id)}${e.variant ? " " + esc(e.variant) : ""}${score}`;
     const tip = [e.harness ? `执行框架（harness）：${e.harness}` : null, e.effort ? `推理档位（effort）：${e.effort}` : null]
       .filter(Boolean).join(" · ");
     return `<a class="bchip ${cls}${focus}" href="${chipBase}${esc(e.benchmark_id)}/"${tip ? ` title="${esc(tip)}"` : ""}>${inner}</a>`;
@@ -608,8 +611,9 @@ function tlEvtHtml(db, r, opts = {}) {
       <span class="evt-vendor">${vendorMark(r.vendor_id, 14)} ${esc(r.vendor_label)}<i>·</i>${region}</span>
     </div>
     <h3 class="evt-title">${titleInner}</h3>
-    ${evtSpecsHtml(r)}
+    ${r.model_specs.length === 1 ? evtSpecsHtml(r) : `<p class="evt-overview">本发布含 ${r.model_specs.length} 个变体，各变体规格见模型详情。</p>`}
     ${evtOverviewHtml(r, benchMode)}
+    <p><a href="${(benchMode ? '../../models/' : chipBase.replace(/benchmarks\/$/, 'models/'))}${esc(r.id)}/">查看模型变体与证据</a>${!r.evidence.length?' · 所收录来源未披露量化评测':''}</p>
     ${chips ? `<div class="evt-chips">${chips}</div>` : ""}
     ${r.source_url && !r.models.length ? `<div class="evt-src"><a href="${esc(r.source_url)}" target="_blank" rel="noopener">官方发布原文 ↗</a><span class="kind">${esc(r.source_kind || "")}</span></div>` : ""}
   </article>`;
@@ -654,7 +658,7 @@ function releasesTimelinePage(db, rel = "../../") {
     releases: db.releases,
   };
 
-  const desc = `收录 2022 年至今国内外主流厂商核心模型的官方发布档案与实测评测数据，逐条对账技术报告中的基准引用、实测得分与评测协议；全面覆盖核心里程碑模型并提供官方出处与架构规格说明。`;
+  const desc = `收录 2022 年至今国内外主流厂商核心模型的官方发布档案与实测评测数据，逐条对账技术报告中的基准引用、实测得分与评测协议；提供官方出处与架构规格说明；覆盖范围和历史缺口可在模型目录中查看。`;
   return `${shellHead({ rel, title: "模型发布时间轴 · 评估大全", desc, path: "benchmarks/releases/", extra: `<style>${SHELL_CSS}${PAGE_CSS}${EVT_CSS}${TIMELINE_CSS}</style>` })}
 </head>
 <body class="tlr-page">
@@ -662,7 +666,7 @@ ${shellTopbar(rel, "releases")}
 <div class="tlr" id="main-content">
   <nav class="breadcrumb" style="margin-bottom:18px;"><a href="${rel}index.html">首页</a> / <b>模型发布</b></nav>
   <p class="eyebrow">Evaluation Ledger · 2022 — 2026</p>
-  <h1>模型发布时间轴</h1>
+  <h1>模型发布时间轴</h1><p><a href="${rel}models/">按模态浏览模型与变体</a> · <a href="${rel}coverage/">覆盖与缺口</a> · <a href="${rel}choose/">按需求选型</a></p>
   <p class="sub">${esc(desc)}<br>证据数据来源标识：<b>绿色</b> 官方表格原始数据、<b>琥珀色</b> 图表数据采点、<b>灰色</b> 未披露量化分值的评测提及。支持按厂商、基准名称与分值阈值快速检索。<a href="${rel}benchmarks/" style="margin-left:8px;">← 返回评估大全</a></p>
 
   <div class="console" id="tlControls" hidden>
@@ -749,10 +753,11 @@ window.EVALS_TL_REL = ${JSON.stringify(rel)};
     var trust=r.verified===0?'none':(r.pending===0?'full':'part');
     var region=r.region==='CN'?'国内':'国际';
     var chips=r.evidence.map(function(e){
-      var score=e.display?' <b>'+esc(e.display)+'</b>':'';
+      var score=' <b>'+esc((${evidenceScoreLabel.toString()})(e))+'</b>';
       var cls=e.status==='verified'?'ok':'pd';
       var focus=fs[e.benchmark_id]?' focus':'';
-      var inner=esc(e.benchmark_id)+(e.variant?' '+esc(e.variant):'')+score;
+      var owner=r.model_specs.find(function(m){return m.id===e.model_id;});
+      var inner=(r.models.length>1?esc(owner?owner.name:(e.model_id||'模型未说明'))+' · ':'')+esc(e.benchmark_id)+(e.variant?' '+esc(e.variant):'')+score;
       var tip=[];if(e.harness)tip.push('执行框架（harness）：'+esc(e.harness));if(e.effort)tip.push('推理档位（effort）：'+esc(e.effort));
       return '<a class="bchip '+cls+focus+'" href="'+REL+'benchmarks/'+esc(e.benchmark_id)+'/"'+(tip.length?' title="'+tip.join(' · ')+'"':'')+'>'+inner+'</a>';
     }).join('');
@@ -765,8 +770,8 @@ window.EVALS_TL_REL = ${JSON.stringify(rel)};
       pin+
       '<div class="evt-head"><span class="evt-date">'+(r.release_date?esc(r.release_date):'日期不明')+'</span>'+
       '<span class="evt-vendor">'+vendorMark(r.vendor_id,13)+' '+esc(r.vendor_label)+'<i>·</i>'+region+'</span></div>'+
-      '<h3 class="evt-title">'+titleInner+'</h3>'+
-      specsHtml(r)+
+      '<h3 class="evt-title">'+titleInner+'</h3><p><a href="../models/'+esc(r.id)+'/">查看模型变体与证据</a>'+(r.evidence.length?'':' · 所收录来源未披露量化评测')+'</p>'+
+      (r.model_specs.length===1?specsHtml(r):'<p>各变体规格见模型详情。</p>')+
       overviewHtml(r)+
       (chips?'<div class="evt-chips">'+chips+'</div>':'')+
       (r.source_url?'<div class="evt-src"><a href="'+esc(r.source_url)+'" target="_blank" rel="noopener">官方发布原文 ↗</a>'+(r.source_kind?'<span class="kind">'+esc(r.source_kind)+'</span>':'')+'</div>':'')+
@@ -777,7 +782,7 @@ window.EVALS_TL_REL = ${JSON.stringify(rel)};
     if(state.vendors.length&&state.vendors.indexOf(r.vendor_id)<0)return false;
     if(state.bench&&!r.evidence.some(function(e){return e.benchmark_id===state.bench;}))return false;
     for(var i=0;i<state.filters.length;i++){var f=state.filters[i];
-      var ok=r.evidence.some(function(e){return e.benchmark_id===f.bench&&e.value!==null&&e.value>=f.min;});
+      var ok=r.evidence.some(function(e){return e.benchmark_id===f.bench&&e.status==='verified'&&e.score_status==='reported'&&e.value!==null&&e.value>=f.min;});
       if(!ok)return false;}
     if(state.q){
       var hay=(r.release_title+' '+(r.models||[]).join(' ')+' '+r.vendor_label).toLowerCase();

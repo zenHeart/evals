@@ -16,7 +16,7 @@ description: evals 仓的模型发布增量入库流程：自动发现自上个�
 
 ## Step 0 · 前置与增量窗口
 
-1. `git status` 必须干净——入库是纯增量操作，脏工作区会污染"本批新增"的边界。不干净先停下向用户说明。
+1. 记录 `git status` 与基线 commit。独立入库要求干净；与用户授权的 issue 修复同批执行时，记录任务开始时的状态并仅提交本任务变更，不回滚或混入无关工作。
 2. 计算扫描窗口：
 
 ```bash
@@ -33,7 +33,10 @@ node .claude/skills/ingest-releases/scripts/checkpoint.mjs status
 - 每条候选记录：厂商、模型名、**官方发布文 URL**、发布日期及其证据（publishedTime / 页面印刷日 / RSS / slug+HF 互证）。
 - 渠道表里的旁证手段（OpenRouter created、HF createdAt）只用来**查漏**与佐证日期，不单独作为证据。
 - 找不到官方一级来源的传闻/聚合站跑分 → 不入账，记入报告的「跳过清单」（先例：GLM-4）。
-- 边界判定：纯权重更新、纯 API 定价调整、垂直非通用模型（翻译/语音/图像）通常不建 release 档；拿不准时列入候选并在报告里说明取舍。
+- 模型分类为 `general / vertical / product / unknown`。翻译、语音、图像、视频等专项模型必须允许建档；分类只影响任务适配与分数比较，不是排除条件。纯定价或应用功能更新按 product 记录排除原因。
+- 运行 `node .claude/skills/ingest-releases/scripts/scan.mjs --write`，按在册厂商官方域名白名单扫描入口，并把失败/空壳与未扫描分别记录到 `data/model-coverage.json`。此脚本只发现候选，不证明来源内容或模型身份。动态页需 reader/浏览器降级并记录方法。
+- 用户链接、未覆盖家族与日期未知候选优先进入历史回填，不受增量窗口限制；扫描候选与已有 release 的差异由 `node scripts/reconcile-coverage.mjs` 对账。一个模型卡包含后增变体时使用 `release_match: "manual"`，禁止仅凭同 URL 误并首发档案。
+- 每个 active vendor 都必须有入口状态、扫描时间、失败原因及候选清单；partial 只代表检查过入口，不能声称穷尽历史与分页。
 
 dry-run 到此为止：输出候选清单后结束。
 
@@ -45,6 +48,7 @@ dry-run 到此为止：输出候选清单后结束。
    渠道表已标明各家脾气；"正文有 Evaluations 章节却看不到分数"时先怀疑渲染漏了表格/图片，不要判定为无数据。
 2. **归档**到 `models/YYYY-MM-DD-<model-slug>/`（page.html + images/ + index.md 转录表 + manifest.json），
    结构与 frontmatter 见 `references/release-schema.md` §2。
+   日期完全未知时归档为 `models/undated-<slug>/`，`release_date: null`；不得拿抓取日冒充发布日期。
 3. **写 release JSON** `data/model-releases/official/<vendor_id>/<release-id>.json`：
    逐字段模板、edge id 双连字符约定、protocol 12 键全列见 `references/release-schema.md` §1。
    **models[] 必须带全规格与概述字段**（params / context_window / pricing / modalities / capability_summary / key_traits）——
@@ -65,6 +69,8 @@ dry-run 到此为止：输出候选清单后结束。
 ## Step 3 · 门禁（顺序执行，全绿才继续）
 
 ```bash
+node scripts/reconcile-coverage.mjs
+node --test tests/*.test.mjs
 node scripts/validate-data.mjs    # 数据层：外键、枚举、edge id、对账不变量
 npm run build                     # 书校验 + EPUB + 全站构建 + validate-site（含占位文案与死链）
 ```
@@ -79,7 +85,7 @@ npm run build                     # 书校验 + EPUB + 全站构建 + validate-s
 
 ## Step 4 · 收口
 
-1. 记录扫描检查点（锚点 = 本批实际入库的最大官方发布日期，不是今天）：
+1. 记录扫描检查点（锚点只前进不回退；历史回填不得拉回增量窗口，也不能拿今天冒充发布日期）：
 
 ```bash
 node .claude/skills/ingest-releases/scripts/checkpoint.mjs commit --max-release-date <本批最大发布日>
@@ -103,7 +109,7 @@ npm run sync:skills               # 自动单向同步镜像至 .agent/skills/
 - 新增 evidence：X 条 = Y verified + Z pending
 - 新 benchmark id：a、b、c（new-benchmark，兜底页已生成）/ 新建实体：…
 - 新厂商：无 / <id>（已注册 + logo）
-- 跳过清单：模型 — 原因（无一级来源 / 非通用模型 / 纯权重更新）
+- 跳过清单：模型 — 原因（无一级来源 / 产品更新 / 纯定价调整）
 - 待人工核验：图表行清单（视觉转写值已在 notes，读图确认后翻 verified）
 - 门禁：validate-data ✓ / build+validate-site ✓ / CI <链接或状态>
 ```
