@@ -33,9 +33,11 @@ node .claude/skills/ingest-releases/scripts/checkpoint.mjs status
 - 每条候选记录：厂商、模型名、**官方发布文 URL**、发布日期及其证据（publishedTime / 页面印刷日 / RSS / slug+HF 互证）。
 - 渠道表里的旁证手段（OpenRouter created、HF createdAt）只用来**查漏**与佐证日期，不单独作为证据。
 - 找不到官方一级来源的传闻/聚合站跑分 → 不入账，记入报告的「跳过清单」（先例：GLM-4）。
-- 模型分类为 `general / vertical / product / unknown`。翻译、语音、图像、视频等专项模型必须允许建档；分类只影响任务适配与分数比较，不是排除条件。纯定价或应用功能更新按 product 记录排除原因。
+- 模型分类为 `general / vertical / product / unknown`。翻译、语音、图像、视频、OCR 等专项模型必须允许建档；分类只影响任务适配与分数比较，不是排除条件。纯定价、开发者工具或应用功能更新按 product 记录排除原因。
+- **厂商全产品线监测（防遗漏铁律）**：不可将厂商等同于单一旗舰品牌。如 Google 必须覆盖 Gemini 与 Gemma 开源双线；字节跳动必须覆盖豆包与 Seedance/Seedream/SeedRealtime/Seed Audio 专项全模态；微软必须覆盖 MAI 图像/语音/转录与 Phi；Meta 必须覆盖 Llama 与 Muse；Mistral 必须覆盖通用、端侧 Small、OCR 文档智能与代码。
+- **多变体完整性校验**：官方页面或模型卡包含多个尺寸/参数变体时，必须逐列逐行核对大表（如 Gemma 4 涵盖 E2B/E4B/12B Unified/26B/31B，严禁遗漏中间列）。人工后增变体使用 `release_match: "manual"`，不误并首发档案。
 - 运行 `node .claude/skills/ingest-releases/scripts/scan.mjs --write`，按在册厂商官方域名白名单扫描入口，并把失败/空壳与未扫描分别记录到 `data/model-coverage.json`。此脚本只发现候选，不证明来源内容或模型身份。动态页需 reader/浏览器降级并记录方法。
-- 用户链接、未覆盖家族与日期未知候选优先进入历史回填，不受增量窗口限制；扫描候选与已有 release 的差异由 `node scripts/reconcile-coverage.mjs` 对账。一个模型卡包含后增变体时使用 `release_match: "manual"`，禁止仅凭同 URL 误并首发档案。
+- **双轨发现机制**：增量窗口仅用于发现近期新发布（过去 14 天）；存量回填审计由 `node scripts/reconcile-coverage.mjs` 常态对账，不受增量窗口排除，防止历史模型永久滑脱。
 - 每个 active vendor 都必须有入口状态、扫描时间、失败原因及候选清单；partial 只代表检查过入口，不能声称穷尽历史与分页。
 
 dry-run 到此为止：输出候选清单后结束。
