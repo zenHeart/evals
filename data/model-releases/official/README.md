@@ -4,7 +4,7 @@
 
 ## 汇总
 
-> **当前总量检查点（2026-09-23）**：163 releases = 149 official + 14 legacy · 2716 evidence edges。每批落地后更新此行。
+> **当前总量检查点（2026-10-04）**：171 releases = 157 official + 14 legacy · 2750 evidence edges。每批落地后更新此行。
 
 | 指标 | 值 |
 |---|---:|
@@ -1084,5 +1084,66 @@ OpenAI GPT-Live-1（2026-09-10 语音垂直 API 模型）；Google Lyria 3.5（�
 - **vendor 注册变更**：无（OpenAI 为既有 Tier 1 注册厂商）。
 - **checkpoint**：账本最大 release_date 推进至 **2026-09-22**（GPT-6 Sol / Luna）；checkpoint 检查点已 commit。
 - **门禁**：`validate-data` PASS（taxonomy 9 类 / vendors 16 / benchmarks 461 / releases 163（official 149）/ evidence edges 2716）；`npm run build` PASS（32 章 / EPUB / 724 个 HTML 页面 / 32569 个内部引用无死链 / 228 个时间轴 / 1920 个事件卡片校验全部通过）。
+
+## 第二十批（2026-10-04 增量入库）：全面增量扫描多厂商前沿模型
+
+> 本批入库扫描窗口自 2026-09-08 至 2026-10-04（以 2026-09-22 为基准回退 14 天重叠），全面覆盖全库 16 家已注册厂商及多产品线（含通用大语言模型、流式语音识别、语音合成、实时翻译、图像生成与数字人模型）。本批共入库 8 个官方 release、34 项基准评测证据（27 verified，7 pending），将官方发布时间轴推进至 **2026-10-01**。
+
+| 指标 | 本批值 |
+|---|---:|
+| 新增 release 文件 | 8（Anthropic / Google / Meta / Microsoft ×2 / OpenAI / Qwen / Tencent） |
+| benchmark_evidence 条数 | 34 |
+| 行 status=verified | 27 |
+| 行 status=pending | 7 |
+| release status=verified | 6 |
+| release status=pending | 2（`openai/gpt-6-1-sol`、`microsoft/mai-voice-2-1`） |
+| verified ∧ vendor_reported（计入自报） | 21 |
+
+### 逐 Release 清单
+
+| 文件 | 来源 URL | 条数 | verified | pending | release status | 抓取路径与说明 |
+|---|---|---:|---:|---:|---|---|
+| `qwen/qwen3-8-livetranslate.json` | `https://qwen.ai/blog?id=qwen3.8-livetranslate` | 3 | 1 | 2 | verified | 官方博客 SPA 客户端渲染提取；Interleave 端到端实时同传架构，支持 60 语向输入与 29 语向输出，字均延迟（LAAL）降至 2.3s；Omnilingua-MSpeaker 与 FLEURS 评测记为 pending |
+| `tencent/hy-image3-5-preview.json` | `https://hy.tencent.com/research/hy-image35-preview` | 1 | 1 | 0 | verified | 官方研究博客 SPA 渲染提取；混元专业级图像生成预览模型，最高 2K 分辨率、排版文字渲染增强，专业设计师 GSB 盲测胜率相比上一代综合提升 30%+ |
+| `meta/muse-realtime-avatar.json` | `https://research.meta.ai/blog/bringing-your-muse-to-life` | 3 | 3 | 0 | verified | 官方研究博客与 JSON-LD 结构化数据核验；音频驱动因果 Diffusion Transformer 架构，448x768 25fps 视频流式生成，870ms 交互延迟，盲测真人偏好度相对 Runway Characters 达 78%、相对 HeyGen LiveAvatar 达 88% |
+| `anthropic/claude-sonnet-5-5.json` | `https://www.anthropic.com/claude-sonnet-5-5` | 9 | 9 | 0 | verified | 官方发布博客表格逐行核验；主打高效日常编码与专业知识工作，收录 Terminal-Bench 4.0 70.6%、FrontierCode 1.1 Max 46.2% / Xhigh 52.1%、CursorBench 4.0 55.5%、GDPval-AA 1844、AA-Briefcase 1811、HLE 64.5%、OSWorld 2.1 80.1%、Chartography 61.6% |
+| `openai/gpt-6-1-sol.json` | `https://openai.com/index/introducing-gpt-6-1-sol/` | 7 | 2 | 5 | pending | 官方发布页面经无头浏览器渲染读取；GPT-6.1 Sol 聚焦智能体编码与电脑操作，价格仅为 Astra 五分之一；正文图表（DeepSWE、GDP.pdf、AutomationBench、OSWorld、Terminal-Bench Science）无逐点数值记 pending，正文事实错误率 4.1%、搜索故障披露率 2.1% 记 verified |
+| `google/gemini-4-argon.json` | `https://blog.google/innovation-and-ai/models-and-research/gemini-models/gemini-4-argon/` | 7 | 7 | 0 | verified | 官方博客正文核验；Google 新一代前沿模型，面向软件工程、企业知识工作与网络安全，输出上限 1M；DeepSWE v1.1 77.9%、AutomationBench 51.3%、LVBench 91.7%、CWE-bench v1 68% 以及 Vals/Harvey 企业基准 |
+| `microsoft/mai-transcribe-2-streaming.json` | `https://microsoft.ai/news/our-first-streaming-transcription-model/` | 4 | 4 | 0 | verified | 官方新闻正文与内嵌交互组件数据提取；微软首款流式转录模型，60 种语言，100ms 首部假设；Artificial Analysis 流式 Final WER 2.50%、First Partial WER 2.80% 均居第一，Time to Final 0.130s 位于帕累托前沿，4000人图灵测试 50.3% |
+| `microsoft/mai-voice-2-1.json` | `https://microsoft.ai/models/mai-voice-2-1/` | 0 | 0 | 0 | pending | 官方模型落地页核验；发布 MAI-Voice-2.1（550ms, $22/M字）与 MAI-Voice-2.1-Flash（45ms, $15/M字），23 种语言多音色情感控制；页面未印独立评测数值，保持 pending 证据档 |
+
+### 规格与协议亮点
+
+- **代码与前沿 Agent**：
+  - **Claude Sonnet 5.5**：在 Terminal-Bench 4.0 取得 70.6%（大幅超越 Sonnet 5 的 10.3% 与 Opus 5.5 的 66.4%）；FrontierCode 1.1 Xhigh 档达 52.1%（Max 档因触发多智能体拆解超范围微降至 46.2%）；GDPval-AA 1844、AA-Briefcase 1811。
+  - **Gemini 4 Argon**：DeepSWE v1.1 取得 77.9%（创下该基准 SOTA）；AutomationBench 取得 51.3%（Zapier 榜单第一）；LVBench 91.7%；CWE-bench 漏洞修复率 68% 并列第一。
+  - **GPT-6.1 Sol**：事实错误率降至 4.1%（低于 GPT-6 Sol 的 4.5%，逼近 Astra 的 4.0%）；搜索工具故障不披露率仅 2.1%（前代为 4.9%）。
+- **语音、转录与多模态数字人**：
+  - **MAI-Transcribe-2-Streaming**：在 Artificial Analysis 语音流式榜单双第一（Final WER 2.50%、First Partial 2.80%），Time to Final 仅 0.130s。
+  - **Qwen3.8-LiveTranslate**：端到端交织流架构，字均同传延迟由 2.8s 压降至 2.3s，在 Omnilingua-MSpeaker 与 FLEURS 上综合领先。
+  - **Muse Realtime Avatar**：通过自强迫分布匹配蒸馏将推理计算减少 60 倍，实现 448x768 25fps 与 870ms 低延迟音画驱动，盲测显著优于现有商业方案。
+  - **Hy Image3.5 preview**：文生图与图生图支持最多 5 张参考图与 2K 分辨率，复杂排版中英文字渲染提升，专业设计师盲测胜率提升超 30%。
+
+### 候选与排除处理
+
+- 本批全面核验了扫描窗口内发现的非独立模型发布文章，在 `data/model-coverage.json` 中统一分类为 `product` 并标注精确排除原因：
+  - `anthropic/features/ebola-response`：客户案例/行业实践文章，非独立模型发布
+  - `anthropic/news/claude-discovers-novel-enzyme-system`：科学研究成果与论文报道，非独立模型发布
+  - `anthropic/news/barclays-scales-claude`：企业商业合作与客户案例，非独立模型发布
+  - `google/products/gemini-app/new-connected-apps-gemini`：产品/工具/平台/方案更新，非独立模型发布
+  - `google/models-and-research/gemini-models/gemini-3-8-live-with-live-avatar`：企业级产品与数字人应用功能上线，基于已收录的 Gemini 3.8 Live 模型底座
+  - `google/products/gemini-app/guided-vision-gemini-live`：Gemini Live 无障碍视觉辅助应用功能上线，非独立模型发布
+  - `mistral/news/hallo-deutschland`：企业德国慕尼黑中心成立新闻，非独立模型发布
+  - `openai/index/practical-guide-building-gpt-6`：GPT-6 开发者构建指南与工程实践，非独立模型发布
+
+### 门禁与验证
+
+- **release 文件变更**：新增 8 个（official 增至 157 个，全局 171 个），新增 34 条 evidence edges（全局 2750 条）。严格遵守账本「只追加」契约。
+- **checkpoint**：账本最大 release_date 推进至 **2026-10-01**；checkpoint 检查点已 commit。
+- **单元测试**：`node --test tests/*.test.mjs` 19 项测试全部通过。
+- **数据层校验**：`node scripts/validate-data.mjs` PASS（0 errors）。
+- **技能同步校验**：`npm run sync:skills:check` PASS（零漂移）。
+- **全站构建与校验**：`npm run build` PASS（32 章 / EPUB / 745 个 HTML 页面 / 33646 个内部引用无死链 / 228 个时间轴 / 1954 个事件卡片校验全部通过）。
+
 
 
