@@ -1145,5 +1145,35 @@ OpenAI GPT-Live-1（2026-09-10 语音垂直 API 模型）；Google Lyria 3.5（�
 - **技能同步校验**：`npm run sync:skills:check` PASS（零漂移）。
 - **全站构建与校验**：`npm run build` PASS（32 章 / EPUB / 745 个 HTML 页面 / 33646 个内部引用无死链 / 228 个时间轴 / 1954 个事件卡片校验全部通过）。
 
+## 第二十一批（2026-10-04 专项补齐与防遗漏升级）：MiniMax M3.1 Flash Preview 官方入库与多产品线巡检机制升级
 
+> 本批针对 MiniMax 混合专家（MoE）思考模型 `MiniMax-M3.1-Flash-Preview`（2026-09-28）展开专项补齐与增量入库，同时针对该模型遗漏的深层根因完成系统性防遗漏架构升级。本批共入库 1 个官方 release（`minimax/minimax-m3-1-flash-preview.json`），完成对应归档物料归档（`models/2026-09-28-minimax-m3-1-flash-preview/`），官方 release 总数推进至 **158**（全库 releases 增至 172 个）。
 
+| 指标 | 本批值 |
+|---|---:|
+| 新增 release 文件 | 1（`minimax/minimax-m3-1-flash-preview.json`） |
+| benchmark_evidence 条数 | 0（官方落地页以案例与规格对比为主，无公开离散基准打分表，依规记 pending） |
+| release status | pending |
+| 官方归档目录 | `models/2026-09-28-minimax-m3-1-flash-preview`（含 `page.html`, `index.md`, `manifest.json`） |
+
+### 遗漏根因深度剖析与防遗漏系统优化
+
+1. **多域名与入口隔离（Domain Fragmentation）**：
+   - **根因**：`data/model-coverage.json` 之前仅将 `www.minimax.io` 列入白名单，且入口仅配置了 `https://www.minimax.io/news`。MiniMax 拥有独立子域矩阵（主站 `www.minimax.io`/`www.minimax.cn`、开放平台 `platform.minimax.io`、Agent 工具落地页 `agent.minimax.cn`/`agent.minimax.io`）。旧扫描脚本在遇到重定向或非白名单域名时会直接拦截或抛出异常。
+   - **优化**：在 `data/model-coverage.json` 中将 `minimax` 的 `allowed_hosts` 完整扩充为多域白名单，同时增补 `https://agent.minimax.cn/tools/m3-1-flash-preview` 与 `https://platform.minimax.io/docs/release-notes/models` 为常驻监测入口。
+2. **发布形态非传统 Blog/News 列表（Product Landing Page vs. Blog Post）**：
+   - **根因**：M3.1 Flash Preview 并未作为博客文章发布在 `/news` 列表中，而是作为 Agent 产品线的模型详情与 IDE 工具专属落地页（`/tools/m3-1-flash-preview`）直接上线。
+   - **优化**：在技能渠道地图（`discovery-channels.md`）与扫描逻辑中明确将工具落地页与开发者平台模型 Release Notes 纳为一级发现源。
+3. **关键词正则遗漏厂商特征**：
+   - **根因**：`scripts/release-discovery.mjs` 中的 `classifyTitle`（通用模型分类正则）和 `discoverLinks`（链接发现关键词正则）涵盖了主流厂商名称，却**唯独遗漏了 `minimax`**。
+   - **优化**：在 `release-discovery.mjs` 的通用模型识别与链接发现正则中补齐 `minimax`，避免后续相关链接被误分类或漏抓。
+4. **技能镜像同步门禁**：
+   - 完成 `.claude/skills/ingest-releases/` 升级后，通过 `npm run sync:skills` 单向镜像到 `.agent/skills/`，经 `npm run sync:skills:check` 验证零漂移。
+
+### 门禁与验证
+
+- **release 文件变更**：新增 1 个（`minimax/minimax-m3-1-flash-preview.json`），official release 增至 158 个，全库 release 增至 172 个。严格遵守账本「只追加」契约。
+- **单元测试**：`node --test tests/*.test.mjs` 19 项测试全部通过（含覆盖校验与 manifest 哈希一致性）。
+- **数据层校验**：`node scripts/validate-data.mjs` PASS（0 errors）。
+- **技能同步校验**：`npm run sync:skills:check` PASS（零漂移）。
+- **全站构建与校验**：`npm run build` PASS（32 章 / EPUB / 746 个 HTML 页面 / 33673 个内部引用无死链 / 228 个时间轴 / 1956 个事件卡片校验全部通过）。

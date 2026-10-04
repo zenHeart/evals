@@ -22,7 +22,7 @@
 | kimi | www.kimi.com/en/blog/ + www.kimi.com/code/docs/en/kimi-code/whats-new.html（预览版也在此发布）；历史发布走 HF model card（moonshotai org，A 级）；旧域 kimi.ai/blog/ | 索引只挂最近 ~9 篇链接；国内/海外域名存在别名对账；表格有时非 DOM 组件（正文有 Evaluations 却无分数 → 先怀疑渲染遗漏，Playwright DOM 扫描 `table` 与 `img`） |
 | deepseek | api-docs.deepseek.com/zh-cn/news/（slug 含日期如 `news250821`） | 分数常在 webp 图：图行 pending + 视觉转写进 notes；slug 裸格式会重定向到文档首页 |
 | glm | z.ai/blog/ | 完整 DOM 表 + 每表独立协议脚注是常见形态（verified 密度最高的来源）；无头浏览器兜底 |
-| minimax | minimax.io/news/（新版）；旧 /blog/ slug 带时间戳后缀（后缀≠发布时间戳） | JS 渲染站：web reader 只回站点壳 → Playwright DOM 扫描；大结果表是整图（数千 px）→ pending |
+| minimax | minimax.io/news/（新版）；agent.minimax.cn/tools/* 与 agent.minimax.io/tools/*（Agent/IDE 工具落地页）；platform.minimax.io/docs/release-notes/models（开发者平台模型日志）；旧 /blog/ slug 带时间戳后缀（后缀≠发布时间戳） | **防遗漏要点**：MiniMax 具备多子域矩阵（官网、开发者文档、Agent 工具平台），模型发布形态不仅限于博客长文，亦会作为 Agent 落地页（如 `/tools/m3-1-flash-preview`）或文档日志直接上线；扫描白名单需囊括 `agent.minimax.*` 与 `platform.minimax.io`；JS 渲染站：大结果表多为整图或产品实战案例，无离散基准打分表时行记 pending |
 | qwen | qwen.ai/blog?id=<model>（research 索引分页找 id，勿猜）；旧域 qwenlm.github.io 部分存活 | id 体系不规律（qwen3.8 / qwen3-max 并存，qwen3.7-max 空壳）；多模态有独立 Qwen-Image / Qwen-Omni 线；DOM 表多且机读，必须逐张转录 |
 | doubao | seed.bytedance.com/en/blog/ + 各专项 Landing Pages（seedream / seedance / seedrealtime / seed audio） | **防遗漏要点**：字节跳动除通用豆包/Seed 外，多模态采用独立品牌前缀（Seedance 视频 / Seedream 图像设计 / SeedRealtime 全双工实时音视频 / Seed Audio 音频创作）；散文少分数、分数图多：图行 pending；正文明确论断行可 verified + not_extracted |
 

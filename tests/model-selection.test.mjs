@@ -59,7 +59,7 @@ test('覆盖对账幂等，后增变体不因共享模型卡并入首发',async(
 
 test('本批官方归档文件与 manifest 哈希一致',async()=>{
  const fs=await import('node:fs'),crypto=await import('node:crypto');
- const dirs=['2026-04-02-gemma-4','2026-07-31-seedance-2-5','2026-09-11-kimi-k2-8-preview','2026-09-18-grok-voice-transcribe-2','2026-09-20-qwen-image-2-1','2026-09-22-claude-opus-5-5'];
+ const dirs=['2026-04-02-gemma-4','2026-07-31-seedance-2-5','2026-09-11-kimi-k2-8-preview','2026-09-18-grok-voice-transcribe-2','2026-09-20-qwen-image-2-1','2026-09-22-claude-opus-5-5','2026-09-28-minimax-m3-1-flash-preview'];
  for(const dir of dirs){const root='models/'+dir;const manifest=JSON.parse(fs.readFileSync(root+'/manifest.json'));assert.ok(manifest.files.some(f=>f.path==='index.md'));for(const f of manifest.files){assert.ok(!f.path.startsWith('/')&&!f.path.includes('..'));assert.equal(crypto.createHash('sha256').update(fs.readFileSync(root+'/'+f.path)).digest('hex'),f.sha256,root+'/'+f.path);}}
 });
 

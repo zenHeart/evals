@@ -12,12 +12,12 @@ export function mergeCandidates(existing, discovered) {
 export function classifyTitle(title){
   if(/raises|funding|series [a-z]|partner|join|hackathon|license|blueprint|safety standard|environmental|energy|manufacturing|compute|caching|prompt caching|cpp|pytorch|tensor|quantization|compiler|infra|sdk\b|cli\b|api\b|platform|la plateforme|le chat|app\b|desktop|workspace|chatgpt|searchgpt|canvas|studio|enterprise|pricing|program|console|solution|toolkit|memory|connectors|fine-tuning|customization|stargazers|forks|pulls|issues|conduct|consultation|public sector|finance|workflows|in-region|regional|ki für|about mistral|bring.*browser|notebook|read docs|images\b|ollama|pairing|gemini models|claude.*constitution|watermark|countering|corps|claude code|kimi business|kimi code|kimi browser|kimi vendor|kimi work|try kimi|keynote|ode poetry|agentic search/i.test(title))return 'product';
   if(/image|video|audio|speech|sound|voice|transcri|seedance|seedream|seedrealtime|lyria|veo|sora|ocr|doc|robot|agent|coder?|devstral|robostral|图像|视频|语音|视觉|多模态/i.test(title))return 'vertical';
-  if(/gemma|llama|gpt|claude|gemini|deepseek|mistral|mixtral|glm|kimi|qwen|step|mimo|phi|hunyuan/i.test(title))return 'general';
+  if(/gemma|llama|gpt|claude|gemini|deepseek|mistral|mixtral|glm|kimi|qwen|step|mimo|phi|hunyuan|minimax/i.test(title))return 'general';
   return 'unknown';
 }
 export function discoverLinks(html, base) {
   const out=[];
-  const RE_KEYWORD=/(introduc|announc|launch|releas|unveil|preview|发布|推出|上线|开源|宣布|gemma|gemini|claude|gpt|llama|mistral|qwen|seed|seedance|seedream|seedrealtime|grok|mimo|mai-|glm-|kimi|deepseek|phi|hunyuan|step|muse|devstral|robostral|ocr|transcri|audio|video|image)/i;
+  const RE_KEYWORD=/(introduc|announc|launch|releas|unveil|preview|发布|推出|上线|开源|宣布|gemma|gemini|claude|gpt|llama|mistral|qwen|seed|seedance|seedream|seedrealtime|grok|mimo|mai-|glm-|kimi|deepseek|phi|hunyuan|step|muse|devstral|robostral|ocr|transcri|audio|video|image|minimax)/i;
   for(const m of html.matchAll(/<a\b[^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi)){
     let title=m[2].replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim();
     try{
