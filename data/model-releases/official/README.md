@@ -1175,5 +1175,57 @@ OpenAI GPT-Live-1（2026-09-10 语音垂直 API 模型）；Google Lyria 3.5（�
 - **release 文件变更**：新增 1 个（`minimax/minimax-m3-1-flash-preview.json`），official release 增至 158 个，全库 release 增至 172 个。严格遵守账本「只追加」契约。
 - **单元测试**：`node --test tests/*.test.mjs` 19 项测试全部通过（含覆盖校验与 manifest 哈希一致性）。
 - **数据层校验**：`node scripts/validate-data.mjs` PASS（0 errors）。
-- **技能同步校验**：`npm run sync:skills:check` PASS（零漂移）。
 - **全站构建与校验**：`npm run build` PASS（32 章 / EPUB / 746 个 HTML 页面 / 33673 个内部引用无死链 / 228 个时间轴 / 1956 个事件卡片校验全部通过）。
+
+## 第二十二批（2026-10-12 增量入库）：全面增量扫描多厂商前沿模型（Claude Haiku 5.5 / Mistral Large 4 / EmbeddingGemma 2）
+
+> 本批入库扫描窗口自 2026-09-17 至 2026-10-12（以检查点 2026-10-01 回退 14 天重叠），全面覆盖全库 16 家在册厂商及多产品线。本批共入库 3 个官方 release、9 项已验证评测证据（9 verified，0 pending），官方 release 总数推进至 **161**（全库 releases 增至 175 个），新增代码嵌入基准实体 `mteb-code`，将官方发布时间轴推进至 **2026-10-07**。
+
+| 指标 | 本批值 |
+|---|---:|
+| 新增 release 文件 | 3（Anthropic / Mistral / Google） |
+| benchmark_evidence 条数 | 9 |
+| 行 status=verified | 9 |
+| 行 status=pending | 0 |
+| release status=verified | 2（`anthropic/claude-haiku-5-5`、`google/embeddinggemma-2`） |
+| release status=pending | 1（`mistral/mistral-large-4`） |
+| 官方归档目录 | 3（`models/2026-10-07-claude-haiku-5-5`、`models/2026-10-06-mistral-large-4`、`models/2026-10-06-embeddinggemma-2`） |
+
+### 逐 Release 清单
+
+| 文件 | 来源 URL | 条数 | verified | pending | release status | 抓取路径与说明 |
+|---|---|---:|---:|---:|---|---|
+| `anthropic/claude-haiku-5-5.json` | `https://www.anthropic.com/claude-haiku-5-5` | 8 | 8 | 0 | verified | 官方发布博客表格逐行核验；主打高吞吐、低成本与快速子智能体协同，收录 GDPval-AA v2.1 1620、AA-Briefcase v1.1 1578、OSWorld 2.1 (Offline subset) 72.4%、HLE no tools 45.9% / with tools 57.4%、Terminal-Bench 4.0 39.2%、FrontierCode 1.1 46.4%、Chartography 46.4% |
+| `mistral/mistral-large-4.json` | `https://mistral.ai/news/mistral-large-4/` | 0 | 0 | 0 | pending | 官方发布新闻核验；1 万亿参数原生多模态 MoE 旗舰开源模型（ML4 / le Chonk），激活 52B，基于欧洲 3800 张 Grace Blackwell 训练；正文图表（DeepSWE, Terminal-Bench 4.0, Cyber Index 等）全部为 WebP 图片，未印独立 DOM 离散数字，保持 pending 证据档 |
+| `google/embeddinggemma-2.json` | `https://blog.google/innovation-and-ai/technology/developers-tools/embeddinggemma-2/` | 1 | 1 | 0 | verified | 官方研究博客核验；Google 基于 Gemma 4 架构开发的 740M 轻量级原生多模态嵌入模型，Apache 2.0 开源；MTEB Code 子集得分 78.68（提升 9.92 点），引入新基准 `mteb-code` |
+
+### 规格与协议亮点
+
+- **代码与智能体**：
+  - **Claude Haiku 5.5**：在 OSWorld 2.1 (Offline subset) 取得 72.4%（远超前代 Haiku 4.5 的 15.7% 与 GPT-6 Luna 的 48.9%）；HLE with tools 达到 57.4%；小提示（<=100k）输入仅 $0.10/M tokens，成本压降约 75%。
+  - **Mistral Large 4**：万亿级开源权重多模态模型，支持欧洲自主算力自部署，在网络安全、代码与专业垂直智能体领域对齐开源前沿。
+- **检索与多模态嵌入**：
+  - **EmbeddingGemma 2**：740M 模块化端侧嵌入模型（文本 270M，视觉 170M，音频 300M），在 MTEB Code 达到 78.68，支持 Matryoshka 表示学习（MRL）动态截断至 128 维（存储压降 6 倍）。
+
+### 候选与排除处理
+
+- 本批核验并清理扫描窗口内发现的非独立模型发布文章与工具更新：
+  - `openai/index/gpt-6-for-everyone`：ChatGPT 应用端 Intelligent UI 上线与免费版推广，底层使用已收录的 GPT-6 Sol / Luna 模型
+  - `openai/index/introducing-dots`：OpenAI Dots 常驻自主 Agent 产品上线，底层使用已收录的 GPT-6 Astra 模型
+  - `openai/index/new-chatgpt-ads-format-and-measurement`：广告格式与效果度量商业功能更新，非独立模型发布
+  - `anthropic/news/2026-usage-policy-update`：使用政策与合规条款更新，非独立模型发布
+  - `anthropic/news/anthropic-cyber-mission`：企业网络安全计划与合作伙伴公告，非独立模型发布
+  - `anthropic/news/genesis-mission-commitment`：科学研究承诺与算力资源资助公告，非独立模型发布
+  - `google/blog/.../google-ai-updates-september-2026`：Google 9月 AI 动态汇总文章，非独立模型发布
+  - `kimi/code/docs/.../*`：Kimi Code 客户端功能文档/工具说明，非独立模型发布
+
+### 门禁与验证
+
+- **release 文件变更**：新增 3 个（official 增至 161 个，全局 175 个），新增 9 条 evidence edges（全局 2759 条）。严格遵守账本「只追加」契约。
+- **benchmark 实体**：新增 `data/benchmarks/mteb-code.json`（全库达 462 个）。
+- **checkpoint**：账本最大 release_date 推进至 **2026-10-07**；checkpoint 检查点已 commit。
+- **单元测试**：`node --test tests/*.test.mjs` 19 项测试全部通过（含覆盖校验与 10 个官方归档目录 manifest 哈希一致性）。
+- **数据层校验**：`node scripts/validate-data.mjs` PASS（0 errors）。
+- **技能同步校验**：`npm run sync:skills:check` PASS（零漂移）。
+- **全站构建与校验**：`npm run build` PASS（32 章 / EPUB / 750 个 HTML 页面 / 33833 个内部引用无死链 / 228 个时间轴 / 1969 个事件卡片校验全部通过）。
+
