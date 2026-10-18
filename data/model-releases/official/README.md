@@ -1229,3 +1229,54 @@ OpenAI GPT-Live-1（2026-09-10 语音垂直 API 模型）；Google Lyria 3.5（�
 - **技能同步校验**：`npm run sync:skills:check` PASS（零漂移）。
 - **全站构建与校验**：`npm run build` PASS（32 章 / EPUB / 750 个 HTML 页面 / 33833 个内部引用无死链 / 228 个时间轴 / 1969 个事件卡片校验全部通过）。
 
+
+---
+
+## 第二十三批（2026-10-18 增量入库）：DeepSeek-V4.1-Flash-1017 官方发布
+
+| 项目 | 内容 |
+| --- | --- |
+| 扫描锚点 | 检查点锚点回退 14 天重叠，窗口 2026-09-23 ~ 2026-10-18 |
+| 新增 release | 1 个：`deepseek/deepseek-v4-1-flash-1017` |
+| 新增 evidence | 11 条 = 0 verified + 11 pending |
+| 新 benchmark id | 0（全部映射既有实体：hlehle / terminalbench / deepswe / program-bench / nl2repo / automationbench / agents-last-exam / apexbench / chartography / babyvision / zerobench） |
+| 新厂商 | 无 |
+
+### 新入库 release
+
+| vendor | 模型 | 发布日与证据 | evidence |
+| --- | --- | --- | --- |
+| deepseek | DeepSeek-V4.1-Flash-1017 | 2026-10-17；api-docs.deepseek.com/news/news261017 侧栏公告清单标注 `Release 2026/10/17`，文档站 News 导航列为当前最新条目，Quick Start 示例改用本模型并把旧 `deepseek-v4-flash` 与 `deepseek-v4-flash-vision-exp` 标记退役 | 11 p⏳ |
+
+官方定位：相对上一版在基准成绩、任务完成速度与输出长度上均更优，构成性能与成本的 Pareto 改进；采用自反馈强化学习改进端到端项目构建，并针对 DeepSeek Harness v0.2.1-rc.1 及以上、Tencent CodeBuddy、WorkBuddy 等脚手架优化。官方 Quick Start 已将 `deepseek-flash` 路由切至本模型。该迭代公告未复述参数量、上下文长度与定价，账本相应字段一律记 null，未沿用 V4.1-Flash 旧值。
+
+### 待人工核验（图表行）
+
+官方评测总表为公告页内嵌 PNG（`models/2026-10-17-deepseek-v4-1-flash-1017/images/benchmark_table_en.png`），11 行按图行规则记 pending，视觉转写值存于各行 `notes`，读图确认后方可翻转 verified：
+
+| 评测基准 | 视觉转写值 | 官方脚注协议 |
+| --- | --- | --- |
+| HLE (w/o tools) | 42.6（另标 44.0*） | * = HLE 文本子集 |
+| Terminal-Bench 4.0 | 42.3 | Claude Code 框架 |
+| DeepSWE v1.1 | 77.0 | Mini-SWE-V2 框架 |
+| ProgramBench | 29.1 | 未说明 |
+| NL2Repo-Bench | 68.2 | 未说明 |
+| Automation-Bench V1.0.6 | 60.5 | 未说明 |
+| Agents' Last Exam | 35.4 | 未说明 |
+| Apex Bench v1.1 | 72.1 | 未说明 |
+| Chartography (w/tools) | 83.0 | 带工具 |
+| BabyVision (w/tools) | 92.5 | 带工具 |
+| ZeroBench-main (w/tools) | 51.0 | Pass@5 |
+
+### 与远端账本的对账说明
+
+本批开工时本地基线落后远端 17 个提交（远端已推进至第二十二批，账本 161 条），开工前发现的 GPT-6 Sol/Luna、Gemini 4 Argon、Gemini 3.8 Live、Mistral Large 4 四个候选均已被上游批次收录且部分条目证据更完整（GPT-6 Sol/Luna 16 条、Mistral Large 4 已入库）。为避免以陈旧条目覆盖上游成果，本批只合入真正新增的 DeepSeek-V4.1-Flash-1017，其余本地草稿保留在 `local/batch12-stale-base` 分支备查，未删除任何历史。
+
+### 跳过清单（本窗口未入库）
+
+| 候选 | 原因 |
+| --- | --- |
+| OpenAI GPT-6.1 Sol（2026-09-29） | 该页正文无发布日期，日期仅由官方 RSS pubDate 支撑；且本批 curl 与无头浏览器均被 openai.com Cloudflare managed challenge 拦截（HTTP 403），无法取得正文与基准数据做归档，不以推测填充。 |
+| Gemini 3.8 TTS（09-23）/ Live Avatar（09-24）/ EmbeddingGemma 2（10-06） | 语音、具身语音与嵌入垂直模型，非通用大模型。 |
+| Mistral Timestral（2026-10-15） | 时间序列垂直模型。 |
+| x.ai、z.ai、Moonshot、Qwen、Seed、Meta AI、Microsoft AI、StepFun、腾讯混元 | 仅 curl 探测受阻或 JS 渲染，未完成浏览器复核，不能据此断言窗口内无发布，需后续批次补扫。 |
