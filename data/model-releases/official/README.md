@@ -1351,3 +1351,60 @@ OpenAI GPT-Live-1（2026-09-10 语音垂直 API 模型）；Google Lyria 3.5（�
 | `npm run validate:site` | ✓ 全部通过（755 个 HTML / 34034 个内部引用；229 个时间轴 / 1985 个事件卡片） |
 
 开工时 `validate-data` 曾因 3 个 `general` 候选既无 release 也无 exclusion_reason 而失败（google 两例 + mistral 一例）；本批三条候选全部处置后转为 PASS。
+
+## 第二十四批补充（2026-10-19 增量入库）：Meta Muse Wonder / Muse Spark Open
+
+main 已先合入 `mistral/timestral`（第二十四批）；本补充只新增 Meta 两个官方发布，不改写既有 Timestral 条目。
+
+| 项目 | 内容 |
+| --- | --- |
+| 扫描锚点 | 与第二十四批同一窗口（2026-10-03 ~ 2026-10-18） |
+| 基线 | `origin/main` 已含 `mistral/timestral`；本补充新增 2 个 release |
+| 新增 release | 2 个：`meta/muse-wonder`、`meta/muse-spark-open` |
+| 新增 evidence | 3 条 = 0 verified + 3 pending（Muse Wonder：LAB / FocusBench / SWE-Marathon）；Muse Spark Open 正文未逐项点名基准，0 条 |
+| 新 benchmark id | `focusbench`（兜底详情页自动生成） |
+| 新厂商 | 无（Meta 已在册） |
+
+### 新入库 release
+
+| vendor | 模型 | 发布日与证据 | evidence |
+| --- | --- | --- | --- |
+| meta | Muse Wonder / Muse Wonder Full | 2026-10-12；正文印刷日「October 12, 2026」与页面 JSON-LD `datePublished 2026-10-12` 一致 | 3 p⏳ |
+| meta | Muse Spark Open | 2026-10-15；正文印刷日「October 15, 2026」与页面 JSON-LD `datePublished 2026-10-15` 一致 | 0（正文未逐项点名基准） |
+
+Muse Wonder 系列面向个人与专业智能体任务，把 Active Memory（跨会话携带个人上下文并主动检索）与 Active Focus（围绕困难目标持续推进）组合在一起；正文未披露参数量与上下文长度，账本 `params` / `context_window` / `pricing` 一律记 null。Muse Spark Open 为开放权重版，正文明示 816B 总参数 / 42B 激活、1M tokens 上下文、原生多模态、Muse Model License。
+
+### 待人工核验（图表行）
+
+| release | 评测 | 页面定位 |
+| --- | --- | --- |
+| muse-wonder | Harvey's Legal Agent Benchmark (LAB) | 完整对比结果图表 |
+| muse-wonder | FocusBench | 完整对比结果图表 |
+| muse-wonder | SWE-Marathon | 完整对比结果图表 |
+
+Muse Spark Open 的「Key Benchmarks」小节为图表且正文未逐项点名基准名称，故本批不铸造 benchmark 实体与 evidence 行，待官方 evaluation methodology report 与 model card 公开后补录。
+
+### 归档
+
+Muse 页面的图表已归档到 `models/2026-10-12-muse-wonder/images/` 与
+`models/2026-10-15-muse-spark-open/images/`，并登记进各自的 `manifest.json`
+（逐文件记录 sha256），上游页面变更后仍可离线复核。
+
+### 候选与排除处理
+
+| 候选 | 处理 |
+| --- | --- |
+| `google-11e9f2eebcc1`（Gemini 4 Argon 开发者文章） | 归并至账本既有 `gemini-4-argon`，补 `archive_path`，不重复建档 |
+| `google-0fb6a7bf6fd6`（Gemini 4 模型安全专题） | 分类改 `product`，记排除原因「模型安全与防护专题文章，非独立模型发布」 |
+
+另新增 5 个待补扫候选，均带明确 `exclusion_reason` 与 `next_backfill_at`。
+
+### 门禁与验证
+
+| 门禁 | 结果 |
+| --- | --- |
+| `node scripts/reconcile-coverage.mjs` | ✓ exit 0 |
+| `node --test tests/*.test.mjs` | ✓ 19 pass / 0 fail |
+| `npm run sync:skills:check` | ✓ 技能镜像无漂移 |
+| `node scripts/validate-data.mjs` | ✓ PASS — taxonomy 9 类 / vendors 16 / benchmarks 462 / releases 179（official 165）/ evidence edges 2778 |
+| `npm run validate` | ✓ 32 章通过（numeric-claim warning 为存量，不阻断） |
