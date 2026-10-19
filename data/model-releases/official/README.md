@@ -1408,3 +1408,112 @@ Muse 页面的图表已归档到 `models/2026-10-12-muse-wonder/images/` 与
 | `npm run sync:skills:check` | ✓ 技能镜像无漂移 |
 | `node scripts/validate-data.mjs` | ✓ PASS — taxonomy 9 类 / vendors 16 / benchmarks 462 / releases 179（official 165）/ evidence edges 2778 |
 | `npm run validate` | ✓ 32 章通过（numeric-claim warning 为存量，不阻断） |
+
+---
+
+## 第二十五批（2026-10-19 增量入库）：MiniMax M3.1 Flash / Grok Voice 3.0 / GLM-Legal
+
+| 项目 | 内容 |
+| --- | --- |
+| 扫描锚点 | 账本 frontier 2026-10-17（`deepseek-v4-1-flash-1017`）回退 14 天 → 窗口 2026-10-03 ~ 2026-10-19 |
+| 基线 | `origin/main` = 5d20181（含第二十四批 Timestral / Muse Spark Open / Muse Wonder） |
+| 新增 release | 3 个：`minimax/minimax-m3-1-flash`、`xai/grok-voice-3`、`glm/glm-legal` |
+| 新增 evidence | 26 条 = 16 verified + 10 pending（其中 5 条为官方未公布数值、9 条为第三方转述） |
+| 新建 benchmark 实体 | 8 个（见下表） |
+| 新厂商 | 无（minimax / xai / glm 均已在册） |
+| 归档目录 | 3 个（`models/2026-10-19-minimax-m3-1-flash/`、`models/2026-10-14-grok-voice-3/`、`models/2026-10-12-glm-legal/`） |
+
+### 新入库 release
+
+| vendor | 模型 | 发布日与日期证据 | evidence |
+| --- | --- | --- | --- |
+| minimax | MiniMax M3.1 Flash | 2026-10-19；页面 JSON-LD `datePublished 2026-10-19T00:00:00.000Z` 与正文日期行「2026-10-19」互证 | 16（6 ✓ / 10 ⏳） |
+| xai | Grok Voice 3.0 | 2026-10-14；页面 JSON-LD `datePublished 2026-10-14T00:00:00Z` 与面包屑「Oct 14, 2026」互证 | 7（7 ✓ / 0 ⏳） |
+| glm | GLM-Legal | 2026-10-12；页面标题行印刷「2026-10-12 · Research」 | 3（3 ✓ / 0 ⏳） |
+
+三条都是上一批因入口不可读而漏掉的窗口内发布：x.ai 对静态抓取返回 403（改用无头浏览器渲染）、`z.ai/blog/` 索引 404（单篇页可读）、MiniMax 博客无 RSS 日期字段（取 JSON-LD）。
+
+### evidence 统计
+
+| release | 条数 | verified | pending | 有数值 | 官方未公布数值 | 第三方转述 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| `minimax-m3-1-flash` | 16 | 6 | 10 | 5 | 1 | 1 |
+| `grok-voice-3` | 7 | 7 | 0 | 7 | 0 | 6 |
+| `glm-legal` | 3 | 3 | 0 | 1 | 2 | 2 |
+| 合计 | 26 | 16 | 10 | 13 | 3 | 9 |
+
+### 新建 benchmark 实体（8 个）
+
+| id | 名称 | 引入来源 |
+| --- | --- | --- |
+| `tau-voice` | τ-Voice | 端到端语音智能体任务完成率；此前只有 Google Gemini 3.8 Live 的引用行、无实体，本批补齐 |
+| `aa-speech-to-speech` | AA Speech-to-Speech Quality Index | Artificial Analysis 语音综合指数；同上 |
+| `bigbench-audio` | Big Bench Audio | 语音音频理解与推理；同上 |
+| `speech-agent-arena` | Speech Agent Arena | 语音智能体真人盲测 Elo |
+| `aa-task-success-rate` | AA Task Success Rate | AA 综合指数的任务完成分项 |
+| `full-duplex-bench` | Full Duplex Bench | 全双工会话动态评测 |
+| `eva-bench` | EVA-Bench | ServiceNow 开源企业语音智能体基准 |
+| `swe-refactor-bench` | SWE Refactor Bench | 存量代码重构评测，官方页脚注给出 `Einsia/SWE-Refactor-Bench` |
+
+`aa-speech-to-speech` / `bigbench-audio` 两个 id 在账本里此前已由 `google/gemini-3-8-live` 引入（标记 new-benchmark、无实体），本批复用同一 id 而非另铸，并补建实体。交叉印证：xAI 页 AA 表中 Gemini 3.8 Live 的 82.6 / 97.7 与 Google 自家发布页记录完全一致，说明两页引用的是同一份 Artificial Analysis 评测。
+
+### 关键口径决定
+
+1. **图表行不自动翻 verified**：MiniMax 官方评测总表是位图（`images/m31-flash-en-2.webp`，15 行基准 × 8 模型列 + 逐项协议脚注），表内 10 行自家数值只存在于图中，全部记 pending，读数仅进 `notes`。
+2. **DOM 明文优先**：同一发布中 5 项分数出现在正文散文的 DOM 文本里（BankerToolBench 76.2、DeepSWE v1.1 73.7%、OSWorld V2 61.7、ALE 29.6、CyberGym 82%），按 verified 记；CyberGym 正文 82% 与图内 82.2 的四舍五入差已记入该行 notes。
+3. **AA 表按第三方转述**：Grok Voice 3.0 评测主表 caption 明确标注 "per Artificial Analysis"、来源行标注 "Source: Artificial Analysis, October 13, 2026"，故该表 5 行与 τ-Voice 71.6% 均记 `third_party_reported`；EVA-Bench 74% 印在正文、基准方为 ServiceNow，按 `vendor_reported` 记。
+4. **成本数值不建基准行**：Grok Voice 3.0 页内联 SVG 的 "Cost per task"（$0.025 / $0.03 / $0.055 USD）是成本对照而非基准分数，按抽取口径并入 Big Bench Audio 行 notes。
+5. **垂直领域模型必须建档**：GLM-Legal 属法律垂域模型，按契约建档（第二十三批把 Timestral 当"时间序列"排除的做法已废止）。
+6. **Vals 独立评测单独识别**：GLM-Legal 页明示「Harvey LAB 与 LegalBench 的结果由 Vals 独立评测」，这两行按第三方转述记；PLawBench 不在该声明覆盖范围内，按自报记。
+7. **AutomationBench-AA 与 v1.0.6 分行**：前者为正文明文点名但无数值，后者只存在于图内 62.8，同一 release 同一基准拆两行（`--automationbench` / `--automationbench-v1-0-6`），edge id 沿用 `stepfun-step-5-preview--automationbench-public` 的既有加后缀写法。
+
+### 待人工核验（图表行，10 条）
+
+全部来自 `models/2026-10-19-minimax-m3-1-flash/images/m31-flash-en-2.webp`，读图确认后方可翻 verified：
+
+| release | 评测 | 视觉转写值 | 协议（官方脚注） |
+| --- | --- | --- | --- |
+| minimax-m3-1-flash | Automation-Bench v1.0.6 | 62.8 | 600 道公开任务；harness Claude Code |
+| minimax-m3-1-flash | Terminal Bench 4.0 | 38.1 | Codex 0.149.1 harness |
+| minimax-m3-1-flash | GDP.pdf AA | 20.8 | 结果直接取自 Artificial Analysis |
+| minimax-m3-1-flash | LOCA-Bench 256K | 60.3 | 官方实现 hkust-nlp/LOCA-bench |
+| minimax-m3-1-flash | PostTrain Bench v1.1 | 39.3 | Claude Code 2.1.251，最大上下文 512K |
+| minimax-m3-1-flash | NL2Repo-Bench | 61.2 | Claude Code 2.1.233，最大上下文 512K |
+| minimax-m3-1-flash | SWE Refactor Bench | 23.0 | Claude Code 2.1.220，最大上下文 200K |
+| minimax-m3-1-flash | BabyVision (w/tools) | 91.0 | Claude Code 2.1.285，最短图片边长 1,500 像素 |
+| minimax-m3-1-flash | HLE (w/o tools) | 43.4 | 限 2,158 道纯文本提示子集 |
+| minimax-m3-1-flash | CharXiv RQ | 82.5 | judge 模型 GPT-5.5 |
+
+### 候选处置与跳过清单
+
+| 候选 | 处理 |
+| --- | --- |
+| `minimax-3500d67669a4`（MiniMax M3.1 Flash） | 归并至 `minimax-m3-1-flash`，补 `archive_path` 与 evidence 状态 |
+| `release-grok-voice-3`、`release-glm-legal` | 由对账脚本按官方页 URL 自动建候选并回填 release 归属 |
+
+窗口内经官方一级来源核实后**未发现**新模型发布、故不建档的厂商：openai（RSS 逐条核日期，Aardvark 10-19 为产品私测、gpt-6-for-everyone 10-07 为产品）、anthropic（newsroom 10/01–10/18 全非模型）、google（blog `publish_date` 逐条，10-13 Argon availability 已由第二十四批处置）、mistral（RSS 最新 Timestral 10-15 已在账）、deepseek（仅 news261017，已在账）、kimi（blog 最新 2026-07-31）、doubao（Seed2.1/Seedance/Seedream 无新）、xiaomi（无 10 月日期）、microsoft（MAI-Cyber-1-Flash 官方 JSON-LD 为 2026-08-13，窗口外）、qwen（周报显示窗口内唯一新模型 10/02 上线百炼的 Qwen-Image-2.1-Pro，窗口外）。
+
+聚合站（`llmgateway.io` / `llm-releases.com`）只作发现线索，日期与数值一律回官方页核实——由此定位到的 Microsoft-Decision-1、Qwen Image 2.1 Turbo、Grok Imagine Video 1.5 Lite、GLM 5.3 Fast、Gemini Nano Banana 2.1、Reka Edge 2603、Beam 等候选，经核实均非窗口内官方模型发布或无官方发布文，不入账。
+
+### 覆盖缺口（如实记录，未能复核）
+
+| 入口 | 状态 | 说明 |
+| --- | --- | --- |
+| `hy.tencent.com`（腾讯混元） | needs_render | 纯 SPA，静态抓取只拿到同一份 117KB 外壳、无任何日期字符串，**未能独立确认窗口内无新发布** |
+| `stepfun.ai/blog`（阶跃星辰） | needs_render | 同上，**未能独立确认窗口内无新发布** |
+
+这两条不能断言"无发布"，已保留为下次批次的复核入口；两家厂商最近一次在账发布（混元 / Step 系列）均早于本窗口。
+
+### 门禁与验证
+
+| 门禁 | 结果 |
+| --- | --- |
+| `node scripts/reconcile-coverage.mjs` | ✓ exit 0 |
+| `node --test tests/*.test.mjs` | ✓ 19 pass / 0 fail |
+| `npm run sync:skills:check` | ✓ 技能镜像无漂移（本批未改 `.claude/skills/`） |
+| `node scripts/validate-data.mjs` | ✓ PASS — taxonomy 9 类 / vendors 16 / benchmarks 470 / releases 182（official 168）/ evidence edges 2804 |
+| `npm run validate` | ✓ 32 章通过（numeric-claim warning 为存量，不阻断） |
+| `npm run build:epub:official` | ✓ evals.epub / 32 章 |
+| `npm run build:web` | ✓ explorer + 470 实体页 + 40 自动证据页 |
+| `npm run validate:site` | ✓ 全部通过（766 个 HTML / 34510 个内部引用；234 个时间轴 / 2021 个事件卡片） |
+| 本地站点抽查 | ✓ `/releases/` 出现 2026-10-19 / 2026-10-14 / 2026-10-12 三个新结点；三个详情页 200 且评测 chip 可点击；8 个新基准详情页的「模型发布采用时间轴」均出现对应新发布；厂商 logo 为真实彩色原标；公开文案无「已核验/待核验/证据账本/窗口起点」等内部流程词 |
