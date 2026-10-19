@@ -1280,3 +1280,74 @@ OpenAI GPT-Live-1（2026-09-10 语音垂直 API 模型）；Google Lyria 3.5（�
 | Gemini 3.8 TTS（09-23）/ Live Avatar（09-24）/ EmbeddingGemma 2（10-06） | 语音、具身语音与嵌入垂直模型，非通用大模型。 |
 | Mistral Timestral（2026-10-15） | 时间序列垂直模型。 |
 | x.ai、z.ai、Moonshot、Qwen、Seed、Meta AI、Microsoft AI、StepFun、腾讯混元 | 仅 curl 探测受阻或 JS 渲染，未完成浏览器复核，不能据此断言窗口内无发布，需后续批次补扫。 |
+
+## 第二十四批（2026-10-19 增量入库）：Mistral Timestral 时间序列基础模型家族
+
+| 项目 | 内容 |
+| --- | --- |
+| 扫描锚点 | 检查点锚点 2026-10-17 回退 14 天重叠，窗口 2026-10-03 ~ 2026-10-19 |
+| 开工基线 | `origin/main` = `48de71d`（第二十三批），独立 worktree detached HEAD，账本 162 条 |
+| 新增 release | 1 个：`mistral/timestral` |
+| 新增 evidence | 5 条 = 0 verified + 5 pending |
+| 新 benchmark id | 3（`gift-eval` / `time-forecast-benchmark` / `fev-bench`，均标 `new-benchmark`，兜底页已生成） |
+| 新厂商 | 无 |
+| 收口 checkpoint | `last_scan_at=2026-10-19`；`last_max_release_date` 保持 `2026-10-17` 未回退（本批最大发布日 2026-10-15 早于锚点，锚点只前进不回退） |
+
+### 新入库 release
+
+| vendor | 模型 | 发布日与证据 | evidence |
+| --- | --- | --- | --- |
+| mistral | Timestral（5M / 28M / 123M / 209M 四尺寸家族） | 2026-10-15；mistral.ai/news/timestral/ 正文印刷 `October 15, 2026`、署名 `By Mistral` | 5 p⏳ |
+
+官方定位：Mistral 首个时间序列基础模型（TSFM）家族，做概率化多变量预测，支持仅历史与已知未来协变量。页面明示规格：上下文 32,768 time steps、输出 21 个分位数的概率预测、部署 on-prem / VPC / air-gapped、Licence Modified MIT；页面未给出 API 定价，账本 `pricing` 记 null。多变体完整性已逐个建档：5M / 28M / 123M / 209M 四个尺寸全部保留，无遗漏。
+
+### 日期证据冲突（未跨来源调和）
+
+同一页面的 JSON-LD 写 `"datePublished":"2026-07-15"`，与正文印刷日 `October 15, 2026` 不一致。按账本契约不跨来源调和：`release_date` 取页面印刷日 `2026-10-15`，JSON-LD 原值写入 manifest 与账本 notes 留档，待官方更正或人工核对后再决定是否走 `revisions[]` 勘误。
+
+### 待人工核验（图表行）
+
+5 项评测全部来自公告页内嵌柱状图（img `alt` 为空、DOM 无明文数值），按图行规则一律记 pending，视觉转写值存于各行 `notes` 与归档 `index.md`，读图确认后方可翻转 verified：
+
+| 评测基准 | 视觉转写值 | 方向 | 图中位次 |
+| --- | --- | --- | --- |
+| GIFT-Eval / GMean MASE | 0.657 | 越低越好 | 1 |
+| GIFT-Eval / GMean WQL | 0.446 | 越低越好 | 1 |
+| TIME / GMean MASE | 0.626 | 越低越好 | 1 |
+| TIME / GMean CRPS | 0.522 | 越低越好 | 1 |
+| fev-bench / SQL skill score | 50.4 | 越高越好 | 1 |
+
+协议字段：页面称结果来自单一 checkpoint、未做集成，但未给出评测协议细节，且技术报告当时尚未发布，故 `protocol` 12 键全部记 null。
+
+### 与第二十三批口径的差异（重要）
+
+第二十三批把 `Mistral Timestral（2026-10-15）` 列入跳过清单，原因为「时间序列垂直模型」。该口径与当前 ingest-releases 技能契约冲突：契约明确要求「翻译、语音、图像、视频、OCR 等专项模型必须允许建档；分类只影响任务适配与分数比较，不是排除条件」，并要求落实厂商全产品线监测（Mistral 必须覆盖通用、端侧 Small、OCR 文档智能与代码）。本批按现行契约建档 Timestral，第二十三批的跳过理由不再沿用。本批未改写第二十三批任何既有内容，只在其后追加本节。
+
+### 候选与排除处理
+
+| 候选 | 处理 |
+| --- | --- |
+| `google-11e9f2eebcc1`（Gemini 4 Argon 开放公告，2026-10-13） | 不建档。属面向开发者的 availability post，非独立模型发布；该模型档案已存在于 `google/gemini-4-argon`（release_date 2026-09-30，status verified，7 条 evidence），不重复建档。已写 `exclusion_reason`。 |
+| `google-0fb6a7bf6fd6`（Gemini 4 Argon 模型安全文章，2026-10-13） | 不建档。属模型安全与负责任开发方法论文章，非独立模型发布；同上，已写 `exclusion_reason`。 |
+
+### 跳过清单（本窗口未入库）
+
+| 候选 | 原因 |
+| --- | --- |
+| x.ai、z.ai、StepFun | 入口扫描为 `inaccessible`（x.ai/news、z.ai/blog、stepfun.ai/research 抓取受阻），未完成浏览器复核，不能据此断言窗口内无发布，需后续批次补扫。 |
+| Meta AI、OpenAI sitemap、Qwen、Seed blog、腾讯混元 | 入口扫描为 `inaccessible` 或 `needs_render`（JS 渲染未复核），同上，不得据此断言窗口内无发布。 |
+
+### 门禁与验证
+
+| 门禁 | 结果 |
+| --- | --- |
+| `node scripts/reconcile-coverage.mjs` | ✓ 通过（exit 0） |
+| `node --test tests/*.test.mjs` | ✓ 19 pass / 0 fail |
+| `npm run sync:skills:check` | ✓ 技能镜像无漂移 |
+| `node scripts/validate-data.mjs` | ✓ PASS — taxonomy 9 类 / vendors 16 / benchmarks 462 / releases 177（official 163）/ evidence edges 2775 |
+| `npm run validate` | ✓ 32 章通过（219 条 numeric-claim warning 为存量，不阻断） |
+| `npm run build:epub:official` | ✓ evals.epub 484 KB / 32 章 |
+| `npm run build:web` | ✓ explorer + 462 实体页 + 42 自动证据页 |
+| `npm run validate:site` | ✓ 全部通过（755 个 HTML / 34034 个内部引用；229 个时间轴 / 1985 个事件卡片） |
+
+开工时 `validate-data` 曾因 3 个 `general` 候选既无 release 也无 exclusion_reason 而失败（google 两例 + mistral 一例）；本批三条候选全部处置后转为 PASS。
