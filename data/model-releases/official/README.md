@@ -1537,5 +1537,5 @@ Muse 页面的图表已归档到 `models/2026-10-12-muse-wonder/images/` 与
   - Meta「Accelerating Scientific Research in Health Data Science With Muse Models」（10-14）——基于既有 Muse 模型的科研应用博客，未发布新模型。
   - Kimi「Remote Control」（10-19）、豆包「Seed Alignment & Preparedness team」（10-14）——客户端功能文档页 / 招聘公告，非独立模型发布。
 - **待人工核验**：本批无图表行。
-- **门禁**：reconcile-coverage ✓ / validate-data ✓（releases 183，official 169，evidence edges 2804）；站点全量构建与 validate-site 交由 CI 在 PR 上复验。
+- **门禁**：`reconcile-coverage` ✓ / `validate-data` ✓（releases 183，official 169，evidence edges 2804）/ `validate-model-coverage` ✓ / `sync:skills:check` ✓ / `npm run build` 全链路 ✓（tests 19/19、book validate 32 章通过、EPUB 484 KB、web 32 章 + 693 URL sitemap、benchmarks hub 470 实体页 + 40 自动证据页、`validate-site` ✓：767 HTML / 34538 内部引用 / 234 时间轴 / 2023 事件卡片）。
 - **分支**：`model-release-daily-20261019T232350Z`（自 `origin/main` = e7e6110 开出），远端分支保留，开 PR 交人工评审。
