@@ -158,6 +158,7 @@
 6. **分支策略（入库任务）** — 一律 `git fetch origin --prune` 后从 `origin/main` 开新分支（命名 `model-release-daily-<UTC时间戳>`），**不要在本地 `main` 上工作**：本地 `main` 与 `origin/main` 长期分叉（PR 走 squash/rebase 合并），在其上开分支会把已入库内容重复带入新批次
 7. **合并与历史** — 推送分支后开 PR（base=`main`）并 squash 合并；远端分支一律保留，禁止 `git branch -D` / `git push --delete` / `gh pr merge --delete-branch`
 8. **工具链 PATH** — `node` / `npm` / `gh` 在 `/usr/local/bin`；非交互 shell 默认 PATH 不含该目录，脚本前先 `export PATH="/usr/local/bin:$PATH"`
+9. **每日自动入库** — 已配置定时任务，每天 09:00（Asia/Shanghai）自动跑一轮 `ingest-releases`：从 `origin/main` 开 `model-release-daily-<UTC时间戳>` 分支 → 写账本 → 过门禁 → 开 PR 并 squash 合并 → CI 部署到 https://evals.zenheart.site 。看到这类分支或 PR 属正常产物，**不是待清理的残留**，也不要重复跑同一批次
 
 ---
 
