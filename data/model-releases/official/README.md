@@ -1526,7 +1526,7 @@ Muse 页面的图表已归档到 `models/2026-10-12-muse-wonder/images/` 与
     - 归档：`models/2026-07-31-minimax-h3/`（page.html + images/h3-hero.png + index.md + manifest.json）。
     - 规格：通用多模态生成模型，统一理解文本/图像/视频/音频上下文，输出原生立体声视频，最长 15 秒、最高 2K；核心技术 Contextual Omni Representation、H3-VAE（4x 有效序列长度）、H3-Omni Transformer（训练吞吐 +30%）、上下文内重生成。
     - 状态 `pending`：发布页未给出任何离散基准跑分数值，页面数字仅为工程指标与价格相对口径（2K 每秒价格不到主流模型三分之一、768p 不到主流 720p 的一半），按纪律记 0 行。
-    - 该发布落在增量窗口之外（2026-07-31），由厂商全产品线巡检在存��回填轨道上发现。
+    - 该发布落在增量窗口之外（2026-07-31），由厂商全产品线巡检在存量回填轨道上发现。
 - **新增 evidence：0 条**（0 verified + 0 pending）。
 - **新 benchmark id：无**（本批无新评测行）。
 - **新厂商：无**。
@@ -1539,3 +1539,60 @@ Muse 页面的图表已归档到 `models/2026-10-12-muse-wonder/images/` 与
 - **待人工核验**：本批无图表行。
 - **门禁**：`reconcile-coverage` ✓ / `validate-data` ✓（releases 183，official 169，evidence edges 2804）/ `validate-model-coverage` ✓ / `sync:skills:check` ✓ / `npm run build` 全链路 ✓（tests 19/19、book validate 32 章通过、EPUB 484 KB、web 32 章 + 693 URL sitemap、benchmarks hub 470 实体页 + 40 自动证据页、`validate-site` ✓：767 HTML / 34538 内部引用 / 234 时间轴 / 2023 事件卡片）。
 - **分支**：`model-release-daily-20261019T232350Z`（自 `origin/main` = e7e6110 开出），远端分支保留，开 PR 交人工评审。
+
+## 第二十七批（2026-10-20 增量窗口 2026-10-05 ~ 2026-10-20）
+
+- **新增 release：2 个**
+  - `gpt-6-october`（vendor=openai，模型=GPT-6 Instant / GPT-6 Sol (October) / GPT-6 Luna (October)，发布日=2026-10-07，evidence 条数 **106** = v✓ 90 / p⏳ 16）。
+    - 发布日证据（一手）：官方发布页 `https://openai.com/index/gpt-6-for-everyone/` 文章头部印刷日期行「2026年10月7日」；交叉确认：部署安全中心系统卡 `https://deploymentsafety.openai.com/gpt-6-october` 印刷日期行「Published October 7, 2026」，以及官方 news RSS 同条 pubDate（07 Oct 2026）。
+    - 归档：`models/2026-10-07-gpt-6-october/`（`page.html` 644,646 B + `system-card.html` 387,274 B + `images/figure-1..7.png` 七张系统卡原图 + `index.md` + `manifest.json`）。
+    - 发布内容：搭载「智能界面」的 GPT-6 当天起面向全球 ChatGPT Plus / Pro / Business / Enterprise 推出，次日扩展到免费版与 Go；付费档底层为 GPT-6 Sol、免费档与 Go 为 GPT-6 Luna，两款都针对日常对话调优；本次更新只作用于「聊天」体验，不改变「工作」模式与 Codex 使用的模型。GPT-6 Instant 未出现在 API 模型列表中，属 ChatGPT 侧档位而非 API 模型。
+    - 评测来源：系统卡 11 张 DOM 机读表（生产安全基准、U18 安全、图像输入安全、GPT-Red 提示注入、HealthBench 四变体、MentalHealthBench 四分档、对抗式用户模拟动态评测、生物化学 High / Critical 阈值、生物模型拒答、网络安全安全评测）+ 4 项正文明文（ExploitBench、SEC-Bench Pro、指令层级鲁棒性、Respecting Warnings）。同一表格中的 GPT-5.5 Instant / GPT-5.6 Luna / GPT-5.6 Sol 等列按契约只写进本行 notes，不拆成独立行。
+    - 规格：上下文窗口 1,050,000 token、最大输出 128,000 token；GPT-6 Sol $2.00 / $10.00 每百万 token，GPT-6 Luna $0.10 / $0.50 每百万 token（取自 OpenAI API 官方模型文档页 `developers.openai.com/api/docs/models/gpt-6-sol` 与 `/gpt-6-luna`，2026-10-20 抓取）；参数量官方未明示，记 null。
+    - 发布页另有两项不构成标准公开基准的内部评测结论——「高价值日常智能体任务」内部评测中 GPT-6「极高」档与 GPT-5.6「中」档同时开始回答且综合得分高于 GPT-5.6「极高」档；需要网页搜索的问题上 GPT-6「即时」档开始回答所需时间比 GPT-5.6「即时」档平均缩短 44%——官方未给基准名与绝对数值，按「不臆造数值」纪律只记入 release notes，不建 evidence 行。
+  - `gemini-4-argon-ga`（vendor=google，模型=Gemini 4 Argon，发布日=2026-10-13，evidence 条数 **6** = v✓ 6 / p⏳ 0）。
+    - 发布日证据（一手）：官方发布页 `https://blog.google/innovation-and-ai/models-and-research/gemini-models/introducing-gemini-4-argon/` 文章头部印刷日期行「Oct 13, 2026」；交叉确认：Google DeepMind 官方博客 RSS 同条 pubDate（Tue, 13 Oct 2026）。
+    - 归档：`models/2026-10-13-gemini-4-argon-ga/`（`page.html` + 同日 `safety-post.html`、`robotics-post.html` + `index.md` + `manifest.json`；本页评测数值全为正文明文、无评测图表，故无 `images/`）。
+    - 发布内容：Gemini 4 Argon 正式面向所有人开放（既有 `gemini-4-argon` 为 2026-09-30 限量首发，仅向 Fairwind Program 可信网络防御者开放）。官方称 1M 统一输入输出 token 上限；开放期每百万输入 $2 / 输出 $10（缓存输入 95% 折扣），2026-11-30 期后调整为 $4 / $20；官方另称在 Vals Index 排名第一（排名而非分数，不建 evidence 行）。
+    - 评测（正文明文）：ERQA 87%、RareBench 57%、LabBench（wet-lab reasoning）52.2%、Gray Swan 间接提示注入（IPI）攻击成功率 0.7%、编码基准走捷径/作弊尝试率 2%；外部生物安全越狱红队解锁率官方只给上界「<1%」，记 value=null + `not_extracted`。同日的《Developing Gemini 4 Argon responsibly and safely》与《Gemini 4 Argon for Robotics》两文复述同一批数字。
+    - 与既有条目的关系：两条 release 指向同一模型 `gemini-4-argon`，按「只追加、不改既有文件」的契约并存而不互相覆盖。
+- **新增 evidence：112 条** = 96 verified（DOM 机读表 + 正文明文）+ 16 pending（图表行，数值在图中，视觉读数未转录）。
+- **新 benchmark id：29 个**（notes 标 `new-benchmark`）：
+  - OpenAI 系统卡侧 25 个：`openai-safe-completions`、`openai-u18-safety`、`openai-vision-safety`、`gpt-red-prompt-injection`、`healthbench-professional`、`healthbench-hard`、`healthbench-consensus`、`mentalhealthbench`、`openai-dynamic-safety-simulations`、`multimodal-troubleshooting-virology`、`protocolqa-open-ended`、`tacit-knowledge-troubleshooting`、`troubleshootingbench`、`shp2-protein-function-prediction`、`coronavirus-ace2-cell-entry-screen`、`phage-plasmid-co-evolution`、`openai-biology-model-refusal`、`openai-cybersecurity-safety`、`respecting-warnings`、`openai-safety-pareto`、`openai-multiturn-jailbreak`、`openai-factuality`、`openai-auto-review-compliance`、`openai-blocker-deception`、`search-tool-failure-disclosure`。
+  - Google 侧 4 个：`rarebench`、`gray-swan-ipi`、`google-bio-jailbreak-redteam-unlock`、`google-agent-shortcut-attempts`。
+  - 其中 27 个由账本自动生成兜底详情页（`data/generated/auto-benchmark-ids.json` 40 → 67）；`openai-factuality`、`search-tool-failure-disclosure` 为此前批次已登记的自动页，本批沿用。
+  - 复用既有实体 5 个：`healthbench`、`exploitbench`、`sec-bench-pro`、`erqa`、`lab-bench`。
+- **新厂商：无**。
+- **跳过清单**
+  - StepAudio 3 系列（TTS / ASR / Gen / Music / Realtime，StepFun）——官方文档页存在（`stepfun.ai/docs/en/guides/models/stepaudio-3-*`），但页面未印发布日期、亦无独立官方发布文，官方 GitHub 与 HuggingFace 仓也无对应模型仓；按「不拿抓取日冒充发布日期」纪律**本轮不建档**，已按 `stepfun-<sha>` 登记 5 条候选进覆盖表（`next_backfill_at = 2026-10-20`）留待存量回填轨道补齐日期证据。
+  - MiniMax「Japanese IP / MiniMax H3 IP Edition」（10-13）——基于已建档 MiniMax H3 的联名活动，非独立模型发布。
+  - MiniMax Music 2.6（官方页印 2026.1.23）、MiniMax Speech 2.8（2026-01-23）——发布日在增量窗口之外，留待存量回填。
+  - Qwen-Drive-1.0（官方研究页标 2026/09/03）——发布日早于增量窗口，留待存量回填。
+  - Anthropic（10-07 ~ 10-18 共 7 条）——Expanding the Cyber Verification Program、Building on our commitment to America、Anthropic Cyber Mission、2026 Usage Policy update、An update on independent evaluators、Anthropic opens Singapore office、Investing in the public benefit：政策 / 合作 / 办公与政府备忘录 / 公益 / 评测方法学公告，非独立模型发布。
+  - xAI「The X Subscription」（10-12）——产品套餐公告。
+  - Meta（10-02、10-14）——Accelerating Scientific Research in Health Data Science With Muse Models（基于既有 Muse 模型的科研应用博客）、Developing Capable Models Responsibly、Solving Open Research Problems Together：科研应用与方法学/合作公告。
+  - 字节跳动「Seed Alignment & Preparedness team」（10-14）——招聘公告。
+  - OpenAI「Rosalind Academic Plan / chatgpt-for-academic-researchers」（10-15）——学术研究计划公告，非独立模型发布。
+  - Google「Gemini 4 Argon for Robotics」（10-13）——同一模型在机器人场景的应用与工程说明文，未发布新模型；其 ERQA 87% 已并入 `gemini-4-argon-ga`。
+  - Google「build-with-gemini-4-argon」开发者开放公告——可用性公告，非独立模型发布（覆盖表已登记排除原因）。
+  - z.ai / 智谱 GLM——`z.ai/blog/` 本轮直连与无头渲染均被 Cloudflare 拦截（152 字节挑战页），窗口内公告无法巡检；旁证渠道（`zai-org` HuggingFace / GitHub）最新模型仓为 2026-08-25 的 GLM-5.3 与 GLM-5.3-Flash，无窗口内新模型。
+  - Qwen——`qwen.ai/blog`、`qwen.ai/research` 与 `qwen.ai/llms.txt` 渲染后无任何 2026-10 条目，窗口内无新发布。
+  - 腾讯混元——`hy.tencent.com` 渲染后最新条目 2026-09-22（Hy Image3.5 preview，已建档），窗口内无新发布。
+  - 小米——`mimo.xiaomi.com` 列表最新为研究论文（2026-09 / 2026-01），窗口内无新发布。
+  - StepFun——除 StepAudio 3 外，`stepfun.ai/research` 与官方 GitHub / HuggingFace 仓最新为 Step-5-Preview 系（已建档），窗口内无新发布。
+  - Microsoft——`microsoft.ai/models` 现有 MAI-Code-1.1-Flash、MAI-Voice-2.1、MAI-Transcribe-2、MAI-Thinking-1、MAI-Image-2.6 均已建档，窗口内无新发布。
+  - Kimi——`kimi.com/en/blog` 最新为 Kimi K3 / Kimi K2.6 等已建档条目，窗口内无新发布。
+  - DeepSeek——官方 news 索引最新为 `news261017`（2026-10-17），已建档。
+  - GPT-Live 1（OpenAI，官方 news RSS 标 2026-09-10）——真实 API 模型（`gpt-live-1`，全双工语音，\$0.05/分钟），但发布日早于增量窗口，留待存量回填。
+- **待人工核验（16 条图表行，7 张原图已归档至 `models/2026-10-07-gpt-6-october/images/`）**
+  - `openai-safety-pareto`（×2 模型）→ `images/figure-1.png`（系统卡 Figure 1，安全—不过度拒答 Pareto 图）
+  - `openai-multiturn-jailbreak`（×2）→ `images/figure-2.png`（Figure 2，多轮越狱鲁棒性按攻击预算）
+  - `openai-factuality`（Factuality heavy / User flagged failures / High stakes，各 ×2）→ `images/figure-3.png`（Figure 3，事实性错误率）
+  - `openai-auto-review-compliance`（×2）→ `images/figure-4.png`（Figure 4，Auto-Review 被禁动作完成率）
+  - `respecting-warnings` 已按 Figure 5 图注明文记 verified；`images/figure-5.png`（Figure 5，Respecting Warnings 条件失败率）→ `search-tool-failure-disclosure`（×2）pending
+  - `openai-blocker-deception`（×2）→ `images/figure-6.png`（Figure 6，Blocker Deception 披露失败率）
+  - `images/figure-7.png`（Figure 7，Broken Search Tool 评测结果）——其数值在系统卡正文中无本模型明文，未建行
+  - 人工读图确认后，按账本契约第 2 条只翻转对应 evidence 的 `status`（pending → verified）并补齐 `locator` / `reported_score`。
+- **门禁**：`reconcile-coverage` ✓ / `validate-data` ✓（releases 185，official 171，evidence edges 2916）/ `node --test tests/*.test.mjs` ✓ 19 pass 0 fail / `sync:skills:check` ✓ / `npm run build` 全链路 ✓（book validate 32 章通过、EPUB 484 KB、web 32 章 + 695 URL sitemap、benchmarks hub 470 实体页 + 67 自动证据页、`validate-site` ✓）。
+- **分支**：`model-release-daily-20261020T010500Z`（自 `origin/main` = 343770c 开出），远端分支保留。
+- **本批勘误**：第二十六批小节末句「由厂商全产品线巡检在存□回填轨道上发现」中夹有两个 U+FFFD 替换字符（原文应为「存量」），本批按「不静默覆盖」原则一并还原为「存量」，除此之外未改动任何既有批次内容。
