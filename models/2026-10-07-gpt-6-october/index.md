@@ -30,7 +30,7 @@ fetched_at: 2026-10-20
 
 ## 评测数据（系统卡 DOM 机读表逐行转录）
 
-> 说明：下列数值均来自系统卡的 DOM 表格（可定位到表头与行），按契约记为 verified。同一行中的他模型列（GPT-5.5 Instant / GPT-5.6 Luna / GPT-5.6 Sol）属于对比列，只写在「备注」列，不拆成独立行。
+> 说明：下列数值均来自系统卡的 DOM 表格（可定位到表头与行），按契约直接记入数值。同一行中的他模型列（GPT-5.5 Instant / GPT-5.6 Luna / GPT-5.6 Sol）属于对比列，只写在「备注」列，不拆成独立行。
 > 表头中的 `GPT-6 Sol (October)` 与 `GPT-6 Luna (October)` 即本 release 的两个自家模型列。
 
 ### Table 1: Production Benchmarks with Challenging Prompts (higher is better)
@@ -153,7 +153,7 @@ fetched_at: 2026-10-20
 | SEC-Bench Pro | GPT-6 Sol (October) 68.85% / GPT-6 Luna (October) 48.50% | 同段对比列：GPT-6 Astra 85.4% |
 | Respecting Warnings | GPT-6 Sol (October) 28% / GPT-6 Luna (October) 15.9% | 取自图 5 图注的正文描述（越低越好）；对比列：GPT-5.6 Sol (Aug) 34%、GPT-5.6 Luna (Aug) 27% |
 
-## 图表行（数值在图中，保持 pending）
+## 图表行（数值只存在于图中，本批不记数值）
 
 | 评测 | 分数 | 备注 |
 | --- | --- | --- |
