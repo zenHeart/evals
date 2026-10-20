@@ -1517,3 +1517,25 @@ Muse 页面的图表已归档到 `models/2026-10-12-muse-wonder/images/` 与
 | `npm run build:web` | ✓ explorer + 470 实体页 + 40 自动证据页 |
 | `npm run validate:site` | ✓ 全部通过（766 个 HTML / 34510 个内部引用；234 个时间轴 / 2021 个事件卡片） |
 | 本地站点抽查 | ✓ `/releases/` 出现 2026-10-19 / 2026-10-14 / 2026-10-12 三个新结点；三个详情页 200 且评测 chip 可点击；8 个新基准详情页的「模型发布采用时间轴」均出现对应新发布；厂商 logo 为真实彩色原标；公开文案无「已核验/待核验/证据账本/窗口起点」等内部流程词 |
+
+
+## 第二十六批（2026-10-19 增量窗口 2026-10-05 ~ 2026-10-19）
+
+- **新增 release：1 个**
+  - `minimax-h3`（vendor=minimax，模型=MiniMax H3，发布日=2026-07-31，证据=官方研究页文章头部印刷日期行 `<time>2026-07-31</time>`，并由官方模型发布说明页 "Jul. 31, 2026" 条目交叉确认；evidence 条数 **0**（v✓ 0 / p⏳ 0））。
+    - 归档：`models/2026-07-31-minimax-h3/`（page.html + images/h3-hero.png + index.md + manifest.json）。
+    - 规格：通用多模态生成模型，统一理解文本/图像/视频/音频上下文，输出原生立体声视频，最长 15 秒、最高 2K；核心技术 Contextual Omni Representation、H3-VAE（4x 有效序列长度）、H3-Omni Transformer（训练吞吐 +30%）、上下文内重生成。
+    - 状态 `pending`：发布页未给出任何离散基准跑分数值，页面数字仅为工程指标与价格相对口径（2K 每秒价格不到主流模型三分之一、768p 不到主流 720p 的一半），按纪律记 0 行。
+    - 该发布落在增量窗口之外（2026-07-31），由厂商全产品线巡检在存��回填轨道上发现。
+- **新增 evidence：0 条**（0 verified + 0 pending）。
+- **新 benchmark id：无**（本批无新评测行）。
+- **新厂商：无**。
+- **跳过清单**
+  - GPT-6 Instant（OpenAI，2026-10-07，官方页 `openai.com/index/gpt-6-for-everyone/`）——官方页已定位、页面印刷日期确认为 2026年10月7日，但本轮直连返回 **403**，未完成归档与转写，**留待下一轮以无头渲染降级链补齐**，本批不入账。
+  - Anthropic「An update on independent evaluators」（10-15）、「Investing in the public benefit」（10-18）、「opens Singapore office」（10-14）——评测方法学 / 公益 / 办公室与政府备忘录公告，非独立模型发布。
+  - OpenAI「Rosalind Academic Plan」（10-15）——研究计划公告，非独立模型发布。
+  - Meta「Accelerating Scientific Research in Health Data Science With Muse Models」（10-14）——基于既有 Muse 模型的科研应用博客，未发布新模型。
+  - Kimi「Remote Control」（10-19）、豆包「Seed Alignment & Preparedness team」（10-14）——客户端功能文档页 / 招聘公告，非独立模型发布。
+- **待人工核验**：本批无图表行。
+- **门禁**：`reconcile-coverage` ✓ / `validate-data` ✓（releases 183，official 169，evidence edges 2804）/ `validate-model-coverage` ✓ / `sync:skills:check` ✓ / `npm run build` 全链路 ✓（tests 19/19、book validate 32 章通过、EPUB 484 KB、web 32 章 + 693 URL sitemap、benchmarks hub 470 实体页 + 40 自动证据页、`validate-site` ✓：767 HTML / 34538 内部引用 / 234 时间轴 / 2023 事件卡片）。
+- **分支**：`model-release-daily-20261019T232350Z`（自 `origin/main` = e7e6110 开出），远端分支保留，开 PR 交人工评审。
