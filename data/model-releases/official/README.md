@@ -1596,3 +1596,57 @@ Muse 页面的图表已归档到 `models/2026-10-12-muse-wonder/images/` 与
 - **门禁**：`reconcile-coverage` ✓ / `validate-data` ✓（releases 185，official 171，evidence edges 2916）/ `node --test tests/*.test.mjs` ✓ 19 pass 0 fail / `sync:skills:check` ✓ / `npm run build` 全链路 ✓（book validate 32 章通过、EPUB 484 KB、web 32 章 + 695 URL sitemap、benchmarks hub 470 实体页 + 67 自动证据页、`validate-site` ✓）。
 - **分支**：`model-release-daily-20261020T010500Z`（自 `origin/main` = 343770c 开出），远端分支保留。
 - **本批勘误**：第二十六批小节末句「由厂商全产品线巡检在存□回填轨道上发现」中夹有两个 U+FFFD 替换字符（原文应为「存量」），本批按「不静默覆盖」原则一并还原为「存量」，除此之外未改动任何既有批次内容。
+
+## 第二十八批（2026-10-21 增量窗口 2026-10-05 ~ 2026-10-21）
+
+- **新增 release：4 个**
+  - `voxtral-3`（vendor=mistral，模型=Voxtral Small Transcribe 3 / Voxtral Mini Transcribe 3 / Voxtral Mini Transcribe Realtime 3 / Voxtral Speech 3，发布日=2026-10-20，evidence 条数 **18** = v✓ 18 / p⏳ 0）。
+    - 发布日证据（一手）：官方发布页 `https://mistral.ai/news/voxtral-3/` 的 JSON-LD `datePublished: 2026-10-20T12:00:22.000Z`；交叉确认：官方 RSS（`https://mistral.ai/rss.xml`）同条 pubDate `Tue, 20 Oct 2026 12:00:22 GMT`。
+    - 归档：`models/2026-10-20-voxtral-3/`（`page.html` 585,235 B + `images/` 5 张官方原图 + `index.md` + `manifest.json`）。
+    - 发布内容：Mistral 发布 Voxtral 3 语音模型家族——语音转文本（Small / Mini / Mini Realtime 三档）与文本转语音（Voxtral Speech 3，即 Voxtral Mini TTS 3.0），并附带 Voice Agent SDK 与 Pro Voice 音色适配（30 分钟音频复现说话人音色与情绪）；后二者为 SDK 与适配能力而非独立模型，未单列为模型条目。官方明示：转写覆盖 50+ 语种、TTS 覆盖 35+ 语种与 50+ 方言；Mini Transcribe 3 为 4B 参数；转写定价 Mini 批式 0.0035 / Mini Realtime 0.008 / Small 0.0040 USD 每分钟；Voxtral Speech 3 为 13 USD 每百万字符（批式与实时同一 API）；实时端到端轮次检测、亚 500ms 延迟、覆盖 35+ 语种。
+    - 评测来源：官方发布页九张评测图表，数值以 `data-value` / `data-display` 属性内嵌于页面图表组件，DOM 机读可逐行核对（与 xAI grok-4-6 一档的处理口径一致）；图表脚注同时载明提示条数、语种清单、音色数、评委模型与单价格取来源，均已随对应行写入 `protocol` 与 `notes`。
+    - 收录 18 行：FLEURS 45 指定语种 / 自动检测语种 WER（Small 4.0% / 4.1%，Mini 4.5% / 4.6%）、说话人分离 cpWER（Small 18.4%、Mini 18.6%）、Earnings 22 关键短语召回（含上下文 94.6%、不含上下文 81.4%）、Artificial Analysis WER 指数（Small 2.1%、Mini 2.2%）、FLEURS 35 实时 WER（2400 / 960 / 480 / 240ms 窗口依次 5.7% / 6.0% / 6.4% / 7.4%）、Voice Code Bench 忠实复现片段 80%、读音控制发音准确片段 87%、多语种（11 语种）评委均分 3.16、英文表现力评委均分 3.13。同图竞品列按契约只写进本行 `notes`，不拆成独立行。
+  - `hy-memory-30b-a3b`（vendor=tencent，模型=Hy-Memory-30B-A3B，发布日=2026-10-15，evidence 条数 **29** = v✓ 29 / p⏳ 0）。
+    - 发布日证据（一手，三处互证）：官方模型仓 `https://huggingface.co/tencent/Hy-Memory-30B-A3B` 创建日 2026-10-15；配套技术报告 arXiv:2610.22196 提交日 2026-10-15（Submitted on 15 Oct 2026）；官方 GitHub 仓 `https://github.com/Tencent-Hunyuan/Hy-Memory` 同批开源。
+    - 归档：`models/2026-10-15-hy-memory-30b-a3b/`（官方模型卡原文 + `images/fig1-training-process.png` + `images/fig3-cross-harness-colm.png` + `images/hunyuan-logo.png` + `index.md` + `manifest.json`）。
+    - 发布内容：腾讯混元发布 30B 总参 / 3B 激活的 MoE 记忆**写入**模型，官方模型卡定位为在记忆系统里负责「写入」一环；两阶段训练——OPD 阶段提供学生自写状态链的密集教师监督，RL 阶段按 chunk 级信用分配并把选中的记忆库跨窗口传递。
+    - 评测来源：官方模型卡 Table 1（跨 harness 六项指标均值）+ Table 2–5（Mem0 / Hy-Memory / MemOS / EverMemOS 四套 harness 下六项指标明细）。官方说明评测只更换记忆写入模型，框架版本、提示词、检索配置、回答模型与评委等其余组件全部固定；主矩阵每项基准在固定 20% 子样本上评估，harness 分为 LoCoMo Judge、LongMemEval、PersonaMem-v2、Travel SPS、Shopping PS、Code Memory Bench 六项等权平均；EverMemOS 对模型完全留出。
+    - 收录 29 行：跨 harness 均值 5 行（Mem0 54.02 / Hy-Memory 60.55 / MemOS 50.51 / EverMemOS 56.89 / 四框架总平均 55.49，对照 Claude Opus 5 总平均 54.62、DeepSeek V4.1 Flash 53.64、Hy3 51.63）+ 四套 harness 下六项指标明细 24 行。
+  - `youtu-parsing-omni`（vendor=tencent，模型=Youtu-Parsing-Omni，发布日=2026-10，date_precision=month，evidence 条数 **6** = v✓ 6 / p⏳ 0）。
+    - 发布日证据（一手）：官方模型仓 `https://huggingface.co/tencent/Youtu-Parsing-Omni` 更新日志写明「**[2026-10]** 技术报告、模型权重、vLLM 插件与推理示例一并发布」，页内未印具体日，故日期精度记到月、仓库目录用 `2026-10-01` 前缀排序，实际发布日待官方后续公告补精确；官方 GitHub 仓 `https://github.com/TencentCloudADP/youtu-parsing` 同批开源。
+    - 归档：`models/2026-10-01-youtu-parsing-omni/`（官方模型卡原文 + `index.md` + `manifest.json`；评测数值在模型卡 Markdown 表格中，无独立图片）。
+    - 发布内容：腾讯发布 5B 文档解析模型，把整页文档（文字、表格、公式、图表）一次性解析成带结构与层级的 JSON 封装——感知层给出版面元素包围盒、文本、LaTeX/OTSL 表格、Markdown 图表、Mermaid 流程图与阅读顺序。
+    - 评测来源：官方模型卡 OmniDocBench v1.6 对照表（19 个系统）。收录 6 行：总分 96.96、文本编辑距离 0.0271、公式 CDM 96.80、表格 TEDS 96.79、表格 TEDS-S 98.20、阅读顺序编辑距离 0.1104；同表其余 18 个系统（TeleOCR 96.91、OvisOCR2 96.47、PaddleOCR-VL-1.6 96.34、MinerU2.5-Pro 95.75、GLM-OCR 95.22、HunyuanOCR-1.5 94.74、Qianfan-OCR 93.90、Youtu-Parsing 93.74、Ovis2.6-30B-A3B 93.70、Logics-Parsing-v2 93.33、FireRed-OCR 93.26、Gemini-3-Pro 92.91、dots.ocr 90.77、OpenDoc-0.1B 90.67、DeepSeek-OCR 2 90.25、Qwen3-VL-235B 89.78、Dolphin-v2 89.50、OCRVerse 88.60）按契约只写进本行 `notes`。
+  - `qwen-image-2-1-turbo`（vendor=qwen，模型=Qwen-Image-2.1-Turbo，发布日=2026-10-09，evidence 条数 **0** = v✓ 0 / p⏳ 0）。
+    - 发布日证据（一手）：官方 GitHub 仓 `https://github.com/QwenLM/Qwen-Image-2.1` 的 README 更新日志逐条写明「**2026.10.09**: We released Qwen-Image-2.1-Turbo for image generation and editing in just **8 denoising steps**」，同日「Qwen-Image-2.1 Pro and Turbo APIs are now officially live!」；官方模型仓 `https://huggingface.co/Qwen/Qwen-Image-2.1-Turbo` 创建日同为 2026-10-09。
+    - 归档：`models/2026-10-09-qwen-image-2-1-turbo/`（官方 README + 官方模型卡原文 + `images/qwen-image-2.1-logo.png` + `index.md` + `manifest.json`）。
+    - 发布内容：Qwen-Image-2.1 的加速 checkpoint，沿用同一套 7B 视觉生成架构，文生图与图像编辑压到 8 步去噪，权重自带推荐采样表，Diffusers 经 `QwenImage21Pipeline` 直接加载，默认 CFG=1、前缀 KV 缓存跨去噪步复用文本与参考图上下文，默认分辨率为 2048 档。
+    - 状态 `pending`：官方 README 与模型卡只给规格、加载方式与使用示例，未印基准分数与对照表，按「不臆造数值」纪律记 0 行。
+    - 与既有条目的关系：本档是已建档 `qwen-image-2-1`（2026-09-20）的后增加速 checkpoint，按变体单独建档、不与首发档案合并；覆盖表中该候选标 `release_match: "manual"`，避免按共享模型卡并入首发档案。
+- **新增 evidence：53 条** = 53 verified（DOM 机读图表数值 + 模型卡 Markdown 表格）+ 0 pending。
+- **新 benchmark id：14 个**（notes 标 `new-benchmark`）：
+  - Mistral 侧 7 个：`cpwer-diarization`（说话人分离质量，官方口径为拼接最小置换 WER）、`keyphrase-recall`（Earnings 22 关键短语召回）、`aa-wer-index`（Artificial Analysis 语音识别综合 WER 指数）、`voice-code-bench`（BeSimple AI 出品的语音合成质量评测）、`pronunciation-control`（读音控制评测）、`tts-multilingual-judge`（11 语种语音合成评委均分）、`tts-expressive-english`（one_eval 英文表现力评委均分）。
+  - 腾讯侧 7 个：`memory-writer-harness-matrix`（记忆写入模型跨框架六项指标均值矩阵）、`locomo`（长对话记忆问答）、`longmemeval`（长记忆评测）、`personamem-v2`（个性化记忆评测）、`travel-sps`（旅行规划轨迹成功率）、`shopping-ps`（购物场景轨迹成功率）、`code-memory-bench`（代码记忆问答评测）。
+  - 由账本自动生成兜底详情页 14 个（`data/generated/auto-benchmark-ids.json` 67 → 81）。
+  - 复用既有实体 2 个：`fleurs`（FLEURS，Voxtral 12 行）、`omnidocbench`（OmniDocBench，Youtu 6 行）。
+- **新厂商：无**。
+- **跳过清单**
+  - OpenAI「Terminal X」（10-20）——客户案例页（Startup 分类），讲述 Terminal X 用 GPT-6.1 Sol / GPT-6 Luna 搭建投资研究工作流，含其自建 Eval Agent 的 88.6% 人工一致率等内部评测结论；非独立模型发布，其涉及的 GPT-6.1 Sol 与 GPT-6 Luna 均为已建档模型。
+  - OpenAI 窗口内其余条目——`sharing-ai-progress-in-mathematics`（数学进展研究分享）、`introducing-the-rosalind-academic-plan`（GPT-Rosalind 学术研究计划）、`advancing-computer-use-with-ironclad`（合作方公告）、`the-eus-next-chapter-in-ai-is-agentic`（政策）、`disrupting-ai-enabled-false-front-operations`（安全研究）、以及 20 余条客户案例 / 合作 / 招聘 / 广告与产品公告：均非独立模型发布。
+  - Mistral `LIDstral-Arabic` 与 `Voxtral-Mini-4B-Realtime-Arabic`（官方模型仓创建日均为 2026-10-08）——官方新闻 RSS 与 changelog 窗口内均无对应发布公告，模型仓创建日不能单独作为发布日，按「不拿抓取日冒充发布日期」纪律**本轮不建档**，留待存量回填轨道补齐日期证据。
+  - Microsoft（tier 2）——`microsoft.ai/blog` 与 `microsoft.ai/models` 本轮直连与无头渲染均被 Cloudflare 拦截（403 / 挑战页），官方 RSS 通道窗口内为空条目；旁证渠道（官方 `microsoft` 模型仓）窗口内新增的 Sentiment-Analysis-7B、scFM-dataselection、UserRepGen-4B 均为研究产物模型而非 MAI / Phi 系列发布，无官方发布文与评测表，本轮不建档。
+  - 腾讯混元 `Youtu-Parsing`（官方模型仓 2026-10-09 前既有版本，OmniDocBench 表内已作对照列收录）——非本窗口新发布。
+  - 腾讯混元 `Hy-Memory-30B-A3B-GGUF` / `-FP8`（2026-10-16 / 2026-10-19）——同模型的量化权重版本，随主档收录，不另建档。
+  - StepFun `Step-5-Preview-NVFP4`（官方模型仓 2026-10-14）——Step-5-Preview（2026-09-19，已建档）的量化权重版本。
+  - Google（10-13 ~ 10-20）——`Gemini 4 Argon for Robotics`（同一模型的机器人场景工程说明文）、`Developing Gemini 4 Argon responsibly and safely`（安全说明）、`Accelerating the search for antimicrobial peptides with Google Antigravity`（科研应用）、`New Gemini tools for small business owners`（应用功能更新）、以及 Gemini Notebook / Android Auto / AI Mode / 商店与公益类条目：非独立模型发布。
+  - Anthropic（10-05 ~ 10-20）——API 变更日志显示窗口内唯一新模型 Claude Haiku 5.5（2026-10-07）**已建档**；其余为评测方法学、政策、合作、办公与公益公告（`an-update-on-independent-evaluators`、`claude-text-watermark`、`cyber-verification-program`、`singapore-office-opening`、`expanding-support-for-scientists`、`2026-us-midterms`、`distillation-defenses` 等）：非独立模型发布。
+  - xAI（10-12 ~ 10-20）——窗口内官方新闻页除已建档的 `grok-voice-3`（2026-10-14）外，仅有 Grok Bot 产品与套餐条目（`incident-sweep` 10-20、`the-x-subscription` 10-12、`team-bots` 09-28、`grok-bot-customer-support` 09-22）：非独立模型发布。
+  - 字节跳动——`/en/blog` 返回 404，`/en/public_papers` 最新条目为 2026-09-28，模型页导航所列 Seed2.1 / Seedance 2.5 / Seedream 5.0 Pro / SeedRealtime / Seed Audio 1.0 均已建档，窗口内无新发布。
+  - Kimi——`kimi.com/en/blog` 最新为 2026-07-31 条目，窗口内无新发布。
+  - 小米——`mimo.xiaomi.com` 列表最新为 2026-06-29 研究论文，窗口内无新发布。
+  - DeepSeek——官方 news 索引最新为 `news261017`（2026-10-17），已建档。
+  - z.ai / 智谱 GLM——`z.ai/blog` 本轮直连返回 nginx 404（`/blog/feed`、`/rss.xml` 等均 404），无头渲染亦被 Cloudflare 拦截（152 字节挑战页），窗口内公告无法巡检；旁证渠道（官方 `zai-org` 模型仓）最新模型仓为 2026-08-25 的 GLM-5.3 与 GLM-5.3-Flash，无窗口内新模型。
+  - Qwen——`qwen.ai/blog?id=qwen-image-2.1` 官方博客页正文为客户端渲染，本轮无头渲染与爬虫 UA 均未取到渲染后正文，Turbo 的官方规格改由官方 GitHub 仓 README 与官方模型仓取证；`qwen.ai/blog` 索引页渲染后亦无任何 2026-10 条目。
+- **待人工核验**：本批无图表行——九张 Voxtral 3 评测图表的数值以 `data-value` / `data-display` 属性内嵌于页面图表组件，DOM 机读可逐行核对，已按 DOM 明文收录，未产生只存在于位图中的数值行。
+- **门禁**：`reconcile-coverage` ✓ / `validate-data` ✓（releases 189，official 175，evidence edges 2969）/ `node --test tests/*.test.mjs` ✓ 19 pass 0 fail / `sync:skills:check` ✓ / `npm run build` 全链路 ✓（book validate 32 章通过、EPUB 484 KB、web 32 章 + 699 URL sitemap、benchmarks hub 470 实体页 + 81 自动证据页、`validate-site` ✓：814 HTML / 36124 内部引用 / 236 时间轴 / 2046 事件卡片）。
+- **分支**：`model-release-daily-20261021T010000Z`（自 `origin/main` = 864a4c3 开出），远端分支保留。
