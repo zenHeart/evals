@@ -13,7 +13,7 @@
 | google | blog.google/technology/ai/（301 跳转 innovation-and-ai/technology/ai/）；开发者/开源入口 blog.google/innovation-and-ai/technology/developers-tools/；Gemma 模型卡 ai.google.dev/gemma/docs/core/；产品页 deepmind.google/models/gemini/ 与 deepmind.google/models/gemma/ | **防遗漏要点**：Google 具有 Gemini（专有旗舰）与 Gemma（开放权重）双系列；一页多模型与后增变体极其常见（如 Gemma 4 一表 5 变体：E2B/E4B/12B Unified/26B/31B，严禁漏列中间变体）；早期帖对比表若为 GIF，无头浏览器开 GIF 截稳定帧取证 |
 | xai | x.ai/news/ | 页面对 reader 与真实 DOM 内容不一致：默认无头浏览器渲染后扫 SVG `<text>`（图表值以无障碍文本内嵌）；包含 Grok 主模型与 Grok Voice Transcribe 等专项模型 |
 | meta | ai.meta.com/blog/；research.meta.ai | ai.meta.com 拒多数 reader → Playwright 直读 DOM；覆盖 Llama（开源通用）与 Muse（Muse Image / Muse Video 等多媒体生成）双线；伴随 Evaluation Report PDF 常为 tier-A 补充源 |
-| mistral | mistral.ai/news/ + 官方 RSS（pubDate 可作日期证据） | 页面常不印日期 → RSS pubDate 取证；覆盖 Mistral/Mixtral（通用）、Mistral Small（端侧小模型）、Mistral OCR（文档智能）及 Devstral/Robostral 专项线 |
+| mistral | mistral.ai/news/ + 官方 RSS `https://mistral.ai/rss.xml`（pubDate 可作日期证据）；开发者文档 changelog `https://docs.mistral.ai/resources/changelogs.md`（`.md` 后缀可直取） | 页面常不印日期 → RSS pubDate 取证；覆盖 Mistral/Mixtral（通用）、Mistral Small（端侧小模型）、Mistral OCR（文档智能）、Voxtral（语音）与 Devstral/Robostral 专项线。**评测图表数值在 DOM 里**：`data-chart-canvas` 内每个 `<g class="chart-mark-group">` 带 `data-series` / `data-category` / `data-value` / `data-display` 四个属性，一张图可整体机读（2026-10-20 的 Voxtral 3 页 9 张图、9 个图表全由此路径取得）。静态 HTTP GET 即可拿到完整 HTML，不需要渲染 |
 
 ## Tier 1 国内
 
@@ -34,6 +34,53 @@
 | stepfun | stepfun.ai/research/（DOM 大表）；static.stepfun.com/blog/<model>/；官方 GitHub 仓（createdAt 作日期证据） | 表注 `*` = 同条件复现语义；自建内部集照录并注明 |
 | microsoft | microsoft.ai/blog/（news 301 重定向至此）；模型落地页 microsoft.ai/models/*（MAI 系列规格大页） | **防遗漏要点**：覆盖 MAI 系列（MAI-Transcribe 语音转录、MAI-Image 图像生成、MAI-Voice、MAI-Thinking、MAI-Code）与 Phi 系列；正文散文明文分数可 verified，对比表多为整图 → pending；规格直接在落地页印出 |
 | xiaomi | mimo.xiaomi.com/ | MiMo-V2.6 已入库；首页为发现入口，规格与日期逐页取证；区分 MiMo 开发者平台/桌面端（product）与模型权重 |
+
+## 查漏渠道：官方 HuggingFace / GitHub 组织（**发现新发布的低成本入口**）
+
+官方模型仓是 A 级来源（与官方博客同级），且 `createdAt` 给出候选发布日；按纪律它只用于**查漏与佐证**，正式建档仍需官方发布文 / 模型卡 / 官方仓 README 的日期互证。
+`https://huggingface.co/api/models?author=<org>&limit=200&sort=createdAt&direction=-1` 一次即可取回该组织全部模型仓的创建日。
+
+| 厂商 | HF 组织 | 备注 |
+|---|---|---|
+| Mistral | `mistralai` | 语音 / 端侧 / OCR 专项权重常先于博客上线（如 `LIDstral-Arabic`） |
+| 腾讯混元 | `tencent` | `Hy-Memory-*`（记忆写入模型）、`Youtu-Parsing-Omni`（文档解析）**只有模型仓+GitHub 仓，没有博客发布文**，靠这条线才不漏 |
+| 阿里 Qwen | `Qwen` | 同一家族的后加速 checkpoint（如 `Qwen-Image-2.1-Turbo`）只在官方仓 README 更新日志里带日期 |
+| StepFun | `stepfun-ai` | 多为已建档模型的量化版本（NVFP4 / BF16 / GGUF），量化版不另建档 |
+| 微软 | `microsoft` | 窗口内新增多为研究产物模型，不是 MAI / Phi 系列发布 |
+| Google | — | Gemma / Gemini 权重不挂在 `google` 组织下，此路查不到 |
+| Meta | `meta-llama` | 2025-04 后无新仓；Muse 系列走 `research.meta.ai/blog`（见 Meta 行） |
+| 智谱 | `zai-org` | 最新仓为 GLM-5.3 系；`z.ai/blog` 被拦截时用它判断是否真有新模型 |
+| DeepSeek / Kimi | `deepseek-ai` / `moonshotai` | 发布密度低，作为兜底 |
+| MiniMax | `MiniMaxAI` | 最新仓 Music-3.0 / H3，与新闻页节奏不同步 |
+
+官方 GitHub 仓 README 的**更新日志**是可靠的官方日期证据（同一行写「YYYY.MM.DD: We released …」），比博客页更好取证：
+`QwenLM/Qwen-Image-2.1`（2026.10.09 Turbo）、`Tencent-Hunyuan/Hy-Memory`、`TencentCloudADP/youtu-parsing`。
+
+## 已知抓取障碍（别重复踩）
+
+| 站点 | 现象 | 可用绕行 |
+|---|---|---|
+| `z.ai/blog` | 静态 GET 返回 nginx 404；`/blog/feed`、`/rss.xml` 均 404；无头渲染只得 152 字节挑战页 | 只能靠 `zai-org` 模型仓 + 官方 GitHub 判断有无新模型；本轮窗口内无法巡检公告 |
+| `microsoft.ai/blog` / `microsoft.ai/models` | 403 Cloudflare 挑战页；官方 RSS 通道 `https://microsoft.ai/feed/` 返回**空条目** | 靠 `microsoft` HF 组织旁证；本轮窗口内无法巡检公告 |
+| `qwen.ai/blog?id=…` | 正文纯客户端渲染：无头 Chrome 不 hydrate（只见导航壳）、爬虫 UA 也只拿到 SEO 关键词 | 同一模型的规格改从官方 GitHub 仓 README + 官方模型仓取证；索引页只作发现入口 |
+| `openai.com/index/<slug>` | 静态 GET 返回 Cloudflare 验证页；但 `https://openai.com/news/rss.xml`（1300 条、带 pubDate）**不拦**，全站发现走 RSS | RSS 发现 + `web_fetch` 工具读正文 |
+| `x.ai/news`、`ai.meta.com/blog` | 静态 GET 403/不可达 | 无头 Chrome 渲染（`x.ai` 可行）；Meta 改走 `research.meta.ai/blog`（可静态 GET） |
+| `hy.tencent.com` | SPA，只出骨架屏；页面里的 `2026/10/16` 是**站点 build-time**，不是发布日 | 靠 `tencent` HF 组织 + 官方 GitHub |
+
+## 图表数值取数：先分清「DOM 可机读」与「只在位图里」
+
+发布页的评测图表有三类，取数方式完全不同，取数前先判类型：
+
+1. **DOM 机读图表**（可逐行核对）：图表组件把每个数据点写成结构化属性，静态抓 HTML 即可取全。
+   - Mistral：`data-chart-canvas` → `<g class="chart-mark-group" data-series=… data-category=… data-value=… data-display=…>`
+   - xAI：渲染后扫 SVG `<text>`（图表值以无障碍文本内嵌）
+   - OpenAI：RSC payload（`self.__next_f.push`）里解析 `vegaSpec` 的 `data.values`，以 `labelValue` 为准
+   这类与本账本既有 `xai/grok-4-6`（locator 记「Also rendered as bar chart; the DOM contains the numeric values」）、`openai/gpt-5-6` 的处理口径一致：DOM 数值可逐行核对，同时在 `locator.figure` 注明「以图渲染但 DOM 内含数值」。
+2. **位图图表**（数值只存在于像素）：`img` / 背景图，需人工读图。视觉转写只进 `notes`，数值留 `null` + `score_status:"not_extracted"`。
+3. **真表格**：Markdown / DOM `<table>`，逐行转录。
+
+判据是「数值是否已写成可机读的 DOM 结构」，不是「长不长得像图」——柱状图、散点图、雷达图都可能是第 1 类。
+**注意**：README「抽取口径」一节现写的是「图片/图表行必须 pending」，字面上可被读成「凡图表一律 pending」；近三批对 DOM 机读图表（xAI SVG 文本、OpenAI vega、Mistral data-value）均按「DOM 明文」记 `verified`。口径措辞是否要收敛，属账本口径变更，需人工裁定后再改，本技能不擅改。
 
 ## 旁证与交叉核对（仅作线索，日期与数值一律以官方页为准）
 
