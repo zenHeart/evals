@@ -1650,3 +1650,35 @@ Muse 页面的图表已归档到 `models/2026-10-12-muse-wonder/images/` 与
 - **待人工核验**：本批无图表行——九张 Voxtral 3 评测图表的数值以 `data-value` / `data-display` 属性内嵌于页面图表组件，DOM 机读可逐行核对，已按 DOM 明文收录，未产生只存在于位图中的数值行。
 - **门禁**：`reconcile-coverage` ✓ / `validate-data` ✓（releases 189，official 175，evidence edges 2969）/ `node --test tests/*.test.mjs` ✓ 19 pass 0 fail / `sync:skills:check` ✓ / `npm run build` 全链路 ✓（book validate 32 章通过、EPUB 484 KB、web 32 章 + 699 URL sitemap、benchmarks hub 470 实体页 + 81 自动证据页、`validate-site` ✓：814 HTML / 36124 内部引用 / 236 时间轴 / 2046 事件卡片）。
 - **分支**：`model-release-daily-20261021T010000Z`（自 `origin/main` = 864a4c3 开出），远端分支保留。
+
+## 第二十九批（2026-10-21 增量窗口 2026-10-06 ~ 2026-10-21）
+
+- **窗口**：增量窗口 2026-10-06 ~ 2026-10-21（检查点锚点 `last_max_release_date=2026-10-20` 回退 14 天重叠）；检查点回写 `last_scan_at=2026-10-21`、`last_max_release_date=2026-10-20`（本批未引入晚于锚点的新发布日期）。
+- **本批新增 release：2 个**（均为存量回填轨道，窗口内增量无新发布）
+  - `minimax-music-3`（vendor=minimax，模型=MiniMax Music 3.0，发布日=2026-08-13，evidence 条数 **0** = v✓ 0 / p⏳ 0）。
+    - 发布日证据（一手）：官方研究页 `https://www.minimax.io/blog/minimax-music-3-0-next-generation-open-weights-production-ready-versatile-music-model` 文章头部印刷日期行 `<time>2026-08-13</time>`；站点导航 SPEECH & MUSIC 菜单项下列出 “MiniMax Music 3.0” 并指向同一篇文章，交叉确认。
+    - 归档：`models/2026-08-13-minimax-music-3/`（官方研究页原样存档 `page.html` + `images/` 8 张页面图片原样下载 + `index.md` + `manifest.json`）。
+    - 发布内容：MiniMax 下一代音乐生成模型，给定创意概念与可选歌词完成作曲、编曲、演唱与混音，输出完整歌曲。技术栈三件套：多层 RVQ 分词器（首层 16,384 条目码本、第 2–8 层各 1,024 条目）+ 8B Global LLM（初始化自 Qwen3.5-8B）与 0.6B Local LLM 组成的 Hybrid-LM + 2.4B flow matching 模块与 123M Flow-VAE 的合成栈；另新增细粒度时间分辨率的 Structured Captions、歌词段落标签（intro/verse/pre-chorus/chorus/bridge/instrumental/solo/outro）与模板化 Prompt Enhancement System。开放权重，但许可证与参数档位官方未明示。
+    - 状态 `pending`：页面正文未给出任何离散基准跑分数值——出现的数字均为模型规模与工程指标（16,384 / 1,024 码本条目数、8B / 0.6B / 2.4B / 123M、Qwen3.5-8B 初始化来源），不构成标准公开评测，按「不臆造数值」纪律记 0 行。页内表格为「用户 prompt / 歌词 / Demo」生成样例对照表，非评测数据，不转录为评测行。
+    - 未明示项：上下文长度、绝对定价、权重许可证与参数档位均记 null。
+  - `minimax-speech-28`（vendor=minimax，模型=MiniMax Speech 2.8，发布日=2026-01-23，evidence 条数 **0** = v✓ 0 / p⏳ 0）。
+    - 发布日证据（一手）：官方新闻页 `https://www.minimax.io/news/minimax-speech-28` 文章头部印刷日期行 “2026.1.23”；站点导航 SPEECH & MUSIC 菜单项下列出 “MiniMax Speech 2.8” 并指向同一篇文章，交叉确认。
+    - 归档：`models/2026-01-23-minimax-speech-28/`（官方新闻页原样存档 `page.html` + `images/` 6 张页面图片原样下载 + `index.md` + `manifest.json`）。
+    - 发布内容：语音合成模型 Speech 2.8，用原生拟声标签（Native Sound Tags）建模 “um”“uh”“ah” 等口语填充词并保留呼吸与停顿；优化特征提取流程，10 秒样本即可完成高保真声音克隆；新增 Pure Audio 以消除背景噪声与数字伪影。
+    - 状态 `pending`：页面正文未给出任何离散基准跑分数值——出现的数字仅为功能演示参数（10 秒克隆样本时长），不构成标准公开评测，按纪律记 0 行。页面里的 Original Audio / Speech-2.8 Cloned Result 为人耳试听演示对照，非客观评测分数，不转录为评测行；官方全文亦未给出 WER/CER 等可量化指标。
+    - 未明示项：参数量、上下文长度、绝对定价均记 null。
+- **新增 evidence：0 条**（本批两个 release 的官方发布文均未报告标准公开评测数值，按「无数值一律不记」纪律记 0 行、状态 pending）。
+- **新 benchmark id：无**。
+- **新厂商：无**。
+- **跳过清单**
+  - OpenAI「Democratic governance of frontier AI, part II: Empowering cyber defenders」（2026-10-21）——全球事务/治理类政策文章，非独立模型发布，覆盖表候选 `openai-e270f5ba4688` 已标排除理由。
+  - Kimi Code CLI 文档页两则——「Tower multi-agent collaboration」与「Kimi Datasource」属 CLI 工具使用文档，非独立模型发布，覆盖表候选 `kimi-35483a7872f3`、`kimi-71080e78b742` 已标排除理由。
+  - OpenAI 窗口内其余条目——客户案例与产品公告（广告业务、客户案例、招聘等）：非独立模型发布。
+  - StepFun `stepaudio-3` 系列（gen / music / asr / realtime / tts）——官方文档页存在但未印发布日，候选已带排除理由，本轮不建档。
+  - Anthropic（10-18 ~ 10-21）——窗口内条目为公益基金、政策与产品公告，非独立模型发布。
+  - Google（10-20 ~ 10-21）——窗口内条目为应用功能与研究类文章，非独立模型发布。
+  - xAI / Meta / z.ai 智谱 / StepFun 研究页——本轮直连不可达或被挑战页拦截，无窗口内新发布可确认。
+- **待人工核验**：本批无图表行——两个 release 的官方页面均无标准公开评测数值，故不产生只存在于位图中的数值行；页面图片已原样归档，供人工复核。
+- **门禁**：`validate-data` ✓（releases 191，official 177，evidence edges 2969）/ `node --test tests/*.test.mjs` ✓ 19 pass 0 fail / `sync:skills:check` ✓ 技能镜像无漂移；`npm run build` 全链路结果见本批 Issue 证据回执。
+- **分支**：见本批 Issue 证据回执（远端分支保留，不自动合并）。
+
