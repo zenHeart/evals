@@ -1682,3 +1682,66 @@ Muse 页面的图表已归档到 `models/2026-10-12-muse-wonder/images/` 与
 - **门禁**：`validate-data` ✓（releases 191，official 177，evidence edges 2969）/ `node --test tests/*.test.mjs` ✓ 19 pass 0 fail / `sync:skills:check` ✓ 技能镜像无漂移；`npm run build` 全链路结果见本批 Issue 证据回执。
 - **分支**：见本批 Issue 证据回执（远端分支保留，不自动合并）。
 
+
+## 第三十批（2026-10-22 增量窗口 2026-10-06 ~ 2026-10-22）
+
+- **窗口**：增量窗口 2026-10-06 ~ 2026-10-22（检查点锚点 `last_max_release_date=2026-10-20` 回退 14 天重叠）；检查点回写 `last_scan_at=2026-10-22`、`last_max_release_date=2026-10-20`（本批未引入晚于锚点的新发布日期）。
+- **本批新增 release：5 个**（增量窗口内确无新发布；五个均为存量回填轨道，由官方 GitHub / 模型仓 / 官方博客与官方新闻 RSS 交叉发现）
+  - `gpt-rosalind`（vendor=openai，模型=GPT‑Rosalind，发布日=2026-04-16，evidence 条数 **9** = v✓ 9 / p⏳ 0）。
+    - 发布日证据（一手，两处互证）：官方发布文 `https://openai.com/index/introducing-gpt-rosalind/` 正文头部印出日期行 `April 16, 2026`；官方新闻 RSS（`openai.com/news/rss.xml`）该文条目时间为 Thu, 16 Apr 2026 01:00:00 GMT。官方 sitemap 另有两条同系列后续文（`introducing-new-capabilities-to-gpt-rosalind` 2026-06-03、`strengthening-societal-resilience-with-rosalind-biodefense` 2026-05-29）与一条学术计划文（`introducing-the-rosalind-academic-plan` 2026-10-15），均属同一模型的后续动作，不另建档。
+    - 归档：`models/2026-04-16-gpt-rosalind/`（英文渲染后 DOM 存档 `page.html` + `images/fig1-life-sciences-plugin.png` + `index.md` + `manifest.json`）。
+    - 发布内容：OpenAI 面向生物学、药物研发与转化医学的前沿推理模型系列，官方定位为「把更好的工具调用能力与对化学、蛋白质工程、基因组学的更深理解结合起来」，以受信访问计划（trusted access program）在 ChatGPT、Codex 与 API 开放，并随附可连接 50+ 科学工具与数据源的 Codex 生命科学研究插件；官方列出 Amgen、Moderna、Allen Institute、Thermo Fisher Scientific 等合作方。
+    - 评测来源：官方「性能与评估」章节的柱状图是页面内嵌 Vega 图表，数值同时存在于渲染后 SVG 的无障碍文本与 RSC payload 的 `vegaLiteSpec.data.values`，属 DOM 机读可逐行核对；官方「行业评估」章节另有 BixBench、LABBench2 的定性结论与一段与 Dyno Therapeutics 合作的 RNA 序列评估。收录 9 行：五个能力维度得分 5 行（Chemistry 0.662 / Biochemistry and protein understanding 0.367 / Phylogenetics 0.163 / Experimental design and analysis 0.647 / Tool usage 0.578，均附 95% 置信区间）、BixBench 与 LABBench2 两行无数值结论、与 Dyno 合作的两行人类专家百分位（预测 >95%、生成约 84%）。
+    - 口径提示：五个能力维度得分是官方 0–1 标度的综合能力分（每柱附置信区间），并非单一标准公开基准的绝对分；与 Dyno 合作的 RNA 序列评估使用未公开样本与未公开的 57 份人类专家历史评分，无法复现，notes 已注明。
+  - `glm-ocr`（vendor=glm，模型=GLM-OCR，发布日=2026-01-30，evidence 条数 **13** = v✓ 1 / p⏳ 12）。
+    - 发布日证据（一手，三处互证）：官方 Hugging Face 模型仓 `https://huggingface.co/zai-org/GLM-OCR`（权重与官方模型卡）创建日 2026-01-30；官方 GitHub 仓 `zai-org/GLM-OCR` 的 News 首条为 2026.2.12（GLM-OCR 微调教程），说明模型在 2026-02-12 之前已公开；官方技术报告 arXiv:2603.10910 提交日 2026-03-11（官方仓 News 记 2026.3.12 技术报告上线）。权重上线日早于技术报告日，本档以权重与模型卡上线日 2026-01-30 为发布日。
+    - 归档：`models/2026-01-30-glm-ocr/`（官方模型卡原文 `page.html` + `images/fig1-docparse.png` + `images/fig2-realworld.png` + `images/fig3-speed.png` + `index.md` + `manifest.json`）。
+    - 发布内容：0.9B 轻量多模态 OCR 模型，建在 GLM-V 编码器-解码器架构上（0.4B CogViT 视觉编码器 + 0.5B GLM 语言解码器），引入 MTP 损失与稳定全任务强化学习，配套 PP-DocLayout-V3 版面分析 + 并行区域识别两阶段流水线，MIT 许可。
+    - 收录 13 行：正文明文 1 行（OmniDocBench V1.5 = 94.62，官方称整体排名第一）+ 官方位图评测表的 12 行图内读数（6 项公共基准：OCRBench 94.0、UniMERNet 96.5、PubTabNet 85.2、TEDS_TEST 86.0、Nanonets-KIE 93.7、Handwritten-Forms 86.1；6 项官方真实场景集：Code 84.7、Real-world Table 91.5、Handwriting 87.0、Multi-language 69.3、Seal 90.5、Receipt (KIE) 94.5）。位图行按纪律记无数值、图内读数写入 notes。
+    - 未明示项：上下文长度与 API 定价官方未印，账本记 null；官方给出的解析吞吐（PDF 1.86 pages/s、图像 0.67 images/s）是工程指标，未立行。
+  - `glm-4-6v`（vendor=glm，模型=GLM-4.6V / GLM-4.6V-Flash，发布日=2025-12-08，evidence 条数 **68** = v✓ 0 / p⏳ 68）。
+    - 发布日证据（一手）：官方发布文 `https://z.ai/blog/glm-4.6v` 正文头部印出日期行 `2025-12-08`，正文以 "Today, we officially introduce and open-source the GLM-4.6V series" 宣告开源；官方 GitHub 仓 `zai-org/GLM-V` 的 Model Overview 收录该系列。
+    - 归档：`models/2025-12-08-glm-4-6v/`（渲染后 DOM 存档 `page.html` + `images/fig1-benchmarks.jpg`（原图 10101×7371）+ `index.md` + `manifest.json`）。
+    - 发布内容：智谱开源的 GLM-4.6V 系列多模态模型，一次放出 GLM-4.6V（106B A12B，云端与高性能集群）与 GLM-4.6V-Flash（9B，本地部署与低延迟）两个版本，训练上下文 128k，主打原生多模态工具调用（图片、截图、文档页可直接作为工具入参）、图文交错内容生成、128k 长文档理解与前端复刻。
+    - 收录 68 行：官方评测位图大表共 34 项开放权重基准 × 两个自家版本 = 68 行；正文只给定性论断、未印任何明文分数，位图行按纪律记无数值、图内读数写入 notes。大表 8 个模型列中另 6 列为 GLM-4.5V、GLM-4.1V-9B-Thinking、Qwen3-VL-8B-Thinking、Qwen3-VL-235B-A22B-Thinking、Kimi-VL-A3B-Thinking-2506、Step3 321B，其中带 * 的数值为官方标注的第三方引用值。
+    - 未明示项：官方大表未标单位与评测协议（账本按仓内惯例以 percent 记单位、协议字段留空），API 定价官方未明示，记 null。
+  - `auk`（vendor=tencent，模型=AuK / AuK-Flash，发布日=2026-09-09，evidence 条数 **13** = v✓ 13 / p⏳ 0）。
+    - 发布日证据（一手，两处互证）：官方 Hugging Face 模型卡 `https://huggingface.co/tencent/AuK` 的 News 首条印出「**[2026/09/09]** AuK is now open-source」；官方技术报告 arXiv:2609.08936（*AuK Technical Report*）提交日 2026-09-08；官方 GitHub 仓 `Tencent-Hunyuan/AuK` 同批开源。
+    - 归档：`models/2026-09-09-auk/`（官方技术报告 HTML 存档 `page.html` + `images/fig1-performance.png`（官方仓 README 性能位图）+ `index.md` + `manifest.json`）。
+    - 发布内容：1.5B 开放权重语音生成与编辑基础模型，用统一自然语言指令接口覆盖零样本/指令 TTS、内容与声学编辑、韵律编辑、语音增强与源分离；训练规模约 30.3 亿条指令-音频样本、195 万小时有效监督；变体 AuK（EMA 后训练，Euler 32 步）与 AuK-Flash（任务路由蒸馏，4 步推理，4.5× 墙钟加速）。
+    - 评测来源：官方技术报告的 HTML 真表（可机读）——语音生成 Seed-TTS-Eval（WER / SIM）、指令 TTS InstructTTSEval（DSD-ZH / DSD-EN）、通用语音编辑 MMAE（IFR / CR / EMR）、语音增强 DNS Challenge（DNSMOS-OVRL / UTMOS / dWER / SIM）。收录 13 行：AuK 11 行 + AuK-Flash 2 行（Seed-TTS-Eval 的 WER 2.85 与 SIM 0.790）。官方报告另含 SpeechEditBench、CHiME-4、Libri2Mix、VCTKSR 与 VAE 对比表，本批未逐项收录，留作后续补档。
+    - 未明示项：上下文长度与 API 定价官方未印，账本记 null；各表未披露评委模型、采样次数与音频预处理细则，协议字段相应留空。
+  - `seed-gr-rl`（vendor=doubao，模型=Seed GR-RL，发布日=2025-12-02，evidence 条数 **1** = v✓ 1 / p⏳ 0）。
+    - 发布日证据（一手）：字节跳动 Seed 官方模型页 `https://seed.bytedance.com/en/gr_rl` 页头在模型名旁印出日期行 `December 2, 2025`（渲染后 DOM 原文），同页提供 Tech report 链接。
+    - 归档：`models/2025-12-02-seed-gr-rl/`（渲染后 DOM 存档 `page.html` + `images/fig1-hero.jpg` + `images/fig2-three-stage-pipeline.png` + `images/fig3-architecture.png` + `images/fig4-task-photo-a.jpg` + `images/fig5-task-photo-b.jpg` + `index.md` + `manifest.json`）。
+    - 发布内容：机器人强化学习框架，把通用视觉-语言-动作策略训练成擅长长时程灵巧操作的专用策略；官方主张人类演示在灵巧高精度任务里可能嘈杂且次优，训练分三阶段（离线数据过滤 → 物理对称性增强 → 在线转向强化学习）。
+    - 收录 1 行：官方正文明文的穿鞋带任务成功率 83.3%（消融链 45.7 → 61.6 → 72.7 → 83.3 写入该行 notes）。官方未给出任何标准公开基准成绩，该指标为厂商自建任务的真实世界自评值。
+    - 未明示项：参数量、上下文长度与定价官方未印，账本记 null；官方页另有两张成功率图表的数值只存在于像素中，已归档留证、未另立行。
+- **新增 evidence：104 条** = 24 verified（官方正文明文 + DOM 机读 Vega 图表数值 + 官方技术报告 HTML 真表数值）+ 80 pending（官方位图评测大表的图内读数行）。
+- **新 benchmark id：29 个**（notes 标 `new-benchmark`）：
+  - OpenAI 侧 2 个：`life-sciences-capability-score`（官方生命科学五个能力维度的 0–1 综合得分，附 95% 置信区间）、`rna-sequence-human-expert-percentile`（与 Dyno Therapeutics 合作的 RNA 序列评估，换算为「超过的人类专家百分位」）。
+  - 智谱 GLM 侧 21 个：`wemath`、`design2code`、`flame-react-eval`、`webquest-singleqa`、`webquest-multiqa`、`chartqapro`、`chartmuseum`、`omnispatial`、`refcoco-avg`、`treebench`、`ref-l4-test`（GLM-4.6V 官方大表列名）；`unimernet`、`pubtabnet`、`teds`、`nanonets-kie`、`handwritten-forms`（GLM-OCR 官方评测表公共基准）；`glm-ocr-realworld-code`、`glm-ocr-realworld-table`、`glm-ocr-realworld-handwriting`、`glm-ocr-realworld-multi-language`、`glm-ocr-realworld-seal`、`glm-ocr-realworld-receipt-kie`（GLM-OCR 官方真实场景自建集）。
+  - 腾讯混元侧 4 个：`seed-tts-eval`（字节 Seed-TTS-Eval 语音合成评测集，WER 与 SIM 两组指标）、`instruct-tts-eval`（指令式 TTS 评测集，DSD-ZH / DSD-EN 子集）、`mmae`（通用语音编辑评测集，IFR / CR / EMR 三项指标）、`dns-challenge`（语音增强评测集，DNSMOS-OVRL / UTMOS / dWER / SIM 四项指标）。
+  - 字节跳动侧 1 个：`shoelace-lacing-success-rate`（官方自建的长时程灵巧操作任务「穿鞋带」成功率）。
+  - 复用既有实体 23 个（`omnidocbench`、`mmbench`、`mmstar`、`blink`、`muirbench`、`mmmu`、`mmmu-pro`、`video-mmmu`、`mathvista`、`ai2d`、`dyna-math`、`zerobench-sub`、`mm-browsecomp`、`osworld`、`androidworld`、`webvoyager`、`mmlongbench`、`lvbench`、`ocrbench`、`ocr-bench-v2`、`charxiv-reasoning`、`bixbench`、`labbench2`）。
+- **新厂商：无**。
+- **跳过清单**
+  - OpenAI 窗口内条目（10-15 ~ 10-21）——`introducing-the-rosalind-academic-plan`（10-15，学术计划公告，面向符合条件实验室的资助与使用计划，非新模型发布，其涉及的 GPT‑Rosalind 本批已按 2026-04-16 的首发文建档）、`openai-models-google-cloud`（分发合作）、`terminal-x`（客户案例，88.6% 为其自建 Eval Agent 的人工一致率，涉及的 GPT-6.1 Sol 已建档）、`att-legal` 等客户案例、以及政策/安全/广告/生物数据类研究文：非独立模型发布。
+  - Mistral `Mistral Advances AI for Engineering with NVIDIA`（2026-10-21）——与 NVIDIA 的合作公告，官方说明将联合开发物理与智能体评测基准，页面未发布新模型、亦无任何评测数值；涉及的 Mistral Large 4 已建档。
+  - Anthropic（10-15 ~ 10-22）——窗口内条目为人员任命、公益基金、政策与安全公告；最新模型仍是已建档的 Claude Haiku 5.5（2026-10-07）。
+  - Google（10-06 ~ 10-22）——`blog.google` 三条 RSS（`/rss/`、`/technology/ai/rss/`、`deepmind.google/blog/rss.xml`）窗口内无新模型条目，`Gemini 4 Argon`（10-13）及其工程/安全说明文已建档；`Nano Banana 2`（2026-02-26）与 `Nano Banana 2 Lite`（2026-06-30）两篇官方 DeepMind 博文对应的图像模型线在账本中尚无独立档案（官方页为位图、无数值），本批未建档，留作后续补档。
+  - xAI（10-12 ~ 10-20）——窗口内除已建档的 `grok-voice-3`（10-14）外为 Grok Bot 与订阅类条目；Grok 4.7（2026-08）已建档。
+  - Meta——官方博客最新条目为 2026-07-27 的 Muse Spark 1.1 等，窗口内无新发布。
+  - 字节跳动——`/en/blog` 返回 404，模型页导航所列 Seed2.1 / Seedance 2.5 / Seedream 5.0 Pro / SeedRealtime / Seed Audio 1.0 均已建档，窗口内无新发布；`/en/gr_rl` 为存量模型页，本批已建档。
+  - 腾讯混元——`Hy-Memory-30B-A3B-GGUF`（2026-10-19）、`Hy-Memory-30B-A3B-FP8`（2026-10-16）、`Qwen3-8B-DSpine-b16`（2026-10-16）为同模型量化权重版本，不另建档；`UniRL`、`CL-bench`、`Prism`、`AuK` 仓中的框架与基准研究仓中，`AuK` 本批已建档，其余为框架/基准/训练技巧研究产物，非独立模型发布。
+  - DeepSeek——官方 news 索引最新为 `news261017`（2026-10-17），已建档；官方模型仓最新仓同为该模型。
+  - Kimi——`kimi.com/en/blog` 最新条目为 2026-07-31（Kimi K3），窗口内无新发布。
+  - 小米——`mimo.xiaomi.com` 列表最新为 MiMo-V2-Flash（2025-12-16）与既有研究文，无窗口内新发布。
+  - z.ai / 智谱 GLM——`z.ai/blog` 索引页与 `z.ai/blog/glm-ocr` 本轮直连与无头渲染均被挑战页拦截（152 字节），GLM-OCR 的官方证据改由官方 GitHub 仓、官方模型卡与官方技术报告取证；窗口内 z.ai 无可确认的新发布。
+  - StepFun（tier 2）——`stepfun.ai/research` 渲染后最新为 Step 5 Preview（已建档）与 StepAudio 3 系列（官方文档页未印发布日，候选已带排除理由），无窗口内新发布。
+  - Microsoft（tier 2）——`microsoft.ai/blog` 渲染后最新条目为 2026-10-15 之前的内容，窗口内无新 MAI / Phi 发布；官方 `microsoft` 模型仓窗口内新增仓均为研究产物模型。
+  - Qwen——`qwen.ai/research` 渲染后最新日期为 2026-09-20，窗口内无新发布；官方模型仓最新为已建档的 Qwen-Image-2.1-Turbo（2026-10-09）。
+  - OpenRouter 查漏（`created` 字段仅作线索）——窗口内上线的 `recursive/flint-v1.0`、`reflection/beam-1.0`、`inception/mercury-3`、`moondream/moondream3*`、`xingchen-agi/xing4.0`、`nvidia/nemotron-3.5-super-vl`、`liquid/lfm-2.5-24b-a2b` 等均属未注册厂商或非在册产品线，接入需人工决策（注册厂商 + 取真实彩色 logo + 登记 LOGO_EXT），本批不动。
+- **待人工核验**：GLM-4.6V 官方评测大表（68 行）与 GLM-OCR 官方两张评测位图（12 行）的数值只存在于图片像素中，按纪律记无数值、图内读数已逐行转写进各行 notes 与归档 `index.md`，读图确认后方可补数值。GLM-OCR 的解析吞吐位图（`fig3-speed.png`）为工程指标，未立行。
+- **门禁**：`reconcile-coverage` ✓ / `validate-data` ✓（releases 196，official 182，evidence edges 3073）/ `node --test tests/*.test.mjs` ✓ 19 pass 0 fail / `sync:skills:check` ✓ / `npm run build` 全链路 ✓（含 book validate 32 章、EPUB、web 构建与 `validate-site`）。
+- **分支**：`model-release-daily-20261022T010000Z`（自 `origin/main` = 093ccfd 开出；开批前先把上一批遗留的 PR #18「第二十九批」squash 合并进 main 并确认其 CI 为绿），远端分支保留、不删除。
