@@ -66,6 +66,10 @@
 | `openai.com/index/<slug>` | 静态 GET 返回 Cloudflare 验证页；但 `https://openai.com/news/rss.xml`（1300 条、带 pubDate）**不拦**，全站发现走 RSS | RSS 发现 + `web_fetch` 工具读正文 |
 | `x.ai/news`、`ai.meta.com/blog` | 静态 GET 403/不可达 | 无头 Chrome 渲染（`x.ai` 可行）；Meta 改走 `research.meta.ai/blog`（可静态 GET） |
 | `hy.tencent.com` | SPA，只出骨架屏；页面里的 `2026/10/16` 是**站点 build-time**，不是发布日 | 靠 `tencent` HF 组织 + 官方 GitHub |
+| `blog.google` 的三条 RSS（`/rss/`、`/innovation-and-ai/technology/ai/rss/`） | **只暴露最近 20 条**；`?start=20/40/60` 不分页（返回与首屏完全相同的 20 条，文件字节数一致） | Google 的完整时间线靠 `deepmind.google/blog/rss.xml`（100 条，可回溯 3 个月）+ `blog.google/rss/` 定点补；**别把 Google 博客 RSS 当作全量窗口**——单靠它扫窗口会静默漏掉 20 条之前的发布 |
+| `openai.com/index/<slug>` 的内嵌 Vega 图表 | 渲染后 SVG 的 `aria-label` **只覆盖部分 mark**（2026-10-22 在 GPT‑Rosalind 页实测：20 个数据 mark 只暴露 15 个，其余 5 个无障碍文本缺失） | 以 RSC payload 的 `vegaLiteSpec.data.values` 为全集来源（`self.__next_f.push` 里解析），SVG 无障碍文本只作交叉校验；缺值时不要用柱体几何反推 |
+
+> 「上一轮跑批遗留未收口」的判定：开工前若发现**当前本地分支**是某个已合并的 `model-release-daily-*`，且存在**更新的远端 `model-release-daily-*` 带 OPEN PR**，说明上一轮在「开 PR」与「合并」之间断了。不要重跑那一批，也不要当残留清理——先把那个 OPEN PR 合并并确认其 CI 为绿，再从 `origin/main` 开本轮新分支。
 
 ## 图表数值取数：先分清「DOM 可机读」与「只在位图里」
 
@@ -74,7 +78,7 @@
 1. **DOM 机读图表**（可逐行核对）：图表组件把每个数据点写成结构化属性，静态抓 HTML 即可取全。
    - Mistral：`data-chart-canvas` → `<g class="chart-mark-group" data-series=… data-category=… data-value=… data-display=…>`
    - xAI：渲染后扫 SVG `<text>`（图表值以无障碍文本内嵌）
-   - OpenAI：RSC payload（`self.__next_f.push`）里解析 `vegaSpec` 的 `data.values`，以 `labelValue` 为准
+   - OpenAI：RSC payload（`self.__next_f.push`）里解析 `vegaSpec` / `vegaLiteSpec` 的 `data.values`，以 `labelValue` 为准（**注意：渲染后 SVG 的 `aria-label` 可能只暴露部分 mark，取全集要回 payload**，见「已知抓取障碍」表）
    这类与本账本既有 `xai/grok-4-6`（locator 记「Also rendered as bar chart; the DOM contains the numeric values」）、`openai/gpt-5-6` 的处理口径一致：DOM 数值可逐行核对，同时在 `locator.figure` 注明「以图渲染但 DOM 内含数值」。
 2. **位图图表**（数值只存在于像素）：`img` / 背景图，需人工读图。视觉转写只进 `notes`，数值留 `null` + `score_status:"not_extracted"`。
 3. **真表格**：Markdown / DOM `<table>`，逐行转录。
