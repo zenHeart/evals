@@ -13,7 +13,7 @@
 | google | blog.google/technology/ai/（301 跳转 innovation-and-ai/technology/ai/）；开发者/开源入口 blog.google/innovation-and-ai/technology/developers-tools/；Gemma 模型卡 ai.google.dev/gemma/docs/core/；产品页 deepmind.google/models/gemini/ 与 deepmind.google/models/gemma/ | **防遗漏要点**：Google 具有 Gemini（专有旗舰）与 Gemma（开放权重）双系列；一页多模型与后增变体极其常见（如 Gemma 4 一表 5 变体：E2B/E4B/12B Unified/26B/31B，严禁漏列中间变体）；早期帖对比表若为 GIF，无头浏览器开 GIF 截稳定帧取证 |
 | xai | x.ai/news/ | 页面对 reader 与真实 DOM 内容不一致：默认无头浏览器渲染后扫 SVG `<text>`（图表值以无障碍文本内嵌）；包含 Grok 主模型与 Grok Voice Transcribe 等专项模型 |
 | meta | ai.meta.com/blog/；research.meta.ai | ai.meta.com 拒多数 reader → Playwright 直读 DOM；覆盖 Llama（开源通用）与 Muse（Muse Image / Muse Video 等多媒体生成）双线；伴随 Evaluation Report PDF 常为 tier-A 补充源 |
-| mistral | mistral.ai/news/ + 官方 RSS `https://mistral.ai/rss.xml`（pubDate 可作日期证据）；开发者文档 changelog `https://docs.mistral.ai/resources/changelogs.md`（`.md` 后缀可直取） | 页面常不印日期 → RSS pubDate 取证；覆盖 Mistral/Mixtral（通用）、Mistral Small（端侧小模型）、Mistral OCR（文档智能）、Voxtral（语音）与 Devstral/Robostral 专项线。**评测图表数值在 DOM 里**：`data-chart-canvas` 内每个 `<g class="chart-mark-group">` 带 `data-series` / `data-category` / `data-value` / `data-display` 四个属性，一张图可整体机读（2026-10-20 的 Voxtral 3 页 9 张图、9 个图表全由此路径取得）。静态 HTTP GET 即可拿到完整 HTML，不需要渲染 |
+| mistral | mistral.ai/news/ + 官方 RSS `https://mistral.ai/rss.xml`（pubDate 可作日期证据）；开发者文档 changelog `https://docs.mistral.ai/resources/changelogs.md`（`.md` 后缀可直取） | 页面常不印日期 → RSS pubDate 取证；覆盖 Mistral/Mixtral（通用）、Mistral Small（端侧小模型）、Mistral OCR（文档智能）、Voxtral（语音）与 Devstral/Robostral 专项线。**评测图表数值在 DOM 里**：`data-chart-canvas` 内每个 `<g class="chart-mark-group">` 带 `data-series` / `data-category` / `data-value` / `data-display` 四个属性，一张图可整体机读（2026-10-20 的 Voxtral 3 页 9 张图、9 个图表全由此路径取得）。静态 HTTP GET 即可拿到完整 HTML，不需要渲染。**注意：官方新闻页只有 92 篇 slug（EN 与 FR 同为 92 条），RSS 也是 92 条——Mistral 的新闻区是「精选」不是全量，专项模型线走博客查不到**（2026-10-08 发布的 `LIDstral-Arabic` / `Voxtral-Mini-4B-Realtime-Arabic` 全程无博客、无 RSS 条目、无 changelog 条目、无 arXiv 论文、无 GitHub 仓、无 API 文档模型页，**只有官方 HF 模型仓**；查漏必须走 HF org API）。官方 changelog 的 `.md` 按 `## YYYY-MM-DD` 分组，可直读某段窗口 |
 
 ## Tier 1 国内
 
@@ -42,7 +42,7 @@
 
 | 厂商 | HF 组织 | 备注 |
 |---|---|---|
-| Mistral | `mistralai` | 语音 / 端侧 / OCR 专项权重常先于博客上线（如 `LIDstral-Arabic`） |
+| Mistral | `mistralai` | 语音 / 端侧 / OCR 专项权重常先于博客上线（`LIDstral-Arabic`、`Voxtral-Mini-4B-Realtime-Arabic` 2026-10-08、`LIDstral-Arabic` 之外还有 `Voxtral-Mini-4B-Realtime-Arabic-WebGPU` space 与 `onnx-community` 的 ONNX 镜像——**后两者是下游社区产物，不是官方发布渠道**）。共同开发方的官方组织（如摩洛哥 `Morocco-MTNRA-Labs`）会镜像同一模型仓，可作「发布已公开」的第二处佐证 |
 | 腾讯混元 | `tencent` | `Hy-Memory-*`（记忆写入模型）、`Youtu-Parsing-Omni`（文档解析）**只有模型仓+GitHub 仓，没有博客发布文**，靠这条线才不漏 |
 | 阿里 Qwen | `Qwen` | 同一家族的后加速 checkpoint（如 `Qwen-Image-2.1-Turbo`）只在官方仓 README 更新日志里带日期 |
 | StepFun | `stepfun-ai` | 多为已建档模型的量化版本（NVFP4 / BF16 / GGUF），量化版不另建档 |
@@ -68,6 +68,7 @@
 | `hy.tencent.com` | SPA，只出骨架屏；页面里的 `2026/10/16` 是**站点 build-time**，不是发布日 | 靠 `tencent` HF 组织 + 官方 GitHub |
 | `blog.google` 的三条 RSS（`/rss/`、`/innovation-and-ai/technology/ai/rss/`） | **只暴露最近 20 条**；`?start=20/40/60` 不分页（返回与首屏完全相同的 20 条，文件字节数一致） | Google 的完整时间线靠 `deepmind.google/blog/rss.xml`（100 条，可回溯 3 个月）+ `blog.google/rss/` 定点补；**别把 Google 博客 RSS 当作全量窗口**——单靠它扫窗口会静默漏掉 20 条之前的发布 |
 | `openai.com/index/<slug>` 的内嵌 Vega 图表 | 渲染后 SVG 的 `aria-label` **只覆盖部分 mark**（2026-10-22 在 GPT‑Rosalind 页实测：20 个数据 mark 只暴露 15 个，其余 5 个无障碍文本缺失） | 以 RSC payload 的 `vegaLiteSpec.data.values` 为全集来源（`self.__next_f.push` 里解析），SVG 无障碍文本只作交叉校验；缺值时不要用柱体几何反推 |
+| `mistral.ai/news/*` 的 `dateModified` 字段 | **是全站重新生成的时间戳，不是该文的编辑时间**——2026-10-23 实测 `mistral-saba`、`mixtral-8x22b`、`codestral`、`mistral-3`、`le-chat-mistral` 五个页面的 `dateModified` 全是 `2026-10-08T13:46:xx`（相差数秒） | **不可当发布日或编辑日证据**；要日期只认 `datePublished`、RSS `pubDate`、正文印刷日或官方仓创建日。特别提醒：Mistral Saba 是 2025-02-17 的老模型，`dateModified=2026-10-08` 极易被误读成「阿拉伯语模型发布日」 |
 
 > 「上一轮跑批遗留未收口」的判定：开工前若发现**当前本地分支**是某个已合并的 `model-release-daily-*`，且存在**更新的远端 `model-release-daily-*` 带 OPEN PR**，说明上一轮在「开 PR」与「合并」之间断了。不要重跑那一批，也不要当残留清理——先把那个 OPEN PR 合并并确认其 CI 为绿，再从 `origin/main` 开本轮新分支。
 
@@ -90,6 +91,7 @@
 
 - **OpenRouter**：`https://openrouter.ai/api/v1/models` 各模型 `created` 时间戳——上架日常≈发布日（可差 1-2 天，权重先行或 API 先行时以官方页为准）；也是"这家最近发过什么"的查漏清单。
 - **HuggingFace org createdAt**：权重先行于 blog 1-2 天很常见；单独不作为发布日，与官方页互证。
+  - **例外（账本既有先例）**：当该模型**没有任何其它官方发布渠道**（无博客 / 无 RSS / 无 changelog / 无论文 / 无 GitHub 仓 / 未进 API 文档）时，官方模型仓的创建日就是「权重与官方模型卡上线日」，可作发布日——先例 `zai-org/GLM-OCR`（第三十批，以权重与模型卡上线日 2026-01-30 为发布日）、`mistralai/LIDstral-Arabic` 与 `mistralai/Voxtral-Mini-4B-Realtime-Arabic`（第三十二批，2026-10-08，两个仓相隔 61 秒属同批发布，并由共同开发方官方 org 在次日镜像佐证）。**用此路径时必须在 notes 写清「已逐一核过哪些渠道均无公告」，别让读者误以为有发布文。**
 - **官方 sitemap / RSS**：openai、mistral（RSS pubDate）可作日期一级证据。
 - **聚合站**（Artificial Analysis、 Various leaderboards）：**只用来发现线索**。其榜单值若被厂商原页转载，按 `third_party_reported` 记录；聚合站自身的数字不入账。
 
