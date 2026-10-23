@@ -1808,3 +1808,57 @@ Muse 页面的图表已归档到 `models/2026-10-12-muse-wonder/images/` 与
 - **待人工核验**：本批 12 条 pending 全部是**官方位图读数行**——LIDstral 逐标签 F1 热力图 1 行（21 个标签 × 4 个模型列）、Voxtral 延迟折线 4 行（80 / 160 / 320 / 720 ms）、Voxtral 逐基准 CER 柱状图 7 行（ISMA / Darija in the Wild / MGB-2 / SADA / Casablanca / FLEURS / MASC clean）。视觉转写值与同图竞品列均已逐行写入各行 notes 与归档 `index.md`，**读图确认后方可翻 verified**。
 - **门禁**：`reconcile-coverage` ✓ / `validate-data` ✓（releases 200，official 186，evidence edges 3094）/ `validate-model-coverage` ✓ / `node --test tests/*.test.mjs` ✓ 19 pass 0 fail / `sync:skills:check` ✓ / `npm run build` 全链路 ✓（含 book validate 32 章、EPUB、web 构建与 `validate-site`）。
 - **分支**：`model-release-daily-20261023T010000Z`（自 `origin/main` = 485ff1d 开出；开批前先把上一批遗留的 PR #21「第三十一批」squash 合并进 main 并确认其 CI 为绿），远端分支保留、不删除。
+## 第三十三批（2026-10-24 增量窗口 2026-10-06 ~ 2026-10-24）
+
+- **窗口**：增量窗口 2026-10-06 ~ 2026-10-24（检查点锚点 `last_max_release_date=2026-10-20` 回退 14 天重叠）。检查点回写 `last_scan_at=2026-10-23`（UTC）、`last_max_release_date=2026-10-24`（本批新增的 Kimi K3.1 Pro 发布日，锚点**前进**）。
+- **执行方式**：本批由 **MiniMax Code App（cwr / cheng）** 在隔离 worktree `model-release-daily-20261023T232138Z`（自 `origin/main` = 2c7a360 开出）内直接执行 `.claude/skills/ingest-releases` 技能合同；全程只写 `models/`、`data/model-releases/official/`、`data/benchmarks/`、`data/model-coverage.json` 与 `data/generated/ingest-checkpoint.json`。
+- **本批新增 release：3 个**（窗口内新增 2 个 + 前一轮遗漏 1 个）
+
+  - `kimi-k3-1-pro`（vendor=kimi，模型=Kimi K3.1 Pro / Kimi K3.1 Pro Highspeed，发布日=**2026-10-24**，evidence 条数 **34** = v✓ 6 / p⏳ 28，`status: verified`）。
+    - 发布日证据（一手）：官方博客列表页 `https://www.kimi.com/en/blog/` 收录该文的日期为 **2026-10-24**；官方页 JSON-LD `dateModified` 同为 2026-10-24；页面配图资源路径含 `/kimi-k3-1/20261023/`（图片构建日，2026-10-23）。以官方列表页日期 2026-10-24 为发布日，`date_precision=day`。
+    - 归档：`models/2026-10-24-kimi-k3-1-pro/`（官方详情页服务端渲染 HTML 原文 `page.html` + `images/kimi-figure-*.webp` 共 5 张官方配图 + `index.md` + `manifest.json`）。
+    - 发布内容：K3.1 系列首个模型，也是 Kimi 迄今能力最强的 **3T 级开源权重**模型，**1 百万 token 上下文**；官方称其在编码、3D 创作、金融研究与智能体能力上大幅提升。官方说明 K3.1 Pro 是在 Kimi K3 基础上用**大规模联合 RL** 后训练得到，为支撑数百个下游领域的联合 RL 而优化了 RL 框架、长上下文推理、训练效率、沙箱基础设施与 rollout 调度。同日还发布 **Kimi K3.1 Pro Highspeed**（官方称速度为标准版 2–3 倍）。上线范围：Kimi.com / 移动端 / Kimi Work / Kimi Code / Kimi API（API 模型名 `kimi-k3.1-pro`、`kimi-k3.1-pro-highspeed`）；官方声明**完整模型权重将于 2026-11-04 前发布**，故归档时无官方权重仓可互证。
+    - 收录 34 行：**正文明文 6 行**（Terminal-Bench 4.0 **65.7%**；Kimi Code Bench 3.0 Long-horizon **61.2%**；BenchCAD with tools **92.7%**；Kimi Hallu Bench Hard claim 级幻觉率 **8.3%**；xdev-bench-hard pass@3 **81.0%**；OfficeQA Pro v2 **64.4**）+ **官方图片评测表 28 行**（coding / agentic / reasoning & knowledge & multimodal / cybersecurity 四组共 29 个具名评测，官方页面只以图片给出数值，按图行纪律一律记 `pending` + `score_status: not_extracted`，**本批不做视觉转写**）。
+    - 协议：官方总脚注声明「除非另有说明，全部结果取 reasoning effort = `max`、temperature = 1.0、top-p = 0.95」，逐项脚注另注明 harness（多数为 Claude-Code harness；OSWorld 用 Kimi Agent harness；ExploitGym 用 KimiCode harness；MCP Atlas 以 Gemini 3.1 Pro 担任评委；BrowseComp 最多 500 步、200K token 触发上下文压缩；ProgramBench 用 binary score，任务分 ≥95% 记 1）。protocol 已按明示值逐键记录。
+    - 安全披露（官方原文，账本 notes 已记）：官方为开源版本从中训练语料与 RL 环境混合中**移除网络安全相关数据**；xdev-bench-hard 上未做该削减的同管线检查点为 90.5%，最终 K3.1 Pro 为 **81.0%**。官方称 K3.1 Pro 的进攻性网络能力按设计低于其管线可产出的水平，落后于已公开至少三个月的最强闭源模型。
+    - 未明示项：Highspeed 版的参数量与上下文官方未单独印，账本记 null；API 定价明细官方未在正文印出，pricing 记 null；官方只给出相对前代的差值（+7.2 / +11.6 分、约 4.2 倍），无绝对分值，不单独建行。
+
+  - `wevisone-vl`（vendor=tencent，模型=WeVisOne-VL-4B / WeVisOne-VL-2B，发布日=**2026-10-22**，evidence 条数 **72** = v✓ 72 / p⏳ 0，`status: verified`）。
+    - 发布日证据（一手，三处互证）：官方 GitHub 仓 `Tencent/WeVisOne-VL` 的 `created_at` = **2026-10-22T08:58:16Z**；官方 Hugging Face 模型仓 `tencent/WeVisOne-VL-4B` 与 `tencent/WeVisOne-VL-2B` 的 `createdAt` 均为 **2026-10-22**；技术报告 **arXiv:2610.31329** 同属 2026-10。`date_precision=day`。
+    - 归档：`models/2026-10-22-wevisone-vl/`（官方 README 原文 `page.html` + `images/` 5 张官方配图（teaser 与三张方法图）+ `index.md` + `manifest.json`）。
+    - 发布内容：腾讯**微信视觉团队（WeChat Vision）**发布的统一视觉感知基础模型，把**目标级感知**（检测、指代定位、计数、指向、OCR）与**像素级感知**（指代分割、可提示 alpha 抠图）合进同一个模型：用结构化 next-token 预测（坐标 token `<0>`…`<1000>`、目标不存在输出 `None`、框后接 `<OBJ>` token）加一个 **9.6M 参数轻量像素解码器**直接输出全分辨率掩码与 alpha，**不需要外接 SAM**。官方称其知识图谱驱动的数据引擎标注了超过 1 亿张图像。权重 2B / 4B 两档，Apache-2.0。
+    - 收录 72 行：官方 GitHub README 的**「Performance at a Glance」+「Full Benchmark Results」七张分表**，全部为 Markdown 表格（DOM 机读，**无一条读图**），逐行转录自家 2B / 4B 两列，竞品列写进各行 notes。覆盖：Object Detection（F1 Mean，COCO / LVIS / Dense200 / VisDrone）、Referring Object Detection（F1 Mean 与 Rejection Rate，RefCOCOg / WeRef / HumanRef / Ref-L4）、Object Counting（Exact-match Accuracy，CountQA / PixMo-Count / CLOC / KubriCount / MixCount）、Object Pointing（Accuracy，PointBench / PixMo-Points / COCO / LVIS / Dense200 / VisDrone）、OCR（F1 Mean，HierText / ICDAR2015 / TotalText / SROIE）、Referring Segmentation（cIoU，ReasonSeg 用 gIoU，RefCOCO / RefCOCO+ / RefCOCOg / ReasonSeg / Ref-ZOM）、Promptable Matting（MAD ×10³，P3M-500-NP / AM-2K / PPM-100 / WeRefMat）。
+    - 协议（官方明示）：F1 取 IoU 0.5:0.95 平均；贪心解码；每图 ≤ 1,960 视觉 token。已逐键写入 protocol。
+    - 未明示项：参数量以外的其他规格、上下文长度与 API 定价官方未印，账本记 null；官方未公开上述各评测的完整定义与数据集介绍。
+
+  - `hy-nomas`（vendor=tencent，模型=Hy-Nomas，发布日=**2026-10-21**，evidence 条数 **4** = v✓ 0 / p⏳ 4，`status: pending`）。
+    - 发布日证据（一手，两处互证 + 项目站）：官方 Hugging Face 模型仓 `tencent/Hy-Nomas` 的 `createdAt` = **2026-10-21**；官方 GitHub 仓 `Tencent-Hunyuan/Hy-Nomas` 的 `created_at` = **2026-10-21T03:04:54Z**；官方项目站 `hy-nomas.hy.tencent.com` 同日上线。`date_precision=day`。
+    - 归档：`models/2026-10-21-hy-nomas/`（官方模型卡原文 `page.html` + `images/` 2 张官方配图 + `index.md` + `manifest.json`）。
+    - 发布内容：腾讯混元发布的**自由形式交互式视频世界生成模型**——按段自回归地一段段生成世界，支持多轮文本指令与相机轨迹控制，用持久化 KV 缓存跨段保持上下文一致。官方明示规格：54 个双流 MMDiT 块、隐藏维度 2,048、16 头 × 128 维、FFN 4×（中间层 8,192）；DCAE-V `f32t4c32` 潜变量（32 通道，空间 32×、时间 4× 压缩）；文本编码器为 `Qwen/Qwen2.5-VL-7B-Instruct` 的语言模型部分（3,584 维 → 两层 token refiner → 投影到 2,048 维）；微调 PixelUMM 解码器（36 层、4,096 维、32 查询头 / 8 KV 头、1 步解码）；3D RoPE 时间/高/宽维度 `[16, 56, 56]`、theta 256；蒸馏推理 8 步去噪、Euler ODE、720×1280 @ 24 FPS；另有单张 RTX 4090 的 INT8 低内存配置（INT8 DiT + INT8 KV cache + FP8 解码器 + CPU offload，历史预算 18 个潜帧）。
+    - 收录 4 行、**全部无数值**：官方随发布公开评测数据集 **Hy-Nomas-Bench**（4 个子基准、280 个测试用例、220 条参考相机轨迹），但官方数据集卡明确写明「Videos, extracted reference/revisit frames, and **evaluation scores are not included**」，技术报告标注 **Coming Soon**。因此 4 行一律 `score_status: not_reported` + `status: pending`，本 release 整体 `status: pending`，**不以任何二级来源补数**。
+
+- **新增 evidence：110 条** = 78 verified（Kimi 正文 6 行 + WeVisOne-VL 官方 Markdown 表 72 行）+ 32 pending（Kimi 官方图片评测表 28 行 + Hy-Nomas-Bench 4 行）。
+- **新 benchmark id：36 个**（notes 标 `new-benchmark`，由账本自动生成兜底详情页，不阻塞入库）：
+  - WeVisOne-VL 24 个：`lvis`、`visdrone`、`refcocog`、`weref-bench`、`humanref`、`ref-l4`、`pixmo-count`、`cloc`、`kubricount`、`mixcount`、`pointbench`、`pixmo-points`、`hiertext`、`icdar2015`、`totaltext`、`sroie`、`refcoco`、`refcoco-plus`、`reasonseg`、`ref-zom`、`p3m-500-np`、`am-2k`、`ppm-100`、`werefmat`。
+  - Kimi 12 个：`kimi-code-bench-3-long-horizon`、`kimi-hallu-bench-hard`、`xdev-bench-hard`、`programbench`、`kimi-code-bench-2`、`bio-mystery-bench`、`handbook-md`、`deck-arena`、`design-bench`、`hle-diamond`、`kimi-hallucination-bench`。
+  - Hy-Nomas 1 个：`hy-nomas-bench`。
+  - 复用既有实体 4 个：`coco`、`dense200`、`countqa`（WeVisOne-VL）、`aa-briefcase`（Kimi AA-Briefcase v1.1，仓内已有正式实体与解读）。官方只给出其余评测的名与指标口径、无完整定义，故本批**未新建 benchmark 实体**，全部由「由发布引用自动生成」的兜底详情页顶着（`data/generated/auto-benchmark-ids.json` 118 → 154）。
+- **新厂商：无**。
+- **跳过清单**
+  - **OpenAI**：官方新闻 RSS 全量 1,318 条，窗口内 **44 条**逐条看过（`pubDate` 为 RFC-822 格式，须按日期规范化后再筛，否则会整窗口漏检）。除客户案例 / 合作 / 方法学 / 既有模型可用性公告外，唯一 `models` 属性的 `decisions-api`（2026-10-22）经官方文档核实为 Decisions API 的 GA 公告（用的是已建档模型）。
+  - **Anthropic**：官方 newsroom 首页内嵌 JSON 逐条解析，窗口内 **25 条**，带 `models` 类别的**仅 Claude Haiku 5.5（2026-10-07，已建档）**，其余为公告 / 安全 / 政策 / 合作 / 研究。
+  - **Meta**：官方 research 博客窗口内 **3 篇**——`/blog/muse-spark-open`（2026-10-15，Introducing Muse Spark Open, The Most Capable US Open‑Weight Model to Date，**已建档** `muse-spark-open`）、`/blog/muse-wonder`（2026-10-12，**已建档** `muse-wonder`）、`/blog/accelerating-scientific-research-in-health-data-science-with-muse-models`（2026-10-14，基于已建档 Muse 模型的研究文章）。
+  - **Microsoft**：官方 `microsoft.ai/blog/` 全站 321 KB 抽取，窗口内 **0 篇**（唯一的 2026-10-22 是页面 JSON-LD 的 `datePublished`，非文章）；官方 RSS 通道返回空条目；官方 HF 组织窗口内新增 `Sentiment-Analysis-7B` / `scFM-dataselection` / `UserRepGen-4B` 三个研究产物模型，非 MAI / Phi 系列发布。
+  - **Mistral**：官方 RSS 92 条，窗口内 4 条（Timestral / Voxtral 3 / Mistral Large 4 / NVIDIA 合作）全部已建档或为合作公告。官方 HF 组织窗口内命中 `Timestral-5M / 28M / 123M / 209M`（2026-10-14）——**多变体完整性校验**：既有 `timestral` 档已逐列收录全部四个尺寸，无遗漏。
+  - **Google**：DeepMind RSS 100 条 + `blog.google` 两条 RSS 各 20 条，窗口内条目均为已建档模型（Gemini 4 Argon、EmbeddingGemma 2）或研究 / 生态文章。
+  - **DeepSeek**：官方 news 页为客户端渲染，静态抓取仅得导航文本；经官方 HF 组织确认窗口内唯一新仓 `DeepSeek-V4.1-Flash-1017`（2026-10-17，**已建档**）。
+  - **腾讯混元 / 微信视觉**：官方 `hy.tencent.com` 为 SPA 空壳，但官方 GitHub 仓与 HF 组织两条一手渠道可用——窗口内新增 `WeVisOne-VL-4B / -2B`（2026-10-22）与 `Hy-Nomas`（2026-10-21），**本批已建档**；`Hy-Memory-30B-A3B-GGUF / -FP8`、`Qwen3-8B-DSpine-b16`、`Youtu-Parsing-Omni` 为已建档模型的量化 / 衍生权重版本。
+  - **Kimi**：官方博客列表页窗口内唯一新模型即 **Kimi K3.1 Pro**（本批已建档）；官方 HF 组织 `moonshotai` 窗口内**无新仓**（官方声明权重 2026-11-04 前才发布）。
+  - **MiniMax**：官方 `minimax.io/news` 窗口内 0 条（唯一 2026-10-23 是站点 JSON-LD `dateModified`，全站重新生成时间戳，非发布证据）；官方 HF 组织 `MiniMaxAI/MiniMax-M3.1-Flash`（2026-10-17）**已建档**。
+  - **Qwen / 豆包**：`qwen.ai/blog` 与 `seed.bytedance.com/en/blog` 均为客户端渲染空壳，静态抓取得不到条目列表；官方 HF 组织 `Qwen/Qwen-Image-2.1-Turbo`（2026-10-09）**已建档**。这两个官方渠道**本轮未能独立核验**，按 partial 记，不声称穷尽。
+  - **StepFun**：官方 `stepfun.ai/research` 只暴露模型名（Step 5 Preview / StepAudio 3 TTS 等）、不暴露机读日期；已建档条目无新增。
+  - **小米 MiMo**：官方 `mimo.xiaomi.com` 最新文章为 **2026-06-29**，窗口内 0 篇。
+  - **xAI / 智谱**：`x.ai/news` 官方站点 **HTTP 403**、`z.ai/blog` **HTTP 404**；官方 `zai-org` HF 组织窗口内 0 新仓。本轮**无法独立核验**这两个厂商的官方博客渠道，按 partial 记。
+- **待人工核验**：本批 32 条 pending 全部是**官方图片评测表 / 无分数**——Kimi 官方图片评测表 28 行（coding 6 项、agentic 13 项、reasoning & knowledge & multimodal 7 项、cybersecurity 2 项；官方图片已归档 `models/2026-10-24-kimi-k3-1-pro/images/kimi-figure-*.webp` 留证）+ Hy-Nomas-Bench 4 行（官方数据集明确不含分数）。本批按纪律**不做视觉转写**、不填数值，读图确认后方可补录并翻 verified。
+- **门禁**：`reconcile-coverage` ✓ / `validate-data` ✓（releases 203，official 189，evidence edges 3204）/ `validate-model-coverage` ✓ / `node --test tests/*.test.mjs` ✓ 19 pass 0 fail / `sync:skills:check` ✓ / `npm run build` 全链路 ✓（含 book validate 32 章、EPUB、web 构建与 `validate-site`）。
+- **分支**：`model-release-daily-20261023T232138Z`（自 `origin/main` = 2c7a360 开出）。
