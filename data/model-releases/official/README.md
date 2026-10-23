@@ -1745,3 +1745,32 @@ Muse 页面的图表已归档到 `models/2026-10-12-muse-wonder/images/` 与
 - **待人工核验**：GLM-4.6V 官方评测大表（68 行）与 GLM-OCR 官方两张评测位图（12 行）的数值只存在于图片像素中，按纪律记无数值、图内读数已逐行转写进各行 notes 与归档 `index.md`，读图确认后方可补数值。GLM-OCR 的解析吞吐位图（`fig3-speed.png`）为工程指标，未立行。
 - **门禁**：`reconcile-coverage` ✓ / `validate-data` ✓（releases 196，official 182，evidence edges 3073）/ `node --test tests/*.test.mjs` ✓ 19 pass 0 fail / `sync:skills:check` ✓ / `npm run build` 全链路 ✓（含 book validate 32 章、EPUB、web 构建与 `validate-site`）。
 - **分支**：`model-release-daily-20261022T010000Z`（自 `origin/main` = 093ccfd 开出；开批前先把上一批遗留的 PR #18「第二十九批」squash 合并进 main 并确认其 CI 为绿），远端分支保留、不删除。
+
+
+## 第三十一批（2026-10-22 增量窗口 2026-10-06 ~ 2026-10-22）
+
+- **窗口**：增量窗口 2026-10-06 ~ 2026-10-22（检查点锚点 `last_max_release_date=2026-10-20` 回退 14 天重叠）；本批窗口与第三十批相同——上一批窗口内未发现新发布，锚点未前进，窗口随之保持不变。检查点回写 `last_scan_at=2026-10-22`、`last_max_release_date=2026-10-20`（本批未引入晚于锚点的新发布日期，锚点只前进不回退；本轮扫描与第三十批同处 UTC 2026-10-22，故检查点取值与上一批一致）。
+- **本批新增 release：2 个 / 3 个模型**（增量窗口内确无新发布；两个均为存量回填轨道，正是第三十批跳过清单中明确「留作后续补档」的 Google 图像模型线缺口，本批结清该交接）
+  - `nano-banana-2`（vendor=google，模型=Nano Banana 2 / Gemini 3.1 Flash Image，发布日=2026-02-26，evidence 条数 **0** = v✓ 0 / p⏳ 0，`status: pending`）。
+    - 发布日证据（一手，机器可读）：官方发布文 `https://blog.google/innovation-and-ai/technology/ai/nano-banana-2/` 的 HTML meta `article:published_time` 印出 `2026-02-26`，JSON-LD `datePublished` = `2026-02-26T16:00:00+00:00`（`dateModified` = `2026-03-19T17:48:15.796286+00:00`，说明官方事后编辑过正文，发布日以 `published_time` 为准）。
+    - 归档：`models/2026-02-26-nano-banana-2/`（官方页原文存档 `page.html` + `images/fig1-nano-banana-2-hero.webp` + `images/fig2-nano-banana-2-subject-consistency.webp` + `images/fig3-nano-banana-2-asset-demo.webp` + `images/fig4-nano-banana-2-social-card.png` + `index.md` + `manifest.json`）。
+    - 发布内容：Google 的新一代图像生成模型，官方定位「把 Nano Banana Pro 的进阶能力与 Gemini Flash 的速度结合起来」——以 Flash 速度提供 Pro 级世界知识、精确文字渲染与翻译、主体一致性（单次工作流最多保留五个角色、14 个物件的保真度）、分辨率 512px 至 4K；随 Gemini app 推出并替换 Fast / Thinking / Pro 档的 Nano Banana Pro，同步进入 Search（AI Mode 与 Lens）、Ads、Flow（成为默认图像生成模型）、AI Studio 与 Gemini API（预览）、Vertex AI（预览），沿用 SynthID + C2PA Content Credentials 的来源标记（官方称 SynthID 验证功能自 11 月上线以来已使用逾 2000 万次）。
+    - 评测来源：官方发布文正文**未印出任何离散基准跑分数值**，与 Nano Banana 2 的对比表（Elo / 延迟 / 每千张成本）在官方页上以**位图**呈现；按「不臆造数值」纪律 evidence 记 0 行、`status: pending`。
+    - 未明示项：参数量、上下文长度与 API 定价官方未印，账本记 null。
+  - `nano-banana-2-lite`（vendor=google，模型=Nano Banana 2 Lite / Gemini 3.1 Flash Lite Image **与** Gemini Omni Flash / `gemini-omni-flash-preview`，发布日=2026-06-30，evidence 条数 **4** = v✓ 3 / p⏳ 1，`status: verified`）。
+    - 发布日证据（一手，机器可读）：官方发布文 `https://blog.google/innovation-and-ai/models-and-research/gemini-models/gemini-omni-flash-nano-banana-2-lite` 的 HTML meta `article:published_time` 印出 `2026-06-30`，JSON-LD `datePublished` = `2026-06-30T16:00:00+00:00`（`dateModified` = `2026-06-30T16:19:32.696637+00:00`）。
+    - 归档：`models/2026-06-30-nano-banana-2-lite/`（同一篇官方发布文原文存档 `page.html` + `images/fig1-nano-banana-2-lite-omni-flash-keyart.png` + `images/fig2-nano-banana-2-lite-performance-benchmark.gif` + `images/fig3-nano-banana-family-model-table.gif` + `images/fig4-gemini-omni-flash-video-editing-benchmark.webp` + `index.md` + `manifest.json`）；一篇官方文同时发布两个模型，按 `gemini-3` 的先例合为一个 release、两行 `models[]`。
+    - 发布内容（模型一）Nano Banana 2 Lite：Nano Banana 家族「最快、最省」的一档，官方称文生图**延迟 4 秒**、**每千张 1K 分辨率图片 0.034 美元**，官方建议用它替换仍在用的第一代 `gemini-2.5-flash-image`；覆盖 Google AI Studio、Gemini API、Gemini Enterprise Agent Platform，以及 AI Mode in Search、Gemini app、NotebookLM、Google Photos、Stitch、Flow、Ads 等消费端，沿用 SynthID 水印。
+    - 发布内容（模型二）Gemini Omni Flash：视频生成 + 对话式编辑模型（`gemini-omni-flash-preview`），官方定价**每秒视频输出 0.10 美元**（官方称与 Veo 3.1 Fast 同价），原生支持文本 / 图像 / 视频多模态输入，当前**单次生成上限 10 秒**、音频参考与场景外延在 Gemini API 尚不支持，以公开预览形态进入 Google AI Studio 与 Gemini API，同步进入 Gemini app 与 Google Flow。
+    - 收录 4 行：正文明文 3 行（文生图延迟 4 秒、每 1K 张 1K 分辨率图 0.034 美元、每秒视频输出 0.10 美元）+ 官方位图对比表 1 行（Elo / 延迟 / 每 1K 图成本三轴对比，页面只以图注命名、未印任何 Elo 数值，整表为 GIF 位图，按纪律记 `pending` + `score_status: not_extracted`、图内数值未做视觉转写）。三行明文数字均为官方性能对比表三轴在正文中的机读形态，notes 已注明「非标准公开评测集、页面未给出测试规模与统计方式」。
+    - 未明示项：参数量、上下文长度官方未印，账本记 null；Omni Flash 的完整评测指向 DeepMind 的 Gemini Omni 专页，本批未取该页数值。
+- **新增 evidence：4 条** = 3 verified（官方正文明文）+ 1 pending（官方位图对比表，图内数值未转写）。
+- **新 benchmark id：4 个**（notes 标 `new-benchmark`，已随 `data/generated/auto-benchmark-ids.json` 入册，110 → 114）：`nano-banana-2-lite-latency`（官方正文明示的文生图延迟）、`nano-banana-2-lite-image-cost`（官方正文明示的每 1K 张 1K 分辨率图像计价）、`nano-banana-image-performance-benchmark`（官方位图对比表三轴：Elo / 延迟 / 每 1K 图成本）、`gemini-omni-flash-video-output-cost`（官方正文明示的按视频秒数计价）。
+- **新厂商：无**。
+- **跳过清单**
+  - **增量窗口内（2026-10-06 ~ 2026-10-22）**：16 家在册厂商逐条巡检后，窗口内确无新发布——Google 三条 RSS（`/rss/`、`/technology/ai/rss/`、`deepmind.google/blog/rss.xml`）窗口内无新模型条目（`Gemini 4 Argon` 及其工程/安全说明文已建档）；OpenAI、Anthropic、xAI、Meta、DeepSeek、Kimi、Mistral、Qwen、豆包、混元、小米、StepFun、Microsoft 的窗口内条目均为合作公告、客户案例、招聘、研究仓或既有模型的量化/衍生版本，无独立新模型发布；窗口内条目明细与第三十批一致。
+  - **StepFun StepAudio 3 系列**（实时交互 / ASR / TTS / 通用音频生成 / 音乐五个模型）——检索到的全部命中均来自第三方站点，官方 `stepfun.ai` 文档页未印发布日；无一手来源即不入账，候选保留在覆盖表的排除理由中。
+  - **Nano Banana（Gemini 2.5 Flash Image，首代，2025-08）与 Nano Banana Pro（Gemini 3 Pro Image，2025-11）**——在 NB2 / NB2 Lite 官方文中只作为「家族回顾」被提及，本轮未定位到它们各自的首发官方文与可机读发布日，按「不臆造」纪律本批不入账，留作后续补档。
+- **待人工核验**：Nano Banana 2 官方页与 Nano Banana 2 Lite 官方页的性能对比表均为**位图**，其中的 Elo、延迟与成本对比数值只存在于图片像素中（已归档 `fig2-nano-banana-2-lite-performance-benchmark.gif` 与 `fig3-nano-banana-family-model-table.gif` 留证）；本批按纪律不立行、不转写数值，如需入库可由人工读图后补 evidence 行。
+- **门禁**：`reconcile-coverage` ✓ / `validate-data` ✓（releases 198，official 184，evidence edges 3077）/ `validate-model-coverage` ✓ / `node --test tests/*.test.mjs` ✓ / `sync:skills:check` ✓ / `npm run validate` ✓ / `npm run build` 全链路 ✓（含 EPUB、web 构建与 `validate-site`）。
+- **分支**：`model-release-daily-20261022T231940Z`（自 `origin/main` = d798573 开出），远端分支保留、不删除；本 PR **未自动合并**，等待人工评审。
