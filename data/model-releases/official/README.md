@@ -4,7 +4,7 @@
 
 ## 汇总
 
-> **当前总量检查点（2026-10-04）**：171 releases = 157 official + 14 legacy · 2750 evidence edges。每批落地后更新此行。
+> **当前总量检查点（2026-10-23）**：200 releases = 186 official + 14 legacy · 3094 evidence edges。每批落地后更新此行。
 
 | 指标 | 值 |
 |---|---:|
@@ -1774,3 +1774,37 @@ Muse 页面的图表已归档到 `models/2026-10-12-muse-wonder/images/` 与
 - **待人工核验**：Nano Banana 2 官方页与 Nano Banana 2 Lite 官方页的性能对比表均为**位图**，其中的 Elo、延迟与成本对比数值只存在于图片像素中（已归档 `fig2-nano-banana-2-lite-performance-benchmark.gif` 与 `fig3-nano-banana-family-model-table.gif` 留证）；本批按纪律不立行、不转写数值，如需入库可由人工读图后补 evidence 行。
 - **门禁**：`reconcile-coverage` ✓ / `validate-data` ✓（releases 198，official 184，evidence edges 3077）/ `validate-model-coverage` ✓ / `node --test tests/*.test.mjs` ✓ / `sync:skills:check` ✓ / `npm run validate` ✓ / `npm run build` 全链路 ✓（含 EPUB、web 构建与 `validate-site`）。
 - **分支**：`model-release-daily-20261022T231940Z`（自 `origin/main` = d798573 开出），远端分支保留、不删除；本 PR **未自动合并**，等待人工评审。
+
+## 第三十二批（2026-10-23 增量窗口 2026-10-06 ~ 2026-10-23）
+
+- **窗口**：增量窗口 2026-10-06 ~ 2026-10-23（检查点锚点 `last_max_release_date=2026-10-20` 回退 14 天重叠）。检查点回写 `last_scan_at=2026-10-23`、`last_max_release_date=2026-10-20`（本批两个 release 的发布日均为 2026-10-08，早于锚点，**锚点只前进不回退**，不因存量回填把增量窗口拉回）。
+- **本批新增 release：2 个**（增量窗口内确无新发布；两个均走**存量回填轨道**，正是第二十八批跳过清单中点名「留待存量回填轨道补齐日期证据」的 Mistral 阿拉伯语模型线，本批结清该交接）
+  - `lidstral-arabic`（vendor=mistral，模型=LIDstral Arabic，发布日=2026-10-08，evidence 条数 **4** = v✓ 3 / p⏳ 1，`status: verified`）。
+    - 发布日证据（一手，两处互证 + 第三方官方佐证）：官方 Hugging Face 模型仓 `https://huggingface.co/mistralai/LIDstral-Arabic`（权重与官方模型卡）创建日 **2026-10-08T11:37:05Z**；同批发布的 `mistralai/Voxtral-Mini-4B-Realtime-Arabic` 创建于 2026-10-08T11:36:06Z（**相隔 61 秒**，属同一批阿拉伯语模型发布）；官方共同开发方 **Morocco-MTNRA-Labs**（摩洛哥数字化与行政改革部）组织于 2026-10-09T17:20:57Z 镜像同一模型仓，独立佐证模型在 2026-10-09 前已公开。按账本既有先例（第三十批 `zai-org/GLM-OCR` 档：以「权重与官方模型卡上线日」为发布日）取 **2026-10-08**。
+    - 取证边界（已逐一核过并记入账本 notes）：Mistral 官方新闻页**全量 92 篇 slug**（含 FR 版同 92 条）、官方 RSS（92 条）、开发者 changelog（窗口内仅 2026-10-06 / 10-20 / 10-22 三条）、官方 GitHub 组织、arXiv（`all:LIDstral`、`all:"Voxtral Arabic"`、`ti:"Arabic" AND all:Mistral` 三组检索均无条目）、API 文档模型总览页——**均无**本次阿拉伯语模型的发布公告；模型仓与官方模型卡是唯一一手发布渠道。另排除一处噪声：Mistral 各新闻页的 `dateModified=2026-10-08T13:46:xx` 是**全站重新生成**的时间戳（`mixtral-8x22b`、`codestral`、`mistral-3`、`le-chat-mistral` 等页同秒同批），非发布证据，已排除。
+    - 归档：`models/2026-10-08-lidstral-arabic/`（官方模型卡原文 `page.html` + `images/arabic-country-comparison.png`（2160×2140 官方逐标签 F1 热力图）+ `index.md` + `manifest.json`）。
+    - 发布内容：面向阿拉伯语文字的**语种与方言识别**模型，可区分标准阿拉伯语（MSA）、各阿拉伯语方言，以及使用同一文字系统的非阿拉伯语（模型卡明确说明训练中刻意纳入这些非阿语语言，以免仅凭文字系统判成阿拉伯语）。结构为 fastText one-vs-all 分类器 + 64 单元 LayerNorm MLP stacker（144 维特征）+ 逐类 isotonic 校准，共 **51 个受支持类别**；CPU 可运行，权重 Apache-2.0。官方已知限制：模型总是输出 51 类之一，未支持语言与混合语言文本会被强行归类。
+    - 收录 4 行：散文明文 3 行（自家 Moroccan Darija F1 **88.67%**；对照 LahjatBERT ALDi CL **72.65%**、GlotLID v3 **71.28%** —— 后两行按抽取口径单列为 `comparison_cited`）+ 官方位图热力图 1 行（21 个地区/语种标签行 × 4 个模型列，数值只存在于像素，按图行规则记 `pending`，逐行视觉转写值写入 notes 与归档 `index.md`）。
+    - 差异留档（不跨来源调和）：散文的对照列名是 LahjatBERT **ALDi** CL（72.65%），官方热力图对照列名是 LahjatBERT **Card** CL 且 Morocco 行读作 68.48% —— 同族不同变体（72.65 > 71.28 > 68.48，与模型卡「ALDi CL 为该方言测试过的最强基线」自洽）；散文的 GlotLID v3 71.28% 与图中 Morocco 行一致。
+    - 未明示项：参数量、上下文长度与 API 定价官方未印，账本记 null；模型卡未给评测协议细节（温度、样本切分、评委均未说明），protocol 12 键全部 null。
+  - `voxtral-mini-4b-realtime-arabic`（vendor=mistral，模型=Voxtral Mini 4B Realtime Arabic，发布日=2026-10-08，evidence 条数 **13** = v✓ 2 / p⏳ 11，`status: verified`）。
+    - 发布日证据（一手，两处互证 + 第三方官方佐证）：官方 Hugging Face 模型仓 `https://huggingface.co/mistralai/Voxtral-Mini-4B-Realtime-Arabic`（权重与官方模型卡）创建日 **2026-10-08T11:36:06Z**；同批的 `mistralai/LIDstral-Arabic` 创建于 2026-10-08T11:37:05Z（相隔 61 秒）；官方共同开发方 Morocco-MTNRA-Labs 组织于 2026-10-09T17:19:43Z 镜像同一模型仓。按 `zai-org/GLM-OCR` 档先例取 **2026-10-08**（取证边界同上一条，同样无博客 / RSS / changelog / GitHub / arXiv 公告）。
+    - 归档：`models/2026-10-08-voxtral-mini-4b-realtime-arabic/`（官方模型卡原文 `page.html` + `images/benchmark_scores.png`（八面板 CER 柱状图）+ `images/avg_evals_by_delay.png`（延迟折线图）+ `images/benchmark_composition.png`（两个新基准的构成环形图）+ `index.md` + `manifest.json`）。
+    - 发布内容：面向阿拉伯语方言与 MSA 的**流式语音转文本**模型，约 4.4B 参数、BF16、16 kHz 因果音频编码器 + 语言解码器，从 `Voxtral-Mini-4B-Realtime-2602` 微调而来，配置化转写延迟 80/160/320/480/720 ms 五档；与摩洛哥 MTNRA 联合开发，隶属 Mistral 与摩洛哥 2026 年 1 月签署的战略伙伴关系，官方定位为主权 AI 资产；官方另提供 WebGPU 浏览器 demo space。
+    - 收录 13 行：正文明文 2 行（七基准平均 CER **8.82%** @480 ms；对照 Voxtral Transcribe Arabic **7.91%**，按口径单列 `comparison_cited`）+ 官方位图 11 行（延迟折线 4 档：80 ms 10.64 / 160 ms 9.76 / 320 ms 9.17 / 720 ms 8.80；逐基准柱状图 7 行：ISMA 6.68 / Darija in the Wild 9.69 / MGB-2 5.31 / SADA 13.75 / Casablanca 20.34 / FLEURS 2.66 / MASC clean 3.33）——全部按图行规则记 `pending`，视觉转写值与同图竞品列写入各行 notes。
+    - 算术自校验：本模型七项（6.68+9.69+5.31+13.75+20.34+2.66+3.33）÷ 7 = 8.8228 ≈ **8.82**，与散文明文一致；Voxtral Transcribe Arabic（4.96+8.97+4.83+12.25+18.60+2.27+3.50）÷ 7 = 7.911 ≈ **7.91**，亦与散文明文一致——散文与图表两处互证。
+    - 差异留档（不跨来源调和）：两张官方图对同一竞品存在 0.01 的四舍五入差（`benchmark_scores.png` 记 Cohere Transcribe Arabic 14.34、Meta Muse Transcribe 10.77；`avg_evals_by_delay.png` 记 Cohere 14.35、Muse 10.76）。
+    - 未明示项：上下文长度与 API 定价官方未印，账本记 null；官方模型卡未给评测协议细节（样本切分、评委均未给出），protocol 仅记明示的 temperature 0.0 与转写延迟，其余键 null。
+- **新增 evidence：17 条** = 5 verified（官方模型卡散文明文：LIDstral 3 行含 2 条竞品对照 + Voxtral 2 行含 1 条竞品对照）+ 12 pending（官方位图读数行：热力图 1 行 + 延迟折线 4 行 + 逐基准柱状图 7 行）。
+- **新 benchmark id：8 个**（notes 标 `new-benchmark`）：`arabic-lid-f1`（阿拉伯语语种与方言识别逐标签 F1）、`arabic-asr-cer`（阿语 ASR 七基准平均 CER）、`isma`、`darija-in-the-wild`、`mgb-2`、`sada`、`casablanca`、`masc-clean`。其中 **4 个已建实体**（`arabic-lid-f1`、`arabic-asr-cer`、`isma`、`darija-in-the-wild`——口径与构成均可从官方模型卡与官方构成图完整整理，interpretation 已写成读者可懂的解读）；`mgb-2` / `sada` / `casablanca` / `masc-clean` 四个只知官方名与所在套件、无法在不臆造的前提下写出解读，按「写不出解读就不要建实体」纪律**只由兜底详情页顶着**。
+- **新厂商：无**。
+- **跳过清单**
+  - **增量窗口内（2026-10-06 ~ 2026-10-23）**：16 家在册厂商逐条巡检后确无新发布。OpenAI 官方新闻 RSS（1315 条全量）窗口内 42 条逐条看过，除客户案例 / 合作 / 政策 / 研究 / 产品公告外，唯一可疑的 `decisions-api`（10-22）经官方开发者文档核实为 **Decisions API 的 GA 公告**，官方文档明写「Currently, only `gpt-6-luna` is supported」——用的是已建档模型，非独立模型发布；`low-resource-programming-languages`（10-19）与 `gpt-6-for-everyone`（10-07）分别是评测方法学发布与既有模型的可用性公告。Anthropic 官方 newsroom 首页内嵌 JSON 按文章对象切分后逐条核对，窗口内 16 条全部为政策 / 公告 / 合作 / 公益 / 研究 / 客户案例，**唯一新模型 Claude Haiku 5.5（2026-10-07）已建档**。Google 三条 RSS（`deepmind.google/blog/rss.xml` 100 条、`blog.google/technology/ai/rss/` 20 条、`blog.google/rss/` 20 条）窗口内无新模型条目（`Gemini 4 Argon` 及其工程 / 安全说明文已建档）。Mistral RSS（92 条）窗口内 4 条全部已建档或为合作公告。Meta 官方 research 博客 8 篇 Muse 相关文全部对应已建档模型或 API 落地页。DeepSeek（`news261017` 已建档）、Kimi（最新 2026-07-31）、小米（最新 2026-06-29 研究文）、StepFun（Step 5 Preview 已建档）、字节跳动（`/en/blog` 404，导航所列模型均已建档）、腾讯混元（`Hy-Memory-30B-A3B-GGUF` / `-FP8` 为同模型量化版本）、小米、微软（`microsoft.ai` 全站 Cloudflare 403、官方 RSS 通道返回空条目）、z.ai / 智谱（`z.ai/blog` nginx 404，官方 `zai-org` 模型仓最新为 2026-08-25 的 GLM-5.3 系）——窗口内均无可确认的新发布。
+  - **OpenBMB / MiniCPM-V-4.7 与 DSpark 变体**（官方 HF 组织 `openbmb`，模型仓创建日 2026-10-06 ~ 2026-10-14，含 1B / 35B-A3B 两个尺寸与 DSpark 变体）——OpenBMB **不在在册 16 家厂商内**，接入属「新增厂商接入」，按任务边界需人工决策（注册厂商 + 取真实彩色 logo + 登记 `LOGO_EXT`），本批不动，记此备查。
+  - **NVIDIA 官方 HF 组织**（`Cosmos3-*`、`Nemotron-*` 等，2026-10-15 ~ 10-19）——同样属未注册厂商的专项模型线，本批不动。
+  - **微软官方 HF 组织**窗口内新增仓（Sentiment-Analysis-7B、scFM-dataselection、UserRepGen-4B）——研究产物模型，非 MAI / Phi 系列发布。
+  - **StepFun `Step-5-Preview-NVFP4`**（官方模型仓 2026-10-14）——已建档 Step-5-Preview（2026-09-19）的量化权重版本，不另建档。
+  - **腾讯混元 `Hy-Memory-30B-A3B-GGUF` / `-FP8`、`Qwen3-8B-DSpine-b16`**——同模型量化 / 衍生权重版本，随主档收录。
+- **待人工核验**：本批 12 条 pending 全部是**官方位图读数行**——LIDstral 逐标签 F1 热力图 1 行（21 个标签 × 4 个模型列）、Voxtral 延迟折线 4 行（80 / 160 / 320 / 720 ms）、Voxtral 逐基准 CER 柱状图 7 行（ISMA / Darija in the Wild / MGB-2 / SADA / Casablanca / FLEURS / MASC clean）。视觉转写值与同图竞品列均已逐行写入各行 notes 与归档 `index.md`，**读图确认后方可翻 verified**。
+- **门禁**：`reconcile-coverage` ✓ / `validate-data` ✓（releases 200，official 186，evidence edges 3094）/ `validate-model-coverage` ✓ / `node --test tests/*.test.mjs` ✓ 19 pass 0 fail / `sync:skills:check` ✓ / `npm run build` 全链路 ✓（含 book validate 32 章、EPUB、web 构建与 `validate-site`）。
+- **分支**：`model-release-daily-20261023T010000Z`（自 `origin/main` = 485ff1d 开出；开批前先把上一批遗留的 PR #21「第三十一批」squash 合并进 main 并确认其 CI 为绿），远端分支保留、不删除。
