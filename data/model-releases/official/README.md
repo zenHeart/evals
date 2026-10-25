@@ -1862,3 +1862,18 @@ Muse 页面的图表已归档到 `models/2026-10-12-muse-wonder/images/` 与
 - **待人工核验**：本批 32 条 pending 全部是**官方图片评测表 / 无分数**——Kimi 官方图片评测表 28 行（coding 6 项、agentic 13 项、reasoning & knowledge & multimodal 7 项、cybersecurity 2 项；官方图片已归档 `models/2026-10-24-kimi-k3-1-pro/images/kimi-figure-*.webp` 留证）+ Hy-Nomas-Bench 4 行（官方数据集明确不含分数）。本批按纪律**不做视觉转写**、不填数值，读图确认后方可补录并翻 verified。
 - **门禁**：`reconcile-coverage` ✓ / `validate-data` ✓（releases 203，official 189，evidence edges 3204）/ `validate-model-coverage` ✓ / `node --test tests/*.test.mjs` ✓ 19 pass 0 fail / `sync:skills:check` ✓ / `npm run build` 全链路 ✓（含 book validate 32 章、EPUB、web 构建与 `validate-site`）。
 - **分支**：`model-release-daily-20261023T232138Z`（自 `origin/main` = 2c7a360 开出）。
+
+## 第三十四批（2026-10-25 增量窗口 2026-10-10 ~ 2026-10-24）
+
+- **窗口结论**：增量窗口内**确无新发布**。第三十三批（2026-10-24 同一 07:15 定时轮次）已把窗口扫到 2026-10-24；本轮在 2026-10-24T23:30Z 起复核 2026-10-22 之后的官方通道，**未出现任何新的官方模型发布**，故不新建 release 条目、不新增官方归档页。
+- **复核通道与结果**：
+  - **OpenAI**：官方 `news/rss.xml` 共 1318 条，2026-10-22 之后 6 条（最新 `Fri, 23 Oct 2026 17:00:00 GMT`），均落在第三十三批已扫窗口内，未指向新模型发布。
+  - **Google**：官方 `deepmind.google/blog/rss.xml` 100 条，2026-10-22 之后 1 条（`Beyond tree cover: mapping the world's forest types`，生态研究文章非模型发布）；官方 `blog.google/rss/` 20 条，2026-10-22 之后 3 条（Gemini 4 Argon 生态文 / Google Marketing Platform / Voltus 虚拟电厂，无新模型发布）。
+  - **Anthropic / Mistral / Meta**：`anthropic.com/rss.xml`、`mistral.ai/news/rss.xml`、`research.meta.ai/blog/rss/` 静态 GET 均返回 **HTTP 404**，与既有「抓取障碍」记录一致，本轮**无法独立巡检**这三个厂商的公告通道，按 partial 记，不声称穷尽。
+  - **MiniMax**：`minimax.io/news` 本轮请求超时（既有记录：站点 JSON-LD `dateModified` 是全站重新生成时间戳，本就不可当发布证据），按 partial 记。
+  - **官方模型仓（HF 组织）**：`mistralai` / `Qwen` / `stepfun-ai` / `microsoft` / `zai-org` / `deepseek-ai` / `moonshotai` / `MiniMaxAI` / `meta-llama` 窗口内 **0 新仓**；`tencent` 窗口内 **5 个新仓**，逐个核对后确认：
+  - **新增官方产物（衍生件，不另建档）**：`tencent/Hy-Nomas-Diffusers`（`createdAt` = 2026-10-24T05:45:20Z），模型卡 `base_model: tencent/Hy-Nomas`，是已建档 `hy-nomas`（2026-10-21）同一权重的 Diffusers 封装版本。按「量化 / 衍生权重版本不另建档」的纪律，本批**不新建 release 条目**，只在 `hy-nomas.json` 的 `notes` 登记该官方衍生仓。
+  - **已建档 / 衍生权重（不另建档）**：`tencent/WeVisOne-VL-4B`（2026-10-22）与 `tencent/WeVisOne-VL-2B`（2026-10-22）已由第三十三批建档；`tencent/Hy-Nomas`（2026-10-21）同上；`tencent/Hy-Memory-30B-A3B-GGUF`（2026-10-19）是已建档 `hy-memory-30b-a3b` 的 GGUF 量化衍生权重。
+- **待人工核验（沿用第三十三批结论，本批未动）**：第三十三批遗留的 32 条 pending 仍为官方图片评测表 / 无分数项（Kimi K3.1 Pro 官方图片评测表 28 行、Hy-Nomas-Bench 4 行），本批按纪律**不做视觉转写**、不填数值。
+- **门禁**：见本批提交记录。
+- **分支**：`model-release-daily-20261024T233200Z`（自 `origin/main` = 169fa11 开出）。
