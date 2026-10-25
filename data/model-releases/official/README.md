@@ -1924,3 +1924,57 @@ Muse 页面的图表已归档到 `models/2026-10-12-muse-wonder/images/` 与
 - **待人工核验（沿用第三十三批结论，本批未动）**：遗留 32 条 pending 仍为官方图片评测表 / 无分数项（Kimi K3.1 Pro 官方图片评测表 28 行、Hy-Nomas-Bench 4 行），按纪律**不做视觉转写**、不填数值。本批新增的 Terminal X 一行为**正文明文**，不涉及读图，不进 pending 清单。
 - **门禁**：见本批提交记录。
 - **分支**：`model-release-daily-20261025T010151Z`（自 `origin/main` = 644d303 开出）。
+
+## 第三十六批（2026-10-26 增量窗口 2026-10-10 ~ 2026-10-25）
+
+- **窗口**：增量窗口 2026-10-10 ~ 2026-10-25（检查点锚点 `last_max_release_date=2026-10-24` 回退 14 天重叠）。检查点回写 `last_scan_at=2026-10-25`（UTC）、`last_max_release_date` **维持 2026-10-24**（本批未新增 release 条目，锚点不前进也不回退）。
+- **执行方式与执行器互斥**：本批由 **MiniMax Code（cwr 主机）** 在隔离 worktree `model-release-daily-20261025T231917Z`（自 `origin/main` = `a31e154` 开出）内执行。原 OpenClaw 定时声明 `workflow:daily-model-releases-and-provider-refresh`（cron id `db2e30ef-541a-49e2-af4a-bcdff12831e9`，原 cron `15 7 * * *` Asia/Shanghai，agent `walle`）已**显式 `--disable` 并原生回读确认 `enabled=false`**，避免两个执行器跑同一轮。
+- **窗口结论**：增量窗口内**确无新的官方模型发布**——窗口内 16 家厂商的发布（Gemini 4 Argon GA 10-13 / Hy-Memory-30B-A3B 10-15 / Mistral Timestral 10-15 / DeepSeek-V4.1-Flash-1017 10-17 / MiniMax M3.1 Flash 10-19 / Voxtral 3 10-20 / Hy-Nomas 10-21 / WeVisOne-VL 10-22 / Kimi K3.1 Pro 10-24 / Hy-Nomas-Diffusers 10-24 / GLM Legal 10-12 / Muse Wonder 10-12 / Muse Spark Open 10-15）**已由第二十八~三十四批全部建档**。本批**不新建 release 条目**，只补**上一批漏判**的官方明文 evidence，共 **18 条**。
+- **本批新增 evidence：18 条 = 18 verified + 0 pending**（全部 `attribution_type: vendor_reported`、`source_kind: official_release_blog`、`source_tier: A`、`evidence_type: text`、`comparison_scope: only_same_protocol`）
+  - **唯一来源（一手，A 级）**：OpenAI 官网研究文章《Advancing coding in low-resource programming languages》 `https://openai.com/index/low-resource-programming-languages`，页面印刷日 **October 19, 2026**，官方新闻 RSS 对应条目 `pubDate` 同为 **2026-10-19**。
+  - **为什么是「漏判」**：第三十五批把窗口内 OpenAI 31 条逐条看过、把该文归入「无模型评测数值或非发布文」；本批按 14 天重叠窗口复核时发现该文**确有明文绝对分值**（MultiLangBench 与 COBOL 迁移评测两套新评测），按纪律捞回并在此登记。
+  - **`multilangbench`（新基准，15 条）**：OpenAI 自建评测——要求模型用指定语言从零构建 SQLite 兼容数据库引擎，测试用例改编自 SQLite 既有测试套件，20 种语言统计测试通过率；官方已开源评测环境与测试套件 `https://github.com/openai/MultiLangBench`。
+    - `openai-gpt-6-astra--multilangbench-astra-avg-20-langs-max-effort` → **87.4%**（20 语言平均测试通过率，推理强度 maximum）
+    - `openai-gpt-6-astra--multilangbench-astra-cobol|-ocaml|-fortran|-visual-basic-max-effort` → **72.1% / 85.8% / 83.5% / 89.4%**
+    - `openai-gpt-6-sol-and-luna--multilangbench-luna-avg-20-langs-max-effort` → **40.3%**（`model_id` = `gpt-6-luna`）
+    - `openai-gpt-6-sol-and-luna--multilangbench-luna-cobol|-ocaml|-fortran|-visual-basic-max-effort` → **17.1% / 34.1% / 31.4% / 41.6%**
+    - `openai-gpt-5-6--multilangbench-sol-avg-20-langs` → **26.8%**，及 4 个逐语言基线 **10.9% / 25.6% / 21.4% / 27.5%**（`model_id` = `gpt-5-6-sol`；该组数字所在句**未标注推理强度**，`reasoning_effort` 记 `null` 并在 `model_variant` 注明，与 GPT-5.6 既有行同款处理）
+  - **`openai-cobol-migration`（新基准，3 条）**：OpenAI 自建评测——把已有 COBOL 程序迁移到 C++ / Java / Kotlin / Python / Rust 并保持行为，用准确率衡量；官方未给正式名称，按用途铸 id。
+    - `openai-gpt-6-1-sol--openai-cobol-migration-gpt-6-1-sol-low-reasoning-effort` → **86.6%**
+    - `openai-gpt-6-1-sol--openai-cobol-migration-gpt-6-1-sol-higher-reasoning-effort` → **97.9%**（官方写「接近饱和」）
+    - `openai-gpt-5-6--openai-cobol-migration-sol-low-reasoning-effort` → **5.4%**（同页明文印出的 GPT-5.6 Sol 基线）
+  - **归档**：`models/2026-10-19-gpt-6-multilangbench-cobol-migration/`（文章页服务端渲染 HTML 原文 `page.html` + `images/` 官方封面图 + `index.md` 全文机读转录 + `manifest.json` 含逐文件 sha256）。
+  - **口径边界**：① 页面 4 个图表容器（`multilangbench-average-test-pass-rate` / `sqlite-performance-by-language` / `cobol-migration-performance` / `sqlite-test-pass-rate-c`）在静态 HTML 中均为**无 `src`/`srcset` 的空 div**，图表数据由前端脚本运行时拉取、静态 HTML 内不含任何语言名或数值数组 → 本批 18 条**全部来自正文散文明文绝对值**，不涉及视觉转写、**无图表 pending 项**；② 其余 16 种语言官方只写「Astra scores above 83% in 19 of the 20 languages」，**无逐语言绝对值**，不建行、不臆造；③ `$0.77 / $3.48 / 78% / 61% / 39%` 均为 **API 成本口径、不是分值**，不单独建行，只写进相关行 notes；④ 两套评测均由 OpenAI 自建自报 → 记 `vendor_reported`，非第三方榜单；COBOL 迁移评测的评测集与评分细则**未公开、未开源**，外部无法复跑。
+  - **对既有 release 文件的唯一改动**：`openai/gpt-6-astra.json`（3 → 8 条）、`openai/gpt-6-sol-and-luna.json`（16 → 21 条）、`openai/gpt-6-1-sol.json`（8 → 10 条）、`openai/gpt-5-6.json`（214 → 220 条）各追加新 evidence 行 ＋ 1 条 `revisions[]` 记录（`field: benchmark_evidence`，写明「仅追加、未改任何既有行、数值、状态与 locator」）＋ release `notes` 末尾补一句来源说明。**未改动任何既有 evidence 行、任何数值、任何 `status`**；`gpt-6-1-sol` 的 release 级 `status` 维持 `pending`（原有 5 条基准行仍是图表待转录），其余三个维持 `verified`。
+- **新增 benchmark id：2 个（均已同步建实体，含 `summary` / `interpretation` / `measures` / `does_not_measure` / `metrics` / `versions` / `limitations` / `official_sources`）**
+  - `multilangbench`（MultiLangBench）
+  - `openai-cobol-migration`（OpenAI COBOL Migration Evaluation）
+- **新厂商**：无。
+- **逐厂商巡检（窗口 2026-10-10 ~ 2026-10-25）**
+  - **OpenAI**：官方 `news/rss.xml` 共 1318 条，窗口内 31 条逐条复核，最新条目 2026-10-23，**无新发布文**；本批从窗口内的 2026-10-19 一文补出 18 条明文 evidence（见上）。
+  - **Google**：`deepmind.google/blog/rss.xml` 100 条 + `blog.google/rss/` 20 条，窗口内条目均为已建档模型（Gemini 4 Argon / Argon GA）、生态文章或研究访谈，**无新发布**。
+  - **Anthropic**：官方 newsroom 列表页窗口内最新文章 2026-10-22（捐赠 Agent Skills 给 Agentic AI Foundation，属标准/生态事项）；`platform.claude.com/docs/en/models/overview` 在架仍为 Claude Fable 5.1 / Opus 5.5 / Sonnet 5.5 / Haiku 5.5（均已建档）；`anthropic.com/rss.xml` 静态 GET 返回 404（沿用既有抓取障碍记录），按 partial 记。
+  - **xAI**：`docs.x.ai/docs/models` 在架旗舰仍为 grok-4.7（已建档 2026-09-21）；`x.ai/news/grok-4-8` 探测 404，**无新发布**。
+  - **Meta**：`research.meta.ai/blog` 窗口内 3 篇——`muse-wonder`（10-12，已建档）、`developing-capable-models-responsibly`（10-14，研究方法文章）、`accelerating-scientific-research-in-health-data-science-with-muse-models`（10-15，基于已建档 Muse 模型的研究文章），**无新发布**。
+  - **Mistral**：官方 RSS 92 条，窗口内 3 条（Voxtral 3 10-20 已建档 / Timestral 10-15 已建档 / NVIDIA 工业工程合作公告 10-21）；官方 HF 组织 `mistralai` 窗口内 4 个新仓 `Timestral-123M / 28M / 5M / 209M`（均 2026-10-14）即已建档 `timestral` 的四个尺寸，**多变体已逐列核对无遗漏**；GitHub `mistralai/timestral`（10-15）同源。
+  - **DeepSeek**：官方 `/updates` 窗口内最新 2026-10-17（DeepSeek-V4.1-Flash-1017，已建档），**无新发布**。
+  - **MiniMax**：官方 `platform.minimax.io/docs/release-notes/models` 窗口内唯一条目 Oct. 19, 2026 / MiniMax M3.1 Flash（已建档）；官方 HF `MiniMaxAI/MiniMax-M3.1-Flash` 权重仓 `createdAt` 2026-10-17（官方发布文口径 10-19），**无新发布**。
+  - **Kimi**：官方博客列表页窗口内唯一新模型即 Kimi K3.1 Pro（10-24，已建档）；官方 HF `moonshotai` 窗口内 0 新仓，**无新发布**。
+  - **豆包**：官方 `seed.bytedance.com/sitemap.xml` 35 条 URL 逐条比对，窗口内唯一新 URL 是招聘贴 `seed-alignment-preparedness-team-looking-for-global-talents`（10-14），**非模型发布**。
+  - **小米 MiMo**：官方 `mimo.xiaomi.com/blog` 窗口内 0 篇新发布（列表页最新为 2025-12-16 的 MiMo-V2-Flash）。
+  - **腾讯混元 / 微信视觉**：官方 HF 组织窗口内 8 个新仓逐个核对——`Hy-Nomas-Diffusers`（10-24，第三十四批已登记为官方衍生仓）、`WeVisOne-VL-4B` / `-2B`（10-22，已建档）、`Hy-Nomas`（10-21，已建档）、`Hy-Memory-30B-A3B`（10-15，已建档）及其 FP8（10-16）/ GGUF（10-19）量化衍生件、`Qwen3-8B-DSpine-b16`（10-16，投机解码 drafter 研究产物）；GitHub `Tencent-Hunyuan` 新仓 `Hy-Nomas`(10-21) / `Hy-Memory`(10-15) 同源；**无新发布**。
+  - **智谱 GLM**：官方 `z.ai/blog` 静态 GET 404；官方 `docs.z.ai` 在架 GLM-5.3 / GLM-5.3-Flash / GLM-5.2（账本已有 `glm-5-3` 2026-08、`glm-5-3-flash` 2026-08-26、`glm-5-2` 2026-06-16）；`zai-org` HF 与 GitHub 窗口内 0 新仓，`api.z.ai` 需鉴权（401）。按 partial 记。
+  - **StepFun**：官方 `stepfun.ai/research` 与 `platform.stepfun.com/docs` 本轮可读（扫描通道记 inaccessible，本批以浏览器 UA 复核），在架模型为 Step 5 Preview / Step 3.7 Flash / Step 3.5 Flash / StepAudio 3 系列，**窗口内无新发布**；HF `stepfun-ai` 窗口内唯一新仓 `Step-5-Preview-NVFP4`（10-14）是已建档 `step-5-preview` 的 NVFP4 量化衍生件，量化版不另建档；GitHub `stepfun-ai/Step-5-Preview`（10-12）同源。
+  - **Qwen**：官方 `Qwen` HF 组织窗口内 0 新仓；GitHub `QwenLM` 窗口内唯一新仓 `BlenderWorld`（10-14）为官方基准仓、非模型发布；`qwen.ai` 为客户端渲染单行页，按既有替代通道（HF 组织）巡检。
+  - **Microsoft**：官方 `microsoft.ai/blog/` 与 `/models/` 以浏览器 UA 可读，在架模型 MAI-Code-1.1-Flash / MAI-Voice-2.1 / MAI-Transcribe-2 / MAI-Thinking-1 / MAI-Image-2.6 与账本一一对应，账本最新为 2026-10-01（`mai-transcribe-2-streaming`、`mai-voice-2.1`），**窗口内无新发布**；HF `microsoft` 窗口内 3 个新仓均为研究产物（`Sentiment-Analysis-7B` 10-17 / `scFM-dataselection` 10-16 / `UserRepGen-4B` 10-14）；GitHub `microsoft` 窗口内新仓为 Amplifier 框架与 `sdbench`（10-19，官方基准仓）。按 partial 记，不声称穷尽。
+- **跳过清单**
+  - **StepAudio 3 系列（阶跃星辰：TTS / ASR / Gen / Music / Realtime）**——官方 `platform.stepfun.com/docs` 与技术报告《StepAudio 3 Gen Technical Report》（`https://arxiv.org/abs/2609.12945`，arXiv **Submitted on 11 Sep 2026**）均可取，且 ASR 文档内有明文评测数值（无语音测试准确率 99%、上下文推理错误率 0.57%（vs StepAudio 2.5 ASR 1.59%、vs 豆包 ASR 2.0 1.00%）、垂类专名平均错误率 3.81%、AISHELL-6 悄悄话 CER 3.97%、中英文通用平均错误率分别较上一代降低 9.3% / 25.0% 等），但**发布日期在增量窗口之外**且账本无此条目，属**存量回填缺口**，本批不越窗建档，留待回填批次处理。
+  - **腾讯混元 `DiagSafe`（GitHub 2026-10-15，arXiv 2610.29225）、`OmniCapBench`（2026-10-12，arXiv 2610.12458）**——窗口内官方**基准仓**，非模型发布；本批账本无与其关联的 evidence 行，不建 release。
+  - **Microsoft `sdbench`（2026-10-19，Science 论文）、Qwen `BlenderWorld`（2026-10-14，arXiv 2610.23986）**——同上，窗口内官方基准仓、非模型发布，不建 release。
+  - **xAI `grok-imagine-image-2.0`（2026-08-07）与 `grok-imagine-video-1.5`（2026-06-16）**——沿用第三十五批结论：官方发布文可取且已核到发布日期，但在增量窗口之外且账本无此条目，属存量回填缺口，本批不越窗建档。
+  - **StepFun `Step-5-Preview-NVFP4`（2026-10-14）**——已建档 `step-5-preview` 的量化衍生版本，量化版不另建档。
+  - **腾讯混元 `Qwen3-8B-DSpine-b16`（2026-10-16）**——投机解码 drafter 研究产物，非独立模型发布，不建档。
+  - **Anthropic RSS（404）、智谱 `z.ai/blog`（404）与 `api.z.ai`（401）**——官方发布文入口本轮不可巡检，按 partial 记，不声称穷尽。
+- **待人工核验**：遗留 32 条 pending 仍为官方图片评测表 / 无分数项（Kimi K3.1 Pro 官方图片评测表 28 行、Hy-Nomas-Bench 4 行），按纪律**不做视觉转写**、不填数值。本批新增 18 条全为**正文明文**，不涉及读图，不进 pending 清单。
+- **门禁**：`node scripts/reconcile-coverage.mjs` 通过；`npm test` 19/19 通过；`node scripts/validate-data.mjs` PASS（taxonomy 9 类 / vendors 16 / benchmarks 477 / releases 203（official 189）/ evidence edges 3223）；`npm run build` 全链通过（`sync:skills:check` + `validate` + `build:epub:official` 484 KB + `build:web` 720 URL / 477 实体页 + 154 auto-evidence 页 + `validate:site` 908 HTML / 39245 内部引用 / 254 时间线 / 2145 事件卡）。
+- **分支**：`model-release-daily-20261025T231917Z`（自 `origin/main` = `a31e154` 开出）。
