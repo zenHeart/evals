@@ -1877,3 +1877,50 @@ Muse 页面的图表已归档到 `models/2026-10-12-muse-wonder/images/` 与
 - **待人工核验（沿用第三十三批结论，本批未动）**：第三十三批遗留的 32 条 pending 仍为官方图片评测表 / 无分数项（Kimi K3.1 Pro 官方图片评测表 28 行、Hy-Nomas-Bench 4 行），本批按纪律**不做视觉转写**、不填数值。
 - **门禁**：见本批提交记录。
 - **分支**：`model-release-daily-20261024T233200Z`（自 `origin/main` = 169fa11 开出）。
+
+## 第三十五批（2026-10-25 增量窗口 2026-10-10 ~ 2026-10-25）
+
+- **窗口**：增量窗口 2026-10-10 ~ 2026-10-25（检查点锚点 `last_max_release_date=2026-10-24` 回退 14 天重叠）。检查点回写 `last_scan_at=2026-10-25`（UTC）、`last_max_release_date` **维持 2026-10-24**（本批未新增 release 条目，锚点不前进也不回退）。
+- **开工前的遗留收口**：本批开工时工作树有 **2026-10-24 09:00 轮次遗留的未提交改动**（`.claude/skills/ingest-releases/references/discovery-channels.md` + 镜像 + `data/model-coverage.json`，mtime 2026-10-24 10:27~10:28，无存活进程），且当前本地分支是已合并的 `model-release-daily-20261024T010000Z`；同时存在**更新的远端分支 `model-release-daily-20261024T233200Z` 带 OPEN PR #25**。按渠道地图里的「上一轮跑批遗留未收口」判定：**先把 PR #25（第三十四批，CI 已绿）squash 合并进 main，再从更新后的 `origin/main`（644d303）开本轮新分支**；遗留的渠道知识与 coverage 扫描结果在本批一并带入，不 stash、不丢弃。
+- **窗口结论**：增量窗口内**确无新的官方模型发布**——窗口内 16 家厂商的发布（Gemini 4 Argon GA 10-13 / Hy-Memory-30B-A3B 10-15 / Mistral Timestral 10-15 / DeepSeek-V4.1-Flash-1017 10-17 / MiniMax M3.1 Flash 10-19 / Voxtral 3 10-20 / Hy-Nomas 10-21 / WeVisOne-VL 10-22 / Kimi K3.1 Pro 10-24 / Hy-Nomas-Diffusers 10-24 / GLM Legal 10-12 / Muse Wonder 10-12 / Muse Spark Open 10-15）**已由第二十八~三十四批全部建档**。本批**不新建 release 条目**，只补一条此前漏掉的**官方明文 evidence**。
+- **本批新增 evidence：1 条 = 1 verified + 0 pending**
+  - `openai-gpt-6-1-sol--terminal-x`（vendor=openai，release=`gpt-6-1-sol`，模型=GPT-6.1 Sol，benchmark=`terminal-x`，**88.6%**，`status: verified`，`attribution_type: third_party_reported`）。
+    - 来源（一手，A 级）：OpenAI 官网客户案例文章《Terminal X matches senior investor judgment 88.6% with GPT-6.1》 `https://openai.com/index/terminal-x`，页面印刷日 **October 20, 2026**，官方新闻 RSS 对应条目 `pubDate` 同为 **2026-10-20**。
+    - 归档：`models/2026-10-20-gpt-6-1-sol-terminal-x/`（文章页服务端渲染 HTML 原文 `page.html` + `images/` 3 张官方配图 + `index.md` + `manifest.json`）。
+    - 数值口径：终端投资机构 Terminal X 用**自建 Eval Agent**（按 **54 条评分准则**逐条核对 agent 产出是否偏离基金章程）评自己的投资研究工作流，在 **500 次已评分判断**上，Eval Agent 判定与**资深人类评审**判定的一致率为 **88.6%**；同页竞品列「次优模型」**86.4%**，官方写明差值 220 个基点。
+    - 只建一行：页面另给「章程偏离检出率较次优模型约 +25%」「单次查询成本约 −30%」，均为**相对差值、无绝对分值**，不单独建行，写进该行 notes。
+    - 协议与归因：评测由客户自建自报、厂商官网转载 → 记 `third_party_reported`（不计厂商自报）；`protocol.harness` 写 `Terminal X Eval Agent`、`protocol.run_count` 写 `500 次已评分判断`、`protocol.judge` 写评分器与资深人类评审对照；属自定义 Agentic 脚手架，`comparison_scope` 标 `only_same_protocol` 并在 notes 交代与官方标准单轮基线的差距。
+    - 边界：54 条准则与 500 次样本**均未公开**，外部无法复跑，跨机构自建准则不可横向比较（已写入 notes 与 benchmark 实体的 `limitations`）。
+  - **对既有 release 文件的唯一改动**：`data/model-releases/official/openai/gpt-6-1-sol.json` 追加上述 1 条 evidence（7 → 8 条）＋ 1 条 `revisions[]` 记录（`field: benchmark_evidence`，写明「仅追加、未改任何既有行、数值、状态与 locator」）＋ release `notes` 末尾补一句来源说明。**未改动任何既有 evidence 行、任何数值、任何 `status`**；release 级 `status` 维持 `pending`（原有 5 条基准行仍是图表待转录）。
+- **新 benchmark id：1 个** — `terminal-x`（notes 标 `new-benchmark`）。本批**同步建了完整实体** `data/benchmarks/terminal-x.json`（summary / interpretation / measures / metrics / versions / limitations 齐备，`content_status: beta`），因为官方页明示了准则条数、样本量、评分器与对照，可整理出完整定义；读者解读已写明「一致率怎么读 + 三条读数注意事项」。
+- **新厂商：无**。
+- **逐厂商巡检结果（窗口 2026-10-10 ~ 2026-10-25）**
+  - **OpenAI**：官方 `news/rss.xml` 1,318 条，窗口内 31 条逐条看过，**无新模型发布文**；窗口内唯一带明文评测数值的官方页是客户案例文章 `terminal-x`（本批已入库）。官方 `sitemap.xml/release/` 84 条 slug 已取回（`lastmod` 全站批量重新生成，不可当日期）。
+  - **Anthropic**：官方 newsroom 内嵌 JSON 窗口内 43 条，逐条看过，均为公告 / 政策 / 安全 / 研究 / 合作，无新模型发布；`platform.claude.com/docs/en/models/overview` 的 Specialized models（Mythos 5 / 5.1）与 Legacy models（Fable 5 / 5.1）**已建档**（Mythos 作为 `claude-fable-5` / `claude-fable-5-1` 的 `models[]` 条目收录），**不重复建档**。
+  - **Google**：官方 `deepmind.google/blog/rss.xml` 100 条 + `blog.google/rss/` 20 条，窗口内条目均为已建档模型（Gemini 4 Argon / Argon GA / EmbeddingGemma 2）或研究与生态文章（如 10-20 的 AMIE 临床研究访谈，非发布文）。
+  - **xAI**：官方 `/news/<slug>` 逐个直取（`grok-4-7` / `grok-voice-3` / `grok-imagine-image-2` / `grok-imagine-video-1-5` / `grok-code-fast-1` 取到 JSON-LD `datePublished`），窗口内最新为 **grok-voice-3（2026-10-14，已建档）**；`grok-4-8` / `grok-5` / `grok-imagine-image-2-0` 均 404。
+  - **Meta**：官方 `research.meta.ai/blog` 窗口内 3 篇——`muse-wonder`(10-12，已建档)、`developing-capable-models-responsibly`(10-14，研究方法文章)、`accelerating-scientific-research-in-health-data-science-with-muse-models`(10-15，基于已建档 Muse 模型的研究文章)，**无新模型发布**。
+  - **Mistral**：官方 RSS 92 条，窗口内 3 条（Voxtral 3 已建档 / Timestral 已建档 / NVIDIA 合作公告）；官方 changelog 窗口内 2 条（Voxtral 3、**Z.ai GLM 5.3 Flash 上架**）；官方 HF 组织窗口内 4 个仓均为已建档 `timestral` 的四个尺寸（5M / 28M / 123M / 209M，多变体已逐列核对无遗漏）。
+  - **DeepSeek**：官方 `/updates` 通道取到窗口内最新 **2026-10-17**（`DeepSeek-V4.1-Flash-1017`，已建档），窗口内无更新发布。
+  - **MiniMax**：官方 `platform.minimax.io/docs/release-notes/models` 窗口内唯一条目 **Oct. 19, 2026 / MiniMax M3.1 Flash**（已建档）；官方 HF 组织 `MiniMaxAI/MiniMax-M3.1-Flash`(2026-10-17) 同源。
+  - **Kimi**：官方博客列表页与 `whats-new` 页窗口内唯一新模型即 **Kimi K3.1 Pro**（已建档）；官方 HF 组织 `moonshotai` 窗口内 **0 新仓**。
+  - **Qwen**：官方 `Qwen` HF 组织窗口内 0 新仓（最新 `Qwen-Image-2.1-Turbo` 2026-10-09，已建档）；官方 GitHub `QwenLM/Qwen-Image-2.1` README 更新日志最新条目同为 `2026.10.09`。`qwen.ai` 为纯客户端渲染（`/sitemap.xml` 返回的是 SPA HTML），按 partial 记。
+  - **豆包**：官方 `seed.bytedance.com/sitemap.xml` 35 条 URL 全量核对，窗口内唯一新 URL 是 `seed-alignment-preparedness-team-looking-for-global-talents`（**招聘贴，非模型发布**）；全部模型发布文 lastmod ≤ 2026-09-28，均已建档。
+  - **小米 MiMo**：官方 `mimo.xiaomi.com` 首页卡片清单最新为 MiMo-V2.6 系列（已建档）与 MiMo-V2.5-Pro（已建档），窗口内 0 篇新发布。
+  - **腾讯混元 / 微信视觉**：官方 HF 组织窗口内 8 个新仓逐个核对——`Hy-Nomas-Diffusers`(10-24，第三十四批已登记)、`WeVisOne-VL-4B` / `-2B`(10-22，已建档)、`Hy-Nomas`(10-21，已建档)、`Hy-Memory-30B-A3B`(10-15，已建档) 与其 FP8 / GGUF 量化衍生件、`Qwen3-8B-DSpine-b16`(投机解码 drafter 研究产物，非独立模型发布)。官方 GitHub `Tencent-Hunyuan` org 窗口内新建 4 仓，其中 3 个是基准/研究产物（OmniCapBench / DiagSafe / Hydra 等）。
+  - **StepFun**：官方 `stepfun.ai/research` 只暴露模型名（Step 5 / Step 3.7 / Step 3.5），不暴露机读日期；官方 HF 组织窗口内唯一新仓 `Step-5-Preview-NVFP4`(2026-10-14) 是已建档 `step-5-preview` 的 NVFP4 量化衍生件，**不另建档**。
+  - **Microsoft**：官方 `microsoft.ai/blog` / `/models/` / `/feed/` 全 403 Cloudflare 挑战页；官方 HF 组织窗口内 3 个新仓（`Sentiment-Analysis-7B` / `scFM-dataselection` / `UserRepGen-4B`）与 GitHub org 窗口内新建仓（`AnalyticsHub-Dashboard`）**均为研究产物 / Copilot 工具，不是 MAI / Phi 发布**。按 partial 记，不声称穷尽。
+  - **智谱 GLM**：官方 `z.ai/blog` 返回 404，官方 `zai-org` HF 组织窗口内 0 新仓（最新 2026-08-25）；已建档 `glm-legal`(10-12) 为窗口内唯一 GLM 发布。按 partial 记。
+- **跳过清单**
+  - **OpenAI / Decisions API**（2026-10-22）——开发者 API 的 GA 公告，用的是已建档模型，非模型发布。
+  - **OpenAI 客户案例 / 合作 / 方法学文章共 30 篇**（窗口内其余条目）——无模型评测数值或非发布文。
+  - **Mistral × NVIDIA 工业工程合作**（2026-10-21）——合作公告。
+  - **Mistral 平台上架 Z.ai GLM 5.3 Flash**（2026-10-22，`zai-glm-5-3-flash`）——**第三方模型在 Mistral 平台上的可售公告**，模型本身是 Z.ai 已建档模型（2026-08-25），按「平台可售公告不另建 release」处理。
+  - **豆包 Seed 招聘贴**（2026-10-14）——招聘文章，非模型发布。
+  - **腾讯 `Qwen3-8B-DSpine-b16`**（2026-10-16）——基于 Qwen3-8B 的投机解码 drafter 研究产物，非独立模型发布。
+  - **StepFun `Step-5-Preview-NVFP4`**（2026-10-14）——已建档 `step-5-preview` 的量化衍生版本，量化版不另建档。
+  - **Microsoft / 智谱 窗口内无新发布**——官方博客通道本轮不可巡检（403 / 404），按 partial 记，不声称穷尽。
+  - **xAI `grok-imagine-image-2.0`（2026-08-07）与 `grok-imagine-video-1.5`（2026-06-16）**——官方发布文可取且已核到发布日期，但**在增量窗口之外且账本无此条目**，属存量回填缺口，留待回填批次处理，本批不越窗建档。
+- **待人工核验（沿用第三十三批结论，本批未动）**：遗留 32 条 pending 仍为官方图片评测表 / 无分数项（Kimi K3.1 Pro 官方图片评测表 28 行、Hy-Nomas-Bench 4 行），按纪律**不做视觉转写**、不填数值。本批新增的 Terminal X 一行为**正文明文**，不涉及读图，不进 pending 清单。
+- **门禁**：见本批提交记录。
+- **分支**：`model-release-daily-20261025T010151Z`（自 `origin/main` = 644d303 开出）。
