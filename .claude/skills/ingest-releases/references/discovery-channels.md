@@ -73,6 +73,9 @@
 | `openai.com/index/<slug>` 的内嵌 Vega 图表 | 渲染后 SVG 的 `aria-label` **只覆盖部分 mark**（2026-10-22 在 GPT‑Rosalind 页实测：20 个数据 mark 只暴露 15 个，其余 5 个无障碍文本缺失） | 以 RSC payload 的 `vegaLiteSpec.data.values` 为全集来源（`self.__next_f.push` 里解析），SVG 无障碍文本只作交叉校验；缺值时不要用柱体几何反推 |
 | **「页面有图表」⇒「正文无明文数值」（误判）** | 厂商发布文常把**图表图片与正文散文明文**混在同一页：图表给全貌与竞品对比，散文给自家模型的几个关键绝对分值。2026-10-26 实测 `mistral.ai/news/mistral-large-4/` 一页之内既有 2400×1582 的 WebP 大图，正文又明文印着 9 个绝对分值 | **判定顺序固定为：先剥 `<script>`/`<style>` → 在可见文本里正则找「数字 + %」→ 逐句读上下文确认这个数字属于哪个评测 → 再看是否另有图表。** 只有「可见文本里确实没有数值」才可判为纯图表。**第二十二批因此把 Mistral Large 4 建成 0 条 evidence 的 pending 档，直到第三十七批重扫才发现**——存量档位里 `benchmark_evidence: []` 且 release 级 `status:"pending"` 的条目应优先回看 |
 | `mistral.ai/news/*` 的 `dateModified` 字段 | **是全站重新生成的时间戳，不是该文的编辑时间**——2026-10-23 实测 `mistral-saba`、`mixtral-8x22b`、`codestral`、`mistral-3`、`le-chat-mistral` 五个页面的 `dateModified` 全是 `2026-10-08T13:46:xx`（相差数秒） | **不可当发布日或编辑日证据**；要日期只认 `datePublished`、RSS `pubDate`、正文印刷日或官方仓创建日。特别提醒：Mistral Saba 是 2025-02-17 的老模型，`dateModified=2026-10-08` 极易被误读成「阿拉伯语模型发布日」 |
+| **RSS `pubDate` 的 RFC-822 格式（`Mon, 26 Oct 2026 22:00:00 GMT`）** | 日期是「日-月-年」，不是 ISO 的「年-月-日」。只认 `YYYY-MM-DD` 的解析器会**把整条 RSS 的窗口内条目全部静默丢掉**——2026-10-26 实测 `openai.com/news/rss.xml` 的最新条目正是 `Mon, 26 Oct 2026 22:00:00 GMT`，若按 ISO 解析，GPT-6.1 Terra 这类窗口内新发布会整批漏检 | 解析 `pubDate` / `published` / `updated` 时**必须同时支持三种形状**：① `YYYY-MM-DD`（ISO）② RFC-822 `26 Oct 2026`（日-月-年）③ `October 26, 2026` / `Oct. 26, 2026`（月-日-年）。先统一归一化成 `YYYY-MM-DD` 再做窗口比较。**自检手段**：解析后必须打印「窗口内条目数」，若为 0 而 RSS 有上千条，说明日期解析错了而不是真没新发布 |
+| `docs.x.ai/docs/release-notes` 里的 `October 15, 2026` | 该页底部有 `Last updated: October 15, 2026`——这是**文档站整页的更新时间戳**，不是任何一条发布的日期 | 该页的发布条目按标题分组（`October 14` / `October 2` / `September 25` 等月份-日 形式），**只认分组标题**，页脚 `Last updated` 一律忽略 |
+
 
 | **本机无头 Chrome**（`/Applications/Google Chrome.app/Contents/MacOS/Google Chrome --headless=new --dump-dom`） | 2026-10-24 实测**完全不出内容**：`--dump-dom` 对 `https://example.com` 都返回 0 字节（`--headless=old`、`--user-data-dir`、`--virtual-time-budget` 三种组合全试过），`perl -e 'alarm N; exec @ARGV'` 强杀后 stdout 仍是空 | 别把时间耗在调无头 Chrome 参数上。改用「静态 GET + 站点自带通道」：sitemap.xml / RSS / 官方文档模型总表 / HF 官方组织 API / GitHub org API——本轮 12 家厂商的巡检全部靠这些静态通道完成 |
 | **内置浏览器（`mcp_browser`）读页面** | `open_tab` 正常（能拿到标题与 URL），但 `query`（kind=text / dom / selector）与 `screenshot` 在重页面上**每次都撞满 275s 超时**（x.ai/news、seed.bytedance.com/en/blog/、x.ai/sitemap.xml 全如此）；`inspect` 在 x.ai/news 上 4s 返回但只有 1 个元素（页面没 hydrate） | 浏览器只适合「确认页面存在」，**不适合当取数通道**。取数走静态 HTTP 通道；浏览器单次调用超时要按 275s 预算规划，一轮别超过 2 次 |
@@ -93,6 +96,19 @@
 
 判据是「数值是否已写成可机读的 DOM 结构」，不是「长不长得像图」——柱状图、散点图、雷达图都可能是第 1 类。
 **注意**：README「抽取口径」一节现写的是「图片/图表行必须 pending」，字面上可被读成「凡图表一律 pending」；近三批对 DOM 机读图表（xAI SVG 文本、OpenAI vega、Mistral data-value）均按「DOM 明文」记 `verified`。口径措辞是否要收敛，属账本口径变更，需人工裁定后再改，本技能不擅改。
+
+## 官方模型仓 README 原文可直接取（markdown 表格 = 真表格，逐格可机读）
+
+Hugging Face 官方模型仓的 README **原文**可以绕过 SPA 直接取，优先级高于爬仓页 HTML：
+
+- 原文：`https://huggingface.co/<org>/<repo>/raw/main/README.md`（2026-10-26 实测 `tencent/Hy-SimulMT-30B-A3B` 直出 23 KB markdown）
+- 仓内图片：`https://huggingface.co/<org>/<repo>/resolve/main/assets/<file>`（同仓 `assets/` 下的评测图可直接归档）
+
+拿到 markdown 后有三条通用价值：
+
+1. **表格是真表格**（第 3 类，见上节）：`| API / Model | FLEURS | CoVoST2 | ACL6060 | RealSI-Sentence |` 这类多列对比表逐格可机读转录，**按「取自家模型列、竞品列进 notes」建行**，不需要读图。
+2. **发布日优先取仓内 News 节的印刷日**，而不是仓 `createdAt`：`tencent/Hy-SimulMT-30B-A3B` 的 HF `createdAt` 是 2026-10-22（权重与代码先落地），但模型卡 News 节写明「**2026.10.26 | Release**: …」，发布日取 **2026-10-26**；两者相差 4 天，`createdAt` 只能当「权重上线日」的旁证。
+3. **厂商加粗规则要读懂**：模型卡常见「自家整行加粗 + 各列最高分另加粗」的双重加粗。2026-10-26 实测 `tencent/Hy-SimulMT-30B-A3B` 的表注写明「The entire Hy-SimulMT row is bolded to highlight our model; other bolded values indicate the highest score in the corresponding column」——所以**自家行加粗 ≠ 自家每列都最高**（该表 CoVoST2 一列最高是 Qwen3.8-LiveTranslate 82.1，Hy-SimulMT 只有 75.5）。读表时必须逐列看哪个数被单独加粗。
 
 ## 客户案例页（customer story）也可能带明文评测数值
 
