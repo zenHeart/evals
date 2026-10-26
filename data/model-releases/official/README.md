@@ -1979,3 +1979,61 @@ Muse 页面的图表已归档到 `models/2026-10-12-muse-wonder/images/` 与
 - **待人工核验**：遗留 32 条 pending 仍为官方图片评测表 / 无分数项（Kimi K3.1 Pro 官方图片评测表 28 行、Hy-Nomas-Bench 4 行），按纪律**不做视觉转写**、不填数值。本批新增 18 条全为**正文明文**，不涉及读图，不进 pending 清单。
 - **门禁**：`node scripts/reconcile-coverage.mjs` 通过；`npm test` 19/19 通过；`node scripts/validate-data.mjs` PASS（taxonomy 9 类 / vendors 16 / benchmarks 477 / releases 203（official 189）/ evidence edges 3223）；`npm run build` 全链通过（`sync:skills:check` + `validate` + `build:epub:official` 484 KB + `build:web` 720 URL / 477 实体页 + 154 auto-evidence 页 + `validate:site` 908 HTML / 39245 内部引用 / 254 时间线 / 2145 事件卡）。
 - **分支**：`model-release-daily-20261025T231917Z`（自 `origin/main` = `a31e154` 开出）。
+
+## 第三十七批（2026-10-26 增量窗口 2026-10-10 ~ 2026-10-26）
+
+- **窗口**：增量窗口 2026-10-10 ~ 2026-10-26（检查点锚点 `last_max_release_date=2026-10-24` 回退 14 天重叠）。检查点回写 `last_scan_at=2026-10-26`（UTC）、`last_max_release_date` **维持 2026-10-24**（本批未新增 release 条目，锚点不前进也不回退）。
+- **窗口结论**：增量窗口内**确无新的官方模型发布**——窗口内 16 家厂商的发布已由第二十八~三十六批全部建档（账本内最大 `release_date` 仍为 2026-10-24 的 Kimi K3.1 Pro）。本批**不新建 release 条目**，改为一处**存量漏判补录**。
+- **本批新增 evidence：10 条 = 10 verified + 0 pending**（全部 `source_kind: official_release_blog`、`source_tier: A`、`evidence_type: text`、`comparison_scope: only_same_protocol`）
+  - **发现方式**：本批按窗口逐条重读官方通道后，又做了一遍**「归档页 vs 账本」交叉对账**（把 `models/*/page.html` 的可见文本里带「数字 + %」的句子逐句抽出来，与该 release 账本里已有的 `reported_score.value` 比对，凡账本里查无此值者列为候选）。这条对账路径在**前 36 批从未跑过**，本批一次命中一处真实漏判。
+  - **漏判本体**：`mistral/mistral-large-4`（发布日 2026-10-06）在第二十二批建档时，`benchmark_evidence` 为**空数组**、release 级 `status` 记 `pending`，归档 `index.md` 与 `manifest.json` 的结论写的是「官方发布文评测全部为 WebP 图片图表，未在正文中披露离散数字表格」。
+  - **复核结论：该结论有误**。按本仓**已归档的同一篇原文**（`models/2026-10-06-mistral-large-4/page.html`，sha256 `9128cfb2…`）复核，该页把**图表图片与正文散文明文**两种呈现形式混在同一页：既有 `/_astro/*.webp` 的 2400×1582 评测大图，正文段落里又明文印着 9 个绝对分值。数值全部位于可见正文（`<p class="text-body-large">`）内，非脚本载荷、非图片读数。
+  - **补录的 10 条 evidence**（release_id=`mistral-large-4`，model_id=`mistral-large-4`）：
+    - `mistral-mistral-large-4--aa-cyber-index` → **82%**（`benchmark_variant` = "reproduce-and-patch 子项（指数内单项，非指数总分）"）
+    - `mistral-mistral-large-4--cybench` → **93%**（pass@1, overall, 40 项挑战）
+    - `mistral-mistral-large-4--deepswe` → **61.7%**（v1.1）
+    - `mistral-mistral-large-4--swe-atlas-codebase-qna` → **59.4%**
+    - `mistral-mistral-large-4--terminalbench` → **28.3%**（4.0）
+    - `mistral-mistral-large-4--aa-coding-agent-index` → **49.8%**
+    - `mistral-mistral-large-4--automationbench` → **59.9%**
+    - `mistral-mistral-large-4--dense200` → **42%**
+    - `mistral-mistral-large-4--dense200-gpt-6-astra` → **41%**（`attribution_type: comparison_cited`，同句印出的竞品 GPT-6-Astra 分，单列一行）
+    - `mistral-mistral-large-4--lakera-b3` → **93.3%**（`metric` = `attack-resistance-rate`，**方向为「攻击抵抗率」越高越好**，勿反读成攻击成功率）
+  - **口径要点**：① AA Cyber Index 的 82% 是该指数**下的一项测试**（复现真实漏洞并打补丁），**不是指数总分**——指数总分只有官方图片图表，未印明文数值，故只记该分项并在 `benchmark_variant` 与 `notes` 里写明；② 该页另说明多家闭源模型因安全护栏拒答而在同一测试上接近零分，已写进 notes 供读者判读；③ 三处竞品对照（Coding Agent Index 对 DeepSeek V4 Pro 0813 / Qwen3.8 Max；AutomationBench 对 Kimi K3 / MiMo-V2.6-Pro / DeepSeek V4 Pro）**只印名次关系未印数值**，按口径不另建 `comparison_cited` 行；④ 官方正文**未明示任何评测协议**（harness / tools / 推理强度 / 温度 / 跑次数），`protocol` 12 键一律 `null`，未做推测；⑤ Dense 200 的 41% 是同句印出的竞品分，按「竞品独立明文引用」口径单列一行而非并入自家行。
+  - **对既有 release 文件的唯一改动**：`data/model-releases/official/mistral/mistral-large-4.json` 追加上述 10 条 evidence（0 → 10）＋ 1 条 `revisions[]` 记录（`field: benchmark_evidence`，写明「仅追加、未改任何既有行、数值与状态」）＋ release `notes` 末尾补一句来源说明＋ release 级 `status` 由 `pending` 改为 `verified`（已存在 verified 行）＋ `models[0].capability_summary` / `key_traits` 改写为读者语言（原文写着「官方评测均为图表图片，未披露 DOM 离散打分表」，与补录事实相反，必须改）。**未改动任何既有 evidence 行**（本批前该文件一条 evidence 都没有）。
+  - **归档同步修正**：`models/2026-10-06-mistral-large-4/index.md` 增补「勘误（2026-10-26 第三十七批）」节与「正文明文绝对分值」转录表；`manifest.json` 的 `index.md` sha256 重算、`limitations` 改为如实描述（原文是「只有图片图表」→ 现为「图表与正文明文两种形式并存，已补录明文部分，其余图表项未转录」）。`page.html` 未改，sha256 不变。
+- **新 benchmark id：2 个（均已同步建实体，含 `summary` / `interpretation` / `measures` / `does_not_measure` / `dataset` / `metrics` / `versions` / `limitations` / `official_sources`）**
+  - `aa-cyber-index`（Artificial Analysis Cyber Index）
+  - `lakera-b3`（Lakera B3 AI Security Benchmark）
+  - 两个实体的 `interpretation` 都写成读者能懂的口径提醒（前者强调「分项 ≠ 指数总分」，后者强调「抵抗率越高越好，别反读」）。
+- **新厂商**：无。
+- **逐厂商巡检（窗口 2026-10-10 ~ 2026-10-26）**
+  - **OpenAI**：官方 `news/rss.xml` 1318 条，窗口内 31 条逐条看过；其中 17 个带评测数值嫌疑的页面逐页取全文核对，**只有 `terminal-x`（10-20，第三十五批已入库）与 `low-resource-programming-languages`（10-19，第三十六批已入库）确有明文绝对分值**，其余为业务指标/客户案例效率数字（如 Block 安全团队 triage 吞吐 +50%、Decisions API 4× 提速 30% 降价），非模型评测分值，不建行。`previewing-gpt-5-6-sol` companion 页重新取到（1.98 MB）复核：只含 ExploitBench / ExploitGym 的定性对比与缓存计费条款，**无新增明文分值**，README 待核验清单第 4 项维持原状。
+  - **Anthropic**：newsroom 内嵌 JSON 解析出 24 篇带 `publishedOn` 的文章，窗口内最新为 2026-10-22（`donating-agent-skills-to-the-agentic-ai-foundation` / `open-call-guest-investigators-life-sciences`），均为公告与生态事项，**无新模型发布**。`platform.claude.com/docs/en/models/overview` 的 RSC payload 机读出在架 4 个模型（Haiku 5.5 = 2026-10-07 / Sonnet 5.5 = 2026-09-28 / Opus 5.5 = 2026-09-22 / Fable 5.1 = 2026-09-01），**全部已建档**；页面顶部那个「October 26, 2026」是 featured-grid 的**页面级日期**（对应条目仍是 9 月 22 日的 Opus 5.5），不是新文章发布日期。`anthropic.com/rss.xml` 静态 GET 仍 404。
+  - **Mistral**：官方 RSS 92 条，最新为 2026-10-21（NVIDIA 合作）；changelog 最新条目 2026-10-22（Z.ai GLM 5.3 Flash 上架，第三方模型可售公告，不建档）。**本批的主要产出来自此厂商**：重读 `mistral-large-4` 归档页发现正文明文分值（见上）。
+  - **Google**：`deepmind.google/blog/rss.xml` 100 条 + `blog.google/innovation-and-ai/rss/` 20 条 + developers-tools RSS，窗口内条目均为已建档模型或生态/研究文章，**无新发布**；`deepmind.google/models/gemini|gemma/` 在架为 Gemini 4 Argon 与 Gemma 4 系列，已建档。
+  - **xAI**：`/news/<slug>` 直取 JSON-LD `datePublished`，本轮核过 `grok-4-7`(2026-09-21)、`grok-voice-3`(2026-10-14)；探测 `grok-4-8` / `grok-5` / `grok-5-1` / `grok-voice-4` / `grok-code-fast-2` / `grok-imagine-image-2-0` / `grok-imagine-video-2` / `grok-4-6-1` / `grok-reasoning-2` **全部 404**，**无新发布**。`docs.x.ai` 模型总表仍以 grok-4.7 为旗舰（已建档）。
+  - **Meta**：`research.meta.ai/blog` 窗口内 3 篇——`muse-wonder`(10-12，已建档)、`developing-capable-models-responsibly`(10-14，研究方法文章)、`accelerating-scientific-research-in-health-data-science-with-muse-models`(10-15，基于已建档 Muse 模型的研究文章)，**无新发布**；另核 `introducing-muse-spark-meta-model-api`(2026-07-09) 与 `introducing-muse-code-and-muse-spark-1-2`(2026-08-05)，**均在增量窗口之外**，属存量回填缺口，本批不越窗建档。
+  - **DeepSeek**：官方 `/updates` 通道窗口内最新仍为 2026-10-17（DeepSeek-V4.1-Flash-1017，已建档），**无新发布**。
+  - **MiniMax**：`platform.minimax.io/docs/release-notes/models` 窗口内唯一条目仍是 Oct. 19, 2026 / MiniMax M3.1 Flash（已建档）；`minimax.io/news` 的 JSON-LD `dateModified` = 2026-10-26T01:06:55Z 是**全站重新生成时间戳**（沿用既有记录，不可当发布日），**无新发布**。
+  - **Kimi**：官方博客列表页窗口内唯一新模型仍是 Kimi K3.1 Pro（10-24，已建档）；`whats-new` 页无新条目；官方 HF 组织 `moonshotai` 窗口内 0 新仓。
+  - **Qwen**：官方 `Qwen` HF 组织窗口内 0 新仓（最新 `Qwen-Image-2.1-Turbo` 2026-10-09，已建档）；GitHub `QwenLM` 窗口内新建仓仅基准仓；`qwen.ai/sitemap.xml` 仍是 SPA HTML 而非 sitemap（既有障碍记录成立），按既有替代通道巡检。
+  - **豆包**：官方 `seed.bytedance.com/sitemap.xml` 35 条 URL 全量比对，窗口内唯一新 URL 仍是招聘贴，**非模型发布**；全部模型发布文 lastmod ≤ 2026-09-28，均已建档。
+  - **小米 MiMo**：官方 `mimo.xiaomi.com` + `/blog` 路由窗口内 0 篇新发布。
+  - **腾讯混元 / 微信视觉**：官方 HF 组织窗口内 8 个新仓逐个核对——`Hy-Nomas-Diffusers`(10-24，第三十四批已登记为官方衍生仓)、`WeVisOne-VL-4B` / `-2B`(10-22，已建档)、`Hy-Nomas`(10-21，已建档)、`Hy-Memory-30B-A3B`(10-15，已建档) 及其 FP8 / GGUF 量化衍生件、`Qwen3-8B-DSpine-b16`(10-16，投机解码 drafter 研究产物)；GitHub `Tencent-Hunyuan` 窗口内新建仓均为基准/研究产物，**无新发布**。
+  - **StepFun**：官方 `platform.stepfun.com/docs/sitemap.xml` 的 `lastmod` 仍是站点重建戳（多数条目同为 2026-10-21）；`platform.stepfun.com/docs/zh/guides/models/step-5-preview.md` 直取可读，在架模型 Step 5 Preview / Step 3.7 Flash / Step 3.5 Flash / StepAudio 3 系列，**窗口内无新发布**；HF `stepfun-ai` 窗口内唯一新仓 `Step-5-Preview-NVFP4`(10-14) 是已建档 `step-5-preview` 的量化衍生件，不另建档。
+  - **智谱 GLM**：官方 `z.ai/blog` 静态 GET 仍 404；官方 `zai-org` HF 组织窗口内 0 新仓（最新 2026-08-25）；`docs.z.ai` 在架 GLM-5.3 / GLM-5.3-Flash / GLM-5.2 均已建档，**无新发布**。按 partial 记。
+  - **Microsoft**：`microsoft.ai/blog/` / `/models/` / `/feed/` 本轮**全部 403 Cloudflare 挑战页**（第三十六批曾恢复 200，命中不稳定，与既有记录一致），官方 HF 组织窗口内 0 新仓、GitHub org 窗口内 0 新仓，**无法独立巡检公告通道**，按 partial 记，不声称穷尽。
+- **入口扫描结果**：本批 `scan.mjs --write` 结果已落盘 `data/model-coverage.json`（`last_scan_at=2026-10-26T01:01:54.214Z`）；`microsoft.ai/blog/` 与 `/models/` 由上一轮的 `partial` 降为 `inaccessible`（HTTP 403），其余通道状态与上一轮一致。候选数 560 未变；`mistral-large-4` 候选的 `evidence_status` 由 `not_reported` 翻为 `reported`（本批补录的直接影响）。
+- **跳过清单**
+  - **Mistral 官方图表项**（CyberGym-E2E、AA-Briefcase、Finance Agent v2 / FinWorkBench、Harvey's Legal Agent、ChartQA Pro、GDP.pdf、Science and Math、Surge AI 盲评 1–5 分制）——只有图片或无数值表述，**不做视觉转写、不建行、不填数值**。
+  - **AA Cyber Index 总分**——只有官方图片图表，未印明文数值，**不建行**（本批只记其分项 82%）。
+  - **Meta `introducing-muse-spark-meta-model-api`(2026-07-09) 与 `introducing-muse-code-and-muse-spark-1-2`(2026-08-05)**——官方发布文可取且已核到发布日期，但在增量窗口之外且账本无对应条目，属存量回填缺口，本批不越窗建档。
+  - **StepAudio 3 系列**（阶跃星辰）——官方文档与技术报告（arXiv 2609.12945 = 2026-09-11）均可取且含明文评测数值，但发布日期在增量窗口之外且账本无此条目，属存量回填缺口，本批不越窗建档。
+  - **xAI `grok-imagine-image-2.0`（2026-08-07）与 `grok-imagine-video-1.5`（2026-06-16）**——官方发布文可取且已核到发布日期，但在增量窗口之外且账本无此条目，属存量回填缺口，本批不越窗建档。
+  - **OpenAI 业务指标类数字**（Block triage 吞吐 +50%、Decisions API 4× 提速 / 30% 降价、Third Moment 10,000 agents 36+ 小时等）——客户案例的效率/成本数字，非模型评测分值，不建行。
+  - **Microsoft 窗口内无新发布**——官方博客通道本轮不可巡检（403），按 partial 记。
+- **待人工核验（沿用第三十三~三十六批结论，本批未动）**：遗留 32 条 pending 仍为官方图片评测表 / 无分数项（Kimi K3.1 Pro 官方图片评测表 28 行、Hy-Nomas-Bench 4 行），按纪律**不做视觉转写**、不填数值。本批新增 10 条全为**正文明文**，不涉及读图，不进 pending 清单。
+- **渠道地图回写**：本批把「图表页也可能同时含正文明文分值」这条教训写回 `.claude/skills/ingest-releases/references/discovery-channels.md`（Mistral 行 + 「已知抓取障碍」表新增一行），并执行 `npm run sync:skills` 同步镜像，`sync:skills:check` 零漂移通过。
+- **门禁**：`node scripts/reconcile-coverage.mjs` 通过；`node --test tests/*.test.mjs` 19/19 通过（含「本批官方归档文件与 manifest 哈希一致」）；`node scripts/validate-data.mjs` PASS（taxonomy 9 类 / vendors 16 / benchmarks 479（+2）/ releases 203（official 189）/ evidence edges 3233（+10））；`npm run build` 全链通过（`sync:skills:check` + `validate` + `build:epub:official` 484 KB + `build:web` 722 URL / 479 实体页 + 154 auto-evidence 页 + `validate:site` 910 HTML / 39356 内部引用 / 256 时间线 / 2154 事件卡）。
+- **分支**：`model-release-daily-20261026T010000Z`（自 `origin/main` = `a4363ea` 开出）。
