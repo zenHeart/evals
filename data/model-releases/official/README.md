@@ -2037,7 +2037,6 @@ Muse 页面的图表已归档到 `models/2026-10-12-muse-wonder/images/` 与
 - **渠道地图回写**：本批把「图表页也可能同时含正文明文分值」这条教训写回 `.claude/skills/ingest-releases/references/discovery-channels.md`（Mistral 行 + 「已知抓取障碍」表新增一行），并执行 `npm run sync:skills` 同步镜像，`sync:skills:check` 零漂移通过。
 - **门禁**：`node scripts/reconcile-coverage.mjs` 通过；`node --test tests/*.test.mjs` 19/19 通过（含「本批官方归档文件与 manifest 哈希一致」）；`node scripts/validate-data.mjs` PASS（taxonomy 9 类 / vendors 16 / benchmarks 479（+2）/ releases 203（official 189）/ evidence edges 3233（+10））；`npm run build` 全链通过（`sync:skills:check` + `validate` + `build:epub:official` 484 KB + `build:web` 722 URL / 479 实体页 + 154 auto-evidence 页 + `validate:site` 910 HTML / 39356 内部引用 / 256 时间线 / 2154 事件卡）。
 - **分支**：`model-release-daily-20261026T010000Z`（自 `origin/main` = `a4363ea` 开出）。
-
 ## 第三十八批（2026-10-27 增量窗口 2026-10-10 ~ 2026-10-26）
 
 - **窗口**：增量窗口 2026-10-10 ~ 2026-10-26（检查点锚点 `last_max_release_date=2026-10-24` 回退 14 天重叠）。检查点回写 `last_scan_at=2026-10-26`（UTC）、`last_max_release_date` 由 **2026-10-24 前进到 2026-10-26**（本批新增 2 条 release 条目，锚点随之前进）。
@@ -2095,3 +2094,58 @@ Muse 页面的图表已归档到 `models/2026-10-12-muse-wonder/images/` 与
   ① **RSS `pubDate` 必须是 RFC-822 格式**（`Mon, 26 Oct 2026 22:00:00 GMT`，日-月-年）——只认 ISO 的解析器会把整条 RSS 的窗口内条目**静默全丢**，本批的 GPT-6.1 Terra 正是在这条上差点漏检；自检手段是「窗口内条目数为 0 时先怀疑日期解析」。② `docs.x.ai/docs/release-notes` 的 `Last updated: October 15, 2026` 是**整页时间戳**、只认分组标题。③ 新增「官方模型仓 README 原文可直接取」一节——`https://huggingface.co/<org>/<repo>/raw/main/README.md` 直出 markdown（表格 = 真表格，逐格可机读）、仓内 `assets/` 图片可从 `/resolve/main/assets/<file>` 直取、**发布日优先取仓内 News 节印刷日**（Hy-SimulMT 的 HF `createdAt` = 2026-10-22，官方 News 节 = 2026.10.26，相差 4 天），并记下厂商「自家整行加粗 + 各列最高分另加粗」的读表规则。
 - **门禁**：`node scripts/reconcile-coverage.mjs` 通过；`node --test tests/*.test.mjs` **19/19 通过**（含「本批官方归档文件与 manifest 哈希一致」）；`node scripts/validate-data.mjs` **PASS**（taxonomy 9 类 / vendors 16 / benchmarks 482（+3）/ releases 205（official 191，+2）/ evidence edges 3246（+13））；`npm run build` 全链通过（`sync:skills:check` + `validate` 32 章 / 219 条 numeric-claim warning 为存量不阻断 + `build:epub:official` 484 KB / `build:web` 727 URL + 482 实体页 + 154 自动证据页 + `validate:site` 915 HTML / 39562 内部引用 / 258 时间轴 / 2168 事件卡）。
 - **分支**：`model-release-daily-20261026T231930Z`（自 `origin/main` = `0a9686d` 开出，隔离 worktree `C:\Users\cheng\code\github\.worktrees\evals\model-release-daily-20261026T231930Z`）。
+## 第三十九批（2026-10-27 增量窗口 2026-10-10 ~ 2026-10-27）
+
+- **窗口**：增量窗口 2026-10-10 ~ 2026-10-27（检查点锚点 `last_max_release_date=2026-10-24` 回退 14 天重叠）。检查点回写 `last_scan_at=2026-10-27`（UTC）、`last_max_release_date` 由 2026-10-24 **前进到 2026-10-27**（本批新增 release 发布日为 2026-10-27）。
+- **窗口结论**：窗口内确有 **2 个新的官方模型发布**——**Google DeepMind Genie 4**（2026-10-27，官方**未发布任何评测数值**）与 **Microsoft AI MAI Image 2.7**（2026-10-27，官方只给**名次与相对差**、无绝对分值）；另从 OpenAI 官网 2026-10-27 客户案例文章中捞到 **1 套客户自建评测（Retell vCX）的明文绝对分值**，覆盖 4 个既有 release。
+- **本批新增 release：2 个**
+  - `google/genie-4`（Genie 4，2026-10-27）——**0 条 evidence**，release `status: pending`。日期三源互证（页面印刷日 / JSON-LD `datePublished=2026-10-27T16:13:00+00:00` / DeepMind 官方 RSS `pubDate`）；官方发布文与 Genie 4 模型页**通篇无任何评测名称与分数**（可见文本正则核对：百分比命中 0 处、`<table>` 0 处、数字+单位 0 处、图表数值 0 处），按「无数值不臆造、无评测名称不硬挂」不建任何 evidence 行。归档 `models/2026-10-27-genie-4/`。
+  - `microsoft/mai-image-2-7`（MAI Image 2.7，2026-10-27）——**1 条 evidence（配图行，pending）**，release `status: pending`。官方发布通告只给名次与相对差：正文「在全部 10 个使用场景与 7 类编辑动作上优于 MAI-Image-2.6」「场景与风格类领先次优模型 **24 Elo**」；配图（两张内联 SVG）给出 Artificial Analysis Image Arena（AA-Image-Editing v2.1）总榜第 2 名与分类名次爬升（推理式编辑 7→1、场景与风格 7→1、文字或符号编辑 6→1，Evaluated 22 Oct 2026）。**页面未印任何绝对 Elo 数字或百分比**，故唯一一条 evidence 记 `evidence_type: figure`、`reported_score.value: null`、`score_status: not_extracted`、`status: pending`，视觉转写值只进 notes。归档 `models/2026-10-27-mai-image-2-7/`（含解码后的两张原始 SVG 图表）。
+- **本批新增 evidence：7 条 = 3 verified + 4 pending**
+  - **verified 3 条（正文明文绝对值，全部 `source_kind: official_release_blog` / `source_tier: A` / `attribution_type: third_party_reported` / `benchmark_id: retell-vcx`）**：来源为 OpenAI 官网 2026-10-27 客户案例文章《Retell uses OpenAI models to help power 100M monthly calls》，披露语音 AI 公司 Retell AI 自建 **vCX benchmark** 的成绩——
+    - `openai-gpt-6-astra--retell-vcx-instruction-following` → **89.7%**（vCX 2026-10-13 批次指令遵循率，GPT-6 Astra 排名第一；配图柱状图同值互证）
+    - `openai-gpt-5-5--retell-vcx-non-hallucination-rate` → **88.0%**（GPT-6 Astra 发布前评测批次，开推理）
+    - `openai-gpt-5-5--retell-vcx-tool-call-correctness` → **88.3%**（同批次，开推理）
+  - **pending 4 条（数值只在配图里，按纪律不自动翻 verified，视觉转写值只进 notes）**：
+    - `openai-gpt-5-5--retell-vcx-instruction-following` → 视觉转写 **85.6%**
+    - `openai-gpt-6-1-sol--retell-vcx-instruction-following` → 视觉转写 **88.5%**
+    - `openai-gpt-6-sol-and-luna--retell-vcx-instruction-following` → 视觉转写 **86.2%**
+    - `microsoft-mai-image-2-7--artificial-analysis-image-arena` → Artificial Analysis Image Arena 总榜**第 2 名**（名次非分值，值留空）
+  - 覆盖既有 release：gpt-6-astra(8→9)、gpt-5-5(128→131)、gpt-6-1-sol(10→11)、gpt-6-sol-and-luna(21→22)。四个文件均只**追加** evidence 行 + 追加 1 条 `revisions[]` + release `notes` 末尾补一句来源说明，**未改动任何既有行、数值、status 与 locator**。
+  - 口径要点：① Retell vCX 由客户自建自跑自报、OpenAI 官网转载，故记 `third_party_reported`（不计厂商自报）；② 竞品列只给相对结论（Gemini-3.1-Pro、Claude-4.6 在两项上均低于 GPT-5.5，无绝对值），只写进 notes，**不建 comparison_cited 行**；③ 图表 Top 5 中的 Claude-5.5 Opus 83.8% 同理只进 notes；④ 页面数字分属**不同批次**（2026-10-13 指令遵循率榜单 vs GPT-6 Astra 发布前的两批次），不可当同一张表读；⑤ 客户运营指标（100M+ 月通话、80%+ 解决率、1 万亿 tokens、每员工 160 万美元营收、Anker 80.4% 与 NPS 63）**不入账本**；⑥ 官方未明示题集、样本量与评分细则，协议字段除 `harness` / `reasoning_effort` / `judge`（页面明示）外一律 null。
+- **新 benchmark id：2 个（均已同步建实体，含 `summary` / `interpretation` / `measures` / `does_not_measure` / `dataset` / `metrics` / `versions` / `limitations` / `official_sources`）**
+  - `retell-vcx`（Retell vCX Benchmark，categories=[agent]）——interpretation 写明读法、当前水位与四条口径提醒（客户自建不可横向比较、批次不同不可对齐、题集未公开）。
+  - `artificial-analysis-image-arena`（Artificial Analysis Image Arena，categories=[preference]）——interpretation 写明「名次是相对量、绝对 Elo 不公开、版本即口径、分类名次 ≠ 总榜名次」。
+- **新厂商**：无。
+- **逐厂商巡检（窗口 2026-10-10 ~ 2026-10-27）**
+  - **OpenAI**：官方 `news/rss.xml` 1331 条，窗口内 10 条逐条看过 → `introducing-gpt-6-1-terra`(10-26，已在**未合并的 PR #30（第三十八批）**建档，本批不重复建档)、`gpt-6-1-sol-coderabbit-code-security`(10-26，纯定性)、`greptile-code-review-codex-astra`(10-26，纯定性)、`check-point-daybreak`(10-27，纯定性)、`fanatics-streamline-fan-experience`(10-27，仅 10% 互动率业务指标)、**`retell-ai`(10-27，含明文绝对分值 → 本批建档)**，其余为产品公告、事件报告与研究文章，**非模型发布**。
+  - **Google**：`deepmind.google/blog/rss.xml` 100 条 + `blog.google` 系列 RSS → 窗口内唯一新模型发布即 **Genie 4**(10-27，已建档)；另 8 条为 Gemini 4 Argon 演示、AI Quest 脑图研究、Fitbit / 电网 / 农业 / 退伍军人等非模型内容；`deepmind.google/models/gemini|gemma/` 在架均已建档。
+  - **Microsoft**：`microsoft.ai/news/` 本轮可访问（此前批次为 403），扫出 **MAI Image 2.7**(10-27，已建档)；官方 HF `microsoft` 组织窗口内唯一新仓 `CogACT-v2-RoboDojo`(10-25) 是机器人研究检查点（沿用 CogACT-v1 先例，非 MAI/Phi 产品发布）；GitHub org 窗口内新建仓均为工具/样例（FoundryX、Visio-Desktop-MCP-Server、amplifier-* 等）；官方博客列表页为客户端渲染，静态文本读不到条目 → 按 partial 记，不声称穷尽。
+  - **Mistral**：官方 RSS 92 条窗口内 0 条；changelog 2026-10-22 的 Z.ai GLM 5.3 Flash 是第三方模型上架公告（该 release 已在库）、2026-10-20 的 Voxtral 3 家族已建档 → 无新发布。
+  - **xAI**：`/news/<slug>` 探测 grok-4-8 / grok-5 / grok-5-1 / grok-5-2 / grok-voice-4 / grok-code-fast-2 / grok-imagine-image-2-0 / grok-imagine-video-2 / grok-4-6-1 / grok-reasoning-2 **全部 404**；`docs.x.ai/docs/models` 在架 grok-4.7 / grok-4.20 / grok-4.6 / grok-4.5 / grok-4.3 全部已建档；`grok-code-fast-1` / `grok-build` / `grok-imagine-image` 文档页最新日期为 2026-08-17 / 2026-09-21 / 2026-03-02，**在增量窗口之外**，属存量回填缺口，本批不越窗建档 → 无新发布。
+  - **Anthropic**：`www.anthropic.com/news` 200 但 `publishedOn` 解析窗口内 0 篇；`anthropic.com/rss.xml` 仍 404；沿用既有结论（在架 Opus 5.5 / Sonnet 5.5 / Haiku 5.5 / Fable 5.1 均已建档）→ 按 partial 记，不声称穷尽。
+  - **Meta**：`research.meta.ai/blog` 200，窗口内标题列表仍是 Muse 家族已建档条目（Muse Wonder / Muse Spark Open / Muse Spark 1.3 / Muse Voice Transcribe / Muse Glimmer / Muse Image·Video 等）→ 无新发布。
+  - **DeepSeek**：`api-docs.deepseek.com/updates` 200（客户端渲染，静态文本窗口内 0 条日期）、官方 news feed 0 条 item → 沿用既有结论（最新 2026-10-17 DeepSeek-V4.1-Flash-1017 已建档），按 partial 记。
+  - **MiniMax**：`platform.minimax.io/docs/release-notes/models` 200（597 KB，日期客户端渲染，静态文本 0 条）；沿用既有结论（最新条目 Oct. 19, 2026 / MiniMax M3.1 Flash 已建档），`minimax.io/news` 的 `dateModified` 是全站重生成戳，**不可当发布日** → 无新发布。
+  - **Kimi**：官方博客 RSS 窗口内唯一新模型仍是 Kimi K3.1 Pro(10-24，已建档)；官方 HF `moonshotai` 窗口内 0 新仓 → 无新发布。
+  - **Qwen**：官方 HF `Qwen` 组织窗口内 0 新仓；GitHub `QwenLM` 窗口内新建仓仅 `BabelArena`(10-22，**基准仓非模型发布**)；`qwen.ai/sitemap.xml` 仍是 SPA HTML，按既有替代通道巡检 → 无新发布。
+  - **豆包**：官方 `seed.bytedance.com/sitemap.xml` 35 条 URL 全量比对，最大 lastmod 2026-10-14，窗口内 0 条 → 无新发布。
+  - **小米 MiMo**：`mimo.xiaomi.com` 与 `/blog` 均 200，窗口内 0 条日期 → 无新发布。
+  - **腾讯混元 / 微信视觉**：官方 HF `tencent` 组织窗口内唯一新仓 `Hy-Nomas-Diffusers`(10-24，第三十四批已登记为官方衍生仓)；GitHub `Tencent-Hunyuan` 窗口内新建仓 `Hy-SimulMT`(10-22，已在**未合并的 PR #30** 建档)、`Hy-Nomas`(10-21，已建档) → 无新发布。
+  - **StepFun**：官方 docs sitemap 148 条 URL 的 lastmod 全为 2026-10-27T03:13 站点重建戳（与既有记录一致）；`step-5-preview.md` 直取 200，在架 Step 5 Preview / Step 3.7 Flash / Step 3.5 Flash 均已建档；HF `stepfun-ai` 窗口内 0 新仓 → 无新发布。
+  - **智谱 GLM**：`z.ai/blog` 仍 404；`docs.z.ai` 在架 GLM-5.3 / GLM-5.3-Flash / GLM-5.2 均已建档；HF `zai-org` 窗口内 0 新仓 → 无新发布，按 partial 记。
+- **入口扫描结果**：本批 `scan.mjs --write` 结果已落盘 `data/model-coverage.json`（`last_scan_at=2026-10-27T23:21:13.933Z`，候选 569 → 570）；`reconcile-coverage.mjs` 已把本批新增 release 补进候选（`release-genie-4`、`release-mai-image-2-7`，`evidence_status` 分别为 `not_reported` 与 `not_extracted`）。本轮新扫出的 3 个 `general/vertical` 候选已按口径归类：Terra 候选标 `excluded`（已在未合并的 PR #30 建档，避免同名 release 冲突）、CodeRabbit 候选标 `excluded`（客户案例无数值）、MAI Image 2.7 候选挂到本批 release。
+- **跳过清单**
+  - **OpenAI 业务指标类数字**（Fanatics 10% 互动率、Retell 100M 月通话 / 80%+ 解决率 / 1 万亿 tokens / 每员工 160 万美元营收、Anker 80.4% 解决率与 NPS 63）——客户运营指标而非模型评测分值，不建行。
+  - **OpenAI 纯定性客户案例**（CodeRabbit、Greptile、Check Point Daybreak）——通篇无数值，不建行。
+  - **Retell vCX 竞品列**（Gemini-3.1-Pro、Claude-4.6、Claude-5.5 Opus 83.8%）——页面只给相对结论或仅见于配图，且非自家模型列，只写进 notes，不建行。
+  - **MAI Image 2.7 的绝对分值**——官方页面**未印任何 Elo 数字或百分比**，只有名次与相对差；「场景与风格领先次优 24 Elo」属相对差，不建行，只写 notes。
+  - **OpenBMB MiniCPM-OCR-1.0 / MiniCPM-OCR-Jev 及其量化衍生件**（HF 2026-10-25 ~ 2026-10-26）——OpenBMB **不在在册 16 家厂商内**，接入属「新增厂商接入」（需注册 + 真实彩色 logo + LOGO_EXT 登记），按任务边界留人工决策，本批不建档。
+  - **NVIDIA Metatron-v1**（HF 2026-10-27）——NVIDIA 不在在册厂商内，沿用第三十二批先例不建档。
+  - **microsoft/CogACT-v2-RoboDojo**（HF 2026-10-25）——研究检查点，沿用 CogACT-v1 先例，非 MAI/Phi 产品发布。
+  - **QwenLM/BabelArena**（2026-10-22）——基准仓而非模型发布；本批未建 benchmark 实体。
+  - **xAI grok-code-fast-1 / grok-build / grok-imagine-image**——仅见于 docs 模型页且文档日期在增量窗口之外，属存量回填缺口，本批不越窗建档。
+  - **Genie 4 的任何评测数值**——官方本轮未发布，无数值可录（不是「跳过」，是「无数值」）。
+- **待人工核验**：本批新增 pending 4 条——Retell vCX 配图柱状图 3 行（GPT-5.5 85.6%、GPT-6.1 Sol 88.5%、GPT-6 Sol 86.2%）与 Artificial Analysis Image Arena 总榜名次 1 行（MAI-Image-2.7 第 2 名），视觉转写值已写入各自 `notes`，读图确认后方可翻 verified；沿用第三十三~三十七批的既有 pending 清单不变。
+- **门禁**：`node scripts/reconcile-coverage.mjs` 通过；`node --test tests/*.test.mjs` 19/19 通过；`node scripts/validate-data.mjs` PASS（taxonomy 9 类 / vendors 16 / benchmarks 481（+2）/ releases 205（official 191，+2）/ evidence edges 3240（+7））；`npm run build` 全链通过（`sync:skills:check` + `validate` + `build:epub:official` 484 KB / 32 章 + `build:web` 726 URL / 481 实体页 + 154 auto-evidence 页 + `validate:site` 914 HTML / 39498 内部引用 / 257 时间轴 / 2162 事件卡）。
+- **分支**：`model-release-daily-20261027T232056Z`（自 `origin/main` = `0a9686d` 开出）。
