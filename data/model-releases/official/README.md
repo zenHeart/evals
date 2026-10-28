@@ -2037,3 +2037,61 @@ Muse 页面的图表已归档到 `models/2026-10-12-muse-wonder/images/` 与
 - **渠道地图回写**：本批把「图表页也可能同时含正文明文分值」这条教训写回 `.claude/skills/ingest-releases/references/discovery-channels.md`（Mistral 行 + 「已知抓取障碍」表新增一行），并执行 `npm run sync:skills` 同步镜像，`sync:skills:check` 零漂移通过。
 - **门禁**：`node scripts/reconcile-coverage.mjs` 通过；`node --test tests/*.test.mjs` 19/19 通过（含「本批官方归档文件与 manifest 哈希一致」）；`node scripts/validate-data.mjs` PASS（taxonomy 9 类 / vendors 16 / benchmarks 479（+2）/ releases 203（official 189）/ evidence edges 3233（+10））；`npm run build` 全链通过（`sync:skills:check` + `validate` + `build:epub:official` 484 KB + `build:web` 722 URL / 479 实体页 + 154 auto-evidence 页 + `validate:site` 910 HTML / 39356 内部引用 / 256 时间线 / 2154 事件卡）。
 - **分支**：`model-release-daily-20261026T010000Z`（自 `origin/main` = `a4363ea` 开出）。
+
+## 第三十八批（2026-10-27 增量窗口 2026-10-10 ~ 2026-10-26）
+
+- **窗口**：增量窗口 2026-10-10 ~ 2026-10-26（检查点锚点 `last_max_release_date=2026-10-24` 回退 14 天重叠）。检查点回写 `last_scan_at=2026-10-26`（UTC）、`last_max_release_date` 由 **2026-10-24 前进到 2026-10-26**（本批新增 2 条 release 条目，锚点随之前进）。
+- **窗口结论**：增量窗口内**确有 2 个新的官方模型发布**，均在本批新建 release 条目——OpenAI **GPT-6.1 Terra**（`openai/gpt-6-1-terra`）与腾讯混元 **Hy-SimulMT-30B-A3B**（`tencent/hy-simulmt`），发布日同为 **2026-10-26**；其余 14 家厂商窗口内**无新发布**。
+- **本批新增 release：2 个；新增 evidence：13 条 = 12 verified + 1 pending**
+  - **OpenAI `gpt-6-1-terra`（7 条，全部 `source_kind: official_release_blog` / `source_tier: A` / `evidence_type: text` / `comparison_scope: only_same_protocol`）**
+    - `openai-gpt-6-1-terra--openai-error-inducing-prompts-error-rate-low-effort` → **16.7%**（官方内部诱导性提示基准，low 努力级别；前代 GPT-5.6 Terra 53.6%）
+    - `openai-gpt-6-1-terra--openai-error-inducing-prompts-error-rate-max-effort` → **4.3%**（同基准，max 努力级别）
+    - `openai-gpt-6-1-terra--terminalbench-terminal-bench-4-0` → **50.3%**（前代 GPT-5.6 Terra 21.5%）
+    - `openai-gpt-6-1-terra--agents-last-exam` → `not_extracted`
+    - `openai-gpt-6-1-terra--mmmu-pro` → `not_extracted`
+    - `openai-gpt-6-1-terra--osworld`（variant `2.1`）→ `not_extracted`
+    - `openai-gpt-6-1-terra--terminal-bench-science-terminal-bench-science-0-1` → `not_extracted`
+  - **腾讯混元 `hy-simulmt`（6 条，全部 `source_kind: official_model_card` / `source_tier: A`；5 条 `evidence_type: text`、1 条 `evidence_type: figure`）**
+    - `tencent-hy-simulmt--fleurs` → **90.3**
+    - `tencent-hy-simulmt--covost2` → **75.5**
+    - `tencent-hy-simulmt--acl6060` → **81.2**
+    - `tencent-hy-simulmt--realsi-realsi-sentence` → **84.7**（官方明写「全表最高」）
+    - `tencent-hy-simulmt--laal-latency-streamlaal` → **≈3s**（官方原文 approximately 3 seconds）
+    - `tencent-hy-simulmt--realsi-realsi-long-form-audio-gemba` → **pending / not_extracted**（GEMBA 绝对值只在官方散点图里）
+  - **口径要点**：① Terra 四项（Agents' Last Exam / MMMU-Pro / OSWorld 2.1 / Terminal-Bench-Science 0.1）官方**只印相对结论与相对成本**（+15 分、约 3 倍 token 效率、约 1/9 单任务成本、「相差 5 分以内」等），无绝对分值，按口径记 `verified` + `score_status:"not_extracted"`，**不折算绝对分、不建 `comparison_cited` 行**；② Hy-SimulMT 的 GEMBA 是**位图散点图**行，按纪律视觉转写只进 `notes`、数值留 `null`；③ 两家官方发布页**均未明示评测协议**（harness / tools / 温度 / 跑次数），`protocol` 12 键一律 `null`，只在正文点名的推理努力级别处填 `reasoning_effort`；④ Hy-SimulMT 四列短音频基准的分数官方只声明「越高越好」、**未说明所用自动指标**，故 `metric` 只记 `translation quality score`，**不臆断**为 BLEU / COMET；⑤ Terra 的内部诱导性提示基准是厂商未公开题集，只能读成同代际前后对比。
+- **新 benchmark id：3 个（均已同步建实体，含 `summary` / `interpretation` / `measures` / `does_not_measure` / `dataset` / `metrics` / `versions` / `limitations` / `official_sources`）**
+  - `openai-error-inducing-prompts`（OpenAI 内部诱导性提示错误率基准）
+  - `acl6060`（短音频语音翻译评测集 ACL6060）
+  - `realsi`（RealSI 真实场景同传评测集，含 RealSI-Sentence 与长音频两个版本）
+  - 三个实体的 `interpretation` 都写成读者能懂的口径提醒：`openai-error-inducing-prompts` 强调**错误率越低越好**（方向与准确率相反）且引用必须带努力级别条件；`acl6060` 强调**同一张表四列分属四个不同测试集、分数尺度不可横向比**；`realsi` 强调 **StreamLAAL 越低越好、GEMBA 越高越好、且 StreamLAAL 不等于首句语音输出时间**。
+  - `laal-latency` 沿用既有候选 id（第三十二批已登记），**未**新建实体。
+- **新厂商**：无。
+- **逐厂商巡检（窗口 2026-10-10 ~ 2026-10-26）**
+  - **OpenAI**：官方 `news/rss.xml` 1325 条，窗口内条目逐条看过；**`introducing-gpt-6-1-terra`（10-26）为本批新发布并建档**；`gpt-6-1-sol-coderabbit-code-security`（10-26）经取全文核对为**客户案例页**（正文无任何评测分值，只有案例叙述）→ 记排除原因「客户案例/行业实践文章，非独立模型发布」；`chatgpts-expanding-world-of-work`（10-26）为产品页 → 记排除；其余窗口内条目为业务指标 / 合作 / 客户 / 工程文章。
+  - **Anthropic**：`platform.claude.com/docs/en/models/overview` 在架模型清单（Fable 5.1 / Opus 5.5 / Sonnet 5.5 / Haiku 5.5 / Fable 5 / Opus 5 / Opus 4.8 …）**全部已建档**，**无新发布**。注：本轮逐页探测 `Released` 字段时该页 SSR 结构已变（`<dt>Released</dt><dd>` 不再直接可匹配），改为按在架清单与既有账本比对确认无新增，**未据此声称已核到每个模型的发布日**。
+  - **Google**：`deepmind.google/blog/rss.xml` 100 条 + `blog.google/rss/` 20 条，窗口内条目为已建档的 Gemini 4 Argon（10-13 GA 已在库，含 Robotics 分支）与研究 / 产品文章，**无新发布**。
+  - **xAI**：`docs.x.ai/docs/release-notes` 逐条核过——窗口内 Grok Voice 2.0 弃用（10-14）、`grok-voice-transcribe-1.0` 终止（10-2）、Grok 4.7 系列**均已建档**；页面底部 `Last updated: October 15, 2026` 是**文档站整页更新时间戳**、不是发布日；**无新发布**。
+  - **Meta**：`research.meta.ai/blog` 可静态 GET，链接发现得窗口内条目 `muse-wonder`(10-12，已建档)、`muse-spark-open`（已建档）与 `accelerating-scientific-research-in-health-data-science-with-muse-models`(10-14，**基于已建档 Muse 模型的研究文章**，非模型发布)，**无新发布**。
+  - **Mistral**：官方 RSS 92 条，窗口内 `Voxtral 3`(10-20)、`Timestral`(10-15)、`Mistral Large 4`(10-06) **均已建档**，**无新发布**。
+  - **Kimi**：官方博客列表页窗口内最新仍是 Kimi K3.1 Pro（10-24，已建档）；`kimi-code` 的 whats-new 页本轮只有 CLI 版本更新（产品，非模型发布）；HF `moonshotai` 窗口内 0 新仓；**无新发布**。
+  - **DeepSeek**：官方 `/updates` 通道窗口内最新仍为 2026-10-17（DeepSeek-V4.1-Flash-1017，已建档），**无新发布**。
+  - **GLM**：官方 `z.ai/blog` 静态 GET 仍 404（既有障碍记录成立）；HF `zai-org` 窗口内 0 新仓（最新 2026-08-25）；GitHub `zai-org` 窗口内 0 新模型仓；**无新发布**，按 partial 记，不声称穷尽。
+  - **MiniMax**：`platform.minimax.io/docs/release-notes/models` 窗口内唯一条目仍是 Oct. 19, 2026 / MiniMax M3.1 Flash（已建档）；HF `MiniMaxAI` 窗口内 0 新仓；**无新发布**。
+  - **Qwen**：`qwen.ai/research` 为纯客户端渲染（可见文本仅 6 字符，取不到）；HF `Qwen` org 窗口内 0 新仓；GitHub `QwenLM` 窗口内新建仓只有 `BabelArena`(10-22) 与 `BlenderWorld`(10-14) 两个**基准仓**、非模型发布；**无新发布**。
+  - **豆包**：官方 `seed.bytedance.com/sitemap.xml` 全量比对，窗口内唯一新 URL 是招聘贴，**非模型发布**；**无新发布**。
+  - **小米 MiMo**：官方 `mimo.xiaomi.com` 可见文本无窗口内新条目，**无新发布**。
+  - **腾讯混元 / 微信视觉**：HF `tencent` org 窗口内新仓逐一核对——`Hy-SimulMT-30B-A3B`（**本批建档**）、`Hy-Nomas-Diffusers`(10-24，已登记官方衍生仓)、`WeVisOne-VL`(10-22，已建档)、`Hy-Nomas`(10-21，已建档)、`Hy-Memory-30B-A3B`(10-15，已建档) 及其量化衍生件、`Qwen3-8B-DSpine-b16`(10-16，投机解码 drafter 研究产物)；GitHub `Tencent-Hunyuan` 窗口内新建 `Hy-SimulMT`(10-22) 与基准仓。**本批的主要产出来自此厂商**。
+  - **StepFun**：官方 `platform.stepfun.com/docs/zh/guides/models/` 在架模型 Step 5 Preview / Step 3.7 Flash / Step 3.5 Flash / StepAudio 3 系列 / Step TTS Mini 等，**全部已建档**；HF `stepfun-ai` 窗口内唯一新仓 `Step-5-Preview-NVFP4`(10-14) 是已建档模型的量化衍生件；**无新发布**。
+  - **Microsoft**：官方 `microsoft.ai/blog/` 本轮**恢复 200 可取**（第三十六批曾恢复、第三十七批撞 403 Cloudflare，命中不稳定与既有记录一致），可见文本无窗口内新模型条目，在架为 MAI-Code-1.1-Flash / MAI-Voice-2.1 / MAI-Transcribe-2 / MAI-Thinking-1 等已建档模型；HF `microsoft` org 与 GitHub org 窗口内 0 新模型仓；**无新发布**。
+- **入口扫描结果**：本批 `scan.mjs --write` 结果已落盘 `data/model-coverage.json`（`last_scan_at=2026-10-26T23:20:28.740Z`）；候选数 560 → **564**（+4）：`openai-35e334c19874`（GPT-6.1 Terra → 挂 `gpt-6-1-terra`，`official_source_verified: true`、`archive_status: archived`）、`release-hy-simulmt`（由 `reconcile-coverage` 按 primary_sources 自动补建 → 挂 `hy-simulmt`，`official_source_verified: true`、`archive_status: archived`）、`openai-7d972df501d0`（CodeRabbit 客户案例 → 记排除原因）、`openai-27334100e818`（ChatGPT 产品页 → 扫描器自带排除原因）。另修正 `openai-7d972df501d0` 的 `classification`：扫描器因标题含「**Code**Rabbit」被 `/coder?/` 误判为 `vertical`，实为客户案例页，改为 `product`（与既有排除先例一致）。
+- **跳过清单**
+  - **Terra 四项只给相对结论的评测**（Agents' Last Exam / MMMU-Pro / OSWorld 2.1 / Terminal-Bench-Science 0.1）——**不折算绝对分、不建 `comparison_cited` 行**，记 `not_extracted`。
+  - **Hy-SimulMT 的人机同传对比**（18 段 2026-09 后新上线录音、各约 6 分钟、10 个领域、6 名 CATTI 持证译员）——结论在图片里、无绝对分值，且官方自述只适用于本次样本、未覆盖语音质量与音色相似度，**不建行**。
+  - **Hy-SimulMT 的 GEMBA 绝对值**——只在官方散点图里，**不做视觉转写进数值字段**，记 `pending` + `not_extracted`，读图结果只进 `notes`。
+  - **Hy-SimulMT 的声音克隆 / 音色定性描述**、**OpenAI Preparedness Framework「Critical」等安全结论**（无量化评测分）——**不建行**。
+  - **OpenAI 业务指标类数字**——客户案例的效率 / 成本数字，非模型评测分值，不建行。
+- **待人工核验**：本批新增 **1 条 pending**（`tencent-hy-simulmt--realsi-realsi-long-form-audio-gemba`，官方散点图行）。沿用第三十三~三十七批结论，遗留 32 条 pending（Kimi K3.1 Pro 官方图片评测表 28 行、Hy-Nomas-Bench 4 行）仍为官方图片 / 无分数项，按纪律**不做视觉转写**、不填数值，本批未动。
+- **渠道地图回写**：本批把三条实测教训写回 `.claude/skills/ingest-releases/references/discovery-channels.md` 并执行 `npm run sync:skills` 同步镜像，`sync:skills:check` 零漂移通过：
+  ① **RSS `pubDate` 必须是 RFC-822 格式**（`Mon, 26 Oct 2026 22:00:00 GMT`，日-月-年）——只认 ISO 的解析器会把整条 RSS 的窗口内条目**静默全丢**，本批的 GPT-6.1 Terra 正是在这条上差点漏检；自检手段是「窗口内条目数为 0 时先怀疑日期解析」。② `docs.x.ai/docs/release-notes` 的 `Last updated: October 15, 2026` 是**整页时间戳**、只认分组标题。③ 新增「官方模型仓 README 原文可直接取」一节——`https://huggingface.co/<org>/<repo>/raw/main/README.md` 直出 markdown（表格 = 真表格，逐格可机读）、仓内 `assets/` 图片可从 `/resolve/main/assets/<file>` 直取、**发布日优先取仓内 News 节印刷日**（Hy-SimulMT 的 HF `createdAt` = 2026-10-22，官方 News 节 = 2026.10.26，相差 4 天），并记下厂商「自家整行加粗 + 各列最高分另加粗」的读表规则。
+- **门禁**：`node scripts/reconcile-coverage.mjs` 通过；`node --test tests/*.test.mjs` **19/19 通过**（含「本批官方归档文件与 manifest 哈希一致」）；`node scripts/validate-data.mjs` **PASS**（taxonomy 9 类 / vendors 16 / benchmarks 482（+3）/ releases 205（official 191，+2）/ evidence edges 3246（+13））；`npm run build` 全链通过（`sync:skills:check` + `validate` 32 章 / 219 条 numeric-claim warning 为存量不阻断 + `build:epub:official` 484 KB / `build:web` 727 URL + 482 实体页 + 154 自动证据页 + `validate:site` 915 HTML / 39562 内部引用 / 258 时间轴 / 2168 事件卡）。
+- **分支**：`model-release-daily-20261026T231930Z`（自 `origin/main` = `0a9686d` 开出，隔离 worktree `C:\Users\cheng\code\github\.worktrees\evals\model-release-daily-20261026T231930Z`）。
