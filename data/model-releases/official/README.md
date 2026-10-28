@@ -2149,3 +2149,61 @@ Muse 页面的图表已归档到 `models/2026-10-12-muse-wonder/images/` 与
 - **待人工核验**：本批新增 pending 4 条——Retell vCX 配图柱状图 3 行（GPT-5.5 85.6%、GPT-6.1 Sol 88.5%、GPT-6 Sol 86.2%）与 Artificial Analysis Image Arena 总榜名次 1 行（MAI-Image-2.7 第 2 名），视觉转写值已写入各自 `notes`，读图确认后方可翻 verified；沿用第三十三~三十七批的既有 pending 清单不变。
 - **门禁**：`node scripts/reconcile-coverage.mjs` 通过；`node --test tests/*.test.mjs` 19/19 通过；`node scripts/validate-data.mjs` PASS（taxonomy 9 类 / vendors 16 / benchmarks 481（+2）/ releases 205（official 191，+2）/ evidence edges 3240（+7））；`npm run build` 全链通过（`sync:skills:check` + `validate` + `build:epub:official` 484 KB / 32 章 + `build:web` 726 URL / 481 实体页 + 154 auto-evidence 页 + `validate:site` 914 HTML / 39498 内部引用 / 257 时间轴 / 2162 事件卡）。
 - **分支**：`model-release-daily-20261027T232056Z`（自 `origin/main` = `0a9686d` 开出）。
+## 第四十批（2026-10-29 增量窗口 2026-10-13 ~ 2026-10-28）
+
+- **窗口**：增量窗口 2026-10-13 ~ 2026-10-28（检查点锚点 `last_max_release_date=2026-10-27` 回退 14 天重叠）。检查点回写 `last_scan_at=2026-10-28`（UTC）、`last_max_release_date` 由 **2026-10-27 前进到 2026-10-28**（本批新增 release 发布日为 2026-10-28）。
+- **窗口结论**：窗口内确有 **1 个新的官方模型发布**——**Google DeepMind Gemini 4 Carbon**（2026-10-28）。本批是**首批「正文明文 + 官方配图总表 + 官方评测方法说明 PDF」三层证据齐备**的入库：发布文正文只印 4 个基准的明文分值，另有一张 17 行 × 5 模型的评测总表图（13 个基准的数值只存在于图中），官方同日另发《Model evaluation — Approach, methodology & results》方法说明 PDF 给出逐基准的 harness / judge / time cap / 题集子集口径。
+- **本批新增 release：1 个**
+  - `google/gemini-4-carbon`（Gemini 4 Carbon，2026-10-28）——**21 条 evidence = 8 verified + 13 pending**，release `status: verified`。发布日期四源互证：发布页印刷日期行「October 28, 2026」/ 页面 JSON-LD `datePublished=2026-10-28T17:00:00+00:00` / `article:published_time` meta = 2026-10-28 / Google DeepMind 官方博客 RSS 同条 pubDate。归档 `models/2026-10-28-gemini-4-carbon/`（含发布页 HTML、官方方法说明 PDF、6 张发布文内嵌图片）。
+- **本批新增 evidence：21 条 = 8 verified（正文明文绝对值）+ 13 pending（数值只在配图总表）**
+  - **verified 8 条**（`source_kind: official_release_blog` / `source_tier: A`）：
+    - `google-gemini-4-carbon--aa-intelligence-index` → **59**（Artificial Analysis Intelligence Index **v5.0**、含工具，第三方榜读数记 `third_party_reported`；官方称排名第 1，名次只进 notes；v5.0 与既有 v4.1.1 不可跨版比较）
+    - `google-gemini-4-carbon--sec-bench-pro` → **88.2%**（Pass@1；183 题 May 2026 JavaScript 引擎切分；每题 3 次独立尝试取平均；**Antigravity 脚手架**；LLM 裁判复核崩溃是否源于目标漏洞；官方自跑 → `vendor_reported`）
+    - `google-gemini-4-carbon--exploitgym` → **54.8%**（Causal Pass Rate；单次尝试、无联网；**Antigravity 脚手架**；默认设置并关闭缓解措施；**10 小时/题超时档**，同模型 6 小时档 53.5% 仅作口径提示；官方自跑 → `vendor_reported`）
+    - `google-gemini-4-carbon--cwe-bench` → **71.0%**（CWE-bench v1；程序化 pass@1、同分以 pass@4 破平；榜内 Carbon 一列标注脚手架 Antigravity；**由 Collinear AI 对全部模型统一评测的官方公开榜 → `third_party_reported`**）
+    - `google-gemini-4-carbon--gray-swan-ipi` → **0.0%**（k=15 次自适应尝试下的攻击成功率，越低越好；Argon 同口径 0.7%；竞品值只进 notes，不建 comparison_cited 行）
+    - `google-gemini-4-carbon--google-terminal-bench-cheat-success` → **0.0%**（Terminal-Bench 4.0 上的**作弊成功比例**，非解题率）
+    - `google-gemini-4-carbon--google-terminal-bench-cheat-attempts` → **0.4%**（Terminal-Bench 4.0 上的**尝试作弊比例**，与上一行同出一句但属不同度量，故分列两行）
+    - `google-gemini-4-carbon--webdev-arena` → **1768 Elo**（第三方盲选竞技场榜单 → `third_party_reported`；官方称较前 +89 Elo、位列第 4，名次与相对差只进 notes）
+  - **pending 13 条**（数值只存在于官方配图总表 `images/carbon-evals-table.webp`；按纪律一律 `evidence_type: figure` + `score_status: not_extracted` + `value: null`，**视觉转写值只写进 notes**，读图确认后方可翻 verified）：Vals Index v2.2（70.4%）、SWE-sweep（9.6%）、FrontierSWE 2（61.2%）、Terminal-Bench 4.0 (AA)（65.2%）、Agents' Last Exam v1.1（77.4%）、OSWorld 2.1 离线子集（81.5%）、AutomationBench（53.9%）、Vending-Bench 2（$16,484）、Chartography（72.5%）、Blueprint-Bench 2（58.6%）、GraphWalks 256k–1M BFS F1（96.2%）、RiemannBench（80.0%）、Terminal-Bench-Science 0.1 (AA)（64.8%）。
+  - 口径要点：① **「页面有图表」既不能推出「正文无数值」，也不能推出「数值都在正文」**——本批 4 个明文分值与 13 个配图分值在同一页共存，判定顺序必须是「先剥 script/style 后在可见文本正则找明文分值，再单独把总表图按 pending 落账」；② `protocol` 字段一律以官方方法说明 PDF 为准（PDF 未明示者留 null），只读发布文会把 harness / judge / time cap 全部漏成 null；③ **安全行为度量不得与能力分混用**——Terminal-Bench 4.0 的 0.0% / 0.4% 是作弊比例，故另立 benchmark id（`google-terminal-bench-cheat-success` / `google-terminal-bench-cheat-attempts`），不挂到 `terminalbench` 解题率行上；④ 第三方榜读数（AA / Vals / Zapier / Andon Labs / Surge / Proximal / Artificial Analysis / WebDev Arena）与厂商自跑（SEC-bench Pro / ExploitGym）分开记 `attribution_type`，其中 CWE-bench 的归属与既有 `gemini-4-argon` 行（vendor_reported）不同，差异已写进本行 notes。
+- **新 benchmark id：2 个（未建实体，走兜底页）**
+  - `swe-sweep`、`riemannbench`——本批**未找到可核验的独立官网/论文地址**，只找到官方方法说明 PDF 里的定义（分别是「subtask-weighted reward」与「Surge 官方公开榜」），按契约不臆造来源地址，暂由兜底页承载，notes 标 `new-benchmark`。
+- **补建 benchmark 实体：3 个**
+  - `cwe-bench`（Collinear AI，1,000+ 现成任务 / 215 类 CWE / 120 道留出评测任务，覆盖 C/C++、Go、Java、TS/JS、Py、Rust；官方来源 `https://www.collinear.ai/` 与 `https://cwe-bench.com/` 均已实测 200）
+  - `gray-swan-ipi`（Gray Swan 间接提示注入基准，k=1/10/15 三档；官方来源 `https://github.com/GraySwanAI/ipi_arena_os` 实测 200）
+  - `vals-index`（Vals AI 按 GDP 权重加权的经济价值指数，v2.2；官方来源 `https://vals.ai/` 实测 200）
+  - 三者此前都只是账本里的 `new-benchmark` 候选 id（分别被 `gemini-4-argon` / `gemini-4-argon-ga` 引用），本批补上正式实体；**既有 release 文件一字未改**。
+- **新厂商**：无。
+- **逐厂商巡检（窗口 2026-10-13 ~ 2026-10-28）**
+  - **Google**：`deepmind.google/blog/rss.xml` 窗口内唯一新模型发布即 **Gemini 4 Carbon**(10-28，已建档)；另 4 条为非模型内容——新加坡 GovTech 联合微调的**反诈骗 Gemma 派生模型**（无模型名、无评测基准名与分数，**非新模型发布**，不建档）、Google Antigravity 抗菌肽研究应用（Antigravity 与 ProtNLM 均为既有对象，**非新发布**）、树覆盖研究与 Argon 旧文重发。`deepmind.google/models/gemini|gemma/` 为客户端渲染、静态文本读不到型号列表，按既有结论以 RSS 为准。
+  - **OpenAI**：官方 `news/rss.xml` 窗口内 3 条新条目——ServiceNow 合作、"The future of the firm"、**Legora 客户案例**；三者均**非模型发布**，且 Legora 通篇百分比（95%+ 审查提速、90% 合同周期、$20M、9.5 小时/律师/周、75% 领导力、3× 使用量）全是**客户运营指标不是模型评测分值**，按第三十九批 Retell 先例不入账本。
+  - **Anthropic**：`platform.claude.com/docs/en/models/overview` 在架型号仍是 Fable 5.1 / Opus 5.5 / Sonnet 5.5 / Haiku 5.5，**全部已建档**，无新发布。
+  - **Mistral**：官方 RSS 窗口内仅「Introducing Timestral」(10-15) 一条，`timestral` **已建档**；HF `mistralai` 窗口内新仓 Timestral-123M/28M/5M/209M 属**同一家族的量化/尺寸衍生件**，不另建档 → 无新发布。
+  - **xAI**：`docs.x.ai/docs/release-notes` 的 October 组只有 **Oct 27** 的产品项（自定义审核开关、自动质量、五张参考图、新宽高比）与 Oct 14 的 Grok Voice 3.0（**已建档**）、Oct 2 的转写件弃用公告；**「Last updated: October 27, 2026」是整页时间戳、只认分组标题**，在架最新模型仍是 8 月的 Grok 4.6 → 无新发布。
+  - **Microsoft**：官方 HF `microsoft` 组织窗口内新仓 4 个（CogACT-v2-RoboDojo、Sentiment-Analysis-7B、scFM-dataselection、UserRepGen-4B）**全部是研究产物**，沿用 CogACT-v1 先例，不属 MAI/Phi 产品发布 → 无新发布。
+  - **DeepSeek**：`api-docs.deepseek.com/updates` 最新条目仍是 2026-10-17（DeepSeek-V4.1-Flash-1017，**已建档**）→ 无新发布。
+  - **MiniMax**：`platform.minimax.io/docs/release-notes/models` 最新条目仍是 MiniMax M3.1 Flash / H3（**已建档**）→ 无新发布。
+  - **Kimi**：官方博客与 HF `moonshotai` 窗口内无新模型（Kimi K3.1 Pro 已建档）→ 无新发布。
+  - **Qwen**：官方 HF `Qwen` 组织窗口内 0 新仓；GitHub `QwenLM` 新建仓仅 `BabelArena`（基准仓非模型发布）与研究产物 → 无新发布。
+  - **豆包**：官方 `seed.bytedance.com/sitemap.xml` 最大 lastmod 仍是 2026-10-14（招聘贴 `seed-alignment-preparedness-team-looking-for-global-talents`，非模型发布）→ 无新发布。
+  - **小米 MiMo**：`mimo.xiaomi.com/blog` 最新条目仍是 2025-12-16 的 MiMo-V2-Flash → 无新发布。
+  - **腾讯混元 / 微信视觉**：HF `tencent` 窗口内新仓 `Hy-Nomas-Diffusers`(10-24，第三十四批已登记为官方衍生仓)、`Hy-Nomas`(10-21，已建档)、`Hy-SimulMT`(10-22，已建档)、`Hy-Memory`(已建档)；`Qwen3-8B-DSpine-b16` 为已知研究产物 → 无新发布。
+  - **StepFun**：官方 docs sitemap 的 lastmod 仍是站点重建戳；在架 Step 5 Preview / Step 3.7 Flash / Step 3.5 Flash 均已建档；HF `stepfun-ai` 窗口内新仓 `Step-5-Preview-NVFP4`(10-14) 是**既有模型的量化衍生件**，按口径不另建档 → 无新发布。
+  - **智谱 GLM**：`z.ai/blog` 仍 404；在架 GLM-5.3 / GLM-5.3-Flash / GLM-5.2 均已建档；HF `zai-org` 窗口内 0 新仓 → 无新发布。
+  - **Meta**：`research.meta.ai/blog` 最新条目仍是 2026-10-12 的 Muse Wonder（**已建档**）→ 无新发布。
+- **入口扫描结果**：本批 `scan.mjs --write` 结果已落盘 `data/model-coverage.json`（`last_scan_at=2026-10-28T23:18:16.353Z`，候选 573）；`reconcile-coverage.mjs` 已把本批 release 补进候选（`release_id=gemini-4-carbon`，`archive_status=archived`、`evidence_status=reported`）。
+- **跳过清单**
+  - **OpenAI Legora 客户案例的全部百分比**（95%+ / 90% / 20%→<1% / $20M / 9.5 小时 / 75% / 3×）——客户运营指标，不是模型评测分值，不建行。
+  - **Gemini 4 Carbon 配图总表的竞品列**（Argon / GPT-6 Astra / Claude Opus 5.5 / Claude Fable 5.1 等 4 列全部数值）——只取自家模型列，竞品列写进本行 notes，**不建 comparison_cited 行**。
+  - **Terminal-Bench 4.0 解题率明文值**——本页**未印**（只在配图总表里有 65.2%），故本批不新增该行的明文分值，只保留 pending 的配图行。
+  - **Carbon 的内部量化结论**（生成安全代码成功率较 Argon 提升逾 2 倍、内部真实编码环境高危越狱告警下降近 80%、无依据声明减少约 2 倍、越界执行下降 26%、服务不足下降 29%）——内部基准无名称无绝对分，只在 release notes 与归档 index.md 备查，**不建行**。
+  - **第三方客户口径**（Chrome 团队称比另一家实验室大型前沿模型好逾 10 倍；Wiz 称在 Web 渗透测试基准上领先）——未印对方绝对分数、无数值，**不建 comparison_cited 行**。
+  - **参数量与上下文长度**——官方未明示，账本记 null（GraphWalks 的「256k 至 1M」是评测覆盖的上下文长度区间，不等于模型上下文窗口）。
+  - **新加坡 GovTech 反诈骗模型 / Google Antigravity 抗菌肽应用**——非新模型发布，不建档。
+  - **Step 5 Preview NVFP4 / Timestral 各尺寸仓**——既有模型的量化与尺寸衍生件，不另建档。
+  - **OpenBMB MiniCPM-OCR / NVIDIA Metatron 等**——OpenBMB 与 NVIDIA 仍不在在册 16 家厂商内，沿用第三十二/三十九批先例不建档。
+- **待人工核验**：本批新增 pending 13 条——全部为官方配图总表（`images/carbon-evals-table.webp`）的 Gemini 4 Carbon 列，视觉转写值已逐行写入各自 `notes`（含同表竞品列数值），读图确认后方可翻 verified；沿用第三十三~三十九批的既有 pending 清单不变。
+- **渠道地图回写**：本批把三条实测教训写回 `.claude/skills/ingest-releases/references/discovery-channels.md` 的 Google 行——① **官方评测方法说明 PDF 通道** `deepmind.google/models/evals-methodology/<model>/` 直出 `application/pdf`（最终 302 到 `storage.googleapis.com/deepmind-media/`），是 `protocol` 字段唯一有据可依的来源；② **`deepmind.google/blog/<slug>` 会 301 跳转到 blog.google 规范页**（字节一致），归档只存一份 HTML；③ **「页面有图表」不等于「正文无数值」也不等于「数值都在正文」**，本批 4 明文 + 13 配图同页共存，判定顺序须先文本后配图。已执行 `npm run sync:skills` 同步镜像，`sync:skills:check` 零漂移通过。
+- **门禁**：`node scripts/reconcile-coverage.mjs` 通过；`node --test tests/*.test.mjs` **19/19 通过**；`node scripts/validate-data.mjs` **PASS**（taxonomy 9 类 / vendors 16 / benchmarks 487（+3）/ releases 208（official 194，+1）/ evidence edges 3274（+21））；`npm run build` 全链通过（`sync:skills:check` + `validate` 32 章 + 219 条 numeric-claim warning 为存量不阻断 + `build:epub:official` 484 KB / 32 章 + `build:web` 735 URL / 487 实体页 + 155 auto-evidence 页 + `validate:site` 924 HTML / 39954 内部引用 / 262 时间轴 / 2198 事件卡）。
+- **分支**：`model-release-daily-20261028T231730Z`（自 `origin/main` = `47d08b4` 开出，隔离 worktree `C:\Users\cheng\code\github\.worktrees\evals\model-release-daily-20261028T231730Z`）。
