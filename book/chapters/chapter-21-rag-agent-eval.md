@@ -442,3 +442,29 @@ drift 检测最容易踩的坑是**只盯分数不盯输入分布**。判官分�
 
 ⭐（生态工具）
 - [DeepEval RAG metrics](https://deepeval.com/docs/evaluation-introduction) — pytest 风格的 RAG 指标实现
+
+
+## 21.13 Learning-agent-v1：把能力评估变成可移植证据
+
+本章的 RAG/Agent 指标可以直接落到仓库中的 `eval-spec-v1` 报告合同：
+
+- 规范：`data/eval-specs/learning-agent-v1.schema.json`
+- 结构有效的合成样例：`data/eval-specs/fixtures/learning-agent-v1-example.json`
+- 故意缺字段的结构反例：`data/eval-specs/fixtures/learning-agent-v1-invalid.json`
+- 无依赖结构校验：`npm run validate:learning-agent`
+
+这一步类似 TypeScript 类型检查：字段齐全只说明报告可解析，不证明内容真实或指标达到阈值。合成样例里的重复字母 hash、`trace://fixture` 和 `case://` 是格式占位，没有对应的实际运行；其中的数值和 `pass` 也不是学习者成绩。验证器不读取来源文件、不核对 hash 内容、不运行 Agent，也不授予掌握或发布资格。
+
+```bash
+# 本地运行，无需联网或付费；预期输出 structure validation passed
+npm run validate:learning-agent
+# 同时检查有效结构和缺字段反例；预期输出 self-test passed
+npm run validate:learning-agent -- --self-test
+# 本次实际报告需显式传入；仍只验证结构
+npm run validate:learning-agent -- path/to/actual-report.json
+```
+
+报告必须带不可变的 `source_snapshot`（每个来源有 locator 和 SHA-256）、模型 revision、prompt hash、检索/grounding/安全/可靠性指标，以及 Explain / Perform / Debug / Transfer / Retain 五类学习证据。缺少 provenance、locator、模型 revision 或 prompt hash 时，验证器直接失败。
+
+这个合同用于记录“这一次运行的证据”，不把单个分数当作掌握结论。实际作品集需要真实运行产生的正常报告和故意退化报告，两份都应结构有效；再用预先冻结的阈值、分母、轨迹和失败用例判断运行结果。当前缺字段反例只测试验证器报错，不能替代故障运行证据。跨仓库学习路径见 [workflow#651](https://github.com/zenHeart/workflow/issues/651)、[learn-design#9](https://github.com/zenHeart/learn-design/issues/9)、[ai-jue#41](https://github.com/zenHeart/ai-jue/issues/41)、[learn-ai#127](https://github.com/zenHeart/learn-ai/issues/127)、[learn-llm#12](https://github.com/zenHeart/learn-llm/issues/12)；这些链接只描述公开能力契约，不携带个人履历或私有运行数据。
+
