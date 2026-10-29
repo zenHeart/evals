@@ -98,6 +98,8 @@
 | 30 | 资源、术语表与 Cheat Sheet | 65 基准总表（交互版见 /benchmarks/）、17 框架、13 指标公式卡 |
 | 31 | 结课自测与 FAQ | 8 道场景题（答案折叠）+ 22 问 FAQ |
 
+学习 Agent 评估证据入口：[第 21 章 §21.13](chapters/chapter-21-rag-agent-eval.md)、[learning-agent-v1 JSON Schema](../data/eval-specs/learning-agent-v1.schema.json) 与 [结构校验器](../scripts/validate-learning-agent.mjs)。跨仓目标见 [workflow#651](https://github.com/zenHeart/workflow/issues/651)；结构有效不等于真实运行已验收或能力已掌握。
+
 ---
 
 ## 章节 DAG 关系
@@ -137,3 +139,4 @@
 8. "5 个榜单对账选型"
 9. "刷榜不是评估"
 10. "没有 CI 的评估 = 不会被使用的评估"
+
