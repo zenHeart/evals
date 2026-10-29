@@ -159,6 +159,7 @@
 7. **合并与历史** — 推送分支后开 PR（base=`main`）并 squash 合并；远端分支一律保留，禁止 `git branch -D` / `git push --delete` / `gh pr merge --delete-branch`
 8. **工具链 PATH** — `node` / `npm` / `gh` 在 `/usr/local/bin`；非交互 shell 默认 PATH 不含该目录，脚本前先 `export PATH="/usr/local/bin:$PATH"`
 9. **每日自动入库** — 已配置定时任务，每天 09:00（Asia/Shanghai）自动跑一轮 `ingest-releases`：从 `origin/main` 开 `model-release-daily-<UTC时间戳>` 分支 → 写账本 → 过门禁 → 开 PR 并 squash 合并 → CI 部署到 https://evals.zenheart.site 。看到这类分支或 PR 属正常产物，**不是待清理的残留**，也不要重复跑同一批次
+10. **开工前收口（入库任务第一步）** — 跑批前先 `git fetch origin --prune` 并查 `gh pr list --state open`：若存在**比本地当前分支更新的 `model-release-daily-*` 带 OPEN PR**，说明上一轮断在「开 PR → 合并」之间，**先**确认那个 PR 的 CI（"Build & Publish"）为绿并 squash 合并它（保留远端分支），**再**从更新后的 `origin/main` 开本轮新分支；不要重跑那一批。只有工作树脏（别人留下的改动）才停止并报告（不 stash / 不切换 / 不覆盖）。完整分流见 `.claude/skills/ingest-releases/SKILL.md` Step 0
 
 ---
 
