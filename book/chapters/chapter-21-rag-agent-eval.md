@@ -466,5 +466,9 @@ npm run validate:learning-agent -- path/to/actual-report.json
 
 报告必须带不可变的 `source_snapshot`（每个来源有 locator 和 SHA-256）、模型 revision、prompt hash、检索/grounding/安全/可靠性指标，以及 Explain / Perform / Debug / Transfer / Retain 五类学习证据。缺少 provenance、locator、模型 revision 或 prompt hash 时，验证器直接失败。
 
-这个合同用于记录“这一次运行的证据”，不把单个分数当作掌握结论。实际作品集需要真实运行产生的正常报告和故意退化报告，两份都应结构有效；再用预先冻结的阈值、分母、轨迹和失败用例判断运行结果。当前缺字段反例只测试验证器报错，不能替代故障运行证据。跨仓库学习路径见 [workflow#651](https://github.com/zenHeart/workflow/issues/651)、[learn-design#9](https://github.com/zenHeart/learn-design/issues/9)、[ai-jue#41](https://github.com/zenHeart/ai-jue/issues/41)、[learn-ai#127](https://github.com/zenHeart/learn-ai/issues/127)、[learn-llm#12](https://github.com/zenHeart/learn-llm/issues/12)；这些链接只描述公开能力契约，不携带个人履历或私有运行数据。
+这个合同用于记录“这一次运行的证据”，不把单个分数当作掌握结论。实际作品集需要真实运行产生的正常报告和故意退化报告，两份都应结构有效；再用预先冻结的阈值、分母、轨迹和失败用例判断运行结果。当前缺字段反例只测试验证器报错，不能替代故障运行证据。
+
+仓库现收录[正常与故障运行样例及复现命令](https://github.com/zenHeart/evals/tree/main/data/eval-specs/examples/learning-agent-local-v1)，由固定版本的本地合成知识库实际执行生成。可直接打开[正常 report](https://github.com/zenHeart/evals/blob/main/data/eval-specs/examples/learning-agent-local-v1/good/report.json) 与[故障 report](https://github.com/zenHeart/evals/blob/main/data/eval-specs/examples/learning-agent-local-v1/degraded/report.json)：两份都通过结构检查；正常 trace 的 `quality_pass=true`，故障 trace 的 `quality_pass=false`，失败项明确指向重复写入导致的幂等性断言。这个区别像 CI 里的测试结果文件：文件格式正确，里面仍可记录失败。每份样例保留原始 report、trace、带 hash 的合成来源和预先固定的阈值，便于沿失败指针定位原因。（来源：样例目录中的实际报告、轨迹和固定生产者链接。）
+
+样例只验证固定抽取式 fixture；真实 token/费用、延迟 SLO 与 `cost_latency` 未测，人工学习证据仍为 `pending`，不能据此关闭完整能力或生产验收。跨仓库学习路径见 [workflow#651](https://github.com/zenHeart/workflow/issues/651)、[learn-design#9](https://github.com/zenHeart/learn-design/issues/9)、[ai-jue#41](https://github.com/zenHeart/ai-jue/issues/41)、[learn-ai#127](https://github.com/zenHeart/learn-ai/issues/127)、[learn-llm#12](https://github.com/zenHeart/learn-llm/issues/12)；这些链接只描述公开能力契约，不携带个人履历或私有运行数据。
 
