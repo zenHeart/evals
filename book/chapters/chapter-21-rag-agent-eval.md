@@ -442,3 +442,17 @@ drift 检测最容易踩的坑是**只盯分数不盯输入分布**。判官分�
 
 ⭐（生态工具）
 - [DeepEval RAG metrics](https://deepeval.com/docs/evaluation-introduction) — pytest 风格的 RAG 指标实现
+
+
+## 21.13 Learning-agent-v1：把能力评估变成可移植证据
+
+本章的 RAG/Agent 指标可以直接落到仓库中的 `eval-spec-v1` 报告合同：
+
+- 规范：`data/eval-specs/learning-agent-v1.schema.json`
+- 可运行样例：`data/eval-specs/fixtures/learning-agent-v1-example.json`
+- 故意失败样例：`data/eval-specs/fixtures/learning-agent-v1-invalid.json`
+- 无依赖门禁：`npm run validate:learning-agent`
+
+报告必须带不可变的 `source_snapshot`（每个来源有 locator 和 SHA-256）、模型 revision、prompt hash、检索/grounding/安全/可靠性指标，以及 Explain / Perform / Debug / Transfer / Retain 五类学习证据。缺少 provenance、locator、模型 revision 或 prompt hash 时，验证器直接失败。
+
+这个合同专门记录“这一次运行的证据”，不把单个分数当作掌握结论。把报告附在作品集中时，至少同时展示一份通过报告和一份故意失败报告，说明你如何定位检索、引用、ACL、注入或重放问题。跨仓库学习路径见 [workflow#651](https://github.com/zenHeart/workflow/issues/651)、[learn-design#9](https://github.com/zenHeart/learn-design/issues/9)、[ai-jue#41](https://github.com/zenHeart/ai-jue/issues/41)、[learn-ai#127](https://github.com/zenHeart/learn-ai/issues/127)、[learn-llm#12](https://github.com/zenHeart/learn-llm/issues/12)；这些链接只描述公开能力契约，不携带个人履历或私有运行数据。
