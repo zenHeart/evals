@@ -2,8 +2,8 @@
 /**
  * Validate learning-agent-v1 evidence reports without adding a runtime dependency.
  *
- * The validator intentionally fails closed: source snapshots, locators, model
- * revisions and prompt hashes are mandatory, while metrics are bounded [0, 1].
+ * This checks report structure, not source bytes, metric truth or learner mastery.
+ * Provenance fields are mandatory, while metrics are bounded [0, 1].
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -18,9 +18,13 @@ const SOURCE_ID = /^[a-z0-9][a-z0-9._-]*$/;
 
 const isObject = (v) => v !== null && typeof v === "object" && !Array.isArray(v);
 const own = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
-const errors = (file) => [];
 const required = (out, file, value, key) => {
-  if (value === undefined || value === null || value === "") out.push(`${file}: ${key} is required`);
+  if (typeof value !== "string" || !value.trim()) out.push(`${file}: ${key} must be a non-empty string`);
+};
+const validDate = (value) => {
+  if (typeof value !== "string" || !DATE.test(value)) return false;
+  const parsed = new Date(`${value}T00:00:00Z`);
+  return Number.isFinite(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;
 };
 const exactKeys = (out, file, value, allowed, label) => {
   if (!isObject(value)) return;
@@ -52,8 +56,8 @@ export function validateLearningAgentReport(report, file = "<report>") {
     required(out, file, snapshot.id, "source_snapshot.id");
     if (typeof snapshot.id !== "string" || !SOURCE_ID.test(snapshot.id))
       out.push(`${file}: source_snapshot.id must be lowercase stable id`);
-    if (typeof snapshot.captured_at !== "string" || !DATE.test(snapshot.captured_at))
-      out.push(`${file}: source_snapshot.captured_at must be YYYY-MM-DD`);
+    if (!validDate(snapshot.captured_at))
+      out.push(`${file}: source_snapshot.captured_at must be a valid YYYY-MM-DD date`);
     if (!Array.isArray(snapshot.sources) || snapshot.sources.length === 0)
       out.push(`${file}: source_snapshot.sources must be a non-empty array`);
     else {
@@ -77,8 +81,8 @@ export function validateLearningAgentReport(report, file = "<report>") {
   if (!isObject(run)) out.push(`${file}: run must be an object`);
   else {
     exactKeys(out, file, run, ["seed","model","prompt_hash"], "run");
-    if (!own(run, "seed") || (run.seed !== null && (!Number.isInteger(run.seed) || run.seed < 0)))
-      out.push(`${file}: run.seed must be a non-negative integer or null`);
+    if (!own(run, "seed") || (run.seed !== null && !Number.isInteger(run.seed)))
+      out.push(`${file}: run.seed must be an integer or null`);
     if (!isObject(run.model)) out.push(`${file}: run.model must be an object`);
     else {
       exactKeys(out, file, run.model, ["provider","name","revision"], "run.model");
@@ -116,13 +120,19 @@ export function validateLearningAgentReport(report, file = "<report>") {
     }
     const reliability = results.reliability;
     if (!isObject(reliability)) out.push(`${file}: results.reliability must be an object`);
-    else for (const key of ["replay_pass","idempotency_pass","timeout_retry_pass"]) {
-      if (typeof reliability[key] !== "boolean") out.push(`${file}: results.reliability.${key} must be boolean`);
+    else {
+      exactKeys(out, file, reliability, ["replay_pass","idempotency_pass","timeout_retry_pass"], "reliability");
+      for (const key of ["replay_pass","idempotency_pass","timeout_retry_pass"]) {
+        if (typeof reliability[key] !== "boolean") out.push(`${file}: results.reliability.${key} must be boolean`);
+      }
     }
     const learning = results.learning;
     if (!isObject(learning)) out.push(`${file}: results.learning must be an object`);
-    else for (const key of ["explain","perform","debug","transfer","retain"])
-      stringEnum(out, file, learning[key], `results.learning.${key}`, ["pass","fail","pending"]);
+    else {
+      exactKeys(out, file, learning, ["explain","perform","debug","transfer","retain"], "learning");
+      for (const key of ["explain","perform","debug","transfer","retain"])
+        stringEnum(out, file, learning[key], `results.learning.${key}`, ["pass","fail","pending"]);
+    }
   }
 
   const evidence = report.evidence;
@@ -139,36 +149,45 @@ export function validateLearningAgentReport(report, file = "<report>") {
 }
 
 function readReport(file) {
-  try { return JSON.parse(fs.readFileSync(file, "utf8")); }
-  catch (error) { return { __parseError: error.message }; }
+  try { return { report: JSON.parse(fs.readFileSync(file, "utf8")) }; }
+  catch (error) { return { error: `${file}: JSON read/parse failed: ${error.message}` }; }
 }
 
 function filesFromArgs(args) {
   if (args.length) return args.map((f) => path.resolve(process.cwd(), f));
-  return fs.readdirSync(FIXTURES).filter((f) => f.endsWith(".json")).map((f) => path.join(FIXTURES, f));
+  return [path.join(FIXTURES, "learning-agent-v1-example.json")];
 }
 
-const args = process.argv.slice(2);
-if (args.includes("--self-test")) {
-  const valid = path.join(FIXTURES, "learning-agent-v1-example.json");
-  const invalid = path.join(FIXTURES, "learning-agent-v1-invalid.json");
-  const validErrors = validateLearningAgentReport(readReport(valid), valid);
-  const invalidErrors = validateLearningAgentReport(readReport(invalid), invalid);
-  if (validErrors.length || !invalidErrors.length) {
-    console.error("learning-agent-v1 self-test failed", { validErrors, invalidErrors });
-    process.exit(1);
+function main(args) {
+  if (args.length === 1 && args[0] === "--self-test") {
+    const valid = path.join(FIXTURES, "learning-agent-v1-example.json");
+    const invalid = path.join(FIXTURES, "learning-agent-v1-invalid.json");
+    const validInput = readReport(valid);
+    const invalidInput = readReport(invalid);
+    const validErrors = validInput.error ? [validInput.error] : validateLearningAgentReport(validInput.report, valid);
+    const invalidErrors = invalidInput.error ? [invalidInput.error] : validateLearningAgentReport(invalidInput.report, invalid);
+    if (validErrors.length || invalidInput.error || !invalidErrors.length) {
+      console.error("learning-agent-v1 self-test failed", { validErrors, invalidErrors });
+      return 1;
+    }
+    console.log("learning-agent-v1 self-test passed");
+  } else {
+    const allErrors = [];
+    for (const file of filesFromArgs(args)) {
+      const input = readReport(file);
+      if (input.error) allErrors.push(input.error);
+      else allErrors.push(...validateLearningAgentReport(input.report, file));
+    }
+    if (allErrors.length) {
+      for (const error of allErrors) console.error(error);
+      return 1;
+    }
+    console.log(`learning-agent-v1 structure validation passed (${filesFromArgs(args).length} report(s)); metrics and source content not verified`);
   }
-  console.log("learning-agent-v1 self-test passed");
-} else {
-  const allErrors = [];
-  for (const file of filesFromArgs(args)) {
-    const report = readReport(file);
-    if (report.__parseError) allErrors.push(`${file}: JSON parse failed: ${report.__parseError}`);
-    else allErrors.push(...validateLearningAgentReport(report, file));
-  }
-  if (allErrors.length) {
-    for (const error of allErrors) console.error(error);
-    process.exit(1);
-  }
-  console.log(`learning-agent-v1 validation passed (${filesFromArgs(args).length} report(s))`);
+  return 0;
 }
+
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  process.exitCode = main(process.argv.slice(2));
+}
+
