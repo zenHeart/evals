@@ -138,7 +138,10 @@ Hugging Face 官方模型仓的 README **原文**可以绕过 SPA 直接取，�
 1. `data/vendors.json` 注册：kebab-case `id`、`name`、`display_name`、`region`（CN|GLOBAL）、`coverage_tier: 2`、`active: true`。
 2. `scripts/fetch-logos.mjs` 的 `DOMAINS` 表加该厂商候选官方域名（1-3 个，按优先级）。
 3. 运行 `node scripts/fetch-logos.mjs`（全量重抓，输出到 `assets/logos/`），确认新厂商文件生成且为彩色品牌标。
+   - ⚠️ **该脚本是全量重抓，会污染其余厂商的已跟踪 logo**：2026-10-30 实测加一个 `particle` 域就改写了 9 个已跟踪文件（anthropic/deepseek/doubao/google/kimi/microsoft/openai/qwen/stepfun/xai 的 favicon 都变了），并把 `meta.jpg`→`meta.png`、`glm.png`→`glm.svg`、`tencent.png`→`tencent.svg`、`xiaomi.svg`→`xiaomi.png` 改成了**别的扩展名**（旧文件不会被删，于是仓库里同时存在两套）。**处置**：`git checkout -- assets/logos/` 还原全部已跟踪文件，把新生成的、非目标厂商的文件用可恢复方式清掉，**最终只新增目标厂商那一个 logo 文件**。不要把 16 家 logo 的重新抓取结果一起提交——那不是本次改动的范围。
+   - 抓下来的 icon 要**确认是真彩色**：2026-10-30 实测 `particle.ai` 的 512×512 Webclip 是真彩色品牌标（解码后 45 个量化色块中 31 个有色相差异，橙/粉/黄/绿/蓝）；单色字形或字母占位一律不合格（见下方图标铁律）。
 4. `scripts/vendor-logos.mjs` 的 `LOGO_EXT` 登记实际扩展名（png/jpg）——不登记则站点徽章退化为字母点。
 5. 本表 Tier 2 加一行渠道说明。
+6. 新厂商接入**必须同步 `data/model-coverage.json` 的 `vendors[]`**（`vendor_id` + `allowed_hosts` + `entries[]`）——`scan.mjs` 遍历的是覆盖文件里的 `vendors[]`，不是 `data/vendors.json`；只改注册表会导致 `validate-data.mjs` 报「<vendor>: 需要唯一的覆盖入口记录」。
 
 图标铁律：**必须真实厂商彩色 logo，禁止字母占位**——这是用户明确红线（GLM/stepfun/阿里曾因字母替换被打回）。
