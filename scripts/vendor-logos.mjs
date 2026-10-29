@@ -21,6 +21,7 @@ export const LOGO_EXT = {
   tencent: "png",
   stepfun: "png",
   microsoft: "png",
+  particle: "png",
 };
 
 export function vendorMark(vendorId, size = 16, logoBase = "/assets/logos/") {
