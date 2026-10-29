@@ -2207,3 +2207,53 @@ Muse 页面的图表已归档到 `models/2026-10-12-muse-wonder/images/` 与
 - **渠道地图回写**：本批把三条实测教训写回 `.claude/skills/ingest-releases/references/discovery-channels.md` 的 Google 行——① **官方评测方法说明 PDF 通道** `deepmind.google/models/evals-methodology/<model>/` 直出 `application/pdf`（最终 302 到 `storage.googleapis.com/deepmind-media/`），是 `protocol` 字段唯一有据可依的来源；② **`deepmind.google/blog/<slug>` 会 301 跳转到 blog.google 规范页**（字节一致），归档只存一份 HTML；③ **「页面有图表」不等于「正文无数值」也不等于「数值都在正文」**，本批 4 明文 + 13 配图同页共存，判定顺序须先文本后配图。已执行 `npm run sync:skills` 同步镜像，`sync:skills:check` 零漂移通过。
 - **门禁**：`node scripts/reconcile-coverage.mjs` 通过；`node --test tests/*.test.mjs` **19/19 通过**；`node scripts/validate-data.mjs` **PASS**（taxonomy 9 类 / vendors 16 / benchmarks 487（+3）/ releases 208（official 194，+1）/ evidence edges 3274（+21））；`npm run build` 全链通过（`sync:skills:check` + `validate` 32 章 + 219 条 numeric-claim warning 为存量不阻断 + `build:epub:official` 484 KB / 32 章 + `build:web` 735 URL / 487 实体页 + 155 auto-evidence 页 + `validate:site` 924 HTML / 39954 内部引用 / 262 时间轴 / 2198 事件卡）。
 - **分支**：`model-release-daily-20261028T231730Z`（自 `origin/main` = `47d08b4` 开出，隔离 worktree `C:\Users\cheng\code\github\.worktrees\evals\model-release-daily-20261028T231730Z`）。
+
+## 第四十一批（2026-10-29 增量窗口 2026-10-14 ~ 2026-10-29）
+
+- **窗口**：增量窗口 2026-10-14 ~ 2026-10-29（检查点锚点 `last_max_release_date=2026-10-28` 回退 14 天重叠）。检查点回写 `last_scan_at=2026-10-29`（UTC）；`last_max_release_date` **保持 2026-10-28 不变**——本批最大发布日为 2026-10-27，锚点只前进不回退，故仍以 2026-10-28 为窗口起点。
+- **窗口结论**：窗口内确有 **1 个新的官方模型发布**——**Microsoft MAI Cyber 1.1 Flash**（2026-10-27）。该发布官方**未公开任何绝对基准分值**（只有「性能与前代相当、每次扫描成本低 18%」的相对结论与两项产品使用占比），故按口径建 **0 evidence 的 pending 档**，与账本既有先例一致（`microsoft/mai-voice-2-1`、`mai-image-2-6`、`mai-transcribe-2` 同为 0 行 pending）。本批另做**存量核验补录**：为 `openai/gpt-6-1-terra` 补齐 4 条此前留空的绝对分值。
+- **本批新增 release：1 个**
+  - `microsoft/mai-cyber-1-1-flash`（MAI-Cyber-1.1-Flash，2026-10-27）——**0 条 evidence**（`benchmark_evidence: []`），release `status: pending`。发布日期三源互证：发布页 JSON-LD `datePublished=2026-10-27T15:00:00+00:00`（`dateModified=2026-10-27T15:03:47+00:00`，发布后 3 分钟内轻微编辑）/ `<meta property="article:modified_time">` 同值 / 正文标题下方印刷日 **October 27, 2026**；官方 `model-sitemap.xml` 同日新增落地页 `microsoft.ai/models/mai-cyber-1-1-flash/`（lastmod 2026-10-27T23:12:12）。归档 `models/2026-10-27-mai-cyber-1-1-flash/`（发布页 HTML + 正文配图 `health_shield_pink.webp` + 转录 index.md + manifest.json）。
+  - 模型规格：官方三页均未明示参数量 / 上下文长度 / API 定价，账本一律记 `null`；官方也未公开模型卡 PDF 直链（`https://microsoft.ai/pdf/MAI-Cyber-1.1-Flash-Model-Card.PDF` 实测 **404**，不是每个模型都有卡），故 `primary_sources` 只有发布通告页 + 模型落地页两条官方来源。
+- **本批新增 evidence：0 条**（该发布官方未公开任何绝对基准分值）
+  - 官方正文与落地页的可见数字只有三类，**全部不是基准分**：① 在**内部 MDASH 漏洞扫描评测套件**上性能与 MAI Cyber 1 Flash 相当、**每次扫描成本低 18%**；② 首次扫描后**近 9 成**后续扫描使用 MAI profile；③ MAI Cyber 至今承担**近 50%** 的 MDASH 扫描。按口径「只有绝对分值才单独建行，页面只给相对差值时写进 notes」**一律不建行**，三项均写进 release `notes` 与归档 index.md。
+- **存量核验补录：4 条 evidence 由 `not_extracted` 补齐为绝对分（`openai/gpt-6-1-terra`）**
+  - `openai-gpt-6-1-terra--agents-last-exam` → **57.6%**（Agents' Last Exam v1，medium reasoning 档）
+  - `openai-gpt-6-1-terra--mmmu-pro` → **85.5%**（MMMU-Pro (Vision)，max reasoning 档；正文未点名推理档，故取最高档并在 `protocol.reasoning_effort` 标注）
+  - `openai-gpt-6-1-terra--osworld` → **66.7%**（OSWorld 2.1, offline set，medium reasoning 档）
+  - `openai-gpt-6-1-terra--terminal-bench-science` → **58.3%**（Terminal-Bench-Science 0.1，max reasoning 档）
+  - **补录依据与交叉校验**：该页 6 张评测图不是位图，而是以结构化数据内嵌在页面 RSC 载荷里（`self.__next_f.push` → `vegaLiteSpec.data.values`，逐「模型 × 推理档位」给出 `score` 与 `usd`），**DOM 可逐行机读**，按「DOM 机读图表记 DOM 明文」口径补齐；四处取值与同页散文**逐条交叉校验一致**——Agents' Last Exam 与同档 GPT-5.6 Terra 差值**恰为 15.0 个百分点**（正文原话 "scores 15 percentage points higher"）、OSWorld medium 档 66.7% > GPT-5.6 Terra 全档最好成绩 57.1%（正文原话 "surpasses GPT-5.6 Terra's best score"）、Terminal-Bench-Science max 档 58.3% > 同档 GPT-6.1 Sol 57.0% 且与 Claude Opus 5.5 w/ fallbacks 63.3% 相差**恰为 5.0 个百分点**（正文原话 "surpasses GPT-6.1 Sol… coming within five points of Opus 5.5"）、MMMU-Pro max 档 85.5% 与 GPT-6.1 Sol 86.3% / GPT-6 Astra 86.7% 相差不到 1.2 个百分点（正文原话 "nearly matches"）。**这些数据在既有归档 `models/2026-10-26-gpt-6-1-terra/page.html` 里就有**，本批未重抓页面，只做核验补录。
+  - 补录纪律：**只补齐此前留空的字段**（`reported_score` / `locator` / `protocol.reasoning_effort`），**未改动任何既有取值**；5 处 `revisions[]` 记录 `from` / `to` / `reason`（4 条 evidence + 1 条 release 级 `notes` 勘误）。各行 `notes` 另附 GPT-6.1 Terra 五个推理档的完整数值与同档竞品对照，归档 `index.md` 新增「内嵌评测图表数据（2026-10-29 核验补录）」一节、`manifest.json` 的 `limitations` 同步勘误。
+  - 口径提醒：这些图是**散点/成本图**，同一模型每项基准有 5 个推理档位的数据点；账本按「每 benchmark 行 = 一条 evidence」只取**一个**档位（正文点名或引用的档位；正文未点名的取最高档并标注），五档完整数值只进归档与 notes。
+- **新 benchmark id：0 个**（本批未新增评测行，无新基准 id）。**补建 benchmark 实体：0 个**。
+- **新厂商：无**（在册仍是 16 家）。
+- **逐厂商巡检（窗口 2026-10-14 ~ 2026-10-29）**
+  - **Microsoft**：本批**唯一有新发布的厂商**。官方 `sitemap_index.xml` → `new-sitemap.xml` 列出全部 news 文章与 `lastmod`，窗口内 2026-10-27 同日三篇：**MAI Cyber 1.1 Flash**（本批建档）、MAI Image 2.6 上 Arena 第 2 名（**MAI-Image-2.6 已建档**，本篇为榜单名次更新，非新模型）、MAI Image 2.7 出圈（**已建档**）；`model-sitemap.xml` 同日新增 `mai-cyber-1-1-flash/` 落地页。另 `frontier-pre-training-at-microsoft-ai`(10-15)、`building-medical-superintelligence`(10-22) 属 lab-notes / health 栏目文章，非模型发布。
+  - **OpenAI**：官方 `news/rss.xml` 窗口内最新条目为 10-28 的 "The future of the firm" / ServiceNow 合作 / Legora 客户案例，**均非模型发布**；`/sitemap.xml/release/` 的 85 条 slug 是全站历史清单（无窗口内新 slug），故以 RSS 为准 → 无新发布。
+  - **Google**：`deepmind.google/blog/rss.xml` 窗口内最新即 **Gemini 4 Carbon**(10-28，第四十批已建档) 与 Genie 4(10-27，已建档) → 无新发布。
+  - **Anthropic**：`platform.claude.com/docs/en/models/overview` 在架型号仍是 Fable 5.1 / Opus 5.5 / Sonnet 5.5 / Haiku 5.5，**全部已建档** → 无新发布。
+  - **Mistral**：官方 RSS 窗口内仅 Timestral(10-15，已建档) → 无新发布；HF `mistralai` 窗口内新仓全是 Timestral 的尺寸衍生件，不另建档。
+  - **xAI**：`docs.x.ai/docs/release-notes` 分组标题最新为 October 27 的**产品项**（自定义审核开关），Oct 14 的 Grok Voice 3.0 已建档 → 无新发布。
+  - **Meta**：`research.meta.ai/blog` 窗口内三条——10-28 的「How American Universities Are Using AI Models From Meta…」（**高校用例文章，无模型名无评测分，非新发布**）、10-15 的 Muse Spark Open（已建档）、10-14 的 Muse 健康数据研究（应用文章）→ 无新发布。
+  - **DeepSeek**：`api-docs.deepseek.com/updates` 最新仍是 2026-10-17（已建档）→ 无新发布。
+  - **MiniMax**：`platform.minimax.io/docs/release-notes/models` 最新仍是 2026-10-19 的 MiniMax M3.1 Flash（已建档）→ 无新发布。
+  - **Kimi**：官方博客与 HF `moonshotai` 窗口内无新模型（K3.1 Pro 含 Highspeed 变体已建档）→ 无新发布。
+  - **Qwen**：HF `Qwen` 组织窗口内 0 新仓；GitHub `QwenLM` 新建仓仅 `BabelArena`（基准仓）；官方 `Qwen-Image-2.1` README 更新日志最新仍是 2026.10.09 的 Turbo（已建档）→ 无新发布。
+  - **豆包**：官方 `seed.bytedance.com/sitemap.xml` 的 12 篇 `/blog/` 文章**逐篇实取并取印刷日**——窗口内最新仍是 10-14 的招聘贴（**非模型发布**），模型类文章最新为 8-05 的 SeedRealtime（已建档）；7 月的 Seedream 5.0 Lite、4 月的 Seed3D 2.0 等**早于窗口且不在账本**，留待存量全量审计批次 → 窗口内无新发布。
+  - **小米 MiMo**：`mimo.xiaomi.com` 首页 Blog 卡片最新仍是 MiMo-V2.6 系列（已建档）→ 无新发布。
+  - **腾讯混元 / 微信视觉**：HF `tencent` 窗口内新仓全是已建档模型或量化衍生件（`Hy-Nomas-Diffusers` 第三十四批已登记）；GitHub `Tencent-Hunyuan` 新仓 `HyperLogic`(10-27) 是**基准仓**（诊断型逻辑推理 benchmark），非模型发布 → 无新发布。
+  - **StepFun**：在架 Step 5 Preview / Step 3.7 Flash / Step 3.5 Flash 均已建档；HF `stepfun-ai` 窗口内新仓 `Step-5-Preview-NVFP4` 是量化衍生件 → 无新发布。
+  - **智谱 GLM**：`z.ai/blog` 仍 404；HF `zai-org` 窗口内 0 新仓 → 无新发布。
+- **入口扫描结果**：本批 `scan.mjs --write` 已落盘 `data/model-coverage.json`；`reconcile-coverage.mjs` 后**未决候选为 0**——两条 Microsoft 候选（模型落地页 + 发布通告页）按 `primary_sources` URL 自动挂到新 release（`release_id=mai-cyber-1-1-flash`、`archive_status=archived`、`evidence_status=not_reported`）；另把历史遗留的 `anthropic` 候选「Announcements」（公告索引页）补上 `exclusion_reason`，不再悬空。
+- **跳过清单**
+  - **MAI Cyber 1.1 Flash 的 18% 扫描成本差**——相对差值，官方未给每次扫描的绝对美元数与通过率，不折算、不建行，只写进 notes。
+  - **MAI Cyber 1.1 Flash 的两项产品采用度指标**（近 9 成后续扫描使用 MAI profile、近 50% 的 MDASH 扫描由 MAI Cyber 承担）——产品运营指标，不是模型能力指标，不入 evidence。
+  - **MDASH 内部漏洞扫描评测套件**——微软内部私有集，未公开题集、题量与判分流程，外部无法复跑、不可跨机构比较；不建行，且在 notes 与 benchmark 边界说明里写明。
+  - **Meta 10-28 高校用例文章**——无模型名、无评测基准与分值，非新模型发布，不建档。
+  - **Microsoft 10-15 lab-notes 与 10-22 health 文章**——非模型发布，不建档。
+  - **腾讯 `HyperLogic` 仓**——基准仓，非模型发布，不建档。
+  - **字节 Seedream 5.0 Lite / Seed3D 2.0 等 2026-02 ~ 2026-07 的模型页**——早于本窗口，属存量缺口，留待存量全量审计批次，本批不扩范围。
+- **待人工核验**：本批新增 pending **0 条**（无新增 evidence 行）。`openai/gpt-6-1-terra` 4 行由**图表数据**（DOM 机读）补齐并经散文交叉校验，不属「待人工读图」范畴，故不在待核验清单内；沿用第三十三~四十批的既有 pending 清单不变。
+- **渠道地图回写**：本批把三条实测教训写回 `.claude/skills/ingest-releases/references/discovery-channels.md`——① **Microsoft 通道 403 的真因是 `Accept` 头**：curl 默认发 `Accept: */*` 直接吃 CF 挑战页，显式带 `-H 'accept: text/html'` 后**同一 URL 立刻 200 全文**（`/blog/`、`/news/<slug>/`、`/models/<slug>/`、`/sitemap_index.xml` 全部可取），并新增 `sitemap_index.xml` → `new-sitemap.xml` / `model-sitemap.xml` 两条发现通道（但 **lastmod ≠ 发布日**，日期一律取文章页 JSON-LD `datePublished`；WP REST API 全 401 不必再试）；② **OpenAI「正文只印相对结论」不等于「页面没有绝对分」**：散文给不出绝对分时下一步应翻 RSC 载荷的图表数据集（`vegaLiteSpec.data.values`），而非直接记 `not_extracted`——**这些数据就在归档的 `page.html` 里**，补录不必重抓页面；③ MAI-Cyber-1.1-Flash 无模型卡 PDF（`/pdf/MAI-Cyber-1.1-Flash-Model-Card.PDF` 实测 404），不是每个模型都有卡。已执行 `npm run sync:skills` 同步镜像，`sync:skills:check` 零漂移通过。
+- **门禁**：`node scripts/reconcile-coverage.mjs` 通过；`node --test tests/*.test.mjs` **19/19 通过**；`node scripts/validate-data.mjs` **PASS**（taxonomy 9 类 / vendors 16 / benchmarks 487 / releases 209（official 195，+1）/ evidence edges 3274）；`npm run build` 全链通过（`sync:skills:check` + `validate` 32 章 + `build:epub:official` 484 KB / 32 章 + `build:web` 736 URL / 487 实体页 + 155 auto-evidence 页 + `validate:site` 925 HTML / 39982 内部引用 / 262 时间轴 / 2200 事件卡）。本地抽查：`/releases/` 时间轴出现 **MAI-Cyber-1.1-Flash** 新结点（徽章为真实微软彩色 logo）、详情页 `models/mai-cyber-1-1-flash/` 可访问且显示「所收录官方页面未披露量化评测。此模型仍可查阅，但不能据此进入分数排序。」，全程无「已核验/待核验/待补」类内部术语。
+- **分支**：`model-release-daily-20261029T010113Z`（自 `origin/main` = `f9a41a9`（第四十批 squash 合并后的 main）开出）。**开工前处置**：上一轮（第四十批）中断在「开 PR」与「合并」之间，`origin/model-release-daily-20261028T231730Z` 的 PR #32 仍为 OPEN；按「先确认那个 OPEN PR 的 CI 为绿并 squash 合并它，再从更新后的 origin/main 开本轮新分支」的顺序，本批开工第一步先确认 PR #32 的 CI（Build EPUB & Web = pass）并 squash 合并（**保留远端分支不删除**），再开本批分支。
