@@ -81,7 +81,7 @@
 | **本机无头 Chrome**（`/Applications/Google Chrome.app/Contents/MacOS/Google Chrome --headless=new --dump-dom`） | 2026-10-24 实测**完全不出内容**：`--dump-dom` 对 `https://example.com` 都返回 0 字节（`--headless=old`、`--user-data-dir`、`--virtual-time-budget` 三种组合全试过），`perl -e 'alarm N; exec @ARGV'` 强杀后 stdout 仍是空 | 别把时间耗在调无头 Chrome 参数上。改用「静态 GET + 站点自带通道」：sitemap.xml / RSS / 官方文档模型总表 / HF 官方组织 API / GitHub org API——本轮 12 家厂商的巡检全部靠这些静态通道完成 |
 | **内置浏览器（`mcp_browser`）读页面** | `open_tab` 正常（能拿到标题与 URL），但 `query`（kind=text / dom / selector）与 `screenshot` 在重页面上**每次都撞满 275s 超时**（x.ai/news、seed.bytedance.com/en/blog/、x.ai/sitemap.xml 全如此）；`inspect` 在 x.ai/news 上 4s 返回但只有 1 个元素（页面没 hydrate） | 浏览器只适合「确认页面存在」，**不适合当取数通道**。取数走静态 HTTP 通道；浏览器单次调用超时要按 275s 预算规划，一轮别超过 2 次 |
 
-> 「上一轮跑批遗留未收口」的判定：开工前若发现**当前本地分支**是某个已合并的 `model-release-daily-*`，且存在**更新的远端 `model-release-daily-*` 带 OPEN PR**，说明上一轮在「开 PR」与「合并」之间断了。不要重跑那一批，也不要当残留清理——先把那个 OPEN PR 合并并确认其 CI 为绿，再从 `origin/main` 开本轮新分支。
+> 「上一轮跑批遗留未收口」的判定：开工前若发现**当前本地分支**是某个已合并的 `model-release-daily-*`，且存在**更新的远端 `model-release-daily-*` 带 OPEN PR**，说明上一轮在「开 PR」与「合并」之间断了。不要重跑那一批，也不要当残留清理——先把那个 OPEN PR 合并并确认其 CI 为绿，再从 `origin/main` 开本轮新分支。**完整的 A/B/C 三情况分流与分支策略见 `SKILL.md` Step 0**（那里是正式规则，本条只是判据提示）。
 
 ## 图表数值取数：先分清「DOM 可机读」与「只在位图里」
 

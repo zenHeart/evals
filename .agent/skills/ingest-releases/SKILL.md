@@ -16,8 +16,30 @@ description: evals 仓的模型发布增量入库流程：自动发现自上个�
 
 ## Step 0 · 前置与增量窗口
 
-1. 记录 `git status` 与基线 commit。独立入库要求干净；与用户授权的 issue 修复同批执行时，记录任务开始时的状态并仅提交本任务变更，不回滚或混入无关工作。
-2. 计算扫描窗口：
+1. **开工前收口**（先做，不要跳过）：
+
+```bash
+git fetch origin --prune
+git status --porcelain
+git branch --show-current
+gh pr list --state open --limit 20
+```
+
+按三种情况分流，**不要**一律"停止并报告"：
+
+| 情况 | 判据 | 动作 |
+| --- | --- | --- |
+| A 上一轮断在「开 PR → 合并」之间 | 存在 OPEN PR，且其 head 分支是比本地当前分支更新的 `model-release-daily-*` | **先**确认那个 OPEN PR 的 CI（"Build & Publish"）为绿，**再** squash 合并它（远端分支保留不删除）；然后从更新后的 `origin/main` 开本轮新分支。**不要**重跑那一批 |
+| B 上一轮已收口 | 当前分支是已合并的 `model-release-daily-*`，且没有 OPEN PR | 直接从 `origin/main` 开本轮新分支；当前分支的产物已在 main 里，不要重复提交 |
+| C 别人留下的脏工作树 | `git status --porcelain` 非空 | **立即停止并报告**：不 stash、不切换分支、不覆盖别人的产物 |
+
+2. **分支策略**：一律 `git switch -c model-release-daily-<UTC时间戳，如 20261029T010113Z> origin/main`。
+   - **禁止使用本地 main**：它与 origin/main 长期分叉且已落后数十个提交，一律不用。
+   - 禁止 `git branch -D`、禁止 `git push --delete`、禁止删除任何远端分支或历史：**远端分支一律保留**。
+   - 本机 git 身份已按仓库配好（local `zenheart <zenheart_register@163.com>`），直接 commit 即可；若仍报 Author identity unknown，用 `git config --local` 按 `git log -1 --format='%an <%ae>'` 设成仓库既有身份，**不要写全局配置**。
+
+3. 记录基线 commit。独立入库要求干净；与用户授权的 issue 修复同批执行时，记录任务开始时的状态并仅提交本任务变更，不回滚或混入无关工作。
+4. 计算扫描窗口：
 
 ```bash
 node .claude/skills/ingest-releases/scripts/checkpoint.mjs status
@@ -100,8 +122,30 @@ npm run sync:skills               # 自动单向同步镜像至 .agent/skills/
 ```
 
 3. 在 `data/model-releases/official/README.md` **末尾追加**本批报告节（只追加，不改既有批次内容；格式沿用既有批次）。
-4. 提交并推送：commit message 沿用仓内风格（中文、`feat:`/`fix:` 前缀、一行说清本批增量），push 到 main，等 CI 绿。
-5. 向用户交付报告。
+4. **提交与合并**（不直接 push 到 main）：
+   - commit message 沿用仓内风格（中文、`feat:`/`fix:` 前缀、一行说清本批增量）；
+   - `git push -u origin <分支名>` → `gh pr create --base main --title "<中文标题>" --body "<本批报告摘要>"` → `gh pr merge <PR号> --squash --subject "<中文标题>" --delete-branch=false`；
+   - `--delete-branch=false` 若解析异常就**直接省略该 flag**（默认不删分支），**任何情况下都不得使用 `--delete-branch`**；远端分支一律保留。
+   - 推完分支后 GitHub 的 mergeable 会短暂返回 UNKNOWN，等约 10 秒再查，别误判成冲突。
+   - **两批同时改同一批「末尾追加型」生成物时的冲突解法**（README 批次节、`model-coverage.json`、`ingest-checkpoint.json`、`evals.epub`、`auto-benchmark-ids.json`）：**不要用 git 的整块拼接**（会把两批的行粘到同一行）。README 按 `## 第N批（` 标题把两个分支原文各切一段、先旧后新拼接；coverage / checkpoint 取较新批次的一侧，再跑 `node scripts/reconcile-coverage.mjs` 重建；epub / web 产物**不手解**，用 `npm run build:epub:official`、`npm run build:web` 重建。冲突块很多时**循环到 `<<<<<<<` 全部消失**，不要只解第一处。
+
+5. **等 CI 绿**：工作流 "Build & Publish"（`gh run list --branch main`、`gh run watch <run-id>`）。
+   - CI 失败就读日志定位、修好重推，直到绿；runner 池排队十几分钟是常态，不要因为慢就重复推分支。
+   - **REST API 限流（403）读不出结论时**，不要硬等重置，改用不占限流额度的等价证据：① `https://github.com/zenHeart/evals/actions/workflows/build-epub.yml/badge.svg` 的 `<title>`；② `https://github.com/zenHeart/evals/commits/main.atom` 里的发布提交（Publish 是最后一步，它成功才会产生 deploy 提交）。
+
+6. **部署后线上校验**（必须逐条做，不能只看 CI 绿）：
+
+```bash
+curl -sL -o /dev/null -w "%{http_code}\n" https://evals.zenheart.site/releases/
+curl -sL https://evals.zenheart.site/releases/ | grep -c "<新结点 slug>"
+curl -sL -o /dev/null -w "%{http_code}\n" https://evals.zenheart.site/models/<新结点 slug>/
+```
+
+   - 本批若还做了**存量补录**（把此前留空的绝对分值补齐），还要在 live 详情页 grep 具体数值，确认每个数值都出现——补录不上线 = 没做完。
+   - **GitHub Pages 有 CDN 传播延迟**：CI 绿后站点可能还要 1~5 分钟才反映；此时 Last-Modified 与章节数仍是旧值，先等一会儿再判失败。
+   - 本仓部署走 GitHub Pages 官方 action（`actions/deploy-pages`），**远端没有 `gh-pages` 分支**，不要去 fetch 它。
+
+7. 向用户交付报告。
 
 ## 交付报告模板
 
