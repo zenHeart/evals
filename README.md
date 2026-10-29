@@ -16,6 +16,7 @@
 
 - **《大模型评估入门》**：32 章（chapter-00 术语速查 + 四大块：建立框架认知 / 方法论与标准流程 / 厂商发布评测全景 / 评估框架实战），提供在线阅读与 EPUB 下载。
 - **评估大全**：65 个主流 benchmark 的参考库（测什么、怎么测、分数含义、厂商采用记录），数据源为 `data/benchmarks/` 实体层。每个 benchmark 都有独立详情页（/benchmarks/<id>/），由构建自动生成。
+- **学习 Agent 评估证据**：从 [第 21 章 §21.13](book/chapters/chapter-21-rag-agent-eval.md) 阅读报告合同，查阅 [learning-agent-v1 JSON Schema](data/eval-specs/learning-agent-v1.schema.json) 与 [结构校验器](scripts/validate-learning-agent.mjs)；跨仓目标见 [workflow#651](https://github.com/zenHeart/workflow/issues/651)。结构校验通过不代表真实运行已验收或能力已掌握。
 
 ## 读者画像
 
@@ -134,3 +135,4 @@ https://evals.zenheart.site
 ## 许可
 
 MIT License. 引用厂商基准数据时，请遵守各原始数据集的许可协议。
+

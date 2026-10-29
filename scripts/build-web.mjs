@@ -1095,6 +1095,7 @@ ${TOPBAR("../", "book")}
   <p style="margin:18px 0;"><a class="read-cta" id="continueReading" href="chapter-01/" hidden>📍 继续上次阅读</a>
   <a class="read-cta" href="chapter-00/">从第 0 章（术语速查）开始 →</a>
   <a class="read-cta" href="chapter-01/">跳过速查，从第 1 章开始 →</a></p>
+  <p class="sub">学习 Agent 评估证据：先读 <a href="chapter-21/#sec-21-13">第 21 章 §21.13</a>，再查 <a href="https://github.com/zenHeart/evals/blob/main/data/eval-specs/learning-agent-v1.schema.json">learning-agent-v1 JSON Schema</a> 与 <a href="https://github.com/zenHeart/evals/blob/main/scripts/validate-learning-agent.mjs">结构校验器</a>；跨仓目标见 <a href="https://github.com/zenHeart/workflow/issues/651">workflow#651</a>。结构校验通过不代表真实运行已验收或能力已掌握。</p>
   ${sections}
 </div>
 ${shellFooter()}
@@ -1333,3 +1334,4 @@ ${urls.map(u => `  <url><loc>${SITE}${u}</loc><lastmod>${today}</lastmod></url>`
 }
 
 main();
+
