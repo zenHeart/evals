@@ -2257,3 +2257,62 @@ Muse 页面的图表已归档到 `models/2026-10-12-muse-wonder/images/` 与
 - **渠道地图回写**：本批把三条实测教训写回 `.claude/skills/ingest-releases/references/discovery-channels.md`——① **Microsoft 通道 403 的真因是 `Accept` 头**：curl 默认发 `Accept: */*` 直接吃 CF 挑战页，显式带 `-H 'accept: text/html'` 后**同一 URL 立刻 200 全文**（`/blog/`、`/news/<slug>/`、`/models/<slug>/`、`/sitemap_index.xml` 全部可取），并新增 `sitemap_index.xml` → `new-sitemap.xml` / `model-sitemap.xml` 两条发现通道（但 **lastmod ≠ 发布日**，日期一律取文章页 JSON-LD `datePublished`；WP REST API 全 401 不必再试）；② **OpenAI「正文只印相对结论」不等于「页面没有绝对分」**：散文给不出绝对分时下一步应翻 RSC 载荷的图表数据集（`vegaLiteSpec.data.values`），而非直接记 `not_extracted`——**这些数据就在归档的 `page.html` 里**，补录不必重抓页面；③ MAI-Cyber-1.1-Flash 无模型卡 PDF（`/pdf/MAI-Cyber-1.1-Flash-Model-Card.PDF` 实测 404），不是每个模型都有卡。已执行 `npm run sync:skills` 同步镜像，`sync:skills:check` 零漂移通过。
 - **门禁**：`node scripts/reconcile-coverage.mjs` 通过；`node --test tests/*.test.mjs` **19/19 通过**；`node scripts/validate-data.mjs` **PASS**（taxonomy 9 类 / vendors 16 / benchmarks 487 / releases 209（official 195，+1）/ evidence edges 3274）；`npm run build` 全链通过（`sync:skills:check` + `validate` 32 章 + `build:epub:official` 484 KB / 32 章 + `build:web` 736 URL / 487 实体页 + 155 auto-evidence 页 + `validate:site` 925 HTML / 39982 内部引用 / 262 时间轴 / 2200 事件卡）。本地抽查：`/releases/` 时间轴出现 **MAI-Cyber-1.1-Flash** 新结点（徽章为真实微软彩色 logo）、详情页 `models/mai-cyber-1-1-flash/` 可访问且显示「所收录官方页面未披露量化评测。此模型仍可查阅，但不能据此进入分数排序。」，全程无「已核验/待核验/待补」类内部术语。
 - **分支**：`model-release-daily-20261029T010113Z`（自 `origin/main` = `f9a41a9`（第四十批 squash 合并后的 main）开出）。**开工前处置**：上一轮（第四十批）中断在「开 PR」与「合并」之间，`origin/model-release-daily-20261028T231730Z` 的 PR #32 仍为 OPEN；按「先确认那个 OPEN PR 的 CI 为绿并 squash 合并它，再从更新后的 origin/main 开本轮新分支」的顺序，本批开工第一步先确认 PR #32 的 CI（Build EPUB & Web = pass）并 squash 合并（**保留远端分支不删除**），再开本批分支。
+
+## 第四十二批（2026-10-30 增量窗口 2026-10-14 ~ 2026-10-29）
+
+- **窗口**：增量窗口 2026-10-14 ~ 2026-10-29（检查点锚点 `last_max_release_date=2026-10-28` 回退 14 天重叠）。检查点回写 `last_scan_at=2026-10-29`（UTC）、`last_max_release_date=2026-10-29`（本批最大发布日 2026-10-29，锚点前进 1 天）。
+- **窗口结论**：窗口内确有 **1 个新的官方模型发布**——**Mistral Large 4（Le Chonk）开源权重版**（2026-10-29）。该发布官方公开 **12 项绝对分值**（散文 8 项 + 仅见于图表 DOM 的 4 项），全部可机读取值，并与同页散文交叉校验一致。
+- **本批新增 release：1 个**
+  - `mistral/mistral-large-4-oss`（Mistral Large 4 (Le Chonk) 开源权重版，2026-10-29）——12 条 evidence，release `status: verified`。发布日期三源互证：发布页 JSON-LD `datePublished=2026-10-29T12:00:07.000Z`（`dateModified=2026-10-29T17:33:42.728Z`，发布当日二次编辑）/ 官方 RSS 条目 `pubDate Wed, 29 Oct 2026 12:00:07 GMT` 同值 / 官方权重仓 `mistralai/Mistral-Large-4-1T-A52B` 的 lastModified 2026-10-29 14:51:07。归档 `models/2026-10-29-mistral-large-4-oss/`（发布页 HTML + 33 张发布内容图 + 转录 index.md + manifest.json，共 35 个文件，manifest 逐文件 sha256）。
+  - **为何单建 release 而不并入 `mistral-large-4`**：Mistral Large 4 于 2026-10-06 以公开预览发布（账本既有条目），本条是官方在追加三周强化学习后放出的**改进权重**，属独立发布事件。两者在同一基准上的成绩不同（Terminal-Bench 4.0：预览 28.3% → 开源权重版 41.4%），若并入同一条目会出现同一 benchmark + 同一 variant 的两套分值，故单建 model id `mistral-large-4-oss`。
+  - 模型规格：1T MoE（HF 仓名 `Mistral-Large-4-1T-A52B`，激活约 52B）、原生多模态（HF `pipeline_tag=image-text-to-text`）、推理档位 Low/Medium/High（默认 High，Low 取代原 "None" 档）；官方发布页**未给 API 定价与上下文长度**，账本一律记 null。权重许可为 **Mistral Ecosystem Open-Weight License**（MIT 改版），官方在 HF 仓提供 LICENSE。
+- **本批新增 evidence：12 条**（`data/model-releases/official/mistral/mistral-large-4-oss.json`）
+  - `frontier-code`（FrontierCode 2.0）→ **19.7%**（散文 + 图表一致）
+  - `aa-coding-agent-index`（High 推理档，默认）→ **48%**；同基准 Medium 档另起一行 → **35%**（仅图表 DOM）
+  - `terminalbench`（4.0）→ **41.4%**（官方正文印「41%」，图表机读 `data-value` 41.4，差异已在行 notes 声明）
+  - `surge-code` ×4 → 对 GLM-5.3 **64%**、对 Kimi K3 **64%**、对 DeepSeek V4.1 Flash 1017 **56%**、对 Claude Opus 5.5 **22%**（对手相关的盲测成对胜率，逐对手拆行）
+  - `aa-cyber-index` → **50.9%**（官方正文印「51%」）
+  - `cyber-refusal-rate` → **96.6%**（安全行为指标，非能力分）
+  - `finworkbench` → **73.3%**
+  - `browsecomp` → **84.5%**
+- **取值纪律与交叉校验**
+  - 九张评测图表均为页面内嵌 SVG 组件，数值以 `data-value` / `data-display` 属性内嵌于 DOM，可机读，**无位图读数**；故散文点名的行取 `evidence_type: "text"` 并附原句，仅见于图表的行取 `evidence_type: "table"`（DOM 机读行免 quote_snippet）。同 vendor 既有先例一致（`mistral/voxtral-3` 18 行同为 `table`/verified，取值同出 `chart-mark-group` 路径）。
+  - 交叉校验 3 处：① **Terminal-Bench 4.0**——账本既有预览行 28.3% + 官方所称「提升 13 个百分点」= 41.3 ≈ 机读值 41.4；② **BrowseComp**——官方所称 SFT checkpoint 时 75% 与图中 `Early Mistral Large SFT checkpoint 75.0` 一致；③ 两处机读值略大于页面显示值（41.4 vs 41%、50.9 vs 51%）已在对应行 notes 显式声明，未静默取整。
+  - **不建行**的相对值：官方称「比 GLM-5.3 每任务少用 47% token」「输出 token 减少 30%」为相对差值，未给绝对 token 预算，不折算、不建行，只写进 notes 与归档 index.md。
+  - **口径提醒**：`aa-cyber-index` 本行是**指数总分**，账本既有 `mistral-large-4` 那行记的是指数内的 reproduce-and-patch **子项**（82），两者不是同一口径，不可混读或相减；`cyber-refusal-rate` 须与能力分成对读（拒答过度会把合法防御任务一并挡掉）。
+- **新 benchmark id：3 个** —— `surge-code`、`cyber-refusal-rate`、`finworkbench`；**同步补建 3 个 benchmark 实体**（三者页面信息足以写全 summary + interpretation）。
+  - `surge-code`（编码类人类盲测成对偏好）→ categories `preference, coding`；解读要点：胜率**对手相关**，不可跨对手并列成综合分。
+  - `cyber-refusal-rate`（恶意网络安全请求平均拒答率）→ categories `safety`；解读要点：这是**拒答行为**指标而非能力分，须与 AA Cyber Index 成对读。
+  - `finworkbench`（FinWorkBench / Finch）→ categories `agent, knowledge`；解读要点：分值是**工作流任务完成正确率**，不是金融知识正确率。
+  - 底层引用页的官方地址本批只记已核实的 Mistral 发布页；JailbreakBench / StrongREJECT / AgentHarm 的官方仓库地址在本批**未完成可访问性核验**（HF API 返回 401、猜测的 GitHub 仓 404），故未写入 `official_sources`，并在实体 notes 中显式声明，不臆造 URL。
+- **新厂商：无**（在册仍是 16 家）。
+- **逐厂商巡检（窗口 2026-10-14 ~ 2026-10-29）**
+  - **Mistral**：本批**唯一有新发布的厂商**。官方 RSS 窗口内两条——10-21 的「Mistral × NVIDIA 合作」（合作公告，非模型发布）与 10-29 的 "Le Chonk: Built for Coders, Trusted by Defenders."（本批建档）。HF `mistralai` 窗口内新仓 `Mistral-Large-4-1T-A52B-NVFP4`（10-15）是量化衍生件，不另建档。
+  - **OpenAI**：官方 `news/rss.xml` 窗口内条目逐条实取——10-29 的 "An updated Model Spec"、"How we detect frontier model misalignment"、Ropes & Gray 客户案例，10-28 的 ServiceNow 合作 / "The future of the firm" / Legora，10-27 的 Retell / Oracle / Check Point，10-26 的 Greptile / CodeRabbit 等，**全部非模型发布**；`/sitemap.xml/release/` 无窗口内新 slug → 无新发布。
+  - **Google**：`deepmind.google/blog/rss.xml` 与 `blog.google` 窗口内最新仍是 Gemini 4 Carbon(10-28，已建档) 与 Genie 4(10-27，已建档) → 无新发布。
+  - **Anthropic**：`platform.claude.com/docs/en/models/overview` 在架型号仍是 Fable 5.1 / Opus 5.5 / Sonnet 5.5 / Haiku 5.5 / Haiku 4.5 / Opus 4.6 / Opus 4.5，全部已建档 → 无新发布。
+  - **Microsoft**：`model-sitemap.xml` 窗口内 lastmod 变化的是 `mai-voice-2-1`（10-29T20:37:38）与 `mai-transcribe-2`（10-29T20:39:46）两个**已在册模型**的落地页刷新（两页 JSON-LD `datePublished` 分别为 2026-10-01 与 2026-09-03，均非新模型）；`new-sitemap.xml` 窗口内 10-27 的三篇与上批一致（MAI Cyber 1.1 Flash / MAI Image 2.6 / MAI Image 2.7 均已建档）→ 无新发布。
+  - **xAI**：`docs.x.ai/docs/release-notes` 窗口内无新模型（10-27 为产品项：自定义审核开关）；`docs.x.ai/docs/models` 在架型号均已建档 → 无新发布。
+  - **Meta**：`research.meta.ai/blog` 窗口内三条——10-28 的「How American Universities Are Using AI Models From Meta…」（**高校用例文章，无模型名无分值，非新发布**）、10-15 的 Muse Spark Open（已建档）、10-14 的 Muse 健康数据研究（应用文章）→ 无新发布。
+  - **DeepSeek**：`api-docs.deepseek.com/updates` 最新仍是 2026-10-17（已建档）→ 无新发布。
+  - **MiniMax**：`platform.minimax.io/docs/release-notes/models` 最新仍是 2026-10-19（已建档）→ 无新发布。
+  - **Kimi**：官方博客与 HF `moonshotai` 窗口内 无新模型（K3.1 Pro 已建档）→ 无新发布。
+  - **Qwen**：HF `Qwen` 组织窗口内唯一新仓 `Qwen3-8B-DSpine-b16`（10-16）是**推测解码研究产物**（非模型发布）；GitHub `QwenLM` 窗口内新建仓 `BabelArena`、`BlenderWorld` 均为**基准仓** → 无新发布。
+  - **豆包**：官方 `seed.bytedance.com/sitemap.xml` 窗口内最新仍是 10-14 的招聘贴（**非模型发布**）→ 无新发布。
+  - **小米 MiMo**：`mimo.xiaomi.com` 首页与 `/blog` 窗口内无新模型卡片（MiMo-V2.6 已建档）→ 无新发布。
+  - **腾讯混元 / 微信视觉**：HF `tencent` 窗口内新仓全是已建档模型或衍生件——其中 `Hy-Nomas-Diffusers`（10-24）是**已建档 `hy-nomas` 的 Diffusers BF16 打包件**，本批**明确结案为「衍生打包，不另建档」**（第三十四批登记的待决项至此闭环）；GitHub `Tencent-Hunyuan` 窗口内新仓 `HyperLogic`（10-27）是**基准仓** → 无新发布。
+  - **StepFun**：`platform.stepfun.com/docs/sitemap.xml` 在架 Step 5 Preview / Step 3.7 / Step 3.5 / Step Router / StepAudio-3 系列均已建档；HF `stepfun-ai` 窗口内 `Step-5-Preview-NVFP4` 是量化衍生件 → 无新发布。
+  - **智谱 GLM**：`z.ai/blog` 仍 404；HF `zai-org` 窗口内 0 新仓 → 无新发布。
+- **入口扫描结果**：本批 `scan.mjs --write` 已落盘 `data/model-coverage.json`；`reconcile-coverage.mjs` 后**未决候选为 0**——本批新增的 Mistral 候选（`https://mistral.ai/news/mistral-large-4-oss/`）按 `primary_sources` URL 自动挂到新 release（`release_id=mistral-large-4-oss`、`archive_status=archived`、`evidence_status=reported`）。
+- **跳过清单**
+  - **「比 GLM-5.3 每任务少用 47% token」「输出 token 减少 30%」**——相对差值，官方未给绝对 token 预算，不折算、不建行。
+  - **HF `Mistral-Large-4-1T-A52B-NVFP4`、`Step-5-Preview-NVFP4`**——量化衍生件，按既有口径不另建档。
+  - **HF `tencent/Hy-Nomas-Diffusers`**——已建档模型的 Diffusers 打包件，不另建档。
+  - **HF `Qwen/Qwen3-8B-DSpine-b16`**——推测解码研究产物，非模型发布。
+  - **GitHub `QwenLM/BabelArena`、`QwenLM/BlenderWorld`、`Tencent-Hunyuan/HyperLogic`**——基准仓，非模型发布。
+  - **Meta 10-28 高校用例文章、OpenAI 10-29 Model Spec 与失准检测方法文、Microsoft 10-29 两个落地页刷新**——非新模型发布，不建档。
+  - **Mistral × NVIDIA 合作公告（10-21）**——合作公告，非模型发布。
+- **待人工核验**：本批新增 pending **0 条**（12 行均为 DOM 机读明文并经散文交叉校验，不属「待人工读图」范畴）；沿用第三十三~四十一批的既有 pending 清单不变。
+- **门禁**：`node scripts/reconcile-coverage.mjs` 通过；`node --test tests/*.test.mjs` **65/65 通过**；`node scripts/validate-data.mjs` **PASS**（taxonomy 9 类 / vendors 16 / benchmarks 490（+3）/ releases 210（official 196，+1）/ evidence edges 3286（+12））；`npm run build` 全链通过（`test` 65/65 + `sync:skills:check` 零漂移 + `validate:data` PASS + `validate` 32 章 + `build:epub:official` 486 KB / 32 章 + `build:web` 740 URL / 490 实体页 + 155 auto-evidence 页 + `validate:site` 929 HTML / 40150 内部引用 / 263 时间轴 / 2208 事件卡）。
+  - **顺带修掉的一个既有阻塞**：本批开工时 `node --test tests/*.test.mjs` 在 cwr（Windows）上失败，根因是 `tests/learning-agent-eval.test.mjs` 用 `URL#pathname` 取脚本路径，在 Windows 下得到 `/C:/...`，spawn 后被解析成 `C:\C:\...`。该用例随 PR #36/#38 于 2026-10-29 合入 `main`（晚于第三十九~四十一批的 09:00 运行），故前三批的「19/19 通过」并不含它。**已在干净 `origin/main`（a22615e）的独立 worktree 上复现，确认与本批改动无关**；本批按最小改动修法（`fileURLToPath(script)` 取代 `script.pathname`）一并修好，Linux/macOS 行为不变。
+- **分支**：`model-release-daily-20261029T231915Z`（自 `origin/main` = `a22615e` 开出，隔离 worktree `C:\Users\cheng\code\github\.worktrees\evals\model-release-daily-20261029T231915Z`，主检出目录 `C:\Users\cheng\code\github\evals` 未被改动）。按本 Issue 验收条款「human reviews each delivery before accepting or publishing it; no automatic merge or publish」，**本批只开 PR、不自动合并**，等待人工评审。

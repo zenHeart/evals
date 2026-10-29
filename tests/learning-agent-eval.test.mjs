@@ -4,21 +4,25 @@ import { execFileSync, spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 const root = new URL("..", import.meta.url);
 const script = new URL("../scripts/validate-learning-agent.mjs", import.meta.url);
+// Windows 下 URL#pathname 会带前导斜杠（/C:/...），spawn 解析后变成 C:\C:\...，
+// 必须先转成平台原生路径再交给子进程。
+const scriptPath = fileURLToPath(script);
 const example = JSON.parse(fs.readFileSync(new URL("../data/eval-specs/fixtures/learning-agent-v1-example.json", import.meta.url), "utf8"));
 const checkReport = (report) => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "learning-agent-validator-"));
   try {
     const file = path.join(dir, "report.json");
     fs.writeFileSync(file, JSON.stringify(report));
-    return spawnSync(process.execPath, [script.pathname, file], { cwd: root, encoding: "utf8" });
+    return spawnSync(process.execPath, [scriptPath, file], { cwd: root, encoding: "utf8" });
   } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 };
 
 test("documented default command validates only the structural example", () => {
-  const result = spawnSync(process.execPath, [script.pathname], { cwd: root, encoding: "utf8" });
+  const result = spawnSync(process.execPath, [scriptPath], { cwd: root, encoding: "utf8" });
   assert.equal(result.status, 0, result.stderr);
   assert.match(result.stdout, /structure validation passed/);
   assert.match(result.stdout, /not verified/);
