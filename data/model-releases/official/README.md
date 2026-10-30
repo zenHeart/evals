@@ -2351,3 +2351,71 @@ Muse 页面的图表已归档到 `models/2026-10-12-muse-wonder/images/` 与
 - **待人工核验**：本批新增 pending **0 条**（8 行均为 DOM 机读明文或散文明文并经交叉校验，不属「待人工读图」范畴）；沿用第三十三~四十二批的既有 pending 清单不变。**唯一待勘误项**是「Tau Airlines」**未标注 τ¹ / τ² 版本**——本行按账本既有惯例归到 `tau-bench` 的 `airline` 域，若厂商实为 τ²-bench 需改 `benchmark_id` 并在 `revisions[]` 记勘误。
 - **门禁**：`node scripts/reconcile-coverage.mjs` 通过（**未决候选 0**，两条 particle 候选按 `primary_sources` URL 自动挂到 `particle-1`，`archive_status: archived`、`evidence_status: reported`）；`node --test tests/*.test.mjs` **65/65 通过**；`node scripts/validate-data.mjs` **PASS**（taxonomy 9 类 / vendors 17 / benchmarks 492 / releases 211（official 197）/ evidence edges 3294）；`npm run build` 全链通过（EPUB / 站点 743 URL + 492 实体页 + 155 auto-evidence 页；`validate:site` **932 HTML / 40281 内部引用 / 263 时间轴 / 2216 事件卡**）。本地抽查：`/releases/` 出现 **Particle-1** 新结点（徽章引用 `logos/particle.png` 6 处）、`/models/particle-1/` 与 `/benchmarks/reactbench/` 可访问，详情页**无**「已核验/待核验/待补/证据账本/窗口起点」类内部术语。
 - **分支**：`model-release-daily-20261029T233758Z`（自 `origin/main` = `57398e6` 开出）。**开工前处置**：开工时发现存在**更新的 OPEN PR #39**（第四十二批，Mistral Large 4 开源权重版），其 CI（Build & Publish，run 40974238899）为 **success** 且与分支 HEAD 同一提交、mergeable CLEAN，按「先确认那个 OPEN PR 的 CI 为绿并 squash 合并它，再从更新后的 origin/main 开本轮新分支」的顺序，本批开工第一步先 squash 合并了 PR #39（merge commit `57398e6`，**保留远端分支不删除**），再开本批分支。⚠️ **需人工复核**：第四十二批的报告节写明该批「按本 Issue 验收条款 human reviews each delivery before accepting or publishing it; no automatic merge or publish，只开 PR 不自动合并，等待人工评审」；本批按既有「开工前收口」规则与「完成所有合并和部署」的既定指令先行合并了它——CI 为绿、内容为本仓常规发布入库，如需按该条款改为先评审，可对 `57398e6` 做回退（远端分支 `origin/model-release-daily-20261029T231915Z` 完整保留，批次内容可随时重新提出）。
+
+---
+
+## 第四十四批（2026-10-30 增量窗口 2026-10-15 ~ 2026-10-30：Microsoft MAI-DxO + SDBench 建档）
+
+- **窗口**：增量窗口 2026-10-15 ~ 2026-10-30（检查点锚点 `last_max_release_date=2026-10-29` 回退 14 天重叠）。检查点回写 `last_scan_at=2026-10-30`（UTC）、`last_max_release_date` **保持 2026-10-29 不变**——本批最大发布日为 2026-10-22，早于既有锚点，锚点只前进不回退。
+- **本批性质**：**全窗口巡检 + 一条补漏建档**。窗口内 17 家在册厂商逐家实取巡检，**14 家确无新发布**（逐家判据见下），1 家（Microsoft）漏了一条**在窗口内、带绝对分值、官方一级来源**的发布，本批补建档。
+- **本批新增 release：1 个**
+  - `microsoft/mai-dxo`（MAI-DxO，2026-10-22）——**3 条 evidence，全部 verified**，`status: verified`。
+  - **发布日期证据链（三源互证，均 2026-10-22）**：正文标题下方印刷日 **October 22, 2026**；Yoast SEO JSON-LD `datePublished=2026-10-22T18:01:00+00:00`、`dateModified=2026-10-22T19:32:05+00:00`（同页 `article:modified_time` 同值互证）；官方 `new-sitemap.xml` 该条 `<lastmod>2026-10-22 19:32 +00:00</lastmod>`（与 `dateModified` 同一时刻）。`date_precision=day`。
+  - **官方定位**：MAI-DxO（Microsoft AI Diagnostic Orchestrator）是微软的「AI 诊断系统」，官方称不依赖单个模型直接给答案，而是**像一组虚拟医生那样运作**——各自提出诊断、挑选要问的问题或检查、互相挑战正在形成的看法，系统再协调**若干轮辩论**，随新证据到达更新判断，并把每项检查的可能价值与其成本相权衡。同文推出 **SDBench（Sequential Diagnosis Benchmark）**：题集为 **304 例取自《新英格兰医学杂志》（NEJM）病例记录**的复杂病例 + 一组更常见的 **MIMIC-IV-ED** 急诊病例，每例都是交互式问诊（模型与医生从有限信息出发自行决定接下来索取什么），基准同时度量**诊断准确率、索取的证据量、估算检查成本**。同文称工作发表于 **Science**，另在 **BMJ Digital Health and AI** 发表愿景文。
+  - **规格三项一律 null**：参数量、上下文长度、API 定价全页未给；MAI-DxO 是**多模型编排系统**而非单一可调用基模，官方 `model-sitemap.xml` 也无对应模型落地页（7 条落地页中无 MAI-DxO）。
+  - 归档 `models/2026-10-22-mai-dxo/`（发布通告页 HTML 499 KB + 4 张配图 + 转录 index.md + manifest.json 含 sha256 与 limitations）。
+- **本批新增 evidence：3 条**（`microsoft-mai-dxo--sdbench--*`）
+  - **`sdbench` · NEJM 复杂病例（304 例）**——MAI-DxO **83%** 诊断准确率（DOM 明文列表，`evidence_type: text`）。
+  - **`sdbench` · MIMIC-IV-ED 急诊常见病例**——MAI-DxO **80%** 诊断准确率。
+  - **`sdbench` · NEJM 复杂病例，成本优化配置**——MAI-DxO **81%** 诊断准确率（**同一基准的不同配置，按变体单独记行**，两行不可互换）。
+  - **对照值一律进 notes、不建 comparison_cited 行**：医生基线 22%（无外部资料）/ 36%（可用教科书与互联网）/ 47%（MIMIC-IV-ED）是**人类对照值而非模型**，按「取自家模型列、竞品列进 notes」处理；官方给的 3.7 倍 / 2.3 倍 / 1.7 倍是**倍数不是分值**，同样只进 notes。
+  - **相对结论不建行**：正文「at half or even one third of the cost」「less than half the cost of comparative systems」是相对成本差、官方未给绝对金额，不折算、不建成本行；首页 hero 图 `health_v5_stat_typeset.webp` 只印「1.7 times more accurate than physicians」，是相对结论，不另建行。
+  - **协议只记明示项**：`protocol.harness` = 「MAI-DxO 编排系统（多个模型组成虚拟医生小组，多轮辩论后聚合）」；其余 11 键（tools / shots / reasoning_effort / temperature / top_p / token_budget / turn_limit / time_limit / run_count / aggregation / judge）官方**全部未明示**，一律 null，不臆造。`comparison_scope` 统一 `only_same_protocol`。
+  - **点名但无数值 → 不建行**：官方称用 GPT-5.5 等新一代模型重跑成绩持平甚至更好，但**未印出任何具体分数**，只在 notes 记录其结论（方法不绑定单一模型代际）。
+- **本批新增 benchmark id：1 个**（`sdbench`）——**同步建实体**（`data/benchmarks/sdbench.json`，summary 与 interpretation 均为读者语言）。`related_benchmarks` 关联既有 `medqa`（USMLE 执照考试题）与 `healthbench`。
+- **本批关键判读：把「系统型发布」纳入时间轴的口径处置（供后续复核裁定）**
+  - MAI-DxO 是**多模型编排的诊断系统**，不是单一基模（官方无模型落地页、无参数量/上下文/定价）。本批按「垂直专项能力发布 + 官方一级来源 + 正文有绝对分值」建档，**`models[].variant` 明写「非单一可调用基模」**，`capability_summary` 也直说这是「多模型编排系统」；release 级 notes 里写明「若后续认为系统型发布不应进入模型时间轴，按账本契约走 `revisions[]` 勘误或移出，不做静默覆盖」。**本批未改写任何既有 release。**
+- **本批关键修正：`microsoft.ai` 的 403 放行规则被推翻（上一批的结论是错的）**
+  - 第四十一~四十三批记的绕行方案是「curl 加 `-H 'accept: text/html'` 即可 200」。**2026-10-30 逐项对照实验（同一 URL、同一 Node undici fetch，只换 UA / Accept / redirect 模式）结论是：决定因素是 UA 字符串**——`Mozilla/5.0 (Windows NT 10.0; Win64; x64) … Chrome/128.0.0.0` **一律 403**，换成 macOS Chrome 141 或**干脆不设 UA**（undici 默认）**都 200 拿全文**；`Accept` 头与 `redirect: manual|follow` **都不是决定因素**。上一批的「加 accept 头就能过」只是碰巧撞上了当时放行的 UA，**不是通则**。
+  - 已把 `.claude/skills/ingest-releases/scripts/scan.mjs` 的 UA 改为 macOS Chrome 141（并加注释说明实测结论），本厂商扫描通道由 **`inaccessible` 升为 `partial`**；镜像已 `npm run sync:skills` 同步、`npm run sync:skills:check` 零漂移。
+  - 渠道地图 `discovery-channels.md` 的 microsoft 行与「已知抓取障碍」表对应行**同步改写**，明确「curl 静态 GET 仍全站 403，取数走 web reader 或 Node `fetch`」。
+- **本批关键修正：`microsoft.ai` 的新闻列表页是客户端渲染，静态扫描会漏文章**
+  - `microsoft.ai/blog/` 的「All stories」由 JS 渲染，**静态 HTML 里只有精选条目**（DOM 查询 `a[href*="/news/"]` 仅命中 `mai-image-2-7-debut` 一条）→ 纯静态扫描会漏掉绝大多数新闻文章。**本批漏掉 MAI-DxO 正是这个原因。**
+  - 处置：把 **`new-sitemap.xml`（38 条 news URL + lastmod）与 `model-sitemap.xml`（7 条模型落地页）加进 `data/model-coverage.json` 的 microsoft 覆盖入口**，本批起对这两条通道实取巡检（两条均 partial）；并把该发现写进渠道地图。
+  - ⚠️ **sitemap 的 lastmod ≠ 发布日**（既有例：`mai-code-1-1-flash-br-better-faster` lastmod 2026-10-07 / 实际发布日 2026-08-11；`mai-image-2-6-launches…` lastmod 2026-10-27 / 实际发布日 2026-08-25），日期一律取文章页 JSON-LD `datePublished`。
+- **逐家巡检结论（窗口 2026-10-15 ~ 2026-10-30，除 Microsoft 外均无新发布）**
+  - **OpenAI**：`openai.com/news/rss.xml` 1337 条，窗口内 **44 条**逐条判读——唯一模型发布是 GPT-6.1 Terra（10-26，已建档）；10-29 的 Model Spec 与失准检测方法文、其余均为客户案例 / 合作公告 / 产品功能项，非模型发布。`sitemap.xml/release/` 82 个 slug 中未建档的最早只到 2025 年（`gpt-5-1` / `gpt-oss` / `introducing-aardvark` / `introducing-indqa` / `browsecomp` 等），无遗漏。
+  - **Anthropic**：`platform.claude.com/docs/en/models/overview` 在架 = Opus 5.5 / Fable 5.1 / Sonnet 5.5 / Haiku 5.5（均已建档）；平台 release notes 窗口内 10-29（Usage & Cost Analytics API）与 10-28（请求体上限 32MB→128MB）均为**平台功能项**，非模型发布 → 无新发布。
+  - **Google**：`deepmind.google/blog/rss.xml` 100 条，窗口内仅 Gemini 4 Carbon（10-28）与 Genie 4（10-27），均已建档；`blog.google/rss/` 窗口内无模型发布 → 无新发布。
+  - **xAI**：`/news/` 索引仍 403；按 slug 探测 10 个候选（`grok-4-8` / `grok-5` / `grok-4-7-1` / `grok-imagine-video-2` / `grok-imagine-image-3` / `grok-voice-transcribe-3` / `grok-code-fast-2` / `grok-imagine-video-1-6` / `grok-imagine-image-2-1`）**全部 404**，既有 `grok-4-7` 仍为 2026-09-21；`docs.x.ai/docs/release-notes` 窗口内 10-27 条目是**自定义审核开关**（产品项）→ 无新发布。
+  - **Meta**：`research.meta.ai/blog` 窗口内 10-28 是**高校用例文章**（无模型名无分值，非发布）、10-15 的 Muse Spark Open 已建档 → 无新发布。
+  - **Mistral**：官方 RSS 93 条，窗口内 Le Chonk / Mistral Large 4 OSS（10-29，已建档）、Voxtral 3（10-20，已建档）、Timestral（10-15，已建档），10-21 为 NVIDIA 合作公告（非发布）；官方 changelog 10-22 的 `zai-glm-5-3-flash` 是**第三方模型上架**、非 Mistral 自研发布；HF 窗口内 `Mistral-Large-4-1T-A52B-NVFP4` 为量化衍生件 → 无新发布。
+  - **Kimi**：官方博客最新仍是 K3.1 Pro（已建档），HF `moonshotai` 窗口内 0 新仓 → 无新发布。
+  - **DeepSeek**：`api-docs.deepseek.com/updates` 最新 2026-10-17 是 **in-house search API 上线（产品项）**，其后为 V4.1-Flash-1017（已建档）→ 无新发布。
+  - **MiniMax**：`platform.minimax.io/docs/release-notes/models` 最新仍 2026-10-19 M3.1 Flash（已建档）；HF `MiniMaxAI` 窗口内 0 新仓 → 无新发布。
+  - **Qwen**：HF `Qwen` 窗口内最新 10-09 Qwen-Image-2.1-Turbo（已建档）；官方 GitHub `QwenLM/Qwen-Image-2.1` README 更新日志最新 `2026.10.09` → 无新发布。
+  - **豆包**：官方 `sitemap.xml` 窗口内最新仍是 10-14 招聘贴（非发布）；`blog_list/foundation` 与 `blog_list/visual` 两栏最新分别为 6-23 Seed2.1 与 7-31 Seedance 2.5（均已建档）→ 无新发布。
+  - **小米 MiMo**：`mimo.xiaomi.com` 首页与 `/blog` 窗口内无新模型卡片 → 无新发布。
+  - **腾讯混元**：HF `tencent` 窗口内新仓全是已建档模型或衍生件——`Hy-Nomas-Diffusers`（Diffusers 打包件）、`WeVisOne-VL-4B/2B`（已建档 `wevisone-vl` 的两个尺寸变体）、`Hy-SimulMT-30B-A3B-Interleave` 系与 FP8/GGUF、`Hy-Memory-30B-A3B-GGUF/FP8`、以及 `Qwen3-8B-DSpine-b16`（**投机解码 drafter 研究产物**，非独立模型）→ 无新发布。
+  - **StepFun**：`stepfun.ai/research` 本批经 **Node `fetch` 恢复 200**（此前记为 301 跳白名单外主机），页面在架 Step 5 Preview / Step 3.7 / 3.5 / Step Router / StepAudio-3 系列均已建档 → 无新发布。
+  - **智谱 GLM**：`z.ai/blog` 仍 404；HF `zai-org` 窗口内 0 新仓 → 无新发布。
+  - **Particle AI**：官方博客仅 `introducing-particle-1` 一篇（已建档）→ 无新发布。
+- **入口扫描结果**：本批 `scan.mjs --write` 已落盘 `data/model-coverage.json`；`reconcile-coverage.mjs` 后**未决候选为 0**。本批两处覆盖收口：
+  - **新增候选**：Microsoft 新闻列表是客户端渲染，扫描器取不到 MAI-DxO 链接，按既有候选 id 规则（`vendor_id + sha256(canonicalURL)[:12]`）手工登记 `microsoft-b6d7d4e92f35`，`release_id=mai-dxo`、`archive_status=archived`、`evidence_status=reported`、`archive_path=models/2026-10-22-mai-dxo`。
+  - **结案 1 条历史悬空候选**：`tencent-ff114e198cd8`（`https://github.com/Tencent/teamai-cli/graphs/commit-activity`）抓到的是 GitHub 错误提示页（"Uh oh! There was an error while loading. Please reload this page"），**非模型发布页**，已补 `exclusion_reason` 结案。
+- **跳过清单**
+  - **OpenAI 10-29 的《An updated Model Spec》与《How we detect frontier model misalignment》**——模型规范与对齐方法文，非模型发布。
+  - **OpenAI 窗口内 40 余条客户案例 / 合作公告**（ServiceNow、Oracle、Retell、Check Point、Legora、Ropes & Gray 等）——非模型发布。
+  - **Anthropic 10-29 的 Usage & Cost Analytics API、10-28 的请求体上限提升**——平台功能项。
+  - **Microsoft 10-15 的《Frontier Pre-training at Microsoft AI》**（lab-notes 栏目）——训练方法文章，非模型发布。
+  - **Microsoft `mai-image-2-6-launches…` 一文 10-27 的 lastmod**——该文发布日仍是 2026-08-25（模型已建档），lastmod 是页面更新时刻，**不新建成档**。
+  - **Microsoft 10-22 文中「GPT-5.5 重跑成绩持平或更好」**——官方未印具体分数，点名无数值，不建行。
+  - **SDBench 的医生基线 22% / 36% / 47% 与 3.7 倍 / 2.3 倍 / 1.7 倍**——人类对照值与倍数，不是模型绝对分，只进 notes。
+  - **「一半甚至三分之一成本」「不到对比系统一半成本」**——相对成本差，官方未给绝对金额，不折算、不建行。
+  - **Mistral × NVIDIA 合作公告、DeepSeek in-house search API、Meta 高校用例文章**——非模型发布。
+  - **HF `Mistral-Large-4-1T-A52B-NVFP4`、`Hy-Nomas-Diffusers`、`Hy-SimulMT-*-FP8/GGUF`、`Hy-Memory-*-GGUF/FP8`、`Qwen3-8B-DSpine-b16`**——量化 / 打包衍生件与研究产物，按既有口径不另建档。
+- **待人工核验**：本批新增 pending **0 条**（3 行均为 DOM 明文列表，不属「待人工读图」范畴）；沿用第三十三~四十三批的既有 pending 清单不变。
+- **门禁**：`node scripts/reconcile-coverage.mjs` 通过（**未决候选 0**）；`node --test tests/*.test.mjs` **65/65 通过**；`node scripts/validate-data.mjs` **PASS**（taxonomy 9 类 / vendors 17 / benchmarks 493（+1）/ releases 212（official 198，+1）/ evidence edges 3297（+3））；`npm run build` 全链通过（EPUB 486 KB / 32 章；站点 745 URL + **493 实体页** + 155 auto-evidence 页；`validate:site` **934 HTML / 40346 内部引用 / 263 时间轴 / 2218 事件卡**）。
+  - 本地抽查：`/releases/` 出现 **2026-10-22 · Microsoft AI / MAI · MAI-DxO** 新结点（徽章引用 `assets/logos/microsoft.png`，解码核验为**真彩色四色品牌标**，非字母占位），结点渲染出日期 / 厂商 / 区域 / 模态 / 概述 / 4 个 key_traits 与三条可点击评测 chip（`sdbench` 83% / 80% / 81%）；`/models/mai-dxo/` 与 `/benchmarks/sdbench/` 均 **200**；本批新增的两张页面**无**「已核验 / 待核验 / 待补 / 证据账本 / 窗口起点」类内部术语。
+- **遗留观察（不属本批改动，按「只追加不改既有文件」未处理）**：站点 `/releases/` 上仍有 **75 处「待补」**字样，全部位于**既有 release 的 evidence notes**（Kimi K3.1 Pro、DeepSeek V4 Pro 等历史条目的「new-benchmark: 完整定义与数据集介绍待补」措辞），**非本批引入**。修它需要改写既有 release 文件，超出本批「只追加」边界，建议单开一批做公开文案措辞收敛。
+- **分支**：`model-release-daily-20261030T010000Z`（自 `origin/main` = `540cbda` 开出）。开工前按分流表判为**情况 B（上一轮已收口）**：无 OPEN PR，当前分支 `docs/ingest-onboarding-20261030` 的提交已以 squash 形式合入 `origin/main`（`540cbda`），故直接另开本批分支，不重跑上一批。

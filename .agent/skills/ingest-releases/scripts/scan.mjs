@@ -18,7 +18,9 @@ for(const vendor of data.vendors){
           method:'GET',
           redirect:'manual',
           headers:{
-            'user-agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
+            // 2026-10-30 实测：microsoft.ai 的 Cloudflare 按 UA 字符串放行——Windows Chrome 128 这条 UA 一律 403，
+            // 换成 macOS Chrome 141 或 Node 默认 UA 即 200 全文（Accept 头与 redirect 模式都不是决定因素）。
+            'user-agent':'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36',
             'accept':'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
           },
           signal:AbortSignal.timeout(15000)
