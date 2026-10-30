@@ -1,0 +1,58 @@
+{
+  "id": "sdbench",
+  "name": "SDBench",
+  "full_name": "SDBench (Sequential Diagnosis Benchmark)",
+  "aliases": ["SDBench", "Sequential Diagnosis Benchmark", "顺序诊断基准"],
+  "status": null,
+  "categories": ["agent", "knowledge"],
+  "summary": "评估「一步步问诊」能力的医疗诊断基准：模型和医生从有限的病例信息出发，自己决定接下来该问什么、该开哪项检查，随新证据到达不断修正判断，最后给出诊断。题目分两组——304 例取自《新英格兰医学杂志》病例记录的复杂病例，以及一组更常见的 MIMIC-IV-ED 急诊科病例。基准同时看三件事：最终诊断准不准、中途索取了多少证据、估算的检查成本是多少，因此评估的不只是答对，还包括「问得值不值」。",
+  "interpretation": "读分要认准量纲：这里记的是**诊断准确率**（最终诊断正确的病例占比，越高越好），不是医学考试的选择题正确率——执照考试那种题会一次性把信息全给你、只需单选一个答案，而 SDBench 要求模型像真实问诊那样自己一步步索取信息。所以分数直接对应「能不能在信息不全、还要自己决定查什么的情况下把病诊断对」。当前水位（微软 2026-10-22 官方发布文口径）：在 NEJM 复杂病例上 MAI-DxO 83%、同场医生基线 22%（无外部资料）与 36%（可用教科书与互联网），官方称约为其 2.3～3.7 倍；在 MIMIC-IV-ED 急诊病例上 MAI-DxO 80%、医生基线 47%，官方称高出 1.7 倍以上。八十上下说明在这类需要长程问诊推理的任务上已经越过医生基线，但这仍是**单一发布方在自己的基准上自测**的结果——官方未公开判分模型、跑次数与题面细节，只有部分 NEJM 病例连同基准、Gatekeeper、Judge 与成本估算代码开源，跨家比较只在同一口径下成立，不要把它当成统一的医学 AI 排名。",
+  "measures": [
+    "交互式问诊场景下的最终诊断准确率",
+    "诊断过程中索取证据的规模与估算检查成本",
+    "在信息有限、需自行决定下一步检查时的长程推理能力"
+  ],
+  "does_not_measure": [
+    "医学知识选择题（如执照考试题）的答题正确率",
+    "通用问答或长上下文阅读能力",
+    "真实临床环境中的安全性与泛化能力（需要前瞻性研究才能回答）"
+  ],
+  "dataset": {
+    "sample_count": 304,
+    "splits": ["NEJM 复杂病例（304 例）", "MIMIC-IV-ED 急诊常见病例（例数官方未印）"],
+    "languages": "en",
+    "source_type": "real-world（NEJM 病例记录 + MIMIC-IV-ED 急诊病例，交互式问诊）",
+    "public_sample": "部分 NEJM 病例开源，含基准、Gatekeeper、Judge 与成本估算代码；MIMIC-IV-ED 病例集未开源"
+  },
+  "metrics": [
+    {
+      "id": "diagnostic_accuracy",
+      "name": "诊断准确率",
+      "range": [0, 100],
+      "unit": "percent",
+      "direction": "higher",
+      "aggregation": "最终诊断正确的病例数 / 病例总数"
+    }
+  ],
+  "default_protocol": {
+    "raw": "交互式问诊协议：模型与/或医生从有限病例信息出发，自行选择下一步索取的问题或检查，随新证据到达更新判断；官方同时度量诊断准确率、索取的证据量与估算检查成本"
+  },
+  "versions": [],
+  "limitations": [
+    "基准由微软（发布方）自建并自测，尚无第三方复跑",
+    "官方未公开判分模型、跑次数、温度与聚合算法",
+    "仅部分 NEJM 病例开源，MIMIC-IV-ED 病例集未开源，外部无法完整复现",
+    "医生基线（22% / 36% / 47%）为人类对照值，不是模型成绩，不能与模型分数同框横比",
+    "官方称用更新一代模型重跑成绩持平或更好，但未公布具体分数"
+  ],
+  "notes": "由微软 2026-10-22《Building Medical Superintelligence》发布文引入，同文发布 MAI-DxO 诊断编排系统。",
+  "official_sources": [
+    {
+      "kind": "site",
+      "url": "https://microsoft.ai/news/building-medical-superintelligence/"
+    }
+  ],
+  "related_benchmarks": ["medqa", "healthbench"],
+  "content_status": "beta",
+  "last_verified_at": "2026-10-30"
+}
