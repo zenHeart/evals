@@ -2419,3 +2419,58 @@ Muse 页面的图表已归档到 `models/2026-10-12-muse-wonder/images/` 与
   - 本地抽查：`/releases/` 出现 **2026-10-22 · Microsoft AI / MAI · MAI-DxO** 新结点（徽章引用 `assets/logos/microsoft.png`，解码核验为**真彩色四色品牌标**，非字母占位），结点渲染出日期 / 厂商 / 区域 / 模态 / 概述 / 4 个 key_traits 与三条可点击评测 chip（`sdbench` 83% / 80% / 81%）；`/models/mai-dxo/` 与 `/benchmarks/sdbench/` 均 **200**；本批新增的两张页面**无**「已核验 / 待核验 / 待补 / 证据账本 / 窗口起点」类内部术语。
 - **遗留观察（不属本批改动，按「只追加不改既有文件」未处理）**：站点 `/releases/` 上仍有 **75 处「待补」**字样，全部位于**既有 release 的 evidence notes**（Kimi K3.1 Pro、DeepSeek V4 Pro 等历史条目的「new-benchmark: 完整定义与数据集介绍待补」措辞），**非本批引入**。修它需要改写既有 release 文件，超出本批「只追加」边界，建议单开一批做公开文案措辞收敛。
 - **分支**：`model-release-daily-20261030T010000Z`（自 `origin/main` = `540cbda` 开出）。开工前按分流表判为**情况 B（上一轮已收口）**：无 OPEN PR，当前分支 `docs/ingest-onboarding-20261030` 的提交已以 squash 形式合入 `origin/main`（`540cbda`），故直接另开本批分支，不重跑上一批。
+
+## 第四十五批（2026-10-30 增量窗口 2026-10-15 ~ 2026-10-30：Microsoft Mage-VL-Cowork 建档 + WebVoyager-Static 新建基准实体）
+
+- **窗口**：增量窗口 2026-10-15 ~ 2026-10-30（检查点锚点 `last_max_release_date=2026-10-29` 回退 14 天重叠）。检查点回写 `last_scan_at=2026-10-30`（UTC）、`last_max_release_date` **推进到 2026-10-30**——本批最大发布日为 2026-10-30，比既有锚点新一天，锚点只前进不回退。
+- **本批性质**：**全窗口巡检 + 一条补漏建档**。窗口内 17 家在册厂商逐家实取巡检，**16 家确无新发布**（逐家判据见下），1 家（Microsoft）漏了一条**在窗口内、带绝对分值、官方一级来源**的发布，本批补建档。
+- **本批新增 release：1 个**
+  - `microsoft/mage-vl-cowork`（Mage-VL-Cowork，2026-10-30）——**2 条 evidence，全部 verified**，`status: verified`。
+  - **发布日期证据链（三源互证，均 2026-10-30）**：Hugging Face 官方模型仓 `microsoft/Mage-VL-Cowork` 的 `createdAt` = **2026-10-30T12:13:24Z**；官方 GitHub 仓 `microsoft/Mage` 提交 `2026-10-30T07:54:49Z`「add Mage-VL-Cowork tech report PDF and citation」与 `2026-10-30T08:09:25Z`「add Mage-VL-Cowork model link」；同仓 `2026-10-30T12:27:15Z`「refresh Cowork README teaser」、`2026-10-30T14:29:26Z`「update README and add OSWorld-Verified reproduction suite」，仓库 `pushed_at` = 2026-10-30T14:56:00Z。`date_precision=day`。
+  - **⚠️ 时间口径冲突（已在 release notes 与归档 index.md 留痕）**：官方 GitHub 仓早在 `2026-10-28T17:49:55Z` 就有一次「docs: add Mage-VL-Cowork README」提交，但当时**既无权重也无技术报告**，属发布前预置文档；权重 + 技术报告 + 模型链接三件套齐备并对外可得的时间是 2026-10-30，故发布日取 **2026-10-30**。
+  - **官方定位**：4B 混合计算机操作智能体——**同一回合内自行决定走 `computer_use`（11 个 GUI 原语，坐标归一化到 `[0,999]`）还是 `bash`（常驻 shell + Python 环境）**，骨干为 Mage-ViT（16×16 patch 网格、3D RoPE）+ Qwen3-4B；上下文活跃窗口 32,768 tokens（架构上限 262,144）；非对称滑动工作记忆（最近 3 张截图 + 4 条完整回复 + 折叠 `Action:` 历史）；5 阶段训练名义算力 7.79 ZFLOPs（32 × B200 + 1,120 个 CPU 沙箱槽位跑 RL）；**Apache-2.0 开源权重**。
+  - 归档 `models/2026-10-30-mage-vl-cowork/`（HF 模型页 HTML 320 KB + **model card 原文 Markdown `page.md` 36 KB** + 卡片 2 张配图 + 转录 index.md + manifest.json 含 sha256 与 6 条 limitations）。
+- **本批新增 evidence：2 条**（`microsoft-mage-vl-cowork--*`）
+  - **`osworld` · OSWorld-Verified（361 题 held-out，排除 Google Drive）**——Mage-VL-Cowork-4B **66.0%** 任务成功率（headline `66.04%` = **两次全量独立跑的均值**，Run 1 = 65.33% / Run 2 = 66.75%）。`evidence_type: text`（DOM 机读 Markdown 表，非图片）。协议明示项全部捕获：`harness` = MAGEHybridAgent（官方自带混合 GUI+终端 agent 框架，1920×1080、history_n=3、images_to_keep=3）、`tools` = [`computer_use`, `bash`]、`temperature` = 0.7、`top_p` = 0.8、`token_budget` = 4096（max_tokens，think + Action + tool_call 共享预算）、`turn_limit` = 50 步、`run_count` = 2 次全量跑、`aggregation` = 两次独立全量跑取均值；`judge` 官方未印 → null。
+  - **`webvoyager-static` · WebVoyager-Static（643 题 / 15 站点，可重置自托管副本）**——**Mage-VL-Cowork-SFT 58.6%**。官方未印该基准的 harness 细节与采样参数 → protocol 仅 `harness` 有值，其余 10 键 null。
+  - **同表竞品列一律进 notes、不另立 comparison_cited 行**：OSWorld 表内 GPT-5.5 78.7 / Claude Opus 4.7 78.0 / GPT-5.4 75.0 / Kimi-K2.6 73.1 / ScaleCUA-Qwen3.5-9B 68.7 / Muse Glimmer-30B 65.9 等 20 余个竞品值；WebVoyager-Static 表内 Fara1.5-4B 68.0 / Qwen3-VL-8B-Thinking 53.7 等 9 个竞品值。人类参考 72.4 是**人类对照值而非模型**，按「取自家模型列」处理，不另立行。
+  - **阶段中间检查点不建行**：官方阶段表 Stage 2 GUI Agent SFT 45.56、Stage 4 Hybrid CUA SFT 55.84（+10.28 pp）、**Stage 5 Online Hybrid RL 66.04（+20.48 pp）= 发布模型**。前两者是训练中间点、不是发布模型；官方另印的 OSWorld-G 30.6% → 56.9% 与 ScreenSpot-v2 78.8% → 87.2% 同属 Stage 1 中训里程碑，**均只进 notes、不建行**（若建行会把中间检查点当成发布模型的成绩）。
+  - **相对结论与成本指标不建行**：Mage-CUA-Forge 的 −93.3% tokens / −82.6% 成本、672 题自建集上的教师 92.0% vs 学生 37.6% / 25.1%、阶段表平均模型调用 18.77 与平均输出 token 5,499/题——**不是公开标准 benchmark 的绝对分值**，只进 notes。
+- **本批新增 benchmark id：1 个**（`webvoyager-static`）——**同步建实体**（`data/benchmarks/webvoyager-static.json`，summary 与 interpretation 均为读者语言）。判据：既有 `webvoyager` 实体是「真实线上站点 + GPT-4V 截图判分」，本条是**厂商自建的离线确定性副本**（可重置自托管站点 + UI 导航轨迹与后端 SQLite 状态双校验），属「同一 benchmark 不同条件/版本 → 拆 variant 行」，**另立实体、不合并、不改写既有 `webvoyager`**；`related_benchmarks` 关联 `webvoyager` 与 `webarena`。
+- **本批关键判读：同一张 model card 里混着三个不同模型，口径必须逐行对齐（供后续复核裁定）**
+  - **陷阱 1｜终版 vs 检查点**：OSWorld 的 66.0% 是 **Stage 5 RL 终版**；WebVoyager-Static 的 58.6% 官方原文明确是 `Mage-VL-Cowork-SFT`（"Even before Stage 5 RL, our generalist desktop-and-browser SFT policy (58.6%)"），即 **Stage 4 检查点**。两行 `model_variant` 已分别写明（`Mage-VL-Cowork-4B（Stage 5 Online Hybrid RL 终版）` / `Mage-VL-Cowork-SFT（Stage 4 Hybrid CUA SFT 检查点，非 Stage 5 RL 终版）`），**不可当作同一个模型互换**。
+  - **陷阱 2｜协议落差**：66.0% 是**厂商自报分**，且用的是官方自带的 `MAGEHybridAgent` agentic harness（随仓 `osworld_eval/mm_agents/`），**不是 OSWorld 原生默认 scaffold**。跨模型比较前必须先对齐 harness，本行 notes 首句即为此披露。
+  - **陷阱 3｜同族三模型不并档**：Mage 家族同卡还有 `microsoft/Mage-VL`（4B codec-native 流式多模态基础模型）与 `microsoft/Mage-ViT`（from-scratch 视觉编码器），二者 HF `createdAt` 分别是 **2026-07-25 / 2026-07-26**，落在本批增量窗口之外。按「后增变体不因共享模型卡并入首发」与增量纪律**不并入本条**，改为在覆盖账本登记为**存量回填候选**（见下），不静默丢档。
+- **本批关键修正：微软官方 HF 组织不再是「只有研究产物模型」**
+  - 既有 `data/model-coverage.json` 的 microsoft 覆盖条目 `fallback_method` 写的是「改用官方 HF 组织 microsoft 旁证（**窗口内多为研究产物模型**）」。**2026-10-30 起这句已不成立**——该组织窗口内出现首个真实产品级发布 `microsoft/Mage-VL-Cowork`（Apache-2.0 开源权重、官方 model card 带完整评测表）。本批已把该 `fallback_method` 改写为「2026-10-30 实测：该组织窗口内除研究产物模型外，已出现首个真实产品级发布 microsoft/Mage-VL-Cowork，已于本日建档；同族基座 Mage-VL / Mage-ViT 为 2026-07 发布、落在增量窗口外，留存量回填」，**3 处同源条目一并改写**。
+- **逐家巡检结论（窗口 2026-10-15 ~ 2026-10-30，除 Microsoft 外均无新发布）**
+  - **OpenAI**：`openai.com/news/rss.xml` 窗口内条目逐条判读——10-30 的《Making it easier for websites to express AI training preferences》《Community safety report and new protections for teens》《Fair use benefits everyone》与 10-29 的 Model Spec / 失准检测方法文（第四十四批已判读）**均非模型发布**；`openai.com/index/introducing-gpt-live-1-in-the-api/` 的 `datePublished` = **2026-09-10**，**窗口外且账本未收录** → 列入存量回填待办，本批不建档。
+  - **Anthropic**：`platform.claude.com/docs/en/models/overview` 在架 = `claude-opus-5-5` / `claude-sonnet-5-5` / `claude-haiku-5-5` / `claude-fable-5-1`（**均已建档**），窗口内无新模型上架 → 无新发布。
+  - **Google**：`deepmind.google/blog/rss.xml` 窗口内 0 条；`blog.google/rss/` 窗口内为 Fitbit Edge 硬件、Project Suncatcher 卫星研究、Gmail 安全检查、Gemini 应用文件编辑 / 教材功能等**产品与研究项，非模型发布** → 无新发布。
+  - **Mistral**：官方 RSS 窗口内仅 10-29 Le Chonk（已建档）；changelog 无窗口内新模型 → 无新发布。
+  - **Kimi**：HF `moonshotai` 窗口内 **0 新仓**；官方博客页静态抓取只拿到 2025 年旧条目（页面主体为客户端渲染，静态抓取不足），**故只据 HF 组织 0 新仓与既有 K3.1 Pro 已建档判定窗口内无新发布证据**，不据残缺抓取断言绝对无发布。
+  - **DeepSeek**：`api-docs.deepseek.com/updates` 最新仍是 2026-10-17（**in-house search API 上线，产品项**）；HF `deepseek-ai` 窗口内 0 新仓 → 无新发布。
+  - **MiniMax**：`platform.minimax.io/docs/release-notes/models` 最新仍是 2026-10-19 M3.1 Flash（已建档）；HF `MiniMaxAI` 窗口内 0 新仓 → 无新发布。
+  - **Qwen**：HF `Qwen` 窗口内 0 新仓（最新仍是 10-09 Qwen-Image-2.1-Turbo，已建档）→ 无新发布。
+  - **豆包**：官方 `sitemap.xml` 最大 lastmod 仍是 2026-10-14 的**招聘贴**（非发布），其后 blog_list 各栏最新均 2026-09-28 → 无新发布。
+  - **xAI**：`docs.x.ai/docs/release-notes` 窗口内最新 10-27 条目仍是**自定义审核开关（产品项）**，无新模型发布；`/news/` 索引仍 403 → 无新发布。
+  - **Meta**：`research.meta.ai/blog` 窗口内 10-28 是**高校用例文章**（无模型名无分值）、10-15 与 10-12 条目均非模型发布 → 无新发布。
+  - **小米 MiMo**：`mimo.xiaomi.com` 首页在架仍是 `mimo-v2.6-series` / `mimo-v2.6` / `mimo-v2-flash` 等既有线（**均已建档**），窗口内无新模型卡片 → 无新发布。
+  - **腾讯混元**：HF `tencent` 窗口内新建 10 个仓——`Hy-Nomas-Diffusers`（Diffusers 打包件）、`WeVisOne-VL-4B/2B`（已建档 `wevisone-vl` 的两个尺寸变体）、`Hy-SimulMT-30B-A3B-Interleave` 系与 FP8/GGUF、`Hy-Nomas`（已建档 `hy-nomas`）→ **均为已建档模型的衍生件或尺寸变体，不另建档**。
+  - **StepFun**：`platform.stepfun.com/docs/zh/guides/models/` 在架 = `step-5-preview` / `step-3.5-flash` / `step-1o`（**均已建档**）；HF `stepfun-ai` 窗口内 0 新仓 → 无新发布。
+  - **智谱 GLM**：HF `zai-org` 窗口内 0 新仓；`z.ai/blog` 仍不可达 → 无新发布。
+  - **Particle AI**：官方博客仅 `introducing-particle-1` 一篇（已建档）→ 无新发布。
+- **入口扫描结果**：本批 `scan.mjs --write` 已落盘 `data/model-coverage.json`；`reconcile-coverage.mjs` 后**未决候选为 0**（582 个候选中，既无 `release_id` 又无 `exclusion_reason` 的候选数 = 0）。本批三处覆盖收口：
+  - **新增候选 1 条并结案**：扫描新发现 `minimax-c3e220bff0be`（`https://agent.minimax.io/about`，标题「MiniMax Code」）。这是 **MiniMax Code 客户端的产品说明页，不是独立模型发布**，其底座模型 M3.1 Flash Preview 已在账本收录（`minimax/minimax-m3-1-flash-preview`）→ 补 `exclusion_reason` 结案、`classification` 改 `product`、`next_backfill_at` 置 null。**本条若不结账会让 `validate:data` 直接失败**（门禁「general/vertical 候选既无 release 也无 exclusion_reason」），是本批门禁实测拦下的唯一一处。
+  - **新增存量回填候选 2 条**：按既有候选 id 规则（`vendor_id + sha256(canonicalURL)[:12]`）登记 `microsoft-4adfece45166`（`https://huggingface.co/microsoft/Mage-VL`）与 `microsoft-0507e8631dd6`（`https://huggingface.co/microsoft/Mage-ViT`），`release_id` 留 null、`exclusion_reason` 写明「2026 年 7 月发布，落在本批增量窗口之外，待存量回填审计批次补建」、`next_backfill_at` = 2026-11-05。**此举是为了防止「历史模型永久滑脱」**——此前这两条在覆盖账本里完全不可见。
+  - **新增 release 候选自动结账**：`reconcile-coverage.mjs` 按归档 `index.md` 的 `release:` 字段自动补出 `release-mage-vl-cowork`，`release_id=mage-vl-cowork`、`archive_status=archived`、`evidence_status=reported`、`archive_path=models/2026-10-30-mage-vl-cowork`。
+- **跳过清单**
+  - **`microsoft/CogACT-v2-RoboDojo`**（HF `createdAt` 2026-10-25）——**无 model card**（页面明确「No model card」），仓内只有 `config.yaml` / `action_feature.json` / `norm_config.json` 与一个 17 GB 的 `weights.pt`，**无 README、无评测表、无官方发布文** → 按「只有媒体转述或聚合站跑分、找不到厂商官方一级来源不建档」跳过。这是本批窗口内 HF microsoft 组织唯一的另一条新仓，**与 Mage-VL-Cowork 完全不同性质**（CogACT 是 VLA 具身研究产物仓、无官方发布材料）。
+  - **OpenAI `gpt-live-1`**（官方页 `datePublished` 2026-09-10）——窗口外且账本未收录 → 存量回填待办。
+  - **同卡其余数值**：Stage 2 / Stage 4 检查点分、Stage 1 的 OSWorld-G 与 ScreenSpot-v2 里程碑、672 题自建集消融、Mage-CUA-Forge 成本表、agent 平均调用数与 token 数——**均非发布模型的公开 benchmark 绝对分值**，不建行。
+  - **本批窗口内其他非发布项**：OpenAI 训练偏好声明 / 未成年人安全报告 / 公平使用文章、Anthropic Usage & Cost Analytics API 与请求体上限调整、Google Fitbit Edge / Project Suncatcher / Gmail 安全检查、Mistral × NVIDIA 合作、DeepSeek in-house search API、Meta 高校用例文章、xAI 自定义审核开关、Microsoft 招聘贴与训练方法文章。
+- **待人工核验**：本批新增 pending **0 条**（2 行均为官方 model card 的 DOM 机读 Markdown 表，不属「待人工读图」范畴）；沿用第三十三~四十四批的既有 pending 清单不变。官方技术报告 PDF（`assets/mage_vl_cowork_tech_report.pdf`）本批**未逐页核读**，账本内不引用其任何数值，已写入归档 limitations。
+- **门禁**：`node scripts/reconcile-coverage.mjs` 通过（**未决候选 0**）；`node --test tests/*.test.mjs` **65/65 通过**；`node scripts/validate-data.mjs` **PASS**（taxonomy 9 类 / vendors 17 / benchmarks 494（+1）/ releases 213（official 199，+1）/ evidence edges 3299（+2））；`npm run build` 全链通过（EPUB 486 KB / 32 章；站点 747 URL + **494 实体页** + 155 auto-evidence 页；`validate:site` **936 HTML / 40411 内部引用 / 263 时间轴 / 2221 事件卡**）。
+  - 本地抽查：`/releases/` 出现 **2026-10-30 · Microsoft AI / MAI · Mage-VL-Cowork** 新结点；`/models/mage-vl-cowork/`（21 KB）与 `/benchmarks/webvoyager-static/`（33 KB）均 **200**，模型页渲染出 66.0 与 58.6 两个分值及 OSWorld / WebVoyager-Static 两个可点击评测 chip，基准页含 643 题数与 58.6；本批新增的三个页面**无**「已核验 / 待核验 / 证据账本 / 窗口起点」类内部术语。
+- **遗留观察（不属本批改动，按「只追加不改既有文件」未处理）**：站点 `/releases/` 上仍有 70 余处「待补」字样，全部位于**既有 release 的 evidence notes**（Kimi K3.1 Pro、DeepSeek V4 Pro 等历史条目的「new-benchmark: 完整定义与数据集介绍待补」措辞），**非本批引入**。修它需要改写既有 release 文件，超出本批「只追加」边界，建议单开一批做公开文案措辞收敛。
+- **分支**：`model-release-daily-20261030T231754Z`（自 `origin/main` = `b7974e9` 开出，隔离 worktree `code/github/.worktrees/evals/model-release-daily-20261030T231754Z`）。开工前按分流表判为**情况 B（上一轮已收口）**：无 OPEN PR，上一轮 `model-release-daily-20261030T010000Z` 的提交已以 squash 形式合入 `origin/main`（`b7974e9`），故直接另开本批分支，不重跑上一批。
