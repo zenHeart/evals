@@ -2419,3 +2419,58 @@ Muse 页面的图表已归档到 `models/2026-10-12-muse-wonder/images/` 与
   - 本地抽查：`/releases/` 出现 **2026-10-22 · Microsoft AI / MAI · MAI-DxO** 新结点（徽章引用 `assets/logos/microsoft.png`，解码核验为**真彩色四色品牌标**，非字母占位），结点渲染出日期 / 厂商 / 区域 / 模态 / 概述 / 4 个 key_traits 与三条可点击评测 chip（`sdbench` 83% / 80% / 81%）；`/models/mai-dxo/` 与 `/benchmarks/sdbench/` 均 **200**；本批新增的两张页面**无**「已核验 / 待核验 / 待补 / 证据账本 / 窗口起点」类内部术语。
 - **遗留观察（不属本批改动，按「只追加不改既有文件」未处理）**：站点 `/releases/` 上仍有 **75 处「待补」**字样，全部位于**既有 release 的 evidence notes**（Kimi K3.1 Pro、DeepSeek V4 Pro 等历史条目的「new-benchmark: 完整定义与数据集介绍待补」措辞），**非本批引入**。修它需要改写既有 release 文件，超出本批「只追加」边界，建议单开一批做公开文案措辞收敛。
 - **分支**：`model-release-daily-20261030T010000Z`（自 `origin/main` = `540cbda` 开出）。开工前按分流表判为**情况 B（上一轮已收口）**：无 OPEN PR，当前分支 `docs/ingest-onboarding-20261030` 的提交已以 squash 形式合入 `origin/main`（`540cbda`），故直接另开本批分支，不重跑上一批。
+
+## 第四十六批（2026-10-31 增量窗口 2026-10-15 ~ 2026-10-31：腾讯官方基准 HyperLogic 榜单补录 42 条官方明文 evidence）
+
+- **执行方式与执行器互斥**：本批由 **MiniMax Code App（cwr / cheng 主机）** 在隔离 worktree `C:\Users\cheng\code\github\.worktrees\evals\model-release-daily-20261031T231926Z`（自 `origin/main` = `b7974e9` 开出）内直接执行 `.claude/skills/ingest-releases` 技能合同。原 OpenClaw 定时声明 `workflow:daily-model-releases-and-provider-refresh`（cron id `db2e30ef-541a-49e2-af4a-bcdff12831e9`，cron `15 7 * * *` Asia/Shanghai，agent `walle`）本轮开工前**原生回读确认 `enabled=false` / `status=disabled`**，且 `openclaw cron list --all --json` 全量回读（`hasMore=false`，共 5 条声明）中**没有任何一条 enabled 的声明落在 `15 7 * * *`**（其余为 `every 30m` 心跳、`0 3 * * *` 记忆整备、`every 7d` × 2 技能复核）→ **两个执行器不会跑同一轮**。本轮执行器为 Windows 原生计划任务 `Workflow.Schedule.evals-model-release-cwr`（回读 `State=Running`，`LastRunTime=2026/11/1 7:15:01`，`NextRunTime=2026/11/2 7:15:00`）。
+- **窗口结论**：增量窗口 2026-10-15 ~ 2026-10-31（检查点锚点 `last_max_release_date=2026-10-29` 回退 14 天重叠）。**窗口内没有新的官方模型发布需要建档**——17 家在册厂商的官方渠道 + OpenRouter `/api/v1/models` + HuggingFace 全站最新仓（按 `createdAt` 倒序取前 100）三路交叉验证，窗口内唯一的厂商官方模型仓是 **`microsoft/Mage-VL-Cowork`（HF `createdAt=2026-10-30`）**，而它**已由第四十五批建档**（PR #43 `model-release-daily-20261030T231754Z`，**当前仍 OPEN 未合并**）。为避免同一模型在并行 PR 里重复建档，本批**不重复建档 Mage-VL-Cowork**。
+- **本批新增 release：0 个**（不建新条目，只补录既有发布的官方明文 evidence）。
+- **本批新增 evidence：42 条 = 42 verified + 0 pending**，全部 `attribution_type: benchmark_owner_reported`、`source_kind: official_benchmark_repo`、`source_tier: A`、`evidence_type: table`、`comparison_scope: only_same_protocol`。
+- **本批新增 benchmark id：1 个**（`hyperlogic`）——**同步建实体** `data/benchmarks/hyperlogic.json`（summary / interpretation / measures / dataset / metrics / default_protocol / limitations 均为读者语言）。
+- **本批补录来源：腾讯官方基准仓 `Tencent-Hunyuan/HyperLogic`**
+  - **日期证据**：README 的 News 节明示 **2026.10.28**「This repository and the Hugging Face dataset go public with about 30% of the items of every tier, the direct-answer prompt and scorer, and the complete Hard agent evaluation.」——仓库与数据集公开日 = 2026-10-28（GitHub API 佐证：`created_at=2026-10-27T11:05:36Z`、`pushed_at=2026-10-28T15:09:00Z`）；论文日 2026-10-02（arXiv 2605.19597 v2）仅作佐证，日期取仓库公开日。数据集 `https://huggingface.co/datasets/tencent/HyperLogic`（官方 HF 组织 `tencent`）。
+  - **榜单口径（页面明示）**：Accuracy (%) on the full benchmark，**3 次 rollout 的均值 ± 标准差**，**每个模型取其最高推理档**；Base Item 以「全部子问都答对」才计对题；Sandbox 给 agent 代码沙箱、+ Library 另给逻辑建模库；粗体为该列最佳；排名按 Base 题目级准确率。脚注：† = 剔除该模型 API 服务拒答的条目；**Grok 4.6 用 `xhigh`，其余 6 个模型用 `max`**。
+  - **按「同一 benchmark 不同条件/版本 → 拆 variant 行」建 6 行 × 7 模型 = 42 行**，`benchmark_variant` 取页面列名（`Seed` / `Base Item` / `Base Sub-Q` / `Hard Direct` / `Hard Sandbox` / `Hard + Library`），`reported_score.value` 取均值、`display` 保留页面原样的「均值 ± 标准差」。
+  - **落档目标（7 个 release，42 行）**：`openai/gpt-5-6`（gpt-5-6-sol，6 行，220→226）、`anthropic/claude-opus-5`（6 行，18→24）、`kimi/kimi-k3`（6 行，41→47）、`xai/grok-4-6`（6 行，10→16）、`deepseek/deepseek-v4-pro`（6 行，10→16）、`glm/glm-5-3`（glm-5.3，6 行，22→28）、`doubao/seed-2-1`（seed-2.1-pro，6 行，59→65）。
+  - **`deepseek/deepseek-v4-pro` 的 release 级 `status` 由 `pending` 翻为 `verified`**（新 evidence 含 verified 行且分值已抽取），并按只追加纪律在 `revisions[]` 记一笔「仅追加、未改既有行」。其余 6 个 release 的 `status` 维持 `verified`。
+  - **协议字段只记页面明示项**：`run_count=3`、`aggregation=「3 次 rollout 的均值 ± 标准差」、`judge=「语义等价 LLM judge（整题子问一起判）」、`reasoning_effort=「最高推理档：max / xhigh」`；Hard 两个 Agent 条件的 `harness`=「Docker 代码沙箱（每 workspace 2 CPU / 10 GB / 3 小时上限）」、`tools`=「代码执行」/「代码执行 + 官方 translation 逻辑建模库（11 模块 + MANUAL.md）」、`time_limit=「3h / workspace」`；`temperature` / `top_p` / `token_budget` / `turn_limit` / `shots` 官方未明示，一律 null，不臆造。
+  - **竞品列一律进 notes、不建 comparison_cited 行**：同一列的其他 6 个模型数值与该列最佳模型均写进各行 `notes`。
+  - **归档** `models/2026-10-28-hyperlogic/`（GitHub 仓库渲染页 HTML + raw `README.md` 原文 + 3 张官方配图 + 转录 `index.md` + `manifest.json` 含 sha256 与 8 条 limitations）。
+- **本批新增 evidence 的三处判读要点（供后续复核裁定）**
+  - **† 列与其它列不同口径**：Claude Opus 5 的 Base Item / Base Sub-Q / Hard Direct 三列为「剔除 API 拒答条目后」的均值 ± 标准差，与其余列不可直接并列比较；已在该三行 `notes` 显式标注。
+  - **Hard 层用的是发布方自定义 Agentic 脚手架**：沙箱条件（condition c2）与加库条件（condition c3）都依赖发布方自带的 Docker 沙箱与 `translation` 逻辑建模库，与官方标准单轮基线不可直接等同 → `protocol.harness` / `protocol.tools` 明示、`notes` 交代差距、`comparison_scope` 保持 `only_same_protocol`。
+  - **榜单数值不可用公开子集复现**：官方只公开每层 30% 的题目与评测脚本（Seed 69 / Base 59 / Hard 30），上表是**全量基准**数值；已在全部 42 行 `notes` 与基准实体 `limitations` 标注。
+- **逐家巡检结论（窗口 2026-10-15 ~ 2026-10-31，除腾讯 HyperLogic 外均无新发布）**
+  - **OpenAI**：`openai.com/news/rss.xml` 1341 条，窗口内 **48 条**逐条判读——10-30 的《Fair use benefits everyone》《Community safety report and new protections for teens》《Making it easier for websites to express AI training preferences》、10-29 的《How we detect frontier model misalignment》《An updated Model Spec》等**全部为非模型发布**（政策 / 方法 / 客户案例 / 产品功能）；`sitemap.xml/release/` 85 个 slug 中最新的模型 slug 是 `introducing-gpt-6-1-sol` 与 `introducing-gpt-6-1-terra`（后者已建档，前者早已建档）→ 无新发布。
+  - **Anthropic**：`platform.claude.com/docs/en/models/overview` 在架 = Fable 5.1 / Opus 5.5 / Sonnet 5.5 / Haiku 5.5（均已建档），窗口内无新条目 → 无新发布。
+  - **Google**：`deepmind.google/blog/rss.xml` 100 条，窗口内 4 条——Gemini 4 Carbon（10-28，已建档）、Genie 4（10-27，已建档）、《Beyond tree cover》（10-22，科研文章）、《Accelerating the search for antimicrobial peptides》（10-15，科研文章），后两条非模型发布；`blog.google/rss/` 窗口内 20 条全为产品 / 研究 / 活动条目（Gmail 权限、Suncatcher 卫星、Fitbit Edge 等）→ 无新发布。
+  - **xAI**：`docs.x.ai/docs/models` 在架最新仍是 Grok 4.7（2026-09-21），无窗口内新条目 → 无新发布。
+  - **Meta**：`research.meta.ai` 窗口内最新 10-28 是**高校用例文章**（无模型名无分值，非发布），10-15 的 Muse Spark Open 已建档 → 无新发布。
+  - **Mistral**：官方 RSS 93 条，窗口内 4 条——Le Chonk（10-29，已建档）、Voxtral 3（10-20，已建档）、Introducing Timestral（10-15，已建档），10-21 是 NVIDIA 合作公告（非发布）→ 无新发布。
+  - **Kimi**：官方博客最新仍是 K3.1 Pro（10-24，已建档），HF `moonshotai` 窗口内 0 新仓 → 无新发布。
+  - **DeepSeek**：`api-docs.deepseek.com/updates` 最新仍是 2026-10-17 V4.1-Flash-1017（已建档）→ 无新发布。
+  - **MiniMax**：`platform.minimax.io/docs/release-notes/models` 最新仍 2026-10-19 M3.1 Flash（已建档），HF `MiniMaxAI` 窗口内 0 新仓 → 无新发布。
+  - **Qwen**：HF `Qwen` 窗口内 0 新仓（最新仍 10-09 Qwen-Image-2.1-Turbo，已建档）→ 无新发布。
+  - **豆包**：官方 `sitemap.xml` 窗口内最新仍是 10-14 招聘贴（非发布），`blog_list/foundation` 与 `blog_list/visual` 最新分别为 6-23 Seed2.1 与 7-31 Seedance 2.5（均已建档）→ 无新发布。
+  - **小米 MiMo**：`mimo.xiaomi.com` 官方渠道在架仍为 MiMo-V2.6 系列（无 V2.7）→ 无新发布。
+  - **腾讯混元**：HF `tencent` 窗口内新仓只有已建档模型与衍生件（最新 `Hy-Nomas-Diffusers` 10-24 已由第三十七批登记）；GitHub `Tencent-Hunyuan/HyperLogic`（仓建 10-27、数据集公开 10-28）经查是**基准仓而非模型发布仓** → 不建 release，改为**补录其官方榜单 evidence**（见上）。
+  - **StepFun**：`platform.stepfun.com/docs/sitemap.xml` 的模型指南页仍是 Step 5 Preview / Step 3.7 / 3.5 / Step Router / StepAudio-3 系列（均已建档）→ 无新发布。
+  - **智谱 GLM**：`z.ai/blog` 仍不可达（404），HF `zai-org` 窗口内 0 新仓 → **本轮 GLM 覆盖记为 partial**（入口已实取巡检，官方博客通道仍缺），不声称穷尽。
+  - **Microsoft**：`new-sitemap.xml` 38 条 news 逐条取页读 `datePublished`，窗口内最新为 10-27 的 MAI Image 2.7 / MAI Cyber 1.1 Flash（已建档）→ 无新发布。
+  - **Particle AI**：官方博客仍只有 `introducing-particle-1` 一篇（已建档），`particle.ai/blog` 根路径 404、`/blog/introducing-particle-1` 正常 → 无新发布。
+- **入口扫描结果**：本批 `scan.mjs --write` 已落盘 `data/model-coverage.json`；`reconcile-coverage.mjs` 后**未决候选为 0**（581 个候选中，既无 `release_id` 又无 `exclusion_reason` 的候选数 = 0）。本批三处覆盖收口：
+  - **结案 1 条新发现候选**：`minimax-c3e220bff0be`（`https://agent.minimax.io/about`，标题「MiniMax Code」）。这是 **MiniMax Code 客户端的产品说明页，不是独立模型发布**（其底座模型 M3.1 Flash Preview 已在账本收录 `minimax/minimax-m3-1-flash-preview`）→ 补 `exclusion_reason`、`classification` 改 `product`、`next_backfill_at` 置 null。**本条若不结账会让 `validate:data` 直接失败**（门禁「general/vertical 候选既无 release 也无 exclusion_reason」），是本批门禁实测拦下的唯一一处。
+  - **新增存量回填候选 2 条**：按既有候选 id 规则（`vendor_id + sha256(canonicalURL)[:12]`）登记 `microsoft-4adfece45166`（`https://huggingface.co/microsoft/Mage-VL`）与 `microsoft-0507e8631dd6`（`https://huggingface.co/microsoft/Mage-ViT`），`release_id` 留 null、`exclusion_reason` 写明「2026 年 7 月发布，落在本批增量窗口之外，待存量回填审计批次补建」、`next_backfill_at` = 2026-11-05。**此举是为了防止「历史模型永久滑脱」**——此前这两条在覆盖账本里完全不可见（第四十五批 PR #43 已同样登记，本批自 `origin/main` 开出故需重登记一次；候选 id 与 URL 口径一致，`mergeCandidates` 按规范 URL 去重，两批同时合入不会产生重复行）。
+  - **归档 frontmatter 的 `release:` 字段刻意写 `hyperlogic`**：本归档是**基准仓**证据页而非某条 release 的发布页；`reconcile-coverage.mjs` 会用 `models/*/index.md` 的 `release:` 建立「release → 归档」映射，若在此写入 7 个 release id 之一，会把那 7 个 release 自有发布文归档的 `archive_path` 覆盖成本归档（实测该映射对每个 release 只保留一个归档目录）。因此本批把 release 归属放在 evidence 行的 `archive_url`（`models/2026-10-28-hyperlogic/`）与 `index.md` 正文，**未改写任何候选的 `archive_path`**（`git diff` 已核验零处 archive_path 变更）。
+- **检查点**：回写 `last_scan_at=2026-10-31`（UTC）、`last_max_release_date` **维持 2026-10-29**（本批未新增 release 条目，锚点不前进也不回退，也**不拿今天冒充发布日期**）。
+- **跳过清单**
+  - **腾讯 `Tencent-Hunyuan/HyperLogic`**——GitHub 组织里的**基准仓**（含题集、评分脚本与 Agent 评测框架），不是模型发布仓 → 不建 release，只作为既有 7 条 release 的 evidence 来源。
+  - **OpenAI 窗口内 48 条**（含 10-30 的 3 条、10-29 的《How we detect frontier model misalignment》《An updated Model Spec》等）——政策、方法、客户案例与产品功能条目，非模型发布。
+  - **Google `blog.google` 窗口内 20 条**——产品 / 科研 / 活动条目，非模型发布。
+  - **Mistral × NVIDIA 合作公告（10-21）、DeepSeek in-house search API、Meta 高校用例文章、Microsoft 前沿预训练方法文**——非模型发布。
+  - **HyperLogic 榜单里的「推理长度」区间（Base 每题中位 15.2k–52.7k token）与「99/585 次触到 131k token 上限」**——官方只给区间与全局计数，**非逐模型绝对分值**，不建行，只写进基准实体 `notes`。
+  - **HyperLogic Key Findings 里的相对结论**（「推理更长不等于更准」「加库使 Hard 准确率变化 −6.0 ~ +10.6 分」「沙箱让每个模型提升 16.7–40.1 分」）——相对差与区间，非逐模型绝对分，不建行。
+  - **HF `Mistral-Large-4-1T-A52B-NVFP4`、`Hy-Nomas-Diffusers`、`Hy-SimulMT-*-FP8/GGUF`、`Hy-Memory-*-GGUF/FP8`、`Qwen3-8B-DSpine-b16`**——量化 / 打包衍生件与研究产物，按既有口径不另建档。
+- **待人工核验**：本批新增 pending **0 条**（42 行全部为 Markdown 表格明文机读，不属「待人工读图」范畴）；沿用第三十三~四十五批的既有 pending 清单不变。
+- **门禁**：`node scripts/reconcile-coverage.mjs` 通过（**未决候选 0**）；`node --test tests/*.test.mjs` **65/65 通过**；`node scripts/validate-data.mjs` **PASS**（taxonomy 9 类 / vendors 17 / benchmarks 494（+1）/ releases 212（official 198）/ evidence edges 3339（+42））；`npm run build` 全链通过（test 65/65 → `sync:skills:check` 技能镜像零漂移 → `validate:data` PASS → 书校验 32 章通过（219 条 numeric-claim 警告为既有存量，非本批引入）→ EPUB 486 KB / 32 章 → 站点 `sitemap.xml` **746 URL**（+1，即 `hyperlogic` 基准页）+ 32 章页 + **494 实体页**（+1）+ 155 auto-evidence 页 → `validate-site` **935 HTML / 40519 内部引用 / 264 时间轴 / 2225 事件卡片** 全通过）。
+- **分支**：`model-release-daily-20261031T231926Z`（自 `origin/main` = `b7974e9` 开出）。开工前按分流表判为**情况 C（上一轮未收口）**：第四十五批的 PR #43 **仍 OPEN 未合并**，`origin/main` 停在第四十四批（`b7974e9`）；本批**不重跑第四十五批**，也不把它的 Mage-VL-Cowork 重复建档，只在证据层补录窗口内新出现的官方榜单。
