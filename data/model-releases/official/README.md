@@ -2419,3 +2419,17 @@ Muse 页面的图表已归档到 `models/2026-10-12-muse-wonder/images/` 与
   - 本地抽查：`/releases/` 出现 **2026-10-22 · Microsoft AI / MAI · MAI-DxO** 新结点（徽章引用 `assets/logos/microsoft.png`，解码核验为**真彩色四色品牌标**，非字母占位），结点渲染出日期 / 厂商 / 区域 / 模态 / 概述 / 4 个 key_traits 与三条可点击评测 chip（`sdbench` 83% / 80% / 81%）；`/models/mai-dxo/` 与 `/benchmarks/sdbench/` 均 **200**；本批新增的两张页面**无**「已核验 / 待核验 / 待补 / 证据账本 / 窗口起点」类内部术语。
 - **遗留观察（不属本批改动，按「只追加不改既有文件」未处理）**：站点 `/releases/` 上仍有 **75 处「待补」**字样，全部位于**既有 release 的 evidence notes**（Kimi K3.1 Pro、DeepSeek V4 Pro 等历史条目的「new-benchmark: 完整定义与数据集介绍待补」措辞），**非本批引入**。修它需要改写既有 release 文件，超出本批「只追加」边界，建议单开一批做公开文案措辞收敛。
 - **分支**：`model-release-daily-20261030T010000Z`（自 `origin/main` = `540cbda` 开出）。开工前按分流表判为**情况 B（上一轮已收口）**：无 OPEN PR，当前分支 `docs/ingest-onboarding-20261030` 的提交已以 squash 形式合入 `origin/main`（`540cbda`），故直接另开本批分支，不重跑上一批。
+
+---
+
+## 第四十七批（2026-11-02）：增量窗口复核 + 可机读证据升级
+
+- **窗口**：2026-10-15 ~ 2026-11-01（检查点锚点 2026-10-29 回退 14 天重叠）。对 17 个在册厂商的官方入口逐个复查，**窗口内确无新发布**；本批不新增 release，只做存量证据升级与覆盖对账。
+- **Mistral Timestral（2026-10-15）**：重抓官方发布页发现，5 张评测图**不是位图**，而是页面内嵌的 SVG 图表组件——数值以 `data-category` / `data-value` / `data-display` 属性内嵌于 DOM，可机读（与本仓已核验的 Voxtral-3 行同一取数通道）。机读值与既有归档位图的视觉转写值**逐位一致**（GIFT-Eval GMean WQL 0.4460、TIME GMean CRPS 0.5223、fev-bench SQL skill score 50.39%），构成 DOM 与位图双路径互证，故按「DOM 表机读行」口径把原 5 条 pending 翻为 verified（红线四「图表图片行永不自动翻 verified」不适用于可机读行）。
+- **多尺寸完整性补录**：官方图表把 5M / 28M / 123M / 209M 四个尺寸各列为一根柱，此前只记了旗舰 209M 一列，本批按 DOM 机读值逐列补齐其余 13 条行（`gift-eval` 两图的 5M 未进前十，未建行亦不臆造）。`timestral` 现有 **18 条 evidence**。
+- **Microsoft MAI-Image-2.7（2026-10-27）**：此前记「本页没有印出任何绝对 Elo 数字」只查了页面可见文本；本批复查归档件 `chart-aa-image-arena-elo.svg` 发现官方 SVG 的 `aria-label` 与内嵌图表数据数组**均以明文给出 Elo 绝对值**（两处一致、可机读）：MAI-Image-2.7-Preview = **1193 Elo**，总榜第 2 名。按勘误口径翻 verified 并补绝对分，走 `revisions[]` 留痕。
+- **新增 evidence**：**14 条 = 14 verified + 0 pending**（Mistral 13 条新增尺寸行 + 1 条升级行、Microsoft 1 条升级行）；**无新增 pending**。
+- **跳过清单**：**MiniMax Code**（`agent.minimax.io/about`）——应用/产品官方介绍页，无模型发布、权重或基准，按产品类候选登记排除，不建 release。
+- **待人工核验**：本批新增 pending **0 条**。沿用既有 pending 清单不变——`deepseek-v4-pro`（10 行）、`glm-4-6v`（68 行）、`muse-wonder`（3 行）等**只存在于像素**的图表行仍记 pending，本批未越红线自动升级。
+- **门禁**：`node scripts/reconcile-coverage.mjs` 通过；`node --test tests/*.test.mjs` **65/65 通过**；`npm run sync:skills:check` 无漂移；`node scripts/validate-data.mjs` **PASS**（taxonomy 9 类 / vendors 17 / benchmarks 493 / releases 212（official 198）/ evidence edges 3310）；`npm run build` 全链通过（EPUB 486 KB / 32 章；站点 745 URL + 493 实体页 + 155 auto-evidence 页；`validate-site` 934 HTML / 40385 内部引用 / 263 时间轴 / 2218 事件卡）。
+- **分支**：`model-release-daily-20261101T231956Z`（自 `origin/main` = `b7974e9` 开出）。开工前存在两个更新的 OPEN PR（#43 第四十五批、#44 第四十六批），按 Issue #357 的「不自动合并、人工复核后再接受」约定**本批不代为合并**，独立开分支并单独开 PR。
