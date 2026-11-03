@@ -2419,3 +2419,67 @@ Muse 页面的图表已归档到 `models/2026-10-12-muse-wonder/images/` 与
   - 本地抽查：`/releases/` 出现 **2026-10-22 · Microsoft AI / MAI · MAI-DxO** 新结点（徽章引用 `assets/logos/microsoft.png`，解码核验为**真彩色四色品牌标**，非字母占位），结点渲染出日期 / 厂商 / 区域 / 模态 / 概述 / 4 个 key_traits 与三条可点击评测 chip（`sdbench` 83% / 80% / 81%）；`/models/mai-dxo/` 与 `/benchmarks/sdbench/` 均 **200**；本批新增的两张页面**无**「已核验 / 待核验 / 待补 / 证据账本 / 窗口起点」类内部术语。
 - **遗留观察（不属本批改动，按「只追加不改既有文件」未处理）**：站点 `/releases/` 上仍有 **75 处「待补」**字样，全部位于**既有 release 的 evidence notes**（Kimi K3.1 Pro、DeepSeek V4 Pro 等历史条目的「new-benchmark: 完整定义与数据集介绍待补」措辞），**非本批引入**。修它需要改写既有 release 文件，超出本批「只追加」边界，建议单开一批做公开文案措辞收敛。
 - **分支**：`model-release-daily-20261030T010000Z`（自 `origin/main` = `540cbda` 开出）。开工前按分流表判为**情况 B（上一轮已收口）**：无 OPEN PR，当前分支 `docs/ingest-onboarding-20261030` 的提交已以 squash 形式合入 `origin/main`（`540cbda`），故直接另开本批分支，不重跑上一批。
+---
+
+## 第四十九批（2026-11-04 CST / 2026-11-03 UTC 增量窗口 2026-10-15 ~ 2026-11-03：Microsoft Sentiment-Analysis-7B 建档，1 条 evidence）
+
+- **窗口**：增量窗口 2026-10-15 ~ 2026-11-03（检查点锚点 `last_max_release_date=2026-10-29` 回退 14 天重叠；窗口右端取 UTC 当日 2026-11-03 = 北京时间 2026-11-04 07:23）。检查点回写 `last_scan_at=2026-11-03`（UTC）、`last_max_release_date` **保持 2026-10-29 不变**——本批最大发布日为 2026-10-21，早于既有锚点，锚点只前进不回退。
+- **本批性质**：**全窗口逐家实取巡检 + 一条补漏建档**。窗口内 17 家在册厂商逐家实取官方通道，**16 家确无新发布**（逐家判据见下），1 家（Microsoft）漏了一条**在窗口内、带绝对分值、官方一级来源**的发布，本批补建档；另有 1 家未注册厂商（NVIDIA）**评估后不接入**（理由见下）。
+- **本批新增 release：1 个**
+  - `microsoft/sentiment-analysis-7b`（Sentiment-Analysis-7B，2026-10-21）——**1 条 evidence，verified**，`status: verified`。
+  - **官方定位**：微软开源的 7B 情感分类模型，在 `mistralai/Mistral-7B-Instruct-v0.2` 之上用**强化学习微调、以 LLM 当裁判**，训练集是约 300 条内部样本且**未使用预定义标签**；判断用户消息对「目标」（用户正在交互的服务、产品或 agent）的态度，输出 `Negative` / `Neutral` / `Positive`，**情感标签恒为生成的第一个 token**，其后附一句解释。MIT 许可。
+  - **发布日期证据链（官方 org 仓 commit 时间线逐版核对，5 次 commit）**：`2026-10-17T00:51:18Z`（`128ec138` initial commit）只有 `.gitattributes` 与 **21 字节占位 README，无权重无评测**；`2026-10-20T19:07:36Z`（`02605a68` Upload folder）上传 **15 个 safetensors 权重分片**与 `config.json`、`chat_template.jinja`；`2026-10-20T19:19:22Z`（`a56b051f` Update README）**首次出现 Evaluation metrics 表**；`2026-10-20T19:28:08Z` 与 `2026-10-26T19:09:43Z` 两次改 README，**评测数值未变**。本仓账本统一按北京时间（UTC+8）记发布日期（先例：`glm/glm-4-6.json` 把 HF createdAt `2025-09-29T18:22Z` 折算为北京时间 09-30），权重与评测表同在 `2026-10-20T19:07Z~19:19Z` 落地、折算北京时间为 **2026-10-21 03:07~03:19**，故 `release_date=2026-10-21`、`date_precision=day`。**不取仓库创建日 2026-10-17**——那一次 commit 只有空壳 README，把它当发布日等于把一次空壳算成发布。
+  - **规格两项记 null**：卡片未给上下文窗口长度与 API 定价；参数量 7B、base_model、RL+LLM-as-Judge 训练方式、输出格式、Licence MIT、pipeline_tag 均为页面明示，照录。
+  - 归档 `models/2026-10-21-sentiment-analysis-7b/`（model card 原文 `page.md` 3618 字节 + 渲染页 `page.html` + 转录 `index.md` + `manifest.json`，含 sha256 与日期证据链）。
+- **本批新增 evidence：1 条**（`microsoft-sentiment-analysis-7b--microsoft-sentiment-analysis-internal`）
+  - **`microsoft-sentiment-analysis-internal` · 情感三分类准确率**——Sentiment-Analysis-7B **72.8%**（model card 正文 markdown 表格明文，`evidence_type: text`，故按口径记 `verified`）。
+  - **基座列一律进 notes、不建 comparison_cited 行**：同表 `mistralai/Mistral-7B-Instruct-v0.2` accuracy 62.0%，是本模型的**基座**而非对位竞品，按「一个 benchmark 行 = 一条 evidence，取自家模型列；竞品列进该行 notes」的口径记入该行 notes。
+  - **协议只记明示项**：官方只说 "The evaluation metric used is accuracy"，**没有**公开评测集规模、构造、标注规则与判分流程，也未明示 harness / tools / 温度 / 跑次数 / 判分器 / 聚合方式，`protocol` **12 键一律 null**；`comparison_scope` 记 `only_same_protocol`。
+  - **口径边界**：厂商内部评测（`dataset.source_type=vendor_internal`），官方未公开评测集规模与构造，该限制同时写进 benchmark 实体的 `interpretation` 与 `limitations`；训练用的约 300 条内部样本与评测集是否同分布官方未说明，不作跨机构比较。
+- **本批新增 benchmark id：1 个**（`microsoft-sentiment-analysis-internal`）——**同步建实体**（`data/benchmarks/microsoft-sentiment-analysis-internal.json`，`summary` 与 `interpretation` 均为读者语言，明确写出「72.8% 高基座 10.8 个百分点、但评测集未公开故不可横向比较」这层含义）。分类取 `knowledge`（垂直专项任务评测，沿用 `anthropic-life-sciences-internal` 等厂商内部评测实体的既有归类）。
+- **未注册厂商评估：NVIDIA，本批不接入**
+  - `nvidia/MotionBricks`（HF 仓创建 2026-10-23）：model card 自述「This release reuses those weights without retraining and packages them in SafeTensors format」——是 **GR00T Whole-Body Control 已发布权重的 SafeTensors 打包件**，与既有 `Hy-Nomas-Diffusers`（Diffusers 打包件）、`Step-5-Preview-NVFP4`（量化件）同类，按既有口径**不另建档**；且 G1 model card 明写「A complete quantitative evaluation report for these checkpoint files is not included with this package」「The paper's benchmark dataset sizes and scores are not measurements of this packaged G1 application」——**打包件没有 checkpoint 级评测**。其论文（arXiv 2604.24833，SIGGRAPH 2026，2026-04）才有完整实验，属**窗口外的存量回填**候选，留给 `reconcile-coverage.mjs` 常态对账。
+  - `nvidia/Metatron-v1`（2026-10-27）：model card 与 G1 卡均**无任务级基准**，明写「These are numerical export checks, not task-success or real-robot benchmarks」→ 无可入账 evidence。
+  - `nvidia/DeepSeek-V4.1-Flash-1017-NVFP4`（2026-10-30）：card 明写「This model is not owned or developed by NVIDIA」，是**第三方量化镜像** → 不另建档。
+  - **结论**：三条候选全部没有 checkpoint 级评测可入账；接入新厂商还要注册 `vendors.json` + 真实彩色 logo + LOGO_EXT，在本批无可入账发布的前提下接入只会给账本留一个空厂商，故本批**不接入**，并把论文侧的实验留作存量回填候选。
+- **逐家巡检结论（窗口 2026-10-15 ~ 2026-11-03，除 Microsoft 外均无新发布）**
+  - **OpenAI**：`openai.com/news/rss.xml` 窗口内最新 4 条（2026-11-03）**全为非模型**——Accelerating engineering for the physical world（物理世界工程加速的研究/产品文）、Cisco 网络安全客户故事、Heimstaden 客户故事、Jill Hazelbaker 人事任命；2026-11-02 的 7 条中只有 **LifeVal 是模型评测发布，已由第四十八批建档（在未合并的 PR #46 内），本批不重跑**。⚠️ **`sitemap.xml/release/` 的 `<lastmod>` 不可作发布日**——`introducing-gpt-5/` 这条 2025-08 发布的旧文 lastmod 同样是 `2026-11-03T21:38Z`（全站重渲染批量刷新），日期一律取 RSS `pubDate`。
+  - **Anthropic**：`platform.claude.com/docs/en/models/overview` 在架 = Opus 5.5 / Fable 5.1 / Sonnet 5.5 / Haiku 5.5（均已建档）；平台 release notes 窗口内 11-03（Claude Mythos 5 / Opus 4.7 / Sonnet 4.6 文本水印）、11-02（message threads beta）、10-30（fast mode 弃用）均为**平台功能 / 政策项**；newsroom 窗口内无模型发布 → 无新发布。
+  - **Google**：`deepmind.google/blog/rss.xml` 窗口内 11-03 一条（Agentic cheminformatics with **Google Antigravity**——开发者工具）、10-30 一条（研究文章）；`blog.google/rss/` 窗口内 12 条全为教育 / 资金 / 安全 / 合作类；`deepmind.google/models/gemini/` 在架 Gemini 4 Carbon（2026-10-28，已建档）、Gemma 4 系列（2026-10-27，已建档）→ 无新发布。
+  - **xAI**：`docs.x.ai/developers/models` 在架最新 = Grok 4.7（**已建档**，官方公告页印刷日 September 21, 2026，窗口外）；release notes 窗口内 11-02 条目是 **Imagine Image Quality 退役说明**，非发布 → 无新发布。
+  - **Meta**：`research.meta.ai/blog` 窗口内 10-28 是**高校用例文章**（无模型名无分值），10-15 的 Muse Spark Open 已建档；Meta 双线（Llama 与 Muse）均已覆盖 → 无新发布。
+  - **Mistral**：官方 RSS 窗口内最新 10-29 Le Chonk（Mistral Large 4，已建档）、10-20 Voxtral 3（已建档）、10-15 Timestral（已建档）；10-21 为 NVIDIA 合作公告 → 无新发布。
+  - **Kimi**：官方博客最新仍是 K3.1 Pro（已建档）；HF `moonshotai` 窗口内 0 新仓 → 无新发布。
+  - **DeepSeek**：`api-docs.deepseek.com/updates` 最新 2026-10-17 是 **in-house search API 上线（产品项）**；V4.1-Flash-1017（已建档）→ 无新发布。
+  - **MiniMax**：`platform.minimax.io/docs/release-notes/models` 最新仍 2026-10-19 M3.1 Flash（已建档）；HF `MiniMaxAI` 窗口内 0 新仓 → 无新发布。
+  - **GLM**：`z.ai/blog` 仍 404；HF `zai-org` 窗口内 0 新仓 → 无新发布。
+  - **Qwen**：HF `Qwen` 窗口内最新 10-09 Qwen-Image-2.1-Turbo（已建档）；GitHub `QwenLM` 窗口内 0 新仓 → 无新发布。
+  - **豆包 Doubao**：`seed.bytedance.com/sitemap.xml` 窗口内最新仍是 10-14（早于窗口）；博客两栏最新分别为 6-23 Seed2.1 与 7-31 Seedance 2.5（均已建档）→ 无新发布。
+  - **小米 MiMo**：`mimo.xiaomi.com` 首页在架 MiMo-V2.6 系列（**已建档**）；官方 blog 为客户端渲染、无日期 → 无新发布。
+  - **腾讯混元**：HF `tencent` 窗口内新仓全是已建档模型或衍生件——`Hy-Nomas-Diffusers`（Diffusers 打包件）、`Hy-SimulMT-*-FP8/GGUF`、`Hy-Memory-*-GGUF/FP8`、`Qwen3-8B-DSpine-b16` 一类**投机解码研究产物** → 无新发布。
+  - **StepFun**：`platform.stepfun.com/docs/zh/guides/models/list` 在架 Step 5 Preview / Step 3.7 Flash（均已建档）→ 无新发布。
+  - **Microsoft**：`microsoft.ai` news 38 条 + model 7 条站点地图**全部实取**，窗口内无新模型落地页；**官方 HF org `microsoft` 窗口内 4 个新仓**——`Mage-VL-Cowork`（10-30，**已由第四十五批建档**，PR #43 未合并）、`CogACT-v2-RoboDojo`（10-25，**无 README**，非模型发布）、`scFM-dataselection`（10-16，**数据选择脚本**，非模型）、`Sentiment-Analysis-7B`（**本批建档**）→ 本批补建 1 个。
+  - **Particle AI**：官方博客仅 `introducing-particle-1` 一篇（已建档）；`docs.particle.ai/models` 页面 `dateModified=2026-11-02` 是**文档站更新**，页内模型（`deepseek-v41-flash-1017`、`glm-5.3-flash`）均为**第三方模型**，非 Particle 自研发布 → 无新发布。
+- **入口扫描结果**：本批 `scan.mjs --write` 已落盘 `data/model-coverage.json`（覆盖窗口回写 `2026-10-15 ~ 2026-11-03`）；`reconcile-coverage.mjs` 通过（**未决候选 0**）。本批三处覆盖收口：
+  - **新增候选**：`microsoft/Sentiment-Analysis-7B` 按既有候选 id 规则（`vendor_id + sha256(canonicalURL)[:12]`）登记 `microsoft-eb3a989561f9`，`release_id=sentiment-analysis-7b`、`archive_status=archived`、`evidence_status=reported`、`official_source_verified=true`、`archive_path=models/2026-10-21-sentiment-analysis-7b`。
+  - **结案 2 条 minimax 候选**（本批 `scan.mjs` 重新发现）：`minimax-c3e220bff0be`（`https://agent.minimax.io/about`）与 `minimax-d768e471ad4d`（`https://agent.minimax.io/`）均为 **MiniMax Code 应用/产品下载页**（页面标题 "MiniMax Code: Minimize Effort, Maximize Intelligence" / "Download MiniMax Code for macOS & Windows"），**无模型发布、无权重、无基准分数**，按 `general/vertical 候选既无 release 也无 exclusion_reason` 门禁补 `exclusion_reason` 结案、`classification` 记 `product`。
+  - ⚠️ **与未合并 PR #46 的关系**：第四十八批已用同样理由结案过 `minimax-c3e220bff0be`，但那份结案**在未合并的 PR #46 里、不在本批的 base（`origin/main`）上**，故本批必须自行补齐以过门禁；这**不是重跑第四十八批**（第四十八批的入库内容是 OpenAI LifeVal 基准与 18 条 evidence，本批一条未碰）。人工合并 #46 与本批时，`data/model-coverage.json` 的同一候选条目可能冲突，需人工取舍（结论一致，取其一即可）。
+- **跳过清单**
+  - **OpenAI 2026-11-03 的 4 条**（物理世界工程加速研究文、Cisco 与 Heimstaden 客户故事、人事任命）与 11-02 的 Scaling Git / Grid Protectors / 安全冲刺 / 漏洞赏金 / Dan Driscoll / Qodo 插件——非模型发布。
+  - **OpenAI `sitemap.xml/release/` 的 `<lastmod>`**——全站重渲染批量刷新（`introducing-gpt-5/` 这条 2025-08 旧文 lastmod 也是 2026-11-03），**不可作发布日**，只用于查漏。
+  - **Anthropic 11-03 / 11-02 / 10-30 的三条**（文本水印、message threads beta、fast mode 弃用）——平台功能 / 政策项。
+  - **Google 11-03 的 Google Antigravity 一文**——开发者工具（agentic coding 工具）介绍，非模型发布；`blog.google/rss/` 窗口内 12 条教育 / 资金 / 安全 / 合作类同理。
+  - **xAI 11-02 的 Imagine Image Quality 退役说明**、**Meta 10-28 的高校用例文章**、**Mistral 10-21 的 NVIDIA 合作公告**、**DeepSeek 10-17 的 in-house search API**、**MiniMax Code 产品页两条**——非模型发布。
+  - **Microsoft `CogACT-v2-RoboDojo`（无 README）、`scFM-dataselection`（数据选择脚本）**——非模型发布。
+  - **NVIDIA `MotionBricks`（GR00T WBC 权重打包件）、`Metatron-v1`（无任务级基准）、`DeepSeek-V4.1-Flash-1017-NVFP4`（第三方量化镜像）**——打包 / 量化衍生件与无 checkpoint 级评测，按既有口径不另建档。
+  - **Sentiment-Analysis-7B 的基座列 62.0%**——同表基座对照，不是对位竞品，不单独建行，只进 notes。
+  - **Sentiment-Analysis-7B 的上下文长度与 API 定价**——官方未明示，一律 null，不臆造。
+- **待人工核验**：本批新增 pending **0 条**（唯一一条 evidence 是 model card 明文表格，不属「待人工读图」范畴）；沿用第三十三~四十八批的既有 pending 清单不变。
+- **门禁**：`node scripts/reconcile-coverage.mjs` 通过（**未决候选 0**）；`node --test tests/*.test.mjs` **65/65 通过**；`node scripts/validate-data.mjs` **PASS**（taxonomy 9 类 / vendors 17 / benchmarks 494（+1）/ releases 213（official 199，+1）/ evidence edges 3298（+1））；`npm run build` 全链通过（EPUB 486 KB / 32 章；站点 747 URL + **494 实体页** + 155 auto-evidence 页；`validate:site` **936 HTML / 40405 内部引用 / 263 时间轴 / 2220 事件卡**）。
+  - 本地抽查：`/releases/` 出现 **2026-10-21 · Microsoft / Sentiment-Analysis-7B** 新结点（`data-trust="full"`，徽章引用 `assets/logos/microsoft.png`，解码核验为 **128×128 truecolor RGBA 真彩色 PNG**、非字母占位），结点渲染出日期 / 厂商 / 区域 / 模态 / 概述 / 5 个 key_traits 与一个可点击评测 chip（`microsoft-sentiment-analysis-internal` **72.8%**）；`/models/sentiment-analysis-7b/` 与 `/benchmarks/microsoft-sentiment-analysis-internal/` 均 **200**；本批新增的两张页面**无**「已核验 / 待核验 / 待补 / 证据账本 / 窗口起点」类内部术语。
+  - 站点 `/releases/` 的「待补」字样计数为 **75**，与第四十四批记录的基线**完全一致**——全部位于既有 release 的 evidence notes（Kimi K3.1 Pro、DeepSeek V4 Pro 等历史条目），**非本批引入**；本批新增结点块内 0 处。
+- **分支**：`model-release-daily-20261103T232159Z`（自 `origin/main` = `b7974e9` 开出）。
+- ⚠️ **开工前处置：4 个更新的 OPEN PR 积压，本批按本 Issue 条款不合并**
+  - 开工时发现 **4 个更新的 OPEN PR**，四者同 base `b7974e9`、各自独立含一批、CI（Build EPUB & Web）**全绿**、均 MERGEABLE、内容互不重叠：**#43**（第四十五批：Microsoft Mage-VL-Cowork + WebVoyager-Static 新建基准）、**#44**（第四十六批：腾讯 HyperLogic 榜单 42 条 evidence）、**#45**（第四十七批：Timestral 图表 DOM 机读核验 + MAI-Image-2.7）、**#46**（第四十八批：OpenAI LifeVal 新建基准 + 18 条 evidence）。
+  - 按渠道地图「开工前先把那个 OPEN PR 合并并确认其 CI 为绿」的常规，本批本应先收口再开新分支；但**本批按本 Issue 验收条款「human reviews each delivery before accepting or publishing it; no automatic merge or publish」不开任何合并动作**，只开新 PR 等人工评审（第四十二批曾先行合并 PR #39 并在报告里标注待人工复核，本批**不做**该动作）。
+  - **后果与需人工处理**：本批分支与 #43~#46 是**同 base 的兄弟分支**，合并顺序由人工裁定；`data/model-coverage.json`、`data/generated/ingest-checkpoint.json`、账本 README 报告节是四者共同改动的文件，**人工合并时可能冲突**，需人工取舍（各批入库内容互不重复，冲突集中在「候选结案 / 检查点 / 报告节追加」这类共享文件的合并取舍）。远端分支一律保留，不删。
