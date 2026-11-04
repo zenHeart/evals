@@ -2543,3 +2543,38 @@ Muse 页面的图表已归档到 `models/2026-10-12-muse-wonder/images/` 与
 - **待人工核验**：本批新增 pending **0 条**。沿用既有 pending 清单不变——`deepseek-v4-pro`（10 行）、`glm-4-6v`（68 行）、`muse-wonder`（3 行）等**只存在于像素**的图表行仍记 pending，本批未越红线自动升级。
 - **门禁**：`node scripts/reconcile-coverage.mjs` 通过；`node --test tests/*.test.mjs` **65/65 通过**；`npm run sync:skills:check` 无漂移；`node scripts/validate-data.mjs` **PASS**（taxonomy 9 类 / vendors 17 / benchmarks 493 / releases 212（official 198）/ evidence edges 3310）；`npm run build` 全链通过（EPUB 486 KB / 32 章；站点 745 URL + 493 实体页 + 155 auto-evidence 页；`validate-site` 934 HTML / 40385 内部引用 / 263 时间轴 / 2218 事件卡）。
 - **分支**：`model-release-daily-20261101T231956Z`（自 `origin/main` = `b7974e9` 开出）。开工前存在两个更新的 OPEN PR（#43 第四十五批、#44 第四十六批），按 Issue #357 的「不自动合并、人工复核后再接受」约定**本批不代为合并**，独立开分支并单独开 PR。
+
+## 第四十八批（2026-11-02 增量窗口 2026-10-15 ~ 2026-11-02：OpenAI LifeVal 官方评测发布 → 新建 benchmark 实体 + 18 条 evidence）
+
+- **本批结论**：窗口 2026-10-15 ~ 2026-11-02 内**无新的模型发布**；本批的实质产出是 OpenAI 于 **2026-11-02** 发布的官方评测《LifeVal: Measuring AI progress on the tasks that matter in everyday life》——它**不是模型发布文**（Research / Publication 栏目），但内嵌了**逐模型 × reasoning effort 的官方机读分值**，故按「官方基准发布 → 建 benchmark 实体 + 补录既有 release 的 evidence」处理。
+- **本批新增**
+  - **新 benchmark 实体 `lifeval`**（`data/benchmarks/lifeval.json`）：日常生活长程任务评测。任务域取自美国时间使用调查 ATUS 与跨国时间使用研究 MTUS，任务筛选来自 OpenAI 自建的 3,995 人代表性调研（照护 / 健康 / 教育 / 家庭事务管理 / 个人财务 / 购物 / 政务办理）；打分口径为 **Average reward (unweighted)**，值域 0–1。
+  - **新 evidence 18 条 = 18 verified + 0 pending**：GPT-5.4（4 条）、GPT-5.5（4 条）、GPT-5.6（5 条）、GPT-6 Astra（5 条），每条对应一个 reasoning effort 档（low/medium/high/xhigh/max）。
+  - **新归档 `models/2026-11-02-lifeval/`**：`page.html`（官方发布文静态存档，含内嵌 RSC 载荷中的 vega-lite 图表数据）+ `index.md`（正文任务分表、逐模型逐 effort 机读表、average_reward 汇总表、官方相对结论）+ `manifest.json`。
+- **取数路径（可复核）**：官方页面静态 HTML 里**没有** `<table>`，分值在两处：
+  1. **正文任务分**（DOM 明文）：`kindergarten-after-moving` 93.1%、`flood-preparation` 98.0%、`family-home-search` 100%、`Texas SNAP application` 98.7%、`book travel to Geneva` 96.7%、`remote-game-with-grandma` 96.3%、`diabetes-adjustment` 90.4%、`LSAT Logical Reasoning` 88.7%；
+  2. **逐模型图表**（内嵌 RSC 的 `vegaLiteSpec.data.values`，22 行）：`{"model":…,"reward":…,"reasoning_effort":…,"tokens":…,"latency":…,"api_cost":…}`，纵轴 `Average reward (unweighted)`、值域 [0,1]。同图另附 `average_reward` 汇总数据集（模型 + release_date + 代表值）。
+  - **官方水位**：GPT-5.2 49.26% / GPT-5.4 73.05% / GPT-5.5 77.45% / GPT-5.6 79.98% / GPT-6 Astra 80.58%（各模型最高 effort 档）。相邻代际提升 3–5 个百分点，边际收益明显收窄。
+- **逐家巡检结论（窗口 2026-10-15 ~ 2026-11-02）**
+  - **OpenAI**：官方 RSS 1344 条，窗口内 10-31 ~ 11-01 **无新条目**；11-02 三条——`Grid Protectors Program`（算力园区用电项目，非模型发布）、`Qodo builds context into AI code review with Codex`（客户案例）、`LifeVal`（官方评测发布，见上）。`/sitemap.xml/release/` 85 条 slug 逐条取正文日期比对，未建档的最早只到 2025 年，**窗口内无遗漏**。
+  - **Anthropic**：news 索引首行「November 2, 2026」是**栏目渲染日**，其下最新一篇仍是《Introducing Claude Opus 5.5》(2026-09-22)；模型总表在架 Opus 5.5 / Fable 5.1 / Sonnet 5.5 / Haiku 5.5，均已建档 → 无新发布。
+  - **xAI**：`docs.x.ai` 11-02 唯一条目是《Imagine Image Quality Retirement》——`grok-imagine-image-quality` 下线改由 `grok-imagine-image-2.0`（quality=low）承接，属**生命周期公告非模型发布**；最新模型仍为 Grok 4.7（2026-09-21，已建档）→ 无新发布。
+  - **Microsoft**：`new-sitemap.xml` 38 条 / `model-sitemap.xml` 7 条全量取回并逐页读 JSON-LD `datePublished`——`mai-code-1-flash`(2026-10-07，已建档为 MAI-Code-1.1-Flash)、`mai-voice-2-1`(2026-10-01，已建档)、`mai-transcribe-2`(2026-09-03，已建档)、`mai-cyber-1-1-flash`(2026-10-27，已建档) → **无新发布**。
+  - **Google**：DeepMind RSS 100 条，窗口内最新为《Speeding up planning decisions with AI》(10-30，研究文章)、Gemini 4 Carbon(10-28，已建档)、Genie 4(10-27，已建档) → 无新发布。
+  - **Mistral**：官方 RSS 93 条，最新仍为 Le Chonk(10-29，已建档)；HF 窗口内仅 `Mistral-Large-4-1T-A52B-NVFP4` 量化衍生件 → 无新发布。
+  - **Kimi / DeepSeek / MiniMax / Qwen / 豆包 / 小米 / StepFun / 智谱 / Particle AI / 腾讯混元**：官方通道与 HF/GitHub 组织逐家巡检，窗口内无新发布（详见下「跳过清单」）。
+- **跳过清单**
+  - **OpenAI《Introducing the Grid Protectors Program》(11-02)**——算力园区电力供给项目，非模型发布。
+  - **OpenAI《Qodo builds context into AI code review with Codex》(11-02)**——客户案例（正文 75% / 88.6% 属客户侧数字，非模型评测）。
+  - **xAI《Imagine Image Quality Retirement》(11-02)**——模型下线公告，非新发布。
+  - **Anthropic news 索引的「November 2, 2026」**——栏目渲染日，非条目。
+  - **Microsoft《Frontier Pre-training at Microsoft AI》(10-15)**、**《building-medical-superintelligence》(10-22，已建档为 MAI-DxO)**——训练方法文章 / 已建档。
+  - **腾讯混元 HF 窗口内新仓**——`Hy-Nomas-Diffusers`(Diffusers 打包件)、`WeVisOne-VL-4B/2B`(已建档 wevisone-vl 的两个尺寸变体)、`Hy-SimulMT-*-Interleave/FP8/GGUF`、`Hy-Memory-30B-A3B-{FP8,GGUF}`、`Qwen3-8B-DSpine-b16`(投机解码 drafter 研究产物) → 均非独立模型发布。
+  - **Mistral HF `Mistral-Large-4-1T-A52B-NVFP4`**、**DeepSeek HF `DeepSeek-V4.1-Flash-1017`(已建档)**、**MiniMax HF `MiniMaxAI/MiniMax-M3.1-Flash`(已建档)**。
+  - **GPT-5.2（官方标注 release_date 2025-12-11）**——本仓**无对应 release 记录**，本批**不新建 release、不建 evidence 行**，其 4 档 effort 分值（27.69% / 37.18% / 45.19% / 49.26%）只留档于 `lifeval` 实体 notes 与本文。
+- **待人工核验**：本批新增 pending **0 条**（18 条全部来自官方页面内嵌 vega-lite 数据的机读明文，不属「待人工读图」范畴）。
+  - ⚠️ **但有一处分层归属待人工确认**：官方图表只标注「GPT-5.6」，**未区分 Sol / Terra / Luna**，本批把 GPT-5.6 的 5 行归到**旗舰 Sol 档**（`model_id=gpt-5-6-sol`），已在每行 `model_variant` 写明该推断，请人工复核。
+  - ⚠️ **发布日期冲突（按「只追加不改既有文件」未改写）**：LifeVal 官方 `average_reward` 汇总图标注 **GPT-5.6 release_date=2026-07-09**，而账本 `gpt-5-6` 的 `release_date` 为 **2026-08-26**（OpenAI 发布页 publishedTime）。两者冲突，本批**不静默覆盖**任一方，记为遗留观察。
+- **门禁**：`node scripts/reconcile-coverage.mjs` 通过（**未决候选 0**）；`node --test tests/*.test.mjs` **65/65 通过**；`node scripts/validate-data.mjs` **PASS**；`npm run build` 全链通过（EPUB + 站点 + `validate:site`）。
+  - 本批 `scan.mjs --write` 已落盘 `data/model-coverage.json`（入口通道状态按本轮实取更新：`doubao /en/blog/`、`qwen.ai/`、`hy.tencent.com/`、`microsoft.ai` 三条 sitemap 由 `partial` 转 `needs_render`，`openai /sitemap.xml/release/` 仍 `needs_render`）。
+- **分支**：`model-release-daily-20261102T232303Z`（自 `origin/main` = `b7974e9` 开出，隔离 worktree `code/github/.worktrees/evals/model-release-daily-20261102T232303Z`）。开工前存在三个更新的 OPEN PR（#43 第四十五批、#44 第四十六批、#45 第四十七批），按 Issue #357 的「不自动合并、人工复核后再接受」约定**本批不代为合并**，独立开分支并单独开 PR；亦不重跑前几批内容。
