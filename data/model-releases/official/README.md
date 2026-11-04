@@ -2643,3 +2643,55 @@ Muse 页面的图表已归档到 `models/2026-10-12-muse-wonder/images/` 与
   - 开工时发现 **4 个更新的 OPEN PR**，四者同 base `b7974e9`、各自独立含一批、CI（Build EPUB & Web）**全绿**、均 MERGEABLE、内容互不重叠：**#43**（第四十五批：Microsoft Mage-VL-Cowork + WebVoyager-Static 新建基准）、**#44**（第四十六批：腾讯 HyperLogic 榜单 42 条 evidence）、**#45**（第四十七批：Timestral 图表 DOM 机读核验 + MAI-Image-2.7）、**#46**（第四十八批：OpenAI LifeVal 新建基准 + 18 条 evidence）。
   - 按渠道地图「开工前先把那个 OPEN PR 合并并确认其 CI 为绿」的常规，本批本应先收口再开新分支；但**本批按本 Issue 验收条款「human reviews each delivery before accepting or publishing it; no automatic merge or publish」不开任何合并动作**，只开新 PR 等人工评审（第四十二批曾先行合并 PR #39 并在报告里标注待人工复核，本批**不做**该动作）。
   - **后果与需人工处理**：本批分支与 #43~#46 是**同 base 的兄弟分支**，合并顺序由人工裁定；`data/model-coverage.json`、`data/generated/ingest-checkpoint.json`、账本 README 报告节是四者共同改动的文件，**人工合并时可能冲突**，需人工取舍（各批入库内容互不重复，冲突集中在「候选结案 / 检查点 / 报告节追加」这类共享文件的合并取舍）。远端分支一律保留，不删。
+
+## 第五十批（2026-11-05 CST / 2026-11-04 UTC 增量窗口 2026-10-16 ~ 2026-11-04：OpenAI BenchCAD 2.0 明文分值补录 1 条 evidence，窗口内 17 家厂商确无新发布）
+
+- **窗口**：增量窗口 2026-10-16 ~ 2026-11-04（检查点锚点 `last_max_release_date=2026-10-30` 回退 14 天重叠；窗口右端取 UTC 当日 2026-11-04 = 北京时间 2026-11-05 07:23）。检查点回写 `last_scan_at=2026-11-04`（UTC）、`last_max_release_date` **保持 2026-10-30 不变**——本批**无新 release**，账本最大发布日仍是 2026-10-30，锚点只前进不回退。
+- **本批性质**：**全窗口逐家实取巡检（17/17 在册厂商逐家实取官方通道）+ 一条补录 evidence**。窗口内 17 家在册厂商逐家实取官方通道，**确无新发布**；本批唯一入库内容是一条**此前漏录的官方明文绝对分值**（OpenAI 官网研究文章里的 BenchCAD 2.0 分值），**不新建 release**。
+- **本批新增 release：0 个**（窗口内确无新的官方模型发布文，逐家判据见下）。
+- **本批新增 evidence：1 条**（`openai-gpt-6-astra--benchcad-2-0`）
+  - **`benchcad` · BenchCAD 2.0 平均分**——**GPT-6 Astra = 0.594**，来源 OpenAI 官网研究文章《Accelerating engineering for the physical world》正文散文明文（`evidence_type: text`，故按口径记 `verified`）。
+  - **为什么第四十九批没抓到**：第四十九批把该文按「非模型发布」整篇跳过了（结论对发布层成立），但该文「Measuring progress on engineering tasks」一节含 **BenchCAD 2.0 的明文绝对分值**。按与 Retell vCX 客户案例、Terminal X 客户案例**同类先例**（非发布文 / 研究文章只要带官方明文绝对分值即可作 evidence 源，不影响该 release 的发布日期与规格），本批按 evidence 层补录。先例：`openai-gpt-6-astra--retell-vcx-instruction-following`（第三十九批）、`openai-gpt-6-1-sol--terminal-x`（第三十五批）。
+  - **量纲必须隔离**：BenchCAD 2.0 是 **0–1 平均分**，与账本既有 6 条 BenchCAD **百分制**行（GPT-5.6 Sol 70.6 / Terra 62.3 / Luna 63.1 / GPT-5.5 44.4；Kimi K3.1 Pro 92.7 且脚注为 with-tools）**不是同一口径，跨版本不可直比**。故 `benchmark_variant` 记 `2.0（0–1 平均分口径）`，并在 benchmark 实体里把 `versions` 补上 2.0 条目、把 `average_score_0_1` 作为独立 metric 单列，实体 `interpretation` 明写这条不可直比边界。
+  - **协议只记明示项**：官方只说 GPT-6 Astra 取「最高推理档」（原文 `at its highest reasoning setting`）与「平均分」（`an average score`），其余（题量、判分细则、temperature / top_p / shots / run_count / judge）**官方未印，一律 null**；`comparison_scope` 记 `only_same_protocol`。
+  - **未具名内部模型的 0.875 不建行**：同段官方另给「A newer internal model achieved an average score of 0.875」——该模型**未具名、无发布信息，无 model id 可挂**，按「未发布 / 预告不建档」口径只记进 notes。
+- **本批新增 benchmark id：0 个**——`benchcad` 实体**就地升级**（非新建）：`versions` 增 `2.0` 条目、`metrics` 增 `average_score_0_1`（0–1 量纲）、`summary` / `interpretation` / `notes` 补 2.0 口径说明、`last_verified_at` 回写 `2026-11-04`。既有 6 条百分制行**一条未动**。
+- **本批新增归档：1 个**——`models/2026-11-03-openai-benchcad-2-0/`（`page.html` 439 KB 服务端渲染页 + `images/` 5 张页面配图原图 + 转录 `index.md` + `manifest.json`，含逐文件 sha256 与 7 条 limitations）。
+- **逐家巡检结论（窗口 2026-10-16 ~ 2026-11-04，17 家全部实取，确无新发布）**
+  - **OpenAI**：`openai.com/news/rss.xml` 窗口内逐条实取（11-04 的 6 条 + 11-03 的 4 条 + 11-02 的 7 条等），**无模型发布**；其中 11-03 的《Accelerating engineering for the physical world》**含 BenchCAD 2.0 明文分值 → 本批补录 1 条 evidence**（见上）。⚠️ **`sitemap.xml/release/` 的 `<lastmod>` 不可作发布日**——全站重渲染批量刷新，同第四十九批结论。
+  - **Anthropic**：`platform.claude.com/docs/en/models/overview` 在架 = claude-fable-5-1 / claude-opus-5-5 / claude-sonnet-5-5 / claude-haiku-5-5（**全部已建档**）；平台 release notes 窗口内条目均为文本水印 / message threads beta / fast mode 弃用等平台功能项 → 无新发布。
+  - **Google**：`deepmind.google/blog/rss.xml` 窗口内 = gemini-4-carbon（10-28，**已建档**）、genie-4（10-27，**已建档**）、agentic-cheminformatics with Google Antigravity（11-03，开发者工具）；`blog.google/rss/` 窗口内条目全为教育 / 资金 / 安全 / 合作类 → 无新发布。
+  - **xAI**：`docs.x.ai/docs/models` 在架最新 = grok-4.7（**已建档**）；release notes 窗口内条目为 Imagine Image Quality 退役说明 → 无新发布。
+  - **Meta**：`research.meta.ai/blog` 窗口内最新 = 高校用例文（10-28）与 Introducing Muse Spark Open（10-15，**已建档**）；Llama 与 Muse 双线均已覆盖 → 无新发布。
+  - **Mistral**：官方 RSS 窗口内最新 = Le Chonk（10-29，Mistral Large 4，**已建档**）、Voxtral 3（10-20，**已建档**）→ 无新发布。
+  - **Kimi**：官方博客最新仍是 K3.1 Pro（10-24，**已建档**）；HF `moonshotai` 窗口内唯一新仓即 `moonshotai/Kimi-K3.1-Pro`（**已建档**）→ 无新发布。
+  - **DeepSeek**：`api-docs.deepseek.com/updates` 最新 2026-10-17 仍是 in-house search API（产品项）；V4.1-Flash-1017（**已建档**）→ 无新发布。
+  - **GLM**：`docs.z.ai` 在架 = GLM-5.3 / GLM-5.3-Flash / GLM-5.2（**全部已建档**）；`z.ai/blog` 仍 404；HF `zai-org` 窗口内 0 新仓 → 无新发布。
+  - **MiniMax**：`platform.minimax.io/docs/release-notes/models` 最新仍为 **Oct. 19, 2026 / M3.1 Flash**（**已建档**）；HF `MiniMaxAI` 窗口内 0 新仓 → 无新发布。
+  - **Qwen**：HF `Qwen` 窗口内无新模型仓（最新 10-09 已建档）；GitHub `QwenLM` 窗口内新仓 `BabelArena` 是**评测集仓**，非模型发布 → 无新发布。
+  - **豆包 Doubao**：`seed.bytedance.com/sitemap.xml` 窗口内无新条目；博客两栏最新分别为 Seed2.1（6-23）与 Seedance 2.5（7-31），**均已建档** → 无新发布。
+  - **小米 MiMo**：`mimo.xiaomi.com/blog` 最新仍是 MiMo-V2-Flash（2025-12-16）；`mimo.xiaomi.com` 在架 MiMo-V2.6 系列（**已建档**）→ 无新发布。
+  - **腾讯混元**：HF `tencent` 窗口内新仓 = `Hy-SimulMT-30B-A3B`（10-22，**已建档**）及其 FP8 / GGUF **量化衍生件**；GitHub `Tencent-Hunyuan` 窗口内新仓 = Hy-Nomas（**已建档**）、HyperLogic（**评测集仓**）→ 无新发布。
+  - **StepFun**：`platform.stepfun.com/docs/zh/guides/models/` 在架 Step 5 Preview / Step 3.7 Flash（**均已建档**）→ 无新发布。
+  - **Microsoft**：`microsoft.ai` new-sitemap（38 条）/ model-sitemap 全部实取，窗口内条目均为已建档模型（mai-cyber-1-1-flash 10-27、mai-voice-2-1 与 mai-transcribe-2 10-29 等）；HF `microsoft` 窗口内新仓 Mage-VL-Cowork（10-30，**已建档**）等均为已建档模型 → 无新发布。
+  - **Particle AI**：`docs.particle.ai/llms.txt` 只列 Particle-1 与两个第三方模型；官方博客仅 `introducing-particle-1` 一篇（**已建档**）→ 无新发布。
+- **「归档页 vs 账本」交叉对账（本批新增手段）**：对窗口内全部 `models/*/page.html` 抽取正文明文百分数，与**全账本已有数值全集**求差，只留下 3 类疑似漏判，逐条核到结论——**都不是漏判**：
+  - **GPT-6.1 Terra 行**：正文的「GPT‑5.6 Terra's published score of 21.5%」**已在该行 notes 内**（按「同一行 notes 记竞品明文引用」口径），不另建 `comparison_cited` 行。
+  - **Particle-1 行**：基座 DeepSeek V4.1 Flash 四值（GPQA 90.91 / Tau 88.00 / MMLU 85.98 / BabyVision 89.60）**已按该归档页的既有口径写进 notes**（基座非对位竞品、不重复建行），不另建行。
+  - **Mage-VL-Cowork 行**：正文里的 **13.9% 是竞品 Fara1.5-4B 的 OSWorld-Verified 分**，非本模型分；该行 notes 已声明「同表竞品列按口径只进 notes、不另立行」。
+  - 其余命中项均为百分制数字与账本同一数值的写法差异（如账本记 `66`、页面印 `66.0%`），非漏判。
+- **入口扫描结果**：本批 `scan.mjs --write` 已落盘 `data/model-coverage.json`（入口覆盖窗口回写 `2026-10-15 ~ 2026-11-03`，逐入口 `last_scanned_at` 与 `content_sha256` 全部刷新）；`reconcile-coverage.mjs` 通过（**未决候选 0**）。本批覆盖收口 1 处：
+  - **结案 1 条 kimi 候选**：本批 `scan.mjs` 新发现 `kimi-f4a904d03d80`（`https://huggingface.co/moonshotai/Kimi-K3.1-Pro`），按 `general/vertical 候选既无 release 也无 exclusion_reason` 门禁必须结案。核对后确认该仓**已在账本内**（`kimi/kimi-k3-1-pro`，release_date 2026-10-24，34 条 evidence，归档 `models/2026-10-24-kimi-k3-1-pro/`），故按既有候选形状补齐 `release_id=kimi-k3-1-pro`、`official_source_verified=true`、`archive_status=archived`、`archive_path`、`evidence_status=reported`、`release_date=2026-10-24`，`exclusion_reason` 保持 null（它**不是**排除项，是已建档模型的仓级入口被重复发现）。
+- **跳过清单**
+  - **OpenAI 2026-11-04《A thousand fewer paths to root》（Linux 内核漏洞研究文）——重点判据**：官方明写该 pipeline 核心是「**an upcoming cyber model**」（**未发布、未具名**），按口径**不建 release**；文中的 kernelCTF 数字是**漏洞 PoC 数量**（25 个 info-leak PoC + 21 个 LPE exploit）与成本 / 复现率（2,308 候选中复现 1,724，约 74.7%），**不是可挂到某个 model_id 的模型评测分数**（无可挂 model_id），按口径**不建 evidence 行**；文中对比提到的 **GPT‑5.5 Cyber / GPT‑5.6 Cyber 在 `openai.com/sitemap.xml/release/` 无对应发布页**，按「无官方一级发布文不建档」不建行，仅在本报告留档。
+  - **OpenAI 2026-11-04 的 Daybreak Red AWS GovCloud（渠道上架公告）、Heimstaden（客户故事，99% 成本降幅是运营指标）、DevRev（客户故事，Enterprise-Bench 有基准名但无绝对分值）、Pierre 收购公告**——非模型发布。
+  - **OpenAI 2026-11-03 的 Cisco 客户故事、Jill Hazelbaker / Dan Driscoll 人事任命**，与 11-02 的 Scaling Git / Grid Protectors / 安全冲刺 / 漏洞赏金 / Qodo 插件——非模型发布。
+  - **Anthropic 11-03 / 11-02 / 10-30 的三条、xAI 11-02 Imagine Image Quality 退役说明、Meta 10-28 高校用例文、Mistral 10-21 NVIDIA 合作公告、DeepSeek 10-17 in-house search API**——平台功能 / 政策 / 案例类，同第四十九批结论。
+  - **腾讯 HF `Hy-SimulMT-30B-A3B` 的 FP8 / GGUF 量化件**——量化衍生件，非独立发布。
+  - **GitHub 窗口内新仓 `QwenLM/BabelArena`、`moonshotai/TCSExam`、`Tencent-Hunyuan/HyperLogic`、`deepseek-ai/dsh-superagent-prototype`、`deepseek-ai/DeepInfer`**——评测集仓 / 研究框架仓，非模型发布。
+  - **BenchCAD 2.0 段落里未具名内部模型的 0.875**——无 model id，不建行，只进 notes。
+- **待人工核验**：本批新增 pending **0 条**（唯一一条 evidence 是官方正文散文明文，不属「待人工读图」范畴）；沿用第三十三~四十九批的既有 pending 清单不变。
+- **门禁**：`node scripts/reconcile-coverage.mjs` 通过（**未决候选 0**）；`node --test tests/*.test.mjs` **65/65 通过**（含「本批官方归档文件与 manifest 哈希一致」一项，已校验本批新归档的逐文件 sha256）；`node scripts/validate-data.mjs` **PASS**（taxonomy 9 类 / vendors 17 / benchmarks 497 / releases 214（official 200）/ evidence edges 3374）；`npm run build` 全链通过（EPUB 486 KB / 32 章；站点 751 URL + **497 实体页** + 155 auto-evidence 页；`validate:site` **940 HTML / 40781 内部引用 / 265 时间轴 / 2235 事件卡**，全部通过）。
+  - 本地抽查：`/benchmarks/benchcad/` 与 `/models/gpt-6-astra/` 渲染出 **0.594** 这一新证据（`unit: score`、0–1 量纲），站点 `/releases/` 的「待补」字样计数与既有基线一致、**本批新增结点块内 0 处**。
+- **分支**：`model-release-daily-20261104T232246Z`（自 `origin/main` = `10e293c` 开出）。**本批不做任何合并动作**——按本 Issue 验收条款「human reviews each delivery before accepting or publishing it; no automatic merge or publish」，只开新 PR 等人工评审。
+- **执行器互斥与幂等**：本批由 **MiniMax Code App（cwr 主机 = CHENGLE / Windows）** 在隔离 worktree `C:\Users\cheng\code\github\.worktrees\evals\model-release-daily-20261104T232246Z` 内执行。**唯一执行者**是 Windows 计划任务 `Workflow.Schedule.evals-model-release-cwr`（`LastRunTime=2026-11-05 07:15:01`，`run_id=1793834108-32626ba5`，`consecutive_failures=0`，`paused=false`）；旧 OpenClaw 声明 `workflow:daily-model-releases-and-provider-refresh`（cron id `db2e30ef-541a-49e2-af4a-bcdff12831e9`，cron `15 7 * * *` Asia/Shanghai，agent `walle`）**原生回读确认 `enabled=false`**，且本批开工时持有 `project-evals` lease 与 `evals-model-release-cwr` 目录锁，**两个执行器不会跑同一轮**。
