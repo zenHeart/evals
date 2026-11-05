@@ -2820,3 +2820,12 @@ Table 3 的 GIF Moderation Recall 度量的是**安全防护（safeguard）检�
 - **分支**：`model-release-daily-20261105T010118Z`（自 `origin/main` = `c7db452` 开出）。
 - ⚠️ **开工前处置（情况 A）**：开工时发现 **PR #48（第五十批）** 处于 OPEN 状态、head 分支 `model-release-daily-20261104T232246Z` 晚于本地当前分支 → 判为「上一轮断在开 PR 与合并之间」。按分流表**先确认该 PR 的 CI（"Build & Publish"）为绿**（"Build EPUB & Web" = SUCCESS，mergeable = MERGEABLE / mergeStateStatus = CLEAN），**再 squash 合并**（`gh pr merge 48 --squash --delete-branch=false`，远端分支保留不删除），然后从更新后的 `origin/main`（= `c7db452`）开本轮新分支。**未重跑第五十批**。
   - 开工时工作树 `data/model-coverage.json` 呈修改态，经逐行核对**差异只有 `last_scan_at` / `last_scanned_at` / `content_sha256` 三类生成字段（60 行增删，零处其他改动）**，属上一轮扫描留下的**纯噪声**，非他人产物 → `git checkout --` 还原后开分支（符合「区分纯噪声与他人脏工作树」的判定）。
+
+### 第五十一批勘误（2026-11-05，PR #51）：`reported_score.display` 改为官方原表逐字字符串
+
+- **问题**：#49 首次录入时，`reported_score.display` 由数值格式化生成（`toFixed(2)` 后再去末尾零），与官方系统卡原表不一致——共 **17 条** evidence 受影响（15 条末尾零被去掉 + 5 处 Flare 星号标注丢失，其中 2 条重叠）。典型例子：Flare Sexual 的 `12.70%*` / `87.30%*` 被写成 `12.7%` / `87.3%`，Extremism 的 `0.00%` 被写成 `0%`，Sunburst Overall 的 `75.50%` 被写成 `75.5%`。`release-schema.md` 规定 `display` 为「**页面原样字符串**」，故按勘误处理。
+- **修正**：`display` 改为**直接从归档页 `page-system-card.html` 的表格单元格解析原字符串**（不再由数值反推）；`reported_score.value` **完全不变**；归档 `index.md` 转录表与 `manifest.json` 逐文件 sha256 同步更新。
+- **留痕**：按账本契约「勘误 = 修订字段值的同时在顶层 `revisions[]` 追加」，已在 `openai/gpt-image-2-6.json` 的 `revisions[]` 记录一条（date / field / from / to / reason 齐备），**未静默覆盖**。
+- **复核**：60 条 safety + 7 条 GIF 全部重新与源表逐格核对通过（`verify` 脚本 60/60 + 7/7，0 mismatch）。
+- **合并方式**：#49 已 squash 合并该文件到 main，直接在原分支再提会产生 **add/add 冲突**（GitHub 报 CONFLICTING）→ 勘误改自 `origin/main`（= `0c4c78a`）开新分支 `model-release-daily-20261105T013000Z` 提交，**只带勘误差异**；冲突的 #50 已关闭，**远端分支一律保留**。**未重跑第五十一批**，未动任何其它批次内容。
+- **线上验证**：部署后 live 详情页 **19 个原样字符串全部生效**（含 `12.70%*` / `87.30%*` / `0.00%` / `75.04%*` / `76.49%*` 等带星号标注），新增页面内部术语 **0 处**。
