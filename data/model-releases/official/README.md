@@ -2903,3 +2903,13 @@ Google 官方博客 2026-11-05 发布《Gemini Omni 1.2 Flash: Fast and cost-eff
 - 覆盖对账：`node scripts/reconcile-coverage.mjs` 后，本批 2 个候选（`google-485654c1f98a`、`openai-14e90e72d340`）均由 `release_id` 归位到新 release（`archive_status=archived`），无遗留「既无 release 也无 exclusion_reason」的候选。
 - 数据门禁：`npm run validate:data` PASS（taxonomy 9 类 / vendors 17 / benchmarks 503 / releases 217（official 203）/ evidence edges 3447）。
 - 全量门禁：`npm run build`（test + sync:skills:check + validate:data + validate + EPUB + Web + 站点检查）通过。
+
+### 存量回填缺口登记（登记入账本，不在本批建档）
+
+本轮深度巡检额外确认了一批**官方一级来源、账本无条目**的存量缺口。按仓库「增量窗口不越窗建档、双轨发现」的纪律，本批**只把它们登记进覆盖账本的回填轨道**（`data/model-coverage.json` 候选，`exclusion_reason` 写明「发布日在增量窗口之外且账本无此条目，属存量回填缺口，留待回填审计批次建档」，`next_backfill_at=2026-11-06`），**不在本批建档**。本批共新增候选 31 条（覆盖账本 591 → 622）：
+
+- **GLM-Image**——官方 `docs.z.ai/release-notes/new-released` 的 `update-label` = 2026-01-14（同页官方条目原文：「We've launched GLM-Image, a state-of-the-art image generation model…」）。
+- **MiniMax M2.1**——官方博客 `minimax.io/blog/minimax-m21` 的 JSON-LD `datePublished` = 2025-12-23。
+- **Qwen 29 条**——官方研究索引 API（`qwen.ai/api/v2/article/retrieval?type=qwen_ai`）的 `extra.date`，逐条给出版本名与官方日期：Qwen-Image-3.0(2026-07-21)、Qwen-Drive-1.0(2026-09-03)、Qwen-AgentWorld(2026-06-23)、Qwen3.7(2026-05-20)、Qwen3.7-Plus(2026-06-01)、Qwen-VLA(2026-05-29)、Qwen3.5-LiveTranslate(2026-05-19)、Qwen3.6-27B(2026-04-22)、Qwen3.6-Max-Preview(2026-04-18)、Qwen3.6-35B-A3B(2026-04-15)、Qwen3.6-Plus(2026-04-02)、Qwen3.5-Omni(2026-03-30)、Qwen3.5-Max-Preview(2026-03-19)、Qwen3.5(2026-02-16)、Qwen-Image-2.0(2026-02-10)、Qwen3-Coder-Next(2026-02-03)、Qwen3-ASR / ForcedAligner(2026-01-29)、Qwen3-TTS Family(2026-01-22)、Qwen3-VL-Embedding / Reranker(2026-01-08)、Qwen-Image-2512(2025-12-31)、Qwen-Image-Edit-2511(2025-12-23)、Qwen3-TTS Voice Cloning / Voice Design(2025-12-23)、Qwen-Image-Layered(2025-12-19)、Qwen3-Omni-Flash-2025-12-01(2025-12-09)、Qwen3-TTS Update(2025-12-05)、Qwen DeepResearch(2025-11-13)、Qwen-RobotSuite / RobotManip / RobotWorld / RobotNav(2026-06-16)。
+
+豆包线的存量缺口（Seed 2.0、Seedream 5.0 Lite、Seedance 2.0、Seed3D 2.0、Seed Prover 1.5 等约 20 条）本批**只记录在本节不落候选**——官方 SSR 列表页给出了印刷日期，但本轮未取得每条对应的稳定发布页 URL，按「不造 URL」的纪律不写入候选，留待回填批次按标题回查官方 slug 后登记。
