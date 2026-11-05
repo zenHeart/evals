@@ -4,7 +4,7 @@
 
 ## 汇总
 
-> **当前总量检查点（2026-10-23）**：200 releases = 186 official + 14 legacy · 3094 evidence edges。每批落地后更新此行。
+> **当前总量检查点（2026-11-05）**：215 releases = 201 official + 14 legacy · 3441 evidence edges。每批落地后更新此行。
 
 | 指标 | 值 |
 |---|---:|
@@ -2695,3 +2695,128 @@ Muse 页面的图表已归档到 `models/2026-10-12-muse-wonder/images/` 与
   - 本地抽查：`/benchmarks/benchcad/` 与 `/models/gpt-6-astra/` 渲染出 **0.594** 这一新证据（`unit: score`、0–1 量纲），站点 `/releases/` 的「待补」字样计数与既有基线一致、**本批新增结点块内 0 处**。
 - **分支**：`model-release-daily-20261104T232246Z`（自 `origin/main` = `10e293c` 开出）。**本批不做任何合并动作**——按本 Issue 验收条款「human reviews each delivery before accepting or publishing it; no automatic merge or publish」，只开新 PR 等人工评审。
 - **执行器互斥与幂等**：本批由 **MiniMax Code App（cwr 主机 = CHENGLE / Windows）** 在隔离 worktree `C:\Users\cheng\code\github\.worktrees\evals\model-release-daily-20261104T232246Z` 内执行。**唯一执行者**是 Windows 计划任务 `Workflow.Schedule.evals-model-release-cwr`（`LastRunTime=2026-11-05 07:15:01`，`run_id=1793834108-32626ba5`，`consecutive_failures=0`，`paused=false`）；旧 OpenClaw 声明 `workflow:daily-model-releases-and-provider-refresh`（cron id `db2e30ef-541a-49e2-af4a-bcdff12831e9`，cron `15 7 * * *` Asia/Shanghai，agent `walle`）**原生回读确认 `enabled=false`**，且本批开工时持有 `project-evals` lease 与 `evals-model-release-cwr` 目录锁，**两个执行器不会跑同一轮**。
+
+## 第五十一批（2026-11-05 CST / 2026-11-04 UTC 增量窗口 2026-10-16 ~ 2026-11-05：OpenAI GPT-Image-2.6 Sunburst / Flare 建档 → 官方系统卡安全评测 67 条 evidence + 2 个新建 benchmark 实体）
+
+- **窗口**：增量窗口 2026-10-16 ~ 2026-11-05（检查点锚点 `last_max_release_date=2026-10-30` 回退 14 天重叠；窗口右端取 UTC 当日 2026-11-05 = 北京时间 2026-11-05 09:00）。检查点回写 `last_scan_at=2026-11-05`（UTC）、`last_max_release_date` **推进到 2026-11-04**——本批有 1 个新 release，其发布日 2026-11-04 晚于既有锚点 2026-10-30，锚点只前进不回退。
+- **本批性质**：**全窗口逐家实取巡检（17/17 在册厂商逐家实取官方通道）+ 1 个新 release 建档 + 67 条 evidence**。
+- **本批新增 release：1 个**（`openai/gpt-image-2-6`，发布日 2026-11-04，含 **2 个模型变体**）。
+- **本批新增 evidence：67 条**（全部 `verified`，**0 条 pending**）
+  - **`openai-image-generation-safety`（新建实体）· 60 条** = 10 个政策类别（Overall / Sexual / Hate / Other / Violence-Gore / Extremism / Self-harm / Political / Abuse / Wrongdoing）× **3 项指标**（Safe Generation / Unsafe Generation Blocked / Unsafe Generation Not Blocked）× **2 个自家模型**（Sunburst / Flare）。
+  - **`openai-gif-moderation-recall`（新建实体）· 7 条** = GIF Moderation Recall 的 7 个类别（Overall / Sexual / Hate-abuse / Violence-gore / Extremism / Self-harm / Violent Activities）。
+- **本批新增 benchmark 实体：2 个**（`openai-image-generation-safety`、`openai-gif-moderation-recall`），两者均已建完整实体（`summary` / `interpretation` / `measures` / `does_not_measure` / `metrics`（含 `direction`）/ `versions` / `limitations` 齐备），非兜底页。
+- **本批新增归档：1 个**——`models/2026-11-04-gpt-image-2-6/`（`page.html` 428 KB 发布页 + `page-system-card.html` 112 KB 系统卡页 + `images/` 5 张页面配图原图 + 转录 `index.md` + `manifest.json`，含逐文件 sha256 与 8 条 limitations）。
+
+### 关键发现：发布文正文没有评测分，分值在系统卡里
+
+本批最重要的取数发现，与渠道地图里「页面有图表 ⇒ 正文无数值」的误判教训同源，但方向相反：
+
+1. **发布文正文确实一行评测分数都没有**。剥 `<script>` / `<style>` 后可见文本仅 **8,634 字符**，全文唯一百分比是「Images 2.6 generates images **50% faster** than before」——**出图速度描述，不是评测分数**（按「正文只印相对结论 / 非评测数值不入账」口径，不建 evidence 行，只进归档的「非评测内容」表）。
+2. **页面内嵌图表数据集里也没有分值**：`vegaLiteSpec` / `vegaSpec` 计数**均为 0**，页面唯一一张图片是社交卡配图（`images-2-6-social.png`），**没有任何评测图表**。即「RSC vega 载荷」这条通道在本页**不适用**——这与 `openai.com/index/introducing-gpt-6-1-terra`（第三十七批从 RSC 载荷取到 4 项绝对分）形成对照。
+3. **真正的分值在官方系统卡**。发布文正文末尾只留一句「Learn more about our safety evaluations and safeguards for Images 2.6 in **the system card**」，链接指向 `deploymentsafety.openai.com/chatgpt-images-2-6`（同属 OpenAI 官方域名，**A 级来源**）。系统卡第 3.2.1 节给出 Table 1 / Table 2、第 3.2.2 节给出 Table 3。
+4. **本批因此新增一条取数通道经验**（已回写渠道地图）：**OpenAI 发布文末尾的「system card」外链是独立的一级证据源**——当发布文正文无任何评测分、页面也无图表载荷时，应下探系统卡；且系统卡的表**与 OpenAI 官网发布页同属官方域名**，可直接作 `source_kind: official_system_card`、`source_tier: A`。
+
+### 三张表的取数形态（全部 DOM 机读，无一条靠读图）
+
+| 表 | 位置 | 页面形态 | 取数方式 | 建行数 |
+|---|---|---|---|---|
+| Table 1 | §3.2.1 | **DOM 真表格**（`<table>`，6 行） | 逐格正则解析 | 12 条（2 模型 × 3 指标 × Overall 1 类） |
+| Table 2 | §3.2.1 | **DOM 真表格**（`<table>`，42 行） | 逐格正则解析 | 48 条（2 模型 × 3 指标 × 9 类） |
+| Table 3 | §3.2.2 | **图表组件**（非 `<table>`） | DOM 的 `data-data` 属性（`modelScores`） | 7 条 |
+
+- **Table 3 是本批的新通道形态**：它在页面上以图表组件渲染，但数值**内嵌在 DOM 的 `data-data` 属性**里（`modelNames: ["GIF Moderation Recall"]`，`datasets[].modelScores["GIF Moderation Recall"].value`），HTML 转义用 `&#34;` 而非 JSON 字符串转义。**这不是位图图表**——数值逐格可核对，故按 DOM 机读记 `verified`，**不落 pending、不进人工读图清单**。这与「图表图片行永不自动翻 verified」的红线不冲突：那条红线针对的是**数值只存在于像素**的位图。
+- **Table 1 / Table 2 的三个类别标签带脚注上标**（`Other (e.g., religious and public figures) 2`、`Overall 1`），且 **Flare 的三行数值带星号**（`75.04%*` / `22.81%*` / `12.70%*` / `87.30%*` / `76.49%*`）。**若解析时按 `^\d+\.\d+%$` 过滤，会静默丢掉 4 行 Flare 数据**——本批首次校验时正是如此（只解析出 40 行而非 44 行），已修正为允许尾部星号。**类别名取页面原文（含 `e.g.` 与脚注号剥离前的形态）**，避免自造标签导致与源表对不上。
+
+### 两个模型变体 —— 多变体完整性已逐列核对
+
+本次发布含 **2 个 API 模型变体**（不是「一个模型两个档」而是两个独立 API 模型 id），**分别建档、分别建行**：
+
+- **GPT-Image-2.6 Sunburst**（高质量档，API id `gpt-image-2.6-sunburst`）：官方原文「for work that calls for greater detail and precision, GPT-Image-2.6 Sunburst brings higher-quality image generation and even greater image consistency across edits when quality is set to medium or high」。
+- **GPT-Image-2.6 Flare**（速度档，API id `gpt-image-2.6-flare`）：官方原文「Flare is optimized for faster generation」「When quality is set to low, Flare can generate images in as little as six seconds」。
+
+两者**各建 30 条安全评测 evidence**（10 类 × 3 指标），互不合并。
+
+### 取数纪律：三列指标方向不同，不可混读
+
+Table 1 / Table 2 的三列是**三个不同的量**、**方向不同**、**三列加总为 100%**：
+
+| 指标 | 方向 | 含义 |
+|---|---|---|
+| Safe Generation | 越高越好 | 生成结果被判为非违规的比例 |
+| Unsafe Generation Blocked | 越高越好 | 违规生成被安全审核层拦截的比例 |
+| Unsafe Generation Not Blocked | **越低越好** | 违规生成未被拦截、最终流向用户的比例 |
+
+已逐项写进 benchmark 实体的 `metrics[].direction`，并在 `interpretation` 里明写「三个分数要一起读」。**若按「Safe Generation 越高越好」的错误直觉读 Not Blocked 列，会把「变差」读成「变好」**——这是本批刻意加固的口径点。
+
+### 官方显著性结论（原文明文，逐条入库）
+
+- 2.6 系列与 2.5 **总体大体持平**：「the GPT-Images-2.6 series with moderation checks generally performs on par with GPT Images-2.5. Minor numerical regressions are not statistically significant.」
+- **Sunburst 漏网率下降**：1.92% → **1.72%**（安全方向改善）。
+- **Flare 漏网率上升**：1.49% → **2.14%**（+0.65 个百分点，66 / 3,077），官方明确「Neither overall difference was statistically significant」。
+- **未加审核前的 Flare 非违规比例下降**：78.36% → **75.04%**，此下降**具统计显著性**，主要来自「Other」与 sexual 类别；20 条净增漏网中有 14 条属「Other」。
+- **无任何单一政策类别**在加审核后出现统计显著的违规生成上升：「No individual prompt category showed a statistically significant increase in violative outputs when safety moderation was applied.」
+- **评测适用边界**（官方明文，已进 benchmark 实体的 `limitations`）：用的是「a fixed set of adversarial requests that are designed around challenging edge cases with automated grading」，结果「do not measure the complete deployed safety system or the frequency of violative outputs in production」。
+
+### 基线列（GPT-Image-2.5）按口径只进 notes，不另建行
+
+Table 1 / Table 2 同表含 **GPT-Image-2.5 Sunburst / Flare（baseline）** 两列。2.5 本身不是本次发布主体，按「竞品列进该行 `notes`、不拆成独立行」口径处理：**每条 evidence 的 `notes` 都记了同类别 2.5 基线的对应数值**（如 Flare Overall 的 Safe Generation 75.04% 一行记「同表对比列（GPT-Image-2.5 Flare 基线，不计入本行）：Safe Generation 78.36%」）。**既不丢信息，也不虚增 evidence 条数**。
+
+### Table 3 是防护层指标，不是模型能力分（重要归因）
+
+Table 3 的 GIF Moderation Recall 度量的是**安全防护（safeguard）检出违规 GIF 的能力**，不是模型自身能力分。官方未在表内区分 Sunburst 与 Flare 两列（`modelNames` 只有一个系列），因此**按发布主体挂 Sunburst，并在每行 `notes` 里写明「此为安全防护层指标……官方未在表内区分 Sunburst 与 Flare 两列，故按发布主体挂 Sunburst，Flare 同样适用」**。官方对该表另有两处限定：「It does not estimate how often harmful requests are fulfilled or harmful GIFs reach users in production」「Motion-related violations remain challenging to detect, and the safeguards may not catch all violations.」——两条均进 benchmark 实体的 `limitations`。
+
+### 逐家巡检结论（窗口 2026-10-16 ~ 2026-11-05，17 家全部实取）
+
+- **OpenAI**：`openai.com/news/rss.xml`（1,359 条）窗口内 **62 条**逐条解析（⚠️ **RSS `pubDate` 是 RFC-822 `Wed, 04 Nov 2026 00:00:00 GMT` 格式——必须先剥掉星期前缀再解析，否则按 ISO 解析会把整条 RSS 的窗口内条目全部静默丢掉**，本批首次解析即踩中，修正后窗口内条目数由 0 变为 62）。逐条判读后**唯一的新模型发布**是《Introducing Images 2.6》（2026-11-04 00:00 GMT，`https://openai.com/index/introducing-images-2-6/`）→ **本批建档**。其余 61 条均为非模型发布（客户故事 / 收购公告 / 人事任命 / 安全政策 / 合作 / 平台功能）。
+  - ⚠️ **上一轮（第五十批）的漏检复盘**：第五十批的窗口是 2026-10-16 ~ 2026-11-04，**已覆盖 Images 2.6 的发布日 2026-11-04**，但该批报告的 OpenAI 逐条清单里**没有提到这一条**——发布文页眉印「November 4, 2026」、RSS `pubDate` 为 `Wed, 04 Nov 2026 00:00:00 GMT`，按「窗口右端取 UTC 当日」的规则本应被扫到。本批按「逐条实取 + 打印窗口内条目数」的自检方式重扫才发现。**教训：RSS 窗口内条目必须逐条列出标题**（不能只统计数量、也不能凭记忆复述上一轮结论），否则会像本例一样整条漏掉而报告仍显示「确无新发布」。
+  - 另实取核对了同窗口的 `broad-access-through-consistent-standards` / `decisions-api` / `chatgpt-expanding-world-of-work` / `openai-models-google-cloud` 四条正文，确认均无新模型发布措辞。
+- **Anthropic**：`anthropic.com/news`（348 KB，索引可静态取）与 `platform.claude.com/docs/en/models/overview`（705 KB）在架模型 = claude-fable-5-1 / claude-opus-5-5 / claude-sonnet-5-5 / claude-haiku-5-5（**全部已建档**）；窗口内 news 条目均为政策 / 合作 / 人事类，无新模型。窗口内唯一的 `2026-10-21` 字样是文档站的 **API 版本号** `migration-2026-10-21`（迁移动作，不是模型发布日）。
+- **Google**：`deepmind.google/blog/rss.xml`（100 条）窗口内 5 条 = gemini-4-carbon（10-28，已建档）/ genie-4（10-27，已建档）/ agentic cheminformatics with Google Antigravity（11-03，开发者工具）/ speeding up planning decisions with AI（10-30）/ beyond tree cover（10-22）→ 无新发布；`blog.google/rss/` 窗口内 20 条全为教育 / 医疗 / 合作 / 产品功能类 → 无新发布。
+- **xAI**：⚠️ **`docs.x.ai` 本轮 TLS 层不可达**（Node `fetch` 与 `curl` 均报 `SSL_ERROR_SYSCALL` / `fetch failed`，非 403 反爬）→ 改走渠道地图记载的备选通道：`x.ai/news/<slug>` 直取成功（`grok-4-7` 200 / `datePublished=2026-09-21`、`grok-voice-3` 200 / 2026-10-14、`grok-imagine-image-2` 200 / 2026-08-07、`grok-code-fast-1` 200 / 2025-08-28 全部与既有记录一致，**sanity check 通过**）；`x.ai/news/` 索引 403（Cloudflare）。按 slug 探测 13 个候选（grok-4-8 / grok-4-9 / grok-5 / grok-5-1 / grok-4-7-1 / grok-imagine-image-2-1 / grok-imagine-video-2 / grok-imagine-video-1-6 / grok-voice-4 / grok-voice-3-1 / grok-code-fast-2 / grok-4-6-1 / grok-4-5-1）**全部 404** → 无新发布。
+- **Meta**：`research.meta.ai/blog`（310 KB）窗口内 = 高校用例文（10-28）与 Introducing Muse Spark Open（10-15，已建档）；Llama 与 Muse 双线均已覆盖 → 无新发布。
+- **Mistral**：官方 RSS（93 条）窗口内 = Le Chonk / Mistral Large 4 OSS（10-29，已建档）/ Voxtral 3（10-20，已建档）/ NVIDIA 合作（10-21）→ 无新发布；HF `mistralai` 窗口内 0 新仓。
+- **Kimi**：`kimi.com/en/blog` 窗口内最新仍是 K3.1 Pro（10-24，已建档）；HF `moonshotai` 窗口内唯一新仓 = `moonshotai/Kimi-K3.1-Pro`（**已建档**）→ 无新发布。
+- **DeepSeek**：`api-docs.deepseek.com/updates` 最新 2026-10-17 仍是 in-house search API（产品项）；V4.1-Flash-1017（已建档）→ 无新发布。
+- **GLM**：HF `zai-org` 窗口内 0 新仓；`z.ai/blog` 仍 404（渠道地图已记）→ 无新发布。
+- **MiniMax**：`platform.minimax.io/docs/release-notes/models` 最新仍为 Oct. 19, 2026 / M3.1 Flash（**已建档**）；HF `MiniMaxAI` 窗口内新仓 = `MiniMaxAI/MiniMax-M3.1-Flash`（**已建档**）→ 无新发布。
+- **Qwen**：HF `Qwen` 窗口内 0 新模型仓；`qwen.ai` 静态仍只出 SPA 壳（渠道地图已记）→ 无新发布。
+- **豆包 Doubao**：`seed.bytedance.com/sitemap.xml` 窗口内无新条目；博客两栏最新分别为 Seed2.1（6-23）与 Seedance 2.5（7-31），**均已建档** → 无新发布。
+- **小米 MiMo**：`mimo.xiaomi.com/blog` 最新仍是 MiMo-V2-Flash（2025-12-16）；`mimo.xiaomi.com` 在架 MiMo-V2.6 系列（**已建档**）→ 无新发布。
+- **腾讯混元**：HF `tencent` 窗口内新仓 13 个 = `Hy-Memory-30B-A3B` 系（10-16，已建档）/ `Hy-Nomas`（10-21，已建档）/ `Hy-SimulMT-30B-A3B` 系（10-22，已建档）/ `WeVisOne-VL`（10-22，已建档）+ 各自的 **FP8 / GGUF / Interleave 量化衍生件**（量化件不另建档）+ `Qwen3-8B-DSpine-b16`（投机解码 drafter 研究产物，非独立发布）→ 无新发布。
+- **StepFun**：`platform.stepfun.com/docs/zh/guides/models/` 在架 Step 5 Preview / Step 3.7 Flash（**均已建档**）；⚠️ 文档站 `dateModified=2026-11-03` 是**页面重建戳**，不是发布日（渠道地图已记）→ 无新发布。
+- **Microsoft**：`new-sitemap.xml`（38 条 news）+ `model-sitemap.xml` 全部实取，窗口内条目均为已建档模型（mai-cyber-1-1-flash 10-27 / mai-image-2-7 10-27 / mai-voice-2-1 10-29 / mai-transcribe-2 10-29 等）；HF `microsoft` 窗口内新仓 = `Sentiment-Analysis-7B`（10-17，已建档）/ `Mage-VL-Cowork`（10-30，已建档）/ `scFM-dataselection`（10-16，**数据集选择研究仓，非模型发布**）→ 无新发布。
+- **Particle AI**：`docs.particle.ai/llms.txt` 只列 Particle-1 与两个第三方模型；官方博客仅 `introducing-particle-1` 一篇（**已建档**）→ 无新发布。
+
+### 跳过清单
+
+- **OpenAI 窗口内其余 61 条 RSS 条目**——客户故事（DevRev / Cisco / Heimstaden / Evernote / Legora / Oracle / Check Point / Greptile / AT&T / Uber / Anima / Itochu 等）、收购公告（Pierre / Orchestra Bio）、人事任命（Jill Hazelbaker / Dan Driscoll）、安全与政策（Grid Protectors / 安全冲刺 / bug bounty / Model Spec 更新 / 前沿模型失配检测 / 训练环境安全 / 协调披露 / 网络安全防御者）、平台功能（Decisions API / Google Cloud 上架 / ChatGPT Ads 扩国 / 遗留广告栈 / 决策 API / 开源合作标准）、合作与研究合作等——**非模型发布**。
+- **OpenAI《A thousand fewer paths to root》**（2026-11-04）——第五十批已按「核心是 an upcoming cyber model（未发布、未具名）」跳过，本批维持同一结论：文中 kernelCTF 数字是**漏洞 PoC 数量**与成本/复现率，**不是可挂到某个 model_id 的模型评测分数**，不建 evidence 行。
+- **OpenAI《Accelerating engineering for the physical world》**（2026-11-03）——**第五十批已按 BenchCAD 2.0 补录 1 条 evidence**，本批不重复入库（既有 release 文件未改）。
+- **GPT-Image-2.6 的 `50% faster` 出图速度、每周 40 亿张图、Flare 低画质 6 秒出图**——**非评测分数**，只进归档「非评测内容」表，不建 evidence 行。
+- **Table 1 / Table 2 的 GPT-Image-2.5 基线列**——按口径进 notes，不另建行（理由见上）。
+- **Table 3 的 GIF 召回率**——**防护层指标**，不当作模型能力分（理由见上）。
+- **系统卡 §3.3 Preparedness**——官方结论「neither model crosses the Bio High threshold or the Cyber High threshold」，**无数值**，不建行；官方另说明「图像模型无法创建并执行代码，因此 AI 自我改进类别无实质风险」。
+- **Microsoft HF `scFM-dataselection`**（2026-10-16）——数据集选择研究仓，非模型发布。
+- **腾讯 HF `Hy-SimulMT` / `Hy-Memory` 系的 FP8 / GGUF / Interleave 量化衍生件**——量化件，不另建档。
+- **`tencent/Qwen3-8B-DSpine-b16`**——投机解码 drafter 研究产物（基于 Qwen3-8B），非独立模型发布。
+
+### 待人工核验
+
+- **本批新增 pending 0 条**——67 条 evidence 全部出自**可机读**的 DOM 真表格（Table 1 / Table 2）与 DOM 内嵌 `data-data` 数据集（Table 3），**无一条依赖位图读图**，故不产生待人工读图项。沿用第三十三~五十批的既有 pending 清单不变。
+
+### 入口扫描与候选结案
+
+- 本批 `scan.mjs --write` 已落盘 `data/model-coverage.json`（逐入口 `last_scanned_at` 与 `content_sha256` 全部刷新）；`reconcile-coverage.mjs` 通过（**未决候选 0**）。
+- **本批覆盖收口 1 处**：结案候选 `openai-295354ff422b`（`https://openai.com/index/introducing-images-2-6/`）。⚠️ **该候选被 `scan.mjs` 的标题分类器判为 `product`（"产品/工具/平台/方案更新，非独立模型发布"）并自动带上了 `exclusion_reason`——这是误判**：该发布页虽标「Product Release」，但**明确发布两个新的 API 模型 id**（`gpt-image-2.6-sunburst` / `gpt-image-2.6-flare`，官方 API 定价页逐行列价），属**模型发布**。按「专项模型必须允许建档；分类只影响任务适配与分数比较，不是排除条件」口径，**改判为 `vertical` 并建档**，补齐 `release_id=gpt-image-2-6`、`official_source_verified=true`、`archive_status=archived`、`archive_path`、`evidence_status=reported`、`release_date=2026-11-04`，`exclusion_reason` 置 null。**教训：标题分类器对「Product Release」类页面的分类不可单独作为排除依据，须回看页面是否给出新的模型 id 与定价。**
+
+### 门禁
+
+- `node scripts/reconcile-coverage.mjs` 通过（**未决候选 0**）。
+- `node --test tests/*.test.mjs` **65/65 通过**（含「本批官方归档文件与 manifest 哈希一致」一项，已校验本批新归档的 8 个文件逐个 sha256）。
+- `node scripts/validate-data.mjs` **PASS**（taxonomy 9 类 / vendors 17 / benchmarks **499**（+2）/ releases **215**（official 201，+1）/ evidence edges **3441**（+67））。
+- `npm run build` 全链通过（EPUB 486 KB / 32 章；站点 **754 URL** + **499 实体页** + 155 auto-evidence 页；`validate:site` **943 HTML / 41067 内部引用 / 265 时间轴 / 2237 事件卡**，全部通过）。
+  - 本地抽查：`/releases/` 出现 **2026-11-04 · OpenAI / GPT-Image-2.6 Sunburst / GPT-Image-2.6 Flare** 新结点（`data-trust="full"`，徽章引用 `assets/logos/openai.png`），结点渲染出日期 / 厂商 / 区域 / 模态 / 两个变体的独立概述 / 4 个 key_traits 与可点击评测 chip（`openai-image-generation-safety` 75.5% / 22.78% / 1.72%，`openai-gif-moderation-recall` 77.7%）；`/models/gpt-image-2-6/`、`/benchmarks/openai-image-generation-safety/`、`/benchmarks/openai-gif-moderation-recall/` 均已生成。
+  - 站点 `/releases/` 的「待补」字样计数为 **75**，与第四十九 / 五十批记录的基线**完全一致**——全部位于既有 release 的 evidence notes，**非本批引入**；**本批新增结点块内 0 处**，新增两张实体页 **0 处**内部术语。
+- **分支**：`model-release-daily-20261105T010118Z`（自 `origin/main` = `c7db452` 开出）。
+- ⚠️ **开工前处置（情况 A）**：开工时发现 **PR #48（第五十批）** 处于 OPEN 状态、head 分支 `model-release-daily-20261104T232246Z` 晚于本地当前分支 → 判为「上一轮断在开 PR 与合并之间」。按分流表**先确认该 PR 的 CI（"Build & Publish"）为绿**（"Build EPUB & Web" = SUCCESS，mergeable = MERGEABLE / mergeStateStatus = CLEAN），**再 squash 合并**（`gh pr merge 48 --squash --delete-branch=false`，远端分支保留不删除），然后从更新后的 `origin/main`（= `c7db452`）开本轮新分支。**未重跑第五十批**。
+  - 开工时工作树 `data/model-coverage.json` 呈修改态，经逐行核对**差异只有 `last_scan_at` / `last_scanned_at` / `content_sha256` 三类生成字段（60 行增删，零处其他改动）**，属上一轮扫描留下的**纯噪声**，非他人产物 → `git checkout --` 还原后开分支（符合「区分纯噪声与他人脏工作树」的判定）。
