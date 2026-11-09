@@ -2998,3 +2998,111 @@ Meta 2026-11-06《Bringing Specialized Models to Muse and Meta AI》发布一批
 - `npm run build` 全链通过（详见本批提交记录；含书校验 + EPUB + 全站构建 + `validate-site`）。
 - **分支**：`model-release-daily-20261106T232045Z`（自 `origin/main` = `d9ff4d6` 开出）。
 - ⚠️ **开工前处置（情况 A）**：开工时发现 **PR #54（上一轮交付）** 处于 OPEN 状态（head `model-release-daily-20261105T232408Z`，head commit `d19404e`），其内容（GPT‑6 Cyber / Gemini Omni 1.2 Flash）**尚未合入 `origin/main`**。按分流表**不重跑该批**、**不自动合并**（人工 review 前不合并），本批从 `origin/main` = `d9ff4d6` 开新分支，两批内容**不重叠**（本批 2026-11-06 新发布 vs 上一轮 2026-11-05 发布）。
+
+## 第五十四批（2026-11-08 CST / 2026-11-07 UTC，增量窗口 2026-10-21 ~ 2026-11-07：字节跳动 Cola2 与 GenFirst 建档 → 34 条 evidence；腾讯 AppCIF-Bench 官方榜单补录 → 70 条 evidence + 1 个新建 benchmark 实体）
+
+> 批次编号说明：第五十二批 / 第五十三批分别在 PR #54 / #55 中（尚未合入 main），本批自 origin/main = d9ff4d6 开出，故编号为第五十四批；三批互为平行批次，合并时按批号顺序回写。
+> 本批由 `zenHeart/workflow#357` 约定的 `evals-model-release-cwr` 定时任务（Windows 计划任务 `\Workflow.Schedule.evals-model-release-cwr`）触发，运行时为 MiniMax Code App（`mcode` 0.6.12）；同周期的旧 OpenClaw 声明 `workflow:daily-model-releases-and-provider-refresh` 已确认 `enabled=0`（disabled），两个执行器不重叠。分支 `model-release-daily-20261107T232106Z` 自 `origin/main` = `d9ff4d6` 开出，**未自动合并**，待人工 review。
+
+### 本批指标
+
+| 指标 | 本批值 |
+|---|---:|
+| 新增 release 文件 | 2（`doubao/cola2`、`doubao/genfirst`） |
+| 新建 benchmark 实体 | 1（`appcif-bench`） |
+| 新增 benchmark_evidence | 104（Cola2 8 + GenFirst 26 + AppCIF-Bench 70） |
+| evidence `status=verified` | 104 |
+| evidence `status=pending` | 0 |
+| 只追加触达的既有 release | 7（各 +10 条 AppCIF-Bench 行） |
+| 新增归档目录 | 3 |
+| 新铸 benchmark id | 8（`race`、`narrativeqa`、`storycloze`、`lambada`、`arc-easy`、`imagenet`、`geneval`、`dpg-bench`） |
+
+### 新增 release
+
+1. **`doubao/cola2`（字节跳动 Cola2，2026-11-06）** —— 官方 Hugging Face 模型卡 `ByteDance-Seed/Cola2` 一级来源，连续潜变量语言模型（动态压缩 VAE + 块因果 DiT + span 因果 token 解码器），官方明示是**基座模型**而非指令微调助手。模型卡「Post-pretraining results」表含 8 个任务行，按「一个 benchmark 行 = 一条 evidence，取自家模型列」建 **8 条** evidence（`doubao-cola2--<benchmark>`）：RACE 69.91 / NarrativeQA 32.70 / HellaSwag 41.75 / StoryCloze 80.42 / LAMBADA 63.00 / ARC-Easy 87.62 / TruthfulQA 54.10 / MMLU 51.32。竞品列（Llama-3-8B、Qwen2.5-7B、Qwen3-8B-Base、LLaDA-8B-Base）按口径写入各行 `notes`。同表另两行**不建行**：8-task average（Cola2 60.10，跨评测聚合值）与 Pretraining tokens（Cola2 346B，规格信息），原值已转录归档。发布日证据链：HF 仓库 `createdAt=2026-11-06T06:59:36Z` 与官方 GitHub 仓库 `created_at=2026-11-06T03:37:50Z` 同日互证，`date_precision=day`；论文 arXiv 2610.31305（2026-10 预印本）仅作佐证。
+2. **`doubao/genfirst`（字节跳动 GenFirst，2026-10-29）** —— 官方 Hugging Face 模型卡 `ByteDance-Seed/GenFirst` 一级来源，端到端潜空间生成研究权重（只发布 **EiT** 实例化，论文中的 EAR 未发布；权重 CC BY-NC 4.0 非商用研究用途、原始 `.pt` 检查点、无 diffusers 集成）。官方模型卡的 Evaluation 节**明示**了两组评测口径，故只收录这两组共 **26 条** evidence：①类条件生成 gFID / IS（16 条：5 个检查点 × gFID/IS × unguided/guided，512 档原表「–」不转录；50,000 张生成样本、torch-fidelity 对 MAR 参考统计、SDE 250 步、256 档 autoguidance + CFG / 512 档普通 CFG）；②GenEval / DPG-Bench（10 条：文生图先验 variant A/B、共享潜变量 SigLIP / VLM-NLL、统一图文 SFT 检查点各 2 条；Euler 50 步、CFG 7.0、区间 [0.35, 1.0]、不做 prompt rewriting）。发布日证据链：HF 仓库 `createdAt=2026-10-29T03:26:09Z` 与官方 GitHub 仓库 `created_at=2026-10-29T03:00:32Z` 同日互证（北京时间同为 2026-10-29）。
+
+### 新建 benchmark 实体
+
+- **`data/benchmarks/appcif-bench.json`**（腾讯官方基准仓 `Tencent-Hunyuan/AppCIF-Bench`，仓库与数据集 2026-11-05 公开，README News 节记 NeurIPS 2026 收录）：应用级复杂指令跟随基准，466 样本 / 3,017 条原子细则、L1–L4 四层难度、SSR（软满足率）与 HSR（硬满足率）两个指标、LLM-as-a-judge 逐条细则判定。实体写入 `interpretation`（分数怎么读）、`measures` / `does_not_measure`、`dataset`（分档样本与细则数）、`metrics`、`versions`（论文初始版 2,998 条 → v1.1 3,017 条）、`limitations`、`official_sources` 与 `related_benchmarks`。
+
+### 新增 evidence（AppCIF-Bench 榜单补录）
+
+官方 Leaderboard 表给出 12 个模型 × 10 列（SSR L1–L4/Avg + HSR L1–L4/Avg）的明文数值，基准所有者自建自跑并自报。按「同一 benchmark 不同列 → 拆 variant 行」对**账本已有对应 release 档案**的 7 个模型各建 **10 条** evidence，共 **70 条**，落到 7 个既有 release（各 +10 条，只追加，未改动任何既有行、数值、状态与 locator）：
+
+| AppCIF 榜单标签 | 落档 release / model | SSR Avg | HSR Avg |
+|---|---|---:|---:|
+| GPT-5.4-xhigh | `openai/gpt-5-4` / `gpt-5-4` | 78.2 | 45.9 |
+| Gemini-3.1-Pro-Preview | `google/gemini-3-1-pro` / `gemini-3-1-pro` | 70.9 | 34.6 |
+| Gemini-3-Flash-Preview | `google/gemini-3-flash` / `gemini-3-flash` | 46.4 | 10.3 |
+| GLM-5.1 | `glm/glm-5-1` / `glm-5.1` | 50.0 | 10.9 |
+| Kimi-K2.5-Thinking | `kimi/kimi-k2-5` / `kimi-k2-5` | 42.5 | 8.6 |
+| DeepSeek-V3.2-Thinking | `deepseek/deepseek-v3-2` / `deepseek-v3-2` | 39.2 | 4.1 |
+| Minimax-M2.7 | `minimax/minimax-m2-7` / `minimax-m2-7` | 24.7 | 2.4 |
+
+每条 evidence 的 `attribution_type=benchmark_owner_reported`、`source_kind=official_benchmark_repo`、`source_tier=A`、`evidence_type=table`、`comparison_scope=only_same_protocol`；同列竞品值写进各行 `notes`。
+
+**榜单另有 5 行未入账**（本仓无对应 release 档案，不强行映射、不硬套到别的型号上）：`Doubao-Seed-2.0-Pro-high`（账本只有 seed-2-0-lite / seed-2-0-mini / seed-2-1）、`Qwen-3.6-Plus-Thinking`（账本 `qwen/qwen3-6-flash` 为经济档且零 evidence，与 Plus 档不是同一次发布）、`Grok-4.2`（账本 `xai/grok-4-20` 是另一次发布且零 evidence）、`Xiaomi-MiMo-V2-Pro` 与 `Xiaomi-MiMo-V2-Omni`（账本只有 `mimo-v2-6` / `mimo-v2-5-pro`）。原值已完整转录在归档 `models/2026-11-05-appcif-bench/index.md`。
+
+### 新增归档
+
+| 目录 | 来源 | 内容 |
+|---|---|---|
+| `models/2026-11-06-cola2/` | `https://huggingface.co/ByteDance-Seed/Cola2` | 模型卡原始 README + 渲染页 + 转录表 + manifest |
+| `models/2026-10-29-genfirst/` | `https://huggingface.co/ByteDance-Seed/GenFirst` | 模型卡原始 README + 渲染页 + 全部评测表转录（含本批未入账的两组数值）+ manifest |
+| `models/2026-11-05-appcif-bench/` | `https://github.com/Tencent-Hunyuan/AppCIF-Bench` | 基准仓原始 README + 渲染页 + 榜单转录表 + 版本口径 + manifest |
+
+三个目录的 `manifest.json` 均带逐文件 `sha256` 与 `limitations[]`（日期证据链、口径差异、未入账项与许可边界逐条写清）。
+
+### 关键发现
+
+- **官方「自建自跑」榜单是本仓的新证据形态**：AppCIF-Bench 由基准所有者自己出题、自己跑、自己发榜，证据性质是 `benchmark_owner_reported` 而非 `vendor_reported`；但它覆盖的是**别家模型**，所以落点是既有 release 的追加行，不新建 release。这与第五十二~五十三批「厂商发自己的模型 → 新建 release」的路径互补，两条路径在本批同时跑通。
+- **版本漂移必须随分数一起读**：AppCIF 官方明示论文初始版（2,998 条细则、Doubao-Seed-1.6-1015 判分）与仓库现版 v1.1（3,017 条细则、Doubao-Seed-2.0-lite 判分）**不可直接比较**，且原裁判已停止服务。本批把这条写进基准实体的 `versions` / `limitations`，并逐行写进 70 条 evidence 的 `notes`。
+- **同表混量纲要拆列**：官方同一张 Leaderboard 表里，GenEval 在文生图先验行是 0–1 小数制（0.8987 / 0.8920 / 0.90 / 0.89），在统一图文行是百分制（86.57）。本批按「单位不同不合并」分别标 `unit`，并在 notes 逐行标注不可跨行比较。
+- **模型卡的「没有」也是信息**：Cola2 卡片明示「Values are accuracies (%) except for the token row」、每个任务数值是三次潜噪声采样均值、且贪心选 token 不等于确定性生成（潜变量从高斯噪声起步，复现需固定种子）；这些都写进协议与 notes，避免后续把单次结果当确定性结果用。
+- **未报告单元格不转录**：GenFirst 类条件表的 512 档 unguided 两列为「–」，按纪律不建行、不写 0；16 条类条件 evidence 就是这样少于「5 检查点 × 4 列」。
+
+### 全窗口逐家实取结果（2026-10-21 ~ 2026-11-07）
+
+| 厂商 / 通道 | 窗口内实取结论 | 本批处置 |
+|---|---|---|
+| OpenAI（官方 RSS） | 62 条窗口条目；模型发布页为《GPT‑6 Cyber》（11-05）、《Introducing Images 2.6》（11-04，已建档 `gpt-image-2-6`）、《GPT‑6.1 Terra》（10-26，已建档）、《LifeVal》（11-02，已建档）；其余为客户案例、合作、人事与政策文 | GPT‑6 Cyber 由 PR #54 建档，本批不重复建档 |
+| Google / DeepMind（官方 RSS） | 《Introducing Gemini Omni 1.2 Flash》（11-05）、《Gemini 4 Carbon》（10-28，已建档）、《Genie 4》（10-27，已建档）；其余为研究博客与应用公告 | Gemini Omni 1.2 Flash 由 PR #54 建档 |
+| Anthropic（官方 newsroom） | newsroom 26 个链接全为公告 / 政策 / 合作 / 公益与安全条目；Claude Opus 5.5（09-22）、Sonnet 5.5（09-28）、Haiku 5.5（10-07）发布文均在窗口前且已建档 | 窗口内无新模型发布 |
+| Meta（官方 research blog） | 窗口内带日期条目为 11-06《Bringing Specialized Models to Muse and Meta AI》（由 PR #55 建档）与 10-28 的页面刷新戳；Muse Wonder（10-12）等已在账本 | 本批不重复建档 |
+| Mistral（官方 RSS + newsroom） | 《Le Chonk》（10-29，`mistral-large-4-oss` 已建档）、《Le Chonk brings the brains. Studio puts it to work.》（11-05，工具产品更新）、《Mistral Advances AI for Engineering with NVIDIA》（10-21，合作公告） | 11-05 为产品类更新，候选保留排除原因，不建 release |
+| ByteDance / Seed（官方 HF 组织 API + GitHub API + 模型卡） | 窗口内新权重发布 2 个：**Cola2**（11-06）与 **GenFirst**（10-29）；另有 GenFirst 配套的 Cross-Layer-TopK-CLT（11-05）、Qwen3-30B-A3B-MoE-SAE（11-05）为解释性研究产物 | Cola2、GenFirst 本批建档；两项解释性产物跳过 |
+| Tencent（官方 HF / GitHub API） | 窗口内新检查点 2 个：Hy-Nomas-Diffusers（10-24，配套工具）、**Qwen3.8-27B-DSpine-b16**（11-07，投机解码 draft 模型）；另有 Hy-Nomas / Hy-SimulMT / WeVisOne-VL 已建档 | draft 模型与其基座模型不是同一次发布，跳过 |
+| Microsoft（官方 HF 组织 API） | 窗口内 Mage-VL-Cowork（10-30）已建档 | 本批无新增 |
+| DeepSeek（官方 API 文档更新日志） | 窗口内无新模型发布（最近一次为 DeepSeek-V4.1-Flash 系列，早于窗口） | 无新增 |
+| MiniMax / Qwen / StepFun / Particle / Doubao / Xiaomi / Kimi / xAI（官方入口页 + HF 组织 API） | 窗口内无新模型发布（xAI 官方 docs 模型清单无窗口内新增；MiniMax、Qwen 入口为 SPA 静态页不可提取模型链接，按 partial 记） | 无新增 |
+
+### 跳过清单
+
+- **Tencent `Qwen3.8-27B-DSpine-b16`**（HF 2026-11-07）—— 投机解码 draft 模型，是另一基座模型的伴生加速件，不是独立发布；基座 Qwen3-8B 本身已建档，不另立 release。
+- **ByteDance-Seed `Cross-Layer-TopK-CLT` / `Qwen3-30B-A3B-MoE-SAE`**（HF 2026-11-05）—— 稀疏注意力 top-k 选算子与特征自编码器，属于模型可解释性研究产物，无官方发布文与基准评测表，不建 release。
+- **GenFirst 端到端 VAE 套件的 rFID / PSNR / SSIM / LPIPS（9 个 VAE）** —— 官方只说在「50,000 张验证集」上重建，**未指明验证集属于哪个数据集**（ImageNet 验证集 / FLUX 验证集 / Qwen3-VL 自建潜空间各不相同），无法忠实命名评测对象；按「不臆造」纪律先完整转录归档，留待建立对应评测实体后回填。
+- **GenFirst 统一图文模型 phase-2 pre-SFT 检查点的 COCO 图生文指标**（CIDEr / BLEU-4 / METEOR / ROUGE-L / SPICE / CLIPScore）—— 官方未给这组指标的评测口径，本批不入账，原值已转录归档。
+- **未登记组织的模型**（openbmb、inclusionAI、internlm、ibm-granite、nvidia、tencent Hy-Nomas/Hy-SimulMT/WeVisOne-VL 之外的新条目）—— 按「未登记组织不建 release」惯例跳过。
+- **AppCIF-Bench 榜单的 5 个未建档型号**（Doubao-Seed-2.0-Pro-high、Qwen-3.6-Plus-Thinking、Grok-4.2、Xiaomi-MiMo-V2-Pro、Xiaomi-MiMo-V2-Omni）—— 本仓无对应 release 档案，不强行映射；原值转录在归档。
+
+### 待人工核验
+
+- 本批 **104 条 evidence 全部为正文明文**，无一条来自图片 / 位图，**不产生新的 pending 读图项**；沿用历史遗留的 pending 清单（官方图片评测表）本批未动。
+- **GenFirst 两组未入账数值**（VAE 重建矩阵、统一图文 COCO 图生文指标）已逐格转录归档，等评测实体与评测对象确认后可回填——请人工确认是否需要在本仓先立「图像生成 / 重建质量」评测轨。
+- **AppCIF-Bench 跨语言对比**未入账：官方 `cross_lingual_strata.json` 标出 18 个角色扮演样本需单列，其余 448 个可直接对比；本批只记官方榜单数值，未自行拼装跨语言对比。
+
+### 入口扫描与候选结案
+
+- 增量窗口由 `checkpoint.mjs status` 给出：`window_since=2026-10-21`、`window_until=2026-11-07`（14 天重叠窗口），`ledger_max_release_date` 由 2026-11-04 前移到 **2026-11-06**（Cola2）。
+- 本批新增 2 个已建档候选：`release-cola2`（doubao / general / `official_source_verified=true`）、`release-genfirst`（doubao / vertical / `official_source_verified=true`），均由 `reconcile-coverage.mjs` 回填 `archive_path` / `archive_status` / `evidence_status`。
+- 扫描新发现但**归属未合并 PR**的 3 条候选按纪律暂置 `unknown` + 留痕 `note`、**不写排除原因**（这三者确非排除项）：`google-485654c1f98a`（Gemini Omni 1.2 Flash，PR #54）、`openai-14e90e72d340`（GPT‑6 Cyber，PR #54）、`meta-4eedf8a76087`（Muse 专项模型，PR #55）。待对应 PR 合并后由 `reconcile-coverage.mjs` 按 URL slug 自动回填 `release_id`。
+- `mistral-5bd02a390745`（Mistral Studio 工具产品更新）保留既有的 product 分类与排除原因，不建 release。
+
+### 门禁
+
+- `node scripts/reconcile-coverage.mjs`：通过，且二次执行无新增 diff（幂等）。
+- `node --test tests/*.test.mjs`：65/65 通过（含「本批官方归档文件与 manifest 哈希一致」）。
+- `node scripts/validate-data.mjs`：PASS（taxonomy 9 类 / vendors 17 / benchmarks 500（+1）/ releases 217（official 203）/ evidence edges 3545（+104））。
+- `npm run build`：全链通过（`test` + `sync:skills:check` + `validate:data` + `validate` + `build:epub:official` + `build:web` + `validate:site`）。
+- **不自动合并**：按 `zenHeart/workflow#357` 的验收要求，本批只开 PR 并回报 commit SHA，交人工 review 后再合。
