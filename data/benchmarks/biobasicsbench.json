@@ -1,0 +1,87 @@
+{
+  "id": "biobasicsbench",
+  "name": "BioBasicsBench",
+  "full_name": "BioBasicsBench: measuring how well AI agents interpret raw experimental data across 100 routine wet-lab tasks",
+  "aliases": [
+    "BioBasicsBench",
+    "BioBasics Bench",
+    "OpenAI BioBasicsBench",
+    "BioBasics"
+  ],
+  "status": "active",
+  "categories": [
+    "agent",
+    "multimodal",
+    "reasoning"
+  ],
+  "summary": "OpenAI 2026-11-06 发布的湿实验室日常任务评测：100 道由一线湿实验室科学家用自己实验数据撰写的真实判读任务，覆盖蛋白方法、成像与流式细胞、定量与检测、核酸方法、分子克隆五个领域；模型输出结构化答案后，按专家撰写的评分细则逐条给分，最终分是「可得分信用额度的百分比」。",
+  "interpretation": "分值是 0–100 的「可得分百分比」（官方字段 mean_credit_pct）：每题按 rubric 逐条给分，再对 100 题取平均，所以它不是「答对题数比例」，而是「完成任务实际拿到的信用额度占比」，满分 100。官方把 7 个模型 × 37 个「模型 × 推理强度」设置各跑 5 次（每设置 500 条结果，全窗口共 18,500 条），误差棒是按整题重采样得到的 95% 置信区间。读分必须先对齐推理档位：无推理（none）到 xhigh 之间同一模型可差 5–15 个百分点，且各模型可用档位不同（GPT-5.2 / GPT-5.4 / GPT-5.5 只到 xhigh，GPT-6.1 Sol 与 GPT-6 Astra 从 low 起，GPT-5.6 Sol 与 GPT-6 Luna 另有 max）。整体水位（xhigh 档）：GPT-5.2 约 31%、GPT-5.4 约 33%、GPT-5.5 约 35%、GPT-6 Luna 约 38%、GPT-5.6 Sol 约 44%、GPT-6.1 Sol 约 62%、GPT-6 Astra 约 67%——GPT-6 家族内部差异极大，Astra 比同为 GPT-6 的 Luna 高近 30 个百分点，所以用它排名时必须同时给出模型与档位。它测的是「读懂原始实验数据、并判断证据是否足以支持结论」，不是知识问答。",
+  "measures": [
+    "模型判读原始实验数据（凝胶图、菌落平板、显微图、仪器读数）并给出结论 / 数值 / 建议的完成质量",
+    "识别实验错误与对照失效的能力",
+    "在证据不足时主动指出「证据不足以支持结论」的能力",
+    "同一模型在不同 reasoning effort 档位下的表现差异",
+    "完成任务所需的平均输出 token 数（官方同图给出）"
+  ],
+  "does_not_measure": [
+    "学科知识与应试能力（知识型基准需另看）",
+    "实验方案设计与实验执行本身（只判读既有数据）",
+    "安全性、有害性与事实性",
+    "多语言与中文任务表现（官方任务与场景以英文 / 欧美湿实验室为主）",
+    "真实生产环境中的科研产出（任务集为厂商自建，非生产流量）"
+  ],
+  "dataset": {
+    "sample_count": 100,
+    "splits": [
+      "Protein Methods 蛋白方法（25 题）",
+      "Imaging & Cytometry 成像与流式细胞（23 题）",
+      "Quantification & Assays 定量与检测（19 题）",
+      "Nucleic Acid Methods 核酸方法（17 题）",
+      "Molecular Cloning 分子克隆（16 题）"
+    ],
+    "source_type": "vendor-authored wet-lab task suite（任务、实验数据与评分细则均由 OpenAI 内部湿实验室科学家撰写，每题经未参与撰写的内部 Ligo 科学家复核 + 一名在岗博士湿实验室科学家外部复核 + 最终内部复核）",
+    "languages": [
+      "en"
+    ],
+    "public_sample": null
+  },
+  "metrics": [
+    {
+      "id": "mean-credit-pct",
+      "name": "Mean reward (percentage of available credit)",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "direction": "higher",
+      "aggregation": "每题 5 次尝试取均值 → 100 题取均值（rubric 逐条给分后折算为可得分百分比）"
+    }
+  ],
+  "versions": [
+    {
+      "id": "2026-11-06",
+      "label": "BioBasicsBench 首版（2026-11-06 发布）",
+      "note": "首版即含 7 个 OpenAI 模型 × 37 个「模型 × 推理强度」设置的官方分值，每设置 5 次尝试 × 100 题，共 18,500 条结果；后续任务集或打分口径变更需另记版本"
+    }
+  ],
+  "limitations": [
+    "官方自建任务集，任务内容、实验数据与评分细则由 OpenAI 单方定义，外部无法复现验证",
+    "任务集与 rubric 未公开，无法复算，也无法核对判分一致性",
+    "95% 置信区间由整题重采样得到，只能反映题集抽样误差，不能覆盖 rubric 打分的主观性",
+    "同一模型不同 reasoning effort 之间分数不可直接比，跨模型比必须同时对齐档位",
+    "各模型可用档位不同（部分模型无 max 档、部分模型无 none 档），缺档时不可直接补值比较",
+    "本仓未收录 GPT-5.2 的独立 release 记录，其 5 档官方分值暂无对应证据行",
+    "本条数值为厂商自报，外部未做独立复跑"
+  ],
+  "notes": "全站共 32 处引用（全部取自官方发布文内嵌 vega-lite data.values 机读值）。官方同页「Tasks by domain and tested skill」图另给出任务域与技能分布：Protein Methods 25 题、Imaging & Cytometry 23 题、Quantification & Assays 19 题、Nucleic Acid Methods 17 题、Molecular Cloning 16 题（合计 100）；全部任务中 tacit knowledge 88 题、multimodal analysis 88 题、error detection 68 题、protocol understanding 50 题、recognizing insufficient data 19 题（同一任务可覆盖多个技能，故各技能计数之和大于 100）。其中 GPT-5.2 在本仓无对应 release 记录，本批不新建 release、不建证据行，其 5 档 effort 分值（none 24.0% / low 28.7% / medium 30.7% / high 30.5% / xhigh 31.2%）仅留档于本实体说明与批次报告。",
+  "official_sources": [
+    {
+      "kind": "site",
+      "url": "https://openai.com/index/measuring-how-ai-agents-handle-wet-lab-science"
+    }
+  ],
+  "related_benchmarks": [],
+  "content_status": "beta",
+  "last_verified_at": "2026-11-06"
+}
