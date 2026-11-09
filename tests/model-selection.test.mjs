@@ -57,6 +57,21 @@ test('覆盖对账幂等，后增变体不因共享模型卡并入首发',async(
 });
 
 
+test('slug 回填按 id 参数寻址，通用末段不误挂到同站别的模型',async()=>{
+ const {reconcileCoverage}=await import('../scripts/reconcile-coverage.mjs');
+ // 真实回归场景：官方站按 ?id= 寻址（qwen.ai/blog?id=<model>），URL 路径末段恒为 "blog"。
+ // 旧实现只取路径末段，会把所有候选误挂到同一站的首个 release 上并清空排除原因。
+ const rel={id:'qwen-image-2-1',vendor_id:'qwen',models:[{id:'qwen-image-2-1',name:'Qwen-Image-2.1'}],primary_sources:[{url:'https://qwen.ai/blog?id=qwen-image-2.1'}],benchmark_evidence:[]};
+ const other={id:'c-other',vendor_id:'qwen',family:'Qwen-Image-2.1',official_urls:['https://qwen.ai/blog?id=qwq-32b'],release_id:null,release_match:'auto',exclusion_reason:'存量回填缺口，留待回填审计批次建档',next_backfill_at:'2026-11-10'};
+ const self={id:'c-self',vendor_id:'qwen',family:'Qwen-Image-2.1',official_urls:['https://qwen.ai/blog?id=qwen-image-2.1'],release_id:null,release_match:'auto',exclusion_reason:null};
+ const out=reconcileCoverage({candidates:[other,self]},[rel],{});
+ const o=out.candidates.find(c=>c.id==='c-other'),s=out.candidates.find(c=>c.id==='c-self');
+ assert.equal(o.release_id,null,'不同 id 的候选不得被误挂到同站别的模型');
+ assert.equal(o.exclusion_reason,'存量回填缺口，留待回填审计批次建档','误挂不得顺带清空排除原因');
+ assert.equal(o.next_backfill_at,'2026-11-10','误挂不得顺带清空回填计划');
+ assert.equal(s.release_id,'qwen-image-2-1','同一 id 的候选应正确回填');
+ assert.deepEqual(reconcileCoverage(out,[rel],{}),out,'修复后仍幂等');
+});
 test('本批官方归档文件与 manifest 哈希一致',async()=>{
  const fs=await import('node:fs'),crypto=await import('node:crypto');
  const dirs=['2026-04-02-gemma-4','2026-07-31-seedance-2-5','2026-09-11-kimi-k2-8-preview','2026-09-18-grok-voice-transcribe-2','2026-09-20-qwen-image-2-1','2026-09-22-claude-opus-5-5','2026-09-28-minimax-m3-1-flash-preview','2026-10-06-embeddinggemma-2','2026-10-06-mistral-large-4','2026-10-07-claude-haiku-5-5'];
