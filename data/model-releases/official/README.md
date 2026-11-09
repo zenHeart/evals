@@ -3106,3 +3106,90 @@ Meta 2026-11-06《Bringing Specialized Models to Muse and Meta AI》发布一批
 - `node scripts/validate-data.mjs`：PASS（taxonomy 9 类 / vendors 17 / benchmarks 500（+1）/ releases 217（official 203）/ evidence edges 3545（+104））。
 - `npm run build`：全链通过（`test` + `sync:skills:check` + `validate:data` + `validate` + `build:epub:official` + `build:web` + `validate:site`）。
 - **不自动合并**：按 `zenHeart/workflow#357` 的验收要求，本批只开 PR 并回报 commit SHA，交人工 review 后再合。
+
+## 第五十五批（2026-11-09 CST / 2026-11-08 UTC 增量窗口 2026-10-21 ~ 2026-11-08：增量复核——17 家厂商确无新发布，收口在飞候选 2 条）
+
+### 窗口结论
+
+- **窗口**：2026-10-21 ~ 2026-11-08（UTC）＝ 检查点锚点 `last_max_release_date=2026-11-04` 回退 14 天重叠；`official_release_count=201`。
+- **本批不新建任何 release 档案、不改动任何既有 release / benchmark 档案**（账本契约：只追加）。
+- **原因**：窗口内官方一级来源（Tier A）发布的新模型共 3 组，**全部已由在飞批次建档交付**——第五十二批（PR #54）、第五十三批（PR #55）、第五十四批（PR #56），三者均已推送但**待人工审阅合并**，其档案尚未进入 `origin/main`。本批不重复建档、不重复计 evidence，详见下一节。
+- **本批主要产出**：① 42 个官方入口逐个实取并刷新覆盖记录（`last_scanned_at` / `content_sha256`）；② 覆盖层**收口 2 条在飞候选** + 新增 3 条「实见但非发布」候选留档；③ 12 处入口降级说明写明本轮实际使用的替代通道；④ **存量档案漏判复核**（结论：无漏判，见下）。
+
+### 与在飞批次的去重说明（重要）
+
+开分支时 `origin/main` 上仍有三个**已推送、未合并**的交付批次：PR #54（第五十二批）、PR #55（第五十三批）、PR #56（第五十四批）。它们的建档内容尚未进入 main，因此从 `origin/main` 开出的本分支在账本里**看不到**这些模型。本批口径如下：
+
+1. **不重跑、不重复建档**：窗口内的新发布（GPT‑6 Cyber / Gemini Omni 1.2 Flash / Muse 专项模型合集 / BioBasicsBench / Cola2 / GenFirst 等）已由上述三批建档交付，本批不新建同 id 档案，避免同一 release id 在两条分支上重复出现。
+2. **不触碰它们曾改动的既有档案**（`openai/gpt-5-4`、`gpt-5-5`、`gpt-5-6`、`gpt-6-1-sol`、`gpt-6-astra`、`gpt-6-sol-and-luna`、`deepseek/deepseek-v3-2`、`glm/glm-5-1`、`google/gemini-3-1-pro`、`google/gemini-3-flash`、`kimi/kimi-k2-5`、`minimax/minimax-m2-7`、`data/benchmarks/exploitbench.json`、`exploitgym.json`），以免人工合并时产生冲突。
+3. **只在覆盖层收口**：把本轮扫描新发现、但已由在飞批次交付的 2 条候选（`openai-14e90e72d340` = GPT‑6 Cyber；`google-485654c1f98a` = Gemini Omni 1.2 Flash）写明交付批次与 PR 号；待对应 PR 合并后，`reconcile-coverage.mjs` 会自动回填 `release_id` / `archive_path` / `evidence_status`。
+4. **未合并、未发布任何内容**：按本仓约定与派单 Issue 的验收口径，交付物一律开 PR 交人工审阅；本批**不执行 merge**。
+
+### 逐家巡检结论（窗口 2026-10-21 ~ 2026-11-08，17 家全部实取）
+
+- **OpenAI**：官方 RSS `https://openai.com/news/rss.xml` 实取 **1368 条**，窗口内 **80 条**；逐条分类后**无新的模型发布**。其中 3 条与模型发布相关：**11-05《GPT‑6 Cyber》→ 已由第五十二批建档交付**（PR #54，未合并）；**11-06《Measuring how AI agents handle everyday wet-lab science》（BioBasicsBench）→ 已由第五十三批建档交付**（PR #55，未合并）；11-04《Introducing Images 2.6》→ 账本已建档 `openai/gpt-image-2-6`（2026-11-04，67 条 evidence）。其余 77 条为客户故事 / 收购 / 人事 / 安全与政策 / 平台功能 / 合作 → 非模型发布。
+- **Anthropic**：`www.anthropic.com/news`（354 KB）与 `platform.claude.com/docs/en/models/overview`（566 KB）实取。newsroom 逐条按卡片 `<time>` 取日期，窗口内条目**全部为政策 / 合作 / 人事 / 资助 / 项目类**（最新为 10-28《AI for Science expands…》），**无模型发布**；最近三次模型发布为 Opus 5.5（09-22）、Sonnet 5.5（09-28）、Haiku 5.5（10-07），**均早于窗口且已建档**。
+- **Google**：`deepmind.google/blog/rss.xml`（100 条）窗口内 11 条 = Gemini Omni 1.2 Flash（11-05，**已由第五十二批交付**）/ Gemini 4 Carbon（10-28，已建档）/ Genie 4（10-27，已建档）+ 8 条研究与产品文章；`blog.google/rss/`（20 条）窗口内全为教育 / 医疗 / 合作 / 产品功能 → 无新发布。
+- **xAI**：`x.ai/news/` 仍 403（Cloudflare）→ 改用官方文档通道 `docs.x.ai/docs/release-notes` + `docs.x.ai/docs/models` 实取。窗口内**唯一事件是 11-02 `grok-imagine-image-quality` 退役**（请求转由 `grok-imagine-image-2.0` low 质量承接），**不是新发布**；在架最新模型仍为 Grok 4.7（09-21，已建档）与 Grok Voice 3（10-14，已建档）。
+- **Meta**：`research.meta.ai/blog` 实取（329 KB）。窗口内模型发布仅 11-06《Bringing Specialized Models to Muse and Meta AI》→ **已由第五十三批建档交付**（PR #55，未合并）；10-28《Introducing Muse Spark Open》已建档（2026-10-15）。Llama 与 Muse 双线均已覆盖 → 无新发布。
+- **Mistral**：官方 RSS（94 条）窗口内 5 条 = Le Chonk / Mistral Large 4 OSS（10-29，已建档，12 条 evidence）/ Voxtral 3（10-20，已建档）/ Timestral（10-15，已建档）/ 11-05 Studio 产品文（非发布）/ 10-21 NVIDIA 合作（非发布）；HF `mistralai` 窗口内新仓仅 `Mistral-Large-4-1T-A52B-NVFP4`（量化件，不另建档）→ 无新发布。
+- **Moonshot / Kimi**：`www.kimi.com/en/blog` 实取，窗口内最新仍为 K3.1 Pro（10-24，已建档）；`www.kimi.com/code/docs/en/kimi-code/whats-new.html` 窗口内最新为 **Kimi Code Desktop v1.3.0（11-04）——客户端版本更新，非模型发布**；HF `moonshotai` 窗口内唯一新仓 = `Kimi-K3.1-Pro`（已建档）→ 无新发布。
+- **DeepSeek**：`api-docs.deepseek.com/updates` 实取，最新条目仍是 2026-10-17（in-house search API，属产品项）；`deepseek-v4-1-flash-1017`（2026-10-17，已建档）→ 无新发布。
+- **Z.ai / 智谱 GLM**：`z.ai/blog` 仍 404 → 改用官方 HF 组织 `zai-org`（154 仓）+ GitHub `zai-org` 巡检，窗口内 **0 新仓** → 无新发布。
+- **MiniMax**：`platform.minimax.io/docs/release-notes/models` 实取，最新仍为 Oct. 19 / M3.1 Flash（已建档）；HF `MiniMaxAI` 窗口内唯一新仓 = `MiniMax-M3.1-Flash`（已建档）→ 无新发布。
+- **Alibaba / Qwen**：HF `Qwen` 窗口内 0 新模型仓；`qwen.ai` 静态仍只出 SPA 壳 → 改用 GitHub `QwenLM`，窗口内新仓仅 `BabelArena`（10-22）与 `BlenderWorld`（10-14，基准配套仓）→ 无新发布。
+- **ByteDance / 豆包**：`seed.bytedance.com/sitemap.xml` 实取（13 KB），窗口内最新条目仍是 2026-10-14 → **已由第五十四批建档交付**（`doubao/genfirst`，PR #56，未合并）→ 无新发布。
+- **Xiaomi / MiMo**：`mimo.xiaomi.com/blog` 实取，最新仍为 MiMo-V2-Flash（2025-12-16）；`mimo.xiaomi.com` 在架 MiMo-V2.6 系列（已建档）→ 无新发布。
+- **腾讯混元**：HF `tencent` 窗口内唯一新仓 = `tencent/Qwen3.8-27B-DSpine-b16`（11-07，**投机解码 drafter 研究权重**，沿用 `Qwen3-8B-DSpine` 口径，不另建档）；GitHub `Tencent-Hunyuan` 窗口内新仓为 `FlashTopK`（稀疏注意力算子）与 `EmoReward` / `DiagSafe` / `OmniCapBench`（基准仓，无模型发布）→ 无新发布。
+- **StepFun**：`platform.stepfun.com` 官方模型文档页实取，在架 Step 5 Preview / Step 3.7 Flash（**均已建档**）；`stepfun.ai/research` 仍重定向到白名单外主机 → 改用 HF `stepfun-ai`，窗口内唯一新仓 = `Step-5-Preview-NVFP4`（量化件）→ 无新发布。
+- **Microsoft**：`microsoft.ai/blog` + `microsoft.ai/models` 实取（两个 sitemap 仍需渲染）→ 改用 HF `microsoft` + GitHub `microsoft` 巡检：HF 窗口内新仓 = `Mage-VL-Cowork`（10-30，已建档）/ `Sentiment-Analysis-7B`（10-21，已建档）/ `scFM-dataselection`（10-16，数据集选择研究仓）/ `UserRepGen-4B`（10-14，研究仓）；GitHub 窗口内新仓 = `TokenEconomizer` 与 `amplifier-*`（工具链）→ 无新发布。
+- **Particle AI**：`particle.ai/blog/introducing-particle-1` + `docs.particle.ai/models` 实取，官方博客仅此一篇发布文（**已建档**）→ 无新发布。
+
+### 存量档案漏判复核（窗口内已归档发布文）
+
+对窗口内已归档的发布目录逐份重扫「可见正文 + DOM 机读值」中的百分比与 Elo，逐一与账本既有 evidence 行比对：
+
+- `google/gemini-4-carbon`（21 行）、`mistral/mistral-large-4-oss`（12 行）、`kimi/kimi-k3-1-pro`（34 行）、`openai/gpt-image-2-6`（67 行）、`particle/particle-1`（8 行）、`microsoft/mage-vl-cowork`（2 行）、`glm/glm-legal`（3 行）等**均无漏判**：页面中未出现在账本里的百分比，经核为竞品对照列（按口径进 notes）、训练配比 / 成本 / 步数等非评测量，或任务提示词里的示例数字（如 GLM-Legal 案例中的「60% 完成度」）。
+- `google/gemini-4-carbon` 的 14 条 `pending` 行**维持 pending**：其数值（Vals Index v2.2 = 70.4%、SWE-sweep = 9.6%、FrontierSWE 2 = 61.2%、Terminal-Bench 4.0 (AA) = 65.2%、Agents' Last Exam v1.1 = 77.4%、OSWorld 2.1 = 81.5%、AutomationBench = 53.9%、Chartography = 72.5%、Blueprint-Bench 2 = 58.6%、GraphWalks = 96.2%、RiemannBench = 80.0%、Terminal-Bench-Science 0.1 = 64.8% 等）在归档 `page.html` 中**逐值检索命中 0**，说明只存在于渲染后的位图里，属「读图得值」——按红线「图表图片行永不自动翻 verified」，**本批不翻**。
+
+### 跳过清单
+
+- **OpenAI 窗口内其余 77 条 RSS 条目** —— 客户故事 / 收购 / 人事 / 安全与政策 / 平台功能 / 合作与研究合作，非模型发布。
+- **Anthropic 窗口内全部 newsroom 条目** —— 政策 / 合作 / 人事 / 资助 / 项目类，无模型发布。
+- **Google《On-Device AI Against Scams: Google DeepMind & MDDI》（10-14）** —— 与新加坡 GovTech 的合作研究：端侧防诈两段式微调流水线，**未公开发布可命名模型或权重，正文无评测分数**，无法建 release。
+- **Google《Gemini 4 Carbon》（10-28）、《Genie 4》（10-27）** —— 均已建档，不重复建档、不重复计 evidence。
+- **xAI `grok-imagine-image-quality` 退役（11-02 生效）** —— 模型退役事件，非新发布。
+- **Mistral《Le Chonk brings the brains. Studio puts it to work.》（11-05）**、**Kimi Code Desktop v1.3.0（11-04）** —— 产品与客户端版本更新，非模型发布。
+- **腾讯 `tencent/Qwen3.8-27B-DSpine-b16`（11-07）** —— 投机解码 drafter 研究权重，无官方发布文与评测分数。
+- **腾讯 GitHub `EmoReward` / `DiagSafe` / `OmniCapBench`、Qwen `BabelArena`、Microsoft `scFM-dataselection` / `UserRepGen-4B` / `TokenEconomizer` / `amplifier-*`** —— 基准仓、训练研究仓与工具链，无模型发布。
+- **NVIDIA / IBM Granite / LiquidAI / Amazon 的 HF 新仓** —— **不在本仓厂商注册表（17 家）内**，本批不纳入巡检口径。
+
+### 待人工核验
+
+- **本批新增 pending 0 条**（本批未新增 evidence 行；既有 pending 清单不变）。
+
+### 入口扫描与候选结案
+
+- 本批 `scan.mjs --write` 已落盘 `data/model-coverage.json`：**42 个官方入口**逐个实取并刷新 `last_scanned_at` / `content_sha256`（partial 30 / needs_render 6 / inaccessible 6）。
+- **收口候选 2 条**：`openai-14e90e72d340`（GPT‑6 Cyber）、`google-485654c1f98a`（Gemini Omni 1.2 Flash）—— 写明交付批次与 PR 号，`exclusion_reason` 注明「已由第五十二批交付，待该 PR 合并后由 reconcile 自动回填」。
+- **新增候选 3 条**（本轮实见、非发布）：Google MDDI 端侧防诈研究、xAI `grok-imagine-image-quality` 退役、Mistral Studio 产品文。
+- **入口降级说明刷新 12 处**：`x.ai/news`（403）、`ai.meta.com/blog`（400）、`research.facebook.com`（400）、`z.ai/blog`（404）、`agent.minimax.cn`（重定向越白名单）、`stepfun.ai/research`（重定向越白名单）、`hy.tencent.com`（SPA 不渲染）、`openai.com/sitemap.xml/release/`、`qwen.ai`（SPA 壳）、`seed.bytedance.com/en/blog/`（SPA 不渲染）、`microsoft.ai` 两个 sitemap —— 逐条写明本轮**实际使用的替代通道**与结论。
+- `reconcile-coverage.mjs` 通过（**未决候选 0**）。
+
+### 门禁
+
+- `node scripts/reconcile-coverage.mjs` 通过（**未决候选 0**）。
+- `node --test tests/*.test.mjs` **65/65 通过**（含「本批官方归档文件与 manifest 哈希一致」一项）。
+- `node scripts/validate-data.mjs` **PASS**（taxonomy 9 类 / vendors 17 / benchmarks 499 / releases 215（official 201）/ evidence edges 3441）。
+- `npm run build` **全链通过（EPUB 486 KB / 32 章；站点 **754 URL** + **499 实体页** + 155 auto-evidence 页；`validate:site` **943 HTML / 41067 内部引用 / 265 时间轴 / 2237 事件卡**，全部通过）**。
+- **分支**：`model-release-daily-20261108T232101Z`（自 `origin/main` = `d9ff4d604f239ad0a07bc812694584d54bc1c196` 开出）。
+- ⚠️ **开工前处置（情况 A 变体）**：开工时 `origin/main` 上存在三个**已推送、未合并**的交付批次（PR #54 / #55 / #56）。按本仓约定「不重跑上一批」，本批**不合并、不关闭**这三个 PR（合并权归人工审阅），而是**避其内容**另开分支交付本批复核结果；PR 合并顺序与冲突处理留待人工处理。
+
+### 合并后追记（2026-11-09）：PR #54 / #55 / #56 已先后合并入库
+
+- 本节以上关于「PR #54 / #55 / #56 三批已推送、待人工审阅合并」的描述，是**第五十五批开工时（2026-11-08 UTC）的事实快照**。2026-11-09 收口时，这三批已按批号顺序（#54 → #55 → #56 → 本批 #57）依次 squash 合并进 `main`，**内容全部进入账本**。
+- 本节「收口候选 2 条」的后续处理已由 `reconcile-coverage.mjs` 按 URL slug 自动回填：`openai-14e90e72d340` → `release_id=gpt-6-cyber`（`archive_status=archived` / `evidence_status=reported` / `classification=vertical`），`google-485654c1f98a` → `release_id=gemini-omni-1-2-flash`（`archive_status=archived` / `evidence_status=not_reported` / `classification=general`）。两者的占位 `exclusion_reason` 随之清空。
+- 本节「新增候选 3 条」（Google MDDI 端侧防诈研究、xAI `grok-imagine-image-quality` 退役、腾讯 `Qwen3.8-27B-DSpine-b16`）经合并后复核**仍为非发布项**，`exclusion_reason` 保留原判，**不建 release**。
+- 检查点锚点：合并后账本最大 `release_date` = **2026-11-06**，`last_max_release_date` 按「只前进不回退」推进至 **2026-11-06**（第五十五批分支上记录的 2026-11-04 系其开分支时的旧基线，已被后续批次推进覆盖）；`last_scan_at` = 2026-11-08。
+- 本批**不新建任何 release 档案、不新增 evidence 行**，与上文口径一致。
+
