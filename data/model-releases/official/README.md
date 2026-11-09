@@ -4,7 +4,7 @@
 
 ## 汇总
 
-> **当前总量检查点（2026-11-05）**：215 releases = 201 official + 14 legacy · 3441 evidence edges。每批落地后更新此行。
+> **当前总量检查点（2026-11-06）**：217 releases = 203 official + 14 legacy · 3447 evidence edges。每批落地后更新此行。
 
 | 指标 | 值 |
 |---|---:|
@@ -2832,6 +2832,90 @@ Table 3 的 GIF Moderation Recall 度量的是**安全防护（safeguard）检�
 - **复核**：60 条 safety + 7 条 GIF 全部重新与源表逐格核对通过（`verify` 脚本 60/60 + 7/7，0 mismatch）。
 - **合并方式**：#49 已 squash 合并该文件到 main，直接在原分支再提会产生 **add/add 冲突**（GitHub 报 CONFLICTING）→ 勘误改自 `origin/main`（= `0c4c78a`）开新分支 `model-release-daily-20261105T013000Z` 提交，**只带勘误差异**；冲突的 #50 已关闭，**远端分支一律保留**。**未重跑第五十一批**，未动任何其它批次内容。
 - **线上验证**：部署后 live 详情页 **19 个原样字符串全部生效**（含 `12.70%*` / `87.30%*` / `0.00%` / `75.04%*` / `76.49%*` 等带星号标注），新增页面内部术语 **0 处**。
+
+## 第五十二批（2026-11-06 CST / 2026-11-05 UTC 增量窗口 2026-10-21 ~ 2026-11-05：OpenAI GPT‑6 Cyber 建档 6 条 evidence + Google Gemini Omni 1.2 Flash 建档，4 个新建 benchmark 实体）
+
+- **窗口**：增量窗口 2026-10-21 ~ 2026-11-05（检查点锚点 `last_max_release_date=2026-11-04` 回退 14 天重叠；窗口右端取 UTC 当日 2026-11-05 = 北京时间 2026-11-06 07:15）。检查点回写 `last_scan_at=2026-11-05`（UTC）、`last_max_release_date` **推进到 2026-11-05**——本批 2 个新 release 的发布日均为 2026-11-05，锚点只前进不回退。
+- **本批性质**：**全窗口逐家实取巡检（17/17 在册厂商逐家实取官方通道）+ 2 个新 release 建档 + 6 条 evidence**。
+- **本批新增 release：2 个**
+  - `openai/gpt-6-cyber`（发布日 2026-11-05，**6 条 evidence**）：OpenAI 网络安全垂直模型 GPT‑6 Cyber，1 个模型变体。
+  - `google/gemini-omni-1-2-flash`（发布日 2026-11-05，**0 条 evidence**）：Google 视频生成与编辑模型 Gemini Omni 1.2 Flash。
+- **本批新增 evidence：6 条**（全部 `verified`，**0 条 pending**）
+  - `exploitgym`（既有实体，本批新增指标 `strict_supplied_vulnerability_pass1`）· 1 条 = GPT‑6 Cyber **48.5%**（基线列 GPT‑6 Astra (Daybreak Blue) 42.4% / GPT-5.6 Cyber 32.1% / GPT-5.6 (Daybreak Blue) 30.3% / GPT‑6 Astra (Safeguards Enabled) 0.0%）。
+  - `remoteexploitbench`（**新建实体**）· 1 条 = N-Day target success **94.7%**（基线列 GPT‑6 Astra 两配置均 0.0%）。
+  - `exploitgym-honeypot`（**新建实体**）· 1 条 = 越界利用率 **0.07%**（越低越好；基线 GPT-5.6 Cyber 5.51%）。
+  - `exploitbench`（既有实体，本批新增指标 `target_success_rate`）· 1 条 = V8 and Chrome target success **42.0%**（基线列 39.0% / 5.5% / 0.0%）。
+  - `sre-bench`（**新建实体**）· 1 条 = All-six-objectives pass@1 **92.8%**（基线列 88.0% / 62.5% / 55.9%）。
+  - `web-pentesting`（**新建实体**）· 1 条 = Web Blackbox score **40.3%**（基线列 32.0% / 0.0%）。
+- **本批新增 benchmark 实体：4 个**（`remoteexploitbench`、`exploitgym-honeypot`、`sre-bench`、`web-pentesting`），均为完整实体（`summary` / `interpretation` / `measures` / `does_not_measure` / `metrics`（含 `direction`）/ `versions` / `limitations` 齐备），非兜底页；另给既有实体 `exploitgym`、`exploitbench` 各补 1 个本批出现的指标（不改动既有指标）。
+- **本批新增归档：2 个**
+  - `models/2026-11-05-gpt-6-cyber/`（`page.html` 516 KB 发布页 + `page-system-card.html` 277 KB 系统卡页 + 转录 `index.md` + `manifest.json`，含逐文件 sha256 与 7 条 limitations）。
+  - `models/2026-11-05-gemini-omni-1-2-flash/`（`page.html` 394 KB 官方博客页 + `page-api-model-doc.html` 67 KB 官方 API 模型文档 + 转录 `index.md` + `manifest.json`，含逐文件 sha256 与 4 条 limitations）。
+
+### 取数发现一：OpenAI 发布文的分值在 RSC 图表负载里，逐值机读
+
+GPT‑6 Cyber 发布文把 6 张评测图渲染成图表组件，数值存于页面内嵌的 `vegaLiteSpec` 负载（DOM 内嵌 JSON）——本批 6 条 evidence **全部逐值取自这些负载，无一条依赖位图读图**。图表标签与 `analyticsIdentifier`：`ExploitGym`(exploitgym)、`RemoteExploitBench`(remoteexploitbench)、`ExploitGym Honeypot`(exploitgym-honeypot)、`ExploitBench (June–August 2026)`(exploitbench-june-august-2026)、`SRE-Bench`(sre-bench)、`Web Pentesting`(web-pentesting)。
+
+- **官方正文与图表负载互为印证**：正文「On ExploitGym … GPT‑6 Cyber scores 48.5%, up from 32.1% for GPT‑5.6 Cyber」与图表值逐格一致；正文「GPT‑6 Cyber achieved 40.3% recall of vulnerabilities compared with 32.0% for GPT‑6 Astra」与 Web Pentesting 图表一致。
+- **同一口径的两个变体不可混读**：ExploitGym Honeypot 的 0.07% 是「**不带**部署安全提示」的越界利用率；正文另述带部署安全提示时 100% 守界，属**不同协议变体**，不与本行混算。
+- **方向不同的指标已分别标注**：ExploitGym Honeypot 越低越好，其余五个越高越好，已写进各 benchmark 实体的 `metrics[].direction`。
+- **不建行的两类数值**：① 发布文第 7 张图（Safeguard performance on sensitive red-teaming，Before→After 标注率）度量的是**防护层**标注率而非模型自身能力分，按 GPT-Image-2.6 的 GIF Moderation Recall 先例不建 evidence 行；② 客户引述里的数值（Cognition 内部基准 23% vs 13%、CodeRabbit 内部基准多发现 66%、81 个 Firefox 新漏洞、948/1,724 个 Linux 内核漏洞）属客户/第三方内部评测且无公开协议，一律不建行，只进 `notes`。
+- **协议字段全空**：官方未印 temperature / top_p / shots / run_count / judge / 分母，12 个 protocol 键全为 null，`comparison_scope` 统一 `only_same_protocol`。
+
+### 取数发现二：Gemini Omni 1.2 Flash 是新模型版本，不是纯定价调整
+
+Google 官方博客 2026-11-05 发布《Gemini Omni 1.2 Flash: Fast and cost-effective with longer clips》，日期四源一致（JSON-LD `datePublished=2026-11-05T17:00:00+00:00`、meta `article:published_time=2026-11-05`、正文上方印刷「Nov 05, 2026」、官方 API 模型文档列出 `gemini-omni-1.2-flash`）。
+
+- **为什么按新 release 建档而不是按「纯定价更新」排除**：官方同时新增了**原生 15 秒视频生成**（Omni 1.1 为 10 秒）与**多轮对话式视频编辑**两项能力，并在 Gemini API / Google Cloud / Gemini for business 全量可用，API 模型 id 与既有 `gemini-omni-1.1-flash` 不同 → 按仓库「API 模型 id 不同即独立 release」的既有口径建档。
+- **本条 evidence 为空，且这是结论不是遗漏**：剥 `<script>`/`<style>` 后可见文本 13,127 字符，全文三处百分比**全部是价格描述**（「This update lowers costs by 30%」「We reduced the price by 30%」「We have dropped the price 30% from Gemini Omni 1.1 making it available at $0.07 per second for 720p video」），页面不含任何评测图表载荷（`vegaLiteSpec`/`vegaSpec` 计数均为 0）。按「纯价格描述不得充当评测分、不得凭空造行」口径，`benchmark_evidence` 置**空数组**。
+- **存量缺口登记**：账本此前只在 `nano-banana-2-lite`（2026-06-30）下记过「Gemini Omni Flash」，**未记 Gemini Omni 1.1**——该缺口属存量回填轨道（`reconcile-coverage.mjs` 常态对账），不在本批增量窗口内。
+
+### 17 家在册厂商逐家实取巡检
+
+| 厂商 | 通道数 | 各通道抓取状态 | 本批建档 |
+|---|---:|---|---:|
+| openai | 2 | partial/needs_render | 0 |
+| anthropic | 2 | partial/partial | 0 |
+| google | 5 | partial/partial/partial/partial/partial | 0 |
+| xai | 2 | inaccessible/partial | 0 |
+| meta | 3 | inaccessible/inaccessible/partial | 0 |
+| mistral | 1 | partial | 0 |
+| kimi | 3 | partial/partial/partial | 0 |
+| deepseek | 2 | partial/partial | 0 |
+| glm | 1 | inaccessible | 0 |
+| minimax | 3 | partial/inaccessible/partial | 0 |
+| qwen | 1 | needs_render | 0 |
+| doubao | 5 | partial/needs_render/partial/partial/partial | 0 |
+| xiaomi | 2 | partial/partial | 0 |
+| tencent | 2 | needs_render/partial | 0 |
+| stepfun | 1 | inaccessible | 0 |
+| microsoft | 5 | partial/partial/partial/needs_render/needs_render | 0 |
+| particle | 2 | partial/partial | 0 |
+
+### 跳过清单（模型 / 页面 — 原因）
+
+- OpenAI RSS 窗口内其余条目 — 均为非模型发布：Daybreak Red 上线 AWS GovCloud（2026-11-04，产品可用性）、How Cisco defends at machine speed（2026-11-03，客户案例）、Dan Driscoll 加入 OpenAI（2026-11-02，人事公告）、Cloudflare links vulnerability discovery to defense（2026-10-21，客户案例）、Empowering cyber defenders（2026-10-21，研究/政策文章）、How Third Moment Research runs 10,000 agents（2026-10-14，客户案例）。
+- GPT‑6 Cyber 客户引述中的内部基准数值 — 第三方内部评测、无官方协议，不建 evidence 行。
+- GPT‑6 Cyber 发布文第 7 张 safeguard 图 — 防护层指标，非模型能力分，不建 evidence 行。
+- Gemini Omni 1.2 Flash 官方博客的 30% 降价 — 价格描述，非评测分，不建 evidence 行。
+- Gemini Omni 1.1 — 账本缺口，属存量回填轨道，不在本批增量窗口内。
+- 其余 15 家厂商窗口内官方通道未见新模型发布文（逐条抓取状态见上表）。
+
+### 覆盖与门禁
+
+- 覆盖对账：`node scripts/reconcile-coverage.mjs` 后，本批 2 个候选（`google-485654c1f98a`、`openai-14e90e72d340`）均由 `release_id` 归位到新 release（`archive_status=archived`），无遗留「既无 release 也无 exclusion_reason」的候选。
+- 数据门禁：`npm run validate:data` PASS（taxonomy 9 类 / vendors 17 / benchmarks 503 / releases 217（official 203）/ evidence edges 3447）。
+- 全量门禁：`npm run build`（test + sync:skills:check + validate:data + validate + EPUB + Web + 站点检查）通过。
+
+### 存量回填缺口登记（登记入账本，不在本批建档）
+
+本轮深度巡检额外确认了一批**官方一级来源、账本无条目**的存量缺口。按仓库「增量窗口不越窗建档、双轨发现」的纪律，本批**只把它们登记进覆盖账本的回填轨道**（`data/model-coverage.json` 候选，`exclusion_reason` 写明「发布日在增量窗口之外且账本无此条目，属存量回填缺口，留待回填审计批次建档」，`next_backfill_at=2026-11-06`），**不在本批建档**。本批共新增候选 31 条（覆盖账本 591 → 622）：
+
+- **GLM-Image**——官方 `docs.z.ai/release-notes/new-released` 的 `update-label` = 2026-01-14（同页官方条目原文：「We've launched GLM-Image, a state-of-the-art image generation model…」）。
+- **MiniMax M2.1**——官方博客 `minimax.io/blog/minimax-m21` 的 JSON-LD `datePublished` = 2025-12-23。
+- **Qwen 29 条**——官方研究索引 API（`qwen.ai/api/v2/article/retrieval?type=qwen_ai`）的 `extra.date`，逐条给出版本名与官方日期：Qwen-Image-3.0(2026-07-21)、Qwen-Drive-1.0(2026-09-03)、Qwen-AgentWorld(2026-06-23)、Qwen3.7(2026-05-20)、Qwen3.7-Plus(2026-06-01)、Qwen-VLA(2026-05-29)、Qwen3.5-LiveTranslate(2026-05-19)、Qwen3.6-27B(2026-04-22)、Qwen3.6-Max-Preview(2026-04-18)、Qwen3.6-35B-A3B(2026-04-15)、Qwen3.6-Plus(2026-04-02)、Qwen3.5-Omni(2026-03-30)、Qwen3.5-Max-Preview(2026-03-19)、Qwen3.5(2026-02-16)、Qwen-Image-2.0(2026-02-10)、Qwen3-Coder-Next(2026-02-03)、Qwen3-ASR / ForcedAligner(2026-01-29)、Qwen3-TTS Family(2026-01-22)、Qwen3-VL-Embedding / Reranker(2026-01-08)、Qwen-Image-2512(2025-12-31)、Qwen-Image-Edit-2511(2025-12-23)、Qwen3-TTS Voice Cloning / Voice Design(2025-12-23)、Qwen-Image-Layered(2025-12-19)、Qwen3-Omni-Flash-2025-12-01(2025-12-09)、Qwen3-TTS Update(2025-12-05)、Qwen DeepResearch(2025-11-13)、Qwen-RobotSuite / RobotManip / RobotWorld / RobotNav(2026-06-16)。
+
+豆包线的存量缺口（Seed 2.0、Seedream 5.0 Lite、Seedance 2.0、Seed3D 2.0、Seed Prover 1.5 等约 20 条）本批**只记录在本节不落候选**——官方 SSR 列表页给出了印刷日期，但本轮未取得每条对应的稳定发布页 URL，按「不造 URL」的纪律不写入候选，留待回填批次按标题回查官方 slug 后登记。
 
 ## 第五十三批（2026-11-07 CST / 2026-11-06 UTC 增量窗口 2026-10-21 ~ 2026-11-06：OpenAI BioBasicsBench 建档 → 32 条 evidence + Meta Muse 专用模型建档 → 2 条 evidence）
 
