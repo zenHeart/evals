@@ -3281,3 +3281,9 @@ Meta 2026-11-06《Bringing Specialized Models to Muse and Meta AI》发布一批
 - `npm run build` **全链通过**（EPUB 486 KB / 32 章；站点 **767 URL** + **507 实体页** + 163 auto-evidence 页；`validate:site` **964 HTML / 42090 内部引用 / 267 时间轴 / 2264 事件卡**）。
 - **分支**：`model-release-daily-20261109T011500Z`（自合并后的 `origin/main` = `f3f1194` 开出）。
 - **检查点**：账本最大 `release_date` = **2026-11-06**（本批未新建档案），锚点按「只前进不回退」保持 **2026-11-06**，`last_scan_at` 推进至 **2026-11-09**。
+
+### 合并后追记（2026-11-09）：覆盖页增量窗口元数据随本批刷新
+
+- 本批合并（PR #58）后，站点覆盖页 `/coverage/` 的「增量窗口」提示仍显示**上一批的旧窗口**（2026-10-21 至 2026-11-08）。该字段（`data/model-coverage.json` 的 `window_since` / `window_until`）**不由任何脚本自动写入**（`scan.mjs` 只写 `last_scan_at` 与候选；`checkpoint.mjs` 的窗口只输出到 stdout），因此必须由跑批方在每批显式落到账本里。
+- 已按本批 `checkpoint.mjs status` 的实际窗口改为 **2026-10-23 至 2026-11-09**（锚点 2026-11-06 回退 14 天重叠，`window_until` = 扫描日）。
+- 候选清单本身（**642 条**）与各厂商线索明细在本批已随 PR #58 上线，本条只修正窗口提示，不改动任何候选内容。
