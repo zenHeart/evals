@@ -2,6 +2,18 @@
 import fs from 'node:fs';
 import {collectReleases} from './load-data.mjs';
 import {canonicalURL,mergeCandidates} from './release-discovery.mjs';
+// 路径末段里这些词是「栏目页」而不是模型标识，拿它们做 slug 回填会把候选误挂到同站别的模型上。
+const GENERIC_SLUGS=new Set(['blog','news','models','model','index','show','post','posts','article','articles','search','docs','guide','guides','list','page','home','en','zh','readme']);
+// 从 URL 取模型 slug：优先 ?id=（qwen.ai/blog?id=<model> 这类按 id 寻址的官方站），
+// 否则取路径末段；带 query 但没有 id 的（如 ?utm_source=…）退回路径末段。
+function slugOf(raw){
+ try{
+  const u=new URL(raw);
+  const id=u.searchParams.get('id');
+  if(id && id.length>2) return id.toLowerCase();
+  return (u.pathname.split('/').filter(Boolean).pop()||'').toLowerCase();
+ }catch{return '';}
+}
 export function reconcileCoverage(data,releases,archives){
  const known=new Map(releases.flatMap(r=>(r.primary_sources||[]).map(s=>[canonicalURL(s.url),r])));
  const out={...data,candidates:data.candidates.map(c=>({...c}))};
@@ -14,11 +26,12 @@ export function reconcileCoverage(data,releases,archives){
    let r=releases.find(r=>r.id===c.release_id)||c.official_urls.map(u=>known.get(canonicalURL(u))).find(Boolean);
    if(!r && c.vendor_id && c.official_urls?.[0]){
      try{
-       const candSlug=(new URL(c.official_urls[0]).pathname.split('/').filter(Boolean).pop()||'').toLowerCase();
-       if(candSlug && candSlug.length > 2){
-         r=releases.find(rel=>rel.vendor_id===c.vendor_id && (rel.id===candSlug || (rel.primary_sources||[]).some(s=>{
-           try{return (new URL(s.url).pathname.split('/').filter(Boolean).pop()||'').toLowerCase()===candSlug;}catch{return false;}
-         })));
+       // slug 取模型标识：优先 query 的 id 参数（如 qwen.ai/blog?id=<model>），
+       // 否则取路径末段。末段过短或过于通用（如 "blog"）时不做匹配，避免误挂到别的模型。
+       const candSlug=slugOf(c.official_urls[0]);
+       if(candSlug && candSlug.length > 2 && !GENERIC_SLUGS.has(candSlug)){
+         const hits=releases.filter(rel=>rel.vendor_id===c.vendor_id && (rel.id===candSlug || (rel.primary_sources||[]).some(s=>slugOf(s.url)===candSlug)));
+         if(hits.length===1) r=hits[0];   // 唯一命中才回填；多个候选时不猜
        }
      }catch{}
    }

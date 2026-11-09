@@ -3193,3 +3193,91 @@ Meta 2026-11-06《Bringing Specialized Models to Muse and Meta AI》发布一批
 - 检查点锚点：合并后账本最大 `release_date` = **2026-11-06**，`last_max_release_date` 按「只前进不回退」推进至 **2026-11-06**（第五十五批分支上记录的 2026-11-04 系其开分支时的旧基线，已被后续批次推进覆盖）；`last_scan_at` = 2026-11-08。
 - 本批**不新建任何 release 档案、不新增 evidence 行**，与上文口径一致。
 
+
+## 第五十六批（2026-11-09 CST / 2026-11-09 UTC 增量窗口 2026-10-23 ~ 2026-11-09：增量复核——17 家厂商确无新发布；修复 1 处合并回归与 1 处 slug 回填缺陷，恢复并新登记 44 条候选）
+
+### 窗口结论
+
+- **窗口**：2026-10-23 ~ 2026-11-09（UTC）＝ 检查点锚点 `last_max_release_date=2026-11-06` 回退 14 天重叠；`official_release_count=206`。
+- **本批不新建任何 release 档案、不新增 evidence 行**（账本契约：只追加）。
+- **原因**：17 家厂商 42 个官方入口逐个实取、窗口内条目逐条打印标题判读后，确认**无 ≥ 2026-11-07 的新发布**。
+- **本批实际产出（三类收口工作，而非空批）**：① 开工前把 4 个在飞 PR 全部 squash 合并入库，账本补齐 3 个交付批次；② 修复 1 处**合并回归**（丢失 31 条候选）与 1 处 **`reconcile-coverage.mjs` slug 回填误挂缺陷**（补回归测试）；③ 新登记 13 条存量缺口候选、结清 1 条遗留未决候选。覆盖候选总数 **598 → 642**，**未决候选 0**。
+
+### 开工前收口：4 个在飞 PR 全部 squash 合并入库
+
+开工时 `origin/main` 上有 **4 个 OPEN PR**，其 head 分支均新于本地当前分支（技能 Step 0 的**情况 A**），且 CI（"Build EPUB & Web"）**均为 pass**。按批号顺序逐个 squash 合并，远端分支一律保留：
+
+| PR | 批次 | 内容 | mergedAt |
+|---|---|---|---|
+| #54 | 第五十二批 | GPT‑6 Cyber 建档 + Gemini Omni 1.2 Flash 建档 | 2026-11-09T01:01:12Z |
+| #55 | 第五十三批 | OpenAI BioBasicsBench 建档 + Meta Muse 专用模型建档 | 2026-11-09T01:05:05Z |
+| #56 | 第五十四批 | 字节 Cola2 / GenFirst 建档 + 腾讯 AppCIF-Bench 榜单补录 | 2026-11-09T01:09:42Z |
+| #57 | 第五十五批 | 增量复核批（确无新发布，收口在飞候选 2 条） | 2026-11-09T01:13:04Z |
+
+- **冲突解法**（遵循技能规定）：README 按 `## 第N批（` 标题**切段先旧后新拼接**；`data/model-coverage.json` / `data/generated/ingest-checkpoint.json` 取较新批次一侧再跑 `reconcile-coverage.mjs` 重建；`evals.epub` / `web/` 产物**不手解**，用 `npm run build:epub:official` 重建；`data/model-releases/official/openai/gpt-5-4.json` 因两侧是**互不相交的 evidence 追加**（ours 10 条 AppCIF、theirs 5 条 BioBasics、共有 101 条），按 evidence id **取并集**（116 条）、`revisions` 按日期排序合并、`last_verified_at` 取 max。
+- 合并后 `origin/main` 依次为 **f94a0b1 → 2e6c33b → e15697c → f3f1194**，4 次 main CI run **均 success**；`gh pr list --state open` 为空。
+- **远端分支全部保留**（未使用 `git branch -D` / `git push --delete` / `gh pr merge --delete-branch`）。
+
+### 合并回归修复：恢复 31 条存量回填缺口候选
+
+- **症状**：#55 合并时用 `git checkout --ours` **选错一侧**，把 #54 附带的 `d19404e`（第五十二批补充登记的 31 条存量回填缺口候选）**整批丢掉**。
+- **处置**：从 `origin/model-release-daily-20261105T232408Z` 恢复全部 31 条 —— GLM‑Image / MiniMax M2.1 两条保留原 `exclusion_reason` 并把锚点窗口更新为本轮；**29 条 Qwen 候选**按官方研究索引 API `qwen.ai/api/v2/article/retrieval?type=qwen_ai` 的 `extra.date` 与 `title` **逐条重建** `family`（此前 29 条全被错填成 "Qwen-Image-2.1"）、`classification`、`release_id=null`、`exclusion_reason`、`next_backfill_at=2026-11-10`。
+- **完整性核查**：4 个分支 union 的 58 个改动文件逐一与 `origin/main` 比对，**除 epub 外无遗漏**；`data/benchmarks/exploitbench.json`、`exploitgym.json` 两侧改动字节一致（可安全自动合并）。
+
+### 缺陷修复：`reconcile-coverage.mjs` 的 slug 回填误挂
+
+- **症状**：原实现只用 URL **路径末段**取 slug。qwen.ai 按 `?id=` 寻址（`https://qwen.ai/blog?id=<model>`），路径末段**恒为 `blog`** → 29 条不同 Qwen 候选**全部被误挂**到 `qwen-image-2-1`，并被顺带清空 `exclusion_reason` / `next_backfill_at`（把「待回填」洗成了「已归入首发」）。
+- **修复**（改代码而非绕过）：新增 `slugOf()`——**优先取 `?id=` 参数**，否则取路径末段；新增 `GENERIC_SLUGS` 黑名单（blog / news / models / index / show / …）拦掉栏目页末段；**仅在唯一命中时**才回填（多命中不猜）；保留 `release_match === 'manual'` 的跳过逻辑。
+- **验证**：对现有数据 **0 处链接变化、0 处链接丢失**；修复后 reconcile **幂等**（连续两次运行 `diff` 为空）；新增回归测试「slug 回填按 id 参数寻址，通用末段不误挂到同站别的模型」（`tests/model-selection.test.mjs`）——用旧逻辑复跑同一夹具得到 `slug="blog"` → **误挂 true**，证明该测试能抓住回归。
+
+### 本轮新登记的 13 条存量缺口候选（只登记，不建档）
+
+按「增量窗口不越窗建档、双轨发现」纪律，一律 `release_id=null` + 写明 `exclusion_reason`；回填类候选统一 `next_backfill_at=2026-11-10`。
+
+| 厂商 | 模型 | 官方来源 | 官方日期 | 判定 |
+|---|---|---|---|---|
+| OpenAI | GPT‑Live / GPT‑Live‑1 | `openai.com/index/introducing-gpt-live` | 2026-07-08 | 存量回填缺口 |
+| OpenAI | GPT‑Live‑1 | `openai.com/index/introducing-gpt-live-1-in-the-api` | 2026-09-10 | 存量回填缺口 |
+| OpenAI | GPT‑5.2‑Codex | `openai.com/index/introducing-gpt-5-2-codex` | 2025-12-18 | 存量回填缺口 |
+| OpenAI | GPT‑5.3‑Codex‑Spark | `openai.com/index/introducing-gpt-5-3-codex-spark` | 2026-02-12 | 存量回填缺口 |
+| OpenAI | GPT‑Rosalind‑5.5 | `openai.com/index/introducing-new-capabilities-to-gpt-rosalind` | 2026-06-03 | 存量回填缺口（账本 `gpt-rosalind` 未覆盖该版本） |
+| OpenAI | Aardvark | `openai.com/index/introducing-aardvark` | 2025-10-30 | 存量回填缺口（后更名 Codex Security） |
+| OpenAI | IndQA | `openai.com/index/introducing-indqa` | 2025-11-03 | product：发布的是**基准**而非独立模型 |
+| OpenAI | Codex 升级公告 | `openai.com/index/introducing-upgrades-to-codex` | 2025-09-15 | product：产品与工具更新 |
+| Anthropic | Claude Sonnet 4.6 | `platform.claude.com/docs/en/models/sonnet-4-6/overview` | 2026-02-17 | 存量回填缺口 |
+| Anthropic | Claude Opus 4.5 | `platform.claude.com/docs/en/models/opus-4-5/overview` | 2025-11-24 | 存量回填缺口 |
+| 腾讯混元 | Hy‑Nomas‑Diffusers | `huggingface.co/tencent/Hy-Nomas-Diffusers` | 2026-10-24 | 格式变体：不另建 release，官方模型卡未给分值 |
+| 字节跳动 | Qwen3‑30B‑A3B‑MoE‑SAE | `huggingface.co/ByteDance-Seed/Qwen3-30B-A3B-MoE-SAE` | 2026-11-05 | product：SAE 可解释性研究权重，基座为第三方 Qwen |
+| 字节跳动 | Cross‑Layer‑TopK‑CLT | `huggingface.co/ByteDance-Seed/Cross-Layer-TopK-CLT` | 2026-11-05 | product：CLT 可解释性研究权重，基座为第三方 Qwen |
+
+- **交叉比对方法**：OpenAI 官方 release sitemap（84 条 slug）逐条与账本 `primary_sources` 比对；Anthropic 模型总表（16 个模型页）逐条与账本比对 —— 两条一级来源都指认「官方确实有、账本确实没有」的缺口。
+- **结清的遗留未决候选**：`kimi-91ed77edea66`（Remote environments）——实取确认为 **Kimi Code CLI 使用指南页**（远程开发环境配置说明），**无模型、无分值** → 改判 `product` 并写明排除原因。
+
+### 逐家巡检结论（窗口 2026-10-23 ~ 2026-11-09，17 家全部实取）
+
+- **OpenAI**：官方 RSS `https://openai.com/news/rss.xml` 实取 **1368 条**，窗口内 **50 条**，逐条打印标题判读 → 全部为客户故事 / 合作 / 人事 / 政策，或已由在飞批次建档的 GPT‑6 Cyber、BioBasicsBench、Images 2.6、LifeVal。
+- **Anthropic**：newsroom 94 篇，窗口内 11-04 / 11-06 两篇**均为 research 文章**（页面内 JSON 双重反转义 `"` 需两步解码才能取到 `publishedOn`）；`platform.claude.com/docs/en/models/overview` 16 个模型页，日期 2026-10-21 / 2026-10-07 → **无新发布**。
+- **Google / DeepMind**：`deepmind.google/blog/rss.xml`（100 条）窗口内 **5 条**，最新 11-05（Gemini Omni 1.2 Flash，已建档）→ 无新发布。
+- **Mistral**：`mistral.ai/rss.xml`（94 条）窗口内 **2 条**，最新 11-05（Studio 产品文，非发布）→ 无新发布。
+- **xAI**：release-notes 最新 11-02；**Meta** blog 最新 11-06；**Kimi** blog 10-24；**DeepSeek** updates 10-17；**MiniMax** 10-19；**豆包** sitemap 10-14；**Qwen** 研究索引 API 最新 2026-09-20；**小米 / Particle** 无窗口内日期 → 均无新发布。
+- **HF 官方组织逐 org 查漏**：窗口内新仓仅 `tencent/Qwen3.8-27B-DSpine-b16`（11-07，上一批已结案）、`microsoft/Mage-VL-Cowork`（已建档）、`moonshotai/Kimi-K3.1-Pro`（已建档）、`ByteDance-Seed/Cola2` / `GenFirst`（已建档）、`tencent/Hy-Nomas-Diffusers`（10-24，格式变体）、`ByteDance-Seed/Qwen3-30B-A3B-MoE-SAE` 与 `Cross-Layer-TopK-CLT`（11-05，可解释性研究权重）→ **无新的独立模型发布**。
+- **GitHub org**：本轮 API 全部 403 限流，改用 `github.com/orgs/<org>/repositories` HTML 取仓名（Tencent‑Hunyuan / QwenLM / zai-org / microsoft）→ 均为既有仓，无新增模型发布。
+
+### 跳过清单
+
+- **OpenAI 窗口内其余 RSS 条目** —— 客户故事 / 合作 / 人事 / 安全与政策 / 平台功能，非模型发布。
+- **Anthropic 窗口内两篇 research 文章** —— 研究文章，非模型发布文。
+- **Mistral Studio 产品文（11-05）** —— 产品更新，非模型发布。
+- **腾讯 `Qwen3.8-27B-DSpine-b16`（11-07）** —— 投机解码 drafter 研究权重，无官方发布文与评测分数。
+- **字节 SAE / CLT 两个研究权重仓（11-05）** —— 基座为第三方 Qwen 模型，非字节独立模型发布。
+- **腾讯 `Hy-Nomas-Diffusers`（10-24）** —— 既有模型 `hy-nomas` 的 BF16 Diffusers 格式变体，不另建 release。
+- **StepFun sitemap 全站同戳**、`platform.minimax.io/docs/release-notes/models` 日期为站点重建戳 —— **不可作发布日**。
+
+### 门禁
+
+- `node scripts/reconcile-coverage.mjs` **通过**（候选总数 **642**，**未决候选 0**，且幂等）。
+- `node --test tests/*.test.mjs` **66/66 通过**（新增「slug 回填按 id 参数寻址，通用末段不误挂到同站别的模型」一项）。
+- `node scripts/validate-data.mjs` **PASS**（taxonomy 9 类 / vendors 17 / benchmarks 507 / releases 220（official 206）/ evidence edges 3585）。
+- `npm run build` **全链通过**（EPUB 486 KB / 32 章；站点 **767 URL** + **507 实体页** + 163 auto-evidence 页；`validate:site` **964 HTML / 42090 内部引用 / 267 时间轴 / 2264 事件卡**）。
+- **分支**：`model-release-daily-20261109T011500Z`（自合并后的 `origin/main` = `f3f1194` 开出）。
+- **检查点**：账本最大 `release_date` = **2026-11-06**（本批未新建档案），锚点按「只前进不回退」保持 **2026-11-06**，`last_scan_at` 推进至 **2026-11-09**。
