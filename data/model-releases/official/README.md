@@ -2802,6 +2802,9 @@ Table 3 的 GIF Moderation Recall 度量的是**安全防护（safeguard）检�
 
 ### 待人工核验
 
+- **公开文案红线自查（本批新增内容 0 处命中）**：本批新建的 3 个基准实体说明已按站点主流写法改成读者语言（「全站共 N 处引用」），**不含**「证据账本 / 已核验 / 待核验 / 待补 / 窗口起点」等内部流程词；新建的 Meta release 详情页实测内部术语命中 **0 处**。
+
+  ⚠️ **全站既有基线（非本批引入，留档备查）**：① 站点 release 时间轴页「待补」字样计数 = **75**，与第四十九 / 五十批记录的基线**完全一致**，本批新增 pending 0 条，**未推高该计数**；② 全站 502 个基准实体中有 **47 个**沿用「证据账本中 N 次引用」这一早期写法（其余 410 个已是读者语言），本批新增实体**未沿用**；③ 模型详情页的 evidence notes 全站惯例直出「new-benchmark: …（data/benchmarks/…）」字样，属既有基线，本批沿用同一格式以便交叉核对，不做单边改写。
 - **本批新增 pending 0 条**——67 条 evidence 全部出自**可机读**的 DOM 真表格（Table 1 / Table 2）与 DOM 内嵌 `data-data` 数据集（Table 3），**无一条依赖位图读图**，故不产生待人工读图项。沿用第三十三~五十批的既有 pending 清单不变。
 
 ### 入口扫描与候选结案
@@ -2913,3 +2916,85 @@ Google 官方博客 2026-11-05 发布《Gemini Omni 1.2 Flash: Fast and cost-eff
 - **Qwen 29 条**——官方研究索引 API（`qwen.ai/api/v2/article/retrieval?type=qwen_ai`）的 `extra.date`，逐条给出版本名与官方日期：Qwen-Image-3.0(2026-07-21)、Qwen-Drive-1.0(2026-09-03)、Qwen-AgentWorld(2026-06-23)、Qwen3.7(2026-05-20)、Qwen3.7-Plus(2026-06-01)、Qwen-VLA(2026-05-29)、Qwen3.5-LiveTranslate(2026-05-19)、Qwen3.6-27B(2026-04-22)、Qwen3.6-Max-Preview(2026-04-18)、Qwen3.6-35B-A3B(2026-04-15)、Qwen3.6-Plus(2026-04-02)、Qwen3.5-Omni(2026-03-30)、Qwen3.5-Max-Preview(2026-03-19)、Qwen3.5(2026-02-16)、Qwen-Image-2.0(2026-02-10)、Qwen3-Coder-Next(2026-02-03)、Qwen3-ASR / ForcedAligner(2026-01-29)、Qwen3-TTS Family(2026-01-22)、Qwen3-VL-Embedding / Reranker(2026-01-08)、Qwen-Image-2512(2025-12-31)、Qwen-Image-Edit-2511(2025-12-23)、Qwen3-TTS Voice Cloning / Voice Design(2025-12-23)、Qwen-Image-Layered(2025-12-19)、Qwen3-Omni-Flash-2025-12-01(2025-12-09)、Qwen3-TTS Update(2025-12-05)、Qwen DeepResearch(2025-11-13)、Qwen-RobotSuite / RobotManip / RobotWorld / RobotNav(2026-06-16)。
 
 豆包线的存量缺口（Seed 2.0、Seedream 5.0 Lite、Seedance 2.0、Seed3D 2.0、Seed Prover 1.5 等约 20 条）本批**只记录在本节不落候选**——官方 SSR 列表页给出了印刷日期，但本轮未取得每条对应的稳定发布页 URL，按「不造 URL」的纪律不写入候选，留待回填批次按标题回查官方 slug 后登记。
+
+## 第五十三批（2026-11-07 CST / 2026-11-06 UTC 增量窗口 2026-10-21 ~ 2026-11-06：OpenAI BioBasicsBench 建档 → 32 条 evidence + Meta Muse 专用模型建档 → 2 条 evidence）
+
+- **窗口**：增量窗口 2026-10-21 ~ 2026-11-06（检查点锚点 `last_max_release_date=2026-11-04` 回退 14 天重叠；窗口右端取 UTC 当日 2026-11-06 = 北京时间 2026-11-07 07:00）。检查点回写 `last_scan_at=2026-11-06`（UTC）、`last_max_release_date` **推进到 2026-11-06**——本批新增 release 的发布日 2026-11-06 晚于既有锚点 2026-11-04，锚点只前进不回退。
+- **本批性质**：**全窗口逐家实取巡检（17/17 在册厂商逐家实取官方通道）+ 1 个新 release 建档 + 3 个新 benchmark 实体 + 34 条 evidence**。
+- **本批新增 release：1 个**（`meta/muse-specialized-models`，发布日 2026-11-06）。
+- **本批新增 evidence：34 条**（全部 `verified`，**0 条 pending**）
+  - **`biobasicsbench`（新建实体）· 32 条** = 6 个自家模型（GPT-5.4 / GPT-5.5 / GPT-5.6 Sol / GPT-6.1 Sol / GPT-6 Luna / GPT-6 Astra）× 各自可用的推理强度档（none / low / medium / high / xhigh / max）。
+  - **`personal-superintelligence-index`（新建实体）· 1 条** + **`active-memory-eval`（新建实体）· 1 条** = Meta Muse 专用模型在两张官方图表上的 Index Score 与「正确使用关键上下文的任务占比」。
+- **本批新增 benchmark 实体：3 个**（`biobasicsbench`、`personal-superintelligence-index`、`active-memory-eval`），三者均已建完整实体（`summary` / `interpretation` / `measures` / `does_not_measure` / `dataset` / `metrics`（含 `direction`）/ `versions` / `limitations` 齐备），非兜底页。
+- **本批新增归档：2 个**——`models/2026-11-06-biobasicsbench/`（`page.html` + 转录 `index.md` + `manifest.json`，含逐文件 sha256）与 `models/2026-11-06-muse-specialized-models/`（同结构）。
+
+### 关键发现一：BioBasicsBench 的 37 个设置分值逐值机读，且能被正文锚点交叉校验
+
+OpenAI 2026-11-06 发布《Measuring how AI agents handle everyday wet-lab science》，公布新基准 **BioBasicsBench**：100 道湿实验室日常判读任务，5 个领域（蛋白方法 25 题 / 成像与流式细胞 23 题 / 定量与检测 19 题 / 核酸方法 17 题 / 分子克隆 16 题），官方口径为「the average task score, expressed as a percentage of the available credit」。
+
+- **取数通道**：全部分值在发布文内嵌图表的 **vega-lite `data.values`** 里，**逐值机读、非位图读图**；同一页还有第二张「Tasks by domain and tested skill」图表，同样逐值机读。
+- **规模自洽校验**：官方印「37 model and reasoning-effort settings, with five attempts on each of the 100 tasks per setting, for a total of 18,500 results」→ 37 × 100 × 5 = **18,500** ✓，图表恰好 37 行 ✓。
+- **正文锚点交叉校验**：正文印「At the 'xhigh' setting … GPT‑6 Astra earned an average of 66.7% of the available credit, compared with 43.8% for GPT‑5.6 Sol.」→ 对应图表值 **66.68508** 与 **43.76452**（一位小数即 66.7% / 43.8%）✓。**正文与图表两个独立通道互证**，故 32 条一律记 `verified`。
+- **读分必须带档位**：无推理（none）到 xhigh 之间同一模型可差 5–15 个百分点；各模型可用档位不同（GPT-5.2 / 5.4 / 5.5 只到 xhigh，GPT-6.1 Sol 与 GPT-6 Astra 从 low 起，GPT-5.6 Sol 与 GPT-6 Luna 另有 max）。已在实体 `interpretation` 与各行 `protocol.reasoning_effort` 双写。
+
+### 关键发现二：Meta Muse 专用模型是窗口内的真·模型发布，且图表数值仍在 DOM 内
+
+Meta 2026-11-06《Bringing Specialized Models to Muse and Meta AI》发布一批 **specialized models**（用 Muse Wonder 继续训练既有模型而得的专用版本，带 Active Memory 与 Active Focus 两项能力，随 Muse 与 Meta AI 两款产品滚动上线）。
+
+- **它不是「产品更新」**：发布文明确「introducing specialized versions of our existing models」，属于新模型变体上线，故**建 release 档**（`muse-specialized-models`）。
+- **无 API 模型名字符串 → id 由发布标题派生**（沿用 GPT-6 Cyber 先例），已在 `models[0].variant` 写明来源。
+- **两张图的数值仍在 DOM 里**：图表是**内联 SVG**（`data-visualization-preset="muse-wonder-bar"`），柱元素的 `aria-label` 与 `data-tooltip-values` JSON 载荷逐值可机读，页面另有 sr-only 文本摘要逐字印出「Current and previous Muse models on the Personal Superintelligence Index: 47% and 38%.」与「…on the Active Memory eval: 90% and 76%.」→ **不是数值只存在于像素的位图**，按第五十一批已确立的口径记 `verified`、不落 pending。
+- **诚实标注精度边界**：官方未发布独立数值数据集，柱标签已是页面侧四舍五入后的**整数百分数**，无更高精度可用；该边界已写进两条 evidence 的 `notes` 与两个实体的 `limitations`。
+
+### 全窗口逐家实取结果（17/17 在册厂商）
+
+- **OpenAI**：`openai.com/news/rss.xml`（1,368 条）窗口内 21 条逐条读；新增 BioBasicsBench（11-06）→ 32 条 evidence + 1 个新 benchmark 实体；其余见跳过清单。
+- **Google**：`deepmind.google/blog/rss.xml`（100 条）+ `blog.google` RSS（20 条）窗口内条目均为已建档模型（Genie 4 / Gemini 4 Carbon）或研究·框架文章 → 无新发布。
+- **Anthropic**：`anthropic.com/news` 最新条目仍是 Claude Opus 5.5（2026-09-22，已建档；newsroom 页眉的「Latest news November 6, 2026」是**页面当前日期**而非文章日期，已核）；`platform.claude.com` 模型总览仍为 Fable 5.1 / Opus 5.5 / Sonnet 5.5 / Haiku 5.5（均已建档）→ 无新发布。
+- **xAI**：`docs.x.ai/docs/models` 最新仍 Grok 4.7（已建档）；`x.ai/news/` 静态不可达（渠道地图已记）→ 无新发布。
+- **Meta**：`research.meta.ai/blog/` → **新增 2026-11-06《Bringing Specialized Models to Muse and Meta AI》** → 1 个 release + 2 条 evidence + 2 个新 benchmark 实体；其余 Muse 系列文章（muse-wonder / muse-spark-1-3 等）均已建档。
+- **Mistral**：`mistral.ai/rss.xml`（94 条）窗口内 = Mistral Large 4 OSS（10-29，已建档）/ Voxtral 3（10-20，已建档）/ Le Chonk·Studio 产品文 / NVIDIA 合作（10-21）→ 无新发布；HF `mistralai` 窗口内 0 新仓。
+- **Kimi**：`kimi.com/en/blog` 最新仍 K3.1 Pro（10-24，已建档）；HF `moonshotai` 窗口内唯一新仓 `moonshotai/Kimi-K3.1-Pro`（已建档）→ 无新发布。
+- **DeepSeek**：`api-docs.deepseek.com/updates` 最新仍 2026-10-17（已建档）→ 无新发布。
+- **GLM**：HF `zai-org` 窗口内 0 新仓；`z.ai/blog/` 仍 404（渠道地图已记）→ 无新发布。
+- **MiniMax**：`platform.minimax.io/docs/release-notes/models` 最新仍 Oct. 19, 2026 / M3.1 Flash（已建档）；HF `MiniMaxAI` 窗口内 0 新仓 → 无新发布。
+- **Qwen**：HF `Qwen` 窗口内 0 新模型仓；GitHub `QwenLM` 新仓 `BabelArena`（10-22，评测榜仓库，非模型发布）；`qwen.ai` 仍只出 SPA 壳 → 无新发布。
+- **豆包 Doubao**：`seed.bytedance.com/sitemap.xml` 实取 35 条 URL，最新 `lastmod` 2026-10-14，窗口内 0 新条目 → 无新发布。
+- **小米 MiMo**：`mimo.xiaomi.com/blog` 无窗口内新条目（站内仍 MiMo-V2 / MiMo Code 等既有产品线）→ 无新发布。
+- **腾讯混元**：HF `tencent` 窗口内新仓 = `Hy-Nomas-Diffusers`（10-24，已随 Hy-Nomas 建档）/ `WeVisOne-VL`（10-22，已建档）/ `Hy-SimulMT-30B-A3B` 系（10-22，已建档）/ `Hy-Nomas`（10-21，已建档）；GitHub `Tencent-Hunyuan` 窗口内新仓 = `FlashTopK`（11-05，算子库）/ `EmoReward`（11-02，研究实现）/ `HyperLogic`（10-27，基准仓，已建档）→ 无新发布。
+- **StepFun**：`platform.stepfun.com/docs/zh/guides/models/` 在架 Step 5 Preview / Step 3.7 Flash / Step 3.5 Flash / StepAudio 3 系 / Step Serif，均属既有产品线；⚠️ 文档站 `dateModified=2026-11-05` 是**页面重建戳**不是发布日（渠道地图已记）；HF `stepfun-ai` 窗口内 0 新仓 → 无新发布。
+- **Microsoft**：`microsoft.ai/blog/` 与 `/models/` 本轮直连被 Cloudflare 拦截（入口状态已记 partial / needs_render）；HF `microsoft` 窗口内新仓 = `Mage-VL-Cowork`（10-30，已建档）→ 无新发布。
+- **Particle AI**：`particle.ai/blog` 列表本轮 404（入口状态记 partial）；官方仍只有 `introducing-particle-1` 一篇（10-27，已建档）→ 无新发布。
+
+### 跳过清单
+
+- **OpenAI《A thousand fewer paths to root》**（11-04）——本批**首次把该页内联图表逐值机读**（vega-lite「Linux Kernel Exploitation Success Rate」：GPT-5.5-Cyber without skills 76.2% / with skills 88.9%，GPT-5.6-Cyber without skills 92.1% / with skills 93.6%），但 **GPT-5.5 Cyber 与 GPT-5.6 Cyber 两个变体在本仓均无 release 记录**，且 with / without skills 属**两种不同编排协议**，故本批不建 evidence 行，数值仅留档于本报告。第五十一批以「kernelCTF 数字是漏洞 PoC 数量」为由跳过的结论，本批按更精确的理由覆盖（该页确有逐模型成功率图表，只是不满足外键与协议一致性要求）。
+- **OpenAI《LifeVal》**（11-02）——**已由前批建档**（基准实体 `lifeval` + 18 条 evidence 已在 `origin/main`），本批**不重复入库**；官方同页汇总图给出的 GPT-5.2 四档分值仍按前批口径只留档、不建行。
+- **OpenAI《How we detect frontier model misalignment》**（10-29）——3 张图表均为**监控系统的 L1 / L2 召回**口径，不是被测模型自身能力分；逐模型对比只有定性表述（「monitors using GPT‑5.6 Sol caught significantly more cases than those using GPT‑5.6 Terra or GPT‑5.6 Luna」）→ 不建行。
+- **OpenAI《Scaling AI research for complex biological data》**（10-21）——唯一百分比是「human experts preferred distributed-agent reports over single-agent reports 75% of the time」，属**人工偏好**而非模型评测分 → 不建行。
+- **OpenAI《Partnering with Hacktron to find vulnerabilities in OpenAI's systems》**（11-06）——**合作公告**，剥标签后正文无任何百分比与评测句 → 不建行。
+- **OpenAI《Introducing GPT‑6 Cyber》**（11-05）与 **Google《Introducing Gemini Omni 1.2 Flash》**（11-05）——**已由上一轮交付分支 `model-release-daily-20261105T232408Z`（PR #54，待人工 review）建档**，本批**不重复建档**。
+- **Google《Evaluating health AI at scale》**（11-04）——**评测方法学框架文章**，正文与图表均无数值 → 不建行。
+- **Anthropic《Discovering and exploiting vulnerabilities in critical, real-world software with Claude》**（10-27）——剥标签后正文无任何百分比与评测句 → 不建行。
+- **腾讯 `Tencent-Hunyuan/FlashTopK`（11-05）**——稀疏注意力 top-k 选算子库，非模型发布；**`Tencent-Hunyuan/EmoReward`（11-02）**——研究实现仓，非模型发布。
+- **Qwen `QwenLM/BabelArena`（10-22）**——评测榜仓库，非模型发布。
+
+### 待人工核验
+
+- **本批新增 pending 0 条**——32 条 BioBasicsBench 全部出自官方发布文内嵌 vega-lite `data.values`（逐值机读），2 条 Meta 全部出自官方页面内联 SVG 图表的柱标签（`aria-label` 与 `data-tooltip-values` JSON 在 DOM 中逐值可机读）。按第五十一批已确立的口径（「图表图片行永不自动翻 verified」的红线针对的是**数值只存在于像素的位图**），两者**均不落 pending、不进人工读图清单**。沿用既有 pending 清单不变。
+
+### 入口扫描与候选结案
+
+- 本批 `scan.mjs --write` 已落盘 `data/model-coverage.json`（17 家厂商逐入口 `last_scanned_at` 与 `content_sha256` 全部刷新）；`reconcile-coverage.mjs` 通过且**幂等**（二次运行结果不变）。
+- **本批结案 1 处**：候选 `meta-4eedf8a76087`（`https://research.meta.ai/blog/specialized-models-for-muse-and-metaai`）→ 分类改 `general`、`official_source_verified=true`、`release_id=muse-specialized-models`、`archive_status=archived`、`archive_path=models/2026-11-06-muse-specialized-models`、`evidence_status=reported`、`release_date=2026-11-06`、`exclusion_reason` 置 null、`release_match=manual`。
+- **本批新登记 1 处**：候选 `openai-5f721228af36`（GPT-5.2 存量缺口）——官方一级来源已确认（BioBasicsBench 发布文逐档给出 GPT-5.2 的 5 档官方分值：none 24.01% / low 28.67% / medium 30.70% / high 30.49% / xhigh 31.15%），但本仓无 GPT-5.2 的独立 release 档案、也没有可定位其发布日的官方发布文，按「不拿抓取日冒充发布日期」纪律本批**不新建 release、不建证据行**，分值仅留档于基准实体说明、归档转录表与本报告；`exclusion_reason` 记录原因（该模型确非排除项，故分类保持 `general`）。
+- **另有 2 条扫描新发现的候选在本分支无外键可关联**：`openai-14e90e72d340`（GPT‑6 Cyber）与 `google-485654c1f98a`（Gemini Omni 1.2 Flash）——对应 release 档案在**尚未合入 `origin/main` 的 PR #54** 中，本分支无外键可关联；二者确非排除项，故暂置 `unknown` 分类 + 留痕 `note`，**不写 `exclusion_reason`**（避免把真实模型误标为已排除），待该 PR 人工 review 合并后由 `reconcile-coverage.mjs` 按 URL slug 自动回填 `release_id`。
+
+### 门禁
+
+- `node scripts/reconcile-coverage.mjs` 通过且幂等（**validate-data 口径下「general/vertical 候选既无 release 也无排除原因」者 = 0**）。
+- `node --test tests/*.test.mjs` **65/65 通过**。
+- `node scripts/validate-data.mjs` **PASS**（taxonomy 9 类 / vendors 17 / benchmarks **502**（+3）/ releases **216**（official 202，+1）/ evidence edges **3475**（+34））。
+- `npm run build` 全链通过（详见本批提交记录；含书校验 + EPUB + 全站构建 + `validate-site`）。
+- **分支**：`model-release-daily-20261106T232045Z`（自 `origin/main` = `d9ff4d6` 开出）。
+- ⚠️ **开工前处置（情况 A）**：开工时发现 **PR #54（上一轮交付）** 处于 OPEN 状态（head `model-release-daily-20261105T232408Z`，head commit `d19404e`），其内容（GPT‑6 Cyber / Gemini Omni 1.2 Flash）**尚未合入 `origin/main`**。按分流表**不重跑该批**、**不自动合并**（人工 review 前不合并），本批从 `origin/main` = `d9ff4d6` 开新分支，两批内容**不重叠**（本批 2026-11-06 新发布 vs 上一轮 2026-11-05 发布）。
