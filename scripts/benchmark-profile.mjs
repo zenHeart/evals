@@ -182,7 +182,7 @@ export const PROFILE_V2_LAYOUT = [
 /** 详情页必须出现的 #p-<key> 锚点（validate-site 用） */
 export function profileAnchors(p) {
   if (p?.template === PROFILE_TEMPLATE_V2)
-    return PROFILE_V2_LAYOUT.filter(d => !(d.optional && !p[d.key])).map(d => [d.key, d.title]);
+    return [...PROFILE_V2_LAYOUT.filter(d => !(d.optional && !p[d.key])).map(d => [d.key, d.title]), ["appendix", "附录"]];
   return [...PROFILE_SECTIONS.filter(d => p?.sections?.[d.key]).map(d => [d.key, d.title]),
     ["ledger", "本站收录的发布成绩"], ["adoption", "发布引用时间轴"], ["links", "官方链接"], ["refs", "参考来源"]];
 }

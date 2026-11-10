@@ -121,6 +121,16 @@ export const PROFILE_V2_CSS = `
 .pf2-appendix { margin-top:34px; border-top:2px solid var(--rule); padding-top:6px; }
 .pf2-appendix > h2.pf2-apx-title { font-size:15px; color:var(--graphite); letter-spacing:.06em; }
 .pf2-note { color:var(--graphite); font-size:13px; line-height:1.7; }
+.pf2-apx-list { display:flex; flex-wrap:wrap; gap:6px 14px; list-style:none; padding:0 !important; margin:6px 0 10px !important; font-size:13.5px; }
+.pf2-part { border:1px solid var(--rule); border-radius:10px; padding:0 14px; margin:10px 0; }
+.pf2-part > summary { cursor:pointer; list-style:none; display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 12px; padding:10px 0; }
+.pf2-part > summary::-webkit-details-marker { display:none; }
+.pf2-part > summary::before { content:"▸"; color:var(--graphite); transition:transform .15s; }
+.pf2-part[open] > summary::before { transform:rotate(90deg); }
+.pf2-part > summary h2.detail-sec { margin:0 !important; font-size:16px; }
+.pf2-part > summary h2.detail-sec::after { display:none; }
+.pf2-part-body { padding-bottom:12px; }
+.pf2-meta { font:600 11.5px/1.5 var(--mono); color:var(--graphite); }
 .pf2-wrap .pf-table .num { white-space:nowrap; font-family:var(--mono); }
 .pf2-wrap .pf-table th { white-space:nowrap; }
 .pf2-table-stack td:first-child { min-width:6.5em; }
@@ -178,8 +188,10 @@ export function renderProfileV2(b, ent, ctx) {
   <div><div class="k">状态</div><div class="v">${ctx.statusBadge}</div></div>
   <div class="wide"><div class="k">当前最高分（本站证据账本，厂商自报原值，按口径分列）</div><div class="v">${topHTML}<br><span class="pf2-note">口径不同的分数不能直接比较；完整列表见附录 C。</span></div></div>
 </div>`;
-  const toc = PROFILE_V2_LAYOUT.filter(d => !(d.optional && !p[d.key])).map(d => `<a href="#p-${d.key}">${esc(d.title)}</a>`).join("");
-  const head = `${card}<div class="pf-meta"><span class="ok">统一档案模板 v2</span><span>${p.sources.length} 个权威来源</span><span>核验于 ${esc(p.verified_at)}</span></div><nav class="pf-toc" aria-label="本页目录">${toc}</nav>`;
+  const body = PROFILE_V2_LAYOUT.filter(d => !d.appendix);
+  const apx = PROFILE_V2_LAYOUT.filter(d => d.appendix && !(d.optional && !p[d.key]));
+  const toc = [...body.map(d => `<a href="#p-${d.key}">${esc(d.title)}</a>`), `<a href="#p-appendix">附录</a>`].join("");
+  const head = `${card}<nav class="pf-toc" aria-label="本页目录">${toc}</nav>`;
 
   // 1 一眼看懂
   const glance = sec("glance", "1. 一眼看懂", `<ul class="pf2-glance">
@@ -226,19 +238,20 @@ export function renderProfileV2(b, ent, ctx) {
   const background = sec("background", "6. 来源与背景", `<div class="kv">${p.background.map(f => `<div class="k">${esc(f.k)}</div><div>${esc(f.v)}${cite(f.cite)}</div>`).join("")}</div>
   <div class="ext-links">${links}<a href="../">← 返回评估大全</a></div>`);
 
-  // 附录
-  const vA = sec("versions", "A · 版本历史", table(["日期", "变化"], ent.versions.map(v => [`<span class="num">${esc(v.date)}</span>`, `${esc(v.label)}${cite(v.cite)}`]), false));
+  // 附录：每部分默认折叠（<details>）；锚点 id 仍在 <details> 上，深链由下方脚本展开
+  const part = (key, title, inner, extra = "") => `<details class="pf-sec pf2-part" id="p-${key}"><summary><h2 class="detail-sec">${esc(title)}</h2>${extra}</summary><div class="pf2-part-body">${inner}</div></details>`;
+  const vA = part("versions", "A · 版本历史", table(["日期", "变化"], ent.versions.map(v => [`<span class="num">${esc(v.date)}</span>`, `${esc(v.label)}${cite(v.cite)}`]), false));
   const or = p.official_results;
-  const vB = or ? sec("official_results", "B · 官方结果快照", table(or.table.columns, or.table.rows.map(r => r.map(esc)), false) + `<p class="refs">快照日期 ${esc(or.table.as_of)}${cite(or.cite)}</p>`) : "";
+  const vB = or ? part("official_results", "B · 官方结果快照", table(or.table.columns, or.table.rows.map(r => r.map(esc)), false) + `<p class="refs">快照日期 ${esc(or.table.as_of)}${cite(or.cite)}</p>`) : "";
   const lr = ctx.ledgerRows;
-  const vC = sec("ledger", "C · 本站收录的发布成绩", `<p class="refs">来自本站证据账本（厂商官方发布中的原始数值，按分数从高到低）。厂商自报与官方结果的脚手架、推理档位可能不同，只有口径一致时才可横向比较。</p>` + (lr.length ? table(["发布日期", "模型", "分数", "口径", "来源"], lr.map(r => [
+  const vC = part("ledger", "C · 本站收录的发布成绩", `<p class="refs">来自本站证据账本（厂商官方发布中的原始数值，按分数从高到低）。厂商自报与官方结果的脚手架、推理档位可能不同，只有口径一致时才可横向比较。</p>` + (lr.length ? table(["发布日期", "模型", "分数", "口径", "来源"], lr.map(r => [
     `<span class="num">${esc(r.date || "—")}</span>`, `<a href="${esc(r.modelHref)}">${esc(r.model)}</a><br><span class="refs">${esc(r.vendor)}</span>`,
     `<span class="num">${esc(r.score)}</span>${r.status === "verified" ? "" : ' <span class="refs">（图表读数）</span>'}`,
     esc([r.variant, r.protocol].filter(Boolean).join(" · ") || "未写明"),
     r.url ? `<a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.attr)} ↗</a>` : esc(r.attr)]), false) : `<p class="pf-missing">本站账本里还没有厂商发布引用这个评测。</p>`) + ctx.comparabilityHTML);
-  const vD = sec("adoption", "D · 发布引用时间轴", ctx.adoptionHTML);
-  const vE = sec("related", "E · 相关评测", ctx.relatedHTML || `<p class="pf-missing">暂无同类别评测。</p>`);
-  const vF = sec("refs", "F · 参考来源", `<ol class="pf-refs">${p.sources.map(s => `<li id="src-${esc(s.id)}"><span class="kind">${esc(KIND_LABEL[s.kind] || s.kind)}</span>${esc(s.title)} · <a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.url)}</a> <span class="refs">（访问于 ${esc(s.accessed)}）</span></li>`).join("")}</ol>`);
+  const vD = part("adoption", "D · 发布引用时间轴", ctx.adoptionHTML);
+  const vE = part("related", "E · 相关评测", ctx.relatedHTML || `<p class="pf-missing">暂无同类别评测。</p>`);
+  const vF = part("refs", "F · 参考来源", `<ol class="pf-refs">${p.sources.map(s => `<li id="src-${esc(s.id)}"><span class="kind">${esc(KIND_LABEL[s.kind] || s.kind)}</span>${esc(s.title)} · <a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.url)}</a> <span class="refs">（访问于 ${esc(s.accessed)}）</span></li>`).join("")}</ol>`, `<span class="pf2-meta">${p.sources.length} 个权威来源 · 核验于 ${esc(p.verified_at)}</span>`);
 
   return `<div class="pf2-wrap">${head}
 ${glance}
@@ -247,12 +260,14 @@ ${method}
 ${reading}
 ${trust}
 ${background}
-<div class="pf2-appendix"><h2 class="pf2-apx-title">附录</h2>
+<div class="pf2-appendix" id="p-appendix"><h2 class="pf2-apx-title">附录</h2>
+<ul class="pf2-apx-list">${apx.map(d => `<li><a href="#p-${d.key}">${esc(d.title.replace(/^附录 /, ""))}</a></li>`).join("")}</ul>
 ${vA}
 ${vB}
 ${vC}
 ${vD}
 ${vE}
 ${vF}
-</div></div>`;
+</div></div>
+<script>(function(){function o(h){h=(h||location.hash).slice(1);if(!h)return;var t=document.getElementById(decodeURIComponent(h));if(!t)return;for(var d=t.closest("details");d;d=d.parentElement&&d.parentElement.closest("details"))d.open=true;t.scrollIntoView();}addEventListener("hashchange",function(){o()});document.addEventListener("click",function(e){var a=e.target.closest&&e.target.closest('a[href^="#"]');if(a)setTimeout(function(){o(a.hash)},0);});if(document.readyState==="loading")addEventListener("DOMContentLoaded",function(){o()});else o();})();</script>`;
 }

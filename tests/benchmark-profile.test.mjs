@@ -58,7 +58,7 @@ test("HLE uses the v2 layout and its content shares come from the paper figure",
   assert.equal(shares.reduce((a, x) => a + x, 0), 100);
   for (const m of b.measures) assert.ok(m.cite.includes("paper@Figure 3"), m.area);
   const keys = profileAnchors(b.profile).map(([k]) => k);
-  for (const k of ["glance", "content", "method", "reading", "trust", "background", "versions", "official_results", "ledger", "adoption", "related", "refs"]) assert.ok(keys.includes(k), k);
+  for (const k of ["glance", "content", "method", "reading", "trust", "background", "appendix", "versions", "official_results", "ledger", "adoption", "related", "refs"]) assert.ok(keys.includes(k), k);
 });
 
 test("v2 rejects uncited rows, bad severity, unused sources and missing entity", () => {
