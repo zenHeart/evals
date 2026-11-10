@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import { validateProfile, profileAnchors, PROFILE_SECTIONS, PROFILE_TEMPLATE, PROFILE_TEMPLATE_V2 } from "../scripts/benchmark-profile.mjs";
-import { toolClass, ledgerTops } from "../scripts/benchmark-profile-page.mjs";
+import { toolClass, ledgerTops, renderProfileV2 } from "../scripts/benchmark-profile-page.mjs";
 
 const dir = new URL("../data/benchmarks/", import.meta.url);
 const entities = fs.readdirSync(dir).filter(f => f.endsWith(".json")).map(f => JSON.parse(fs.readFileSync(new URL(f, dir), "utf8")));
@@ -83,4 +83,14 @@ test("ledger top score is split by tool protocol", () => {
   const t = ledgerTops([{ value: 60, variant: "no tools" }, { value: 70, variant: "with tools" }, { value: 65, variant: "no tools" }, { value: null, variant: "with tools" }]);
   assert.equal(t.no.value, 65);
   assert.equal(t.with.value, 70);
+});
+
+test("v2 header card has exactly 4 small cards (no duplicate status card) plus 2 full-width rows", () => {
+  const b = hle();
+  const html = renderProfileV2({}, b, { ledgerRows: [], comparabilityHTML: "", adoptionHTML: "", relatedHTML: "" });
+  const card = html.slice(html.indexOf('<div class="pf2-card"'), html.indexOf("</nav>"));
+  const keys = [...card.matchAll(/<div class="k">([^<]+)<\/div>/g)].map(m => m[1]);
+  assert.ok(!keys.includes("状态"));
+  assert.deepEqual(keys.slice(1, 5), ["发布方", "首次发布", "题量", "主要指标"]);
+  assert.equal((card.match(/class="wide"/g) || []).length, 2);
 });

@@ -96,7 +96,9 @@ export function renderProfile(b, profile, ctx) {
 
 /* ===================== benchmark-profile/v2（新手友好版式） ===================== */
 export const PROFILE_V2_CSS = `
-.pf2-card { display:grid; grid-template-columns:repeat(auto-fill, minmax(min(100%, 200px), 1fr)); gap:10px; margin:14px 0 6px; }
+/* 4 张小卡：桌面 4 列一行，窄屏 2×2，避免落单空格；全称与当前最高分整行 */
+.pf2-card { display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:10px; margin:14px 0 6px; }
+@media (max-width: 760px) { .pf2-card { grid-template-columns:repeat(2, minmax(0, 1fr)); } }
 .pf2-card > div { border:1px solid var(--rule); border-radius:10px; padding:10px 12px; }
 .pf2-card .k { font:700 11px/1.4 var(--mono); color:var(--graphite); letter-spacing:.04em; margin-bottom:4px; }
 .pf2-card .v { font-size:14px; line-height:1.6; }
@@ -185,7 +187,6 @@ export function renderProfileV2(b, ent, ctx) {
   <div><div class="k">首次发布</div><div class="v">${esc(p.header.first_release.v)}${cite(p.header.first_release.cite)}</div></div>
   <div><div class="k">题量</div><div class="v"><b>${esc(ds.sample_count.toLocaleString("en-US"))}</b> 题（公开集）${cite(ds.cite)}</div></div>
   <div><div class="k">主要指标</div><div class="v">${esc(m0.name)}（${esc(m0.direction)}）${cite(m0.cite)}</div></div>
-  <div><div class="k">状态</div><div class="v">${ctx.statusBadge}</div></div>
   <div class="wide"><div class="k">当前最高分（本站证据账本，厂商自报原值，按口径分列）</div><div class="v">${topHTML}<br><span class="pf2-note">口径不同的分数不能直接比较；完整列表见附录 C。</span></div></div>
 </div>`;
   const body = PROFILE_V2_LAYOUT.filter(d => !d.appendix);
