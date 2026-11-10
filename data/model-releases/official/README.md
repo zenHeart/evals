@@ -3287,3 +3287,103 @@ Meta 2026-11-06《Bringing Specialized Models to Muse and Meta AI》发布一批
 - 本批合并（PR #58）后，站点覆盖页 `/coverage/` 的「增量窗口」提示仍显示**上一批的旧窗口**（2026-10-21 至 2026-11-08）。该字段（`data/model-coverage.json` 的 `window_since` / `window_until`）**不由任何脚本自动写入**（`scan.mjs` 只写 `last_scan_at` 与候选；`checkpoint.mjs` 的窗口只输出到 stdout），因此必须由跑批方在每批显式落到账本里。
 - 已按本批 `checkpoint.mjs status` 的实际窗口改为 **2026-10-23 至 2026-11-09**（锚点 2026-11-06 回退 14 天重叠，`window_until` = 扫描日）。
 - 候选清单本身（**642 条**）与各厂商线索明细在本批已随 PR #58 上线，本条只修正窗口提示，不改动任何候选内容。
+## 第五十七批（2026-11-10 CST / 2026-11-09 UTC 增量窗口 2026-10-23 ~ 2026-11-09：Anthropic Claude Fable 5.2 / Mythos 5.2 建档 15 条 evidence + Meta Muse Ember 建档 11 条 evidence + 字节跳动 Seedream 5.5 建档 3 条 evidence）
+
+### 窗口结论
+
+- **窗口**：2026-10-23 ~ 2026-11-09（UTC）＝ 检查点锚点 `last_max_release_date=2026-11-06` 回退 14 天重叠。
+- **本批新建 3 个 release 档案、新增 29 条 evidence 行**（账本契约：只追加，不改既有文件）。
+- **与第五十六批的关系**：第五十六批（2026-11-09 CST）判定「17 家厂商确无新发布」时，Seedream 5.5 的官方 sitemap `lastmod` 为 `2026-11-09T08:38:12Z`、Anthropic 与 Meta 两条发布页日期均为 2026-11-09 —— **这三条发布落在第五十六批巡检时点之后或当日稍晚发布**，属真实漏检而非结论冲突。本批独立实取 17 家厂商官方入口后确认这三条为窗口内新发布。
+
+### 新建 Release（3 个）
+
+| 文件 | 厂商 | 发布日 | evidence | 数据来源与转录口径 |
+|---|---|---|---:|---|
+| `anthropic/claude-fable-5-2` | Anthropic | 2026-11-09 | 15 | 官方发布页唯一 DOM 对比表（`zKqBAG_table`），逐格取自 `zKqBAG_value` / `zKqBAG_qualifier` span，**DOM 逐值可机读，非位图读图**；14 个基准行 → 15 条（Terminal-Bench-Science 0.1 因同格括注 Mythos 5.2 值拆两行） |
+| `meta/muse-ember` | Meta | 2026-11-09 | 11 | 官方发布页内 DOM 结果表（`benchmark-table-module`），逐格取自单元格文本；10 个基准行 → 11 条（OSWorld 2.1 因同格印 partial / binary 双口径拆两行） |
+| `doubao/seedream-5-5` | 字节跳动 | 2026-11-09 | 3 | 官方技术博客正文散文明文数值；模型页 `seedreamPerformance` 字段为空数组，无结构化评测数据 |
+
+### Anthropic Claude Fable 5.2 / Claude Mythos 5.2 —— 同模型双护栏档
+
+- **发布日期证据链（三处互证）**：官方发布页可见文字「November 9, 2026」（页面**无** JSON-LD `datePublished`）；官方模型文档页 `platform.claude.com/docs/en/models/fable-5-2/overview` 首行「**Latest.** Released November 9, 2026.」；官方 `release-notes/overview` 有「### November 9, 2026」小节。
+- **同模型双档**：Fable 与 Mythos 为**同一底层模型**，差异仅在网络与生物安全护栏档。**CyScenarioBench / CVE Rediscovery / De novo binder design 三行的 Fable 5.2 列印的实为 Mythos 5.2 的值**（护栏更松故分数更高），已分别建档到对应 `model_id`，不与 Fable 值混记；Terminal-Bench-Science 0.1 的 75.3% (Mythos 5.2) 同理另立一条边。
+- **协议落差披露**：页面脚注明示「Scores for Fable 5.2, Fable 5.1, and Opus 5.5 show results with safeguards on unless otherwise noted」，而同表 Opus 5.5 在三行标注「without safeguards」——与本档开启护栏的 Fable 5.2 数值协议不同，不可直接横比。全部 15 条 `comparison_scope` 均标 `only_same_protocol`。
+- **脚注留存**：†「On CyScenarioBench, each lab's scores are based on unique tasks.」；‡「RoboDojo Sim shows the highest-available effort and was run internally.」（内部运行、外部无法复跑）。
+- **AA-Briefcase 双单位**：同格印 `66.1% rubric` 与 `1785 Elo` 两个单位，本档取 rubric 百分数入 evidence（`unit: percent` + `metric: rubric`），Elo 值与其余竞品 Elo 只记 notes。
+- **新建 benchmark id（5 个，未同步建实体）**：`frontier-swe-v2`、`cve-rediscovery`、`de-novo-binder-design`、`wandr`、`robo-doj` —— 官方未给出题目规模与判分细节，仅在 notes 标 `new-benchmark`。
+- 规格（官方文档页明示）：上下文 1M tokens、最大输出 128K tokens、输入 $8 / MTok、输出 $40 / MTok；fast mode $16 / $80；知识截止 2026 年 6 月。发布文另述「outputs up to 30% faster than Claude Fable 5.1」为相对提速描述，不建 evidence 行。
+
+### Meta Muse Ember —— 来源分层是本条的关键
+
+- **发布日期证据**：官方发布页 JSON-LD `datePublished` = 2026-11-09T00:00:00.000Z，与可见文字「November 9, 2026」一致。
+- **来源分层披露（11 条 evidence 分两类，不可混作同一口径）**：
+  - **第三方评测机构口径**（页面 figcaption 印「Artificial Analysis | November 9, 2026. Strict pass@1.」）→ `attribution_type: third_party_reported`：AutomationBench-AA、Coding Agent Index-AA、FrontierCode 2.0-AA、GDP.pdf-AA、OSWorld 2.1、Artificial Analysis Index（6 行 7 条）。
+  - **Meta 内部评测口径**（figcaption 分别印「Meta internal evaluation. Partial-credit reward.」「Internal composite index of personal and knowledge work.」「Meta internal evaluation. Linux subset.」「Meta internal evaluation. With tools.」）→ `attribution_type: vendor_reported`：Agents' Last Exam、Personal Superintelligence Index、Terminal-Bench 4.0、PerceptionBench（4 行 4 条）。
+- **Terminal-Bench 4.0 为 Linux 子集口径**（figcaption 明示），且 harness 为页面明示的 `best published harness`，已写入 `protocol.harness`。
+- **单位口径**：页面多行印裸数（46 / 31 / 36 / 22.8 / 37.8 / 40.9 / 27.2 / 61.6 / 46.8 / 69.5 / 33.8 / 80.6 等）无百分号，`display` 按页面原样记录；index 类（46、36）`unit: index`，其余 `unit: percent`。
+- **同表竞品领先关系不可误读**：FrontierCode 2.0-AA 行中 Haiku 5.5 的 34.9 被页面标为 Best result（即本模型 27.2 **低于**同表 Haiku 值）；GDP.pdf-AA 行中 GPT-6 Luna 22.8 与本模型并列 Best result —— 均已在 notes 注明。
+- 规格：1M 上下文 / 最多 512K 输出 / 输入 $0.10、输出 $0.50 每百万 tokens（Meta Model API）。
+
+### 字节跳动 Seedream 5.5 —— 散文可机读值 vs 图表值
+
+- **发布日期证据**：官方技术博客页面可见文字「日期 2026-11-09」（英文页同位印「Date 2026-11-09」）；官方 sitemap 该条目 `lastmod` = 2026-11-09T08:38:12.000Z。
+- **只收 3 条**：GSB 真实感图生图 `+55.62%`、严重文字崩坏率 `0.4%`、轻微文字崩坏率 `1.7%`。模型页 `seedreamPerformance` 为空数组，无结构化评测数据。
+- **未转录**：四项 GSB 对比中的其余三项、可用率 / MOS 图、文字渲染横向对比柱状图**均为图片**，不可从 DOM 机读 → 按 §12.2 不建行、不臆测数值。
+- **评测设置（发布文明示）**：依托 **MagicArena** 平台，覆盖电商、营销、影视、游戏、办公与服装设计六类场景，由图像生成领域资深评测专家评分；GSB 专项覆盖文生图与图生图两种任务。
+- **不建行的相对描述**：「支持多达 100 轮持续创作」（能力上限）、「影视与办公两个场景的可用率均达到上一版本的两倍以上」（相对倍数）。
+- **两个指标方向相反**：崩坏率**越低越好**，已在 `metric` 字段注明「严重 / 轻微」以免与常规 percent 行混读。
+- **新建 benchmark id（2 个，未同步建实体）**：`gsb-preference`（GSB 偏好对比，正值代表优于对照）、`text-corruption-rate`（文字崩坏率）。
+- 规格限制：发布文未给参数量 / 上下文 / API 定价（`params` / `context_window` / `pricing` 一律 null）；未见 API 模型名字符串（火山方舟模型 ID 列表中无 5.5），model id 由发布标题派生。
+
+### 逐家巡检结论（窗口 2026-10-23 ~ 2026-11-09，17 家全部实取）
+
+- **OpenAI**：官方 RSS `https://openai.com/news/rss.xml` 全量解析（`lastBuildDate` = 2026-11-09），窗口内条目逐条打印标题判读 → 均为已建档发布（GPT-6.1 Terra / GPT-Image-2.6 / GPT-6 Cyber）、基准发布（BioBasicsBench / LifeVal）、客户故事、合作、人事或政策。`openai.com/index/*` 单页 403 Cloudflare，无新发布需读分。
+- **Anthropic**：`platform.claude.com/docs/en/release-notes/overview.md` + `models/overview.md` + 发布页 → **新发布 Fable 5.2 / Mythos 5.2**（本批建档）；newsroom 其余窗口条目为管理功能与产品更新（消息线程、水印、fast mode 弃用等），非模型发布。
+- **Google / DeepMind**：`deepmind.google/blog/rss.xml`（100 条，`lastBuildDate` = 2026-11-05）、`blog.google` 三条 RSS、`ai.google.dev/gemini-api/docs/changelog`、`vertex-ai` release notes（页面 Last updated 2026-11-09）→ 窗口内仅 Gemini Omni 1.2 Flash（11-05，已建档）、Gemini 4 Carbon（10-28，已建档）、Genie 4（10-27，已建档）；11-09 的 Maps Platform in AI Studio 为工具发布。**DeepMind 侧 11-06 ~ 11-09 无条目**（feed 截至 11-05，已由 Gemini API changelog 与 blog.google 11-09 条目交叉补齐）。
+- **xAI**：`docs.x.ai/docs/release-notes`（Last updated 2026-11-02，最新条目为 11-02 图像质量项退役）、`docs.x.ai/docs/models` 模型总表、`docs.x.ai/sitemap.xml` lastmod 全扫 → **无新模型发布**；`x.ai/news` 与 `x.ai/sitemap.xml` 均 403 Cloudflare、`x.ai/news/rss.xml` 404 → 官网新闻索引本轮**不可读**（单页 `x.ai/news/<slug>` 可读并可取 JSON-LD `datePublished`，逐条探测均在窗口外）。
+- **Meta**：`research.meta.ai/blog` 文章卡片列表（服务端渲染，含 `dateTime`）+ `ai.meta.com/blog` → **新发布 Muse Ember**（本批建档）；其余为客户故事、研究文章与政策文。HF `meta-llama` 最新仓 2025-04-28 → 窗口内无 Llama 开源权重。
+- **Mistral**：`mistral.ai/rss.xml` 全量 + `mistral.ai/news` 卡片列表 → 窗口内仅 11-05 平台产品文与 10-29 Le Chonk（已建档）；HF `mistralai` 官方仓最新 2026-10-15（且为已建档模型的量化衍生）→ **无新发布**。
+- **Kimi**：`www.kimi.com/en/blog/` 全部卡片日期逐条打印 + `kimi-code/whats-new.html` changelog → 最新为 10-24 Kimi K3.1 Pro（已建档）；HF `moonshotai` 的 `Kimi-K3.1-Pro` 仓 `createdAt` 2026-11-02 是**权重上传时间戳**而非新发布，不重复建档。
+- **DeepSeek**：`api-docs.deepseek.com/updates` 变更日志（最新条目 Date: 2026-10-17）→ **窗口内无新发布**；`/zh-cn/news` 与 `/news/rss.xml` 均重定向到文档首页（已确认不可用）。
+- **GLM / Z.ai**：`docs.z.ai/release-notes/new-released` 权威发布列表（最新 2026-08-26 GLM-5.3-Flash）+ `docs.z.ai/llms.txt` + `zhipuai.cn` + `docs.bigmodel.cn` 中文总表 → **窗口内无新发布**；`z.ai/blog` 404（nginx）已确认不可用。GLM-5-Turbo（2026-03-15）与 GLM-5V-Turbo（2026-03-19）官方站有、账本无，属**存量缺口**，已登记待后续存量审计批次。
+- **MiniMax**：`platform.minimax.io/docs/release-notes/models`（唯一带真实日期的渠道，最新 Oct. 19, 2026 MiniMax M3.1 Flash）+ `agent.minimax.io/tools` → **窗口内无新发布**；`H3 Image` 页面原文为「upcoming」预告，无发布日期，非发布。
+- **Qwen**：HF `Qwen` org（最新 2026-10-09 Qwen-Image-2.1-Turbo，已建档）+ 官方研究索引 API `qwen.ai/api/v2/article/retrieval?type=qwen_ai`（最新 2026-09-20）+ `QwenLM` GitHub org 各仓 README changelog → **窗口内无新发布**；`qwen.ai/blog` 为客户端渲染、sitemap 返回 SPA HTML，均不可用。
+- **字节跳动 / Seed**：`seed.bytedance.com/sitemap.xml` 全量 + 官方技术博客 + `seed.bytedance.com/en/models` → **新发布 Seedream 5.5**（本批建档）；HF `ByteDance-Seed` 窗口内另两个新仓（`Qwen3-30B-A3B-MoE-SAE` 11-05、`Cross-Layer-TopK-CLT` 11-06）均为**既有 Qwen3 基座上的可解释性研究件**，非模型发布，按「既有模型的衍生件不另建 release」跳过（与第十二批 Qwen-Drive 同口径）。
+- **小米 MiMo**：`mimo.xiaomi.com` 首页文章卡片 + 各 blog 页内印刷日期 → 最新为 09-27「Diagnosing and Mitigating Tool-Call Repetition in MiMo-V2.6」（既有模型的研究复盘文，非发布）；`mimo-v2-6-material-research` 页 200 但**无日期字符串**且属客户故事，不影响窗口结论；无 sitemap / feed。HF `XiaomiMiMo` 最新 2026-09-27 → **窗口内无新发布**。
+- **腾讯混元**：`hy.tencent.com` 与 `hy.tencent.ai` 全部路径均为 **SPA 空壳**（6.5–6.9 KB，无日期、无正文、无可发现的 JSON API）→ 改用官方 GitHub org `Tencent-Hunyuan` + HF `tencent` 巡检，见下节。
+- **StepFun**：`platform.stepfun.com/docs/zh/guides/models.md` 模型总表 + `llms.txt` + HF `stepfun-ai`（最新 2026-10-14，且为已建档 Step 5 Preview 的量化衍生）+ GitHub org → **窗口内无新发布**；`stepfun.ai/research` 307 重定向到 `platform.stepfun.ai/`（allowlist 外），`static.stepfun.com/blog/` 返回空体，`www.stepfun.com/blog` 为 1,954 B 空壳 → 官网研究页本轮**不可读**。
+- **Microsoft MAI**：`microsoft.ai/blog` + `new-sitemap.xml`（38 URL）+ `model-sitemap.xml`（7 URL）+ `models` 总表 + HF `microsoft` + GitHub org → 窗口内模型页仅 `mai-cyber-1-1-flash` / `mai-image-2-7` / `mai-transcribe-2` / `mai-voice-2-1` / `Mage-VL-Cowork`（均已建档）；**sitemap `lastmod` 不等于发布日**——逐页取 JSON-LD `datePublished` 后，11-09 lastmod 的两篇 Copilot Health 实为 **2026-03** 的产品文章，`building-medical-superintelligence` 为 10-22。→ **窗口内无新发布**。
+- **Particle AI**：`particle.ai/blog` 索引（**仅 1 篇** `introducing-particle-1`，即已建档的 10-28 发布）+ `docs.particle.ai/models` 目录（`particle-1` 为自家模型，另两条 DeepSeek / GLM 为第三方托管模型）+ 无 HF / GitHub org → **窗口内无新发布**。
+
+### 腾讯 Hyra 线 5 条发现的处置（登记候选，不建档，留人工裁定）
+
+- **发现**：官方 `Tencent-Hunyuan` GitHub org 的 `Hyra-results` 仓 README「## News」小节逐条打印日期，窗口内确有 5 条带权重与推理代码的模型发布：**HyPDE**（2026-11-04，323M 参 2D PDE 基础模型）、**HyCell**（2026-11-02，16.1M 单细胞嵌入模型）、**HyFF**（2026-11-02，五个机器学习力场）、**HyInv**（2026-11-02，1.96M 蛋白质逆折叠 GNN）、**HyPLM-Flash**（2026-11-02，650M 蛋白质语言模型）。日期另有 GitHub Release `published_at`（如 `hyplm-flash-weights` 2026-11-02T08:50:59Z、`hypde-weights` 2026-11-05T06:45:47Z）与 commit 日期互证。
+- **处置**：按双轨发现纪律**登记为候选**（`tencent-hypde` / `tencent-hycell` / `tencent-hyff` / `tencent-hyinv` / `tencent-hyplm-flash`，`classification: unknown`、`release_id: null`、写明 `exclusion_reason`），**本批不建 release 档案**。
+- **理由**：① 属 AI4Science 科学计算线（偏微分方程模拟 / 单细胞嵌入 / 分子力场 / 蛋白质逆折叠 / 蛋白质语言模型），不是通用 LLM 发布；② 官方**未印可机读的评测百分数**——HyPDE 为 VRMSE 与「9 of 13 数据集」计数、HyCell 为 overall score 0.735、HyFF 为 meV/Å 力误差、HyInv 的分数**只在技术报告 PDF 内**（§12.5：OCR/视觉辅助不可作唯一证据）、HyPLM-Flash 只有吞吐表，与本账本的 LLM 评测百分数口径不同；③ 是否把该线纳入收录范围属**范围裁定**，按 Issue #357 的非目标须升级人工决定，本批不自行扩范围。
+- **另记**：`hy.tencent.ai/research/hyra2`（Hyra 2.0 博客，11-02）是**研究智能体工作流的博客**，非模型发布；`hyqec`（11-03）是量子码证明器 + 独立证书检查器，无模型。
+
+### 门禁（本批全绿）
+
+| 门禁 | 结果 |
+|---|---|
+| `node scripts/reconcile-coverage.mjs` | 通过，且幂等（连续两次运行 diff 为空） |
+| `node --test tests/*.test.mjs` | **66/66 通过** |
+| `node scripts/validate-data.mjs` | **PASS**（benchmarks 507 / releases 223 official 209 / evidence edges 3614） |
+| `npm run sync:skills:check` | 通过（技能镜像零漂移） |
+| `npm run build`（含 `build:epub:official` + `build:web` + `validate:site`） | 全链通过（EPUB 32 章 / 507 实体页 / 171 auto-evidence 页 / 770 URL / validate-site ✓） |
+
+### 本批产出汇总
+
+| 指标 | 数值 |
+|---|---:|
+| 新建 release 文件 | 3（official 206 → 209） |
+| 新增 evidence 行 | 29（全部 `status: verified`） |
+| 其中 `vendor_reported` | 22（Anthropic 15 + Meta 内部口径 4 + Seedream 3） |
+| 其中 `third_party_reported` | 7（Meta 表内 Artificial Analysis 口径） |
+| 新铸 benchmark id（未同步建实体） | 7（frontier-swe-v2 / cve-rediscovery / de-novo-binder-design / wandr / robo-doj / gsb-preference / text-corruption-rate） |
+| 新建归档目录 | 3（`models/2026-11-09-claude-fable-5-2` / `models/2026-11-09-muse-ember` / `models/2026-11-09-seedream-5-5`，各含 page.html + index.md + manifest.json） |
+| 新登记候选 | 5（腾讯 Hyra 线，`release_id: null` + `exclusion_reason`） |
+| 覆盖候选总数 | 648 → 653 |
+| 窗口内 general/vertical 未决候选 | **0** |
+
+> 按 zenHeart/workflow#357 的验收要求，本批**不自动合并**，交人工 review。
