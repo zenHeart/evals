@@ -3387,3 +3387,91 @@ Meta 2026-11-06《Bringing Specialized Models to Muse and Meta AI》发布一批
 | 窗口内 general/vertical 未决候选 | **0** |
 
 > 按 zenHeart/workflow#357 的验收要求，本批**不自动合并**，交人工 review。
+
+## 第五十八批（2026-11-10 CST / 2026-11-10 UTC 增量窗口 2026-10-26 ~ 2026-11-10：腾讯混元 Hy4 正式版建档 54 条 evidence）
+
+### 窗口结论
+
+- **窗口**：2026-10-26 ~ 2026-11-10（UTC）＝ 检查点锚点 `last_max_release_date=2026-11-09` 回退 14 天重叠。
+- **本批新建 1 个 release 档案、新增 54 条 evidence 行**（账本契约：只追加，不改既有文件）。
+- **与第五十七批的关系（重要，涉上一批的真实漏检）**：Hy4 正式版发布日为 **2026-11-04**，**落在第五十七批的窗口（2026-10-23 ~ 2026-11-09）之内**，但那一批判定「腾讯混元 `hy.tencent.com` 全站只回 SPA 骨架屏 → 无官方发布文可取」，改走 HF `tencent` 组织 + `Tencent-Hunyuan` GitHub org 查漏，因而**漏掉了 Hy4**——这两条查漏通道只能看到权重仓与研究件，看不到博客正文里的评测分值。本批定位到混元官网的**官方数据接口**（`api.hunyuan.tencent.com`）后成功取到发布文正文，Hy4 补建档。该绕行已写回 `discovery-channels.md` 的腾讯行与「已知抓取障碍」表，避免下一批重蹈。
+
+### 新建 Release（1 个）
+
+| 文件 | 厂商 | 发布日 | evidence | 数据来源与转录口径 |
+|---|---|---|---:|---|
+| `tencent/hy4` | 腾讯混元 | 2026-11-04 | 54 | 官方发布文正文（官方接口 `publicDetail` 取回的 43,508 字符 markdown）：**20 条正文明文绝对值 → verified**；**34 条附录配图行 → pending + not_extracted**（数值只进 notes） |
+
+### 腾讯混元 Hy4 —— 日期证据链与两类证据的分层
+
+- **发布日期四源互证**：发布文封面卡 `date = "2026年11月4日"`；官方接口返回 `displayPublishTime=1793721600`（2026-11-04T00:00:00Z）与 `publishedAt=2026-11-04T03:21:40Z`；腾讯官网通稿落款「2026年11月04日」；腾讯云技术百科概述「腾讯混元于 2026 年 11 月 4 日正式发布的最新一代大语言模型」。**注意 `hy.tencent.com` 骨架屏里的 `2026/11/6` 是站点 build-time，不是发布日**。
+- **取数路径（此前批次从未走通）**：发布页是 SPA，静态 GET 只回 6,893 B 骨架屏；正文由官方接口提供——`POST https://api.hunyuan.tencent.com/api/blog/publicList`（`{"pageNum":1,"pageSize":30}`）取文章列表数字 id，再 `POST .../api/blog/publicDetail`（`{"id":100129}`）取 `data.detail.content`。**detail 接口只认数字 id**：`{"slug":"hy4"}` → 404 空体，`{"id":"hy4"}` → `{"code":1,"msg":"后台服务内部错误"}`。
+- **证据分层（两类不可混作同一口径）**：
+  - **① 正文明文绝对值 20 条（`evidence_type: text`，`status: verified`）**：腾讯金融科技 FiT 金融众测 3.04/4、混元自建事实性测试 2 项（幻觉率 5.45%、猜测错误率 5.6%）、WorkBuddy 2 项（平均效果 83.18 分、通过率 96.15%）、元宝 72.53、和平精英 AI NPC 2 项（总分 2.91、情绪价值 2.96）、王者荣耀 3 行（配置准确率 97.28%、Agent 校验修复后 99.32%、代码根因 73.8%）、QQ 93.10%、微信读书 87.69、Hy-BioExperimentBench 30.4/100 —— 共 14 条 `vendor_reported`（腾讯系自测）；讯兔科技 IRAB 61.63、进门数据查询 75.4、财搭子 3 行（4.27 / 4.43 / 4.03）、Manus 任务完成率「接近 97%」—— 共 6 条 `third_party_reported`（客户自建评测，由发布文以客户证言形式转述）。
+  - **② 附录「模型得分」配图 34 行（`evidence_type: figure`，`status: pending`，`score_status: not_extracted`，`value: null`）**：附录只渲染为官方位图（`models/2026-11-04-hy4/images/bench-hy4-appendix.jpg`，1965×3756）。**按纪律不把视觉转写值自动翻 verified**——转写值只进 notes，`locator.figure` 指向归档原图。本批已按原生分辨率切条带逐行复核 34 行，并确认列序（`Hy4 preview` / **`Hy4`（蓝框高亮，第 3 个数值列）** / GLM-5.3 / DeepSeek-V4.1-Flash-1017 / Kimi K3.1 Pro / GPT-6.1 Sol / Claude Opus 5.5），且与 `images/bench1-hy4-main.jpg` 柱状图交叉互证（3DArena-Modeling 确认为 **37.1** 而非 371）。**升级路径与 `tencent/hy4-preview` 一致**：需另起一轮「重读归档图片」专项批次才能翻 verified，本批不自动翻。
+- **只给相对差值的表述不单独建行**，只进 notes：GameDev +19.1%、GameLogic +9.8%、企业微信大圆 +13.5%/+12.7%/+8.5%、腾讯新闻 +28%/+36%、ima +9.7%/+3.4%/+1.2%、元宝多轮记忆 +6.67 分 / 写作多样性 +10.89 分 / 多模态 Agent +36.8% / 多模态问答 +15.8%、QQ 三场景 +6.66pp/+4.69pp/+2.52pp、微信读书 +22.2%/+50.7%/+3.0%/+6.6%、IRAB +12.03 分、训练吞吐 +20.1%。
+- **规格与定价来源分层**：发布文本身**未印**参数量、上下文与定价表（只印了定价表的 DOM 表与「首次引入视觉 / 电脑操作」）；**770B 总参 / 49B 激活 MoE、1M tokens 上下文（TokenHub 侧约 960K 输入）、定价 输入 6 元 / 输出 18 元 / 缓存命中 0.3 元每百万 tokens** 均取自**腾讯云技术百科官方规格页**（`cloud.tencent.com/developer/techpedia/2748`，页面修改于 2026-11-05），并已登记为 `primary_sources` 的第三条。
+- **量纲混杂已在 `unit` / `metric` 字段区分**：4 分制（金融众测）、5 分制（财搭子）、3 分制（和平精英）、0–100（Hy-BioExperimentBench）、百分制（准确率 / 通过率 / 满意率）；跨行不可直接比较。
+- **官方预告不建档**：Hy4 flash「计划近期发布」、模型权重开源与系统卡片均为官方预告，发布文未给评测值 → 本批不建 release，后续增量入库。
+- **新铸 benchmark id 28 个**（未同步建实体，notes 标 `new-benchmark`）：正文侧 `tencent-finance-crowdtest`、`tencent-factuality-self-test`、`workbuddy-comprehensive`、`irab`、`jinmen-research-agent`、`caidazi-harness`、`manus-internal-eval`、`yuanbao-internal-eval`、`pubgm-ai-npc`、`honor-of-kings-config-accuracy`、`honor-of-kings-root-cause`、`qq-xiaoq-satisfaction`、`weread-comprehensive`、`hy-bioexperimentbench`；附录侧 `hy-backend`、`webcraftbench`、`gamefix-bench`、`3darena-modeling`、`goal2repo`、`autocatbench`、`agents-first-exam-if`、`tag-bench`、`pptgen-bench`、`hy-frontiermath-t5`、`proofbench`、`foundation-model-bench`、`tenuretrail`、`buddyvqa-atlas`。
+- **复用既有实体 19 个**：deepswe、swe-marathon、program-bench、terminalbench、frontier-code、hy-companybench、hy-swe-max、hy-lifesearch、hy-browsecomp-pro2、apex-agents、agents-last-exam、automationbench、e-bench、hlehle、terminal-bench-science、posttrain-bench、osworld、mmmu-pro、zerobench。**版本差异按「拆 variant 行」处理**（如 `terminalbench` 4.0、`hy-swe-max` Verified 2.0、`hy-backend` 3.0、`buddyvqa-atlas` with/without tools 两行）。
+- **一处需人工留意的归并判断**：附录行名「Hy-BrowseComp 2.0」与既有实体 `hy-browsecomp-pro2`（Hy-BrowseComp-Pro2）同族，`hy4-preview` 档的同族行记于该 id（preview 56.1 → 正式版 59.9），本批沿用该 id 并在 notes 写明行名映射；若人工认定二者是不同基准，改 id 只需改本条。
+
+### 逐家巡检结论（窗口 2026-10-26 ~ 2026-11-10，17 家全部实取）
+
+- **OpenAI**：官方 RSS `https://openai.com/news/rss.xml` 全量解析，窗口内 69 条**逐条打印标题**判读 → 全为客户故事 / 合作 / 平台与政策类，无模型发布。
+- **Anthropic**：`platform.claude.com/docs/en/release-notes/overview.md` → 窗口内最新仍是 11-09 的 Fable 5.2 / Mythos 5.2（第五十七批已建档），无新增。
+- **Google / DeepMind**：`deepmind.google/blog/rss.xml`（100 条）+ `blog.google` 三条 RSS + Gemini API changelog → 最新 11-05（Gemini Omni 1.2 Flash 等已建档），窗口内无新发布。
+- **Mistral**：`mistral.ai/rss.xml` + `mistral.ai/news` 卡片 → 最新 11-05 平台产品文，非模型发布；HF `mistralai` 无新仓。
+- **Kimi**：`www.kimi.com/en/blog/` 全部卡片日期 + `kimi-code/whats-new.html` → 最新 10-24 Kimi K3.1 Pro（已建档）；HF `moonshotai` 窗口内新仓为既有模型的权重上传，非新发布。
+- **DeepSeek**：`api-docs.deepseek.com/updates` 变更日志最新 2026-10-17 → 窗口内无新发布。
+- **GLM / Z.ai**：`docs.z.ai/release-notes/new-released` 最新 2026-08-26（GLM-5.3-Flash）+ `docs.bigmodel.cn` 最新 2026-10-10 → 窗口内无新发布；`z.ai/blog` 仍 404。
+- **MiniMax**：`platform.minimax.io/docs/release-notes/models` 最新 Oct. 19, 2026 → 窗口内无新发布。
+- **Qwen**：官方研究索引 API `qwen.ai/api/v2/article/retrieval?type=qwen_ai` 最新 2026-09-20 + HF `Qwen` org + `QwenLM` GitHub org → 窗口内无新发布。
+- **xAI**：`docs.x.ai` release notes 与模型总表最新 11-02 → 窗口内无新发布；`x.ai/news` 与 `x.ai/sitemap.xml` 仍 403。
+- **Microsoft MAI**：`microsoft.ai` sitemap 全扫，窗口内仅两篇 Copilot Health 产品文（`lastmod` 11-09 但正文日期为 2026-03，非模型发布）→ 窗口内无新发布。
+- **Meta**：`research.meta.ai/blog` 最新 11-09 Muse Ember（第五十七批已建档）→ 无新增。
+- **字节跳动 / Seed**：`seed.bytedance.com/sitemap.xml` 最新 11-09 Seedream 5.5（已建档）；HF `ByteDance-Seed` 窗口内新仓仍为既有 Qwen3 基座上的可解释性研究件 → 无新发布。
+- **小米 MiMo**：`mimo.xiaomi.com` 首页 + blog 页内印刷日期 → 最新 09-27 研究复盘文；HF `XiaomiMiMo` 最新 2026-09-27 → 窗口内无新发布。
+- **腾讯混元**：**新发布 Hy4 正式版（2026-11-04，本批建档）**——经官方接口取到发布文正文；另 `hy.tencent.com` / `hunyuan.tencent.com` 静态 GET 仍只回同一份 6,893 B 骨架屏（内容哈希未变）。
+- **StepFun**：`platform.stepfun.com/docs/zh/guides/models.md` + HF `stepfun-ai` → 窗口内无新发布。
+- **Particle AI**：`particle.ai/blog` 仍仅 1 篇（已建档的 10-28 发布）+ `docs.particle.ai/models` → 窗口内无新发布。
+- **HF 官方组织查漏**：`tencent` / `microsoft` / `moonshotai` / `ByteDance-Seed` 窗口内新仓均已建档或为研究权重件；其余 org 无新仓。
+
+### 排除清单（窗口内发现但按契约不建档）
+
+| 候选 | 处置理由 |
+|---|---|
+| `openai/gpt-6-1-terra-pro` | 窗口外旧模型的衍生条目，无独立发布证据 |
+| `google/gemini-omni-1.1-flash` | 窗口外旧模型，不属本增量窗口 |
+| `z-ai/glm-5.3-flashx-legal` | 已由 `glm/glm-legal` 建档，不重复建档 |
+| `liquid/ricursive` | 无官方一级来源 |
+| 腾讯 Hyra 线 5 条（HyPDE / HyCell / HyFF / HyInv / HyPLM-Flash） | 第五十七批已登记候选（`release_id: null` + `exclusion_reason`），属 AI4Science 科学计算线且官方未印可机读评测百分数，范围裁定仍待人工决定，本批维持登记不建档 |
+
+### 待人工裁定（本批未自行扩范围）
+
+- **Thinking Machines Lab（Inkling 2 Small，2026-11-05）**：官方发布页 `https://thinkingmachines.ai/news/inkling-2-small/` 已实取（740,935 B，8 张 DOM 真表，数值逐格可机读），取证完整（AA Intelligence Index 31、594B 总参 / 17B 激活 MoE、8 张评测表的全部数值均已提取）。但该厂商**不在 `data/vendors.json` 的 17 家之内**，接入属「新增厂商」范围裁定，按纪律需人工决定后再建档，故本批**不建档、不写入账本**。接入时需完成的六步：注册 `data/vendors.json`（id `thinking-machines`）→ `scripts/fetch-logos.mjs` 的 `DOMAINS` 加 `thinkingmachines.ai` → 跑完 fetch-logos 后 `git checkout -- assets/logos/` 还原其余 16 家被污染的 logo、只保留新增那一个真实彩色 brand mark → `scripts/vendor-logos.mjs` 的 `LOGO_EXT` 登记扩展名 → `discovery-channels.md` Tier 2 加渠道行 → `data/model-coverage.json` 的 `vendors[]` 同步 vendor_id / allowed_hosts / entries。
+
+### 门禁（本批全绿）
+
+| 门禁 | 结果 |
+|---|---|
+| `node scripts/reconcile-coverage.mjs` | 通过，且幂等（连续两次运行 diff 为空）；窗口内 general/vertical 未决候选 **0** |
+| `node --test tests/*.test.mjs` | **通过** |
+| `node scripts/validate-data.mjs` | **PASS**（taxonomy 9 类 / vendors 17 / benchmarks 507 / releases 224（official 210）/ evidence edges 3668） |
+| `npm run sync:skills:check` | 通过（技能镜像零漂移） |
+| `npm run build`（含 `build:epub:official` + `build:web` + `validate:site`） | 全链通过 |
+
+### 本批产出汇总
+
+| 指标 | 数值 |
+|---|---:|
+| 新建 release 文件 | 1（official 209 → 210） |
+| 新增 evidence 行 | 54（verified 20 + pending 34） |
+| 其中 `vendor_reported` | 48（正文明文 14 + 附录位图 34） |
+| 其中 `third_party_reported` | 6（全部为正文明文；附录位图 34 行均为厂商自报） |
+| 新铸 benchmark id（未同步建实体） | 28 |
+| 复用既有 benchmark 实体 | 19 |
+| 新建归档目录 | 1（`models/2026-11-04-hy4`：page-source.md + tencent-pr.html + images/ 三张原图 + index.md + manifest.json） |
+| 覆盖候选总数 | 653 → 654 |
+| 窗口内 general/vertical 未决候选 | **0** |
