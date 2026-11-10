@@ -282,7 +282,7 @@ let profiled = 0;
 for (const [file, b] of benchData) {
   if (b.profile !== undefined) {
     profiled++;
-    for (const m of validateProfile(b.profile, `benchmarks/${b.id}.json`)) err(file, m);
+    for (const m of validateProfile(b.profile, `benchmarks/${b.id}.json`, b)) err(file, m);
     if (backlog.has(b.id)) err(backlogFile, `${b.id} 已按模板建档，请从 backlog 中移除`);
   } else if (!backlog.has(b.id)) {
     err(file, `新建或未登记的 benchmark 实体必须带 profile（${PROFILE_TEMPLATE}）；写不出有来源的档案就不要建实体，让证据兜底页先顶着`);

@@ -97,6 +97,8 @@ export function loadBenchData() {
         lastVerifiedAt: b.last_verified_at ?? null,
         fullName: b.full_name ?? null,
         profile: b.profile ?? null,
+        // v2 档案的正文就是实体顶层字段（measures / limitations / versions …），渲染时需要原始实体
+        entity: b.profile?.template === "benchmark-profile/v2" ? b : null,
         url: (sources.find(s => s.kind === "site") || sources[0] || {}).url ?? null,
         paper: (sources.find(s => s.kind === "paper") || {}).url ?? null,
         // evidence 视图在下方统一填充

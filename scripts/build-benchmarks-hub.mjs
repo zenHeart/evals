@@ -23,7 +23,8 @@ import { SITE, SHELL_CSS, shellHead, shellTopbar, shellFooter, SHELL_JS } from "
 import { loadBenchData } from "./load-data.mjs";
 import { benchmarkScopeHTML, evidenceScoreLabel } from "./model-ui.mjs";
 import { vendorMark, LOGO_EXT } from "./vendor-logos.mjs";
-import { renderProfile, profileNotice, PROFILE_CSS } from "./benchmark-profile-page.mjs";
+import { renderProfile, renderProfileV2, profileNotice, PROFILE_CSS, PROFILE_V2_CSS } from "./benchmark-profile-page.mjs";
+import { PROFILE_TEMPLATE_V2 } from "./benchmark-profile.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = join(__dirname, "..");
@@ -297,6 +298,7 @@ function profiledDetailPage(db, b, cat, related, adoptBlock, rels, cite) {
       const m = r.model_specs.find(x => x.id === e.model_id);
       ledgerRows.push({
         date: r.release_date, vendor: r.vendor_label, model: (m?.name || r.models[0] || r.release_title) + (e.variant ? ` · ${e.variant}` : ""),
+        modelName: m?.name || r.models[0] || r.release_title, variant: e.variant || null,
         modelHref: `../../models/${r.id}/`, score: evidenceScoreLabel(e), value: e.value, status: e.status, url: e.url,
         protocol: [e.harness, e.effort].filter(Boolean).join(" · "),
         attr: ({ vendor_reported: "厂商自报", third_party_reported: "第三方测得", benchmark_owner_reported: "评测方公布", site_reproduced: "本站复现", comparison_cited: "对比引用" })[e.attribution] || "发布原文",
@@ -304,6 +306,7 @@ function profiledDetailPage(db, b, cat, related, adoptBlock, rels, cite) {
     }
   }
   ledgerRows.sort((x, y) => (y.value ?? -Infinity) - (x.value ?? -Infinity) || (y.date || "").localeCompare(x.date || ""));
+  if (b.profile.template === PROFILE_TEMPLATE_V2) return profiledDetailPageV2(db, b, cat, related, adoptBlock, cite, ledgerRows);
   const p = renderProfile(b, b.profile, { ledgerRows });
   const ov = b.profile.sections.overview;
   const title = `${b.name} · 评测档案：测什么、怎么评、分数怎么读 · 评估大全`;
@@ -333,6 +336,39 @@ ${shellTopbar("../../", "benchmarks")}
   ${related.length ? `<h2 class="detail-sec" id="related">相关评测（同类别）</h2>
   <div class="related">${related.map(r => `<a href="../${esc(r.id)}/"><span class="r-name">${esc(r.name)}</span><br><span style="color:var(--graphite)">${esc(truncate(r.tests, 40))}</span></a>`).join("")}</div>` : ""}
   ${p.refs}
+  <p class="refs" style="margin-top:14px;">发现事实或来源有误？欢迎在 <a href="https://github.com/zenHeart/evals" target="_blank" rel="noopener">GitHub</a> 提 Issue。</p>
+</main>
+<footer class="site-foot"><a href="${SITE}">evals.zenheart.site</a> · MIT License · ZenHeart</footer>
+${SHELL_JS}
+</body>
+</html>`;
+}
+
+/** benchmark-profile/v2：新手友好版式（头部卡 → 一眼看懂 → 评估内容 → 如何测量 → 怎么读 → 可信度 → 背景 → 附录） */
+function profiledDetailPageV2(db, b, cat, related, adoptBlock, cite, ledgerRows) {
+  const ent = b.entity;
+  const title = `${b.name} · 评测档案：是什么、测什么、怎么读分数 · 评估大全`;
+  const desc = truncate(`${b.name}：${ent.summary}`, 150);
+  const uniq = new Set(cite.map(a => a.release_id).filter(Boolean)).size;
+  const body = renderProfileV2(b, ent, {
+    ledgerRows,
+    statusBadge: statusBadge(b.status),
+    comparabilityHTML: `<div class="callout warn"><b>可比性提示：</b>同一评测的分数是「实验配置」的产物：评测版本、执行框架（harness / 脚手架）、推理档位、工具、采样参数、运行次数或聚合方式任何一项不同，数字就不能直接横向比较。</div>${benchmarkScopeHTML(b.id, db.useCase)}`,
+    adoptionHTML: `<p class="refs">共 ${uniq} 场模型发布引用（${cite.length} 项分值） · 按发布时间倒序${db.updated ? ` · 数据更新于 ${esc(db.updated)}` : ""}</p>${adoptBlock}`,
+    relatedHTML: related.length ? `<div class="related">${related.map(r => `<a href="../${esc(r.id)}/"><span class="r-name">${esc(r.name)}</span><br><span style="color:var(--graphite)">${esc(truncate(r.tests, 40))}</span></a>`).join("")}</div>` : "",
+  });
+  return `${shellHead({ rel: "../../", title, desc, path: `benchmarks/${b.id}/`, extra: `<style>${SHELL_CSS}${PAGE_CSS}${EVT_CSS}${TIMELINE_CSS}${PROFILE_CSS}${PROFILE_V2_CSS}</style>` })}
+</head>
+<body>
+${shellTopbar("../../", "benchmarks")}
+<main id="main-content" class="detail-main bm-container">
+  <nav class="breadcrumb"><a href="../../index.html">首页</a> / <a href="../">评估大全</a> / <b>${esc(b.name)}</b></nav>
+  <div class="detail-head">
+    <h1>${esc(b.name)}</h1>
+    ${statusBadge(b.status)}
+    <span class="cat-tag" style="background:color-mix(in srgb, ${esc(cat.color)} 15%, transparent); color:${esc(cat.color)}">${esc(cat.name)}</span>
+  </div>
+  ${body}
   <p class="refs" style="margin-top:14px;">发现事实或来源有误？欢迎在 <a href="https://github.com/zenHeart/evals" target="_blank" rel="noopener">GitHub</a> 提 Issue。</p>
 </main>
 <footer class="site-foot"><a href="${SITE}">evals.zenheart.site</a> · MIT License · ZenHeart</footer>
