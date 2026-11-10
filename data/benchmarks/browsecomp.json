@@ -1,14 +1,16 @@
 {
   "id": "browsecomp",
   "name": "BrowseComp",
-  "full_name": null,
-  "aliases": ["Browsing Competition"],
-  "status": null,
+  "full_name": "BrowseComp: A Simple Yet Challenging Benchmark for Browsing Agents",
+  "aliases": [
+    "Browsing Competition"
+  ],
+  "status": "active",
   "categories": [
     "agent"
   ],
   "summary": "OpenAI 出品的浏览型检索基准：1266 道答案极难找到的网页问题，考 Agent 的持久检索与多跳浏览",
-  "interpretation": "无浏览工具的模型几乎拿不到分（基础工具链约 2 分），旗舰浏览系统在数十分量级——分数对 harness 与工具链极其敏感，跨厂商不可直接比。",
+  "interpretation": "准确率 = 简短答案与参考答案语义一致的比例。人类训练师 2 小时内只解出约 29%；分数对测试时计算（浏览轮数、并行采样与投票）高度敏感，比较前要确认是否为单次作答。",
   "measures": [
     "在开放网页上定位难找信息的多跳检索能力",
     "跨页面交叉验证与持久探索",
@@ -32,7 +34,10 @@
     {
       "id": "accuracy",
       "name": "Accuracy",
-      "range": [0, 100],
+      "range": [
+        0,
+        100
+      ],
       "unit": "percent",
       "direction": "higher",
       "aggregation": "mean"
@@ -71,6 +76,264 @@
     "webarena",
     "browsecomp-zh"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-10",
+  "profile": {
+    "template": "benchmark-profile/v1",
+    "verified_at": "2026-11-10",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "BrowseComp: A Simple Yet Challenging Benchmark for Browsing Agents（arXiv:2504.12516 v1，2025-04-16）",
+        "url": "https://arxiv.org/abs/2504.12516",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "openai/simple-evals（BrowseComp 参考实现；2025-07 起仓库不再更新新模型结果）",
+        "url": "https://github.com/openai/simple-evals",
+        "accessed": "2026-11-10"
+      }
+    ],
+    "sections": {
+      "overview": {
+        "text": "BrowseComp（Browsing Competition）是 OpenAI 的网页浏览智能体基准：1,266 道「答案难找、但找到后容易核对」的问题，考验智能体能否坚持、有创意地在互联网上多跳检索纠缠在一起的信息。答案都是简短字符串，便于自动判分。",
+        "cite": [
+          "paper@Abstract",
+          "paper@§1"
+        ]
+      },
+      "origin": {
+        "facts": [
+          {
+            "k": "机构",
+            "v": "OpenAI",
+            "cite": [
+              "paper@作者署名"
+            ]
+          },
+          {
+            "k": "作者",
+            "v": "Jason Wei、Zhiqing Sun（共同一作）、Spencer Papay、Scott McKinney、Jeffrey Han、Isa Fulford、Hyung Won Chung、Alex Tachard Passos、William Fedus、Amelia Glaese",
+            "cite": [
+              "paper@作者署名"
+            ]
+          },
+          {
+            "k": "首发时间",
+            "v": "2025-04-16 提交 arXiv（仅 v1），数据与评测代码在 simple-evals 仓库",
+            "cite": [
+              "paper",
+              "repo"
+            ]
+          }
+        ]
+      },
+      "measures": {
+        "items": [
+          {
+            "text": "测：持续搜索、换角度改写查询、在多个网页间拼接证据的浏览能力，类似「编程竞赛之于编程智能体」——不完整但有用。",
+            "cite": [
+              "paper@Abstract",
+              "paper@§2.4"
+            ]
+          },
+          {
+            "text": "不测：真实用户问题的分布、长答案生成、澄清含糊需求（作者明确说避开了这些难点）。",
+            "cite": [
+              "paper@Abstract",
+              "paper@§2.4"
+            ]
+          }
+        ]
+      },
+      "composition": {
+        "facts": [
+          {
+            "k": "题量",
+            "v": "1,266 题，答案为单个简短字符串",
+            "cite": [
+              "paper@Abstract",
+              "paper@§2.3"
+            ]
+          },
+          {
+            "k": "主题分布",
+            "v": "影视 205、其他 197、科技 173、艺术 127、历史 125、体育 123、音乐 116、电子游戏 71、地理 70、政治 59（主题由 ChatGPT 事后分类）",
+            "cite": [
+              "paper@§2.2 Figure 2"
+            ]
+          },
+          {
+            "k": "防泄漏",
+            "v": "数据中加入 canary 字符串，便于训练语料过滤",
+            "cite": [
+              "paper@§1"
+            ]
+          }
+        ]
+      },
+      "construction": {
+        "items": [
+          {
+            "text": "完全由人工训练师出题，沿用 SimpleQA 的规范：答案单一、无争议、不随时间变化。",
+            "cite": [
+              "paper@§2.1"
+            ]
+          },
+          {
+            "text": "难度把关三条：当时的模型（GPT-4o 带/不带浏览、o1、早期 Deep Research）都答不出；训练师做 5 次简单 Google 搜索，首页结果里找不到答案；另一位训练师 10 分钟内答不出（未严格执行）。",
+            "cite": [
+              "paper@§2.1"
+            ]
+          },
+          {
+            "text": "「倒置提问」：从一个种子（人物、事件、作品）出发，组合多个搜索空间很大的特征来出题——验证容易，暴力搜索极难。作者承认无法完全排除存在其他符合条件的答案。",
+            "cite": [
+              "paper@§2.1"
+            ]
+          }
+        ]
+      },
+      "scoring": {
+        "items": [
+          {
+            "text": "指标为准确率：用 AI 模型判断预测答案是否与参考答案语义等价，判分提示与 Humanity's Last Exam 相同。",
+            "cite": [
+              "paper@§2.3 Grading"
+            ]
+          },
+          {
+            "text": "同时要求模型给出置信度，计算校准误差。",
+            "cite": [
+              "paper@§4.2 Calibration Analysis"
+            ]
+          },
+          {
+            "text": "测试时计算影响很大：论文显示 Deep Research 准确率随浏览投入平滑上升，对 64 次并行采样做多数投票、加权投票或 best-of-N 比单次作答再提高 15%–25%。",
+            "cite": [
+              "paper@Figure 1",
+              "paper@§4.4 Figure 4"
+            ]
+          }
+        ]
+      },
+      "reading": {
+        "items": [
+          {
+            "text": "论文基线：GPT-4o 0.6%、GPT-4o 带浏览 1.9%、GPT-4.5 0.9%、o1 9.9%、Deep Research 51.5%。",
+            "cite": [
+              "paper@Table 3"
+            ]
+          },
+          {
+            "text": "人类参照：出题同批训练师在不用 AI 的情况下，1,255 题中只解出 29.2%，70.8% 在搜索约 2 小时后放弃；解出的题中与参考答案一致的为 86.4%。",
+            "cite": [
+              "paper@§3 Table 2"
+            ]
+          },
+          {
+            "text": "厂商分数常来自不同的工具集、上下文管理和并行采样/投票策略，单次（pass@1）与多次聚合的数字不能直接比较。",
+            "cite": [
+              "paper@§4.4"
+            ]
+          }
+        ]
+      },
+      "limitations": {
+        "items": [
+          {
+            "text": "不代表真实用户检索需求：问题是人为构造的「倒置谜题」，答案简短。",
+            "cite": [
+              "paper@Abstract",
+              "paper@§2.4"
+            ]
+          },
+          {
+            "text": "可能存在未被发现的其他正确答案；人类复核时 13.6% 的已解题答案与参考答案不一致。",
+            "cite": [
+              "paper@§2.1",
+              "paper@§3 Table 2"
+            ]
+          },
+          {
+            "text": "训练针对性：论文脚注说明 Deep Research 用了专门教模型做 BrowseComp 类任务的数据训练，基准分数可能被针对性优化。",
+            "cite": [
+              "paper@§4.1 脚注 1"
+            ]
+          },
+          {
+            "text": "随时间漂移：题目依赖公开网页，网页内容变化或答案被公开讨论后难度会变（数据中的 canary 只能帮助训练方过滤，不能阻止泄漏）。",
+            "cite": [
+              "paper@§1"
+            ]
+          },
+          {
+            "text": "参考实现所在的 simple-evals 仓库自 2025-07 起不再更新新模型结果，仅保留 BrowseComp 等参考实现。",
+            "cite": [
+              "repo"
+            ]
+          }
+        ]
+      },
+      "versions": {
+        "items": [
+          {
+            "text": "2025-04：唯一官方版本（1,266 题）。中文版 BrowseComp-ZH、多模态版等为其他团队的衍生基准，本站另有条目。",
+            "cite": [
+              "paper"
+            ]
+          }
+        ]
+      },
+      "official_results": {
+        "table": {
+          "as_of": "2026-11-10",
+          "columns": [
+            "来源",
+            "模型",
+            "准确率",
+            "校准误差"
+          ],
+          "rows": [
+            [
+              "论文 Table 3",
+              "GPT-4o",
+              "0.6%",
+              "69%"
+            ],
+            [
+              "论文 Table 3",
+              "GPT-4o w/ browsing",
+              "1.9%",
+              "82%"
+            ],
+            [
+              "论文 Table 3",
+              "GPT-4.5",
+              "0.9%",
+              "68%"
+            ],
+            [
+              "论文 Table 3",
+              "OpenAI o1",
+              "9.9%",
+              "65%"
+            ],
+            [
+              "论文 Table 3",
+              "Deep Research",
+              "51.5%",
+              "91%"
+            ]
+          ]
+        },
+        "cite": [
+          "paper@Table 3"
+        ]
+      }
+    }
+  }
 }
