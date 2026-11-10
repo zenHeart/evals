@@ -17,6 +17,7 @@
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync, rmSync, readdirSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
+import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { SITE, SHELL_CSS, shellHead, shellTopbar, shellFooter, SHELL_JS } from "./site-shell.mjs";
 import { loadBenchData } from "./load-data.mjs";
@@ -682,10 +683,60 @@ function tlGroupHeader(name, meta, href) {
   return `<div class="grp"><span class="g-name">${nameHtml}</span><span class="g-line"></span><span class="g-meta">${esc(meta)}</span></div>`;
 }
 
-function releasesTimelinePage(db, rel = "../../") {
-  const cutoff = db.cutoff;
+/** /releases/ 首屏服务端直出的卡片数（其余由虚拟列表按需渲染） */
+const TL_SSR_COUNT = 16;
 
-  // 厂商发布数统计与排序（按发布数倒序，直接融合于控制台厂商过滤按钮，彻底消除静态条冗余）
+/** 发布时间轴瘦身数据：只保留卡片渲染与过滤所需字段（不再内联整本账本） */
+function releasesSlimData(db) {
+  const releases = [...db.releases].sort((a, b) => (b.release_date || "").localeCompare(a.release_date || "") || (a.id || "").localeCompare(b.id || ""));
+  return {
+    v: 2,
+    cutoff: db.cutoff,
+    logoExt: LOGO_EXT,
+    benchmarks: db.benchmarks.map(b => [b.id, b.name]).sort((a, b) => a[0].localeCompare(b[0])),
+    releases: releases.map(r => {
+      const multi = r.models.length > 1;
+      return {
+        i: r.id, v: r.vendor_id, l: r.vendor_label, g: r.region === "CN" ? 1 : 0,
+        t: r.release_title, d: r.release_date || null, m: r.models,
+        tv: r.verified === 0 ? "none" : r.pending === 0 ? "full" : "part",
+        sp: r.model_specs.length === 1 ? evtSpecsHtml(r) : `<p class="evt-overview">本发布含 ${r.model_specs.length} 个变体，各变体规格见模型详情。</p>`,
+        ov: evtOverviewHtml(r, false),
+        u: r.source_url || null, k: r.source_kind || null,
+        e: r.evidence.map(e => {
+          const owner = multi ? (r.model_specs.find(m => m.id === e.model_id)?.name || e.model_id || "模型未说明") : "";
+          const fv = e.status === "verified" && e.score_status === "reported" && e.value !== null ? e.value : null;
+          return [e.benchmark_id, evidenceScoreLabel(e), e.status === "verified" ? 1 : 0, owner, e.variant || "", e.harness || "", e.effort || "", fv];
+        }),
+      };
+    }),
+  };
+}
+
+/** 年份归档页：/releases/<year>/ 全量静态卡片（无 JS 可读、可被抓取；content-visibility 降低渲染成本） */
+function releasesYearPage(db, year, list, years) {
+  const rel = "../../";
+  const cards = list.map(r => tlEvtHtml(db, r, { chipBase: rel + "benchmarks/" })).join("");
+  const ev = list.reduce((s, r) => s + r.evidence.length, 0);
+  return `${shellHead({ rel, title: `${year} 年模型发布 · 模型发布时间轴 · 评估大全`, desc: `${year} 年主流模型官方发布 ${list.length} 次、评测引用 ${ev} 条的静态归档。`, path: `releases/${year}/`, extra: `<style>${SHELL_CSS}${PAGE_CSS}${EVT_CSS}${TIMELINE_CSS}.feed .evt{content-visibility:auto;contain-intrinsic-size:auto 240px;}</style>` })}
+</head>
+<body class="tlr-page">
+${shellTopbar(rel, "releases")}
+<div class="tlr" id="main-content">
+  <nav class="breadcrumb" style="margin-bottom:18px;"><a href="${rel}index.html">首页</a> / <a href="../">模型发布</a> / <b>${esc(year)}</b></nav>
+  <h1>${esc(year)} 年模型发布</h1>
+  <p class="sub">共 ${list.length} 次发布 · ${ev} 条评测引用 · 按发布时间倒序。交互式检索请回到 <a href="../">模型发布时间轴</a>。</p>
+  <p class="tl-years">按年份：${years.map(y => y === year ? `<b>${esc(y)}</b>` : `<a href="../${esc(y)}/">${esc(y)}</a>`).join(" · ")}</p>
+  <div class="feed"><div class="yrm"><b>${esc(year)}</b></div>${cards}</div>
+</div>
+<footer class="site-foot"><a href="${SITE}">evals.zenheart.site</a> · MIT License · ZenHeart</footer>
+${SHELL_JS}
+</body>
+</html>`;
+}
+
+function releasesTimelinePage(db, rel = "../../", dataFile = "data.json", years = []) {
+  // 厂商发布数统计与排序（按发布数倒序，直接融合于控制台厂商过滤按钮）
   const covCounts = new Map();
   for (const r of db.releases) covCounts.set(r.vendor_id, (covCounts.get(r.vendor_id) || 0) + 1);
   const vendorChips = [...covCounts.entries()].sort((a, b) => b[1] - a[1])
@@ -696,27 +747,26 @@ function releasesTimelinePage(db, rel = "../../") {
       return `<button type="button" class="vchip" data-v="${esc(vid)}" aria-pressed="false">${mark ? `<span class="vmark">${mark}</span>` : ""}<span>${esc(label)}</span><span class="vchip-n">${n}</span></button>`;
     }).join("");
 
-  // noscript 静态默认视图：全量时间轴，结点=模型名称，年份刻度
-  const allReleases = [...db.releases].sort((a, b) => (b.release_date || "").localeCompare(a.release_date || ""));
+  // 首屏直出：最新 TL_SSR_COUNT 张卡片（LCP 不等 JS），其余交给虚拟列表；无 JS 时走年份归档页
+  const allReleases = [...db.releases].sort((a, b) => (b.release_date || "").localeCompare(a.release_date || "") || (a.id || "").localeCompare(b.id || ""));
   let prevYear = null;
   const staticParts = [];
-  for (const r of allReleases) {
+  for (const r of allReleases.slice(0, TL_SSR_COUNT)) {
     const y = r.release_date ? r.release_date.slice(0, 4) : null;
     if (y && y !== prevYear) { staticParts.push(`<div class="yrm"><b>${esc(y)}</b></div>`); prevYear = y; }
     staticParts.push(tlEvtHtml(db, r, { chipBase: rel + "benchmarks/" }));
   }
-  const staticFeed = `<div class="feed">${staticParts.join("") || '<div class="tl-empty">暂无数据。</div>'}</div>`;
-
-  const tlData = {
-    cutoff,
-    logoExt: LOGO_EXT,
-    benchmarks: db.benchmarks.map(b => ({ id: b.id, name: b.name })).sort((a, b) => a.id.localeCompare(b.id)),
-    vendors: db.vendors.map(v => ({ id: v.id, label: v.display_name || v.name, region: v.region ?? "" })),
-    releases: db.releases,
-  };
+  const totalEv = db.releases.reduce((s, r) => s + r.evidence.length, 0);
+  const yearLinks = years.map(y => `<a href="${esc(y)}/">${esc(y)}</a>`).join(" · ");
 
   const desc = `收录 2022 年至今国内外主流厂商核心模型的官方发布档案与实测评测数据，逐条对账技术报告中的基准引用、实测得分与评测协议；提供官方出处与架构规格说明；覆盖范围和历史缺口可在模型目录中查看。`;
-  return `${shellHead({ rel, title: "模型发布时间轴 · 评估大全", desc, path: "benchmarks/releases/", extra: `<style>${SHELL_CSS}${PAGE_CSS}${EVT_CSS}${TIMELINE_CSS}</style>` })}
+  return `${shellHead({ rel, title: "模型发布时间轴 · 评估大全", desc, path: "releases/", extra: `<link rel="preload" href="${esc(dataFile)}" as="fetch" type="application/json" crossorigin>
+<style>${SHELL_CSS}${PAGE_CSS}${EVT_CSS}${TIMELINE_CSS}
+.tl-blk { display:flow-root; }
+.tl-years { font-size:13.5px; color:var(--graphite); }
+.tl-more { margin:18px 0 0; font-size:14px; }
+.chip-more { font-size:12px; padding:3px 10px; }
+</style>` })}
 </head>
 <body class="tlr-page">
 ${shellTopbar(rel, "releases")}
@@ -725,6 +775,7 @@ ${shellTopbar(rel, "releases")}
   <p class="eyebrow">Evaluation Ledger · 2022 — 2026</p>
   <h1>模型发布时间轴</h1><p><a href="${rel}models/">按模态浏览模型与变体</a> · <a href="${rel}coverage/">覆盖与缺口</a> · <a href="${rel}choose/">按需求选型</a></p>
   <p class="sub">${esc(desc)}<br>证据数据来源标识：<b>绿色</b> 官方表格原始数据、<b>琥珀色</b> 图表数据采点、<b>灰色</b> 未披露量化分值的评测提及。支持按厂商、基准名称与分值阈值快速检索。<a href="${rel}benchmarks/" style="margin-left:8px;">← 返回评估大全</a></p>
+  <p class="tl-years">按年份浏览静态归档：${yearLinks}</p>
 
   <div class="console" id="tlControls" hidden>
     <div class="row">
@@ -734,183 +785,109 @@ ${shellTopbar(rel, "releases")}
     <div class="row" id="tlVendorRow"><span class="lab">厂商</span>${vendorChips}</div>
     <div class="row">
       <span class="lab">分数过滤</span>
-      <select id="tlBench" aria-label="选择评测"></select>
+      <select id="tlBench" aria-label="选择评测"><option value="">选择评测…</option></select>
       <span class="lab" style="min-width:auto">≥</span>
       <input type="number" id="tlMin" step="any" placeholder="如 70" aria-label="最低分数">
       <button class="ghost-btn" id="tlAddScore" type="button">添加过滤</button>
       <span id="tlFilters" style="display:inline-flex;gap:6px;flex-wrap:wrap;"></span>
     </div>
   </div>
-  <div class="tl-count" id="tlCount" hidden></div>
+  <div class="tl-count" id="tlCount">共 ${db.releases.length} 次发布 · ${totalEv} 条评测引用</div>
 
-  <noscript><div>${staticFeed || '<div class="tl-empty">暂无数据。</div>'}</div></noscript>
-  <div id="tlStatic">${staticFeed || '<div class="tl-empty">暂无数据。</div>'}</div>
+  <div id="tlStatic"><div class="feed">${staticParts.join("") || '<div class="tl-empty">暂无数据。</div>'}</div>
+  <p class="tl-more">首屏展示最新 ${Math.min(TL_SSR_COUNT, allReleases.length)} 次发布；更早的发布请启用 JavaScript，或按年份浏览：${yearLinks}</p></div>
   <div id="tlApp" class="feed" hidden></div>
 </div>
 <footer class="site-foot"><a href="${SITE}">evals.zenheart.site</a> · MIT License · ZenHeart</footer>
 ${SHELL_JS}
 <script>
-window.EVALS_TL = ${JSON.stringify(tlData)};
-window.EVALS_TL_REL = ${JSON.stringify(rel)};
-</script>
-<script>
 (function(){
-  var D=window.EVALS_TL;
-  var REL=window.EVALS_TL_REL||'../../';
+  var REL=${JSON.stringify(rel)},DATA=${JSON.stringify(dataFile)};
   var app=document.getElementById('tlApp'),staticEl=document.getElementById('tlStatic');
-  if(!app||!D)return;
-  var state={vendors:[],bench:null,filters:[],q:''};
-  var benchName={}; D.benchmarks.forEach(function(b){benchName[b.id]=b.name;});
-  function pinLogo(vid,trust){
-    var ext=D.logoExt&&D.logoExt[vid];
-    var img=ext?'<img class="vlogo-img" src="'+REL+'assets/logos/'+vid+'.'+ext+'" width="17" height="17" alt="">':'<b style="color:var(--graphite)">·</b>';
-    return '<span class="pin-logo pin-'+trust+'" aria-hidden="true">'+img+'</span>';
-  }
-  function vendorMark(vid,size){
-    var ext=D.logoExt&&D.logoExt[vid];
-    if(!ext)return '';
-    return '<img class="vlogo-img" src="'+REL+'assets/logos/'+vid+'.'+ext+'" width="'+size+'" height="'+size+'" alt="" loading="lazy">';
-  }
+  if(!app||!window.fetch||!window.IntersectionObserver)return;
+  var D=null,state={vendors:[],bench:null,filters:[],q:''};
   function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
-
-  function focusSet(){
-    var s={};
-    if(state.bench)s[state.bench]=1;
-    state.filters.forEach(function(f){s[f.bench]=1;});
-    return s;
-  }
-
-  function specsHtml(r){
-    var m0=null,specs=r.model_specs||[];
-    for(var i=0;i<specs.length;i++){var m=specs[i];
-      if(m&&(m.params||m.context_window||m.pricing||(m.modalities&&m.modalities.length))){m0=m;break;}}
-    if(!m0)return '';
-    var bits=[];
-    if(m0.params)bits.push('<span><span class="sp-k">参数</span><b>'+esc(m0.params)+'</b></span>');
-    if(m0.context_window)bits.push('<span><span class="sp-k">上下文</span><b>'+esc(m0.context_window)+'</b></span>');
-    var p=m0.pricing;
-    if(p&&(p.input_per_m!=null||p.output_per_m!=null)){
-      var cur=p.currency==='CNY'?'¥':'$';
-      var pair=(p.input_per_m!=null?cur+p.input_per_m:'—')+'/'+(p.output_per_m!=null?cur+p.output_per_m:'—');
-      bits.push('<span><span class="sp-k">价格</span><b>'+pair+'</b><span class="sp-note"> 每百万 tokens'+(p.note?' · '+esc(p.note):'')+'</span></span>');
-    }
-    if(m0.modalities&&m0.modalities.length)bits.push('<span><span class="sp-k">模态</span><b>'+esc(m0.modalities.join('·'))+'</b></span>');
-    return bits.length?'<div class="evt-specs">'+bits.join('')+'</div>':'';
-  }
-  function overviewHtml(r){
-    var summary=null,traits=[],specs=r.model_specs||[];
-    for(var i=0;i<specs.length;i++){if(specs[i]&&specs[i].capability_summary){summary=specs[i].capability_summary;traits=specs[i].key_traits||[];break;}}
-    var ov='';
-    if(summary){ov='<p class="evt-overview">'+esc(summary)+'</p>';}
-    else if(r.release_title){ov='<p class="evt-overview">'+esc(r.release_title)+'</p>';}
-    return ov+(traits.length?'<div class="evt-traits">'+traits.map(function(t){return '<span class="tchip">'+esc(t)+'</span>';}).join('')+'</div>':'');
-  }
-  function nodeHtml(r){
-    var fs=focusSet();
-    var trust=r.verified===0?'none':(r.pending===0?'full':'part');
-    var region=r.region==='CN'?'国内':'国际';
-    var chips=r.evidence.map(function(e){
-      var score=' <b>'+esc((${evidenceScoreLabel.toString()})(e))+'</b>';
-      var cls=e.status==='verified'?'ok':'pd';
-      var focus=fs[e.benchmark_id]?' focus':'';
-      var owner=r.model_specs.find(function(m){return m.id===e.model_id;});
-      var inner=(r.models.length>1?esc(owner?owner.name:(e.model_id||'模型未说明'))+' · ':'')+esc(e.benchmark_id)+(e.variant?' '+esc(e.variant):'')+score;
-      var tip=[];if(e.harness)tip.push('执行框架（harness）：'+esc(e.harness));if(e.effort)tip.push('推理档位（effort）：'+esc(e.effort));
-      return '<a class="bchip '+cls+focus+'" href="'+REL+'benchmarks/'+esc(e.benchmark_id)+'/"'+(tip.length?' title="'+tip.join(' · ')+'"':'')+'>'+inner+'</a>';
-    }).join('');
-    var modelTitle=r.models.length?r.models.join(' / '):r.release_title;
-    var titleInner=r.source_url
-      ?'<a href="'+esc(r.source_url)+'" target="_blank" rel="noopener" title="阅读官方发布文：'+esc(r.release_title)+'">'+esc(modelTitle)+'</a>'
-      :esc(modelTitle);
-    var pin=pinLogo(r.vendor_id,trust);
-    return '<article class="evt" data-trust="'+trust+'">'+
-      pin+
-      '<div class="evt-head"><span class="evt-date">'+(r.release_date?esc(r.release_date):'日期不明')+'</span>'+
-      '<span class="evt-vendor">'+vendorMark(r.vendor_id,13)+' '+esc(r.vendor_label)+'<i>·</i>'+region+'</span></div>'+
-      '<h3 class="evt-title">'+titleInner+'</h3><p><a href="../models/'+esc(r.id)+'/">查看模型变体与证据</a>'+(r.evidence.length?'':' · 所收录来源未披露量化评测')+'</p>'+
-      (r.model_specs.length===1?specsHtml(r):'<p>各变体规格见模型详情。</p>')+
-      overviewHtml(r)+
+  function logo(vid,size,cls){var ext=D.logoExt&&D.logoExt[vid];return ext?'<img class="vlogo-img" src="'+REL+'assets/logos/'+vid+'.'+ext+'" width="'+size+'" height="'+size+'" alt="" loading="lazy" decoding="async">':'';}
+  function focusSet(){var s={};if(state.bench)s[state.bench]=1;state.filters.forEach(function(f){s[f.bench]=1;});return s;}
+  // 与服务端 tlEvtHtml（非评测模式）同构
+  var CHIP_MAX=24,expanded={};
+  function card(r,fs){
+    var lim=expanded[r.i]?r.e.length:CHIP_MAX,ev=r.e;
+    // 有评测过滤时，命中的分数 chip 排在最前，避免被折叠
+    if(fs&&Object.keys(fs).length)ev=ev.filter(function(e){return fs[e[0]];}).concat(ev.filter(function(e){return !fs[e[0]];}));
+    var chips=ev.slice(0,lim).map(function(e){
+      var tip=[];if(e[5])tip.push('执行框架（harness）：'+esc(e[5]));if(e[6])tip.push('推理档位（effort）：'+esc(e[6]));
+      return '<a class="bchip '+(e[2]?'ok':'pd')+(fs[e[0]]?' focus':'')+'" href="'+REL+'benchmarks/'+esc(e[0])+'/"'+(tip.length?' title="'+tip.join(' · ')+'"':'')+'>'+(e[3]?esc(e[3])+' · ':'')+esc(e[0])+(e[4]?' '+esc(e[4]):'')+' <b>'+esc(e[1])+'</b></a>';
+    }).join('')+(r.e.length>lim?'<button type="button" class="ghost-btn chip-more" data-r="'+esc(r.i)+'">展开其余 '+(r.e.length-lim)+' 项评测</button>':'');
+    var mt=r.m.length?r.m.join(' / '):r.t;
+    var title=r.u?'<a href="'+esc(r.u)+'" target="_blank" rel="noopener" title="阅读官方发布文：'+esc(r.t)+'">'+esc(mt)+'</a>':esc(mt);
+    var pin=D.logoExt[r.v]?logo(r.v,17):'<b style="color:var(--graphite)">·</b>';
+    return '<article class="evt" data-trust="'+r.tv+'"><span class="pin-logo pin-'+r.tv+'" aria-hidden="true">'+pin+'</span>'+
+      '<div class="evt-head"><span class="evt-date">'+(r.d?esc(r.d):'日期不明')+'</span><span class="evt-vendor">'+logo(r.v,14)+' '+esc(r.l)+'<i>·</i>'+(r.g?'国内':'国际')+'</span></div>'+
+      '<h3 class="evt-title">'+title+'</h3>'+r.sp+r.ov+
+      '<p><a href="'+REL+'models/'+esc(r.i)+'/">查看模型变体与证据</a>'+(r.e.length?'':' · 所收录来源未披露量化评测')+'</p>'+
       (chips?'<div class="evt-chips">'+chips+'</div>':'')+
-      (r.source_url?'<div class="evt-src"><a href="'+esc(r.source_url)+'" target="_blank" rel="noopener">官方发布原文 ↗</a>'+(r.source_kind?'<span class="kind">'+esc(r.source_kind)+'</span>':'')+'</div>':'')+
+      (r.u&&!r.m.length?'<div class="evt-src"><a href="'+esc(r.u)+'" target="_blank" rel="noopener">官方发布原文 ↗</a><span class="kind">'+esc(r.k||'')+'</span></div>':'')+
       '</article>';
   }
-
   function pass(r){
-    if(state.vendors.length&&state.vendors.indexOf(r.vendor_id)<0)return false;
-    if(state.bench&&!r.evidence.some(function(e){return e.benchmark_id===state.bench;}))return false;
+    if(state.vendors.length&&state.vendors.indexOf(r.v)<0)return false;
+    if(state.bench&&!r.e.some(function(e){return e[0]===state.bench;}))return false;
     for(var i=0;i<state.filters.length;i++){var f=state.filters[i];
-      var ok=r.evidence.some(function(e){return e.benchmark_id===f.bench&&e.status==='verified'&&e.score_status==='reported'&&e.value!==null&&e.value>=f.min;});
-      if(!ok)return false;}
-    if(state.q){
-      var hay=(r.release_title+' '+(r.models||[]).join(' ')+' '+r.vendor_label).toLowerCase();
-      if(hay.indexOf(state.q)<0)return false;
-    }
+      if(!r.e.some(function(e){return e[0]===f.bench&&e[7]!==null&&e[7]>=f.min;}))return false;}
+    if(state.q){var hay=(r.t+' '+r.m.join(' ')+' '+r.l).toLowerCase();if(hay.indexOf(state.q)<0)return false;}
     return true;
   }
-
-  function yearMarkers(list){
-    var out=[],prev=null;
-    list.forEach(function(r){
-      var y=r.release_date?r.release_date.slice(0,4):null;
-      if(y&&y!==prev){out.push('<div class="yrm"><b>'+esc(y)+'</b></div>');prev=y;}
-      out.push(nodeHtml(r));
-    });
-    return out;
-  }
-
+  // ---- 分块虚拟列表：每块 BLK 项，视口 ±1.5 屏内的块才真实渲染，其余用测得高度的占位块
+  var BLK=12,blocks=[],io=null,avg=230,fs0={};
+  function blockHtml(b){return b.items.map(function(it){return it.y?'<div class="yrm"><b>'+esc(it.y)+'</b></div>':card(it.r,fs0);}).join('');}
+  function estimate(b){return b.h!=null?b.h:Math.round(b.items.reduce(function(s,it){return s+(it.y?66:avg);},0));}
+  function show(el,b){if(b.on)return;el.innerHTML=blockHtml(b);el.style.height='';b.on=true;b.h=el.offsetHeight;
+    var hs=0,n=0;blocks.forEach(function(x){if(x.h!=null){hs+=x.h;n+=x.items.length;}});if(n)avg=Math.max(120,hs/n);}
+  function hide(el,b){if(!b.on)return;b.h=el.offsetHeight;el.style.height=b.h+'px';el.innerHTML='';b.on=false;}
   function render(){
-    var list=D.releases.filter(pass).sort(function(a,b){return (b.release_date||'').localeCompare(a.release_date||'');});
-    var parts=[],prev=null;
-    list.forEach(function(r){
-      var y=r.release_date?r.release_date.slice(0,4):null;
-      if(y&&y!==prev){parts.push('<div class="yrm"><b>'+esc(y)+'</b></div>');prev=y;}
-      parts.push(nodeHtml(r));
-    });
-    app.innerHTML=parts.join('')||'<div class="tl-empty">没有匹配的发布——试试清除厂商、搜索或分数过滤。</div>';
-    var ev=0;list.forEach(function(r){ev+=r.evidence.length;});
+    var list=D.releases.filter(pass),items=[],prev=null,ev=0;
+    list.forEach(function(r){var y=r.d?r.d.slice(0,4):null;if(y&&y!==prev){items.push({y:y});prev=y;}items.push({r:r});ev+=r.e.length;});
     document.getElementById('tlCount').textContent='共 '+list.length+' 次发布 · '+ev+' 条评测引用';
+    if(io)io.disconnect();fs0=focusSet();blocks=[];
+    for(var i=0;i<items.length;i+=BLK)blocks.push({items:items.slice(i,i+BLK),h:null,on:false});
+    if(!blocks.length){app.innerHTML='<div class="tl-empty">没有匹配的发布——试试清除厂商、搜索或分数过滤。</div>';return;}
+    app.innerHTML=blocks.map(function(b,i){return '<div class="tl-blk" data-b="'+i+'" style="height:'+estimate(b)+'px"></div>';}).join('');
+    var els=app.children;show(els[0],blocks[0]);
+    io=new IntersectionObserver(function(ents){ents.forEach(function(en){var i=+en.target.getAttribute('data-b');
+      if(en.isIntersecting)show(en.target,blocks[i]);else hide(en.target,blocks[i]);});
+      for(var j=0;j<blocks.length;j++)if(!blocks[j].on&&blocks[j].h==null)els[j].style.height=estimate(blocks[j])+'px';
+    },{rootMargin:'150% 0px'});
+    for(var k=0;k<els.length;k++)io.observe(els[k]);
   }
-
-  function renderFilters(){
-    document.getElementById('tlFilters').innerHTML=state.filters.map(function(f,i){
-      return '<span class="fchip">'+esc(f.bench)+' ≥ '+esc(f.min)+
-        '<button type="button" data-i="'+i+'" aria-label="移除过滤">✕</button></span>';}).join('');
+  function renderFilters(){document.getElementById('tlFilters').innerHTML=state.filters.map(function(f,i){
+    return '<span class="fchip">'+esc(f.bench)+' ≥ '+esc(f.min)+'<button type="button" data-i="'+i+'" aria-label="移除过滤">✕</button></span>';}).join('');}
+  function boot(data){
+    D=data;
+    document.getElementById('tlControls').hidden=false;staticEl.hidden=true;app.hidden=false;
+    var vr=document.getElementById('tlVendorRow'),benchSel=document.getElementById('tlBench'),filled=false;
+    function fillBench(){if(filled)return;filled=true;var h='<option value="">选择评测…</option>';
+      D.benchmarks.forEach(function(b){h+='<option value="'+esc(b[0])+'">'+esc(b[0]+' · '+b[1])+'</option>';});benchSel.innerHTML=h;}
+    benchSel.addEventListener('focus',fillBench);benchSel.addEventListener('pointerdown',fillBench);
+    vr.addEventListener('click',function(e){var b=e.target.closest('.vchip');if(!b)return;
+      var v=b.getAttribute('data-v'),i=state.vendors.indexOf(v);
+      if(i<0)state.vendors.push(v);else state.vendors.splice(i,1);
+      b.classList.toggle('on',i<0);b.setAttribute('aria-pressed',i<0?'true':'false');render();});
+    document.getElementById('tlAddScore').addEventListener('click',function(){
+      fillBench();var bid=benchSel.value,min=parseFloat(document.getElementById('tlMin').value);
+      if(!bid||isNaN(min))return;
+      if(!state.filters.some(function(f){return f.bench===bid&&f.min===min;})){state.filters.push({bench:bid,min:min});renderFilters();render();}});
+    document.getElementById('tlFilters').addEventListener('click',function(e){var b=e.target.closest('button[data-i]');if(!b)return;
+      state.filters.splice(parseInt(b.getAttribute('data-i'),10),1);renderFilters();render();});
+    app.addEventListener('click',function(e){var b=e.target.closest('.chip-more');if(!b)return;
+      var id=b.getAttribute('data-r'),r=null;for(var i=0;i<D.releases.length;i++)if(D.releases[i].i===id){r=D.releases[i];break;}
+      if(!r)return;expanded[id]=1;var art=b.closest('article.evt');var tmp=document.createElement('div');tmp.innerHTML=card(r,fs0);art.replaceWith(tmp.firstChild);});
+    var qt=null;document.getElementById('tlQ').addEventListener('input',function(e){var v=e.target.value.trim().toLowerCase();
+      clearTimeout(qt);qt=setTimeout(function(){state.q=v;render();},120);});
+    render();
   }
-
-  var controls=document.getElementById('tlControls'),count=document.getElementById('tlCount');
-  controls.hidden=false;count.hidden=false;staticEl.hidden=true;app.hidden=false;app.classList.add('animate');
-  var vr=document.getElementById('tlVendorRow');
-  if(!vr.querySelector('.vchip')){
-    var counts={};
-    D.releases.forEach(function(r){counts[r.vendor_id]=(counts[r.vendor_id]||0)+1;});
-    D.vendors.filter(function(v){return (counts[v.id]||0)>0;})
-      .sort(function(a,b){return (counts[b.id]||0)-(counts[a.id]||0);})
-      .forEach(function(v){
-        var b=document.createElement('button');b.type='button';b.className='vchip';b.setAttribute('data-v',v.id);b.setAttribute('aria-pressed','false');
-        var mark=vendorMark(v.id,14);var n=counts[v.id]||0;
-        b.innerHTML=(mark?'<span class="vmark">'+mark+'</span>':'')+'<span>'+esc(v.label)+'</span><span class="vchip-n">'+n+'</span>';
-        vr.appendChild(b);
-      });
-  }
-  var benchSel=document.getElementById('tlBench');
-  benchSel.innerHTML='<option value="">选择评测…</option>'+D.benchmarks.map(function(b){return '<option value="'+esc(b.id)+'">'+esc(b.id+' · '+b.name)+'</option>';}).join('');
-
-  vr.addEventListener('click',function(e){
-    var b=e.target.closest('.vchip');if(!b)return;
-    var v=b.getAttribute('data-v'),i=state.vendors.indexOf(v);
-    if(i<0)state.vendors.push(v);else state.vendors.splice(i,1);
-    b.classList.toggle('on',i<0);b.setAttribute('aria-pressed',i<0?'true':'false');render();});
-  document.getElementById('tlAddScore').addEventListener('click',function(){
-    var bid=benchSel.value,min=parseFloat(document.getElementById('tlMin').value);
-    if(!bid||isNaN(min))return;
-    var dup=state.filters.some(function(f){return f.bench===bid&&f.min===min;});
-    if(!dup){state.filters.push({bench:bid,min:min});renderFilters();render();}});
-  document.getElementById('tlFilters').addEventListener('click',function(e){
-    var b=e.target.closest('button[data-i]');if(!b)return;
-    state.filters.splice(parseInt(b.getAttribute('data-i'),10),1);renderFilters();render();});
-  document.getElementById('tlQ').addEventListener('input',function(e){state.q=e.target.value.trim().toLowerCase();render();});
-
-  render();
+  fetch(DATA,{credentials:'same-origin'}).then(function(r){if(!r.ok)throw new Error(r.status);return r.json();}).then(boot)
+    .catch(function(){/* 数据加载失败：保留首屏直出与年份归档入口 */});
 })();
 </script>
 </body>
@@ -923,7 +900,7 @@ window.EVALS_TL_REL = ${JSON.stringify(rel)};
 function pinLogo(vid, trust) {
   const ext = LOGO_EXT[vid];
   const img = ext
-    ? `<img class="vlogo-img" src="/assets/logos/${vid}.${ext}" width="17" height="17" alt="">`
+    ? `<img class="vlogo-img" src="/assets/logos/${vid}.${ext}" width="17" height="17" alt="" loading="lazy" decoding="async">`
     : `<b style="color:var(--graphite)">·</b>`;
   return `<span class="pin-logo pin-${trust}" aria-hidden="true">${img}</span>`;
 }
@@ -1039,7 +1016,25 @@ function main() {
   // 模型发布时间轴：一级路由 /releases/（主导航「模型发布」）+ 旧深层路径重定向
   const relTop = join(DIST, "releases");
   mkdirSync(relTop, { recursive: true });
-  writeFileSync(join(relTop, "index.html"), releasesTimelinePage(db, "../"), "utf-8");
+  // 瘦身数据外置为内容哈希文件（可长期缓存，内容变才换 URL），不再内联进 HTML
+  for (const name of readdirSync(relTop)) if (/^data\.[0-9a-f]+\.json$/.test(name)) rmSync(join(relTop, name), { force: true });
+  const slim = JSON.stringify(releasesSlimData(db));
+  const dataFile = `data.${createHash("sha256").update(slim).digest("hex").slice(0, 10)}.json`;
+  writeFileSync(join(relTop, dataFile), slim, "utf-8");
+  // 年份静态归档（无 JS / 爬虫入口）
+  const byYear = new Map();
+  for (const r of [...db.releases].sort((a, b) => (b.release_date || "").localeCompare(a.release_date || "") || (a.id || "").localeCompare(b.id || ""))) {
+    const y = r.release_date ? r.release_date.slice(0, 4) : "unknown";
+    if (!byYear.has(y)) byYear.set(y, []);
+    byYear.get(y).push(r);
+  }
+  const years = [...byYear.keys()];
+  for (const name of readdirSync(relTop)) if (/^\d{4}$|^unknown$/.test(name) && !byYear.has(name)) rmSync(join(relTop, name), { recursive: true, force: true });
+  for (const [y, list] of byYear) {
+    mkdirSync(join(relTop, y), { recursive: true });
+    writeFileSync(join(relTop, y, "index.html"), releasesYearPage(db, y, list, years), "utf-8");
+  }
+  writeFileSync(join(relTop, "index.html"), releasesTimelinePage(db, "../", dataFile, years), "utf-8");
   const relDir = join(dir, "releases");
   mkdirSync(relDir, { recursive: true });
   writeFileSync(join(relDir, "index.html"),
