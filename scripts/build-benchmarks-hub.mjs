@@ -352,7 +352,6 @@ function profiledDetailPageV2(db, b, cat, related, adoptBlock, cite, ledgerRows)
   const uniq = new Set(cite.map(a => a.release_id).filter(Boolean)).size;
   const body = renderProfileV2(b, ent, {
     ledgerRows,
-    statusBadge: statusBadge(b.status),
     comparabilityHTML: `<div class="callout warn"><b>可比性提示：</b>同一评测的分数是「实验配置」的产物：评测版本、执行框架（harness / 脚手架）、推理档位、工具、采样参数、运行次数或聚合方式任何一项不同，数字就不能直接横向比较。</div>${benchmarkScopeHTML(b.id, db.useCase)}`,
     adoptionHTML: `<p class="refs">共 ${uniq} 场模型发布引用（${cite.length} 项分值） · 按发布时间倒序${db.updated ? ` · 数据更新于 ${esc(db.updated)}` : ""}</p>${adoptBlock}`,
     relatedHTML: related.length ? `<div class="related">${related.map(r => `<a href="../${esc(r.id)}/"><span class="r-name">${esc(r.name)}</span><br><span style="color:var(--graphite)">${esc(truncate(r.tests, 40))}</span></a>`).join("")}</div>` : "",
