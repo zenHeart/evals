@@ -3475,3 +3475,53 @@ Meta 2026-11-06《Bringing Specialized Models to Muse and Meta AI》发布一批
 | 新建归档目录 | 1（`models/2026-11-04-hy4`：page-source.md + tencent-pr.html + images/ 三张原图 + index.md + manifest.json） |
 | 覆盖候选总数 | 653 → 654 |
 | 窗口内 general/vertical 未决候选 | **0** |
+
+
+## 2026-11-10 第五十九批：Thinking Machines Lab 新厂商接入 + Inkling 2 Small 建档（73 条 evidence）
+
+经用户确认（第五十八批「待人工裁定」项），接入新厂商 **thinking-machines**（Thinking Machines Lab，tier 2，GLOBAL），并为 2026-11-05 发布的 **Inkling 2 Small** 建档。
+
+### 新厂商接入（六步全部完成）
+
+1. `data/vendors.json` 注册 `thinking-machines`（coverage_tier 2，active）；
+2. `scripts/fetch-logos.mjs` 的 `DOMAINS` 加 `thinkingmachines.ai`；
+3. 跑 `fetch-logos` 后 `git checkout -- assets/logos/` 还原其余厂商被重抓的 logo（并删除重抓产生的多余扩展名文件），只保留新增的官网 apple-touch-icon（180×180 PNG，官方品牌标本身即深色方块图形，非字母占位），以 base64 原样内嵌为 `assets/logos/thinking-machines.svg`（本批推送通道只接受文本文件）；
+4. `scripts/vendor-logos.mjs` 的 `LOGO_EXT` 登记 `svg`；
+5. `discovery-channels.md` Tier 2 加 thinking-machines 渠道行（canonical `.claude/skills/` 修改后 `npm run sync:skills` 同步镜像）；
+6. `data/model-coverage.json` 的 `vendors[]` 新增 vendor_id / allowed_hosts / entries（news 索引、发布文、HF 组织）。
+
+### 新建 release
+
+| 文件 | 发布日 | evidence | 转录口径 |
+|---|---|---:|---|
+| `thinking-machines/inkling-2-small` | 2026-11-05 | 73（全部 verified） | 发布文 DOM `<table>` 逐格机读：Evaluation snapshot 总表 + 仅出现在小节表的行 + PMPP-Hard results 表 + Alignment 表 |
+
+- **日期证据**：`<meta itemprop="datePublished" content="2026-11-05T00:00:00+00:00">` + 官方模型卡「Date of release: Nov 5, 2026」互证。
+- **归属口径**：页面明示外部报告值机构清单，清单内 43 行记 `third_party_reported`，其余 30 行记 `vendor_reported`；Code2Video-AA、Vals Legal Index、Vals Finance Index、Apex 2025 页面未明说归属，按字面记厂商自报并在 notes 标待复核。
+- **一致性核对**：小节表与总表重叠行 0 差异；官方模型卡内嵌总表 50 个重叠行与发布文 0 差异。
+- **不调和项**：ComplexConstraints 表行 v1.0 vs 来源清单 v1.1；FORTRESS ORS 20.4 与 benign 79.7% 差 0.1。
+- **规格**：594B-A17B MoE、1M 上下文、文本+图像输入；页面未印定价 → `pricing: null`；权重拟以 Apache 2.0 开放（截至归档日 HF 尚无）。
+
+### 新铸 benchmark id（未同步建实体，notes 标 `new-benchmark`）
+
+`aa-3d`、`aa-omniscience`、`apex-accounting`、`apollo-covert-action`、`code-arena-webdev`、`code2video-aa`、`complexconstraints`、`dayjob`、`design-arena`、`diligencebench`、`distressbench`、`enterprisebench-corecraft`、`enterpriseops-gym`、`excel-modeling-benchmark`、`fortress`、`hle-diamond`、`honeybench`、`humanitys-sixth-sense`、`legal-research-bench`、`patcheval`、`pmpp-hard`、`strongreject`、`tax-agent-bench`、`thinking-machines-covert-misbehavior`、`thinking-machines-destructive-actions`、`thinking-machines-misbehavior`、`vals-cyberbench`、`vals-finance-index`、`vals-legal-index`
+
+### 归档
+
+`models/2026-11-05-inkling-2-small/`：page.html + model-card.html + index.md（全部评测表转录 + 训练披露）+ manifest.json（逐文件 sha256）。
+
+### 门禁
+
+| 门禁 | 结果 |
+|---|---|
+| `node scripts/reconcile-coverage.mjs` | 通过，且幂等；新增候选 `release-inkling-2-small`（archived / reported） |
+| `node --test tests/*.test.mjs` | 66/66 |
+| `node scripts/validate-data.mjs` | PASS（vendors 18 / benchmarks 507 / releases 225（official 211）/ evidence edges 3741） |
+| `npm run sync:skills:check` | 通过 |
+| `npm run build` | 全链通过（772 URL / 507 实体页 / 227 auto-evidence 页 / validate-site ✓） |
+
+### 未处理（不在本批授权范围）
+
+- 腾讯 Hyra 线 5 条候选维持原状，不建档。
+- Thinking Machines 旧代 Inkling（2026-07）/ Inkling Small（2026-07）早于接入日，留待存量回填批次。
+- 检查点 `last_max_release_date` 维持 2026-11-09（本批最大发布日 2026-11-05 早于锚点，锚点只前进不回退）。

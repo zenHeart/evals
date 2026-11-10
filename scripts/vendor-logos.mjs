@@ -22,6 +22,7 @@ export const LOGO_EXT = {
   stepfun: "png",
   microsoft: "png",
   particle: "png",
+  "thinking-machines": "svg",
 };
 
 export function vendorMark(vendorId, size = 16, logoBase = "/assets/logos/") {

@@ -26,6 +26,7 @@ const DOMAINS = {
   stepfun: ["stepfun.ai", "www.stepfun.com", "platform.stepfun.com"],
   microsoft: ["www.microsoft.com", "microsoft.ai"],
   particle: ["particle.ai"],
+  "thinking-machines": ["thinkingmachines.ai"],
 };
 
 const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126 Safari/537.36";
