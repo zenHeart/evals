@@ -95,6 +95,8 @@ export function loadBenchData() {
         status: b.status ?? null,
         contentStatus: b.content_status ?? null,
         lastVerifiedAt: b.last_verified_at ?? null,
+        fullName: b.full_name ?? null,
+        profile: b.profile ?? null,
         url: (sources.find(s => s.kind === "site") || sources[0] || {}).url ?? null,
         paper: (sources.find(s => s.kind === "paper") || {}).url ?? null,
         // evidence 视图在下方统一填充

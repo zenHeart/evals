@@ -19,6 +19,7 @@
  */
 import fs from "node:fs";
 import { validateCoverage } from "./validate-model-coverage.mjs";
+import { validateProfile, profileCompleteness, PROFILE_TEMPLATE } from "./benchmark-profile.mjs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -268,6 +269,33 @@ for (const file of benchFiles) {
 for (const [file, b] of benchData) {
   for (const m of validateBenchmark(b, ctx)) err(file, m);
   forbidDash(file, b);
+}
+
+// 评测档案模板门禁（benchmark-profile/v1，见 scripts/benchmark-profile.mjs）
+// 棘轮：data/benchmark-profile-backlog.json 冻结了模板上线时尚未升级的存量实体。
+//   - 不在 backlog 里的实体必须带合规 profile（新建实体一律按模板写，逐条引用权威来源）；
+//   - 已升级（带 profile）的实体必须从 backlog 移除，backlog 只减不增。
+const backlogFile = path.join(DATA, "benchmark-profile-backlog.json");
+const backlogR = readJson(backlogFile);
+const backlog = new Set(backlogR.ok ? backlogR.data.ids || [] : []);
+let profiled = 0;
+for (const [file, b] of benchData) {
+  if (b.profile !== undefined) {
+    profiled++;
+    for (const m of validateProfile(b.profile, `benchmarks/${b.id}.json`)) err(file, m);
+    if (backlog.has(b.id)) err(backlogFile, `${b.id} 已按模板建档，请从 backlog 中移除`);
+  } else if (!backlog.has(b.id)) {
+    err(file, `新建或未登记的 benchmark 实体必须带 profile（${PROFILE_TEMPLATE}）；写不出有来源的档案就不要建实体，让证据兜底页先顶着`);
+  }
+}
+for (const id of backlog) if (!ctx.benchmarkIds.has(id)) err(backlogFile, `backlog 中的 ${id} 已无对应实体，请移除`);
+if (backlogR.ok && backlogR.data.count !== backlog.size) err(backlogFile, `count=${backlogR.data.count} 与 ids 实际数量 ${backlog.size} 不一致`);
+console.log(`[profile] 模板档案 ${profiled} 个通过校验；待升级存量 ${backlog.size} 个（backlog 只减不增）`);
+{
+  // 模板 fixture 自测：坏样例必须被拒
+  const bad = validateProfile({ template: PROFILE_TEMPLATE, verified_at: "2026-01-01", sources: [{ id: "p", kind: "paper", title: "t", url: "http://x", accessed: "2026-01-01" }], sections: { overview: { text: "无来源的断言" } } }, "fixture");
+  if (bad.length < 5) errors.push("fixture 自测失败：缺来源 / 缺章节的 profile 未被检出");
+  void profileCompleteness;
 }
 
 const releasesRoot = path.join(DATA, "model-releases");
