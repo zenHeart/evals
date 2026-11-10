@@ -123,6 +123,8 @@
 必填字段形状（validate-data.mjs 强制）：`id`（=文件名）、`name`、`full_name`（可 null）、`aliases`（数组，可空）、`categories`（非空，取值见 data/taxonomy.json）、`summary`（非空，一句话讲它测什么）、`measures` / `does_not_measure` / `metrics` / `versions` / `limitations` / `related_benchmarks`（数组，可空）、`dataset`（对象，可全 null）、`official_sources`（HTTPS URL 数组）、`content_status`（新档 `"beta"`）、`last_verified_at`（当天）。
 **`interpretation` 必须写真实解读**（分数怎么读、量纲、当前水位）——站点详情页的「30 秒看懂」直接渲染它，构建门禁会拦截"待补"类占位文案；写不出解读就不要建实体，让兜底页先顶着。
 
+**新建实体必须同时写 `profile`（统一档案模板 `benchmark-profile/v1`，定义见 `scripts/benchmark-profile.mjs`）**：章节为一句话定位 / 出处（机构、作者、日期）/ 测什么不测什么 / 任务构成与规模 / 数据来源与构建 / 评分方法 / 怎么读分数 / 局限与污染 / 版本历史（可选：官方结果快照）。每条事实必须用 `cite` 指向 `profile.sources` 里**本次实际打开过**的论文、官网、仓库、数据集或官方榜单（`"paper@§3.2"` 形式写定位）；查不到权威信息的章节写 `{"missing":"原因"}`，不允许编造。`validate-data` 会拒绝不带合规 profile 的新实体；`data/benchmark-profile-backlog.json` 是模板上线时冻结的存量清单，只减不增——升级一个存量实体就把它从 backlog 删掉。范例：`data/benchmarks/remote-labor-index.json`。
+
 ## 2. 发布文归档 — `models/YYYY-MM-DD-<model-slug>/`
 
 按发布日期组织，四件套：

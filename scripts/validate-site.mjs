@@ -17,6 +17,7 @@
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { PROFILE_SECTIONS } from "./benchmark-profile.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, "..");
@@ -249,6 +250,31 @@ function checkTimelineMonotonicity() {
   console.log(`  [timeline] 时序单调性检查 ${checkedFeeds} 个时间轴 / ${checkedEvents} 个事件卡片`);
 }
 
+// ---------------------------------------------------------------- 评测档案模板渲染门禁
+/** 带 profile 的实体：详情页必须渲染全部模板章节锚点、每个来源条目与成绩/来源区；角标不得指向不存在的来源 */
+function checkBenchmarkProfiles() {
+  const dir = join(ROOT, "data", "benchmarks");
+  const dist = join(ROOT, "dist", "benchmarks");
+  if (!existsSync(dist)) return;
+  let n = 0;
+  for (const f of readdirSync(dir).filter(x => x.endsWith(".json"))) {
+    const b = JSON.parse(readFileSync(join(dir, f), "utf-8"));
+    if (!b.profile) continue;
+    const page = join(dist, b.id, "index.html");
+    if (!existsSync(page)) { err(`[profile] ${b.id} 缺少详情页`); continue; }
+    const html = readFileSync(page, "utf-8");
+    if (!html.includes(`data-profile="${b.profile.template}"`)) err(`[profile] ${b.id} 详情页未使用统一档案模板渲染`);
+    for (const def of PROFILE_SECTIONS) {
+      if (b.profile.sections[def.key] && !html.includes(`id="p-${def.key}"`)) err(`[profile] ${b.id} 详情页缺少章节「${def.title}」`);
+    }
+    for (const k of ["ledger", "adoption", "links", "refs"]) if (!html.includes(`id="p-${k}"`)) err(`[profile] ${b.id} 详情页缺少 #p-${k}`);
+    for (const s of b.profile.sources) if (!html.includes(`id="src-${s.id}"`)) err(`[profile] ${b.id} 参考来源缺少 ${s.id}`);
+    for (const m of html.matchAll(/href="#src-([^"]+)"/g)) if (!html.includes(`id="src-${m[1]}"`)) err(`[profile] ${b.id} 角标指向不存在的来源 ${m[1]}`);
+    n++;
+  }
+  console.log(`  [profile] 统一档案模板渲染检查 ${n} 个评测页`);
+}
+
 // ---------------------------------------------------------------- main
 
 const parts = readPartStructure();
@@ -258,6 +284,7 @@ checkCrossReferences(parts);
 checkBenchmarkSchema();
 checkDist();
 checkTimelineMonotonicity();
+checkBenchmarkProfiles();
 
 if (warn.length) warn.forEach(w => console.log(`  ⚠ ${w}`));
 if (errors.length) {

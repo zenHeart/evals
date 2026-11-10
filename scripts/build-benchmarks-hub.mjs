@@ -22,6 +22,7 @@ import { SITE, SHELL_CSS, shellHead, shellTopbar, shellFooter, SHELL_JS } from "
 import { loadBenchData } from "./load-data.mjs";
 import { benchmarkScopeHTML, evidenceScoreLabel } from "./model-ui.mjs";
 import { vendorMark, LOGO_EXT } from "./vendor-logos.mjs";
+import { renderProfile, profileNotice, PROFILE_CSS } from "./benchmark-profile-page.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = join(__dirname, "..");
@@ -286,6 +287,59 @@ function statusBadge(status) {
   return `<span class="status-badge status-${cls}">${esc(label)}</span>`;
 }
 
+/** 统一档案模板（benchmark-profile/v1）详情页：章节 + 角标引用 + 本站成绩表 + 时间轴 + 来源 */
+function profiledDetailPage(db, b, cat, related, adoptBlock, rels, cite) {
+  const ledgerRows = [];
+  for (const r of db.releases) {
+    for (const e of r.evidence) {
+      if (e.benchmark_id !== b.id) continue;
+      const m = r.model_specs.find(x => x.id === e.model_id);
+      ledgerRows.push({
+        date: r.release_date, vendor: r.vendor_label, model: (m?.name || r.models[0] || r.release_title) + (e.variant ? ` · ${e.variant}` : ""),
+        modelHref: `../../models/${r.id}/`, score: evidenceScoreLabel(e), value: e.value, status: e.status, url: e.url,
+        protocol: [e.harness, e.effort].filter(Boolean).join(" · "),
+        attr: ({ vendor_reported: "厂商自报", third_party_reported: "第三方测得", benchmark_owner_reported: "评测方公布", site_reproduced: "本站复现", comparison_cited: "对比引用" })[e.attribution] || "发布原文",
+      });
+    }
+  }
+  ledgerRows.sort((x, y) => (y.value ?? -Infinity) - (x.value ?? -Infinity) || (y.date || "").localeCompare(x.date || ""));
+  const p = renderProfile(b, b.profile, { ledgerRows });
+  const ov = b.profile.sections.overview;
+  const title = `${b.name} · 评测档案：测什么、怎么评、分数怎么读 · 评估大全`;
+  const desc = truncate(`${b.name}：${ov && ov.text ? ov.text : b.tests || ""}`, 150);
+  const uniq = new Set(cite.map(a => a.release_id).filter(Boolean)).size;
+  return `${shellHead({ rel: "../../", title, desc, path: `benchmarks/${b.id}/`, extra: `<style>${SHELL_CSS}${PAGE_CSS}${EVT_CSS}${TIMELINE_CSS}${PROFILE_CSS}</style>` })}
+</head>
+<body>
+${shellTopbar("../../", "benchmarks")}
+<main id="main-content" class="detail-main bm-container">
+  <nav class="breadcrumb"><a href="../../index.html">首页</a> / <a href="../">评估大全</a> / <b>${esc(b.name)}</b></nav>
+  <div class="detail-head">
+    <h1>${esc(b.name)}</h1>
+    ${statusBadge(b.status)}
+    <span class="cat-tag" style="background:color-mix(in srgb, ${esc(cat.color)} 15%, transparent); color:${esc(cat.color)}">${esc(cat.name)}</span>
+  </div>
+  ${b.fullName && b.fullName !== b.name ? `<p style="font-size:14px;color:var(--graphite);margin:4px 0 0;">${esc(b.fullName)}</p>` : ""}
+  ${p.head}
+  ${p.sections}
+  ${p.ledger}
+  <div class="callout warn"><b>可比性提示：</b>同一评测的分数是「实验配置」的产物：评测版本、执行框架（harness / 脚手架）、推理档位、工具、采样参数、运行次数或聚合方式任何一项不同，数字就不能直接横向比较。</div>
+  ${benchmarkScopeHTML(b.id, db.useCase)}
+  <section class="pf-sec" id="p-adoption"><h2 class="detail-sec">发布引用时间轴</h2>
+  <p class="refs">共 ${uniq} 场模型发布引用（${cite.length} 项分值） · 按发布时间倒序${db.updated ? ` · 数据更新于 ${esc(db.updated)}` : ""}</p>
+  ${adoptBlock}</section>
+  ${p.links}
+  ${related.length ? `<h2 class="detail-sec" id="related">相关评测（同类别）</h2>
+  <div class="related">${related.map(r => `<a href="../${esc(r.id)}/"><span class="r-name">${esc(r.name)}</span><br><span style="color:var(--graphite)">${esc(truncate(r.tests, 40))}</span></a>`).join("")}</div>` : ""}
+  ${p.refs}
+  <p class="refs" style="margin-top:14px;">发现事实或来源有误？欢迎在 <a href="https://github.com/zenHeart/evals" target="_blank" rel="noopener">GitHub</a> 提 Issue。</p>
+</main>
+<footer class="site-foot"><a href="${SITE}">evals.zenheart.site</a> · MIT License · ZenHeart</footer>
+${SHELL_JS}
+</body>
+</html>`;
+}
+
 function detailPage(db, b, cat, related) {
   const cite = b.adoption || [];
   // 统一窗口语义：fresh 进主视图，archive（窗口外/日期缺失）降级为折叠历史区
@@ -342,6 +396,8 @@ function detailPage(db, b, cat, related) {
     adoptBlock = tbl(cite.map(row));
   }
 
+  if (b.profile) return profiledDetailPage(db, b, cat, related, adoptBlock, rels, cite);
+
   return `${shellHead({ rel: "../../", title, desc, path: `benchmarks/${b.id}/`, extra: `<style>${SHELL_CSS}${PAGE_CSS}${EVT_CSS}${TIMELINE_CSS}</style>` })}
 </head>
 <body>
@@ -353,6 +409,7 @@ ${shellTopbar("../../", "benchmarks")}
     ${statusBadge(b.status)}
   </div>
   ${b.tests ? `<p style="font-size:15.5px;color:#475569;margin:6px 0 0;">${esc(b.tests)}</p>` : ""}
+  ${profileNotice("legacy")}
 
   <h2 class="detail-sec" id="identity">基本信息</h2>
   <div class="kv">${identityRows}</div>
@@ -911,6 +968,7 @@ ${shellTopbar("../../", "benchmarks")}
   <nav class="breadcrumb"><a href="../../index.html">首页</a> / <a href="../">评估大全</a> / <b>${esc(id)}</b></nav>
   <div class="detail-head"><h1>${esc(id)}</h1><span class="status-badge status-saturation">由发布引用自动生成</span></div>
   <p style="font-size:15.5px;color:#475569;margin:6px 0 0;">这个评测在官方模型发布中被引用了 <b>${rels.length}</b> 场发布${rows.length > rels.length ? `（共 <b>${rows.length}</b> 项分值）` : ""}（来自${esc(vendors.join("、"))}）。本页由这些发布引用自动生成：逐条列出每次引用的分数、协议与原文链接；完整的评测定义、数据集与指标介绍仍在补全，缺失的信息不会编造。</p>
+  ${profileNotice("auto")}
   <div class="callout">下面每张「发布」卡片记录了主流模型在该基准上的官方实测得分、评测协议与模型核心能力介绍。</div>
 
   <h2 class="detail-sec" id="adoption">模型发布引用时间轴</h2>
