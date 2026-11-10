@@ -1310,6 +1310,9 @@ async function main() {
   if (existsSync(benchDataPath)) {
     for (const b of loadBenchData().benchmarks) urls.push(`/benchmarks/${b.id}/`);
   }
+  // /releases/<year>/ 静态归档（hub 构建产出）
+  const relYears = existsSync(join(DIST, "releases")) ? readdirSync(join(DIST, "releases")).filter(n => /^\d{4}$/.test(n)).sort().reverse() : [];
+  for (const y of relYears) urls.push(`/releases/${y}/`);
   urls.push(...buildModelPages(loadBenchData(), DIST));
   const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
