@@ -3649,3 +3649,69 @@ Gemini Robotics 2.5 的 DeepMind 官方 RSS `pubDate` 为 `Mon, 09 Nov 2026 19:5
 - 未删除任何远端分支。
 - 未改 Workflow 配置、未改 skills 镜像（`sync:skills:check` 零漂移）。
 - 未执行私有供应商刷新（`--providers-only` 独立受控阶段），未触碰 `config/providers.ini`，未向 evals 写入任何凭据或私有供应商数据。
+
+## 第六十一批（2026-11-11 CST / 2026-11-11 UTC 增量窗口 2026-10-27 ~ 2026-11-11：当日增量复核——18 家在册厂商确无新的官方模型发布，登记 1 条「实见但非发布」候选）
+
+### 窗口结论
+
+- **窗口**：2026-10-27 ~ 2026-11-11（`checkpoint.mjs status`：锚点 `last_max_release_date=2026-11-10` 回退 14 天重叠，`window_until=2026-11-11`）；`official_release_count=215`。
+- **本批性质**：第六十批的窗口右端只取到 2026-11-10（其扫描始于 UTC 2026-11-10T23:20Z），**未覆盖 2026-11-11**。本批专门补扫 2026-11-11（北京时间当日）及第六十批之后新出现的条目，扫描时刻为 **UTC 2026-11-11T01:30Z ~ 01:50Z（北京时间 09:30 ~ 09:50）**。
+- **结论**：18 家在册厂商逐家实取官方通道、窗口尾段（≥ 2026-11-09）条目逐条打印标题判读后，**无第六十批之外的新官方模型发布**。本批**不新建任何 release 档案、不新增 evidence 行、不改动任何既有 release / benchmark 档案**；第六十批的 4 个 release（Gemini Robotics 2.5 / Gemini 4 Carbon GA / MKA 基准 / MiniMax H3-Image）不重跑。
+- **检查点**：账本最大 `release_date` 仍为 **2026-11-10**，锚点按「只前进不回退」保持 2026-11-10；`last_scan_at = 2026-11-11`。下批窗口仍为 2026-10-27 起。
+- ⚠️ **当日覆盖只到扫描时刻**：北京时间 2026-11-11 白天及美西时间 11-11 当天稍后发布的内容不在本批覆盖范围内，需由下一批补扫，**本批不声称 11-11 全天已穷尽**。
+
+### 逐家巡检结论（窗口尾段 ≥ 2026-11-09 逐条判读）
+
+- **OpenAI**：`openai.com/news/rss.xml` 实取 **1377 条**，≥ 11-09 共 **9 条**，逐条标题：Gilbert + Tobin 客户故事（pubDate 11-12 00:00 GMT）、Helping caregivers use AI、Introducing Businesses in ChatGPT（产品功能）、Closing the AI guidance gap in education、AI's effect on freelance work、ChatGPT Enterprise in AWS Marketplace、Control Room（研究基础设施）、CodeRabbit 客户故事、Kuken 客户故事 → **无模型发布**。
+- **Anthropic**：newsroom 实取（353 KB），最新卡片 11-10《Anthropic launches roadshow for proposed initial public offering》（公司公告）与 11-09 Fable 5.2 / Mythos 5.2（第五十七批已建档）；页头「November 11, 2026」是页面当日日期栏而非文章日期；`platform.claude.com/docs/en/release-notes/overview.md` 最新条目仍是 November 9, 2026 → 无新发布。
+- **Google / DeepMind**：`deepmind.google/blog/rss.xml`（100 条）≥ 11-09 共 3 条 = Gemini 4 Carbon is now available、AlphaProof Code、Gemini Robotics 2.5（均已由第六十批建档或判为不建档）；`blog.google/rss/` ≥ 11-09 共 15 条，除已建档的 Carbon GA / Carbon for developers / MKA 外，均为 Pixel Drop、Gemini Intelligence 设备功能、Google Fi、新顶级域名、Adobe 合作、Gemini for healthcare、Waze、TPU 8tx / 8i Max（硬件）、Maps Platform in AI Studio、节日礼品指南 → 无新模型；Gemini API changelog 最新 November 10, 2026（Carbon GA）；Gemma 线无新条目（HF `google` 最新仓 2026-09-14）。
+- **xAI**：`docs.x.ai/docs/release-notes` 最新仍为 November 2（`grok-imagine-image-quality` 退役）；模型总表旗舰 Grok 4.7；表内 `grok-build-0.1` 的 aliases 为 `grok-code-fast-1` 系列（既有模型别名，非新发布）。
+- **Meta**：`research.meta.ai/blog` 实取（338 KB），最新卡片 11-09 Muse Ember（已建档）/ 11-06 → 无新发布；HF `meta-llama` 最新仓仍为 2025-04，`facebook` 最新 2026-10-28。
+- **Mistral**：`mistral.ai/rss.xml`（94 条）≥ 11-09 **0 条**；`docs.mistral.ai/resources/changelogs.md` 无新段；HF `mistralai` 最新 2026-10-15 → 无新发布。
+- **Kimi**：`www.kimi.com/en/blog/` 最新 2026-10-24（K3.1 Pro，已建档）；Kimi Code whats-new 最新 November 4, 2026（客户端版本）；HF `moonshotai` 最新 2026-11-02（既有模型权重上传）→ 无新发布。
+- **DeepSeek**：`api-docs.deepseek.com/updates` 最新 2026-10-17；HF `deepseek-ai` 最新 2026-10-17 → 无新发布。
+- **GLM / Z.ai**：`z.ai/blog` 仍不可达（scan 记 inaccessible）；`docs.z.ai/release-notes/new-released` 最新条目 2026-08-26 GLM-5.3-Flash（已建档）；HF `zai-org` 最新 2026-08-25 → 无新发布（**覆盖记 partial，不声称穷尽**）。
+- **MiniMax**：`platform.minimax.io/docs/release-notes/models` 最新 Nov. 10, 2026 · MiniMax H3 Image（第六十批已建档）；`www.minimax.io/news` 为客户端渲染卡片墙，JSON-LD `dateModified` 恰为抓取时刻（页面渲染戳，不是新文章日期）；HF `MiniMaxAI` ≥ 11-08 唯一新仓 `MiniMax-H3-Image-PE`（见下「候选登记」）→ 无新发布。
+- **Qwen**：官方研究索引 API `qwen.ai/api/v2/article/retrieval?type=qwen_ai` 最新 2026-09-20；HF `Qwen` 最新 2026-10-09；GitHub `QwenLM` 最新新建仓 2026-10-22（BabelArena）→ 无新发布。
+- **字节跳动 / Seed**：`seed.bytedance.com/sitemap.xml`（35 条）最新 lastmod 2026-11-09（Seedream 5.5，已建档）；HF `ByteDance-Seed` 最新 2026-11-06；GitHub 最新新建仓 Cola2（已建档）→ 无新发布。
+- **小米 MiMo**：`mimo.xiaomi.com` 首页 + `/blog` 静态可见最新印刷日期 June 29, 2026；HF `XiaomiMiMo` 最新 2026-09-27 → 无新发布迹象（**覆盖记 partial**）。
+- **腾讯混元**：官方接口 `api.hunyuan.tencent.com/api/blog/publicList`（13 篇）最新 100129《Hy4 正式发布》（已建档）；HF `tencent` 最新 2026-11-07（DSpine drafter，已结案）；GitHub `Tencent-Hunyuan` 最新新建仓 2026-11-05 → 无新发布。Hyra 线维持原状。
+- **StepFun**：`platform.stepfun.com/docs/sitemap.xml`（147 条）最新 lastmod 11-09 为 Step Code CLI 文档页（产品文档，非模型页）；HF `stepfun-ai` 最新 2026-10-14 → 无新发布。
+- **Microsoft**：`microsoft.ai/new-sitemap.xml`（38 条）最新 lastmod 11-09 两篇 Copilot Health（第六十批已核 `datePublished` 2026-03-12，产品文）；`model-sitemap.xml`（7 条）最新 10-29；HF `microsoft` 最新 2026-10-30（Mage-VL-Cowork，已建档）→ 无新发布。
+- **Particle AI**：首页博客链接仍仅 `/blog/introducing-particle-1`（已建档）→ 无新发布。
+- **Thinking Machines Lab**：`thinkingmachines.ai/news/` 与 sitemap（42 条）最新 11-05 Inkling 2 Small（已建档）；HF org 最新 2026-07-27 → 无新发布。
+- **旁证查漏**：OpenRouter `/api/v1/models`（469 个）`created ≥ 2026-11-08` 的条目逐条比对：Gemini 4 Carbon、Inkling 2 Small、Claude Fable 5.2、Muse Ember 均已建档；另有 `baidu/ernie-5.5-flash-preview`、`baidu/ernie-light-dt-1.0-intl`、`nex-agi/nex-n2.6` 三条，**厂商不在本仓注册表内**，按既有口径不纳入。
+
+### 候选登记（本批实见、非发布）
+
+- `minimax-f6de200bf248`：`huggingface.co/MiniMaxAI/MiniMax-H3-Image-PE`（官方仓创建日 2026-11-08）——H3-Image 的提示词扩写组件（基座为第三方 Qwen3.8-27B，FP4），随 `minimax/minimax-h3-image` 同批发布，无独立发布文与评测分值 → 写明 `exclusion_reason`，不另建 release。
+
+### 跳过清单
+
+| 候选 | 处置理由 |
+|---|---|
+| OpenAI ≥ 11-09 的 9 条 RSS 条目 | 客户故事 / 产品功能 / 教育与劳动研究 / 研究基础设施，非模型发布 |
+| Anthropic IPO roadshow（11-10） | 公司公告，非模型发布 |
+| Google Pixel Drop / Gemini Intelligence 设备功能 / TPU 8tx・8i Max / Maps Platform in AI Studio 等（11-09 ~ 11-10） | 产品、硬件与平台更新，非模型发布 |
+| xAI `grok-build-0.1`（docs 模型表） | 别名指向既有 `grok-code-fast-1` 系列，非新发布 |
+| MiniMax `MiniMax-H3-Image-PE`（HF，11-08） | 已建档 H3-Image 的配套组件，见上 |
+| 百度 ERNIE 5.5 Flash（Preview / Base 开源）、ERNIE-Light-DT-1.0、Nex AGI Nex-N2.6、SpeakLeash Bielik 11B v3.1 系列 | 厂商不在本仓注册表（18 家）内，本批不纳入；如需接入属范围决定，留待人工 |
+| 聚合快讯站所称「阿里 11-11 上线 Qwen3.5-Plus / Qwen3.5-397B-A17B」 | 仅聚合站转述，Qwen 官方研究索引 API、HF `Qwen`、GitHub `QwenLM` 均无对应 2026-11 条目，无一级来源 → 不建档 |
+
+### 待人工核验
+
+- **本批新增 pending 0 条**（未新增 evidence 行）；第六十批遗留 5 条 pending 图行与两处官方数据冲突维持原状。
+- 腾讯 Hyra 线候选、小米 MiMo / 智谱 GLM 两家 partial 覆盖，维持第六十批的待裁定状态。
+
+### 入口扫描与覆盖收口
+
+- `scan.mjs --write` 已落盘 `data/model-coverage.json`（逐入口 `last_scanned_at` / `content_sha256` 刷新；入口扫描未暴露新候选，候选总数 676 → **677**，新增的 1 条为上文人工登记）。
+- **覆盖窗口元数据**：`window_since` / `window_until` 不由脚本自动写入，已按本批 `checkpoint.mjs status` 改为 **2026-10-27 ~ 2026-11-11**（第五十六批起的惯例）。
+
+### 门禁
+
+- `node scripts/reconcile-coverage.mjs` 通过，且幂等（连续两次运行 diff 为空）。
+- `node --test tests/*.test.mjs` **75/75 通过**。
+- `node scripts/validate-data.mjs` **PASS**（taxonomy 9 类 / vendors 18 / benchmarks 509 / releases 229（official 215）/ evidence edges 3758）。
+- `npm run build` 全链通过（见 PR 说明）。
+- **分支**：`model-release-daily-20261111T013020Z`（自 `origin/main` = `3a22c7f` 开出）。
