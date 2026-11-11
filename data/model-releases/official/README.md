@@ -3525,3 +3525,127 @@ Meta 2026-11-06《Bringing Specialized Models to Muse and Meta AI》发布一批
 - 腾讯 Hyra 线 5 条候选维持原状，不建档。
 - Thinking Machines 旧代 Inkling（2026-07）/ Inkling Small（2026-07）早于接入日，留待存量回填批次。
 - 检查点 `last_max_release_date` 维持 2026-11-09（本批最大发布日 2026-11-05 早于锚点，锚点只前进不回退）。
+
+## 第六十批（2026-11-11 CST / 2026-11-10 UTC 增量窗口 2026-10-26 ~ 2026-11-10：Google 机器人与通用模型双线 + MiniMax H3-Image 建档
+
+- **窗口**：增量窗口 **2026-10-26 ~ 2026-11-10**（检查点锚点 `last_max_release_date=2026-11-09` 回退 14 天重叠）。检查点回写 `last_scan_at=2026-11-11`（UTC）、`last_max_release_date` **推进到 2026-11-10**——本批 4 个新 release 的发布日均为 2026-11-10，晚于旧锚点 2026-11-09，锚点只前进不回退。下批窗口因此变为 2026-10-27 ~ 2026-11-11。
+  - ⚠️ **UTC 跨日边界说明**：本批实际扫描始于 **UTC 2026-11-10T23:20Z**（北京时间 2026-11-11 07:20），执行至 UTC 午夜后才提交检查点，故 `last_scan_at` 由脚本按提交时刻记为 UTC 2026-11-11，而覆盖账本内逐入口的 `last_scanned_at` 时间戳仍为 `2026-11-10T23:20:17Z`。**窗口右端按实际巡检到的 UTC 日期取 2026-11-10**，未把未巡检到的 11-11 计入窗口。
+- **本批性质**：**全窗口逐家实取巡检（18 家在册厂商逐家实取官方通道）+ 4 个新 release 建档 + 17 条 evidence + 1 个新 benchmark 实体**。
+- **本批新增 release：4 个**（official 211 → **215**），全部发布日 **2026-11-10**（UTC）。
+
+| release 文件 | 厂商 | 发布日与一级来源证据 | evidence | 转录口径 |
+|---|---|---|---:|---|
+| `google/gemini-robotics-2-5` | Google DeepMind | 页面 `<meta property="article:published_time" content="2026-11-10T15:00:00+00:00">` + 印刷日「November 10, 2026」+ JSON-LD `datePublished` 三处互证 | 6（2 verified + 4 pending） | 正文明文绝对分 2 条 + 官方四张位图柱状图视觉转写 4 条 |
+| `google/gemini-4-carbon-ga` | Google | JSON-LD `datePublished 2026-11-10T16:00:00+00:00` + `article:published_time` + 印刷日 + DeepMind RSS `pubDate: Tue, 10 Nov 2026 16:03:47 +0000` 四处互证 | 10（10 verified） | 全部为正文明文绝对分或点名未印分值 |
+| `google/mka-benchmark` | Google（与 Artificial Analysis 合作） | JSON-LD `datePublished 2026-11-10T16:00:00+00:00` + 印刷日 + blog.google RSS | 1（0 verified + 1 pending） | 唯一分值只存在于官方位图（pareto 图），按图行规则记 pending |
+| `minimax/minimax-h3-image` | MiniMax | JSON-LD `datePublished 2026-11-10T16:23:20.000Z` + 官方 release-notes 条目「Nov. 10, 2026 · MiniMax H3 Image」双源互证 | 0 | 发布页**无任何标准公开基准分**，按口径记 0 行、`status: pending` |
+
+- **本批新增 evidence：17 条**（**12 verified + 5 pending**）
+  - `gemini-robotics-2-5` **6 条**：ASIMOV-Jailbreak 越狱抵抗力 **99.5%**（Gemini 4 Argon，正文明文）、Mercedes-Benz 产线零件拣配成功率 **96%**（真实产线概念验证，正文明文）、官方四张评测图各 1 条（位图，pending）。
+  - `gemini-4-carbon-ga` **10 条**：Project Fortify 扫描召回率 100% / 分诊精确率 95%（Google 自家内部基准）、ExploitBench + CyScenarioBench 种子集的攻击轨迹阻断率 99%（一句话同时归给两个基准，故只建一行、种子来源写进 `benchmark_variant`）、agentic honesty 375 任务通过率 92%（Argon 基线 70%）/ 拒绝补全缺失实验数据 98% / 指出方法学缺陷 68%，以及 Hebbia E2E Financial Agentic、SEC-bench Pro、ExploitGym、CWE-bench 四条**点名但未印分值**的 `not_reported` 行。
+  - `mka-benchmark` **1 条**：Gemini 4 Carbon 在 MKA 上的质量分与每任务成本**只存在于官方位图**，记 pending。
+  - `minimax-h3-image` **0 条**（官方页无评测分）。
+- **本批新增 benchmark 实体：1 个**（`multimodal-knowledge-agent`），已建**完整实体**（`summary` / `interpretation` / `measures` / `does_not_measure` / `metrics`（含 `direction`）/ `versions` / `limitations` 齐备 + 合规 `benchmark-profile/v1`，10 个 section 全部有实开来源的 cite），非兜底页；实体数 508 → **509**。
+- **新铸 benchmark id 10 个**（notes 标 `new-benchmark`）：`asimov-jailbreak`、`apollo-automotive-kitting`、`gemini-robotics-suite-tabletop-pick-place`、`gemini-robotics-suite-multi-step-contact-rich`、`gemini-robotics-suite-precision-kitting-insertion`、`gemini-robotics-suite-dexterous-tools-deformables`、`e2e-financial-agentic`、`project-fortify`、`agentic-honesty`、`multimodal-knowledge-agent`。
+- **本批新增归档：4 个**：`models/2026-11-10-gemini-robotics-2-5/`（page.html + 4 张官方评测图原图 + index.md + manifest.json）、`models/2026-11-10-gemini-4-carbon-ga/`、`models/2026-11-10-mka-benchmark/`（含 4 张官方图）、`models/2026-11-10-minimax-h3-image/`（含定价图与延迟图）。
+
+### 取数纪律（本批四个值得写下来的点）
+
+1. **「同一模型、同一条官方路径、不同发布阶段」应各建一条 release，不合并**。`gemini-4-carbon`（2026-10-28 首发）与 `gemini-4-carbon-ga`（2026-11-10 正式开放）是两条官方发布文、两套日期与两套证据，按账本契约「只追加、不改既有文件」**新建独立 release 文件**，并在新文件 notes 里写明两者关系与既有 release 归属。
+2. **名次口径与相对口径一律不建行**。Carbon GA 页的 CursorBench 4.0 / Perplexity WANDR / Zapier AutomationBench「排名第一」、Balyasny「23 组配置中居首」、MKA「质量第 2」、H3-Image「5× 于主流方案」「定价为同类 50~70%」等**全部只进 notes 与归档转录表**，不拆成 evidence 行；同口径先例见 `gemini-4-argon-ga`（「官方称 Argon 在 Vals Index 排名第一（排名而非分数，故不建 evidence 行）」）。
+3. **位图行不自动翻 verified**。Gemini Robotics 2.5 的四张柱状图与 MKA 的 pareto 图均为**位图**，即使数值清晰可读，也一律记 `value=null` / `score_status=not_extracted` / `status=pending`，转写值只进 notes（与账本内既有 249 条 pending 图行同口径），需另起「重读归档图片」专项批次才能翻 verified。
+4. **真实产线概念验证不是标准化基准**。96% 的 Mercedes-Benz 零件拣配成功率来自 Apptronik Apollo 2 在**活跃产线**上的客户概念验证（匈牙利凯奇梅特 / 德国辛德芬根），无公开题集、无统一协议，**不可与本档其余基准分横向比较**；账本中单列 `apollo-automotive-kitting` 并在 `metric` 与 `notes` 双重标注。
+
+### 日期口径：一个不调和项（已记录，未折中）
+
+Gemini Robotics 2.5 的 DeepMind 官方 RSS `pubDate` 为 `Mon, 09 Nov 2026 19:51:47 +0000`，比页面自身 `article:published_time`（`2026-11-10T15:00:00+00:00`）**早约 19 小时**。按本仓一贯口径以**页面自身发布元数据**为准，故 `release_date = 2026-11-10`；RSS 时间戳只作查漏线索保留，已写入 release `notes` 与 `manifest.limitations`。MiniMax H3-Image 同类情形反向：页面可见 `<time>2026-11-11</time>` 是 **CST（UTC+8）渲染**（16:23:20Z + 8h = 11-11 00:23:20 CST），而 JSON-LD 与官方 release-notes 均为 **2026-11-10**，故取 UTC 日期。两条都在归档里写明了差异来源。
+
+### 逐家巡检结论（窗口 2026-10-26 ~ 2026-11-10，18 家在册厂商逐家实取）
+
+- **OpenAI**：`openai.com/news/rss.xml` 全量解析，窗口内条目**逐条打印标题**判读 → 全为客户故事 / 合作 / 平台与政策 / 研究文，**无模型发布**。其中 11-06 的《measuring how AI agents handle wet lab science》是评测方法学研究文，其 BioBasicsBench 基准**已随 `openai/gpt-6-astra` 由第五十三批建档**，不重复建档。
+- **Anthropic**：`platform.claude.com/docs/en/release-notes/overview.md` + `models/overview.md` → 窗口内最新仍是 11-09 的 Fable 5.2 / Mythos 5.2（第五十七批已建档）→ 无新增。
+- **Google / DeepMind**：`deepmind.google/blog/rss.xml`（100 条）+ `blog.google` 三条 RSS + Gemini API changelog → **窗口内 3 条新发布全部建档**（Robotics 2.5 / Carbon GA / MKA 基准）；另 11-10 的 AlphaProof Code（Lean 形式化验证研究系统）与 Gemini for healthcare（基础设施文）不建档。
+- **xAI**：`docs.x.ai/docs/release-notes`（窗口内最新 11-02）+ 模型总表（Grok 4.7，已建档）→ 无新发布；`x.ai/news` 与 `x.ai/sitemap.xml` 仍 403。
+- **Meta**：`research.meta.ai/blog`（337 KB，卡片逐条取印刷日期）→ 窗口内 3 条：11-09 Muse Ember（第五十七批已建档）、11-06 学术合作、10-28 医学科研支持 → 无新发布；`ai.meta.com/blog` 返回 400。
+- **Mistral**：`mistral.ai/rss.xml` → 窗口内仅 11-05 平台产品文与 10-29 Le Chonk（已建档）；`docs.mistral.ai/resources/changelogs.md` 无更新 → 无新发布。
+- **Kimi**：`www.kimi.com/en/blog/` 全部卡片日期 + HF `moonshotai` → 最新 10-24 Kimi K3.1 Pro（已建档）；HF 仓 `createdAt` 2026-11-02 是既有模型的权重上传时间戳，非新发布。
+- **DeepSeek**：`api-docs.deepseek.com/updates` 变更日志最新 2026-10-17（已建档）→ 窗口内无新发布。
+- **GLM / Z.ai**：`z.ai/blog` 仍 404；HF `zai-org` 窗口内 0 新仓；`docs.z.ai` 最新仍为 2026-08-26 GLM-5.3-Flash（已建档）→ 无新发布（**本轮 GLM 覆盖记 partial，不声称穷尽**）。
+- **MiniMax**：`platform.minimax.io/docs/release-notes/models` 窗口内 **Nov. 10, 2026 · MiniMax H3 Image** → **本批建档**；官方研究文 `www.minimax.io/blog/minimax-h3-image` 实取（70 KB）+ 官方定价页 `platform.minimax.io/docs/pricing/overview` 实取绝对价。
+- **Qwen**：官方研究索引 API `qwen.ai/api/v2/article/retrieval?type=qwen_ai`（40 篇，日期逐条解析）最新 2026-09-20，**窗口内 0 篇**；HF `Qwen` org 最新 2026-10-09（Qwen-Image-2.1-Turbo，已建档）→ 无新发布。
+- **字节跳动 / Seed**：`seed.bytedance.com/sitemap.xml` 全量 → 窗口内仅 11-09 Seedream 5.5（第五十七批已建档）→ 无新发布。
+- **小米 MiMo**：`mimo.xiaomi.com` 首页与 blog 页为客户端渲染，静态 GET 取不到印刷日期 → **本轮覆盖记 partial**，未发现窗口内新发布迹象。
+- **腾讯混元**：官方接口 `api.hunyuan.tencent.com/api/blog/publicList` 逐条解析 → 窗口内仅 11-04 Hy4 正式版（第五十八批已建档）→ 无新发布。
+- **StepFun**：`platform.stepfun.com/docs/sitemap.xml`（147 条）逐条判读 → 窗口内无新模型页；`step-3.5-flash` / `step-3.7-flash` / `step-5-preview` / `stepaudio-3-*` 均已建档 → 无新发布。
+- **Microsoft MAI**：`microsoft.ai` 的 `new-sitemap.xml` + `model-sitemap.xml` 全扫 → 11-09 两篇 Copilot Health 的 JSON-LD `datePublished` 实为 **2026-03-12**（产品文，非模型发布）；11-05《Building medical superintelligence》的 `datePublished` 为 **2026-10-22**（窗口外）且其模型 MAI-DxO / SDBench 已由第四十四批建档 → 窗口内无新发布。**sitemap `lastmod` 不等于发布日**，已逐页取 `datePublished` 复核。
+- **Particle AI**：`particle.ai/blog` 仍仅 1 篇（10-28，已建档）；`docs.particle.ai/models` 在架模型均为第三方托管 → 无新发布。
+- **Thinking Machines Lab**：`thinkingmachines.ai/news/` 逐条判读 → 窗口内仅 11-05 Inkling 2 Small（第五十九批已建档）；HF org 4 个 Inkling 系权重仓均为 **2026-07** 旧仓（官方称 Inkling 2 Small 权重仓截至 2026-11-10 尚未开放）→ 无新发布。
+
+### 覆盖收口（`scan.mjs --write` + `reconcile-coverage.mjs`）
+
+本批 `scan.mjs --write` 已落盘 `data/model-coverage.json`（逐入口 `last_scanned_at` 与 `content_sha256` 全部刷新）；`reconcile-coverage.mjs` 通过且幂等。**窗口内 general/vertical 未决候选 = 0**（候选总数 675）。本批共处置 8 条新暴露候选：
+
+- **自动归并 1 条**：`minimax-de829297c6f9`（MiniMax H3 Image，`https://www.minimax.io/blog/minimax-h3-image`）→ 按 URL 命中本批新建 `minimax/minimax-h3-image`，`release_id` / `archive_path` / `archive_status=archived` / `evidence_status=not_reported` 全部由对账脚本自动补齐。
+- **补 `exclusion_reason` 结案 7 条**：
+  - `minimax-37b74f849a43`（`platform.minimax.io/docs/guides/image-generation`，扫描页内「View docs →」导航链接）→ 官方 API 使用指南页，非独立模型发布。
+  - `thinking-machines-24359eb3a228` / `thinking-machines-5ea09ca60044`（HF `Inkling` / `Inkling-Small` 权重仓，createdAt 2026-07-14 / 2026-07-27）→ 2026-07 的旧代发布，账本暂无该 release 档案，属**存量回填缺口**，`next_backfill_at = 2026-11-10`（沿用第五十七批「防止历史模型永久滑脱」的做法）。
+  - `thinking-machines-8923490e0275` / `thinking-machines-90307ee3bf7c`（`Inkling-NVFP4` / `Inkling-Small-NVFP4`）→ 量化衍生件（`base_model` 指向同厂同款），非独立模型发布。
+  - `thinking-machines-3881d7c2ea1e` / `thinking-machines-ee5ecca182c7`（`meta-llama-3-instruct-tokenizer` / `meta-llama-3-tokenizer`）→ 仅分词器仓库，无模型权重与评测数据。
+
+> 补 `exclusion_reason` 时已核对门禁 `scripts/validate-model-coverage.mjs:48`——`classification=vertical` 的候选**不得以「分类」为由排除**，故 4 条 Inkling 系候选的排除理由一律写「量化衍生件」或「窗口外存量回填缺口」，不出现「分类 / 垂直」字样。
+
+### 排除清单（窗口内发现但按契约不建档）
+
+| 候选 | 处置理由 |
+|---|---|
+| `google/alphaproof-code`（2026-11-10） | AlphaProof Code 是 Lean 形式化验证**研究系统**，非模型发布；页面无标准评测表 → 不建档 |
+| `google/gemini-for-healthcare`（2026-11-10） | 医疗场景产品与基础设施文，非模型发布 → 不建档 |
+| `openai/measuring-how-ai-agents-handle-wet-lab-science`（2026-11-06） | 评测方法学研究文；其 BioBasicsBench 基准已随 `openai/gpt-6-astra` 建档 → 不重复建档 |
+| `microsoft/introducing-copilot-health`（sitemap lastmod 11-09） | JSON-LD `datePublished` 实为 2026-03-12，产品文 → 不建档 |
+| `microsoft/building-medical-superintelligence`（sitemap lastmod 11-05） | `datePublished` 2026-10-22，窗口外且模型 MAI-DxO / SDBench 已建档 → 不建档 |
+| Gemini Robotics 2.5 的相对口径数值（30%~100% 成功率提升、20%~30% 速度提升、33% / 43% 安全完成率提升、200 余项任务） | 相对表述与规模数字，非可比较绝对分 → 只进 notes 与归档转录表 |
+| Gemini 4 Carbon GA 的名次表述（CursorBench 4.0 / WANDR / AutomationBench 第一、Balyasny 23 组配置居首、MKA 质量第 2） | 名次而非分值 → 只进 notes |
+| MiniMax H3-Image 的相对口径数值（5× / 1.5~2× / 3~4× 速度、定价为同类 50~70%、首周 5 折） | 相对表述 → 只进 notes 与归档转录表 |
+
+### 门禁（本批本地全绿）
+
+| 门禁 | 结果 |
+|---|---|
+| `node scripts/reconcile-coverage.mjs` | 通过，且幂等（连续两次运行 diff 为空）；窗口内 general/vertical 未决候选 **0** |
+| `node --test tests/*.test.mjs` | **通过**（含「本批官方归档文件与 manifest 哈希一致」与「覆盖对账幂等」两项专项） |
+| `node scripts/validate-data.mjs` | **PASS**（taxonomy 9 类 / vendors 18 / benchmarks 509 / releases 229（official 215）/ evidence edges 3758） |
+| `npm run sync:skills:check` | 通过（技能镜像零漂移） |
+| `npm run build`（含 `build:epub:official` + `build:web` + `validate:site`） | 全链通过 |
+| 契约 `validate_paths` 允许路径 | 仅 `models/`、`data/model-releases/official/`、`data/benchmarks/`、`data/model-coverage.json`、`data/generated/`（构建再生产物） |
+| 密钥模式扫描 | 无凭据命中 |
+
+### 本批产出汇总
+
+| 指标 | 数值 |
+|---|---:|
+| 新建 release 文件 | **4**（official 211 → 215；releases 225 → 229） |
+| 新增 evidence 行 | **17**（verified 12 + pending 5；edges 3741 → 3758） |
+| 其中 `vendor_reported` | 17（本批全部为厂商自报；MKA 一条按图行记 pending） |
+| 新建 benchmark 实体 | **1**（`multimodal-knowledge-agent`，含合规 v1 profile；508 → 509） |
+| 新铸 benchmark id（notes 标 `new-benchmark`） | 10 |
+| 复用既有 benchmark 实体 | `sec-bench-pro`、`exploitgym`、`cwe-bench`、`exploitbench`、`cyscenariobench` |
+| 新建归档目录 | **4** |
+| 覆盖候选总数 | 653 → **675** |
+| 窗口内 general/vertical 未决候选 | **0** |
+| 检查点 `last_max_release_date` | 2026-11-09 → **2026-11-10** |
+
+### 待人工裁定（本批未自行扩范围）
+
+1. **本批 PR 是否合入 main**（按本 Issue 验收标准未自动合并）。
+2. **5 条 pending 图行需人工复核才能翻 verified**：Gemini Robotics 2.5 四组任务集的 16 个高亮任务读数，以及 MKA 的 Gemini 4 Carbon 质量分 54.3% / 每任务成本 $5.63（技术报告 Table 3 独立佐证 54.34% Climb-WSR）。
+3. **两处官方数据冲突未调和**（已逐条记入 notes 与 limitations，等官方勘误后走 `revisions[]`）：① MKA 的 GPT-6 Astra 每任务成本在博客图读作 $6.15、技术报告 Table 4 读作 $6.03（Carbon / Fable / Opus 两处一致）；② MiniMax H3-Image 首周 5 折的像素门槛在定价页为「≥ 16,600,000 pixels」、博客定价图为「≥ 16,000,000 pixels」。
+4. **OpenClaw 旧声明仍为停用态**：此前因连续 10 次 `source_branch_mismatch` 被自动停用，本轮已显式 `--disable` 并原生回读确认 `enabled=false`，`schedule-runner.py` 的 `legacy_conflict()` 返回 `none`；`resource/model-release-daily/stop.json` 的停机态是否清空属运维决定，本轮未擅自清除。
+5. **腾讯 Hyra 线 5 条候选**（HyPDE / HyCell / HyFF / HyInv / HyPLM-Flash）维持第五十七批起的原状（仅登记候选、不建档），范围裁定仍待人工决定。
+6. **小米 MiMo 与智谱 GLM 两家覆盖记 partial**（页面为客户端渲染 / `z.ai/blog` 404），本批不声称这两家已穷尽。
+
+### 未做的事
+
+- 未合并 PR（按本 Issue 验收标准交人工 review）。
+- 未删除任何远端分支。
+- 未改 Workflow 配置、未改 skills 镜像（`sync:skills:check` 零漂移）。
+- 未执行私有供应商刷新（`--providers-only` 独立受控阶段），未触碰 `config/providers.ini`，未向 evals 写入任何凭据或私有供应商数据。
