@@ -1,0 +1,533 @@
+{
+  "id": "multimodal-knowledge-agent",
+  "name": "Multimodal Knowledge Agent (MKA)",
+  "full_name": "MKA: Evaluating Multimodal Knowledge Agents on end-to-end professional tasks",
+  "aliases": [
+    "MKA",
+    "Multimodal Knowledge Agent"
+  ],
+  "status": "active",
+  "categories": [
+    "agent",
+    "multimodal"
+  ],
+  "summary": "MKA 是 Google DeepMind 与 Artificial Analysis 联合推出的多模态知识工作智能体基准：200 题、覆盖 10 个行业 83 个职业的真实职业项目，测的是智能体能否在关键信息只存在于图和版式里的多文件工作目录中，自己读文件、用工具、最后交出一份专业人士会验收的交付文件。",
+  "interpretation": "分数是百分比（Climb WSR，越高越好），可以理解成「每题按专家给每条检查项打的权重，算模型满足了多大比例的硬性要求，再在 200 题上取平均」。2026-11-10 的官方水位是：Claude Fable 5.2 56.6%、Gemini 4 Carbon 54.3%、Claude Opus 5.5 53.0%、GPT-6 Astra 50.2%——官方自己写明「即使最强的前沿模型，Climb-WSR 也仍在 57% 以下」，说明这个基准远未饱和，前沿之间还没有拉开差距。前三名在统计上其实不可分（Carbon 与 Fable 5.2 相差 2.22 个百分点，95% 置信区间跨 0），所以别把名次当定论。三个必须记住的 caveat：一是分数是「模型 + Stirrup 脚手架 + GPT-6 Luna 评分器」三件套的组合表现，换脚手架或换评分器的分数不能直接横比；二是 200 题评测集私有，只有 Artificial Analysis 能跑和托管榜单，外部只能拿到 10 题公开 Showcase 自测，无法复算分数；三是读任何绝对数值都要看清出自哪里——官方博客结果图里的 54.3% 与技术报告 Table 3 的 54.34% 是同一个数（Climb-WSR），但 GPT-6 Astra 的每任务成本在博客图里是 $6.15、技术报告 Table 4 里是 $6.03，两处口径不一致，别混着引用。",
+  "measures": [
+    "端到端完成真实职业项目的能力：从读取多文件输入、调用工具，到产出一份独立的可交付文件（.xlsx / .pptx / .pdf / .docx / .html / .png 等）",
+    "跨格式综合推理：PDF、图像与扫描件、表格、Word 文档、地理空间图层、演示稿、CSV 混在同一工作目录里，需要互相印证",
+    "以视觉为承重信息的读图能力：把文件压成纯文本会丢掉关键信息，必须真的「看」",
+    "工具编排：代码执行、文件读写、渲染页面后再看图，以及按题目要求交付独立文件而非只回一段话"
+  ],
+  "does_not_measure": [
+    "纯文本可解的知识问答与检索型任务（这类任务去掉图像工具后分数几乎不变，MKA 刻意排除了）",
+    "单轮多选或短答案的视觉问答、像素级 GUI 点击操作",
+    "模型的裸感知能力上限：分数是「模型 + Stirrup 脚手架 + AI 评分器」的组合，脚手架与工具会显著影响结果",
+    "需要与真实客户或团队持续多轮协作的工作流：每题都是独立项目"
+  ],
+  "dataset": {
+    "sample_count": 200,
+    "splits": [
+      "MKA private evaluation set (200)",
+      "MKA-Showcase public set (10)"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "expert-authored professional workflows",
+    "public_sample": "https://huggingface.co/datasets/google/multimodal-knowledge-agent"
+  },
+  "metrics": [
+    "climb_wsr",
+    "regression_wsr",
+    "overall_wsr",
+    "cost_per_task",
+    "total_tokens_per_task",
+    "output_tokens_per_task",
+    "turns_per_task",
+    "time_per_task"
+  ],
+  "default_protocol": {
+    "raw": "Stirrup v0.2.1 开源智能体框架；同一套系统提示、工具集、容器镜像与资源预算，只有模型端点不同。沙箱为全新隔离的 Linux 容器（4 vCPU，基础 128 MB 内存可突发到 16 GB，Debian + Python 3.13），有互联网访问。工具四个：code_exec（单条命令 300 秒超时）、view_image、web_search（180 秒超时）、finish。回合上限 250，每题墙钟 8 小时，上下文可用时 1M token，达到上下文长度 70% 触发压缩，最后 20 回合提示剩余回合数。每个模型每题只跑一次。交付物由基于 OpenAI GPT-6 Luna 的智能体自动评分器（Agentic Autorater）在独立沙箱内逐条打分，评分项权重为 1–5 的整数。"
+  },
+  "versions": [
+    "v1 (2026-11-10)"
+  ],
+  "limitations": [
+    "定量结果外部无法复算：200 题评测集私有且由 Artificial Analysis 独占运行与托管，公开的只有 10 题 Showcase，仅够看格式与自测",
+    "出题靠专家、判分靠 AI，两端都可能带偏：官方测出评分器相对人类多数票仍有 3.8% 的逐条错误率（误放行 2.4%、误判失败 1.4%）",
+    "Climb / Regression 的切分不是天然标签，而是用四个上一代模型的通过情况推出来的；官方承认因此少部分本属 Regression 的评分项可能被误标为 Climb",
+    "覆盖面只有 10 个行业、83 个职业，且 88% 的题要求产出独立文件：它测的是「交付物型职业工作」，不覆盖文本问答型工作",
+    "成本口径两处不一致：官方博客结果图把 GPT-6 Astra 每任务成本标为 $6.15，同一份技术报告 Table 4 记 $6.03，原因官方未说明",
+    "以上数字均为厂商与榜单方自报，本站未做独立复跑"
+  ],
+  "notes": "2026-11-10 由 Google 官方发布文与技术报告同日发布，Artificial Analysis 同日上线其榜单页与 MKA methodology 章节；10 题公开 Showcase 以 Apache-2.0 释出在 Hugging Face。账本侧对应 release：google/mka-benchmark.json（该页 Carbon 成绩只在图内，本批记 1 条 figure 行，pending）。",
+  "official_sources": [
+    {
+      "kind": "blog",
+      "url": "https://blog.google/innovation-and-ai/models-and-research/gemini-models/multimodal-knowledge-agent-benchmark/"
+    },
+    {
+      "kind": "paper",
+      "url": "https://storage.googleapis.com/deepmind-media/papers/mka_tech_paper.pdf"
+    },
+    {
+      "kind": "leaderboard",
+      "url": "https://artificialanalysis.ai/evaluations/mka"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/google/multimodal-knowledge-agent"
+    }
+  ],
+  "related_benchmarks": [
+    "gdpval",
+    "apex-agents",
+    "gdp-pdf",
+    "spreadsheetbench",
+    "mmmu-pro"
+  ],
+  "content_status": "beta",
+  "last_verified_at": "2026-11-10",
+  "profile": {
+    "template": "benchmark-profile/v1",
+    "verified_at": "2026-11-10",
+    "sources": [
+      {
+        "id": "blog",
+        "kind": "blog",
+        "title": "Introducing the Multimodal Knowledge Agent benchmark（Google 官方发布文，2026-11-10）",
+        "url": "https://blog.google/innovation-and-ai/models-and-research/gemini-models/multimodal-knowledge-agent-benchmark/",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "MKA: Evaluating Multimodal Knowledge Agents on end-to-end professional tasks（Google DeepMind 技术报告，2026-11-10）",
+        "url": "https://storage.googleapis.com/deepmind-media/papers/mka_tech_paper.pdf",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "aa",
+        "kind": "leaderboard",
+        "title": "Multimodal Knowledge Agent (MKA) Benchmark · Artificial Analysis 榜单与方法说明",
+        "url": "https://artificialanalysis.ai/evaluations/mka",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "hf",
+        "kind": "dataset",
+        "title": "google/multimodal-knowledge-agent（Hugging Face 公开 Showcase 集，Apache-2.0）",
+        "url": "https://huggingface.co/datasets/google/multimodal-knowledge-agent",
+        "accessed": "2026-11-10"
+      }
+    ],
+    "sections": {
+      "overview": {
+        "text": "MKA 是一套端到端的「多模态知识工作」智能体基准：它给智能体一个装满视觉密集文件的工程目录（建筑蓝图、工程原理图、临床影像、财务图表、地理空间地图等），让它自己开文件、用工具、最后交出一份专业人士真的会验收的交付物（.xlsx / .pptx / .pdf / .docx / .html / .png 等）。它要回答的问题是——当关键信息只存在于图和版式里时，智能体还能不能把这份活干完。它不是选择题，也不是短答案的视觉问答。",
+        "cite": [
+          "blog@Introducing MKA",
+          "paper@§1 Introduction",
+          "aa@Background"
+        ]
+      },
+      "origin": {
+        "facts": [
+          {
+            "k": "机构",
+            "v": "Google DeepMind 研发并署名作者；Artificial Analysis 联合共建，负责运行 200 题私有评测集、托管公开榜单与发布评测方法说明",
+            "cite": [
+              "paper@作者署名页",
+              "blog@首段",
+              "aa@Methodology"
+            ]
+          },
+          {
+            "k": "共同第一作者",
+            "v": "Anima Singh（研究与评测负责人）、Suhas Yogin（端到端数据与发布负责人）、Weicheng Kuo（早期数据与任务设计负责人）",
+            "cite": [
+              "paper@作者署名页与脚注"
+            ]
+          },
+          {
+            "k": "发布时间",
+            "v": "2026-11-10，官方发布文与技术报告同日发布；Artificial Analysis 榜单页同日上线",
+            "cite": [
+              "paper@首页日期",
+              "blog@JSON-LD datePublished",
+              "aa@Background"
+            ]
+          },
+          {
+            "k": "命名与两个任务集",
+            "v": "MKA = Multimodal Knowledge Agent；200 题的私有评测集称 MKA，10 题的公开集称 MKA-Showcase（每个行业 1 题）",
+            "cite": [
+              "paper@§2.1 Public Leaderboard",
+              "hf@Dataset card"
+            ]
+          },
+          {
+            "k": "公开材料",
+            "v": "官方发布文 + 技术报告 PDF + 公开 10 题 Showcase 数据集（Hugging Face，Apache-2.0，总体积约 1.01 GB，含每个任务的 prompt、输入文件与评分标准）",
+            "cite": [
+              "blog@正文",
+              "hf@Dataset card"
+            ]
+          }
+        ]
+      },
+      "measures": {
+        "items": [
+          {
+            "text": "测：智能体在多文件、视觉密集的真实职业工作流里从读取输入到产出可交付文件的全过程能力——交付物是报告、表格、幻灯片、批注过的图纸这类真实文件，而不只是文本回答。",
+            "cite": [
+              "aa@Background",
+              "paper@§2 The MKA Dataset"
+            ]
+          },
+          {
+            "text": "测：跨格式综合推理（PDF、图像与扫描件、表格、Word 文档、地理空间图层、演示稿、CSV 混在同一工作目录），而且视觉是承重的——把文件压成纯文本会丢掉关键信息。",
+            "cite": [
+              "paper@§2 Input files",
+              "hf@Dataset card"
+            ]
+          },
+          {
+            "text": "测：工具编排与「交付独立文件」这件事本身——渲染页面后回头再看图、写脚本解析输入、最后按题目要求产出 .xlsx / .pptx / .docx / .json 或结构化技术报告。",
+            "cite": [
+              "hf@Dataset card",
+              "paper@§3.1 Tools"
+            ]
+          },
+          {
+            "text": "不测：纯文本可解的知识问答与检索型任务。官方用消融实验证明这一点——去掉图像工具后，同一个模型在 GDPval 上的 Overall WSR 几乎不变（+0.08 pp，不显著），在 MKA 上却掉 5.94 pp。",
+            "cite": [
+              "paper@§4.3 Role of Visual Perception",
+              "paper@Table 5"
+            ]
+          },
+          {
+            "text": "不测：单轮多选/短答案的视觉问答，也不对应像素级 GUI 点击操作——那是另一类基准（官方在 Table 1 里逐项对比了 MMMU-Pro、GDP.pdf、GDP.xlsx、BrowseComp、OSWorld、SpreadsheetBench 2、APEX-Agents、GDPval）。",
+            "cite": [
+              "paper@Table 1",
+              "paper@§5 Related Work"
+            ]
+          },
+          {
+            "text": "不测：模型的裸能力上限。分数是「模型 + Stirrup 脚手架 + GPT-6 Luna 评分器」的组合表现，脚手架与工具集的变化会显著改变结果。",
+            "cite": [
+              "paper@§3.1 Agentic Harness",
+              "paper@§3.2 Agentic Autorater"
+            ]
+          }
+        ]
+      },
+      "composition": {
+        "facts": [
+          {
+            "k": "任务总数与分布",
+            "v": "200 题，均匀分布在 10 个行业（每行业 20 题），覆盖 83 个职业；每个出题作者至少 5 年从业经验，每题都由同岗位的第二位专家复核真实性与准确性",
+            "cite": [
+              "paper@§2 The MKA Dataset",
+              "paper@Figure 1",
+              "blog@Introducing MKA"
+            ]
+          },
+          {
+            "k": "10 个行业",
+            "v": "商业、建筑、教育、工程、金融、医疗、法律与政府、物流与制图、科学、软件与数据",
+            "cite": [
+              "paper@§2 Sectors"
+            ]
+          },
+          {
+            "k": "每题输入文件",
+            "v": "2 至 45 个，全集合计 1,459 个（均值 7.30、中位数 6.0）",
+            "cite": [
+              "paper@§2 Input files"
+            ]
+          },
+          {
+            "k": "输入文件格式分布",
+            "v": "PDF 43.0%（628 个）、图像与扫描件 22.9%（334）、表格 10.9%（159）、Word 文档 10.2%（149）、地理空间与文本/JSON 6.0%（88）、幻灯片 3.5%（51）、CSV/TSV 3.4%（50）",
+            "cite": [
+              "paper@§2 Input files",
+              "paper@Figure 2"
+            ]
+          },
+          {
+            "k": "交付物类型分布",
+            "v": "PDF 报告 22.5%（45 题）、Word 文档 21.0%（42）、演示稿 17.0%（34）、表格 16.0%（32）、文本报告 15.0%（30）、图像与图表 4.5%（9）、Web 应用 4.0%（8）；其中 176 题（88.0%）要求产出独立文件，24 题（12.0%）直接在文本里回答",
+            "cite": [
+              "paper@§2 Deliverables",
+              "paper@Figure 3"
+            ]
+          },
+          {
+            "k": "评分标准规模",
+            "v": "全集合计 14,284 条评分项，每题均值 71.4 条、中位数 68.5 条、取值范围 20–150 条；每条带 1–5 的整数权重（权重 1–5 的占比分别为 21.6%、26.2%、26.1%、21.4%、4.7%）",
+            "cite": [
+              "paper@§2 Rubrics",
+              "blog@Introducing MKA"
+            ]
+          },
+          {
+            "k": "标注成本",
+            "v": "每位专家在每题上投入 3 至 8 小时：准备真实的多文件输入、亲手解一遍做出黄金交付物、再逐条写评分标准",
+            "cite": [
+              "paper@§2 The MKA Dataset",
+              "blog@Introducing MKA"
+            ]
+          },
+          {
+            "k": "公开样例集",
+            "v": "MKA-Showcase 10 题（每个行业 1 题），含完整 prompt、全部输入文件与评分标准，以 Apache-2.0 释出在 Hugging Face",
+            "cite": [
+              "hf@Dataset card",
+              "paper@§2.1 Public Leaderboard"
+            ]
+          }
+        ]
+      },
+      "construction": {
+        "items": [
+          {
+            "text": "题目不是从网上搜来的，而是由 10 个行业、83 个职业的从业专家按各自真实工作流撰写：每人先攒出一套真实的多文件输入，再亲手把题解一遍做出「黄金交付物」，最后逐条写评分标准。",
+            "cite": [
+              "paper@§2 The MKA Dataset",
+              "blog@Introducing MKA"
+            ]
+          },
+          {
+            "text": "每条评分项还配有专家写的「黄金理由」，指明答案出自输入文件的哪个位置、必要时还给出推导过程；99.6%（14,229 / 14,284 条）有，200 题中有 199 题做到 100% 覆盖。",
+            "cite": [
+              "paper@§2 Rubrics · Golden justifications"
+            ]
+          },
+          {
+            "text": "评分项之间可以声明前置依赖：29.5%（190 题共 4,217 条）把下游结论挂在上游的视觉提取与计算之上，形成任务内的有向无环图；主/次目标标注为 94.5%（13,497 条）主要目标、5.5%（787 条）次要目标。",
+            "cite": [
+              "paper@§2 Rubrics · Dependencies",
+              "paper@§2 Rubrics · Weights and priority"
+            ]
+          },
+          {
+            "text": "防污染：200 题评测集由 Artificial Analysis 保管并私有运行。官方给出的理由是让题目既不会泄漏进训练数据，也不会被模型通过搜索检索到；对外只放 10 题 Showcase。",
+            "cite": [
+              "blog@私有任务集段落",
+              "paper@§2.1 Public Leaderboard"
+            ]
+          },
+          {
+            "text": "公开的 10 题按 tasks/task_<id>/ 组织，每个任务目录下有 metadata.json（任务 ID、prompt、领域、角色、输入文件清单、任务目标与经济理由）、rubrics.json（逐条评分标准与权重）和 input/（全部输入文件）。",
+            "cite": [
+              "hf@Repository Structure"
+            ]
+          }
+        ]
+      },
+      "scoring": {
+        "items": [
+          {
+            "text": "主指标是 Climb WSR（Climb 加权满意率）：先算每题的加权满意率 WSR = 满足的评分项权重和 ÷ 全部评分项权重和，再对任务取均值（任务等权）。",
+            "cite": [
+              "aa@Background",
+              "paper@§3.4 Weighted Satisfaction Rate (WSR)"
+            ]
+          },
+          {
+            "text": "Climb 与 Regression 两类评分项是官方用一个固定的「上一代模型对照组」（Gemini 3.8 Flash、Gemini 3.6 Flash、Claude Sonnet 5.5、GPT-6.1 Sol）标定出来的：对照组的每个模型在 3 次运行中有 2 次以上通过的记为 Regression（6,396 条，覆盖 180 题），其余记为 Climb（7,888 条，覆盖全部 200 题）。Climb 评的是前沿能力，Regression 评的是基础能力有没有退步。",
+            "cite": [
+              "paper@§3.4 Climb and regression splits"
+            ]
+          },
+          {
+            "text": "判分用智能体自动评分器（Agentic Autorater）：它本身也是一个 Stirrup 智能体，在自己的新容器里跑，拥有 code_exec、view_image 和一个结构化的 submit_verdicts 收卷工具，没有联网；它只能看到候选交付物和智能体的最终回复，看不到任务的输入文件（因为评分标准本身是自洽的，每条都直接写明期望值或容差）。评分模型是 OpenAI GPT-6 Luna，官方说明这样选是为了避免偏向 Gemini 家族。",
+            "cite": [
+              "paper@§3.2 Agentic Autorater",
+              "aa@Background"
+            ]
+          },
+          {
+            "text": "评分器可靠性：在一项覆盖 50 题、跨 9 个行业的研究里，3 位对模型身份盲评的领域专家逐条打分，评分器与专家的成对一致率 96.2%（95% CI 94.7–97.6），专家之间的上限是 99.8%，加权 Cohen's κ = 0.911，任务级 Pearson r = 0.966。相对人类多数票，评分器每条评分项的错误率 3.8%（误放行 2.4%、误判失败 1.4%）。官方发布文把这个数字概括为「领域专家自己评分时，96% 的时间与评分器结论一致」。",
+            "cite": [
+              "paper@§3.3 Agreement Between the Autorater and Human Raters",
+              "paper@Table 2",
+              "blog@autorater 段落"
+            ]
+          },
+          {
+            "text": "运行协议：所有模型都跑在 Stirrup（v0.2.1）里，系统提示、工具集、容器镜像与资源预算完全一致，只有模型端点不同。沙箱是全新隔离的 Linux 容器（4 vCPU，基础 128 MB 内存可突发到 16 GB，Debian + Python 3.13，预装 LibreOffice、Tesseract、pymupdf、weasyprint 等文档与渲染工具），有互联网访问。工具共四个：code_exec（执行 bash 与 Python，单条命令 300 秒超时）、view_image（把光栅图按原生分辨率放进模型视觉上下文）、web_search（180 秒超时）、finish（检查声明的交付物都存在后收尾）。回合上限 250，每题墙钟 8 小时，上下文可用时 1M token，走到上下文长度的 70% 触发压缩，最后 20 回合会提示剩余回合数。每个模型每题只跑一次。",
+            "cite": [
+              "paper@§3.1 Agentic Harness",
+              "paper@§3.1 Tools",
+              "aa@Background"
+            ]
+          },
+          {
+            "text": "Artificial Analysis 侧补充了成本口径：成本只计入被测模型的调用，不含评分器调用；并在按行业、按输出文件类型、按成本、按 token、按速度等维度给出分视图。",
+            "cite": [
+              "aa@Cost",
+              "aa@Token Usage"
+            ]
+          }
+        ]
+      },
+      "reading": {
+        "items": [
+          {
+            "text": "量纲是百分比，越高越好，当前水位在 50%–57% 区间（2026-11-10），离饱和还很远——官方自己写明「即使最强的前沿模型，Climb-WSR 也仍在 57% 以下，留下大量提升空间」。",
+            "cite": [
+              "paper@§1 Introduction",
+              "paper@§4.1 Model Quality Comparison",
+              "aa@MKA Climb WSR"
+            ]
+          },
+          {
+            "text": "读排名要当心置信区间：官方对前三名做了成对任务级自助法，Claude Fable 5.2 与 Gemini 4 Carbon 的 Climb-WSR 相差 +2.22 个百分点（95% CI −0.94 ~ +5.49）、Carbon 与 Claude Opus 5.5 相差 +1.33 个百分点（95% CI −1.70 ~ +4.41），前两名在统计上不可分；Carbon 对 GPT-6 Astra 的 +4.10 个百分点（95% CI +1.00 ~ +7.11）才算显著。",
+            "cite": [
+              "paper@§4.1 Model Quality Comparison"
+            ]
+          },
+          {
+            "text": "别把 Regression WSR 当质量分：四个模型的 Regression-WSR 都在 95% 以上（95.17%–96.36%），说明前沿差异几乎全部集中在 Climb-WSR 上。",
+            "cite": [
+              "paper@§4.1 Model Quality Comparison",
+              "paper@Table 3"
+            ]
+          },
+          {
+            "text": "成本要另看一列：官方博客那张结果图把质量与每任务成本并排（Gemini 4 Carbon 54.3% / $5.63、Claude Fable 5.2 56.6% / $35.28、Claude Opus 5.5 53.0% / $10.29、GPT-6 Astra 50.2% / $6.15），Artificial Analysis 榜单则把成本单列并说明「只计入被测模型调用、不含评分器调用」；两边口径不同，成本数字不能混着比。",
+            "cite": [
+              "blog@结果图",
+              "aa@Cost"
+            ]
+          },
+          {
+            "text": "一个反向验证：把 view_image 工具去掉后，Gemini 4 Carbon 在 MKA 上 Climb-WSR 掉 5.94 个百分点、Overall WSR 掉 4.58 个百分点，而同一模型在 GDPval 上几乎不变。这说明 MKA 确实在考视觉，而不是换个名字继续考文本。",
+            "cite": [
+              "paper@§4.3 Role of Visual Perception",
+              "paper@Table 5"
+            ]
+          },
+          {
+            "text": "效率差异巨大：官方发布文概括为「受测模型每题平均使用 30 到 130 回合」，这是跨模型的区间而不是任何单个模型的分数。",
+            "cite": [
+              "blog@技术报告段落"
+            ]
+          }
+        ]
+      },
+      "limitations": {
+        "items": [
+          {
+            "text": "定量结果外部无法复算：200 题评测集私有，只有 Artificial Analysis 能在其上运行并托管公开榜单；对外只有 10 题 Showcase，够看格式、够自测，不够复算分数。",
+            "cite": [
+              "blog@私有任务集段落",
+              "paper@§2.1 Public Leaderboard",
+              "hf@Dataset card"
+            ]
+          },
+          {
+            "text": "出题靠专家、判分靠 AI，两端都可能带偏：官方测出评分器对人类多数票仍有 3.8% 的逐条错误率，其中误放行 2.4% 主要来自边界宽松（模型提交的答案与标准答案不同但语义等价时仍算通过）。",
+            "cite": [
+              "paper@§3.3 Error breakdown",
+              "paper@Table 2"
+            ]
+          },
+          {
+            "text": "Climb / Regression 的切分不是天然标签，而是用四个上一代模型的通过情况推出来的。官方自己承认：因为切分依赖评分器判定，少量本应算 Regression 的评分项可能被误标成 Climb（2-of-3 规则与冻结切分用来缓解这一点）。",
+            "cite": [
+              "paper@§3.4 Climb and regression splits"
+            ]
+          },
+          {
+            "text": "覆盖面有限：只有 10 个行业、83 个职业，且 88% 的题要求产出独立文件。它测的是「交付物型职业工作」，不覆盖文本问答型工作，也不覆盖需要与客户/团队持续协作的流程。",
+            "cite": [
+              "paper@§2 The MKA Dataset",
+              "paper@§2 Deliverables"
+            ]
+          },
+          {
+            "text": "成本口径两处不一致：官方博客结果图把 GPT-6 Astra 的每任务 API 成本标为 $6.15，而同一份技术报告 Table 4 记为 $6.03（Gemini 4 Carbon $5.63、Claude Fable 5.2 $35.28、Claude Opus 5.5 $10.29 两处一致），相差 0.12 美元，原因官方未说明。",
+            "cite": [
+              "blog@结果图",
+              "paper@Table 4"
+            ]
+          },
+          {
+            "text": "以上数字均为厂商与榜单方自报，本站未做独立复跑；榜单上的模型条目与分数会随 Artificial Analysis 追加模型而变动。",
+            "cite": [
+              "aa@Methodology",
+              "aa@MKA Climb WSR"
+            ]
+          }
+        ]
+      },
+      "versions": {
+        "items": [
+          {
+            "text": "v1（2026-11-10）：技术报告、官方发布文、Artificial Analysis 榜单页与 10 题公开 Showcase 同日发布，构成为 200 题私有评测集 + 10 题公开集。截至 2026-11-10 未见数据版本更新或论文修订版，变化只体现在榜单持续追加模型与配置。",
+            "cite": [
+              "paper@首页日期",
+              "blog@正文",
+              "aa@Background",
+              "hf@Dataset card"
+            ]
+          }
+        ]
+      },
+      "official_results": {
+        "table": {
+          "as_of": "2026-11-10",
+          "columns": [
+            "模型",
+            "Climb-WSR（±95% CI）",
+            "Overall WSR（±95% CI）",
+            "Regression-WSR",
+            "每任务 API 成本",
+            "平均回合 / 用时"
+          ],
+          "rows": [
+            [
+              "Claude Fable 5.2",
+              "56.56 ± 3.63",
+              "73.26 ± 2.45",
+              "95.71",
+              "$35.28",
+              "128.8 回合 / 83.2 分钟"
+            ],
+            [
+              "Gemini 4 Carbon",
+              "54.34 ± 3.24",
+              "71.89 ± 2.15",
+              "96.36",
+              "$5.63",
+              "46.6 回合 / 29.2 分钟"
+            ],
+            [
+              "Claude Opus 5.5",
+              "53.01 ± 3.54",
+              "70.98 ± 2.46",
+              "95.81",
+              "$10.29",
+              "91.4 回合 / 33.8 分钟"
+            ],
+            [
+              "GPT-6 Astra",
+              "50.24 ± 3.25",
+              "69.34 ± 2.10",
+              "95.17",
+              "$6.03",
+              "29.0 回合 / 18.5 分钟"
+            ]
+          ]
+        },
+        "cite": [
+          "paper@Table 3",
+          "paper@Table 4"
+        ]
+      }
+    }
+  }
+}
