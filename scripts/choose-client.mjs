@@ -1,117 +1,102 @@
-import {readState,stateParams,parseGoal,selectModels} from './model-selection.mjs';
-import {esc,evidenceHTML,specsHTML} from './model-ui.mjs';
+/** /choose/：选领域 → 搜两个模型 → 两两对照。计算在 model-compare.mjs，渲染在 compare-ui.mjs（与构建期同构）。 */
+import {headToHead,readCompareParams,compareParams,searchModels} from './model-compare.mjs';
+import {compareHTML,modelHead} from './compare-ui.mjs';
+import {esc} from './model-ui.mjs';
 
-const data=await fetch('../assets/selection-data.json').then(r=>{if(!r.ok)throw Error('数据无法读取');return r.json();});
-const form=document.querySelector('#choose-form');
-const status=document.querySelector('#selection-status'), results=document.querySelector('#selection-results');
+const REL='../';
+const form=document.querySelector('#compare-form');
+const out=document.querySelector('#compare');
+const live=document.querySelector('#cbx-status');
+const emptyHTML=out.innerHTML;
+let data;
+try{data=await fetch(REL+'assets/compare-data.json').then(r=>{if(!r.ok)throw Error(String(r.status));return r.json();});}
+catch{out.insertAdjacentHTML('afterbegin','<p class="negative">对比数据暂时无法读取，请刷新重试；模型档案仍可在 <a href="../models/">模型目录</a> 打开。</p>');throw Error('compare-data 读取失败');}
+const byKey=new Map(data.models.map(m=>[m.key,m]));
+const state=readCompareParams(new URLSearchParams(location.search),data.useCases,data.models);
 
-let currentTask=new URLSearchParams(location.search).get('task')||'chinese-longform-writing';
-if(!data.useCases||!data.useCases[currentTask]) currentTask='chinese-longform-writing';
-let currentUseCase=data.useCases?.[currentTask]||data.useCase;
+function domainCount(task){
+  const u=data.useCases[task],c={};
+  for(const m of data.models){const n=new Set(m.evidence.filter(e=>u.benchmarks[e.benchmark_id]).map(e=>e.benchmark_id)).size;if(n)c[m.key]=n;}
+  return c;
+}
+let counts=domainCount(state.task);
 
-function renderWeights(useCase){
- const container=form?.querySelector('.weights');
- if(!container||!useCase?.dimensions)return;
- container.innerHTML=useCase.dimensions.map(d=>
-  `<label>${esc(d.label)}<input type="number" name="w_${d.id}" min="0" max="10" step="1" value="${d.weight}" aria-label="${esc(d.label)}权重"><small>${(d.benchmarks||[]).map(id=>`<a href="../benchmarks/${id}/">${esc(useCase.benchmarks?.[id]?.name||id)}</a>`).join('、')||'需要自建任务样本'}</small></label>`
- ).join('');
+// ---------------- 组合框（ARIA 1.2 combobox + listbox，aria-activedescendant 管理焦点）
+const boxes={};
+for(const el of form.querySelectorAll('.cbx')){
+  const side=el.dataset.side,input=el.querySelector('input'),list=el.querySelector('[role=listbox]'),clr=el.querySelector('.clr');
+  const box={side,input,list,clr,items:[],active:-1};boxes[side]=box;
+  let t=0;
+  const announce=n=>{clearTimeout(t);t=setTimeout(()=>{live.textContent=n?`找到 ${n} 个模型，用上下方向键选择`:'没有匹配的模型';},350);};
+  box.open=()=>{
+    const q=input.value.trim();
+    box.items=searchModels(data.models,q,counts,q?30:12);
+    box.active=-1;
+    list.innerHTML=box.items.length?box.items.map((m,i)=>{const n=counts[m.key]||0;return `<li role="option" id="opt-${side}-${i}" aria-selected="false" data-i="${i}"><span class="o-n">${esc(m.name)}</span><span class="o-s">${esc(m.vendor_label)}${m.release_date?' · '+esc(m.release_date):''}</span><span class="o-c${n?' has':''}">${n?n+' 项评估':'本领域无分数'}</span></li>`;}).join(''):'<li class="o-empty" role="presentation">没有匹配的模型，换个关键词试试</li>';
+    list.hidden=false;input.setAttribute('aria-expanded','true');input.removeAttribute('aria-activedescendant');
+    announce(box.items.length);
+  };
+  box.close=()=>{list.hidden=true;input.setAttribute('aria-expanded','false');input.removeAttribute('aria-activedescendant');box.active=-1;};
+  box.move=d=>{
+    if(list.hidden)box.open();
+    if(!box.items.length)return;
+    box.active=(box.active+d+box.items.length)%box.items.length;
+    for(const o of list.querySelectorAll('[role=option]'))o.setAttribute('aria-selected',String(+o.dataset.i===box.active));
+    const o=list.querySelector(`#opt-${side}-${box.active}`);input.setAttribute('aria-activedescendant',o.id);o.scrollIntoView({block:'nearest'});
+  };
+  box.pick=m=>{state[side]=m?m.key:'';box.sync();box.close();update();};
+  box.sync=()=>{const m=byKey.get(state[side]);input.value=m?m.name:'';clr.hidden=!m;};
+  input.addEventListener('input',()=>box.open());
+  input.addEventListener('focus',()=>{input.select();});
+  input.addEventListener('click',()=>{if(list.hidden)box.open();});
+  input.addEventListener('keydown',e=>{
+    if(e.isComposing||e.keyCode===229)return; // 输入法组字中不拦截回车与方向键
+    if(e.key==='ArrowDown'){e.preventDefault();box.move(1);}
+    else if(e.key==='ArrowUp'){e.preventDefault();box.move(-1);}
+    else if(e.key==='Enter'){if(!list.hidden){e.preventDefault();const m=box.items[box.active>=0?box.active:0];if(m)box.pick(m);}}
+    else if(e.key==='Escape'){if(!list.hidden){e.preventDefault();box.close();box.sync();}else if(input.value){e.preventDefault();box.pick(null);}}
+    else if(e.key==='Tab'){box.close();box.sync();}
+  });
+  input.addEventListener('blur',()=>setTimeout(()=>{if(!el.contains(document.activeElement)){box.close();box.sync();}},120));
+  list.addEventListener('pointerdown',e=>e.preventDefault()); // 保持输入框焦点
+  list.addEventListener('click',e=>{const o=e.target.closest('[role=option]');if(o)box.pick(box.items[+o.dataset.i]);});
+  clr.addEventListener('click',()=>{box.pick(null);input.focus();});
 }
 
-function formState(){
- const p=new URLSearchParams(new FormData(form));
- p.set('candidates',[...form.elements.candidates.selectedOptions].map(o=>o.value).join(','));
- return readState(p,currentUseCase,data.models);
+// ---------------- 领域、交换、推荐对照
+for(const r of form.elements.task?.length?form.elements.task:[form.elements.task].filter(Boolean)) r.checked=r.value===state.task;
+form.addEventListener('change',e=>{if(e.target.name==='task'){state.task=e.target.value;counts=domainCount(state.task);update();}});
+form.addEventListener('submit',e=>e.preventDefault());
+function swap(){[state.a,state.b]=[state.b,state.a];boxes.a.sync();boxes.b.sync();update();}
+document.querySelector('#swap').addEventListener('click',swap);
+out.addEventListener('click',e=>{
+  const s=e.target.closest('[data-pair]');
+  if(s){e.preventDefault();const [task,a,b]=s.dataset.pair.split('|');state.task=task;state.a=a;state.b=b;for(const r of form.elements.task)r.checked=r.value===task;counts=domainCount(task);boxes.a.sync();boxes.b.sync();update();out.scrollIntoView({block:'start'});return;}
+  if(e.target.closest('#cmp-swap'))swap();
+  const ch=e.target.closest('[data-change]');if(ch){const b=boxes[ch.dataset.change];b.input.focus();b.input.scrollIntoView({block:'center'});b.open();}
+});
+
+function suggestions(task){
+  return `<ul class="sugg" role="list">${(data.suggestions[task]||[]).map(p=>{const a=byKey.get(p.a),b=byKey.get(p.b);return `<li><a href="?task=${esc(task)}&amp;a=${esc(p.a)}&amp;b=${esc(p.b)}" data-pair="${esc(task)}|${esc(p.a)}|${esc(p.b)}"><b>${esc(a.name)}</b> 对比 <b>${esc(b.name)}</b><small>${esc(a.vendor_label)} / ${esc(b.vendor_label)} · 共同可比评估 ${p.n} 项</small></a></li>`;}).join('')}</ul>`;
 }
 
-function fill(state){
- for(const [k,v] of Object.entries(state)){
-  if(k==='weights'){
-   for(const [id,w] of Object.entries(v)){
-    if(form.elements['w_'+id]) form.elements['w_'+id].value=w;
-   }
-  }else if(k==='candidates'){
-   for(const o of form.elements.candidates.options) o.selected=v.includes(o.value);
-  }else if(form.elements[k]){
-   form.elements[k].value=v??'';
+function update(push=true){
+  if(push)history.replaceState(null,'','?'+compareParams(state));
+  const uc=data.useCases[state.task],A=byKey.get(state.a),B=byKey.get(state.b);
+  if(!A||!B||A.key===B.key){
+    out.innerHTML=emptyHTML;
+    out.querySelector('#sugg').innerHTML=suggestions(state.task);
+    if(A&&B)out.querySelector('#cmp-empty h2').textContent='请选择两个不同的模型';
+    else if(A||B)out.querySelector('#cmp-empty h2').textContent='再选一个模型';
+    document.title='选领域，对比两个模型 · 按需求选型';
+    return;
   }
- }
+  const res=headToHead(uc,data.citations[state.task],A,B);
+  out.innerHTML=`<div class="cmp-head cmp-grid" role="group" aria-label="对比中的两个模型"><div class="tools"><button type="button" id="cmp-swap">⇄ 交换</button><button type="button" data-change="a">换 A</button><button type="button" data-change="b">换 B</button></div><div class="mh a"><span class="mh-k">A · ${esc(uc.title)}</span>${modelHead(A,REL)}</div><div class="mh b"><span class="mh-k">B</span>${modelHead(B,REL)}</div></div>`+compareHTML(res,A,B,uc,REL);
+  // 窄屏默认收起「仅作参考」
+  const ref=out.querySelector('#cmp-ref-wrap');if(ref&&matchMedia('(max-width:720px)').matches)ref.open=false;
+  document.title=`${A.name} 对比 ${B.name} · ${uc.title} · 按需求选型`;
 }
-
-function render(state,save=true){
- const report=selectModels({...data,useCase:currentUseCase},state);
- if(save){
-  const p=stateParams(state);
-  if(currentTask) p.set('task',currentTask);
-  history.replaceState(null,'','?'+p);
- }
- status.textContent=report.message;
- const pool=report.candidates.filter(m=>m.eligible);
- const rows=[...report.candidates].sort((a,b)=>Number(b.eligible)-Number(a.eligible)||(b.total??-1)-(a.total??-1)||b.coverage-a.coverage||a.key.localeCompare(b.key));
- const main=rows.filter(m=>m.coverage>0), others=rows.filter(m=>!m.coverage);
- function card(m){
-  const reasons=m.checks.filter(c=>c.status!=='pass');
-  const label=!m.eligible?'未通过所选硬约束':report.winner===m.key?'优先试用':m.total!==null?'同协议候选':'不建议直接下结论';
-  return `<article class="model-card"><h2><a href="../models/${esc(m.release_id)}/#${esc(m.id)}">${esc(m.name)}</a></h2><p><strong>${label}</strong> · ${esc(m.vendor_label)}</p><p>${m.total===null?'综合分数：不计算':`当前权重读数：${m.total.toFixed(2)} / 100`}</p><p>有记录的维度 ${m.coverage} / ${m.dimensions.length}；数量不代表能力高低。</p><ul>${m.checks.map(c=>`<li>${esc(c.label)}：${c.status==='pass'?'满足':c.status==='fail'?'不满足':'缺少信息，无法确认'}</li>`).join('')||'<li>未设置硬约束</li>'}</ul>${reasons.length?'<p>放宽对应硬约束后可重新检查；未知值不会自动通过。</p>':''}<details><summary>规格、成本与数据缺口</summary>${specsHTML(m)}<p>服务可用地区、部署方式、延迟和吞吐：当前资料不足。报价来自发布时记录，采购前需复核。</p></details>
-   <table class="model-table"><thead><tr><th>维度</th><th>原始记录 / 可比记录</th><th>共同协议归一化读数</th></tr></thead><tbody>${m.dimensions.map(d=>`<tr><td>${esc(d.label)}</td><td>${d.rows.length} / ${d.comparable.length}</td><td>${d.score===null?'证据不足':d.score.toFixed(2)}${d.conflict?'（同协议数值冲突）' : ''}</td></tr>`).join('')}</tbody></table>
-   <details><summary>为什么能或不能推荐：逐维度查看来源</summary>${m.dimensions.map(d=>`<h3>${esc(d.label)}</h3>${evidenceHTML(d.rows,'../',data.asOf)}`).join('')}<p>主要反例：公开题集上的表现不代表你的文体、事实引用和长文一致性；需要同一业务样本复核。</p></details></article>`;
- }
- results.innerHTML=`<p>候选 ${report.candidates.length} 个，其中 ${pool.length} 个通过已设置约束。以下按约束与证据可见性组织，不是能力排行榜。</p>${!pool.length?'<p class="negative">没有模型通过全部硬约束。可用“放宽硬约束”恢复候选。</p>':''}${!Object.values(state.weights).some(x=>x>0)?'<p>所有权重为 0，请至少选择一个维度。</p>':''}<section class="model-card"><h2>权重敏感性</h2><p>${report.canRank?'调整权重后重新计算，只在相同候选和共享协议下查看试用顺序变化。':'当前证据不足，改变权重也不能补出缺失分数；无法给出可靠的胜出敏感性结论。'}</p><a href="#business-eval">建立自己的业务评估计划</a></section>${main.map(card).join('')}<details><summary>查看没有所选维度证据的 ${others.length} 个候选</summary>${others.map(card).join('')}</details>`;
-}
-
-function switchTask(task,save=true){
- currentTask=(data.useCases&&data.useCases[task])?task:'chinese-longform-writing';
- currentUseCase=data.useCases?.[currentTask]||data.useCase;
-
- document.querySelectorAll('.task-tab').forEach(btn=>{
-  const active=btn.dataset.task===currentTask;
-  btn.classList.toggle('active',active);
-  btn.setAttribute('aria-selected',active?'true':'false');
- });
-
- const panelWriting=document.querySelector('#panel-writing');
- const panelCoding=document.querySelector('#panel-coding');
- if(panelWriting) panelWriting.style.display=currentTask==='chinese-longform-writing'?'':'none';
- if(panelCoding) panelCoding.style.display=currentTask==='coding'?'':'none';
-
- renderWeights(currentUseCase);
-
- const s=readState(new URLSearchParams(location.search),currentUseCase,data.models);
- fill(s);
- render(s,save);
-}
-
-document.querySelectorAll('.task-tab').forEach(btn=>{
- btn.addEventListener('click',()=>switchTask(btn.dataset.task,true));
-});
-
-form.addEventListener('submit',e=>{e.preventDefault();render(formState());});
-form.addEventListener('reset',e=>{
- e.preventDefault();
- fill(readState(new URLSearchParams(),currentUseCase,data.models));
- document.querySelector('#parse-note').textContent=`已恢复默认${currentUseCase.title||'任务'}模板。`;
- render(formState(),false);
- const p=new URLSearchParams();
- if(currentTask) p.set('task',currentTask);
- history.replaceState(null,'','?'+p);
-});
-document.querySelector('#parse-goal').addEventListener('click',()=>{
- const parsed=parseGoal(form.elements.goal.value,currentUseCase);
- for(const [id,w] of Object.entries(parsed.weights)){
-  if(form.elements['w_'+id]) form.elements['w_'+id].value=w;
- }
- document.querySelector('#parse-note').textContent=parsed.note;
- render(formState());
-});
-document.querySelector('#relax').addEventListener('click',()=>{
- const s=formState();
- Object.assign(s,{modality:'',context:0,maxPrice:null,region:'',deployment:''});
- fill(s);
- render(s);
-});
-addEventListener('popstate',()=>{
- const p=new URLSearchParams(location.search);
- const task=p.get('task')||'chinese-longform-writing';
- switchTask(task,false);
-});
-
-switchTask(currentTask,false);
+boxes.a.sync();boxes.b.sync();
+update(false);
+addEventListener('popstate',()=>{Object.assign(state,readCompareParams(new URLSearchParams(location.search),data.useCases,data.models));counts=domainCount(state.task);boxes.a.sync();boxes.b.sync();update(false);});

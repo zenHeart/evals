@@ -200,7 +200,9 @@ function checkDist() {
     for (const m of html.matchAll(/(?:href|src)="([^"#]+)(#[^"]*)?"/g)) {
       const raw = m[1];
       if (/^(https?:|mailto:|data:|javascript:)/.test(raw)) continue;
-      const target = raw.startsWith("/") ? join(dist, raw) : resolve(base, raw);
+      // 查询参数只影响页面状态（如 /choose/?task=…&a=…），按路径部分检查；纯 ?query 指向当前页
+      const path = raw.split("?")[0] || "./";
+      const target = path.startsWith("/") ? join(dist, path) : resolve(base, path);
       const rel = relative(dist, target).replace(/\\/g, "/");
       if (rel.startsWith("..")) { err(`[link] ${relative(dist, f)} → "${raw}" 越出 dist`); continue; }
       checked++;
