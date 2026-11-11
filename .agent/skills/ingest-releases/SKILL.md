@@ -32,6 +32,13 @@ gh pr list --state open --limit 20
 | A 上一轮断在「开 PR → 合并」之间 | 存在 OPEN PR，且其 head 分支是比本地当前分支更新的 `model-release-daily-*` | **先**确认那个 OPEN PR 的 CI（"Build & Publish"）为绿，**再** squash 合并它（远端分支保留不删除）；然后从更新后的 `origin/main` 开本轮新分支。**不要**重跑那一批 |
 | B 上一轮已收口 | 当前分支是已合并的 `model-release-daily-*`，且没有 OPEN PR | 直接从 `origin/main` 开本轮新分支；当前分支的产物已在 main 里，不要重复提交 |
 | C 别人留下的脏工作树 | `git status --porcelain` 非空 | **立即停止并报告**：不 stash、不切换分支、不覆盖别人的产物 |
+| D **同日并发跑批**（另一实例把同一任务跑了一遍并先合入 main） | `git fetch origin --prune` 后 `git log -1 --format=%cI origin/main` 的时间**晚于本轮开工时间**，且其提交信息是另一条批次的 `model-release-daily-*`；典型症状是本轮 PR 一开就 `mergeable: CONFLICTING`、或 `gh run list --branch <本轮分支>` 查不到自己的 workflow 运行 | **不要重跑、也不要重开分支**：`git merge origin/main` 把并发批次并进来，冲突按「只追加」处理（见下），再重跑全部门禁后继续用原 PR |
+
+**D 的冲突处置（三处各有规矩，不要手合）**：
+
+- `data/model-releases/official/README.md`：双方都是「往文件末尾追加批次节」→ 取 main 的版本，再把本轮批次节**追加到末尾**；两批编号撞车时**本轮编号顺延**（如 main 已是「第六十一批」则本轮编「第六十二批」），并在本批节开头加一段「批次编号说明」写清并发分支名、对方结论与两批为何不矛盾。
+- `data/model-coverage.json`：多为自动合并；合并后**必须重跑 `node scripts/reconcile-coverage.mjs`** 并确认幂等（连续两次 diff 为空），确认对方的候选与本轮的候选都在。
+- `evals.epub` 等**二进制产物**：永不手合——取 main 的版本后按合并后的数据**重新 `npm run build`** 生成。
 
 2. **分支策略**：一律 `git switch -c model-release-daily-<UTC时间戳，如 20261029T010113Z> origin/main`。
    - **禁止使用本地 main**：它与 origin/main 长期分叉且已落后数十个提交，一律不用。
