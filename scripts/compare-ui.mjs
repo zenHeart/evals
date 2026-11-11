@@ -3,7 +3,8 @@
  * 只负责展示；计算全部在 model-compare.mjs。
  */
 import {esc} from './model-ui.mjs';
-import {isPending} from './model-compare.mjs';
+import {isPending,excludedText} from './model-compare.mjs';
+export {excludedText};
 
 const fmt=v=>Number.isFinite(v)?(Math.round(v*10)/10).toFixed(1):'—';
 const NEAR=1; // 0–100 刻度上差距小于 1 分视为接近：不高亮胜负
@@ -64,7 +65,7 @@ export function compareHTML(res,A,B,uc,rel='../'){
       :!c.both?`<p class="vd-thin">两者在可计分的评估里没有共同报告的项目，差距来自各自报告了哪些评估，而不是同一道题上的高下。</p>`:'';
     verdict=`<div class="vd-row"><div class="vd-k">引用加权综合分<small>0–100，仅限${title}</small></div>
       <div class="vd-v ${sa}"><span class="big">${fmt(c.a)}</span></div><div class="vd-v ${sb}"><span class="big">${fmt(c.b)}</span></div></div>
-      ${lead}<p class="vd-how">按${title}全部 ${c.of} 项可计分评估加权，权重是每项评估被官方发布引用的次数；没有报告的评估记 0 分，权重不会挪给报告过的评估。本次计入 <b>${c.n}</b> 项：${nm(A)} 有分 ${c.hasA} 项，${nm(B)} 有分 ${c.hasB} 项，双方都有 ${c.both} 项。${c.excluded?`另有 ${c.excluded} 项因官方配图尚未转录或口径不同，这组对照里不计入（不记 0）。`:''}${c.equalWeights?'计入的评估都还没有官方引用记录，按等权计算。':''}</p>${thin}`;
+      ${lead}<p class="vd-how">${title}共 ${c.of} 项可计分评估，本次计入 <b>${c.n}</b> 项，按每项评估被官方发布引用的次数加权；没有报告的评估记 0 分，权重不会挪给报告过的评估。${nm(A)} 有分 ${c.hasA} 项，${nm(B)} 有分 ${c.hasB} 项，双方都有 ${c.both} 项。${c.excluded?`另有 ${c.excluded} 项这组对照里不计入（不记 0）：${excludedText(c.excludedBy)}。`:''}${c.equalWeights?'计入的评估都还没有官方引用记录，按等权计算。':''}</p>${thin}`;
   }else{
     verdict=`<div class="vd-row"><div class="vd-k">引用加权综合分</div><div class="vd-v na"><span class="big">—</span></div><div class="vd-v na"><span class="big">—</span></div></div>
       <p class="vd-lead"><b>无法综合对比</b></p><p class="vd-how">${esc(res.reason||'')}。下面仍列出双方各自的原始分数。</p>`;

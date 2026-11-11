@@ -167,6 +167,11 @@ export function pairBench(rowsA,rowsB){
   return {excluded:MULTI};
 }
 
+/** 不计入项按真实原因汇总，带项数（结论区与「无法综合对比」共用，不能一律写成「尚未转录」） */
+const KIND_TEXT={pending:'官方配图尚未转录出数值',condition:'双方的评测版本或测试条件不同',version:'有一方没写明评测版本',multi:'同一版本下有多档测试设置、无法确定用哪一档',metric:'记录的单位或指标对不上'};
+export function excludedText(by){
+  return Object.keys(KIND_TEXT).filter(k=>by?.[k]).map(k=>`${by[k]} 项因${KIND_TEXT[k]}`).join('，');
+}
 /** 一侧在某评估上的原始记录分类 */
 function sideRows(m,id,rule){
   const rows=(m?.evidence||[]).filter(e=>e.benchmark_id===id);
@@ -218,8 +223,10 @@ export function headToHead(domain,A,B){
     const blocked=[a,b].find(x=>x.state==='pending'||x.state==='other');
     if(blocked&&!reason)reason=blocked.state==='pending'?'有一方的分数只在官方配图里，尚未转录出数值':'有一方的记录版本、单位或指标对不上';
     const status=blocked?'excluded':'scored';
+    // 不计入的原因类别：供结论区按真实原因汇总（不能一律写成「尚未转录」）
+    const kind=status!=='excluded'?null:reason===MULTI?'multi':/版本或测试条件不同/.test(reason)?'condition':/没有写明评测版本/.test(reason)?'version':blocked.state==='pending'&&[a,b].every(x=>x.state!=='other')?'pending':'metric';
     const na=a.state==='value'?a.n:0,nb=b.state==='value'?b.n:0;
-    rows.push({...base,status,a,b,variant,reason,na,nb,diff:na-nb,
+    rows.push({...base,status,kind,a,b,variant,reason,na,nb,diff:na-nb,
       // 只在双方都有真实数值时标胜负；「有分 vs 缺失」靠「计 0」提示，不画胜者
       winner:status==='scored'&&a.state==='value'&&b.state==='value'&&Math.abs(na-nb)>1e-9?(na>nb?'a':'b'):null});
   }
@@ -227,14 +234,15 @@ export function headToHead(domain,A,B){
   const total=scored.reduce((s,r)=>s+r.cite,0);
   for(const r of rows)r.weight=r.status!=='scored'?0:total>0?r.cite/total:1/scored.length;
   let composite=null,reason=null;
+  const byKind={};for(const r of rows)if(r.status==='excluded')byKind[r.kind]=(byKind[r.kind]||0)+1;
   if(!A||!B)reason='请选择两个模型';
   else if(A.key&&A.key===B.key)reason='请选择两个不同的模型';
   else if(!eligible.length)reason='这一领域还没有可以换算成 0–100 分的评估';
-  else if(!scored.length)reason='这一领域的可计分评估在这组对照里都因待转录或口径不同而退出，无法综合对比';
+  else if(!scored.length)reason='这一领域的可计分评估在这组对照里都不计入（'+excludedText(byKind)+'），无法综合对比';
   else{
     const a=scored.reduce((s,r)=>s+r.weight*r.na,0),b=scored.reduce((s,r)=>s+r.weight*r.nb,0);
     const has=w=>scored.filter(r=>r[w].state==='value').length;
-    composite={a,b,n:scored.length,of:eligible.length,excluded:rows.length-scored.length,hasA:has('a'),hasB:has('b'),
+    composite={a,b,n:scored.length,of:eligible.length,excluded:rows.length-scored.length,excludedBy:byKind,hasA:has('a'),hasB:has('b'),
       both:scored.filter(r=>r.a.state==='value'&&r.b.state==='value').length,
       single:eligible.length===1?eligible[0]:null,winner:Math.abs(a-b)<TIE?null:a>b?'a':'b',diff:a-b,equalWeights:total===0,totalCite:total};
   }

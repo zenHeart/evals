@@ -249,3 +249,31 @@ test('双方都没有可计入的分数：不写「持平」',()=>{
   const html=compareHTML(r,A,B,{id:'coding',title:'编程开发'},'../');
   assert.ok(html.includes('分不出高下'));assert.ok(!html.includes('持平'));
 });
+const howText=html=>(html.match(/<p class="vd-how">[\s\S]*?<\/p>/)||[''])[0].replace(/<[^>]+>/g,'');
+test('结论区：「本次计入」是这组实际计入的项数；不计入按真实原因分别计数',()=>{
+  // hot：A 待转录 → 不计入（待转录）；cold：双方版本不同 → 不计入（版本或测试条件）；inhouse 计入
+  const A=M('a',[pend('hot'),ev('cold',50,{variant:'1.0'}),ev('inhouse',40)]),B=M('b',[ev('hot',60),ev('cold',70,{variant:'2.0'})]);
+  const r=headToHead(dom,A,B);
+  assert.equal(r.composite.n,1);assert.equal(r.composite.of,3);
+  assert.deepEqual(r.composite.excludedBy,{pending:1,condition:1});
+  const t=howText(compareHTML(r,A,B,{id:'coding',title:'编程开发'},'../'));
+  assert.match(t,/共 3 项可计分评估，本次计入 1 项/);
+  assert.ok(!/本次计入 3 项/.test(t));
+  assert.match(t,/另有 2 项这组对照里不计入（不记 0）：1 项因官方配图尚未转录出数值，1 项因双方的评测版本或测试条件不同/);
+  // 只有条件不同：不得写成「尚未转录」
+  const A2=M('a',[ev('cold',50,{variant:'with Search'})]),B2=M('b',[ev('cold',70,{variant:'with context management'})]);
+  const t2=howText(compareHTML(headToHead(dom,A2,B2),A2,B2,{id:'coding',title:'编程开发'},'../'));
+  assert.match(t2,/1 项因双方的评测版本或测试条件不同/);assert.ok(!/尚未转录/.test(t2));
+  for(const w of ['已核验','待核验','证据账本','窗口起点'])assert.ok(!t.includes(w)&&!t2.includes(w));
+});
+test('真实数据：Hy4 vs GLM-5.3 计入 21 项（2 项待转录）；Kimi K2.6 vs GLM-5.1 的 BrowseComp 因测试条件不同',async()=>{
+  const {loadBenchData}=await import('../scripts/load-data.mjs');const {compareData}=await import('../scripts/build-model-pages.mjs');
+  const d=compareData(loadBenchData());const k=key=>d.models.find(m=>m.key===key);
+  const pairs=[['coding','hy4--hy4','glm-5-3--glm-5.3'],['research-search','kimi-k2-6--kimi-k2-6','glm-5-1--glm-5.1']];
+  const [[t1,a1,b1],[t2,a2,b2]]=pairs;
+  if(k(a1)&&k(b1)){const r=headToHead(d.useCases[t1],k(a1),k(b1));const t=howText(compareHTML(r,k(a1),k(b1),d.useCases[t1],'../'));
+    assert.equal(r.composite.n,r.composite.of-r.composite.excluded);assert.match(t,new RegExp('本次计入 '+r.composite.n+' 项'));
+    assert.ok(r.composite.excludedBy.pending>=2);assert.match(t,/项因官方配图尚未转录出数值/);}
+  if(k(a2)&&k(b2)){const r=headToHead(d.useCases[t2],k(a2),k(b2));const t=howText(compareHTML(r,k(a2),k(b2),d.useCases[t2],'../'));
+    assert.equal(r.rows.find(x=>x.id==='browsecomp').kind,'condition');assert.match(t,/项因双方的评测版本或测试条件不同/);assert.ok(!/尚未转录/.test(t));}
+});
