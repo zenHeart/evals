@@ -1,5 +1,5 @@
 /** /choose/：选领域 → 搜两个模型 → 两两对照。计算在 model-compare.mjs，渲染在 compare-ui.mjs（与构建期同构）。 */
-import {headToHead,readCompareParams,compareParams,searchModels} from './model-compare.mjs';
+import {headToHead,readCompareParams,compareParams,searchModels,domainCounts} from './model-compare.mjs';
 import {compareHTML,modelHead} from './compare-ui.mjs';
 import {esc} from './model-ui.mjs';
 
@@ -14,11 +14,9 @@ catch{out.insertAdjacentHTML('afterbegin','<p class="negative">对比数据暂�
 const byKey=new Map(data.models.map(m=>[m.key,m]));
 const state=readCompareParams(new URLSearchParams(location.search),data.useCases,data.models);
 
-function domainCount(task){
-  const u=data.useCases[task],c={};
-  for(const m of data.models){const n=new Set(m.evidence.filter(e=>u.benchmarks[e.benchmark_id]).map(e=>e.benchmark_id)).size;if(n)c[m.key]=n;}
-  return c;
-}
+/** 每个模型在当前领域有官方数值的可计分评估数；没有的模型照样能选，综合分按 0 计 */
+const countCache={};
+function domainCount(task){return countCache[task]??=domainCounts(data.useCases[task],data.models);}
 let counts=domainCount(state.task);
 
 // ---------------- 组合框（ARIA 1.2 combobox + listbox，aria-activedescendant 管理焦点）
@@ -32,7 +30,7 @@ for(const el of form.querySelectorAll('.cbx')){
     const q=input.value.trim();
     box.items=searchModels(data.models,q,counts,q?30:12);
     box.active=-1;
-    list.innerHTML=box.items.length?box.items.map((m,i)=>{const n=counts[m.key]||0;return `<li role="option" id="opt-${side}-${i}" aria-selected="false" data-i="${i}"><span class="o-n">${esc(m.name)}</span><span class="o-s">${esc(m.vendor_label)}${m.release_date?' · '+esc(m.release_date):''}</span><span class="o-c${n?' has':''}">${n?n+' 项评估':'本领域无分数'}</span></li>`;}).join(''):'<li class="o-empty" role="presentation">没有匹配的模型，换个关键词试试</li>';
+    list.innerHTML=box.items.length?box.items.map((m,i)=>{const n=counts[m.key]||0;return `<li role="option" id="opt-${side}-${i}" aria-selected="false" data-i="${i}"><span class="o-n">${esc(m.name)}</span><span class="o-s">${esc(m.vendor_label)}${m.release_date?' · '+esc(m.release_date):''}</span><span class="o-c${n?' has':''}">${n?n+' 项有分':'暂无分数 · 计 0'}</span></li>`;}).join(''):'<li class="o-empty" role="presentation">没有匹配的模型，换个关键词试试</li>';
     list.hidden=false;input.setAttribute('aria-expanded','true');input.removeAttribute('aria-activedescendant');
     announce(box.items.length);
   };
@@ -77,7 +75,7 @@ out.addEventListener('click',e=>{
 });
 
 function suggestions(task){
-  return `<ul class="sugg" role="list">${(data.suggestions[task]||[]).map(p=>{const a=byKey.get(p.a),b=byKey.get(p.b);return `<li><a href="?task=${esc(task)}&amp;a=${esc(p.a)}&amp;b=${esc(p.b)}" data-pair="${esc(task)}|${esc(p.a)}|${esc(p.b)}"><b>${esc(a.name)}</b> 对比 <b>${esc(b.name)}</b><small>${esc(a.vendor_label)} / ${esc(b.vendor_label)} · 共同可比评估 ${p.n} 项</small></a></li>`;}).join('')}</ul>`;
+  return `<ul class="sugg" role="list">${(data.suggestions[task]||[]).map(p=>{const a=byKey.get(p.a),b=byKey.get(p.b);return `<li><a href="?task=${esc(task)}&amp;a=${esc(p.a)}&amp;b=${esc(p.b)}" data-pair="${esc(task)}|${esc(p.a)}|${esc(p.b)}"><b>${esc(a.name)}</b> 对比 <b>${esc(b.name)}</b><small>${esc(a.vendor_label)} / ${esc(b.vendor_label)} · 双方都有分 ${p.n} 项</small></a></li>`;}).join('')}</ul>`;
 }
 
 function update(push=true){
@@ -91,7 +89,7 @@ function update(push=true){
     document.title='选领域，对比两个模型 · 按需求选型';
     return;
   }
-  const res=headToHead(uc,data.citations[state.task],A,B);
+  const res=headToHead(uc,A,B);
   out.innerHTML=`<div class="cmp-head cmp-grid" role="group" aria-label="对比中的两个模型"><div class="tools"><button type="button" id="cmp-swap">⇄ 交换</button><button type="button" data-change="a">换 A</button><button type="button" data-change="b">换 B</button></div><div class="mh a"><span class="mh-k">A · ${esc(uc.title)}</span>${modelHead(A,REL)}</div><div class="mh b"><span class="mh-k">B</span>${modelHead(B,REL)}</div></div>`+compareHTML(res,A,B,uc,REL);
   // 窄屏默认收起「仅作参考」
   const ref=out.querySelector('#cmp-ref-wrap');if(ref&&matchMedia('(max-width:720px)').matches)ref.open=false;

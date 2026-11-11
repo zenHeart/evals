@@ -88,6 +88,8 @@ export function loadBenchData() {
         id: b.id,
         name: b.name,
         category: (b.categories && b.categories[0]) || null,
+        // 指标声明：/choose/ 领域目录的 0–100 换算规则使用（model-compare.mjs ruleFromEntity）
+        metrics: b.metrics || [],
         tests: b.summary ?? null,
         protocol: b.default_protocol?.raw ?? null,
         meaning: b.interpretation ?? null,

@@ -8,6 +8,28 @@ export function evidenceScoreLabel(e) {
   if(e.score_status === 'not_reported') return '官方未公布数值';
   return e.status === 'pending' ? '图表尚无可读数值' : '该来源尚无可读数值';
 }
+/** 时间轴芯片上的分数：只有已核验、官方公布的数值才写数字，其余一律「-」（不写「图表尚无可读数值」） */
+export function chipScoreText(e) {
+  if(e.status === 'verified' && e.score_status === 'reported' && (e.display || Number.isFinite(e.value))) return e.display || String(e.value);
+  return '-';
+}
+/** 「-」芯片的悬停说明（安静提示，不出现在芯片文字里） */
+export function chipScoreTip(e) {
+  if(chipScoreText(e) !== '-') return '';
+  if(e.score_status === 'not_reported') return '官方未公布数值';
+  return e.locator?.figure || e.status === 'pending' ? '官方配图尚未转录出数值' : '官方原文尚未转录出数值';
+}
+/** 芯片悬停说明：「-」的原因 + 执行框架 / 推理档位；服务端芯片与 /releases/ 客户端 card() 顺序一致 */
+export function chipTip(e) {
+  return [chipScoreTip(e) || null, e.harness ? `执行框架（harness）：${e.harness}` : null, e.effort ? `推理档位（effort）：${e.effort}` : null]
+    .filter(Boolean).join(' · ');
+}
+/** 芯片上的评测名：取冒号前的短名（无实体时回退 id），再接版本；版本号已含在名称里时不重复 */
+export function chipBenchName(benchName, id, variant) {
+  const shortName = benchName ? (benchName.split(':')[0]?.trim() || benchName) : id;
+  const v = String(variant || '').trim();
+  return v && !shortName.toLowerCase().includes(v.toLowerCase()) ? shortName + ' ' + v : shortName;
+}
 export function evidenceHTML(rows,rel='../../',asOf='') {
   if(!rows.length)return '<p class="muted">尚无对应评测记录。缺少证据不代表能力为零。</p>';
   return rows.map(e=>{

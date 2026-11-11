@@ -21,7 +21,7 @@ import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { SITE, SHELL_CSS, shellHead, shellTopbar, shellFooter, SHELL_JS } from "./site-shell.mjs";
 import { loadBenchData } from "./load-data.mjs";
-import { benchmarkScopeHTML, evidenceScoreLabel } from "./model-ui.mjs";
+import { benchmarkScopeHTML, evidenceScoreLabel, chipScoreText, chipScoreTip, chipTip, chipBenchName } from "./model-ui.mjs";
 import { vendorMark, LOGO_EXT } from "./vendor-logos.mjs";
 import { renderProfile, renderProfileV2, profileNotice, PROFILE_CSS, PROFILE_V2_CSS } from "./benchmark-profile-page.mjs";
 import { PROFILE_TEMPLATE_V2 } from "./benchmark-profile.mjs";
@@ -664,17 +664,16 @@ function evtOverviewHtml(r, benchMode = false) {
   return (overview || "") + (traits ? `<div class="evt-traits">${traits}</div>` : "");
 }
 
-/** 时间轴芯片上的评测短名：与评测模式同一规则（取冒号前的短名，回退 id）；版本号已含在名称里时不重复 */
+/** 时间轴芯片上的评测短名 + 版本（规则见 model-ui.mjs chipBenchName） */
+/** 名称与分数之间的分隔：「-」前加「 · 」，读作「FrontierCode 2.0 · -」；客户端 card() 同一规则 */
+const chipSep = score => (score === "-" ? " · " : " ");
 function chipBenchLabel(db, e) {
-  const benchName = db.benchmarks.find(x => x.id === e.benchmark_id)?.name;
-  const shortName = benchName ? (benchName.split(":")[0]?.trim() || benchName) : e.benchmark_id;
-  const v = (e.variant || "").trim();
-  return v && !shortName.toLowerCase().includes(v.toLowerCase()) ? shortName + " " + v : shortName;
+  return chipBenchName(db.benchmarks.find(x => x.id === e.benchmark_id)?.name, e.benchmark_id, e.variant);
 }
 
 /** 多变体分组后，分数文字末尾重复的变体名（如「75.3% (Mythos 5.2)」）已由小标题表达，去掉 */
 function chipScoreLabel(e, owner) {
-  const label = evidenceScoreLabel(e);
+  const label = chipScoreText(e);
   if (!owner) return label;
   const names = [owner, owner.split(/\s+/).slice(1).join(" ")].filter(n => n && n.length >= 3);
   let out = label;
@@ -701,9 +700,9 @@ function tlChipsHtml(db, r, chipBase, focusSet) {
     // 账本中出现的每个评测都有详情页（正式实体或证据自动建档）——chip 一律可点
     const cls = e.status === "verified" ? "ok" : "pd";
     const focus = focusSet && focusSet[e.benchmark_id] ? " focus" : "";
-    const tip = [e.harness ? `执行框架（harness）：${e.harness}` : null, e.effort ? `推理档位（effort）：${e.effort}` : null]
-      .filter(Boolean).join(" · ");
-    return `<a class="bchip ${cls}${focus}" href="${chipBase}${esc(e.benchmark_id)}/"${tip ? ` title="${esc(tip)}"` : ""}>${esc(chipBenchLabel(db, e))} <b>${esc(multi ? chipScoreLabel(e, owner(e)) : evidenceScoreLabel(e))}</b></a>`;
+    const tip = chipTip(e);
+    const score = multi ? chipScoreLabel(e, owner(e)) : chipScoreText(e);
+    return `<a class="bchip ${cls}${focus}" href="${chipBase}${esc(e.benchmark_id)}/"${tip ? ` title="${esc(tip)}"` : ""}>${esc(chipBenchLabel(db, e))}${chipSep(score)}<b>${esc(score)}</b></a>`;
   };
   if (!multi) return r.evidence.map(chip).join("");
   // 与客户端 card() 同构：按 groupedEvidence 顺序，变体名变化时插入一次小标题
@@ -730,12 +729,11 @@ function tlEvtHtml(db, r, opts = {}) {
   const chips = (benchMode && benchRows.length > 0) ? (() => {
     return benchRows.map(benchRow => {
       const cls = benchRow.status === "verified" ? "ok" : "pd";
-      const tip = [benchRow.harness ? `执行框架（harness）：${benchRow.harness}` : null, benchRow.effort ? `推理档位（effort）：${benchRow.effort}` : null]
-        .filter(Boolean).join(" · ");
-      const benchName = db.benchmarks.find(x => x.id === benchRow.benchmark_id)?.name;
-      const shortName = benchName ? (benchName.split(":")[0]?.trim() || benchName) : benchRow.benchmark_id;
-      const label = (r.models.length > 1 ? esc(r.model_specs.find(m => m.id === benchRow.model_id)?.name || benchRow.model_id || "模型未说明") + " · " : "") + (benchRow.variant ? esc(benchRow.variant) : esc(shortName));
-      return `<span class="bchip ${cls} focus"${tip ? ` title="${esc(tip)}"` : ""}>${label} <b>${esc(evidenceScoreLabel(benchRow))}</b></span>`;
+      const tip = chipTip(benchRow);
+      // 与时间轴芯片同一规则：评测短名 + 版本（不再只写版本号，避免「2.0」这种看不出是哪个评测的芯片）
+      const label = (r.models.length > 1 ? esc(r.model_specs.find(m => m.id === benchRow.model_id)?.name || benchRow.model_id || "模型未说明") + " · " : "") + esc(chipBenchLabel(db, benchRow));
+      const score = chipScoreText(benchRow);
+      return `<span class="bchip ${cls} focus"${tip ? ` title="${esc(tip)}"` : ""}>${label}${chipSep(score)}<b>${esc(score)}</b></span>`;
     }).join("");
   })() : tlChipsHtml(db, r, chipBase, focusSet);
   const modelTitle = r.models.length ? r.models.join(" / ") : r.release_title;
@@ -787,7 +785,7 @@ function releasesSlimData(db) {
         e: groupedEvidence(r).map(e => {
           const owner = multi ? (r.model_specs.find(m => m.id === e.model_id)?.name || e.model_id || "模型未说明") : "";
           const fv = e.status === "verified" && e.score_status === "reported" && e.value !== null ? e.value : null;
-          return [e.benchmark_id, multi ? chipScoreLabel(e, owner) : evidenceScoreLabel(e), e.status === "verified" ? 1 : 0, owner, e.variant || "", e.harness || "", e.effort || "", fv, chipBenchLabel(db, e)];
+          return [e.benchmark_id, multi ? chipScoreLabel(e, owner) : chipScoreText(e), e.status === "verified" ? 1 : 0, owner, e.variant || "", e.harness || "", e.effort || "", fv, chipBenchLabel(db, e), chipScoreTip(e)];
         }),
       };
     }),
@@ -899,10 +897,10 @@ ${SHELL_JS}
       keep=ev.filter(function(e){return hit.indexOf(e)>=0||rest.indexOf(e)>=0;});}
     var prevOwner=null;
     var chips=keep.map(function(e){
-      var tip=[];if(e[5])tip.push('执行框架（harness）：'+esc(e[5]));if(e[6])tip.push('推理档位（effort）：'+esc(e[6]));
+      var tip=[];if(e[9])tip.push(esc(e[9]));if(e[5])tip.push('执行框架（harness）：'+esc(e[5]));if(e[6])tip.push('推理档位（effort）：'+esc(e[6]));
       // 多变体发布：变体名只作一次分组小标题，芯片不再重复模型名前缀
       var head='';if(e[3]&&e[3]!==prevOwner){head='<span class="chip-grp">'+esc(e[3])+'</span>';prevOwner=e[3];}
-      return head+'<a class="bchip '+(e[2]?'ok':'pd')+(fs[e[0]]?' focus':'')+'" href="'+REL+'benchmarks/'+esc(e[0])+'/"'+(tip.length?' title="'+tip.join(' · ')+'"':'')+'>'+esc(e[8]||e[0])+' <b>'+esc(e[1])+'</b></a>';
+      return head+'<a class="bchip '+(e[2]?'ok':'pd')+(fs[e[0]]?' focus':'')+'" href="'+REL+'benchmarks/'+esc(e[0])+'/"'+(tip.length?' title="'+tip.join(' · ')+'"':'')+'>'+esc(e[8]||e[0])+(e[1]==='-'?' · ':' ')+'<b>'+esc(e[1])+'</b></a>';
     }).join('')+(r.e.length>keep.length?'<button type="button" class="ghost-btn chip-more" data-r="'+esc(r.i)+'">展开其余 '+(r.e.length-keep.length)+' 项评测</button>':'');
     var mt=r.m.length?r.m.join(' / '):r.t;
     var title=r.u?'<a href="'+esc(r.u)+'" target="_blank" rel="noopener" title="阅读官方发布文：'+esc(r.t)+'">'+esc(mt)+'</a>':esc(mt);

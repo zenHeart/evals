@@ -372,6 +372,21 @@ for (const useCaseFile of jsonFiles(useCasesDir)) {
       ids.add(d.id);
       for (const id of d.benchmarks) if (!ctx.benchmarkIds.has(id) || !useCase.data.benchmarks[id]) err(useCaseFile, "评测映射不存在：" + id);
     }
+    // /choose/ 领域目录：catalog 只能列出已登记的评估实体或官方发布里的候选评估 id，不能重复、不能与 benchmarks 重叠
+    const cat = useCase.data.catalog ?? [];
+    if (!Array.isArray(cat)) err(useCaseFile, "catalog 必须是数组");
+    else {
+      const seen = new Set();
+      for (const id of cat) {
+        if (typeof id !== "string" || (!ctx.benchmarkIds.has(id) && !candidateBenchmarkIds.has(id))) err(useCaseFile, "catalog 引用了不存在的评估：" + JSON.stringify(id));
+        if (seen.has(id) || useCase.data.benchmarks?.[id]) err(useCaseFile, "catalog 评估重复：" + id);
+        seen.add(id);
+      }
+    }
+    for (const [id, b] of Object.entries(useCase.data.benchmarks ?? {})) {
+      if (b.comparison === "cross_model" && b.unit === "percent" && !(b.min === 0 && b.max === 100)) err(useCaseFile, "百分制换算规则必须是 0–100：" + id);
+      if (b.comparison === "cross_model" && !(b.source_urls ?? []).length) err(useCaseFile, "可计分评估缺少官方来源：" + id);
+    }
   }
 }
 
