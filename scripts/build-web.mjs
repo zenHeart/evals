@@ -526,7 +526,7 @@ body.dark .proto-exp-card { box-shadow: 0 4px 20px rgba(0,0,0,.25); }
 .promise h3 { margin:0 0 6px; font-size:16px; color:var(--ink); }
 .promise p { margin:0; font-size:13.5px; color:var(--graphite); line-height:1.7; }
 .promise-eyebrow { font-size: 11.5px; font-weight: 800; letter-spacing: .1em; color: var(--pin); text-transform: uppercase; margin: 0 0 14px; }
-/* /book/ 学习台与 /build/ 入口 */
+/* /book/ 学习台入口 */
 .read-cta {
   display:inline-block; margin:4px 8px 4px 0; padding:9px 18px; border-radius:6px;
   border:1.5px solid var(--pin); color:var(--pin); font-weight:700; font-size:14px; text-decoration:none;
@@ -846,7 +846,7 @@ function indexPage(parts, chaptersMeta, bench) {
     ["系统学习", "32 章体系化技术路径：从评测认知、实验设计到工程实操，配带代码示例与即时交互自测", "book/"],
     ["评估大全", `${bench.count} 项评测档案：收录任务定义、打分协议、厂商引用频次与历史对账证据`, "benchmarks/"],
     ["模型发布", "主流模型官方发布时间轴：逐条索引各厂商技术报告中的基准引用与实测得分", "releases/"],
-    ["动手搭建", "业务评估工程落地指南：测试集构建、自动化判官打分、并发控制与 CI 阻断门禁", "build/"],
+    ["按需求选型", "先选领域，再挑两个模型逐项对照官方分数，并按评测被引用的次数给出综合分", "choose/"],
   ].map(([t, s, href]) => `<a class="entry-card" href="${href}"><div class="e-title">${t}</div><div class="e-sub">${s}</div></a>`).join("");
   const featured = bench.featured.map(b => `
     <a class="feat-card" href="benchmarks/${b.id}/">
@@ -1112,49 +1112,22 @@ ${SHELL_JS}
 </html>`;
 }
 
-/** /build/ 动手搭建入口（任务导向，链接到现有章节，不复制正文） */
-function buildIndexPage(chaptersMeta) {
-  const link = (num) => `../book/chapter-${num}/`;
-  const steps = [
-    ["① 设计目标：评估什么", "把业务目标拆成能力、指标与失败分类", [23], chaptersMeta],
-    ["② 建测试集", "四来源混合、脱敏、版本锁定与数据飞轮", [24], chaptersMeta],
-    ["③ 实现评分器与流水线", "框架选型 + 用 Node.js 自建 Mini Evaluator（scorer / judge / 缓存 / 并发）", [19, 20], chaptersMeta],
-    ["④ 接入 CI 门禁", "PR 快集 / 夜间全量 / 发版安全集 / 在线采样，四层流水线", [25], chaptersMeta],
-  ].map(([title, sub, nums]) => {
-    const links = nums.map(n => {
-      const f = Object.keys(chaptersMeta).find(k => chaptersMeta[k].num === String(n));
-      return `<a href="${link(n)}">第 ${n} 章 · ${chaptersMeta[f] ? chaptersMeta[f].title.replace(/^\d+\.\s*/, "") : ""}</a>`;
-    }).join("");
-    return `<div class="promise"><h3>${title}</h3><p>${sub}</p><div class="step-links">${links}</div></div>`;
-  }).join("");
-  const advanced = [
-    [21, "RAG / Agent / 应用层评估"],
-    [22, "红队与安全评估"],
-    [26, "在线评估与 A/B 实验"],
-    [30, "资源速查：按场景查基准与框架"],
-  ].map(([n, label]) => `<a href="${link(n)}">第 ${n} 章 · ${label}</a>`).join("");
-  const cases = [27, 28, 29].map(n => {
-    const f = Object.keys(chaptersMeta).find(k => chaptersMeta[k].num === String(n));
-    return `<a href="${link(n)}">第 ${n} 章 · ${chaptersMeta[f] ? chaptersMeta[f].title.replace(/^\d+\.\s*/, "") : ""}</a>`;
-  }).join("");
-  const desc = "大模型评估体系落地实战指南：四步实现业务指标拆解、测试集构建、自动化打分判官与 GitHub Actions CI 质量阻断门禁。";
-  return `${COMMON_HEAD("../", "动手搭建 · 大模型评估入门", desc, "build/")}
+/** /build/ 已下线：保留一个静态跳转页，旧链接转到系统学习，避免死链 */
+function buildRemovedPage() {
+  const to = "../book/";
+  return `<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>页面已下线 · 大模型评估入门</title>
+<link rel="canonical" href="${SITE}/book/">
+<meta http-equiv="refresh" content="0; url=${to}">
+<script>location.replace("${to}");</script>
 </head>
 <body>
-${TOPBAR("../", "build")}
-<main id="main-content" style="max-width:1080px;margin:0 auto;padding:32px 24px 80px;">
-  <div class="breadcrumb"><a href="../index.html">首页</a> / <b>动手搭建</b></div>
-  <h1>动手搭建</h1>
-  <p class="sub" style="max-width:72ch;">按四步技术路径将大模型评测流水线集成至工程项目中，各阶段均直达对应实现章节与可运行代码示例。</p>
-  <div class="promise-grid">${steps}</div>
-  <div class="part-group" style="margin-top:34px;">进阶专题</div>
-  <div class="step-links step-links-col">${advanced}</div>
-  <div class="part-group" style="margin-top:24px;">三个完整案例（业务目标 → 数据 → 指标 → 上线）</div>
-  <div class="step-links step-links-col">${cases}</div>
-  <p style="margin-top:26px;"><a href="../book/chapter-31/">结课自测：检验三大能力 →</a></p>
-</main>
-${shellFooter()}
-${SHELL_JS}
+<p>原「搭建入口」页面已下线，相关内容都在<a href="${to}">系统学习</a>里，例如<a href="../book/chapter-25/">第 25 章 · 评估流水线工程</a>。</p>
 </body>
 </html>`;
 }
@@ -1176,7 +1149,7 @@ function redirectStub(fromRel, toUrl, sitePath) {
 }
 
 function notFoundPage() {
-  return `${COMMON_HEAD("", "页面不存在 · 大模型评估入门", "404：页面不存在。从首页、系统学习、评估大全或动手搭建入口继续。", "404.html")}
+  return `${COMMON_HEAD("", "页面不存在 · 大模型评估入门", "404：页面不存在。从首页、系统学习、评估大全或模型发布入口继续。", "404.html")}
 </head>
 <body>
 ${TOPBAR("", "")}
@@ -1188,7 +1161,7 @@ ${TOPBAR("", "")}
     <a class="read-cta" href="book/">系统学习</a>
     <a class="read-cta" href="benchmarks/">评估大全</a>
     <a class="read-cta" href="releases/">模型发布</a>
-    <a class="read-cta" href="build/">动手搭建</a>
+    <a class="read-cta" href="choose/">按需求选型</a>
   </p>
 </main>
 ${shellFooter()}
@@ -1299,13 +1272,13 @@ async function main() {
 
   writeFileSync(join(DIST, "index.html"), indexPage(parts, chaptersMeta, bench), "utf-8");
   writeFileSync(join(DIST, "book", "index.html"), bookIndexPage(parts, chaptersMeta), "utf-8");
-  writeFileSync(join(DIST, "build", "index.html"), buildIndexPage(chaptersMeta), "utf-8");
+  writeFileSync(join(DIST, "build", "index.html"), buildRemovedPage(), "utf-8");
   writeFileSync(join(DIST, "404.html"), notFoundPage(), "utf-8");
   writeFileSync(join(DIST, "search-data.js"), `window.EVALS_SEARCH=${JSON.stringify(searchData)};`, "utf-8");
   console.log("[evals-web] Built index / book / build / 404 / search-data.js");
 
   const today = new Date().toISOString().slice(0, 10);
-  const urls = ["/", "/book/", ...flat.map(f => `/book/chapter-${chaptersMeta[f].num}/`), "/build/", "/benchmarks/", "/releases/"];
+  const urls = ["/", "/book/", ...flat.map(f => `/book/chapter-${chaptersMeta[f].num}/`), "/benchmarks/", "/releases/"];
   // benchmark 详情 URL 集由 hub 构建写入 dist/benchmarks/；sitemap 直接扫描同源数据保证一致
   if (existsSync(benchDataPath)) {
     for (const b of loadBenchData().benchmarks) urls.push(`/benchmarks/${b.id}/`);

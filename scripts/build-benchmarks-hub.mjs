@@ -562,6 +562,8 @@ const EVT_CSS = `
 a.bchip:hover { text-decoration:none; border-color:var(--pin); }
 .bchip.focus { outline:1.5px solid var(--pin); outline-offset:1px; }
 .bchip.plain { border:1px dashed var(--rule); color:var(--graphite); }
+.chip-grp { flex:0 0 100%; font-size:12px; font-weight:600; line-height:1.4; color:var(--graphite); margin:6px 0 -1px; }
+.chip-grp:first-child { margin-top:0; }
 .evt-src { font-size:12.5px; }
 .evt-src a { color:var(--graphite); text-decoration:underline; text-underline-offset:3px; }
 .evt-src a:hover { color:var(--pin); }
@@ -662,6 +664,58 @@ function evtOverviewHtml(r, benchMode = false) {
   return (overview || "") + (traits ? `<div class="evt-traits">${traits}</div>` : "");
 }
 
+/** 时间轴芯片上的评测短名：与评测模式同一规则（取冒号前的短名，回退 id）；版本号已含在名称里时不重复 */
+function chipBenchLabel(db, e) {
+  const benchName = db.benchmarks.find(x => x.id === e.benchmark_id)?.name;
+  const shortName = benchName ? (benchName.split(":")[0]?.trim() || benchName) : e.benchmark_id;
+  const v = (e.variant || "").trim();
+  return v && !shortName.toLowerCase().includes(v.toLowerCase()) ? shortName + " " + v : shortName;
+}
+
+/** 多变体分组后，分数文字末尾重复的变体名（如「75.3% (Mythos 5.2)」）已由小标题表达，去掉 */
+function chipScoreLabel(e, owner) {
+  const label = evidenceScoreLabel(e);
+  if (!owner) return label;
+  const names = [owner, owner.split(/\s+/).slice(1).join(" ")].filter(n => n && n.length >= 3);
+  let out = label;
+  for (const n of names) {
+    const re = new RegExp("\\s*[（(]?\\s*" + n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\s*[)）]?\\s*$", "i");
+    out = out.replace(re, "");
+  }
+  return out.trim() || label;
+}
+
+/** 多变体发布的证据按变体分组（组序 = 首次出现顺序，组内保持原顺序）；单变体原样返回 */
+function groupedEvidence(r) {
+  if (r.models.length <= 1) return r.evidence;
+  const order = [];
+  for (const e of r.evidence) if (!order.includes(e.model_id)) order.push(e.model_id);
+  return order.flatMap(id => r.evidence.filter(e => e.model_id === id));
+}
+
+/** 时间轴 / 年份归档卡的评测芯片（非评测模式）。多变体发布按变体分组：变体名只出现一次作小标题，芯片只写「评测名 + 版本 + 分数」 */
+function tlChipsHtml(db, r, chipBase, focusSet) {
+  const multi = r.models.length > 1;
+  const owner = e => r.model_specs.find(m => m.id === e.model_id)?.name || e.model_id || "模型未说明";
+  const chip = e => {
+    // 账本中出现的每个评测都有详情页（正式实体或证据自动建档）——chip 一律可点
+    const cls = e.status === "verified" ? "ok" : "pd";
+    const focus = focusSet && focusSet[e.benchmark_id] ? " focus" : "";
+    const tip = [e.harness ? `执行框架（harness）：${e.harness}` : null, e.effort ? `推理档位（effort）：${e.effort}` : null]
+      .filter(Boolean).join(" · ");
+    return `<a class="bchip ${cls}${focus}" href="${chipBase}${esc(e.benchmark_id)}/"${tip ? ` title="${esc(tip)}"` : ""}>${esc(chipBenchLabel(db, e))} <b>${esc(multi ? chipScoreLabel(e, owner(e)) : evidenceScoreLabel(e))}</b></a>`;
+  };
+  if (!multi) return r.evidence.map(chip).join("");
+  // 与客户端 card() 同构：按 groupedEvidence 顺序，变体名变化时插入一次小标题
+  let prev = null;
+  return groupedEvidence(r).map(e => {
+    const k = owner(e);
+    const head = k !== prev ? `<span class="chip-grp">${esc(k)}</span>` : "";
+    prev = k;
+    return head + chip(e);
+  }).join("");
+}
+
 /** 时间轴事件卡（服务端静态与客户端渲染共用同一 HTML 结构） */
 function tlEvtHtml(db, r, opts = {}) {
   const focusSet = opts.focusSet || null;
@@ -683,16 +737,7 @@ function tlEvtHtml(db, r, opts = {}) {
       const label = (r.models.length > 1 ? esc(r.model_specs.find(m => m.id === benchRow.model_id)?.name || benchRow.model_id || "模型未说明") + " · " : "") + (benchRow.variant ? esc(benchRow.variant) : esc(shortName));
       return `<span class="bchip ${cls} focus"${tip ? ` title="${esc(tip)}"` : ""}>${label} <b>${esc(evidenceScoreLabel(benchRow))}</b></span>`;
     }).join("");
-  })() : r.evidence.map(e => {
-    // 账本中出现的每个评测都有详情页（正式实体或证据自动建档）——chip 一律可点
-    const score = ` <b>${esc(evidenceScoreLabel(e))}</b>`;
-    const cls = e.status === "verified" ? "ok" : "pd";
-    const focus = focusSet && focusSet[e.benchmark_id] ? " focus" : "";
-    const inner = `${r.models.length > 1 ? esc(r.model_specs.find(m => m.id === e.model_id)?.name || e.model_id || "模型未说明") + " · " : ""}${esc(e.benchmark_id)}${e.variant ? " " + esc(e.variant) : ""}${score}`;
-    const tip = [e.harness ? `执行框架（harness）：${e.harness}` : null, e.effort ? `推理档位（effort）：${e.effort}` : null]
-      .filter(Boolean).join(" · ");
-    return `<a class="bchip ${cls}${focus}" href="${chipBase}${esc(e.benchmark_id)}/"${tip ? ` title="${esc(tip)}"` : ""}>${inner}</a>`;
-  }).join("");
+  })() : tlChipsHtml(db, r, chipBase, focusSet);
   const modelTitle = r.models.length ? r.models.join(" / ") : r.release_title;
   const titleInner = r.source_url
     ? `<a href="${esc(r.source_url)}" target="_blank" rel="noopener" title="阅读官方发布文：${esc(r.release_title)}">${esc(modelTitle)}</a>`
@@ -738,10 +783,11 @@ function releasesSlimData(db) {
         sp: r.model_specs.length === 1 ? evtSpecsHtml(r) : `<p class="evt-overview">本发布含 ${r.model_specs.length} 个变体，各变体规格见模型详情。</p>`,
         ov: evtOverviewHtml(r, false),
         u: r.source_url || null, k: r.source_kind || null,
-        e: r.evidence.map(e => {
+        // 多变体：与服务端 tlChipsHtml 同序（按变体首次出现的顺序分组），客户端才能每组只出一个小标题
+        e: groupedEvidence(r).map(e => {
           const owner = multi ? (r.model_specs.find(m => m.id === e.model_id)?.name || e.model_id || "模型未说明") : "";
           const fv = e.status === "verified" && e.score_status === "reported" && e.value !== null ? e.value : null;
-          return [e.benchmark_id, evidenceScoreLabel(e), e.status === "verified" ? 1 : 0, owner, e.variant || "", e.harness || "", e.effort || "", fv];
+          return [e.benchmark_id, multi ? chipScoreLabel(e, owner) : evidenceScoreLabel(e), e.status === "verified" ? 1 : 0, owner, e.variant || "", e.harness || "", e.effort || "", fv, chipBenchLabel(db, e)];
         }),
       };
     }),
@@ -847,13 +893,17 @@ ${SHELL_JS}
   // 与服务端 tlEvtHtml（非评测模式）同构
   var CHIP_MAX=24,expanded={};
   function card(r,fs){
-    var lim=expanded[r.i]?r.e.length:CHIP_MAX,ev=r.e;
-    // 有评测过滤时，命中的分数 chip 排在最前，避免被折叠
-    if(fs&&Object.keys(fs).length)ev=ev.filter(function(e){return fs[e[0]];}).concat(ev.filter(function(e){return !fs[e[0]];}));
-    var chips=ev.slice(0,lim).map(function(e){
+    var lim=expanded[r.i]?r.e.length:CHIP_MAX,ev=r.e,keep=ev;
+    // 有评测过滤时，命中的分数 chip 一定保留，避免被折叠；展示仍按原顺序（多变体时按变体分组）
+    if(ev.length>lim){var hit=ev.filter(function(e){return fs[e[0]];}),room=Math.max(0,lim-hit.length),rest=ev.filter(function(e){return !fs[e[0]];}).slice(0,room);
+      keep=ev.filter(function(e){return hit.indexOf(e)>=0||rest.indexOf(e)>=0;});}
+    var prevOwner=null;
+    var chips=keep.map(function(e){
       var tip=[];if(e[5])tip.push('执行框架（harness）：'+esc(e[5]));if(e[6])tip.push('推理档位（effort）：'+esc(e[6]));
-      return '<a class="bchip '+(e[2]?'ok':'pd')+(fs[e[0]]?' focus':'')+'" href="'+REL+'benchmarks/'+esc(e[0])+'/"'+(tip.length?' title="'+tip.join(' · ')+'"':'')+'>'+(e[3]?esc(e[3])+' · ':'')+esc(e[0])+(e[4]?' '+esc(e[4]):'')+' <b>'+esc(e[1])+'</b></a>';
-    }).join('')+(r.e.length>lim?'<button type="button" class="ghost-btn chip-more" data-r="'+esc(r.i)+'">展开其余 '+(r.e.length-lim)+' 项评测</button>':'');
+      // 多变体发布：变体名只作一次分组小标题，芯片不再重复模型名前缀
+      var head='';if(e[3]&&e[3]!==prevOwner){head='<span class="chip-grp">'+esc(e[3])+'</span>';prevOwner=e[3];}
+      return head+'<a class="bchip '+(e[2]?'ok':'pd')+(fs[e[0]]?' focus':'')+'" href="'+REL+'benchmarks/'+esc(e[0])+'/"'+(tip.length?' title="'+tip.join(' · ')+'"':'')+'>'+esc(e[8]||e[0])+' <b>'+esc(e[1])+'</b></a>';
+    }).join('')+(r.e.length>keep.length?'<button type="button" class="ghost-btn chip-more" data-r="'+esc(r.i)+'">展开其余 '+(r.e.length-keep.length)+' 项评测</button>':'');
     var mt=r.m.length?r.m.join(' / '):r.t;
     var title=r.u?'<a href="'+esc(r.u)+'" target="_blank" rel="noopener" title="阅读官方发布文：'+esc(r.t)+'">'+esc(mt)+'</a>':esc(mt);
     var pin=D.logoExt[r.v]?logo(r.v,17):'<b style="color:var(--graphite)">·</b>';

@@ -22,7 +22,6 @@ export const PRIMARY_NAV = [
   { key: "benchmarks", label: "评估大全", href: "benchmarks/" },
   { key: "releases", label: "模型发布", href: "releases/" },
   { key: "choose", label: "按需求选型", href: "choose/" },
-  { key: "build", label: "动手搭建", href: "build/" },
 ];
 
 // ---------------------------------------------------------------- 共享 CSS
@@ -139,8 +138,8 @@ ${extra}`;
 }
 
 /**
- * 顶栏。active: "book" | "benchmarks" | "build" | ""
- * rel: 相对前缀（首页 ""，章节页 "../../"，/book/ 与 /build/ 页 "../"）
+ * 顶栏。active: "book" | "benchmarks" | "releases" | "choose" | ""
+ * rel: 相对前缀（首页 ""，章节页 "../../"，/book/ 页 "../"）
  */
 export function shellTopbar(rel = "", active = "") {
   const nav = PRIMARY_NAV.map(item => {
