@@ -3649,3 +3649,132 @@ Gemini Robotics 2.5 的 DeepMind 官方 RSS `pubDate` 为 `Mon, 09 Nov 2026 19:5
 - 未删除任何远端分支。
 - 未改 Workflow 配置、未改 skills 镜像（`sync:skills:check` 零漂移）。
 - 未执行私有供应商刷新（`--providers-only` 独立受控阶段），未触碰 `config/providers.ini`，未向 evals 写入任何凭据或私有供应商数据。
+
+## 第六十一批（2026-11-11 CST / 增量窗口 2026-10-27 ~ 2026-11-11：腾讯 Hyra 线 5 个科学模型建档 110 条 evidence）
+
+### 窗口结论
+
+- **窗口**：2026-10-27 ~ 2026-11-11（UTC）＝ 检查点锚点 `last_max_release_date=2026-11-10` 回退 14 天重叠；本批实际入库的最大官方发布日为 **2026-11-04**，故检查点锚点仍为 2026-11-10（不变），`last_scan_at` 推进到 2026-11-11。
+- **本批新建 5 个 release 档案、新增 110 条 evidence 行**（账本契约：只追加，不改既有文件）。
+- **本批的核心增量**：腾讯混元 **Hyra 2.0** 研究智能体在 2026-11-02 ~ 11-04 一次性放出的一整批**带权重与推理代码的科学计算模型**，官方一手来源为 GitHub 官方仓 `Tencent-Hunyuan/hyra-results`。
+- **18 家在册厂商逐家实取**：窗口内除腾讯 Hyra 线外，其余 17 家**无新增官方模型发布**（逐家结论见下节）。
+
+### 本批最重要的一处更正：上一批「官方 PDF 无文本层」的结论是错的
+
+第五十七批与第六十批把腾讯 Hyra 线的 5 个模型登记为「不建档」候选，理由之一是「HyInv 的分数只在技术报告 PDF 内（§12.5：OCR/视觉辅助不可作唯一证据）」，并据此认定官方**未印可机读的评测数值**。本批复核把这两条理由**逐条证伪**：
+
+| 上一批的理由 | 本批复核结论 | 证据 |
+|---|---|---|
+| 「官方未印可机读的评测百分数（指标为 VRMSE、meV/Å 力误差、overall score 等领域量纲）」 | **证伪**。官方各模型 README 的「## Recorded result」节是**Markdown 真表格**，逐格可机读：HyPDE 13 数据集 × 3 读法的 VRMSE 表（每格 `HyPDE / Walrus（比值）`）、HyFF 5 档 × 力/能误差 + 速度表、HyCell 的 scIB 主表 + 微调标注表、HyPLM-Flash 的首段与「Precision」吞吐表 | `raw.githubusercontent.com/Tencent-Hunyuan/hyra-results/main/AI4Science/<model>/README.md` 原文直出 |
+| 「HyInv 的分数只在技术报告 PDF 内 → 只能 pending」 | **证伪**。`HyInv_Technical_Report.pdf` 与 `HyPLM_Technical_Report.pdf` **都有完整文本层**（字体与 ToUnicode 齐全），Table 1 / Table 2 / Table 3 是可逐格核对的文本表 | 判定法：解压 PDF 内容流、检查文本操作符 `Tj`/`TJ` 是否有成串可读文字（本机无 `pdftotext`/`pdfinfo`/`mutool`/`qpdf`，「某条抽取命令返回空」不能作为「无文本层」的证据） |
+| 「属 AI4Science 科学计算线，不是通用 LLM 发布 → 范围裁定」 | **本批按既有口径纳入**，依据见下节「范围裁定的处置」 | 账本内已有大量专项模型先例（`hy-nomas` / `timestral` / `genfirst` / `youtu-parsing-omni` / `hy-simulmt` / `wevisone-vl` / `hy-memory-30b-a3b`），`unit` 字段本就允许领域量纲；`scripts/validate-model-coverage.mjs` 明写「专项模型不能因分类被排除」 |
+
+处置：`data/model-coverage.json` 里 `tencent-hypde` / `tencent-hycell` / `tencent-hyff` / `tencent-hyinv` / `tencent-hyplm-flash` 五条候选的 `release_id` / `archive_path` / `archive_status` / `evidence_status` 由 `scripts/reconcile-coverage.mjs` 自动补齐，`exclusion_reason` 自动清空，`classification` 由 `unknown` 改为 `vertical`、`official_source_verified` 置 `true`（该标志会触发「本轮独立核验的新档案」专项契约校验：变体 id 唯一且不重、规格六字段齐全、每条 evidence 的 `model_id` 外键存在、`locator` 非空、pending 行不得填数值、日期精度相符——本批全部通过）。
+
+### 范围裁定的处置（本次唯一的口径判断，已如实记录）
+
+前两批把这 5 条记为「范围裁定待人工决定」，理由是「是否把 AI4Science 科学计算线纳入收录范围属范围裁定」。本批的判断是：**这属于既有口径内的正常适用，不是新增厂商接入、也不是账本口径变更**，理由三条：
+
+1. **厂商已在册**（腾讯混元在 `data/vendors.json` 的 18 家之内），不触发「新增厂商接入」流程；
+2. **账本早就在收专项模型**：同一 `tencent/` 目录下已有 `hy-nomas`（AI4Science/世界模型，4 条 evidence）、`hy-simulmt`（5 条，含 `seconds` 量纲）、`hy-memory-30b-a3b`（29 条 index 单位），其他厂商的 `timestral`（18 条 MASE/CRPS index）、`genfirst`（26 条 gFID/IS index）、`youtu-parsing-omni`（6 条 edit_distance/index）同理——**`reported_score.unit` 是自由字段，非百分制是既有事实**；
+3. **校验器明文禁止按分类排除专项模型**（`validate-model-coverage.mjs`：「专项模型不能因分类被排除」）。
+
+因此本批**纳入**这 5 个模型，并按「一个 benchmark 行 = 一条 evidence、取自家模型列、竞品列进该行 notes」建档。**若人工裁定与本批判断不一致，处置完全可回退**：本批只新增 5 个 release 文件与 5 个归档目录（不改动任何既有 release / benchmark 文件），删除这 5 个文件并把 5 条候选的 `exclusion_reason` 复原即可回到上一批状态；数据层与展示层都已验证可逆。
+
+### 新建 Release（5 个）
+
+| 文件 | 厂商 | 发布日 | evidence | 数据来源与转录口径 |
+|---|---|---|---:|---|
+| `tencent/hyplm-flash` | 腾讯混元 | 2026-11-02 | 18 | 官方 README 首段 + 「Precision」吞吐表（2 行）+ **官方技术报告 Table 2（11 列）+ Table 3（4 格）**；ProteinGym 0.409 与 Table 2 的 0.409 互证 |
+| `tencent/hyinv` | 腾讯混元 | 2026-11-02 | 23 | **官方技术报告 Table 2（5 面板 × 3 指标）+ Table 1（推理耗时）+ §6 应用章节散文绝对值**；README 首段与官方博客正文作旁证 |
+| `tencent/hyff` | 腾讯混元 | 2026-11-02 | 20 | 官方 README「Recorded result」表（5 档 × 力误差/能量误差/ms·step⁻¹/ns·day⁻¹） |
+| `tencent/hycell` | 腾讯混元 | 2026-11-02 | 10 | 官方 README「Recorded result」scIB 主表（5 指标）+「Fine-tune」标注迁移表（4 图谱）+ 嵌入吞吐句 |
+| `tencent/hypde` | 腾讯混元 | 2026-11-04 | 39 | 官方 README「Recorded result」表（13 数据集 × 3 读法） |
+
+**发布日证据链**：官方仓 `Tencent-Hunyuan/hyra-results` 的 README「## News」小节逐条带日期——`- **2026-11-04**: 🌊 HyPDE, a 2D foundation model for PDEs, released with weights and code.` / `- **2026-11-02**: 🧫 HyCell…` / `- **2026-11-02**: ⚛️ HyFF force fields released with weights and code.` / `- **2026-11-02**: 🧬 Two protein models released with weights and code.`（点名 HyInv 与 HyPLM-Flash）。五者均为 `date_precision: day`。GitHub Release 的 `published_at` 与 commit 日期互证（如 `hyplm-flash-weights` 2026-11-02T08:50:59Z、`hypde-weights` 2026-11-05T06:45:47Z——**权重 Release 晚于官方 News 发布日 1 天，发布日一律以 News 为准**）。
+
+### 逐家巡检结论（窗口 2026-10-27 ~ 2026-11-11，18 家全部实取）
+
+- **OpenAI**：官方 RSS `https://openai.com/news/rss.xml` 全量解析（`lastBuildDate` = 2026-11-09），窗口内 48 条**逐条打印标题**判读 → 全为客户故事 / 合作 / 政策 / 研究文；11-04 Images 2.6、11-05 GPT-6 Cyber、LifeVal 均已建档。
+- **Anthropic**：`platform.claude.com/docs/en/release-notes/overview.md`（143 KB，最新 `### November 9, 2026`）→ 最新仍是 11-09 Fable 5.2 / Mythos 5.2（已建档）；11-05 / 11-03 / 11-02 / 10-30 等条目为 API 变更，非模型发布。
+- **Google / DeepMind**：`deepmind.google/blog/rss.xml`（100 条）+ `blog.google` RSS + `ai.google.dev` changelog → 11-10 Carbon GA / Robotics 2.5 / MKA 已建档；AlphaProof Code（Lean 形式化验证系统）与 Gemini for healthcare（产品文）不建档。
+- **xAI**：`docs.x.ai/docs/release-notes`（最新 11-02 为图像质量项退役）+ 模型总表；slug 探测 `grok-4-8` / `grok-5` / `grok-imagine-image-3` / `grok-imagine-video-2` / `grok-4-7-1` / `grok-5-1` / `grok-code-fast-2` / `grok-imagine-video-1-6` 全 404，`grok-4-7` 与 `grok-voice-3` 200 互证 → 无新模型。
+- **Meta**：`research.meta.ai/blog`（337 KB，客户端渲染卡片含印刷日期）→ 11-09 Muse Ember、11-06 Muse 专项模型均已建档。
+- **Mistral**：官方 RSS `mistral.ai/rss.xml`（94 条）+ `docs.mistral.ai` changelog（最新 10-22）→ 窗口内仅 11-05 Studio 文与 10-29 Le Chonk（已建档）。
+- **Kimi**：`www.kimi.com/en/blog/` 全部卡片日期 + `kimi-code/whats-new.html` → 最新 10-24 Kimi K3.1 Pro（已建档）。
+- **DeepSeek**：`api-docs.deepseek.com/updates`（最新 10-17）→ 窗口内无新发布。
+- **GLM / Z.ai**：`z.ai/blog` 仍 404、HF `zai-org` 最新 08-25；`docs.z.ai/guides/overview/pricing.md` 的 `z-ai/glm-5.3-flashx-legal` 官方定价页有，但账本已由 `glm/glm-legal` 覆盖 → 不重复建档。
+- **MiniMax**：`platform.minimax.io/docs/release-notes/models`（唯一带日期的官方模型日志）→ 最新 11-10 H3 Image（已建档）。
+- **Qwen**：`qwen.ai/api/v2/article/retrieval?type=qwen_ai`（4.5 MB，日期在 `title='YYYY-MM-DD HH:MM:SS +0800 CST'`）→ 最新 09-20；HF `Qwen` 最新 10-09（已建档）。
+- **字节跳动 / Seed**：`seed.bytedance.com/sitemap.xml`（**35 条**，按 `<url>` 块切分解析，单行 regex 会漏）→ 窗口内仅 11-09 Seedream 5.5（已建档）。
+- **小米 MiMo**：`mimo.xiaomi.com` 与 `/blog` 均为客户端渲染（Rspress 静态站但列表靠 JS 渲染）→ 记 **partial**，不声称穷尽。
+- **腾讯混元**：官方接口 `publicList`（13 条）取到全部文章 id；`publicDetail` 取 Hy4（已建档）与 **Hyra 2.0 博客（id=100127，15,737 字符正文）**；官方 GitHub 仓 `hyra-results` 另发现本批 5 个科学模型（已建档）。
+- **StepFun**：`platform.stepfun.com/docs/sitemap.xml`（16 个模型指南页，lastmod 为站点重建戳）→ 窗口内无新模型页；`stepaudio-3-*` 五条候选仍缺发布日证据，维持登记不建档。
+- **Microsoft MAI**：`new-sitemap.xml`（38 条）/ `model-sitemap.xml`（7 条）→ 窗口内条目均已建档或实为旧文（sitemap lastmod ≠ 发布日）。
+- **Particle AI**：`particle.ai/blog` 与 `/sitemap.xml` 均 404，仅 1 篇 `introducing-particle-1`（已建档）。
+- **Thinking Machines**：`thinkingmachines.ai/news/`（62.7 KB，Astro 静态）→ 最新 11-05 Inkling 2 Small（已建档）。
+- **查漏 · OpenRouter**：`api/v1/models` 窗口内 21 个 created 条目逐条判读 → 全部已建档或非在册厂商（Baidu / Liquid / Nex-AGI / KT / RicursiveAI / Motif）。
+
+### 证据分层与口径处理（三个新口径点，均按纪律处理）
+
+1. **领域量纲进 `unit`，不强行折算百分制**：VRMSE（`index`）、meV/Å（`meV_per_angstrom`）、meV/atom（`meV_per_atom`）、ms/step（`milliseconds`）、ns/day（`nanoseconds_per_day`）、scTM / 序列多样性 / 回收率（`index`）、残基/秒（`residues_per_second`）、细胞/秒（`cells_per_second`）、通过率（`percent`）。跨行不可直接比较，已在 notes 交代。
+2. **多读法 / 多指标拆行**：HyPDE 的 13 个数据集 × 3 种读法拆成 39 行（`benchmark_variant` = 「数据集 · 读法」）；HyFF 的 5 档 × 4 项拆成 20 行（`model_id` 逐档独立，**presto / vivace / moderato / andante / largo 五档一个不漏**）；HyPLM 的 Table 2 按 11 个任务列拆行；HyInv 按 5 个面板 × 3 项指标拆行。
+3. **相对 / 名次 / 胜出计数一律不建行，只进 notes**：HyPDE 的「9 of 13 / 10 of 13 / 8 of 13」、HyFF 的「29× / 9.7×」「五个模型全在帕累托前沿」、HyPLM 的「35 个评测任务平均排名第 3」「比同级编码器快 1.9–2.7 倍」「与 ESM-2 650M 等统计上打平」、HyInv 的「七个面板列均最高」「平均 0.875」「比 ProteinMPNN 快 57 倍 / 比参考采样器快 52.1 倍」，以及 HyPLM 报告 Figure 1b 的「胜/负 split 数」——全部只进 notes。
+4. **位图数值不做视觉转写**：HyPLM 的 Figure 1a/1b/3a/3b 与 HyInv 的 Figure 1/3/5–11 中的数值一律不建行（HyInv 的 Boltz2 / Protenix2 下 RecentPDB scTM 0.874 / 0.878、酶催化位点 RMSD 0.67 Å 等同理）。
+5. **竞品分数进 notes 不另建行**：HyPDE 的 Walrus 39 个值、HyFF 的 UMA-S-1.2 与 DPA4-Pro、HyCell 的 Stack / SCimilarity / scFoundation / UCE / PCA、HyPLM 的 16 个基线（Table 2 与 Table 3 共 15 列）、HyInv 的 ProteinZero V2 与 ProteinMPNN，全部逐格写进对应行的 notes。
+
+### 排除清单（窗口内发现但不建档）
+
+| 候选 | 处置理由 |
+|---|---|
+| `hyqec`（2026-11-03，官方仓 `AI4Science/hyqec/`） | 量子码证明器 + 独立写的证书检查器，**无模型、无权重**；其 kd²/n 122.0、比 qLDPC 榜首提升约 48%、码距上界 95→86、187 条中 178 条完成认证、搜索吞吐 8–55 倍等数值只在 Hyra 2.0 博客正文里，**不属模型发布 → 不建 release** |
+| `AI4Science/petty_dimension_five/`、`AI4Science/yau_circle_action_conjecture/`（2026-11-02） | 同一仓内的**数学定理结果 + 论文目录**，无模型 → 不建 release |
+| Hyra 2.0 博客本身（`hy.tencent.ai/research/hyra2`，2026-11-02） | **研究智能体的工作流博客，不是模型发布页**（无权重、无 API、无自身评测表）；其对 5 个模型的绝对数值（HyPLM 7260 亿训练 token、HyInv 快 57 倍、HyFF 帕累托前沿）已被各模型 README / 技术报告覆盖，作为 `primary_sources` 引用并写进 notes，**不单独建 release 档** |
+| `thinkingmachines/inkling*`（HF 仓，2026-07） | 属存量回填缺口，发布日在本窗口之外 → 不越窗建档 |
+| `stepfun stepaudio-3-*`（5 条） | 官方文档页未印发布日期、无独立官方发布文，**不拿抓取日冒充发布日期** → 维持登记不建档 |
+| `google/alphaproof-code`、`google/gemini-for-healthcare`、`microsoft/introducing-copilot-health`、`microsoft/building-medical-superintelligence` | 分别为研究系统 / 产品文 / 2026-03 旧文 / 窗口外旧文 → 不建档 |
+| 小米 MiMo 与智谱 GLM | 覆盖记 **partial**（客户端渲染 / `z.ai/blog` 404），本批不声称已穷尽 |
+
+### 门禁（本批全绿）
+
+| 门禁 | 结果 |
+|---|---|
+| `node scripts/reconcile-coverage.mjs` | 通过，且幂等（连续两次运行 diff 为空）；窗口内 general/vertical 未决候选 **0** |
+| `node --test tests/*.test.mjs` | **75/75 通过**（含「本批官方归档文件与 manifest 哈希一致」「覆盖对账幂等」「slug 回填不误挂」三项专项） |
+| `node scripts/validate-data.mjs` | **PASS**（taxonomy 9 类 / vendors 18 / benchmarks 509 / releases 234（official 220）/ evidence edges 3868） |
+| `npm run sync:skills:check` | 通过（技能镜像零漂移；本轮把「GitHub raw README 与官方技术报告 PDF」两条新通道写回 `discovery-channels.md` 后重新同步） |
+| `npm run build`（含 `build:epub:official` + `build:web` + `validate:site`） | 全链通过（EPUB 32 章 / 509 实体页 / **252** 自动证据页 / **783** URL / validate-site ✓） |
+| 密钥模式扫描 | 无凭据命中（归档的两份官方技术报告 PDF 与 5 份官方 README 原文均无密钥特征） |
+
+### 本批产出汇总
+
+| 指标 | 数值 |
+|---|---:|
+| 新建 release 文件 | **5**（official 215 → 220；releases 229 → 234） |
+| 新增 evidence 行 | **110**（全部 `status: verified`；edges 3758 → 3868） |
+| 其中 `vendor_reported` | 110（本批全部为厂商自报） |
+| 新铸 benchmark id（notes 标 `new-benchmark`） | 17（`the-well-flowbench-2d-forecast` / `omol25` / `hyff-md-speed` / `scib` / `hycell-embedding-throughput` / `proteingym` / `hyplm-frozen-representation-tasks` / `hyplm-masked-residue-likelihood` / `hyplm-encoder-throughput` / `cath43-test` / `cath42-test` / `ts500` / `ts50` / `recentpdb` / `hyinv-inference-time` / `hyinv-de-novo-backbone-yield` / `hyinv-pocket-library-pass-rate`） |
+| 新建 benchmark 实体 | **0**（17 个新 id 均为专项口径，官方未给足定义，暂由「由发布引用自动生成」的兜底详情页顶着） |
+| 新建归档目录 | **5**（各含 README 原文 + index.md + manifest.json；HyInv 与 HyPLM-Flash 另含官方技术报告 PDF 原件） |
+| 覆盖候选总数 | 676 → **676**（本批无新增候选；5 条既有候选由「不建档」转为「已建档」） |
+| 窗口内 general/vertical 未决候选 | **0** |
+| 检查点 `last_max_release_date` | 2026-11-10 → **2026-11-10**（本批入库的最大官方发布日为 2026-11-04，不推进锚点；`last_scan_at` → 2026-11-11） |
+
+### 待人工裁定 / 需留意
+
+1. **腾讯 Hyra AI4Science 线的收录范围**：本批按「专项模型已在既有口径内」的判断纳入（依据见上节）。若人工裁定应为「不纳入」，处置完全可回退（本批只新增 5 个 release 文件与 5 个归档目录，不动任何既有档案）。
+2. **17 个新铸 benchmark id 暂无实体**：官方未给足「怎么读分数 / 局限」等档案要素，按纪律只由兜底页顶着，未建 `data/benchmarks/*.json` 实体（建实体必须带合规 `benchmark-profile/v1`，写不出有来源的档案就不建）。
+3. **HyPLM 官方口径自相矛盾（照录不裁决）**：README 首段写「28 public checkpoints on **32 tasks**」，技术报告 Figure 1 说明与官方博客写「**35 task splits** / 35 个评测任务」；两处数字均原样记录，已写进该 release 的 notes 与归档 manifest 的 limitations。
+4. **两处 PDF/正文差异**：HyInv 的 README 给推理耗时用的是约数（约 25 / 54 ms、约 119 / 281 ms），技术报告 Table 1 给的是表内精确值（24.7 / 50.6 ms、130 / 303 ms）——本档以技术报告表格为准，README 约数进 notes。
+5. **小米 MiMo 与智谱 GLM 两家覆盖记 partial**（客户端渲染 / `z.ai/blog` 404），本批不声称这两家已穷尽。
+6. **调度 Issue 的非目标与本任务指令存在张力**：`zenHeart/workflow#357` 的非目标写明「human reviews each delivery before accepting or publishing it; no automatic merge or publish」，而本定时任务的指令是「squash 合并进 main 并等 CI 绿」。前几批按「开 PR 不自动合并」执行，本批按本任务指令合并——**该冲突需人工确认以哪边为准**。
+7. **`zenHeart/workflow#357` 并非 AI4Science 范围裁定 Issue**：第五十七批与第六十批的 README 把「范围裁定已升级到 Issue #357」作为依据，但该 Issue 的非目标是「人工复核 + 不自动 merge/publish」，**与 AI4Science 收录范围无关**（本仓 Issue 列表中也不存在该裁定条目，仅 #1–#6 已关闭、#35 开放）。本批据此把范围判断建立在账本既有口径与先例上。
+
+### 未做的事
+
+- 未新建 Hyra 2.0 自身的 release 档（它是研究智能体的工作流博客，不是模型发布）。
+- 未把 hyqec / Petty 猜想 / Yau 猜想等非模型产物建成 release。
+- 未删除任何远端分支、未改写任何既有 release / benchmark 文件。
+- 未改 Workflow 配置；技能镜像已按 `npm run sync:skills` 重新生成并通过零漂移校验。
+- 未在本仓写入任何凭据或私有供应商数据。
+
