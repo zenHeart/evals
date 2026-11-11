@@ -2,7 +2,7 @@ import {mkdirSync,writeFileSync,copyFileSync} from 'node:fs';
 import {join} from 'node:path';
 import {SHELL_CSS,shellHead,shellTopbar,shellFooter,SHELL_JS} from './site-shell.mjs';
 import {esc,MODEL_CSS,evidenceHTML,specsHTML} from './model-ui.mjs';
-import {citationCounts,headToHead,domainCatalog} from './model-compare.mjs';
+import {citationCounts,headToHead,domainCatalog,setCompareRules} from './model-compare.mjs';
 import {COMPARE_CSS} from './compare-ui.mjs';
 export function selectionData(db){
   const models=db.releases.flatMap(r=>r.model_specs.filter(m=>m.id).map(m=>({...m,key:r.id+'--'+m.id,release_id:r.id,release_date:r.release_date,vendor_id:r.vendor_id,vendor_label:r.vendor_label,region:r.region,evidence:r.evidence.filter(e=>e.model_id===m.id)})));
@@ -19,6 +19,7 @@ const DOMAIN_LABEL={coding:'编程开发','chinese-longform-writing':'文档写�
 const KEEP=['id','benchmark_id','variant','metric','unit','value','display','status','score_status','attribution','harness','effort'];
 /** 领域目录（含引用次数与 0–100 换算规则），构建期算好随数据下发，浏览器不再重复推导 */
 export function domainCatalogs(db){
+  setCompareRules(db.compareRules);
   const entities=Object.fromEntries(db.benchmarks.map(b=>[b.id,{name:b.name,metrics:b.metrics||[]}]));
   const official=db.releases.filter(r=>r.source_kind);
   const allIds=[...new Set([...Object.keys(entities),...Object.values(db.useCases).flatMap(u=>[...Object.keys(u.benchmarks||{}),...(u.catalog||[])])])];
@@ -30,12 +31,30 @@ export function compareData(db){
   const catalogs=domainCatalogs(db);
   const inDomain=new Set(Object.values(catalogs).flatMap(c=>c.map(b=>b.id)));
   const titles=Object.fromEntries(db.releases.map(r=>[r.id,r.release_title||'']));
-  const models=sd.models.map(m=>({key:m.key,id:m.id,name:m.name,vendor_label:m.vendor_label,release_id:m.release_id,release_date:m.release_date||null,release_title:titles[m.release_id]||'',
-    evidence:m.evidence.filter(e=>inDomain.has(e.benchmark_id)).map(e=>Object.fromEntries(KEEP.filter(k=>e[k]!==undefined&&e[k]!==null&&e[k]!=='').map(k=>[k,e[k]])))}));
+  const models=mergeSameModel(sd.models.map(m=>({key:m.key,id:m.id,name:m.name,vendor_id:m.vendor_id,vendor_label:m.vendor_label,release_id:m.release_id,release_date:m.release_date||null,release_title:titles[m.release_id]||'',
+    evidence:m.evidence.filter(e=>inDomain.has(e.benchmark_id)).map(e=>Object.fromEntries(KEEP.filter(k=>e[k]!==undefined&&e[k]!==null&&e[k]!=='').map(k=>[k,e[k]])))})));
   // 领域顺序与读者标签：编程数据最充分，作为默认领域；新增领域时在这里补标签即可
   const order=Object.keys(db.useCases).sort((a,b)=>(DOMAIN_ORDER.indexOf(a)+1||99)-(DOMAIN_ORDER.indexOf(b)+1||99));
   const useCases=Object.fromEntries(order.map(id=>{const u=db.useCases[id];return [id,{id,title:DOMAIN_LABEL[id]||u.title,description:u.description,catalog:catalogs[id]}];}));
   return {asOf:sd.asOf,useCases,models,suggestions:suggestPairs(useCases,models)};
+}
+/**
+ * 同一厂商的同一模型 id 出现在多篇官方发布里（如 GA 公告、评测专文与首发页）时合并成一个可选模型：
+ * 记录取并集（完全相同的记录只留一条），key 用记录最多的那篇发布，其余 key 记进 aliases，旧链接仍能打开。
+ * 不合并不同的模型 id（变体之间不互相借分）。
+ */
+export function mergeSameModel(models){
+  const groups=new Map();
+  for(const m of models){const g=(m.vendor_id||m.vendor_label)+'|'+m.id;if(!groups.has(g))groups.set(g,[]);groups.get(g).push(m);}
+  const out=[];
+  for(const ms of groups.values()){
+    if(ms.length===1){out.push(ms[0]);continue;}
+    const p=[...ms].sort((a,b)=>b.evidence.length-a.evidence.length||String(b.release_date||'').localeCompare(String(a.release_date||''))||a.key.localeCompare(b.key))[0];
+    const seen=new Set(),evidence=[];
+    for(const m of [p,...ms.filter(x=>x!==p)])for(const e of m.evidence){const k=JSON.stringify([e.benchmark_id,e.variant||'',e.metric||'',e.unit||'',e.value??null,e.status,e.score_status]);if(seen.has(k))continue;seen.add(k);evidence.push(e);}
+    out.push({...p,evidence,aliases:ms.filter(x=>x!==p).map(x=>x.key)});
+  }
+  return out;
 }
 /** 推荐对照：每个领域取「双方都有真实数值」的可计分评估最多、优先跨厂商、发布较新的几组，避免同一模型反复出现 */
 export function suggestPairs(useCases,models,limit=4){

@@ -240,6 +240,9 @@ export function loadBenchData() {
     useCase: useCases["chinese-longform-writing"] || readJson(join(DATA, "use-cases", "chinese-longform-writing.json")),
     useCases,
     coverage: readJson(join(DATA, "model-coverage.json")),
+    // /choose/ 计分规则登记表（逐项核对后的 0–100 换算 / 仅作参考决定、指标同义写法）
+    compareRules: existsSync(join(DATA, "compare-rules.json")) ? readJson(join(DATA, "compare-rules.json")) : null,
+    benchmarkAliases: ALIAS,
     _unmatchedEvidenceIds: [...unmatched],
   };
   return cache;
