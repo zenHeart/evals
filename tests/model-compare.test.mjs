@@ -212,7 +212,7 @@ test('真实数据：目录、可计分集合与推荐对照',async()=>{
   const w=d.useCases['chinese-longform-writing'],c=d.useCases.coding;
   assert.deepEqual(Object.keys(d.useCases),['coding','office-business','computer-use','research-search','knowledge-reasoning','vision-documents','chinese-longform-writing','quant-finance'],'8 个按用途划分的领域，编程开发在前（默认）');
   assert.deepEqual(Object.values(d.useCases).map(u=>u.title),['编程开发','办公与商务','电脑操作','调研与搜索','知识与推理','视觉与文档','文档写作','量化与金融']);
-  assert.deepEqual(w.catalog.filter(b=>b.eligible).map(b=>b.id).sort(),['ifeval','multichallenge'],'文档写作目前只有 IFEval 与 MultiChallenge 能换算');
+  assert.deepEqual(w.catalog.filter(b=>b.eligible).map(b=>b.id).sort(),['collie','ifeval','inverse-ifeval','multichallenge','multiif'],'文档写作：指令遵循类评估按登记表换算');
   assert.ok(c.catalog.length>40,'编程目录包含逐项筛出的软件工程评估');
   // 领域之间不重叠；按用户口径排除的评估不得混入
   const owner={};for(const [id,u] of Object.entries(d.useCases))for(const b of u.catalog){assert.ok(!owner[b.id],b.id+' 同时属于 '+owner[b.id]+' 与 '+id);owner[b.id]=id;}
@@ -228,7 +228,7 @@ test('真实数据：目录、可计分集合与推荐对照',async()=>{
   assert.equal(d.useCases['office-business'].catalog.find(b=>b.id==='economically-important-tasks')?.eligible,false,'胜率（win-or-tie）不换算');
   for(const id of ['terminalbench','swebench-pro','lcb','humaneval','mbpp'])assert.ok(c.catalog.find(b=>b.id===id)?.eligible,id);
   assert.equal(c.catalog.find(b=>b.id==='aider')?.eligible,false,'use-case 声明仅作参考的仍是参考');
-  assert.equal(c.catalog.find(b=>b.id==='frontier-code')?.eligible,false,'档案没有唯一有界指标的不换算');
+  {const fc=c.catalog.find(b=>b.id==='frontier-code');assert.ok(fc?.eligible,'FrontierCode 按官方 Score 口径计分');assert.equal(fc.rule.metric,'score');assert.equal(fc.rule.allowNullMetric,false,'没写口径的记录不算 Score');}
   for(let i=1;i<c.catalog.length;i++)assert.ok(c.catalog[i-1].cite>=c.catalog[i].cite,'按引用降序');
   const inDomain=new Set(Object.values(d.useCases).flatMap(u=>u.catalog.map(b=>b.id)));
   assert.ok(d.models.every(m=>m.evidence.every(e=>inDomain.has(e.benchmark_id))));
