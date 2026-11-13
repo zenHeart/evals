@@ -169,3 +169,110 @@ test('真实数据回归：GPT-5.6 Sol vs GPT-5.5 没有自报共同评估，靠
   const v=fairVerdict(res,{sizes:d.sizes,est:u.est,A,B,tables:d.tables});
   assert.ok(v.kt>=3);assert.equal(v.leader,'a');assert.equal(v.level,'lean');
 });
+
+// ---------------- 数值冲突逐条归因（data/competitor-columns/conflicts.json）
+test('冲突登记：汇总数字能由逐条记录重算；每条都有原因、处置、原页出处与说明',async()=>{
+  const {readFileSync}=await import('node:fs');const {join}=await import('node:path');
+  const {fileURLToPath}=await import('node:url');
+  const c=JSON.parse(readFileSync(join(fileURLToPath(import.meta.url),'..','..','data','competitor-columns','conflicts.json'),'utf8'));
+  const cnt=a=>a.reduce((s,x)=>(s[x]=(s[x]||0)+1,s),{});
+  const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b)||
+    (Object.keys(a).length===Object.keys(b).length&&Object.keys(a).every(k=>a[k]===b[k]));
+  const svt=c.self_vs_table,ct=c.cross_table;
+  assert.equal(svt.length,c.summary.self_vs_table.total);
+  assert.equal(ct.length,c.summary.cross_table.total);
+  assert.ok(same(cnt(svt.map(x=>x.cause)),c.summary.self_vs_table.by_cause),'by_cause 与逐条记录一致');
+  assert.ok(same(cnt(svt.map(x=>x.action)),c.summary.self_vs_table.by_action),'by_action 与逐条记录一致');
+  assert.ok(same(cnt(ct.flatMap(x=>x.causes)),c.summary.cross_table.by_cause),'cross_table by_cause 与逐条记录一致');
+  assert.equal(new Set(svt.map(x=>x.id)).size,svt.length,'id 不重复');
+  assert.equal(new Set(ct.map(x=>x.id)).size,ct.length,'id 不重复');
+  // after_fixes 与 not_comparable_cells 可按规则重算
+  const A=c.summary.after_fixes;
+  assert.equal(A.self_vs_table_remaining,svt.filter(x=>x.action!=='fix').length);
+  assert.equal(A.self_vs_table_remaining_comparable,svt.filter(x=>x.action==='keep').length);
+  assert.equal(A.cross_table_remaining,ct.filter(x=>!x.causes.includes('our_error')).length);
+  for(const x of svt){
+    assert.ok(c.cause_labels[x.cause]&&c.action_labels[x.action],x.id);
+    assert.ok(/^https?:\/\//.test(x.table.source_url),x.id);
+    assert.ok((x.self_reports||[]).every(r=>/^https?:\/\//.test(r.source_url)),x.id);
+    assert.ok(x.note&&x.note.length>2,x.id);
+    assert.ok(Number.isFinite(x.abs_diff)&&x.abs_diff>0,x.id);
+  }
+  for(const x of ct){
+    assert.ok(x.note&&x.note.length>2,x.id);
+    assert.ok(x.values.length>=2&&x.distinct_values.length>1,x.id);
+    assert.ok(x.causes.every(k=>c.cause_labels[k]),x.id);
+    for(const v of x.values)assert.ok(/^https?:\/\//.test(v.source_url),x.id);
+  }
+  // 「同上」这类无锚点写法不允许再出现
+  assert.equal([...svt,...ct].filter(x=>/^同上/.test(x.note||'')).length,0,'说明必须自足');
+});
+
+test('冲突登记：设置不同被判不可比的格，在数据里真的标了 not_comparable 且不进对照',async()=>{
+  const {loadBenchData}=await import('../scripts/load-data.mjs');
+  const {readFileSync}=await import('node:fs');const {fileURLToPath}=await import('node:url');const {join}=await import('node:path');
+  const c=JSON.parse(readFileSync(join(fileURLToPath(import.meta.url),'..','..','data','competitor-columns','conflicts.json'),'utf8'));
+  const db=loadBenchData();
+  // 每条 action=nc 的登记，都能在对应发布文件里找到 not_comparable 的格
+  const byFile=new Map(db.competitorColumns.map(d=>[d.release_id,d]));
+  for(const x of c.self_vs_table.filter(x=>x.action==='nc')){
+    const d=byFile.get(x.table.release_id);
+    assert.ok(d,`${x.id}: 找不到发布 ${x.table.release_id}`);
+    const cell=d.columns.find(k=>k.host_evidence_id===x.table.host_evidence_id&&k.value===x.table.value);
+    assert.ok(cell,`${x.id}: 找不到同表格`);
+    assert.equal(cell.comparability?.status,'not_comparable',`${x.id}: 该格未标不可比`);
+  }
+  // 汇总里的不可比格数与实测一致
+  const nc=db.competitorColumns.flatMap(d=>d.columns.filter(k=>k.comparability?.status==='not_comparable'));
+  assert.ok(nc.length>=150,'至少 150 格标了不可比');
+  assert.equal(c.summary.not_comparable_cells.total,nc.length,'汇总与实测一致');
+});
+
+test('不可比格：不计入同表两两对照；设置不同的格仍进全库估计，来源不可靠的不进',()=>{
+  const cat=Array.from({length:2},(_,i)=>bench('x'+i,50));
+  const dom={title:'测试',catalog:cat};
+  const H=M('h','vh',cat.map((c,i)=>({...ev(c.id,50),id:'h'+i})));
+  const A=M('a','va',[]),B=M('b','vb',[]);
+  const d0=doc('r','vh',[['h0',{a:95,b:20}],['h1',{a:90,b:25}]]);
+  // 第 1 行 A 的格判为「设置不同」；第 2 行 A 的格来源不可靠（页面示意组件）
+  d0.columns[0].comparability={status:'not_comparable',cause:'settings_differ',label:'推理/工具设置不同'};
+  d0.columns[2].comparability={status:'not_comparable',cause:'placeholder_widget',label:'页面示意组件，来源不明'};
+  const T=buildSameTables([d0],[H,A,B]);
+  assert.equal(sameTableHits(T,{id:'x0',rule},'a','b',['va','vb']).length,0,'x0 的 A 格不可比 → 该行不构成对照');
+  assert.equal(sameTableHits(T,{id:'x1',rule},'a','b',['va','vb']).length,0,'x1 的 A 格也不可比');
+  const v=fairVerdict(headToHead(dom,A,B),{A,B,tables:T});
+  assert.equal(v.kt,0);assert.equal(v.leader,null);
+  // 全库估计：设置不同的格照常进（与自报「同一项多档设置取中位数」一致），来源不可靠的不进
+  const obs=domainObservations(dom,[H,A,B],T);
+  const get=(k,i)=>obs.filter(o=>o.key===k&&o.item===i);
+  assert.equal(get('a','x0#1.0').length,1,'设置不同的格仍进全库估计');
+  assert.equal(get('b','x0#1.0').length,1);
+  assert.equal(get('a','x1#1.0').length,0,'来源不可靠的格不进全库估计');
+  assert.equal(get('b','x1#1.0').length,1,'同一行里没有问题的格照常进');
+});
+
+test('冲突登记：两个必查样例已归因（Kimi K2 表 Opus 4 无扩展思考 33.9 vs 自报 75.5；Anthropic 页 Astra TBS 68.1 vs 自报 64.6）',async()=>{
+  const {readFileSync}=await import('node:fs');const {fileURLToPath}=await import('node:url');const {join}=await import('node:path');
+  const c=JSON.parse(readFileSync(join(fileURLToPath(import.meta.url),'..','..','data','competitor-columns','conflicts.json'),'utf8'));
+  const aime=c.self_vs_table.find(x=>x.benchmark_id==='aime-25'&&x.table.release_id==='kimi-k2'&&x.table.value===33.9);
+  assert.ok(aime,'Kimi K2 表 AIME 2025 的 33.9 未登记');
+  assert.equal(aime.self_reports[0].value,75.5);
+  assert.equal(aime.table.settings,'w/o extended thinking');
+  assert.equal(aime.cause,'settings_differ');
+  assert.equal(aime.action,'nc','关闭扩展思考与自报口径不同，判不可比');
+  const tbs=c.self_vs_table.find(x=>x.benchmark_id==='terminal-bench-science'&&x.table.value===68.1);
+  assert.ok(tbs,'Anthropic 页 Astra TBS 68.1 未登记');
+  assert.equal(tbs.self_reports[0].value,64.6);
+  assert.equal(tbs.table.release_id,'claude-fable-5-2');
+  assert.equal(tbs.action,'keep','两页都未说明原因：保留，以自报 64.6 为准');
+  // 自报 64.6 确实是页面主值，68.1 只作「另见」
+  const {loadBenchData}=await import('../scripts/load-data.mjs');const {compareData}=await import('../scripts/build-model-pages.mjs');
+  const d=compareData(loadBenchData());const u=d.useCases.coding;
+  const A=d.models.find(m=>m.key==='claude-fable-5-2--claude-fable-5-2'),B=d.models.find(m=>m.key==='gpt-6-astra--gpt-6-astra');
+  const res=headToHead(u,A,B);
+  fairVerdict(res,{sizes:d.sizes,est:u.est,A,B,tables:d.tables});
+  const row=res.rows.find(r=>r.id==='terminal-bench-science');
+  assert.equal(row.b.row.value,64.6);
+  assert.ok(row.alts.some(x=>x.who==='b'&&x.value===68.1&&x.differs&&x.rel==='claude-fable-5-2'));
+});
+
