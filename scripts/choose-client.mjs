@@ -90,7 +90,7 @@ function update(push=true){
     return;
   }
   const res=headToHead(uc,A,B);
-  out.innerHTML=`<div class="cmp-head cmp-grid" role="group" aria-label="对比中的两个模型"><div class="tools"><button type="button" id="cmp-swap">⇄ 交换</button><button type="button" data-change="a">换 A</button><button type="button" data-change="b">换 B</button></div><div class="mh a"><span class="mh-k">A · ${esc(uc.title)}</span>${modelHead(A,REL)}</div><div class="mh b"><span class="mh-k">B</span>${modelHead(B,REL)}</div></div>`+compareHTML(res,A,B,uc,REL,{sizes:data.sizes});
+  out.innerHTML=`<div class="cmp-head cmp-grid" role="group" aria-label="对比中的两个模型"><div class="tools"><button type="button" id="cmp-swap">⇄ 交换</button><button type="button" data-change="a">换 A</button><button type="button" data-change="b">换 B</button></div><div class="mh a"><span class="mh-k">A · ${esc(uc.title)}</span>${modelHead(A,REL)}</div><div class="mh b"><span class="mh-k">B</span>${modelHead(B,REL)}</div></div>`+compareHTML(res,A,B,uc,REL,{sizes:data.sizes,tables:data.tables});
   // 窄屏默认收起「仅作参考」
   const ref=out.querySelector('#cmp-ref-wrap');if(ref&&matchMedia('(max-width:720px)').matches)ref.open=false;
   document.title=`${A.name} 对比 ${B.name} · ${uc.title} · 按需求选型`;

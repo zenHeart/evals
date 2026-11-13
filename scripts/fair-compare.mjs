@@ -15,6 +15,13 @@
  *     只在没有共同评估时作为「间接估计」出现，且必须够有把握（≥90%，双方各至少 2 项可对齐的评估）。
  *     估计的不确定度额外加入「挑选误差」SELECTION_SD，用外部榜单校准，避免过度自信。
  *  3. 覆盖面（单列）：各自报告了几项、只有一方报告的有几项。没报告不等于 0 分，也不参与胜负。
+ *  4. 同表对照（补充证据）：厂商发布页的对比表里常列出其他模型的分数（同一张表、同一行、同一套设置）。
+ *     这些数值记在 data/competitor-columns/（来源类型 third_party_reported_by_vendor，与自报分开），规则：
+ *      - 双方都有自报、能同题对照的评估：仍以自报为准，同表数值只作为「另见」列出（不一致时标出，不取平均）；
+ *      - 至少一方没有可用的自报、但某篇发布页在同一行里同时列出了双方：用这一行补上对照，权重减半
+ *        （SAME_TABLE_WEIGHT=0.5：数值由发布方在自己的设置下测得，发布方可能就是被比较的一方，且竞品的推理档位常未注明）；
+ *        同一评估有多篇发布页的同表行时，各行平分这一半权重；
+ *      - 只靠同表证据时结论最多判「略占优」（明显领先至少要有 1 项自报同题对照）；发布方就是被比较的一方时可信度为低。
  *
  * 不变式（tests/fair-compare.test.mjs 用随机数据逐条验证）：
  *  - 一方在全部共同评估上都不低于另一方（且至少一项更高），结论不可能判另一方领先；
@@ -48,6 +55,8 @@ export const EST_MIN_N=2;
  * 取 0.5 时各外部来源上该档的一致率都在 90% 以上（scripts/fair-compare-validate.mjs 可复现）。
  */
 export const SELECTION_SD=0.5;
+/** 同表证据（发布页对比表里的竞品列）相对自报同题对照的权重 */
+export const SAME_TABLE_WEIGHT=0.5;
 /** 全库估计最少需要的残差自由度（观测数 − 模型数 − 评估项数） */
 export const MIN_DOF=30;
 
@@ -80,37 +89,62 @@ export const weightOf=cite=>Math.log2(2+Math.max(0,cite||0));
  */
 export function fairVerdict(res,ctx={}){
   const rows=res?.rows||[];
-  const shared=[],onlyA=[],onlyB=[];
+  const shared=[],onlyA=[],onlyB=[],tabled=[];
+  const ka=ctx.A?.key,kb=ctx.B?.key;
   for(const r of rows){
-    if(r.status!=='scored')continue;
-    const va=r.a.state==='value',vb=r.b.state==='value';
+    delete r.gap;delete r.table;delete r.alts;
+    const va=r.status==='scored'&&r.a.state==='value',vb=r.status==='scored'&&r.b.state==='value';
+    const hits=ka&&kb&&ka!==kb?sameTableHits(ctx.tables,r,ka,kb,[ctx.A?.vendor_id,ctx.B?.vendor_id]):[];
     if(va&&vb){
       const {n,known}=sampleSize(ctx.sizes,r.id,r.variant);
       const d=r.a.n-r.b.n,se=gapSE(r.a.n,r.b.n,n),w=weightOf(r.cite);
       const z=d/se;
       r.gap={d,se,n,known,z,w,clear:Math.abs(z)>=1.96,dir:Math.abs(d)<1e-9?0:d>0?1:-1};
+      // 自报为准；别家发布页同表里的数值只作「另见」（不一致时标出，不取平均）
+      const alts=sameTableAlts(ctx.tables,r,ka,kb);
+      if(alts.length)r.alts=alts;
       shared.push(r);
-    }else if(va)onlyA.push(r);else if(vb)onlyB.push(r);
+      continue;
+    }
+    if(hits.length){
+      const w=weightOf(r.cite)*SAME_TABLE_WEIGHT/hits.length;
+      for(const h of hits){
+        const {n,known}=sampleSize(ctx.sizes,r.id,h.variant);
+        h.d=h.a.n-h.b.n;h.se=gapSE(h.a.n,h.b.n,n);h.n=n;h.known=known;h.z=h.d/h.se;h.w=w;
+      }
+      const d=hits.reduce((s,h)=>s+h.d,0)/hits.length;
+      r.table={hits,w:w*hits.length,d,dir:Math.abs(d)<1e-9?0:d>0?1:-1,home:hits.every(h=>h.home)};
+      tabled.push(r);
+    }
+    if(va)onlyA.push(r);else if(vb)onlyB.push(r);
   }
-  const k=shared.length;
+  const k=shared.length,kt=tabled.length;
   const wins=shared.filter(r=>r.gap.dir>0).length,losses=shared.filter(r=>r.gap.dir<0).length,ties=k-wins-losses;
   const clearWins=shared.filter(r=>r.gap.dir>0&&r.gap.clear).length,clearLosses=shared.filter(r=>r.gap.dir<0&&r.gap.clear).length;
   const W=shared.reduce((s,r)=>s+r.gap.w,0);
   const meanA=k?shared.reduce((s,r)=>s+r.gap.w*r.a.n,0)/W:null,meanB=k?shared.reduce((s,r)=>s+r.gap.w*r.b.n,0)/W:null;
-  const Z=k?shared.reduce((s,r)=>s+r.gap.w*r.gap.z,0)/Math.sqrt(shared.reduce((s,r)=>s+r.gap.w**2,0)):0;
-  const pA=k?phi(Z):null;
-  let leader=null,level='none',basis=k?'shared':'none';
-  if(k){
+  // 同表对照的均分（只在没有自报同题对照时作为主数字展示）
+  const th=tabled.flatMap(r=>r.table.hits),TW=th.reduce((s,h)=>s+h.w,0);
+  const tMeanA=kt?th.reduce((s,h)=>s+h.w*h.a.n,0)/TW:null,tMeanB=kt?th.reduce((s,h)=>s+h.w*h.b.n,0)/TW:null;
+  const twins=tabled.filter(r=>r.table.dir>0).length,tlosses=tabled.filter(r=>r.table.dir<0).length;
+  const terms=[...shared.map(r=>[r.gap.w,r.gap.z]),...th.map(h=>[h.w,h.z])];
+  const Z=terms.length?terms.reduce((s,[w,z])=>s+w*z,0)/Math.sqrt(terms.reduce((s,[w])=>s+w*w,0)):0;
+  const pA=terms.length?phi(Z):null;
+  const tableOnly=!k&&kt>0,homeOnly=tableOnly&&tabled.every(r=>r.table.home);
+  let leader=null,level='none',basis=k&&kt?'shared+table':k?'shared':kt?'table':'none';
+  if(terms.length){
     const conf=Math.max(pA,1-pA);
-    if(conf>=CLEAR&&k>=3)level='clear';
+    if(conf>=CLEAR&&k>=1&&k+kt>=3)level='clear';
     else if(conf>=LEAN)level='lean';
     else level='even';
     if(level!=='even')leader=Z>0?'a':'b';
   }
-  // 可信度：共同评估越多、题量越清楚越高
+  // 可信度：共同评估越多、题量越清楚越高；同表证据按半项计；只靠同表证据时最高为中，发布方就是其中一方时为低
+  const keff=k+kt*SAME_TABLE_WEIGHT;
   const knownShare=k?shared.filter(r=>r.gap.known).length/k:0;
-  let confidence=k===0?'none':k===1?'low':k<=2?'low':k<=4?'medium':'high';
+  let confidence=keff===0?'none':keff<3?'low':keff<5?'medium':'high';
   if(confidence==='high'&&knownShare<0.5)confidence='medium';
+  if(tableOnly)confidence=homeOnly?'low':confidence==='high'?'medium':confidence;
   // 间接估计（只在没有共同评估时给方向）
   const ea=ctx.est?.[ctx.A?.key],eb=ctx.est?.[ctx.B?.key];
   let estimate=null;
@@ -121,9 +155,88 @@ export function fairVerdict(res,ctx={}){
     const enough=ea.n>=EST_MIN_N&&eb.n>=EST_MIN_N;
     estimate={a:ea,b:eb,pA:p,enough,leader:!enough?null:p>=EST_LEAN?'a':p<=1-EST_LEAN?'b':null};
   }
-  if(!k&&estimate?.leader){leader=estimate.leader;level='indirect';basis='estimate';confidence='low';}
+  if(!k&&!kt&&estimate?.leader){leader=estimate.leader;level='indirect';basis='estimate';confidence='low';}
   return {k,shared,onlyA,onlyB,wins,losses,ties,clearWins,clearLosses,meanA,meanB,meanGap:k?meanA-meanB:null,Z,pA,leader,level,basis,confidence,estimate,
+    kt,tabled,twins,tlosses,tMeanA,tMeanB,tableOnly,homeOnly,
     hasA:shared.length+onlyA.length,hasB:shared.length+onlyB.length};
+}
+
+/**
+ * 同表证据的构建期整理：把 data/competitor-columns/ 的竞品列挂到「宿主行」（发布方自家模型在该表该行的自报记录）上。
+ * 宿主行给出评估 id、版本、指标与单位；同一行里的竞品数值共享这些口径。
+ * @param docs   loadCompetitorColumns() 的结果
+ * @param models compareData 的模型（已合并同名模型）
+ * @returns {rows:{[宿主记录 id]:{b,v,metric,unit,by,byLabel,rel,cells:{[模型 key]:[数值,原文,设置,是否宿主]}}}}
+ */
+export function buildSameTables(docs,models){
+  const evIdx=new Map(),byId=new Map(),vlabel={};
+  for(const m of models){
+    if(m.vendor_id&&!vlabel[m.vendor_id])vlabel[m.vendor_id]=m.vendor_label||m.vendor_id;
+    for(const e of m.evidence||[])if(e.id&&!evIdx.has(e.id))evIdx.set(e.id,{m,e});
+    (byId.get(m.id)||byId.set(m.id,[]).get(m.id)).push(m);
+  }
+  const rows={};
+  for(const d of docs||[]){
+    for(const c of d.columns||[]){
+      if(!c.model_id||!Number.isFinite(c.value))continue;
+      const h=evIdx.get(c.host_evidence_id);
+      if(!h||!Number.isFinite(h.e.value)||h.e.status!=='verified'||h.e.score_status!=='reported')continue;
+      const subs=byId.get(c.model_id)||[];
+      if(subs.length!==1)continue; // 同一个模型 id 对应多家时不猜
+      const sub=subs[0];
+      if(sub.key===h.m.key)continue;
+      const r=rows[c.host_evidence_id]??={b:h.e.benchmark_id,v:h.e.variant||'',metric:h.e.metric||'',unit:h.e.unit||'',
+        by:d.reported_by_vendor,byLabel:vlabel[d.reported_by_vendor]||d.reported_by_vendor,rel:d.release_id,
+        cells:{[h.m.key]:[h.e.value,h.e.display||String(h.e.value),h.e.effort||null,1]}};
+      if(!r.cells[sub.key])r.cells[sub.key]=[c.value,c.display||String(c.value),c.settings||null,0];
+    }
+  }
+  return {rows};
+}
+const tIndex=new WeakMap();
+function tableIndex(T){
+  let ix=tIndex.get(T);
+  if(!ix){ix=new Map();for(const [id,r] of Object.entries(T.rows||{}))for(const k of Object.keys(r.cells)){const key=k+'|'+r.b;(ix.get(key)||ix.set(key,[]).get(key)).push(id);}tIndex.set(T,ix);}
+  return ix;
+}
+/** 同表一格能否按该评估的规则计分；能则返回 0–100 分 */
+function tableCell(t,key,rule){
+  const c=t.cells[key];if(!c||!rule)return null;
+  const e={status:'verified',score_status:'reported',value:c[0],unit:t.unit,metric:t.metric};
+  if(rowIssue(e,rule))return null;
+  return {value:c[0],display:c[1],settings:c[2],self:Boolean(c[3]),n:normalizedValue(e,rule)};
+}
+/** 某评估上同一行同时列出 A、B 的同表行（每行一个对照）；home=发布方就是其中一方（含同厂商的其他型号） */
+export function sameTableHits(T,r,ka,kb,vendors=[]){
+  if(!T?.rows||!r?.rule)return [];
+  const ix=tableIndex(T),ids=new Set(ix.get(kb+'|'+r.id)||[]);
+  const out=[],seen=new Set();
+  for(const id of ix.get(ka+'|'+r.id)||[]){
+    if(!ids.has(id))continue;
+    const t=T.rows[id],a=tableCell(t,ka,r.rule),b=tableCell(t,kb,r.rule);
+    if(!a||!b)continue;
+    // 同一发布方在多篇发布页里重复印出同一组数值：只算一次
+    const dup=[t.by,variantOf({variant:t.v,metric:t.metric}),a.value,b.value].join('|');
+    if(seen.has(dup))continue;seen.add(dup);
+    out.push({id,by:t.by,byLabel:t.byLabel,rel:t.rel,variant:variantOf({variant:t.v,metric:t.metric}),raw:t.v,a,b,home:a.self||b.self||vendors.includes(t.by)});
+  }
+  return out;
+}
+/** 双方已有自报同题对照时，别家发布页同表里对 A / B 的转述（同一版本），供「另见」展示与冲突统计 */
+export function sameTableAlts(T,r,ka,kb){
+  if(!T?.rows||!r?.rule)return [];
+  const ix=tableIndex(T),out=[];
+  for(const [who,key] of [['a',ka],['b',kb]]){
+    const own=r[who]?.row?.value;
+    for(const id of ix.get(key+'|'+r.id)||[]){
+      const t=T.rows[id];
+      if(variantOf({variant:t.v,metric:t.metric})!==r.variant)continue;
+      const c=tableCell(t,key,r.rule);
+      if(!c||c.self)continue;
+      out.push({who,id,by:t.by,byLabel:t.byLabel,rel:t.rel,value:c.value,display:c.display,settings:c.settings,differs:Number.isFinite(own)&&Math.abs(own-c.value)>1e-9});
+    }
+  }
+  return out;
 }
 
 /**
@@ -194,18 +307,32 @@ export function predict(fit,key,item){
  * 领域观测矩阵：每个模型在每个可计分评估项上的一个得分（0–100）。
  * 只收能计分的官方数值；同一项多个不同数值（多档设置）取中位数——这只用于全库估计，同题对照仍按原规则不择优。
  */
-export function domainObservations(domain,models){
+export function domainObservations(domain,models,tables=null){
   const obs=[];
   for(const c of domain.catalog||[]){
     if(!c.eligible)continue;
+    // 同表竞品列：只给「自己没有这项自报」的模型补观测（自报为准，不与自报混合）
+    const extra={};
+    if(tables)for(const t of Object.values(tables.rows||{})){
+      if(t.b!==c.id)continue;
+      const v=variantOf({variant:t.v,metric:t.metric});
+      for(const [key,cell] of Object.entries(t.cells)){
+        if(cell[3])continue;
+        const e={status:'verified',score_status:'reported',value:cell[0],unit:t.unit,metric:t.metric};
+        if(rowIssue(e,c.rule))continue;
+        ((extra[key]??={})[v]??=[]).push(normalizedValue(e,c.rule));
+      }
+    }
     for(const m of models){
       const rows=(m.evidence||[]).filter(e=>e.benchmark_id===c.id&&!rowIssue(e,c.rule));
       const g={};
       for(const e of rows)(g[variantOf(e)]??=[]).push(normalizedValue(e,c.rule));
+      for(const [v,vs] of Object.entries(extra[m.key]||{}))if(!g[v])g[v]=vs.map(x=>({x,table:true}));
       for(const [v,vs] of Object.entries(g)){
-        const s=[...new Set(vs)].sort((a,b)=>a-b);
+        const table=vs.some(x=>x?.table);
+        const s=[...new Set(vs.map(x=>x?.table?x.x:x))].sort((a,b)=>a-b);
         const y=s.length%2?s[(s.length-1)/2]:(s[s.length/2-1]+s[s.length/2])/2;
-        obs.push({key:m.key,item:c.id+'#'+v,bench:c.id,y});
+        obs.push({key:m.key,item:c.id+'#'+v,bench:c.id,y,...(table?{table:true}:{})});
       }
     }
   }
