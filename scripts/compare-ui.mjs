@@ -4,7 +4,7 @@
  */
 import {esc} from './model-ui.mjs';
 import {isPending,excludedText} from './model-compare.mjs';
-import {fairVerdict} from './fair-compare.mjs';
+import {fairVerdict,domainCtx,HOME_MIN_ROWS} from './fair-compare.mjs';
 export {excludedText};
 
 const fmt=v=>Number.isFinite(v)?(Math.round(v*10)/10).toFixed(1):'—';
@@ -63,7 +63,7 @@ export function compareHTML(res,A,B,uc,rel='../',opt={}){
   const c=res.composite;
   const nm=m=>esc(m.name);
   const title=esc(uc.title||'本领域');
-  const v=c?fairVerdict(res,{sizes:opt.sizes,est:uc.est,A,B,tables:opt.tables}):null;
+  const v=c?fairVerdict(res,{sizes:opt.sizes,...domainCtx(uc),A,B,tables:opt.tables}):null;
   res.verdict=v;
   // ---- 结论区：同题对照是主结论；全库估计只作参考；覆盖面单列（没报告不等于 0 分）
   let verdict;
@@ -91,16 +91,17 @@ export function compareHTML(res,A,B,uc,rel='../',opt={}){
         +(L?`把各项合并后，${who(L)} 更强的把握${pctText(p)}。`:`合并后哪一方更强的把握都不到 ${pct(0.84)}%。`);
     }else if(v.kt){
       const p=L?(L==='a'?v.pA:1-v.pA):Math.max(v.pA,1-v.pA);
-      lead=L?`按发布页同表数据，<b>${who(L)}</b> 略占优`:'按发布页同表数据，两者<b>难分高下</b>';
+      lead=L?`按发布页同表数据，<b>${who(L)}</b> 略占优`:v.homeThin?'两者<b>难分高下</b>（只有发布方自家表格的 1 项数据，仅作参考）':'按发布页同表数据，两者<b>难分高下</b>';
       how=`两者在${title}没有各自都报告、且版本与测试条件一致的评估。${reporters.map(esc).join('、')} 的发布页在同一张表里同时列出了两者 ${v.kt} 项评估的分数（同一发布方、同一套设置），${tText(L)}。这些数值由发布方给出，不是被比较厂商自己的报告，按半权计入，只靠它最多判「略占优」${v.homeOnly?'；发布方本身就是其中一方，可能偏向自家':''}。`
-        +(L?`合并后 ${who(L)} 更强的把握${pctText(p)}。`:`合并后哪一方更强的把握都不到 ${pct(0.84)}%。`);
+        +(v.homeThin?`只有发布方自家的一张表、${v.kt} 项评估，不足 ${HOME_MIN_ROWS} 项独立数据，不据此判高下，上面的数值仅作参考。`
+          :L?`合并后 ${who(L)} 更强的把握${pctText(p)}。`:`合并后哪一方更强的把握都不到 ${pct(0.84)}%。`);
     }else if(v.level==='indirect'){
       const p=L==='a'?v.estimate.pA:1-v.estimate.pA;
       lead=`没有共同评估；间接估计 <b>${who(L)}</b> 可能更强`;
       how=`两者在${title}没有都做过、且版本与测试条件一致的评估，无法同题对照。下面的全库能力估计借其他模型的成绩把不同评估对齐后推断，${who(L)} 更强的把握${pctText(p)}——这是间接推断，请结合逐项分数判断。`;
     }else{
       lead='<b>数据不足</b>，无法判断高下';
-      const why=!v.estimate?'':!v.estimate.enough?'；至少一方能和其他模型对齐的评估不足 2 项，也不做间接推断':'，全库能力估计的区间也大幅重叠';
+      const why=!v.estimate?'':v.estimate.reference?'；本领域的全库能力估计仅供参考，不据此做间接推断':!v.estimate.enough?'；至少一方能和其他模型对齐的评估不足 2 项，也不做间接推断':'，全库能力估计的区间也大幅重叠';
       how=`两者在${title}没有都做过、且版本与测试条件一致的评估${why}。下面仍列出各自的原始分数。`;
     }
     const big=(x,w)=>`<div class="vd-v ${sideCls(w)}"><span class="big">${fmt(x)}</span></div>`;
@@ -110,7 +111,9 @@ export function compareHTML(res,A,B,uc,rel='../',opt={}){
     const e=v.estimate;
     const estCell=x=>x?`<div class="vd-v est"><span class="mid">${fmt0(x.idx)}</span><small>区间 ${fmt0(x.lo)}–${fmt0(x.hi)}${x.n<2?' · 只依据 1 项':''}</small></div>`:'<div class="vd-v est na"><span class="mid">—</span><small>数据不足</small></div>';
     const ea=uc.est?.[A.key],eb=uc.est?.[B.key];
-    const estRow=uc.est&&Object.keys(uc.est).length?`<div class="vd-row est"><div class="vd-k">全库能力估计<small>0–100 · 95% 区间 · 仅作参考</small></div>${estCell(ea)}${estCell(eb)}</div>
+    const refWhy={unvalidated:`${title}没有可用来校验的外部综合榜单`,thin:`${title}大多数模型只有 1 项可对齐的评估`}[v.estReference];
+    const refNote=refWhy?`<p class="vd-ref"><b>仅供参考</b>：${refWhy}，这里的全库能力估计无法验证准不准，只作参考展示，不据此判断高下。</p>`:'';
+    const estRow=uc.est&&Object.keys(uc.est).length?`<div class="vd-row est"><div class="vd-k">全库能力估计<small>0–100 · 95% 区间 · ${refWhy?'<b>仅供参考</b>':'仅作参考'}</small></div>${estCell(ea)}${estCell(eb)}</div>${refNote}
       <p class="vd-how">用${title}${uc.estMeta?.models?` ${uc.estMeta.models} 个模型`:'全部模型'}的可计分分数，按每项评估的难度对齐后估计（与 Epoch AI 能力指数同一类方法），可以推断「没报告的评估大概会考多少」。报告的评估越少，区间越宽${v.k?'；它不改变上面的同题对照结论':''}。</p>`
       :`<p class="vd-how">${title}公开分数太少、模型之间重叠太少，暂不提供全库能力估计。</p>`;
     const only=(list,m)=>list.length?`${nm(m)} 另有 ${list.length} 项（${list.slice(0,4).map(r=>esc(r.name)).join('、')}${list.length>4?' 等':''}）`:'';
@@ -136,7 +139,10 @@ export function compareHTML(res,A,B,uc,rel='../',opt={}){
       extra+=`<small class="cs tbl">同表对照（半权${hs.length>1?`，${hs.length} 张表平分`:''}）：${hs.map(h=>`<a href="${rel}models/${esc(h.rel)}/">${esc(h.byLabel)} 发布页</a> ${esc(h.a.display)}${h.a.settings?'（'+esc(h.a.settings)+'）':''} 对 ${esc(h.b.display)}${h.b.settings?'（'+esc(h.b.settings)+'）':''} · 差 ${fmt(Math.abs(h.d))} 分 · 误差约 ±${fmt(1.96*h.se)}${Math.abs(h.z)>=1.96?'':' · 在误差内'}`).join('；')}</small>`;
     }
     if(r.alts?.length){
-      extra+=`<small class="cs alt">另见：${r.alts.map(x=>`<a href="${rel}models/${esc(x.rel)}/">${esc(x.byLabel)} 发布页</a>同表记 ${esc(x.who==='a'?A.name:B.name)} ${esc(x.display)}${x.differs?'（与自报不同，以自报为准）':''}`).join('；')}</small>`;
+      extra+=`<small class="cs alt">另见：${r.alts.map(x=>`<a href="${rel}models/${esc(x.rel)}/">${esc(x.byLabel)} 发布页</a>同表记 ${esc(x.who==='a'?A.name:B.name)} ${esc(x.display)}${x.settings?'（'+esc(x.settings)+'）':''}${x.nc?`（${esc(x.nc)}，不计入）`:x.differs?'（与自报不同，以自报为准）':''}`).join('；')}</small>`;
+    }
+    if(r.tref?.length){
+      extra+=`<small class="cs alt">同表数据（${title}的发布页同表数据只作参考，不计入胜负）：${r.tref.map(h=>`<a href="${rel}models/${esc(h.rel)}/">${esc(h.byLabel)} 发布页</a> ${esc(h.a.display)}${h.a.settings?'（'+esc(h.a.settings)+'）':''} 对 ${esc(h.b.display)}${h.b.settings?'（'+esc(h.b.settings)+'）':''}`).join('；')}</small>`;
     }
     if(r.status==='excluded')extra=`<small class="cs">${r.table?'自报分数不计入这组对照':'不计入这组对照'}：${esc(r.reason||'')}</small>`+extra;
     else if(r.a.state==='value'&&r.b.state==='value'){const set=[settings(r.a.row),settings(r.b.row)];if(set.some(Boolean)&&set[0]!==set[1])extra=`<small class="cs">测试设置可能不同：${esc(set[0]||'未说明')} / ${esc(set[1]||'未说明')}</small>`+extra;}
@@ -216,6 +222,7 @@ export const COMPARE_CSS=`
 .cv.tb{font-style:italic}.cs.tbl,.cs.alt{display:block}
 .vd-cov{margin:12px 0 0;font-size:14px;color:var(--graphite);max-width:75ch}
 .vd-thin{margin:10px 0 0;padding:8px 12px;border-left:3px solid var(--warn);background:color-mix(in srgb,var(--warn) 8%,transparent);font-size:14px}
+.vd-ref{margin:6px 0;padding:6px 10px;border-left:3px solid var(--warn);background:color-mix(in srgb,var(--warn) 8%,transparent);font-size:13px;max-width:75ch}
 .csec{margin:26px 0 0}
 .csec h2,.csec summary h2{font-size:17px;margin:0;display:inline}
 .csec h2 .n{font:600 13px/1 var(--mono);color:var(--graphite);margin-left:6px}

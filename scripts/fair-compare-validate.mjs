@@ -12,7 +12,7 @@ import {readFileSync,readdirSync,writeFileSync} from 'node:fs';
 import {join,dirname} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {headToHead,rowIssue,variantOf,normalizedValue} from './model-compare.mjs';
-import {domainObservations,fitAbility,fairVerdict,predict} from './fair-compare.mjs';
+import {domainObservations,fitAbility,fairVerdict,predict,domainCtx,compactEstimates,estimateReference} from './fair-compare.mjs';
 
 const DIR=join(dirname(fileURLToPath(import.meta.url)),'..','data','external-validation');
 export function loadExternal(dir=DIR){
@@ -73,9 +73,9 @@ export function validate(cmp,ext=loadExternal(),db=null){
         const truth=a.ext>b.ext?'a':'b';
         const A=cmp.models.find(m=>m.key===a.key),B=cmp.models.find(m=>m.key===b.key);
         const r=headToHead(cmp.useCases[d],A,B);if(!r.composite)continue;
-        const v0=fairVerdict(r,{sizes:cmp.sizes,est:cmp.useCases[d].est,A,B});
+        const v0=fairVerdict(r,{sizes:cmp.sizes,...domainCtx(cmp.useCases[d]),A,B});
         if(v0.leader){pw.newNoTables[1]++;if(v0.leader===truth)pw.newNoTables[0]++;}
-        const v=fairVerdict(r,{sizes:cmp.sizes,est:cmp.useCases[d].est,A,B,tables:cmp.tables});
+        const v=fairVerdict(r,{sizes:cmp.sizes,...domainCtx(cmp.useCases[d]),A,B,tables:cmp.tables});
         if(r.composite.winner){pw.old[1]++;if(r.composite.winner===truth)pw.old[0]++;}
         if(v.leader){pw.new[1]++;if(v.leader===truth)pw.new[0]++;const k=v.basis==='estimate'?'newIndirect':v.basis==='table'?'newTable':'newShared';pw[k][1]++;if(v.leader===truth)pw[k][0]++;}
       }
@@ -85,7 +85,7 @@ export function validate(cmp,ext=loadExternal(),db=null){
   // 留一评估外推
   for(const d of ['coding','knowledge-reasoning','vision-documents']){
     // 训练集含同表竞品列（与上线口径一致）；被拿掉的评估项连同其同表数值一起拿掉，只用自报分数检验
-    const u=cmp.useCases[d];const obsAll=domainObservations(u,cmp.models,cmp.tables);const obs=obsAll.filter(o=>!o.table);
+    const u=cmp.useCases[d];const obsAll=domainObservations(u,cmp.models,cmp.tables,{tableWeight:u.tableFitWeight??1});const obs=obsAll.filter(o=>!o.table);
     const cite=Object.fromEntries(u.catalog.map(c=>[c.id,c.cite]));
     const items=[...new Set(obs.map(o=>o.item))].filter(i=>obs.filter(o=>o.item===i).length>=5);
     const res=[];
@@ -162,7 +162,7 @@ export function crossSource(cmp,db){
     if(t.w===t.l)continue;
     const A=(byId.get(t.own)||[])[0],B=(byId.get(t.rival)||[])[0];if(!A||!B)continue;
     const u=cmp.useCases[t.domain];const r=headToHead(u,A,B);if(!r.composite)continue;
-    const v=fairVerdict(r,{sizes:cmp.sizes,est:u.est,A,B});
+    const v=fairVerdict(r,{sizes:cmp.sizes,...domainCtx(u),A,B});
     const table=t.w>t.l?'a':'b';
     if(!v.leader)agree.undecided++;else if(v.leader===table)agree.same++;else{agree.opposite++;agree.list.push({...t,verdict:v.leader,k:v.k,level:v.level});}
   }
@@ -170,7 +170,27 @@ export function crossSource(cmp,db){
     largest:diffs.sort((a,b)=>Math.abs(b.diff)-Math.abs(a.diff)).slice(0,15),tables:Object.keys(tables).length,agree,columns:colCmp};
 }
 
-if(import.meta.url===`file://${process.argv[1]}`){
+/**
+ * 同表可信度 ρ 的选择（--sweep-table-weight [领域]）：只改这一领域的 ρ，重拟全库估计后重跑外部验证，
+ * 列出各档在该领域的 Spearman、两两一致率与留一外推，供 TABLE_WEIGHT_BY_DOMAIN 取值。
+ */
+export function sweepTableWeight(cmp,ext,domain,grid=[0,0.1,0.25,0.5,0.75,1],verdictGrid=null){
+  const u=cmp.useCases[domain],keep={tw:u.tableWeight,fw:u.tableFitWeight,est:u.est,meta:u.estMeta};
+  const out=[];
+  const pairs=verdictGrid?grid.flatMap(f=>verdictGrid.map(v=>[f,v])):grid.map(r=>[r,r]);
+  for(const [rho,vr] of pairs){
+    u.tableWeight=vr;u.tableFitWeight=rho;
+    const fit=fitAbility(domainObservations(u,cmp.models,cmp.tables,{tableWeight:rho}));
+    u.est=compactEstimates(fit);u.estMeta={...keep.meta,models:Object.keys(fit.models).length,reference:estimateReference(domain,u.est)};
+    const v=validate(cmp,ext);
+    const src=Object.fromEntries(Object.entries(v.sources).filter(([,o])=>o.domains[domain]).map(([s,o])=>[s,{n:o.domains[domain].n,rho:o.domains[domain].rho_new}]));
+    const pw=Object.fromEntries(Object.entries(v.pairwise).filter(([k])=>k.endsWith('|'+domain)).map(([k,o])=>[k.split('|')[0],o.new]));
+    out.push({rho,verdict:vr,src,pairwise:pw,loo:v.loo[domain]&&{items:v.loo[domain].items,median:v.loo[domain].median.new,weighted:v.loo[domain].weighted.new}});
+  }
+  Object.assign(u,{tableWeight:keep.tw,tableFitWeight:keep.fw,est:keep.est,estMeta:keep.meta});
+  return out;
+}
+if(import.meta.url===`file://${process.argv[1]}`&&!process.argv.includes('--sweep-table-weight')){
   const {loadBenchData}=await import('./load-data.mjs');const {compareData}=await import('./build-model-pages.mjs');
   const db=loadBenchData();const v=validate(compareData(db),loadExternal(),db);
   const f=x=>x==null?'—':x.toFixed(2);
@@ -188,4 +208,11 @@ if(import.meta.url===`file://${process.argv[1]}`){
     const k=c.columns;console.log('== 同表竞品列 vs 被转述模型自报：',k.cells,'格，其中',k.withSelf,'格有同版本自报，一致',k.equal,'，不一致',k.conflicts.length,'（差值中位数',f(k.medianConflictDiff),'分）');
     for(const x of k.conflicts.slice(0,8))console.log('   不一致',x.bench,x.variant||'',x.model,'同表',x.table,x.settings||'','自报',x.self.join('/'),'by',x.release);}
   const i=process.argv.indexOf('--out');if(i>0)writeFileSync(process.argv[i+1],JSON.stringify(v,null,1));
+}
+if(import.meta.url===`file://${process.argv[1]}`&&process.argv.includes('--sweep-table-weight')){
+  const {loadBenchData}=await import('./load-data.mjs');const {compareData}=await import('./build-model-pages.mjs');
+  const d=process.argv[process.argv.indexOf('--sweep-table-weight')+1]||'vision-documents';
+  const rows=sweepTableWeight(compareData(loadBenchData()),loadExternal(),d,[0,0.1,0.25,0.5,0.75,1],process.argv.includes('--split')?[0,0.1,0.25,0.5,1]:null);
+  const f=x=>x==null?'—':x.toFixed(2);
+  for(const r of rows)console.log('ρ估计='+r.rho,'ρ对照='+r.verdict,Object.entries(r.src).map(([s,x])=>`${s} n=${x.n} ρs=${f(x.rho)}`).join('  '),'|',Object.entries(r.pairwise).map(([s,x])=>`${s} ${x.agree}/${x.of}`).join('  '),'| 留一',r.loo?`${f(r.loo.median)}/${f(r.loo.weighted)}`:'—');
 }

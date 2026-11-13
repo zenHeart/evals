@@ -20,7 +20,7 @@
  *   noTablesDecided  不用同表证据时判出方向的组数（对照基线）
  */
 import {headToHead} from './model-compare.mjs';
-import {fairVerdict} from './fair-compare.mjs';
+import {fairVerdict,domainCtx} from './fair-compare.mjs';
 import {compareData} from './build-model-pages.mjs';
 import {rowIssue} from './model-compare.mjs';
 
@@ -44,9 +44,9 @@ export function auditFair(cmp,{examples=12,symmetry=true}={}){
     for(let i=0;i<ms.length;i++)for(let j=i+1;j<ms.length;j++){
       const A=ms[i],B=ms[j];
       const r=headToHead(u,A,B);if(!r.composite)continue;
-      const v0=fairVerdict(r,{sizes:cmp.sizes,est:u.est,A,B});
+      const v0=fairVerdict(r,{sizes:cmp.sizes,...domainCtx(u),A,B,tables:null});
       if(v0.leader)s.noTablesDecided++;
-      const v=fairVerdict(r,{sizes:cmp.sizes,est:u.est,A,B,tables:cmp.tables});
+      const v=fairVerdict(r,{sizes:cmp.sizes,...domainCtx(u),A,B,tables:cmp.tables});
       s.pairs++;
       if(!v.k&&v.kt){s.tableFilled++;if(v.leader)s.tableDecided++;if(v.homeOnly)s.tableHome++;}
       if(v.k&&v.kt)s.tableAdded++;
@@ -61,7 +61,7 @@ export function auditFair(cmp,{examples=12,symmetry=true}={}){
       if(dom&&nw&&nw!==dom)s.newDominance++;
       if(v.level==='clear'&&v.estimate?.leader&&v.estimate.leader!==nw){s.estConflict++;if(out.examples.estConflict.length<examples)out.examples.estConflict.push({domain:d,a:A.key,b:B.key,leader:nw,k:v.k,estPA:+v.estimate.pA.toFixed(3)});}
       if(symmetry){
-        const r2=headToHead(u,B,A),v2=fairVerdict(r2,{sizes:cmp.sizes,est:u.est,A:B,B:A,tables:cmp.tables});
+        const r2=headToHead(u,B,A),v2=fairVerdict(r2,{sizes:cmp.sizes,...domainCtx(u),A:B,B:A,tables:cmp.tables});
         if(v2.leader!==mirror(nw)||v2.level!==v.level||v2.k!==v.k||v2.kt!==v.kt)s.asymmetric++;
       }
     }
