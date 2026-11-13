@@ -846,7 +846,7 @@ function indexPage(parts, chaptersMeta, bench) {
     ["系统学习", "32 章体系化技术路径：从评测认知、实验设计到工程实操，配带代码示例与即时交互自测", "book/"],
     ["评估大全", `${bench.count} 项评测档案：收录任务定义、打分协议、厂商引用频次与历史对账证据`, "benchmarks/"],
     ["模型发布", "主流模型官方发布时间轴：逐条索引各厂商技术报告中的基准引用与实测得分", "releases/"],
-    ["按需求选型", "先选领域，再挑两个模型逐项对照官方分数，并按评测被引用的次数给出综合分", "choose/"],
+    ["按需求选型", "先选领域，再挑两个模型，在双方都做过的评估上逐项对照官方分数（标出题量误差），没报告的不按 0 分算", "choose/"],
   ].map(([t, s, href]) => `<a class="entry-card" href="${href}"><div class="e-title">${t}</div><div class="e-sub">${s}</div></a>`).join("");
   const featured = bench.featured.map(b => `
     <a class="feat-card" href="benchmarks/${b.id}/">

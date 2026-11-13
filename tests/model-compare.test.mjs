@@ -151,10 +151,11 @@ test('搜索：本领域有分数的优先，没有分数的仍可搜到',()=>{
   assert.deepEqual(counts,{'b--1':1});
   assert.deepEqual(searchModels(ms,'anthropic',counts).map(m=>m.key),['b--1','a--1']);
 });
-test('渲染：缺失显示「-」并注明计 0；待转录显示「-」与「尚未转录」，不画胜者；不出现内部用语',()=>{
+test('渲染：缺失显示「-」并注明不计分（不按 0 分算）；待转录显示「-」与「尚未转录」，不画胜者；不出现内部用语',()=>{
   const A=M('a',[ev('hot',80),ev('cold',50),ev('desc',1500,{unit:'elo'})]),B=M('b',[pend('hot')]);
   const html=compareHTML(headToHead(dom,A,B),A,B,dom,'../');
-  assert.match(html,/未报告 · 计 0/);
+  assert.match(html,/未报告 · 不计分/);
+  assert.ok(!/计 0|记 0/.test(html),'任何地方都不再按 0 分计');
   assert.match(html,/尚未转录/);
   assert.match(html,/title="官方配图尚未转录出数值"[^>]*>-</);
   assert.ok(!/图表尚无可读数值|已核验|待核验|证据账本|窗口起点/.test(html));
@@ -170,7 +171,10 @@ test('渲染：领域只有一项可计分评估时如实说明',()=>{
   const A=M('a',[ev('ife',84.1,{metric:'prompt_strict_acc'})]),B=M('b',[]);
   const r=headToHead(w,A,B);
   assert.equal(r.composite.a,84.1);assert.equal(r.composite.b,0);
-  assert.match(compareHTML(r,A,B,w,'../'),/文档写作目前只有 <a [^>]+>IFEval<\/a> 能换算成 0–100 分，综合分就等于这一项的得分（没有这项分数记 0）/);
+  const html=compareHTML(r,A,B,w,'../');
+  assert.match(html,/文档写作目前只有 <a [^>]+>IFEval<\/a> 能换算成 0–100 分，结论只反映这一项/);
+  assert.match(html,/数据不足/,'B 没有任何分数：不能因为「没报告=0」判 A 赢');
+  assert.equal(r.verdict.leader,null);
 });
 test('时间轴芯片：待转录写「-」并有安静提示，评测名不被吞掉',()=>{
   const e={benchmark_id:'frontier-code',variant:'2.0',status:'pending',score_status:'not_extracted',value:null,display:null,locator:{figure:'images/a.jpg'}};
@@ -247,33 +251,36 @@ test('双方都没有可计入的分数：不写「持平」',()=>{
   const A=M('a',[pend('hot')]),B=M('b',[]);
   const r=headToHead(dom,A,B);
   const html=compareHTML(r,A,B,{id:'coding',title:'编程开发'},'../');
-  assert.ok(html.includes('分不出高下'));assert.ok(!html.includes('持平'));
+  assert.ok(html.includes('数据不足'));assert.ok(!html.includes('持平'));
 });
 const howText=html=>(html.match(/<p class="vd-how">[\s\S]*?<\/p>/)||[''])[0].replace(/<[^>]+>/g,'');
-test('结论区：「本次计入」是这组实际计入的项数；不计入按真实原因分别计数',()=>{
-  // hot：A 待转录 → 不计入（待转录）；cold：双方版本不同 → 不计入（版本或测试条件）；inhouse 计入
+const covText=html=>(html.match(/<p class="vd-cov">[\s\S]*?<\/p>/)||[''])[0].replace(/<[^>]+>/g,'');
+test('结论区：覆盖面如实计数；不计入按真实原因分别计数',()=>{
+  // hot：A 待转录 → 不计入（待转录）；cold：双方版本不同 → 不计入（版本或测试条件）；inhouse 只有 A 报告
   const A=M('a',[pend('hot'),ev('cold',50,{variant:'1.0'}),ev('inhouse',40)]),B=M('b',[ev('hot',60),ev('cold',70,{variant:'2.0'})]);
   const r=headToHead(dom,A,B);
   assert.equal(r.composite.n,1);assert.equal(r.composite.of,3);
   assert.deepEqual(r.composite.excludedBy,{pending:1,condition:1});
-  const t=howText(compareHTML(r,A,B,{id:'coding',title:'编程开发'},'../'));
-  assert.match(t,/共 3 项可计分评估，本次计入 1 项/);
-  assert.ok(!/本次计入 3 项/.test(t));
-  assert.match(t,/另有 2 项这组对照里不计入（不记 0）：1 项因官方配图尚未转录出数值，1 项因双方的评测版本或测试条件不同/);
+  const html=compareHTML(r,A,B,{id:'coding',title:'编程开发'},'../');
+  const t=covText(html);
+  assert.match(t,/A 有分 1 项，B 有分 0 项，双方都有 0 项/);
+  assert.match(t,/A 另有 1 项（Vendor In-house）只有自己报告，不参与胜负——没报告不等于 0 分/);
+  assert.match(t,/另有 2 项这组对照里不计入：1 项因官方配图尚未转录出数值，1 项因双方的评测版本或测试条件不同/);
+  assert.match(html,/数据不足/);
   // 只有条件不同：不得写成「尚未转录」
   const A2=M('a',[ev('cold',50,{variant:'with Search'})]),B2=M('b',[ev('cold',70,{variant:'with context management'})]);
-  const t2=howText(compareHTML(headToHead(dom,A2,B2),A2,B2,{id:'coding',title:'编程开发'},'../'));
+  const t2=covText(compareHTML(headToHead(dom,A2,B2),A2,B2,{id:'coding',title:'编程开发'},'../'));
   assert.match(t2,/1 项因双方的评测版本或测试条件不同/);assert.ok(!/尚未转录/.test(t2));
-  for(const w of ['已核验','待核验','证据账本','窗口起点'])assert.ok(!t.includes(w)&&!t2.includes(w));
+  for(const w of ['已核验','待核验','证据账本','窗口起点'])assert.ok(!html.includes(w)&&!t2.includes(w));
 });
-test('真实数据：Hy4 vs GLM-5.3 计入 21 项（2 项待转录）；Kimi K2.6 vs GLM-5.1 的 BrowseComp 因测试条件不同',async()=>{
+test('真实数据：Hy4 vs GLM-5.3 的待转录项如实计数；Kimi K2.6 vs GLM-5.1 的 BrowseComp 因测试条件不同',async()=>{
   const {loadBenchData}=await import('../scripts/load-data.mjs');const {compareData}=await import('../scripts/build-model-pages.mjs');
   const d=compareData(loadBenchData());const k=key=>d.models.find(m=>m.key===key);
   const pairs=[['coding','hy4--hy4','glm-5-3--glm-5.3'],['research-search','kimi-k2-6--kimi-k2-6','glm-5-1--glm-5.1']];
   const [[t1,a1,b1],[t2,a2,b2]]=pairs;
-  if(k(a1)&&k(b1)){const r=headToHead(d.useCases[t1],k(a1),k(b1));const t=howText(compareHTML(r,k(a1),k(b1),d.useCases[t1],'../'));
-    assert.equal(r.composite.n,r.composite.of-r.composite.excluded);assert.match(t,new RegExp('本次计入 '+r.composite.n+' 项'));
+  if(k(a1)&&k(b1)){const r=headToHead(d.useCases[t1],k(a1),k(b1));const t=covText(compareHTML(r,k(a1),k(b1),d.useCases[t1],'../'));
+    assert.equal(r.composite.n,r.composite.of-r.composite.excluded);assert.match(t,new RegExp('双方都有 '+r.composite.both+' 项'));
     assert.ok(r.composite.excludedBy.pending>=2);assert.match(t,/项因官方配图尚未转录出数值/);}
-  if(k(a2)&&k(b2)){const r=headToHead(d.useCases[t2],k(a2),k(b2));const t=howText(compareHTML(r,k(a2),k(b2),d.useCases[t2],'../'));
+  if(k(a2)&&k(b2)){const r=headToHead(d.useCases[t2],k(a2),k(b2));const t=covText(compareHTML(r,k(a2),k(b2),d.useCases[t2],'../'));
     assert.equal(r.rows.find(x=>x.id==='browsecomp').kind,'condition');assert.match(t,/项因双方的评测版本或测试条件不同/);assert.ok(!/尚未转录/.test(t));}
 });

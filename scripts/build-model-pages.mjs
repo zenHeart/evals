@@ -4,6 +4,7 @@ import {SHELL_CSS,shellHead,shellTopbar,shellFooter,SHELL_JS} from './site-shell
 import {esc,MODEL_CSS,evidenceHTML,specsHTML} from './model-ui.mjs';
 import {citationCounts,headToHead,domainCatalog,setCompareRules} from './model-compare.mjs';
 import {COMPARE_CSS} from './compare-ui.mjs';
+import {domainObservations,fitAbility,compactEstimates} from './fair-compare.mjs';
 export function selectionData(db){
   const models=db.releases.flatMap(r=>r.model_specs.filter(m=>m.id).map(m=>({...m,key:r.id+'--'+m.id,release_id:r.id,release_date:r.release_date,vendor_id:r.vendor_id,vendor_label:r.vendor_label,region:r.region,evidence:r.evidence.filter(e=>e.model_id===m.id)})));
   return {
@@ -36,7 +37,15 @@ export function compareData(db){
   // 领域顺序与读者标签：编程数据最充分，作为默认领域；新增领域时在这里补标签即可
   const order=Object.keys(db.useCases).sort((a,b)=>(DOMAIN_ORDER.indexOf(a)+1||99)-(DOMAIN_ORDER.indexOf(b)+1||99));
   const useCases=Object.fromEntries(order.map(id=>{const u=db.useCases[id];return [id,{id,title:DOMAIN_LABEL[id]||u.title,description:u.description,catalog:catalogs[id]}];}));
-  return {asOf:sd.asOf,useCases,models,suggestions:suggestPairs(useCases,models)};
+  // 全库能力估计（构建期拟合一次，随数据下发）：数据太稀的领域不给估计
+  for(const u of Object.values(useCases)){
+    const fit=fitAbility(domainObservations(u,models));
+    u.est=compactEstimates(fit);
+    u.estMeta={models:Object.keys(fit.models).length,insufficient:fit.insufficient};
+  }
+  // 题量登记（同题对照的误差估计）：只下发题量，不下发出处说明
+  const sizes=Object.fromEntries(Object.entries(db.compareRules?.sample_sizes||{}).filter(([k])=>!k.startsWith('_')).map(([k,v])=>[k,{...(v.n?{n:v.n}:{}),...(v.variants?{variants:v.variants}:{})}]));
+  return {asOf:sd.asOf,useCases,models,sizes,suggestions:suggestPairs(useCases,models)};
 }
 /**
  * 同一厂商的同一模型 id 出现在多篇官方发布里（如 GA 公告、评测专文与首发页）时合并成一个可选模型：
@@ -83,7 +92,7 @@ const classificationLabels={general:'通用模型',vertical:'专项模型',produ
 export function buildModelPages(db,dist){
  const data=selectionData(db);
  mkdirSync(join(dist,'assets'),{recursive:true});
- for(const f of ['model-selection.mjs','model-ui.mjs','model-compare.mjs','compare-ui.mjs','choose-client.mjs','models-client.mjs'])copyFileSync(new URL(f,import.meta.url),join(dist,'assets',f));
+ for(const f of ['model-selection.mjs','model-ui.mjs','model-compare.mjs','fair-compare.mjs','compare-ui.mjs','choose-client.mjs','models-client.mjs'])copyFileSync(new URL(f,import.meta.url),join(dist,'assets',f));
  writeFileSync(join(dist,'assets','selection-data.json'),JSON.stringify(data));
  const cmp=compareData(db);
  writeFileSync(join(dist,'assets','compare-data.json'),JSON.stringify(cmp));
@@ -111,29 +120,29 @@ export function buildModelPages(db,dist){
  const cbx=(side,label)=>`<div class="cbx" data-side="${side}"><label for="pick-${side}"><span class="tag-${side}" aria-hidden="true"></span>${label}</label><div class="cbx-field"><input id="pick-${side}" name="${side}" type="text" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="pick-${side}-list" autocomplete="off" spellcheck="false" placeholder="搜索模型名或厂商，如 Claude、Qwen"><button type="button" class="clr" data-clear="${side}" aria-label="清除${label}" hidden>清除</button></div><ul id="pick-${side}-list" role="listbox" aria-label="${label}候选" hidden></ul></div>`;
  const chooseBody = `<p class="eyebrow-mono">模型对比</p>
 <h1>选领域，对比两个模型</h1>
-<p class="choose-lead">按你要拿模型来做的事选领域——编程开发、办公与商务、电脑操作、调研与搜索、知识与推理、视觉与文档、文档写作、量化与金融——再搜两个模型，逐项看它们在同一评估上的官方分数。综合分覆盖该领域全部能换算成 0–100 分的评估，按每项评估被官方发布引用的次数加权：没有报告的记 0 分；官方配图里尚未转录出数值的不记 0，这一项不计入。两个模型报告的评估不一样也能比。<a href="../models/">浏览全部模型</a></p>
+<p class="choose-lead">按你要拿模型来做的事选领域——编程开发、办公与商务、电脑操作、调研与搜索、知识与推理、视觉与文档、文档写作、量化与金融——再搜两个模型。结论只看两者都做过、版本与测试条件一致的评估（同题对照），每项差距都标出题量误差；没报告的评估不按 0 分算，单独列为覆盖面。另附一个借全部模型成绩对齐难度后的全库能力估计，供参考。<a href="../models/">浏览全部模型</a></p>
 <form class="picker" id="compare-form" action="./" method="get">
   <fieldset class="domain"><legend>领域</legend>${domainRadios}</fieldset>
   <div class="duo">${cbx('a','模型 A')}<button type="button" class="swap" id="swap" aria-label="交换 A 与 B" title="交换 A 与 B">⇄</button>${cbx('b','模型 B')}</div>
   <p class="sr-only" id="cbx-status" role="status" aria-live="polite"></p>
 </form>
 <div id="compare" class="cmp">
-  <div class="cmp-empty" id="cmp-empty"><h2>选两个模型开始对比</h2><p class="muted">搜索框会优先列出在当前领域有分数的模型；没有分数的模型也能选，综合分记 0。也可以从这些对照开始：</p><div id="sugg">${suggHTML(firstTask)}</div>
+  <div class="cmp-empty" id="cmp-empty"><h2>选两个模型开始对比</h2><p class="muted">搜索框会优先列出在当前领域有分数的模型；没有分数的模型也能选。也可以从这些对照开始：</p><div id="sugg">${suggHTML(firstTask)}</div>
   <noscript><p>对比需要启用浏览器脚本。不启用也可以直接打开<a href="../models/">模型档案</a>，每个模型页都列出了全部官方分数与出处。</p></noscript></div>
 </div>
 <details class="method">
-  <summary>综合分怎么算</summary>
+  <summary>结论怎么得出</summary>
   <ol>
     <li><b>领域</b>：按真实用途划分，不按学术分类。本期 8 个：${domains.map(u=>esc(u.title)).join('、')}。视频生成、图像生成、语音对话本期不单独设领域——这几类公开分数大多是竞技场 Elo 或人工偏好胜率，没有固定的 0–100 意义，下一期再评估。</li>
     <li><b>领域目录</b>：每个领域的评估是逐项按评估档案（名称、简介、官方来源）筛出来的「这类工作」的评估，写在领域文件里，不按名字或关键词自动猜，一项评估只归一个领域。例如：编程开发只收软件工程评估；办公与商务不含金融与编程；电脑操作只收 GUI / 桌面 / 手机界面操作；调研与搜索不收只是顺带用到工具的通用 Agent 评测（Toolathlon、MCP-Atlas、AutomationBench、τ-bench）；知识与推理不含编程与写作；视觉与文档不含视频生成与 GUI 操作。</li>
-    <li><b>能否计分</b>：只有能可靠换算成 0–100 分的评估进入综合分——领域文件为它写明了单位、指标与上下界（均为百分制正确率或成功率，并附官方来源）；或评估档案里只有一个写明固定上下界的指标（Elo、胜率、竞技场分数这类相对读数除外）。其余列在「仅作参考」，只看原始分数，不进综合分，也不按 0 计。</li>
+    <li><b>能否计分</b>：只有能可靠换算成 0–100 分的评估参与对照——领域文件为它写明了单位、指标与上下界（均为百分制正确率或成功率，并附官方来源）；或评估档案里只有一个写明固定上下界的指标（Elo、胜率、竞技场分数这类相对读数除外）。其余列在「仅作参考」，只看原始分数。</li>
     <li><b>各领域现状</b>（目录项数 / 可计分项数，括号内是引用最多的几项）：<ul class="dom-stat">${domains.map(u=>{const el=u.catalog.filter(b=>b.eligible);return '<li><b>'+esc(u.title)+'</b> '+u.catalog.length+' / '+el.length+(el.length?'（'+el.slice(0,4).map(b=>esc(b.name)).join('、')+(el.length>4?' 等':'')+'）':'')+'</li>';}).join('')}</ul></li>
-    <li><b>权重</b>：每项评估被多少个官方模型发布引用过（同一次发布的多个型号只算一次），并按此从高到低排列。</li>
-    <li><b>每一项怎么记分</b>：只有官方公布、且单位和指标都对得上的数值才计分，换算到 0–100。没有这项评估的任何记录，表格显示「-」，综合分记 0。官方配图里有、但还没转录出数值的，同样显示「-」，但不当成 0：这一项在这组对照里整体不计入。双方都有数值但版本或测试条件（如有无工具、计分方式、子集）不同、或一方的记录口径对不上时，也整体不计入，不拿真实分数去比一个假 0。</li>
-    <li><b>综合分</b> = Σ（权重 × 得分）÷ Σ 权重，分母是该领域全部可计分评估的权重之和（只减去上一条里整体不计入的项）。没报告的评估不会把权重挪给报告过的评估，所以报告得少会拉低综合分。</li>
-    <li>可计分评估很少的领域，综合分只反映那几项，页面会直接写明。文档写作尤其如此：公开、能横向比较的写作评估很少，目前只有 IFEval 与 MultiChallenge 两项指令遵循类评估能计分，长文写作质量本身还没有可比的公开分数。</li>
+    <li><b>同题对照（主结论）</b>：只比较双方都有官方数值、且评测版本与测试条件（有无工具、子集、计分方式等）一致的评估。每一项按题量估算误差（题越少误差越大；题量来自评估官方说明，未登记的按 100 题保守估计），差距在误差内的只算「方向」，不算「明显领先」。多项合并时按评估的重要性加权（被官方发布引用越多越重要，但取对数，热门评估不会压倒一切），算出哪一方更强的把握：≥97.5% 且至少 3 项共同评估才写「明显领先」，≥84% 写「略占优」，否则写「难分高下」。</li>
+    <li><b>没报告不等于 0 分</b>：只有一方报告的评估不参与胜负，单列为「覆盖面」。厂商通常优先公布自己占优的评估，所以「报告得多」既不加分，也不减分。官方配图里有、但还没转录出数值的，同样不计入这组对照。</li>
+    <li><b>全库能力估计（参考）</b>：用本领域全部模型的全部可计分分数拟合一个按难度对齐的模型——每项评估有自己的难度，每个模型有一个能力值，报告少的模型会被适度拉向平均（与 Epoch AI 能力指数、项目反应理论同一类方法）。它能推断「没报告的评估大概会考多少」，并给出 95% 区间；只在两者没有任何共同评估时，且把握 ≥90%，才用它给出「间接估计」的方向。公开分数太稀的领域不提供估计。</li>
+    <li><b>保证</b>：一方在每一项共同评估上都不低于另一方时，结论不会判另一方领先；交换 A 与 B，结论对称；多一项只有一方报告的评估，不会改变同题对照的结论。这些性质由自动测试逐条检查，构建时还会对全部模型两两对照做一遍体检。</li>
   </ol>
-  <p>这是同一领域内、同一批公开分数下的对照读数，不是模型的总体能力排名；「记 0」表示官方没有报告，不代表模型真的不会。官方自报分数的测试设置（如推理档位、执行框架）可能不同，页面会在对应行提示。上线前请用自己的业务样本复核：<a href="../book/chapter-24/">建立测试集</a> · <a href="../book/chapter-05/">设计评分标准</a> · <a href="../book/chapter-25/">评估流水线工程</a></p>
+  <p>这是同一领域内、同一批公开分数下的对照读数，不是模型的总体能力排名。官方自报分数的测试设置（如推理档位、执行框架）可能不同，页面会在对应行提示。上线前请用自己的业务样本复核：<a href="../book/chapter-24/">建立测试集</a> · <a href="../book/chapter-05/">设计评分标准</a> · <a href="../book/chapter-25/">评估流水线工程</a></p>
 </details>`;
 
  save(dist,'choose',page('选领域，对比两个模型','choose/','../','choose',chooseBody,`<script type="module" src="../assets/choose-client.mjs"></script>`,{css:COMPARE_CSS,mainClass:'model-main choose-main'}));

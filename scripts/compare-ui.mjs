@@ -4,9 +4,12 @@
  */
 import {esc} from './model-ui.mjs';
 import {isPending,excludedText} from './model-compare.mjs';
+import {fairVerdict} from './fair-compare.mjs';
 export {excludedText};
 
 const fmt=v=>Number.isFinite(v)?(Math.round(v*10)/10).toFixed(1):'—';
+const pct=p=>Math.round(p*100);
+const fmt0=v=>Number.isFinite(v)?String(Math.round(v)):'—';
 const NEAR=1; // 0–100 刻度上差距小于 1 分视为接近：不高亮胜负
 export const PENDING_TIP='官方配图尚未转录出数值';
 /** 对照表里的分数文字：只有官方公布的数值才显示数字，其余一律「-」 */
@@ -40,7 +43,7 @@ export function modelHead(m,rel){
 function cell(m,s,r,who,rel){
   const cls=r.winner?(r.winner===who?' win':' lose'):'';
   if(s.state==='value')return `<div class="cc ${who}${cls}">${scoreLink(m,s.row,rel)}${bar(s.n)}</div>`;
-  if(s.state==='missing')return `<div class="cc ${who}"><span class="cx" title="没有这项评估的记录">-</span><small class="cq">${r.status==='scored'?'未报告 · 计 0':'未报告'}</small></div>`;
+  if(s.state==='missing')return `<div class="cc ${who}"><span class="cx" title="没有这项评估的记录">-</span><small class="cq">${r.status==='scored'?'未报告 · 不计分':'未报告'}</small></div>`;
   return `<div class="cc ${who}">${scoreList(m,s.rows,rel,s.state==='other'?' raw':'')}</div>`;
 }
 
@@ -49,33 +52,66 @@ function cell(m,s,r,who,rel){
  * @param A,B  模型
  * @param uc   领域（{title, catalog}）
  */
-export function compareHTML(res,A,B,uc,rel='../'){
+export function compareHTML(res,A,B,uc,rel='../',opt={}){
   const c=res.composite;
   const nm=m=>esc(m.name);
   const title=esc(uc.title||'本领域');
-  // ---- 结论区
+  const v=c?fairVerdict(res,{sizes:opt.sizes,est:uc.est,A,B}):null;
+  res.verdict=v;
+  // ---- 结论区：同题对照是主结论；全库估计只作参考；覆盖面单列（没报告不等于 0 分）
   let verdict;
-  if(c){
-    const sa=side(c.diff,'a'),sb=side(c.diff,'b');
-    const lead=!c.hasA&&!c.hasB?`<p class="vd-lead">两者在这里都没有可计入的分数，分不出高下</p>`:c.winner?`<p class="vd-lead"><b>${nm(c.winner==='a'?A:B)}</b> 领先 ${fmt(Math.abs(c.diff))} 分</p>`:`<p class="vd-lead">两者<b>持平</b>（差距小于 0.1 分）</p>`;
-    const one=c.single?`<a href="${rel}benchmarks/${esc(c.single.id)}/">${esc(c.single.name)}</a>`:'';
-    const few=!c.single&&c.of<=3?res.rows.map(r=>`<a href="${rel}benchmarks/${esc(r.id)}/">${esc(r.name)}</a>`).join('、'):'';
-    const thin=c.single?`<p class="vd-thin">${title}目前只有 ${one} 能换算成 0–100 分，综合分就等于这一项的得分（没有这项分数记 0），不代表全面能力。</p>`
-      :few?`<p class="vd-thin">${title}目前只有 ${few} 这 ${c.of} 项能换算成 0–100 分，综合分只反映这几项，不代表全面能力。</p>`
-      :!c.both?`<p class="vd-thin">两者在可计分的评估里没有共同报告的项目，差距来自各自报告了哪些评估，而不是同一道题上的高下。</p>`:'';
-    verdict=`<div class="vd-row"><div class="vd-k">引用加权综合分<small>0–100，仅限${title}</small></div>
-      <div class="vd-v ${sa}"><span class="big">${fmt(c.a)}</span></div><div class="vd-v ${sb}"><span class="big">${fmt(c.b)}</span></div></div>
-      ${lead}<p class="vd-how">${title}共 ${c.of} 项可计分评估，本次计入 <b>${c.n}</b> 项，按每项评估被官方发布引用的次数加权；没有报告的评估记 0 分，权重不会挪给报告过的评估。${nm(A)} 有分 ${c.hasA} 项，${nm(B)} 有分 ${c.hasB} 项，双方都有 ${c.both} 项。${c.excluded?`另有 ${c.excluded} 项这组对照里不计入（不记 0）：${excludedText(c.excludedBy)}。`:''}${c.equalWeights?'计入的评估都还没有官方引用记录，按等权计算。':''}</p>${thin}`;
+  if(v){
+    const who=w=>w==='a'?nm(A):nm(B);
+    const L=v.leader;
+    const sideCls=w=>!L?'tie':L===w?'win':'lose';
+    const confText={high:'高',medium:'中',low:'低',none:'—'}[v.confidence];
+    const confWhy=v.k===0?'':v.k<=2?`只有 ${v.k} 项共同评估，证据单薄`:v.confidence==='high'?`${v.k} 项共同评估`:`${v.k} 项共同评估`;
+    let lead,how='';
+    const winText=L?`在 ${v.k} 项共同评估上 ${who(L)} 领先 ${L==='a'?v.wins:v.losses} 项、落后 ${L==='a'?v.losses:v.wins} 项${v.ties?`、持平 ${v.ties} 项`:''}`:`在 ${v.k} 项共同评估上 ${nm(A)} 领先 ${v.wins} 项、${nm(B)} 领先 ${v.losses} 项${v.ties?`、持平 ${v.ties} 项`:''}`;
+    const clear=v.clearWins+v.clearLosses;
+    if(v.k){
+      const gap=Math.abs(v.meanGap);
+      const p=L?(L==='a'?v.pA:1-v.pA):Math.max(v.pA,1-v.pA);
+      if(v.level==='clear')lead=`<b>${who(L)}</b> 明显领先`;
+      else if(v.level==='lean')lead=`<b>${who(L)}</b> 略占优`;
+      else lead='两者<b>难分高下</b>';
+      how=`${winText}，按评估重要性加权平均${L?'高':'相差'} ${fmt(gap)} 分。`
+        +(clear?`其中 ${clear} 项的差距超出题量误差；`:'每一项的差距都在题量误差范围内，单看一项不足以定胜负；')
+        +(L?`把各项合并后，${who(L)} 更强的把握约 ${pct(p)}%。`:`合并后哪一方更强的把握都不到 ${pct(0.84)}%。`);
+    }else if(v.level==='indirect'){
+      const p=L==='a'?v.estimate.pA:1-v.estimate.pA;
+      lead=`没有共同评估；间接估计 <b>${who(L)}</b> 可能更强`;
+      how=`两者在${title}没有都做过、且版本与测试条件一致的评估，无法同题对照。下面的全库能力估计借其他模型的成绩把不同评估对齐后推断，${who(L)} 更强的把握约 ${pct(p)}%——这是间接推断，请结合逐项分数判断。`;
+    }else{
+      lead='<b>数据不足</b>，无法判断高下';
+      const why=!v.estimate?'':!v.estimate.enough?'；至少一方能和其他模型对齐的评估不足 2 项，也不做间接推断':'，全库能力估计的区间也大幅重叠';
+      how=`两者在${title}没有都做过、且版本与测试条件一致的评估${why}。下面仍列出各自的原始分数。`;
+    }
+    const big=(x,w)=>`<div class="vd-v ${sideCls(w)}"><span class="big">${fmt(x)}</span></div>`;
+    const shared=v.k?`<div class="vd-row"><div class="vd-k">同题对照<small>${v.k} 项双方都有的评估 · 加权均分</small></div>${big(v.meanA,'a')}${big(v.meanB,'b')}</div>`
+      :`<div class="vd-row"><div class="vd-k">同题对照<small>没有双方都有的评估</small></div><div class="vd-v na"><span class="big">—</span></div><div class="vd-v na"><span class="big">—</span></div></div>`;
+    const e=v.estimate;
+    const estCell=x=>x?`<div class="vd-v est"><span class="mid">${fmt0(x.idx)}</span><small>区间 ${fmt0(x.lo)}–${fmt0(x.hi)}${x.n<2?' · 只依据 1 项':''}</small></div>`:'<div class="vd-v est na"><span class="mid">—</span><small>数据不足</small></div>';
+    const ea=uc.est?.[A.key],eb=uc.est?.[B.key];
+    const estRow=uc.est&&Object.keys(uc.est).length?`<div class="vd-row est"><div class="vd-k">全库能力估计<small>0–100 · 95% 区间 · 仅作参考</small></div>${estCell(ea)}${estCell(eb)}</div>
+      <p class="vd-how">用${title}${uc.estMeta?.models?` ${uc.estMeta.models} 个模型`:'全部模型'}的可计分分数，按每项评估的难度对齐后估计（与 Epoch AI 能力指数同一类方法），可以推断「没报告的评估大概会考多少」。报告的评估越少，区间越宽${v.k?'；它不改变上面的同题对照结论':''}。</p>`
+      :`<p class="vd-how">${title}公开分数太少、模型之间重叠太少，暂不提供全库能力估计。</p>`;
+    const only=(list,m)=>list.length?`${nm(m)} 另有 ${list.length} 项（${list.slice(0,4).map(r=>esc(r.name)).join('、')}${list.length>4?' 等':''}）`:'';
+    const ones=[only(v.onlyA,A),only(v.onlyB,B)].filter(Boolean);
+    const cov=`<p class="vd-cov"><b>覆盖面</b>：${nm(A)} 有分 ${v.hasA} 项，${nm(B)} 有分 ${v.hasB} 项，双方都有 ${v.k} 项。${ones.length?ones.join('，')+'只有自己报告，不参与胜负——没报告不等于 0 分；厂商通常优先公布自己占优的评估，单方面的分数只说明它做过这项。':''}${c.excluded?`另有 ${c.excluded} 项这组对照里不计入：${excludedText(c.excludedBy)}。`:''}</p>`;
+    const names=c.of<=3?res.rows.map(r=>`<a href="${rel}benchmarks/${esc(r.id)}/">${esc(r.name)}</a>`).join('、'):'';
+    const thin=c.of<=3?`<p class="vd-thin">${title}目前只有 ${names}${c.of>1?` 这 ${c.of} 项`:''} 能换算成 0–100 分，结论只反映${c.of>1?'这几项':'这一项'}，不代表全面能力。</p>`:'';
+    verdict=`${shared}<p class="vd-lead">${lead}</p><p class="vd-how">${how}${v.k?` 可信度：<b>${confText}</b>（${confWhy}）。`:''}</p>${estRow}${cov}${thin}`;
   }else{
-    verdict=`<div class="vd-row"><div class="vd-k">引用加权综合分</div><div class="vd-v na"><span class="big">—</span></div><div class="vd-v na"><span class="big">—</span></div></div>
-      <p class="vd-lead"><b>无法综合对比</b></p><p class="vd-how">${esc(res.reason||'')}。下面仍列出双方各自的原始分数。</p>`;
+    verdict=`<div class="vd-row"><div class="vd-k">同题对照</div><div class="vd-v na"><span class="big">—</span></div><div class="vd-v na"><span class="big">—</span></div></div>
+      <p class="vd-lead"><b>无法对比</b></p><p class="vd-how">${esc(res.reason||'')}。下面仍列出双方各自的原始分数。</p>`;
   }
-  // ---- 可计分评估：至少一方有记录的逐项列出；双方都没有记录的收进一个折叠区（各记 0）
+  // ---- 可计分评估：至少一方有记录的逐项列出；双方都没有记录的收进一个折叠区
   const meta=r=>{
     // 显示官方原文写法，不显示内部配对用的归一化键
     const raws=[...new Set([r.a?.row?.variant,r.b?.row?.variant].filter(Boolean))];
     const bits=[raws.length?'版本 '+esc(raws.join(' / ')):'','官方引用 '+r.cite+' 次'];
-    if(r.status==='scored'&&c)bits.push('占综合分 '+(r.weight*100<1&&r.weight>0?'<1':Math.round(r.weight*100))+'%');
+    if(r.gap)bits.push(`差 ${fmt(Math.abs(r.gap.d))} 分 · 误差约 ±${fmt(1.96*r.gap.se)}（${r.gap.known?r.gap.n+' 题':'题量未登记，按 '+r.gap.n+' 题估'}）${r.gap.clear?'':' · 在误差内'}`);
     let extra='';
     if(r.status==='excluded')extra=`<small class="cs">不计入这组对照：${esc(r.reason||'')}</small>`;
     else if(r.a.state==='value'&&r.b.state==='value'){const set=[settings(r.a.row),settings(r.b.row)];if(set.some(Boolean)&&set[0]!==set[1])extra=`<small class="cs">测试设置可能不同：${esc(set[0]||'未说明')} / ${esc(set[1]||'未说明')}</small>`;}
@@ -85,7 +121,7 @@ export function compareHTML(res,A,B,uc,rel='../'){
   const empty=res.rows.filter(r=>r.a.state==='missing'&&r.b.state==='missing');
   const rowHTML=r=>`<li class="crow${r.status==='excluded'?' quiet':''}">${benchCell(r,rel,meta(r))}${cell(A,r.a,r,'a',rel)}${cell(B,r.b,r,'b',rel)}</li>`;
   const main=shown.map(rowHTML).join('');
-  const emptyList=empty.length?`<details class="cempty"><summary>两者都没有记录的 ${empty.length} 项（双方都记 0 分）</summary><ul class="cnames" role="list">${empty.map(r=>`<li><a href="${rel}benchmarks/${esc(r.id)}/">${esc(r.name)}</a> <small>引用 ${r.cite} 次</small></li>`).join('')}</ul></details>`:'';
+  const emptyList=empty.length?`<details class="cempty"><summary>两者都没有记录的 ${empty.length} 项</summary><ul class="cnames" role="list">${empty.map(r=>`<li><a href="${rel}benchmarks/${esc(r.id)}/">${esc(r.name)}</a> <small>引用 ${r.cite} 次</small></li>`).join('')}</ul></details>`:'';
   // ---- 仅作参考
   const raws=r=>`<li class="crow quiet">${benchCell(r,rel,`<small class="cm">官方引用 ${r.cite} 次</small>`)}
       <div class="cc a">${scoreList(A,r.a,rel)}</div>
@@ -94,9 +130,9 @@ export function compareHTML(res,A,B,uc,rel='../'){
   const refRest=res.referenceEmpty?`<p class="csec-hint">另有 ${res.referenceEmpty} 项本领域的参考评估两者都没有记录。</p>`:'';
   return `<section class="verdict" aria-label="综合结论">${verdict}</section>
   <section class="csec" aria-labelledby="cmp-scored"><h2 id="cmp-scored">可计分评估 <span class="n">${res.rows.length}</span></h2>
-  <p class="csec-hint">${title}里能换算成 0–100 分的评估，按官方引用次数从高到低排列。「-」表示没有官方数值：没有报告的记 0 分；官方配图里尚未转录的不记 0，这一项不计入这组对照。点分数看出处，点评估名看它测什么。</p>
+  <p class="csec-hint">${title}里能换算成 0–100 分的评估，按官方引用次数从高到低排列。「-」表示没有官方数值：没有报告的不计分，也不按 0 分算；官方配图里尚未转录的同样不计入这组对照。只有双方都有、版本与测试条件一致的评估才比胜负，每项都标出题量误差。点分数看出处，点评估名看它测什么。</p>
   ${res.rows.length?`<ul class="clist" role="list">${main}</ul>${emptyList}`:'<p class="csec-empty">这一领域还没有能换算成 0–100 分的评估。</p>'}</section>
-  ${ref||refRest?`<details class="csec sub ref" id="cmp-ref-wrap" open><summary><h2 id="cmp-ref">仅作参考 <span class="n">${res.reference.length}</span></h2></summary><p class="csec-hint">这些评估属于${title}，但没有可靠的 0–100 换算（含厂商内部评测、Elo 或胜率这类相对读数），只列原始分数，不判胜负，也不进入综合分（不按 0 计）。</p>${ref?`<ul class="clist" role="list">${ref}</ul>`:''}${refRest}</details>`:''}`;
+  ${ref||refRest?`<details class="csec sub ref" id="cmp-ref-wrap" open><summary><h2 id="cmp-ref">仅作参考 <span class="n">${res.reference.length}</span></h2></summary><p class="csec-hint">这些评估属于${title}，但没有可靠的 0–100 换算（含厂商内部评测、Elo 或胜率这类相对读数），只列原始分数，不判胜负，也不进入同题对照（不按 0 计）。</p>${ref?`<ul class="clist" role="list">${ref}</ul>`:''}${refRest}</details>`:''}`;
 }
 
 export const COMPARE_CSS=`
@@ -150,6 +186,9 @@ export const COMPARE_CSS=`
 .vd-v.na .big{color:var(--rule)}
 .vd-lead{margin:14px 0 4px;font-size:17px}
 .vd-how{margin:4px 0;color:var(--graphite);font-size:14px;max-width:75ch}
+.vd-row.est{margin-top:18px;padding-top:12px;border-top:1px dashed var(--rule)}
+.vd-v.est .mid{font:600 26px/1 var(--serif);color:var(--ink)}.vd-v.est small{display:block;color:var(--graphite);font-size:12.5px;margin-top:2px}.vd-v.est.na .mid{color:var(--rule)}
+.vd-cov{margin:12px 0 0;font-size:14px;color:var(--graphite);max-width:75ch}
 .vd-thin{margin:10px 0 0;padding:8px 12px;border-left:3px solid var(--warn);background:color-mix(in srgb,var(--warn) 8%,transparent);font-size:14px}
 .csec{margin:26px 0 0}
 .csec h2,.csec summary h2{font-size:17px;margin:0;display:inline}
