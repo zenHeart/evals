@@ -4,7 +4,7 @@ import {SHELL_CSS,shellHead,shellTopbar,shellFooter,SHELL_JS} from './site-shell
 import {esc,MODEL_CSS,evidenceHTML,specsHTML} from './model-ui.mjs';
 import {citationCounts,headToHead,domainCatalog,setCompareRules} from './model-compare.mjs';
 import {COMPARE_CSS} from './compare-ui.mjs';
-import {domainObservations,fitAbility,compactEstimates} from './fair-compare.mjs';
+import {domainObservations,fitAbility,compactEstimates,buildSameTables} from './fair-compare.mjs';
 export function selectionData(db){
   const models=db.releases.flatMap(r=>r.model_specs.filter(m=>m.id).map(m=>({...m,key:r.id+'--'+m.id,release_id:r.id,release_date:r.release_date,vendor_id:r.vendor_id,vendor_label:r.vendor_label,region:r.region,evidence:r.evidence.filter(e=>e.model_id===m.id)})));
   return {
@@ -38,14 +38,18 @@ export function compareData(db){
   const order=Object.keys(db.useCases).sort((a,b)=>(DOMAIN_ORDER.indexOf(a)+1||99)-(DOMAIN_ORDER.indexOf(b)+1||99));
   const useCases=Object.fromEntries(order.map(id=>{const u=db.useCases[id];return [id,{id,title:DOMAIN_LABEL[id]||u.title,description:u.description,catalog:catalogs[id]}];}));
   // 全库能力估计（构建期拟合一次，随数据下发）：数据太稀的领域不给估计
+  // 同表证据：发布页同一张表同一行里的其他模型分数（第三方转述，不并入任何模型的自报记录）
+  const tables=buildSameTables(db.competitorColumns||[],models);
   for(const u of Object.values(useCases)){
-    const fit=fitAbility(domainObservations(u,models));
+    // 全库估计也吸收同表竞品列，但只给「自己没有这项自报」的模型补观测（外部验证见 fair-compare-validate.mjs）
+    const fit=fitAbility(domainObservations(u,models,tables));
     u.est=compactEstimates(fit);
     u.estMeta={models:Object.keys(fit.models).length,insufficient:fit.insufficient};
   }
   // 题量登记（同题对照的误差估计）：只下发题量，不下发出处说明
   const sizes=Object.fromEntries(Object.entries(db.compareRules?.sample_sizes||{}).filter(([k])=>!k.startsWith('_')).map(([k,v])=>[k,{...(v.n?{n:v.n}:{}),...(v.variants?{variants:v.variants}:{})}]));
-  return {asOf:sd.asOf,useCases,models,sizes,suggestions:suggestPairs(useCases,models)};
+  // 同表证据：发布页同一张表同一行里的其他模型分数（第三方转述，不并入任何模型的自报记录）
+  return {asOf:sd.asOf,useCases,models,sizes,tables,suggestions:suggestPairs(useCases,models)};
 }
 /**
  * 同一厂商的同一模型 id 出现在多篇官方发布里（如 GA 公告、评测专文与首发页）时合并成一个可选模型：
@@ -120,7 +124,7 @@ export function buildModelPages(db,dist){
  const cbx=(side,label)=>`<div class="cbx" data-side="${side}"><label for="pick-${side}"><span class="tag-${side}" aria-hidden="true"></span>${label}</label><div class="cbx-field"><input id="pick-${side}" name="${side}" type="text" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="pick-${side}-list" autocomplete="off" spellcheck="false" placeholder="搜索模型名或厂商，如 Claude、Qwen"><button type="button" class="clr" data-clear="${side}" aria-label="清除${label}" hidden>清除</button></div><ul id="pick-${side}-list" role="listbox" aria-label="${label}候选" hidden></ul></div>`;
  const chooseBody = `<p class="eyebrow-mono">模型对比</p>
 <h1>选领域，对比两个模型</h1>
-<p class="choose-lead">按你要拿模型来做的事选领域——编程开发、办公与商务、电脑操作、调研与搜索、知识与推理、视觉与文档、文档写作、量化与金融——再搜两个模型。结论只看两者都做过、版本与测试条件一致的评估（同题对照），每项差距都标出题量误差；没报告的评估不按 0 分算，单独列为覆盖面。另附一个借全部模型成绩对齐难度后的全库能力估计，供参考。<a href="../models/">浏览全部模型</a></p>
+<p class="choose-lead">按你要拿模型来做的事选领域——编程开发、办公与商务、电脑操作、调研与搜索、知识与推理、视觉与文档、文档写作、量化与金融——再搜两个模型。结论只看两者都做过、版本与测试条件一致的评估（同题对照），每项差距都标出题量误差；一方没有自报时，官方发布页同一张表里同时列出的两者分数可以补上对照（按半权计）；没报告的评估不按 0 分算，单独列为覆盖面。另附一个借全部模型成绩对齐难度后的全库能力估计，供参考。<a href="../models/">浏览全部模型</a></p>
 <form class="picker" id="compare-form" action="./" method="get">
   <fieldset class="domain"><legend>领域</legend>${domainRadios}</fieldset>
   <div class="duo">${cbx('a','模型 A')}<button type="button" class="swap" id="swap" aria-label="交换 A 与 B" title="交换 A 与 B">⇄</button>${cbx('b','模型 B')}</div>
@@ -138,9 +142,10 @@ export function buildModelPages(db,dist){
     <li><b>能否计分</b>：只有能可靠换算成 0–100 分的评估参与对照——领域文件为它写明了单位、指标与上下界（均为百分制正确率或成功率，并附官方来源）；或评估档案里只有一个写明固定上下界的指标（Elo、胜率、竞技场分数这类相对读数除外）。其余列在「仅作参考」，只看原始分数。</li>
     <li><b>各领域现状</b>（目录项数 / 可计分项数，括号内是引用最多的几项）：<ul class="dom-stat">${domains.map(u=>{const el=u.catalog.filter(b=>b.eligible);return '<li><b>'+esc(u.title)+'</b> '+u.catalog.length+' / '+el.length+(el.length?'（'+el.slice(0,4).map(b=>esc(b.name)).join('、')+(el.length>4?' 等':'')+'）':'')+'</li>';}).join('')}</ul></li>
     <li><b>同题对照（主结论）</b>：只比较双方都有官方数值、且评测版本与测试条件（有无工具、子集、计分方式等）一致的评估。每一项按题量估算误差（题越少误差越大；题量来自评估官方说明，未登记的按 100 题保守估计），差距在误差内的只算「方向」，不算「明显领先」。多项合并时按评估的重要性加权（被官方发布引用越多越重要，但取对数，热门评估不会压倒一切），算出哪一方更强的把握：≥97.5% 且至少 3 项共同评估才写「明显领先」，≥84% 写「略占优」，否则写「难分高下」。</li>
+    <li><b>同表对照（补充）</b>：官方发布页的对比表里常同时列出其他厂商模型的分数。这些数值单独记录为「发布方转述」，不算被比较厂商的自报：双方都有自报时以自报为准，同表数值只作为「另见」列出，数值不同就标出来，不取平均；一方或双方没有可比的自报、但某篇发布页在同一张表的同一行里列出了两者时，用这一行补上对照。同一张表意味着同一发布方、同一套测试设置，但发布方可能就是其中一方、竞品的推理档位也常未注明，所以按半权计入；同一项有多张表时各表平分这一半；只靠同表数据最多判「略占优」。全库能力估计也会用这些数值，但只给自己没有这项自报的模型补上。</li>
     <li><b>没报告不等于 0 分</b>：只有一方报告的评估不参与胜负，单列为「覆盖面」。厂商通常优先公布自己占优的评估，所以「报告得多」既不加分，也不减分。官方配图里有、但还没转录出数值的，同样不计入这组对照。</li>
-    <li><b>全库能力估计（参考）</b>：用本领域全部模型的全部可计分分数拟合一个按难度对齐的模型——每项评估有自己的难度，每个模型有一个能力值，报告少的模型会被适度拉向平均（与 Epoch AI 能力指数、项目反应理论同一类方法）。它能推断「没报告的评估大概会考多少」，并给出 95% 区间；只在两者没有任何共同评估时，且把握 ≥90%，才用它给出「间接估计」的方向。公开分数太稀的领域不提供估计。</li>
-    <li><b>保证</b>：一方在每一项共同评估上都不低于另一方时，结论不会判另一方领先；交换 A 与 B，结论对称；多一项只有一方报告的评估，不会改变同题对照的结论。这些性质由自动测试逐条检查，构建时还会对全部模型两两对照做一遍体检。</li>
+    <li><b>全库能力估计（参考）</b>：用本领域全部模型的全部可计分分数拟合一个按难度对齐的模型——每项评估有自己的难度，每个模型有一个能力值，报告少的模型会被适度拉向平均（与 Epoch AI 能力指数、项目反应理论同一类方法）。它能推断「没报告的评估大概会考多少」，并给出 95% 区间；只在两者既没有共同评估、也没有发布页同表数据时，且把握 ≥90%，才用它给出「间接估计」的方向。公开分数太稀的领域不提供估计。</li>
+    <li><b>保证</b>：一方在每一项共同评估（含同表对照）上都不低于另一方时，结论不会判另一方领先；交换 A 与 B，结论对称；多一项只有一方报告的评估，不会改变同题对照的结论。这些性质由自动测试逐条检查，构建时还会对全部模型两两对照做一遍体检。</li>
   </ol>
   <p>这是同一领域内、同一批公开分数下的对照读数，不是模型的总体能力排名。官方自报分数的测试设置（如推理档位、执行框架）可能不同，页面会在对应行提示。上线前请用自己的业务样本复核：<a href="../book/chapter-24/">建立测试集</a> · <a href="../book/chapter-05/">设计评分标准</a> · <a href="../book/chapter-25/">评估流水线工程</a></p>
 </details>`;

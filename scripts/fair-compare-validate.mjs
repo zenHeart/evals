@@ -65,7 +65,7 @@ export function validate(cmp,ext=loadExternal(),db=null){
         rho_new:spearman(R.map(r=>r.est),ex),rho_old:spearman(R.map(r=>r.old),ex),rho_coverage:spearman(R.map(r=>r.cov),ex),
         old_vs_coverage:spearman(R.map(r=>r.old),R.map(r=>r.cov)),models:R};
       // 两两方向一致率（外部差距超出其区间才算有方向）
-      const pw={new:[0,0],old:[0,0],newShared:[0,0],newIndirect:[0,0]};
+      const pw={new:[0,0],old:[0,0],newShared:[0,0],newIndirect:[0,0],newNoTables:[0,0],newTable:[0,0]};
       for(let i=0;i<R.length;i++)for(let j=i+1;j<R.length;j++){
         const a=R[i],b=R[j];
         if(a.ci&&b.ci&&!(a.ci[0]>b.ci[1]||b.ci[0]>a.ci[1]))continue;
@@ -73,22 +73,26 @@ export function validate(cmp,ext=loadExternal(),db=null){
         const truth=a.ext>b.ext?'a':'b';
         const A=cmp.models.find(m=>m.key===a.key),B=cmp.models.find(m=>m.key===b.key);
         const r=headToHead(cmp.useCases[d],A,B);if(!r.composite)continue;
-        const v=fairVerdict(r,{sizes:cmp.sizes,est:cmp.useCases[d].est,A,B});
+        const v0=fairVerdict(r,{sizes:cmp.sizes,est:cmp.useCases[d].est,A,B});
+        if(v0.leader){pw.newNoTables[1]++;if(v0.leader===truth)pw.newNoTables[0]++;}
+        const v=fairVerdict(r,{sizes:cmp.sizes,est:cmp.useCases[d].est,A,B,tables:cmp.tables});
         if(r.composite.winner){pw.old[1]++;if(r.composite.winner===truth)pw.old[0]++;}
-        if(v.leader){pw.new[1]++;if(v.leader===truth)pw.new[0]++;const k=v.basis==='shared'?'newShared':'newIndirect';pw[k][1]++;if(v.leader===truth)pw[k][0]++;}
+        if(v.leader){pw.new[1]++;if(v.leader===truth)pw.new[0]++;const k=v.basis==='estimate'?'newIndirect':v.basis==='table'?'newTable':'newShared';pw[k][1]++;if(v.leader===truth)pw[k][0]++;}
       }
       out.pairwise[sid+'|'+d]=Object.fromEntries(Object.entries(pw).map(([k,[ok,n]])=>[k,{agree:ok,of:n,rate:n?ok/n:null}]));
     }
   }
   // 留一评估外推
   for(const d of ['coding','knowledge-reasoning','vision-documents']){
-    const u=cmp.useCases[d];const obs=domainObservations(u,cmp.models);
+    // 训练集含同表竞品列（与上线口径一致）；被拿掉的评估项连同其同表数值一起拿掉，只用自报分数检验
+    const u=cmp.useCases[d];const obsAll=domainObservations(u,cmp.models,cmp.tables);const obs=obsAll.filter(o=>!o.table);
     const cite=Object.fromEntries(u.catalog.map(c=>[c.id,c.cite]));
     const items=[...new Set(obs.map(o=>o.item))].filter(i=>obs.filter(o=>o.item===i).length>=5);
     const res=[];
     for(const it of items){
+      const fit=fitAbility(obsAll.filter(o=>o.item!==it));
+      // 两个基线（旧口径、简单平均）只用自报分数，与上线前口径一致
       const train=obs.filter(o=>o.item!==it),test=obs.filter(o=>o.item===it);
-      const fit=fitAbility(train);
       const T=test.filter(o=>fit.models[o.key]);if(T.length<5)continue;
       const bench=it.split('#')[0];
       // 旧口径基线：其余评估的引用加权均分，缺失记 0（同一评估多版本取最高）
@@ -136,6 +140,22 @@ export function crossSource(cmp,db){
       }
     }
   }
+  // 发布页同表竞品列（data/competitor-columns/）与被转述模型自报的逐格对照：同一评估、同一版本写法
+  const colCmp={cells:0,withSelf:0,equal:0,conflicts:[]};
+  for(const [id,t] of Object.entries(cmp.tables?.rows||{})){
+    const v=variantOf({variant:t.v,metric:t.metric});
+    for(const [key,c] of Object.entries(t.cells)){
+      if(c[3])continue;colCmp.cells++;
+      const m=cmp.models.find(x=>x.key===key);
+      const own=[...new Set(m.evidence.filter(e=>e.benchmark_id===t.b&&e.status==='verified'&&e.score_status==='reported'&&Number.isFinite(e.value)&&e.attribution!=='comparison_cited'&&variantOf(e)===v).map(e=>e.value))];
+      if(!own.length)continue;colCmp.withSelf++;
+      if(own.some(x=>Math.abs(x-c[0])<1e-9))colCmp.equal++;
+      else colCmp.conflicts.push({bench:t.b,variant:t.v,by:t.by,release:t.rel,model:m.name,table:c[0],settings:c[2],self:own,diff:Math.min(...own.map(x=>Math.abs(x-c[0])))});
+    }
+  }
+  colCmp.conflicts.sort((a,b)=>b.diff-a.diff);
+  const cd=colCmp.conflicts.map(x=>x.diff).sort((a,b)=>a-b);
+  colCmp.medianConflictDiff=cd.length?cd[Math.floor(cd.length/2)]:null;
   const abs=diffs.map(d=>Math.abs(d.diff)).sort((a,b)=>a-b);
   const agree={same:0,opposite:0,undecided:0,list:[]};
   for(const t of Object.values(tables)){
@@ -147,7 +167,7 @@ export function crossSource(cmp,db){
     if(!v.leader)agree.undecided++;else if(v.leader===table)agree.same++;else{agree.opposite++;agree.list.push({...t,verdict:v.leader,k:v.k,level:v.level});}
   }
   return {pairs:diffs.length,medianAbsDiff:abs.length?abs[Math.floor(abs.length/2)]:null,over2:abs.filter(x=>x>2).length,over5:abs.filter(x=>x>5).length,
-    largest:diffs.sort((a,b)=>Math.abs(b.diff)-Math.abs(a.diff)).slice(0,15),tables:Object.keys(tables).length,agree};
+    largest:diffs.sort((a,b)=>Math.abs(b.diff)-Math.abs(a.diff)).slice(0,15),tables:Object.keys(tables).length,agree,columns:colCmp};
 }
 
 if(import.meta.url===`file://${process.argv[1]}`){
@@ -164,6 +184,8 @@ if(import.meta.url===`file://${process.argv[1]}`){
   if(c){console.log('== 竞品引用 vs 自报：',c.pairs,'对，绝对差中位数',f(c.medianAbsDiff),'分，>2 分',c.over2,'，>5 分',c.over5);
     console.log('== 厂商同表对照 vs 本站结论：同向',c.agree.same,'反向',c.agree.opposite,'本站未判',c.agree.undecided);
     for(const x of c.largest.slice(0,6))console.log('   ',x.bench,x.variant,x.cited,'by',x.by,'引用',x.citedValue,'自报',x.selfValue);
-    for(const x of c.agree.list.slice(0,8))console.log('   反向',JSON.stringify(x));}
+    for(const x of c.agree.list.slice(0,8))console.log('   反向',JSON.stringify(x));
+    const k=c.columns;console.log('== 同表竞品列 vs 被转述模型自报：',k.cells,'格，其中',k.withSelf,'格有同版本自报，一致',k.equal,'，不一致',k.conflicts.length,'（差值中位数',f(k.medianConflictDiff),'分）');
+    for(const x of k.conflicts.slice(0,8))console.log('   不一致',x.bench,x.variant||'',x.model,'同表',x.table,x.settings||'','自报',x.self.join('/'),'by',x.release);}
   const i=process.argv.indexOf('--out');if(i>0)writeFileSync(process.argv[i+1],JSON.stringify(v,null,1));
 }

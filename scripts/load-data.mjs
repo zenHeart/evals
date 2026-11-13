@@ -64,6 +64,18 @@ export function loadUseCases() {
   return map;
 }
 
+/** data/competitor-columns/<vendor>/<release>.json：每个文件是一篇官方发布页里竞品列的结构化记录 */
+export function loadCompetitorColumns(dir = join(DATA, "competitor-columns")) {
+  if (!existsSync(dir)) return [];
+  const out = [];
+  for (const v of readdirSync(dir, { withFileTypes: true })) {
+    if (!v.isDirectory()) continue;
+    for (const f of readdirSync(join(dir, v.name)).filter(f => f.endsWith(".json")).sort())
+      out.push({ ...readJson(join(dir, v.name, f)), _file: `${v.name}/${f}` });
+  }
+  return out;
+}
+
 export function loadBenchData() {
   if (cache) return cache;
   const cutoff = freshCutoff();
@@ -242,6 +254,8 @@ export function loadBenchData() {
     coverage: readJson(join(DATA, "model-coverage.json")),
     // /choose/ 计分规则登记表（逐项核对后的 0–100 换算 / 仅作参考决定、指标同义写法）
     compareRules: existsSync(join(DATA, "compare-rules.json")) ? readJson(join(DATA, "compare-rules.json")) : null,
+    // 发布页对比表里其他模型的分数（同表竞品列，第三方转述：由发布方测得或转引，不算被比较厂商的自报）
+    competitorColumns: loadCompetitorColumns(),
     benchmarkAliases: ALIAS,
     _unmatchedEvidenceIds: [...unmatched],
   };
