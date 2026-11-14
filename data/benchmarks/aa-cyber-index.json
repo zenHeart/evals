@@ -4,73 +4,648 @@
   "full_name": "Artificial Analysis Cyber Index",
   "aliases": [
     "Artificial Analysis Cyber Index",
-    "AA Cyber Index v3",
-    "Cyber Index"
+    "Cyber Index",
+    "Cyber Index Alliance"
   ],
-  "status": null,
+  "status": "active",
   "categories": [
     "safety",
     "agent"
   ],
-  "summary": "Artificial Analysis 出品的网络安全能力指数：综合衡量模型在真实开源软件里「复现漏洞并打补丁」等攻防任务上的水平，由独立第三方评测机构运行，厂商只引用结果。",
-  "interpretation": "第三方网络安全指数，不是厂商自建集：分项衡量模型在真实开源仓库里找出漏洞、复现漏洞、生成补丁的能力。读分要盯住分项口径——同一指数内部不同分项难度差异很大，官方发布文里出现的「某一项 82%」指的是该指数下的一项测试，而不是指数总分。模型在「闭源模型因安全护栏拒答而无法执行」的子项上天然占优，因此该指数也间接反映拒答策略差异。",
+  "summary": "Artificial Analysis 自行实现并运行的网络安全防御指数：CWE-Bench-AA、DeepsecBench-AA、CyberGym-E2E-AA 三个分项各占 1/3，考的是「在有源码的真实工程里找漏洞、复现崩溃、打上不破坏原有行为的补丁」，明确不要求做出可用利用。",
+  "interpretation": "高分说明模型更能接手安全团队里「审代码—复现—打补丁」这段防御工作，官方同页给出每次任务成本，可以一起看性价比。三条边界必须记住：只测防御不测攻击（没有任何任务要求把漏洞变成可用利用）；安全拒答被单独记录、不计入分数，所以指数同时反映护栏松紧，trusted-access 模型会显著抬高分数；三个分项判分方式不同（执行式 pass@1 与 LLM 裁判 median F2），且 Artificial Analysis 的实现与上游 Collinear AI / Vercel / Berkeley RDI 自家榜单的数字不能直接横比。",
   "measures": [
-    "在真实开源软件中复现已知漏洞",
-    "为真实漏洞生成并验证补丁",
-    "网络安全攻防综合能力"
+    {
+      "area": "审计真实仓库并修复（CWE-Bench-AA）",
+      "focus": "拿到一个开源仓库的检出和「隐患范围」描述，找出漏洞并打补丁，且不能破坏正常行为；120 道私有留出题，覆盖 OWASP Top 10 (2025) 全部十类，任务只给范围不给精确位置。",
+      "share": "1/3",
+      "format": "智能体审计—打补丁；确定性程序验证（exploit 不再触发且正常行为仍正常），单次尝试 pass@1，2 小时上限，Harbor 沙箱无互联网访问。",
+      "cite": [
+        "cybermethod@CWE-Bench-AA",
+        "cwebench@CWE-Bench-AA pass@1",
+        "cwebench@Background"
+      ]
+    },
+    {
+      "area": "按专家确认清单找漏洞（DeepsecBench-AA）",
+      "focus": "审查扫描器标记的文件，上报能确认真实的漏洞与明显缺陷，与人工专家确认的 golden set 比对；漏报代价高于误报，golden set 之外的真实发现只计入精确率。",
+      "share": "1/3",
+      "format": "静态审查后提交发现；LLM 裁判（GPT-5.6 Sol (high)）判真假并匹配 golden set，3 次重复取 median F2，E2B 沙箱、500 轮上限。",
+      "cite": [
+        "cybermethod@DeepsecBench-AA",
+        "deepsecbench@Background"
+      ]
+    },
+    {
+      "area": "复现并修复内存安全漏洞（CyberGym-E2E-AA）",
+      "focus": "在 C/C++ 项目里定位漏洞、写出能触发 sanitizer 崩溃的 PoC 输入、再打补丁让崩溃不再复现且项目测试仍过；131 题，每项目一题。",
+      "share": "1/3",
+      "format": "端到端 PoC + 补丁；执行式四阶段判定（第 1–3 阶段计分，第 4 阶段只作诊断），单次尝试 pass@1，90 分钟上限，项目 OSS-Fuzz 构建镜像沙箱。",
+      "cite": [
+        "cybermethod@CyberGym-E2E-AA",
+        "cybergym@CyberGym-E2E-AA pass@1"
+      ]
+    }
   ],
   "does_not_measure": [
-    "通用代码生成能力",
-    "长程智能体任务编排",
-    "多模态理解"
+    {
+      "text": "事件响应（incident response）",
+      "cite": [
+        "cybermethod@覆盖范围"
+      ]
+    },
+    {
+      "text": "写新代码时不引入漏洞",
+      "cite": [
+        "cybermethod@覆盖范围"
+      ]
+    },
+    {
+      "text": "拿不到源码的目标：编译产物与线上服务器",
+      "cite": [
+        "cybermethod@覆盖范围"
+      ]
+    },
+    {
+      "text": "把找到的漏洞变成可用利用（exploit realization）——防御向指数明确不做",
+      "cite": [
+        "cybermethod@覆盖范围",
+        "launch@Benchmark overview"
+      ]
+    }
   ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
+    "sample_count": 251,
+    "splits": [
+      "CWE-Bench-AA：120 道私有留出题，对 Collinear AI 与 Artificial Analysis 私有",
+      "DeepsecBench-AA：私有评测，对专家确认的 golden set 判分，题量未披露",
+      "CyberGym-E2E-AA：131 题，每项目一题，从 920 个漏洞 / 139 个 OSS-Fuzz 项目中筛出"
+    ],
     "languages": [
       "en"
     ],
-    "source_type": "third_party_benchmark",
-    "public_sample": null
+    "source_type": "third_party_benchmark（Artificial Analysis 自行实现并运行；上游数据由 Collinear AI / Vercel / Berkeley RDI 提供，CWE-Bench-AA 与 DeepsecBench-AA 为私有留出集）",
+    "public_sample": "CWE-Bench-AA 与 DeepsecBench-AA 的题目私有；CyberGym-E2E-AA 公开 131 个任务 ID 与沙箱配置，上游 CyberGym-E2E 数据集在 Hugging Face 公开",
+    "totals": "已知题量共 251 题（CWE-Bench-AA 120 + CyberGym-E2E-AA 131），DeepsecBench-AA 题量未披露 · 三个分项各占 1/3 · 题目语言为英文 · 覆盖 C/C++、Go、Java、JavaScript/TypeScript、Python、Rust",
+    "cite": [
+      "cybermethod@Cyber Index evaluation suite",
+      "cybermethod@CWE-Bench-AA",
+      "cybermethod@CyberGym-E2E-AA",
+      "cwebench@Background"
+    ],
+    "construction": [
+      {
+        "k": "题目来源",
+        "text": "三个分项分别来自 Collinear AI 的 CWE-bench、Vercel 的 DeepsecBench、Berkeley RDI 的 CyberGym-E2E；Artificial Analysis 各自重新实现，以上游私有留出集或筛选子集的形式运行。",
+        "cite": [
+          "cybermethod@CWE-Bench-AA",
+          "cybermethod@DeepsecBench-AA",
+          "cybermethod@CyberGym-E2E-AA",
+          "launch@Alliance"
+        ]
+      },
+      {
+        "k": "私有与筛选",
+        "text": "CWE-Bench-AA 用 120 道对 Collinear AI 与 Artificial Analysis 私有的留出题，覆盖 OWASP Top 10 (2025) 十类；CyberGym-E2E-AA 从 920 个漏洞里按难度筛出 131 题（每项目一题），剔除有 oracle leak 或沙箱不兼容的任务。",
+        "cite": [
+          "cybermethod@CWE-Bench-AA",
+          "cybermethod@CyberGym-E2E-AA"
+        ]
+      },
+      {
+        "k": "统一 harness 与沙箱",
+        "text": "全部任务跑在开源 agent harness Stirrup 上，同一评测内所有模型拿到相同提示词与工具；CWE-Bench-AA 用 Harbor 沙箱、DeepsecBench-AA 用 E2B 沙箱、CyberGym-E2E-AA 用项目 OSS-Fuzz 构建镜像，均无互联网访问。",
+        "cite": [
+          "cybermethod",
+          "cybermethod@CyberGym-E2E-AA"
+        ]
+      },
+      {
+        "k": "判分方式",
+        "text": "CWE-Bench-AA 与 CyberGym-E2E-AA 是执行式判定（确定性验证器 / sanitizer 崩溃加功能测试），DeepsecBench-AA 由 GPT-5.6 Sol (high) 作裁判，把上报发现与专家确认的 golden set 匹配，重复上报拉低精确率。",
+        "cite": [
+          "cybermethod@CWE-Bench-AA",
+          "cybermethod@DeepsecBench-AA",
+          "cybermethod@CyberGym-E2E-AA"
+        ]
+      },
+      {
+        "k": "拒答处理",
+        "text": "模型或厂商以安全为由拒绝任务的案例被单独记录并从分数中剔除，榜单图例用 Successes / Safety blocks / Trusted-access model 标出。",
+        "cite": [
+          "cybermethod",
+          "launch@Methodology"
+        ]
+      }
+    ]
   },
   "metrics": [
     {
       "id": "index-score",
-      "name": "指数分项得分",
+      "name": "Cyber Index 分数",
+      "direction": "越高越好",
+      "description": "三个分项各 1/3 的等权平均，官方同页并列给出每次任务成本与输出 token 用量；单项口径见后三条。",
       "range": [
         0,
         100
       ],
       "unit": "percent",
-      "direction": "higher",
-      "aggregation": "mean"
+      "cite": [
+        "cybermethod@Cyber Index evaluation suite"
+      ]
+    },
+    {
+      "id": "cwe-bench-aa-pass1",
+      "name": "CWE-Bench-AA pass@1",
+      "direction": "越高越好",
+      "description": "单次尝试解决的 120 道私有留出题占比；判定条件是程序化验证器确认 exploit 不再触发且正常行为仍正常，无部分分、无 LLM 裁判。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "cybermethod@CWE-Bench-AA",
+        "cwebench@CWE-Bench-AA pass@1"
+      ]
+    },
+    {
+      "id": "deepsecbench-aa-f2",
+      "name": "DeepsecBench-AA median F2",
+      "direction": "越高越好",
+      "description": "3 次重复的 F2 中位数；F2 偏重召回（漏报的漏洞没人修，误报只花分诊时间），裁判 GPT-5.6 Sol (high) 判真假并匹配 golden set。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "cybermethod@DeepsecBench-AA",
+        "deepsecbench@Background"
+      ]
+    },
+    {
+      "id": "cybergym-e2e-aa-pass1",
+      "name": "CyberGym-E2E-AA pass@1",
+      "direction": "越高越好",
+      "description": "单次尝试解决的 131 个内存安全任务占比；PoC 崩溃未打补丁的构建、补丁修掉该崩溃、功能测试仍过三者全过才记 1，是否修到根因只作诊断。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "cybermethod@CyberGym-E2E-AA",
+        "cybergym@Background"
+      ]
     }
   ],
-  "default_protocol": null,
+  "default_protocol": {
+    "raw": "全部任务跑在开源 agent harness Stirrup 上，同一评测内所有模型拿到相同提示词与工具；CWE-Bench-AA 在 Harbor 沙箱里拿到仓库检出与审计指令、2 小时内完成，DeepsecBench-AA 在 E2B 沙箱里审扫描器标记的文件、500 轮内提交发现，CyberGym-E2E-AA 在项目 OSS-Fuzz 构建镜像里 90 分钟内交 PoC 与补丁，三个沙箱都没有互联网访问。CWE-Bench-AA 与 CyberGym-E2E-AA 每任务跑 1 次，DeepsecBench-AA 跑 3 次取中位数。以安全为由的拒答单独记录，不进分数。",
+    "cite": [
+      "cybermethod",
+      "cybermethod@CWE-Bench-AA",
+      "cybermethod@DeepsecBench-AA",
+      "cybermethod@CyberGym-E2E-AA",
+      "launch@Methodology"
+    ],
+    "variants": [
+      {
+        "text": "公开模型与 trusted-access 模型分列：后者只对特定渠道开放、网络护栏更少；同一模型两种口径能差 32 分。",
+        "cite": [
+          "trusted"
+        ]
+      },
+      {
+        "text": "三个分项判分方式不同：CWE-Bench-AA 与 CyberGym-E2E-AA 是执行式 pass@1，DeepsecBench-AA 是 LLM 裁判下的 median F2（3 次重复），分数既不能相加也不能直接比大小。",
+        "cite": [
+          "cybermethod@Cyber Index evaluation suite",
+          "cybermethod@DeepsecBench-AA"
+        ]
+      },
+      {
+        "text": "重复次数不同：CWE-Bench-AA 与 CyberGym-E2E-AA 每任务只跑 1 次，DeepsecBench-AA 跑 3 次取中位数，方差口径不一致。",
+        "cite": [
+          "cybermethod@CWE-Bench-AA",
+          "cybermethod@DeepsecBench-AA",
+          "cybermethod@CyberGym-E2E-AA"
+        ]
+      },
+      {
+        "text": "与上游基准各自榜单不可比：三个分项都是 Artificial Analysis 用自家 harness 重跑的。",
+        "cite": [
+          "cybermethod@CWE-Bench-AA",
+          "cybermethod@DeepsecBench-AA",
+          "cybermethod@CyberGym-E2E-AA"
+        ]
+      }
+    ]
+  },
   "versions": [
     {
-      "id": "v3",
-      "label": "Artificial Analysis Cyber Index v3",
-      "note": "官方发布文引用的图表版本标识为 artificial-analysis-cyber-index-v3"
+      "id": "v1",
+      "date": "2026-09-28",
+      "label": "v1.0 发布：CWE-Bench-AA / DeepsecBench-AA / CyberGym-E2E-AA 各 1/3，随 Cyber Index Alliance 一起上线",
+      "cite": [
+        "launch@发布日期",
+        "cybermethod@Version History"
+      ]
+    },
+    {
+      "id": "trusted-access",
+      "date": "2026-10-08",
+      "label": "榜单扩展至 trusted-access 模型：GPT-6 Sol (Daybreak Blue, max) 入榜并登顶",
+      "cite": [
+        "trusted"
+      ]
+    },
+    {
+      "id": "current",
+      "date": "2026-11-13",
+      "label": "官方版本历史仍只有 Version 1.0（2026 年 9 月至当前）；本档案核对日",
+      "cite": [
+        "cybermethod@Version History"
+      ]
     }
   ],
   "limitations": [
-    "由第三方（Artificial Analysis）运行，评测集与判分口径未公开，外部无法复跑",
-    "指数总分与分项得分含义不同，跨厂商引用时须确认引用的是总分还是分项",
-    "部分分项允许模型执行真实漏洞复现与补丁生成，闭源模型常因安全拒答而得分偏低"
+    {
+      "issue": "评测集私有，外部无法复跑",
+      "impact": "CWE-Bench-AA 与 DeepsecBench-AA 的题目对 Collinear AI 与 Artificial Analysis 私有，CyberGym-E2E-AA 只公开任务 ID 与沙箱配置；判分器、提示词与评分细节只在方法论页描述，外部无法完整复现。",
+      "severity": "高",
+      "response": "方法论页公开每个分项的题量、沙箱、轮次与时长上限、判分阶段和裁判模型，并公布 131 个任务 ID 与沙箱配置。",
+      "reader": "把分数当作 Artificial Analysis 口径下的结果，不要期待第三方能复现同一数字。",
+      "cite": [
+        "cybermethod@CWE-Bench-AA",
+        "cybermethod@DeepsecBench-AA",
+        "cybermethod@CyberGym-E2E-AA"
+      ]
+    },
+    {
+      "issue": "与上游基准结果不可直接比较",
+      "impact": "三个分项都是 Artificial Analysis 用自家 Stirrup harness 与提示词重跑的，官方在方法论页三次明确说数字与 cwe-bench.com、Vercel、Berkeley RDI 发布的结果不可直接比较。",
+      "severity": "中",
+      "response": "方法论页每个分项下用「Differences from ...」单独说明差异。",
+      "reader": "跨来源比分数前先确认跑的是哪一套实现。",
+      "cite": [
+        "cybermethod@CWE-Bench-AA",
+        "cybermethod@DeepsecBench-AA",
+        "cybermethod@CyberGym-E2E-AA"
+      ]
+    },
+    {
+      "issue": "安全拒答压低并扭曲前沿闭源模型的分数",
+      "impact": "拒答单独记录、不计分；CyberGym-E2E-AA 上 GPT-6 Astra、GPT-6 Sol、Claude Fable 5.1、Claude Opus 5.5、Qwen3.8 2.4T A95B、Qwen3.8 27B 拒答率不低于 98%，官方直言难以评估前沿模型表现。",
+      "severity": "高",
+      "response": "2026-10-08 起把 trusted-access 模型（护栏更少）单列入榜；Daybreak Blue 版 GPT-6 Sol 无安全阻断，总分比公开版高 32 分。",
+      "reader": "看到拒答率高的模型，低分不等于能力低；比较时先确认是公开版还是 trusted-access 版。",
+      "cite": [
+        "launch@CyberGym-E2E-AA",
+        "trusted",
+        "launch@Methodology"
+      ]
+    },
+    {
+      "issue": "覆盖面只到「有源码的防御前半段」",
+      "impact": "官方列出的不测项：事件响应、写新代码不引入漏洞、无源码目标（编译产物与线上服务器）、exploit realization。",
+      "severity": "中",
+      "response": "路线图说会随模型进步增补评测，从上述空白开始。",
+      "reader": "别用它推断模型做事件响应或攻击利用的能力。",
+      "cite": [
+        "cybermethod@覆盖范围",
+        "launch@Roadmap"
+      ]
+    },
+    {
+      "issue": "判分口径混合，开放式任务天花板明显",
+      "impact": "两个分项是执行式判定，DeepsecBench-AA 靠 LLM 裁判匹配 golden set；最好模型也只找到 41% 的专家确认漏洞，CyberGym-E2E-AA 上 42% 的尝试到 90 分钟都没造出崩溃，31% 的通过修的是别的崩溃。",
+      "severity": "中",
+      "response": "DeepsecBench-AA 用 3 次重复取中位数并公开裁判模型；CyberGym-E2E-AA 的第 4 阶段（是否修到根因）只作诊断不计分。",
+      "reader": "分项之间不要横比；同一个模型两次运行之间的差异也要留余地。",
+      "cite": [
+        "launch@How models fail · DeepsecBench-AA",
+        "launch@How models fail · CyberGym-E2E-AA",
+        "cybermethod@DeepsecBench-AA",
+        "cybermethod@CyberGym-E2E-AA"
+      ]
+    }
   ],
-  "notes": "Mistral Large 4 发布文引用的分项为「复现真实漏洞并打补丁」测试",
+  "notes": "官方版本历史只有 1.0 一条，首页图表标注为 v1；本站旧版把别名记成「AA Cyber Index v3」，官方来源中查无实据，已按官方口径改正。",
   "official_sources": [
     {
       "kind": "site",
       "url": "https://artificialanalysis.ai/"
+    },
+    {
+      "kind": "site",
+      "url": "https://artificialanalysis.ai/methodology/cyber-index"
+    },
+    {
+      "kind": "leaderboard",
+      "url": "https://artificialanalysis.ai/evaluations/artificial-analysis-cyber-index"
+    },
+    {
+      "kind": "leaderboard",
+      "url": "https://artificialanalysis.ai/evaluations/cwe-bench-aa"
+    },
+    {
+      "kind": "leaderboard",
+      "url": "https://artificialanalysis.ai/evaluations/deepsecbench-aa"
+    },
+    {
+      "kind": "leaderboard",
+      "url": "https://artificialanalysis.ai/evaluations/cybergym-e2e-aa"
+    },
+    {
+      "kind": "announcement",
+      "url": "https://artificialanalysis.ai/articles/artificial-analysis-cyber-index"
+    },
+    {
+      "kind": "announcement",
+      "url": "https://artificialanalysis.ai/articles/trusted-access-models-cyber-index"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/ArtificialAnalysis/Stirrup"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/sunblaze-ucb/cybergym-e2e"
     }
   ],
   "related_benchmarks": [
     "cybench",
     "cybergym",
-    "exploitbench"
+    "exploitbench",
+    "cwe-bench"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-10-26"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-13",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      {
+        "id": "cybermethod",
+        "kind": "site",
+        "title": "Artificial Analysis Cyber Index — Methodology",
+        "url": "https://artificialanalysis.ai/methodology/cyber-index",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "cwebench",
+        "kind": "leaderboard",
+        "title": "CWE-Bench-AA — Artificial Analysis",
+        "url": "https://artificialanalysis.ai/evaluations/cwe-bench-aa",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "deepsecbench",
+        "kind": "leaderboard",
+        "title": "DeepsecBench-AA — Artificial Analysis",
+        "url": "https://artificialanalysis.ai/evaluations/deepsecbench-aa",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "cybergym",
+        "kind": "leaderboard",
+        "title": "CyberGym-E2E-AA — Artificial Analysis",
+        "url": "https://artificialanalysis.ai/evaluations/cybergym-e2e-aa",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "launch",
+        "kind": "announcement",
+        "title": "Announcing the Artificial Analysis Cyber Index Alliance",
+        "url": "https://artificialanalysis.ai/articles/artificial-analysis-cyber-index",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "trusted",
+        "kind": "announcement",
+        "title": "Introducing trusted-access models to the Artificial Analysis Cyber Index",
+        "url": "https://artificialanalysis.ai/articles/trusted-access-models-cyber-index",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "artificialanalysis",
+        "kind": "site",
+        "title": "Artificial Analysis — Independent AI Benchmarking",
+        "url": "https://artificialanalysis.ai/",
+        "accessed": "2026-11-13"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Artificial Analysis（Cyber Index Alliance：Collinear AI、IBM、NVIDIA、Vercel）",
+        "cite": [
+          "launch@Alliance"
+        ]
+      },
+      "first_release": {
+        "v": "2026-09-28",
+        "cite": [
+          "launch@发布日期"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "cybermethod",
+        "cybermethod@Cyber Index evaluation suite",
+        "launch@Benchmark overview"
+      ],
+      "interpretation": [
+        "cybermethod",
+        "trusted",
+        "launch@Methodology",
+        "launch@Benchmark overview"
+      ]
+    },
+    "problem": {
+      "text": "安全团队面对的是同一个开放性问题：在一直在变的大型代码库里决定先看哪里；而攻击侧正在用 AI 把同样的工作自动化并放大。给防御工作选模型需要一份独立、同口径、同时给出每次任务成本的对比。",
+      "cite": [
+        "launch@DeepsecBench-AA",
+        "launch@Introducing"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "与上游基准自家榜单的关系",
+        "value": "不可直接横比",
+        "note": "三个分项都是 Artificial Analysis 用自己的 Stirrup harness 与提示词重跑的，官方明确说数字与 cwe-bench.com、Vercel、Berkeley RDI 发布的结果不可直接比较。",
+        "cite": [
+          "cybermethod@CWE-Bench-AA",
+          "cybermethod@DeepsecBench-AA",
+          "cybermethod@CyberGym-E2E-AA"
+        ]
+      },
+      {
+        "label": "CWE-Bench-AA 当前第一",
+        "value": "76%（Tencent Hy4，pass@1）",
+        "note": "同页第二、第三为 DeepSeek V4.1 Flash 1017 (Max) 69%、Grok 4.7 (Xhigh) 68%。",
+        "cite": [
+          "cwebench@CWE-Bench-AA pass@1"
+        ]
+      },
+      {
+        "label": "DeepsecBench-AA 当前第一",
+        "value": "46%（GPT-6 Sol (Max)，median F2）",
+        "note": "最好模型也只找到专家确认漏洞中的 41%；同页第二、第三为 GPT-6 Astra (Max) 37%、Kimi K3.1 Pro 37%。",
+        "cite": [
+          "deepsecbench@DeepsecBench-AA F2",
+          "launch@How models fail · DeepsecBench-AA"
+        ]
+      },
+      {
+        "label": "CyberGym-E2E-AA 当前第一",
+        "value": "95%（Kimi K3.1 Pro，pass@1）",
+        "note": "同页第二、第三为 Mistral Large 4 Preview 82%、Mistral Large 4 (High) 79%；6 个前沿模型在此分项拒答率不低于 98%。",
+        "cite": [
+          "cybergym@CyberGym-E2E-AA pass@1",
+          "launch@CyberGym-E2E-AA"
+        ]
+      },
+      {
+        "label": "trusted-access 模型的加分幅度",
+        "value": "比公开版同模型高 32 分",
+        "note": "GPT-6 Sol (Daybreak Blue, max) 全指数无安全阻断，$1.77/任务，低于 Grok 4.7 (xhigh) 的 $11.67；增益最大的是拒答最多的 CyberGym-E2E。",
+        "cite": [
+          "trusted"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把某个分项的得分当成 Cyber Index 总分——指数是三个分项各 1/3 的等权平均，分项难度与判分方式都不同。",
+        "cite": [
+          "cybermethod@Cyber Index evaluation suite"
+        ]
+      },
+      {
+        "text": "拿 Artificial Analysis 的分数去和 cwe-bench.com、Vercel、Berkeley RDI 的官方榜单对比——官方明确说不可直接比较。",
+        "cite": [
+          "cybermethod@CWE-Bench-AA",
+          "cybermethod@DeepsecBench-AA",
+          "cybermethod@CyberGym-E2E-AA"
+        ]
+      },
+      {
+        "text": "把安全拒答读成能力不行——拒答单独记录、不计入分数；换 trusted-access 模型（护栏更少）后同一模型能高 32 分。",
+        "cite": [
+          "launch@Methodology",
+          "trusted"
+        ]
+      },
+      {
+        "text": "以为它在测攻击能力——没有任何任务要求把漏洞变成可用利用，exploit realization 明确不在范围内。",
+        "cite": [
+          "launch@Benchmark overview",
+          "cybermethod@覆盖范围"
+        ]
+      },
+      {
+        "text": "以为便宜就等于分低——官方同页分别给分数与每次任务成本，三个分项当前成本最低的模型都不是分数第一。",
+        "cite": [
+          "cwebench@Cost per Task",
+          "deepsecbench@Cost per Task",
+          "cybergym@Cost per Task"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布与运行方",
+        "v": "Artificial Analysis 自行实现并独立运行三个评测；Cyber Index Alliance 首发伙伴为 Collinear AI、IBM、NVIDIA、Vercel。",
+        "cite": [
+          "launch@Alliance",
+          "cwebench@Methodology"
+        ]
+      },
+      {
+        "k": "联盟分工",
+        "v": "Collinear AI 贡献 CWE-bench 私有留出集，Vercel 贡献 DeepsecBench 私有留出集，IBM 与 NVIDIA 提供范围与方法论的专家输入；CyberGym-E2E 来自 Berkeley RDI。",
+        "cite": [
+          "launch@Alliance",
+          "cybermethod@CyberGym-E2E-AA"
+        ]
+      },
+      {
+        "k": "统一 harness",
+        "v": "所有任务跑在开源 agent harness Stirrup 上，同一评测内所有模型拿到相同提示词与工具；Stirrup 在 GitHub 开源，上游 CyberGym-E2E 数据集在 Hugging Face 公开。",
+        "cite": [
+          "cybermethod"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2026-09-28 随联盟一起发布（三个分项各 1/3，只含公开可访问模型）→ 2026-10-08 榜单扩展至 trusted-access 模型。",
+        "cite": [
+          "launch@发布日期",
+          "trusted"
+        ]
+      },
+      {
+        "k": "版本口径",
+        "v": "官方版本历史只有 Version 1.0 一条（2026 年 9 月至当前），首页图表标注为 v1；本站旧版记录的「v3」在官方来源中查无实据。",
+        "cite": [
+          "cybermethod@Version History",
+          "artificialanalysis@Cyber Index"
+        ]
+      },
+      {
+        "k": "成本量级",
+        "v": "三个分项当前每次任务成本最低分别为 $0.11（CWE-Bench-AA）、$0.0589（DeepsecBench-AA）、$0.13（CyberGym-E2E-AA）。",
+        "cite": [
+          "cwebench@Cost per Task",
+          "deepsecbench@Cost per Task",
+          "cybergym@Cost per Task"
+        ]
+      }
+    ],
+    "official_results": {
+      "cite": [
+        "cwebench@CWE-Bench-AA pass@1",
+        "deepsecbench@DeepsecBench-AA F2",
+        "cybergym@CyberGym-E2E-AA pass@1"
+      ],
+      "table": {
+        "as_of": "2026-11-13",
+        "columns": [
+          "分项",
+          "当前第一",
+          "分数",
+          "判分口径",
+          "该页覆盖模型数"
+        ],
+        "rows": [
+          [
+            "CWE-Bench-AA",
+            "Tencent Hy4",
+            "76%",
+            "pass@1，确定性验证器，单次尝试",
+            "25 of 26"
+          ],
+          [
+            "DeepsecBench-AA",
+            "GPT-6 Sol (Max)",
+            "46%",
+            "median F2，3 次重复，GPT-5.6 Sol (high) 裁判",
+            "27 of 28"
+          ],
+          [
+            "CyberGym-E2E-AA",
+            "Kimi K3.1 Pro",
+            "95%",
+            "pass@1，执行式四阶段（1–3 计分）",
+            "25 of 26"
+          ]
+        ]
+      }
+    }
+  }
 }
