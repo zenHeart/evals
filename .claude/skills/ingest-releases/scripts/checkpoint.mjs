@@ -25,6 +25,7 @@ import { join } from "node:path";
 const ROOT = join(process.cwd());
 const RELEASES_DIR = join(ROOT, "data", "model-releases", "official");
 const CHECKPOINT = join(ROOT, "data", "generated", "ingest-checkpoint.json");
+const COVERAGE = join(ROOT, "data", "model-coverage.json");
 const OVERLAP_DAYS = 14;
 const FIRST_RUN_FALLBACK_DAYS = 90;
 
@@ -120,6 +121,18 @@ function commit(args) {
     _comment: "ingest-releases 技能的扫描检查点：last_max_release_date 是下次增量窗口的锚点（自动回退重叠天数）。由 checkpoint.mjs commit 维护，勿手改。",
   }, null, 2) + "\n", "utf-8");
   console.log(`[checkpoint] 已记录：last_scan_at=${today()} last_max_release_date=${anchor}`);
+
+  // 同步覆盖页的展示窗口（data/model-coverage.json 的 window_since / window_until 是
+  // 手写型元数据，没有任何脚本自动写入——漏写就会让覆盖页长期显示上一批的窗口）。
+  // 这里按与 status() 完全相同的口径落账：起点 = 锚点回退 OVERLAP_DAYS，终点 = 今天。
+  if (existsSync(COVERAGE)) {
+    const cov = JSON.parse(readFileSync(COVERAGE, "utf-8"));
+    cov.last_scan_at = new Date().toISOString();
+    cov.window_since = anchor ? daysAgo(anchor, OVERLAP_DAYS) : daysAgo(today(), FIRST_RUN_FALLBACK_DAYS);
+    cov.window_until = today();
+    writeFileSync(COVERAGE, JSON.stringify(cov, null, 2) + "\n", "utf-8");
+    console.log(`[checkpoint] 已同步覆盖页窗口：window_since=${cov.window_since} window_until=${cov.window_until}`);
+  }
 }
 
 const [, , cmd, ...args] = process.argv;

@@ -131,6 +131,10 @@ npm run build                     # 书校验 + EPUB + 全站构建 + validate-s
 node .claude/skills/ingest-releases/scripts/checkpoint.mjs commit --max-release-date <本批最大发布日>
 ```
 
+   该命令会**一并把覆盖页的展示窗口落账**（`data/model-coverage.json` 的 `window_since` / `window_until` / `last_scan_at`，
+   口径与 `checkpoint.mjs status` 完全一致）。这两个字段曾经是纯手写型元数据——每批漏写就让覆盖页长期显示上一批的窗口，
+   现已自动化。**收口后仍要在 live 覆盖页 grep 一次窗口字符串复核**（数据改了但页面没跟上＝没做完）。
+
 2. 若更新或优化了 `.claude/skills/` 下的技能定义或脚本，执行：
 
 ```bash
