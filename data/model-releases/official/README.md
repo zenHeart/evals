@@ -4057,3 +4057,93 @@ Gemini Robotics 2.5 的 DeepMind 官方 RSS `pubDate` 为 `Mon, 09 Nov 2026 19:5
 - 未改写任何既有 release / benchmark 文件，未删除任何远端分支，未改 Workflow 配置。
 - 未在本仓写入任何凭据或私有供应商数据。
 
+
+## 第六十五批（2026-11-14 CST / 2026-11-13 UTC 增量窗口 2026-10-29 ~ 2026-11-14：Thinking Machines Inkling / Inkling-Small 存量回填建档 64 条 evidence + Google Gemini Decision 1 建档 11 条 + Google AlphaProof Code 建档）
+
+### 本批窗口与前置
+
+- **增量窗口**：锚点 `ledger_max_release_date = 2026-11-12` 回退 14 天重叠 → `window_since = 2026-10-29`、`window_until = 2026-11-14`（UTC）。
+- **基线**：`origin/main` @ `e21ce18`；分支 `model-release-daily-20261114T010734Z`。
+- **开工前收口（Step 0）**：开工时发现两个 `model-release-daily-*` 带 OPEN PR——#77（第六十四批，CI 绿、CLEAN）与 #73（第六十三批，CI 绿但 `mergeable: CONFLICTING`）。按分流表：**#77 先 squash 合并**（远端分支保留）；**#73 rebase 到最新 `origin/main` 后按「先旧后新」拼接合入**，冲突处置为：README 两批批次节切段拼接（第六十三批在前、第六十四批在后，并给第六十三批补「后续批次处置」小节）；`data/model-coverage.json` 取较新批次一侧为基底并承接第六十三批对 3 条产品页的 `exclusion_reason`；`ingest-checkpoint.json` 取较新一侧（锚点只前进）；`evals.epub` 与 `auto-benchmark-ids.json` 属生成物，**不手合**，取 main 版后重建。两批均已 squash 合并，**远端分支一律保留**（未删除任何分支或历史）。
+
+### 入口复扫（Step 1）
+
+`node .claude/skills/ingest-releases/scripts/scan.mjs --write` 对 18 家在册厂商的官方域名入口逐一复扫（失败与动态页均落进 `data/model-coverage.json`，不静默跳过）：openai sitemap 为 `needs_render`；anthropic / google / meta / mistral / kimi / deepseek / minimax / doubao / xiaomi / tencent GitHub / microsoft / particle / thinking-machines 为 `partial`；xai news、meta 两个 blog、glm z.ai/blog、minimax agent 工具页、stepfun research 为 `inaccessible`。RSS 与官方模型总表另走定点通道（见下）。
+
+### 本批新建档（5 个 release）
+
+| release | 厂商 | 发布日 | 发布日证据 | evidence |
+|---|---|---|---|---|
+| `thinking-machines/inkling` | Thinking Machines Lab | 2026-07-15 | 页面 `itemprop="datePublished" content="2026-07-15T00:00:00+00:00"` + 官方 news 索引「Inkling: Our Open-Weights Model Jul 15, 2026」 | 28 条 verified |
+| `thinking-machines/inkling-small` | Thinking Machines Lab | 2026-07-30 | 页面 `itemprop="datePublished" content="2026-07-30T00:00:00+00:00"` + 官方 news 索引「Introducing Inkling-Small Jul 30, 2026」 | 36 条 verified |
+| `google/gemini-decision-1` | Google | 2026-11-11 | `<meta article:published_time>` = 2026-11-11 + JSON-LD `datePublished=2026-11-11T18:00:00+00:00` + Google 官方博客 RSS 条目 | 11 条 pending（位图图行） |
+| `google/alphaproof-code` | Google | 2026-11-10 | JSON-LD `datePublished=2026-11-10T12:00:00+00:00` + DeepMind 官方 RSS `Tue, 10 Nov 2026 12:02:28 +0000` | 0 条（release 状态 pending） |
+
+- **Inkling / Inkling-Small 是存量回填**：`thinkingmachines.ai/sitemap.xml` 的 `/model-card/` 条目比 `/news/` 条目多，多出来的 `model-card/inkling/` 与 `model-card/inkling-small/` 即「有官方模型卡但此前未建档」的型号（本轮补齐）。两页评测数值全部落在 **DOM 真表格**（`<table>` 计数 5 / 4），逐格机读，故按「取自家列、竞品列进 notes」建行。
+- **Gemini Decision 1 是窗口内的新模型**：发布文正文只印相对结论（「leads across the suite」「lowest calibration error」「nearly 5x cheaper」），**但页面无任何内嵌图表数据载荷**（`vega` / `vegaLite` / `data-data` 计数全为 0），评测对照只以 **WebP 位图**呈现 → 11 行全部按图行记 `evidence_type:"figure"` / `status:"pending"` / `value:null` / `score_status:"not_extracted"`，**视觉转写值只写进各行 notes**，待人工读图核验后方可翻 verified。
+- **AlphaProof Code 是研究系统发布而非新模型**：正文数字全为工程规模口径（超 600 万行 Lean、1% 代码需人工复核、4 周、2 个注入缺陷），**不是评测分数**，故 `benchmark_evidence` 为空、release 状态 pending，不为工程量指标建行。`models[]` 收录其证明模型 Gemini 4 Carbon（页面原文「agents powered by Gemini Carbon did the proofs」）。
+- **LifeVal 复核结论：已在第四十八批覆盖，本批不重复建档。** 本轮按「OpenAI 发布文的 RSC vega-lite 通道再次可用」重新解析了 `openai.com/index/lifeval` 的载荷，确认图 1（5 行）与图 2（22 行）逐点可机读；核对账本后发现第四十八批已新建 benchmark 实体 `data/benchmarks/lifeval.json`、已把 18 条 verified evidence 补录进 GPT-5.4 / GPT-5.5 / GPT-5.6 / GPT-6 Astra 四个 release、已建归档 `models/2026-11-02-lifeval/`（含完整的「模型 × reasoning effort」22 组表），**本批据此撤回了原拟新建的 `openai/lifeval` release 与其归档改写**，不重复建档、不重复写数。**教训：新建 release 前先按 id 查账本与归档目录，不能只看本轮发现窗口。**
+
+### 覆盖对账与未决候选清零
+
+- 本批把此前悬空的 **7 条未决候选**（`exclusion_reason` 与 `release_id` 皆空）逐条判定完毕：Anthropic IPO 路演公告、Thinking Machines 的 3 条资助计划公告与 1 条 Tinker 平台公告按口径写明 `exclusion_reason`；`Introducing Gemini 4 Hydrogen` 等 9 条旧线索已在第六十四批关联，本批新增的 Inkling / Inkling-Small 两条 news 页候选由 `reconcile-coverage.mjs` 自动关联到对应 release。**reconcile 之后未决候选为 0。**
+- **标题分类器误判修正**：官方 Hugging Face 模型卡页 `thinkingmachines/Inkling` 被分类器判为 product 并写了排除理由，本批回看页面实为模型卡 → 改判 `general`、清排除理由、以 `release_match:"manual"` 手工关联 `inkling`；两个权重仓候选（`Inkling` 952B / `Inkling-Small` 266B，与发布文 975B / 276B 总参口径不同）同样手工关联并在 notes 标注口径差异。**这正是「分类结果不可单独作为排除依据」的又一次实例。**
+- 候选总数 697 → **700**（新增：DeepSeek 应用 API 全套产品条目 1 条 + 本批 4 个 release 的自动候选）；已关联 release 的候选 283 → **290**。
+
+### 跳过清单
+
+| 对象 | 厂商 | 原因 |
+|---|---|---|
+| Introducing ChatGPT Wallet（2026-11-13） | OpenAI | 产品发布（与 AmEx / Mastercard / Visa 合作的 Agent 支付钱包），非模型发布页 |
+| ChatGPT Plus for veterans and servicemembers（2026-11-11） | OpenAI | 产品与权益公告，非模型发布（第六十三批已登记，本轮复核） |
+| DeepSeek 应用 API 全套（web search / file input / URL reading / model safety / ASR / TTS，2026-11-13） | DeepSeek | 变更日志该条目只有日期、没有独立模型发布标题，属平台能力更新 |
+| MiniMax-H3-Image-PE（HF 2026-11-08） | MiniMax | H3-Image 的提示词扩展权重（base_model 为 Qwen3.8-27B），与已建档 H3-Image 同源，官方无独立发布文与独立评测 |
+| MAI Cyber 1.1 Flash / MAI Image 2.7 / MAI Transcribe 2 | Microsoft | 官方新闻页取不到可解析的发布日期（无 JSON-LD `datePublished`，正文亦无印刷日），**无日期证据不建档** |
+| Gemini 4 Carbon 正式开放 / Gemini Robotics 2.5 / Gemini Omni 1.2 Flash | Google | 已于第五十二、六十批建档，本轮仅复核 |
+| BioBasicsBench（2026-11-06） | OpenAI | 已于第五十三批建档 32 条 evidence，本轮仅复核 |
+| gemini-4-20（静默代际） | xAI | 账本已有零行占位档 `status:"pending"`，官方无发布文与可核对数值，二级来源数字不记 |
+
+### 新建 benchmark id（12 个，均标 `new-benchmark`，暂不建实体）
+
+`jevbench`、`amazon-esci`、`new-yorker-caption`、`pubmedqa`、`when2call`、`top-1-ece`、`total-price`、`audio-mc`、`mmau`、`voicebench`、`forecastbench`、`prophet-arena`。按仓库口径「写不出权威解读就不建实体」，先由兜底详情页顶着；12 个 id 同时登记进 `data/compare-rules.json` 的 `unmapped_ids` 并写明不进对照的理由（`tests/compare-audit.test.mjs` 的 orphans 门禁要求每个被引用的 id 都能对上档案、别名或 unmapped 说明）。
+
+### 待人工核验清单（pending 升级路径）
+
+1. **Gemini Decision 1 的 11 行图行**：位图对照图见归档 `models/2026-11-11-gemini-decision-1/images/c02-54461bb3a855160a0551.webp`，视觉转写值已写在各行 notes（自研模型列与 TypeSafe Jav 1.14 / GPT-6 Luna / Gemini 3.5 Flash-Lite 三列竞品值），读图确认后方可翻 verified。
+2. **Inkling / Inkling-Small 的 effort 扫描图**：两页的 effort 曲线是内联 SVG 且数据点无数值标签，各 effort 档位分值需人工读图；本批只按总表建 effort=0.99（Inkling）与正式发布值（Inkling-Small）各一行。
+4. **AlphaGenome 2 之外的 AlphaProof Code**：页面称将开源形式化验证产物并给出技术论文链接，论文内容本轮未取，取到后可考虑补 benchmark 口径。
+
+### 门禁（本批全绿）
+
+| 门禁 | 结果 |
+| --- | --- |
+| `node scripts/reconcile-coverage.mjs` | 通过，且幂等（连续两次运行 diff 为空） |
+| `node --test tests/*.test.mjs` | **139/139 通过**（含「覆盖对账幂等」「本批官方归档文件与 manifest 哈希一致」「slug 回填按 id 参数寻址」等专项） |
+| `node scripts/validate-data.mjs` | **PASS**（taxonomy 9 类 / vendors 18 / benchmarks 509 / releases 241（official 227）/ evidence edges 4013） |
+| `npm run sync:skills:check` | 通过（`.agent/skills/` 与 `.claude/skills/` 零漂移） |
+| `npm run validate`（`book/validate.js`） | 通过（32 章） |
+| `npm run build:epub:official` + `npm run build:web` + `npm run validate:site` | 全部通过（1097 个 HTML / 40363 个内部引用 / 291 个时间轴事件 / 2271 张事件卡 / 509 档案页 / 268 自动证据页；EPUB 486 KB / 32 章） |
+
+### 本批产出汇总
+
+| 指标 | 数值 |
+| --- | ---: |
+| 新建 release 文件 | **4**（`thinking-machines/inkling`、`thinking-machines/inkling-small`、`google/gemini-decision-1`、`google/alphaproof-code`） |
+| 新增 evidence 行 | **75** = **64 verified** + **11 pending** |
+| 新建归档目录 | **4**（`models/2026-07-15-inkling`、`models/2026-07-30-inkling-small`、`models/2026-11-11-gemini-decision-1`、`models/2026-11-10-alphaproof-code`） |
+| 新建 benchmark id | **12**（+ `data/compare-rules.json` 的 `unmapped_ids` 登记 12 条） |
+| 候选处置 | 未决候选 **7 → 0**；手工关联 3 条（HF 模型卡与 2 个权重仓）；新增产品条目候选 1 条 |
+| 全库规模 | releases 236 → **240**；evidence edges 3933 → **4008** |
+| 检查点 | `last_scan_at` 2026-11-13 → **2026-11-14**；`last_max_release_date` **2026-11-12 → 2026-11-12**（本批最大发布日为 2026-11-11，小于既有锚点，锚点只前进不回退） |
+
+### 技能与渠道地图更新
+
+- `.claude/skills/ingest-releases/references/discovery-channels.md` 补记本轮 4 条经验：Thinking Machines 的 `sitemap.xml` model-card 条目可当漏检指示器、effort 扫描图是内联 SVG 且数据点无数值标签、官方 HF 模型卡会被标题分类器误判为 product；OpenAI 发布文的 RSC vega-lite 通道再次可用且与位图图表行的处置不同；blog.google 的评测对照图是位图且无任何内嵌数据载荷；DeepSeek `/updates` 条目看有无独立标题区分模型发布与平台更新；Microsoft AI 新闻页本轮取不到发布日期。
+- 技能镜像已按 `npm run sync:skills` 重新生成并通过 `npm run sync:skills:check` 零漂移校验。
+
+### 未做的事
+
+- 未写任何无来源数值：位图图行一律 `pending` + `value:null`，视觉转写只进 notes；未把工程规模口径（Lean 行数、耗时、注入缺陷数）当评测分建行。
+- 未改写任何既有 release / benchmark / 归档文件；只新增 4 个 release 档、4 个归档目录与本节（LifeVal 因第四十八批已覆盖而撤回重建，`models/2026-11-02-lifeval/` 保持 main 原样）。
+- 未把任何新读数写进既有模型 release，也未为 12 个新 benchmark id 硬写档案实体。
+- 未删除任何远端分支、未改 Workflow 配置、未在本仓写入任何凭据或私有供应商数据。
