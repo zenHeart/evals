@@ -14,7 +14,7 @@ catch{out.insertAdjacentHTML('afterbegin','<p class="negative">对比数据暂�
 const byKey=new Map(data.models.map(m=>[m.key,m]));
 const state=readCompareParams(new URLSearchParams(location.search),data.useCases,data.models);
 
-/** 每个模型在当前领域有官方数值的可计分评估数；没有的模型照样能选，综合分按 0 计 */
+/** 每个模型在当前领域有官方数值的可计分评估数；没有的模型照样能选（没报告不按 0 分算） */
 const countCache={};
 function domainCount(task){return countCache[task]??=domainCounts(data.useCases[task],data.models);}
 let counts=domainCount(state.task);
@@ -90,7 +90,7 @@ function update(push=true){
     return;
   }
   const res=headToHead(uc,A,B);
-  out.innerHTML=`<div class="cmp-head cmp-grid" role="group" aria-label="对比中的两个模型"><div class="tools"><button type="button" id="cmp-swap">⇄ 交换</button><button type="button" data-change="a">换 A</button><button type="button" data-change="b">换 B</button></div><div class="mh a"><span class="mh-k">A · ${esc(uc.title)}</span>${modelHead(A,REL)}</div><div class="mh b"><span class="mh-k">B</span>${modelHead(B,REL)}</div></div>`+compareHTML(res,A,B,uc,REL);
+  out.innerHTML=`<div class="cmp-head cmp-grid" role="group" aria-label="对比中的两个模型"><div class="tools"><button type="button" id="cmp-swap">⇄ 交换</button><button type="button" data-change="a">换 A</button><button type="button" data-change="b">换 B</button></div><div class="mh a"><span class="mh-k">A · ${esc(uc.title)}</span>${modelHead(A,REL)}</div><div class="mh b"><span class="mh-k">B</span>${modelHead(B,REL)}</div></div>`+compareHTML(res,A,B,uc,REL,{sizes:data.sizes,tables:data.tables});
   // 窄屏默认收起「仅作参考」
   const ref=out.querySelector('#cmp-ref-wrap');if(ref&&matchMedia('(max-width:720px)').matches)ref.open=false;
   document.title=`${A.name} 对比 ${B.name} · ${uc.title} · 按需求选型`;

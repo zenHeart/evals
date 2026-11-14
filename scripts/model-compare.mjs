@@ -23,26 +23,45 @@
 const unitOf=u=>u==='%'?'percent':String(u||'').trim().toLowerCase();
 const canonMetric=m=>String(m||'').trim().toLowerCase().replace(/-/g,'_').replace(/^pass_at_(\d+)$/,'pass@$1');
 /** 「任务通过率」一族：在代码与 Agent 评测里是同一种读数的不同叫法 */
-const PASS_FAMILY=['pass_rate','resolve_rate','resolved_rate','task solve rate','pass@1','accuracy','percent_solved','test_pass_rate','task_pass_rate','success_rate','task_success_rate','task_completion_rate'];
+const PASS_FAMILY=['pass_rate','resolve_rate','resolved_rate','task solve rate','pass@1','accuracy','percent_solved','test_pass_rate','task_pass_rate','success_rate','task_success_rate','task_completion_rate','resolution_rate','exact_match','em'];
+/** avg@k：k 次采样的平均正确率，就是 pass@1 的多次采样估计，与正确率同一读数（pass@k、cons@k 不是） */
+const inPassFamily=m=>PASS_FAMILY.includes(m)||/^avg@\d+$/.test(m);
+const normLabel=s=>String(s||'').trim().toLowerCase().replace(/\s+/g,' ');
 /** Elo、胜率、竞技场分数依赖对手或题池，没有固定 0–100 意义，不换算 */
 const RELATIVE=/elo|win.?rate|win.?or.?tie|arena|preference|胜率|对战/i;
 const RULE_KEYS=['unit','metric','min','max'];
+/**
+ * 计分规则登记表（data/compare-rules.json，构建期读入后传给 domainCatalog）：
+ *   rules[id] = {decision:'score', unit, metric, min, max, direction, basis} —— 档案没写上下界、但官方主指标明确唯一（正确率 / 通过率 / 解决率）时补的换算规则；
+ *   rules[id] = {decision:'reference', reason} —— 逐项核对后明确只作参考（Elo、胜率、双主指标、厂商内部题集等）；
+ *   metric_aliases[id] = [官方同义写法…] —— 账本里记录的指标原文，与计分口径是同一个读数（只认整串，不做模糊匹配，单语言切片等不收）。
+ */
+let RULES={rules:{},metric_aliases:{}};
+export function setCompareRules(r){RULES={rules:r?.rules||{},metric_aliases:r?.metric_aliases||{},single_version:r?.single_version||{}};}
+const aliasesOf=id=>(RULES.metric_aliases[id]||[]).map(normLabel);
 const validRule=r=>r&&RULE_KEYS.every(k=>r[k]!==null&&r[k]!==undefined&&r[k]!=='')&&Number.isFinite(r.min)&&Number.isFinite(r.max)&&r.max>r.min;
 
 /** use-case 已声明评估的计分规则；返回 {rule} 或 {reason} */
-export function ruleFromUseCase(r){
+export function ruleFromUseCase(r,id){
   if(!r||r.comparison!=='cross_model')return {reason:'仅作参考：各家题目、裁判或口径不统一'};
   if(!validRule(r))return {reason:'没有可靠的 0–100 换算范围'};
-  return {rule:{unit:unitOf(r.unit),metric:canonMetric(r.metric),min:r.min,max:r.max,direction:r.direction||'higher',allowNullMetric:true,source:'use-case'}};
+  return {rule:{unit:unitOf(r.unit),metric:canonMetric(r.metric),min:r.min,max:r.max,direction:r.direction||'higher',allowNullMetric:true,aliases:aliasesOf(id),source:'use-case'}};
+}
+/** 登记表里的逐项决定；没有登记返回 null */
+export function ruleFromRegistry(id){
+  const r=RULES.rules[id];if(!r)return null;
+  if(r.decision==='reference')return {reason:r.reason||'仅作参考'};
+  if(r.decision==='score'&&validRule(r))return {rule:{unit:unitOf(r.unit),metric:canonMetric(r.metric),min:r.min,max:r.max,direction:r.direction==='lower'?'lower':'higher',allowNullMetric:r.allow_null_metric!==false,aliases:aliasesOf(id),source:'registry'}};
+  return null;
 }
 /** 评估档案 metrics 推出的计分规则；返回 {rule} 或 {reason} */
-export function ruleFromEntity(ent){
+export function ruleFromEntity(ent,id){
   const ms=(ent?.metrics||[]).filter(m=>m&&typeof m==='object');
   const bounded=ms.filter(m=>Array.isArray(m.range)&&m.range.length===2&&Number.isFinite(m.range[0])&&Number.isFinite(m.range[1])&&m.range[1]>m.range[0]&&m.unit&&m.id&&!RELATIVE.test(m.id+' '+(m.name||'')));
   if(bounded.length!==1)return {reason:bounded.length?'评估档案有多个可换算指标，无法确定用哪一个':'评估档案没有写明固定上下界，不换算成 0–100'};
   const m=bounded[0];
   // 档案只声明了这一个指标时，未写指标名的记录才视为这个指标
-  return {rule:{unit:unitOf(m.unit),metric:canonMetric(m.id),min:m.range[0],max:m.range[1],direction:m.direction==='lower'?'lower':'higher',allowNullMetric:(ent.metrics||[]).length===1,source:'benchmark'}};
+  return {rule:{unit:unitOf(m.unit),metric:canonMetric(m.id),min:m.range[0],max:m.range[1],direction:m.direction==='lower'?'lower':'higher',allowNullMetric:(ent.metrics||[]).length===1,aliases:aliasesOf(id),source:'benchmark'}};
 }
 
 /** 引用次数：不同官方发布数（releases: [{id, evidence|benchmark_evidence:[{benchmark_id}]}]） */
@@ -69,7 +88,9 @@ export function domainCatalog(useCase,entities,cites){
   for(const id of useCase?.catalog||[])ids.add(id);
   return [...ids].map(id=>{
     const uc=useCase.benchmarks?.[id];
-    const {rule,reason}=uc?ruleFromUseCase(uc):ruleFromEntity(entities?.[id]);
+    // 先看 use-case 声明，再看逐项登记表，最后才从评估档案的指标声明推导
+    const {rule,reason}=uc?ruleFromUseCase(uc,id):(ruleFromRegistry(id)||ruleFromEntity(entities?.[id],id));
+    if(rule&&RULES?.single_version?.[id])rule.singleVersion=true;
     return {id,name:uc?.name||entities?.[id]?.name||id,cite:cites?.[id]||0,source:declared.has(id)?'use-case':'catalog',eligible:Boolean(rule),rule:rule||null,reason:reason||null};
   }).sort((a,b)=>b.cite-a.cite||Number(b.eligible)-Number(a.eligible)||a.name.localeCompare(b.name));
 }
@@ -78,7 +99,8 @@ export function metricMatches(e,rule){
   const m=canonMetric(e.metric);
   if(!m)return Boolean(rule.allowNullMetric);
   if(m===rule.metric)return true;
-  return PASS_FAMILY.includes(rule.metric)&&PASS_FAMILY.includes(m);
+  if((rule.aliases||[]).includes(normLabel(e.metric)))return true;
+  return inPassFamily(rule.metric)&&inPassFamily(m);
 }
 /** 记录在该规则下能否计分；返回不能的原因（面向读者）或 null */
 export function rowIssue(e,rule){
@@ -114,22 +136,27 @@ const COND=[
   ['discard',/\bdiscard/],
   ['partial',/\bpartial\b/],['strict',/\bstrict\b/],['binary',/\bbinary\b/],['loose',/\bloose\b/],
   ['offline',/\boffline\b/],['text',/\btext[\s\-]*(?:only|subset)\b|^text\b|\btext\s*\(/],['image',/\bimage\b/],['full',/\bfull[\s\-]*set\b/],
-  ['diamond',/\bdiamond\b/],['verified',/\bverified\b/],['public',/\bpublic\b/],['pro',/(?:^|[\s,(])pro(?:\b(?!\s*max)|$)/],
+  ['diamond',/\bdiamond\b/],['main',/\bmain\b/],['extended',/\bextended\b/],['verified',/\bverified\b/],['public',/\bpublic\b/],['pro',/(?:^|[\s,(])pro(?:\b(?!\s*max)|$)/],
 ];
 const DATE=/\b\d{1,2}\/\d{1,2}\/\d{2,4}\b|\b20\d\d[.\-\/]\d{1,2}\b|\b\d{2}\.\d{2}\s*-\s*\d{2}\.\d{2}\b|\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+20\d\d\b/g;
+/** 记录在指标原文里的计分方式（如「Computer use across desktop apps (partial)」、partial_score）同样是测试条件 */
+const SCORING_MODE=[['partial',/(?:^|[^a-z])partial(?:[^a-z]|$)/],['binary',/(?:^|[^a-z])binary(?:[^a-z]|$)/]];
 export function variantOf(e){
   const raw=String(e.variant||'').trim().toLowerCase();
-  if(!raw)return '';
-  const tags=COND.filter(([,re])=>re.test(raw)).map(([t])=>t);
+  const met=String(e.metric||'').trim().toLowerCase();
+  const mtags=SCORING_MODE.filter(([t,re])=>re.test(met)&&!COND.find(([k])=>k===t)[1].test(raw)).map(([t])=>t);
+  if(!raw&&!mtags.length)return '';
+  const tags=[...COND.filter(([,re])=>re.test(raw)).map(([t])=>t),...mtags];
   // 子集规模、多次尝试、轮数上限：同样会改变分数含义
   const sub=raw.match(/\bn\s*=\s*(\d+)|\b(\d+)[\s-]*(?:sample|task)s?\b/);if(sub)tags.push('n'+(sub[1]||sub[2]));
   const k=raw.match(/pass@(\d+)/);if(k&&k[1]!=='1')tags.push('pass@'+k[1]);
   if(/multiple attempts|parallel test-time|best[\s-]of/.test(raw))tags.push('多次尝试');
   const t=raw.match(/(\d+)\s*turns?\b/);if(t)tags.push(t[1]+'轮');
   if(tags.includes('无上下文管理'))tags.splice(tags.indexOf('上下文管理')>>>0,tags.includes('上下文管理')?1:0);
-  const v=raw.match(/\bv(\d+)\b/);
+  // v6 与 6、v1.1 与 1.1 是同一版本写法
+  const v=raw.match(/\bv(\d+)(?:\.(\d+))?\b/);
   const n=v?null:raw.replace(DATE,' ').match(/(?<![\d/.\-@=])(\d{1,2})(?:\.(\d+))?(?![\d/]|-\d|\s*(?:turns?|k\b|b\b|gb|core|s\b))/);
-  let base=v?'v'+v[1]:n?n[1]+'.'+(n[2]||'0'):'';
+  let base=v?v[1]+'.'+(v[2]||'0'):n?n[1]+'.'+(n[2]||'0'):'';
   // 没有版本号时，题目时间窗口也是版本的一部分（如 LiveCodeBench 不同日期区间）
   if(!base){const d=raw.match(DATE);if(d)base=d.map(x=>x.replace(/\s+/g,'')).join('~');}
   if(!base&&!tags.length)base=raw.split(/[\s,，(（;；\-]+/).find(Boolean)||'';
@@ -142,21 +169,32 @@ const groupBy=(rows,f)=>rows.reduce((o,e)=>{(o[f(e)]??=[]).push(e);return o;},{}
 const distinct=rows=>[...new Set(rows.map(e=>e.value))];
 const MULTI='同一版本下有多档测试设置的分数，无法确定用哪一档';
 /** 一侧单独取值：最新版本；同版本多个不同数值（多档设置）时不择优 */
+const baseOf=v=>v.split('|')[0];
 export function pickOne(rows){
   const vs=[...new Set(rows.map(variantOf))].sort(cmpVariantDesc);
-  // 只有「都是版本号」时才取最新版本；有工具 / 子集 / 设置等非版本写法并存且分数不同，不替用户挑一个
-  if(vs.length>1&&!vs.filter(Boolean).every(isNumericVariant)&&distinct(rows).length>1)return {excluded:MULTI};
+  // 记录里有明确版本号时：取最新版本；最新版本下只有一个分数才用（旧版本的子集 / 条件不影响取最新版）
+  const bases=[...new Set(vs.map(baseOf).filter(b=>isNumericVariant(b)))].sort(cmpVariantDesc);
+  if(bases.length){
+    const R=rows.filter(e=>baseOf(variantOf(e))===bases[0]);
+    const rv=[...new Set(R.map(variantOf))];
+    if(distinct(R).length===1)return {row:R[0],variant:rv.length===1?rv[0]:bases[0]};
+    return {excluded:MULTI};
+  }
+  // 没有版本号：有工具 / 子集 / 设置等不同写法并存且分数不同，不替用户挑一个
+  if(vs.length>1&&distinct(rows).length>1)return {excluded:MULTI};
   const v=vs.find(Boolean)??'';
   const R=rows.filter(e=>variantOf(e)===v);
   if(distinct(R).length===1)return {row:R[0],variant:v};
   return {excluded:MULTI};
 }
 /** 两侧都有可计分记录：必须在同一个写明的版本上配对 */
-export function pairBench(rowsA,rowsB){
-  const va=new Set(rowsA.map(variantOf).filter(Boolean)),vb=new Set(rowsB.map(variantOf).filter(Boolean));
+export function pairBench(rowsA,rowsB,{singleVersion=false}={}){
+  // 登记表标明「只有一个公开版本」的评估（如 HumanEval 164 题）：双方都没写版本也视为同一版本；写了版本 / 条件的仍须一致
+  const keep=v=>singleVersion||Boolean(v);
+  const va=new Set(rowsA.map(variantOf).filter(keep)),vb=new Set(rowsB.map(variantOf).filter(keep));
   const common=[...va].filter(v=>vb.has(v)).sort(cmpVariantDesc);
   const raw=rows=>[...new Set(rows.map(e=>String(e.variant||'').trim()).filter(Boolean))].join('、');
-  if(!common.length)return {excluded:va.size&&vb.size?'双方报告的评测版本或测试条件不同（'+raw(rowsA)+' / '+raw(rowsB)+'），不能直接对照':'至少一方没有写明评测版本，不能确认是同一版本'};
+  if(!common.length)return {excluded:[...va].some(Boolean)&&[...vb].some(Boolean)?'双方报告的评测版本或测试条件不同（'+raw(rowsA)+' / '+raw(rowsB)+'），不能直接对照':'至少一方没有写明评测版本，不能确认是同一版本'};
   const v=common[0];
   const A=rowsA.filter(e=>variantOf(e)===v),B=rowsB.filter(e=>variantOf(e)===v);
   const da=distinct(A),db=distinct(B);
@@ -208,7 +246,7 @@ export function headToHead(domain,A,B){
     const stateOf=s=>s.usable.length?null:s.rows.length===0?{state:'missing'}:s.pending.length&&!s.other.length?{state:'pending',rows:s.rows}:{state:'other',rows:s.rows};
     let a=stateOf(sa),b=stateOf(sb),reason=null,variant=null;
     if(!a&&!b){
-      const p=pairBench(sa.usable,sb.usable);
+      const p=pairBench(sa.usable,sb.usable,{singleVersion:c.rule?.singleVersion});
       if(p.excluded){reason=p.excluded;a={state:'other',rows:sa.usable};b={state:'other',rows:sb.usable};}
       else{a=val(p.a,c.rule,p.variant);b=val(p.b,c.rule,p.variant);variant=p.variant;}
     }else{
@@ -251,7 +289,8 @@ export function headToHead(domain,A,B){
 /** 读写 URL：task / a / b（模型 key = releaseId--modelId） */
 export function readCompareParams(params,useCases,models){
   const task=useCases?.[params.get('task')]?params.get('task'):Object.keys(useCases||{})[0]||'';
-  const ok=k=>models.some(m=>m.key===k)?k:'';
+  // 同一模型在多篇发布里出现时已合并，旧 key 通过 aliases 仍能打开
+  const ok=k=>models.some(m=>m.key===k)?k:(models.find(m=>(m.aliases||[]).includes(k))?.key||'');
   return {task,a:ok(params.get('a')||''),b:ok(params.get('b')||'')};
 }
 export function compareParams(s){const p=new URLSearchParams();if(s.task)p.set('task',s.task);if(s.a)p.set('a',s.a);if(s.b)p.set('b',s.b);return p;}

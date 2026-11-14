@@ -3931,3 +3931,129 @@ Gemini Robotics 2.5 的 DeepMind 官方 RSS `pubDate` 为 `Mon, 09 Nov 2026 19:5
 - 未新建任何 release 档、未写任何评测数值、未归档任何官方页面。
 - 未改写任何既有 release / benchmark 文件；只追加本节与 `data/model-coverage.json` 的扫描/登记结果。
 - 未删除任何远端分支、未改 Workflow 配置、未在本仓写入任何凭据或私有供应商数据。
+
+### 后续批次处置（2026-11-14 收口）
+
+- 本节原以 PR #73（分支 `model-release-daily-20261112T231846Z`）提交，与 `main` 冲突未合入；2026-11-14 收口时已 rebase 到最新 `origin/main` 并按「先旧后新」顺序与第六十四批一并落入 `main`。
+- 上表 9 条「待核验 general 型号」已由**第六十四批**逐条落到具体 release（Claude Opus 4.8 / Opus 5 / Fable 5 / Sonnet 5 / Opus 4.7 / Fable 5.2 / Fable 5.1 → 既有档案，Gemini 4 Hydrogen → 第六十四批新建档案），`exclusion_reason` 已清空、`release_id` 已回填。
+- 本节「候选总数 676 → 695」为当时的中间态；第六十四批复扫后的候选总数以 `data/model-coverage.json` 为准。
+- 本批登记但未建档的三条产品/栏目页（Microsoft 公告列表页、xAI Grok Bot / Grok Build 产品页）已按本节口径写明 `exclusion_reason`，不再悬空。
+
+
+## 第六十四批（2026-11-14 CST / 2026-11-13 UTC 增量窗口 2026-10-27 ~ 2026-11-13：Google Gemini 4 Hydrogen 建档 13 条 evidence + AlphaGenome 2 建档 2 条 evidence）
+
+> 批次编号说明：第六十三批 = PR #73（分支 `model-release-daily-20261112T231846Z`），本批开跑时它仍为 **OPEN** 且与 `main` 冲突（`mergeable: CONFLICTING`），当时尚未进入 `main`；本批按第六十三批留下的线索（`Introducing Gemini 4 Hydrogen` 候选的 `next_backfill_at: 2026-11-13`）完成回填。为避免两个批次在同一 base 上重号，本批记为第六十四批。**2026-11-14 收口更新**：第六十三批已 rebase 到最新 `main` 并与本批一并按「先旧后新」顺序合入，两批内容互不重复——第六十三批只做入口复扫与线索登记（无新增 release / evidence），本批负责把其中 9 条线索落到具体档案。
+
+### 窗口结论
+
+- 本轮增量窗口：**2026-10-27 ~ 2026-11-13**（锚点取上一检查点 `last_max_release_date = 2026-11-10`，按 14 天重叠回退到 2026-10-27；本次新增发布日 2026-11-11 / 2026-11-12 均在窗口内）。
+- **18 家在册厂商全部实取**，窗口内确认 **2 个新的官方模型发布**，均来自 Google：**Gemini 4 Hydrogen**（2026-11-12）与 **AlphaGenome 2**（2026-11-11）。
+- 其余 16 家窗口内**确无新的官方模型发布**（逐家结论见下）；DeepSeek 11-13 的条目是应用 API 能力更新、Microsoft 的 sitemap 变化是 lastmod 改版戳而非发布日，两者都不是模型发布。
+
+### 新建 Release（2 个）
+
+| release | 厂商 | 发布日 | evidence | 归属口径 | 归档 |
+|---|---|---|---|---|---|
+| `gemini-4-hydrogen` | google | 2026-11-12 | 13 | 11 条 vendor_reported + 2 条 third_party_reported（Artificial Analysis 指数） | `models/2026-11-12-gemini-4-hydrogen/` |
+| `alphagenome-2` | google | 2026-11-11 | 2 | 2 条 vendor_reported（自家模型对自家前代） | `models/2026-11-11-alphagenome-2/` |
+
+两个 release 档均为 `status: "verified"`；evidence 全部 `evidence_type: "text"`（发布页正文散文明文），**无 pending 行**。
+
+### 发布日证据链（两源互证）
+
+| release | 来源一（发布页自身） | 来源二（独立时间戳） |
+|---|---|---|
+| `gemini-4-hydrogen` | JSON-LD `datePublished=2026-11-12T18:00:00+00:00`、`dateModified=2026-11-13T18:27:54.873135+00:00`；页身印刷日期行 `Nov 12, 2026` | 同篇发布文在 blog.google 镜像地址以同构内容发布（417284 字节，JSON-LD 时间戳一致）；另有官方模型页 `ai.google.dev/gemini-api/docs/models/gemini-4-hydrogen` 佐证模型代码与上下文规格 |
+| `alphagenome-2` | JSON-LD `datePublished=2026-11-11T15:00:00+00:00` | Google DeepMind 官方 RSS 条目 `pubDate Wed, 11 Nov 2026 15:00:15 +0000`（与 JSON-LD 相差 15 秒） |
+
+### 逐家巡检结论（窗口 2026-10-27 ~ 2026-11-13，18 家全部实取）
+
+| 厂商 | 入口 | 结论 |
+|---|---|---|
+| OpenAI | `openai.com/news/rss.xml` | 最新至 11-13（ChatGPT Wallet、儿童安全研究、Businesses in ChatGPT、Control Room、客户故事）全部是产品 / 商业 / 公司动态，无新模型发布 |
+| Anthropic | `anthropic.com/news` + 候选 slug 的 JSON-LD | 最新模型发布文仍是 11-09 的 Fable 5.2 / Mythos 5.2（已建档）；11-10 是 IPO 路演稿；11-13 的日期是索引页 "as of" 角标而非新文章（逐条核了 8 个候选 slug 的 `datePublished`，均非模型发布） |
+| **Google** | DeepMind 官方 RSS（读至 11-13） | **2 个新发布**：Gemini 4 Hydrogen（11-12）、AlphaGenome 2（11-11）；另 11-10 的 Gemini 4 Carbon GA / Gemini Robotics 2.5 前批已建档、weather datasets 是数据集发布、AlphaProof Code 是形式化验证工具框架 |
+| xAI | `docs.x.ai/docs/release-notes`、`/docs/models` | 最新模型发布是 09-21 Grok 4.7 与 10-14 Grok Voice 3.0；11-02 仅「Image Quality Model Retirement」退役说明，非发布 |
+| Meta | `research.meta.ai/blog` | 最新仍是 11-09 的 Muse Ember（已建档） |
+| Mistral | `mistral.ai/rss.xml` | 最新 11-05 是产品文（Le Chonk + Studio）；上一条 10-29「Le Chonk: Built for Coders」= mistral-large-4-oss（已建档） |
+| Kimi | `kimi.com/en/blog` | 最新 2026-10-24（K3.1-Pro，已建档） |
+| DeepSeek | `api-docs.deepseek.com/updates` | 窗口内仅 11-13「Releasing the full-suite application APIs」（搜索 / 文件 / URL / OCR / ASR / TTS 等应用 API，非模型发布）；最近模型发布仍是 10-17 V4.1-Flash-1017（已建档） |
+| GLM | `zai-org` HF 仓 + `docs.z.ai` 模型清单（`z.ai/blog` 索引页 404，改用双通道复核） | 最新仍是 GLM-5.3 / 5.3-Flash / 5.3-FlashX（已建档）；HF 仓最新 08-25 |
+| MiniMax | `platform.minimax.io/docs/release-notes/models`（日期化模型日志） | 最新仍是 11-10 的 MiniMax H3 Image（已建档） |
+| Qwen | `Qwen` HF 仓 + `qwenlm.github.io/blog` | HF 最新 10-09（早于窗口）；博客窗口内无新帖 |
+| Doubao | `seed.bytedance.com/sitemap.xml` + `ByteDance-Seed` HF 仓 | 最新博客 11-09 Seedream 5.5（已建档）；HF 最新 11-06 Cola2（已建档） |
+| Xiaomi | `mimo.xiaomi.com` 首页 + `/blog` | 窗口内无新发布；账本已有 mimo-v2-6（09-22） |
+| Tencent | 混元官方博客 API `publicList`（13 条全量） | 最新 11-04「Hy4 正式发布」（已建档）；次新 10-27「Hyra 2.0」是科研智能体工作流博客，非模型发布 |
+| StepFun | `platform.stepfun.com/docs/zh/guides/models.md` | 模型清单最新仍是 step-5-preview（账本已有，09-19） |
+| Microsoft | `microsoft.ai/new-sitemap.xml` + 逐条回源 JSON-LD | sitemap 的 lastmod 是站点改版戳不是发布日；逐条回源确认窗口内无新模型发布（mai-transcribe-2 = 09-03、frontier-pre-training = 10-15，均早于窗口；mai-image-2-7 = 10-27、building-medical-superintelligence = 10-22 已建档） |
+| Particle | `particle.ai/blog` + `docs.particle.ai` | 只有 Introducing Particle-1（10-28，已建档） |
+| Thinking Machines | `thinkingmachines.ai/news` + `thinkingmachines` HF 仓 | 最新 11-05 Inkling 2 Small（已建档）；HF 仓 11-04 的 MXFP8 是同源量化权重变体 |
+
+**查漏交叉复核**：18 家官方 HF 仓（`createdAt ≥ 2026-11-09` 无新增模型仓）+ OpenRouter 模型目录（`created ≥ 2026-11-09`）双向比对，窗口内只有 `google/gemini-4-hydrogen` 一个新上架模型，与逐家巡检结论一致。OpenRouter 另列出 `inclusionai/ling-3.2-flash`（11-13）、`baidu/ernie-5.5-flash-preview`（11-10）、`baidu/ernie-light-dt-1.0-intl`（11-10）、`nex-agi/nex-n2.6`（11-10）—— **均为 18 家在册名单外的厂商**，按「新厂商接入需人工核验」不建档（见排除清单）。
+
+### 证据分层与口径处理（本批的 5 个口径决定）
+
+1. **正文明文 vs 位图**：两篇发布页都没有 DOM 跑分表（`<table>` 计数 0），Hydrogen 的 6 张评测配图是 GIF 位图。按仓库口径「位图数值不得作为唯一证据」，位图只作复核留证、数值不入证据字段；所有有值的行都来自正文散文明文。
+2. **正文点名但无数值 → `not_extracted`**：AutomationBench-AA（只说领先同级）、Agent Arena（只给 #5）、SWE-sweep（只说优于同级）、Gray Swan IPI（只给「more than 2.3x more resilient」的相对倍数）四条按契约记 `score_status: "not_extracted"`、`value: null`，绝对值需人工读图 / 读相对表后按 `revisions[]` 补录，不直接改写。
+3. **同一 benchmark 不同思考档 → 拆 variant 行**：Artificial Analysis Intelligence Index 在同一句里给了默认 high 档 51 与最高 xhigh 档 54 两个读数，故拆成两行（`benchmark_variant` 分别为 `high thinking level（默认档）` 与 `xhigh thinking level（最高档）`），而不是把 54 写进同一格。
+4. **系统级指标不归因到单模型**：Antigravity **Orchestrator** 的 Terminal-Bench 4.0 成功率是 Carbon 与 Hydrogen 动态切换的**多模型系统**指标，故不建 Hydrogen 的 evidence 行，只写进 release notes 与归档说明。
+5. **上界值照录**：`keeping false refusals on HealthBench Pro under 0.4%` 是**误拒率上界**，记 `value: 0.4`、`display: "under 0.4%"`、`metric: "false_refusal_rate"`，并在 notes 里写明是上界、且与 HealthBench v1 的任务成功率不是同一量纲。
+
+### 排除清单（窗口内发现但不建档）
+
+| 对象 | 排除理由 |
+|---|---|
+| DeepSeek 2026-11-13「Releasing the full-suite application APIs」 | 应用 / 开发者能力更新（搜索、文件、URL、OCR、ASR、TTS 接口），不是模型发布 |
+| Anthropic 11-10 IPO 路演稿、11-13 索引角标、S-1 / 公告类文章 | 公司与资本动态，非模型发布；11-13 的日期经逐条回源确认是索引页 "as of" 角标，不是新文章 |
+| OpenAI ChatGPT Wallet（11-13）、儿童安全研究（11-12）、Businesses in ChatGPT（11-10） | 产品 / 商业 / 研究报告类，非模型发布 |
+| Google AlphaProof Code（11-10） | 形式化验证的智能体工具框架，不是独立模型发布 |
+| Google「Opening the datasets behind our AI weather models」（11-10） | 数据集发布，非模型发布 |
+| xAI「Image Quality Model Retirement」（11-02） | 模型退役说明，非发布 |
+| 腾讯混元「Hyra 2.0：自动化科研的下一步」（10-27） | 科研智能体工作流博客，不是模型发布（沿用第六十二批同一处置） |
+| Microsoft mai-transcribe-2（09-03）、frontier-pre-training（10-15） | 真实发布日早于本窗口（sitemap lastmod 是改版戳，已逐条回源纠正） |
+| Inclusion AI Ling 3.2 Flash（11-13）、百度 ERNIE-5.5-Flash-Preview / ERNIE-Light-DT-1.0-Intl（11-10）、Nex AGI Nex-N2.6（11-10） | 18 家在册名单外的厂商，接入需人工核验，不建档（已作为线索报给 Issue） |
+| Anthropic 官方目录扫出的 8 个型号（Opus 4.8 / Opus 5 / Fable 5 / Sonnet 5 / Opus 4.7 / Mythos 5 / 5.1 / 5.2） | 已在账本既有 release 的 `models[]` 中覆盖，本轮复核无新发布文 → 候选改为 `release_id` 指向既有档，不重复建档 |
+| thinkingmachines HF 权重仓（Inkling 2 Small / MXFP8） | 与已建档的 `inkling-2-small` 同源，权重仓本身不是独立发布文，也无独立评测 |
+
+### 新建 benchmark id（6 个，均标 `new-benchmark`，暂不建实体）
+
+`vals-tax-agent-bench`、`vals-legal-research-bench`、`healthbench-pro`、`tenk10k`、`agent-arena`、`swe-sweep`。按仓库口径「写不出权威解读就不建实体」，先由兜底详情页顶着；6 个 id 同时登记进 `data/compare-rules.json` 的 `unmapped_ids` 并写明不进对照的理由（`tests/compare-audit.test.mjs` 的 orphans 门禁要求每个被引用的 id 都能对上档案、别名或 unmapped 说明）。
+
+### 门禁（本批全绿）
+
+| 门禁 | 结果 |
+|---|---|
+| `node scripts/reconcile-coverage.mjs` | exit 0 |
+| `node scripts/validate-data.mjs` | **PASS** — taxonomy 9 类 / vendors 18 / benchmarks 509 / releases 236（official 222）/ evidence edges 3933 |
+| `npm run test` | 139 项全过（首轮 1 项失败：4 个新 benchmark id 未登记 unmapped_ids → 已登记后复跑通过） |
+| `npm run sync:skills:check` | 零漂移通过（`.agent/skills/` 与 `.claude/skills/` 一致） |
+| `npm run validate` | 通过（章节完整性 / 标题层级 / 链接 / fence / TODO / 数据引用） |
+| `npm run build:epub:official` | evals.epub 486 KB / 32 章 |
+| `npm run build:web` | 32 章页面 + sitemap 784 URL + 509 档案页 + 256 自动证据页 |
+| `npm run validate:site` | 全部通过（1080 HTML / 39786 内部引用 / 281 时间轴 / 8 档案模板） |
+
+### 本批产出汇总
+
+- 新建 release 档 **2** 个（`google/gemini-4-hydrogen.json`、`google/alphagenome-2.json`）
+- 新建 evidence **15** 条（13 + 2），全部 `verified` / `evidence_type: text`
+- 新建归档目录 **2** 个（`page.html` + `index.md` + `manifest.json` + 图片 **19** 张：Hydrogen 16 张、AlphaGenome 2 3 张；Hydrogen 有 1 张站点装饰 SVG 返回 404，未下载，已在 manifest 记录）
+- 新建 benchmark id **6** 个 + `compare-rules.json` 的 `unmapped_ids` 登记 **6** 条
+- 候选处置 **9** 条：Anthropic 8 条改为指向既有 release 的 `release_id`，Thinking Machines HF 权重仓 1 条补 `exclusion_reason`
+- 检查点推进：`last_scan_at 2026-10-26 → 2026-11-13`、`last_max_release_date 2026-10-24 → 2026-11-12`（下一轮窗口 2026-10-29 ~ 2026-11-13）
+
+### 待人工裁定 / 需留意
+
+1. **4 条 `not_extracted` 行待人工读图补值**：AutomationBench-AA、Agent Arena、SWE-sweep、Gray Swan IPI（配图见各归档 `images/`）。
+2. **第六十三批（PR #73）仍 OPEN 且 `CONFLICTING`**：其 head `5b5b886` 未进入 `main`，且因 #74~#76 已合入而与 `main` 冲突；本批已按它留下的线索回填 Gemini 4 Hydrogen，但 PR #73 本身是否保留、关闭或重做需人工决定。
+3. **非在册厂商 4 个**：Inclusion AI / 百度 / Nex AGI 的窗口内新模型已作为线索报给 Issue，接入与否需人工核验。
+4. **AlphaGenome 2 的口径边界**：只给了自家模型对自家前代（初代 AlphaGenome 单细胞微调版）在单个数据集（TenK10K）上的对比值，无跨数据集基准、无第三方读数，**不具备跨厂商横向比较条件**，引用时必须带对照口径。
+
+### 未做的事
+
+- 未自动合并本批 PR：按本 Issue 的验收口径「人工复核后再接受或发布，不自动合并 / 发布」，本批只开 PR 等人工评审（与第六十三批同一处置）。
+- 未新建非在册厂商（Inclusion AI / 百度 / Nex AGI）的 release 档，也未把它们的候选写进 18 家覆盖矩阵。
+- 未新建 6 个 benchmark id 的评估档案实体（缺权威定义与可写解读，按仓库口径不硬写）。
+- 未把位图（GIF）中的数值转写成 evidence，未把相对倍数、速度倍数、token 用量降幅、内部安全指标建成行。
+- 未改写任何既有 release / benchmark 文件，未删除任何远端分支，未改 Workflow 配置。
+- 未在本仓写入任何凭据或私有供应商数据。
+
