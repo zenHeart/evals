@@ -75,6 +75,15 @@ dry-run 到此为止：输出候选清单后结束。
 
 对每个候选，**先归档、后写账本**（`models/` 是一切转写与复核的依据）：
 
+0. **建档前先查既有（防重复建档，红线级）**：写任何文件之前，先按 release id、模型名、来源 URL 三条线索查既有账本与归档目录：
+   `ls data/model-releases/official/<vendor_id>/`、`ls models/ | grep -i <slug>`、以及全库 grep 候选标题关键词。
+   **「本轮窗口内新发现」≠「账本未覆盖」**——窗口只管发现，不管是否已入库。
+   2026-11-14 实测踩坑：OpenAI LifeVal（2026-11-02）在窗口内被重新发现，动手前若不查，
+   会重复新建 `openai/lifeval` release（与第四十八批的 18 条 evidence 重复）并**覆盖**既有的
+   `models/2026-11-02-lifeval/` 归档。查证后发现第四十八批已建 benchmark 实体 + 把 evidence 补录进
+   GPT-5.4/5.5/5.6/6-Astra 四个 release + 已建归档 → 本批撤回重建，不重复写数。
+   **判断口径**：若既有档已用另一种形状覆盖同一批证据（如「benchmark 实体 + 补录进各模型 release」而非「单独建一个 release」），
+   以既有形状为准，只补真正缺的部分，**不改写既有归档**。
 1. **抓取原文**，按降级链：web reader → 备用 reader → 无头浏览器渲染后直读 DOM。
    渠道表已标明各家脾气；"正文有 Evaluations 章节却看不到分数"时先怀疑渲染漏了表格/图片，不要判定为无数据。
 2. **归档**到 `models/YYYY-MM-DD-<model-slug>/`（page.html + images/ + index.md 转录表 + manifest.json），
