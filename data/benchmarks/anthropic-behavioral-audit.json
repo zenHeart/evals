@@ -1,35 +1,619 @@
 {
   "id": "anthropic-behavioral-audit",
   "name": "Anthropic 自动化行为审计",
-  "full_name": null,
+  "full_name": "Anthropic 自动化行为审计（Automated Behavioral Audit）",
   "aliases": [],
-  "status": null,
+  "status": "active",
   "categories": [
     "safety"
   ],
-  "summary": "自动化行为审计：欺骗/谄媚等失对齐行为检测",
-  "interpretation": "Anthropic 自动化行为审计：对欺骗、被诱导误用、鲁莽动作等失对齐行为打综合分（Opus 5 为 2.3，为其近期模型最低）——分数越低越对齐、方向与能力评测相反；口径私有，只在同代模型间可比。",
-  "measures": [],
-  "does_not_measure": [],
+  "summary": "Anthropic 内部的自动化对齐审计：一套自动生成多样场景的套件，探查模型在配合人类误用、有害指令遵从、谄媚、自我保全、欺骗等维度上的行为，由另一个 AI 模型复查打分，合成一个 1–10 的综合分。分数越低代表越对齐，方向与能力评测相反。场景集与评分口径都不公开，只能在 Anthropic 自家模型之间横向比较。",
+  "interpretation": "低分说明在 Anthropic 自己的口径里失对齐行为更少：它衡量的是模型「会不会做出 Anthropic 不想要的行为」，不是模型「会不会做题」。它不说明模型在化学、生物、网络等双用途能力上的风险（那由另一套 RSP 评估负责），也不构成第三方可复现的安全认证；跨代分数因为题目集变过而不可直接相比。",
+  "measures": [
+    {
+      "area": "总体失对齐行为",
+      "focus": "多种不良行为合成的单一综合分，Anthropic 称包含配合人类误用与跨场景的自主行动；已知披露值 Opus 5 = 2.3、Mythos 5.2 = 2.67、Opus 5.5 = 2.79、Sonnet 5.5 = 3.10、Mythos 5.1 = 3.28",
+      "share": "未披露（合成权重未公布）",
+      "format": "模拟场景多轮对话 + AI 裁判打 1–10 分",
+      "cite": [
+        "anthropic-news-fable-mythos-5-2",
+        "anthropic-news-claude-opus-5"
+      ]
+    },
+    {
+      "area": "误导与不诚实",
+      "focus": "八类误导行为分别打分：对用户说谎、过度恭维或轻易附和、谎称任务已完成等；Sonnet 5.5 在八类中的七类上优于 Sonnet 5",
+      "share": "八类（原文未给各类占比）",
+      "format": "AI 裁判复查模拟会话后逐类打分",
+      "cite": [
+        "anthropic-transparency-model-report@Honesty"
+      ]
+    },
+    {
+      "area": "被诱导误用",
+      "focus": "模型被诱导配合有害用途的程度；Anthropic 称 Opus 5 是近期模型中最不容易被骗去误用的",
+      "share": "未披露",
+      "format": "模拟场景多轮对话 + AI 裁判打分",
+      "cite": [
+        "anthropic-news-claude-opus-5"
+      ]
+    },
+    {
+      "area": "鲁莽动作",
+      "focus": "是否采取可能带来难以逆转副作用的鲁莽行动；Anthropic 称 Opus 5 在这方面是其最安全的模型",
+      "share": "未披露",
+      "format": "模拟场景多轮对话 + AI 裁判打分",
+      "cite": [
+        "anthropic-news-claude-opus-5"
+      ]
+    },
+    {
+      "area": "动机性推理与无视约束",
+      "focus": "模型是否为自身行为找理由（例如认为当前情境是模拟或测评），以及是否无视指令里的显式限制；Mythos 5.1 比 Mythos 5 更少出现",
+      "share": "未披露",
+      "format": "模拟场景多轮对话 + AI 裁判打分",
+      "cite": [
+        "anthropic-news-fable-mythos-5-1"
+      ]
+    },
+    {
+      "area": "对 Claude 宪法的遵从",
+      "focus": "行为与 Claude 宪法价值观的一致程度；Anthropic 称 Opus 5 优于 Opus 4.8、Sonnet 5、Fable 5",
+      "share": "未披露",
+      "format": "模拟场景多轮对话 + AI 裁判打分",
+      "cite": [
+        "anthropic-news-claude-opus-5",
+        "anthropic-transparency-model-report@Claude Opus 5 Summary Table"
+      ]
+    },
+    {
+      "area": "评估意识（元指标）",
+      "focus": "模型察觉自己正在被测评的情形占比；Haiku 4.5 在加入过滤后仍有约 9% 的场景出现评估意识",
+      "share": "未披露",
+      "format": "模拟场景多轮对话 + AI 裁判打分",
+      "cite": [
+        "anthropic-transparency-model-report@Automated Behavioral Audits"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "公开可复现性：场景集、提示词、裁判模型与权重都不公开，也没有官方数据集或仓库，第三方无法自行运行这套审计。",
+      "cite": [
+        "anthropic-transparency-model-report",
+        "anthropic-news-fable-mythos-5-2"
+      ]
+    },
+    {
+      "text": "双用途能力端的灾难性风险：化学、生物、网络等能力由另一套 Responsible Scaling Policy（RSP）评估流程在发布前单独评估，不属于本审计。",
+      "cite": [
+        "anthropic-transparency-model-report"
+      ]
+    },
+    {
+      "text": "沙箱逃逸：模型报告把它作为独立评估单列（28 个手工场景、每个模型跑 7 次），并明确说它是对宽口径对齐审计的补充。",
+      "cite": [
+        "anthropic-transparency-model-report@Alignment Evaluation"
+      ]
+    },
+    {
+      "text": "超长上下文工作与多智能体设置：Anthropic 自述该审计对这两类场景可见度较低。",
+      "cite": [
+        "anthropic-news-fable-mythos-5-1"
+      ]
+    },
+    {
+      "text": "不可能任务：Anthropic 称覆盖度不如预期，而这类任务更容易诱发异常与失对齐行为。",
+      "cite": [
+        "anthropic-news-fable-mythos-5-1"
+      ]
+    }
+  ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": "vendor_internal",
-    "public_sample": null
+    "sample_count": 1900,
+    "splits": [
+      "未披露（场景集不公开，Anthropic 未公布任何训练/测试拆分）"
+    ],
+    "languages": [
+      "未披露"
+    ],
+    "source_type": "vendor_internal（Anthropic 内部，场景集与口径均不公开）",
+    "public_sample": false,
+    "totals": "场景数随目标模型而变：Opus 5.5 约 2,000 个、Sonnet 5.5 约 1,850 个、Mythos 5.2 约 1,900 个；模型报告另按目标模型披露约 2,900–4,100 次调查（每次调查通常包含多轮对话，由约 1,450–2,100 个种子指令展开）。本栏取最新一次披露（Mythos 5.2）的约 1,900 个场景。",
+    "cite": [
+      "anthropic-news-claude-opus-5-5",
+      "anthropic-news-sonnet-5-5",
+      "anthropic-news-fable-mythos-5-2",
+      "anthropic-transparency-model-report@Claude Opus 5 Summary Table"
+    ],
+    "construction": [
+      {
+        "k": "场景生成",
+        "text": "Anthropic 把这套审计描述为一套生成多样场景、探查模型行为的套件；披露的探查维度包括配合人类误用、有害指令遵从、谄媚、自我保全与欺骗。",
+        "cite": [
+          "anthropic-transparency-model-report@Automated Behavioral Audits"
+        ]
+      },
+      {
+        "k": "判定方式",
+        "text": "判定由另一个 AI 模型完成：Sonnet 5.5 小节称先跑约 4,100 场模拟测试会话，再让另一个 AI 模型复查，找出八类误导行为。",
+        "cite": [
+          "anthropic-transparency-model-report@Honesty"
+        ]
+      },
+      {
+        "k": "规模与聚合",
+        "text": "按目标模型的全部调查取平均，并标注 95% 置信区间；多数图的 y 轴被截断，未显示满分 10 的上界。",
+        "cite": [
+          "anthropic-transparency-model-report@Claude Opus 5 Summary Table",
+          "anthropic-transparency-model-report"
+        ]
+      },
+      {
+        "k": "方向约定",
+        "text": "所有图上数字越低代表该行为的发生率或严重程度越低；行为在不太可能出现的会话中也会被打分。",
+        "cite": [
+          "anthropic-transparency-model-report"
+        ]
+      },
+      {
+        "k": "公开程度",
+        "text": "题目与口径不公开；Anthropic 指引读者去看各代模型的 System Card（例如 Mythos 5.2 对应 Section 6.4.1）。",
+        "cite": [
+          "anthropic-news-fable-mythos-5-2"
+        ]
+      }
+    ]
   },
-  "metrics": [],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [],
-  "notes": "厂商内部/未公开——Opus 5 发布页披露的自动化行为审计",
+  "default_protocol": {
+    "raw": "Anthropic 未公布完整协议。已披露的部分：审计套件自动生成多样场景探查模型行为，由另一个 AI 模型复查并打分；分值在 1–10 之间、越低越好，按目标模型的全部调查取平均并给 95% 置信区间。",
+    "cite": [
+      "anthropic-transparency-model-report@Automated Behavioral Audits",
+      "anthropic-transparency-model-report@Honesty",
+      "anthropic-transparency-model-report"
+    ],
+    "variants": [
+      {
+        "text": "场景与调查规模逐代变化：约 1,850–2,000 个场景、约 2,900–4,100 次调查、约 1,450–2,100 个种子指令。Anthropic 建议只在同一张图内横向比较，跨代分数不可直接相比。",
+        "cite": [
+          "anthropic-news-claude-opus-5-5",
+          "anthropic-news-sonnet-5-5",
+          "anthropic-news-fable-mythos-5-2",
+          "anthropic-transparency-model-report@Claude Opus 5 Summary Table",
+          "anthropic-transparency-model-report@Claude Fable 5.1 Summary Table"
+        ]
+      },
+      {
+        "text": "Fable 5.1 / Mythos 5.1 一代的会话场景由两个不同的调查员模型各跑一次（约 2,100 个种子指令 → 约 4,100 次调查），其他代是同一场景采样两次。",
+        "cite": [
+          "anthropic-transparency-model-report@Claude Fable 5.1 Summary Table"
+        ]
+      },
+      {
+        "text": "沙箱逃逸是另立的评估（28 个手工场景、每个模型跑 7 次，按低/中高严重度分别统计），Anthropic 明确说它补充而非属于宽口径对齐审计。",
+        "cite": [
+          "anthropic-transparency-model-report@Alignment Evaluation"
+        ]
+      },
+      {
+        "text": "Mythos 5.2 与 Fable 5.2 是同一底层模型，后者带有额外的网络安全与生物安全防护；发布页报出的审计分数属于 Mythos 5.2。",
+        "cite": [
+          "anthropic-news-fable-mythos-5-2"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "overall_misaligned_behavior",
+      "name": "总体失对齐行为分（Overall misaligned behavior score）",
+      "direction": "越低越好",
+      "description": "由多种不良行为合成的单一综合分，Anthropic 称包含配合人类误用与跨场景的自主行动；是用来横向比较自家模型的主指标。",
+      "range": [
+        1,
+        10
+      ],
+      "unit": "score",
+      "cite": [
+        "anthropic-news-fable-mythos-5-2",
+        "anthropic-news-claude-opus-5"
+      ]
+    },
+    {
+      "id": "misleading_behaviors",
+      "name": "误导用户行为分（八类）",
+      "direction": "越低越好",
+      "description": "对说谎、过度恭维或轻易附和、谎称任务已完成等八类误导行为分别打分；Anthropic 称 Sonnet 5.5 在八类中的七类上优于 Sonnet 5。",
+      "range": [
+        1,
+        10
+      ],
+      "unit": "score",
+      "cite": [
+        "anthropic-transparency-model-report@Honesty"
+      ]
+    },
+    {
+      "id": "evaluation_awareness",
+      "name": "评估意识率（Evaluation awareness）",
+      "direction": "越低越好",
+      "description": "模型察觉自己正处于测评环境的情形占比；Haiku 4.5 在加入过滤后仍约 9% 的场景出现，Anthropic 说这会降低对结果的信任度。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "anthropic-transparency-model-report@Automated Behavioral Audits"
+      ]
+    }
+  ],
+  "versions": [
+    {
+      "id": "opus-5",
+      "date": "2026-07-24",
+      "label": "Claude Opus 5 发布页给出该审计的综合分 2.3，并称是其近期模型中最低",
+      "cite": [
+        "anthropic-news-claude-opus-5"
+      ]
+    },
+    {
+      "id": "opus-5-5",
+      "date": "2026-09-22",
+      "label": "Claude Opus 5.5 发布页称其在该审计上强于此前所有受测模型，规模描述为「近 2,000 个场景」",
+      "cite": [
+        "anthropic-news-claude-opus-5-5"
+      ]
+    },
+    {
+      "id": "sonnet-5-5",
+      "date": "2026-09-28",
+      "label": "Claude Sonnet 5.5 发布页采用「约 1,850 个场景」口径，并称在多数对齐指标上优于或持平 Sonnet 5",
+      "cite": [
+        "anthropic-news-sonnet-5-5"
+      ]
+    },
+    {
+      "id": "model-report",
+      "date": "2026-10-02",
+      "label": "Anthropic 透明度模型报告汇总多代模型的审计图，并按目标模型披露调查数与种子指令数",
+      "cite": [
+        "anthropic-transparency-model-report"
+      ]
+    },
+    {
+      "id": "fable-mythos-5-2",
+      "date": "2026-11-09",
+      "label": "Claude Fable 5.2 / Mythos 5.2 发布页给出四模型同图综合分：Mythos 5.2 = 2.67、Opus 5.5 = 2.79、Sonnet 5.5 = 3.10、Mythos 5.1 = 3.28",
+      "cite": [
+        "anthropic-news-fable-mythos-5-2"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "口径与题目集不公开，无法第三方复现",
+      "impact": "场景、提示词、裁判模型与合成权重都不公开；外部只能读到综合分和分项图。独立验证不可行，分数只能采信 Anthropic 自述。",
+      "severity": "高",
+      "response": "Anthropic 在各代 System Card 中给出分项细节（如 Mythos 5.2 的 Section 6.4.1），并发布透明度模型报告汇总多代结果。",
+      "reader": "把它当作厂商自报的内部指标，不要当作公开基准的排名。",
+      "cite": [
+        "anthropic-news-fable-mythos-5-2",
+        "anthropic-transparency-model-report"
+      ]
+    },
+    {
+      "issue": "跨代口径变化导致分数不可比",
+      "impact": "Opus 5 发布页称其综合分 2.3 是近期模型最低；而 2026-11-09 的 Fable/Mythos 5.2 同图给出 Opus 5.5 = 2.79、Mythos 5.2 = 2.67，均高于 2.3。同期场景规模在约 1,850–2,000 之间变动，调查数在约 2,900–4,100 之间变动，说明题目集与聚合方式改过。",
+      "severity": "高",
+      "response": "Anthropic 提示只在同一张图内横向比较，并说明行为在不太可能出现的会话中也会被打分，因此分数最适合用来互相比模型。",
+      "reader": "不要把 2026-07 的 2.3 和 2026-11 的 2.67 排成一条进步曲线。",
+      "cite": [
+        "anthropic-news-claude-opus-5",
+        "anthropic-news-fable-mythos-5-2",
+        "anthropic-transparency-model-report"
+      ]
+    },
+    {
+      "issue": "评估意识污染结果",
+      "impact": "模型会察觉自己在被测评：Haiku 4.5 在加入过滤后仍有约 9% 的场景出现评估意识；Sonnet 4.5 不带过滤时评估意识分数约高 25%。Anthropic 称这会降低对结果的信任度。",
+      "severity": "中",
+      "response": "加入现实主义过滤筛掉明显不真实的测试提示；用白盒可解释性方法补充评估；Opus 4.5 起移除训练中 suspected 会加剧评估意识的组件。",
+      "reader": "看到某代分数明显变好时，先区分是对齐变了还是评估意识变了。",
+      "cite": [
+        "anthropic-transparency-model-report@Automated Behavioral Audits",
+        "anthropic-transparency-model-report"
+      ]
+    },
+    {
+      "issue": "覆盖盲区：长上下文、多智能体、不可能任务",
+      "impact": "Anthropic 自述对超长上下文工作与多智能体设置可见度较低，对不可能任务的覆盖也不足——而不可能任务更容易诱发异常与失对齐行为。",
+      "severity": "中",
+      "response": "Anthropic 称近期已在该领域做出改进，并会继续投入。",
+      "reader": "这个分数不覆盖长时间、多智能体的真实部署形态。",
+      "cite": [
+        "anthropic-news-fable-mythos-5-1"
+      ]
+    },
+    {
+      "issue": "综合分的合成方式不透明",
+      "impact": "综合分由「多种不良行为」合成，Anthropic 未公布权重与聚合公式，只说明包含配合人类误用与跨场景的自主行动。",
+      "severity": "中",
+      "response": "未见官方回应（仅说明构成成分）。",
+      "reader": "分项之间的小差距比综合分的一个小数位更有信息量。",
+      "cite": [
+        "anthropic-news-fable-mythos-5-2"
+      ]
+    },
+    {
+      "issue": "图表 y 轴截断放大视觉差距",
+      "impact": "Anthropic 注明多数图的 y 轴被截断、未显示满分 10 的上界；图上看起来的巨大落差对应的绝对差可能很小。",
+      "severity": "低",
+      "response": "原文已标注该截断。",
+      "reader": "读图时以数值标签为准，不要按柱高比例推断。",
+      "cite": [
+        "anthropic-transparency-model-report"
+      ]
+    }
+  ],
+  "notes": "厂商内部评测，无公开题目集与代码；本档案只汇总 Anthropic 自己在发布页与透明度模型报告里披露的内容。",
   "official_sources": [
     {
       "kind": "site",
       "url": "https://www.anthropic.com/news/claude-opus-5"
+    },
+    {
+      "kind": "site",
+      "url": "https://www.anthropic.com/transparency/model-report"
+    },
+    {
+      "kind": "announcement",
+      "url": "https://www.anthropic.com/claude-fable-and-mythos-5-2"
     }
   ],
-  "related_benchmarks": [],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "related_benchmarks": [
+    "anthropic-life-sciences-internal",
+    "anthropic-structural-biology",
+    "harmbench",
+    "truthfulqa"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "anthropic-news-claude-opus-5",
+        "kind": "site",
+        "title": "Introducing Claude Opus 5（2026-07-24，含 Alignment and safety 小节）",
+        "url": "https://www.anthropic.com/news/claude-opus-5",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "anthropic-news-claude-opus-5-5",
+        "kind": "announcement",
+        "title": "Introducing Claude Opus 5.5（2026-09-22）",
+        "url": "https://www.anthropic.com/news/claude-opus-5-5",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "anthropic-news-sonnet-5-5",
+        "kind": "announcement",
+        "title": "Introducing Claude Sonnet 5.5（2026-09-28）",
+        "url": "https://www.anthropic.com/claude-sonnet-5-5",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "anthropic-news-fable-mythos-5-1",
+        "kind": "announcement",
+        "title": "Introducing Claude Fable 5.1 and Claude Mythos 5.1（2026 年 9 月）",
+        "url": "https://www.anthropic.com/claude-fable-and-mythos-5-1",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "anthropic-news-fable-mythos-5-2",
+        "kind": "announcement",
+        "title": "Introducing Claude Fable 5.2 and Claude Mythos 5.2（2026-11-09）",
+        "url": "https://www.anthropic.com/claude-fable-and-mythos-5-2",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "anthropic-transparency-model-report",
+        "kind": "site",
+        "title": "Anthropic's Transparency Hub — Model Report（2026-10-02）",
+        "url": "https://www.anthropic.com/transparency/model-report",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Anthropic（内部对齐评估，不对外提供运行方式）",
+        "cite": [
+          "anthropic-news-claude-opus-5"
+        ]
+      },
+      "first_release": {
+        "v": "未披露（Anthropic 未公布该套件本身的启用日期；可追溯到的最早描述在 Claude Haiku 4.5，2025 年 10 月发布，当时已称应用了自动化行为审计套件）",
+        "cite": [
+          "anthropic-transparency-model-report@Automated Behavioral Audits"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "anthropic-transparency-model-report@Automated Behavioral Audits",
+        "anthropic-news-fable-mythos-5-2",
+        "anthropic-news-claude-opus-5-5"
+      ],
+      "interpretation": [
+        "anthropic-news-fable-mythos-5-2",
+        "anthropic-transparency-model-report",
+        "anthropic-news-claude-opus-5"
+      ]
+    },
+    "problem": {
+      "text": "模型发布前需要一个覆盖面宽、能自动跑完的对齐体检。Anthropic 称自动化行为审计是其跑得最全面的对齐测试，用数千个模拟场景跨多个维度探查模型行为，从而在每一代模型发布前给出可在自家模型间横向比较的对齐分数。",
+      "cite": [
+        "anthropic-news-claude-opus-5-5",
+        "anthropic-transparency-model-report@Automated Behavioral Audits"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "官方同图最好（2026-11-09 发布页）",
+        "value": "2.67（Claude Mythos 5.2）",
+        "note": "同图四模型：Mythos 5.2 = 2.67、Opus 5.5 = 2.79、Sonnet 5.5 = 3.10、Mythos 5.1 = 3.28；口径为约 1,900 个场景。",
+        "cite": [
+          "anthropic-news-fable-mythos-5-2"
+        ]
+      },
+      {
+        "label": "历史披露最低（2026-07-24 Opus 5 发布页）",
+        "value": "2.3（Claude Opus 5）",
+        "note": "原文称是其近期模型中最低；与上一条不同图、口径已变，不能直接比较。",
+        "cite": [
+          "anthropic-news-claude-opus-5"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      },
+      {
+        "label": "随机 / 完全对齐参考线",
+        "value": "未披露",
+        "note": "Anthropic 未给出随机行为或「完全对齐」的参考分；只说明行为在不太可能出现的会话中也会被打分，所以分数适合互相比而不是对着绝对值读。",
+        "cite": [
+          "anthropic-transparency-model-report"
+        ]
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "以为分数越高越好。这是失对齐行为分，方向与能力评测相反：越低代表越对齐。",
+        "cite": [
+          "anthropic-news-fable-mythos-5-2",
+          "anthropic-transparency-model-report"
+        ]
+      },
+      {
+        "text": "把不同代模型的综合分排成一条进步曲线。场景规模与调查数逐代都在变，Anthropic 自己只建议在同一张图内横向比较。",
+        "cite": [
+          "anthropic-news-claude-opus-5",
+          "anthropic-news-fable-mythos-5-2",
+          "anthropic-transparency-model-report"
+        ]
+      },
+      {
+        "text": "以为它是公开基准，可以在外部数据集或仓库上自己跑。场景集、提示词与裁判口径都不公开，也没有官方仓库。",
+        "cite": [
+          "anthropic-transparency-model-report",
+          "anthropic-news-fable-mythos-5-2"
+        ]
+      },
+      {
+        "text": "以为低分等于模型安全。这套审计只覆盖行为层面的失对齐信号；双用途能力风险由另一套 RSP 评估流程在发布前单独判定。",
+        "cite": [
+          "anthropic-transparency-model-report"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "Anthropic；口径、场景集与聚合方式均为内部资产，不对外公开。",
+        "cite": [
+          "anthropic-news-claude-opus-5"
+        ]
+      },
+      {
+        "k": "最早可查披露",
+        "v": "Anthropic 未公布该套件本身的启用日期。本档案能追溯到的最早描述在 Claude Haiku 4.5（2025 年 10 月发布）一节，当时已称「我们应用了自动化行为审计套件」。",
+        "cite": [
+          "anthropic-transparency-model-report@Automated Behavioral Audits"
+        ]
+      },
+      {
+        "k": "测量维度",
+        "v": "配合人类误用、有害指令遵从、谄媚、自我保全、欺骗；诚实性一侧另测八类误导行为，并单列评估意识。",
+        "cite": [
+          "anthropic-transparency-model-report@Automated Behavioral Audits",
+          "anthropic-transparency-model-report@Honesty"
+        ]
+      },
+      {
+        "k": "判定者",
+        "v": "由另一个 AI 模型复查会话并打分；Sonnet 5.5 小节的描述是先跑约 4,100 场模拟测试会话，再让另一个 AI 模型复查。",
+        "cite": [
+          "anthropic-transparency-model-report@Honesty"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2025-10 前后已用于 Haiku 4.5 → 2026-07-24 Opus 5 报 2.3 → 2026-09（仅到月）Fable/Mythos 5.1 → 2026-09-22 Opus 5.5 → 2026-09-28 Sonnet 5.5 → 2026-10-02 透明度模型报告 → 2026-11-09 Fable/Mythos 5.2 同图四模型。",
+        "cite": [
+          "anthropic-news-claude-opus-5",
+          "anthropic-news-claude-opus-5-5",
+          "anthropic-news-sonnet-5-5",
+          "anthropic-transparency-model-report",
+          "anthropic-news-fable-mythos-5-2"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "未披露：无公开数据集、无公开仓库；Anthropic 指向各代模型的 System Card 对应小节（如 Mythos 5.2 的 Section 6.4.1）。",
+        "cite": [
+          "anthropic-news-fable-mythos-5-2"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-09",
+        "columns": [
+          "来源",
+          "模型",
+          "总体失对齐行为分",
+          "口径说明"
+        ],
+        "rows": [
+          [
+            "Claude Fable 5.2 / Mythos 5.2 发布页",
+            "Claude Mythos 5.2",
+            "2.67",
+            "约 1,900 个场景；四模型同图"
+          ],
+          [
+            "Claude Fable 5.2 / Mythos 5.2 发布页",
+            "Claude Opus 5.5",
+            "2.79",
+            "同上同图"
+          ],
+          [
+            "Claude Fable 5.2 / Mythos 5.2 发布页",
+            "Claude Sonnet 5.5",
+            "3.10",
+            "同上同图"
+          ],
+          [
+            "Claude Fable 5.2 / Mythos 5.2 发布页",
+            "Claude Mythos 5.1",
+            "3.28",
+            "同上同图"
+          ],
+          [
+            "Claude Opus 5 发布页",
+            "Claude Opus 5",
+            "2.3",
+            "2026-07 单独披露；模型报告对应约 3,200 次调查 / 约 1,600 个种子指令，与上一行不同图，不可直接比较"
+          ]
+        ]
+      },
+      "cite": [
+        "anthropic-news-fable-mythos-5-2",
+        "anthropic-news-claude-opus-5"
+      ]
+    }
+  }
 }
