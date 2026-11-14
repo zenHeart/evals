@@ -4148,3 +4148,101 @@ Gemini Robotics 2.5 的 DeepMind 官方 RSS `pubDate` 为 `Mon, 09 Nov 2026 19:5
 - 未把任何新读数写进既有模型 release，也未为 12 个新 benchmark id 硬写档案实体。
 - 未删除任何远端分支、未改 Workflow 配置、未在本仓写入任何凭据或私有供应商数据。
 - **收口补录（2026-11-14 同一批次）**：`data/model-coverage.json` 的 `window_since` / `window_until` 属**手写型展示元数据**（无脚本自动写入），本批初稿漏写，覆盖页一度仍显示上一批窗口 2026-10-27 ~ 2026-11-11；已更正为本批实际窗口 **2026-10-29 ~ 2026-11-14** 并重新部署。
+
+## 第六十六批（2026-11-15 CST / 2026-11-14 UTC 增量窗口 2026-10-29 ~ 2026-11-14：窗口内确无新发布（26 个 release 已建档）；存量回填 MiniMax M2.1 + OpenAI GPT‑Live / GPT‑Live‑1 三档 + 新建 benchmark 实体 VIBE）
+
+### 本批窗口与前置
+
+- **增量窗口**：锚点 `ledger_max_release_date = 2026-11-12` 回退 14 天重叠 → `window_since = 2026-10-29`、`window_until = 2026-11-14`（UTC）。
+- **基线**：`origin/main` @ `6bd6c83`；分支 `model-release-daily-20261114T231815Z`；隔离 worktree `C:\Users\cheng\code\github\.worktrees\evals\model-release-daily-20261114T231815Z`（`node_modules` 用目录联接复用主检出，避免重复安装）。
+- **开工前收口（Step 0）**：开工时本地 `main` 落后 `origin/main` 54 个提交，已 `git fetch origin --prune` 后**一律从 `origin/main` 开分支**，不在本地 `main` 上工作；开工时无 OPEN 的 `model-release-daily-*` PR（第六十四/六十五批的 PR #77–#81 均已合并），**无遗留批次需收口**。
+- **互斥前置（对应 Issue #357「两个执行器不得跑同一轮」）**：`openclaw cron list --all --json` 原生回读确认 OpenClaw 旧声明 `workflow:daily-model-releases-and-provider-refresh`（cron id `db2e30ef-541a-49e2-af4a-bcdff12831e9`）为 `enabled:false` / `status:"disabled"` / **无 `nextRunAtMs`**；全量 6 个 job 逐条核对，**无第二个执行器占用 evals 增量窗口**（其余为 `0 3 * * *` 记忆 dreaming、`every 30m` heartbeat、`every 7d` 技能评审等，与本轮窗口无关）。`task-routing.yaml` 中 `evals-model-release-cwr` 的 `legacy_exclusive` 指向该声明，**互斥成立**，本轮由 MiniMax Code（cwr）单独执行。
+
+### 入口复扫（Step 1）
+
+`node .claude/skills/ingest-releases/scripts/scan.mjs --write` 对 18 家在册厂商的官方域名入口逐一复扫（失败与动态页均落进 `data/model-coverage.json`，不静默跳过）。另走定点通道复扫：OpenAI `news/rss.xml` + `sitemap.xml/release/`、DeepMind `blog/rss.xml`（100 条可回溯）、Mistral `rss.xml`、Google 三条 RSS（`/rss/`、`/technology/ai/rss/`、`/technology/developers-tools/rss/`）、Anthropic `news` + `platform.claude.com` 模型总表、Meta `research.meta.ai/blog`、DeepSeek `/updates`、MiniMax 平台模型日志、Kimi blog + whats-new、腾讯官方博客 `publicList` API、豆包 `sitemap.xml`、GLM `docs.z.ai/release-notes`、xAI slug 探测、StepFun 模型指南、Particle 官方文档、HF 官方组织 API（Qwen / tencent / moonshotai / MiniMaxAI / deepseek-ai / zai-org / stepfun-ai / microsoft / meta-llama / mistralai）、OpenRouter 模型目录。
+
+### 窗口结论：确无新发布（26 个 release 已建档）
+
+窗口内逐渠道核验，**26 个官方发布已在前序批次建档**（anthropic 1、doubao 3、google 8、meta 2、microsoft 1、minimax 1、mistral 1、openai 2、tencent 6、thinking-machines 1）：
+
+- **OpenAI RSS 窗口内 51 条逐条列标题判读**（全量 1,387 条，窗口内 51 条）：产品 / 公司 / 客户故事 / 研究文占绝大多数；窗口内的模型发布只有 `Introducing Images 2.6`（11-04 → `openai/gpt-image-2-6`）、`GPT‑6 Cyber`（11-05 → `openai/gpt-6-cyber`）、`Measuring how AI agents handle everyday wet-lab science`（11-06 BioBasicsBench → 挂在 `openai/gpt-6-astra`），三条**均已建档**。
+- **DeepMind RSS 窗口内 9 条**逐条判读：Gemini 4 Hydrogen（11-12）、AlphaGenome 2（11-11）、Gemini 4 Carbon（11-10）、AlphaProof Code（11-10）、AI 天气模型数据集（11-10）、Gemini Robotics 2.5（11-09）、Gemini Omni 1.2 Flash（11-05）等**均已建档**。
+- **Mistral RSS 窗口内 2 条**：`Le Chonk: Built for Coders, Trusted by Defenders`（10-29 → `mistral/mistral-large-4-oss` 已建档）；`Le Chonk brings the brains. Studio puts it to work.`（11-05）为 Studio 工具文章，属产品更新。
+- **Google 三条 RSS**（AI 9 条 / 开发者 7 条 / 根 20 条窗口内 9 条）：Gemini 4 Hydrogen、Decisions API、Gemini 4 Carbon、Omni 1.2 Flash 等**均已建档**，其余为搜索 / 应用 / 企业功能更新。
+- **Anthropic `/news` 列表页顶部出现的「November 14, 2026」是页面级日期徽标、不是文章日期**——它后面跟的是分类词 `Announcements`；该页真正最新的文章是 2026-11-09 的 `Introducing Claude Fable 5.2 and Claude Mythos 5.2`（已建档为 `anthropic/claude-fable-5-2`，models[] 同时收录 Fable 5.2 与 Mythos 5.2）。**按「日期 + 后随文字」配对会凭空造出一条「11-14 新发布」，本批已把这条坑写进技能的渠道表。**
+- **其余厂商定点通道**：MiniMax 平台模型日志最新为 H3 Image（11-10，已建档）；Meta research 最新为 Muse Ember（11-09，已建档）；豆包 sitemap 最新为 Seedream 5.5（11-09，已建档）；腾讯官方博客 `publicList` 最新为「Introducing Hy4」（11-04，已建档）；GLM `docs.z.ai/release-notes` 最新为 2026-08-26；Kimi blog / whats-new 最新为 2026-10-24；xAI 无窗口内新 slug；StepFun / Particle 无窗口内新发布。
+- **结论：本轮增量窗口内确无未建档的新发布**，转入**存量回填**轨道处理已登记且到期的回填缺口。
+
+### 本批新建档（3 个 release，均为存量回填）
+
+| release | 厂商 | 发布日 | 发布日证据 | evidence |
+|---|---|---|---|---|
+| `minimax/minimax-m2-1` | MiniMax | 2025-12-23 | 页面结构化数据 `2025-12-23T00:00:00.000Z` + 页面 `<time>` 印刷日 + 官方 HF 数据集 `MiniMaxAI/VIBE` 的 `createdAt=2025-12-23T03:26:14Z` 与 README Roadmap「Released: December 23, 2025」 | 1 条 verified（VIBE 平均分 88.6）+ 1 条 pending（SWE-bench Verified 位图） |
+| `openai/gpt-live-1` | OpenAI | 2026-09-10 | 页眉印刷日「September 10, 2026」+ 类目 `Product Release` | 1 条 verified（Tau3 排名 #1）+ 2 条 pending（客户端渲染图表） |
+| `openai/gpt-live` | OpenAI | 2026-07-08 | 页眉印刷日「July 8, 2026」+ 类目 `Product Release` | 0 条（release 状态 pending） |
+
+- **MiniMax M2.1 是存量回填**：`data/model-coverage.json` 候选 `minimax-21937c8d20c4`（`next_backfill_at=2026-11-10`，到期）登记的官方博客发布页缺口，本批建档并归档到 `models/2025-12-23-minimax-m21/`。**VIBE 平均分 88.6 是正文明文**（`achieving an average score of 88.6`）→ 按 DOM 机读口径记 `verified`；官方只写 `average score`、**未标百分号也未给满分**，故 `unit` 记 `index`、display 保留原样字符串「88.6」。**SWE-bench Verified 行记 pending**：正文只点名、无数值，承载数值的 7 张官方基准图在 2026-11-14 **直连 CDN 与 Next.js 图片代理两种路由全部 404**，既无法归档也无法视觉转写。
+- **GPT‑Live‑1 是存量回填**：候选 `openai-b8a75fb67d81`（到期）登记的 API 发布文缺口，归档到 `models/2026-09-10-gpt-live-1/`。**Tau3 排名第 1 是正文明文**（`it also ranks #1 on Tau3`）→ 记 `verified`、`unit:"rank"`、display「#1」；另两行（Full Duplex Bench、Tau3 banking_knowledge 97 题）**数值只在客户端渲染图表里**——该页评测图在静态 HTML 中只留下 `<div id="gpt-live-card-1" style="height:400px">` 空容器，`vegaLiteSpec`/`vegaSpec`/数据数组计数**全为 0**，故记 `pending` + `not_extracted`。**正文对 Full Duplex Bench 只给相对增量（较 GPT‑Realtime‑2.1 提升 30 个百分点），差值不是绝对分，不当取值**；竞品基线只进 notes。
+- **GPT‑Live 是存量回填**：候选 `openai-3fb14968493d`（到期）登记的系列首发文缺口，归档到 `models/2026-07-08-gpt-live/`。**该发布文全文没有任何评测基准或分数**，故 `benchmark_evidence` 记 0 行、release 状态 `pending`，**不拿第三方榜单或二手转写代填**；文首「For current capabilities: Explore the model catalog」说明它是首发介绍文，参数量 / 上下文窗口 / 定价一律留 `null`。
+- **三个 release 的口径纪律**：官方页给出的「Recommended inference parameters: temperature=1.0 / top_p=0.95 / top_k=40」是**本地部署的推荐推理参数、不是评测协议**，未写入 `protocol`；客户引述数值（Speak 打断次数下降近 80%、客户代码量减少 23K 行等）属客户内部评测、无官方协议，**不建 evidence 行**。
+
+### 新建 benchmark 实体（1 个）
+
+- **`data/benchmarks/vibe.json`** —— VIBE（Visual & Interactive Benchmark for Execution in Application Development）**v1**。
+- **起因**：M2.1 的 88.6 需要一个可解析的 benchmark 外键，而仓内只有 `vibe-pro`（2026-02-12）与 `vibe-v2`（2026-06-01）两个**内部**版本实体，**VIBE v1 本身没有实体**。
+- **口径来源（两条一手来源，全部实际打开过）**：官方 Hugging Face 数据集 `MiniMaxAI/VIBE`（200 题、五子集各 40 题、Easy 65 / Medium 70 / Hard 65、AaaV 三层判定 Execution/Interactive/Visual、容器化沙箱、多次运行取均值、MIT 许可、Roadmap 显示 Phase 2/3 至今未勾选）+ 官方 M2.1 发布文（子集命名与 88.6）。
+- **按 `benchmark-profile/v2` 模板写 profile**，`summary` / `interpretation` / `measures` / `does_not_measure` / `dataset` / `metrics` / `default_protocol` / `versions` / `limitations` / `profile` 全部有 cite；两条 source 分别为 `blog` 与 `dataset` 形态。
+- **写进 `limitations` 的三条硬约束**：裁判脚本与 rubric **至今未公开**（外部无法复现官方平均分）；量纲**未声明**（不要把 88.6 当成 88.6%）；厂商自建题集 + 厂商自建裁判（不能当外部标尺）。同族 `vibe-pro` / `vibe-v2` 记在 `related_benchmarks` 与 `notes`，数字**不可并列**。
+
+### 覆盖对账与未决候选清零
+
+- 本批把 **3 条已到期（`next_backfill_at ≤ 2026-11-14`）的存量回填候选**逐条收口：`minimax-21937c8d20c4` → `minimax-m2-1`、`openai-b8a75fb67d81` → `gpt-live-1`、`openai-3fb14968493d` → `gpt-live`（三条均写入 `release_id` / `archive_status:"archived"` / `archive_path` / `evidence_status`，清 `exclusion_reason`）。
+- **另补登 2 条本轮新发现、此前无候选记录的窗口内线索**：`accelerating-engineering-for-the-physical-world`（OpenAI 研究文 2026-11-03，BenchCAD 2.0 的 GPT‑6 Astra 成绩**已在前序批次建档**，本批补挂到 `openai/gpt-6-astra` 与归档 `models/2026-11-03-openai-benchcad-2-0/`）、`a-thousand-fewer-paths-to-root`（OpenAI 安全研究文 2026-11-04，见下方跳过清单）。
+- **reconcile 之后 general/vertical 未决候选为 0**；候选总数 700 → **702**。
+
+### 跳过清单
+
+| 对象 | 厂商 | 原因 |
+|---|---|---|
+| A thousand fewer paths to root（2026-11-04） | OpenAI | 官方安全研究文，主体模型是「**an upcoming cyber model**」（发布预告、当时未公布型号），按「预告不建档」不建 release；文内「Linux Kernel Exploitation Success Rate」图的四个数值（GPT-5.5-Cyber 无/有 skills 76.2% / 88.9%，GPT-5.6-Cyber 无/有 skills 92.1% / 93.6%）挂在**账本无独立档案**的两个 Cyber 专项变体上，且该评测是官方内部未公开的题集与口径、无法整理出可发布的 benchmark 定义；头条数字（2,308 候选发现 / 1,724 复现 / 948 个 LPE exploit / API 成本 $1,213,430）属工程规模与成本口径、不是评测分。已登记为候选 `openai-fbaa86a829ad`，`next_backfill_at=2026-11-16`，留待官方发布该模型或公开评测定义后回补 |
+| MiniMax M2.1 发布页的 7 张官方基准图 | MiniMax | 官方图床 `filecdn.minimax.chat/public/*.png` 直连 **404**，改走站点图片代理 `/_next/image?url=…&w=1920&q=75` 与 `&w=3840&q=90` **两种路由同样 404** → 无法归档读数、无法视觉转写，相关 evidence 行一律 pending + not_extracted |
+| M2.1 的「core software engineering leaderboards」等对比 | MiniMax | 数值只在位图内且位图不可取，正文亦未给出可确定的基准名称 → 按「不建无名行」只记录不建 evidence |
+| GPT‑Live‑1 的 Full Duplex Bench / Tau3 banking_knowledge 绝对分 | OpenAI | 评测图为 `data-dotcom-chart` 客户端渲染，静态 HTML 只有空容器、`vegaLiteSpec`/`vegaSpec`/数据数组计数全为 0 → 不可机读，记 pending + not_extracted；正文只给相对增量（+30 个百分点），差值不当取值 |
+| GPT‑Live‑1 发布页的客户引述数值 | OpenAI | Speak 打断次数下降近 80%、客户代码量减少 23K 行等属客户内部评测、无官方协议，不建 evidence 行 |
+| GPT‑Live 发布文（2026-07-08） | OpenAI | 全文无任何评测基准或分数 → 0 条 evidence、release 状态 pending |
+| OpenAI 窗口内其余 RSS 条目（产品 / 公司 / 客户故事 / 安全与治理文章） | OpenAI | 非模型发布，按口径不建档 |
+| MiniMax-H3-Image-PE（HF 2026-11-08） | MiniMax | H3-Image 的提示词扩展权重，与已建档 H3-Image 同源，官方无独立发布文与独立评测（沿用前序批次判定） |
+
+### 待人工核验（读图后翻 verified）
+
+| release | benchmark | 状态 | 待读对象 |
+|---|---|---|---|
+| `minimax/minimax-m2-1` | `swebench`（SWE-bench Verified × 多 coding agent 框架） | pending + not_extracted | 官方基准位图（当前 404，需等官方恢复图床或另发可读版本）；读图时按 coding agent 框架拆行，勿混读成一个分母 |
+| `openai/gpt-live-1` | `full-duplex-bench` | pending + not_extracted | 客户端渲染图 `gpt-live-card-3 / 4 / 5`（停顿处理 / 回复延迟 / 工具调用三张口径不同，需按卡拆分） |
+| `openai/gpt-live-1` | `tau3-bench`（banking_knowledge 97 题） | pending + not_extracted | 客户端渲染图 `gpt-live-card-2`（Pass@1 口径） |
+
+### 门禁
+
+| 门禁 | 结果 |
+|---|---|
+| `node scripts/reconcile-coverage.mjs` | ✓ exit 0 |
+| `node scripts/validate-model-coverage.mjs` | ✓ exit 0 |
+| `node scripts/validate-data.mjs` | ✓ PASS — taxonomy 9 类 / vendors 18 / **benchmarks 510** / **releases 243（official 229）** / **evidence edges 4013**；profile 模板档案 81 个通过校验 |
+| `node --test tests/*.test.mjs` | ✓ **140 pass / 0 fail**（含「本批官方归档文件与 manifest 哈希一致」归档一致性用例） |
+| `npm run sync:skills:check` | ✓ 技能镜像无漂移（本批改了 `.claude/skills/ingest-releases/references/discovery-channels.md`，已 `npm run sync:skills` 单向同步到 `.agent/skills/`） |
+| `npm run validate` | ✓ 32 章全部通过（219 条 numeric-claim 提示为存量历史告警，与本批无关） |
+| `npm run build` | ✓ exit 0 — EPUB 486 KB / 32 章；web 构建 32 章页面 + **510 个实体页 + 268 个自动证据页**、sitemap 792 URL；`validate-site` 全绿（1,100 个 HTML / 41,007 条内部引用 / 292 个时间轴 / 2,276 张事件卡 / 81 个档案页） |
+
+> `evals.epub` 是构建产物（字节随打包时间戳变化），本批正文未改动书稿章节，**已 `git restore` 还原以免二进制噪音进 diff**。
+
+### 汇总
+
+- **新增 release**：3 个（全部为存量回填：`minimax/minimax-m2-1` 2 条、`openai/gpt-live-1` 3 条、`openai/gpt-live` 0 条）
+- **新增 evidence**：5 条 = **2 verified**（`minimax-m2-1--vibe` 88.6、`openai-gpt-live-1--tau3-bench` #1）+ **3 pending**（`minimax-m2-1--swebench`、`openai-gpt-live-1--tau3-bench-banking-knowledge`、`openai-gpt-live-1--full-duplex-bench`）
+- **新增 benchmark 实体**：1 个（`vibe`，VIBE v1，v2 模板）
+- **新增归档目录**：3 个（`models/2025-12-23-minimax-m21/`、`models/2026-07-08-gpt-live/`、`models/2026-09-10-gpt-live-1/`），均含 `page.html` + `images/` + `index.md` + `manifest.json`（逐文件 sha256）
+- **新增厂商**：无
+- **候选数**：700 → 702；general/vertical 未决候选 **0**
+- **检查点**：`last_scan_at=2026-11-14`；`last_max_release_date=2026-11-12`（**锚点只前进不回退**——本批最大发布日 2026-09-10 早于既有锚点，故不覆盖）；覆盖页窗口同步为 `2026-10-29 ~ 2026-11-14`
+- **本批新增技能条目**：`discovery-channels.md` 增 3 条已知抓取障碍 —— Anthropic `/news` 页面级日期徽标、OpenAI 部分发布页的 `data-dotcom-chart` 客户端渲染（与 RSC vega 通道逐页判定的区别）、MiniMax 官方基准图 CDN 三路由全 404
