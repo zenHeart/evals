@@ -243,7 +243,7 @@ export function renderProfileV2(b, ent, ctx) {
   const part = (key, title, inner, extra = "") => `<details class="pf-sec pf2-part" id="p-${key}"><summary><h2 class="detail-sec">${esc(title)}</h2>${extra}</summary><div class="pf2-part-body">${inner}</div></details>`;
   const vA = part("versions", "A · 版本历史", table(["日期", "变化"], ent.versions.map(v => [`<span class="num">${esc(v.date)}</span>`, `${esc(v.label)}${cite(v.cite)}`]), false));
   const or = p.official_results;
-  const vB = or ? part("official_results", "B · 官方结果快照", table(or.table.columns, or.table.rows.map(r => r.map(esc)), false) + `<p class="refs">快照日期 ${esc(or.table.as_of)}${cite(or.cite)}</p>`) : "";
+  const vB = or ? part("official_results", "B · 官方结果快照", table(or.table.columns, or.table.rows.map(r => r.map(v => esc(v ?? "—"))), false) + `<p class="refs">快照日期 ${esc(or.table.as_of)}${cite(or.cite)}</p>`) : "";
   const lr = ctx.ledgerRows;
   const vC = part("ledger", "C · 本站收录的发布成绩", `<p class="refs">来自本站证据账本（厂商官方发布中的原始数值，按分数从高到低）。厂商自报与官方结果的脚手架、推理档位可能不同，只有口径一致时才可横向比较。</p>` + (lr.length ? table(["发布日期", "模型", "分数", "口径", "来源"], lr.map(r => [
     `<span class="num">${esc(r.date || "—")}</span>`, `<a href="${esc(r.modelHref)}">${esc(r.model)}</a><br><span class="refs">${esc(r.vendor)}</span>`,

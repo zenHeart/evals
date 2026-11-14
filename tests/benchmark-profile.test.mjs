@@ -94,3 +94,12 @@ test("v2 header card has exactly 4 small cards (no duplicate status card) plus 2
   assert.deepEqual(keys.slice(1, 5), ["发布方", "首次发布", "题量", "主要指标"]);
   assert.equal((card.match(/class="wide"/g) || []).length, 2);
 });
+
+test("official_results 表格里来源未披露的值渲染成「—」，不露出 null 字面量", () => {
+  const b = hle();
+  b.profile.official_results.table.rows = [["论文 Table 1", "GPT-4o", "2.7%", null, "全集"]];
+  const html = renderProfileV2({}, b, { ledgerRows: [], comparabilityHTML: "", adoptionHTML: "", relatedHTML: "" });
+  const tbl = html.slice(html.indexOf("official_results"), html.indexOf("official_results") + 4000);
+  assert.ok(tbl.includes("—"), "缺失值应渲染成「—」");
+  assert.ok(!tbl.includes(">null<"), "表格单元格不应出现 null 字面量");
+});
