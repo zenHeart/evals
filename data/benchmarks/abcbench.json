@@ -1,7 +1,7 @@
 {
   "id": "abcbench",
   "name": "ABC-Bench",
-  "full_name": "Agentic Bio-Capabilities Benchmark",
+  "full_name": "Agentic Bio-Capabilities Benchmark for Biosecurity（面向生物安全的智能体生物能力基准）",
   "aliases": [
     "ABCBench",
     "ABC Bench"
@@ -11,50 +11,303 @@
     "safety",
     "agent"
   ],
-  "summary": "SecureBio 出品的生物安全 agent 基准：以片段设计（Fragment Design）、筛查规避（Screening Evasion）、移液程控（Liquid Handling）三类端到端任务度量前沿模型的 agentic 生物能力",
-  "interpretation": "按任务完成度计分；Meta Muse Spark 1.1 报告中 Fragment Design 97、Liquid Handling 93.7、Screening Evasion 63.2——移液程控类多家模型接近满分，读分应按任务拆开看而非只看均值。",
+  "summary": "ABC-Bench 是 SecureBio 等机构出的生物安全基准，考 AI 智能体（能自己调工具、写代码的模型）能不能完成分子生物学里的三个动手任务：把一段目标 DNA 拆成商业合成公司肯接单的短片段、把片段改写成躲过合成筛查的版本、写脚本指挥移液机器人（OpenTrons OT-2）做 DNA 组装。三项都由算法按固定判据打 0–1 分（每个任务有多个判据，满足几个给几分），不用人或模型当裁判。",
+  "interpretation": "高分只代表该任务的判据全部达标，不代表模型能端到端获得病原体——三个任务只是生物风险链上的一小段，论文和 SecureBio 都明确说这不等于 AI 已经降低生物武器门槛。三个任务难度差得很远（筛查规避明显最难，且已有模型在该任务上全部拒答），必须按任务分开读；论文同时给出每个模型均分在人类专家分数分布中的百分位，可用来对照真人水平。",
   "measures": [
-    "可组装 DNA 片段的设计（含绕过合成长度限制的拆分）",
-    "对商业 DNA 合成筛查系统的规避",
-    "液体处理机器人程控代码生成"
+    {
+      "area": "DNA 片段设计（Fragment Design）",
+      "focus": "把目标序列拆成可商用合成的短片段，并满足 Gibson Assembly（一种把 DNA 片段拼接起来的实验方法）的设计约束；论文在人类基线提示词里给出的准则是：重叠末端 20–40 bp、单个片段（不含重叠）100–1000 bp、重叠区 GC 含量 40–60%",
+      "share": "未披露（论文未给出三个任务的题量占比）",
+      "format": "提交 Python（biopython）+ Bash 脚本，由算法判分",
+      "cite": [
+        "paper@§3.2",
+        "paper@Table 1",
+        "paper@A1.3.1"
+      ]
+    },
+    {
+      "area": "合成筛查规避（Screening Evasion）",
+      "focus": "改写片段序列以躲过核酸合成筛查（NASS，DNA 合成公司用来拦危险序列的审查），同时仍能拼回原目标序列并满足商用合成尺寸要求；三个任务里唯一没有公开方法可循的一项",
+      "share": "未披露（论文未给出三个任务的题量占比）",
+      "format": "提交改写后的片段与重构方案，判据是躲过三种筛查且仍可组装",
+      "cite": [
+        "paper@§3.2",
+        "paper@Table 1",
+        "securebio-blog-how-frontier-ai-mod@Designing an agentic biosecurity benchmark"
+      ]
+    },
+    {
+      "area": "移液机器人程控（Liquid Handling Robot）",
+      "focus": "写 Python 脚本让低成本移液机器人 OpenTrons OT-2 跑完 Gibson Assembly：算试剂体积、装载耗材与温控模块、执行移液、按参数孵育",
+      "share": "未披露（论文未给出三个任务的题量占比）",
+      "format": "提交 OpenTrons Python 脚本，可在官方模拟器里先跑通，再由算法判分",
+      "cite": [
+        "paper@§3.2",
+        "paper@Table 1",
+        "securebio-blog-how-frontier-ai-mod@Designing an agentic biosecurity benchmark"
+      ]
+    }
   ],
   "does_not_measure": [
-    "湿实验实际成功率",
-    "生物领域知识问答"
+    {
+      "text": "端到端获得或部署病原体：论文明确说三个任务没有覆盖风险链的全部步骤，后续工作才会扩展",
+      "cite": [
+        "paper@§3.2",
+        "securebio-blog-how-frontier-ai-mod@What this means for biosecurity"
+      ]
+    },
+    {
+      "text": "这些任务的非编码成分：论文说当前任务很大程度上「能写代码就能做得不错」，非编码部分要留给未来版本评估",
+      "cite": [
+        "paper@§6.1"
+      ]
+    },
+    {
+      "text": "纯知识问答与文献解读（读实验图、排查实验流程、回答怎么做生物信息分析）——论文把这些归给 LAB-Bench、BixBench 一类分析型基准，ABC-Bench 测的是生成与操作",
+      "cite": [
+        "paper@§2 Related Work"
+      ]
+    }
   ],
   "dataset": {
-    "sample_count": null,
+    "sample_count": 30,
     "splits": [
-      "FragmentDesign",
-      "LiquidHandling",
-      "ScreeningEvasion"
+      "Fragment Design",
+      "Screening Evasion",
+      "Liquid Handling Robot"
     ],
     "languages": [
       "en"
     ],
-    "source_type": "real-world（生物安全评测任务）",
-    "public_sample": null
+    "source_type": "agentic task suite（三个可算法化打分的端到端任务，另加一次湿实验验证）",
+    "public_sample": false,
+    "totals": "三个任务，每个任务最多 10 个样本；论文未给出确切总题量，本栏的 30 是「每任务上限 10 × 3 个任务」的上限值，不是清点结果。题型是提交代码或序列、由算法判分；论文公开了 Fragment Design 与 Liquid Handling Robot 的提示词，Screening Evasion 的提示词因安全原因未公开；题目语言为英文。",
+    "cite": [
+      "paper@§3.2",
+      "paper@A1.3"
+    ],
+    "construction": [
+      {
+        "k": "任务选定",
+        "text": "从生物风险链里挑出三个既有技术难度、又能客观打分的步骤：片段设计、筛查规避、移液机器人程控；论文说明它们合起来对应风险链的一段，而不是全链。",
+        "cite": [
+          "paper@§3.2"
+        ]
+      },
+      {
+        "k": "设计原则",
+        "text": "按论文第 3.1 节的基准设计原则组织，其中两条直接决定口径：任务要对应多步致害路径中的单个环节，以及必须用可复现的算法判分，而不是人工或模型评分。",
+        "cite": [
+          "paper@§3.1"
+        ]
+      },
+      {
+        "k": "提示词与工具",
+        "text": "每个任务给 agent 固定提示词和一组工具；论文 Table 1 列出各任务的工具与判据，例如筛查规避额外提供 NCBI BLAST+ 与网页搜索，移液机器人任务提供 OpenTrons 模拟器。",
+        "cite": [
+          "paper@Table 1",
+          "paper@§3.2"
+        ]
+      },
+      {
+        "k": "样本构造",
+        "text": "每个任务最多 10 个样本，用来测提示词变体或任务细节的小改动（例如换成不同的 DNA 序列）。",
+        "cite": [
+          "paper@§3.2"
+        ]
+      },
+      {
+        "k": "重复评测",
+        "text": "每个模型在每个任务上独立评 N = 10 次，与既往做法一致；Table 2 报的是均值与标准误。",
+        "cite": [
+          "paper@§4.1",
+          "paper@Table 2"
+        ]
+      },
+      {
+        "k": "湿实验验证",
+        "text": "除机测外，作者用 GPT-o4-mini-high 在 OpenTrons Flex 移液机器人上实跑三次 Gibson Assembly，把装配产物转进 DH5α 感受态细胞并做全质粒测序，三次全部成功。",
+        "cite": [
+          "paper@§5.2"
+        ]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "通过 Inspect AI 框架（UK AISI）评测，使用模型提供商支持的最高推理档位或 token 预算；每个任务独立评 N = 10 次；每个任务有多个评分判据，满足一个给部分分；拒答样本从分析中剔除。",
+    "cite": [
+      "paper@Table 2",
+      "paper@Table A2",
+      "paper@§4.1"
+    ],
+    "variants": [
+      {
+        "text": "提示词版本：人类基线用较早的 baseline_v1（含更多生物学与方法论提示），前沿模型用最新版提示词；官方实现同时支持两种模式，但两者分数不能直接对比。",
+        "cite": [
+          "paper@A1.3",
+          "paper@A1.3.2"
+        ]
+      },
+      {
+        "text": "推理档位：各模型用各自的最高档（Table 2 标注为 [max] / [high] / [xhigh] / [16k]），跨模型比较时档位并不一致。",
+        "cite": [
+          "paper@Table 2"
+        ]
+      },
+      {
+        "text": "拒答处理：拒答样本被剔除后再算均值，高拒答模型的分数建立在更少的样本上；Figure 2 用星号与剑号标出这类低置信度结果。",
+        "cite": [
+          "paper@Figure 2",
+          "paper@Table 2"
+        ]
+      },
+      {
+        "text": "机测与湿实验：论文同时报告模拟器内的机测成绩和三次真实湿实验结果，后者成功率高于模拟器内的表现，两者不能互相替代。",
+        "cite": [
+          "paper@§5.2"
+        ]
+      }
+    ]
   },
   "metrics": [
     {
-      "id": "accuracy",
-      "name": "Accuracy",
+      "id": "task-score",
+      "name": "任务得分（0–1）",
+      "direction": "越高越好",
+      "description": "按任务的多个评分判据给部分分后的均值；主指标，论文 Table 2 与图 2 都用它",
+      "range": [
+        0,
+        1
+      ],
+      "unit": "score",
+      "cite": [
+        "paper@Table 2"
+      ]
+    },
+    {
+      "id": "expert-percentile",
+      "name": "人类专家百分位",
+      "direction": "越高越好",
+      "description": "模型均分落在人类专家分数分布中的第几百分位，例如 58th 表示该均分高于 58% 的专家",
       "range": [
         0,
         100
       ],
-      "unit": "percent",
-      "direction": "higher",
-      "aggregation": "mean"
+      "unit": "percentile",
+      "cite": [
+        "paper@Table 3"
+      ]
+    },
+    {
+      "id": "refusal-rate",
+      "name": "拒答率",
+      "direction": "越低越好",
+      "description": "被判定为拒答的样本占比；拒答指推理 API 返回对应拒答的错误响应，或 agent 未提交答案、只提交部分答案并引用安全顾虑",
+      "range": [
+        0,
+        1
+      ],
+      "unit": "proportion",
+      "cite": [
+        "paper@Table A2"
+      ]
     }
   ],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [
-    "各发布方引用的子集组合不一致（Meta 报三任务，OpenAI 评估用两任务）"
+  "versions": [
+    {
+      "id": "arxiv-v1",
+      "date": "2026-06-09",
+      "label": "arXiv v1 首发（cs.AI），本页核对所用版本",
+      "cite": [
+        "paper@arXiv 印章"
+      ]
+    },
+    {
+      "id": "blog",
+      "date": "2026-06-10",
+      "label": "SecureBio 发布解读博客《How Frontier AI Models Perform on Viral DNA Assembly Tasks》",
+      "cite": [
+        "securebio-blog-how-frontier-ai-mod@标题与作者栏"
+      ]
+    }
   ],
-  "notes": "被 OpenAI/Meta 等用于发版前安全评估；SecureBio 深链来自搜索索引（slug 含 en dash），正文未逐字抓取，站点 /blog/ 索引已验证可达",
+  "limitations": [
+    {
+      "issue": "覆盖范围窄",
+      "impact": "三个任务只对应生物风险链上的一段，论文自己说它远不全面；拿到高分不能推断模型具备获得或部署病原体的完整能力。",
+      "severity": "高",
+      "response": "论文称更多任务正在开发中，计划覆盖更宽的相关能力；SecureBio 博客同样强调它只是「获取并部署潜在危险病原体所需能力中很窄的一片」。",
+      "reader": "把三个任务的分数当成风险链上三个环节的探针，不要当成整体生物危险度评分。",
+      "cite": [
+        "paper@§3.2",
+        "paper@§6.1",
+        "securebio-blog-how-frontier-ai-mod@What this means for biosecurity"
+      ]
+    },
+    {
+      "issue": "编码中心设计可能压低人类基线",
+      "impact": "论文认为最重要的局限是三个任务很大程度上「能写代码就能做得不错」；把任务都框成写代码的问题有利于激发模型，却不反映领域专家通常的做法（他们更可能用 NEBuilder 这类专用设计工具或手工设计），因此人类基线可能被低估。",
+      "severity": "高",
+      "response": "论文要求基线人员有 ≥ 2 年 Python 经验来缓解，但仍在多份基线提交里看到编码错误；作者提出未来应让人类用自己惯常的工具与工作流，并考虑在后续任务前给予早期反馈。",
+      "reader": "看「模型超过人类专家」这类结论时，要记得人类被要求在模型的强项（写代码）上比赛。",
+      "cite": [
+        "paper@§6.1"
+      ]
+    },
+    {
+      "issue": "拒答让部分分数不可比",
+      "impact": "筛查规避上 Claude Sonnet 4.6、Claude Opus 4.6、GPT-5.4 全部样本拒答，Claude Opus 4 拒答超过 90%；片段设计上三个 Claude 模型拒答超过 50%。拒答样本被剔除后，剩余样本算出的均值不代表模型的完整行为。",
+      "severity": "中",
+      "response": "论文在图 2 用星号（≥50% / ≥90% 拒答）与剑号（全部拒答）标出低置信度结果，并在 Table 2 注明拒答样本被剔除。",
+      "reader": "看到 ∗ / ∗∗ / † 标记的分数要单独看，不要和零拒答模型的分数并列排名。",
+      "cite": [
+        "paper@§4.2",
+        "paper@Figure 2",
+        "paper@Table 2",
+        "paper@Table A2"
+      ]
+    },
+    {
+      "issue": "人类基线与模型用的提示词版本不同",
+      "impact": "人类基线结果用较早的 baseline_v1 提示词采集（含更多生物学与方法论提示），前沿模型结果用最新版提示词；移液机器人任务的实验 setup 在基线采集后也做过小幅修改。",
+      "severity": "中",
+      "response": "论文说明官方实现同时支持 latest 与 baseline_v1 两种模式，并说明基线按其任务说明中的 setup 评分。",
+      "reader": "人类基线与模型分数之间存在口径差，比较时应保留余地。",
+      "cite": [
+        "paper@A1.3",
+        "paper@A1.3.2"
+      ]
+    },
+    {
+      "issue": "「专家」的定义单一",
+      "impact": "论文只采用一种专家定义——有至少两年编程经验的生物学博士；论文也承认业内对「谁是专家」没有共识，不同群体测出来会不一样。",
+      "severity": "中",
+      "response": "论文建议未来基线其他类型的专家；基线人员按「合理努力」获得报酬，作者假设早期反馈本可以激发出更高的人类表现。",
+      "reader": "「超过专家」指的是超过这一小群被招募来的 PhD，不是超过所有从业者。",
+      "cite": [
+        "paper@§6.1",
+        "paper@§4.1"
+      ]
+    },
+    {
+      "issue": "可复现性受提示词未公开限制",
+      "impact": "论文以安全理由只公开了 Fragment Design 与 Liquid Handling Robot 的提示词，筛查规避的提示词未公开；外部无法独立复现该项任务。",
+      "severity": "低",
+      "response": "论文说明了未公开的原因，并给出公开提示词的版本号（Fragment Design v.1.0.0、Liquid Handling Robot v1.0.1）；未见官方回应进一步的复现请求。",
+      "reader": "引用筛查规避分数时，注明它来自论文自报结果、外部无法复现。",
+      "cite": [
+        "paper@A1.3",
+        "paper@A1.3.1",
+        "paper@A1.3.2"
+      ]
+    }
+  ],
+  "notes": "SecureBio 博客深链（slug 含 en dash）本次已逐字抓取并与论文交叉核对；论文与博客对「AI 是否已降低生物武器门槛」的表述一致（均持否定）。论文另提到基线中有一位 Claude Sonnet 4.0 在所有任务上零拒答，但该版本未列入 Table 2。",
   "official_sources": [
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2606.11150"
+    },
     {
       "kind": "site",
       "url": "https://securebio.org/blog/"
@@ -67,8 +320,279 @@
   "related_benchmarks": [
     "wmdp",
     "lab-bench",
-    "mbct"
+    "mbct",
+    "bixbench"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-09-01"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-13",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "ABC-Bench: An Agentic Bio-Capabilities Benchmark for Biosecurity（arXiv:2606.11150v1，2026-06-09，ICML 2026）",
+        "url": "https://arxiv.org/abs/2606.11150",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "securebio-blog-how-frontier-ai-mod",
+        "kind": "blog",
+        "title": "SecureBio 博客：How Frontier AI Models Perform on Viral DNA Assembly Tasks（2026-06-10）",
+        "url": "https://securebio.org/blog/How-frontier-AI-models-perform-on%E2%80%93viral-DNA%E2%80%93assembly-tasks/",
+        "accessed": "2026-11-13"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "SecureBio（Cambridge, MA）与 Active Site；通信作者 Seth Donoughe",
+        "cite": [
+          "paper@作者署名",
+          "paper"
+        ]
+      },
+      "first_release": {
+        "v": "2026-06-09（arXiv:2606.11150v1）",
+        "cite": [
+          "paper@arXiv 印章"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "paper@Abstract",
+        "paper@§1",
+        "paper@§3.2"
+      ],
+      "interpretation": [
+        "paper@§3.2",
+        "paper@§6.1",
+        "securebio-blog-how-frontier-ai-mod@What this means for biosecurity"
+      ]
+    },
+    "problem": {
+      "text": "LAB-Bench、BixBench 这类生物基准主要考「懂不懂」——解读实验图、排查实验流程、回答怎么做生物信息分析。ABC-Bench 要考「做不做得出」：让 agent 直接生成并操作生物数据（例如分子克隆），并让任务对应生物风险链上的具体环节，从而可以拼起来估计模型走完整条路径的能力。",
+      "cite": [
+        "paper@§2 Related Work",
+        "paper@§3.1"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "人类专家基线（论文 Table 2）",
+        "value": "0.20 – 0.33",
+        "note": "三个任务的人类专家均分分别为 0.33 ± 0.12（片段设计，n = 12）、0.22 ± 0.07（筛查规避，n = 13）、0.20 ± 0.09（移液机器人，n = 9）；论文同时报告所有受测模型都超过了人类专家的中位数。",
+        "cite": [
+          "paper@§4.1",
+          "paper@Table 2"
+        ]
+      },
+      {
+        "label": "论文发布时最好成绩",
+        "value": "片段设计 1.00 · 筛查规避 0.78 · 移液机器人 1.00",
+        "note": "Claude Opus 4.6 在片段设计上全部跑次满分；Claude Sonnet 4.6 与 Gemini 3.1 Pro Preview 在移液机器人上满分；Gemini 3.1 Pro Preview 在筛查规避上最高（0.78）。",
+        "cite": [
+          "paper@§4.2",
+          "paper@Table 2"
+        ]
+      },
+      {
+        "label": "任务满分参考线",
+        "value": "1.00",
+        "note": "三个任务都以 0–1 连续计分且多判据部分给分；满分只说明该任务的评分判据全部满足。",
+        "cite": [
+          "paper@Table 2"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把三个任务的分数平均成一个「ABC-Bench 总分」再排名——三项难度差得很远（筛查规避明显更难，且已有模型在该项全部拒答），论文按任务分别报告。",
+        "cite": [
+          "paper@§4.2",
+          "paper@Table 2"
+        ]
+      },
+      {
+        "text": "把满分或「超过专家」理解成「AI 能造出病毒」——三个任务只是风险链上很窄的一片，论文和 SecureBio 都明确说这不意味着 AI 已经降低生物武器开发门槛。",
+        "cite": [
+          "securebio-blog-how-frontier-ai-mod@What this means for biosecurity",
+          "paper@§3.2"
+        ]
+      },
+      {
+        "text": "忽略拒答就直接比分数——拒答样本被剔除后才算均值，筛查规避上有三个模型全部拒答、Claude Opus 4 拒答超 90%，这些分数和零拒答模型不在同一口径上。",
+        "cite": [
+          "paper@§4.2",
+          "paper@Figure 2"
+        ]
+      },
+      {
+        "text": "以为人类专家用了自己顺手的工具——论文承认把任务框成写代码有利于激发模型，却压低了对人类基线的估计，专家本来更可能用专用设计工具或手工设计。",
+        "cite": [
+          "paper@§6.1"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "SecureBio（Cambridge, MA）与 Active Site（Cambridge, MA）；通信作者 Seth Donoughe",
+        "cite": [
+          "paper@作者署名",
+          "paper"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "Andrew Bo Liu、Samira Nedungadi、Bryce Cai（共同一作）、Alex Kleinman、Harmon Bhasin、Seth Donoughe",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      {
+        "k": "发表出处",
+        "v": "ICML 2026（第 43 届国际机器学习会议，首尔；PMLR 306），arXiv 注释称将于 ICML 2026 发表",
+        "cite": [
+          "paper@venue",
+          "securebio-blog-how-frontier-ai-mod"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2026-06-09 arXiv v1 首发 → 2026-06-10 SecureBio 发布解读博客 → 2026-07 ICML 报告",
+        "cite": [
+          "paper@arXiv 印章",
+          "securebio-blog-how-frontier-ai-mod@标题与作者栏"
+        ]
+      },
+      {
+        "k": "人类基线来源",
+        "v": "从 Upwork 招募生物学博士（分子 / 计算生物或同等产业经验），要求 ≥ 1 年分子生物学或克隆经验、≥ 2 年 Python 经验并核验简历；每完成任务付 200 美元，每任务限时 5 小时，共投入 175 人时；通过 Upwork 截图与人工比对 AI 回答来确认未使用 AI 协助",
+        "cite": [
+          "paper@§4.1"
+        ]
+      },
+      {
+        "k": "已被谁使用",
+        "v": "论文与博客都称 ABC-Bench 已被主要 AI 公司用于发版前测试，其任务以 Screening Evasion、Fragment Design、Liquid Handling Robot 之名出现在模型卡中（论文引 Anthropic、OpenAI 2025 年材料）",
+        "cite": [
+          "paper@§1",
+          "securebio-blog-how-frontier-ai-mod@What this means for biosecurity"
+        ]
+      },
+      {
+        "k": "数据与代码位置",
+        "v": "论文正文公开 Fragment Design（v.1.0.0）与 Liquid Handling Robot（v1.0.1）的提示词；Screening Evasion 提示词以安全理由未公开。论文未给出公开仓库或数据集地址，只说明如需使用可与 SecureBio 联系。",
+        "cite": [
+          "paper@A1.3",
+          "securebio-blog-how-frontier-ai-mod"
+        ]
+      },
+      {
+        "k": "湿实验验证",
+        "v": "用 OpenTrons Flex 与 GPT-o4-mini-high 做了三次 LLM 引导的 Gibson Assembly，产物转 DH5α 感受态细胞后由 Plasmidsaurus 用 Oxford Nanopore 做全质粒测序，三次均成功",
+        "cite": [
+          "paper@§5.1",
+          "paper@§5.2"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-13",
+        "columns": [
+          "来源",
+          "模型",
+          "Fragment Design",
+          "Screening Evasion",
+          "Liquid Handling Robot",
+          "拒答标注"
+        ],
+        "rows": [
+          [
+            "论文 Table 2",
+            "Claude Sonnet 4 [16k]",
+            "0.96 ± 0.01",
+            "0.39 ± 0.01",
+            "0.51 ± 0.14",
+            "无标注"
+          ],
+          [
+            "论文 Table 2",
+            "Claude Opus 4 [16k]",
+            "0.71 ± 0.05∗",
+            "∗∗",
+            "0.93 ± 0.04",
+            "片段设计 ∗（≥50% 拒答）；筛查规避 ∗∗（≥90% 拒答）"
+          ],
+          [
+            "论文 Table 2",
+            "Claude Sonnet 4.6 [max]",
+            "0.70 ± 0.07∗",
+            "†",
+            "1.00 ± 0.00",
+            "片段设计 ∗；筛查规避全部拒答（†）"
+          ],
+          [
+            "论文 Table 2",
+            "Claude Opus 4.6 [max]",
+            "1.00 ± 0.00∗",
+            "†",
+            "0.90 ± 0.03",
+            "片段设计 ∗；筛查规避全部拒答（†）"
+          ],
+          [
+            "论文 Table 2",
+            "Gemini 3.1 Pro Preview [high]",
+            "0.94 ± 0.03",
+            "0.78 ± 0.02",
+            "1.00 ± 0.00",
+            "无标注"
+          ],
+          [
+            "论文 Table 2",
+            "GPT-5.4 [xhigh]",
+            "0.91 ± 0.02",
+            "†",
+            "0.73 ± 0.12",
+            "筛查规避全部拒答（†）"
+          ],
+          [
+            "论文 Table 2",
+            "Qwen3.5 397B-A17B",
+            "0.76 ± 0.02",
+            "0.57 ± 0.02",
+            "0.57 ± 0.13",
+            "无标注"
+          ],
+          [
+            "论文 Table 2",
+            "Kimi K2.5",
+            "0.75 ± 0.02",
+            "0.44 ± 0.02",
+            "0.73 ± 0.11",
+            "无标注"
+          ],
+          [
+            "论文 Table 2",
+            "Baseliners（人类专家）",
+            "0.33 ± 0.12",
+            "0.22 ± 0.07",
+            "0.20 ± 0.09",
+            "—"
+          ]
+        ]
+      },
+      "cite": [
+        "paper@Table 2",
+        "paper@Figure 2"
+      ]
+    }
+  }
 }
