@@ -1,38 +1,468 @@
 {
   "id": "agentbench",
   "name": "AgentBench",
-  "full_name": null,
-  "aliases": [],
-  "status": null,
+  "full_name": "AgentBench: Evaluating LLMs as Agents",
+  "aliases": [
+    "AGENTBENCH",
+    "AgentBench FC"
+  ],
+  "status": "active",
   "categories": [
     "agent"
   ],
-  "summary": "8 环境综合 Agent 评测（OS/DB/网页/游戏…）",
-  "interpretation": "8 种环境综合 Agent 考试（OS/DB/网页/游戏）。",
-  "measures": [],
-  "does_not_measure": [],
+  "summary": "AgentBench 是清华大学等提出的 8 环境 LLM-as-Agent 评测：操作系统、数据库、知识图谱、卡牌游戏、海龟汤、家务、网购、网页操作，全部是多轮交互任务，模型必须按固定格式一步步输出动作，让环境真的动起来，由环境自带的检查逻辑判定成败。",
+  "interpretation": "高分说明模型在这套固定接口和 1-shot CoT 提示下能多轮完成指定任务；但它测的不是通用 agent 能力——论文自己说即使最强的 gpt-4 也算不上可实际使用的 agent，且低分里有相当比例是格式与动作合法性错误。另外，论文的总分是按任务加权平均的分，不是答对率，不能读成百分比。",
+  "measures": [
+    {
+      "area": "操作系统（OS）",
+      "focus": "在 Ubuntu Docker 终端里按自然语言指令执行 bash，环境用初始化脚本、示例代码和检查脚本来判定对错；题目来自 Stack Overflow 上按点赞数排序后由 8 名标注者挑选的 6,000 个真实问题，另一半由 gpt-4 生成并用单元测试过滤。",
+      "share": "Test 144 / Dev 26",
+      "format": "任务成功率（SR）",
+      "cite": [
+        "arxiv-2308-03688@§3.1",
+        "arxiv-2308-03688@附录 B",
+        "arxiv-2308-03688@Table 2"
+      ]
+    },
+    {
+      "area": "数据库（DB）",
+      "focus": "连真实 MySQL 执行 SQL 完成任务，覆盖完整的提问到执行流程；数据复用并合并 WikiSQL、WikiTableQuestions、SQA、HybridaQA、FeTaQA，再用 gpt-3.5-turbo 增补行与 SQL 查询。",
+      "share": "Test 300 / Dev 60",
+      "format": "任务成功率（SR）",
+      "cite": [
+        "arxiv-2308-03688@§3.1",
+        "arxiv-2308-03688@附录 C",
+        "arxiv-2308-03688@Table 2"
+      ]
+    },
+    {
+      "area": "知识图谱（KG）",
+      "focus": "在 Freebase 上用工具调用序列回答多跳问答；只保留需要至少 5 次工具调用的问题以保证难度，共 1,663 题，取前 500 题使用。",
+      "share": "Test 150 / Dev 20",
+      "format": "答案 F1",
+      "cite": [
+        "arxiv-2308-03688@§3.1",
+        "arxiv-2308-03688@附录 D",
+        "arxiv-2308-03688@Table 2"
+      ]
+    },
+    {
+      "area": "卡牌游戏（DCG）",
+      "focus": "改编自 2021 年 THU Agent Competition 的简化 Aquawar 系统，模型控制一队有不同技能的鱼，与另一支算法队伍回合制对战；论文报胜率。",
+      "share": "Test 20 / Dev 12",
+      "format": "奖励（Reward，胜率）",
+      "cite": [
+        "arxiv-2308-03688@§3.2",
+        "arxiv-2308-03688@附录 E",
+        "arxiv-2308-03688@Table 2"
+      ]
+    },
+    {
+      "area": "海龟汤（LTP）",
+      "focus": "横向思维谜题：主持人只回答「是 / 否 / 无关」，模型在有限轮次内通过提问逼近真相；论文按猜中的关键情节点计游戏进度。",
+      "share": "Test 50 / Dev 20",
+      "format": "游戏进度（Game Progress）",
+      "cite": [
+        "arxiv-2308-03688@§3.2",
+        "arxiv-2308-03688@附录 F",
+        "arxiv-2308-03688@Table 2"
+      ]
+    },
+    {
+      "area": "家务（HH）",
+      "focus": "改编自 ALFWorld 的文本家务环境，模型要把「把台灯放到桌上」这类高层目标拆成一系列底层动作；取 OOD split 里 134 个可解问题。",
+      "share": "Test 50 / Dev 20",
+      "format": "任务成功率（SR）",
+      "cite": [
+        "arxiv-2308-03688@§3.2",
+        "arxiv-2308-03688@附录 G",
+        "arxiv-2308-03688@Table 2"
+      ]
+    },
+    {
+      "area": "网购（WS）",
+      "focus": "改编自 WebShop 的模拟电商环境，模型要做搜索、查看、选择商品；论文改用它来评测纯提示的 LLM，而不是专门训练过的模型。",
+      "share": "Test 200 / Dev 80",
+      "format": "奖励（Reward，目标属性匹配度）",
+      "cite": [
+        "arxiv-2308-03688@§3.3",
+        "arxiv-2308-03688@附录 H",
+        "arxiv-2308-03688@Table 2"
+      ]
+    },
+    {
+      "area": "网页操作（WB）",
+      "focus": "改编自 Mind2Web 的跨域测试集（73 个网站的 912 个任务），在真实网页 HTML 上执行点击、选择、输入等高层指令；论文用 topk 10 候选加 CoT few-shot 构造选择题。",
+      "share": "Test 100 / Dev 31",
+      "format": "单步成功率（Step SR）",
+      "cite": [
+        "arxiv-2308-03688@§3.3",
+        "arxiv-2308-03688@附录 I.1",
+        "arxiv-2308-03688@Table 2"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "带反思、搜索、集成或多轮重试的 agent 框架——论文明确只评最原始的 CoT，不做多轮采样或复杂策略。",
+      "cite": [
+        "arxiv-2308-03688@§2 CoT"
+      ]
+    },
+    {
+      "text": "多模态与视觉能力——8 个环境全部是纯文本界面；视觉方向另立了同仓库的 VisualAgentBench。",
+      "cite": [
+        "thudm-repo@README"
+      ]
+    },
+    {
+      "text": "长上下文能力——交互历史按 3,500 token 截断并插入省略提示，2,048 上下文的模型会直接触发 Context Limit Exceeded。",
+      "cite": [
+        "arxiv-2308-03688@§4.1 提示词",
+        "arxiv-2308-03688@§2 完成原因"
+      ]
+    },
+    {
+      "text": "现代函数调用 / 工具编排形态——那是仓库 main 分支 AgentBench FC 的口径，且只覆盖 5 个环境。",
+      "cite": [
+        "thudm-repo@README"
+      ]
+    },
+    {
+      "text": "真实生产环境的鲁棒性（并发、故障恢复、安全边界）——每个环境都是容器化隔离后的一次性任务。",
+      "cite": [
+        "arxiv-2308-03688@§4.1 工具链"
+      ]
+    }
+  ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
+    "sample_count": 1014,
+    "splits": [
+      "Dev 269 题（约 3k 次模型调用）",
+      "Test 1,014 题（约 11k 次模型调用）"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "混合：5 个环境为新建（OS / DB / KG / DCG / LTP），3 个改编自已发布数据集（ALFWorld / WebShop / Mind2Web）",
+    "public_sample": true,
+    "multimodal_share": "0（全部为文本界面）",
+    "totals": "8 个环境合计 Test 1,014 题、Dev 269 题；单题预计交互轮数从 5 到 50 不等。论文未单列语言字段，但题目、提示词与指标名均为英文。",
+    "cite": [
+      "arxiv-2308-03688@§4.1 数据集",
+      "arxiv-2308-03688@Table 2",
+      "thudm-repo@README"
+    ],
+    "construction": [
+      {
+        "k": "环境来源",
+        "text": "5 个环境（OS / DB / KG / DCG / LTP）是新建的，另外 3 个（HH / WS / WB）分别改编自 ALFWorld、WebShop、Mind2Web 三个已发布数据集。",
+        "cite": [
+          "thudm-repo@README"
+        ]
+      },
+      {
+        "k": "OS 出题",
+        "text": "先从 Stack Overflow 按点赞数收集 6,000 个带 bash/shell 标签的真实问题，8 名计算机相关专业的标注者挑出有难度的并写初始化脚本与检查脚本；另一半由 gpt-4 生成并用单元测试过滤。最终整理出 144 个样本。",
+        "cite": [
+          "arxiv-2308-03688@附录 B"
+        ]
+      },
+      {
+        "k": "DB 出题",
+        "text": "复用并合并 WikiSQL、WikiTableQuestions、SQA、HybridaQA、FeTaQA 五个数据集拿到原始查询和数据库，再用 gpt-3.5-turbo 为每张表生成 10 行新数据、5 条新 SQL 查询并改写问句；有效条目筛成 300 条，分 select / insert / update 三类。",
+        "cite": [
+          "arxiv-2308-03688@附录 C"
+        ]
+      },
+      {
+        "k": "KG 出题",
+        "text": "取 Freebase 上的 GrailQA、ComplexWebQuestions、GraphQuestions，借助已有 S-expression 标注得到最优工具调用序列，只保留需要至少 5 次工具调用的问题，共 1,663 题。",
+        "cite": [
+          "arxiv-2308-03688@附录 D"
+        ]
+      },
+      {
+        "k": "游戏与谜题",
+        "text": "DCG 以 Aquawar 框架搭建交互系统，分动作阶段和猜测阶段；LTP 先搭自动判定的主持人系统，再把网上不同难度的谜题情节简化成若干情节点。",
+        "cite": [
+          "arxiv-2308-03688@附录 E",
+          "arxiv-2308-03688@附录 F"
+        ]
+      },
+      {
+        "k": "改编公开数据集",
+        "text": "HH 用 ALFWorld OOD split 里的 134 个可解问题；WS 取 12,087 条人工指令的前 500 条作测试集；WB 用 Mind2Web 的 Cross Domain 测试集，含 73 个网站的 912 个任务。",
+        "cite": [
+          "arxiv-2308-03688@附录 G",
+          "arxiv-2308-03688@附录 H",
+          "arxiv-2308-03688@附录 I.1"
+        ]
+      }
+    ]
   },
-  "metrics": [],
   "default_protocol": {
-    "raw": "各环境独立成功率聚合"
+    "raw": "论文口径：最原始的 Chain-of-Thought，Thought 与 Action 在同一轮输出，任务指令里附一个简单示例（1-shot）；temperature=0 贪心解码；交互历史按 token 数不超过 3,500 截断，截断时在被保留的最早消息前插入 [NOTICE] 提示；每环境有固定动作空间与轮次上限（知识图谱最多 15 次动作，海龟汤每局上限 25 轮，操作系统默认 8 轮）；模型只需提供 HTTP 模型服务，环境封装进 Docker 镜像并拆成独立 worker。",
+    "cite": [
+      "arxiv-2308-03688@§2 CoT",
+      "arxiv-2308-03688@§4.1 提示词",
+      "arxiv-2308-03688@附录 D",
+      "arxiv-2308-03688@附录 F",
+      "arxiv-2308-03688@§4.1 工具链"
+    ],
+    "variants": [
+      {
+        "text": "论文 CoT 口径 vs 现行 AgentBench FC 口径：仓库 main 分支已换成 function calling 提示，官方榜单只覆盖 5 个环境（ALFWorld / DB / KG / OS / WebShop）并报 pass@1 成功率，与论文 Table 3 的 8 环境加权 OA 既不同尺度也不同环境集合，不能直接比。",
+        "cite": [
+          "thudm-repo@README",
+          "leaderboard"
+        ]
+      },
+      {
+        "text": "DCG 有两个阶段（动作阶段与猜测阶段），论文取两阶段平均；WS / WB 与原论文设置不同——WebShop 论文沿用其官方实现，WB 用 topk 10 加 CoT few-shot，而 Mind2Web 原文是 topk 50。",
+        "cite": [
+          "arxiv-2308-03688@附录 E",
+          "arxiv-2308-03688@附录 I.1"
+        ]
+      }
+    ]
   },
-  "versions": [],
-  "limitations": [],
+  "metrics": [
+    {
+      "id": "overall-score",
+      "name": "AgentBench 总分（OA）",
+      "direction": "越高越好",
+      "description": "把每个任务的分数乘上该任务的固定权重后取平均。权重取该任务在论文全部参评模型上平均分的倒数，因此容易拿高分的任务（论文点名 Web Shopping）权重低、难任务权重高。它是加权分而不是通过率，数值也可以大于 1。",
+      "range": null,
+      "unit": null,
+      "cite": [
+        "arxiv-2308-03688@§4.1 总体分",
+        "arxiv-2308-03688@Table 3"
+      ]
+    },
+    {
+      "id": "success-rate",
+      "name": "任务成功率（SR）",
+      "direction": "越高越好",
+      "description": "操作系统、数据库、家务三个环境的指标：由环境自带的检查脚本判定任务是否真正完成，不是答案字符串匹配。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2308-03688@§3.1",
+        "arxiv-2308-03688@附录 B",
+        "arxiv-2308-03688@Table 2"
+      ]
+    },
+    {
+      "id": "f1",
+      "name": "答案 F1",
+      "direction": "越高越好",
+      "description": "知识图谱环境的指标：对比模型给出的答案实体集合与标准答案集合的 F1。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2308-03688@§3.1",
+        "arxiv-2308-03688@Table 2"
+      ]
+    },
+    {
+      "id": "reward",
+      "name": "奖励（Reward）",
+      "direction": "越高越好",
+      "description": "卡牌游戏与网购两个环境的指标：DCG 报胜率，WebShop 按目标属性匹配程度给分。",
+      "range": null,
+      "unit": null,
+      "cite": [
+        "arxiv-2308-03688@§3.2",
+        "arxiv-2308-03688@§3.3",
+        "arxiv-2308-03688@Table 2"
+      ]
+    },
+    {
+      "id": "game-progress",
+      "name": "游戏进度（Game Progress）",
+      "direction": "越高越好",
+      "description": "海龟汤环境的指标：按猜中的关键情节点衡量模型逼近真相的程度。",
+      "range": null,
+      "unit": null,
+      "cite": [
+        "arxiv-2308-03688@§3.2",
+        "arxiv-2308-03688@Table 2"
+      ]
+    },
+    {
+      "id": "step-sr",
+      "name": "单步成功率（Step SR）",
+      "direction": "越高越好",
+      "description": "网页操作环境的主指标：选中的元素正确且预测操作与标注一致才算该步成功。论文用它而不用任务成功率，是因为当时模型整题成功率太低。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2308-03688@附录 I.1",
+        "arxiv-2308-03688@附录 I.2",
+        "arxiv-2308-03688@Table 2"
+      ]
+    },
+    {
+      "id": "validity",
+      "name": "有效执行率",
+      "direction": "越高越好",
+      "description": "派生指标：Completed 占比，其余为 Context Limit Exceeded、Invalid Format、Invalid Action、Task Limit Exceeded 四类失败。论文用它把「能力不够」和「不按格式出牌」区分开。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2308-03688@§2 完成原因",
+        "arxiv-2308-03688@§4.3 失败构成"
+      ]
+    }
+  ],
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2023-08-07",
+      "label": "arXiv v1 首发",
+      "cite": [
+        "arxiv-abs-jina@提交历史"
+      ]
+    },
+    {
+      "id": "v2-iclr",
+      "date": "2023-10-25",
+      "label": "ICLR 2024 会议论文（arXiv v2）",
+      "cite": [
+        "arxiv-abs-jina@Comments",
+        "arxiv-abs-jina@提交历史"
+      ]
+    },
+    {
+      "id": "v3",
+      "date": "2025-10-04",
+      "label": "arXiv v3 修订，当前最新版；本页论文口径的事实与数值依据此版",
+      "cite": [
+        "arxiv-abs-jina@提交历史"
+      ]
+    },
+    {
+      "id": "visual",
+      "date": "2024-08-13",
+      "label": "同仓库发布 VisualAgentBench：5 个视觉环境、17 个多模态模型，并给出行为克隆轨迹数据集",
+      "cite": [
+        "thudm-repo@README"
+      ]
+    },
+    {
+      "id": "fc",
+      "date": "2025-10-10",
+      "label": "仓库 main 分支切换为 AgentBench FC（function calling，基于 AgentRL），只覆盖 5 个环境；论文版保留在 tag v0.1 / v0.2",
+      "cite": [
+        "thudm-repo@README"
+      ]
+    },
+    {
+      "id": "lb-refresh",
+      "date": "2025-11-18",
+      "label": "官方 FC 榜单页面标题标注的最近更新日期",
+      "cite": [
+        "leaderboard"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "两套口径并存，数字不可比",
+      "impact": "论文 Table 3 是 1-shot CoT 加 8 环境加权 OA；仓库 main 分支和官方现行榜单已换成 function calling 的 AgentBench FC，只覆盖 5 个环境、指标是 pass@1 成功率。同一个模型在两套口径下的名次和绝对值都不同。",
+      "severity": "高",
+      "response": "仓库保留 tag v0.1 / v0.2 作为论文版入口；榜单页面标题明确写作 AgentBench FC Leaderboard。",
+      "reader": "先确认数字来自论文表还是 FC 榜单；本页附录 C 用「口径」列把两者分开列。",
+      "cite": [
+        "thudm-repo@README",
+        "leaderboard",
+        "arxiv-2308-03688@Table 3"
+      ]
+    },
+    {
+      "issue": "总分是加权分，不是通过率",
+      "impact": "OA 的权重是「该任务在论文那 29 个模型上平均分的倒数」，并被固定下来供后续复用。权重取决于论文那一批评测的模型构成，后来的模型参评并不会改变权重，因此不同来源的 OA 不可比；数值也可以大于 1。",
+      "severity": "高",
+      "response": "论文公开了权重计算方法，并说明这样做是为了避免容易高分的任务主导总分。",
+      "reader": "不要把 OA 读成百分比；要看某个环境的绝对水平就直接看 Table 3 对应列。",
+      "cite": [
+        "arxiv-2308-03688@§4.1 总体分",
+        "arxiv-2308-03688@Table 2"
+      ]
+    },
+    {
+      "issue": "接口与提示词被论文固定",
+      "impact": "只评最原始 CoT、单轮内同时输出 Thought 与 Action、temperature=0、历史 3,500 token 截断、每环境固定动作空间与轮次上限。换提示词、换工具定义或允许重试都可能显著改变结果。",
+      "severity": "中",
+      "response": "论文公开了各环境的提示词与动作空间；FC 版改成了 function calling 提示。",
+      "reader": "分数反映「这套接口下的表现」，不要外推成模型的通用 agent 能力。",
+      "cite": [
+        "arxiv-2308-03688@§2 CoT",
+        "arxiv-2308-03688@§4.1 提示词"
+      ]
+    },
+    {
+      "issue": "失败里有相当比例是指令跟随问题",
+      "impact": "Invalid Format 在开源模型上占 10.4%（商用 API 模型 6.0%），Invalid Action 占 13.6%（API 模型 4.6%）。也就是说低分里有一部分是格式和动作合法性，不是任务本身不会做。",
+      "severity": "中",
+      "response": "论文把失败分成五类并分别统计，但没有为格式失败单设指标。",
+      "reader": "比较模型时把 Completed 率和分数一起看；格式失败率高的模型，差距会被低估。",
+      "cite": [
+        "arxiv-2308-03688@§4.3 失败构成",
+        "arxiv-2308-03688@§2 完成原因"
+      ]
+    },
+    {
+      "issue": "污染与泄露风险未评估",
+      "impact": "3 个环境直接改编自公开数据集（ALFWorld / WebShop / Mind2Web）；数据库环境虽用 gpt-3.5-turbo 增补了数据，但论文未报告任何污染检测，也未讨论这三个公开数据集是否已进入模型训练数据。",
+      "severity": "低",
+      "response": "未见官方回应。",
+      "reader": "对大幅跃升保持怀疑，优先看有没有新环境或新 split 上的复核结果。",
+      "cite": [
+        "arxiv-2308-03688@附录 C",
+        "thudm-repo@README"
+      ]
+    },
+    {
+      "issue": "题量在正文与附录间对不上",
+      "impact": "Table 2 与附录的样本数不一致：WebShop 附录写取 12,087 条指令的前 500 条作测试集，Table 2 写 200；家务附录写 ALFWorld OOD split 里 134 个可解问题，Table 2 写 dev 20 / test 50；OS 附录写整理出 144 个样本，Table 2 写 dev 26 加 test 144。",
+      "severity": "低",
+      "response": "未见官方说明。",
+      "reader": "引用题量时以 Table 2 为准，并注明附录口径不同。",
+      "cite": [
+        "arxiv-2308-03688@Table 2",
+        "arxiv-2308-03688@附录 H",
+        "arxiv-2308-03688@附录 G",
+        "arxiv-2308-03688@附录 B"
+      ]
+    }
+  ],
   "notes": null,
   "official_sources": [
     {
-      "kind": "site",
-      "url": "https://gtharive.github.io/AgentBench/"
+      "kind": "repo",
+      "url": "https://github.com/THUDM/AgentBench"
     },
     {
       "kind": "paper",
       "url": "https://arxiv.org/abs/2308.03688"
+    },
+    {
+      "kind": "leaderboard",
+      "url": "https://docs.google.com/spreadsheets/d/e/2PACX-1vRR3Wl7wsCgHpwUw1_eUXW_fptAPLL3FkhnW_rua0O1Ji_GIVrpTjY5LaKAhwO-WeARjnY_KNw0SYNJ/pubhtml"
     }
   ],
   "related_benchmarks": [
@@ -43,6 +473,299 @@
     "gaia",
     "bfcl"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-28"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "arxiv-2308-03688",
+        "kind": "paper",
+        "title": "AgentBench: Evaluating LLMs as Agents（arXiv:2308.03688，v3，2025-10-04）",
+        "url": "https://arxiv.org/abs/2308.03688",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "thudm-repo",
+        "kind": "repo",
+        "title": "THUDM/AgentBench（Apache-2.0；main 分支为 AgentBench FC，v0.1 / v0.2 为论文版）",
+        "url": "https://github.com/THUDM/AgentBench",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "leaderboard",
+        "kind": "leaderboard",
+        "title": "AgentBench FC Leaderboard（Google Sheets，标题标注 updated 2025-11-18）",
+        "url": "https://docs.google.com/spreadsheets/d/e/2PACX-1vRR3Wl7wsCgHpwUw1_eUXW_fptAPLL3FkhnW_rua0O1Ji_GIVrpTjY5LaKAhwO-WeARjnY_KNw0SYNJ/pubhtml",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "leaderboard-csv",
+        "kind": "leaderboard",
+        "title": "同一榜单的 CSV 导出（pass@1 成绩取自此处）",
+        "url": "https://docs.google.com/spreadsheets/d/e/2PACX-1vRR3Wl7wsCgHpwUw1_eUXW_fptAPLL3FkhnW_rua0O1Ji_GIVrpTjY5LaKAhwO-WeARjnY_KNw0SYNJ/pub?gid=0&single=true&output=csv",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "arxiv-abs-jina",
+        "kind": "paper",
+        "title": "arXiv 摘要页（经 r.jina.ai 读取，用于 v1 / v2 / v3 提交日期与 Comments 字段）",
+        "url": "https://r.jina.ai/https://arxiv.org/abs/2308.03688",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "清华大学、俄亥俄州立大学、加州大学伯克利分校；通讯作者 Yuxiao Dong 与 Jie Tang",
+        "cite": [
+          "arxiv-2308-03688@作者署名"
+        ]
+      },
+      "first_release": {
+        "v": "2023-08-07（arXiv v1）",
+        "cite": [
+          "arxiv-abs-jina@提交历史"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "arxiv-2308-03688@摘要",
+        "arxiv-2308-03688@§4.2",
+        "thudm-repo@README"
+      ],
+      "interpretation": [
+        "arxiv-2308-03688@§4.1 总体分",
+        "arxiv-2308-03688@§2 完成原因",
+        "arxiv-2308-03688@§4.3 失败构成"
+      ]
+    },
+    "problem": {
+      "text": "当时的 agent 评测大多只覆盖单类环境，而 LLM 被当成 agent 用时要在操作系统、数据库、知识图谱、游戏、网页等完全不同的界面里多轮决策。AgentBench 想用一套统一的服务器-客户端框架把 8 类环境放进同一个榜单，量化 LLM 与「可实际使用的 agent」之间的差距，并定位失败原因。",
+      "cite": [
+        "arxiv-2308-03688@摘要",
+        "arxiv-2308-03688@§4.1 工具链"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机 / 朴素基线",
+        "value": "论文未给出整榜随机基线",
+        "note": "论文只在卡牌游戏环境提供 random 与 greedy 两个朴素策略作对照，没有报告它们的 AgentBench 总分；本站也不推算。",
+        "cite": [
+          "arxiv-2308-03688@附录 E"
+        ]
+      },
+      {
+        "label": "论文发布时最好",
+        "value": "gpt-4（0613）OA 4.01",
+        "note": "29 个模型里最高，在 8 个环境中的 6 个上最好。参评商用 API 模型平均 2.32，开源模型（≤70B）平均 0.51，最强开源 codellama-34b 为 0.96，仍明显低于 gpt-3.5-turbo。",
+        "cite": [
+          "arxiv-2308-03688@§4.2",
+          "arxiv-2308-03688@§4.2 OSS",
+          "arxiv-2308-03688@Table 3"
+        ]
+      },
+      {
+        "label": "官方现行榜单最高",
+        "value": "AgentRL w/ Qwen2.5-32B-Instruct，AVG 70.4",
+        "note": "AgentBench FC 口径，pass@1 成功率，只覆盖 ALFWorld / DB / KG / OS / WebShop 五个环境，与论文 OA 不同尺度，不能直接比。",
+        "cite": [
+          "leaderboard-csv",
+          "thudm-repo@README"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      },
+      {
+        "label": "网页操作的现实上限参考",
+        "value": "个位数任务成功率",
+        "note": "论文明确说即使当时最好的模型在网页操作环境也只能达到个位数任务成功率，因此该环境的主指标退到单步成功率。",
+        "cite": [
+          "arxiv-2308-03688@附录 I.2"
+        ]
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把论文的总分 OA 当成「答对了百分之多少」——它是按任务加权平均的分，权重取各任务在所有参评模型上平均分的倒数，数值可以大于 1。",
+        "cite": [
+          "arxiv-2308-03688@§4.1 总体分"
+        ]
+      },
+      {
+        "text": "把论文 Table 3 的分数和官方 FC 榜单的 pass@1 排在一起比——前者是 1-shot CoT 加 8 环境加权 OA，后者是 function calling 加 5 环境成功率。",
+        "cite": [
+          "thudm-repo@README",
+          "leaderboard"
+        ]
+      },
+      {
+        "text": "把某个环境上的高分读成「通用 agent 能力达标」——接口、提示词、动作空间和轮次上限都由论文固定，换一套就可能完全不同。",
+        "cite": [
+          "arxiv-2308-03688@§2 CoT",
+          "arxiv-2308-03688@§4.1 提示词"
+        ]
+      },
+      {
+        "text": "把开源模型的低分全归因于参数规模——论文统计显示 Invalid Format 与 Invalid Action 在开源模型上明显更高，指令跟随是独立因素；论文也发现 llama-2-13b 与 llama-2-70b 表现接近，说明规模不是唯一变量。",
+        "cite": [
+          "arxiv-2308-03688@§4.3 失败构成"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "清华大学、俄亥俄州立大学、加州大学伯克利分校；通讯作者 Yuxiao Dong 与 Jie Tang（清华大学）",
+        "cite": [
+          "arxiv-2308-03688@作者署名"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "Xiao Liu、Hao Yu、Hanchen Zhang 为共同一作；作者含 Yifan Xu、Xuanyu Lei、Hanyu Lai、Yu Gu、Aohan Zeng、Minlie Huang 等",
+        "cite": [
+          "arxiv-2308-03688@作者署名"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2023-08-07 arXiv v1 → 2023-10-25 ICLR 2024 会议论文 → 2024-08-13 VisualAgentBench → 2025-10-04 arXiv v3 → 2025-10-10 仓库切到 AgentBench FC → 2025-11-18 官方榜单标注更新",
+        "cite": [
+          "arxiv-abs-jina@提交历史",
+          "thudm-repo@README",
+          "leaderboard"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "代码、数据集与环境在 GitHub THUDM/AgentBench（Apache-2.0）；论文版保留 tag v0.1 / v0.2；FC 版用 Docker Compose 一键拉起全部 5 个环境",
+        "cite": [
+          "thudm-repo@README"
+        ]
+      },
+      {
+        "k": "成绩提交",
+        "v": "官方榜单接受外部提交，联系 agentbench_fc@googlegroups.com；榜单 Result Source 列标注结果由哪套框架跑出",
+        "cite": [
+          "thudm-repo@README",
+          "leaderboard-csv"
+        ]
+      },
+      {
+        "k": "引用",
+        "v": "仓库描述为 A Comprehensive Benchmark to Evaluate LLMs as Agents (ICLR'24)，BibTeX key 为 liu2023agentbench",
+        "cite": [
+          "thudm-repo@Citation"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-14",
+        "columns": [
+          "来源",
+          "模型",
+          "总分",
+          "分环境成绩",
+          "口径"
+        ],
+        "rows": [
+          [
+            "论文 Table 3",
+            "gpt-4 (0613)",
+            "4.01",
+            "OS 42.4 / DB 32.0 / KG 58.8 / DCG 74.5 / LTP 16.6 / HH 78.0 / WS 61.1 / WB 29.0",
+            "1-shot CoT，temperature=0，8 环境加权 OA"
+          ],
+          [
+            "论文 Table 3",
+            "claude-3 (opus)",
+            "3.11",
+            "OS 22.9 / DB 51.7 / KG 34.6 / DCG 44.5 / LTP 14.3 / HH 70.0 / WS 27.9 / WB 26.0",
+            "同上"
+          ],
+          [
+            "论文 Table 3",
+            "glm-4",
+            "2.89",
+            "OS 29.2 / DB 42.3 / KG 46.3 / DCG 34.1 / LTP 14.2 / HH 34.0 / WS 61.6 / WB 27.0",
+            "同上"
+          ],
+          [
+            "论文 Table 3",
+            "claude-2",
+            "2.49",
+            "OS 18.1 / DB 27.3 / KG 41.3 / DCG 55.5 / LTP 8.4 / HH 54.0 / WS 61.4 / WB 0.0",
+            "同上"
+          ],
+          [
+            "论文 Table 3",
+            "gpt-3.5-turbo (0613)",
+            "2.32",
+            "OS 32.6 / DB 36.7 / KG 25.9 / DCG 33.7 / LTP 10.5 / HH 16.0 / WS 64.1 / WB 20.0",
+            "同上"
+          ],
+          [
+            "论文 Table 3",
+            "codellama-34b (instruct)",
+            "0.96",
+            "OS 2.8 / DB 14.0 / KG 23.5 / DCG 8.4 / LTP 0.7 / HH 4.0 / WS 52.1 / WB 20.0",
+            "同上；参评开源模型（≤70B）里最高"
+          ],
+          [
+            "论文 Table 3",
+            "开源模型平均",
+            "0.51",
+            "—",
+            "同上；商用 API 模型平均 2.32"
+          ],
+          [
+            "FC 榜单",
+            "AgentRL w/ Qwen2.5-32B-Instruct",
+            "70.4",
+            "ALFWorld 94.5 / DB 70.4 / KG 77.0 / OS 51.7 / WebShop 58.6",
+            "function calling，pass@1，5 环境平均（Result Source=AgentRL）"
+          ],
+          [
+            "FC 榜单",
+            "Claude Sonnet 4.5 (2025-09-29)",
+            "58.9",
+            "ALFWorld 82.5 / DB 71.2 / KG 64.1 / OS 38.0 / WebShop 38.6",
+            "同上"
+          ],
+          [
+            "FC 榜单",
+            "GPT-5 (2025-08-07)",
+            "52.2",
+            "ALFWorld 65.4 / DB 63.2 / KG 64.1 / OS 34.5 / WebShop 33.7",
+            "同上"
+          ],
+          [
+            "FC 榜单",
+            "DeepSeek-R1 (2025-05-28)",
+            "49.3",
+            "ALFWorld 51.4 / DB 60.4 / KG 50.2 / OS 53.6 / WebShop 31.0",
+            "同上"
+          ],
+          [
+            "FC 榜单",
+            "o3-mini (2025-01-31)",
+            "40.9",
+            "ALFWorld 28.4 / DB 56.5 / KG 51.8 / OS 35.1 / WebShop 32.7",
+            "同上"
+          ]
+        ]
+      },
+      "cite": [
+        "arxiv-2308-03688@Table 3",
+        "leaderboard-csv",
+        "thudm-repo@README"
+      ]
+    }
+  }
 }
