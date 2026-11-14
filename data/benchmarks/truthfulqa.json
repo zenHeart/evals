@@ -1,38 +1,351 @@
 {
   "id": "truthfulqa",
   "name": "TruthfulQA",
-  "full_name": null,
+  "full_name": "TruthfulQA: Measuring How Models Mimic Human Falsehoods（测模型如何模仿人类假话）",
   "aliases": [],
-  "status": null,
+  "status": "active",
   "categories": [
     "safety"
   ],
-  "summary": "817 道对抗事实题，测一本正经胡说倾向",
-  "interpretation": "专测“一本正经胡说”的倾向。分数高 = 少骗人。",
-  "measures": [],
-  "does_not_measure": [],
-  "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
-  },
-  "metrics": [],
-  "default_protocol": {
-    "raw": "MC1/MC2 概率口径"
-  },
-  "versions": [],
-  "limitations": [],
-  "notes": null,
-  "official_sources": [
+  "summary": "TruthfulQA 是 817 道由作者撰写的对抗性常识题，专门诱导模型复述人类也会相信的流行误解（论文称之为 imitative falsehood，模仿性假话）；它要求零样本作答，同时看「真实性」和「信息量」两个指标，发布时最好的模型只有 58% 的回答为真，人类基线是 94%。",
+  "interpretation": "高分说明模型在单轮、短答案的常识问答里很少一本正经地复述误解，而且答得有信息量；但它不覆盖长文生成、多轮对抗对话和专业领域，题目也不是从线上系统采集的，所以高分不代表模型在真实产品里同样诚实。另外「我没有意见」这类不表态回答在论文定义下算真，只看真实性会被刷分。",
+  "measures": [
     {
-      "kind": "site",
-      "url": "https://github.com/sylinrl/TruthfulQA"
+      "area": "模仿性假话（主任务：生成）",
+      "focus": "每题要求模型用 1-2 句完整回答常识问题，问题专门挑人类也会答错的流行误解；论文附录示例：围绕「华特·迪士尼的遗体在哪」出现的遗体被冷冻、停在迪士尼乐园下、埋在加勒比海盗项目下等说法",
+      "share": "未披露（论文不按类别给题量占比）",
+      "format": "生成式短答案，贪心解码（温度 0）",
+      "cite": [
+        "arxiv-2109-07958@§2.2",
+        "arxiv-2109-07958@§3.2",
+        "arxiv-2109-07958@附录 C.1",
+        "repo-truthfulqa@README"
+      ]
     },
+    {
+      "area": "选择题任务（MC1 / MC2）",
+      "focus": "同一批题目改用真假参考答案当选项，用来廉价地自动评分：MC1 从 4-5 个选项里选出唯一正确项，MC2 看模型分配给全部真实答案的归一化概率",
+      "share": "未披露（与生成任务共用同一批 817 题）",
+      "format": "4-5 个选项单选 / 真假参考答案集合",
+      "cite": [
+        "repo-truthfulqa@README",
+        "arxiv-2109-07958@§3.2"
+      ]
+    },
+    {
+      "area": "信息量（第二指标）",
+      "focus": "论文把「No comment」「我不知道」这类不表态回答判为真，所以必须同时衡量回答是否降低了问题的不确定性；论文把真实性与信息量的关系类比为 precision 与 recall",
+      "share": "未披露",
+      "format": "人工判定或微调 GPT-3（GPT-info）自动判定",
+      "cite": [
+        "arxiv-2109-07958@§2.1",
+        "repo-truthfulqa@README"
+      ]
+    },
+    {
+      "area": "类别覆盖面",
+      "focus": "38 个类别，涵盖健康、法律、金融、政治等；论文按类别给出 GPT-3-175B 在三个提示词下的真实性分解（Figure 13），最好的提示词在几乎所有类别都低于人类平均",
+      "share": "最大类 Misconceptions 100 题（约 12%，100/817，本站按题量折算）",
+      "format": "按类别分解的条形图",
+      "cite": [
+        "arxiv-2109-07958@Abstract",
+        "arxiv-2109-07958@Figure 13"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "长文生成与多轮对抗对话（论文明确说不覆盖新闻稿式长文，也不覆盖与对抗者长时间聊天）",
+      "cite": [
+        "arxiv-2109-07958@§8"
+      ]
+    },
+    {
+      "text": "专业领域里的真实性（论文：TruthfulQA 考高分不意味着模型在专业领域诚实，考低分只说明不够鲁棒）",
+      "cite": [
+        "arxiv-2109-07958@§7"
+      ]
+    },
+    {
+      "text": "线上系统里的真实性（题目由作者撰写、不是从部署系统采集的，可能高估或低估真实表现）",
+      "cite": [
+        "arxiv-2109-07958@§8"
+      ]
+    },
+    {
+      "text": "模型「知不知道」答案（只测它说不说真话，不测知识存量；论文的定义允许用拒绝作答换来完全真实）",
+      "cite": [
+        "arxiv-2109-07958@§2.1"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 817,
+    "splits": [
+      "公开测试集 817 题（论文称只用于 zero-shot 设置）",
+      "GPT-judge / GPT-info 的微调与验证数据：6.9k 条作者写的真假参考答案样本 + 约 15.5k 条模型答案样本（带人工标签，不在 817 题内）",
+      "旧版题库与原始基线在仓库 data/v0/（2021-10 之前的版本）"
+    ],
+    "languages": [],
+    "source_type": "作者原创对抗题（先由作者撰写，再用 GPT-3-175B 把模型能答对的题过滤掉）",
+    "public_sample": true,
+    "totals": "公开测试集 817 题 · 38 个类别 · 每题配真假两组参考答案 · 437 题经 GPT-3-175B（QA 提示）对抗过滤 + 380 题未经过目标模型测试 · 题目多为一句式常识问题，中位数 9 个词",
+    "cite": [
+      "arxiv-2109-07958@Abstract",
+      "arxiv-2109-07958@§2.2",
+      "arxiv-2109-07958@§3.2",
+      "repo-truthfulqa@README"
+    ],
+    "construction": [
+      {
+        "k": "先写人类会答错的题",
+        "text": "作者先写一些人会答错的常识问题，再用 GPT-3-175B（QA 提示）在多个非零温度采样下测试，把模型能稳定答对的题删掉，留下 437 道「过滤题」。",
+        "cite": [
+          "arxiv-2109-07958@§2.2"
+        ]
+      },
+      {
+        "k": "再补 380 道未测试题",
+        "text": "作者利用上一步的经验再写 380 道预期人和模型都会答错的题；这批题没有经过目标模型测试（「未过滤题」），论文报告的是两部分合并后的结果。",
+        "cite": [
+          "arxiv-2109-07958@§2.2"
+        ]
+      },
+      {
+        "k": "真答案取自可靠来源，假答案取自误解",
+        "text": "真实参考答案直接取自维基百科（或题目列出的来源）并补充常见变体；错误答案靠联网搜索 [常见误解 / 迷信 / 阴谋论] 来拓宽覆盖面。",
+        "cite": [
+          "arxiv-2109-07958@附录 C.1"
+        ]
+      },
+      {
+        "k": "两名外部研究者校验",
+        "text": "一名校验者看 100 题判断哪个参考答案为真，7% 有分歧；另一名参与者答 250 题，作者按既定流程把其中 6% 的答案判为假，这名参与者的答案同时充当人类基线。论文据此把参考答案分歧率估计为 6-7%，并称基线模型之间的差距通常大于这个范围。",
+        "cite": [
+          "arxiv-2109-07958@§2.3"
+        ]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "零样本（论文称 true zero-shot：不做梯度更新、提示里不出现 TruthfulQA 例题，也不在本题集上调节提示与超参）。主任务是生成：模型用贪心解码（温度 0）针对默认 QA 提示输出 1-2 句完整回答；回答分真假两组参考答案，由人工或微调 GPT-3（GPT-judge 判真实性、GPT-info 判信息量）打分。",
+    "cite": [
+      "arxiv-2109-07958@§2.2 Prompts",
+      "arxiv-2109-07958@§3.2",
+      "repo-truthfulqa@README"
+    ],
+    "variants": [
+      {
+        "text": "生成任务 vs 选择题任务：同一批题目两种判分方式，分数不可混比；论文两种都报，选择题任务只是生成任务的廉价自动替代。",
+        "cite": [
+          "repo-truthfulqa@README",
+          "arxiv-2109-07958@§3.2"
+        ]
+      },
+      {
+        "text": "旧 MC1/MC2 vs 2025-01 起的二选一新版：新版每题只有正确项和最佳错误项两个选项、顺序随机，官方推荐新版，同时称多数模型在新旧版上表现接近、旧结果仍然有效。",
+        "cite": [
+          "repo-truthfulqa@README"
+        ]
+      },
+      {
+        "text": "提示词差异：论文说提示词对 GPT-3-175B 的真实性有显著影响（Table 4 中 QA 提示 20.4% vs help 提示 58.1%），厂商自报成绩必须写清用的是哪个提示。",
+        "cite": [
+          "arxiv-2109-07958@§4.1",
+          "arxiv-2109-07958@Table 4"
+        ]
+      },
+      {
+        "text": "人工判定 vs GPT-judge 自动判定：GPT-judge 与人工判定有 90-96% 的验证一致率（人类基线上 89.5%），但不完全等同，跨论文比较时要看清是谁在打分。",
+        "cite": [
+          "arxiv-2109-07958@§4.4"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "true-rate",
+      "name": "% true（真实性）",
+      "direction": "越高越好",
+      "description": "回答被判定为真实的百分比。生成任务里由人工或微调 GPT-3（GPT-judge）判定；标量分数按 0.5 阈值二值化，选择题任务则由真实参考答案的总归一化概率给出。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2109-07958@Table 4 注",
+        "arxiv-2109-07958@§3.2",
+        "repo-truthfulqa@README"
+      ]
+    },
+    {
+      "id": "info-rate",
+      "name": "% info（信息量）",
+      "direction": "越高越好",
+      "description": "回答被判定为有信息量的百分比（人工或微调的 GPT-info），用来防止模型靠「我没有意见」刷高真实性。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2109-07958@§2.1",
+        "repo-truthfulqa@README"
+      ]
+    },
+    {
+      "id": "mc1",
+      "name": "MC1（单选准确率）",
+      "direction": "越高越好",
+      "description": "4-5 个参考答案选项里选出唯一正确项的准确率；模型的选择是补全对数概率最高的那个选项，与其他选项无关。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "repo-truthfulqa@README"
+      ]
+    },
+    {
+      "id": "mc2",
+      "name": "MC2（多真值概率）",
+      "direction": "越高越好",
+      "description": "模型分配给全部真实参考答案的归一化总概率。",
+      "range": [
+        0,
+        1
+      ],
+      "unit": "ratio",
+      "cite": [
+        "repo-truthfulqa@README"
+      ]
+    }
+  ],
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2021-09-08",
+      "label": "arXiv v1 首次提交（793 KB）",
+      "cite": [
+        "arxiv-2109-07958@arXiv 提交历史"
+      ]
+    },
+    {
+      "id": "v2",
+      "date": "2022-05-08",
+      "label": "arXiv v2 修订（7,171 KB，本档案核对所用版本）；ACL 2022 主会发表",
+      "cite": [
+        "arxiv-2109-07958@arXiv 提交历史",
+        "arxiv-2109-07958@arXiv 摘要页"
+      ]
+    },
+    {
+      "id": "refanswers-2021-10",
+      "date": "2021-10",
+      "label": "README 记录：新增约 300 条参考答案，覆盖「是共识性误解，但其实是…」这类限定式长回答；旧版题库迁到 data/v0/",
+      "cite": [
+        "repo-truthfulqa@README"
+      ]
+    },
+    {
+      "id": "mc-binary-2025-01",
+      "date": "2025-01",
+      "label": "README 记录：推出二选一新版（官方推荐替代 MC1/MC2）、修正错别字并把部分问题改得更具体、剔除少量失效题、移除 Indexical Error: Time 类别",
+      "cite": [
+        "repo-truthfulqa@README"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "「拒绝回答」算真，真实性可被刷分",
+      "impact": "论文把「No comment」「我不知道」这类不表态回答判为真，一个每题都回答「我没有意见」的模型在定义上是完全真实的；只报 %true 会让这类模型接近满分，论文因此把信息量设为第二目标。",
+      "severity": "高",
+      "response": "论文要求同时评估信息量，README 也明确把真实性当主目标、信息量当第二目标；论文用 precision/recall 类比两者必须一起看。",
+      "reader": "看到 %true 先找同一张表的 %info；%true 高而 %info 低的成绩要警惕。",
+      "cite": [
+        "arxiv-2109-07958@§2.1",
+        "repo-truthfulqa@README"
+      ]
+    },
+    {
+      "issue": "参考答案有 6-7% 的分歧",
+      "impact": "两名外部研究者分别校验 100 题与 250 题，分歧率 7% 与 6%；论文认为这可能被校验者的时间不足放大，并称基线模型之间的差距通常大于这个范围，主要结论不受影响。",
+      "severity": "中",
+      "response": "论文公开校验流程（附录 D/F）与全部参考答案；2025-01 更新修正错别字、剔除失效题并移除 Indexical Error: Time 类，但官方说明尚未完成对剩余题目的全量复验。",
+      "reader": "同一量级的模型差距不要过度解读；跨版本比较前先确认数据集版本。",
+      "cite": [
+        "arxiv-2109-07958@§2.3",
+        "repo-truthfulqa@README"
+      ]
+    },
+    {
+      "issue": "对抗式选题混入「非模仿性」错误",
+      "impact": "题目是拿 GPT-3-175B 过滤出来的，模型答错可能只是因为问法异常，而不是因为它学了人类假话；论文专门用实验区分这两类原因，并保留 380 道未经过目标模型测试的题目分别报告。",
+      "severity": "中",
+      "response": "论文把错误拆成模仿性与非模仿性两类并做语法扰动实验（§4.3、附录 B.4）。",
+      "reader": "低分既可能是模仿性假话，也可能是题型脆弱；论文因此只说高分不推出专业领域诚实、低分说明不够鲁棒。",
+      "cite": [
+        "arxiv-2109-07958@§2.2",
+        "arxiv-2109-07958@§7"
+      ]
+    },
+    {
+      "issue": "版本与口径多次变动，历史成绩不完全可比",
+      "impact": "2021-10 增补约 300 条参考答案，2025-01 改成二选一设置并删题改类；论文 Table 4 与 README v0 基线表在同一模型上数值也不完全一致（如 GPT-2 1.5B 的 %true(GPT-judge) 论文记 30.7、README 记 29.87），两个来源都没说明差异原因。",
+      "severity": "中",
+      "response": "README 保留 data/v0/ 旧版题库与原始基线表，并逐条列出 2025-01 的改动内容。",
+      "reader": "比较历史成绩前先确认三件事：数据集版本、判分设置（生成 / MC1 / MC2 / 新版二选一）、提示词。",
+      "cite": [
+        "repo-truthfulqa@README",
+        "arxiv-2109-07958@Table 4"
+      ]
+    },
+    {
+      "issue": "题目分布与真实使用场景有差距",
+      "impact": "题目由作者撰写、不是从部署系统采集的，论文明说这可能高估或低估模型在真实产品里的诚实程度；同时不覆盖长文生成和对抗性多轮对话。",
+      "severity": "中",
+      "response": "论文在伦理节列出这些边界；暂无官方修正。",
+      "reader": "把 TruthfulQA 当成「常识诚实度探针」，不要当成产品安全性的总分。",
+      "cite": [
+        "arxiv-2109-07958@§8"
+      ]
+    },
+    {
+      "issue": "公开题库的污染风险",
+      "impact": "题目、参考答案和微调数据全部公开在仓库里，可能进入训练数据或被针对性调优，使公开集分数偏高；论文没有提到私有留存集或污染检测机制。",
+      "severity": "低",
+      "response": "暂无；官方只提供旧版 data/v0/ 与更新日志，没有留存集。",
+      "reader": "出现接近或超过 94% 人类基线的成绩时，先怀疑数据污染再下结论。",
+      "cite": [
+        "repo-truthfulqa@README",
+        "arxiv-2109-07958@§4.1"
+      ]
+    },
+    {
+      "issue": "两处官方表述不一致",
+      "impact": "论文标题和仓库 README 的一级标题都是 Mimic Human Falsehoods，GitHub 仓库页标题与 About 写的是 Imitate Human Falsehoods；用错关键词可能检索不到论文。",
+      "severity": "低",
+      "response": "以论文题目（Mimic）为准，README 的一级标题与论文一致。",
+      "reader": "引用时写 Mimic Human Falsehoods。",
+      "cite": [
+        "arxiv-2109-07958@作者署名",
+        "repo-truthfulqa@README"
+      ]
+    }
+  ],
+  "notes": "ACL 2022 主会发表；2025-01 起官方推荐二选一新版，旧的 MC1/MC2 结果官方称仍然有效",
+  "official_sources": [
     {
       "kind": "paper",
       "url": "https://arxiv.org/abs/2109.07958"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/sylinrl/TruthfulQA"
     }
   ],
   "related_benchmarks": [
@@ -40,6 +353,282 @@
     "harmbench",
     "factsg"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-28"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "arxiv-2109-07958",
+        "kind": "paper",
+        "title": "TruthfulQA: Measuring How Models Mimic Human Falsehoods（arXiv:2109.07958 v2，2022-05-08，ACL 2022 主会）",
+        "url": "https://arxiv.org/abs/2109.07958",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "repo-truthfulqa",
+        "kind": "repo",
+        "title": "sylinrl/TruthfulQA 官方仓库（README 含任务口径、指标定义、基线表与更新日志）",
+        "url": "https://github.com/sylinrl/TruthfulQA",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "University of Oxford × OpenAI（Stephanie Lin、Owain Evans，Oxford；Jacob Hilton，OpenAI）",
+        "cite": [
+          "repo-truthfulqa@README",
+          "arxiv-2109-07958@作者署名"
+        ]
+      },
+      "first_release": {
+        "v": "2021-09-08（arXiv v1）",
+        "cite": [
+          "arxiv-2109-07958@arXiv 提交历史"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "arxiv-2109-07958@Abstract",
+        "arxiv-2109-07958@§2.2",
+        "arxiv-2109-07958@§4.1"
+      ],
+      "interpretation": [
+        "arxiv-2109-07958@§7",
+        "arxiv-2109-07958@§8",
+        "arxiv-2109-07958@§2.1"
+      ]
+    },
+    "problem": {
+      "text": "当时的问答基准主要考「模型有没有学会知识」，而大模型的训练目标本身就在激励它复述训练分布里高频的人类说法——流行误解、迷信、阴谋论——于是出现「模型越大越不诚实」的逆缩放。TruthfulQA 要专门测这种模仿性假话：题目必须让模型有机会说出人类也会说的假话，并且只有零样本、不调提示才能算数。",
+      "cite": [
+        "arxiv-2109-07958@§1",
+        "arxiv-2109-07958@§2.2 Prompts"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机猜测基线",
+        "value": "论文未给出",
+        "note": "论文只说「没有模型显著超过随机猜测」，没有给 MC1/MC2 的随机基线数值；本站不推算。",
+        "cite": [
+          "arxiv-2109-07958@§4.2"
+        ]
+      },
+      {
+        "label": "论文发布时最好（生成任务，help 提示）",
+        "value": "58% true",
+        "note": "GPT-3-175B + helpful 提示；论文同节给出该模型 21% 的回答同时真实且有信息量，42% 的回答假但有信息量。同一个模型换成默认 QA 提示只有 20.4%（Table 4）。",
+        "cite": [
+          "arxiv-2109-07958@§4.1",
+          "arxiv-2109-07958@Table 4"
+        ]
+      },
+      {
+        "label": "人类基线",
+        "value": "94% true",
+        "note": "同一位外部参与者 87% 的回答同时真实且有信息量，只有 6% 被判为假。",
+        "cite": [
+          "arxiv-2109-07958@§4.1"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      },
+      {
+        "label": "「靠闭嘴刷满分」的理论线",
+        "value": "100% true / %info 接近 0",
+        "note": "论文定义下每题都答「No comment」就是完全真实的模型。这条线用来说明为什么必须同时看信息量，不是官方指标。",
+        "cite": [
+          "arxiv-2109-07958@§2.1"
+        ]
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 %true 高直接读成「模型更诚实」而不看 %info——只说「我没有意见」的回答在论文定义下算真。",
+        "cite": [
+          "arxiv-2109-07958@§2.1",
+          "repo-truthfulqa@README"
+        ]
+      },
+      {
+        "text": "把不同提示词的 GPT-3-175B 成绩排在一起比（QA 提示 20.4% vs help 提示 58.1%，相差近三倍；论文说提示词显著影响真实性）。",
+        "cite": [
+          "arxiv-2109-07958@§4.1",
+          "arxiv-2109-07958@Table 4"
+        ]
+      },
+      {
+        "text": "把 MC1/MC2 的旧成绩和 2025-01 之后的二选一成绩混在一个榜里——设置不同，尽管官方称多数模型在新旧版上表现接近。",
+        "cite": [
+          "repo-truthfulqa@README"
+        ]
+      },
+      {
+        "text": "把「模型越大越不诚实」当成普遍规律——论文的逆缩放结论来自它自己测的四个模型族，附录 B.3 里 Anthropic、Gopher、InstructGPT 在大尺寸上又回到正向缩放（只是增速很慢）。",
+        "cite": [
+          "arxiv-2109-07958@§4.2",
+          "arxiv-2109-07958@附录 B.3"
+        ]
+      },
+      {
+        "text": "把高分理解成「模型在专业领域也诚实」——论文明确说高分推不出领域诚实，低分只说明不够鲁棒。",
+        "cite": [
+          "arxiv-2109-07958@§7"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方与作者",
+        "v": "Stephanie Lin（University of Oxford）、Jacob Hilton（OpenAI）、Owain Evans（University of Oxford）",
+        "cite": [
+          "repo-truthfulqa@README",
+          "arxiv-2109-07958@作者署名"
+        ]
+      },
+      {
+        "k": "题目语言",
+        "v": "未披露（论文与 README 均未声明；题目与参考答案均为英文）",
+        "cite": [
+          "arxiv-2109-07958@§2.2",
+          "repo-truthfulqa@README"
+        ]
+      },
+      {
+        "k": "发表场合",
+        "v": "ACL 2022 主会（arXiv 摘要页 Comments 字段；同字段说明评测代码公开）",
+        "cite": [
+          "arxiv-2109-07958@arXiv 摘要页"
+        ]
+      },
+      {
+        "k": "判分自动化",
+        "v": "GPT-judge 是微调的 GPT-3-6.7B，把回答分成真/假，与人工判定有 90-96% 验证一致率，在人类基线上 89.5%；相似模型 GPT-info 判信息量。自动指标里 BLEURT 是官方推荐的相似度指标。",
+        "cite": [
+          "arxiv-2109-07958@§3.2",
+          "arxiv-2109-07958@§4.4",
+          "repo-truthfulqa@README"
+        ]
+      },
+      {
+        "k": "逆缩放证据",
+        "v": "同族内模型越大越不诚实：GPT-Neo/J 6B 比 125M 低 12 个百分点，最大的 GPT-Neo/J 比小 60 倍的模型低 17%；但 UnifiedQA（为 QA 任务微调的 T5）整体比三个 GPT 族更真实、却最不 informative。",
+        "cite": [
+          "arxiv-2109-07958@§4.2"
+        ]
+      },
+      {
+        "k": "外部评测",
+        "v": "Anthropic、Gopher、WebGPT、InstructGPT 等模型由外部研究者在生成与选择题两个任务上评测，结果收在论文附录 B.3。",
+        "cite": [
+          "arxiv-2109-07958@§3.1"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "题目与参考答案在仓库 TruthfulQA.csv，评测代码与选择题 JSON 同仓，微调数据集在 data/finetune_truth.jsonl 与 data/finetune_info.jsonl，旧版题库在 data/v0/。",
+        "cite": [
+          "repo-truthfulqa@README"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-14",
+        "columns": [
+          "来源",
+          "模型 / 设置",
+          "% true",
+          "% info",
+          "% true (GPT-judge)",
+          "MC1",
+          "MC2"
+        ],
+        "rows": [
+          [
+            "README v0 基线表",
+            "GPT-3 175B",
+            "20.44",
+            "97.55",
+            "20.56",
+            "0.21",
+            "0.33"
+          ],
+          [
+            "README v0 基线表",
+            "GPT-J 6B",
+            "26.68",
+            "89.96",
+            "27.17",
+            "0.20",
+            "0.36"
+          ],
+          [
+            "README v0 基线表",
+            "GPT-2 1.5B",
+            "29.50",
+            "89.84",
+            "29.87",
+            "0.22",
+            "0.39"
+          ],
+          [
+            "README v0 基线表",
+            "UnifiedQA 3B",
+            "53.86",
+            "64.50",
+            "53.24",
+            "0.19",
+            "0.35"
+          ],
+          [
+            "论文 Table 4",
+            "GPT-3 175B（QA 提示）",
+            "20.4",
+            "97.6",
+            "20.6",
+            "未列出",
+            "未列出"
+          ],
+          [
+            "论文 Table 4",
+            "GPT-3 175B（help 提示）",
+            "58.1",
+            "63.3",
+            "57.2",
+            "未列出",
+            "未列出"
+          ],
+          [
+            "论文 Table 4",
+            "GPT-3 350M",
+            "37.0",
+            "72.7",
+            "35.9",
+            "未列出",
+            "未列出"
+          ],
+          [
+            "论文 §4.1",
+            "人类基线（外部参与者）",
+            "94",
+            "未列出",
+            "未列出",
+            "不适用",
+            "不适用"
+          ]
+        ]
+      },
+      "cite": [
+        "repo-truthfulqa@README",
+        "arxiv-2109-07958@§4.1",
+        "arxiv-2109-07958@Table 4"
+      ]
+    }
+  }
 }

@@ -1,63 +1,654 @@
 {
   "id": "sre-bench",
   "name": "SRE-Bench",
-  "full_name": "SRE-Bench（运维/SRE 任务集）",
+  "full_name": "SRE-Bench: The Next Challenge for Agentic Cybersecurity — A Realistic, Contamination-Free Reverse Engineering Benchmark",
   "aliases": [],
-  "status": null,
+  "status": "active",
   "categories": [
     "agent",
     "safety"
   ],
-  "summary": "OpenAI 在 GPT‑6 Cyber 发布文中给出的 SRE（站点可靠性工程）任务评测：模型要完成真实运维场景里的多目标任务。",
-  "interpretation": "本批收录的是「六项运维目标全部达成」的通过率（All-six-objectives pass@1），越高越好——它比单项任务成功率更严格。GPT‑6 Cyber 92.8%，GPT-6 Astra (Daybreak Blue) 88.0%、(Safeguards Enabled) 62.5%、GPT-5.6 (Daybreak Blue) 55.9%。",
+  "summary": "SRE-Bench 是面向智能体的**逆向工程**基准（注意：与站点可靠性工程无关）。论文作者从零编写 19 个私有、真实规模的程序（平均 16,915.8 行代码），再配上 44 个自研反分析原语，编译成 262 个二进制实例、1,572 个确定性判分任务，每个实例 6 题。它要回答的是：只有二进制、拿不到源码时，模型能不能把程序语义挖出来并把指定功能实现出来。",
+  "interpretation": "头部数字看公开设置下的 Score（每个实例 0–6 分，取成功任务数均值）和 Solved（六题全过的实例占比）。GPT-6-Astra 平均 5.55/6，在**已评分**的 181 个实例里 149 个全过（82.3%）——分母是 181 而不是 262，因为大量请求因安全拒答或上下文超限没能评分。完全关掉护栏、不设预算上限的内部设置下，同一个模型是 88.0% pass@1 / 99.2% pass@4。",
   "measures": [
-    "All-six-objectives pass@1（六项运维目标全部达成的通过率，越高越好）"
+    {
+      "area": "网络协议（Network Protocol）",
+      "focus": "拿到一个实现专有加密协议的客户端二进制和若干不完整抓包，没有规格说明；要恢复分层报文格式、重建客户端/服务端状态机，再写一个驱动去跟阅卷用的在线服务端对话。六项任务构成能力阶梯：完成加密握手 → 伪造晋级令牌 → 跟密钥轮换并维持滚动 MAC 链 → 走连接迁移 → 反虚拟化字节码过滤器 → 单会话内综合 capstone。",
+      "share": "4 个程序",
+      "format": "在线服务端按单一计费 TCP 连接（上限 64 条消息）判定驱动把协议状态机推进了多深",
+      "cite": [
+        "paper@附录 A",
+        "paper@Table 3"
+      ]
+    },
+    {
+      "area": "游戏（Game）",
+      "focus": "一个 20 层终端 roguelike，带战斗、法术、合成、商店、阵营、任务和成就；二进制里藏着六个正常游玩永远不会触发、手册也没写的行为，只能靠还原程序逻辑才能定位。",
+      "share": "4 个程序",
+      "format": "提交动作轨迹，由无头校验器回放并报告触发了哪些隐藏行为",
+      "cite": [
+        "paper@附录 A",
+        "paper@Table 3"
+      ]
+    },
+    {
+      "area": "文件格式（File Format）",
+      "focus": "一个只发布编码器的专有压缩器（自研版 GZIP），二进制里没有解码器；要把多级编码管线逆向出来，实现一个能逐字节还原原文件的解码器，还要处理可恢复的损坏。",
+      "share": "4 个程序",
+      "format": "六个口令保护、复杂度递增的压缩包，要求文件内容和元数据都精确还原",
+      "cite": [
+        "paper@附录 A",
+        "paper@Table 3"
+      ]
+    },
+    {
+      "area": "恶意软件（Malware）",
+      "focus": "一个构造上惰性且安全的 Linux 植入程序，在沙箱里用密钥激活后模拟六类常见恶意软件家族的行为（进程伪装、持久化、挖矿、勒索、C2 心跳、横向移动），效果严格限制在沙箱内。",
+      "share": "4 个程序",
+      "format": "防御性任务：写一个清理工具，精准移除每个家族的痕迹，同时保住阅卷方埋下的良性数据；按家族合取计分",
+      "cite": [
+        "paper@附录 A",
+        "paper@Table 3"
+      ]
+    },
+    {
+      "area": "固件（Firmware）",
+      "focus": "一个虚构安全单片机的裸机固件，加密两阶段启动、自研片上密码学和几十个外设子系统；只能通过 JTAG 风格接口访问一个从零写的仿真器，每会话 5,000 条命令预算。",
+      "share": "3 个程序",
+      "format": "六项任务沿依赖链递进，从最初通信一直到完全特权控制；判分逻辑在仿真器里，不暴露给智能体",
+      "cite": [
+        "paper@附录 A",
+        "paper@Table 3"
+      ]
+    }
   ],
   "does_not_measure": [
-    "不衡量安全漏洞利用能力（那是 ExploitGym / ExploitBench 的口径）",
-    "不衡量单目标任务的局部成功率"
+    {
+      "text": "不衡量漏洞利用能力：任务是从二进制恢复语义并实现指定功能，不是打穿目标或拿 shell；论文明确说这些任务不是 exploitation-oriented",
+      "cite": [
+        "paper@§4 Results"
+      ]
+    },
+    {
+      "text": "不衡量源码安全能力，也不能由它外推：论文反复强调源码上的强表现无法线性迁移到二进制分析",
+      "cite": [
+        "paper@Abstract"
+      ]
+    },
+    {
+      "text": "不衡量方案挑选与自检：pass@4 依赖私有 grader 在四次尝试里找到正确解，实际部署时没有人替你选",
+      "cite": [
+        "paper@§4 Figure 4"
+      ]
+    },
+    {
+      "text": "不覆盖最大规模的真实软件：程序平均 16,915.8 行，够不到几十万到上百万行的系统",
+      "cite": [
+        "paper@§5 Discussion"
+      ]
+    }
   ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": "厂商自建安全评测集",
-    "public_sample": null
+    "sample_count": 262,
+    "splits": [
+      "公开设置评测（8 个模型，统一 mini-SWE-agent 脚手架）",
+      "内部无约束设置（3 个 OpenAI + 2 个 Anthropic 模型，关护栏、不设预算上限）",
+      "无公开训练/测试划分：二进制与任务实例均不对外发布"
+    ],
+    "languages": [
+      "C",
+      "C++",
+      "Rust",
+      "Go"
+    ],
+    "source_type": "expert-authored（RE 专家从零编写，论文称累计超过 5,000 专家小时）",
+    "public_sample": false,
+    "totals": "19 个私有程序 → 262 个二进制实例 → 1,572 个任务（每实例固定 6 个确定性判分任务）；代码总量超过 320K 行，平均 16,915.8 LoC/程序，另有 27K+ LoC 的反分析保护套件（44 个原语、9 个技术族，一半以上没有公开实现）",
+    "cite": [
+      "paper@Abstract",
+      "paper@§1",
+      "paper@§3 Benchmark Construction",
+      "paper@§5 Discussion",
+      "paper@附录 B.9"
+    ],
+    "construction": [
+      {
+        "k": "程序从零编写",
+        "text": "19 个程序由 RE 专家手写，覆盖 C/C++/Rust/Go，跨 5 个代表性 RE 域；为保持防污染，目标程序、评测设施和保护层都必须从零开发，不能改造公开代码。",
+        "cite": [
+          "paper@§1",
+          "paper@§3 Benchmark Construction",
+          "paper@§5 Discussion"
+        ]
+      },
+      {
+        "k": "自研反分析保护层",
+        "text": "44 个保护原语、9 个技术族、27K+ LoC 实现，一半以上没有公开实现；再组合成 8 个难度预设，每个预设共享同一条基线（逐页认证加密、fold-not-branch 派生密钥、自校验和、loader 虚拟化、混淆与去符号层）。",
+        "cite": [
+          "paper@§1",
+          "paper@附录 B.9"
+        ]
+      },
+      {
+        "k": "实例生成",
+        "text": "4 个域的 16 个程序各生成 8 个未保护实例（覆盖优化级别、去符号、静/动态链接三轴的全部组合）+ 8 个保护实例（每个预设一个）；固件 3 个程序因裸机、保护内置于二进制，只按优化级别变化。",
+        "cite": [
+          "paper@§3 Benchmark Construction"
+        ]
+      },
+      {
+        "k": "任务定义",
+        "text": "每个二进制实例固定 6 个确定性判分任务，262 个实例合计 1,572 个任务；判分要么由无头校验器回放，要么由在线服务端在受控连接上给出。",
+        "cite": [
+          "paper@§3 Benchmark Construction",
+          "paper@附录 A"
+        ]
+      },
+      {
+        "k": "污染控制与反捷径",
+        "text": "二进制和任务实例一律不公开；论文披露的内容经过「能否从二进制里恢复出来」的人工核验；实例相关的名字、路径、密钥每轮由全新 secret 派生，堵死硬编码式解法，恶意软件域的清理工具还被设计成不能靠「全删了」拿分。",
+        "cite": [
+          "paper@Reproducibility Statement",
+          "paper@附录 A"
+        ]
+      }
+    ]
   },
   "metrics": [
     {
-      "id": "all_six_objectives_pass1",
-      "name": "All-six-objectives pass@1",
+      "id": "score",
+      "name": "Score（平均分）",
+      "direction": "越高越好",
+      "description": "每个二进制实例成功完成的任务数（满分 6）在所有已评分实例上的均值",
+      "range": [
+        0,
+        6
+      ],
+      "unit": "point",
+      "cite": [
+        "paper@§4 Metrics"
+      ]
+    },
+    {
+      "id": "solved",
+      "name": "Solved（满分实例率）",
+      "direction": "越高越好",
+      "description": "六项任务全部通过的二进制实例占已评分实例的比例",
+      "range": [
+        0,
+        100
+      ],
       "unit": "percent",
-      "direction": "higher_is_better",
-      "description": "同时达成全部六项运维目标的任务通过率"
+      "cite": [
+        "paper@§4 Metrics"
+      ]
+    },
+    {
+      "id": "zeros",
+      "name": "Zeros（零分实例率）",
+      "direction": "越低越好",
+      "description": "完全没有拿到任何一个任务分的实例占已评分实例的比例",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§4 Metrics"
+      ]
+    },
+    {
+      "id": "pass1",
+      "name": "pass@1（无约束设置）",
+      "direction": "越高越好",
+      "description": "关护栏、不设预算上限的内部设置下，单次尝试即完整解出的实例比例（每实例 n=4，用 Chen et al. 2021 的无偏估计）",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§4 Metrics",
+        "paper@§4 Figure 4"
+      ]
+    },
+    {
+      "id": "pass4",
+      "name": "pass@4（无约束设置）",
+      "direction": "越高越好",
+      "description": "同一设置下，四次尝试中至少一次完整解出的实例比例；是能力上界参考，不是部署成功率",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§4 Metrics",
+        "paper@§4 Figure 4"
+      ]
+    },
+    {
+      "id": "cost-per-point",
+      "name": "单位分数成本",
+      "direction": "越低越好",
+      "description": "每提升 1 分 Score 所花的美元；论文用它比较拆解保护机制的成本代价",
+      "unit": "USD per point",
+      "cite": [
+        "paper@§4 Figure 3"
+      ]
     }
   ],
   "default_protocol": {
-    "raw": "官方未印题集规模、分母与判分细则"
+    "raw": "公开设置：模型放进标准化的 mini-SWE-agent（消除脚手架差异），各自用最高的推理档，每次运行上限 500 个模型步和 6 小时墙上时钟，开启可用的模型侧网络安全护栏。每个实例在隔离容器里求解，容器带目标二进制、分域辅助材料和一套标准 RE 工具。内部无约束设置用 Codex（OpenAI 模型）和 Claude Code（Anthropic 模型）的默认配置，关闭网络安全护栏、不设评测预算上限，共 16,768 次尝试、2.37B 输出 token，折合约 566,000 美元。所有均值都只在已评分运行上计算，排除护栏拒答和上下文窗口失败。",
+    "cite": [
+      "paper@§4 Setup",
+      "paper@§4 Metrics"
+    ],
+    "variants": [
+      {
+        "text": "未保护 vs 保护实例：同一程序按 8 个编译配置出未保护实例、按 8 个保护预设出保护实例。加固把 GPT-5.6-sol 的均分从 4.69 砍到 2.50，把除 GPT-6-Astra 外的所有模型压到 0.33 以下，而 GPT-6-Astra 只掉 0.10 分。",
+        "cite": [
+          "paper@§3 Benchmark Construction",
+          "paper@§4 Figure 3"
+        ]
+      },
+      {
+        "text": "推理档位：无约束设置扫 Medium 到 Max，GPT-5.6 Sol 的 pass@1 从 5.8% 涨到 55.8%；推理档位本身就能解释十几到几十个百分点的差距。",
+        "cite": [
+          "paper@§4 Figure 4"
+        ]
+      },
+      {
+        "text": "复杂度与污染消融：把同一个压缩任务改成「公开代码改写版」约 2 美元、10 分钟即可完整解出；小体量净室程序被两个模型在全部配置下满分。论文据此论证防污染和真实规模都不可省。",
+        "cite": [
+          "paper@§5 Discussion"
+        ]
+      },
+      {
+        "text": "预设细分：把聚合的保护效应拆到 8 个预设后，GPT-6-Astra 每个预设都在 5.25–6.00，GPT-5.6-sol 在 1.93–3.19，其余模型每个预设都低于 0.6，GLM-5.2 八个预设全是 0.00。",
+        "cite": [
+          "paper@附录 B.9"
+        ]
+      }
+    ]
   },
   "versions": [
     {
-      "name": "GPT‑6 Cyber（2026-11-05）",
-      "note": "首次录入"
+      "id": "v2",
+      "date": "2026-10-01",
+      "label": "arXiv v2（论文 arXiv 印记日期，本页核对所用版本；v1 日期未能核实）",
+      "cite": [
+        "paper"
+      ]
     }
   ],
   "limitations": [
-    "官方未公开题集、判分细则与采样方式，外部无法独立复跑",
-    "官方未印 temperature / top_p / shots / run_count / judge 等协议细节",
-    "厂商自报数值，未经第三方复现"
+    {
+      "issue": "程序池只有 19 个",
+      "impact": "262 个实例全部派生自这 19 个程序，程序级多样性有限；域与域之间的分数差可能混有「程序本身难度」的成分。",
+      "severity": "高",
+      "response": "论文自己把这一条列为局限并解释成因：要防污染，目标程序、评测设施和保护层都得从零写，累计超过 5,000 专家小时；消融显示便宜的替代方案（公开代码改写、小净室程序）都会失效。",
+      "reader": "看到某个域上的高分或低分时，先分清这是模型差异还是程序差异；论文明确说聚合分会掩盖域内变化。",
+      "cite": [
+        "paper@§5 Discussion",
+        "paper@Abstract"
+      ]
+    },
+    {
+      "issue": "二进制与任务实例不公开",
+      "impact": "外部无法独立复跑、审计或扩展，只能通过论文描述的 open evaluation service 申请评测，而论文没有给出该服务的地址。",
+      "severity": "高",
+      "response": "论文以保全污染抗力为由不公开 binaries 与 task instances，并称披露粒度控制在「分析师从二进制里能恢复到的水平」。",
+      "reader": "所有数字都是论文方或厂商自报，本站只转录不复现；引用时不要写成第三方独立测评。",
+      "cite": [
+        "paper@Reproducibility Statement",
+        "paper@附录 A"
+      ]
+    },
+    {
+      "issue": "公开设置的分母被拒答和上下文失败吃掉",
+      "impact": "Table 4 的所有百分比都以「已评分实例」为分母；GPT-6-Astra 因网络安全理由频繁拒答，只剩 181/262（69.1%）可评分，是八个模型里最少的。",
+      "severity": "高",
+      "response": "论文在表注和正文明确 #Graded 之外的部分来自护栏拒答或上下文窗口限制，并强调这些分数不能解读为在全部 262 个实例上的成功率。",
+      "reader": "不要把 82.3% 当成 262 个实例上的成功率；比较模型时同时看 #Graded。",
+      "cite": [
+        "paper@Table 4 注",
+        "paper@§4 Results"
+      ]
+    },
+    {
+      "issue": "pass@4 高不等于可用",
+      "impact": "无约束设置下 GPT-6-Astra 的 pass@4 达 99.2%，但有 69 个实例同时存在成功和失败的尝试，1,048 次尝试里有 126 次没拿满；这些运行没有测「选出正确提交」的环节。",
+      "severity": "中",
+      "response": "论文把「可靠地识别正确候选」列为未解问题，并指出高 pass@4 意味着私有 grader 能在四次尝试里找到正确解，实际使用需要在没有 grader 的情况下选择或验证。",
+      "reader": "pass@k 是能力上界参考，不是部署成功率；看到接近 100% 的 pass@4 时先找同段的 Solver/selector 讨论。",
+      "cite": [
+        "paper@§4 Figure 4",
+        "paper@Abstract"
+      ]
+    },
+    {
+      "issue": "程序规模够不到最大的真实软件",
+      "impact": "平均 16,915.8 LoC，覆盖不到几十万到上百万行的真实系统。",
+      "severity": "中",
+      "response": "论文称其程序已比既有 RE 基准大 30–470×，并把更大程序列为后续扩展方向，同时指出防污染约束下开发成本随规模快速增长。",
+      "reader": "这个基准上的分数不能直接外推到大型闭源软件的分析。",
+      "cite": [
+        "paper@§5 Discussion"
+      ]
+    },
+    {
+      "issue": "反分析保护是自研的，不对应市面产品",
+      "impact": "44 个原语里一半以上没有公开实现，难度标定缺少外部对照；加固带来的分数下降衡量的不是对某个具体商业壳的破解力。",
+      "severity": "低",
+      "response": "论文按「人类分析师能从二进制恢复的粒度」披露设计，并人工核验过披露内容确实可从二进制恢复；每个实例的常量、触发条件、隐藏行为机制和参考解都做了遮蔽。",
+      "reader": "把保护带来的下降读成「对这类机制的敏感度」，不要读成商业加固产品排名。",
+      "cite": [
+        "paper@附录 B.9",
+        "paper@附录 A"
+      ]
+    }
   ],
-  "notes": "new-benchmark: 取自 OpenAI《GPT‑6 Cyber》发布页图表负载（analyticsIdentifier=sre-bench），逐值机读。",
+  "notes": "new-benchmark：本页为 benchmark-profile/v2 深度档案，唯一一手来源是 arXiv:2608.11469v2（2026-10-01）论文全文；OpenAI《GPT-6 Astra》公告页（英文页本次核验返回 500，改用俄文 locale）作为厂商侧旁证。\n\n与旧版实体的差异（重要）：旧版把 SRE-Bench 描述成 OpenAI《GPT-6 Cyber》发布页图表里的「六项运维目标全部达成」运维/SRE 任务集，来源 https://openai.com/index/introducing-gpt-6-cyber/ 。本次核验该页抓取版全文不含任何 SRE-Bench 内容（相关数值只存在于页面图表的 vegaLiteSpec 机读负载里），且论文口径与图表口径不是同一件事，因此旧描述与旧数值全部作废，按论文重写。\n\n本站账本 data/model-releases/official/openai/gpt-6-cyber.json 中仍保留 GPT-6 Cyber 92.8%（All-six-objectives pass@1，厂商自报、图表读数）一行。该行口径与本页论文口径不同（论文公开设置报 Solved 与 Score，无约束设置报 pass@1/pass@4），不可直接横向比较；本页不引用它。\n\n未披露项：arXiv v1 发布日期（arXiv API 查询失败）、open evaluation service 的地址、训练/测试划分、各模型 temperature/top_p/shots 等采样参数、分域分数表（论文只给文字描述与图）。",
   "official_sources": [
     {
-      "kind": "site",
-      "url": "https://openai.com/index/introducing-gpt-6-cyber/"
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2608.11469"
     }
   ],
   "related_benchmarks": [
+    "cybergym",
+    "exploitbench",
     "remoteexploitbench",
     "web-pentesting"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-11-06"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "SRE-Bench: The Next Challenge for Agentic Cybersecurity — A Realistic, Contamination-Free Reverse Engineering Benchmark（arXiv:2608.11469v2）",
+        "url": "https://arxiv.org/abs/2608.11469",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "astra-ru",
+        "kind": "site",
+        "title": "GPT-6 Astra（OpenAI 公告页；英文 locale 本次核验返回 500，故取俄文 locale）",
+        "url": "https://openai.com/ru-RU/index/gpt-6-astra/",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Columbia University × Google DeepMind × UC Berkeley × OpenAI × Anthropic × Tufts University × UCLA × Vals AI（论文合著，无独立官网）",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      "first_release": {
+        "v": "2026-10-01（arXiv v2）",
+        "cite": [
+          "paper"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "paper@Abstract",
+        "paper@§1",
+        "paper@§3 Benchmark Construction"
+      ],
+      "interpretation": [
+        "paper@§4 Metrics",
+        "paper@§4 Results",
+        "paper@Table 4 注",
+        "paper@§4 Figure 4"
+      ]
+    },
+    "problem": {
+      "text": "安全上最要紧的软件——恶意软件、固件、专有企业应用——大多只以二进制形式分发，分析之前必须先做逆向。但既有智能体 RE 基准要么直接搬现成 CTF（有污染、规模小、保护弱），要么是小玩具程序，既拉不开最强模型之间的差距，也测不出真实二进制上的能力。SRE-Bench 的做法是从零造一批既防污染又够大的程序，把「只有二进制」这件事本身变成考点。",
+      "cite": [
+        "paper@§1",
+        "paper@Abstract",
+        "paper@Table 1"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "公开设置最强均分",
+        "value": "5.55 / 6（92.4%）",
+        "note": "GPT-6-Astra（Table 4）；同表 GPT-5.6-Sol 3.69、Claude-Fable-5.1 2.58、Claude-Opus-5 1.91、GLM-5.2 0.21，八个模型均值相差超过 25 倍。",
+        "cite": [
+          "paper@Table 4",
+          "paper@§5 Discussion"
+        ]
+      },
+      {
+        "label": "公开设置最强满分实例率",
+        "value": "82.3%（149/181 已评分）",
+        "note": "分母是已评分实例，不是全部 262 个；GPT-6-Astra 因安全拒答只剩 181 个可评分（69.1%）。",
+        "cite": [
+          "paper@§4 Results"
+        ]
+      },
+      {
+        "label": "「源码强 ≠ 二进制强」的分界",
+        "value": "GPT-5.6-Sol 31.5% / Claude-Fable-5.1 26.9%",
+        "note": "两个源码安全能力很强的模型，在 SRE-Bench 上只有约三分之一和四分之一的实例能六题全过。",
+        "cite": [
+          "paper@Abstract",
+          "paper@§4 Results"
+        ]
+      },
+      {
+        "label": "无约束内部设置最强 pass@1",
+        "value": "88.0%（GPT-6-Astra，Max 档）",
+        "note": "关护栏、不设预算上限；同设置 Opus 5.5 为 82.1%。OpenAI 公告页独立给出 88.0% / 99.2%。",
+        "cite": [
+          "paper@§4 Figure 4",
+          "astra-ru"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      },
+      {
+        "label": "加固后的强模型参照",
+        "value": "2.50 / 6（GPT-5.6-sol）",
+        "note": "同一模型未加固时是 4.69；GPT-6-Astra 加固后只掉 0.10，其余模型全部被压到 0.33 以下。",
+        "cite": [
+          "paper@§4 Figure 3"
+        ]
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 82.3% 当成 262 个实例上的成功率——它是在已评分实例（GPT-6-Astra 只有 181 个）上的比例，论文明确说不能这么读。",
+        "cite": [
+          "paper@§4 Results"
+        ]
+      },
+      {
+        "text": "把 pass@4 99.2% 当成部署表现——它的含义是私有 grader 在四次尝试里找到了正确解；GPT-6-Astra 有 69 个实例成败尝试并存，1,048 次尝试里 126 次没拿满。",
+        "cite": [
+          "paper@§4 Figure 4"
+        ]
+      },
+      {
+        "text": "把 SRE-Bench 当成漏洞利用基准——任务是恢复二进制语义并实现指定功能，不是打穿目标；论文明确说这些任务不是 exploitation-oriented。",
+        "cite": [
+          "paper@§4 Results"
+        ]
+      },
+      {
+        "text": "把名字里的 SRE 读成站点可靠性工程（Site Reliability Engineering）——这个基准测的是智能体逆向工程（Reverse Engineering）。",
+        "cite": [
+          "paper@Abstract"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "Columbia University、Google DeepMind、UC Berkeley、OpenAI、Anthropic、Tufts University、UCLA、Vals AI 的合著论文；没有独立官网、仓库或公开数据集页。",
+        "cite": [
+          "paper@作者署名",
+          "paper@Reproducibility Statement"
+        ]
+      },
+      {
+        "k": "出题者与工时",
+        "v": "RE 专家从零编写全部 19 个程序，论文称累计投入超过 5,000 专家小时。",
+        "cite": [
+          "paper@Abstract",
+          "paper@§5 Discussion"
+        ]
+      },
+      {
+        "k": "为什么值得单独测",
+        "v": "论文引 CISA 2026 目录：46.5% 的在野利用漏洞来自不发布源码的厂商；引 Google：2025 年超过 48% 的零日针对专有企业软件。",
+        "cite": [
+          "paper@§1"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "二进制与任务实例均不公开，只提供 open evaluation service 供研究者申请评测；论文未给出该服务地址，也没有 GitHub 仓库或 Hugging Face 数据集。",
+        "cite": [
+          "paper@Reproducibility Statement"
+        ]
+      },
+      {
+        "k": "安全设计",
+        "v": "目标程序全部自研，而非采集第三方漏洞或已部署软件的二进制；实验在隔离环境中进行，不与外部系统或服务交互；恶意软件域被构造成惰性且安全。",
+        "cite": [
+          "paper@Ethics Statement",
+          "paper@附录 A"
+        ]
+      },
+      {
+        "k": "与前代基准的差别",
+        "v": "论文 Table 1 的对比：NYU CTF Bench 51 实例、Cybench 6、CTF-Dojo 123、CTFTiny 16、CREBench 432（1,728 任务，526.2 LoC）、AgentRE-Bench 13（63.5 LoC）、CrackMeBench 12（36.1 LoC）；SRE-Bench 为 262 实例、16,915.8 LoC，程序复杂度与保护复杂度均标为 Real-World，且做程序身份级别的污染控制。",
+        "cite": [
+          "paper@Table 1"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-14",
+        "columns": [
+          "来源",
+          "模型",
+          "已评分实例",
+          "Score（0–6）",
+          "满分实例 Solved",
+          "零分实例 Zeros",
+          "API 调用",
+          "成本（$）",
+          "时长（min）"
+        ],
+        "rows": [
+          [
+            "论文 Table 4",
+            "GPT-6-Astra",
+            "181 / 262",
+            "5.55±0.09（92.4）",
+            "149（82.3%）",
+            "7（3.9%）",
+            "61",
+            "13.5",
+            "18"
+          ],
+          [
+            "论文 Table 4",
+            "GPT-5.6-Sol",
+            "254 / 262",
+            "3.69±0.14（61.4）",
+            "80（31.5%）",
+            "41（16.1%）",
+            "196",
+            "42.5",
+            "88"
+          ],
+          [
+            "论文 Table 4",
+            "Claude-Fable-5.1",
+            "223 / 262",
+            "2.58±0.18（43.0）",
+            "60（26.9%）",
+            "96（43.0%）",
+            "173",
+            "34.7",
+            "123"
+          ],
+          [
+            "论文 Table 4",
+            "Claude-Opus-5",
+            "256 / 262",
+            "1.91±0.14（31.8）",
+            "32（12.5%）",
+            "118（46.1%）",
+            "139",
+            "23.6",
+            "81"
+          ],
+          [
+            "论文 Table 4",
+            "GPT-5.5",
+            "262 / 262",
+            "1.02±0.10（17.0）",
+            "10（3.8%）",
+            "148（56.5%）",
+            "128",
+            "17.8",
+            "46"
+          ],
+          [
+            "论文 Table 4",
+            "DeepSeek-V4.1-Flash",
+            "262 / 262",
+            "0.85±0.09（14.2）",
+            "2（0.8%）",
+            "166（63.4%）",
+            "182",
+            "0.5",
+            "61"
+          ],
+          [
+            "论文 Table 4",
+            "Grok-4.5",
+            "218 / 262",
+            "0.45±0.07（7.6）",
+            "2（0.9%）",
+            "160（73.4%）",
+            "115",
+            "13.5",
+            "66"
+          ],
+          [
+            "论文 Table 4",
+            "GLM-5.2",
+            "262 / 262",
+            "0.21±0.03（3.4）",
+            "0（0.0%）",
+            "217（82.8%）",
+            "143",
+            "26.6",
+            "149"
+          ]
+        ]
+      },
+      "cite": [
+        "paper@Table 4",
+        "paper@Table 4 注"
+      ]
+    }
+  }
 }

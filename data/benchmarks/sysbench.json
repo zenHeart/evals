@@ -4,58 +4,143 @@
   "full_name": "SysBench: Can Large Language Models Follow System Messages?",
   "aliases": [],
   "status": null,
-  "categories": [
-    "preference"
-  ],
-  "summary": "系统提示（system message）遵循能力评测：约束类型 × 提示格式 × 鲁棒性三维度、5 轮对话",
-  "interpretation": "给定系统消息下的多轮指令遵循，准确率越高越好；Hunyuan-A13B Instruct 表 Instruction Following 组读 76.1（与 IF-Eval 同组）——比 IF-Eval 更贴近真实产品里「系统提示约束」的场景。",
+  "categories": ["preference"],
+  "summary": "系统提示（system message）遵循能力评测：把系统提示里的约束分成 6 类，用 500 个系统提示 × 5 轮用户对话测量，同时报告约束 / 指令 / 会话三级粒度的满足率，并专门考察「用户指令与系统提示冲突」和「多轮稳定性」两类真实场景。",
+  "interpretation": "高分 = 在多轮对话里持续遵守系统提示里的约束。读分时注意三点：CSR（约束粒度）最高 87.1%，ISR（指令粒度）最高只有 76.6%，SSR（会话粒度）最高仅 54.4%——粒度越粗分数掉得越狠；论文把用户指令分成与系统提示相容 / 冲突两类，冲突时的正确行为被定义为拒绝或忽略该指令；第三方模型卡上的 SysBench 分数与论文表格口径不同，不能直接排在一起。",
   "measures": [
-    "系统消息约束的多轮遵循",
-    "约束类型/提示格式/鲁棒性三维度的遵循"
+    { "area": "Content 约束（内容约束）", "focus": "回答里必须包含或不得包含的内容，如要求总结、解释或拒答", "share": "约 28%", "format": "多轮对话中的用户指令，裁判按人工标注的 checklist 逐条核对", "cite": ["arxiv-2408-10943@Figure 3", "arxiv-2408-10943@附录 A.1", "arxiv-2408-10943@§3.1"] },
+    { "area": "Action 约束（动作约束）", "focus": "要求模型执行某个具体动作，如总结、解释、拒绝", "share": "约 24%", "format": "多轮对话中的用户指令，裁判按人工标注的 checklist 逐条核对", "cite": ["arxiv-2408-10943@Figure 3", "arxiv-2408-10943@附录 A.1", "arxiv-2408-10943@§3.1"] },
+    { "area": "Style 约束（风格约束）", "focus": "回答的语气、风格、口吻要求", "share": "约 21%", "format": "多轮对话中的用户指令，裁判按人工标注的 checklist 逐条核对", "cite": ["arxiv-2408-10943@Figure 3", "arxiv-2408-10943@附录 A.1", "arxiv-2408-10943@§3.1"] },
+    { "area": "Format 约束（格式约束）", "focus": "回答的组织形式，如列表、段落、表格", "share": "约 16%", "format": "多轮对话中的用户指令，裁判按人工标注的 checklist 逐条核对", "cite": ["arxiv-2408-10943@Figure 3", "arxiv-2408-10943@附录 A.1", "arxiv-2408-10943@§3.1"] },
+    { "area": "Role 约束（角色约束）", "focus": "模型要扮演的角色、职业或身份", "share": "约 9%", "format": "多轮对话中的用户指令，裁判按人工标注的 checklist 逐条核对", "cite": ["arxiv-2408-10943@Figure 3", "arxiv-2408-10943@附录 A.1", "arxiv-2408-10943@§3.2"] },
+    { "area": "Background 约束（背景约束）", "focus": "模型需要知道的情景背景设定", "share": "约 2%", "format": "多轮对话中的用户指令，裁判按人工标注的 checklist 逐条核对", "cite": ["arxiv-2408-10943@Figure 3", "arxiv-2408-10943@附录 A.1", "arxiv-2408-10943@§3.2"] },
+    { "area": "指令与系统提示的对齐关系", "focus": "用户指令与系统提示目标相容（可同时满足）还是冲突（应被拒绝或忽略）；作者把它列为要回答的三个核心问题之一", "share": "1,951 条相容 / 549 条冲突（指令层面，约 78% / 22%）", "format": "多轮对话中的用户指令，分为 aligned 与 misaligned 两类", "cite": ["arxiv-2408-10943@Table 1", "arxiv-2408-10943@§3.1"] },
+    { "area": "多轮对话结构", "focus": "会话分依赖型（后续轮次要用到历史上下文）与并行型（每轮独立）两种，考察稳定性而非单轮发挥", "share": "356 个依赖型 / 144 个并行型会话", "format": "每个系统提示固定 5 轮用户对话", "cite": ["arxiv-2408-10943@Table 1", "arxiv-2408-10943@§3.1"] }
   ],
   "does_not_measure": [
-    "无系统提示的通用对话质量",
-    "工具调用正确性"
+    { "text": "不判回答质量或有用性：裁判只核对系统提示里的约束是否被满足，不评答案对不对、好不好", "cite": ["arxiv-2408-10943@§3.1", "arxiv-2408-10943@§3.3"] },
+    { "text": "不提供「同一指令在无系统提示下」的对照分数，因此无法从 SysBench 读出加系统提示带来了多少变化", "cite": ["arxiv-2408-10943@§3.3", "arxiv-2408-10943@§4.1"] },
+    { "text": "不按语种分别报告分数：数据是中英双语，论文没有把中文题目和英文题目的得分拆开", "cite": ["arxiv-2408-10943@§3.2", "arxiv-2408-10943@§4.1"] },
+    { "text": "不衡量冲突指令下「哪种选择更优」：论文把优先遵守系统提示并拒绝 / 忽略冲突指令定义为正确行为，这是一个规范设定而非对模型品性的测量", "cite": ["arxiv-2408-10943@§3.1"] }
   ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [
-      "en"
-    ],
-    "source_type": "curated multi-turn dialogues（开源）",
-    "public_sample": true
+    "sample_count": 500,
+    "splits": ["500 个系统提示 × 5 轮用户对话（共 2,500 轮）", "指令层面：1,951 条与系统提示相容 + 549 条冲突"],
+    "languages": ["zh", "en"],
+    "source_type": "curated multi-turn dialogues（人工筛选 + 模型辅助生成，开源）",
+    "public_sample": true,
+    "totals": "500 个系统提示 × 5 轮用户对话 = 2,500 轮；指令层面 1,951 条相容 + 549 条冲突；平均每条指令挂钩 2–3 条系统约束；数据以单个 JSON 文件随仓库发布",
+    "cite": ["arxiv-2408-10943@§5", "arxiv-2408-10943@Table 1", "repo-sysbench@README"],
+    "construction": [
+      { "k": "数据来源", "text": "先从线上日志收集数千条系统提示，用启发式规则和聚类去掉重复与噪声，再由 21 名受训标注员筛出 500 条并人工润色，保证任务描述明确、约束多样。", "cite": ["arxiv-2408-10943@§3.2"] },
+      { "k": "对话生成", "text": "为每个系统提示保留 5 轮用户对话；作者收集对应用户对话并用 GPT-4o 辅助生成，再由标注员按专家设计的标注指南人工重写。", "cite": ["arxiv-2408-10943@§3.2"] },
+      { "k": "约束设计", "text": "约束被设计成可验证的原子规则，并为每个用户指令人工标注一份 checklist，用来核验相关系统约束是否被正确满足。", "cite": ["arxiv-2408-10943@§3.1"] },
+      { "k": "标注指南", "text": "相容的用户指令可以与系统提示同时满足；冲突的用户指令与系统提示矛盾，模型应当拒绝执行或忽略，以防止安全攻击。", "cite": ["arxiv-2408-10943@§3.1"] },
+      { "k": "质量把关", "text": "全部数据由多名专家多轮独立检查；论文同时说明流水线是「真实数据收集 → 模型辅助预处理 → 人工定稿」。", "cite": ["arxiv-2408-10943@§3.2"] }
+    ]
   },
   "metrics": [
-    {
-      "id": "accuracy",
-      "name": "Accuracy",
-      "range": [0, 100],
-      "unit": "percent",
-      "direction": "higher",
-      "aggregation": "mean"
-    }
+    { "id": "csr", "name": "CSR（Constraint Satisfaction Rate，约束满足率）", "direction": "越高越好", "description": "最细粒度：被判定为满足的约束占全部约束的平均比例，衡量单条指令内具体约束的遵循情况", "range": [0, 100], "unit": "percent", "cite": ["arxiv-2408-10943@§3.3", "arxiv-2408-10943@§4.2"] },
+    { "id": "isr", "name": "ISR（Instruction Satisfaction Rate，指令满足率）", "direction": "越高越好", "description": "指令粒度：一条指令只有当它关联的所有约束全部满足才计为通过", "range": [0, 100], "unit": "percent", "cite": ["arxiv-2408-10943@§3.3", "arxiv-2408-10943@§4.3"] },
+    { "id": "ssr", "name": "SSR（Session Stability Rate，会话稳定性率）", "direction": "越高越好", "description": "会话粒度：从会话开始算起，模型连续满足全部约束的平均轮数占比，衡量多轮中的持续稳定能力", "range": [0, 100], "unit": "percent", "cite": ["arxiv-2408-10943@§3.3", "arxiv-2408-10943@§4.4"] }
   ],
-  "versions": [],
-  "limitations": [],
-  "default_protocol": null,
-  "notes": "PKU-Baichuan ML System Lab 出品；Hunyuan-A13B Instruct 表 Instruction Following 组登记行",
+  "default_protocol": {
+    "raw": "把系统提示 + 历史对话 + 当前轮用户指令一起喂给被测模型生成回答，再用 GPT-4o 作裁判逐条核对人工 checklist；裁判提示词同样包含系统提示、历史对话和当前轮用户指令，温度设为 0；生成阶段所有推理参数保持默认。裁判与人工评估的一致率超过 94%。",
+    "cite": ["arxiv-2408-10943@§3.3", "arxiv-2408-10943@§4.1", "arxiv-2408-10943@附录 A.2", "repo-sysbench@README"],
+    "variants": [
+      { "text": "ground-truth 历史实验：把历史轮次的模型回答替换成标准答案，看各轮 ISR 提升多少，用来判断错误是否在多轮里累积", "cite": ["arxiv-2408-10943@§4.5", "repo-sysbench@README"] },
+      { "text": "注意力分数实验：把系统提示改当成用户消息喂入，比较模型对系统提示 token 的注意力占比与约束遵循能力的相关性", "cite": ["arxiv-2408-10943@§4.5", "repo-sysbench@README"] }
+    ]
+  },
+  "versions": [
+    { "id": "v1", "date": "2024-08-20", "label": "arXiv v1 提交", "cite": ["arxiv-2408-10943@abs"] },
+    { "id": "v2", "date": "2024-10-22", "label": "arXiv v2 修订（本页核对的版本，页眉标注 22 Oct 2024）", "cite": ["arxiv-2408-10943@页眉", "arxiv-2408-10943@abs"] }
+  ],
+  "limitations": [
+    { "issue": "裁判只有单一模型（GPT-4o）", "impact": "所有分数都经过 GPT-4o 判定，裁判自身的偏差会系统性传导到全部模型；论文只报告了与人工评估 94% 的一致率，没有做多裁判交叉验证。", "severity": "高", "response": "把分数当相对排序看，不要当绝对通过率；关注论文报告的裁判—人工一致率。", "reader": "跨模型的几个百分点差距可能落在裁判噪声里。", "cite": ["arxiv-2408-10943@§3.3", "arxiv-2408-10943@§4.1"] },
+    { "issue": "规模小，且 role / background 两类约束占比低", "impact": "合计 500 个系统提示、2,500 轮；role 约 9%、background 约 2%，这两类的分数波动会被小样本放大。", "severity": "中", "response": "拆到约束类型一级时多看趋势、少抠小数点；论文自己也说明这两类占比低是因为真实场景里通常各只出现一次。", "reader": "分类型得分不宜当作稳定估计。", "cite": ["arxiv-2408-10943@Figure 3", "arxiv-2408-10943@§3.2", "arxiv-2408-10943@§4.2"] },
+    { "issue": "冲突指令的「正确行为」是价值判断", "impact": "misaligned 情形下模型必须拒绝或忽略指令才算对，这是作者设定的规范，不是唯一合理的处置方式；对「何时该顺从用户」的不同理解会直接改变这类题的对错。", "severity": "中", "response": "把 misaligned 子集单独看，并结合安全策略解读。", "reader": "不要把冲突子集的高分直接等同于「更安全」或「更好用」。", "cite": ["arxiv-2408-10943@§3.1"] },
+    { "issue": "全部使用默认推理参数", "impact": "生成阶段所有参数保持默认，未做温度 / 采样 / 系统提示模板的扫描，因此分数不代表模型的最佳可达水平。", "severity": "中", "response": "跨模型比较相对公平，但不能推断某个模型的上限。", "reader": "不要用 SysBench 分数论证「某模型不行」，只能论证「默认配置下如此」。", "cite": ["arxiv-2408-10943@§4.1"] },
+    { "issue": "污染检测与留出集未在数据构建一节披露", "impact": "论文数据构建一节没有说明是否做了去污染或预留私有测试集，公开数据可直接下载，分数可能受训练数据污染影响。", "severity": "中", "response": "优先看非公开数据上的结果或后续独立复现。", "reader": "公开集上的绝对分数要打折看。", "cite": ["arxiv-2408-10943@§3.2"] },
+    { "issue": "结果快照停在 2024-10，只覆盖 16 个 2024 年年中模型", "impact": "官方表格的模型集合已经过时，新模型的系统提示遵循能力没有对应官方数字，也没有持续更新的榜单。", "severity": "低", "response": "需要新模型分数时自行跑仓库代码或查第三方模型卡，并注意口径差异。", "reader": "第三方数字与论文表格不可直接混排。", "cite": ["arxiv-2408-10943@页眉", "arxiv-2408-10943@§4.1"] }
+  ],
+  "notes": "北京大学与百川智能（Baichuan Inc.）出品，论文 arXiv:2408.10943（v2，2024-10-22），代码与数据在 github.com/pku-baichuan-mlsystemlab/sysbench。注意与同名数据库 OLTP 压测工具 akopytov/sysbench 区分。混元-A13B-Instruct 模型卡在 Instruction Following 组登记 IF-Eval 84.7 / SysBench 76.1（口径与论文表格不同）。本档案仍列在 data/benchmark-profile-backlog.json 中，v2 建档后需由该 backlog 的负责人移除对应条目。",
   "official_sources": [
-    {
-      "kind": "paper",
-      "url": "https://arxiv.org/abs/2408.10943"
+    { "kind": "paper", "url": "https://arxiv.org/abs/2408.10943" },
+    { "kind": "github", "url": "https://github.com/pku-baichuan-mlsystemlab/sysbench" }
+  ],
+  "related_benchmarks": ["ifeval", "ifbench", "multichallenge", "kor-bench"],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      { "id": "arxiv-2408-10943", "kind": "paper", "title": "SysBench: Can Large Language Models Follow System Messages?（arXiv:2408.10943v2，2024-10-22）", "url": "https://arxiv.org/abs/2408.10943", "accessed": "2026-11-14" },
+      { "id": "repo-sysbench", "kind": "repo", "title": "pku-baichuan-mlsystemlab/sysbench（评测代码与数据集）", "url": "https://github.com/pku-baichuan-mlsystemlab/sysbench", "accessed": "2026-11-14" },
+      { "id": "hunyuan-a13b", "kind": "repo", "title": "Tencent-Hunyuan/Hunyuan-A13B 模型卡（第三方成绩引用）", "url": "https://github.com/Tencent-Hunyuan/Hunyuan-A13B", "accessed": "2026-11-14" },
+      { "id": "sysbench-oltp", "kind": "repo", "title": "akopytov/sysbench（同名数据库压测工具，用于消歧）", "url": "https://github.com/akopytov/sysbench", "accessed": "2026-11-14" }
+    ],
+    "header": {
+      "publisher": { "v": "北京大学 & 百川智能（Baichuan Inc.）", "cite": ["arxiv-2408-10943@作者块"] },
+      "first_release": { "v": "2024-08-20（arXiv v1；当前核对版本 v2，2024-10-22）", "cite": ["arxiv-2408-10943@abs", "arxiv-2408-10943@页眉"] }
     },
-    {
-      "kind": "github",
-      "url": "https://github.com/pku-baichuan-mlsystemlab/sysbench"
+    "cites": {
+      "summary": ["arxiv-2408-10943@摘要", "arxiv-2408-10943@§3.1", "arxiv-2408-10943@Table 1", "arxiv-2408-10943@§3.3", "arxiv-2408-10943@§5"],
+      "interpretation": ["arxiv-2408-10943@Table 2", "arxiv-2408-10943@Table 3", "arxiv-2408-10943@§4.4", "arxiv-2408-10943@§3.1", "arxiv-2408-10943@§3.3"]
+    },
+    "problem": {
+      "text": "真实产品里的系统提示通常带多条约束，还要跨多轮对话持续生效；而现有指令遵循评测多是单轮、无系统提示的场景。作者据此指出：缺少一个系统消息遵循能力的综合基准，并把它归结为现有 LLM 的三类局限——约束违反、指令误判和多轮不稳定。",
+      "cite": ["arxiv-2408-10943@§1", "arxiv-2408-10943@摘要"]
+    },
+    "ladder": [
+      { "label": "随机基线", "value": "论文未给出", "note": "论文没有报告随机或最低参照分数，本站也不推算。", "cite": ["arxiv-2408-10943@Table 2"] },
+      { "label": "论文里中文导向组的最高 CSR", "value": "80.4%", "note": "Qwen2.5-72B-Instruct（CSR 80.4% / ISR 66.2% / SSR 42.8%）；英文导向组最高为 GPT-4o。", "cite": ["arxiv-2408-10943@Table 2"] },
+      { "label": "论文全场最高 CSR", "value": "87.1%", "note": "GPT-4o；但 ISR 最高 76.6% 属 GPT-4-Turbo，SSR 最高只有 54.4%（同为 GPT-4o），三个粒度不是同一个模型领先。", "cite": ["arxiv-2408-10943@Table 2", "arxiv-2408-10943@Table 3", "arxiv-2408-10943@§4.3", "arxiv-2408-10943@§4.4"] },
+      { "label": "本站账本当前最高", "auto": "ledger-top" }
+    ],
+    "misreadings": [
+      { "text": "同名不同物：SysBench 也是一个流行的数据库 / 系统 OLTP 压测工具（akopytov/sysbench，LuaJIT 编写、多线程），与这个 LLM 评测无关。", "cite": ["sysbench-oltp@README"] },
+      { "text": "在冲突指令上得高分不等于「更听用户的话」：论文把拒绝或忽略与系统提示冲突的指令定义为正确行为，这类分数考的是边界坚持。", "cite": ["arxiv-2408-10943@§3.1"] },
+      { "text": "第三方模型卡的 SysBench 分数不能和论文表格直接比：模型卡的评测口径（提示、裁判、子集）与论文不一致，混元-A13B-Instruct 的 76.1% 就是一例。", "cite": ["hunyuan-a13b@对比表", "arxiv-2408-10943@Table 2"] },
+      { "text": "只看总分会漏掉严重偏科：Qwen2-7B 在 role 约束下 CSR 有 81.0%，style 约束下却跌到 43.3%，总分掩盖了这类短板。", "cite": ["arxiv-2408-10943@§4.2"] },
+      { "text": "以为题目全是英文：数据是中英双语（论文以中文原貌 + 英文翻译展示示例），不要把分数读成纯英文系统提示下的表现。", "cite": ["arxiv-2408-10943@§3.2"] }
+    ],
+    "background": [
+      { "k": "发布方", "v": "北京大学与百川智能（Baichuan Inc.）合作完成", "cite": ["arxiv-2408-10943@作者块"] },
+      { "k": "论文与代码", "v": "arXiv:2408.10943（v1 2024-08-20，v2 2024-10-22）；代码与数据在 github.com/pku-baichuan-mlsystemlab/sysbench", "cite": ["arxiv-2408-10943@abs", "repo-sysbench@README"] },
+      { "k": "自我定位", "v": "作者称 SysBench 是首个系统消息遵循能力的综合基准", "cite": ["arxiv-2408-10943@§5"] },
+      { "k": "数据形态", "v": "仓库以单个 JSON 数组发布 500 段对话，每段含系统提示的角色与内容、5 轮完整对话，以及每轮对应的 5 条指令条目", "cite": ["repo-sysbench@README"] },
+      { "k": "裁判实现", "v": "仓库用 gpt4o.py 作为模型裁判，需要自备 OpenAI Key 与 base URL；评测提示词要求同时给出系统提示、历史对话、当前轮问题与答案", "cite": ["repo-sysbench@README", "arxiv-2408-10943@附录 A.2"] },
+      { "k": "算力", "v": "跑开源模型需要 GPU；论文中最大的 Qwen-72B 用 4× NVIDIA H100 80GB", "cite": ["repo-sysbench@README"] },
+      { "k": "复现门槛", "v": "代码本身只依赖 Python ≥ 3.10 与 openai ≥ 1.0；由于 API Key 已从数据中移除，从零复现论文全部结果更复杂，作者提示复现结果应与论文一致", "cite": ["repo-sysbench@README"] },
+      { "k": "第三方引用", "v": "混元-A13B-Instruct 模型卡的 Instruction Following 组登记 IF-Eval 84.7 / SysBench 76.1", "cite": ["hunyuan-a13b@对比表"] },
+      { "k": "同名工具", "v": "akopytov/sysbench 是基于 LuaJIT 的多线程数据库与系统压测工具，常出现在性能测试语境里", "cite": ["sysbench-oltp@README"] }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2024-10-22",
+        "columns": ["来源", "模型", "CSR", "ISR", "SSR", "备注"],
+        "rows": [
+          ["论文 Table 2", "GPT-4o", "87.1%", "76.4%", "54.4%", "英文导向组"],
+          ["论文 Table 2", "GPT-4-Turbo-20240409", "86.5%", "76.6%", "53.2%", "英文导向组"],
+          ["论文 Table 2", "Claude-3-Opus", "85.0%", "74.1%", "51.8%", "英文导向组"],
+          ["论文 Table 2", "Llama3.1-70B-Instruct", "76.6%", "60.3%", "36.6%", "英文导向组"],
+          ["论文 Table 2", "Llama3.1-8B-Instruct", "66.5%", "46.9%", "24.9%", "英文导向组"],
+          ["论文 Table 2", "Mixtral-8x22B-Instruct", "63.6%", "44.4%", "22.8%", "英文导向组"],
+          ["论文 Table 2", "GPT3.5-Turbo-20231106", "61.6%", "43.2%", "20.8%", "英文导向组"],
+          ["论文 Table 2", "Mixtral-8x7B-Instruct", "56.5%", "37.6%", "19.1%", "英文导向组"],
+          ["论文 Table 2", "Qwen2.5-72B-Instruct", "80.4%", "66.2%", "42.8%", "中文导向组"],
+          ["论文 Table 2", "GLM-4-0520", "78.9%", "65.5%", "41.6%", "中文导向组"],
+          ["论文 Table 2", "Qwen2-72B-Instruct", "79.0%", "64.1%", "41.6%", "中文导向组"],
+          ["论文 Table 2", "DeepSeek-V2-0628", "76.1%", "61.7%", "39.6%", "中文导向组"],
+          ["论文 Table 2", "Moonshot-V1-8K", "70.3%", "52.3%", "30.0%", "中文导向组"],
+          ["论文 Table 2", "GLM-4-9B-Chat", "64.2%", "44.0%", "25.9%", "中文导向组"],
+          ["论文 Table 2", "ERNIE-4-8K-0613", "50.7%", "33.8%", "20.0%", "中文导向组"],
+          ["论文 Table 2", "Qwen2-7B-Instruct", "47.0%", "26.9%", "15.0%", "中文导向组"]
+        ]
+      },
+      "cite": ["arxiv-2408-10943@Table 2"]
     }
-  ],
-  "related_benchmarks": [
-    "ifeval",
-    "ifbench",
-    "multichallenge",
-    "kor-bench"
-  ],
-  "content_status": "beta",
-  "last_verified_at": "2026-09-01"
+  }
 }

@@ -1,41 +1,406 @@
 {
   "id": "vitabench",
   "name": "VitaBench",
-  "full_name": null,
+  "full_name": "VitaBench: Benchmarking LLM Agents with Versatile Interactive Tasks in Real-world Applications",
   "aliases": [],
   "status": null,
-  "categories": [
-    "agent"
-  ],
-  "summary": "美团 VitaBench 多轮工具调用交互评测",
-  "interpretation": "美团出品的生活服务智能体评测（外卖/到店/在线旅游，66 工具），100 个跨场景 + 300 个单场景任务，rubric 滑窗评估计任务成功率；跨场景最佳仅 32.5%，远未饱和。",
-  "measures": [],
-  "does_not_measure": [],
-  "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
-  },
-  "metrics": [],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [],
-  "notes": "Qwen 引用；美团 LongCat 开源",
-  "official_sources": [
+  "categories": ["agent"],
+  "summary": "VitaBench 是美团 LongCat 团队开源的智能体评测：把外卖配送、到店消费、在线旅游三个真实生活服务场景压缩成 66 个互相依赖的 API 工具，让被测智能体和一位模拟用户多轮对话（思考模型平均约 61 轮、非思考模型约 70 轮）把事情办成。它用一份人工写的逐条勾选评分表（rubric）加滑动窗口裁判判定每次运行成没成，主指标是 4 次运行的平均成功率 Avg@4。目前跨场景最好只有 32.5%，远未饱和。",
+  "interpretation": "高分说明智能体能在信息量大、工具互相牵连、用户还会中途改主意的多轮对话里稳定把事办成。但它不说明单轮函数调用更准，也不代表能接真实生产系统——数据库、API 和用户都是模拟的。另外单次成绩很抖：顶级模型 4 次全对的概率（Pass^4）仍是个位数。",
+  "measures": [
     {
-      "kind": "github",
-      "url": "https://github.com/meituan-longcat/vitabench"
+      "area": "推理复杂度",
+      "focus": "要在时间与空间维度上整合大量环境信息才能形成可行方案，论文用「推理点」量化：跨场景任务平均 10.3 个，单场景 5.6–9.7 个。",
+      "share": "未披露（论文只按域给出推理点均值，未给题目占比）",
+      "format": "只通过端到端任务成功率体现，不单独报告推理分",
+      "cite": ["paper-arxiv@Table 5", "paper-arxiv@附录 A"]
     },
     {
-      "kind": "site",
-      "url": "https://qwen.ai/blog?id=qwen3.7"
+      "area": "工具复杂度",
+      "focus": "66 个 API 工具构成依赖图（跨场景 512 条边），调用带前置/后置条件，必须先满足指定状态才能执行。",
+      "share": "未披露",
+      "format": "端到端任务成功率",
+      "cite": ["paper-arxiv@§3.2", "paper-arxiv@Table 2"]
+    },
+    {
+      "area": "交互复杂度",
+      "focus": "模拟用户掌握完整需求但逐步透露，只在被问到时说隐式约束，并带人格与行为风格；单个任务通常涉及 5–20 个服务商、某些情况超过 100 个商品。",
+      "share": "未披露",
+      "format": "端到端任务成功率",
+      "cite": ["paper-arxiv@§3.2", "paper-arxiv@附录 B"]
+    },
+    {
+      "area": "跨场景任务（主结果）",
+      "focus": "把三个域的数据库与工具合并进同一个环境，考察域切换、工具选择面扩大与长程协调；论文报告这是表现最差的一档。",
+      "share": "100 题 / 共 400 题",
+      "format": "跨场景 Avg@4",
+      "cite": ["paper-arxiv@§3.2", "paper-arxiv@§5.2"]
+    },
+    {
+      "area": "单场景任务",
+      "focus": "外卖配送、到店消费、在线旅游各自独立环境，不跨域组合。",
+      "share": "300 题 / 共 400 题（每域 100 题）",
+      "format": "单场景 Avg@4",
+      "cite": ["paper-arxiv@Table 2"]
     }
   ],
-  "related_benchmarks": [
-    "tau-bench"
+  "does_not_measure": [
+    {
+      "text": "不单独报告单轮函数调用与参数填充准确率；工具使用错误只在失败归因里占 21.1%。",
+      "cite": ["paper-arxiv@§5.3"]
+    },
+    {
+      "text": "不评测 32B 以下的小模型（论文以难度为由排除）。",
+      "cite": ["paper-arxiv@§4.1"]
+    },
+    {
+      "text": "不连接真实生活服务平台：API 调用由 Python 函数确定性执行，用户由 LLM 模拟。",
+      "cite": ["paper-arxiv@§3.1"]
+    },
+    {
+      "text": "主分数不区分用 20 轮办成和用 90 轮办成，轮数只作为分析维度呈现，不计入分数。",
+      "cite": ["paper-arxiv@§3.3", "paper-arxiv@§4.2"]
+    }
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "dataset": {
+    "sample_count": 400,
+    "splits": [
+      "跨场景任务 100 题（主结果：三个域合并为同一环境）",
+      "单场景任务 300 题（外卖配送 / 到店消费 / 在线旅游各 100 题）"
+    ],
+    "languages": ["zh", "en"],
+    "source_type": "多个真实用户请求合成的任务指令，叠加真实平台脱敏数据与人工监督下的合成增强",
+    "public_sample": true,
+    "totals": "共 400 题（100 跨场景 + 300 单场景）· 66 个 API 工具（写 27 / 读 33 / 通用 6）· 跨场景依赖边 512 条 · 跨场景库含服务商 1,324 个、商品 6,942 个、交易 334 条（README 2026-01 版口径）· 单个任务通常涉及 5–20 个服务商",
+    "cite": ["repo-vitabench@README Benchmark Details", "paper-arxiv@Table 2", "paper-arxiv@§3.2"],
+    "construction": [
+      {
+        "k": "阶段一 · 框架设计",
+        "text": "把外卖配送、到店消费、在线旅游抽象成简化 API 工具的有向图，显式声明前置/后置条件与工具间依赖，领域规则直接编码进工具结构，从而支持跨域组合。",
+        "cite": ["site-vitabench@Method", "paper-arxiv@§3.2"]
+      },
+      {
+        "k": "阶段二 · 任务创建",
+        "text": "从匿名真实用户画像、组合指令，以及带干扰项与交易历史的真实环境构造任务；每道题经人工迭代校验以保证清晰，同时保留多种可行解。",
+        "cite": ["site-vitabench@Method"]
+      },
+      {
+        "k": "评分表（rubric）",
+        "text": "为每道任务人工设计原子化评分项（如「500 米内的餐厅」「用户只吃素食」），采用全有或全无计分：必须满足全部评分项才算这次运行成功。",
+        "cite": ["paper-arxiv@§3.3"]
+      },
+      {
+        "k": "人工一致性校验",
+        "text": "人工评估的评分者间一致性达到 Cohen's κ ≥ 0.81。",
+        "cite": ["paper-arxiv@§3.3"]
+      },
+      {
+        "k": "规模与语言",
+        "text": "上述流程共产出 400 个任务及配套数据库；英文版于 2025-11-04 补上，任务与数据库全部翻译。",
+        "cite": ["paper-arxiv@§3.2", "repo-commits@提交历史", "repo-vitabench@README News"]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "被测模型以 function-calling agent 形式接入 OpenAI tool schema 的工具，与模拟用户多轮对话，不限制轮数，直到输出 ###STOP### 或判定任务失败；模拟用户用 gpt-4.1-2025-04-14，裁判用 claude-3.7-sonnet（论文说明这样选是为了避免与被评模型重叠）。裁判按每 10 轮一个滑动窗口（相邻窗口重叠 2 轮）滚动更新每条 rubric 的满足状态，全部满足才判该次运行成功。主结果每题在 temperature 0.0 下运行 4 次，报 4 次的平均成功率 Avg@4。",
+    "cite": ["paper-arxiv@§4.1", "paper-arxiv@§3.3", "paper-arxiv@附录 B"],
+    "variants": [
+      {
+        "text": "数据集版本：论文 v2（2025-10）与官网 2026-01-22 榜单的数据集、工具和裁判都不同，30.0% 与 32.5% 不能直接比。",
+        "cite": ["paper-arxiv@摘要", "site-vitabench@Leaderboard", "repo-vitabench@README News", "paper-arxiv@Table 3 注"]
+      },
+      {
+        "text": "模型类别：thinking 与 non-thinking 分表排名；可切换的混合模型按 think-on / think-off 两类分别评测，思考模型按官方指南开启高推理强度。",
+        "cite": ["paper-arxiv@§4.1"]
+      },
+      {
+        "text": "指标口径：Avg@4 / Pass@4 / Pass^4 差异极大，顶级模型的 Pass^4 仍接近 0。",
+        "cite": ["paper-arxiv@§4.1", "paper-arxiv@§4.2"]
+      },
+      {
+        "text": "语言：提示与任务可选中文（默认）或英文。",
+        "cite": ["repo-vitabench@README Quick Start"]
+      },
+      {
+        "text": "跨域评测：用逗号连接多个域名即可自动把这些域的环境合并为统一环境。",
+        "cite": ["repo-vitabench@README Benchmark Details"]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "avg-4",
+      "name": "Avg@4",
+      "direction": "越高越好",
+      "description": "每题运行 4 次、每次按 rubric 全有或全无判成败后的平均成功率，是主指标。",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["paper-arxiv@§4.1", "paper-arxiv@§3.3"]
+    },
+    {
+      "id": "pass-4",
+      "name": "Pass@4",
+      "direction": "越高越好",
+      "description": "4 次运行里至少 1 次成功的概率，衡量多次尝试能否探索出可行路径。",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["paper-arxiv@§4.1"]
+    },
+    {
+      "id": "pass-4-all",
+      "name": "Pass^4",
+      "direction": "越高越好",
+      "description": "4 次运行全部成功的概率，衡量稳定性。",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["paper-arxiv@§4.1"]
+    }
+  ],
+  "versions": [
+    {
+      "id": "arxiv-v1",
+      "date": "2025-09-30",
+      "label": "arXiv v1 论文首次公开",
+      "cite": ["paper-arxiv@arXiv 提交历史"]
+    },
+    {
+      "id": "arxiv-v2",
+      "date": "2025-10-17",
+      "label": "arXiv v2（本档案引用的版本）；仓库代码、数据集与评测流水线已于 2025-10-14 首次提交",
+      "cite": ["paper-arxiv@arXiv 提交历史", "paper-arxiv@v2 版本行", "repo-commits@提交历史"]
+    },
+    {
+      "id": "english-dataset",
+      "date": "2025-11-04",
+      "label": "发布英文版数据集：任务与数据库全部翻译，支持 --language english",
+      "cite": ["repo-commits@提交历史", "repo-vitabench@README News", "repo-vitabench@README Quick Start"]
+    },
+    {
+      "id": "refresh-2026-01",
+      "date": "2026-01-22",
+      "label": "数据集与工具修订、评测模型升级、指标随新裁判更新；官网榜单同步更新至 2026-01-22（跨场景最佳 32.5%）",
+      "cite": ["repo-vitabench@README News", "repo-commits@提交历史", "site-vitabench@Leaderboard"]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "数据集修订导致历史分数不可比",
+      "impact": "官方在 2026-01 发布修订版数据集与工具并升级评测模型，指标随新裁判同步更新；论文 Table 2 与仓库 README 的同名统计也不一致（跨场景商品 6,946 vs 6,942、交易 447 vs 334；配送服务商 410 vs 409、配送商品 788 vs 784、到店交易 28 vs 36）。",
+      "severity": "高",
+      "response": "官网榜单脚注说明会定期修正错误、替换过时样本、增加新任务，且所有榜单指标同步更新；论文脚注则说明因 API 稳定性暂缺部分模型结果、最完整结果以官网为准。",
+      "reader": "比较分数前先确认数据集版本与榜单更新日期（当前为 2026-01-22）。",
+      "cite": ["repo-vitabench@README News", "repo-vitabench@README Benchmark Details", "paper-arxiv@Table 2", "site-vitabench@Leaderboard", "paper-arxiv@Table 3 注"]
+    },
+    {
+      "issue": "评测口径多且互不可比",
+      "impact": "thinking 与 non-thinking 分表、混合模型双档、Avg@4 / Pass@4 / Pass^4 差异巨大、语言分中英；同一模型换档位可从 21.8% 变成 29.0%。",
+      "severity": "高",
+      "response": "论文固定 temperature 0.0、每题运行 4 次，并在附录公开 agent / user / evaluator 的提示词模板；官网按 thinking / non-thinking 分表。",
+      "reader": "先看类别、指标名、推理档位和语言再比。",
+      "cite": ["paper-arxiv@§4.1", "paper-arxiv@§4.2", "paper-arxiv@附录 B", "site-vitabench@Leaderboard"]
+    },
+    {
+      "issue": "用户模拟器与裁判都是 LLM",
+      "impact": "用户由 gpt-4.1-2025-04-14 模拟、裁判由 claude-3.7-sonnet 担任；论文归类的失败里有 9.2% 来自用户模拟器错误。",
+      "severity": "中",
+      "response": "论文做了组件可靠性验证：模拟用户信息保真 9.48/10、人格一致 9.34/10，裁判与人工判断一致 Cohen's κ = 0.828，并公布提示词模板。",
+      "reader": "裁判模型更换会让历史分数整体偏移。",
+      "cite": ["paper-arxiv@§4.1", "paper-arxiv@§5.1", "paper-arxiv@§5.3", "paper-arxiv@附录 B"]
+    },
+    {
+      "issue": "单次运行方差大",
+      "impact": "temperature 0.0 下多轮扰动仍会放大成不同轨迹，顶级模型 Pass^4 仍接近 0。",
+      "severity": "中",
+      "response": "论文用 32 次重采样分析确定每题跑 4 次（比单次降低 77.5% MSE，且 k=8 收益已很小），并公开该分析。",
+      "reader": "单次运行的分数波动可能很大，看 4 次平均。",
+      "cite": ["paper-arxiv@§4.2", "paper-arxiv@§5.1"]
+    },
+    {
+      "issue": "污染与针对性调优风险",
+      "impact": "数据集在 Hugging Face 公开（MIT，中英双语，总文件大小 46.4 MB），可被下载后混入训练数据或针对性调优；论文与官网均未报告留存集或污染检测。",
+      "severity": "中",
+      "response": "未见官方回应（论文与官网均未讨论污染或留存集）。",
+      "reader": "看到厂商自报分数时，留意是否同一数据集版本与同一裁判。",
+      "cite": ["dataset-hf@数据集卡"]
+    }
+  ],
+  "notes": "Qwen 引用；美团 LongCat 开源；评测代码改编自 tau2-bench",
+  "official_sources": [
+    { "kind": "paper", "url": "https://arxiv.org/abs/2509.26490" },
+    { "kind": "site", "url": "https://vitabench.github.io/" },
+    { "kind": "repo", "url": "https://github.com/meituan-longcat/vitabench" },
+    { "kind": "dataset", "url": "https://huggingface.co/datasets/meituan-longcat/VitaBench" }
+  ],
+  "related_benchmarks": ["tau-bench", "tau2-bench"],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "paper-arxiv",
+        "kind": "paper",
+        "title": "VitaBench: Benchmarking LLM Agents with Versatile Interactive Tasks in Real-world Applications (arXiv:2509.26490v2)",
+        "url": "https://arxiv.org/abs/2509.26490",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "site-vitabench",
+        "kind": "site",
+        "title": "VitaBench 项目官网（含 Leaderboard）",
+        "url": "https://vitabench.github.io/",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "repo-vitabench",
+        "kind": "repo",
+        "title": "meituan-longcat/vitabench GitHub 仓库",
+        "url": "https://github.com/meituan-longcat/vitabench",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "dataset-hf",
+        "kind": "dataset",
+        "title": "Hugging Face 数据集 meituan-longcat/VitaBench",
+        "url": "https://huggingface.co/datasets/meituan-longcat/VitaBench",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "repo-commits",
+        "kind": "repo",
+        "title": "vitabench 仓库提交历史（GitHub API）",
+        "url": "https://api.github.com/repos/meituan-longcat/vitabench/commits?per_page=100",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "美团 LongCat 团队（论文署名 Meituan LongCat Team；Wei He 工作期间在该团队实习，来自复旦大学）",
+        "cite": ["paper-arxiv@贡献者署名"]
+      },
+      "first_release": {
+        "v": "2025-09-30（arXiv v1）；仓库代码与数据 2025-10-14 首次提交",
+        "cite": ["paper-arxiv@arXiv 提交历史", "repo-commits@提交历史"]
+      }
+    },
+    "cites": {
+      "summary": ["paper-arxiv@摘要", "repo-vitabench@README Introduction", "site-vitabench@摘要"],
+      "interpretation": ["paper-arxiv@§3.3", "paper-arxiv@§4.2", "site-vitabench@Overview"]
+    },
+    "problem": {
+      "text": "早期工具调用基准主要考函数调用与参数准确率，靠增加工具数和干扰项来提高难度，忽视了工具之间及其执行环境的相互依赖，也很少把用户当作会带来不确定性的环境组件；τ-bench 一类基准则用冗长的领域策略文档约束智能体，把「遵守策略」置于「自主探索」之上。VitaBench 用工具依赖图把领域规则编码进工具结构、去掉策略文档，并把模拟用户作为环境的一部分，从而在真实生活服务场景里同时考察推理、工具与交互三个维度的复杂度。",
+      "cite": ["paper-arxiv@§1", "paper-arxiv@§3.2"]
+    },
+    "ladder": [
+      {
+        "label": "随机 / 空跑基线",
+        "value": "论文未给出",
+        "note": "主分数要求满足全部 rubric 才算成功，随机智能体基本不可能做对；论文没有报告随机基线，本站也不推算。",
+        "cite": ["paper-arxiv@§3.3"]
+      },
+      {
+        "label": "论文发布时最好（arXiv v2 数据，2025-10）",
+        "value": "30.0%（o3 high，跨场景 Avg@4）",
+        "note": "论文主结果：单场景最佳 48.3%，跨场景跌到 30.0%；同期最强非思考模型 Claude-4.1-Opus 为 21.8%，开启思考后升到 29.0%。",
+        "cite": ["paper-arxiv@§4.2", "paper-arxiv@Table 3"]
+      },
+      {
+        "label": "官方榜单当前最高（2026-01-22 更新）",
+        "value": "32.5%（Gemini-3-Flash high，跨场景 Avg@4）",
+        "note": "榜单数据集与裁判均为 2026-01 修订版；同表非思考类最高为 Gemini-3-Pro (low) 的 30.0%。",
+        "cite": ["site-vitabench@Leaderboard", "site-vitabench@Overview"]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      },
+      {
+        "label": "稳定性参考线",
+        "value": "顶级模型 Pass^4 仅 0–10%；每题 4 次比单次降低 77.5% MSE",
+        "note": "论文用 32 次重采样确定每题跑 4 次（k=8 收益已很小）；跨场景 Pass^4 在论文与官网榜单上都是个位数，说明单次成绩很抖。",
+        "cite": ["paper-arxiv@§5.1", "paper-arxiv@§4.2"]
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把论文的 30.0% 和官网的 32.5% 当成同一口径的进步或退步——两者的数据集、工具和裁判都不同（2026-01 修订）。",
+        "cite": ["paper-arxiv@摘要", "site-vitabench@摘要", "repo-vitabench@README News"]
+      },
+      {
+        "text": "把 Avg@4、Pass@4、Pass^4 混着比——顶级模型跨场景 Pass^4 仍接近 0，三个指标说的不是一回事。",
+        "cite": ["paper-arxiv@§4.1", "paper-arxiv@§4.2"]
+      },
+      {
+        "text": "把跨场景分数和单场景分数并列——跨场景要合并三个域的数据库与工具，明显更难，论文报告两者有 20 个百分点以上的落差。",
+        "cite": ["paper-arxiv@§4.2", "site-vitabench@Overview"]
+      },
+      {
+        "text": "把厂商自报分数直接和官网榜单比——Qwen 团队公告的是 4 个域的平均分，不是跨场景 Avg@4。",
+        "cite": ["repo-vitabench@README News"]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "美团 LongCat 团队；论文署名 Meituan LongCat Team，未显式标注机构的作者均来自美团。",
+        "cite": ["paper-arxiv@贡献者署名"]
+      },
+      {
+        "k": "核心作者",
+        "v": "Wei He（复旦大学，工作期间在美团 LongCat 团队实习，通讯）、Yueqing Sun、Hongyan Hao、Xueyuan Hao 为共同一作；作者列表按字母序排列；通讯邮箱 whe23@m.fudan.edu.cn 与 guqi03@meituan.com。",
+        "cite": ["paper-arxiv@贡献者署名", "site-vitabench@作者署名"]
+      },
+      {
+        "k": "时间线",
+        "v": "2025-09-30 arXiv v1 → 2025-10-14 仓库首次提交 → 2025-10-17 arXiv v2 → 2025-11-04 英文版数据集 → 2026-01 被 ICLR 2026 接收并发布修订版 → 2026-01-22 榜单更新 → 2026-02 被 Qwen3.5 与 Seed2.0 引用。",
+        "cite": ["paper-arxiv@arXiv 提交历史", "repo-commits@提交历史", "repo-vitabench@README News", "site-vitabench@Leaderboard"]
+      },
+      {
+        "k": "数据与代码",
+        "v": "代码与数据集在 GitHub 以 MIT 许可开源，数据集同步发布在 Hugging Face（中英双语，总文件大小 46.4 MB）。",
+        "cite": ["repo-vitabench@README License", "dataset-hf@数据集卡"]
+      },
+      {
+        "k": "评测代码来源",
+        "v": "评测框架改编自 tau2-bench 的代码库。",
+        "cite": ["repo-vitabench@README Acknowledgement"]
+      },
+      {
+        "k": "命名",
+        "v": "「Vita」取自拉丁语「生活」，对应其生活服务场景定位。",
+        "cite": ["repo-vitabench@README Introduction"]
+      },
+      {
+        "k": "榜单口径",
+        "v": "分 thinking 与 non-thinking 两张表排名，均按跨场景 Avg@4 排序。",
+        "cite": ["paper-arxiv@§4.1", "site-vitabench@Leaderboard"]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-14",
+        "columns": ["来源", "模型", "类别", "跨场景 Avg@4", "跨场景 Pass@4", "跨场景 Pass^4", "口径"],
+        "rows": [
+          ["论文 Table 3", "o3 (high)", "thinking", "30.0", "61.0", "6.0", "arXiv v2 数据集；temperature 0.0，每题 4 次"],
+          ["论文 Table 3", "Claude-4.1-Opus (w/ thinking)", "thinking", "29.0", "56.0", "6.0", "arXiv v2 数据集；temperature 0.0，每题 4 次"],
+          ["论文 Table 3", "LongCat-Flash-Thinking", "thinking", "24.3", "54.0", "3.0", "arXiv v2 数据集；temperature 0.0，每题 4 次"],
+          ["论文 Table 3", "Gemini-2.5-Pro", "thinking", "23.5", "53.0", "5.0", "arXiv v2 数据集；temperature 0.0，每题 4 次"],
+          ["论文 Table 3", "GPT-5 (high)", "thinking", "22.8", "51.0", "3.0", "arXiv v2 数据集；temperature 0.0，每题 4 次"],
+          ["论文 Table 3", "Claude-4.1-Opus (w/o thinking)", "non-thinking", "21.8", "47.0", "3.0", "arXiv v2 数据集；temperature 0.0，每题 4 次"],
+          ["论文 Table 3", "LongCat-Flash-Chat", "non-thinking", "20.3", "45.0", "2.0", "arXiv v2 数据集；temperature 0.0，每题 4 次"],
+          ["官网榜单 2026-01-22", "Gemini-3-Flash (high)", "thinking", "32.5", "63.0", "7.0", "2026-01 修订数据集与新裁判"],
+          ["官网榜单 2026-01-22", "Gemini-3-Pro (high)", "thinking", "31.5", "59.0", "10.0", "2026-01 修订数据集与新裁判"],
+          ["官网榜单 2026-01-22", "LongCat-Flash-Thinking-2601", "thinking", "29.3", "60.0", "8.0", "2026-01 修订数据集与新裁判"],
+          ["官网榜单 2026-01-22", "Claude-4.5-Opus", "thinking", "28.5", "52.0", "8.0", "2026-01 修订数据集与新裁判"],
+          ["官网榜单 2026-01-22", "o3 (high)", "thinking", "26.3", "51.0", "6.0", "2026-01 修订数据集与新裁判"],
+          ["官网榜单 2026-01-22", "GPT-5.2 (xhigh)", "thinking", "24.3", "55.0", "2.0", "2026-01 修订数据集与新裁判"],
+          ["官网榜单 2026-01-22", "Gemini-3-Pro (low)", "non-thinking", "30.0", "57.0", "10.0", "2026-01 修订数据集与新裁判"],
+          ["官网榜单 2026-01-22", "Claude-4.5-Opus", "non-thinking", "23.3", "54.0", "4.0", "2026-01 修订数据集与新裁判"],
+          ["官网榜单 2026-01-22", "LongCat-Flash-Chat", "non-thinking", "22.8", "49.0", "5.0", "2026-01 修订数据集与新裁判"]
+        ]
+      },
+      "cite": ["paper-arxiv@Table 3", "site-vitabench@Leaderboard"]
+    }
+  }
 }

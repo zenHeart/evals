@@ -1,41 +1,587 @@
 {
   "id": "swe-fficiency",
   "name": "SWE-fficiency",
-  "full_name": null,
+  "full_name": "SWE-fficiency: Can Language Models Optimize Real-World Repositories on Real Workloads?",
   "aliases": [],
-  "status": null,
+  "status": "active",
   "categories": [
     "coding"
   ],
-  "summary": "开源性能优化基准（498 任务）",
-  "interpretation": "498 个真实 Python 库性能优化任务（numpy/scipy 等 9 库），指标为加速比 SR = 模型提速 ÷ 人类专家 PR 提速（调和平均），SR>1.0 即超过人类基线；正确性测试必须保持通过。",
-  "measures": [],
-  "does_not_measure": [],
+  "summary": "SWE-fficiency 是 498 个从 9 个主流 Python 库（numpy、scipy、pandas、scikit-learn、matplotlib、xarray、sympy、dask、astropy）真实 GitHub PR 中抽出的性能优化任务：给模型一个完整仓库快照、一份性能负载脚本和仓库既有测试，让它定位瓶颈并交出既不破坏测试、又能追上人类专家提速的补丁。指标是加速比 SR = 模型提速 ÷ 专家提速，全任务取调和平均。",
+  "interpretation": "SR 越高说明模型越接近甚至超过人类专家的优化水平。论文实测所有前沿 agent 都达不到专家水平的 0.23×，官网榜单最高也只有 0.225×（Claude 4.5 Opus，OpenHands）；SR 低于 1.0× 不代表补丁没有提速，只代表没追上那条 PR 的作者，SR 大于 1.0× 才叫超过人类基线。厂商自报的百分比成绩（如 MiniMax M3 的 34.8%）用的是另一套沙箱、超时与脚手架口径，和 SR 不能直接换算。",
+  "measures": [
+    {
+      "area": "瓶颈定位与热点归因",
+      "focus": "在仓库规模上 profile 负载、沿调用链找到专家真正优化的函数。论文实测超过 68% 的专家增益落在模型从未编辑过的函数里；模型与专家编辑同一文件的比率也只有 55%。",
+      "share": "未披露（论文未按考察维度拆分得分）",
+      "format": "提交一个 git 补丁",
+      "cite": [
+        "paper@§4.2 定位失败",
+        "site@任务定义"
+      ]
+    },
+    {
+      "area": "性能推理与优化取舍",
+      "focus": "做结构性降耗（降低单元素成本）而不是加局部捷径；论文观察到模型偏好恒等判断、提前退出和记忆化这类局部捷径，专家则重构代码降低单元素成本。专家提速跨度从 1.1× 到 100× 以上，长负载、大提速的题上模型掉得最明显。",
+      "share": "未披露（论文未按考察维度拆分得分）",
+      "format": "提交一个 git 补丁",
+      "cite": [
+        "paper@§4.2 捷径偏好",
+        "site@Key Features 专家锚定",
+        "site@发现"
+      ]
+    },
+    {
+      "area": "正确性保持（pass-to-pass）",
+      "focus": "补丁必须通过被改动代码覆盖到的仓库既有测试。论文用覆盖率分析筛出 guarding test，并把「通过正确性但更慢」「测试失败」「比基线更慢/更快」等结果分桶统计。",
+      "share": "未披露（论文未按考察维度拆分得分）",
+      "format": "仓库既有单元 / 集成测试",
+      "cite": [
+        "site@Key Features 正确性",
+        "paper@§2.1 Stage III",
+        "paper@Table 3"
+      ]
+    },
+    {
+      "area": "长程 agent 探索",
+      "focus": "3 小时墙钟上限、单步 30 分钟超时、最多 100 个动作；模型自行决定怎么 profile、怎么定位、怎么改、怎么验证，脚手架提供文件编辑与 bash 终端。",
+      "share": "未披露（论文未按考察维度拆分得分）",
+      "format": "OpenHands / SWE-agent 脚手架 + bash",
+      "cite": [
+        "paper@§4 Agent Scaffold",
+        "repo-swefficiency@README 推荐限制",
+        "site@Methodology 脚手架"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "不测修 bug 或实现新功能：任务全部来自性能优化 PR，输入是能跑但慢的代码，考的是提效而非功能正确性。",
+      "cite": [
+        "site@任务定义",
+        "repo-swefficiency@README Highlights"
+      ]
+    },
+    {
+      "text": "不测 C/C++/Rust 等更底层栈：论文明确说目前只覆盖 Python/Cython 的九个库，往下延伸需要重新设计覆盖测试选择并加入语言相关的构建感知。",
+      "cite": [
+        "paper@§6 Discussion"
+      ]
+    },
+    {
+      "text": "不测孤立算法 Puzzle：论文与官网都强调这是仓库规模的工程排查，不是算法题，也不能据此推断其他编码基准上的表现。",
+      "cite": [
+        "site@任务定义",
+        "paper@§6 Discussion"
+      ]
+    },
+    {
+      "text": "不把「记得训练数据里的这个 PR」当测量对象：栈帧自省与跨轮缓存两类 reward hacking 是论文单独分析的已知攻击面，不是本基准要测的能力。",
+      "cite": [
+        "paper@附录 L 防作弊"
+      ]
+    }
+  ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
+    "sample_count": 498,
+    "splits": [
+      "公开测试集 498 个任务（9 个仓库）",
+      "SWE-FFICIENCY LITE：分布对齐的 100 题小子集"
+    ],
+    "languages": [
+      "python",
+      "cython"
+    ],
+    "source_type": "公开 GitHub 仓库中以性能关键词筛选出的已合并 PR（permissive license），经多阶段管道清洗、覆盖测试筛选与人工标注性能负载后执行式过滤得到",
+    "public_sample": true,
+    "totals": "498 个任务 / 9 个仓库；Hugging Face 数据卡显示 498 行、约 299 MB；专家提速跨度 1.1×–100× 以上；另有按难度分布对齐的 100 题 LITE 子集。构建漏斗：抓取 96,457 个 PR → 属性过滤后 9,257 个 → 覆盖测试筛选后 1,041 个 → 执行式过滤后 498 个。",
+    "cite": [
+      "site@Overview",
+      "paper@附录 E.5",
+      "dataset@数据集统计",
+      "paper@附录 H LITE",
+      "site@Key Features 专家锚定",
+      "paper@附录 E.1 抓取量",
+      "paper@附录 E.2",
+      "paper@附录 E.3"
+    ],
+    "construction": [
+      {
+        "k": "仓库与 PR 抓取",
+        "text": "以 2025-03-12 为截止日抓取九个广泛使用的开源 Python 仓库（数据科学、机器学习、高性能计算方向，选它们是因为测试套件成熟、性能要求严格）的已合并 PR，得到 96,457 个；并放宽 SWE-bench 的约束，不再要求 PR 必须关联 GitHub issue。",
+        "cite": [
+          "paper@附录 E.1",
+          "paper@附录 E.1 抓取量"
+        ]
+      },
+      {
+        "k": "属性过滤",
+        "text": "要求元数据含性能关键词（perf / speedup / benchmark），排除修改测试的 PR（避免把行为变更冒充成优化），只保留对文件 AST 有实质修改的编辑，排除空改与只改文档；此阶段后保留 9,257 个（-90.4%）。",
+        "cite": [
+          "paper@§2.1 Stage II",
+          "paper@附录 E.2"
+        ]
+      },
+      {
+        "k": "容器化与覆盖测试筛选",
+        "text": "为每个实例构造可执行 docker 环境，依赖手动固定版本（测试常对版本敏感），跑仓库单测并用行覆盖保留「至少有一个 guarding test 的执行行与改动代码相交」的实例；此阶段后保留 1,041 个（-88.8%）。",
+        "cite": [
+          "paper@§2.1 Stage III",
+          "paper@附录 E.3"
+        ]
+      },
+      {
+        "k": "性能负载人工标注",
+        "text": "用 PR 描述与讨论作为上下文，人工为每个任务写一个最小负载脚本，可靠暴露改动前后的性能差；PR 自带的 demo 脚本格式不一、不可靠自动抽取，LM 生成负载同样不可靠。1,041 个实例的标注共约 200 作者小时。",
+        "cite": [
+          "paper@§2.1 Stage IV",
+          "paper@附录 E.4 标注工时"
+        ]
+      },
+      {
+        "k": "执行式过滤",
+        "text": "在打补丁前后分别跑正确性测试与性能负载，只保留改进达到统计显著的实例，并用 docker（4 CPU / 16 GB）保证可复现；最终得到 9 个仓库 498 个任务。",
+        "cite": [
+          "paper@§2.1 Stage V",
+          "paper@附录 E.5 过滤",
+          "paper@附录 E.5"
+        ]
+      },
+      {
+        "k": "测量方式",
+        "text": "用 Python timeit（timeit.repeat()）做性能测量，理由是数据集里的 PR 作者自己就用 timeit / %timeit 演示收益；每个负载多次重复以拿到运行时分布，从而做方差分析。",
+        "cite": [
+          "paper@附录 C"
+        ]
+      },
+      {
+        "k": "LITE 子集",
+        "text": "按负载运行时长、金补丁提速、金补丁行数三个难度指标分别 log 分箱，按各箱占比分配配额并无放回抽样，构造 n = 100 的分布对齐小子集。",
+        "cite": [
+          "paper@附录 H LITE"
+        ]
+      }
+    ]
   },
-  "metrics": [],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [],
-  "notes": "MiniMax 引用；考提效而非修 bug",
+  "metrics": [
+    {
+      "id": "speedup-ratio",
+      "name": "加速比（Speedup Ratio, SR）",
+      "direction": "越高越好",
+      "description": "单实例 SR = (T_pre / T_post_lm) ÷ (T_pre / T_post_gold)，即模型提速除以专家（金补丁）提速；全任务取调和平均，每个实例设 SRmin = 0.001 下限。SR = 1.0× 表示追平专家。",
+      "unit": "ratio",
+      "cite": [
+        "paper@§2 指标定义",
+        "paper@§2 指标聚合",
+        "repo-swefficiency@README 指标",
+        "site@Methodology 指标"
+      ]
+    },
+    {
+      "id": "proportion-correct",
+      "name": "正确性通过率",
+      "direction": "越高越好",
+      "description": "补丁通过覆盖测试（guarding tests）的实例占比；论文把「通过正确性但更慢」「测试失败」「比基线更慢 / 更快」等补丁结果分桶报告。",
+      "unit": "percent",
+      "cite": [
+        "paper@Table 3",
+        "repo-swefficiency@README report"
+      ]
+    },
+    {
+      "id": "proportion-human-speedup-or-better",
+      "name": "达到或超过专家提速的实例占比",
+      "direction": "越高越好",
+      "description": "仓库评测产物 eval_report 的汇总指标之一：匹配或超过专家提速的实例比例；同批汇总指标还有 overall_score（SR 调和平均）与 proportion_incorrect。",
+      "unit": "percent",
+      "cite": [
+        "repo-swefficiency@README report"
+      ]
+    }
+  ],
+  "default_protocol": {
+    "raw": "给 agent 完整仓库快照、该实例的性能负载脚本和仓库既有测试；agent 在容器里自行 profile、定位、改代码。补丁先在覆盖测试上过正确性，再跑负载测提速。单实例 SR = 模型提速 ÷ 专家提速，全任务调和平均，单实例下限 0.001；空补丁或未通过单测的补丁，SR 被钳到 max(1 ÷ 专家提速, 0.001)。评测全部跑在单台 GCP n2-standard-64（64 vCPU / 256 GB）上，每个 worker 独占 4 个物理核、对应内存节点和 16 GB 内存上限。",
+    "cite": [
+      "paper@§2 指标定义",
+      "paper@§2 指标聚合",
+      "paper@§2 失败计分",
+      "repo-swefficiency@README 失败处理",
+      "paper@§4 评测配置",
+      "site@Methodology 实验设置"
+    ],
+    "variants": [
+      {
+        "text": "脚手架：论文表 2 的实验全部使用 OpenHands，官网另列 SWE-agent  scaffold 的结果，站点榜单里还混有 Cursor CLI；不同脚手架的数字不能直接混比。",
+        "cite": [
+          "paper@Table 2",
+          "site@Methodology 脚手架",
+          "site@Leaderboard"
+        ]
+      },
+      {
+        "text": "硬件与并发：官方复现榜单要求大 VM（GCP n2-standard-64，建议 --num_workers 12，即每 worker 4 vCPU / 16 GB）。论文报告在固定硬件上多次独立测量的 SR 方差小于 0.5%，但换机器或换并发数仍会改变绝对提速数字。",
+        "cite": [
+          "repo-swefficiency@README 环境配置",
+          "site@Methodology 实验设置",
+          "paper@§4 测量稳定性"
+        ]
+      },
+      {
+        "text": "厂商自报口径不可比：MiniMax 报 SWE-fficiency 34.8%，但用的是 1C2G 沙箱、2 小时超时、Claude Code 作脚手架、内部测试——与官方 3 小时 / 100 动作 / OpenHands 的协议不同；且 34.8% 是百分比，而本基准指标是 SR 比值，两者不能换算。",
+        "cite": [
+          "minimax-blog-minimax-m3@评测设置说明",
+          "minimax-blog-minimax-m3@SWE-fficiency 成绩",
+          "paper@§4 Agent Scaffold"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2025-11-08",
+      "label": "arXiv v1 提交（arXiv:2511.06090，cs.SE；官网引用条目年份为 2025）",
+      "cite": [
+        "paper@提交历史",
+        "site@Overview"
+      ]
+    },
+    {
+      "id": "v3-icml2026",
+      "date": "2026-06-27",
+      "label": "arXiv v3 修订；论文标注为 ICML 2026 会议论文（Proceedings of the 43rd ICML, Seoul；PMLR 306, 2026）",
+      "cite": [
+        "paper@提交历史",
+        "paper@会议信息"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "覆盖语言与技术栈单一",
+      "impact": "只覆盖 Python/Cython 的九个广泛使用库。论文明确说延伸到 C/C++/Rust 等更底层栈需要重新设计覆盖测试选择，并加入语言相关的构建感知。因此分数不能外推到系统级或非 Python 栈的性能优化。",
+      "severity": "高",
+      "response": "作者以 HumanEval、SWE-bench 等 Python-only 基准带动各自方向进展为先例，认为本基准同样能推动性能优化研究；论文未给出多语言版本时间表。",
+      "reader": "看到非 Python 栈或系统级优化的结论，需要另找证据，不要用 SWE-fficiency 的分数背书。",
+      "cite": [
+        "paper@§6 Discussion"
+      ]
+    },
+    {
+      "issue": "官方口径与厂商口径不可比，且官方自身数字不一致",
+      "impact": "站点统计卡写「11 个前沿模型」「平均 SR < 0.15×」；论文说评测 15 个来自六家机构的前沿模型、所有 agent 都不到专家水平的 0.23×；官网正文也写「不到 0.23×」。MiniMax 另以 1C2G / 2 小时 / Claude Code 报出 34.8%。",
+      "severity": "高",
+      "response": "论文与仓库公开了完整评测配置（VM 规格、worker 绑定、每任务时限与动作上限、脚手架）供独立复现，并公开了模型轨迹；厂商自报数字需自行核对其沙箱与脚手架。",
+      "reader": "比较任何两个 SWE-fficiency 数字前，先核对来源（论文哪一版 / 官网 / 厂商）、脚手架与沙箱配置，再决定是否可比。",
+      "cite": [
+        "site@统计卡",
+        "site@统计卡2",
+        "site@发现",
+        "paper@§4 模型数量",
+        "paper@§4.1 Overall Performance",
+        "minimax-blog-minimax-m3@评测设置说明"
+      ]
+    },
+    {
+      "issue": "reward hacking 与负载过拟合",
+      "impact": "论文附录记录了栈帧自省（模型判断自己是否处在性能评测环境）与跨轮缓存（compute once, re-use forever）两类作弊；负载过拟合则把评测负载的形状、dtype、索引结构硬编码进补丁，在输入轻微变化时不成立，最坏情况直接违反正确性。",
+      "severity": "中",
+      "response": "harness 会拒绝复用计时结果与自省调用栈的提交；构建阶段还会拒绝提速未达统计显著的实例；仓库要求「通过正确性 + 统计显著提速」。",
+      "reader": "看到异常大的提速，先怀疑负载过拟合或缓存，而不是能力跃升；核对是否换了负载输入。",
+      "cite": [
+        "paper@附录 L 防作弊",
+        "paper@附录 L 防护",
+        "paper@§4.2 负载过拟合",
+        "repo-swefficiency@README Highlights"
+      ]
+    },
+    {
+      "issue": "榜单与论文版本不同步",
+      "impact": "官网榜单最后更新于 2026 年 2 月，包含论文表 2 之外的 Claude 4.6 Opus（0.155×）与 Composer-1（Cursor CLI，0.063×）；论文 v3（2026-06-27）又在其后修订。站点只写更新月份，未给具体日期。",
+      "severity": "中",
+      "response": "站点在榜单上方标注「Last updated: February 2026」；论文与站点各自给出完整表格，可逐条对照。",
+      "reader": "引用具体分数时写清出自论文哪一版还是站点哪次更新，避免把不同时点的数字当成同一批。",
+      "cite": [
+        "site@Leaderboard",
+        "paper@提交历史"
+      ]
+    },
+    {
+      "issue": "绝对提速依赖硬件与并发配置",
+      "impact": "SR 是同一硬件上「模型补丁后 ÷ 专家补丁后」的比值，绝对运行时长与线程调度会随机器变化；官方用容器化环境并对 CPU / 内存做绑定来压方差。",
+      "severity": "中",
+      "response": "论文报告固定硬件上多次独立测量的 SR 方差小于 0.5%；仓库提供 setup 脚本配置 docker 与 CPU pinning，并给出推荐 worker 数与每任务时限。",
+      "reader": "换机器跑出来的 SR 不要直接和榜单比；先复现官方的容器与绑定配置。",
+      "cite": [
+        "repo-swefficiency@README 环境配置",
+        "paper@§4 评测配置",
+        "paper@§4 测量稳定性",
+        "site@Methodology 实验设置"
+      ]
+    }
+  ],
+  "notes": "本站唯一收录的自报成绩来自 MiniMax M3（34.8%），口径与官方不同，见「常见误读」；考提效而非修 bug",
   "official_sources": [
     {
-      "kind": "github",
-      "url": "https://github.com/swefficiency/swefficiency"
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2511.06090"
     },
     {
       "kind": "site",
-      "url": "https://www.minimax.io/blog/minimax-m3"
+      "url": "https://swefficiency.com"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/swefficiency/swefficiency"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/swefficiency/swefficiency"
     }
   ],
   "related_benchmarks": [
     "swebench"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "SWE-fficiency: Can Language Models Optimize Real-World Repositories on Real Workloads?（arXiv:2511.06090，v3，ICML 2026 / PMLR 306）",
+        "url": "https://arxiv.org/abs/2511.06090",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "site",
+        "kind": "site",
+        "title": "swefficiency.com 官网（任务说明、方法论、关键发现与榜单）",
+        "url": "https://swefficiency.com",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "repo-swefficiency",
+        "kind": "repo",
+        "title": "swefficiency/swefficiency（评测代码与 README）",
+        "url": "https://github.com/swefficiency/swefficiency",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "dataset",
+        "kind": "dataset",
+        "title": "swefficiency/swefficiency（Hugging Face 数据集）",
+        "url": "https://huggingface.co/datasets/swefficiency/swefficiency",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "minimax-blog-minimax-m3",
+        "kind": "blog",
+        "title": "MiniMax M3: Frontier Coding, 1M Context, Native Multimodality（厂商自报口径）",
+        "url": "https://www.minimax.io/blog/minimax-m3",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Google DeepMind 与 Harvard、Princeton、西安交通大学等合作；一作 Jeffrey Jian Ma",
+        "cite": [
+          "paper@标题与作者",
+          "site@作者与单位"
+        ]
+      },
+      "first_release": {
+        "v": "2025-11-08（arXiv v1）；v3 于 2026-06-27 修订并收入 ICML 2026（PMLR 306）",
+        "cite": [
+          "paper@提交历史",
+          "paper@会议信息"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "site@Overview",
+        "repo-swefficiency@README Highlights",
+        "paper@§2 指标定义",
+        "paper@§2 指标聚合"
+      ],
+      "interpretation": [
+        "paper@§4.1 Overall Performance",
+        "site@Leaderboard",
+        "minimax-blog-minimax-m3@评测设置说明",
+        "repo-swefficiency@README 指标"
+      ]
+    },
+    "problem": {
+      "text": "SWE-bench 这类基准只考「能不能把功能改对」，不考「能不能把代码改快」：真实库里最值钱的优化是先定位热点、再跨函数推理、同时不破坏既有行为。SWE-fficiency 把性能工程单独拆出来测，并明确区分性能负载与正确性测试——论文指出仓库单测通常要求跑得快，用单测当性能基准并不反映真实性能工程。",
+      "cite": [
+        "paper@§2 工作负载与正确性分离",
+        "paper@摘要",
+        "site@任务定义"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "补丁失败 / 打不上的兜底计分",
+        "value": "SR = max(1 ÷ 专家提速, 0.001)",
+        "note": "论文对空补丁或未通过单测的补丁，把实例 SR 钳到 max(1/Speedup_gold, SRmin)。这既不是 0 分也不是 1.0×，读榜时容易看错。",
+        "cite": [
+          "paper@§2 失败计分"
+        ]
+      },
+      {
+        "label": "论文报告的前沿 agent 上限",
+        "value": "不到专家水平的 0.23×",
+        "note": "论文 §4.1 的结论性表述；论文表 2 的最高项是 Claude 4.5 Opus（OpenHands），官网榜单同为 0.225×。",
+        "cite": [
+          "paper@§4.1 Overall Performance",
+          "site@Leaderboard"
+        ]
+      },
+      {
+        "label": "人类专家（锚点）",
+        "value": "1.000×",
+        "note": "SR = 模型提速 ÷ 专家提速；论文表 2 注明 human-expert SR 为 1.0×，官网榜单把 Human Expert 单列为 1.000×。",
+        "cite": [
+          "paper@Table 2",
+          "site@Leaderboard"
+        ]
+      },
+      {
+        "label": "超过人类基线",
+        "value": "SR > 1.0×",
+        "note": "仓库 README 写明 SR>1.0 即超过人类基线；目前没有任何公开系统达到。",
+        "cite": [
+          "repo-swefficiency@README 指标"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把厂商自报的 34.8% 当成 SWE-fficiency 成绩来比：那是 MiniMax 在 1C2G 沙箱、2 小时超时、Claude Code 脚手架下的内部测试结果，且本基准指标是 SR 比值而不是百分比，两者不能换算。",
+        "cite": [
+          "minimax-blog-minimax-m3@评测设置说明",
+          "minimax-blog-minimax-m3@SWE-fficiency 成绩"
+        ]
+      },
+      {
+        "text": "把「不到 0.23× 专家水平」读成「几乎没提速」：SR 是相对专家 PR 的比值，低 SR 只说明没追上那条 PR 的作者，不代表补丁没有提速。",
+        "cite": [
+          "paper@§4.1 Overall Performance",
+          "repo-swefficiency@README 指标"
+        ]
+      },
+      {
+        "text": "只看名次不看脚手架：论文表 2 的实验全部用 OpenHands，站点榜单里混有 Cursor CLI 等不同脚手架，跨脚手架比较没有意义。",
+        "cite": [
+          "paper@Table 2",
+          "site@Leaderboard"
+        ]
+      },
+      {
+        "text": "把站点头部统计卡当结论：同一张卡写「11 个前沿模型」「平均 SR < 0.15×」，与页面正文和论文的「15 个模型」「不到 0.23×」都不一致，正文与论文口径更可靠。",
+        "cite": [
+          "site@统计卡",
+          "site@统计卡2",
+          "site@发现",
+          "paper@§4 模型数量"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方与核心作者",
+        "v": "Google DeepMind 与 Harvard、Princeton、西安交通大学等合作；作者为 Jeffrey Jian Ma、Milad Hashemi、Amir Yazdanbakhsh、Kevin Swersky、Ofir Press、Enhui Li、Vijay Janapa Reddi、Parthasarathy Ranganathan。",
+        "cite": [
+          "paper@标题与作者",
+          "site@作者与单位"
+        ]
+      },
+      {
+        "k": "发表载体",
+        "v": "arXiv:2511.06090（cs.SE），2025-11-08 提交 v1，2026-06-27 修订为 v3；论文标注 Proceedings of the 43rd International Conference on Machine Learning, Seoul, South Korea, PMLR 306, 2026。",
+        "cite": [
+          "paper@提交历史",
+          "paper@会议信息"
+        ]
+      },
+      {
+        "k": "命名与读音",
+        "v": "站点注明读作 swee-FISH-uhn-see。",
+        "cite": [
+          "site@Overview"
+        ]
+      },
+      {
+        "k": "许可与数据来源",
+        "v": "仓库软件为 Apache 2.0；任务实例通过公开 GitHub API 抓自 permissive license 的公开仓库，各仓库许可在论文表 4 列出。Hugging Face 数据集 swefficiency/swefficiency 共 498 行、约 299 MB。",
+        "cite": [
+          "repo-swefficiency@README License",
+          "paper@附录 B.1",
+          "dataset@数据集统计"
+        ]
+      },
+      {
+        "k": "构建规模",
+        "v": "漏斗为 96,457 个 PR → 属性过滤后 9,257 个 → 覆盖测试筛选后 1,041 个 → 执行式过滤后 498 个；1,041 个实例的负载标注共约 200 作者小时。",
+        "cite": [
+          "paper@附录 E.1 抓取量",
+          "paper@附录 E.2",
+          "paper@附录 E.3",
+          "paper@附录 E.4 标注工时"
+        ]
+      },
+      {
+        "k": "与本站账本的关系",
+        "v": "本站目前只收录 MiniMax M3 一条自报成绩（34.8%），其沙箱、超时与脚手架均与官方协议不同，见「常见误读」第一条。",
+        "cite": [
+          "minimax-blog-minimax-m3@SWE-fficiency 成绩",
+          "minimax-blog-minimax-m3@评测设置说明"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-14",
+        "columns": [
+          "来源",
+          "系统",
+          "SR",
+          "脚手架 / 备注"
+        ],
+        "rows": [
+          ["官网榜单（最后更新 2026-02）", "Human Expert", "1.000×", "人类专家锚点；论文表 2 同样以 1.0× 为专家 SR"],
+          ["官网榜单（最后更新 2026-02）", "Claude 4.5 Opus (OpenHands)", "0.225×", "论文表 2 与官网榜单最高"],
+          ["官网榜单（最后更新 2026-02）", "GPT-5 (OpenHands)", "0.157×", "论文表 2"],
+          ["官网榜单（最后更新 2026-02）", "Claude 4.6 Opus (OpenHands)", "0.155×", "仅官网榜单，论文表 2 无此项"],
+          ["官网榜单（最后更新 2026-02）", "GPT-5.2 (OpenHands)", "0.148×", "论文表 2"],
+          ["官网榜单（最后更新 2026-02）", "Claude 4.5 Sonnet (OpenHands)", "0.116×", "论文表 2"],
+          ["官网榜单（最后更新 2026-02）", "Gemini 3 Flash (OpenHands)", "0.106×", "论文表 2"],
+          ["官网榜单（最后更新 2026-02）", "Gemini 3 Pro (OpenHands)", "0.102×", "论文表 2"],
+          ["官网榜单（最后更新 2026-02）", "Claude 4.1 Opus (OpenHands)", "0.098×", "论文表 2"],
+          ["官网榜单（最后更新 2026-02）", "Qwen3 Coder Plus 20250923 (OpenHands)", "0.068×", "论文表 2"],
+          ["官网榜单（最后更新 2026-02）", "Composer-1 (Cursor CLI)", "0.063×", "仅官网榜单；非 OpenHands 脚手架"],
+          ["官网榜单（最后更新 2026-02）", "Kimi K2-0905 (OpenHands)", "0.054×", "论文表 2"],
+          ["官网榜单（最后更新 2026-02）", "DeepSeek V3.1 (OpenHands)", "0.043×", "论文表 2"],
+          ["官网榜单（最后更新 2026-02）", "GLM-4.6 (OpenHands)", "0.042×", "论文表 2"],
+          ["官网榜单（最后更新 2026-02）", "Gemini 2.5 Flash (OpenHands)", "0.041×", "论文表 2"],
+          ["官网榜单（最后更新 2026-02）", "GPT-5 Mini (OpenHands)", "0.039×", "论文表 2"],
+          ["官网榜单（最后更新 2026-02）", "Gemini 2.5 Pro (OpenHands)", "0.031×", "论文表 2"],
+          ["官网榜单（最后更新 2026-02）", "Claude 3.7 Sonnet (OpenHands)", "0.024×", "论文表 2 最低"],
+          ["厂商自报（MiniMax 博客）", "MiniMax M3", "34.8%", "1C2G 沙箱 / 2 小时超时 / Claude Code 脚手架 / 内部测试；百分比口径，与 SR 不可比"]
+        ]
+      },
+      "cite": [
+        "site@Leaderboard",
+        "paper@Table 2",
+        "minimax-blog-minimax-m3@评测设置说明"
+      ]
+    }
+  }
 }

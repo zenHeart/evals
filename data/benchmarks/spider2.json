@@ -1,39 +1,830 @@
 {
   "id": "spider2",
-  "name": "Spider2.0",
-  "full_name": null,
-  "aliases": [],
-  "status": null,
-  "categories": [
-    "coding"
+  "name": "Spider 2.0",
+  "full_name": "Spider 2.0: Evaluating Language Models on Real-World Enterprise Text-to-SQL Workflows",
+  "aliases": [
+    "Spider2.0",
+    "Spider2",
+    "Spider 2.0-Lite",
+    "Spider 2.0-Snow",
+    "Spider2-DBT"
   ],
-  "summary": "企业级真实数据工作流文本转 SQL 评测",
-  "interpretation": "632 个企业级真实数据工作流题（Snow/Lite 各 547 + DBT 68），按执行结果正确率计分；发布时 o1-preview 仅 17.1%、GPT-4o 仅 10.1%（对比 Spider 1.0 的 86.6%），是 Spider 1.0 的实用化升级。",
-  "measures": [],
-  "does_not_measure": [],
+  "status": "active",
+  "categories": [
+    "coding",
+    "agent"
+  ],
+  "summary": "Spider 2.0 是面向企业真实数据库的 agentic text-to-SQL 评测：632 个来自生产数据库与 DBT 数据转换项目的工作流问题，单库平均 800+ 列、gold SQL 平均 144 tokens。发布时最强的 agent 框架（Spider-Agent + o1-Preview）也只解开 21.36%，而同一模型在 Spider 1.0 / BIRD 上分别能到 91.2% / 73.0%。",
+  "interpretation": "读分数必须先分口径：论文里 Spider 2.0 主口径用 SR（是否把整个工作流干完），Spider 2.0-lite / snow 用 EX（SQL 执行结果对不对）。lite 与 snow 题面同源，但 lite 混 BigQuery / SQLite / Snowflake 三种方言、不提供预定义 schema，snow 全部托管在 Snowflake 并提供库元数据与文档。论文的 23.22% / 23.77% 是 o1-preview 在 lite / snow 上的 EX、21.36% 是 632 题口径的 SR；官网榜单是另一套口径（Snow 547 例的外部提交），当前第一已达 96.70。两组数字不能直接比。",
+  "measures": [
+    {
+      "area": "企业级 schema 理解",
+      "focus": "库平均 800 列以上、多 schema / 嵌套列 / 分区表，且不提供预定义 schema，方法必须交互式探索数据库",
+      "share": "lite 平均 803.6 列 / snow 平均 812.1 列；全量 632 题平均 743.5 列",
+      "format": "开放式工作流任务，需自行发出 SQL 与命令行脚本探查库结构",
+      "cite": [
+        "paper@Table 2",
+        "spider2-sql@Data Examples",
+        "paper@§1"
+      ]
+    },
+    {
+      "area": "长上下文与多步推理",
+      "focus": "gold SQL 平均 144 tokens、常超 100 行、含多 CTE / 嵌套子查询 / 集合运算",
+      "share": "lite 平均 144.5 tokens、snow 平均 161.8 tokens、全量平均 148.3 tokens",
+      "format": "单题需产出多条 SQL，最终以 CSV / 字符串 / 表 / 数据库形式给出结果",
+      "cite": [
+        "paper@§1",
+        "paper@Table 2",
+        "spider2-sql@About"
+      ]
+    },
+    {
+      "area": "SQL 方言高级函数",
+      "focus": "时间（DATE_TRUNC）、地理（ST_DISTANCE）、统计（CORR、STDDEV、NTILE）等方言特有函数",
+      "share": "85.98% 的查询用到方言高级函数；Table 3 中 With Functions 占 75.00%（474 例）",
+      "format": "函数选择错误本身即算失败（错误分析中 Dialect function usage 占 10.3%）",
+      "cite": [
+        "paper@§2.2",
+        "paper@Table 3",
+        "paper@§4.2"
+      ]
+    },
+    {
+      "area": "嵌套 schema / 嵌套列",
+      "focus": "单列内存 array / dict，模型难以推断嵌套字段语义，是 schema linking 错误的主要来源",
+      "share": "With Nested Schemas 117 例（18.51%）",
+      "format": "非 DBT 项目中该子集 SR 仅 10.34%，不含嵌套列的子集为 27.38%",
+      "cite": [
+        "paper@Table 3",
+        "paper@Table 7",
+        "paper@§4.1"
+      ]
+    },
+    {
+      "area": "多 schema 数据库",
+      "focus": "同一库内多个 schema，需要先定位再关联",
+      "share": "With Multiple Schemas 140 例（22.15%）",
+      "format": "开放式工作流任务",
+      "cite": [
+        "paper@Table 3"
+      ]
+    },
+    {
+      "area": "外部文档 grounding",
+      "focus": "必须读项目文档 / 教程才能确定口径（如指标定义、时间窗），模型常有正确策略但卡在把文档需求翻译成 SQL",
+      "share": "With Documentation 82 例（12.97%）；该子集 SR 11.54%，不含外部文档的子集 26.64%",
+      "format": "项目代码库 + 文档 + 数据库接口联合输入",
+      "cite": [
+        "paper@Table 3",
+        "paper@Table 8",
+        "paper@§4.1"
+      ]
+    },
+    {
+      "area": "项目级 DBT 数据转换",
+      "focus": "仓库级任务：要理解整个 DBT 项目、跑多条 SQL 完成数据转换，类似 SWE-Bench 的仓库级设定",
+      "share": "论文 Table 3 记 With Project-level (DBT) 78 例（12.34%）；发布版 Spider2-DBT 为 68 tasks",
+      "format": "发布版为 DuckDB 上的 code agent task；该子集 SR 12.82%，不含 DBT 的子集 23.22%",
+      "cite": [
+        "paper@Table 3",
+        "paper@Table 9",
+        "repo@README",
+        "spider2-sql@News"
+      ]
+    },
+    {
+      "area": "多方言覆盖",
+      "focus": "BigQuery / Snowflake / SQLite / DuckDB / PostgreSQL / ClickHouse 六种方言",
+      "share": "Bigquery 214（33.86%）、Snowflake 198（31.33%）、SQLite 135（21.36%）、DuckDB 68（10.76%）、Postgres 10（1.58%）、Clickhouse 7（1.11%）",
+      "format": "同一批问题同时托管在 BigQuery 与 Snowflake 上做方言消融",
+      "cite": [
+        "paper@Table 3",
+        "paper@附录 C.4"
+      ]
+    },
+    {
+      "area": "答案形态多样性",
+      "focus": "最终产物可能是字符串 / 数值、一张表或整个数据库，评测脚本按形态分别判定",
+      "share": "String/Number Answer 162（25.63%）、Table Answer 392（62.03%）、Database Answer 78（12.34%）",
+      "format": "执行式 focused evaluation：只看指令指定的核心列，忽略无关列",
+      "cite": [
+        "paper@Table 3",
+        "paper@附录 A"
+      ]
+    },
+    {
+      "area": "大规模数据上的真实执行",
+      "focus": "不是玩具库，查询要在 TB 级数据上真实跑",
+      "share": "平均每库 5273.42M 行，多个库达 TB 级",
+      "format": "需真实连接云数仓执行",
+      "cite": [
+        "paper@附录 B.8"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "「给定题面 + 预定义 schema → 一条 SQL」的传统单轮 text-to-SQL（这是 Spider 2.0-Lite 子集的定位；Spider 2.0 主口径明确不提供预准备输入）",
+      "cite": [
+        "paper@§1",
+        "spider2-sql@Data Examples"
+      ]
+    },
+    {
+      "text": "数据库 schema 设计 / DDL / 数据建模能力（任务只要求读库写 SQL，不要求建库或改表）",
+      "cite": [
+        "paper@§1"
+      ]
+    },
+    {
+      "text": "SQL 执行性能与优化（没有执行计划、索引选择、耗时类指标；评测只判定结果是否正确）",
+      "cite": [
+        "paper@§3.1",
+        "paper@附录 A"
+      ]
+    },
+    {
+      "text": "结果的自然语言解释或分析报告撰写（官方要求最终输出 CSV 文件，不是自然语言答案）",
+      "cite": [
+        "spider2-sql@News",
+        "paper@附录 A"
+      ]
+    },
+    {
+      "text": "人类水平（论文只做了定性人类对照，没有报告人类 SR / EX 基线）",
+      "cite": [
+        "paper@§4.1"
+      ]
+    }
+  ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
+    "sample_count": 632,
+    "splits": [
+      "Spider 2.0-lite：547 例（BigQuery 214 / Snowflake 198 / SQLite 135），多方言、需自行探索 schema",
+      "Spider 2.0-snow：547 例，全部托管在 Snowflake，提供库元数据与文档",
+      "Spider2-DBT：68 例，DuckDB 上的 DBT 项目级数据转换任务"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "enterprise real-world（生产数据库 + 技术教程 / 社区论坛 / 开源项目中的真实 SQL，以及 Fivetran 与 DBT 数据转换项目）",
+    "public_sample": true,
+    "totals": "论文口径 632 题（547 条 gold SQL + 78 个 DBT 项目，来自 213 个数据库）；实际发布的设置是 Spider 2.0-lite 547 + Spider 2.0-snow 547 + Spider2-DBT 68，原 632 题 setting 已于 2025-05-22 移除。论文 Table 3 难度分布：Easy 160（25.32%）/ Medium 279（44.15%）/ Hard 193（30.54%）。论文未设语言字段，全部题面为英文。",
+    "cite": [
+      "paper@Abstract",
+      "paper@Table 3",
+      "repo@README",
+      "spider2-sql@News"
+    ],
+    "construction": [
+      {
+        "k": "数据库筛选门槛",
+        "text": "每个库必须超过 200 列或具有嵌套 schema 结构；最终选出 74 个 BigQuery、54 个 Snowflake、30 个 SQLite、40 个 DuckDB、10 个 PostgreSQL、5 个 ClickHouse 数据库（共 213 个）。",
+        "cite": [
+          "paper@§2.2"
+        ]
+      },
+      {
+        "k": "题源与清洗",
+        "text": "从技术教程与社区论坛收集 1,021 条复杂 SQL，并从 Fivetran 与 DBT 收集 157 个数据转换项目；SQL 须超过 50 tokens（BIRD 平均为 30.9），最终保留 547 条高质量 SQL 与 78 个 DBT 项目。",
+        "cite": [
+          "paper@§2.2"
+        ]
+      },
+      {
+        "k": "标注团队",
+        "text": "由 8 位计算机专业、全部精通 SQL 的作者执行数据标注，标注流水线分六步。",
+        "cite": [
+          "paper@§2.2"
+        ]
+      },
+      {
+        "k": "反污染",
+        "text": "为避免污染，要求标注者重写每条 SQL 并验证无 bug；84.2% 的样例经历表层重写，42% 经历语义层重写。",
+        "cite": [
+          "paper@§2.2"
+        ]
+      },
+      {
+        "k": "质量校验",
+        "text": "45% 的样例在第一轮校验者那里就被发现错误；85.98% 的 SQL 使用了各方言的高级函数。",
+        "cite": [
+          "paper@§2.2"
+        ]
+      },
+      {
+        "k": "发布后修订",
+        "text": "2024-12-24 放开全部 examples 与 gold answers 支持自评；2025-01-10 起以 data update log 跟踪样例变更，榜单结果随之动态变化。",
+        "cite": [
+          "spider2-sql@News",
+          "repo@README"
+        ]
+      }
+    ]
   },
-  "metrics": [],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [],
-  "notes": "Qwen3-coder 引用",
+  "metrics": [
+    {
+      "id": "success_rate",
+      "name": "成功率（SR）",
+      "direction": "越高越好",
+      "description": "成功完成整个工作流任务的实例占比，用于 Spider 2.0 主口径；判定标准是 gold value 的所有列都出现在预测 SQL 的输出中，由人工编写的评测脚本逐例裁定。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§3.1",
+        "paper@附录 A"
+      ]
+    },
+    {
+      "id": "execution_accuracy",
+      "name": "执行准确率（EX）",
+      "direction": "越高越好",
+      "description": "SQL 执行结果与 gold 执行结果一致的题目占比，用于 Spider 2.0-lite 与 Spider 2.0-snow；采用执行式 focused evaluation，忽略无关列、只关注指令指定的核心列。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§3.1",
+        "paper@附录 A"
+      ]
+    }
+  ],
+  "default_protocol": {
+    "raw": "主实验用固定系统提示词、temperature 0.0，输入超限时从开头截断；agent 侧采样 temperature 1.0 / top-p 0.9，同一结果连续出现 3 次或单动作超过 120 秒即自动终止。官方要求最终提交输出 CSV 文件而不是 SQL 文本。",
+    "cite": [
+      "paper@§3.1",
+      "paper@附录 C.1",
+      "spider2-sql@News"
+    ],
+    "variants": [
+      {
+        "text": "Spider 2.0（agentic，SR）vs Spider 2.0-lite / snow（EX）：主口径不提供任何预准备输入，lite / snow 只需输出 SQL；三者的分数不能放在一起比。",
+        "cite": [
+          "paper@§1",
+          "paper@§3.1"
+        ]
+      },
+      {
+        "text": "lite vs snow：lite 混 BigQuery / SQLite / Snowflake 三种方言且需自行探索 schema，snow 全部托管在 Snowflake 并提供准备好的库元数据与文档。",
+        "cite": [
+          "paper@Table 2",
+          "spider2-sql@Leaderboard"
+        ]
+      },
+      {
+        "text": "论文自测 vs 官网榜单：论文 Table 4 / 5 / 6 是论文作者跑的结果，官网榜单是外部方法提交，且官方明示题目不变、分数也可能随评测脚本修正而变化。",
+        "cite": [
+          "spider2-sql@Leaderboard",
+          "repo@README"
+        ]
+      },
+      {
+        "text": "oracle tables 设置：2025-04-20 起提供 spider2-lite / spider2-snow 的 ground-truth tables，使用该设置必须声明，带 -* 的方法不进榜单排名。",
+        "cite": [
+          "spider2-sql@News",
+          "spider2-sql@Leaderboard"
+        ]
+      },
+      {
+        "text": "oracle 函数文档 / few-shot：在 lite 上给 DAIL-SQL + GPT-4o 提供 oracle 函数文档为 5.85%（不给 5.68%），few-shot 为 0-shot 5.68% / 1-shot 6.40% / 3-shot 6.76%，提升都极小。",
+        "cite": [
+          "paper@Table 10",
+          "paper@Table 11"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2024-11-12",
+      "label": "arXiv v1 发布（5,260 KB）",
+      "cite": [
+        "arxiv-abs@Submission history"
+      ]
+    },
+    {
+      "id": "release-all",
+      "date": "2024-12-24",
+      "label": "放开全部 examples 与 gold answers，支持自评；榜单仍只认官方提交",
+      "cite": [
+        "spider2-sql@News",
+        "repo@README"
+      ]
+    },
+    {
+      "id": "agent-reco",
+      "date": "2024-12-26",
+      "label": "官方建议改用 spider-agent-lite / spider-agent-snow 做基准测试，并要求输出 CSV 而非 SQL",
+      "cite": [
+        "spider2-sql@News"
+      ]
+    },
+    {
+      "id": "update-log",
+      "date": "2025-01-10",
+      "label": "引入 data update log 跟踪评测样例变更，榜单结果随之动态变化",
+      "cite": [
+        "repo@README"
+      ]
+    },
+    {
+      "id": "oracle-tables",
+      "date": "2025-04-20",
+      "label": "提供 spider2-lite / spider2-snow 的 ground-truth tables（oracle tables 设置）",
+      "cite": [
+        "repo@README"
+      ]
+    },
+    {
+      "id": "dbt",
+      "date": "2025-05-22",
+      "label": "新增 Spider2-DBT（68 tasks，仓库级 text-to-SQL），并移除原 Spider2 setting",
+      "cite": [
+        "spider2-sql@News",
+        "repo@README"
+      ]
+    },
+    {
+      "id": "toolcall-agent",
+      "date": "2025-06-10",
+      "label": "实现免 Docker 的 tool-call 版 Spider-Agent，运行性能显著提升",
+      "cite": [
+        "repo@README"
+      ]
+    },
+    {
+      "id": "snow-jsonl",
+      "date": "2025-07-13",
+      "label": "更新 spider2-snow.jsonl 消除歧义，旧版改名 spider2-snow-0713.jsonl 备查",
+      "cite": [
+        "repo@README"
+      ]
+    },
+    {
+      "id": "v2",
+      "date": "2025-03-17",
+      "label": "arXiv v2（5,263 KB）；论文以 ICLR 2025 Oral 发表",
+      "cite": [
+        "arxiv-abs@Submission history",
+        "paper@页眉"
+      ]
+    },
+    {
+      "id": "eval-suite-fix",
+      "date": "2025-10-29",
+      "label": "修复 evaluation-suite，榜单分数更准确稳定，并刷新受影响的方法（官网该条新闻标注为 2024-10-29，按仓库与条目顺序应为 2025 年）",
+      "cite": [
+        "repo@README",
+        "spider2-sql@News"
+      ]
+    },
+    {
+      "id": "snow-mfa",
+      "date": "2025-11-06",
+      "label": "Snowflake 密码与 MFA 策略升级，Web UI 登录与 Python 凭据访问行为均发生变化",
+      "cite": [
+        "repo@README"
+      ]
+    },
+    {
+      "id": "snow-suspend",
+      "date": "2026-08-12",
+      "label": "Snowflake 评测账号意外封禁，Spider 2.0-Snow 访问持续中断",
+      "cite": [
+        "repo@README"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "规模口径不一致",
+      "impact": "官网与论文仍称 632 problems，但实际可跑的是 lite 547 + snow 547 + DBT 68；论文 Table 3 记 78 个 DBT 项目，而发布版 Spider2-DBT 只有 68 tasks。直接引「632 题」会高估可复现题量。",
+      "severity": "高",
+      "response": "引用时说明是论文口径 632 还是发布口径 615；读榜单先确认是哪个 setting。",
+      "reader": "不要用 632 去除以任何分母来推算 per-example 指标；先看自己复现的是 lite、snow 还是 DBT。",
+      "cite": [
+        "spider2-sql@About",
+        "spider2-sql@News",
+        "repo@README",
+        "paper@Table 3"
+      ]
+    },
+    {
+      "issue": "依赖外部云账号，可用性受制于厂商",
+      "impact": "lite 需自备 BigQuery / Snowflake 凭据并产生费用；snow 依赖官方 Snowflake 账号，2025-11-06 因 MFA 策略升级失效、2026-08-12 账号被封禁导致访问中断。复现实验可能直接卡在环境准备阶段。",
+      "severity": "高",
+      "response": "按 README 的 Step1 / Step2 注册并阅读 Snowflake Guideline；账号不可用期间改用已发布数据或 DBT 子集。",
+      "reader": "看到 Snow 榜单新高时，先确认当期 Snowflake 账号是否可用，否则无法独立复现。",
+      "cite": [
+        "repo@README",
+        "spider2-sql@Leaderboard"
+      ]
+    },
+    {
+      "issue": "榜单分数随时间漂移",
+      "impact": "2025-07-13 更新 spider2-snow.jsonl、2025-10-29 修复 evaluation-suite，官网明示「题目不变、分数可能微变」。跨时间比较不同方法的榜单分，容易把评测脚本修正误读成模型进步。",
+      "severity": "高",
+      "response": "记录抓取日期作为 as_of；比较时优先取同一版本评测套件下的结果。",
+      "reader": "引用榜单分数必须带抓取日期；相差一两个名次时先怀疑评测套件版本而非模型能力。",
+      "cite": [
+        "spider2-sql@Leaderboard",
+        "repo@README"
+      ]
+    },
+    {
+      "issue": "同一模型有四个互不一致的公开数字",
+      "impact": "o1-preview：官网 Why 段 17.1%、论文 Table 6 原生 SR 21.36%、论文 Table 4 lite EX 23.22% / snow EX 23.77%；GPT-4o 官网口径 10.1%；仓库 README 称 GPT-4 仅 6.0%。混报会得出相反结论。",
+      "severity": "中",
+      "response": "报数必须带口径（SR / EX、lite / snow / 632 题、论文自测 / 官网提交 / 仓库口径）。",
+      "reader": "任何「Spider 2.0 上 X%」的转述，先问是哪个口径；本页 official_results 已按来源分列。",
+      "cite": [
+        "spider2-sql@Why Spider 2.0?",
+        "paper@Table 6",
+        "paper@Table 4",
+        "repo@README"
+      ]
+    },
+    {
+      "issue": "无人类基线",
+      "impact": "论文只做了定性人类对照（人类能靠多步推理和迭代理解掌握 schema），没有报告人类 SR / EX，无法计算「人类 vs 模型」的差距。",
+      "severity": "中",
+      "response": "本站不推算人类基线；需要人类参照时自行设计小样本人工评测并说明抽样方式。",
+      "reader": "不要把 21% 直接理解成「距人类还差 79 个百分点」。",
+      "cite": [
+        "paper@§4.1"
+      ]
+    },
+    {
+      "issue": "反污染证据是流程性的",
+      "impact": "论文报告标注者重写每条 SQL、84.2% 表层重写 / 42% 语义层重写、45% 首轮即被发现错误，但没有公开重写前后的查询对照，也没有给出去污染后的复测分数。",
+      "severity": "中",
+      "response": "将其视为流程声明而非可验证指标；高分段结论仍建议抽查题面是否出现在公开语料中。",
+      "reader": "96.70 这类接近满分的成绩，需要额外怀疑训练数据污染而非单纯能力提升。",
+      "cite": [
+        "paper@§2.2"
+      ]
+    },
+    {
+      "issue": "难度分级口径粗糙且分 setting 分布未披露",
+      "impact": "难度按 gold SQL 的 whitespace token 数划分（Easy <80 / Medium 80–159 / Hard ≥160），Table 3 的难度占比是 632 题总体，lite / snow 各自的难度分布未给出。",
+      "severity": "低",
+      "response": "跨 setting 比较 Easy / Medium / Hard 分层分数前，先确认两边的难度分布一致。",
+      "reader": "看到「lite Hard 只有 1.24%」时，记住这是 token 数口径的 Hard，不是人工标注的难度。",
+      "cite": [
+        "paper@§3.1",
+        "paper@Table 3"
+      ]
+    },
+    {
+      "issue": "执行成本高",
+      "impact": "平均每库 5273.42M 行、多库 TB 级；论文报告 Spider-Agent + o1-preview 平均单题成本 0.75$，跑全量 632 题成本接近 500$，且 snow 查询还要排队。",
+      "severity": "低",
+      "response": "先用 Spider2-DBT（68 tasks）或抽样子集验证流程，再决定是否跑全量。",
+      "reader": "比较不同方法的成本时，注意论文同时给出了 DIN-SQL + GPT-4o 0.14$ 与 DAIL-SQL + GPT-4o 0.09$ 这类低一个数量级的选项。",
+      "cite": [
+        "paper@附录 B.8",
+        "paper@Table 21"
+      ]
+    },
+    {
+      "issue": "语言维度未披露",
+      "impact": "论文没有语言字段，也没有语言统计，全部题面为英文；无法据此评估多语言或中文 SQL 能力。",
+      "severity": "低",
+      "response": "多语言 text-to-SQL 能力需另选基准。",
+      "reader": "不要把英文题面上的高分迁移到中文数据仓库场景。",
+      "cite": [
+        "paper@Abstract"
+      ]
+    }
+  ],
+  "notes": "Spider 1.0 之后的企业级 agentic text-to-SQL 续作，ICLR 2025 Oral；配套 Spider-Agent 框架与 DBT 项目级子集。论文基线已完全饱和（官网 Snow 榜单第一 96.70），该基准的分辨力目前主要来自方言消融、错误分析与成本维度。",
   "official_sources": [
     {
       "kind": "site",
-      "url": "https://spider2-sql.github.io"
+      "url": "https://spider2-sql.github.io/"
     },
     {
-      "kind": "site",
-      "url": "https://qwenlm.github.io/blog/qwen3-coder/"
+      "kind": "repo",
+      "url": "https://github.com/xlang-ai/Spider2"
+    },
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2411.07763"
     }
   ],
-  "related_benchmarks": [],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "related_benchmarks": [
+    "spider",
+    "bird-sql",
+    "livesqlbench",
+    "dsbench-hard",
+    "dsbench-fullstack"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "Spider 2.0: Evaluating Language Models on Real-World Enterprise Text-to-SQL Workflows（arXiv:2411.07763v2，ICLR 2025 Oral）",
+        "url": "https://arxiv.org/pdf/2411.07763",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "spider2-sql",
+        "kind": "site",
+        "title": "Spider 2.0 官网（含 News、Why、Setting、Leaderboard）",
+        "url": "https://spider2-sql.github.io",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "xlang-ai/Spider2 仓库 README（News 与 Overview）",
+        "url": "https://github.com/xlang-ai/Spider2",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "arxiv-abs",
+        "kind": "paper",
+        "title": "arXiv:2411.07763 摘要页（作者列表与提交历史）",
+        "url": "https://arxiv.org/abs/2411.07763",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "香港大学（HKU）牵头，联合 Salesforce Research、Sea AI Lab、Google DeepMind、Google Cloud AI Research 与滑铁卢大学；项目由 XLANG Lab 维护",
+        "cite": [
+          "paper@作者署名",
+          "arxiv-abs@Authors"
+        ]
+      },
+      "first_release": {
+        "v": "2024-11-12（arXiv v1）；2025-03-17 发 v2，论文作为 ICLR 2025 Oral 发表",
+        "cite": [
+          "arxiv-abs@Submission history",
+          "paper@页眉"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "paper@Abstract",
+        "paper@§1",
+        "paper@Table 2"
+      ],
+      "interpretation": [
+        "paper@§3.1",
+        "spider2-sql@Leaderboard",
+        "spider2-sql@Why Spider 2.0?"
+      ]
+    },
+    "problem": {
+      "text": "Spider 1.0、BIRD 这类 text-to-SQL 基准建立在库小、schema 简单、单条 SQL 的假设上；真实企业数据库平均几百到上千列、多方言、带嵌套 schema，还要读外部文档和项目代码库。Spider 2.0 要测的是「模型能不能自己在复杂企业数据环境里把活干完」，而不是「给定 schema 写对一条 SQL」。",
+      "cite": [
+        "paper@Abstract",
+        "paper@§1",
+        "spider2-sql@Why Spider 2.0?"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机 / 平凡基线",
+        "value": "论文未给出",
+        "note": "论文没有报告随机或平凡基线，本站也不推算。",
+        "cite": [
+          "paper@§3.1"
+        ]
+      },
+      {
+        "label": "传统 pipeline 方法最好（lite EX）",
+        "value": "5.68%",
+        "note": "DAIL-SQL + GPT-4o；同一方法在 Spider 1.0 上 86.6%、BIRD 上 57.4%，这个跨基准落差就是 Spider 2.0 的核心信息。",
+        "cite": [
+          "paper@Table 5"
+        ]
+      },
+      {
+        "label": "论文发布时最强（632 题 agentic SR）",
+        "value": "21.36%",
+        "note": "Spider-Agent + o1-Preview；同一模型在 EX 口径下 lite 23.22% / snow 23.77%。",
+        "cite": [
+          "paper@Table 6",
+          "paper@Table 4"
+        ]
+      },
+      {
+        "label": "人类水平",
+        "value": "论文未给出",
+        "note": "论文只做了定性人类对照（人类能靠多步推理与迭代理解掌握 schema），没有报告人类 SR / EX；本站不推算。",
+        "cite": [
+          "paper@§4.1"
+        ]
+      },
+      {
+        "label": "官网 Snow 榜单当前第一",
+        "value": "96.70",
+        "note": "Genloop's Sentinel Agent v2 Pro（Snow 547 例外部提交口径；页面未注明结果更新日期，且官方明示分数可能随评测脚本修正变化）。",
+        "cite": [
+          "spider2-sql@Leaderboard"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把官网榜单 96.70 和论文的 21% 放在一起，得出「模型已经解决 Spider 2.0」——前者是 Snow 547 例的外部提交口径，后者是 632 题 agentic SR 口径。",
+        "cite": [
+          "spider2-sql@Leaderboard",
+          "paper@Table 6"
+        ]
+      },
+      {
+        "text": "看到 632 就以为能直接跑 632 题——原 632 setting 已于 2025-05-22 移除，实际是 lite / snow 各 547 加 DBT 68。",
+        "cite": [
+          "spider2-sql@News",
+          "repo@README"
+        ]
+      },
+      {
+        "text": "把 o1-preview 的 17.1%（官网 Why 段）、21.36%（论文 SR）、23.22% / 23.77%（论文 EX）混成一个数字报出去。",
+        "cite": [
+          "spider2-sql@Why Spider 2.0?",
+          "paper@Table 6",
+          "paper@Table 4"
+        ]
+      },
+      {
+        "text": "以为拿到发布的 gold SQL 就可以拿去微调——官方明确不推荐，且只放出了少量 gold SQL。",
+        "cite": [
+          "repo@README",
+          "spider2-sql@News"
+        ]
+      },
+      {
+        "text": "把带 -* 的 oracle tables 成绩和正常成绩一起排名——官方说明这类使用 ground-truth 表的方法不进排名。",
+        "cite": [
+          "spider2-sql@Leaderboard"
+        ]
+      },
+      {
+        "text": "以为最终提交 SQL 文本就行——官方要求输出 CSV 文件。",
+        "cite": [
+          "spider2-sql@News"
+        ]
+      },
+      {
+        "text": "以为 snow 一定比 lite 难——论文的同题方言消融显示 BigQuery 12.78% 对 Snowflake 6.6%，方言差异确实影响成绩，但 lite 混合三方言且无预定义 schema，两者不能直接比高低。",
+        "cite": [
+          "paper@附录 C.4",
+          "paper@Table 2"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "香港大学（HKU）牵头，联合 Salesforce Research、Sea AI Lab、Google DeepMind、Google Cloud AI Research 与滑铁卢大学；XLANG Lab 维护",
+        "cite": [
+          "paper@作者署名",
+          "arxiv-abs@Authors"
+        ]
+      },
+      {
+        "k": "论文与会议",
+        "v": "arXiv:2411.07763，v1 2024-11-12 / v2 2025-03-17；ICLR 2025 Oral",
+        "cite": [
+          "arxiv-abs@Submission history",
+          "paper@页眉"
+        ]
+      },
+      {
+        "k": "配套框架",
+        "v": "论文提出 Spider-Agent；2025-06-10 起提供免 Docker 的 tool-call 版本，2025-05-22 起提供 spider-agent-dbt",
+        "cite": [
+          "paper@§3.1",
+          "repo@README"
+        ]
+      },
+      {
+        "k": "数据来源",
+        "v": "74 个 BigQuery、54 个 Snowflake、30 个 SQLite、40 个 DuckDB、10 个 PostgreSQL、5 个 ClickHouse，共 213 个库；题面来自技术教程、社区论坛与开源项目中的真实 SQL，以及 Fivetran / DBT 数据转换项目",
+        "cite": [
+          "paper@§2.2"
+        ]
+      },
+      {
+        "k": "数据规模",
+        "v": "平均每库 5273.42M 行，多个库达 TB 级",
+        "cite": [
+          "paper@附录 B.8"
+        ]
+      },
+      {
+        "k": "许可与热度",
+        "v": "仓库 MIT license；2026-11-14 抓取时为 888 stars / 154 forks / 241 commits",
+        "cite": [
+          "repo@README"
+        ]
+      },
+      {
+        "k": "前作与对照基准",
+        "v": "Spider 1.0（2,147 题 / 40 库 / 平均 27.1 列）与 BIRD（1,789 题 / 15 库 / 平均 54.2 列）是论文表内的主要对照；论文用同一张表给出跨基准对比",
+        "cite": [
+          "paper@Table 2",
+          "paper@Table 5"
+        ]
+      },
+      {
+        "k": "难度分级",
+        "v": "按 gold SQL 的 whitespace token 数划分：Easy <80、Medium 80–159、Hard ≥160",
+        "cite": [
+          "paper@§3.1"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-14",
+        "columns": [
+          "来源",
+          "方法 / 配置",
+          "口径",
+          "成绩"
+        ],
+        "rows": [
+          ["论文 Table 4", "o1-preview + Spider-Agent", "Lite Easy / Medium / Hard / 总体 EX", "33.59% / 23.58% / 15.03% / 23.22%"],
+          ["论文 Table 4", "o1-preview + Spider-Agent", "Snow Easy / Medium / Hard / 总体 EX", "39.84% / 21.14% / 15.61% / 23.77%"],
+          ["论文 Table 4", "o3-mini + Spider-Agent", "Lite / Snow 总体 EX", "23.40% / 19.20%"],
+          ["论文 Table 4", "Claude-3.5-Sonnet + Spider-Agent", "Lite / Snow 总体 EX", "15.54% / 15.54%"],
+          ["论文 Table 4", "GPT-4o + Spider-Agent", "Lite / Snow 总体 EX", "13.16% / 12.98%"],
+          ["论文 Table 4", "DeepSeek-V3 + Spider-Agent", "Lite / Snow 总体 EX", "8.78% / 8.78%"],
+          ["论文 Table 4", "Qwen2.5-Coder + Spider-Agent", "Lite / Snow 总体 EX", "5.30% / 5.48%"],
+          ["论文 Table 5", "DIN-SQL + GPT-4o", "Spider 1.0 / BIRD / Snow / Lite 总体 EX", "85.3% / 55.9% / 0.00% / 1.46%"],
+          ["论文 Table 5", "DAIL-SQL + GPT-4o", "Spider 1.0 / BIRD / Snow / Lite 总体 EX", "86.6% / 57.4% / 2.20% / 5.68%"],
+          ["论文 Table 5", "CHESS + GPT-4o", "Spider 1.0 / BIRD / Snow / Lite 总体 EX", "87.2% / 66.7% / 1.28% / 3.84%"],
+          ["论文 Table 5", "SFT CodeS-15B", "Spider 1.0 / BIRD / Snow / Lite 总体 EX", "85.4% / 59.3% / 0.00% / 0.73%"],
+          ["论文 Table 6", "AutoEval + GPT-4o", "632 题原生 SR", "5.70%"],
+          ["论文 Table 6", "Reflexion + GPT-4o", "632 题原生 SR", "7.28%"],
+          ["论文 Table 6", "CodeR + GPT-4o", "632 题原生 SR", "7.91%"],
+          ["论文 Table 6", "Spider-Agent + o1-Preview", "632 题原生 SR", "21.36%"],
+          ["论文 Table 6", "Spider-Agent + Claude-3.5-Sonnet", "632 题原生 SR", "14.87%"],
+          ["论文 Table 6", "Spider-Agent + GPT-4o", "632 题原生 SR", "12.34%"],
+          ["论文 Table 6", "Spider-Agent + GPT-4", "632 题原生 SR", "9.86%"],
+          ["论文 Table 6", "Spider-Agent + Qwen2.5-72B", "632 题原生 SR", "6.17%"],
+          ["论文 Table 6", "Spider-Agent + DeepSeek-V2.5", "632 题原生 SR", "5.22%"],
+          ["论文 Table 6", "Spider-Agent + Gemini-Pro-1.5", "632 题原生 SR", "2.53%"],
+          ["论文 Table 6", "Spider-Agent + Llama-3.1-405B", "632 题原生 SR", "2.21%"],
+          ["论文 Table 7", "按是否含嵌套列（非 DBT 项目）", "SR：含 10.34% / 不含 27.38%", "嵌套列样本占 18.51%"],
+          ["论文 Table 8", "按是否需外部文档（非 DBT 项目）", "SR：含 11.54% / 不含 26.64%", "需外部文档样本占 12.97%"],
+          ["论文 Table 9", "按是否含 DBT 项目", "SR：含 12.82% / 不含 23.22%", "DBT 样本占 12.34%"],
+          ["论文 Table 10", "DAIL-SQL + GPT-4o（oracle 设置）", "Lite EX：有 / 无 oracle 函数文档", "5.85% / 5.68%"],
+          ["论文 Table 11", "DAIL-SQL + GPT-4o（few-shot）", "Lite EX：0-shot / 1-shot / 3-shot", "5.68% / 6.40% / 6.76%"],
+          ["论文 Table 20", "Spider-Agent + o1-preview，按数据库", "总体 / BigQuery / Snowflake / SQLite / DuckDB / Postgres / ClickHouse SR", "17.0% / 24.07% / 7.14% / 20.74% / 17.69% / 12.82% / 57.14%"],
+          ["论文 Table 21", "Spider-Agent + o1-preview", "平均单题 API 成本", "0.75 $"],
+          ["论文 Table 21", "Spider-Agent + GPT-4-Turbo", "平均单题 API 成本", "0.58 $"],
+          ["论文 Table 21", "Spider-Agent + GPT-4o", "平均单题 API 成本", "0.32 $"],
+          ["论文 Table 21", "DIN-SQL + GPT-4o", "平均单题 API 成本", "0.14 $"],
+          ["论文 Table 21", "DAIL-SQL + GPT-4o", "平均单题 API 成本", "0.09 $"],
+          ["论文 Table 21", "DAIL-SQL + o1-preview", "平均单题 API 成本", "0.32 $"],
+          ["论文 Table 21", "CHESS + GPT-4o", "平均单题 API 成本", "0.43 $"],
+          ["论文 附录 C.4", "同题双方言消融（180 例）", "BigQuery / Snowflake 成绩", "12.78% / 6.6%"],
+          ["官网 Snow 榜单", "Genloop's Sentinel Agent v2 Pro（Genloop）", "Snow 547 例提交口径，榜单第一", "96.70"],
+          ["官网 Snow 榜单", "Native mini（usenative.ai）", "Snow 547 例提交口径，榜单第二", "96.53"],
+          ["官网 Why 段", "o1-preview", "官网口径（未注明 setting）", "17.1%"],
+          ["官网 Why 段", "GPT-4o", "官网口径（未注明 setting）", "10.1%"],
+          ["仓库 README", "GPT-4", "仓库口径（未注明 setting）", "6.0%"]
+        ]
+      },
+      "cite": [
+        "paper@Table 4",
+        "paper@Table 5",
+        "paper@Table 6",
+        "paper@Table 7",
+        "paper@Table 8",
+        "paper@Table 9",
+        "paper@Table 10",
+        "paper@Table 11",
+        "paper@Table 20",
+        "paper@Table 21",
+        "paper@附录 C.4",
+        "spider2-sql@Leaderboard",
+        "spider2-sql@Why Spider 2.0?",
+        "repo@README"
+      ]
+    }
+  }
 }

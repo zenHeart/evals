@@ -1,35 +1,547 @@
 {
   "id": "vpct",
   "name": "VPCT",
-  "full_name": null,
+  "full_name": "VPCT（Visual Physics Comprehension Test，视觉物理理解测试）",
   "aliases": [],
   "status": null,
   "categories": [
     "multimodal"
   ],
-  "summary": "斜面弹道图视觉物理理解测试",
-  "interpretation": "引用出处单一（字节 Seed1.8 发布表），公开题集、指标与协议未能核实；分数口径以厂商自报为准，跨厂商可比性未知。",
-  "measures": [],
-  "does_not_measure": [],
+  "summary": "100 道「小球落桶」物理题：每张图里有一个小球、若干斜坡和 3 个桶，模型要判断小球最终滚进哪个桶；标准答案由物理模拟器算出，唯一指标是准确率。",
+  "interpretation": "高分说明模型能从一张静态示意图推出小球的滚动与弹跳轨迹并落到正确的桶。但它不代表通用物理能力——论文自建的对照条件把桶翻过来后，模型准确率掉到 3–4%。另外这是三选一，随机基线就有约 33.3%，几个百分点的差距不要过度解读。",
+  "measures": [
+    {
+      "area": "视觉物理推理",
+      "focus": "看静态示意图推断小球沿斜坡滚动、弹跳后落入哪个桶；示例：一张有 3 个桶、一个漂浮小球和一系列斜坡线的草图",
+      "share": "100 题（全部）",
+      "format": "单张图片 + 三选一（桶 1/2/3）",
+      "cite": [
+        "hf-readme",
+        "vipe-paper@§3"
+      ]
+    },
+    {
+      "area": "物理理解鲁棒性（论文自建对照）",
+      "focus": "把桶倒置后，同一模型还能不能选对；用来检验原题高分是否来自捷径",
+      "share": "论文对照条件，不在公开 100 题内",
+      "format": "同一批图，桶翻转",
+      "cite": [
+        "vipe-paper@附录 C"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "不测连续的物理量（速度、落点时间、轨迹形状）：回答只要一个桶号",
+      "cite": [
+        "prompt-py",
+        "epoch"
+      ]
+    },
+    {
+      "text": "不测其他物理场景：全部题目是同一套「球—斜坡—桶」模板，只换斜坡配置",
+      "cite": [
+        "hf-readme",
+        "epoch"
+      ]
+    },
+    {
+      "text": "不测文本问答与知识：题目是图像，回答是桶号；也不评测模型的文字解释质量",
+      "cite": [
+        "prompt-py",
+        "vipe-paper@§3"
+      ]
+    }
+  ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
+    "sample_count": 100,
+    "splits": [
+      "train（唯一拆分）"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "模拟器生成的示意图：作者用模拟器造题，并用同一模拟器直接算出标准答案",
+    "public_sample": true,
+    "totals": "公开 100 题，每题一张示意图配一组模拟器输出（落桶、初始位置与半径、所画线条、时长、simId）；文件约 2.1 MB，MIT 许可",
+    "cite": [
+      "hf-readme",
+      "hf-dataset",
+      "dataset-api",
+      "prompt-py"
+    ],
+    "construction": [
+      {
+        "k": "造题",
+        "text": "用模拟器工具生成 100 道题，每张图放 3 个桶、一个漂浮的小球和一系列斜坡。",
+        "cite": [
+          "hf-readme"
+        ]
+      },
+      {
+        "k": "定标准答案",
+        "text": "用同一个模拟器跑出小球落进哪个桶，作为 ground truth。",
+        "cite": [
+          "hf-readme"
+        ]
+      },
+      {
+        "k": "附带数据",
+        "text": "每张图配对模拟结果，以及用该模拟器重跑所需的数据；模拟器本身注明暂不公开。",
+        "cite": [
+          "hf-readme"
+        ]
+      },
+      {
+        "k": "公开形态",
+        "text": "以 Hugging Face 数据集 camelCase12/vpct-1 发布，MIT 许可，单个 train 拆分，约 2.1 MB，未设门槛。",
+        "cite": [
+          "hf-dataset",
+          "dataset-api"
+        ]
+      },
+      {
+        "k": "配套评测代码",
+        "text": "另有 runner 仓库提供 run-vpct.py，用户自备数据集目录即可跑。",
+        "cite": [
+          "repo-runner"
+        ]
+      }
+    ]
   },
-  "metrics": [],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [],
-  "notes": "字节 Seed 引用；公开出处未能核实",
+  "default_protocol": {
+    "raw": "把题目图和固定英文提示词一起交给模型，要求先分步推理、再以 answer(X) 给出桶号（1/2/3）；判分看 X 是否等于模拟器给出的落桶。runner 默认单轮，示例命令：python run-vpct.py -d ./data -o ./runs/... -m <模型> --runs 1 --batch-size 5 --max-tokens 16384 --subset 5。",
+    "cite": [
+      "prompt-py",
+      "repo-runner",
+      "hf-readme"
+    ],
+    "variants": [
+      {
+        "text": "跑几轮：runner 的 --runs 可重复采样；Epoch AI 记录榜单分数是不同轮数的平均（多个模型跑 2–3 次，有的只跑 1 次），跨模型横比口径不齐。",
+        "cite": [
+          "repo-runner",
+          "epoch"
+        ]
+      },
+      {
+        "text": "子集：--subset 只跑前 N 题，README 的示例就用 --subset 5；子集分数和全集 100 题不是一回事。",
+        "cite": [
+          "repo-runner"
+        ]
+      },
+      {
+        "text": "输出通道：论文不让模型答 answer(X)，而是让它生成小球滚动视频，再用 MSE / 颜色检测器判落点；同一模型在文本与图像两条通道下差距很大（Nano Banana Flash 文本 50% vs 图像 21%）。",
+        "cite": [
+          "vipe-paper@附录 C",
+          "vipe-paper@附录 G"
+        ]
+      },
+      {
+        "text": "输入风格：论文把草图改写成照片级真实场景（视觉提示工程），Veo 3.1 从 41.3% 升到 59.3%，与原草图分数不可比。",
+        "cite": [
+          "vipe-paper@§3",
+          "vipe-paper@§5"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "accuracy",
+      "name": "准确率",
+      "direction": "越高越好",
+      "description": "预测桶号与模拟器标准答案一致的题目占比；三选一，随机基线约 33.3%",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "vipe-paper@附录 C",
+        "hf-readme"
+      ]
+    }
+  ],
+  "versions": [
+    {
+      "id": "runner-repo",
+      "date": "2025-05-24",
+      "label": "GitHub runner 仓库 camelCase12/vpct-runner 创建（本档案可核验的最早公开痕迹）",
+      "cite": [
+        "repo-api"
+      ]
+    },
+    {
+      "id": "dataset-vpct-1",
+      "date": "2025-05-25",
+      "label": "Hugging Face 数据集 camelCase12/vpct-1 创建并上线 100 题，MIT 许可",
+      "cite": [
+        "dataset-api",
+        "hf-readme"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "榜单口径不透明",
+      "impact": "成绩只在作者个人站的榜单页公布，没有版本化的结果文件；Epoch AI 收录的分数是不同轮数的平均（多个模型 2–3 次，有的仅 1 次），跨模型横比口径不齐。",
+      "severity": "高",
+      "response": "未见官方回应；runner 提供 --runs，可自测复现。",
+      "reader": "引用 VPCT 分数前先问：几轮平均、是否只跑子集、原图还是改写图。",
+      "cite": [
+        "epoch",
+        "repo-runner"
+      ]
+    },
+    {
+      "issue": "原题高分不等于物理理解",
+      "impact": "论文自建对照：把桶翻过来后，模型准确率掉到 3–4%（Gemini 3.1 Pro 从 96% 掉下来，Gemini 2.5 Pro 从 48% 掉下来，逐项数值见论文 Table 2）；论文据此认为 VLM 在这类任务上走了捷径。",
+      "severity": "高",
+      "response": "论文作者自建并公开该对照条件（Table 2）。",
+      "reader": "看到 90%+ 的分数，只说明它在原始朝上桶的图上选得准。",
+      "cite": [
+        "vipe-paper@Table 2",
+        "vipe-paper@附录 C"
+      ]
+    },
+    {
+      "issue": "规模小、题型单一、随机基线高",
+      "impact": "只有 100 题、同一套球—斜坡—桶模板、只换斜坡配置，且三选一随机就有约 33.3%；小差距可能落在噪声内（论文柱状图标了 95% 置信区间）。",
+      "severity": "中",
+      "response": "未见官方回应。",
+      "reader": "优先看带置信区间或多次运行的结果，不要解读几个百分点的差距。",
+      "cite": [
+        "hf-readme",
+        "vipe-paper@附录 C",
+        "vipe-paper@Figure 2"
+      ]
+    },
+    {
+      "issue": "第三方改写版本与原始口径混用",
+      "impact": "论文为评测视频模型把 100 题改写成照片级真实场景并去掉桶再判落点，这类分数和原榜的 answer(X) 口径不同，引用时容易混。",
+      "severity": "中",
+      "response": "论文在附录 C 说明改写与评分细节。",
+      "reader": "注意分数标注是原始草图（sketch）还是视觉提示工程改写图。",
+      "cite": [
+        "vipe-paper@附录 C",
+        "vipe-paper@§3"
+      ]
+    },
+    {
+      "issue": "无论文、无机构背书",
+      "impact": "题库与协议只有数据集卡和 runner 脚本，没有论文级的方法、统计与审计报告；维护依赖个人作者。",
+      "severity": "低",
+      "response": "未见官方回应。",
+      "reader": "把它当作社区基准，引用时优先给数据集卡与仓库链接。",
+      "cite": [
+        "hf-readme",
+        "repo-runner"
+      ]
+    }
+  ],
+  "notes": "个人维护的开源社区基准：题库与协议以数据集卡、runner 脚本为准，无论文、无机构背书；本环境无法访问作者榜单页，榜单数字均转引自第三方论文与 Epoch AI。",
   "official_sources": [
     {
-      "kind": "site",
-      "url": "https://seed.bytedance.com/en/blog/official-release-of-seed1-8-a-generalized-agentic-model"
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/camelCase12/vpct-1"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/camelCase12/vpct-runner"
+    },
+    {
+      "kind": "leaderboard",
+      "url": "https://cbrower.dev/vpct"
     }
   ],
   "related_benchmarks": [],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "hf-dataset",
+        "kind": "dataset",
+        "title": "camelCase12/vpct-1 · Hugging Face 数据集页",
+        "url": "https://huggingface.co/datasets/camelCase12/vpct-1",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "hf-readme",
+        "kind": "dataset",
+        "title": "VPCT 数据集卡（README.md，camelCase12/vpct-1）",
+        "url": "https://huggingface.co/datasets/camelCase12/vpct-1/raw/main/README.md",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "dataset-api",
+        "kind": "dataset",
+        "title": "Hugging Face 数据集 API：camelCase12/vpct-1",
+        "url": "https://huggingface.co/api/datasets/camelCase12/vpct-1",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "repo-runner",
+        "kind": "repo",
+        "title": "camelCase12/vpct-runner · GitHub 仓库页（评测 runner）",
+        "url": "https://github.com/camelCase12/vpct-runner",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "repo-api",
+        "kind": "repo",
+        "title": "GitHub API：camelCase12/vpct-runner 仓库元数据",
+        "url": "https://api.github.com/repos/camelCase12/vpct-runner",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "prompt-py",
+        "kind": "repo",
+        "title": "vpct-runner 源码 prompt.py（默认提示词）",
+        "url": "https://raw.githubusercontent.com/camelCase12/vpct-runner/main/prompt.py",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "epoch",
+        "kind": "site",
+        "title": "Epoch AI · VPCT 基准页（第三方收录与口径说明）",
+        "url": "https://epoch.ai/benchmarks/vpct",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "vipe-paper",
+        "kind": "paper",
+        "title": "Visual prompt engineering for video models（arXiv:2607.25537v1，2026-07-28）",
+        "url": "https://arxiv.org/abs/2607.25537",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "个人作者 Chase Brower（Hugging Face / GitHub 用户名 camelCase12），未见机构或公司背书",
+        "cite": [
+          "hf-dataset",
+          "repo-api"
+        ]
+      },
+      "first_release": {
+        "v": "2025-05-24（runner 仓库创建；数据集 2025-05-25 上线）",
+        "cite": [
+          "repo-api",
+          "dataset-api"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "hf-readme",
+        "epoch",
+        "vipe-paper@§3"
+      ],
+      "interpretation": [
+        "vipe-paper@附录 C",
+        "vipe-paper@Table 2"
+      ]
+    },
+    "problem": {
+      "text": "把「看一张静态图、推断接下来发生的物理过程」做成可自动判分的视觉题：每题只要从 3 个桶里选一个，标准答案由模拟器直接算出，不需要人工标注。",
+      "cite": [
+        "hf-readme",
+        "epoch"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机猜测基线",
+        "value": "33.3%",
+        "note": "三选一；论文在评测细节里给出 chance level 33.3%",
+        "cite": [
+          "vipe-paper@附录 C"
+        ]
+      },
+      {
+        "label": "人类基线",
+        "value": "100%（3 名志愿者，全集）",
+        "note": "Epoch AI 记录三名志愿者在整榜都拿到 100%，并称这类题对多数人不难",
+        "cite": [
+          "epoch"
+        ]
+      },
+      {
+        "label": "论文自测最高（文本 VLM）",
+        "value": "96%",
+        "note": "Gemini 3.1 Pro 在原始草图上的成绩；论文同时转述公开榜单领先者 Gemini 3 Pro Preview 为 91%",
+        "cite": [
+          "vipe-paper@附录 C"
+        ]
+      },
+      {
+        "label": "论文报告最高（视频模型）",
+        "value": "68.0%",
+        "note": "Veo 3.1 在视觉提示工程改写图上叠加 20 次自洽多数投票；原始草图仅 41.3%",
+        "cite": [
+          "vipe-paper@§5"
+        ]
+      },
+      {
+        "label": "对照条件（桶倒置）",
+        "value": "3–4%",
+        "note": "论文自建对照：把桶翻过来后 Gemini 3.1 Pro 与 Gemini 2.5 Pro 都掉到 3–4%（逐项数值见 Table 2），是这条分数阶梯的警示线",
+        "cite": [
+          "vipe-paper@附录 C",
+          "vipe-paper@Table 2"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把不同来源的分数直接横比：论文的数字来自视频模型生成视频后判落点，Epoch AI 收录的数字走 answer(X) 口径，两者不是一回事。",
+        "cite": [
+          "vipe-paper@附录 C",
+          "epoch"
+        ]
+      },
+      {
+        "text": "看到 96% 就认为模型懂了物理：论文把桶翻过来后，准确率掉到 3–4%。",
+        "cite": [
+          "vipe-paper@附录 C",
+          "vipe-paper@Table 2"
+        ]
+      },
+      {
+        "text": "把三选一当成难题：随机就有约 33.3%，而且论文称这类题对人类不难（3 名志愿者 100%）。",
+        "cite": [
+          "vipe-paper@附录 C",
+          "epoch"
+        ]
+      },
+      {
+        "text": "把视觉提示工程改写图上的分数当成原榜成绩：Veo 3.1 在两种输入下差 18 个百分点。",
+        "cite": [
+          "vipe-paper@§5"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "个人作者 Chase Brower（Hugging Face / GitHub 用户名 camelCase12），未见机构或公司背书",
+        "cite": [
+          "hf-dataset",
+          "repo-api"
+        ]
+      },
+      {
+        "k": "数据与代码位置",
+        "v": "数据 camelCase12/vpct-1（MIT，train 拆分，100 题）；评测脚本 camelCase12/vpct-runner；榜单页由数据集卡与仓库 README 链接到作者个人站",
+        "cite": [
+          "hf-dataset",
+          "repo-runner"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2025-05-24 建 runner 仓库，2025-05-25 上线 100 题数据集；2026-07-28 第三方论文用它评测视频模型的物理推理",
+        "cite": [
+          "repo-api",
+          "dataset-api",
+          "vipe-paper"
+        ]
+      },
+      {
+        "k": "第三方采用",
+        "v": "Google DeepMind 的《Visual prompt engineering for video models》（arXiv:2607.25537）用全部 100 题评测 Veo 3.1 等视频模型，并自建倒置桶对照条件",
+        "cite": [
+          "vipe-paper@附录 A",
+          "vipe-paper@附录 C"
+        ]
+      },
+      {
+        "k": "人类表现",
+        "v": "Epoch AI 记录三名志愿者在整榜都拿到 100%",
+        "cite": [
+          "epoch"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-14",
+        "columns": [
+          "来源",
+          "模型",
+          "准确率",
+          "口径"
+        ],
+        "rows": [
+          [
+            "论文 §5",
+            "Veo 3.1（原始草图）",
+            "41.3%",
+            "生成视频判落点；自洽投票起点"
+          ],
+          [
+            "论文 §5",
+            "Veo 3.1（原始草图 + 20 次投票）",
+            "50.0%",
+            "多数投票，20 次独立运行"
+          ],
+          [
+            "论文 §5",
+            "Veo 3.1（视觉提示工程改写图）",
+            "59.3%",
+            "单次生成"
+          ],
+          [
+            "论文 §5",
+            "Veo 3.1（改写图 + 20 次投票）",
+            "68.0%",
+            "多数投票，20 次独立运行"
+          ],
+          [
+            "论文 Table 2",
+            "Gemini 3.1 Pro（文本 VLM）",
+            "96%",
+            "原始草图"
+          ],
+          [
+            "论文 Table 2",
+            "Gemini 3.1 Pro（桶倒置对照）",
+            "4%",
+            "同一模型，桶翻过来"
+          ],
+          [
+            "论文 Table 2",
+            "Gemini 2.5 Pro（文本 VLM）",
+            "48%",
+            "原始草图"
+          ],
+          [
+            "论文 Table 2",
+            "Gemini 2.5 Pro（桶倒置对照）",
+            "3%",
+            "同一模型，桶翻过来"
+          ],
+          [
+            "论文附录 C（转述公开榜单）",
+            "Gemini 3 Pro Preview",
+            "91%",
+            "作者榜单成绩，论文转述"
+          ]
+        ]
+      },
+      "cite": [
+        "vipe-paper@§5",
+        "vipe-paper@Table 2",
+        "vipe-paper@附录 C"
+      ]
+    }
+  }
 }

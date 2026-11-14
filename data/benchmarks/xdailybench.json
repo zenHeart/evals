@@ -1,35 +1,717 @@
 {
   "id": "xdailybench",
   "name": "xDailyBench",
-  "full_name": null,
+  "full_name": "xDailyBench: Benchmarking LLMs on Professional Consultation for Real-Life Problems（真实生活问题上的专业咨询能力评测）",
   "aliases": [],
   "status": null,
   "categories": [
     "agent"
   ],
-  "summary": "字节内部白领日常办公任务评测",
-  "interpretation": "字节自建的白领日常办公任务评测（Seed2.1 页披露），数值为厂商自报；题集未公开，主要用于其代际模型纵向对比，跨厂商可比性未知。",
-  "measures": [],
-  "does_not_measure": [],
+  "summary": "字节跳动 Seed 联合 M-A-P、TokenWave.AI 于 2026 年 9 月公开的开放式日常咨询评测：248 道由真实用户提交的任务，覆盖个人生活、白领工作、学习研究等 51 个细粒度场景，每题配多条 0/1 二元评分条目（平均 13.3 条）。模型需以 agent 形式端到端完成并交付成果，由统一裁判逐条判定。",
+  "interpretation": "高分说明模型能补上用户没说出口的要求——论文显示所有模型的隐式需求得分都比显式需求低 9 个百分点以上，最强的 Seed-2.1-Evolving 与 Kimi-K3 也只有 75.6%。低分不代表不会做题，而是说明它把散落在提示词、附件和用户背景里的约束综合起来、给出真正可用方案的能力不足。",
+  "measures": [
+    {
+      "area": "显式需求遵循",
+      "focus": "用户提问里直接写明的约束，例如交付格式、指定工具、明确的计算口径。",
+      "share": "70.5%",
+      "format": "二元评分条目（0/1），按 rubric 级单独汇总",
+      "cite": [
+        "paper@§3.2"
+      ]
+    },
+    {
+      "area": "一般隐式需求推断",
+      "focus": "用户没写、但专业上默认要满足的条件：可验证性、可执行性、事实准确性、格式与精度、行业惯例。",
+      "share": "18.5%",
+      "format": "二元评分条目（0/1）",
+      "cite": [
+        "paper@§3.2"
+      ]
+    },
+    {
+      "area": "用户特定隐式需求推断",
+      "focus": "必须从用户角色、专业背景或上下文推断出来的个人化要求，例如某位患者的治疗优先级。",
+      "share": "11.0%",
+      "format": "二元评分条目（0/1）",
+      "cite": [
+        "paper@§3.2"
+      ]
+    },
+    {
+      "area": "信息理解",
+      "focus": "能否读懂任务输入与上下文材料（文字、文件、图片、附件），并找出完成任务所需的信息。",
+      "share": "未披露（论文未给该维度的条目占比）",
+      "format": "按能力维度聚合的 rubric 级得分",
+      "cite": [
+        "paper@附录 C"
+      ]
+    },
+    {
+      "area": "指令遵循与交付物质量",
+      "focus": "是否满足任务的形式与输出要求；最终交付物是否完整、事实正确、组织清晰、格式可读。",
+      "share": "未披露（论文未给该维度的条目占比）",
+      "format": "按能力维度聚合的 rubric 级得分",
+      "cite": [
+        "paper@附录 C"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "不测单一知识问答或学科考试：论文把自己定位为对「以学术问题或合成场景为中心的既有基准」的补充，任务全部来自真实用户的日常与专业咨询。",
+      "cite": [
+        "paper@§1"
+      ]
+    },
+    {
+      "text": "不测有唯一标准答案的闭卷题：任务刻意保留多个有效解，评分条目只约束任务相关要求，没有单一参考输出可比对。",
+      "cite": [
+        "paper@§3.1.2"
+      ]
+    },
+    {
+      "text": "不测人类专家上限：论文 Table 3 与项目页榜单都只列模型，没有人类基线可对照。",
+      "cite": [
+        "paper@Table 3",
+        "project-page@Leaderboard"
+      ]
+    }
+  ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": "vendor_internal",
-    "public_sample": null
+    "sample_count": 248,
+    "splits": [
+      "论文与项目页均未划分公开训练/测试集（题集尚未公开）"
+    ],
+    "languages": [
+      "未披露"
+    ],
+    "source_type": "crowdsourced_real_user（众包平台招募的真实用户提交）",
+    "public_sample": false,
+    "totals": "248 道任务、4 个一级领域（含 Others）、51 个二级场景（项目页写作 56）；每题平均 13.3 条二元评分条目（中位数 14），归入 5 个能力维度；难度分 easy/medium/hard 但论文未给各级数量。",
+    "cite": [
+      "paper@Table 2",
+      "project-page@Data Statistics"
+    ],
+    "construction": [
+      {
+        "k": "真实任务征集",
+        "text": "通过项目平台向众包平台招募日常生活中经常用 AI 的用户，请他们提交自己真实完成过或确实想用 AI 完成的任务，并附原始指令、可选的 workspace 文件、用户背景与参考解法；共调研超过 1,000 人。",
+        "cite": [
+          "paper@§3.1.1"
+        ]
+      },
+      {
+        "k": "初筛与分域",
+        "text": "按质量初筛后保留超过 500 道任务，归入个人生活、白领工作、学习研究、其他四个大域，最终整理为 248 道。",
+        "cite": [
+          "paper@§3.1.1",
+          "paper@Table 2"
+        ]
+      },
+      {
+        "k": "评分条目构建",
+        "text": "由提交者为每题写一组二元（0/1）评分条目，需满足三条原则：对齐（每条对应一个显式或隐式需求）、完备（合起来覆盖成功完成的全部必要需求）、开放（只约束任务相关要求，允许多个有效解），并打上能力维度标签。",
+        "cite": [
+          "paper@§3.1.2"
+        ]
+      },
+      {
+        "k": "交叉评审与修订",
+        "text": "多轮人工交叉评审，检查条目是否原子化、清晰、可判定，并修订有歧义或不可执行的条目。",
+        "cite": [
+          "paper@§3.1.4"
+        ]
+      },
+      {
+        "k": "自动裁判人工校验",
+        "text": "对每题的每条评分条目，用自动裁判与人工判定做多轮对照，一致率必须达到 90% 以上，不达标的条目会被人工修改后重测。",
+        "cite": [
+          "paper@§3.1.4"
+        ]
+      }
+    ]
   },
-  "metrics": [],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [],
-  "notes": "厂商内部/未公开——Seed2.1 发布页披露",
+  "default_protocol": {
+    "raw": "所有模型拿到相同的任务指令、工具和执行预算，单任务最多 120 个 agent step，不做模型特化的提示词，也没有人工介入；默认用 Nanobot 作为统一 agent harness（统一工具接口、文件系统访问与执行管线）。判分上，纯文本响应用 LLM-as-a-Judge，涉及文件交付物或 workspace 交互的用 Agent-as-a-Judge，全程固定 GLM-5.1 作裁判以消除裁判侧差异。",
+    "cite": [
+      "paper@§4.1",
+      "paper@脚注 2"
+    ],
+    "variants": [
+      {
+        "text": "harness 差异：Kimi-K3、Kimi-K2.6、Gemini-3.1-Pro 因与 Nanobot 兼容性差改用 OpenCode，论文明确说明这是为了避免把 harness 兼容性和模型能力混在一起；这三个模型的分数与其他模型不严格同口径。",
+        "cite": [
+          "paper@脚注 2"
+        ]
+      },
+      {
+        "text": "任务级 vs rubric 级口径：项目页榜单提供「任务级总分」和「显式/隐式 rubric」两个视图，衡量的是端到端交付质量与要求级合规度，两者不能混读。",
+        "cite": [
+          "project-page@Leaderboard"
+        ]
+      },
+      {
+        "text": "厂商模型卡口径：Seed2.1 模型页另有一张 xDailyBench 表（标注为 White-Collar Office Work），只覆盖 5 个模型、页面未说明其评测口径，不能与论文 Table 3 直接对比。",
+        "cite": [
+          "seed-en-model-seed2-1@Evaluation Results"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "task-level-score",
+      "name": "任务级得分",
+      "direction": "越高越好",
+      "description": "先算每个任务的得分，再对所有任务等权平均，反映端到端交付质量。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@Table 3"
+      ]
+    },
+    {
+      "id": "domain-level-score",
+      "name": "领域级得分",
+      "direction": "越高越好",
+      "description": "在同一领域内按任务级同样的方式平均，用于看模型在个人生活/白领工作/学习研究/其他上的差异。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@Table 3"
+      ]
+    },
+    {
+      "id": "rubric-level-score",
+      "name": "rubric 级得分",
+      "direction": "越高越好",
+      "description": "把全部任务的评分条目汇总后按显式/隐式分开平均，衡量要求级合规度而非端到端交付。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@Table 3"
+      ]
+    },
+    {
+      "id": "explicit-implicit-gap",
+      "name": "显式-隐式差距",
+      "direction": "越低越好",
+      "description": "同一模型显式需求得分减隐式需求得分的百分点差；论文报告所有模型差距都不小于 9。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percentage points",
+      "cite": [
+        "paper@§4.2"
+      ]
+    },
+    {
+      "id": "capability-dimension-score",
+      "name": "能力维度得分",
+      "direction": "越高越好",
+      "description": "按共享同一能力标签的 rubric 结果聚合，得到信息理解、指令遵循、分析推理、定量推理、交付物质量五个维度的剖面。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§5.1",
+        "paper@附录 C"
+      ]
+    }
+  ],
+  "versions": [
+    {
+      "id": "first-public-mention",
+      "date": "2026-06-23",
+      "label": "Seed2.1 发布博客首次公开把 xDailyBench 列为已评测基准（此时论文尚未发布）",
+      "cite": [
+        "seed-en-blog-seed2-1-official@正文"
+      ]
+    },
+    {
+      "id": "arxiv-v1",
+      "date": "2026-09-07",
+      "label": "arXiv v1（2609.07784v1，cs.AI）发布，248 题与 11 个模型的完整结果首次公开",
+      "cite": [
+        "paper@标题页"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "题集尚未公开",
+      "impact": "项目页的 Paper 与 Dataset 都标注 Coming Soon，外部取不到任务、评分条目与判分代码，只能引用论文和项目页自报的数值，无法独立复现或审计数据污染。",
+      "severity": "高",
+      "response": "未见官方回应",
+      "reader": "把 75.6% 当作可复核的公开基准成绩之前，先确认题集是否已经发布。",
+      "cite": [
+        "project-page@Paper / Dataset"
+      ]
+    },
+    {
+      "issue": "同一基准名跨来源分数不一致",
+      "impact": "Seed2.1 模型页给 Seed2.1 Pro 61.0、Claude Opus 4.7 69.0、GPT-5.5 73.0、Gemini 3.1 Pro 35.2；论文给 Seed-2.1-Evolving 75.6、Claude-Opus-4.7 70.8、GPT-5.5 72.6、Gemini-3.1-Pro 51.3。模型版本与评测口径都不同。",
+      "severity": "高",
+      "response": "未见官方回应",
+      "reader": "跨页面对比分值时，先确认是不是同一个模型版本和同一套 harness。",
+      "cite": [
+        "seed-en-model-seed2-1@Evaluation Results",
+        "paper@Table 3"
+      ]
+    },
+    {
+      "issue": "裁判本身是模型",
+      "impact": "纯文本用 LLM-as-a-Judge、文件交付物用 Agent-as-a-Judge，裁判统一为 GLM-5.1，存在裁判侧偏差以及与被评模型同源的风险。",
+      "severity": "中",
+      "response": "论文要求每条评分条目的人工-自动一致率不低于 90%，不达标的条目会被人工修订后重测。",
+      "reader": "跨模型比较时记住判分由单一模型完成，微小分差可能来自裁判偏好而非能力差异。",
+      "cite": [
+        "paper@§4.1",
+        "paper@§3.1.4"
+      ]
+    },
+    {
+      "issue": "题量小且场景刻意分散",
+      "impact": "248 题规模下，最大二级场景也只有 16 题，单个场景或单个能力维度的波动会被放大。",
+      "severity": "中",
+      "response": "论文说明场景分布是刻意求分散，不让基准集中在少数主导类目上。",
+      "reader": "不要用单个场景或单个能力维度给模型排名。",
+      "cite": [
+        "paper@§3.2"
+      ]
+    },
+    {
+      "issue": "未报告人类或随机基线",
+      "impact": "75.6% 没有人类参照点，无法判断离「够用」还差多远，也无法校准分数的绝对含义。",
+      "severity": "中",
+      "response": "论文只说与高质量实用可用性之间存在巨大差距，未给人类分数。",
+      "reader": "把这个分数当作模型间的相对排序，不要当作任务完成率的绝对值。",
+      "cite": [
+        "paper@§1",
+        "paper@Table 3"
+      ]
+    },
+    {
+      "issue": "场景数两个来源不一致",
+      "impact": "论文 Table 2 写 51 个二级场景，项目页写 56 个 L2 场景，相差 5 个；引用场景覆盖面时必须说明取自哪个来源。",
+      "severity": "低",
+      "response": "未见官方回应",
+      "reader": "看到「51」和「56」不要以为是笔误，它们分别来自论文和项目页。",
+      "cite": [
+        "paper@Table 2",
+        "project-page@Data Statistics"
+      ]
+    }
+  ],
+  "notes": "248 题全部来自真实用户提交，项目页尚未放出题集；论文口径的官方最高任务级得分为 75.6%（Seed-2.1-Evolving 与 Kimi-K3 并列）。",
   "official_sources": [
+    {
+      "kind": "site",
+      "url": "https://susan0803.github.io/xdaily/"
+    },
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2609.07784"
+    },
     {
       "kind": "site",
       "url": "https://seed.bytedance.com/en/blog/seed2-1-officially-released-advancing-ai-productivity"
     }
   ],
-  "related_benchmarks": [],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "related_benchmarks": [
+    "clawbench",
+    "toolathlon",
+    "doubao-multi-turn-bench",
+    "workspace-bench"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "xDailyBench: Benchmarking LLMs on Professional Consultation for Real-Life Problems (arXiv:2609.07784v1)",
+        "url": "https://arxiv.org/abs/2609.07784",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "project-page",
+        "kind": "site",
+        "title": "xDailyBench 项目页（含榜单与数据统计）",
+        "url": "https://susan0803.github.io/xdaily/",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "seed-en-model-seed2-1",
+        "kind": "docs",
+        "title": "Seed2.1 Model Card（Evaluation Results 含 xDailyBench 行）",
+        "url": "https://seed.bytedance.com/en/seed2_1",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "seed-en-blog-seed2-1-official",
+        "kind": "announcement",
+        "title": "Seed2.1 Officially Released: Advancing AI Productivity",
+        "url": "https://seed.bytedance.com/en/blog/seed2-1-officially-released-advancing-ai-productivity",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "ByteDance Seed（第一署名），联合 M-A-P 与 TokenWave.AI",
+        "cite": [
+          "paper@标题页"
+        ]
+      },
+      "first_release": {
+        "v": "2026-09-07（arXiv v1，2609.07784v1）",
+        "cite": [
+          "paper@标题页"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "paper@摘要",
+        "project-page@What is xDailyBench"
+      ],
+      "interpretation": [
+        "paper@§4.2",
+        "paper@§5.1"
+      ]
+    },
+    "problem": {
+      "text": "考试式基准和专业工作流基准都抓不住真实请求：用户的提问常常含糊、个人化、依赖上下文，没有唯一正确答案，要求模型从用户背景和情境里补出没明说的需求。xDailyBench 用真实用户任务加二元评分条目来量化这件事。",
+      "cite": [
+        "paper@摘要",
+        "paper@§1"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机/人类基线",
+        "value": "论文未给出",
+        "note": "论文 Table 3 与项目页榜单都只报告模型分数，没有随机或人类基线。",
+        "cite": [
+          "paper@Table 3"
+        ]
+      },
+      {
+        "label": "论文发布时最好",
+        "value": "75.6%",
+        "note": "Seed-2.1-Evolving 与 Kimi-K3 并列任务级第一；Seed-2.1-Evolving 显式 81.0% vs 隐式 65.0%，Kimi-K3 为 78.2% vs 67.6%。",
+        "cite": [
+          "paper@Table 3",
+          "project-page@Leaderboard"
+        ]
+      },
+      {
+        "label": "项目页榜单最高",
+        "value": "75.6%",
+        "note": "同为 Seed-2.1-Evolving 与 Kimi-K3；垫底 Gemini-3.1-Pro 51.3%。",
+        "cite": [
+          "project-page@Leaderboard"
+        ]
+      },
+      {
+        "label": "厂商模型卡同名列",
+        "value": "61.0%（Seed2.1 Pro）",
+        "note": "Seed2.1 模型页另有一张 xDailyBench 表，最高分 61.0，与论文 75.6 不同口径，不能直接对比。",
+        "cite": [
+          "seed-en-model-seed2-1@Evaluation Results"
+        ]
+      },
+      {
+        "label": "隐式需求差距参考线",
+        "value": "9–19 个百分点",
+        "note": "论文报告所有模型显式-隐式差距都不小于 9，最大为 DeepSeek-V4-Pro 的 19.0。",
+        "cite": [
+          "paper@§4.2"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 75.6% 理解成「接近人类水平」：论文没有任何人类基线，且明确说这与高质量实用可用性之间仍有巨大差距。",
+        "cite": [
+          "paper@§1"
+        ]
+      },
+      {
+        "text": "把 Seed2.1 模型页的 61.0 和论文的 75.6 当同一个数：前者是 Seed2.1 Pro 在模型卡自己那张表上的成绩，后者是论文里的 Seed-2.1-Evolving，模型版本和口径都不同。",
+        "cite": [
+          "seed-en-model-seed2-1@Evaluation Results",
+          "paper@Table 3"
+        ]
+      },
+      {
+        "text": "把总分当成能力均匀：Seed-2.1-Evolving 和 Kimi-K3 同为 75.6，但五个能力维度剖面差别很大；GPT-5.5 与 GPT-5.6-sol 也只差 0.2 分。",
+        "cite": [
+          "paper@§5.1"
+        ]
+      },
+      {
+        "text": "把「51 个场景」和项目页的「56 个 L2 场景」混用：两个数字来自不同来源，引用时要说明出处。",
+        "cite": [
+          "paper@Table 2",
+          "project-page@Data Statistics"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "ByteDance Seed（第一署名机构），另有 M-A-P 与 TokenWave.AI",
+        "cite": [
+          "paper@标题页"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "项目负责人 Yongchang Peng、Qingshui Gu、Liya Zhu、Ge Zhang；论文 Contributions 节另列核心贡献者、贡献者与赞助委员会（Yujia Qin、Jiaheng Liu）",
+        "cite": [
+          "paper@Contributions"
+        ]
+      },
+      {
+        "k": "任务来源",
+        "v": "众包平台招募的、日常生活中经常用 AI 工具的用户，提交自己真实遇到的咨询场景",
+        "cite": [
+          "project-page@Construction Pipeline"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2026-06-23 Seed2.1 发布博客首次把 xDailyBench 列为已评测基准 → 2026-09-07 arXiv v1 发布完整结果",
+        "cite": [
+          "seed-en-blog-seed2-1-official@正文",
+          "paper@标题页"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "项目页的 Paper 与 Dataset 均标注 Coming Soon，暂无公开仓库或数据集卡",
+        "cite": [
+          "project-page@Paper / Dataset"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-14",
+        "columns": [
+          "来源",
+          "模型",
+          "任务级",
+          "个人生活",
+          "白领工作",
+          "学习研究",
+          "其他跨域",
+          "显式需求",
+          "隐式需求"
+        ],
+        "rows": [
+          [
+            "论文 Table 3",
+            "Seed-2.1-Evolving",
+            "75.6",
+            "71.8",
+            "78.8",
+            "76.4",
+            "77.1",
+            "81.0",
+            "65.0"
+          ],
+          [
+            "论文 Table 3",
+            "Kimi-K3",
+            "75.6",
+            "75.3",
+            "72.2",
+            "80.5",
+            "77.8",
+            "78.2",
+            "67.6"
+          ],
+          [
+            "论文 Table 3",
+            "GPT-5.5",
+            "72.6",
+            "69.7",
+            "72.5",
+            "72.8",
+            "81.8",
+            "77.2",
+            "62.3"
+          ],
+          [
+            "论文 Table 3",
+            "GPT-5.6-sol",
+            "72.4",
+            "74.5",
+            "66.5",
+            "72.3",
+            "82.4",
+            "75.0",
+            "66.0"
+          ],
+          [
+            "论文 Table 3",
+            "Claude-Opus-4.7",
+            "70.8",
+            "68.8",
+            "72.2",
+            "70.9",
+            "72.6",
+            "75.5",
+            "61.8"
+          ],
+          [
+            "论文 Table 3",
+            "Qwen3.7-Max",
+            "68.6",
+            "65.9",
+            "69.0",
+            "70.1",
+            "73.2",
+            "73.6",
+            "56.8"
+          ],
+          [
+            "论文 Table 3",
+            "DeepSeek-V4-Pro",
+            "67.3",
+            "64.4",
+            "67.9",
+            "73.3",
+            "65.1",
+            "72.5",
+            "53.5"
+          ],
+          [
+            "论文 Table 3",
+            "Qwen3.6-Max",
+            "62.6",
+            "61.0",
+            "63.7",
+            "65.8",
+            "59.3",
+            "68.4",
+            "50.7"
+          ],
+          [
+            "论文 Table 3",
+            "Kimi-K2.6",
+            "61.2",
+            "61.9",
+            "60.7",
+            "57.8",
+            "66.1",
+            "64.4",
+            "52.1"
+          ],
+          [
+            "论文 Table 3",
+            "GLM-5.1",
+            "61.2",
+            "57.7",
+            "63.4",
+            "66.3",
+            "56.9",
+            "65.1",
+            "52.5"
+          ],
+          [
+            "论文 Table 3",
+            "Gemini-3.1-Pro",
+            "51.3",
+            "46.3",
+            "52.1",
+            "57.5",
+            "53.7",
+            "55.6",
+            "39.5"
+          ],
+          [
+            "Seed2.1 模型页",
+            "Seed2.1 Pro",
+            "61.0",
+            "未披露",
+            "未披露",
+            "未披露",
+            "未披露",
+            "未披露",
+            "未披露"
+          ],
+          [
+            "Seed2.1 模型页",
+            "Seed2.1 Turbo",
+            "56.4",
+            "未披露",
+            "未披露",
+            "未披露",
+            "未披露",
+            "未披露",
+            "未披露"
+          ],
+          [
+            "Seed2.1 模型页",
+            "Claude Opus 4.7",
+            "69.0",
+            "未披露",
+            "未披露",
+            "未披露",
+            "未披露",
+            "未披露",
+            "未披露"
+          ],
+          [
+            "Seed2.1 模型页",
+            "GPT-5.5",
+            "73.0",
+            "未披露",
+            "未披露",
+            "未披露",
+            "未披露",
+            "未披露",
+            "未披露"
+          ],
+          [
+            "Seed2.1 模型页",
+            "Gemini 3.1 Pro",
+            "35.2",
+            "未披露",
+            "未披露",
+            "未披露",
+            "未披露",
+            "未披露",
+            "未披露"
+          ]
+        ]
+      },
+      "cite": [
+        "paper@Table 3",
+        "seed-en-model-seed2-1@Evaluation Results"
+      ]
+    }
+  }
 }

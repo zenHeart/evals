@@ -1,41 +1,854 @@
 {
   "id": "swebench-live",
   "name": "SWE-bench-Live",
-  "full_name": null,
-  "aliases": [],
-  "status": null,
-  "categories": [
-    "coding"
+  "full_name": "SWE-bench-Live（持续更新的多语言多操作系统软件工程任务基准）",
+  "aliases": [
+    "SWE-bench-Live/MultiLang",
+    "SWE-bench-Live/Windows",
+    "SWE-bench Live"
   ],
-  "summary": "自动更新的多语言多 OS 软件工程评测",
-  "interpretation": "微软维护的月更 SWE 题集（Python 主榜 + 多语言 MultiLang 已超 1,000 题 + Windows 61 题），沿用测试判分、以解决率计分；lite/verified 固定分片保跨期可比，full 分片持续注入新题防污染。",
-  "measures": [],
-  "does_not_measure": [],
+  "status": "active",
+  "categories": [
+    "coding",
+    "agent"
+  ],
+  "summary": "SWE-bench-Live 是微软维护的持续更新真实仓库修 bug 基准：2025-05 首发 1,319 个来自 93 个仓库的 Python 任务，每个任务配独立 Docker 镜像，用「补丁让失败测试转绿」判分；2026 年起扩展出 MultiLang（8 种语言）与 Windows 两个分集。",
+  "interpretation": "解决率高只说明模型能在这批近期真实 issue 上把测试修绿，不代表通用编程能力。同一套 OpenHands + Claude 3.7 Sonnet 设置在 SWE-bench Verified 上有 43.20%，在本基准上只有 19.25%，说明它比 SWE-bench 更难也更抗过拟合，绝对分数天然偏低。跨期比较必须锁定分片：lite / verified 冻结，full 每月换 50 道新题。",
+  "measures": [
+    {
+      "area": "Python 仓库 issue 修复（主榜）",
+      "focus": "Lite / Full / Verified 三个分片仍是 Python 任务；full 每月注入 50 个新验证 issue，lite 与 verified 冻结以保证跨期可比。",
+      "share": "主卡 3,688 行：test 约 1k / lite 300 / verified 500 / full 1.89k",
+      "format": "生成补丁后在实例级 Docker 镜像里跑仓库测试，按测试是否由失败转通过判分",
+      "cite": [
+        "site@News Feb 2026",
+        "dataset@News 2025-09-17"
+      ]
+    },
+    {
+      "area": "多语言仓库（MultiLang 分集）",
+      "focus": "C/C++、C#、Java、TS/JS、Go、Rust 等 8 种语言，每个语言分片 >100 题；每个分片再用 LLM 过滤掉「题意里含解」或「推不出测试补丁」的实例。",
+      "share": "1,077 题 / 431 个仓库",
+      "format": "与主榜同一协议，额外加 LLM 过滤",
+      "cite": [
+        "repo-swe-bench-live@README News 2026-08-21",
+        "dataset-multilang@Introduction"
+      ]
+    },
+    {
+      "area": "Windows 仓库（Windows 分集）",
+      "focus": "Windows 特定实现与 PowerShell 操作；镜像为 Windows 架构镜像，需在 Windows 系统上运行，用 SWE-agent/OpenHands 之外另写的 Win-agent 评测。",
+      "share": "66 题 / 48 个仓库 / 9 种语言",
+      "format": "Win-agent + Windows 架构镜像",
+      "cite": [
+        "dataset-windows@Introduction",
+        "repo-swe-bench-live@README News 2026-08-21",
+        "site@News Feb 2026"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "不测脱离仓库上下文的单文件算法题：任务必须来自真实 GitHub issue，且判分只看仓库测试是否由失败转为通过，不测代码风格或可读性。",
+      "cite": [
+        "paper@§3.1 采集",
+        "paper@§3.3 校验"
+      ]
+    },
+    {
+      "text": "不测把答案泄漏给 agent 的场景：rollout 只允许读 problem_statement 字段和该实例的 Docker 镜像，禁止访问 hint、FAIL_TO_PASS、test_patch，也禁止看目标 issue 之后发布的提交与 PR。",
+      "cite": [
+        "dataset@评测协议"
+      ]
+    },
+    {
+      "text": "不测通用 OS 或非仓库型 agent 能力（如纯 shell 任务、GUI 操作）：Windows 分集只覆盖 Windows 特定仓库任务，与 Linux 分集不可直接比。",
+      "cite": [
+        "repolaunch-paper@§5.2",
+        "site@News Feb 2026"
+      ]
+    }
+  ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
+    "sample_count": 3688,
+    "splits": [
+      "test（约 1k，最新题）",
+      "lite（300，冻结）",
+      "verified（500，冻结）",
+      "full（1.89k，每月 +50）",
+      "MultiLang（1,077，8 语言）",
+      "Windows（66，9 语言）"
+    ],
+    "languages": [
+      "Python",
+      "C/C++",
+      "C#",
+      "Java",
+      "TypeScript/JavaScript",
+      "Go",
+      "Rust"
+    ],
+    "source_type": "真实 GitHub issue–PR 对（仅 2024-01 之后创建的 issue），由 RepoLaunch 多 agent 管线自动构建执行环境",
+    "public_sample": true,
+    "multiple_choice_share": "0（无可选项，全部由测试执行判分）",
+    "multimodal_share": "未披露（论文与数据集卡均未给出输入模态构成）",
+    "totals": "主卡 3,688 行（Python：test 约 1k / lite 300 / verified 500 / full 1.89k）· MultiLang 1,077 题 / 431 仓库 / 8 语言 · Windows 66 题 / 48 仓库 / 9 语言",
+    "cite": [
+      "dataset@卡片概览",
+      "dataset-multilang@卡片概览",
+      "dataset-windows@卡片概览",
+      "repo-swe-bench-live@README News 2026-08-21"
+    ],
+    "construction": [
+      {
+        "k": "采集范围",
+        "text": "只收 2024 年 1 月之后创建的 issue，PR 必须改动仓库测试套件（即 test patch），这份补丁就是评测目标。",
+        "cite": [
+          "paper@§3.1 采集"
+        ]
+      },
+      {
+        "k": "环境构建",
+        "text": "每个实例配独立 Docker 镜像；RepoLaunch 多 agent 管线跨 9 种语言与 Windows/Linux 解析依赖、编译并抽取标准化测试状态，平均构建成功率约 80%。",
+        "cite": [
+          "repolaunch-paper@摘要",
+          "repolaunch-paper@§1"
+        ]
+      },
+      {
+        "k": "实例校验",
+        "text": "对比打补丁前后的测试日志，只保留至少出现一次 FAIL_TO_PASS 转换且 PASS_TO_PASS 不回归的实例。",
+        "cite": [
+          "paper@§3.3 校验"
+        ]
+      },
+      {
+        "k": "子集过滤",
+        "text": "Verified 子集由 LLM 过滤 full 得到（2024-07 至 2025-04 的 500 个实例）；MultiLang 的每个语言分片也做同样的 LLM 过滤。",
+        "cite": [
+          "dataset@News 2025-07-19",
+          "dataset-multilang@Introduction"
+        ]
+      },
+      {
+        "k": "持续更新",
+        "text": "2025-09 起每月向数据集新增 50 个新验证 issue；2026-01 增加 MultiLang 分集，2026-03 增加 Windows 分集。",
+        "cite": [
+          "dataset@News 2025-09-17",
+          "repo-swe-bench-live@README News 2026-01-01",
+          "repo-swe-bench-live@README News 2026-03-08"
+        ]
+      },
+      {
+        "k": "环境修正",
+        "text": "issue #100 的环境修正一次性应用到 full / test / verified / lite 里的 51 个既有实例，属于数据集发布后的勘误。",
+        "cite": [
+          "dataset@issue #100 修订"
+        ]
+      }
+    ]
   },
-  "metrics": [],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [],
-  "notes": "Qwen3-coder 引用；Microsoft 发布",
+  "metrics": [
+    {
+      "id": "resolved-rate",
+      "name": "解决率（Resolved Rate）",
+      "direction": "越高越好",
+      "description": "agent 成功解决的 issue 占全部实例的比例，是主指标，沿用 SWE-bench 的评测协议。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§4.1 指标"
+      ]
+    },
+    {
+      "id": "patch-apply-rate",
+      "name": "补丁可应用率（Patch Apply Rate）",
+      "direction": "越高越好",
+      "description": "生成补丁语法正确、能无错应用到代码库的比例，反映输出可用性。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§4.1 指标"
+      ]
+    },
+    {
+      "id": "localization-success-rate",
+      "name": "定位成功率（Localization Success Rate）",
+      "direction": "越高越好",
+      "description": "生成补丁修改的文件集合与 gold patch 的一致程度，按文件级计算。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§4.1 指标"
+      ]
+    }
+  ],
+  "default_protocol": {
+    "raw": "沿用 SWE-bench 协议：rollout 中 agent 只能读数据集的 problem_statement 字段和该实例的 Docker 镜像，禁止访问 hint、FAIL_TO_PASS、test_patch，禁止在 rollout 前或中打 test_patch，禁止访问目标 issue 之后发布的提交与 PR；提示词只含通用工作流说明，不含任务特定信息。提交结果必须附 agent 的原始 rollout 轨迹，供维护者核查协议合规性（至少 10 个代表性样本）。论文中 OpenHands 每实例最多 60 轮，SWE-agent 每实例最多 100 次 LLM 调用，Agentless 两阶段各出 1 个样本且不做回归测试重排。",
+    "cite": [
+      "dataset@评测协议",
+      "paper@§4.1 设置"
+    ],
+    "variants": [
+      {
+        "text": "agent 差异：OpenHands / SWE-agent / Agentless 的迭代上限与采样数不同，Agentless 还去掉了回归测试重排阶段，跨 agent 比较必须先看清设置。",
+        "cite": [
+          "paper@§4.1 设置"
+        ]
+      },
+      {
+        "text": "分片与版本：full 每月注入 50 个新验证 issue，lite 与 verified 冻结；不同时间点的 full 分数不可直接比，官方也只把带 Verified 标签的成绩视为已核验。",
+        "cite": [
+          "dataset@News 2025-09-17",
+          "site@News Aug 2026"
+        ]
+      },
+      {
+        "text": "操作系统与语言分集：Windows 分集必须用 Windows 架构镜像 + Win-agent，MultiLang 分集按语言拆榜，二者的分数都不能与 Python 主榜直接比。",
+        "cite": [
+          "dataset-windows@Introduction",
+          "repolaunch-paper@§5.2"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "paper-v2",
+      "date": "2025-06-01",
+      "label": "arXiv v2（本页核对所用论文版本）发布",
+      "cite": [
+        "paper"
+      ]
+    },
+    {
+      "id": "initial",
+      "date": "2025-05-21",
+      "label": "首发：1,319 个实例 / 93 个仓库，每个实例配 Docker 镜像",
+      "cite": [
+        "dataset@News 2025-05-21"
+      ]
+    },
+    {
+      "id": "update-1565",
+      "date": "2025-06-30",
+      "label": "数据集增至 1,565 个实例 / 164 个仓库",
+      "cite": [
+        "dataset@News 2025-06-30"
+      ]
+    },
+    {
+      "id": "verified-500",
+      "date": "2025-07-19",
+      "label": "用 LLM 过滤生成 Verified 子集：500 个实例（2024-07 至 2025-04）",
+      "cite": [
+        "dataset@News 2025-07-19"
+      ]
+    },
+    {
+      "id": "monthly-50",
+      "date": "2025-09-17",
+      "label": "确定月度更新节奏：每月 +50 个新验证 issue，lite / verified 冻结",
+      "cite": [
+        "dataset@News 2025-09-17",
+        "repo-swe-bench-live@README News 2025-09-17"
+      ]
+    },
+    {
+      "id": "multilang",
+      "date": "2026-01-01",
+      "label": "发布 MultiLang 分集与排行榜（C/C++、C#、Java、TS/JS、Go、Rust）",
+      "cite": [
+        "repo-swe-bench-live@README News 2026-01-01"
+      ]
+    },
+    {
+      "id": "windows",
+      "date": "2026-03-08",
+      "label": "发布 Windows 分集与排行榜（Windows 特定实现 + PowerShell 操作）",
+      "cite": [
+        "repo-swe-bench-live@README News 2026-03-08"
+      ]
+    },
+    {
+      "id": "growth",
+      "date": "2026-08-21",
+      "label": "MultiLang 增至 1,077 题 / 431 仓库 / 8 语言；Windows 增至 66 题 / 48 仓库 / 9 语言；造题改为每仓库只构建一个提交",
+      "cite": [
+        "repo-swe-bench-live@README News 2026-08-21"
+      ]
+    },
+    {
+      "id": "verified-tag",
+      "date": "2026-08-31",
+      "label": "加强提交验证：提交必须带 rollout 轨迹，通过验证的成绩在排行榜打 Verified 标签",
+      "cite": [
+        "site@News Aug 2026"
+      ]
+    },
+    {
+      "id": "repolaunch-accepted",
+      "date": "2026-09-25",
+      "label": "RepoLaunch 论文被 NeurIPS 2026 主会接收为 poster",
+      "cite": [
+        "repo-swe-bench-live@README News 2026-09-25",
+        "repolaunch-paper@首页"
+      ]
+    },
+    {
+      "id": "repolaunch-v3",
+      "date": "2026-10-03",
+      "label": "RepoLaunch 论文 arXiv v3 发布（本页 MultiLang / Windows 结果所依据的版本）",
+      "cite": [
+        "repolaunch-paper"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "远未饱和，与 SWE-bench 差距巨大",
+      "impact": "同一套 OpenHands + Claude 3.7 Sonnet 设置在 SWE-bench Verified 上 43.20%，在本基准上只有 19.25%，相差一倍以上；论文把这视为 SWE-bench 被过拟合的证据，也意味着本基准的绝对分数天然偏低。",
+      "severity": "高",
+      "response": "持续注入新 issue、冻结 lite/verified 保证跨期可比，并要求提交 rollout 轨迹供核查。",
+      "reader": "不要把 SWE-bench Verified 的高分迁移到本基准；比较时锁定分片、版本与 agent 设置。",
+      "cite": [
+        "paper@§4.2"
+      ]
+    },
+    {
+      "issue": "任务与测试补丁公开，存在污染与刷榜风险",
+      "impact": "任务与 gold test patch 都在 Hugging Face 公开，可能进入训练数据；违规读取泄漏字段或未来提交会让成绩虚高。",
+      "severity": "高",
+      "response": "评测协议明确禁止访问未来提交与 oracle 解；2026-08 起提交必须附 rollout 轨迹，通过者打 Verified 标签。",
+      "reader": "优先看带 Verified 标签的成绩；未验证的自报分数要保留余地。",
+      "cite": [
+        "site@News Aug 2026",
+        "dataset@评测协议"
+      ]
+    },
+    {
+      "issue": "官方自身统计口径不一致",
+      "impact": "论文 §4.2 正文称 216 个实例来自原 SWE-bench 的 8 个仓库、其余 1,103 个来自新仓库（合计 1,319），但同页 Table 5 按仓库来源给出 744 / 383（合计 1,127），两处对不上。",
+      "severity": "中",
+      "response": "论文未说明差异原因；本页两个数字都按原文引用并标注取自正文还是 Table 5。",
+      "reader": "引用题源构成时注明出处，不要把两组数字混用。",
+      "cite": [
+        "paper@§4.2 题源",
+        "paper@Table 5"
+      ]
+    },
+    {
+      "issue": "MultiLang 规模在论文与现网不一致",
+      "impact": "RepoLaunch 论文报告 MultiLang 为 612 个实例 / 303 个仓库（2025-07/08 与 2026-03/04 两批抽样），而仓库与数据集卡现网为 1,077 个实例 / 431 个仓库。",
+      "severity": "中",
+      "response": "论文抽样受资源与时间限制；现网数字持续增长，本页正文以现网口径为准。",
+      "reader": "看数字日期：论文口径是抽样批次，现网口径是当前全集。",
+      "cite": [
+        "repolaunch-paper@§4.2",
+        "repo-swe-bench-live@README News 2026-08-21",
+        "dataset-multilang@卡片概览"
+      ]
+    },
+    {
+      "issue": "厂商自报数字可核验性差（含本站账本）",
+      "impact": "本站账本中 Qwen3-Coder-480B-A35B-Instruct 的 26.3% 转写自 Qwen3-Coder 发布博客的头图（视觉读数，未确认）；该博客正文只报告 SWE-Bench Verified，没有给出 SWE-bench-Live 数字。",
+      "severity": "中",
+      "response": "本页不把该数字作为官方结果收录；厂商引用需提供可核验文本或轨迹。",
+      "reader": "看到厂商自报的 SWE-bench-Live 分数，先找原文或轨迹再信。",
+      "cite": [
+        "qwenlm-blog-qwen3-coder@Scaling Long-Horizon RL"
+      ]
+    },
+    {
+      "issue": "题源与时间分布会影响绝对分",
+      "impact": "论文按季度分析认为解决率随时间稳定，但来自原 SWE-bench 仓库的实例解决率 22.96%，高于新仓库的 18.89%；full 每月换题会改变新仓库占比。",
+      "severity": "低",
+      "response": "论文分题源与创建日期做了拆解，本页在附录 B 引用其结果。",
+      "reader": "跨版本比较时注意 full 的题源构成变化，别把构成变化当成模型进步。",
+      "cite": [
+        "paper@§4.3",
+        "paper@Table 5"
+      ]
+    }
+  ],
+  "notes": "主榜（Python）与 MultiLang / Windows 分集规模、分片规则、月度更新节奏均以仓库 README 与 Hugging Face 数据集卡为准；论文分数取自 arXiv:2505.23419v2 与 arXiv:2603.05026v3。本站账本中 Qwen3-Coder-480B-A35B-Instruct 的 26.3% 系发布博客头图视觉读数（未确认），非官方文本数字。",
   "official_sources": [
     {
-      "kind": "github",
+      "kind": "site",
+      "url": "https://swe-bench-live.github.io/"
+    },
+    {
+      "kind": "repo",
       "url": "https://github.com/microsoft/swe-bench-live"
     },
     {
-      "kind": "site",
-      "url": "https://qwenlm.github.io/blog/qwen3-coder/"
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2505.23419"
+    },
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2603.05026"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/SWE-bench-Live/SWE-bench-Live"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/SWE-bench-Live/MultiLang"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/SWE-bench-Live/Windows"
     }
   ],
   "related_benchmarks": [
-    "swebench"
+    "swebench",
+    "swebench-multilingual",
+    "multi-swe-bench",
+    "terminalbench",
+    "swe-lancer"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "SWE-bench Goes Live!（arXiv:2505.23419v2，2025-06-01）",
+        "url": "https://arxiv.org/abs/2505.23419",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "repolaunch-paper",
+        "kind": "paper",
+        "title": "RepoLaunch: Automating Repository Build and Test for SWE Task Creation（arXiv:2603.05026v3，2026-10-03）",
+        "url": "https://arxiv.org/abs/2603.05026",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "repo-swe-bench-live",
+        "kind": "repo",
+        "title": "GitHub: microsoft/swe-bench-live",
+        "url": "https://github.com/microsoft/swe-bench-live",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "site",
+        "kind": "site",
+        "title": "SWE-bench-Live 官网与排行榜",
+        "url": "https://swe-bench-live.github.io/",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "dataset",
+        "kind": "dataset",
+        "title": "Hugging Face: SWE-bench-Live/SWE-bench-Live",
+        "url": "https://huggingface.co/datasets/SWE-bench-Live/SWE-bench-Live",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "dataset-multilang",
+        "kind": "dataset",
+        "title": "Hugging Face: SWE-bench-Live/MultiLang",
+        "url": "https://huggingface.co/datasets/SWE-bench-Live/MultiLang",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "dataset-windows",
+        "kind": "dataset",
+        "title": "Hugging Face: SWE-bench-Live/Windows",
+        "url": "https://huggingface.co/datasets/SWE-bench-Live/Windows",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "qwenlm-blog-qwen3-coder",
+        "kind": "blog",
+        "title": "QwenLM Blog: Qwen3-Coder",
+        "url": "https://qwenlm.github.io/blog/qwen3-coder/",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Microsoft（SWE-bench-Live 与 RepoLaunch 两篇论文的共同作者团队）",
+        "cite": [
+          "paper@作者署名",
+          "repolaunch-paper@作者署名"
+        ]
+      },
+      "first_release": {
+        "v": "2025-05-21（数据集首发 1,319 题 / 93 仓库）",
+        "cite": [
+          "dataset@News 2025-05-21",
+          "paper"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "paper@摘要",
+        "repo-swe-bench-live@README 简介",
+        "site@首页"
+      ],
+      "interpretation": [
+        "paper@§4.2",
+        "dataset@News 2025-09-17"
+      ]
+    },
+    "problem": {
+      "text": "SWE-bench 自发布后不再更新、只覆盖 12 个仓库，模型容易过拟合固定测试集，公开任务也可能污染训练数据。SWE-bench-Live 用自动化管线持续从新 issue 造题，提供新鲜、可执行、抗污染的评测信号。",
+      "cite": [
+        "paper@§1 相关工作",
+        "paper@摘要"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "论文 Lite 子集最好",
+        "value": "17.67%（OpenHands / Claude 3.7 Sonnet）",
+        "note": "补丁可应用率 84.00%，文件级定位成功率 48.00%；同模型的 Agentless 组合只有 11.33%，SWE-agent 同模型 17.67% 但定位成功率略低。",
+        "cite": [
+          "paper@Table 3"
+        ]
+      },
+      {
+        "label": "论文 full 子集最好",
+        "value": "19.25%（OpenHands / Claude 3.7 Sonnet）",
+        "note": "补丁可应用率 85.89%，定位成功率 48.29%；第二名 SWE-agent / GPT-4.1 为 18.57%。",
+        "cite": [
+          "paper@Table 4"
+        ]
+      },
+      {
+        "label": "同设置在 SWE-bench Verified 上",
+        "value": "43.20%",
+        "note": "论文用完全相同的 OpenHands + Claude 3.7 Sonnet 设置重跑 SWE-bench Verified，是本基准最好成绩的两倍多，也是本基准远未饱和的直接证据。",
+        "cite": [
+          "paper@§4.2"
+        ]
+      },
+      {
+        "label": "MultiLang 分集最好",
+        "value": "35.8%（GPT-5.5，6 个 agent 平均）",
+        "note": "RepoLaunch 论文：新模型最高超过 35%，老模型约 15%；按 agent 平均最高是 SWE-agent 29.6%；Java 最易（GPT-5.5 + SWE-agent 50.0%），Rust 最难。",
+        "cite": [
+          "repolaunch-paper@§5.2",
+          "repolaunch-paper@Table 2"
+        ]
+      },
+      {
+        "label": "Windows 分集最好",
+        "value": "30.0%（Claude-4.5 + Win-agent）",
+        "note": "RepoLaunch 论文：所有 LM 在 Windows 上的成功率都低于 Linux；Windows 分集上 Claude-4.5 30.0% > GPT-5.5 26.7% > Ds-4 21.7%。",
+        "cite": [
+          "repolaunch-paper@§5.2",
+          "repolaunch-paper@Table 14"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 SWE-bench Verified 的分数和 SWE-bench-Live 的分数排在一起比——同一模型同一设置相差一倍以上（43.20% vs 19.25%），两个榜不可混排。",
+        "cite": [
+          "paper@§4.2"
+        ]
+      },
+      {
+        "text": "把 lite/verified 的冻结分和 full 的月度新题分混在一起看趋势——full 每月换 50 道题，lite/verified 才是跨期可比的。",
+        "cite": [
+          "dataset@News 2025-09-17",
+          "site@News Feb 2026"
+        ]
+      },
+      {
+        "text": "以为 MultiLang 上的分数可以和 Python 主榜直接比——语言分片题量与难度不同（Java 最易、Rust 最难），且 MultiLang 额外用 LLM 过滤过题意泄漏。",
+        "cite": [
+          "repolaunch-paper@§5.2",
+          "dataset-multilang@Introduction"
+        ]
+      },
+      {
+        "text": "看到厂商自报的 SWE-bench-Live 分数就当成官方榜成绩——需确认是否附 rollout 轨迹并通过 Verified 标签，头图数字不算数。",
+        "cite": [
+          "site@News Aug 2026",
+          "qwenlm-blog-qwen3-coder@Scaling Long-Horizon RL"
+        ]
+      },
+      {
+        "text": "以为本基准已经饱和、模型接近人类水平——论文最好成绩只有 19.25%，作者认为这恰恰说明 SWE-bench 系列其他子集被过拟合了。",
+        "cite": [
+          "paper@§4.2"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "Microsoft（两篇论文共同作者团队：Linghao Zhang、Shilin He、Chaoyun Zhang 等；RepoLaunch 为 Kenan Li、Rongzhi Li、Linghao Zhang 等）",
+        "cite": [
+          "paper@作者署名",
+          "repolaunch-paper@作者署名"
+        ]
+      },
+      {
+        "k": "论文与发表",
+        "v": "《SWE-bench Goes Live!》arXiv:2505.23419v2（2025-06-01）；RepoLaunch arXiv:2603.05026v3（2026-10-03），被 NeurIPS 2026 主会接收为 poster。",
+        "cite": [
+          "paper",
+          "repolaunch-paper@首页",
+          "repo-swe-bench-live@README News 2026-09-25"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "数据集在 Hugging Face（SWE-bench-Live/SWE-bench-Live、/MultiLang、/Windows），代码在 GitHub microsoft/SWE-bench-live。",
+        "cite": [
+          "repo-swe-bench-live@README 简介",
+          "dataset@卡片概览"
+        ]
+      },
+      {
+        "k": "造题管线",
+        "v": "RepoLaunch 五步：Crawl → Verification → Split → Launch → Validation；多 agent 分工，Setup Agent Linux 60 步 / Windows 90 步，单条 bash 命令 30 分钟超时。",
+        "cite": [
+          "repolaunch-paper@§4.2 流程",
+          "repolaunch-paper@§4.1 超参"
+        ]
+      },
+      {
+        "k": "成本",
+        "v": "RepoLaunch 造 Python 仓库执行环境平均每实例 0.65 USD（Table 9，成功率 76%）；2026-08 改用每仓库只构建一个提交后，LM API 成本省 82%、镜像存储省 78%。",
+        "cite": [
+          "repolaunch-paper@Table 9",
+          "repo-swe-bench-live@README News 2026-08-21"
+        ]
+      },
+      {
+        "k": "与其他 live 基准的关系",
+        "v": "论文同时期横向对比：Multi-SWE-bench 最好方法解决率仅 19.32%，OmniGIRL 最高 8.6%，说明持续更新的真实仓库基准整体都很难。",
+        "cite": [
+          "paper@§4.2"
+        ]
+      },
+      {
+        "k": "提交物",
+        "v": "排行榜上的 agent 轨迹归档在 SWE-bench-Live/submissions；本站账本引用的 Qwen3-Coder 发布博客属二级来源，只用于说明 agentic 多轮交互的必要性。",
+        "cite": [
+          "site@提交说明",
+          "qwenlm-blog-qwen3-coder@Scaling Long-Horizon RL"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-14",
+        "columns": [
+          "来源",
+          "agent",
+          "模型",
+          "分片 / 语言",
+          "解决率",
+          "补丁可应用率",
+          "定位成功率"
+        ],
+        "rows": [
+          [
+            "论文 Table 3",
+            "OpenHands",
+            "Claude 3.7 Sonnet",
+            "Lite",
+            "17.67%",
+            "84.00%",
+            "48.00%"
+          ],
+          [
+            "论文 Table 3",
+            "SWE-agent",
+            "Claude 3.7 Sonnet",
+            "Lite",
+            "17.67%",
+            "84.67%",
+            "46.33%"
+          ],
+          [
+            "论文 Table 3",
+            "SWE-agent",
+            "GPT-4.1",
+            "Lite",
+            "16.33%",
+            "95.00%",
+            "47.33%"
+          ],
+          [
+            "论文 Table 3",
+            "Agentless",
+            "Claude 3.7 Sonnet",
+            "Lite",
+            "11.33%",
+            "68.00%",
+            "30.00%"
+          ],
+          [
+            "论文 Table 4",
+            "OpenHands",
+            "Claude 3.7 Sonnet",
+            "full",
+            "19.25%",
+            "85.89%",
+            "48.29%"
+          ],
+          [
+            "论文 Table 4",
+            "SWE-agent",
+            "GPT-4.1",
+            "full",
+            "18.57%",
+            "94.54%",
+            "49.50%"
+          ],
+          [
+            "论文 Table 4",
+            "SWE-agent",
+            "Claude 3.7 Sonnet",
+            "full",
+            "17.13%",
+            "89.15%",
+            "45.86%"
+          ],
+          [
+            "论文 Table 5",
+            "OpenHands",
+            "Claude 3.7 Sonnet",
+            "来自原 SWE-bench 仓库",
+            "22.96%",
+            "未列出",
+            "未列出"
+          ],
+          [
+            "论文 Table 5",
+            "OpenHands",
+            "Claude 3.7 Sonnet",
+            "来自非 SWE-bench 仓库",
+            "18.89%",
+            "未列出",
+            "未列出"
+          ],
+          [
+            "RepoLaunch Table 2(a)",
+            "SWE-agent",
+            "6 个 LM 平均",
+            "MultiLang 6 语言",
+            "29.6%",
+            "未列出",
+            "未列出"
+          ],
+          [
+            "RepoLaunch Table 2(a)",
+            "ClaudeCode",
+            "6 个 LM 平均",
+            "MultiLang 6 语言",
+            "29.2%",
+            "未列出",
+            "未列出"
+          ],
+          [
+            "RepoLaunch Table 2(a)",
+            "OpenHands",
+            "6 个 LM 平均",
+            "MultiLang 6 语言",
+            "27.9%",
+            "未列出",
+            "未列出"
+          ],
+          [
+            "RepoLaunch Table 2(b)",
+            "4 个 agent 平均",
+            "GPT-5.5",
+            "MultiLang 6 语言 + Windows",
+            "35.8%",
+            "未列出",
+            "未列出"
+          ],
+          [
+            "RepoLaunch Table 2(b)",
+            "4 个 agent 平均",
+            "Deepseek-v4",
+            "MultiLang 6 语言 + Windows",
+            "30.0%",
+            "未列出",
+            "未列出"
+          ],
+          [
+            "RepoLaunch Table 2(b)",
+            "4 个 agent 平均",
+            "Claude-4.5",
+            "MultiLang 6 语言 + Windows",
+            "28.5%",
+            "未列出",
+            "未列出"
+          ],
+          [
+            "RepoLaunch Table 2(c)",
+            "SWE-agent",
+            "GPT-5.5",
+            "Java",
+            "50.0%",
+            "未列出",
+            "未列出"
+          ],
+          [
+            "RepoLaunch Table 2(c)",
+            "Win-agent",
+            "Claude-4.5",
+            "Windows",
+            "30.0%",
+            "未列出",
+            "未列出"
+          ],
+          [
+            "RepoLaunch Table 14",
+            "Win-agent",
+            "GPT-5.5",
+            "Windows",
+            "26.7%",
+            "未列出",
+            "未列出"
+          ],
+          [
+            "RepoLaunch Table 14",
+            "Win-agent",
+            "Gemini-3",
+            "Windows",
+            "16.7%",
+            "未列出",
+            "未列出"
+          ]
+        ]
+      },
+      "cite": [
+        "paper@Table 3",
+        "paper@Table 4",
+        "paper@Table 5",
+        "repolaunch-paper@Table 2",
+        "repolaunch-paper@Table 14"
+      ]
+    }
+  }
 }

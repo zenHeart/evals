@@ -1,57 +1,716 @@
 {
   "id": "surds",
   "name": "SURDS",
-  "full_name": "SURDS: Benchmarking Spatial Understanding and Reasoning in Driving Scenarios with Vision Language Models",
+  "full_name": "SURDS: Benchmarking Spatial Understanding and Reasoning in Driving Scenarios with Vision Language Models（驾驶场景中视觉语言模型的空间理解与推理基准）",
   "aliases": [],
   "status": null,
   "categories": [
     "multimodal",
     "reasoning"
   ],
-  "summary": "基于 nuScenes 的驾驶空间推理评测：9,250 个评测样本（另有 41,080 训练实例），覆盖朝向/深度/定位/距离/左右序/前后关系六类",
-  "interpretation": "空间关系是 VLM 的长期短板：SURDS 把它拆成六个可分别归因的子类（NeurIPS 2025 D&B）。Qwen3.8-Max 77.8 vs Fable5 79.4，旗舰间差距不大但距满分辨率仍有明显空间。",
+  "summary": "SURDS 是用自动驾驶数据集 nuScenes 的环视图像搭出来的空间推理问答评测：9,250 道评测题（另有 41,080 道训练实例），把「空间理解」拆成朝向、深度、像素定位、距离、左右序、前后关系六类，每类单独报分。",
+  "interpretation": "高分说明模型在驾驶图像里能稳定判断物体的朝向、远近和相对位置——这正是当前 VLM 的普遍短板，论文报告多数模型在朝向和深度两类上等于或低于随机水平。但总分只是六类的算术平均，某一类接近 0 会被其他类抬高；论文里 40.80 的最好成绩来自一个经过 SFT 加 GRPO 后训练的 3B 小模型，不能读成通用上限。",
   "measures": [
-    "驾驶场景细粒度空间关系推理（六类）"
+    {
+      "area": "朝向判定（Yaw Angle Determination）",
+      "focus": "判断图中指定物体正朝哪个方向，以相机朝向为参考基准；示例题「Which direction is the white car facing in the image?」",
+      "share": "未披露",
+      "format": "四选一（模板给四个占位选项，示例为 North / South / East / West）",
+      "cite": [
+        "arxiv-2411-13112@Figure 5",
+        "arxiv-2411-13112@附录 B"
+      ]
+    },
+    {
+      "area": "像素定位（Pixel Location Estimation）",
+      "focus": "给出指定物体在图像中的坐标；示例题「Where is the white car located in the image?」",
+      "share": "未披露",
+      "format": "开放式坐标答案（按 coordinates [x, y] 输出），不用选项匹配",
+      "cite": [
+        "arxiv-2411-13112@Figure 6",
+        "arxiv-2411-13112@附录 B"
+      ]
+    },
+    {
+      "area": "深度区间（Depth Range Determination）",
+      "focus": "判断物体到相机的垂直距离落在哪个区间；示例题「How far is the vertical distance of the white car in the picture from the camera?」",
+      "share": "未披露",
+      "format": "三选一（三个距离区间选项，示例为 15–18 / 19–23 / 24–31 米）",
+      "cite": [
+        "arxiv-2411-13112@Figure 7",
+        "arxiv-2411-13112@附录 B"
+      ]
+    },
+    {
+      "area": "距离比较（Distance Estimation）",
+      "focus": "两个物体中谁离相机更近；示例题「Which object, the orange rigid bus or the orange car, is closer to the camera?」",
+      "share": "未披露",
+      "format": "二选一 + 「Almost the same」",
+      "cite": [
+        "arxiv-2411-13112@Figure 8",
+        "arxiv-2411-13112@附录 B"
+      ]
+    },
+    {
+      "area": "左右判定（Left/Right Determination）",
+      "focus": "判断两个物体谁更偏左或右；示例题「Which is further right, the gray truck or the red car?」",
+      "share": "未披露",
+      "format": "二选一 + 「Almost the same」",
+      "cite": [
+        "arxiv-2411-13112@Figure 9",
+        "arxiv-2411-13112@附录 B"
+      ]
+    },
+    {
+      "area": "前后判定（Front/Behind Determination）",
+      "focus": "以相机视角判断两个物体的前后关系，离相机更远的算更靠前；示例题「Is the blue rigid bus behind the gray car?」",
+      "share": "未披露",
+      "format": "三选一（Yes / No / Almost the same in terms of front-back position）",
+      "cite": [
+        "arxiv-2411-13112@Figure 10",
+        "arxiv-2411-13112@附录 B"
+      ]
+    }
   ],
   "does_not_measure": [
-    "端到端规划",
-    "地图/激光雷达融合推理"
+    {
+      "text": "推理过程质量：判分只看最终答案（除像素定位外对 1 错 0），论文里的逻辑奖励是训练信号，不是评测项",
+      "cite": [
+        "arxiv-2411-13112@§5.1",
+        "arxiv-2411-13112@§4.2"
+      ]
+    },
+    {
+      "text": "遮挡严重与小目标：构建时按遮挡比超过 0.8、中心出界、像素面积过小剔除物体，这类场景不在覆盖范围内",
+      "cite": [
+        "arxiv-2411-13112@§3"
+      ]
+    },
+    {
+      "text": "缺少 LiDAR 语义点支撑的物体：按 lidarseg 点云投影剔除语义点数不足的实例",
+      "cite": [
+        "arxiv-2411-13112@§3"
+      ]
+    },
+    {
+      "text": "nuScenes 之外的采集域：数据只来自波士顿与新加坡两个城区的环视图像",
+      "cite": [
+        "arxiv-2411-13112@§3"
+      ]
+    }
   ],
   "dataset": {
     "sample_count": 9250,
     "splits": [
-      "评测 9,250 样本",
+      "评测 9,250 样本（验证集）",
       "训练 41,080 实例"
     ],
     "languages": [
       "en"
     ],
-    "source_type": "derived（nuScenes 构建）",
-    "public_sample": true
+    "source_type": "derived（从 nuScenes 六路环视图像构建，LiDAR 语义点用于过滤）",
+    "public_sample": true,
+    "totals": "评测 9,250 样本 + 训练 41,080 实例；由 28,130 个训练场景与 6,019 个验证场景（每场景 6 路相机）筛出 27,152 / 5,919 张图后生成；题干与选项为英文",
+    "cite": [
+      "arxiv-2411-13112@摘要",
+      "arxiv-2411-13112@§3"
+    ],
+    "construction": [
+      {
+        "k": "场景与图像筛选",
+        "text": "从 nuScenes 的 28,130 个训练场景与 6,019 个验证场景（每场景 6 路相机）出发，筛出物体清晰可见的图像，分别保留 27,152 张与 5,919 张。",
+        "cite": [
+          "arxiv-2411-13112@§3"
+        ]
+      },
+      {
+        "k": "遮挡与几何过滤",
+        "text": "把 nuScenes 的 lidarseg 点云投影到图像平面，剔除语义点数不足的物体；再剔除中心出界、像素面积过小的物体，并按两个框的面积交比超过 0.8 丢弃被严重遮挡的目标。",
+        "cite": [
+          "arxiv-2411-13112@§3"
+        ]
+      },
+      {
+        "k": "描述质量过滤",
+        "text": "用 instruction-blip-13B 生成物体级描述，描述不清或不具体的实例直接丢弃。",
+        "cite": [
+          "arxiv-2411-13112@§3"
+        ]
+      },
+      {
+        "k": "问答生成",
+        "text": "先用视觉推理模型 QVQ 对抽样问答做反思、提炼解题规则，再把规则和原始问答一起喂给 Qwen2.5-VL-72B，生成带思维链标注的新问答，并由模型自身校验修正。",
+        "cite": [
+          "arxiv-2411-13112@§4.1"
+        ]
+      },
+      {
+        "k": "任务切分",
+        "text": "六类任务分两个子集：前三类（朝向、像素定位、深度区间）考单个物体，后三类（距离、左右序、前后关系）要求跨多个物体做关系推理。",
+        "cite": [
+          "arxiv-2411-13112@§3"
+        ]
+      }
+    ]
   },
-  "metrics": [],
-  "default_protocol": null,
+  "default_protocol": {
+    "raw": "模型看单张 nuScenes 环视图像回答六类空间问题：除像素定位外的五类按选项匹配判分（对 1、错 0），像素定位输出坐标并按 centerness 指标评分，总分是六项平均；论文用 sglang 加速推理，训练与评测都在 8 张 NVIDIA A800 上完成。",
+    "cite": [
+      "arxiv-2411-13112@§5.1",
+      "arxiv-2411-13112@附录 B"
+    ],
+    "variants": [
+      {
+        "text": "是否经过 SFT 冷启动与 GRPO 对齐：论文表 4 显示同一个 3B 基座从 13.48（原始）到 29.66（SFT+GRPO）再到 40.80（再加定位与逻辑奖励），不同训练配置之间不能直接比。",
+        "cite": [
+          "arxiv-2411-13112@Table 4"
+        ]
+      },
+      {
+        "text": "用完整训练版还是仅评测版：训练数据体积大，官方另发布仅评测版 SURDS_eval；两者文件规模不同（约 2.79 GB 对约 493 MB）。",
+        "cite": [
+          "repo@README",
+          "surds-eval@数据集卡",
+          "surds-data@数据集卡"
+        ]
+      },
+      {
+        "text": "提示与输出格式：附录 B 给出六类题目的题干模板与选项，附录 C 规定 <location> / <think> / <answer> 的结构化输出。",
+        "cite": [
+          "arxiv-2411-13112@附录 B",
+          "arxiv-2411-13112@附录 C"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "overall",
+      "name": "总分（六类平均）",
+      "direction": "越高越好",
+      "description": "六项任务得分的算术平均，论文表 2 用它给模型排序",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2411-13112@§5.1",
+        "arxiv-2411-13112@Table 2"
+      ]
+    },
+    {
+      "id": "task-accuracy",
+      "name": "任务准确率（0/1）",
+      "direction": "越高越好",
+      "description": "除像素定位外的五类任务：最终答案与标准答案一致记 1，否则记 0",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2411-13112@§5.1"
+      ]
+    },
+    {
+      "id": "pixel-localization",
+      "name": "像素定位得分（centerness）",
+      "direction": "越高越好",
+      "description": "像素定位任务不用选项匹配，改用基于 centerness 的指标衡量预测位置；论文未给出该指标的取值区间与阈值细节",
+      "range": null,
+      "unit": null,
+      "cite": [
+        "arxiv-2411-13112@§5.1"
+      ]
+    }
+  ],
   "versions": [
     {
       "id": "v1",
-      "label": "SURDS（NeurIPS 2025 D&B）",
-      "note": "arXiv:2411.13112"
+      "date": "2024-11-20",
+      "label": "arXiv v1 发布",
+      "cite": [
+        "arxivapi@published"
+      ]
+    },
+    {
+      "id": "v3",
+      "date": "2025-05-27",
+      "label": "arXiv 更新至 v3（本页核对所用版本）；此版本标题已为 SURDS，仓库说明论文标题由 DriveMLLM 改为 SURDS，并用 v1 分支保留旧版数据",
+      "cite": [
+        "arxivapi@updated",
+        "arxiv-2411-13112@标题页",
+        "repo@README"
+      ]
     }
   ],
   "limitations": [
-    "基于 nuScenes，场景多样性受源数据限制",
-    "空间类别的判分对文本表述敏感"
+    {
+      "issue": "任务间难度极不对称，总分被容易的类别拉高",
+      "impact": "总分是六项平均，而各类难度差很大：左右序一类多个模型能到 60–77%，像素定位普遍低于 7%、朝向普遍低于 20%，论文也说多数模型在朝向上等于或低于随机水平。只看总分会低估空间推理的真实短板。",
+      "severity": "高",
+      "response": "论文按六类分别报告分数，并在表 2 后说明 Score 列就是六项平均。",
+      "reader": "先看单类分数再看总分；总分差几分可能只来自某一类，个别模型（如 SpatialBot）的 0.00 还包含无法按指令输出的情况。",
+      "cite": [
+        "arxiv-2411-13112@Table 2",
+        "arxiv-2411-13112@§5.3",
+        "arxiv-2411-13112@§5.2"
+      ]
+    },
+    {
+      "issue": "评测域窄，且构建时剔除了部分物体",
+      "impact": "数据只来自 nuScenes 在波士顿与新加坡城区的六路环视图像，构建中还剔除遮挡严重、过小、缺 LiDAR 语义点的物体；换到其他城市、其他传感器配置或更密集遮挡的场景是否成立，论文没有验证。",
+      "severity": "中",
+      "response": "论文未提供其他域的扩展版本。",
+      "reader": "把分数读成「nuScenes 域内的空间推理」，不要外推到任意驾驶场景。",
+      "cite": [
+        "arxiv-2411-13112@§3"
+      ]
+    },
+    {
+      "issue": "最好成绩来自专门后训练的 3B 模型，不是通用上限",
+      "impact": "表 2 里 40.80 是 Qwen2.5-VL-3B 经 SFT 冷启动加 GRPO（含定位与逻辑奖励）之后的结果；同期未做该训练的 GPT-4o 只有 13.30、Gemini-2.0-flash 35.71。分数高低主要反映训练配方。",
+      "severity": "中",
+      "response": "论文用表 4 的消融说明增益来源：单独加定位或逻辑奖励收益有限，两项一起加才有明显提升。",
+      "reader": "引用 40.80 时说明是哪个模型、什么训练配置。",
+      "cite": [
+        "arxiv-2411-13112@Table 2",
+        "arxiv-2411-13112@Table 4",
+        "arxiv-2411-13112@§5.4"
+      ]
+    },
+    {
+      "issue": "判分与题面强耦合，复现门槛高",
+      "impact": "五类任务按固定选项模板判对错，像素定位改用 centerness 指标；论文未报告提示或坐标格式的敏感性分析，换一种输出格式分数可能变化。",
+      "severity": "中",
+      "response": "论文公开题库、评测代码与提示模板（附录 B / C）。",
+      "reader": "复现时严格按附录 B / C 的题干模板与输出格式。",
+      "cite": [
+        "arxiv-2411-13112@附录 B",
+        "arxiv-2411-13112@附录 C",
+        "arxiv-2411-13112@§5.1"
+      ]
+    },
+    {
+      "issue": "配套数据集卡与论文的来源描述不一致",
+      "impact": "论文和 SURDS / SURDS_eval 卡说数据来自 nuScenes 图像，而配套的 MLLM_eval_dataset 卡写明只取 CAM_FRONT 单路前视相机；只用该子集复现，等于把六路环视问题降级成前视问题。",
+      "severity": "中",
+      "response": "以论文与主数据集卡为准；该子集更像早期局部版本（仓库为旧版数据单设了 v1 分支）。",
+      "reader": "下载时确认用的是 SURDS / SURDS_eval 还是 MLLM_eval_dataset。",
+      "cite": [
+        "arxiv-2411-13112@§3",
+        "hf@数据集卡",
+        "surds-data@数据集卡",
+        "repo@README"
+      ]
+    },
+    {
+      "issue": "训练集与评测集都公开，存在污染可能",
+      "impact": "41,080 条训练实例与 9,250 条评测样本都在 Hugging Face 公开，底图来自公开的 nuScenes；论文没有报告污染检测结果。",
+      "severity": "中",
+      "response": "官方另提供仅评测版 SURDS_eval，可与训练版区分。",
+      "reader": "关注分数是否来自只用评测集的设置。",
+      "cite": [
+        "repo@README",
+        "surds-eval@数据集卡"
+      ]
+    },
+    {
+      "issue": "论文自陈的未验证项",
+      "impact": "作者在结论里写明方法尚未在更大规模模型变体上测试，线性奖励缩放与多阶段 GRPO 调度的收益也尚未厘清。",
+      "severity": "低",
+      "response": "论文未给出后续验证计划。",
+      "reader": "把 40.80 读成该配置下的结果，不要外推到更大模型。",
+      "cite": [
+        "arxiv-2411-13112@§6"
+      ]
+    }
   ],
-  "notes": "Qwen3.8-Max 表 2 Real-World & Spatial 组出现（77.8 vs Fable5 79.4 / Qwen3.7-Plus 77.2）",
+  "notes": "早期题为 DriveMLLM，GitHub 仓库仍名 Drive-MLLM 并保留 v1 分支存放旧版数据；数据与代码分别在 Hugging Face 与 GitHub",
   "official_sources": [
     {
       "kind": "paper",
       "url": "https://arxiv.org/abs/2411.13112"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/XiandaGuo/Drive-MLLM"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/bonbon-rj/SURDS"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/bonbon-rj/SURDS_eval"
     }
   ],
   "related_benchmarks": [
-    "lingoqa"
+    "lingoqa",
+    "blink",
+    "cv-bench",
+    "embspatial-bench"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-09-01"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "arxiv-2411-13112",
+        "kind": "paper",
+        "title": "SURDS: Benchmarking Spatial Understanding and Reasoning in Driving Scenarios with Vision Language Models（arXiv:2411.13112v3，2025-05-27）",
+        "url": "https://arxiv.org/abs/2411.13112",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "arxivapi",
+        "kind": "docs",
+        "title": "arXiv API 元数据（id_list=2411.13112，首次提交与最近更新日期）",
+        "url": "https://export.arxiv.org/api/query?id_list=2411.13112",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "XiandaGuo/Drive-MLLM（SURDS 题库、训练与评测代码、README 与 BibTeX）",
+        "url": "https://github.com/XiandaGuo/Drive-MLLM",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "surds-data",
+        "kind": "dataset",
+        "title": "bonbon-rj/SURDS（Hugging Face，训练 + 评测数据）",
+        "url": "https://huggingface.co/datasets/bonbon-rj/SURDS",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "surds-eval",
+        "kind": "dataset",
+        "title": "bonbon-rj/SURDS_eval（Hugging Face，仅评测数据）",
+        "url": "https://huggingface.co/datasets/bonbon-rj/SURDS_eval",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "hf",
+        "kind": "dataset",
+        "title": "bonbon-rj/MLLM_eval_dataset（Hugging Face，早期评测子集，CAM_FRONT 单相机）",
+        "url": "https://huggingface.co/datasets/bonbon-rj/MLLM_eval_dataset",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "武汉大学、中科院自动化所等联合团队（署名机构还含 Waytous、悉尼科技大学、微软研究院、西安交通大学 IAIR、TikTok、清华大学 AIR）",
+        "cite": [
+          "arxiv-2411-13112@标题页"
+        ]
+      },
+      "first_release": {
+        "v": "2024-11-20（arXiv v1）",
+        "cite": [
+          "arxivapi@published"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "arxiv-2411-13112@摘要",
+        "arxiv-2411-13112@§3",
+        "repo@README"
+      ],
+      "interpretation": [
+        "arxiv-2411-13112@§5.3",
+        "arxiv-2411-13112@§5.1",
+        "arxiv-2411-13112@Table 2"
+      ]
+    },
+    "problem": {
+      "text": "已有视觉语言数据集多为单任务、以识别为中心，难以整体评估多模态空间推理；SURDS 用同一批 nuScenes 环视图像把空间理解拆成六类可分别归因的问题，用来暴露模型在绝对位姿、度量信息和相对空间启发式上的短板。",
+      "cite": [
+        "arxiv-2411-13112@§2",
+        "arxiv-2411-13112@§5.3",
+        "arxiv-2411-13112@摘要"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机猜测基线",
+        "value": "12.22",
+        "note": "论文表 2 的 Random 行总分；分项从 1.12（像素定位）到 34.27（深度区间）不等，深度区间一类是三选一。",
+        "cite": [
+          "arxiv-2411-13112@Table 2",
+          "arxiv-2411-13112@附录 B"
+        ]
+      },
+      {
+        "label": "论文表 2 中通用模型最高",
+        "value": "35.71",
+        "note": "Gemini-2.0-flash；同表 Qwen2.5-VL-72B-Instruct 为 33.47、GPT-4o 为 13.30。",
+        "cite": [
+          "arxiv-2411-13112@Table 2"
+        ]
+      },
+      {
+        "label": "论文最好成绩（3B 模型 + SFT / GRPO / LocLogic）",
+        "value": "40.80",
+        "note": "论文称领先第二名 14.25%（相对提升；与 35.71 的绝对差是 5.09 分）。同表未做后训练的 Qwen2.5-VL-3B-Instruct 为 13.48。",
+        "cite": [
+          "arxiv-2411-13112@Table 2",
+          "arxiv-2411-13112@§5.2",
+          "arxiv-2411-13112@Table 4"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 14.25% 当成百分点差——40.80 与 35.71 的绝对差是 5.09 分，14.25% 是相对提升。",
+        "cite": [
+          "arxiv-2411-13112@§5.2",
+          "arxiv-2411-13112@Table 2"
+        ]
+      },
+      {
+        "text": "把总分当成六类均衡——总分是六项平均，左右序上能到 60–77% 的模型，像素定位可能只有个位数。",
+        "cite": [
+          "arxiv-2411-13112@§5.1",
+          "arxiv-2411-13112@Table 2"
+        ]
+      },
+      {
+        "text": "以为分数高就是参数大——论文明确说参数规模不是空间能力的可靠预测因子，大模型有时不如小模型。",
+        "cite": [
+          "arxiv-2411-13112@§5.3"
+        ]
+      },
+      {
+        "text": "把随机基线在深度区间上的 34.27 当成模型水平——该类只有三个选项，随机行就有这个分数。",
+        "cite": [
+          "arxiv-2411-13112@Table 2",
+          "arxiv-2411-13112@附录 B"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "武汉大学计算机学院、中科院自动化所、Waytous、悉尼科技大学、微软研究院、西安交通大学 IAIR、TikTok、清华大学 AIR 等联合团队",
+        "cite": [
+          "arxiv-2411-13112@标题页"
+        ]
+      },
+      {
+        "k": "数据来源",
+        "v": "nuScenes 六路环视图像（LiDAR 语义点用于过滤），场景位于波士顿与新加坡城区",
+        "cite": [
+          "arxiv-2411-13112@§3"
+        ]
+      },
+      {
+        "k": "名称变更",
+        "v": "早期题为 DriveMLLM: A Benchmark for Spatial Understanding with Multimodal Large Language Models in Autonomous Driving，后改为 SURDS；GitHub 仓库仍叫 Drive-MLLM，并保留 v1 分支存放旧版数据",
+        "cite": [
+          "repo@README"
+        ]
+      },
+      {
+        "k": "训练配方",
+        "v": "用 LLaMA-Factory 做 SFT 冷启动，再用 VLM-R1 框架跑 GRPO；奖励含格式、定位、准确率、逻辑四项",
+        "cite": [
+          "repo@README",
+          "arxiv-2411-13112@§4.2"
+        ]
+      },
+      {
+        "k": "收录情况",
+        "v": "仓库 README 标注 NeurIPS 2025，BibTeX 写 booktitle={NeurIPS}, year={2025}；未找到官方 proceedings 页面，故本页不写具体录用日期",
+        "cite": [
+          "repo@README"
+        ]
+      },
+      {
+        "k": "资助",
+        "v": "国家自然科学基金 62373356；国家自然科学基金联合基金 U24B20162",
+        "cite": [
+          "arxiv-2411-13112@§6"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "训练版数据 bonbon-rj/SURDS（约 2.79 GB）、仅评测版 bonbon-rj/SURDS_eval（约 493 MB）、早期子集 bonbon-rj/MLLM_eval_dataset（约 80.6 MB）在 Hugging Face；题库模板与评测代码在 GitHub XiandaGuo/Drive-MLLM",
+        "cite": [
+          "surds-data@数据集卡",
+          "surds-eval@数据集卡",
+          "hf@数据集卡",
+          "repo@README"
+        ]
+      },
+      {
+        "k": "使用限制",
+        "v": "仓库声明代码仅用于学术目的，不得用于任何商业用途",
+        "cite": [
+          "repo@README"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-14",
+        "columns": [
+          "来源",
+          "模型",
+          "朝向",
+          "像素定位",
+          "深度区间",
+          "距离",
+          "左右序",
+          "前后关系",
+          "总分"
+        ],
+        "rows": [
+          [
+            "论文 Table 2",
+            "Random（随机基线）",
+            "5.73",
+            "1.12",
+            "34.27",
+            "8.76",
+            "11.57",
+            "11.89",
+            "12.22"
+          ],
+          [
+            "论文 Table 2",
+            "GPT-4o",
+            "13.08",
+            "1.62",
+            "2.49",
+            "11.57",
+            "47.89",
+            "3.14",
+            "13.30"
+          ],
+          [
+            "论文 Table 2",
+            "GPT-4o-mini",
+            "3.24",
+            "0.28",
+            "0.22",
+            "4.22",
+            "21.51",
+            "2.05",
+            "5.25"
+          ],
+          [
+            "论文 Table 2",
+            "Gemini-1.5-pro",
+            "19.14",
+            "4.41",
+            "22.70",
+            "61.95",
+            "66.38",
+            "22.05",
+            "32.77"
+          ],
+          [
+            "论文 Table 2",
+            "Gemini-2.0-flash",
+            "9.30",
+            "5.41",
+            "32.97",
+            "69.30",
+            "77.30",
+            "20.00",
+            "35.71"
+          ],
+          [
+            "论文 Table 2",
+            "LLaVA-OV-Qwen2-72b-si",
+            "1.95",
+            "3.03",
+            "23.57",
+            "3.78",
+            "9.73",
+            "8.65",
+            "8.45"
+          ],
+          [
+            "论文 Table 2",
+            "Qwen2.5-VL-72B-Instruct",
+            "11.57",
+            "6.13",
+            "44.00",
+            "58.05",
+            "66.16",
+            "14.92",
+            "33.47"
+          ],
+          [
+            "论文 Table 2",
+            "Qwen2.5-VL-7B-Instruct",
+            "7.57",
+            "3.46",
+            "25.95",
+            "11.46",
+            "17.95",
+            "9.30",
+            "12.61"
+          ],
+          [
+            "论文 Table 2",
+            "Qwen2.5-VL-3B-Instruct",
+            "6.27",
+            "3.81",
+            "27.68",
+            "17.84",
+            "14.81",
+            "10.49",
+            "13.48"
+          ],
+          [
+            "论文 Table 2",
+            "SpatialBot",
+            "0.00",
+            "0.00",
+            "12.00",
+            "0.00",
+            "0.00",
+            "0.00",
+            "2.00"
+          ],
+          [
+            "论文 Table 2",
+            "SpatialRGPT",
+            "1.30",
+            "0.55",
+            "10.59",
+            "1.95",
+            "0.86",
+            "7.35",
+            "3.77"
+          ],
+          [
+            "论文 Table 2",
+            "Qwen2.5-VL-3B-SFT-GRPO-LocLogic",
+            "20.97",
+            "44.81",
+            "69.84",
+            "49.30",
+            "51.35",
+            "8.54",
+            "40.80"
+          ]
+        ]
+      },
+      "cite": [
+        "arxiv-2411-13112@Table 2"
+      ]
+    }
+  }
 }

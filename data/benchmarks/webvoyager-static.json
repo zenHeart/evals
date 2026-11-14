@@ -1,56 +1,627 @@
 {
   "id": "webvoyager-static",
   "name": "WebVoyager-Static",
-  "full_name": "WebVoyager-Static (deterministic offline reconstruction of WebVoyager)",
+  "full_name": "WebVoyager-Static（WebVoyager 的确定性离线重建版）",
   "aliases": ["WebVoyager-Static"],
   "status": null,
   "categories": ["agent"],
-  "summary": "微软为网页 agent 评测自建的**确定性离线**基准：把 WebVoyager 的 643 个任务 / 15 个站点重建成可重置的自托管副本，判定时同时校验必需的 UI 导航轨迹与后端 SQLite 数据库状态。",
-  "interpretation": "读分要认准它和原版 WebVoyager 不是一回事：原版跑在真实线上站点、用 GPT-4V 看截图判分，WebVoyager-Static 跑在自托管副本上、并且要求「导航轨迹 + 后端状态」双对得上。官方给的理由是线上网页评测受内容漂移、反爬拦截和只看截图的 VLM 判分影响，会系统性虚高——按官方引述，已发表的网页 agent 线上分数虚高幅度在 12.8～33.1 pp 之间，而 WebVoyager-Static 正是为了把这个水分挤掉。当前水位（微软 2026-10-30 官方 model card 口径）：自家 Mage-VL-Cowork-SFT（4B，通用桌面+浏览器）58.6%，同表 Fara1.5-4B（浏览器专精）68.0%、Qwen3-VL-8B-Thinking 53.7%、Qwen3.5-9B 53.3%、Qwen3-VL-4B-Thinking 49.6%、OpenWebRL-4B 47.1%、MolmoWeb-8B 46.8%、MolmoWeb-4B 42.6%、Fara-7B 40.4%、Qwen3.5-4B 37.3%。看这个表要同时记住两件事：一是**它由发布方自建并自测**，没有第三方复跑；二是 58.6% 属于官方卡片的 SFT 检查点，不是最终 RL 版的分数（最终 RL 版见 OSWorld-Verified 行）。",
+  "summary": "微软在 Mage-VL-Cowork 工作中发布的确定性离线网页 agent 评测：把原版 WebVoyager 的 643 个任务、15 个站点重建成可重置的自托管副本（本地 Flask + SQLite，目标域名路由到本机，每个回合从只读种子快照恢复工作库），单题必须同时通过「必需 UI 导航轨迹」与「后端 SQLite 数据库状态」两道校验才计成功。",
+  "interpretation": "读分先认清它和原版 WebVoyager 是两套口径：原版跑真实线上站点、由 GPT-4V 看任务回复与最后 k 张截图判分；WebVoyager-Static 跑自托管副本、要求导航轨迹与后端状态双双对上。官方给出的理由是线上评测被内容漂移、反爬拦截和只看截图的判分污染——按官方引述，已发表网页 agent 的线上分数虚高 12.8～33.1 pp。当前公开成绩全部出自微软自己的一张表：同口径下 Fara1.5-4B（4B 浏览器专精）68.0%，发布方自家 Mage-VL-Cowork-SFT（4B，桌面+浏览器通用）58.6%（377/643），Qwen3-VL-8B-Thinking 53.7%、Qwen3.5-9B 53.3%、Qwen3-VL-4B-Thinking 49.6%、OpenWebRL-4B 47.1%、MolmoWeb-8B 46.8%、MolmoWeb-4B 42.6%、Fara-7B 40.4%、Qwen3.5-4B 37.3%（完整表见附录 B）。两点必须同时记住：这个基准由发布方自建并自测，尚无第三方复跑；58.6% 是 Stage 4 SFT 检查点的成绩，最终 RL 版的 WebVoyager-Static 分数官方没有公布。",
   "measures": [
-    "网页端到端任务成功率（UI 导航轨迹与后端 SQLite 数据库状态双校验）"
+    {
+      "area": "端到端网页任务成功率",
+      "focus": "在 15 个站点的自托管副本上完成原版 WebVoyager 题目：检索、多属性筛选、表单提交、信息查询等多步操作",
+      "share": "643 题全部计入；每个站点 40~45 题",
+      "format": "单题为通过 / 未通过，聚合为百分比",
+      "cite": [
+        "huggingface-microsoft-mage-vl-cowork@要点5",
+        "techreport@§6.1",
+        "paper-webvoyager@Table 1"
+      ]
+    },
+    {
+      "area": "必需 UI 导航轨迹",
+      "focus": "确认 agent 真的访问过目标页面并完成了指定交互（日期选择器、价格滑块、排序菜单、分页、表单提交），而不是从搜索摘要或参数化记忆里直接猜答案",
+      "share": "单题判定的两个必要条件之一",
+      "format": "执行轨迹校验",
+      "cite": [
+        "techreport@§6.1",
+        "techreport@§6.6"
+      ]
+    },
+    {
+      "area": "后端 SQLite 数据库状态",
+      "focus": "把 agent 的答案与本地数据库记录逐项对真值，识别「填了表单、点了按钮，但后端数据库没有实际变更」的假阳性",
+      "share": "单题判定的两个必要条件之一",
+      "format": "数据库状态比对",
+      "cite": [
+        "huggingface-microsoft-mage-vl-cowork@要点5",
+        "techreport@§6.1"
+      ]
+    }
   ],
   "does_not_measure": [
-    "真实线上站点的内容漂移与反爬鲁棒性（评测跑在自托管副本上）",
-    "原生 WebVoyager 的 GPT-4V 截图判分口径",
-    "通用视觉语言理解能力（表内 General VLM 分类行的分数只反映网页任务上的表现）"
+    {
+      "text": "真实线上站点的鲁棒性：内容漂移、反爬与访问拦截、地区差异都不再出现，因为评测跑在本地自托管副本上",
+      "cite": [
+        "techreport@§6.1"
+      ]
+    },
+    {
+      "text": "原版 WebVoyager 的 GPT-4V 截图判分口径：本评测不凭最后一张截图下结论，而是校验轨迹与后端数据库",
+      "cite": [
+        "paper-webvoyager@§5.1",
+        "techreport@§6.1"
+      ]
+    },
+    {
+      "text": "通用视觉语言理解能力：表里 Qwen3-VL-8B-Thinking、Qwen3.5-9B 等 General VLM 的分数只代表它们在这 15 个站点多步网页任务上的成绩",
+      "cite": [
+        "techreport@§6.6"
+      ]
+    },
+    {
+      "text": "桌面与跨应用任务：同模型的 OSWorld-Verified 成绩跑在另一套桌面环境（361 道留出题、50 步上限）上，与本表数字不可互换",
+      "cite": [
+        "techreport@§6.1"
+      ]
+    },
+    {
+      "text": "推理成本与效率：token 消耗、模型调用次数、延迟不在本表指标里",
+      "cite": [
+        "techreport@Table 4"
+      ]
+    }
   ],
   "dataset": {
     "sample_count": 643,
-    "splits": ["WebVoyager-Static（全部 643 题，15 个站点）"],
-    "languages": "en",
-    "source_type": "厂商自建（基于公开 WebVoyager 题集重建为可重置自托管副本）",
-    "public_sample": null
+    "splits": [
+      "全部 643 题 / 15 个站点（官方未公开 train/dev/test 划分，也未给出可下载的副本）"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "厂商自建：沿用公开 WebVoyager 题集，在 WebHarbor 自托管副本基础上扩建为可重置的离线环境",
+    "public_sample": null,
+    "totals": "643 题 / 15 个站点（原版论文口径：每个站点 40~45 题）",
+    "cite": [
+      "huggingface-microsoft-mage-vl-cowork@要点5",
+      "techreport@§6.1",
+      "paper-webvoyager@§4.2",
+      "repo-webvoyager@README"
+    ],
+    "construction": [
+      {
+        "k": "题集来源",
+        "text": "不重新出题：沿用 WebVoyager 论文与开源仓库的 643 条任务查询和 15 个站点，逐题重建可运行的环境",
+        "cite": [
+          "repo-webvoyager@README",
+          "techreport@§6.1"
+        ]
+      },
+      {
+        "k": "站点副本",
+        "text": "在 WebHarbor 自托管副本基础上扩建，补回缺失页面、交互控件与本地数据库记录，使 15 个站点的全部 643 题都能离线跑通；副本以本地 Flask + SQLite 运行，目标域名路由到本机",
+        "cite": [
+          "techreport@§6.1",
+          "techreport@附录 A.1"
+        ]
+      },
+      {
+        "k": "前端保真",
+        "text": "从目标站点抓取参考快照——DOM 层级、计算后的 CSS 规则与静态资源（logo、图标、内联 SVG），端点受限时补网页归档，再重建完整页面结构",
+        "cite": [
+          "techreport@附录 A.1"
+        ]
+      },
+      {
+        "k": "交互控件",
+        "text": "实现端到端任务所需的交互控件：多属性筛选面板、日期选择器、排序菜单、分页、有状态提交表单，以及 Leaflet 地图、Chart.js 视图等领域组件",
+        "cite": [
+          "techreport@附录 A.1"
+        ]
+      },
+      {
+        "k": "数据库种子",
+        "text": "种子数据主要来自公开 API 与数据转储（ESPN、Stack Exchange、Hacker News、OpenStreetMap）、爬虫归档与书目库；缺正文、描述或图片时用 LLM 与图像生成模型补全，合成字段与任务校验器查询的规范字段分开标记",
+        "cite": [
+          "techreport@附录 A.1"
+        ]
+      },
+      {
+        "k": "每回合重置",
+        "text": "每个 episode 开始前从只读种子快照恢复一份全新的工作数据库，把有状态操作跨回合隔离，同时暴露底层表供确定性校验",
+        "cite": [
+          "techreport@附录 A.1"
+        ]
+      },
+      {
+        "k": "原题标注方式",
+        "text": "原版 WebVoyager 用半自动方式生成并过滤 643 条任务查询，每题附简短参考答案；其中 22.3% 的题标注了 golden response，其余只有 possible answer",
+        "cite": [
+          "repo-webvoyager@README",
+          "paper-webvoyager@§4.3"
+        ]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "在本地自托管站点副本上运行 agent：目标域名指向本机，每个回合前从只读种子快照恢复 SQLite 工作库。单题判定为「必需的 UI 导航轨迹通过」且「答案与后端数据库状态同时对上」才计成功，汇总为 643 题上的成功率。",
+    "cite": [
+      "techreport@§6.1",
+      "huggingface-microsoft-mage-vl-cowork@要点5"
+    ],
+    "variants": [
+      {
+        "text": "原版 WebVoyager 口径：真实线上站点，用 GPT-4V 作 auto-evaluator，喂给它任务、agent 回复与最后 k 张截图做二值判定；温度设为 1、单题最多 15 步；GPT-4V 判分与人工标注的一致率 85.3%（full trajectory，κ = 0.70）",
+        "cite": [
+          "paper-webvoyager@§5.1",
+          "paper-webvoyager@§5",
+          "paper-webvoyager@Table 3"
+        ]
+      },
+      {
+        "text": "对照口径：Table 4 同表列出各家自报的线上 WebVoyager 分数与离线分数，五个有自报线上值的模型掉 12.8～33.1 pp；线上值是各家自行申报，不是微软复跑的结果",
+        "cite": [
+          "techreport@§6.6",
+          "techreport@Table 4"
+        ]
+      },
+      {
+        "text": "官方未披露项：WebVoyager-Static 的 agent harness、温度 / top_p、步数上限、每配置跑几次与聚合方式都没有印出来，只写了「identical offline evaluation settings」；同一份报告对 OSWorld-Verified 则明确写了 361 道留出题、50 步上限、两次取平均",
+        "cite": [
+          "techreport@§6.1"
+        ]
+      }
+    ]
   },
   "metrics": [
     {
       "id": "task_success_rate",
-      "name": "任务成功率",
-      "range": [0, 100],
+      "name": "任务成功率（Task Success Rate）",
+      "direction": "越高越好",
+      "description": "同时通过 UI 导航轨迹校验与后端 SQLite 状态校验的题数 / 643；Table 4 的所有横向比较都用这一列",
+      "range": [
+        0,
+        100
+      ],
       "unit": "percent",
-      "direction": "higher",
-      "aggregation": "必需的 UI 导航轨迹与后端 SQLite 数据库状态同时通过的题数 / 总题数"
+      "cite": [
+        "techreport@§6.6",
+        "huggingface-microsoft-mage-vl-cowork@要点5"
+      ]
+    },
+    {
+      "id": "live_static_gap",
+      "name": "线上自报分与离线分落差（Δ pp）",
+      "direction": "越接近 0 越好",
+      "description": "同一模型自报的线上 WebVoyager 成功率减去其 WebVoyager-Static 成功率；表中以负值印出，五个有自报线上值的模型落在 −12.8～−33.1 pp",
+      "range": null,
+      "unit": "percentage points",
+      "cite": [
+        "techreport@§6.6",
+        "techreport@Table 4"
+      ]
     }
   ],
-  "default_protocol": {
-    "raw": "可重置自托管站点副本；判定同时校验必需的 UI 导航轨迹与后端 SQLite 数据库状态（官方未印 agent harness、采样参数、步数上限、跑次数与聚合方式）"
-  },
-  "versions": [],
-  "limitations": [
-    "基准由微软（发布方）自建并自测，尚无第三方复跑",
-    "官方未公开站点副本与题集的地址，外部无法完整复现",
-    "官方未印 agent harness、温度 / top_p / max_tokens、步数上限、跑次数与聚合方式",
-    "与原版 WebVoyager 是「真实线上站点 + GPT-4V 截图判分」和「自托管副本 + 轨迹与状态双校验」两种口径，分数不可直接互换",
-    "官方表中给出的线上自报值与虚高幅度为各家自行申报，未经第三方核验"
+  "versions": [
+    {
+      "id": "webvoyager-paper-v1",
+      "date": "2024-01-25",
+      "label": "原版 WebVoyager 论文提交 arXiv（2401.13919v1）",
+      "cite": [
+        "paper-webvoyager@arXiv 提交历史"
+      ]
+    },
+    {
+      "id": "webvoyager-paper-v4",
+      "date": "2024-06-06",
+      "label": "WebVoyager 论文更新至 v4（当前版本）：643 题 / 15 站点，GPT-4V 自动判分与人工一致率 85.3%，被 ACL 2024 主会接收",
+      "cite": [
+        "paper-webvoyager@arXiv 提交历史",
+        "paper-webvoyager@摘要"
+      ]
+    },
+    {
+      "id": "webvoyager-static",
+      "date": "2026-10-30",
+      "label": "微软 Mage-VL-Cowork 模型卡发布 WebVoyager-Static：643 题全部重建到可重置自托管副本，判分加入后端状态校验",
+      "cite": [
+        "huggingface-microsoft-mage-vl-cowork@模型卡元数据",
+        "huggingface-microsoft-mage-vl-cowork@要点5"
+      ]
+    }
   ],
-  "notes": "new-benchmark：2026-10-30 批由 microsoft/Mage-VL-Cowork 官方 Hugging Face model card 引入。与既有 webvoyager 实体是「原版 vs 厂商自建离线确定性副本」的关系，按「同一 benchmark 不同条件/版本 → 拆 variant 行」的纪律另立实体，不合并、不改写 webvoyager。",
+  "limitations": [
+    {
+      "issue": "由发布方自建并自测，没有第三方复跑",
+      "impact": "表内所有横向比较都来自微软一次评测，harness 与判分实现未公开，外部无法独立验证 58.6% 以及它与各基线之间的差距",
+      "severity": "高",
+      "response": "把这张表当作发布方自述来读；要引用具体差距，先等第三方复现或官方放出环境与判分代码",
+      "reader": "想用这个分数做模型选型的人",
+      "cite": [
+        "techreport@§6.1",
+        "huggingface-microsoft-mage-vl-cowork@要点5"
+      ]
+    },
+    {
+      "issue": "评测环境与题集未公开下载",
+      "impact": "站点副本、种子数据库、判分脚本都没有给出地址，复现需要按附录 A.1 自己重建，工作量与原文不对等",
+      "severity": "高",
+      "response": "附录 A.1 公开了构建方法（快照来源、控件清单、种子数据来源），可作复现蓝图，但不是一键复现",
+      "reader": "要复现或做自己消融实验的人",
+      "cite": [
+        "techreport@附录 A.1"
+      ]
+    },
+    {
+      "issue": "副本不等于真实网站",
+      "impact": "自托管副本消除了内容漂移与反爬，同时也消除了这两类真实失败；页面结构、控件行为与数据都是重建的，在这里得分高不代表在线上站点也高",
+      "severity": "中",
+      "response": "把它当多步网页交互的诊断工具，不当线上鲁棒性证据；线上能力另看真实站点评测",
+      "reader": "关心落地表现的人",
+      "cite": [
+        "techreport@§6.1",
+        "techreport@附录 A.1"
+      ]
+    },
+    {
+      "issue": "评测口径的关键参数未披露",
+      "impact": "步数上限、温度、跑几次、怎么聚合都没写，只说了 identical offline evaluation settings；换 harness 后的分数彼此不可比",
+      "severity": "中",
+      "response": "跨论文比较时只用同一张表内的模型，不要把本表数字和别处的 WebVoyager 数字混排",
+      "reader": "做横向对比的人",
+      "cite": [
+        "techreport@§6.1"
+      ]
+    },
+    {
+      "issue": "虚高幅度依赖各家自报的线上分数",
+      "impact": "12.8～33.1 pp 的分子是各论文自己报的线上成绩，harness、提示与跑次都不同，不是同条件 A/B",
+      "severity": "中",
+      "response": "把这个区间读作量级警示而非精确测量；要精确结论需要同一 harness 双跑",
+      "reader": "要引用这个数字的人",
+      "cite": [
+        "techreport@§6.6",
+        "huggingface-microsoft-mage-vl-cowork@要点5"
+      ]
+    },
+    {
+      "issue": "原题库的站点与答案类型偏差",
+      "impact": "原版 WebVoyager 只覆盖 15 个英文站点，明确排除需要登录或验证码的网站；643 题里只有 22.3% 有 golden response，其余只有 possible answer",
+      "severity": "中",
+      "response": "结论限定在「这 15 个英文公开站点的多步任务」；登录态、验证码、非英文站点都不在覆盖范围内",
+      "reader": "想把结论推广到其它站点的人",
+      "cite": [
+        "paper-webvoyager@§4.1",
+        "paper-webvoyager@§4.3"
+      ]
+    },
+    {
+      "issue": "只有一个检查点进入本表",
+      "impact": "58.6% 是 Stage 4 SFT 检查点；最终 RL 版 Mage-VL-Cowork 的 WebVoyager-Static 分数未公布，无法判断 RL 是否也带来提升",
+      "severity": "低",
+      "response": "不要把 58.6% 当作该模型的最终网页能力，等官方补 RL 版数字",
+      "reader": "关注最终发布模型的人",
+      "cite": [
+        "techreport@§6.6",
+        "huggingface-microsoft-mage-vl-cowork@要点5"
+      ]
+    },
+    {
+      "issue": "副本种子数据含合成内容",
+      "impact": "副本的正文、商品描述与缩略图部分由 LLM 与图像生成模型补全，与真实站点内容不完全一致",
+      "severity": "低",
+      "response": "报告称合成字段与校验器查询的规范字段分开标记；读分时知道页面内容有一部分是生成的",
+      "reader": "关心数据真实性的人",
+      "cite": [
+        "techreport@附录 A.1"
+      ]
+    }
+  ],
+  "notes": "new-benchmark：2026-10-30 批由 microsoft/Mage-VL-Cowork 官方 Hugging Face model card 引入。与既有 webvoyager 实体是「原版 vs 厂商自建离线确定性副本」的关系，按「同一 benchmark 不同条件/版本 → 拆 variant 行」的纪律另立实体，不合并、不改写 webvoyager。2026-11-14 升级为 benchmark-profile/v2：证据来自模型卡 WebVoyager-Static 一节、Mage-VL-Cowork 技术报告（§6.1 / §6.6 / Table 4 / 附录 A.1）、WebVoyager 论文 arXiv:2401.13919v4 与官方仓库 README。",
   "official_sources": [
     {
       "kind": "site",
       "url": "https://huggingface.co/microsoft/Mage-VL-Cowork"
     }
   ],
-  "related_benchmarks": ["webvoyager", "webarena"],
-  "content_status": "beta",
-  "last_verified_at": "2026-10-30"
+  "related_benchmarks": [
+    "webvoyager",
+    "webarena"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "huggingface-microsoft-mage-vl-cowork",
+        "kind": "site",
+        "title": "Mage-VL-Cowork 模型卡（要点 5：Browser Transfer & Deterministic Verification: WebVoyager-Static）",
+        "url": "https://huggingface.co/microsoft/Mage-VL-Cowork",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "techreport",
+        "kind": "paper",
+        "title": "Mage-VL-Cowork: A Full Training Recipe to Learn Hybrid Computer Use From Evolved Harnesses（Microsoft Mage Team 技术报告，2026 年 10 月）",
+        "url": "https://github.com/microsoft/Mage/raw/main/assets/mage_vl_cowork_tech_report.pdf",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "paper-webvoyager",
+        "kind": "paper",
+        "title": "WebVoyager: Building an End-to-End Web Agent with Large Multimodal Models（arXiv:2401.13919v4，ACL 2024 主会）",
+        "url": "https://arxiv.org/abs/2401.13919",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "repo-webvoyager",
+        "kind": "repo",
+        "title": "WebVoyager 官方仓库 README（MinorJerry/WebVoyager，Apache-2.0）",
+        "url": "https://github.com/MinorJerry/WebVoyager",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Microsoft Mage Team（Mage-VL-Cowork 与 WebVoyager-Static 的发布方；原版 WebVoyager 出自浙江大学 / 腾讯 AI Lab / 西湖大学团队）",
+        "cite": [
+          "techreport@标题页",
+          "paper-webvoyager@标题页"
+        ]
+      },
+      "first_release": {
+        "v": "2026-10-30（microsoft/Mage-VL-Cowork 模型卡创建时间，WebVoyager-Static 首次公开；原版 WebVoyager 论文 2024-01-25 提交 arXiv）",
+        "cite": [
+          "huggingface-microsoft-mage-vl-cowork@模型卡元数据",
+          "paper-webvoyager@arXiv 提交历史"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "huggingface-microsoft-mage-vl-cowork@要点5",
+        "techreport@§6.1",
+        "techreport@附录 A.1",
+        "paper-webvoyager@§4.2",
+        "repo-webvoyager@README"
+      ],
+      "interpretation": [
+        "huggingface-microsoft-mage-vl-cowork@要点5",
+        "techreport@§6.6",
+        "techreport@Table 4",
+        "techreport@§6.1",
+        "paper-webvoyager@§5.1"
+      ]
+    },
+    "problem": {
+      "text": "线上网页 agent 评测既不可复现也不可信：页面内容随时间与地点变化、反爬与访问拦截打断 rollout、VLM 判分只看最后截图又没有后端真值、新模型已经知道大量目标信息于是不浏览直接猜。WebVoyager-Static 用可重置的自托管副本加上「轨迹 + 后端状态」双校验，把这类虚高挤掉。",
+      "cite": [
+        "techreport@§6.1",
+        "huggingface-microsoft-mage-vl-cowork@要点5"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "原版 WebVoyager 线上口径参考线（GPT-4V 驱动）",
+        "value": "59.1%",
+        "note": "真实线上站点 + 最后 k 张截图判分，人工一致率 85.3%；和离线口径不是同一把尺子",
+        "cite": [
+          "paper-webvoyager@摘要",
+          "paper-webvoyager@Table 3"
+        ]
+      },
+      {
+        "label": "本表最低：Qwen3.5-4B（4B 通用 VLM）",
+        "value": "37.3%",
+        "note": "同一离线口径下的下界参照",
+        "cite": [
+          "techreport@Table 4"
+        ]
+      },
+      {
+        "label": "发布方自家 4B 通用（桌面 + 浏览器）SFT 检查点",
+        "value": "58.6%（377/643）",
+        "note": "4B 通用模型里的最高分；这是 Stage 4 SFT，不是最终 RL 版",
+        "cite": [
+          "techreport@§6.6"
+        ]
+      },
+      {
+        "label": "本表最高：Fara1.5-4B（4B 浏览器专精）",
+        "value": "68.0%",
+        "note": "专精浏览器 DOM / 截图流程；同一模型在全桌面 OSWorld-Verified 上只有 13.9%",
+        "cite": [
+          "techreport@§6.6",
+          "techreport@Table 4",
+          "huggingface-microsoft-mage-vl-cowork@要点5"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 58.6% 和原版 WebVoyager 的 59.1% 直接比大小——一把是自托管副本加后端校验，一把是线上站点加截图判分，不是同一把尺子",
+        "cite": [
+          "techreport@§6.1",
+          "paper-webvoyager@§5.1"
+        ]
+      },
+      {
+        "text": "把表里的 Live → Static Inflation 列读成「涨了」——该列印的是离线分减线上分的负值，12.8～33.1 pp 指的是线上分数里含的水分",
+        "cite": [
+          "huggingface-microsoft-mage-vl-cowork@要点5",
+          "techreport@§6.6"
+        ]
+      },
+      {
+        "text": "以为 WebVoyager-Static 就是 WebHarbor 或另一个公开数据集——它是微软为这次发布自建的评测，附录 A.1 只公开构建方法，没有给环境下载地址",
+        "cite": [
+          "techreport@§6.1",
+          "techreport@附录 A.1"
+        ]
+      },
+      {
+        "text": "以为 58.6% 是 Mage-VL-Cowork 的最终网页能力——卡片明说这是 Stage 5 RL 之前的 SFT 检查点，RL 版的 WebVoyager-Static 分数没有公布",
+        "cite": [
+          "huggingface-microsoft-mage-vl-cowork@要点5",
+          "techreport@§6.6"
+        ]
+      },
+      {
+        "text": "把表里通用 VLM 的分数当成通用视觉理解水位——这张表只测 15 个站点的多步网页任务",
+        "cite": [
+          "techreport@§6.6"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "原版 WebVoyager",
+        "v": "2024-01-25 提交 arXiv、2024-06-06 更新至 v4 并被 ACL 2024 主会接收；作者来自浙江大学、腾讯 AI Lab 与西湖大学；用 GPT-4V 既当 agent 又当 auto-evaluator，代码与数据以 Apache-2.0 开源",
+        "cite": [
+          "paper-webvoyager@arXiv 提交历史",
+          "paper-webvoyager@标题页",
+          "repo-webvoyager@README"
+        ]
+      },
+      {
+        "k": "原题库构成",
+        "v": "15 个英文站点：Allrecipes、Amazon、Apple、ArXiv、BBC News、Booking、Cambridge Dictionary、Coursera、ESPN、GitHub、Google Flights、Google Map、Google Search、Huggingface、Wolfram Alpha；明确排除需要登录或验证码的网站；每站 40~45 题共 643 题，其中 22.3% 有 golden response",
+        "cite": [
+          "paper-webvoyager@§4.1",
+          "paper-webvoyager@Table 1",
+          "paper-webvoyager@§4.3"
+        ]
+      },
+      {
+        "k": "开源仓库附带内容",
+        "v": "仓库除 643 题外还放了从 GAIA 验证集抽取的 90 道 Level 1/2 网页任务，起点统一设为 Google Search；--max_iter 是单题在线交互次数上限，超出即判失败",
+        "cite": [
+          "repo-webvoyager@README"
+        ]
+      },
+      {
+        "k": "副本技术基线",
+        "v": "微软在 WebHarbor 自托管副本基础上扩建，并搭配 InfiniteWeb 合成站点，用于可控的浏览器与跨应用任务生成；这些副本每个 episode 从本地种子数据库重置",
+        "cite": [
+          "techreport@§3.2",
+          "techreport@附录 A.1"
+        ]
+      },
+      {
+        "k": "发布方与报告",
+        "v": "WebVoyager-Static 由 Microsoft Mage Team 在 Mage-VL-Cowork 技术报告（标注 2026 年 10 月）与同日的 Hugging Face 模型卡中给出；副本构建细节的唯一公开出处是报告附录 A.1",
+        "cite": [
+          "techreport@标题页",
+          "huggingface-microsoft-mage-vl-cowork@模型卡元数据"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-10-30",
+        "columns": [
+          "模型",
+          "参数量",
+          "Agent 范围",
+          "WebVoyager-Static (%)",
+          "自报线上 (%)",
+          "落差 (pp)"
+        ],
+        "rows": [
+          [
+            "Fara1.5-4B",
+            "4B",
+            "浏览器专精",
+            "68.0",
+            "80.8",
+            "−12.8"
+          ],
+          [
+            "Mage-VL-Cowork-SFT（发布方）",
+            "4B",
+            "桌面 + 浏览器通用",
+            "58.6",
+            "—",
+            "—"
+          ],
+          [
+            "Qwen3-VL-8B-Thinking",
+            "8B",
+            "通用 VLM",
+            "53.7",
+            "—",
+            "—"
+          ],
+          [
+            "Qwen3.5-9B",
+            "9B",
+            "通用 VLM",
+            "53.3",
+            "—",
+            "—"
+          ],
+          [
+            "Qwen3-VL-4B-Thinking",
+            "4B",
+            "通用 VLM",
+            "49.6",
+            "—",
+            "—"
+          ],
+          [
+            "OpenWebRL-4B",
+            "4B",
+            "浏览器专精",
+            "47.1",
+            "74.1",
+            "−27.0"
+          ],
+          [
+            "MolmoWeb-8B",
+            "8B",
+            "浏览器专精",
+            "46.8",
+            "78.2",
+            "−31.4"
+          ],
+          [
+            "MolmoWeb-4B",
+            "4B",
+            "浏览器专精",
+            "42.6",
+            "75.2",
+            "−32.6"
+          ],
+          [
+            "Fara-7B",
+            "7B",
+            "浏览器专精",
+            "40.4",
+            "73.5",
+            "−33.1"
+          ],
+          [
+            "Qwen3.5-4B",
+            "4B",
+            "通用 VLM",
+            "37.3",
+            "—",
+            "—"
+          ]
+        ]
+      },
+      "cite": [
+        "techreport@Table 4",
+        "huggingface-microsoft-mage-vl-cowork@要点5"
+      ]
+    }
+  }
 }

@@ -1,7 +1,7 @@
 {
   "id": "visualprobe",
   "name": "VisualProbe",
-  "full_name": null,
+  "full_name": "Visual Probe Dataset（Mini-o3 论文提出的高分辨率视觉搜索基准）",
   "aliases": [
     "Visual Probe",
     "VisualProbe-Hard"
@@ -10,45 +10,296 @@
   "categories": [
     "multimodal"
   ],
-  "summary": "细粒度视觉感知评测（Mini-o3 团队）：小目标、干扰物、高分辨率图像，分 easy/medium/hard 子集（hard 子集 106 题）",
-  "interpretation": "细粒度视觉感知压力测试；Step 3.7 Flash 报「with Python tool」（crop/zoom/draw）泳道 65.05——考的是工具增强的视觉搜索（thinking with images），比单次推理读分更能反映 agentic 视觉能力；与 V* Bench 同族。",
+  "summary": "Mini-o3 团队（ByteDance × 香港大学）2025-09 随论文开源的高分辨率视觉搜索基准：题目要求在小目标、多干扰物的高清图里反复定位并回答，按 easy / medium / hard 三档分层。论文口径测试集 500 题，HF 公开卡三档合计 515 题。",
+  "interpretation": "高分说明模型能在高分辨率图里做多步、带工具的视觉搜索（先裁剪再放大再判断），而不是一次性读图就给答案。但必须看清工具口径：论文里 Mini-o3 只用 crop 工具（hard 48.0），StepFun 登记行的 65.05 属于「with Python tool」泳道（裁剪/缩放/画像素/画框的富动作空间），两者不能直接比。",
   "measures": [
-    "高分辨率图像中的小目标识别",
-    "工具增强（裁剪/缩放）下的多步视觉搜索"
+    {
+      "area": "视觉定位与检索",
+      "focus": "在小目标、多干扰物的高分辨率图里定位指定对象并回答其属性；官方把这类任务定义为 visual search，题目示例如「那只黑翼蝴蝶的身体是什么颜色」「数字 50 左边的英文单词是什么」",
+      "share": "全部题目",
+      "format": "开放式短答案（颜色/数量/位置/单词等）",
+      "cite": [
+        "arxiv-2509-07969@§3.2",
+        "vp-hf-hard"
+      ]
+    },
+    {
+      "area": "难度分层",
+      "focus": "同一任务按 easy / medium / hard 三档给出；论文明确说 hard 档是为鼓励 RL 中的反思式试错推理而专门构造的，是主表与消融的核心口径",
+      "share": "hard 档 106 题（HF 公开卡）",
+      "format": "官方表格按 hard / medium / easy 三列分别报分",
+      "cite": [
+        "arxiv-2509-07969@§3.2",
+        "vp-hf-hard",
+        "arxiv-2509-07969@Table 1"
+      ]
+    },
+    {
+      "area": "多轮交互与工具使用",
+      "focus": "官方实现只给 crop 工具做多轮裁剪；考的是工具增强下的视觉搜索能力，而不是单次读图读分",
+      "share": "全部题目",
+      "format": "多轮 agentic 轨迹（训练上限 6 轮，推理可扩展到数十轮）",
+      "cite": [
+        "repo-mini-o3@Stage 2 RL 配置",
+        "arxiv-2509-07969@§4.1"
+      ]
+    }
   ],
   "does_not_measure": [
-    "文本推理",
-    "文档 OCR 与版面解析"
+    {
+      "text": "不测纯文本推理、数学或代码能力：题目全部围绕高分辨率图像中的视觉搜索，答案来自图像内容本身。",
+      "cite": [
+        "arxiv-2509-07969@§3.2"
+      ]
+    },
+    {
+      "text": "不测文档 OCR 与版面解析：干扰物是通用物体而非文档版面结构，公开示例问的是物体颜色、数量与单词。",
+      "cite": [
+        "vp-hf-easy",
+        "vp-hf-hard"
+      ]
+    },
+    {
+      "text": "不测人类水平，也不提供随机基线：论文主表既没有人类成绩也没有随机基线，本站不做外推。",
+      "cite": [
+        "arxiv-2509-07969@Table 1",
+        "arxiv-2509-07969@§4.1"
+      ]
+    }
   ],
   "dataset": {
-    "sample_count": null,
+    "sample_count": 500,
     "splits": [
-      "easy",
-      "medium",
-      "hard（106 题）"
+      "easy（HF 公开卡 141 题）",
+      "medium（HF 公开卡 268 题）",
+      "hard（HF 公开卡 106 题）",
+      "train（论文 4,000 题 / HF 公开卡 2,900 题）"
     ],
     "languages": [
       "en"
     ],
-    "source_type": "high-resolution visual search questions（开源）",
-    "public_sample": true
+    "source_type": "high-resolution visual search questions（开源，CC BY-NC 4.0）",
+    "public_sample": true,
+    "totals": "论文口径：训练 4,000 题 + 测试 500 题（easy / medium / hard 三档）；HF 公开卡：训练 2,900 题，测试 easy 141 + medium 268 + hard 106 = 515 题。两套题量不一致，官方未说明差异来源，详见局限。",
+    "cite": [
+      "arxiv-2509-07969@§3.2",
+      "vp-hf-train",
+      "vp-hf-easy",
+      "vp-hf-medium",
+      "vp-hf-hard"
+    ],
+    "construction": [
+      {
+        "k": "任务形态",
+        "text": "从高分辨率图像出发构造「先定位、再答属性」的视觉搜索题：目标很小、周围有大量同类干扰物，单次读图答不出来，需要反复裁剪放大后判断。",
+        "cite": [
+          "vp-hf-hard",
+          "arxiv-2509-07969@§3.2"
+        ]
+      },
+      {
+        "k": "难度分档",
+        "text": "官方把题目分为 easy / medium / hard 三档，各档单独建卡发布；论文说明 hard 档是为鼓励 RL 中的反思式试错推理而专门构造的。",
+        "cite": [
+          "arxiv-2509-07969@§3.2",
+          "vp-hf-easy",
+          "vp-hf-medium",
+          "vp-hf-hard"
+        ]
+      },
+      {
+        "k": "训练数据组成",
+        "text": "训练用 VisualProbe 训练集，并额外随机抽 8,000 条 DeepEyes-Datasets-47k，以保住简单视觉搜索场景上的表现。",
+        "cite": [
+          "arxiv-2509-07969@§4.1"
+        ]
+      },
+      {
+        "k": "冷启动轨迹",
+        "text": "用少量人工示例做上下文学习，让已有 VLM 逐轮产出 thought + action，只保留最终答案正确的轨迹，共收集约 6,000 条冷启动轨迹。",
+        "cite": [
+          "arxiv-2509-07969@§4.3"
+        ]
+      },
+      {
+        "k": "像素预算",
+        "text": "为在 32K 上下文里塞进更多交互轮，论文把单图最大像素压到 2M（必要时更低）；消融显示 2M 时 hard 得分最高。",
+        "cite": [
+          "arxiv-2509-07969@§4.1",
+          "arxiv-2509-07969@Table 3"
+        ]
+      }
+    ]
   },
   "metrics": [
     {
       "id": "accuracy",
-      "name": "Accuracy",
-      "range": [0, 100],
+      "name": "准确率（Avg@32）",
+      "direction": "越高越好",
+      "description": "每题在 temperature 1.0 下跑 K 次、按 K 次结果取平均的准确率；官方因为单次评测方差大而采用 Avg@K，VisualProbe 上报 K=32。",
+      "range": [
+        0,
+        100
+      ],
       "unit": "percent",
-      "direction": "higher",
-      "aggregation": "mean"
+      "cite": [
+        "arxiv-2509-07969@§4.1",
+        "repo-mini-o3@Evaluation"
+      ]
+    },
+    {
+      "id": "avg-turns",
+      "name": "平均交互轮数",
+      "direction": "越高越好",
+      "description": "诊断指标：消融表附带统计整体轨迹与正确轨迹的平均交互轮数，用来说明像素预算如何挤占可进行的交互轮数；它不是官方的优化目标。",
+      "unit": "turns",
+      "cite": [
+        "arxiv-2509-07969@Table 3"
+      ]
     }
   ],
-  "versions": [],
-  "limitations": [],
   "default_protocol": {
-    "raw": "with Python tool（crop/zoom/draw）——Step 3.7 Flash 发布页「Visual Perception with Python Tool」表"
+    "raw": "Mini-o3 官方口径：Qwen2.5-VL-7B-Instruct 底座，工具只有 crop（data.tool_call=\"crop\"），训练时最多 6 轮交互、32K 上下文；评测每案跑 K=32 次、temperature 1.0 取平均（Avg@32），答案抽取走 gpt_extract_answer + strict 标签。",
+    "cite": [
+      "repo-mini-o3@Stage 2 RL 配置",
+      "repo-mini-o3@Evaluation Script",
+      "arxiv-2509-07969@§4.1"
+    ],
+    "variants": [
+      {
+        "text": "带 Python 工具（Step 3.7 Flash）：把裁剪、放大缩小、画像素/画框统一成代码接口，VisualProbe 自报 65.05%；与论文里仅 crop 的 48.0 不是同一工具口径。",
+        "cite": [
+          "stepfun-blog@Python tool 段",
+          "stepfun-blog@Visual Perception with Python Tool",
+          "arxiv-2509-07969@Table 1"
+        ]
+      },
+      {
+        "text": "像素预算消融：max pixels 取 0.5M / 1M / 2M / 12M 时 hard 分别为 36.4 / 44.4 / 48.0 / 36.1，官方默认 2M。",
+        "cite": [
+          "arxiv-2509-07969@Table 3",
+          "arxiv-2509-07969@§4.1"
+        ]
+      },
+      {
+        "text": "评测脚本口径：val_max_generation_round=12、val_n=32、val_do_sample=True，即每案最多 12 轮交互、跑 32 次取平均。",
+        "cite": [
+          "repo-mini-o3@Stage 2 RL 配置",
+          "repo-mini-o3@Evaluation Script"
+        ]
+      }
+    ]
   },
-  "notes": "随 Mini-o3（arXiv 2509.07969）走红的视觉探测基准；StepFun 发布页登记行",
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2025-09-09",
+      "label": "arXiv v1 提交（cs.CV），Mini-o3 论文与 VisualProbe 数据集首次公开",
+      "cite": [
+        "arxiv-2509-07969@版本页"
+      ]
+    },
+    {
+      "id": "v1-open",
+      "date": "2025-09-10",
+      "label": "项目页、论文、代码、模型与数据正式开放下载",
+      "cite": [
+        "repo-mini-o3@News"
+      ]
+    },
+    {
+      "id": "iclr-2026",
+      "date": "2026-01-26",
+      "label": "Mini-o3 被 ICLR 2026 接收；论文版本仍为 arXiv v1",
+      "cite": [
+        "repo-mini-o3@News",
+        "arxiv-2509-07969@版本页"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "题量口径冲突：论文与 HF 公开卡不一致",
+      "impact": "论文写训练 4,000 题、测试 500 题；HF 公开卡是训练 2,900 题与 easy 141 + medium 268 + hard 106（测试合计 515 题）。差 200～400 题，直接影响按题量做的加权、子集抽样与复现，官方未说明差异来源。",
+      "severity": "高",
+      "response": "未见官方回应；复现时建议以 HF 公开卡的实测题量为准，并明确自己用的是哪一套。",
+      "reader": "引用题量时不要混用两套数字；跨论文对比前先确认对方用的是 500 还是 515。",
+      "cite": [
+        "arxiv-2509-07969@§3.2",
+        "vp-hf-train",
+        "vp-hf-easy",
+        "vp-hf-medium",
+        "vp-hf-hard"
+      ]
+    },
+    {
+      "issue": "工具口径不统一，分数不可直接横比",
+      "impact": "论文基线只有 crop 工具；StepFun 登记行的 65.05 用的是富动作空间 Python 工具（裁剪/缩放/画像素/画框），同一张发布页表格里 Gemini 3 Flash 报 69.90%。工具空间不同，跨模型排名会变。",
+      "severity": "高",
+      "response": "本站把两种口径分开登记；官方未提供统一工具接口下的对照表。",
+      "reader": "看 VisualProbe 分数先问一句：带什么工具、跑几次取平均。",
+      "cite": [
+        "stepfun-blog@Python tool 段",
+        "stepfun-blog@Visual Perception with Python Tool",
+        "arxiv-2509-07969@Table 1"
+      ]
+    },
+    {
+      "issue": "论文未报告人类基线与随机基线",
+      "impact": "主表里既没有人类成绩也没有随机基线，读者无法判断 hard 档 48.0 距离人类水平还有多远，也无从估计猜对率。",
+      "severity": "中",
+      "response": "论文未给出；本站不做外推。",
+      "reader": "不要把 48.0 当成「接近人类」的证据，它只说明强于同期开源 7B 与所测闭源模型。",
+      "cite": [
+        "arxiv-2509-07969@Table 1",
+        "arxiv-2509-07969@§4.1"
+      ]
+    },
+    {
+      "issue": "hard 子集题量小，单题权重高",
+      "impact": "HF 公开 hard 卡只有 106 题，一题约 0.94 个百分点；Avg@32 只压采样方差，不压题目层的抽样误差。",
+      "severity": "中",
+      "response": "论文用 Avg@32 降方差，但没有给出题目层的置信区间或多次重抽结果。",
+      "reader": "hard 档 1～2 个点的差距基本读不出信号。",
+      "cite": [
+        "vp-hf-hard",
+        "arxiv-2509-07969@§4.1"
+      ]
+    },
+    {
+      "issue": "答案抽取与判分未独立审计",
+      "impact": "官方评测依赖 gpt_extract_answer 与 strict 标签从模型输出里抽答案，抽取失败会被判错；论文没有给出抽取失败率和人工抽检比例。",
+      "severity": "中",
+      "response": "仓库开源了评测脚本与配置，但没有发布判分审计数据。",
+      "reader": "看到分数先确认是否用了官方的 strict 抽取；自建 harness 的结果会有系统性偏差。",
+      "cite": [
+        "repo-mini-o3@Stage 2 RL 配置",
+        "repo-mini-o3@Evaluation"
+      ]
+    },
+    {
+      "issue": "论文表格自述与实际所列模型不一致",
+      "impact": "Table 1 脚注写「所列模型均为 7B」，但表里包含 GPT-4o；读者若按 7B 同档解读会误判量级。",
+      "severity": "低",
+      "response": "论文未修正（截至 arXiv v1，2026-11-14 核验）。",
+      "reader": "横向比较时按模型实际档位读，不要被脚注带跑。",
+      "cite": [
+        "arxiv-2509-07969@Table 1"
+      ]
+    },
+    {
+      "issue": "许可限制商业使用",
+      "impact": "数据与模型为 CC BY-NC 4.0，仅限研究用途；基座还受 Qwen 许可约束，商用需另行解决授权。",
+      "severity": "低",
+      "response": "官方在项目页与仓库 License 节明确写了研究用途限制。",
+      "reader": "想用于产品或商业评测的团队需要先解决许可。",
+      "cite": [
+        "mini-o3@Usage and License Notices",
+        "repo-mini-o3@License"
+      ]
+    }
+  ],
+  "notes": "随 Mini-o3（arXiv 2509.07969）发布的视觉搜索基准：论文口径测试 500 题，HF 公开卡测试合计 515 题，两套题量官方未说明差异。StepFun 发布页把它登记为「with Python tool」泳道（65.05%），与论文仅 crop 的 48.0 不同口径。",
   "official_sources": [
     {
       "kind": "paper",
@@ -61,6 +312,14 @@
     {
       "kind": "github",
       "url": "https://github.com/Mini-o3/Mini-o3"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/Mini-o3/VisualProbe_Hard"
+    },
+    {
+      "kind": "announcement",
+      "url": "https://static.stepfun.com/blog/step-3.7-flash/"
     }
   ],
   "related_benchmarks": [
@@ -69,6 +328,301 @@
     "blink",
     "perception-bench"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-09-01"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "arxiv-2509-07969",
+        "kind": "paper",
+        "title": "Mini-o3: Scaling Up Reasoning Patterns and Interaction Turns for Visual Search（arXiv:2509.07969v1，2025-09-09）",
+        "url": "https://arxiv.org/abs/2509.07969",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "mini-o3",
+        "kind": "site",
+        "title": "Mini-o3 项目主页（Visual Probe Dataset / Performance / Usage and License Notices）",
+        "url": "https://mini-o3.github.io/",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "repo-mini-o3",
+        "kind": "repo",
+        "title": "Mini-o3/Mini-o3 官方代码仓库 README（News / Stage 2 RL 配置 / Evaluation / License）",
+        "url": "https://github.com/Mini-o3/Mini-o3",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "vp-hf-train",
+        "kind": "dataset",
+        "title": "Hugging Face 数据集卡：Mini-o3/VisualProbe_train",
+        "url": "https://huggingface.co/datasets/Mini-o3/VisualProbe_train",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "vp-hf-easy",
+        "kind": "dataset",
+        "title": "Hugging Face 数据集卡：Mini-o3/VisualProbe_Easy",
+        "url": "https://huggingface.co/datasets/Mini-o3/VisualProbe_Easy",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "vp-hf-medium",
+        "kind": "dataset",
+        "title": "Hugging Face 数据集卡：Mini-o3/VisualProbe_Medium",
+        "url": "https://huggingface.co/datasets/Mini-o3/VisualProbe_Medium",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "vp-hf-hard",
+        "kind": "dataset",
+        "title": "Hugging Face 数据集卡：Mini-o3/VisualProbe_Hard",
+        "url": "https://huggingface.co/datasets/Mini-o3/VisualProbe_Hard",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "stepfun-blog",
+        "kind": "announcement",
+        "title": "StepFun 发布页：Step 3.7 Flash（Visual Perception with Python Tool 表）",
+        "url": "https://static.stepfun.com/blog/step-3.7-flash/",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Mini-o3 团队：ByteDance × 香港大学（Xin Lai、Junyi Li、Wei Li、Tao Liu、Tianjian Li、Hengshuang Zhao）",
+        "cite": [
+          "arxiv-2509-07969@标题页"
+        ]
+      },
+      "first_release": {
+        "v": "2025-09-09（arXiv v1）；2025-09-10 代码 / 模型 / 数据开放",
+        "cite": [
+          "arxiv-2509-07969@版本页",
+          "repo-mini-o3@News"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "arxiv-2509-07969@§3.2",
+        "mini-o3@Visual Probe Dataset",
+        "vp-hf-hard",
+        "vp-hf-easy",
+        "vp-hf-medium"
+      ],
+      "interpretation": [
+        "repo-mini-o3@Stage 2 RL 配置",
+        "stepfun-blog@Python tool 段",
+        "arxiv-2509-07969@Table 1"
+      ]
+    },
+    "problem": {
+      "text": "评测模型能否像人一样在高分辨率图像里做反复试探的视觉搜索：目标很小、干扰物很多，单次读图答不出来，必须多轮裁剪、放大、再判断，才能定位并回答指定问题。",
+      "cite": [
+        "arxiv-2509-07969@§3.2",
+        "mini-o3@Visual Probe Dataset"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机 / 人类基线",
+        "value": "论文未给出",
+        "note": "论文主表既没有随机基线也没有人类成绩；本站不外推。",
+        "cite": [
+          "arxiv-2509-07969@Table 1",
+          "arxiv-2509-07969@§4.1"
+        ]
+      },
+      {
+        "label": "论文发布时最好（hard 档）",
+        "value": "48.0",
+        "note": "Mini-o3 (7B) 自身，仅 crop 工具、Avg@32；同期 DeepEyes‡ 35.1、Pixel Reasoner‡ 28.8、Qwen2.5-VL-Instruct 23.9、GPT-4o 11.2。",
+        "cite": [
+          "arxiv-2509-07969@Table 1"
+        ]
+      },
+      {
+        "label": "厂商自报最高（带 Python 工具）",
+        "value": "65.05%",
+        "note": "Step 3.7 Flash 的「with Python tool」泳道（同一张发布页表格里 Gemini 3 Flash 为 69.90%）；工具口径与论文不同，不可直接与 48.0 相比。",
+        "cite": [
+          "stepfun-blog@Visual Perception with Python Tool",
+          "stepfun-blog@Python tool 段"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      },
+      {
+        "label": "统计分辨率参考线（hard 档）",
+        "value": "一题约 0.94 个百分点（106 题）",
+        "note": "Avg@32 只压采样方差、不压题目抽样误差；低于这个幅度的差距读不出信号。这条线是本站按公开题量算的参考，不是官方上限。",
+        "cite": [
+          "vp-hf-hard",
+          "arxiv-2509-07969@§4.1"
+        ]
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把论文的 48.0 和 StepFun 的 65.05 当成同一口径的进步：前者只用 crop 工具，后者用裁剪/缩放/画像素/画框的富动作空间，工具空间不同，分数不能直接相减。",
+        "cite": [
+          "stepfun-blog@Python tool 段",
+          "arxiv-2509-07969@Table 1"
+        ]
+      },
+      {
+        "text": "以为题目总量是 4,000：4,000 是论文的训练集；HF 公开训练卡只有 2,900 题，测试三档合计 515 题。",
+        "cite": [
+          "arxiv-2509-07969@§3.2",
+          "vp-hf-train",
+          "vp-hf-easy",
+          "vp-hf-medium",
+          "vp-hf-hard"
+        ]
+      },
+      {
+        "text": "把它当成通用的「细粒度视觉问答」基准：它专测高分辨率图里的视觉搜索，需要多轮裁剪定位，只会单次读图的模型会被系统性低估。",
+        "cite": [
+          "arxiv-2509-07969@§3.2",
+          "repo-mini-o3@Stage 2 RL 配置"
+        ]
+      },
+      {
+        "text": "以为图像像素预算越大分越高：官方消融里 12M 的 hard 只有 36.1，低于 2M 的 48.0，因为像素挤占上下文后能做的交互轮数变少。",
+        "cite": [
+          "arxiv-2509-07969@Table 3"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "Mini-o3 团队：ByteDance × 香港大学",
+        "cite": [
+          "arxiv-2509-07969@标题页"
+        ]
+      },
+      {
+        "k": "随哪篇论文发布",
+        "v": "Mini-o3: Scaling Up Reasoning Patterns and Interaction Turns for Visual Search（arXiv:2509.07969v1，2025-09-09）",
+        "cite": [
+          "arxiv-2509-07969@版本页",
+          "arxiv-2509-07969@标题页"
+        ]
+      },
+      {
+        "k": "为什么造它",
+        "v": "已有视觉搜索基准目标不够小、干扰物不够多、分辨率不够高，难以逼出反思式试错推理；hard 档专为 RL 设计。",
+        "cite": [
+          "arxiv-2509-07969@§3.2",
+          "arxiv-2509-07969@§1"
+        ]
+      },
+      {
+        "k": "同族基准",
+        "v": "论文把 VisualProbe 与 V* Bench、HR-Bench、MME-Realworld 一起作为视觉搜索测试套件。",
+        "cite": [
+          "arxiv-2509-07969@§4.1",
+          "repo-mini-o3@Evaluation"
+        ]
+      },
+      {
+        "k": "许可",
+        "v": "代码 Apache-2.0；数据与模型 CC BY-NC 4.0，仅限研究用途，并受 Qwen 许可约束。",
+        "cite": [
+          "repo-mini-o3@License",
+          "mini-o3@Usage and License Notices"
+        ]
+      },
+      {
+        "k": "论文后续状态",
+        "v": "Mini-o3 于 2026-01-26 被 ICLR 2026 接收，论文版本仍为 arXiv v1。",
+        "cite": [
+          "repo-mini-o3@News",
+          "arxiv-2509-07969@版本页"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-14",
+        "columns": [
+          "来源",
+          "模型",
+          "hard",
+          "medium",
+          "easy",
+          "口径"
+        ],
+        "rows": [
+          [
+            "论文 Table 1",
+            "GPT-4o",
+            "11.2",
+            "15.4",
+            "47.5",
+            "Avg@32；论文脚注称所列模型均为 7B，与本行实际档位不符"
+          ],
+          [
+            "论文 Table 1",
+            "LLaVA-OneVision",
+            "13.4",
+            "12.5",
+            "36.2",
+            "Avg@32"
+          ],
+          [
+            "论文 Table 1",
+            "Qwen2.5-VL-Instruct",
+            "23.9",
+            "26.0",
+            "39.1",
+            "Avg@32"
+          ],
+          [
+            "论文 Table 1",
+            "Pixel Reasoner‡",
+            "28.8",
+            "29.6",
+            "58.4",
+            "Avg@32（用其官方模型与评测代码复测）"
+          ],
+          [
+            "论文 Table 1",
+            "DeepEyes‡",
+            "35.1",
+            "29.8",
+            "60.1",
+            "Avg@32（用其官方模型与评测代码复测）"
+          ],
+          [
+            "论文 Table 1",
+            "Mini-o3 (Ours)",
+            "48.0",
+            "50.4",
+            "67.0",
+            "Avg@32，仅 crop 工具"
+          ],
+          [
+            "StepFun 发布页",
+            "Step 3.7 Flash（with Python tool）",
+            "65.05%",
+            "未披露",
+            "未披露",
+            "厂商自测值，Python 工具（裁剪/缩放/画像素/画框）"
+          ]
+        ]
+      },
+      "cite": [
+        "arxiv-2509-07969@Table 1",
+        "stepfun-blog@Visual Perception with Python Tool"
+      ]
+    }
+  }
 }

@@ -1,39 +1,547 @@
 {
   "id": "tempcompass",
   "name": "TempCompass",
-  "full_name": null,
+  "full_name": "TempCompass: Do Video LLMs Really Understand Videos?（视频大语言模型时序感知评测基准）",
   "aliases": [],
   "status": null,
   "categories": [
     "multimodal"
   ],
-  "summary": "视频时序理解多任务评测",
-  "interpretation": "视频时序理解多任务评测（是/否、多选、字幕等多种任务格式），用同静态内容但时序不同的『冲突视频』防单帧捷径，LLM 自动判分；发布时被测视频模型的时序感知普遍偏弱。",
-  "measures": [],
-  "does_not_measure": [],
+  "summary": "TempCompass 是北京大学、香港大学与华为诺亚方舟实验室 2024 年 3 月发布的视频大语言模型（Video LLM，把大语言模型扩展到视频输入的多模态模型）时序感知基准：把「时序」拆成动作、速度、方向、属性变化、事件顺序 5 类共 10 个细粒度子维度，用多选、是非、字幕匹配、字幕生成 4 种题型考察，并用「冲突视频」（静态内容相同、时序不同）堵住靠单帧画面或语言常识猜答案的捷径。",
+  "interpretation": "高分说明模型能沿时间轴读出动作类型、快慢、运动方向、属性变化与事件先后，而不是靠静态画面或语言先验蒙对；低分说明时序感知弱——论文发布时 8 个 SOTA Video LLM 与 3 个 Image LLM 在多选题上的平均准确率只有 33.9%–51.1%，远低于人类的 97.3%。它不覆盖 30 秒以上的视频，也不评估时序之外的通用视觉能力；字幕生成题由 ChatGPT 判分，约 20% 的判分与人工不一致，该题型绝对分数不宜直接用于厂商排名。",
+  "measures": [
+    {
+      "area": "时序感知—动作",
+      "focus": "判断视频里发生的是哪类动作：粗粒度动作、细粒度动作、物体运动、相机运动（示例元信息形如「Subject: woman athletes / Action: running」）。",
+      "share": "5 类基本时序维度之一；论文统计该维度约 100 条视频，多选题人类准确率 100%",
+      "format": "Multi-Choice QA、Yes/No QA、Caption Matching、Caption Generation",
+      "cite": [
+        "arxiv-2403-00476@§3.1",
+        "arxiv-2403-00476@§3.2.4",
+        "arxiv-2403-00476@Table 2"
+      ]
+    },
+    {
+      "area": "时序感知—速度",
+      "focus": "判断某物体运动快慢或整片快慢（绝对速度），或比较不同物体的快慢（相对速度）。",
+      "share": "5 类基本时序维度之一；论文统计该维度约 100 条视频，多选题人类准确率 90%",
+      "format": "Multi-Choice QA、Yes/No QA、Caption Matching、Caption Generation",
+      "cite": [
+        "arxiv-2403-00476@§3.1",
+        "arxiv-2403-00476@§3.2.4",
+        "arxiv-2403-00476@Table 2"
+      ]
+    },
+    {
+      "area": "时序感知—方向",
+      "focus": "判断运动方向，论文区分物体方向与相机方向两类。",
+      "share": "5 类基本时序维度之一；论文统计该维度约 100 条视频，多选题人类准确率 96.7%",
+      "format": "Multi-Choice QA、Yes/No QA、Caption Matching、Caption Generation",
+      "cite": [
+        "arxiv-2403-00476@§3.1",
+        "arxiv-2403-00476@§3.2.4",
+        "arxiv-2403-00476@Table 2"
+      ]
+    },
+    {
+      "area": "时序感知—属性变化",
+      "focus": "判断物体或整片的属性如何随时间变化，细分为尺寸形状变化、颜色光线变化、组合变化与其他变化（如「Subject: ice cream / Attribute Change: melting」）。",
+      "share": "5 类基本时序维度之一；论文统计该维度约 100 条视频，多选题人类准确率 100%",
+      "format": "Multi-Choice QA、Yes/No QA、Caption Matching、Caption Generation",
+      "cite": [
+        "arxiv-2403-00476@§3.1",
+        "arxiv-2403-00476@§3.2.4",
+        "arxiv-2403-00476@Table 2"
+      ]
+    },
+    {
+      "area": "时序感知—事件顺序",
+      "focus": "判断多个事件发生的先后（示例元信息形如「Events: 1. shooting one missile 2. shooting two missiles」）。",
+      "share": "5 类基本时序维度之一；论文统计该维度约 100 条视频，多选题人类准确率 100%",
+      "format": "Multi-Choice QA、Yes/No QA、Caption Matching、Caption Generation",
+      "cite": [
+        "arxiv-2403-00476@§3.1",
+        "arxiv-2403-00476@§3.2.4",
+        "arxiv-2403-00476@Table 2"
+      ]
+    },
+    {
+      "area": "任务格式多样性",
+      "focus": "同一段视频配 4 种题型：多选题、是非题、字幕匹配（二选一）、字幕生成（受约束的描述生成），用于观察时序表现在不同任务形态下的差异。",
+      "share": "4 种题型；论文统计每种题型至少 1,500 条指令",
+      "format": "Multi-Choice QA / Yes/No QA / Caption Matching / Caption Generation",
+      "cite": [
+        "arxiv-2403-00476@§3.1",
+        "arxiv-2403-00476@附录 A.3"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "不覆盖 30 秒以上的视频：论文只收集中短时长视频，长视频、小时级视频的时序理解不在评测范围内。",
+      "cite": [
+        "arxiv-2403-00476@附录 A.3"
+      ]
+    },
+    {
+      "text": "不评测时序维度之外的通用视觉能力（细粒度物体识别、文字识别、空间推理等）：数据集只按 9 类静态内容（人物、动物、植物、食物、自然物、载具、人造物、建筑、抽象）分类，不设这类任务。",
+      "cite": [
+        "arxiv-2403-00476@§3.1.3"
+      ]
+    },
+    {
+      "text": "不提供公开的语言标注：论文与官方仓库均未说明题目使用何种语言，读者引用时应写「未披露」，不应默认其为英文或多语言基准。",
+      "cite": [
+        "arxiv-2403-00476@§3.2"
+      ]
+    },
+    {
+      "text": "不给出训练/验证/测试划分：论文与仓库均未披露 split 信息，该基准按整套数据集使用。",
+      "cite": [
+        "arxiv-2403-00476@§3.2.4"
+      ]
+    }
+  ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
+    "sample_count": 7540,
+    "splits": [
+      "未披露（论文未给出训练/验证/测试划分）"
+    ],
+    "languages": [
+      "未披露"
+    ],
+    "source_type": "人工从 ShutterStock 采购的开放域短视频，配人工标注的半结构化元信息与 ChatGPT 生成、人工校对的题目指令",
+    "public_sample": true,
+    "totals": "410 条视频、500 条元信息、7,540 条题目指令；5 类基本时序维度、10 个细粒度子维度、4 种题型、9 类静态内容；视频时长集中在 30 秒以内。",
+    "cite": [
+      "arxiv-2403-00476@§3.2.4",
+      "arxiv-2403-00476@附录 A.3",
+      "repo@README"
+    ],
+    "construction": [
+      {
+        "k": "选维度与内容类别",
+        "text": "先确定要考察的时序维度集合与静态内容类别，作为后续视频采集与题目生成的约束。",
+        "cite": [
+          "arxiv-2403-00476@§3.2"
+        ]
+      },
+      {
+        "k": "采原始视频",
+        "text": "从 ShutterStock 采购原始视频，控制静态内容分布以保证多样性，并确保视频不出现在视频-语言预训练常用数据集 WebVid 中。",
+        "cite": [
+          "arxiv-2403-00476@§3.2.1"
+        ]
+      },
+      {
+        "k": "构冲突视频",
+        "text": "用倒放、空间拼接、时间拼接三种方式构造静态内容相同、仅在某个时序维度上不同的冲突视频对/三元组，让对一支视频成立的捷径在冲突视频上反向失效。",
+        "cite": [
+          "arxiv-2403-00476@§3.2.1"
+        ]
+      },
+      {
+        "k": "标元信息",
+        "text": "人工为视频标注半结构化元信息，每条由主语短语与描述所关注时序维度的短语两部分组成。",
+        "cite": [
+          "arxiv-2403-00476@§3.2.2"
+        ]
+      },
+      {
+        "k": "生成并人工校对题目",
+        "text": "先用 ChatGPT（gpt3.5-turbo）生成多选题指令并人工校对，再基于校对后的多选题生成是非题、字幕匹配与字幕生成指令，并再次人工校对。",
+        "cite": [
+          "arxiv-2403-00476@§3.2.3"
+        ]
+      },
+      {
+        "k": "质量抽检",
+        "text": "随机抽取 200 条题目指令交 3 名人类标注员试做，600 个标注结果中仅 5 个被标记为「无法作答」。",
+        "cite": [
+          "arxiv-2403-00476@§3.3"
+        ]
+      }
+    ]
   },
-  "metrics": [],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [],
-  "notes": "字节 Seed 引用",
+  "metrics": [
+    {
+      "id": "accuracy",
+      "name": "Accuracy（准确率）",
+      "direction": "越高越好",
+      "description": "模型回答被判为正确的比例。多选题与是非题按候选选项与标准答案比对，字幕匹配按二选一，字幕生成由 ChatGPT 判定。",
+      "range": "0–100",
+      "unit": "%",
+      "cite": [
+        "arxiv-2403-00476@Table 2"
+      ]
+    },
+    {
+      "id": "match_rate",
+      "name": "Match Rate（规则匹配成功率）",
+      "direction": "越高越好",
+      "description": "模型回答能被手写规则成功解析出一个候选选项的比例，衡量回答格式是否可被自动判分，是诊断指标而非能力指标。",
+      "range": "0–100",
+      "unit": "%",
+      "cite": [
+        "arxiv-2403-00476@Table 2"
+      ]
+    }
+  ],
+  "default_protocol": {
+    "raw": "对多选题、是非题与字幕匹配三类题型，先用手写规则检查模型回答中是否显式出现候选选项（A/B/C/D、Yes/No、Caption A/Caption B）并与标准答案比对；规则匹配失败的回答再交给 ChatGPT（gpt3.5-turbo）依据任务指令与标准答案判断对错。字幕生成题由 ChatGPT 判分。论文同时报告 Match Rate，即模型回答被规则成功解析出选项的比例。",
+    "cite": [
+      "arxiv-2403-00476@§3.4",
+      "arxiv-2403-00476@Table 2"
+    ],
+    "variants": [
+      {
+        "text": "答题提示词口径：官方仓库 2024-03-23 起把多选题与字幕匹配的提示词从 \"Best Option:\" 改为 \"Please directly give the best option:\"，规则匹配成功率随之大幅变化（V-LLaVA 多选题从 37.9 升到 100），跨版本分数不可直接比较。",
+        "cite": [
+          "repo@README"
+        ]
+      },
+      {
+        "text": "裁判口径：官方评测脚本对字幕生成之外的三类题型提供 --disable_llm 选项，可完全关闭 ChatGPT 判分、改为纯规则评测，分数会与默认混合判分不同。",
+        "cite": [
+          "repo@README"
+        ]
+      },
+      {
+        "text": "集成口径：通过 lmms-eval 跑出的「具体时序维度」分数可能不正确（各题型平均分正确），官方提供 utils/acc_lmms_eval.py 修正，跨工具复现的维度级数字可能对不上。",
+        "cite": [
+          "repo@README"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "arxiv-v1",
+      "date": "2024-03-01",
+      "label": "arXiv v1 首次公开论文",
+      "cite": [
+        "arxiv-2403-00476@提交历史"
+      ]
+    },
+    {
+      "id": "eval-code-release",
+      "date": "2024-03-12",
+      "label": "官方仓库发布自动评测代码",
+      "cite": [
+        "repo@README"
+      ]
+    },
+    {
+      "id": "arxiv-v2",
+      "date": "2024-03-17",
+      "label": "arXiv v2",
+      "cite": [
+        "arxiv-2403-00476@提交历史"
+      ]
+    },
+    {
+      "id": "acl-2024-findings",
+      "date": "2024-05-16",
+      "label": "被 ACL 2024 Findings 接收",
+      "cite": [
+        "repo@README"
+      ]
+    },
+    {
+      "id": "arxiv-v3",
+      "date": "2024-06-03",
+      "label": "arXiv v3（本档案引用版本）",
+      "cite": [
+        "arxiv-2403-00476@提交历史"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "单帧偏置与语言先验无法根除",
+      "impact": "即使构造了冲突视频，Image LLM 在部分任务与时序维度上仍明显高于随机基线，说明模型仍在依赖静态画面线索或语言常识；据此解读模型「时序能力」时会高估。",
+      "severity": "高",
+      "response": "论文如实披露该现象，未给出去偏方法；官方仓库提供 --disable_llm，研究者可改用纯规则评测以降低裁判侧噪声。",
+      "reader": "某模型在 TempCompass 上接近随机，只说明冲突视频下单帧/语言捷径失效，不等同于完全不具备时序感知；应结合 Image LLM 对照组成果一起读。",
+      "cite": [
+        "arxiv-2403-00476@§6"
+      ]
+    },
+    {
+      "issue": "字幕生成题的自动判分不稳定",
+      "impact": "论文披露约 20% 的 LLM 判分结果与人工不一致；与标准答案信息一致但夹带幻觉内容的回答会被误判，该题型分数噪声大。",
+      "severity": "高",
+      "response": "论文披露了一致性比例，未给出修正方案。",
+      "reader": "Caption Generation 一栏的绝对分数不宜与多选题直接对比，也不宜单独用于厂商排名。",
+      "cite": [
+        "arxiv-2403-00476@§6"
+      ]
+    },
+    {
+      "issue": "两个一手来源的许可证不一致",
+      "impact": "论文附录 E 写 CC-BY 4.0，官方仓库 README 写 CC BY-NC 4.0 并限定学术研究用途；按论文的宽松许可行事会有商用合规风险。",
+      "severity": "中",
+      "response": "未见官方回应。",
+      "reader": "复现、二次发布或商用前，以仓库 LICENSE 文件与作者授权为准，不要引用论文附录的许可条款。",
+      "cite": [
+        "arxiv-2403-00476@附录 E",
+        "repo@README"
+      ]
+    },
+    {
+      "issue": "只覆盖 30 秒以内的中短视频",
+      "impact": "无法反映分钟级、小时级视频的时序理解，长视频模型在该基准上的优势体现不出来。",
+      "severity": "中",
+      "response": "未见官方回应；仓库 TODO 列表未包含时长扩展项。",
+      "reader": "不要把 TempCompass 分数当作长视频时序能力的证据。",
+      "cite": [
+        "arxiv-2403-00476@附录 A.3"
+      ]
+    },
+    {
+      "issue": "lmms-eval 集成的维度聚合存在缺陷",
+      "impact": "经 lmms-eval 默认聚合得到的具体时序维度分数可能错误，只有各题型平均分正确；跨工具复现的维度级数字可能对不上论文。",
+      "severity": "中",
+      "response": "官方提供 utils/acc_lmms_eval.py 修正脚本，并建议把结果提交到官方 HuggingFace 榜单。",
+      "reader": "看到维度级分数与论文不一致时，先确认是否走了 lmms-eval 的默认聚合。",
+      "cite": [
+        "repo@README"
+      ]
+    },
+    {
+      "issue": "预训练污染只针对 WebVid 一个数据集做过排除",
+      "impact": "论文仅声明视频不来自 WebVid，未说明是否排除其他视频-文本预训练语料，污染风险未被完全排除。",
+      "severity": "低",
+      "response": "论文披露了去污范围，未见更广泛的去污声明。",
+      "reader": "引用该基准结论时，说明其去污范围仅限 WebVid。",
+      "cite": [
+        "arxiv-2403-00476@§3.2.1"
+      ]
+    }
+  ],
+  "notes": "本档案为 benchmark-profile/v2；引用的论文版本为 arXiv v3（2024-06-03）。",
   "official_sources": [
     {
       "kind": "paper",
       "url": "https://arxiv.org/abs/2403.00476"
     },
     {
-      "kind": "site",
-      "url": "https://seed.bytedance.com/en/blog/official-release-of-seed1-8-a-generalized-agentic-model"
+      "kind": "repo",
+      "url": "https://github.com/llyx97/TempCompass"
+    },
+    {
+      "kind": "announcement",
+      "url": "https://seed.bytedance.com/en/blog/seed-2-0-official-launch"
     }
   ],
   "related_benchmarks": [],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "arxiv-2403-00476",
+        "kind": "paper",
+        "title": "TempCompass: Do Video LLMs Really Understand Videos?（arXiv 论文 v3 全文与摘要页）",
+        "url": "https://arxiv.org/abs/2403.00476",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "llyx97/TempCompass 官方仓库 README",
+        "url": "https://github.com/llyx97/TempCompass",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "seed2-blog",
+        "kind": "announcement",
+        "title": "Seed 2.0 Official Launch（字节跳动 Seed 官方博客）",
+        "url": "https://seed.bytedance.com/en/blog/seed-2-0-official-launch",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "北京大学（多媒体信息处理国家重点实验室、计算机学院、数据科学中心）牵头，与香港大学、华为诺亚方舟实验室合作",
+        "cite": [
+          "arxiv-2403-00476@标题页",
+          "repo@README"
+        ]
+      },
+      "first_release": {
+        "v": "2024-03-01（arXiv v1）",
+        "cite": [
+          "arxiv-2403-00476@提交历史"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "arxiv-2403-00476@§3.1",
+        "arxiv-2403-00476@§3.2.4",
+        "arxiv-2403-00476@附录 A.3",
+        "repo@README"
+      ],
+      "interpretation": [
+        "arxiv-2403-00476@Table 2",
+        "arxiv-2403-00476@§6",
+        "arxiv-2403-00476@附录 A.3"
+      ]
+    },
+    "problem": {
+      "text": "既有视频理解基准大多只提供一种题型（如多选题），且无法区分速度、方向等不同时序维度，因此既看不出模型在不同任务形态下的差异，也给不出细粒度的时序反馈；同时模型可以靠单帧画面或语言先验猜对答案，基准分数虚高。TempCompass 用多维度的时序拆解、四种题型与冲突视频同时应对这两个问题。",
+      "cite": [
+        "arxiv-2403-00476@摘要",
+        "arxiv-2403-00476@§3.1"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机基线（多选题平均）",
+        "value": "29.9%",
+        "note": "多选题随机基线 29.9%；是非题与字幕匹配为 50.0%，字幕生成为 30.0%",
+        "cite": [
+          "arxiv-2403-00476@Table 2"
+        ]
+      },
+      {
+        "label": "人类标注员（多选题平均）",
+        "value": "97.3%",
+        "note": "多选题 97.3%；是非题 94%、字幕匹配 99.3%、字幕生成 97.3%",
+        "cite": [
+          "arxiv-2403-00476@Table 2"
+        ]
+      },
+      {
+        "label": "论文发布时最好成绩（Video LLM，多选题平均）",
+        "value": "51.1%",
+        "note": "VideoChat2-7B；同表 Image LLM 最好为 SPHINX-v2-13B 的 50.9%",
+        "cite": [
+          "arxiv-2403-00476@Table 2"
+        ]
+      },
+      {
+        "label": "官方榜单最高",
+        "value": "论文未给出",
+        "note": "官方 README 于 2024-08-30 记录 GPT-4o 建立新 SoTA，但未给出具体分数；榜单为 HuggingFace Space，本次核验未取得可引用的分数行",
+        "cite": [
+          "repo@README"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "「TempCompass 是英文基准」——论文与官方仓库均未标注题目语言，引用时应写「未披露」而非默认英文。",
+        "cite": [
+          "arxiv-2403-00476@§3.2"
+        ]
+      },
+      {
+        "text": "「分数低说明模型看不懂视频」——在冲突视频上接近随机，说明的是单帧/语言捷径失效，不等同于完全不具备时序感知；论文同时报告 Image LLM 在部分任务上仍高于随机基线。",
+        "cite": [
+          "arxiv-2403-00476@§6"
+        ]
+      },
+      {
+        "text": "「Match Rate 高说明答得好」——Match Rate 只衡量回答能否被规则解析出选项，是判分可解析性指标；官方改提示词后它可以从 37.9 跳到 100，与正确率并不同步。",
+        "cite": [
+          "arxiv-2403-00476@Table 2",
+          "repo@README"
+        ]
+      },
+      {
+        "text": "「数据集可自由商用」——论文附录写 CC-BY 4.0，仓库写 CC BY-NC 4.0 且限定学术用途，两者冲突，商用需另行确认。",
+        "cite": [
+          "arxiv-2403-00476@附录 E",
+          "repo@README"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方与核心作者",
+        "v": "北京大学牵头，与香港大学、华为诺亚方舟实验室合作；论文署名 9 位作者，Yuanxin Liu 与 Shicheng Li 为共同第一作者。",
+        "cite": [
+          "arxiv-2403-00476@标题页",
+          "repo@README"
+        ]
+      },
+      {
+        "k": "发表状态",
+        "v": "2024-05-16 被 ACL 2024 Findings 接收。",
+        "cite": [
+          "repo@README"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2024-03-01 arXiv v1 → 2024-03-12 评测代码发布 → 2024-03-17 arXiv v2 → 2024-03-23 答题提示词改进并新增关闭 ChatGPT 判分的选项 → 2024-05-16 ACL 2024 Findings 接收 → 2024-06-03 arXiv v3 → 2024-07 集成 LMMs-Eval → 2024-10-30 集成 VLMEvalKit。",
+        "cite": [
+          "arxiv-2403-00476@提交历史",
+          "repo@README"
+        ]
+      },
+      {
+        "k": "数据与代码位置",
+        "v": "题目指令位于仓库 questions/ 目录；处理后的视频可从 Google Drive 或 HuggingFace 下载；评测代码含 eval_multi_choice.py、eval_yes_no.py、eval_caption_matching.py、eval_captioning.py 四个脚本。",
+        "cite": [
+          "repo@README"
+        ]
+      },
+      {
+        "k": "外部采用",
+        "v": "字节跳动 Seed 在 Seed 2.0 官方发布博客中，把 TempCompass 与 TVBench、MotionBench 并列为视频时序与运动感知的关键基准。",
+        "cite": [
+          "seed2-blog@正文"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2024-06-03",
+        "columns": [
+          "任务格式",
+          "人类",
+          "随机",
+          "Video LLM 最好成绩（模型）"
+        ],
+        "rows": [
+          [
+            "Multi-Choice QA",
+            "97.3",
+            "29.9",
+            "51.1（VideoChat2-7B）"
+          ],
+          [
+            "Yes/No QA",
+            "94",
+            "50.0",
+            "60.0（Qwen-VL-Chat-7B）"
+          ],
+          [
+            "Caption Matching",
+            "99.3",
+            "50.0",
+            "63.7（V-LLaVA-7B）"
+          ],
+          [
+            "Caption Generation",
+            "97.3",
+            "30.0",
+            "38.5（VideoChat2-7B）"
+          ]
+        ]
+      },
+      "cite": [
+        "arxiv-2403-00476@Table 2"
+      ]
+    }
+  }
 }

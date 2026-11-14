@@ -1,35 +1,394 @@
 {
   "id": "swe-dev",
-  "name": "SWE-Dev（Kimi）",
-  "full_name": null,
-  "aliases": [],
-  "status": null,
-  "categories": [
-    "coding"
+  "name": "SWE-Dev",
+  "full_name": "SWE-Dev: Evaluating and Training Autonomous End-to-End Feature-Driven Software Development（特征驱动开发数据集与基准）",
+  "aliases": [
+    "DorothyDUUU/SWE-Dev",
+    "SWE-Dev（arXiv:2505.16975）"
   ],
-  "summary": "Kimi K2 模型卡中的软件工程开发评测",
-  "interpretation": "月之暗面自建的软件工程开发评测（Kimi K2 模型卡披露），数值为厂商自报，公开足迹未检索到；主要用于其代际模型纵向对比，跨厂商可比性未知。",
-  "measures": [],
-  "does_not_measure": [],
-  "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": "vendor_internal",
-    "public_sample": null
-  },
-  "metrics": [],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [],
-  "notes": "公开足迹未检索到，按月之暗面内部评测处理",
-  "official_sources": [
+  "status": "active",
+  "categories": ["coding"],
+  "summary": "SWE-Dev 面向「给已有代码库加新功能」的特征驱动开发（FDD）任务：14,000 条训练 + 500 条测试样本，每条都带可运行 Docker 环境和开发者写的可执行单元测试，因此既能做 SFT 也能做 RL。测试集人工切成 Easy / Hard 各 250 条，难度看调用树深度。最强单轮模型在 Hard 上只有 22.51% Pass@1，换 OpenHands 工具增强代理能到 56.44%，仍有一半左右任务没解决。",
+  "interpretation": "分数衡量的是「读 PRD → 跨文件实现新功能 → 过测试」的端到端能力，比修 bug 类基准更贴近真实开发。但看数时要注意四件事：只覆盖 Python；默认只给调用树内的相关代码而非整库；论文内部同一模型在不同表/小节数字口径不一致；Kimi K2 模型卡自报的 66.6% ACC 用的是它自己那套 SWE-agent 派生的 harness，与论文 OpenHands 口径不可直接比。",
+  "measures": [
     {
-      "kind": "site",
-      "url": "https://huggingface.co/moonshotai/Kimi-K2-Instruct-0905"
+      "area": "跨文件功能实现",
+      "focus": "在已有代码库上加新功能：平均约 190 行目标代码、跨 3 个文件；Hard 任务通常要实现 5 个以上相互依赖的函数",
+      "share": "Hard 250 题（占测试集 50%）",
+      "format": "Pass@1 / Pass@3，由可执行单元测试判定",
+      "cite": ["paper@§1 引言", "paper@§3.2 Dataset Features", "paper@§4 Setup"]
+    },
+    {
+      "area": "长上下文代码定位",
+      "focus": "默认只提供调用树里的相关代码上下文而不是整个代码库，考的是按调用关系定位该改哪些文件",
+      "share": "全部 500 条测试样本",
+      "format": "同上",
+      "cite": ["paper@§4 Setup"]
+    },
+    {
+      "area": "指令理解（PRD → 实现）",
+      "focus": "任务以 GPT-4o 生成的产品需求文档（PRD）给出：高层模块描述 + 被屏蔽函数的实现级 docstring，要求把需求变成可运行代码",
+      "share": "全部样本",
+      "format": "同上",
+      "cite": ["paper@§3.2 Dataset Features"]
+    },
+    {
+      "area": "训练收益",
+      "focus": "用同一份数据做 SFT / PPO / DPO / MAS 角色式微调，看模型能否被这份语料抬起来",
+      "share": "14,000 条训练样本",
+      "format": "训练前后 Pass@1 / Pass@3 对比",
+      "cite": ["paper@§4.2.1", "paper@§4.2.2", "paper@§4.2.3"]
     }
   ],
-  "related_benchmarks": [],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "does_not_measure": [
+    {
+      "text": "除 Python 以外的编程语言（作者在局限里明确说目前只针对 Python）",
+      "cite": ["paper@附录 E.6 Limitation"]
+    },
+    {
+      "text": "修 bug / 改已有缺陷类任务——本基准考的是加新功能，不是 issue 修复（论文 Table 1 正是按 task type 把它和 SWE-bench 等区分开）",
+      "cite": ["paper@Table 1"]
+    },
+    {
+      "text": "开放式软件工程活动：需求澄清、架构设计、跨仓库协作、代码审查",
+      "cite": ["paper@§1 引言"]
+    },
+    {
+      "text": "可执行单元测试之外的质量维度（可读性、性能、安全）——最终判定只跑原始单元测试报 Pass@1",
+      "cite": ["paper@附录 D.3"]
+    }
+  ],
+  "dataset": {
+    "sample_count": 14500,
+    "splits": ["train 14,000", "test Easy 250", "test Hard 250"],
+    "languages": ["Python"],
+    "source_type": "开源 PyPI 项目（从 8,000 个热门包筛选而来）",
+    "public_sample": true,
+    "totals": "14,000 训练 + 500 测试；测试集人工切成 Easy / Hard 各 250 条；训练集覆盖 1,033 个仓库、测试集 39 个仓库，两切分无仓库重叠；代码与数据以 Apache 2.0 发布",
+    "cite": ["paper@Abstract", "paper@Table 5", "paper@§3.2 Dataset Features", "repo2@License"],
+    "construction": [
+      {
+        "k": "选库",
+        "text": "从 8,000 个热门 PyPI 包（按 star）出发，过滤后得到 1,072 个已验证仓库（截至 2024-12-12）和 9,314 个可执行测试文件。",
+        "cite": ["paper@§3.1 Dataset Construction"]
+      },
+      {
+        "k": "切分仓库",
+        "text": "训练集覆盖 1,033 个仓库，测试集 39 个仓库，两个切分之间没有任何仓库重叠。",
+        "cite": ["paper@§3.2 Dataset Features"]
+      },
+      {
+        "k": "造任务",
+        "text": "用 pytest 在 Docker 里跑测试文件，并用 Python 内置 trace 模块记录源码里被触发的函数，据此建函数级调用树；再屏蔽核心函数，用 GPT-4o 从测试文件合成高层模块描述、给被屏蔽函数的 docstring 补实现级细节，形成 PRD。",
+        "cite": ["paper@§3.1 Dataset Construction", "paper@§3.2 Dataset Features"]
+      },
+      {
+        "k": "定难度",
+        "text": "调用树深度 1–2 记为 Easy，深度 ≥ 3 记为 Hard（通常要实现 5 个以上相互依赖的函数）；Easy / Hard 各 250 条。",
+        "cite": ["paper@§3.2 Dataset Features", "paper@Table 5"]
+      },
+      {
+        "k": "环境与分发",
+        "text": "测试镜像至少需要 10GB 存储、训练镜像至少 100GB；数据集单独放在 DorothyDUUU/SWE-Dev-dataset，代码与数据均以 Apache 2.0 发布。",
+        "cite": ["repo2@README", "repo2@License"]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "pass_at_k",
+      "name": "Pass@k",
+      "direction": "越高越好",
+      "description": "同一任务采 k 个回答，至少一个通过全部开发者写的单元测试的比例；论文主要报 Pass@1 与 Pass@3",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["paper@§4 Setup"]
+    },
+    {
+      "id": "acc",
+      "name": "ACC（Kimi 模型卡口径）",
+      "direction": "越高越好",
+      "description": "Kimi K2 模型卡 SWE-Dev 行的指标，报五次独立全测试集运行的 mean ± std；其 harness 派生自 SWE-agent 并做了多项改写，与论文 OpenHands 口径不是一回事",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["huggingface-moonshotai-kimi-k2-instr@Evaluation Results", "huggingface-moonshotai-kimi-k2-instr@评测说明"]
+    }
+  ],
+  "default_protocol": {
+    "raw": "默认把调用树里的相关代码上下文（而非整个代码库）交给模型，任务以 PRD 形式描述要加的功能，用 Pass@k 评估；最终判定是在自带的可运行环境里跑原始 SWE-Dev 单元测试，分别报 Easy / Hard 切分的 Pass@1。论文代理设置：temperature = 0.6、最大 agent 步数 100、每任务执行超时 300 秒、最大上下文 64k tokens。",
+    "cite": ["paper@§4 Setup", "paper@附录 D.3"],
+    "variants": [
+      {
+        "text": "单轮 LLM（无工具）vs 工具增强代理（OpenHands）：论文分开报，单轮最好 Hard 22.51%，OpenHands 最好 56.44%，两者不能混在一张榜里比。",
+        "cite": ["paper@Abstract", "paper@§4.1.3"]
+      },
+      {
+        "text": "单代理 vs 多代理（MAS）：MAS 在复杂任务上普遍优于单代理基线，Self-Refine 最好到 Hard 20.03%（对照组单代理 11.09%）；MAS 角色式微调则是另一套训练口径。",
+        "cite": ["paper@§4.1.2", "paper@Table 9", "paper@§4.2.3"]
+      },
+      {
+        "text": "Kimi K2 模型卡口径：harness 派生自 SWE-agent，裁剪 Bash/Edit 工具上下文窗口并重写系统提示；跑前 prune 掉目标 commit 不可达的 Git 对象；对 SWE-Dev 还额外覆盖原仓库文件、删除会考目标函数的测试文件；报五次独立全测试集运行的 mean ± std。",
+        "cite": ["huggingface-moonshotai-kimi-k2-instr@评测说明"]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "preprint",
+      "date": "2025-05-22",
+      "label": "预印本首发（官方仓库 News：[20250522] Release the preprint version!）",
+      "cite": ["repo2@News"]
+    },
+    {
+      "id": "infer-docker",
+      "date": "2025-06-01",
+      "label": "发布测试/训练切分的推理脚本与 Docker 镜像（官方仓库 News：[20250601]）",
+      "cite": ["repo2@News"]
+    },
+    {
+      "id": "kimi-k2-adoption",
+      "date": "2025-09-08",
+      "label": "Kimi-K2 采用本基准（官方仓库 News 公告「Our benchmark is used by Kimi-K2」）",
+      "cite": ["repo2@News"]
+    },
+    {
+      "id": "v3",
+      "date": "2026-02-06",
+      "label": "arXiv v3 修订版（cs.SE）",
+      "cite": ["paper@arXiv v3 版本标"]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "只覆盖 Python",
+      "impact": "结论无法外推到其他语言生态；论文自己承认这不能反映真实编程语言的多样性。",
+      "severity": "中",
+      "response": "作者在附录 E.6 将其列为明确局限；跨语言需求目前要看 Multi-SWE-bench 一类基准。",
+      "reader": "把 SWE-Dev 的分数当作「Python 仓库级功能开发」的证据，不要当作通用编码能力。",
+      "cite": ["paper@附录 E.6 Limitation"]
+    },
+    {
+      "issue": "论文内部数字口径不一致",
+      "impact": "摘要与 §1 把 22.51%（Hard）归给 Claude-3.7-Sonnet，Table 7 显示 22.51% 属于 Claude-3.7-Sonnet-thinking，而 §4.1.1 报的 Claude-3.7-Sonnet（非 thinking）是 19.74%；官方排行榜给的 Chat LLM Hard 最好成绩又是 19.13%。",
+      "severity": "中",
+      "response": "本档案在分数阶梯和结果表里分别标注口径（模型全名 + 表号）；引用时建议直接给模型全名而不是「论文最好成绩」。",
+      "reader": "看到 22.51% 先确认指的是 thinking 版；19.13% 与 19.74% 的差异论文未解释。",
+      "cite": ["paper@Abstract", "paper@§4.1.1", "paper@Table 7", "repo2@Leaderboard"]
+    },
+    {
+      "issue": "与 Kimi K2 模型卡数字不可比",
+      "impact": "论文 Table 10 报 Kimi-K2-Instruct 在 OpenHands 下 Hard 51.05%，Kimi 模型卡自报 SWE-Dev ACC 66.6 ± 0.72%；后者换了 harness，还额外覆盖原仓库文件、删除相关测试文件，并报五次运行的 mean ± std。",
+      "severity": "高",
+      "response": "本档案把两种口径分成两行写进结果表，并在 default_protocol.variants 里列出 Kimi 侧的全部改写。",
+      "reader": "跨厂商比 SWE-Dev 时，先确认两边用的是同一套 harness；拿 66.6% 和 51.05% 直接比会高估或低估。",
+      "cite": ["paper@Table 10", "huggingface-moonshotai-kimi-k2-instr@Evaluation Results", "huggingface-moonshotai-kimi-k2-instr@评测说明"]
+    },
+    {
+      "issue": "任务由 GPT-4o 生成 PRD，带模型偏置",
+      "impact": "需求文档是 GPT-4o 从测试文件反合成的，可能系统性偏好某种实现风格；论文也做了人工评估来核对 docstring 增强后的 PRD 质量。",
+      "severity": "中",
+      "response": "论文附录有人工评估流程；但 PRD 与测试同源这一点本身没有消除。",
+      "reader": "模型「读懂需求」的表现里，有一部分其实是在拟合 GPT-4o 的写法。",
+      "cite": ["paper@§3.2 Dataset Features"]
+    },
+    {
+      "issue": "训练实验增益有限且设置很窄",
+      "impact": "作者自述训练实验只用标准技术（SFT、RL、MAS 角色式训练），增益 modest；RL 部分因算力限制只用了 2k 训练样本，且 RL 提 Pass@1 的同时对 Pass@3 几乎无影响。",
+      "severity": "低",
+      "response": "论文按 Easy/Hard 与 Pass@1/Pass@3 分别报数；本档案在结果表里保留 SFT / PPO / DPO / MAS 各行的原始数字。",
+      "reader": "「在 SWE-Dev 上微调有效」成立，但幅度要看基座与样本量，别把 7B 的 +18.89 个点当作普遍承诺。",
+      "cite": ["paper@附录 E.6 Limitation", "paper@§4.2.2", "paper@§4.2.1"]
+    }
+  ],
+  "notes": "同名物区分：arXiv:2506.07636《SWE-Dev: Building Software Engineering Agents with Training and Inference Scaling》是 SWE 代理论文（SWE-bench-Verified 上 7B resolve rate 23.4%、32B 36.6%），不是本基准。官方仓库 News 明确「Our benchmark is used by Kimi-K2」，因此 Kimi K2 模型卡里的 SWE-Dev 行即本基准。",
+  "official_sources": [
+    { "kind": "paper", "url": "https://arxiv.org/abs/2505.16975" },
+    { "kind": "repo", "url": "https://github.com/DorothyDUUU/SWE-Dev" },
+    { "kind": "dataset", "url": "https://github.com/DorothyDUUU/SWE-Dev-dataset" },
+    { "kind": "site", "url": "https://huggingface.co/moonshotai/Kimi-K2-Instruct-0905" }
+  ],
+  "related_benchmarks": ["swebench", "multi-swe-bench", "swebench-multilingual", "swe-lancer", "swe-fficiency", "frontierswe", "aider", "terminalbench", "complexfuncbench", "nl2repo"],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "SWE-Dev: Evaluating and Training Autonomous End-to-End Feature-Driven Software Development（arXiv:2505.16975，v3，2026-02-06）",
+        "url": "https://arxiv.org/abs/2505.16975",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "repo2",
+        "kind": "repo",
+        "title": "DorothyDUUU/SWE-Dev（官方仓库：README / Leaderboard / News / License / Citation）",
+        "url": "https://github.com/DorothyDUUU/SWE-Dev",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "huggingface-moonshotai-kimi-k2-instr",
+        "kind": "site",
+        "title": "moonshotai/Kimi-K2-Instruct-0905 模型卡（评测结果表与评测说明）",
+        "url": "https://huggingface.co/moonshotai/Kimi-K2-Instruct-0905",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "agent-collision",
+        "kind": "paper",
+        "title": "SWE-Dev: Building Software Engineering Agents with Training and Inference Scaling（arXiv:2506.07636，同名 SWE 代理工作，非本基准，仅用于消歧）",
+        "url": "https://arxiv.org/abs/2506.07636",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "上海交通大学 / 北京航空航天大学 / 香港中文大学 / 密歇根大学（Yaxin Du、Yuzhu Cai、Siheng Chen 等）",
+        "cite": ["paper@作者署名"]
+      },
+      "first_release": {
+        "v": "2025-05-22（arXiv 预印本；官方仓库 News 首条公告）",
+        "cite": ["repo2@News"]
+      }
+    },
+    "cites": {
+      "summary": ["paper@Abstract", "repo2@README", "paper@§4.1.3"],
+      "interpretation": ["paper@§4.1.3", "paper@附录 E.6 Limitation", "huggingface-moonshotai-kimi-k2-instr@评测说明", "paper@§4.1.1", "paper@Table 7"]
+    },
+    "problem": {
+      "text": "修 bug 类基准（SWE-bench 等）只覆盖 issue 修复，而且多数不带真实可执行测试与可运行环境；真实开发里更常见的是「给已有代码库加新功能」的特征驱动开发（FDD），这一块此前缺少大规模、可验证的数据集。SWE-Dev 用 PyPI 真实项目造了 14,000 训练 + 500 测试条任务，每条都配可运行环境和开发者写的单元测试，用来同时支撑评测与训练。",
+      "cite": ["paper@Abstract", "paper@Table 1"]
+    },
+    "ladder": [
+      {
+        "label": "单代理基线（GPT-4o-mini 驱动，无工具）",
+        "value": "11.09%",
+        "note": "Hard 切分 Pass@1；论文 §4.1.2 / Table 9 用它作 MAS 的对照组，同表 Easy 为 34.47%。",
+        "cite": ["paper@§4.1.2", "paper@Table 9"]
+      },
+      {
+        "label": "多代理最好（Self-Refine，GPT-4o-mini 驱动）",
+        "value": "20.03%",
+        "note": "Hard 切分 Pass@1；Easy 上 Self-Refine 最高 40.02%，且成本只有 5.78 美元/任务。",
+        "cite": ["paper@§4.1.2", "paper@Table 9"]
+      },
+      {
+        "label": "单轮 LLM 最好（Claude-3.7-Sonnet-thinking）",
+        "value": "22.51%",
+        "note": "Hard 切分 Pass@1（摘要口径）；论文 §4.1.1 另报 Claude-3.7-Sonnet 非 thinking 版 19.74%，官方排行榜的 Chat LLM Hard 最好是 19.13%。",
+        "cite": ["paper@Abstract", "paper@§4.1.1", "paper@Table 7", "repo2@Leaderboard"]
+      },
+      {
+        "label": "工具增强代理最好（Claude-4.1-Opus-Thinking，OpenHands）",
+        "value": "56.44%",
+        "note": "Hard 切分 Pass@1，Easy 86.30%；给模型工具与测试反馈后相对单轮最好成绩提升超过 2 倍，但仍有近一半 Hard 任务未解决。",
+        "cite": ["paper@§4.1.3", "paper@Table 10"]
+      },
+      {
+        "label": "Kimi 自建 harness 口径",
+        "value": "66.6 ± 0.72%",
+        "note": "Kimi K2-Instruct-0905 模型卡 SWE-Dev 行 ACC，五次独立全测试集运行的 mean ± std；harness 派生自 SWE-agent 并做了多项改写，与上面各行的论文口径不可直接比较。",
+        "cite": ["huggingface-moonshotai-kimi-k2-instr@Evaluation Results", "huggingface-moonshotai-kimi-k2-instr@评测说明"]
+      },
+      {
+        "label": "本站结果表最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 arXiv:2506.07636《SWE-Dev: Building Software Engineering Agents with Training and Inference Scaling》当成本基准的续作——那是一篇 SWE 代理论文，报的是 SWE-bench-Verified 上的 resolve rate（7B 23.4%、32B 36.6%），和本基准不是一回事。",
+        "cite": ["agent-collision@Abstract", "agent-collision@Figure 1"]
+      },
+      {
+        "text": "拿 Kimi K2 模型卡的 66.6% 和论文里的 51.05% 直接比高低——前者是 Kimi 自己那套 SWE-agent 派生 harness 的 ACC，后者是论文 OpenHands 口径的 Hard Pass@1，口径不同。",
+        "cite": ["huggingface-moonshotai-kimi-k2-instr@Evaluation Results", "paper@Table 10"]
+      },
+      {
+        "text": "把单轮分数和代理分数排在一起看进步——同一模型加工具与测试反馈后，Hard 分数能从 22.51% 量级跳到 56.44% 量级，两者是不同设置。",
+        "cite": ["paper@Abstract", "paper@§4.1.3"]
+      },
+      {
+        "text": "以为 Easy / Hard 是按代码行数或需求文档长度划分的——官方定义只看调用树深度（Easy 1–2，Hard ≥3）。",
+        "cite": ["paper@§3.2 Dataset Features"]
+      },
+      {
+        "text": "以为 Hard 集比 Easy 集更难是因为题目描述更长——两者规模相同（各 250 条），差异来自要实现的函数之间的依赖深度。",
+        "cite": ["paper@Table 5", "paper@§3.2 Dataset Features"]
+      }
+    ],
+    "background": [
+      {
+        "k": "任务形态",
+        "v": "特征驱动开发（FDD）：给出现有代码库，要求新增功能；判定只看新增功能对应的单元测试是否通过。",
+        "cite": ["repo2@README", "paper@附录 D.3"]
+      },
+      {
+        "k": "任务来源",
+        "v": "8,000 个热门 PyPI 包 → 1,072 个已验证仓库 + 9,314 个可执行测试文件 → 1,061 个可运行环境。",
+        "cite": ["paper@§3.1 Dataset Construction", "paper@Table 1"]
+      },
+      {
+        "k": "任务量级",
+        "v": "平均 190 行目标代码；训练集 14,000 条 / 1,033 个仓库，测试集 500 条 / 39 个仓库，两切分无仓库重叠。",
+        "cite": ["paper@§1 引言", "paper@Table 1", "paper@§3.2 Dataset Features"]
+      },
+      {
+        "k": "官方排行榜口径",
+        "v": "按 category / #methods / easy best pass@1 / hard best pass@1 四列给总体最好成绩：Chat LLMs 17 个方法（54.37% / 19.13%）、Reasoning LLMs 10 个（51.21% / 22.51%）、Multi-Agent Systems 10 个（未填成绩）。",
+        "cite": ["repo2@Leaderboard"]
+      },
+      {
+        "k": "与 Kimi 的关系",
+        "v": "官方仓库公告「Our benchmark is used by Kimi-K2」；Kimi K2 模型卡因此单列了 SWE-Dev 一行，并说明其 harness 的具体改法。",
+        "cite": ["repo2@News", "huggingface-moonshotai-kimi-k2-instr@评测说明"]
+      },
+      {
+        "k": "训练侧结论",
+        "v": "Qwen2.5-7B-Instruct zero-shot Easy/Hard 25.74/6.68 → SFT 后 36.90/18.89；PPO（2k 样本）28.30/12.25；MAS 角色式微调 organizer + coder 31.65/12.70。",
+        "cite": ["paper@§4.2.1", "paper@§4.2.2", "paper@§4.2.3"]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-14",
+        "columns": ["来源", "模型 / 系统", "Easy", "Hard", "口径"],
+        "rows": [
+          ["论文 Table 7", "Claude-3.7-Sonnet-thinking", "49.47%", "22.51%", "单轮，Pass@1"],
+          ["论文 Table 7", "Claude-3.7-Sonnet", "53.09%", "19.74%", "单轮，Pass@1"],
+          ["论文 §4.1.1", "Grok-3-beta", "53.63%", "18.97%", "单轮，Pass@1"],
+          ["论文 Table 9", "单代理基线（GPT-4o-mini）", "34.47%", "11.09%", "多代理实验对照组，Pass@1"],
+          ["论文 Table 9", "Self-Refine（MAS，GPT-4o-mini）", "40.02%", "20.03%", "多代理，Pass@1"],
+          ["论文 Table 10", "Claude-4.1-Opus-Thinking", "86.30%", "56.44%", "OpenHands 代理，Pass@1"],
+          ["论文 Table 10", "GPT-5", "87.56%", "54.21%", "OpenHands 代理，Pass@1"],
+          ["论文 Table 10", "Claude 4.5 Thinking", "84.83%", "53.55%", "OpenHands 代理，Pass@1"],
+          ["论文 Table 10", "Kimi-K2-Thinking", "83.89%", "50.86%", "OpenHands 代理，Pass@1"],
+          ["论文 Table 10", "Kimi-K2-Instruct", "81.82%", "51.05%", "OpenHands 代理，Pass@1"],
+          ["论文 Table 10", "GLM-4.5", "71.83%", "39.00%", "OpenHands 代理，Pass@1"],
+          ["论文 Table 3", "Qwen2.5-7B-Instruct（zero-shot）", "25.74%", "6.68%", "单轮，Pass@1"],
+          ["论文 Table 3", "Qwen2.5-7B-Instruct（SFT 后）", "36.90%", "18.89%", "单轮，Pass@1"],
+          ["论文 Table 2", "Qwen2.5-7B-Instruct（PPO，2k 样本）", "28.30%", "12.25%", "单轮，Pass@1"],
+          ["论文 Table 4", "MAS 角色式微调（organizer + coder）", "31.65%", "12.70%", "多代理微调，Pass@1"],
+          ["Kimi 模型卡", "Kimi-K2-Instruct-0905", "未单列", "66.6 ± 0.72%", "Kimi 自建 harness，ACC"],
+          ["Kimi 模型卡", "Kimi-K2-Instruct-0711", "未单列", "61.9%", "同上"],
+          ["Kimi 模型卡", "Qwen3-Coder-480B-A35B-Instruct", "未单列", "64.7%", "同上"],
+          ["Kimi 模型卡", "GLM-4.5", "未单列", "63.2%", "同上"],
+          ["Kimi 模型卡", "DeepSeek-V3.1", "未单列", "53.3%", "同上"],
+          ["Kimi 模型卡", "Claude-Sonnet-4", "未单列", "67.1%", "同上"]
+        ]
+      },
+      "cite": [
+        "paper@Table 7",
+        "paper@§4.1.1",
+        "paper@Table 9",
+        "paper@Table 10",
+        "paper@Table 3",
+        "paper@Table 2",
+        "paper@§4.2.3",
+        "huggingface-moonshotai-kimi-k2-instr@Evaluation Results"
+      ]
+    }
+  }
 }

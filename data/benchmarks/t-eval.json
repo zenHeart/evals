@@ -3,52 +3,434 @@
   "name": "T-Eval",
   "full_name": "T-Eval: Evaluating the Tool Utilization Capability of Large Language Models Step by Step",
   "aliases": [],
-  "status": null,
+  "status": "active",
   "categories": [
     "agent"
   ],
-  "summary": "OpenCompass 出品的工具使用分步评测：把工具利用拆成指令/规划/推理/检索/理解/复查等子过程分别计分",
-  "interpretation": "分步读分（instruction、planning、reasoning、retrieval、understanding、review 等），Hunyuan T1 读 68.8——比「只看最终调用是否成功」更能定位短板在规划还是在执行；跨报告比较前确认读的是总分还是单一子过程。",
+  "summary": "OpenCompass 社区出品的开源工具使用评测：把一次完整的工具调用过程拆成指令遵循、规划、推理、检索、参数理解、复查六种子能力分别计分，另有一套端到端胜率；结论导向评测一致，但能把短板定位到具体子过程。",
+  "interpretation": "总分 Overall 是六个子集指标的平均，不是端到端任务成功率——端到端另有一套 win rate 口径，两者不能混着比。分步子项才是这个基准的主要价值：论文 Table 1 里 GPT-4 拿 86.4 分居首，而 REVIEW 子项多数模型只有 50%～60%、GPT-4 到 95%，说明当前模型的普遍短板在「看完工具响应后判断够不够」。跨报告比较前先确认读的是 Overall 还是单一子项、string 还是 JSON 口径。",
   "measures": [
-    "工具使用各子过程（规划/推理/检索/理解/复查）的分步能力",
-    "端到端工具调用成功率"
+    {
+      "area": "INSTRUCT（指令遵循）",
+      "focus": "按指定格式产出工具调用请求，考工具名与参数值是否正确；示例要求以「Call the function AirbnbSearch.search_property_by_place with the parameter as follows: place is Berlin;」的形式输出",
+      "share": "2,660 题 / 共 23,305（11.4%，按 Table 2 计数推算）",
+      "format": "先判格式是否合规（通过得 0.5 分），再按工具名与参数值准确率乘 0.5 后相加",
+      "cite": [
+        "arxiv-2312-14033@Table 2",
+        "arxiv-2312-14033@附录 C.1 INSTRUCT",
+        "arxiv-2312-14033@附录 B.2.1 INSTRUCT",
+        "arxiv-2312-14033@§2.2.2 Single-Index Evaluation"
+      ]
+    },
+    {
+      "area": "PLAN（规划）",
+      "focus": "给定工具列表和 query，生成完整调用动作序列，与金标序列比对；真实 query 会跨多个工具，例如既要找柏林房源并复查其中不超过三个、又要检索 Arxiv 上太阳能文章并取至多三篇的元信息",
+      "share": "553 题 / 共 23,305（2.4%，按 Table 2 计数推算）",
+      "format": "Sentence-BERT 算工具名与参数加权相似度，相似度超过阈值的动作连边后做最大权匹配 + 最长有序子序列，按 2pr/(p+r) 计分",
+      "cite": [
+        "arxiv-2312-14033@Table 2",
+        "arxiv-2312-14033@§2.2.2 Single-Index Evaluation",
+        "arxiv-2312-14033@附录 C.2 PLAN",
+        "arxiv-2312-14033@附录 B.2.2 PLAN"
+      ]
+    },
+    {
+      "area": "REASON（推理）",
+      "focus": "在已有观察的基础上推断下一步的 thought",
+      "share": "6,426 题 / 共 23,305（27.6%，按 Table 2 计数推算）",
+      "format": "模型生成的下一步 thought 与金标 thought 计算相似度",
+      "cite": [
+        "arxiv-2312-14033@Table 2",
+        "arxiv-2312-14033@§2.2.2 Single-Index Evaluation"
+      ]
+    },
+    {
+      "area": "RETRIEVE（工具检索）",
+      "focus": "从工具列表中选出下一步应该调用的工具",
+      "share": "6,426 题 / 共 23,305（27.6%，按 Table 2 计数推算）",
+      "format": "与金标工具名精确比对",
+      "cite": [
+        "arxiv-2312-14033@Table 2",
+        "arxiv-2312-14033@§2.2.2 Single-Index Evaluation"
+      ]
+    },
+    {
+      "area": "UNDERSTAND（参数理解）",
+      "focus": "为下一步调用生成合适的参数",
+      "share": "6,753 题 / 共 23,305（29.0%，按 Table 2 计数推算）",
+      "format": "与金标参数计算相似度",
+      "cite": [
+        "arxiv-2312-14033@Table 2",
+        "arxiv-2312-14033@§2.2.2 Single-Index Evaluation"
+      ]
+    },
+    {
+      "area": "REVIEW（复查）",
+      "focus": "判断工具响应是否达成 thought 里设定的目标，即检查工具响应并确认是否已拿到解决问题所需的足够信息；示例是查询「The Battle at Lake Changjin」的影片详情却传了 Inception，工具返回找不到该影片",
+      "share": "487 题 / 共 23,305（2.1%，按 Table 2 计数推算）",
+      "format": "五选一选择题：Success / Internal Error / Input Error / Irrelevant Response / Unable to Accomplish",
+      "cite": [
+        "arxiv-2312-14033@Table 2",
+        "arxiv-2312-14033@§2.2.2 Single-Index Evaluation",
+        "arxiv-2312-14033@§2.1 Evaluation Decomposition",
+        "arxiv-2312-14033@附录 B.2.6 REVIEW"
+      ]
+    },
+    {
+      "area": "端到端（End-to-End）",
+      "focus": "跑完整多步任务，用模型完整响应与 GPT-3.5 的响应比质量",
+      "share": "未披露（论文未给该口径的题量）",
+      "format": "沿用 ToolBench 的 win rate",
+      "cite": [
+        "arxiv-2312-14033@§2.2.3 End-to-End Evaluation",
+        "arxiv-2312-14033@附录 B.1 Implementation Details"
+      ]
+    }
   ],
   "does_not_measure": [
-    "真实生产系统上的调用（离线评测）",
-    "浏览器/移动端 GUI 操作"
+    {
+      "text": "真实生产系统上的工具调用：全部在离线测试集上作答，不连真实 API，因此测不到 API 服务不稳定、限流、超时和信息时效漂移对结果的影响",
+      "cite": [
+        "arxiv-2312-14033@§1 Introduction"
+      ]
+    },
+    {
+      "text": "浏览器、移动端等 GUI 操作：只覆盖文本形式的函数调用，基础工具集为 6 个领域下的 15 个工具",
+      "cite": [
+        "arxiv-2312-14033@§2.3.1 Tool Collection"
+      ]
+    },
+    {
+      "text": "超过 20 步的长程任务：端到端评测以 ReAct 为基础 agent 框架，并把最大动作步数限制为 20",
+      "cite": [
+        "arxiv-2312-14033@附录 B.1 Implementation Details"
+      ]
+    },
+    {
+      "text": "开发集调优：仓库 TODO 里仍列着「Provide dev set for T-Eval」，截至本次核验公开数据只有一个 train split，没有 dev split",
+      "cite": [
+        "repo-t-eval@TODO",
+        "dataset"
+      ]
+    }
   ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
+    "sample_count": 23305,
+    "splits": [
+      "INSTRUCT",
+      "PLAN",
+      "REASON",
+      "RETRIEVE",
+      "UNDERSTAND",
+      "REVIEW",
+      "中文子集（2024-01-08 起发布，题量未披露）"
+    ],
     "languages": [
       "en",
       "zh"
     ],
-    "source_type": "tool-use benchmark（开源）",
-    "public_sample": true
+    "source_type": "GPT-3.5/GPT-4 生成指令 + 三智能体机器标注 + 人工两轮核验（开源，Apache-2.0）",
+    "public_sample": true,
+    "totals": "6 个子集共 23,305 条测试用例，由 553 对人工核验后的 instruction-solution 标注对展开而来（附录 A.1 记 533 对，两处不一致）；平均每个 query 5.8 个 calling steps。数据集在 Hugging Face（lovesnowbest/T-Eval），单 split `train`，总文件 46.5 MB，Apache-2.0，也可从 Google Drive 下载。",
+    "cite": [
+      "arxiv-2312-14033@Table 2",
+      "arxiv-2312-14033@§2.4 Dataset Summary",
+      "arxiv-2312-14033@§A.1 Dataset Statistics",
+      "arxiv-2312-14033@Figure 5",
+      "dataset",
+      "repo-t-eval@Test Data",
+      "repo-t-eval@License"
+    ],
+    "construction": [
+      {
+        "k": "工具收集",
+        "text": "每个领域挑 1～2 个工具，覆盖 Research、Travel、Entertainment、Web、Life、Financials，得到 15 个基础工具；每个工具都由人工撰写高质量、详细的工具文档。",
+        "cite": [
+          "arxiv-2312-14033@§2.3.1 Tool Collection"
+        ]
+      },
+      {
+        "k": "指令生成",
+        "text": "先由模型生成指令，再用更强的 GPT-4 修订，提升指令的可行性与多样性。",
+        "cite": [
+          "arxiv-2312-14033@§2.3.2 Instruction Generation"
+        ]
+      },
+      {
+        "k": "金标标注",
+        "text": "把标注任务显式拆成 planner、executor、reviewer 三种职能；整个机器标注阶段由 GPT-3.5 完成，之后人工评审过滤掉无效的 instruction-solution 对。",
+        "cite": [
+          "arxiv-2312-14033@§2.3.3 Golden Solution Annotation",
+          "arxiv-2312-14033@§2.4 Dataset Summary"
+        ]
+      },
+      {
+        "k": "难度分级",
+        "text": "easy 一级用简单 string 格式、更看重文本语义质量；difficult 一级用产品里更常见的 JSON 格式，对工具名与参数做更严格、更细粒度的匹配。",
+        "cite": [
+          "arxiv-2312-14033@§2.3.4 Inclusive Difficulty Evaluation"
+        ]
+      },
+      {
+        "k": "规模",
+        "text": "先生成 1,500 对初始 instruction-solution，经两轮人工核验后保留 553 对，再按各子过程的评测协议展开成 23,305 条测试用例。",
+        "cite": [
+          "arxiv-2312-14033@§2.4 Dataset Summary"
+        ]
+      },
+      {
+        "k": "任务形态",
+        "text": "标注路径覆盖全部工具集，平均每个 query 5.8 个 calling steps，论文以此论证其对工具利用能力的泛化性与区分度。",
+        "cite": [
+          "arxiv-2312-14033@§A.1 Dataset Statistics",
+          "arxiv-2312-14033@Figure 5"
+        ]
+      }
+    ]
   },
   "metrics": [
     {
-      "id": "accuracy",
-      "name": "Accuracy（分步与总分）",
-      "range": [0, 100],
+      "id": "overall",
+      "name": "Overall（总分）",
+      "direction": "越高越好",
+      "description": "六个子集（INSTRUCT / RETRIEVE / PLAN / REASON / REVIEW / UNDERSTAND）指标的平均值；论文 Table 1 注明确 Overall 就是所有子集指标算出来的平均分",
+      "range": [
+        0,
+        100
+      ],
       "unit": "percent",
-      "direction": "higher",
-      "aggregation": "mean"
+      "cite": [
+        "arxiv-2312-14033@Table 1",
+        "leaderboard"
+      ]
+    },
+    {
+      "id": "sub-index",
+      "name": "子过程分项（Instruct / Plan / Reason / Retrieve / Understand / Review）",
+      "direction": "越高越好",
+      "description": "六种子能力各自的分数，官方榜单按这 6 列加 Overall 展示；论文为每个子过程单独设计判分指标",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "leaderboard",
+        "arxiv-2312-14033@§2.2.2 Single-Index Evaluation"
+      ]
+    },
+    {
+      "id": "win-rate",
+      "name": "端到端胜率（win rate）",
+      "direction": "越高越好",
+      "description": "沿用 ToolBench 的胜率定义：拿模型完整响应的质量与 GPT-3.5 的响应比较；论文用它和分步指标做交叉验证",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2312-14033@§2.2.3 End-to-End Evaluation",
+        "arxiv-2312-14033@§4.3 Comparison to Other Benchmarks"
+      ]
     }
   ],
-  "versions": [],
-  "limitations": [],
-  "default_protocol": null,
-  "notes": "ACL 2024；Hunyuan T1 模型卡表登记行",
+  "default_protocol": {
+    "raw": "单索入口径：把每个子过程各自构造成独立题目，用多轮对话的方式逐轮向模型提问并评判回答——INSTRUCT 要求模型按指定格式生成调用请求，判格式合规（通过得 0.5 分）后再算工具名与参数值准确率并乘 0.5，两者相加；PLAN 给定工具列表与 query，让模型生成调用动作序列，用 Sentence-BERT（all-mpnet-base-v2）算工具名与参数的加权相似度（β=0.75），相似度大于 0.7 的两个动作连边，跑 Hopcroft-Karp 最大权匹配加最长有序子序列，按 2pr/(p+r) 计分；REASON 比对下一步 thought 的相似度；RETRIEVE 让模型选下一个工具并与金标工具名比对；UNDERSTAND 让模型生成下一步参数并与金标参数算相似度；REVIEW 是 Success / Internal Error / Input Error / Irrelevant Response / Unable to Accomplish 五选一。端到端口径：以 ReAct 为基础 agent 框架、最大动作步数 20，跑完整任务后按 ToolBench 的 win rate 与 GPT-3.5 的响应比质量。",
+    "cite": [
+      "arxiv-2312-14033@§2.2.2 Single-Index Evaluation",
+      "arxiv-2312-14033@附录 C.1 INSTRUCT",
+      "arxiv-2312-14033@附录 C.2 PLAN",
+      "arxiv-2312-14033@附录 B.1 Implementation Details",
+      "arxiv-2312-14033@§2.2.3 End-to-End Evaluation"
+    ],
+    "variants": [
+      {
+        "text": "easy（string 格式，重语义）与 difficult（JSON 格式，工具名与参数严格细粒度匹配）两级难度分开报告；论文专门讨论过两种格式下的分差，混在一起比会得出相反的结论。",
+        "cite": [
+          "arxiv-2312-14033@§2.3.4 Inclusive Difficulty Evaluation",
+          "arxiv-2312-14033@§4.1 Format Following v.s Problem Solving"
+        ]
+      },
+      {
+        "text": "单索引分步分 vs 端到端 win rate：两套指标服务不同问题，前者定位子过程短板，后者衡量整体任务表现，论文用它们互相印证趋势。",
+        "cite": [
+          "arxiv-2312-14033@§2.2.3 End-to-End Evaluation",
+          "arxiv-2312-14033@§4.3 Comparison to Other Benchmarks"
+        ]
+      },
+      {
+        "text": "英文与中文数据分开发布（2024-01-08 起有中文榜单与中文数据），题目与答案格式随语言变化，跨语言分数不可直接比较。",
+        "cite": [
+          "repo-t-eval@What's New"
+        ]
+      },
+      {
+        "text": "论文 Table 1（2023-12 实验、旧数据）与官方英文榜单（2024-02 新数据）口径不同：同一模型的子项对不上，只有 Overall 一致；榜单页没有标注数据版本。",
+        "cite": [
+          "arxiv-2312-14033@Table 1",
+          "leaderboard",
+          "repo-t-eval@What's New"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "data-v1",
+      "date": "2023-12-21",
+      "label": "Hugging Face 数据集卡显示 Published Dec 21, 2023；README 的 What's New 记同日发布测试脚本与数据",
+      "cite": [
+        "dataset",
+        "repo-t-eval@What's New"
+      ]
+    },
+    {
+      "id": "arxiv-v1",
+      "date": "2023-12-21",
+      "label": "arXiv v1 提交（README 的 What's New 记 2023.12.22 论文上线，与提交历史差一天）",
+      "cite": [
+        "arxiv-2312-14033@提交历史",
+        "repo-t-eval@What's New"
+      ]
+    },
+    {
+      "id": "arxiv-v2",
+      "date": "2024-01-04",
+      "label": "arXiv v2（提交时间戳 Thu, 4 Jan 2024 05:11:22 UTC）",
+      "cite": [
+        "arxiv-2312-14033@提交历史"
+      ]
+    },
+    {
+      "id": "zh",
+      "date": "2024-01-08",
+      "label": "发布中文（ZH）榜单与中文数据，题目与答案格式改为中文",
+      "cite": [
+        "repo-t-eval@What's New"
+      ]
+    },
+    {
+      "id": "arxiv-v3",
+      "date": "2024-01-15",
+      "label": "arXiv v3，即本档案核对所用版本（提交历史标注 last revised 15 Jan 2024）",
+      "cite": [
+        "arxiv-2312-14033@提交历史"
+      ]
+    },
+    {
+      "id": "data-v2",
+      "date": "2024-02-22",
+      "label": "发布新数据（中英双语）与 1/5 子集，以及用于更快推理的代码，README 注明榜单待更新；Hugging Face 数据集卡的同一条记录记作 [2024.02.18]",
+      "cite": [
+        "repo-t-eval@What's New",
+        "dataset"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "离线评测，不连真实工具",
+      "impact": "全部题目在固定测试集上离线作答，测不到 API 服务不稳定、限流、超时和信息时效漂移；论文自己正是把这类外部因素列为现有实时交互式基准的噪声来源。",
+      "severity": "高",
+      "response": "改用离线标注的 solution path 作金标，把中间过程拆成可自动判分的子问题；未提供在线复测通道。",
+      "reader": "不要把 T-Eval 分数直接当成生产环境可用性；上线前仍需在真实工具链上验证。",
+      "cite": [
+        "arxiv-2312-14033@§1 Introduction",
+        "arxiv-2312-14033@§2.2.2 Single-Index Evaluation"
+      ]
+    },
+    {
+      "issue": "两个子集题量过小",
+      "impact": "PLAN 只有 553 题、REVIEW 只有 487 题，合计不到总题量的 5%，而这两个子项恰好是作者认定的主要短板；一两个百分点的差距很可能来自抽样波动。",
+      "severity": "高",
+      "response": "论文未报告这两个子集的置信区间，也没有扩充计划。",
+      "reader": "PLAN / REVIEW 子项的排名差距不要细读，看趋势比看点值可靠。",
+      "cite": [
+        "arxiv-2312-14033@Table 2",
+        "arxiv-2312-14033@§3.2 Main Results"
+      ]
+    },
+    {
+      "issue": "口径分歧：string 与 JSON",
+      "impact": "同一模型在两种输出格式下分数差异极大——论文举的例子超过 20 个点，Baichuan2-13B 的 PLAN 在 JSON 下很低、换成 string 格式却有 65.6%（差 25 个点）；厂商只报一种格式时无法与他人口径比较。",
+      "severity": "中",
+      "response": "论文提出「包容性评测协议」，用语义句子分析替代严格格式匹配，并在表 1 中把两种格式都列出来。",
+      "reader": "比较前先确认是 string 还是 JSON 口径；两种格式都报的表更可信。",
+      "cite": [
+        "arxiv-2312-14033@§4.1 Format Following v.s Problem Solving",
+        "arxiv-2312-14033@§4.2 Inclusive Evaluation Protocol",
+        "arxiv-2312-14033@§2.3.4 Inclusive Difficulty Evaluation"
+      ]
+    },
+    {
+      "issue": "数据构建依赖 GPT-3.5 / GPT-4",
+      "impact": "指令由 GPT-3.5 生成、GPT-4 修订，机器标注阶段由 GPT-3.5 完成，端到端又以 GPT-3.5 的响应作为比较基线——GPT 系模型的优势与偏差会被写进金标。",
+      "severity": "中",
+      "response": "人工两轮核验过滤无效的 instruction-solution 对；论文未做标注者间一致性或针对 GPT 偏差的敏感性分析。",
+      "reader": "看到 GPT 系模型分数特别高时，要考虑到它同时也是数据的构造者。",
+      "cite": [
+        "arxiv-2312-14033@§2.3.2 Instruction Generation",
+        "arxiv-2312-14033@§2.3.3 Golden Solution Annotation",
+        "arxiv-2312-14033@§2.2.3 End-to-End Evaluation"
+      ]
+    },
+    {
+      "issue": "来源之间互相矛盾",
+      "impact": "instruction-solution 对数正文写 553、附录 A.1 写 533；新数据发布日 GitHub 记 2024.02.22、Hugging Face 记 2024.02.18；论文上线日 README 记 2023.12.22、arXiv 提交历史是 2023-12-21。引用题量或日期时会遇到两个版本。",
+      "severity": "中",
+      "response": "本档案按「正文优先、提交历史优先」取其一，并在此显式记录分歧；未见官方勘误。",
+      "reader": "引用数字时注明取自正文还是附录；日期优先用 arXiv 提交历史。",
+      "cite": [
+        "arxiv-2312-14033@§2.4 Dataset Summary",
+        "arxiv-2312-14033@§A.1 Dataset Statistics",
+        "repo-t-eval@What's New",
+        "dataset",
+        "arxiv-2312-14033@提交历史"
+      ]
+    },
+    {
+      "issue": "榜单口径不一致且更新滞后",
+      "impact": "官方英文榜单子项与论文 Table 1 子项对不上（Overall 相同），说明 2024-02 换过数据，但榜单页没有标注数据版本；README 的 What's New 也写着榜单待更新。截至本次核验（2026-11-14）榜单仍只收录 GPT-4-Turbo / Claude-2.1 这一代模型。",
+      "severity": "中",
+      "response": "仓库说明可邮件提交结果、由作者更新榜单；未见自动化的数据版本标注。",
+      "reader": "榜单反映的是 2024 年前后的模型代际，不要用它衡量最新模型。",
+      "cite": [
+        "leaderboard",
+        "repo-t-eval@What's New",
+        "repo-t-eval@提交结果"
+      ]
+    },
+    {
+      "issue": "无 dev set，长程任务覆盖不足",
+      "impact": "仓库 TODO 仍列着「Provide dev set for T-Eval, reducing the evaluation time.」，公开数据只有一个 train split，调参空间受限；端到端评测把最大动作步数限制在 20，更长程的任务不在覆盖范围内。",
+      "severity": "低",
+      "response": "作者在 TODO 里标注了 dev set 计划；截至本次核验未见发布。",
+      "reader": "自行划分验证集时注意与官方 6 个子集对齐，避免直接拿测试数据调参。",
+      "cite": [
+        "repo-t-eval@TODO",
+        "dataset",
+        "arxiv-2312-14033@附录 B.1 Implementation Details"
+      ]
+    }
+  ],
+  "notes": "ACL 2024；官方榜单成绩需自行跑 test.py 后邮件提交，由作者更新",
   "official_sources": [
     {
       "kind": "paper",
       "url": "https://arxiv.org/abs/2312.14033"
     },
     {
-      "kind": "github",
+      "kind": "repo",
       "url": "https://github.com/open-compass/T-Eval"
+    },
+    {
+      "kind": "leaderboard",
+      "url": "https://open-compass.github.io/T-Eval/leaderboard.html"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/lovesnowbest/T-Eval"
     }
   ],
   "related_benchmarks": [
@@ -58,6 +440,262 @@
     "cello",
     "toolathlon"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-09-01"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "arxiv-2312-14033",
+        "kind": "paper",
+        "title": "T-Eval: Evaluating the Tool Utilization Capability of Large Language Models Step by Step（arXiv:2312.14033，v3，2024-01-15）",
+        "url": "https://arxiv.org/abs/2312.14033",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "repo-t-eval",
+        "kind": "repo",
+        "title": "open-compass/T-Eval（README、What's New、TODO、License）",
+        "url": "https://github.com/open-compass/T-Eval",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "leaderboard",
+        "kind": "leaderboard",
+        "title": "T-Eval 官方英文榜单（open-compass.github.io/T-Eval/leaderboard.html）",
+        "url": "https://open-compass.github.io/T-Eval/leaderboard.html",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "dataset",
+        "kind": "dataset",
+        "title": "lovesnowbest/T-Eval（Hugging Face 数据集卡）",
+        "url": "https://huggingface.co/datasets/lovesnowbest/T-Eval",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "OpenCompass 社区（GitHub: open-compass/T-Eval）；论文作者来自中国科学技术大学、上海人工智能实验室、清华大学、吉林大学",
+        "cite": [
+          "repo-t-eval@README 标题",
+          "repo-t-eval@仓库描述",
+          "arxiv-2312-14033@作者署名"
+        ]
+      },
+      "first_release": {
+        "v": "2023-12-21（arXiv v1 提交；同日在 Hugging Face 发布测试数据）",
+        "cite": [
+          "arxiv-2312-14033@提交历史",
+          "dataset"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "arxiv-2312-14033@Abstract",
+        "arxiv-2312-14033@§2.1 Evaluation Decomposition"
+      ],
+      "interpretation": [
+        "arxiv-2312-14033@Table 1",
+        "arxiv-2312-14033@§3.2 Main Results",
+        "leaderboard"
+      ]
+    },
+    "problem": {
+      "text": "只看最终输出或单步调用是否成功，会漏掉中间步骤的评估，很难定位模型工具使用能力的真正瓶颈；而且依赖实时工具交互的基准把 API 服务不稳定、信息时效漂移这类外部因素算进来，带来方差和不公平比较。",
+      "cite": [
+        "arxiv-2312-14033@§1 Introduction"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "论文 Table 1 最低",
+        "value": "27.4",
+        "note": "LLaMA2-7B 的 Overall；同表 CodeLLaMA-7B 28.6、AgentLM-7B 41.4，均为 2023-12 实验、旧数据口径。",
+        "cite": [
+          "arxiv-2312-14033@Table 1"
+        ]
+      },
+      {
+        "label": "论文 Table 1 最高",
+        "value": "86.4",
+        "note": "GPT-4（gpt-4-1106-preview），六个子集指标的平均。",
+        "cite": [
+          "arxiv-2312-14033@Table 1",
+          "arxiv-2312-14033@§3.2 Main Results"
+        ]
+      },
+      {
+        "label": "官方英文榜单最高",
+        "value": "86.4",
+        "note": "GPT-4-Turbo (Nov 2023)，Instruct 96.3 / Plan 87.8 / Reason 65.3 / Retrieve 88.9 / Understand 85.8 / Review 94.5；与论文 Table 1 的 Overall 一致但子项口径不同，榜单页未标注数据版本与更新日期。",
+        "cite": [
+          "leaderboard"
+        ]
+      },
+      {
+        "label": "官方英文榜单最低",
+        "value": "27.4",
+        "note": "LLaMA2-7B；榜单第 20 名 CodeLLaMA-7B 28.6 的 Retrieve 只有 2.4，说明工具检索能力可以接近零。",
+        "cite": [
+          "leaderboard"
+        ]
+      },
+      {
+        "label": "REVIEW 子项的能力天花板参考",
+        "value": "95%",
+        "note": "GPT-4 的 review 得分 95%，而多数模型只有 50%～60%，论文据此认为应更多关注当前 LLM 的复查能力。",
+        "cite": [
+          "arxiv-2312-14033@§3.2 Main Results"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 Overall 当成端到端任务成功率——它只是六个子集指标的平均，端到端另有一套 win rate 口径。",
+        "cite": [
+          "arxiv-2312-14033@Table 1",
+          "arxiv-2312-14033@§2.2.3 End-to-End Evaluation"
+        ]
+      },
+      {
+        "text": "把官方榜单子项和论文 Table 1 的子项直接对比——同一模型（如 Qwen-72B 的 Instruct）两个口径差很多，因为 2024-02 换过数据，只有 Overall 一致。",
+        "cite": [
+          "leaderboard",
+          "arxiv-2312-14033@Table 1"
+        ]
+      },
+      {
+        "text": "看到 string 格式分高就认为模型真的会规划——论文明确指出低分可能只是格式问题：Baichuan2-13B 在 JSON 下 PLAN 很低，换成 string 格式却有 65.6%（差 25 个点）。",
+        "cite": [
+          "arxiv-2312-14033@§4.2 Inclusive Evaluation Protocol",
+          "arxiv-2312-14033@§4.1 Format Following v.s Problem Solving"
+        ]
+      },
+      {
+        "text": "把 T-Eval 报告的 win rate 和 ToolBench 的 win rate 当成同一个数——T-Eval 是拿模型响应和 GPT-3.5 的响应比质量，趋势一致但不是同一套题。",
+        "cite": [
+          "arxiv-2312-14033@§2.2.3 End-to-End Evaluation",
+          "arxiv-2312-14033@§4.3 Comparison to Other Benchmarks"
+        ]
+      },
+      {
+        "text": "把 API 模型和开源模型的分数无差别地排在一起看——榜单用 🌍 标记 API 模型，两者的调用方式与限制不同。",
+        "cite": [
+          "leaderboard"
+        ]
+      },
+      {
+        "text": "以为提交成绩随时能在榜单上看到——需要自己跑 test.py 生成推理结果并发邮件给作者，由作者跑预测后更新榜单。",
+        "cite": [
+          "repo-t-eval@提交结果"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "论文",
+        "v": "T-Eval: Evaluating the Tool Utilization Capability of Large Language Models Step by Step（arXiv:2312.14033，v3，2024-01-15；仓库标题标注 ACL2024）",
+        "cite": [
+          "repo-t-eval@README 标题",
+          "repo-t-eval@仓库描述",
+          "arxiv-2312-14033@提交历史"
+        ]
+      },
+      {
+        "k": "作者",
+        "v": "Zehui Chen、Weihua Du、Wenwei Zhang（三人共同一作）、Kuikun Liu、Jiangning Liu、Miao Zheng、Jingming Zhuo、Songyang Zhang、Dahua Lin、Kai Chen（通讯）、Feng Zhao（通讯）",
+        "cite": [
+          "arxiv-2312-14033@作者署名"
+        ]
+      },
+      {
+        "k": "机构",
+        "v": "中国科学技术大学、上海人工智能实验室、清华大学、吉林大学",
+        "cite": [
+          "arxiv-2312-14033@作者署名"
+        ]
+      },
+      {
+        "k": "实验设置",
+        "v": "论文共评测 20 个模型，实验时间 2023-12-01 至 2023-12-10；GPT-4 = gpt-4-1106-preview，GPT-3.5 = gpt-3.5-turbo-16k，Claude2 = claude-2.1",
+        "cite": [
+          "arxiv-2312-14033@§3.1 Experimental Setup"
+        ]
+      },
+      {
+        "k": "代码与数据",
+        "v": "代码在 GitHub（open-compass/T-Eval，Apache-2.0，基于 Lagent 与 OpenCompass 构建）；测试数据可从 Google Drive 或 Hugging Face（lovesnowbest/T-Eval）下载",
+        "cite": [
+          "repo-t-eval@Test Data",
+          "repo-t-eval@致谢",
+          "repo-t-eval@License",
+          "dataset"
+        ]
+      },
+      {
+        "k": "榜单",
+        "v": "官方英文榜单在 open-compass.github.io/T-Eval/leaderboard.html，另有中文榜单；🌍 标记 API 模型，其余为开源模型",
+        "cite": [
+          "leaderboard",
+          "repo-t-eval@What's New"
+        ]
+      },
+      {
+        "k": "成绩提交",
+        "v": "自行运行 test.py 生成推理结果，发邮件提交给作者，由作者运行预测并更新榜单",
+        "cite": [
+          "repo-t-eval@提交结果"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-14",
+        "columns": [
+          "#",
+          "模型",
+          "Instruct",
+          "Plan",
+          "Reason",
+          "Retrieve",
+          "Understand",
+          "Review",
+          "Overall"
+        ],
+        "rows": [
+          ["1", "GPT-4-Turbo (Nov 2023) 🌍", "96.3", "87.8", "65.3", "88.9", "85.8", "94.5", "86.4"],
+          ["2", "GPT-3.5-Turbo (Nov 2023) 🌍", "96.6", "86.6", "67.8", "92.2", "85.5", "75.6", "84.0"],
+          ["3", "Claude-2.1 (Nov 2023) 🌍", "97.8", "86.0", "62.8", "77.3", "78.5", "70.4", "78.8"],
+          ["4", "Nanbeige-Agent-32B", "88.5", "80.8", "61.5", "80.5", "79.7", "66.5", "76.2"],
+          ["5", "Qwen-72B", "63.0", "79.2", "59.5", "70.9", "75.3", "80.3", "71.4"],
+          ["6", "Qwen-14B", "73.7", "74.7", "52.4", "75.6", "64.7", "56.9", "66.3"],
+          ["7", "Qwen-7B", "61.5", "64.7", "45.2", "62.1", "61.9", "61.6", "59.5"],
+          ["8", "Baichuan2-7B", "73.0", "52.3", "41.3", "51.1", "59.6", "61.4", "56.5"],
+          ["9", "Mistral-7B", "61.7", "71.1", "39.1", "51.8", "49.0", "63.2", "56.0"],
+          ["10", "LLaMA2-70B", "79.0", "60.5", "31.1", "39.5", "44.8", "62.8", "53.0"],
+          ["11", "ChatGLM3-6B", "72.0", "42.7", "36.2", "45.2", "57.8", "54.8", "51.4"],
+          ["12", "Baichuan2-13B", "29.9", "60.8", "41.9", "55.7", "56.0", "57.3", "50.3"],
+          ["13", "WizardLM-13B", "39.8", "59.2", "30.6", "45.4", "47.8", "71.5", "49.0"],
+          ["14", "Vicuna-13B", "48.9", "39.9", "52.7", "20.4", "65.9", "60.8", "48.1"],
+          ["15", "InternLM-7B", "39.1", "55.4", "36.9", "47.1", "50.3", "46.2", "45.8"],
+          ["16", "Vicuna-7B", "48.0", "30.6", "48.8", "22.5", "60.5", "58.5", "44.8"],
+          ["17", "WizardLM-70B", "20.6", "62.1", "42.7", "47.2", "63.6", "28.7", "44.2"],
+          ["18", "AgentLM-7B", "46.9", "34.5", "33.8", "42.0", "46.2", "44.8", "41.4"],
+          ["19", "LLaMA2-13B", "33.4", "56.9", "26.4", "24.7", "29.4", "53.0", "37.3"],
+          ["20", "CodeLLaMA-7B", "48.5", "52.8", "14.8", "2.4", "13.4", "40.0", "28.6"],
+          ["21", "LLaMA2-7B", "34.5", "28.1", "22.1", "16.9", "24.4", "38.6", "27.4"]
+        ]
+      },
+      "cite": [
+        "leaderboard"
+      ]
+    }
+  }
 }

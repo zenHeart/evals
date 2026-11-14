@@ -1,40 +1,466 @@
 {
   "id": "wmt24",
   "name": "WMT24++",
-  "full_name": null,
+  "full_name": "WMT24++（WMT24 的 55 语种 / 方言扩展）",
   "aliases": [],
-  "status": null,
+  "status": "active",
   "categories": [
-    "knowledge",
     "chinese"
   ],
-  "summary": "WMT24++ 翻译评测（55 语种，XCOMET 计分）",
-  "interpretation": "WMT24++ 翻译评测：Google 将 WMT24 人工译员测试集扩展到 55 语种，用 XCOMET 语义质量分计分，越高越好；跨模型可比，与 BLEU 等旧口径不可直接混比。",
-  "measures": [],
-  "does_not_measure": [],
-  "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
-  },
-  "metrics": [],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [],
-  "notes": "Qwen 引用；Google 发布",
-  "official_sources": [
+  "summary": "WMT24++ 是 Google × Unbabel 把 WMT24 的英文测试集扩展到 55 个 en→xx 语言 / 方言：复用同一批 998 个段落级英文源，为 8 个原有语言对补人工译后编辑、为 46 个新语言 / 方言新收集人工参考译文，再用 MetricX-24 等自动指标给 MT 服务与 LLM 排名。",
+  "interpretation": "论文结论是前沿 LLM（o1、Claude、Gemini）在全部 55 个语言上的自动指标排名最高，且每个语言上最好的 MT 系统看起来大致等于甚至好于人工译文；但作者本人和图 1 都明确警告这只是一次自动指标口径的结论——指标已知系统性低估人工译文、在这 55 种语言里多数未经验证，作者把人工评测列为未来工作。看这个基准时先记住：默认参考译文是译后编辑而不是原始人工译文。",
+  "measures": [
     {
-      "kind": "github",
-      "url": "https://github.com/google/wmt24pp"
+      "area": "文学（literary）",
+      "focus": "取自图书等叙事性文本的英文源段落；论文同时给出每篇文档的词数统计（8 篇、平均每篇 980 词）",
+      "share": "206 / 998 ≈ 20.6%",
+      "format": "段落级英→目标语人工参考译文",
+      "cite": [
+        "paper@Table 2",
+        "paper@§2.1 WMT24 English Sources"
+      ]
     },
     {
-      "kind": "site",
-      "url": "https://qwen.ai/blog?id=qwen3.7"
+      "area": "新闻（news）",
+      "focus": "取自新闻报道的英文源（17 篇文档）",
+      "share": "149 / 998 ≈ 14.9%",
+      "format": "段落级英→目标语人工参考译文",
+      "cite": [
+        "paper@Table 2"
+      ]
+    },
+    {
+      "area": "社交媒体（social）",
+      "focus": "取自社交平台的用户生成内容，平均每段最短（15.7 词 / 段）",
+      "share": "531 / 998 ≈ 53.2%",
+      "format": "段落级英→目标语人工参考译文",
+      "cite": [
+        "paper@Table 2"
+      ]
+    },
+    {
+      "area": "口语转写（speech）",
+      "focus": "取自演讲等口语材料的转写，平均每段最长（73.0 词 / 段），每段即一篇文档",
+      "share": "111 / 998 ≈ 11.1%",
+      "format": "段落级英→目标语人工参考译文",
+      "cite": [
+        "paper@Table 2"
+      ]
+    },
+    {
+      "area": "canary 金丝雀段",
+      "focus": "唯一一段用于检测测试集污染的数据集标识段，不是翻译能力考点",
+      "share": "1 / 998 ≈ 0.1%",
+      "format": "与四域并列计入 998 段总数",
+      "cite": [
+        "paper@Table 2"
+      ]
     }
   ],
-  "related_benchmarks": [],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "does_not_measure": [
+    {
+      "text": "人工评测结论：论文的全部排名与结论都基于自动指标，没有做人工评测；作者明确说结论需要用人工评测确认，并把它列为未来工作。",
+      "cite": [
+        "paper@Abstract",
+        "paper@§5 Conclusion"
+      ]
+    },
+    {
+      "text": "除翻译以外的模型能力：这里只评英→目标语翻译这一件事，不测推理、知识或代码等其他维度。",
+      "cite": [
+        "paper@§1 Introduction"
+      ]
+    },
+    {
+      "text": "多模态翻译能力本身：源页面只额外保留整页截图供研究使用，翻译质量评分不看图；论文也说目前没有公开可靠的工具能判断文本属于哪个区域方言。",
+      "cite": [
+        "paper@§2.5 Source Images",
+        "paper@§2.1 WMT24 English Sources"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 998,
+    "splits": [
+      "无训练 / 验证划分：每个语言对就是全部 998 段，按 segment_id / document_id 标识",
+      "人工数据与机器数据分仓：本仓库（google/wmt24pp）只放人工参考译文与译后编辑，MT / LLM 输出和自动指标分在配套数据集 MTME"
+    ],
+    "languages": [
+      "en→xx 共 55 个语言 / 方言（8 个 WMT24 原有语言对补译后编辑 + 46 个新语言 / 方言 + 冰岛语沿用 WMT24 参考）",
+      "含简体中文 zh_CN 与繁体中文 zh_TW 两个独立语言对"
+    ],
+    "source_type": "reused WMT24 English sources（段落级英文源，四域 + canary，171 篇文档），可得时另存源页面整页截图",
+    "public_sample": true,
+    "totals": "998 个段落级英文源 × 55 个 en→xx 语言 / 方言；Hugging Face 页面写「Subset (55)」但只列出 54 个带行数的子集，datasetsServerInfo.numRows=53,892（=54×998），页面未说明该差异；bn_BD 的人工译文被方言抽检否决，未发布也不在数据集中。",
+    "cite": [
+      "dataset@README",
+      "dataset@Files & versions",
+      "paper@§2.1 WMT24 English Sources"
+    ],
+    "construction": [
+      {
+        "k": "源段落复用 WMT24",
+        "text": "沿用 WMT24 已采集的 998 个段落级英文源，覆盖 literary / news / social / speech 四域加 1 段 canary，共 171 篇文档，不重新采集英文源。",
+        "cite": [
+          "paper@§2.1 WMT24 English Sources",
+          "paper@Table 2"
+        ]
+      },
+      {
+        "k": "参考译文与译后编辑",
+        "text": "8 个原有 WMT24 en→xx 语言对补人工译后编辑，46 个新语言 / 方言新收集人工参考译文；全部由目标地区在职的专业译员完成并按其所在地合理付酬，译员拿得到对应文档上下文和原文 URL。",
+        "cite": [
+          "paper@§2.2 Reference & Post-Edit Collection",
+          "paper@Abstract"
+        ]
+      },
+      {
+        "k": "方言正确性抽检",
+        "text": "每个新语言 / 方言随机抽约 20 段交该方言母语者核验译文是否真的用了目标方言；bn_BD 因此被否并排除出数据集。论文说目前没有公开可靠的方言识别工具。",
+        "cite": [
+          "paper@§2.1 WMT24 English Sources"
+        ]
+      },
+      {
+        "k": "MT 系统与提示词",
+        "text": "对多家 MT 服务和若干 LLM 收集翻译；LLM 侧用 0-shot 提示，提示词要求给出适合指定地区的译文并带上目标地区码（原文见论文 Figure 3）。",
+        "cite": [
+          "paper@§2.3 Machine Translation Collection",
+          "paper@Figure 3"
+        ]
+      },
+      {
+        "k": "坏源段剔除",
+        "text": "识别出 38 个基本是 URL、表情符号等没有翻译价值的源段，把它们从论文其余分析中移除；数据集卡用 is_bad_source 字段标记这些段并建议使用者同样剔除。",
+        "cite": [
+          "paper@§2.3 Machine Translation Collection",
+          "paper@Table 4",
+          "dataset@Schema"
+        ]
+      },
+      {
+        "k": "源页面截图",
+        "text": "在可得的情况下额外保留英文源的整页截图，供多模态翻译研究使用；截图单独存放，不参与翻译质量评分。",
+        "cite": [
+          "paper@§2.5 Source Images",
+          "paper@§1 Introduction"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "metricx-24",
+      "name": "MetricX-24",
+      "direction": "越低越好（论文图中取负号后越高越好）",
+      "description": "Google 的参考式翻译质量回归指标，WMT24++ 正文的主指标，系统排名（论文 Figure 2）按它计算；Figure 12 画的是它的负值。",
+      "cite": [
+        "paper@§2.4 Automatic Evaluation Metrics",
+        "paper@Figure 12",
+        "paper@Figure 2"
+      ]
+    },
+    {
+      "id": "metricx-24-qe",
+      "name": "MetricX-24-QE",
+      "direction": "越低越好",
+      "description": "无参考版 MetricX-24，不需要目标语参考即可给系统打分；论文 Figure 1 用它比较人工参考、译后编辑与最佳 MT 输出的质量。",
+      "cite": [
+        "paper@§2.4 Automatic Evaluation Metrics",
+        "paper@Figure 1"
+      ]
+    },
+    {
+      "id": "appendix-metrics",
+      "name": "附录补充指标（BLEU / ChrF / XCOMET / XCOMET-QE / COMETKiwi-23 / Gemini-DA / Gemini-DA-QE）",
+      "direction": "BLEU / ChrF / XCOMET 系列越高越好，MetricX 越低越好",
+      "description": "正文只报 MetricX-24 与 MetricX-24-QE，其余指标的结果放在附录 B；Gemini-DA(-QE) 是 0-shot 让 Gemini 打 0–100 分的裁判式指标。",
+      "cite": [
+        "paper@§2.4 Automatic Evaluation Metrics",
+        "paper@Appendix A"
+      ]
+    }
+  ],
+  "default_protocol": {
+    "raw": "参考式指标（MetricX-24）用译后编辑当参考，无参考指标（MetricX-24-QE）只用源文；LLM 侧 0-shot 提示，提示词指定目标地区与地区码；跨系统比较用平均排名，论文 Figure 2 的显著性用单边置换检验（α=0.05）。",
+    "cite": [
+      "paper@§2.4 Automatic Evaluation Metrics",
+      "paper@Figure 3",
+      "paper@Figure 2"
+    ],
+    "variants": [
+      {
+        "text": "默认参考是译后编辑而不是原始人工译文：部分译后编辑实际等于完整重写，参考式指标的分数会随参考选择变化；数据集同时给出 original_target 与 target 两列。",
+        "cite": [
+          "paper@§2.2 Reference & Post-Edit Collection",
+          "dataset@Schema"
+        ]
+      },
+      {
+        "text": "只报正文的 MetricX-24 / MetricX-24-QE，还是同时看附录 B 的 BLEU / ChrF / XCOMET / COMETKiwi-23 / Gemini-DA(-QE)：两套数字都来自同一次运行，但论文结论以正文指标为准。",
+        "cite": [
+          "paper@§2.4 Automatic Evaluation Metrics"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "arxiv-v1",
+      "date": "2025-02-18",
+      "label": "arXiv v1 发布（arXiv:2502.12404 [cs.CL]），Google × Unbabel，17 位作者",
+      "cite": [
+        "paper@arXiv 版本信息",
+        "paper@作者署名"
+      ]
+    },
+    {
+      "id": "hf-2026-07-30",
+      "date": "2026-07-30",
+      "label": "Hugging Face 数据集卡最近更新时间（页面 lastModified，本页核验时所见）",
+      "cite": [
+        "dataset@Files & versions"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "全部结论依赖自动指标，未做人工评测",
+      "impact": "「LLM 排名最高」「最好 MT 系统大致等于或好于人工译文」都是自动指标口径的结论；QE 指标已知系统性低估人工译文，且论文自述这些指标在 55 种语言里多数未经验证。",
+      "severity": "高",
+      "response": "作者明确把人工评测列为未来工作，并在图 1 与结论中重复警告；附录 D 讨论指标对人工译文的偏差。",
+      "reader": "把 WMT24++ 的排名当作「自动指标口径的排名」，不要直接当成翻译能力或人工质量的排序。",
+      "cite": [
+        "paper@Abstract",
+        "paper@§1 Introduction",
+        "paper@§3.1 Human & Machine Translation Quality",
+        "paper@§5 Conclusion"
+      ]
+    },
+    {
+      "issue": "指标在语言之间不可比",
+      "impact": "跨语言比较时分数差异显著，从 -2 到 -6；作者不认为这是真实质量下降，因为人工与机器译文的分数在不同语言上趋势几乎一致，推测是指标在不同语言上行为不同。",
+      "severity": "高",
+      "response": "论文只提示读者注意并给出假设，没有提出修正或校准方法。",
+      "reader": "跨语言比绝对分数要保留余地，看同一指标下的排名比看绝对分更稳。",
+      "cite": [
+        "paper@§3.1 Human & Machine Translation Quality"
+      ]
+    },
+    {
+      "issue": "源段落自带噪声",
+      "impact": "998 个源段里有 38 个基本是 URL、表情符号等没有翻译价值的内容，论文已把它们从分析中剔除，但它们仍在数据集里。",
+      "severity": "中",
+      "response": "论文 Table 4 列出这 38 段；数据集卡用 is_bad_source 标记并建议使用者复现时同样剔除。",
+      "reader": "复现论文数字前先按 is_bad_source 过滤，否则对不上。",
+      "cite": [
+        "paper@§2.3 Machine Translation Collection",
+        "paper@Table 4",
+        "dataset@Schema"
+      ]
+    },
+    {
+      "issue": "方言正确性只做小样本抽检",
+      "impact": "每个新语言 / 方言只随机抽约 20 段交母语者核验；bn_BD 因此被否并排除，但其余语言的 998 段无法保证全部用了目标方言。",
+      "severity": "中",
+      "response": "约 20 段的母语者抽检 + 直接排除不合格语言；作者说明目前没有公开可靠的方言识别工具可自动化这一步。",
+      "reader": "看某个区域方言的结果时，记住它只经过约 20 段的抽检验证。",
+      "cite": [
+        "paper@§2.1 WMT24 English Sources"
+      ]
+    },
+    {
+      "issue": "译后编辑幅度不一致",
+      "impact": "部分译后编辑实际是完整重写，作为参考译文时它与原始人工译文差异不小，参考式指标的分数会受参考选择影响；论文未量化重写比例。",
+      "severity": "中",
+      "response": "数据集同时提供 original_target 与 target 两列，并建议默认用译后编辑当参考；论文明确说优先保证译文质量而非严格遵循译后编辑规范。",
+      "reader": "比较不同论文的数字时，先确认它们用的是哪一列当参考。",
+      "cite": [
+        "paper@§2.2 Reference & Post-Edit Collection",
+        "dataset@Schema"
+      ]
+    },
+    {
+      "issue": "规模与方向单一",
+      "impact": "每个语言只有 998 段、只有一个英文源方向，55 个语言 / 方言里多数是首次形成公开基准，缺少历史可比数据；论文与数据集卡均未提及私有留存集。",
+      "severity": "低",
+      "response": "论文把自己定位为 WMT24 的扩展而不是替代，延续 WMT 系列的公开测试集传统。",
+      "reader": "不要把 998 段上几个点的差当成稳定差异，优先看排名和显著性检验。",
+      "cite": [
+        "paper@§5 Conclusion",
+        "paper@§2.1 WMT24 English Sources"
+      ]
+    }
+  ],
+  "notes": "Qwen 引用；Google 与 Unbabel 发布。原 official_sources 里的 github.com/google/wmt24pp（404）与 qwen.ai/blog?id=qwen3.7（跳转到无关文档）均已失效，本版替换为论文与 Hugging Face 数据集两个可核验一手来源。",
+  "official_sources": [
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2502.12404"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/google/wmt24pp"
+    }
+  ],
+  "related_benchmarks": [
+    "floris",
+    "mtob"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "WMT24++: Expanding the Language Coverage of WMT24 to 55 Languages & Dialects（arXiv:2502.12404v1，2025-02-18）",
+        "url": "https://arxiv.org/abs/2502.12404",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "dataset",
+        "kind": "dataset",
+        "title": "google/wmt24pp（Hugging Face，人工参考译文与译后编辑）",
+        "url": "https://huggingface.co/datasets/google/wmt24pp",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Google × Unbabel（论文作者同时带这两个机构署名）",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      "first_release": {
+        "v": "2025-02-18（arXiv v1，arXiv:2502.12404 [cs.CL]）",
+        "cite": [
+          "paper@arXiv 版本信息"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "paper@Abstract",
+        "paper@§2.1 WMT24 English Sources",
+        "paper@§2.2 Reference & Post-Edit Collection"
+      ],
+      "interpretation": [
+        "paper@§1 Introduction",
+        "paper@Figure 1",
+        "paper@§5 Conclusion"
+      ]
+    },
+    "problem": {
+      "text": "随着 LLM 的非英语能力变强，需要覆盖更多语言的基准来评测它们的多语言表现，尤其是机器翻译；而 WMT24 只有 11 个语言对（其中 9 个 en→xx 语言对共享同一批英文源），撑不起 55 种语言的对比。",
+      "cite": [
+        "paper@Abstract",
+        "paper@§2.1 WMT24 English Sources"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "论文最好系统（自动指标口径）",
+        "value": "OpenAI o1，55 语言平均排名 1.5",
+        "note": "o1 / Claude / Gemini 在 55 个语言上的平均排名为 1.5 / 1.9 / 2.1，绝对分数非常接近；排名显著性用单边置换检验 α=0.05。作者同时指出 MT 服务的模型更小更快，这里存在质量与速度 / 成本的取舍。",
+        "cite": [
+          "paper@§3.2 System Evaluation",
+          "paper@Figure 2"
+        ]
+      },
+      {
+        "label": "人工译文参考线",
+        "value": "论文称每个语言上最好的 MT 系统「大致等于或好于」人工译文，往往幅度不小",
+        "note": "这是 QE 指标（MetricX-24-QE）口径的观察，而 QE 指标已知系统性低估人工译文；作者明确说没有大规模人工评测就无法得出确定结论。这条线不是人工评测结论，只是论文报告的指标现象。",
+        "cite": [
+          "paper@§3.1 Human & Machine Translation Quality",
+          "paper@Figure 1"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把「LLM 排名第一」读成「LLM 翻译超过人类」：论文与图 1 都明确警告这只是自动指标的结论，指标对人工译文有系统性低估、在这 55 种语言里多数未经验证，作者要求用人工评测确认。",
+        "cite": [
+          "paper@Figure 1",
+          "paper@Abstract"
+        ]
+      },
+      {
+        "text": "以为主指标是 XCOMET：正文主指标是 MetricX-24 与 MetricX-24-QE，XCOMET / XCOMET-QE / COMETKiwi-23 / BLEU / ChrF / Gemini-DA(-QE) 的结果只在附录 B。",
+        "cite": [
+          "paper@§2.4 Automatic Evaluation Metrics"
+        ]
+      },
+      {
+        "text": "以为 Hugging Face 上就是 55 个可下载子集：数据集卡写「Subset (55)」，但页面只列出 54 个带行数的子集，datasetsServerInfo.numRows=53,892（=54×998）；bn_BD 的人工译文被方言抽检否决，未发布也不在数据集中。",
+        "cite": [
+          "dataset@Files & versions",
+          "paper@§2.1 WMT24 English Sources"
+        ]
+      },
+      {
+        "text": "以为 target 列就是原始人工译文：original_target 才是原始参考译文，target 是它的译后编辑，数据集卡建议默认用译后编辑当参考；部分译后编辑实际是完整重写。",
+        "cite": [
+          "dataset@Schema",
+          "paper@§2.2 Reference & Post-Edit Collection"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "Google × Unbabel",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "共 17 位作者，第一作者 Daniel Deutsch（Google）；Ricardo Rei 属 Unbabel，其余为 Google",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2025-02-18 arXiv v1 发布 → 2026-07-30 Hugging Face 数据集卡最近更新（本页核验时页面 lastModified）",
+        "cite": [
+          "paper@arXiv 版本信息",
+          "dataset@Files & versions"
+        ]
+      },
+      {
+        "k": "与 WMT24 的关系",
+        "v": "直接建立在 WMT24 数据集之上：复用同一批 998 个英文源，8 个原语言对补译后编辑，加上沿用 WMT24 参考的冰岛语，共 55 个 en→xx 语言对",
+        "cite": [
+          "paper@Table 1",
+          "paper@§2.1 WMT24 English Sources"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "人工参考与译后编辑在 Hugging Face google/wmt24pp（apache-2.0），每语言对一个 jsonl；MT / LLM 输出与自动指标分在配套数据集 MTME；源页面截图单独存放",
+        "cite": [
+          "dataset@License",
+          "dataset@README",
+          "paper@§2.5 Source Images"
+        ]
+      },
+      {
+        "k": "相近基准",
+        "v": "论文在相关工作中把 FLORES（200 语言）列为 WMT 之外覆盖大量语言的代表工作",
+        "cite": [
+          "paper@§3.2 System Evaluation"
+        ]
+      }
+    ]
+  }
 }

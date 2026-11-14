@@ -1,29 +1,421 @@
 {
   "id": "lcb",
   "name": "LiveCodeBench",
-  "full_name": null,
+  "full_name": "LiveCodeBench: Holistic and Contamination Free Evaluation of Large Language Models for Code（代码大模型的实时题库、多场景评测）",
   "aliases": [],
-  "status": null,
+  "status": "active",
   "categories": [
     "coding"
   ],
-  "summary": "持续收录 LeetCode/Codeforces 新题，按时间窗切分防污染",
-  "interpretation": "用还没出生的竞赛题考模型（时间窗切分防背题）。分数比 HumanEval 低很多，但更接近“真实的算法功底”。",
-  "measures": [],
-  "does_not_measure": [],
+  "summary": "LiveCodeBench 用爬虫从 LeetCode、AtCoder、Codeforces 三个竞赛平台持续抓题，并给每道题标注它的比赛日期（相当于给题库打上「出厂时间」），因此可以只挑「模型训练截止日之后才发布」的题目来考，绕开题目早就被抄进训练集的问题。除了常规的自然语言转代码，它还同时测自我修复、代码执行、测试输出预测，一共四种场景。",
+  "interpretation": "高分说明模型在「发布时间晚于训练截止日、带隐藏测试的竞赛编程题」上，一次生成就全部通过测试的比例高（主指标 pass@1）。它不说明模型能写真实工程代码——论文自己说竞赛编程只是编程的一个子域；也不说明不同 release 版本、不同时间窗、不同推理档位之间的分数可以直接比较。",
+  "measures": [
+    {
+      "area": "代码生成（code generation）",
+      "focus": "给题面（自然语言描述 + 示例输入输出）写一段通过全部隐藏测试的程序；论文 Figure 3 的示例题是：给定正整数数组，返回「出现次数等于最大出现次数」的那些元素的总频次",
+      "share": "511 题（论文 v2 口径）",
+      "format": "LeetCode 题附带 starter code、走函数签名；AtCoder / Codeforces 题走标准输入；判题为功能正确性，必须通过全部测试",
+      "cite": [
+        "paper@§2 Code Generation",
+        "paper@Figure 3",
+        "paper@§3.3 Scenario-specific benchmark construction",
+        "paper@§4 Evaluation Metrics"
+      ]
+    },
+    {
+      "area": "自我修复（self-repair）",
+      "focus": "在首次生成失败后，把异常信息或失败测试反馈给模型，让它产出修正版；评的是「首次生成或修复之后」的最终通过率",
+      "share": "349 题（论文 §7 口径，与代码生成同题集）",
+      "format": "零样本提示 + 错误反馈（语法错误、运行时错误、答案错误、超时）",
+      "cite": [
+        "paper@§2 Self Repair",
+        "paper@§4.1 Scenario-specific setup",
+        "paper@§7 Limitations"
+      ]
+    },
+    {
+      "area": "代码执行（code execution）",
+      "focus": "给人写的函数和一组测试输入，让模型预测程序输出；示例：对 count([1,3,3,4,4]) 预测返回值",
+      "share": "188 题 / 479 个样本（论文 §7 记题数、§3.3 记样本数，样本取自 85 道题，每题最多 6 个）",
+      "format": "2-shot 无思维链、1-shot 带思维链；按 assert f(input) == 生成输出 判对",
+      "cite": [
+        "paper@§2 Code Execution",
+        "paper@§4.1 Scenario-specific setup",
+        "paper@§3.3 Scenario-specific benchmark construction",
+        "paper@附录 A.3 Code Execution",
+        "paper@§7 Limitations"
+      ]
+    },
+    {
+      "area": "测试输出预测（test output prediction）",
+      "focus": "论文新提出的任务：给题面和固定测试输入，让模型写出期望输出，用来考测试生成与自然语言推理；输入不交给模型猜",
+      "share": "254 题 / 442 个实例（论文 §7 记题数、§3.3 记实例数，来自 181 道 LeetCode 题）",
+      "format": "零样本提示补全 assert；解析生成的回答后做等价性判定",
+      "cite": [
+        "paper@§2 Test Case Output Prediction",
+        "paper@§4.1 Scenario-specific setup",
+        "paper@§3.3 Scenario-specific benchmark construction",
+        "paper@§7 Limitations"
+      ]
+    },
+    {
+      "area": "难度分档（论文 Table 1 的 Easy / Medium / Hard）",
+      "focus": "按平台难度标签切分，便于看模型在不同难度上的落差；示例档位构成：Easy 182、Medium 206、Hard 123",
+      "share": "182 / 206 / 123 题（合计 511，论文 v2 口径）",
+      "format": "难度标签取自 LeetCode 官方标签、AtCoder 数值评分分段、Codeforces 评分分段",
+      "cite": [
+        "paper@Table 1",
+        "paper@§3.2 Platform Specific Curation"
+      ]
+    },
+    {
+      "area": "平台构成",
+      "focus": "题目来自三个竞赛平台，其中 AtCoder 最多、Codeforces 最少（后者更难，只取一小部分）",
+      "share": "AtCoder 267、LeetCode 235、CodeForces 9（合计 511，论文 v2 口径）",
+      "format": "LeetCode 取 2023-04 之后的周赛与双周赛；AtCoder 只取 abc 初学者赛并排除评分 >500 的题；Codeforces 只取 Div.3 / Div.4",
+      "cite": [
+        "paper@Table 1",
+        "paper@§3.2 Platform Specific Curation"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "真实软件工程能力（论文明确说竞赛题不代表「最一般意义」的编程能力，建议再补领域专用评测）",
+      "cite": [
+        "paper@§7 Limitations"
+      ]
+    },
+    {
+      "text": "Python 以外语言的编程能力（论文说目前只聚焦 Python）",
+      "cite": [
+        "paper@§7 Limitations"
+      ]
+    },
+    {
+      "text": "「已经背下来的题」——这正是它要避开的部分：只有发布时间晚于模型训练截止日的题目才纳入对比",
+      "cite": [
+        "paper@§5.1 Avoiding Contamination",
+        "repo@Code Generation"
+      ]
+    }
+  ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
+    "sample_count": 1055,
+    "splits": [
+      "release_v1 至 release_v6：按题目发布时间滚动的六个数据集版本（现行主版本 release_v6 为 1,055 题，2023-05 至 2025-04）",
+      "时间窗切分：任意起止日期按题目发布日过滤，官方榜单默认 2024-08-01 至 2025-05-01（454 题）",
+      "难度切分：LCB-Easy / LCB-Medium / LCB-Hard（论文 Table 1）",
+      "平台切分：AtCoder / LeetCode / CodeForces 子集（论文 Table 1）",
+      "测试规模切分：code_generation（完整测试）与 code_generation_lite（裁剪测试，现行默认）"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "competition-platform scrape（抓取 LeetCode 周赛/双周赛、AtCoder abc、Codeforces Div.3/Div.4 的公开题目、题解与测试）",
+    "public_sample": true,
+    "totals": "现行主版本 release_v6 共 1,055 题（2023-05 至 2025-04）；论文 v2 版为 511 题，其中 Easy 182 / Medium 206 / Hard 123，平均每题 17.0 个测试；题目为英文，解答语言只支持 Python。",
+    "cite": [
+      "repo@Dataset Versions",
+      "paper@Table 1",
+      "paper@§7 Limitations"
+    ],
+    "construction": [
+      {
+        "k": "抓题与清洗",
+        "text": "为三个平台各写 HTML 爬虫，解析数学公式、剔除带图的题、剔除无法用输入输出判格的题（如多解或需要构造数据结构的题），同时收集题面、测试、标准解和比赛日期。",
+        "cite": [
+          "paper@§3.1 Data Collection"
+        ]
+      },
+      {
+        "k": "按难度筛选",
+        "text": "排除评分高到「最好的模型也做不动」的题，再用平台难度标签把题分成 Easy / Medium / Hard；LeetCode 用官方标签，AtCoder 用 [0,200) / [200,400) / [400,500] 分段，Codeforces 用 {800} / (800,1000] / (1000,1300] 分段。",
+        "cite": [
+          "paper@§3.1 Problem difficulty",
+          "paper@§3.2 Platform Specific Curation"
+        ]
+      },
+      {
+        "k": "构造测试",
+        "text": "平台直接给出测试就用平台的；否则用 GPT-4-Turbo 构造输入生成器（随机 + 对抗两类），生成器在标准解上验证后采样输入，每题输入数阈值取 100。",
+        "cite": [
+          "paper@§3.1 Test collection",
+          "paper@附录 A.2 Generator Based Test Generation"
+        ]
+      },
+      {
+        "k": "按场景重组",
+        "text": "代码生成与自我修复直接用题面（LeetCode 额外给 starter code）；代码执行从约 2,000 份人写题解里按长度、无浮点、运行步数等条件过滤，得到 85 道题的 479 个样本、每题最多 6 个；测试输出预测用 LeetCode 题面加示例输入，得到 181 道题的 442 个实例。",
+        "cite": [
+          "paper@§3.3 Scenario-specific benchmark construction",
+          "paper@附录 A.3 Code Execution"
+        ]
+      },
+      {
+        "k": "授权与使用边界",
+        "text": "只爬公开可见内容，主张 Fair Use §107，仅限学术用途，并明确声明不用抓来的题目做训练。",
+        "cite": [
+          "paper@附录 A.1 License"
+        ]
+      }
+    ]
   },
-  "metrics": [],
   "default_protocol": {
-    "raw": "按题目发布时间划分 train/corrupt/test 窗口"
+    "raw": "代码生成场景：指令微调模型用零样本提示，基础模型用一个固定的一次性示例；每题生成 10 个候选（核采样 temperature 0.2、top_p 0.95），程序必须通过全部隐藏测试才算对，主指标 pass@1（同时计算 pass@5）；判题器沿用 apps 基准的检查器并做了修改。官方榜单默认只统计 2024-08-01 至 2025-05-01 发布的 454 题。",
+    "cite": [
+      "paper@§4.1 Scenario-specific setup",
+      "paper@§4 Evaluation Metrics",
+      "repo@Code Generation",
+      "leaderboard"
+    ],
+    "variants": [
+      {
+        "text": "数据集 release 版本：release_v1 至 release_v6 的题目范围与数量都不同（400 / 511 / 612 / 713 / 880 / 1,055 题），跨版本分数不可直接比。",
+        "cite": [
+          "repo@Dataset Versions"
+        ]
+      },
+      {
+        "text": "时间窗：论文为规避 DeepSeek 污染只报 2023-09 之后发布的题目（最终 349 题）；官方榜单默认窗口是 2024-08-01 至 2025-05-01（454 题），页面上可拖动起止日期改窗。",
+        "cite": [
+          "paper@§5.1 Avoiding Contamination",
+          "repo@Code Generation",
+          "leaderboard"
+        ]
+      },
+      {
+        "text": "测试规模：完整测试的 code_generation 与裁剪测试的 code_generation_lite（后者是现行默认，官方称性能估计相近但快得多）。",
+        "cite": [
+          "repo@Code Generation",
+          "dataset@Dataset Description"
+        ]
+      },
+      {
+        "text": "推理档位：同一模型不同 reasoning effort 差距很大，例如榜单上 O4-Mini Low 65.9 / Medium 74.2 / High 80.2。",
+        "cite": [
+          "leaderboard"
+        ]
+      },
+      {
+        "text": "采样与超时：n=10、temperature 0.2、top_p 0.95；README 提示超时设置会给 pass@1 / pass@5 带来小于 0.5 点的波动，显著波动需要调 --num_process_evaluate 或 --timeout。",
+        "cite": [
+          "paper@§4 Evaluation Metrics",
+          "repo@Code Generation"
+        ]
+      }
+    ]
   },
-  "versions": [],
-  "limitations": [],
+  "metrics": [
+    {
+      "id": "pass-at-1",
+      "name": "pass@1（一次生成即通过率）",
+      "direction": "越高越好",
+      "description": "每题采样 10 个候选程序，估计「至少一个候选通过全部隐藏测试」比例中的单次通过部分；论文主指标，也是官方榜单唯一列出的指标",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§4 Evaluation Metrics",
+        "repo@Code Generation",
+        "leaderboard"
+      ]
+    },
+    {
+      "id": "pass-at-5",
+      "name": "pass@5",
+      "direction": "越高越好",
+      "description": "官方 README 声明代码生成场景同时计算 pass@1 与 pass@5 两个指标",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "repo@Code Generation"
+      ]
+    },
+    {
+      "id": "self-repair-pass-at-1",
+      "name": "自我修复后 pass@1",
+      "direction": "越高越好",
+      "description": "把「首次生成就对」和「按错误反馈修好」合起来计的最终通过率",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§2 Self Repair"
+      ]
+    },
+    {
+      "id": "code-execution-accuracy",
+      "name": "代码执行正确率",
+      "direction": "越高越好",
+      "description": "预测的程序输出与真实输出按 assert f(input) == 生成输出 判定",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§2 Code Execution"
+      ]
+    },
+    {
+      "id": "test-output-prediction-accuracy",
+      "name": "测试输出预测正确率",
+      "direction": "越高越好",
+      "description": "给定题面和固定测试输入，模型写出的期望输出经解析与等价性判定后算对的比例",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§2 Test Case Output Prediction",
+        "paper@§4 Evaluation Metrics"
+      ]
+    }
+  ],
+  "versions": [
+    {
+      "id": "arxiv-v1",
+      "date": "2024-03-12",
+      "label": "arXiv v1 首发（论文口径为 400 题、2023-05 至 2024-03；仓库同日 Initial commit）",
+      "cite": [
+        "abs",
+        "repo@Dataset Versions",
+        "commits"
+      ]
+    },
+    {
+      "id": "leaderboard-launch",
+      "date": "2024-04-16",
+      "label": "官方榜单上线（Hugging Face 博客公告）",
+      "cite": [
+        "hfblog"
+      ]
+    },
+    {
+      "id": "release-v2",
+      "date": "2024-06-07",
+      "label": "数据集 release_v2：511 题（2023-05 至 2024-05）；论文前一天更新到 arXiv v2",
+      "cite": [
+        "commits",
+        "repo@Dataset Versions",
+        "paper"
+      ]
+    },
+    {
+      "id": "release-v5",
+      "date": "2025-01-14",
+      "label": "数据集 release_v5：880 题（2023-05 至 2025-01）",
+      "cite": [
+        "commits@7a9e302a",
+        "repo@Dataset Versions"
+      ]
+    },
+    {
+      "id": "release-v6",
+      "date": "2025-04-21",
+      "label": "数据集 release_v6（现行主版本）：1,055 题（2023-05 至 2025-04）",
+      "cite": [
+        "commits@a12f7ebe",
+        "repo@Dataset Versions"
+      ]
+    },
+    {
+      "id": "livecodebench-pro",
+      "date": "2025-06-13",
+      "label": "同团队另立 LiveCodeBench Pro（Codeforces / ICPC / IOI 题，奥林匹克奖牌得主标注），用于应对原基准饱和",
+      "cite": [
+        "pro"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "评测集小，分数噪声大",
+      "impact": "论文最终评测只取 2023-09 之后发布的 349 题，作者自估代码生成成绩有 1–1.5% 的波动（用 511 题 bootstrap 349 题子集测得），并明确建议模型差距小时不要下结论；模型截止日越新，可用题目越少。",
+      "severity": "高",
+      "response": "论文提出两个方向：接入更多竞赛平台以增加新题，以及筹建一个不公开的私有测试集（类似 Kaggle 的做法）；截至本次核验未见私有集上线。",
+      "reader": "两个模型差 1–2 分时，先核对题量和时间窗，不要直接当成能力差距。",
+      "cite": [
+        "paper@§7 Limitations",
+        "paper@§5.1 Avoiding Contamination"
+      ]
+    },
+    {
+      "issue": "时间窗只能缓解污染，不能杜绝",
+      "impact": "「无污染」依赖题目发布日期晚于模型训练截止日。论文用 DeepSeek 作证据：DS-Base-33B 在 2023-05 的 LeetCode 题上 pass@1 约 60，到 2023-09 的题上约 0，作者据此判断早期题目很可能已进预训练。但题目发布后仍可能被讨论、转载或进入后续训练数据，发布日期只挡住「发布前」的那一部分。",
+      "severity": "高",
+      "response": "论文按模型截止日切窗评测并公开 DeepSeek 的逐月下降曲线；对截止日之后的新题，只能依赖竞赛平台持续产出新题。",
+      "reader": "看到「无污染 / contamination-free」时，先确认分数对应的时间窗和该模型的训练截止日。",
+      "cite": [
+        "paper@§5.1 Avoiding Contamination",
+        "site@Contamination"
+      ]
+    },
+    {
+      "issue": "题目与判题错误（官方 ERRATA）",
+      "impact": "ERRATA 记录了 12 道「多个正确答案但只判一种输出」的题（正确解可能被误判为错）、2 道交互题（评测套件不支持，必然做不对）和若干错误测试用例；这些都会给分数加噪声。ERRATA 首句写「7 problems」，同节实际列出 12 条，文档自身数字不一致。",
+      "severity": "中",
+      "response": "官方维护 ERRATA 列表，并称会依据这些反馈持续改进题目筛选启发式。",
+      "reader": "对接近满分的模型，ERRATA 列出的题可能是失分点之一；读榜单时不必为 1 分以内差异较真。",
+      "cite": [
+        "errata@Multiple Solutions Accepted",
+        "errata@Interactive Problems",
+        "errata@Erroneous Test Cases",
+        "repo@ERRATA"
+      ]
+    },
+    {
+      "issue": "HumanEval 上的高分会误导",
+      "impact": "论文实测 HumanEval+ 与 LCB-Easy 的 pass@1 相关性只有 0.72，且模型分成两簇：在 HumanEval+ 上好、在 LCB 上差的主要是开源模型的微调变体；DS-Ins-1.3B 在 HumanEval+ 上 59.8%，在 LCB-Easy 上只有 26.3%。",
+      "severity": "中",
+      "response": "论文把这一点作为使用 LiveCodeBench 的主要论据；未提出针对该现象的修正方法。",
+      "reader": "不要用 HumanEval 分数推断 LiveCodeBench 分数，两者只中等相关。",
+      "cite": [
+        "paper@§5.2 Comparison to HumanEval"
+      ]
+    },
+    {
+      "issue": "领域单一：只有竞赛编程、只有 Python",
+      "impact": "题目只来自三个竞赛平台，论文明确说这可能不代表「最一般意义」的编程能力；解答语言只有 Python，无法反映其他语言的能力，也无法反映开放式、由用户提出的真实需求。",
+      "severity": "中",
+      "response": "论文称加入新语言只需接入相应评测引擎，并建议把 LiveCodeBench 当作起点、再按领域补专用评测。",
+      "reader": "把 LiveCodeBench 分数当作算法与竞赛编程指标，不要当作工程能力指标。",
+      "cite": [
+        "paper@§7 Limitations"
+      ]
+    },
+    {
+      "issue": "榜单口径与官网信息滞后",
+      "impact": "官方榜单默认只显示 2024-08-01 至 2025-05-01 的 454 题（不足 release_v6 1,055 题的一半），榜首 80.2；而官网首页介绍仍写「三百多题、2023-05 至 2024-02」，落后于仓库 README 的 release_v6，两处对不上。",
+      "severity": "中",
+      "response": "榜单页面提供起止日期滑块可切窗，并链接到 release_v5 版榜单；官网首页的介绍文字未见更新。",
+      "reader": "引用榜单数字时一并写明时间窗与题量，并优先以仓库 README 的 release 版本为准。",
+      "cite": [
+        "leaderboard",
+        "site@Introduction",
+        "repo@Dataset Versions"
+      ]
+    },
+    {
+      "issue": "提示词未针对模型调优",
+      "impact": "论文不为每个模型调提示词，只按系统提示和分隔符做微调，作者承认这会带来成绩波动；开源模型在带思维链的代码执行场景甚至可能不如直接执行。",
+      "severity": "低",
+      "response": "论文称模型排序在四个场景之间基本一致、与 HumanEval 上的趋势相符，因此认为这是较小的问题。",
+      "reader": "同一模型换提示词后分数变化不必惊讶；比较时确认是否同提示词。",
+      "cite": [
+        "paper@§7 Limitations"
+      ]
+    }
+  ],
   "notes": "代码推理模型共识榜（6/11 家）",
   "official_sources": [
     {
@@ -33,6 +425,18 @@
     {
       "kind": "paper",
       "url": "https://arxiv.org/abs/2403.07974"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/LiveCodeBench/LiveCodeBench"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/livecodebench/code_generation_lite"
+    },
+    {
+      "kind": "leaderboard",
+      "url": "https://livecodebench.github.io/leaderboard.html"
     }
   ],
   "related_benchmarks": [
@@ -41,8 +445,461 @@
     "swe-lancer",
     "aider",
     "humanevalplus",
-    "apps"
+    "apps",
+    "cruxeval"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-28"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-10",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-10",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "LiveCodeBench: Holistic and Contamination Free Evaluation of Large Language Models for Code（arXiv:2403.07974v2，2024-06-06，PDF 全文）",
+        "url": "https://arxiv.org/abs/2403.07974",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "abs",
+        "kind": "paper",
+        "title": "arXiv:2403.07974 摘要页（v1 提交与 v2 修订日期）",
+        "url": "https://arxiv.org/abs/2403.07974",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "LiveCodeBench/LiveCodeBench 官方仓库 README（release 版本清单、评测流程、判题器）",
+        "url": "https://github.com/LiveCodeBench/LiveCodeBench",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "commits",
+        "kind": "repo",
+        "title": "LiveCodeBench/LiveCodeBench README.md 提交历史与 release_v2 / release_v5 / release_v6 提交补丁",
+        "url": "https://github.com/LiveCodeBench/LiveCodeBench/commits/main/README.md",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "errata",
+        "kind": "repo",
+        "title": "LiveCodeBench ERRATA.md（已知题目与测试问题清单）",
+        "url": "https://github.com/LiveCodeBench/LiveCodeBench/blob/main/ERRATA.md",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "site",
+        "kind": "site",
+        "title": "livecodebench.github.io 官网首页",
+        "url": "https://livecodebench.github.io/",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "leaderboard",
+        "kind": "leaderboard",
+        "title": "LiveCodeBench 官方榜单（默认时间窗 2024-08-01 至 2025-05-01，454 题）",
+        "url": "https://livecodebench.github.io/leaderboard.html",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "dataset",
+        "kind": "dataset",
+        "title": "livecodebench/code_generation_lite（Hugging Face 数据集卡，现行默认版本）",
+        "url": "https://huggingface.co/datasets/livecodebench/code_generation_lite",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "pro",
+        "kind": "paper",
+        "title": "LiveCodeBench Pro: How Do Olympiad Medalists Judge LLMs in Competitive Programming?（arXiv:2506.11928，2025-06-13）",
+        "url": "https://arxiv.org/abs/2506.11928",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "hfblog",
+        "kind": "blog",
+        "title": "Hugging Face 博客：Introducing the LiveCodeBench Leaderboard（2024-04-16）",
+        "url": "https://huggingface.co/blog/leaderboard-livecodebench",
+        "accessed": "2026-11-10"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "UC Berkeley（SKY Lab）为主，合作方 MIT、Cornell",
+        "cite": [
+          "paper@作者署名",
+          "hfblog"
+        ]
+      },
+      "first_release": {
+        "v": "2024-03-12（arXiv v1）",
+        "cite": [
+          "abs"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "paper@Abstract",
+        "paper@§3.1 Data Collection",
+        "paper@§2 Code Generation"
+      ],
+      "interpretation": [
+        "paper@§7 Limitations",
+        "paper@§5.1 Avoiding Contamination"
+      ]
+    },
+    "problem": {
+      "text": "HumanEval、MBPP、APPS 这类老基准题量固定、只考「自然语言转代码」一种任务，题目又早已出现在训练数据里：前沿模型刷到高分后既拉不开差距，高分也可能只是背题。LiveCodeBench 想用「持续抓新题 + 给每题标发布日期 + 四种场景」同时应对饱和、污染和任务单一三个问题。",
+      "cite": [
+        "paper@§1",
+        "paper@Abstract"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机猜测基线",
+        "value": "论文未给出",
+        "note": "题目按功能正确性判分（通过全部隐藏测试才算对），论文没有报告整卷随机基线，本站也不推算。",
+        "cite": [
+          "paper@§4 Evaluation Metrics"
+        ]
+      },
+      {
+        "label": "论文发布时最好（2024-06，论文 v2 口径）",
+        "value": "49.1",
+        "note": "GPT-4O-2024-05-13 的 pass@1（Easy 92.6 / Medium 46.4 / Hard 8.2）；同表最低为 OC-DS-1.3B 的 6.8。该表口径为 2023-09 之后发布的题目。",
+        "cite": [
+          "paper@Table 3",
+          "paper@§5.2 Performance and Model Comparisons"
+        ]
+      },
+      {
+        "label": "论文引用的竞赛水平参考",
+        "value": "GPT-4 的 Codeforces 平均 Elo 392（2023 年数据）",
+        "note": "论文引用 OpenAI 2023 的统计，称 GPT-4 处于参赛者后 5%，用来说明竞赛题对当年的模型仍然很难。",
+        "cite": [
+          "paper@§3.1 Problem difficulty"
+        ]
+      },
+      {
+        "label": "官方榜单当前最高",
+        "value": "80.2",
+        "note": "O4-Mini (High) 的 pass@1；榜单默认时间窗 2024-08-01 至 2025-05-01、454 题，同行 Easy 99.1 / Medium 89.4 / Hard 63.5。",
+        "cite": [
+          "leaderboard"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      },
+      {
+        "label": "饱和参考线（Easy 子集）",
+        "value": "99.1",
+        "note": "榜首模型在 Easy 子集已接近满分，Easy 基本失去区分度；同一行的 Hard 子集只有 63.5，仍有空间。这条线直接取榜首那一行，不是推算值。",
+        "cite": [
+          "leaderboard"
+        ]
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把不同 release 版本或不同时间窗的分数排在一起比——release_v1 只有 400 题、release_v6 有 1,055 题，而榜单默认窗口只显示其中 454 题。",
+        "cite": [
+          "repo@Dataset Versions",
+          "leaderboard"
+        ]
+      },
+      {
+        "text": "把「contamination-free（无污染）」理解成绝对干净——它靠的是题目发布日期晚于模型训练截止日来降低风险，挡不住发布之后的流传。",
+        "cite": [
+          "paper@§5.1 Avoiding Contamination"
+        ]
+      },
+      {
+        "text": "看到 80 分以上就认为模型擅长编程——Easy 子集已接近满分，Hard 子集仍只有约 63.5；同团队后来的 LiveCodeBench Pro 上，不带工具的最好成绩在 medium 是 53%、hard 是 0%。",
+        "cite": [
+          "leaderboard",
+          "pro@Abstract"
+        ]
+      },
+      {
+        "text": "用 HumanEval 分数推断 LiveCodeBench 分数——论文实测两者相关性只有 0.72，且存在「HumanEval 好、LiveCodeBench 差」的一簇模型。",
+        "cite": [
+          "paper@§5.2 Comparison to HumanEval"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "以 UC Berkeley（SKY Lab）为主，合作方 MIT 与 Cornell",
+        "cite": [
+          "paper@作者署名",
+          "hfblog"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "Naman Jain、King Han、Alex Gu、Wen-Ding Li、Fanjia Yan、Tianjun Zhang、Sida I. Wang、Armando Solar-Lezama、Koushik Sen、Ion Stoica",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      {
+        "k": "题目来源平台",
+        "v": "LeetCode（2023-04 之后的周赛与双周赛，用官方难度标签）、AtCoder（只取 abc 初学者赛，排除 arc/agc，评分 >500 的题剔除）、Codeforces（只取 Div.3 / Div.4）",
+        "cite": [
+          "paper@§3.2 Platform Specific Curation"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2024-03-12 arXiv v1 → 2024-04-16 官方榜单上线 → 2024-06-07 release_v2（511 题）→ 2025-01-14 release_v5（880 题）→ 2025-04-21 release_v6（1,055 题）→ 2025-06-13 同团队发布 LiveCodeBench Pro",
+        "cite": [
+          "abs",
+          "hfblog",
+          "commits@a12f7ebe",
+          "pro"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "数据集在 Hugging Face livecodebench 组织下（code_generation_lite 为现行默认），评测代码与 ERRATA 在 GitHub；榜单提交走 GitHub PR，目前只收代码生成场景",
+        "cite": [
+          "dataset",
+          "repo",
+          "repo@Submit Models to Leaderboard"
+        ]
+      },
+      {
+        "k": "授权",
+        "v": "只爬公开可见内容、主张 Fair Use §107、仅限学术用途，并明确声明不用抓来的题目做训练",
+        "cite": [
+          "paper@附录 A.1 License"
+        ]
+      },
+      {
+        "k": "论文口径与现行口径差异",
+        "v": "论文 v2 报 511 题（覆盖 2023-05 至 2024-05），最终评测只取 2023-09 之后的 349 题；现行 release_v6 为 1,055 题（覆盖至 2025-04）。引用旧论文数字时注意这不是同一批题。",
+        "cite": [
+          "paper@§3.3 Scenario-specific benchmark construction",
+          "paper@§7 Limitations",
+          "repo@Dataset Versions"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-10",
+        "columns": [
+          "来源",
+          "模型",
+          "Pass@1",
+          "Easy",
+          "Medium",
+          "Hard",
+          "口径"
+        ],
+        "rows": [
+          [
+            "论文 Table 3",
+            "OC-DS-1.3B",
+            "6.8",
+            "20.0",
+            "0.4",
+            "0.0",
+            "2023-09 之后发布的题目"
+          ],
+          [
+            "论文 Table 3",
+            "CodeLlama-13b-Ins",
+            "15.3",
+            "43.1",
+            "3.0",
+            "0.0",
+            "同上"
+          ],
+          [
+            "论文 Table 3",
+            "Gemini-Pro",
+            "21.1",
+            "53.8",
+            "9.4",
+            "0.2",
+            "同上"
+          ],
+          [
+            "论文 Table 3",
+            "GPT-3.5-Turbo-0125",
+            "23.9",
+            "59.3",
+            "11.9",
+            "0.5",
+            "同上"
+          ],
+          [
+            "论文 Table 3",
+            "LLama3-70b-Ins",
+            "30.1",
+            "69.6",
+            "19.0",
+            "1.8",
+            "同上"
+          ],
+          [
+            "论文 Table 3",
+            "Codestral-Latest",
+            "33.9",
+            "72.5",
+            "25.9",
+            "3.3",
+            "同上"
+          ],
+          [
+            "论文 Table 3",
+            "GPT-4-0613",
+            "35.6",
+            "79.3",
+            "25.0",
+            "2.4",
+            "同上"
+          ],
+          [
+            "论文 Table 3",
+            "Claude-3-Opus",
+            "37.8",
+            "83.1",
+            "23.7",
+            "6.7",
+            "同上"
+          ],
+          [
+            "论文 Table 3",
+            "Gemini-Pro-1.5-May",
+            "40.7",
+            "84.8",
+            "30.1",
+            "7.3",
+            "同上"
+          ],
+          [
+            "论文 Table 3",
+            "GPT-4-Turbo-1106",
+            "42.6",
+            "86.9",
+            "36.9",
+            "4.0",
+            "同上"
+          ],
+          [
+            "论文 Table 3",
+            "GPT-4-Turbo-2024-04-09",
+            "45.6",
+            "88.7",
+            "39.7",
+            "8.4",
+            "同上"
+          ],
+          [
+            "论文 Table 3",
+            "GPT-4O-2024-05-13",
+            "49.1",
+            "92.6",
+            "46.4",
+            "8.2",
+            "同上"
+          ],
+          [
+            "官方榜单",
+            "DeepSeek-V3",
+            "27.2",
+            "64.3",
+            "27.9",
+            "6.7",
+            "默认时间窗 2024-08-01 至 2025-05-01，454 题"
+          ],
+          [
+            "官方榜单",
+            "GPT-4-Turbo-2024-04-09",
+            "28.7",
+            "81.0",
+            "24.8",
+            "3.1",
+            "同上"
+          ],
+          [
+            "官方榜单",
+            "GPT-4O-2024-08-06",
+            "29.5",
+            "82.5",
+            "26.0",
+            "3.3",
+            "同上"
+          ],
+          [
+            "官方榜单",
+            "Claude-3.5-Sonnet-20241022",
+            "36.4",
+            "91.2",
+            "34.3",
+            "8.2",
+            "同上"
+          ],
+          [
+            "官方榜单",
+            "Claude-Opus-4 (Thinking)",
+            "56.6",
+            "98.2",
+            "70.9",
+            "24.1",
+            "同上"
+          ],
+          [
+            "官方榜单",
+            "Gemini-2.5-Pro-06-05",
+            "73.6",
+            "99.1",
+            "87.2",
+            "50.2",
+            "同上"
+          ],
+          [
+            "官方榜单",
+            "DeepSeek-R1-0528",
+            "73.1",
+            "98.7",
+            "85.2",
+            "50.7",
+            "同上"
+          ],
+          [
+            "官方榜单",
+            "O3 (High)",
+            "75.8",
+            "99.1",
+            "84.4",
+            "57.1",
+            "同上"
+          ],
+          [
+            "官方榜单",
+            "O4-Mini (High)",
+            "80.2",
+            "99.1",
+            "89.4",
+            "63.5",
+            "同上"
+          ]
+        ]
+      },
+      "cite": [
+        "paper@Table 3",
+        "leaderboard"
+      ]
+    }
+  }
 }

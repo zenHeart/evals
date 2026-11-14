@@ -1,48 +1,389 @@
 {
   "id": "winogrande",
   "name": "WinoGrande",
-  "full_name": null,
-  "aliases": [],
-  "status": null,
-  "categories": [
-    "knowledge"
-  ],
-  "summary": "44k 代词消歧常识题",
-  "interpretation": "代词指代消歧的常识题（“它”指的是房子还是车库）。",
-  "measures": [],
-  "does_not_measure": [],
-  "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
-  },
-  "metrics": [],
-  "default_protocol": {
-    "raw": "fine-tune/few-shot 双口径"
-  },
-  "versions": [],
-  "limitations": [],
-  "notes": null,
-  "official_sources": [
+  "full_name": "WinoGrande: An Adversarial Winograd Schema Challenge at Scale（大规模对抗式 Winograd Schema 挑战）",
+  "aliases": ["WINOGRANDE", "WinoGrande_debiased", "WinoGrande_all", "winogrande"],
+  "status": "active",
+  "categories": ["knowledge"],
+  "summary": "WinoGrande 是 4.4 万道代词消歧常识题：一句挖空的名词句，从两个候选名词里选对的那个（前端类比：一句缺主语的 if 条件，从两个变量名里挑对的那个）。它靠众包写「孪生句」把规模做大，再用 AFLITE 算法剔掉机器可利用的词共现线索，让模型不能靠词联想蒙对。",
+  "interpretation": "高分说明模型在词共现线索被系统性削弱之后仍能选对指代对象，但它不等于模型真的理解了语言：WinoWhat 把题目同义改写后所有受测模型都显著掉点；而且测试集标签不公开，大量论文报的其实是验证集分数。",
+  "measures": [
     {
-      "kind": "site",
-      "url": "https://leaderboard.allenai.org/winogrande"
+      "area": "代词 / 名词指代消歧（填空形式）",
+      "focus": "给定一句把名词换成空格的名词句，从两个候选名词中选正确的那个，需要理解两个分句之间的因果或对比关系。论文用「孪生句」成对构造：同一句模板只差一个词，答案随之反转。",
+      "share": "全部题目（debiased 12,282 题；含被 AFLITE 过滤题的 all 43,972 题）",
+      "format": "二选一填空（fill-in-the-blank）",
+      "cite": ["arxiv-1907-10641@§3.1", "arxiv-1907-10641@Table 1"]
     },
+    {
+      "area": "抗数据偏差（AFLITE 去偏后的题目）",
+      "focus": "debiased 子集经过对抗式过滤，机器可利用的词共现 / 词联想线索被削弱：只给空格前的局部上下文时，BERT 和 RoBERTa 都只拿到机会水平附近。",
+      "share": "未披露（论文没有单独统计这类题目的占比；debiased 共 12,282 题）",
+      "format": "二选一填空",
+      "cite": ["arxiv-1907-10641@Table 3", "arxiv-1907-10641@§3.2"]
+    },
+    {
+      "area": "常识类型细分（第三方划分）",
+      "focus": "原论文没有按常识类型拆分题目。WinoWhat 把验证集划为 physical / social / numerical / spatial / temporal 五类，并逐类报告模型表现与改写后的掉点幅度。",
+      "share": "未披露（原论文未给出类型占比）",
+      "format": "二选一填空",
+      "cite": ["winowhat@§3.1"]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "不测词汇联想：只给空格前的局部上下文时，BERT 和 RoBERTa 都只拿到 50% 上下的机会水平，说明单靠词共现做不出这道题。",
+      "cite": ["arxiv-1907-10641@Table 3"]
+    },
+    {
+      "text": "不测开放式生成与长文本推理：题型固定为一句挖空句加两个候选名词，数据字段只有 sentence / option1 / option2 / answer。",
+      "cite": ["dataset@Data Fields"]
+    },
+    {
+      "text": "不测改写鲁棒性：同义改写后所有受测模型都掉点，说明这个分数不代表稳定的指代消歧能力。",
+      "cite": ["winowhat@§4.1"]
+    },
+    {
+      "text": "不测多语言：题目由 AMT 众包工人从 WikiHow 文章改写而来，论文没有提供其他语言版本或分语言统计。",
+      "cite": ["arxiv-1907-10641@§3.1"]
+    }
+  ],
+  "dataset": {
+    "sample_count": 43972,
+    "splits": [
+      "WinoGrande_debiased：train 9,248 / dev 1,267 / test 1,767（共 12,282）",
+      "WinoGrande_all：train 40,938 / dev 1,267 / test 1,767（共 43,972）",
+      "按训练规模的五档子集：XS 160 / S 640 / M 2,558 / L 10,234 / XL 40,938"
+    ],
+    "languages": ["en"],
+    "source_type": "crowdsourced（AMT 众包工人写孪生句，锚点词来自随机分配的 WikiHow 文章，再经 AFLITE 对抗式过滤）",
+    "public_sample": true,
+    "multiple_choice_share": "100%（二选一）",
+    "multimodal_share": "0%（纯文本）",
+    "totals": "WinoGrande_all 43,972 题（train 40,938 / dev 1,267 / test 1,767）；WinoGrande_debiased 12,282 题（train 9,248 / dev 1,267 / test 1,767）；全部为英文二选一填空；测试集标签不公开，需向官方榜单提交预测才能拿到 test 分数。",
+    "cite": ["arxiv-1907-10641@§3.2", "dataset@Dataset Summary"],
+    "construction": [
+      {
+        "k": "写孪生句",
+        "text": "AMT 众包工人按要求写一对只差一个词的孪生句，两句话各自通顺但答案相反，要求避免词联想、编辑距离非零但很小；句长控制在 15–30 词，两句话之间至少 70% 的词重叠。",
+        "cite": ["arxiv-1907-10641@§3.1", "arxiv-1907-10641@Table 1"]
+      },
+      {
+        "k": "锚点词与验证",
+        "text": "工人从随机分配的 WikiHow 文章里随机取锚点词，并保证孪生句包含该词，以避免题目主题过度集中；每道题再由 3 名独立众工验证。",
+        "cite": ["arxiv-1907-10641@§3.1"]
+      },
+      {
+        "k": "粗筛",
+        "text": "共收集 77k 道题（38k 对孪生句），验证后 68%（53k）判定有效；报酬为每对孪生句 0.4 美元、每次句子验证 0.03 美元。",
+        "cite": ["arxiv-1907-10641@§3.1"]
+      },
+      {
+        "k": "AFLITE 去偏",
+        "text": "先用 6k 题（5k 训练 + 1k 验证）微调 RoBERTa 得到词嵌入，再用 AFLITE（m=10,000，n=64，k=500，τ=0.75）迭代剔除机器可利用的统计线索。",
+        "cite": ["arxiv-1907-10641@§3.2"]
+      },
+      {
+        "k": "定稿与规模",
+        "text": "去偏后得到 12,282 题（train 9,248 / dev 1,267 / test 1,767）；另放出被 AFLITE 过滤掉的 31k 题作训练资源，合计 43,972 题，并按训练规模切成 XS–XL 五档。",
+        "cite": ["arxiv-1907-10641@§3.2"]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "accuracy",
+      "name": "准确率",
+      "direction": "越高越好",
+      "description": "二选一填空中选对候选名词的题目占比；论文分别报告 dev 与 test 两个拆分的准确率，并另给按训练规模 XS–XL 的分档结果。",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["arxiv-1907-10641@Table 3", "arxiv-1907-10641@Table 4", "repo@README"]
+    }
+  ],
+  "default_protocol": {
+    "raw": "把句子里的空格填上 option1 或 option2，答对记 1 分，准确率 = 答对题数 / 总题数。论文口径是在训练集上微调 BERT / RoBERTa，然后在 dev 和 test 上评测；官方仓库的 eval.py 只能在 dev 上打分，test 集标签不公开，要拿到 test 分数必须向榜单提交预测文件。",
+    "cite": ["arxiv-1907-10641@Table 3", "repo@README"],
+    "variants": [
+      {
+        "text": "训练规模：XS / S / M / L / XL 五档（160–40,938 题），test 准确率从 50.4% 到 79.1%；不同档位的数字不能混排。",
+        "cite": ["arxiv-1907-10641@Table 4"]
+      },
+      {
+        "text": "零样本 vs 微调：RoBERTa-DPR 是用 DPR 微调后直接评测 WinoGrande（零样本），test 58.9%；和在 WinoGrande 自己训练集上微调的 64.9%–79.1% 不是同一回事。",
+        "cite": ["arxiv-1907-10641@Table 3"]
+      },
+      {
+        "text": "验证集当测试集：test 标签不公开，很多后续研究只能报验证集（1,267 题）的分数，与 test 数字不能直接比。",
+        "cite": ["repo@README", "winowhat@§3.1"]
+      },
+      {
+        "text": "few-shot 提示：GPT-4 用 5-shot 报 87.5%，与微调口径不可比。",
+        "cite": ["gpt4@Table 2", "winowhat@§3.1"]
+      },
+      {
+        "text": "评分方式：WinoWhat 用「部分评估」——计算每个候选词在句中位置的对数似然并取较高者，认为它比原来的部分评估更能反映指代消歧能力；这组数字与论文的微调准确率不是同一把尺子。",
+        "cite": ["winowhat@§3.2"]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2019-07-24",
+      "label": "arXiv v1 提交",
+      "cite": ["arxiv-1907-10641@提交历史"]
+    },
+    {
+      "id": "v2",
+      "date": "2019-11-21",
+      "label": "arXiv v2 修订（本页核对所用版本）",
+      "cite": ["arxiv-1907-10641@提交历史"]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "评测口径不一致",
+      "impact": "训练规模（XS→XL）、零样本 vs 微调、验证集 vs 测试集、few-shot 提示、不同的评分方式都会显著改变分数；厂商与论文自报常只写其中一种口径，跨报告比较容易失真。",
+      "severity": "高",
+      "response": "论文在 Table 3 / Table 4 中把不同口径分开列，并公开训练与评测脚本；官方仓库只提供 dev 的标签与 eval.py，test 分数必须走榜单提交。",
+      "reader": "比较任何两个 WinoGrande 分数前，先确认训练规模、是否零样本、报的是 dev 还是 test、以及评分方式。",
+      "cite": ["arxiv-1907-10641@Table 3", "arxiv-1907-10641@Table 4", "repo@README"]
+    },
+    {
+      "issue": "改写鲁棒性不足",
+      "impact": "WinoWhat 把验证集同义改写后（空格移到句末），所有受测模型都显著掉点，且没有一个常识类别对这种改写免疫；该文据此认为 LLM 在 WinoGrande 上的推理能力被高估。",
+      "severity": "高",
+      "response": "WinoWhat 公开了改写后的平行语料与常识分类；WinoGrande 原作者没有修订题目本身。",
+      "reader": "把 WinoGrande 分数当成「上下文内指代消歧」的一个下界，而不是稳定的推理能力。",
+      "cite": ["winowhat@§4.1", "winowhat@Abstract"]
+    },
+    {
+      "issue": "污染风险",
+      "impact": "训练集与验证集可以公开下载，可能进入预训练数据；GPT-4 技术报告专门设了一张预训练污染自查表（Table 11），覆盖其评测的学术基准。WinoWhat 用 Pythia / LLaMA 1 做的记忆化对照则显示，记忆化对成绩影响很小。",
+      "severity": "中",
+      "response": "原作者把测试集标签保留为私有以缓解污染；WinoWhat 建议同时报告未公开测试集与改写集的结果。",
+      "reader": "看到 85% 以上的 WinoGrande 分数时，先问一句报的是哪个拆分、是否 few-shot。",
+      "cite": ["gpt4@Table 11", "winowhat@§2.4", "winowhat@Abstract"]
+    },
+    {
+      "issue": "debiased 子集自身仍有偏差",
+      "impact": "AFLITE 过滤后，debiased 集里约 1/3 的题目不再是孪生句；论文也追问 AFLITE 检测到的偏差是否就是 WSC 设计初衷想避开的那种，并指出统计规律仍然存在。",
+      "severity": "中",
+      "response": "论文同时放出 WinoGrande_all 与五档训练子集，方便按训练规模重跑；没有进一步的人工去偏。",
+      "reader": "不要把「AFLITE 去偏」理解为题目完全无偏；它是把机器可检测的统计线索压到最低。",
+      "cite": ["arxiv-1907-10641@§3.1", "arxiv-1907-10641@§3.2"]
+    },
+    {
+      "issue": "发行口径与命名不一致",
+      "impact": "论文用 WinoGrandeall / WinoGrandedebiased 命名两套规模，HuggingFace 数据卡则按训练规模切成 6 个配置，两边对同一份数据的行数统计口径并不完全一致（论文 all 训练集 40,938 题，数据卡的 xl 配置略少）。",
+      "severity": "低",
+      "response": "引用题量时说明用的是论文口径还是数据卡口径；两处都给出了拆分级别的数字。",
+      "reader": "看到 43,972、43.4k、12.3k 这类数字时，先确认是哪一套发行。",
+      "cite": ["arxiv-1907-10641@§3.2", "dataset@Dataset Summary"]
+    },
+    {
+      "issue": "人类基线来自众包而非专家",
+      "impact": "论文报告的人类 94.0% 是 3 名众包工人逐题多数投票的结果，不是 WSC 那样的语言学专家标注；用它当「人类水平」上限会高估难度上限。",
+      "severity": "低",
+      "response": "论文没有提供专家版的人类基线。",
+      "reader": "94% 是众包工人在这种简单句式上的表现，不要理解为专家能力上限。",
+      "cite": ["arxiv-1907-10641@§4.1", "arxiv-1907-10641@Table 3"]
+    }
+  ],
+  "notes": "测试集标签至今未公开，test 分数必须走官方榜单提交；很多后续工作只报验证集（1,267 题）分数，跨论文比较时先确认拆分。",
+  "official_sources": [
     {
       "kind": "paper",
       "url": "https://arxiv.org/abs/1907.10641"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/allenai/winogrande"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/allenai/winogrande"
     }
   ],
-  "related_benchmarks": [
-    "mmlu",
-    "mmlu-pro",
-    "mmlu-redux",
-    "hellaswag",
-    "drop",
-    "gpqa-index"
-  ],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-28"
+  "related_benchmarks": ["mmlu", "mmlu-pro", "mmlu-redux", "hellaswag", "drop", "gpqa-index"],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "arxiv-1907-10641",
+        "kind": "paper",
+        "title": "WinoGrande: An Adversarial Winograd Schema Challenge at Scale（arXiv:1907.10641v2，含 arXiv 摘要页提交历史）",
+        "url": "https://arxiv.org/abs/1907.10641",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "allenai/winogrande 官方仓库 README（Version 1.1）",
+        "url": "https://github.com/allenai/winogrande",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "dataset",
+        "kind": "dataset",
+        "title": "HuggingFace 数据卡 allenai/winogrande",
+        "url": "https://huggingface.co/datasets/allenai/winogrande",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "gpt4",
+        "kind": "paper",
+        "title": "GPT-4 Technical Report（arXiv:2303.08774）",
+        "url": "https://arxiv.org/abs/2303.08774",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "winowhat",
+        "kind": "paper",
+        "title": "WinoWhat: A Parallel Corpus of Paraphrased WinoGrande Sentences with Commonsense Categorization（arXiv:2503.23779v1）",
+        "url": "https://arxiv.org/abs/2503.23779",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Allen Institute for Artificial Intelligence（AI2）与美国华盛顿大学",
+        "cite": ["arxiv-1907-10641@作者署名"]
+      },
+      "first_release": {
+        "v": "2019-07-24（arXiv v1 提交；v2 修订于 2019-11-21）",
+        "cite": ["arxiv-1907-10641@提交历史"]
+      }
+    },
+    "cites": {
+      "summary": ["arxiv-1907-10641@Abstract", "arxiv-1907-10641@§3.1", "arxiv-1907-10641@§3.2", "repo@README", "dataset@Dataset Summary"],
+      "interpretation": ["winowhat@§4.1", "winowhat@Abstract", "repo@README", "winowhat@§3.1"]
+    },
+    "problem": {
+      "text": "给定一句把名词换成空格的名词句，从两个候选名词中选出正确的那个。两句候选往往只差一个词，答案随之反转，因此不能靠词共现或词联想猜中——需要读懂两个分句之间的因果或对比关系。",
+      "cite": ["arxiv-1907-10641@§3.1", "arxiv-1907-10641@Table 1"]
+    },
+    "ladder": [
+      {
+        "label": "随机猜测基线",
+        "value": "50%",
+        "note": "二选一填空。论文 Table 3 中 WKH 与 Ensemble LMs 两个基线只拿到机会水平。",
+        "cite": ["arxiv-1907-10641@§4.2"]
+      },
+      {
+        "label": "仅词共现线索（去偏有效性证据）",
+        "value": "52.1%（dev）",
+        "note": "RoBERTa 只看空格前的局部上下文时的 dev 分数（test 50.0%），说明 AFLITE 之后单靠词共现已接近无效。",
+        "cite": ["arxiv-1907-10641@Table 3"]
+      },
+      {
+        "label": "论文发布时最好",
+        "value": "79.1%（test）",
+        "note": "RoBERTa，XL 档 40,938 题微调；同一行 dev 79.3%。",
+        "cite": ["arxiv-1907-10641@Table 3"]
+      },
+      {
+        "label": "few-shot 最好（第三方汇总）",
+        "value": "87.5%",
+        "note": "GPT-4 5-shot；数字经 WinoWhat §3.1 转引，与微调口径不可比。",
+        "cite": ["winowhat@§3.1", "gpt4@Table 2"]
+      },
+      {
+        "label": "人类基线",
+        "value": "94.0%（test）",
+        "note": "3 名众包工人逐题多数投票，不是语言学专家标注。",
+        "cite": ["arxiv-1907-10641@§4.1", "arxiv-1907-10641@Table 3"]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把「44k」当成一个固定题量：论文里 44k 是粗筛后的有效题量口径，实际发行是 debiased 12,282 题与 all 43,972 题两套，HuggingFace 又按训练规模切成 6 个配置。看到 44k、43.4k、12.3k 先问是哪一套。",
+        "cite": ["arxiv-1907-10641@§3.2", "dataset@Dataset Summary"]
+      },
+      {
+        "text": "以为测试集分数能自己复现：test.jsonl 不带标签，要拿到 test 分数必须向官方榜单提交预测；仓库的 eval.py 只能在 dev 上打分。很多论文报的其实是 dev 分数。",
+        "cite": ["repo@README"]
+      },
+      {
+        "text": "把「AFLITE 去偏」理解为题目完全无偏：去偏后 debiased 集里约 1/3 的题目不再是孪生句，Trichelair 等另报告 WSC 中 13.5% 的题仍带词联想偏差；统计规律只是被压到最低，不是归零。",
+        "cite": ["arxiv-1907-10641@§3.1", "arxiv-1907-10641@§5.1"]
+      },
+      {
+        "text": "把 79.1% 当成模型能力上限：那是 XL 档（40,938 题）微调的 test 成绩；XS 档（160 题）只有 50.4%，论文自己说要达到人类水平需要超过 118K 训练实例。",
+        "cite": ["arxiv-1907-10641@Table 4", "arxiv-1907-10641@§4.2"]
+      },
+      {
+        "text": "把 WinoGrande 分数当作常识推理能力的证据：WinoWhat 的同义改写实验显示所有受测模型都掉点，且没有一个常识类别对这种改写免疫。",
+        "cite": ["winowhat@§4.1"]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "Allen Institute for Artificial Intelligence（AI2）与美国华盛顿大学",
+        "cite": ["arxiv-1907-10641@作者署名"]
+      },
+      {
+        "k": "核心作者",
+        "v": "Keisuke Sakaguchi、Ronan Le Bras、Chandra Bhagavatula、Yejin Choi（AI2；Yejin Choi 兼华盛顿大学）",
+        "cite": ["arxiv-1907-10641@作者署名"]
+      },
+      {
+        "k": "时间线",
+        "v": "2019-07-24 arXiv v1 提交 → 2019-11-21 arXiv v2 修订（本页核对版本）；仓库 README 标注 Version 1.1，未给发布日期",
+        "cite": ["arxiv-1907-10641@提交历史", "repo@README"]
+      },
+      {
+        "k": "前身与动机",
+        "v": "原始 WSC（Levesque, Davis, Morgenstern 2011）是 273 道专家手写的代词消歧题，原意是让依赖词共现的统计模型无解；神经语言模型在其变体上已接近 90%，作者据此判断需要重新设计规模与去偏方式",
+        "cite": ["arxiv-1907-10641@Abstract", "arxiv-1907-10641@Table 5"]
+      },
+      {
+        "k": "数据与代码",
+        "v": "数据集与评测代码在 GitHub allenai/winogrande（代码 Apache-2.0，数据 CC-BY）；HuggingFace 数据卡提供 6 个按训练规模划分的配置",
+        "cite": ["repo@README", "dataset@Dataset Summary"]
+      },
+      {
+        "k": "测试集口径",
+        "v": "test 标签不公开，需向榜单提交预测；验证集 1,267 题、标签均衡，是后续研究的主要替代口径",
+        "cite": ["repo@README", "winowhat@§3.1"]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-14",
+        "columns": ["来源", "模型", "口径", "准确率", "备注"],
+        "rows": [
+          ["论文 Table 3", "WKH（词义知识）", "微调 dev/test", "49.4% / 49.6%", "机会水平"],
+          ["论文 Table 3", "Ensemble LMs", "微调 dev/test", "53.0% / 50.9%", "机会水平"],
+          ["论文 Table 3", "BERT", "WinoGrande 微调", "65.8% / 64.9%", ""],
+          ["论文 Table 3", "RoBERTa", "WinoGrande 微调", "79.3% / 79.1%", "论文最好模型"],
+          ["论文 Table 3", "BERT（仅局部上下文）", "只看空格前上下文", "52.5% / 51.9%", "词共现不足"],
+          ["论文 Table 3", "RoBERTa（仅局部上下文）", "只看空格前上下文", "52.1% / 50.0%", "词共现不足"],
+          ["论文 Table 3", "RoBERTa-DPR", "DPR 微调后零样本", "59.4% / 58.9%", "零样本最好"],
+          ["论文 Table 3", "Human（3 名众工多数投票）", "众包人工", "94.1% / 94.0%", "论文人类基线"],
+          ["论文 Table 4", "RoBERTa（XS，160 题）", "按训练规模", "51.5% / 50.4%", ""],
+          ["论文 Table 4", "RoBERTa（S，640 题）", "按训练规模", "58.6% / 58.6%", ""],
+          ["论文 Table 4", "RoBERTa（M，2,558 题）", "按训练规模", "66.9% / 67.6%", ""],
+          ["论文 Table 4", "RoBERTa（L，10,234 题）", "按训练规模", "75.8% / 74.7%", ""],
+          ["论文 Table 4", "RoBERTa（XL，40,938 题）", "按训练规模", "79.3% / 79.1%", ""],
+          ["GPT-4 技术报告 Table 2", "GPT-4", "5-shot 提示", "87.5%", "零样本为 81.6%"],
+          ["WinoWhat §3.1", "Gemma 2 27B", "部分评估", "83.7%", "验证集口径"],
+          ["WinoWhat §3.1", "LLaMA 2 7B", "部分评估", "69.2%", "验证集口径"],
+          ["WinoWhat §3.1", "LLaMA 2 70B", "部分评估", "80.2%", "验证集口径"],
+          ["WinoWhat §3.1", "GPT-4", "few-shot 提示", "87.5%", "验证集口径"],
+          ["WinoWhat §3.1", "Pythia 12B", "部分评估", "66.6%", "验证集口径"]
+        ]
+      },
+      "cite": ["arxiv-1907-10641@Table 3", "arxiv-1907-10641@Table 4", "gpt4@Table 2", "winowhat@§3.1"]
+    }
+  }
 }

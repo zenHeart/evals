@@ -1,60 +1,414 @@
 {
   "id": "videodr",
   "name": "VideoDR",
-  "full_name": "Watching, Reasoning, and Searching: A Video Deep Research Benchmark on Open Web for Agentic Video Reasoning",
+  "full_name": "Watching, Reasoning, and Searching: A Video Deep Research Benchmark on Open Web for Agentic Video Reasoning（VideoDR，视频深度研究基准）",
   "aliases": [
-    "Video Deep Research"
+    "Video Deep Research",
+    "VideoDR-Benchmark"
   ],
-  "status": null,
+  "status": "active",
   "categories": [
     "multimodal",
     "agent"
   ],
-  "summary": "首个视频 deep research 评测：视频只给局部线索，可验证答案分布在整个开放网——需跨帧锚点抽取 + 联网检索 + 多跳验证，覆盖 6 个语义域",
-  "interpretation": "把 deep research 范式从文本扩展到视频：Qwen 表给 w/ Search 口径（Qwen3.8-Max 73.2 vs Fable5 77.1），而 Qwen3.7-Plus 仅 41.0——联网工具是这道题的分水岭。",
+  "summary": "VideoDR 是第一个视频 deep research（深度研究）基准：给模型一段视频和一个开放域事实问题，答案不在片子里，而要靠跨帧抽出的视觉锚点去开放网上检索、取证、再做多跳推理。500 题、6 个语义域，答案由 LLM 裁判判定语义等价；同一个模型可在 Workflow 与 Agentic 两种系统组织下分别评测。",
+  "interpretation": "高分说明模型能把「视频里某一帧的线索」变成「开放网上的可验证事实」。但作者的核心结论是 Agentic 并不必然优于 Workflow——增益取决于模型能否在长检索链里守住最初的视觉锚点。目前最好成绩是 53.60%（Agentic）/ 51.80%（Workflow），只比人类平均 40.22% 高十几个点；高难度子集上所有模型都掉到 30.41% 以下。",
   "measures": [
-    "视频线索与开放网证据的联合推理",
-    "agentic 检索与多跳验证"
+    {
+      "area": "多帧视觉线索（Multi-frame Visual Cues）",
+      "focus": "答案必须由跨多个时间点的画面线索支撑。官方说明要求「从多个视频帧中准确识别连续关键信息」；论文把它写成出题硬约束——单帧截图答不出。",
+      "share": "未披露（论文不按能力维度给分）",
+      "format": "无独立分数，作为全部题目的出题前提",
+      "cite": [
+        "repo-videodr-benchmark@Core Capabilities",
+        "arxiv-2601-06943@§3.2"
+      ]
+    },
+    {
+      "area": "交互式检索（Interactive Search）",
+      "focus": "在浏览器环境里做多跳深度检索：模型自己决定查什么、查几轮，把视频线索变成可检索的查询。",
+      "share": "未披露（论文不按能力维度给分）",
+      "format": "无独立分数；检索/推理轮次在附录 A 单独分析",
+      "cite": [
+        "repo-videodr-benchmark@Core Capabilities",
+        "arxiv-2601-06943@附录 A"
+      ]
+    },
+    {
+      "area": "证据整合（Evidence Synthesis）",
+      "focus": "把视频线索和网页证据合成一个可验证的事实答案；论文要求答案可由开放网上的证据链核验。",
+      "share": "未披露（论文不按能力维度给分）",
+      "format": "无独立分数；输出为单一事实性答案",
+      "cite": [
+        "repo-videodr-benchmark@Core Capabilities",
+        "arxiv-2601-06943@§5"
+      ]
+    },
+    {
+      "area": "日常生活（Daily Life）",
+      "focus": "生活类开放事实（出行、消费、事件溯源等）。Table 3 中 Gemini-3.1-pro-preview 的 Agentic 在这一域最高（60.12%），人类为 39.77%。",
+      "share": "33.6%（168 题）",
+      "format": "分域准确率（Table 3），域内再按难度分层",
+      "cite": [
+        "arxiv-2601-06943@§3.4",
+        "arxiv-2601-06943@Table 3"
+      ]
+    },
+    {
+      "area": "科技（Technology）",
+      "focus": "产品、企业与技术类开放事实。Table 3：GPT-5.4 的 Agentic 在该域明显受益（39.82%→46.02%）。",
+      "share": "22.6%（113 题）",
+      "format": "分域准确率（Table 3）",
+      "cite": [
+        "arxiv-2601-06943@§3.4",
+        "arxiv-2601-06943@§4.2"
+      ]
+    },
+    {
+      "area": "文化（Culture）",
+      "focus": "Table 3 中 Gemini-3.1-pro-preview 的 Agentic 为 49.23%，人类为 47.81%，差距最小的一类。",
+      "share": "13.0%（65 题）",
+      "format": "分域准确率（Table 3）",
+      "cite": [
+        "arxiv-2601-06943@§3.4",
+        "arxiv-2601-06943@Table 3"
+      ]
+    },
+    {
+      "area": "历史（History）",
+      "focus": "Table 3：Gemini-3.1-pro-preview 的 Agentic 59.32%，GPT-5.4 的 Agentic 47.46%。",
+      "share": "11.8%（59 题）",
+      "format": "分域准确率（Table 3）",
+      "cite": [
+        "arxiv-2601-06943@§3.4",
+        "arxiv-2601-06943@Table 3"
+      ]
+    },
+    {
+      "area": "经济（Economics）",
+      "focus": "Table 3 中最低的一类：Gemini-3.1-pro-preview 的 Agentic 35.09%，GPT-5.4 的 Agentic 29.82%。",
+      "share": "11.4%（57 题）",
+      "format": "分域准确率（Table 3）",
+      "cite": [
+        "arxiv-2601-06943@§3.4",
+        "arxiv-2601-06943@Table 3"
+      ]
+    },
+    {
+      "area": "地理（Geography）",
+      "focus": "Table 3：GPT-5.4 的 Agentic 在该域最高（55.26%），Gemini-3.1-pro-preview 为 47.37%。",
+      "share": "7.6%（38 题）",
+      "format": "分域准确率（Table 3）",
+      "cite": [
+        "arxiv-2601-06943@§3.4",
+        "arxiv-2601-06943@Table 3"
+      ]
+    }
   ],
   "does_not_measure": [
-    "纯视频内容理解（答案在片内）",
-    "文本 deep research（BrowseComp/GAIA 负责）"
+    {
+      "text": "只看视频、不联网就能答的问题——出题时用 video-only test 淘汰：标注员只看视频作答，答得出就不采用。",
+      "cite": [
+        "arxiv-2601-06943@§3.3.1"
+      ]
+    },
+    {
+      "text": "只联网、不看视频就能答的问题——web-only test 淘汰：标注员只拿到文字问题并可以搜索，答得出就不采用。",
+      "cite": [
+        "arxiv-2601-06943@§3.3.1"
+      ]
+    },
+    {
+      "text": "长时程记忆与反复回看：协议明确研究过程中不允许反复重看视频，模型只能依赖首轮固化的视觉线索。",
+      "cite": [
+        "arxiv-2601-06943@§3.1",
+        "arxiv-2601-06943@§4.2"
+      ]
+    },
+    {
+      "text": "纯文本 deep research（无视频条件）：任务定义以给定视频为前提，问题必须同时依赖视频与开放网页才有效。",
+      "cite": [
+        "arxiv-2601-06943@§3.1",
+        "arxiv-2601-06943@§3.3.1"
+      ]
+    }
   ],
   "dataset": {
-    "sample_count": null,
+    "sample_count": 500,
     "splits": [
-      "6 语义域"
+      "单一 test split（500 题，无公开 train / val）",
+      "难度三层：Low 112 / Mid 171 / High 217",
+      "时长三组：Short 162 / Medium 151 / Long 187",
+      "语义六域：Daily Life 168 / Technology 113 / Culture 65 / History 59 / Economics 57 / Geography 38"
     ],
     "languages": [
       "en"
     ],
-    "source_type": "human_curated",
-    "public_sample": true
+    "source_type": "human-curated（人工标注：3 名有视频理解与检索经验的标注员出题、答疑并归档证据网页）",
+    "public_sample": true,
+    "totals": "500 题单一 test split；问题为英文、平均 25.54 个 token；Hugging Face 总大小 476 GB，CC BY 4.0；视频需按 1.mp4–500.mp4 自行下载，部分样本备注要求从原始视频切片",
+    "cite": [
+      "hf-videodr-500@Dataset card",
+      "hf-videodr@Dataset card",
+      "arxiv-2601-06943@§3.4",
+      "repo-videodr-benchmark@Current Dataset"
+    ],
+    "construction": [
+      {
+        "k": "候选视频池",
+        "text": "标注员从不同平台选视频，并按来源、领域、时长三个维度分层抽样以覆盖真实场景；同时用三类负条件过滤：单场景且视觉语义高度冗余的片段、靠纯文本搜索就能答对的热门话题、缺乏可验证证据链的孤立内容。",
+        "cite": [
+          "arxiv-2601-06943@§3.2"
+        ]
+      },
+      {
+        "k": "片段整理",
+        "text": "人工剔除缺少显著视觉锚点的片段；长视频可切出多个语义聚焦的片段，每个片段分别出题。",
+        "cite": [
+          "arxiv-2601-06943@§3.2"
+        ]
+      },
+      {
+        "k": "出题约束",
+        "text": "两条硬约束：多帧推理——问题必须由跨多个时间点的视频线索支撑；多跳推理——问题必须隐含一条可分解的多步推理路径，至少包含一轮「视频感知 ↔ 外部搜索」的信息交换。",
+        "cite": [
+          "arxiv-2601-06943@§3.2"
+        ]
+      },
+      {
+        "k": "证据归档",
+        "text": "把支撑每个答案的关键网页归档留存，供后续核验。",
+        "cite": [
+          "arxiv-2601-06943@§3.2"
+        ]
+      },
+      {
+        "k": "双重依赖测试",
+        "text": "web-only test（只给文字问题、可联网搜索）与 video-only test（只看视频）都答不出的样本才保留为有效样本。",
+        "cite": [
+          "arxiv-2601-06943@§3.3.1"
+        ]
+      },
+      {
+        "k": "人类标定",
+        "text": "5 名受试者盲答，按答对人数定难度：0–1 人答对为 High、2–3 人为 Mid、4–5 人为 Low；同时得到人类参考准确率 40.22%。",
+        "cite": [
+          "arxiv-2601-06943@§3.3.2"
+        ]
+      }
+    ]
   },
-  "metrics": [],
+  "metrics": [
+    {
+      "id": "accuracy",
+      "name": "准确率（Accuracy）",
+      "direction": "越高越好",
+      "description": "LLM 裁判判定模型答案与参考答案语义等一样例的占比；裁判输出二值标签，不做部分给分。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2601-06943@§4.1"
+      ]
+    },
+    {
+      "id": "stratified-accuracy",
+      "name": "分层准确率",
+      "direction": "越高越好",
+      "description": "按难度（Low / Mid / High）、视频时长（Short / Medium / Long）、语义域分别统计的准确率；官方提交要求一并报告这些分层数字。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2601-06943@§4.2",
+        "leaderboard-videodr@Submission"
+      ]
+    },
+    {
+      "id": "human-reference",
+      "name": "人类参考准确率",
+      "direction": "参照线",
+      "description": "5 名受试者盲答的平均正确率（500 题 40.22%，100 题首版 50.40%），用于判断模型是否超过人类平均水平。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2601-06943@§3.3.2",
+        "arxiv-2601-06943@附录 F"
+      ]
+    }
+  ],
   "default_protocol": {
-    "raw": "w/ Search（联网检索开启，Qwen3.8-Max 表 2 口径）"
+    "raw": "给模型一段视频 V、一个自然语言问题 Q 和一个浏览器检索工具 S，允许在「视频线索 ↔ 网页证据」之间多轮迭代检索，最后输出一个事实性答案 A；研究过程中不允许反复重看视频。论文对比两种系统组织：Workflow 是多模态模型先把跨帧视觉线索抽取并固化成结构化中间文本、再由该文本驱动检索、反思与证据过滤的两阶段流水线；Agentic 是把原始视频和问题直接交给单个多模态智能体的端到端循环，理解、生成查询、检索与证据整合在同一个执行循环里完成。判分用 LLM-as-judge：官方基线代码的裁判模型默认 /model/DeepSeek-V3，论文主表用 DeepSeek-V3-0324，判定预测与参考答案是否语义等价后统计 Accuracy。",
+    "cite": [
+      "arxiv-2601-06943@§3.1",
+      "arxiv-2601-06943@§4.1",
+      "repo-videodr-benchmark@Evaluation Tools"
+    ],
+    "variants": [
+      {
+        "text": "Workflow vs Agentic：同一模型的两种系统组织，官方表格分列，不能混着比。Agentic 不能回看视频，Workflow 把视觉线索外化成可反复访问的文本外部记忆，这正是两者分数差异的来源。",
+        "cite": [
+          "arxiv-2601-06943@§4.2"
+        ]
+      },
+      {
+        "text": "500 题（当前基准）vs 100 题（2026-01 首版）：题量与难度分布都不同，人类参考分从 50.40% 变成 40.22%；官方榜单目前仍挂在 100 题口径上。",
+        "cite": [
+          "repo-videodr-benchmark@Current Dataset",
+          "repo-videodr-benchmark@News",
+          "arxiv-2601-06943@附录 F",
+          "leaderboard-videodr@Leaderboard"
+        ]
+      },
+      {
+        "text": "检索后端：论文只写「浏览器检索工具」，未点名搜索引擎；官方基线代码要求配置 TAVILY_API_KEY，自带 profile 走 OpenRouter 的 OpenAI 兼容端点，换端点要同时改模型名。",
+        "cite": [
+          "arxiv-2601-06943@§3.1",
+          "repo-videodr-benchmark@Quick Start",
+          "repo-videodr-benchmark@Evaluation Tools"
+        ]
+      },
+      {
+        "text": "裁判与汇总口径：官方汇总报告分母固定为 100，直接读 500 题结果会低估；官方要求按实际评测数量从逐题结果重算，并单独报告缺失或失败的样本。",
+        "cite": [
+          "repo-videodr-benchmark@Evaluation Tools"
+        ]
+      }
+    ]
   },
   "versions": [
     {
-      "id": "v1",
-      "label": "VideoDR（2026-01）",
-      "note": "arXiv:2601.06943；Workflow 与 Agentic 双范式评测"
+      "id": "v1-100",
+      "date": "2026-01-11",
+      "label": "首发：论文与 100 题基准上线（论文附录 F 的 Table 8/9 即该口径：人类 50.40%，最高 76.00% Agentic）",
+      "cite": [
+        "repo-videodr-benchmark@News",
+        "arxiv-2601-06943@附录 F",
+        "leaderboard-videodr@Leaderboard"
+      ]
+    },
+    {
+      "id": "paper-v2",
+      "date": "2026-05-18",
+      "label": "论文更新到 arXiv v2，主表改用 500 题口径",
+      "cite": [
+        "arxiv-2601-06943@v2 页眉",
+        "arxiv-2601-06943@Table 1"
+      ]
+    },
+    {
+      "id": "data-500",
+      "date": "2026-05-19",
+      "label": "数据集扩充到 500 题并成为当前基准，100 题发布版标记为历史",
+      "cite": [
+        "repo-videodr-benchmark@News",
+        "repo-videodr-benchmark@Current Dataset"
+      ]
     }
   ],
   "limitations": [
-    "依赖开放网检索，结果受搜索后端影响、复现需固定工具链",
-    "视频-网页证据链的判分较复杂"
+    {
+      "issue": "官方汇总脚本分母固定为 100",
+      "impact": "用 llm_as_judge 的汇总报告直接读 500 题结果，准确率会被按 100 的分母缩放到错误量级（低估约 5 倍），缺失或失败的样本也不会单独显现。",
+      "severity": "高",
+      "response": "官方在 README 明确要求：500 题发布版按实际评测数量从逐题结果重算准确率，并单独报告缺失或失败的样本。",
+      "reader": "看到 500 题口径的分数，先确认它是从逐题结果重算的，而不是汇总报告里的百分比。",
+      "cite": [
+        "repo-videodr-benchmark@Evaluation Tools"
+      ]
+    },
+    {
+      "issue": "官方榜单口径与当前数据集不一致",
+      "impact": "榜单仍是 100 题口径（6 个模型、100 题、平均 45.0%、最高 76.0%），而论文主表与当前数据集都是 500 题（最高 53.60%）；把两个数字并列会高估当前最好水平。",
+      "severity": "高",
+      "response": "官方未更新榜单口径；README 已把 100 题发布版标记为历史，并指向 500 题数据集。",
+      "reader": "引用最高分时必须写清是 100 题还是 500 题口径；本页 ladder 与官方结果表都把两种口径分列。",
+      "cite": [
+        "leaderboard-videodr@Leaderboard",
+        "leaderboard-videodr@Submission",
+        "repo-videodr-benchmark@Current Dataset"
+      ]
+    },
+    {
+      "issue": "依赖开放网，复现受检索后端与网页变化影响",
+      "impact": "答案要联网取证，搜索后端、索引与网页内容都会随时间变化；同一模型在不同工具链下分数会漂移。",
+      "severity": "中",
+      "response": "论文说明保留了标注与核验过程中涉及的所有视频和证据网页的本地副本；复现仍需固定检索工具与提示词。",
+      "reader": "跨论文、跨时间的对比要核对检索工具配置，不要只看总分。",
+      "cite": [
+        "arxiv-2601-06943@附录 E",
+        "repo-videodr-benchmark@Quick Start"
+      ]
+    },
+    {
+      "issue": "人工标注成本高，难以快速扩展",
+      "impact": "每个样本都要同时满足视频依赖与网页依赖，还要做双重依赖测试与 5 人盲标定，构建流程耗时。",
+      "severity": "中",
+      "response": "未见官方回应（论文如实说明该限制）。",
+      "reader": "题量短期内不太可能大幅增长，500 题上的统计量有限，单个百分点的差距要谨慎解读。",
+      "cite": [
+        "arxiv-2601-06943@附录 D"
+      ]
+    },
+    {
+      "issue": "Agentic 不允许回看视频",
+      "impact": "协议规定研究过程中不能反复重看，早期视觉锚点一旦漂移，后续检索只能依赖首轮线索；这正是作者归因的 goal drift 与长时程一致性问题。",
+      "severity": "中",
+      "response": "作者在 Workflow 侧把视觉线索外化成可反复访问的文本外部记忆；未见官方对 Agentic 协议的修订。",
+      "reader": "比较两种范式时注意：Agentic 的劣势有一部分来自协议限制，不全是模型能力差异。",
+      "cite": [
+        "arxiv-2601-06943@§3.1",
+        "arxiv-2601-06943@§4.2"
+      ]
+    },
+    {
+      "issue": "单一 LLM 裁判的二值判定",
+      "impact": "用 DeepSeek-V3-0324 判断语义等价，边界情况（数值、计数、大小比较）容易误判；论文错误分析显示数值可靠性是当前多模态模型的持续短板。",
+      "severity": "中",
+      "response": "官方提供逐题判定结果与推理过程（judge_results.csv），可人工复核；未提供多裁判交叉验证。",
+      "reader": "对分数接近的模型，建议抽看 judge_results.csv 的判定理由再下结论。",
+      "cite": [
+        "arxiv-2601-06943@§4.1",
+        "arxiv-2601-06943@§4.3",
+        "repo-videodr-benchmark@Evaluation Tools"
+      ]
+    },
+    {
+      "issue": "视频体积与获取成本",
+      "impact": "Hugging Face 总大小 476 GB，视频需按 1.mp4–500.mp4 自行下载摆放；部分样本备注要求从原始视频切片。",
+      "severity": "低",
+      "response": "数据集卡给出 video_url 与备注字段，便于定位原始视频。",
+      "reader": "本地复现前先算磁盘与带宽成本。",
+      "cite": [
+        "hf-videodr-500@Dataset card",
+        "repo-videodr-benchmark@Current Dataset"
+      ]
+    }
   ],
-  "notes": "Qwen3.8-Max 表 2 出现（73.2，w/ Search；footnote 15 检索工具开启）",
+  "notes": "当前基准 = strike20023/VideoDR（500 题）；Yu2020/VideoDR（100 题）为历史发布版；官方榜单 videodr-benchmark.github.io 仍为 100 题口径。",
   "official_sources": [
     {
       "kind": "paper",
       "url": "https://arxiv.org/abs/2601.06943"
     },
     {
-      "kind": "github",
+      "kind": "repo",
       "url": "https://github.com/QuantaAlpha/VideoDR-Benchmark"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/strike20023/VideoDR"
+    },
+    {
+      "kind": "leaderboard",
+      "url": "https://videodr-benchmark.github.io/"
     },
     {
       "kind": "dataset",
@@ -64,8 +418,418 @@
   "related_benchmarks": [
     "mlvu",
     "video-mme",
-    "browsecomp"
+    "browsecomp",
+    "gaia"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-09-01"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "arxiv-2601-06943",
+        "kind": "paper",
+        "title": "Watching, Reasoning, and Searching: A Video Deep Research Benchmark on Open Web for Agentic Video Reasoning（arXiv:2601.06943v2，2026-05-18）",
+        "url": "https://arxiv.org/abs/2601.06943",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "repo-videodr-benchmark",
+        "kind": "repo",
+        "title": "QuantaAlpha/VideoDR-Benchmark（官方代码、数据说明与评测工具）",
+        "url": "https://github.com/QuantaAlpha/VideoDR-Benchmark",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "leaderboard-videodr",
+        "kind": "leaderboard",
+        "title": "VideoDR 官方排行榜（100 题口径）",
+        "url": "https://videodr-benchmark.github.io/",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "hf-videodr-500",
+        "kind": "dataset",
+        "title": "strike20023/VideoDR（Hugging Face，500 题，当前基准）",
+        "url": "https://huggingface.co/datasets/strike20023/VideoDR",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "hf-videodr",
+        "kind": "dataset",
+        "title": "Yu2020/VideoDR（Hugging Face，100 题，历史发布版）",
+        "url": "https://huggingface.co/datasets/Yu2020/VideoDR",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "论文由兰州大学团队发表（通讯作者 pengh@lzu.edu.cn）；代码、数据与官方榜单由 QuantaAlpha 维护",
+        "cite": [
+          "arxiv-2601-06943@通讯作者",
+          "repo-videodr-benchmark@Contact"
+        ]
+      },
+      "first_release": {
+        "v": "2026-01-11（论文与 100 题基准首发）",
+        "cite": [
+          "repo-videodr-benchmark@News"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "arxiv-2601-06943@Abstract",
+        "arxiv-2601-06943@§3.1",
+        "arxiv-2601-06943@§3.4"
+      ],
+      "interpretation": [
+        "arxiv-2601-06943@§4.2",
+        "arxiv-2601-06943@Abstract"
+      ]
+    },
+    "problem": {
+      "text": "视频问答基准多考「看懂这一段」，而真实场景里关键线索常常在视频里：用户问的是开放域事实问题，要验证的知识既不在视频或其标题里，也散落在庞大且动态变化的开放网页语料中；纯文本 deep research 基准又不考察「从画面里抽出线索」这一步。VideoDR 把 deep research 扩展到以视频为条件的开放域事实问答：模型先抽取并组合多帧视觉锚点，再把它变成可检索的查询，在开放网上取证并做多跳推理。",
+      "cite": [
+        "arxiv-2601-06943@§1",
+        "arxiv-2601-06943@§3.1"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "人类参考（500 题）",
+        "value": "40.22%",
+        "note": "5 名受试者盲答平均；按难度为 81.71% / 49.64% / 11.39%，高难度子集已接近随机水平。",
+        "cite": [
+          "arxiv-2601-06943@§3.3.2",
+          "arxiv-2601-06943@§4.2"
+        ]
+      },
+      {
+        "label": "首版 100 题 · 人类参考",
+        "value": "50.40%",
+        "note": "论文附录 F Table 8/9 的 100 题口径；题量与难度分布和 500 题不同，不可与上一条直接比。",
+        "cite": [
+          "arxiv-2601-06943@附录 F"
+        ]
+      },
+      {
+        "label": "论文 500 题 · Workflow 最好",
+        "value": "51.80%",
+        "note": "Gemini-3.1-pro-preview；同模型 Agentic 为 53.60%，GPT-5.4 为 47.00% / 47.40%。",
+        "cite": [
+          "arxiv-2601-06943@§4.2"
+        ]
+      },
+      {
+        "label": "论文 500 题 · Agentic 最好",
+        "value": "53.60%",
+        "note": "Gemini-3.1-pro-preview；作者结论是 Agentic 并不必然优于 Workflow。",
+        "cite": [
+          "arxiv-2601-06943@§4.2"
+        ]
+      },
+      {
+        "label": "官方榜单最高（100 题口径）",
+        "value": "76.00%",
+        "note": "Agentic+Gemini-3-pro-preview；榜单共 6 个模型、100 题，平均 45.0%。与上面的 500 题口径不可比。",
+        "cite": [
+          "leaderboard-videodr@Leaderboard"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把官方榜单的 76.00% 和论文的 53.60% 排在一起——前者是 100 题口径，后者是 500 题口径，题量和难度分布都不同。",
+        "cite": [
+          "leaderboard-videodr@Leaderboard",
+          "repo-videodr-benchmark@Current Dataset"
+        ]
+      },
+      {
+        "text": "看到 Agentic 分数更高就断言「端到端智能体更强」——作者明确结论是不必然更优，增益取决于模型能否在长检索链里守住最初的视觉锚点。",
+        "cite": [
+          "arxiv-2601-06943@§4.2"
+        ]
+      },
+      {
+        "text": "直接用官方汇总报告的百分比当 500 题准确率——汇总报告分母固定为 100，会算错。",
+        "cite": [
+          "repo-videodr-benchmark@Evaluation Tools"
+        ]
+      },
+      {
+        "text": "把 500 题的人类 40.22% 和 100 题的人类 50.40% 当成同一回事——两批题的难度分布不同，高难度样本占比更高。",
+        "cite": [
+          "arxiv-2601-06943@§3.3.2",
+          "arxiv-2601-06943@附录 F"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "论文由兰州大学团队发表（通讯作者 pengh@lzu.edu.cn）；代码、数据与官方榜单由 QuantaAlpha 维护",
+        "cite": [
+          "arxiv-2601-06943@通讯作者",
+          "repo-videodr-benchmark@Contact"
+        ]
+      },
+      {
+        "k": "论文",
+        "v": "arXiv:2601.06943v2（cs.CV，2026-05-18），标题 Watching, Reasoning, and Searching: A Video Deep Research Benchmark on Open Web for Agentic Video Reasoning",
+        "cite": [
+          "arxiv-2601-06943@标题页",
+          "arxiv-2601-06943@v2 页眉"
+        ]
+      },
+      {
+        "k": "数据",
+        "v": "当前基准 strike20023/VideoDR（500 题，CC BY 4.0，CSV + 视频）；历史发布版 Yu2020/VideoDR（100 题）",
+        "cite": [
+          "hf-videodr-500@Dataset card",
+          "hf-videodr@Dataset card",
+          "repo-videodr-benchmark@Current Dataset"
+        ]
+      },
+      {
+        "k": "代码",
+        "v": "GitHub QuantaAlpha/VideoDR-Benchmark：videoDR-Agent/ 是基于 LangGraph 的智能体与工作流基线、配置与评测运行器，llm_as_judge/ 是判分与失败分析工具；代码 MIT",
+        "cite": [
+          "repo-videodr-benchmark@Repository Structure",
+          "repo-videodr-benchmark@License"
+        ]
+      },
+      {
+        "k": "榜单",
+        "v": "videodr-benchmark.github.io，邮件提交；提交需报告总体与分层准确率并附全部预测轨迹，目前仍为 100 题口径",
+        "cite": [
+          "leaderboard-videodr@Submission",
+          "leaderboard-videodr@Leaderboard"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2026-01-11 论文与基准首发 → 01-12 数据发布 → 01-14 CSV 增加 Category/Difficulty 标签 → 01-15 官方榜单上线 → 01-19 更新两种范式代码 → 05-18 论文 v2 → 05-19 扩充到 500 题",
+        "cite": [
+          "repo-videodr-benchmark@News",
+          "arxiv-2601-06943@v2 页眉"
+        ]
+      },
+      {
+        "k": "许可",
+        "v": "代码 MIT；外部数据集、源视频等第三方材料遵循各自许可，代码许可不覆盖这些材料；500 题数据集卡为 CC BY 4.0",
+        "cite": [
+          "repo-videodr-benchmark@License",
+          "hf-videodr-500@Dataset card"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-14",
+        "columns": [
+          "来源",
+          "模型",
+          "范式",
+          "准确率",
+          "口径 / 备注"
+        ],
+        "rows": [
+          [
+            "论文 Table 1",
+            "Gemini-3.1-pro-preview",
+            "Workflow",
+            "51.80%",
+            "500 题；难度 78.57 / 63.74 / 28.57"
+          ],
+          [
+            "论文 Table 1",
+            "Gemini-3.1-pro-preview",
+            "Agentic",
+            "53.60%",
+            "500 题；难度 84.82 / 62.57 / 30.41"
+          ],
+          [
+            "论文 Table 1",
+            "GPT-5.4",
+            "Workflow",
+            "47.00%",
+            "500 题"
+          ],
+          [
+            "论文 Table 1",
+            "GPT-5.4",
+            "Agentic",
+            "47.40%",
+            "500 题"
+          ],
+          [
+            "论文 Table 1",
+            "Qwen3.5-35B-A3B",
+            "Workflow",
+            "35.00%",
+            "500 题"
+          ],
+          [
+            "论文 Table 1",
+            "Qwen3.5-35B-A3B",
+            "Agentic",
+            "34.60%",
+            "500 题"
+          ],
+          [
+            "论文 Table 1",
+            "Gemma-4-31B-it",
+            "Workflow",
+            "31.60%",
+            "500 题"
+          ],
+          [
+            "论文 Table 1",
+            "Gemma-4-31B-it",
+            "Agentic",
+            "33.60%",
+            "500 题"
+          ],
+          [
+            "论文 Table 1",
+            "GLM-4.6V-Flash",
+            "Workflow",
+            "17.80%",
+            "500 题"
+          ],
+          [
+            "论文 Table 1",
+            "GLM-4.6V-Flash",
+            "Agentic",
+            "21.80%",
+            "500 题"
+          ],
+          [
+            "论文 Table 1",
+            "InternVL3.5-14B",
+            "Workflow",
+            "16.00%",
+            "500 题"
+          ],
+          [
+            "论文 Table 1",
+            "InternVL3.5-14B",
+            "Agentic",
+            "15.40%",
+            "500 题"
+          ],
+          [
+            "论文 Table 1",
+            "人类（5 人盲答）",
+            "—",
+            "40.22%",
+            "500 题；难度 81.71 / 49.64 / 11.39"
+          ],
+          [
+            "论文附录 F Table 8",
+            "人类（5 人盲答）",
+            "—",
+            "50.40%",
+            "100 题口径"
+          ],
+          [
+            "官方榜单",
+            "Gemini-3-pro-preview",
+            "Agentic",
+            "76.00%",
+            "100 题口径；Think 2.89 / Search 2.52 / 449.44s"
+          ],
+          [
+            "官方榜单",
+            "Gemini-3-pro-preview",
+            "Workflow",
+            "69.00%",
+            "100 题口径"
+          ],
+          [
+            "官方榜单",
+            "GPT-5.2",
+            "Workflow",
+            "69.00%",
+            "100 题口径"
+          ],
+          [
+            "官方榜单",
+            "GPT-5.2",
+            "Agentic",
+            "69.00%",
+            "100 题口径"
+          ],
+          [
+            "官方榜单",
+            "GPT-4o",
+            "Agentic",
+            "43.00%",
+            "100 题口径"
+          ],
+          [
+            "官方榜单",
+            "GPT-4o",
+            "Workflow",
+            "42.00%",
+            "100 题口径"
+          ],
+          [
+            "官方榜单",
+            "Qwen3-Omni-30B-A3B",
+            "Workflow",
+            "37.00%",
+            "100 题口径"
+          ],
+          [
+            "官方榜单",
+            "Qwen3-Omni-30B-A3B",
+            "Agentic",
+            "37.00%",
+            "100 题口径"
+          ],
+          [
+            "官方榜单",
+            "InternVL3.5-14B",
+            "Agentic",
+            "30.00%",
+            "100 题口径"
+          ],
+          [
+            "官方榜单",
+            "InternVL3.5-14B",
+            "Workflow",
+            "27.00%",
+            "100 题口径"
+          ],
+          [
+            "官方榜单",
+            "MiniCPM-V 4.5",
+            "Workflow",
+            "25.00%",
+            "100 题口径"
+          ],
+          [
+            "官方榜单",
+            "MiniCPM-V 4.5",
+            "Agentic",
+            "16.00%",
+            "100 题口径"
+          ]
+        ]
+      },
+      "cite": [
+        "arxiv-2601-06943@Table 1",
+        "arxiv-2601-06943@附录 F",
+        "leaderboard-videodr@Leaderboard"
+      ]
+    }
+  }
 }

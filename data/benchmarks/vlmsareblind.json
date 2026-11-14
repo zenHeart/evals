@@ -1,28 +1,339 @@
 {
   "id": "vlmsareblind",
   "name": "VLMsAreBlind",
-  "full_name": null,
-  "aliases": [],
-  "status": null,
+  "full_name": "BlindTest（Vision language models are blind）",
+  "aliases": [
+    "VLMs Are Blind",
+    "vision-llms-are-blind",
+    "BlindTest"
+  ],
+  "status": "active",
   "categories": [
     "multimodal"
   ],
-  "summary": "简单几何图形视觉盲点测试",
-  "interpretation": "BlindTest：7 类对人类近乎平凡的几何图形任务（圆相交/字母圈选等），准确率计分；SOTA 平均仅 58.07%、最好 77.84%，人类预期 100%。",
-  "measures": [],
-  "does_not_measure": [],
+  "summary": "BlindTest 是 7 个对人类近乎平凡的底层几何视觉任务：数两条折线相交几次、判断两个圆是相交还是相切、说出被红圈圈住的是哪个字母、数奥运五环式重叠图形有几个、数嵌套方块有几层、数表格有几行几列、数地铁图里有几条纯色路径。模型只要给出一个数字或 Yes/No，但四个当时的 SOTA VLM 平均只有 58.07%，最好的 Claude 3.5 Sonnet 也只有 77.84%，远低于论文预期的人类水平。",
+  "interpretation": "高分说明模型在图形紧密贴合、边缘互相遮挡时仍然数得清几何基元——这正是当前 VLM 的集体短板，所以它更像一个「视觉健全性检查」而不是能力榜。低分只代表低层视觉有缺陷，不代表看不懂照片或不会推理：论文的线性探测显示视觉编码器里的信息是够的（CLIP 投影层前 ≥ 99.47%，SigLIP 变体 100%），瓶颈在语言模型没能把这些低层特征解成正确的语言输出。反过来，把字母或形状之间的间距加大，多数模型就能接近满分。",
+  "measures": [
+    {
+      "area": "任务 1 · 数两条折线的交点",
+      "focus": "同一张大画布上画两条各由两段组成的折线，问它们相交几次（0 / 1 / 2）；折线坐标从隐形 12×12 网格随机采样，画布边长取 384 / 768 / 1152 px",
+      "share": "37.0%",
+      "format": "整数答案，论文要求写成花括号形式（如 {1}）",
+      "cite": [
+        "arxiv-2407-06581@§3.1",
+        "arxiv-2407-06581@Fig. 7"
+      ]
+    },
+    {
+      "area": "任务 2 · 两个圆是相交还是相切",
+      "focus": "两个等大实心圆，边界间距从负值（重叠）连续取到正值（分离），覆盖重叠 / 相切 / 分离三种关系，共四种朝向；问「两个圆是否接触」",
+      "share": "15.8%",
+      "format": "Yes / No 二分类",
+      "cite": [
+        "arxiv-2407-06581@§3.2",
+        "github-repo@README"
+      ]
+    },
+    {
+      "area": "任务 3 · 被圈住的是哪个字母",
+      "focus": "在 Acknowledgement（15 字母）、Subdermatoglyphic（17 字母）和随机串 tHyUiKaRbNqWeOpXcZvM（20 字母）上逐个字母套红圈，问圈中的是哪一个；3 种红线宽 × 2 种字体 × 4 种内边距",
+      "share": "25.7%",
+      "format": "单个字母",
+      "cite": [
+        "arxiv-2407-06581@§3.3"
+      ]
+    },
+    {
+      "area": "任务 4 · 数重叠的圆（同一实验再用五边形做一遍）",
+      "focus": "5–9 个等大圆排成两行、互相重叠（奥运五环式），问有几个圆；论文用五边形重复整套实验以验证结论可迁移，因此榜单里这个任务占两列",
+      "share": "9.9%",
+      "format": "整数答案",
+      "cite": [
+        "arxiv-2407-06581@§3.4",
+        "arxiv-2407-06581@Table 1"
+      ]
+    },
+    {
+      "area": "任务 5 · 数嵌套方块",
+      "focus": "2–5 个正方形从大到小依次嵌套、边与边不相交，问有几层；线宽取 3 / 4 / 6 px，每档 10 张",
+      "share": "2.5%",
+      "format": "整数答案",
+      "cite": [
+        "arxiv-2407-06581@§3.5"
+      ]
+    },
+    {
+      "area": "任务 6 · 数表格的行数和列数",
+      "focus": "N×N、N×N+1 等网格（含 10×10 以平衡行列规模），既有空表格也有每格填一个随机英文词的表格；画布取 500 / 1250 / 2000 px，两种线宽",
+      "share": "5.4%",
+      "format": "两个整数（行数、列数）",
+      "cite": [
+        "arxiv-2407-06581@§3.6"
+      ]
+    },
+    {
+      "area": "任务 7 · 数单色路径",
+      "focus": "简化地铁图，四个固定站点 A / B / C / D，每站有 1–3 条出边，问从一站到另一站有几条纯色路径；画布取 512 / 1024 px",
+      "share": "3.7%",
+      "format": "整数答案",
+      "cite": [
+        "arxiv-2407-06581@§3.7"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "高层视觉理解与知识问答：论文把它定位成第一个「低层视觉健全性检查」，与 MMLU、AI2D、ChartQA 这类基准是分工关系，不是替代关系",
+      "cite": [
+        "arxiv-2407-06581@§7"
+      ]
+    },
+    {
+      "text": "推理与思维链能力：论文明确说这些任务不需要慢思考，实测两个 SOTA 慢思考模型都不比同代非思考版本好",
+      "cite": [
+        "arxiv-2407-06581@§4.7",
+        "arxiv-2407-06581@Table 4"
+      ]
+    },
+    {
+      "text": "提示词工程的上限：2-shot 示例、思维链和 meta-prompting 都不比论文的基线提示词好",
+      "cite": [
+        "arxiv-2407-06581@App. D.1",
+        "arxiv-2407-06581@§8"
+      ]
+    },
+    {
+      "text": "污染与背诵：题目是从零设计、发布前不存在于互联网的新题，且不需要世界知识，靠记忆或无视输入图像几乎不可能答对",
+      "cite": [
+        "arxiv-2407-06581@§8"
+      ]
+    },
+    {
+      "text": "自然图像理解：全部题面都是程序渲染的几何图形，不涉及照片、场景或真实文档",
+      "cite": [
+        "arxiv-2407-06581@§3.1",
+        "arxiv-2407-06581@§7"
+      ]
+    }
+  ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
+    "sample_count": 4860,
+    "splits": [
+      "无训练 / 测试划分，全量一次评测",
+      "Hugging Face 镜像：单一 valid split，8,016 行"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "程序化生成（按参数网格渲染几何图形，无人工出题）",
+    "public_sample": true,
+    "totals": "7 个任务共 4,860 张图（按论文 §3.1–§3.7 各任务题量相加：1,800 + 768 + 1,248 + 480 + 120 + 264 + 180；论文未直接给出总数）· 每张图配两个语义等价的问句 · 官方 Hugging Face 镜像为 8,016 行、单一 valid split、parquet 格式、83.5 MB · 题面语言为英文",
+    "cite": [
+      "arxiv-2407-06581@§3.1",
+      "arxiv-2407-06581@§3.2",
+      "arxiv-2407-06581@§3.3",
+      "arxiv-2407-06581@§3.4",
+      "arxiv-2407-06581@§3.5",
+      "arxiv-2407-06581@§3.6",
+      "arxiv-2407-06581@§3.7",
+      "vlmsareblind-hf@Dataset card"
+    ],
+    "construction": [
+      {
+        "k": "程序化生成，不出人题",
+        "text": "题目不是人写的，而是按参数网格渲染：折线坐标从隐形 12×12 网格随机采样，圆的直径与间距、方块边长、线宽、画布尺寸、内边距都在离散集合里取值，并配垂直翻转等变体，保证覆盖「重叠 / 相切 / 分离」三种关系。",
+        "cite": [
+          "arxiv-2407-06581@§3.1",
+          "arxiv-2407-06581@§3.2",
+          "arxiv-2407-06581@§3.4"
+        ]
+      },
+      {
+        "k": "每图两问，取平均",
+        "text": "每张测试图配两个措辞不同、语义等价的问题，论文报告的是这两个提示词上的平均准确率，用来抵消提示词的偶然性。",
+        "cite": [
+          "arxiv-2407-06581@§2",
+          "arxiv-2407-06581@§4.1"
+        ]
+      },
+      {
+        "k": "8 列而不是 7 列",
+        "text": "论文对「数重叠形状」同时用圆和五边形各做一遍，Table 1 因此有 8 个任务列；榜单的 Task mean 是这 8 列的未加权平均（本站复算：(56.84 + 86.70 + 79.36 + 39.44 + 30.99 + 74.99 + 47.35 + 48.90) / 8 = 58.07），与各任务图片数量无关。上方 measures 的 share 是题量占比，不是分数权重。",
+        "cite": [
+          "arxiv-2407-06581@Table 1",
+          "arxiv-2407-06581@§3.4"
+        ]
+      },
+      {
+        "k": "图片与提示词全部公开",
+        "text": "图片按任务放在 GitHub 仓库的 src/{task} 目录，提示词集中在 prompts.md；官方复现说明要求用默认 API 设置或官方 playground，不要用模型网页界面。",
+        "cite": [
+          "github-repo@README"
+        ]
+      }
+    ]
   },
-  "metrics": [],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [],
-  "notes": "字节 Seed 引用",
+  "metrics": [
+    {
+      "id": "accuracy",
+      "name": "准确率",
+      "direction": "越高越好",
+      "description": "从模型回答里解析出最终答案（数字或 Yes/No）并与标准答案比对后的正确率，每个模型按两个等价提示词取平均",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2407-06581@§4.1",
+        "arxiv-2407-06581@Table 1"
+      ]
+    }
+  ],
+  "default_protocol": {
+    "raw": "每张图用两个语义等价的提示词提问，从回答中解析出最终答案（数字或 Yes/No，论文示例要求写成花括号形式）与标准答案比对，报告准确率。四个闭源模型全部走官方 API（OpenAI / Google / Anthropic）的默认设置：GPT-4o 为 gpt-4o-2024-05-13、temperature 1.0、detail auto；Gemini-1.5 Pro、Claude 3 Sonnet、Claude 3.5 Sonnet 均用默认设置。",
+    "cite": [
+      "arxiv-2407-06581@§4.1",
+      "arxiv-2407-06581@App. A",
+      "arxiv-2407-06581@Fig. 7"
+    ],
+    "variants": [
+      {
+        "text": "网页界面 ≠ API：官方明确警告用 chatgpt.com 等网页界面可能得到很不一样的结果，附录 A 还记录 perplexity.ai 与 gemini.google.com 上的同款模型更差；复现必须用默认 API 设置或官方 playground。",
+        "cite": [
+          "github-repo@README",
+          "arxiv-2407-06581@App. A"
+        ]
+      },
+      {
+        "text": "任务 4 的圆与五边形在 Table 1 里占两列。按 8 列未加权平均得到 58.07%；若先把两列合成一个任务再按 7 个任务平均，会得到另一个数，两种口径不能混用。",
+        "cite": [
+          "arxiv-2407-06581@Table 1",
+          "arxiv-2407-06581@§3.4"
+        ]
+      },
+      {
+        "text": "慢思考模型要和同代非思考模型分开比：Gemini 2.0 Flash-Thinking 71.59% 对 Gemini 2.0 Flash 72.75%，QVQ 比 Qwen2-VL 低 11.65 分。",
+        "cite": [
+          "arxiv-2407-06581@§4.7",
+          "arxiv-2407-06581@Table 4"
+        ]
+      },
+      {
+        "text": "简化版（加大字母 / 形状间距、减少地铁图转弯）是另一个口径：多数模型在这种版本上接近满分，Sonnet-3.5 在圈字母任务上加 3 个空格达到 95%，不能与原版分数混排。",
+        "cite": [
+          "arxiv-2407-06581@§5.1"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2024-07-09",
+      "label": "arXiv v1 首发（会议版）。项目站与 GitHub README 用的是这一版数字：均值 58.57% / 58.12%，最佳模型 74.94%",
+      "cite": [
+        "arxiv-2407-06581@Submission history",
+        "project-site@摘要",
+        "github-repo@README"
+      ]
+    },
+    {
+      "id": "hf-mirror",
+      "date": "2024-07-09",
+      "label": "Hugging Face 数据集 XAI/vlmsareblind 上线：8,016 行、单一 valid split、parquet、83.5 MB",
+      "cite": [
+        "vlmsareblind-hf@Dataset card"
+      ]
+    },
+    {
+      "id": "accv2024",
+      "date": "2024-12",
+      "label": "ACCV 2024 口头报告（站点标注 Accepted for Oral Presentation；具体会期来源未给出）",
+      "cite": [
+        "project-site@头部",
+        "github-repo@README"
+      ]
+    },
+    {
+      "id": "v6",
+      "date": "2025-03-27",
+      "label": "arXiv v6 期刊版（本页核对所用版本）：均值 58.07%、Sonnet-3.5 77.84%，并新增开源模型、慢思考模型、线性探测与简化版实验",
+      "cite": [
+        "arxiv-2407-06581@Submission history",
+        "arxiv-2407-06581@Table 1"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "三套数字口径不一致",
+      "impact": "同一个 benchmark 有三个均值：论文 v6 58.07%、项目站 58.57%、GitHub README 58.12%；最佳模型同样有 77.84%（论文）/ 74.94%（站点表格与 README）/ 74.01%（站点摘要）三个值，站点摘要甚至与自家表格不一致。引用时不标版本几乎必然对不上。",
+      "severity": "高",
+      "response": "以 arXiv v6（2025-03-27 期刊版）为准；本页阶梯与附录 B 每一行都标注了取自哪一版。",
+      "reader": "看到 58% 附近的数字先问是哪个版本；跨版本比较没有意义。",
+      "cite": [
+        "arxiv-2407-06581@Table 1",
+        "project-site@摘要",
+        "github-repo@README"
+      ]
+    },
+    {
+      "issue": "「人类 100%」是预期而非实测",
+      "impact": "论文没有做人类被试实验，100% 只是作者的预期（原话是 expected 100% accuracy、5 岁孩子能解）。把它当作实测人类基线引用会夸大模型与人的差距。",
+      "severity": "高",
+      "response": "论文只给出定性论证，未报告人类准确率；本站不补测，也不把这个数写成人类成绩。",
+      "reader": "引用时写「人类预期接近 100%」，不要写「人类 100%」。",
+      "cite": [
+        "arxiv-2407-06581@Table 1",
+        "arxiv-2407-06581@§7"
+      ]
+    },
+    {
+      "issue": "任务量小且分布极不均",
+      "impact": "7 个任务共 4,860 张图，最小的任务只有 120 张；而榜单均值是 8 列的未加权平均，每个任务对总分贡献相同，120 张图的任务和 1,800 张图的任务权重一样，小样本任务上的波动会被等量放大到总分。",
+      "severity": "中",
+      "response": "论文按 8 列取未加权均值并在表注说明随机基底的算法，未对任务加权，也未报告置信区间。",
+      "reader": "总分容易掩盖「哪个任务崩了」，建议按任务列看：例如 Sonnet-3 在数嵌套方块上只有 1.87%。",
+      "cite": [
+        "arxiv-2407-06581@Table 1",
+        "arxiv-2407-06581@§3.5"
+      ]
+    },
+    {
+      "issue": "模型代际老化",
+      "impact": "Table 1 评的是 2024 年中的 GPT-4o、Gemini-1.5 Pro、Claude 3 Sonnet、Claude 3.5 Sonnet，附录补测的也是 Gemini 2.0 Flash、Qwen2-VL、QVQ 这一代；今天的前沿模型分数无法从本页推断。",
+      "severity": "中",
+      "response": "论文 v6 追加了开源与慢思考模型，但没有持续更新榜单；项目站与 README 停留在会议版。",
+      "reader": "不要把本页数字当作当前 SOTA 的衡量，只把它当作「这一类缺陷确实存在」的证据。",
+      "cite": [
+        "arxiv-2407-06581@App. A",
+        "arxiv-2407-06581@App. C"
+      ]
+    },
+    {
+      "issue": "复现口径敏感",
+      "impact": "官方明确说用网页界面（chatgpt.com 等）会得到很不一样的结果，附录 A 还记录 perplexity.ai、gemini.google.com 上的同款模型更差；默认 temperature = 1 也会带来波动。",
+      "severity": "中",
+      "response": "README 给出复现步骤（默认 API 设置或官方 playground）并说明 temperature = 1 会带来变异；论文在附录 A 逐一列出各模型的 API 版本与温度。",
+      "reader": "自测数字和论文不一致时，先检查是不是走了网页界面或改了 temperature。",
+      "cite": [
+        "github-repo@README",
+        "arxiv-2407-06581@App. A"
+      ]
+    },
+    {
+      "issue": "只测底层几何，结论不可外推",
+      "impact": "BlindTest 只覆盖线、圆、方、网格、地铁路径五类基元，不测自然图像理解和高层视觉问答；论文自己也把它定位成健全性检查，并用 ARC 作对照说明两者的分工。",
+      "severity": "低",
+      "response": "论文在 §7 说明 BlindTest 直接评测对基本几何图形的识别，而 ARC 是在「已经认出图形」的前提下考推理。",
+      "reader": "低分只说明低层视觉有缺陷，不能推断模型看不懂照片或不会做视觉推理。",
+      "cite": [
+        "arxiv-2407-06581@§7"
+      ]
+    }
+  ],
+  "notes": "ACCV 2024 口头报告；期刊版 v6 补了开源模型、慢思考模型与线性探测",
   "official_sources": [
     {
       "kind": "paper",
@@ -30,10 +341,404 @@
     },
     {
       "kind": "site",
-      "url": "https://seed.bytedance.com/en/blog/official-release-of-seed1-8-a-generalized-agentic-model"
+      "url": "https://vlmsareblind.github.io/"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/anguyen8/vision-llms-are-blind"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/XAI/vlmsareblind"
     }
   ],
-  "related_benchmarks": [],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "related_benchmarks": [
+    "mmmu",
+    "ai2d",
+    "chartqa",
+    "docvqa",
+    "blink",
+    "cv-bench"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "arxiv-2407-06581",
+        "kind": "paper",
+        "title": "Vision language models are blind: Failing to translate detailed visual features into words（arXiv:2407.06581，v6，2025-03-27）",
+        "url": "https://arxiv.org/abs/2407.06581",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "project-site",
+        "kind": "site",
+        "title": "vlmsareblind.github.io 项目站（ACCV 2024 会议版结果）",
+        "url": "https://vlmsareblind.github.io",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "github-repo",
+        "kind": "repo",
+        "title": "anguyen8/vision-llms-are-blind（README、图片与 prompts.md，MIT）",
+        "url": "https://github.com/anguyen8/vision-llms-are-blind",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "vlmsareblind-hf",
+        "kind": "dataset",
+        "title": "XAI/vlmsareblind（Hugging Face 数据集镜像）",
+        "url": "https://huggingface.co/datasets/XAI/vlmsareblind",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Auburn University × University of Alberta（论文作者单位；数据集镜像挂在 Hugging Face XAI 组织下）",
+        "cite": [
+          "github-repo@README",
+          "vlmsareblind-hf@Dataset card"
+        ]
+      },
+      "first_release": {
+        "v": "2024-07-09（arXiv v1；同日在 Hugging Face 上线数据集）",
+        "cite": [
+          "arxiv-2407-06581@Submission history",
+          "vlmsareblind-hf@Dataset card"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "arxiv-2407-06581@摘要",
+        "arxiv-2407-06581@Table 1"
+      ],
+      "interpretation": [
+        "arxiv-2407-06581@§6",
+        "arxiv-2407-06581@Table 1"
+      ]
+    },
+    "problem": {
+      "text": "当时的 VLM 在 MMLU、AI2D、ChartQA 这类高层视觉基准上分数很高，作者于是反向提问：这些分数有多少是靠「根本不用看图」拿到的？论文引用前人统计称 MMMU 里 42.9% 的题即使不给输入图像也能定答案。BlindTest 用 7 个对人类近乎平凡的几何任务，把「有没有真的看清紧密贴合的几何基元」单独测出来。",
+      "cite": [
+        "arxiv-2407-06581@§1",
+        "arxiv-2407-06581@§7"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机猜测基线",
+        "value": "24.00%",
+        "note": "论文按「每个任务都是单标签 N 路分类」计算的随机水平；各任务随机基线从 4.55%（任务 7）到 50.00%（任务 2）不等。",
+        "cite": [
+          "arxiv-2407-06581@Table 1"
+        ]
+      },
+      {
+        "label": "四个闭源 VLM 均值（Table 1 Task mean）",
+        "value": "58.07%",
+        "note": "8 个任务列（任务 4 的圆与五边形各占一列）的未加权平均；同期论文附录 C 表 T1 的 Mean 行（4 闭源 + 8 开源共 12 个模型）为 42.28%，本站按表中数字复算一致。",
+        "cite": [
+          "arxiv-2407-06581@Table 1",
+          "arxiv-2407-06581@App. C"
+        ]
+      },
+      {
+        "label": "开源最佳（LLaVA-OneV-72B-ov）",
+        "value": "45.92%",
+        "note": "与 Claude 3 Sonnet 的 45.73% 基本持平；同一家族从 0.5B 到 72B 提升 +27.1（18.82 → 45.92）。",
+        "cite": [
+          "arxiv-2407-06581@App. C"
+        ]
+      },
+      {
+        "label": "论文最佳（Claude 3.5 Sonnet）",
+        "value": "77.84%",
+        "note": "Table 1 四个闭源模型里最高；慢思考模型最高只有 71.59%（Gemini 2.0 Flash-Thinking）。",
+        "cite": [
+          "arxiv-2407-06581@Table 1",
+          "arxiv-2407-06581@Table 4"
+        ]
+      },
+      {
+        "label": "人类预期",
+        "value": "接近 100%（预期，非实测）",
+        "note": "论文只做定性论证（5 岁孩子能解），没有人类被试实验；本站不把这个数当作实测人类基线。",
+        "cite": [
+          "arxiv-2407-06581@§7"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 58% 附近的不同数字混着引：58.07%（论文 v6）/ 58.57%（项目站）/ 58.12%（GitHub README）是三套口径。",
+        "cite": [
+          "arxiv-2407-06581@Table 1",
+          "project-site@摘要",
+          "github-repo@README"
+        ]
+      },
+      {
+        "text": "把「人类 100%」当成实测人类准确率——论文没有做人类实验，这只是作者的预期。",
+        "cite": [
+          "arxiv-2407-06581@§7"
+        ]
+      },
+      {
+        "text": "以为 7 个任务就是 7 列均值：Table 1 实际是 8 列（任务 4 的圆和五边形分开），按 7 列平均会得到另一个数。",
+        "cite": [
+          "arxiv-2407-06581@Table 1",
+          "arxiv-2407-06581@§3.4"
+        ]
+      },
+      {
+        "text": "以为慢思考或更长推理能补上：两个 SOTA 慢思考模型都不比同代非思考版本好。",
+        "cite": [
+          "arxiv-2407-06581@§4.7",
+          "arxiv-2407-06581@Table 4"
+        ]
+      },
+      {
+        "text": "以为是提示词没写好：2-shot、思维链和 meta-prompting 都不比基线提示词好；反过来，把字母间距加大，Sonnet-3.5 能到 95%。",
+        "cite": [
+          "arxiv-2407-06581@App. D.1",
+          "arxiv-2407-06581@§5.1"
+        ]
+      },
+      {
+        "text": "用网页界面（chatgpt.com 等）自测后质疑论文数字——官方明确警告过这条路数不可比。",
+        "cite": [
+          "github-repo@README"
+        ]
+      },
+      {
+        "text": "把低分理解成「模型没有视觉能力」：线性探测显示视觉编码器里信息是够的，问题出在语言模型解不出这些信息。",
+        "cite": [
+          "arxiv-2407-06581@§6"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "论文与发表",
+        "v": "Vision language models are blind: Failing to translate detailed features into words；ACCV 2024 口头报告，arXiv v6（2025-03-27）为期刊版",
+        "cite": [
+          "arxiv-2407-06581@Submission history",
+          "project-site@头部"
+        ]
+      },
+      {
+        "k": "作者与单位",
+        "v": "Pooyan Rahmanzadehgervi、Logan Bolton（共同一作）、Mohammad Reza Taesiri、Anh Totti Nguyen；Auburn University 与 University of Alberta",
+        "cite": [
+          "github-repo@README"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2024-07-09 arXiv v1 与 Hugging Face 数据集上线 → 2024-12 ACCV 2024 口头报告 → 2025-03-27 arXiv v6 期刊版",
+        "cite": [
+          "arxiv-2407-06581@Submission history",
+          "vlmsareblind-hf@Dataset card",
+          "project-site@头部"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "图片与 prompts.md 在 GitHub anguyen8/vision-llms-are-blind（MIT）；Hugging Face XAI/vlmsareblind 提供 parquet 镜像（8,016 行）",
+        "cite": [
+          "github-repo@README",
+          "vlmsareblind-hf@Dataset card"
+        ]
+      },
+      {
+        "k": "核心结论",
+        "v": "视觉编码器里的信息是够的——CLIP 投影层前线性探测 ≥ 99.47%，SigLIP 变体 100%——瓶颈在语言模型没能把这些低层特征解成正确的语言输出",
+        "cite": [
+          "arxiv-2407-06581@§6"
+        ]
+      },
+      {
+        "k": "反直觉发现",
+        "v": "只要把字母或形状之间的间距加大，多数模型就能接近满分：Sonnet-3.5 在圈字母任务上加 3 个空格达到 95%",
+        "cite": [
+          "arxiv-2407-06581@§5.1"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-14",
+        "columns": [
+          "来源",
+          "模型",
+          "参数量",
+          "任务均值 (%)",
+          "口径"
+        ],
+        "rows": [
+          [
+            "论文 Table 1",
+            "随机基线",
+            "—",
+            "24.00",
+            "按单标签 N 路分类计算"
+          ],
+          [
+            "论文 Table 1",
+            "GPT-4o",
+            "未披露",
+            "50.23",
+            "闭源 API，temperature 1.0"
+          ],
+          [
+            "论文 Table 1",
+            "Gemini-1.5 Pro",
+            "未披露",
+            "58.48",
+            "闭源 API，默认设置"
+          ],
+          [
+            "论文 Table 1",
+            "Claude 3 Sonnet",
+            "未披露",
+            "45.73",
+            "闭源 API，默认设置"
+          ],
+          [
+            "论文 Table 1",
+            "Claude 3.5 Sonnet",
+            "未披露",
+            "77.84",
+            "闭源 API，默认设置"
+          ],
+          [
+            "论文 Table 1",
+            "四模型均值",
+            "—",
+            "58.07",
+            "8 个任务列未加权平均"
+          ],
+          [
+            "论文 Table 4",
+            "Gemini 2.0 Flash",
+            "未披露",
+            "72.75",
+            "非思考版"
+          ],
+          [
+            "论文 Table 4",
+            "Gemini 2.0 Flash-Thinking",
+            "未披露",
+            "71.59",
+            "慢思考版"
+          ],
+          [
+            "论文 Table 4",
+            "Qwen2-VL",
+            "72B",
+            "54.13",
+            "非思考版"
+          ],
+          [
+            "论文 Table 4",
+            "QVQ-Preview",
+            "72B",
+            "42.48",
+            "慢思考版"
+          ],
+          [
+            "论文 Table T1",
+            "LLaVA-OneV-ov 72B",
+            "72B",
+            "45.92",
+            "开源最佳"
+          ],
+          [
+            "论文 Table T1",
+            "LLaVA-OneV-si 7B",
+            "7B",
+            "40.00",
+            "开源"
+          ],
+          [
+            "论文 Table T1",
+            "LLaVA-OneV-ov 7B",
+            "7B",
+            "39.17",
+            "开源"
+          ],
+          [
+            "论文 Table T1",
+            "LLaVA-OneV-si 72B",
+            "72B",
+            "38.41",
+            "开源"
+          ],
+          [
+            "论文 Table T1",
+            "InternVL-2",
+            "8B",
+            "40.76",
+            "开源"
+          ],
+          [
+            "论文 Table T1",
+            "LLaVA-OneV-si 0.5B",
+            "0.5B",
+            "23.03",
+            "开源"
+          ],
+          [
+            "论文 Table T1",
+            "Phi-3.5-vision",
+            "4.2B",
+            "29.01",
+            "开源"
+          ],
+          [
+            "论文 Table T1",
+            "LLaVA-OneV-ov 0.5B",
+            "0.5B",
+            "18.82",
+            "开源最小"
+          ],
+          [
+            "论文 Table T1",
+            "Mean 行（4 闭源 + 8 开源）",
+            "—",
+            "42.28",
+            "附录 C 表中 12 个模型的平均"
+          ],
+          [
+            "项目站结果表",
+            "四模型均值",
+            "—",
+            "58.57",
+            "ACCV 会议版"
+          ],
+          [
+            "项目站结果表",
+            "最佳模型（Claude 3.5 Sonnet）",
+            "未披露",
+            "74.94",
+            "ACCV 会议版"
+          ]
+        ]
+      },
+      "cite": [
+        "arxiv-2407-06581@Table 1",
+        "arxiv-2407-06581@Table 4",
+        "arxiv-2407-06581@App. C",
+        "project-site@结果表"
+      ]
+    }
+  }
 }

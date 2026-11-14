@@ -1,27 +1,617 @@
 {
   "id": "spider",
   "name": "Spider",
-  "full_name": null,
-  "aliases": [],
-  "status": null,
+  "full_name": "Spider 1.0（Yale 复杂跨域语义解析与文本转 SQL 数据集）",
+  "aliases": [
+    "Spider 1.0"
+  ],
+  "status": "near-saturation",
   "categories": [
     "coding"
   ],
-  "summary": "大规模跨域文本转 SQL 评测（Yale）",
-  "interpretation": "Yale 跨域文本转 SQL 评测（11 名耶鲁学生标注），官方现用 Test Suite Accuracy 并辅以执行准确率/精确集合匹配；榜单已于 2024 年 2 月停更，头部模型 test 执行准确率约 91.2%，属近饱和的老基准。",
-  "measures": [],
-  "does_not_measure": [],
+  "summary": "Spider 是耶鲁大学发布的跨域「文本转 SQL」数据集：给模型一个多表数据库的 schema 和一句英文提问，让它写出能跑通的 SQL。它用 10,181 个问题、5,693 条复杂 SQL、200 个数据库覆盖 138 个领域，训练和测试用不同的数据库，专门考「换一个没见过的数据库还会不会写 SQL」。",
+  "interpretation": "高分说明模型在「已知 schema 的英文问句 → 一条 SQL」这条链路上已经接近可用：官方执行准确率榜首约 91.2%，且 2024 年 2 月起榜单停止更新。它不说明模型能处理企业里真实的多方言、长上下文、多步数据工作流——同组在 Spider 2.0 上测 o1-preview，只能解出 21.3%。",
+  "measures": [
+    {
+      "area": "单库内的复杂 SQL 结构",
+      "focus": "JOIN、嵌套子查询、INTERSECT / EXCEPT / UNION、GROUP BY + HAVING、ORDER BY + LIMIT 的组合使用；论文要求每个库的标注覆盖 SELECT 多列与聚合、WHERE、GROUP BY、HAVING、ORDER BY、LIMIT、JOIN、INTERSECT、EXCEPT、UNION、NOT IN、OR、AND、EXISTS、LIKE 与嵌套查询。示例（论文 Figure 3，extra hard）：\"What is average life expectancy in the countries where English is not the official language?\" 对应嵌套子查询 + 聚合 + NOT IN。",
+      "share": "论文按子句统计：ORDER BY 1,335 条、GROUP BY 1,491 条、嵌套查询 844 条、HAVING 388 条；并称嵌套查询数约为此前所有 text-to-SQL 数据集之和的两倍、ORDER BY（LIMIT）与 GROUP BY（HAVING）是其十倍",
+      "format": "单轮英文问句 → 单条 SQL",
+      "cite": [
+        "paper@§3.2",
+        "paper@§4",
+        "repo@README"
+      ]
+    },
+    {
+      "area": "跨数据库概化（主设定）",
+      "focus": "同一数据库的所有问题落在同一侧，测试用训练中没出现过的全新 schema；这是论文反复强调的区分点，也是 database split 与 example split 的分界",
+      "share": "200 个数据库覆盖 138 个领域，多数领域各一个库、约 20–50 个问题；database split 按库划分为 146 train / 20 dev / 40 test（共 206 个库）",
+      "format": "单轮英文问句 + schema → 单条 SQL（train/dev 公开下载，test 集自 2024-02-05 起公开）",
+      "cite": [
+        "paper@§4",
+        "paper@§8 Data Splits",
+        "yale-lily-spider@Getting Started"
+      ]
+    },
+    {
+      "area": "多表 schema 理解",
+      "focus": "库本身比此前数据集复杂：多表、有外键、每库几十列；模型必须把问句里的词对齐到正确的表与列",
+      "share": "平均每库 5.1 张表、27.6 列、8.8 个外键；问题长度约 13 个词、SQL 长度约 21 个 token",
+      "format": "schema（建表语句）+ 英文问句 → SQL",
+      "cite": [
+        "paper@Table 1",
+        "paper@§4"
+      ]
+    },
+    {
+      "area": "难度分层",
+      "focus": "官方按 SQL 组件数量把题分为 easy / medium / hard / extra hard 四级，评测与论文都按难度分别报告成绩，便于定位模型在哪一级失效",
+      "share": "论文给出四级划分标准，未给各级题量",
+      "format": "按难度分层的 test 集成绩表",
+      "cite": [
+        "paper@§6"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "不测 SQL 里条件值的生成：任务设定把标准答案里的值（gold values）作为输入一起交给模型，让它填进正确的槽位，模型只需选对/复制值而不是从零想出来。",
+      "cite": [
+        "paper@§5"
+      ]
+    },
+    {
+      "text": "不测需要数据库外知识的问题：论文明确排除了需要常识推理或数学计算的查询，只保留仅凭库内内容能答的题。",
+      "cite": [
+        "paper@§5"
+      ]
+    },
+    {
+      "text": "不测多轮澄清：有歧义或表述不清的问句在标注阶段就被排除，论文把多轮交互列为未来方向。",
+      "cite": [
+        "paper@§3.2"
+      ]
+    },
+    {
+      "text": "不测带外部方言与工程依赖的真实工作流：Spider 的库是 SQLite、每库约 2K 行，同组的 Spider 2.0 才把多方言、超大库、项目级代码与文档纳入评测。",
+      "cite": [
+        "spider2-paper@B.8 Extended Dataset Statistics",
+        "spider2-paper@Abstract"
+      ]
+    }
+  ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
+    "sample_count": 10181,
+    "splits": [
+      "example split：8,659 train / 1,034 dev / 2,147 test，同一数据库的问题可以同时出现在训练与测试",
+      "database split：206 个库分为 146 train / 20 dev / 40 test，同一数据库的全部问题落在同一侧（论文主推的「全新 schema」设定）"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "expert-authored（11 名计算机专业学生手工编写，约 1,000 人时）",
+    "public_sample": true,
+    "totals": "10,181 个问题 / 5,693 条唯一复杂 SQL / 200 个数据库 / 138 个领域；平均每库 5.1 张表、27.6 列、8.8 个外键；题型为「schema + 单轮英文问句 → 单条 SQL」",
+    "cite": [
+      "paper@§1",
+      "paper@Table 1",
+      "paper@§4"
+    ],
+    "construction": [
+      {
+        "k": "① 数据库收集与改造",
+        "text": "200 个库来自三类：约 70 个来自数据库课程、SQL 教程网站、在线 CSV 与教材示例；约 40 个取自 DatabaseAnswers 的 schema（人工改写为 SQLite 并填充数据）；其余 90 个基于 WikiSQL 的表重组而成。",
+        "cite": [
+          "paper@§3.1"
+        ]
+      },
+      {
+        "k": "② 人工写题与 SQL",
+        "text": "每个库由 8 名熟练 SQL 的计算机专业学生写 20–50 个自然语言问题及其 SQL 标签；不用任何模板或脚本生成，以避免词汇与结构单一。",
+        "cite": [
+          "paper@§3.2"
+        ]
+      },
+      {
+        "k": "③ SQL 组件覆盖检查",
+        "text": "要求每个库的标注覆盖 SELECT 多列与聚合、WHERE、GROUP BY、HAVING、ORDER BY、LIMIT、JOIN、INTERSECT、EXCEPT、UNION、NOT IN、OR、AND、EXISTS、LIKE 与嵌套查询；并检查每张表至少在一条查询中出现，避免出现从未被用到的表。",
+        "cite": [
+          "paper@§3.2"
+        ]
+      },
+      {
+        "k": "④ 一致性与清晰度约束",
+        "text": "语义等价、返回同样结果的查询只保留一种写法，避免同一库出现重复标签；不写歧义或含糊的问题，也不写需要库外知识才能回答的问题；数据库专用的缩写列名（如 stu id）手工改写为完整词（student id）。",
+        "cite": [
+          "paper@§3.1",
+          "paper@§3.2"
+        ]
+      },
+      {
+        "k": "⑤ 三轮复审",
+        "text": "SQL 写完由另一名标注者复核问题是否清晰、是否包含足够信息来回答查询；再由母语者校对每句话的语法与语义；最后由最有经验的标注者终审，并用脚本执行并解析全部 SQL 标签，确认可运行、正确且格式统一。",
+        "cite": [
+          "paper@§3.3",
+          "paper@§3.4",
+          "paper@§3.5"
+        ]
+      },
+      {
+        "k": "⑥ 后续修订",
+        "text": "2020 年起官方修正过两批问题：dev/test 中约 4% 的 dev 样本（标注错误与「非错误的标签不一致」）被更新；scholar 与 formula_1 两个库的 column_name / column_name_original 不一致被修正并重新解析 SQL。两次修订都要求重新下载数据。",
+        "cite": [
+          "repo@Changelog"
+        ]
+      }
+    ]
   },
-  "metrics": [],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [],
+  "metrics": [
+    {
+      "id": "test-suite-accuracy",
+      "name": "Test Suite Accuracy（测试集套件准确率）",
+      "direction": "越高越好",
+      "unit": "percent",
+      "range": [
+        0,
+        100
+      ],
+      "description": "在一组扰动数据库（test suite）上比较预测 SQL 与标准 SQL 的返回结果是否一致。官方称它比单库执行准确率给出更紧的语义准确率上界；2020 年 10 月起成为 Spider 官方榜单指标，原精确集合匹配降级为参考。",
+      "cite": [
+        "test-suite-eval@README",
+        "yale-lily-spider@News 11/15/2020"
+      ]
+    },
+    {
+      "id": "execution-accuracy",
+      "name": "Execution Accuracy（执行准确率，官方榜为 Execution with Values）",
+      "direction": "越高越好",
+      "unit": "percent",
+      "range": [
+        0,
+        100
+      ],
+      "description": "在原数据库上执行预测 SQL 并与标准结果比对。论文版明确不提供该指标（当时的模型不预测值），并要求提交方自行报告；2020 年后官网榜单以 Execution with Values 形式报告，即要求模型自己预测条件里的值。",
+      "cite": [
+        "paper@§6",
+        "repo@Evaluation",
+        "yale-lily-spider@Leaderboard - Execution with Values"
+      ]
+    },
+    {
+      "id": "exact-set-match",
+      "name": "Exact Set Match Accuracy（精确集合匹配）",
+      "direction": "越高越好",
+      "unit": "percent",
+      "range": [
+        0,
+        100
+      ],
+      "description": "把每条 SQL 拆成若干子句（SELECT / WHERE / GROUP BY / ORDER BY / KEYWORDS 等），每个子句做集合比较，所有子句全部正确才算这条对。评测时不含值字符串，2020 年后只作参考指标报告。",
+      "cite": [
+        "paper@§6",
+        "test-suite-eval@README"
+      ]
+    },
+    {
+      "id": "component-matching-f1",
+      "name": "Component Matching F1",
+      "direction": "越高越好",
+      "unit": "percent",
+      "range": [
+        0,
+        100
+      ],
+      "description": "对 SELECT、WHERE、GROUP BY、ORDER BY、KEYWORDS 五个子句分别做集合精确匹配后计算 F1，用于定位模型在哪类子句上出错；论文用 WHERE 子句的表现作为主要诊断维度。",
+      "cite": [
+        "paper@§6",
+        "paper@§8"
+      ]
+    }
+  ],
+  "default_protocol": {
+    "raw": "输入是「数据库 schema（建表语句）+ 一句英文问题」，输出一条 SQL。官方评测脚本把每条 SQL 拆成若干子句做集合比较，集合比较中不含值字符串。官方原流程是提交者按官网教程把模型跑在隐藏 test 集上、提交预测文件，由官方读取后出分；2024 年 2 月 5 日起官方停止接受提交并冻结榜单，同时 Spider 1.0 的 test 集已公开可下载。2020 年 10 月起官方指标改为 Test Suite Accuracy，原精确集合匹配作为参考一并报告；官网同时保留一个 Execution with Values 榜单（要求模型自己预测条件里的值）。",
+    "cite": [
+      "paper@§5",
+      "paper@§6",
+      "yale-lily-spider@Getting Started",
+      "test-suite-eval@README"
+    ],
+    "variants": [
+      {
+        "text": "example split 还是 database split：前者同一数据库可同时出现在训练与测试，后者训练与测试的数据库完全不重叠。论文实测所有模型在 database split 上的成绩都明显低于 example split，两种设定下的分数不可直接比较。",
+        "cite": [
+          "paper@§8 Data Splits",
+          "paper@§8"
+        ]
+      },
+      {
+        "text": "带值还是不带值：系统不预测条件值时用 --plug_value 把标准值填入预测 SQL；官网 Execution with Values 榜单则要求模型自己预测值。两种口径的分数不能混着比。",
+        "cite": [
+          "test-suite-eval@README",
+          "yale-lily-spider@Leaderboard - Execution with Values"
+        ]
+      },
+      {
+        "text": "是否加 --keep_distinct：评测默认会去掉 DISTINCT 关键字，要与原始的 exact set match 口径可比就不应加该参数，加上与否会改变结果。",
+        "cite": [
+          "test-suite-eval@README"
+        ]
+      },
+      {
+        "text": "数据版本：官方在 2020 年 5 月 2 日之后报告的 test 结果基于修正过标注错误的新发布，更早的成绩与更晚的成绩不可直接比较。",
+        "cite": [
+          "yale-lily-spider@News 11/15/2020",
+          "repo@Changelog"
+        ]
+      }
+    ]
+  },
+  "limitations": [
+    {
+      "issue": "基准近饱和，官方榜单已停更",
+      "impact": "Execution with Values 榜首为 91.2%（2023-11-02 提交，模型署名 MiniSeek、未公开代码）；2024 年 2 月 5 日起官方不再接受 Spider 1.0 提交、不再更新榜单，Spider 1.0 的 test 集也已公开。继续在 Spider 1.0 上刷分对区分前沿模型的作用有限。",
+      "severity": "高",
+      "response": "官方把方向转向后继基准 Spider 2.0（企业级多方言工作流，2024-11-12 发布论文、数据与代码），并在官网引导用户关注 Dr.Spider 做语义解析鲁棒性研究。",
+      "reader": "看到 Spider 1.0 分数接近或超过 90%，应把它读作「这条链路已基本可用」，而不是模型鲁棒性或企业场景能力的证据。",
+      "cite": [
+        "yale-lily-spider@Leaderboard - Execution with Values",
+        "yale-lily-spider@News 02/05/2024",
+        "spider2-paper@Abstract"
+      ]
+    },
+    {
+      "issue": "标注错误与标签不一致",
+      "impact": "2020-06-07 官方修正 dev/test 中的标注错误与「非错误的标签不一致」，约 4% 的 dev 样本被更新；此前与之后的成绩基于不同数据版本。",
+      "severity": "中",
+      "response": "官方在仓库 Changelog 与官网同步修订说明，并要求重新下载数据。",
+      "reader": "跨 2020 年 5 月的成绩对比要先确认数据版本；只看几个百分点的差距要留余地。",
+      "cite": [
+        "repo@Changelog",
+        "yale-lily-spider@News 06/07/2020",
+        "yale-lily-spider@News 11/15/2020"
+      ]
+    },
+    {
+      "issue": "执行准确率存在假阳性",
+      "impact": "论文明确指出：预测 SQL 与标准 SQL 语义不同但返回同样结果（例如都返回 NULL）时，执行准确率会给出错误的正例；而精确集合匹配又会漏掉语义等价的新写法。",
+      "severity": "中",
+      "response": "官方 2020 年 10 月起改用 Test Suite Accuracy（多库扰动），称其给出更紧的语义准确率上界，并把 exact set match 作为参考指标。",
+      "reader": "不要用单一指标下结论；看 Test Suite Accuracy 时也要确认是否带值、是否加了 --keep_distinct。",
+      "cite": [
+        "paper@§6",
+        "test-suite-eval@README"
+      ]
+    },
+    {
+      "issue": "任务设定偏窄：不测值生成、不测库外知识、不测多轮澄清",
+      "impact": "SQL 里的字面值由标注方给定；需要常识或算术的题被排除；有歧义的问句在标注阶段被排除。因此高分只覆盖「给定 schema 与值、写对查询」这一段。",
+      "severity": "中",
+      "response": "论文把值预测、库外知识与多轮澄清明确列为未来方向；同组后续用 SParC / CoSQL 覆盖上下文依赖对话，用 Spider 2.0 覆盖真实工作流。",
+      "reader": "高分不代表模型能独立完成一条真实的数据查询请求。",
+      "cite": [
+        "paper@§5",
+        "paper@§3.2"
+      ]
+    },
+    {
+      "issue": "数据库泛化差距大",
+      "impact": "论文实测所有模型在 database split 上的成绩都明显低于 example split，说明当时的方法并没有真正泛化到未见过的 schema。",
+      "severity": "中",
+      "response": "官方把 database split 作为主设定之一单独报告，并在后续版本中继续使用全新数据库与全新 schema。",
+      "reader": "对比任何 Spider 成绩前先确认是 example split 还是 database split。",
+      "cite": [
+        "paper@§8",
+        "paper@§8 Data Splits"
+      ]
+    },
+    {
+      "issue": "数据许可与使用边界",
+      "impact": "数据集以 CC BY-SA 4.0 发布。官网对 test 集的两处表述不一致：Getting Started 仍写「为保持测试结果完整性，不向公众发布 test 集」，而 2024-02-05 的公告写「Spider 1.0 的 test 集已发布」并同时停止接受提交。",
+      "severity": "低",
+      "response": "官网提供下载入口、提交教程与许可说明；公告与使用文档的更新不同步。",
+      "reader": "二次使用需遵守 CC BY-SA 4.0；复现榜单成绩时注意口径是官网冻结前以隐藏 test 集运行的提交，而非本机自测。",
+      "cite": [
+        "yale-lily-spider@Getting Started",
+        "yale-lily-spider@News 02/05/2024"
+      ]
+    }
+  ],
+  "versions": [
+    {
+      "date": "2018-09-24",
+      "label": "arXiv v1 提交；论文与数据集公开，后发表于 EMNLP 2018",
+      "cite": [
+        "paper@Submission history",
+        "repo@Citation"
+      ],
+      "id": "v1"
+    },
+    {
+      "date": "2018-10-25",
+      "label": "更新评测脚本（count(*) 查询也参与评分）与基线结果，修复 SQL 解析小 bug",
+      "cite": [
+        "repo@Changelog"
+      ],
+      "id": "eval-script-update"
+    },
+    {
+      "date": "2018-12-17",
+      "label": "更新 7 个 sqlite 数据库文件，需重新下载数据",
+      "cite": [
+        "repo@Changelog"
+      ],
+      "id": "db-files-fix"
+    },
+    {
+      "date": "2020-06-07",
+      "label": "修正 dev/test 中的标注错误与标签不一致（约 4% 的 dev 样本被更新），需重新下载数据",
+      "cite": [
+        "repo@Changelog",
+        "yale-lily-spider@News 06/07/2020"
+      ],
+      "id": "annotation-fix"
+    },
+    {
+      "date": "2020-08-03",
+      "label": "修正 scholar 与 formula_1 两个库的 column_name / column_name_original 不一致并重新解析 SQL",
+      "cite": [
+        "repo@Changelog"
+      ],
+      "id": "schema-fix"
+    },
+    {
+      "date": "2020-11-15",
+      "label": "官方指标切换为 Test Suite Accuracy，exact set match 降级为参考；2020-05-02 之后的 test 结果基于修订后的新发布",
+      "cite": [
+        "yale-lily-spider@News 11/15/2020"
+      ],
+      "id": "official-metric-switch"
+    },
+    {
+      "date": "2024-02-05",
+      "label": "停止接受 Spider 1.0 提交并冻结榜单；Spider 1.0 的 test 集已公开",
+      "cite": [
+        "yale-lily-spider@News 02/05/2024"
+      ],
+      "id": "leaderboard-frozen"
+    },
+    {
+      "date": "2024-11-12",
+      "label": "同组发布后继基准 Spider 2.0 的论文、数据与代码",
+      "cite": [
+        "yale-lily-spider@News 11/12/2024"
+      ],
+      "id": "spider2-release"
+    }
+  ],
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "Spider: A Large-Scale Human-Labeled Dataset for Complex and Cross-Domain Semantic Parsing and Text-to-SQL（arXiv:1809.08887，EMNLP 2018）",
+        "url": "https://arxiv.org/abs/1809.08887",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "yale-lily-spider",
+        "kind": "site",
+        "title": "Spider: Yale Semantic Parsing and Text-to-SQL Challenge（yale-lily.github.io/spider）",
+        "url": "https://yale-lily.github.io/spider",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "taoyds/spider — Spider 数据集、评测与预处理脚本仓库",
+        "url": "https://github.com/taoyds/spider",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "test-suite-eval",
+        "kind": "repo",
+        "title": "taoyds/test-suite-sql-eval — Semantic Evaluation for Text-to-SQL with Distilled Test Suites（EMNLP 2020）",
+        "url": "https://github.com/taoyds/test-suite-sql-eval",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "spider2-paper",
+        "kind": "paper",
+        "title": "Spider 2.0: Evaluating Language Models on Real-World Enterprise Text-to-SQL Workflows（arXiv:2411.07763，ICLR 2025）",
+        "url": "https://arxiv.org/abs/2411.07763",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "cites": {
+      "summary": [
+        "paper@§1",
+        "yale-lily-spider@What is Spider?"
+      ],
+      "interpretation": [
+        "yale-lily-spider@Leaderboard - Execution with Values",
+        "yale-lily-spider@News 02/05/2024",
+        "spider2-paper@Abstract"
+      ]
+    },
+    "header": {
+      "publisher": {
+        "v": "Yale University LILY 实验室（官网现标注为 XLANG Lab）",
+        "cite": [
+          "yale-lily-spider@页脚",
+          "repo@Citation"
+        ]
+      },
+      "first_release": {
+        "v": "2018-09-24（arXiv v1；论文发表于 EMNLP 2018）",
+        "cite": [
+          "paper@Submission history",
+          "repo@Citation"
+        ]
+      }
+    },
+    "problem": {
+      "text": "在 Spider 之前，主流 text-to-SQL 数据集要么像 ATIS、Geo、Academic 那样只有一个数据库、训练与测试出现同样的 SQL 查询，要么像 WikiSQL 那样虽然量大但每条 SQL 都很简单、每个库只有一张表且没有外键。Spider 第一次把「多表数据库 + 复杂 SQL + 跨域全新数据库」放在一起，专门考模型在没见过的 schema 上还能不能写对查询。",
+      "cite": [
+        "paper@§2",
+        "yale-lily-spider@Why Spider?"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "论文发布时的最强基线（Exact Matching）",
+        "value": "论文未给出一张汇总表",
+        "note": "论文按难度分列各模型的 exact matching 成绩，正文称所有模型的总体成绩都很低、仍有很大改进空间；PDF 抽取无法可靠还原分列表格的列对应关系，本站不转写具体数值。",
+        "cite": [
+          "paper@§6",
+          "paper@§8"
+        ]
+      },
+      {
+        "label": "官方榜单最高（Execution with Values）",
+        "value": "91.2%",
+        "note": "提交日期 2023-11-02，模型署名 MiniSeek（Anonymous），官网标注「代码与论文稍后公开」。榜单 2024-02-05 起冻结。",
+        "cite": [
+          "yale-lily-spider@Leaderboard - Execution with Values"
+        ]
+      },
+      {
+        "label": "后继基准上的同类方法（Spider 2.0）",
+        "value": "21.3%",
+        "note": "o1-preview + 代码 agent 框架；Spider 2.0-lite 设定下最强的 text-to-SQL 解析器也只能解出 5.7%，对比 Spider 1.0 的 91.2%。",
+        "cite": [
+          "spider2-paper@§1"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 example split 的成绩当成跨数据库能力。example split 里同一数据库可以同时出现在训练与测试；database split 才是「全新 schema」设定，论文实测后者明显更低。",
+        "cite": [
+          "paper@§8 Data Splits",
+          "paper@§8"
+        ]
+      },
+      {
+        "text": "以为官方指标一直是执行准确率。论文原版只提供 Component Matching 与 Exact Matching，并明确写「当前版本不提供 Execution Accuracy」；2020-11-15 起官方才改用 Test Suite Accuracy。",
+        "cite": [
+          "paper@§6",
+          "yale-lily-spider@News 11/15/2020"
+        ]
+      },
+      {
+        "text": "以为 SQL 里的字面值也要模型生成。任务设定把标准值作为输入交给模型，让它填进正确槽位；只有官网 Execution with Values 榜单才要求模型自己预测值。",
+        "cite": [
+          "paper@§5",
+          "yale-lily-spider@Leaderboard - Execution with Values"
+        ]
+      },
+      {
+        "text": "把 Spider 1.0 的高分当成企业级 text-to-SQL 能力。Spider 1.0 的库是 SQLite、平均每库约 2K 行，不涉及多方言、超大库与项目级代码；同组 Spider 2.0 上 o1-preview 只解出 21.3%。",
+        "cite": [
+          "spider2-paper@B.8 Extended Dataset Statistics",
+          "spider2-paper@Abstract"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "Yale University LILY 实验室（Yale-LILY），官网侧栏现标注为 XLANG Lab for Building LLM/VLM Agents",
+        "cite": [
+          "yale-lily-spider@页脚"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "Tao Yu、Rui Zhang、Kai Yang、Michihiro Yasunaga、Dongxu Wang、Zifan Li、James Ma、Irene Li、Qingning Yao、Shanelle Roman、Zilin Zhang、Dragomir Radev；数据集由 11 名计算机专业学生标注",
+        "cite": [
+          "paper@作者署名",
+          "repo@Citation"
+        ]
+      },
+      {
+        "k": "标注投入",
+        "v": "11 名学生共约 1,000 人时；每个库由 8 名熟练 SQL 的学生写 20–50 个问题；问题和 SQL 都经另一人复核、母语者校对与终审",
+        "cite": [
+          "paper@§3",
+          "paper@§3.2",
+          "paper@§3.5"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2018-09-24 arXiv v1 → EMNLP 2018 发表 → 2020-06-07 修正约 4% dev 标注错误 → 2020-11-15 官方指标改为 Test Suite Accuracy → 2024-02-05 榜单冻结、test 集公开 → 2024-11-12 后继基准 Spider 2.0 发布",
+        "cite": [
+          "paper@Submission history",
+          "repo@Changelog",
+          "yale-lily-spider@News 11/15/2020",
+          "yale-lily-spider@News 02/05/2024"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "数据集（CC BY-SA 4.0）从官网下载；官方原以隐藏 test 集 + 提交模型的方式出分，2024-02-05 起榜单冻结、test 集公开。数据加载、预处理与评测脚本在 taoyds/spider，Test Suite Accuracy 实现在 taoyds/test-suite-sql-eval",
+        "cite": [
+          "yale-lily-spider@Getting Started",
+          "repo@README",
+          "test-suite-eval@README"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-14",
+        "columns": [
+          "来源",
+          "模型",
+          "Test 执行准确率（带值）",
+          "提交日期"
+        ],
+        "rows": [
+          [
+            "官网榜单 Execution with Values",
+            "MiniSeek（Anonymous，代码与论文未公开）",
+            "91.2%",
+            "2023-11-02"
+          ],
+          [
+            "官网榜单 Execution with Values",
+            "DAIL-SQL + GPT-4 + Self-Consistency（Alibaba）",
+            "86.6%",
+            "2023-08-20"
+          ],
+          [
+            "官网榜单 Execution with Values",
+            "DAIL-SQL + GPT-4",
+            "86.2%",
+            "2023-08-09"
+          ],
+          [
+            "官网榜单 Execution with Values",
+            "DPG-SQL + GPT-4 + Self-Correction",
+            "85.6%",
+            "2023-10-17"
+          ],
+          [
+            "官网榜单 Execution with Values",
+            "DIN-SQL + GPT-4（University of Alberta）",
+            "85.3%",
+            "2023-04-21"
+          ]
+        ]
+      },
+      "cite": [
+        "yale-lily-spider@Leaderboard - Execution with Values"
+      ]
+    }
+  },
   "notes": "Qwen 引用",
   "official_sources": [
     {
@@ -29,11 +619,25 @@
       "url": "https://yale-lily.github.io/spider"
     },
     {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/1809.08887"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/taoyds/spider"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/taoyds/test-suite-sql-eval"
+    },
+    {
       "kind": "site",
       "url": "https://qwenlm.github.io/blog/qwen2.5/"
     }
   ],
-  "related_benchmarks": [],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "related_benchmarks": [
+    "spider2"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14"
 }
