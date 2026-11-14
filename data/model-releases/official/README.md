@@ -3845,9 +3845,104 @@ Gemini Robotics 2.5 的 DeepMind 官方 RSS `pubDate` 为 `Mon, 09 Nov 2026 19:5
 - 未改 Workflow 配置；技能镜像已按 `npm run sync:skills` 重新生成并通过零漂移校验。
 - 未在本仓写入任何凭据或私有供应商数据。
 
+
+## 第六十三批（2026-11-13 CST / 2026-11-12 UTC 增量窗口 2026-10-27 ~ 2026-11-12：18 家在册厂商入口复扫，新登记 18 条型号线索，其中 9 条 general 型号待下轮核验）
+
+### 本批窗口与前置
+
+- **增量窗口**：锚点 `ledger_max_release_date = 2026-11-10` 回退 14 天重叠 → `window_since = 2026-10-27`、`window_until = 2026-11-12`（UTC）。
+- **基线**：`origin/main` @ `bf91449`；分支 `model-release-daily-20261112T231846Z`；工作目录为独立 worktree（`C:/Users/cheng/code/github/.worktrees/evals/model-release-daily-20261112T231846Z`），主检出 `evals/main` 保持干净。
+- **调度互斥**：OpenClaw 侧旧声明 `workflow:daily-model-releases-and-provider-refresh` 在 cron 存储中的 `enabled` 为 `0`（只读回读确认），与本调度的 `legacy_exclusive` 键一致，两个执行器不会跑同一轮。
+
+### 入口复扫（Step 1）
+
+`node .claude/skills/ingest-releases/scripts/scan.mjs --write` 对 18 家在册厂商的官方域名入口逐一复扫（失败与动态页均落进 `data/model-coverage.json`，不静默跳过）：
+
+| 入口状态 | 涉及入口 |
+| --- | --- |
+| `partial`（已读取到官方链接，历史与分页未穷尽） | google ×3、xai 文档、meta research.meta.ai、mistral、kimi ×3、deepseek ×2、minimax ×2、doubao ×4、xiaomi ×2、tencent GitHub、microsoft ×3、particle ×2、thinking-machines ×3 |
+| `needs_render`（动态内容尚需渲染读取） | qwen.ai、doubao blog、tencent hy.tencent.com、tencent hunyuan research、microsoft ×2 sitemap |
+| `inaccessible`（本次读取失败，不等于厂商无发布） | x.ai/news、meta ai.meta.com/blog、meta research.facebook.com、glm z.ai/blog、minimax agent 工具页、stepfun research |
+
+### 新登记线索（Step 1 → Step 2 的中间态）
+
+复扫后候选总数 **676 → 695**（新增 18 条）。按既有口径分流：
+
+| 候选 id | 厂商 | 型号 | 分类 | 处置 |
+| --- | --- | --- | --- | --- |
+| `anthropic-60825589549b` | anthropic | Claude Opus 4.8 | general | 登记待核验 / 按口径排除 |
+| `anthropic-8644e982e72d` | anthropic | Claude Opus 5 | general | 登记待核验 / 按口径排除 |
+| `anthropic-8872f2abd000` | anthropic | Claude Fable 5 | general | 登记待核验 / 按口径排除 |
+| `anthropic-aa021366c24c` | anthropic | Claude Opus 4.6 | general | 已建档 claude-opus-4-6 |
+| `anthropic-b09669c7cc08` | anthropic | Claude Sonnet 5 | general | 登记待核验 / 按口径排除 |
+| `anthropic-bcdb1dab5304` | anthropic | Claude Opus 4.7 | general | 登记待核验 / 按口径排除 |
+| `anthropic-c4974ae5336a` | anthropic | Claude Mythos 5 | general | 登记待核验 / 按口径排除 |
+| `anthropic-cc2cddad67b0` | anthropic | Claude Sonnet 4.5 | general | 已建档 claude-sonnet-4-5 |
+| `anthropic-cfeb61f3fcca` | anthropic | Claude Mythos 5.2 | general | 登记待核验 / 按口径排除 |
+| `anthropic-e1910c5126bc` | anthropic | Claude Haiku 4.5 | general | 已建档 claude-haiku-4-5 |
+| `anthropic-f4e22e58641c` | anthropic | Claude Mythos 5.1 | general | 登记待核验 / 按口径排除 |
+| `google-d7c21c501eb2` | google | Introducing Gemini 4 Hydrogen | general | 登记待核验 / 按口径排除 |
+| `microsoft-4282a233fe42` | microsoft | Announcements | unknown | 登记待核验 / 按口径排除 |
+| `openai-ac94b61a25ad` | openai | ChatGPT Plus for veterans and servicemembers Company Nov 11, 2026 | product | 登记待核验 / 按口径排除 |
+| `thinking-machines-0679810bb8b1` | thinking-machines | Inkling 2 Small | vertical | 已建档 inkling-2-small |
+| `thinking-machines-1b1dfeff1694` | thinking-machines | thinkingmachines/Inkling-2-Small-MXFP8 Image-Text-to-Text • 612B • Updated about 2 hours ago • 13 • 7 | vertical | 登记待核验 / 按口径排除 |
+| `xai-3b295a170021` | xai | Grok Bot | unknown | 登记待核验 / 按口径排除 |
+| `xai-62f55b4ebce2` | xai | Grok Build | unknown | 登记待核验 / 按口径排除 |
+
+- **9 条 general 型号（Anthropic 8 条 + Google Gemini 4 Hydrogen 1 条）登记为「待核验线索」**：入口复扫在官方模型目录新发现该型号页，但本轮**未取得官方发布文与可核对评测证据**，因此**不建档、不写分数**，按契约留待下一轮核验（`next_backfill_at = 2026-11-13`）。它们的 `exclusion_reason` 文本明确写的是「待核验」而非「不是模型」，一旦后续轮次拿到官方发布文，`reconcile-coverage.mjs` 会自动清空该字段并关联 release。
+- **5 条按既有口径排除**：Microsoft 公告列表页、OpenAI ChatGPT Plus 权益公告、xAI Grok Bot / Grok Build 产品页（均非模型发布页）；Thinking Machines 的 Inkling-2-Small-MXFP8 是已建档 Inkling 2 Small 的量化权重变体，官方无独立发布文与独立评测（专项模型不因性质被排除）。
+- **4 条由 `reconcile-coverage.mjs` 自动关联到既有 release**（Claude Opus 4.6 / Sonnet 4.5 / Haiku 4.5、Inkling 2 Small），不重复建档。
+
+### 官方发布文回读（本轮实际读取到的一手证据）
+
+- **MiniMax 官方模型发布说明**（`platform.minimax.io/docs/release-notes/models`，页面 `dateModified = 2026-11-11T06:16:39Z`）：最新一条模型发布为 **2026-11-10 MiniMax H3 Image**，该条已在第六十批建档；其后无新的官方模型发布条目。
+- 其余厂商本轮以入口复扫为准，未取得「窗口内新增官方发布文 + 可核对评测数值」的组合证据，因此本批**不新建任何 release**，也**不新增任何 evidence 行**。
+
+### 门禁（本批全绿）
+
+| 门禁 | 结果 |
+| --- | --- |
+| `node scripts/reconcile-coverage.mjs` | 通过，且幂等（连续两次运行 diff 为空） |
+| `node --test tests/*.test.mjs` | **99/99 通过**（含「覆盖对账幂等」「本批官方归档文件与 manifest 哈希一致」等专项） |
+| `node scripts/validate-data.mjs` | **PASS**（taxonomy 9 类 / vendors 18 / benchmarks 509 / releases 234（official 220）/ evidence edges 3868） |
+| `npm run sync:skills:check` | 通过（技能镜像零漂移） |
+| `npm run validate`（`book/validate.js`） | **passed for 32 chapters** |
+| `npm run build:epub:official` + `npm run build:web` + `npm run validate:site` | 见下节「本批产出汇总」后的构建结论 |
+
+### 本批产出汇总
+
+| 指标 | 数值 |
+| --- | ---: |
+| 新建 release 文件 | **0**（本批无新增官方发布文证据） |
+| 新增 evidence 行 | **0** |
+| 新建归档目录 | **0** |
+| 新登记候选 | **18**（9 条待核验 general 型号 + 5 条按口径排除 + 4 条自动关联既有 release） |
+| 候选总数 | 676 → **695** |
+| 检查点 `last_max_release_date` | 2026-11-10 → **2026-11-10**（本批无新发布，锚点不推进；`last_scan_at` → 2026-11-12） |
+
+### 待人工裁定 / 需留意
+
+1. **Anthropic 8 条 + Gemini 4 Hydrogen 的待核验线索**：下一轮必须逐条读取官方发布文与评测表，能取到证据就建档并清空 `exclusion_reason`；确认不是新模型发布的再按口径写明排除理由。
+2. **入口覆盖仍是 partial**：qwen.ai、doubao blog、tencent 两条入口为动态渲染、glm z.ai/blog 本轮 404，这些厂商本批不声称已穷尽。
+3. **调度 Issue 与仓内技能的张力仍在**：`zenHeart/workflow#357` 的非目标写明「human reviews each delivery before accepting or publishing it; no automatic merge or publish」，本批按**开 PR、不自动合并**执行，留待人工复核。
+
+### 未做的事
+
+- 未新建任何 release 档、未写任何评测数值、未归档任何官方页面。
+- 未改写任何既有 release / benchmark 文件；只追加本节与 `data/model-coverage.json` 的扫描/登记结果。
+- 未删除任何远端分支、未改 Workflow 配置、未在本仓写入任何凭据或私有供应商数据。
+
+### 后续批次处置（2026-11-14 收口）
+
+- 本节原以 PR #73（分支 `model-release-daily-20261112T231846Z`）提交，与 `main` 冲突未合入；2026-11-14 收口时已 rebase 到最新 `origin/main` 并按「先旧后新」顺序与第六十四批一并落入 `main`。
+- 上表 9 条「待核验 general 型号」已由**第六十四批**逐条落到具体 release（Claude Opus 4.8 / Opus 5 / Fable 5 / Sonnet 5 / Opus 4.7 / Fable 5.2 / Fable 5.1 → 既有档案，Gemini 4 Hydrogen → 第六十四批新建档案），`exclusion_reason` 已清空、`release_id` 已回填。
+- 本节「候选总数 676 → 695」为当时的中间态；第六十四批复扫后的候选总数以 `data/model-coverage.json` 为准。
+- 本批登记但未建档的三条产品/栏目页（Microsoft 公告列表页、xAI Grok Bot / Grok Build 产品页）已按本节口径写明 `exclusion_reason`，不再悬空。
+
+
 ## 第六十四批（2026-11-14 CST / 2026-11-13 UTC 增量窗口 2026-10-27 ~ 2026-11-13：Google Gemini 4 Hydrogen 建档 13 条 evidence + AlphaGenome 2 建档 2 条 evidence）
 
-> 批次编号说明：第六十三批 = PR #73（分支 `model-release-daily-20261112T231846Z`），截至本批开跑时仍为 **OPEN** 且与 `main` 冲突（`mergeable: CONFLICTING`），尚未进入 `main`；本批按第六十三批留下的线索（`Introducing Gemini 4 Hydrogen` 候选的 `next_backfill_at: 2026-11-13`）完成回填。为避免两个批次在同一 base 上重号，本批记为第六十四批。
+> 批次编号说明：第六十三批 = PR #73（分支 `model-release-daily-20261112T231846Z`），本批开跑时它仍为 **OPEN** 且与 `main` 冲突（`mergeable: CONFLICTING`），当时尚未进入 `main`；本批按第六十三批留下的线索（`Introducing Gemini 4 Hydrogen` 候选的 `next_backfill_at: 2026-11-13`）完成回填。为避免两个批次在同一 base 上重号，本批记为第六十四批。**2026-11-14 收口更新**：第六十三批已 rebase 到最新 `main` 并与本批一并按「先旧后新」顺序合入，两批内容互不重复——第六十三批只做入口复扫与线索登记（无新增 release / evidence），本批负责把其中 9 条线索落到具体档案。
 
 ### 窗口结论
 
