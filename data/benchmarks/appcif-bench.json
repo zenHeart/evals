@@ -1,7 +1,7 @@
 {
   "id": "appcif-bench",
   "name": "AppCIF-Bench",
-  "full_name": "AppCIF-Bench: An Application-Level Complex Instruction Following Benchmark for Large Language Models",
+  "full_name": "AppCIF-Bench: An Application-Level Complex Instruction Following Benchmark for Large Language Models（应用级复杂指令跟随基准）",
   "aliases": [
     "AppCIF"
   ],
@@ -11,70 +11,379 @@
     "longctx",
     "chinese"
   ],
-  "summary": "腾讯官方出题的应用级复杂指令跟随基准：把长系统提示词与可执行代码仿真引擎组成环境，考察模型在多轮干扰与嵌套规则下能否持续满足成百上千条细则",
-  "interpretation": "分数怎么读：两个指标都是越高越好，满分 100。SSR（软满足率）看「有多少条细则被满足」——L4 档 90 个样本共 795 条细则，GPT-5.4-xhigh 拿到 75.9%，意思是平均每四条细则里约有一条没做到；HSR（硬满足率）看「整个样本的细则全部满足」才算一次通过，L4 档 90 个样本里 GPT-5.4-xhigh 只通过 31.1%，其余多数模型是 0%。当前水位：12 个模型的 HSR 全局平均从 1.1%（Xiaomi-MiMo-V2-Omni）到 45.9%（GPT-5.4-xhigh）；而 L1「精确执行」档的 SSR 已普遍落在 66–82%——区分度不在「会不会做这件事」，而在「能不能扛住干扰与嵌套规则」。难度沿两条轴同时加压：地平线长度 H（干扰累积的跨度）与逻辑深度 L（嵌套规则的层数），L4 的系统提示词约 1.4 万词、配套代码仿真引擎平均约 3,500 行 Python，需要模型在状态机上持续推断。读分时注意口径：官方排行榜用的是论文初始版数据（2,998 条细则）与 Doubao-Seed-1.6-1015 判分，仓库当前发布的是 v1.1（466 样本 / 3,017 条细则）并改用 Doubao-Seed-2.0-lite 判分，两套分数不可直接比较；排行榜只覆盖中文版数据。",
+  "summary": "AppCIF-Bench 是腾讯发布的应用级复杂指令跟随基准：把一份上万字的系统提示词当成规则书，再配一个能跑的 Python 代码仿真引擎当出题器，考模型在多轮对话、累积干扰和层层嵌套的规则下，能不能把一个样本里的上百条细则全部做到。",
+  "interpretation": "两个指标都越高越好，满分 100。SSR（软满足率）= 被满足的细则条数 ÷ 该档全部细则条数，衡量「做对了多少条」；HSR（硬满足率）= 全部细则都满足的样本数 ÷ 样本数，衡量「有没有一次全对」。官方 12 模型榜上 HSR 全局平均从 1.1%（Xiaomi-MiMo-V2-Omni）到 45.9%（GPT-5.4-xhigh），最高的 GPT-5.4-xhigh 在 L4 档也只有 31.1%；而 L1 档 SSR 已普遍落在 66%–82%。区分度不在「会不会做这件事」，而在「扛不扛得住长跨度干扰与嵌套规则」。读分前必须先核口径：官方排行榜跑的是论文初始版数据（2,998 条细则）并用 Doubao-Seed-1.6-1015 判分，仓库当前发布的是 v1.1（3,017 条细则）并改用 Doubao-Seed-2.0-lite 判分，两套分数不能直接比；排行榜也只覆盖中文版数据。",
   "measures": [
-    "长系统提示词下的复杂指令跟随（规则嵌套、格式约束、状态机推断）",
-    "多轮对话中的目标保持（早期指令在长交互里不被后续内容冲淡）",
-    "高噪声环境下的信息重组（全局干扰项与关键信号混排）",
-    "极端压力下的规则推理（L4：约 1.4 万词提示词 + 可执行仿真引擎）"
+    {
+      "area": "课程规划（Curriculum Planning）",
+      "focus": "在先修课链、预算和时间限制下排出课程组合与证书。真实示例：要求恰好推荐 COMBO003、COMBO005、CS004B、CS003 四门课并给出四个指定证书名，结束时间不晚于 2027-04-30、总费用 3796 元且不超 4000 元预算、发票 4 张",
+      "share": "76 个样本（L1 38 / L2 38）",
+      "format": "多轮对话（系统提示词 + 历史轮次 + 最终问题），按原子二值细则逐条判定",
+      "cite": [
+        "repo@Benchmark Details",
+        "site@Application scenarios",
+        "datafile"
+      ]
+    },
+    {
+      "area": "旅行规划（Travel Planning）",
+      "focus": "在预算、时间、POI 多重竞争约束下找出可行行程。真实示例：只规划厦门之行第 2 天，并要求标注每两个相邻安排点之间的距离",
+      "share": "50 个样本（L1 25 / L2 17 / L3 8）",
+      "format": "同上：多轮对话 + 最终问题，按二值细则判定",
+      "cite": [
+        "repo@Benchmark Details",
+        "site@Application scenarios",
+        "datafile"
+      ]
+    },
+    {
+      "area": "数值密集（Numeric-Intensive）",
+      "focus": "执行公式化业务规则，「差不多对」算错。真实示例：按早上/中午/下午茶/晚上分段统计前天饮食开销，同一外卖订单要合并配送费并标注「外卖订单 N」，序号按下单时间排",
+      "share": "46 个样本（L1 23 / L3 23）",
+      "format": "同上：多轮对话 + 最终问题，按二值细则判定",
+      "cite": [
+        "repo@Benchmark Details",
+        "site@Application scenarios",
+        "datafile"
+      ]
+    },
+    {
+      "area": "角色扮演（Role-Playing）",
+      "focus": "在冗长、嘈杂、部分对抗性的对话里维持人设与既有设定。真实示例（L3）：问「神秘坐标附近有什么景点」，要求答出三个非北纬 25° 东经 101° 附近的景点",
+      "share": "54 个样本（L1 27 / L2 16 / L3 11）",
+      "format": "同上：多轮对话 + 最终问题，按二值细则判定",
+      "cite": [
+        "repo@Benchmark Details",
+        "site@Application scenarios",
+        "datafile"
+      ]
+    },
+    {
+      "area": "真实世界仿真（Real-world Simulation）",
+      "focus": "在专家手写的规则书里做状态机推断，六个子场景各 40 个样本：演唱会预算、墓葬探索、中医诊断、案件裁决、电网调度、时空交易；唯一到达 L4 的场景",
+      "share": "240 个样本（L1 21 / L2 49 / L3 80 / L4 90）",
+      "format": "同上，但标准答案由可执行 Python 引擎推导，中文文件另附推导过程",
+      "cite": [
+        "repo@Benchmark Details",
+        "repo@Code Simulation Engines",
+        "site@Application scenarios",
+        "datafile"
+      ]
+    },
+    {
+      "area": "L1 · Precise Execution（精确执行）",
+      "focus": "短 H（干扰跨度）、少步 L（规则嵌套）；输入干净、规则无歧义，测的是执行下限",
+      "share": "134 个样本 / 730 条细则",
+      "format": "多轮对话 + 最终问题，按二值细则判定",
+      "cite": [
+        "repo@Benchmark Details",
+        "site@Two Axes, Four Levels, Five Scenarios"
+      ]
+    },
+    {
+      "area": "L2 · Multi-turn Goal Retention（多轮目标保持）",
+      "focus": "长 H 带局部干扰、多步 L；要在噪声轮次里筛出关键信息并串起一条推理链",
+      "share": "120 个样本 / 688 条细则",
+      "format": "多轮对话 + 最终问题，按二值细则判定",
+      "cite": [
+        "repo@Benchmark Details",
+        "site@Two Axes, Four Levels, Five Scenarios"
+      ]
+    },
+    {
+      "area": "L3 · Information Reorganization Under High Noise（高噪声下的信息重组）",
+      "focus": "长 H 带全局干扰、多步 L；答案条件被打散，必须重新拼装（官网将此档命名为 Information Reorganization，仓库写作 Information Reorganization Under High Noise）",
+      "share": "122 个样本 / 803 条细则",
+      "format": "多轮对话 + 最终问题，按二值细则判定",
+      "cite": [
+        "repo@Benchmark Details",
+        "site@Two Axes, Four Levels, Five Scenarios"
+      ]
+    },
+    {
+      "area": "L4 · Extreme Pressure Deduction（极端压力推断）",
+      "focus": "极端 H、深层多步 L；IF-THEN-ELSE 嵌套最多五层、上百条互相依赖的规则；L4 系统提示词约 1.4 万词，配套代码仿真引擎平均约 3,500 行 Python",
+      "share": "90 个样本 / 796 条细则",
+      "format": "多轮对话 + 最终问题，标准答案由引擎推导，按二值细则判定",
+      "cite": [
+        "repo@Benchmark Details",
+        "repo@Introduction",
+        "site@Two Axes, Four Levels, Five Scenarios"
+      ]
+    }
   ],
   "does_not_measure": [
-    "通用知识量与事实记忆",
-    "单轮短指令的常规指令跟随能力",
-    "代码生成质量（仿真引擎是题目环境的一部分，不是被测对象）",
-    "英文能力（官方排行榜只跑中文版数据）"
+    {
+      "text": "不依赖预训练知识——超长系统提示词本身就是规则书，用状态变量、转移规则和任务约束定义了一个自洽环境",
+      "cite": [
+        "site@Prompt-as-Environment"
+      ]
+    },
+    {
+      "text": "不评回答是否有用、自然或有创意——每条细则是原子二值判定，只看满足或不满足",
+      "cite": [
+        "site@Prompt-as-Environment"
+      ]
+    },
+    {
+      "text": "不测代码生成能力——代码仿真引擎是题目环境和标准答案的来源，不是被测对象",
+      "cite": [
+        "repo@Code Simulation Engines"
+      ]
+    },
+    {
+      "text": "不能当作英文指令跟随能力的证据——官方排行榜只跑中文版数据",
+      "cite": [
+        "repo@Leaderboard"
+      ]
+    }
   ],
   "dataset": {
     "sample_count": 466,
+    "rubric_count": 3017,
     "splits": [
-      "L1 精确执行 134 样本（730 条细则）",
-      "L2 多轮目标保持 120 样本（688 条细则）",
-      "L3 高噪声下的信息重组 122 样本（803 条细则）",
-      "L4 极端压力推断 90 样本（796 条细则）"
+      "L1 精确执行 134 样本 / 730 条细则",
+      "L2 多轮目标保持 120 样本 / 688 条细则",
+      "L3 高噪声信息重组 122 样本 / 803 条细则",
+      "L4 极端压力推断 90 样本 / 796 条细则",
+      "课程规划 76 样本（L1 38 / L2 38）",
+      "旅行规划 50 样本（L1 25 / L2 17 / L3 8）",
+      "数值密集 46 样本（L1 23 / L3 23）",
+      "角色扮演 54 样本（L1 27 / L2 16 / L3 11）",
+      "真实世界仿真 240 样本（L1 21 / L2 49 / L3 80 / L4 90），含六个子场景各 40 个"
     ],
     "languages": [
       "zh",
       "en"
     ],
-    "source_type": "real-world 应用级场景（开源，含可执行代码仿真引擎）",
-    "public_sample": "全量公开：466 样本与 3,017 条细则，中文与英文两份（样本 id 与每样本细则数一致），另公开 6 个可执行代码仿真引擎与引擎输入，可自行复跑；官方排行榜数值来自论文初始版数据（2,998 条细则）"
+    "source_type": "应用级真实场景 + 专家手写规则书 + 可执行代码仿真引擎（开源，Labor-Divided Human-AI 流水线构建）",
+    "public_sample": true,
+    "totals": "466 个样本、3,017 条原子细则；中文与英文各一份（同一样本 id、每样本细则数相同），另公开 6 个可执行代码仿真引擎与 240 个仿真样本的引擎输入，可自行复跑；官方排行榜数值来自论文初始版数据（2,998 条细则）",
+    "cite": [
+      "repo@Benchmark Details",
+      "site@Abstract",
+      "dataset"
+    ],
+    "construction": [
+      {
+        "k": "两条难度轴",
+        "text": "难度沿两个概念上独立的轴分层：Horizon Length（H，干扰累积、关键信号必须被持续跟踪的跨度）与 Logical Depth（L，规则嵌套深度）；自动化负责推进 H 轴，人类专家拥有 L 轴。",
+        "cite": [
+          "repo@Introduction",
+          "site@Labor-Divided Human-AI Data Construction"
+        ]
+      },
+      {
+        "k": "四个开放域场景：AI-First Refinement",
+        "text": "课程规划、旅行规划、数值密集、角色扮演四个开放域场景走 AI-First Refinement（AI 先行、人工精修）。",
+        "cite": [
+          "site@Labor-Divided Human-AI Data Construction"
+        ]
+      },
+      {
+        "k": "真实世界仿真：Human-First Expansion",
+        "text": "Prompt-as-Environment 的真实世界仿真场景走 Human-First Expansion（人工先行扩展）。",
+        "cite": [
+          "site@Labor-Divided Human-AI Data Construction"
+        ]
+      },
+      {
+        "k": "提示词即环境",
+        "text": "超长系统提示词充当规则书，用状态变量、转移规则和任务约束定义自洽环境；配套的 Python 代码仿真引擎执行每个任务实例得出标准答案，六个引擎只依赖 Python 标准库。",
+        "cite": [
+          "site@Prompt-as-Environment",
+          "repo@Code Simulation Engines"
+        ]
+      },
+      {
+        "k": "细则与推导同步产出",
+        "text": "每个样本的标准答案推导与它的评分细则一起产出，保证推理痕迹与判分标准一致；细则为原子二值形式。",
+        "cite": [
+          "site@Labor-Divided Human-AI Data Construction",
+          "site@Prompt-as-Environment"
+        ]
+      },
+      {
+        "k": "发布后修订（v1.1）",
+        "text": "提交后审计修正了标准答案、细则措辞、推导、规则书规则与少量对话轮次，并同步修正引擎：2,998 条原细则中 1,084 条被修改、1 条移除、20 条新增（共 3,017 条），149 个样本未变。",
+        "cite": [
+          "repo@Version notes"
+        ]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "LLM-as-a-judge：裁判逐条判定细则，每次只看到该条细则、最终问题和模型回答（中文提示词在 eval/eval_pipeline.py，要求输出 JSON 的 reason 与 tag=是/否）。官方脚本分三步——pull_answer 收集回答 → evaluate 逐条判定 → calculate_accuracy 计算 SSR 与 HSR，分级与分类结果写入 accuracy_summary.xlsx（constraint_* 列为 SSR、sample_* 列为 HSR）；无回答或无判定的样本计为失败；缺 API key，或 key、权限、模型名被供应商拒绝，会立即中止。仓库默认裁判为 Doubao-Seed-2.0-lite（需 ARK_API_KEY），官方榜裁判为 Doubao-Seed-1.6-1015。",
+    "cite": [
+      "repo@Run an evaluation",
+      "repo@Version notes"
+    ],
+    "variants": [
+      {
+        "text": "裁判模型：论文官方榜用 Doubao-Seed-1.6-1015（该裁判已停止服务）；v1.1 仓库默认 Doubao-Seed-2.0-lite（doubao-seed-2-0-lite-260428），判分提示词相同。换裁判会改变分数，官方要求报告所用裁判。",
+        "cite": [
+          "repo@Version notes"
+        ]
+      },
+      {
+        "text": "数据集版本：论文初始版 2,998 条细则 vs 仓库 v1.1 的 3,017 条细则（1,084 条修订、1 条移除、20 条新增），官方明确两套分数不可直接比较。",
+        "cite": [
+          "repo@Version notes"
+        ]
+      },
+      {
+        "text": "语言版本：官方榜只跑中文版；v1.1 新增英文平行版。官方用 cross_lingual_strata.json 标出 18 个角色扮演样本（依赖中文输出，或约束与提示语言绑定）需单列报告，其余 448 个样本可直接对比。",
+        "cite": [
+          "repo@Dataset"
+        ]
+      },
+      {
+        "text": "被测模型档位：榜单模型名自带推理档位（如 GPT-5.4-xhigh、Doubao-Seed-2.0-Pro-high、Kimi-K2.5-Thinking、Qwen-3.6-Plus-Thinking、DeepSeek-V3.2-Thinking），同一模型不同档位之间不可比。",
+        "cite": [
+          "repo@Leaderboard"
+        ]
+      }
+    ]
   },
   "metrics": [
     {
-      "name": "SSR (%)",
-      "description": "软满足率：被满足的细则条数占该难度档全部细则条数的比例，另有按细则数加权的全局平均"
+      "id": "ssr",
+      "name": "SSR（软满足率）",
+      "direction": "越高越好",
+      "description": "被满足的细则条数占全部细则条数的比例；另有按细则数加权的全局平均",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "repo@Benchmark Details",
+        "site@Leaderboard"
+      ]
     },
     {
-      "name": "HSR (%)",
-      "description": "硬满足率：该样本的全部细则都被满足才记一次通过，分母是样本数，另有按样本数加权的全局平均"
+      "id": "hsr",
+      "name": "HSR（硬满足率）",
+      "direction": "越高越好",
+      "description": "全部细则都被满足的样本占比，分母是样本数；另有按样本数加权的全局平均",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "repo@Benchmark Details",
+        "site@Leaderboard"
+      ]
     }
   ],
-  "default_protocol": {
-    "raw": "LLM-as-a-judge 逐条细则判定（裁判只看细则、最终问题与模型回答）；官方评测脚本分三步——拉取回答、逐条判定、计算 SSR 与 HSR；无回答或无判定的样本计为失败；缺 API key 或模型名被拒会立即中止。"
-  },
   "versions": [
     {
-      "id": "paper-initial",
-      "label": "论文初始版（2,998 条细则）",
-      "note": "官方排行榜所用版本，判分模型为 Doubao-Seed-1.6-1015；该裁判模型已停止服务"
+      "id": "neurips-2026",
+      "date": "2026-09-25",
+      "label": "NeurIPS 2026 接收，会议海报页面上线；官方榜单数据即论文 Table 2（论文初始版 2,998 条细则，Doubao-Seed-1.6-1015 判分）",
+      "cite": [
+        "neurips@Abstract",
+        "repo@Leaderboard"
+      ]
     },
     {
       "id": "v1.1",
-      "label": "v1.1（3,017 条细则）",
-      "note": "仓库当前发布版本：修正 gold 值、细则措辞与推导并新增 20 条细则、移除 1 条，新增英文平行版本，判分模型改为 Doubao-Seed-2.0-lite（同一判分提示词）"
+      "date": "2026-11-05",
+      "label": "仓库与数据集公开，发布 v1.1：3,017 条细则、新增英文平行版、裁判改为 Doubao-Seed-2.0-lite；croissant 元数据记 version 1.1.0、datePublished 2026-11-05",
+      "cite": [
+        "dataset",
+        "repo@Version notes"
+      ]
     }
   ],
   "limitations": [
-    "排行榜为基准所有者（腾讯）自建自跑并自报，非第三方独立评测，题目与判分流程由发布方控制",
-    "排行榜数值出自论文初始版数据（2,998 条细则）与 Doubao-Seed-1.6-1015 判分；仓库 v1.1（3,017 条细则）改用 Doubao-Seed-2.0-lite 判分，两套分数不可直接比较",
-    "排行榜只覆盖中文版数据，v1.1 新增的英文版尚未出榜",
-    "仅覆盖 12 个前沿 API 模型，未覆盖开源权重模型与中低档模型",
-    "判分完全依赖 LLM 裁判逐条判定细则，裁判版本或提示词变动都会改变分数",
-    "L4 档仅 90 个样本，层内差异的统计意义有限",
-    "数据集以 CC BY-NC 4.0 发布（非商用），评测代码与仿真引擎为 Apache-2.0"
+    {
+      "issue": "基准所有者自建自跑并自报",
+      "impact": "12 个模型全部由腾讯自行调用 API 评测、自行判分并发布；题目、判分流程与榜单都由发布方控制，没有第三方独立复现结果。",
+      "severity": "高",
+      "response": "评测代码、判分提示词与代码仿真引擎全部公开，可自行复跑；官方报告独立二次裁判（Gemini-3-Flash-Preview）在 95.8% 的样本上与主裁判判定一致，且 12 模型排序不变。",
+      "reader": "在第三方复现之前，把它当发布方自报成绩看；复跑时先固定数据集版本与裁判模型。",
+      "cite": [
+        "site@Leaderboard",
+        "repo@Run an evaluation"
+      ]
+    },
+    {
+      "issue": "两套数据与裁判版本的分数不可比",
+      "impact": "官方排行榜用论文初始版数据（2,998 条细则）与 Doubao-Seed-1.6-1015 判分；仓库 v1.1 是 3,017 条细则并改用 Doubao-Seed-2.0-lite 判分，而原裁判模型已停止服务。",
+      "severity": "高",
+      "response": "README 的 Version notes 明确写出两版差异与「不可直接比较」，并说明 v1.1 的复评结果在论文附录 J（论文全文本次未能打开，未纳入核对）。",
+      "reader": "比较任何两个分数之前，先确认数据集版本与裁判模型；跨版本比较没有意义。",
+      "cite": [
+        "repo@Version notes"
+      ]
+    },
+    {
+      "issue": "判分完全依赖 LLM 裁判",
+      "impact": "每条细则由 LLM 裁判做二值判定；裁判模型版本、判分提示词或请求参数的变动都会改变分数。",
+      "severity": "中",
+      "response": "裁判输入被限制为「该条细则 + 最终问题 + 模型回答」，提示词公开在 eval/eval_pipeline.py；官方报告主裁判与人工标注者在 60 例分层子集上 96% 一致。",
+      "reader": "看到 SSR/HSR 先问「哪个裁判、哪版提示词」；换裁判的复跑结果不能与原榜混排。",
+      "cite": [
+        "repo@Run an evaluation",
+        "site@Leaderboard"
+      ]
+    },
+    {
+      "issue": "官方榜单只覆盖中文版",
+      "impact": "排行榜 12 个模型全部只在中文数据上评测；v1.1 新增的英文平行版尚未出榜。",
+      "severity": "中",
+      "response": "英文版与中文版同样公开（466 样本、同 id、每样本细则数相同），官方提供 cross_lingual_strata.json 标出 18 个需单列的角色扮演样本，其余 448 个可直接对比。",
+      "reader": "中文榜分数不能当作英文指令跟随能力；做跨语言对比时按官方的分层处理。",
+      "cite": [
+        "repo@Leaderboard",
+        "repo@Dataset"
+      ]
+    },
+    {
+      "issue": "一个模型因 API 失败被排除出榜",
+      "impact": "Claude-Opus-4.6 在 466 个用例中反复运行失败 34 例，被排除出榜，因此榜单不是对同期前沿模型的完整横评。",
+      "severity": "中",
+      "response": "官网在榜单说明中直接写明排除原因与失败用例数。",
+      "reader": "看榜时注意缺了哪个模型、为什么缺；缺项不等于低分。",
+      "cite": [
+        "site@Leaderboard"
+      ]
+    },
+    {
+      "issue": "L4 档样本量小",
+      "impact": "最难的 L4 档只有 90 个样本、796 条细则，档内差距的统计意义有限。",
+      "severity": "低",
+      "response": "未见官方回应（论文附录内容本次未能打开）。",
+      "reader": "L4 上几个百分点的差距不要过度解读。",
+      "cite": [
+        "repo@Benchmark Details"
+      ]
+    },
+    {
+      "issue": "数据集许可限制商用",
+      "impact": "数据文件与引擎输入以 CC BY-NC 4.0 发布，只能用于非商业用途；评测代码与代码仿真引擎为 Apache-2.0。",
+      "severity": "低",
+      "response": "仓库 License 节分别列出两类许可与适用范围。",
+      "reader": "商用前先确认许可边界。",
+      "cite": [
+        "repo@License"
+      ]
+    },
+    {
+      "issue": "难度档命名在两个官方来源不一致",
+      "impact": "L3 在官网叫 Information Reorganization，在仓库 README 的难度表里叫 Information Reorganization Under High Noise，同一档位两个名字。",
+      "severity": "低",
+      "response": "未见官方回应。",
+      "reader": "引用档位名称时注明来源，避免同一档位被当成两个。",
+      "cite": [
+        "site@Two Axes, Four Levels, Five Scenarios",
+        "repo@Benchmark Details"
+      ]
+    }
   ],
-  "notes": "仓库与数据集于 2026-11-05 公开，README News 节记「AppCIF-Bench has been accepted to NeurIPS 2026」，并记评测代码、代码仿真引擎与中英文数据集一并发布。五个应用场景为课程规划、旅行规划、数值密集、角色扮演与真实世界仿真；真实世界仿真 240 个样本覆盖六个子场景（演唱会预算、墓葬探索、中医诊断、案件裁决、电网调度、时空交易），每场景 40 个样本。跨语言对比需单独处理：官方用 cross_lingual_strata.json 标出 18 个角色扮演样本（依赖中文输出或与提示语言绑定的约束）需单列报告，其余 448 个样本可直接对比。",
+  "notes": "仓库与数据集于 2026-11-05 公开，README News 节记「AppCIF-Bench has been accepted to NeurIPS 2026」。官方排行榜数据即论文 Table 2（网站 main.js 注释写明 Table 2 of the paper），判分 Doubao-Seed-1.6-1015。真实世界仿真 240 个样本覆盖六个子场景，每场景 40 个。论文全文在 NeurIPS 2026 / OpenReview，本次因浏览器验证未能打开，论文独有的信息（如附录 J 的 v1.1 复评结果）未纳入本档案。",
   "official_sources": [
     {
       "kind": "repo",
@@ -83,6 +392,10 @@
     {
       "kind": "site",
       "url": "https://ac2333.github.io/AppCIF/"
+    },
+    {
+      "kind": "site",
+      "url": "https://neurips.cc/virtual/2026/poster/139375"
     }
   ],
   "related_benchmarks": [
@@ -91,6 +404,321 @@
     "tau-bench",
     "longbench"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-11-07"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-10",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-10",
+    "sources": [
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "Tencent-Hunyuan/AppCIF-Bench（官方仓库 README：题量表、榜单、版本说明、许可）",
+        "url": "https://github.com/Tencent-Hunyuan/AppCIF-Bench",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "site",
+        "kind": "site",
+        "title": "AppCIF-Bench 官网（摘要、作者、难度档、场景、榜单脚注、构建流程）",
+        "url": "https://ac2333.github.io/AppCIF/",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "dataset",
+        "kind": "dataset",
+        "title": "data/croissant.json（数据集元数据卡：version 1.1.0、datePublished、许可）",
+        "url": "https://github.com/Tencent-Hunyuan/AppCIF-Bench/blob/main/data/croissant.json",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "datafile",
+        "kind": "dataset",
+        "title": "data/AppCIF_bench_dataset.jsonl（中文版全量 466 样本，含细则与推导）",
+        "url": "https://github.com/Tencent-Hunyuan/AppCIF-Bench/blob/main/data/AppCIF_bench_dataset.jsonl",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "neurips",
+        "kind": "announcement",
+        "title": "NeurIPS 2026 海报页面（论文摘要）",
+        "url": "https://neurips.cc/virtual/2026/poster/139375",
+        "accessed": "2026-11-10"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "腾讯（Tencent）",
+        "cite": [
+          "site@Citation"
+        ]
+      },
+      "first_release": {
+        "v": "2026-11-05（仓库与数据集公开，发布 v1.1）",
+        "cite": [
+          "dataset",
+          "repo@News"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "site@Abstract",
+        "neurips@Abstract",
+        "repo@Introduction"
+      ],
+      "interpretation": [
+        "repo@Leaderboard",
+        "repo@Version notes",
+        "site@Leaderboard"
+      ]
+    },
+    "problem": {
+      "text": "现有指令跟随基准大多是原子级、短跨度的：一次只考一两条格式约束，既不管长跨度上干扰的累积，也不管规则的深层嵌套，而生产环境里的复杂指令恰恰同时要求这两者。AppCIF 用 Horizon Length 与 Logical Depth 两条轴把难度分层，并用「提示词即环境 + 可执行引擎产标准答案」把应用级任务变成可判分的评测。",
+      "cite": [
+        "site@Abstract",
+        "neurips@Abstract",
+        "repo@Introduction"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机 / 人类基线",
+        "value": "未披露",
+        "note": "官网与仓库 README 均未报告随机猜测基线或人类参考分（论文正文本次未能打开，不排除其中有）。",
+        "cite": [
+          "site@Leaderboard",
+          "repo@Leaderboard"
+        ]
+      },
+      {
+        "label": "官方榜单最高 HSR（硬满足率）",
+        "value": "45.9%",
+        "note": "GPT-5.4-xhigh 的全局 HSR 平均，L4 档 31.1%；同模型 SSR 全局 78.2% 也是最高。",
+        "cite": [
+          "repo@Leaderboard"
+        ]
+      },
+      {
+        "label": "官方榜单单档最高 SSR（软满足率）",
+        "value": "82.4%",
+        "note": "Gemini-3.1-Pro-Preview 的 L1 档 SSR；其 SSR 全局 70.9% 低于 GPT-5.4-xhigh 的 78.2%，HSR 全局 34.6%。",
+        "cite": [
+          "repo@Leaderboard"
+        ]
+      },
+      {
+        "label": "官方榜单最低 HSR",
+        "value": "1.1%",
+        "note": "Xiaomi-MiMo-V2-Omni 的全局 HSR 平均；12 个模型中多数在 L4 档 HSR 为 0.0%。",
+        "cite": [
+          "repo@Leaderboard"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      },
+      {
+        "label": "判分噪声参考线",
+        "value": "二次裁判一致率 95.8% / 人工一致率 96%",
+        "note": "独立二次裁判（Gemini-3-Flash-Preview）与主裁判在 95.8% 的样本上判定一致且 12 模型排序不变；主裁判与人工标注者在 60 例分层子集上 96% 一致。本站据此认为小于该量级的模型间差距需谨慎解读——这是本站解读，不是官方上限。",
+        "cite": [
+          "site@Leaderboard"
+        ]
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 SSR 和 HSR 混在一起比：SSR 是细则通过比例，HSR 要求整个样本的细则全部通过；同一模型两者可差 30 个百分点以上（GPT-5.4-xhigh 为 78.2% vs 45.9%）。",
+        "cite": [
+          "repo@Benchmark Details",
+          "repo@Leaderboard"
+        ]
+      },
+      {
+        "text": "把论文榜分数和 v1.1 复评分数排在一起：数据集版本（2,998 → 3,017 条细则）和裁判模型（Doubao-Seed-1.6-1015 → Doubao-Seed-2.0-lite）都变了，官方明说不可直接比较。",
+        "cite": [
+          "repo@Version notes"
+        ]
+      },
+      {
+        "text": "把 HSR 读成「回答质量高」：HSR 只按原子二值细则判定，不评价回答是否有用、自然或有创意。",
+        "cite": [
+          "site@Prompt-as-Environment"
+        ]
+      },
+      {
+        "text": "把高分理解成通用能力提升：这个基准只考察应用级复杂指令跟随，官网说它暴露的是长跨度、强干扰下指令执行的瓶颈。",
+        "cite": [
+          "site@Abstract"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "腾讯（Tencent），仓库挂在 Tencent-Hunyuan 组织下",
+        "cite": [
+          "site@Citation",
+          "repo"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "Jiahao Xu、Xuefang Zhao（共同一作，标注 Equal contribution）、Xinhua Feng、Hongrui Yang、Yixian Liu、Zhichao Hu（通讯作者）、Yuhong Liu；七人全部署名 Tencent",
+        "cite": [
+          "site@Citation"
+        ]
+      },
+      {
+        "k": "发表",
+        "v": "NeurIPS 2026（海报）；官方引用格式 @inproceedings{xu2026appcif, ... booktitle = {Advances in Neural Information Processing Systems}, year = {2026}}",
+        "cite": [
+          "repo@News",
+          "site@Citation"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2026-09-25 NeurIPS 2026 会议页面上线 → 2026-11-05 仓库与数据集公开（v1.1，croissant 记 datePublished 2026-11-05）",
+        "cite": [
+          "neurips@Abstract",
+          "dataset"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "数据集（中英文 JSONL）、croissant 元数据、cross_lingual_strata.json 与 6 个代码仿真引擎均在 GitHub 仓库；引擎输入在 code_simulation_engines/structured_inputs.jsonl，覆盖全部 240 个仿真样本",
+        "cite": [
+          "repo@Dataset",
+          "repo@Code Simulation Engines",
+          "dataset"
+        ]
+      },
+      {
+        "k": "许可",
+        "v": "数据文件与引擎输入 CC BY-NC 4.0（仅非商用）；评测代码与代码仿真引擎 Apache-2.0",
+        "cite": [
+          "repo@License",
+          "dataset"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-10",
+        "columns": [
+          "模型",
+          "SSR 全局 (%)",
+          "HSR 全局 (%)",
+          "SSR L4 (%)",
+          "HSR L4 (%)",
+          "口径"
+        ],
+        "rows": [
+          [
+            "GPT-5.4-xhigh",
+            "78.2",
+            "45.9",
+            "75.9",
+            "31.1",
+            "Doubao-Seed-1.6-1015 判分；论文初始版 2,998 条细则；中文版"
+          ],
+          [
+            "Gemini-3.1-Pro-Preview",
+            "70.9",
+            "34.6",
+            "53.1",
+            "8.9",
+            "同上"
+          ],
+          [
+            "Doubao-Seed-2.0-Pro-high",
+            "53.5",
+            "20.0",
+            "34.7",
+            "2.2",
+            "同上"
+          ],
+          [
+            "GLM-5.1",
+            "50.0",
+            "10.9",
+            "30.6",
+            "0.0",
+            "同上"
+          ],
+          [
+            "Gemini-3-Flash-Preview",
+            "46.4",
+            "10.3",
+            "23.8",
+            "0.0",
+            "同上"
+          ],
+          [
+            "Kimi-K2.5-Thinking",
+            "42.5",
+            "8.6",
+            "25.0",
+            "0.0",
+            "同上"
+          ],
+          [
+            "Qwen-3.6-Plus-Thinking",
+            "44.7",
+            "7.9",
+            "30.7",
+            "0.0",
+            "同上"
+          ],
+          [
+            "Grok-4.2",
+            "36.7",
+            "5.2",
+            "16.1",
+            "0.0",
+            "同上"
+          ],
+          [
+            "DeepSeek-V3.2-Thinking",
+            "39.2",
+            "4.1",
+            "29.9",
+            "0.0",
+            "同上"
+          ],
+          [
+            "Xiaomi-MiMo-V2-Pro",
+            "32.5",
+            "3.4",
+            "19.6",
+            "0.0",
+            "同上"
+          ],
+          [
+            "Minimax-M2.7",
+            "24.7",
+            "2.4",
+            "12.6",
+            "1.1",
+            "同上"
+          ],
+          [
+            "Xiaomi-MiMo-V2-Omni",
+            "28.3",
+            "1.1",
+            "16.1",
+            "0.0",
+            "同上"
+          ]
+        ]
+      },
+      "cite": [
+        "repo@Leaderboard",
+        "site@Leaderboard"
+      ]
+    }
+  }
 }
