@@ -1,32 +1,380 @@
 {
   "id": "aa-lcr",
   "name": "AA-LCR",
-  "full_name": "Artificial Analysis Long Context Reasoning",
-  "aliases": [],
-  "status": null,
+  "full_name": "Artificial Analysis Long Context Reasoning（Artificial Analysis 长上下文推理）",
+  "aliases": [
+    "AA-LCR v1.1",
+    "AA-LCR-25"
+  ],
+  "status": "historical",
   "categories": [
     "longctx"
   ],
-  "summary": "Artificial Analysis 长上下文多文档推理指数",
-  "interpretation": "Artificial Analysis 长上下文推理评测：100 道题、文档长 10k–100k token（财报/法律/学术论文等），开放式作答由 LLM 判定是否等价于官方答案、取平均通过率；2024 中期前沿模型不足 50%，如今榜首约 83%——考跨分散章节的综合推理而非单点检索。",
-  "measures": [],
-  "does_not_measure": [],
+  "summary": "AA-LCR 是 Artificial Analysis 出的长上下文推理考题：100 道英文开放式问答题，每题的输入是一组约 10 万 token 的真实文档（公司财报、政府咨询提交、法律文本、行业报告、学术论文等），答案无法靠检索某一篇直接得到，必须跨多份文档综合推理；得分是被 LLM 裁判判为与官方答案一致的题目占比。",
+  "interpretation": "高分说明模型能把分散在多份长文档里的信息连起来做推理；官方明确说上下文窗口大并不保证模型能在长文档上有效推理，所以这一项和「窗口多大」是两件事。读分数时还要留两份余量：答案键本身出过错（v1.1 修正了 16 个，每个都对着题目自己的源文档重新核验），裁判是另一个 LLM 且只看到题目和两份答案、看不到那 10 万 token 原文；v1.0 与 v1.1 的分数也不能直接比。",
+  "measures": [
+    {
+      "area": "公司报告 / 财报（Company Documents）",
+      "focus": "财务分析与比较指标：跨多份季报、补充材料、年报和电话会记录做差值与比率计算。示例题：比较 Nasdaq 与 NYSE 各一家公司 2023-06-30 的股东权益总额差，以千美元报告。",
+      "share": "63 题（全集 100 题）",
+      "format": "开放式短答案，多数带单位与小数位要求（如「以千美元报告」「保留两位小数」），由 LLM 裁判判定等价",
+      "cite": [
+        "hf-dataset@Technical Details",
+        "official-page@Example Tasks"
+      ]
+    },
+    {
+      "area": "政府咨询提交（Government Consultations）",
+      "focus": "同一场监管咨询的几十份公众提交之间做交叉比对。示例题：列出文档集中明确点名 section 133BXF 的提交机构（按字母序、用全称）。",
+      "share": "11 题",
+      "format": "开放式答案，多为列表/排序题",
+      "cite": [
+        "hf-dataset@Technical Details",
+        "hf-dataset@Dataset Viewer"
+      ]
+    },
+    {
+      "area": "行业报告（Industry Reports）",
+      "focus": "McKinsey、Ai Group、Clean Energy Council、KPMG 等报告间的数据提取与比较。示例题：贡献最高与最低的可再生能源发电技术，2023 年对总可再生发电的贡献相差多少个百分点。",
+      "share": "8 题",
+      "format": "开放式数值答案，多带百分比与小数位要求",
+      "cite": [
+        "hf-dataset@Technical Details",
+        "hf-dataset@Dataset Viewer"
+      ]
+    },
+    {
+      "area": "法律（Legal）",
+      "focus": "EU AI Act、加州 SB 1047 法案分析与判例检索。示例题：按 EU AI Act 的实施时间表，一个高风险 AI 系统在 2025-06-01 投放市场后何时必须完全履行法案义务。",
+      "share": "6 题",
+      "format": "开放式答案（日期、条款名、机构名）",
+      "cite": [
+        "hf-dataset@Technical Details",
+        "hf-dataset@Dataset Viewer"
+      ]
+    },
+    {
+      "area": "营销材料（Marketing）",
+      "focus": "Deloitte 数字媒体趋势、CMO Survey、游戏广告指南等营销与广告合规文档。示例题：2022 年购买过虚拟偶像推广的产品或服务的美国客户中，Gen-Z 或千禧一代占多大比例。",
+      "share": "6 题",
+      "format": "开放式数值/名称答案",
+      "cite": [
+        "hf-dataset@Technical Details",
+        "hf-dataset@Dataset Viewer"
+      ]
+    },
+    {
+      "area": "学术论文（Academia）",
+      "focus": "arXiv 论文（LLM 安全、提示注入等）之间的概念归属与观点归纳。示例题：Baum 参与撰写的论文反复讨论的两大 LLM 威胁，在 Liu 与 Hu 的另一篇论文里被归入哪个总称。",
+      "share": "5 题",
+      "format": "开放式短答案（术语、论文标题）",
+      "cite": [
+        "hf-dataset@Technical Details",
+        "hf-dataset@Dataset Viewer"
+      ]
+    },
+    {
+      "area": "调查报告（Survey Reports）",
+      "focus": "建筑与工程行业调研的适用性判断。示例题：做建筑趋势研究时，哪些文档的 scope 覆盖 2022 年展望，给出完整标题与出品机构。",
+      "share": "1 题",
+      "format": "开放式答案（文档标题 + 机构）",
+      "cite": [
+        "hf-dataset@Technical Details",
+        "hf-dataset@Dataset Viewer"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "不测工具调用与多轮 agent 行为：官方调用模板只把文档与问题放进同一次提问，模板里没有工具定义，也没有多轮交互",
+      "cite": [
+        "hf-dataset@Technical Details"
+      ]
+    },
+    {
+      "text": "不测「大海捞针」式单点检索：题目设计要求答案不能直接从文档检索到，必须跨多个信息源推理（人工测试逐题验证过这一点）",
+      "cite": [
+        "hf-dataset@README",
+        "launch-post"
+      ]
+    },
+    {
+      "text": "不测多模态与非英文输入：100 题对应的 7 类文档全部是 text-only，题目为英文",
+      "cite": [
+        "hf-dataset@Technical Details"
+      ]
+    },
+    {
+      "text": "不测上下文窗口上限本身：官方要求模型至少支持 128K 窗口才能参评，窗口不够的模型拿不到分数，而不是拿到低分",
+      "cite": [
+        "aa-methodology@AA-LCR v1.1",
+        "launch-post@Key takeaways"
+      ]
+    }
+  ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
+    "sample_count": 100,
+    "splits": [
+      "test（唯一 split，100 题）",
+      "v1.0.0 旧版保留在 revision bdae010，官方称用于复现更早结果"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "真实公开文档（公司报告与财报、政府咨询提交、法律文本、行业报告、学术论文、营销材料、调查报告），题面由人工撰写，非合成数据",
+    "public_sample": true,
+    "multiple_choice_share": "0（官方称全部为 open-answer questions）",
+    "multimodal_share": "0（7 类文档均为 text-only）",
+    "totals": "全集 100 题 / 30 个文档集 / 234 份文档 / 2,979,757 token，平均每个文档集约 99,325 token（cl100k_base 计）；单题输入 71.7k–115k token；全部为英文开放式问答，无选择题、无图片。",
+    "cite": [
+      "hf-dataset@Technical Details",
+      "hf-dataset@Dataset Viewer",
+      "launch-post@Key takeaways"
+    ],
+    "construction": [
+      {
+        "k": "文档遴选",
+        "text": "研究团队挑选多样化的真实文档集（公司报告、政府咨询、法律文档、学术论文），每集约 10 万 token，对应知识工作者日常分析的材料。",
+        "cite": [
+          "hf-dataset@Dataset Development"
+        ]
+      },
+      {
+        "k": "出题与难度校准",
+        "text": "多名 Artificial Analysis 研究成员加十多名短期合约本科生出题；出题时通过开发面板接入非前沿测试模型（GPT-4o-mini、Llama-3.1-70B、Gemini 1.5 Flash）验证难度，要求这些模型答错。官方称这些模型是刻意选的：出题者接触不到前沿模型，以避免题目被针对特定前沿模型做对抗筛选。",
+        "cite": [
+          "hf-dataset@Dataset Development"
+        ]
+      },
+      {
+        "k": "人工验证",
+        "text": "每道题都由人类测试者用同一套文档集作答：单个评估者首次通过率通常只有 40%–60%；看到正确答案后一致性高，说明题目难但有清晰可辩护的答案；未通过验证的题被修改或丢弃；每题至少被一名人类测试者答对。",
+        "cite": [
+          "hf-dataset@Dataset Development"
+        ]
+      },
+      {
+        "k": "拼装口径",
+        "text": "题目元数据在 Hugging Face 数据集里，文档文本按 data_source_filenames 的顺序拼进提示词模板（顺序会影响成绩）；token 数以完整提示词用 cl100k_base tokenizer 计。",
+        "cite": [
+          "hf-dataset@Technical Details"
+        ]
+      },
+      {
+        "k": "许可",
+        "text": "题目集采用 Apache License 2.0；文档集是创建时公开可得文档的文本表示，官方不主张版权。",
+        "cite": [
+          "hf-dataset@License"
+        ]
+      }
+    ]
   },
-  "metrics": [],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [],
-  "notes": "Kimi/Meta Muse 引用；约 100 题多文档聚合问答",
+  "default_protocol": {
+    "raw": "把该题的文档集按 data_source_filenames 顺序拼进同一次提示词（BEGIN INPUT DOCUMENTS … END INPUT DOCUMENTS，然后「Answer the following question using the input documents provided above.」与 START QUESTION … END QUESTION），模型直接给出开放式答案。另一个 LLM 等式检查器（v1.1 起为 GPT-5.6 Luna (medium)）拿到题目、官方答案和候选答案，输出 CORRECT / INCORRECT，v1.1 起还带一份系统提示词规定数值等价、格式要求、排序与「只认最终承诺值」等判据；按 pass@1 汇总为平均通过率。官方通用测试参数：非推理模型温度 0、推理模型 0.6（模型实验室另有建议时从其建议），非推理模型最大输出 16,384 token（窗口或输出上限更小的模型相应调低）。",
+    "cite": [
+      "hf-dataset@Technical Details",
+      "hf-dataset@Scoring Approach",
+      "aa-methodology@AA-LCR v1.1",
+      "aa-methodology@General Testing Parameters"
+    ],
+    "variants": [
+      {
+        "text": "数据集版本 v1.0.0 vs v1.1：v1.0.0 的裁判没有系统提示词，答案键含 16 处错误；v1.1 增加裁判系统提示词并修正 16 个答案键，官方明示两版分数不可直接比较。",
+        "cite": [
+          "hf-dataset@New in Version 1.1 (September 2026)",
+          "aa-methodology@AA-LCR v1.1"
+        ]
+      },
+      {
+        "text": "裁判模型更换：Intelligence Index v4.1.1（2026 年 8–9 月）起 AA-LCR 的裁判从 Qwen3 235B A22B 2507 Non-Reasoning 换成 GPT-5.6 Luna (medium)，更换前后的分数同样不可直接比较。",
+        "cite": [
+          "aa-methodology@Version History"
+        ]
+      },
+      {
+        "text": "重复次数与子集口径：官方 Endpoint Accuracy Index 用的是 25 题子集 AA-LCR-25，每题跑 25 次（v1.0 时 10 次），并公布 95% 置信区间；主榜单口径是 pass@1。",
+        "cite": [
+          "aa-endpoint-index-v11@What's changes in v1.1"
+        ]
+      },
+      {
+        "text": "厂商自报口径：Kimi K2.5 博客标注自己的 AA-LCR 分数是三次运行平均（avg@3），与官方 pass@1 口径不同，不能直接和官方榜单并列。",
+        "cite": [
+          "kimi-k2-5@Long-Context Benchmarks"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "accuracy",
+      "name": "AA-LCR 分数（平均通过率）",
+      "direction": "越高越好",
+      "description": "开放式答案被 LLM 等式检查器判为与官方答案一致的题目占比；pass/fail 判定后取平均，pass@1 口径",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "official-page@FAQ",
+        "aa-methodology@AA-LCR v1.1"
+      ]
+    }
+  ],
+  "versions": [
+    {
+      "id": "v1.0.0",
+      "date": "2025-08-06",
+      "label": "HF 仓库 initial commit（2025-08-05）后于 2025-08-06 发布：100 题、7 类文档、裁判无系统提示词；同期纳入 Intelligence Index v2.2",
+      "cite": [
+        "hf-commits-api@initial commit",
+        "launch-post",
+        "aa-methodology@Version History"
+      ]
+    },
+    {
+      "id": "v1.0.0-csv",
+      "date": "2025-08-22",
+      "label": "上传 AA-LCR_Dataset.csv（#5），题目元数据可下载",
+      "cite": [
+        "hf-commits"
+      ]
+    },
+    {
+      "id": "token-fix",
+      "date": "2025-09-05",
+      "label": "修正数据集 token 计数（fix: update AA-LCR_dataset.csv token counts）",
+      "cite": [
+        "hf-commits"
+      ]
+    },
+    {
+      "id": "encoding-fix",
+      "date": "2025-11-26",
+      "label": "修复 question 字符串编码问题（fix: remedy question string encoding issue）",
+      "cite": [
+        "hf-commits"
+      ]
+    },
+    {
+      "id": "ordering-snippets",
+      "date": "2025-12-08",
+      "label": "补充文档顺序代码片段（add document ordering snippets）；该 revision（bdae010）被官方指定为 v1.0.0 的可复现锚点",
+      "cite": [
+        "hf-commits",
+        "hf-dataset@New in Version 1.1 (September 2026)"
+      ]
+    },
+    {
+      "id": "v1.1",
+      "date": "2026-09-04",
+      "label": "v1.1：修正 16 个答案键并在数据集卡记录裁判系统提示词；题目与文档集不变，官方明示分数与 v1.0 不可直接比较",
+      "cite": [
+        "hf-commits-api@v1.1 commit",
+        "hf-dataset@New in Version 1.1 (September 2026)",
+        "aa-methodology@Version History"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "答案键错误",
+      "impact": "v1.1 修正了 16 个答案键，每个都对着该题自己的源文档重新核验：多数是表示法问题（第 28 题 0.658 改为 65.8%，第 40 题把日期序列号 45444 改为 June 2024），4 题改的是答案本身（第 10、25、30、67 题）。现网样例里仍能看到题干与答案不一致：第 2 题要求列出 3 个判决结果不同的商标侵权案件，answer 字段只列了 2 个；第 10 题题干问「营收下降了多少」，答案写的是「8.57%, increase not decrease」。",
+      "severity": "高",
+      "response": "官方在 v1.1 修正并逐题重新核验答案键，题目与文档集未变；v1.0.0 保留在 revision bdae010 供复现。",
+      "reader": "引用 AA-LCR 分数前先看数据集版本；v1.0 的历史分数掺有错误答案键，和 v1.1 不能同榜比较。",
+      "cite": [
+        "hf-dataset@New in Version 1.1 (September 2026)",
+        "hf-dataset@Dataset Viewer",
+        "aa-methodology@AA-LCR v1.1"
+      ]
+    },
+    {
+      "issue": "LLM 裁判看不到原文",
+      "impact": "裁判提示词只包含题目、官方答案和候选答案，不包含那 10 万 token 原文，因此它只能判断「候选答案像不像官方答案」，无法判断官方答案本身对不对。",
+      "severity": "高",
+      "response": "官方公开了完整裁判系统提示词与判据（数值等价、格式要求、排序容错、只认最终承诺值），并称裁判模型按与人工判断的一致性在 HLE 与 AA-LCR 上验证后选定；未对「裁判看不到原文」这一结构本身作出说明。",
+      "reader": "分数同时包含模型能力、答案键质量与裁判误差三项；越接近满分，越难区分模型答错和题目/答案本身有问题。",
+      "cite": [
+        "hf-dataset@Scoring Approach",
+        "aa-methodology@Equality Checker LLM"
+      ]
+    },
+    {
+      "issue": "运行噪声",
+      "impact": "在 25 题子集口径下，每题跑 10 次时平均 95% 置信区间为 ±4.7 分，是官方三项端点评测里最宽的（BFCL-500 ±2.9、HLE-250 ±1.6），官方称长上下文噪声可能掩盖工具调用与推理上的真实差异。",
+      "severity": "中",
+      "response": "官方把重复次数从 10 提到 25，平均 95% 置信区间收窄到 ±2.6 分，并公开区间。",
+      "reader": "头部模型 1–2 个点的差距可能落在噪声里；比较时优先看官方给出的区间而非点估计。",
+      "cite": [
+        "aa-endpoint-index-v11",
+        "aa-endpoint-index-v11@What's changes in v1.1"
+      ]
+    },
+    {
+      "issue": "版本与口径不可比",
+      "impact": "v1.0→v1.1 换了裁判提示词并改了 16 个答案键；Intelligence Index v4.1.1 又换了裁判模型（Qwen3 235B A22B 2507 Non-Reasoning → GPT-5.6 Luna (medium)）；Endpoint Accuracy Index 另用 25 题子集。同一串「AA-LCR 分数」背后可能是三四种口径。",
+      "severity": "中",
+      "response": "官方明示各版本分数不可直接比较，并保留 v1.0.0 在 revision bdae010。",
+      "reader": "看到 AA-LCR 分数先问三件事：数据集版本、裁判模型、重复次数。",
+      "cite": [
+        "hf-dataset@New in Version 1.1 (September 2026)",
+        "aa-methodology@Version History",
+        "aa-endpoint-index-v11"
+      ]
+    },
+    {
+      "issue": "污染与刷榜",
+      "impact": "题目、答案键和文档文本全部公开可下载，可能进入训练数据或被针对性调优，使公开集分数偏高。",
+      "severity": "中",
+      "response": "官方靠「答案无法直接检索、必须跨文档推理」的题目设计与人工验证缓解；题目集与文档文本完全公开，来源中未提及私有留存集，也未见针对污染问题的专门回应。",
+      "reader": "对公开集分数保留余地，交叉参考不同时间、不同版本下的复核结果。",
+      "cite": [
+        "hf-dataset@README",
+        "hf-dataset@License"
+      ]
+    },
+    {
+      "issue": "头部集中与官方表述不一致",
+      "impact": "榜首 88.7%，距满分只剩约 11 分；官方评测页同一页里对「谁是第一」给出两种说法——正文说 Kimi K3 (Max) 88.7% 最高，FAQ 说 Step 5 Preview 88.3% 是最高。",
+      "severity": "低",
+      "response": "未见官方回应。",
+      "reader": "头部几名差距在 1–3 分内，且官方页自身表述不一致；引用时写清模型、分数与抓取日期。",
+      "cite": [
+        "official-page",
+        "official-page@FAQ"
+      ]
+    },
+    {
+      "issue": "已从 Intelligence Index 移除",
+      "impact": "Intelligence Index v5.0（2026 年 10 月—11 月）起 AA-LCR 被移出指数，方法论页把它归入 Legacy Evaluations，不再参与综合智能分。",
+      "severity": "低",
+      "response": "官方称保留方法论供参考与历史可比，并继续作为独立评测在新模型发布时运行。",
+      "reader": "它不再是综合指数的成分项，不要按指数权重解读单项分数。",
+      "cite": [
+        "aa-methodology@Legacy Evaluations",
+        "aa-methodology@Version History"
+      ]
+    }
+  ],
+  "notes": "第三方引用：Kimi K2.5 博客、Meta Muse-Glimmer-30B 模型卡；AA 自家 Endpoint Accuracy Index 用其 25 题子集 AA-LCR-25",
   "official_sources": [
     {
       "kind": "site",
       "url": "https://artificialanalysis.ai/evaluations/artificial-analysis-long-context-reasoning"
+    },
+    {
+      "kind": "site",
+      "url": "https://artificialanalysis.ai/methodology/intelligence-benchmarking"
+    },
+    {
+      "kind": "site",
+      "url": "https://artificialanalysis.ai/articles/endpoint-accuracy-index-v1-1"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/ArtificialAnalysis/AA-LCR"
     },
     {
       "kind": "site",
@@ -39,8 +387,301 @@
   ],
   "related_benchmarks": [
     "ruler",
-    "niah"
+    "niah",
+    "longbench"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-13",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      {
+        "id": "official-page",
+        "kind": "site",
+        "title": "AA-LCR v1.1: Long Context Reasoning Benchmark（Artificial Analysis 官方评测页）",
+        "url": "https://artificialanalysis.ai/evaluations/artificial-analysis-long-context-reasoning",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "aa-methodology",
+        "kind": "site",
+        "title": "Artificial Analysis Intelligence Benchmarking Methodology（AA-LCR v1.1 列在 Legacy Evaluations）",
+        "url": "https://artificialanalysis.ai/methodology/intelligence-benchmarking",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "hf-dataset",
+        "kind": "dataset",
+        "title": "ArtificialAnalysis/AA-LCR（Hugging Face 数据集卡，v1.1，含裁判系统提示词与分类统计表）",
+        "url": "https://huggingface.co/datasets/ArtificialAnalysis/AA-LCR",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "launch-post",
+        "kind": "announcement",
+        "title": "Announcing Artificial Analysis Long Context Reasoning (AA-LCR)（georgewritescode，2025-08-06）",
+        "url": "https://huggingface.co/posts/georgewritescode/981174566402338",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "hf-commits",
+        "kind": "dataset",
+        "title": "ArtificialAnalysis/AA-LCR commit history 页面",
+        "url": "https://huggingface.co/datasets/ArtificialAnalysis/AA-LCR/commits/main",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "hf-commits-api",
+        "kind": "dataset",
+        "title": "ArtificialAnalysis/AA-LCR commits API（JSON，含精确提交时间）",
+        "url": "https://huggingface.co/api/datasets/ArtificialAnalysis/AA-LCR/commits/main",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "aa-endpoint-index-v11",
+        "kind": "site",
+        "title": "Endpoint Accuracy Index v1.1: Tighter long context intervals and expanded model coverage（2026-11-09）",
+        "url": "https://artificialanalysis.ai/articles/endpoint-accuracy-index-v1-1",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "kimi-k2-5",
+        "kind": "blog",
+        "title": "Kimi K2.5 博客（长上下文基准章节：AA-LCR avg@3）",
+        "url": "https://www.kimi.ai/blog/kimi-k2-5",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "muse-card",
+        "kind": "docs",
+        "title": "meta-models/Muse-Glimmer-30B 模型卡（基准表含 AA-LCR 一行）",
+        "url": "https://huggingface.co/meta-models/Muse-Glimmer-30B",
+        "accessed": "2026-11-13"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Artificial Analysis, Inc.（第三方独立 AI 评测机构）",
+        "cite": [
+          "hf-dataset@Access and Citation",
+          "official-page"
+        ]
+      },
+      "first_release": {
+        "v": "2025-08-06（HF 数据集仓库 initial commit 2025-08-05，发布帖 2025-08-06）",
+        "cite": [
+          "hf-commits-api@initial commit",
+          "launch-post"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "official-page",
+        "hf-dataset@README",
+        "launch-post"
+      ],
+      "interpretation": [
+        "official-page@FAQ",
+        "hf-dataset@New in Version 1.1 (September 2026)",
+        "aa-endpoint-index-v11"
+      ]
+    },
+    "problem": {
+      "text": "长上下文窗口越做越大，但「装得下」不等于「用得上」。官方把长文本理解定位成一类研究不足、人类显著领先模型的评测，并强调真实知识工作（文档分析、代码库理解、多步工作流）需要在多份长文档间做跨段综合，而不是从某一份里做简单数据提取；AA-LCR 用 100 道必须跨多份约 10 万 token 文档推理的题来测这件事。",
+      "cite": [
+        "official-page@Background",
+        "hf-dataset@README",
+        "launch-post"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机 / 空白基线",
+        "value": "官方未给出",
+        "note": "100 题全部为开放式作答，官方没有报告随机或空白基线，本站也不推算。",
+        "cite": [
+          "official-page@FAQ"
+        ]
+      },
+      {
+        "label": "人类基线",
+        "value": "约 40%–60%（首次作答）",
+        "note": "数据集卡：单个评估者首次作答通常答对 40%–60%，看到正确答案后一致性高；每题至少被一名人类测试者答对。",
+        "cite": [
+          "hf-dataset@Dataset Development"
+        ]
+      },
+      {
+        "label": "发布时最好成绩",
+        "value": "69%（OpenAI o3，2025-08-06）",
+        "note": "发布帖：o3 69%、Grok 4 68%、Qwen3 235B 2507 Thinking 67%，头部约 70%；同期官方页称 mid-2024 前沿模型在这类题上不足 50%。",
+        "cite": [
+          "launch-post@Key takeaways",
+          "official-page@Background"
+        ]
+      },
+      {
+        "label": "官方榜单当前最高",
+        "value": "88.7%（Kimi K3 (Max)）",
+        "note": "官方评测页正文：Kimi K3 (Max) 88.7%、Step 5 Preview 88.3%、Kimi K3.1 Pro 86.3%；页面显示 596 个模型中 27 个有 AA-LCR v1.1 成绩。同页 FAQ 称 Step 5 Preview 88.3% 为最高，两处表述不一致。",
+        "cite": [
+          "official-page",
+          "official-page@FAQ"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      },
+      {
+        "label": "噪声参考线",
+        "value": "95% 置信区间约 ±2.6 分（25 题子集、每题 25 次）",
+        "note": "官方 Endpoint Accuracy Index v1.1：重复从 10 提到 25 后，平均 95% CI 从 ±4.7 收窄到 ±2.6；v1.0 时长上下文召回是三项里噪声最宽的。这条线是官方给出的统计口径，不是分数上限。",
+        "cite": [
+          "aa-endpoint-index-v11@What's changes in v1.1"
+        ]
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把大上下文窗口当成 AA-LCR 高分的理由——官方明确说大窗口不保证模型能在长文档上有效推理，这一项测的是用不用得对，不是装不装得下。",
+        "cite": [
+          "official-page@FAQ"
+        ]
+      },
+      {
+        "text": "把 v1.0 和 v1.1 的分数排在同一张榜上比——官方明示两版分数不可直接比较（答案键修正 + 裁判提示词变更）。",
+        "cite": [
+          "hf-dataset@New in Version 1.1 (September 2026)"
+        ]
+      },
+      {
+        "text": "把它当成检索测试（大海捞针）——题目设计要求答案不能直接从文档检索到，必须跨多个信息源推理，人工测试逐题验证过这一点。",
+        "cite": [
+          "hf-dataset@README",
+          "launch-post"
+        ]
+      },
+      {
+        "text": "把厂商自报分数和官方榜单直接并列——Kimi K2.5 博客标注自己的 AA-LCR 分数是三次运行平均（avg@3），与官方 pass@1 口径不同。",
+        "cite": [
+          "kimi-k2-5@Long-Context Benchmarks"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "Artificial Analysis, Inc.（第三方独立 AI 评测机构；数据集卡引用信息的 publisher 为 Artificial Analysis, Inc.）",
+        "cite": [
+          "hf-dataset@Access and Citation",
+          "official-page"
+        ]
+      },
+      {
+        "k": "提交者与出题者",
+        "v": "HF 仓库 initial commit 与 2025-08-06 发布帖由 georgewritescode（George Cameron）提交；v1.1 提交者为 kartikey-aa 与 huff3669；数据集卡称题目由 Artificial Analysis 研究团队多名成员加十多名短期合约本科生出题或验证",
+        "cite": [
+          "hf-commits-api@initial commit",
+          "launch-post",
+          "hf-dataset@Dataset Development"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2025-08-06 发布并纳入 Intelligence Index v2.2 → 2026-09-04 数据集 v1.1（修正 16 个答案键、记录裁判提示词）→ Intelligence Index v5.0（2026 年 10 月—11 月）起移出指数、归入 Legacy Evaluations，作为独立评测继续运行",
+        "cite": [
+          "launch-post",
+          "hf-commits-api@v1.1 commit",
+          "aa-methodology@Version History"
+        ]
+      },
+      {
+        "k": "数据与代码位置",
+        "v": "数据集在 Hugging Face（ArtificialAnalysis/AA-LCR：AA-LCR_Dataset.csv + AA-LCR_extracted-text.zip）；官方评测页 Related Links 只给方法论页与 HF 数据集，数据集卡内附加载与判分代码片段，未见独立评测代码仓库",
+        "cite": [
+          "hf-dataset@Technical Details",
+          "official-page@Related Links"
+        ]
+      },
+      {
+        "k": "许可证",
+        "v": "题目集 Apache License 2.0；文档集为创建时公开可得文档的文本表示，官方不主张版权",
+        "cite": [
+          "hf-dataset@License"
+        ]
+      },
+      {
+        "k": "第三方与自家衍生使用",
+        "v": "Kimi K2.5 博客把 AA-LCR 作为长上下文基准并自报 avg@3；Meta Muse-Glimmer-30B 模型卡基准表列 AA-LCR 一行（80.0 / 68.3 / 73.3）；Artificial Analysis 自家 Endpoint Accuracy Index 用其 25 题子集 AA-LCR-25（每题 25 次）",
+        "cite": [
+          "kimi-k2-5@Long-Context Benchmarks",
+          "muse-card@Benchmarks",
+          "aa-endpoint-index-v11@What's changes in v1.1"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-13",
+        "columns": [
+          "来源",
+          "模型",
+          "AA-LCR 分数",
+          "口径 / 备注"
+        ],
+        "rows": [
+          [
+            "发布帖（2025-08-06）",
+            "OpenAI o3",
+            "69%",
+            "发布时榜首，v1.0 口径"
+          ],
+          [
+            "发布帖（2025-08-06）",
+            "xAI Grok 4",
+            "68%",
+            "同上"
+          ],
+          [
+            "发布帖（2025-08-06）",
+            "Qwen3 235B 2507 Thinking",
+            "67%",
+            "同上"
+          ],
+          [
+            "官方评测页正文",
+            "Kimi K3 (Max)",
+            "88.7%",
+            "官方页称其为最高（2026-11-13 核对）"
+          ],
+          [
+            "官方评测页正文",
+            "Step 5 Preview",
+            "88.3%",
+            "官方页正文列第二"
+          ],
+          [
+            "官方评测页正文",
+            "Kimi K3.1 Pro",
+            "86.3%",
+            "官方页正文列第三"
+          ],
+          [
+            "官方评测页 FAQ",
+            "Step 5 Preview",
+            "88.3%",
+            "FAQ 称其为最高，与正文 88.7% 不一致"
+          ]
+        ]
+      },
+      "cite": [
+        "launch-post@Key takeaways",
+        "official-page",
+        "official-page@FAQ"
+      ]
+    }
+  }
 }
