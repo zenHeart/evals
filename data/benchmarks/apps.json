@@ -1,38 +1,307 @@
 {
   "id": "apps",
   "name": "APPS",
-  "full_name": null,
+  "full_name": "APPS（Automated Programming Progress Standard）",
   "aliases": [],
   "status": null,
   "categories": [
     "coding"
   ],
-  "summary": "10k 编程竞赛题（入门→IOI）",
-  "interpretation": "10000 道编程竞赛题（从一行解到算法硬题），按隐藏测试用例执行判分、严格/宽松两口径，通过率越高越好；发布时 GPT-Neo 在入门题上也只过约 20% 测试——考察竞赛级代码生成的经典存量基准。",
-  "measures": [],
-  "does_not_measure": [],
+  "summary": "APPS 是 10,000 道真人编程竞赛题组成的代码生成基准：给模型一段自然语言题面，让它写出能过测试用例的 Python 程序。题目从「数字符串里有几个元音」的入门题，一直到 IOI、ACM 级别的高中与大学竞赛题，按来源站自带难度分成入门 / 面试 / 竞赛三档。",
+  "interpretation": "分数说明模型把自然语言需求翻译成可执行程序的程度。但主流口径「测试用例平均通过率」是按通过比例给分的，写对一半用例就拿一半分；而且 test 集每题平均只有 21.2 个测试用例、个别题只给 2 个，通过测试不等于程序真的正确——论文实测在 2 个用例的题上，模型「做对」的题里三分之二是假阳性。",
+  "measures": [
+    {
+      "area": "入门级（introductory）",
+      "focus": "示例：数字符串里的元音个数、返回整数列表的前缀和；论文称有一两年经验的程序员不用复杂算法就能答对",
+      "share": "36.4%（3,639 题，test 1,000 题）",
+      "format": "Python 程序，由隐藏测试用例执行判定",
+      "cite": [
+        "arxiv-2105-09938@§3 Dataset Difficulty",
+        "arxiv-2105-09938@§3 Dataset"
+      ]
+    },
+    {
+      "area": "面试级（interview）",
+      "focus": "更偏算法、难度相当于编程技术面试题",
+      "share": "50.0%（5,000 题，test 3,000 题）",
+      "format": "同上",
+      "cite": [
+        "arxiv-2105-09938@§3 Dataset Difficulty"
+      ]
+    },
+    {
+      "area": "竞赛级（competition）",
+      "focus": "最难一档，相当于 USACO、IOI、ACM 级别的高中与大学程序设计竞赛题",
+      "share": "13.6%（1,361 题，test 1,000 题）",
+      "format": "同上",
+      "cite": [
+        "arxiv-2105-09938@§3 Dataset Difficulty"
+      ]
+    },
+    {
+      "area": "提交格式：Call-Based",
+      "focus": "题面给 starter code（通常是函数头），答案写成函数返回值；Hugging Face 版样本中只有少数指定了 fn_name 与 starter_code",
+      "share": "未披露（论文未按提交格式给出题数）",
+      "format": "Python 函数",
+      "cite": [
+        "arxiv-2105-09938@§3 Problem Formats",
+        "hf-apps@Data Fields"
+      ]
+    },
+    {
+      "area": "提交格式：Standard Input",
+      "focus": "一般不给 starter code，程序从标准输入读数据、往标准输出写结果",
+      "share": "未披露（论文未按提交格式给出题数）",
+      "format": "Python 脚本（stdin → stdout）",
+      "cite": [
+        "arxiv-2105-09938@§3 Problem Formats"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "程序是否正确——只按给定测试用例判定，用例少时漏判明显：论文实测 2 个用例的题上，GPT-Neo 2.7B「做对」的 12 道里有 8 道是假阳性，3 个用例的 6 道里有 1 道。",
+      "cite": [
+        "arxiv-2105-09938@§3 Test Case Quality"
+      ]
+    },
+    {
+      "text": "代码质量的一切其他维度——论文只定义「测试用例平均通过率」和「严格准确率」两个指标，不看风格、可读性、复杂度或工程规范。",
+      "cite": [
+        "arxiv-2105-09938@§4.2 Metrics"
+      ]
+    },
+    {
+      "text": "与参考答案的文本相似度——作者明确说用 BLEU 评估是测试用例的糟糕替代品。",
+      "cite": [
+        "arxiv-2105-09938@§4.2 Metrics"
+      ]
+    }
+  ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
+    "sample_count": 10000,
+    "splits": [
+      "train 5,000 题",
+      "test 5,000 题"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "从公开竞赛编程站点抓取题面、人类题解与测试用例后人工整理（Codewars / AtCoder / Kattis / Codeforces / CodeChef / HackerRank / LeetCode）",
+    "public_sample": true,
+    "totals": "10,000 题 · 131,777 个测试用例 · 232,421 个人类题解 · 平均题长 293.2 词 · test 集每题平均 21.2 个测试用例 · train/test 各 5,000 题 · 题面英文、题解 Python",
+    "cite": [
+      "arxiv-2105-09938@§3 Dataset",
+      "arxiv-2105-09938@附录 A",
+      "hf-apps@Dataset Statistics"
+    ],
+    "construction": [
+      {
+        "k": "抓取来源",
+        "text": "只抓公开页面，不抓付费墙内容；来源为 AtCoder、CodeChef、Codeforces、Codewars、HackerRank、Kattis、LeetCode，其中 Kattis 上的题采用 CC BY-SA 3.0 许可。",
+        "cite": [
+          "arxiv-2105-09938@附录 A"
+        ]
+      },
+      {
+        "k": "人工整理与去重",
+        "text": "作者手工整理题面、人类题解和测试用例，并用 tf-idf 特征加 SVD 降维、余弦相似度做去重；需要图片才能解的题、缺题解或用例的题、重复题都被剔除。",
+        "cite": [
+          "arxiv-2105-09938@§3 Dataset Construction",
+          "arxiv-2105-09938@附录 B.3"
+        ]
+      },
+      {
+        "k": "难度标注",
+        "text": "直接用来源站自带难度切档：Kattis 难度小于 3 记为入门级、3 到 5 记为面试级、大于 5 记为竞赛级。三档题量（3,639 / 5,000 / 1,361）是站点难度的分布，不是作者重新打标。",
+        "cite": [
+          "arxiv-2105-09938@§3 Dataset Difficulty"
+        ]
+      },
+      {
+        "k": "判题框架",
+        "text": "作者自己实现判题框架，把多个竞赛站点的判题功能合并到一起，用统一方式运行生成的代码。",
+        "cite": [
+          "arxiv-2105-09938@§3 Testing Framework"
+        ]
+      },
+      {
+        "k": "采集与打磨周期",
+        "text": "数据采集于 2020 年末到 2021 年初，由论文的本科生与研究生作者在约六个月内反复打磨。",
+        "cite": [
+          "arxiv-2105-09938@附录 B.3",
+          "arxiv-2105-09938@§3 Dataset Construction"
+        ]
+      }
+    ]
   },
-  "metrics": [],
+  "metrics": [
+    {
+      "id": "test-case-average",
+      "name": "测试用例平均通过率（test case average）",
+      "direction": "越高越好",
+      "description": "对每题算「通过的测试用例数 / 该题测试用例总数」，再对全部题取平均；写对一半用例就能拿一半分，是宽松口径。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2105-09938@§4.2 Metrics",
+        "arxiv-2105-09938@§3 Dataset"
+      ]
+    },
+    {
+      "id": "strict-accuracy",
+      "name": "严格准确率（strict accuracy）",
+      "direction": "越高越好",
+      "description": "只有当生成的程序通过该题全部测试用例，才算这道题答对，再除以总题数；比宽松口径严得多。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2105-09938@§4.2 Strict Accuracy",
+        "arxiv-2105-09938@Table 2"
+      ]
+    },
+    {
+      "id": "syntax-error-rate",
+      "name": "语法错误率（论文观察项）",
+      "direction": "越低越好",
+      "description": "判题框架按 pyext 能否把生成代码当 Python 模块加载来判断是否含语法错误；论文用它解释早期模型为什么分数低。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2105-09938@§4.3 Syntax Errors"
+      ]
+    }
+  ],
   "default_protocol": {
-    "raw": "执行测试 + 严格/宽松两口径"
+    "raw": "给模型一段自然语言题面，按提交格式分别用「Call-Based Format」或「Standard Input Format」引导，用 beam search（beam size 5）生成 Python 程序，在隐藏测试用例上执行判定：宽松口径算通过用例比例的平均值，严格口径要求通过该题全部用例。论文中 GPT-2 与 GPT-Neo 为在 train 集微调，GPT-3 175B 为 few-shot（每题给两条同类型示例）。",
+    "cite": [
+      "arxiv-2105-09938@§3 Problem Formats",
+      "arxiv-2105-09938@§4.1 Experimental Setup",
+      "arxiv-2105-09938@§4.2 Metrics"
+    ],
+    "variants": [
+      {
+        "text": "Top-1 vs Top-5：论文一次生成 5 个候选程序，分别报取第 1 个（Top-1）和取 5 个中最好的（Top-5）。摘要里「约 20% 测试用例」指入门题 Top-5 的 19.9%，同设置 Top-1 是 14.7%。",
+        "cite": [
+          "arxiv-2105-09938@Table 3",
+          "arxiv-2105-09938@§1"
+        ]
+      },
+      {
+        "text": "微调 vs few-shot：论文表 2 里 GPT-2 与 GPT-Neo 是在训练集上微调的，GPT-3 175B 是 few-shot 未微调，两者不能直接比。",
+        "cite": [
+          "arxiv-2105-09938@Table 2",
+          "arxiv-2105-09938@§4.3 Evaluating GPT-3"
+        ]
+      },
+      {
+        "text": "分档报 vs 总平均：论文表 2 同时给入门 / 面试 / 竞赛三档和总平均，跨模型比较时容易拿错档（例如 GPT-3 175B 在竞赛档两个口径都是 0.00%）。",
+        "cite": [
+          "arxiv-2105-09938@Table 2",
+          "arxiv-2105-09938@§4.3 Test Case Evaluation"
+        ]
+      }
+    ]
   },
-  "versions": [],
-  "limitations": [],
+  "versions": [
+    {
+      "id": "arxiv-v1",
+      "date": "2021-05-20",
+      "label": "arXiv v1 首发《Measuring Coding Challenge Competence With APPS》",
+      "cite": [
+        "arxiv-2105-09938@Submission history"
+      ]
+    },
+    {
+      "id": "arxiv-v3",
+      "date": "2021-11-08",
+      "label": "arXiv v3 修订，即 NeurIPS 2021 Datasets and Benchmarks Track 录用版本（本页核对所用版本）",
+      "cite": [
+        "arxiv-2105-09938@Submission history",
+        "arxiv-2105-09938@首页页眉"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "测试用例覆盖不足导致假阳性",
+      "impact": "test 集每题平均 21.2 个用例，但有的题只有 2 个。论文实测：GPT-Neo 2.7B 在 2 用例的题上「做对」的 12 道里 8 道是假阳性，3 用例的 6 道里 1 道是；按全量折算假阳性率低于 1%。AlphaCode 团队也报告该数据集在评测中会产生大量假阳性。",
+      "severity": "高",
+      "response": "论文给出分用例数的假阳性统计，并称噪声显著低于多数自然标注数据集；用例集此后没有修订版本。",
+      "reader": "低分段模型容易被这套用例高估；比较模型时优先看严格准确率，并记住「过测试」不等于「写对」。",
+      "cite": [
+        "arxiv-2105-09938@§3 Test Case Quality",
+        "hf-apps@Dataset Statistics",
+        "hf-apps@Considerations for Using the Data"
+      ]
+    },
+    {
+      "issue": "训练数据污染",
+      "impact": "作者剔除了与常见编程练习题关键词匹配的 GitHub 仓库、以及与 APPS starter code 函数签名相同的代码，GPT-2 模型用的是去污染后的数据；但 GPT-Neo 的 GitHub 预训练数据没有经过 APPS 去污染流程，它的成绩可能偏高。",
+      "severity": "高",
+      "response": "论文在附录 C 公开去污染用的关键词清单，并明确说明 GPT-2 已去污染、GPT-Neo 未去污染；未见 GPT-Neo 的重训版本。",
+      "reader": "看到 GPT-Neo 的 APPS 成绩要记得它没做 APPS 去污染；跨论文比较前先问训练数据是否去污染。",
+      "cite": [
+        "arxiv-2105-09938@§4.1 Experimental Setup",
+        "arxiv-2105-09938@附录 C"
+      ]
+    },
+    {
+      "issue": "指标口径混用",
+      "impact": "「测试用例平均通过率」与「严格准确率」差近一个数量级（GPT-Neo 2.7B 全集 10.15% 对 1.12%），Top-1 与 Top-5、微调与 few-shot 也都差很多；论文摘要强调的「约 20%」是入门题 Top-5 宽松口径。",
+      "severity": "中",
+      "response": "论文在表 2、表 3 分开报两种指标与 Top-1/Top-5，并在表注说明 GPT-3 未微调。",
+      "reader": "看到「APPS 20%」这类数字先确认口径；比较两个模型必须同指标、同分档、同采样次数。",
+      "cite": [
+        "arxiv-2105-09938@Table 2",
+        "arxiv-2105-09938@Table 3",
+        "arxiv-2105-09938@§4.2 Metrics"
+      ]
+    },
+    {
+      "issue": "BLEU 等文本相似度指标会骗人",
+      "impact": "难度越高 BLEU 反而越高，而模型实际表现更差；GPT-2 0.1B 的 BLEU（26.8 / 29.7 / 30.2）与 GPT-Neo 2.7B（27.1 / 29.1 / 29.3）几乎打平，但两者测试用例成绩差一倍以上。",
+      "severity": "中",
+      "response": "论文明确说 BLEU 不能替代测试用例，主结果全部按测试用例报。",
+      "reader": "任何只用 BLEU 或代码编辑距离报的 APPS 成绩都不要采信。",
+      "cite": [
+        "arxiv-2105-09938@§4.3 BLEU"
+      ]
+    },
+    {
+      "issue": "许可标注不一致",
+      "impact": "论文附录 A 写明数据按 CC BY-SA 3.0 许可（依 Kattis 题面许可与 ShareAlike 条款）、代码为 MIT；但 Hugging Face 数据集卡只标「License: mit」，两处不一致，实际合规义务要以论文为准。",
+      "severity": "低",
+      "response": "论文附录 A 说明只抓公开数据、遵守 Fair Use §107 与 DMCA §1201，并声明为权利侵害承担全部责任；HF 卡未同步许可信息。",
+      "reader": "二次分发或商用前按论文附录 A 的 CC BY-SA 3.0 评估，不要只信数据集卡上那一行许可。",
+      "cite": [
+        "arxiv-2105-09938@附录 A",
+        "hf-apps@Dataset card"
+      ]
+    }
+  ],
   "notes": null,
   "official_sources": [
     {
-      "kind": "site",
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2105.09938"
+    },
+    {
+      "kind": "dataset",
       "url": "https://huggingface.co/datasets/codeparrot/apps"
     },
     {
-      "kind": "paper",
-      "url": "https://arxiv.org/abs/2105.09938"
+      "kind": "repo",
+      "url": "https://github.com/hendrycks/apps"
     }
   ],
   "related_benchmarks": [
@@ -43,6 +312,295 @@
     "aider",
     "humanevalplus"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-28"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "arxiv-2105-09938",
+        "kind": "paper",
+        "title": "Measuring Coding Challenge Competence With APPS（arXiv:2105.09938 v3，2021-11-08，NeurIPS 2021 Datasets and Benchmarks Track）",
+        "url": "https://arxiv.org/abs/2105.09938",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "hf-apps",
+        "kind": "dataset",
+        "title": "codeparrot/apps（Hugging Face 数据集卡、字段说明与统计）",
+        "url": "https://huggingface.co/datasets/codeparrot/apps",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "github-apps",
+        "kind": "repo",
+        "title": "hendrycks/apps（官方仓库：数据与模型权重下载、训练与评测代码）",
+        "url": "https://github.com/hendrycks/apps",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "高校研究团队（论文署名机构：UC Berkeley、UChicago、UIUC 等）",
+        "cite": [
+          "arxiv-2105-09938@作者署名"
+        ]
+      },
+      "first_release": {
+        "v": "2021-05-20（arXiv v1）",
+        "cite": [
+          "arxiv-2105-09938@Submission history"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "arxiv-2105-09938@Abstract",
+        "arxiv-2105-09938@§3 Dataset",
+        "arxiv-2105-09938@§3 Dataset Difficulty"
+      ],
+      "interpretation": [
+        "arxiv-2105-09938@§4.2 Metrics",
+        "arxiv-2105-09938@§3 Test Case Quality"
+      ]
+    },
+    "problem": {
+      "text": "在 APPS 之前，代码生成基准多是 docstring 补全这类短题——论文指出那些 docstring 往往是不完整的规格说明、平均只有 14.7 个词，很难把模型和会编程的人区分开。APPS 想用真实的、有难度分层的竞赛题，把「模型是不是真的会编程」测出来。",
+      "cite": [
+        "arxiv-2105-09938@§2 Related Work",
+        "arxiv-2105-09938@§3 Dataset"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "论文中最低参照：GPT-3 175B（few-shot，未微调）",
+        "value": "0.55% / 0.06%",
+        "note": "测试用例平均通过率 / 严格准确率，全 test 集；它 5,000 道测试题里只做对 3 道（2 道入门 + 1 道面试），且约 59% 的入门题输出带语法错误。",
+        "cite": [
+          "arxiv-2105-09938@Table 2",
+          "arxiv-2105-09938@§4.3 Evaluating GPT-3",
+          "arxiv-2105-09938@§4.3 Syntax Errors"
+        ]
+      },
+      {
+        "label": "论文中最好：GPT-Neo 2.7B（微调）",
+        "value": "10.15% / 1.12%",
+        "note": "全 test 集；入门题为 14.68% / 3.90%。注意它的预训练数据未做 APPS 去污染。",
+        "cite": [
+          "arxiv-2105-09938@Table 2",
+          "arxiv-2105-09938@§4.1 Experimental Setup"
+        ]
+      },
+      {
+        "label": "同模型多次采样：GPT-Neo 2.7B 入门题 Top-5",
+        "value": "19.9% / 5.5%",
+        "note": "beam search 一次生成 5 个程序、取最好的一个；同设置 Top-1 是 14.7% / 3.9%。这是论文摘要「约 20% 测试用例」的出处。",
+        "cite": [
+          "arxiv-2105-09938@Table 3",
+          "arxiv-2105-09938@Abstract"
+        ]
+      },
+      {
+        "label": "论文引用的外部最好：Codex 12B",
+        "value": "入门题 4.14% / 9.65%",
+        "note": "Chen et al. (2021) 在 APPS 上评测 Codex 的结果（Top-1 / Top-5），扩到 Top-1000 为 25% 准确率；论文未给 Codex 的全集两口径成绩。",
+        "cite": [
+          "arxiv-2105-09938@§4.3 Model Performance Analysis"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      },
+      {
+        "label": "人类水平",
+        "value": "未披露",
+        "note": "论文没有报告人类程序员在 APPS 上的成绩，也没有官方榜单或随机基线；本站不做推算。",
+        "cite": [
+          "arxiv-2105-09938@Table 2"
+        ]
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把「APPS 上 20%」当成答对了 20% 的题——摘要里的约 20% 是入门题 Top-5 的测试用例平均通过率，同设置 Top-1 是 14.7%，严格准确率只有 5.5%。",
+        "cite": [
+          "arxiv-2105-09938@Table 3",
+          "arxiv-2105-09938@§1"
+        ]
+      },
+      {
+        "text": "把两种口径混着比——同一个 GPT-Neo 2.7B 在入门题上，测试用例平均通过率 14.68%、严格准确率 3.90%，差近 4 倍。",
+        "cite": [
+          "arxiv-2105-09938@Table 2"
+        ]
+      },
+      {
+        "text": "用 BLEU 或代码相似度报 APPS 成绩——论文实测 BLEU 随难度上升而上升，与模型的真实表现反向。",
+        "cite": [
+          "arxiv-2105-09938@§4.3 BLEU"
+        ]
+      },
+      {
+        "text": "以为通过测试就算程序正确——在只有 2 个测试用例的题上，模型「做对」的题里三分之二是假阳性。",
+        "cite": [
+          "arxiv-2105-09938@§3 Test Case Quality"
+        ]
+      },
+      {
+        "text": "把 GPT-3 175B 的 0.55% 当成同等训练条件下的结果——它是 few-shot 未微调，且约 59% 的入门题输出带语法错误，与微调模型不可直接比较。",
+        "cite": [
+          "arxiv-2105-09938@§4.3 Evaluating GPT-3",
+          "arxiv-2105-09938@§4.3 Syntax Errors"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "高校研究团队，论文署名机构为 UC Berkeley、UChicago、UIUC 等；发表于 NeurIPS 2021 Datasets and Benchmarks Track",
+        "cite": [
+          "arxiv-2105-09938@作者署名",
+          "arxiv-2105-09938@首页页眉"
+        ]
+      },
+      {
+        "k": "数据与代码获取",
+        "v": "数据集可从项目站下载（约 1.3GB），也在 Hugging Face datasets 的 apps 下提供；官方仓库同时含训练与评测代码，并放出微调好的 GPT-2 1.5B 与 GPT-Neo 2.7B 权重",
+        "cite": [
+          "github-apps@README",
+          "hf-apps@Data Splits"
+        ]
+      },
+      {
+        "k": "许可",
+        "v": "数据 CC BY-SA 3.0、代码 MIT（Hugging Face 卡另标 mit，与论文不一致，见「可信度与局限」）",
+        "cite": [
+          "arxiv-2105-09938@附录 A",
+          "hf-apps@Dataset card"
+        ]
+      },
+      {
+        "k": "采集周期",
+        "v": "2020 年末至 2021 年初采集，之后由论文的本科生与研究生作者打磨约六个月",
+        "cite": [
+          "arxiv-2105-09938@附录 B.3"
+        ]
+      },
+      {
+        "k": "样本字段",
+        "v": "Hugging Face 版每个样本含 problem_id、question、solutions、input_output、difficulty、url、starter_code；其中只有少数样本指定了 fn_name 与 starter_code",
+        "cite": [
+          "hf-apps@Data Fields"
+        ]
+      },
+      {
+        "k": "数据完整性缺口",
+        "v": "195 个 train 样本没有测试用例，1,235 个 test 样本没有 ground-truth 题解",
+        "cite": [
+          "hf-apps@Dataset Statistics"
+        ]
+      },
+      {
+        "k": "与其他基准的关系",
+        "v": "论文表 1 的对比结论是：APPS 的 ground-truth 题解数量比既有文本-代码转换数据集高出一个数量级，同时题面是自然语言问题描述",
+        "cite": [
+          "arxiv-2105-09938@Table 1"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-14",
+        "columns": [
+          "来源",
+          "模型",
+          "口径",
+          "入门级",
+          "面试级",
+          "竞赛级",
+          "平均"
+        ],
+        "rows": [
+          [
+            "论文 Table 2",
+            "GPT-2 0.1B（微调）",
+            "测试用例平均通过率",
+            "5.64%",
+            "6.93%",
+            "4.37%",
+            "6.16%"
+          ],
+          [
+            "论文 Table 2",
+            "GPT-2 0.1B（微调）",
+            "严格准确率",
+            "1.00%",
+            "0.33%",
+            "0.00%",
+            "0.40%"
+          ],
+          [
+            "论文 Table 2",
+            "GPT-2 1.5B（微调）",
+            "测试用例平均通过率",
+            "7.40%",
+            "9.11%",
+            "5.05%",
+            "7.96%"
+          ],
+          [
+            "论文 Table 2",
+            "GPT-2 1.5B（微调）",
+            "严格准确率",
+            "1.30%",
+            "0.70%",
+            "0.00%",
+            "0.68%"
+          ],
+          [
+            "论文 Table 2",
+            "GPT-Neo 2.7B（微调）",
+            "测试用例平均通过率",
+            "14.68%",
+            "9.85%",
+            "6.54%",
+            "10.15%"
+          ],
+          [
+            "论文 Table 2",
+            "GPT-Neo 2.7B（微调）",
+            "严格准确率",
+            "3.90%",
+            "0.57%",
+            "0.00%",
+            "1.12%"
+          ],
+          [
+            "论文 Table 2",
+            "GPT-3 175B（few-shot，未微调）",
+            "测试用例平均通过率",
+            "0.57%",
+            "0.65%",
+            "0.21%",
+            "0.55%"
+          ],
+          [
+            "论文 Table 2",
+            "GPT-3 175B（few-shot，未微调）",
+            "严格准确率",
+            "0.20%",
+            "0.03%",
+            "0.00%",
+            "0.06%"
+          ]
+        ]
+      },
+      "cite": [
+        "arxiv-2105-09938@Table 2",
+        "arxiv-2105-09938@§4.3 Test Case Evaluation"
+      ]
+    }
+  }
 }
