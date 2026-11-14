@@ -1,42 +1,370 @@
 {
   "id": "alignbench",
   "name": "AlignBench",
-  "full_name": null,
+  "full_name": "AlignBench: Benchmarking Chinese Alignment of Large Language Models",
   "aliases": [],
-  "status": null,
-  "categories": [
-    "chinese"
-  ],
-  "summary": "中文大模型多维对齐评测（LLM 评判）",
-  "interpretation": "683 题中文对齐评测（8 大类），GPT-4 按规则把 1–10 分五等分打分、越高越好；分数是 LLM 评判的相对质量而非客观对错，8 分以上可视为第一梯队。",
-  "measures": [],
-  "does_not_measure": [],
-  "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
-  },
-  "metrics": [],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [],
-  "notes": "Qwen 引用；THUDM 发布",
-  "official_sources": [
+  "status": "active",
+  "categories": ["chinese"],
+  "summary": "AlignBench 是 683 道中文对齐评测题：题目主要来自 ChatGLM 在线服务里的真实用户提问（少部分是研究人员构造的挑战性问题），分 8 大类，每道题都配一份人工校正过的参考答案；评测时把问题、模型回复和参考答案一起交给 GPT-4-0613，让它按规则逐题打出 1–10 分。",
+  "interpretation": "分数是 GPT-4 裁判给出的相对质量分（1–10，越高越好），不是客观对错的通过率。官方规则把 1–10 五等分，并把高质量参考答案锚定在 8 分作为打分枢轴，所以「8 分」意味着接近参考答案，而不是答对了八成。论文用 gpt-4-0613 作裁判评测 17 个支持中文的 LLM，说受评闭源模型大多在 6 分以上或接近 6 分；仓库排行榜基于 v1.1 题库，前列模型在 8 分上下。换裁判模型或换题库版本（v1 / v1.1）的分数不能直接比分。",
+  "measures": [
     {
-      "kind": "github",
-      "url": "https://github.com/THUDM/AlignBench"
+      "area": "基本任务（Fundamental Language Ability）",
+      "focus": "由传统 NLP 任务衍生的基础语言能力，包括信息抽取、文本分类、常识问答、短摘要等，按该任务自定义的提示与格式零样本/少样本完成。",
+      "share": "68 题（约 10%）",
+      "format": "任务型指令（分类 / 抽取 / 摘要）",
+      "cite": ["paper@§2.1", "paper@Table 2", "repo-alignbench@分类体系"]
     },
     {
-      "kind": "site",
-      "url": "https://qwenlm.github.io/blog/qwen2.5/"
+      "area": "中文理解（Chinese Understanding）",
+      "focus": "中文特有的文化、历史背景理解，考察模型对中文语境中隐含知识的掌握。",
+      "share": "58 题（约 8%）",
+      "format": "开放式理解题",
+      "cite": ["paper@§2.1", "paper@Table 2", "repo-alignbench@分类体系"]
+    },
+    {
+      "area": "综合问答（Comprehensive QA）",
+      "focus": "开放式回答主观问题，这类用法对应普通用户最常向聊天助手提的提问方式。",
+      "share": "38 题（约 6%）",
+      "format": "开放式问答",
+      "cite": ["paper@§2.1", "paper@Table 2", "repo-alignbench@分类体系"]
+    },
+    {
+      "area": "文本写作（Text Writing）",
+      "focus": "有难度的写作指令，既要求语言功底，也考察指令遵循能力（如按给定体裁、对象、约束写作）。",
+      "share": "75 题（约 11%）",
+      "format": "创作型指令",
+      "cite": ["paper@§2.1", "paper@Table 2", "repo-alignbench@分类体系"]
+    },
+    {
+      "area": "逻辑推理（Logical Reasoning）",
+      "focus": "在复杂的逻辑问题中理解、分析并给出正确回答，考察推理链条而不是知识记忆。",
+      "share": "92 题（约 13%）",
+      "format": "逻辑题",
+      "cite": ["paper@§2.1", "paper@Table 2", "repo-alignbench@分类体系"]
+    },
+    {
+      "area": "数学计算（Mathematics）",
+      "focus": "从初等到高等、不同形式的数学问题，答案相对固定，是最适合用低温生成与规则化评分的类别。",
+      "share": "112 题（约 16%）",
+      "format": "数学题",
+      "cite": ["paper@§2.1", "paper@Table 2", "repo-alignbench@分类体系"]
+    },
+    {
+      "area": "角色扮演（Task-oriented Role Play）",
+      "focus": "让模型扮演特定身份并完成对应任务，考察身份一致性与任务完成度。",
+      "share": "116 题（约 17%）",
+      "format": "角色设定 + 任务指令",
+      "cite": ["paper@§2.1", "paper@Table 2", "repo-alignbench@分类体系"]
+    },
+    {
+      "area": "专业能力（Professional Knowledge）",
+      "focus": "物理、历史、音乐、法律等具体领域的知识型问答，属于知识密集型题目，需要标注来源。",
+      "share": "124 题（约 18%）",
+      "format": "领域知识问答",
+      "cite": ["paper@§2.1", "paper@Table 2", "repo-alignbench@分类体系"]
     }
   ],
-  "related_benchmarks": [
-    "mtbench",
-    "alpacaeval"
+  "does_not_measure": [
+    {
+      "text": "英文对齐水平。论文明确指出 MT-Bench 与 AlpacaEval 这两个常用对齐基准都只做英文，无法反映中文模型的对齐水平——AlignBench 补的是中文这一块，它的结论不能外推到英文能力。",
+      "cite": ["paper@§1"]
+    },
+    {
+      "text": "长文本查询下的表现。论文在局限里说明当前版本没有覆盖长文本查询，留待后续版本补充。",
+      "cite": ["paper@局限"]
+    },
+    {
+      "text": "客观对错式的通过率。对齐本身是开放式问题，没有唯一解，因此官方只给 1–10 的相对质量分，不做 exact-match 式的对错判定。",
+      "cite": ["repo-alignbench@单点打分", "paper@§3"]
+    }
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "dataset": {
+    "sample_count": 683,
+    "splits": ["公开全集 683 题（未划分训练/测试留出集，论文与仓库均未披露独立评测子集）"],
+    "languages": ["zh"],
+    "source_type": "真实用户提问 + 研究人员构造的挑战性问题",
+    "public_sample": true,
+    "totals": "683 题 · 8 大类 · 全中文。分类计数：基本任务 68 / 中文理解 58 / 综合问答 38 / 文本写作 75 / 逻辑推理 92 / 数学计算 112 / 角色扮演 116 / 专业能力 124（占比为本站按 683 折算，四舍五入）。每个样本含一个任务性用户指令、一份高质量参考答案和对应类别；知识密集型题目另附标注者从可靠网页来源收集的 URL 与引文。",
+    "cite": ["repo-alignbench@数据集信息", "repo-alignbench@样本结构", "paper@Table 2", "paper@Abstract"],
+    "construction": [
+      {
+        "k": "题目来源",
+        "text": "为了保证多样性与真实性，题目主要取自在线聊天服务的真实场景，另一部分是由研究人员撰写的挑战性问题。",
+        "cite": ["paper@§2.2", "repo-alignbench@数据来源"]
+      },
+      {
+        "k": "人工筛选与规则",
+        "text": "标注流程要求问题表述清晰、不能是简单事实问答、对多数 LLM 构成难度（需要综合运用能力才能解出）、并且安全不敏感；模型回答则要求语言、风格一致且表达尊重。",
+        "cite": ["paper@§2.2"]
+      },
+      {
+        "k": "难度过滤",
+        "text": "先用多个已有模型（GPT-3.5-turbo、ChatGLM API、Sparkdesk）生成回答并交给 GPT-4 打分，按各模型平均分丢弃得分最高的一半题目，保留下来的题更难。",
+        "cite": ["paper@§2.2"]
+      },
+      {
+        "k": "参考答案",
+        "text": "参考答案先用 GPT-4 生成，再由人工标注者逐条审阅、修订、打磨；知识密集型查询（占 66.5%）还要标注者联网检索并提供含 URL 与引文的证据，最后合成参考答案。",
+        "cite": ["paper@§2.2", "paper@§1", "paper@Abstract"]
+      },
+      {
+        "k": "发布后修订",
+        "text": "v1.1（2024-06-15）对事实性较强的测试指令的参考答案做了一轮人工检查修正，其中约 22% 的答案除修正外还补充了来源网页与引用信息。",
+        "cite": ["repo-alignbench@更新日志"]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "overall",
+      "name": "综合评分（Overall）",
+      "direction": "越高越好",
+      "description": "GPT-4-0613 按评分规则给出的 1–10 分单点分。官方报告口径为 Overall 总分、两组均分（中文推理 = 数学计算 + 逻辑推理；中文语言 = 其余六类）以及 8 个大类分。",
+      "range": [1, 10],
+      "unit": "point",
+      "cite": ["repo-alignbench@单点打分", "repo-alignbench@评价方法", "repo-alignbench@排行榜", "paper@Table 6"]
+    },
+    {
+      "id": "category-avg",
+      "name": "分类均分（8 大类 + 推理/语言两组）",
+      "direction": "越高越好",
+      "description": "按大类或按组平均的单点分，用于定位模型短板。论文表 6 与仓库排行榜都同时给出 Overall、两组均分和 8 个大类分，只看总分会掩盖结构性问题。",
+      "range": [1, 10],
+      "unit": "point",
+      "cite": ["repo-alignbench@排行榜", "paper@Table 6"]
+    }
+  ],
+  "default_protocol": {
+    "raw": "把用户问题、待测模型的回复和人工校正的参考答案一起交给 GPT-4-0613。裁判先按该题对应的多个维度生成分析，再给出 1–10 的最终评分（思维链）；评分规则把 1–10 五等分，逐档描述该分数相对参考答案的质量，并把参考答案设为 8 分作为打分枢轴。由于不同任务性质不同，官方主张按任务分别做多维度分析，而不是对所有任务套同一套评估流程。生成待测回复时，答案相对固定的任务（数学、专业知识等）用 temperature 0.1，需要创造性的任务（写作、角色扮演等）用 0.7。",
+    "cite": ["repo-alignbench@评价方法", "repo-alignbench@规则校准", "repo-alignbench@单点打分", "repo-alignbench@多维度分析", "paper@§3"],
+    "variants": [
+      {
+        "text": "裁判模型口径。论文表 6 与仓库榜单都以 gpt-4-0613 作裁判；README 建议后续模型用 gpt-4-0613 自测后再汇报，或联系 SuperBench 团队。换成别的裁判模型，分数与这些表不可直接比较。",
+        "cite": ["paper@§5", "repo-alignbench@排行榜", "repo-alignbench@评测步骤"]
+      },
+      {
+        "text": "题库版本口径。仓库排行榜基于 v1.1（2024-06-15 更新，参考答案经过一轮人工复核）；论文表 6 发表于 v1.1 之前，表中未标注题库版本。两者不能直接对比。",
+        "cite": ["repo-alignbench@排行榜", "repo-alignbench@更新日志", "paper@Table 6"]
+      },
+      {
+        "text": "打分方式。采用单点打分（point-wise）而非两两比对，论文称该方式在费用和时间上更有优势，并且与人工判断的一致性最好。",
+        "cite": ["paper@§3", "paper@§4"]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "arxiv-v1",
+      "date": "2023-11-30",
+      "label": "arXiv v1 首发（2311.18743）",
+      "cite": ["paper@提交历史"]
+    },
+    {
+      "id": "v1-1",
+      "date": "2024-06-15",
+      "label": "数据集更新到 v1.1：对涉及较强事实性内容的测试指令的参考答案做了一轮人工检查修正，约 22% 的答案另补充来源网页与引用信息",
+      "cite": ["repo-alignbench@更新日志"]
+    },
+    {
+      "id": "acl2024",
+      "date": "2024-08-25",
+      "label": "arXiv v4 修订（本档案核对所用版本）；同名论文被 ACL 2024 收录（Volume 1: Long Papers, pp. 11621–11640）",
+      "cite": ["paper@提交历史", "acl@题录"]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "LLM 裁判固有偏差",
+      "impact": "论文点名 LLM-as-Judge 的位置偏差、冗长偏差与自我增强偏差，并说明这些偏差可能损害对某些模型评测的正确性；AlignBench 的全部官方分数都由 GPT-4 一个裁判打出。",
+      "severity": "高",
+      "response": "用规则校准 + 多维度分析压制偏差：论文称多维度方法能有效平衡不同维度、减少冗长偏差，人工一致性实验显示单点多维规则校准的方法在样本级 Pearson 与成对一致率（去平局）上最好。",
+      "reader": "1–2 分的差距按同一梯队内的抖动看；换裁判模型必须重新评测。",
+      "cite": ["paper@局限", "paper@§3", "paper@§4"]
+    },
+    {
+      "issue": "裁判与人工的一致性仍有差距",
+      "impact": "论文说 GPT-4 裁判与人工评价的相关性和区分度「还有很大提升空间」；规则校准裁判比通用裁判更少给 9、10 分，更接近人类打分习惯。",
+      "severity": "中",
+      "response": "用规则校准让分数分布更接近人类，并把裁判提示词、维度定义与 judge.py 随仓库公开供复现。",
+      "reader": "绝对分数不必当真，同一裁判、同一时期的横向比较更有意义。",
+      "cite": ["paper@局限", "paper@§3", "repo-alignbench@评测步骤"]
+    },
+    {
+      "issue": "公开题库的污染风险",
+      "impact": "题目、参考答案与评测代码全部公开可下载，摘要还称发布后已被多家厂商用于自评；公开题库存在被混入训练数据的可能（本站提示，论文未讨论污染问题）。",
+      "severity": "中",
+      "response": "论文未提出缓解措施；仓库靠持续人工修订参考答案维护，并建议新模型用同一裁判自测。",
+      "reader": "对公开题库上的高分保留余地，优先看同一裁判、同一时期的横向比较。",
+      "cite": ["repo-alignbench@数据集信息", "paper@Abstract", "paper@局限"]
+    },
+    {
+      "issue": "题量与覆盖面",
+      "impact": "论文称在同类基准中 AlignBench 题量相对大，但仍需扩充才能得到更稳定可靠的评测；此外当前版本未覆盖长文本查询。",
+      "severity": "中",
+      "response": "人类参与的数据构建流程用于动态维护，v1.1 即对参考答案的一轮集中复核；论文把长文本查询列为后续版本方向。",
+      "reader": "看清分数出自 v1 还是 v1.1，并关注后续修订。",
+      "cite": ["paper@局限", "repo-alignbench@更新日志", "repo-alignbench@基本信息"]
+    },
+    {
+      "issue": "只测中文",
+      "impact": "AlignBench 只做中文对齐，论文以此作为与英文基准的互补点，因此其结论不能外推到英文对齐能力。",
+      "severity": "低",
+      "response": "英文对齐结论需另用 MT-Bench、AlpacaEval 等英文基准评测。",
+      "reader": "不要用 AlignBench 分数论证模型的英文能力。",
+      "cite": ["paper@§1"]
+    }
+  ],
+  "notes": "Qwen 引用；THUDM 发布",
+  "official_sources": [
+    { "kind": "github", "url": "https://github.com/THUDM/AlignBench" },
+    { "kind": "site", "url": "https://qwenlm.github.io/blog/qwen2.5/" }
+  ],
+  "related_benchmarks": ["mtbench", "alpacaeval"],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "AlignBench: Benchmarking Chinese Alignment of Large Language Models（arXiv:2311.18743，v4，2024-08-25）",
+        "url": "https://arxiv.org/abs/2311.18743",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "repo-alignbench",
+        "kind": "repo",
+        "title": "THUDM/AlignBench（README、数据集说明、评测代码与排行榜）",
+        "url": "https://github.com/THUDM/AlignBench",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "acl",
+        "kind": "paper",
+        "title": "ACL Anthology 2024.acl-long.624（AlignBench，ACL 2024 Long Papers）",
+        "url": "https://aclanthology.org/2024.acl-long.624/",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "清华大学知识工程组（KEG）等 6 家机构：清华 KEG、智谱 AI、中国人民大学、清华大学 CoAI、圣母大学、利哈伊大学；代码与数据由 THUDM 维护",
+        "cite": ["paper@作者单位", "repo-alignbench@项目定位"]
+      },
+      "first_release": {
+        "v": "2023-11-30（arXiv v1）；当前数据集版本 v1.1（2024-06-15）",
+        "cite": ["paper@提交历史", "repo-alignbench@更新日志"]
+      }
+    },
+    "cites": {
+      "summary": ["repo-alignbench@数据集信息", "repo-alignbench@数据来源", "repo-alignbench@评价方法"],
+      "interpretation": ["repo-alignbench@规则校准", "paper@§3", "paper@§5"]
+    },
+    "problem": {
+      "text": "当时中文对齐评测几乎是空白：AlpacaEval 用两两比对、被指不稳定且不可解释，MT-Bench 只有 80 道英文题、还用同一套提示词评判不同任务，而且两者都只做英文，反映不了中文模型的对齐水平。AlignBench 要做一个真实场景为基础、开放式、有难度且全自动的中文对齐评测。",
+      "cite": ["paper@§1", "paper@Abstract", "acl@摘要"]
+    },
+    "ladder": [
+      {
+        "label": "量纲与方向",
+        "value": "1–10 分，越高越好",
+        "note": "GPT-4-0613 单点分；官方规则把 1–10 五等分，每档对应一段相对参考答案的质量描述。",
+        "cite": ["repo-alignbench@单点打分", "repo-alignbench@规则校准"]
+      },
+      {
+        "label": "参考答案锚点",
+        "value": "8 分",
+        "note": "高质量参考答案被锚定在 8 分作为相对打分枢轴；8 分意味着接近参考答案，不是 80% 正确率。",
+        "cite": ["paper@§3", "repo-alignbench@规则校准"]
+      },
+      {
+        "label": "论文榜单最好（17 个支持中文的 LLM）",
+        "value": "8.01（gpt-4-1106-preview）",
+        "note": "论文表 6，裁判 gpt-4-0613；表内最低为 LLaMA-2-13B-Chinese-Chat 3.35。论文称受评闭源模型大多在 6 分以上或接近 6 分。",
+        "cite": ["paper@Table 6", "paper@§5", "paper@§1"]
+      },
+      {
+        "label": "官方排行榜最好（2024.06 更新）",
+        "value": "8.38（GPT-4o）",
+        "note": "README 榜单基于 v1.1 + gpt-4-0613，共 24 个模型；末位 Claude 3 Haiku 6.38。",
+        "cite": ["repo-alignbench@排行榜"]
+      },
+      { "label": "本站账本当前最高", "auto": "ledger-top" }
+    ],
+    "misreadings": [
+      {
+        "text": "把 AlignBench 分数当成「答对百分之几」。它是 GPT-4 裁判给出的相对质量分，参考答案本身被设为 8 分。",
+        "cite": ["paper@§3", "repo-alignbench@规则校准"]
+      },
+      {
+        "text": "把 8 分读成「80 分」。1–10 被五等分，8 分是参考答案锚点而非正确率。",
+        "cite": ["repo-alignbench@规则校准", "paper@§3"]
+      },
+      {
+        "text": "把论文表 6 和 README 排行榜的分数排在同一列比较。前者早于 v1.1、表中未标注题库版本，后者基于 v1.1，题库版本不同。",
+        "cite": ["repo-alignbench@更新日志", "repo-alignbench@排行榜"]
+      },
+      {
+        "text": "只看总分不看分类。官方同时报告 8 个大类和推理/语言两组，模型短板只在分类里显现。",
+        "cite": ["repo-alignbench@排行榜", "paper@Table 6"]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "清华大学知识工程组（KEG）等 6 家机构；代码、数据与排行榜由 THUDM 维护",
+        "cite": ["paper@作者单位", "repo-alignbench@项目定位"]
+      },
+      {
+        "k": "论文",
+        "v": "AlignBench: Benchmarking Chinese Alignment of Large Language Models，ACL 2024（Volume 1: Long Papers, pp. 11621–11640，Bangkok）；arXiv:2311.18743",
+        "cite": ["acl@题录", "paper@提交历史"]
+      },
+      {
+        "k": "数据与代码",
+        "v": "github.com/THUDM/AlignBench：题目与参考答案在 data/data_release.jsonl，评测入口 judge.py / show_result.py，评分维度定义在 config",
+        "cite": ["repo-alignbench@数据集信息", "repo-alignbench@多维度分析"]
+      },
+      {
+        "k": "评测口径",
+        "v": "GPT-4-0613 单点分 + 思维链 + 规则校准 + 多维度分析；裁判提示词与维度定义随仓库公开",
+        "cite": ["repo-alignbench@评价方法", "repo-alignbench@基本信息"]
+      },
+      {
+        "k": "人工校验",
+        "v": "论文从全集中随机抽 400 题做一致性实验，覆盖 8 个 LLM 的回答，共 3200 组问答配对；人类标注用 1–5 分",
+        "cite": ["paper@§4"]
+      },
+      {
+        "k": "第三方采用",
+        "v": "清华大学基础模型中心的 SuperBench 评估团队把 AlignBench v1.1 作为周期性评估的一部分；论文摘要称发布后已被 ChatGLM、Qwen、DeepSeek、Yi、Baichuan、Abab 用于自评",
+        "cite": ["repo-alignbench@排行榜", "paper@Abstract"]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-14",
+        "columns": ["来源", "模型", "总分（Overall）", "口径"],
+        "rows": [
+          ["README 排行榜（2024.06 更新）", "GPT-4o", "8.38", "v1.1；gpt-4-0613 裁判"],
+          ["README 排行榜（2024.06 更新）", "通义千问2.5", "8.17", "v1.1；gpt-4-0613 裁判"],
+          ["README 排行榜（2024.06 更新）", "GPT-4 Turbo-20240409", "8.00", "v1.1；gpt-4-0613 裁判"],
+          ["README 排行榜（2024.06 更新）", "Abab 6.5(MoE)", "7.94", "v1.1；gpt-4-0613 裁判"],
+          ["README 排行榜（2024.06 更新）", "GLM-4-0520", "7.89", "v1.1；gpt-4-0613 裁判"],
+          ["README 排行榜（2024.06 更新）", "Sensechat 5.0", "7.89", "v1.1；gpt-4-0613 裁判"],
+          ["README 排行榜（2024.06 更新）", "Qwen 1.5-110B-Chat", "7.86", "v1.1；gpt-4-0613 裁判"],
+          ["README 排行榜（2024.06 更新）", "文心一言4.0", "7.85", "v1.1；gpt-4-0613 裁判"],
+          ["README 排行榜（2024.06 更新）", "Claude 3 Haiku", "6.38", "v1.1；gpt-4-0613 裁判（表内最低）"],
+          ["论文 Table 6", "gpt-4-1106-preview", "8.01", "gpt-4-0613 裁判；未标注题库版本"],
+          ["论文 Table 6", "gpt-4-0613", "7.53", "gpt-4-0613 裁判；未标注题库版本"],
+          ["论文 Table 6", "chatglm-turbo（智谱清言）", "6.24", "gpt-4-0613 裁判；未标注题库版本"],
+          ["论文 Table 6", "LLaMA-2-13B-Chinese-Chat", "3.35", "gpt-4-0613 裁判；未标注题库版本（表内最低）"]
+        ]
+      },
+      "cite": ["repo-alignbench@排行榜", "paper@Table 6"]
+    }
+  }
 }
