@@ -1,42 +1,632 @@
 {
   "id": "arc-challenge",
   "name": "ARC-Challenge",
-  "full_name": null,
-  "aliases": [],
-  "status": null,
-  "categories": [
-    "knowledge"
+  "full_name": "ARC-Challenge（AI2 Reasoning Challenge 挑战集）",
+  "aliases": [
+    "ARC",
+    "AI2 Reasoning Challenge",
+    "ai2_arc"
   ],
-  "summary": "AI2 ARC 挑战集科学选择题（25-shot）",
-  "interpretation": "AI2 小学科学选择题的挑战档：7787 题中连检索与词共现两个基线算法都答错的 1172 题 test 集，准确率越高越好（Llama 3.1 用 25-shot 口径引用）；原生设计目标就是「检索做不出的题」，如今对旗舰更像知识基线。",
-  "measures": [],
-  "does_not_measure": [],
+  "status": "active",
+  "categories": [
+    "knowledge",
+    "reasoning"
+  ],
+  "summary": "ARC 是美国 AI2 在 2018 年发布的自然科学多选题数据集，共 7,787 道 3–9 年级考试真题；其中被「关键词检索」和「词共现统计」两个最笨的基线同时答错的 2,590 题组成 Challenge 集，用来逼模型做真正的推理。前端类比：相当于先用两个只会做字符串匹配的脚本把「靠套路就能答对」的题过滤掉，剩下的硬骨头才拿来当测试。",
+  "interpretation": "高分说明模型在检索不到现成句子时，仍能利用小学到初中的科学知识做单选推理；但它只覆盖美国课程体系的科学常识，题型是 4 选 1 闭卷单选。2018 年论文报告的最好成绩只有 27.11%，并未显著超过 25% 的随机基线；而 2024 年论文指出，Challenge 集看起来难很大程度上是因为多数评测把每个选项单独打分（separation）而不让模型同屏对比选项（options），换成 options 口径后前沿模型达 93–96%，该基准对顶级模型已基本饱和。",
+  "measures": [
+    {
+      "area": "知识·定义与基本事实",
+      "focus": "示例题（Definition）：What is a worldwide increase in temperature called? 选项为 greenhouse effect / global warming / ozone depletion / solar heating，考基本科学术语",
+      "share": "未披露（论文按 100 题抽样做主观分类，只在图 1 给相对大小，正文未给数值）",
+      "format": "4 选 1 单选题",
+      "cite": [
+        "paper@Table 4",
+        "paper@Question Types"
+      ]
+    },
+    {
+      "area": "知识·过程与因果",
+      "focus": "示例题（Processes & Causal）：What is the first step of the process in the formation of sedimentary rocks? 选项为 erosion / deposition / compaction / cementation，考过程步骤排序",
+      "share": "未披露（同上，论文未给出各类别数值占比）",
+      "format": "4 选 1 单选题",
+      "cite": [
+        "paper@Table 4",
+        "paper@Question Types"
+      ]
+    },
+    {
+      "area": "知识·实验与科学方法",
+      "focus": "示例题（Experiments）：How do scientists try to remain objective during experiments? 考变量控制、重复实验等科学方法",
+      "share": "未披露（同上，论文未给出各类别数值占比）",
+      "format": "4 选 1 单选题",
+      "cite": [
+        "paper@Table 4"
+      ]
+    },
+    {
+      "area": "知识·代数（遗传学比例）",
+      "focus": "示例题（Algebraic）：红色花植物 (RR) 与白色花植物 (rr) 杂交，后代花色是多少？考简单孟德尔比例",
+      "share": "未披露（同上，论文未给出各类别数值占比）",
+      "format": "4 选 1 单选题",
+      "cite": [
+        "paper@Table 4"
+      ]
+    },
+    {
+      "area": "推理·问题逻辑与语言匹配",
+      "focus": "示例题（Question logic）：Which item below is not made from a material grown in nature? 选项含 cotton shirt / wooden chair / plastic spoon / grass basket",
+      "share": "未披露（论文按 100 题抽样做主观分类，只在图 2 给相对大小，正文未给数值）",
+      "format": "4 选 1 单选题",
+      "cite": [
+        "paper@Table 5",
+        "paper@Question Types"
+      ]
+    },
+    {
+      "area": "推理·多跳",
+      "focus": "示例题（Multihop Reasoning）：Which property of a mineral can be determined just by looking at it? 选项为 luster / mass / weight / hardness；论文用它说明「mineral」与错误选项「hardness」词共现很强，简单检索和词共现答不出这类题",
+      "share": "未披露（同上，论文未给出各类别数值占比）",
+      "format": "4 选 1 单选题",
+      "cite": [
+        "paper@Table 5",
+        "paper@Introduction"
+      ]
+    },
+    {
+      "area": "推理·代数与假设/反事实",
+      "focus": "示例题（Algebraic / Hypothetical）：杂合光滑豌豆 (Ss) 与纯合光滑豌豆 (SS) 杂交，后代可能的基因型是什么？If the Sun were larger, what would most likely also have to be true for Earth to sustain life?",
+      "share": "未披露（同上，论文未给出各类别数值占比）",
+      "format": "4 选 1 单选题",
+      "cite": [
+        "paper@Table 5"
+      ]
+    },
+    {
+      "area": "推理·类比",
+      "focus": "示例题（Analogy）：细胞内分子把信号从细胞膜传到细胞核，哪个身体系统使用类似过程？选项含 endocrine / lymphatic / excretory / integumentary system",
+      "share": "未披露（同上，论文未给出各类别数值占比）",
+      "format": "4 选 1 单选题",
+      "cite": [
+        "paper@Table 5"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "多模态与图示理解：论文明确题目全部为非图示（non-diagram）选择题，不看图也能答。",
+      "cite": [
+        "paper@§3 Dataset"
+      ]
+    },
+    {
+      "text": "开放式生成与解释：评分只看最终选了哪个选项（或报告了哪些并列选项），系统不需要写出推理过程或解释。",
+      "cite": [
+        "paper@Baseline Performance"
+      ]
+    },
+    {
+      "text": "非美国课程体系的知识：题源全部来自美国各州标准化考试与一个匿名内容合作伙伴，不覆盖其他国家的科学课程。",
+      "cite": [
+        "paper@Appendix A"
+      ]
+    }
+  ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
+    "sample_count": 7787,
+    "splits": [
+      "ARC-Challenge Train：1,119 题",
+      "ARC-Challenge Dev：299 题",
+      "ARC-Challenge Test：1,172 题",
+      "ARC-Easy Train：2,251 题",
+      "ARC-Easy Dev：570 题",
+      "ARC-Easy Test：2,376 题"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "standardized test（美国 3–9 年级自然科学标准化考试真题；论文 Table 7 列出全部题源，以美国各州考试为主）",
+    "public_sample": true,
+    "multiple_choice_share": "100%（论文：全部为非图示多选题；选项数最少 3 个、平均 4.0 个、最多 5 个）",
+    "multimodal_share": "0%（论文：all non-diagram）",
+    "totals": "共 7,787 题 = Challenge 2,590 + Easy 5,197；本实体只覆盖 Challenge 集。Challenge 测试集 1,172 题，均为英文单选题，题干最短 2 词、平均 22.3 词、最长 128 词。",
+    "cite": [
+      "paper@Table 1",
+      "paper@Table 3",
+      "paper@§3 Dataset",
+      "hf-card@Data Splits"
+    ],
+    "construction": [
+      {
+        "k": "题源收集",
+        "text": "从论文 Table 7 列出的各来源收集自然科学标准化考试题，以美国各州考试为主（NY Regents、MCAS、TIMSS、NAEP 等），另有一个匿名内容合作伙伴（论文中称 Mercury）为非商业研究目的提供题目。",
+        "cite": [
+          "paper@Appendix A",
+          "paper@Table 7"
+        ]
+      },
+      {
+        "k": "两个过滤器定义 Challenge 集",
+        "text": "先用 IR 检索基线（Waterloo 语料 + Elasticsearch）和 PMI 点互信息基线各答一遍：两个都答错的题进入 Challenge 集（2,590 题），其余进 Easy 集（5,197 题）。论文说明这只是对「难题」的实用近似。",
+        "cite": [
+          "paper@Identifying Challenge Questions",
+          "paper@§3 Dataset"
+        ]
+      },
+      {
+        "k": "划分 train / dev / test",
+        "text": "Challenge 集划分为 Train 1,119 / Dev 299 / Test 1,172，Easy 集为 2,251 / 570 / 2,376；论文只在两个测试集上报告分数。",
+        "cite": [
+          "paper@Table 1",
+          "paper@Results"
+        ]
+      },
+      {
+        "k": "配套发布 ARC Corpus",
+        "text": "同步发布 ARC Corpus：14M 句（1.4GB）科学句子；论文明确使用该语料是可选的，系统也不限于该语料。",
+        "cite": [
+          "paper@The ARC Corpus",
+          "paper@Abstract"
+        ]
+      }
+    ]
   },
-  "metrics": [],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [],
-  "notes": "Meta Llama 3.1 引用",
+  "metrics": [
+    {
+      "id": "accuracy",
+      "name": "准确率（Accuracy）",
+      "direction": "越高越好",
+      "description": "答对题数占总题数的比例。评分规则：系统选对得 1 分；若系统报告 k 路并列且其中包含正确答案，该题得 1/k 分；总分为所有题得分之和除以题数，以百分比报告。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@Baseline Performance"
+      ]
+    }
+  ],
+  "default_protocol": {
+    "raw": "2018 年论文的官方口径：对每个选项独立打分后取最高分（或报告并列），按上述评分规则在 Challenge 与 Easy 的测试集上算百分比。论文报告的最好系统 DGEM 为 27.11%，与 25.02% 的随机基线之差落在 95% 置信区间 ±2.5% 之内，作者结论是没有任何基线显著超过随机。",
+    "cite": [
+      "paper@Baseline Performance",
+      "paper@Table 6",
+      "paper@Results"
+    ],
+    "variants": [
+      {
+        "text": "选项展示方式（separation vs options）：separation 只给题干、逐个选项算似然后取最高；options 把所有选项一起放进 prompt 让模型直接对比。2024 年论文实测两者最高可差 35 个百分点（Llama 3.1 70B 从 64% 到 93%），并且会改变模型排序，两种口径的分数不可比；该论文对 Llama 3 70B 自报的 92.9 判定为 options 口径（复现值为 separation 64.2 / options 91.3）。",
+        "cite": [
+          "arc-challenge-2024@§1 Introduction",
+          "arc-challenge-2024@§2 Impact on evaluation results",
+          "arc-challenge-2024@Figure 4",
+          "arc-challenge-2024@Table 1"
+        ]
+      },
+      {
+        "text": "shots 与打分方式：Llama 3.1 对预训练模型用 25-shot、prompt 里给全部选项并对选项字符算似然，对后训练模型用 0-shot 生成选项字母，最大生成长度 100 tokens；不同 shots 数之间不可比。",
+        "cite": [
+          "llama31-eval-details@ARC-Challenge"
+        ]
+      },
+      {
+        "text": "是否允许检索外部语料：论文的 IR 基线用 Waterloo 语料时按定义接近 0 分（1.02），改用配套的 ARC Corpus 后升到 20.26%；是否开放检索显著改变分数。",
+        "cite": [
+          "paper@Table 6",
+          "paper@The ARC Corpus"
+        ]
+      },
+      {
+        "text": "子集与版本：Challenge 与 Easy 两个子集难度不同，2018 年论文的 Challenge 测试集为 1,172 题；不同子集、不同版本之间的分数不可直接比较。",
+        "cite": [
+          "paper@Table 1",
+          "paper@Table 6"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2018-03-14",
+      "label": "arXiv v1 发布（arXiv:1803.05457v1），7,787 题（Challenge 2,590 / Easy 5,197），配套 ARC Corpus 与三个神经基线实现",
+      "cite": [
+        "paper"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "评分方式制造虚假难度差距",
+      "impact": "多数历史 ARC Challenge 分数用的是 separation 口径（逐个选项打分）。2024 年论文实测换成 options 口径，Llama 3.1 70B 从 64% 升到 93%，差异最高达 35 个百分点，Challenge 与 Easy 的差距最大可缩小 6 倍。因此跨论文比较 ARC 分数时，排序可能由口径而不是能力决定。",
+      "severity": "高",
+      "response": "2024 年论文明确建议多选评测应让模型同屏看到所有选项；论文也说明由于技术报告很少写口径，他们对历史分数的口径判断是靠同时复现两种设置、看哪个能复现报告分数推断的。",
+      "reader": "比较 ARC 分数前先确认口径（separation / options / shots）；本页附录 B 的基线表是 separation 口径。",
+      "cite": [
+        "arc-challenge-2024@§1 Introduction",
+        "arc-challenge-2024@Figure 1",
+        "arc-challenge-2024@Figure 4",
+        "arc-challenge-2024@Limitations",
+        "arc-challenge-2024@§6 Summary"
+      ]
+    },
+    {
+      "issue": "前沿模型已饱和",
+      "impact": "2024 年论文的 options 口径下 Mistral Large (2407) 与 Qwen 2.5 72B 均达 95%；Llama 3 论文报告预训练 Llama 3 405B 为 96.1 ±1.1、Llama 3 8B 为 79.7 ±2.3。分数贴近天花板，难以区分最强模型。",
+      "severity": "高",
+      "response": "未见 AI2 发布新版本或替代集；论文中给出的 leaderboard 地址为 http://data.allenai.org/arc，本页核验时该地址已不可访问。",
+      "reader": "95% 以上的几个点差距不要过度解读；40–80% 区间的中小模型仍有区分度。",
+      "cite": [
+        "llama3-paper@Table 12",
+        "arc-challenge-2024@Figure 4",
+        "paper@Table 6"
+      ]
+    },
+    {
+      "issue": "约三成题目脱离选项集合就无法作答",
+      "impact": "2024 年论文用 gpt-4o-2024-11-20 分批判定，估计 ARC Challenge 有 31%、ARC Easy 有 21% 的题属于「只给单个选项、不给其他选项就答不出」。这类题的分数高度依赖评测方式，排除法本身就是重要得分来源。",
+      "severity": "中",
+      "response": "论文据此把「让模型同屏看到所有选项」写成了多选评测的默认建议。",
+      "reader": "看到 90% 以上的 ARC Challenge 分数时，先问是哪种口径；options 口径下的高分不等于同等程度的深度推理。",
+      "cite": [
+        "arc-challenge-2024@Appendix B",
+        "arc-challenge-2024@§1 Introduction",
+        "arc-challenge-2024@§1.1 Hardly answerable in separation"
+      ]
+    },
+    {
+      "issue": "训练数据污染风险",
+      "impact": "Challenge 的 train / test / validation 全部公开可下载（数据集卡给出 1,119 / 299 / 1,172 行），可能已进入模型训练数据或被针对性调优，使公开集分数偏高。",
+      "severity": "中",
+      "response": "未见官方回应；数据集卡元数据标注许可为 cc-by-sa-4.0。",
+      "reader": "单看公开集分数时保留余地，优先参考口径一致、发布时间更晚的结果。",
+      "cite": [
+        "hf-card@Data Splits",
+        "hf-card@frontmatter"
+      ]
+    },
+    {
+      "issue": "题目来源文化背景单一",
+      "impact": "题源全部来自美国标准化考试与一个匿名合作伙伴，课程体系偏向美国小学科学；对非美国课程训练的模型可能形成系统性偏差。",
+      "severity": "低",
+      "response": "未见官方回应。",
+      "reader": "评估非美国课程体系下训练的模型时，把课程差异纳入解读。",
+      "cite": [
+        "paper@Appendix A"
+      ]
+    }
+  ],
+  "notes": "ARC（AI2 Reasoning Challenge）含 Challenge 集（2,590 题）与 Easy 集（5,197 题）两个子集，本实体只覆盖 Challenge 集。ARC-AGI（抽象推理网格任务，实体 id arc-agi）是完全不同的 benchmark，名称相似但任务与分数都不可比。",
   "official_sources": [
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/1803.05457"
+    },
     {
       "kind": "dataset",
       "url": "https://huggingface.co/datasets/allenai/ai2_arc"
     },
     {
+      "kind": "repo",
+      "url": "https://github.com/allenai/arc-solvers"
+    },
+    {
       "kind": "site",
-      "url": "https://ai.meta.com/blog/meta-Llama-3-1/"
+      "url": "https://allenai.org/data/arc"
     }
   ],
   "related_benchmarks": [
+    "ai2d",
     "hellaswag",
-    "winogrande"
+    "winogrande",
+    "mmlu",
+    "gsm8k",
+    "gpqa",
+    "truthfulqa"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-13",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "Think you have Solved Question Answering? Try ARC, the AI2 Reasoning Challenge（arXiv:1803.05457v1，2018-03-14）",
+        "url": "https://arxiv.org/abs/1803.05457",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "arc-challenge-2024",
+        "kind": "paper",
+        "title": "In Case You Missed It: ARC 'Challenge' Is Not That Challenging（arXiv:2412.17758v1，2024-12-23）",
+        "url": "https://arxiv.org/abs/2412.17758",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "llama3-paper",
+        "kind": "paper",
+        "title": "The Llama 3 Herd of Models（arXiv:2407.21783，Meta，2024）",
+        "url": "https://arxiv.org/abs/2407.21783",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "hf-card",
+        "kind": "dataset",
+        "title": "allenai/ai2_arc（Hugging Face 数据集卡，许可 cc-by-sa-4.0）",
+        "url": "https://huggingface.co/datasets/allenai/ai2_arc",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "allenai/arc-solvers（IR / PMI 与 DecompAttn、BiDAF、DGEM 基线实现）",
+        "url": "https://github.com/allenai/arc-solvers",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "llama31-eval-details",
+        "kind": "docs",
+        "title": "Llama 3.1 Evaluation Details（Meta，llama-models 仓库）",
+        "url": "https://github.com/meta-llama/llama-models/blob/main/models/llama3_1/eval_details.md",
+        "accessed": "2026-11-13"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Allen Institute for Artificial Intelligence（AI2），美国西雅图的非营利 AI 研究机构",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      "first_release": {
+        "v": "2018-03-14（arXiv:1803.05457v1）",
+        "cite": [
+          "paper"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "paper@Abstract",
+        "paper@§3 Dataset",
+        "paper@Table 1",
+        "hf-card@Dataset Summary"
+      ],
+      "interpretation": [
+        "paper@Table 6",
+        "paper@Results",
+        "arc-challenge-2024@§2 Impact on evaluation results",
+        "llama3-paper@Table 12"
+      ]
+    },
+    "problem": {
+      "text": "SQuAD、SNLI 等阅读理解和推断数据集靠表面线索就能答对，分数被信息检索和统计相关这类简单算法主导，研究被引向增量改进这些算法。ARC 想用「检索和词共现都答不出」的题目，把研究拉回需要知识与推理的难任务上。",
+      "cite": [
+        "paper@Introduction",
+        "paper@Related Work"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机猜测基线",
+        "value": "25.02%",
+        "note": "论文的 Guess-all 基线（每个选项都选，按 1/k 计分）在 Challenge 与 Easy 测试集上都是 25.02%。",
+        "cite": [
+          "paper@Table 6",
+          "paper@Baseline Performance"
+        ]
+      },
+      {
+        "label": "论文发布时最好成绩",
+        "value": "27.11%",
+        "note": "DGEM（2018，论文 Table 6）；作者明确说没有任何算法显著高于随机基线，95% 置信区间为 ±2.5%。",
+        "cite": [
+          "paper@Table 6",
+          "paper@Results",
+          "paper@Conclusion"
+        ]
+      },
+      {
+        "label": "2024 年论文 options 口径最好成绩",
+        "value": "95%",
+        "note": "Mistral Large (2407) 与 Qwen 2.5 72B 在「所有选项同屏」口径下均 95%，同一批模型在 separation 口径下只有 63–67%；Llama 3.1 70B 为 64% → 93%。",
+        "cite": [
+          "arc-challenge-2024@Figure 4",
+          "arc-challenge-2024@§2 Impact on evaluation results"
+        ]
+      },
+      {
+        "label": "Llama 3 论文记录的最好成绩",
+        "value": "96.1 ±1.1%",
+        "note": "Llama 3 论文 Table 12 的预训练模型成绩（95% 置信区间）：Llama 3 405B 96.1 ±1.1、Llama 3 70B 92.9 ±1.5、Llama 3 8B 79.7 ±2.3；2024 年论文判定 Llama 3 70B 自报的 92.9 属 options 口径。",
+        "cite": [
+          "llama3-paper@Table 12",
+          "arc-challenge-2024@Table 1"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      },
+      {
+        "label": "饱和参考线",
+        "value": "约 96%",
+        "note": "本站按 2024 论文 options 口径最高 95% 与 Llama 3 论文 96.1 ±1.1 取整得到的参考线，不是官方上限；越接近这条线，模型差距越容易混进口径差异与题目噪声。",
+        "cite": [
+          "arc-challenge-2024@Figure 4",
+          "llama3-paper@Table 12"
+        ]
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 2018 年的 27% 当成 ARC Challenge 的「天然难度」——那是 separation 口径下的成绩；2024 年论文里同代开源模型换成 options 口径就在 91–95%。",
+        "cite": [
+          "paper@Table 6",
+          "arc-challenge-2024@§2 Impact on evaluation results"
+        ]
+      },
+      {
+        "text": "把不同论文报的 ARC Challenge 分数直接排名——separation 与 options 最高可差 35 个百分点，且会改变模型排序。",
+        "cite": [
+          "arc-challenge-2024@Figure 4",
+          "arc-challenge-2024@§1 Introduction"
+        ]
+      },
+      {
+        "text": "把高分解读为「科学推理能力极强」——2024 年论文估计约 31% 的 Challenge 题必须同屏对比选项才能答，排除法本身就是重要得分来源。",
+        "cite": [
+          "arc-challenge-2024@Appendix B"
+        ]
+      },
+      {
+        "text": "把 ARC（AI2 Reasoning Challenge）和 ARC-AGI 混为一谈——前者是美国小学科学多选题，后者是抽象推理网格任务，两者题目、来源与分数都不可比。",
+        "cite": [
+          "hf-card@Dataset Summary",
+          "paper@Abstract"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "Allen Institute for Artificial Intelligence（AI2），美国西雅图",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "Peter Clark、Isaac Cowhey、Oren Etzioni、Tushar Khot、Ashish Sabharwal、Carissa Schoenick、Oyvind Tafjord",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      {
+        "k": "首次发布",
+        "v": "2018-03-14（arXiv:1803.05457v1）",
+        "cite": [
+          "paper"
+        ]
+      },
+      {
+        "k": "题源",
+        "v": "论文 Table 7 列出全部题源，以美国各州标准化考试为主（NY Regents 103+422、MCAS 221+411、TIMSS 60+151 等）；匿名合作伙伴 Mercury 贡献 1,762 道 Challenge 题与 3,366 道 Easy 题",
+        "cite": [
+          "paper@Appendix A",
+          "paper@Table 7"
+        ]
+      },
+      {
+        "k": "年级分布",
+        "v": "Challenge 集以 8 年级为主（41.4%，1,072 题），其余为 3–9 年级；论文说明各年级难度有大量重叠，每个年级都混有难易题",
+        "cite": [
+          "paper@Table 2",
+          "paper@§3 Dataset"
+        ]
+      },
+      {
+        "k": "ARC Corpus",
+        "v": "14M 句（1.4GB）科学句子；论文称抽样分析显示其覆盖约 95% Challenge 题所需知识，使用语料可选，系统也不限于该语料",
+        "cite": [
+          "paper@The ARC Corpus",
+          "paper@Abstract"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "数据集在 Hugging Face（allenai/ai2_arc，ARC-Challenge / ARC-Easy 两个 config）；IR / PMI 与三个神经基线的实现代码在 GitHub（allenai/arc-solvers），仓库命令示例引用 ARC-V1-Feb2018 数据与 ARC-V1-Models-Aug2018 模型",
+        "cite": [
+          "hf-card@Data Splits",
+          "repo@README",
+          "repo@Running baseline models"
+        ]
+      },
+      {
+        "k": "数据格式",
+        "v": "JSON：每题含 id、question.stem（题干）、question.choices（text + label）、answerKey；Hugging Face 数据集卡同样给出 id / question / choices / answerKey 四个字段",
+        "cite": [
+          "repo@Running against a new question set",
+          "hf-card@Data Instances"
+        ]
+      },
+      {
+        "k": "许可",
+        "v": "数据集卡元数据标注 cc-by-sa-4.0；数据集卡首页指向 allenai.org/data/arc（该地址现重定向到 Hugging Face 数据集页）",
+        "cite": [
+          "hf-card@frontmatter",
+          "hf-card@Dataset Description"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2018-03-14",
+        "columns": [
+          "Solver",
+          "Challenge Set (%)",
+          "Easy Set (%)"
+        ],
+        "rows": [
+          [
+            "IR (dataset defn)",
+            "(1.02)",
+            "(74.48)†"
+          ],
+          [
+            "PMI (dataset defn)",
+            "(2.03)†",
+            "(77.82)†"
+          ],
+          [
+            "IR (using ARC Corpus)",
+            "20.26",
+            "62.55"
+          ],
+          [
+            "TupleInference",
+            "23.83",
+            "60.81"
+          ],
+          [
+            "DecompAttn‡",
+            "24.34",
+            "58.27"
+          ],
+          [
+            "Guess-all (“random”)",
+            "25.02",
+            "25.02"
+          ],
+          [
+            "DGEM-OpenIE‡",
+            "26.41",
+            "57.45"
+          ],
+          [
+            "BiDAF‡",
+            "26.54",
+            "50.11"
+          ],
+          [
+            "TableILP",
+            "26.97",
+            "36.15"
+          ],
+          [
+            "DGEM",
+            "27.11",
+            "58.97"
+          ]
+        ]
+      },
+      "cite": [
+        "paper@Table 6",
+        "paper@Table 6 注"
+      ]
+    }
+  }
 }
