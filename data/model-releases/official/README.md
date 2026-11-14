@@ -4147,3 +4147,4 @@ Gemini Robotics 2.5 的 DeepMind 官方 RSS `pubDate` 为 `Mon, 09 Nov 2026 19:5
 - 未改写任何既有 release / benchmark / 归档文件；只新增 4 个 release 档、4 个归档目录与本节（LifeVal 因第四十八批已覆盖而撤回重建，`models/2026-11-02-lifeval/` 保持 main 原样）。
 - 未把任何新读数写进既有模型 release，也未为 12 个新 benchmark id 硬写档案实体。
 - 未删除任何远端分支、未改 Workflow 配置、未在本仓写入任何凭据或私有供应商数据。
+- **收口补录（2026-11-14 同一批次）**：`data/model-coverage.json` 的 `window_since` / `window_until` 属**手写型展示元数据**（无脚本自动写入），本批初稿漏写，覆盖页一度仍显示上一批窗口 2026-10-27 ~ 2026-11-11；已更正为本批实际窗口 **2026-10-29 ~ 2026-11-14** 并重新部署。
