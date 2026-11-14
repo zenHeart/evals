@@ -1,32 +1,371 @@
 {
   "id": "amo-bench",
   "name": "AMO-Bench",
-  "full_name": null,
+  "full_name": "AMO-Bench: Large Language Models Still Struggle in High School Math Competitions（AMO-Bench：大语言模型仍难以应对高中数学竞赛）",
   "aliases": [],
-  "status": null,
+  "status": "active",
   "categories": [
     "reasoning"
   ],
-  "summary": "奥赛级高难数学推理（50 道人工命题）",
-  "interpretation": "50 道人工原创奥赛级数学题（全部经专家确认不低于 IMO 难度、只交最终答案可自动判分），准确率越高越好；发布时最强模型仅 52.4%、多数低于 40%，2026 年初 SOTA 才到 65.1%——远未饱和的前沿数学上限集。",
-  "measures": [],
-  "does_not_measure": [],
+  "summary": "AMO-Bench 是美团 LongCat 团队出的 50 道人工原创奥赛级数学题：难度不低于 IMO、只交最终答案可自动判分。arXiv v1 时 26 个模型最高 52.4%，2026 年 2 月榜单 SOTA 才到 65.1%，离饱和还远。",
+  "interpretation": "AVG@32 越高，说明模型在奥赛级数学推理上越强。这个基准的设计初衷就是不让前沿模型饱和：发布时最强模型只有 52.4%、多数不到 40%，一年多后榜单 SOTA 65.1%，论文仍称「远未饱和」。采样口径（推理/非推理模型温度、top-k、top-p、最大长度、32 次平均）直接影响分数，跨模型比较前先看清口径。",
+  "measures": [
+    {
+      "area": "代数方程与不等式",
+      "focus": "代数方程与不等式的求解、恒等变形与估算",
+      "share": "11/50",
+      "format": "最终答案（数值/表达式，parser 判分）",
+      "cite": [
+        "paper@§2.2",
+        "amo-bench@Dataset Statistics"
+      ]
+    },
+    {
+      "area": "函数与数列",
+      "focus": "函数性质、递推关系与数列相关的推理",
+      "share": "13/50",
+      "format": "最终答案（数值/表达式，parser 判分）",
+      "cite": [
+        "paper@§2.2",
+        "amo-bench@Dataset Statistics"
+      ]
+    },
+    {
+      "area": "几何",
+      "focus": "平面/立体几何中的度量与结构推理",
+      "share": "5/50",
+      "format": "最终答案（数值/表达式，parser 判分）",
+      "cite": [
+        "paper@§2.2",
+        "amo-bench@Dataset Statistics"
+      ]
+    },
+    {
+      "area": "数论",
+      "focus": "整除、同余、素数与丢番图型推理",
+      "share": "9/50",
+      "format": "最终答案（数值/表达式，parser 判分）",
+      "cite": [
+        "paper@§2.2",
+        "amo-bench@Dataset Statistics"
+      ]
+    },
+    {
+      "area": "组合",
+      "focus": "计数、构造与组合优化类推理",
+      "share": "12/50",
+      "format": "最终答案（数值/表达式，parser 判分）",
+      "cite": [
+        "paper@§2.2",
+        "amo-bench@Dataset Statistics"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "证明的书写与推理过程质量：每道题只要求提交最终答案，不要求写出完整证明。",
+      "cite": [
+        "amo-bench@Abstract",
+        "paper@脚注 8"
+      ]
+    },
+    {
+      "text": "竞赛数学之外的能力：题目是文字 + LaTeX 的最终答案，不涉及代码、工具调用或多模态理解。",
+      "cite": [
+        "amo-bench@Abstract",
+        "dataset@数据集卡"
+      ]
+    },
+    {
+      "text": "人类基线：官方未披露人类专家在 AMO-Bench 上的成绩，本站不做推算。",
+      "cite": [
+        "paper@Table 1",
+        "amo-bench@Updates"
+      ]
+    }
+  ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
+    "sample_count": 50,
+    "splits": [
+      "AMO-Bench 全集 50 题（混合判分）",
+      "AMO-Bench-P：仅 39 道 parser 可判题",
+      "CH：中文版本（跨语言鲁棒性）"
+    ],
+    "languages": [
+      "en",
+      "zh"
+    ],
+    "source_type": "human-authored（专家原创命题 + 人工逐步解答）",
+    "public_sample": true,
+    "totals": "共 50 题：39 题数值/集合/变量表达式答案走 parser 判分（即 AMO-Bench-P），11 题描述性答案用 o4-mini (Low) 判分；另有中文（CH）版本。",
+    "cite": [
+      "paper@Abstract",
+      "amo-bench@Grading Pipeline",
+      "acl-pdf@§2.1"
+    ],
+    "construction": [
+      {
+        "k": "四阶段构建",
+        "text": "数据创建 → 质量评审 → 原创性评审 → 难度评审：所有题目由顶尖高校与教育机构的数学专家独立原创，作者必须同时给出详细的逐步解答。",
+        "cite": [
+          "amo-bench@Construction pipeline",
+          "paper@§2.1"
+        ]
+      },
+      {
+        "k": "质量评审",
+        "text": "每道候选题目由至少三位专家盲评审其质量。",
+        "cite": [
+          "paper@§2.1",
+          "amo-bench@Construction pipeline"
+        ]
+      },
+      {
+        "k": "原创性评审",
+        "text": "与已有数据集（如 AIME24/25）做 10-gram 匹配比对，确保题目不是公开材料的改写而是真正原创，以防记忆造成的性能泄漏。",
+        "cite": [
+          "paper@§2.1",
+          "repo@Key Features"
+        ]
+      },
+      {
+        "k": "难度评审",
+        "text": "过滤复杂度不足的题目，并要求每题达到或超过 IMO 难度标准（由人类专家确认）；仓库另称加入了 LLM 难度过滤，剔除对当前推理模型不够难的题。",
+        "cite": [
+          "paper@§2.1",
+          "repo@Key Features"
+        ]
+      },
+      {
+        "k": "人工推理路径",
+        "text": "除最终答案外，每题附有人工撰写的详细推理路径，可用于 prompt 工程与错误分析。",
+        "cite": [
+          "repo@Key Features",
+          "paper@§2.1"
+        ]
+      }
+    ]
   },
-  "metrics": [],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [],
-  "notes": "字节 Seed 引用",
+  "metrics": [
+    {
+      "id": "avg32",
+      "name": "AVG@32 准确率",
+      "direction": "越高越好",
+      "description": "同一题采样 32 次后取平均的最终答案正确率，AMO-Bench 与 AMO-Bench-P 分别报告；ACL 2026 版给出 95% 置信区间。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§3.1",
+        "acl-pdf@Table 3"
+      ]
+    },
+    {
+      "id": "passk",
+      "name": "pass@k",
+      "direction": "越高越好",
+      "description": "k 次采样中至少一次答对的题目占比；随 k 增大先快后慢，头部推理模型 pass@32 超过 70%。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§3.2"
+      ]
+    }
+  ],
+  "default_protocol": {
+    "raw": "每题只交最终答案：39 题走 parser 判分（评测脚本用 Math-Verify 解析模型输出并对照标准答案，含小数的答案要求至少四位小数），11 题描述性答案由 o4-mini (Low) 判分，并对 5 个独立判分样本做多数投票；判分方法本身在 10 个模型的 1,000 条回答上准确率 99.2%。默认报告口径是 AVG@32：推理模型 temperature 1.0、非推理模型 0.7，top-k=50、top-p=0.95，最大上下文/输出长度取各模型允许的上限，每题采样 32 次取平均。",
+    "cite": [
+      "paper@§2.3",
+      "paper@§3.1",
+      "repo@Acknowledgement",
+      "amo-bench@Grading Pipeline"
+    ],
+    "variants": [
+      {
+        "text": "AMO-Bench 全集（50 题，混合判分）vs AMO-Bench-P（39 题，只用 parser 判分）：P 子集分数普遍更高，两者不能混排。",
+        "cite": [
+          "paper@Table 1",
+          "paper@脚注 8"
+        ]
+      },
+      {
+        "text": "推理模型与非推理模型的采样温度不同（1.0 vs 0.7），最大长度又取各模型自己的上限，跨模型比较含系统误差。",
+        "cite": [
+          "paper@§3.1"
+        ]
+      },
+      {
+        "text": "除 AVG@32 外论文还报 pass@k：随 k 增大先快后慢，头部推理模型 pass@32 超过 70%，与 AVG@32 不可互换。",
+        "cite": [
+          "paper@§3.2"
+        ]
+      },
+      {
+        "text": "ACL 2026 版另有中文（CH）版本用于跨语言鲁棒性，多个模型在 CH 上明显掉分，英文分数不能直接外推到中文。",
+        "cite": [
+          "acl-pdf@§2.1",
+          "acl-pdf@§3.2"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "arxiv-v1",
+      "date": "2025-10-30",
+      "label": "arXiv v1：26 个受评模型，最高 52.4%，多数低于 40%",
+      "cite": [
+        "paper@arXiv v1 日期戳",
+        "paper@§3.2"
+      ]
+    },
+    {
+      "id": "release",
+      "date": "2025-10-31",
+      "label": "数据集、评测代码与技术报告公开",
+      "cite": [
+        "amo-bench@Updates",
+        "repo@Updates"
+      ]
+    },
+    {
+      "id": "p35-fix",
+      "date": "2025-11-05",
+      "label": "Problem 35 题目表述修订（五整数改为非负）并同步 Hugging Face 数据集",
+      "cite": [
+        "repo@Updates",
+        "repo@Discussions and Feedbacks"
+      ]
+    },
+    {
+      "id": "kimi-sota",
+      "date": "2025-11-19",
+      "label": "Kimi-K2-Thinking 56.0%，榜单新 SOTA",
+      "cite": [
+        "amo-bench@Updates",
+        "repo@Updates"
+      ]
+    },
+    {
+      "id": "gemini3-sota",
+      "date": "2025-11-24",
+      "label": "Gemini 3 Pro 63.1%，首次突破 60%",
+      "cite": [
+        "amo-bench@Updates",
+        "repo@Updates"
+      ]
+    },
+    {
+      "id": "token-efficiency",
+      "date": "2025-12-01",
+      "label": "榜单新增 Token Efficiency 列",
+      "cite": [
+        "amo-bench@Updates",
+        "repo@Updates"
+      ]
+    },
+    {
+      "id": "sota-65",
+      "date": "2026-02-05",
+      "label": "Qwen3-Max-Thinking 65.1% 创 SOTA；GLM-4.7 62.4% 创开源记录",
+      "cite": [
+        "amo-bench@Updates",
+        "repo@Updates"
+      ]
+    },
+    {
+      "id": "acl-findings",
+      "date": "2026-07",
+      "label": "ACL 2026 Findings 正式版：36 个受评模型，最高 63.1 ± 1.4%，补充中文（CH）版本与推理效率、波动性、跨语言分析",
+      "cite": [
+        "acl@Anthology ID",
+        "acl@Cite (ACL)",
+        "acl-pdf@Table 3"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "题目数据问题（社区已确认）",
+      "impact": "Problem 26 与某竞赛题实质相同；Problem 38、39 与两篇 arXiv 论文内容相似；Problem 12、13、15、21 含复杂数值表达式，模型不调用外部工具时容易算错；Problem 35 表述已被修订。这些都直接影响对应题目的区分度与跨版本可比性。",
+      "severity": "高",
+      "response": "维护方在仓库与官网 Updates 公开列出社区反馈，2025-11-05 修订 Problem 35 并同步 Hugging Face 数据集，称会持续更新数据集。",
+      "reader": "引用具体题号的成绩前先看反馈清单；比较 2025-11-05 前后的分数时注意题目本身已变。",
+      "cite": [
+        "repo@Discussions and Feedbacks",
+        "repo@Updates"
+      ]
+    },
+    {
+      "issue": "规模小、采样噪声大",
+      "impact": "仅 50 题，且推理模型评测要求高采样温度，论文明确说最终结果天然受随机性与采样噪声影响；单题对错就会改变约 2 个百分点。",
+      "severity": "中",
+      "response": "官方用 AVG@32（32 次采样平均）压缩噪声，ACL 2026 版进一步给出 95% 置信区间。",
+      "reader": "几个百分点以内的排名差异不要当真，优先看置信区间是否重叠。",
+      "cite": [
+        "acl-pdf@Limitations",
+        "acl-pdf@Table 3"
+      ]
+    },
+    {
+      "issue": "混合判分的取舍",
+      "impact": "39 题用 parser 判分、11 题用 o4-mini (Low) 判分，论文承认两种方式各有固有取舍；判分器在 1,000 条回答上准确率 99.2%，但描述性答案仍可能被误判。",
+      "severity": "中",
+      "response": "官方公布判分准确率评估，并提供只用 parser 的 AMO-Bench-P 子集便于复现。",
+      "reader": "看描述性答案占比高的模型差距时，留意这 11 题的判分误差。",
+      "cite": [
+        "acl-pdf@Limitations",
+        "paper@§2.3",
+        "repo@Quick Start"
+      ]
+    },
+    {
+      "issue": "只测最终答案、不测证明",
+      "impact": "题目只要求最终答案，无法评估证明书写与推理过程质量，只能靠人工撰写的推理路径间接观察。",
+      "severity": "低",
+      "response": "每题附人工详细推理路径，支持 prompt 工程与错误分析。",
+      "reader": "不要把高分理解为能写出可发表的证明。",
+      "cite": [
+        "amo-bench@Abstract",
+        "repo@Key Features"
+      ]
+    },
+    {
+      "issue": "版本与口径分散",
+      "impact": "arXiv v1（2025-10-30，26 个模型）、ACL 2026 Findings（2026-07，36 个模型）与持续更新的官网榜单三处口径不同，作者排序也不同（arXiv 版 BibTeX 以 Shengnan An 为首，ACL 版以 Junlin Liu 为首）。",
+      "severity": "低",
+      "response": "论文与榜单各自标注受评模型数与更新时间；本档案分列三处快照。",
+      "reader": "报分数时同时说明取自论文哪一版还是榜单哪一天。",
+      "cite": [
+        "paper@Table 1",
+        "acl@Cite (ACL)",
+        "repo@Citation",
+        "amo-bench@Updates"
+      ]
+    }
+  ],
+  "notes": "美团 LongCat 团队出品；字节 Seed 博客曾引用。arXiv v1 与 ACL 2026 Findings 两版口径不同，引用时注明版本。",
   "official_sources": [
     {
       "kind": "site",
       "url": "https://amo-bench.github.io/"
+    },
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2510.26768"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/meituan-longcat/AMO-Bench"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/meituan-longcat/AMO-Bench"
     },
     {
       "kind": "site",
@@ -34,8 +373,283 @@
     }
   ],
   "related_benchmarks": [
-    "aime24"
+    "aime24",
+    "aime-25",
+    "beyondaime",
+    "olympiadbench",
+    "frontiermath",
+    "hlehle"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "AMO-Bench: Large Language Models Still Struggle in High School Math Competitions（arXiv:2510.26768 v1，2025-10-30）",
+        "url": "https://arxiv.org/abs/2510.26768",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "amo-bench",
+        "kind": "site",
+        "title": "AMO-Bench 项目页（含榜单更新日志、数据集统计、构建与判分流程）",
+        "url": "https://amo-bench.github.io/",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "meituan-longcat/AMO-Bench（评测代码、README 更新日志与社区反馈）",
+        "url": "https://github.com/meituan-longcat/AMO-Bench",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "dataset",
+        "kind": "dataset",
+        "title": "meituan-longcat/AMO-Bench（Hugging Face 数据集卡）",
+        "url": "https://huggingface.co/datasets/meituan-longcat/AMO-Bench",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "acl",
+        "kind": "paper",
+        "title": "ACL 2026 Findings：AMO-Bench（Anthology 2026.findings-acl.101，2026 年 7 月，pp. 2120–2137）",
+        "url": "https://aclanthology.org/2026.findings-acl.101/",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "acl-pdf",
+        "kind": "paper",
+        "title": "ACL 2026 Findings 版论文 PDF（Table 3 含 95% 置信区间）",
+        "url": "https://aclanthology.org/2026.findings-acl.101.pdf",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "美团 LongCat Team（Meituan）",
+        "cite": [
+          "amo-bench@作者署名"
+        ]
+      },
+      "first_release": {
+        "v": "2025-10-30（arXiv v1）；2025-10-31 数据集、评测代码与技术报告公开",
+        "cite": [
+          "paper@arXiv v1 日期戳",
+          "amo-bench@Updates"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "paper@Abstract",
+        "amo-bench@Abstract",
+        "amo-bench@Updates"
+      ],
+      "interpretation": [
+        "paper@§3.2",
+        "amo-bench@Updates",
+        "acl-pdf@§3.2"
+      ]
+    },
+    "problem": {
+      "text": "AIME24/25 等热门竞赛已被前沿模型做到饱和，拉不开最强模型之间的差距；AMO-Bench 用全新的、专家确认不低于 IMO 难度、且与公开材料无相似性的题目，只收最终答案以便自动判分，重新把差距测出来。",
+      "cite": [
+        "paper@Abstract",
+        "repo@Key Features",
+        "amo-bench@Abstract"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "发布时最好（arXiv v1，2025-10-30）",
+        "value": "52.4%",
+        "note": "GPT-5-Thinking (High)，26 个受评模型中的最高分，其余多数低于 40%；同期头部模型 pass@32 超 70%，说明单次抽样仍不稳定。",
+        "cite": [
+          "paper@§3.2",
+          "paper@Abstract"
+        ]
+      },
+      {
+        "label": "ACL 2026 Findings 论文最好",
+        "value": "63.1 ± 1.4%",
+        "note": "Gemini-3-Pro，36 个受评模型中的最高分；在 AMO-Bench-P 上为 67.4 ± 1.7%，多数模型低于 50%。",
+        "cite": [
+          "acl-pdf@Table 3",
+          "acl-pdf@Abstract"
+        ]
+      },
+      {
+        "label": "官方榜单当前 SOTA（2026-02-05 更新）",
+        "value": "65.1%",
+        "note": "Qwen3-Max-Thinking；同一条更新称 GLM-4.7 以 62.4% 创开源记录。注意这与论文 Table 3 中的 Qwen3-Max-Thinking (Preview) 57.4% 不是同一版本。",
+        "cite": [
+          "amo-bench@Updates",
+          "repo@Updates"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把榜单 SOTA 和论文表格的成绩排在一起比：榜单 2026-02-05 报的 Qwen3-Max-Thinking 65.1% 与论文 Table 3 里的 Qwen3-Max-Thinking (Preview) 57.4% 是不同版本、不同口径。",
+        "cite": [
+          "amo-bench@Updates",
+          "acl-pdf@Table 3"
+        ]
+      },
+      {
+        "text": "用 AVG@32 推断单次作答能力：头部推理模型 pass@32 超过 70%，同一题 32 次采样波动很大，单次分数明显低于 32 次平均。",
+        "cite": [
+          "paper@§3.2"
+        ]
+      },
+      {
+        "text": "把 50 题上的几个百分点差距当成稳定排名：ACL 论文明确说受数据规模与高采样温度影响，结果天然受随机性与采样噪声左右。",
+        "cite": [
+          "acl-pdf@Limitations"
+        ]
+      },
+      {
+        "text": "把 AMO-Bench 与 AMO-Bench-P 的分数混排：P 子集只有 39 道 parser 可判题，分数普遍更高。",
+        "cite": [
+          "paper@脚注 8",
+          "paper@Table 1"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "美团 LongCat Team（Meituan）。",
+        "cite": [
+          "amo-bench@作者署名"
+        ]
+      },
+      {
+        "k": "论文与版本",
+        "v": "arXiv:2510.26768 v1（2025-10-30）报告 26 个模型；ACL 2026 Findings 正式版（2026 年 7 月，pp. 2120–2137，Anthology ID 2026.findings-acl.101）把受评模型扩到 36 个，补充推理效率、排名波动性与中文（CH）跨语言分析。",
+        "cite": [
+          "paper@arXiv v1 日期戳",
+          "acl@Anthology ID",
+          "acl@Cite (ACL)",
+          "acl-pdf@Abstract"
+        ]
+      },
+      {
+        "k": "开源与数据",
+        "v": "代码仓库 MIT 许可；Hugging Face 数据集 50 行、英文、parquet、体积 117 kB，上月下载 2,853 次；评测脚本用 Math-Verify 解析模型输出。",
+        "cite": [
+          "repo@License",
+          "dataset@数据集卡",
+          "repo@Acknowledgement"
+        ]
+      },
+      {
+        "k": "人类基线",
+        "v": "未披露：论文与榜单均未报告人类专家在 AMO-Bench 上的成绩，本站不做推算。",
+        "cite": [
+          "paper@Table 1",
+          "amo-bench@Updates"
+        ]
+      },
+      {
+        "k": "定位",
+        "v": "作者在 Related Work 中把 AMO-Bench 与一批「后饱和」数学基准并列讨论，并称它是撰写时最具挑战的基准之一；论文还给出与 AIME24、MATH500 的解答长度分布对比。",
+        "cite": [
+          "paper@§4 Related Work",
+          "paper@§2.2"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-14",
+        "columns": [
+          "来源",
+          "模型",
+          "AVG@32",
+          "AMO-Bench-P",
+          "口径"
+        ],
+        "rows": [
+          [
+            "arXiv 论文 Table 1",
+            "GPT-5-Thinking (High)",
+            "52.4%",
+            "54.8%",
+            "v1：26 个受评模型中的最高分，其余多数低于 40%"
+          ],
+          [
+            "ACL 论文 Table 3",
+            "Gemini-3-Pro",
+            "63.1 ± 1.4",
+            "67.4 ± 1.7",
+            "36 个受评模型中的最高分，95% 置信区间"
+          ],
+          [
+            "ACL 论文 Table 3",
+            "DeepSeek-V3.2-Speciale",
+            "60.3 ± 1.2",
+            "62.3 ± 1.4",
+            "同上"
+          ],
+          [
+            "ACL 论文 Table 3",
+            "Qwen3-Max-Thinking (Preview)",
+            "57.4 ± 1.5",
+            "60.0 ± 1.7",
+            "同上"
+          ],
+          [
+            "ACL 论文 Table 3",
+            "Kimi-K2-Thinking",
+            "56.0 ± 1.6",
+            "55.7 ± 1.8",
+            "同上"
+          ],
+          [
+            "ACL 论文 Table 3",
+            "GPT-5-Thinking (High)",
+            "52.4 ± 1.6",
+            "54.8 ± 1.8",
+            "同上；arXiv v1 时即为最高分"
+          ],
+          [
+            "官方榜单 Updates",
+            "Gemini 3 Pro",
+            "63.1%",
+            "未列出",
+            "2025-11-24，首次突破 60%"
+          ],
+          [
+            "官方榜单 Updates",
+            "Qwen3-Max-Thinking",
+            "65.1%",
+            "未列出",
+            "2026-02-05，榜单 SOTA"
+          ],
+          [
+            "官方榜单 Updates",
+            "GLM-4.7",
+            "62.4%",
+            "未列出",
+            "2026-02-05，开源记录"
+          ]
+        ]
+      },
+      "cite": [
+        "paper@Table 1",
+        "acl-pdf@Table 3",
+        "amo-bench@Updates"
+      ]
+    }
+  }
 }
