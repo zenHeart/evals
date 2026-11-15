@@ -1,35 +1,430 @@
 {
   "id": "dyna-math",
   "name": "DynaMath",
-  "full_name": null,
-  "aliases": [],
-  "status": null,
-  "categories": [
-    "multimodal"
-  ],
-  "summary": "动态变换视觉条件下的数学题推理",
-  "interpretation": "DynaMath：501 道种子视觉数学题 × 10 种条件变体 = 5010 题，除平均准确率外更看「最差情况准确率」（种子题须在全部 10 个变体都对才算过）——衡量视觉条件变化下的稳健性，比单次测试更抗运气。",
-  "measures": [],
-  "does_not_measure": [],
-  "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
-  },
-  "metrics": [],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [],
-  "notes": "字节 Seed 引用；同题多变体考察稳健性",
-  "official_sources": [
+  "full_name": "DynaMath: A Dynamic Visual Benchmark for Evaluating Mathematical Reasoning Robustness of Vision Language Models",
+  "aliases": ["DynaMATH"],
+  "status": "active",
+  "categories": ["multimodal", "reasoning"],
+  "summary": "DynaMath 把 501 道多主题视觉数学题各写成一个 Python 程序，程序按随机采样的条件现场生成 10 个变体，共 5,010 道具体题目；它专门测「同一道题换个图、换个数字还做不做得对」，而不是只测单题准确率。",
+  "interpretation": "高分说明模型对视觉数学题的条件变化稳健：不只是某一版做对，而是同一知识点的 10 个变体全部做对（A_wst）。论文里 14 个前沿 VLM 的最差情况准确率都接近或不足平均情况的一半，当时最好的 zero-shot Claude-3.5 只有 35.3%，人类基线 77.3% 仍高出其平均情况分数 12.5 个百分点。",
+  "measures": [
     {
-      "kind": "site",
-      "url": "https://seed.bytedance.com/en/blog/official-release-of-seed1-8-a-generalized-agentic-model"
+      "area": "统计 Statistics",
+      "focus": "占比最大的主题；来自 MathVista 的 107 题覆盖统计等基础概念，另有来自公开资源的进阶推理题",
+      "share": "25.0%",
+      "format": "未披露（论文未按主题拆分题型）",
+      "cite": ["paper@Table 1", "paper@§3.2"]
+    },
+    {
+      "area": "解析几何 Analytic Geometry",
+      "focus": "解析几何基础概念题（MathVista 来源的 107 题覆盖该类）",
+      "share": "19.4%",
+      "format": "未披露（论文未按主题拆分题型）",
+      "cite": ["paper@Table 1", "paper@§3.2"]
+    },
+    {
+      "area": "平面几何 Plane Geometry",
+      "focus": "平面几何题（MathVista 来源的 107 题覆盖该类）",
+      "share": "15.4%",
+      "format": "未披露（论文未按主题拆分题型）",
+      "cite": ["paper@Table 1", "paper@§3.2"]
+    },
+    {
+      "area": "代数 Algebra",
+      "focus": "代数题；论文 §4.2 提到闭源模型能在该主题上超过人类成绩",
+      "share": "10.2%",
+      "format": "未披露（论文未按主题拆分题型）",
+      "cite": ["paper@Table 1", "paper@§3.2", "paper@§4.2"]
+    },
+    {
+      "area": "图论 Graph Theory",
+      "focus": "本科难度图论题，48 道来自 MMMU 与公开教育资源",
+      "share": "9.6%",
+      "format": "未披露（论文未按主题拆分题型）",
+      "cite": ["paper@Table 1", "paper@§3.2", "paper@§3.1"]
+    },
+    {
+      "area": "科学图表 Scientific Figures",
+      "focus": "基于科学图表的题目，45 道来自 MMMU",
+      "share": "9.0%",
+      "format": "未披露（论文未按主题拆分题型）",
+      "cite": ["paper@Table 1", "paper@§3.2", "paper@§3.1"]
+    },
+    {
+      "area": "算术 Arithmetic",
+      "focus": "算术题；27 道来自 MATH-V 的题是算术、谜题测试与立体几何的原型",
+      "share": "5.2%",
+      "format": "未披露（论文未按主题拆分题型）",
+      "cite": ["paper@Table 1", "paper@§3.2", "paper@§3.1"]
+    },
+    {
+      "area": "谜题测试 Puzzle Tests",
+      "focus": "论文称这是对 VLM 最难的主题，但只占全集 3.4%",
+      "share": "3.4%",
+      "format": "未披露（论文未按主题拆分题型）",
+      "cite": ["paper@Table 1", "paper@§3.2", "paper@附录 A"]
+    },
+    {
+      "area": "立体几何 Solid Geometry",
+      "focus": "立体几何题（27 道 MATH-V 来源的题覆盖该类）",
+      "share": "3.0%",
+      "format": "未披露（论文未按主题拆分题型）",
+      "cite": ["paper@Table 1", "paper@§3.2", "paper@§3.1"]
     }
   ],
-  "related_benchmarks": [],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "does_not_measure": [
+    {
+      "text": "静态单题准确率：题面和图像固定、只出现一次的考法不在本基准范围内，论文明确以此为设计目标。",
+      "cite": ["paper@§1"]
+    },
+    {
+      "text": "纯文本数学推理：每题都带图（论文称与纯文本基准的区别正在于此），文字-only 模型无法直接在本基准上评测。",
+      "cite": ["paper@附录 A"]
+    },
+    {
+      "text": "竞赛级难题：作者说目标不是做最难的竞赛级基准，而是提供相对简单、变体多样的题来测稳健性。",
+      "cite": ["paper@§3.1", "paper@附录 A"]
+    },
+    {
+      "text": "重复一致性不等于最差情况准确率：RC 只衡量同一变体重复作答是否一致，A_wst 才要求 10 个变体全对。",
+      "cite": ["paper@§3.3"]
+    }
+  ],
+  "dataset": {
+    "sample_count": 5010,
+    "splits": [
+      "Hugging Face 公开样例 DynaMath_Sample：default 5.01k 行（501 seed × 10 变体）+ sample_variant1 501 行",
+      "完整集与自建变体：按仓库 Dockerfile + generate_json.py 本地生成，可指定起始索引、生成数量与随机种子"
+    ],
+    "languages": ["en"],
+    "source_type": "程序化生成（seed 题写成 Python 程序，按随机条件生成变体）",
+    "public_sample": true,
+    "multiple_choice_share": "34.7%",
+    "multimodal_share": "100%（每题均带图；470/501 个程序用随机条件现场绘制题图，31 个用固定图只随机化文字元素）",
+    "totals": "501 个 seed 程序 × 10 个变体 = 5,010 道具体题目（论文 Table 1；Hugging Face 公开样例为 5.01k 行）· 题型 59.1% 数值题 / 34.7% 选择题 / 6.2% 自由填答 · 主题 9 类，统计 25.0% 最大 · 难度以高中 55.3%、本科 32.1% 为主 · 语言英文 · 许可 apache-2.0",
+    "cite": ["paper@Table 1", "paper@§3.2", "dataset", "repo"],
+    "construction": [
+      {
+        "k": "筛题",
+        "text": "从公开资源收集题目，剔除过于复杂、不适合程序化生成的题，最终留下 501 个 seed 程序。",
+        "cite": ["repo"]
+      },
+      {
+        "k": "来源构成",
+        "text": "227 个（45.3%）来自成熟视觉数学数据集，274 个（54.7%）为新收集或基于公开资源自研；其中 MathVista 107 题、MATH-V 27 题、MMMU 科学图表 45 题与图论 48 题、公开资源 236 题、自研 38 题。",
+        "cite": ["paper@§3.1", "homepage"]
+      },
+      {
+        "k": "写成程序",
+        "text": "每个 seed 题表示为一个 Python 程序，按随机采样的条件生成变体；470 个程序含绘图函数、用随机条件生成题图，31 个程序用固定图只随机化文字元素。",
+        "cite": ["paper@§3.1", "repo"]
+      },
+      {
+        "k": "策略标注",
+        "text": "招募一批大学 STEM 学生为每题标注解题时用的常用策略，用于后续错误分析。",
+        "cite": ["paper@§3.1"]
+      },
+      {
+        "k": "生成与分发",
+        "text": "每题生成 M = 10 个变体，共 5,010 道具体题；Hugging Face 提供 5.01k 行样例，仓库提供 Docker 镜像与 generate_json.py 生成脚本。",
+        "cite": ["paper@§3.3", "dataset", "repo@生成流程"]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "worst-case-accuracy",
+      "name": "最差情况准确率 A_wst",
+      "direction": "越高越好",
+      "description": "一个 seed 题在全部 10 个变体上都答对，才记该 seed 答对；A_wst 就是答对的 seed 占 501 的百分比。",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["paper@Abstract", "paper@§3.3"]
+    },
+    {
+      "id": "average-case-accuracy",
+      "name": "平均情况准确率 A_avg",
+      "direction": "越高越好",
+      "description": "在全部 5,010 道具体题（501 seed × 10 变体）上按题计的平均准确率。",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["paper@§3.3", "paper@Table 2"]
+    },
+    {
+      "id": "reasoning-robustness",
+      "name": "推理稳健性 RR",
+      "direction": "越高越好",
+      "description": "RR = A_wst / A_avg，衡量模型表现跨变体的一致程度；论文报告所有受测 VLM 的 RR 都接近或不足 0.5。",
+      "range": [0, 1],
+      "unit": "ratio",
+      "cite": ["paper@§3.3", "paper@Abstract"]
+    },
+    {
+      "id": "repetition-consistency",
+      "name": "重复一致性 RC",
+      "direction": "越高越好",
+      "description": "同一题重复提问时答案与第一次回答的一致程度，反映模型对答案的置信度；论文只对 4 个模型报了 5 次重复的 RC。",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["paper@§3.3", "paper@Table 4"]
+    }
+  ],
+  "default_protocol": {
+    "raw": "论文用提示工程加模板匹配从模型回答里抽取最终答案；开源模型用 lmdeploy 部署，所有模型温度设为 0.0 以降低随机性；闭源与开源模型都跑 zero-shot 和 3-shot CoT 两种口径，3-shot 示例按主题从 MathVista 与 MathVision 各取 5 个、在该主题下随机选 3 个；人类基线由 20 名 STEM 本科生或研究生在新增的 1,002 题（每 seed 2 个变体）上取平均分得到。",
+    "cite": ["paper@§3.3", "paper@§4.1"],
+    "variants": [
+      {
+        "text": "zero-shot vs 3-shot CoT：论文两套口径都报，CoT 并非稳定加分——Claude-3.5 的 A_avg 从 64.8% 降到 62.5%，Gemini Pro 1.5 从 60.5% 降到 58.7%。",
+        "cite": ["paper@§4.2"]
+      },
+      {
+        "text": "闭源 vs 开源部署：开源权重用 lmdeploy 部署、温度 0.0；官方表覆盖的是 Qwen2-VL / InternVL2 / LLaVA 一代 2024–2025 年前后的模型。",
+        "cite": ["paper@§4.1", "paper@Table 3"]
+      },
+      {
+        "text": "人类基线与模型不同口径：人类在新增的 1,002 题（每 seed 2 个变体）上测，模型在 5,010 题上测，77.3% 与模型分数不能当成同口径直接相减。",
+        "cite": ["paper@§4.1", "paper@§4.2"]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2024-10-29",
+      "label": "arXiv 首次提交（2411.00836）",
+      "cite": ["paper@Submission history"]
+    },
+    {
+      "id": "vlmevalkit",
+      "date": "2024-11-25",
+      "label": "接入 VLMEvalKit，可一条命令评测",
+      "cite": ["repo"]
+    },
+    {
+      "id": "iclr2025",
+      "date": "2025-02-24",
+      "label": "arXiv 最后修订，以 ICLR 2025 会议论文发表",
+      "cite": ["paper@Submission history", "paper@页眉"]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "最差情况准确率把 10 个变体压成 0/1",
+      "impact": "一个 seed 只要有一个变体做错就记 0 分，A_wst 被显著拉低（论文：所有受测 VLM 的 A_wst 都接近或不足 A_avg 的一半），单个模型的 A_wst 更像「有没有短板」而非整体水平。",
+      "severity": "高",
+      "response": "论文同时报告 A_avg 与 RR，用 RR 看跨变体的一致程度。",
+      "reader": "不要把 A_wst 当成模型整体准确率；它是「10 个变体全对」的严格口径，与 A_avg 配对看。",
+      "cite": ["paper@Abstract", "paper@§3.3"]
+    },
+    {
+      "issue": "题型占比在论文与仓库之间不一致",
+      "impact": "论文 §3.2 写 59.1% 数值题 / 34.7% 选择题 / 6.2% 自由填答，仓库 README 写 35.5% 选择题 / 64.7% 自由填答，两边对选择题和自由填答的占比给不出同一个数。",
+      "severity": "中",
+      "response": "本页以 ICLR 2025 论文口径为准，仓库数字仅作记录。",
+      "reader": "引用题型占比时注明出自论文还是仓库 README。",
+      "cite": ["paper@§3.2", "repo@Question Types"]
+    },
+    {
+      "issue": "官方结果停在 2024–2025 一代模型",
+      "impact": "官方表只覆盖 GPT-4o / Claude-3.5 / Gemini Pro 1.5 / Qwen2-VL / InternVL2 / LLaVA 一代，最强闭源模型的 A_wst 也只有 35.3%。",
+      "severity": "中",
+      "response": "论文定位为提出基准与度量，未声称覆盖后续模型。",
+      "reader": "用本页数字回答「当时那批模型有多不稳健」，不要用它给今天的模型排名。",
+      "cite": ["paper@§4.2", "paper@Table 3"]
+    },
+    {
+      "issue": "污染与刷榜风险",
+      "impact": "seed 题来自 MathVista、MATH-V、MMMU 等公开数据集与公开网页资源，完整集可由仓库脚本复现生成，可能已进入训练数据。",
+      "severity": "中",
+      "response": "论文未设私有留存集，也未报告污染检测结果。",
+      "reader": "把本基准分数视为那批模型的稳健性快照；新一代模型需要另找结果。",
+      "cite": ["paper@§3.1", "repo@生成流程"]
+    },
+    {
+      "issue": "变体数量分布不均且难度偏低",
+      "impact": "约 30.5% 的 seed 只有 10–10² 个可能变体；作者自述难度相对 MATH-V 有限，目标不是竞赛级难题，且最难的谜题测试只占 3.4%。",
+      "severity": "中",
+      "response": "论文按主题与难度分层报告 A_avg / A_wst。",
+      "reader": "看分主题、分难度表（附录 B）而不是只看总分，尤其注意 PT 与 SF。",
+      "cite": ["paper@§3.2", "paper@附录 A"]
+    },
+    {
+      "issue": "人工标注成本高",
+      "impact": "501 个 seed 题靠人工筛选、改写成 Python 程序并标注解题策略，扩容慢。",
+      "severity": "低",
+      "response": "论文把「当前设计高度依赖人工」列为局限。",
+      "reader": "题量与主题分布短期内不会有大幅变化。",
+      "cite": ["paper@附录 A"]
+    }
+  ],
+  "notes": "论文与官方仓库对题型占比的表述不一致，已在「可信度与局限」记录并以论文为准。Hugging Face 页面只提供 5.01k 行样例，完整 501×10 需按仓库脚本本地生成。",
+  "official_sources": [
+    { "kind": "paper", "url": "https://arxiv.org/abs/2411.00836" },
+    { "kind": "site", "url": "https://dynamath.github.io" },
+    { "kind": "repo", "url": "https://github.com/DynaMath/DynaMath" },
+    { "kind": "dataset", "url": "https://huggingface.co/datasets/DynaMath/DynaMath_Sample" }
+  ],
+  "related_benchmarks": ["mathvista", "mathvision", "mmmu"],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-13",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "DynaMath: A Dynamic Visual Benchmark for Evaluating Mathematical Reasoning Robustness of Vision Language Models（arXiv:2411.00836，ICLR 2025）",
+        "url": "https://arxiv.org/abs/2411.00836",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "homepage",
+        "kind": "site",
+        "title": "DynaMath 项目主页 dynamath.github.io",
+        "url": "https://dynamath.github.io",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "DynaMath/DynaMath（官方仓库：数据集、生成脚本与评测）",
+        "url": "https://github.com/DynaMath/DynaMath",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "dataset",
+        "kind": "dataset",
+        "title": "DynaMath/DynaMath_Sample（Hugging Face 公开样例）",
+        "url": "https://huggingface.co/datasets/DynaMath/DynaMath_Sample",
+        "accessed": "2026-11-13"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "University of Illinois at Urbana-Champaign × University of California, Berkeley",
+        "cite": ["homepage", "repo@Citation"]
+      },
+      "first_release": {
+        "v": "2024-10-29（arXiv 首次提交；2025-02-24 最后修订，ICLR 2025 发表）",
+        "cite": ["paper@Submission history", "paper@页眉"]
+      }
+    },
+    "cites": {
+      "summary": ["paper@Abstract", "paper@§3.3"],
+      "interpretation": ["paper@Abstract", "paper@§4.2"]
+    },
+    "problem": {
+      "text": "已有视觉数学基准都是静态题库，模型可以靠记忆或对固定图像的拟合拿分，测不出「条件一变就不会」的问题；DynaMath 用程序化生成的变体来专门度量视觉数学推理的稳健性。",
+      "cite": ["paper@Abstract", "paper@§1"]
+    },
+    "ladder": [
+      {
+        "label": "随机猜测基线",
+        "value": "论文未给出",
+        "note": "全卷为 59.1% 数值题、34.7% 选择题、6.2% 自由填答，论文没有报告整卷随机基线，本站也不推算。",
+        "cite": ["paper@§3.2"]
+      },
+      {
+        "label": "论文中最强开源模型",
+        "value": "A_avg 55.1% / A_wst 28.3%",
+        "note": "Qwen2-VL-72B（zero-shot）；论文称开源里它 A_wst 最高，而同代小模型 Llava-v1.6-vicuna-13B 只有 2.8%。",
+        "cite": ["paper@§4.2", "paper@Table 2", "paper@Table 3"]
+      },
+      {
+        "label": "论文发布时最强闭源模型",
+        "value": "A_avg 64.8% / A_wst 35.3%",
+        "note": "Zero-shot Claude-3.5；论文称它拿到最高 zero-shot 平均准确率，但最差情况只有 35.3%。",
+        "cite": ["paper@§4.2", "paper@Table 2", "paper@Table 3"]
+      },
+      {
+        "label": "人类基线",
+        "value": "A_avg 77.3%（A_wst 未披露）",
+        "note": "20 名 STEM 本科生/研究生，在新增的 1,002 题（每 seed 2 个变体）上取平均分；论文未报告人类的最差情况准确率。",
+        "cite": ["paper@§4.1", "paper@§4.2", "paper@Table 2"]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 A_wst 当成模型整体准确率——它是「10 个变体全对」的严格口径，比 A_avg 低一大截。",
+        "cite": ["paper@Abstract", "paper@§3.3"]
+      },
+      {
+        "text": "把 501 当成题目总量——题库是 501 个 seed 程序，实际评测 5,010 道由程序生成的具体题。",
+        "cite": ["paper@§3.3", "homepage"]
+      },
+      {
+        "text": "把 RR 高理解成模型强——RR 只是 A_wst 与 A_avg 的比值，论文里 RR 最高的是 Claude-3.5 与 GPT-4o，且闭源整体比开源更稳健。",
+        "cite": ["paper@§3.3", "paper@§4.2"]
+      },
+      {
+        "text": "把 3-shot CoT 当成稳定加分——论文里 Claude-3.5 与 Gemini Pro 1.5 的 A_avg 反而下降。",
+        "cite": ["paper@§4.2"]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "University of Illinois at Urbana-Champaign × University of California, Berkeley",
+        "cite": ["homepage", "repo@Citation"]
+      },
+      {
+        "k": "作者",
+        "v": "Chengke Zou, Xingang Guo, Rui Yang, Junyu Zhang, Bin Hu, Huan Zhang",
+        "cite": ["repo@Citation"]
+      },
+      {
+        "k": "发表",
+        "v": "ICLR 2025 会议论文；arXiv 2411.00836，2024-10-29 提交、2025-02-24 最后修订",
+        "cite": ["paper@页眉", "paper@Submission history"]
+      },
+      {
+        "k": "代码与数据",
+        "v": "官方仓库含 Dockerfile 与 generate_json.py 生成脚本；Hugging Face DynaMath_Sample 为 apache-2.0 的 5.01k 行样例",
+        "cite": ["repo", "repo@生成流程", "dataset"]
+      },
+      {
+        "k": "评测生态",
+        "v": "2024-11-25 起接入 VLMEvalKit，可一条命令评测",
+        "cite": ["repo"]
+      },
+      {
+        "k": "项目主页",
+        "v": "dynamath.github.io（摘要、227/274 来源构成与机构署名）",
+        "cite": ["homepage"]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-13",
+        "columns": ["来源", "模型", "口径", "平均情况准确率 A_avg（%）", "最差情况准确率 A_wst（%）"],
+        "rows": [
+          ["论文 Table 2 / Table 3", "GPT-4o", "zero-shot", "63.7", "34.7"],
+          ["论文 Table 2 / Table 3", "Claude-3.5", "zero-shot", "64.8", "35.3"],
+          ["论文 Table 2 / Table 3", "Gemini Pro 1.5", "zero-shot", "60.5", "26.9"],
+          ["论文 Table 2 / Table 3", "GPT-4o", "3-shot CoT", "64.9", "32.3"],
+          ["论文 Table 2 / Table 3", "Claude-3.5", "3-shot CoT", "62.5", "32.1"],
+          ["论文 Table 2 / Table 3", "Gemini Pro 1.5", "3-shot CoT", "58.7", "23.6"],
+          ["论文 Table 2 / Table 3", "Qwen2-VL-72B", "zero-shot", "55.1", "28.3"],
+          ["论文 Table 2 / Table 3", "Qwen2-VL-72B", "3-shot CoT", "52.4", "22.8"],
+          ["论文 Table 2 / Table 3", "Qwen2-VL-7B", "zero-shot", "42.1", "13.8"],
+          ["论文 Table 2 / Table 3", "InternVL2-76B", "zero-shot", "54.0", "24.6"],
+          ["论文 Table 2 / Table 3", "InternVL2-40B", "zero-shot", "41.8", "14.2"],
+          ["论文 Table 2 / Table 3", "InternVL2-26B", "zero-shot", "41.0", "14.4"],
+          ["论文 Table 2 / Table 3", "InternVL2-8B", "zero-shot", "39.7", "10.4"],
+          ["论文 Table 2 / Table 3", "Llama-3.2-90B", "zero-shot", "44.0", "13.0"],
+          ["论文 Table 2 / Table 3", "Deepseek-VL-7B-chat", "zero-shot", "21.5", "4.2"],
+          ["论文 Table 2 / Table 3", "Llava-v1.6-34B", "zero-shot", "27.1", "6.0"],
+          ["论文 Table 2 / Table 3", "Llava-v1.6-vicuna-13B", "zero-shot", "19.8", "2.8"],
+          ["论文 Table 2 / Table 3", "Llava-v1.5-7B", "zero-shot", "16.6", "1.8"],
+          ["论文 Table 2 / Table 3", "人类基线（20 名 STEM 学生）", "1,002 题、每 seed 2 变体", "77.3", "未披露"]
+        ]
+      },
+      "cite": ["paper@Table 2", "paper@Table 3"]
+    }
+  }
 }
