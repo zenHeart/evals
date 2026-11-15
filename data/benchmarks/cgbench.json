@@ -1,35 +1,980 @@
 {
   "id": "cgbench",
-  "name": "CGBench",
-  "full_name": null,
-  "aliases": [],
-  "status": null,
+  "name": "CG-Bench",
+  "full_name": "CG-Bench: Clue-grounded Question Answering Benchmark for Long Video Understanding（长视频「线索锚定」问答基准）",
+  "aliases": [
+    "CG-Bench-QG",
+    "CG-Bench-Clue",
+    "CG-Bench-Hard"
+  ],
+  "status": "active",
   "categories": [
     "multimodal"
   ],
-  "summary": "长视频定位式问答（需给时间戳证据）",
-  "interpretation": "CG-Bench 长视频「线索锚定」问答：1219 个手工精选长视频，模型不仅要答对问题，还要给出支撑答案的时间区间（按 QA 准确率与证据区间 mIoU 双指标计分，越高越好）——专治「答对了但说不清在哪看到的」。",
-  "measures": [],
-  "does_not_measure": [],
-  "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
-  },
-  "metrics": [],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [],
-  "notes": "字节 Seed 引用",
-  "official_sources": [
+  "summary": "CG-Bench 是南京大学、上海人工智能实验室、复旦大学和浙江大学发布的长视频问答基准：1,219 个人工精选长视频（10–80 分钟）配 12,129 组「问题—答案—线索」三元组，每组都标注了能回答问题的那个几十秒视频片段（线索区间）。模型答完题还必须交出这个片段——答对但给不出证据一样扣分。",
+  "interpretation": "高分说明模型不只是「蒙对选项」，而是真的在长视频里定位到了支撑答案的那几十秒。论文里 GPT-4o 的长视频选择题准确率有 45.2%，可一旦要求同时给出正确证据区间（acc.@IoU）就掉到 4.38%，所以这个基准主要用来区分「会猜」和「看得准」；它不衡量开放式科研、通用知识或音频字幕融合的上限，跨页比分数前还要先确认跑的是全量还是 mini-set。",
+  "measures": [
     {
-      "kind": "site",
-      "url": "https://seed.bytedance.com/en/blog/official-release-of-seed1-8-a-generalized-agentic-model"
+      "area": "感知类问题（Perception）",
+      "focus": "物体与属性识别等基础感知；论文把感知类再细分为 10 个子类",
+      "share": "未披露（论文只给子类数，不给三类题目各自的占比）",
+      "format": "多选题（每组配 4–7 个负样本，选项 A–H 近似均匀分布）+ 需给出答案对应的线索区间",
+      "cite": [
+        "paper@§1",
+        "paper@§3.1",
+        "paper@§3.2"
+      ]
+    },
+    {
+      "area": "推理类问题（Reasoning）",
+      "focus": "需要跨片段关联信息才能作答；论文把推理类细分为 14 个子类（§1 写作 12，见「可信度与局限」）",
+      "share": "未披露（论文只给子类数，不给三类题目各自的占比）",
+      "format": "多选题 + 需给出答案对应的线索区间",
+      "cite": [
+        "paper@§1",
+        "paper@§3.1"
+      ]
+    },
+    {
+      "area": "幻觉类问题（Hallucination）",
+      "focus": "问题兼具感知与推理成分，用来测模型会不会顺着错误前提作答",
+      "share": "未披露（论文只给子类数，不给三类题目各自的占比）",
+      "format": "多选题 + 需给出答案对应的线索区间",
+      "cite": [
+        "paper@§3.1"
+      ]
+    },
+    {
+      "area": "线索定位（白盒证据定位）",
+      "focus": "模型不只要选对，还要直接输出能回答问题的起止时间区间；全库共 14,362 个线索区间，平均每个 19.24 秒",
+      "share": "12,129 组三元组共标注 14,362 个线索区间",
+      "format": "时间区间（tIoU / mIoU / rec.@IoU / acc.@IoU）",
+      "cite": [
+        "paper@§3.2",
+        "paper@§3.3"
+      ]
     }
   ],
-  "related_benchmarks": [],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "does_not_measure": [
+    {
+      "text": "「只看问题与选项的文字就能答对」的纯文本能力：出题阶段会用 GPT-4 过滤掉仅凭文本即可作答的 QA 对，也会过滤掉「稀疏帧 + 小模型」就能答对的部分。",
+      "cite": [
+        "paper@§3.1"
+      ]
+    },
+    {
+      "text": "音频与字幕带来的增益上限：论文实测加音频几乎没有收益，Gemini-1.5 Pro 加音频后 mIoU 从 9.16 微降到 9.10，所以这里的分数不代表多模态融合的上限。",
+      "cite": [
+        "paper@Table 4"
+      ]
+    },
+    {
+      "text": "开放式生成质量本身：开放式问答由 GPT-4o 当多模态裁判判分，并叠加「需要视觉线索」触发启发式，判分带有裁判偏置。",
+      "cite": [
+        "paper@§3.3.3"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 12129,
+    "splits": [
+      "全量：1,219 个视频 / 12,129 组 QAC 三元组（论文与数据集卡口径）",
+      "CG-Bench-QG：线索定位子基准，与 NextGQA、Ego4D-NLQ 等同属线索定位类对比",
+      "CG-Bench-Clue：由 QAC 三元组转换而来的短视频 QA 子基准",
+      "CG-Bench-Hard：2026-11-02 发布的 2,417 道难题子集",
+      "官方榜单 mini-set：1,118 个视频 / 3,000 题，仅用于快速评测"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "人工采集并 7 轮筛选的网络长视频 + 人工标注 QAC 三元组（视觉 / 音频 / 字幕）",
+    "public_sample": true,
+    "totals": "1,219 个人工精选长视频（10–80 分钟，20–30 分钟最多）· 12,129 组「问题—答案—线索」三元组 · 14,362 个线索区间，平均 19.24 秒 · 每个视频 6–15 组三元组 · 题型分感知 / 推理 / 幻觉三类",
+    "cite": [
+      "paper@§3.2",
+      "paper@§3.1",
+      "leaderboard@Benchmark Statistics"
+    ],
+    "construction": [
+      {
+        "k": "视频筛选",
+        "text": "从互联网人工采集长视频（论文定义超过 10 分钟才算 long），人工审阅并过滤 7 轮，覆盖视觉、音频、字幕三种模态。",
+        "cite": [
+          "paper@§3.1"
+        ]
+      },
+      {
+        "k": "三级标签体系",
+        "text": "14 个一级类目 + 171 个二级标签 + 638 个三级标签，用来保证内容多样性并形成长尾分布。",
+        "cite": [
+          "paper@§3.1",
+          "leaderboard@Benchmark Statistics"
+        ]
+      },
+      {
+        "k": "三元组标注",
+        "text": "每段视频按时长标注 6–15 组「问题—答案—线索」三元组；标注员用母语书写以减少表达损耗，并按要求加入负向选项构成多选题。",
+        "cite": [
+          "paper@§3.1",
+          "leaderboard@Question Meta"
+        ]
+      },
+      {
+        "k": "选项配平",
+        "text": "每组三元组配 4–7 个负样本，使选项 A–H 的分布近似均匀（A 占 12.4%）。",
+        "cite": [
+          "paper@§3.2"
+        ]
+      },
+      {
+        "k": "两层质检",
+        "text": "先把问题与选项输入 GPT-4，过滤掉仅凭纯文本就能答对的 QA 对；再把视频、问题与选项输入多个 MLLM，过滤掉只用稀疏帧和小模型就能答对的部分。",
+        "cite": [
+          "paper@§3.1"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "long-acc",
+      "name": "长视频选择题准确率（long-acc.）",
+      "direction": "越高越好",
+      "description": "给模型整段长视频（默认采样 128 帧）做多选题，答对题目的占比；这是最接近传统视频 QA 的口径。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§3.3",
+        "paper@§4.1",
+        "leaderboard@Leaderboard"
+      ]
+    },
+    {
+      "id": "clue-acc",
+      "name": "线索选择题准确率（clue-acc.）",
+      "direction": "越高越好",
+      "description": "只把标注线索区间内的视频片段给模型，答对题目的占比；衡量「看到正确片段之后能不能答对」。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§3.3",
+        "leaderboard@Leaderboard"
+      ]
+    },
+    {
+      "id": "miou",
+      "name": "线索区间 mIoU",
+      "direction": "越高越好",
+      "description": "模型输出的证据区间与标注线索区间的平均时间交并比（tIoU 的平均），衡量定位精度。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§3.3",
+        "leaderboard@Leaderboard"
+      ]
+    },
+    {
+      "id": "rec-iou",
+      "name": "rec.@IoU",
+      "direction": "越高越好",
+      "description": "IoU 超过阈值的预测所占比例，按 0.1 / 0.2 / 0.3 / 0.4 / 0.5 五档平均得到最终结果；衡量能不能找到相关线索。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§3.3",
+        "leaderboard@Leaderboard"
+      ]
+    },
+    {
+      "id": "acc-iou",
+      "name": "acc.@IoU",
+      "direction": "越高越好",
+      "description": "IoU 超过阈值时的答案准确率；默认阈值 τ=0，即要求模型选对选项，并且给出的时间区间与标注线索区间至少有一点重叠。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§3.3.2",
+        "leaderboard@Leaderboard"
+      ]
+    },
+    {
+      "id": "crr",
+      "name": "线索召回率（CRR，Clue Recovery Rate）",
+      "direction": "越高越好",
+      "description": "黑盒口径：min(long-acc., clue-acc.) / clue-acc. × 100%，衡量模型从被稀释的长视频上下文里找回短线索的能力；低于 100% 说明这种检索还不够稳。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§3.3"
+      ]
+    },
+    {
+      "id": "oe-acc",
+      "name": "开放式问答准确率（OE acc.）",
+      "direction": "越高越好",
+      "description": "线索辅助的开放式问答，由 GPT-4o 当多模态裁判判断模型答案与标准答案是否一致，判分带「需要视觉线索」触发启发式。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§3.3.3"
+      ]
+    }
+  ],
+  "default_protocol": {
+    "raw": "长视频选择题统一采样 128 帧，线索选择题给 32 帧；多选题要求模型输出正确选项的大写字母。白盒证据定位要求模型返回 [[s1, e1], [s2, e2], ...] 形式的时间区间，帧与字幕会附带时间戳以增强时间感知。开放式问答由模型自由作答，再由 GPT-4o 当多模态裁判判断对错。",
+    "cite": [
+      "paper@§4.1",
+      "paper@§3.3",
+      "paper@§3.3.3"
+    ],
+    "variants": [
+      {
+        "text": "线索选择题（只给标注线索区间内的视频）vs 长视频选择题（给整段长视频）：两者的落差就是 CRR 要量的「上下文稀释」。",
+        "cite": [
+          "paper@§3.3"
+        ]
+      },
+      {
+        "text": "白盒 vs 黑盒：白盒要求模型直接输出线索区间（mIoU / rec.@IoU / acc.@IoU），黑盒只用两个准确率算 CRR；同一模型两种口径的数字不能混用。",
+        "cite": [
+          "paper@§3.3"
+        ]
+      },
+      {
+        "text": "官方榜单跑的是 mini-set（1,118 个视频 / 3,000 题）快速评测，与论文全量 Table 3 的数字不一致：GPT-4o-08-06 的 long-acc. 榜单 44.9 vs 论文 45.2，mIoU 5.73 vs 5.62，CRR 76.6 vs 77.5，rec.@IoU 8.12 vs 8.30。",
+        "cite": [
+          "leaderboard@Leaderboard",
+          "paper@Table 3"
+        ]
+      },
+      {
+        "text": "输入配置会明显改变分数：GPT-4o 同时加帧时间戳与字幕时间戳后，mIoU 从 3.39 升到 9.68、acc.@IoU 从 10.7 升到 26.7；帧数、时间戳、字幕的有无会让同名模型的分数不可比。",
+        "cite": [
+          "paper@Table 4"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "release",
+      "date": "2024-12-15",
+      "label": "数据集与官方榜单上线（仓库 News：We released CG-Bench dataset and leaderboard!）",
+      "cite": [
+        "repo@News"
+      ]
+    },
+    {
+      "id": "v1",
+      "date": "2024-12-16",
+      "label": "arXiv v1 发布（arXiv:2412.12075v1 [cs.CV]）",
+      "cite": [
+        "paper"
+      ]
+    },
+    {
+      "id": "vlmevalkit",
+      "date": "2025-01-10",
+      "label": "可在 VLMEvalKit 中测试该数据集（仓库 News）",
+      "cite": [
+        "repo@News"
+      ]
+    },
+    {
+      "id": "iclr2025",
+      "date": "2025-01-26",
+      "label": "论文被 ICLR 2025 接收（仓库 News）",
+      "cite": [
+        "repo@News"
+      ]
+    },
+    {
+      "id": "hard",
+      "date": "2026-11-02",
+      "label": "发布 CG-Bench-Hard：2,417 道三个前沿模型至多只有一个答对的难题子集",
+      "cite": [
+        "dataset@News",
+        "dataset@CG-Bench-Hard"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "官方榜单与论文是两套口径，数字对不上",
+      "impact": "榜单跑 mini-set（1,118 视频 / 3,000 题），论文 Table 3 跑全量：GPT-4o-08-06 的 long-acc. 44.9 vs 45.2、mIoU 5.73 vs 5.62、CRR 76.6 vs 77.5、rec.@IoU 8.12 vs 8.30；全量口径下 long-acc. 最高是 GPT-4o-08-06 的 45.2（Qwen2-VL-72B 41.3），榜单口径下最高却是 Qwen2-VL-72B 的 45.3。直接跨页排名会得出相反结论。",
+      "severity": "高",
+      "response": "榜单页自称「mini-set for fast evaluation」，论文表 3 为全量；未见官方说明两套数字差异的来源，也没有给出全量口径的在线榜单。",
+      "reader": "比分数前先确认口径：榜单数字一律是 mini-set，论文 Table 3 才是全量。",
+      "cite": [
+        "leaderboard@Leaderboard",
+        "paper@Table 3",
+        "paper@§4.2"
+      ]
+    },
+    {
+      "issue": "人类基线有两种互不可比的条件",
+      "impact": "Table 3 同时给了 Human (full-video)（long-acc. 90.3、mIoU 35.5、CRR 97.9、开放式 83.7）和 Human (sparse frames)（128 帧、30 个视频 296 题，long-acc. 59.85）；后者才是与模型同条件的对照，前者接近「看完整个视频」的上限。引用时容易把 90.3 当成模型可比的参照。",
+      "severity": "中",
+      "response": "论文在表 3 中分行给出两种条件，并在 §4.2 说明稀疏帧人类评测的抽样规模。",
+      "reader": "看到「人类 90%」要确认是不是 full-video 口径；和 128 帧模型对比应使用 59.85 那一行。",
+      "cite": [
+        "paper@Table 3",
+        "paper@§4.2"
+      ]
+    },
+    {
+      "issue": "开放式判分依赖 GPT-4o 裁判与触发启发式",
+      "impact": "开放式问答由 GPT-4o 判对错，并带「I need visual clues」触发机制；论文实测该触发率 14%、召回 88%，说明判分流程本身有偏置，与人工标注也存在差距。",
+      "severity": "中",
+      "response": "论文用 200 个人工标注样本量化了触发率与召回，并称该启发式在成本与偏差之间取得平衡；未给出完全去掉裁判的方案。",
+      "reader": "开放式准确率要看作「GPT-4o 裁判口径下的分数」，不要当成绝对正确的生成质量。",
+      "cite": [
+        "paper@§3.3.3"
+      ]
+    },
+    {
+      "issue": "榜单 Rank 列与指标值不一致",
+      "impact": "榜单第 1 名 Videochat2 的 long-acc. 只有 19.1（全表最低之一），而 Qwen2-VL-72B（45.3）排第 16；页面没有说明 Rank 按哪一列排序。",
+      "severity": "中",
+      "response": "未见官方回应。",
+      "reader": "以具体指标列而不是 Rank 列为准。",
+      "cite": [
+        "leaderboard@Leaderboard"
+      ]
+    },
+    {
+      "issue": "论文内部对推理类子类数表述不一致",
+      "impact": "§1 写推理类分为 12 个子类，§3.1、官网与数据集卡都写 14 个；影响对该基准题型构成的准确描述。",
+      "severity": "中",
+      "response": "未见官方回应。",
+      "reader": "引用子类数时优先采用 §3.1 / 官网 / 数据集卡的 14，并注明 §1 的 12。",
+      "cite": [
+        "paper@§1",
+        "paper@§3.1",
+        "leaderboard@Question Meta"
+      ]
+    },
+    {
+      "issue": "Table 2 中子基准规模数字可疑",
+      "impact": "论文 Table 2 把 CG-Bench-Clue 的 #Video 写成 12,129，与全文「1,219 个视频」的表述冲突（12,129 是 QA 对数）。",
+      "severity": "低",
+      "response": "未见官方回应。",
+      "reader": "子基准的视频数以 1,219 为准，表格里的 12,129 应理解为 QA 对数。",
+      "cite": [
+        "paper@Table 2",
+        "paper@§3.2"
+      ]
+    },
+    {
+      "issue": "数据访问有门槛且体积大",
+      "impact": "Hugging Face 数据集为 gated，需同意使用条款（不得用于伤害人类受试者的实验；视频版权归原作者，仅限学术研究）；仓库显示总体积约 411 GB，复现评测需要可观的存储与算力。",
+      "severity": "低",
+      "response": "官方在数据集卡中给出许可（MIT）与使用条款，并说明版权归属。",
+      "reader": "下载前先确认条款与存储预算。",
+      "cite": [
+        "dataset",
+        "repo@README"
+      ]
+    }
+  ],
+  "notes": "原「字节 Seed 引用」查无实据（该官方博客全文未提及 CG-Bench），已删除；榜单跑 mini-set、论文 Table 3 跑全量，两套数字不要混着比。",
+  "official_sources": [
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2412.12075"
+    },
+    {
+      "kind": "leaderboard",
+      "url": "https://cg-bench.github.io/leaderboard/"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/CG-Bench/CG-Bench"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/CG-Bench/CG-Bench"
+    }
+  ],
+  "related_benchmarks": [
+    "video-mme",
+    "longvideobench",
+    "lvbench",
+    "tempcompass",
+    "mvbench",
+    "videoholmes",
+    "videoreasonbench"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-13",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "CG-Bench: Clue-grounded Question Answering Benchmark for Long Video Understanding（arXiv:2412.12075v1 [cs.CV]，2024-12-16）",
+        "url": "https://arxiv.org/abs/2412.12075",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "leaderboard",
+        "kind": "leaderboard",
+        "title": "CG-Bench 官方榜单页（cg-bench.github.io/leaderboard）",
+        "url": "https://cg-bench.github.io/leaderboard/",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "CG-Bench GitHub 仓库（README 与 News）",
+        "url": "https://github.com/CG-Bench/CG-Bench",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "dataset",
+        "kind": "dataset",
+        "title": "CG-Bench Hugging Face 数据集卡（Summary / News / CG-Bench-Hard / Citation）",
+        "url": "https://huggingface.co/datasets/CG-Bench/CG-Bench",
+        "accessed": "2026-11-13"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "南京大学、上海人工智能实验室、复旦大学、浙江大学（论文署名单位）",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      "first_release": {
+        "v": "2024-12-15 数据集与榜单上线；2024-12-16 arXiv v1",
+        "cite": [
+          "repo@News",
+          "paper"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "paper@abstract",
+        "paper@§3.2"
+      ],
+      "interpretation": [
+        "paper@Table 3",
+        "paper@§4.2",
+        "leaderboard@Leaderboard"
+      ]
+    },
+    "problem": {
+      "text": "现有长视频基准大多只靠多选题评分：模型可以靠「短视频理解 + 选项排除」蒙对答案，说不清答案来自哪里。CG-Bench 要求模型同时给出支撑答案的线索区间，把「答对」和「定位到证据」拆成两个独立可测的量。",
+      "cite": [
+        "paper@abstract",
+        "dataset@Summary",
+        "paper@§3.3"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机猜测基线",
+        "value": "14.2%",
+        "note": "论文 Table 3 的 Random 行：clue-acc. 与 long-acc. 均为 14.2，CRR 记为 100（分子分母同值），开放式准确率 0。",
+        "cite": [
+          "paper@Table 3"
+        ]
+      },
+      {
+        "label": "人类基线（128 帧稀疏条件）",
+        "value": "59.85%",
+        "note": "抽 30 个视频共 296 题，128 帧条件下的长视频准确率；full-video 口径下人类 long-acc. 为 90.3，两者条件不同。",
+        "cite": [
+          "paper@Table 3",
+          "paper@§4.2"
+        ]
+      },
+      {
+        "label": "论文发布时最好（全量口径）",
+        "value": "45.2%",
+        "note": "GPT-4o-08-06 的 long-acc.；同表 Qwen2-VL-72B 41.3、InternVL2-78B 42.2。同一模型一旦要求同时给出正确证据区间，acc.@IoU 只有 4.38，CRR 77.5，开放式 39.5。",
+        "cite": [
+          "paper@Table 3",
+          "paper@§4.2"
+        ]
+      },
+      {
+        "label": "官方榜单当前最高（mini-set 口径）",
+        "value": "45.3%",
+        "note": "Qwen2-VL-72B 的 long-acc.；同榜 GPT-4o-08-06 为 44.9，但 mIoU（5.73）与开放式准确率（39.2）最高。",
+        "cite": [
+          "leaderboard@Leaderboard"
+        ]
+      },
+      {
+        "label": "CG-Bench-Hard 当前最高",
+        "value": "29.04%",
+        "note": "Gemini 4 Argon 在 2,417 道难题子集上的长视频准确率（702 / 2,417）；Claude Opus 5.5 为 12.49，GPT-6.1 Sol 为 13.20。",
+        "cite": [
+          "dataset@CG-Bench-Hard"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 long-acc. 当成「看懂了」：GPT-4o 的 long-acc. 是 45.2，但 acc.@IoU 只有 4.38——答对选项和给出正确证据区间是两件事。",
+        "cite": [
+          "paper@§4.2",
+          "paper@Table 3"
+        ]
+      },
+      {
+        "text": "把 CRR 100% 当成强能力：随机基线的 clue-acc. 与 long-acc. 同为 14.2，CRR 也会记成 100；只有这两个准确率都有意义时 CRR 才可比。",
+        "cite": [
+          "paper@Table 3",
+          "paper@§3.3"
+        ]
+      },
+      {
+        "text": "把榜单名次当成指标排序：Rank 第 1 的 Videochat2，long-acc. 只有 19.1，而 45.3 的 Qwen2-VL-72B 排在第 16。",
+        "cite": [
+          "leaderboard@Leaderboard"
+        ]
+      },
+      {
+        "text": "把人类 90.3% 当成与模型同条件的对照：那是 full-video 口径；128 帧稀疏条件下同一批标注只有 59.85。",
+        "cite": [
+          "paper@Table 3",
+          "paper@§4.2"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "南京大学、上海人工智能实验室、复旦大学、浙江大学",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "Guo Chen、Yicheng Liu、Yifei Huang（标 ∗ 共同一作）、Yuping He、Baoqi Pei、Jilan Xu、Yali Wang、Tong Lu，Limin Wang（标 † 通讯作者）",
+        "cite": [
+          "paper@作者署名",
+          "dataset@Citation"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2024-12-15 数据集与榜单上线 → 2024-12-16 arXiv v1 → 2025-01-10 进入 VLMEvalKit → 2025-01-26 被 ICLR 2025 接收 → 2026-11-02 发布 CG-Bench-Hard",
+        "cite": [
+          "repo@News",
+          "paper",
+          "dataset@News"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "数据在 Hugging Face（CG-Bench/CG-Bench，json 格式，gated，约 411 GB），运行代码在 GitHub 仓库，榜单在项目页",
+        "cite": [
+          "repo@README",
+          "dataset"
+        ]
+      },
+      {
+        "k": "论文收录",
+        "v": "ICLR 2025（仓库 News 2025-01-26）",
+        "cite": [
+          "repo@News"
+        ]
+      },
+      {
+        "k": "许可与引用",
+        "v": "数据集卡标注 License: mit；引用条目为 chen2024cgbench（arXiv:2412.12075，cs.CV）",
+        "cite": [
+          "dataset",
+          "dataset@Citation"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-13",
+        "columns": [
+          "来源",
+          "口径",
+          "模型",
+          "参数",
+          "#F clue",
+          "#F long",
+          "clue-acc. (%)",
+          "long-acc. (%)",
+          "mIoU (%)",
+          "rec.@IoU (%)",
+          "acc.@IoU (%)",
+          "CRR (%)",
+          "开放式 acc. (%)"
+        ],
+        "rows": [
+          [
+            "官方榜单",
+            "mini-set（1,118 视频 / 3,000 题）",
+            "Videochat2",
+            "7B",
+            "16",
+            "16",
+            "35.5",
+            "19.1",
+            "1.07",
+            "1.91",
+            "0.91",
+            "53.8",
+            "18.4"
+          ],
+          [
+            "官方榜单",
+            "mini-set（1,118 视频 / 3,000 题）",
+            "VideoLLaMA",
+            "7B",
+            "32",
+            "32",
+            "36.5",
+            "18.0",
+            "1.14",
+            "1.93",
+            "0.74",
+            "49.3",
+            "16.0"
+          ],
+          [
+            "官方榜单",
+            "mini-set（1,118 视频 / 3,000 题）",
+            "Video-LLaVA",
+            "7B",
+            "8",
+            "8",
+            "33.4",
+            "16.8",
+            "1.01",
+            "1.89",
+            "0.64",
+            "50.3",
+            "12.0"
+          ],
+          [
+            "官方榜单",
+            "mini-set（1,118 视频 / 3,000 题）",
+            "ST-LLM",
+            "7B",
+            "32",
+            "64",
+            "39.1",
+            "24.7",
+            "2.13",
+            "2.83",
+            "1.27",
+            "63.2",
+            "20.0"
+          ],
+          [
+            "官方榜单",
+            "mini-set（1,118 视频 / 3,000 题）",
+            "Chat-UniVi-v1.5",
+            "13B",
+            "32",
+            "64",
+            "41.2",
+            "26.7",
+            "1.91",
+            "2.45",
+            "1.29",
+            "64.7",
+            "21.8"
+          ],
+          [
+            "官方榜单",
+            "mini-set（1,118 视频 / 3,000 题）",
+            "ShareGPT4Video",
+            "16B",
+            "16",
+            "16",
+            "40.9",
+            "27.1",
+            "2.07",
+            "2.39",
+            "1.02",
+            "66.4",
+            "21.5"
+          ],
+          [
+            "官方榜单",
+            "mini-set（1,118 视频 / 3,000 题）",
+            "Qwen-VL-Chat",
+            "7B",
+            "4",
+            "4",
+            "37.7",
+            "20.7",
+            "0.93",
+            "1.06",
+            "0.52",
+            "54.9",
+            "20.1"
+          ],
+          [
+            "官方榜单",
+            "mini-set（1,118 视频 / 3,000 题）",
+            "ViLA",
+            "8B",
+            "14",
+            "14",
+            "41.4",
+            "28.1",
+            "1.98",
+            "2.51",
+            "1.43",
+            "67.8",
+            "23.8"
+          ],
+          [
+            "官方榜单",
+            "mini-set（1,118 视频 / 3,000 题）",
+            "InternVL-Chat-v1.5",
+            "20B",
+            "10",
+            "10",
+            "42.0",
+            "28.5",
+            "1.85",
+            "2.48",
+            "1.09",
+            "67.9",
+            "22.9"
+          ],
+          [
+            "官方榜单",
+            "mini-set（1,118 视频 / 3,000 题）",
+            "MiniCPM-v2.6",
+            "8B",
+            "32",
+            "32",
+            "44.4",
+            "29.9",
+            "2.27",
+            "2.41",
+            "0.94",
+            "67.3",
+            "26.3"
+          ],
+          [
+            "官方榜单",
+            "mini-set（1,118 视频 / 3,000 题）",
+            "Kangaroo",
+            "8B",
+            "32",
+            "64",
+            "46.4",
+            "31.2",
+            "2.32",
+            "2.97",
+            "1.54",
+            "67.2",
+            "25.9"
+          ],
+          [
+            "官方榜单",
+            "mini-set（1,118 视频 / 3,000 题）",
+            "LLaVA-OneVision",
+            "7B",
+            "16",
+            "16",
+            "43.7",
+            "30.9",
+            "1.56",
+            "1.72",
+            "1.19",
+            "70.7",
+            "25.0"
+          ],
+          [
+            "官方榜单",
+            "mini-set（1,118 视频 / 3,000 题）",
+            "Video-CCAM",
+            "14B",
+            "32",
+            "96",
+            "42.9",
+            "29.1",
+            "2.76",
+            "3.57",
+            "1.85",
+            "67.8",
+            "24.8"
+          ],
+          [
+            "官方榜单",
+            "mini-set（1,118 视频 / 3,000 题）",
+            "LongVA",
+            "7B",
+            "32",
+            "128",
+            "42.6",
+            "28.7",
+            "2.91",
+            "3.15",
+            "1.32",
+            "67.4",
+            "24.2"
+          ],
+          [
+            "官方榜单",
+            "mini-set（1,118 视频 / 3,000 题）",
+            "VITA",
+            "8x7B",
+            "32",
+            "32",
+            "47.4",
+            "33.0",
+            "2.99",
+            "3.16",
+            "2.15",
+            "69.6",
+            "28.0"
+          ],
+          [
+            "官方榜单",
+            "mini-set（1,118 视频 / 3,000 题）",
+            "Qwen2-VL",
+            "72B",
+            "32",
+            "128",
+            "57.8",
+            "45.3",
+            "3.64",
+            "5.11",
+            "3.17",
+            "78.4",
+            "33.7"
+          ],
+          [
+            "官方榜单",
+            "mini-set（1,118 视频 / 3,000 题）",
+            "InternVL2.5",
+            "72B",
+            "32",
+            "32",
+            "59.5",
+            "44.2",
+            "3.90",
+            "5.05",
+            "2.46",
+            "74.3",
+            "34.2"
+          ],
+          [
+            "官方榜单",
+            "mini-set（1,118 视频 / 3,000 题）",
+            "GPT-4o-08-06",
+            null,
+            "32",
+            "128",
+            "58.6",
+            "44.9",
+            "5.73",
+            "8.12",
+            "4.33",
+            "76.6",
+            "39.2"
+          ],
+          [
+            "官方榜单",
+            "mini-set（1,118 视频 / 3,000 题）",
+            "GPT-4mini-08-06",
+            null,
+            "32",
+            "128",
+            "48.4",
+            "32.6",
+            "3.68",
+            "5.07",
+            "2.13",
+            "67.4",
+            "24.9"
+          ],
+          [
+            "官方榜单",
+            "mini-set（1,118 视频 / 3,000 题）",
+            "Gemini-1.5-Pro",
+            null,
+            "32",
+            "128",
+            "50.9",
+            "37.8",
+            "3.85",
+            "5.61",
+            "2.64",
+            "74.3",
+            "28.7"
+          ],
+          [
+            "官方榜单",
+            "mini-set（1,118 视频 / 3,000 题）",
+            "Gemini-1.5-Flash",
+            null,
+            "32",
+            "128",
+            "48.4",
+            "33.5",
+            "3.43",
+            "5.10",
+            "2.49",
+            "69.2",
+            "24.6"
+          ],
+          [
+            "官方榜单",
+            "mini-set（1,118 视频 / 3,000 题）",
+            "Claude3.5-Sonnet",
+            null,
+            "32",
+            "50",
+            "56.5",
+            "40.3",
+            "4.17",
+            "5.99",
+            "2.73",
+            "71.3",
+            "35.6"
+          ]
+        ]
+      },
+      "cite": [
+        "leaderboard@Leaderboard"
+      ]
+    }
+  }
 }
