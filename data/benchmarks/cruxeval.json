@@ -1,42 +1,389 @@
 {
   "id": "cruxeval",
   "name": "CRUXEval",
-  "full_name": null,
+  "full_name": "CRUXEval: A Benchmark for Code Reasoning, Understanding and Execution（代码推理、理解与执行评测）",
   "aliases": [],
-  "status": null,
-  "categories": [
-    "coding",
-    "reasoning"
-  ],
-  "summary": "代码推理评测：预测输入或输出",
-  "interpretation": "800 个短 Python 函数的代码推理：预测输入（I）或预测输出（O）两任务、pass@1 计分；题面按「人类程序员 1 分钟内可做」筛过，但发布时 GPT-4 也只有 63–67%、配 CoT 最高约 75–82%——考察对代码执行的真实理解。",
-  "measures": [],
-  "does_not_measure": [],
-  "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
-  },
-  "metrics": [],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [],
-  "notes": "Qwen 引用",
-  "official_sources": [
+  "status": "active",
+  "categories": ["coding", "reasoning"],
+  "summary": "800 个 3–13 行的短 Python 函数，每题给出函数源码和一个输入输出对，让模型二选一地去猜：给定输入猜输出（CRUXEval-O），或给定输出反推输入（CRUXEval-I）。对错不由措辞决定，而由 assert 是否成立决定。",
+  "interpretation": "高分意味着模型真的在「执行」代码，而不是在背题面形状：输出是函数真实跑出来的，判分是 assert f(input) == 生成结果 是否通过，没有部分分。发布时 GPT-4 无 CoT 只有 63–67%，加 CoT 最高约 75–82%；在与基准非常相似的样本上微调过的 Code Llama 34B 能追平 GPT-4，但准确率停在 70% 以下——论文的结论是简单微调远没有解决这个基准。",
+  "measures": [
     {
-      "kind": "site",
-      "url": "https://crux-eval.github.io"
+      "area": "输出预测（CRUXEval-O）",
+      "focus": "给定函数与输入，逐步执行并写出正确的输出值，直接考察代码执行能力",
+      "share": "800 题（与输入预测共用同一批函数）",
+      "format": "自由生成，判据为 assert f(input) == generated output 通过",
+      "cite": ["paper@§3 Benchmark Construction", "repo@Getting Started"]
     },
     {
-      "kind": "site",
-      "url": "https://qwenlm.github.io/blog/qwen2.5/"
+      "area": "输入预测（CRUXEval-I）",
+      "focus": "给定函数与期望输出，反推出能让断言成立的输入，考察对代码功能的更高层理解",
+      "share": "800 题（与输出预测共用同一批函数）",
+      "format": "自由生成，判据为 assert f(generated input) == output 通过",
+      "cite": ["paper@§3 Benchmark Construction", "repo@Getting Started"]
+    },
+    {
+      "area": "题型与构成",
+      "focus": "只用标准库 str / dict / list 里的 69 个函数拼出的短函数；刻意排除算术与记忆负担，也排除 import、非确定性与副作用",
+      "share": "候选生成阶段 46% str、27% dict、27% list；最终 800 题来自 69 个标准库函数（str 47 / dict 11 / list 11）",
+      "format": "每题 = 函数源码 + 输入 + 输出；代码长度 75–300 字符、3–13 行",
+      "cite": ["paper@§3.1 Generating Candidates", "paper@§3.2 Filtering Candidates", "paper@Abstract"]
     }
   ],
-  "related_benchmarks": [
-    "humaneval"
+  "does_not_measure": [
+    {
+      "text": "不测从自然语言写代码——那是 HumanEval / MBPP 的领域；CRUXEval 的定位是与它们互补，专考「读懂代码在干什么」。",
+      "cite": ["crux-eval@Motivation", "leaderboard"]
+    },
+    {
+      "text": "不测真实工程流程：没有多文件项目、没有调试、没有修 bug、没有长上下文，全部是自包含的单函数。",
+      "cite": ["paper@§7 Limitations", "repo@Getting Started"]
+    },
+    {
+      "text": "不测算术与记忆负担：过滤器刻意排除了浮点运算、真除法和需要心算的整数/长字符串操作，为的是让好程序员一分钟内不靠额外内存也能做。",
+      "cite": ["paper@§3.2 Filtering Candidates"]
+    },
+    {
+      "text": "不测工具与解释器辅助：论文把「输出预测直接用 Python 解释器算、输入预测给模型接个解释器」列为待回应的问题，没有把这种情况纳入基准成绩。",
+      "cite": ["paper@§7 Limitations"]
+    }
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "dataset": {
+    "sample_count": 800,
+    "splits": ["test"],
+    "languages": ["python"],
+    "source_type": "合成（Code Llama 34B 生成候选函数与输入输出对，再按人工规则过滤并随机抽样）",
+    "public_sample": true,
+    "multiple_choice_share": "0%（不是选择题，答案自由生成后由 assert 判定）",
+    "multimodal_share": "0%（纯 Python 代码与文本，无图片）",
+    "totals": "公开 800 题，单个 test split · 全部为自由生成的 Python 代码与文本，无选择题、无多模态 · 生成阶段共产出 102,000 个函数与 489,306 个输入输出对，最终按过滤条件随机抽取 800 题 · 代码长度 30–278 字符",
+    "cite": ["paper@§3 Benchmark Construction", "dataset@Data Viewer", "repo@Getting Started"],
+    "construction": [
+      {
+        "k": "候选生成",
+        "text": "用 Code Llama 34B 批量生成候选函数和输入，从标准库取 69 个函数作积木，共产出 102,000 个函数（46% str、27% dict、27% list）和 489,306 个输入输出对。",
+        "cite": ["paper@§3.1 Generating Candidates"]
+      },
+      {
+        "k": "编译期过滤",
+        "text": "函数参数必须全部被使用、代码长度 75–300 字符、无语法错误，且断言 assert f(input) == output 成立。",
+        "cite": ["paper@§3.2 Filtering Candidates"]
+      },
+      {
+        "k": "运行期过滤",
+        "text": "不出现浮点运算、真除法、exp；其他整数运算至少有一个参数 ≤ 3；字符串与列表运算至少有一个参数长度 ≤ 3；2 秒内跑完；无未捕获异常。",
+        "cite": ["paper@§3.2 Filtering Candidates"]
+      },
+      {
+        "k": "代码形态过滤",
+        "text": "函数不能有任何 import（如 os、random），必须确定性（随机、set 顺序），不能有 input、builtins 之类的副作用。",
+        "cite": ["paper@§3.2 Filtering Candidates"]
+      },
+      {
+        "k": "人工可解性门槛",
+        "text": "过滤的目标是让好程序员不靠额外内存、一分钟左右能做完，避免把模型逼去做心算——官网把这一步概括为「按人类程序员可做来筛候选」。",
+        "cite": ["paper@§3.2 Filtering Candidates", "crux-eval@Benchmark Construction"]
+      },
+      {
+        "k": "定档 800 题",
+        "text": "先从约 1,700 题里自助法抽样测噪声，确认 800 题足以稳定区分 Code Llama 34B > 13B 等模型对，再从通过过滤的样本里随机抽 800 题；论文用 HumanEval 只有 164 例来论证小基准同样有价值。",
+        "cite": ["paper@§3.3 Data size and measuring noise", "dataset@Dataset card"]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "output-pass1",
+      "name": "CRUXEval-O pass@1",
+      "direction": "越高越好",
+      "description": "输出预测任务一次采样即通过 assert f(input) == generated output 的题目占比（温度 0.2）",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["paper@§4 Evaluation", "paper@§3 Benchmark Construction"]
+    },
+    {
+      "id": "output-pass5",
+      "name": "CRUXEval-O pass@5",
+      "direction": "越高越好",
+      "description": "输出预测任务多次采样中至少一次通过的题目占比（温度 0.8，每题采样 10 次）",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["paper@§4 Evaluation", "leaderboard@Notes"]
+    },
+    {
+      "id": "input-pass1",
+      "name": "CRUXEval-I pass@1",
+      "direction": "越高越好",
+      "description": "输入预测任务一次采样即通过 assert f(generated input) == output 的题目占比（温度 0.2）",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["paper@§4 Evaluation", "paper@§3 Benchmark Construction"]
+    },
+    {
+      "id": "input-pass5",
+      "name": "CRUXEval-I pass@5",
+      "direction": "越高越好",
+      "description": "输入预测任务多次采样中至少一次通过的题目占比（温度 0.8，每题采样 10 次）",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["paper@§4 Evaluation", "leaderboard@Notes"]
+    }
+  ],
+  "default_protocol": {
+    "raw": "模型自由生成答案，然后用断言判对错：输入预测通过的条件是 assert f(generated input) == output 成立，输出预测通过的条件是 assert f(input) == generated output 成立。非 GPT 模型每题采样 N=100，GPT 模型采样 N=10；同时报 pass@1（T=0.2）与 pass@5（T=0.8），并用 10,000 次自助法给出区间。",
+    "cite": ["paper@§3 Benchmark Construction", "paper@§4 Evaluation"],
+    "variants": [
+      {
+        "text": "无 CoT vs 带 CoT：CoT 对输出预测的提升大于输入预测，GPT-4 收益最大（pass@1 输入 67.1%→74.8%、输出 63.4%→81.9%）。两组数字不能混着比。",
+        "cite": ["paper@§5.1 Chain of Thought Prompting", "paper@Table 3"]
+      },
+      {
+        "text": "论文 vs 官网排行榜：官方说明排行榜用了与论文不同的一套提示词，所以同一模型的分数会有小幅差异，也不按 pass@1 之外的方式排名。",
+        "cite": ["leaderboard@Notes"]
+      },
+      {
+        "text": "原始模型 vs 微调模型：微调实验用与基准非常相似的样本训练 Code Llama 34B，它能追平 GPT-4 但准确率停在 70% 以下，说明简单微调并未解决基准。",
+        "cite": ["paper@§5.2 Fine-tuning Experiments"]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2024-01-05",
+      "label": "arXiv v1 发布（cs.SE），800 题；Table 2 / Table 3 给出全部原始分数",
+      "cite": ["paper@v1 版头", "paper@Abstract"]
+    },
+    {
+      "id": "repo-archived",
+      "date": "2025-09-18",
+      "label": "官方 GitHub 仓库被作者归档，转为只读；数据与排行榜仍在线",
+      "cite": ["repo@归档声明"]
+    },
+    {
+      "id": "site-checked",
+      "date": "2026-11-13",
+      "label": "本页核对时点：官网、排行榜、Hugging Face 数据集（test 800 行）与 arXiv v1 文本一致；排行榜提示词与论文不同，数字有小幅差异",
+      "cite": ["dataset@Data Viewer", "leaderboard@Notes", "paper@v1 版头"]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "题目全部由单个模型（Code Llama 34B）生成",
+      "impact": "基准只覆盖 Code Llama 34B 写得出的那类短函数，题型分布与难度上限都受它限制，无法反映更真实的代码库。",
+      "severity": "高",
+      "response": "只把它当作「代码执行理解」这一个维度的探针；要评工程能力请看任务型基准（如 SWE-bench 一类）。",
+      "reader": "高分只说明模型会执行这类短函数，不代表能改真实仓库。",
+      "cite": ["paper@§7 Limitations"]
+    },
+    {
+      "issue": "样本噪声约 1.5%（N=800）",
+      "impact": "小于约 1.5 个百分点的模型差距统计上不可信；论文明确用 Phind v2 的 47.9% 看似胜过 CodeLlama 的 46.5%、但两者标准差都约 1.5% 来举例说明不能据此下结论。",
+      "severity": "高",
+      "response": "比较模型时看论文的自助法区间或成对显著性，不要只比小数点后一位。",
+      "reader": "两个模型差 1 个点以内应当视为打平。",
+      "cite": ["paper@§3.3 Data size and measuring noise", "paper@§7 Limitations"]
+    },
+    {
+      "issue": "微调实验的去污只查了精确字符串匹配",
+      "impact": "仍可能存在语义重复或只改几个字符的近似程序，微调后的高分可能来自「记住」而非「学会」。",
+      "severity": "中",
+      "response": "把微调分数当上界参考，不当成基准已被解决的证据。",
+      "reader": "微调刷到 70% 不等于理解了执行语义。",
+      "cite": ["paper@§7 Limitations"]
+    },
+    {
+      "issue": "对提示词与任务格式敏感，「接解释器算不算解决」也未有定论",
+      "impact": "同一模型换一套提示词分数就会变（官网排行榜与论文的差异正源于此）；输出预测原则上可以用 Python 解释器直接算，基准没有把这种情况纳入成绩。",
+      "severity": "中",
+      "response": "跨论文比较前先确认提示词、温度与采样数一致；带工具的跑分要与无工具分开看。",
+      "reader": "官网数字和论文数字不完全一致是正常现象。",
+      "cite": ["paper@§7 Limitations", "leaderboard@Notes"]
+    },
+    {
+      "issue": "官方仓库已归档，基准本身不再更新",
+      "impact": "2025-09-18 起仓库只读，不再新增题目或维护流程，题目难度与协议停留在 2024 年的水平。",
+      "severity": "低",
+      "response": "当作稳定的历史对照基准使用；需要更高区分度时找后续的代码推理基准。",
+      "reader": "这是 2024 年的基准，别用它衡量最新模型的上限。",
+      "cite": ["repo@归档声明"]
+    }
+  ],
+  "notes": "三处需要留意的口径差异：① 官网 Results 段说 Code Llama 34B「47% 和 44%」，对应论文 Table 2 的无 CoT 成绩（46.5% / 41.1%）；论文摘要说「50% 和 46%」，对应 Table 3 的带 CoT 成绩（50.4% / 46.0%）——同一个模型两组数字，差别在有没有 CoT。② 官方排行榜页自己说明用了与论文不同的一套提示词，因此分数与论文有小幅差异；该页模型行由 JS 动态加载，静态抓取只能拿到说明文字，所以本页「官方结果快照」改用论文 Table 2 / Table 3 的原始分数。③ 旧版官方链接里的 Qwen2.5 技术博客正文并未提到 CRUXEval，已从来源中移除。",
+  "official_sources": [
+    { "kind": "site", "url": "https://crux-eval.github.io" },
+    { "kind": "site", "url": "https://crux-eval.github.io/leaderboard.html" },
+    { "kind": "paper", "url": "https://arxiv.org/abs/2401.03065" },
+    { "kind": "repo", "url": "https://github.com/facebookresearch/cruxeval" },
+    { "kind": "dataset", "url": "https://huggingface.co/datasets/cruxeval-org/cruxeval" }
+  ],
+  "related_benchmarks": ["humaneval", "mbpp"],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-13",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "CRUXEval: A Benchmark for Code Reasoning, Understanding and Execution（arXiv:2401.03065v1，2024-01-05）",
+        "url": "https://arxiv.org/abs/2401.03065",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "crux-eval",
+        "kind": "site",
+        "title": "CRUXEval 官网项目页（Motivation / 构建 / 结果 / 洞察 / BibTeX）",
+        "url": "https://crux-eval.github.io",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "leaderboard",
+        "kind": "site",
+        "title": "CRUXEval 官方排行榜页（含计分口径说明 Notes）",
+        "url": "https://crux-eval.github.io/leaderboard.html",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "facebookresearch/cruxeval（评测代码，2025-09-18 起归档只读）",
+        "url": "https://github.com/facebookresearch/cruxeval",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "dataset",
+        "kind": "dataset",
+        "title": "cruxeval-org/cruxeval（Hugging Face 数据集，test split 800 行）",
+        "url": "https://huggingface.co/datasets/cruxeval-org/cruxeval",
+        "accessed": "2026-11-13"
+      }
+    ],
+    "header": {
+      "publisher": { "v": "MIT × Meta AI Research", "cite": ["crux-eval@作者署名"] },
+      "first_release": { "v": "2024-01-05", "cite": ["paper@v1 版头"] }
+    },
+    "cites": {
+      "summary": ["crux-eval", "paper@§3 Benchmark Construction", "repo@Getting Started"],
+      "interpretation": ["paper@Abstract", "paper@§5.2 Fine-tuning Experiments", "paper@§3 Benchmark Construction"]
+    },
+    "problem": {
+      "text": "HumanEval / MBPP 考的是「把自然语言写成代码」，模型可以靠背题目形状拿分；CRUXEval 反过来考「读懂代码在干什么」——给定函数和输入猜输出，或给定函数和输出猜输入，理由是这类执行推理是代码模型另一项基础能力，而 GPT-4 在一些惊人简单的 Python 程序上也会 consistently 出错。",
+      "cite": ["crux-eval@Motivation", "crux-eval@Results"]
+    },
+    "ladder": [
+      {
+        "label": "论文发布时最好（无 CoT）",
+        "value": "67.1% 输入 / 63.4% 输出（GPT-4）",
+        "note": "同表 Code Llama 34B 为 46.5% / 41.1%；官网把这两个数说成 47% 和 44%。",
+        "cite": ["paper@Table 2"]
+      },
+      {
+        "label": "论文发布时最好（带 CoT）",
+        "value": "74.8% 输入 / 81.9% 输出（GPT-4）",
+        "note": "每题 10 次采样；论文称这是最好配置，同时明确说离 acing 这个基准还远。",
+        "cite": ["paper@Table 3", "paper@§5.1 Chain of Thought Prompting"]
+      },
+      {
+        "label": "在类似样本上微调的上限",
+        "value": "70% 以下（两个任务都趋平）",
+        "note": "Code Llama 34B 在与基准非常相似的样本上微调后可追平 GPT-4，但准确率停在 70% 以下。",
+        "cite": ["paper@§5.2 Fine-tuning Experiments"]
+      },
+      {
+        "label": "样本噪声参考线",
+        "value": "约 1.5%（type 1）/ 0.2%（type 2）",
+        "note": "N=800 时逐模型的噪声量级；小于这个量级的排名差异不能当结论。",
+        "cite": ["paper@§3.3 Data size and measuring noise"]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把它当成代码生成基准来读。CRUXEval 不考「写代码」，考「读代码」；在 HumanEval 上微调涨点明显的蒸馏模型（WizardCoder、Phind、Phi）在 CRUXEval 上并不显著超过 Code Llama 34B。",
+        "cite": ["crux-eval@Motivation", "crux-eval@Insights"]
+      },
+      {
+        "text": "把 1 个点以内的差距当成排名。N=800 的样本噪声约 1.5%，论文明确说 Phind v2 的 47.9% 不能据此说胜过 CodeLlama 的 46.5%。",
+        "cite": ["paper@§7 Limitations"]
+      },
+      {
+        "text": "看到 GPT-4 带 CoT 的 81.9% 就认为基准基本被解决。同表微调后的 Code Llama 34B 能追平 GPT-4 却仍卡在 70% 以下，论文的结论是简单微调远没有解决这个基准。",
+        "cite": ["paper@§5.2 Fine-tuning Experiments"]
+      },
+      {
+        "text": "直接拿官网排行榜数字和论文表格对比。官方说明排行榜用了另一套提示词，两组数字存在小幅差异。",
+        "cite": ["leaderboard@Notes"]
+      }
+    ],
+    "background": [
+      {
+        "k": "作者与机构",
+        "v": "Alex Gu（MIT）、Baptiste Rozière、Hugh Leather、Armando Solar-Lezama（MIT）、Gabriel Synnaeve、Sida I. Wang（Meta AI Research）",
+        "cite": ["crux-eval@作者署名"]
+      },
+      {
+        "k": "发布载体",
+        "v": "2024-01-05 挂上 arXiv（cs.SE，v1），论文标题即 CRUXEval: A Benchmark for Code Reasoning, Understanding and Execution",
+        "cite": ["paper@v1 版头", "paper@Abstract"]
+      },
+      {
+        "k": "许可与数据分发",
+        "v": "代码与数据均为 MIT 许可；数据以 cruxeval.jsonl 分发，每行含 code / input / output 三个字段，Hugging Face 上另有 cruxeval-org/cruxeval（默认子集即 800 行）",
+        "cite": ["repo@License", "repo@Getting Started", "dataset@Dataset card"]
+      },
+      {
+        "k": "与 HumanEval / MBPP 的关系",
+        "v": "官网定位为「与 HumanEval、MBPP 互补」：那两个考生成代码，CRUXEval 考推理代码执行；基础模型上两者分数相关，但微调蒸馏会打破这种相关",
+        "cite": ["leaderboard", "crux-eval@Insights"]
+      },
+      {
+        "k": "为什么只要 800 题",
+        "v": "论文引用 HumanEval 只有 164 例说明「评测基准可以很小，更快更便宜是被忽视的优势」，再用自助法证明 800 题足以稳定复现模型间排序",
+        "cite": ["paper@§3.3 Data size and measuring noise"]
+      },
+      {
+        "k": "仓库现状",
+        "v": "官方 GitHub 仓库已于 2025-09-18 被作者归档为只读，基准数据与排行榜仍在线可访问",
+        "cite": ["repo@归档声明"]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-13",
+        "columns": ["来源", "模型", "CoT", "I pass@1", "I pass@5", "O pass@1", "O pass@5"],
+        "rows": [
+          ["论文 Table 2", "CodeLlama 7B", "✗", "36.6%", "55.2%", "36.4%", "49.6%"],
+          ["论文 Table 2", "CodeLlama 13B", "✗", "39.0%", "58.2%", "38.4%", "53.2%"],
+          ["论文 Table 2", "CodeLlama 34B", "✗", "46.5%", "64.7%", "41.1%", "56.1%"],
+          ["论文 Table 2", "CodeLlama Python 7B", "✗", "36.3%", "56.0%", "36.4%", "49.7%"],
+          ["论文 Table 2", "CodeLlama Python 13B", "✗", "40.5%", "58.0%", "37.8%", "50.8%"],
+          ["论文 Table 2", "CodeLlama Python 34B", "✗", "41.5%", "59.2%", "40.7%", "53.7%"],
+          ["论文 Table 2", "StarCoder-Base 7B", "✗", "30.0%", "48.9%", "31.1%", "43.8%"],
+          ["论文 Table 2", "StarCoder-Base 15.5B", "✗", "31.6%", "49.5%", "33.3%", "47.7%"],
+          ["论文 Table 2", "WizardCoder 13B", "✗", "39.2%", "54.8%", "37.9%", "51.6%"],
+          ["论文 Table 2", "WizardCoder 34B", "✗", "42.8%", "57.3%", "41.2%", "52.2%"],
+          ["论文 Table 2", "Phi-1 1.3B", "✗", "13.9%", "22.6%", "23.3%", "34.0%"],
+          ["论文 Table 2", "Phi-1.5 1.3B", "✗", "24.1%", "38.9%", "27.1%", "39.4%"],
+          ["论文 Table 2", "Phind v2 34B", "✗", "47.9%", "64.9%", "38.3%", "49.2%"],
+          ["论文 Table 2", "Deepseek Coder-Base 6.7B", "✗", "41.1%", "61.7%", "39.8%", "53.9%"],
+          ["论文 Table 2", "Deepseek Coder-Base 33B", "✗", "46.6%", "65.1%", "43.6%", "57.6%"],
+          ["论文 Table 2", "Deepseek Coder-Instruct 6.7B", "✗", "36.6%", "54.4%", "41.0%", "52.5%"],
+          ["论文 Table 2", "Deepseek Coder-Instruct 33B", "✗", "47.4%", "64.2%", "44.0%", "58.0%"],
+          ["论文 Table 2", "Mistral 7B", "✗", "36.0%", "54.2%", "31.7%", "45.2%"],
+          ["论文 Table 2", "GPT-3.5", "✗", "49.2%", "66.5%", "50.0%", "60.1%"],
+          ["论文 Table 2", "GPT-4", "✗", "67.1%", "76.8%", "63.4%", "68.7%"],
+          ["论文 Table 3", "Code Llama 13B", "✓", "39.1%", "55.2%", "39.3%", "59.9%"],
+          ["论文 Table 3", "Code Llama 34B", "✓", "50.4%", "68.3%", "46.0%", "65.3%"],
+          ["论文 Table 3", "GPT-3.5", "✓", "49.1%", "76.3%", "63.3%", "81.2%"],
+          ["论文 Table 3", "GPT-4", "✓", "74.8%", "88.4%", "81.9%", "90.7%"]
+        ]
+      },
+      "cite": ["paper@Table 2", "paper@Table 3"]
+    }
+  }
 }
