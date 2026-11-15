@@ -1,35 +1,587 @@
 {
   "id": "countix",
   "name": "Countix",
-  "full_name": null,
+  "full_name": "Countix（出自 Counting Out Time: Class Agnostic Video Repetition Counting in the Wild，CVPR 2020）",
   "aliases": [],
-  "status": null,
+  "status": "active",
   "categories": [
     "multimodal"
   ],
-  "summary": "视频中重复动作计数评测",
-  "interpretation": "Countix：野生场景（YouTube）视频重复动作计数数据集（约 526 段、规模比既有数据集大近 90 倍），按计数误差指标（如 OBO，±1 内算对）计分、越高越好；考视频时序感知的「数动作」基本功。",
-  "measures": [],
-  "does_not_measure": [],
+  "summary": "Countix 是「看一段视频，数出里面某个动作重复了几遍」的评测集：8,757 段来自 Kinetics 的 YouTube 真实视频，每段都人工标好了重复片段的时间范围和次数，考的是模型能不能在平均 6 秒的短视频上把动作数准。",
+  "interpretation": "这里的分数是误差，越低越好：MAE 是预测次数相对真值的平均偏差，OBO 是相差超过 1 次的视频占比。数错通常不是识别不出动作，而是没搞清楚「什么算一次」——论文自己举的例子是颠足球，模型数左右腿、标注者数球的起落，结果只数出一半。跨论文比较前还要先确认 OBO 写的是误差还是准确率，两种口径数字看着像但方向相反。",
+  "measures": [
+    {
+      "area": "重复动作计数（唯一任务）",
+      "focus": "输入一段短视频，输出其中重复动作的次数；论文 Figure 6 的示例有 mountain climber（登山）、pirouetting（单足旋转）、playing ukulele（弹尤克里里）、slicing onion（切洋葱）",
+      "share": "全部 8,757 段",
+      "format": "视频 → 单个整数；预测与真值相差 ≤1 在 OBO 口径下算对",
+      "cite": [
+        "paper@§5",
+        "paper@Figure 6",
+        "paper@§6.1"
+      ]
+    },
+    {
+      "area": "重复片段与周期标注（随数据附带）",
+      "focus": "每段视频同时标了重复片段的时间范围和周期长度；Figure 6 右列给出全库的计数与周期长度分布，可直接看任务难度",
+      "share": "全部 8,757 段",
+      "format": "时间戳区间 + 次数 + 周期长度",
+      "cite": [
+        "paper@§5",
+        "paper@Figure 6"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "动作识别与分类：任务只要求输出次数，模型是 class-agnostic 的，不区分动作类别；45 类只是挑选数据的入口，论文附录逐类描述每类的重复内容。",
+      "cite": [
+        "paper@Abstract",
+        "paper@附录 Table 14"
+      ]
+    },
+    {
+      "text": "声音与多模态：原库只用画面，音轨不参与；后来的 Countix-AV 才从里面挑出 19 类补上声音标注。",
+      "cite": [
+        "paper-countixav@§2"
+      ]
+    },
+    {
+      "text": "长视频与复杂重复结构：论文把「多个同时发生的重复信号」和「重复段落的编排（如舞步、乐句）」明确列为下一步工作。",
+      "cite": [
+        "paper@§8"
+      ]
+    },
+    {
+      "text": "人类基线：原论文没有报告人类在 Countix 上的计数表现，本站也不推算。",
+      "cite": [
+        "paper"
+      ]
+    }
+  ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
+    "sample_count": 8757,
+    "splits": [
+      "train 4,588 段（沿用 Kinetics 训练划分）",
+      "val 1,450 段（原论文报告 OBO / MAE 的主要位置）",
+      "test 2,719 段（原论文只在 Table 7 给一个最终分数）"
+    ],
     "languages": [],
-    "source_type": null,
-    "public_sample": null
+    "source_type": "Kinetics（YouTube 真实视频）子集 + 众包人工标注的重复片段与次数",
+    "public_sample": true,
+    "totals": "全库 8,757 段视频、45 类；时长平均 6.13±3.08 秒（最短 0.2 秒 / 最长 10.0 秒）；每段重复次数平均 6.84±6.76（最少 2 次 / 最多 73 次）；纯视觉、无语言维度",
+    "cite": [
+      "paper@Table 1",
+      "paper@§5",
+      "paper-countixav@§2",
+      "blog-google-research"
+    ],
+    "construction": [
+      {
+        "k": "选类",
+        "text": "人工从 Kinetics 里挑出「容易发生重复」的类别（论文举例 jumping jacks、slicing onion），排除 head stand、alligator wrestling 这类几乎不重复的类。",
+        "cite": [
+          "paper@§5"
+        ]
+      },
+      {
+        "k": "众包标注",
+        "text": "标注者先在视频里框出「次数没有歧义」的重复片段，再数这一段里重复了多少次；标注界面沿用常见的时序片段标注工具。",
+        "cite": [
+          "paper@§5"
+        ]
+      },
+      {
+        "k": "一致性过滤",
+        "text": "每段由 3 名标注者标注，时间范围重叠不足的片段直接丢弃。",
+        "cite": [
+          "paper@§5"
+        ]
+      },
+      {
+        "k": "取中位数",
+        "text": "留下的片段用 3 人次数的中位数作为真值，片段边界同样取中位数。",
+        "cite": [
+          "paper@§5"
+        ]
+      },
+      {
+        "k": "沿用划分",
+        "text": "保留 Kinetics 原有的 train / val / test 划分；论文认为这样可以避免 Kinetics 预训练带来的数据泄漏。",
+        "cite": [
+          "paper@§5",
+          "paper@§4.1"
+        ]
+      },
+      {
+        "k": "公开",
+        "text": "计数标注随项目页打包发布，并提供 Colab 演示；论文附录逐类列出全部类别及每类的重复内容。",
+        "cite": [
+          "blog-google-research",
+          "paper@附录 Table 14"
+        ]
+      }
+    ]
   },
-  "metrics": [],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [],
+  "default_protocol": {
+    "raw": "给模型一段视频，让它输出重复动作的次数；按 OBO（预测与真值相差 ≤1 记对）和 MAE（|预测−真值| 除以真值后取平均）两个误差指标计分。原论文的消融与同类比较都在 validation set 上报告，另给一个 Countix test set 的最终分数（Table 7）。",
+    "cite": [
+      "paper@§6.1",
+      "paper@Table 7"
+    ],
+    "variants": [
+      {
+        "text": "OBO 的方向在不同论文里相反：原论文把它定义为误差（越低越好，RepNet 0.3034），Countix-AV 与 RACNet 把它当作 off-by-one accuracy（越高越好，同一个 0.3034 被写成 0.697）。",
+        "cite": [
+          "paper@§6.1",
+          "paper-countixav@§4.2",
+          "paper-countixav@Table 5",
+          "paper-racnet@Table 2"
+        ]
+      },
+      {
+        "text": "验证集 vs 测试集：原论文的消融和同类比较都在 validation set 上报告，test set 只在 Table 7 给一个最终分数；Countix-AV 的对比表直接用 test set，两者不能混着看。",
+        "cite": [
+          "paper@§6.1",
+          "paper-countixav@Table 5"
+        ]
+      },
+      {
+        "text": "训练数据来源不同：原论文用 Kinetics 的无标注训练视频采样生成合成重复视频来训练；RACNet 的迁移设定改用在 RepCountA 上训练后再评 Countix，数字不可直接比。",
+        "cite": [
+          "paper@§4.1",
+          "paper-racnet@Table 2"
+        ]
+      },
+      {
+        "text": "输入时间分辨率不同：RACNet 报告了抽帧与完整时间分辨率两套结果，同一模型在 Countix 上差距明显（RepNet 的 MAE 从 0.8441 降到 0.6028）。",
+        "cite": [
+          "paper-racnet@Table 2",
+          "paper-racnet@Table 6"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "obo",
+      "name": "OBO（Off-By-One）计数误差",
+      "direction": "越低越好",
+      "description": "预测次数与真值相差 ≤1 记对该视频为正确，误差即全库误分类率；注意后续论文有把它当准确率（越高越好）报告的口径",
+      "range": [
+        0,
+        1
+      ],
+      "unit": "proportion",
+      "cite": [
+        "paper@§6.1"
+      ]
+    },
+    {
+      "id": "mae",
+      "name": "MAE（平均绝对计数误差）",
+      "direction": "越低越好",
+      "description": "预测次数与真值的绝对差除以真值次数后，在全库上取平均，即相对计数偏差",
+      "range": [
+        0,
+        "无上界"
+      ],
+      "unit": "proportion of ground-truth count",
+      "cite": [
+        "paper@§6.1"
+      ]
+    }
+  ],
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2020-06-27",
+      "label": "arXiv v1 发布（后被 CVPR 2020 录用），Countix 计数标注随项目页公开下载",
+      "cite": [
+        "paper",
+        "site-repnet"
+      ]
+    },
+    {
+      "id": "countix-av",
+      "date": "2021-04-17",
+      "label": "衍生集 Countix-AV（arXiv:2103.13096v2）：从 Countix 中挑出 19 类、1,863 段补上声音标注；原 Countix 本身未修订",
+      "cite": [
+        "paper-countixav@§2"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "OBO 口径互相矛盾",
+      "impact": "同一份 RepNet 结果在原论文是 0.3034 的误差，在 Countix-AV 的对比表里变成 0.697 的准确率；后续论文还统一改用 off-by-one accuracy。把这些数字直接排成一列会得出方向相反的结论。",
+      "severity": "高",
+      "response": "本站附录 B 单列「口径」列；引用原论文成绩时回到 Table 7 取 0.3641 / 0.3034。",
+      "reader": "看到 Countix 的 OBO 数字，先确认它是误差还是准确率，再看高低。",
+      "cite": [
+        "paper@Table 7",
+        "paper-countixav@Table 5",
+        "paper-countixav@§4.2"
+      ]
+    },
+    {
+      "issue": "没有官方榜单",
+      "impact": "项目页只放论文、演示和 Colab，没有任何持续更新的成绩表；所有可见数字都来自各论文自己的一轮评测，训练数据、输入分辨率、评测划分都不统一。",
+      "severity": "中",
+      "response": "本站只在附录 B 收录三篇论文报告的数字，并逐行标注来源与设定。",
+      "reader": "不要拿不同论文的 Countix 分数直接排名。",
+      "cite": [
+        "site-repnet",
+        "blog-google-research"
+      ]
+    },
+    {
+      "issue": "「什么算一次重复」存在歧义",
+      "impact": "论文自己举例：颠足球时模型只数出标注者一半的次数，因为模型数左右腿、标注者数球的起落；这类样本会同时拉低 OBO 与 MAE，且很难从分数里区分出来。",
+      "severity": "中",
+      "response": "论文用 3 人标注取中位数压制个体差异，但没有为「一次重复」给出形式化定义。",
+      "reader": "计数差距接近 2 倍时，先怀疑动作本身有歧义，再怀疑模型能力。",
+      "cite": [
+        "paper@§6.5",
+        "paper@§5"
+      ]
+    },
+    {
+      "issue": "片段短、类别偏日常",
+      "impact": "平均时长 6.13 秒、最长 10 秒，类别来自 Kinetics 中人工挑出的「容易重复」的类，覆盖不了长时间、复杂编排的重复过程。",
+      "severity": "低",
+      "response": "论文把多个同时重复信号与重复段落编排列为下一步工作。",
+      "reader": "不要把 Countix 成绩当成通用视频理解能力。",
+      "cite": [
+        "paper@Table 1",
+        "paper@§5",
+        "paper@§8"
+      ]
+    }
+  ],
   "notes": "字节 Seed 引用",
   "official_sources": [
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2006.15418"
+    },
+    {
+      "kind": "site",
+      "url": "https://sites.google.com/view/repnet"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://storage.googleapis.com/deepmind-media/Datasets/countix.tar.gz"
+    },
     {
       "kind": "site",
       "url": "https://seed.bytedance.com/en/blog/official-release-of-seed1-8-a-generalized-agentic-model"
     }
   ],
   "related_benchmarks": [],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "Counting Out Time: Class Agnostic Video Repetition Counting in the Wild（arXiv:2006.15418v1，2020-06-27；CVPR 2020）",
+        "url": "https://arxiv.org/pdf/2006.15418",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "site-repnet",
+        "kind": "site",
+        "title": "RepNet 项目页（论文、BibTeX、Countix 数据与 Colab 入口）",
+        "url": "https://sites.google.com/view/repnet",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "blog-google-research",
+        "kind": "blog",
+        "title": "Google Research Blog：RepNet: Counting Repetitions in Videos",
+        "url": "https://research.google/blog/repnet-counting-repetitions-in-videos",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "paper-countixav",
+        "kind": "paper",
+        "title": "Repetitive Activity Counting by Sight and Sound（arXiv:2103.13096v2，2021-04-17；Countix-AV）",
+        "url": "https://arxiv.org/pdf/2103.13096",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "paper-racnet",
+        "kind": "paper",
+        "title": "Rethinking Temporal Self-Similarity for Repetitive Action Counting（arXiv:2407.09431v1，2024-07-12；ICIP 2024）",
+        "url": "https://arxiv.org/pdf/2407.09431",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Google Research 与 DeepMind",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      "first_release": {
+        "v": "2020-06-27（arXiv v1；CVPR 2020 录用）",
+        "cite": [
+          "paper",
+          "site-repnet"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "paper@§5",
+        "paper@Table 1",
+        "paper-countixav@§2"
+      ],
+      "interpretation": [
+        "paper@§6.1",
+        "paper@§6.5",
+        "paper-countixav@Table 5"
+      ]
+    },
+    "problem": {
+      "text": "做重复计数研究缺少够大的真实视频数据：此前的 QUVA 只有 100 段测试视频，基本只用于测试，模型没法学；Countix 从 Kinetics 取子集把规模拉到约 90 倍，并提供训练 / 验证 / 测试划分，让「训练 + 评测」第一次能在同一套真实视频上完成。",
+      "cite": [
+        "paper@§2",
+        "paper@§5",
+        "paper@Table 1"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机 / 人类基线",
+        "value": "论文未给出",
+        "note": "原论文没有报告随机或人类在 Countix 上的计数表现，本站不推算。",
+        "cite": [
+          "paper"
+        ]
+      },
+      {
+        "label": "论文发布时最好（RepNet，test set）",
+        "value": "MAE 0.3641 / OBO 误差 0.3034",
+        "note": "Table 7 只报了这一个模型在 Countix test set 上的最终分数；同类比较都在 validation set 上做。",
+        "cite": [
+          "paper@Table 7"
+        ]
+      },
+      {
+        "label": "后续论文最好（Countix-AV，Sight & Sound，test set）",
+        "value": "MAE 0.307 / OBO 0.511（准确率口径）",
+        "note": "同一张表里原论文的 OBO 被写成 0.697 准确率；该成绩是视频加声音的设定，与纯视觉结果不同。",
+        "cite": [
+          "paper-countixav@Table 5"
+        ]
+      },
+      {
+        "label": "跨数据集迁移最好（RACNet，只在 RepCountA 上训练）",
+        "value": "MAE 0.5278 / OBOA 0.3924",
+        "note": "同设定下 RepNet 为 0.8441 / 0.1600；换成完整时间分辨率后 RepNet 提升到 0.6028 / 0.1158，RACNet 不变。",
+        "cite": [
+          "paper-racnet@Table 2",
+          "paper-racnet@Table 6"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 Countix 的 OBO 当成「越高越好」的分数引用——原论文里它是误差，越高代表数错得越多。",
+        "cite": [
+          "paper@§6.1",
+          "paper@Table 7"
+        ]
+      },
+      {
+        "text": "把 Countix-AV 表里的 0.697 当成某个新模型的成绩——那是同一份 RepNet 结果换成准确率口径（1 − 0.3034）后的写法。",
+        "cite": [
+          "paper-countixav@Table 5"
+        ]
+      },
+      {
+        "text": "拿不同论文的 Countix 数字直接排名——训练数据（合成 Kinetics vs RepCountA）、输入分辨率、评测划分都不同。",
+        "cite": [
+          "paper-racnet@Table 2",
+          "paper@§4.1"
+        ]
+      },
+      {
+        "text": "把 Countix 当成「视频理解综合评测」——它只数重复动作，不识别动作类别，也没有官方榜单。",
+        "cite": [
+          "paper@Abstract",
+          "site-repnet"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "Google Research 与 DeepMind",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "Debidatta Dwibedi、Yusuf Aytar、Jonathan Tompson、Pierre Sermanet、Andrew Zisserman",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2020-06-27 arXiv v1 发布 → CVPR 2020 录用 → 计数标注随项目页公开下载",
+        "cite": [
+          "paper",
+          "site-repnet"
+        ]
+      },
+      {
+        "k": "配套模型",
+        "v": "RepNet：帧编码器 → 时序自相似矩阵 → 周期预测；训练数据是从 Kinetics 无标注视频里采样短片、按随机周期重复生成的合成视频",
+        "cite": [
+          "paper@Abstract",
+          "paper@§4.1"
+        ]
+      },
+      {
+        "k": "命名与规模",
+        "v": "论文与项目页都把这份新数据集命名为 Countix，称其规模约为既有数据集的 90 倍；官方博客按 Kinetics 视频数描述为约 9,000 段",
+        "cite": [
+          "site-repnet",
+          "blog-google-research"
+        ]
+      },
+      {
+        "k": "数据与演示",
+        "v": "项目页提供 Countix 标注打包下载与 Colab 演示（可直接跑 RepNet）",
+        "cite": [
+          "blog-google-research"
+        ]
+      },
+      {
+        "k": "后续使用",
+        "v": "Countix-AV（2021）从中挑 19 类补声音；RACNet（2024）把它用作跨数据集迁移与完整时间分辨率评测对象",
+        "cite": [
+          "paper-countixav@§2",
+          "paper-racnet@Abstract"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-14",
+        "columns": [
+          "来源",
+          "模型",
+          "MAE（越低越好）",
+          "OBO（原论文口径：误差，越低越好）",
+          "训练 / 输入设定"
+        ],
+        "rows": [
+          [
+            "原论文 Table 7（test set）",
+            "RepNet",
+            "0.3641",
+            "0.3034",
+            "Kinetics 无标注视频生成合成重复视频；论文自实现模型"
+          ],
+          [
+            "Countix-AV Table 5（test set）",
+            "RepNet 公开的 sight-only 权重（Baseline†）",
+            "0.525",
+            "0.289",
+            "直接使用 RepNet 作者发布的纯视觉权重"
+          ],
+          [
+            "Countix-AV Table 5（test set）",
+            "Dwibedi et al.（原论文）",
+            "0.364",
+            "0.697",
+            "该文把 OBO 写成准确率（1 − 0.3034）"
+          ],
+          [
+            "Countix-AV Table 5（test set）",
+            "Sight only",
+            "0.314",
+            "0.498",
+            "Countix 上训练的纯视觉模型"
+          ],
+          [
+            "Countix-AV Table 5（test set）",
+            "Sound only",
+            "0.793",
+            "0.331",
+            "仅音频输入"
+          ],
+          [
+            "Countix-AV Table 5（test set）",
+            "Sight & Sound",
+            "0.307",
+            "0.511",
+            "视频 + 音频联合"
+          ],
+          [
+            "RACNet Table 2（test set，迁移）",
+            "RepNet",
+            "0.8441",
+            "0.1600",
+            "只在 RepCountA 上训练，未在 Countix 上训练"
+          ],
+          [
+            "RACNet Table 2（test set，迁移）",
+            "TransRac",
+            "0.5804",
+            "0.3782",
+            "同上"
+          ],
+          [
+            "RACNet Table 2（test set，迁移）",
+            "RACnet",
+            "0.5278",
+            "0.3924",
+            "同上；OBOA 为准确率口径"
+          ],
+          [
+            "RACNet Table 6（完整时间分辨率）",
+            "RepNet",
+            "0.6028",
+            "0.1158",
+            "同 Table 2 设定，输入改用完整时间分辨率"
+          ],
+          [
+            "RACNet Table 6（完整时间分辨率）",
+            "Transrac",
+            "0.5483",
+            "0.3712",
+            "同上"
+          ],
+          [
+            "RACNet Table 6（完整时间分辨率）",
+            "RACnet (ours)",
+            "0.5278",
+            "0.3924",
+            "同上"
+          ]
+        ]
+      },
+      "cite": [
+        "paper@Table 7",
+        "paper-countixav@Table 5",
+        "paper-racnet@Table 2",
+        "paper-racnet@Table 6"
+      ]
+    }
+  }
 }
