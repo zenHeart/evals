@@ -10,37 +10,384 @@
   "categories": [
     "agent"
   ],
-  "summary": "腾讯 Hunyuan 出品的 Agent 多任务鲁棒性评测：复杂工具关系、关键隐藏信息、动态决策路径三类挑战",
-  "interpretation": "考工具依赖、长上下文信息依赖与频繁策略切换下的鲁棒性（49 个 agent 参测）；Hunyuan-A13B Instruct 表 Agent 组读 63.5——注意名字里的 C3 与中文阅读理解数据集 C3 无关，也常见被误读为纯工具调用榜。",
+  "summary": "腾讯混元团队开源的 Agent 多任务鲁棒性基准：1024 条工具调用任务序列，用「复杂工具关系、关键隐藏信息、动态决策路径」三个挑战做单变量分析，逐项量化工具依赖、长上下文依赖与频繁策略切换对 agent 的影响。",
+  "interpretation": "高分说明模型在 2–4 个连续任务里能稳定处理工具间的参数/逻辑依赖、从前文里找回被隐藏的信息、并在不同动作策略之间正确切换；论文用 AP、OP Rate、V_F、DDD 等细粒度指标把「错在哪一类」定位出来。它不衡量通用知识、单轮函数调用或对话质量。论文正文叙述的最好成绩是 55.34，而 Table 1 中 19 个代表模型的最高 Total 为 44.14（GPT-4.1），两处论文未作解释。",
   "measures": [
-    "复杂工具关系下的调用选择",
-    "关键隐藏信息的处理与动态决策路径切换"
+    {
+      "area": "挑战 1 · 复杂工具关系",
+      "focus": "同一任务序列里多个工具存在参数或逻辑依赖（串行 / 并行 / 串并结合三类），agent 要先识别依赖再决定调用顺序与组合；论文把这三种依赖归为参数或逻辑依赖",
+      "share": "256 条，每条 1–4 个任务",
+      "format": "多轮工具调用任务序列，按决策树增量匹配执行路径，未全对时用 AP 给部分分",
+      "cite": [
+        "arxiv-2505-18746@§3.1",
+        "arxiv-2505-18746@§3.2",
+        "arxiv-2505-18746"
+      ]
+    },
+    {
+      "area": "挑战 2 · 关键隐藏信息",
+      "focus": "agent 只能看到历史用户任务和自己的摘要，被省略的信息要靠引用（Reference）或远距上下文（Long-Context）找回；论文另设 Omit 策略",
+      "share": "768 条多任务数据，每条 2–4 个任务",
+      "format": "提供正确历史对话以避免误差级联，只评最后一个任务；按 Omit / Reference / Long-Context 三种隐藏策略分别报告",
+      "cite": [
+        "arxiv-2505-18746@§3.1",
+        "arxiv-2505-18746@§3.3"
+      ]
+    },
+    {
+      "area": "挑战 3 · 动态决策路径",
+      "focus": "在 Challenge 2 之上加入历史决策的影响，任务序列要遍历不同动作策略之间的切换；论文称共覆盖 2–4 个任务的 336 种策略切换组合",
+      "share": "768 条多任务数据，每条 2–4 个任务",
+      "format": "整体准确率的主口径；两个任务的子集有 16 种连续任务组合，三个 / 四个任务子集分别有 64 / 256 种",
+      "cite": [
+        "arxiv-2505-18746@§3.1",
+        "arxiv-2505-18746@§3.4"
+      ]
+    }
   ],
   "does_not_measure": [
-    "单轮函数调用正确性",
-    "纯对话质量"
+    {
+      "text": "不测脱离依赖关系的单点工具调用能力——论文在 Related Work 里明确把自己与 BFCL V3 区分开，后者只覆盖策略切换空间的一小部分",
+      "cite": [
+        "arxiv-2505-18746@§4"
+      ]
+    },
+    {
+      "text": "不测开放式对话质量与闲聊——四个动作策略里的对话策略只是策略切换组合中的一个环节，论文的定位是用挑战暴露模型脆弱点并研究 agent 性能的可解释性",
+      "cite": [
+        "arxiv-2505-18746@摘要",
+        "arxiv-2505-18746"
+      ]
+    },
+    {
+      "text": "不测通用知识问答——三个挑战全部围绕工具依赖、隐藏信息与策略切换，论文没有报告任何知识型题目",
+      "cite": [
+        "arxiv-2505-18746@摘要"
+      ]
+    }
   ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": "agentic scenarios（开源）",
-    "public_sample": true
+    "sample_count": 1024,
+    "splits": [
+      "Challenge 1 · 复杂工具关系：256 条，每条 1–4 个任务",
+      "Challenge 2 · 关键隐藏信息：768 条多任务数据，每条 2–4 个任务",
+      "Challenge 3 · 动态决策路径：768 条多任务数据，每条 2–4 个任务"
+    ],
+    "languages": [
+      "en",
+      "zh"
+    ],
+    "source_type": "多智能体框架生成 + 五轮人工精修（agentic scenarios，开源）",
+    "public_sample": true,
+    "totals": "共 1,024 条测试数据：256 条 1–4 个任务的单 / 少任务数据（Challenge 1）+ 768 条 2–4 个任务的多任务数据（Challenge 2 与 Challenge 3）；官方同时提供中文与英文两个语言版本，README 明确后续榜单主要报告英文版结果。",
+    "cite": [
+      "arxiv-2505-18746@§3.1",
+      "repo-c3-benchmark@README"
+    ],
+    "construction": [
+      {
+        "k": "工具池",
+        "text": "从开源 API 仓库取工具：400 个工具归入 50 个不同类别，合计 1,600 个工具。",
+        "cite": [
+          "arxiv-2505-18746@附录 A.1.1"
+        ]
+      },
+      {
+        "k": "多角色生成",
+        "text": "用五角色框架（User、Planner、AI Agent、Checker、Observer）生成数据：先抽样目标决策轨迹并指定每一步的策略类型，再为后续任务随机分配信息隐藏方式；用户问题由 HunYuan 系列模型生成，执行过程由 HunYuan-TurboS 生成，格式由启发式规则校验。",
+        "cite": [
+          "arxiv-2505-18746@§2.5"
+        ]
+      },
+      {
+        "k": "五轮人工精修",
+        "text": "5 位有 NLP / CV / LLM 经验的资深算法研究员分五轮检查与修正（分层生成分层校对、领域专家点评、交叉验证、资深专家终审、代码复查参数类型与依赖），历时约一个月。",
+        "cite": [
+          "repo-c3-benchmark@README"
+        ]
+      },
+      {
+        "k": "质量口径（三处不一致）",
+        "text": "论文正文记录准确率从生成初期约 60% 提升到两轮自检后 86%、交叉校验后 94%、终审后接近 100%；附录 A.1.5 的分阶段数字为基线 62% → 单轮自检 78% → 多轮自检 86% → 交叉校验 94% → 专家验证 100.0%；README 表述为「从不足 60% 到 100% 正确」。本站按原文分别记录，不强行统一。",
+        "cite": [
+          "arxiv-2505-18746@§2.5",
+          "arxiv-2505-18746@附录 A.1.5",
+          "repo-c3-benchmark@README"
+        ]
+      },
+      {
+        "k": "双语与分布",
+        "text": "同一套流程产出中文与英文两个版本的测试数据，均经过上述人工检查；README 称第二至第四轮真实多轮任务的动作空间覆盖率达到两个 100%。",
+        "cite": [
+          "repo-c3-benchmark@README"
+        ]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "按 Challenge 3 的口径测试：每个条目是一条 2–4 个任务的连续任务序列，agent 只能看到历史用户任务与自己的摘要，逐步选择并调用工具；有官方 Function Call 接口的模型走接口，否则用 prompt。判分用工具调用图逐动作匹配，匹配不上即终止该路径，并用决策树剪枝提前剪掉已不可能成功的分支。",
+    "cite": [
+      "arxiv-2505-18746@§3.1",
+      "arxiv-2505-18746@§3.2",
+      "repo-c3-benchmark@README"
+    ],
+    "variants": [
+      {
+        "text": "接口口径：论文对有 Function Call 接口的模型用接口、其余用 prompt；README 则称全部请求统一走标准 ToolCalls 协议。两种口径下的分数不宜直接比较。",
+        "cite": [
+          "arxiv-2505-18746@§3.1",
+          "repo-c3-benchmark@README"
+        ]
+      },
+      {
+        "text": "信息隐藏策略：Challenge 2 分 Omit / Reference / Long-Context 三种分别报告，混合口径会掩盖长上下文这一最弱项。",
+        "cite": [
+          "arxiv-2505-18746@§3.3"
+        ]
+      },
+      {
+        "text": "任务数：1–4 个任务分别报告，整体准确率不计入单任务；论文称平均而言每多一个任务准确率下降约 10.1%。",
+        "cite": [
+          "arxiv-2505-18746@§3.3"
+        ]
+      },
+      {
+        "text": "语言：测试数据有中英两版，README 明确后续榜单主要报告英文版，中文版成绩不能与英文版混排。",
+        "cite": [
+          "repo-c3-benchmark@README"
+        ]
+      }
+    ]
   },
   "metrics": [
     {
-      "id": "accuracy",
-      "name": "Accuracy",
-      "range": [0, 100],
+      "id": "total-accuracy",
+      "name": "总准确率（Total）",
+      "direction": "越高越好",
+      "description": "整条多任务序列端到端全部正确的比例，即论文 Table 1 的 Total 列与 Figure 5 的整体准确率；Challenge 3 口径下不计入单任务。",
+      "range": [
+        0,
+        100
+      ],
       "unit": "percent",
-      "direction": "higher",
-      "aggregation": "mean"
+      "cite": [
+        "arxiv-2505-18746@§3.1",
+        "arxiv-2505-18746@§3.2"
+      ]
+    },
+    {
+      "id": "p-s-multi",
+      "name": "串行依赖子任务准确率（P^S_multi）",
+      "direction": "越高越好",
+      "description": "Challenge 1 中工具需串行调用的子集正确率，衡量对前序工具返回值的依赖处理。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2505-18746@§3.1",
+        "arxiv-2505-18746"
+      ]
+    },
+    {
+      "id": "p-p-multi",
+      "name": "并行依赖子任务准确率（P^P_multi）",
+      "direction": "越高越好",
+      "description": "Challenge 1 中工具需并行调用的子集正确率；论文点名 Claude-3.7 的 OP Rate 大幅下降是因为它无法执行并行调用。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2505-18746@§3.1",
+        "arxiv-2505-18746@§3.2"
+      ]
+    },
+    {
+      "id": "p-s-plus-p-multi",
+      "name": "串并结合子任务准确率（P^S+P_multi）",
+      "direction": "越高越好",
+      "description": "Challenge 1 中同一任务既需串行又需并行调用的子集正确率；Table 1 中该列数值普遍最低（如 GPT-4.1 为 20.24，同表 P^S_multi 为 58.60）。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2505-18746@§3.1",
+        "arxiv-2505-18746"
+      ]
+    },
+    {
+      "id": "ap",
+      "name": "完成进度（Accomplish Progress, AP）",
+      "direction": "越高越好",
+      "description": "软指标：任务未全对时按决策树中已正确完成的步骤给部分分，用来定位错误发生在哪一步，因此数值天然高于完全正确的比例。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2505-18746@§3.2"
+      ]
+    },
+    {
+      "id": "op-rate",
+      "name": "最优路径率（Optimal Path Rate, OP Rate）",
+      "direction": "越高越好",
+      "description": "模型工具调用步数与最优路径的一致程度；论文按 1/0 打标后在整份测试集上取平均，衡量策略执行效率。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2505-18746@§3.2"
+      ]
+    },
+    {
+      "id": "ptf",
+      "name": "策略切换频率（Policy Transition Frequency, P_T_F）",
+      "direction": "越低越好",
+      "description": "任务序列中相邻两步策略类型不同的频率，衡量决策轨迹复杂度；论文发现它越高鲁棒性越差，故按越低越好读。",
+      "cite": [
+        "arxiv-2505-18746@§3.4"
+      ]
+    },
+    {
+      "id": "acc2",
+      "name": "双挑战一致正确率（Acc2）",
+      "direction": "越高越好",
+      "description": "模型在 Challenge 2 与 Challenge 3 两次测试中都正确的比例，论文公式为 Acc2 = RR/(RR + WW + WR + RW)。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2505-18746@§3.4"
+      ]
+    },
+    {
+      "id": "vf",
+      "name": "波动因子（Volatility Factor, V_F）",
+      "direction": "越低越好",
+      "description": "Challenge 2 与 Challenge 3 两次结果之间互相翻转的比例，衡量稳定性；论文明确 V_F 越高表示鲁棒性越低。",
+      "cite": [
+        "arxiv-2505-18746@§3.4"
+      ]
+    },
+    {
+      "id": "ddd",
+      "name": "去偏下降方向（Debiased Descent Direction, DDD）",
+      "direction": "越低越好",
+      "description": "把 RW/WR 双向转换率除以 Acc2 以消除任务难度偏差后得到的下降方向指标；论文用它和 P_T_F 做相关性分析，发现频繁策略切换会降低鲁棒性。",
+      "cite": [
+        "arxiv-2505-18746@§3.4"
+      ]
     }
   ],
-  "versions": [],
-  "limitations": [],
-  "default_protocol": null,
-  "notes": "腾讯 Hunyuan 出品；Hunyuan-A13B README 明确把它与 BFCL-v3、τ-Bench 并列为 agent 能力锚点",
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2025-05-24",
+      "label": "arXiv v1 首发（6,919 KB）",
+      "cite": [
+        "arxiv-2505-18746@Submission history"
+      ]
+    },
+    {
+      "id": "v2",
+      "date": "2025-05-27",
+      "label": "arXiv v2 修订（6,919 KB）",
+      "cite": [
+        "arxiv-2505-18746@Submission history"
+      ]
+    },
+    {
+      "id": "v3",
+      "date": "2025-06-25",
+      "label": "arXiv v3 修订（6,576 KB）",
+      "cite": [
+        "arxiv-2505-18746@Submission history"
+      ]
+    },
+    {
+      "id": "v4",
+      "date": "2025-06-27",
+      "label": "arXiv v4（本页核对所用版本，6,576 KB）",
+      "cite": [
+        "arxiv-2505-18746@Submission history"
+      ]
+    },
+    {
+      "id": "wildtoolbench",
+      "date": "2026-01-26",
+      "label": "官方仓库宣布迁往 WildToolBench；后继论文 Benchmarking LLM Tool-Use in the Wild 被 ICLR 2026 接收",
+      "cite": [
+        "repo-c3-benchmark@README"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "正文最好分与表格最高分不一致",
+      "impact": "论文 §1 与 §3.1 叙述表现最好的模型只得 55.34，但 Table 1 中 19 个代表模型的最高 Total 是 GPT-4.1 的 44.14。论文未说明两者为何不同（模型集合或统计口径可能不同），引用「C³-Bench 最高分」时不写清来源会得到两个数。",
+      "severity": "中",
+      "response": "未见官方回应",
+      "reader": "看到 55.34 时确认它出自正文叙述而非表格；跨论文比较优先用表格里可复现的行。",
+      "cite": [
+        "arxiv-2505-18746@§1",
+        "arxiv-2505-18746@§3.1"
+      ]
+    },
+    {
+      "issue": "测试集规模受人工标注限制",
+      "impact": "数据靠 5 位专家五轮人工精修，论文自己承认这限制了数据规模的扩展能力；同时「维持数据质量」与「遍历全部策略切换类型」两个目标并发，限制了任务的可行长度。",
+      "severity": "中",
+      "response": "论文的解释是当前 agent 表现已经较差，对更大测试集的需求不强；未见扩大规模的计划。",
+      "reader": "题量只有 1,024 条，单个模型的分数波动可能来自小样本；看趋势比看点差更可靠。",
+      "cite": [
+        "arxiv-2505-18746@§6"
+      ]
+    },
+    {
+      "issue": "仓库已迁往后继项目",
+      "impact": "官方 README 顶部声明本仓库已迁往 WildToolBench，后继论文于 2026-01-26 被 ICLR 2026 接收；C³-Bench 的数据与评测框架仍可访问，但后续更新在新仓库。",
+      "severity": "中",
+      "response": "官方把 C³-Bench 作为 WildToolBench 的前身，在新仓库继续维护工具使用评测。",
+      "reader": "需要最新工具使用评测时去看 WildToolBench；引用 C³-Bench 时注意作者已把它定位为前一版。",
+      "cite": [
+        "repo-c3-benchmark@README"
+      ]
+    },
+    {
+      "issue": "污染风险",
+      "impact": "测试数据在 GitHub 仓库与 Hugging Face 公开可得，可能进入训练数据或被针对性调优，使公开集分数偏高；论文与仓库均未提及私有留存集。",
+      "severity": "中",
+      "response": "未见官方回应",
+      "reader": "公开集分数要保留余地；比较同一模型不同时间的成绩时考虑这一因素。",
+      "cite": [
+        "repo-c3-benchmark@README"
+      ]
+    },
+    {
+      "issue": "构建质量口径三处不一致",
+      "impact": "论文正文写准确率从约 60% 到两轮自检后 86%、交叉校验后 94%、终审后接近 100%；附录 A.1.5 写基线 62% → 单轮自检 78% → 多轮自检 86% → 交叉校验 94% → 专家验证 100.0%；README 写「从不足 60% 到 100% 正确」。三处对同一流程的表述不完全一致。",
+      "severity": "低",
+      "response": "未见官方回应",
+      "reader": "引用数据质量时注明取自正文、附录还是 README，不要混用。",
+      "cite": [
+        "arxiv-2505-18746@§2.5",
+        "arxiv-2505-18746@附录 A.1.5",
+        "repo-c3-benchmark@README"
+      ]
+    }
+  ],
+  "notes": "本页 2026-11-14 按 benchmark-profile/v2 重写，只用论文 arXiv v4 与官方仓库 README 两个一手来源交叉核对；官方仓库已迁往 WildToolBench（ICLR 2026），引用时注意作者已把本基准定位为前一版。",
   "official_sources": [
     {
       "kind": "paper",
@@ -48,7 +395,7 @@
     },
     {
       "kind": "github",
-      "url": "https://github.com/TencentHunyuan/C3-Benchmark"
+      "url": "https://github.com/Tencent-Hunyuan/C3-Benchmark"
     }
   ],
   "related_benchmarks": [
@@ -57,6 +404,215 @@
     "complexfuncbench",
     "t-eval"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-09-01"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "arxiv-2505-18746",
+        "kind": "paper",
+        "title": "C³-Bench: The Things Real Disturbing LLM based Agent in Multi-Tasking（arXiv:2505.18746，v4，2025-06-27）",
+        "url": "https://arxiv.org/abs/2505.18746",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "repo-c3-benchmark",
+        "kind": "repo",
+        "title": "Tencent-Hunyuan/C3-Benchmark（官方仓库 README，含数据位置、构建流程与评测框架说明）",
+        "url": "https://github.com/Tencent-Hunyuan/C3-Benchmark",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "腾讯混元（Tencent HunYuan）团队",
+        "cite": [
+          "arxiv-2505-18746@作者署名"
+        ]
+      },
+      "first_release": {
+        "v": "2025-05-24（arXiv v1）",
+        "cite": [
+          "arxiv-2505-18746@Submission history"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "arxiv-2505-18746@摘要",
+        "arxiv-2505-18746@§3.1"
+      ],
+      "interpretation": [
+        "arxiv-2505-18746@§3.2",
+        "arxiv-2505-18746@§3.3",
+        "arxiv-2505-18746@§3.4"
+      ]
+    },
+    "problem": {
+      "text": "此前的 agent 基准主要测单轮或弱依赖的工具调用：论文在 Related Work 里指出 BFCL V3 虽最接近，也只覆盖策略切换空间的一小部分；而当时的多轮对话评测只看历史对话，忽略了工具间关系、环境反馈与历史决策对 agent 行为的影响。C³-Bench 想把这些扰动拆开，用单变量分析逐个量化它们对鲁棒性的影响。",
+      "cite": [
+        "arxiv-2505-18746@§4",
+        "arxiv-2505-18746@§1",
+        "arxiv-2505-18746@摘要"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "论文发布时最好成绩（正文叙述）",
+        "value": "55.34",
+        "note": "论文 §1 与 §3.1 称表现最好的模型只得 55.34；注意 Table 1 中 19 个代表模型的最高 Total 是 44.14，论文未解释差异。",
+        "cite": [
+          "arxiv-2505-18746@§1",
+          "arxiv-2505-18746@§3.1"
+        ]
+      },
+      {
+        "label": "论文 Table 1 最高 Total",
+        "value": "44.14（GPT-4.1）",
+        "note": "19 个代表模型在 Challenge 3 口径下的最高总准确率；同表最低为 Hammer2.1-7b 的 21.88。",
+        "cite": [
+          "arxiv-2505-18746@§3.1"
+        ]
+      },
+      {
+        "label": "Challenge 2 最高分",
+        "value": "51.56（Gemini-2.0-thinking）",
+        "note": "论文称隐藏信息即使对最强模型也只有 51.56；同表长上下文子列（Long）最高仅 41.34。",
+        "cite": [
+          "arxiv-2505-18746@§3.3"
+        ]
+      },
+      {
+        "label": "随机 / 人类基线",
+        "value": "论文未给出",
+        "note": "论文没有报告随机基线或人类基线，本站也不推算。",
+        "cite": [
+          "arxiv-2505-18746@§3.1"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把它当成单轮函数调用榜（与 BFCL 同口径）——论文明确说 BFCL V3 只覆盖策略切换空间的一小部分，C³-Bench 测的是多任务序列里的依赖、隐藏信息与策略切换。",
+        "cite": [
+          "arxiv-2505-18746@§4",
+          "arxiv-2505-18746@摘要"
+        ]
+      },
+      {
+        "text": "把 55.34 和 44.14 当成同一张榜的不同行——55.34 出自正文叙述，44.14 是 Table 1 里 19 个代表模型的最高 Total，论文未解释两者差异。",
+        "cite": [
+          "arxiv-2505-18746@§1",
+          "arxiv-2505-18746@§3.1"
+        ]
+      },
+      {
+        "text": "把 AP 当成普通准确率——AP 是软指标，任务未全对时也按已正确完成的步骤给分，因此同一模型的 AP 通常高于它的 Total。",
+        "cite": [
+          "arxiv-2505-18746@§3.2"
+        ]
+      },
+      {
+        "text": "把 OP Rate 为 0 读成「完全不会调用工具」——论文点名 Claude-3.7 该项大幅下降的原因是它无法执行并行调用，属于策略形态不适配。",
+        "cite": [
+          "arxiv-2505-18746@§3.2"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "腾讯混元（Tencent HunYuan）团队",
+        "cite": [
+          "arxiv-2505-18746@作者署名"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "Peijie Yu、Yifan Yang（共同一作）、Jinjian Li、Zelong Zhang、Haorui Wang、Xiao Feng、Feng Zhang",
+        "cite": [
+          "arxiv-2505-18746@作者署名"
+        ]
+      },
+      {
+        "k": "首发与版本",
+        "v": "2025-05-24 arXiv v1；2025-06-27 v4（本页核对所用版本）",
+        "cite": [
+          "arxiv-2505-18746@Submission history"
+        ]
+      },
+      {
+        "k": "参测规模",
+        "v": "49 个主流模型（快思考 / 慢思考 / 领域专用），论文详析其中 31 个，Table 1 与 Table 2 各列 19 个代表模型",
+        "cite": [
+          "arxiv-2505-18746@§3.1"
+        ]
+      },
+      {
+        "k": "工具池",
+        "v": "1,600 个工具（400 个归入 50 个类别），取自开源 API 仓库",
+        "cite": [
+          "arxiv-2505-18746@附录 A.1.1"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "测试数据在仓库 c3_bench/data/C3-Bench.jsonl 与 Hugging Face 数据集（tencent/C3-BenchMark）；README 称排行榜、测试框架与数据生成框架均开源；仓库已迁往 yupeijei1997/WildToolBench",
+        "cite": [
+          "repo-c3-benchmark@README"
+        ]
+      },
+      {
+        "k": "后继项目",
+        "v": "2026-01-26 官方宣布仓库迁往 WildToolBench，论文 Benchmarking LLM Tool-Use in the Wild 被 ICLR 2026 接收",
+        "cite": [
+          "repo-c3-benchmark@README"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2025-06-27",
+        "columns": [
+          "来源",
+          "模型",
+          "Total",
+          "P^S_multi",
+          "P^P_multi",
+          "P^S+P_multi",
+          "AP",
+          "OP Rate"
+        ],
+        "rows": [
+          ["论文 Table 1", "GPT-4.1", "44.14", "58.60", "25.00", "20.24", "46.06", "43.57"],
+          ["论文 Table 1", "GPT-4o", "41.80", "53.50", "31.25", "21.43", "45.06", "41.08"],
+          ["论文 Table 1", "QwQ-32b", "41.41", "54.78", "31.25", "17.86", "36.68", "41.91"],
+          ["论文 Table 1", "DeepSeek-R1", "41.02", "53.50", "18.75", "21.43", "43.89", "41.49"],
+          ["论文 Table 1", "Gemini-2.0-thinking", "40.23", "54.14", "25.00", "16.67", "40.37", "40.66"],
+          ["论文 Table 1", "o1", "39.06", "50.96", "12.50", "21.43", "37.35", "39.83"],
+          ["论文 Table 1", "Claude-3.7", "39.06", "43.57", "62.50", "25.00", "63.65", "0.00"],
+          ["论文 Table 1", "ToolACE2-8B", "37.89", "47.77", "31.25", "20.24", "43.72", "21.99"],
+          ["论文 Table 1", "Gemini-2.5-pro", "36.33", "49.04", "25.00", "14.29", "39.87", "32.37"],
+          ["论文 Table 1", "Mistral-Large-2", "36.33", "47.77", "25.00", "16.67", "40.87", "35.27"],
+          ["论文 Table 1", "DeepSeek-V3", "35.16", "48.41", "25.00", "11.90", "27.47", "34.85"],
+          ["论文 Table 1", "xLAM-2-32b", "34.77", "45.86", "25.00", "15.48", "41.88", "18.67"],
+          ["论文 Table 1", "Qwen2.5-32b", "32.03", "44.59", "25.00", "9.52", "31.32", "29.88"],
+          ["论文 Table 1", "Qwen3-32b(think)", "28.91", "42.04", "12.50", "7.14", "29.48", "28.63"],
+          ["论文 Table 1", "Watt-8b", "28.13", "44.59", "6.25", "1.19", "21.94", "29.46"],
+          ["论文 Table 1", "Doubao-1.5-pro", "24.61", "35.03", "12.50", "7.14", "30.15", "6.64"],
+          ["论文 Table 1", "Doubao-1-5-thinking", "22.66", "31.21", "18.75", "7.14", "26.30", "20.75"],
+          ["论文 Table 1", "Hammer2.1-7b", "21.88", "33.12", "12.50", "2.38", "14.24", "21.58"]
+        ]
+      },
+      "cite": [
+        "arxiv-2505-18746@§3.1"
+      ]
+    }
+  }
 }
