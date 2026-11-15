@@ -1,35 +1,533 @@
 {
   "id": "egotempo",
   "name": "EgoTempo",
-  "full_name": null,
+  "full_name": "EgoTempo（第一视角视频时间理解基准）",
   "aliases": [],
-  "status": null,
+  "status": "active",
   "categories": [
     "multimodal"
   ],
-  "summary": "第一视角视频时间理解问答",
-  "interpretation": "500 道第一视角视频开放问答（10 类时间推理、LLM 判卷），准确率越高越好；人类 63%、最强闭源模型 40%——答案无法从单帧或常识推出，专考视频时间理解。",
-  "measures": [],
-  "does_not_measure": [],
-  "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
-  },
-  "metrics": [],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [],
-  "notes": "字节 Seed 引用",
-  "official_sources": [
+  "summary": "第一视角视频的时间理解问答：500 道开放式问题，答案必须跨多帧整合信息才能得出，由 LLM 裁判判卷，报准确率。",
+  "interpretation": "准确率越高越好。论文自测的 Gemini 1.5 Flash 只有 39.1%，GPT-4o 40.1%，而 20 名人类参与者看完视频能到 63.2%；纯文本 10.0%、单帧 9.1%，说明这些题既不能靠常识也不能靠看一眼解决。它是 2025 年用来暴露「模型缺时间理解」的基准，40% 远不等于视频理解已解决；换 60.9% 那个数则是 4 选 1 口径，不能和这里的开放式分数混比。",
+  "measures": [
     {
-      "kind": "site",
-      "url": "https://seed.bytedance.com/en/blog/official-release-of-seed1-8-a-generalized-agentic-model"
+      "area": "动作组（5 类：动作序列、动作计数、时序事件排序、未来动作预测、物体特定动作）",
+      "focus": "把用户做的一连串动作按顺序复原、数次数、推断下一步，答案依赖整段视频里动作的先后与重复；示例类别定义为「识别此人执行的动作序列」",
+      "share": "每类 50 题，两组各 5 类（合计各约 250 题）",
+      "format": "开放式简答，无选项",
+      "cite": [
+        "paper@§3.1 Capability Taxonomy",
+        "paper@§3 Dataset Statistics",
+        "paper@Table 8"
+      ]
+    },
+    {
+      "area": "物体组（5 类：空间关系、定位物体、物体序列、物体计数、动作特定物体）",
+      "focus": "追踪用户交互的对象与环境中的物体——在哪、按什么顺序出现、出现过几个、对应哪个动作",
+      "share": "每类 50 题，两组各 5 类（合计各约 250 题）",
+      "format": "开放式简答，无选项；物体序列类答案平均约 22 词，计数类平均约 2 词",
+      "cite": [
+        "paper@§3.1 Capability Taxonomy",
+        "paper@§3 Dataset Statistics"
+      ]
     }
   ],
-  "related_benchmarks": [],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "does_not_measure": [
+    {
+      "text": "不测单帧或静态图像可答的问题：生成阶段就剔除了「Gemini 只看一帧就能答对」的问答对",
+      "cite": [
+        "paper@§3.2 Question-Answer Pair Generation"
+      ]
+    },
+    {
+      "text": "不测脱离视觉的世界知识推理：纯文本（只给问题）基线说明仅靠常识和语言推理做不动这些题",
+      "cite": [
+        "paper@§4.2 Results"
+      ]
+    },
+    {
+      "text": "不测长视频：片段由最多 120 条 narration 或不超过 120 秒裁出，先满足者为准，最长片段 140 秒",
+      "cite": [
+        "paper@§3.2 Data Curation Pipeline",
+        "paper@§3 Dataset Statistics"
+      ]
+    },
+    {
+      "text": "不测选项式（CloseQA）成绩：官方主口径是开放式 OpenQA，CloseQA 只作为附录 B 的对照，论文认为它有固有偏差",
+      "cite": [
+        "paper@§3.2 Question-Answer Pair Generation",
+        "paper@附录 B"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 500,
+    "splits": [
+      "单一集合 500 题（论文未划分训练/测试或公开/私有集）"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "Ego4D 第一视角视频 + narrations，Gemini 1.5 Pro 生成问答后人工筛选",
+    "public_sample": false,
+    "multiple_choice_share": "0%（主口径为开放式问答；4 选 1 的 CloseQA 仅作附录 B 对照）",
+    "multimodal_share": "100%（每题都要看懂第一视角视频，纯文本是论文的对照基线而非正式口径）",
+    "totals": "500 题 = 10 类 × 50 题；来自 221 段 Ego4D 视频裁出的 365 个标注片段，片段时长 3–140 秒（平均 45 秒），覆盖 40 个 Ego4D 场景；问题平均 11 词、答案平均 10 词，其中物体序列类答案约 22 词、计数类约 2 词。",
+    "cite": [
+      "paper@§3 Dataset Statistics",
+      "paper@§3.2 Question-Answer Pair Generation",
+      "paper@§3.2 Data Curation Pipeline"
+    ],
+    "construction": [
+      {
+        "k": "取材",
+        "text": "从 Ego4D 的第一视角视频出发，每段视频配有 narrations——用自由文本句子逐句描述事件的第一人称记录。",
+        "cite": [
+          "paper@§3.2 Data Curation Pipeline"
+        ]
+      },
+      {
+        "k": "切时间窗与片段",
+        "text": "借用 EgoVLP 的策略为每条 narration 定义时间窗；单条 narration 对应片段平均只有约 5 秒、上下文不足，因此把连续片段合并成 clip，最多合并 120 条 narration 或把 clip 时长限制在 120 秒，先满足者为准。",
+        "cite": [
+          "paper@§3.2 Data Curation Pipeline"
+        ]
+      },
+      {
+        "k": "生成问答",
+        "text": "先用 Gemini 1.5 Pro 零样本根据 narration 生成只关注用户交互、缺少背景细节的 caption，再用 caption 和视频片段让 Gemini 按 10 个类别生成问题。",
+        "cite": [
+          "paper@§3.2 Question-Answer Pair Generation"
+        ]
+      },
+      {
+        "k": "人工筛选",
+        "text": "两条硬标准：问题必须需要多帧信息，问题与答案必须逻辑一致。同时剔除缺乏时间复杂性或含无关内容的对，以及 Gemini 只看单帧就能答对的对，最终留下 500 对、每个能力 50 对。",
+        "cite": [
+          "paper@§3.2 Question-Answer Pair Generation"
+        ]
+      },
+      {
+        "k": "题型选择",
+        "text": "选开放式问答（OpenQA）而不是封闭式（CloseQA），为的是避免出现「不引用视觉内容也能答对」的设计糟糕的题目。",
+        "cite": [
+          "paper@§3.2 Question-Answer Pair Generation"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "accuracy",
+      "name": "准确率",
+      "direction": "越高越好",
+      "description": "LLM 裁判判定模型开放式预测与标准答案一致的题目占比，按类别和全体平均两级报告；随机猜测基线为 4.9%",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§4.1 Evaluation Protocol",
+        "paper@§4.2 Results"
+      ]
+    }
+  ],
+  "default_protocol": {
+    "raw": "两步：先让被测模型在给定输入下对每题生成开放式预测，再把「预测 + 标准答案」连同评测提示词交给 LLM 裁判；裁判是 Gemini 1.5 Pro，逐题标记 correct/incorrect 并给出理由。输入分三档——纯文本（只给问题）、单帧（问题 + 中央一帧）、多帧（问题 + 均匀采样的多帧）。论文对每个模型报告帧数最优的那一档，随机基线由「每题配一个同类随机答案」得到。",
+    "cite": [
+      "paper@§4.1 Evaluation Protocol",
+      "paper@§4.2 Results"
+    ],
+    "variants": [
+      {
+        "text": "输入档位不能混比：论文明确纯文本与单帧基本持平，而每个模型的最好成绩都出现在多帧档。",
+        "cite": [
+          "paper@§4.2 Results",
+          "paper@Table 3"
+        ]
+      },
+      {
+        "text": "OpenQA 与 CloseQA 不能混比：同一模型在 CloseQA 多帧下 60.9%，OpenQA 只有 39.1%，论文据此指出 CloseQA 存在固有偏差。",
+        "cite": [
+          "paper@附录 B"
+        ]
+      },
+      {
+        "text": "被测模型与裁判的关系要看清：数据集由 Gemini 1.5 Pro 生成，因此论文自测只跑 Gemini 1.5 Flash 以保证公平，表中 GPT-4o、Qwen2-VL 等是同一张表内的横向对比。",
+        "cite": [
+          "paper@§4.1 Evaluation Protocol"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2025-03-17",
+      "label": "arXiv v1 提交（cs.CV），论文页面标注已被 CVPR 2025 接收；截至 2026-11-13 未检索到后续修订版本或官方榜单更新",
+      "cite": [
+        "paper@arXiv 提交历史",
+        "paper@arXiv 摘要页备注"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "裁判与数据生成同源",
+      "impact": "判卷用 Gemini 1.5 Pro，数据集也由它生成，存在同源偏差的可能。论文用 GPT-4V 作对照裁判，两种裁判的评估结果 closely aligned；另对 100 道问答（每类 10 道）做误差分析，人工与 LLM 判定一致率约 96%。",
+      "severity": "高",
+      "response": "论文给出了双裁判对照与人工一致率两项证据，但被测模型若与裁判同族（Gemini 系列），读者仍需自行判断偏差方向。",
+      "reader": "看到 Gemini 系列分数时，先确认裁判是谁、数据由谁生成。",
+      "cite": [
+        "paper@§4.1 Evaluation Protocol",
+        "paper@附录 A.2",
+        "paper@附录 A.3"
+      ]
+    },
+    {
+      "issue": "题量小，每类只有 50 题",
+      "impact": "500 题、10 类各 50 题，单题对应 2 个百分点，类别间几个点的差距噪声很大；论文自己也强调计数与时序事件排序在 1FPS 下仍未解决。",
+      "severity": "中",
+      "response": "论文按类别逐列报告分数，便于看出波动；但没有给出置信区间或多次采样方差。",
+      "reader": "类别之间几个百分点的排序不要当作稳定结论，只看量级差异。",
+      "cite": [
+        "paper@§3.2 Question-Answer Pair Generation",
+        "paper@§4.2 Results"
+      ]
+    },
+    {
+      "issue": "题型口径高度敏感",
+      "impact": "同一模型把开放式改成 4 选 1 后，多帧成绩从 39.1% 跳到 60.9%；论文据此认为 CloseQA 的显著增益暴露了该题型的局限与固有偏差，不适合用来评估通用理解能力。",
+      "severity": "中",
+      "response": "论文把 CloseQA 放在附录 B 作对照，并在正文说明其偏差，主口径保持 OpenQA。",
+      "reader": "引用分数时必须带上题型；把 60.9% 当主表成绩是常见错误。",
+      "cite": [
+        "paper@附录 B"
+      ]
+    },
+    {
+      "issue": "覆盖范围受限",
+      "impact": "片段最长 120 秒（实测最长 140 秒）、场景取自 Ego4D 的 40 个场景，题目与答案均为英文；不能外推到长视频、非第一视角或非英文设置。",
+      "severity": "中",
+      "response": "论文在数据集统计中明确给出了时长、场景数与词数分布，边界可自查。",
+      "reader": "把它当作第一视角、短片、英文、开放式问答这一个切口的结论，不要推广成「视频理解总体水平」。",
+      "cite": [
+        "paper@§3.2 Data Curation Pipeline",
+        "paper@§3 Dataset Statistics"
+      ]
+    },
+    {
+      "issue": "单一版本，无公开数据集入口",
+      "impact": "只有 arXiv v1 一个版本，未见后续修订、勘误或官方榜单；论文正文也未给出可直接打开的数据集与代码入口，GitHub 与 Hugging Face 上的同名仓库 2026-11-13 实测不可达。",
+      "severity": "低",
+      "response": "本页所有数字均直接取自论文正文与附录表格；若官方后续放出可用入口，应补充 repo / dataset 来源并复核。",
+      "reader": "想自己复现或抽查题目的读者，需要先找到可用的数据获取渠道。",
+      "cite": [
+        "paper@arXiv 提交历史"
+      ]
+    }
+  ],
+  "notes": "唯一一手来源是 arXiv:2503.13646 论文（页面标注 CVPR 2025）。原记录的「字节 Seed 引用」（Seed1.8 发布博客）正文与其中的成绩表图片里均未出现 EgoTempo，不能作为来源，已从 official_sources 移除；GitHub（google-research/datasets/egotempo）与 Hugging Face 同名仓库 2026-11-13 实测不可达，故本页不列 repo / dataset 来源。",
+  "official_sources": [
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2503.13646"
+    }
+  ],
+  "related_benchmarks": [
+    "egoschema"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-13",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "Omnia de EgoTempo: Benchmarking Temporal Understanding of Multi-Modal LLMs in Egocentric Videos（arXiv:2503.13646v1，2025-03-17；页面标注已被 CVPR 2025 接收）",
+        "url": "https://arxiv.org/abs/2503.13646",
+        "accessed": "2026-11-13"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Google（与 Politecnico di Torino 合作）",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      "first_release": {
+        "v": "2025-03-17（arXiv v1，cs.CV）",
+        "cite": [
+          "paper@arXiv 提交历史"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "paper@Abstract",
+        "paper@§3 Dataset Statistics",
+        "paper@§4.2 Results"
+      ],
+      "interpretation": [
+        "paper@§4.2 Results",
+        "paper@附录 C",
+        "paper@附录 B"
+      ]
+    },
+    "problem": {
+      "text": "现有 VideoQA 数据集上，模型靠单帧或先验知识就能拿到高分，分数区分不出「有没有真的理解视频里发生了什么」。EgoTempo 用 500 道必须跨帧整合信息的第一视角开放式问答，并配合纯文本、单帧两条基线，把这个问题变成一个可量化的分数。",
+      "cite": [
+        "paper@Abstract",
+        "paper@Figure 1",
+        "paper@§4.2 Results"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机猜测（每题配一个同类随机答案）",
+        "value": "4.9%",
+        "note": "论文报告的随机基线",
+        "cite": [
+          "paper@Table 3",
+          "paper@§4.1 Evaluation Protocol"
+        ]
+      },
+      {
+        "label": "纯文本（只给问题，不给任何画面）",
+        "value": "10.0%",
+        "note": "Gemini-Flash，0 帧；只比随机高 5.1 个百分点，说明常识与语言推理不够用",
+        "cite": [
+          "paper@Table 3",
+          "paper@§4.2 Results"
+        ]
+      },
+      {
+        "label": "单帧（问题 + 中央一帧）",
+        "value": "9.1%",
+        "note": "Gemini-Flash；与纯文本基本持平，论文正文把这组数记作 10.0 与 9.1",
+        "cite": [
+          "paper@Table 3",
+          "paper@§4.2 Results"
+        ]
+      },
+      {
+        "label": "论文自测模型 Gemini 1.5 Flash（1FPS 多帧）",
+        "value": "39.1%",
+        "note": "数据由 Gemini 1.5 Pro 生成，为保公平自测只跑 Gemini 1.5 Flash",
+        "cite": [
+          "paper@§4.2 Results",
+          "paper@§4.1 Evaluation Protocol"
+        ]
+      },
+      {
+        "label": "论文主表最高 GPT-4o（32 帧）",
+        "value": "40.1%",
+        "note": "同表 Qwen2-VL-72B 28.4% 是最强开源模型",
+        "cite": [
+          "paper@Table 3",
+          "paper@§4.2 Results"
+        ]
+      },
+      {
+        "label": "换成 4 选 1 的 CloseQA 口径（Gemini-Flash 多帧）",
+        "value": "60.9%",
+        "note": "同题不同题型，与上面的开放式分数不能直接比",
+        "cite": [
+          "paper@附录 B"
+        ]
+      },
+      {
+        "label": "人类（20 名参与者看完对应视频）",
+        "value": "63.2%",
+        "note": "论文表述为平均 63%、比 Gemini 高 24%，其中序列识别类最低",
+        "cite": [
+          "paper@附录 C",
+          "paper@Table 7"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 39–40% 理解成「视频理解已经解决了」。同表里纯文本 10.0%、单帧 9.1%，人类 63.2%，论文结论是即便 SOTA MLLM 在这个数据集上仍然吃力。",
+        "cite": [
+          "paper@Table 3",
+          "paper@§4.2 Results",
+          "paper@§5 Conclusion"
+        ]
+      },
+      {
+        "text": "把附录 B 的 60.9% 和主表的 39.1% 放在一起比。前者是 4 选 1 的 CloseQA，后者是开放式 OpenQA，论文明确说 CloseQA 的增益暴露了该题型的固有偏差。",
+        "cite": [
+          "paper@附录 B"
+        ]
+      },
+      {
+        "text": "以为加帧就能解决计数和时序排序。论文明确说计数与时序事件排序在 1FPS 下仍未解决，消融实验里计数类（OC、AC）加帧也不涨。",
+        "cite": [
+          "paper@§4.2 Results",
+          "paper@§4.3 Ablations"
+        ]
+      },
+      {
+        "text": "把「单帧≈纯文本」当成题目太难的证据。10.0% 与 9.1% 基本持平说明模型没有从那一帧真正用到视觉信息；论文用 Figure 1 说明多帧才有 4.3× 的提升。",
+        "cite": [
+          "paper@§4.2 Results",
+          "paper@Figure 1"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "Google（论文作者署名机构为 Google 与 Politecnico di Torino，含一位在读实习期间完成的工作）",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      {
+        "k": "首次发布",
+        "v": "2025-03-17 提交 arXiv v1（cs.CV），页面标注已被 CVPR 2025 接收",
+        "cite": [
+          "paper@arXiv 提交历史",
+          "paper@arXiv 摘要页备注"
+        ]
+      },
+      {
+        "k": "数据来源",
+        "v": "Ego4D 第一视角视频，以视频自带的 narrations 作为事件描述起点，再裁成不超过 120 秒的片段",
+        "cite": [
+          "paper@§3.2 Data Curation Pipeline"
+        ]
+      },
+      {
+        "k": "为什么难",
+        "v": "论文用 Figure 1 对比：模型在 EgoSchema、EgoTaskQA 上单帧即有 51%、41%，在 EgoTempo 上只有约 9%；其他数据集多帧提升 1.4×，EgoTempo 提升 4.3×",
+        "cite": [
+          "paper@Figure 1"
+        ]
+      },
+      {
+        "k": "题型设计动机",
+        "v": "选 OpenQA 是为避免「不看视觉也能答」的坏题；附录 B 用 CloseQA 反证了这一点——同题改成选项式后分数大幅上升",
+        "cite": [
+          "paper@§3.2 Question-Answer Pair Generation",
+          "paper@附录 B"
+        ]
+      },
+      {
+        "k": "与人类的差距",
+        "v": "20 名参与者看完对应视频后作答，平均 63.2%，比 Gemini 高 24%；其中序列识别类最低，论文归因于不同粒度下识别特定序列的主观性",
+        "cite": [
+          "paper@附录 C"
+        ]
+      },
+      {
+        "k": "分类体系",
+        "v": "10 个自由问答类别分成两组：一组关注用户动作，一组关注物体（包括用户交互的对象与环境中的物体）",
+        "cite": [
+          "paper@§3.1 Capability Taxonomy"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-13",
+        "columns": [
+          "来源",
+          "模型 / 基线",
+          "输入",
+          "准确率",
+          "备注"
+        ],
+        "rows": [
+          [
+            "论文 Table 3",
+            "随机猜测",
+            "—",
+            "4.9%",
+            "每题配一个同类随机答案的基线"
+          ],
+          [
+            "论文 Table 3",
+            "Gemini 1.5 Flash",
+            "纯文本（0 帧）",
+            "10.0%",
+            "只给问题，不给画面"
+          ],
+          [
+            "论文 Table 3",
+            "Gemini 1.5 Flash",
+            "单帧",
+            "9.1%",
+            "与纯文本基本持平"
+          ],
+          [
+            "论文 Table 3",
+            "Gemini 1.5 Flash",
+            "多帧 1FPS（32 帧）",
+            "39.1%",
+            "论文自测口径（数据由 Gemini 1.5 Pro 生成）"
+          ],
+          [
+            "论文 Table 3",
+            "GPT-4o",
+            "多帧 32 帧",
+            "40.1%",
+            "论文主表最高分"
+          ],
+          [
+            "论文 Table 3",
+            "Qwen2-VL-72B",
+            "多帧 32 帧",
+            "28.4%",
+            "表中最强开源模型"
+          ],
+          [
+            "论文 Table 6",
+            "Gemini 1.5 Flash",
+            "CloseQA 多帧",
+            "60.9%",
+            "同题改 4 选 1；OpenQA 口径为 39.1%"
+          ],
+          [
+            "论文 Table 6",
+            "Gemini 1.5 Flash",
+            "CloseQA 单帧",
+            "43.8%",
+            "论文记为较 CloseQA 纯文本 +7%"
+          ],
+          [
+            "论文 Table 6",
+            "Gemini 1.5 Flash",
+            "CloseQA 纯文本",
+            "36.0%",
+            "论文记为比随机基线高 11%"
+          ],
+          [
+            "论文 Table 7",
+            "人类（20 名参与者）",
+            "看完对应视频",
+            "63.2%",
+            "比 Gemini 高 24%，序列识别类最低"
+          ]
+        ]
+      },
+      "cite": [
+        "paper@Table 3",
+        "paper@Table 6",
+        "paper@Table 7",
+        "paper@§4.2 Results",
+        "paper@附录 B",
+        "paper@附录 C"
+      ]
+    }
+  }
 }
