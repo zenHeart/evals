@@ -1,39 +1,599 @@
 {
   "id": "autologi",
   "name": "AutoLogi",
-  "full_name": null,
-  "aliases": [],
-  "status": null,
+  "full_name": "AutoLogi: Automated Generation of Logic Puzzles for Evaluating Reasoning Abilities of Large Language Models（自动生成逻辑谜题，用于评估大语言模型的推理能力）",
+  "aliases": [
+    "AutoLogi (Augmented)",
+    "Augmented AutoLogi"
+  ],
+  "status": "active",
   "categories": [
     "reasoning"
   ],
-  "summary": "自动生成逻辑谜题的双语逻辑推理评测",
-  "interpretation": "自动生成的开放式逻辑谜题（双语、程序化验证、难度可调），准确率越高越好；因改开放式作答规避了选择题瞎猜，发布时模型分数带拉宽到 35%–73%（原选择题集仅 21%–37%）。",
-  "measures": [],
-  "does_not_measure": [],
+  "summary": "Qwen 团队 2025-02 发布的双语（中/英）逻辑推理评测：用 GPT-4 从 LSAT、LogiQA 真题里抽取背景与约束，自动合成开放式作答的逻辑谜题，再由随题生成的程序验证器判分。发布版为增强版，共 1,575 道英文题 + 883 道中文题；官方口径是 5 次独立运行的均值±标准差，难度可通过增删约束调节。",
+  "interpretation": "准确率（Acc）越高代表约束满足式逻辑推理越强，官方一律报 5 次运行的均值±std。分数必须连同版本读：论文的基座版（AutoLogi，206 英 / 139 中）与增强版（AutoLogi Augmented，1,575 英 / 883 中，也是仓库实际发布并上榜的版本）是两套题；厂商自报（如 Kimi K2 的 89.5）又常常不说明版本、子集与运行次数，与论文表格不能直接横比。改用开放式作答后，同一批评测模型的分布比原选择题集宽得多（论文报告 35.25–72.61 对 21.04–37.39）。",
+  "measures": [
+    {
+      "area": "约束满足式逻辑谜题",
+      "focus": "给若干背景与约束，要求模型给出任意一个满足全部约束的合法安排（排座、排序、分组一类）；考点是多步演绎与全局一致性",
+      "share": "全部题目",
+      "format": "开放式作答，无选项；由随题生成的程序验证器判定",
+      "cite": [
+        "arxiv-2502-16906@§3.1",
+        "arxiv-2502-16906@§3.3",
+        "repo-8188zq@README"
+      ]
+    },
+    {
+      "area": "英文子集",
+      "focus": "从 AR-LSAT（LSAT 分析推理题）抽取出背景与约束后合成的英文谜题",
+      "share": "1,575 / 2,458 题（增强版）",
+      "format": "开放式作答 + 程序验证器",
+      "cite": [
+        "arxiv-2502-16906@§4",
+        "repo-8188zq@README（D testing 行）"
+      ]
+    },
+    {
+      "area": "中文子集",
+      "focus": "从 LogiQA 抽取出背景与约束后合成的中文谜题，用来单独看中文场景下的逻辑推理",
+      "share": "883 / 2,458 题（增强版）",
+      "format": "开放式作答 + 程序验证器",
+      "cite": [
+        "arxiv-2502-16906@§4",
+        "repo-8188zq@README（D testing 行）"
+      ]
+    },
+    {
+      "area": "难度控制",
+      "focus": "用 Reduction / Expansion 增删约束，构造难度分布更均衡的题目集合，把不同档位的模型拉开",
+      "share": "增强版相对基座版的题量增量（206/139 → 1,575/883）",
+      "format": "同一谜题的不同约束数量变体",
+      "cite": [
+        "arxiv-2502-16906@§3.3",
+        "arxiv-2502-16906@Table 1"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "选择题口径的随机猜测收益：AutoLogi 改成开放式作答并用程序验证器判分，论文明确指出选择题格式易被随机猜中、导致性能被高估；它不测量也不复现选择题格式的分数。",
+      "cite": [
+        "arxiv-2502-16906@摘要",
+        "arxiv-2502-16906@§1"
+      ]
+    },
+    {
+      "text": "逻辑推理以外的能力：全部题目都是约束满足式逻辑谜题，数学计算、代码生成、知识问答、长文本阅读、多语言理解等不在考察范围内。",
+      "cite": [
+        "arxiv-2502-16906@§3.1"
+      ]
+    },
+    {
+      "text": "题目与验证器自身的正确性：论文自报约 3% 的验证结果含错误、中文子集约 23% 的题目实际无解，因此分数不回答「题目是否出对、判分是否判对」。",
+      "cite": [
+        "arxiv-2502-16906@§5.4",
+        "arxiv-2502-16906@§6"
+      ]
+    }
+  ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
+    "sample_count": 2458,
+    "splits": [
+      "AutoLogi（基座版，论文 Stage 2）：206 英 + 139 中，论文报告了结果，但仓库未随该版本发布测试数据",
+      "AutoLogi (Augmented)（增强版，论文 Stage 3）：1,575 英 + 883 中，仓库 testing-data 目录即此版本，也是仓库榜单的唯一覆盖版本"
+    ],
+    "languages": [
+      "en",
+      "zh"
+    ],
+    "source_type": "LLM 合成（GPT-4 从 AR-LSAT / LogiQA 抽取背景与约束后生成，再经 Reduction / Expansion 扩题）",
+    "public_sample": true,
+    "multiple_choice_share": "0%（全部为开放式作答）",
+    "multimodal_share": "0%（纯文本）",
+    "totals": "发布版共 2,458 题：英文 1,575 + 中文 883（增强版）；论文另报基座版 206 英 + 139 中。语料来源为 AR-LSAT（英）与 LogiQA（中）",
+    "cite": [
+      "repo-8188zq@README（D testing 行）",
+      "arxiv-2502-16906@Table 1",
+      "arxiv-2502-16906@§4"
+    ],
+    "construction": [
+      {
+        "k": "Stage 1 · 抽取素材",
+        "text": "从源语料里抽出背景信息与约束条件：先用 GPT-4 过滤，得到 AR-LSAT 的 230 道英文题（40 个不同背景）和 LogiQA 的 123 道中文题（90 个背景）。",
+        "cite": [
+          "arxiv-2502-16906@§4",
+          "repo-8188zq@README"
+        ]
+      },
+      {
+        "k": "Stage 2 · 生成验证器",
+        "text": "用 GPT-4 与 GPT-4o 生成格式要求与验证器程序；题干由「背景 + 约束 + 要求模型给出任一满足约束的合法安排」构成。题干与选项拆开去重后得到 210 英 + 147 中的开放式逻辑谜题，进入 Stage 2 的基座版为 206 英 + 139 中。",
+        "cite": [
+          "arxiv-2502-16906@§4",
+          "arxiv-2502-16906@§3.1",
+          "repo-8188zq@README"
+        ]
+      },
+      {
+        "k": "Stage 3 · 难度扩题",
+        "text": "用 Reduction 与 Expansion 两种互补手法增删约束，把集合扩到 1,575 英 + 883 中，并让难度分布更均衡。约 30% 由 LLM 追加的约束会让题目变得无解，需要遍历函数兜底校验。",
+        "cite": [
+          "arxiv-2502-16906@§4",
+          "arxiv-2502-16906@§3.3",
+          "arxiv-2502-16906@§5.4"
+        ]
+      },
+      {
+        "k": "判分器",
+        "text": "每道题自带一个程序验证器，检查模型给出的安排是否满足全部约束并符合格式要求；论文用 90 个样例对照人工判定，验证器只有 3 例不一致（F1 0.96），LLM 裁判有 17 例（F1 0.76）。",
+        "cite": [
+          "repo-8188zq@README",
+          "arxiv-2502-16906@§5.4"
+        ]
+      },
+      {
+        "k": "附带训练数据",
+        "text": "仓库同时提供合成管线的训练产物：训练语料 5,064 英 / 1,675 中，以及 DPO(7b) 2,877 英 / 901 中、DPO(72b) 2,349 英 / 621 中、SFT(72b) 3,724 英 / 1,170 中；这些不属于评测题集。",
+        "cite": [
+          "repo-8188zq@README（D testing 行）",
+          "arxiv-2502-16906@Table 2"
+        ]
+      }
+    ]
   },
-  "metrics": [],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [],
-  "notes": "Kimi K2 引用",
+  "metrics": [
+    {
+      "id": "accuracy",
+      "name": "准确率（Acc）",
+      "direction": "越高越好",
+      "description": "程序验证器判定为满足全部约束的题目占比；论文口径为 5 次独立运行的均值±标准差",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2502-16906@Table 3",
+        "arxiv-2502-16906@§5.1"
+      ]
+    },
+    {
+      "id": "overall",
+      "name": "Overall Scores（中英均分）",
+      "direction": "越高越好",
+      "description": "仓库榜单里的综合分，即英文子集得分与中文子集得分的算术平均；论文表格本身不报这一列",
+      "cite": [
+        "repo-8188zq@README（榜单）"
+      ]
+    },
+    {
+      "id": "std",
+      "name": "标准差（std）",
+      "direction": "越低越稳定",
+      "description": "5 次运行之间的离散程度，随均值一起报告（如 72.53±0.82）；论文两版题目的 std 大致在 0.3–3.8 之间",
+      "cite": [
+        "arxiv-2502-16906@Table 3",
+        "arxiv-2502-16906@§5.1"
+      ]
+    }
+  ],
+  "default_protocol": {
+    "raw": "把 testing-data 里的 prompt 字段直接喂给模型，收集其输出后用 evaluation/eval.py 与随题程序验证器判分；论文口径为 5 次独立运行取均值与标准差。",
+    "cite": [
+      "repo-8188zq@README",
+      "arxiv-2502-16906@§5.1",
+      "arxiv-2502-16906@Table 3"
+    ],
+    "variants": [
+      {
+        "text": "基座版（AutoLogi，Stage 2，206 英 / 139 中）与增强版（AutoLogi Augmented，Stage 3，1,575 英 / 883 中）是两套题：论文 Table 3 两版都报，仓库只发布并只榜单增强版，两版分数不能混读。",
+        "cite": [
+          "arxiv-2502-16906@§5.1",
+          "arxiv-2502-16906@Table 1",
+          "repo-8188zq@README（榜单）"
+        ]
+      },
+      {
+        "text": "子集口径：可以分别看英文 / 中文，也可以看仓库榜单的 Overall（中英算术平均）；厂商自报常常只给一个总分，不说明用的是哪一版、哪个子集。",
+        "cite": [
+          "repo-8188zq@README（榜单）",
+          "kimi-blog-kimi-k2@Benchmarking Kimi K2"
+        ]
+      },
+      {
+        "text": "运行次数：论文所有结果都是 5 次独立运行的均值±std；Kimi K2 博客自报 89.5 时未说明版本、子集与运行次数。",
+        "cite": [
+          "arxiv-2502-16906@§5.1",
+          "kimi-blog-kimi-k2@Benchmarking Kimi K2"
+        ]
+      },
+      {
+        "text": "训练用途口径：论文 Table 4 报的是用合成数据微调/DPO 后的模型（Qwen2.5-72B + DPO 英文 74.79、中文 69.54），与「直接评测现成模型」不是同一件事。",
+        "cite": [
+          "arxiv-2502-16906@Table 4",
+          "arxiv-2502-16906@§5.1"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "date": "2025-02-24",
+      "label": "arXiv v1 发布（至今唯一版本）：论文 + 官方仓库，发布增强版测试数据 1,575 英 / 883 中",
+      "cite": [
+        "arxiv-2502-16906@v1 页眉",
+        "repo-8188zq@README"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "约 3% 的验证结果含错误",
+      "impact": "论文在 §6 明说约 3% 的验证结果含错误，即判分方和作答方都可能出错；论文 Table 3 的 std 普遍在 0.8–1.5，几个百分点的模型差距可能落在误差带内。",
+      "severity": "高",
+      "response": "论文给出四类错误划分（81% 逻辑推断错误、13% 结论矛盾等），并报告程序验证器与 LLM 裁判的一致性对照（3/90 vs 17/90，F1 0.96 vs 0.76）。",
+      "reader": "不要把几个百分点的差距当成稳定结论；比较模型时优先看同一版本、同一子集、同样 5 次运行口径下的均值与 std。",
+      "cite": [
+        "arxiv-2502-16906@§6",
+        "arxiv-2502-16906@§5.4",
+        "arxiv-2502-16906@Table 3"
+      ]
+    },
+    {
+      "issue": "中文子集约 23% 的题目实际无解（英文子集约 11%）",
+      "impact": "中文子集 139 题中有 23% 被判定为无解，这部分题目任何模型都答不对，会系统性压低中文绝对分；英文子集也有约 11%。",
+      "severity": "高",
+      "response": "论文在增删约束后引入遍历函数校验可解性，并披露了该比例；仓库发布的增强版经过同一套校验。",
+      "reader": "中文绝对分偏低不等于模型中文逻辑能力同等幅度偏弱；中英差距里混着题目质量问题，建议中英分开看。",
+      "cite": [
+        "arxiv-2502-16906@§5.4"
+      ]
+    },
+    {
+      "issue": "版本与子集口径不一致，跨来源分数不可直接横比",
+      "impact": "论文同时存在基座版与增强版两套题，仓库只发布增强版；Kimi K2 博客自报 89.5 时未说明版本、子集与运行次数，与论文表格、仓库榜单三者口径不同。",
+      "severity": "中",
+      "response": "本站按来源分别记录各口径；引用分数时必须同时标注来源、版本与子集。",
+      "reader": "看到 89.5 这类高分先找口径说明，再决定能否与论文的 72.61 或仓库榜单的 70.39 对比。",
+      "cite": [
+        "arxiv-2502-16906@Table 1",
+        "repo-8188zq@README（榜单）",
+        "kimi-blog-kimi-k2@Benchmarking Kimi K2"
+      ]
+    },
+    {
+      "issue": "题目与验证器都由 GPT-4 生成",
+      "impact": "三个阶段都依赖 GPT-4（Stage 2 同时用 GPT-4o）出题、写格式要求与验证器，生成质量与所用 LLM 的能力和版本绑定；上游模型更新或不可用时复现成本高。",
+      "severity": "中",
+      "response": "论文披露全部阶段使用的模型；仓库开放完整合成管线（synthsize/ 目录）与评测脚本，可自备 OPENAI_API_KEY 复现。",
+      "reader": "自建题库时结果会随所用 LLM 与提示词变化；跨复现对比要固定模型、版本与提示词。",
+      "cite": [
+        "arxiv-2502-16906@§4",
+        "arxiv-2502-16906@§6",
+        "repo-8188zq@README"
+      ]
+    },
+    {
+      "issue": "Stage 3 扩题时约 30% 的新增约束会让题目无解",
+      "impact": "增强版靠 LLM 追加/删除约束把题量扩大约 7 倍，其中约 30% 的追加约束会产生无解题目，必须靠遍历函数逐个校验，限制了自动化扩题的规模与质量。",
+      "severity": "中",
+      "response": "论文把遍历函数作为扩题流程的必要环节，并披露该比例。",
+      "reader": "增强版题量远大于基座版，但增量题目的质量依赖这套可解性校验，不能按题量线性外推可信度。",
+      "cite": [
+        "arxiv-2502-16906@§5.4"
+      ]
+    },
+    {
+      "issue": "错误集中于逻辑推断环节",
+      "impact": "人工归因显示 81% 的错误是逻辑推断错误、13% 是结论与推断自相矛盾，说明该评测主要拉开的是多步演绎能力，对格式错误、理解偏差不敏感。",
+      "severity": "低",
+      "response": "论文把错误来源分成四类并给出占比，可结合错误类型定位模型短板。",
+      "reader": "分数低时先看是不是多步推断断链，而不是输出格式没对上。",
+      "cite": [
+        "arxiv-2502-16906@§5.4"
+      ]
+    },
+    {
+      "issue": "跨语言表现差异明显",
+      "impact": "llama 系模型中文分显著低于英文，Claude、Qwen、GPT-3.5 相对均衡，说明中英两个子集对模型语言能力的敏感度不同，单看 Overall 会掩盖语言侧短板。",
+      "severity": "低",
+      "response": "论文按语言分别报告并讨论该现象；仓库榜单同时给出中英分与 Overall。",
+      "reader": "比较模型时把中英分分开看，再用 Overall 做汇总。",
+      "cite": [
+        "arxiv-2502-16906@§5.4",
+        "repo-8188zq@README（榜单）"
+      ]
+    }
+  ],
+  "notes": "Kimi K2 发布博客的 Math & STEM 任务表引用了 AutoLogi（Kimi-K2-Instruct，Acc 89.5，non-thinking 口径），未说明版本、子集与运行次数。",
   "official_sources": [
     {
       "kind": "paper",
       "url": "https://arxiv.org/abs/2502.16906"
     },
     {
+      "kind": "repo",
+      "url": "https://github.com/8188zq/AutoLogi"
+    },
+    {
       "kind": "site",
       "url": "https://www.kimi.ai/blog/kimi-k2"
     }
   ],
-  "related_benchmarks": [],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "related_benchmarks": [
+    "zebralogic",
+    "hyperlogic",
+    "logicvista",
+    "livebench"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "arxiv-2502-16906",
+        "kind": "paper",
+        "title": "AutoLogi: Automated Generation of Logic Puzzles for Evaluating Reasoning Abilities of Large Language Models（arXiv:2502.16906v1）",
+        "url": "https://arxiv.org/abs/2502.16906",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "repo-8188zq",
+        "kind": "repo",
+        "title": "8188zq/AutoLogi — 官方实现仓库（README 含数据量表与榜单）",
+        "url": "https://github.com/8188zq/AutoLogi",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "kimi-blog-kimi-k2",
+        "kind": "blog",
+        "title": "Kimi K2 发布博客（Benchmarking Kimi K2 表格）",
+        "url": "https://www.kimi.ai/blog/kimi-k2",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Qwen Team，Alibaba Group；复旦大学计算机学院、复旦大学智能信息处理重点实验室",
+        "cite": [
+          "arxiv-2502-16906@作者署名"
+        ]
+      },
+      "first_release": {
+        "v": "2025-02-24（arXiv:2502.16906v1，至今唯一版本）",
+        "cite": [
+          "arxiv-2502-16906@v1 页眉"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "arxiv-2502-16906@摘要",
+        "repo-8188zq@README",
+        "repo-8188zq@README（D testing 行）"
+      ],
+      "interpretation": [
+        "arxiv-2502-16906@§5.1",
+        "arxiv-2502-16906@Table 3",
+        "repo-8188zq@README（榜单）",
+        "kimi-blog-kimi-k2@Benchmarking Kimi K2"
+      ]
+    },
+    "problem": {
+      "text": "选择题格式的逻辑推理题（AR-LSAT / LogiQA）能被随机猜测，同一批模型的分数挤在很窄的区间（论文报告 21.04–37.39），既高估了模型能力，也分不出高下；而人工构造大规模、难度可控、可自动判分的逻辑题成本很高。AutoLogi 用 LLM 自动合成开放式作答、由程序验证器判分的逻辑谜题，把分数区间拉宽到 35.25–72.61，并按需调节难度。",
+      "cite": [
+        "arxiv-2502-16906@摘要",
+        "arxiv-2502-16906@§1",
+        "arxiv-2502-16906@§3.3"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "原选择题格式的分数区间",
+        "value": "21.04 – 37.39",
+        "note": "同一批来源选择题集（AR-LSAT / LogiQA）上的准确率区间；论文用它说明选择题被随机猜测拉高、区分度不足。",
+        "cite": [
+          "arxiv-2502-16906@摘要"
+        ]
+      },
+      {
+        "label": "论文发布时最好（AutoLogi 基座版）",
+        "value": "62.04（英）/ 55.54（中）",
+        "note": "GPT-4o-2024-08-06，对应论文 Table 3 的 AutoLogi 列（Stage 2 题量，206 英 / 139 中）。",
+        "cite": [
+          "arxiv-2502-16906@Table 3"
+        ]
+      },
+      {
+        "label": "论文发布时最好（增强版）",
+        "value": "72.61（英）/ 66.70（中）",
+        "note": "GPT-4o-2024-08-06；Claude-3.5-sonnet 为 72.53 / 68.24，中文更高。两版 std 均在 1.3 以内。",
+        "cite": [
+          "arxiv-2502-16906@Table 3"
+        ]
+      },
+      {
+        "label": "官方仓库榜单最高（Overall）",
+        "value": "70.39",
+        "note": "Claude-3.5-sonnet 的中英均分；GPT-4o-2024-08-06 为 69.66。仓库榜单只覆盖增强版。",
+        "cite": [
+          "repo-8188zq@README（榜单）"
+        ]
+      },
+      {
+        "label": "厂商自报",
+        "value": "89.5",
+        "note": "Kimi K2 博客表中 Kimi-K2-Instruct 的 AutoLogi Acc，未说明版本、子集与运行次数，与论文/仓库口径不可直接横比。",
+        "cite": [
+          "kimi-blog-kimi-k2@Benchmarking Kimi K2"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 89.5 和论文表格里的 72.61 直接比：两者口径不同——论文跑 5 次取均值并分版本、分子集报告，Kimi 博客只给一个总分且未说明版本与运行次数。",
+        "cite": [
+          "kimi-blog-kimi-k2@Benchmarking Kimi K2",
+          "arxiv-2502-16906@Table 3"
+        ]
+      },
+      {
+        "text": "以为仓库里的 1,575 / 883 就是全部题目：这是增强版（Stage 3）的题量；论文的基座版（Stage 2）只有 206 英 / 139 中，两版分数不能混读。",
+        "cite": [
+          "repo-8188zq@README（D testing 行）",
+          "arxiv-2502-16906@Table 1"
+        ]
+      },
+      {
+        "text": "以为开放式作答就没有运气成分：题目难度由约束数量与解空间比例决定，随机猜中一个合法安排仍是可量化的概率，论文用 Solution Space Ratio 表示理论随机猜测概率。",
+        "cite": [
+          "arxiv-2502-16906@§5.4"
+        ]
+      },
+      {
+        "text": "把仓库里的训练数据当成测试题：仓库另有 5,064 英 / 1,675 中的训练语料与 DPO、SFT 数据，它们是合成管线的产物，不属于评测题集。",
+        "cite": [
+          "repo-8188zq@README（D testing 行）",
+          "repo-8188zq@README"
+        ]
+      },
+      {
+        "text": "看到分数高就认为题目一定出对：论文自报约 3% 的验证结果含错误、中文子集约 23% 的题目无解，分数不保证题目与判分的质量。",
+        "cite": [
+          "arxiv-2502-16906@§6",
+          "arxiv-2502-16906@§5.4"
+        ]
+      },
+      {
+        "text": "把 Qwen2.5-72B 的 74.79 当成「现成模型考出来的」：那是用 AutoLogi 合成数据做 DPO 之后的成绩（论文 Table 4），与直接评测不是同一件事。",
+        "cite": [
+          "arxiv-2502-16906@Table 4",
+          "arxiv-2502-16906@§5.1"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "Qwen Team，Alibaba Group；合作单位为复旦大学计算机学院与复旦大学智能信息处理重点实验室。",
+        "cite": [
+          "arxiv-2502-16906@作者署名"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "Qin Zhu、Fei Huang、Runyu Peng、Keming Lu、Bowen Yu、Qinyuan Cheng、Xipeng Qiu、Xuanjing Huang、Junyang Lin（见仓库 BibTeX）。",
+        "cite": [
+          "repo-8188zq@README（Citation）"
+        ]
+      },
+      {
+        "k": "首次发布",
+        "v": "2025-02-24，arXiv:2502.16906v1 [cs.CL]；arXiv 上至今只有一个版本。",
+        "cite": [
+          "arxiv-2502-16906@v1 页眉"
+        ]
+      },
+      {
+        "k": "论文与代码",
+        "v": "arXiv 论文 + GitHub 仓库 8188zq/AutoLogi（官方实现，含合成脚本、评测脚本与测试数据）。",
+        "cite": [
+          "arxiv-2502-16906@摘要",
+          "repo-8188zq@README"
+        ]
+      },
+      {
+        "k": "合成方法",
+        "v": "三阶段：Stage 1 从源语料（AR-LSAT / LogiQA）抽取背景与约束；Stage 2 用 GPT-4 与 GPT-4o 生成格式要求与程序验证器；Stage 3 用 Reduction / Expansion 增删约束扩题并控难度。三个阶段都靠 GPT-4 级别的 LLM。",
+        "cite": [
+          "arxiv-2502-16906@§4",
+          "repo-8188zq@README"
+        ]
+      },
+      {
+        "k": "附带训练数据",
+        "v": "仓库同时提供训练语料（英 5,064 / 中 1,675）与 DPO、SFT 数据（7b / 72b 两档）；论文 Table 4 报告 Qwen2.5-72B 经 DPO 后英文 +6.61、中文 +5.62。",
+        "cite": [
+          "repo-8188zq@README（D testing 行）",
+          "arxiv-2502-16906@Table 2",
+          "arxiv-2502-16906@Table 4"
+        ]
+      },
+      {
+        "k": "验证器质量",
+        "v": "程序验证器与人工判定在 90 个样例中只有 3 例不一致（F1 0.96），LLM 裁判有 17 例（F1 0.76）。",
+        "cite": [
+          "arxiv-2502-16906@§5.4"
+        ]
+      },
+      {
+        "k": "难度如何度量",
+        "v": "论文用两个指标刻画难度：每题约束数量，以及 Solution Space Ratio（合法解占全部可能空间的比例，即理论随机猜中概率）；两者都与准确率负相关。",
+        "cite": [
+          "arxiv-2502-16906@§5.4"
+        ]
+      },
+      {
+        "k": "被哪些发布引用",
+        "v": "Kimi K2（Moonshot AI）发布博客的 Math & STEM 任务表中列了 AutoLogi Acc，同表还有 ZebraLogic、GPQA-Diamond、HLE 等。",
+        "cite": [
+          "kimi-blog-kimi-k2@Benchmarking Kimi K2"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-14",
+        "columns": [
+          "来源",
+          "模型",
+          "版本",
+          "EN",
+          "CN",
+          "Overall",
+          "备注"
+        ],
+        "rows": [
+          ["论文 Table 3", "Qwen2.5-7b-instruct", "基座版", "27.28±2.41", "30.94±1.76", "未报告", "5 次运行均值±std"],
+          ["论文 Table 3", "Qwen2.5-7b-instruct", "增强版", "43.64±1.25", "42.08±1.50", "未报告", "5 次运行均值±std"],
+          ["论文 Table 3", "Qwen2.5-72b-instruct", "基座版", "53.50±0.93", "54.10±0.28", "未报告", "5 次运行均值±std"],
+          ["论文 Table 3", "Qwen2.5-72b-instruct", "增强版", "68.18±0.77", "63.92±0.56", "未报告", "5 次运行均值±std"],
+          ["论文 Table 3", "LLama3.1-8b-instruct", "基座版", "25.53±3.64", "17.41±3.61", "未报告", "5 次运行均值±std"],
+          ["论文 Table 3", "LLama3.1-8b-instruct", "增强版", "37.96±1.41", "23.69±1.33", "未报告", "5 次运行均值±std"],
+          ["论文 Table 3", "LLama3.1-70b-instruct", "基座版", "53.79±2.92", "42.59±2.41", "未报告", "5 次运行均值±std"],
+          ["论文 Table 3", "LLama3.1-70b-instruct", "增强版", "62.47±0.96", "53.77±0.95", "未报告", "5 次运行均值±std"],
+          ["论文 Table 3", "LLama3.1-405b-instruct", "基座版", "59.42±3.04", "56.98±1.79", "未报告", "5 次运行均值±std"],
+          ["论文 Table 3", "LLama3.1-405b-instruct", "增强版", "70.43±1.39", "65.39±1.07", "未报告", "5 次运行均值±std"],
+          ["论文 Table 3", "GPT-3.5-Turbo", "基座版", "18.93±3.83", "22.30±2.39", "未报告", "5 次运行均值±std"],
+          ["论文 Table 3", "GPT-3.5-Turbo", "增强版", "35.25±0.81", "34.47±1.39", "未报告", "5 次运行均值±std"],
+          ["论文 Table 3", "GPT-4o-2024-08-06", "基座版", "62.04±1.59", "55.54±3.78", "未报告", "5 次运行均值±std"],
+          ["论文 Table 3", "GPT-4o-2024-08-06", "增强版", "72.61±0.76", "66.70±1.25", "未报告", "5 次运行均值±std"],
+          ["论文 Table 3", "Claude-3.5-sonnet", "基座版", "60.97±0.88", "60.29±3.19", "未报告", "5 次运行均值±std"],
+          ["论文 Table 3", "Claude-3.5-sonnet", "增强版", "72.53±0.82", "68.24±0.98", "未报告", "5 次运行均值±std"],
+          ["官方仓库榜单", "Qwen2.5-7b-instruct", "增强版", "43.64±1.25", "42.08±1.50", "42.86", "Overall = 中英算术平均"],
+          ["官方仓库榜单", "Qwen2.5-72b-instruct", "增强版", "68.18±0.77", "63.92±0.56", "66.05", "Overall = 中英算术平均"],
+          ["官方仓库榜单", "LLama3.1-8b-instruct", "增强版", "37.96±1.41", "23.69±1.33", "30.83", "Overall = 中英算术平均"],
+          ["官方仓库榜单", "LLama3.1-70b-instruct", "增强版", "62.47±0.96", "53.77±0.95", "58.12", "Overall = 中英算术平均"],
+          ["官方仓库榜单", "LLama3.1-405b-instruct", "增强版", "70.43±1.39", "65.39±1.07", "67.91", "Overall = 中英算术平均"],
+          ["官方仓库榜单", "GPT-3.5-Turbo", "增强版", "35.25±0.81", "34.47±1.39", "34.86", "Overall = 中英算术平均"],
+          ["官方仓库榜单", "GPT-4o-2024-08-06", "增强版", "72.61±0.76", "66.70±1.25", "69.66", "Overall = 中英算术平均"],
+          ["官方仓库榜单", "Claude-3.5-sonnet", "增强版", "72.53±0.82", "68.24±0.98", "70.39", "Overall = 中英算术平均；榜单最高"],
+          ["Kimi K2 博客", "Kimi-K2-Instruct", "未说明", "未拆分", "未拆分", "未拆分", "AutoLogi Acc 89.5；未说明版本、子集与运行次数，且注明全部受评模型均为 non-thinking。同表竞品：DeepSeek-V3-0324 88.9、Qwen3-235B-A22B(Non-thinking) 83.3*、Claude Sonnet 4 89.8、Claude Opus 4 86.1、GPT-4.1 88.2、Gemini 2.5 Flash Preview 84.1"]
+        ]
+      },
+      "cite": [
+        "arxiv-2502-16906@Table 3",
+        "repo-8188zq@README（榜单）",
+        "kimi-blog-kimi-k2@Benchmarking Kimi K2",
+        "kimi-blog-kimi-k2@评测说明"
+      ]
+    }
+  }
 }
