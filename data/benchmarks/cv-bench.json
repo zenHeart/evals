@@ -1,39 +1,535 @@
 {
   "id": "cv-bench",
   "name": "CV-Bench",
-  "full_name": null,
+  "full_name": "Cambrian Vision-Centric Benchmark（Cambrian 视觉中心基准）",
   "aliases": [],
-  "status": null,
+  "status": "active",
   "categories": [
     "multimodal"
   ],
-  "summary": "2D/3D 经典视觉任务改写的多模态问答",
-  "interpretation": "Cambrian 的 CV-Bench：2638 道人工核验的选择题，把 2D 计数/空间关系与 3D 深度/对应等经典视觉任务改写成 VQA，准确率越高越好；发布时 GPT-4V 仅 64–74 分——考「纯视觉」基本功而非知识。",
-  "measures": [],
-  "does_not_measure": [],
+  "summary": "纽约大学 VISIONx 实验室随 Cambrian-1 论文发布的视觉中心基准：2,638 道人工筛过的多选题，把 ADE20K/COCO 的 2D 空间关系与物体计数、Omni3D 的 3D 深度顺序与相对距离改写成 VQA，答案全在选项里，考的是「看图」基本功而不是知识。",
+  "interpretation": "总分是 2D 与 3D 两组准确率的等权平均（各占 50%），越高说明纯视觉感知越稳。论文发布时（2024-12）GPT-4V 2D 64.3 / 3D 73.8，自家 Cambrian-1-8B 2D 72.3 / 3D 72.0；本站账本已收录到更高分段，说明这个基准远未饱和。它只覆盖四类底层感知，不能外推成通用视觉能力。",
+  "measures": [
+    {
+      "area": "空间关系（2D）",
+      "focus": "给定锚点物体，判断另一物体在它的左/右或上/下方；题目取自有两个不同 ground-truth 类别的图，用标注框标出目标以避免多实例歧义",
+      "share": "650 题，约 25%",
+      "format": "封闭选项多选题，要求只回选项字母",
+      "cite": [
+        "cambrian-1-paper@Table 1",
+        "cambrian-1-paper@§3.2",
+        "cambrian-1-paper@Figure 4",
+        "cambrian-1-paper@Table 26"
+      ]
+    },
+    {
+      "area": "物体计数（2D）",
+      "focus": "数图中某类物体的实例数；选项故意设置成与正确答案相近的数值，并包含正确答案为 0 的存在性检查题",
+      "share": "788 题，约 30%",
+      "format": "封闭选项多选题，选项为数字",
+      "cite": [
+        "cambrian-1-paper@Table 1",
+        "cambrian-1-paper@§3.2",
+        "cambrian-1-paper@Figure 4",
+        "cvbench-hf@预览"
+      ]
+    },
+    {
+      "area": "深度顺序（3D）",
+      "focus": "判断两个物体哪个离相机更近；取自 Omni3D，用两种颜色的标注框区分两个物体",
+      "share": "600 题，约 23%",
+      "format": "封闭选项多选题",
+      "cite": [
+        "cambrian-1-paper@Table 1",
+        "cambrian-1-paper@§3.2",
+        "cambrian-1-paper@Figure 4"
+      ]
+    },
+    {
+      "area": "相对距离（3D）",
+      "focus": "锚点之外还有两个物体，判断哪个离锚点更近；判据是 A 的最远顶点要比 B 的最近顶点离锚点再短一个 offset",
+      "share": "600 题，约 23%",
+      "format": "封闭选项多选题",
+      "cite": [
+        "cambrian-1-paper@Table 1",
+        "cambrian-1-paper@§3.2",
+        "cambrian-1-paper@Figure 4"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "知识与长链推理：四类任务问的都是位置、个数、远近，答案是封闭选项，论文没有为 CV-Bench 设计需要外部世界知识的题型",
+      "cite": [
+        "cambrian-1-paper@§3.2",
+        "cambrian-1-paper@Table 26"
+      ]
+    },
+    {
+      "text": "四项之外的经典 VQA 能力：任务表只有空间关系、物体计数、深度顺序、相对距离，OCR、细粒度属性识别与开放式描述都没有对应题型",
+      "cite": [
+        "cambrian-1-paper@§3.1",
+        "cambrian-1-paper@§3.2"
+      ]
+    },
+    {
+      "text": "时序与视频：每题只配一张静态图（数据集卡 Modalities 为 Image + Text，单一 test split），没有视频或跨帧推理题",
+      "cite": [
+        "cvbench-hf@元信息",
+        "cvbench-hf@子集与 split"
+      ]
+    }
+  ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
+    "sample_count": 2638,
+    "splits": [
+      "test（唯一 split，2.64k 行）"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "从既有视觉基准改写：2D 来自 ADE20K 与 COCO，3D 来自 Omni3D",
+    "public_sample": true,
+    "multiple_choice_share": "100%",
+    "multimodal_share": "100%（每题一张图加一段文字，无纯文本题）",
+    "totals": "2,638 题 = 2D 1,438 题（空间关系 650 + 物体计数 788，来自 ADE20K 与 COCO）+ 3D 1,200 题（深度顺序 600 + 相对距离 600，来自 Omni3D）；Hugging Face 上 default 2.64k 行 / 2D 1.44k 行 / 3D 1.2k 行",
+    "cite": [
+      "cambrian-1-paper@Table 1",
+      "cambrian-1-paper@§3.2",
+      "cvbench-hf@子集与 split",
+      "cvbench-hf@元信息",
+      "cvbench-hf@卡首"
+    ],
+    "construction": [
+      {
+        "k": "题目来源",
+        "text": "用既有视觉基准及其 ground truth 标注程序化地生成问答对：2D 用 COCO 与 ADE20K，3D 用 Omni3D；论文的说法是把标准视觉基准改写到多模态上下文里来考经典视觉任务。",
+        "cite": [
+          "cambrian-1-paper@附录 C",
+          "cambrian-1-paper@§3.2",
+          "cambrian-1-paper@Finding 2"
+        ]
+      },
+      {
+        "k": "人工三态筛选",
+        "text": "每个 query 被判为 accepted（原样采用）/ modified（改掉错误选项）/ rejected（有歧义、目标过小或专家也看不出的直接剔除）；两阶段之后定稿 2,638 题，论文称可靠性与准确率都因此改善。",
+        "cite": [
+          "cambrian-1-paper@附录 C"
+        ]
+      },
+      {
+        "k": "计数与距离判据",
+        "text": "计数题若某类实例没被全部标注，ground truth 会少于图中实际出现的数量；相对距离题要求 A 的最远顶点比 B 的最近顶点离锚点再短一个 offset，才算 A 更近。",
+        "cite": [
+          "cambrian-1-paper@附录 C",
+          "cambrian-1-paper@§3.2"
+        ]
+      },
+      {
+        "k": "歧义消解",
+        "text": "空间关系题取两个不同 ground-truth 类别的图并用标注框标出；深度顺序用两色框、相对距离用三色框；问题里显式指定锚点物体，避免一处多义。",
+        "cite": [
+          "cambrian-1-paper@§3.2"
+        ]
+      },
+      {
+        "k": "规模与许可",
+        "text": "2,638 题比 RealWorldQA 多 3.5 倍、比 MMVP 多 8.8 倍；Hugging Face 许可证为 apache-2.0，提供 default / 2D / 3D 三个子集，各含一个 test split。",
+        "cite": [
+          "cambrian-1-paper@§3.2",
+          "cvbench-hf@元信息",
+          "cvbench-hf@子集与 split"
+        ]
+      }
+    ]
   },
-  "metrics": [],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [],
-  "notes": "字节 Seed 引用；Cambrian 项目发布",
+  "default_protocol": {
+    "raw": "每题一张图加一段带选项的问题，提示词要求「直接用给定选项的字母作答」（Answer with the option’s letter from the given choices directly.）；论文用模糊匹配从回答里抽出答案，并对需要模糊匹配的基准另做 GPT-3.5 裁判消融，结论是两者精度接近。",
+    "cite": [
+      "cambrian-1-paper@Table 26",
+      "cambrian-1-paper@§6",
+      "cambrian-1-paper@附录 G.2",
+      "cambrian-1-paper@Table 24"
+    ],
+    "variants": [
+      {
+        "text": "分开报还是报总分：总分是 2D 与 3D 两组准确率的等权平均，等权会把 3D 的权重从题量占比的约 46% 抬到 50%；想看子集表现就看单组分数，两种口径不能混着比。",
+        "cite": [
+          "cambrian-1-paper@附录 C",
+          "cvbench-hf@Accuracy",
+          "cambrian-1-paper@Table 1"
+        ]
+      },
+      {
+        "text": "2D 分本身是 ADE20K 与 COCO 两个来源的平均：论文公式为 (accuracy_2D_ade + accuracy_2D_coco)/2，所以 2D 分不是任一单一数据集上的准确率。",
+        "cite": [
+          "cambrian-1-paper@附录 C",
+          "cvbench-hf@Accuracy"
+        ]
+      },
+      {
+        "text": "判分方式：模糊匹配 vs LLM 裁判——论文消融显示在需要匹配的基准上两者精度接近，因此不同工作用不同裁判时的分数差异主要来自模型而不是判分器。",
+        "cite": [
+          "cambrian-1-paper@Table 24",
+          "cambrian-1-paper@附录 G.2"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "accuracy-2d",
+      "name": "2D 准确率",
+      "direction": "越高越好",
+      "description": "空间关系与物体计数两组（即 ADE20K 与 COCO 两个来源）准确率的平均",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "cambrian-1-paper@附录 C",
+        "cvbench-hf@Accuracy"
+      ]
+    },
+    {
+      "id": "accuracy-3d",
+      "name": "3D 准确率",
+      "direction": "越高越好",
+      "description": "Omni3D 上深度顺序与相对距离两组任务的准确率",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "cambrian-1-paper@附录 C",
+        "cvbench-hf@Accuracy"
+      ]
+    },
+    {
+      "id": "overall-accuracy",
+      "name": "CV-Bench 总分",
+      "direction": "越高越好",
+      "description": "2D 与 3D 准确率的等权平均，论文强调这样给两组任务同等重要性",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "cambrian-1-paper@附录 C",
+        "cvbench-hf@Accuracy"
+      ]
+    }
+  ],
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2024-06-24",
+      "label": "arXiv v1 首发，Cambrian 项目页与 Hugging Face 数据集卡同日上线（数据集卡标注 Published Jun 24, 2024）",
+      "cite": [
+        "cvbench-hf@元信息",
+        "cambrian-mllm@CV-Bench 条目"
+      ]
+    },
+    {
+      "id": "v2",
+      "date": "2024-12-04",
+      "label": "arXiv v2（本档案核对所用版本，含 Table 9 / 21 / 24 / 26 与附录 C 的构建与判分细节）",
+      "cite": [
+        "cambrian-1-paper@标题页"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "与训练数据的测试图重叠",
+      "impact": "用图像哈希比对，CV-Bench 有 758 张（28.73%）测试图与一个训练集相同、336 张（12.74%）与另一个训练集相同；论文同时明确说明图像相同不等于问答案对相同，且因为很多测试集本身就用了 COCO 验证集图像，这类重叠不可避免。",
+      "severity": "中",
+      "response": "论文在表注里给出上述限定条件；同实验室后续另发 Test-set Stress-Test，专门量化可被利用的非视觉捷径。",
+      "reader": "看到某模型 CV-Bench 高分时，先确认它的多模态训练数据是否直接用过这些图像；图像重叠本身不构成刷榜证据。",
+      "cite": [
+        "cambrian-1-paper@Table 21",
+        "cambrian-mllm@后续工作"
+      ]
+    },
+    {
+      "issue": "只覆盖四类底层感知",
+      "impact": "2,638 题集中在空间关系、计数、深度顺序、相对距离，不涉及 OCR、细粒度属性、开放描述或时序；在这四项上的高分不能外推成通用视觉能力。",
+      "severity": "中",
+      "response": "论文的定位就是「视觉中心」：先确认基准真的能测感知基本功，再谈更通用的能力；视频方向由同实验室后续的 VSTAT 等工作补。",
+      "reader": "把 CV-Bench 当感知探针用，不要当通用 VQA 排行榜看。",
+      "cite": [
+        "cambrian-1-paper@§3.1",
+        "cambrian-1-paper@§3.2",
+        "cambrian-mllm@后续工作"
+      ]
+    },
+    {
+      "issue": "没有人类基线、随机基线与盲视对照",
+      "impact": "论文没有报告 CV-Bench 的人类准确率、随机猜测率或无图对照，也没有按任务拆分给出一张完整的模型分数表，读者无法判断模型离人类还有多远。",
+      "severity": "中",
+      "response": "本站不代算：ladder 的随机基线一栏直接写「论文未给出」。",
+      "reader": "引用 CV-Bench 分时不要配「人类约 xx%」这类数字，论文里没有。",
+      "cite": [
+        "cambrian-1-paper@Table 9",
+        "cambrian-1-paper@Table 1"
+      ]
+    },
+    {
+      "issue": "各题选项数不固定",
+      "impact": "选项数随题而变（论文 Table 26 的计数示例有 5 个选项，Hugging Face 预览样例见 4 与 6 个），随机基线因此不是固定值，不同工作的选项模板差异也会带来偏差。",
+      "severity": "低",
+      "response": "论文未披露各任务的选项数分布，也未做选项数消融。",
+      "reader": "不要把 CV-Bench 的随机基线当成一个可以套用的常数。",
+      "cite": [
+        "cambrian-1-paper@Table 26",
+        "cvbench-hf@预览"
+      ]
+    },
+    {
+      "issue": "判分依赖模糊匹配",
+      "impact": "论文用模糊匹配从自由格式回答里抽答案，而不是严格的精确匹配；虽然 GPT-3.5 裁判消融显示两者接近，但极端输出格式下仍可能有偏差。",
+      "severity": "低",
+      "response": "论文对需要模糊匹配的基准做了消融（Table 24），结论是模糊匹配给出的判定可靠。",
+      "reader": "复现时注意抽答案的实现细节，1–2 分的差距不必过度解读。",
+      "cite": [
+        "cambrian-1-paper@§6",
+        "cambrian-1-paper@附录 G.2",
+        "cambrian-1-paper@Table 24"
+      ]
+    }
+  ],
+  "notes": "字节 Seed 系列模型引用；Cambrian 项目（纽约大学 VISIONx）发布",
   "official_sources": [
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2406.16860"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/nyu-visionx/CV-Bench"
+    },
     {
       "kind": "site",
       "url": "https://cambrian-mllm.github.io/"
     },
     {
-      "kind": "site",
-      "url": "https://seed.bytedance.com/en/blog/official-release-of-seed1-8-a-generalized-agentic-model"
+      "kind": "repo",
+      "url": "https://github.com/cambrian-mllm/cambrian"
     }
   ],
-  "related_benchmarks": [],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "related_benchmarks": [
+    "mmvp",
+    "realworldqa",
+    "blink",
+    "mmmu",
+    "vstar"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "cambrian-1-paper",
+        "kind": "paper",
+        "title": "Cambrian-1: A Fully Open, Vision-Centric Exploration of Multimodal LLMs（arXiv:2406.16860v2，2024-12-04）",
+        "url": "https://arxiv.org/abs/2406.16860",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "cvbench-hf",
+        "kind": "dataset",
+        "title": "nyu-visionx/CV-Bench（Hugging Face 数据集卡）",
+        "url": "https://huggingface.co/datasets/nyu-visionx/CV-Bench",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "cambrian-mllm",
+        "kind": "site",
+        "title": "Cambrian 项目主页（含 CV-Bench 条目与发布日）",
+        "url": "https://cambrian-mllm.github.io/",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "纽约大学 VISIONx 实验室（Hugging Face 组织 nyu-visionx）",
+        "cite": [
+          "cambrian-1-paper@标题页",
+          "cambrian-mllm@首页",
+          "cambrian-mllm@CV-Bench 条目"
+        ]
+      },
+      "first_release": {
+        "v": "2024-06-24（arXiv v1、项目页与数据集卡同日上线）",
+        "cite": [
+          "cvbench-hf@元信息",
+          "cambrian-mllm@CV-Bench 条目"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "cambrian-1-paper@摘要",
+        "cambrian-1-paper@§3.2",
+        "cvbench-hf@卡首",
+        "cvbench-hf@元信息"
+      ],
+      "interpretation": [
+        "cambrian-1-paper@附录 C",
+        "cvbench-hf@Accuracy",
+        "cambrian-1-paper@Table 9"
+      ]
+    },
+    "problem": {
+      "text": "论文复盘现有 MLLM 基准时发现：真正测视觉中心能力的基准题量太小（RealWorldQA、MMVP 只有几百题），撑不起稳健比较，而且普遍不覆盖深度与空间感知这些关键视觉元素。CV-Bench 就是为了补上这个缺口——把已有的大体量视觉基准改写成 VQA，用 2,638 道人工筛过的题把「纯视觉」这件事测稳。",
+      "cite": [
+        "cambrian-1-paper@§3.1",
+        "cambrian-1-paper@Finding 1",
+        "cambrian-1-paper@§3.2"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机猜测基线",
+        "value": "论文未给出",
+        "note": "论文没有报告整卷或分任务的随机准确率，且各题选项数不固定，本站不推算。",
+        "cite": [
+          "cambrian-1-paper@Table 9",
+          "cambrian-1-paper@Table 26"
+        ]
+      },
+      {
+        "label": "论文发布时（2024-12）闭源对照 GPT-4V",
+        "value": "2D 64.3 / 3D 73.8",
+        "note": "Table 9；GPT-4V 的规模与训练数据在表中记为 UNK.（未公开）。",
+        "cite": [
+          "cambrian-1-paper@Table 9"
+        ]
+      },
+      {
+        "label": "论文发布时（2024-12）自家最好 Cambrian-1-8B",
+        "value": "2D 72.3 / 3D 72.0",
+        "note": "Table 9；论文称其超过当时的开源模型，与 GPT-4V 等闭源模型相比有竞争力。",
+        "cite": [
+          "cambrian-1-paper@Table 9"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 2D 分当成单一数据集上的准确率——它是 ADE20K 与 COCO 两个来源的平均，两个来源的题量与难度并不相同。",
+        "cite": [
+          "cambrian-1-paper@附录 C",
+          "cvbench-hf@Accuracy",
+          "cambrian-1-paper@Table 1"
+        ]
+      },
+      {
+        "text": "把总分和单独的 3D 分混着比——等权平均会把 3D 的权重从题量占比的约 46% 抬到 50%，两个口径不可互换。",
+        "cite": [
+          "cambrian-1-paper@附录 C",
+          "cambrian-1-paper@Table 1"
+        ]
+      },
+      {
+        "text": "把 28.73% 的图像重叠直接等同于刷榜——论文明确说图像匹配不等于问答案对匹配，且 COCO 验证集被广泛复用导致这类重叠不可避免。",
+        "cite": [
+          "cambrian-1-paper@Table 21"
+        ]
+      },
+      {
+        "text": "把 CV-Bench 高分读成通用视觉能力——它只覆盖空间关系、计数、深度、距离四项，论文自己就说多数基准并没有真正测到视觉中心能力。",
+        "cite": [
+          "cambrian-1-paper@§3.1",
+          "cambrian-1-paper@Finding 1",
+          "cambrian-1-paper@§3.2"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "纽约大学（New York University）VISIONx 实验室；Hugging Face 组织为 nyu-visionx，项目页署名 Cambrian VISIONx @ NYU",
+        "cite": [
+          "cambrian-1-paper@标题页",
+          "cambrian-mllm@首页",
+          "cambrian-mllm@CV-Bench 条目"
+        ]
+      },
+      {
+        "k": "载体论文",
+        "v": "没有独立论文，随 Cambrian-1: A Fully Open, Vision-Centric Exploration of Multimodal LLMs（arXiv:2406.16860）的 §3.2 与附录 C 一起发布",
+        "cite": [
+          "cambrian-1-paper@摘要",
+          "cambrian-1-paper@§3.2",
+          "cambrian-1-paper@附录 C"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2024-06-24 arXiv v1、项目页与 Hugging Face 数据集卡同日上线 → 2024-12-04 arXiv v2（本档案核对版本）",
+        "cite": [
+          "cvbench-hf@元信息",
+          "cambrian-mllm@CV-Bench 条目",
+          "cambrian-1-paper@标题页"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "数据集在 huggingface.co/datasets/nyu-visionx/CV-Bench（apache-2.0，default / 2D / 3D 三个子集，各一个 test split）；评测代码在 github.com/cambrian-mllm/cambrian",
+        "cite": [
+          "cvbench-hf@元信息",
+          "cvbench-hf@子集与 split",
+          "cambrian-1-paper@标题页"
+        ]
+      },
+      {
+        "k": "同实验室后续工作",
+        "v": "项目页还列有 Test-Set Stress-Test（基准设计者应该「在测试集上训练」以暴露可被利用的非视觉捷径）与 VSTAT（多模态视频理解的视觉状态跟踪基准）等，方向分别对应污染/捷径与视频时序",
+        "cite": [
+          "cambrian-mllm@后续工作"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2024-12-04",
+        "columns": [
+          "来源",
+          "模型",
+          "CV-Bench 2D",
+          "CV-Bench 3D",
+          "口径"
+        ],
+        "rows": [
+          [
+            "论文 Table 9",
+            "GPT-4V",
+            64.3,
+            73.8,
+            "发布时闭源对照；规模与训练数据未公开"
+          ],
+          [
+            "论文 Table 9",
+            "Cambrian-1-8B",
+            72.3,
+            72.0,
+            "论文最好成绩（自家 8B）"
+          ]
+        ]
+      },
+      "cite": [
+        "cambrian-1-paper@Table 9"
+      ]
+    }
+  }
 }
