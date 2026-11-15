@@ -1,46 +1,438 @@
 {
   "id": "evalplus",
   "name": "EvalPlus",
-  "full_name": null,
+  "full_name": "EvalPlus —— 大语言模型代码合成严格评测框架（HumanEval+ / MBPP+ 增强测试集）",
   "aliases": [],
   "status": null,
-  "categories": [
-    "coding"
-  ],
-  "summary": "HumanEval+/MBPP+ 增强测试用例代码评测",
-  "interpretation": "HumanEval+/MBPP+：在原 HumanEval/MBPP 基础上把测试用例扩充 80×/35× 的增强版，pass@1 越高越好；增强用例专门堵「碰巧通过」的运气分——分数比原版更接近真实代码正确性。",
-  "measures": [],
-  "does_not_measure": [],
-  "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
-  },
-  "metrics": [],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [],
-  "notes": "Qwen 引用；用增强用例防运气通过",
-  "official_sources": [
+  "categories": ["coding"],
+  "summary": "EvalPlus 是 UIUC 与南京大学团队提出的代码评测框架：它把 HumanEval / MBPP 原版那点少量测试用例分别扩充约 80 倍 / 35 倍，得到 HumanEval+ / MBPP+，用多得多的测试输入去判断模型生成的代码是不是真的对。同一个模型在增强测试下的分数通常明显低于原版——掉下来的那部分就是「碰巧通过」的运气分。",
+  "interpretation": "pass@1 高，说明模型写出的代码在远多于原版的测试输入下仍能全部跑对，比原版 HumanEval / MBPP 分数更接近「这段代码真的能用」。但它只覆盖 Python 函数级编程题：不说明代码跑得快（效率由同项目的 EvalPerf 单独评），不说明模型读得懂整个仓库（由 RepoQA 评），也不说明题目没在训练数据里出现过。",
+  "measures": [
     {
-      "kind": "site",
-      "url": "https://evalplus.github.io"
+      "area": "功能正确性 · HumanEval+",
+      "focus": "164 道人工编写的 Python 函数级编程题：给模型一个函数签名加 docstring，让它补全实现，再用增强测试判断实现是否真的对。",
+      "share": "164 题",
+      "format": "pass@k（0–100%）",
+      "cite": ["paper@§3", "humanevalplus-dataset@数据集查看器"]
     },
     {
-      "kind": "site",
-      "url": "https://qwenlm.github.io/blog/qwen2.5/"
+      "area": "功能正确性 · MBPP+",
+      "focus": "MBPP 的众包 Python 编程题，官方在 MBPP-sanitized 基础上再手工筛掉不合格题目并修正实现，然后把测试用例扩充约 35 倍。",
+      "share": "399 题（榜单口径）/ 378 题（数据集卡口径）",
+      "format": "pass@k（0–100%）",
+      "cite": ["releases@v0.2.0", "leaderboard@Notes", "mbppplus-dataset@数据集查看器"]
     },
     {
-      "kind": "site",
-      "url": "https://qwen.ai/blog?id=qwen3.8-flash-next"
+      "area": "代码效率 · EvalPerf",
+      "focus": "从 HumanEval+ 与 MBPP+ 里挑出的、能区分实现快慢的编程题，配套专门构造的「能跑出性能差异」的测试输入，用差分性能评分比较 LLM 生成代码的快慢。",
+      "share": "118 个 coding task",
+      "format": "差分性能评分（DPS）",
+      "cite": ["releases@v0.3.1", "evalplus@EvalPerf"]
+    },
+    {
+      "area": "长上下文代码理解 · RepoQA",
+      "focus": "跨文件检索并理解代码库：给定仓库回答需要定位多处代码的问题，用来评测长上下文代码理解。",
+      "share": "未披露",
+      "format": "未披露",
+      "cite": ["evalplus@RepoQA"]
     }
   ],
-  "related_benchmarks": [
-    "humaneval",
-    "humanevalplus"
+  "does_not_measure": [
+    {
+      "text": "不测代码运行效率。HumanEval+ / MBPP+ 只判断输出对不对、不判断快慢，效率是同一团队另设的 EvalPerf 基准的职责。",
+      "cite": ["evalplus@EvalPerf"]
+    },
+    {
+      "text": "不测长上下文仓库理解。跨文件检索与仓库级代码问答由 RepoQA 负责，HumanEval+ / MBPP+ 全是单函数级题目。",
+      "cite": ["evalplus@RepoQA"]
+    },
+    {
+      "text": "不覆盖 Python 以外的语言，论文的实验对象就是 Python 函数级编程题。",
+      "cite": ["paper@§3"]
+    },
+    {
+      "text": "不自动排除数据污染。官方榜单把避免污染的责任交给模型提供方，训练数据接近的模型分数会被污染抬高。",
+      "cite": ["leaderboard@Notes"]
+    },
+    {
+      "text": "不测量代码可读性、可维护性、安全性等工程属性——论文把范围限定在功能正确性。",
+      "cite": ["paper@摘要"]
+    }
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "dataset": {
+    "sample_count": 542,
+    "splits": ["HumanEval+", "MBPP+"],
+    "languages": ["Python"],
+    "source_type": "在 HumanEval / MBPP 原题之上的测试集扩充：ChatGPT 生成种子输入 → 类型感知变异 → 差分测试筛选 → 测试约简；题目本身不新增。",
+    "public_sample": "HuggingFace 公开 evalplus/humanevalplus（数据集查看器 164 行）与 evalplus/mbppplus（378 行）；代码与测试集在 GitHub evalplus/evalplus，Apache-2.0 许可。",
+    "totals": "HumanEval+ 164 题（沿用 HumanEval 原题，只把测试用例扩充约 80×）；MBPP+ 378 题（数据集卡口径，官方榜单仍按 399 题子集计分）；两者合计 542 题。另有 EvalPerf 118 个 coding task（HumanEval+ 与 MBPP+ 的子集）与 RepoQA（题量未披露）。",
+    "cite": ["humanevalplus-dataset@数据集查看器", "mbppplus-dataset@数据集查看器", "repo@README", "repo@News", "leaderboard@Notes", "releases@v0.2.0", "paper@Table 4 注"],
+    "construction": [
+      {
+        "k": "① 生成种子输入",
+        "text": "用原版 ground-truth 的示例测试输入作示范，再加一条专门指令让 ChatGPT 生成高质量种子输入；每任务约 30 个种子，由 3 条不同 prompt 产生。",
+        "cite": ["paper@§2.1", "paper@§3"]
+      },
+      {
+        "k": "② 类型感知变异",
+        "text": "在种子上做类型感知变异，每任务再生成 1000 个输入，单题时间预算 1 小时。",
+        "cite": ["paper@§3"]
+      },
+      {
+        "k": "③ 差分测试筛选",
+        "text": "以差分测试为 oracle，交叉比对 ground-truth 实现与 LLM 生成实现的输出，只保留能把两者区分开的输入。",
+        "cite": ["paper@§2.1"]
+      },
+      {
+        "k": "④ 测试约简（MINI）",
+        "text": "以分支覆盖率、变异体击杀、LLM 样本击杀为测试需求，用集合覆盖算法把 HumanEval+ 平均 764.1 个测试约简到 16.1 个（约 47×），得到 HumanEval+-MINI。",
+        "cite": ["paper@Table 4", "releases@v0.1.5"]
+      },
+      {
+        "k": "⑤ 输入契约标注",
+        "text": "按 programming by contract 的思路给函数前置条件加断言（如 assert n > 0），保证喂进去的测试输入合法；HumanEval+ 的 164 题里有 83 题带手写契约。",
+        "cite": ["paper@§2.3", "paper@§3"]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "对每道题让模型生成程序：随机采样 200 个样本 × 4 个温度档位（0.2 / 0.4 / 0.6 / 0.8），再加一次贪心解码；用无偏估计的 pass@k 统计功能正确性。官方榜单排名按贪心解码的 pass@1。",
+    "cite": ["paper@§3", "leaderboard@Notes"],
+    "variants": [
+      {
+        "text": "base 模型与 chat 模型使用不同 prompt，换一套 prompt 得到的分数与原口径不可直接比较。",
+        "cite": ["repo@README"]
+      },
+      {
+        "text": "MBPP / MBPP+ 榜单口径是 MBPP-sanitized 427 题里手验过的 399 题子集，而 HuggingFace 的 mbppplus 数据集卡已是删掉坏题后的 378 题；两套口径的 MBPP+ 分数不可直接比较。",
+        "cite": ["leaderboard@Notes", "releases@v0.2.0", "mbppplus-dataset@数据集查看器"]
+      },
+      {
+        "text": "HumanEval+-MINI（平均约 16 个测试/题）与完整 HumanEval+（平均约 764 个测试/题）是两套测试集，分数不可直接比较。",
+        "cite": ["paper@Table 4", "releases@v0.1.5"]
+      },
+      {
+        "text": "榜单同时给出「EvalPlus Tests」与「Base Tests」两列：Base Tests 就是原版 HumanEval / MBPP 的分数，同一模型在该列系统性高于 EvalPlus Tests 列。",
+        "cite": ["leaderboard@Notes", "leaderboard@HumanEval+ 榜单"]
+      },
+      {
+        "text": "EvalPlus 各版本会修 ground-truth 与测试输入（v0.2.1 修 32 处 HumanEval+ oracle，v0.2.0 修 MBPP+ 三个 ground-truth），跨版本分数会有位移；官方预估 MBPP+ 换成 v0.2.0 口径约带来 4 个百分点的 pass@1 改善。",
+        "cite": ["repo@News"]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "pass-k",
+      "name": "pass@k（k 次采样至少一次全通过）",
+      "direction": "越高越好",
+      "description": "每道题采样 k 个程序，只要有一个在全部增强测试下通过就算该题通过，再对全部题目求平均；论文用的是无偏估计版本，k 常取 1 / 10 / 100。",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["paper@§3", "paper@摘要"]
+    },
+    {
+      "id": "pass-1",
+      "name": "pass@1（贪心解码单次通过率）",
+      "direction": "越高越好",
+      "description": "每道题只取一次贪心解码的输出，用增强测试判定是否全部通过；官方榜单按这个指标排名。",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["leaderboard@Notes", "paper@§3"]
+    }
+  ],
+  "versions": [
+    {
+      "id": "paper-v1",
+      "date": "2023-05-02",
+      "label": "arXiv v1 提交（论文首发；v3 于 2023-10-30 修订后投稿 NeurIPS 2023）",
+      "cite": ["paper@arXiv 提交记录", "paper@标题页"]
+    },
+    {
+      "id": "v0.1.5",
+      "date": "2023-06-02",
+      "label": "HumanEval+-MINI 发布，用于超快评测",
+      "cite": ["releases@v0.1.5", "repo@News"]
+    },
+    {
+      "id": "v0.1.7",
+      "date": "2023-09-06",
+      "label": "首个官方榜单上线；HumanEval+ 契约与输入修正",
+      "cite": ["releases@v0.1.7", "repo@News"]
+    },
+    {
+      "id": "v0.2.0",
+      "date": "2023-11-28",
+      "label": "MBPP+ 发布（399 题口径，测试用例扩充约 35×）",
+      "cite": ["releases@v0.2.0", "repo@News"]
+    },
+    {
+      "id": "v0.2.1",
+      "date": "2024-04-02",
+      "label": "HumanEval+ / MBPP+ 数据集上 HuggingFace；HumanEval+ oracle 修正 32 处",
+      "cite": ["releases@v0.2.1", "repo@News"]
+    },
+    {
+      "id": "v0.2.2",
+      "date": "2024-04-03",
+      "label": "发布自动化调整；README 新闻中 MBPP+ 数据升级到 v0.2.0（399 → 378 题）记在 2024-04-17 的 pre v0.3.0 条目下",
+      "cite": ["releases@v0.2.2", "repo@News"]
+    },
+    {
+      "id": "v0.3.1",
+      "date": "2024-10-20",
+      "label": "EvalPerf 代码效率评测并入仓库；一条命令跑完生成 + 后处理 + 评测（v0.3.0 因依赖问题被跳过）",
+      "cite": ["releases@v0.3.1", "repo@News"]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "原版 HumanEval / MBPP 的 ground-truth 本身有错：论文复查发现 HumanEval 原版 ground-truth 有 18 处缺陷（约占题目 11%），其中 5 处没处理边界输入、10 处功能实现错误；论文另称按同样标准检查发现超过 10% 的 ground-truth 实现不正确。",
+      "impact": "用错的标准答案筛测试输入，会让「对的解被判错」，也会让 LLM 的解被误判为错；这是 EvalPlus 要把测试集整个重建一遍的直接原因。",
+      "severity": "高",
+      "response": "EvalPlus 在扩充测试时以差分测试交叉核对 ground-truth 与 LLM 解，并在 v0.2.0 / v0.2.1 等多个版本里持续修 HumanEval+ 契约与 oracle。",
+      "reader": "看到某个模型在 HumanEval+ 上异常低分时，先怀疑是不是 ground-truth 判错，而不是直接认为模型差。",
+      "cite": ["paper@§3", "repo@News"]
+    },
+    {
+      "issue": "MBPP+ 题量在不同官方来源不一致：HuggingFace 数据集卡 mbppplus 是 378 行，官方榜单 Notes 与 v0.2.0 发布说明都说用 399 题子集。",
+      "impact": "同一模型在两个口径下的 MBPP+ 分数不可直接比较；把 399 口径和 378 口径的分数混进同一张表会得出错误结论。",
+      "severity": "高",
+      "response": "README 新闻明确写出 MBPP+ 升级到 v0.2.0 时删掉坏题（399 → 378），并预估约 4 个百分点的 pass@1 改善。",
+      "reader": "比较 MBPP+ 分数前，先确认对方用的是 399 题还是 378 题口径。",
+      "cite": ["mbppplus-dataset@数据集查看器", "leaderboard@Notes", "releases@v0.2.0", "repo@News"]
+    },
+    {
+      "issue": "增强测试会改变模型排名：论文发现测试不充分会导致错误排序；HumanEval+ 上多个模型的相对位置和原版不同。论文给出的平均下降幅度是 pass@1⋆ 最多降 23.1%、pass@1 最多降 19.3%、pass@10 最多降 24.9%、pass@100 最多降 28.9%。",
+      "impact": "在原版榜单上「谁更好」的结论可能在增强测试下反转，例如 WizardCoder-CodeLlama 与 Phind-CodeLlama 在原版 HumanEval 上被判定不优于 ChatGPT，HumanEval+ 上反而超过 ChatGPT。",
+      "severity": "中",
+      "response": "EvalPlus 的做法就是换成更充分的测试集，并在论文里给出两个口径的对照表。",
+      "reader": "不要把原版 HumanEval / MBPP 的排名直接搬到 HumanEval+ / MBPP+ 上。",
+      "cite": ["paper@摘要", "paper@§3"]
+    },
+    {
+      "issue": "数据污染责任在模型提供方：官方榜单明确说模型提供方有责任避免数据污染，训练数据接近的模型会受影响；榜单只对开放权重 / 开放数据的模型标注了可核查污染的颜色标记。",
+      "impact": "闭源或数据不开放的模型分数可能被高估，且无法从榜单侧核实。",
+      "severity": "中",
+      "response": "榜单用颜色标记开放程度，说明只有开源数据的模型才能具体推理污染情况。",
+      "reader": "看到某个模型 HumanEval+ 分数突然很高时，先看它是否开放训练数据。",
+      "cite": ["leaderboard@Notes"]
+    },
+    {
+      "issue": "覆盖面窄：只有 Python 函数级编程题，不测多语言、不测仓库级改动、不测效率；EvalPlus 团队另设 EvalPerf 与 RepoQA 分别补效率与仓库理解。",
+      "impact": "HumanEval+ / MBPP+ 高分只代表窄口径下的功能正确性，不能外推到真实工程能力。",
+      "severity": "中",
+      "response": "EvalPlus 仓库在 v0.3.1 起把 EvalPerf 并入，官网也把 RepoQA 列为独立基准。",
+      "reader": "评估编码 Agent 时应配合仓库级基准一起看。",
+      "cite": ["evalplus@EvalPerf", "evalplus@RepoQA", "releases@v0.3.1"]
+    },
+    {
+      "issue": "HumanEval+ 的平均测试数在不同来源不一致：论文 Table 2 / Table 4 正文写 764.1 个，Table 4 注释与 v0.1.5 发布说明写 774.8 个；MINI 的平均测试数也有 16.1（论文）与 16.5（v0.1.5）两个数。",
+      "impact": "只影响对「扩充倍数」「约简倍数」的精确描述，不影响 pass@k 分数本身。",
+      "severity": "低",
+      "response": "未见官方统一说明。",
+      "reader": "引用 HumanEval+ 平均测试数时，最好同时注明取自 Table 2 还是 Table 4 注释。",
+      "cite": ["paper@Table 4", "paper@Table 4 注", "releases@v0.1.5"]
+    },
+    {
+      "issue": "第三方复现口径不明：Qwen 在技术报告里把 EvalPlus 当作 14 个基准之一汇报 Qwen3.8-Flash-Next-Base 的成绩，但该表格只给分数，不说明用的哪个 EvalPlus 版本、哪套 prompt、399 还是 378 题口径。",
+      "impact": "引用第三方报告里的 EvalPlus 分数时，无法确认与官方榜单口径一致。",
+      "severity": "低",
+      "response": "未见 Qwen 侧补充说明。",
+      "reader": "比较不同厂商报告里的 EvalPlus 分数时，先找口径说明。",
+      "cite": ["qwen-blog-id-qwen3-8-flash-ne@Coding tasks"]
+    }
+  ],
+  "notes": "Qwen 引用；用增强用例防运气通过",
+  "official_sources": [
+    { "kind": "site", "url": "https://evalplus.github.io" },
+    { "kind": "site", "url": "https://qwenlm.github.io/blog/qwen2.5/" },
+    { "kind": "site", "url": "https://qwen.ai/blog?id=qwen3.8-flash-next" },
+    { "kind": "paper", "url": "https://arxiv.org/abs/2305.01210" },
+    { "kind": "repo", "url": "https://github.com/evalplus/evalplus" },
+    { "kind": "leaderboard", "url": "https://evalplus.github.io/leaderboard.html" },
+    { "kind": "dataset", "url": "https://huggingface.co/datasets/evalplus/humanevalplus" },
+    { "kind": "dataset", "url": "https://huggingface.co/datasets/evalplus/mbppplus" }
+  ],
+  "related_benchmarks": ["humaneval", "humanevalplus", "mbpp", "mbpp-evalplus"],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-13",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "Is Your Code Generated by ChatGPT Really Correct? Rigorous Evaluation of Large Language Models for Code Generation（arXiv:2305.01210v3，NeurIPS 2023）",
+        "url": "https://arxiv.org/abs/2305.01210",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "evalplus",
+        "kind": "site",
+        "title": "Benchmarks by EvalPlus Team（EvalPlus 官网首页）",
+        "url": "https://evalplus.github.io",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "evalplus/evalplus GitHub 仓库（README 与 News）",
+        "url": "https://github.com/evalplus/evalplus",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "leaderboard",
+        "kind": "leaderboard",
+        "title": "EvalPlus Leaderboard（HumanEval / MBPP / Average 三个标签页）",
+        "url": "https://evalplus.github.io/leaderboard.html",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "releases",
+        "kind": "announcement",
+        "title": "evalplus/evalplus Releases（Atom feed，v0.1.3 – v0.3.1）",
+        "url": "https://github.com/evalplus/evalplus/releases.atom",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "humanevalplus-dataset",
+        "kind": "dataset",
+        "title": "HuggingFace 数据集 evalplus/humanevalplus",
+        "url": "https://huggingface.co/datasets/evalplus/humanevalplus",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "mbppplus-dataset",
+        "kind": "dataset",
+        "title": "HuggingFace 数据集 evalplus/mbppplus",
+        "url": "https://huggingface.co/datasets/evalplus/mbppplus",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "qwen-blog-id-qwen3-8-flash-ne",
+        "kind": "blog",
+        "title": "Qwen 博客：Qwen3.8-Flash-Next-Base 技术报告（仅用于口径局限说明）",
+        "url": "https://qwen.ai/blog?id=qwen3.8-flash-next",
+        "accessed": "2026-11-13"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "University of Illinois Urbana-Champaign 与 Nanjing University；代码与数据集由 EvalPlus 团队维护（Apache-2.0）",
+        "cite": ["paper@标题页", "repo@README"]
+      },
+      "first_release": {
+        "v": "2023-05-02（arXiv v1 提交）；仓库最早一条带日期的发布记录是 v0.1.3（2023-05-09）",
+        "cite": ["paper@arXiv 提交记录", "releases@v0.1.3"]
+      }
+    },
+    "cites": {
+      "summary": ["repo@README", "paper@摘要", "paper@标题页"],
+      "interpretation": ["leaderboard@Notes", "evalplus@EvalPerf", "evalplus@RepoQA"]
+    },
+    "problem": {
+      "text": "原版 HumanEval / MBPP 只带极少测试用例（HumanEval 平均 9.6 个），大量错误实现能「碰巧通过」全部测试；更麻烦的是原版 ground-truth 本身就有缺陷（论文称超过 10% 实现不正确），连标准答案都不可靠。EvalPlus 用扩充后的测试集把这两类噪声一起压掉，让分数更接近真实功能正确性。",
+      "cite": ["paper@Table 4 注", "paper@摘要", "paper@§3"]
+    },
+    "ladder": [
+      {
+        "label": "随机 / 平凡基线",
+        "value": "论文未给出",
+        "note": "论文没有报告随机解或平凡解的 pass@k 基线，本站也不推算。",
+        "cite": ["paper@§3"]
+      },
+      {
+        "label": "论文发布时最好（2023-10，26 个模型）",
+        "value": "论文未给出",
+        "note": "论文 Table 3 逐模型列出原版 HumanEval 与 HumanEval+ 两个口径的 pass@k，但没有汇总「最好成绩」行；论文给出的汇总是下降幅度：pass@1⋆ 最多降 23.1%、pass@1 最多降 19.3%、pass@10 最多降 24.9%、pass@100 最多降 28.9%。",
+        "cite": ["paper@Table 3", "paper@§3"]
+      },
+      {
+        "label": "官网榜单当前最高（HumanEval+，EvalPlus Tests）",
+        "value": "89",
+        "note": "O1 Preview 与 O1 Mini（均为 Sept 2024）并列第 1，贪心解码 pass@1；页面未标注结果更新日期，访问日为 2026-11-13。",
+        "cite": ["leaderboard@HumanEval+ 榜单"]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      },
+      {
+        "label": "原版口径参考线（Base Tests）",
+        "value": "96.3",
+        "note": "同一榜单 Base Tests 列就是原版 HumanEval 的分数，O1 Preview 在该列为 96.3，与 EvalPlus Tests 列的 89 相差约 7 个百分点；两个口径不可混排。",
+        "cite": ["leaderboard@HumanEval+ 榜单", "leaderboard@Notes"]
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把原版 HumanEval / MBPP 的分数当成「代码真的对」——原版测试太少，大量错误实现能碰巧通过；EvalPlus 就是为此把测试扩了约 80× / 35×。",
+        "cite": ["repo@README", "paper@摘要"]
+      },
+      {
+        "text": "把 HumanEval+ 上模型排名的变化当成「新模型一定更强」——测试更充分本身就会改变排名，论文明确说测试不充分会导致错误排序。",
+        "cite": ["paper@§3"]
+      },
+      {
+        "text": "把 MBPP+ 分数跨口径直接比较——官方榜单用 399 题子集，HuggingFace 数据集卡是 378 题。",
+        "cite": ["leaderboard@Notes", "mbppplus-dataset@数据集查看器"]
+      },
+      {
+        "text": "把 EvalPlus 成绩当成编码能力总评——它只测 Python 函数级功能正确性，效率归 EvalPerf、仓库理解归 RepoQA。",
+        "cite": ["evalplus@EvalPerf", "evalplus@RepoQA"]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "University of Illinois Urbana-Champaign 与 Nanjing University；代码与数据集由 EvalPlus 团队在 GitHub / HuggingFace 维护（Apache-2.0）",
+        "cite": ["paper@标题页", "repo@README"]
+      },
+      {
+        "k": "核心作者",
+        "v": "Jiawei Liu、Chunqiu Steven Xia（共同一作）、Yuyao Wang、Lingming Zhang",
+        "cite": ["paper@标题页"]
+      },
+      {
+        "k": "发表出处",
+        "v": "NeurIPS 2023（第 37 届神经信息处理系统大会）",
+        "cite": ["paper@标题页"]
+      },
+      {
+        "k": "时间线",
+        "v": "2023-05-02 arXiv v1 → 2023-06-02 HumanEval+-MINI → 2023-09-06 首个官方榜单 → 2023-10-30 arXiv v3 → 2023-11-28 MBPP+ → 2024-04-02 数据集上 HuggingFace → 2024-10-20 EvalPerf 并入仓库",
+        "cite": ["paper@arXiv 提交记录", "releases@v0.1.5", "releases@v0.1.7", "releases@v0.2.0", "releases@v0.2.1", "releases@v0.3.1"]
+      },
+      {
+        "k": "数据与代码",
+        "v": "数据集在 HuggingFace（evalplus/humanevalplus 164 行、evalplus/mbppplus 378 行）；代码在 GitHub evalplus/evalplus；榜单在 evalplus.github.io/leaderboard.html",
+        "cite": ["humanevalplus-dataset@数据集查看器", "mbppplus-dataset@数据集查看器", "repo@README", "leaderboard@Notes"]
+      },
+      {
+        "k": "采用情况",
+        "v": "README 列出的使用方包括 Meta Llama 3.1 与 3.3、Allen AI TÜLU 1/2/3、Qwen2.5-Coder、CodeQwen 1.5、DeepSeek-Coder V2、Qwen2、Snowflake Arctic、StarCoder2、Magicoder、WizardCoder；论文称 PyPI 包发布 5 个月内被安装超过 6 千次。",
+        "cite": ["repo@README", "paper@§5"]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-13",
+        "columns": ["来源", "模型", "pass@1", "口径"],
+        "rows": [
+          ["官网榜单 HumanEval 标签页 · EvalPlus Tests", "O1 Preview (Sept 2024)", "89", "HumanEval+ v0.1.10；贪心解码"],
+          ["官网榜单 HumanEval 标签页 · EvalPlus Tests", "O1 Mini (Sept 2024)", "89", "HumanEval+ v0.1.10；贪心解码"],
+          ["官网榜单 HumanEval 标签页 · EvalPlus Tests", "Qwen2.5-Coder-32B-Instruct", "87.2", "HumanEval+ v0.1.10；贪心解码"],
+          ["官网榜单 HumanEval 标签页 · EvalPlus Tests", "GPT 4o (Aug 2024)", "87.2", "HumanEval+ v0.1.10；贪心解码"],
+          ["官网榜单 HumanEval 标签页 · EvalPlus Tests", "GPT-4 (May 2023)", "79.3", "HumanEval+ v0.1.10；贪心解码"],
+          ["官网榜单 HumanEval 标签页 · EvalPlus Tests", "zyte-1B", "1.8", "HumanEval+ v0.1.10；贪心解码（榜末）"],
+          ["官网榜单 HumanEval 标签页 · Base Tests", "O1 Preview (Sept 2024)", "96.3", "原版 HumanEval 测试"],
+          ["官网榜单 HumanEval 标签页 · Base Tests", "GPT 4o (Aug 2024)", "92.7", "原版 HumanEval 测试"],
+          ["官网榜单 HumanEval 标签页 · Base Tests", "GPT-4 (May 2023)", "88.4", "原版 HumanEval 测试"]
+        ]
+      },
+      "cite": ["leaderboard@HumanEval+ 榜单", "leaderboard@Notes"]
+    }
+  }
 }
