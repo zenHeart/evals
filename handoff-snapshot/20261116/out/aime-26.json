@@ -1,0 +1,668 @@
+{
+  "id": "aime-26",
+  "name": "AIME 2026",
+  "full_name": "American Invitational Mathematics Examination 2026（美国数学邀请赛 2026 年卷；本档案指 MathArena 的 AIME 2026 评测集）",
+  "aliases": ["aime2026", "AIME 2026 I/II"],
+  "status": null,
+  "categories": [
+    "reasoning"
+  ],
+  "summary": "AIME 2026 是美国数学邀请赛 2026 年两套试卷拼成的推理评测集：每套 15 题、3 小时，答案只能是 0–999 的整数，所以能全自动判分；MathArena 把 30 道真题做成公开数据集，并按统一协议持续给模型跑分。",
+  "interpretation": "高分说明模型在当年最新竞赛真题上的多步推理和算术很少出错；但整卷只有 30 题、头部模型已接近满分，MathArena 官网也已把这个竞赛标记为弃用——它衡量的是「不在新题上掉链子」，区分旗舰模型不够，更适合比较中小模型或验证新训练方法。",
+  "measures": [
+    {
+      "area": "AIME 2026 I + II 两套竞赛真题",
+      "focus": "两套各 15 题的短答案竞赛推理；示例题（数据集预览）：等角五边形边长平方和为 308、对角线平方和为 800，周长平方可写成 m√n，求 m+n（标准答案 681）",
+      "share": "两套各 15 题，共 30 题",
+      "format": "0–999 整数，精确匹配",
+      "cite": [
+        "paper@附录 A.3",
+        "hfpage@数据预览"
+      ]
+    },
+    {
+      "area": "知识点分布（代数 / 几何 / 数论 / 组合）",
+      "focus": "MathArena 未公布 2026 卷各知识点的题目数与占比；数据集预览中另可见数列/数论类题目：首项为 4 且含 24 和 34 的整数等差数列，求各项第 10 项之和（标准答案 178）",
+      "share": "未披露",
+      "format": "未披露",
+      "cite": [
+        "hfpage@数据预览",
+        "paper@Table 4"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "证明写作与解题过程——只看最终整数答案；论文把 AIME 2026 归入 final-answer competitions，证明质量由 USAMO 等基准另测",
+      "cite": [
+        "paper@Table 1",
+        "paper@Table 4"
+      ]
+    },
+    {
+      "text": "视觉与多模态推理——AIME 2026 是纯文本短答案，MathArena 用 Kangaroo 2025 单独测视觉推理",
+      "cite": [
+        "paper@§4.2",
+        "paper@Table 1"
+      ]
+    },
+    {
+      "text": "工具调用与长程智能体能力——竞赛配置未启用 harness，官方运行是单轮问答；厂商另报的带 Python 等口径不在 MathArena 榜单内",
+      "cite": [
+        "repo@Adding a New Model/Agent",
+        "config"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 30,
+    "splits": [
+      "train：30 题（AIME 2026 I + II 合并为一个 split，数据集内未按场次分开标注）"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "competition（竞赛真题；MathArena 从 AoPS 提取、转 LaTeX、人工校验）",
+    "public_sample": true,
+    "totals": "30 题（两套各 15 题）· 全部为 0–999 整数短答案 · 题面为 LaTeX 源码 · 英文 · 许可 CC BY-NC-SA 4.0",
+    "cite": [
+      "card@dataset_info",
+      "paper@附录 A.3",
+      "evalcfg@description"
+    ],
+    "construction": [
+      {
+        "k": "题目来源",
+        "text": "2026 年 AIME 真题从 Art of Problem Solving（AoPS）网站提取；数据集卡说明题目经过提取、转换为 LaTeX 并人工校验。",
+        "cite": [
+          "paper@附录 A.3",
+          "card@Source Data"
+        ]
+      },
+      {
+        "k": "整理为可判分数据集",
+        "text": "整理成 Hugging Face 数据集，只有三个字段：problem_idx（题号）、answer（0–999 整数标准答案）、problem（LaTeX 题面）。",
+        "cite": [
+          "card@Data Fields"
+        ]
+      },
+      {
+        "k": "提示词与答案格式",
+        "text": "竞赛配置要求模型把最终答案放进 \\boxed{}，并提示「答案是 0 到 999 之间（含）的整数」。",
+        "cite": [
+          "config@instruction"
+        ]
+      },
+      {
+        "k": "自动判分",
+        "text": "用基于 SymPy 的解析器抽取答案并与标准答案比对；解析器遇到格式错误时要求模型重述答案，再用 LLM 裁判判定，裁判与解析器不一致的个案全部人工复核（占比低于 1%）。",
+        "cite": [
+          "paper@附录 A.2"
+        ]
+      },
+      {
+        "k": "多次运行取平均",
+        "text": "每个模型在每道题上运行 4 次，榜单显示平均分与单次运行单题的平均成本（美元）。",
+        "cite": [
+          "site@About MathArena",
+          "paper@附录 A.1",
+          "repo@Additional Flags"
+        ]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "模型按竞赛配置的提示词作答（最终答案放进 \\boxed{}，答案为 0–999 整数）；MathArena 用 SymPy 解析器抽答案，格式不符时要求模型重述，再用 LLM 裁判判定并人工复核分歧个案；每个模型每题运行 4 次取平均，榜单同时给出 95% 置信区间与单题平均成本。",
+    "cite": [
+      "config@instruction",
+      "paper@附录 A.2",
+      "site@About MathArena"
+    ],
+    "variants": [
+      {
+        "text": "整卷 30 题 vs 仅 AIME 2026 I（15 题）：GLM-5 发布时只跑了 I 卷（自报 92.7），与后来各家的整卷 30 题分数不可直接比较。",
+        "cite": [
+          "glm5@Full Benchmark Table"
+        ]
+      },
+      {
+        "text": "厂商自建口径 vs MathArena 独立复测：GLM-5.2 自报 99.2（自家博客与 HF 提交榜，GPT-5.5 medium 作裁判、温度 1.0、最长生成 163,840 token），MathArena 榜单为 90.00%。",
+        "cite": [
+          "glm52@Full Benchmark Table",
+          "glm52@Footnote",
+          "lb@Accuracy 列",
+          "hfpage@DatasetLeaderboard"
+        ]
+      },
+      {
+        "text": "运行次数与聚合方式：MathArena 固定每题 4 次取平均；HF 数据集页的厂商提交榜允许 maj@16 等口径（如 Darwin-180B-RSI 标注 maj@16=100.0、16 次平均 98.75），与 avg@4 不同。",
+        "cite": [
+          "hfpage@DatasetLeaderboard",
+          "site@About MathArena"
+        ]
+      },
+      {
+        "text": "推理档位：榜单同时存在同一模型的不同推理档位（如 GPT-5.2 (high) 98.33% 与 GPT-5.5 (xhigh) 100.00%），跨档位比较会改变结论。",
+        "cite": [
+          "lb@Accuracy 列"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "accuracy",
+      "name": "准确率（4 次运行平均）",
+      "direction": "越高越好",
+      "description": "模型最终答案与标准答案一致的题目占比；每题运行 4 次取平均，榜单附 95% 置信区间",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "site@About MathArena",
+        "lb@Accuracy 列"
+      ]
+    },
+    {
+      "id": "cost-per-problem",
+      "name": "单题平均成本",
+      "direction": "越低越好",
+      "description": "单次运行一道题的平均成本（美元），榜单按模型报告",
+      "range": [
+        0,
+        null
+      ],
+      "unit": "USD",
+      "cite": [
+        "site@About MathArena",
+        "lb@Cost 列"
+      ]
+    }
+  ],
+  "versions": [
+    {
+      "id": "aime-2026-exam",
+      "date": "2026-02-06",
+      "label": "AIME 2026 竞赛举行（MathArena 竞赛配置 date 为 2026-02-06）；数据集收录 I + II 两套共 30 题",
+      "cite": [
+        "config@date",
+        "paper@附录 A.3"
+      ]
+    },
+    {
+      "id": "matharena-platform-v1",
+      "date": "2026-05-01",
+      "label": "MathArena 平台论文 arXiv v1 发布，AIME 2026 以 30 题 final-answer 基准纳入（Table 1 日期记为 02/26）",
+      "cite": [
+        "paper"
+      ]
+    },
+    {
+      "id": "matharena-platform-v2",
+      "date": "2026-05-15",
+      "label": "arXiv v2（本档案核对所用版本）",
+      "cite": [
+        "paper"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "已饱和并被官方弃用",
+      "impact": "论文发布时头部模型在 AIME 2026 上已接近满分（GPT-5.5 97%）；本站 2026-11-11 核对时榜单前两名为 100.00%，且 MathArena 官网已把 AIME 2026 标记为 Deprecated competition，与全部 final-answer 竞赛一起退出活跃榜单。",
+      "severity": "高",
+      "response": "MathArena 把评测重心转向研究级基准（ArXivMath / BrokenArXiv / ArXivLean / LeanLean），并称这类竞赛基准的价值转向评估较小模型与学术研究方法；未对 AIME 2026 本身做修订。",
+      "reader": "高分只说明「不在竞赛真题上掉链子」；要区分当代旗舰模型，应看 MathArena 的活跃基准或 Apex 等高难题集。",
+      "cite": [
+        "paper@§5.2",
+        "site@竞赛选择器"
+      ]
+    },
+    {
+      "issue": "厂商自报与独立复测不一致",
+      "impact": "同一模型在不同口径下差距可达数个点：GLM-5.2 在自家博客与 HF 提交榜自报 99.2，MathArena 独立运行仅 90.00%；GLM-5.1 自报 95.3（GPT-5.2 medium 裁判），MathArena 复测 95.83%。",
+      "severity": "高",
+      "response": "MathArena 的做法是尽可能先复现厂商报告再发布自己的结果，差异必须解释或解决后才发布；论文记录了 Claude Opus 4.6 在 AIME 2026 上「几乎满分」被成功复现的案例。",
+      "reader": "比较分数前先确认是 MathArena 复测还是厂商自报，以及运行次数、裁判模型与推理档位。",
+      "cite": [
+        "glm52@Full Benchmark Table",
+        "glm51@Full Benchmark Table",
+        "lb@Accuracy 列",
+        "hfpage@DatasetLeaderboard",
+        "paper@附录 C"
+      ]
+    },
+    {
+      "issue": "样本极小、单题权重高",
+      "impact": "整卷只有 30 题，一题之差约 3.3 个百分点；榜单前列模型的 95% 置信区间互相重叠（如 96.67% ± 3.21%、90.00% ± 7.59%）。",
+      "severity": "中",
+      "response": "MathArena 每题运行 4 次取平均并报告 95% 置信区间；对未运行的模型用项目反应理论补分，并在表格脚注说明估计值。",
+      "reader": "榜单前 10 名之间几个点的差距不要当成稳定排名。",
+      "cite": [
+        "lb@Accuracy 列",
+        "lb@表格脚注"
+      ]
+    },
+    {
+      "issue": "赛后发布与污染窗口",
+      "impact": "AIME 2026 于 2026-02 举行，此后发布的模型可能已在训练数据中见过真题；榜单对竞赛后发布的模型标注 ⚠️「Model was released after competition release」。",
+      "severity": "中",
+      "response": "MathArena 的定位是用新题测训练中未见过的推理，并在榜单上标注模型与竞赛的发布先后；未见针对已污染模型的专门修正。",
+      "reader": "看分数时注意模型的 ⚠️ 标记与发布日期。",
+      "cite": [
+        "lb@ contamination 提示",
+        "site@About MathArena",
+        "config@date"
+      ]
+    }
+  ],
+  "notes": "GLM/Kimi/Meta Muse 引用；MathArena 提供标准评测与榜单",
+  "official_sources": [
+    {
+      "kind": "site",
+      "url": "https://matharena.ai/"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/MathArena/aime_2026"
+    },
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2605.00674"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/eth-sri/matharena"
+    },
+    {
+      "kind": "site",
+      "url": "https://maa.org/maa-invitational-competitions/"
+    },
+    {
+      "kind": "site",
+      "url": "https://z.ai/blog/glm-5.1"
+    },
+    {
+      "kind": "site",
+      "url": "https://z.ai/blog/glm-5.2"
+    },
+    {
+      "kind": "site",
+      "url": "https://z.ai/blog/glm-5"
+    }
+  ],
+  "related_benchmarks": [
+    "aime24",
+    "aime-25",
+    "hmmt25",
+    "frontiermath",
+    "math500",
+    "gpqa",
+    "imo-answerbench"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-11",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-11",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "Beyond Benchmarks: MathArena as an Evaluation Platform for Mathematics with LLMs（arXiv:2605.00674v2，2026-05-15）",
+        "url": "https://arxiv.org/abs/2605.00674",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "site",
+        "kind": "site",
+        "title": "MathArena 官网首页（About MathArena、竞赛选择器与更新日志）",
+        "url": "https://matharena.ai/",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "lb",
+        "kind": "leaderboard",
+        "title": "MathArena AIME 2026 榜单数据（competition_tables/aime--aime_2026）",
+        "url": "https://matharena.ai/competition_tables/aime--aime_2026",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "card",
+        "kind": "dataset",
+        "title": "MathArena/aime_2026 数据集卡（Hugging Face README）",
+        "url": "https://huggingface.co/datasets/MathArena/aime_2026",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "evalcfg",
+        "kind": "dataset",
+        "title": "MathArena/aime_2026 仓库内 eval.yaml（任务描述与框架声明）",
+        "url": "https://huggingface.co/datasets/MathArena/aime_2026/blob/main/eval.yaml",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "hfpage",
+        "kind": "leaderboard",
+        "title": "MathArena/aime_2026 数据集页（Hugging Face，含厂商提交的评测结果榜）",
+        "url": "https://huggingface.co/datasets/MathArena/aime_2026",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "eth-sri/matharena GitHub 仓库 README（评测代码、运行参数、竞赛配置映射）",
+        "url": "https://github.com/eth-sri/matharena",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "config",
+        "kind": "repo",
+        "title": "eth-sri/matharena 竞赛配置 aime/aime_2026.yaml（提示词、题量、日期）",
+        "url": "https://github.com/eth-sri/matharena/blob/main/configs/competitions/aime/aime_2026.yaml",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "maa",
+        "kind": "site",
+        "title": "MAA：Invitational Competitions（AIME 赛制说明与 2027 年改革）",
+        "url": "https://maa.org/maa-invitational-competitions/",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "glm5",
+        "kind": "blog",
+        "title": "GLM-5 发布博客（z.ai，2026-02，自报 AIME 2026 I 分数）",
+        "url": "https://z.ai/blog/glm-5",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "glm51",
+        "kind": "blog",
+        "title": "GLM-5.1 发布博客（z.ai，2026-04，自报 AIME 2026 分数）",
+        "url": "https://z.ai/blog/glm-5.1",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "glm52",
+        "kind": "blog",
+        "title": "GLM-5.2 发布博客（z.ai，2026-06，自报 AIME 2026 分数与评测口径）",
+        "url": "https://z.ai/blog/glm-5.2",
+        "accessed": "2026-11-11"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "MathArena（ETH Zurich SRI Lab 与 INSAIT）制作评测集与榜单；竞赛本身由美国数学协会（MAA）主办",
+        "cite": [
+          "paper@作者署名",
+          "maa@Invitational Competition Sequence"
+        ]
+      },
+      "first_release": {
+        "v": "评测集随 MathArena 平台论文于 2026-05-01 公开（竞赛日期 2026-02-06，数据含 I + II 两套共 30 题）",
+        "cite": [
+          "paper",
+          "config@date"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "evalcfg@description",
+        "paper@附录 A.3",
+        "card@Dataset Summary"
+      ],
+      "interpretation": [
+        "paper@§5.2",
+        "site@竞赛选择器"
+      ]
+    },
+    "problem": {
+      "text": "静态基准范围窄、很快饱和、发布后很少维护，从业者只能拿厂商自报数字拼图；MathArena 用「刚比完的竞赛真题」提供训练数据里大概率不存在的题目，并对所有模型跑同一套协议。论文也承认这类竞赛基准一年内就饱和，AIME 2026 因此在 2026 年底被官网标记为弃用。",
+      "cite": [
+        "paper@摘要",
+        "paper@§1",
+        "site@竞赛选择器"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机 / 人类基线",
+        "value": "论文未给出",
+        "note": "MathArena 未报告 AIME 2026 的人类或随机基线；论文只说明该竞赛面向数学兴趣强的高中学生。",
+        "cite": [
+          "paper@Table 4"
+        ]
+      },
+      {
+        "label": "论文发布时最好",
+        "value": "97%",
+        "note": "论文 §5.2：GPT-5.5 在 AIME 与 HMMT 上均达到 97%，作者据此判断 final-answer 竞赛已饱和。",
+        "cite": [
+          "paper@§5.2"
+        ]
+      },
+      {
+        "label": "官方榜单当前最高",
+        "value": "100.00%",
+        "note": "MathArena AIME 2026 榜单（2026-11-11 抓取）：GPT-5.5 (xhigh) 与 Claude-Opus-4.8 (max) 并列 100.00%（± 0.00%）。",
+        "cite": [
+          "lb@Accuracy 列"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      },
+      {
+        "label": "饱和 / 弃用参考线",
+        "value": "官方已标记 Deprecated competition",
+        "note": "本站核对时 MathArena 官网把 AIME 2026 与全部 final-answer 竞赛一起归入弃用组；分数接近满分即进入无区分度区间。",
+        "cite": [
+          "site@竞赛选择器",
+          "paper@§5.2"
+        ]
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把厂商自报分数和 MathArena 独立复测分数排在一起比——GLM-5.2 自报 99.2，MathArena 复测 90.00%，差约 9 个百分点。",
+        "cite": [
+          "glm52@Full Benchmark Table",
+          "lb@Accuracy 列",
+          "hfpage@DatasetLeaderboard"
+        ]
+      },
+      {
+        "text": "把「AIME 2026 I」的分数当成整卷分数——GLM-5 发布时只跑了 15 题的 I 卷（92.7），整卷是 30 题。",
+        "cite": [
+          "glm5@Full Benchmark Table",
+          "card@dataset_info"
+        ]
+      },
+      {
+        "text": "混淆聚合口径——HF 数据集页的厂商提交榜允许 maj@16 等（Darwin-180B-RSI 标注 maj@16=100.0、16 次平均 98.75），MathArena 榜单固定为每题 4 次平均。",
+        "cite": [
+          "hfpage@DatasetLeaderboard",
+          "site@About MathArena"
+        ]
+      },
+      {
+        "text": "以为这个榜还能区分旗舰模型——MathArena 已把 AIME 2026 标记为弃用，论文也说它不再适合区分前沿模型。",
+        "cite": [
+          "site@竞赛选择器",
+          "paper@§5.2"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "竞赛方",
+        "v": "美国数学协会（MAA）：AIME 是 AMC 系列中面向 AMC 10/12 高分学生的邀请赛，成绩优异者进入 USAMO / USAJMO 选拔",
+        "cite": [
+          "maa@Invitational Competition Sequence"
+        ]
+      },
+      {
+        "k": "评测方与核心作者",
+        "v": "MathArena（ETH Zurich SRI Lab 与 INSAIT，获 Epoch AI 资助）；2026 平台论文作者 Jasper Dekoninck、Nikola Jovanović、Tim Gehrunger、Kári Rögnvaldsson、Ivo Petrov、Chenhao Sun、Martin Vechev",
+        "cite": [
+          "paper@作者署名",
+          "site@About MathArena"
+        ]
+      },
+      {
+        "k": "赛制（2026 卷）",
+        "v": "两套试卷各 15 题、3 小时，答案均为 0–999 整数；MAA 已宣布 2027 年 2 月起改为 Pearson 考点机考、两段各 90 分钟（8 + 7 题）",
+        "cite": [
+          "evalcfg@description",
+          "maa@FAQ"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "数据集 MathArena/aime_2026（Hugging Face，CC BY-NC-SA 4.0，30 题）；评测代码在 GitHub eth-sri/matharena，竞赛配置为 aime/aime_2026.yaml",
+        "cite": [
+          "card@Licensing Information",
+          "repo@Current Website Competitions"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2026-02-06 AIME 2026 竞赛 → 2026-05-01 / 05-15 MathArena 平台论文 arXiv v1 / v2 → 2026-11-11 本站核对时官网已标记为 Deprecated",
+        "cite": [
+          "config@date",
+          "paper",
+          "site@竞赛选择器"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-11",
+        "columns": [
+          "来源",
+          "模型",
+          "提供方",
+          "准确率",
+          "95% CI",
+          "口径"
+        ],
+        "rows": [
+          [
+            "MathArena 榜单",
+            "GPT-5.5 (xhigh)",
+            "OpenAI",
+            "100.00%",
+            "± 0.00%",
+            "每题 4 次平均"
+          ],
+          [
+            "MathArena 榜单",
+            "Claude-Opus-4.8 (max)",
+            "Anthropic",
+            "100.00%",
+            "± 0.00%",
+            "同上"
+          ],
+          [
+            "MathArena 榜单",
+            "GPT-5.4 (xhigh)",
+            "OpenAI",
+            "99.17%",
+            "± 1.63%",
+            "同上"
+          ],
+          [
+            "MathArena 榜单",
+            "GPT-5.2 (high)",
+            "OpenAI",
+            "98.33%",
+            "± 2.29%",
+            "同上"
+          ],
+          [
+            "MathArena 榜单",
+            "Gemini 3.1 Pro Preview",
+            "Google",
+            "98.33%",
+            "± 2.29%",
+            "同上"
+          ],
+          [
+            "MathArena 榜单",
+            "Step 3.5 Flash",
+            "StepFun",
+            "96.67%",
+            "± 3.21%",
+            "同上"
+          ],
+          [
+            "MathArena 榜单",
+            "GLM 5",
+            "Z.ai",
+            "96.67%",
+            "± 3.21%",
+            "同上"
+          ],
+          [
+            "MathArena 榜单",
+            "DeepSeek-v4-Pro (Max)",
+            "DeepSeek",
+            "96.67%",
+            "± 3.21%",
+            "同上"
+          ],
+          [
+            "MathArena 榜单",
+            "Kimi K3 (Think)",
+            "Moonshot AI",
+            "96.67%",
+            "± 4.54%",
+            "同上"
+          ],
+          [
+            "MathArena 榜单",
+            "GLM 5.1",
+            "Z.ai",
+            "95.83%",
+            "± 3.58%",
+            "同上"
+          ],
+          [
+            "MathArena 榜单",
+            "GLM 5.2",
+            "Z.ai",
+            "90.00%",
+            "± 7.59%",
+            "同上"
+          ],
+          [
+            "GLM-5.2 博客自报",
+            "GLM-5.2",
+            "Z.ai",
+            "99.2",
+            "未列出",
+            "厂商自报；GPT-5.5 (medium) 裁判"
+          ],
+          [
+            "GLM-5 博客自报",
+            "GLM-5 (Thinking)",
+            "Z.ai",
+            "92.7",
+            "未列出",
+            "仅 AIME 2026 I（15 题）"
+          ]
+        ]
+      },
+      "cite": [
+        "lb@Accuracy 列",
+        "glm52@Full Benchmark Table",
+        "glm5@Full Benchmark Table"
+      ]
+    }
+  }
+}

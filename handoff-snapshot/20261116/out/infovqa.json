@@ -1,0 +1,546 @@
+{
+  "id": "infovqa",
+  "name": "InfoVQA",
+  "full_name": "InfographicVQA",
+  "aliases": [
+    "InfographicVQA"
+  ],
+  "status": null,
+  "categories": [
+    "multimodal"
+  ],
+  "summary": "信息图（infographic）视觉问答：5,485 张真实网络信息图上的 30,035 个问答对，答案多数要从图内 OCR 文本里逐字抽出，也有一部分要做计数、算术或排序；2021 DocVQA 挑战赛 Task 3 的官方数据集。",
+  "interpretation": "分数上沿由人类定：test 集 ANLS 0.980、Accuracy 95.70%。2021 DocVQA 竞赛官方榜单最高是 Applica.ai TILT 的 0.6120，论文自带基线只有 0.272。但 Vocab + OCR UB 说明超过 3/4 的答案就在 OCR 文本串或最常见答案词表里，所以高分并不自动等于「看懂了图」——读分数时应同时看 Answer-source、Evidence 与 Operation 三类分解。",
+  "measures": [
+    {
+      "area": "Image-span 答案",
+      "focus": "答案是从信息图 OCR 文本中按默认阅读顺序逐字抽出的单个连续 span",
+      "share": "validation + test 中近 70% 的题目（论文按只能处理这一类的 LayoutLM 口径给出）",
+      "format": "抽取式问答，答案为一段连续文本",
+      "cite": [
+        "arxiv-2104-12756@§4.3"
+      ]
+    },
+    {
+      "area": "Question-span 答案",
+      "focus": "答案直接取自问题本身的文本，例如比较两个对象后回指问题里出现的名词",
+      "share": "未披露具体占比（论文只在 Figure 2 给 validation 的分布图）",
+      "format": "抽取式问答，答案为一段连续文本",
+      "cite": [
+        "arxiv-2104-12756@§3.2"
+      ]
+    },
+    {
+      "area": "Multi-span 答案",
+      "focus": "答案由图内多个不连续 span 组成，片段顺序不定；评测时穷举所有排列都算正确",
+      "share": "未披露具体占比",
+      "format": "多段文本，允许任意排列",
+      "cite": [
+        "arxiv-2104-12756@§3.2",
+        "icdar-2021-docvqa@§3.1"
+      ]
+    },
+    {
+      "area": "Non-extractive 数值答案",
+      "focus": "答案不在图里、必须算出来；这一类只允许数值答案，以保证答案短且唯一",
+      "share": "未披露具体占比",
+      "format": "数值",
+      "cite": [
+        "arxiv-2104-12756@§3.2"
+      ]
+    },
+    {
+      "area": "Evidence 与 Operation 标注",
+      "focus": "每题另标证据类型（Text / Figure / Table-List / Map / Visual-Layout）与所需操作（Counting / Arithmetic / Sorting），用于分项分析",
+      "share": "未披露具体占比（论文只在 Figure 2 给 validation 的分布图，且一题可属多类）",
+      "format": "多标签，一题可同时有多类",
+      "cite": [
+        "arxiv-2104-12756@§3.3",
+        "icdar-2021-docvqa@§3.2"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "不测自然场景图片理解：全部题目都挂在信息图上，没有通用物体或场景问答。",
+      "cite": [
+        "arxiv-2104-12756@§1"
+      ]
+    },
+    {
+      "text": "不测开放式或主观问答：Non-extractive 一类只允许数值答案，论文明确说这样能保证答案短且唯一，不给 variability 留空间。",
+      "cite": [
+        "arxiv-2104-12756@§3.2"
+      ]
+    },
+    {
+      "text": "不测长文档跨页推理：每题只对应单张信息图，不涉及多页文档。",
+      "cite": [
+        "icdar-2021-docvqa@§3"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 30035,
+    "splits": [
+      "train：23,946 题 / 4,406 张图",
+      "validation：2,801 题 / 500 张图",
+      "test：3,288 题 / 579 张图"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "real-world infographics（Google / Bing 图片搜索下载的真实信息图）",
+    "public_sample": true,
+    "totals": "共 5,485 张信息图、30,035 个问答对，图片来自 2,594 个不同域名；题目 99.11% 唯一、平均长度 11.54 词、平均答案长度 1.60；每张图平均 217.89 个 OCR 文本 token；train / validation / test 约为 80 / 10 / 10，图片在三个 split 间不重叠。",
+    "cite": [
+      "arxiv-2104-12756@§3.3",
+      "arxiv-2104-12756@Table 2",
+      "icdar-2021-docvqa@§3.2"
+    ],
+    "construction": [
+      {
+        "k": "搜集并去重图片",
+        "text": "用 Google 与 Bing 图片搜索按「infographics」下载超过 10K 张图，先用 perceptual hashing 去掉近 2,000 张重复图，再用 Amazon Textract OCR 文本的 Jaccard 相似度做第二轮去重，最后剩约 7K 张进入标注。",
+        "cite": [
+          "arxiv-2104-12756@附录 A.1"
+        ]
+      },
+      {
+        "k": "第一阶段提问与作答",
+        "text": "标注者在内部 Web 工具上对每张图提问题并作答，收集到 30K 题以上后停止；随后把数据切成约 80 / 10 / 10 的 train / validation / test。",
+        "cite": [
+          "arxiv-2104-12756@附录 A.2"
+        ]
+      },
+      {
+        "k": "第二阶段补答案",
+        "text": "只把 validation 与 test 的图片送入第二阶段，由另一位标注者在看不到第一阶段答案的情况下重新作答，因此一题可以有多个有效答案。",
+        "cite": [
+          "arxiv-2104-12756@附录 A.2"
+        ]
+      },
+      {
+        "k": "筛选题目与标注者",
+        "text": "标注者可标记「无法回答」，约 1.9% 的题目因此被删除；pilot 阶段超过 40% 的问答对有噪声，于是改用内部工具并选拔 13 名经过 webinar 与 quiz 的标注者。",
+        "cite": [
+          "arxiv-2104-12756@附录 A.2"
+        ]
+      },
+      {
+        "k": "打标签与发布",
+        "text": "第二阶段同时标注 Answer-source、Evidence 与 Operation 三类标签；问答标注以 CC-BY 发布，图片只对研究与教育用途提供打包下载。",
+        "cite": [
+          "arxiv-2104-12756@附录 A.2",
+          "arxiv-2104-12756@附录 A.3"
+        ]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "主指标 ANLS（Average Normalized Levenshtein Similarity），协议与 DocVQA / ST-VQA 完全一致：标准答案与预测答案都先转成小写，再算归一化 Levenshtein 距离，距离 ≥ τ=0.5 时该标准答案记 0 分，其余按 1−距离 计分；论文公式里 N 是题目总数、M 是每题标准答案数。次指标 Accuracy 是预测与至少一个标准答案完全一致的题目比例。题目文本与边界框由官方用 Amazon Textract OCR 提供。",
+    "cite": [
+      "arxiv-2104-12756@§5.1",
+      "arxiv-2104-12756@附录 C.1",
+      "icdar-2021-docvqa@§3.1"
+    ],
+    "variants": [
+      {
+        "text": "Multi-span 答案：答案是一组无序文本片段，评测时穷举所有排列都视为正确。",
+        "cite": [
+          "arxiv-2104-12756@§3.2",
+          "icdar-2021-docvqa@§3.1"
+        ]
+      },
+      {
+        "text": "一题多个标准答案：第二阶段会为同一题收集多个有效答案，预测与其中任意一个匹配即算命中。",
+        "cite": [
+          "arxiv-2104-12756@附录 A.2"
+        ]
+      },
+      {
+        "text": "不同模型覆盖的 Answer-source 范围不同：LayoutLM 的抽取式设定只能回答 Image-span 一类（约占 validation + test 的 70%），它与其他方法的可比范围因此受限。",
+        "cite": [
+          "arxiv-2104-12756@§4.3"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "anls",
+      "name": "ANLS（Average Normalized Levenshtein Similarity）",
+      "direction": "越高越好",
+      "description": "主指标。标准答案与预测答案都转成小写后算归一化 Levenshtein 相似度：归一化编辑距离 ≥ τ=0.5 的标准答案记 0 分，其余按 1−距离 计分，最后按题目与标准答案汇总。",
+      "range": [
+        0,
+        1
+      ],
+      "unit": "ratio",
+      "aggregation": "mean",
+      "cite": [
+        "arxiv-2104-12756@附录 C.1"
+      ]
+    },
+    {
+      "id": "accuracy",
+      "name": "Accuracy（精确匹配率）",
+      "direction": "越高越好",
+      "description": "次指标。预测答案与至少一个标准答案完全一致的题目占比。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "aggregation": "mean",
+      "cite": [
+        "arxiv-2104-12756@附录 C.1"
+      ]
+    }
+  ],
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2021-04-26",
+      "label": "arXiv v1 首次公开（Mon, 26 Apr 2021 17:45:54 UTC）",
+      "cite": [
+        "arxiv-2104-12756@arXiv 版本记录"
+      ]
+    },
+    {
+      "id": "v2",
+      "date": "2021-08-22",
+      "label": "arXiv v2，本档案核对版本（Sun, 22 Aug 2021 04:27:56 UTC）",
+      "cite": [
+        "arxiv-2104-12756@arXiv 版本记录"
+      ]
+    },
+    {
+      "id": "icdar-2021-report",
+      "date": "2021-11-10",
+      "label": "ICDAR 2021 DocVQA 竞赛报告发布，给出官方榜单 Table 1",
+      "cite": [
+        "icdar-2021-docvqa@arXiv 版本记录"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "答案可被词表与 OCR 覆盖，纯文本方法也能拿分",
+      "impact": "Vocab + OCR UB 达到 Accuracy 77.4%（test），意味着超过 3/4 的题目答案就在 OCR 文本串或最常见答案词表里；一个不做视觉推理的纯文本模型也能拿到相当高的分数，分数高低不等于「看懂图」。",
+      "severity": "高",
+      "response": "读分数时同时看 Answer-source / Evidence / Operation 分项，并单独考察 Non-extractive 与 Multi-span 子类。",
+      "reader": "把 ANLS 当作「会不会读图上的文字」的下界指标，而不是视觉理解能力的直接度量。",
+      "cite": [
+        "arxiv-2104-12756@§5.2",
+        "arxiv-2104-12756@Table 4"
+      ]
+    },
+    {
+      "issue": "自下而上的目标检测特征在信息图上几乎失效",
+      "impact": "论文用 VG 与 DLA 两个检测器统计，每张信息图平均只检出 4.1 / 4.7 个物体；M4C 里用 bottom-up 物体特征的变体反而比只用整图框更差。依赖检测框的视觉特征方案在这个数据集上有系统性劣势。",
+      "severity": "中",
+      "response": "比较不同方法时先确认视觉特征来源（检测框 / 整图 ROI / 不用视觉特征），不要只看总分。",
+      "reader": "早期基线分数偏低有相当部分来自特征选择，而不是任务本身不可解。",
+      "cite": [
+        "arxiv-2104-12756@Table 3",
+        "arxiv-2104-12756@Table 5"
+      ]
+    },
+    {
+      "issue": "Multi-span 与 Non-extractive 子类明显更难",
+      "impact": "ICDAR 报告的分项显示，当答案是多段文本（Multi-Span）或不在图里（Non-Span）时所有方法都掉分；需要计数、排序、算术的题目也比 None 类更难。",
+      "severity": "中",
+      "response": "看分项而不是总分；对算术类题目单独评估。",
+      "reader": "总体 ANLS 会把容易的 Text 类和困难的操作类混在一个数里。",
+      "cite": [
+        "icdar-2021-docvqa@§3.5"
+      ]
+    },
+    {
+      "issue": "官方榜单停留在 2021 年，与后续自报分数口径不同",
+      "impact": "可引用的官方榜单是 ICDAR 2021 的 Table 1（最高 0.6120）；此后的成绩多由厂商自报，模型规模、OCR 输入与 token 预算都不同。ScreenAI 论文自己也只与「同量级（SoTA<5B）」模型比较。",
+      "severity": "中",
+      "response": "跨时间比较时固定泳道与协议，或改用同一篇论文里的同量级对照表。",
+      "reader": "看到远高于 0.6120 的分数时，先确认它属于哪一年、哪种口径。",
+      "cite": [
+        "icdar-2021-docvqa@Table 1",
+        "screenai@§5"
+      ]
+    },
+    {
+      "issue": "标注噪声与题目清洗依赖内部流程",
+      "impact": "pilot 阶段超过 40% 的问答对有噪声，最终有约 1.9% 的题目因标注者标记「无法回答」被删除；数据由 13 名内部标注者在两阶段流程下产出，不是公开众包。",
+      "severity": "中",
+      "response": "引用时注明数据产出方式与清洗比例。",
+      "reader": "题目分布由标注者与筛选规则共同决定，不同批次之间不完全可比。",
+      "cite": [
+        "arxiv-2104-12756@附录 A.2"
+      ]
+    },
+    {
+      "issue": "图片版权与使用限制",
+      "impact": "问答标注以 CC-BY 发布，但图片本身只对研究与教育用途提供打包下载，其他用途只给原始 URL 列表。",
+      "severity": "低",
+      "response": "商业使用需自行联系图片原始来源获取授权。",
+      "reader": "不要把 InfoVQA 的图片直接用于商业产品。",
+      "cite": [
+        "arxiv-2104-12756@附录 A.3"
+      ]
+    }
+  ],
+  "notes": "Kimi K2.5 附录视觉表登记行 InfoVQA (test)",
+  "official_sources": [
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2104.12756"
+    },
+    {
+      "kind": "site",
+      "url": "https://www.docvqa.org/datasets/infographicvqa"
+    }
+  ],
+  "related_benchmarks": [
+    "docvqa",
+    "chartqa",
+    "ocrbench",
+    "charxiv-reasoning"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "arxiv-2104-12756",
+        "kind": "paper",
+        "title": "InfographicVQA（arXiv:2104.12756v2，2021-08-22，WACV 2022）",
+        "url": "https://arxiv.org/abs/2104.12756",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "docvqa-datasets-infographicvqa",
+        "kind": "site",
+        "title": "DocVQA 官网 InfographicVQA 数据集页",
+        "url": "https://www.docvqa.org/datasets/infographicvqa",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "icdar-2021-docvqa",
+        "kind": "paper",
+        "title": "ICDAR 2021 Competition on Document Visual Question Answering（arXiv:2111.05547v1，2021-11-10）",
+        "url": "https://arxiv.org/abs/2111.05547",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "screenai",
+        "kind": "paper",
+        "title": "ScreenAI: A Vision-Language Model for UI and Infographics Understanding（arXiv:2402.04615）",
+        "url": "https://arxiv.org/pdf/2402.04615",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "CVIT（IIIT Hyderabad）、IISER Pune 与 CVC（Universitat Autònoma de Barcelona）联合发布",
+        "cite": [
+          "arxiv-2104-12756@作者块"
+        ]
+      },
+      "first_release": {
+        "v": "2021-04-26（arXiv v1 提交日；本档案核对的是 2021-08-22 的 v2）",
+        "cite": [
+          "arxiv-2104-12756@arXiv 版本记录"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "arxiv-2104-12756@§1",
+        "arxiv-2104-12756@§3.3",
+        "docvqa-datasets-infographicvqa@数据集说明"
+      ],
+      "interpretation": [
+        "arxiv-2104-12756@Table 4",
+        "arxiv-2104-12756@§5.2",
+        "icdar-2021-docvqa@Table 1"
+      ]
+    },
+    "problem": {
+      "text": "2021 年之前的文档 VQA 数据集以正文文本为主，OCR 之后接纯文本 QA 就能拿到不错的总体分数，但一遇到依赖图形、手写或版面信息的问题就明显掉分。InfoVQA 把场景换成版面和视觉元素占主导的信息图，要求模型把 OCR 文本、图表、地图与版面信息放在一起做基础推理和算术。",
+      "cite": [
+        "icdar-2021-docvqa@§3",
+        "arxiv-2104-12756@§1"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机猜一个答案",
+        "value": "ANLS 0.005（test）",
+        "note": "论文 Table 4 的随机答案启发式，Accuracy 0.00%。",
+        "cite": [
+          "arxiv-2104-12756@Table 4"
+        ]
+      },
+      {
+        "label": "只猜训练集里最常见的答案",
+        "value": "ANLS 0.035（test）",
+        "note": "多数答案启发式，Accuracy 1.73%。",
+        "cite": [
+          "arxiv-2104-12756@Table 4"
+        ]
+      },
+      {
+        "label": "会读图的上界（最常见答案词表 + OCR span）",
+        "value": "Accuracy 77.4%（test）",
+        "note": "论文用 5,000 个最常见答案词表加 OCR span 能覆盖的比例，说明多数答案不必「看懂图」也能拿到。",
+        "cite": [
+          "arxiv-2104-12756@Table 4"
+        ]
+      },
+      {
+        "label": "人类标注者",
+        "value": "ANLS 0.980（test）",
+        "note": "Accuracy 95.70%；论文称与 DocVQA 上的人类表现相当。",
+        "cite": [
+          "arxiv-2104-12756@Table 4"
+        ]
+      },
+      {
+        "label": "论文自带基线最好成绩",
+        "value": "ANLS 0.272（test）",
+        "note": "LayoutLM 的一个变体；论文明确指出 test 上最好的是不用任何视觉特征、只用 OCR 与问题文本的设定。",
+        "cite": [
+          "arxiv-2104-12756@§5.2",
+          "arxiv-2104-12756@Table 6"
+        ]
+      },
+      {
+        "label": "2021 DocVQA 竞赛冠军",
+        "value": "ANLS 0.6120",
+        "note": "Applica.ai TILT，来自 ICDAR 2021 官方榜单 Table 1。",
+        "cite": [
+          "icdar-2021-docvqa@Table 1"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 2021 年官方榜单的 0.6120 和后来厂商自报的分数直接排在一起。竞赛榜单是 2021 年的口径，此后的模型规模、OCR 输入与 token 预算都变了；ScreenAI 论文自己就注明只与「同量级（SoTA<5B）」模型比较。",
+        "cite": [
+          "icdar-2021-docvqa@Table 1",
+          "screenai@§5"
+        ]
+      },
+      {
+        "text": "以为高分等于「看懂了图」。Vocab + OCR UB 显示超过 3/4 的答案就在 OCR 文本串或最常见答案词表里，只会读文本的模型也能拿到相当一部分分数。",
+        "cite": [
+          "arxiv-2104-12756@§5.2",
+          "arxiv-2104-12756@Table 4"
+        ]
+      },
+      {
+        "text": "把 test 和 validation 两个泳道混着比。两个 split 的题目与图片完全不重叠，论文里 LayoutLM 在 validation 上最好的变体与在 test 上最好的变体并不是同一个。",
+        "cite": [
+          "arxiv-2104-12756@§5.2",
+          "arxiv-2104-12756@Table 6"
+        ]
+      },
+      {
+        "text": "把人类成绩 0.980 当成天花板。0.980 只是本协议下的 ANLS；同一行里 Accuracy 只有 95.70%，说明仍有约 4% 的题连人类也答不到与标准答案完全一致。",
+        "cite": [
+          "arxiv-2104-12756@Table 4"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "CVIT（IIIT Hyderabad）、IISER Pune 与 CVC（Universitat Autònoma de Barcelona）；论文作者为 Minesh Mathew、Viraj Bagal、Rubèn Tito、Dimosthenis Karatzas、Ernest Valveny 与 C.V. Jawahar。",
+        "cite": [
+          "arxiv-2104-12756@作者块"
+        ]
+      },
+      {
+        "k": "正式发表",
+        "v": "论文发表于 WACV 2022，页码 1697–1706（著录见 ScreenAI 参考文献条目）。",
+        "cite": [
+          "screenai@参考文献"
+        ]
+      },
+      {
+        "k": "数据与榜单位置",
+        "v": "数据集、代码与榜单入口在 docvqa.org；实际下载走 RRC 挑战页的 Download 标签下「Infographics VQA」链接。",
+        "cite": [
+          "docvqa-datasets-infographicvqa@Download"
+        ]
+      },
+      {
+        "k": "竞赛规模",
+        "v": "ICDAR 2021 DocVQA 竞赛的 Infographics VQA 任务共收到 18 位用户的 337 次提交，最终 6 个方法参与排名。",
+        "cite": [
+          "icdar-2021-docvqa@§3"
+        ]
+      },
+      {
+        "k": "为什么要做这个数据集",
+        "v": "2020 年单文档 VQA 的强方法大多是 OCR 加纯文本 QA，在依赖图形、手写或版面信息的问题上明显更差；新任务因此减少纯文本证据题目，增加需要解读版面与视觉元素的题目。",
+        "cite": [
+          "icdar-2021-docvqa@§3"
+        ]
+      },
+      {
+        "k": "标注方式",
+        "v": "问答由人工标注；官网明确「Questions and answers are manually annotated」，论文补充说明用的是内部 Web 工具加紧密协作的标注者。",
+        "cite": [
+          "docvqa-datasets-infographicvqa@Images and Questions",
+          "icdar-2021-docvqa@§3.2"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-14",
+        "columns": [
+          "来源",
+          "方法",
+          "ANLS(val)",
+          "ANLS(test)",
+          "Accuracy(test, %)"
+        ],
+        "rows": [
+          ["论文 Table 4", "Random answer", "0.006", "0.005", "0.00"],
+          ["论文 Table 4", "Random OCR token", "0.011", "0.014", "0.49"],
+          ["论文 Table 4", "Majority answer", "0.041", "0.035", "1.73"],
+          ["论文 Table 4", "Human performance", "未披露", "0.980", "95.70"],
+          ["论文 Table 4", "Vocab UB", "未披露", "未披露", "51.34"],
+          ["论文 Table 4", "OCR UB", "未披露", "未披露", "56.96"],
+          ["论文 Table 4", "Vocab + OCR UB", "未披露", "未披露", "77.4"],
+          ["论文 Table 5", "M4C（最优变体）", "0.142", "0.147", "6.64"],
+          ["论文 Table 6", "LayoutLM（test 最优：不用视觉特征）", "0.250", "0.272", "19.74"],
+          ["论文 Table 6", "LayoutLM（validation 最优：CLS + DLA 整图特征）", "0.256", "0.261", "19.16"],
+          ["ICDAR 2021 Table 1", "(Baseline) Human", "未披露", "0.9800", "未披露"],
+          ["ICDAR 2021 Table 1", "Applica.ai TILT", "未披露", "0.6120", "未披露"],
+          ["ICDAR 2021 Table 1", "IG-BERT (single model)", "未披露", "0.3854", "未披露"],
+          ["ICDAR 2021 Table 1", "NAVER CLOVA", "未披露", "0.3219", "未披露"],
+          ["ICDAR 2021 Table 1", "Ensemble LM and VLM", "未披露", "0.2853", "未披露"],
+          ["ICDAR 2021 Table 1", "(Baseline) LayoutLM", "未披露", "0.2720", "未披露"],
+          ["ICDAR 2021 Table 1", "bert baseline", "未披露", "0.2078", "未披露"],
+          ["ICDAR 2021 Table 1", "BERT (CPDP)", "未披露", "0.1678", "未披露"],
+          ["ICDAR 2021 Table 1", "(Baseline) M4C", "未披露", "0.1470", "未披露"]
+        ]
+      },
+      "cite": [
+        "icdar-2021-docvqa@Table 1",
+        "arxiv-2104-12756@Table 4",
+        "arxiv-2104-12756@Table 5",
+        "arxiv-2104-12756@Table 6"
+      ]
+    }
+  }
+}

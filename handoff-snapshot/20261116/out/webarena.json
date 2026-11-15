@@ -1,0 +1,739 @@
+{
+  "id": "webarena",
+  "name": "WebArena",
+  "full_name": "WebArena: A Realistic Web Environment for Building Autonomous Agents",
+  "aliases": [],
+  "status": "active",
+  "categories": [
+    "agent"
+  ],
+  "summary": "WebArena 是一个自托管、可复现的网页环境：把电商、内容管理、GitLab、Reddit 四类常见网站按真实功能与数据自建出来，再叠加地图、离线维基、计算器、记事本等工具站点，让智能体在真实的浏览器交互里完成 812 道长程任务。任务答案一部分是文本，另一部分由程序化奖励函数检查执行轨迹是否真的改对了站点状态，因此它考的是「会不会操作网页」，而不是「知不知道答案」。",
+  "interpretation": "高分意味着智能体能在自建的四个站点里完成多步网页操作并让站点状态落到正确结果上——例如下单后订单状态确实改变、仓库确实被创建、回答不可完成的问题时承认无法完成。但要注意三点：它只覆盖这四个自建站点与 812 道固定任务，不覆盖真实开放互联网；分数对「是否提示不可完成任务」极其敏感（GPT-4 从 14.41% 掉到 11.70%）；人类基线 78.24% 只在 170 个模板各取一题的子集上测得，不是全集成绩。",
+  "measures": [
+    {
+      "area": "电商（OneStopShop 自建商城）",
+      "focus": "查订单、取消订单、改收货地址、按条件筛选商品、给商品补库存、汇总评价等需要真正改变站点状态的操作",
+      "share": "23.0%",
+      "format": "长程网页操作 + 程序化功能正确性判定",
+      "cite": [
+        "arxiv-2307-13854@Figure 6",
+        "site-og@List of Tasks"
+      ]
+    },
+    {
+      "area": "内容管理 CMS（Magento 后台）",
+      "focus": "在店主权限的后台里新建商品、改价格与库存、看报表、配置站点设置",
+      "share": "22.4%",
+      "format": "长程网页操作 + 程序化功能正确性判定",
+      "cite": [
+        "arxiv-2307-13854@Figure 6",
+        "site-og@List of Tasks"
+      ]
+    },
+    {
+      "area": "GitLab 协作开发",
+      "focus": "建仓库、写 README、发起合并请求、设置个人状态、在 issue 里检索信息",
+      "share": "22.2%",
+      "format": "长程网页操作 + 程序化功能正确性判定",
+      "cite": [
+        "arxiv-2307-13854@Figure 6",
+        "site-og@List of Tasks"
+      ]
+    },
+    {
+      "area": "地图与路径规划（OpenStreetMap）",
+      "focus": "两地间步行/驾车距离与时间、最近设施查询、坐标格式转换、跨站拼接近邻搜索",
+      "share": "13.4%",
+      "format": "多步检索 + 工具调用 + 文本回答",
+      "cite": [
+        "arxiv-2307-13854@Figure 6",
+        "site-og@List of Tasks"
+      ]
+    },
+    {
+      "area": "Reddit 论坛",
+      "focus": "发帖与评论、按子版块检索历史帖子、汇总用户观点、订阅 newsletter",
+      "share": "13.1%",
+      "format": "长程网页操作 + 文本回答",
+      "cite": [
+        "arxiv-2307-13854@Figure 6",
+        "site-og@List of Tasks"
+      ]
+    },
+    {
+      "area": "跨站任务",
+      "focus": "需要同时操作多个站点并在其间搬运信息的任务，例如把两个球队主场都查出来再算路径",
+      "share": "5.9%",
+      "format": "多标签跨站操作 + 文本回答",
+      "cite": [
+        "arxiv-2307-13854@Figure 6",
+        "arxiv-2307-13854@§2.3 Observation Space",
+        "site-og@List of Tasks"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "不测真实开放互联网：四个站点都是自建镜像并灌入抽样数据（购物站约 90k 商品、论坛 127390 帖、GitLab 300 仓库），商品与帖子是构造出来的，不等于真实站点内容。",
+      "cite": [
+        "site-og@首页",
+        "arxiv-2307-13854@附录 A.1"
+      ]
+    },
+    {
+      "text": "不测不碰网页就能答的纯知识问答：信息类任务同样要求智能体在网页环境里检索并给出文本回答，靠模型内部知识蒙答案不算数。",
+      "cite": [
+        "arxiv-2307-13854@§3.1 Intent Collection"
+      ]
+    },
+    {
+      "text": "不测视觉多模态理解：论文基线的观察空间是可访问性树加元素 ID，看截图不是本基准的默认设定；要测视觉网页任务有同项目的姊妹基准 VisualWebArena。",
+      "cite": [
+        "arxiv-2307-13854@§5 Results",
+        "webarena@首页"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 812,
+    "splits": [
+      "论文只发布一个 812 题的测试集，未给出 train / val 划分"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "人工标注的自建网站任务（模板 + 变量实例化），答案由人工与程序双重标注",
+    "public_sample": true,
+    "totals": "812 道任务，来自 241 个模板，平均每个模板实例化 3.3 例；任务分布在 4 类站点与跨站组合上。",
+    "cite": [
+      "arxiv-2307-13854@§3",
+      "arxiv-2307-13854@§3.1 Intent Collection"
+    ],
+    "construction": [
+      {
+        "k": "选站点与工具",
+        "text": "作者先分析约 200 条真实浏览器历史记录并归类，取其中最显著的四个类别各实现一个实例：电商、社交论坛、协作开发、内容管理系统；另外自建地图、离线维基、计算器、记事本作为工具与知识站点。",
+        "cite": [
+          "arxiv-2307-13854@§2.2 Website Selection",
+          "arxiv-2307-13854@附录 A.1"
+        ]
+      },
+      {
+        "k": "灌数据与建账号",
+        "text": "为每个站点灌入构造数据并预置用户状态：购物站约 90k 商品、300 多个类目，顾客账号两年内有 35 笔以上订单；论坛有 95 个 subreddit、127390 帖、661781 用户；GitLab 有 300 个仓库、1000 多个至少提交过一次的账号；地图用 OpenStreetMap 但只覆盖美国东北部。",
+        "cite": [
+          "arxiv-2307-13854@附录 A.1"
+        ]
+      },
+      {
+        "k": "写模板与实例化",
+        "text": "按三条准则写意图模板——抽象高层、鼓励创造性、用变量槽实例化；最终得到 241 个模板、812 个实例，平均每模板 3.3 例，并按站点统计意图分布。",
+        "cite": [
+          "arxiv-2307-13854@§3.1 Intent Collection",
+          "arxiv-2307-13854@Figure 6"
+        ]
+      },
+      {
+        "k": "标答案与评分函数",
+        "text": "信息类任务标参考答案，用 exact_match / must_include / fuzzy_match 三种方式判分，其中 fuzzy_match 用 gpt-4-0613 当裁判；操作类任务写 JavaScript 奖励函数 rprog，程序化检查执行轨迹的中间状态是否符合预期。",
+        "cite": [
+          "arxiv-2307-13854@§3.2 Evaluation Annotation",
+          "arxiv-2307-13854@附录 A.7"
+        ]
+      },
+      {
+        "k": "造不可完成任务与双标仲裁",
+        "text": "刻意构造站点内无解的意图并标为 \"N/A\"，期望智能体承认无法完成；每道题由两人标注，分歧时第三人仲裁，标程序者需完整跑一遍并检查中间状态。",
+        "cite": [
+          "arxiv-2307-13854@§3.2 Evaluation Annotation"
+        ]
+      },
+      {
+        "k": "Docker 打包与环境重置",
+        "text": "每个站点打成一个自包含 Docker 镜像（含代码、数据库与依赖），提供脚本把环境重置到确定性初始状态，重置耗时从几秒到一分钟不等。",
+        "cite": [
+          "arxiv-2307-13854@附录 A.2"
+        ]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "观察空间默认用可访问性树加元素 ID（也可换成原始 HTML DOM 或截图）；动作空间是模拟键鼠的复合动作，分元素操作、标签操作、URL 导航三类，元素可按屏幕坐标或唯一 ID 选中；单条轨迹最多 30 次状态转移，同一观察上重复同一动作超过三次或连续三次无效动作就停止。判分走两条路：信息类任务比对参考答案（exact_match / must_include / fuzzy_match，fuzzy_match 用 gpt-4-0613 判定语义等价），操作类任务跑 rprog 程序检查中间状态。评测用两份 in-context 示例，温度 1.0、top-p 0.9。",
+    "cite": [
+      "arxiv-2307-13854@§2.3 Observation Space",
+      "arxiv-2307-13854@§2.4 Action Space",
+      "arxiv-2307-13854@§3.2 Evaluation Annotation",
+      "arxiv-2307-13854@§5 Results",
+      "arxiv-2307-13854@附录 A.6",
+      "arxiv-2307-13854@附录 A.7"
+    ],
+    "variants": [
+      {
+        "text": "是否给「遇到不可完成任务就停」的 UA hint：同样 CoT + GPT-4，带上是 11.70%，去掉升到 14.41%。",
+        "cite": [
+          "arxiv-2307-13854@§5 Results",
+          "arxiv-2307-13854@§5.1 Analysis"
+        ]
+      },
+      {
+        "text": "观察表示有三种可选：原始 HTML DOM、截图、可访问性树；论文基线用可访问性树，换表示会改变分数（榜单上 BrowserGym + GPT-4 记为 23.5%，备注为不同观察表示）。",
+        "cite": [
+          "arxiv-2307-13854@§2.3 Observation Space",
+          "leaderboard@表格"
+        ]
+      },
+      {
+        "text": "数据集版本：2023-10-24 发布 v0.2.0，重修了全集中已发现的标注 bug，此后不再预期大改标注。",
+        "cite": [
+          "github@News"
+        ]
+      },
+      {
+        "text": "WebArena Subset：榜单另设 Reddit 子集口径，AutoManual 65.1、AutoGuide 43.7，不能与全集分数混排。",
+        "cite": [
+          "leaderboard@WebArena Subset"
+        ]
+      },
+      {
+        "text": "榜单开放口径：2024 年 9 月起要求提交必须附原始轨迹（每步观察与预测动作），此前的条目没有这一约束。",
+        "cite": [
+          "leaderboard@表格"
+        ]
+      },
+      {
+        "text": "人类基线口径：论文与榜单都注明人类 78.24% 来自「每模板取一题」的 170 题抽样，不是 812 题全集。",
+        "cite": [
+          "arxiv-2307-13854@§3.2 Evaluation Annotation",
+          "leaderboard@Human Performance"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "sr",
+      "name": "端到端任务成功率（SR）",
+      "direction": "越高越好",
+      "description": "812 题中被判为成功的比例，论文主指标；报告时分全部任务、可完成任务、不可完成任务三列。",
+      "range": "0–100",
+      "unit": "%",
+      "cite": [
+        "arxiv-2307-13854@Table 2",
+        "arxiv-2307-13854@Abstract"
+      ]
+    },
+    {
+      "id": "sr-ac",
+      "name": "可完成任务成功率（SR_AC）",
+      "direction": "越高越好",
+      "description": "只统计站点内可完成的那部分任务上的成功率，用来隔离「该停不停」带来的损耗。",
+      "range": "0–100",
+      "unit": "%",
+      "cite": [
+        "arxiv-2307-13854@Table 2"
+      ]
+    },
+    {
+      "id": "sr-ua",
+      "name": "不可完成任务识别率（SR_UA）",
+      "direction": "越高越好",
+      "description": "只统计标为 \"N/A\" 的不可完成任务，衡量智能体是否能在无解时承认无法完成而不是硬编答案。",
+      "range": "0–100",
+      "unit": "%",
+      "cite": [
+        "arxiv-2307-13854@Table 2",
+        "arxiv-2307-13854@§3.2 Evaluation Annotation"
+      ]
+    }
+  ],
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2023-07-25",
+      "label": "arXiv v1：论文、代码与数据集首次公开",
+      "cite": [
+        "arxiv-abs@Submission history"
+      ]
+    },
+    {
+      "id": "v0.2.0",
+      "date": "2023-10-24",
+      "label": "数据集修订版：重修全集已发现的标注 bug",
+      "cite": [
+        "github@News"
+      ]
+    },
+    {
+      "id": "v4",
+      "date": "2024-04-16",
+      "label": "arXiv v4：会议 camera-ready 版本",
+      "cite": [
+        "arxiv-abs@Submission history"
+      ]
+    },
+    {
+      "id": "agentlab",
+      "date": "2024-12-05",
+      "label": "仓库口径变更：声明本仓库是复现论文结果的 canonical 实现，新实验建议走 AgentLab / BrowserGym",
+      "cite": [
+        "github@Update on 12/5/2024"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "分数对「是否提示不可完成任务」极其敏感",
+      "impact": "同模型同策略下 GPT-4 从 14.41%（无 UA hint）掉到 11.70%（带 UA hint）；GPT-4 还把 54.9% 的可完成任务误判为不可能。",
+      "severity": "高",
+      "response": "比对任何两个 WebArena 分数前先确认 UA hint 开关；最好同时看 SR_AC 与 SR_UA 两列而不是只看 SR。",
+      "reader": "会把不同口径的数字直接排序的人",
+      "cite": [
+        "arxiv-2307-13854@§5 Results",
+        "arxiv-2307-13854@§5.1 Analysis"
+      ]
+    },
+    {
+      "issue": "人类基线是 170 题抽样，不是全集",
+      "impact": "78.24% 由 5 名 CS 研究生在「每个模板取一题」的 170 题上测得，与智能体的 812 题全集成绩不同口径，不能当作全集差距。",
+      "severity": "高",
+      "response": "引用人类基线时同时说明抽样口径；比较人类与模型时用同一子集复算。",
+      "reader": "把 78.24% 当成人类在 812 题全集上的成绩的人",
+      "cite": [
+        "arxiv-2307-13854@§3.2 Evaluation Annotation",
+        "leaderboard@Human Performance"
+      ]
+    },
+    {
+      "issue": "榜单混合自报与开放条目，历史条目缺轨迹",
+      "impact": "最高分 86.1% 的 Narada AI Code 标注为非开放（Open? 列为 ✗）；2024 年 9 月前的提交不强制附原始轨迹，复现门槛不一致。",
+      "severity": "中",
+      "response": "只把 Open? 列为 ✔ 且附轨迹的条目当作可比基线；对自报条目标注来源与日期。",
+      "reader": "把榜单第一行当作已复现结论的人",
+      "cite": [
+        "leaderboard@表格"
+      ]
+    },
+    {
+      "issue": "文本答案判分依赖 LLM 裁判",
+      "impact": "fuzzy_match 用 gpt-4-0613 判定回答与参考答案是否语义等价，裁判自身会出错；论文人工抽核 40 例中 39 例与人工一致。",
+      "severity": "中",
+      "response": "把 fuzzy_match 的分数视为带裁判噪声的估计，关键结论尽量用 exact_match / must_include 或程序化判定复核。",
+      "reader": "把 SR 的末位数字当作精确测量的人",
+      "cite": [
+        "arxiv-2307-13854@附录 A.7",
+        "arxiv-2307-13854@附录 A.8"
+      ]
+    },
+    {
+      "issue": "复现必须自托管并重置环境，成本高",
+      "impact": "每个站点一个自包含 Docker 镜像，评测前要自建网站、取自动登录 cookie、提供 OpenAI API key，跑完 812 例还要把环境重置回初始状态；重置耗时从几秒到一分钟不等。",
+      "severity": "中",
+      "response": "把「自建 + 重置」计入实验时间预算；不要在官方 demo 站点上跑正式评测（它只用于浏览）。",
+      "reader": "以为下载仓库就能直接跑分的人",
+      "cite": [
+        "github@End-to-end Evaluation",
+        "arxiv-2307-13854@附录 A.2"
+      ]
+    },
+    {
+      "issue": "任务需要领域知识，人类标注者不是普通用户",
+      "impact": "论文承认很多任务需要领域知识；人类成绩由 CS 研究生测得，不代表普通网民水平。",
+      "severity": "低",
+      "response": "把人类 78.24% 理解为「熟练用户」参照系，不要当作一般人群基准。",
+      "reader": "把人类基线当作普通人水平的人",
+      "cite": [
+        "arxiv-2307-13854@附录 A.5",
+        "arxiv-2307-13854@§3.2 Evaluation Annotation"
+      ]
+    },
+    {
+      "issue": "发表信息在不同来源间不一致",
+      "impact": "论文页眉写 ICLR 2024，项目官网首页把 WebArena 标为 NeurIPS 2024 · Oral；榜单还把论文的 GPT-4 无 UA hint 成绩记作 14.9%，而论文正文是 14.41%。",
+      "severity": "低",
+      "response": "引用会议名时注明来源；引用数字时优先用论文 v4 正文，并说明榜单口径的差异。",
+      "reader": "把不同来源的数字与会议名混为一致的人",
+      "cite": [
+        "arxiv-2307-13854@页眉",
+        "webarena@首页",
+        "leaderboard@表格",
+        "arxiv-2307-13854@Abstract"
+      ]
+    },
+    {
+      "issue": "论文自报的失败模式提示观察偏差",
+      "impact": "附录 A.10 指出 GPT-4 常会抓住第一个相关信息就不再核验其相关性或准确性。",
+      "severity": "低",
+      "response": "解读低分时区分「找不到元素」与「过早采信第一个结果」，前者是交互问题，后者是检索策略问题。",
+      "reader": "把所有失败都归因为不会操作网页的人",
+      "cite": [
+        "arxiv-2307-13854@附录 A.10"
+      ]
+    }
+  ],
+  "notes": "本档案的站点构成、题量、模板数、网站占比、人类基线、模型成绩与数据规模均取自 arXiv v4 论文正文与附录；版本演进取自官方 GitHub README 的 News 与 Update 说明；榜单条目取自官方 Google Sheet。论文未给出的内容（例如各站点的请求延迟分布、模板级完整清单、逐题标注者间一致性系数）在本档案中记为未披露。",
+  "official_sources": [
+    {
+      "label": "项目主页",
+      "url": "https://webarena.dev/"
+    },
+    {
+      "label": "论文（arXiv v4）",
+      "url": "https://arxiv.org/abs/2307.13854"
+    },
+    {
+      "label": "官方仓库",
+      "url": "https://github.com/web-arena-x/webarena"
+    },
+    {
+      "label": "官方榜单",
+      "url": "https://docs.google.com/spreadsheets/d/1M801lEpBbKSNwP-vDBkC_pF7LdyGU1f_ufZb_NWNBZQ/edit?usp=sharing"
+    }
+  ],
+  "related_benchmarks": [
+    "mind2web",
+    "osworld",
+    "webvoyager",
+    "terminalbench",
+    "tau-bench",
+    "gaia",
+    "bfcl",
+    "mlebench"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-13",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      {
+        "id": "arxiv-2307-13854",
+        "kind": "paper",
+        "title": "WebArena: A Realistic Web Environment for Building Autonomous Agents（arXiv v4, ICLR 2024 camera-ready）",
+        "url": "https://arxiv.org/abs/2307.13854",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "arxiv-abs",
+        "kind": "paper",
+        "title": "arXiv:2307.13854 摘要页与提交历史",
+        "url": "https://arxiv.org/abs/2307.13854",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "site-og",
+        "kind": "site",
+        "title": "WebArena 官方项目页（任务清单与作者信息）",
+        "url": "https://webarena.dev/og/",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "webarena",
+        "kind": "site",
+        "title": "WebArena-x 项目家族首页",
+        "url": "https://webarena.dev/",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "github",
+        "kind": "repo",
+        "title": "web-arena-x/webarena 官方仓库 README 与 News",
+        "url": "https://github.com/web-arena-x/webarena",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "leaderboard",
+        "kind": "leaderboard",
+        "title": "X-WebArena-Leaderboard 官方榜单（Google Sheet）",
+        "url": "https://docs.google.com/spreadsheets/d/1M801lEpBbKSNwP-vDBkC_pF7LdyGU1f_ufZb_NWNBZQ/edit?usp=sharing",
+        "accessed": "2026-11-13"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Carnegie Mellon University（项目页另列 Inspired Cognition）",
+        "cite": [
+          "arxiv-2307-13854@作者署名",
+          "site-og@作者署名"
+        ]
+      },
+      "first_release": {
+        "v": "2023-07-25（arXiv v1 提交）",
+        "cite": [
+          "arxiv-abs@Submission history"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "arxiv-2307-13854@§2.2 Website Selection",
+        "arxiv-2307-13854@§3",
+        "site-og@首页"
+      ],
+      "interpretation": [
+        "arxiv-2307-13854@§5 Results",
+        "arxiv-2307-13854@§5.1 Analysis",
+        "arxiv-2307-13854@§3.2 Evaluation Annotation"
+      ]
+    },
+    "problem": {
+      "text": "此前的网页智能体基准要么停在静态页面上、没法验证功能正确性，要么把真实网站的复杂度砍到只剩少数任务类型，且很少支持多标签与跨站操作。WebArena 把四类常见网站按真实功能自建出来，配 812 道需要多步交互的长程任务，并用程序化奖励函数检查轨迹，第一次同时满足可交互、高真实度、多标签与功能正确性四项。",
+      "cite": [
+        "arxiv-2307-13854@Table 4",
+        "arxiv-2307-13854@§6 Related Work",
+        "arxiv-2307-13854@§2.3 Observation Space"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "无需网页操作的基线",
+        "value": "论文未给出",
+        "note": "论文未报告随机或无操作基线的下界",
+        "cite": [
+          "arxiv-2307-13854@Table 2"
+        ]
+      },
+      {
+        "label": "论文发布时最好（GPT-4 + CoT，无 UA hint）",
+        "value": "14.41%",
+        "note": "SR_AC 13.02%，SR_UA 44.44%",
+        "cite": [
+          "arxiv-2307-13854@Abstract",
+          "arxiv-2307-13854@Table 2"
+        ]
+      },
+      {
+        "label": "论文报告的同模型带 UA hint",
+        "value": "11.70%",
+        "note": "SR_AC 8.63%，SR_UA 77.78%",
+        "cite": [
+          "arxiv-2307-13854@§5 Results"
+        ]
+      },
+      {
+        "label": "人类基线（170 题抽样）",
+        "value": "78.24%",
+        "note": "每个模板取一题，5 名 CS 研究生完成",
+        "cite": [
+          "arxiv-2307-13854@§3.2 Evaluation Annotation",
+          "leaderboard@Human Performance"
+        ]
+      },
+      {
+        "label": "官方榜单最高（全部条目，含自报）",
+        "value": "86.1%",
+        "note": "Narada AI Code，2026-09，Open? 列为 ✗",
+        "cite": [
+          "leaderboard@表格"
+        ]
+      },
+      {
+        "label": "官方榜单最高（开放条目）",
+        "value": "74.3%",
+        "note": "Deepseek v3.2，2026-02，WebTactix，Open? 列为 ✔",
+        "cite": [
+          "leaderboard@表格"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 14.41% 当成「带 UA hint」的成绩：它其实是把「遇到不可完成任务就停」的提示去掉之后的分数；带上提示同模型只有 11.70%。",
+        "cite": [
+          "arxiv-2307-13854@§5.1 Analysis",
+          "arxiv-2307-13854@§5 Results"
+        ]
+      },
+      {
+        "text": "把人类 78.24% 当成 812 题全集上的成绩：论文与榜单都注明它来自每模板取一题的 170 题抽样。",
+        "cite": [
+          "arxiv-2307-13854@§3.2 Evaluation Annotation",
+          "leaderboard@Human Performance"
+        ]
+      },
+      {
+        "text": "以为 WebArena 是在真实互联网上跑：四个站点是自建镜像加构造数据，商品、帖子、仓库都是灌进去的样本。",
+        "cite": [
+          "site-og@首页",
+          "arxiv-2307-13854@附录 A.1"
+        ]
+      },
+      {
+        "text": "以为榜单高分都经过官方复现：榜单同时收录自报与开放条目，2024 年 9 月之前不要求附原始轨迹，第一行的 86.1% 就标注为非开放。",
+        "cite": [
+          "leaderboard@表格"
+        ]
+      },
+      {
+        "text": "把榜单上的 14.9% 与论文的 14.41% 当作同一口径的两次测量：榜单那一行对应「未提供 not achievable hint」的 gpt-4-0613，论文正文给的是 14.41%。",
+        "cite": [
+          "leaderboard@表格",
+          "arxiv-2307-13854@Abstract"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "Carnegie Mellon University 为主导，项目页另列 Inspired Cognition；论文署名含 Graham Neubig、Daniel Fried、Yonatan Bisk 等。",
+        "cite": [
+          "arxiv-2307-13854@作者署名",
+          "site-og@作者署名"
+        ]
+      },
+      {
+        "k": "首发与版本",
+        "v": "2023-07-25 提交 arXiv v1，2023-10-24 发布数据集 v0.2.0，2024-04-16 更新到 v4。",
+        "cite": [
+          "arxiv-abs@Submission history",
+          "github@News"
+        ]
+      },
+      {
+        "k": "发表信息",
+        "v": "论文页眉写 ICLR 2024，项目官网首页标 NeurIPS 2024 · Oral，两处不一致，引用时需注明来源。",
+        "cite": [
+          "arxiv-2307-13854@页眉",
+          "webarena@首页"
+        ]
+      },
+      {
+        "k": "环境构成",
+        "v": "四个可交互站点（电商、CMS、GitLab、Reddit）各一个 Docker 镜像，外加地图、离线维基、计算器、记事本四个工具与知识站点。",
+        "cite": [
+          "arxiv-2307-13854@§2.2 Website Selection",
+          "arxiv-2307-13854@附录 A.1"
+        ]
+      },
+      {
+        "k": "观察与动作空间",
+        "v": "观察含当前 URL、已打开标签与聚焦标签内容，页面可按原始 DOM、截图、可访问性树三种模式渲染；动作是模拟键鼠的复合动作，可按坐标或唯一元素 ID 选中元素。",
+        "cite": [
+          "arxiv-2307-13854@§2.3 Observation Space",
+          "arxiv-2307-13854@§2.4 Action Space"
+        ]
+      },
+      {
+        "k": "数据规模",
+        "v": "购物站约 90k 商品、300 多个类目；论坛 95 个 subreddit、127390 帖、661781 用户；GitLab 300 个仓库、1000 多个有提交的账号；地图只用 OpenStreetMap 的美国东北部数据，维基是 Kiwix 托管的离线英文版（知识截止 2023 年 5 月）。",
+        "cite": [
+          "arxiv-2307-13854@附录 A.1"
+        ]
+      },
+      {
+        "k": "部署与重置",
+        "v": "每站点一个自包含 Docker 镜像，提供脚本重置到确定性初始状态，耗时几秒到一分钟。",
+        "cite": [
+          "arxiv-2307-13854@附录 A.2"
+        ]
+      },
+      {
+        "k": "代码与复现",
+        "v": "官方仓库声明自己是复现论文结果的 canonical 实现；自 2024-12-05 起，新实验建议改用 AgentLab / BrowserGym（并行实验、VisualWebArena 集成、统一榜单、边界情况处理）。",
+        "cite": [
+          "github@Update on 12/5/2024"
+        ]
+      },
+      {
+        "k": "评测前置条件",
+        "v": "需自建网站、获取各站自动登录 cookie、提供 OpenAI API key；跑完 812 例后把环境重置回初始状态，官方 demo 站点只用于浏览。",
+        "cite": [
+          "github@End-to-end Evaluation"
+        ]
+      },
+      {
+        "k": "同族基准",
+        "v": "官网把 WebArena 与 VisualWebArena（视觉网页任务）、WebArena-Infinity（演进环境）、TheAgentCompany（模拟公司任务）并列为一组基准。",
+        "cite": [
+          "webarena@首页"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-13",
+        "columns": [
+          "来源",
+          "模型 / 人类",
+          "成功率 (%)",
+          "口径"
+        ],
+        "rows": [
+          [
+            "论文 Table 2",
+            "TEXT-BISON-001（CoT + UA hint）",
+            "5.05",
+            "812 题全集"
+          ],
+          [
+            "论文 Table 2",
+            "GPT-3.5（CoT + UA hint）",
+            "8.75",
+            "812 题全集"
+          ],
+          [
+            "论文 Table 2",
+            "GPT-3.5（CoT，无 UA hint）",
+            "6.16",
+            "812 题全集"
+          ],
+          [
+            "论文 Table 2",
+            "GPT-3.5（无 CoT + UA hint）",
+            "6.41",
+            "812 题全集"
+          ],
+          [
+            "论文 Table 2",
+            "GPT-4（CoT + UA hint）",
+            "11.70",
+            "812 题全集"
+          ],
+          [
+            "论文 Table 2",
+            "GPT-4（CoT，无 UA hint）",
+            "14.41",
+            "812 题全集"
+          ],
+          [
+            "论文 Table 2",
+            "Human",
+            "78.24",
+            "170 个模板各取 1 题"
+          ],
+          [
+            "官方榜单",
+            "Narada AI Code",
+            "86.1",
+            "2026-09，Open? ✗"
+          ],
+          [
+            "官方榜单",
+            "Deepseek v3.2",
+            "74.3",
+            "2026-02，WebTactix，Open? ✔"
+          ],
+          [
+            "官方榜单",
+            "Claude Code + GBOX MCP",
+            "68",
+            "2025-10，Open? ✔"
+          ],
+          [
+            "官方榜单",
+            "gpt-4-0613",
+            "14.9",
+            "2023-06，未提供 not achievable hint"
+          ]
+        ]
+      },
+      "cite": [
+        "arxiv-2307-13854@Table 2",
+        "leaderboard@表格"
+      ]
+    }
+  }
+}

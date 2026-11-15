@@ -1,0 +1,757 @@
+{
+  "id": "qwen-claw",
+  "name": "QwenClawBench",
+  "full_name": "QwenClawBench（OpenClaw 智能体真实用户分布基准）",
+  "aliases": [],
+  "status": "active",
+  "categories": [
+    "agent"
+  ],
+  "summary": "QwenClawBench 是阿里 Qwen 团队开源的 OpenClaw 智能体基准：100 道贴近真实用户场景的任务，覆盖 8 个领域，每题在独立 Docker 容器里跑，按自动化检查、LLM 裁判或两者混合打分；官方榜单当前最高 60.5 分（Claude Sonnet 4.6）。",
+  "interpretation": "高分说明该智能体能在一批贴近真实使用场景的多步任务上稳定交付：交付物通过确定性检查，动作轨迹也获得裁判认可。它不衡量「会聊天」或通用智能，也不能跨运行方直接比——同一个 Claude 4.5 Opus 在 Qwen 模型卡上是 52.3，在官方榜单上是 56.1。",
+  "measures": [
+    {
+      "area": "工作流与智能体编排",
+      "focus": "工作流编排、技能创建、定时任务、多智能体协同（Workflow orchestration, skill creation, cron jobs, multi-agent coordination）",
+      "share": "21 题",
+      "format": "Markdown 任务文件：YAML frontmatter + Prompt / Expected Behavior / Grading Criteria / Automated Checks / LLM Judge Rubric 分节；该领域的评分模式占比未披露",
+      "cite": [
+        "dataset@Task Category Distribution",
+        "repo@Task Structure"
+      ]
+    },
+    {
+      "area": "系统运维与管理",
+      "focus": "系统操作、环境配置、故障排查、工作区管理（System ops, environment configuration, troubleshooting, workspace management）",
+      "share": "20 题",
+      "format": "同上：每题一个 Markdown 任务文件 + 一个 assets/ 初始工作区目录；评分模式占比未披露",
+      "cite": [
+        "dataset@Task Category Distribution",
+        "repo@Task Structure"
+      ]
+    },
+    {
+      "area": "知识与记忆管理",
+      "focus": "知识库构建、记忆系统设计、文档管理、上下文检索（Knowledge base construction, memory system design, document management, context retrieval）",
+      "share": "15 题",
+      "format": "同上：每题一个 Markdown 任务文件 + 一个 assets/ 初始工作区目录；评分模式占比未披露",
+      "cite": [
+        "dataset@Task Category Distribution",
+        "repo@Task Structure"
+      ]
+    },
+    {
+      "area": "金融与量化交易",
+      "focus": "量化策略回测、套利监控、交易分析、仓位管理（Quant strategy backtesting, arbitrage monitoring, trade analysis, position management）",
+      "share": "10 题",
+      "format": "同上：每题一个 Markdown 任务文件 + 一个 assets/ 初始工作区目录；评分模式占比未披露",
+      "cite": [
+        "dataset@Task Category Distribution",
+        "repo@Task Structure"
+      ]
+    },
+    {
+      "area": "数据分析与建模",
+      "focus": "统计分析、数据处理、质量审计、回归建模（Statistical analysis, data processing, quality auditing, regression modeling）",
+      "share": "10 题",
+      "format": "同上：每题一个 Markdown 任务文件 + 一个 assets/ 初始工作区目录；评分模式占比未披露",
+      "cite": [
+        "dataset@Task Category Distribution",
+        "repo@Task Structure"
+      ]
+    },
+    {
+      "area": "安全与漏洞管理",
+      "focus": "安全审计、凭据管理、注入防御、隐私合规（Security auditing, credential management, injection defense, privacy compliance）",
+      "share": "9 题",
+      "format": "同上：每题一个 Markdown 任务文件 + 一个 assets/ 初始工作区目录；评分模式占比未披露",
+      "cite": [
+        "dataset@Task Category Distribution",
+        "repo@Task Structure"
+      ]
+    },
+    {
+      "area": "沟通与调度",
+      "focus": "消息通知、日程规划、定时提醒、任务排程（Message notifications, schedule planning, timed reminders, task scheduling）",
+      "share": "8 题",
+      "format": "同上：每题一个 Markdown 任务文件 + 一个 assets/ 初始工作区目录；评分模式占比未披露",
+      "cite": [
+        "dataset@Task Category Distribution",
+        "repo@Task Structure"
+      ]
+    },
+    {
+      "area": "研究与信息检索",
+      "focus": "竞品分析、文献检索、技术调研、SEO 关键词研究（Competitive analysis, literature retrieval, technical research, SEO keyword research）",
+      "share": "7 题",
+      "format": "同上：每题一个 Markdown 任务文件 + 一个 assets/ 初始工作区目录；评分模式占比未披露",
+      "cite": [
+        "dataset@Task Category Distribution",
+        "repo@Task Structure"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "不测对话生成质量本身：判分对象是交付物与操作轨迹——自动检查核对输出文件、命令结果与工作区状态，LLM 裁判评的是轨迹质量，没有对文采或对话轮次打分的环节。",
+      "cite": [
+        "repo@Scoring Mechanism"
+      ]
+    },
+    {
+      "text": "不覆盖多模态输入：任务由 Markdown 题面加工作区文件（代码、配置、数据、日志）构成，README 与数据集卡均未提及图片、音频或视频类任务。",
+      "cite": [
+        "repo@Task Structure",
+        "dataset@Dataset Structure"
+      ]
+    },
+    {
+      "text": "未给出人类基线与随机基线：榜单只有 12 个模型的分数，没有「人类」或「随机」参照行，因此无法据此判断某个模型是否达到人类水平。",
+      "cite": [
+        "leaderboard@页面头部"
+      ]
+    },
+    {
+      "text": "不含滚动更新或动态生成子集：题集是固定的 qwenclawbench-v1.1-100（100 题），README 未提及持续出新题，也未说明是否预留私有留存集。",
+      "cite": [
+        "repo@Usage",
+        "repo@Citation"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 100,
+    "splits": [
+      "未划分：单一任务集 qwenclawbench-v1.1-100，README 未给出 train/test 或公开/私有拆分"
+    ],
+    "languages": [
+      "zh",
+      "en"
+    ],
+    "source_type": "真实用户分布（real-user-distribution）：README 称从真实用户场景选取，最初是 Qwen3.6-Plus 研发期的内部基准，后优化并开源",
+    "public_sample": true,
+    "totals": "100 题 · 8 个领域（最多 21 题、最少 7 题）· 每题一个 Markdown 任务文件加一个 assets/ 初始工作区目录 · 中英双语 · Hugging Face 数据集总大小约 10.4 MB",
+    "cite": [
+      "repo@README",
+      "dataset@Task Category Distribution",
+      "dataset@卡片属性"
+    ],
+    "construction": [
+      {
+        "k": "选题依据",
+        "text": "领域按真实 OpenClaw 使用模式挑选，工作区文件按真实工作场景设计，用于模拟（simulate）实际作业环境。",
+        "cite": [
+          "repo@README"
+        ]
+      },
+      {
+        "k": "来源沿革",
+        "text": "原是 Qwen3.6-Plus 开发期间的内部基准，之后优化并开源，README 与数据集卡对三处评分机制的描述一致。",
+        "cite": [
+          "repo@README",
+          "dataset@Scoring Mechanism"
+        ]
+      },
+      {
+        "k": "题面结构",
+        "text": "每题一个 Markdown 文件（tasks/task_*.md），带 YAML frontmatter 头部和结构化正文分节。",
+        "cite": [
+          "repo@Task Structure",
+          "dataset@Task Structure"
+        ]
+      },
+      {
+        "k": "工作区资产",
+        "text": "每题在 assets/<task_id>/ 下有对应目录，放初始工作区文件（代码、配置、数据、日志等）；这些文件在任务开始前拷入 Docker 容器的工作区。",
+        "cite": [
+          "repo@Task Structure",
+          "dataset@Dataset Structure"
+        ]
+      },
+      {
+        "k": "环境与并发",
+        "text": "每题跑在独立 Docker 容器里，任务在多个容器间并行执行以缩短总时长；中断的运行可从断点恢复，跳过已完成且健康的题目。",
+        "cite": [
+          "repo@Why QwenClawBench"
+        ]
+      },
+      {
+        "k": "人工审校与去污染",
+        "text": "未披露：README 与数据集卡均未说明题目是否经过人工复核、是否有训练数据去污染流程或预留留存集。",
+        "cite": [
+          "repo@Usage",
+          "dataset@Dataset Structure"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "score",
+      "name": "总分（Score）",
+      "direction": "越高越好",
+      "description": "榜单头条指标，0–100。按每题的 grading_type 走 automated / llm_judge / hybrid 三种模式算分后汇总；hybrid 用 grading_weights 加权，且自动分低于 0.75 时 LLM 分清零。",
+      "range": "0–100",
+      "unit": "percent",
+      "cite": [
+        "leaderboard@页面头部",
+        "repo@Scoring Mechanism",
+        "leaderboard@Hybrid Formula"
+      ]
+    },
+    {
+      "id": "auto",
+      "name": "Auto 分项",
+      "direction": "越高越好",
+      "description": "自动化评分：题面内嵌的 Python grade(transcript, workspace_path) 对交付物做确定性规则检查（输出文件、命令结果、工作区状态），最终分是所有检查维度的平均；榜单另注为「二值通过/失败，可选部分给分」。",
+      "range": "0–100",
+      "unit": "percent",
+      "cite": [
+        "repo@Scoring Mechanism",
+        "leaderboard@Scoring Methodology"
+      ]
+    },
+    {
+      "id": "llm",
+      "name": "LLM 分项",
+      "direction": "越高越好",
+      "description": "LLM 裁判分：默认裁判为 claude-opus-4.5，按多个 rubric 维度（各 0.0–1.0）给动作轨迹打分，最终分是维度加权平均；榜单页表述为「Claude 按 rubric 评输出，处理开放式或难以验证的答案」。",
+      "range": "0–100",
+      "unit": "percent",
+      "cite": [
+        "repo@Scoring Mechanism",
+        "leaderboard@Scoring Methodology"
+      ]
+    }
+  ],
+  "default_protocol": {
+    "raw": "拉取 ghcr.io/openclaw/openclaw:main 镜像，每题在独立 Docker 容器里执行；在 openclaw_config/openclaw.json 里配好模型提供方并在 .env 填好凭据后运行 run.sh，默认 10 个容器并行、每题跑 3 次取平均。判分按题面 grading_type 分三种：automated（题面内嵌 Python grade 函数做确定性规则检查，取各检查维度平均）、llm_judge（默认 claude-opus-4.5 按 rubric 给轨迹打分，取维度加权平均）、hybrid（两者按 grading_weights 加权，且自动分低于 0.75 时 LLM 分记 0；榜单演算示例用 w=(0.6/0.4)，A:90% L:85% 得 88.0%，A:70% L:95% 因未过硬检查只得 42.0%）。Qwen3.6-27B 模型卡另注明其自评口径为 temp=0.6、256K 上下文。",
+    "cite": [
+      "repo@Usage",
+      "repo@Why QwenClawBench",
+      "repo@Scoring Mechanism",
+      "leaderboard@Hybrid Formula",
+      "qwen-card@Benchmark Results"
+    ],
+    "variants": [
+      {
+        "text": "三种评分模式不能混着比：同一题可按 automated / llm_judge / hybrid 出分，hybrid 还带「自动分低于 0.75 就把 LLM 分清零」的门槛；加 --simple-scoring 可退回纯加权平均。",
+        "cite": [
+          "repo@Scoring Mechanism"
+        ]
+      },
+      {
+        "text": "重复次数与并发影响稳定性：默认每题跑 3 次取平均、10 个容器并行；README 另提供异常检测与断点恢复，说明单次运行的分数本身带基础设施噪声。",
+        "cite": [
+          "repo@Usage",
+          "repo@Why QwenClawBench"
+        ]
+      },
+      {
+        "text": "Qwen 模型卡口径与榜单口径是两套：模型卡标注 temp=0.6、256K 上下文，榜单页未标注每个模型的脚手架、工具与推理档位，两者不能直接对齐。",
+        "cite": [
+          "qwen-card@Benchmark Results",
+          "leaderboard@页面头部"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "date": "2026-04-08",
+      "label": "开源发布：GitHub 仓库创建（README 引文 key 为 qwenclawbench1.1，标注 2026 年 4 月），题集目录名 qwenclawbench-v1.1-100",
+      "cite": [
+        "gh-api@created_at",
+        "repo@Citation"
+      ]
+    },
+    {
+      "date": "2026-04-21",
+      "label": "Qwen3.6-27B 模型卡创建，Benchmark Results 表首次收录 QwenClawBench 一行（temp=0.6、256K 上下文）",
+      "cite": [
+        "qwen-card@createdAt",
+        "qwen-card@Benchmark Results"
+      ]
+    },
+    {
+      "date": "2026-06-10",
+      "label": "仓库 main 分支最后一次代码推送；此后至 2026-11-14 无新提交，题集仍为 v1.1-100",
+      "cite": [
+        "gh-api@pushed_at"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "LLM 裁判本身不稳定，还可能被「说得流利但做错了」的智能体刷分",
+      "impact": "官方明确记录过「智能体没能产出正确交付物，却仍拿到高 LLM 分」的情况；原因是裁判主要看轨迹质量，稳定性差且更易被流畅但错误的输出利用。",
+      "severity": "高",
+      "response": "hybrid 模式加了硬门槛：自动分低于 0.75 时 LLM 分直接记 0；也可用 --simple-scoring 之外的方式交叉核对 Auto 分项。",
+      "reader": "不要只盯总分，同时看 Auto 分项；两者背离越大，越要怀疑该模型靠「说得像」拿分。",
+      "cite": [
+        "repo@Scoring Mechanism"
+      ]
+    },
+    {
+      "issue": "跨运行方不可比：同一模型在两个官方来源上分数不同",
+      "impact": "Claude 4.5 Opus 在 Qwen3.6-27B 模型卡是 52.3，在官方榜单是 56.1；题集同为 v1.1-100，差在运行方与设置。",
+      "severity": "高",
+      "response": "比较时固定单一来源与口径；引用模型卡数字需同时注明 temp=0.6、256K 上下文。",
+      "reader": "不要把 Qwen 模型卡上的数字和榜单数字混进同一张排序表。",
+      "cite": [
+        "qwen-card@Benchmark Results",
+        "leaderboard@模型榜单"
+      ]
+    },
+    {
+      "issue": "分数受基础设施可靠性影响",
+      "impact": "README 指出在 OpenClaw 上复现稳健的大规模评测并不轻松，结果高度依赖基础设施；API 报错、容器崩溃、超时若不显式标记，会被静默计入分数。",
+      "severity": "中",
+      "response": "官方用 Docker 隔离、并发执行、异常显式标记与断点恢复来缓解，并默认每题跑 3 次取平均。",
+      "reader": "看到分数异常波动，先查是否重跑次数不足或有容器失败，别直接当成能力变化。",
+      "cite": [
+        "repo@Why QwenClawBench",
+        "repo@Usage"
+      ]
+    },
+    {
+      "issue": "未披露污染防控与留存集",
+      "impact": "题集固定且公开（GitHub 与 Hugging Face 均可取，Hugging Face 侧需先同意访问条款），但 README 与数据集卡都没说明是否有训练数据去污染流程、是否预留私有集、题目是否经过人工复核。",
+      "severity": "中",
+      "response": "目前只能按「公开题集」对待；引用时注明题集版本 v1.1-100。",
+      "reader": "题面本身含 Expected Behavior 与 Grading Criteria，若模型可能见过题面，分数存在上限虚高风险。",
+      "cite": [
+        "repo@Usage",
+        "dataset@Dataset Structure"
+      ]
+    },
+    {
+      "issue": "领域分布不均，且未公开各题权重",
+      "impact": "8 个领域题量从 21 到 7 不等，工作流编排一类独占 21%；总分是题目分数的汇总，README 与数据集卡都没说明是否按领域或题型加权，各领域用了哪种评分模式也未披露。",
+      "severity": "中",
+      "response": "把总分当作「该模型在这 100 道题上的平均表现」，不外推到单个领域。",
+      "reader": "想看领域细分需谨慎——官方未提供分领域成绩，也没有可下载的逐题分解。",
+      "cite": [
+        "dataset@Task Category Distribution",
+        "repo@Scoring Mechanism"
+      ]
+    },
+    {
+      "issue": "缺少人类/随机基线与结果时间标注",
+      "impact": "榜单只有 12 个模型的分数，没有人类或随机参照行；页面也未标注结果测量日期，以及每个模型用的脚手架、工具与推理档位。",
+      "severity": "低",
+      "response": "无法据此判断模型是否达到人类水平；跨模型比较只能局限在同一榜单内部。",
+      "reader": "不要用「离人类还差多少」来解读 60.5 这个数。",
+      "cite": [
+        "leaderboard@页面头部",
+        "leaderboard@模型榜单"
+      ]
+    }
+  ],
+  "notes": "Qwen3.6-Plus 研发期内部基准，2026-04 开源，MIT 许可；代码托管在 GitHub SKYLENAGE-AI 组织，数据镜像在 Hugging Face skylenage-ai",
+  "official_sources": [
+    {
+      "kind": "repo",
+      "url": "https://github.com/SKYLENAGE-AI/QwenClawBench"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/skylenage-ai/QwenClawBench"
+    },
+    {
+      "kind": "leaderboard",
+      "url": "https://skylenage-ai.github.io/QwenClawBench-Leaderboard/"
+    },
+    {
+      "kind": "docs",
+      "url": "https://huggingface.co/Qwen/Qwen3.6-27B"
+    }
+  ],
+  "related_benchmarks": [
+    "claw-eval",
+    "wildclawbench"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "SKYLENAGE-AI/QwenClawBench（README：设计动机、评分机制、任务结构、用法、引文）",
+        "url": "https://github.com/SKYLENAGE-AI/QwenClawBench",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "dataset",
+        "kind": "dataset",
+        "title": "skylenage-ai/QwenClawBench（Hugging Face 数据集卡：任务类别分布、数据集结构、许可证）",
+        "url": "https://huggingface.co/datasets/skylenage-ai/QwenClawBench",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "leaderboard",
+        "kind": "leaderboard",
+        "title": "QwenClaw Bench Leaderboard（12 个模型成绩、评分方法与混合公式演算）",
+        "url": "https://skylenage-ai.github.io/QwenClawBench-Leaderboard/",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "qwen-card",
+        "kind": "docs",
+        "title": "Qwen/Qwen3.6-27B 模型卡（Benchmark Results 表收录 QwenClawBench 一行）",
+        "url": "https://huggingface.co/Qwen/Qwen3.6-27B",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "gh-api",
+        "kind": "repo",
+        "title": "GitHub API：repos/SKYLENAGE-AI/QwenClawBench（描述、创建/推送时间、许可证）",
+        "url": "https://api.github.com/repos/SKYLENAGE-AI/QwenClawBench",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Qwen Team, Alibaba Group（GitHub 仓库描述与 README 引文署名）；代码托管在 GitHub SKYLENAGE-AI 组织，数据托管在 Hugging Face skylenage-ai",
+        "cite": [
+          "gh-api@description",
+          "repo@Citation"
+        ]
+      },
+      "first_release": {
+        "v": "2026-04-08（GitHub 仓库创建日；README 引文标注 2026 年 4 月，题集目录名 qwenclawbench-v1.1-100）",
+        "cite": [
+          "gh-api@created_at",
+          "repo@Citation"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "repo@README",
+        "dataset@Task Category Distribution",
+        "leaderboard@页面头部"
+      ],
+      "interpretation": [
+        "repo@Scoring Mechanism",
+        "qwen-card@Benchmark Results",
+        "leaderboard@模型榜单"
+      ]
+    },
+    "problem": {
+      "text": "在 OpenClaw 这类真实智能体上做大规模评测并不轻松：README 指出结果高度依赖基础设施可靠性，API 报错、容器崩溃、超时都会污染分数，而现有题集又不贴合真实用户的工作场景。QwenClawBench 的做法是用 Docker 隔离、并发执行与异常显式标记把基础设施噪声从分数里剥出来，并按真实 OpenClaw 使用模式选题、用贴近真实工作场景的资产模拟作业环境。",
+      "cite": [
+        "repo@Why QwenClawBench",
+        "repo@README"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机/空跑基线",
+        "value": "论文未给出",
+        "note": "README 与榜单都没有随机或空跑参照分，本站也不推算。",
+        "cite": [
+          "leaderboard@页面头部"
+        ]
+      },
+      {
+        "label": "人类基线",
+        "value": "未披露",
+        "note": "官方未公布人类在该基准上的成绩，因此无法据此判断模型是否达到人类水平。",
+        "cite": [
+          "leaderboard@页面头部"
+        ]
+      },
+      {
+        "label": "Qwen 模型卡自报最低",
+        "value": "41.7",
+        "note": "Gemma4-31B，来自 Qwen3.6-27B 模型卡 Benchmark Results 表；该表共 6 个模型，口径 temp=0.6、256K 上下文。",
+        "cite": [
+          "qwen-card@Benchmark Results"
+        ]
+      },
+      {
+        "label": "Qwen 模型卡自报最高",
+        "value": "53.4",
+        "note": "Qwen3.6-27B（模型卡所在模型）；同表 Claude 4.5 Opus 为 52.3，与官方榜单的 56.1 不同源。",
+        "cite": [
+          "qwen-card@Benchmark Results"
+        ]
+      },
+      {
+        "label": "官方榜单最低",
+        "value": "50.5",
+        "note": "MiniMax-M2.7（Auto 70.6 / LLM 65.1）；榜单 12 个模型全部落在 50.5–60.5，极差 10 分。",
+        "cite": [
+          "leaderboard@模型榜单"
+        ]
+      },
+      {
+        "label": "官方榜单最高",
+        "value": "60.5",
+        "note": "Claude Sonnet 4.6（Auto 74.5 / LLM 73.4），页面以 Top Score 卡标注；该页未注明结果测量日期。",
+        "cite": [
+          "leaderboard@页面头部",
+          "leaderboard@模型榜单"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把总分当成 Auto 与 LLM 的简单平均：榜首 Claude Sonnet 4.6 的 Auto 74.5、LLM 73.4，总分只有 60.5，三者不是同一口径的线性组合。",
+        "cite": [
+          "leaderboard@页面头部",
+          "leaderboard@模型榜单",
+          "repo@Scoring Mechanism"
+        ]
+      },
+      {
+        "text": "以为 60.5 意味着模型只做对了六成题：总分由 automated / llm_judge / hybrid 三种模式按题目混合算出，且 hybrid 在自动分低于 0.75 时会把 LLM 分清零，低分题对总分的拖累比表面更大。",
+        "cite": [
+          "repo@Scoring Mechanism",
+          "leaderboard@Hybrid Formula"
+        ]
+      },
+      {
+        "text": "把 Qwen 模型卡上的分数和榜单分数直接对比：同一个 Claude 4.5 Opus 在 Qwen3.6-27B 模型卡上是 52.3，在官方榜单上是 56.1；题集版本相同（v1.1-100），差在运行方与设置。",
+        "cite": [
+          "qwen-card@Benchmark Results",
+          "leaderboard@模型榜单"
+        ]
+      },
+      {
+        "text": "以为换裁判无所谓：默认裁判是 claude-opus-4.5，且官方明确记录过「交付物做错但 LLM 裁判给高分」的情况，换裁判会直接改变 llm_judge 与 hybrid 的分数。",
+        "cite": [
+          "repo@Scoring Mechanism"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "Qwen Team, Alibaba Group（GitHub 仓库描述与 README 引文署名）；代码在 GitHub SKYLENAGE-AI 组织，数据在 Hugging Face skylenage-ai",
+        "cite": [
+          "gh-api@description",
+          "repo@Citation"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "未披露：README 引文只署 {Qwen Team} and {Alibaba Data}，没有个人作者名单",
+        "cite": [
+          "repo@Citation"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2026-04-08 仓库创建并开源（v1.1-100）→ 2026-04-21 Qwen3.6-27B 模型卡收录该基准成绩 → 2026-06-10 仓库最后一次推送",
+        "cite": [
+          "gh-api@created_at",
+          "qwen-card@createdAt",
+          "gh-api@pushed_at"
+        ]
+      },
+      {
+        "k": "数据与代码位置",
+        "v": "GitHub SKYLENAGE-AI/QwenClawBench（data/qwenclawbench-v1.1-100/ 下含 tasks/ 与 assets/）与 Hugging Face skylenage-ai/QwenClawBench（qwenclawbench.jsonl + tasks/ + assets/）；HF 侧文件需先同意访问条款才能下载",
+        "cite": [
+          "repo@Task Structure",
+          "dataset@Dataset Structure"
+        ]
+      },
+      {
+        "k": "许可证",
+        "v": "MIT（GitHub 仓库 license 字段与数据集卡均标注）",
+        "cite": [
+          "gh-api@license",
+          "dataset@License"
+        ]
+      },
+      {
+        "k": "评测框架",
+        "v": "README 称基准建立在 PinchBench 框架之上，并致谢 Claw-Eval、ZClawBench、WildClawBench 等社区贡献",
+        "cite": [
+          "repo@Acknowledgments"
+        ]
+      },
+      {
+        "k": "语种与规模",
+        "v": "中英双语；100 题、8 个领域；Hugging Face 数据集总大小约 10.4 MB",
+        "cite": [
+          "dataset@卡片属性",
+          "dataset@Task Category Distribution"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-14",
+        "columns": [
+          "来源",
+          "模型",
+          "总分",
+          "Auto",
+          "LLM",
+          "口径"
+        ],
+        "rows": [
+          [
+            "官方榜单",
+            "Claude Sonnet 4.6",
+            "60.5",
+            "74.5",
+            "73.4",
+            "v1.1-100；页面 Top Score 标注"
+          ],
+          [
+            "官方榜单",
+            "Claude Opus 4.6",
+            "59.5",
+            "75.8",
+            "72.1",
+            "v1.1-100"
+          ],
+          [
+            "官方榜单",
+            "GLM-5.1",
+            "58.7",
+            "74.6",
+            "70.9",
+            "v1.1-100"
+          ],
+          [
+            "官方榜单",
+            "Qwen3.6-Plus",
+            "57.4",
+            "74.7",
+            "69.0",
+            "v1.1-100"
+          ],
+          [
+            "官方榜单",
+            "GPT-5.4",
+            "56.7",
+            "71.5",
+            "72.9",
+            "v1.1-100；带 high 徽章（页面未说明含义）"
+          ],
+          [
+            "官方榜单",
+            "MiMo-V2-Pro",
+            "56.5",
+            "73.0",
+            "69.1",
+            "v1.1-100"
+          ],
+          [
+            "官方榜单",
+            "Claude Opus 4.5",
+            "56.1",
+            "75.1",
+            "70.7",
+            "v1.1-100"
+          ],
+          [
+            "官方榜单",
+            "GLM-5",
+            "54.9",
+            "72.9",
+            "66.7",
+            "v1.1-100"
+          ],
+          [
+            "官方榜单",
+            "Qwen3.5-Plus",
+            "53.0",
+            "71.0",
+            "65.8",
+            "v1.1-100"
+          ],
+          [
+            "官方榜单",
+            "Kimi-K2.5",
+            "51.9",
+            "69.5",
+            "62.6",
+            "v1.1-100"
+          ],
+          [
+            "官方榜单",
+            "DeepSeek-V3.2-Thinking",
+            "50.7",
+            "71.2",
+            "62.4",
+            "v1.1-100"
+          ],
+          [
+            "官方榜单",
+            "MiniMax-M2.7",
+            "50.5",
+            "70.6",
+            "65.1",
+            "v1.1-100"
+          ],
+          [
+            "Qwen3.6-27B 模型卡",
+            "Qwen3.5-27B",
+            "52.2",
+            "未列出",
+            "未列出",
+            "temp=0.6，256K 上下文"
+          ],
+          [
+            "Qwen3.6-27B 模型卡",
+            "Qwen3.5-397B-A17B",
+            "51.8",
+            "未列出",
+            "未列出",
+            "temp=0.6，256K 上下文"
+          ],
+          [
+            "Qwen3.6-27B 模型卡",
+            "Gemma4-31B",
+            "41.7",
+            "未列出",
+            "未列出",
+            "temp=0.6，256K 上下文"
+          ],
+          [
+            "Qwen3.6-27B 模型卡",
+            "Claude 4.5 Opus",
+            "52.3",
+            "未列出",
+            "未列出",
+            "temp=0.6，256K 上下文；同一模型在榜单上写作 Claude Opus 4.5（56.1）"
+          ],
+          [
+            "Qwen3.6-27B 模型卡",
+            "Qwen3.6-35B-A3B",
+            "52.6",
+            "未列出",
+            "未列出",
+            "temp=0.6，256K 上下文"
+          ],
+          [
+            "Qwen3.6-27B 模型卡",
+            "Qwen3.6-27B",
+            "53.4",
+            "未列出",
+            "未列出",
+            "temp=0.6，256K 上下文"
+          ]
+        ]
+      },
+      "cite": [
+        "leaderboard@模型榜单",
+        "qwen-card@Benchmark Results"
+      ]
+    }
+  }
+}

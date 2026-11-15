@@ -1,0 +1,590 @@
+{
+  "id": "pmc-vqa",
+  "name": "PMC-VQA",
+  "full_name": "PMC-VQA：医学视觉问答的视觉指令微调（Visual Instruction Tuning for Medical Visual Question Answering）",
+  "aliases": [],
+  "status": null,
+  "categories": [
+    "multimodal",
+    "knowledge"
+  ],
+  "summary": "PMC-VQA 是从 PubMed Central 开源论文里自动建起来的医学视觉问答（VQA）数据集：22.7 万道题、14.9 万张医学影像，每题四个候选答案。它把此前的医学 VQA 从『给定选项挑答案』改写成『让模型直接生成答案』。",
+  "interpretation": "高分说明模型能把图像内容和医学术语对上号，并按选项格式稳定输出；不说明诊断可靠——题目由 ChatGPT 从图片标题生成，不是医生出的题。一个直观标尺：完全不看图的纯文本模型也能拿到约 30.8% 的 Choice ACC，因为约三成题目的正确答案是 B。",
+  "measures": [
+    {
+      "area": "影像模态覆盖",
+      "focus": "覆盖放射学、病理学、显微镜、信号、通用生物医学插图等多类模态的医学影像",
+      "share": "约 80% 为放射学影像（论文 Table 1 标注）",
+      "format": "四选一 / 自由生成",
+      "cite": [
+        "arxiv-2305-10415@Table 1"
+      ]
+    },
+    {
+      "area": "模态与切面识别",
+      "focus": "例：『这张图用的是哪种脑部切面？』在 Axial / Coronal / Sagittal / Oblique 中选一个",
+      "share": "未披露",
+      "format": "四选一 / 自由生成",
+      "cite": [
+        "arxiv-2305-10415@§4.3.2"
+      ]
+    },
+    {
+      "area": "解剖部位与影像所见",
+      "focus": "答案多为位置描述、影像模态、解剖区域等约 5 个词的名词性短语",
+      "share": "未披露",
+      "format": "四选一 / 自由生成",
+      "cite": [
+        "arxiv-2305-10415@§2.1"
+      ]
+    },
+    {
+      "area": "异常与病灶判断",
+      "focus": "从识别影像模态、切面、器官，到需要专门知识与判断的较难问题",
+      "share": "未披露",
+      "format": "四选一 / 自由生成",
+      "cite": [
+        "arxiv-2305-10415@§2.1"
+      ]
+    },
+    {
+      "area": "复合图子图定位",
+      "focus": "论文特别提到数据集包含需要从复合图中找出目标子图的难题",
+      "share": "未披露",
+      "format": "四选一 / 自由生成",
+      "cite": [
+        "arxiv-2305-10415@§2.1"
+      ]
+    },
+    {
+      "area": "开放问答（blank 口径）",
+      "focus": "不给候选选项、模型直接生成答案；答案空间超过 10 万种可能",
+      "share": "未披露",
+      "format": "自由生成",
+      "cite": [
+        "arxiv-2305-10415@§4.3.2"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "临床诊断正确性：题目由 ChatGPT 从图片标题生成，答案不保证符合临床结论",
+      "cite": [
+        "arxiv-2305-10415@Limitations"
+      ]
+    },
+    {
+      "text": "回答流畅度与可读性：ACC 与 BLEU-1 都只比字符串相似度，不考虑词序和流畅度",
+      "cite": [
+        "arxiv-2305-10415@Limitations"
+      ]
+    },
+    {
+      "text": "对不合理问题的拒答能力：模型在无意义问题上仍会给出答案，而不指出问题不成立",
+      "cite": [
+        "arxiv-2305-10415@附录 A.4"
+      ]
+    },
+    {
+      "text": "真实临床场景的分布：数据取自学术论文配图，比临床影像更干净、更典型",
+      "cite": [
+        "arxiv-2305-10415@Limitations"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 226946,
+    "splits": [
+      "训练集：226,946 题中扣除随机抽取的测试集后的部分（论文未给出精确训练题量）",
+      "PMC-VQA-test-initial：50,000 题随机初版测试集（HF 文件名 test.csv）",
+      "PMC-VQA-test：2,000 题人工复核测试集（HF 文件名 test_clean.csv）",
+      "HF version-2：非复合图子集 train2.csv / test2.csv / images2.zip（论文未给出题量）"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "synthetic（真实医学影像 + ChatGPT 生成题目）",
+    "public_sample": true,
+    "totals": "最终题库 226,946 题 / 149,075 张图（论文精确值；摘要口径约 227k / 149k），其中 2,000 题为人工复核测试集、50,000 题为随机初版测试集。",
+    "cite": [
+      "arxiv-2305-10415@§4.1"
+    ],
+    "construction": [
+      {
+        "k": "① 取图",
+        "text": "从 PMC-OA（PubMed Central 开源子集的图文对，共 160 万对、覆盖 240 万篇论文）里取第一阶段的 381K 图文对，不做子图自动切分，以保留复合图。",
+        "cite": [
+          "arxiv-2305-10415@§4.1"
+        ]
+      },
+      {
+        "k": "② 生成题",
+        "text": "用 ChatGPT 给每张图的标题出 5 道四选一题，提示词要求四选项中一正三误、正确选项位置随机；标题太短时 ChatGPT 会重复生成或中途拒答，这类样本被丢弃。首轮共得到 1,497,808 题，平均每张图 3.93 题。",
+        "cite": [
+          "arxiv-2305-10415@§4.1"
+        ]
+      },
+      {
+        "k": "③ 文本过滤",
+        "text": "训练一个只看文字、不看图的 LLaMA-7B，删掉『光凭生物医学知识就能答对』的题；为避免蒙对，每道题打乱选项顺序推理 5 次，5 中 3 即删除。此步后剩 848,433 题。",
+        "cite": [
+          "arxiv-2305-10415@§4.1"
+        ]
+      },
+      {
+        "k": "④ 可答性过滤",
+        "text": "人工标注 2,192 题（训练 1,752 / 测试 440）训练一个二分类器，判断『只看图能否作答』，准确率 81.77%，再据此清洗全库，最终得到 226,946 题 / 149,075 图。",
+        "cite": [
+          "arxiv-2305-10415@§4.1"
+        ]
+      },
+      {
+        "k": "⑤ 切测试集",
+        "text": "从清洗后的库里随机抽 50,000 题作 PMC-VQA-test-initial（同一张图不会同时出现在训练与测试集）；另人工复核出 2,000 题作 PMC-VQA-test，复核时估计超过 80% 的案例可以保留。",
+        "cite": [
+          "arxiv-2305-10415@§4.1"
+        ]
+      },
+      {
+        "k": "⑥ 发布",
+        "text": "Hugging Face 数据集卡提供 train.csv / test.csv / test_clean.csv 与图片压缩包，列包含 Figure_path、Question、Answer、Choice A–D 与 Answer_label；后续追加 version-2 非复合图文件。",
+        "cite": [
+          "hf-dataset@Dataset Structure"
+        ]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "评测默认用 PMC-VQA-test（2,000 题人工复核版）。Choice 口径把四个候选选项一起给模型，让它输出答案文本，再用 difflib.SequenceMatcher（Python 标准库的序列相似度类）与四个选项比对、取最相似的一个，命中即正确；Blanking 口径不给选项，模型直接生成答案后再做同样的比对。BLEU-1 只比较生成答案与参考答案的单词（unigram）精度，取值 0–1。",
+    "cite": [
+      "arxiv-2305-10415@§4.3.6"
+    ],
+    "variants": [
+      {
+        "text": "Choice（四选一）与 Blanking（不给选项、自由生成）是两套口径：同一模型在 Blanking 下通常更低，因为生成长句后难以匹配到某个选项。",
+        "cite": [
+          "arxiv-2305-10415@§2.3"
+        ]
+      },
+      {
+        "text": "PMC-VQA-test（2,000 题人工复核）与 PMC-VQA-test-initial（50,000 题随机、未复核）不可直接比较：论文最好成绩从 40.3% 降到 39.2% Choice ACC。",
+        "cite": [
+          "arxiv-2305-10415@附录 A.2"
+        ]
+      },
+      {
+        "text": "HF version-2 是非复合图子集，与 version-1 不是同一批图像，跨版本比较需先确认文件批次。",
+        "cite": [
+          "hf-dataset@Dataset Structure"
+        ]
+      },
+      {
+        "text": "答案空间超过 10 万种可能，检索式方法（从固定答案集里选）在此不适用，只能按生成式口径评分。",
+        "cite": [
+          "arxiv-2305-10415@§4.3.2"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "choice-accuracy",
+      "name": "Choice ACC（选择准确率）",
+      "direction": "越高越好",
+      "description": "多选题口径：模型输出答案文本后，用 difflib.SequenceMatcher 与四个候选选项比对、取最相似的一个，命中率即 ACC。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2305-10415@§4.3.6"
+      ]
+    },
+    {
+      "id": "blanking-accuracy",
+      "name": "Blanking ACC（填空准确率）",
+      "direction": "越高越好",
+      "description": "不给候选选项、模型直接生成答案后再做同样比对的 ACC；论文报告该口径普遍低于 Choice ACC。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2305-10415@§4.3.2"
+      ]
+    },
+    {
+      "id": "bleu-1",
+      "name": "BLEU-1",
+      "direction": "越高越好",
+      "description": "只比较单词（unigram）精度的 BLEU 变体，取值 0–1；对语序和流畅度不敏感。",
+      "range": [
+        0,
+        1
+      ],
+      "unit": "score",
+      "cite": [
+        "arxiv-2305-10415@§4.3.6"
+      ]
+    }
+  ],
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2023-05-17",
+      "label": "arXiv v1 首次公开",
+      "cite": [
+        "arxiv-2305-10415@arXiv 页面"
+      ]
+    },
+    {
+      "id": "v6",
+      "date": "2024-09-08",
+      "label": "arXiv v6 当前版本，本站引用的表格数据以此版为准",
+      "cite": [
+        "arxiv-2305-10415@arXiv 页面"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "题目由 ChatGPT 从图片标题生成，未经医生逐题编写",
+      "impact": "分数反映的是『图文对齐 + 医学术语』掌握度，不等同于临床问答能力；论文自称整体工作更接近 proof-of-concept",
+      "severity": "高",
+      "response": "论文未给出改进计划，仅表示需要更多后续工作才能用于真实临床",
+      "reader": "把它当成医学多模态能力的门槛测试，不要当成诊断能力证明",
+      "cite": [
+        "arxiv-2305-10415@Limitations"
+      ]
+    },
+    {
+      "issue": "正确选项分布不均，B 占 30.87%",
+      "impact": "纯文本模型靠倾向选 B 就能拿到约 30.8% Choice ACC，低分模型的成绩被抬高",
+      "severity": "高",
+      "response": "论文未调整选项分布，仅在正文中指出该现象",
+      "reader": "看绝对分数时先扣掉 30% 附近的纯文本基线",
+      "cite": [
+        "arxiv-2305-10415@§2.1"
+      ]
+    },
+    {
+      "issue": "数据来自学术论文配图，倾向典型病例和带标注的干净切片",
+      "impact": "分布比临床场景简单，泛化到真实临床影像时会打折",
+      "severity": "中",
+      "response": "论文承认该偏差，并主张用于训练仍有价值",
+      "reader": "在真实临床影像上的表现通常低于本基准分数",
+      "cite": [
+        "arxiv-2305-10415@Limitations"
+      ]
+    },
+    {
+      "issue": "ACC 与 BLEU-1 都基于字符串相似度，不考虑词序与流畅度",
+      "impact": "编码器型模型在这两个指标上被系统性低估；语义正确但措辞不同的答案会丢分",
+      "severity": "中",
+      "response": "论文称未来会探索更准确有效的评测指标",
+      "reader": "跨架构比较时把 Blanking ACC 与 BLEU-1 分开看",
+      "cite": [
+        "arxiv-2305-10415@Limitations"
+      ]
+    },
+    {
+      "issue": "模型在无意义或域外问题上会幻觉而不拒答",
+      "impact": "例如询问腹部 CT 的肺结节，模型仍会给出答案而不指出问题不成立",
+      "severity": "中",
+      "response": "论文未给出修复方案，仅在附录展示案例",
+      "reader": "不要指望它拒绝不合理的问题",
+      "cite": [
+        "arxiv-2305-10415@附录 A.4"
+      ]
+    },
+    {
+      "issue": "换用未复核的 50,000 题测试集，最好成绩从 40.3% 降到 39.2%",
+      "impact": "两个测试集之间存在口径差，跨论文比较数字时容易错配",
+      "severity": "低",
+      "response": "论文同时报告两个测试集的结果",
+      "reader": "比较不同论文的数字前，先确认用的是哪个测试集",
+      "cite": [
+        "arxiv-2305-10415@附录 A.2"
+      ]
+    },
+    {
+      "issue": "官方仓库的 MedVInT-TD checkpoint 曾误上传，7 月 31 日才更正",
+      "impact": "复现者若使用旧 checkpoint 会得到偏低的结果",
+      "severity": "低",
+      "response": "仓库 README 已声明问题并更换 checkpoint",
+      "reader": "下载 checkpoint 时确认日期在更正之后",
+      "cite": [
+        "github-repo@README"
+      ]
+    },
+    {
+      "issue": "HF 数据集卡另有一套 version-2 非复合图文件，论文未给出其题量",
+      "impact": "同一名字下存在两批图像，跨版本比较时容易混用",
+      "severity": "低",
+      "response": "数据集卡以文件名区分（train2.csv / test2.csv / images2.zip）",
+      "reader": "引用题量时说明用的是 version-1 还是 version-2",
+      "cite": [
+        "hf-dataset@Dataset Structure"
+      ]
+    }
+  ],
+  "notes": "本站账本已收录 Qwen3.8-Max 66.2%（对比 Qwen3.7-Plus 63.4 / Fable5 63.2），来源 Qwen 官方博客。",
+  "official_sources": [
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2305.10415"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/xiaoman-zhang/PMC-VQA"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/xmcmic/PMC-VQA"
+    }
+  ],
+  "related_benchmarks": [
+    "slake",
+    "biobench"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "arxiv-2305-10415",
+        "kind": "paper",
+        "title": "PMC-VQA: Visual Instruction Tuning for Medical Visual Question Answering (arXiv:2305.10415v6)",
+        "url": "https://arxiv.org/abs/2305.10415",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "hf-dataset",
+        "kind": "dataset",
+        "title": "Hugging Face 数据集卡：xmcmic/PMC-VQA",
+        "url": "https://huggingface.co/datasets/xmcmic/PMC-VQA",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "github-repo",
+        "kind": "repo",
+        "title": "GitHub 仓库：xiaoman-zhang/PMC-VQA",
+        "url": "https://github.com/xiaoman-zhang/PMC-VQA",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "上海交通大学、上海人工智能实验室",
+        "cite": [
+          "arxiv-2305-10415@标题页"
+        ]
+      },
+      "first_release": {
+        "v": "2023-05-17（arXiv v1；当前版本 v6，2024-09-08 修订）",
+        "cite": [
+          "arxiv-2305-10415@arXiv 页面"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "arxiv-2305-10415@摘要"
+      ],
+      "interpretation": [
+        "arxiv-2305-10415@§2.3"
+      ]
+    },
+    "problem": {
+      "text": "此前的医学 VQA 数据集（VQA-RAD、SLAKE 等）只有几千题，且把任务限定为『从一个封闭答案集里检索正确项』，既喂不饱生成式大模型，也框死了使用方式。PMC-VQA 用可扩展管线把题量做到 22.7 万，并要求模型自由生成答案，答案空间超过 10 万种可能。",
+      "cite": [
+        "arxiv-2305-10415@§4.3.2"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "纯文本模型（不看图）",
+        "value": "30.8%（Choice ACC）",
+        "note": "LLaMA 纯文本；约 30% 的题正确答案是 B，该分数接近瞎猜上限",
+        "cite": [
+          "arxiv-2305-10415@§2.3"
+        ]
+      },
+      {
+        "label": "通用视觉语言模型零样本",
+        "value": "26.4%（Choice ACC）",
+        "note": "Open-Flamingo 零样本，显著低于论文模型",
+        "cite": [
+          "arxiv-2305-10415@§2.3"
+        ]
+      },
+      {
+        "label": "医学生成式模型零样本",
+        "value": "34.8%（Choice ACC）",
+        "note": "LLaVA-Med 零样本，仍落后于论文的 MedVInT",
+        "cite": [
+          "arxiv-2305-10415@Table 3"
+        ]
+      },
+      {
+        "label": "论文发布时最好成绩",
+        "value": "40.3%（Choice ACC）",
+        "note": "MedVInT-TD + PMC-LLaMA + PMC-CLIP；同配置 Blanking ACC 33.6、BLEU-1 21.5",
+        "cite": [
+          "arxiv-2305-10415@Table 3"
+        ]
+      },
+      {
+        "label": "同一模型换未复核测试集",
+        "value": "39.2%（Choice ACC）",
+        "note": "在 50,000 题随机测试集 PMC-VQA-test-initial 上从 40.3 降到 39.2",
+        "cite": [
+          "arxiv-2305-10415@附录 A.2"
+        ]
+      },
+      {
+        "label": "GPT-4 读原图标题（参考上界）",
+        "value": "89.3%（Choice ACC）",
+        "note": "Oracle 设置：让 GPT-4 看论文原图标题作答，不是人类基线",
+        "cite": [
+          "arxiv-2305-10415@Table 3"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "『227k』是清洗后的最终题量（226,946），不是 ChatGPT 首轮生成的 1,497,808 对，也不是清洗中间态 848,433。",
+        "cite": [
+          "arxiv-2305-10415@§4.1"
+        ]
+      },
+      {
+        "text": "论文表格里的 40.3% 跑的是 PMC-VQA-test（2,000 题人工复核版）；换成 50,000 题随机初版测试集降到 39.2%。",
+        "cite": [
+          "arxiv-2305-10415@附录 A.2"
+        ]
+      },
+      {
+        "text": "Choice ACC 超过 30% 不等于模型看得懂图：约 30% 的题正确答案是 B，纯文本模型也能到 30.8%。",
+        "cite": [
+          "arxiv-2305-10415@§2.3"
+        ]
+      },
+      {
+        "text": "论文摘要给出的 Papers with Code 榜单链接不是现行成绩入口；引用成绩以论文 Table 3 与本站账本为准。",
+        "cite": [
+          "arxiv-2305-10415@摘要"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "上海交通大学、上海人工智能实验室",
+        "cite": [
+          "arxiv-2305-10415@标题页"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "Xiaoman Zhang、Chaoyi Wu、Ziheng Zhao、Weixiong Lin、Ya Zhang、Yanfeng Wang、Weidi Xie",
+        "cite": [
+          "arxiv-2305-10415@arXiv 页面"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2023-05-17 arXiv v1 首次公开；2024-09-08 修订至 v6，本站引用的表格数据以此版为准",
+        "cite": [
+          "arxiv-2305-10415@arXiv 页面"
+        ]
+      },
+      {
+        "k": "配套模型",
+        "v": "MedVInT-TE（配编码器型语言骨干）与 MedVInT-TD（配解码器型语言骨干），默认视觉骨干为 PMC-CLIP、语言骨干为 PMC-LLaMA",
+        "cite": [
+          "arxiv-2305-10415@§2.3"
+        ]
+      },
+      {
+        "k": "数据与代码位置",
+        "v": "数据集在 Hugging Face xmcmic/PMC-VQA（现归 RadGenome 组织）；代码与 checkpoint 在 GitHub xiaoman-zhang/PMC-VQA",
+        "cite": [
+          "github-repo@README"
+        ]
+      },
+      {
+        "k": "许可",
+        "v": "数据集为 CC BY-SA（所引源论文为 CC0 或 CC BY）；代码仓库为 MIT",
+        "cite": [
+          "arxiv-2305-10415@§7 Data Availability",
+          "github-repo@About"
+        ]
+      },
+      {
+        "k": "数据来源",
+        "v": "取自 PMC-OA，即 PubMed Central 开源子集的图文对（160 万对、覆盖 240 万篇论文）的第一阶段产物",
+        "cite": [
+          "arxiv-2305-10415@§4.1"
+        ]
+      },
+      {
+        "k": "影响",
+        "v": "论文称发布后被广泛采用，多个生成式医学模型与后续工作引用或对比该数据集",
+        "cite": [
+          "arxiv-2305-10415@Impacts of Our Work"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2024-09-08",
+        "columns": [
+          "方法",
+          "语言骨干",
+          "视觉骨干",
+          "Choice ACC (%)",
+          "Blanking ACC (%)",
+          "BLEU-1"
+        ],
+        "rows": [
+          ["GPT-4-Oracle", "GPT-4", "–", 89.3, 22.0, 18.8],
+          ["GPT-4", "GPT-4", "–", 25.7, 21.1, 3.0],
+          ["LLaMA", "LLaMA", "–", 30.8, 27.2, 14.6],
+          ["PMC-CLIP", "PMC-CLIP", "PMC-CLIP", 24.7, "–", "–"],
+          ["BLIP-2", "OPT-2.7B", "CLIP", 24.3, 21.8, 7.6],
+          ["Open-Flamingo", "LLaMA", "CLIP", 26.4, 26.5, 4.1],
+          ["LLaVA-Med", "Vicuna", "BioMedCLIP", 34.8, 29.4, 3.9],
+          ["MedICap-GPT-4", "GPT-4", "MedICap", 27.2, 20.9, 4.2],
+          ["MedICap-PMCVQA-GPT-4", "GPT-4", "MedICap-PMCVQA", 35.9, 22.4, 3.8],
+          ["MedVInT-TE", "–", "Scratch", 34.9, 34.2, 20.9],
+          ["MedVInT-TE", "PubMedBERT", "CLIP", 34.3, 34.4, 20.8],
+          ["MedVInT-TE", "PubMedBERT", "PMC-CLIP", 37.6, 36.4, 23.2],
+          ["MedVInT-TE", "LLaMA-ENC", "Scratch", 35.2, 32.5, 15.9],
+          ["MedVInT-TE", "LLaMA-ENC", "CLIP", 36.1, 33.4, 15.1],
+          ["MedVInT-TE", "LLaMA-ENC", "PMC-CLIP", 37.1, 36.8, 18.4],
+          ["MedVInT-TE", "PMC-LLaMA-ENC", "Scratch", 38.0, 35.0, 17.0],
+          ["MedVInT-TE", "PMC-LLaMA-ENC", "CLIP", 38.5, 34.4, 16.5],
+          ["MedVInT-TE", "PMC-LLaMA-ENC", "PMC-CLIP", 39.2, 35.3, 18.6],
+          ["MedVInT-TE", "LLaMA", "Scratch", 37.9, 30.2, 18.0],
+          ["MedVInT-TE", "LLaMA", "CLIP", 39.2, 32.2, 20.0],
+          ["MedVInT-TE", "LLaMA", "PMC-CLIP", 39.5, 33.4, 21.3],
+          ["MedVInT-TD", "–", "Scratch", 36.9, 29.8, 17.4],
+          ["MedVInT-TD", "PMC-LLaMA", "CLIP", 36.9, 32.6, 20.4],
+          ["MedVInT-TD", "PMC-LLaMA", "PMC-CLIP", 40.3, 33.6, 21.5]
+        ]
+      },
+      "cite": [
+        "arxiv-2305-10415@Table 3"
+      ]
+    }
+  }
+}

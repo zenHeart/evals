@@ -1,0 +1,620 @@
+{
+  "id": "parametric-cad-bench",
+  "name": "Parametric CAD Bench",
+  "full_name": "Parametric CAD Bench: Can AI agents author editable CAD?",
+  "aliases": [],
+  "status": "active",
+  "categories": [
+    "coding",
+    "agent",
+    "multimodal"
+  ],
+  "summary": "gNucleus AI 的 CAD agent 评测：让 agent 在固定版本的 FreeCAD 里，从文字零件规格或工程图产出原生可编辑的 .FCStd 参数化模型，再由独立 verifier 按「几何相似度 × 规格一致性」两条轴打分。v3 共 100 题（30 文本创建 / 30 创建后编辑 / 40 工程图重建），主要指标是平均连续任务奖励。",
+  "interpretation": "高分说明这个（模型 + agent）组合能在 pinned FreeCAD 环境里端到端交付几何正确、命名尺寸一致的参数化模型；它测的是整套 agentic 系统，不是模型单独能力——同一模型换 agent 会明显改变分数（Opus 5.5 配 Claude Code 61.03%，配 mini-swe-agent 57.96%）。分数是连续奖励的均值，不是二值成功率：部分正确只得部分分，失败或未评分记 0。",
+  "measures": [
+    {
+      "area": "Text-to-CAD 创建（文字规格 → 参数化模型）",
+      "focus": "从自然语言零件描述 + 关键参数表生成原生参数化 FreeCAD 模型。示例桁架加强板有 86 个关键参数，参考实现为单草图单凸垫、单实体 203 面、280 mm 宽 × 549 mm 高 × 8 mm 厚。",
+      "share": "30%（v3）",
+      "format": "文字规格 + 参数表 → /app/answer.py + /app/answer.FCStd",
+      "cite": [
+        "paper@Table 1 注",
+        "paper@§3.2"
+      ]
+    },
+    {
+      "area": "Text-to-CAD 创建后编辑（先建再改）",
+      "focus": "先按文字建基体模型，再按追加编辑指令产出目标模型，两个产物分别评分；只看最终轮廓不能证明基体建对。示例 freecad-ff7883ab0c 有 15 个基体参数 + 14 个追加目标参数。",
+      "share": "30%（v3）",
+      "format": "基体描述 + 编辑指令 → answer_base.FCStd + answer_edit.FCStd",
+      "cite": [
+        "paper@Table 1 注",
+        "paper@§3.2"
+      ]
+    },
+    {
+      "area": "Image-to-CAD 工程图重建",
+      "focus": "只给工程图（正交 / 剖面 / 轴测视图 + 尺寸标注），文字规格被扣住不发，要求重建可编辑单实体 PartDesign 模型。示例前轮连杆臂总长 56 mm、深 19.5 mm、两眼孔分别为 3 mm 与 2 mm。",
+      "share": "40%（v3）",
+      "format": "工程图 → /app/answer.py + /app/answer.FCStd",
+      "cite": [
+        "paper@Table 1 注",
+        "paper@§3.2"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "装配配合、FEM/FEA、制造资格认定与广义有机曲面建模：参考实现限定为单实体 PartDesign，官方明确这些工程需求不在覆盖范围内。",
+      "cite": [
+        "paper@§6"
+      ]
+    },
+    {
+      "text": "对外部既有 CAD 文档的维护式编辑：create-and-edit 是先建后改的两阶段构建，不提供外部作者写的起始 FCStd。",
+      "cite": [
+        "paper@§3.2",
+        "paper@Table 1 注"
+      ]
+    },
+    {
+      "text": "设计意图与未来任意修改的功能可编辑性：几何相似度与被检命名参数只是启发式代理指标。",
+      "cite": [
+        "paper@§6"
+      ]
+    },
+    {
+      "text": "孤立的视觉感知：工程图分数覆盖 CAD 构建、工具使用、图像传输与失败恢复的整条 agentic 链路。",
+      "cite": [
+        "paper@§5.3"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 100,
+    "splits": [
+      "v3：30 文本创建 + 30 创建后编辑 + 40 工程图重建，冻结在一个不可变数据集 digest 下",
+      "官方口径：每个 (模型, agent) 一行 = 一轮全新 100 题、每题一次尝试、四路并发"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "synthetic（gNucleus AI 编写并开源）",
+    "public_sample": true,
+    "totals": "v3 共 100 题：30 文本创建 + 30 创建后编辑 + 40 工程图重建。参考模型共 687 个实体建模特征对象（均值 6.87、中位 6、范围 1–20）；按工作流看，创建 5.20、创建后编辑目标 5.60（基体 2.47）、工程图重建 9.08。每个任务随规格、参考模型与图纸一起发布。",
+    "cite": [
+      "paper@§3.1",
+      "paper@§3.3",
+      "paper@附录 A"
+    ]
+  },
+  "metrics": [
+    {
+      "id": "overall-reward",
+      "name": "总体平均连续任务奖励（Overall / mean reward）",
+      "direction": "越高越好",
+      "description": "100 题最终奖励的均值，换算到 0–100 尺码：完美结果得 1.0，部分正确得部分分，失败或未评分记 0。奖励是几何相似度与规格一致性的调和均值，任一轴为 0 则整题为 0。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§4.2",
+        "cadbench"
+      ]
+    },
+    {
+      "id": "geometry-similarity",
+      "name": "geometry_similarity（几何相似度）",
+      "direction": "越高越好",
+      "description": "五个子分加权：面型面积、体积、总表面积、归一化主惯性矩、面中心 ICP 对齐；体积相对误差 ≤0.1% 满分、≥1% 零分。OCCT 有向包围盒是门控而非加权子分：排序后尺寸的最大相对误差 ≥10% 直接置 0；>5,000 面或面/顶点数相对参考差 >50% 直接拒绝。结构门控另要求一个非空 PartDesign::Body 通过允许的原生操作产出唯一实体。",
+      "range": [
+        0,
+        1
+      ],
+      "unit": "ratio",
+      "cite": [
+        "paper@§4.2"
+      ]
+    },
+    {
+      "id": "cad-spec-consistency",
+      "name": "cad_spec_consistency（规格一致性）",
+      "direction": "越高越好",
+      "description": "解析任务规格中的命名参数，由 CAD 工程师编写的 param_check.py 在候选文档上测量；默认相对容差 1%，默认失败预算 10，即 n ≥ 10 时每个不一致或测不到的参数扣 0.1。它度量被编码的检查，不证明未来任意修改可编辑。",
+      "range": [
+        0,
+        1
+      ],
+      "unit": "ratio",
+      "cite": [
+        "paper@§4.2"
+      ]
+    },
+    {
+      "id": "perfect-task-rate",
+      "name": "完美任务率（perfect tasks）",
+      "direction": "越高越好",
+      "description": "最终奖励恰好等于 1.0 的任务占比；官方明确这个连续奖励不是 Pass@1，完美任务率是另报的口径。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§4.2",
+        "v3-news@The v3 leaderboard"
+      ]
+    },
+    {
+      "id": "cost-per-point",
+      "name": "每分 API 成本（描述性比值）",
+      "direction": "越低越好",
+      "description": "已知 API 成本除以 0–100 尺码上的总分。官方说明它衡量「每取得一分花了多少钱」，不是把系统再提高一分的边际成本，且不含部分算力与托管开销。",
+      "unit": "USD/point",
+      "cite": [
+        "paper@§5.4",
+        "paper@§6"
+      ]
+    }
+  ],
+  "default_protocol": {
+    "raw": "agent 在 pinned 环境（FreeCAD 1.1.0 + Harbor 0.23.0 + task schema 1.3）里跑多轮 agentic loop：读规格或工程图 → 写 /app/answer.py → 在 FreeCAD 里执行并存出 /app/answer.FCStd → 交给独立 verifier，用 gnucleus-freecad-validator 0.6.0 的默认 v2 scorer 计算 geometry_similarity 与 cad_spec_consistency，两者取调和均值得到最终奖励。held-back 的参考几何与 grader 资产放在独立的 verifier 环境里，agent 环境默认无网络（模型 provider 除外），工作被限制在 /app 下。",
+    "cite": [
+      "paper@§4.1",
+      "paper@§4.2",
+      "v3-news@What changed in v3"
+    ],
+    "variants": [
+      {
+        "text": "harness 是一等变量：同一模型换 agent 会改变分数。v3 里 Opus 5.5 配 Claude Code 61.03%、配 mini-swe-agent 57.96%（差 3.08 分）；Gemini 3.8 Flash 配 mini-swe-agent（带多模态桥）36.19%、配 Antigravity 27.56%。官方说明这不是受控消融——提示词、工具协议与服务路径都不同。",
+        "cite": [
+          "paper@§5.2",
+          "v3-news@Multimodal bridge"
+        ]
+      },
+      {
+        "text": "版本之间不可比：v2 是 100 道文本创建题、validator 0.4.0；v3 换了题目总体、模态、编辑要求、validator 版本、评分行为、网络策略、Harbor 版本与 task schema。v3 分是新测量，不是 v2 系列的延续。",
+        "cite": [
+          "v2-news@What changed in v2",
+          "v3-news@Why v2 and v3 scores are separate"
+        ]
+      },
+      {
+        "text": "mini-swe-agent 的多模态桥：该接口只暴露 Bash，没有原生看图工具，/app 下的本地图片不会自动变成模型可见图像。桥的做法是让系统模板要求 agent 先用一条 bash 把图片 base64 送进多模态观察通道，自定义观察模板再绕过 10,000 字符的 shell 输出截断保住完整 data URL。",
+        "cite": [
+          "v3-news@Multimodal bridge"
+        ]
+      },
+      {
+        "text": "v1 的 harness 效应样本：GPT-5.5 经 Codex 得 0.832，同一模型经 vendor-neutral 的 mini-swe-agent 得 0.744；官方称换 driver 会让分数双向偏移约 10%，每格 100 次尝试花费 $3–$170。",
+        "cite": [
+          "gnucleus-cad-bench-news-parametri@Results",
+          "gnucleus-cad-bench-news-parametri@Why this is different"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2026-05-13",
+      "label": "v1 发布：100 道文本创建任务、10 个 agent×model 榜单格，GPT-5.5 via Codex 0.832 居首；validator 0.1.0 烘在任务镜像里",
+      "cite": [
+        "gnucleus-cad-bench-news-parametri@Results",
+        "gnucleus-cad-bench-news-parametri@标题"
+      ]
+    },
+    {
+      "id": "v2",
+      "date": "2026-09-08",
+      "label": "v2：FreeCAD 0.21.2 → 1.1.0，held-out 资产移入独立 verifier 镜像，reward 报告对齐 Harbor 契约，validator 0.1.0 → 0.4.0，v1 冻结",
+      "cite": [
+        "v2-news@What changed in v2"
+      ]
+    },
+    {
+      "id": "v3",
+      "date": "2026-09-21",
+      "label": "v3：改为 30 创建 / 30 创建后编辑 / 40 工程图重建，validator 0.6.0 + v2 scorer，执行隔离收紧（默认无网络），Harbor 0.23.0 + task schema 1.3",
+      "cite": [
+        "v3-news@What changed in v3"
+      ]
+    },
+    {
+      "id": "v3-opus55",
+      "date": "2026-09-24",
+      "label": "Claude Opus 5.5 两行入榜（Claude Code 61.03% / mini-swe-agent 57.96%），该日快照即论文所用的 13 系统结果",
+      "cite": [
+        "cadbench@Latest Updates",
+        "v3-paper-news@正文"
+      ]
+    },
+    {
+      "id": "v3-paper",
+      "date": "2026-11-02",
+      "label": "v3 论文《Parametric CAD Bench v3: Evaluating Agentic Parametric CAD Authoring from Text and Engineering Drawings》提交至 arXiv（2611.02659v1）",
+      "cite": [
+        "paper@标题",
+        "paper@arXiv 编号"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "题目是精选的 100 道，不是工程 CAD 的代表性抽样",
+      "impact": "家族依赖与选题限制泛化；单实体 PartDesign 的要求不覆盖装配配合、FEM/FEA、制造资格认定与广义有机曲面建模。",
+      "severity": "高",
+      "response": "官方把它定位为面向工程的策展评测而非代表性抽样，并公开版本化任务与配置以便复查。",
+      "reader": "看到 60% 左右的分时，记住这是 100 道精选 FreeCAD 任务上的系统表现，不是通用 CAD 能力。",
+      "cite": [
+        "paper@§6"
+      ]
+    },
+    {
+      "issue": "agent 与模型效应混在一起，单次尝试不说明稳定性",
+      "impact": "agent 工具、提示词、服务路径与预算会混淆纯模型比较；每任务一次官方尝试，不能建立跑间稳健性。",
+      "severity": "高",
+      "response": "官方用同模型配不同 agent 的配对比较披露 harness 效应，并说明这些比较不是受控消融。",
+      "reader": "比较两个模型前先看是不是同一个 agent；同一 agent 内比较才接近模型差异。",
+      "cite": [
+        "paper@§6",
+        "paper@§5.2"
+      ]
+    },
+    {
+      "issue": "评分是启发式代理，不是工程合格判定",
+      "impact": "几何相似度与被检命名参数不能证明未来任意修改可编辑、设计意图正确或工程上有效；另一种同样满足需求的建法可能在参考比对中吃亏。",
+      "severity": "中",
+      "response": "参数检查由 CAD 工程师按任务编写，并区分 witness / custom / native 三类测量方式；官方明确这些检查只是代理。",
+      "reader": "把高分别当成「接近工程可用」的证据要谨慎，它首先说明几何与命名尺寸对上了。",
+      "cite": [
+        "paper@§6",
+        "paper@§3.2"
+      ]
+    },
+    {
+      "issue": "多模态接口缺陷会制造零分",
+      "impact": "mini-swe-agent 的桥信任被标记包裹的 shell 输出；模型索要从未创建的派生图片时，shell 报错会被当成图像字节送出，6 个 Gemini 工程图试验因此判零且不重试。",
+      "severity": "中",
+      "response": "官方记录为 agent/adapter 失败而非基础设施故障，六项全部保留为零，并要求后续模板设计不得利用评测结果。",
+      "reader": "读 mini-swe-agent 行的 image-to-CAD 分数时要考虑这类接口失败。",
+      "cite": [
+        "v3-news@Multimodal bridge"
+      ]
+    },
+    {
+      "issue": "污染声明与逐位复现都受限",
+      "impact": "公开资产、厂商未披露的训练数据与不断变化的实现，让污染主张和复现都受限。",
+      "severity": "中",
+      "response": "任务与 validator 以 Apache-2.0 发布并冻结在一个数据集 digest 上，官方行都链到公开 Harbor job。",
+      "reader": "复现时锁定同一 digest 与同一 validator 版本，否则数字不可比。",
+      "cite": [
+        "paper@§6",
+        "paper@附录 A"
+      ]
+    },
+    {
+      "issue": "成本只覆盖已知 API 花费",
+      "impact": "报告的 API 成本不含部分算力与托管开销；部分行的成本来自官方按轨迹 token 审计推算。",
+      "severity": "低",
+      "response": "官方标注哪些行是审计值，并把每分成本作为描述性比值发布。",
+      "reader": "把成本当量级参考，不是标准化报价。",
+      "cite": [
+        "paper@§5.4",
+        "paper@§6"
+      ]
+    }
+  ],
+  "notes": "2026-11-14 升级为 benchmark-profile/v2 时做了三处事实收口：(1) 删去原 v1 档案的别名「gNucleus CAD Bench」——本次抓取的 8 个来源中均无该称谓；(2) 删去「Qwen3.8-Max 91.5 为其表内最高」——V3 榜单 13 行中没有 Qwen 行，也无任何来源支持该数字；(3) 原 official_sources 里的 github.com/gnucleus-ai/cad-bench 已 404（返回 GitHub Page not found），任务套件的实际位置是 Harbor Hub 的 gnucleus-ai/cad-bench，评分器仓库是 gNucleus-AI/freecad-validator（大小写不同）。",
+  "official_sources": [
+    {
+      "kind": "site",
+      "url": "https://cadbench.ai"
+    },
+    {
+      "kind": "site",
+      "url": "https://www.gnucleus.ai/cad-bench/news/parametric-cad-bench"
+    },
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2611.02659"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/gnucleus-ai/cad-gen-freecad"
+    },
+    {
+      "kind": "docs",
+      "url": "https://hub.harborframework.com/datasets/gnucleus-ai/cad-bench"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/gNucleus-AI/freecad-validator"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/gNucleus-AI/cad-bench-submission"
+    }
+  ],
+  "related_benchmarks": [
+    "benchcad",
+    "terminalbench",
+    "harbor-index",
+    "qwen-blender-bench"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "Parametric CAD Bench v3: Evaluating Agentic Parametric CAD Authoring from Text and Engineering Drawings（arXiv:2611.02659v1）",
+        "url": "https://arxiv.org/abs/2611.02659",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "cadbench",
+        "kind": "leaderboard",
+        "title": "Parametric CAD Bench — cadbench.ai（V1 / V2 / V3 榜单与评分说明）",
+        "url": "https://cadbench.ai",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "v3-news",
+        "kind": "announcement",
+        "title": "Parametric CAD Bench V3 发布说明（cadbench.ai/news/cad-bench-v3）",
+        "url": "https://cadbench.ai/news/cad-bench-v3",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "v3-paper-news",
+        "kind": "announcement",
+        "title": "Parametric CAD Bench V3: Paper and Evaluation Findings（cadbench.ai/news/cad-bench-v3-paper）",
+        "url": "https://cadbench.ai/news/cad-bench-v3-paper",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "v2-news",
+        "kind": "announcement",
+        "title": "Parametric CAD Bench v2 发布说明（cadbench.ai/news/cad-bench-v2）",
+        "url": "https://cadbench.ai/news/cad-bench-v2",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "gnucleus-cad-bench-news-parametri",
+        "kind": "announcement",
+        "title": "Parametric CAD Bench（v1 发布文，www.gnucleus.ai/cad-bench/news/parametric-cad-bench）",
+        "url": "https://www.gnucleus.ai/cad-bench/news/parametric-cad-bench",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "harbor-cad-bench",
+        "kind": "docs",
+        "title": "Harbor Hub 数据集页：gnucleus-ai/cad-bench",
+        "url": "https://hub.harborframework.com/datasets/gnucleus-ai/cad-bench",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "hf-cad-gen-freecad",
+        "kind": "dataset",
+        "title": "Hugging Face 数据集：gnucleus-ai/cad-gen-freecad（上游零件数据，100 行）",
+        "url": "https://huggingface.co/datasets/gnucleus-ai/cad-gen-freecad",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "gNucleus AI, Inc.",
+        "cite": [
+          "paper@标题与作者署名"
+        ]
+      },
+      "first_release": {
+        "v": "2026-05-13（v1 发布文；v3 论文 2026-11-02 提交 arXiv）",
+        "cite": [
+          "gnucleus-cad-bench-news-parametri@标题",
+          "paper@arXiv 编号"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "paper@Abstract",
+        "cadbench",
+        "paper@§3.1"
+      ],
+      "interpretation": [
+        "paper@§4.2",
+        "paper@§5.2",
+        "v3-news@The v3 leaderboard"
+      ]
+    },
+    "problem": {
+      "text": "判断一个 CAD agent 有没有满足工程设计需求，不能只看脚本能跑或外形像不像：还要看几何是否到位、指定尺寸是否一致、以及产物是不是原生可编辑的参数化模型（带特征树与可驱动尺寸）。Parametric CAD Bench 用可执行、可复查的评分把这三件事同时测出来，并用调和均值当「可编辑性门控」——几何对但命名参数全缺的模型得 0，而不是 0.5。",
+      "cite": [
+        "paper@Abstract",
+        "paper@§1",
+        "gnucleus-cad-bench-news-parametri@How scoring works"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "零分 / 未交付基线",
+        "value": "0",
+        "note": "任一必需轴或交付物为 0 时整题即 0，最终异常同样记 0；未交付、脚本执行失败也没有部分分。",
+        "cite": [
+          "paper@§4.2"
+        ]
+      },
+      {
+        "label": "所有系统都得零的任务",
+        "value": "6 / 100（全部是创建后编辑）",
+        "note": "这 6 题在已评估的每一行都得零；另有 11 题至少有一行拿满分。工程图重建的组间差异最大。",
+        "cite": [
+          "v3-news@Per-task spread"
+        ]
+      },
+      {
+        "label": "v3 榜上最低（GPT-5.6 Terra + Codex）",
+        "value": "17.24%",
+        "note": "13 行公开结果里的最低总体点估计；其 image-to-CAD 为 8.18%，是全数据集最低。",
+        "cite": [
+          "cadbench",
+          "paper@§5.3"
+        ]
+      },
+      {
+        "label": "v3 当前最高（Claude Opus 5.5 + Claude Code）",
+        "value": "61.03%",
+        "note": "同一模型配 mini-swe-agent 为 57.96%（低 3.08 分）；该行 image-to-CAD 84.66% 为全数据集最高。",
+        "cite": [
+          "cadbench",
+          "v3-paper-news@正文",
+          "paper@§5.2"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      },
+      {
+        "label": "v2 榜最高（Claude Fable 5.1 + Claude Code）",
+        "value": "84.81%",
+        "note": "v2 是 100 道文本创建题、validator 0.4.0，与 v3 不是同一把尺；官方明确 v2 与 v3 分数分开。",
+        "cite": [
+          "v2-news@The v2 leaderboard",
+          "v3-news@Why v2 and v3 scores are separate"
+        ]
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 61% 当成「61% 的任务做对了」——总体分是连续奖励的均值，部分正确只得部分分；完美任务率（最终奖励恰为 1.0 的占比）是另报的口径，与 Pass@1 不是一回事。",
+        "cite": [
+          "paper@§4.2",
+          "v3-news@The v3 leaderboard"
+        ]
+      },
+      {
+        "text": "跨版本比分：v2 的 84.81% 与 v3 的 61.03% 不是同一把尺——v3 换了题目总体、模态、编辑要求、validator 与评分行为、网络策略、Harbor 版本和 task schema。",
+        "cite": [
+          "v3-news@Why v2 and v3 scores are separate",
+          "v2-news@What changed in v2"
+        ]
+      },
+      {
+        "text": "把榜首点估计当成决定性排名：前三名的 95% 置信区间大幅重叠，在这 100 题样本上点估计顺序不构成统计意义上的分离。",
+        "cite": [
+          "v3-news@The v3 leaderboard",
+          "paper@§5.1"
+        ]
+      },
+      {
+        "text": "把 image-to-CAD 高分读成视觉感知强：该轴覆盖 CAD 构建、工具使用、图像传输与失败恢复整条链路，不是孤立的感知能力。",
+        "cite": [
+          "paper@§5.3"
+        ]
+      },
+      {
+        "text": "用模型档位或 token 单价推断成本：GPT-6 Astra 既是最高分行也是每分成本最低行（$317.81 / 56.87 分 = $5.59 每分），而它的 token 用量是全矩阵最少的。",
+        "cite": [
+          "v3-news@Cost per point",
+          "paper@§5.4"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "gNucleus AI, Inc.（论文作者 Mei Chen、Yu Xia、Haipeng Mao 均署名该公司）",
+        "cite": [
+          "paper@标题与作者署名"
+        ]
+      },
+      {
+        "k": "论文",
+        "v": "《Parametric CAD Bench v3: Evaluating Agentic Parametric CAD Authoring from Text and Engineering Drawings》，arXiv:2611.02659v1 [cs.AI]，2026-11-02 提交；论文报告的是 2026-09-24 的 13 个模型-agent 系统快照。",
+        "cite": [
+          "paper@标题",
+          "paper@arXiv 编号",
+          "v3-paper-news@正文"
+        ]
+      },
+      {
+        "k": "任务与评分资产",
+        "v": "任务套件在 Harbor Hub（gnucleus-ai/cad-bench，Harbor schema 1.3，需 harbor >= 0.20.0，可 harbor run -d gnucleus-ai/cad-bench 复跑）；评分器 gnucleus-freecad-validator 0.6.0 发在 PyPI，validator 仓库 tag v0.6.0（commit 2a5d67f）；上游零件数据在 Hugging Face（gnucleus-ai/cad-gen-freecad，100 行，Apache-2.0，FCStd 由 FreeCAD 0.21.2 编写）。",
+        "cite": [
+          "harbor-cad-bench",
+          "paper@附录 A",
+          "hf-cad-gen-freecad"
+        ]
+      },
+      {
+        "k": "版本时间线",
+        "v": "2026-05-13 v1 发布（10 个 agent×model 榜单格，GPT-5.5 via Codex 0.832 居首）→ 09-08 v2（FreeCAD 1.1.0 + verifier 隔离，Fable 5.1 84.81%）→ 09-21 v3（三工作流 100 题）→ 09-24 Opus 5.5 两行入榜 → 11-02 v3 论文提交 arXiv。",
+        "cite": [
+          "cadbench@Latest Updates",
+          "gnucleus-cad-bench-news-parametri@Results",
+          "v2-news@The v2 leaderboard",
+          "v3-news@The v3 leaderboard"
+        ]
+      },
+      {
+        "k": "提交方式",
+        "v": "第三方 (agent, model) 结果可提交：跑 harbor run -d gnucleus-ai/cad-bench@v1，把 run 产物推到自己控制的 HF 数据集，再到 cad-bench-submission 仓库开 PR 加一个 manifest YAML；维护者人工复核 schema、按 reward.json 抽验重评、轨迹合理性与成本复算，合并后 manifest 即权威榜单条目。",
+        "cite": [
+          "gnucleus-cad-bench-news-parametri@提交方式",
+          "harbor-cad-bench"
+        ]
+      },
+      {
+        "k": "许可",
+        "v": "任务（规格、参考模型、图纸）与 validator 均以 Apache License 2.0 发布；图纸中再分发的 FreeCAD 与 OCCT 带 LGPL-2.1 许可声明。",
+        "cite": [
+          "paper@附录 A",
+          "hf-cad-gen-freecad"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-14",
+        "columns": [
+          "来源",
+          "模型",
+          "Agent",
+          "Create",
+          "Create + Edit",
+          "Image-to-CAD",
+          "Overall",
+          "已知成本"
+        ],
+        "rows": [
+          ["官网 V3 榜单", "Claude Opus 5.5 (max)", "Claude Code", "50.87", "39.69", "84.66", "61.03", "$573.94"],
+          ["官网 V3 榜单", "Claude Opus 5.5 (max)", "mini-swe-agent", "42.79", "41.38", "81.77", "57.96", "$498.28"],
+          ["官网 V3 榜单", "GPT-6 Astra (max)", "Codex", "52.26", "44.37", "69.70", "56.87", "$317.81"],
+          ["官网 V3 榜单", "Claude Fable 5.1 (max)", "Claude Code", "55.48", "36.75", "72.71", "56.75", "$1,056.04"],
+          ["官网 V3 榜单", "Claude Opus 5 (max)", "Claude Code", "49.48", "36.52", "62.64", "50.86", "$1,012.21"],
+          ["官网 V3 榜单", "Gemini 3.8 Flash (high)", "mini-swe-agent", "47.94", "31.22", "31.10", "36.19", "$271.85"],
+          ["官网 V3 榜单", "Grok 4.7 (high)", "Grok Build", "45.57", "34.63", "26.91", "34.82", "$670.22"],
+          ["官网 V3 榜单", "GPT-5.6 Sol (max)", "Codex", "36.23", "24.78", "29.20", "29.98", "$291.99"],
+          ["官网 V3 榜单", "Grok 4.6 (high)", "Grok Build", "41.61", "33.45", "13.00", "27.72", "$390.94"],
+          ["官网 V3 榜单", "Gemini 3.8 Flash (high)", "Antigravity", "43.28", "25.32", "17.45", "27.56", "$196.74"],
+          ["官网 V3 榜单", "Kimi K3 (max)", "mini-swe-agent", "39.11", "23.49", "15.36", "24.92", "$314.55"],
+          ["官网 V3 榜单", "Muse Spark 1.3 (max)", "mini-swe-agent", "33.61", "24.33", "8.84", "20.92", "$357.03"],
+          ["官网 V3 榜单", "GPT-5.6 Terra (max)", "Codex", "23.32", "23.23", "8.18", "17.24", "$215.12"]
+        ]
+      },
+      "cite": [
+        "cadbench",
+        "paper@§5.1",
+        "v3-paper-news@正文"
+      ]
+    }
+  }
+}

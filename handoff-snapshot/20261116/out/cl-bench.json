@@ -1,0 +1,786 @@
+{
+  "id": "cl-bench",
+  "name": "CL-bench",
+  "full_name": "CL-bench: A Benchmark for Context Learning（上下文学习基准）",
+  "aliases": [],
+  "status": null,
+  "categories": [
+    "longctx"
+  ],
+  "summary": "CL-bench 是腾讯混元团队与复旦大学 2026 年 2 月发布的「上下文学习」评测：500 个由领域专家编写的复杂上下文（context，指随任务一起交给模型的那一大段背景材料，可能是产品手册、虚构法律或实验数据）、1,899 道任务和 31,607 条判分标准（rubric，逐条的是/否判分点）。每道题要用的新知识只放在上下文里，模型必须现场学会再用它做题，不能靠预训练记忆。",
+  "interpretation": "高分说明模型真能读懂并套用眼前这份全新材料——包括凭空虚构的法律体系、从没见过的 SDK 文档、要从数据里归纳出来的规律。但它只测「有上下文时的即学即用」：不测开放式科研，也不代表通用智能；而且采用全对或全错判分，低分既可能来自没学会，也可能来自格式或指令遵循失误，单看总分区分不出这两种原因。论文没有给出人类基线，所以这类数字没有人类参照点。",
+  "measures": [
+    {
+      "area": "领域知识推理（Domain Knowledge Reasoning）",
+      "focus": "上下文给出某一专业领域的新知识，模型学会后做专业判断。官网示例案例 Genfanad PM onboarding：把一整套游戏开发文档按研发渠道整理成表，逐条标注来源文档并加粗给出 0–100% 置信度，再把世界观条目各用一句话摘要单独成表。",
+      "share": "190 个上下文 / 663 题 / 11,099 条 rubric（平均每上下文 3.5 题、每任务 16.7 条）",
+      "format": "多轮对话式任务，产出为表格、结构化文本或代码，由任务级 rubric 逐条判定",
+      "cite": [
+        "paper@Table 1",
+        "site",
+        "paper@§3.1"
+      ]
+    },
+    {
+      "area": "规则系统应用（Rule System Application）",
+      "focus": "上下文给出一套全新的正式规则，模型必须严格按它执行。官网示例案例 EZLang 教学语言助手：给定一门自造语言的完整语法与全局函数文档，写一个每 30 分钟轮询、17:30 停止的时间检查程序，再逐行解释并引用对应的函数文档，且不得使用该语言未定义的关键字。",
+      "share": "140 个上下文 / 566 题 / 8,286 条 rubric（平均每上下文 4.0 题、每任务 14.6 条）",
+      "format": "多轮对话式任务，常见产出为符合新语法的程序、数学证明或条款适用结论",
+      "cite": [
+        "paper@Table 1",
+        "site",
+        "paper@§3.1"
+      ]
+    },
+    {
+      "area": "程序性任务执行（Procedural Task Execution）",
+      "focus": "上下文给出一套复杂流程、手册或工作流，模型要学会并按步骤执行。官网示例案例 Shelby's 食谱助手：在「不含花生与乳制品、必须使用 Shelby's 产品、备餐不超过 15 分钟、固定输出模板」的约束下，把一道高乳脂菜肴改造成合规版本并缩量，再在对话中途改做 5 分钟免烤甜点。",
+      "share": "100 个上下文 / 471 题 / 9,486 条 rubric（平均每上下文 4.7 题、每任务 20.1 条）",
+      "format": "多轮任务且常含顺序依赖，产出为操作步骤、伪代码或编排方案",
+      "cite": [
+        "paper@Table 1",
+        "site",
+        "paper@§3.1"
+      ]
+    },
+    {
+      "area": "经验发现与模拟（Empirical Discovery & Simulation）",
+      "focus": "上下文给出实验数据、观测记录或模拟环境，模型要自己归纳出规律再用它解题；前三类以演绎为主，这一类以归纳为主。官网示例案例 Electron in a magnetic field：约 1,000 个 (t,x,y,z) 采样点，分三轮求出电子入射俯仰角（3 位有效数字）、磁场强度（1 位有效数字）与初速，并要求复用前面已得到的数值。",
+      "share": "70 个上下文 / 199 题 / 2,736 条 rubric（平均每上下文 2.8 题、每任务 13.7 条）",
+      "format": "数据分析与建模类任务，答案常为数值或公式，rubric 同时核对中间量与最终值",
+      "cite": [
+        "paper@Table 1",
+        "site",
+        "paper@§3.1"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "纯长上下文检索与阅读理解——论文明确说 CL-bench「远远超出主要测试检索或阅读理解的长上下文任务」",
+      "cite": [
+        "paper@Abstract"
+      ]
+    },
+    {
+      "text": "只靠几条示例学任务格式的 in-context learning（ICL）——论文把两者分开：ICL 学的是任务格式与浅层启发式，CL-bench 学的是预训练里不存在的新知识",
+      "cite": [
+        "paper@§2"
+      ]
+    },
+    {
+      "text": "预训练静态知识本身——题目所需知识都不在预训练里；去掉上下文后，GPT-5.1 (high) 在随机抽样的 1,000 题上只能解出 0.9%",
+      "cite": [
+        "paper@附录 A"
+      ]
+    },
+    {
+      "text": "多模态上下文中的学习——论文明确 CL-bench 目前只覆盖文本上下文",
+      "cite": [
+        "paper@§6.3 Extension to multimodal contexts"
+      ]
+    },
+    {
+      "text": "长时程对话里的上下文巩固、纠错与迁移——评测只覆盖单轮任务与短任务序列",
+      "cite": [
+        "paper@§6.3 Interaction dynamics"
+      ]
+    },
+    {
+      "text": "人类水平的上下文学习——论文没有建立人类基线",
+      "cite": [
+        "paper@§6.3 Human baselines"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 1899,
+    "splits": [
+      "公开全集：500 个上下文 / 1,899 个任务（Hugging Face tencent/CL-bench，单 split、1.9k 行 JSONL）",
+      "论文未设置独立的 dev / test 拆分，也未公布私有留存集"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "expert-authored（领域专家原创、改写现实内容，或取自小众与新兴长尾来源）",
+    "public_sample": true,
+    "multimodal_share": "0（论文明确只覆盖文本上下文）",
+    "totals": "500 个上下文 · 1,899 个任务 · 31,607 条判分 rubric · 平均每上下文 3.8 题（最多 12）· 平均每任务 16.6 条（最多 114）· 平均上下文输入 10.4K tokens（最长 65.0K）· 51.1% 的任务跨轮顺序依赖 · 语言为英文",
+    "cite": [
+      "paper@Table 1",
+      "paper@§3.1",
+      "dataset"
+    ],
+    "construction": [
+      {
+        "k": "Stage 1 · 专家设计上下文",
+        "text": "资深领域专家先设计包含新知识的上下文，这些知识要么在互联网上不存在，要么属于小众长尾；每个上下文都落在真实场景里，并包含解出关联任务所需的充分信息。",
+        "cite": [
+          "paper@§3.3"
+        ]
+      },
+      {
+        "k": "Stage 2 · 专家设计任务",
+        "text": "再为每个上下文设计若干任务，确保解题必须真正从上下文学习；任务要求清晰、具体、准确且有挑战性，同一上下文内的任务可以顺序依赖（后一题依赖前一题的标准解）。",
+        "cite": [
+          "paper@§3.3",
+          "paper@§3.1"
+        ]
+      },
+      {
+        "k": "Stage 3 · 专家撰写 rubric",
+        "text": "为每题写多条二元判分点，覆盖事实正确性、计算准确性、判断正确性、程序正确性、内容完整性与格式合规六个维度；每个上下文连同其任务平均耗时约 20 小时专家工时。",
+        "cite": [
+          "paper@§3.3",
+          "paper@§3.4"
+        ]
+      },
+      {
+        "k": "防污染三策略",
+        "text": "让上下文里的新知识超出预训练语料：(1) 完全虚构创作，例如为虚构国家造一套含新判例与法律原则的完整法律体系，或设计一门语法语义全新的编程语言；(2) 修改现有内容，例如改写历史事件、更改科学与数学定义、修改技术文档与规范；(3) 纳入小众与新兴内容，例如前沿研究发现、新发布的产品手册与技术文档。",
+        "cite": [
+          "paper@§3.3"
+        ]
+      },
+      {
+        "k": "无上下文消融验证",
+        "text": "随机抽 1,000 题，去掉对应上下文后让当时表现最好的 GPT-5.1 (high) 作答，解出率跌到 0.9%，用来说明任务确实无法靠预训练知识蒙对。",
+        "cite": [
+          "paper@附录 A"
+        ]
+      },
+      {
+        "k": "质量抽检",
+        "text": "所有 rubric 由资深领域专家构建，并经过双重核对与随机抽样验证，以保证判分的有效性与精度。",
+        "cite": [
+          "paper@§3.4"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "solving-rate",
+      "name": "任务解出率（Task Solving Rate）",
+      "direction": "越高越好",
+      "description": "该任务关联的所有 rubric 全部通过记 1 分、任一条不满足记 0 分；解出率即得 1 分任务占总任务的百分比。论文按三次运行报告 mean ± std。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§3.4",
+        "paper@§4 Setup"
+      ]
+    },
+    {
+      "id": "category-solving-rate",
+      "name": "分类 / 子类解出率",
+      "direction": "越高越好",
+      "description": "按四个上下文类别与 18 个子类分别计算的解出率，用于定位能力短板，例如经验发现与模拟类比其他三类低约 6 个百分点。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§4",
+        "paper@附录 B"
+      ]
+    },
+    {
+      "id": "error-mix",
+      "name": "失败错误类型分布",
+      "direction": "越低越好",
+      "description": "失败案例中「忽视上下文 / 误用上下文 / 格式错误 / 拒答」四类占比；一个解答可同时命中多类，因此单行合计可超过 100%。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@Table 3"
+      ]
+    }
+  ],
+  "default_protocol": {
+    "raw": "通过各模型官方 API 调用，统一使用 thinking / high reasoning effort，每题跑 3 次取平均，温度取各模型推荐或默认值。判卷由 GPT-5.1 担任 verifier，按论文给出的 system prompt 逐条核对 rubric：这是严格的 all-or-nothing 判分，最终分数是二元的——学生的答案必须完美满足每一条要求才记 1 分，只要有一条未完全满足就记 0 分。推理模型只评最终解答，思考过程不计入。",
+    "cite": [
+      "paper@§4 Setup",
+      "paper@§3.4",
+      "paper@附录 E Table 4",
+      "repo"
+    ],
+    "variants": [
+      {
+        "text": "推理档位：GPT-5.1 从 high 降到 low/no，平均解出率从 23.7% 降到 21.2%（只差 2.5 个百分点）；GPT-5.2 提高推理档位收益接近于零甚至为负。带档位与不带档位的分数不能直接比。",
+        "cite": [
+          "paper@§5 Figure 6"
+        ]
+      },
+      {
+        "text": "单次运行 vs 三次平均：官网榜单里带 † 的条目是单次运行、没有标准差；同一模型单跑与三跑平均不是同一口径。",
+        "cite": [
+          "leaderboard"
+        ]
+      },
+      {
+        "text": "判卷模型与档位：论文所有实验都用 GPT-5.1 作 verifier（未注明判卷时的推理档位），而官方仓库默认脚本对 CL-bench 指定 low reasoning effort、对 CL-bench Life 指定 high，两者不是同一口径。",
+        "cite": [
+          "repo",
+          "paper@§3.4"
+        ]
+      },
+      {
+        "text": "CL-bench 与 CL-bench Life 是两个基准：1,899 题 / 4 类 / 18 子类，对比 405 题 / 3 类 / 9 子类，分数不能互比。",
+        "cite": [
+          "repo",
+          "site"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2026-02-03",
+      "label": "arXiv v1 发布（arXiv:2602.03587v1 [cs.CL] 3 Feb 2026）：500 个上下文 / 1,899 个任务 / 31,607 条 rubric；同日腾讯混元技术博客首发《Learning from context is harder than we thought》（作者 Shihan Dou 与 Pluto Zhou）",
+      "cite": [
+        "paper@v1 页眉",
+        "hy",
+        "repo"
+      ]
+    },
+    {
+      "id": "life",
+      "date": "2026-04-30",
+      "label": "同家族姊妹集 CL-bench Life 发布（arXiv:2604.27043）：405 个真实生活上下文任务、5,348 条 rubric、3 个类别 / 9 个子类；官方研究列表记为 2026-04-30",
+      "cite": [
+        "repo",
+        "hy",
+        "site"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "全对或全错判分把「没学会」和「格式失误」混在一起",
+      "impact": "一个任务平均 16.6 条 rubric，任一不满足即 0 分；论文 Table 3 显示格式错误率在 33%–46% 之间，也就是说相当一部分失败并非来自没读懂上下文，而是输出格式或指令遵循不达标。总分因此偏保守，且无法从单个数字区分失败的真正原因。",
+      "severity": "高",
+      "response": "论文公开逐条 rubric 判定结果与错误类型分布；官网另给出不同通过阈值（100% / 95% / 90% …）下的任务通过率，读者可以看更宽松阈值下的分数。",
+      "reader": "把「解出率低」理解为「端到端一次全对的比例低」，不要直接等同于「完全没学会」；除 100% 阈值外也看更宽松的口径。",
+      "cite": [
+        "paper@§3.4",
+        "paper@Table 3",
+        "site"
+      ]
+    },
+    {
+      "issue": "没有人类基线",
+      "impact": "论文明确未建立人类基线，17.2% 这类数字因此没有人类参照点，无法判断模型距人类还有多远。",
+      "severity": "高",
+      "response": "论文把人类基线列为 future work，并解释了困难：出题专家不能当无偏被试，非专家又可能缺乏参与上下文所需的基础知识。",
+      "reader": "不要把 23.7% 与任何「人类正确率」对比；本页分数阶梯中人类一栏为「论文未给出」。",
+      "cite": [
+        "paper@§6.3 Human baselines"
+      ]
+    },
+    {
+      "issue": "判卷模型单一，且论文与仓库口径不一致",
+      "impact": "所有实验都由 GPT-5.1 判卷，论文未注明判卷时的推理档位，而官方仓库默认脚本对 CL-bench 指定 low reasoning effort；用同一模型既答题又判卷也带来自评偏差的风险。",
+      "severity": "中",
+      "response": "论文补做两项验证：换用 Claude Opus 4.5 与 Qwen-3-Max 作 verifier，与 GPT-5.1 的原始一致率超过 90%；另随机抽 100 个解答由标注员核对，判卷准确率超过 90%。",
+      "reader": "复现时先确认 judge 模型与推理档位；比较论文数字与第三方自报数字前先对齐这一项。",
+      "cite": [
+        "paper@§3.4",
+        "repo"
+      ]
+    },
+    {
+      "issue": "领域覆盖与交互形态有限",
+      "impact": "18 个子类无法穷尽真实世界的领域与知识类型；评测只覆盖单轮任务与短任务序列，不涉及长对话中的持续巩固与修正；且只测文本，不测图片、音频与视频。",
+      "severity": "中",
+      "response": "论文把这些列为 future work，并提出通过社区贡献或领域专属扩展来扩充 CL-bench。",
+      "reader": "在文本、单轮口径之外的任务上不要直接外推 CL-bench 的结论。",
+      "cite": [
+        "paper@§6.3 Coverage",
+        "paper@§6.3 Interaction dynamics",
+        "paper@§6.3 Extension to multimodal contexts"
+      ]
+    },
+    {
+      "issue": "分数随上下文长度与运行次数波动",
+      "impact": "所有模型的解出率都随输入变长而下降，Claude Opus 4.5 在 0-15K 与 120K+ 两个区间之间掉了超过 20 个百分点；经验发现与模拟类的跨运行标准差也明显更大，行为更不稳定。",
+      "severity": "中",
+      "response": "论文按输入长度分箱报告，并统一跑 3 次取平均；官网对单次运行的条目标注 † 并说明没有标准差。",
+      "reader": "比较时注意上下文长度区间，以及该数字是单次运行还是多次平均。",
+      "cite": [
+        "paper@§5 Figure 7",
+        "paper@附录 B",
+        "leaderboard"
+      ]
+    },
+    {
+      "issue": "污染风险已很低但非零",
+      "impact": "上下文知识为虚构、改写或长尾内容，但数据集公开可下载，理论上仍可能被针对性训练或调优，使分数偏高。",
+      "severity": "低",
+      "response": "论文用无上下文消融（0.9%）证明任务对上下文的依赖；HY-2.0 的全部数据在该系列模型发布后定稿交付，论文脚注称无数据泄露；数据集采用仅限评测的自定义许可，明确禁止用于训练、微调、校准、蒸馏等任何参数更新。",
+      "reader": "优先看官网榜单与官方判卷流程给出的分数；对厂商自报分数保留余地。",
+      "cite": [
+        "paper@附录 A",
+        "paper@Table 2 脚注 1",
+        "dataset"
+      ]
+    }
+  ],
+  "notes": "MiniMax 引用；腾讯混元发布",
+  "official_sources": [
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2602.03587"
+    },
+    {
+      "kind": "site",
+      "url": "https://www.clbench.com/"
+    },
+    {
+      "kind": "github",
+      "url": "https://github.com/Tencent-Hunyuan/CL-bench"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/tencent/CL-bench"
+    },
+    {
+      "kind": "site",
+      "url": "https://hy.tencent.com/research"
+    },
+    {
+      "kind": "site",
+      "url": "https://www.minimax.io/blog/minimax-m3"
+    }
+  ],
+  "related_benchmarks": [
+    "longbench",
+    "ruler"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-13",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "CL-bench: A Benchmark for Context Learning（arXiv:2602.03587v1，2026-02-03）",
+        "url": "https://arxiv.org/abs/2602.03587",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "site",
+        "kind": "site",
+        "title": "clbench.com 官网（CL-bench 与 CL-bench Life 案例、阈值通过率）",
+        "url": "https://www.clbench.com/",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "leaderboard",
+        "kind": "leaderboard",
+        "title": "clbench.com CL-bench 榜单数据（data/clb-data.json，36 条模型记录）",
+        "url": "https://www.clbench.com/data/clb-data.json",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "Tencent-Hunyuan/CL-bench（README、推理与判分脚本、结果提交规则）",
+        "url": "https://github.com/Tencent-Hunyuan/CL-bench",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "dataset",
+        "kind": "dataset",
+        "title": "tencent/CL-bench（Hugging Face 数据集卡、字段结构与许可）",
+        "url": "https://huggingface.co/datasets/tencent/CL-bench",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "hy",
+        "kind": "site",
+        "title": "腾讯混元技术博客 Tencent HY Research 研究列表（2026-02-03 首发文章条目）",
+        "url": "https://hy.tencent.com/research",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "minimax",
+        "kind": "blog",
+        "title": "MiniMax M3 博客（评测方法说明中列出 CL-bench）",
+        "url": "https://www.minimax.io/blog/minimax-m3",
+        "accessed": "2026-11-13"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "腾讯混元团队（Hunyuan Team, Tencent）× 复旦大学（Fudan University）",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      "first_release": {
+        "v": "2026-02-03（arXiv:2602.03587v1；同日腾讯混元技术博客首发）",
+        "cite": [
+          "paper@v1 页眉",
+          "hy"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "paper@Abstract",
+        "paper@Table 1",
+        "paper@§3.4"
+      ],
+      "interpretation": [
+        "paper@§5",
+        "paper@§6.1",
+        "paper@§6.3 Human baselines"
+      ]
+    },
+    "problem": {
+      "text": "现有基准主要考「用预训练里的静态知识推理」：长上下文基准考检索与阅读理解，in-context learning 只从几条示例学任务格式；行业隐含假设是「上下文给到位，模型就能做对」。CL-bench 要单独考的是另一件事——把预训练中不存在的新知识完整放进上下文之后，模型能不能现场学会它，并用它把任务做对。",
+      "cite": [
+        "paper@Abstract",
+        "paper@§2"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "无上下文基线（消融）",
+        "value": "0.9%",
+        "note": "随机抽 1,000 题去掉上下文后，GPT-5.1 (high) 的解出率；论文据此证明任务无法靠预训练知识蒙对。",
+        "cite": [
+          "paper@附录 A"
+        ]
+      },
+      {
+        "label": "论文发布时十个前沿模型平均",
+        "value": "17.2%",
+        "note": "Table 2 中十个前沿模型的总体解出率平均水平；多数模型集中在 13%–18% 区间。",
+        "cite": [
+          "paper@Table 2"
+        ]
+      },
+      {
+        "label": "论文发布时最好成绩",
+        "value": "23.7%",
+        "note": "GPT-5.1 (High)，mean ± std 为 23.7% ± 0.5%（三次运行平均）。",
+        "cite": [
+          "paper@Table 2"
+        ]
+      },
+      {
+        "label": "官网榜单当前最高",
+        "value": "27.9%",
+        "note": "GPT-5.4 (xhigh)（OpenAI），单次运行、无标准差；本档案核对日期 2026-11-13，榜单共 36 条模型记录。",
+        "cite": [
+          "leaderboard"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      },
+      {
+        "label": "归纳类参考线",
+        "value": "11.8%",
+        "note": "经验发现与模拟类的平均解出率，约比其他三类低 6 个百分点；这一类跨运行波动也更大。",
+        "cite": [
+          "paper@附录 B"
+        ]
+      },
+      {
+        "label": "人类基线",
+        "value": "论文未给出",
+        "note": "论文明确未建立人类基线，本基准因此没有人类参照点。",
+        "cite": [
+          "paper@§6.3 Human baselines"
+        ]
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 CL-bench 的「上下文学习」和 GPT-3 以来的 in-context learning（ICL）当成一回事——ICL 只从几条示例学任务格式与浅层启发式，CL-bench 要求学预训练里不存在的新知识本身。",
+        "cite": [
+          "paper@§2"
+        ]
+      },
+      {
+        "text": "把低分读成「模型不会读长文」——长上下文推理与指令遵循是必要但不充分条件；GPT-5.2 的总体解出率反而比 GPT-5.1 低 5.6 个百分点。",
+        "cite": [
+          "paper@§4",
+          "paper@§5"
+        ]
+      },
+      {
+        "text": "把不同来源的分数直接排在一起——推理档位（high / low）、单次运行还是三次平均、CL-bench 还是 CL-bench Life，都会改变数字。",
+        "cite": [
+          "paper@§5 Figure 6",
+          "leaderboard",
+          "repo"
+        ]
+      },
+      {
+        "text": "把 23.7% 读成「能力天花板」——论文明确说这个分数不应只被当作失败信号：能解出其中任何一题，本身说明模型已具备初步的即场学习能力。",
+        "cite": [
+          "paper@§6.1"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "腾讯混元团队与复旦大学（论文署名 Hunyuan Team, Tencent / Fudan University）",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "共同一作 Shihan Dou、Ming Zhang、Zhangyue Yin、Chenhao Huang 等；论文标注的通讯作者为 Shihan Dou、Tao Gui、Pluto Zhou；Shunyu Yao（姚顺雨）为署名最后一位",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      {
+        "k": "首发渠道",
+        "v": "腾讯混元技术博客（Tencent HY Research）2026-02-03 上线首篇文章《Learning from context is harder than we thought》，作者 Shihan Dou 与 Pluto Zhou",
+        "cite": [
+          "hy"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2026-02-03 arXiv v1 与官方博客首发 → 2026-04-30 同家族 CL-bench Life 发布 → 官网榜单持续更新（本档案核对时 36 条模型记录）",
+        "cite": [
+          "paper@v1 页眉",
+          "hy",
+          "repo",
+          "leaderboard"
+        ]
+      },
+      {
+        "k": "构建投入",
+        "v": "每个上下文连同其任务与 rubric 平均耗时约 20 小时专家工时；全部由资深领域专家制作并经多轮质量评审",
+        "cite": [
+          "paper@§3.3"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "数据集在 Hugging Face（tencent/CL-bench，1,899 行 JSONL，约 90.1 MB；姊妹集 tencent/CL-bench-Life），推理与判分脚本在 GitHub，榜单与完整案例在 clbench.com",
+        "cite": [
+          "dataset",
+          "repo",
+          "site"
+        ]
+      },
+      {
+        "k": "许可",
+        "v": "自定义「仅限评测」许可：允许为评测、测试与基准目的使用，明确禁止用于训练、微调、校准、蒸馏或任何形式的参数更新",
+        "cite": [
+          "dataset"
+        ]
+      },
+      {
+        "k": "第三方引用",
+        "v": "MiniMax 在 M3 模型博客的评测方法说明中列出 CL-bench，称使用开源数据与 rubric、评测设置与官方流程一致，分数为内部测试结果",
+        "cite": [
+          "minimax"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-13",
+        "columns": [
+          "来源",
+          "模型",
+          "总解出率",
+          "领域知识推理",
+          "规则系统应用",
+          "程序性任务执行",
+          "经验发现与模拟",
+          "口径"
+        ],
+        "rows": [
+          [
+            "论文 Table 2",
+            "GPT 5.1 (High)",
+            "23.7% ±0.5%",
+            "25.3% ±1.3%",
+            "23.7% ±1.3%",
+            "23.8% ±1.4%",
+            "18.1% ±3.1%",
+            "thinking/high，3 次平均"
+          ],
+          [
+            "论文 Table 2",
+            "Claude Opus 4.5 Thinking",
+            "21.1% ±1.4%",
+            "23.7% ±1.2%",
+            "19.0% ±1.5%",
+            "22.6% ±1.5%",
+            "15.1% ±2.3%",
+            "同上"
+          ],
+          [
+            "论文 Table 2",
+            "GPT 5.2 (High)",
+            "18.1% ±0.8%",
+            "18.6% ±0.9%",
+            "17.2% ±1.3%",
+            "21.4% ±1.1%",
+            "11.7% ±1.8%",
+            "同上"
+          ],
+          [
+            "论文 Table 2",
+            "o3 (High)",
+            "17.8% ±0.2%",
+            "18.0% ±1.4%",
+            "17.6% ±1.1%",
+            "19.5% ±0.4%",
+            "13.7% ±0.8%",
+            "同上"
+          ],
+          [
+            "论文 Table 2",
+            "Kimi K2 Thinking",
+            "17.6% ±0.6%",
+            "18.7% ±0.6%",
+            "17.0% ±1.5%",
+            "18.8% ±0.7%",
+            "12.6% ±4.0%",
+            "同上"
+          ],
+          [
+            "论文 Table 2",
+            "HY 2.0 Thinking",
+            "17.2% ±0.6%",
+            "18.0% ±1.0%",
+            "17.3% ±0.5%",
+            "19.4% ±1.1%",
+            "8.9% ±0.3%",
+            "同上"
+          ],
+          [
+            "论文 Table 2",
+            "Gemini 3 Pro (High)",
+            "15.8% ±0.3%",
+            "15.5% ±1.1%",
+            "17.7% ±1.7%",
+            "16.4% ±1.6%",
+            "10.1% ±3.1%",
+            "同上"
+          ],
+          [
+            "论文 Table 2",
+            "Qwen 3 Max Thinking",
+            "14.1% ±0.1%",
+            "13.5% ±0.5%",
+            "15.6% ±1.0%",
+            "15.2% ±1.4%",
+            "9.0% ±1.0%",
+            "同上"
+          ],
+          [
+            "论文 Table 2",
+            "Doubao 1.6 Thinking",
+            "13.4% ±0.1%",
+            "13.7% ±0.1%",
+            "14.2% ±1.4%",
+            "13.9% ±1.5%",
+            "9.4% ±0.3%",
+            "同上"
+          ],
+          [
+            "论文 Table 2",
+            "DeepSeek V3.2 Thinking",
+            "13.2% ±0.4%",
+            "13.6% ±0.6%",
+            "13.8% ±0.6%",
+            "14.2% ±0.1%",
+            "8.0% ±1.5%",
+            "同上"
+          ],
+          [
+            "官网榜单",
+            "GPT-5.4 (xhigh)",
+            "27.9%",
+            "28.8%",
+            "26.7%",
+            "30.1%",
+            "22.8%",
+            "单次运行（†，无标准差）"
+          ],
+          [
+            "官网榜单",
+            "GPT 5.1 (High)",
+            "23.7% ±0.5%",
+            "25.3% ±1.3%",
+            "23.7% ±1.3%",
+            "23.8% ±1.4%",
+            "18.1% ±3.1%",
+            "3 次平均"
+          ],
+          [
+            "官网榜单",
+            "Polyphony",
+            "23.4% ±0.4%",
+            "25.1% ±1.0%",
+            "22.7% ±0.5%",
+            "26.7% ±0.9%",
+            "11.7% ±0.6%",
+            "3 次平均"
+          ],
+          [
+            "官网榜单",
+            "Hy3 preview",
+            "22.8%",
+            "25.2%",
+            "21.6%",
+            "22.3%",
+            "19.6%",
+            "单次运行（†，无标准差）"
+          ],
+          [
+            "官网榜单",
+            "Grok 4.20 (reasoning)",
+            "22.2%",
+            "23.9%",
+            "22.7%",
+            "23.4%",
+            "12.3%",
+            "单次运行（†，无标准差）"
+          ],
+          [
+            "官网榜单",
+            "GPT 5.1",
+            "21.1% ±0.2%",
+            "22.4% ±0.7%",
+            "21.0% ±0.7%",
+            "22.8% ±1.3%",
+            "13.6% ±1.0%",
+            "3 次平均"
+          ]
+        ]
+      },
+      "cite": [
+        "paper@Table 2",
+        "leaderboard"
+      ]
+    }
+  }
+}

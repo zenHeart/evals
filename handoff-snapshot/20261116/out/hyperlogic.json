@@ -1,0 +1,96 @@
+{
+  "id": "hyperlogic",
+  "name": "HyperLogic",
+  "full_name": null,
+  "aliases": [
+    "Tencent-HyperLogic"
+  ],
+  "status": "active",
+  "categories": [
+    "reasoning",
+    "agent"
+  ],
+  "summary": "腾讯官方出题的中文形式逻辑推理基准，分 Seed / Base / Hard 三层，标准答案由两套独立形式化编码经求解器推导",
+  "interpretation": "考的是「把自然语言推理题翻译成可计算的形式化问题」这件事本身。Seed 层（228 道单问题题）几乎不区分模型，七个前沿模型全在 84–90 分、彼此差不到 6 分；Base 层（195 道题、922 个子问）每题背景约 3300 字、子问平均 4.7 个，全部子问答对才算对题，模型与 Seed 相比普遍掉 12 分以上，七个模型被拉开 33 分（44.6–77.6）；Hard 层（100 道题、背景约 8700 字）耦合搜索空间更大，直接作答没有任何模型超过 16%，给沙箱 Agent 后每个模型提升 16.7–40.1 分，最好也只有 55.7%（额外给逻辑建模库 57.0%）。所以这个基准的判别力主要在 Base 与 Hard 两层：它量的是形式化建模与长程推理稳定性，不是知识量，也不是普通的多轮对话能力。",
+  "measures": [
+    "自然语言形式逻辑推理（把题面翻译成可计算模型并求解）",
+    "长背景下的多子问一致性（Base 层需全部子问答对）",
+    "Agent 写代码 + 求解器求解的能力（Hard 层沙箱条件）"
+  ],
+  "does_not_measure": [
+    "通用知识与事实记忆（Seed 层即已饱和）",
+    "写作、对话、指令跟随等非推理能力",
+    "数学计算能力（标准答案由求解器推导而非模型给出）"
+  ],
+  "dataset": {
+    "sample_count": 523,
+    "splits": [
+      "Seed 228（全量）",
+      "Base 195（全量）",
+      "Hard 100（全量）"
+    ],
+    "languages": [
+      "zh"
+    ],
+    "source_type": "public_subset",
+    "public_sample": "官方公开每层 30% 的题目与标准答案（Seed 69 / Base 59 / Hard 30）、直接作答 prompt 与语义评分脚本、Hard Agent 评测全流程；其余 70% 与全部形式化翻译保留在私有集合，公开子集分数不可复现全量榜单数值"
+  },
+  "metrics": [
+    {
+      "name": "Accuracy (%)",
+      "description": "全量基准准确率，3 次 rollout 的均值 ± 标准差"
+    },
+    {
+      "name": "Base Item",
+      "description": "题目级准确率：该题所有子问全部答对才计对"
+    },
+    {
+      "name": "Base Sub-Q",
+      "description": "子问级准确率"
+    },
+    {
+      "name": "Hard Direct",
+      "description": "Hard 层直接作答（不经 Agent）准确率"
+    },
+    {
+      "name": "Hard Sandbox",
+      "description": "Hard 层给 Agent Docker 代码沙箱（condition c2）"
+    },
+    {
+      "name": "Hard + Library",
+      "description": "Hard 层给 Agent 代码沙箱 + 官方 11 模块 translation 逻辑建模库与 MANUAL.md（condition c3）"
+    }
+  ],
+  "default_protocol": {
+    "raw": "Accuracy (%)，3 次 rollout 的均值 ± 标准差，每个模型取其最高推理档（Grok 4.6 用 xhigh，其余用 max）；语义等价 LLM judge 判分（整题子问一起判）；拒答条目剔除出分母并单独统计"
+  },
+  "versions": [],
+  "limitations": [
+    "榜单为基准所有者（腾讯）自建自跑，非第三方独立评测，题目与判分流程由发布方控制",
+    "每层仅公开 30% 题目，公开子集分数不可复现全量数值，第三方复现存在偏差",
+    "Hard 层两个 Agent 条件依赖发布方自带的 Docker 沙箱与 translation 逻辑建模库，属自定义 Agentic 脚手架，与其他基准的单轮标准基线不可直接等同",
+    "仅覆盖 7 个前沿模型、单一语言（中文）、单一题集版本，未覆盖中低档模型与英文题",
+    "Seed 层已接近饱和（84–90 分），单独使用时几乎没有判别力"
+  ],
+  "notes": "仓库与数据集 2026-10-28 公开（README News 明示 \"This repository and the Hugging Face dataset go public\"），对应 arXiv 2605.19597 v2（2026-10-02 论文）。榜单按 Base 题目级准确率排名，官方在 Key Findings 中自述：推理长度与准确率不相关（Base 每次题中位推理长度 15.2k–52.7k token）；Hard 层六个模型在沙箱下主要写朴素 Python 枚举候选解而非调用求解器。",
+  "official_sources": [
+    {
+      "kind": "repo",
+      "url": "https://github.com/Tencent-Hunyuan/HyperLogic"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/tencent/HyperLogic"
+    },
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2605.19597"
+    }
+  ],
+  "related_benchmarks": [
+    "hlehle",
+    "bbh"
+  ],
+  "content_status": "beta",
+  "last_verified_at": "2026-10-31"
+}

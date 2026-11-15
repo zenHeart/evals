@@ -1,0 +1,835 @@
+{
+  "id": "arena",
+  "name": "Chatbot Arena",
+  "full_name": "Chatbot Arena（聊天机器人竞技场；现名 Arena / LMArena，域名由 chat.lmsys.org → lmarena.ai → arena.ai）",
+  "aliases": [],
+  "status": null,
+  "categories": [
+    "preference"
+  ],
+  "summary": "Chatbot Arena 是一个持续运营的开放评测平台：用户输入任意问题，两个匿名模型分别回答，用户投票选出更好的那个；平台再把所有投票按 Bradley-Terry 模型（一种把「A 胜 B」的两两结果折算成单一实力分的统计模型，和国际象棋 Elo 积分同源）拟合成每个模型的 Arena Score 并公开排名。",
+  "interpretation": "高分只说明「在这批真实用户提出的这些 prompt 上，更多投票者偏好这个模型的回答」——它是相对偏好排名，不是正确率，也不直接衡量事实准确性。分数只能和同一榜单、同一抓取时间、同一口径（是否开启风格控制、是否计入 Direct 对战票）的模型比；跨版本、跨 arena、跨时间的绝对分不可比。",
+  "measures": [
+    {
+      "area": "开放式对话总榜（Text Arena · overall）",
+      "focus": "真实用户自由输入的任意 prompt；论文抽样显示高频主题簇包括 Python 游戏编程挑战、C/C++ 多线程、SQL 查询辅助、诗歌写作提示、旅行规划、电影推荐等，最大簇只占约 1%",
+      "share": "未披露（题目来自实时用户输入，没有固定题库，官方未给出各类占比）",
+      "format": "两个匿名模型回答同一 prompt，用户投票（A 更好 / B 更好 / 平局，另有 both are bad 按钮）",
+      "cite": [
+        "paper@§3.1 Interface",
+        "paper@Table 2",
+        "paper@§6.2"
+      ]
+    },
+    {
+      "area": "难度分层（Hard / Expert）",
+      "focus": "Hard 子集约覆盖全部 prompt 的三分之一；Arena Expert 只取 5.5%，按推理深度与专精度挑出最难的 prompt，用来拉大模型差距",
+      "share": "Hard 约三分之一；Expert 5.5%",
+      "format": "同一投票机制下的子集榜单",
+      "cite": [
+        "changelog@November 5, 2025"
+      ]
+    },
+    {
+      "area": "职业分类（Occupational Categories）",
+      "focus": "八个职业类目：软件与 IT 服务、写作文学与语言、生命物理与社会科学、娱乐体育与媒体、商业管理与财务运营、数学、法律与政府、医疗健康",
+      "share": "未披露",
+      "format": "类目榜单",
+      "cite": [
+        "changelog@November 5, 2025"
+      ]
+    },
+    {
+      "area": "语言分布",
+      "focus": "论文统计（截至 2024-01）：77% 英文、5% 中文，俄、德、西、法、日等各不足 2%；对话平均每样本 1.3 轮",
+      "share": "77% 英文 / 5% 中文",
+      "format": "多轮对话，平均每个样本 1.3 轮",
+      "cite": [
+        "paper@§3.2 Data Statistics",
+        "paper@Table 1"
+      ]
+    },
+    {
+      "area": "非文本竞技场",
+      "focus": "除 Text 外还有 WebDev（代码）、Vision（视觉理解）、Text-to-Image、Image Edit、Text-to-Video、Image-to-Video、Video Edit、Document、Search、Agent、Alignment Index 等 13 个榜单；Agent 榜不看偏好投票，而看文件下载、差评事件、重试、可控性等行为信号",
+      "share": "未披露",
+      "format": "各 arena 自有投票规则（如 Video Arena 允许对同一代多次投票，2026-03 起只计 prompt 作者的票）",
+      "cite": [
+        "leaderboard",
+        "changelog@June 4, 2026",
+        "changelog@March 10, 2026"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "事实正确性：投票是偏好而非判分。论文只验证了众包投票与专家盲标的一致率（72%–83%），没有把「答对」作为指标",
+      "cite": [
+        "paper@§6.3",
+        "paper@Table 3"
+      ]
+    },
+    {
+      "text": "安全与拒答行为：论文明确说本研究只评估有用性、忽略安全面，需要另建并行机制",
+      "cite": [
+        "paper@§8 Discussion"
+      ]
+    },
+    {
+      "text": "生产环境与专业领域用法：论文承认数据主要来自在线聊天界面，可能无法反映 LLM 在真实生产或专门领域的使用，prompt 分布可能有偏",
+      "cite": [
+        "paper@§8 Discussion"
+      ]
+    },
+    {
+      "text": "模型能力的绝对量：Bradley-Terry / Elo 是相对分，论文明确说从 Elo 改用 BT 系数的理由是「BT 系数更适合统计估计」，两套绝对数字不能互相换算",
+      "cite": [
+        "paper@§4"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 377161486,
+    "splits": [
+      "无固定训练 / 测试划分：题目来自持续流入的真实用户 prompt，榜单按发布时间滚动出快照（HuggingFace 数据集提供 latest 与 full 两个 split）",
+      "Agent Arena 单列：2026-06-04 起改用行为信号与因果推断，不用 Bradley-Terry"
+    ],
+    "languages": [
+      "en（论文统计 77%）",
+      "zh（5%）",
+      "ru / de / es / fr / ja 等（各不足 2%，合计约 18%）"
+    ],
+    "source_type": "live-crowdsourced（实时众包：用户自由输入 prompt 并投票，官方另开放代号预发布模型供社区测试）",
+    "public_sample": true,
+    "totals": "截至 2026-11-11 抓取，arena.ai/leaderboard 显示累计 377,161,486 个 Total Sessions（官方未在该页给出累计投票数或对战数）。论文 Table 1 记录截至 2024-01-21 为 243,329 次对战、90,051 名用户、149 种语言、平均每样本 1.3 轮、平均每题 94.9 token。HuggingFace 榜单数据集另有 2026-11-09 发布的 Text（风格控制）榜快照。",
+    "cite": [
+      "leaderboard",
+      "paper@Table 1",
+      "lb-dataset@Notes",
+      "text-board"
+    ],
+    "construction": [
+      {
+        "k": "收题",
+        "text": "平台不预设任何输入提示，用户自由输入任意 prompt；同一 prompt 同时送给两个匿名模型，用免费服务换取真实使用数据。",
+        "cite": [
+          "paper@§3.1 Interface",
+          "how-it-works"
+        ]
+      },
+      {
+        "k": "匿名与滥用过滤",
+        "text": "用关键词过滤含模型名或公司名的对话以防匿名泄露；用 OpenAI moderation API 标记不安全内容（约占全部请求 3%）；投票之后才揭示模型身份，揭示后投的票不计入榜单。",
+        "cite": [
+          "paper@§3.1 Interface",
+          "paper@§3.2 Data Statistics",
+          "faq"
+        ]
+      },
+      {
+        "k": "投票",
+        "text": "用户比较两个回答并投票（A 更好 / B 更好 / 平局）；2026-05-12 起 Direct 模式转化来的对战票也计入 Text、Vision、Search、Document 榜。",
+        "cite": [
+          "paper@§3.1 Interface",
+          "changelog@May 12, 2026"
+        ]
+      },
+      {
+        "k": "数据清洗",
+        "text": "去重（约滤掉 10% 的提交票）、身份泄露检测（不足 4% 的票被标为 identity_leak）、剔除统计异常投票模式用户的票、剔除模型与自己对战的行。",
+        "cite": [
+          "changelog@July 14, 2025",
+          "changelog@September 17, 2025",
+          "changelog@October 7, 2025"
+        ]
+      },
+      {
+        "k": "拟合排名",
+        "text": "对投票做按出现频率逆比例的重加权逻辑回归，估计 Bradley-Terry 系数作为 Arena Score；置信区间 2025-08-01 起由 bootstrap 改为基于中心极限定理的闭式解。",
+        "cite": [
+          "paper@§5",
+          "changelog@August 1, 2025"
+        ]
+      },
+      {
+        "k": "风格控制",
+        "text": "把答案长度、markdown 标题 / 加粗 / 列表数（2025-04 起再加 emoji 数与情感极性）作为额外特征放进同一个回归，让这些特征的系数吸收风格效应；2025-05-16 起 Text 与 Vision 榜默认开启。",
+        "cite": [
+          "style-blog",
+          "sentiment-blog",
+          "lb-dataset@Notes"
+        ]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "用户在 battle 模式输入任意 prompt，系统派两个匿名模型作答；用户投票（A 更好 / B 更好 / 平局），投票后揭示模型身份。平台对所有匿名投票做按频率逆比例重加权的逻辑回归，估计 Bradley-Terry 系数得到 Arena Score（官方 2024-01-09 起不再称其为 Elo），并给出置信区间；Text 与 Vision 榜自 2025-05-16 起默认开启风格控制，把长度、markdown、情感等风格特征作为回归中的额外变量。",
+    "cite": [
+      "how-it-works",
+      "faq",
+      "paper@§4",
+      "paper@§5",
+      "lb-dataset@Notes"
+    ],
+    "variants": [
+      {
+        "text": "开 / 不开风格控制：同一模型两套分数不同。官方 2025-05-16 把 Text 与 Vision 默认切到风格控制榜，并调整偏移量使两套分落在同一量表上；Search 榜 2025-08-28 起仍用普通 Bradley-Terry。",
+        "cite": [
+          "lb-dataset@Notes",
+          "changelog@August 28, 2025"
+        ]
+      },
+      {
+        "text": "含 / 不含 Direct 对战票：2026-05-12 起 Direct 模式转化的对战票计入 Text、Vision、Search、Document 榜，官方称这会显著改变 prompt 分布（偏向长查询、难 prompt、编程与指令遵循），并带来位置偏倚与同机构偏倚，已用 is_direct_battle 与 same_org_indicator 两个特征吸收。",
+        "cite": [
+          "changelog@May 12, 2026"
+        ]
+      },
+      {
+        "text": "battle / Side by Side / Direct 三种模式：Side by Side 非匿名、票不计入公开榜；Direct 无投票。三种模式的数据混在一起会改变结论。",
+        "cite": [
+          "faq"
+        ]
+      },
+      {
+        "text": "不同 arena 之间不可比：Agent 榜不用 Bradley-Terry，而用因果追踪得到的干预效应；WebDev 榜拆成 HTML 与 React 两类；Video 榜 2026-03-10 起只计 prompt 作者的票。",
+        "cite": [
+          "changelog@June 4, 2026",
+          "changelog@Code Arena WebDev Leaderboard Categorization",
+          "changelog@March 10, 2026"
+        ]
+      },
+      {
+        "text": "preliminary 标签：匿名测试后公开的模型，其分数在收集到足够新票前标为 preliminary，官方明示分数可能随社区 prompt 与投票演变而移动。",
+        "cite": [
+          "changelog@September 18, 2025"
+        ]
+      },
+      {
+        "text": "「总投票数」口径：2025-08-05 起把已下架模型参与的对战也计入投票数，只改展示数字、不改榜单计算。",
+        "cite": [
+          "changelog@August 5, 2025"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "arena-score",
+      "name": "Arena Score（Bradley-Terry 系数）",
+      "direction": "越高越好",
+      "description": "由全部匿名投票经逆频率重加权的逻辑回归估计出的 Bradley-Terry 系数，可理解为「相对其他模型的偏好强度」；开启风格控制时，同一回归还会拟合长度、markdown、情感等风格特征的系数。",
+      "range": "无固定上下界（当前 Text 风格控制榜第 1 名 1526，第 12 名 1494）",
+      "unit": "point",
+      "cite": [
+        "faq",
+        "paper@§4",
+        "style-blog",
+        "text-board"
+      ]
+    },
+    {
+      "id": "ci-width",
+      "name": "95% 置信区间半宽",
+      "direction": "越低越好",
+      "description": "Arena Score 的不确定度。2025-08-01 起由 bootstrap 改为基于中心极限定理的闭式解；频率重加权会放大方差、加宽区间，使相邻名次更常出现重叠。",
+      "range": "约 4–15 分（当前 Text 风格控制榜前 12 名）",
+      "unit": "point",
+      "cite": [
+        "changelog@August 1, 2025",
+        "text-board"
+      ]
+    },
+    {
+      "id": "vote-count",
+      "name": "投票数（vote_count）",
+      "direction": "越高越好",
+      "description": "该模型累计参与的对战数；票越多置信区间越窄、名次越稳。2025-08-05 起「总投票数」把已下架模型的对战也计入。",
+      "range": "数千至数十万（当前 Text 风格控制榜前 12 名：4,282 – 89,228）",
+      "unit": "vote",
+      "cite": [
+        "lb-dataset@Schema",
+        "changelog@August 5, 2025"
+      ]
+    }
+  ],
+  "versions": [
+    {
+      "id": "elo-to-bt",
+      "date": "2024-01-09",
+      "label": "评分体系从 Elo 改为 Bradley-Terry 系数（HuggingFace 榜单数据集 Notes）",
+      "cite": [
+        "lb-dataset@Notes"
+      ]
+    },
+    {
+      "id": "arxiv-v1",
+      "date": "2024-03-07",
+      "label": "arXiv v1 发表《Chatbot Arena: An Open Platform for Evaluating LLMs by Human Preference》（ICML 2024）",
+      "cite": [
+        "paper",
+        "how-it-works"
+      ]
+    },
+    {
+      "id": "own-site",
+      "date": "2024-09-20",
+      "label": "LMSYS 博客宣布 Chatbot Arena 启用独立站点 lmarena.ai，从 LMSys 毕业独立运营",
+      "cite": [
+        "lmsys-blog"
+      ]
+    },
+    {
+      "id": "style-default",
+      "date": "2025-05-16",
+      "label": "风格控制成为 Text 与 Vision 榜默认，并调整偏移量使风格控制榜与非风格控制榜落在同一量表",
+      "cite": [
+        "lb-dataset@Notes"
+      ]
+    },
+    {
+      "id": "reweighting",
+      "date": "2025-07-23",
+      "label": "按出现频率逆比例的重加权方案上线（HuggingFace 榜单数据集 Notes）",
+      "cite": [
+        "lb-dataset@Notes"
+      ]
+    },
+    {
+      "id": "clt-ci",
+      "date": "2025-08-01",
+      "label": "置信区间从 bootstrap 改为基于中心极限定理的闭式解，官方称与 bootstrap 结果几乎一致且计算成本大幅下降",
+      "cite": [
+        "changelog@August 1, 2025"
+      ]
+    },
+    {
+      "id": "arena-expert",
+      "date": "2025-11-05",
+      "label": "上线 Arena Expert 与八个职业分类榜；Expert 只取全部 prompt 的 5.5%",
+      "cite": [
+        "changelog@November 5, 2025"
+      ]
+    },
+    {
+      "id": "direct-battles",
+      "date": "2026-05-12",
+      "label": "Direct 模式转化的对战票计入 Text、Vision、Search、Document 榜，并新增 is_direct_battle、same_org_indicator 两个偏倚修正特征",
+      "cite": [
+        "changelog@May 12, 2026"
+      ]
+    },
+    {
+      "id": "agent-arena",
+      "date": "2026-06-04",
+      "label": "Agent Arena 上线，改用行为信号与因果追踪，不再使用 Bradley-Terry",
+      "cite": [
+        "changelog@June 4, 2026"
+      ]
+    },
+    {
+      "id": "current-board",
+      "date": "2026-11-09",
+      "label": "HuggingFace 榜单数据集记录的最近一次 Text（风格控制）榜发布快照（本页官方结果表所用版本）",
+      "cite": [
+        "text-board"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "投票人群偏倚",
+      "impact": "投票者不是随机样本。论文预计用户以 LLM 爱好者与研究者为主，prompt 分布可能偏向在线聊天场景而非生产环境；2026-05 接入 Direct 对战票后，prompt 分布进一步偏向长查询、难 prompt、编程与指令遵循。",
+      "severity": "高",
+      "response": "官方用逆频率重加权、去重（约 10% 票）、身份泄露过滤（不足 4% 票）、异常用户票过滤与匿名投票规则缓解；2026-05 为 Direct 票新增位置偏倚与同机构偏倚两个修正特征。",
+      "reader": "把榜单读作「这群真实用户的偏好分布」，不是全体用户或专家共识；换一类用户或一类任务，结论可能不同。",
+      "cite": [
+        "paper@§8 Discussion",
+        "changelog@May 12, 2026",
+        "changelog@July 14, 2025",
+        "changelog@September 17, 2025"
+      ]
+    },
+    {
+      "issue": "私有测试与选择性披露",
+      "impact": "《The Leaderboard Illusion》审计 2024-01 至 2025-04 的 2M 场对战、42 家提供方、243 个模型，发现厂商可在公开发布前测试多个私有变体并只公布最好成绩，违反 Bradley-Terry 模型的无偏抽样假设；极端案例是 Meta 在 Llama-4 发布前测了 27 个私有变体。该论文还指出无法保证公开榜单上的版本与公开 API 一致。",
+      "severity": "高",
+      "response": "官方 FAQ 说明代号模型需同时满足公司发布标准与平台政策，才会以正式名称进入公开榜；2025-09-18 起对匿名测试后公开的模型打 preliminary 标签。对「禁止撤回分数」「公开限制每方私有变体数量」「均衡采样率」三项建议，未见官方公开承诺。",
+      "reader": "看到某厂商首发即登顶时，先查是否带 preliminary 标签、是否只公布了最优变体。",
+      "cite": [
+        "illusion",
+        "faq",
+        "changelog@September 18, 2025"
+      ]
+    },
+    {
+      "issue": "数据访问不对称与静默下架",
+      "impact": "同一篇审计估计 Google 与 OpenAI 分别拿到竞技场约 19.2% 与 20.4% 的数据，而 83 个开放权重模型合计仅约 29.7%；论文估计仅靠额外竞技场数据就能把 ArenaHard 上的相对表现提升至多 112%，从而鼓励针对竞技场分布过拟合。243 个公开模型中有 205 个被静默下架，其中 64% 是开放权重或完全开源模型。",
+      "severity": "高",
+      "response": "官方 FAQ 称会与研究社区分享部分匿名投票数据（prompt 文本、投票结果、模型配对），并在 HuggingFace 开放榜单历史快照；changelog 说明模型下架的公开更新放在 GitHub。未见对采样率与下架比例均衡化的公开承诺。",
+      "reader": "开放权重模型的分数与名次更容易受下架与采样不足影响，横向比较时留出余地。",
+      "cite": [
+        "illusion",
+        "faq",
+        "lb-dataset"
+      ]
+    },
+    {
+      "issue": "风格与冗长偏倚",
+      "impact": "官方自己的分析显示长度是最主要的风格因素（同时控制长度与 markdown 时长度系数 0.249，markdown 列表 0.031、标题 0.024、加粗 0.019）；控制长度与 markdown 后排名明显变动，GPT-4o-mini 与 Grok-2-mini 掉到多数前沿模型之后，Claude 3.5 Sonnet / Opus 与 Llama-3.1-405B 上升。后续情感控制分析显示正面情感占优、中性语气吃亏。",
+      "severity": "中",
+      "response": "2024-08 推出风格控制（长度 + markdown 标题 / 加粗 / 列表数），2025-04 扩展到 emoji 数与情感极性，2025-05-16 起 Text 与 Vision 榜默认开启；官方同时说明该分析仍是观察性的，可能存在未观测混淆因素（如推理题的理由长度同时推高长度与质量）。",
+      "reader": "比较模型时优先看风格控制榜；只报原始榜分数时，要意识到其中含风格红利。",
+      "cite": [
+        "style-blog",
+        "sentiment-blog",
+        "lb-dataset@Notes"
+      ]
+    },
+    {
+      "issue": "跨版本、跨榜不可比",
+      "impact": "评分口径多次变动：2024-01-09 Elo 改 BT、2025-05-16 风格控制默认化、2025-07-23 频率重加权、2025-08-01 置信区间改闭式解、2026-05-12 Direct 票入榜、2026-03-10 视频榜改为只算作者票。每一次都会让改动前后的分数不能直接相连，Agent 榜更是完全换成因果干预效应。",
+      "severity": "中",
+      "response": "官方维护 Leaderboard Changelog，并在 HuggingFace 开放含 full 历史快照的榜单数据集，可逐次追溯方法论变更。",
+      "reader": "引用任何 Arena 分数时同时记录抓取日期与口径；跨时间比较先查 changelog。",
+      "cite": [
+        "changelog",
+        "lb-dataset@Notes"
+      ]
+    },
+    {
+      "issue": "不是正确性基准",
+      "impact": "投票衡量偏好而非事实正确。论文用 160 场对战做众包用户与两位专家盲标对比，一致率 72%–83%，与两位专家之间的一致率（79.4%–89.8%）同量级，说明众包票可用但不等于判分。",
+      "severity": "中",
+      "response": "论文通过专家盲标验证投票质量；平台另设 Alignment Index 等榜单，但未把事实正确率作为 Text 榜指标。",
+      "reader": "Arena 排名高不代表答案更正确；需要事实性结论时另用带标准答案的基准。",
+      "cite": [
+        "paper@§6.3",
+        "paper@Table 3",
+        "leaderboard"
+      ]
+    }
+  ],
+  "notes": "产品体验叙事厂商引用；发布后冲 Arena 是行业惯例",
+  "official_sources": [
+    {
+      "kind": "site",
+      "url": "https://lmarena.ai/"
+    },
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2403.04132"
+    },
+    {
+      "kind": "site",
+      "url": "https://arena.ai/about"
+    },
+    {
+      "kind": "site",
+      "url": "https://arena.ai/how-it-works"
+    },
+    {
+      "kind": "site",
+      "url": "https://arena.ai/faq"
+    },
+    {
+      "kind": "site",
+      "url": "https://arena.ai/leaderboard"
+    },
+    {
+      "kind": "docs",
+      "url": "https://arena.ai/blog/leaderboard-changelog/"
+    },
+    {
+      "kind": "blog",
+      "url": "https://blog.lmarena.ai/blog/2024/style-control/"
+    },
+    {
+      "kind": "blog",
+      "url": "https://blog.lmarena.ai/blog/2025/sentiment-control/"
+    },
+    {
+      "kind": "blog",
+      "url": "https://lmsys.org/blog/2024-09-20-arena-new-site/"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/lmarena-ai/leaderboard-dataset"
+    },
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2504.20879"
+    }
+  ],
+  "related_benchmarks": [
+    "mtbench",
+    "alpacaeval",
+    "ifeval",
+    "arenahard",
+    "wildbench"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-11",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-11",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "Chatbot Arena: An Open Platform for Evaluating LLMs by Human Preference（arXiv:2403.04132v1，2024-03-07，ICML 2024）",
+        "url": "https://arxiv.org/abs/2403.04132",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "site",
+        "kind": "site",
+        "title": "arena.ai/about（官方 About 页：Arena, formerly LMArena, created by researchers from UC Berkeley）",
+        "url": "https://arena.ai/about",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "leaderboard",
+        "kind": "leaderboard",
+        "title": "arena.ai/leaderboard（官方榜单总览，含累计 Total Sessions）",
+        "url": "https://arena.ai/leaderboard",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "how-it-works",
+        "kind": "site",
+        "title": "arena.ai/how-it-works（官方机制说明：battle 模式流程、预发布模型、开放数据集清单）",
+        "url": "https://arena.ai/how-it-works",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "faq",
+        "kind": "site",
+        "title": "arena.ai/faq（官方 FAQ：Bradley-Terry 评级、匿名规则、Side by Side / Direct 模式、代号模型政策、数据开放范围）",
+        "url": "https://arena.ai/faq",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "changelog",
+        "kind": "docs",
+        "title": "Arena Leaderboard Changelog（官方方法论变更日志，2025-07 至 2026-07）",
+        "url": "https://arena.ai/blog/leaderboard-changelog/",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "style-blog",
+        "kind": "blog",
+        "title": "Does Style Matter? Disentangling style and substance in Chatbot Arena（2024-08）",
+        "url": "https://blog.lmarena.ai/blog/2024/style-control/",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "sentiment-blog",
+        "kind": "blog",
+        "title": "Does Sentiment Matter Too? Introducing Sentiment Control（2025-04）",
+        "url": "https://blog.lmarena.ai/blog/2025/sentiment-control/",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "lmsys-blog",
+        "kind": "blog",
+        "title": "Announcing a New Site for Chatbot Arena（LMSYS Org，2024-09-20）",
+        "url": "https://lmsys.org/blog/2024-09-20-arena-new-site/",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "lb-dataset",
+        "kind": "dataset",
+        "title": "lmarena-ai/leaderboard-dataset（HuggingFace，Arena 榜单历史快照，含方法论变更 Notes）",
+        "url": "https://huggingface.co/datasets/lmarena-ai/leaderboard-dataset",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "text-board",
+        "kind": "dataset",
+        "title": "lmarena-ai/leaderboard-dataset · text_style_control · latest（2026-11-09 发布的 Text 风格控制榜前 12 行，HF datasets-server API）",
+        "url": "https://datasets-server.huggingface.co/rows?dataset=lmarena-ai%2Fleaderboard-dataset&config=text_style_control&split=latest&offset=0&length=12",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "illusion",
+        "kind": "paper",
+        "title": "The Leaderboard Illusion（arXiv:2504.20879v2，2025-05-12，Cohere Labs / Princeton / Stanford 等）",
+        "url": "https://arxiv.org/abs/2504.20879",
+        "accessed": "2026-11-11"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "LMSYS Org（UC Berkeley / Stanford / UCSD 研究者）发起，现由 Arena Intelligence 运营",
+        "cite": [
+          "paper@作者署名",
+          "site"
+        ]
+      },
+      "first_release": {
+        "v": "2023-04（论文 §3.2：We began collecting data in April 2023；官方未给出精确日期）",
+        "cite": [
+          "paper@§3.2 Data Statistics"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "paper@Abstract",
+        "paper@§3.1 Interface",
+        "how-it-works",
+        "faq",
+        "leaderboard"
+      ],
+      "interpretation": [
+        "paper@§4",
+        "paper@§8 Discussion",
+        "lb-dataset@Notes",
+        "changelog"
+      ]
+    },
+    "problem": {
+      "text": "MMLU、HellaSwag、GSM-8K 这类静态、有标准答案的基准题目不开放、题库会随时间被污染、很多复杂任务根本没有唯一标准答案，测不准前沿模型的真实体验；Chatbot Arena 想做一个题目实时来自真实用户、指标是人类偏好的开放平台。",
+      "cite": [
+        "paper@§1 Introduction",
+        "paper@§2 Related Work"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机 / 无偏好基线",
+        "value": "论文未给出",
+        "note": "Arena 没有随机基线概念：分数是相对偏好强度而非答对率，论文也未报告任何绝对参照分。",
+        "cite": [
+          "paper@§4"
+        ]
+      },
+      {
+        "label": "人类专家参照",
+        "value": "众包投票与专家盲标一致率 72%–83%",
+        "note": "论文抽 160 场对战让 UC Berkeley 研究生盲标，与众包用户的一致率 72%–83%，与两位专家之间的一致率（79.4%–89.8%）同量级；论文据此认为众包票质量可用。",
+        "cite": [
+          "paper@§6.3",
+          "paper@Table 3"
+        ]
+      },
+      {
+        "label": "论文发布时平台规模",
+        "value": "243,329 次对战 / 90,051 名用户 / 50 个模型",
+        "note": "论文 Table 1 记录截至 2024-01-21 的规模；论文没有给出「人类水平」这类可对比的分数。",
+        "cite": [
+          "paper@Table 1"
+        ]
+      },
+      {
+        "label": "官方 Text（风格控制）榜第 1 名",
+        "value": "1526",
+        "note": "Gemini 4 Carbon (High)，Google，2026-11-09 发布；95% 置信区间 1516.4–1535.6，累计 4,282 票。arena.ai/leaderboard 的 New Release Rankings 同样显示 Gemini 4 Carbon 为 Text · High 第一。",
+        "cite": [
+          "text-board",
+          "leaderboard@New Release Rankings"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      },
+      {
+        "label": "噪声参考线",
+        "value": "前 6 名（1526 → 1503）置信区间彼此重叠",
+        "note": "官方称频率重加权会加宽区间、使并列更常见；把 10 分以内的差距当作名次差异属于过度解读。这条线是本站按当前榜单区间重叠情况给出的参考，不是官方阈值。",
+        "cite": [
+          "text-board",
+          "changelog@August 1, 2025"
+        ]
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 Arena Score 当正确率或准确率读——它是匿名投票拟合出的偏好强度，答得好听和答得对都会赢。",
+        "cite": [
+          "faq",
+          "paper@§6.3"
+        ]
+      },
+      {
+        "text": "把不同时间、不同口径的分数排在一起比（开 / 不开风格控制、含 / 不含 Direct 票、battle / Side by Side / Direct、Text / Agent 榜）。",
+        "cite": [
+          "lb-dataset@Notes",
+          "changelog@May 12, 2026",
+          "faq"
+        ]
+      },
+      {
+        "text": "把 Elo 的绝对数字当成有物理意义的量——官方 2024-01-09 已从 Elo 改用 Bradley-Terry 系数，论文明确说理由是 BT 系数更适合统计估计。",
+        "cite": [
+          "lb-dataset@Notes",
+          "paper@§4"
+        ]
+      },
+      {
+        "text": "认为「发布后冲上 Arena 第一」等于模型更强——私有多变体测试与选择性公布会让平均实力较弱的模型家族排到较强家族前面，该论文用实证与模拟都验证了这一点。",
+        "cite": [
+          "illusion"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "LMSYS Org（UC Berkeley / Stanford / UCSD 研究者组成的开放研究组织）发起；现由 Arena Intelligence 运营（arena.ai 页脚 © Arena Intelligence 2026）",
+        "cite": [
+          "paper@作者署名",
+          "site",
+          "lmsys-blog"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "Wei-Lin Chiang、Lianmin Zheng、Ying Sheng、Anastasios N. Angelopoulos、Tianle Li、Dacheng Li、Banghua Zhu、Hao Zhang、Michael I. Jordan、Joseph E. Gonzalez、Ion Stoica",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      {
+        "k": "首次发布",
+        "v": "2023-04 开始收集数据（论文 §3.2）；官方未公布精确日期，外部资料另有 2023-05 的说法",
+        "cite": [
+          "paper@§3.2 Data Statistics"
+        ]
+      },
+      {
+        "k": "名称与域名演变",
+        "v": "Chatbot Arena（chat.lmsys.org）→ 2024-09-20 启用独立站 lmarena.ai → 现名 Arena（arena.ai）；官方 about 页自述 formerly LMArena，changelog 2026-03-10 条目提到 After the migration to arena.ai",
+        "cite": [
+          "lmsys-blog",
+          "site",
+          "changelog@March 10, 2026"
+        ]
+      },
+      {
+        "k": "论文收录",
+        "v": "ICML 2024（how-it-works 页列为 Original Chatbot Arena research paper (ICML 2024)）",
+        "cite": [
+          "how-it-works"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "榜单历史快照在 HuggingFace（lmarena-ai/leaderboard-dataset，cc-by-4.0，含 text / text_style_control / vision / webdev / agent 等 23 个子集，latest 与 full 两个 split）；官方称已开源全球最大的生成式模型有机人类偏好库，投票数据含 prompt 文本、投票结果与模型配对",
+        "cite": [
+          "lb-dataset",
+          "how-it-works",
+          "faq"
+        ]
+      },
+      {
+        "k": "商业化",
+        "v": "平台提供面向企业、模型实验室与开发者的 AI Evaluations 服务；2026-10-08 官方博客宣布 2 亿美元 B 轮",
+        "cite": [
+          "faq",
+          "leaderboard"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-11",
+        "columns": [
+          "来源",
+          "模型",
+          "Arena Score",
+          "95% 置信区间",
+          "投票数",
+          "口径"
+        ],
+        "rows": [
+          [
+            "HF 榜单数据集 text_style_control（2026-11-09 发布）",
+            "Gemini 4 Carbon (High)",
+            "1526",
+            "1516.4 – 1535.6",
+            "4,282",
+            "Text 榜 · 风格控制（默认）"
+          ],
+          [
+            "同上",
+            "Gemini 4 Argon (High)",
+            "1522",
+            "1516.9 – 1527.9",
+            "19,787",
+            "同上"
+          ],
+          [
+            "同上",
+            "Muse Wonder (Max)",
+            "1511",
+            "1504.6 – 1517.3",
+            "12,032",
+            "同上"
+          ],
+          [
+            "同上",
+            "Claude Opus 5.5 (High)",
+            "1506",
+            "1500.0 – 1512.1",
+            "15,249",
+            "同上"
+          ],
+          [
+            "同上",
+            "Claude Fable 5 (High)",
+            "1504",
+            "1499.7 – 1508.1",
+            "45,524",
+            "同上"
+          ],
+          [
+            "同上",
+            "Claude Opus 4.6 (High)",
+            "1503",
+            "1499.8 – 1506.3",
+            "84,424",
+            "同上"
+          ],
+          [
+            "同上",
+            "Claude Fable 5.1 (Max)",
+            "1503",
+            "1497.2 – 1508.2",
+            "20,087",
+            "同上"
+          ],
+          [
+            "同上",
+            "Claude Opus 4.7 (High)",
+            "1501",
+            "1497.3 – 1504.8",
+            "64,308",
+            "同上"
+          ],
+          [
+            "同上",
+            "Gemini 3.8 Flash (High)",
+            "1497",
+            "1493.3 – 1501.7",
+            "61,143",
+            "同上"
+          ],
+          [
+            "同上",
+            "Claude Opus 4.6",
+            "1496",
+            "1493.3 – 1499.7",
+            "89,228",
+            "同上"
+          ]
+        ]
+      },
+      "cite": [
+        "text-board"
+      ]
+    }
+  }
+}

@@ -1,0 +1,773 @@
+{
+  "id": "biglaw-bench",
+  "name": "BigLaw Bench",
+  "full_name": null,
+  "aliases": [
+    "BLB"
+  ],
+  "status": "active",
+  "categories": [
+    "knowledge",
+    "agent"
+  ],
+  "summary": "Harvey 把自己内部评测数据集公开成的版本：用律师真实计费工作转成的法律任务（Core 交易/诉讼、Workflows、Retrieval）考模型，分数 =「完成了多少比例的律师级工作成果」，错误和幻觉倒扣分，需要引用的任务另算来源分。",
+  "interpretation": "高分说明模型给出的法律工作产物更接近可直接交付的律师级成果，并且在被要求给来源时能指到具体文档；它不是执业能力认证。官方数字来自 Harvey 自己跑分或 Harvey 转述给厂商的口径，完整数据集不公开，外部无法按原口径复现，只能把这些数字当作报告值看。",
+  "measures": [
+    {
+      "area": "Core · 交易类（Transactional）",
+      "focus": "README 列 9 个子类：公司战略与建议、起草、法律研究、尽职调查、风险评估与合规、谈判策略、交易管理、交易结构、监管与建议；公告分布表中占比最高为公司战略与建议 28.3%、法律研究 13.2%",
+      "share": "Core 内占比：公告表 8 类合计 100%（README 列 9 类，两处口径不一致）",
+      "format": "开放式任务：prompt + 文档，按定制 rubric 打分；公开示例见 blb-core/core-samples.csv",
+      "cite": [
+        "repo-biglaw-bench@Benchmarks",
+        "harvey-blog-biglaw-announce@Tasks",
+        "blb-core-samples"
+      ]
+    },
+    {
+      "area": "Core · 诉讼类（Litigation）",
+      "focus": "README 列 6 个子类：诉讼文件分析、案件管理、判例法研究、庭审记录分析、文件审查与分析、庭审准备与口头辩论；公告分布表中占比最高为诉讼文件分析 25.5%、案件管理 23.4%",
+      "share": "Core 内占比：公告表 8 类合计 100%（README 列 6 类，两处口径不一致）",
+      "format": "同上：prompt + 文档 + rubric；公开示例见 blb-core/core-samples.csv",
+      "cite": [
+        "repo-biglaw-bench@Benchmarks",
+        "harvey-blog-biglaw-announce@Tasks",
+        "blb-core-samples"
+      ]
+    },
+    {
+      "area": "Workflows · SPA Deal Points",
+      "focus": "从股权购买协议里抽取标准 deal point，用于评测 agentic 系统；公开示例含 29 个字段（交易价格、每股价格、股数、交割交付物、售后价格调整、赔偿上限与门槛等）",
+      "share": "未披露（公告只给 Core 的类别占比表）",
+      "format": "字段抽取：10 份 SPA × 29 个 deal point 列",
+      "cite": [
+        "repo-biglaw-bench@Benchmarks",
+        "harvey-blog-bblb-spa",
+        "blb-spa-samples"
+      ]
+    },
+    {
+      "area": "Retrieval · Contracts",
+      "focus": "合并协议与 SPA 等长文档：数百页、数十万 token，含交叉引用与定义术语，必须持续跟踪才能定位相关文本",
+      "share": "未披露",
+      "format": "检索 + 引用定位；公开示例含 merger_agreements 与 spa 两类各 10 条查询",
+      "cite": [
+        "repo-biglaw-bench@Benchmarks",
+        "harvey-blog-bblb-retrieval",
+        "blb-retrieval-samples"
+      ]
+    },
+    {
+      "area": "Retrieval · Discovery Emails",
+      "focus": "短、量大、关系复杂（邮件线程）、元数据丰富（发件人、收件人、附件）的邮件集合，考能否找到相关邮件",
+      "share": "未披露",
+      "format": "检索 + 引用定位；公开示例 10 条查询",
+      "cite": [
+        "repo-biglaw-bench@Benchmarks",
+        "harvey-blog-bblb-retrieval",
+        "blb-retrieval-samples"
+      ]
+    },
+    {
+      "area": "Retrieval · Research Databases",
+      "focus": "判例法等数百万文档的数据库，单篇即可达数百页，且「新近性」这类关系是普通语义搜索抓不到的；仓库 README 未把它列为已提供的基准",
+      "share": "未披露",
+      "format": "未披露（仓库未放出该类公开示例）",
+      "cite": [
+        "harvey-blog-bblb-retrieval",
+        "repo-biglaw-bench@Benchmarks"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "通用知识型选择题：公告明确指出现有多选题或一刀切基准抓不住律师真实计费工作，BLB 的任务全部由真实时间条目转来",
+      "cite": [
+        "harvey-blog-biglaw-announce@Tasks"
+      ]
+    },
+    {
+      "text": "长时程 agent 工作流（多步、跨系统）：2026-05 Harvey 推出 LAB 时，把自己的 BigLaw Bench 归为「短时程推理」类基准",
+      "cite": [
+        "harvey-blog-lab"
+      ]
+    },
+    {
+      "text": "美国法以外的法律体系：2026-02 Harvey 才把 global law 列为扩展研究方向，当时基准未覆盖",
+      "cite": [
+        "harvey-blog-expanding-big-law-bench"
+      ]
+    },
+    {
+      "text": "延迟、成本等工程指标与多模态输入：任务是 prompt + 文档对的文本任务，仓库只定义任务与评分口径，未给工程指标（未披露）",
+      "cite": [
+        "harvey-blog-biglaw-announce@Tasks",
+        "repo-biglaw-bench@Data Samples"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 46,
+    "splits": [
+      "仓库公开示例 46 条",
+      "完整数据集（题量未披露，需联系 Harvey）"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "律师真实计费工作的时间条目 + 公开法律文件（prompt / 文档对）",
+    "public_sample": true,
+    "totals": "仓库公开示例共 46 条（本站按官方 CSV 行数统计）：Core 任务 6 个（编号 4 / 5 / 19 / 49 / 60 / 96）+ Workflows SPA 10 份（29 个 deal point 列）+ Retrieval 查询 30 条（discovery_emails / merger_agreements / spa 各 10 条）。完整数据集题量未披露，需联系 Harvey 获取；来源未显式声明语料语言，公开示例均为英文。",
+    "cite": [
+      "repo-biglaw-bench@Data Samples",
+      "blb-core-samples",
+      "blb-spa-samples",
+      "blb-retrieval-samples"
+    ],
+    "construction": [
+      {
+        "k": "任务从哪来",
+        "text": "把律师真实计费工作的时间条目转成 prompt / 文档对，再按诉讼 / 交易、事项阶段等维度分类；因为工作都要计费，时间条目集合接近真实执业任务的全集。",
+        "cite": [
+          "harvey-blog-biglaw-announce@Tasks"
+        ]
+      },
+      {
+        "k": "谁出的题",
+        "text": "Harvey 法律研究团队（有跨执业领域与 BigLaw 律所经验的律师）用公开文件构建，便于在真实条件下透明评测。",
+        "cite": [
+          "harvey-blog-biglaw-announce@Tasks"
+        ]
+      },
+      {
+        "k": "怎么打分",
+        "text": "每个任务配定制 rubric：每条实质性要求按对完成任务的重要性给正分；幻觉、语气或长度不当、无关内容、毒性等给负分，理由是纠正错误的人力会抵消 AI 成果的效用。",
+        "cite": [
+          "harvey-blog-biglaw-announce@Evaluation Methodology"
+        ]
+      },
+      {
+        "k": "检索集构成",
+        "text": "Contracts（合并协议与 SPA）与 Discovery Emails 两类已放出公开示例；公告还描述了 Research Databases（判例法等百万级文档），但仓库 README 未把它列为已提供的基准。",
+        "cite": [
+          "harvey-blog-bblb-retrieval",
+          "repo-biglaw-bench@Benchmarks"
+        ]
+      },
+      {
+        "k": "工作流集构成",
+        "text": "Workflows 目前只提供 SPA Deal Points：从股权购买协议中抽取标准 deal point，公开示例为 10 份 SPA × 29 个字段。",
+        "cite": [
+          "repo-biglaw-bench@Benchmarks",
+          "blb-spa-samples"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "answer-score",
+      "name": "Answer score（答案分）",
+      "direction": "越高越好",
+      "description": "正分（满足 rubric 要求）与负分（错误、幻觉等）相加后除以该题可用正分总数，表示模型完成了多少比例的律师级工作成果。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "repo-biglaw-bench@Evaluation Methodology",
+        "harvey-blog-biglaw-announce@Evaluation Methodology"
+      ]
+    },
+    {
+      "id": "source-score",
+      "name": "Source score（来源分）",
+      "direction": "越高越好",
+      "description": "在需要验证的实质性要点中，模型给出有效来源（能连到源文档具体文本的陈述或链接）的比例；即使 prompt 没要求给来源也计分。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "harvey-blog-biglaw-announce@Evaluation Methodology",
+        "harvey-blog-bblb-sources"
+      ]
+    },
+    {
+      "id": "spa-deal-point-accuracy",
+      "name": "SPA deal point 正确率",
+      "direction": "越高越好",
+      "description": "从股权购买协议中正确抽取标准 deal point 的比例；公告口径下 GPT-4o 66.04%、Gemini 72.27%，Harvey SPA agents 98.47%。",
+      "unit": "percent",
+      "cite": [
+        "harvey-blog-bblb-spa",
+        "blb-spa-samples"
+      ]
+    },
+    {
+      "id": "retrieval-relevance",
+      "name": "检索相关内容识别",
+      "direction": "越高越好",
+      "description": "相对 OpenAI / Voyage / Cohere 等 embedding 检索方法多识别的相关内容比例，Harvey 自报至多 30%；是相对增益，不是绝对准确率。",
+      "cite": [
+        "harvey-blog-bblb-retrieval",
+        "blb-retrieval-samples"
+      ]
+    },
+    {
+      "id": "hallucination-rate",
+      "name": "幻觉率",
+      "direction": "越低越好",
+      "description": "回答中含幻觉主张的句子数 ÷ 回答总句子数；幻觉定义为「可被真相来源证伪的事实性主张」，只在需要跨多个长文档推理的 BLB 子集上测量。",
+      "unit": "percent",
+      "cite": [
+        "harvey-blog-biglaw-hallucinations"
+      ]
+    }
+  ],
+  "default_protocol": {
+    "raw": "每个任务用定制 rubric 评分：满足要求得正分，错误或失误（如幻觉）得负分；answer score =（正分 + 负分）÷ 该题可用正分总数。需要引用的任务另计 source score：在 rubric 要求且有来源才能验证的实质性要点中，看模型是否给出能连到源文档具体文本的有效来源。",
+    "cite": [
+      "repo-biglaw-bench@Evaluation Methodology",
+      "harvey-blog-biglaw-announce@Evaluation Methodology",
+      "harvey-blog-bblb-sources"
+    ],
+    "variants": [
+      {
+        "text": "是否要求给来源会显著改变分数：公告称为了让模型在陈述后附来源而专门改提示词，结果基础模型持续编造文档文本或页码，来源分变弱、答案分也大幅下降。",
+        "cite": [
+          "harvey-blog-biglaw-announce@Results"
+        ]
+      },
+      {
+        "text": "公开示例只含 prompt、文档与 rubric；完整评测用的模型提示词、裁判配置与运行设置未随数据集公开，外部无法按官方口径复现。",
+        "cite": [
+          "repo-biglaw-bench@Data Samples"
+        ]
+      },
+      {
+        "text": "幻觉率另用一套自建检测系统，且只在需要跨多个长文档推理的 BLB 子集上部署，与主分数不是同一口径。",
+        "cite": [
+          "harvey-blog-biglaw-hallucinations"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "repo-created",
+      "date": "2024-08-24",
+      "label": "GitHub 仓库创建（harveyai/biglaw-bench）",
+      "cite": [
+        "harvey-repo-api"
+      ]
+    },
+    {
+      "id": "first-public",
+      "date": "2024-08-29",
+      "label": "首发公告，宣布 BigLaw Bench 首次公开结果；Harvey 专有模型产出律师级成果的 74%，公开基础模型平均「超过一半」",
+      "cite": [
+        "harvey-blog-biglaw-announce@Overview",
+        "harvey-blog-biglaw-announce@Results"
+      ]
+    },
+    {
+      "id": "sources-post",
+      "date": "2024-09-23",
+      "label": "公开来源评分方法与「有效来源」定义",
+      "cite": [
+        "harvey-blog-bblb-sources"
+      ]
+    },
+    {
+      "id": "spa-post",
+      "date": "2024-09-26",
+      "label": "公开 SPA deal points 工作流数据与结果（基础模型 66.04%–72.27%，Harvey SPA agents 98.47%）",
+      "cite": [
+        "harvey-blog-bblb-spa"
+      ]
+    },
+    {
+      "id": "hallucination-post",
+      "date": "2024-10-07",
+      "label": "公开幻觉定义、句子级幻觉率与自建检测系统",
+      "cite": [
+        "harvey-blog-biglaw-hallucinations"
+      ]
+    },
+    {
+      "id": "retrieval-post",
+      "date": "2024-11-13",
+      "label": "公开检索基准（Contracts / Discovery Emails / Research Databases）与检索对比结果",
+      "cite": [
+        "harvey-blog-bblb-retrieval"
+      ]
+    },
+    {
+      "id": "third-party-overtake",
+      "date": "2025-05-13",
+      "label": "Harvey 披露：不到一年内 7 个模型（含 3 个非 OAI）在 BLB 上超过最初被评测的 Harvey 系统",
+      "cite": [
+        "harvey-blog-model-offerings"
+      ]
+    },
+    {
+      "id": "expansion-announced",
+      "date": "2026-02-09",
+      "label": "宣布扩展基准：BLB 数据点将增加五倍以上，方向为全球法律、执业领域与法律研究",
+      "cite": [
+        "harvey-blog-expanding-big-law-bench"
+      ]
+    },
+    {
+      "id": "lab-successor",
+      "date": "2026-05-06",
+      "label": "Harvey 开源继任基准 LAB（超过 1,200 个 agent 任务、24 个执业领域、超过 75,000 条专家 rubric），发布时不带榜单",
+      "cite": [
+        "harvey-blog-lab"
+      ]
+    },
+    {
+      "id": "repo-latest",
+      "date": "2026-03-17",
+      "label": "仓库最近一次推送；累计 23 commits、192 stars、29 forks",
+      "cite": [
+        "harvey-repo-api"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "完整数据集与评测口径不公开",
+      "impact": "只有 46 条公开示例；完整题量、模型提示词、裁判配置均未披露，外部无法复现官方数字，只能引用 Harvey 或厂商转述的分数。",
+      "severity": "高",
+      "response": "Harvey 表示完整数据集与资源需直接联系获取；2026-02 宣布将发布扩展基准与方法论深度文章。",
+      "reader": "把 90.2% / 90.9% 这类数字当作 Harvey 侧报告值，不是可复现的独立测量。",
+      "cite": [
+        "repo-biglaw-bench@Data Samples",
+        "harvey-blog-expanding-big-law-bench",
+        "anthropic-news-claude-opus-4-6"
+      ]
+    },
+    {
+      "issue": "自评且与自家产品利益相关",
+      "impact": "基准由 Harvey 构建并用于对比自家产品；首发结论（专有模型 74% 领先）和后续结论（7 个第三方模型反超）都出自 Harvey 自己的跑分，首发各模型分数只以图表给出、正文未列数值。",
+      "severity": "高",
+      "response": "Harvey 公开了任务构造方法与部分对自己不利的发现（基础模型拿不出来源、第三方模型反超）。",
+      "reader": "比较不同来源的数字前，先看是谁跑的、什么时候跑的、口径是什么。",
+      "cite": [
+        "harvey-blog-biglaw-announce@Results",
+        "harvey-blog-model-offerings"
+      ]
+    },
+    {
+      "issue": "无公共提交入口，后续更新未落地",
+      "impact": "BLB 没有公开提交渠道，也没有随模型发布更新的统一榜单；Harvey 已把开源重心转向 Harvey LAB，2026-02 宣布的五倍以上数据点扩展截至核验日未见发布。",
+      "severity": "中",
+      "response": "Harvey 称将在数月内发布扩展基准与方法论深度文章；LAB 作为开源继任者已发布，且同样不带榜单。",
+      "reader": "要看最新法律 agent 能力，优先看 LAB 与厂商披露；BLB 数字可能是旧快照。",
+      "cite": [
+        "repo-biglaw-bench@Data Samples",
+        "harvey-blog-expanding-big-law-bench",
+        "harvey-blog-lab"
+      ]
+    },
+    {
+      "issue": "幻觉检测只覆盖子集",
+      "impact": "幻觉率（Harvey Assistant 0.2% 到 Gemini 1.9%）只在需要跨多个长文档推理的 BLB 子集上、用 Harvey 自建检测系统测量，句子级定义与主分数口径不同。",
+      "severity": "中",
+      "response": "Harvey 公开了幻觉定义（可被真相来源证伪的事实性主张）与句子级计算方法，并称所有模型判断都经过人工复核。",
+      "reader": "0.2% 不是全基准平均幻觉率；比较时注意检测系统、句子集与是否人工复核。",
+      "cite": [
+        "harvey-blog-biglaw-hallucinations"
+      ]
+    },
+    {
+      "issue": "地域与模态覆盖有限",
+      "impact": "任务来自美国 BigLaw 执业的时间条目，公开示例为英文文本；2026-02 Harvey 才把 global law 列为扩展方向，非英语法系当时不在覆盖范围内。",
+      "severity": "低",
+      "response": "Harvey 宣布扩展方向含全球法律、执业领域与法律研究。",
+      "reader": "不要用它推断模型在中国法或其他法系上的能力。",
+      "cite": [
+        "harvey-blog-expanding-big-law-bench",
+        "harvey-blog-biglaw-announce@Tasks"
+      ]
+    }
+  ],
+  "notes": "Anthropic Opus 4.6/4.7 引用；Harvey 发布",
+  "official_sources": [
+    {
+      "kind": "github",
+      "url": "https://github.com/harveyai/biglaw-bench"
+    },
+    {
+      "kind": "site",
+      "url": "https://www.anthropic.com/news/claude-opus-4-6"
+    },
+    {
+      "kind": "site",
+      "url": "https://www.anthropic.com/news/claude-opus-4-7"
+    }
+  ],
+  "related_benchmarks": [
+    "harvey-lab",
+    "legal-agent-benchmark",
+    "legalbench"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-13",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      {
+        "id": "repo-biglaw-bench",
+        "kind": "repo",
+        "title": "harveyai/biglaw-bench README（三块基准与评分方法）",
+        "url": "https://github.com/harveyai/biglaw-bench",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "harvey-repo-api",
+        "kind": "repo",
+        "title": "GitHub API：harveyai/biglaw-bench 仓库元数据",
+        "url": "https://api.github.com/repos/harveyai/biglaw-bench",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "blb-core-samples",
+        "kind": "dataset",
+        "title": "blb-core/core-samples.csv（6 个公开任务与 rubric）",
+        "url": "https://raw.githubusercontent.com/harveyai/biglaw-bench/main/blb-core/core-samples.csv",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "blb-spa-samples",
+        "kind": "dataset",
+        "title": "blb-workflows/spa/spa-samples.csv（10 份 SPA × 29 个 deal point）",
+        "url": "https://raw.githubusercontent.com/harveyai/biglaw-bench/main/blb-workflows/spa/spa-samples.csv",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "blb-retrieval-samples",
+        "kind": "dataset",
+        "title": "blb-retrieval/samples.csv（30 条检索查询）",
+        "url": "https://raw.githubusercontent.com/harveyai/biglaw-bench/main/blb-retrieval/samples.csv",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "harvey-blog-biglaw-announce",
+        "kind": "blog",
+        "title": "Introducing BigLaw Bench（2024-08-29）",
+        "url": "https://www.harvey.ai/blog/introducing-biglaw-bench",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "harvey-blog-bblb-sources",
+        "kind": "blog",
+        "title": "BigLaw Bench：为什么测 source score（2024-09-23）",
+        "url": "https://www.harvey.ai/blog/biglaw-bench-sources",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "harvey-blog-bblb-spa",
+        "kind": "blog",
+        "title": "BigLaw Bench Workflows：SPA Deal Points（2024-09-26）",
+        "url": "https://www.harvey.ai/blog/biglaw-bench-workflows-spa-deal-points",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "harvey-blog-biglaw-hallucinations",
+        "kind": "blog",
+        "title": "BigLaw Bench：幻觉定义与幻觉率（2024-10-07）",
+        "url": "https://www.harvey.ai/blog/biglaw-bench-hallucinations",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "harvey-blog-bblb-retrieval",
+        "kind": "blog",
+        "title": "BigLaw Bench：检索基准（2024-11-13）",
+        "url": "https://www.harvey.ai/blog/biglaw-bench-retrieval",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "harvey-blog-model-offerings",
+        "kind": "blog",
+        "title": "Expanding Harvey's model offerings（2025-05-13）",
+        "url": "https://www.harvey.ai/blog/expanding-harveys-model-offerings",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "harvey-blog-expanding-big-law-bench",
+        "kind": "blog",
+        "title": "Expanding Big Law Bench（2026-02-09）",
+        "url": "https://www.harvey.ai/blog/expanding-big-law-bench",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "harvey-blog-lab",
+        "kind": "blog",
+        "title": "Introducing Harvey's Legal Agent Benchmark（2026-05-06）",
+        "url": "https://www.harvey.ai/blog/introducing-harveys-legal-agent-benchmark",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "anthropic-news-claude-opus-4-6",
+        "kind": "site",
+        "title": "Claude Opus 4.6（Anthropic 新闻页，引 Harvey 研究人员成绩）",
+        "url": "https://www.anthropic.com/news/claude-opus-4-6",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "anthropic-news-claude-opus-4-7",
+        "kind": "site",
+        "title": "Claude Opus 4.7（Anthropic 新闻页，引 Harvey 研究人员成绩）",
+        "url": "https://www.anthropic.com/news/claude-opus-4-7",
+        "accessed": "2026-11-13"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Harvey（法律 AI 公司）",
+        "cite": [
+          "repo-biglaw-bench@Overview"
+        ]
+      },
+      "first_release": {
+        "v": "2024-08-29（首发公告宣布 BigLaw Bench 首次公开结果）",
+        "cite": [
+          "harvey-blog-biglaw-announce@Overview"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "repo-biglaw-bench@Overview",
+        "harvey-blog-biglaw-announce@Overview",
+        "harvey-blog-biglaw-announce@Tasks"
+      ],
+      "interpretation": [
+        "repo-biglaw-bench@Evaluation Methodology",
+        "harvey-blog-biglaw-announce@Results",
+        "harvey-blog-bblb-sources"
+      ]
+    },
+    "problem": {
+      "text": "当时的法律 AI 评测要么是选择题、要么是一刀切基准，抓不住律师真实计费工作；Harvey 把自己内部评测数据集公开成 BigLaw Bench，用真实时间条目转成的任务衡量模型能产出多少比例的律师级成果。",
+      "cite": [
+        "harvey-blog-biglaw-announce@Overview",
+        "harvey-blog-biglaw-announce@Tasks"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "首发公告：公开基础模型平均水平",
+        "value": "「超过一半」（未给数值）",
+        "note": "公告只做定性描述：基础模型能解决「空白页」问题、把用户带到离最终成果一半以上，但常缺特异性或漏掉关键法律细节。",
+        "cite": [
+          "harvey-blog-biglaw-announce@Results"
+        ]
+      },
+      {
+        "label": "首发公告：Harvey 专有模型",
+        "value": "74%",
+        "note": "2024-08-29 的 answer score，即产出最终专家律师级工作成果的比例；同期各基础模型分数只以图表给出，正文未列数值。",
+        "cite": [
+          "harvey-blog-biglaw-announce@Results"
+        ]
+      },
+      {
+        "label": "SPA 工作流：基础模型",
+        "value": "66.04% – 72.27%",
+        "note": "GPT-4o 66.04%、Gemini 72.27%，deal point 抽取正确率；同口径 Harvey SPA agents 为 98.47%。",
+        "cite": [
+          "harvey-blog-bblb-spa"
+        ]
+      },
+      {
+        "label": "SPA 工作流：Harvey SPA agents",
+        "value": "98.47%",
+        "note": "同一公告口径下的 deal point 抽取正确率，用于说明 agent 化带来的差距。",
+        "cite": [
+          "harvey-blog-bblb-spa"
+        ]
+      },
+      {
+        "label": "Anthropic 引用的 Harvey 侧成绩",
+        "value": "90.2%（Opus 4.6）→ 90.9%（Opus 4.7）",
+        "note": "Opus 4.6：40% 满分、84% 高于 0.8；Opus 4.7 为 high effort 口径。两条都出自 Harvey 研究人员引语，评测口径（effort、子集、任务集）未披露。",
+        "cite": [
+          "anthropic-news-claude-opus-4-6",
+          "anthropic-news-claude-opus-4-7"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "90%+ 不等于「模型能独立当律师」：分数是「完成多少比例律师级成果」，且这两个数字来自 Harvey 侧评测，口径未披露。",
+        "cite": [
+          "anthropic-news-claude-opus-4-6",
+          "repo-biglaw-bench@Evaluation Methodology"
+        ]
+      },
+      {
+        "text": "答案分高不等于有出处：公告发现基础模型答案不错但拿不出来源，即使明确要求给来源也会编造文档文本或页码；来源分要单独看。",
+        "cite": [
+          "harvey-blog-biglaw-announce@Results",
+          "harvey-blog-bblb-sources"
+        ]
+      },
+      {
+        "text": "74% 不是上限而是起点：2025-05 Harvey 自己披露，不到一年内已有 7 个第三方模型超过最初被评测的 Harvey 系统。",
+        "cite": [
+          "harvey-blog-model-offerings"
+        ]
+      },
+      {
+        "text": "BigLaw Bench 与 Harvey LAB 不是同一个基准：LAB 是 2026-05 开源的继任基准（超过 1,200 个 agent 任务、超过 75,000 条 rubric），BLB 完整数据仍未公开。",
+        "cite": [
+          "harvey-blog-lab",
+          "repo-biglaw-bench@Data Samples"
+        ]
+      },
+      {
+        "text": "三个子基准的分数不能互换：Core 是任务级 rubric 分，Workflows 是字段抽取正确率，Retrieval 是相对检索增益，单位与口径都不同。",
+        "cite": [
+          "repo-biglaw-bench@Benchmarks",
+          "harvey-blog-bblb-retrieval"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "Harvey（法律 AI 公司）；基准由其法律研究团队设计，README 署名 18 位贡献者（Julio Pereyra、Elizabeth Lebens、Matthew Guillod 等）",
+        "cite": [
+          "repo-biglaw-bench@Overview",
+          "repo-biglaw-bench@Credits"
+        ]
+      },
+      {
+        "k": "与内部数据集的关系",
+        "v": "公开版本来自 Harvey 内部评测数据集，首发公告称其为「面向公众的内部数据集版本」",
+        "cite": [
+          "harvey-blog-biglaw-announce@Overview"
+        ]
+      },
+      {
+        "k": "仓库现状",
+        "v": "GitHub harveyai/biglaw-bench，创建于 2024-08-24，23 commits、192 stars、29 forks；未声明 license，仓库描述为空",
+        "cite": [
+          "harvey-repo-api"
+        ]
+      },
+      {
+        "k": "外部引用",
+        "v": "Anthropic 在 Claude Opus 4.6 / 4.7 发布页引用 Harvey 研究人员的 BigLaw Bench 成绩（90.2% / 90.9%），是本站榜单之外最常见的引用来源",
+        "cite": [
+          "anthropic-news-claude-opus-4-6",
+          "anthropic-news-claude-opus-4-7"
+        ]
+      },
+      {
+        "k": "继任基准",
+        "v": "2026-05 Harvey 开源 Harvey LAB（超过 1,200 个 agent 任务、24 个执业领域、超过 75,000 条专家 rubric），并把自己的 BigLaw Bench 归为此前的短时程推理类基准",
+        "cite": [
+          "harvey-blog-lab"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-13",
+        "columns": [
+          "来源",
+          "模型 / 系统",
+          "分数",
+          "口径"
+        ],
+        "rows": [
+          [
+            "首发公告（2024-08-29）",
+            "Harvey 专有模型",
+            "74%",
+            "answer score：产出最终专家律师级工作成果的比例"
+          ],
+          [
+            "首发公告（2024-08-29）",
+            "公开基础模型（整体）",
+            "「超过一半」",
+            "公告定性描述，未给数值；各模型分数只以图表给出"
+          ],
+          [
+            "SPA 工作流公告（2024-09-26）",
+            "GPT-4o",
+            "66.04%",
+            "SPA deal point 抽取正确率"
+          ],
+          [
+            "SPA 工作流公告（2024-09-26）",
+            "Gemini",
+            "72.27%",
+            "同上"
+          ],
+          [
+            "SPA 工作流公告（2024-09-26）",
+            "Harvey SPA agents",
+            "98.47%",
+            "同上"
+          ],
+          [
+            "幻觉公告（2024-10-07）",
+            "Harvey Assistant",
+            "0.2%（1688 句）",
+            "句子级幻觉率，仅在跨多长文档推理的 BLB 子集上测量"
+          ],
+          [
+            "幻觉公告（2024-10-07）",
+            "Claude",
+            "0.7%（1140 句）",
+            "同上"
+          ],
+          [
+            "幻觉公告（2024-10-07）",
+            "ChatGPT",
+            "1.3%（1176 句）",
+            "同上"
+          ],
+          [
+            "幻觉公告（2024-10-07）",
+            "Gemini",
+            "1.9%（1067 句）",
+            "同上"
+          ],
+          [
+            "Anthropic 新闻页（引 Harvey）",
+            "Claude Opus 4.6",
+            "90.2%",
+            "BigLaw Bench 最高的 Claude 分数；40% 满分、84% 高于 0.8"
+          ],
+          [
+            "Anthropic 新闻页（引 Harvey）",
+            "Claude Opus 4.7",
+            "90.9%",
+            "high effort 口径"
+          ]
+        ]
+      },
+      "cite": [
+        "harvey-blog-biglaw-announce@Results",
+        "harvey-blog-bblb-spa",
+        "harvey-blog-biglaw-hallucinations",
+        "anthropic-news-claude-opus-4-6",
+        "anthropic-news-claude-opus-4-7"
+      ]
+    }
+  }
+}

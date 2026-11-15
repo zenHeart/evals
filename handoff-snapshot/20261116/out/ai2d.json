@@ -1,0 +1,518 @@
+{
+  "id": "ai2d",
+  "name": "AI2D",
+  "full_name": "AI2 Diagrams（AI2 图表数据集）",
+  "aliases": [],
+  "status": null,
+  "categories": [
+    "multimodal"
+  ],
+  "summary": "AI2 Diagrams（AI2D）是 Allen Institute for Artificial Intelligence 与 University of Washington 在 2016 年发布的小学科学示意图数据集：全库 >5,000 张示意图、>15,000 道四选一多选题，外加 >150,000 条结构标注（constituent 分割、constituent 之间的关系、constituent 与画布的关系）。论文把「看懂一张示意图」拆成两个可分别打分的任务——句法解析（把图解析成 Diagram Parse Graph）和语义解释（回答关于这张图的选择题）。",
+  "interpretation": "分数高说明模型能读懂教科书式示意图的结构语义：哪个标注指向哪个部件、箭头从哪指向哪、一个流程沿着什么顺序推进。它不外推到通用视觉：论文明确指出图表与真实图像的题目差异很大，真实图像上的 QA 系统不能直接搬过来。多模态榜单里 AI2D 常作「图表理解」的对照项，接近饱和的分数也只代表这一类示意图读得好。",
+  "measures": [
+    {
+      "area": "图表问答（AI2D QA）",
+      "focus": "围绕食物网、水循环、人体结构这类小学科学示意图提四选一问题。论文 Figure 4 的原题示例：From the above food web diagram, what will lead to an increase in the population of deer?（选项 increase in lion / decrease in plants / decrease in lion / increase in pika）",
+      "share": "论文口径全库 >15,000 题；公开测试集 3,088 题（HF 镜像）。论文未给出题型占比",
+      "format": "四选一多选题",
+      "cite": [
+        "arxiv-1603-07396@Figure 4",
+        "arxiv-1603-07396@§6",
+        "hf-lmms-ai2d"
+      ]
+    },
+    {
+      "area": "句法解析（Diagram Parse Graph 推理）",
+      "focus": "把示意图解析成 DPG：节点是 constituent，边是, constituent 之间的关系；模型要从候选节点/边中选出最能解释这张图的子图",
+      "share": "论文为它单设指标（JIG），不与问答合并计分；论文未给出该子任务的题量拆分",
+      "format": "结构化预测（节点/边的检测与关系分类）",
+      "cite": [
+        "arxiv-1603-07396@§3",
+        "arxiv-1603-07396@§7.3"
+      ]
+    },
+    {
+      "area": "关系分类（R1–R10）",
+      "focus": "十类关系，包括 Intra-Object Label（文字框给整个对象命名）、Intra-Object Region Label、Intra-Object Linkage、Inter-Object Linkage、Arrow Head Assignment、Arrow Descriptor、Image Title / Section Title / Caption / Misc",
+      "share": "论文口径全库 53K 条关系标注；论文未给出十类各自的占比",
+      "format": "多类别分类（10 类）",
+      "cite": [
+        "arxiv-1603-07396@Table 1",
+        "arxiv-1603-07396@§6"
+      ]
+    },
+    {
+      "area": "元素识别与文字框/箭头分类",
+      "focus": "四类 constituent：Blobs（Illustrations）、Text Boxes、Arrows、Arrow Heads；其中文字框再分 4 类（与画布的关系、与图表元素的关系、对象内关系、对象间关系），箭头再分 3 类",
+      "share": "论文口径全库 118K 个 constituent 标注；论文未给出各类占比",
+      "format": "检测 + 多类别分类",
+      "cite": [
+        "arxiv-1603-07396@§3",
+        "arxiv-1603-07396@§6"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "不考自然照片场景理解。论文的立论前提就是图表图像与真实图像差异很大、相应的问题也不同，真实图像上的 QA 系统无法直接用于图表 QA。",
+      "cite": [
+        "arxiv-1603-07396@§2"
+      ]
+    },
+    {
+      "text": "不考开放式或生成式回答。题目全部是四选一多选题，评分只按选项命中率，没有答案解释、过程或置信度维度。",
+      "cite": [
+        "arxiv-1603-07396@§6",
+        "hf-lmms-ai2d"
+      ]
+    },
+    {
+      "text": "不考多语言与长文本阅读。公开测试集的样例题目均为英文短句；论文未对题目语言构成作正式说明。",
+      "cite": [
+        "hf-lmms-ai2d"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 3088,
+    "splits": [
+      "论文口径：train 4,000 图 + blind test 1,000 图，论文只报 blind test 上的成绩",
+      "公开分发（Hugging Face lmms-lab/ai2d）：仅 test split，3,088 题"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "human-annotated（Google 图片检索采集 + Amazon Mechanical Turk 众包标注）",
+    "public_sample": true,
+    "totals": "论文口径：全库 >5,000 张小学科学示意图、>15,000 道四选一多选题、>150,000 条标注（>118K constituents、53K 关系）；公开测试集 3,088 题（HF 镜像，约 139 MB）",
+    "cite": [
+      "arxiv-1603-07396@§6",
+      "hf-lmms-ai2d"
+    ],
+    "construction": [
+      {
+        "k": "采集图片",
+        "text": "用 Google 图片检索抓图，种子词取自 1–6 年级科学教材的章节标题，因此覆盖了学生、教师、专业设计者等不同水平作者画的示意图。",
+        "cite": [
+          "arxiv-1603-07396@§6",
+          "springer-diagrammatic-chapter@§3.1"
+        ]
+      },
+      {
+        "k": "标注四类低层元素",
+        "text": "标注 Blobs（Illustrations）、Text Boxes、Arrows、Arrow Heads 四类 constituent 的分割；复杂形状用多边形、文字块与箭头头部用矩形框。",
+        "cite": [
+          "arxiv-1603-07396@§6",
+          "springer-diagrammatic-chapter@§3.1"
+        ]
+      },
+      {
+        "k": "文字框与箭头分类",
+        "text": "文字框分 4 类（与画布的关系、与图表元素的关系、对象内关系、对象间关系）；箭头分 3 类（对象内关系、对象间关系、两者都不是）。",
+        "cite": [
+          "arxiv-1603-07396@§6"
+        ]
+      },
+      {
+        "k": "标注关系",
+        "text": "给箭头标注 linkage（让标注者选起点与终点 constituent），再给文字框标注 intra-object label、intra-object region label、arrow descriptor 等关系，最后汇总成 Table 1 的十类关系。",
+        "cite": [
+          "arxiv-1603-07396@§6",
+          "arxiv-1603-07396@Table 1"
+        ]
+      },
+      {
+        "k": "生成选择题",
+        "text": "最后一步通过 AMT 为每张图生成带答案的小学科学多选题，题目与图配对。",
+        "cite": [
+          "arxiv-1603-07396@§6"
+        ]
+      },
+      {
+        "k": "划分训练/测试",
+        "text": "划分为 train 4,000 图与 blind test 1,000 图，论文只报告 blind test 上的数字。",
+        "cite": [
+          "arxiv-1603-07396@§6"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "accuracy",
+      "name": "多选题准确率",
+      "direction": "越高越好",
+      "description": "blind test set 上四选一选择题答对的比例，取全测试集平均；论文的主指标。",
+      "range": "0–100%",
+      "unit": "%",
+      "cite": [
+        "arxiv-1603-07396@§7.4",
+        "arxiv-1603-07396@Table 2"
+      ]
+    },
+    {
+      "id": "jig",
+      "name": "JIG（Jaccard Index for Graphs）",
+      "direction": "越高越好",
+      "description": "句法解析子任务的指标：对推断出的 DPG 与真值 DPG 的节点集合与边集合分别求 Jaccard 指数（交集大小 / 并集大小），在测试集上取平均。与问答准确率不同量纲。",
+      "range": "论文未给出",
+      "unit": "JIG 分",
+      "cite": [
+        "arxiv-1603-07396@§7.3"
+      ]
+    }
+  ],
+  "default_protocol": {
+    "raw": "在 blind test set（1,000 张图）上报告四选一多选题准确率；论文口径每题 4 个选项，答对计 1 分，取全测试集平均。",
+    "cite": [
+      "arxiv-1603-07396@§6",
+      "arxiv-1603-07396@§7.4"
+    ],
+    "variants": [
+      {
+        "text": "句法解析子任务用 JIG 而不是准确率，两个分数不可混读、不可互相换算。",
+        "cite": [
+          "arxiv-1603-07396@§7.3"
+        ]
+      },
+      {
+        "text": "公开分发只含 test split（HF 镜像 3,088 题），不含论文的 train 4,000 图；论文中的 >5,000 图 / >15,000 题是全库口径，不是可下载的评测集规模。",
+        "cite": [
+          "hf-lmms-ai2d",
+          "arxiv-1603-07396@§6"
+        ]
+      },
+      {
+        "text": "论文右表同时给出 VQA→VQA（29.06%）与 VQA→AI2D（32.90%）两个迁移设置，训练数据与 Dqa-Net→AI2D（38.47%）不同，三者不是同一条曲线上的点。",
+        "cite": [
+          "arxiv-1603-07396@Table 2"
+        ]
+      },
+      {
+        "text": "论文未披露提示词、few-shot 样例数或推理档位；其基线是 2016 年的 CNN + LSTM 架构（Keras / TensorFlow / GloVe），与现代大模型的评测口径不兼容。",
+        "cite": [
+          "arxiv-1603-07396@§7"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2016-03-24",
+      "label": "arXiv v1 提交并公开发布数据集与基线；至今仅此一个版本，论文未再修订",
+      "cite": [
+        "arxiv-1603-07396@Submission history",
+        "arxiv-1603-07396@§8"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "题量口径互相不一致",
+      "impact": "论文摘要称全库 >5,000 张图，第三方复述给出 4,903 张（Springer 章节）与 4,817 张（AI2 官网数据集页口径），而公开测试集只有 3,088 题。直接引用「5,000」而不说明是图数还是题数、全库还是测试集，会让跨论文的数字对比失效。",
+      "severity": "高",
+      "response": "未见官方回应；AI2 官网数据集页在本次核验时无法抓取，4,817 这一口径本次未取到可引用的一手原文。",
+      "reader": "看到 AI2D 数字先问三件事：是图数还是题数、全库还是 blind test、原始论文还是第三方镜像。",
+      "cite": [
+        "arxiv-1603-07396@摘要",
+        "springer-diagrammatic-chapter@§3.1",
+        "hf-lmms-ai2d"
+      ]
+    },
+    {
+      "issue": "众包 DPG 标注质量不均，常含孤立节点与多个连通分量",
+      "impact": "句法解析子任务的 JIG 上限被标注本身压低；依赖 DPG 做注意力对齐的问答模型也会继承这些标注缺口。Springer 章节以 AI2D 中一张岩石循环图为例：整个剖面被并成单个 blob，岩浆与岩层没有被分开，导致 DPG 画不出循环结构。",
+      "severity": "中",
+      "response": "论文未回应该批评。后续工作 AI2D-RST 从中取 1,000 张图由受训专家用新 schema 重标注，作为替代方案。",
+      "reader": "JIG 分数低不等于解析算法差，也可能来自标注不完整；引用解析类结果时注意区分。",
+      "cite": [
+        "springer-diagrammatic-chapter@§3.1"
+      ]
+    },
+    {
+      "issue": "题目类型占比与错误分布未披露",
+      "impact": "论文没有给出题型（元素识别 / 关系判断 / 流程推理）的划分与占比，也无法按题型拆解错误，难以定位模型短板。",
+      "severity": "中",
+      "response": "论文未给出题目类型划分。",
+      "reader": "「AI2D 准确率」是一个单一总数，不代表各类图表推理能力的分布。",
+      "cite": [
+        "arxiv-1603-07396@§6"
+      ]
+    },
+    {
+      "issue": "四选一 + 小学教材范围，难度天花板受限",
+      "impact": "选项固定为 4 个带来可观的随机基线，论文既未报告随机基线也未报告人类基线，缺少这两条参考线时高低分都难以解释。",
+      "severity": "低",
+      "response": "论文未给出随机基线与人类基线。",
+      "reader": "跨年份比较时注意：现代模型的提升有一部分来自训练数据里见过同类教材示意图。",
+      "cite": [
+        "arxiv-1603-07396@§6",
+        "hf-lmms-ai2d"
+      ]
+    },
+    {
+      "issue": "图片脱离原始教材上下文",
+      "impact": "抓图时图片被从教材中剥离，缺少章节标题与图注提供的语境，部分题目需要额外的学科常识才能作答。",
+      "severity": "低",
+      "response": "Springer 章节指出图片脱离了原始上下文，只能认为它近似各种媒介学习材料中图表的使用方式。",
+      "reader": "低分可能来自缺少上下文，而不是看不懂图。",
+      "cite": [
+        "springer-diagrammatic-chapter@§3.1"
+      ]
+    }
+  ],
+  "notes": "数字口径：论文摘要口径为 >5,000 张小学科学示意图、>15,000 道四选一多选题、>150,000 条标注；官方页曾计 4,817 张图，Springer 章节复述为 4,903 张；公开测试集（HF lmms-lab/ai2d）为 3,088 题。2026-09-02 建档时：v1 迁移中 AI2D 内容曾误挂在 vizwiz 实体下，本次拆分归正。2026-11-14 升级 v2：AI2 官网数据集页（allenai.org/data/diagrams）本次无法抓取，4,817 这一口径未取到可引用的一手原文，已在 limitations 中说明。",
+  "official_sources": [
+    {
+      "kind": "site",
+      "url": "https://allenai.org/data/diagrams"
+    },
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/1603.07396"
+    }
+  ],
+  "related_benchmarks": [
+    "mmmu",
+    "mathvista",
+    "popecv",
+    "chartqa",
+    "docvqa",
+    "mmvet"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "arxiv-1603-07396",
+        "kind": "paper",
+        "title": "A Diagram Is Worth A Dozen Images（arXiv:1603.07396v1, cs.CV）",
+        "url": "https://arxiv.org/abs/1603.07396",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "hf-lmms-ai2d",
+        "kind": "dataset",
+        "title": "lmms-lab/ai2d · Hugging Face 数据集卡（AI2D 公开测试集分发）",
+        "url": "https://huggingface.co/datasets/lmms-lab/ai2d",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "springer-diagrammatic-chapter",
+        "kind": "paper",
+        "title": "Introducing the Diagrammatic Semiotic Mode（Hiippala & Bateman，Springer 章节，§3.1 分析 AI2D 及其标注局限）",
+        "url": "https://link.springer.com/content/pdf/10.1007/978-3-031-15146-0_1.pdf",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Allen Institute for Artificial Intelligence 与 University of Washington",
+        "cite": [
+          "arxiv-1603-07396"
+        ]
+      },
+      "first_release": {
+        "v": "2016-03-24（arXiv v1）",
+        "cite": [
+          "arxiv-1603-07396@Submission history"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "arxiv-1603-07396@摘要",
+        "arxiv-1603-07396@§6",
+        "hf-lmms-ai2d"
+      ],
+      "interpretation": [
+        "arxiv-1603-07396@§2",
+        "arxiv-1603-07396@Table 2"
+      ]
+    },
+    "problem": {
+      "text": "在 AI2D 之前，图表理解的方法要么依赖手写规则、要么假设视觉基元已由人工标好、要么只处理某一类特定图表；而真实图像上的 QA 系统又因为图表与照片差异太大不能直接搬用。论文需要一个覆盖多样小学科学示意图、带全套结构标注并配套选择题的数据集，才能把「看懂一张示意图」拆成可分别打分、可对比基线的两个任务：句法解析与语义解释。",
+      "cite": [
+        "arxiv-1603-07396@§1",
+        "arxiv-1603-07396@§2"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机猜测基线",
+        "value": "论文未给出",
+        "note": "题目固定为四选一；论文没有报告随机基线，本站也不代为推算。",
+        "cite": [
+          "arxiv-1603-07396@§6",
+          "hf-lmms-ai2d"
+        ]
+      },
+      {
+        "label": "人类基线",
+        "value": "论文未给出",
+        "note": "论文没有报告人类在 AI2D 问答上的准确率。",
+        "cite": [
+          "arxiv-1603-07396@§6"
+        ]
+      },
+      {
+        "label": "同期 VQA 迁移基线",
+        "value": "29.06% / 32.90%",
+        "note": "同一个 VQA 模型分别在 VQA 与 AI2D 上训练，用于体现自然图像域与图表域之间的差距。",
+        "cite": [
+          "arxiv-1603-07396@Table 2"
+        ]
+      },
+      {
+        "label": "论文发布时最好（图表问答）",
+        "value": "38.47%",
+        "note": "Dqa-Net，训练集为 AI2D，在 blind test set 上报告；同期 A* Search 与 Greedy Search 的 JIG 分别为 41.02 与 28.96。",
+        "cite": [
+          "arxiv-1603-07396@Table 2",
+          "arxiv-1603-07396@§7.4"
+        ]
+      },
+      {
+        "label": "论文发布时最好（句法解析 JIG）",
+        "value": "51.45",
+        "note": "Dsdp-Net；与问答准确率不同量纲，只用于解析子任务内部对比。",
+        "cite": [
+          "arxiv-1603-07396@Table 2",
+          "arxiv-1603-07396@§7.3"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "「AI2D 有 5,000 题」——论文里的 >5,000 指图片张数，不是题数；题目数是全库 >15,000，公开测试集是 3,088 题。",
+        "cite": [
+          "arxiv-1603-07396@摘要",
+          "hf-lmms-ai2d"
+        ]
+      },
+      {
+        "text": "「AI2D 分数高 = 视觉能力强」——它只考教科书式示意图的结构语义（标注指向、箭头方向、流程顺序），论文明确说不外推到真实图像。",
+        "cite": [
+          "arxiv-1603-07396@§2"
+        ]
+      },
+      {
+        "text": "「AI2D 只有一个分数」——论文实际报两套指标：问答准确率（Table 2 右）与句法解析 JIG（Table 2 左），两者不同量纲。",
+        "cite": [
+          "arxiv-1603-07396@Table 2"
+        ]
+      },
+      {
+        "text": "「32.90% 和 38.47% 是同设置下的进步」——前者训练集是 VQA，后者是 AI2D，训练数据不同，不是同一条曲线上的两个点。",
+        "cite": [
+          "arxiv-1603-07396@Table 2"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "Allen Institute for Artificial Intelligence（AI2）与 University of Washington；作者署名分属这两个机构。",
+        "cite": [
+          "arxiv-1603-07396"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "Aniruddha Kembhavi、Mike Salvato、Eric Kolve、Minjoon Seo、Hannaneh Hajishirzi、Ali Farhadi。",
+        "cite": [
+          "arxiv-1603-07396"
+        ]
+      },
+      {
+        "k": "论文",
+        "v": "A Diagram Is Worth A Dozen Images，arXiv:1603.07396v1（cs.CV）。",
+        "cite": [
+          "arxiv-1603-07396"
+        ]
+      },
+      {
+        "k": "发布时间线",
+        "v": "2016-03-24 提交 arXiv v1；此后没有新版本，论文与数据集均未随修订更新。",
+        "cite": [
+          "arxiv-1603-07396@Submission history"
+        ]
+      },
+      {
+        "k": "数据与代码位置",
+        "v": "论文称数据集与基线一并发布；当前社区最常用的公开评测分发是 Hugging Face 上的 lmms-lab/ai2d（test split 3,088 题）。AI2 官网数据集页在本次核验时抓取失败，未采用。",
+        "cite": [
+          "arxiv-1603-07396@§8",
+          "hf-lmms-ai2d"
+        ]
+      },
+      {
+        "k": "任务定位",
+        "v": "论文把图表理解定义为两个任务：句法解析（推断 DPG）与语义解释（在图表 QA 中考查），并分别给出 Dsdp-Net 与 Dqa-Net 两个基线。",
+        "cite": [
+          "arxiv-1603-07396@§1"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2016-03-24",
+        "columns": [
+          "方法",
+          "训练集",
+          "分数",
+          "所在半表"
+        ],
+        "rows": [
+          [
+            "Greedy Search",
+            "论文未列出",
+            "28.96",
+            "Table 2 左（JIG）"
+          ],
+          [
+            "A* Search",
+            "论文未列出",
+            "41.02",
+            "Table 2 左（JIG）"
+          ],
+          [
+            "Dsdp-Net",
+            "AI2D",
+            "51.45",
+            "Table 2 左（JIG）"
+          ],
+          [
+            "VQA",
+            "VQA",
+            "29.06",
+            "Table 2 右（准确率 %）"
+          ],
+          [
+            "VQA",
+            "AI2D",
+            "32.90",
+            "Table 2 右（准确率 %）"
+          ],
+          [
+            "Dqa-Net",
+            "AI2D",
+            "38.47",
+            "Table 2 右（准确率 %）"
+          ]
+        ]
+      },
+      "cite": [
+        "arxiv-1603-07396@Table 2"
+      ]
+    }
+  }
+}

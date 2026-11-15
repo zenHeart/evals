@@ -1,0 +1,404 @@
+{
+  "id": "bankertoolbench",
+  "name": "BankerToolBench",
+  "full_name": "BankerToolBench (BTB)",
+  "aliases": ["BTB"],
+  "status": null,
+  "categories": [
+    "agent"
+  ],
+  "summary": "初级投行分析师端到端工作流评测：100 个源自真实投行工作的任务（产出 Excel 财务模型、PowerPoint 路演材料等多文件交付物），由 502 名银行家共建任务与 rubric（平均每题约 150 条加权二元判据），Gandalf agentic verifier 自动评分。2026 年 4 月论文报告：最佳模型 GPT-5.4 仍未通过近一半判据，银行家评定 0% 的 AI 交付物可直接发客户。",
+  "interpretation": "总分 Score = 各任务「加权判据通过率 × 100」的均值，判据权重 1/3/5/10 对应 nice-to-have/minor/major/critical，越高越好。2026 年 4 月论文口径下 9 个前沿模型全部落在低分区：三种主流 harness 下两个较强模型仅得 52.9–56.7 分；换成更直观的 Pass@1（单次运行得分 ≥ 80 分的任务占比）后最佳模型也只有 16%，关键（critical）判据全通过率仅 2%。分数可跨模型稳定比较（3 次重复运行标准差 1–2 个百分点、排名不变），但不能解读为「任务完成率」或「可委派度」。",
+  "measures": [
+    {
+      "area": "Financial Modeling & Scenario Analysis",
+      "focus": "财务建模与情景分析（DCF、LBO/信用模型、并购模型等）",
+      "share": "37%",
+      "format": "Excel 多 tab 财务模型（多文件交付物）",
+      "cite": ["paper@§3.1"]
+    },
+    {
+      "area": "Valuation & Pricing Analysis",
+      "focus": "估值与定价（Trading Comps、Teaser、债务容量分析等）",
+      "share": "30%",
+      "format": "Excel/PowerPoint 估值交付物",
+      "cite": ["paper@§3.1"]
+    },
+    {
+      "area": "Client & Marketing Materials",
+      "focus": "客户与营销材料（Pitchbook、CIM、Market Update 等）",
+      "share": "27%",
+      "format": "PowerPoint/PDF/Word 材料",
+      "cite": ["paper@§3.1"]
+    },
+    {
+      "area": "Market Analysis & Investor Engagement",
+      "focus": "市场分析与投资者沟通",
+      "share": "3%",
+      "format": "混合型交付物",
+      "cite": ["paper@§3.1"]
+    },
+    {
+      "area": "Process & Timeline Management",
+      "focus": "流程与时间线管理",
+      "share": "2%",
+      "format": "混合型交付物",
+      "cite": ["paper@§3.1"]
+    },
+    {
+      "area": "Aftermarket Performance Trading",
+      "focus": "后市表现交易分析",
+      "share": "1%",
+      "format": "混合型交付物",
+      "cite": ["paper@§3.1"]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "真实在途交易的混乱信息：任务依赖标准化数据源（SEC 文件、行情数据平台）并锚定历史日期快照，不含 live deal 中不完整、矛盾的信息",
+      "cite": ["paper@§7"]
+    },
+    {
+      "text": "团队协作与组织情境：评测的是单人的离散工作流，不含多人协作、多轮反馈循环与组织约束",
+      "cite": ["paper@§7"]
+    },
+    {
+      "text": "非美国市场的投行工作：任务以美国市场为中心，也不含个人信息与机密交易数据",
+      "cite": ["paper@§7"]
+    }
+  ],
+  "dataset": {
+    "sample_count": 100,
+    "splits": ["test"],
+    "languages": ["English"],
+    "source_type": "专家共建：502 名现役/前任投行从业者参与共建（其中 172 人直接建题，累计超 5,700 小时；平均经验 3.4 年）",
+    "public_sample": true,
+    "totals": "100 任务；产品组分布 M&A 62% / Levfin 19% / ECM 10% / DCM 6% / M&A&Levfin 3%；交付物为 Excel 财务模型、PowerPoint 路演材料与 PDF/Word 报告等多文件产物；人类银行家平均每题 5 小时、最长 21 小时",
+    "cite": ["hf-dataset", "paper@§3.1"],
+    "construction": [
+      {
+        "k": "蓝图",
+        "text": "先做 129 人「银行家期待 AI 什么」问卷、8 名高级银行家各 60 分钟访谈、193 人 Job Task Analysis 问卷，形成任务蓝图（目标分类与配比）",
+        "cite": ["paper@§4.1"]
+      },
+      {
+        "k": "建题",
+        "text": "172 名银行家各按自己真实做过的工作出题：prompt + 数据室文件 + 黄金交付物 + rubric；参与者来自 BofA、Centerview、Citi、Evercore、Goldman Sachs、JPMorgan、Lazard、Moelis、Morgan Stanley、PJT、UBS 等行",
+        "cite": ["paper@§4.2"]
+      },
+      {
+        "k": "评审",
+        "text": "每题至少 4 名银行家经手：作者-评审迭代修改，最后两名终审一票否决；每个人工评审阶段前还有 LLM 自动审查",
+        "cite": ["paper@§4.4"]
+      },
+      {
+        "k": "数据与环境",
+        "text": "数据室预置输入文件；agent 可调三个 MCP 工具（行情数据平台、SEC EDGAR、公司 logo）并在 Docker 沙箱内执行代码；每题锚定历史日期，只暴露该日期前的信息、不允许访问互联网",
+        "cite": ["paper@§3.2"]
+      },
+      {
+        "k": "定版",
+        "text": "rubric 平均每题 150 条二元 Pass/Fail 判据、六类加权（1/3/5/10）；v1.0 随论文冻结（代码 tag + HF 数据集快照），v1.1 为当前 main（判据更客观、工具接口更真实）",
+        "cite": ["paper@§3.3", "repo-bankertoolbench"]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "score",
+      "name": "Score（加权判据通过率）",
+      "direction": "越高越好",
+      "description": "单任务 Score = Σ(权重 × 通过)/Σ权重 × 100，判据为二元 Pass/Fail、权重 1/3/5/10；总分 = 100 任务平均。官方推荐的精细比较指标",
+      "range": "0–100",
+      "unit": "分",
+      "cite": ["paper@§5", "paper@§3.3"]
+    },
+    {
+      "id": "pass_at_1",
+      "name": "Pass@1",
+      "direction": "越高越好",
+      "description": "单次运行得分 ≥ 80 分（T=0.8，经 172 次银行家评分标定的「可接受」阈值）的任务占比，3 次运行取均值；最佳模型 GPT-5.4 为 16%",
+      "range": "0–100%",
+      "unit": "%",
+      "cite": ["paper@§6.1", "paper@Appendix A.4"]
+    },
+    {
+      "id": "pass_cubed",
+      "name": "Pass^3",
+      "direction": "越高越好",
+      "description": "连续 3 次运行全部通过（≥ 80 分）的任务占比，度量可靠性；GPT-5.4 为 13%",
+      "range": "0–100%",
+      "unit": "%",
+      "cite": ["paper@§6.1"]
+    },
+    {
+      "id": "critical_pass",
+      "name": "关键判据全通过率",
+      "direction": "越高越好",
+      "description": "通过该题 rubric 中全部 critical（权重 10）判据的任务占比；GPT-5.4 为 2%、Gemini 2.5 Pro 为 0%、其余前沿模型 1%",
+      "range": "0–100%",
+      "unit": "%",
+      "cite": ["paper@§6.1"]
+    }
+  ],
+  "default_protocol": {
+    "raw": "在 Harbor 隔离沙箱中运行 agent（论文基线 harness 为 OpenCode）：agent 读任务 prompt 与数据室预置文件，调用三个 MCP 工具（行情数据平台 / SEC EDGAR / 公司 logo）并执行代码（Terminal 调用约占 44%），产出多文件交付物；随后 Gandalf agentic verifier（agent-as-a-judge，配置 Gemini 3 Flash Preview）逐条判定 rubric 判据。论文主结果只把 final_prompt 作为指令（prompt_context / formatting_context 两个附加上下文 flag 均关闭）；单任务耗时数百秒、最多 539 次 LLM 调用。",
+    "cite": ["paper@§5", "repo-bankertoolbench"],
+    "variants": [
+      {
+        "text": "v1.1 官方榜单口径：Harbor 0.15.0 + opencode-ai 1.17.9 + Docker 29.1.5 + verifier gemini/gemini-3-flash-preview，README 给出逐项可复现工具链",
+        "cite": ["repo-bankertoolbench"]
+      },
+      {
+        "text": "换 agent harness：经 Harbor 改单条配置即可换 OpenHands/Goose 等；论文实测对质量影响有限（同模型三个 harness 相差 ≤ 1.8 分）但对运行时长与成本影响显著",
+        "cite": ["paper@§6.5", "paper@Table 4"]
+      },
+      {
+        "text": "派生口径：Pass@1 / Pass^3 / 关键判据全通过率（把 Score 映射为更可解释的通过率）",
+        "cite": ["paper@§6.1"]
+      },
+      {
+        "text": "第三方运行口径（如 MiniMax M3 博客）：用 Claude Code/Codex 当脚手架、MiniMax M2.7 当评分模型——与官方 OpenCode + Gandalf(Gemini) 口径不可比",
+        "cite": ["minimax-blog-minimax-m3", "repo-bankertoolbench"]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "v1.0",
+      "date": "2026-04-13",
+      "label": "论文版 v1.0：arXiv v1 提交日；代码 tag v1.0 冻结，配 HF 数据集 v1.0 快照，100 任务（v1.1 为当前 main，发布日期未披露，不在本表列无日期条目）",
+      "cite": ["paper@arXiv 头部", "repo-bankertoolbench"]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "评分依赖 LLM verifier（Gandalf，配置 Gemini 3 Flash Preview）：总体 accuracy 88.2%、FPR 18.6%，Instruction Following 类判据 FPR 达 39.6%",
+      "impact": "部分判据类别存在系统性误判（偏松或偏紧），单模型绝对分数有数个百分点量级的不确定度",
+      "severity": "中",
+      "response": "官方开源了 verifier 并公布人评对齐数据：与共识的 κ=0.756 落在人与人一致区间（0.692–0.815），重复运行标准差 0.4 个百分点；也给出 Claude Sonnet 4.6 / Gemini 3 Pro 替代 judge 的对比",
+      "reader": "跨模型相对排名可信；引用绝对分数时注明 verifier 版本，留几个百分点余量",
+      "cite": ["paper@Appendix D"]
+    },
+    {
+      "issue": "任务与 rubric 全量公开于 HF，存在训练污染风险；且 rubric 分数可被 hill-climb——Qwen 3 4B/32B 用 Dr. GRPO/DPO 后训练最高提升 13×",
+      "impact": "在公开任务上训练或过拟合的模型分数虚高，损害榜单可比性",
+      "severity": "高",
+      "response": "仓库内置 canary 串检测泄漏；论文明确要求不要在该数据上训练模型；官方另保留未发布的私有同构任务用于检测过拟合",
+      "reader": "看到新模型高分先查是否接触过该数据集；优先看官方榜单与防污染声明",
+      "cite": ["paper@§6.6", "repo-bankertoolbench", "paper@Appendix A.6"]
+    },
+    {
+      "issue": "生态效度取舍：标准化数据源（非 live-deal 混乱信息）、单人离散工作流（无团队协作/多轮反馈）、以美国市场为中心",
+      "impact": "高分不等于真实投行环境中的可委派度；结论外推到非美国市场或协作场景需谨慎",
+      "severity": "中",
+      "response": "论文 §7 自述这些取舍及其理由（可复现、安全、可公平比较）",
+      "reader": "把它理解为「受控环境下的专业工作流能力测试」，不是「投行工作自动化率」",
+      "cite": ["paper@§7"]
+    },
+    {
+      "issue": "Pass@1 的可接受阈值 T=0.8 来自 172 次银行家评分的相对风险最优化（RR=3.35，略低于人-人一致性的 3.68）",
+      "impact": "换阈值会改变 Pass 率绝对值，不同文章引用的通过率口径可能不一致",
+      "severity": "低",
+      "response": "官方同时公布原始 Score 并推荐用 Score 做精细比较；引用 Pass@1 时注明 T=0.8 与 3 次运行均值口径",
+      "reader": "对比通过率前先核对双方阈值定义",
+      "cite": ["paper@Appendix A.4"]
+    },
+    {
+      "issue": "非官方运行的 harness 与评分模型不统一（第三方各自用 Claude Code/Codex 脚手架、自选 judge 模型）",
+      "impact": "不同口径的分数被误当同一榜单直接比较",
+      "severity": "中",
+      "response": "官方 README 固定 v1.1 榜单工具链；论文 §6.5 实测 harness 对质量影响有限但存在",
+      "reader": "看任何 BTB 分数先核对三点：harness、verifier/judge 模型、数据集版本（v1.0/v1.1）",
+      "cite": ["repo-bankertoolbench", "minimax-blog-minimax-m3"]
+    }
+  ],
+  "notes": "Handshake AI Research 出品（NeurIPS 2026）；MiniMax M3 博客引用的为第三方运行口径，与官方榜单不可比",
+  "official_sources": [
+    {
+      "kind": "github",
+      "url": "https://github.com/Handshake-AI-Research/bankertoolbench"
+    },
+    {
+      "kind": "site",
+      "url": "https://www.minimax.io/blog/minimax-m3"
+    },
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2604.11304"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/handshake-ai-research/bankertoolbench"
+    },
+    {
+      "kind": "leaderboard",
+      "url": "https://joinhandshake.com/research/benchmarks/bankertool-bench/"
+    }
+  ],
+  "related_benchmarks": [],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-13",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "BankerToolBench: Evaluating AI Agents in End-to-End Investment Banking Workflows（arXiv 2604.11304v1）",
+        "url": "https://arxiv.org/abs/2604.11304",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "repo-bankertoolbench",
+        "kind": "repo",
+        "title": "Handshake-AI-Research/bankertoolbench（GitHub README：版本史 / 数据集字段 / 复现工具链 / 许可）",
+        "url": "https://github.com/Handshake-AI-Research/bankertoolbench",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "leaderboard",
+        "kind": "leaderboard",
+        "title": "BankerToolBench 官方榜单（Handshake Research；v1 / v1.1 两版图表）",
+        "url": "https://joinhandshake.com/research/benchmarks/bankertool-bench/",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "hf-dataset",
+        "kind": "dataset",
+        "title": "handshake-ai-research/bankertoolbench（Hugging Face 数据集卡）",
+        "url": "https://huggingface.co/datasets/handshake-ai-research/bankertoolbench",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "minimax-blog-minimax-m3",
+        "kind": "blog",
+        "title": "MiniMax M3 发布博客（第三方 BTB 运行口径说明）",
+        "url": "https://www.minimax.io/blog/minimax-m3",
+        "accessed": "2026-11-13"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Handshake AI Research（Handshake 的 AI 研究团队；GitHub org Handshake-AI-Research）",
+        "cite": ["repo-bankertoolbench", "leaderboard"]
+      },
+      "first_release": {
+        "v": "2026-04-13（arXiv v1 提交日）",
+        "cite": ["paper@arXiv 头部"]
+      }
+    },
+    "cites": {
+      "summary": ["paper@Abstract", "leaderboard"],
+      "interpretation": ["paper@§3.4", "paper@§6.1"]
+    },
+    "problem": {
+      "text": "已有 AI 评测缺少对「经济上有意义的专业工作流」的保真度：聊天问答与代码题无法回答「AI 能否完成初级投行分析师那份数小时的端到端交付物」。BTB 用 100 个取自真实投行工作的多文件交付物任务、专家 rubric 与 agentic verifier 补上这一缺口。",
+      "cite": ["paper@Abstract"]
+    },
+    "ladder": [
+      {
+        "label": "不产出交付物（地板）",
+        "value": "0 分",
+        "note": "agent 未生成交付物文件时直接 0 分",
+        "cite": ["paper@Appendix A.6"]
+      },
+      {
+        "label": "小模型后训练前（Qwen 3 4B 基线）",
+        "value": "约 1 分（0.01）",
+        "note": "Dr. GRPO 后训练升至 0.13（13×）——说明 rubric 分数可被爬升，也提示污染风险",
+        "cite": ["paper@§6.6"]
+      },
+      {
+        "label": "2026 前沿模型区间（论文 Table 4）",
+        "value": "52.9–56.7 分",
+        "note": "Claude Opus 4.6 与 GPT-5.2 在 OpenHands/OpenCode/Goose 三个 harness 下的得分带",
+        "cite": ["paper@Table 4"]
+      },
+      {
+        "label": "银行家「可接受」阈值（Pass@1 口径）",
+        "value": "80 分",
+        "note": "人评标定 T=0.8；前沿模型 Pass@1 最高仅 16%，0% 交付物被评为可直接发送",
+        "cite": ["paper@Appendix A.4"]
+      },
+      {
+        "label": "最佳模型 GPT-5.4 总分",
+        "value": "论文未给出（仅在 Figure 6 图中呈现）",
+        "note": "正文文本披露的是其派生口径：Pass@1 16%、Pass^3 13%、关键判据全通过率 2%",
+        "cite": ["paper@§6.1"]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 Score 当「任务完成率」：56 分不等于完成了 56% 的任务，而是全部判据的加权通过率；按「≥ 80 分算可接受」的 Pass@1 口径，最佳模型也只过 16% 的任务",
+        "cite": ["paper@§6.1"]
+      },
+      {
+        "text": "把第三方运行当官方榜单：MiniMax M3 博客的 BTB 分数用 Claude Code/Codex 脚手架、MiniMax M2.7 当评分模型，与官方 OpenCode + Gandalf(Gemini) 口径不可比",
+        "cite": ["minimax-blog-minimax-m3", "repo-bankertoolbench"]
+      },
+      {
+        "text": "混用 v1.0 与 v1.1 分数：论文与 v1.0 tag 是冻结口径；v1.1 改了 MCP 工具名并让判据更客观，官方榜单也分 v1 / v1.1 两张图",
+        "cite": ["repo-bankertoolbench", "leaderboard"]
+      },
+      {
+        "text": "认为该榜分数噪声大不可比：官方 3 次重复运行的标准差仅 1–2 个百分点、模型排名全部保持；真正不可比的是跨 harness / verifier / 数据版本的口径混用",
+        "cite": ["paper@§6.2"]
+      }
+    ],
+    "background": [
+      {
+        "k": "发表",
+        "v": "NeurIPS 2026（Advances in Neural Information Processing Systems，inproceedings）；arXiv 2604.11304",
+        "cite": ["repo-bankertoolbench", "paper@arXiv 头部"]
+      },
+      {
+        "k": "许可",
+        "v": "代码 Apache-2.0；数据集 CC-BY-4.0；带 canary 串（btb:rll7:26b5c67b-…）检测训练数据泄漏",
+        "cite": ["repo-bankertoolbench"]
+      },
+      {
+        "k": "数据集",
+        "v": "HF handshake-ai-research/bankertoolbench：单一 test split 100 行、英文、< 1K 样本规模；v1.0 数据快照与代码 tag 配对",
+        "cite": ["hf-dataset", "repo-bankertoolbench"]
+      },
+      {
+        "k": "Verifier",
+        "v": "Gandalf the Grader（独立开源仓库，构建于 OpenHands harness）：judge 模型对比中 Gemini 3 Flash Preview 为 Pareto 最优——accuracy 88.2%、$0.50/任务、406s/任务",
+        "cite": ["paper@Appendix D"]
+      },
+      {
+        "k": "版本",
+        "v": "v1.0 = 论文版（tag 冻结，git checkout tags/v1.0 + HF v1.0 快照复现）；v1.1 = 当前 main（MCP 工具更名、输入校验更严、判据更客观，推荐新运行用 v1.1；发布日期未披露）",
+        "cite": ["repo-bankertoolbench"]
+      },
+      {
+        "k": "失败模式（GPT-5.4 agent 轨迹）",
+        "v": "代码与公式生成 41%、推理与逻辑 27%、检索与坚持 18%、接地与编造 13%；Claude Opus 系模型则系统性地把关键值硬编码而非公式驱动",
+        "cite": ["paper@§6.3"]
+      },
+      {
+        "k": "RL 环境",
+        "v": "以 Harbor 框架的 RL environment 发布，单条配置即可换任意 harness/model；官方榜单页同样强调这一点",
+        "cite": ["paper@§3.2", "leaderboard"]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-04-13",
+        "columns": ["Agent Harness", "Claude Opus 4.6 Score ↑", "Claude Opus 4.6 运行时长(s) ↓", "GPT-5.2 Score ↑", "GPT-5.2 运行时长(s) ↓"],
+        "rows": [
+          ["OpenHands", "53.0 ± 0.4", "703.8 ± 18.3", "54.5 ± 1.5", "1771.4 ± 214"],
+          ["OpenCode", "53.2 ± 0.5", "701.6 ± 12.8", "56.1 ± 0.2", "977.3 ± 10.0"],
+          ["Goose", "52.9 ± 1.0", "889.0 ± 26.5", "56.7 ± 0.7", "1024.4 ± 59.7"]
+        ]
+      },
+      "cite": ["paper@Table 4"]
+    }
+  }
+}

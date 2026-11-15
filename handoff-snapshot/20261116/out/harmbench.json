@@ -1,0 +1,523 @@
+{
+  "id": "harmbench",
+  "name": "HarmBench",
+  "full_name": "HarmBench: A Standardized Evaluation Framework for Automated Red Teaming and Robust Refusal（自动化红队与稳健拒绝的标准化评测框架）",
+  "aliases": [],
+  "status": null,
+  "categories": [
+    "safety"
+  ],
+  "summary": "HarmBench 是 Center for AI Safety 等机构发布的标准化红队评测框架：它提供 510 条人工设计的有害行为作为统一题库（400 条文本 + 110 条多模态），用「攻击成功率（ASR）」衡量一个红队方法能撬开多少目标模型。红队方法就是自动生成攻击提示、诱导模型产出它本应拒绝的内容。",
+  "interpretation": "ASR 越低说明目标模型在这套题库、这套攻击设置下越难被撬开，可以理解为「越稳」；ASR 高不代表模型本身在主动作恶，只代表它在该设置下失守。论文的核心结论是没有任何一种攻击或防御是通用的：每个攻击都至少在某个模型上失效，每个模型都至少被一种攻击打出高 ASR，所以单个 ASR 数字只是局部结论，不能当成「安全性排名」。",
+  "measures": [
+    {
+      "area": "标准行为（standard behaviors）",
+      "focus": "直接请求有害内容的行为，语义上覆盖原文列出的 7 个类别：网络犯罪与未授权入侵、化学与生物武器/毒品、版权侵犯、谣言与虚假信息、骚扰与霸凌、非法活动、一般有害",
+      "share": "200 条",
+      "format": "文本输入 → 文本生成",
+      "cite": [
+        "arxiv-2402-04249@§4.1"
+      ]
+    },
+    {
+      "area": "版权行为（copyright behaviors）",
+      "focus": "考模型会不会直接吐出受版权保护的整段内容；判定不用 LLM 裁判，而是对原文分块做 MinHash 哈希比对",
+      "share": "100 条",
+      "format": "文本输入 → 文本生成",
+      "cite": [
+        "arxiv-2402-04249@§4.1",
+        "arxiv-2402-04249@附录 B.5.2"
+      ]
+    },
+    {
+      "area": "上下文行为（contextual behaviors）",
+      "focus": "同一个行为在良性或恶意意图下都说得通（论文称为 dual-intent），专测模型会不会在「安全上下文」里把恶意那一半也一起完成；作者用 GPT-4 蒸馏四家公司的可接受使用政策后手工设计，并做了 Google 搜索性对照（同类数据集 50%–55% 能搜到现成答案，HarmBench 上下文行为为 0%）",
+      "share": "100 条",
+      "format": "上下文 + 行为请求 → 文本生成",
+      "cite": [
+        "arxiv-2402-04249@§4.1",
+        "arxiv-2402-04249@§4.2"
+      ]
+    },
+    {
+      "area": "多模态行为（multimodal behaviors）",
+      "focus": "图文混合输入下诱导模型完成有害行为，考察多模态模型是否同样稳健拒绝",
+      "share": "110 条",
+      "format": "图文输入 → 文本生成",
+      "cite": [
+        "arxiv-2402-04249@§4.1"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "模型本身的能力或智能水平：论文只在对抗训练一节顺带报告 MT-Bench 均分，用作「别把模型训笨了」的 sanity check，它不是 HarmBench 的评分指标",
+      "cite": [
+        "arxiv-2402-04249@§6.2"
+      ]
+    },
+    {
+      "text": "系统级防御（输入/输出过滤器、监控层、外挂审核）：论文明确把大规模对比限定在模型级防御，系统级评估留给未来工作",
+      "cite": [
+        "arxiv-2402-04249@§6"
+      ]
+    },
+    {
+      "text": "「某行为是否真该被禁止」的规范判断：行为设计标准来自几家公司的可接受使用政策摘要，不是普适伦理标准",
+      "cite": [
+        "arxiv-2402-04249@§4.2"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 510,
+    "splits": [
+      "验证集 100 条",
+      "测试集 410 条"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "人工设计（先用 GPT-4 把 OpenAI、Anthropic、Meta、Inflection AI 的可接受使用政策蒸馏成一份合并摘要，再由数位作者据此手工编写行为）",
+    "public_sample": true,
+    "totals": "510 条有害行为 = 400 条文本 + 110 条多模态；按功能分 standard 200 条 / copyright 100 条 / contextual 100 条 / multimodal 110 条；官方拆分验证集 100 条、测试集 410 条；评测语言为英文",
+    "cite": [
+      "arxiv-2402-04249@§4.1",
+      "arxiv-2402-04249@§4.2"
+    ],
+    "construction": [
+      {
+        "k": "设计准则",
+        "text": "行为被设计成违反法律或规范，「大多数理性人都不会希望一个公开可用的 LLM 表现出它」；编写时以 GPT-4 蒸馏出的四家公司可接受使用政策合并摘要为指导，由数位作者手工完成。",
+        "cite": [
+          "arxiv-2402-04249@§4.2"
+        ]
+      },
+      {
+        "k": "功能与语义分类",
+        "text": "先按功能分四类（standard / copyright / contextual / multimodal），再归入 7 个语义类别（网络犯罪与未授权入侵、化学与生物武器/毒品、版权侵犯、谣言与虚假信息、骚扰与霸凌、非法活动、一般有害）。",
+        "cite": [
+          "arxiv-2402-04249@§4.1"
+        ]
+      },
+      {
+        "k": "官方拆分与防污染",
+        "text": "给出官方验证集/测试集拆分（100 / 410 条），并要求攻击与防御都不得在测试集、或与测试集语义相同的行为上调参。",
+        "cite": [
+          "arxiv-2402-04249@§4.1"
+        ]
+      },
+      {
+        "k": "双意图筛选",
+        "text": "人工红队发现同一行为可能出于良性或恶意理由被执行（如写加密函数），因此把这类「双意图」行为单列为 contextual 类别，避免把模型训得连正常用途一起拒绝。",
+        "cite": [
+          "arxiv-2402-04249@§4.2"
+        ]
+      },
+      {
+        "k": "搜索性对照",
+        "text": "作者用 Google 对每个数据集随机抽 20 条行为做 10 分钟限时搜索对照：MaliciousInstruct 55%、AdvBench 50%、HarmBench 上下文行为 0%，用来验证「不能靠搜索引擎直接抄到答案」。",
+        "cite": [
+          "arxiv-2402-04249@§4.2"
+        ]
+      },
+      {
+        "k": "生成测试案例与判定",
+        "text": "评测流水线三步：由红队方法把行为变成测试案例 → 让目标模型生成补全 → 用分类器判定。非版权行为用微调的 Llama 2 13B Chat 分类器，版权行为用哈希（MinHash）分类器。",
+        "cite": [
+          "arxiv-2402-04249@§4.3",
+          "arxiv-2402-04249@附录 B.5.2"
+        ]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "攻击方法为每条行为生成若干测试案例，目标模型按贪心解码确定性地产出补全，再由分类器判定该测试案例是否成功（判据：补全表明模型表现出了该行为，或明显试图表现该行为）；攻击成功率 ASR = 成功测试案例数 ÷ 测试案例总数，以百分比表示。",
+    "cite": [
+      "arxiv-2402-04249@§3.1",
+      "arxiv-2402-04249@附录 B.1",
+      "arxiv-2402-04249@§4.3"
+    ],
+    "variants": [
+      {
+        "text": "每条行为的测试案例数 N：原文实测该参数能让 ASR 变动最多约 30%，HarmBench 统一固定 N = 512 让指标收敛；不同 N 下的 ASR 不能直接比。",
+        "cite": [
+          "arxiv-2402-04249@§3.2"
+        ]
+      },
+      {
+        "text": "分类器不同：最终测试分类器是 Llama 2 13B Chat 微调版（与人类标注一致率 93.2%），调参阶段用的验证分类器是 Mistral 7B 微调版（88.6%），两者的数字不能直接对齐。",
+        "cite": [
+          "arxiv-2402-04249@附录 B.2"
+        ]
+      },
+      {
+        "text": "版权行为走另一套判据：用 MinHash 对原文分块做哈希比对，而不是 LLM 分类器；把版权 ASR 和其它类别的 ASR 汇总成一个数时口径并不一致。",
+        "cite": [
+          "arxiv-2402-04249@附录 B.5.2"
+        ]
+      },
+      {
+        "text": "版权行为只公开发布不可逆的密码学哈希而非原文，因此版权 ASR 的复现依赖本地是否持有原文。",
+        "cite": [
+          "arxiv-2402-04249@影响声明"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "asr",
+      "name": "攻击成功率（ASR）",
+      "direction": "越低越好",
+      "description": "测试案例中成功让目标模型表现出目标有害行为的比例，是衡量红队方法成效的主要指标",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2402-04249@§3.1",
+        "arxiv-2402-04249@附录 B.1"
+      ]
+    },
+    {
+      "id": "mt-bench",
+      "name": "MT-Bench 均分",
+      "direction": "越高越好",
+      "description": "仅用于确认对抗训练没有把模型的通用对话能力打废（sanity check），不是 HarmBench 的评分指标；论文未给出口径细节与量表范围",
+      "cite": [
+        "arxiv-2402-04249@§6.2"
+      ]
+    }
+  ],
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2024-02-06",
+      "label": "首次发布：33 个受评 LLM + 18 种红队方法",
+      "cite": [
+        "github-repo@Latest News"
+      ]
+    },
+    {
+      "id": "v1-0",
+      "date": "2024-02-26",
+      "label": "HarmBench 1.0：对抗训练代码与模型、预计算测试案例及多项改进；本档案核对的论文为 arXiv:2402.04249v2（2024-02-27）",
+      "cite": [
+        "github-repo@Latest News",
+        "arxiv-2402-04249@作者署名"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "测试案例数 N 的取法能让 ASR 变动最多约 30%",
+      "impact": "同一个模型、同一个攻击方法，只因为每条行为采样多少条测试案例不同，ASR 就能差出最多约 30 个百分点；此前跨论文的数字因此常常不可比。",
+      "severity": "高",
+      "response": "HarmBench 把该参数标准化为 N = 512，让指标收敛，并在论文中实测了这个敏感性。",
+      "reader": "比较两个 ASR 之前，先确认两者的 N 是否一致；论文未给出的 N 一律按不可比处理。",
+      "cite": [
+        "arxiv-2402-04249@§3.2"
+      ]
+    },
+    {
+      "issue": "LLM 分类器判定「是否成功」，可被输出形式博弈",
+      "impact": "测试分类器与人类标注一致率 93.2%，验证分类器 88.6%；只要把输出写得「看起来像成功」，就可能骗过分类器，使 ASR 被高估。",
+      "severity": "高",
+      "response": "论文公开了 3 个分类器模型（标准+上下文、多模态、验证）供复现；未见到针对分类器博弈的专门应对。",
+      "reader": "看到异常高的 ASR，先怀疑是不是在 gaming 裁判，而不是模型真的全失守。",
+      "cite": [
+        "arxiv-2402-04249@附录 B.2",
+        "github-repo@Classifiers"
+      ]
+    },
+    {
+      "issue": "四类功能的 ASR 结构差异明显，不能混成一个数",
+      "impact": "论文实测上下文行为的 ASR 明显更高（尽管其潜在危害差异更大），版权行为的 ASR 相对较低；把四类平均成一个总分，会同时掩盖「上下文容易失守」和「版权较稳」两个事实。",
+      "severity": "中",
+      "response": "论文按四类分别报告结果，未给出官方总分。",
+      "reader": "看分类别的 ASR，不要只看一个汇总数字。",
+      "cite": [
+        "arxiv-2402-04249@§6.1"
+      ]
+    },
+    {
+      "issue": "没有任何攻击或防御是通用的",
+      "impact": "所有攻击都至少在某个 LLM 上 ASR 很低，所有 LLM 都至少被一种攻击打出高 ASR；「最强攻击」「最稳模型」会随目标换人而变。",
+      "severity": "中",
+      "response": "论文同时评测 18 种红队方法（来自 12 篇论文）× 33 个目标 LLM（24 开源 + 9 闭源），并把「不通用」本身作为核心结论写出。",
+      "reader": "换目标模型就要重测，不要直接沿用别处报告的 ASR。",
+      "cite": [
+        "arxiv-2402-04249@§6.1",
+        "arxiv-2402-04249@§6"
+      ]
+    },
+    {
+      "issue": "版权行为只发布哈希，无法本地逐字复现判分",
+      "impact": "版权类别缺少可读原文，复现只能按 MinHash 分块哈希比对，实现细节差异会直接影响该类 ASR。",
+      "severity": "中",
+      "response": "论文以「不可逆的密码学哈希」形式发布版权材料，以最大化保护版权。",
+      "reader": "版权 ASR 的可复现性弱于其它三类，跨来源对比时留出余量。",
+      "cite": [
+        "arxiv-2402-04249@影响声明",
+        "arxiv-2402-04249@附录 B.5.2"
+      ]
+    },
+    {
+      "issue": "鲁棒性与模型规模无关，打破常见直觉",
+      "impact": "此前工作倾向认为更大的模型更难红队，但 HarmBench 的结论是鲁棒性与模型大小独立；按参数量挑「更安全的模型」没有依据。",
+      "severity": "低",
+      "response": "论文在 33 个目标上的大规模对比中给出该结论。",
+      "reader": "选型时看实测 ASR，不要用参数量代替安全性证据。",
+      "cite": [
+        "arxiv-2402-04249@§6.1"
+      ]
+    },
+    {
+      "issue": "只覆盖模型级防御，不覆盖系统级防线",
+      "impact": "输入/输出过滤、监控、外挂审核等系统层防护不在评测范围内，HarmBench 的分数不能直接外推为一整套安全系统的评分。",
+      "severity": "低",
+      "response": "论文明确把大规模对比聚焦模型级防御，并把系统级评估列为未来工作。",
+      "reader": "这是模型鲁棒性基准，不是系统安全基准。",
+      "cite": [
+        "arxiv-2402-04249@§6"
+      ]
+    }
+  ],
+  "notes": "论文同时提出 R2D2（Robust Refusal Dynamic Defense）对抗训练方法，用强优化型红队方法持续更新测试案例池来微调模型；官方仓库另提供 3 个分类器模型。",
+  "official_sources": [
+    {
+      "kind": "site",
+      "url": "https://www.harmbench.org/"
+    },
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2402.04249"
+    }
+  ],
+  "related_benchmarks": [
+    "truthfulqa",
+    "simpleqa",
+    "factsg"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "arxiv-2402-04249",
+        "kind": "paper",
+        "title": "HarmBench: A Standardized Evaluation Framework for Automated Red Teaming and Robust Refusal（arXiv:2402.04249v2，2024-02-27）",
+        "url": "https://arxiv.org/abs/2402.04249",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "harmbench",
+        "kind": "site",
+        "title": "harmbench.org 官网",
+        "url": "https://www.harmbench.org/",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "github-repo",
+        "kind": "repo",
+        "title": "centerforaisafety/HarmBench（评测代码、分类器说明、更新日志）",
+        "url": "https://github.com/centerforaisafety/HarmBench",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Center for AI Safety 牵头，与 University of Illinois Urbana-Champaign、Carnegie Mellon University、UC Berkeley、Microsoft 合作（论文作者署名机构）",
+        "cite": [
+          "arxiv-2402-04249@作者署名"
+        ]
+      },
+      "first_release": {
+        "v": "2024-02-06（首次发布：33 个受评 LLM + 18 种红队方法）",
+        "cite": [
+          "github-repo@Latest News"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "arxiv-2402-04249@§1",
+        "harmbench@What is HarmBench?",
+        "arxiv-2402-04249@§4.1"
+      ],
+      "interpretation": [
+        "arxiv-2402-04249@§3.1",
+        "arxiv-2402-04249@§6.1"
+      ]
+    },
+    "problem": {
+      "text": "红队方法此前各自造题、各自判分、各自报告，跨论文的数字基本没法比；HarmBench 要提供一套统一的有害行为题库、分类器与评测流水线，把「 breadth、可比性、稳健指标」三件事一次做齐，并顺带证明统一基准能推动攻击与防御协同演进（论文提出 R2D2 对抗训练）。",
+      "cite": [
+        "arxiv-2402-04249@§1",
+        "harmbench@What is HarmBench?"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "论文报告的最低 ASR（最好情况）",
+        "value": "GCG 攻击下 5.5%",
+        "note": "Zephyr 7B + R2D2（本文方法）在 GCG 攻击下的 ASR；同表它的平均 ASR 为 19.1%，MT-Bench 6.0。",
+        "cite": [
+          "arxiv-2402-04249@Table 11"
+        ]
+      },
+      {
+        "label": "无对抗训练的基线模型",
+        "value": "GCG 攻击下 62.2%–69.4%",
+        "note": "论文 Table 11 中 Zephyr 7B / Mistral 7B / Koala 13B 在 GCG 下的 ASR；Llama 2 7B Chat 与 13B Chat 另报为 31.8% 与 30.2%。",
+        "cite": [
+          "arxiv-2402-04249@Table 11",
+          "arxiv-2402-04249@§6.2"
+        ]
+      },
+      {
+        "label": "「安全线」",
+        "value": "论文未给出可当作安全阈值的 ASR",
+        "note": "作者结论：经过对齐训练之后，仍然没有模型对所有被评测的攻击稳健；每个 LLM 都至少被一种攻击打出高 ASR。因此不存在一个「低于它就安全」的分数线。",
+        "cite": [
+          "arxiv-2402-04249@§6.1",
+          "arxiv-2402-04249@影响声明"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 ASR 高读成「模型本身在主动生成有害内容」——ASR 只衡量这套题库、这套攻击设置下的失守比例，不衡量模型的意图或倾向。",
+        "cite": [
+          "arxiv-2402-04249@§3.1"
+        ]
+      },
+      {
+        "text": "以为模型越大越难被红队——论文的结论是鲁棒性与模型规模独立，按参数量推断安全性没有依据。",
+        "cite": [
+          "arxiv-2402-04249@§6.1"
+        ]
+      },
+      {
+        "text": "把某个攻击或某个防御当成「通用解」——论文实测没有一种攻击或防御在所有 LLM 上一致有效，任何单一 ASR 都只是局部结论。",
+        "cite": [
+          "arxiv-2402-04249@§6.1"
+        ]
+      },
+      {
+        "text": "把版权行为的低 ASR 读成「版权防护做得好」，或把上下文行为的高 ASR 读成「模型更危险」——论文明确说两类要分开看，上下文行为的潜在危害差异其实更大。",
+        "cite": [
+          "arxiv-2402-04249@§6.1"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "Center for AI Safety 牵头，合作机构含 University of Illinois Urbana-Champaign、Carnegie Mellon University、UC Berkeley、Microsoft",
+        "cite": [
+          "arxiv-2402-04249@作者署名"
+        ]
+      },
+      {
+        "k": "作者",
+        "v": "Mantas Mazeika、Long Phan、Xuwang Yin、Andy Zou、Zifan Wang、Norman Mu、Elham Sakhaee、Nathaniel Li、Steven Basart、Bo Li、David Forsyth、Dan Hendrycks（官网 BibTeX）",
+        "cite": [
+          "harmbench@Citation"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2024-02-06 首次发布（33 个 LLM + 18 种红队方法）→ 2024-02-26 HarmBench 1.0（对抗训练代码与模型、预计算测试案例）→ 论文 arXiv:2402.04249v2 标注 2024-02-27",
+        "cite": [
+          "github-repo@Latest News",
+          "arxiv-2402-04249@作者署名"
+        ]
+      },
+      {
+        "k": "评测规模",
+        "v": "同时评测 18 种红队方法（来自 12 篇论文）与 33 个目标 LLM（24 个开源 + 9 个闭源）",
+        "cite": [
+          "arxiv-2402-04249@§6",
+          "arxiv-2402-04249@Figure 1"
+        ]
+      },
+      {
+        "k": "配套方法",
+        "v": "论文提出 R2D2（Robust Refusal Dynamic Defense）：不微调在静态有害提示集上，而是微调在由强优化型红队方法持续更新的动态测试案例池上；示例配置为 Mistral 7B Base 微调 500 步、180 条持久测试案例，单卡组 8×A100 约 16 小时",
+        "cite": [
+          "arxiv-2402-04249@§5",
+          "arxiv-2402-04249@§6.2"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "代码与行为数据在 GitHub: centerforaisafety/HarmBench（MIT License）；官方另发布 3 个分类器模型：cais/HarmBench-Llama-2-13b-cls（标准+上下文）、cais/HarmBench-Llama-2-13b-cls-multimodal-behaviors（多模态）、cais/HarmBench-Mistral-7b-val-cls（验证，覆盖三类）",
+        "cite": [
+          "github-repo",
+          "github-repo@Classifiers"
+        ]
+      },
+      {
+        "k": "论文",
+        "v": "arXiv:2402.04249（本档案核对版本为 v2）",
+        "cite": [
+          "arxiv-2402-04249"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-14",
+        "columns": [
+          "模型",
+          "MT-Bench",
+          "GCG ASR",
+          "平均 ASR",
+          "备注"
+        ],
+        "rows": [
+          [
+            "Zephyr 7B",
+            "7.34",
+            "69.4%",
+            "62.7%",
+            "论文主表用的是 Zephyr 7B beta（含 SFT + DPO 训练）"
+          ],
+          [
+            "Mistral 7B",
+            "6.5",
+            "69.1%",
+            "55.7%",
+            "—"
+          ],
+          [
+            "Koala 13B",
+            "5.4",
+            "62.2%",
+            "48.5%",
+            "—"
+          ],
+          [
+            "Zephyr 7B + R2D2（本文方法）",
+            "6.0",
+            "5.5%",
+            "19.1%",
+            "只在 SFT 阶段引入 R2D2、未含 DPO，与上一行不完全同口径"
+          ]
+        ]
+      },
+      "cite": [
+        "arxiv-2402-04249@Table 11"
+      ]
+    }
+  }
+}

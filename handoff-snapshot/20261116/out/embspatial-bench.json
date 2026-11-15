@@ -1,0 +1,523 @@
+{
+  "id": "embspatial-bench",
+  "name": "EmbSpatial-Bench",
+  "full_name": "EmbSpatial-Bench: Benchmarking Spatial Understanding for Embodied Tasks with Large Vision-Language Models",
+  "aliases": [],
+  "status": "active",
+  "categories": [
+    "multimodal"
+  ],
+  "summary": "EmbSpatial-Bench 是 3,640 道从 Matterport3D / ScanNet / AI2-THOR 室内具身场景自动导出的多选视觉题，只考 6 类自我中心空间关系（above / below / left / right / close / far），图像是 3D 场景里随机视角拍的 RGB-D 帧。",
+  "interpretation": "准确率越高，说明 LVLM 在具身场景里判断「谁在谁上面 / 左边 / 更近」这项基本功越扎实。官方零样本最好只有 49.11%（Generation 口径）或 43.85%（Likelihood 口径），人类 90.33%——论文的结论是当时的前沿 LVLM（含 GPT-4V）这项能力仍明显不足。读这个分数要记住三件事：只在英文室内场景上成立；Generation 与 Likelihood 两种判分口径不能混着比；实验里的开源模型参数规模都在 7B 左右。",
+  "measures": [
+    {
+      "area": "垂直关系（above / below）",
+      "focus": "判断两个物体在图像中的上下位置；关系从 3D 标注直接导出，按整个 bbox 的位置判定",
+      "share": "未披露（论文只说 6 类关系保持平衡分布，各关系题量只画在图 6，没有给数字）",
+      "format": "多选题，问两个物体的相对位置（README 示例为 4 个选项）",
+      "cite": [
+        "arxiv-2406-05756@§2.1",
+        "arxiv-2406-05756@附录 A.2"
+      ]
+    },
+    {
+      "area": "水平关系（left / right）",
+      "focus": "判断两个物体在图像中的左右位置；与垂直关系同源，同样按整个 bbox 的位置判定",
+      "share": "未披露（同上，论文只给出图 6 的分布图）",
+      "format": "多选题，问两个物体的相对位置",
+      "cite": [
+        "arxiv-2406-05756@§2.1",
+        "arxiv-2406-05756@附录 A.2"
+      ]
+    },
+    {
+      "area": "深度关系（close / far）",
+      "focus": "在给定物体中找出最近或最远的一个；用 bbox 内的平均深度判定，是论文错误分析中明显弱于水平/垂直的一维",
+      "share": "未披露（同上，论文只给出图 6 的分布图）",
+      "format": "多选题，问给定物体中哪一个最远 / 最近",
+      "cite": [
+        "arxiv-2406-05756@§2.1",
+        "arxiv-2406-05756@附录 A.2"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "物体定位 / grounding 能力——论文把物体定位做成 EmbSpatial-SFT 里的辅助训练任务（用文本 bbox 回答物体位置），它不出现在 EmbSpatial-Bench 的评测集里",
+      "cite": [
+        "arxiv-2406-05756@§3"
+      ]
+    },
+    {
+      "text": "室外、开放世界的空间理解——三个数据源（MP3D / ScanNet / AI2-THOR）都是室内具身数据集，论文在 Limitations 里明确说这限制了基准对户外环境的适用性",
+      "cite": [
+        "arxiv-2406-05756@Limitations"
+      ]
+    },
+    {
+      "text": "英文以外的语言——论文明确说只研究了英文，基准与结论向其他语言的普适性受限",
+      "cite": [
+        "arxiv-2406-05756@Limitations"
+      ]
+    },
+    {
+      "text": "下游具身任务（导航、操作、重排）的执行成功率——本基准只测空间理解这一项前置技能，论文也把它定位成「当前 LVLM 与合格具身智能之间差距」的探针",
+      "cite": [
+        "arxiv-2406-05756@摘要",
+        "arxiv-2406-05756@§1"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 3640,
+    "splits": [
+      "评测集 3,640 题（MP3D 1,201 / AI2-THOR 1,239 / ScanNet 1,200；论文未披露 train / val / test 划分）",
+      "EmbSpatial-SFT 约 25K 训练样本（配套指令微调集，只用 MP3D 的训练划分）"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "从带完整标注的 3D 具身场景数据集（MP3D / ScanNet / AI2-THOR）用标注自动导出的合成 QA",
+    "public_sample": true,
+    "totals": "3,640 题 · 2,181 张图像 · 294 个物体类别 · 277 个场景；其中 Matterport3D 1,201 题 / 928 图 / 133 类 / 26 场景，AI2-THOR 1,239 / 683 / 95 / 93，ScanNet 1,200 / 570 / 35 / 175",
+    "cite": [
+      "arxiv-2406-05756@Table 1",
+      "arxiv-2406-05756@§2.2"
+    ],
+    "construction": [
+      {
+        "k": "场景来源",
+        "text": "选 MP3D 的测试场景、ScanNet 的验证场景，以及 AI2-THOR 里来自 ALFRED 的 7 类家务任务、93 个场景；在每个 3D 场景中随机选视角并拍摄对应的 RGB-D 图像。",
+        "cite": [
+          "arxiv-2406-05756@§2.1"
+        ]
+      },
+      {
+        "k": "关系抽取",
+        "text": "不依赖目标检测器，直接用相机参数和 3D 坐标把每个物体投影成图像 bbox，再抽取 bbox 互不重叠的空间关系三元组；上下左右按整个 bbox 的位置判定，远近用 bbox 内的平均深度。",
+        "cite": [
+          "arxiv-2406-05756@§2.1"
+        ]
+      },
+      {
+        "k": "题型生成",
+        "text": "上下左右设计 5 套模板生成问题，并拿无关关系当错误选项；远近则对每张图聚合关系三元组，问给定物体中哪一个最远 / 最近。",
+        "cite": [
+          "arxiv-2406-05756@§2.1"
+        ]
+      },
+      {
+        "k": "自动过滤",
+        "text": "先剔除 bbox 过大或过小的三元组：bbox 的边长小于 50 像素、或大于图像对应维度的一半，就丢掉。",
+        "cite": [
+          "arxiv-2406-05756@附录 A.4"
+        ]
+      },
+      {
+        "k": "人工核验",
+        "text": "自动构建与过滤之后逐条人工检查三件事：题中物体能否在图像里被唯一、清晰地识别；目标物体是否符合所述空间关系；负样本选项是否确实是错误的物体或关系。不满足任一条件即丢弃。",
+        "cite": [
+          "arxiv-2406-05756@附录 A.4"
+        ]
+      },
+      {
+        "k": "配套 SFT 集",
+        "text": "EmbSpatial-SFT 提供空间关系识别与物体定位两类 QA，共约 25K 训练样本，只用 MP3D 的训练划分，这样仍能拿另外两个场景的数据对微调后的模型做零样本评测。",
+        "cite": [
+          "arxiv-2406-05756@§3"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "accuracy",
+      "name": "准确率（Accuracy）",
+      "direction": "越高越好",
+      "description": "多选答案与标准答案一致的比例；官方主指标，零样本与指令微调实验都用它",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "repo@EmbSpatial-Bench Data",
+        "arxiv-2406-05756@§4.1"
+      ]
+    }
+  ],
+  "default_protocol": {
+    "raw": "多选题：模型从若干选项中选出最合理的一个，官方主指标为 Accuracy。官方给两种判分口径——generation 直接读模型文本输出中被预测的选项；likelihood 取模型给各选项的概率中最高的那个。",
+    "cite": [
+      "repo@EmbSpatial-Bench Data",
+      "arxiv-2406-05756@§4.1"
+    ],
+    "variants": [
+      {
+        "text": "Generation vs Likelihood：两种口径分数差别很大（同一个 MiniGPT-v2 零样本 23.93% vs 43.85%）。likelihood 依赖模型 logits 分布的质量，generation 则会因为部分 LVLM 指令跟随能力不足、输出非法选项而失分；官方两种都报，比较时必须同口径。",
+        "cite": [
+          "arxiv-2406-05756@§4.1",
+          "arxiv-2406-05756@Table 2"
+        ]
+      },
+      {
+        "text": "零样本 vs 在 EmbSpatial-SFT 上指令微调后：微调只用 MP3D 训练划分，评测用另外两个场景，属域外设定；微调后 Likelihood 口径从 43.85% 升到 78.10%。",
+        "cite": [
+          "arxiv-2406-05756@§3",
+          "arxiv-2406-05756@Table 3"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "arxiv-v1",
+      "date": "2024-06-09",
+      "label": "arXiv v1 提交（Submission history: [v1] Sun, 9 Jun 2024 12:23:14 UTC，4,097 KB）",
+      "cite": [
+        "arxiv-2406-05756@arXiv 提交页"
+      ]
+    },
+    {
+      "id": "acl-2024",
+      "date": "2024-08-01",
+      "label": "ACL 2024 短论文正式发表（Anthology 只标注 month=aug / year=2024，无具体日期；此处按月初占位以满足 ISO 日期格式）",
+      "cite": [
+        "acl-short-33@BibTeX"
+      ]
+    },
+    {
+      "id": "snapshot-2026-11",
+      "date": "2026-11-14",
+      "label": "本页核对所用快照：GitHub 仓库 17 commits / 32 stars / 3 forks，README 仍称 SFT 代码与权重「即将发布」；HF 数据集查看器报 DatasetGenerationCastError",
+      "cite": [
+        "repo",
+        "hf-dataset@数据集预览"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "两种判分口径差异巨大",
+      "impact": "同一个 MiniGPT-v2 零样本 Generation 23.93%、Likelihood 43.85%，相差近 20 个点。likelihood 的判分精度依赖模型 logits 分布质量，generation 则会因模型输出非法选项而失分。",
+      "severity": "高",
+      "response": "论文两种口径都报告，并在附录 C 用 GPT-4V 案例指出：物体定位和空间关系判断这两步都会出错。",
+      "reader": "比较任何两个模型前先确认口径一致；看到异常低的 generation 分数，先怀疑指令跟随能力而不是空间理解能力。",
+      "cite": [
+        "arxiv-2406-05756@§4.1",
+        "arxiv-2406-05756@Table 2",
+        "arxiv-2406-05756@附录 C"
+      ]
+    },
+    {
+      "issue": "HF 数据集查看器不可用",
+      "impact": "官方 Hugging Face 数据集因 embspatial_sft.json 的列名与评测文件不一致（多出 questions，缺 scene_id / question / answer_options），数据集生成直接抛 DatasetGenerationCastError，网页查看器无法预览，只能下载原始文件自行读取。",
+      "severity": "中",
+      "response": "论文与仓库均未回应此问题；README 仍称 SFT 代码与模型权重「即将发布」。",
+      "reader": "在 HF 页面看不到预览不等于数据缺失，也不等于评测结果有问题。",
+      "cite": [
+        "hf-dataset@数据集预览"
+      ]
+    },
+    {
+      "issue": "仅室内场景",
+      "impact": "三个数据源都是室内具身数据集，论文在 Limitations 里明确说这限制了基准对户外环境的适用性。",
+      "severity": "中",
+      "response": "论文如实披露，暂无室外版本。",
+      "reader": "不要把这里的分数外推到室外或开放世界的空间理解。",
+      "cite": [
+        "arxiv-2406-05756@Limitations"
+      ]
+    },
+    {
+      "issue": "实验模型规模偏小且年代较早",
+      "impact": "论文实验用的开源模型参数规模都在 7B 左右，最好成绩 49.11% 来自闭源 Qwen-VL-Max，GPT-4V 用的是 gpt-4-1106-vision-preview；这个基数代表不了后续更大规模 LVLM 的水平。",
+      "severity": "中",
+      "response": "论文如实披露了模型版本与参数规模。",
+      "reader": "本基准发布于 2024 年年中，别把 49.11% 当成当前 LVLM 的上限。",
+      "cite": [
+        "arxiv-2406-05756@附录 B.1",
+        "arxiv-2406-05756@Table 2"
+      ]
+    },
+    {
+      "issue": "仅英文",
+      "impact": "论文明确说只研究了英文，基准与结论向其他语言的普适性受限。",
+      "severity": "低",
+      "response": "论文如实披露，暂无多语言版本。",
+      "reader": "跨语言空间理解能力不能用本基准的分数代表。",
+      "cite": [
+        "arxiv-2406-05756@Limitations"
+      ]
+    }
+  ],
+  "notes": "复旦大学出品，ACL 2024 短论文；EmbSpatial-SFT 为配套指令微调集；HF 数据集查看器目前报 cast 错误（见局限）",
+  "official_sources": [
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2406.05756"
+    },
+    {
+      "kind": "paper",
+      "url": "https://aclanthology.org/2024.acl-short.33/"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/mengfeidu/EmbSpatial-Bench"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/Phineas476/EmbSpatial-Bench"
+    }
+  ],
+  "related_benchmarks": [
+    "refspatialbench",
+    "cv-bench",
+    "egoschema"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "arxiv-2406-05756",
+        "kind": "paper",
+        "title": "EmbSpatial-Bench: Benchmarking Spatial Understanding for Embodied Tasks with Large Vision-Language Models（arXiv:2406.05756，abs 页 + pdftotext -layout 全文）",
+        "url": "https://arxiv.org/abs/2406.05756",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "mengfeidu/EmbSpatial-Bench（GitHub 仓库 README）",
+        "url": "https://github.com/mengfeidu/EmbSpatial-Bench",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "acl-short-33",
+        "kind": "paper",
+        "title": "ACL Anthology 2024.acl-short.33（正式版元数据与 BibTeX）",
+        "url": "https://aclanthology.org/2024.acl-short.33/",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "hf-dataset",
+        "kind": "dataset",
+        "title": "Phineas476/EmbSpatial-Bench（Hugging Face 数据集卡与查看器报错）",
+        "url": "https://huggingface.co/datasets/Phineas476/EmbSpatial-Bench",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "复旦大学（数据科学学院 + 计算机科学学院）",
+        "cite": [
+          "arxiv-2406-05756@作者署名"
+        ]
+      },
+      "first_release": {
+        "v": "2024-06-09（arXiv v1）",
+        "cite": [
+          "arxiv-2406-05756@arXiv 提交页"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "arxiv-2406-05756@摘要",
+        "arxiv-2406-05756@§2.1"
+      ],
+      "interpretation": [
+        "arxiv-2406-05756@§4.2",
+        "arxiv-2406-05756@Table 2",
+        "repo@EmbSpatial-Bench Data"
+      ]
+    },
+    "problem": {
+      "text": "当时的具身 3D 模拟器已经能给导航、房间重排这类任务提供完整标注，但 LVLM 在具身环境中的空间理解这项关键技能还没有被系统评测过——论文认为现有基准不适合准确评估这种能力，前沿 LVLM 与「合格的具身智能」之间的差距因此是未知的。EmbSpatial-Bench 直接复用这些 3D 数据源的标注自动生成多选视觉题，把这项基本功单独拎出来测。",
+      "cite": [
+        "arxiv-2406-05756@摘要",
+        "arxiv-2406-05756@§1"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机基线",
+        "value": "未披露",
+        "note": "论文没有报告四选一随机猜的基线，本站也不推算。",
+        "cite": [
+          "arxiv-2406-05756@§4.2",
+          "arxiv-2406-05756@Table 2"
+        ]
+      },
+      {
+        "label": "论文零样本最好（Generation 口径）",
+        "value": "49.11%",
+        "note": "Qwen-VL-Max（闭源）；同期 GPT-4V 为 36.07%。",
+        "cite": [
+          "arxiv-2406-05756@Table 2"
+        ]
+      },
+      {
+        "label": "论文零样本最好（Likelihood 口径）",
+        "value": "43.85%",
+        "note": "MiniGPT-v2（约 7B）；GPT-4V 与 Qwen-VL-Max 未报 likelihood。",
+        "cite": [
+          "arxiv-2406-05756@Table 2"
+        ]
+      },
+      {
+        "label": "人类参考线",
+        "value": "90.33%",
+        "note": "论文把人类作为上限参考，与最好的 LVLM 差约 40 个点。",
+        "cite": [
+          "arxiv-2406-05756@Table 2"
+        ]
+      },
+      {
+        "label": "在 EmbSpatial-SFT 上微调后最好",
+        "value": "78.10%",
+        "note": "Finetuned MiniGPT-v2，Likelihood 口径；MP3D 80.52 / AI2-THOR 73.69 / ScanNet 80.25。",
+        "cite": [
+          "arxiv-2406-05756@Table 3"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 49.11% 读成「LVLM 完全不懂空间关系」——它只代表 2024 年年中那批约 7B 开源模型加两个闭源模型的零样本水平，而且只在英文室内场景上成立。",
+        "cite": [
+          "arxiv-2406-05756@§4.2",
+          "arxiv-2406-05756@附录 B.1",
+          "arxiv-2406-05756@Limitations"
+        ]
+      },
+      {
+        "text": "把 Generation 和 Likelihood 两种口径的分数排在一起比——同一个 MiniGPT-v2 能差出近 20 个点。",
+        "cite": [
+          "arxiv-2406-05756@§4.1",
+          "arxiv-2406-05756@Table 2"
+        ]
+      },
+      {
+        "text": "把 SFT 后的 78.10% 当成基准 SOTA——那是约 7B 的 MiniGPT-v2 在自家 EmbSpatial-SFT（仅 MP3D 训练划分）上微调后的域外成绩，不是与其他前沿模型的同条件对比。",
+        "cite": [
+          "arxiv-2406-05756@Table 3",
+          "arxiv-2406-05756@附录 B.1",
+          "arxiv-2406-05756@§3"
+        ]
+      },
+      {
+        "text": "在 Hugging Face 页面看不到数据集预览就断定数据下架或造假——那是 embspatial_sft.json 列名不一致导致的 cast 报错。",
+        "cite": [
+          "hf-dataset@数据集预览"
+        ]
+      },
+      {
+        "text": "以为 6 类关系的题量是均匀的——论文只说保持「平衡分布」，各关系的具体题量只画在图 6，没有给数字。",
+        "cite": [
+          "arxiv-2406-05756@§2.1",
+          "arxiv-2406-05756@附录 A.2"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "复旦大学数据科学学院与计算机科学学院；作者 Mengfei Du†、Binhao Wu†、Zejun Li、Xuanjing Huang、Zhongyu Wei*（† 共同一作，* 通讯作者）",
+        "cite": [
+          "arxiv-2406-05756@作者署名",
+          "repo@README"
+        ]
+      },
+      {
+        "k": "发表记录",
+        "v": "ACL 2024 短论文（Proceedings of the 62nd Annual Meeting of the ACL, Volume 2: Short Papers），Bangkok, Thailand，2024 年 8 月，pp. 346–355，DOI 10.18653/v1/2024.acl-short.33",
+        "cite": [
+          "acl-short-33@BibTeX"
+        ]
+      },
+      {
+        "k": "首发与公开",
+        "v": "arXiv v1 于 2024-06-09 提交；代码与 README 在 GitHub，评测数据与 SFT 数据在同一 Hugging Face 仓库（Phineas476/EmbSpatial-Bench）",
+        "cite": [
+          "arxiv-2406-05756@arXiv 提交页",
+          "repo@EmbSpatial-Bench Data"
+        ]
+      },
+      {
+        "k": "算力支持",
+        "v": "论文致谢复旦大学 CFFF 平台提供算力",
+        "cite": [
+          "arxiv-2406-05756@致谢"
+        ]
+      },
+      {
+        "k": "联系方式",
+        "v": "README 给出的联系邮箱为 mfdu22@m.fudan.edu.cn",
+        "cite": [
+          "repo@Contact"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-14",
+        "columns": [
+          "来源",
+          "模型",
+          "口径",
+          "In-Domain MP3D",
+          "Out-Domain AI2-THOR",
+          "Out-Domain ScanNet",
+          "All（总体）"
+        ],
+        "rows": [
+          ["论文 Table 2", "BLIP2", "Generation", "未给出", "未给出", "未给出", "37.99"],
+          ["论文 Table 2", "InstructBLIP", "Generation", "未给出", "未给出", "未给出", "38.85"],
+          ["论文 Table 2", "Cheetor", "Generation", "未给出", "未给出", "未给出", "24.56"],
+          ["论文 Table 2", "Lynx", "Generation", "未给出", "未给出", "未给出", "29.09"],
+          ["论文 Table 2", "mPlugOwl", "Generation", "未给出", "未给出", "未给出", "24.12"],
+          ["论文 Table 2", "ImagebindLLM", "Generation", "未给出", "未给出", "未给出", "26.46"],
+          ["论文 Table 2", "Shikra", "Generation", "未给出", "未给出", "未给出", "28.38"],
+          ["论文 Table 2", "MiniGPT4", "Generation", "未给出", "未给出", "未给出", "23.54"],
+          ["论文 Table 2", "MiniGPT-v2", "Generation", "未给出", "未给出", "未给出", "23.93"],
+          ["论文 Table 2", "LLaVA-1.6", "Generation", "未给出", "未给出", "未给出", "35.19"],
+          ["论文 Table 2", "GPT-4V", "Generation", "未给出", "未给出", "未给出", "36.07"],
+          ["论文 Table 2", "Qwen-VL-Max", "Generation", "未给出", "未给出", "未给出", "49.11"],
+          ["论文 Table 2", "Human", "—", "未给出", "未给出", "未给出", "90.33"],
+          ["论文 Table 2", "BLIP2", "Likelihood", "未给出", "未给出", "未给出", "35.71"],
+          ["论文 Table 2", "InstructBLIP", "Likelihood", "未给出", "未给出", "未给出", "33.41"],
+          ["论文 Table 2", "Cheetor", "Likelihood", "未给出", "未给出", "未给出", "32.80"],
+          ["论文 Table 2", "Lynx", "Likelihood", "未给出", "未给出", "未给出", "41.62"],
+          ["论文 Table 2", "mPlugOwl", "Likelihood", "未给出", "未给出", "未给出", "27.42"],
+          ["论文 Table 2", "ImagebindLLM", "Likelihood", "未给出", "未给出", "未给出", "33.46"],
+          ["论文 Table 2", "Shikra", "Likelihood", "未给出", "未给出", "未给出", "34.75"],
+          ["论文 Table 2", "MiniGPT4", "Likelihood", "未给出", "未给出", "未给出", "31.70"],
+          ["论文 Table 2", "MiniGPT-v2", "Likelihood", "未给出", "未给出", "未给出", "43.85"],
+          ["论文 Table 2", "LLaVA-1.6", "Likelihood", "未给出", "未给出", "未给出", "38.84"],
+          ["论文 Table 2", "GPT-4V", "Likelihood", "未给出", "未给出", "未给出", "未评测"],
+          ["论文 Table 2", "Qwen-VL-Max", "Likelihood", "未给出", "未给出", "未给出", "未评测"],
+          ["论文 Table 3", "MiniGPT-v2（未微调）", "Generation", "23.31", "20.58", "28.00", "23.93"],
+          ["论文 Table 3", "Finetuned MiniGPT-v2", "Generation", "31.64", "34.06", "33.17", "32.97"],
+          ["论文 Table 3", "w/o LoRA", "Generation", "26.81", "25.26", "23.25", "25.11"],
+          ["论文 Table 3", "w/o OL", "Generation", "34.22", "31.40", "31.92", "32.50"],
+          ["论文 Table 3", "MiniGPT-v2（未微调）", "Likelihood", "46.71", "41.97", "42.92", "43.85"],
+          ["论文 Table 3", "Finetuned MiniGPT-v2", "Likelihood", "80.52", "73.69", "80.25", "78.10"],
+          ["论文 Table 3", "w/o LoRA", "Likelihood", "48.38", "38.90", "44.17", "43.76"],
+          ["论文 Table 3", "w/o OL", "Likelihood", "80.35", "72.15", "79.67", "77.34"]
+        ]
+      },
+      "cite": [
+        "arxiv-2406-05756@Table 2",
+        "arxiv-2406-05756@Table 3"
+      ]
+    }
+  }
+}

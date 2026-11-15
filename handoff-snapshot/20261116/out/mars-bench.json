@@ -1,0 +1,539 @@
+{
+  "id": "mars-bench",
+  "name": "MARS-Bench",
+  "full_name": "MARS-Bench: A Multi-turn Athletic Real-world Scenario Benchmark for Dialogue Evaluation",
+  "aliases": ["MARSBench", "MARS Bench"],
+  "status": "active",
+  "categories": ["reasoning"],
+  "summary": "字节 Seed 与中科大提出的多轮对话评测基准：把真实 NBA/NHL 赛事解说拼成平均 33.42 轮、共 120 场的超长对话，考指令跟随、上下文检索、信息推理、任务切换四类任务，用 task-specific checklist + LLM 裁判自动打分；论文报告的最高总分 72.44（Gemini-2.5-Pro），最强开源 45.42（DeepSeek-R1）。",
+  "interpretation": "高分说明模型在几十轮、话题频繁跳转、证据散落在很早轮次的长对话里，仍能跟住轮次级格式要求、找回旧信息并跨轮推理。论文的核心结论是：闭源明显强过开源（72.44 vs 45.42），显式推理能提升长对话鲁棒性，轮数越多、上下文越分散，CR/IR 掉得越明显，IF 与 TS 最弱。但分数只在体育解说文本上测得，不覆盖多模态与开放域对话，且完全依赖 LLM 裁判的 checklist 评判。",
+  "measures": [
+    {
+      "area": "Instruction Following（指令跟随，IF）",
+      "focus": "跟踪轮次级结构并在指定轮次按格式作答；子任务含固定格式单轮响应（1 题/节）、轮次条件提示格式化（8 题/节）、轮次条件推断格式化（1 题/节）",
+      "share": "25%（按场次：每类任务 30 场 / 共 120 场）",
+      "format": "在指定对话轮生成文本，裁判按该题 checklist 打分",
+      "cite": [
+        "mars-project-page@task-categories",
+        "arxiv-2505-23810@section-2.2-task-categories",
+        "arxiv-2505-23810@section-2.3-statistics"
+      ]
+    },
+    {
+      "area": "Context Retrieval（上下文检索，CR）",
+      "focus": "从历史轮次里定位并取回事实；子任务含锚定事件检索（2 题/节）、区间事件检索（1 题/节）",
+      "share": "25%（按场次：每类任务 30 场 / 共 120 场）",
+      "format": "同上",
+      "cite": [
+        "mars-project-page@task-categories",
+        "arxiv-2505-23810@section-2.2-task-categories",
+        "arxiv-2505-23810@section-2.3-statistics"
+      ]
+    },
+    {
+      "area": "Information Reasoning（信息推理，IR）",
+      "focus": "聚合分散信息推理：当前比分跟踪（末节 1 题）、比分领先变化检测（1 题）、球员表现影响分析（2 题）",
+      "share": "25%（按场次：每类任务 30 场 / 共 120 场）",
+      "format": "同上",
+      "cite": [
+        "mars-project-page@task-categories",
+        "arxiv-2505-23810@section-2.2-task-categories",
+        "arxiv-2505-23810@section-2.3-statistics"
+      ]
+    },
+    {
+      "area": "Task Switching（任务切换，TS）",
+      "focus": "在无关任务间切换：赛内推理查询（3 题/节）+ 赛外数学查询（3 题/节，题目来自 MathQA）；论文 Table 3 的 TS 列只统计赛内部分，含数学题的完整结果在 Table 5",
+      "share": "25%（按场次：每类任务 30 场 / 共 120 场）",
+      "format": "同上",
+      "cite": [
+        "mars-project-page@task-categories",
+        "arxiv-2505-23810@appendix-b-ts",
+        "arxiv-2505-23810@section-2.3-statistics"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "开放域与日常对话能力（论文在局限中明确说聚焦体育场景可能限制向开放域/日常对话泛化）",
+      "cite": ["arxiv-2505-23810@limitations-domain"]
+    },
+    {
+      "text": "多模态输入（图像、语音等——基准限于文本）",
+      "cite": ["arxiv-2505-23810@limitations-modality"]
+    },
+    {
+      "text": "连贯性、风格、语用等细微问题（checklist + LLM 裁判的自动评判可能漏掉）",
+      "cite": ["arxiv-2505-23810@limitations-eval"]
+    },
+    {
+      "text": "随机基线或人类基线（论文未报告，页面上也没有人类成绩可对照）",
+      "cite": ["arxiv-2505-23810@table-3"]
+    },
+    {
+      "text": "单轮知识或数学能力本身（赛外数学题只是任务切换的陪衬，且论文 Table 3 的 TS 列不含数学题）",
+      "cite": ["arxiv-2505-23810@appendix-b-ts"]
+    }
+  ],
+  "dataset": {
+    "sample_count": 120,
+    "splits": ["论文未划分公开/私有评测集：120 场全部用于评测，GitHub 仓库同时提供 data/*.jsonl 原始对话数据"],
+    "languages": ["en", "zh"],
+    "source_type": "真实赛事文字解说：ESPN 的 NBA/NHL 英文 play-by-play 与赛后统计，补充虎扑的中文 NBA 数据；答案由客观统计信息确定",
+    "public_sample": true,
+    "totals": "120 场比赛（每类任务 30 场：15 场英文 NBA、10 场中文 NBA、5 场英文 NHL）· 平均每场 33.42 轮 · 共 4,010 个查询 · 每场按节切分（NBA 四节 / NHL 三节，不含加时），每节再切成 5 个比分跟踪轮 · 每个样本含 play-by-play 记录、球队阵容、球员统计三部分",
+    "cite": [
+      "arxiv-2505-23810@section-2.1-data-sources",
+      "arxiv-2505-23810@section-2.3-statistics",
+      "arxiv-2505-23810@table-2",
+      "arxiv-2505-23810@section-2.2-periods",
+      "mars-project-page@segments",
+      "mars-project-page@data-format"
+    ],
+    "construction": [
+      {
+        "k": "数据采集",
+        "text": "从 ESPN 收集 NBA 与 NHL 的英文 play-by-play 记录和赛后统计，并用虎扑的中文 NBA 数据补充以增强语言与领域多样性；数据统一成结构化格式，每个样本对应一场完整比赛。",
+        "cite": ["arxiv-2505-23810@section-2.1-data-sources"]
+      },
+      {
+        "k": "样本结构",
+        "text": "每个样本含三部分：详细 play-by-play 记录、球队阵容、球员统计；前两者直接作为模型输入，球员统计用于校验模型答案的正确性。",
+        "cite": ["mars-project-page@data-format"]
+      },
+      {
+        "k": "问题构造",
+        "text": "每场比赛按预定义题型手工设计问题，用正则从 play-by-play 条目中抽取信息得到唯一答案，再为每题生成 checklist（规定客观统计证据作为评分标准），形成 (question, answer, checklist) 三元组。",
+        "cite": ["arxiv-2505-23810@section-2.1-question-construction"]
+      },
+      {
+        "k": "质量把关",
+        "text": "全部标注与核验由作者完成，走三阶段质控：每类抽 5 个代表题人工核对自动抽取的可靠性；两位作者交叉复核；再用 DeepSeek-V3-0324 辅助人工查漏。",
+        "cite": ["arxiv-2505-23810@section-2.1-quality-assurance"]
+      },
+      {
+        "k": "多轮结构",
+        "text": "每场比赛按节切分（NBA 四节 / NHL 三节，不含加时），每节再切成 5 个比分跟踪轮组成多轮对话，四类任务的问题按位置插入，模型必须逐轮作答并保持连贯。",
+        "cite": ["arxiv-2505-23810@section-2.2-periods", "mars-project-page@segments"]
+      },
+      {
+        "k": "与同类基准对比",
+        "text": "论文 Table 2 的对比：MT-Bench 平均 1–2 轮 / 80 个查询、MT-Bench-101 3 轮 / 4,208 个查询、MultiChallenge 5 轮 / 1,365 个查询，均为英文；MARS-Bench 平均 33 轮 / 4,010 个查询、英文+中文，且是表中唯一同时具备真实交互、跨轮、多任务的基准。",
+        "cite": ["arxiv-2505-23810@table-2"]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "overall",
+      "name": "Overall（总分）",
+      "direction": "越高越好",
+      "description": "四类任务（IF/CR/IR/TS）的整体表现；论文 Table 3 以 0–100 数值报告，逐题分数来自 checklist 评判（0.0–1.0）",
+      "range": [0, 100],
+      "unit": "score（论文表内数值，不是百分制正确率）",
+      "cite": [
+        "arxiv-2505-23810@table-3",
+        "arxiv-2505-23810@appendix-f-score"
+      ]
+    },
+    {
+      "id": "if",
+      "name": "Instruction Following（IF）",
+      "direction": "越高越好",
+      "description": "指令跟随子任务得分；论文观察到这是模型整体最弱的一类",
+      "range": [0, 100],
+      "unit": "score",
+      "cite": [
+        "arxiv-2505-23810@table-3",
+        "arxiv-2505-23810@section-3.2-if"
+      ]
+    },
+    {
+      "id": "cr",
+      "name": "Context Retrieval（CR）",
+      "direction": "越高越好",
+      "description": "上下文检索子任务得分；论文按轮次拆解后发现准确率倾向在多轮后期下降",
+      "range": [0, 100],
+      "unit": "score",
+      "cite": [
+        "arxiv-2505-23810@table-3",
+        "arxiv-2505-23810@section-4.1-decline"
+      ]
+    },
+    {
+      "id": "ir",
+      "name": "Information Reasoning（IR）",
+      "direction": "越高越好",
+      "description": "信息推理子任务得分；同样随轮数增加而下降",
+      "range": [0, 100],
+      "unit": "score",
+      "cite": [
+        "arxiv-2505-23810@table-3",
+        "arxiv-2505-23810@section-4.1-decline"
+      ]
+    },
+    {
+      "id": "ts",
+      "name": "Task Switching（TS）",
+      "direction": "越高越好",
+      "description": "任务切换子任务得分；论文 Table 3 的 TS 列只含赛内（体育）任务，含赛外数学题的结果在 Table 5",
+      "range": [0, 100],
+      "unit": "score",
+      "cite": [
+        "arxiv-2505-23810@table-3",
+        "arxiv-2505-23810@appendix-b-ts"
+      ]
+    },
+    {
+      "id": "checklist-score",
+      "name": "单题 checklist 分数",
+      "direction": "越高越好",
+      "description": "裁判按 checklist 逐项给分，命中 first_check 一票否决条件时最终判 0；单题分数是 0.0–1.0 的浮点数，论文表内数值是其聚合后的 0–100 呈现",
+      "range": [0, 1],
+      "unit": "score",
+      "cite": ["arxiv-2505-23810@appendix-f-score"]
+    }
+  ],
+  "default_protocol": {
+    "raw": "zero-shot 提示：模型只拿到任务指令与对话场景（提示模板按任务类别定制），在长对话中逐轮增量作答；评测采用 LLM-as-a-judge——每题配一份 task-specific checklist 规定评分项，裁判模型逐项核对预测答案，命中 first_check 一票否决条件时直接判 0，最终单题分数是 0.0–1.0 的浮点数；论文点名 DeepSeek-V3-0324 等主流 LLM 能作可靠一致的裁判。",
+    "cite": [
+      "arxiv-2505-23810@section-3.1-prompting",
+      "arxiv-2505-23810@section-3.1-evaluation",
+      "arxiv-2505-23810@appendix-f-score",
+      "arxiv-2505-23810@section-3.1-judge"
+    ],
+    "variants": [
+      {
+        "text": "TS 列口径：论文 Table 3 的 TS 只统计赛内（体育）任务，含赛外数学题的完整结果在 Table 5；两者差别很大（Gemini-2.5-Pro 66.72 vs 89.57），不能混用。",
+        "cite": [
+          "arxiv-2505-23810@appendix-b-ts",
+          "arxiv-2505-23810@table-5"
+        ]
+      },
+      {
+        "text": "输入格式消融：同样的 play-by-play 记录分别以 20 轮对话和单轮拼接两种形式输入，多数模型在多轮形式下更差（Gemini-2.5-Pro 等头部模型除外）。",
+        "cite": ["arxiv-2505-23810@section-4.1-input-format"]
+      },
+      {
+        "text": "轮数消融：把主要结果按交互轮次拆开看，CR 与 IR 的准确率倾向于在多轮后期下降。",
+        "cite": ["arxiv-2505-23810@section-4.1-decline"]
+      },
+      {
+        "text": "机制分析口径：附录 I 在 Qwen2.5-7B-Instruct 上做注意力可视化（固定 temperature 0.7 / top-p 0.9 / top-k 40），结论只针对该模型，不外推到其他模型。",
+        "cite": ["arxiv-2505-23810@appendix-i-attention"]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "arxiv-v1",
+      "date": "2025-05-27",
+      "label": "arXiv v1 首发（cs.CL）",
+      "cite": ["arxiv-2505-23810@submission-history"]
+    },
+    {
+      "id": "arxiv-v2",
+      "date": "2025-09-15",
+      "label": "arXiv v2 修订（本页核对版本；29 页、13 幅图）",
+      "cite": [
+        "arxiv-2505-23810@submission-history",
+        "arxiv-2505-23810@comments"
+      ]
+    },
+    {
+      "id": "emnlp2025-findings",
+      "date": "2025-11-04",
+      "label": "EMNLP 2025 Findings 正式发表（Findings of the ACL: EMNLP 2025，页码 5872–5898）",
+      "cite": [
+        "emnlp-findings-paper@header",
+        "repo-github@citation"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "领域局限：只测体育解说文本",
+      "impact": "论文在局限中明确说聚焦体育场景可能限制向开放域/日常对话泛化；换到别的长对话场景，这里的分数不能直接外推。",
+      "severity": "中",
+      "response": "论文把扩展到更广领域、扩大规模列为 future work；目前没有修正。",
+      "reader": "把它当成「长对话 + 客观答案」这一细分场景的分数，不是通用对话能力。",
+      "cite": ["arxiv-2505-23810@limitations-domain"]
+    },
+    {
+      "issue": "评测完全依赖 LLM 裁判",
+      "impact": "checklist 自动评判可能漏掉连贯性、风格、语用等细微问题；论文点名的裁判模型 DeepSeek-V3-0324 自身在 Table 3 只有 37.31 分，裁判与被评模型同源时结论要更谨慎。",
+      "severity": "中",
+      "response": "论文用固定 checklist 与 first_check 一票否决条件降低主观性，并把人工评测列为 future work。",
+      "reader": "看厂商自报的 MARS-Bench 分数时，先确认裁判模型与提示词是否与论文一致。",
+      "cite": [
+        "arxiv-2505-23810@limitations-eval",
+        "arxiv-2505-23810@section-3.1-judge",
+        "arxiv-2505-23810@table-3"
+      ]
+    },
+    {
+      "issue": "口径不一致：TS 列的覆盖范围",
+      "impact": "Table 3 的 TS 只含赛内任务，数学题结果在 Table 5；两处数字差很多（Gemini-2.5-Pro 66.72 vs 89.57），混用会明显高估或低估任务切换能力。",
+      "severity": "中",
+      "response": "论文在附录 B 分开报告，并在 Table 3 表注说明「数学题分数见附录 B」。",
+      "reader": "核对 TS 数字时先确认来自 Table 3（仅体育）还是 Table 5（含数学）。",
+      "cite": [
+        "arxiv-2505-23810@appendix-b-ts",
+        "arxiv-2505-23810@table-5"
+      ]
+    },
+    {
+      "issue": "来源之间数字对不上",
+      "impact": "项目页称评测 23 个代表性模型，论文 Table 3 却列出 30 行模型结果（含同系列不同规格），两份材料对「测了多少模型」口径不一致。",
+      "severity": "低",
+      "response": "以论文表格为准并注明版本；项目页未说明差异原因。",
+      "reader": "引用模型数量时写清出处（论文 Table 3 = 30 行）。",
+      "cite": [
+        "mars-project-page@leaderboard",
+        "arxiv-2505-23810@table-3"
+      ]
+    },
+    {
+      "issue": "污染与刷榜风险",
+      "impact": "基准与代码公开在 GitHub（Apache-2.0），data/*.jsonl 可直接下载，可能进入训练数据或被针对性调优，使分数偏高；论文与仓库均未提及私有留存集，也没有污染分析。",
+      "severity": "中",
+      "response": "未见官方应对措施。",
+      "reader": "对异常高的分数保留怀疑，优先看同一版本代码下的复现结果。",
+      "cite": [
+        "repo-github@data-files",
+        "repo-github@license"
+      ]
+    }
+  ],
+  "notes": "本页所有分数出自论文 Table 3 / Table 5（arXiv v2）；项目页另有交互式榜单但未标注更新日期。字节 Seed1.8 官方发布博客中未检索到 MARS-Bench 相关内容，故未列为来源。",
+  "official_sources": [
+    { "kind": "paper", "url": "https://arxiv.org/abs/2505.23810" },
+    { "kind": "site", "url": "https://syuchin.github.io/MARS-Bench/" },
+    { "kind": "repo", "url": "https://github.com/syuchin/MARS-Bench" },
+    { "kind": "paper", "url": "https://aclanthology.org/2025.findings-emnlp.314.pdf" }
+  ],
+  "related_benchmarks": ["mtbench", "multichallenge", "agentbench"],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "arxiv-2505-23810",
+        "kind": "paper",
+        "title": "MARS-Bench: A Multi-turn Athletic Real-world Scenario Benchmark for Dialogue Evaluation（arXiv:2505.23810v2，2025-09-15）",
+        "url": "https://arxiv.org/abs/2505.23810",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "mars-project-page",
+        "kind": "site",
+        "title": "MARS-Bench 项目页（任务类别说明与交互式榜单）",
+        "url": "https://syuchin.github.io/MARS-Bench/",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "repo-github",
+        "kind": "repo",
+        "title": "Syuchin/MARS-Bench（评测代码、数据文件与 BibTeX）",
+        "url": "https://github.com/syuchin/MARS-Bench",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "emnlp-findings-paper",
+        "kind": "paper",
+        "title": "Findings of the Association for Computational Linguistics: EMNLP 2025 正式版（页码 5872–5898）",
+        "url": "https://aclanthology.org/2025.findings-emnlp.314.pdf",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "ByteDance Seed × 中国科学技术大学（USTC）",
+        "cite": ["arxiv-2505-23810@affiliations"]
+      },
+      "first_release": {
+        "v": "2025-05-27（arXiv v1）",
+        "cite": ["arxiv-2505-23810@submission-history"]
+      }
+    },
+    "cites": {
+      "summary": [
+        "arxiv-2505-23810@abstract",
+        "arxiv-2505-23810@section-2.3-statistics",
+        "arxiv-2505-23810@section-2.1-data-sources"
+      ],
+      "interpretation": [
+        "arxiv-2505-23810@section-3.2-turns",
+        "arxiv-2505-23810@section-3.2-closed-vs-open",
+        "arxiv-2505-23810@section-3.2-reasoning",
+        "arxiv-2505-23810@limitations-domain",
+        "arxiv-2505-23810@limitations-eval"
+      ]
+    },
+    "problem": {
+      "text": "现有多轮对话基准要么只测很短的对话（论文 Table 2：MT-Bench 平均 1–2 轮），要么一次性把完整对话历史塞给模型，覆盖不了「几十轮、话题频繁跳转、证据散落在很早轮次」这类真实长对话的鲁棒性问题；论文要用答案客观、可自动核验的体育解说文本，造一个同时考超长多轮、跨轮依赖与任务切换的基准。",
+      "cite": [
+        "mars-project-page@introduction",
+        "arxiv-2505-23810@table-2",
+        "arxiv-2505-23810@abstract"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机 / 人类基线",
+        "value": "论文未给出",
+        "note": "论文没有报告随机基线或人类成绩，本页也不推算；能对照的只有裁判模型自身的成绩（见下）。",
+        "cite": ["arxiv-2505-23810@table-3"]
+      },
+      {
+        "label": "论文表内最低",
+        "value": "25.52（Qwen3-4B，Overall）",
+        "note": "论文 Table 3 共 30 行模型结果，Overall 最低的是 Qwen3-4B。",
+        "cite": ["arxiv-2505-23810@table-3"]
+      },
+      {
+        "label": "论文报告的最强开源",
+        "value": "45.42（DeepSeek-R1，Overall）",
+        "note": "论文称 DeepSeek-R1 是表内最强开源；同门非推理版 DeepSeek-V3-0324 为 37.31。",
+        "cite": [
+          "arxiv-2505-23810@section-3.2-closed-vs-open",
+          "arxiv-2505-23810@section-3.2-reasoning"
+        ]
+      },
+      {
+        "label": "论文报告的最高分",
+        "value": "72.44（Gemini-2.5-Pro，Overall）",
+        "note": "论文原话是「Even top models achieve around 70 points」；IF/CR/IR/TS 分别为 65.08/87.06/70.92/66.72。",
+        "cite": [
+          "arxiv-2505-23810@section-3.2-closed-vs-open",
+          "arxiv-2505-23810@table-3"
+        ]
+      },
+      {
+        "label": "裁判模型自身成绩",
+        "value": "37.31（DeepSeek-V3-0324，Overall）",
+        "note": "论文点名用 DeepSeek-V3-0324 等主流 LLM 作裁判；裁判自身只有 37.31 分，读 LLM-as-a-judge 结果时要留余地。",
+        "cite": [
+          "arxiv-2505-23810@section-3.1-judge",
+          "arxiv-2505-23810@table-3"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 Table 3 的 TS 列当成「赛外数学也考了」——Table 3 的 TS 只含赛内（体育）任务，数学题的完整结果在论文 Table 5；两者差别很大（Gemini-2.5-Pro 66.72 vs 89.57）。",
+        "cite": [
+          "arxiv-2505-23810@appendix-b-ts",
+          "arxiv-2505-23810@table-5"
+        ]
+      },
+      {
+        "text": "把 33 轮当成「一套题有 33 道」——33.42 是每场平均对话轮数，题目按节插入，规模是 120 场 / 4,010 个查询。",
+        "cite": [
+          "arxiv-2505-23810@section-2.3-statistics",
+          "arxiv-2505-23810@table-2"
+        ]
+      },
+      {
+        "text": "看到 72.44 就认为模型「真看懂比赛了」——分数全部来自 checklist + LLM 裁判的自动评判，裁判自身（DeepSeek-V3-0324）只有 37.31 分，且论文承认这种评判可能漏掉连贯性、风格、语用问题。",
+        "cite": [
+          "arxiv-2505-23810@section-3.1-evaluation",
+          "arxiv-2505-23810@section-3.1-judge",
+          "arxiv-2505-23810@limitations-eval"
+        ]
+      },
+      {
+        "text": "把项目页的「23 个模型」和论文 Table 3 的行数当成同一口径——项目页称评测 23 个代表性模型，论文 Table 3 列出 30 行模型结果；引用模型数量时要写清出处。",
+        "cite": [
+          "mars-project-page@leaderboard",
+          "arxiv-2505-23810@table-3"
+        ]
+      },
+      {
+        "text": "把 MARS-Bench 的分数推广成通用对话能力——论文自己指出基准限于体育文本，可能限制向开放域/日常对话泛化。",
+        "cite": ["arxiv-2505-23810@limitations-domain"]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "ByteDance Seed × 中国科学技术大学（USTC）",
+        "cite": ["arxiv-2505-23810@affiliations"]
+      },
+      {
+        "k": "核心作者",
+        "v": "Chenghao Yang、Yinbo Luo（共同一作）、Zhoufutu Wen、Qi Chu（通讯）等 11 位",
+        "cite": ["arxiv-2505-23810@authors"]
+      },
+      {
+        "k": "时间线",
+        "v": "2025-05-27 arXiv v1 → 2025-09-15 arXiv v2（本页核对版本，29 页 13 图）→ 2025-11-04 EMNLP 2025 Findings 正式发表（页码 5872–5898）",
+        "cite": [
+          "arxiv-2505-23810@submission-history",
+          "arxiv-2505-23810@comments",
+          "emnlp-findings-paper@header"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "GitHub 仓库 Syuchin/MARS-Bench（Apache-2.0）提供 chat/eval 代码与 data/*.jsonl 对话数据，跑通需自备 API key；项目页另有交互式榜单。",
+        "cite": [
+          "repo-github@license",
+          "repo-github@data-files",
+          "mars-project-page@leaderboard"
+        ]
+      },
+      {
+        "k": "评测裁判",
+        "v": "采用 LLM-as-a-judge：每题一份 task-specific checklist，裁判逐项打分（单题 0.0–1.0），命中 first_check 一票否决条件直接判 0；论文点名 DeepSeek-V3-0324 等主流 LLM 的判断可靠一致。",
+        "cite": [
+          "arxiv-2505-23810@section-3.1-evaluation",
+          "arxiv-2505-23810@appendix-f-score",
+          "arxiv-2505-23810@section-3.1-judge"
+        ]
+      },
+      {
+        "k": "论文主要结论",
+        "v": "闭源明显强过开源；显式推理提升长对话鲁棒性；轮数越多、上下文越分散，CR/IR 掉得越明显；IF 与 TS 是最弱两类；特殊 token 会吸走注意力。",
+        "cite": [
+          "arxiv-2505-23810@section-3.2-closed-vs-open",
+          "arxiv-2505-23810@section-3.2-reasoning",
+          "arxiv-2505-23810@section-3.2-turns",
+          "arxiv-2505-23810@section-3.2-if",
+          "arxiv-2505-23810@appendix-i-attention"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-14",
+        "columns": ["来源", "模型", "Overall", "IF", "CR", "IR", "TS", "口径"],
+        "rows": [
+          ["论文 Table 3", "Gemini-2.5-Pro", "72.44", "65.08", "87.06", "70.92", "66.72", "闭源；带显式推理"],
+          ["论文 Table 3", "Claude-3.7-Sonnet-Thinking", "62.29", "43.28", "71.51", "66.98", "67.38", "闭源；带显式推理"],
+          ["论文 Table 3", "o1-1217", "59.62", "53.09", "64.48", "62.63", "58.28", "闭源；带显式推理"],
+          ["论文 Table 3", "Gemini-2.5-Flash", "59.22", "45.96", "77.76", "52.93", "60.23", "闭源；带显式推理"],
+          ["论文 Table 3", "GPT-4.5-Preview", "53.33", "55.52", "66.65", "50.43", "40.74", "闭源；无显式推理"],
+          ["论文 Table 3", "Doubao-1.5-Pro-Thinking", "52.62", "51.99", "55.64", "52.17", "50.69", "闭源；带显式推理"],
+          ["论文 Table 3", "Grok3", "51.21", "61.19", "73.91", "33.89", "35.87", "闭源；带显式推理"],
+          ["论文 Table 3", "o4-mini-0416", "47.13", "47.48", "61.26", "39.74", "40.03", "闭源；带显式推理"],
+          ["论文 Table 3", "DeepSeek-R1", "45.42", "53.04", "49.23", "40.01", "39.40", "开源；表内最强开源"],
+          ["论文 Table 3", "Claude-3.5-Sonnet", "43.17", "44.45", "52.09", "39.03", "37.09", "闭源；无显式推理"],
+          ["论文 Table 3", "DeepSeek-V3-0324", "37.31", "45.34", "46.18", "27.70", "30.02", "开源；论文点名的裁判模型"],
+          ["论文 Table 3", "Qwen3-4B", "25.52", "46.77", "16.62", "17.62", "21.07", "开源；表内 Overall 最低"],
+          ["论文 Table 5", "Gemini-2.5-Pro", "72.44", "65.08", "87.06", "70.92", "89.57", "TS 列改取 Other Tasks（赛外数学题）"]
+        ]
+      },
+      "cite": [
+        "arxiv-2505-23810@table-3",
+        "arxiv-2505-23810@table-5"
+      ]
+    }
+  }
+}

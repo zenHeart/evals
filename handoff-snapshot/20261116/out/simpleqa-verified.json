@@ -1,0 +1,395 @@
+{
+  "id": "simpleqa-verified",
+  "name": "SimpleQA Verified",
+  "full_name": "SimpleQA Verified（已验证版 SimpleQA；论文副标题：A Reliable Factuality Benchmark to Measure Parametric Knowledge）",
+  "aliases": [],
+  "status": "active",
+  "categories": ["knowledge"],
+  "summary": "Google DeepMind 与 Google Research 从 OpenAI SimpleQA（4,326 题）多阶段筛选、清洗、改写而来的 1,000 题短事实问答基准：模型只凭参数化知识（不联网、不用工具）作答单答案问题，由 GPT-4.1 裁判按参考答案判 correct / incorrect / not attempted，主指标 F1-Score 是「总体正确率」与「已作答题目中的正确率」的调和平均。",
+  "interpretation": "分数越高，代表模型不查资料、凭参数化记忆答对的事实越多。官方在论文、HF 数据集卡、Kaggle 榜单三处都写明：一旦允许带搜索等工具，本基准接近被完全解出，所以它只衡量「无工具时脑子里记得多少」。它和原版 SimpleQA 不是同一批题（4,326 → 1,000），清洗删掉错题与歧义题让基准变易、§2.6 只保留最难的 1,000 题又让它变难，两者相互抵消，两套分数不能直接互相替代；要比较只能看论文 Table 7 的 ΔSimpleQA 列。",
+  "measures": [
+    {
+      "area": "Other（其他）",
+      "focus": "原文未给出该类别的定义与示例题；它是既非日期、人名、数值、地点的兜底类型（论文 Table 1 的六个示例分别属 Date / Number / Place / Person）",
+      "share": "249 题 / 24.9%",
+      "format": "短答案，精确匹配 + GPT-4.1 裁判",
+      "cite": ["hf-simpleqa-verified@Dataset Viewer", "paper@Table 1"]
+    },
+    {
+      "area": "Date（日期）",
+      "focus": "示例：'On what day, month, and year was Algerian artist Mohammed Racim born?'（答案 June 24, 1896，主题 Art）",
+      "share": "222 题 / 22.2%",
+      "format": "短答案，日期可含多种写法",
+      "cite": ["paper@Table 1", "hf-simpleqa-verified@Dataset Viewer"]
+    },
+    {
+      "area": "Person（人名）",
+      "focus": "示例：'Which famous drummer opened a Wahoo's Fish Taco restaurant in Norco, California, in 2004?'（答案 Travis Barker，主题 Music）",
+      "share": "198 题 / 19.8%",
+      "format": "短答案，人名",
+      "cite": ["paper@Table 1", "hf-simpleqa-verified@Dataset Viewer"]
+    },
+    {
+      "area": "Number（数值）",
+      "focus": "示例：'What is the longitude of Lilongwe in decimal format?'（答案 33.7738，可接受区间 33.7586–33.8022；§2.5 起数值标准答案统一改写为可接受区间）",
+      "share": "185 题 / 18.5%",
+      "format": "短答案，数值 + 容差区间",
+      "cite": ["paper@Table 1", "paper@§2.5", "hf-simpleqa-verified@Dataset Viewer"]
+    },
+    {
+      "area": "Place（地点）",
+      "focus": "示例：'From which university did David Hibbett receive his Bachelor of Arts degree?'（答案 University of Massachusetts Amherst）",
+      "share": "146 题 / 14.6%",
+      "format": "短答案，机构/地名",
+      "cite": ["paper@Table 1", "hf-simpleqa-verified@Dataset Viewer"]
+    },
+    {
+      "area": "需推理 / 多步（能力标签）",
+      "focus": "论文 §2.7 用这两个标签标注题目是否需要推理或跨步整合信息；Table 1 的六个示例里只有 Travis Barker 一题标 Reasoning=Yes，只有 George Frederic Watts 一题标 Multi-Step=Yes",
+      "share": "需推理 37 题 / 3.7%；需多步 73 题 / 7.3%",
+      "format": "标注标签，不是独立题型",
+      "cite": ["paper@§2.7", "paper@Table 1", "hf-simpleqa-verified@Dataset Viewer"]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "不衡量带工具的能力：官方明确带搜索/检索工具时基准「trivial to solve which defeats its purpose」，任何带工具口径的分数都不代表本基准",
+      "cite": ["leaderboard@Limitations", "hf-simpleqa-verified@Limitations", "paper@§4"]
+    },
+    {
+      "text": "不衡量参数化知识以外的一切：论文要求只在测量参数化事实性时使用本基准，长文本事实性、多轮对话、指令遵循、代码与推理能力均不在测量范围内",
+      "cite": ["paper@§4", "paper@§1"]
+    },
+    {
+      "text": "不鼓励盲目作答：Attempted（作答率）与 Hedged（对冲率）只是论文 Table 7 的辅助列，主指标 F1-Score 同时看总体正确率与已作答正确率，乱猜会被总体正确率拖低",
+      "cite": ["paper@Table 7", "paper@§3"]
+    }
+  ],
+  "dataset": {
+    "sample_count": 1000,
+    "splits": ["eval（1,000 题；HF 数据集卡显示 split (1) eval · 1k rows）"],
+    "languages": ["en"],
+    "source_type": "从 OpenAI SimpleQA（2024-11-07，4,326 题）多阶段筛选而来：语义去重、TF-IDF 去重、移除参考 URL 指向受站点爬取控制的题、答案类型与主题配平、冲突来源核对、数值答案改写为可接受区间，最后按前沿模型难度挑出最难的 1,000 题；每题带参考答案、答案类型、主题、是否需推理/多步与参考 URL",
+    "public_sample": true,
+    "totals": "1,000 题全部英文。答案类型：Other 249、Date 222、Person 198、Number 185、Place 146（合计 1,000）。主题：politics 176、science and technology 160、art 145、sports 117、geography 111、music 102、other 102、history 52、tv shows 20、video games 15（合计 1,000）。需多步 73 题（7.3%），需推理 37 题（3.7%）。数据集文件 356 kb。",
+    "cite": ["hf-simpleqa-verified@Dataset Viewer", "hf-simpleqa-verified@README", "paper@§2.7"],
+    "construction": [
+      {
+        "k": "保证参考来源唯一（§2.1）",
+        "text": "原 SimpleQA 每题至少有两个不同人工标注给的参考 URL；同一 URL 只保留一题，避免单个站点/标注者被过度采样 → 4,326 → 3,095（−28.5%）",
+        "cite": ["paper@§2.1", "paper@Table 2"]
+      },
+      {
+        "k": "语义去重（§2.2）",
+        "text": "用 Gemini embedding 计算问题间余弦相似度，超过 0.77 判为过于相似并去重 → 3,095 → 2,871（−7.2%）",
+        "cite": ["paper@§2.2", "paper@Table 2"]
+      },
+      {
+        "k": "TF-IDF 去重 + 尊重站点爬取控制（§2.3）",
+        "text": "先做 TF-IDF 相似度去重（→ 2,664），再移除参考 URL 指向已采用 robots.txt 等访问控制手段的站点（Google / OpenAI / Anthropic）的题目 → 1,855（累计 −57.1%）",
+        "cite": ["paper@§2.3", "paper@Table 2"]
+      },
+      {
+        "k": "答案类型与主题配平（§2.4）",
+        "text": "按题型与主题分布做配额采样：原版 32.8% 的答案是日期、24.1% 是人名，主题又被少数标注者的偏好带偏（如 119 题问哥伦比亚各市建城日期）→ 1,218（累计 −71.8%）",
+        "cite": ["paper@§2.4", "paper@Table 2"]
+      },
+      {
+        "k": "冲突来源核对与数值改写（§2.5）",
+        "text": "各来源数值答案相差超过 5% 容差的题先删（→ 1,117），再删剩余数值歧义题（→ 1,073），并把数值标准答案改写成可接受区间（题数不变）",
+        "cite": ["paper@§2.5", "paper@Table 2"]
+      },
+      {
+        "k": "扩大头部空间 + 人工复核（§2.6 / §2.7）",
+        "text": "剔除所有前沿模型都能答对的题，从剩余样本中挑最难的 1,000 题（→ 1,000，累计 −76.9%）；随后人工清理参考 URL、核对来源质量与日期精度、补齐元数据，并标注是否需推理/多步",
+        "cite": ["paper@§2.6", "paper@§2.7", "paper@Table 2"]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "f1-score",
+      "name": "F1-Score（主指标）",
+      "direction": "越高越好",
+      "description": "总体正确率（correct / 全部题）与已作答正确率（correct / attempted）的调和平均，兼顾答得准与知道什么时候不答",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["paper@§3", "paper@Table 7"]
+    },
+    {
+      "id": "accuracy",
+      "name": "Accuracy（总体正确率）",
+      "direction": "越高越好",
+      "description": "判为 correct 的题数占全部 1,000 题的比例；not attempted 计入分母",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["paper@Table 7"]
+    },
+    {
+      "id": "accuracy-given-attempted",
+      "name": "Acc.|Attempted（已作答正确率）",
+      "direction": "越高越好",
+      "description": "只统计模型实际给出答案的题中判为 correct 的比例，反映「开口就说」时的准确度",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["paper@Table 7"]
+    },
+    {
+      "id": "attempted",
+      "name": "Attempted（作答率）",
+      "direction": "视用途",
+      "description": "模型给出实质答案而非拒答/对冲的题目比例，衡量模型有多敢答",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["paper@Table 7"]
+    },
+    {
+      "id": "hedged",
+      "name": "Hedged（对冲率）",
+      "direction": "视用途",
+      "description": "回答中出现对冲、限定或改写而非直接给出标准答案的比例",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["paper@Table 7"]
+    }
+  ],
+  "default_protocol": {
+    "raw": "被测模型用标准 API 参数、不开启任何工具作答；每份回答由 gpt-4.1-2025-04-14 裁判按系统提示词判 correct / incorrect / not attempted，并重复评分 n = 10 次（温度 T = 2.0）后汇总；主指标 F1-Score 定义为总体正确率与已作答正确率的调和平均。",
+    "cite": ["paper@§3", "paper@§3.2", "paper@§4"],
+    "variants": [
+      {
+        "text": "带工具 vs 无工具：官方在论文 §4、HF 数据集卡 Limitations、Kaggle 榜单 Limitations 三处声明带工具即接近满分，两种口径不可比",
+        "cite": ["paper@§4", "hf-simpleqa-verified@Limitations", "leaderboard@Limitations"]
+      },
+      {
+        "text": "与原版 SimpleQA 的差：裁判相同（gpt-4.1-2025-04-14）但题集不同，只能看论文 Table 7 的 ΔSimpleQA 列；论文同时说明清洗（变易）与 §2.6 对抗筛选（变难）相互抵消，整体均分「almost exactly the same」",
+        "cite": ["paper@Table 7", "paper@§4"]
+      },
+      {
+        "text": "裁判提示词版本：v2 提示词在「直接作答」与「对冲」两方面收紧规则，词数比原版多 15%（963 → 1,124），换提示词前后的历史分数不可直接对比",
+        "cite": ["paper@§3.2"]
+      },
+      {
+        "text": "排行榜 Score 口径：Kaggle 榜单只给一列 Score（带 ±区间），页面未说明它就是论文的 F1-Score，也未说明裁判版本与重复次数；引用时应写「Score（口径未注明）」",
+        "cite": ["leaderboard@Leaderboard", "leaderboard@About SimpleQA Verified"]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "simpleqa",
+      "date": "2024-11-07",
+      "label": "OpenAI SimpleQA v1（arXiv:2411.04368，4,326 题），本基准的原型",
+      "cite": ["simpleqa-paper@Submission history"]
+    },
+    {
+      "id": "v1",
+      "date": "2025-09-09",
+      "label": "SimpleQA Verified arXiv v1 提交",
+      "cite": ["paper@Submission history"]
+    },
+    {
+      "id": "v2",
+      "date": "2026-03-10",
+      "label": "SimpleQA Verified arXiv v2（最后修订，本档案主要依据版本）",
+      "cite": ["paper@Submission history"]
+    },
+    {
+      "id": "leaderboard-2026-10-20",
+      "date": "2026-10-20",
+      "label": "Kaggle 官方榜单快照（Updated October 20, 2026 · Showing 48 of 58 models，榜上 22 名带分数）",
+      "cite": ["leaderboard@Leaderboard"]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "带工具即失去测量意义",
+      "impact": "一旦允许搜索/检索，基准接近被完全解出；任何带工具口径的分数都不能与本页分数比较",
+      "severity": "高",
+      "response": "官方在论文 §4、HF 数据集卡 Limitations、Kaggle 榜单 Limitations 三处重复该约束",
+      "reader": "看到本基准分数，先确认评测时关闭了工具",
+      "cite": ["paper@§4", "hf-simpleqa-verified@Limitations", "leaderboard@Limitations"]
+    },
+    {
+      "issue": "清洗让基准变易与对抗筛选让基准变难相互抵消",
+      "impact": "论文 §4 实测整体均分与原 SimpleQA「almost exactly the same」：删错题/歧义题（变易）被 §2.6 只留最难题（变难）抵消；GPT-4o、Claude Opus 4、Claude Sonnet 4 显著变差，o4-mini 变好",
+      "severity": "中",
+      "response": "论文 Table 7 给出 ΔSimpleQA 列并标注统计显著性（* p < 0.05）",
+      "reader": "Verified 与原版分数不能互相替代",
+      "cite": ["paper@§4", "paper@Table 7"]
+    },
+    {
+      "issue": "尊重站点爬取控制导致知识面收窄",
+      "impact": "§2.3 因参考 URL 指向采用访问控制手段的站点而删掉 2,664 → 1,855（−30.4%），是单步删得最多的一步；论文未量化这对知识覆盖的影响",
+      "severity": "中",
+      "response": "论文只在图里给出主题分布；HF 数据集卡统计显示剩余 1,000 题仍覆盖 10 类主题",
+      "reader": "把分数当作参数化知识的一次抽样，不是全量知识普查",
+      "cite": ["paper@§2.3", "hf-simpleqa-verified@Dataset Viewer"]
+    },
+    {
+      "issue": "排行榜口径未注明",
+      "impact": "Kaggle 榜单只给一列 Score（带 ±区间），页面未说明是否等于论文 F1-Score、用哪个裁判、重复几次",
+      "severity": "中",
+      "response": "未见官方说明（页面只链到技术报告与 notebook）",
+      "reader": "引用榜单数字时标注「Score（口径未注明）」",
+      "cite": ["leaderboard@Leaderboard"]
+    },
+    {
+      "issue": "1,000 题的采样误差",
+      "impact": "榜单前列 22 名的置信区间为 ±2.6%–3.4%，几个百分点的差距不构成稳定排序",
+      "severity": "中",
+      "response": "榜单直接给出每个模型的 ± 区间",
+      "reader": "差距小于误差区间时不要解读为强弱",
+      "cite": ["leaderboard@Leaderboard"]
+    },
+    {
+      "issue": "参考答案质量仍继承自原版",
+      "impact": "§2.7 的人工复核只做 URL 清理、来源质量核对、日期精度核对与元数据补全；论文未给出复核后仍存在的错误率估计",
+      "severity": "低",
+      "response": "未见官方回应",
+      "reader": "个别题目的标准答案仍可能有误",
+      "cite": ["paper@§2.7"]
+    }
+  ],
+  "notes": "官方口径三处一致：无工具、GPT-4.1 裁判、主指标 F1-Score。本页数值取自 arXiv:2509.07968v2（2026-03-10）与 Kaggle 榜单 2026-10-20 快照；榜单 Score 列口径页面未注明，勿直接等同论文 F1。原 v1 备注中的「DeepSeek 引用」缺乏可核验来源（所给页面无任何 SimpleQA 内容），已移除。",
+  "official_sources": [
+    { "kind": "dataset", "url": "https://huggingface.co/datasets/google/simpleqa-verified" },
+    { "kind": "paper", "url": "https://arxiv.org/abs/2509.07968" },
+    { "kind": "leaderboard", "url": "https://www.kaggle.com/benchmarks/deepmind/simpleqa-verified" }
+  ],
+  "related_benchmarks": ["simpleqa"],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-15",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-15",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "SimpleQA Verified: A Reliable Factuality Benchmark to Measure Parametric Knowledge（arXiv:2509.07968v2，2026-03-10）",
+        "url": "https://arxiv.org/abs/2509.07968",
+        "accessed": "2026-11-15"
+      },
+      {
+        "id": "leaderboard",
+        "kind": "leaderboard",
+        "title": "SimpleQA Verified Leaderboard | Kaggle（榜单快照 2026-10-20）",
+        "url": "https://www.kaggle.com/benchmarks/deepmind/simpleqa-verified",
+        "accessed": "2026-11-15"
+      },
+      {
+        "id": "hf-simpleqa-verified",
+        "kind": "dataset",
+        "title": "google/simpleqa-verified · Hugging Face 数据集卡",
+        "url": "https://huggingface.co/datasets/google/simpleqa-verified",
+        "accessed": "2026-11-15"
+      },
+      {
+        "id": "simpleqa-paper",
+        "kind": "paper",
+        "title": "Measuring short-form factuality in large language models with SimpleQA（arXiv:2411.04368v1，2024-11-07）",
+        "url": "https://arxiv.org/abs/2411.04368",
+        "accessed": "2026-11-15"
+      }
+    ],
+    "header": {
+      "publisher": { "v": "Google DeepMind × Google Research", "cite": ["paper@作者署名"] },
+      "first_release": { "v": "2025-09-09（arXiv v1）", "cite": ["paper@Submission history"] }
+    },
+    "cites": {
+      "summary": ["paper@Abstract", "leaderboard@About SimpleQA Verified", "paper@§3"],
+      "interpretation": ["paper@§4", "leaderboard@Limitations", "hf-simpleqa-verified@Limitations", "paper@Table 7"]
+    },
+    "problem": {
+      "text": "OpenAI SimpleQA（2024-11，4,326 题）存在噪声与错误标注、主题与题型偏斜、题目重复，并容易被模型针对基准特性过拟合；Google DeepMind 与 Google Research 想给社区一个更可靠的事实性测量工具，同时保留足够的头部空间让前沿模型继续拉开差距。",
+      "cite": ["paper@§1", "leaderboard@About SimpleQA Verified", "simpleqa-paper@§1"]
+    },
+    "ladder": [
+      {
+        "label": "论文发布时最好",
+        "value": "Gemini 2.5 Pro — F1-Score 55.6",
+        "note": "同表 Accuracy 55.3、Acc.|Attempted 55.9、Attempted 98.9、Hedged 1.1；ΔSimpleQA +0.5 个百分点（不显著）",
+        "cite": ["paper@Table 7"]
+      },
+      {
+        "label": "官方榜单最高",
+        "value": "Gemini 3.1 Pro Preview（Google）— Score 77.5% ±2.6%",
+        "note": "快照 2026-10-20；榜单只写 Score，未注明是否等于论文 F1-Score，两者口径不同不可直接对齐",
+        "cite": ["leaderboard@Leaderboard"]
+      },
+      { "label": "本站账本当前最高", "auto": "ledger-top" }
+    ],
+    "misreadings": [
+      {
+        "text": "「Verified 就是变难了的 SimpleQA，分数一定更高」——不对。论文 §4 实测整体均分与原版几乎一致：删掉错题和歧义题让基准变易，§2.6 只保留最难的 1,000 题又让它变难，两者相互抵消，只有个别模型显著变差或变好。",
+        "cite": ["paper@§4", "paper@Table 7"]
+      },
+      {
+        "text": "「原版 SimpleQA 全是日期题」——不对。日期答案确实偏多（32.8% 的答案是日期、24.1% 是人名），但主题前三仍是 science & technology、politics、art；原版还存在「119 题（2.7%）问哥伦比亚各市建城日期」这类被单一标注者偏好带偏的聚集。",
+        "cite": ["simpleqa-paper@§2.3", "paper@§2.4", "paper@§2.1"]
+      },
+      {
+        "text": "「1,000 题就是删了 76.9% 之后剩下的原题」——不对。最后一步「扩大头部空间」是从剩余 1,073 题里挑最难的 1,000 题；而在此之前数值标准答案已被改写成可接受区间（题数不变、答案形式变了）。",
+        "cite": ["paper@§2.5", "paper@§2.6"]
+      },
+      {
+        "text": "「榜单 77.5% 就是论文的 F1-Score」——未经证实。Kaggle 榜单只有一列 Score（带 ±区间），页面没有说明它就是论文 Table 7 的 F1-Score，也没说明裁判版本与重复次数。",
+        "cite": ["leaderboard@Leaderboard"]
+      },
+      {
+        "text": "「原版 SimpleQA 的标注 100% 正确」——不对。原论文的人工核查显示第三位标注员与 GPT 裁判的一致率为 94.4%，剩余 41 个（4.1%）确实答错的样本里有 7 个只是没答全。",
+        "cite": ["simpleqa-paper@§4"]
+      }
+    ],
+    "background": [
+      {
+        "k": "原型",
+        "v": "OpenAI SimpleQA（arXiv:2411.04368，2024-11-07），4,326 道短事实问答，主打冷门尾部分布，用来考察模型是否「知道自己不知道」",
+        "cite": ["simpleqa-paper@§1"]
+      },
+      {
+        "k": "为什么重做",
+        "v": "原版有人工标注噪声与错误、主题/题型偏斜、题目重复，并容易被针对基准特性过拟合；Google 想让事实性评测更可信、更难被刷",
+        "cite": ["paper@§1", "leaderboard@About SimpleQA Verified"]
+      },
+      {
+        "k": "与原型的关系",
+        "v": "题集从 4,326 删到 1,000（累计 −76.9%），参考答案与参考 URL 重新核对，数值答案改写为可接受区间；裁判仍用 GPT-4.1，但提示词收紧（词数 +15%）",
+        "cite": ["paper@Table 2", "paper@§3.2"]
+      },
+      {
+        "k": "谁在做",
+        "v": "Lukas Haas、Gal Yona、Giovanni D'Antonio、Sasha Goldshtein、Dipanjan Das，来自 Google DeepMind 与 Google Research",
+        "cite": ["paper@作者署名"]
+      },
+      {
+        "k": "公开形态",
+        "v": "HF 数据集卡（MIT 许可，task_categories: question-answering，语言 en，356 kb，split eval 1k rows）+ Kaggle 榜单与 notebook + arXiv 技术报告",
+        "cite": ["hf-simpleqa-verified@README", "leaderboard@Leaderboard"]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-03-10",
+        "columns": ["来源", "排名", "模型", "F1-Score", "ΔSimpleQA（百分点）", "Accuracy", "Acc.|Attempted", "Attempted", "Hedged", "口径"],
+        "rows": [
+          ["论文 Table 7", "1", "Gemini 2.5 Pro", "55.6", "+0.5", "55.3", "55.9", "98.9", "1.1", "全集 1,000 题；无工具；裁判 gpt-4.1-2025-04-14"],
+          ["论文 Table 7", "2", "GPT-5", "52.3", "+1.8", "50.9", "53.8", "94.6", "5.4", "同上"],
+          ["论文 Table 7", "3", "o3", "51.9", "+1.9", "51.6", "52.0", "99.3", "0.7", "同上"],
+          ["论文 Table 7", "4", "GPT-4.1", "39.9", "-1.0", "39.8", "40.1", "99.3", "0.7", "同上"],
+          ["论文 Table 7", "5", "GPT-4o", "34.9", "-3.5*", "34.4", "35.5", "97.0", "3.0", "同上"],
+          ["论文 Table 7", "6", "DeepSeek-R1 (0528)", "33.3", "+1.4", "32.7", "33.9", "96.4", "3.6", "同上"],
+          ["论文 Table 7", "7", "Claude Opus 4", "28.3", "-4.0*", "19.2", "54.1", "35.5", "64.5", "同上"],
+          ["论文 Table 7", "8", "Gemini 2.5 Flash", "28.2", "-1.4", "27.8", "28.7", "96.9", "3.1", "同上"],
+          ["论文 Table 7", "9", "GPT-5 mini", "24.6", "+1.1", "17.3", "42.8", "40.4", "59.6", "同上"],
+          ["论文 Table 7", "10", "o4-mini", "23.4", "+2.9*", "23.0", "23.8", "96.5", "3.5", "同上"],
+          ["论文 Table 7", "11", "Claude Sonnet 4", "18.7", "-4.4*", "12.5", "36.9", "33.9", "66.1", "同上"],
+          ["论文 Table 7", "12", "GPT-5 nano", "14.4", "+0.7", "10.2", "24.2", "42.2", "57.8", "同上"],
+          ["论文 Table 7", "13", "Gemini 2.5 Flash Lite", "11.1", "-0.4", "10.2", "12.1", "84.0", "16.0", "同上"]
+        ]
+      },
+      "cite": ["paper@Table 7"]
+    }
+  }
+}

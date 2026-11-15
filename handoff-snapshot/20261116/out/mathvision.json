@@ -1,0 +1,414 @@
+{
+  "id": "mathvision",
+  "name": "MATH-Vision",
+  "full_name": "Measuring Multimodal Mathematical Reasoning with MATH-Vision Dataset（MATH-Vision：用真实数学竞赛题测量多模态数学推理）",
+  "aliases": ["MATH-V", "MathVision", "MATH-Vision dataset"],
+  "status": null,
+  "categories": ["multimodal", "reasoning"],
+  "summary": "MATH-Vision（简称 MATH-V）是 3,040 道来自 19 项真实数学竞赛的带图数学题，覆盖 16 个数学学科、5 个难度级，题目全部为英文，用来测大模型「看图 + 做数学推理」的能力。",
+  "interpretation": "高分说明模型在带图竞赛数学题上接近人类水平。论文发布时最好成绩只有 22.76%（GPT-4V），而人类在 testmini 子集上是 75.66%，说明它当时确实难。但官方榜单现在最高已有 96.1%（GPT-5.4，带 Python、第三方评测），高分段比较前必须先看清四项口径：开不开 Chain-of-Thought、全集还是 testmini、带不带工具、是否第三方评测。",
+  "measures": [
+    {
+      "area": "16 个数学学科的带图推理",
+      "focus": "示例题（论文 Figure 5）：三个同心圆与两条公共直径，三块灰色区域面积相等、小圆半径为 1，求三个圆半径之积",
+      "share": "论文未给出各学科题量占比",
+      "format": "选择题 1,532 题（50.4%）与开放作答 1,508 题（49.6%）混合",
+      "cite": ["paper@Figure 5", "paper@Table 1"]
+    },
+    {
+      "area": "5 个难度级",
+      "focus": "先按原竞赛年级粗分、再人工逐题复核：3–6 年级归 Level 2，7–8 归 Level 3，9–10 归 Level 4，11 年级及以上归 Level 5",
+      "share": "论文未给出各级题量（仅 Figure 17 图示）",
+      "format": "同级内选择题与开放作答混合",
+      "cite": ["paper@附录 D.2"]
+    },
+    {
+      "area": "19 项来源竞赛",
+      "focus": "Math Kangaroo 1,499 题、AMC(8/10/12)+AIME 759 题、UK（Grey/Pink/Junior/Senior）535 题；IMO 因过难且很少用视觉输入被排除",
+      "share": "Table 1 只列出这三组（合计 2,793 题），未列出其余竞赛的题量",
+      "format": "竞赛原题与原图",
+      "cite": ["paper@Table 1", "paper@§3.2"]
+    },
+    {
+      "area": "快速评测子集 testmini",
+      "focus": "从全集抽出 304 题（10.0%）用于快速评测；论文附录 A 用多个模型验证 testmini 与全集趋势平行（Qwen-VL-Plus 在两者上只差 0.19%）",
+      "share": "304 / 3,040（10.0%）",
+      "format": "与全集同分布抽样",
+      "cite": ["paper@Table 1", "paper@附录 A"]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "非英文的数学推理：题目全部为英文，作者明确说因此无法评估模型在其他语言下的推理能力",
+      "cite": ["paper@§6"]
+    },
+    {
+      "text": "数学以外学科（如物理、化学）的多模态推理：作者明确说只收了数学题",
+      "cite": ["paper@§6"]
+    },
+    {
+      "text": "真实拍摄图片：论文说所有图片都是抽象的、没有真实生活照片；官方另发 MATH-Vision-Wild 变体来补这一维",
+      "cite": ["paper@§6", "dataset@README"]
+    },
+    {
+      "text": "带工具（搜索、代码执行）的解题能力：论文全部实验为 zero-shot 无工具，官方榜单上的带 Python 条目是另一套口径",
+      "cite": ["paper@§4.1", "site@Main Leaderboard"]
+    }
+  ],
+  "dataset": {
+    "sample_count": 3040,
+    "splits": ["test（3,040 题，主评测集）", "testmini（304 题，快速评测子集）"],
+    "languages": ["en"],
+    "source_type": "real-world 竞赛真题（公开来源，人工筛选与交叉标注）",
+    "public_sample": true,
+    "multiple_choice_share": "1,532 / 3,040（50.4%）",
+    "multimodal_share": "论文未给出该比例；结论称 3,040 题每题都配图，独立图片共 3,472 张",
+    "totals": "3,040 题全部配图，其中 testmini 304 题（10.0%）；1,532 题选择题（50.4%）、1,508 题开放作答（49.6%）；3,472 张独立图片、370 个独立答案；16 学科、5 难度级、19 项来源竞赛；题目为英文，平均 42.3 词",
+    "cite": ["paper@Table 1", "paper@§5"],
+    "construction": [
+      {
+        "k": "定竞赛范围",
+        "text": "先列国际与国内的数学竞赛，入选标准是「视觉输入在题目里经常出现、能提供关键信息」且「题目可分成不同难度级（如 AMC8/AMC10/AMC12/AIME）」；IMO 因过难且很少用视觉输入被排除，最终选 19 项竞赛。",
+        "cite": ["paper@§3.2"]
+      },
+      {
+        "k": "在线筛题",
+        "text": "从在线资源里挑图文交错的题，避开禁止复制转载的站点；考虑到污染问题，优先挑「找不到现成答案」的题（答案散落在单独文档或页面里）。PDF 用 Mathpix API 抽文字和图片，共收集约 9,000 题，其中 3,500 题带图。",
+        "cite": ["paper@§3.2"]
+      },
+      {
+        "k": "四阶段清洗与去重",
+        "text": "10 名理工科高年级标注员先核对图文对齐（Mathpix 可能把图文排错序），剔除缺文、错图、含隐私或不当内容的题，交叉验证后剩 3,352 题；再用词重叠与 Levenshtein 距离找疑似重复题并人工复核删除，得到最终 3,040 题。",
+        "cite": ["paper@§3.2"]
+      },
+      {
+        "k": "标学科与难度",
+        "text": "学科由三组标注员独立标注，并用 GPT-4V 与 Gemini Pro 给建议，最后由三名专家标注员多数投票定稿；难度则参考原竞赛的年级要求划分，再按题目实际难度人工调整。",
+        "cite": ["paper@§3.2", "paper@附录 D.2"]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "论文全部实验为 zero-shot（可不开或开 Chain-of-Thought），不做微调、不用 few-shot 示例；提示词优先用模型自带的选择题/开放题默认提示词，模型没有对应提示词时作者自己做 prompt engineering 并选最优提示，答案要求填在一对引号里（选择题只填一个字母）。判分由官方仓库的 evaluation/evaluate.py 完成：先用规则从回答里抽答案（识别「the final answer is / the answer is / the correct answer is / the answer should be」、\\boxed{}、结尾的单个字母等），再用 is_equal 与标准答案比较；is_equal 会把 LaTeX 转成 sympy 表达式按数值比较（保留 2 位小数）。官方脚本输出总体准确率以及各学科、各难度级的准确率；2024-07 起 VLMEvalKit 支持 MATH-V 并改用 LLM 做答案抽取以提高准确度。",
+    "cite": ["paper@§4.1", "eval-code", "eval-utils", "repo@Evaluation", "repo@News"],
+    "variants": [
+      {
+        "text": "开 / 不开 Chain-of-Thought：GPT-4V 从 22.76% 升到 23.98%，Gemini Pro 反而从 17.66% 降到 14.34%，两种口径的分数不能直接比。",
+        "cite": ["paper@§4.2", "paper@Table 3"]
+      },
+      {
+        "text": "全集（3,040 题）vs testmini（304 题）：官方主榜单按全集计算，论文的人类基值和部分模型行是 testmini。",
+        "cite": ["paper@Table 2", "site@Main Leaderboard"]
+      },
+      {
+        "text": "带 Python 工具 vs 无工具：官方主榜单前列多条明确写 (w/ Python)，与论文的 zero-shot 无工具口径不是一回事。",
+        "cite": ["site@Main Leaderboard"]
+      },
+      {
+        "text": "官方自测 vs 第三方评测：榜单里多条标注 (3rd-party eval)，其提示词与判分实现不保证与官方脚本一致。",
+        "cite": ["site@Main Leaderboard"]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "accuracy",
+      "name": "准确率（Accuracy）",
+      "direction": "越高越好",
+      "description": "判为正确的题目占比；主榜单按 3,040 题全集计算，论文另给 testmini 结果，并可细分到 16 个学科与 5 个难度级",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["repo@Evaluation", "paper@Table 2"]
+    }
+  ],
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2024-02-22",
+      "label": "arXiv v1 发布，3,040 题（arXiv 元数据 published 为 2024-02-22T18:56:38Z，至今只有这一个版本）",
+      "cite": ["arxiv@published", "repo@News"]
+    },
+    {
+      "id": "hf-release",
+      "date": "2024-02-23",
+      "label": "数据集上线 Hugging Face（MathLLMs/MathVision）",
+      "cite": ["repo@News"]
+    },
+    {
+      "id": "neurips-2024",
+      "date": "2024-09-27",
+      "label": "被 NeurIPS 2024 Datasets and Benchmarks Track 接收",
+      "cite": ["repo@News", "repo@Citation"]
+    },
+    {
+      "id": "open-leaderboard",
+      "date": "2025-05-16",
+      "label": "官方新增开源模型榜单（Open Source Leaderboard）",
+      "cite": ["repo@News"]
+    },
+    {
+      "id": "wild",
+      "date": "2026-04-24",
+      "label": "发布 MATH-Vision-Wild：把 testmini 原题在打印纸、iPad、笔记本、投影仪上实拍，另立 Wild 榜单",
+      "cite": ["dataset@News", "site@Wild Leaderboard"]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "污染与刷榜风险",
+      "impact": "题目来自公开竞赛与网站、可自由下载，可能进入训练集或被针对性调优。论文自述靠「优先挑找不到现成答案的题」降低污染，但官方主榜单仍把 Vision-R1-7B、R1-VL-7B、Mulberry-Qwen2VL-7B 三个条目标注为 (contamination-flagged)。",
+      "severity": "高",
+      "response": "论文在选材阶段避开禁止转载的站点并优先选无现成答案的题；作者声明数据集「不应用于训练作弊」。数据集卡里原本强烈建议「若必须用于训练请排除 testmini」的警示，在当前版本已被注释隐藏。",
+      "reader": "看到榜单分数先找 contamination-flagged 标记；某模型在 MATH-Vision 上的跃升要结合其他基准一起看。",
+      "cite": ["paper@§3.2", "paper@§5", "site@Main Leaderboard", "dataset@README"]
+    },
+    {
+      "issue": "评测口径不统一",
+      "impact": "开/关 CoT、全集 vs testmini、带不带 Python、官方自测 vs 第三方评测都会显著改变分数；主榜单前列大量条目是带 Python 的第三方评测。",
+      "severity": "高",
+      "response": "论文固定 zero-shot 与统一提示词并在附录给出提示词表；官方脚本按学科与难度级分别统计准确率；2024-07 起 VLMEvalKit 改用 LLM 做答案抽取。未见官方对第三方评测条目做口径标注之外的进一步规范。",
+      "reader": "比较两个模型前，先确认 CoT、子集、工具、是否第三方评测这四项一致。",
+      "cite": ["paper@§4.1", "paper@§4.2", "site@Main Leaderboard", "repo@News"]
+    },
+    {
+      "issue": "接近饱和，高分段区分度下降",
+      "impact": "官方主榜单最高 96.1%（GPT-5.4，xhigh reasoning，带 Python，第三方评测，2026-04-01），已远超论文发布时最好成绩 22.76% 和榜单上的人类 68.82%；Wild 榜单显示同一批 testmini 题换成实拍后多数模型掉 20–50 分。",
+      "severity": "中",
+      "response": "官方另立 MATH-Vision-Wild 数据集与榜单，用实拍/截图变体重新拉开差距。",
+      "reader": "接近上限的分数不要只按百分点排序；结合 Wild 变体看鲁棒性。",
+      "cite": ["site@Main Leaderboard", "site@Wild Leaderboard", "dataset@README"]
+    },
+    {
+      "issue": "答案错误与题目歧义",
+      "impact": "数据集卡致谢里列出社区成员更正了 6 道题的答案（ID 21、691、2522、2524、338、1826），说明发布后仍发现标准答案有误；论文没有给出整卷的答案错误率。",
+      "severity": "中",
+      "response": "官方在数据集卡中致谢勘误者，并邀请把 question_id 提到 issue 页以便修改；论文称数据经多名标注员交叉验证以保证「唯一且正确的答案」。",
+      "reader": "遇到与标准答案不一致的题，先查 issue 页是否已有勘误记录。",
+      "cite": ["dataset@Acknowledgments", "dataset@Leaderboard", "paper@§1"]
+    },
+    {
+      "issue": "论文内部数字互相矛盾",
+      "impact": "§1 写「1,532 道开放作答、1,508 道选择题」，Table 1 写「选择题 1,532（50.4%）、开放作答 1,508（49.6%）」；Table 1 的选项占比 19.5%–21.2% 正是以 1,532 为分母，与 Table 1 自洽。",
+      "severity": "低",
+      "response": "未见官方回应（arXiv 只有 v1，没有修订版）。",
+      "reader": "引用题型构成时以 Table 1 为准，并注明论文正文与表格不一致。",
+      "cite": ["paper@§1", "paper@Table 1"]
+    },
+    {
+      "issue": "语言与领域覆盖单一",
+      "impact": "题目全部英文且只收数学题；图片全部为抽象图形，没有真实照片。",
+      "severity": "低",
+      "response": "论文在 Limitations 中明确列出这两点；Wild 变体补上了「真实拍摄」这一维。",
+      "reader": "不要用 MATH-Vision 的分数推断模型的中文数学能力或物理/化学推理能力。",
+      "cite": ["paper@§6", "dataset@README"]
+    }
+  ],
+  "notes": "证据账本中 5 次引用；与 MathVista 是两个不同数据集（勿混用）。题目由 MAA、KMA、UKMT 等竞赛方提供，数据集与代码为 MIT 许可",
+  "official_sources": [
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2402.14804"
+    },
+    {
+      "kind": "github",
+      "url": "https://github.com/mathllm/MATH-V"
+    },
+    {
+      "kind": "site",
+      "url": "https://mathllm.github.io/mathvision/"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/MathLLMs/MathVision"
+    }
+  ],
+  "related_benchmarks": ["mathvista", "math500", "mmmu", "zerobench"],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-11",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-11",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "Measuring Multimodal Mathematical Reasoning with MATH-Vision Dataset（arXiv:2402.14804v1 全文，NeurIPS 2024 D&B）",
+        "url": "https://arxiv.org/abs/2402.14804",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "arxiv",
+        "kind": "paper",
+        "title": "arXiv API 元数据（id_list=2402.14804，确认仅 v1 与首次提交时间）",
+        "url": "https://export.arxiv.org/api/query?id_list=2402.14804",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "mathllm/MATH-V（官方仓库 README：News、Evaluation、Citation）",
+        "url": "https://github.com/mathllm/MATH-V",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "eval-code",
+        "kind": "repo",
+        "title": "mathllm/MATH-V evaluation/evaluate.py（官方判分脚本）",
+        "url": "https://github.com/mathllm/MATH-V/blob/main/evaluation/evaluate.py",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "eval-utils",
+        "kind": "repo",
+        "title": "mathllm/MATH-V evaluation/utils.py（is_equal 答案等价判断）",
+        "url": "https://github.com/mathllm/MATH-V/blob/main/evaluation/utils.py",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "dataset",
+        "kind": "dataset",
+        "title": "MathLLMs/MathVision（Hugging Face 数据集卡）",
+        "url": "https://huggingface.co/datasets/MathLLMs/MathVision",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "site",
+        "kind": "leaderboard",
+        "title": "MATH-Vision 官网（Main / Open Source / Wild 三张榜单）",
+        "url": "https://mathllm.github.io/mathvision/",
+        "accessed": "2026-11-11"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "香港中文大学多媒体实验室（Multimedia Lab, CUHK）× 商汤（SenseTime）× 上海人工智能实验室（Shanghai AI Laboratory）",
+        "cite": ["paper@作者署名"]
+      },
+      "first_release": {
+        "v": "2024-02-22（arXiv v1）",
+        "cite": ["arxiv@published"]
+      }
+    },
+    "cites": {
+      "summary": ["arxiv@summary", "paper@Table 1"],
+      "interpretation": ["paper@§1", "paper@Table 2", "site@Main Leaderboard"]
+    },
+    "problem": {
+      "text": "已有基准的题目类型单一、学科覆盖窄。作者举的例子：MathVista 里 375 道 abstract scene 题中绝大多数只能归成「数个数 / 给定参照物量长度 / 看时钟报时」三类；Math-QA 类数据的学科范围也局限于平面几何、表格和图表问答。MATH-Vision 改用真实竞赛题，把学科扩到 16 个、难度分成 5 级，重新拉开模型之间的差距。",
+      "cite": ["arxiv@summary", "paper@§1"]
+    },
+    "ladder": [
+      {
+        "label": "随机猜测基线",
+        "value": "7.17%",
+        "note": "论文 Table 2 的 Random Chance 行（全集）；各学科从 0.6%（metric geometry - angle）到 22.1%（descriptive geometry）不等。",
+        "cite": ["paper@Table 2"]
+      },
+      {
+        "label": "人类基线",
+        "value": "68.82%（全集）/ 75.66%（testmini）",
+        "note": "官网主榜单 Human 行（2024-04-05）为全集 68.82%，注明是「高中毕业及以上标注员的平均表现」；论文 Table 2 的 Human (testmini) 为 75.66%，论文 §1 用 22.76 对 75.66 描述差距。两个数字口径不同，不要混用。",
+        "cite": ["site@Main Leaderboard", "paper@Table 2", "paper@§1"]
+      },
+      {
+        "label": "论文发布时最好成绩",
+        "value": "22.76%",
+        "note": "GPT-4V，全集，无 CoT；同表开源最好为 InternLM-XComposer2-VL 14.54%。官方仓库 News 另记 GPT-4V 23.98%（带 CoT）并称人类约 70%。",
+        "cite": ["paper@Table 2", "repo@News"]
+      },
+      {
+        "label": "官方榜单当前最高",
+        "value": "96.1%",
+        "note": "GPT-5.4（xhigh reasoning，带 Python，第三方评测，2026-04-01）。同榜不带 Python 的 GPT-5.4 为 92.0%，Kimi K2.6 无工具为 87.4%。",
+        "cite": ["site@Main Leaderboard"]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      },
+      {
+        "label": "鲁棒性参考线（Wild 实拍变体）",
+        "value": "o4-mini 57.2%（唯一提升）",
+        "note": "同一批 testmini 题改成实拍后，Gemini 2.5 Pro Preview 05-06 (thinking) 从 63.8 掉到 49.0，Gemini 1.5 Pro 从 38.8 掉到 18.4；只有 o4-mini 从 55.9 升到 57.2。",
+        "cite": ["site@Wild Leaderboard"]
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 testmini 的分数当成全集分数：论文的人类基线 75.66% 是 testmini（304 题），官网主榜单的人类 68.82% 是全集（3,040 题）。",
+        "cite": ["paper@Table 2", "site@Main Leaderboard"]
+      },
+      {
+        "text": "把带 Python 工具的分数和 zero-shot 无工具分数排在一起比：官方主榜单第 1 名 96.1% 明确标注 (3rd-party eval) 且带 Python。",
+        "cite": ["site@Main Leaderboard"]
+      },
+      {
+        "text": "以为分数低就一定是模型不行：论文自己指出 InternLM-XComposer2-VL 在 MathVista 上比 GPT-4V 高 7.7%、比 Gemini Pro 高 12.4%，在 MATH-Vision 上却低很多，作者把这种反差归因于数据污染问题。",
+        "cite": ["paper@§4.2"]
+      },
+      {
+        "text": "忽略 contamination-flagged 标记：主榜单里 Vision-R1-7B、R1-VL-7B、Mulberry-Qwen2VL-7B 三个条目带这个标记，直接和未标记模型并列排名会高估它们。",
+        "cite": ["site@Main Leaderboard"]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "香港中文大学多媒体实验室、商汤（SenseTime）、上海人工智能实验室",
+        "cite": ["paper@作者署名"]
+      },
+      {
+        "k": "核心作者",
+        "v": "Ke Wang、Junting Pan（project lead）、Weikang Shi、Zimu Lu、Mingjie Zhan、Hongsheng Li（directional lead）；论文标注 Junting Pan 等为共同一作",
+        "cite": ["paper@作者署名"]
+      },
+      {
+        "k": "发表 venue",
+        "v": "NeurIPS 2024 Datasets and Benchmarks Track（2024-09-27 接收）",
+        "cite": ["repo@Citation", "repo@News"]
+      },
+      {
+        "k": "时间线",
+        "v": "2024-02-22 arXiv v1 → 2024-02-23 数据集上线 Hugging Face → 2024-09-27 NeurIPS D&B 接收 → 2025-05-16 新增开源榜单 → 2026-04-24 发布 MATH-Vision-Wild",
+        "cite": ["arxiv@published", "repo@News", "dataset@News"]
+      },
+      {
+        "k": "题目来源与许可",
+        "v": "题目由 MAA（AMC/AIME）、Kangaroo of Mathematics in Austria（KMA）、UKMT 等竞赛方提供，作者称遵守 Fair Use §107；数据集与开源代码为 MIT 许可",
+        "cite": ["paper@§7", "paper@§5"]
+      },
+      {
+        "k": "数据与代码",
+        "v": "数据集在 Hugging Face（MathLLMs/MathVision，MIT，test 3,040 题 / testmini 304 题），评测代码与三张官方榜单在 GitHub（mathllm/MATH-V）；Wild 变体数据集为 MathLLMs/MathVision-Wild",
+        "cite": ["dataset@dataset_info", "repo@Evaluation", "dataset@README"]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-11",
+        "columns": ["来源", "模型", "准确率(%)", "日期", "口径"],
+        "rows": [
+          ["论文 Table 2", "Random Chance", "7.17", "—", "全集"],
+          ["论文 Table 2", "GPT4V", "22.76", "—", "全集，无 CoT"],
+          ["论文 Table 2", "Gemini Pro", "17.66", "—", "全集，无 CoT"],
+          ["论文 Table 2", "InternLM-XComposer2-VL", "14.54", "—", "全集，无 CoT（开源最好）"],
+          ["论文 Table 2", "Human (testmini)", "75.66", "—", "testmini 304 题"],
+          ["论文 Table 3", "GPT4V-CoT", "23.98", "—", "全集，开 CoT"],
+          ["论文 Table 3", "Gemini Pro-CoT", "14.34", "—", "全集，开 CoT"],
+          ["官网主榜单", "Human", "68.82", "2024-04-05", "全集"],
+          ["官网主榜单", "Random Chance", "7.17", "2024-02-21", "全集"],
+          ["官网主榜单", "GPT-4o", "30.39", "2024-05-19", "全集"],
+          ["官网主榜单", "Kimi K2.6 (no tools)", "87.4", "2026-04-01", "全集，无工具"],
+          ["官网主榜单", "GPT-5.4 (xhigh reasoning) (3rd-party eval)", "92.0", "2026-04-01", "全集，无工具，第三方评测"],
+          ["官网主榜单", "Kimi K2.6 (w/ Python)", "93.2", "2026-04-01", "全集，带 Python"],
+          ["官网主榜单", "Gemini 3.1 Pro (thinking high, w/ Python) (3rd-party eval)", "95.7", "2026-04-01", "全集，带 Python，第三方评测"],
+          ["官网主榜单", "GPT-5.4 (xhigh reasoning, w/ Python) (3rd-party eval)", "96.1", "2026-04-01", "全集，带 Python，第三方评测"],
+          ["官网 Wild 榜单", "Gemini 1.5 Pro", "18.4", "2024-05-23", "testmini 实拍（Wild）"],
+          ["官网 Wild 榜单", "Gemini 2.5 Pro Preview 05-06 (thinking)", "49.0", "2025-05-06", "testmini 实拍（Wild）"],
+          ["官网 Wild 榜单", "o4-mini", "57.2", "2025-04-16", "testmini 实拍（Wild）"]
+        ]
+      },
+      "cite": ["paper@Table 2", "paper@Table 3", "site@Main Leaderboard", "site@Wild Leaderboard"]
+    }
+  }
+}

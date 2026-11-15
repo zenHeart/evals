@@ -1,0 +1,624 @@
+{
+  "id": "yc-bench",
+  "name": "YC-Bench",
+  "full_name": "YC-Bench: Benchmarking AI Agents for Long-Term Planning and Consistent Execution",
+  "aliases": [],
+  "status": "active",
+  "categories": [
+    "agent"
+  ],
+  "summary": "Collinear AI 出的长程智能体基准：让模型当一年模拟创业公司的 CEO，只能通过 CLI 与一个 SQLite 离散事件模拟器交互，在数百轮里做任务选择、员工分配、现金流与客户信任经营，最后按期末净资产排名。",
+  "interpretation": "高分说明模型在「上下文被截断 + 状态部分可观测」的条件下能把长程链路走通：论文里最强的单一成功预测因子是 scratchpad（跨截断的持久记忆）使用强度，站点统计显示只有 4/10 个模型在 scratchpad 里显式维护优先客户白名单、三分之二的运行完全没提到拉黑对抗客户。失败集中在两处——没识别出约三分之一的对抗客户（占破产的 47%），以及员工分配不当或并发过高（7/11 个模型因此大量失败）。",
+  "measures": [
+    {
+      "area": "客户信任与任务选择",
+      "focus": "信任越高，同一客户后续任务的工作量越小、奖励档位越高；论文里顶尖模型靠早期集中服务一两个客户触发信任滚雪球，把客户摊薄的模型则始终拿不到工作量减免。",
+      "share": "未披露（论文未给各考察方向占比）",
+      "format": "模拟环境中的连续决策（数百轮）",
+      "cite": [
+        "paper@§3 Clients",
+        "paper@§4.2 Main Results",
+        "collinear-ai-yc-bench@Key Findings"
+      ]
+    },
+    {
+      "area": "多行业域任务分配",
+      "focus": "任务分属 4 个行业域，各有工作量与截止时间；逾期罚掉奖励的 35% 并扣声望，高声望解锁更高奖励任务并线性放大收益。",
+      "share": "未披露",
+      "format": "市场池挑任务 + 派员工",
+      "cite": [
+        "paper@§3 Tasks and domains",
+        "repo"
+      ]
+    },
+    {
+      "area": "员工分配与产能估算",
+      "focus": "8 名固定员工不能招聘/解雇，各领域产能不同且是隐藏信息；完成任务会提升产能但同时抬高月薪，7/11 个模型因分不到能赶上截止的员工而大量失败。",
+      "share": "未披露",
+      "format": "分配决策 + 截止时间风险",
+      "cite": [
+        "paper@§3 Employees and productivity",
+        "paper@Table 2",
+        "collinear-ai-yc-bench@Key Findings"
+      ]
+    },
+    {
+      "area": "现金流与发薪压力",
+      "focus": "月薪随完成任务数单调上升，是主要成本压力；期末净资产是唯一记分项，资金跌破 0 即破产。",
+      "share": "未披露",
+      "format": "单一标量（期末资金）",
+      "cite": [
+        "paper@§3 Employees and productivity",
+        "paper@§3 Environment Definition"
+      ]
+    },
+    {
+      "area": "对抗客户识别",
+      "focus": "约 35% 的客户是对抗客户（接受任务后工作量被虚增、截止几乎不可能达成），奖励仍有竞争力所以不能按价格过滤；只能从反复失败的模式推断，占破产的 47%。",
+      "share": "约 32%–35%（对抗任务/客户占比；站点给 ~32%，论文 Table 2 给 35%）",
+      "format": "隐状态推断（POMDP）",
+      "cite": [
+        "paper@§3 Adversarial clients",
+        "paper@Table 2",
+        "collinear-ai-yc-bench@Key Findings"
+      ]
+    },
+    {
+      "area": "长期记忆（scratchpad）",
+      "focus": "对话历史每 20 轮截断，唯一跨轮记忆是每轮注入系统提示的 scratchpad；论文称它是成功的最强单一预测因子，行为统计也显示前三名用得更勤。",
+      "share": "未披露",
+      "format": "自由文本笔记（策略自选）",
+      "cite": [
+        "paper@§3 Memory",
+        "paper@Abstract",
+        "paper@Table 3"
+      ]
+    },
+    {
+      "area": "成本效率",
+      "focus": "单位 API 美元带来的游戏内营收，是独立于净资产的第二维度：Kimi-K2.5 比次优模型高 2.5×，GLM-5 比榜首 Opus 高 11× 而成绩接近。",
+      "share": "未披露",
+      "format": "派生指标（营收 / API 成本）",
+      "cite": [
+        "collinear-ai-yc-bench@Key Findings",
+        "paper@Table 4"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "自然语言信息提取：工作量、员工产能、截止时间都以数值直接给出，不考从文本里估工期",
+      "cite": [
+        "paper@§6 Limitations"
+      ]
+    },
+    {
+      "text": "招聘、裁员与随机外生冲击：员工不可增减，扰动只有对抗客户，没有随机事件",
+      "cite": [
+        "paper@§6 Limitations"
+      ]
+    },
+    {
+      "text": "长上下文窗口本身：K=20 是固定截断；附录 E 显示调 K 会改变分数（3/4 个模型在 K=30 最好），但它考的是截断下的记忆策略，不是窗口长度",
+      "cite": [
+        "paper@Appendix E",
+        "paper@§3 Memory"
+      ]
+    },
+    {
+      "text": "代码与多模态能力：全部交互都是 CLI 文本命令，不涉及看图、读长文或写代码",
+      "cite": [
+        "paper@Appendix A",
+        "repo"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 200,
+    "splits": [
+      "论文与官网口径：medium（论文称 default）预设 × 种子 1–3，取平均",
+      "HF 数据集榜：medium 预设 × 种子 1–3 平均，共 10 条提交"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "程序化生成的离散事件模拟（无固定题目集，任务池按种子生成）",
+    "public_sample": true,
+    "totals": "不是固定题目集：medium 预设下每个种子一个 200 个市场任务的任务池、8 名员工、35% 对抗客户、20 轮上下文截断。论文共 12 个模型 × 3 种子 = 36 次 LLM 运行；官网榜单另收录 67 条记录（66 个模型 + 贪心基线），HF 数据集榜 10 条提交。",
+    "cite": [
+      "paper@Table 2",
+      "paper@§4.1 Setup",
+      "collinear-ai-yc-bench@Evaluate Your Model",
+      "dataset"
+    ],
+    "construction": [
+      {
+        "k": "环境",
+        "text": "SQLite 支撑的离散事件模拟，智能体只能通过 CLI 命令交互；sim resume 推进时钟，每次运行产出 SQLite 库和 JSON rollout。",
+        "cite": [
+          "repo",
+          "paper@§3 Simulation Clock"
+        ]
+      },
+      {
+        "k": "任务与截止",
+        "text": "任务来自市场池，带预定奖励、接受后激活的截止时间和该领域工作量；逾期罚 35% 奖励并扣声望，高声望解锁更高奖励任务。",
+        "cite": [
+          "paper@§3 Tasks and domains",
+          "repo"
+        ]
+      },
+      {
+        "k": "员工",
+        "text": "8 名固定员工（不可招聘/解雇），各有分领域产能与资历档位；任务成功后产能提升但同时涨薪，月薪随完成任务数单调上升。",
+        "cite": [
+          "paper@Table 2",
+          "paper@§3 Employees and productivity"
+        ]
+      },
+      {
+        "k": "客户与对抗",
+        "text": "多个客户，约 35% 为对抗客户：接受任务后工作量被虚增、对抗状态永不直接揭示，只能从反复失败的模式推断。",
+        "cite": [
+          "paper@Table 2",
+          "paper@§3 Adversarial clients"
+        ]
+      },
+      {
+        "k": "观测与记忆",
+        "text": "每轮给结构化状态摘要（时间戳、资金、月薪、跑道估计、活跃任务数），员工档位、市场任务、客户信任、任务进度都要主动查询；对话历史截断到最近 20 轮，scratchpad 每轮注入系统提示。",
+        "cite": [
+          "paper@§3 Observations",
+          "paper@Table 2",
+          "paper@§3 Memory"
+        ]
+      },
+      {
+        "k": "系统提示词",
+        "text": "每次运行的系统提示词在论文附录 C 全文给出，模型在每轮聊天记录里都能看到它。",
+        "cite": [
+          "paper@Appendix C"
+        ]
+      },
+      {
+        "k": "提交方式",
+        "text": "榜单提交：下载仓库里的 run_yc_bench_job.py 跑 medium 预设 3 个种子，再在模型自己的 HF 仓库提 PR 加 .eval_results/yc-bench.yaml。",
+        "cite": [
+          "dataset"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "final-funds",
+      "name": "期末净资产",
+      "direction": "越高越好",
+      "description": "3 个种子期末资金的平均值（美元），破产记 $0；唯一记分项",
+      "cite": [
+        "dataset",
+        "collinear-ai-yc-bench@Leaderboard"
+      ]
+    },
+    {
+      "id": "bankrupt-seeds",
+      "name": "破产种子数",
+      "direction": "越低越好",
+      "description": "3 个种子里有几个期末资金跌破 0",
+      "cite": [
+        "collinear-ai-yc-bench@Leaderboard"
+      ]
+    },
+    {
+      "id": "api-cost",
+      "name": "单次运行 API 成本",
+      "direction": "越低越好",
+      "description": "论文 Table 4 按 3 种子给均值 ± 标准差（美元）、总 token 数与运行分钟数；波动很大（Claude Opus 4.6 86.07 ± 41.17，Claude Sonnet 4.6 18.06 ± 18.87）",
+      "cite": [
+        "paper@Table 4"
+      ]
+    },
+    {
+      "id": "cost-efficiency",
+      "name": "成本效率",
+      "direction": "越高越好",
+      "description": "游戏内营收除以 API 成本；Kimi-K2.5 比次优模型高 2.5×，GLM-5 比榜首 Opus 高 11×",
+      "cite": [
+        "collinear-ai-yc-bench@Key Findings",
+        "paper@Abstract"
+      ]
+    },
+    {
+      "id": "behavioral",
+      "name": "行为统计",
+      "direction": "视维度而定",
+      "description": "论文 Table 3 的四个行为指标：SP/100T（每 100 轮 scratchpad 写入）、Inspect/Accept（任务查询/接受比）、Avg Conc.（平均并发任务数）、Cmd/Turn（每轮命令数）",
+      "cite": [
+        "paper@Table 3"
+      ]
+    }
+  ],
+  "default_protocol": {
+    "raw": "用 LiteLLM 推理、OpenRouter 作模型提供方，模型通过 CLI 与模拟器交互；每个模型跑 medium（论文称 default）预设的种子 1–3，取期末资金平均，破产记 $0，score = average(max(0, final_funds_cents / 100))。论文另设贪心基线作对照：每轮接受市场上奖励最高的任务、把全部员工派上去并推进时钟。",
+    "cite": [
+      "dataset",
+      "paper@§4.1 Setup",
+      "paper@§4.1 Baseline"
+    ],
+    "variants": [
+      {
+        "text": "预设名字不一致：论文与仓库写 default，官网与 HF 榜写 medium；参数一致（200 个市场任务、8 名员工、中等截止压力），但文本上容易被误当成两套配置。",
+        "cite": [
+          "repo",
+          "collinear-ai-yc-bench@Evaluate Your Model"
+        ]
+      },
+      {
+        "text": "上下文窗口 K 可调（20/30/40/50）：附录 E 里 3/4 个模型在 K=30 最好（GPT-5.4 Mini 提升 123%、Gemini 3 Flash 27%），之后急剧变差，而 GPT-5.4 在默认 K=20 最好。跨 K 的分数不能直接比。",
+        "cite": [
+          "paper@Appendix E"
+        ]
+      },
+      {
+        "text": "榜单不同步：官网 67 条记录、HF 数据集榜 10 条，同一模型两边可能差一倍以上（MiniMax-M3：HF 记 2,100,000，官网 $999,506）。",
+        "cite": [
+          "collinear-ai-yc-bench@Leaderboard",
+          "dataset@Leaderboard"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2026-04-01",
+      "label": "arXiv v1 首发（论文首页标注 1 Apr 2026，通信日期 2026-04-02；站点 BibTeX 写作 year 2025）",
+      "cite": [
+        "paper",
+        "collinear-ai-yc-bench@BibTeX"
+      ]
+    },
+    {
+      "id": "site-2026-11",
+      "date": "2026-11-14",
+      "label": "官网榜单快照：67 条记录，榜首 Claude Fable 5.2 $3,445,495；论文的 12 个模型里 Claude Opus 4.6 排第 27、GLM-5 第 29",
+      "cite": [
+        "collinear-ai-yc-bench@Leaderboard"
+      ]
+    },
+    {
+      "id": "hf-2026-11",
+      "date": "2026-11-14",
+      "label": "HF 数据集榜快照：10 条提交，榜首 MiniMaxAI/MiniMax-M3 记 2,100,000（官网同一模型 $999,506）",
+      "cite": [
+        "dataset@Leaderboard"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "两个榜单数值不一致",
+      "impact": "官网 67 条记录、HF 数据集榜 10 条；HF 榜首 MiniMax-M3 记 2,100,000，官网同一模型 $999,506，差一倍以上。引用哪个数会直接改变结论。",
+      "severity": "中",
+      "response": "本站以官网榜单为准，HF 值在附录 B 单独分列并标注来源。",
+      "reader": "看到 YC-Bench 分数先问是哪个榜、哪个预设、几个种子。",
+      "cite": [
+        "dataset@Leaderboard",
+        "collinear-ai-yc-bench@Leaderboard"
+      ]
+    },
+    {
+      "issue": "单一标量，运行间方差大",
+      "impact": "只有期末净资产一个记分项；论文 Table 4 显示成本与运行时长的标准差常与均值同量级（Claude Opus 4.6 成本 86.07 ± 41.17 美元，Claude Sonnet 4.6 18.06 ± 18.87 美元），单种子名次不可靠。",
+      "severity": "中",
+      "response": "固定 3 种子平均，榜单要求 3 种子，破产记 $0；论文另设贪心基线作对照。",
+      "reader": "看 3 种子均值和破产种子数，不要看单次运行。",
+      "cite": [
+        "paper@Table 4",
+        "dataset"
+      ]
+    },
+    {
+      "issue": "环境被大幅简化",
+      "impact": "员工不能招聘/解雇，扰动只有对抗客户而没有随机外生事件，工作量与产能都是数值而非自然语言；高分不等于能经营真实公司。",
+      "severity": "中",
+      "response": "论文在 Limitations 里明确列出这些简化并说明后续放开；对抗客户的隐藏状态与信任滚雪球仍要求跨种子泛化。",
+      "reader": "把它读成长程一致性与资源管理的压力测试，不是创业能力证明。",
+      "cite": [
+        "paper@§6 Limitations"
+      ]
+    },
+    {
+      "issue": "口径命名不一致（default / medium）",
+      "impact": "论文与仓库写 default 预设，官网与 HF 榜写 medium；实际参数一致（200 个市场任务、8 名员工），但文本上容易被当成两套配置，从而错判模型间差距。",
+      "severity": "低",
+      "response": "预设是 src/yc_bench/config/presets/ 下的 TOML 文件，README 指向 default.toml 查全部可调参数。",
+      "reader": "比较前核对预设名和参数，别被名字差异误导。",
+      "cite": [
+        "repo",
+        "collinear-ai-yc-bench@Evaluate Your Model"
+      ]
+    },
+    {
+      "issue": "开源可被针对性调优",
+      "impact": "代码、配置和每次运行的系统提示词全部公开（附录 C 全文给出），厂商可以针对环境机制优化而不提升通用长程能力。",
+      "severity": "低",
+      "response": "对抗客户的隐藏状态与信任动力学仍要求泛化；站点持续收录新模型并公开全部配置。",
+      "reader": "把榜单分当作该环境内的表现，不要外推到通用长程能力。",
+      "cite": [
+        "repo",
+        "paper@Appendix C"
+      ]
+    }
+  ],
+  "notes": "MiniMax M3 官方博客把 YC-Bench 列为评测项（用官方代码与配置、指标为期末资产）；Collinear AI 开源，站点内容 CC BY-SA 4.0。",
+  "official_sources": [
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2604.01212"
+    },
+    {
+      "kind": "site",
+      "url": "https://collinear-ai.github.io/yc-bench/"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/collinear-ai/yc-bench"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/collinear-ai/yc-bench"
+    }
+  ],
+  "related_benchmarks": [
+    "vending-bench",
+    "vending-bench-2",
+    "agent-startup-bench"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "YC-Bench: Benchmarking AI Agents for Long-Term Planning and Consistent Execution（arXiv:2604.01212v1，2026-04-01）",
+        "url": "https://arxiv.org/abs/2604.01212",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "collinear-ai-yc-bench",
+        "kind": "site",
+        "title": "YC-Bench 官网（摘要、榜单 67 条、Key Findings、复现命令、BibTeX）",
+        "url": "https://collinear-ai.github.io/yc-bench/",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "collinear-ai/yc-bench（评测代码、README 与预设说明）",
+        "url": "https://github.com/collinear-ai/yc-bench",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "dataset",
+        "kind": "dataset",
+        "title": "collinear-ai/yc-bench（Hugging Face，数据集榜 10 条 + 提交说明）",
+        "url": "https://huggingface.co/datasets/collinear-ai/yc-bench",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "minimax-blog-minimax-m3",
+        "kind": "blog",
+        "title": "MiniMax 官方博客：MiniMax M3（含 YC-Bench 评测口径说明，2026-06-01）",
+        "url": "https://www.minimax.io/blog/minimax-m3",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Collinear AI（论文通信邮箱 research@collinear.ai；站点版权归 Collinear AI）",
+        "cite": [
+          "paper",
+          "collinear-ai-yc-bench"
+        ]
+      },
+      "first_release": {
+        "v": "2026-04-01（arXiv v1；站点 BibTeX 写作 year 2025）",
+        "cite": [
+          "paper",
+          "collinear-ai-yc-bench@BibTeX"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "paper@Abstract",
+        "paper@§1",
+        "collinear-ai-yc-bench@Evaluate Your Model",
+        "repo"
+      ],
+      "interpretation": [
+        "paper@Abstract",
+        "paper@§4.2 Main Results",
+        "paper@§5 Error Analysis",
+        "collinear-ai-yc-bench@Key Findings"
+      ]
+    },
+    "problem": {
+      "text": "论文认为 Vending-Bench 与 Vending-Bench 2 已经考察过前沿模型的长程一致性，但那些环境里每个动作立刻有可感知后果（改错价格，第二天就掉销量），而真实经营必须在对结果不确定时承担短期次优；SWE-bench 的每个任务是有界独立问题，TheAgentCompany 也不考察数百个复利回合下的持续战略一致性。YC-Bench 因此把问题设成多行业域任务分配、隐藏员工产能造成的信息不对称，加上会虚增工作量的对抗客户，并用 20 轮上下文截断强制模型自己维护长期记忆；论文把它形式化为转移与观测动力学确定但未知的 POMDP。",
+      "cite": [
+        "paper@§1",
+        "paper@Related Work",
+        "paper@§2 Related Work"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "贪心基线（论文对照 + 官网榜单基线行）",
+        "value": "$0（3/3 破产）",
+        "note": "贪心基线每轮接市场上奖励最高的任务、把所有员工派上去再推进时钟；论文说 LLM 智能体理应超过它。",
+        "cite": [
+          "collinear-ai-yc-bench@Leaderboard",
+          "paper@§4.1 Baseline"
+        ]
+      },
+      {
+        "label": "保本线（起始资金）",
+        "value": "$200,000",
+        "note": "论文 12 个模型里只有 5 个平均盈利，其余 7 个低于起始资金；3 个超过 $1,000,000。",
+        "cite": [
+          "paper@§3 Environment Definition",
+          "paper@§4.2 Main Results"
+        ]
+      },
+      {
+        "label": "论文发布时最好",
+        "value": "$1.27M",
+        "note": "Claude Opus 4.6（3 种子平均）；GLM-5 $1.21M，推理成本低 11×。",
+        "cite": [
+          "paper@Abstract"
+        ]
+      },
+      {
+        "label": "官网榜单当前第一",
+        "value": "$3,445,495",
+        "note": "Claude Fable 5.2（0/3 破产）；第二名 Gemini 4 Carbon $3,425,290，两者接近。",
+        "cite": [
+          "collinear-ai-yc-bench@Leaderboard"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把官网榜单分数和论文分数当成同一批数据：论文只评 12 个模型，官网已收录 67 条；同名模型数值一致（Claude Opus 4.6 论文 $1.27M、官网第 27 名 $1,269,734；GLM-5 论文 $1.21M、官网第 29 名 $1,208,190），但榜首早已换人。",
+        "cite": [
+          "paper@Abstract",
+          "collinear-ai-yc-bench@Leaderboard"
+        ]
+      },
+      {
+        "text": "把 HF 数据集榜的 2,100,000 当成 MiniMax-M3 的 YC-Bench 成绩：官网同一模型是 $999,506，两个榜不同步。",
+        "cite": [
+          "dataset@Leaderboard",
+          "collinear-ai-yc-bench@Leaderboard"
+        ]
+      },
+      {
+        "text": "把两个 35% 混成一个数：35% 是对抗客户占比（论文 Table 2），另一个 35% 是任务逾期时罚掉的任务奖励比例。",
+        "cite": [
+          "paper@Table 2",
+          "repo",
+          "paper@§3 Tasks and domains"
+        ]
+      },
+      {
+        "text": "把摘要的「只有 3 个模型稳定超过起始资金」和正文的「5 个模型平均盈利」当矛盾：前者强调稳定超过，后者是 3 种子均值口径。",
+        "cite": [
+          "paper@Abstract",
+          "paper@§4.2 Main Results"
+        ]
+      },
+      {
+        "text": "把期末资产高理解为更省钱：成本效率是另一个维度，Kimi-K2.5 单位 API 美元营收最高（2.5×），期末资产在官网只排第 51。",
+        "cite": [
+          "collinear-ai-yc-bench@Key Findings",
+          "collinear-ai-yc-bench@Leaderboard"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "Collinear AI（论文通信邮箱 research@collinear.ai，站点版权归 Collinear AI）",
+        "cite": [
+          "paper",
+          "collinear-ai-yc-bench"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "Muyu He、Adit Jain、Anand Kumar、Vincent Tu（论文标注共同一作）、Soumyadeep Bakshi、Sachin Patro、Nazneen Rajani",
+        "cite": [
+          "paper",
+          "collinear-ai-yc-bench@BibTeX"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2026-04-01 arXiv v1 首发 → 2026-04-02 论文通信日期 → 2026-06-01 MiniMax M3 官方博客按官方代码与配置评测（指标期末资产，未公布分数）→ 2026-11-14 官网 67 条记录 / HF 榜 10 条提交",
+        "cite": [
+          "paper",
+          "minimax-blog-minimax-m3",
+          "collinear-ai-yc-bench@Leaderboard"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "评测代码在 GitHub 仓库（README 说明预设为 TOML、产物为 SQLite + JSON），数据集在 Hugging Face（Apache 2.0、需同意条款），站点内容 CC BY-SA 4.0",
+        "cite": [
+          "repo",
+          "dataset",
+          "collinear-ai-yc-bench"
+        ]
+      },
+      {
+        "k": "相关工作",
+        "v": "论文明确说 Vending-Bench 是关键启发；YC-Bench 在多行业域任务分配、隐藏员工产能造成的信息不对称上扩展了这一范式",
+        "cite": [
+          "paper@Related Work"
+        ]
+      },
+      {
+        "k": "被引用情况",
+        "v": "MiniMax M3 官方博客把 YC-Bench 列入评测项，注明使用官方 YC-Bench 代码与配置、环境与官方一致、指标为期末资产（fund）",
+        "cite": [
+          "minimax-blog-minimax-m3"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-14",
+        "columns": [
+          "来源",
+          "模型",
+          "期末净资产（3 种子均值）",
+          "破产种子",
+          "口径"
+        ],
+        "rows": [
+          ["论文 Abstract / §4.2", "Claude Opus 4.6", "$1.27M", "0/3", "论文 12 模型，default 预设"],
+          ["论文 Abstract / §4.2", "GLM-5", "$1.21M", "0/3", "同上；推理成本低 11×"],
+          ["论文 §4.2", "GPT-5.4", "超过 $1,000,000", "0/3", "同上；三个破百万模型之一"],
+          ["论文 Table 4", "Gemini 3.1 Pro", "摘要未列", "2/3", "成本 7.36 ± 8.18 美元/次"],
+          ["官网榜单", "Claude Fable 5.2", "$3,445,495", "0/3", "67 条记录第 1；medium 预设"],
+          ["官网榜单", "Gemini 4 Carbon", "$3,425,290", "0/3", "第 2，与第 1 接近"],
+          ["官网榜单", "Claude Opus 4.6", "$1,269,734", "0/3", "第 27；与论文 $1.27M 一致"],
+          ["官网榜单", "GLM-5", "$1,208,190", "0/3", "第 29；与论文 $1.21M 一致"],
+          ["官网榜单", "GLM-5.1", "$1,510,772", "0/3", "第 21；与 HF 榜数值一致"],
+          ["官网榜单", "GPT-5.4", "$1,000,803", "0/3", "第 40；论文称三个模型超 $1M"],
+          ["官网榜单", "MiniMax M3", "$999,506", "0/3", "第 41；HF 榜同一模型记 2,100,000"],
+          ["官网榜单", "Kimi-K2.5", "$408,822", "1/3", "第 51；成本效率 2.5× 最高"],
+          ["官网榜单", "Claude Sonnet 4.6", "$104,432", "2/3", "第 60；成本 18.06 ± 18.87 美元/次"],
+          ["官网榜单", "Gemini 3.1 Pro", "$66,104", "1/3", "第 62"],
+          ["官网榜单", "Greedy Bot Baseline", "$0", "3/3", "榜单基线行"],
+          ["HF 数据集榜", "MiniMaxAI/MiniMax-M3", "2,100,000", "未列出", "10 条提交第 1；与官网不一致"],
+          ["HF 数据集榜", "zai-org/GLM-5.1", "1,510,772", "未列出", "第 2；与官网数值一致"]
+        ]
+      },
+      "cite": [
+        "paper@Abstract",
+        "paper@Table 4",
+        "collinear-ai-yc-bench@Leaderboard",
+        "dataset@Leaderboard"
+      ]
+    }
+  }
+}

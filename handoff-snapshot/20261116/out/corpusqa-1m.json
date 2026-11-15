@@ -1,0 +1,417 @@
+{
+  "id": "corpusqa-1m",
+  "name": "CorpusQA (1M)",
+  "full_name": "CorpusQA 1M 档（Set2）· CorpusQA: A 10 Million Token Benchmark for Corpus-Level Analysis and Reasoning",
+  "aliases": ["CorpusQA-1M", "CorpusQA Set2"],
+  "status": "active",
+  "categories": ["longctx"],
+  "summary": "阿里通义实验室发布的语料级（corpus-level）长文本推理基准 CorpusQA：把数百篇真实 PDF 的全文拼接成最多 1000 万 token 的语料，问题必须跨全库筛选、聚合、计算才能答对，标准答案由 NL2SQL 在结构化数据表上程序化算出。1M 档（Set2）是四档中的第二档，共 329 题、平均语料 905K token、中英双语。",
+  "interpretation": "1M 档分数衡量的是百万 token 级原文上的全局信息整合能力，而不是单文档检索：论文实测所有基础模型从 128K 到 1M 都显著退化（最好只剩 50.73%），标准 RAG 在该档接近失效（17.38%），Memory Agent 也只有 44.95%。因此该档 50% 上下的分数不是「接近满分的小瑕疵」，而是当前方法的实际上限；人类专家在该档也已掉到约一半，论文据此把 1M 之后称为超出人类能力的区间。",
+  "measures": [
+    {
+      "area": "1M 档（Set2，本实体）",
+      "focus": "百万 token 级语料上的全局整合与统计聚合：证据分散在数百篇文档里，只靠检索少数片段取不齐，必须把全文读进来做跨文档比较、排名、条件筛选和多步计算。",
+      "share": "329 题（论文 Table 2 长度档行）",
+      "format": "自然语言问题；答案为字符串列表（可为空）、单个短字符串、数值（两位小数、不带单位）或百分比（两位小数）",
+      "cite": ["paper@Table 2", "paper@§3.5", "paper@附录 C"]
+    },
+    {
+      "area": "金融（Financial-zh / Financial-en）",
+      "focus": "财报类语料的数值比较与排名，论文示例为「找出基本每股收益高于稀释每股收益的公司」；该域原始材料本身即结构化财报，是四个域里唯一免人工抽检的域。",
+      "share": "664 题（论文 Table 2 领域行）",
+      "format": "同上",
+      "cite": ["paper@Table 2", "paper@§3.3", "paper@§3.6"]
+    },
+    {
+      "area": "教育（Education-en）",
+      "focus": "高校招生、毕业率、师生比等统计聚合，论文示例为「找出 2023 年总入学人数前 5 的大学」；该域是人工抽检一致率报告对象之一。",
+      "share": "328 题（论文 Table 2 领域行）",
+      "format": "同上",
+      "cite": ["paper@Table 2", "paper@§3.6", "paper@附录 B"]
+    },
+    {
+      "area": "房地产（Real Estate-en）",
+      "focus": "不动产数据的条件筛选与聚合；论文未给出该领域示例题。",
+      "share": "324 题（论文 Table 2 领域行）",
+      "format": "论文未给出该领域示例题",
+      "cite": ["paper@Table 2"]
+    },
+    {
+      "area": "难度分层（Easy / Medium / Hard）",
+      "focus": "Easy 测简单检索、筛选与排序；Medium 要求组合多个条件并做基础算术；Hard 涉及复杂多步计算、自定义业务逻辑与高级分析推理。",
+      "share": "296 / 648 / 372 题（论文 Table 2 难度行）",
+      "format": "题目由人工模板 + LLM 改写生成，按逻辑与计算复杂度分级",
+      "cite": ["paper@Table 2", "paper@§3.3", "paper@附录 B"]
+    },
+    {
+      "area": "长度档位（全集四档）",
+      "focus": "128K / 1M / 4M / 10M：前两档直接测基础模型的长上下文能力，后两档超出所有基础模型窗口，只用来评测 RAG 与 Memory Agent 这类系统级方案。",
+      "share": "每档 329 题（论文 Table 2 长度档行）",
+      "format": "4M / 10M 档没有任何基础模型能直读，论文表中记为 Context Limit Exceeded",
+      "cite": ["paper@Table 2", "paper@§4.1", "paper@§4.2"]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "单文档长文本的事实召回与位置定位（NIAH 式大海捞针）——CorpusQA 的输入是多篇文档拼接成的语料，问题要求跨全库聚合。",
+      "cite": ["paper@§2.2", "paper@Table 1"]
+    },
+    {
+      "text": "多模态理解——输入只含从 PDF 解析出的 Markdown 文本，没有图片题。",
+      "cite": ["paper@§3.2"]
+    },
+    {
+      "text": "开放式生成、写作与摘要质量——输出被限定为列表 / 短串 / 数值 / 百分比，裁判只判断与标准答案是否语义等价。",
+      "cite": ["paper@附录 C", "paper@附录 D"]
+    },
+    {
+      "text": "检索系统自身的召回率等工程指标——RAG 只是被测系统之一，论文不报检索质量指标。",
+      "cite": ["paper@§4.1"]
+    },
+    {
+      "text": "智能体多轮交互、工具调用与深度研究能力——论文明确把更复杂的 agentic 架构列为未覆盖范围。",
+      "cite": ["paper@Limitations"]
+    }
+  ],
+  "dataset": {
+    "sample_count": 329,
+    "splits": [
+      "Set2（1M 档，本实体）：329 题，平均语料 905K tokens，中英双语",
+      "全集四档共 1,316 题：Set1（128K）/ Set2（1M）/ Set3（4M）/ Set4（10M），每档 329 题",
+      "Hugging Face 当前公开 128K 与 1M 两档共 658 行（split: train）；4M / 10M 档在 ModelScope"
+    ],
+    "languages": ["en", "zh"],
+    "source_type": "schema-driven 合成：真实 PDF 语料 + 人工模板与 LLM 改写的问题 + NL2SQL 程序化标准答案",
+    "public_sample": true,
+    "totals": "1M 档（Set2）329 题、平均语料 905K tokens、中英双语；全集四档各 329 题共 1,316 题，跨金融 / 教育 / 房地产三个领域；Hugging Face 现公开 128K 与 1M 两档共 658 行、总文件大小 1.17 GB",
+    "cite": ["paper@Table 2", "repo", "dataset"],
+    "construction": [
+      {
+        "k": "选文档",
+        "text": "先收集真实 PDF，做两阶段过滤：先丢掉少于 10,240 token 的文档，再只保留富含统计表与数值数据的文档。",
+        "cite": ["paper@§3.2", "repo"]
+      },
+      {
+        "k": "抽 schema",
+        "text": "用 Gemini 2.5 Pro、GPT-4.1、Qwen-Max 三个模型做多模型投票抽取键值对，只有在所有抽取结果里构成明确多数的值才被采信；无法达成共识的文档整体丢弃。",
+        "cite": ["paper@§3.2"]
+      },
+      {
+        "k": "造问题",
+        "text": "先人工写一批覆盖比较、排名、条件筛选、多步计算等推理模式的模板，再用 LLM 改写扩充，并按 Easy / Medium / Hard 分级。",
+        "cite": ["paper@§3.3", "paper@附录 B"]
+      },
+      {
+        "k": "聚成表",
+        "text": "把每个语料内所有文档抽取出的结构化 JSON 聚合成一张全局数据表。",
+        "cite": ["paper@§3.4"]
+      },
+      {
+        "k": "算标准答案",
+        "text": "由 LLM 生成 SQL，直接对聚合表执行得到标准答案，从而保证每个 ground truth 100% 正确且逻辑上来自完整源数据。",
+        "cite": ["paper@§3.4"]
+      },
+      {
+        "k": "拼长上下文",
+        "text": "把第 1 步选出的原始全文 Markdown 文档完整拼接，作为最终的长上下文输入。",
+        "cite": ["paper@§3.5"]
+      },
+      {
+        "k": "人工抽检",
+        "text": "每个域抽 1,000 条 schema 送人工核验：教育英文域与模型抽取的一致率为 94.13%，金融中文域为 98.97%，复审不一致案例后认定模型原抽取全部正确。",
+        "cite": ["paper@§3.6"]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "accuracy",
+      "name": "准确率（LLM-as-a-Judge）",
+      "direction": "越高越好",
+      "description": "用强 LLM 判断模型输出与标准答案是否语义等价，判定为等价的题目占比；答案常是数值、百分比或实体名且等价格式多样，故不用精确字符串匹配。",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["paper@§4.1", "paper@附录 D"]
+    },
+    {
+      "id": "timeout-rate",
+      "name": "超时率",
+      "direction": "越低越好",
+      "description": "人类基线研究中受试者在 90 分钟限时后放弃的任务比例，只用于标定难度，不参与模型排名。",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["paper@§4.5"]
+    },
+    {
+      "id": "avg-time",
+      "name": "平均用时",
+      "direction": "越低越好",
+      "description": "人类基线研究中每题平均耗时（分钟），只用于标定难度；4M / 10M 档受试者全部超时，该项记为不可用。",
+      "range": null,
+      "unit": "minute",
+      "cite": ["paper@§4.5"]
+    }
+  ],
+  "default_protocol": {
+    "raw": "按附录 C 的固定模板，把拼接好的全文语料和问题一起交给被测模型：每篇文档前加 `# Document N:`，问题前加 `# Question:`，并限定答案只能是字符串列表（含空列表）、单个短字符串、数值（保留两位小数、不带单位）或百分比（保留两位小数），日期用 YYYY-MM，多个文件对同一项取值冲突时取最新文件的值，最终答案必须以「The answer is: xxx.」结尾。判分不用精确字符串匹配：用强 LLM 判断模型输出与标准答案是否语义等价，裁判模型为 DeepSeek-V3、temperature=0，其余超参默认。",
+    "cite": ["paper@附录 C", "paper@附录 D", "paper@§4.1"],
+    "variants": [
+      {
+        "text": "128K 与 1M 档直接测基础模型的长上下文能力；4M 与 10M 档只测 RAG 与 Memory Agent 两类系统级方案，跨档、跨方案类型的分数不可直接比较。",
+        "cite": ["paper@§4.1", "paper@Table 4"]
+      },
+      {
+        "text": "RAG 与 Memory Agent 两条系统基线都构建在 Gemini-2.5-Pro 上；Memory Agent 评了 MemAgent-14B 专用微调版与通用 LLM 两种实现。",
+        "cite": ["paper@§4.1"]
+      },
+      {
+        "text": "闭源 API 模型直接调官方接口测试；开源模型在 8×A100 80GB 服务器上自建推理。",
+        "cite": ["paper@§4.1"]
+      },
+      {
+        "text": "同一模型家族区分思考版与指令版（仅 128K 档）：Qwen3-235B-Thinking 78.08 对 Qwen3-235B-Instruct 61.41，思考版优势明显。",
+        "cite": ["paper@附录 A", "paper@Figure 4"]
+      },
+      {
+        "text": "官方仓库提供 infer.py / eval.py 与断点续跑，默认推理模型 gemini-2.5-flash、默认裁判 deepseek-v3，均可在命令行替换；部分题的标准答案是空列表，属正常设计。",
+        "cite": ["repo"]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "repo-first",
+      "date": "2025-12-04",
+      "label": "官方仓库发布首个版本（1,316 题 + 评测脚本）",
+      "cite": ["repo"]
+    },
+    {
+      "id": "v1",
+      "date": "2026-01-21",
+      "label": "arXiv v1 首发（cs.CL）",
+      "cite": ["paper"]
+    },
+    {
+      "id": "v2",
+      "date": "2026-04-25",
+      "label": "arXiv v2 修订（本页核对所用版本）",
+      "cite": ["paper"]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "跨档位、跨方案类型的分数不可比",
+      "impact": "128K 档评了 10 个基础模型，1M 档只有 3 个（Gemini-2.5-Pro 50.73 / Gemini-2.5-Flash 37.31 / MiniMax-M1-80k 11.63），4M 与 10M 档没有任何基础模型能直读（表中记为 Context Limit Exceeded），只评 RAG 与 Memory Agent。",
+      "severity": "高",
+      "response": "论文按档位与方案类型分开报告，Table 3 与 Table 4 各自成表。",
+      "reader": "比较任何两个 CorpusQA 分数前，先确认长度档和方案类型一致；不要把 128K 的 80 分与 1M 的 50 分当成同一件东西上的差距。",
+      "cite": ["paper@Table 3", "paper@Table 4", "paper@§4.1", "paper@§4.2"]
+    },
+    {
+      "issue": "裁判是 LLM 而非规则系统",
+      "impact": "判分用 DeepSeek-V3 判断语义等价，论文自述这比纯规则系统更不确定；裁判判错会直接改变分数，换裁判模型也会引入偏差。",
+      "severity": "中",
+      "response": "附录 D 公开裁判提示词；temperature=0，其余超参默认。",
+      "reader": "引用 CorpusQA 分数时注明裁判模型；不同裁判下的分数不要直接相减。",
+      "cite": ["paper@Limitations", "paper@附录 D", "paper@§4.1"]
+    },
+    {
+      "issue": "标准答案的正确性依赖 LLM 抽取的结构化数据",
+      "impact": "ground truth 由 NL2SQL 在 schema 表上算出，而 schema 来自三个 LLM 的多模型投票抽取；教育英文域与金融中文域各抽 1,000 条人工核验，一致率分别为 94.13% 与 98.97%，复审不一致案例后认定模型原抽取全部正确。",
+      "severity": "中",
+      "response": "多模型多数票 + 共识过滤，无法达成共识的文档整体丢弃；金融英文与房地产英文域直接来自结构化源，免检。",
+      "reader": "94%+ 的一致率不等于零误差；边界题的标准答案仍可能有争议。",
+      "cite": ["paper@§3.6", "paper@§3.2"]
+    },
+    {
+      "issue": "未覆盖更复杂的智能体架构",
+      "impact": "论文只评了 RAG 与 Memory Agent 两族系统，deep research 类智能体未测，其表现留作未来工作。",
+      "severity": "中",
+      "response": "论文在 Limitations 中明确列为未覆盖范围。",
+      "reader": "不要把 Table 4 的系统分数当成「智能体方案的上限」。",
+      "cite": ["paper@Limitations"]
+    },
+    {
+      "issue": "人类基线样本极小",
+      "impact": "人类研究每个档位只抽 12 道题；4M 与 10M 档人类专家全部超时放弃，基础模型则因上下文超限无法处理输入。",
+      "severity": "低",
+      "response": "论文仅用该研究标定难度，不作为主结果。",
+      "reader": "人类基线的百分比波动很大，只用来判断「是否超出人类能力」，不要精确解读。",
+      "cite": ["paper@§4.5"]
+    }
+  ],
+  "notes": "Table 3 的 128K 档榜首是 GPT-5（82.02），1M 档只剩 3 个模型能直读、最好 50.73；本站账本另有 DeepSeek-V4 的 1M 档成绩（见页面自动附录）。",
+  "official_sources": [
+    { "kind": "paper", "url": "https://arxiv.org/abs/2601.14952" },
+    { "kind": "repo", "url": "https://github.com/Tongyi-Zhiwen/CorpusQA" },
+    { "kind": "dataset", "url": "https://huggingface.co/datasets/Tongyi-Zhiwen/CorpusQA" },
+    { "kind": "site", "url": "https://api-docs.deepseek.com/zh-cn/news/news260424" }
+  ],
+  "related_benchmarks": ["longbench", "infinitebench-en-mc", "frames", "ruler", "niah"],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-13",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      {
+        "id": "arxiv-2601-14952",
+        "kind": "paper",
+        "title": "CorpusQA: A 10 Million Token Benchmark for Corpus-Level Analysis and Reasoning（arXiv:2601.14952v2，2026-04-25）",
+        "url": "https://arxiv.org/abs/2601.14952",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "Tongyi-Zhiwen/CorpusQA（官方仓库，MIT license）",
+        "url": "https://github.com/Tongyi-Zhiwen/CorpusQA",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "dataset",
+        "kind": "dataset",
+        "title": "Tongyi-Zhiwen/CorpusQA（Hugging Face 数据集）",
+        "url": "https://huggingface.co/datasets/Tongyi-Zhiwen/CorpusQA",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "api-docs-zh-cn-news-news260424",
+        "kind": "site",
+        "title": "DeepSeek-V4 预览版：迈入百万上下文普惠时代（DeepSeek API 文档新闻页）",
+        "url": "https://api-docs.deepseek.com/zh-cn/news/news260424",
+        "accessed": "2026-11-13"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "阿里通义实验室（Tongyi Lab, Alibaba Group）",
+        "cite": ["paper@作者署名"]
+      },
+      "first_release": {
+        "v": "2025-12-04（官方仓库首版）；arXiv 2026-01-21",
+        "cite": ["repo", "paper"]
+      }
+    },
+    "cites": {
+      "summary": ["paper@Abstract", "repo", "dataset"],
+      "interpretation": ["paper@§4.2", "paper@§4.3", "paper@Table 4", "paper@§4.5"]
+    },
+    "problem": {
+      "text": "现有多数长文本基准只测单篇文档，或建立在「答案能从少数检索片段拼出来」的稀疏检索假设上；语料级分析里证据分散在数百篇文档中，答案需要全局整合、比较与统计聚合，这个能力一直没有被单独测量。",
+      "cite": ["paper@Abstract", "paper@§1", "paper@Table 1", "paper@§2.2"]
+    },
+    "ladder": [
+      {
+        "label": "标准 RAG（Gemini-2.5-Pro 底座）",
+        "value": "17.38%",
+        "note": "1M 档 Overall；论文称 RAG 在大规模下接近失效，4M / 10M 档分别只剩 2.43% / 1.20%。",
+        "cite": ["paper@§4.3", "paper@Table 4"]
+      },
+      {
+        "label": "Memory Agent（同底座，论文最好的系统方案）",
+        "value": "44.95%",
+        "note": "1M 档 Overall；4M / 10M 档仍有 22.14% / 11.13%，是唯一在 10M 档还能出结果的方案。",
+        "cite": ["paper@§4.3", "paper@Table 4"]
+      },
+      {
+        "label": "基础模型直读 1M（论文最好）",
+        "value": "50.73%",
+        "note": "Gemini-2.5-Pro；同档 Gemini-2.5-Flash 37.31%、MiniMax-M1-80k 仅 11.63%。",
+        "cite": ["paper@§4.2", "paper@Table 3"]
+      },
+      {
+        "label": "人类专家（每档 12 题抽样）",
+        "value": "128K 档 75.0%；1M 档起崩塌，4M / 10M 档全部超时放弃",
+        "note": "论文称 1M 是人类与基础模型性能的临界点，此后任务「demonstrably superhuman」；人类基线样本极小，只用于标定难度。",
+        "cite": ["paper@§4.5"]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 CorpusQA 当成 LongBench / InfiniteBench 那样的单文档长文本基准来读分数——它的输入是数百篇文档拼接成的语料，问题必须跨全库聚合才能答对。",
+        "cite": ["paper@§2.2", "paper@Table 1"]
+      },
+      {
+        "text": "拿 128K 档的高分外推 1M 档——论文实测所有基础模型到 1M 都显著退化，最好也只有 50.73%。",
+        "cite": ["paper@§4.2", "paper@Table 3"]
+      },
+      {
+        "text": "用 RAG 的分数代表系统方案上限——论文结论正好相反：检索式方法在大规模下崩塌，Memory Agent 明显更稳。",
+        "cite": ["paper@§4.3", "paper@Table 4"]
+      },
+      {
+        "text": "因为标准答案是程序化算出来的，就认为评测完全确定——ground truth 建立在 LLM 投票抽取的 schema 上，且判分本身仍是 LLM-as-a-Judge。",
+        "cite": ["paper@§3.6", "paper@Limitations"]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "阿里通义实验室（Tongyi Lab, Alibaba Group）",
+        "cite": ["paper@作者署名"]
+      },
+      {
+        "k": "核心作者",
+        "v": "Zhiyuan Lu、Chenliang Li、Yingcheng Shi、Weizhou Shen、Ming Yan、Fei Huang（论文署名均属 Tongyi Lab）",
+        "cite": ["paper@作者署名"]
+      },
+      {
+        "k": "时间线",
+        "v": "2025-12-04 官方仓库发布首版（README 的 What's New）→ 2026-01-21 arXiv v1 → 2026-04-25 arXiv v2（本页核对版本）；仓库引文把年份写作 2025",
+        "cite": ["repo", "paper"]
+      },
+      {
+        "k": "数据与代码",
+        "v": "GitHub 仓库 MIT license，含 src/infer.py 与 src/eval.py、setup.sh 与断点续跑；数据集不在仓库内，需从 Hugging Face 下载，当前公开 128K 与 1M 两档共 658 行、总文件大小 1.17 GB，4M / 10M 档在 ModelScope",
+        "cite": ["repo", "dataset"]
+      },
+      {
+        "k": "裁判与复现",
+        "v": "论文用 DeepSeek-V3 作裁判、temperature=0；官方脚本默认裁判模型即 deepseek-v3，默认推理模型 gemini-2.5-flash，均可在命令行替换",
+        "cite": ["paper@§4.1", "repo"]
+      },
+      {
+        "k": "合成数据的训练价值",
+        "v": "论文用该框架合成的 480 条训练数据对开源模型 Qwen3-4B-Thinking 做 25 步 GRPO 微调，CorpusQA 上取得显著提升，并外溢到 LongBenchV2 与 FRAMES 两个外部长文本基准（具体数值见图 3 的柱状标注）",
+        "cite": ["paper@§4.4", "paper@Figure 3"]
+      },
+      {
+        "k": "思考模型优势",
+        "v": "128K 档思考版稳定优于指令版：Qwen3-235B-Thinking 78.08 对 Qwen3-235B-Instruct 61.41；作者据此称该基准对推理能力敏感",
+        "cite": ["paper@附录 A", "paper@Figure 4"]
+      },
+      {
+        "k": "产业采用",
+        "v": "DeepSeek 在 V4 预览版公告中称 V4-Pro 与 V4-Flash 最大上下文长度为 1M，并宣布 1M 上下文成为其所有官方服务的标配；该页的基准对比以图片形式给出，正文不含 CorpusQA 字样",
+        "cite": ["api-docs-zh-cn-news-news260424"]
+      }
+    ],
+    "official_results": {
+      "cite": ["paper@Table 3", "paper@Table 4"],
+      "table": {
+        "as_of": "2026-11-13",
+        "columns": ["来源", "长度档", "口径", "方案 / 模型", "准确率 (%)"],
+        "rows": [
+          ["论文 Table 3", "128K", "基础模型直读", "GPT-5", "82.02"],
+          ["论文 Table 3", "128K", "基础模型直读", "Gemini-2.5-Pro", "80.19"],
+          ["论文 Table 3", "128K", "基础模型直读", "GPT-5-Mini", "79.88"],
+          ["论文 Table 3", "128K", "基础模型直读", "Qwen3-235B-A22B-Thinking", "78.08"],
+          ["论文 Table 3", "128K", "基础模型直读", "Gemini-2.5-Flash", "77.81"],
+          ["论文 Table 3", "128K", "基础模型直读", "DeepSeek-R1-0528", "74.72"],
+          ["论文 Table 3", "128K", "基础模型直读", "MiniMax-M1-80k", "71.02"],
+          ["论文 Table 3", "128K", "基础模型直读", "Qwen3-30B-A3B-Thinking", "69.59"],
+          ["论文 Table 3", "1M", "基础模型直读", "Gemini-2.5-Pro", "50.73"],
+          ["论文 Table 3", "1M", "基础模型直读", "Gemini-2.5-Flash", "37.31"],
+          ["论文 Table 3", "1M", "基础模型直读", "MiniMax-M1-80k", "11.63"],
+          ["论文 Table 4", "1M", "系统方案（Gemini-2.5-Pro 底座）", "Memory Agent", "44.95"],
+          ["论文 Table 4", "1M", "系统方案（Gemini-2.5-Pro 底座）", "RAG", "17.38"]
+        ]
+      }
+    }
+  }
+}

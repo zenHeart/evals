@@ -1,0 +1,709 @@
+{
+  "id": "egoschema",
+  "name": "EgoSchema",
+  "full_name": "EgoSchema: A Diagnostic Benchmark for Very Long-form Video Language Understanding（超长第一视角视频语言理解诊断基准）",
+  "aliases": [],
+  "status": "active",
+  "categories": [
+    "multimodal"
+  ],
+  "summary": "EgoSchema 是 5,000 余道基于 3 分钟第一视角视频的五选一问答，题目按「时间证书长度」筛选，专门测长程视频理解；随机 20%，人类约 76%，论文报告的最好零样本模型不到 33%。",
+  "interpretation": "准确率越高说明模型能在更长的时间跨度上维持因果与意图推理。但它只测五选一 MCQ，不测开放式生成；论文的 <33% 与 2025 年厂商自报的 70%+ 不是同一条曲线（帧数、提示词、后训练均未披露），不能直接相连。",
+  "measures": [
+    {
+      "area": "长时程时间定位",
+      "focus": "找出回答问题所必需的最小子片段集合。论文用「时间证书」刻画：中位证书长度约 100 秒，比第二长的数据集长 5×，比其他视频理解数据集长 10×–100×；且证书长度与视频片段长度仅弱相关。",
+      "share": "未披露",
+      "format": "五选一（唯一正确项）",
+      "cite": [
+        "arxiv-2308-09126@§3.2",
+        "arxiv-2308-09126@§1"
+      ]
+    },
+    {
+      "area": "活动目的与行为意图归纳",
+      "focus": "把散落在整段视频里的动作归约为一个目标。Hugging Face 公开 viewer 中的真实例题：「what are the main ingredients and tools used during the video, and how do they contribute to the goal of the activity?」",
+      "share": "未披露",
+      "format": "五选一",
+      "cite": [
+        "dataset@数据集卡片"
+      ]
+    },
+    {
+      "area": "事件顺序、中断与因果推断",
+      "focus": "真实例题：「Although the video is predominantly focused on one recurring action, there is an interruption in c's activity. briefly describe this interruption and its significance within the video.」；另一例要求按事件描述行为及其目的，而不罗列每个动作。",
+      "share": "未披露",
+      "format": "五选一",
+      "cite": [
+        "dataset@数据集卡片"
+      ]
+    },
+    {
+      "area": "人物关系与技能水平判断",
+      "focus": "论文生成提示中的真实示例题：「question 1: what can you deduce about the relationship between c and the man, based on their interactions and behaviors throughout the video?」——答案必须是对全程互动的压缩结论，而非旁白原文的罗列。",
+      "share": "未披露",
+      "format": "五选一",
+      "cite": [
+        "arxiv-2308-09126@§3.1.2"
+      ]
+    },
+    {
+      "area": "场景与主活动识别",
+      "focus": "论文生成提示中的真实示例题：「question 2: identify the primary activity in the apartment and discuss its importance/significance. how does it influence the actions and atmosphere of the video?」",
+      "share": "未披露",
+      "format": "五选一",
+      "cite": [
+        "arxiv-2308-09126@§3.1.2"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "只靠问题文本就能猜对的题：作者专门设了 blind 过滤基线（只给问题、不给视频和旁白让 LLM 猜），猜对的题目会被剔除。",
+      "cite": [
+        "arxiv-2308-09126@§3.1.3"
+      ]
+    },
+    {
+      "text": "需要引用时间戳或旁白原文的问题：生成规则明确要求「问题不得提及任何特定时间戳或旁白」，正确答案也不得罗列旁白信息，必须压缩成简洁结论。",
+      "cite": [
+        "arxiv-2308-09126@§3.1.2"
+      ]
+    },
+    {
+      "text": "开放式生成与回答质量：指标只有 MCQ 准确率，不评生成文本的流畅度、事实性或结构。",
+      "cite": [
+        "arxiv-2308-09126@§4.2",
+        "repo@README"
+      ]
+    },
+    {
+      "text": "片段级短时识别能力：人工策划第一轮就要求时间证书不低于 30 秒，能在很短时间内答对的题会被筛掉。",
+      "cite": [
+        "arxiv-2308-09126@§3.1.4"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 5063,
+    "splits": [
+      "完整评测集（视频与问题公开，正确答案不公开，需提交到 Kaggle 竞赛或作者验证服务器）",
+      "公开 500 题子集（subset_answers.json，含正确答案，供离线自测）",
+      "Hugging Face 镜像 lmms-eval/egoschema：GENERATION / MC / MC_PPL 各 5.03k 行 + Subset 500 行"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "Ego4D 第一视角视频片段（mp4，30 fps）+ 人工策划的五选一问答",
+    "public_sample": true,
+    "totals": "论文数据表记 5063 题（每题 1 视频 + 1 问题 + 5 选项）；仓库 README 与验证服务器返回串记 5031 题；Hugging Face viewer 显示 GENERATION/MC/MC_PPL 各 5.03k 行、Subset 500 行——三个口径对不上（见 limitations）。片段为非重叠的 3 分钟切段，每段至少含 30 条人工旁白。",
+    "cite": [
+      "arxiv-2308-09126@EgoSchema Datasheet",
+      "repo@README",
+      "dataset@数据集卡片"
+    ],
+    "construction": [
+      {
+        "k": "Stage I 取材",
+        "text": "从 Ego4D 里挑 RGB 视频与旁白，只取非重叠的 3 分钟切段，且每段至少 30 条带时间戳的人工旁白；数据为 30 fps 的 mp4。",
+        "cite": [
+          "arxiv-2308-09126@Figure 4",
+          "arxiv-2308-09126@EgoSchema Datasheet"
+        ]
+      },
+      {
+        "k": "Stage II 生成 QAW",
+        "text": "用 Q(AW)-shot 提示（先生成问题，再基于问题和旁白生成答案与三个干扰项，共两次链式调用，比 QAW-shot 便宜约 30%）批量生成「问题-答案-干扰项」三元组；作者明确把它选为主生成方法。",
+        "cite": [
+          "arxiv-2308-09126@§3.1.2",
+          "arxiv-2308-09126@Figure 4"
+        ]
+      },
+      {
+        "k": "Stage III 自动过滤",
+        "text": "用 blind 过滤基线让 LLM 只看问题猜答案，猜对的题丢弃；同时保留一个只给旁白不给问题的 No-Q 基线用于 sanity check。干扰项要「与视频片段相关且合理」。",
+        "cite": [
+          "arxiv-2308-09126@§3.1.3"
+        ]
+      },
+      {
+        "k": "Stage IV 两轮人工策划",
+        "text": "第一轮要求人工核验问题规范、答案确实正确、四个干扰项确实错，并确认时间证书不低于 30 秒；不合格整条丢弃，第一轮就会砍掉约 4×–5×。第二轮继续筛选，最终留下的是「证书长度在百秒量级」的题目。",
+        "cite": [
+          "arxiv-2308-09126@§3.1.4",
+          "arxiv-2308-09126@§3.2",
+          "arxiv-2308-09126@Figure 4"
+        ]
+      },
+      {
+        "k": "答案发布策略",
+        "text": "按 Ego4D 许可开源（允许研究与商业使用），但只公开 500 题的正确答案（subset_answers.json）；全集答案不公开，因为基准定位为零样本评测，需通过 Kaggle 竞赛或作者验证服务器提交预测。",
+        "cite": [
+          "arxiv-2308-09126@EgoSchema Datasheet",
+          "repo@README"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "accuracy",
+      "name": "五选一准确率",
+      "direction": "越高越好",
+      "description": "在完整评测集上选对唯一正确项的题目占比；需提交到 Kaggle 竞赛 egoschema-public 或作者验证服务器获取。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "repo@README",
+        "arxiv-2308-09126@§4.2"
+      ]
+    },
+    {
+      "id": "public-500-accuracy",
+      "name": "公开 500 题子集准确率",
+      "direction": "越高越好",
+      "description": "在 subset_answers.json 的 500 题上离线计算的准确率，供本地自测与性能跟踪，与全集分数不是同一个数。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "repo@README"
+      ]
+    }
+  ],
+  "default_protocol": {
+    "raw": "零样本五选一：给定一段 3 分钟视频片段（帧由参评方按统一规则从片段中均匀抽取，帧数自定）与问题加五个选项，模型直接输出选项，不做微调。论文对 mPLUG-Owl 的做法是逐个选项提问「Given question <question text>, is answer <answer text> correct?」并取「Yes」token 的 softmax 最高项；对 InternVideo 则把问题与每个选项拼成「Question: <question text>? Is it <answer text>」后取输出分数最高项。全集结果提交到 Kaggle 竞赛 egoschema-public 或作者的验证服务器（validate.py / curl），本地只能用 subset_answers.json 的 500 题自测。",
+    "cite": [
+      "arxiv-2308-09126@§4.2",
+      "repo@README",
+      "arxiv-2308-09126@EgoSchema Datasheet"
+    ],
+    "variants": [
+      {
+        "text": "帧数口径：论文报过 1–90 帧。同一模型的准确率对帧数非单调——mPLUG-Owl 7.2B 在 1/5/10/15/30 帧上分别是 27.0% / 31.1% / 29.6% / 28.7% / 20.0%；InternVideo 478M 则单调但约 30 帧后饱和。跨论文比较必须先对齐帧数。",
+        "cite": [
+          "arxiv-2308-09126@§4.2",
+          "arxiv-2308-09126@Table 6"
+        ]
+      },
+      {
+        "text": "推理设置：论文区分「按训练帧数推理」和「在 80G A100 上放到显存允许的最大帧数」两种设置，帧都是均匀抽取的。",
+        "cite": [
+          "arxiv-2308-09126@§4.2"
+        ]
+      },
+      {
+        "text": "全集 vs 公开 500 题：验证服务器一次返回两行，分别是「All of 5031 EgoSchema Questions」和「Publicly eleased 500 EgoSchema Answers」（原文拼写如此），两者不能混用。",
+        "cite": [
+          "repo@README"
+        ]
+      },
+      {
+        "text": "Hugging Face 镜像的三个配置：GENERATION（开放式生成）、MC（多选）、MC_PPL（多选 PPL 归一），各 5.03k 行，另有 500 行的 Subset 配置。用不同配置跑出来的分数不可直接对比。",
+        "cite": [
+          "dataset@数据集卡片"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2023-08-17",
+      "label": "arXiv v1 发布（论文自述「Preprint. Under review.」）。arXiv 上只有 v1，本站未取得一手会议或期刊出处；第三方文献目录常记 NeurIPS 36:46212–46244，未经一手核验前不写入本档案。",
+      "cite": [
+        "arxiv-2308-09126@标题页",
+        "arxiv-2308-09126@arXiv 提交信息"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "完整评测集答案不公开",
+      "impact": "只能拿到 500 题的正确答案，全集分数必须提交到 Kaggle 竞赛或作者验证服务器，无法在本地复现；论文报告的所有模型分数都无法被第三方独立重跑。",
+      "severity": "高",
+      "response": "官方提供 Kaggle 竞赛 egoschema-public 与验证服务器两条提交通道，并预告「Coming Soon: A public leaderboard」——截至本档核对时该公共排行榜尚未上线。",
+      "reader": "看到 EgoSchema 分数先问是全集口径还是 500 题子集口径，以及是谁跑的、提交到哪里。",
+      "cite": [
+        "repo@README"
+      ]
+    },
+    {
+      "issue": "早期低分与近期高分不是同一条曲线",
+      "impact": "论文（2023-08，zero-shot、帧数受限）报告最好 32.1%、7B+ 开源模型 <33%、100B+ 闭源 <40%；xAI 在 Grok 3 公告（2025-02）里自报 EgoSchema 74.5%，但未披露帧数、提示词与后训练细节。把两者画成一条上升曲线会严重高估进步幅度。",
+      "severity": "高",
+      "response": "论文固定了均匀抽帧与两种推理设置并公开了各模型的提示格式；厂商侧只有自报数字，没有可对齐的口径。",
+      "reader": "比较时先确认口径（哪一年、哪个来源、zero-shot 还是自报、多少帧）；本档案的官方结果表按来源分块列，不跨块连线。",
+      "cite": [
+        "arxiv-2308-09126@Table 6",
+        "repo@README",
+        "x-news-grok-3@基准表格"
+      ]
+    },
+    {
+      "issue": "题量三个口径互相不一致",
+      "impact": "论文数据表记 5063 instances，仓库 README 与验证服务器返回串记 5031 题，Hugging Face viewer 显示 5.03k 行。相差约 32 题，论文未解释原因，会影响「样本量」类引用。",
+      "severity": "中",
+      "response": "本站按所引位置原样记录三个数字，不做折算或取平均；引用时需注明取自论文数据表、仓库还是 Hugging Face。",
+      "reader": "不要把 5.03k / 5031 / 5063 当成三个不同子集，它们是同一评测集的三种记录口径。",
+      "cite": [
+        "arxiv-2308-09126@EgoSchema Datasheet",
+        "repo@README",
+        "dataset@数据集卡片"
+      ]
+    },
+    {
+      "issue": "数据偏置与标签噪声",
+      "impact": "视频全部取自 Ego4D，继承其第一视角偏置（场景、活动、人群分布不均）；LLM 生成的题目与选项也继承网络规模训练数据的偏置。作者承认两轮人工策划后仍可能残留少量错标或格式不佳的问答对。",
+      "severity": "中",
+      "response": "论文承诺托管一个众包勘误板（errata board）随开源社区反馈持续修正；截至本档核对时未见该勘误板的独立入口。",
+      "reader": "把 EgoSchema 当作长视频理解的诊断信号，而不是无噪声的金标准；个别题存疑时不要据此否定整体趋势。",
+      "cite": [
+        "arxiv-2308-09126@§6 Limitations"
+      ]
+    },
+    {
+      "issue": "对帧数与实现细节敏感",
+      "impact": "同一模型换帧数就能差 10 个百分点以上（mPLUG-Owl 7.2B 从 31.1% 掉到 20.0%），且论文自己也报告准确率对帧数非单调；不同实现的选项拼接方式（逐项提问 vs 拼接后打分）也会改变分数。",
+      "severity": "中",
+      "response": "论文在正文中报告了非单调现象并说明两种推理设置，同时公开了 mPLUG-Owl 与 InternVideo 的提示格式；但未给出统一的官方推理配置。",
+      "reader": "复现或对比时务必记录帧数、抽帧方式与选项打分方式，缺一项就无法判断差距来自模型还是实现。",
+      "cite": [
+        "arxiv-2308-09126@§4.2",
+        "arxiv-2308-09126@Table 6"
+      ]
+    }
+  ],
+  "notes": "xAI Grok 3 公告（2025-02）引用了 EgoSchema。论文自述「Preprint. Under review.」，arXiv 仅 v1；第三方文献目录常记 NeurIPS 36:46212–46244，本站未取得一手会议/期刊出处，核验前不写入。",
+  "official_sources": [
+    {
+      "kind": "site",
+      "url": "https://egoschema.github.io/"
+    },
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2308.09126"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/egoschema/EgoSchema"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/lmms-lab/egoschema"
+    },
+    {
+      "kind": "announcement",
+      "url": "https://x.ai/news/grok-3"
+    }
+  ],
+  "related_benchmarks": [
+    "longvideobench",
+    "mlvu",
+    "tempcompass"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-13",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      {
+        "id": "arxiv-2308-09126",
+        "kind": "paper",
+        "title": "EgoSchema: A Diagnostic Benchmark for Very Long-form Video Language Understanding（arXiv:2308.09126 v1，2023-08-17）",
+        "url": "https://arxiv.org/abs/2308.09126",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "egoschema",
+        "kind": "site",
+        "title": "EgoSchema 官网（摘要与下载入口）",
+        "url": "https://egoschema.github.io/",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "egoschema/EgoSchema（README：500 题子集、Kaggle 竞赛名、验证服务器返回串、highlight 数字）",
+        "url": "https://github.com/egoschema/EgoSchema",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "dataset",
+        "kind": "dataset",
+        "title": "lmms-eval/egoschema（Hugging Face，含 GENERATION / MC / MC_PPL / Subset 四个配置与公开例题）",
+        "url": "https://huggingface.co/datasets/lmms-lab/egoschema",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "x-news-grok-3",
+        "kind": "announcement",
+        "title": "xAI：Grok 3 公告（2025-02，基准对比表含 EgoSchema 行）",
+        "url": "https://x.ai/news/grok-3",
+        "accessed": "2026-11-13"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "UC Berkeley，Berkeley AI Research（BAIR）",
+        "cite": [
+          "repo@README"
+        ]
+      },
+      "first_release": {
+        "v": "2023-08-17（arXiv v1）",
+        "cite": [
+          "arxiv-2308-09126@arXiv 提交信息"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "arxiv-2308-09126@摘要",
+        "egoschema@摘要",
+        "arxiv-2308-09126@EgoSchema Datasheet"
+      ],
+      "interpretation": [
+        "arxiv-2308-09126@§4.2",
+        "arxiv-2308-09126@Table 6",
+        "repo@README",
+        "x-news-grok-3@基准表格"
+      ]
+    },
+    "problem": {
+      "text": "此前的视频理解数据集大多只需要很短的证据片段就能作答，时间证书普遍在秒级，测不出模型能否在长时间跨度上维持推理。EgoSchema 从 Ego4D 取 3 分钟第一视角片段，并按「时间证书约 100 秒」筛题，把长程时间理解单独拉出来测。",
+      "cite": [
+        "arxiv-2308-09126@摘要",
+        "arxiv-2308-09126@§3.2",
+        "arxiv-2308-09126@§1"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机猜测基线",
+        "value": "20.0%",
+        "note": "五选一均匀随机。论文 Table 6 首行即此基线。",
+        "cite": [
+          "arxiv-2308-09126@Table 6"
+        ]
+      },
+      {
+        "label": "论文报告的零样本最好成绩",
+        "value": "32.1%",
+        "note": "InternVideo [48]（Dec 2022，478M）在 90 帧设置下取得；同表 7B+ 的 mPLUG-Owl 最高只有 31.1%（5 帧）。摘要与仓库 README 据此概括为「最好模型不到 33%」。",
+        "cite": [
+          "arxiv-2308-09126@Table 6",
+          "arxiv-2308-09126@摘要"
+        ]
+      },
+      {
+        "label": "厂商自报最高",
+        "value": "74.5%",
+        "note": "xAI 在 Grok 3 公告（2025-02）的基准表中自报：Grok 3 Beta 74.5%、Grok 3 mini Beta 74.3%、Gemini 2.0 71.9%、GPT 4o 72.2%，DeepSeek-V3 与 Claude 3.5 Sonnet 为「—」。该表未披露帧数、提示词与推理设置，与上一级不是同一口径。",
+        "cite": [
+          "x-news-grok-3@基准表格"
+        ]
+      },
+      {
+        "label": "人类参考线",
+        "value": "75.0%",
+        "note": "论文 Figure 7：无限制 75.0%，Video → Text 76.2%，限时 3 分钟 68.0%，限时 1 分钟 67.0%，1 fps（180 帧）67.2%。摘要里「人类约 76%」对应的是该图最高一档。",
+        "cite": [
+          "arxiv-2308-09126@Figure 7",
+          "arxiv-2308-09126@摘要"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 2023 年的 <33% 和 2025 年的 70%+ 连成一条上升曲线。前者是论文在受限帧数下的 zero-shot 结果，后者是厂商自报且未披露帧数与提示词，两者之间没有可比基线。",
+        "cite": [
+          "repo@README",
+          "x-news-grok-3@基准表格"
+        ]
+      },
+      {
+        "text": "以为「视频越长分越低」。论文明确指出时间证书长度与视频片段长度只是弱相关——3 分钟片段里真正必要的证据中位数约 100 秒，难点在证据的时间跨度而非视频总时长。",
+        "cite": [
+          "arxiv-2308-09126@§1",
+          "arxiv-2308-09126@§3.2"
+        ]
+      },
+      {
+        "text": "把 5.03k / 5031 / 5063 当成三个不同子集。它们是论文数据表、仓库 README 与 Hugging Face viewer 对同一评测集的三种记录口径，相差约 32 题且论文未解释。",
+        "cite": [
+          "arxiv-2308-09126@EgoSchema Datasheet",
+          "repo@README",
+          "dataset@数据集卡片"
+        ]
+      },
+      {
+        "text": "把摘要的「人类约 76%」当成直接看视频的上限。Figure 7 里最高一档是 Video → Text（76.2%），No constraint 是 75.0%，限时 1 分钟只有 67.0%；引用人类水平时应说明是哪一档。",
+        "cite": [
+          "arxiv-2308-09126@Figure 7",
+          "arxiv-2308-09126@摘要"
+        ]
+      },
+      {
+        "text": "用「帧越多分越高」解释模型差异。论文自己报告准确率对帧数非单调：mPLUG-Owl 7.2B 从 5 帧的 31.1% 掉到 30 帧的 20.0%。",
+        "cite": [
+          "arxiv-2308-09126@§4.2",
+          "arxiv-2308-09126@Table 6"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "UC Berkeley，Berkeley AI Research（BAIR）",
+        "cite": [
+          "repo@README"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "Karttikeya Mangalam、Raiymbek Akshulakov、Jitendra Malik",
+        "cite": [
+          "repo@README"
+        ]
+      },
+      {
+        "k": "数据来源",
+        "v": "Ego4D 第一视角视频，取非重叠的 3 分钟切段，每段至少 30 条带时间戳的人工旁白；视频为 30 fps mp4",
+        "cite": [
+          "arxiv-2308-09126@EgoSchema Datasheet"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2023-08-17 arXiv v1 发布 → 官网上线并提供下载脚本与基准代码 → GitHub 仓库开通 Kaggle 竞赛与验证服务器两条提交通道 → 2025-02 xAI 在 Grok 3 公告中报告 74.5%",
+        "cite": [
+          "arxiv-2308-09126@arXiv 提交信息",
+          "repo@README",
+          "x-news-grok-3@基准表格"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "数据集经 Kaggle 竞赛 egoschema-public 或 Wasabi / Google Drive 下载；评测代码在 GitHub 仓库 benchmarking/ 目录；Hugging Face 镜像为 lmms-eval/egoschema（含 GENERATION / MC / MC_PPL / Subset 四个配置）",
+        "cite": [
+          "repo@README",
+          "dataset@数据集卡片"
+        ]
+      },
+      {
+        "k": "许可",
+        "v": "按 Ego4D 许可发布，允许研究与商业目的使用视频与文本数据",
+        "cite": [
+          "arxiv-2308-09126@EgoSchema Datasheet"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-13",
+        "columns": [
+          "来源",
+          "模型",
+          "参数量",
+          "帧数",
+          "准确率",
+          "口径"
+        ],
+        "rows": [
+          [
+            "论文 Table 6",
+            "随机基线",
+            "—",
+            "—",
+            "20.0%",
+            "五选一均匀随机"
+          ],
+          [
+            "论文 Table 6",
+            "FrozenBiLM [57]（Oct 2022）",
+            "1.2B",
+            "10",
+            "26.4%",
+            "zero-shot"
+          ],
+          [
+            "论文 Table 6",
+            "FrozenBiLM [57]（Oct 2022）",
+            "1.2B",
+            "90",
+            "26.9%",
+            "zero-shot"
+          ],
+          [
+            "论文 Table 6",
+            "VIOLET [14]（Sept 2022）",
+            "198M",
+            "5",
+            "19.9%",
+            "zero-shot"
+          ],
+          [
+            "论文 Table 6",
+            "VIOLET [14]（Sept 2022）",
+            "198M",
+            "75",
+            "19.6%",
+            "zero-shot"
+          ],
+          [
+            "论文 Table 6",
+            "mPLUG-Owl [59]（May 2023）",
+            "7.2B",
+            "1",
+            "27.0%",
+            "zero-shot"
+          ],
+          [
+            "论文 Table 6",
+            "mPLUG-Owl [59]（May 2023）",
+            "7.2B",
+            "5",
+            "31.1%",
+            "zero-shot"
+          ],
+          [
+            "论文 Table 6",
+            "mPLUG-Owl [59]（May 2023）",
+            "7.2B",
+            "10",
+            "29.6%",
+            "zero-shot"
+          ],
+          [
+            "论文 Table 6",
+            "mPLUG-Owl [59]（May 2023）",
+            "7.2B",
+            "15",
+            "28.7%",
+            "zero-shot"
+          ],
+          [
+            "论文 Table 6",
+            "mPLUG-Owl [59]（May 2023）",
+            "7.2B",
+            "30",
+            "20.0%",
+            "zero-shot"
+          ],
+          [
+            "论文 Table 6",
+            "InternVideo [48]（Dec 2022）",
+            "478M",
+            "10",
+            "31.4%",
+            "zero-shot"
+          ],
+          [
+            "论文 Table 6",
+            "InternVideo [48]（Dec 2022）",
+            "478M",
+            "30",
+            "31.8%",
+            "zero-shot"
+          ],
+          [
+            "论文 Table 6",
+            "InternVideo [48]（Dec 2022）",
+            "478M",
+            "90",
+            "32.1%",
+            "zero-shot"
+          ],
+          [
+            "论文 Figure 7",
+            "人类",
+            "—",
+            "180 帧（1 fps）",
+            "67.2%",
+            "人类设置，5 小时视频上估计"
+          ],
+          [
+            "论文 Figure 7",
+            "人类",
+            "—",
+            "In <1 min",
+            "67.0%",
+            "人类限时设置，5 小时视频上估计"
+          ],
+          [
+            "论文 Figure 7",
+            "人类",
+            "—",
+            "In <3 min",
+            "68.0%",
+            "人类限时设置，5 小时视频上估计"
+          ],
+          [
+            "论文 Figure 7",
+            "人类",
+            "—",
+            "No constraint",
+            "75.0%",
+            "人类无限制设置，9 小时视频上估计"
+          ],
+          [
+            "论文 Figure 7",
+            "人类",
+            "—",
+            "Video → Text",
+            "76.2%",
+            "人类设置（原文设置名），5 小时视频上估计"
+          ],
+          [
+            "xAI Grok 3 公告",
+            "Grok 3 Beta",
+            "未披露",
+            "未披露",
+            "74.5%",
+            "厂商自报"
+          ],
+          [
+            "xAI Grok 3 公告",
+            "Grok 3 mini Beta",
+            "未披露",
+            "未披露",
+            "74.3%",
+            "厂商自报"
+          ],
+          [
+            "xAI Grok 3 公告",
+            "Gemini 2.0",
+            "未披露",
+            "未披露",
+            "71.9%",
+            "厂商自报"
+          ],
+          [
+            "xAI Grok 3 公告",
+            "GPT 4o",
+            "未披露",
+            "未披露",
+            "72.2%",
+            "厂商自报"
+          ]
+        ]
+      },
+      "cite": [
+        "arxiv-2308-09126@Table 6",
+        "arxiv-2308-09126@Figure 7",
+        "x-news-grok-3@基准表格"
+      ]
+    }
+  }
+}

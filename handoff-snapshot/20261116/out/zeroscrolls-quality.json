@@ -1,0 +1,566 @@
+{
+  "id": "zeroscrolls-quality",
+  "name": "ZeroSCROLLS (QuALITY)",
+  "full_name": "ZeroSCROLLS 的 QuALITY 长文多选问答子任务（论文表 3 缩写 QALT）",
+  "aliases": [
+    "QALT",
+    "ZeroSCROLLS QuALITY"
+  ],
+  "status": "active",
+  "categories": [
+    "longctx"
+  ],
+  "summary": "ZeroSCROLLS 十个长文本零样本任务里的 QuALITY 子任务：把 Project Gutenberg 等来源的长篇文章和一个 4 选 1 问题放进同一条提示词，要求模型只输出 A/B/C/D 一个字母，按 500 道测试题算准确率。",
+  "interpretation": "高分说明模型在不微调的前提下能通读长文并稳定答对多选题：论文发布时 GPT-4 拿 89.2、人类参考线 93.5，而 4 选 1 随机猜只有 26.6。但这个分数同时考「答得对」和「守格式」；参考答案不公开、官方榜单本次已不可访问，只能对照论文表 3 的快照，也不能外推到 QuALITY 全库 6,737 题。",
+  "measures": [
+    {
+      "area": "文学与综合类长文的多选问答",
+      "focus": "文章来自 Project Gutenberg、Open American National Corpus 等；题目由有经验的作者编写，设计上要求读完原文很大一部分才能答对",
+      "share": "100%（该子任务共 500 题）",
+      "format": "4 选 1 单选（A/B/C/D）",
+      "cite": [
+        "zeroscrolls-paper@§3.1.2",
+        "zeroscrolls-paper@Table 1"
+      ]
+    },
+    {
+      "area": "其中约半数为「hard」难题",
+      "focus": "限时浏览（speed validation）下多数标注者答错的题被标为 hard，靠略读或检索做不出来；ZeroSCROLLS 不单独报这个子集的分数",
+      "share": "约 50%（QuALITY 全集口径，非 ZeroSCROLLS 子集口径）",
+      "format": "与主任务相同，未单独计分",
+      "cite": [
+        "hf-zero-scrolls@QuALITY",
+        "quality-paper@§1"
+      ]
+    },
+    {
+      "area": "输入规模与模态",
+      "focus": "平均每题 4,248 词（论文表 1）；原 QuALITY 文章为 2k–8k token（约 1.5k–6k 词，不含标点）的英文文章",
+      "share": "500 题全部为长文",
+      "format": "纯文本，无图片",
+      "cite": [
+        "zeroscrolls-paper@Table 1",
+        "quality-paper@§1"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "不测开放式生成：答案只能是 A/B/C/D 中的一个字母，指令明确要求「不要给出任何解释」",
+      "cite": [
+        "zeroscrolls-paper@Table 6",
+        "zeroscrolls-paper@§3.2"
+      ]
+    },
+    {
+      "text": "不测微调与任务特定训练：官方只跑 zero-shot，CoLT5 一类微调模型只作参照，两者的分数不能混排",
+      "cite": [
+        "zeroscrolls-paper@§4.1"
+      ]
+    },
+    {
+      "text": "不测检索与工具使用：整篇文章一次性进上下文，超出窗口直接截断并告知模型，不让模型补查资料",
+      "cite": [
+        "zeroscrolls-paper@§3.2"
+      ]
+    },
+    {
+      "text": "不覆盖 QuALITY 全库：原库 6,737 题，本子任务只取其中约 500 题，也不单独报告 QuALITY-HARD 分数",
+      "cite": [
+        "zeroscrolls-paper@§3.1",
+        "quality-paper@§1"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 500,
+    "splits": [
+      "test（500 题）",
+      "validation（每任务约 20 题，仅供人工抽查）"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "沿用既有公开数据集 QuALITY 的测试集，未重新标注",
+    "public_sample": "题干与文章可在 Hugging Face tau/zero_scrolls 下载；标准答案不公开",
+    "multiple_choice_share": "100%",
+    "totals": "500 题测试集（无训练集）· 题型为 4 选 1 多选（A/B/C/D）· 语言英文 · 平均 4,248 词/题 · 另有每任务约 20 题验证集仅供人工抽查",
+    "cite": [
+      "zeroscrolls-paper@Table 1",
+      "zeroscrolls-paper@Abstract",
+      "hf-zero-scrolls@Data Fields",
+      "hf-zero-scrolls@Overview"
+    ],
+    "construction": [
+      {
+        "k": "选题",
+        "text": "直接沿用 QuALITY（Pang et al., 2022）的测试集：故事与文章来自 Project Gutenberg、Open American National Corpus 等；ZeroSCROLLS 只含测试集与小验证集，不含训练数据。",
+        "cite": [
+          "zeroscrolls-paper@§3.1.2",
+          "zeroscrolls-paper@Abstract"
+        ]
+      },
+      {
+        "k": "控量",
+        "text": "为控制评测成本，每个任务最多保留 500 个例子。",
+        "cite": [
+          "zeroscrolls-paper@§3.1"
+        ]
+      },
+      {
+        "k": "提示词",
+        "text": "固定英文指令：给出故事和一个带 4 个选项的多选题，要求写出对应字母，并追加「不要给出任何解释」；提示以表示回答类型的抬头（如 \"Answer:\"）结束。",
+        "cite": [
+          "zeroscrolls-paper@Table 6",
+          "zeroscrolls-paper@§3.2"
+        ]
+      },
+      {
+        "k": "截断",
+        "text": "输入总长超出模型上下文窗口时直接裁掉尾部，并附加一句话说明其余上下文已被修剪，让模型知道自己没看全。",
+        "cite": [
+          "zeroscrolls-paper@§3.2"
+        ]
+      },
+      {
+        "k": "判分",
+        "text": "取输出中第一个被词边界包围的有效选项字母，与标准答案比对；原库的参考答案由标注者与出题人投票产生。",
+        "cite": [
+          "zeroscrolls-paper@§3.3",
+          "hf-zero-scrolls@QuALITY"
+        ]
+      },
+      {
+        "k": "人类参考线",
+        "text": "人类分数直接采用 Pang et al. (2022) 在全量 QuALITY 测试集上报出的成绩，不是在这 500 题上重新测的。",
+        "cite": [
+          "zeroscrolls-paper@§4.1"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "accuracy",
+      "name": "Accuracy（准确率）",
+      "direction": "越高越好",
+      "description": "多选问答命中率：预测字母与标准答案一致记 1 分，按 500 题求平均。论文先取输出中第一个被词边界包围的有效选项字母，格式不符或答非所问计 0 分。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "zeroscrolls-paper@§3.3",
+        "zeroscrolls-paper@Table 1"
+      ]
+    },
+    {
+      "id": "avg",
+      "name": "10 任务平均分（Avg）",
+      "direction": "越高越好",
+      "description": "论文表 3 的 Avg 列：10 个任务各自指标的简单平均（摘要任务用 ROUGE、QuALITY 用 Accuracy、其余问答用 F1、BookSumSort 用指数相似度）。它不是 QuALITY 的分数，只用来定位模型在整套基准上的相对水平。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "分",
+      "cite": [
+        "zeroscrolls-paper@Table 3"
+      ]
+    }
+  ],
+  "default_protocol": {
+    "raw": "zero-shot 直接推理：把整篇文章、固定英文指令和 4 个选项放进同一条提示词，指令要求用对应字母作答并「不要给出任何解释」，提示以表示回答类型的抬头结束；推理用贪心解码，从输出里取第一个被词边界包围的有效选项字母与标准答案比对，命中记 1 分，最后按 500 题求平均得到准确率。",
+    "cite": [
+      "zeroscrolls-paper@Table 6",
+      "zeroscrolls-paper@§3.2",
+      "zeroscrolls-paper@§4.1",
+      "zeroscrolls-paper@§3.3"
+    ],
+    "variants": [
+      {
+        "text": "输入长度：上下文窗口不同会导致同一道题被截断或不被截断，论文表 4 显示 Claude 从 8k 降到 4k 时 QuALITY 从 84.8 掉到 76.8，不同窗口的分数不能直接比。",
+        "cite": [
+          "zeroscrolls-paper@Table 4"
+        ]
+      },
+      {
+        "text": "随机基线：答不出时从 A/B/C/D 随机选得 26.6，接近这个数说明模型基本没在读文章。",
+        "cite": [
+          "zeroscrolls-paper@Table 3",
+          "zeroscrolls-paper@§4.1"
+        ]
+      },
+      {
+        "text": "格式违规：论文第 5 节的格式分析做在 NarrativeQA 上——Claude 200 题里 191 题格式正确，GPT-4 只有 71 题；作者认为这会压低 GPT-4 的分数。",
+        "cite": [
+          "zeroscrolls-paper@§5"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2023-05-23",
+      "label": "arXiv v1 首次公开",
+      "cite": [
+        "zeroscrolls-paper@arXiv 版本信息"
+      ]
+    },
+    {
+      "id": "v3",
+      "date": "2023-12-17",
+      "label": "arXiv v3（当前版本），本档案数字取自该版表 3；论文同年 12 月在 Findings of EMNLP 2023 正式发表（pp. 7977–7989）",
+      "cite": [
+        "zeroscrolls-paper@arXiv 版本信息",
+        "hf-zero-scrolls@Citation"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "标准答案不公开，且官方榜单已不可访问",
+      "impact": "数据卡明说该特性恒为 None、只有测试集；外部只能自建推理流程，而论文与仓库指向的在线榜单域名本次核验已无法解析，拿不到榜单现状，也无法核对最新分数。",
+      "severity": "高",
+      "response": "本档案所有数字只回溯到论文表 3 的快照；需要可持续对分的场景改用其他仍可提交的长文基准。",
+      "reader": "看到任何「ZeroSCROLLS 最新分数」先追问来源与日期；拿不到可访问的提交入口就不要采信。",
+      "cite": [
+        "hf-zero-scrolls@Data Fields",
+        "zs-repo@Leaderboard",
+        "zeroscrolls-paper@Abstract"
+      ]
+    },
+    {
+      "issue": "500 题只是 QuALITY 全库的一个子集",
+      "impact": "原库共 6,737 题，本子任务每任务最多保留 500 题；样本量小，单题波动对准确率的影响约在个百分点量级，分数不能外推到全库。",
+      "severity": "中",
+      "response": "比较模型时同时看 10 任务平均与多个子任务，避免只按这 500 题排名。",
+      "reader": "把 89.2 当成「QuALITY 整体水平」会错配口径。",
+      "cite": [
+        "zeroscrolls-paper@§3.1",
+        "quality-paper@§1"
+      ]
+    },
+    {
+      "issue": "人类上界与模型分数不同池子",
+      "impact": "93.5% 取自 Pang et al. (2022) 在全量 QuALITY 测试集上的成绩，不是在这 500 题上重测，严格说两者不能直接相减。",
+      "severity": "中",
+      "response": "把 93.5 当作量级参考，而不是这道子任务的精确上界。",
+      "reader": "「距人类只差 4.3 个百分点」这类说法把两个池子的数字相减，不严谨。",
+      "cite": [
+        "zeroscrolls-paper@§4.1",
+        "quality-paper@Abstract"
+      ]
+    },
+    {
+      "issue": "指标对输出格式敏感",
+      "impact": "只认一个字母，模型多写一句话就可能判错；论文第 5 节的格式统计（NarrativeQA：Claude 191/200、GPT-4 71/200）显示模型之间差距很大，作者认为这压低了 GPT-4 的分数。",
+      "severity": "中",
+      "response": "复现时严格按附录提示词与「取首个有效字母」的解析规则执行。",
+      "reader": "分数低不等于不会做，也可能只是没按格式输出。",
+      "cite": [
+        "zeroscrolls-paper@§3.3",
+        "zeroscrolls-paper@§5",
+        "zeroscrolls-paper@Table 6"
+      ]
+    },
+    {
+      "issue": "文章与题干公开可得，污染风险无法排除",
+      "impact": "文章与题干可在 Hugging Face 下载，长文很可能已进入训练语料；论文只说明「只有测试集和小验证集、没有训练数据」，未披露任何留存集或污染对照设计。",
+      "severity": "中",
+      "response": "把该子任务分数当作参考而非纯泛化度量，并关注污染受控的替代基准。",
+      "reader": "对 2024 年之后发布的模型，89.2 附近的数字要打问号。",
+      "cite": [
+        "zeroscrolls-paper@Abstract",
+        "hf-zero-scrolls@Overview"
+      ]
+    }
+  ],
+  "notes": "本页只覆盖 ZeroSCROLLS 10 个任务中的 QuALITY 子任务；原库 QuALITY 的构建细节见 quality-paper。",
+  "official_sources": [
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/pdf/2305.14196"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/tau/zero_scrolls"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/tau-nlp/zero_scrolls"
+    }
+  ],
+  "related_benchmarks": [
+    "longbench",
+    "drop"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-13",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      {
+        "id": "zeroscrolls-paper",
+        "kind": "paper",
+        "title": "ZeroSCROLLS: A Zero-Shot Benchmark for Long Text Understanding（arXiv:2305.14196v3，2023-12-17）",
+        "url": "https://arxiv.org/pdf/2305.14196",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "hf-zero-scrolls",
+        "kind": "dataset",
+        "title": "tau/zero_scrolls（Hugging Face 数据集卡）",
+        "url": "https://huggingface.co/datasets/tau/zero_scrolls",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "zs-repo",
+        "kind": "repo",
+        "title": "tau-nlp/zero_scrolls（官方推理与榜单提交代码）",
+        "url": "https://github.com/tau-nlp/zero_scrolls",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "quality-paper",
+        "kind": "paper",
+        "title": "QuALITY: Question Answering with Long Input Texts, Yes!（arXiv:2112.08608）",
+        "url": "https://arxiv.org/pdf/2112.08608",
+        "accessed": "2026-11-13"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Tel Aviv 大学 Blavatnik 计算机学院 × Meta AI（Shaham、Ivgi、Efrat、Berant、Levy）",
+        "cite": [
+          "zeroscrolls-paper@标题"
+        ]
+      },
+      "first_release": {
+        "v": "2023-05-23（arXiv v1）；2023 年 12 月在 Findings of EMNLP 2023 正式发表",
+        "cite": [
+          "zeroscrolls-paper@arXiv 版本信息",
+          "hf-zero-scrolls@Citation"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "zeroscrolls-paper@Abstract",
+        "zeroscrolls-paper@Table 1",
+        "hf-zero-scrolls@Overview"
+      ],
+      "interpretation": [
+        "zeroscrolls-paper@§4.2",
+        "zeroscrolls-paper@§4.1",
+        "zeroscrolls-paper@§3.3",
+        "hf-zero-scrolls@QuALITY"
+      ]
+    },
+    "problem": {
+      "text": "HELM、BigBench 这类零样本基准基本只覆盖短文本（BigBench 平均每条输入 77 词），模型在长文本上的零样本能力缺少可比度量；ZeroSCROLLS 用 10 个长文本任务的纯测试集补上这块，并配在线榜单，让「当前最强」这个移动目标可以持续比较。",
+      "cite": [
+        "zeroscrolls-paper@§1",
+        "zeroscrolls-paper@Abstract"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机基线（4 选 1）",
+        "value": "26.6%",
+        "note": "答不出时从 A/B/C/D 随机选；接近这个数说明模型基本没在读文章。",
+        "cite": [
+          "zeroscrolls-paper@Table 3",
+          "zeroscrolls-paper@§4.1"
+        ]
+      },
+      {
+        "label": "论文发布时最好（GPT-4）",
+        "value": "89.2%",
+        "note": "GPT-4 8k 上下文；但它在 10 个任务里只在 QuALITY 上最好，10 任务平均只有 41.7。",
+        "cite": [
+          "zeroscrolls-paper@Table 3",
+          "zeroscrolls-paper@§4.2"
+        ]
+      },
+      {
+        "label": "人类参考线",
+        "value": "93.5%",
+        "note": "直接采用 Pang et al. (2022) 在全量 QuALITY 测试集上报出的人类成绩，不是在这 500 题上重测。",
+        "cite": [
+          "zeroscrolls-paper@§4.1",
+          "quality-paper@Abstract"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      },
+      {
+        "label": "官方榜单现状",
+        "value": "本次核验无法获取",
+        "note": "论文与仓库都指向在线榜单 zero.scrolls-benchmark.com/leaderboard，但 2026-11-13 本地抓取与第三方抓取（r.jina.ai）均报域名无法解析；论文表 3 之外没有可引用的官方数字。",
+        "cite": [
+          "zs-repo@Leaderboard",
+          "zeroscrolls-paper@Abstract"
+        ]
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 GPT-4 的 89.2 读成「长文本理解接近人类」：论文同时指出 GPT-4 只在 QuALITY 这一个数据集上最好，10 任务平均只有 41.7。",
+        "cite": [
+          "zeroscrolls-paper@§4.2",
+          "zeroscrolls-paper@Table 3"
+        ]
+      },
+      {
+        "text": "把表 3 的 Avg 列当成 QuALITY 分数：Avg 是 10 个任务（4 个 ROUGE 摘要 + 4 个 F1 问答 + QuALITY 的 Accuracy + BookSumSort 的指数相似度）的平均，QuALITY 单列才是 QALT。",
+        "cite": [
+          "zeroscrolls-paper@Table 3"
+        ]
+      },
+      {
+        "text": "把 500 题当成 QuALITY 全集：原库共 6,737 题，ZeroSCROLLS 每个任务最多保留 500 题。",
+        "cite": [
+          "zeroscrolls-paper@§3.1",
+          "quality-paper@§1"
+        ]
+      },
+      {
+        "text": "以为还能去官网榜单查最新分数：论文与仓库都指向在线榜单，但该域名本次核验已无法解析，论文表 3 之外没有可引用的官方数字。",
+        "cite": [
+          "zs-repo@Leaderboard",
+          "zeroscrolls-paper@Abstract"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "论文",
+        "v": "ZeroSCROLLS: A Zero-Shot Benchmark for Long Text Understanding（Shaham、Ivgi、Efrat、Berant，Tel Aviv 大学；Omer Levy，Meta AI），arXiv:2305.14196。",
+        "cite": [
+          "zeroscrolls-paper@标题"
+        ]
+      },
+      {
+        "k": "正式发表",
+        "v": "Findings of the Association for Computational Linguistics: EMNLP 2023，pp. 7977–7989，Singapore，DOI 10.18653/v1/2023.findings-emnlp.536。",
+        "cite": [
+          "hf-zero-scrolls@Citation"
+        ]
+      },
+      {
+        "k": "基准定位",
+        "v": "10 个长文本任务的零样本测试集：6 个改编自 SCROLLS、4 个为新增（含 2 个信息融合任务）；没有训练集，验证集每任务约 20 题只用于人工抽查。",
+        "cite": [
+          "zeroscrolls-paper@Abstract",
+          "zeroscrolls-paper@§3",
+          "hf-zero-scrolls@Overview"
+        ]
+      },
+      {
+        "k": "与 QuALITY 的关系",
+        "v": "本页只覆盖其中的 QuALITY 子任务（表 3 缩写 QALT，指标 Accuracy）：沿用 QuALITY 测试集约 500 题，参考答案由标注者与出题人投票产生。",
+        "cite": [
+          "zeroscrolls-paper@Table 3",
+          "hf-zero-scrolls@QuALITY"
+        ]
+      },
+      {
+        "k": "表 3 列名对照",
+        "v": "GovReport、SummScreenFD、QMSum、SQuALITY、Qasper、NarrativeQA、QuALITY、MuSiQue、SpaceDigest、BookSumSort；指标依次为 ROUGE、ROUGE、ROUGE、ROUGE、F1、F1、Accuracy、F1、指数相似度、指数相似度。",
+        "cite": [
+          "zeroscrolls-paper@Table 3"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "Hugging Face tau/zero_scrolls 提供数据集，GitHub tau-nlp/zero_scrolls 提供推理代码与榜单提交格式转换脚本。",
+        "cite": [
+          "hf-zero-scrolls@Overview",
+          "zs-repo@README"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2023-12-17",
+        "columns": [
+          "模型",
+          "上下文上限",
+          "QuALITY 准确率（%）",
+          "10 任务平均分"
+        ],
+        "rows": [
+          [
+            "Naive（随机基线）",
+            null,
+            "26.6",
+            "19.6"
+          ],
+          [
+            "T0pp（开源）",
+            "8192",
+            "21.4",
+            "14.3"
+          ],
+          [
+            "Flan-T5（开源）",
+            "8192",
+            "75.2",
+            "29.9"
+          ],
+          [
+            "Flan-UL2（开源）",
+            "8192",
+            "75.6",
+            "30.6"
+          ],
+          [
+            "DaVinci003",
+            "4096",
+            "69.0",
+            "33.7"
+          ],
+          [
+            "ChatGPT",
+            "4096",
+            "66.6",
+            "34.0"
+          ],
+          [
+            "Claude",
+            "8000",
+            "84.8",
+            "39.1"
+          ],
+          [
+            "GPT-4",
+            "8192",
+            "89.2",
+            "41.7"
+          ],
+          [
+            "CoLT5-xl（微调参照）",
+            "16384",
+            "47.0",
+            null
+          ],
+          [
+            "人类参考线（取自 Pang et al. 2022 全量测试集）",
+            null,
+            "93.5",
+            null
+          ]
+        ]
+      },
+      "cite": [
+        "zeroscrolls-paper@Table 3"
+      ]
+    }
+  }
+}

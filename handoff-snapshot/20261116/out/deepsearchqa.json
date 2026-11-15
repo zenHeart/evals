@@ -1,0 +1,630 @@
+{
+  "id": "deepsearchqa",
+  "name": "DeepSearchQA",
+  "full_name": "DeepSearchQA: Bridging the Comprehensiveness Gap for Deep Research Agents（深度搜索问答：弥合深度研究智能体的全面性差距）",
+  "aliases": [],
+  "status": null,
+  "categories": [
+    "agent"
+  ],
+  "summary": "DeepSearchQA 是 Google DeepMind 等团队开源的 900 道多步深度检索题：每题要求能自己调用搜索工具的智能体（agent）在开放网页上跑完一串前后依赖的搜索，最后交出一份「完整答案清单」；官方用 F1（精确率与召回率的调和平均，二者失衡就会被拉低）排名。",
+  "interpretation": "F1 高说明智能体既找得全（召回）又不乱加（精确）；但它不衡量搜索过程是否高效，也不代表会写报告或能做开放研究——官方采用纯结果式评测，把智能体当黑盒，蒙对和真正推理出的答案得分相同。同一个模型的 F1 与「完全正确率」相差约 13–16 个百分点，只看一个数会显著改变结论。",
+  "measures": [
+    {
+      "area": "集答案任务（Set Answer）",
+      "focus": "示例（论文 Table 3「Vaccination Study」）：用世界银行 2023 年数据，列出人口 100–200 万、预期寿命 ≥75 岁、麻疹疫苗接种率 ≥85% 的所有国家，要求逗号分隔且不要额外文字。",
+      "share": "65%",
+      "format": "提交一个答案集合：枚举所有满足约束的条目，或回答多个子问题",
+      "cite": [
+        "dataset@README",
+        "paper@Table 3"
+      ]
+    },
+    {
+      "area": "单答案任务（Single Answer）",
+      "focus": "示例（论文 Table 1「The Epidemiologist」）：2019–2020 年间，哪些美国州的死亡率在 229.8–<268.1（每 10 万人）且死因是 CDC 认定的当期首位死因。",
+      "share": "未披露（官方只披露 65% 为集答案，未给单答案占比）",
+      "format": "唯一实体或数值；给出多个候选（对冲）即判失败",
+      "cite": [
+        "paper@Table 1",
+        "paper@§3.1"
+      ]
+    },
+    {
+      "area": "领域分布（17 个领域）",
+      "focus": "正文点名的领域包括政治与政府、金融与经济、科学、健康、历史、地理、媒体；论文强调所有题目都锚定时间或静态数据源（如「According to the 2020 Census...」）以抑制网页漂移。",
+      "share": "未披露（论文 Figure 1 是分布图，正文未列出各领域数值）",
+      "format": "未披露",
+      "cite": [
+        "paper@§2",
+        "paper@Figure 1"
+      ]
+    },
+    {
+      "area": "任务复杂度画像",
+      "focus": "三类：结构化检索（多步搜索策略）、上下文管理（大文档组装）、逻辑推理（约束求解）。示例（Table 3「Financial Trend Hunter」）：对 2020–2023 年中 NVIDIA 年涨幅 >125% 且美国 GDP 增幅 >2.5% 的年份取交集。",
+      "share": "未披露",
+      "format": "自由文本答案，由裁判判定语义等价",
+      "cite": [
+        "paper@Table 2",
+        "paper@Table 3"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "搜索过程与轨迹质量：官方只看最终答案集合，不记录访问页面、查询序列等轨迹，无法区分正确推理与偶然答对，也难以定位失败发生在检索、推理还是合成阶段。",
+      "cite": [
+        "paper@§1.3",
+        "paper@§5.1"
+      ]
+    },
+    {
+      "text": "时效性与突发新闻检索：数据集基于「静态网页」假设，题目刻意锚定时间或静态数据源；源网站被删除或大幅改动后标准答案仍会失效。",
+      "cite": [
+        "paper@§2",
+        "paper@§5.1"
+      ]
+    },
+    {
+      "text": "答案不唯一或主观解读类任务：出题阶段被过滤掉（只保留标准答案确定的任务，模糊题目在验证阶段剔除）。",
+      "cite": [
+        "paper@§2"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 900,
+    "splits": [
+      "eval（Hugging Face 唯一拆分，DSQA-full.csv，900 题）",
+      "200 题子集（仅 Google 博客的 pass@8 vs pass@1 对比使用）"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "expert-annotated hand-crafted（专家数据标注员人工构造 + 三阶段答案验证）",
+    "public_sample": true,
+    "set_answer_share": "65%",
+    "totals": "900 题 · 约 65% 为集答案（需给出穷尽列表），其余为单答案 · 17 个领域 · 题目语言英文 · 许可证 Apache-2.0 · Hugging Face 上以单个 eval 拆分（DSQA-full.csv）提供，Kaggle 提供排行榜与起步代码",
+    "cite": [
+      "dataset@README",
+      "paper@§2",
+      "site"
+    ],
+    "construction": [
+      {
+        "k": "出题与筛选",
+        "text": "题目由专家数据标注员从多种来源整理，用来反映真实、高价值的用户查询；再严格过滤，只保留客观、以信息检索为目标且标准答案确定的任务。",
+        "cite": [
+          "paper@§2"
+        ]
+      },
+      {
+        "k": "因果链结构",
+        "text": "每题构成因果链：前一步拿不到信息，后一步就无法继续，考长程规划与上下文保持；同时所有题目锚定时间或静态数据源，抑制活网页基准固有的漂移。",
+        "cite": [
+          "paper@Abstract",
+          "paper@§2"
+        ]
+      },
+      {
+        "k": "三阶段答案验证",
+        "text": "1) 三名评审在不看标准答案的情况下独立研究答案；2) 把独立答案与出题人给的标准答案交叉比对；3) 出现差异进入冲突解决阶段，判定是标准答案要更新、评审错了还是题目本身有歧义；所有模糊题目在此阶段剔除。",
+        "cite": [
+          "paper@§2"
+        ]
+      },
+      {
+        "k": "官方评测由 Kaggle 执行",
+        "text": "官方维护实时排行榜并对新模型开放提交，评测由 Kaggle 完成；论文 Table 4 的结果即由 Kaggle 独立评测。",
+        "cite": [
+          "paper@§1.3",
+          "paper@Table 4"
+        ]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "被评测对象是可以访问网页的 LLM 或 LLM 智能体，它针对每道题提交一个答案集合；答案类型（单答案/集答案）在推理时不告诉被评测系统。官方用 Gemini 2.5 Flash 作裁判（零样本，判分提示词见论文附录 A 与 Kaggle 起步 notebook），逐项判定提交答案与标准答案是否语义等价，再按集合关系计算 F1。",
+    "cite": [
+      "dataset@README",
+      "paper@§3.2",
+      "paper@附录 A"
+    ],
+    "variants": [
+      {
+        "text": "换裁判模型或换判分提示词：数据集卡明确指定 gemini-2.5-flash 与 Kaggle starter notebook 中的判分提示词，并称换用其它裁判或提示词「很可能造成统计上显著的偏差」。",
+        "cite": [
+          "dataset@README"
+        ]
+      },
+      {
+        "text": "单次 vs 多次采样（pass@k）：论文报告采样 n 次可把完全正确率从 67.18%（n=1）提到 85.71%（n=8）；Google 博客的 pass@8 vs pass@1 只在 200 题子集上计算，与全集成绩不可比。",
+        "cite": [
+          "paper@§4",
+          "site"
+        ]
+      },
+      {
+        "text": "智能体配置与上下文管理策略：论文 Table 4 混合了 Deep Research 智能体与裸推理模型（GPT-5 High Reasoning、Gemini 3 Pro Preview、Gemini 2.5 Flash）；厂商自报还常带上下文管理差异，例如 Kimi 明说其 DeepSearchQA 测试未做上下文管理、超出上下文长度的任务直接计为失败。",
+        "cite": [
+          "paper@Table 4",
+          "kimi"
+        ]
+      },
+      {
+        "text": "报 F1 还是报「完全正确率」：同一模型两个数相差约 13–16 个百分点（Gemini Deep Research Agent：F1 81.90% vs 完全正确率 66.09%），混排即失真。",
+        "cite": [
+          "paper@§4"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "f1",
+      "name": "F1-Score（精确率与召回率的调和平均）",
+      "direction": "越高越好",
+      "description": "主指标。对每题，precision = 提交集合与标准答案交集中的项目数 / 提交项目数，recall = 交集项目数 / 标准答案项目数，F1 = 2PR/(P+R)；单答案题退化为精确匹配（1.0 或 0.0），集答案题同时惩罚漏检索与乱加；逐题算完后对全集合平均。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§3.1"
+      ]
+    },
+    {
+      "id": "fully-correct",
+      "name": "完全正确率（S = G）",
+      "direction": "越高越好",
+      "description": "提交集合与标准答案集合语义完全一致（含零个错误项）的题目占比；集答案题要求 recall=1 且 precision=1，单答案题给出多个候选也算失败。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§3.1"
+      ]
+    },
+    {
+      "id": "fully-incorrect",
+      "name": "完全错误率（S ∩ G = ∅）",
+      "direction": "越低越好",
+      "description": "提交集合与标准答案毫无交集的题目占比，代表搜索策略彻底失败或对题意的根本误解。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§3.1"
+      ]
+    },
+    {
+      "id": "correct-with-extraneous",
+      "name": "多答率（G ⊂ S，对冲失败）",
+      "direction": "越低越好",
+      "description": "找全了标准答案（recall=1）但额外掺入一个或多个错误项的题目占比，对应「用低置信答案扩大覆盖面对冲」的行为。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§3.1"
+      ]
+    }
+  ],
+  "default_protocol_note": null,
+  "versions": [
+    {
+      "id": "open-source",
+      "date": "2025-12-11",
+      "label": "Google 官方博客随 Gemini Deep Research 开放同步开源数据集、Kaggle 排行榜与 Colab 起步代码（arXiv 技术报告尚未发布）",
+      "cite": [
+        "site@发布日期",
+        "site"
+      ]
+    },
+    {
+      "id": "arxiv-v1",
+      "date": "2026-01-28",
+      "label": "arXiv v1 技术报告发布（arXiv:2601.20975v1，本页核对所用版本）",
+      "cite": [
+        "paper@版本页眉"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "静态网页假设，标准答案会过期",
+      "impact": "题目刻意锚定时间或静态数据源，但源网站被删除或内容大幅改动后，标准答案仍然失效；官方明说需要周期性人工复核与更新，突发新闻类检索不在评测范围内。",
+      "severity": "高",
+      "response": "论文与数据集卡都把这一点列为局限，并提出未来版本引入「活」的动态列表（如「List all current members of the UK Parliament’s Science and Technology Committee」）；截至本页核验日未见数据集更新记录。",
+      "reader": "不要用它评估时效性检索；看到很新的成绩时，留意题目答案是否仍与当前网页一致。",
+      "cite": [
+        "paper@§5.1",
+        "paper@§5.2",
+        "dataset@README"
+      ]
+    },
+    {
+      "issue": "黑盒结果式评分",
+      "impact": "只对最终答案集合打分，不看轨迹；靠猜、靠运气拼出的正确答案与真正推理出的答案得分一样，也无法区分失败发生在检索、推理还是合成阶段。",
+      "severity": "中",
+      "response": "论文把「加入基于过程的指标」列为未来扩展方向（记录访问页面与查询序列作为辅助诊断数据），当前版本未实现。",
+      "reader": "F1 高不等于过程可靠；厂商报的步数、成本要另看，不能从分数反推。",
+      "cite": [
+        "paper@§5.1",
+        "paper@§5.2"
+      ]
+    },
+    {
+      "issue": "评分依赖单一 LLM 裁判",
+      "impact": "语义等价判定由 Gemini 2.5 Flash 零样本完成；数据集卡明确说换裁判模型或判分提示词很可能造成统计显著偏差，官方评分与第三方复现可能不同。",
+      "severity": "中",
+      "response": "数据集卡指定了裁判模型与 Kaggle starter notebook 中的判分提示词；未见官方对裁判一致性的量化研究。",
+      "reader": "对比不同来源的分数前，先确认裁判模型与判分提示词一致。",
+      "cite": [
+        "dataset@README",
+        "paper@§3.2"
+      ]
+    },
+    {
+      "issue": "公开集可被污染或针对性优化",
+      "impact": "900 题与标准答案全部公开可下载（Apache-2.0），存在被纳入训练数据或被针对性调优的风险，公开集分数可能偏高。",
+      "severity": "中",
+      "response": "未见官方回应（论文与数据集卡均未讨论污染、留存集或去污染流程）。",
+      "reader": "缺少私有留存集做交叉验证，单看公开集分数要保留余地。",
+      "cite": [
+        "dataset@README"
+      ]
+    },
+    {
+      "issue": "题量带来的统计噪声",
+      "impact": "900 题的 95% 置信区间宽约 ±2–3.4 个百分点（论文 Table 4），相邻名次的差距（如 Gemini Deep Research Agent 66.09% vs GPT-5 Pro High Reasoning 65.18%）落在区间内，论文本身也说两者统计上接近。",
+      "severity": "低",
+      "response": "论文在每个指标旁报告 95% 置信区间，并在正文说明头部两名「统计上可比」。",
+      "reader": "头部几个点的名次差异不要过度解读。",
+      "cite": [
+        "paper@Table 4",
+        "paper@§4"
+      ]
+    }
+  ],
+  "notes": "Google DeepMind × Google Search × Kaggle × Google Research 联合发布；数据在 Hugging Face，排行榜与起步代码在 Kaggle；Kimi、Meta 等厂商有自报成绩",
+  "official_sources": [
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/google/deepsearchqa"
+    },
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2601.20975"
+    },
+    {
+      "kind": "site",
+      "url": "https://www.anthropic.com/news/claude-opus-4-6"
+    },
+    {
+      "kind": "site",
+      "url": "https://www.kimi.ai/blog/kimi-k2-6"
+    },
+    {
+      "kind": "site",
+      "url": "https://huggingface.co/meta-models/Muse-Glimmer-30B"
+    }
+  ],
+  "related_benchmarks": [
+    "gaia",
+    "browsecomp",
+    "finsearchcomp",
+    "xbench-deepsearch",
+    "widesearch"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-11",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-11",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "DeepSearchQA: Bridging the Comprehensiveness Gap for Deep Research Agents（arXiv:2601.20975v1，2026-01-28）",
+        "url": "https://arxiv.org/abs/2601.20975",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "dataset",
+        "kind": "dataset",
+        "title": "google/deepsearchqa（Hugging Face 数据集卡）",
+        "url": "https://huggingface.co/datasets/google/deepsearchqa",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "site",
+        "kind": "site",
+        "title": "Google 官方博客 Build with Gemini Deep Research（2025-12-11，同步开源 DeepSearchQA）",
+        "url": "https://blog.google/technology/developers/deep-research-agent-gemini-api/",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "kimi",
+        "kind": "blog",
+        "title": "Kimi K2.6 Tech Blog（DeepSearchQA 复现口径说明）",
+        "url": "https://www.kimi.ai/blog/kimi-k2-6",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "meta",
+        "kind": "site",
+        "title": "meta-models/Muse-Glimmer-30B 模型卡（DeepSearch QA 自报成绩）",
+        "url": "https://huggingface.co/meta-models/Muse-Glimmer-30B",
+        "accessed": "2026-11-11"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Google DeepMind × Google Search × Kaggle × Google Research（论文作者机构标注）",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      "first_release": {
+        "v": "2025-12-11（Google 博客开源数据集与排行榜；arXiv 技术报告 2026-01-28）",
+        "cite": [
+          "site@发布日期",
+          "paper@版本页眉"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "paper@Abstract",
+        "dataset@README",
+        "site"
+      ],
+      "interpretation": [
+        "paper@§1.3",
+        "paper@§5.1"
+      ]
+    },
+    "problem": {
+      "text": "此前的基准（TruthfulQA、HaluEval、SimpleQA，以及 HLE、GAIA、BrowseComp）几乎都保持「单答案」格式以保证可客观评分，鼓励的是「在草堆里找一根针」式的精准检索；而真实信息需求常常要的是一份完整清单，例如「列出所有 P/E 低于 20 且在东南亚有业务的半导体公司」。DeepSearchQA 把这一空白命名为「全面性差距」（Comprehensiveness Gap），改用答案集合来评测；论文用 Table 5 归纳了当前智能体的三类典型失败：量化估计错误、工具调用限制、停止准则失败。",
+      "cite": [
+        "paper@§1.1",
+        "paper@§1.2",
+        "paper@§1.3",
+        "paper@Table 5"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "人类基线",
+        "value": "论文未给出",
+        "note": "技术报告只报告模型结果，没有报告人类在该基准上的表现。",
+        "cite": [
+          "paper@Table 4"
+        ]
+      },
+      {
+        "label": "论文结果表最低",
+        "value": "Claude 4.5 Haiku：F1 22.24%，完全错误率 71.00%",
+        "note": "表内 10 个条目从 22.24% 到 81.90%；作者说低于某个参数或算力阈值后效用是阶梯式下跌，不是线性权衡（Gemini 2.5 Flash F1 42.99%，约为领先者一半，完全错误率 45.27%）。",
+        "cite": [
+          "paper@Table 4",
+          "paper@§4"
+        ]
+      },
+      {
+        "label": "论文发布时最好（Kaggle 独立评测）",
+        "value": "Gemini Deep Research Agent：F1 81.90%，完全正确率 66.09%",
+        "note": "GPT-5 Pro High Reasoning 完全正确率 65.18%（统计上接近）、F1 78.98%；完全错误率 9.95% vs 14.13%，Gemini 的灾难性失败更少。",
+        "cite": [
+          "paper@Table 4",
+          "paper@§4"
+        ]
+      },
+      {
+        "label": "厂商自报（口径未披露，仅供参考）",
+        "value": "74.6（Meta Muse-Glimmer-30B，High Reasoning）",
+        "note": "Meta 模型卡只给一个数，未说明裁判、判分提示词、采样次数与上下文配置；Kimi 则明说其 DeepSearchQA 测试未做上下文管理、超上下文任务直接计失败。两者都不能与论文 Table 4 直接比。",
+        "cite": [
+          "meta",
+          "kimi"
+        ]
+      },
+      {
+        "label": "多次采样上界（pass@8，非单次成绩）",
+        "value": "完全正确率 85.71%（n=8）",
+        "note": "论文报告的同一智能体多次采样上界（n=1 为 67.18%，n=2 为 74.51%，n=4 为 81.72%）；Google 博客的 pass@8 vs pass@1 只在 200 题子集上算。",
+        "cite": [
+          "paper@§4",
+          "site"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 Google 博客里的 66.1% 当成 F1：那是「完全正确率」（Fully Correct），同一个 Gemini Deep Research Agent 的 F1 是 81.90%。",
+        "cite": [
+          "site",
+          "paper@Table 4"
+        ]
+      },
+      {
+        "text": "把 F1 和完全正确率混排：两者相差约 13–16 个百分点，是论文专门讨论的「最后一公里」差距（漏掉长尾 vs 无法判断何时停止）。",
+        "cite": [
+          "paper@§4"
+        ]
+      },
+      {
+        "text": "把带多次采样（pass@8）或在 200 题子集上算出的分数，与全集单次成绩放在一起比。",
+        "cite": [
+          "paper@§4",
+          "site"
+        ]
+      },
+      {
+        "text": "把它当成单答案事实问答基准：约 65% 的题要的是完整清单，单答案题的 F1 就是精确匹配，多给候选直接判失败。",
+        "cite": [
+          "dataset@README",
+          "paper@§3.1"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "Google DeepMind、Google Search、Kaggle、Google Research（论文作者机构标注；对应作者 gnikita@ / lukhaas@ / dipanjand@google.com）",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "共同一作 Nikita Gupta、Riju Chatterjee、Lukas Haas、Connie Tao；其余作者 Andrew Wang、Chang Liu、Hidekazu Oiwa、Elena Gribovskaya、Jan Ackermann、John Blitzer、Sasha Goldshtein、Dipanjan Das",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2025-12-11 Google 博客开源数据集、Kaggle 排行榜与 Colab 起步代码 → 2026-01-28 arXiv v1 技术报告",
+        "cite": [
+          "site@发布日期",
+          "paper@版本页眉"
+        ]
+      },
+      {
+        "k": "数据与代码位置",
+        "v": "数据集在 Hugging Face（google/deepsearchqa，Apache-2.0，单文件 DSQA-full.csv，split=eval）；排行榜、起步代码与讨论区在 Kaggle（google/dsqa）",
+        "cite": [
+          "dataset@README"
+        ]
+      },
+      {
+        "k": "评测执行方",
+        "v": "论文 Table 4 的结果由 Kaggle 独立评测；官方排行榜由 Kaggle 维护并对新模型开放提交",
+        "cite": [
+          "paper@Table 4",
+          "paper@§1.3"
+        ]
+      },
+      {
+        "k": "裁判",
+        "v": "Gemini 2.5 Flash，零样本；判分提示词在论文附录 A 与 Kaggle starter notebook",
+        "cite": [
+          "paper@§3.2",
+          "dataset@README"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-11",
+        "columns": [
+          "来源",
+          "模型",
+          "完全正确率",
+          "完全错误率",
+          "多答率",
+          "F1"
+        ],
+        "rows": [
+          [
+            "论文 Table 4",
+            "Gemini Deep Research Agent",
+            "66.09 ±3.16",
+            "9.95 ±2.00",
+            "10.30 ±2.03",
+            "81.90"
+          ],
+          [
+            "论文 Table 4",
+            "GPT-5 Pro High Reasoning",
+            "65.18 ±3.11",
+            "14.13 ±2.28",
+            "8.12 ±1.79",
+            "78.98"
+          ],
+          [
+            "论文 Table 4",
+            "GPT-5 High Reasoning",
+            "59.41 ±3.21",
+            "19.91 ±2.61",
+            "6.56 ±1.62",
+            "73.24"
+          ],
+          [
+            "论文 Table 4",
+            "Gemini 3 Pro Preview",
+            "56.56 ±3.24",
+            "12.78 ±2.18",
+            "9.89 ±1.95",
+            "76.86"
+          ],
+          [
+            "论文 Table 4",
+            "o3 Deep Research",
+            "44.24 ±3.27",
+            "20.09 ±2.64",
+            "11.74 ±2.12",
+            "66.45"
+          ],
+          [
+            "论文 Table 4",
+            "o4 Mini Deep Research",
+            "40.36 ±3.21",
+            "24.19 ±2.80",
+            "7.80 ±1.76",
+            "61.76"
+          ],
+          [
+            "论文 Table 4",
+            "Gemini 2.5 Flash",
+            "25.92 ±2.86",
+            "45.27 ±3.25",
+            "5.90 ±1.54",
+            "42.99"
+          ],
+          [
+            "论文 Table 4",
+            "Claude 4.5 Opus",
+            "24.01 ±2.89",
+            "50.66 ±3.39",
+            "4.18 ±1.36",
+            "40.20"
+          ],
+          [
+            "论文 Table 4",
+            "Claude 4.5 Sonnet",
+            "16.04 ±2.40",
+            "64.25 ±3.13",
+            "2.90 ±1.10",
+            "27.85"
+          ],
+          [
+            "论文 Table 4",
+            "Claude 4.5 Haiku",
+            "12.78 ±2.18",
+            "71.00 ±2.96",
+            "1.89 ±0.89",
+            "22.24"
+          ]
+        ]
+      },
+      "cite": [
+        "paper@Table 4"
+      ]
+    }
+  }
+}

@@ -1,0 +1,568 @@
+{
+  "id": "mlvu",
+  "name": "MLVU",
+  "full_name": "MLVU: Benchmarking Multi-task Long Video Understanding",
+  "aliases": [
+    "Multi-task Long Video Understanding Benchmark",
+    "MLVU Benchmark"
+  ],
+  "status": "active",
+  "categories": [
+    "multimodal"
+  ],
+  "summary": "MLVU 是一个长视频理解评测：3,102 道题挂在 1,730 个 3 分钟到 2 小时的视频上（电影、纪录片、剧集、监控、第一视角、动画、游戏、教程、体育、生活记录），9 类任务分成整体理解、单点细节、多细节三组，用 M-Avg（7 个多选任务，0–100）和 G-Avg（2 个生成任务，0–10）报告。",
+  "interpretation": "M-Avg / G-Avg 衡量的是「把几分钟到几小时的视频看完再答题」的能力。论文里最好的 GPT-4o 在 test 集上 M-Avg 54.5、G-Avg 5.87，离满分 100/10 很远，相对 6 选 1 的随机基线（16.7）也谈不上压倒性；真正拉开差距的是单点细节定位（NQA 只有 42.9）和动作计数/排序这类要多片段汇总的任务。分数高说明模型能吃下长输入并定位关键片段，不代表它理解因果或能做开放式推理。另外 dev 集 4 选项、test 集 6 选项，两套口径的分数不能直接混比。",
+  "measures": [
+    {
+      "area": "整体理解（holistic LVU）",
+      "focus": "TR 主题推理 + AR 异常识别 + VS 视频摘要，需要用整段视频的全局信息；VS 是唯一的生成类任务",
+      "share": "27%（851/3,102 题）",
+      "format": "TR / AR 为多选，按准确率计分；VS 为生成，由 GPT-4 排序打分（0–10）",
+      "cite": [
+        "arxiv-2406-04264@§3.2 Construction",
+        "arxiv-2406-04264@§3.2.1"
+      ]
+    },
+    {
+      "area": "单点细节（single-detail LVU）",
+      "focus": "NQA 针点问答 + ER 事件排序 + PQA 情节问答，考在长视频里定位一个关键片段的能力，题量最大的一组",
+      "share": "45%（1,409/3,102 题）",
+      "format": "均为多选，按准确率计分",
+      "cite": [
+        "arxiv-2406-04264@§3.2 Construction",
+        "arxiv-2406-04264@§3.2.2"
+      ]
+    },
+    {
+      "area": "多细节（multi-detail LVU）",
+      "focus": "SSC 子场景描述 + AO 动作顺序 + AC 动作计数，需要跨多个片段汇总信息；SSC 是生成类任务",
+      "share": "27%（842/3,102 题）",
+      "format": "SSC 为生成，AO / AC 为多选",
+      "cite": [
+        "arxiv-2406-04264@§3.2 Construction",
+        "arxiv-2406-04264@§3.2.3"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "不测纯文本长上下文推理：输入是视频帧，没有配套的长文档阅读任务。",
+      "cite": [
+        "hf-mvlu",
+        "arxiv-2406-04264@§3.1 Overview"
+      ]
+    },
+    {
+      "text": "不测秒级短视频的即时反应：MLVU 的视频长度下限是 3 分钟，最短的评测片段也是「前 3 分钟」。",
+      "cite": [
+        "hf-mvlu",
+        "arxiv-2406-04264@§3.1 Overview"
+      ]
+    },
+    {
+      "text": "不测开放式生成质量的人工评分：VS / SSC 的分数由 GPT-4 排序给出，不是人工标注的金标准。",
+      "cite": [
+        "arxiv-2406-04264@附录 G.3"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 3102,
+    "splits": [
+      "dev（2,593 题，多选 4 选项）",
+      "test（509 题，多选 6 选项）"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "human_curated",
+    "public_sample": true,
+    "multiple_choice_share": "84%（9 类任务里 7 类是多选，合计 2,598/3,102 题）",
+    "multimodal_share": "100%（输入为视频帧，无纯文本语料）",
+    "totals": "3,102 题 = dev 2,593 + test 509，覆盖 1,730 个长视频；多选 2,598 题（84%）、生成 504 题（16%）",
+    "cite": [
+      "arxiv-2406-04264@§3.1 Overview",
+      "arxiv-2406-04264@附录 E"
+    ],
+    "construction": [
+      {
+        "k": "素材池",
+        "text": "长视频来自 ULVC（986 个），覆盖电影 168、纪录片 60、游戏 65、监控 239、第一视角 100、卡通 72、剧集 92、教程 60、体育 60、生活记录 70；MLVU 实际用到其中 1,730 个视频。",
+        "cite": [
+          "arxiv-2406-04264@附录 C"
+        ]
+      },
+      {
+        "k": "视频数与题数的关系",
+        "text": "ULVC 的视频数与基准内的视频数、题数不是一一对应：1,730 个视频对应 3,102 道题，一个视频可挂多道题。",
+        "cite": [
+          "arxiv-2406-04264@附录 C"
+        ]
+      },
+      {
+        "k": "按片段标注",
+        "text": "多数任务采用片段级标注，因此可以在不增加人工标注的前提下，把同一批题改挂到「前 3 分钟 / 前 6 分钟 / 整段」上，用于长度维度的对比。",
+        "cite": [
+          "arxiv-2406-04264@附录 D",
+          "arxiv-2406-04264@§3.1 Overview"
+        ]
+      },
+      {
+        "k": "选项数",
+        "text": "多选题目在 dev 集给 4 个候选、test 集给 6 个候选，后者更难也更有区分度。",
+        "cite": [
+          "arxiv-2406-04264@Figure 2 注",
+          "arxiv-2406-04264@附录 B"
+        ]
+      },
+      {
+        "k": "防常识捷径",
+        "text": "标注时刻意避开原作专有名词（示例视频里的两个角色写作 cat and mouse 而非 Tom and Jerry），并要求标注者只提供必要的剧情细节、不透露任何答案线索。",
+        "cite": [
+          "arxiv-2406-04264@§3.2.2"
+        ]
+      },
+      {
+        "k": "逐任务题量（dev/test）",
+        "text": "TR 264/91、AR 200/39、VS 217/40、NQA 355/60、ER 352/53、PQA 539/50、SSC 201/46、AO 259/70、AC 206/60，合计 2,593/509。",
+        "cite": [
+          "arxiv-2406-04264@附录 E"
+        ]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "零样本（zero-shot）直接评测：不给示例、不微调，输入为按帧数或帧率均匀采样的视频帧；闭式任务按预测选项与标准答案匹配算绝对准确率，生成任务由 GPT-4 按多条准则排序打分。",
+    "cite": [
+      "arxiv-2406-04264@附录 G.3",
+      "arxiv-2406-04264@§4.1 Settings"
+    ],
+    "variants": [
+      {
+        "text": "两套口径并存：论文主表报 test 集（6 选项），附录 B 报 dev 集（4 选项）；同一模型在 dev 上 64.6、test 上 54.5，不可直接比较。",
+        "cite": [
+          "arxiv-2406-04264@附录 B",
+          "arxiv-2406-04264@Figure 2 注"
+        ]
+      },
+      {
+        "text": "输入长度口径不统一：有的模型按帧数上限采样（16/32/96/256 帧），有的按帧率采样（如 GPT-4o 0.5 fps）；帧数越多分越高，GPT-4o 从 16 帧加到 256 帧 M-Avg 由 45.8 升到 54.5。",
+        "cite": [
+          "arxiv-2406-04264@Table 3 注",
+          "arxiv-2406-04264@附录 G.1"
+        ]
+      },
+      {
+        "text": "题库换过一代：2024-07-28 发布的 test 集有 11 个任务（新增 Sports QA 与 Tutorial QA），比论文的 9 类多两个，且当时标准答案未披露；2025-03-18 才公开 test 集标准答案。",
+        "cite": [
+          "hf-mvlu@News",
+          "gh-mlvu@News"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "m-avg",
+      "name": "M-Avg（多选任务平均分）",
+      "direction": "higher_is_better",
+      "description": "7 个多选任务（TR/AR/NQA/ER/PQA/AO/AC）准确率的平均，论文用它横向比较闭式（closed-ended）任务。",
+      "range": "0–100",
+      "unit": "%",
+      "cite": [
+        "arxiv-2406-04264@Table 2 注"
+      ]
+    },
+    {
+      "id": "g-avg",
+      "name": "G-Avg（生成任务平均分）",
+      "direction": "higher_is_better",
+      "description": "2 个生成任务（VS 视频摘要、SSC 子场景描述）的平均分，由 GPT-4 排序评分。",
+      "range": "0.0–10.0",
+      "unit": "分",
+      "cite": [
+        "arxiv-2406-04264@Table 2 注",
+        "arxiv-2406-04264@附录 G.3"
+      ]
+    },
+    {
+      "id": "task-accuracy",
+      "name": "任务准确率",
+      "direction": "higher_is_better",
+      "description": "单个多选任务的绝对准确率；做长度-性能曲线时，取 5 个涉及局部信息的多选任务（NQA/ER/PQA/AC/AO）的平均准确率。",
+      "range": "0–100",
+      "unit": "%",
+      "cite": [
+        "arxiv-2406-04264@附录 G.3",
+        "arxiv-2406-04264@Figure 3 注"
+      ]
+    }
+  ],
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2024-06-07",
+      "label": "MLVU 基准与论文首次公开",
+      "cite": [
+        "hf-mvlu@News"
+      ]
+    },
+    {
+      "id": "repo-migrate",
+      "date": "2024-06-19",
+      "label": "仓库迁移至 JUNJIE99/MLVU（此前在别的仓库维护）",
+      "cite": [
+        "hf-mvlu@News"
+      ]
+    },
+    {
+      "id": "test-leaderboard",
+      "date": "2024-07-25",
+      "label": "MLVU-Test 榜单上线，收录 LongVA / VILA / ShareGPT4-Video 等模型",
+      "cite": [
+        "hf-mvlu@News"
+      ]
+    },
+    {
+      "id": "test-data",
+      "date": "2024-07-28",
+      "label": "test 集数据公开（11 任务、6 选项、答案未披露）；dev 集接入 lmms-eval",
+      "cite": [
+        "hf-mvlu@News"
+      ]
+    },
+    {
+      "id": "arxiv-v3",
+      "date": "2025-01-01",
+      "label": "arXiv v3 修订版（当前被引用的论文版本）",
+      "cite": [
+        "arxiv-2406-04264@标题"
+      ]
+    },
+    {
+      "id": "cvpr-2025",
+      "date": "2025-02-27",
+      "label": "被 CVPR 2025 接收",
+      "cite": [
+        "gh-mlvu@News"
+      ]
+    },
+    {
+      "id": "test-gt",
+      "date": "2025-03-18",
+      "label": "test 集标准答案公开，test 集同时接入 lmms-eval",
+      "cite": [
+        "gh-mlvu@News"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "dev / test 双口径并存，且选项数不同（4 vs 6）",
+      "impact": "同一模型在 dev 上 64.6、test 上 54.5；跨表或跨版本引用时，容易把难度差异误读成进步或退步。",
+      "severity": "高",
+      "response": "引用分数必须同时说明是 dev 还是 test；本站默认以 test 口径为准，dev 数字只在附录里出现。",
+      "reader": "看到 MLVU 分数先找「dev / test」两个字，找不到就当这个数字不可比。",
+      "cite": [
+        "arxiv-2406-04264@附录 B",
+        "hf-mvlu@News"
+      ]
+    },
+    {
+      "issue": "多选任务存在选项猜测空间",
+      "impact": "9 类任务里 7 类是选择题；随机猜在 test 集（6 选 1）就能拿 16.7 分，低分模型之间的真实差距被压缩。",
+      "severity": "中",
+      "response": "读分数时减去随机基线，并用 G-Avg 与局部信息子集（NQA/ER/PQA/AC/AO）交叉验证。",
+      "reader": "低于 20 分的模型基本等同于没看懂视频。",
+      "cite": [
+        "arxiv-2406-04264@Table 2 注",
+        "arxiv-2406-04264@附录 G.3"
+      ]
+    },
+    {
+      "issue": "生成任务（VS / SSC）的分数由 GPT-4 排序给出",
+      "impact": "G-Avg 不是人工金标准，裁判模型自身的偏好会进入分数，跨论文复现容易出现偏差。",
+      "severity": "中",
+      "response": "G-Avg 只用于同一张表内的横向比较，不要当成绝对质量分。",
+      "reader": "G-Avg 5.87 与 5.80 的差距在裁判噪声范围内，不构成排名依据。",
+      "cite": [
+        "arxiv-2406-04264@附录 G.3"
+      ]
+    },
+    {
+      "issue": "各来源对同一基准的描述不一致",
+      "impact": "论文说 23 个 MLLM、HF 卡片说 20 个；论文标题是 Benchmarking，HF 与仓库的引用是 A Comprehensive Benchmark；论文 9 类任务，2024-07 的 test 集有 11 个任务。",
+      "severity": "中",
+      "response": "任务数以论文附录 E 表 1 为准，模型数以论文 §4.1 为准，引用时注明取自哪个来源。",
+      "reader": "看到「MLVU 有 11 个任务」要知道那指的是 test 集的题库版本，不是论文的 9 类。",
+      "cite": [
+        "arxiv-2406-04264@摘要",
+        "hf-mvlu@Intro",
+        "hf-mvlu@News",
+        "gh-mlvu@News"
+      ]
+    },
+    {
+      "issue": "视频素材来自第三方，版权方可要求下架",
+      "impact": "原片被撤下时，官方用稀疏采样帧加降分辨率替代，题目与原始画面的对应关系会变化。",
+      "severity": "中",
+      "response": "标注文件承诺永久保留，但复现实验前应确认所用视频版本与下载时间。",
+      "reader": "同一道题在不同时间下载到的画面可能不同，跨时间的绝对分数不宜直接对比。",
+      "cite": [
+        "hf-mvlu@Usage",
+        "hf-mvlu@License",
+        "gh-mlvu@License"
+      ]
+    },
+    {
+      "issue": "题库公开可下载，存在被训练数据覆盖的风险",
+      "impact": "dev 集自 2024-06 起公开，test 集答案自 2025-03 起公开；此后训练的模型可能已经见过题目本身。",
+      "severity": "中",
+      "response": "对 2025 年后发布的模型，用 held-out 题目或更新版题库交叉验证，不要只看 MLVU 分数。",
+      "reader": "越新的模型分数越高，其中一部分可能来自见过题，而不是看懂视频。",
+      "cite": [
+        "hf-mvlu@News",
+        "gh-mlvu@News"
+      ]
+    }
+  ],
+  "notes": "本站账本收录的各模型成绩见档案页附录 C；dev / test 口径差异与题库换代的细节见 limitations。",
+  "official_sources": [
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2406.04264"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/JUNJIE99/MLVU"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/MLVU/MVLU"
+    }
+  ],
+  "related_benchmarks": [
+    "egolife",
+    "video-mme",
+    "longvideobench",
+    "tvbench",
+    "lvbench"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "arxiv-2406-04264",
+        "kind": "paper",
+        "title": "MLVU: Benchmarking Multi-task Long Video Understanding（arXiv:2406.04264v3）",
+        "url": "https://arxiv.org/abs/2406.04264",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "hf-mvlu",
+        "kind": "dataset",
+        "title": "MLVU/MVLU · Hugging Face 数据集卡片",
+        "url": "https://huggingface.co/datasets/MLVU/MVLU",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "gh-mlvu",
+        "kind": "repo",
+        "title": "JUNJIE99/MLVU · GitHub 仓库 README",
+        "url": "https://github.com/JUNJIE99/MLVU",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "北京智源人工智能研究院（BAAI）· 北京邮电大学 · 上海交通大学 · 浙江大学 · 北京大学",
+        "cite": [
+          "arxiv-2406-04264@作者单位"
+        ]
+      },
+      "first_release": {
+        "v": "2024-06-07",
+        "cite": [
+          "hf-mvlu@News"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "arxiv-2406-04264@§3.1 Overview",
+        "hf-mvlu",
+        "arxiv-2406-04264@附录 E"
+      ],
+      "interpretation": [
+        "arxiv-2406-04264@§4.2 Main Results",
+        "arxiv-2406-04264@Table 2 注",
+        "arxiv-2406-04264@附录 B"
+      ]
+    },
+    "problem": {
+      "text": "要解决的是「长视频理解没法被现有基准衡量」。已有视频基准大多只有几秒长的片段，很多题目只关于单个画面，或者能靠文本提示直接答出，既不反映长度也不反映体裁多样性，因此无法区分模型是真看懂了长视频还是只做了单帧识别。",
+      "cite": [
+        "arxiv-2406-04264@§1 Introduction"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机猜（test 集，6 选 1）",
+        "value": "M-Avg 16.7",
+        "note": "test 集多选为 6 选项；dev 集为 4 选项，随机基线 25。",
+        "cite": [
+          "arxiv-2406-04264@Table 2 注",
+          "arxiv-2406-04264@附录 B"
+        ]
+      },
+      {
+        "label": "论文最好（test 集）· GPT-4o†（0.5 fps）",
+        "value": "M-Avg 54.5 / G-Avg 5.87",
+        "note": "满分 100 / 10。短板在 NQA 42.9 与 AO 46.2、AC 35.0。",
+        "cite": [
+          "arxiv-2406-04264@§4.2 Main Results",
+          "arxiv-2406-04264@Table 2 注"
+        ]
+      },
+      {
+        "label": "论文最好开源（test 集）· LLaVA-OneVision（32 帧）",
+        "value": "M-Avg 51.7 / G-Avg 4.42",
+        "note": "与 GPT-4o 的 M-Avg 差距为 2.8 个百分点。",
+        "cite": [
+          "arxiv-2406-04264@§4.2 Main Results"
+        ]
+      },
+      {
+        "label": "论文最好（dev 集）· GPT-4o†（0.5 fps）",
+        "value": "M-Avg 64.6 / G-Avg 5.80",
+        "note": "dev 集口径；注意 Video-XL（64.9）在 dev 上略高于 GPT-4o。",
+        "cite": [
+          "arxiv-2406-04264@附录 B",
+          "hf-mvlu@Intro"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "「GPT-4o 是 MLVU 第一」只对 test 集成立：在 dev 集上 Video-XL（M-Avg 64.9）略高于 GPT-4o（64.6）。",
+        "cite": [
+          "arxiv-2406-04264@附录 B"
+        ]
+      },
+      {
+        "text": "「M-Avg 54.5 说明模型看不懂长视频」：54.5 是 7 个多选任务的平均，其中整体类任务已到 TR 83.7 / AR 68.8；真正的短板是 NQA 42.9 这类单点细节定位。",
+        "cite": [
+          "arxiv-2406-04264@§4.2 Main Results",
+          "arxiv-2406-04264@Table 2 注"
+        ]
+      },
+      {
+        "text": "dev 与 test 的分数不能混比：dev 是 4 选项、test 是 6 选项，且 test 题库在 2024-07 换成过一代（11 任务）。",
+        "cite": [
+          "arxiv-2406-04264@附录 B",
+          "hf-mvlu@News"
+        ]
+      },
+      {
+        "text": "「MLVU 只是又一个视频问答集」：它把「变长」当一等公民——同一批题按前 3 分钟、前 6 分钟、整段增量切分，专门量化长度带来的衰减。",
+        "cite": [
+          "arxiv-2406-04264@§3.1 Overview",
+          "arxiv-2406-04264@§4.3 Further Analysis"
+        ]
+      },
+      {
+        "text": "「帧数给得越多分越高」只在闭式任务上明显：GPT-4o 从 16 帧加到 256 帧 M-Avg 由 45.8 升到 54.5，但长度衰减依然存在——所有模型的性能都随视频变长而下降。",
+        "cite": [
+          "arxiv-2406-04264@Table 3 注",
+          "arxiv-2406-04264@§4.2 Main Results"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "出品方",
+        "v": "北京智源人工智能研究院（BAAI）联合北京邮电大学、上海交通大学、浙江大学、北京大学。",
+        "cite": [
+          "arxiv-2406-04264@作者单位"
+        ]
+      },
+      {
+        "k": "要解决的问题",
+        "v": "已有视频基准视频太短、体裁单一、任务类型少，且不少题目只关于单个画面或能靠文本提示直接答出，无法衡量长视频理解。",
+        "cite": [
+          "arxiv-2406-04264@§1 Introduction"
+        ]
+      },
+      {
+        "k": "评测规模",
+        "v": "论文对 23 个开源与闭源 MLLM 做零样本横评，结论是现有方法在多数任务上都有明显差距，视频越长衰减越严重。",
+        "cite": [
+          "arxiv-2406-04264@§4.1 Settings",
+          "arxiv-2406-04264@摘要"
+        ]
+      },
+      {
+        "k": "长度敏感性",
+        "v": "配套 MLVU Time-ladder 用 180 秒 / 360 秒 / 600 秒三档长度复刻同类任务，用来单独看长度的影响。",
+        "cite": [
+          "arxiv-2406-04264@§4.3 Further Analysis"
+        ]
+      },
+      {
+        "k": "能力归因",
+        "v": "消融实验显示 LVU 表现与 MMMU 上的图像理解表现大体一致，并随 backbone 变大、更先进而提升。",
+        "cite": [
+          "arxiv-2406-04264@Table 3 注"
+        ]
+      },
+      {
+        "k": "许可与获取",
+        "v": "数据集为 CC-BY-NC-SA-4.0，仅限研究用途；Hugging Face 需同意条款后下载，GitHub 仓库提供标注数据与评测代码。",
+        "cite": [
+          "hf-mvlu@License",
+          "gh-mvlu@License",
+          "gh-mlvu@README"
+        ]
+      },
+      {
+        "k": "学术认定",
+        "v": "2025-02-27 被 CVPR 2025 接收。",
+        "cite": [
+          "gh-mlvu@News"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2025-01-01",
+        "columns": [
+          "口径",
+          "模型（输入配置）",
+          "M-Avg",
+          "G-Avg"
+        ],
+        "rows": [
+          ["test", "GPT-4o†（0.5 fps）", "54.5", "5.87"],
+          ["test", "LLaVA-OneVision（32 帧）", "51.7", "4.42"],
+          ["test", "Video-XL（256 帧）", "46.3", "4.21"],
+          ["test", "随机基线（6 选 1）", "16.7", "–"],
+          ["dev", "Video-XL（256 帧）", "64.9", "4.14"],
+          ["dev", "GPT-4o†（0.5 fps）", "64.6", "5.80"],
+          ["dev", "Video-CCAM（96 帧）", "63.1", "4.01"],
+          ["dev", "随机基线（4 选 1）", "25", "–"]
+        ]
+      },
+      "cite": [
+        "arxiv-2406-04264@Table 2 注",
+        "arxiv-2406-04264@附录 B"
+      ]
+    }
+  }
+}

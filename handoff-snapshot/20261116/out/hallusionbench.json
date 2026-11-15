@@ -1,0 +1,660 @@
+{
+  "id": "hallusionbench",
+  "name": "HallusionBench",
+  "full_name": "HallusionBench: An Advanced Diagnostic Suite for Entangled Language Hallucination and Visual Illusion in Large Vision-Language Models（CVPR 2024）",
+  "aliases": [],
+  "status": "active",
+  "categories": [
+    "multimodal"
+  ],
+  "summary": "HallusionBench 是一个图文推理评测：346 张人工挑选的图配 1,129 道「是/否」题，每道题还配一个对照组——同一道题换一张被人工改过的图，或者干脆不给图。模型要答对就得真的看图：靠语言先验（例如「中国在 2008 奥运金牌最多」）蒙对的题，一换成矛盾的图就露馅。名字里的 Hallusion 是 hallucination（幻觉）加 illusion（错觉）的合成词。",
+  "interpretation": "主指标 qAcc（问题对准确率）要求同一道题在原图语境和对照语境下都答对才算得分，所以分数低是设计使然：论文期 GPT-4V 只有 31.42%，同期其余 14 个模型都低于 16%。高分意味着「语言先验和画面冲突时，模型仍然跟着图走」。别按常规准确率及格线读它，也别把 31.42% 直接和今天的榜单比——官方榜单当前最高 qAcc 56.0%（MiMo-VL-7B，2025-07 提交），这个基准远未饱和。",
+  "measures": [
+    {
+      "area": "视觉依赖题（Visual Dependent，VD）",
+      "focus": "不看图就给不出肯定答案的题，直接考图里的事物、几何与逻辑关系。例：「右边的橙色圆圈和左边的一样大吗？」——不给图时无法判断",
+      "share": "591 题",
+      "format": "是 / 否二选一",
+      "cite": [
+        "arxiv-2310-14566@§3.1.1",
+        "arxiv-2310-14566@§3.3",
+        "arxiv-2310-14566@图1"
+      ]
+    },
+    {
+      "area": "视觉补充题（Visual Supplement，VS）",
+      "focus": "不看图也能答、图只提供补充或纠错的题，用来检验模型是否被先验带偏。例：「新墨西哥州比得克萨斯州大吗？」——靠记忆可答，给了地图反而可能被带错",
+      "share": "538 题",
+      "format": "是 / 否二选一",
+      "cite": [
+        "arxiv-2310-14566@§3.1.2",
+        "arxiv-2310-14566@§3.3"
+      ]
+    },
+    {
+      "area": "人工编辑图（Hard 档）",
+      "focus": "原图经翻转、顺序反转、遮挡、OCR 文字编辑、物体编辑、颜色编辑后与语言先验冲突；论文称自己是第一个把人工编辑图纳入评测的工作",
+      "share": "504 题（45%）；另有网络原图 447 题（39%）、无图 178 题（16%）",
+      "format": "是 / 否二选一",
+      "cite": [
+        "arxiv-2310-14566@§3.3",
+        "arxiv-2310-14566@§3.4"
+      ]
+    },
+    {
+      "area": "失败模式归因与作答偏向",
+      "focus": "把答错的题对分成语言幻觉（不看图就下判断）、视觉错觉（看懂了图却理解错）和混合三类；另外测是否无脑答「是」（是/否偏向、FP Ratio）以及同一张图下多个变体问题是否自洽",
+      "share": "全部 1,129 题（分析口径，不是独立题集）",
+      "format": "Pct. Diff / FP Ratio / 一致性准确率 / 三类归因占比",
+      "cite": [
+        "arxiv-2310-14566@§3.4",
+        "arxiv-2310-14566@§4.3",
+        "arxiv-2310-14566@§4.3.1"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "通用知识广度与开放式生成——全部题目都是围绕单张图的是/否判断，没有自由回答、长文本或代码任务。",
+      "cite": [
+        "arxiv-2310-14566@§3.2",
+        "repo@README"
+      ]
+    },
+    {
+      "text": "「图里有没有某物」这类对象存在型幻觉——论文把 POPE、M-HalDetect 等现有基准归到这一类，HallusionBench 要分开量化的是语言幻觉与视觉错觉。",
+      "cite": [
+        "arxiv-2310-14566@Table 1",
+        "arxiv-2310-14566@§3.4"
+      ]
+    },
+    {
+      "text": "置信度校准——论文的指标只有准确率、是/否偏向和一致性，没有预期校准误差（ECE）一类指标。",
+      "cite": [
+        "arxiv-2310-14566@§4.2",
+        "arxiv-2310-14566@§4.3.1"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 1129,
+    "splits": [
+      "未划分 train / val / test，单一评测文件 HallusionBench.json"
+    ],
+    "languages": [
+      "英文（论文未单列语言字段；全部例题、题库与裁判提示均为英文）"
+    ],
+    "source_type": "人工构建：专家手写题目并人工编辑图片，底图取自互联网原图",
+    "public_sample": true,
+    "totals": "346 张图配 1,129 道是/否题，组成 455 个视觉-问题对照组；平均每图 3.26 题；约 45% 的题配人工编辑图",
+    "cite": [
+      "arxiv-2310-14566@§3.1",
+      "arxiv-2310-14566@§3.3",
+      "dataset@README"
+    ],
+    "construction": [
+      {
+        "k": "选题与分工",
+        "text": "人工专家手工收集 346 张不同主题、不同类型的图（错觉图、几何数学、海报、logo、卡通、梗图、统计图表、表格、地图、连续帧/视频），题目也由专家围绕这些图手写。",
+        "cite": [
+          "arxiv-2310-14566@§3",
+          "arxiv-2310-14566@§3.3"
+        ]
+      },
+      {
+        "k": "分两类四档",
+        "text": "先按是否依赖视觉分成视觉依赖（VD）与视觉补充（VS）两类，再各分 Easy / Hard：VD 的 Easy 是网络原图、Hard 是编辑图；VS 的 Easy 是不给图（答「不确定」也算对）、Hard 是给图且答案必须跟随图。",
+        "cite": [
+          "arxiv-2310-14566@§3.1.1",
+          "arxiv-2310-14566@§3.1.2",
+          "repo@README"
+        ]
+      },
+      {
+        "k": "人工改图",
+        "text": "对原图做翻转、顺序反转、遮挡、OCR 文字编辑、物体编辑、颜色编辑，制造与语言先验冲突的 Hard 版本；论文称自己是第一个把人工编辑图纳入评测的工作。",
+        "cite": [
+          "arxiv-2310-14566@§3.3",
+          "arxiv-2310-14566@§3.4"
+        ]
+      },
+      {
+        "k": "成对与多问",
+        "text": "同一知识在一张图上写多个逻辑相关的变体问题（用于一致性测试），同一道题再分别配原图、编辑图或无图构成对照组；所有题统一写成是/否。",
+        "cite": [
+          "arxiv-2310-14566@§3.2",
+          "arxiv-2310-14566@§3.1",
+          "repo@README"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "qacc",
+      "name": "问题对准确率（qAcc / Accuracy per Question Pair）",
+      "direction": "越高越好",
+      "description": "同一道题在原图语境与对照语境（编辑图或无图）下都答对，这个题对才得分；论文与官方榜单的主指标",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2310-14566@Table 2",
+        "repo@README"
+      ]
+    },
+    {
+      "id": "facc",
+      "name": "单图准确率（fAcc / Accuracy per Figure，一致性测试）",
+      "direction": "越高越好",
+      "description": "同一张图下的所有变体问题全部答对，该图才得分；用来查模型对同一张图的多个相关问题是否自洽",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2310-14566@§4.3.2",
+        "repo@README"
+      ]
+    },
+    {
+      "id": "aacc",
+      "name": "整体准确率（aAcc / Accuracy per Question）",
+      "direction": "越高越好",
+      "description": "全部题目（含 Easy 与 Hard）的答对占比；因为 Easy 题占比高，aAcc 通常远高于 qAcc",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "repo@README",
+        "arxiv-2310-14566@Table 2"
+      ]
+    },
+    {
+      "id": "pct-diff",
+      "name": "是/否偏向（Pct. Diff）",
+      "direction": "越低越好",
+      "description": "模型答「是」的比例与题库中真实答案为「是」的比例之差，取值 [-1, 1]；绝对值越接近 0 说明越不会无脑答「是」",
+      "range": [
+        -1,
+        1
+      ],
+      "unit": "ratio",
+      "cite": [
+        "arxiv-2310-14566@§4.3.1"
+      ]
+    }
+  ],
+  "default_protocol": {
+    "raw": "默认协议是 zero-shot 的是/否问答：模型对每个「图 + 问题」给出答案，官方用纯文本 GPT-4 当裁判（temperature 设为 0，每个样本判 3 次取平均）把回答标成 incorrect / correct / unclear；视觉补充类在不给图时答「不确定」也算对。主指标是问题对准确率 qAcc。",
+    "cite": [
+      "arxiv-2310-14566@§4.1",
+      "arxiv-2310-14566@§4.2",
+      "repo@README"
+    ],
+    "variants": [
+      {
+        "text": "人工评测 vs GPT-4 辅助评测：同一个 GPT-4V 在两种裁判下 qAcc 分别是 31.42% 和 28.79%；论文摘要引用的是人工评测那个数，官方榜单两行都列。混用两个口径会让同一模型差出约 2.6 个点。",
+        "cite": [
+          "arxiv-2310-14566@摘要",
+          "arxiv-2310-14566@Table 2",
+          "repo@README"
+        ]
+      },
+      {
+        "text": "数据集版本：2023-10-27 首版只有 254 题，2023-11-28 随论文全文上传扩容到 1,129 题 / 346 图并更新榜单；只看旧榜单或旧快照会拿到小编本分数。",
+        "cite": [
+          "repo@README",
+          "dataset@README"
+        ]
+      },
+      {
+        "text": "榜单口径与论文表不同：官方榜单只列 aAcc / fAcc / qAcc / overall 四列（overall 是三者平均），论文 Table 2 另列 Easy aAcc 与 Hard aAcc；榜单只收录自愿提交的结果。",
+        "cite": [
+          "leaderboard@leaderboard.json",
+          "arxiv-2310-14566@Table 2"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "arxiv-v1",
+      "date": "2023-10-23",
+      "label": "arXiv v1 首发（早期报告，含案例分析）",
+      "cite": [
+        "arxiv-2310-14566"
+      ]
+    },
+    {
+      "id": "repo-2023-10-27",
+      "date": "2023-10-27",
+      "label": "GitHub 上线评测代码与榜单，首版数据集 254 题",
+      "cite": [
+        "repo@README",
+        "dataset@README"
+      ]
+    },
+    {
+      "id": "arxiv-v2-expanded",
+      "date": "2023-11-28",
+      "label": "arXiv v2：论文全文上传，数据集扩容到 1,129 题 / 346 图并更新榜单",
+      "cite": [
+        "arxiv-2310-14566",
+        "repo@README"
+      ]
+    },
+    {
+      "id": "cvpr-2024",
+      "date": "2024-02-26",
+      "label": "官方宣布被 CVPR 2024 接收",
+      "cite": [
+        "repo@README",
+        "arxiv-2310-14566"
+      ]
+    },
+    {
+      "id": "arxiv-v5",
+      "date": "2024-03-25",
+      "label": "arXiv v5（本档案核对所用版本）",
+      "cite": [
+        "arxiv-2310-14566"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "依赖 GPT-4 当裁判",
+      "impact": "官方默认用纯文本 GPT-4 判分（temperature 0、判 3 次取平均），论文明确记录即使 temperature=0 输出仍有波动；裁判模型更换或升级会让历史分数不可比。",
+      "severity": "中",
+      "response": "论文报告 3 次取平均并用人工评测验证一致性；仓库提供 evaluation.py，用户可以填自己的 API key。",
+      "reader": "复现时固定裁判模型与版本，否则别把不同时间跑出的分数放在一起比。",
+      "cite": [
+        "arxiv-2310-14566@§4.1",
+        "repo@README"
+      ]
+    },
+    {
+      "issue": "规模小、题型单一",
+      "impact": "1,129 道题、全部是围绕单张图的是/否判断。第三方基准 FREAK（2026-03）据此批评它样本多样性不足、图像质量欠佳、任务设计过于简化，并另建基准。",
+      "severity": "中",
+      "response": "论文未回应；作者在结论里只提出继续扩展基准的方向。",
+      "reader": "把它当诊断工具而不是排名基准；跨基准比较分数意义有限。",
+      "cite": [
+        "freak-critique@§1",
+        "arxiv-2310-14566@§3.2"
+      ]
+    },
+    {
+      "issue": "摘要与表格口径不一致",
+      "impact": "摘要写 GPT-4V 取得 31.42% 问题对准确率，论文 Table 2 里 31.42 对应人工评测行，GPT-4 辅助评测行是 28.79%；引用时容易张冠李戴。",
+      "severity": "中",
+      "response": "论文 §4.1 称 GPT-4 辅助评测与人工判断差异可忽略，榜单同时给出两行。",
+      "reader": "看到 31.42 先确认是人工评测口径。",
+      "cite": [
+        "arxiv-2310-14566@摘要",
+        "arxiv-2310-14566@Table 2",
+        "arxiv-2310-14566@§4.1"
+      ]
+    },
+    {
+      "issue": "污染与去重未评估",
+      "impact": "底图来自互联网、题目依赖世界知识，论文未报告数据污染或去重分析；Hard 档靠人工改图对抗记忆，但不给图的题仍可能被记住。",
+      "severity": "中",
+      "response": "论文未回应。",
+      "reader": "比较同一模型的不同版本时，留意它是否可能见过原图。",
+      "cite": [
+        "arxiv-2310-14566@§3.3",
+        "arxiv-2310-14566@§3.4"
+      ]
+    },
+    {
+      "issue": "官方榜单口径漂移",
+      "impact": "榜单自 2023-10 起持续更新、只收录自愿提交结果，且只列 aAcc / fAcc / qAcc / overall；论文 Table 2 另列 Easy / Hard 准确率。同一模型可能因版本与提交时间不同而分数不同。",
+      "severity": "低",
+      "response": "仓库随榜单提供 leaderboard.json 与 random_guess.py。",
+      "reader": "引用榜单数字时带上抓取日期与模型版本。",
+      "cite": [
+        "leaderboard@leaderboard.json",
+        "arxiv-2310-14566@Table 2"
+      ]
+    }
+  ],
+  "notes": "「Hallusion」是 hallucination（幻觉）与 illusion（错觉）的合成词；论文摘要的 31.42% 是人工评测口径，GPT-4 辅助评测为 28.79%。",
+  "official_sources": [
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2310.14566"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/tianyi-lab/HallusionBench"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/rayguan/HallusionBench"
+    }
+  ],
+  "related_benchmarks": [
+    "mathvista",
+    "popecv"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-13",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      {
+        "id": "arxiv-2310-14566",
+        "kind": "paper",
+        "title": "HallusionBench: An Advanced Diagnostic Suite for Entangled Language Hallucination and Visual Illusion in Large Vision-Language Models（arXiv:2310.14566v5，CVPR 2024）",
+        "url": "https://arxiv.org/abs/2310.14566",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "tianyi-lab/HallusionBench（评测代码、榜单与 README）",
+        "url": "https://github.com/tianyi-lab/HallusionBench",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "dataset",
+        "kind": "dataset",
+        "title": "rayguan/HallusionBench（Hugging Face 数据卡镜像）",
+        "url": "https://huggingface.co/datasets/rayguan/HallusionBench",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "leaderboard",
+        "kind": "leaderboard",
+        "title": "官方榜单 leaderboard.json（raw）",
+        "url": "https://raw.githubusercontent.com/tianyi-lab/HallusionBench/main/leaderboard.json",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "freak-critique",
+        "kind": "paper",
+        "title": "FREAK: Fine-grained Evaluation Against Knowledge（arXiv:2603.19765，第三方批评）",
+        "url": "https://arxiv.org/abs/2603.19765",
+        "accessed": "2026-11-13"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "University of Maryland, College Park（论文署名唯一机构；CVPR 2024 论文）",
+        "cite": [
+          "arxiv-2310-14566@作者署名"
+        ]
+      },
+      "first_release": {
+        "v": "2023-10-23（arXiv v1）；评测代码与榜单 2023-10-27 上线，数据集 2023-11-28 扩容",
+        "cite": [
+          "arxiv-2310-14566",
+          "repo@README"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "arxiv-2310-14566@摘要",
+        "arxiv-2310-14566@§3.1",
+        "arxiv-2310-14566@§3.3"
+      ],
+      "interpretation": [
+        "arxiv-2310-14566@Table 2",
+        "leaderboard@leaderboard.json",
+        "arxiv-2310-14566@§4.2"
+      ]
+    },
+    "problem": {
+      "text": "POPE、M-HalDetect、GAVIE 等已有幻觉基准主要评「图里有没有某物」这类对象存在型幻觉，题型与视觉输入类型都窄；作者想用带人工对照组的基准，把「被语言先验带偏」和「看错图」两种失败分开量化，并测模型的作答偏向与逻辑自洽。",
+      "cite": [
+        "arxiv-2310-14566@Table 1",
+        "arxiv-2310-14566@§3.4"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机猜测基线",
+        "value": "qAcc 15.60%",
+        "note": "论文把「随机选是/否」列为基线：qAcc 15.60、fAcc 18.21、Easy aAcc 39.12、Hard aAcc 39.06、aAcc 45.96。",
+        "cite": [
+          "arxiv-2310-14566@Table 2"
+        ]
+      },
+      {
+        "label": "论文发布时最好",
+        "value": "qAcc 31.42%",
+        "note": "GPT-4V（2023-10 版）人工评测口径；GPT-4 辅助评测为 28.79%，其余 14 个模型都低于 16%。",
+        "cite": [
+          "arxiv-2310-14566@摘要",
+          "arxiv-2310-14566@Table 2"
+        ]
+      },
+      {
+        "label": "官方榜单当前最高",
+        "value": "qAcc 56.0%",
+        "note": "MiMo-VL-7B（2025-07-02 提交）：aAcc 75.8 / fAcc 59.5 / overall 63.8；榜单只收录自愿提交结果，抓取于 2026-11-13。",
+        "cite": [
+          "leaderboard@leaderboard.json"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      },
+      {
+        "label": "是否已饱和",
+        "value": "未饱和",
+        "note": "榜单最高 qAcc 56.0% 距满分仍远；论文期 31.42% 与今天的差距主要来自模型进步，也混入了裁判口径与数据集版本变化。",
+        "cite": [
+          "leaderboard@leaderboard.json",
+          "arxiv-2310-14566@Table 2"
+        ]
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 31.42% 当成「GPT-4V 只会做对三成题」来跨时代比较——官方榜单当前最高 qAcc 已是 56.0%，且裁判口径与数据集版本都变过。",
+        "cite": [
+          "arxiv-2310-14566@Table 2",
+          "leaderboard@leaderboard.json"
+        ]
+      },
+      {
+        "text": "把 qAcc 和 aAcc 混着比：aAcc 含大量 Easy 题（GPT-4V 的 Easy 准确率 79.56%），qAcc 要求同一道题在原图与对照语境下都对，天然低得多。",
+        "cite": [
+          "arxiv-2310-14566@Table 2",
+          "repo@README"
+        ]
+      },
+      {
+        "text": "把低分归因为「题目偏、知识冷」——低分主要来自人工改图与语言先验的冲突，让先验失效正是设计目的。",
+        "cite": [
+          "arxiv-2310-14566@§3.3",
+          "arxiv-2310-14566@§3.4"
+        ]
+      },
+      {
+        "text": "把「答不确定」一律算错——视觉补充类在不给图时，uncertain 判为正确，这是协议明文写的。",
+        "cite": [
+          "arxiv-2310-14566@§4.2",
+          "repo@README"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "University of Maryland, College Park（论文署名唯一机构）",
+        "cite": [
+          "arxiv-2310-14566@作者署名"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "Tianrui Guan、Fuxiao Liu（共同一作）、Xiyang Wu、Ruiqi Xian、Zongxia Li、Xiaoyu Liu、Xijun Wang、Lichang Chen、Furong Huang、Yaser Yacoob、Dinesh Manocha、Tianyi Zhou",
+        "cite": [
+          "arxiv-2310-14566@作者署名"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2023-10-23 arXiv v1 → 2023-10-27 代码与榜单上线 → 2023-11-28 数据集扩容 → 2024-02-26 CVPR 2024 接收 → 2024-03-25 arXiv v5",
+        "cite": [
+          "arxiv-2310-14566",
+          "repo@README"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "题目在 HallusionBench.json、图片在 hallusion_bench.zip（Google Drive）；GitHub 提供 evaluation.py、gpt4v_benchmark.py、random_guess.py 与 leaderboard.json；Hugging Face 有同一份镜像卡（BSD-3-Clause，近一月下载 3,079 次）",
+        "cite": [
+          "repo@README",
+          "dataset@README"
+        ]
+      },
+      {
+        "k": "发表",
+        "v": "CVPR 2024（论文页码 14375–14385）",
+        "cite": [
+          "repo@README",
+          "arxiv-2310-14566"
+        ]
+      },
+      {
+        "k": "名称由来",
+        "v": "「Hallusion」是 hallucination（幻觉）与 illusion（错觉）的合成词",
+        "cite": [
+          "arxiv-2310-14566@脚注1"
+        ]
+      },
+      {
+        "k": "许可",
+        "v": "BSD-3-Clause",
+        "cite": [
+          "repo@README",
+          "dataset@README"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-13",
+        "columns": [
+          "来源",
+          "模型",
+          "qAcc（问题对）",
+          "fAcc（单图）",
+          "Easy aAcc",
+          "Hard aAcc",
+          "aAcc（整体）",
+          "口径"
+        ],
+        "rows": [
+          [
+            "论文 Table 2",
+            "GPT-4V（2023-10）",
+            "31.42%",
+            "44.22%",
+            "79.56%",
+            "38.37%",
+            "67.58%",
+            "人工评测"
+          ],
+          [
+            "论文 Table 2",
+            "GPT-4V（2023-10）",
+            "28.79%",
+            "39.88%",
+            "75.60%",
+            "37.67%",
+            "65.28%",
+            "GPT-4 辅助评测"
+          ],
+          [
+            "论文 Table 2",
+            "LLaVA-1.5 13B",
+            "10.55%",
+            "24.86%",
+            "49.67%",
+            "29.77%",
+            "46.94%",
+            "GPT-4 辅助评测"
+          ],
+          [
+            "论文 Table 2",
+            "Claude 3",
+            "21.76%",
+            "28.61%",
+            "55.16%",
+            "41.40%",
+            "56.86%",
+            "GPT-4 辅助评测"
+          ],
+          [
+            "论文 Table 2",
+            "Gemini Pro Vision（2023-12）",
+            "7.69%",
+            "8.67%",
+            "35.60%",
+            "30.23%",
+            "36.85%",
+            "GPT-4 辅助评测"
+          ],
+          [
+            "论文 Table 2",
+            "随机猜是/否",
+            "15.60%",
+            "18.21%",
+            "39.12%",
+            "39.06%",
+            "45.96%",
+            "GPT-4 辅助评测"
+          ],
+          [
+            "官方榜单",
+            "MiMo-VL-7B（2025-07-02）",
+            "56.0%",
+            "59.5%",
+            "未列出",
+            "未列出",
+            "75.8%",
+            "榜单口径，overall 63.8"
+          ],
+          [
+            "官方榜单",
+            "BlueLM-2.6-3B（2025-09-17）",
+            "56.0%",
+            "57.2%",
+            "未列出",
+            "未列出",
+            "76.1%",
+            "榜单口径，overall 63.1"
+          ],
+          [
+            "官方榜单",
+            "InternVL3-14B（2025-04-14）",
+            "47.7%",
+            "49.4%",
+            "未列出",
+            "未列出",
+            "70.6%",
+            "榜单口径，overall 55.9"
+          ]
+        ]
+      },
+      "cite": [
+        "arxiv-2310-14566@Table 2",
+        "leaderboard@leaderboard.json"
+      ]
+    }
+  }
+}

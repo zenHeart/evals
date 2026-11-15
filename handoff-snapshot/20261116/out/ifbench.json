@@ -1,0 +1,680 @@
+{
+  "id": "ifbench",
+  "name": "IFBench",
+  "full_name": "IFBench（论文《Generalizing Verifiable Instruction Following》提出的精确指令遵循基准）",
+  "aliases": [],
+  "status": "active",
+  "categories": [
+    "preference"
+  ],
+  "summary": "Ai2 的精确指令遵循基准：300 条 prompt，每条挂 1–2 个能写成 Python 验证函数的新输出约束（共 58 类，分计数、比例、词、句子、格式、自定义、复制 7 大类），约束模板贴在从未公开的 WildChat prompt 上，专测模型在 IFEval 那 25 类旧约束之外的泛化。",
+  "interpretation": "IFEval 的 25 类约束已被前沿模型刷到 80% 以上，拉不开差距；IFBench 换成没见过的新约束，默认口径是 prompt-level loose accuracy——一条 prompt 上的约束全部通过（宽松判会先剔掉回答首尾行和某些字体修饰）才算这条对。论文里 GPT-4.1、Claude 3.7 Sonnet、Qwen3-32B、Claude 4 Sonnet 都不到 50%，而用 RLVR 专训能把 TÜLU-3-8B 的 IFBench 从 28.9 提到 45.9。读这个分数要记住三件事：一是宽松/严格口径差一大截（同模型 strict 30.6 vs loose 44.6），二是它可以被针对性刷——论文自己发现 RLVR 会让模型把优先级从「完成任务」转向「满足约束」，通用回答的裁判均分从 7/10 掉到 6.4/10；三是第三方榜单上的同名分数常是厂商或榜单自评，与论文口径不构成同一时间序列。",
+  "measures": [
+    {
+      "area": "格式 format",
+      "focus": "把回答改写成指定结构：每节先用斜体 thesis 句开头、用 */- 表示多级 bullet、按指定列名与分隔符生成 CSV、每句末尾加 emoji、指定数量的 markdown 高亮小节等",
+      "share": "24%（14/58）",
+      "format": "程序验证：跑对应的 Python 验证函数判定约束是否满足",
+      "cite": [
+        "arxiv-2507-02833@§2",
+        "arxiv-2507-02833@附录 A"
+      ]
+    },
+    {
+      "area": "词 words",
+      "focus": "词级别的花式约束：至少 N 个长度 ≥5 的回文、相邻两词首字母不能相同、只用含一种元音的词写段落、不重复任何词超过 N 次、停用词占比上限等",
+      "share": "22%（13/58）",
+      "format": "程序验证：跑对应的 Python 验证函数判定约束是否满足",
+      "cite": [
+        "arxiv-2507-02833@§2",
+        "arxiv-2507-02833@附录 A"
+      ]
+    },
+    {
+      "area": "自定义 custom",
+      "focus": "脱离模板的一次性约束：把答案按字母倒序写、按指定列名/分隔符/行数生成 CSV、按纬度排序欧洲首都等",
+      "share": "19%（11/58）",
+      "format": "程序验证：跑对应的 Python 验证函数判定约束是否满足",
+      "cite": [
+        "arxiv-2507-02833@§2",
+        "arxiv-2507-02833@附录 A"
+      ]
+    },
+    {
+      "area": "计数 count",
+      "focus": "数东西：至少 N 个不重复词、恰好 N 个数字、至少 N 个人名（从给定列表里选）、用遍所有标准标点",
+      "share": "16%（9/58）",
+      "format": "程序验证：跑对应的 Python 验证函数判定约束是否满足",
+      "cite": [
+        "arxiv-2507-02833@§2",
+        "arxiv-2507-02833@附录 A"
+      ]
+    },
+    {
+      "area": "比例 ratio",
+      "focus": "比例与重叠：陈述句与疑问句保持 2:1、与参考文本的 trigram 重叠度保持在 X%（±2%）等",
+      "share": "9%（5/58）",
+      "format": "程序验证：跑对应的 Python 验证函数判定约束是否满足",
+      "cite": [
+        "arxiv-2507-02833@§2",
+        "arxiv-2507-02833@附录 A"
+      ]
+    },
+    {
+      "area": "句子 sentence",
+      "focus": "句子级操作：每句比上一句多正好 N 个词、每句的尾词成为下一句的首词、每句首字母递进",
+      "share": "5%（3/58）",
+      "format": "程序验证：跑对应的 Python 验证函数判定约束是否满足",
+      "cite": [
+        "arxiv-2507-02833@§2",
+        "arxiv-2507-02833@附录 A"
+      ]
+    },
+    {
+      "area": "复制 copy",
+      "focus": "从输入里复制：原样重复请求、重复请求但改第一个词、复制指定下标区间的那段文字",
+      "share": "5%（3/58）",
+      "format": "程序验证：跑对应的 Python 验证函数判定约束是否满足",
+      "cite": [
+        "arxiv-2507-02833@§2",
+        "arxiv-2507-02833@附录 A"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "回答质量与有用性：论文用 GPT-4.1 当裁判单独测过，RLVR 专训模型的通用回答均分反而从 7/10 降到 6.4/10——约束满足率和回答质量在这里是 trade-off，IFBench 分高不代表更好用。",
+      "cite": [
+        "arxiv-2507-02833@§5"
+      ]
+    },
+    {
+      "text": "不可验证的约束：论文明确只做能写成 Python 验证函数的约束，野用户大量使用的约束没有易验证的 ground truth，因此部分约束可能显得不自然或造作；IFBench 高分不等于在真实软约束上更好。",
+      "cite": [
+        "arxiv-2507-02833@§7"
+      ]
+    },
+    {
+      "text": "多语言与非 WildChat 分布：300 条测试 prompt 全部来自英文 WildChat 的留出部分，论文与数据集卡都没有给其他语言的划分或分数；数据集卡只标了 Text/parquet。",
+      "cite": [
+        "arxiv-2507-02833@§2",
+        "hf-ifbench-test@Datasets at Hugging Face"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 300,
+    "splits": [
+      "IFBench_test（300 条 prompt，默认评测集；HF 上 default/train 两个视图各 300 行）",
+      "IFBench_multi-turn（把任务与约束拆到 2 轮的可选变体；条数论文与仓库均未给出）",
+      "IF_multi_constraints_upto5（IF-RLVR 训练集，非测试集）"
+    ],
+    "languages": [
+      "未披露（prompt 取自 WildChat，论文与数据集卡均未单独声明语言）"
+    ],
+    "source_type": "held-out WildChat 真实用户 prompt + 人工编写并筛选的新约束模板",
+    "public_sample": true,
+    "totals": "默认测试集 300 条 prompt，每条含 1–2 个约束；58 类 IFBench OOD 约束 + 25 类 IFEval 经典约束，共 83 个验证器；另有 29 类 IFTRAIN 训练约束、可选 2 轮多轮约束隔离测试集，以及 IF-RLVR 训练集。",
+    "cite": [
+      "arxiv-2507-02833@§2",
+      "repo-ifbench@README",
+      "hf-ifbench-test@Datasets at Hugging Face"
+    ],
+    "construction": [
+      {
+        "k": "收集约束",
+        "text": "先向作者之外的真实 LM 用户征集他们试过的约束类型，再人工补写覆盖核心 IF 技能的约束；只保留能配一个 Python 验证函数的，保证评测和训练可复现。",
+        "cite": [
+          "arxiv-2507-02833@§2"
+        ]
+      },
+      {
+        "k": "切分训练/测试约束",
+        "text": "把约束分成测试用（IFBench 58 类）和训练用（IFTRAIN 29 类）两套，防止 RLVR 训练时见过测试约束。",
+        "cite": [
+          "arxiv-2507-02833@§2"
+        ]
+      },
+      {
+        "k": "拼装 prompt",
+        "text": "把实例化后的约束加到从未公开（held out from release）的 WildChat prompt 上，用「新 prompt × 新约束」双重留出来避免训练-测试污染。",
+        "cite": [
+          "arxiv-2507-02833@§2"
+        ]
+      },
+      {
+        "k": "人工核对",
+        "text": "每条实例都经人工标注，核对 prompt 与约束是否兼容（例如要代码的约束不能配一个要求总结的 prompt），最终得到 300 条 prompt。",
+        "cite": [
+          "arxiv-2507-02833@§2"
+        ]
+      },
+      {
+        "k": "发布形态",
+        "text": "pip 包 ifbench 内置全部 83 个验证器与测试 jsonl（ifbench.data_path()）；HF 上发布 IFBench_test、IFBench_multi-turn、IF_multi_constraints_upto5；代码 Apache-2.0，数据 ODC-BY-1.0。",
+        "cite": [
+          "repo-ifbench@README",
+          "hf-ifbench-test@Datasets at Hugging Face"
+        ]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "单轮：把任务 prompt 和一个（或两个）输出约束直接拼在一起让模型回答，用对应的 Python 验证函数逐条判定约束是否满足。默认报 prompt-level loose accuracy——一条 prompt 上的约束全部通过才算这条 prompt 对；宽松判会先删掉回答的首尾行和某些字体修饰再验证。生成用 temperature 0，按模型类型调大 max tokens（思考模型给更多，并剥掉 reasoning chain 只留答案）。",
+    "cite": [
+      "arxiv-2507-02833@§2",
+      "arxiv-2507-02833@App. G",
+      "repo-ifbench@README"
+    ],
+    "variants": [
+      {
+        "text": "strict vs loose：strict 按原文严格判，loose 先清洗再判，两者不能混着比。论文 Table 5 里 GRPO after DPO 的 IFEval strict 89.65、IFBench strict 30.6；Table 3 中同模型的 loose 是 92.2 / 44.6。",
+        "cite": [
+          "arxiv-2507-02833@§2",
+          "arxiv-2507-02833@Table 5",
+          "arxiv-2507-02833@Table 3"
+        ]
+      },
+      {
+        "text": "单轮 vs 多轮约束隔离：多轮把任务和约束拆到不同轮次（第一轮只给 prompt，第二轮才追加约束并要求改写第一轮回答），论文实测同模型多轮普遍低于单轮；HF 官方任务标签是 Prompt Level Loose。",
+        "cite": [
+          "arxiv-2507-02833@§2",
+          "arxiv-2507-02833@Table 7",
+          "repo-ifbench@README",
+          "hf-ifbench-test@Datasets at Hugging Face"
+        ]
+      },
+      {
+        "text": "评测方不同：论文自己跑、HF 榜单上的模型提交、厂商博客自报是三种来源。截至 2026-11-13，HF 榜单最高 82.8（Qwen3.8-2.4T-A95B），共 23 个模型；而论文发表时（2025 年）的前沿模型都不到 50%，两者相隔约一年，不构成同口径时间序列。",
+        "cite": [
+          "hf-ifbench-test@Datasets at Hugging Face",
+          "arxiv-2507-02833@§1"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "prompt-level-loose-accuracy",
+      "name": "prompt-level loose accuracy（提示词级宽松准确率）",
+      "direction": "越高越好",
+      "description": "默认指标：一条 prompt 上的全部约束都通过即算这条 prompt 对，通过的 prompt 占 300 条的比例；宽松判会先删掉回答首尾行和某些字体修饰再验证。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2507-02833@§2",
+        "repo-ifbench@README"
+      ]
+    },
+    {
+      "id": "prompt-level-strict-accuracy",
+      "name": "prompt-level strict accuracy（提示词级严格准确率）",
+      "direction": "越高越好",
+      "description": "不做事后清洗，按原文严格验证约束；同模型下通常明显低于宽松分（论文 Table 5：GRPO after DPO 为 IFEval 89.65 / IFBench 30.6）。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2507-02833@§2",
+        "arxiv-2507-02833@Table 5"
+      ]
+    },
+    {
+      "id": "multi-turn-loose-accuracy",
+      "name": "多轮约束隔离准确率",
+      "direction": "越高越好",
+      "description": "把任务与约束拆到不同轮次后的宽松准确率；论文实测同模型多轮普遍低于单轮（Table 7：IF-RLVR-MULTI 在多轮设置上优于 IF-RLVR-SINGLE，但达不到可比的单轮水平）。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2507-02833@§2",
+        "arxiv-2507-02833@Table 7"
+      ]
+    }
+  ],
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2025-07-03",
+      "label": "arXiv v1 首发（Generalizing Verifiable Instruction Following）",
+      "cite": [
+        "arxiv-2507-02833@arXiv"
+      ]
+    },
+    {
+      "id": "v2",
+      "date": "2025-08-04",
+      "label": "arXiv v2 修订",
+      "cite": [
+        "arxiv-2507-02833@arXiv"
+      ]
+    },
+    {
+      "id": "v3",
+      "date": "2025-11-11",
+      "label": "arXiv v3 修订，camera-ready；脚注 39th Conference on Neural Information Processing Systems (NeurIPS 2025) Track on Datasets and Benchmarks，11 pages（本页核对所用版本）",
+      "cite": [
+        "arxiv-2507-02833@arXiv",
+        "arxiv-2507-02833@作者署名"
+      ]
+    },
+    {
+      "id": "hf-leaderboard",
+      "date": "2026-11-13",
+      "label": "HF allenai/IFBench_test 榜单快照（Prompt Level Loose，23 个模型）——本页核对时点，非基准自身版本",
+      "cite": [
+        "hf-ifbench-test@Datasets at Hugging Face"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "只测可验证约束，约束本身可能不自然",
+      "impact": "论文明说只做可验证约束，野用户大量约束没有易验证 ground truth，因此部分约束显得造作；在 IFBench 上高分的模型，未必在真实用户的软约束上更好。",
+      "severity": "高",
+      "response": "论文把探索不可验证约束的 RL 列为 future work，并配套发布了 IFTRAIN 训练约束与 IF-RLVR 配方；基准本身没有扩充到不可验证约束。",
+      "reader": "把 IFBench 当作「精确满足可编程约束」的单项能力，不要当成通用指令遵循或对齐的总分。",
+      "cite": [
+        "arxiv-2507-02833@§7"
+      ]
+    },
+    {
+      "issue": "宽松/严格与单轮/多轮口径极易混用",
+      "impact": "同模型 loose 与 strict 差一大截（论文 Table 5 GRPO after DPO：IFBench strict 30.6，而 Table 3 的 loose 是 44.6；IFEval 89.65 vs 92.2），多轮也普遍低于单轮；榜单与厂商自报若不标口径就不可比。",
+      "severity": "高",
+      "response": "论文与仓库都声明默认报 prompt-level loose accuracy；HF 数据集卡把任务标为 Prompt Level Loose。",
+      "reader": "比较前先确认口径；只有同口径的分数才能并列看。",
+      "cite": [
+        "arxiv-2507-02833@§2",
+        "arxiv-2507-02833@Table 5",
+        "arxiv-2507-02833@Table 3",
+        "repo-ifbench@README",
+        "hf-ifbench-test@Datasets at Hugging Face"
+      ]
+    },
+    {
+      "issue": "可验证就等于可被针对性刷（reward hacking）",
+      "impact": "约束能写成验证函数，就必然能被专门优化：论文发现 RLVR 训出来的模型会把优先级从「完成任务」转向「满足约束」，通用回答的 LLM-as-judge 均分从 7/10 掉到 6.4/10；Qwen2.5-72B-Instruct 的 IF 准确率与裁判分最负相关。",
+      "severity": "中",
+      "response": "论文建议在可验证奖励里混入偏好奖励模型信号来缓解，并公开了分析与 IF-RLVR 代码。",
+      "reader": "看到某个模型 IFBench 突涨，先看它是不是专门为此训过，并留意它通用能力有没有掉。",
+      "cite": [
+        "arxiv-2507-02833@§5",
+        "arxiv-2507-02833@§3"
+      ]
+    },
+    {
+      "issue": "约束分布靠人工挑选，子技能题量不均衡",
+      "impact": "58 个约束里格式 14 个、词 13 个、自定义 11 个，而句子和复制各只有 3 个（本站按论文附录 A 逐条清点）；个位数题量的子技能单项波动大。",
+      "severity": "中",
+      "response": "论文未按大类给出题量或加权说明，也未发布加权口径；论文 Table 2 给了 IFEval/IFBench 的约束类型拆分，可作子技能参考。",
+      "reader": "不要从 300 条的总分反推某个子技能的强弱；需要子技能结论时去看论文 Table 2 的拆分。",
+      "cite": [
+        "arxiv-2507-02833@附录 A",
+        "arxiv-2507-02833@Table 2"
+      ]
+    }
+  ],
+  "notes": "NeurIPS 2025 Datasets & Benchmarks 论文；RLVR 专训把 TÜLU-3-8B 的 IFBench 从 28.9 提到 45.9，base 策略 + IF-RLVR 达 53.7；HF 榜单当前最高 82.8（2026-11-13 快照）。",
+  "official_sources": [
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2507.02833"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/allenai/IFBench"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/allenai/IFBench_test"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/allenai/IFBench_multi-turn"
+    },
+    {
+      "kind": "site",
+      "url": "https://huggingface.co/meta-models/Muse-Glimmer-30B"
+    },
+    {
+      "kind": "site",
+      "url": "https://qwen.ai/blog?id=qwen3.8-flash-next"
+    }
+  ],
+  "related_benchmarks": [
+    "ifeval",
+    "mtbench"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-13",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      {
+        "id": "arxiv-2507-02833",
+        "kind": "paper",
+        "title": "Generalizing Verifiable Instruction Following（arXiv:2507.02833v3，NeurIPS 2025 D&B，11 pages）",
+        "url": "https://arxiv.org/abs/2507.02833",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "repo-ifbench",
+        "kind": "repo",
+        "title": "allenai/IFBench — GitHub 仓库与 README（代码 Apache-2.0）",
+        "url": "https://github.com/allenai/IFBench",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "hf-ifbench-test",
+        "kind": "dataset",
+        "title": "allenai/IFBench_test — Hugging Face 数据集卡与排行榜（Prompt Level Loose）",
+        "url": "https://huggingface.co/datasets/allenai/IFBench_test",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "huggingface-meta-models-muse-glimmer",
+        "kind": "site",
+        "title": "meta-models/Muse-Glimmer-30B 模型卡（自报 IFBench prompt level loose 77）",
+        "url": "https://huggingface.co/meta-models/Muse-Glimmer-30B",
+        "accessed": "2026-11-13"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Ai2（Allen Institute for Artificial Intelligence）与华盛顿大学；论文联系人 valentinap@allenai.org",
+        "cite": [
+          "arxiv-2507-02833@作者署名"
+        ]
+      },
+      "first_release": {
+        "v": "2025-07-03（arXiv v1；2025-11-11 v3 为 NeurIPS 2025 D&B camera-ready）",
+        "cite": [
+          "arxiv-2507-02833@arXiv"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "arxiv-2507-02833@摘要",
+        "arxiv-2507-02833@§2",
+        "repo-ifbench@README"
+      ],
+      "interpretation": [
+        "arxiv-2507-02833@§1",
+        "arxiv-2507-02833@§5",
+        "arxiv-2507-02833@Table 5",
+        "hf-ifbench-test@Datasets at Hugging Face"
+      ]
+    },
+    "problem": {
+      "text": "IFEval 只有 25 个约束模板，模型在这套固定模板上严重过拟合——许多前沿模型在 2B 规模就能拿 80%+，基准已经饱和，测不出差距。IFBench 要回答的是：换成没见过的新约束、新 prompt，模型还能不能精确听话。",
+      "cite": [
+        "arxiv-2507-02833@§1",
+        "arxiv-2507-02833@§2"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机 / 人类基线",
+        "value": "论文未给出",
+        "note": "论文只报告各模型成绩，没有随机或人类基线；本站也不代为推算。",
+        "cite": [
+          "arxiv-2507-02833@Table 3"
+        ]
+      },
+      {
+        "label": "论文发表时的前沿模型",
+        "value": "低于 50%",
+        "note": "论文两处文字表述：GPT-4.1 / Claude 3.7 Sonnet，以及 Qwen3-32B / Claude 4 Sonnet；论文没有给这些模型的精确分数。",
+        "cite": [
+          "arxiv-2507-02833@§1"
+        ]
+      },
+      {
+        "label": "论文内 RLVR 专训前",
+        "value": "28.9（TÜLU-3-8B）",
+        "note": "论文 §3 与 Table 3 的 TÜLU 行一致；同期 IFEval 为 82.4。",
+        "cite": [
+          "arxiv-2507-02833@§3",
+          "arxiv-2507-02833@Table 3"
+        ]
+      },
+      {
+        "label": "论文内 RLVR 专训后",
+        "value": "45.9（同一 TÜLU-3-8B）",
+        "note": "论文 §3 给的是 IFeval 82.4→92.2、IFBench 28.9→45.9；Table 3 中 IF-RLVR TÜLU-DPO 8b 报 44.6，两个数字来自不同设定，不要混用。",
+        "cite": [
+          "arxiv-2507-02833@§3",
+          "arxiv-2507-02833@Table 3"
+        ]
+      },
+      {
+        "label": "论文内最好成绩",
+        "value": "53.7（qwen2.5-7B base 策略 + IF-RLVR）",
+        "note": "Table 3；同模型 IFEval 87.8。论文称其 RLVR 模型 outperform most SOTA (besides o3)。",
+        "cite": [
+          "arxiv-2507-02833@Table 3",
+          "arxiv-2507-02833@§3"
+        ]
+      },
+      {
+        "label": "第三方榜单当前最高",
+        "value": "82.8（Qwen3.8-2.4T-A95B）",
+        "note": "HF allenai/IFBench_test 榜单，Prompt Level Loose，共 23 个模型；本页核对时点 2026-11-13。与论文内的 53.7 相隔约一年，不构成同口径时间序列。",
+        "cite": [
+          "hf-ifbench-test@Datasets at Hugging Face"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      },
+      {
+        "label": "饱和参照线（IFEval 旧约束）",
+        "value": "80%+",
+        "note": "IFEval 只有 25 个约束模板，论文说它 quickly saturated，2B 规模即有 80%+；这条线用来说明为什么需要 IFBench，不是 IFBench 的分数。",
+        "cite": [
+          "arxiv-2507-02833@§1"
+        ]
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 IFBench 分数和 IFEval 分数并列比较——IFEval 已饱和（2B 模型就能 80%+），IFBench 是刻意换的新约束、新 prompt，两者难度和分布都不同。",
+        "cite": [
+          "arxiv-2507-02833@§1"
+        ]
+      },
+      {
+        "text": "把 strict 当 loose 读（或反之）——宽松判会先清洗回答，同模型两个口径能差 10 个百分点以上（Table 5 的 30.6 vs Table 3 的 44.6）。",
+        "cite": [
+          "arxiv-2507-02833@§2",
+          "arxiv-2507-02833@Table 5",
+          "arxiv-2507-02833@Table 3"
+        ]
+      },
+      {
+        "text": "看到榜单上 80+ 就认为基准已经饱和——截至 2026-11-13 HF 榜单最高 82.8，但那是 2026 年的模型；论文发表的 2025 年，前沿模型都不到 50%，中间约 30 分的差距主要来自这一年多的专门训练，不是同一批模型的进步。",
+        "cite": [
+          "hf-ifbench-test@Datasets at Hugging Face",
+          "arxiv-2507-02833@§1"
+        ]
+      },
+      {
+        "text": "把 IFBench 高分等同于「更听话/更好用」——论文实测 RLVR 专训模型通用回答的裁判均分反而从 7/10 降到 6.4/10，约束满足率与回答质量在此处是 trade-off。",
+        "cite": [
+          "arxiv-2507-02833@§5"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "Ai2（Allen Institute for Artificial Intelligence）与华盛顿大学；论文联系人 valentinap@allenai.org",
+        "cite": [
+          "arxiv-2507-02833@作者署名"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "Valentina Pyatkin、Saumya Malik、Victoria Graf、Hamish Ivison、Shengyi Huang、Pradeep Dasigi、Nathan Lambert、Hannaneh Hajishirzi",
+        "cite": [
+          "arxiv-2507-02833@作者署名"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2025-07-03 arXiv v1 → 2025-08-04 v2 → 2025-11-11 v3（NeurIPS 2025 D&B camera-ready，11 pages）",
+        "cite": [
+          "arxiv-2507-02833@arXiv",
+          "arxiv-2507-02833@作者署名"
+        ]
+      },
+      {
+        "k": "与前作的关系",
+        "v": "约束验证器沿用并扩展 IFEval：pip 包 ifbench 内置 25 个 IFEval 经典 key 加 58 个 IFBench OOD key，共 83 个验证器；IFBench 在论文中被定位为 IFEval 的 out-of-domain 后继。",
+        "cite": [
+          "repo-ifbench@README",
+          "arxiv-2507-02833@§2"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "代码 GitHub allenai/IFBench（Apache-2.0），测试集、多轮测试集、IF-RLVR 训练集在 HF allenai 名下（ODC-BY-1.0）；IF-RLVR 的 GRPO 训练代码在 allenai/open-instruct，训练约束与验证函数在 open_instruct/IFEvalG。",
+        "cite": [
+          "repo-ifbench@README"
+        ]
+      },
+      {
+        "k": "榜单口径",
+        "v": "HF allenai/IFBench_test 榜单当前 23 个模型，任务标签 Prompt Level Loose，最高 Qwen3.8-2.4T-A95B 82.8；Muse-Glimmer-30B 在模型卡自报 77，与榜单一致。",
+        "cite": [
+          "hf-ifbench-test@Datasets at Hugging Face",
+          "huggingface-meta-models-muse-glimmer@评测结果"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-13",
+        "columns": [
+          "来源",
+          "模型",
+          "IFBench",
+          "IFEval",
+          "口径"
+        ],
+        "rows": [
+          [
+            "论文 Table 3",
+            "TÜLU-sft",
+            "20.7",
+            "72.8",
+            "prompt-level loose"
+          ],
+          [
+            "论文 Table 3",
+            "TÜLU-DPO",
+            "25.5",
+            "81.1",
+            "prompt-level loose"
+          ],
+          [
+            "论文 Table 3",
+            "TÜLU",
+            "28.9",
+            "82.4",
+            "prompt-level loose"
+          ],
+          [
+            "论文 Table 3",
+            "IF-RLVR TÜLU-DPO 8b",
+            "44.6",
+            "92.2",
+            "prompt-level loose"
+          ],
+          [
+            "论文 Table 3",
+            "IF-RLVR qwen2.5 7b",
+            "53.7",
+            "87.8",
+            "prompt-level loose"
+          ],
+          [
+            "论文 Table 5",
+            "GRPO after DPO",
+            "30.6",
+            "89.65",
+            "strict"
+          ],
+          [
+            "论文 Table 5",
+            "DPO after DPO",
+            "29.3",
+            "79.67",
+            "strict"
+          ],
+          [
+            "论文 §1（文字表述）",
+            "GPT-4.1 / Claude 3.7 Sonnet",
+            "低于 50%",
+            "未披露",
+            "论文未给具体值"
+          ],
+          [
+            "论文贡献列表（文字表述）",
+            "Qwen3-32B / Claude 4 Sonnet",
+            "低于 50%",
+            "未披露",
+            "论文未给具体值"
+          ],
+          [
+            "HF 榜单",
+            "Qwen3.8-2.4T-A95B",
+            "82.8",
+            "未披露",
+            "榜单 Prompt Level Loose"
+          ],
+          [
+            "HF 榜单",
+            "Qwen3.8-Flash-Next",
+            "81.3",
+            "未披露",
+            "榜单 Prompt Level Loose"
+          ],
+          [
+            "HF 榜单",
+            "Qwen3.8-27B",
+            "79.5",
+            "未披露",
+            "榜单 Prompt Level Loose"
+          ],
+          [
+            "HF 榜单 + 模型卡自报",
+            "meta-models/Muse-Glimmer-30B",
+            "77",
+            "未披露",
+            "榜单 Prompt Level Loose（模型卡一致）"
+          ]
+        ]
+      },
+      "cite": [
+        "arxiv-2507-02833@Table 3",
+        "arxiv-2507-02833@Table 5",
+        "arxiv-2507-02833@§1",
+        "hf-ifbench-test@Datasets at Hugging Face",
+        "huggingface-meta-models-muse-glimmer@评测结果"
+      ]
+    }
+  }
+}

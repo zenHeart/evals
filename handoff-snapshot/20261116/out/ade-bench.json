@@ -1,0 +1,509 @@
+{
+  "id": "ade-bench",
+  "name": "ADE Bench",
+  "full_name": "ADE Bench（Analytics and Data Engineering Benchmark，分析与数据工程基准）",
+  "aliases": [
+    "ADE Bench",
+    "ADE",
+    "Analytics and Data Engineering Bench"
+  ],
+  "status": "active",
+  "categories": [
+    "agent",
+    "coding"
+  ],
+  "summary": "dbt Labs 开源的 Agent 基准：把真实 dbt 项目与真实数据库装进一次性沙箱，让 Agent 自己定位并修好问题，再用任务自带的 dbt 测试判分。前端类比：一个自带 CI 用例的仓库，Agent 的交付物要通过全部用例才算完成。ADE 是 Analytics and data engineering benchmark 的缩写。",
+  "interpretation": "只有一种量纲：任务通过率（越高越好）。一次 rollout 内该任务的测试全部通过才算过，任何一条失败即整题失败，因此分数对应「能不能独立交付一个可用的数据工程改动」，不是 SQL 语法记忆，也不是数据分析问答的正确率。官方不发布成绩表，仓库与文档只提供框架与题目；目前公开的唯一数字来自第三方厂商（Particle）自家模型发布文里的 token / 成本对比，且只覆盖它自己的模型。跨模型比较必须锁定同一 harness、同一任务子集与同一 rollout 次数才成立。",
+  "measures": [
+    {
+      "area": "真实工程改动的端到端交付",
+      "focus": "读题 → 定位问题 → 改 dbt 模型 / 宏 / 配置 → 让项目自带测试全绿。题面以真实用户报错的口吻给出，如 airbnb001 的「I got this error, please fix it, and fix it anywhere else it needs to be fixed.」（题目要求 Fix an outdated dbt util）",
+      "share": "未披露（README 未给类别占比）",
+      "format": "开放式 Agent 任务（在仓库里做改动），非选择题",
+      "cite": [
+        "task-airbnb001@prompt",
+        "task-airbnb001",
+        "repo-readme@An introduction to how ADE-bench works"
+      ]
+    },
+    {
+      "area": "数据检查、调试与依赖治理",
+      "focus": "任务按标签归类，同一批题目里混有 schema 探查、调试、宏与包依赖一类工作；以 airbnb001 为例，tags 为 data-inspection、dbt、dbt-macros、dbt-packages、dbt-utils、debugging、jinja、model-refactor",
+      "share": "未披露（按标签归类，官方未给占比）",
+      "format": "标签式分类，题目本身仍是开放式改动",
+      "cite": [
+        "task-airbnb001@tags"
+      ]
+    },
+    {
+      "area": "多数据库 × 多项目形态",
+      "focus": "同一题目按 db_type（duckdb / snowflake）与 project_type（dbt / dbt-fusion）拆成多个变体分别跑；airbnb001 有 4 个变体，本站清点 65 个任务中 38 个为 4 变体、19 个为 3 变体、8 个为 2 变体",
+      "share": "未披露（变体数按题目而异）",
+      "format": "同题多变体，按数据库 / 项目类型分别记通过率",
+      "cite": [
+        "task-airbnb001@variants",
+        "repo-readme@Usage"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "不考数据科学知识问答或 SQL 语法记忆：判分只看任务自带的测试是否全过，没有卷面分。",
+      "cite": [
+        "repo-readme@An introduction to how ADE-bench works"
+      ]
+    },
+    {
+      "text": "不评估代码风格、可读性或实现路径优劣：通过率里没有代码质量项，只有测试通过与否。",
+      "cite": [
+        "repo-readme@README"
+      ]
+    },
+    {
+      "text": "不测数据工程域外的通用 Agent 能力（浏览网页、长文档问答等）：每个任务都在一次性沙箱里跑一个 dbt 项目，记录结果后即删除容器。",
+      "cite": [
+        "repo-readme@An introduction to how ADE-bench works",
+        "repo-readme@Task definition"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 65,
+    "splits": [
+      "公开任务集：tasks/ 下 65 个任务目录（本站 2026-11-14 清点）",
+      "任务变体：按 db_type × project_type 展开（38 个任务 4 变体、19 个 3 变体、8 个 2 变体）"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "official_open_source（dbt Labs 官方开源仓库，题目 / 数据库 / 代码全公开）",
+    "public_sample": true,
+    "totals": "本站 2026-11-14 清点 tasks/ 目录：65 个任务目录（另有 .template 目录，不计入题量）。status：ready 60、dev 4、open 1；difficulty：easy 18、medium 32、hard 15。数据库侧公开 DuckDB 与 Snowflake 两类，DuckDB 库文件随 GitHub Release 的 databases tag 分发；题目可用 ade view tasks 一览。",
+    "cite": [
+      "tasks-listing@任务目录",
+      "repo-readme@README",
+      "databases-release",
+      "docs-cli@View Results"
+    ],
+    "construction": [
+      {
+        "k": "题目形态",
+        "text": "每个任务是一个目录：task_id、status（ready / dev / open）、description、给 Agent 的 prompt、difficulty、tags，以及多个 db_type × project_type 变体；prompt 用真实用户报错的口吻写，如 airbnb001 的「I got this error, please fix it, and fix it anywhere else it needs to be fixed.」",
+        "cite": [
+          "task-airbnb001",
+          "task-airbnb001@prompt",
+          "task-airbnb001@variants"
+        ]
+      },
+      {
+        "k": "运行环境",
+        "text": "每个任务在独立临时沙箱里跑：先给项目拍初始快照，跑任务自带的 setup 脚本，再把环境交给 Agent，任务记录结果后删除容器。框架自身依赖容器与数据库客户端（pyproject 的 dependencies 含 docker、podman、duckdb、snowflake-connector-python、anthropic、openai、pandas）。",
+        "cite": [
+          "repo-readme@An introduction to how ADE-bench works",
+          "pyproject"
+        ]
+      },
+      {
+        "k": "数据库",
+        "text": "任务可指向共享数据库：DuckDB 库文件放 shared/databases/duckdb，用 gh release download databases 拉取；官方同时支持 Snowflake，并提供 duckdb-to-snowflake 迁移命令。",
+        "cite": [
+          "repo-readme@How databases work",
+          "databases-release",
+          "docs-cli@Database Migration"
+        ]
+      },
+      {
+        "k": "共享 dbt 项目",
+        "text": "除数据库外还有共享项目层：shared/projects 按类型组织可被多个任务复用的项目文件，dbt 一类面向数据转换任务，另预留 other 类型。",
+        "cite": [
+          "projects-readme"
+        ]
+      },
+      {
+        "k": "判分",
+        "text": "判分完全靠任务自带的 dbt 测试：改动对照任务指定的表评，测试全过才算通过；框架自带自动比对表的能力，任务配置里声明要比对的表（airbnb001 比对 dim_listings_hosts 与 daily_agg_reviews）。仓库另有一个 sage agent 当标准答案，跑 sage 时全部测试都应当通过。",
+        "cite": [
+          "repo-readme@An introduction to how ADE-bench works",
+          "task-airbnb001@solution_seeds",
+          "repo-readme@The sage agent"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "task_pass_rate",
+      "name": "任务通过率",
+      "direction": "越高越好",
+      "description": "一次 rollout 内该任务的测试全部通过记 1，任何一条失败记 0；通过率 = 通过的尝试数 / 总尝试数。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "repo-readme@An introduction to how ADE-bench works",
+        "repo-readme@README"
+      ]
+    }
+  ],
+  "default_protocol": {
+    "raw": "官方 CLI 口径：ade run <task…>（或 ade run all）--db duckdb|snowflake --project-type dbt|dbt-fusion --agent claude|codex|gemini|sage，可用 --model 指定具体模型。默认每任务跑 1 次（--n-attempts 1）、并发 4 个 trial（--n-concurrent-trials 4）、单个 Agent 最多 50 次模型调用（--max-episodes 50）。结果用 ade view / ade view runs 查看，大型试跑可存为 production runs。",
+    "cite": [
+      "repo-readme@Usage",
+      "repo-readme@README",
+      "docs-cli@Run tasks",
+      "docs-cli@Save Results",
+      "docs-cli@View Results"
+    ],
+    "variants": [
+      {
+        "text": "官方内置 Agent：Claude Code（--agent claude）、OpenAI Codex（--agent codex）、Gemini CLI（--agent gemini），外加当标准答案的 sage；可挂不同插件集（README 插件集一节列出 none / all-dbt-skills / dbt-mcp，分别代表不挂、挂 dbt skills、挂 dbt MCP server）。",
+        "cite": [
+          "repo-readme@README",
+          "repo-readme@Plugin sets",
+          "repo-readme@Usage"
+        ]
+      },
+      {
+        "text": "第三方复现口径（Particle 2026-10-28 发布文）：ADE Bench 与 Terminal-Bench 2.1、ReactBench、DeepSWE 1.1 同场跑，除 DeepSWE 1.1 用 mini-swe-agent 外用 Terminus 2，统一 512k token 上限、temperature 1、top_p 0.95、max reasoning，每任务 16 次 rollout。",
+        "cite": [
+          "particle-blog-introducing-particl@评测设置",
+          "particle-blog-introducing-particl@发布时间"
+        ]
+      },
+      {
+        "text": "题目侧变体：同一任务可按 db_type（duckdb / snowflake）与 project_type（dbt / dbt-fusion）分别跑，通过率按变体分别统计。",
+        "cite": [
+          "task-airbnb001@variants",
+          "repo-readme@Usage"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "1.0.0rc1",
+      "date": "2026-02-12",
+      "label": "PyPI 首个发布 1.0.0rc1（预发布版本；仓库按 RELEASING 的流程构建、测试并发布到 PyPI）",
+      "cite": [
+        "pypi@releases",
+        "pyproject",
+        "releasing@How to release"
+      ]
+    },
+    {
+      "id": "databases",
+      "date": "2026-03-23",
+      "label": "databases GitHub Release：稳定的 DuckDB 数据库文件，也用于 CI（该 tag 之后主分支已有 14 个提交）",
+      "cite": [
+        "databases-release"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "官方不发布成绩表，也没有汇总的题集构成与判分细则说明",
+      "impact": "无法判断任何模型在该基准上的水位，也无法做跨模型比较；本档案的题量与构成来自本站对公开仓库的清点",
+      "severity": "高",
+      "response": "只在同一 harness、同一任务子集、同一 rollout 次数下比较；引用时注明是第三方复现口径",
+      "reader": "看到 ADE Bench 分数先问口径：harness、任务子集、rollout 次数，缺一项就不可比",
+      "cite": [
+        "repo-readme@README",
+        "particle-blog-introducing-particl@评测设置"
+      ]
+    },
+    {
+      "issue": "任务集随仓库滚动更新，未按版本打标签",
+      "impact": "同一模型名在不同时间点的分数可能对应不同题集；本站清点的 65 题只是 2026-11-14 的快照",
+      "severity": "中",
+      "response": "比较历史成绩前记录任务目录的 commit 或 release 时点；数据库侧已有 tagged release 可对齐",
+      "reader": "把题量当作快照，引用时带上清点日期",
+      "cite": [
+        "tasks-listing@任务目录",
+        "databases-release"
+      ]
+    },
+    {
+      "issue": "判分完全依赖任务自带的 dbt 测试",
+      "impact": "题目写错或测试过松 / 过严都会直接扭曲通过率；框架用 sage 自检可解性，但不保证测试覆盖了真实意图",
+      "severity": "中",
+      "response": "引用具体题目时读它的 task.yaml 与测试；对异常高分 / 低分先跑 sage 验证题目可解",
+      "reader": "把单题分数当作该题测试集的表现，不是领域能力的绝对度量",
+      "cite": [
+        "repo-readme@The sage agent",
+        "task-airbnb001@solution_seeds"
+      ]
+    },
+    {
+      "issue": "真实数据库依赖外部服务与本地文件",
+      "impact": "Snowflake 变体需要凭据，DuckDB 需要下载 release 里的 .duckdb 文件；复现成本高于纯文本基准",
+      "severity": "中",
+      "response": "复现时按 README 用 gh release download 拉 DuckDB 库；Snowflake 需自备账号",
+      "reader": "复现前先准备数据库与凭据；基础设施中断的 rollout 在统计时会被剔除",
+      "cite": [
+        "repo-readme@How databases work",
+        "databases-release",
+        "particle-blog-introducing-particl@ADE Bench"
+      ]
+    },
+    {
+      "issue": "公开的第三方对比只覆盖 token 与成本",
+      "impact": "Particle 报告了 ADE Bench 上的 token / 成本降幅与 Pass@1 结论，但未公开逐模型准确率，且样本是它自己的模型",
+      "severity": "低",
+      "response": "token / 成本结论按厂商口径引用，不外推成能力排序",
+      "reader": "成本下降不等于答对更多题",
+      "cite": [
+        "particle-blog-introducing-particl@成本对比",
+        "particle-blog-introducing-particl@Pass@1"
+      ]
+    }
+  ],
+  "notes": "本档案为 benchmark-profile/v2：官方只发布框架与题目、不发布成绩表，因此没有官方结果快照；公开的 token / 成本数字来自 Particle 的第三方对比，只用于局限与误读两节。",
+  "official_sources": [
+    {
+      "kind": "repo",
+      "url": "https://github.com/dbt-labs/ade-bench"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/dbt-labs/ade-bench/releases/tag/databases"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/dbt-labs/ade-bench/blob/main/docs/CLI.md"
+    },
+    {
+      "kind": "site",
+      "url": "https://pypi.org/project/ade-bench/"
+    }
+  ],
+  "related_benchmarks": [
+    "terminalbench",
+    "spider2",
+    "deepswe",
+    "reactbench"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "repo-readme",
+        "kind": "repo",
+        "title": "dbt-labs/ade-bench README（官方仓库说明）",
+        "url": "https://raw.githubusercontent.com/dbt-labs/ade-bench/main/README.md",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "tasks-listing",
+        "kind": "repo",
+        "title": "ade-bench/tasks 目录清单",
+        "url": "https://github.com/dbt-labs/ade-bench/tree/main/tasks",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "task-airbnb001",
+        "kind": "dataset",
+        "title": "tasks/airbnb001/task.yaml（题目样例）",
+        "url": "https://raw.githubusercontent.com/dbt-labs/ade-bench/main/tasks/airbnb001/task.yaml",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "docs-cli",
+        "kind": "docs",
+        "title": "ADE-bench CLI 文档",
+        "url": "https://raw.githubusercontent.com/dbt-labs/ade-bench/main/docs/CLI.md",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "databases-release",
+        "kind": "repo",
+        "title": "databases GitHub Release（共享 DuckDB 数据库）",
+        "url": "https://github.com/dbt-labs/ade-bench/releases/tag/databases",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "projects-readme",
+        "kind": "repo",
+        "title": "shared/projects/README.md（共享项目层说明）",
+        "url": "https://raw.githubusercontent.com/dbt-labs/ade-bench/main/shared/projects/README.md",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "releasing",
+        "kind": "repo",
+        "title": "RELEASING.md（发布流程）",
+        "url": "https://raw.githubusercontent.com/dbt-labs/ade-bench/main/RELEASING.md",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "pyproject",
+        "kind": "repo",
+        "title": "pyproject.toml（版本与依赖）",
+        "url": "https://raw.githubusercontent.com/dbt-labs/ade-bench/main/pyproject.toml",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "pypi",
+        "kind": "site",
+        "title": "PyPI: ade-bench（发布记录与许可）",
+        "url": "https://pypi.org/pypi/ade-bench/json",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "particle-blog-introducing-particl",
+        "kind": "blog",
+        "title": "Particle：Introducing Particle-1（第三方对比口径）",
+        "url": "https://particle.ai/blog/introducing-particle-1",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "dbt Labs（GitHub 组织 dbt-labs 下的开源仓库）",
+        "cite": [
+          "tasks-listing@页面标题"
+        ]
+      },
+      "first_release": {
+        "v": "2026-02-12（PyPI 1.0.0rc1）",
+        "cite": [
+          "pypi@releases",
+          "pyproject"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "repo-readme@Overview",
+        "repo-readme@脚注",
+        "repo-readme@An introduction to how ADE-bench works"
+      ],
+      "interpretation": [
+        "repo-readme@An introduction to how ADE-bench works",
+        "repo-readme@Task definition",
+        "particle-blog-introducing-particl@评测设置",
+        "particle-blog-introducing-particl@成本对比"
+      ]
+    },
+    "problem": {
+      "text": "在数据工程场景里，模型常见的失败不是写不出 SQL，而是不知道该把改动落到哪：schema 长什么样、哪个模型要被更新、materialization 怎么配、改完会不会让下游测试挂掉。ADE Bench 的做法是直接给一个真实的 dbt 项目加一个真实的数据库，让 Agent 在沙箱里定位并修好问题，再用项目自带的测试验收。",
+      "cite": [
+        "repo-readme@Overview",
+        "repo-readme@An introduction to how ADE-bench works",
+        "task-airbnb001@prompt"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "sage（题目自带的标准答案 agent）",
+        "value": "预期 100%",
+        "note": "框架用 sage 自检题目可解：跑 sage 时全部测试都应当通过；它不是参评模型。",
+        "cite": [
+          "repo-readme@The sage agent"
+        ]
+      },
+      {
+        "label": "前沿模型（第三方复现口径）",
+        "value": "未披露准确率",
+        "note": "Particle 发布文只给出 token / 成本降幅与 Pass@1 结论，没有公开 ADE Bench 上的逐模型通过率。",
+        "cite": [
+          "particle-blog-introducing-particl@Pass@1"
+        ]
+      },
+      {
+        "label": "随机 / 空改动基线",
+        "value": "未披露",
+        "note": "官方仓库与文档没有发布任何模型跑分，也没有给出基线。",
+        "cite": [
+          "repo-readme@README"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把「62.1% fewer output tokens」当成准确率：这是 Particle-1 相对 DeepSeek V4.1 Flash 的输出 token 降幅，不是 ADE Bench 上的通过率。",
+        "cite": [
+          "particle-blog-introducing-particl@成本对比"
+        ]
+      },
+      {
+        "text": "以为官方发布了模型排行榜：仓库与文档只提供框架与题目，公开数字全部来自第三方厂商的自家对比。",
+        "cite": [
+          "particle-blog-introducing-particl@评测设置"
+        ]
+      },
+      {
+        "text": "把 sage 当成一个参评模型：sage 是题目自带的标准答案（跑 solution.sh 后退出），用来验证题目可解。",
+        "cite": [
+          "repo-readme@The sage agent"
+        ]
+      },
+      {
+        "text": "把每任务 16 次 rollout 当成官方默认：16 次是 Particle 复现时的设置，官方 CLI 默认每任务跑 1 次。",
+        "cite": [
+          "particle-blog-introducing-particl@评测设置",
+          "repo-readme@Usage"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "dbt Labs（GitHub 组织 dbt-labs）；README 致谢里说明由 Benn Stancil 创建，并感谢 dbt Labs 与 dbt 社区成员的贡献。",
+        "cite": [
+          "tasks-listing@页面标题",
+          "repo-readme@Acknowledgements"
+        ]
+      },
+      {
+        "k": "首次公开",
+        "v": "2026-02-12 以 1.0.0rc1 发布到 PyPI；代码 Apache-2.0，要求 Python >= 3.10。",
+        "cite": [
+          "pypi@releases",
+          "pypi@info",
+          "pyproject"
+        ]
+      },
+      {
+        "k": "同类工作",
+        "v": "README 致谢里说明 ADE-bench 大量借鉴 Terminal-Bench 与 Spider 2.0；二者都是 Agent 基准，ADE Bench 把场景换到数据工程域。",
+        "cite": [
+          "repo-readme@Acknowledgements"
+        ]
+      },
+      {
+        "k": "第三方复现",
+        "v": "Particle 在 2026-10-28 的模型发布文里把 ADE Bench 与 Terminal-Bench 2.1、ReactBench、DeepSWE 1.1 并列，对比自家模型的 token 与成本。",
+        "cite": [
+          "particle-blog-introducing-particl@发布时间",
+          "particle-blog-introducing-particl@评测设置"
+        ]
+      },
+      {
+        "k": "代码与数据位置",
+        "v": "题目在 tasks/，共享数据库经 GitHub Release 分发，共享 dbt 项目在 shared/projects/，CLI 文档在 docs/CLI.md。",
+        "cite": [
+          "repo-readme@How databases work",
+          "projects-readme",
+          "docs-cli@Run tasks"
+        ]
+      },
+      {
+        "k": "结果留存",
+        "v": "CLI 支持把多次试跑保存为 production runs，并用 ade view / ade view runs 查看结果。",
+        "cite": [
+          "docs-cli@Save Results",
+          "docs-cli@View Results"
+        ]
+      }
+    ]
+  }
+}

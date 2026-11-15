@@ -1,0 +1,595 @@
+{
+  "id": "tau-voice",
+  "name": "τ-Voice",
+  "full_name": "τ-Voice: Benchmarking Full-Duplex Voice Agents on Real-World Domains",
+  "aliases": [
+    "Tau-Voice",
+    "τ-Voice Agentic Benchmark",
+    "tau-voice"
+  ],
+  "status": "active",
+  "categories": [
+    "agent",
+    "multimodal"
+  ],
+  "summary": "端到端语音智能体的客服任务完成率基准：把 τ²-bench 的 278 个英文客服任务搬进全双工语音，音频原生模型边听边说，按环境终态是否对上金标准判定「诉求有没有真被办成」，同时记录延迟、抢话、附和忽略等对话动态。论文口径下最好的语音模型在干净音频也只有 51%，纯文本 GPT-5 是 85%；换到真实通话（多口音、噪声、打断）再掉 12pp 到 38%。",
+  "interpretation": "分数是 pass@1 任务完成率（百分比，越高越好），必须和评测条件一起读：干净音频 51% 的模型换到 Realistic（多口音、背景噪声、信道退化、自然轮换）会掉 12pp 到 38%，只保留文本 SOTA 的 30–45%。还要分清两套口径——论文是 2025-12 / 2026-02 三个音频原生模型在 voice-v1 帧上的自测；Artificial Analysis 2026-10-13 快照里的 56.5%–74.5% 是另一批模型、按「有则 3 次试验取平均」统计，两者不能直接比。最后，完成率高不代表通话体验好：论文里没有任何一家在延迟、响应、抢话、选择性四项上全优。",
+  "measures": [
+    {
+      "area": "多轮客服任务完成",
+      "focus": "航空 / 零售 / 电信三域，按域政策引导多轮对话并调用工具，把环境（数据库）改到唯一正确的终态；成功由终态与金标准逐项比对确定性判定",
+      "share": "主指标（pass@1）",
+      "format": "每任务单次尝试、二值判定",
+      "cite": [
+        "paper-tau-voice@§4.5 Metrics",
+        "paper-tau-voice@§4.1 Domains and Tasks"
+      ]
+    },
+    {
+      "area": "全双工对话动态",
+      "focus": "响应率 / 让位率、响应延迟 / 让位延迟、agent 抢话率、能否正确忽略附和、口头禅与非指向言语",
+      "share": "副指标，Realistic 条件下测，与完成率并列报告",
+      "format": "模拟通话中逐回合统计，聚合成 4 个分数",
+      "cite": [
+        "paper-tau-voice@§4.5 Metrics",
+        "paper-tau-voice@§5.1 Quantitative Results"
+      ]
+    },
+    {
+      "area": "真实音频环境鲁棒性",
+      "focus": "多口音、室内外背景噪声、突发声、帧丢失与闷音等信道退化，以及咳嗽、「hold on」等非指向言语和 LLM 驱动的打断 / 附和",
+      "share": "以条件维度呈现：Clean vs Realistic，另在 Retail 上拆 +Noise / +Accents / +Turn-taking 三个单因子消融",
+      "format": "同一批任务换音频前端与轮换策略",
+      "cite": [
+        "paper-tau-voice@§4.3 Evaluation Conditions",
+        "paper-tau-voice@§5.1 Quantitative Results"
+      ]
+    },
+    {
+      "area": "失败归因",
+      "focus": "把每次失败归到 agent 侧还是用户模拟器侧，并区分逻辑 / 转写 / 幻觉 / 无响应 / 超时 / 提前终止",
+      "share": "定性分析，不进入打分",
+      "format": "两名标注员独立标注 + 讨论调解",
+      "cite": [
+        "paper-tau-voice@§5.2 Qualitative Error Analysis"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "语音合成音质与自然度（语气、自然感），也不测用户满意度或部分完成——只有「终态完全正确」算成功",
+      "cite": [
+        "paper-tau-voice@§6.1 Limitations"
+      ]
+    },
+    {
+      "text": "ASR 单独的字错率；转写能力只在「认证时听错名字 / 邮箱导致任务失败」这一路径里间接体现",
+      "cite": [
+        "paper-tau-voice@§5.2 Qualitative Error Analysis"
+      ]
+    },
+    {
+      "text": "非英语与非真人语音：全 benchmark 仅英文、全部走 TTS，口音结论论文自标为指示性",
+      "cite": [
+        "paper-tau-voice@§6.1 Limitations"
+      ]
+    },
+    {
+      "text": "工具调用延迟、级联 ASR→LLM→TTS 架构差异，以及真人用户的耐心与记忆差异",
+      "cite": [
+        "paper-tau-voice@§6.2 Future Work",
+        "paper-tau-voice@§6.1 Limitations"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 278,
+    "splits": [
+      "Retail 114 题（主评测域）",
+      "Airline 50 题",
+      "Telecom 114 题"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "沿用 τ²-bench 的客服场景任务，配可控语音用户模拟器重放",
+    "public_sample": true,
+    "totals": "278 个英文任务 = Retail 114 + Airline 50 + Telecom 114；每家模型跑 3 域 × 2 条件（Clean / Realistic），Retail 额外跑 3 个单因子消融；论文对 Retail 每个条件重复 2 次独立运行用于显著性检验。",
+    "cite": [
+      "paper-tau-voice@§4.1 Domains and Tasks",
+      "paper-tau-voice@§5.1 Quantitative Results"
+    ],
+    "construction": [
+      {
+        "k": "任务来源",
+        "text": "三域任务集从 τ²-bench 沿用。Retail 114 题覆盖退货、换货、取消与订单修改，常在同一通对话里叠加，还要求处理说到一半改主意的客户；Airline 50 题覆盖改签、取消、升舱与订座修改，需校验乘客信息与票价规则；Telecom 114 题覆盖套餐变更、账单查询、业务开通与账户修改，都涉及认证与政策校验。",
+        "cite": [
+          "paper-tau-voice@§4.1 Domains and Tasks",
+          "paper-tau-voice@References"
+        ]
+      },
+      {
+        "k": "主域选择",
+        "text": "Retail 被定为主评测域，因为它重度依赖槽位填充（收集姓名、邮箱、订单号、地址），而端到端语音系统在这里已知吃力；Airline 与 Telecom 作为支撑域考察泛化。",
+        "cite": [
+          "paper-tau-voice@§4.1 Domains and Tasks"
+        ]
+      },
+      {
+        "k": "被测模型",
+        "text": "三个音频原生提供方，发布于 2025 年末至 2026 年初；论文 §4.2 的 Table 3 列出 gpt-realtime-1.5（Feb 2026）、gemini-live-2.5-flash-native-audio（Dec 2025）、grok-voice-agent（Dec 2025）。全部使用同一套系统提示，外加语音特化指引：收集姓名 / 邮箱 / ID 时要求客户逐字母拼写，认证失败时再明确要一次拼写。",
+        "cite": [
+          "paper-tau-voice@§4.2 Models"
+        ]
+      },
+      {
+        "k": "用户模拟",
+        "text": "可控语音用户模拟器：按 persona 生成口音与说话风格，用 ElevenLabs v3 以 24kHz 合成语音，再混入背景噪声、突发声、咳嗽与「hold on」等非指向言语；轮换由可配置阈值加 LLM 决策共同驱动。",
+        "cite": [
+          "paper-tau-voice@§4.4 Simulation Parameters",
+          "paper-tau-voice@§4.3 Evaluation Conditions"
+        ]
+      },
+      {
+        "k": "判定方式",
+        "text": "任务完全可验证：成功由「环境终态（如数据库记录）与金标准逐项比对」确定性判定，报告 pass@1——单次尝试内完成的任务比例。",
+        "cite": [
+          "paper-tau-voice@§4.5 Metrics"
+        ]
+      },
+      {
+        "k": "可复现性",
+        "text": "每任务固定随机种子以复现音效排程（噪声时机、帧丢失），LLM 响应本身仍不确定。关键参数：tick 200ms、单通上限 1200s、用户模拟器 LLM 为 GPT-4.1、TTS 为 ElevenLabs v3 @24kHz、每 2s 检查一次打断与附和。",
+        "cite": [
+          "paper-tau-voice@§4.4 Simulation Parameters"
+        ]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "每个音频原生模型在同一批 278 个英文客服任务上，分别在 Clean 与 Realistic 两种语音复杂度条件下各跑一遍。Clean 模拟理想电话场景：清晰美式口音、无背景噪声、无用户打断。Realistic 反映真实通话：多口音、环境噪声（室内外背景、突发声）、信道退化（帧丢失、闷音）与自然轮换行为（打断、附和、口头禅、非指向言语）。为拆分每个因素的贡献，Retail 上另跑三个单因子消融（+噪声 / +口音 / +轮换）。判定以环境终态对金标准为准，报告 pass@1。",
+    "cite": [
+      "paper-tau-voice@§4.3 Evaluation Conditions",
+      "paper-tau-voice@§4.5 Metrics"
+    ],
+    "variants": [
+      {
+        "text": "Clean：理想电话场景，清晰美式口音，无背景噪声、无用户打断",
+        "cite": [
+          "paper-tau-voice@§4.3 Evaluation Conditions"
+        ]
+      },
+      {
+        "text": "Realistic：全部效果叠加——多口音、环境噪声、信道退化与自然轮换行为",
+        "cite": [
+          "paper-tau-voice@§4.3 Evaluation Conditions"
+        ]
+      },
+      {
+        "text": "单因子消融（仅 Retail）：+Noise / +Accents / +Turn-taking，各自只加一类效果，用于定位哪个因素最伤",
+        "cite": [
+          "paper-tau-voice@§4.3 Evaluation Conditions",
+          "paper-tau-voice@§5.1 Quantitative Results"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "task-completion",
+      "name": "任务完成率（pass@1）",
+      "direction": "越高越好",
+      "description": "单次尝试内把环境改到金标准终态的任务比例；论文按 Clean / Realistic 与三域分别报告。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper-tau-voice@§4.5 Metrics"
+      ]
+    },
+    {
+      "id": "responsiveness",
+      "name": "响应性 Responsiveness",
+      "direction": "越高越好",
+      "description": "响应率 RR（用户说完得到回复的轮次比例）与让位率 RY（被打断后 2 秒内让出的比例）的均值。",
+      "cite": [
+        "paper-tau-voice@§4.5 Metrics"
+      ]
+    },
+    {
+      "id": "latency",
+      "name": "延迟 Latency",
+      "direction": "越低越好",
+      "description": "响应延迟 LR（用户话音结束到 agent 开口）与让位延迟 LY（被打断后停止说话）的均值，Table 8 以秒报告。",
+      "cite": [
+        "paper-tau-voice@§4.5 Metrics",
+        "paper-tau-voice@Table 8"
+      ]
+    },
+    {
+      "id": "interrupt",
+      "name": "抢话率 Interrupt",
+      "direction": "越低越好",
+      "description": "agent 在用户说完前就开口的轮次比例；超过 100% 表示平均每轮抢话多次。",
+      "cite": [
+        "paper-tau-voice@§4.5 Metrics"
+      ]
+    },
+    {
+      "id": "selectivity",
+      "name": "选择性 Selectivity",
+      "direction": "越高越好",
+      "description": "正确忽略附和（SBC）、口头禅（SVT）与非指向言语（SND）三项的均值——不接不该接的话。",
+      "cite": [
+        "paper-tau-voice@§4.5 Metrics"
+      ]
+    }
+  ],
+  "versions": [
+    {
+      "id": "tau2-bench",
+      "date": "2025-06",
+      "label": "τ²-bench（Barres et al. 2025，arXiv:2506.07982）——τ-Voice 的任务集与终态判定口径的来源",
+      "cite": [
+        "paper-tau-voice@References",
+        "paper-tau-voice@摘要"
+      ]
+    },
+    {
+      "id": "tau3-bench-v1",
+      "date": "2026-03",
+      "label": "τ³-bench v1.0：首次加入语音全双工评测、banking_knowledge 域与 75+ 处任务修复",
+      "cite": [
+        "repo-tau2-bench@Previous release: τ³-bench (v1.0)"
+      ]
+    },
+    {
+      "id": "paper-v1",
+      "date": "2026-03-14",
+      "label": "τ-Voice 论文首版（arXiv:2603.13686v1，Preprint. March 17, 2026.）：278 任务、3 个音频原生模型、Clean / Realistic 两条件",
+      "cite": [
+        "paper-tau-voice@标题与作者"
+      ]
+    },
+    {
+      "id": "tau-bench-2.0",
+      "date": "2026-07-15",
+      "label": "τ-bench 2.0 / v1.0.1（CHANGELOG 标注 1.0.1 为 2026-07-15）：修复 banking_knowledge 评分，1.0.1 之前的结果在该域不可比；语音默认值改为用户模拟器 gpt-5.5（原 gpt-4.1）、通话上限 2400 秒（原 1200）、agent 音色 marin（原 alloy）；1.x 与 2.0 结果分列不同榜单页，2.0 英文运行与 1.0.1 输入不完全一致",
+      "cite": [
+        "repo-tau2-bench@Comparing with v1.0.1",
+        "repo-tau2-bench@Overview"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "仅英文、全程 TTS",
+      "impact": "口音结论建立在 TTS persona 上，不能外推到真人语音或其他语言；论文自己标注为「指示性而非确定性」。xAI 因口音掉 18pp 这类结论尤其要谨慎对待。",
+      "severity": "高",
+      "response": "论文在 §6.1 明确该边界；把口音差异当方向性信号，换语言或真人语音需重测。",
+      "reader": "看到「xAI 口音掉 18pp」时，先确认自己面对的是不是英文 TTS 场景。",
+      "cite": [
+        "paper-tau-voice@§6.1 Limitations",
+        "paper-tau-voice@§5.1 Quantitative Results"
+      ]
+    },
+    {
+      "issue": "跨口径不可比",
+      "impact": "论文自测（2025-12 / 2026-02 三个模型，voice-v1 帧）与 Artificial Analysis 2026-10-13 快照（另一批模型，3 次试验取平均、部分仅 1–2 次）是两套数字，直接对比会得出错误结论。",
+      "severity": "高",
+      "response": "引用时标明来源、快照日期与试验次数；不要把两套数字混算或排名。",
+      "reader": "看到 51% 和 71.6% 时，先问这是哪个口径、哪一批模型。",
+      "cite": [
+        "aa-speech-to-speech@Agentic Performance (𝜏-Voice)",
+        "x-news-grok-voice-3@Speech-to-speech benchmark comparison",
+        "paper-tau-voice@§5.1 Quantitative Results"
+      ]
+    },
+    {
+      "issue": "用户模拟器比真人更耐心",
+      "impact": "模拟器记忆完美、工具调用瞬时，p95 处理时间约 1.5 秒；真人更不耐躁、会重复、会中途放弃，真实完成率可能更低。",
+      "severity": "中",
+      "response": "论文用人工 5 秒响应延迟验证过，未观察到 agent 行为异常；仍应把绝对水位当上界参考。",
+      "reader": "不要把 51% 当成生产环境里的真实解决率。",
+      "cite": [
+        "paper-tau-voice@§6.1 Limitations"
+      ]
+    },
+    {
+      "issue": "转写注入旁路了 agent 侧 ASR",
+      "impact": "用户模拟器直接吃 agent 的转写文本而非重新识别其语音，测不到「用户能不能听懂 agent」这一环。",
+      "severity": "中",
+      "response": "91 次抽样中标注员认为 agent 语音 100% 可理解，论文判断该简化影响很小。",
+      "reader": "涉及 agent 发音清晰度的结论不在本 benchmark 覆盖范围内。",
+      "cite": [
+        "paper-tau-voice@§6.1 Limitations"
+      ]
+    },
+    {
+      "issue": "不测主观体验与部分完成",
+      "impact": "没有音质、自然度、满意度，也没有「做了一半」的中间分；一个把三件事办成两件的通话与全失败的会话同分。",
+      "severity": "中",
+      "response": "配合 Full-Duplex Bench、EVA-Bench 等体验向 benchmark 一起读。",
+      "reader": "分低不一定体验差，分高也不代表客户满意。",
+      "cite": [
+        "paper-tau-voice@§6.1 Limitations"
+      ]
+    },
+    {
+      "issue": "失败归因为人工定性标注",
+      "impact": "79% / 90% 的 agent 归因比例来自两名标注员对失败抽样的判断，带主观性。",
+      "severity": "低",
+      "response": "两人独立标注，一致率 84%（76/91），分歧经讨论达到 100%。",
+      "reader": "把这个比例当量级参考，不要当精确测量。",
+      "cite": [
+        "paper-tau-voice@§5.2 Qualitative Error Analysis"
+      ]
+    }
+  ],
+  "notes": "证据账本中 28 处引用；核心来源为 τ-Voice 论文（arXiv:2603.13686）与 sierra-research/tau2-bench 仓库，公开水位用 Artificial Analysis Speech-to-Speech 页与 xAI Grok Voice 3.0 发布文交叉核对。原 Google blog 链接（blog.google/technology/ai/gemini-3-8-live/）已 404，本版不再作为来源。",
+  "official_sources": [
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2603.13686"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/sierra-research/tau2-bench"
+    },
+    {
+      "kind": "leaderboard",
+      "url": "https://artificialanalysis.ai/speech-to-speech"
+    },
+    {
+      "kind": "announcement",
+      "url": "https://x.ai/news/grok-voice-3"
+    }
+  ],
+  "related_benchmarks": [
+    "full-duplex-bench",
+    "bigbench-audio",
+    "eva-bench"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-13",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      {
+        "id": "paper-tau-voice",
+        "kind": "paper",
+        "title": "τ-Voice: Benchmarking Full-Duplex Voice Agents on Real-World Domains（arXiv:2603.13686v1）",
+        "url": "https://arxiv.org/abs/2603.13686",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "repo-tau2-bench",
+        "kind": "repo",
+        "title": "sierra-research/tau2-bench README（τ-bench 2.0）",
+        "url": "https://github.com/sierra-research/tau2-bench",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "aa-speech-to-speech",
+        "kind": "leaderboard",
+        "title": "Artificial Analysis — Speech to Speech（含 𝜏-Voice 列）",
+        "url": "https://artificialanalysis.ai/speech-to-speech",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "x-news-grok-voice-3",
+        "kind": "announcement",
+        "title": "Introducing Grok Voice 3.0（xAI，2026-10-14）",
+        "url": "https://x.ai/news/grok-voice-3",
+        "accessed": "2026-11-13"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Sierra.ai 与 Princeton Language and Intelligence（arXiv:2603.13686v1）",
+        "cite": [
+          "paper-tau-voice@标题与作者"
+        ]
+      },
+      "first_release": {
+        "v": "2026-03-14（arXiv v1；论文标注 Preprint. March 17, 2026.）",
+        "cite": [
+          "paper-tau-voice@标题与作者"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "paper-tau-voice@摘要",
+        "paper-tau-voice@§5.1 Quantitative Results",
+        "paper-tau-voice@§6.3 Conclusion"
+      ],
+      "interpretation": [
+        "paper-tau-voice@§5.1 Quantitative Results",
+        "aa-speech-to-speech@Agentic Performance (𝜏-Voice)",
+        "x-news-grok-voice-3@Agentic Performance vs. Speed"
+      ]
+    },
+    "problem": {
+      "text": "语音智能体已经在生产环境接听真实来电，但此前的评测把两件事拆开了：一类只测对话动态（打断、轮换、附和），一类只在文本里测任务完成与工具调用。τ-Voice 第一次把「可验证终态的接地任务 + 全双工交互 + 真实音频」放进同一帧，因此可以直接比较语音和文本的完成率，并单独看音频复杂度造成了多少损失。",
+      "cite": [
+        "paper-tau-voice@摘要",
+        "paper-tau-voice@§1.2 Our Contributions"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "论文口径 · 最好成绩（Clean）",
+        "value": "51%",
+        "note": "xAI 在三域合计上的 pass@1；同表纯文本 GPT-5 为 85%、GPT-4.1 为 54%，最好语音比 GPT-5 掉 34pp。",
+        "cite": [
+          "paper-tau-voice@§5.1 Quantitative Results",
+          "paper-tau-voice@Table 6"
+        ]
+      },
+      {
+        "label": "论文口径 · 最难条件（Realistic）",
+        "value": "38%",
+        "note": "同一个模型换到 Realistic 再掉 12pp；三家语音在 Realistic 下落在 26–38%。",
+        "cite": [
+          "paper-tau-voice@§5.1 Quantitative Results",
+          "paper-tau-voice@摘要"
+        ]
+      },
+      {
+        "label": "公开榜单快照（2026-10-13）",
+        "value": "74.5%",
+        "note": "Artificial Analysis 𝜏-Voice 列最高可见值：GPT-Live-1 (Astra, Medium) 74.5%；Grok Voice 3.0 71.6%、Gemini 3.8 Live (Ext. Thinking, High) 68.6%、Grok Voice 2.0 56.5%。另一套口径，勿与论文数字混比。",
+        "cite": [
+          "x-news-grok-voice-3@Agentic Performance vs. Speed",
+          "aa-speech-to-speech@Agentic Performance (𝜏-Voice)"
+        ]
+      },
+      {
+        "label": "文本上限参照",
+        "value": "85%",
+        "note": "GPT-5 (reasoning) 在同一批任务上的文本 pass@1；最好的语音只保留文本 SOTA 的 30–45%。",
+        "cite": [
+          "paper-tau-voice@摘要",
+          "paper-tau-voice@Table 6"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "分高 ≠ 通话体验好。论文里三家各有一项垫底：OpenAI 延迟 0.90s、响应率 100%，但选择性只有 6%（几乎对所有附和、口头禅和非指向言语都作出反应）；xAI 选择性 57% 却抢话率 84%；Google 抢话率最低（21%）却漏掉近三分之一轮次（69%）。没有任何一家同时做到可靠响应与恰当克制。",
+        "cite": [
+          "paper-tau-voice@§5.1 Quantitative Results",
+          "paper-tau-voice@Table 8"
+        ]
+      },
+      {
+        "text": "论文的 51% / 38% 和 Artificial Analysis 的 56.5%–74.5% 不是同一口径。前者是 2025-12 / 2026-02 三个音频原生模型在 voice-v1 帧上的论文自测；后者是 2026-10-13 第三方快照、另一批模型，「有则 3 次试验取平均」，其中 GPT-Live-1 (Astra, medium)、GPT-Realtime-2 (Minimal) 只有 1 次试验。",
+        "cite": [
+          "aa-speech-to-speech@Agentic Performance (𝜏-Voice)",
+          "paper-tau-voice@§5.1 Quantitative Results"
+        ]
+      },
+      {
+        "text": "「Speech-to-Speech 指数第一」不等于 𝜏-Voice 第一。该指数是语音推理（Big Bench Audio）、𝜏-Voice、竞技场偏好、任务成功率四分的等权合成，且只收录四项数据齐全的模型；xAI 的 86.9 是合成分，不是 𝜏-Voice 成绩。",
+        "cite": [
+          "x-news-grok-voice-3@The Most Accurate Voice Model",
+          "aa-speech-to-speech@Speech to Speech Index"
+        ]
+      },
+      {
+        "text": "不要把三个单因子消融值直接相加去推 Realistic。Google 近乎可加（单因子合计 −16pp，完整 Realistic −15pp），xAI 明显不可加（合计 −16pp，完整只 −10pp——口音单独 −18pp，但加上噪声与轮换反而部分补偿）。",
+        "cite": [
+          "paper-tau-voice@§5.1 Quantitative Results"
+        ]
+      },
+      {
+        "text": "「完成率低」不等于「ASR 差」。逻辑错误在 Voice-Fragile 队列里最常见（13/43），转写失败集中在认证环节；论文判断语音-文本差距不纯粹是识别问题，推理与 grounding 挑战独立于音质存在。",
+        "cite": [
+          "paper-tau-voice@§5.2 Qualitative Error Analysis"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方与作者",
+        "v": "Sierra.ai（San Francisco）与普林斯顿大学 Language and Intelligence；作者 Soham Ray、Keshav Dhandhania、Victor Barres、Karthik Narasimhan。",
+        "cite": [
+          "paper-tau-voice@标题与作者"
+        ]
+      },
+      {
+        "k": "论文与引用",
+        "v": "arXiv:2603.13686v1 [cs.SD]，2026-03-14 提交，Preprint. March 17, 2026.；官方 BibTeX 引用键 ray2026tauvoicebenchmarkingfullduplexvoice。",
+        "cite": [
+          "paper-tau-voice@标题与作者",
+          "repo-tau2-bench@Citation"
+        ]
+      },
+      {
+        "k": "前身",
+        "v": "τ²-bench（Barres et al., 2025，arXiv:2506.07982）——τ-Voice 沿用其任务集与终态判定；τ³-bench v1.0 首次加入语音全双工评测与 banking_knowledge 域。",
+        "cite": [
+          "paper-tau-voice@References",
+          "repo-tau2-bench@Previous release: τ³-bench (v1.0)"
+        ]
+      },
+      {
+        "k": "开源实现与榜单",
+        "v": "代码与任务在 github.com/sierra-research/tau2-bench；对外榜单在 taubench.com，1.x 与 2.0 分列不同页。",
+        "cite": [
+          "repo-tau2-bench@Leaderboard",
+          "repo-tau2-bench@Comparing with v1.0.1"
+        ]
+      },
+      {
+        "k": "第三方口径",
+        "v": "Artificial Analysis 的 Speech-to-Speech 指数把语音推理（Big Bench Audio）、𝜏-Voice、竞技场偏好、任务成功率等权合成，只收录四项齐全的模型，图表在有条件时取 3 次试验平均；其 𝜏-Voice 定义为「扮演客服 agent 解决复刻客服场景的比例，每题有唯一正确数据库终态」。",
+        "cite": [
+          "aa-speech-to-speech@Speech to Speech Index",
+          "aa-speech-to-speech@Agentic Performance (𝜏-Voice)"
+        ]
+      },
+      {
+        "k": "厂商口径",
+        "v": "xAI 在 Grok Voice 3.0 发布文中引用 Artificial Analysis 2026-10-13 数据：𝜏-Voice 71.6%，称「与 GPT-Live-1 (Astra) 相当但延迟低 40%」；同文称其在 Speech-to-Speech 指数上以 86.9 排第一。",
+        "cite": [
+          "x-news-grok-voice-3@Speech-to-speech benchmark comparison",
+          "x-news-grok-voice-3@The Most Accurate Voice Model"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-03-17",
+        "columns": [
+          "域",
+          "文本 GPT-5（GPT-4.1）",
+          "Google Clean / Realistic",
+          "OpenAI Clean / Realistic",
+          "xAI Clean / Realistic"
+        ],
+        "rows": [
+          [
+            "合计",
+            "85%（54%）",
+            "31% / 26%",
+            "49% / 35%",
+            "51% / 38%"
+          ],
+          [
+            "Retail（主域）",
+            "81%（76%）",
+            "45% / 30%",
+            "71% / 45%",
+            "48% / 39%"
+          ],
+          [
+            "Airline",
+            "83%（53%）",
+            "28% / 30%",
+            "48% / 40%",
+            "46% / 36%"
+          ],
+          [
+            "Telecom",
+            "90%（34%）",
+            "20% / 18%",
+            "28% / 21%",
+            "58% / 40%"
+          ]
+        ]
+      },
+      "cite": [
+        "paper-tau-voice@Table 6"
+      ]
+    }
+  }
+}

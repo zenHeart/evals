@@ -1,0 +1,396 @@
+{
+  "id": "hle-vl",
+  "name": "HLE-VL",
+  "full_name": "Humanity's Last Exam - Vision-Language（HLE-VL）",
+  "aliases": ["Humanity's Last Exam (VL)", "HLE VL", "WebWatcher HLE-VL"],
+  "status": "active",
+  "categories": ["multimodal", "knowledge"],
+  "summary": "HLE-VL 是 Humanity's Last Exam（HLE）的视觉语言子集：WebWatcher 论文从 HLE 的 2,500 道专家原创题中挑出 330 道多模态题，题干由图片承载，配合代码解释器、网页访问、OCR 等工具，考察「从图里读出题目 + 调动冷门学科知识 + 把检索串成多步链路」一体的深度研究能力。它没有独立官网和独立榜单，公开成绩几乎全部来自 WebWatcher 论文及其模型卡，以及 2026 年 Qwen3.8-Max 发布表（第三方转录）。",
+  "interpretation": "分数同时取决于三件事：能否看懂图片里的题干、能否调动冷门学科知识、能否把工具串成多步链路。只有 330 题，单题约值 0.30 个百分点，差 1 分约等于 3 道题，随机波动不小；而各家口径（带不带工具、用谁的 harness、取哪几次运行）差别极大，论文口径与厂商口径相差近 40 个百分点，跨报告比较基本无效。",
+  "measures": [
+    {
+      "area": "多模态题干理解",
+      "focus": "题干以图片承载，模型必须先看懂图里的问题；论文附录样例是一道 KenKen 谜题，要求给出解完后顶行应出现的四个数",
+      "share": "100%（330 道全部为多模态题）",
+      "format": "答案格式随题而定，样例为四个数字连写",
+      "cite": ["arxiv-2508-05748@附录 D.4", "arxiv-2508-05748@附录 D.6"]
+    },
+    {
+      "area": "跨学科学术知识",
+      "focus": "题目取自 HLE 专家题库，覆盖生物、化学、计算机/AI、工程、人文、数学、物理等学科（论文 Table 1 即按学科分列）",
+      "share": "各学科题量未披露",
+      "format": "母基准 HLE 含选择题与精确匹配短答案，子集题型构成未披露",
+      "cite": ["arxiv-2508-05748@附录 D.4", "arxiv-2501-14249@摘要"]
+    },
+    {
+      "area": "工具增强的多步检索与推理",
+      "focus": "可调用代码解释器、网页文本搜索、网页图片搜索、网页访问、OCR 五类工具，最多 15 次工具调用，需自行规划检索链路",
+      "share": "未披露（论文未给出各工具调用占比）",
+      "format": "ReAct 式多轮「思考—调用工具—观察」",
+      "cite": ["arxiv-2508-05748@附录 D.1", "arxiv-2508-05748@附录 D.2"]
+    },
+    {
+      "area": "判分方式",
+      "focus": "用 HLE 官方提示词让 LLM 当裁判，与标准答案比对（允许很小数值误差），并抽取 0%–100% 置信度",
+      "share": "全部题目",
+      "format": "二元正确判定 + 置信度",
+      "cite": ["arxiv-2508-05748@附录 D.5"]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "纯文本超难推理（那部分见 hlehle：HLE-VL 只取多模态题）",
+      "cite": ["arxiv-2508-05748@附录 D.4", "arxiv-2501-14249@摘要"]
+    },
+    {
+      "text": "常规难度的视觉问答或图像识别（题目是专家级学科题，不是日常 VQA）",
+      "cite": ["arxiv-2508-05748@附录 D.4"]
+    },
+    {
+      "text": "开放式科研与主观创作（每题有唯一可验证答案，母基准定位是闭卷学术考试）",
+      "cite": ["arxiv-2501-14249@摘要", "arxiv-2508-05748@附录 D.4"]
+    },
+    {
+      "text": "带工具与不带工具的能力拆分（论文按范式分组报告，没有逐题归因工具增益）",
+      "cite": ["arxiv-2508-05748@§4.1", "arxiv-2508-05748@Table 1"]
+    }
+  ],
+  "dataset": {
+    "sample_count": 330,
+    "splits": ["330 道多模态题（论文未说明是否另有留存或私有集）"],
+    "languages": ["en"],
+    "source_type": "human_curated",
+    "public_sample": true,
+    "multiple_choice_share": "未披露（母基准 HLE 含选择题与精确匹配题，但 WebWatcher 论文未给出子集题型构成）",
+    "multimodal_share": "100%",
+    "totals": "330 道多模态题，自 HLE 的 2,500 道专家原创题抽取 · 各学科题量未披露 · 题型构成（选择/精确匹配占比）未披露 · 子集挑选标准未披露 · 论文未说明是否另有留存集 · 题目语言为英文",
+    "cite": ["arxiv-2508-05748@附录 D.4", "arxiv-2501-14249@摘要"],
+    "construction": [
+      {
+        "k": "母基准",
+        "text": "HLE 由全球近 1,000 名专家（500+ 机构、50 国）撰写，共 2,500 题；每题答案唯一、可自动判分、且无法靠联网检索快速得到。",
+        "cite": ["arxiv-2501-14249@§3.1", "arxiv-2501-14249@摘要"]
+      },
+      {
+        "k": "子集划定",
+        "text": "WebWatcher 论文从中取 330 道多模态题组成 HLE-VL，用于评估视觉—语言联合推理；论文未说明抽取标准与学科配比。",
+        "cite": ["arxiv-2508-05748@附录 D.4"]
+      },
+      {
+        "k": "运行与数据",
+        "text": "官方模型卡要求把测试集预存到 infer/vl_search_r1/eval_data，HLE 数据文件名如 hle.jsonl，再运行 infer/scripts_eval/scripts/eval.sh。",
+        "cite": ["huggingface-alibaba-nlp-webwatcher-3@使用说明"]
+      },
+      {
+        "k": "工具集",
+        "text": "五类工具：代码解释器（执行 Python 做计算、数据分析或内容抽取）、网页文本搜索（取 Google 文本搜索前 10 条摘要）、网页图片搜索（按图取前 10 张图与描述，只能用一次）、网页访问（按给定目标返回网页摘要）、OCR（内部引擎抽取图中文字）。",
+        "cite": ["arxiv-2508-05748@附录 D.1"]
+      },
+      {
+        "k": "调用预算",
+        "text": "ReAct 框架基于 Qwen-Agent 实现，单轮工具调用不超过 15 次。",
+        "cite": ["arxiv-2508-05748@附录 D.2"]
+      },
+      {
+        "k": "公开程度",
+        "text": "母基准 HLE 在 lastexam.ai 公开，并保留私有留存集用于评估过拟合；WebWatcher 论文未单独发布 HLE-VL 子集清单。",
+        "cite": ["arxiv-2501-14249@摘要", "arxiv-2501-14249@§3"]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "pass_at_1",
+      "name": "Pass@1 准确率",
+      "direction": "越高越好",
+      "description": "单次生成即被判为正确的题目占比；论文给出的 Avg. 为三次推理轮次的平均",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["arxiv-2508-05748@§4.1", "arxiv-2508-05748@Table 1"]
+    },
+    {
+      "id": "pass_at_3",
+      "name": "Pass@3",
+      "direction": "越高越好",
+      "description": "官方模型卡提供 pass3.sh，用 LLM-as-judge 同时评估 Pass@3 与 Pass@1",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["huggingface-alibaba-nlp-webwatcher-3@使用说明"]
+    }
+  ],
+  "default_protocol": {
+    "raw": "模型以 ReAct 形式带五类工具多步求解，单轮最多 15 次工具调用；每个配置重复生成 k 次（temperature 0.6、top-p 0.95），报告 pass@k，论文表格里的 Avg. 是三次推理轮次的平均；答案正确性由 LLM-as-Judge 按 HLE 官方提示词判定（允许很小数值误差），并抽取 0%–100% 置信度。",
+    "cite": ["arxiv-2508-05748@§4.1", "arxiv-2508-05748@附录 D.5", "arxiv-2508-05748@附录 D.2"],
+    "variants": [
+      {
+        "text": "论文四种范式：Direct Inference（不用外部检索、直接答）、RAG Workflow、Reasoning Model（推理专用模型）、Open Source Agents（OmniSearch、WebWatcher-7B/32B）；Figure 1 注明其他模型均配 RAG workflow。",
+        "cite": ["arxiv-2508-05748@§4.1 基线", "arxiv-2508-05748@Figure 1"]
+      },
+      {
+        "text": "厂商发布表口径：Qwen3.8-Max 表的 HLE-VL 行为「w/ Tools」，即同时使用代码解释器（CI）与搜索；Gemini 3.1-Pro 与 GPT-5.6 Sol 的带工具分数经其官方原生工具调用 API 端到端测得。",
+        "cite": ["openlm-qwen38@多模态评测表脚注"]
+      },
+      {
+        "text": "同一模型 WebWatcher-32B 在论文里有 13.6% 与 18.2% 两个数，引用时须说明取哪一个（见「可信度与局限」）。",
+        "cite": ["arxiv-2508-05748@Table 1", "arxiv-2508-05748@§4.2"]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2025-08-07",
+      "label": "arXiv v1 首发（WebWatcher 论文，HLE-VL 随文定义）",
+      "cite": ["arxiv-2508-05748@版本历史"]
+    },
+    {
+      "id": "hf-card",
+      "date": "2025-08-27",
+      "label": "WebWatcher-32B 模型卡上线（GitHub 元数据 createdAt）",
+      "cite": ["huggingface-alibaba-nlp-webwatcher-3@元数据"]
+    },
+    {
+      "id": "v3",
+      "date": "2025-09-01",
+      "label": "论文修订为 v3（本页核对所用版本）",
+      "cite": ["arxiv-2508-05748@版本历史"]
+    },
+    {
+      "id": "qwen38-table",
+      "date": "2026-08-02",
+      "label": "Qwen3.8-Max 发布表出现 HLE-VL (w/ Tools) 行（第三方转录页标注 2026 Aug 2）",
+      "cite": ["openlm-qwen38@发布信息", "openlm-qwen38@多模态评测表脚注"]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "论文内部数字互相矛盾",
+      "impact": "同一模型 WebWatcher-32B：§4.2 正文与模型卡「Superior Performance」称达到 18.2% 的新 SOTA，而 Table 1 / Figure 1 与模型卡「Complex Reasoning」给的是 13.6%，相差 4.6 个百分点（约 15 个单题粒度）。Table 1 里 Gemini-2.5-Pro（15.8%）与 o4-mini（16.0%）也高于 13.6%，与「new state-of-the-art」表述冲突。此外模型卡列的基线 GPT-4o 9.8%、Gemini-2.5-flash 9.2%、Qwen2.5-VL-72B 8.6%，与 Table 1 的 RAG Workflow Avg（12.3 / 11.4 / 8.6）对不上，只有 Qwen2.5-VL-72B 相同；Figure 1 虽注明其他模型均配 RAG workflow，但图内数值在论文文本中不可机读，无法核对取自哪一组。",
+      "severity": "高",
+      "response": "本页两个数都列出并标注出处；涉及排序的结论暂以 Table 1 为准，等作者澄清或后续版本修订。",
+      "reader": "看到 18.2% 先确认它来自正文还是表格；跨报告排名在澄清前不要采信。",
+      "cite": ["arxiv-2508-05748@§4.2", "arxiv-2508-05748@Table 1", "huggingface-alibaba-nlp-webwatcher-3@模型卡", "arxiv-2508-05748@Figure 1"]
+    },
+    {
+      "issue": "题量小、口径不统一，跨报告不可比",
+      "impact": "330 题下单题约值 0.30 个百分点，1 分约等于 3 道题；论文的 Avg. 是三次推理轮次平均，厂商表是自家 harness 端到端测的带工具分数，两者相差近 40 个百分点（13.6% vs 52.2%），但不共享工具实现与运行配置，不能当成同一把尺子。",
+      "severity": "高",
+      "response": "本页把论文成绩与厂商自报分表列示并标注来源，不做跨源合并排名。",
+      "reader": "只在同一张表内部比大小；看到 13.6% 与 52.2% 时先分清是论文口径还是厂商口径。",
+      "cite": ["arxiv-2508-05748@附录 D.4", "arxiv-2508-05748@Table 1", "openlm-qwen38@多模态评测表脚注"]
+    },
+    {
+      "issue": "子集构建不透明 + 母题库答案质量存疑",
+      "impact": "论文未披露 330 题怎么挑、学科与题型如何配比，也无法确认是否与 HLE 公开集逐题对应；母基准 HLE 自身有答案质量争议——其参考文献记录有分析认为约 30% 的化学/生物答案可能有误。子集越小，这类错误对均值的拉动越明显。",
+      "severity": "中",
+      "response": "沿用母基准公开集与官方判分提示词；对单题层面的结论保持谨慎。",
+      "reader": "把 HLE-VL 当能力探针而非精确标尺；高分段几个百分点的差距不要过度解读。",
+      "cite": ["arxiv-2508-05748@附录 D.4", "arxiv-2501-14249@参考文献[47]"]
+    },
+    {
+      "issue": "命名与归属混乱",
+      "impact": "HLE-VL 不是官方发布的独立基准名，而是 WebWatcher 论文给表起的标题；官方模型卡把它误写成「Human Life Exam (HLE-VL)」（正确为 Humanity's Last Exam），且只列四个 benchmark，比论文 §4.1 的五个少 SimpleVQA。",
+      "severity": "低",
+      "response": "本页统一写作 HLE-VL 并在背景里说明出处；模型卡的误写在引文中原样保留以便核对。",
+      "reader": "看到「Human Life Exam」按 HLE-VL 理解即可，它不是另一个基准。",
+      "cite": ["arxiv-2508-05748@Table 1", "huggingface-alibaba-nlp-webwatcher-3@模型卡", "arxiv-2508-05748@§4.1"]
+    }
+  ],
+  "notes": "WebWatcher（阿里通义实验室）论文将 HLE-VL 列为核心评测之一；HLE-VL 是该论文从 HLE 2,500 题中取 330 道多模态题构成的子集。2026 年 Qwen3.8-Max 发布表出现 HLE-VL (w/ Tools) 行（52.2，w/ Tools），该表经第三方站点转录。",
+  "official_sources": [
+    { "kind": "paper", "url": "https://arxiv.org/abs/2508.05748" },
+    { "kind": "site", "url": "https://huggingface.co/Alibaba-NLP/WebWatcher-32B" },
+    { "kind": "site", "url": "https://qwen.ai/blog?id=qwen3.8" }
+  ],
+  "related_benchmarks": ["hlehle", "mmmu-pro", "zerobench", "bc-vl"],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "arxiv-2508-05748",
+        "kind": "paper",
+        "title": "WebWatcher: Breaking New Frontiers of Vision-Language Deep Research Agent（arXiv:2508.05748v3，2025-09-01）",
+        "url": "https://arxiv.org/abs/2508.05748",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "huggingface-alibaba-nlp-webwatcher-3",
+        "kind": "site",
+        "title": "WebWatcher-32B 模型卡（Hugging Face，createdAt 2025-08-27）",
+        "url": "https://huggingface.co/Alibaba-NLP/WebWatcher-32B",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "openlm-qwen38",
+        "kind": "site",
+        "title": "Qwen3.8-Max 发布公告转录页（openlm.ai，第三方转录，非官方一手页面）",
+        "url": "https://openlm.ai/qwen3.8/",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "arxiv-2501-14249",
+        "kind": "paper",
+        "title": "Humanity's Last Exam（arXiv:2501.14249v12，2026-10-19）",
+        "url": "https://arxiv.org/abs/2501.14249",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "阿里巴巴通义实验室（Tongyi Lab, Alibaba Group）",
+        "cite": ["arxiv-2508-05748@标题与作者"]
+      },
+      "first_release": {
+        "v": "2025-08-07（arXiv:2508.05748 v1）",
+        "cite": ["arxiv-2508-05748@版本历史"]
+      }
+    },
+    "cites": {
+      "summary": ["arxiv-2508-05748@附录 D.4", "arxiv-2501-14249@摘要", "openlm-qwen38@多模态评测表脚注"],
+      "interpretation": ["arxiv-2508-05748@附录 D.4", "arxiv-2508-05748@Table 1", "openlm-qwen38@多模态评测表脚注"]
+    },
+    "problem": {
+      "text": "现有深度研究 agent 大多只处理文本，忽略了真实世界里大量承载在图片中的信息；WebWatcher 要测的是「看懂图 + 检索 + 推理」一体的多模态深度研究能力，并回答在超难学科题上工具与训练能把模型推到多远。",
+      "cite": ["arxiv-2508-05748@§1", "arxiv-2508-05748@摘要", "arxiv-2501-14249@摘要"]
+    },
+    "ladder": [
+      {
+        "label": "论文：直接推理（无检索）",
+        "value": "2.8%–6.5%",
+        "note": "GPT-4o 6.5%、Qwen-2.5-VL-72B 4.9%、Gemini-2.5-flash 4.9%、Claude-3.7-Sonnet 2.8%；论文称这一档 consistently under…perform，均分低于 10%。",
+        "cite": ["arxiv-2508-05748@Table 1", "arxiv-2508-05748@§4.2"]
+      },
+      {
+        "label": "论文：RAG Workflow 基线",
+        "value": "3.5%–12.3%",
+        "note": "Claude-3.7-Sonnet 3.5% 最低，GPT-4o 12.3% 最高，Qwen-2.5-VL-72B 8.6%。",
+        "cite": ["arxiv-2508-05748@Table 1"]
+      },
+      {
+        "label": "论文：推理专用模型",
+        "value": "15.8%–16.0%",
+        "note": "Gemini-2.5-Pro 15.8%、o4-mini 16.0%，是 Table 1 中最高的一档。",
+        "cite": ["arxiv-2508-05748@§4.2", "arxiv-2508-05748@Table 1"]
+      },
+      {
+        "label": "论文：开源 agent（WebWatcher）",
+        "value": "10.6%–13.6%",
+        "note": "WebWatcher-7B 10.6%、WebWatcher-32B 13.6%（Table 1）；正文另称 WebWatcher-32B 达 18.2%，两个数不一致，见「可信度与局限」。",
+        "cite": ["arxiv-2508-05748@Table 1", "arxiv-2508-05748@§4.2"]
+      },
+      {
+        "label": "厂商自报（第三方转录）",
+        "value": "52.2%",
+        "note": "Qwen3.8-Max 表 HLE-VL (w/ Tools) 行；同表 Qwen 3.7-Plus 25.6%、GPT-5.6 Sol 51.2%、Gemini 3.1-Pro 43.9%。口径是代码解释器 + 搜索、经各家原生工具 API 端到端测得，与论文口径不可比。",
+        "cite": ["openlm-qwen38@多模态评测表脚注", "openlm-qwen38@多模态评测表"]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      },
+      {
+        "label": "单题粒度参考",
+        "value": "约 0.30 个百分点/题",
+        "note": "按 330 题折算（1/330），是本站给出的刻度参考，不是官方上限，也不是随机基线。",
+        "cite": ["arxiv-2508-05748@附录 D.4"]
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把厂商自报的 52.2% 和论文的 13.6% 排进同一张榜——两者工具实现、harness、运行次数都不同，近 40 个百分点的差距主要来自口径差异。",
+        "cite": ["openlm-qwen38@多模态评测表脚注", "arxiv-2508-05748@Table 1"]
+      },
+      {
+        "text": "把 18.2% 和 13.6% 当成两个模型或两个版本的成绩——它们都指 WebWatcher-32B，只是论文正文与表格自相矛盾。",
+        "cite": ["arxiv-2508-05748@§4.2", "arxiv-2508-05748@Table 1"]
+      },
+      {
+        "text": "把 HLE-VL 的分数当成 HLE 全集的成绩——HLE-VL 只是其中 330 道多模态题，纯文本分数要看 hlehle。",
+        "cite": ["arxiv-2508-05748@附录 D.4", "arxiv-2501-14249@摘要"]
+      },
+      {
+        "text": "看到模型卡写「Human Life Exam」就以为是个新基准——那是 Humanity's Last Exam 的误写，指的仍是 HLE-VL。",
+        "cite": ["huggingface-alibaba-nlp-webwatcher-3@模型卡"]
+      },
+      {
+        "text": "把 330 题上 2–3 个百分点的起伏当成能力变化——单题约值 0.30 个百分点，这点差距只有 6–10 道题。",
+        "cite": ["arxiv-2508-05748@附录 D.4"]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "阿里巴巴通义实验室（Tongyi Lab, Alibaba Group）",
+        "cite": ["arxiv-2508-05748@标题与作者"]
+      },
+      {
+        "k": "核心作者",
+        "v": "Xinyu Geng、Peng Xia、Zhen Zhang（共同一作），Xinyu Wang、Qiuchen Wang、Ruixue Ding、Chenxi Wang、Jialong Wu、Yida Zhao、Kuan Li，资深/通讯作者 Yong Jiang、Pengjun Xie、Fei Huang、Jingren Zhou",
+        "cite": ["arxiv-2508-05748@标题与作者"]
+      },
+      {
+        "k": "载体论文",
+        "v": "WebWatcher: Breaking New Frontiers of Vision-Language Deep Research Agent（arXiv:2508.05748，v3，2025-09-01 修订）",
+        "cite": ["arxiv-2508-05748@标题", "arxiv-2508-05748@版本历史"]
+      },
+      {
+        "k": "母基准",
+        "v": "Humanity's Last Exam（HLE，arXiv:2501.14249 v12，2026-10-19）：2,500 道专家原创题，近 1,000 名贡献者、500+ 机构、50 国，公开集在 lastexam.ai，另有私有留存集",
+        "cite": ["arxiv-2501-14249@§3.1", "arxiv-2501-14249@摘要"]
+      },
+      {
+        "k": "官方实现与数据",
+        "v": "模型卡要求测试集预存 infer/vl_search_r1/eval_data（HLE 文件名如 hle.jsonl），评测运行 infer/scripts_eval/scripts/eval.sh，判分运行 infer/vl_search_r1/pass3.sh",
+        "cite": ["huggingface-alibaba-nlp-webwatcher-3@使用说明"]
+      },
+      {
+        "k": "工具集",
+        "v": "代码解释器、网页文本搜索、网页图片搜索、网页访问、内部 OCR 共五类；ReAct 框架基于 Qwen-Agent，工具调用上限 15 次",
+        "cite": ["arxiv-2508-05748@附录 D.1", "arxiv-2508-05748@附录 D.2"]
+      },
+      {
+        "k": "时间线",
+        "v": "2025-08-07 论文 v1 → 2025-08-27 模型卡上线 → 2025-09-01 论文 v3（本页核对版本）→ 2026-08-02 Qwen3.8-Max 发布表出现 HLE-VL (w/ Tools)",
+        "cite": ["arxiv-2508-05748@版本历史", "huggingface-alibaba-nlp-webwatcher-3@元数据", "openlm-qwen38@发布信息"]
+      },
+      {
+        "k": "同族评测",
+        "v": "WebWatcher 论文同时在 BrowseComp-VL、LiveVQA、SimpleVQA、MMSearch 上报告结果；HLE-VL 与文本版 HLE 是两个不同子集",
+        "cite": ["arxiv-2508-05748@§4.1", "arxiv-2508-05748@附录 D.4"]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-14",
+        "columns": ["来源", "模型", "范式", "Bio.", "Chem.", "CS/AI", "Engineer.", "Human.", "Math", "Physics", "Other", "Avg."],
+        "rows": [
+          ["论文 Table 1", "GPT-4o", "Direct Inference", "13.8", "0.0", "0.0", "3.9", "12.0", "6.8", "7.1", "7.0", "6.5"],
+          ["论文 Table 1", "Gemini-2.5-flash", "Direct Inference", "12.1", "1.6", "0.0", "0.0", "4.0", "0.0", "14.3", "0.0", "4.9"],
+          ["论文 Table 1", "Claude-3.7-Sonnet", "Direct Inference", "1.7", "4.8", "0.0", "2.0", "0.0", "0.0", "0.0", "12.3", "2.8"],
+          ["论文 Table 1", "Qwen-2.5-VL-7B", "Direct Inference", "3.4", "3.2", "7.1", "0.0", "4.0", "2.3", "7.1", "0.0", "2.6"],
+          ["论文 Table 1", "Qwen-2.5-VL-32B", "Direct Inference", "3.4", "6.5", "0.0", "3.9", "8.0", "2.3", "7.1", "0.0", "3.7"],
+          ["论文 Table 1", "Qwen-2.5-VL-72B", "Direct Inference", "3.4", "8.0", "0.0", "5.9", "8.0", "0.0", "0.0", "7.0", "4.9"],
+          ["论文 Table 1", "GPT-4o", "RAG Workflow", "9.8", "24.1", "4.8", "0.0", "2.0", "4.0", "9.1", "14.3", "12.3"],
+          ["论文 Table 1", "Gemini-2.5-flash", "RAG Workflow", "25.9", "3.2", "7.1", "0.0", "8.0", "9.1", "3.5", "14.0", "11.4"],
+          ["论文 Table 1", "Claude-3.7-Sonnet", "RAG Workflow", "4.3", "5.2", "4.8", "0.0", "0.0", "0.0", "9.1", "14.3", "3.5"],
+          ["论文 Table 1", "Qwen-2.5-VL-7B", "RAG Workflow", "4.3", "6.9", "3.2", "7.1", "0.0", "4.0", "4.5", "7.1", "5.3"],
+          ["论文 Table 1", "Qwen-2.5-VL-32B", "RAG Workflow", "5.2", "10.3", "3.2", "7.1", "0.0", "0.0", "4.5", "7.1", "8.8"],
+          ["论文 Table 1", "Qwen-2.5-VL-72B", "RAG Workflow", "15.8", "10.3", "8.1", "0.0", "2.0", "8.0", "6.8", "14.3", "8.6"],
+          ["论文 Table 1", "o4-mini", "Reasoning Model", "12.1", "23.7", "17.7", "0.0", "5.8", "0.0", "33.3", "21.4", "16.0"],
+          ["论文 Table 1", "Gemini-2.5-Pro", "Reasoning Model", "23.7", "17.7", "13.3", "11.5", "8.0", "13.3", "14.3", "15.5", "15.8"],
+          ["论文 Table 1", "OmniSearch (GPT-4o)", "Open Source Agents", "15.5", "8.2", "0.0", "2.2", "8.0", "6.8", "21.4", "12.1", "9.3"],
+          ["论文 Table 1", "WebWatcher-7B", "Open Source Agents", "18.6", "6.5", "6.7", "7.7", "4.0", "6.7", "7.1", "17.2", "10.6"],
+          ["论文 Table 1", "WebWatcher-32B", "Open Source Agents", "33.8", "9.7", "0.0", "5.8", "8.0", "8.9", "14.3", "13.8", "13.6"],
+          ["Qwen3.8-Max 发布表（第三方转录）", "Qwen 3.8-Max", "w/ Tools（CI + Search）", "未列出", "未列出", "未列出", "未列出", "未列出", "未列出", "未列出", "未列出", "52.2"],
+          ["Qwen3.8-Max 发布表（第三方转录）", "GPT-5.6 Sol", "w/ Tools（原生工具 API）", "未列出", "未列出", "未列出", "未列出", "未列出", "未列出", "未列出", "未列出", "51.2"],
+          ["Qwen3.8-Max 发布表（第三方转录）", "Gemini 3.1-Pro", "w/ Tools（原生工具 API）", "未列出", "未列出", "未列出", "未列出", "未列出", "未列出", "未列出", "未列出", "43.9"],
+          ["Qwen3.8-Max 发布表（第三方转录）", "Qwen 3.7-Plus", "w/ Tools", "未列出", "未列出", "未列出", "未列出", "未列出", "未列出", "未列出", "未列出", "25.6"]
+        ]
+      },
+      "cite": ["arxiv-2508-05748@Table 1", "arxiv-2508-05748@Figure 1", "openlm-qwen38@多模态评测表"]
+    }
+  }
+}

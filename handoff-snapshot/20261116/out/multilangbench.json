@@ -1,0 +1,578 @@
+{
+  "id": "multilangbench",
+  "name": "MultiLangBench",
+  "full_name": "MultiLangBench（OpenAI 自建的多语言代码评测：要求模型用指定编程语言从零实现一个 SQLite 兼容的数据库引擎）",
+  "aliases": [],
+  "status": null,
+  "categories": [
+    "coding"
+  ],
+  "summary": "MultiLangBench 是 OpenAI 自建自报的代码评测：指定一门编程语言，让模型从零写出一个 SQLite 兼容的数据库引擎（SQLite 是应用最广的嵌入式数据库；前端类比：不许用任何现成依赖，从零实现一个能跑 SQL 的本地存储包），再用同一套测试统计通过率。官方主指标是 20 种低资源语言上的平均测试通过率，同时报估测 API 成本。",
+  "interpretation": "高分说明模型能在一场长时间编码会话里，用一门几乎没有训练语料的语言堆出真正能跑的功能；分数低说明它连基本的数据组织与查询执行都没建立起来。它不代表通用软件工程能力——评测不读既有大型代码库、不做重构与调试、不覆盖 Python / JavaScript 等主流语言；20 语言平均分还会掩盖单语言差距（官方明示 COBOL 仍是最难的一门）。这是厂商自建自报的评测，样本量、每语言题数与运行配置均未披露，外部只能复跑已开源的测试套件、无法复核官方跑分过程。",
+  "measures": [
+    {
+      "area": "20 语言平均测试通过率（主指标）",
+      "focus": "模型用指定语言实现 SQLite 引擎后，对初始数据库执行一条 SQL 查询并产出修改后的数据库文件，由参考 SQLite 实现校验内容是否符合预期；官方正文点名 COBOL、OCaml、Fortran、Visual Basic 四种语言的逐语言值",
+      "share": "20 种编程语言（完整清单官方未披露）",
+      "format": "测试通过率（%）+ 估测平均 API 成本（美元/样本）",
+      "cite": [
+        "site@§1",
+        "site@引言"
+      ]
+    },
+    {
+      "area": "逐语言测试通过率",
+      "focus": "GPT-6 Astra（maximum 推理强度）：COBOL 72.1%（官方称为最难的一门）、OCaml 85.8%、Fortran 83.5%、Visual Basic 89.4%；上代 GPT-5.6 Sol 同四门为 10.9% / 25.6% / 21.4% / 27.5%",
+      "share": "官方正文只点名 4 种语言；其余 16 种语言只给一句「Astra scores above 83% in 19 of the 20 languages」，无逐语言绝对值",
+      "format": "测试通过率（%）",
+      "cite": [
+        "site@§1"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "Python、JavaScript 等主流语言的通用编码能力——评测只覆盖 20 种低资源语言",
+      "cite": [
+        "site@引言"
+      ]
+    },
+    {
+      "text": "在真实生产代码库上的维护、重构与调试能力——任务是从零写新引擎，不读既有大型代码库",
+      "cite": [
+        "site@§1"
+      ]
+    },
+    {
+      "text": "联网检索、工具调用等能力——评测环境明令不允许联网",
+      "cite": [
+        "repo@Environment Setup"
+      ]
+    },
+    {
+      "text": "COBOL 程序迁移到其他语言的行为保持能力——那是同页另一套独立评测（COBOL migration evaluation），与 MultiLangBench 分开报告",
+      "cite": [
+        "site@§2"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 23939,
+    "splits": [
+      "全量测试套件：23,939 个测试用例（本站从官方仓库 tests/ 目录实测；README 表述为 24k）",
+      "官方推荐子集：272 个测试（测试名前缀 00 / 01 / 02，README 明示；官方称跑全量 24k 太贵）"
+    ],
+    "languages": [
+      "COBOL",
+      "OCaml",
+      "Fortran",
+      "Visual Basic"
+    ],
+    "source_type": "OpenAI 自建：测试用例由 SQLite 自带 TCL 测试套件转换而来，与编程语言无关、全部 20 种语言共用同一套测试；评测环境与测试套件已在 GitHub 开源（Apache-2.0）",
+    "public_sample": true,
+    "totals": "每个测试用例由 4 个文件组成：initial_database.sql（建初始库）+ user_query.sql（待执行查询）+ validation_query.sql（用真实 SQLite 校验）+ expected_output.txt（期望输出），共 23,939 组（本站从官方仓库 tests/ 目录实测，README 表述为 24k，源自 SQLite TCL 测试套件 51k 中的 24k 可转换项）；官方推荐默认只跑 272 个（前缀 00 / 01 / 02）。全部 20 种语言共用同一套测试。官方只点名 COBOL、OCaml、Fortran、Visual Basic 四种语言的逐语言成绩，其余 16 种语言的名称与逐语言绝对值均未披露；每语言跑几个样本、共多少样本也未披露。",
+    "cite": [
+      "repo@README",
+      "site@§1"
+    ],
+    "construction": [
+      {
+        "k": "取测试",
+        "text": "从 SQLite 自带的 TCL 测试套件中转换出可用项：51k 个测试里 24k 个能转换成 initial_database / user_query / validation_query 三段式；测试目录名是这三段内容的 sha256 哈希。",
+        "cite": [
+          "repo@README"
+        ]
+      },
+      {
+        "k": "定接口",
+        "text": "跨语言比较用数据库文件当共享接口：候选程序读入初始数据库和一条 SQL 查询，产出修改后的数据库文件，再用参考 SQLite 实现检查内容是否符合预期，因此同一套测试适用于任何实现语言。",
+        "cite": [
+          "site@§1"
+        ]
+      },
+      {
+        "k": "备环境",
+        "text": "容器内放入 SQLite 3.40.1 文档供模型参考；评测前必须清掉环境里所有 SQLite 痕迹（库、可执行文件、其他程序内嵌实现）；不允许联网。",
+        "cite": [
+          "repo@Environment Setup"
+        ]
+      },
+      {
+        "k": "判分",
+        "text": "把 input.db 传入容器，以 user_query 作为 stdin 跑模型程序，取出 output.db，再用真实 SQLite 3.40.1 跑 validation_query 比对期望输出；不匹配、崩溃或超时（60 秒）都记失败。",
+        "cite": [
+          "repo@Grading"
+        ]
+      },
+      {
+        "k": "卡语言",
+        "text": "模型没按指定语言写、或混用多种语言，该测试通过率记 0；可以用另一个语言模型来检查解答是否用了要求的语言。",
+        "cite": [
+          "repo@Grading",
+          "repo@README"
+        ]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "主指标是测试通过率（test_pass_rate），与估测 API 成本（api_cost）一起以元组形式报告；README 未规定统一提示词、温度、pass@k 或每语言重复次数。官方文章公布的成绩都写明推理强度为 maximum（GPT-6 Astra 87.4%、GPT-6 Luna 40.3%）；GPT-5.6 Sol 的 26.8% 与 Astra 的 87.4% 同句，该句以「At maximum reasoning effort」开头，官方没有为它单独重复标注档位。README 建议默认只跑 272 个测试（前缀 00 / 01 / 02），要更高精度可以跑全量但必须注明。",
+    "cite": [
+      "repo@README",
+      "site@§1"
+    ],
+    "variants": [
+      {
+        "text": "测试规模：默认 272 个测试 vs 全量约 24k 个测试，两者通过率不可直接互换（README 允许跑全量但要求注明）。",
+        "cite": [
+          "repo@README"
+        ]
+      },
+      {
+        "text": "推理强度档位：官方公布的三项成绩均标注 maximum reasoning effort；同一模型在低档位下的 MultiLangBench 成绩官方未给出。",
+        "cite": [
+          "site@§1"
+        ]
+      },
+      {
+        "text": "成本口径：估测平均 API 成本（$0.77 vs $3.48，约低 78%）是每样本成本指标，不是分值，不能与通过率混看。",
+        "cite": [
+          "site@§1"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "test_pass_rate",
+      "name": "测试通过率",
+      "direction": "越高越好",
+      "description": "在指定编程语言实现的引擎上，通过 validation_query 校验的测试占比；官方主指标为 20 种语言的算术平均",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "repo@README",
+        "site@§1"
+      ]
+    },
+    {
+      "id": "api_cost",
+      "name": "估测平均 API 成本",
+      "direction": "越低越好",
+      "description": "每样本的估测平均 API 成本（美元），与通过率一起作为元组报告；成本不是分值",
+      "range": null,
+      "unit": "usd",
+      "cite": [
+        "repo@README",
+        "site@§1"
+      ]
+    }
+  ],
+  "versions": [
+    {
+      "id": "multilangbench",
+      "date": "2026-10-19",
+      "label": "官方仓库创建（created_at 2026-10-19T20:58:00Z）并推送首个提交；官方文章《Advancing coding in low-resource programming languages》公布 MultiLangBench 首批成绩",
+      "cite": [
+        "repo-api@仓库元数据",
+        "press@正文"
+      ]
+    },
+    {
+      "id": "page-meta-2026-11-06",
+      "date": "2026-11-06",
+      "label": "openai.com 文章页面元数据 date 字段为 2026-11-06，官方仓库 updated_at 同为 2026-11-06（pushed_at 仍为 2026-10-19，无新提交）；官方未给出版本号，本条目只记录该元数据时间，不代表评测内容变更",
+      "cite": [
+        "page-meta@date 字段",
+        "repo-api@仓库元数据"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "厂商自建自报，无第三方复核",
+      "impact": "MultiLangBench 由 OpenAI 自行设计、运行并在自家官网文章发布成绩，尚无独立第三方复现；官方未披露每语言题量、总样本量、重复次数、提示词与温度等运行配置，外部只能用开源的测试套件复跑、无法复核官方跑分过程。",
+      "severity": "高",
+      "response": "官方开源了评测环境与测试套件（github.com/openai/MultiLangBench，Apache-2.0），开发者可自行复跑；官方同时说明把这类能力用于生产软件仍需专家审查、并针对具体系统的业务规则与依赖做测试。",
+      "reader": "把 87.4% 当作「OpenAI 自报口径」读，不要与第三方榜单分数并列比较。",
+      "cite": [
+        "site@§1",
+        "site@§2",
+        "repo@README"
+      ]
+    },
+    {
+      "issue": "20 种语言清单与逐语言成绩未完整披露",
+      "impact": "官方正文只点名 COBOL、OCaml、Fortran、Visual Basic 四种语言的逐语言值，其余 16 种语言只有一句「Astra scores above 83% in 19 of the 20 languages」；完整语言清单在官方文章与开源仓库里都查不到，逐语言对比无法进行。",
+      "severity": "高",
+      "response": "官方文章称把评测设置、测试套件「连同各语言结果一起」发布在 GitHub，但仓库根目录只有 README、LICENSE、scripts、tests 四项，未见逐语言结果文件（.gitignore 中保留 /internal 条目）。官方未见进一步说明。",
+      "reader": "只看官方点名的 4 种语言与 20 语言平均值；不要把「19/20 语言超过 83%」当成某一门具体语言的分数。",
+      "cite": [
+        "site@§1",
+        "repo@README"
+      ]
+    },
+    {
+      "issue": "推理强度与成本口径易混",
+      "impact": "GPT-6 Astra 的 87.4% 与 GPT-6 Luna 的 40.3% 都标注 maximum reasoning effort；GPT-5.6 Sol 的 26.8% 与 Astra 同句、官方没有为它单独重复标注档位。同页的 $0.77 / $3.48 / 约低 78% 是估测 API 成本，不是分数。",
+      "severity": "中",
+      "response": "官方在正文两处明确写出「At maximum reasoning effort」；未见为 GPT-5.6 Sol 单独标注档位的说明。",
+      "reader": "横向比较前先对齐推理强度；把成本数字与通过率分开放。",
+      "cite": [
+        "site@§1"
+      ]
+    },
+    {
+      "issue": "二手转述与官方数字不一致",
+      "impact": "The Decoder 的报道把上代成绩写成「up from about 38 percent for GPT-5.6 Terra」，并给出 GPT-5.6 Terra 37.9%；模型名（Terra）与数值（约 38%）都与官方正文的 GPT-5.6 Sol 26.8% 不同。引用二手转述会得到另一套数字。",
+      "severity": "中",
+      "response": "以官方文章为准；官方未见对转述差异的回应。",
+      "reader": "追溯数字时只认 openai.com 原文与开源仓库，不要引用二手转述的具体数值。",
+      "cite": [
+        "press@正文",
+        "site@§1"
+      ]
+    },
+    {
+      "issue": "任务形态与通用软件工程基准不同",
+      "impact": "任务是从零实现一个 SQLite 兼容引擎，不读既有大型代码库、不做重构与调试，测试全部来自 SQLite 既有测试套件的转换；分数不能与「改真实仓库」一类的基准互换。",
+      "severity": "中",
+      "response": "官方说明该评测衡量「长时间编码会话里能建出多少可用功能」，与同页的 COBOL 迁移评测互补（一个测构建、一个测保行为）。",
+      "reader": "把 MultiLangBench 当成长程从零构建的专项能力看，不是通用工程能力总分。",
+      "cite": [
+        "site@§1",
+        "repo@README"
+      ]
+    },
+    {
+      "issue": "测试套件完全公开，存在污染风险",
+      "impact": "测试套件公开可下载，且改编自公开的 SQLite 测试套件，可能进入训练数据或被针对性准备，使公开套件上的通过率偏高；官方未设不公开的留存集。",
+      "severity": "中",
+      "response": "未见官方就污染风险的回应；官方只规定不允许联网、并要求评测前清除环境内所有 SQLite 痕迹以防直接调用现成实现。",
+      "reader": "公开套件分数保留余地；官方未提供留存集或滚动修订版本。",
+      "cite": [
+        "repo@README",
+        "repo@Environment Setup"
+      ]
+    }
+  ],
+  "notes": "MultiLangBench 与同页的 COBOL 迁移评测均由 OpenAI 自建自报。本档案 2026-11-11 按 benchmark-profile/v2 重写，逐条回源核对：官方文章（openai.com，裸 curl 返回 403，正文经只读镜像取得并与直读结果逐字一致）+ 官方仓库 README 与 GitHub API 元数据。官方文章与开源仓库均未给出 20 种语言的完整清单、每语言题量与样本量。归档见 models/2026-10-19-gpt-6-multilangbench-cobol-migration/。",
+  "official_sources": [
+    {
+      "kind": "site",
+      "url": "https://openai.com/index/low-resource-programming-languages"
+    },
+    {
+      "kind": "code",
+      "url": "https://github.com/openai/MultiLangBench"
+    }
+  ],
+  "related_benchmarks": [
+    "openai-cobol-migration",
+    "aider"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-11",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-11",
+    "sources": [
+      {
+        "id": "site",
+        "kind": "site",
+        "title": "Advancing coding in low-resource programming languages（OpenAI 官方文章；openai.com 对裸 curl 返回 403，正文经只读镜像 r.jina.ai 取得，与读取服务直读结果逐字一致）",
+        "url": "https://openai.com/index/low-resource-programming-languages",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "openai/MultiLangBench（GitHub README：评测环境、测试套件与评分规则）",
+        "url": "https://github.com/openai/MultiLangBench",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "repo-api",
+        "kind": "repo",
+        "title": "openai/MultiLangBench 仓库元数据（GitHub REST API：创建时间、更新时间、许可证）",
+        "url": "https://api.github.com/repos/openai/MultiLangBench",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "page-meta",
+        "kind": "site",
+        "title": "openai.com 文章页面元数据（页面自身 meta 标签的 date / publisher 字段，经元数据读取服务返回）",
+        "url": "https://api.microlink.io/?url=https%3A%2F%2Fopenai.com%2Findex%2Flow-resource-programming-languages",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "press",
+        "kind": "blog",
+        "title": "The Decoder 报道（经聚合镜像收录）：把上代成绩写成 GPT-5.6 Terra 约 38%，与官方正文不一致",
+        "url": "https://aihot.virxact.com/items/h22qgiu5fxlqtxlgwbe352rl7",
+        "accessed": "2026-11-11"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "OpenAI",
+        "cite": [
+          "page-meta@date 字段"
+        ]
+      },
+      "first_release": {
+        "v": "2026-10-19（官方仓库创建日；官方文章页面元数据另报 2026-11-06，见 versions）",
+        "cite": [
+          "repo-api@仓库元数据",
+          "page-meta@date 字段"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "site@§1",
+        "repo@README"
+      ],
+      "interpretation": [
+        "site@§1",
+        "repo@Grading"
+      ]
+    },
+    "problem": {
+      "text": "主流语言（Python、JavaScript）的公开代码与文档充足，模型表现好；COBOL、Fortran、Visual Basic 这类语言可供模型学习的代码和文档少，却支撑着全球关键基础设施——官方引用数据称 COBOL 支撑超过 40% 的网银系统、80% 的线下刷卡交易与 95% 的 ATM 交易，Fortran 用于天气预报与核反应堆安全分析。既有代码基准不覆盖这类语言，OpenAI 因此自建一套跨语言可比的构建型评测来衡量进展。",
+      "cite": [
+        "site@引言",
+        "site@§1"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机 / 平凡基线",
+        "value": "论文未给出",
+        "note": "README 未给出随机基线；判分用真实 SQLite 比对期望输出字符串，纯猜无法通过，本站不推算。",
+        "cite": [
+          "repo@Grading"
+        ]
+      },
+      {
+        "label": "官方首次公布的上代成绩（GPT-5.6 Sol）",
+        "value": "26.8%",
+        "note": "20 语言平均测试通过率；与 Astra 的 87.4% 同句，该句以「At maximum reasoning effort」开头，官方未为它单独重复标注档位。",
+        "cite": [
+          "site@§1"
+        ]
+      },
+      {
+        "label": "官方同页低成本档（GPT-6 Luna）",
+        "value": "40.3%",
+        "note": "20 语言平均测试通过率，标注 maximum reasoning effort；估测平均 API 成本 $0.77/样本。",
+        "cite": [
+          "site@§1"
+        ]
+      },
+      {
+        "label": "官方公布最好成绩（GPT-6 Astra）",
+        "value": "87.4%",
+        "note": "20 语言平均测试通过率，maximum reasoning effort；官方称 20 种语言里 19 种超过 83%，COBOL 最难为 72%。",
+        "cite": [
+          "site@§1"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把估测 API 成本（$0.77 / $3.48 / 约低 78%）当成分数差距——那是每样本成本口径，与通过率无关。",
+        "cite": [
+          "site@§1"
+        ]
+      },
+      {
+        "text": "把「Astra scores above 83% in 19 of the 20 languages」读成「每门语言都超过 83%」——官方只点名 4 门语言的逐语言值，其余 16 门的绝对值未给出。",
+        "cite": [
+          "site@§1"
+        ]
+      },
+      {
+        "text": "把 20 语言平均分当成单语言分数——平均掩盖了 COBOL 72.1% 与 Visual Basic 89.4% 之间约 17 个百分点的差距。",
+        "cite": [
+          "site@§1"
+        ]
+      },
+      {
+        "text": "把 MultiLangBench 与同页的 COBOL 迁移评测混为一谈——后者是另一套独立评测，成功标准是隐藏测试全部通过、可观测输出逐字节一致。",
+        "cite": [
+          "site@§2"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "OpenAI（官方文章发表于 openai.com；评测环境与测试套件开源在 github.com/openai/MultiLangBench，Apache-2.0）",
+        "cite": [
+          "page-meta@date 字段",
+          "repo@License",
+          "repo-api@仓库元数据"
+        ]
+      },
+      {
+        "k": "首次公开",
+        "v": "2026-10-19（官方仓库 created_at 为 2026-10-19T20:58:00Z，pushed_at 为 2026-10-19T21:01:03Z；官方文章页面元数据 date 字段为 2026-11-06，仓库 updated_at 同为 2026-11-06）",
+        "cite": [
+          "repo-api@仓库元数据",
+          "page-meta@date 字段"
+        ]
+      },
+      {
+        "k": "覆盖语言",
+        "v": "20 种编程语言；官方正文只点名 COBOL、OCaml、Fortran、Visual Basic 四种，完整清单未披露",
+        "cite": [
+          "site@引言",
+          "site@§1"
+        ]
+      },
+      {
+        "k": "被测模型",
+        "v": "MultiLangBench 上官方公布 GPT-6 Astra、GPT-6 Luna、GPT-5.6 Sol 三款；同页另一套 COBOL 迁移评测另报 GPT-6.1 Sol",
+        "cite": [
+          "site@§1",
+          "site@§2"
+        ]
+      },
+      {
+        "k": "测试来源",
+        "v": "SQLite 自带 TCL 测试套件（51k 个测试中 24k 个可转换）；测试目录名是 initial_database / user_query / validation_query 三者内容的 sha256 哈希",
+        "cite": [
+          "repo@README"
+        ]
+      },
+      {
+        "k": "运行约束",
+        "v": "不允许联网；评测前必须清除环境内所有 SQLite 痕迹（库、可执行文件、其他程序内嵌实现）；模型需提供读数据库路径参数、从 stdin 收 SQL 查询的可执行文件",
+        "cite": [
+          "repo@Environment Setup"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "测试套件与评测脚本在 GitHub（Apache-2.0）；逐语言结果官方称随仓库发布，但仓库内未见结果文件",
+        "cite": [
+          "repo@README",
+          "site@§1"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-11",
+        "columns": [
+          "模型",
+          "口径",
+          "测试通过率",
+          "推理强度"
+        ],
+        "rows": [
+          [
+            "GPT-6 Astra",
+            "20 语言平均",
+            "87.4%",
+            "maximum"
+          ],
+          [
+            "GPT-6 Astra",
+            "COBOL",
+            "72.1%",
+            "maximum"
+          ],
+          [
+            "GPT-6 Astra",
+            "OCaml",
+            "85.8%",
+            "maximum"
+          ],
+          [
+            "GPT-6 Astra",
+            "Fortran",
+            "83.5%",
+            "maximum"
+          ],
+          [
+            "GPT-6 Astra",
+            "Visual Basic",
+            "89.4%",
+            "maximum"
+          ],
+          [
+            "GPT-6 Luna",
+            "20 语言平均",
+            "40.3%",
+            "maximum"
+          ],
+          [
+            "GPT-6 Luna",
+            "COBOL",
+            "17.1%",
+            "maximum"
+          ],
+          [
+            "GPT-6 Luna",
+            "OCaml",
+            "34.1%",
+            "maximum"
+          ],
+          [
+            "GPT-6 Luna",
+            "Fortran",
+            "31.4%",
+            "maximum"
+          ],
+          [
+            "GPT-6 Luna",
+            "Visual Basic",
+            "41.6%",
+            "maximum"
+          ],
+          [
+            "GPT-5.6 Sol",
+            "20 语言平均",
+            "26.8%",
+            "与 Astra 同句，官方未单独标注"
+          ],
+          [
+            "GPT-5.6 Sol",
+            "COBOL",
+            "10.9%",
+            "同上"
+          ],
+          [
+            "GPT-5.6 Sol",
+            "OCaml",
+            "25.6%",
+            "同上"
+          ],
+          [
+            "GPT-5.6 Sol",
+            "Fortran",
+            "21.4%",
+            "同上"
+          ],
+          [
+            "GPT-5.6 Sol",
+            "Visual Basic",
+            "27.5%",
+            "同上"
+          ]
+        ]
+      },
+      "cite": [
+        "site@§1"
+      ]
+    }
+  }
+}

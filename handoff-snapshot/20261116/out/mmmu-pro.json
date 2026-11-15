@@ -1,0 +1,651 @@
+{
+  "id": "mmmu-pro",
+  "name": "MMMU-Pro",
+  "full_name": "MMMU-Pro: A More Robust Multi-discipline Multimodal Understanding Benchmark（大规模多学科多模态理解基准 MMMU 的强化版）",
+  "aliases": [
+    "MMMU Pro"
+  ],
+  "status": "active",
+  "categories": [
+    "multimodal"
+  ],
+  "summary": "MMMU-Pro 是基准套件 MMMU（1.15 万道大学水平的图文混合考试题）的抗捷径强化版：先用 4 个纯文本大模型筛掉不看图也能答对的题，再把选择题选项从 4 个扩到 10 个，并新增「纯视觉」考法——题干和选项直接嵌进截图或照片，模型必须同时「看图」和「读字」。",
+  "interpretation": "高分说明模型在必须同时理解图与文的大学学科选择题上更强，也更少靠选项里的统计线索猜答案。论文口径下所有受测模型比原版 MMMU 低 16.8–26.9 个百分点，这个落差可当作原 MMMU 分数中捷径成分的量级参考。两点保留：「人类专家」分数是论文用 MMMU 原评测数据近似出来的，不是新做的真人评测；官方榜单上已出现超过人类专家高档的模型分数。",
+  "measures": [
+    {
+      "area": "多学科大学知识（六大领域）",
+      "focus": "题目继承自 MMMU 的大学考试、测验与教科书，覆盖艺术与设计、商业、科学、健康与医学、人文与社科、技术与工程六大领域、30 个学科；示例题（论文附录 I）：根据椭圆轨道示意图判断「太阳可能位于哪个点」",
+      "share": "论文未给出 MMMU-Pro 最终分学科题量；抽样阶段按 30 个学科均匀分布，每学科 60 题",
+      "format": "图文混合选择题，每题带 1 张及以上图片",
+      "cite": [
+        "paper@§2.1",
+        "paper@§2.2",
+        "paper@附录I"
+      ]
+    },
+    {
+      "area": "视觉-文本整合（vision-only 设置）",
+      "focus": "题干与选项嵌入截图或照片，不向模型提供任何显式文本；注释者在模拟显示环境中变化背景、字体样式与字号拍摄，模拟用户直接发截图的真实场景",
+      "share": "1,730 题（每道题各一份截图/照片呈现，与 standard 设置题量相同）",
+      "format": "截图/照片中的选择题，最多 10 个选项",
+      "cite": [
+        "paper@§2.2"
+      ]
+    },
+    {
+      "area": "抗捷径与抗猜测",
+      "focus": "先用 4 个开源纯文本 LLM 在不给图的情况下各答 10 遍，剔除多数试验中被至少 3 个模型答对的题；再把候选选项从 4 扩到 10，随机猜的基线随之从 24.9% 降到 12.8%",
+      "share": "standard（10 选项）与 standard（4 选项）各 1,730 题",
+      "format": "选择题",
+      "cite": [
+        "paper@§2.2",
+        "paper@Table 1"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "纯文本即可作答的学科题——这类题在构建时已被剔除（论文原话：过滤掉可被纯文本模型回答的问题）",
+      "cite": [
+        "paper@§2.2"
+      ]
+    },
+    {
+      "text": "预定义学科与题型之外的能力——论文局限节自述范围限于既定学科与题型，且纯视觉设置不能完全反映人类感知的复杂性",
+      "cite": [
+        "paper@Limitations"
+      ]
+    },
+    {
+      "text": "开放式长回答或生成质量——评测只取回答中最后的选项字母与标准答案比对，解析不出选项时随机选一个",
+      "cite": [
+        "paper@附录A",
+        "evalcode@evaluate.py"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 1730,
+    "splits": [
+      "HF 数据集只有一个 split：test（每个子集 1.73k 行）",
+      "三个配置子集：standard (10 options)、standard (4 options)、vision，各 1,730 行"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "real-world（继承自 MMMU：大学考试、测验与教科书题目，人工收集）",
+    "public_sample": true,
+    "totals": "1,730 道题；每题有三种呈现——standard（10 选项）、standard（4 选项）与 vision（截图/照片），论文口径合计 3,460 个题目-呈现组合；HF 数据集 3 个子集共 5,190 行；题目为英文图文选择题",
+    "cite": [
+      "paper@§2.2",
+      "dataset@Files",
+      "dataset"
+    ],
+    "construction": [
+      {
+        "k": "筛掉纯文本可答题",
+        "text": "用 Llama3-70B-Instruct、Qwen2-72B-Instruct、Yi-1.5-34B-Chat、Mixtral-8×22B-Instruct 四个开源纯文本 LLM 在不给图的情况下各答 10 遍；某题被至少 3 个模型在多数试验中答对即剔除，再从剩余池中按 30 个学科均匀抽 1,800 题（每学科 60 题）。",
+        "cite": [
+          "paper@§2.2"
+        ]
+      },
+      {
+        "k": "扩选项并人工质检",
+        "text": "GPT-4o 生成、Claude 3.5 过滤新选项，再经两轮人工评审修正核验；同时剔除与图片缺乏清晰关联的题。此步滤掉 70 题，最终剩 1,730 题。",
+        "cite": [
+          "paper@§2.2"
+        ]
+      },
+      {
+        "k": "生成纯视觉呈现",
+        "text": "注释者在模拟显示环境中手动拍摄截图与照片，变化背景、字体样式与字号；每道题各得一份嵌入题干与选项的图像，形成 1,730 题 vision 版本，与 standard 合计 3,460 个题目-呈现组合。",
+        "cite": [
+          "paper@§2.2"
+        ]
+      },
+      {
+        "k": "发布后多次修订",
+        "text": "HF 数据集卡记录：2024-10-20 上传 standard (4 options) 子集，2024-11-10 给 vision 子集补选项，2025-03-08 修正图标签与打乱选项的不匹配，2026-05-30 修选项扩增问题，2026-07-10 修正两道题的标准答案标签。",
+        "cite": [
+          "dataset@News"
+        ]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "standard 设置向模型提供题干、图片与 4 或 10 个选项；vision 设置只提供嵌有题干和选项的截图/照片，不给任何显式文本。提示词要求回答最后一行是「Answer: $LETTER」；官方评测脚本取回答中最后一次「Answer:」之后的内容，与选项唯一匹配后同标准答案比对，解析不出选项时随机选一个。论文分别用 Direct 与 CoT 两种提示词评测并报告较高者；MMMU-Pro 总分 = standard（10 选项）与 vision 两个设置准确率的平均。",
+    "cite": [
+      "paper@附录A",
+      "evalcode@evaluate.py",
+      "paper@§3.1"
+    ],
+    "variants": [
+      {
+        "text": "三种设置分数不可混比：standard（4 选项）、standard（10 选项）与 vision 的随机基线分别约 24.9%、12.8%、12.4%，官方榜单把三者分列。",
+        "cite": [
+          "paper@Table 1",
+          "leaderboard"
+        ]
+      },
+      {
+        "text": "Direct 与 CoT 提示差异大：论文总体结果报两者较高值；CoT 在部分学科可能反而更差（LLaVA-OneVision-72B 在艺术与设计上低 17.12 个百分点）。",
+        "cite": [
+          "paper@附录G Table 6",
+          "paper@§3.1"
+        ]
+      },
+      {
+        "text": "官方榜单同时收录带工具与不带工具口径（如 Claude Opus 4.6：77.3 vs 73.9；GPT-5.4 Thinking：82.1 vs 81.2），两者不能直接比。",
+        "cite": [
+          "leaderboard"
+        ]
+      },
+      {
+        "text": "standard（10 选项）子集的选项顺序被打乱，复现时需按官方推理脚本处理选项里 <image i> 占位符与数据集 image_i 键的映射。",
+        "cite": [
+          "eval@README"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "accuracy",
+      "name": "准确率（Accuracy）",
+      "direction": "越高越好",
+      "description": "回答选项字母与标准答案一致的题目占比；MMMU-Pro 主分数为 standard（10 选项）与 vision 两个设置准确率的平均",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§3.1",
+        "evalcode@evaluate.py"
+      ]
+    }
+  ],
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2024-09-04",
+      "label": "arXiv v1 提交（官方公告为 2024-09-05）",
+      "cite": [
+        "abs@Submission history",
+        "site@News"
+      ]
+    },
+    {
+      "id": "v2",
+      "date": "2024-09-10",
+      "label": "arXiv v2 提交",
+      "cite": [
+        "abs@Submission history"
+      ]
+    },
+    {
+      "id": "hf-standard-4",
+      "date": "2024-10-20",
+      "label": "HF 数据集上传 standard (4 options) 子集",
+      "cite": [
+        "dataset@News"
+      ]
+    },
+    {
+      "id": "hf-vision-options",
+      "date": "2024-11-10",
+      "label": "HF vision 子集补充选项",
+      "cite": [
+        "dataset@News"
+      ]
+    },
+    {
+      "id": "fix-label-mismatch",
+      "date": "2025-03-08",
+      "label": "修正 vision 与 standard（10 选项）中图标签和打乱选项的不匹配（涉及 16 道题）",
+      "cite": [
+        "dataset@News"
+      ]
+    },
+    {
+      "id": "v3",
+      "date": "2025-05-22",
+      "label": "arXiv v3（本档案核对所用版本）",
+      "cite": [
+        "abs@Submission history",
+        "paper"
+      ]
+    },
+    {
+      "id": "fix-augmentation",
+      "date": "2026-05-30",
+      "label": "修正 vision 与 standard（10 选项）的选项扩增问题",
+      "cite": [
+        "dataset@News"
+      ]
+    },
+    {
+      "id": "fix-ground-truth",
+      "date": "2026-07-10",
+      "label": "修正两道题的标准答案标签",
+      "cite": [
+        "dataset@News"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "评测口径多且易混",
+      "impact": "standard（4 / 10 选项）与 vision 三种设置、Direct 与 CoT 两种提示、榜单的带工具与不带工具口径都会显著改变分数；论文总体结果报 Direct/CoT 较高者，厂商与榜单常只写其中一种。",
+      "severity": "高",
+      "response": "论文固定提示词格式并公开评测脚本；官方榜单把不同设置分列，但未统一工具口径。",
+      "reader": "比较前先确认设置（选项数、是否 vision）、提示方式与是否带工具，再着看分数来自论文、HF 卡还是榜单。",
+      "cite": [
+        "paper@§3.1",
+        "paper@附录A",
+        "leaderboard",
+        "eval@README"
+      ]
+    },
+    {
+      "issue": "人类表现为近似值",
+      "impact": "论文没有重做真人评测，而是用 MMMU 原评测中 90 位专家在 577 道同题上的数据近似人类表现；论文自述这会引入报告偏差。",
+      "severity": "中",
+      "response": "论文附录 B 给出近似方法与公式，并说明这是保守估计。",
+      "reader": "把「人类专家」行当参考线而非实测；官方榜单已有模型超过人类高档（86.9% vs 85.4%）。",
+      "cite": [
+        "paper@§3.1",
+        "paper@附录B",
+        "paper@Limitations",
+        "leaderboard"
+      ]
+    },
+    {
+      "issue": "污染与同源题库",
+      "impact": "题目全部派生自 MMMU（大学考试、测验与教科书），原题库若已进入训练数据，风险部分继承；论文未报告任何污染实验。",
+      "severity": "中",
+      "response": "未见官方回应（论文与数据集卡均未讨论数据污染）。",
+      "reader": "对公开可下载题库的分数保留余地，优先看新版本修订后的复核结果。",
+      "cite": [
+        "paper@§2.1",
+        "paper@§2.2"
+      ]
+    },
+    {
+      "issue": "残余统计捷径与纯视觉渲染敏感",
+      "impact": "论文局限节自述数据集仍可能含可被利用的统计捷径，且纯视觉设置不能完全反映人类感知复杂性；GPT-4o 的 60 个标注错误中推理错误占 46%、感知错误占 27%，OCR 只占 0%。",
+      "severity": "中",
+      "response": "论文用定性分析解释视觉-文本整合的认知负荷，并给出训练方向建议；未对残余捷径做定量修正。",
+      "reader": "vision 分数可能对截图质量与渲染方式敏感，跨模型比较时注意输入形态一致。",
+      "cite": [
+        "paper@Limitations",
+        "paper@§3.6",
+        "paper@§3.5"
+      ]
+    },
+    {
+      "issue": "榜单饱和与题目噪声",
+      "impact": "官方榜单当前最高 86.9%（Chance Vision 1.5，2026-07-01），已远高于论文发布时最好成绩 51.9%，也超过人类专家高档 85.4%；高分段几个点的差距可能小于题目噪声。",
+      "severity": "低",
+      "response": "团队多次修订数据集标签（2025-03、2026-05、2026-07）；未见针对饱和的官方说明。",
+      "reader": "高分段比较要结合数据集修订版本看，单看一个百分点的差距意义有限。",
+      "cite": [
+        "leaderboard",
+        "dataset@News"
+      ]
+    }
+  ],
+  "notes": "与 MMMU 原版共用题库；论文、HF 数据集卡与官方榜单三处口径需分辨（见默认协议与局限）",
+  "official_sources": [
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2409.02813"
+    },
+    {
+      "kind": "site",
+      "url": "https://mmmu-benchmark.github.io/"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/MMMU-Benchmark/MMMU"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/MMMU/MMMU_Pro"
+    }
+  ],
+  "related_benchmarks": [
+    "mmmu",
+    "mathvista",
+    "charxiv-reasoning",
+    "zerobench",
+    "mmvet"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-10",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-10",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "MMMU-Pro: A More Robust Multi-discipline Multimodal Understanding Benchmark（arXiv:2409.02813v3，2025-05-22）",
+        "url": "https://arxiv.org/abs/2409.02813",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "abs",
+        "kind": "paper",
+        "title": "arXiv:2409.02813 摘要页（提交历史与 Comments 字段）",
+        "url": "https://arxiv.org/abs/2409.02813",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "MMMU-Benchmark/MMMU（README 与引用条目）",
+        "url": "https://github.com/MMMU-Benchmark/MMMU",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "eval",
+        "kind": "docs",
+        "title": "mmmu-pro/README.md（推理与评测目录说明）",
+        "url": "https://github.com/MMMU-Benchmark/MMMU/blob/main/mmmu-pro/README.md",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "evalcode",
+        "kind": "repo",
+        "title": "mmmu-pro/evaluate.py（官方评测脚本）",
+        "url": "https://github.com/MMMU-Benchmark/MMMU/blob/main/mmmu-pro/evaluate.py",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "dataset",
+        "kind": "dataset",
+        "title": "MMMU/MMMU_Pro（Hugging Face 数据集卡）",
+        "url": "https://huggingface.co/datasets/MMMU/MMMU_Pro",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "leaderboard",
+        "kind": "leaderboard",
+        "title": "MMMU 官网榜单数据（leaderboard_data.json，含 MMMU-Pro 列）",
+        "url": "https://mmmu-benchmark.github.io/#leaderboard",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "site",
+        "kind": "site",
+        "title": "mmmu-benchmark.github.io 官网（新闻与榜单说明）",
+        "url": "https://mmmu-benchmark.github.io/",
+        "accessed": "2026-11-10"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "MMMU Team（论文正文未列机构全称；通讯作者邮箱 xyue2@andrew.cmu.edu）",
+        "cite": [
+          "paper"
+        ]
+      },
+      "first_release": {
+        "v": "2024-09-04（arXiv v1 提交；官方公告为 2024-09-05）",
+        "cite": [
+          "abs@Submission history",
+          "site@News"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "paper@Abstract",
+        "paper@§2.2"
+      ],
+      "interpretation": [
+        "paper@§3.1",
+        "paper@附录B",
+        "leaderboard"
+      ]
+    },
+    "problem": {
+      "text": "MMMU 上纯文本 LLM 不看图也能答对一部分题：有的题与图片基本无关，有的题即使需要看图，模型也能靠候选选项里的线索和预训练知识猜对；加上原版每题只有 4 个选项、随机基线约四分之一，基准拉不开模型差距。MMMU-Pro 用「过滤纯文本可答题 + 选项扩到 10 + 纯视觉输入」三步把这类捷径堵上。",
+      "cite": [
+        "paper@§2.1",
+        "paper@§2.2",
+        "paper@Table 1"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机猜测基线",
+        "value": "12.8%（standard 10 选项）/ 12.4%（vision）",
+        "note": "standard（4 选项）为 24.9%；取自论文 Table 1 的 Random Choice 行。",
+        "cite": [
+          "paper@Table 1"
+        ]
+      },
+      {
+        "label": "人类专家（论文近似值）",
+        "value": "73.0%–85.4%",
+        "note": "低/中/高三档估计（附录 B Table 4 的 Overall 列），基于 MMMU 原评测 90 位专家在 577 道同题上的数据近似，不是新做的真人评测。",
+        "cite": [
+          "paper@附录B Table 4",
+          "paper@附录B"
+        ]
+      },
+      {
+        "label": "论文发布时最好成绩",
+        "value": "51.9%",
+        "note": "GPT-4o (0513)：standard（10 选项）54.0 与 vision 49.7 的平均；同模型在原版 MMMU (Val) 为 69.1，下降 15.1 点。",
+        "cite": [
+          "paper@Table 1",
+          "dataset@Overall Results"
+        ]
+      },
+      {
+        "label": "官方榜单当前最高",
+        "value": "86.9%",
+        "note": "Chance Vision 1.5（2026-07-01；standard 87.6 / vision 86.1），已超过人类专家高档 85.4%。官网页面标注 Last updated: 09/05/2025，但榜单数据文件含 2026-07 条目，两处不一致。",
+        "cite": [
+          "leaderboard",
+          "site@Leaderboard"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 MMMU-Pro 分数和原版 MMMU 分数直接排在一起比——选项数与输入形态都不同，论文口径下降 16.8–26.9 个百分点。",
+        "cite": [
+          "paper@Abstract",
+          "paper@Table 1"
+        ]
+      },
+      {
+        "text": "把 4 选项与 10 选项的分数混比——随机基线就从 24.9% 变成 12.8%，几个点的差距可能只是口径差异。",
+        "cite": [
+          "paper@Table 1"
+        ]
+      },
+      {
+        "text": "把「人类专家」当成论文新做的真人评测——它是用 MMMU 原评测数据近似出来的。",
+        "cite": [
+          "paper@附录B"
+        ]
+      },
+      {
+        "text": "把榜单带工具与不带工具的分数混比——同一模型两种口径可差数个点（Claude Opus 4.6：77.3 vs 73.9）。",
+        "cite": [
+          "leaderboard"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "MMMU Team（多机构合作；论文正文未列机构全称，通讯邮箱 xyue2@andrew.cmu.edu）",
+        "cite": [
+          "paper"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "共同一作 Xiang Yue、Tianyu Zheng、Yuansheng Ni；其余作者 Yubo Wang、Kai Zhang、Shengbang Tong、Yuxuan Sun、Botao Yu、Ge Zhang、Huan Sun、Yu Su、Wenhu Chen、Graham Neubig",
+        "cite": [
+          "paper"
+        ]
+      },
+      {
+        "k": "发表",
+        "v": "arXiv:2409.02813（cs.CL / cs.CV），Comments 字段标注 ACL 2025 Main；仓库引用条目标注 Proceedings of ACL, 2025",
+        "cite": [
+          "abs@Comments",
+          "repo@Citation"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2024-09-04 arXiv v1 → 2024-09-05 官方公告 → 2024-10-20 / 11-10 HF 补齐子集 → 2025-03-08 修标签 → 2025-05-22 arXiv v3 → 2026-05-30 / 07-10 再修标签",
+        "cite": [
+          "abs@Submission history",
+          "site@News",
+          "dataset@News"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "数据集在 Hugging Face（MMMU/MMMU_Pro，apache-2.0，3 个子集共 5,190 行）；推理与评测代码在 GitHub 仓库 mmmu-pro 目录",
+        "cite": [
+          "dataset@Files",
+          "repo@README",
+          "eval@README"
+        ]
+      },
+      {
+        "k": "许可与免责",
+        "v": "HF 许可证 apache-2.0；数据集卡声明注释者须遵守原始来源的版权与许可规则，涉嫌侵权的样本经核实后会下架",
+        "cite": [
+          "dataset@Files",
+          "dataset@Disclaimers"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-10",
+        "columns": [
+          "来源",
+          "模型",
+          "MMMU-Pro 总分",
+          "standard(10 选项)",
+          "vision",
+          "MMMU(Val)",
+          "口径/备注"
+        ],
+        "rows": [
+          [
+            "论文 Table 1 + HF 数据集卡",
+            "GPT-4o (0513)",
+            "51.9",
+            "54.0",
+            "49.7",
+            "69.1",
+            "Direct/CoT 较高者；总分为两设置平均"
+          ],
+          [
+            "论文 Table 1 + HF 数据集卡",
+            "Claude 3.5 Sonnet",
+            "51.5",
+            "55.0",
+            "48.0",
+            "68.3",
+            "同上"
+          ],
+          [
+            "论文 Table 1 + HF 数据集卡",
+            "Gemini 1.5 Pro (0801)",
+            "46.9",
+            "49.4",
+            "44.4",
+            "65.8",
+            "同上"
+          ],
+          [
+            "HF 数据集卡 Table 1",
+            "GPT-4o mini",
+            "37.6",
+            "未列出",
+            "未列出",
+            "59.4",
+            "两设置平均"
+          ],
+          [
+            "HF 数据集卡 Table 1",
+            "VILA-1.5-40B",
+            "25.0",
+            "未列出",
+            "未列出",
+            "51.9",
+            "两设置平均"
+          ],
+          [
+            "官方榜单",
+            "Human Expert (High)",
+            "85.4",
+            "85.4",
+            "85.4",
+            "88.6",
+            "论文近似的人类表现"
+          ],
+          [
+            "官方榜单",
+            "Chance Vision 1.5",
+            "86.9",
+            "87.6",
+            "86.1",
+            "未列出",
+            "2026-07-01，来源标注 author"
+          ],
+          [
+            "官方榜单",
+            "GPT-5.4 Thinking w/ tools",
+            "82.1",
+            "未列出",
+            "未列出",
+            "未列出",
+            "2026-03-05，带工具"
+          ],
+          [
+            "官方榜单",
+            "GPT-5.4 Thinking w/o tools",
+            "81.2",
+            "未列出",
+            "未列出",
+            "未列出",
+            "2026-03-05，不带工具"
+          ],
+          [
+            "官方榜单",
+            "Gemini 3.0 Pro",
+            "81.0",
+            "未列出",
+            "未列出",
+            "未列出",
+            "2025-11-18"
+          ]
+        ]
+      },
+      "cite": [
+        "paper@Table 1",
+        "dataset@Overall Results",
+        "leaderboard"
+      ]
+    }
+  }
+}

@@ -1,0 +1,327 @@
+{
+  "id": "swe-atlas-test-writing",
+  "name": "SWE Atlas — Test Writing",
+  "full_name": "SWE Atlas — Test Writing（SWE Atlas 测试编写子赛道）",
+  "aliases": ["SWE-Atlas-TW", "swe-atlas-tw"],
+  "status": "active",
+  "categories": ["coding"],
+  "summary": "Scale AI 出品的 SWE Atlas 三个子赛道之一：给智能体一个真实开源仓库和一段行为描述，让它自己把该补的测试写出来，再用程序化检查加 LLM rubric 判分。Test Writing 共 90 题，取自 11 个生产级仓库、4 种编程语言。",
+  "interpretation": "分数是「一次提交能否同时过三道关」的比例，取 3 次试验的平均：改动清单要列全（Manifest Check）、测试要在原代码上通过且把实现换成空壳后必须失败（Mutation Test）、必选 rubric 全过（Rubric Check）。Scale 官方榜单第一是 Fable-5.1 (Claude Code) xHigh 的 67.04%，第二名 Opus 5 (Claude Code) xHigh 62.22%；但同一任务的 Pass³（三次全部通过）比 Pass@1 还要掉 30%–50%，高分不等于稳定发挥。",
+  "measures": [
+    {
+      "area": "单元测试（Unit Tests）",
+      "focus": "在仓库里定位被测函数或类，补上隔离环境下的单元测试；论文附录 F 的结论是这一类模型相对最擅长。",
+      "share": "未披露（官方只划分了三类测试范围，没有公布各类题量）",
+      "format": "自然语言任务描述 + 智能体提交的测试补丁与 manifest，由程序化检查 + LLM rubric 判定",
+      "cite": ["arxiv-swe-atlas@附录 F", "arxiv-swe-atlas@附录 F 分布", "github-swe-atlas@README Lane 表"]
+    },
+    {
+      "area": "集成测试（Integration Tests）",
+      "focus": "跨模块、跨边界的测试；与单元测试同属模型表现相对好的一类。",
+      "share": "未披露（官方只划分了三类测试范围，没有公布各类题量）",
+      "format": "同上：任务描述 + 测试补丁，Manifest / Mutation / Rubric 三关判定",
+      "cite": ["arxiv-swe-atlas@附录 F", "arxiv-swe-atlas@附录 F 分布"]
+    },
+    {
+      "area": "验收测试（Acceptance Tests）",
+      "focus": "按用户可见行为写的端到端验收测试；论文明确指出所有模型在这一类上都明显更差，是拉开差距的地方。",
+      "share": "未披露（官方只划分了三类测试范围，没有公布各类题量）",
+      "format": "同上：任务描述 + 测试补丁，Manifest / Mutation / Rubric 三关判定",
+      "cite": ["arxiv-swe-atlas@附录 F", "arxiv-swe-atlas@附录 F 分布"]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "多轮交互能力（澄清提问、迭代 review、人类在环 steering）——全部任务都是单轮，作者把多轮列为未来工作。",
+      "cite": ["arxiv-swe-atlas@§2 单轮", "arxiv-swe-atlas@附录 A 单轮"]
+    },
+    {
+      "text": "把代码改对的能力——SWE Atlas 把这件事分给 Codebase QnA 与 Refactoring 两个赛道，本赛道只评测试。",
+      "cite": ["arxiv-swe-atlas@Abstract", "github-swe-atlas@README Lane 表"]
+    },
+    {
+      "text": "除 Test Comprehensiveness 以外的 rubric 轴不计入最终分——官方只用必选 rubric 给模型排序，其余只做定性分析。",
+      "cite": ["labs-leaderboard-sweatlas-tw@Rubric creation", "arxiv-swe-atlas@§2.1.2 rubric"]
+    }
+  ],
+  "dataset": {
+    "sample_count": 90,
+    "splits": ["public"],
+    "languages": ["Go", "Python", "TypeScript", "C"],
+    "source_type": "expert-authored",
+    "public_sample": true,
+    "totals": "Test Writing 90 题；SWE Atlas 全套 284 题（Codebase QnA 124 + Test Writing 90 + Refactoring 70）。本子赛道取自 11 个生产级开源仓库、4 种语言（Go / Python / C / TypeScript），全套则来自 18 个活跃维护的开源仓库。",
+    "cite": ["labs-leaderboard-sweatlas-tw@Overview", "labs-leaderboard-sweatlas-tw@Dataset Description", "arxiv-swe-atlas@§1 贡献列表", "github-swe-atlas@README 索引"],
+    "construction": [
+      {
+        "k": "出题人",
+        "text": "由有多年真实软件工程经验的专业工程师出题，不是从现有测试集自动生成的。",
+        "cite": ["arxiv-swe-atlas@§2.2 出题人"]
+      },
+      {
+        "k": "任务环境",
+        "text": "沿用 SWE-Bench Pro 的做法，选用高质量、活跃维护的开源仓库作为任务环境；题目环境用 digest 固定的公开镜像，任务自带镜像、资源、超时与网络白名单配置。",
+        "cite": ["arxiv-swe-atlas@§2 任务环境", "github-swe-atlas@README 目录结构", "github-swe-atlas@README 任务结构"]
+      },
+      {
+        "k": "质量门",
+        "text": "所有题目由三位可信专家独立审计任务说明、验证配置与 rubric；被至少 2 位专家判为无效、过细或有歧义的 rubric 直接过滤掉。",
+        "cite": ["arxiv-swe-atlas@§2.2 审计", "arxiv-swe-atlas@§2.2 过滤"]
+      },
+      {
+        "k": "任务形态",
+        "text": "单轮任务：一次用户提问，智能体自行探索仓库并产出测试；没有多轮澄清。",
+        "cite": ["arxiv-swe-atlas@§2 单轮"]
+      },
+      {
+        "k": "公开与复现",
+        "text": "任务数据、判分器、rubric 与裁判提示词、每模型一份运行配置，以及 oracle / nop 对照配置，全部以 Apache-2.0 公开在 GitHub；仓库内置 oracle 智能体（套用参考解，预期得满分）和 nop 智能体（什么都不做，预期 0 分）两条 sanity check。",
+        "cite": ["github-swe-atlas@README 许可", "github-swe-atlas@README Oracle 检查", "github-swe-atlas@README sanity check", "github-swe-atlas@README 运行配置"]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "task-resolve-rate",
+      "name": "Task Resolve Rate（= Pass@1）",
+      "direction": "越高越好",
+      "description": "单次提交通过 Manifest + Mutation + Rubric 三道检查即记 1 分；每个模型跑 3 次试验，报均值，论文同时给出 Wilson 95% 置信区间。",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["labs-leaderboard-sweatlas-tw@Evaluation Metric", "arxiv-swe-atlas@Table 1", "labs-leaderboard-sweatlas-tw@Rubric Check"]
+    },
+    {
+      "id": "pass3",
+      "name": "Pass³（三次全过，一致性）",
+      "direction": "越高越好",
+      "description": "3 次试验全部通过的任务占比；论文称即使最好配置，从 Pass@1 到 Pass³ 也会掉 30%–50%，说明模型不能稳定地产出正确测试。",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["arxiv-swe-atlas@Table 1", "arxiv-swe-atlas@§3 一致性"]
+    },
+    {
+      "id": "sub-checks",
+      "name": "分项检查通过率（Manifest / Mutation / Rubric）",
+      "direction": "越高越好",
+      "description": "论文按三道检查拆解：多数模型 manifest 写得不错，真正拉开差距的是 rubric check 与 mutation check。",
+      "cite": ["arxiv-swe-atlas@§4.3 manifest", "arxiv-swe-atlas@§4.3 关键差异"]
+    }
+  ],
+  "default_protocol": {
+    "raw": "智能体在容器里拿到任务说明后自行探索仓库、写测试并提交；提交后依次过 Manifest Check（LLM 裁判核对改动清单是否列全）、Mutation Test（测试要在原代码上通过，把实现替换成空壳后必须失败或报错）、Rubric Grading（4 个评分轴，只有 Test Comprehensiveness 是必选）。三项全过才算 resolve，主指标是 3 次试验的平均 resolve 率。",
+    "cite": ["labs-leaderboard-sweatlas-tw@Manifest Check", "labs-leaderboard-sweatlas-tw@Mutation Test", "labs-leaderboard-sweatlas-tw@Rubric Check", "labs-leaderboard-sweatlas-tw@Rubric creation", "labs-leaderboard-sweatlas-tw@Evaluation Metric", "arxiv-swe-atlas@§2.1.2 判分", "arxiv-swe-atlas@§2.1.2 变异测试"],
+    "variants": [
+      {
+        "text": "一方脚手架 vs 公共脚手架：官方对最强模型用其厂商一方 harness（Codex CLI / Claude Code / Gemini CLI）以复现终端用户体验，同时用 mini-SWE-agent 作为统一脚手架横向比较——两种口径的分数不能混排。",
+        "cite": ["arxiv-swe-atlas@§3 实验设置", "arxiv-swe-atlas@§3 mini-SWE"]
+      },
+      {
+        "text": "裁判版本：v1.0（论文与 2026-07 榜单）rubric 裁判是 Claude Opus 4.5；v1.1（2026-11 README）换成 openai/gpt-6.1-sol，high reasoning effort、3 票多数，并细化评分标准、限制网络。官方明确说 v1.1 分数不能直接和 v1.0 比。",
+        "cite": ["arxiv-swe-atlas@附录 J judge", "github-swe-atlas@README 版本更新", "github-swe-atlas@README Judge 配置"]
+      },
+      {
+        "text": "运行环境：Harbor 框架 + Modal 沙箱，docker 容器 16 CPU / 16GB、6 小时时限；v1.1 每任务 3 次尝试、reasoning effort 拉满、网页工具关闭。",
+        "cite": ["arxiv-swe-atlas@附录 J 运行环境", "arxiv-swe-atlas@附录 J 框架", "github-swe-atlas@README 运行配置"]
+      },
+      {
+        "text": "智能体步数：mini-swe-agent 的步数从 250 提到 500（Muse Spark、GLM 5.2 等新模型），给探索留出空间。",
+        "cite": ["labs-leaderboard-sweatlas-tw@Update July 28, 2026 步数"]
+      },
+      {
+        "text": "异常提交记 0：超时按智能体已产出的内容评分，拒答、空答案或裁判无法评分的提交记 0；因基础设施错误结束的试验不计分，需原地重跑。",
+        "cite": ["github-swe-atlas@README 评分规则", "github-swe-atlas@README sanity check"]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "v1.0-arxiv",
+      "date": "2026-05-08",
+      "label": "arXiv v1 发布（arXiv:2605.08366v1，cs.LG）：Test Writing 90 题，rubric 裁判 Claude Opus 4.5，Harbor + Modal、16C/16G、6 小时时限。",
+      "cite": ["arxiv-swe-atlas@arXiv 版式", "arxiv-swe-atlas@Abstract", "arxiv-swe-atlas@附录 J judge", "arxiv-swe-atlas@附录 J 运行环境"]
+    },
+    {
+      "id": "v1.0-leaderboard-refresh",
+      "date": "2026-07-28",
+      "label": "官方 Test Writing 榜单更新：改版数据集堵掉「查上游修复」的取巧路径，mini-swe-agent 步数 250→500，并记录 Fable-5 (Claude Code) xHigh 拒答率升高。",
+      "cite": ["labs-leaderboard-sweatlas-tw@Update July 28, 2026", "labs-leaderboard-sweatlas-tw@Update July 28, 2026 步数", "labs-leaderboard-sweatlas-tw@Update July 28, 2026 拒答"]
+    },
+    {
+      "id": "v1.1",
+      "date": "2026-11-13",
+      "label": "v1.1 上线（README 标注 Update November 2026，页面未给出具体日期，本行日期取本次核验日）：裁判换成 openai/gpt-6.1-sol、评分标准细化、网络受限，三个子榜单合成单一索引，官方说明分数与 v1.0 不可直接比较。",
+      "cite": ["github-swe-atlas@README 版本更新", "github-swe-atlas@README 索引"]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "裁判换代造成版本断层",
+      "impact": "v1.0 的 rubric 裁判是 Claude Opus 4.5，v1.1 换成 openai/gpt-6.1-sol（high effort、3 票多数）并细化评分标准、限制网络；官方明确说 v1.1 分数不能直接和 v1.0 比。论文与 2026-07 榜单同属 v1.0 口径，2026-11 之后的官方分数属于另一套口径。",
+      "severity": "高",
+      "response": "README 在版本更新说明里写清了裁判、评分标准与网络三处变化；复现配置（configs/claude-opus-5-5.yaml、configs/gpt-6.1-sol.yaml）逐模型公开。",
+      "reader": "看到 Test Writing 分数先问是 v1.0 还是 v1.1；跨版本只做定性比较，不要把两个口径的数字排进同一张排名表。",
+      "cite": ["github-swe-atlas@README 版本更新", "github-swe-atlas@README Judge 配置", "arxiv-swe-atlas@附录 J judge"]
+    },
+    {
+      "issue": "判分依赖 LLM 裁判",
+      "impact": "Manifest Check 与 Rubric Grading 都由 LLM 判，裁判本身的版本和提示词会直接影响分数。论文附录 H 报告：三个裁判在 1,306 条 rubric 判定上两两 Cohen's κ 0.746–0.837、Macro-F1 也达到 substantial；Opus 4.5 自身五次重复在 510 条上 99.2% 一致、κ 0.983。",
+      "severity": "高",
+      "response": "作者建议讨论分数时固定裁判版本，并与其他模型在同一裁判下比较；仓库公开 judge 提示词，可用 JUDGE_MODEL / JUDGE_REASONING_EFFORT / JUDGE_VOTES 改裁判。",
+      "reader": "换裁判重跑得到的分数不能直接和旧数字比；引用时最好连裁判模型一起写。",
+      "cite": ["arxiv-swe-atlas@附录 A judge 版本", "arxiv-swe-atlas@附录 H judge 一致性", "arxiv-swe-atlas@附录 H 复现性", "github-swe-atlas@README Judge 配置"]
+    },
+    {
+      "issue": "Pass@1 高但不可靠",
+      "impact": "论文称即使最好配置，从 Pass@1 到 Pass³ 也掉 30%–50%：同一任务三次跑并不能稳定通过。单次高分很可能来自运气而非稳定的测试设计能力。",
+      "severity": "中",
+      "response": "官方同时报 Pass@1（3 次均值，带 Wilson 95% CI）与 Pass³（一致性），并公开每任务的多次试验结果（jobs/ 下每 trial 一个目录）。",
+      "reader": "比较模型时把 Pass³ 一起看；只报 Pass@1 会系统性高估模型的可靠程度。",
+      "cite": ["arxiv-swe-atlas@§3 一致性", "arxiv-swe-atlas@Table 1"]
+    },
+    {
+      "issue": "污染与「查答案」风险",
+      "impact": "任务取自强 copyleft 的生产级仓库，作者认为这降低了进专有模型训练集的可能，但不能完全排除；论文附录 I 报告 Test Writing 新增行与参考解的 Jaccard 仅 0.08–0.11，210 次试验里只有 2 个 run（GPT-5.4、GPT-5.3 Codex，仅 Codex 脚手架）共 4 次访问 raw.githubusercontent.com，且这些试验全部失败。官方 2026-07 改版数据集，正是因为观察到 Fable 5、GPT 5.6 开始用 curl、git 甚至包源码去查上游修复。",
+      "severity": "中",
+      "response": "选 copyleft 仓库 + 改版数据集堵路径 + 附录报告污染筛查量化结果；v1.1 进一步把智能体网络收到白名单内。",
+      "reader": "这个基准测的是「写测试」，不是「绕过验证」；跨版本比较时注意 v1.1 已经收紧了网络。",
+      "cite": ["arxiv-swe-atlas@附录 I 污染筛查", "arxiv-swe-atlas@附录 I 联网行为", "arxiv-swe-atlas@附录 A 污染", "labs-leaderboard-sweatlas-tw@Update July 28, 2026", "github-swe-atlas@README 版本更新"]
+    },
+    {
+      "issue": "脚手架与步数显著影响分数",
+      "impact": "同一模型在厂商一方脚手架和 mini-swe-agent 上差距明显，官方称测试放置与逻辑一致性上可差约 10 个百分点；官方还把 mini-swe-agent 步数从 250 提到 500。论文另观察到写得越多测试的模型变异失败率越高。",
+      "severity": "中",
+      "response": "论文对最强模型同时报一方 harness 与 mini-SWE-agent 两套结果；每模型一份运行配置公开（harness、版本、reasoning effort、网页工具、尝试次数）。",
+      "reader": "比较两个模型前先确认脚手架和步数一致，否则差距可能来自工具链而非模型。",
+      "cite": ["labs-leaderboard-sweatlas-tw@Analysis 脚手架", "labs-leaderboard-sweatlas-tw@Update July 28, 2026 步数", "labs-leaderboard-sweatlas-tw@Analysis 相关性", "github-swe-atlas@README 运行配置"]
+    },
+    {
+      "issue": "只覆盖单轮任务",
+      "impact": "全部任务是单轮，没有澄清提问、迭代 review 和人类在环 steering，与真实团队里「写测试」的协作形态有距离。",
+      "severity": "低",
+      "response": "作者在附录 A 明确把多轮评测列为未来工作。",
+      "reader": "这个分数只代表「一次性把测试写对」的能力，不代表协作迭代中的测试能力。",
+      "cite": ["arxiv-swe-atlas@附录 A 单轮", "arxiv-swe-atlas@§2 单轮"]
+    },
+    {
+      "issue": "基准本身会被针对性优化",
+      "impact": "作者承认，任何成为优化目标的基准都会被 gaming：后续模型可能过拟合到 rubric 用语或特定的仓库集合上。",
+      "severity": "低",
+      "response": "官方在 2026-07 改版数据集、v1.1 细化评分标准并限制网络，作为反制。",
+      "reader": "把这个分数当成阶段性快照，不要当成「测试能力」的稳定度量。",
+      "cite": ["arxiv-swe-atlas@附录 A gaming", "labs-leaderboard-sweatlas-tw@Update July 28, 2026"]
+    }
+  ],
+  "notes": "Scale AI SWE Atlas 三个子赛道之一；任务数据与复现配置以 Apache-2.0 公开在 GitHub。官方榜单 2026-07 起为 v1.0 口径，README 2026-11 起为 v1.1 口径，两者不可直接比较。",
+  "official_sources": [
+    { "kind": "leaderboard", "url": "https://labs.scale.com/leaderboard/sweatlas-tw" },
+    { "kind": "paper", "url": "https://arxiv.org/abs/2605.08366" },
+    { "kind": "repo", "url": "https://github.com/scaleapi/SWE-Atlas" }
+  ],
+  "related_benchmarks": ["swebench-pro", "swebench", "terminalbench"],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-13",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      { "id": "labs-leaderboard-sweatlas-tw", "kind": "site", "title": "Scale AI Leaderboard — SWE Atlas · Test Writing（页面标注 Update July 28, 2026）", "url": "https://labs.scale.com/leaderboard/sweatlas-tw", "accessed": "2026-11-13" },
+      { "id": "arxiv-swe-atlas", "kind": "paper", "title": "SWE Atlas: Benchmarking Coding Agents Beyond Issue Resolution（arXiv:2605.08366v1，2026-05-08）", "url": "https://arxiv.org/pdf/2605.08366v1", "accessed": "2026-11-13" },
+      { "id": "github-swe-atlas", "kind": "repo", "title": "scaleapi/SWE-Atlas（任务数据、判分器与运行配置，Apache-2.0）", "url": "https://github.com/scaleapi/SWE-Atlas", "accessed": "2026-11-13" },
+      { "id": "minimax-blog-minimax-m3", "kind": "blog", "title": "MiniMax 博客：MiniMax-M3（第三方厂商自建口径，仅用于说明非官方口径差异）", "url": "https://www.minimax.io/blog/minimax-m3", "accessed": "2026-11-13" }
+    ],
+    "header": {
+      "publisher": { "v": "Scale AI", "cite": ["arxiv-swe-atlas@标题页"] },
+      "first_release": { "v": "2026-05-08（arXiv v1）", "cite": ["arxiv-swe-atlas@arXiv 版式"] }
+    },
+    "cites": {
+      "summary": ["labs-leaderboard-sweatlas-tw@Overview", "labs-leaderboard-sweatlas-tw@Dataset Description", "arxiv-swe-atlas@Abstract"],
+      "interpretation": ["labs-leaderboard-sweatlas-tw@Rubric Check", "labs-leaderboard-sweatlas-tw@Evaluation Metric", "labs-leaderboard-sweatlas-tw@Performance Comparison 第 1 行", "labs-leaderboard-sweatlas-tw@Performance Comparison 第 2 行", "arxiv-swe-atlas@§3 一致性"]
+    },
+    "problem": {
+      "text": "写测试是专业软件工程里最难外包给 AI 的环节之一：测试要回答「应该测什么」，而不是「代码现在怎么写的」。主流编码基准考的是把代码改对，测不出测试设计能力；SWE Atlas 因此把「补测试」单独拆成一个赛道，用程序化变异加 LLM rubric 来判分。",
+      "cite": ["arxiv-swe-atlas@Abstract", "arxiv-swe-atlas@§2.1.2 判分", "labs-leaderboard-sweatlas-tw@Mutation Test"]
+    },
+    "ladder": [
+      {
+        "label": "sanity check 基线（什么都不做的智能体）",
+        "value": "预期 0 分",
+        "note": "仓库内置 nop 智能体，用来验证判分链路是否正常工作；oracle 智能体套用参考解，预期拿满分。",
+        "cite": ["github-swe-atlas@README sanity check", "github-swe-atlas@README Oracle 检查"]
+      },
+      {
+        "label": "论文发布时最好（2026-05，Table 1）",
+        "value": "44.36%（GPT-5.4 (Codex) xHigh，± 6.04）",
+        "note": "arXiv v1 的 Table 1，3 次试验均值、Wilson 95% CI；同期 mini-SWE-agent 公共脚手架最高为 Opus 4.7 的 43.25%。",
+        "cite": ["arxiv-swe-atlas@Table 1", "labs-leaderboard-sweatlas-tw@Performance Comparison 第 8 行"]
+      },
+      {
+        "label": "官方榜单当前第 1（页面标注 2026-07-28）",
+        "value": "67.04%（Fable-5.1 (Claude Code) xHigh，± 5.33）",
+        "note": "v1.0 口径，rubric 裁判 Claude Opus 4.5；与论文 Table 1 同口径但模型批次不同。",
+        "cite": ["labs-leaderboard-sweatlas-tw@Performance Comparison 第 1 行", "arxiv-swe-atlas@附录 J judge"]
+      },
+      {
+        "label": "官方榜单当前第 2",
+        "value": "62.22%（Opus 5 (Claude Code) xHigh，± 5.58）",
+        "note": "同为 v1.0 口径；第 3 名是 Fable-5 (Claude Code) xHigh 的 55.60%。",
+        "cite": ["labs-leaderboard-sweatlas-tw@Performance Comparison 第 2 行", "labs-leaderboard-sweatlas-tw@Performance Comparison 第 3 行"]
+      },
+      {
+        "label": "页面正文自称的分数区间",
+        "value": "「Top models score under 45%」",
+        "note": "这句正文与同页榜单表（第 1 名 67.04%）自相矛盾，属于未随榜单更新的旧文案；读分数请以表为准。",
+        "cite": ["labs-leaderboard-sweatlas-tw@Results", "labs-leaderboard-sweatlas-tw@Performance Comparison 第 1 行"]
+      },
+      { "label": "本站账本当前最高", "auto": "ledger-top" }
+    ],
+    "misreadings": [
+      {
+        "text": "把 v1.0 和 v1.1 的分数排进同一张表。v1.1 换了裁判（openai/gpt-6.1-sol，high effort、3 票多数）、细化评分标准并限制网络，官方明确说两者不能直接比较。",
+        "cite": ["github-swe-atlas@README 版本更新", "github-swe-atlas@README Judge 配置"]
+      },
+      {
+        "text": "把 67% 理解成「已经会写测试了」。论文显示最好配置从 Pass@1 到 Pass³ 也会掉 30%–50%，同一任务三次跑并不稳定。",
+        "cite": ["arxiv-swe-atlas@§3 一致性"]
+      },
+      {
+        "text": "混排不同脚手架的分数。同一模型在厂商一方脚手架和 mini-swe-agent 上差距明显，官方称测试放置与逻辑一致性上可差约 10 个百分点。",
+        "cite": ["labs-leaderboard-sweatlas-tw@Analysis 脚手架"]
+      },
+      {
+        "text": "拿非必选 rubric 的得分当排名依据。官方只用 Test Comprehensiveness 这一个必选 rubric 计分排名，其余评分轴只做定性分析。",
+        "cite": ["labs-leaderboard-sweatlas-tw@Rubric creation", "arxiv-swe-atlas@§2.1.2 rubric"]
+      },
+      {
+        "text": "把厂商博客里的分数当官方口径。MiniMax 的 Opus 4.7 / MiniMax-M2.7 / MiniMax-M3 跑在自建基础设施上，用 Claude Code 脚手架、4C8G 沙箱、3 小时超时、跑 4 次取平均，只称与官方逻辑对齐。",
+        "cite": ["minimax-blog-minimax-m3@评测方法", "minimax-blog-minimax-m3@评测方法 对比组"]
+      },
+      {
+        "text": "以为 manifest 写不全是通过率的主要瓶颈。论文的结论正相反：多数模型 manifest 写得不错，真正拉开差距的是 rubric check 和 mutation check。",
+        "cite": ["arxiv-swe-atlas@§4.3 manifest", "arxiv-swe-atlas@§4.3 关键差异"]
+      }
+    ],
+    "background": [
+      { "k": "发布方", "v": "Scale AI（论文 15 位作者全部来自 Scale AI，Mohit Raghavendra、Soham Dan、Miguel Romero Calvo 为共同一作）", "cite": ["arxiv-swe-atlas@标题页"] },
+      { "k": "首次公开", "v": "2026-05-08，arXiv:2605.08366v1（cs.LG）", "cite": ["arxiv-swe-atlas@arXiv 版式"] },
+      { "k": "在套件中的位置", "v": "SWE Atlas 是覆盖三类专业软件工程工作流的基准套件，Test Writing 是其中一个子赛道；全套 284 题，本赛道 90 题", "cite": ["arxiv-swe-atlas@Abstract", "arxiv-swe-atlas@§1 贡献列表"] },
+      { "k": "任务范围", "v": "按测试范围分为集成测试、单元测试与验收测试三类；论文的结论是所有模型在单元与集成测试上相对好，验收测试明显更差", "cite": ["arxiv-swe-atlas@附录 F", "arxiv-swe-atlas@附录 F 分布"] },
+      { "k": "开源与复现", "v": "任务数据、判分器、rubric 与裁判提示词、逐模型运行配置以 Apache-2.0 公开；v1.1 把三个子榜单合成一个易跑的单一索引", "cite": ["github-swe-atlas@README 许可", "github-swe-atlas@README 索引", "github-swe-atlas@README 任务结构"] },
+      { "k": "v1.1 的变化", "v": "裁判换成 openai/gpt-6.1-sol（high reasoning effort、3 票多数），评分标准细化，智能体网络收到白名单内；官方说明分数与 v1.0 不可直接比较", "cite": ["github-swe-atlas@README 版本更新", "github-swe-atlas@README Judge 配置"] },
+      { "k": "致谢", "v": "README 致谢 Artificial Analysis 与 Inductive ML 对 v1.1 发布的贡献", "cite": ["github-swe-atlas@README 致谢"] },
+      { "k": "成本观察", "v": "论文附录 G 的观察是每任务成本随通过率上升", "cite": ["arxiv-swe-atlas@附录 G 成本"] }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-07-28",
+        "columns": ["来源", "模型 / 脚手架", "Task Resolve Rate", "口径"],
+        "rows": [
+          ["官方榜单（labs.scale.com）", "Fable-5.1 (Claude Code) xHigh", "67.04 ± 5.33", "v1.0，裁判 Claude Opus 4.5，3 次试验均值"],
+          ["官方榜单", "Opus 5 (Claude Code) xHigh", "62.22 ± 5.58", "同上"],
+          ["官方榜单", "Fable-5 (Claude Code) xHigh", "55.60 ± 5.80", "同上"],
+          ["官方榜单", "GPT-5.4 (Codex) xHigh", "44.36 ± 6.04", "同上（与论文 Table 1 数字一致）"]
+        ]
+      },
+      "cite": ["labs-leaderboard-sweatlas-tw@Performance Comparison 第 1 行", "labs-leaderboard-sweatlas-tw@Performance Comparison 第 2 行", "labs-leaderboard-sweatlas-tw@Performance Comparison 第 3 行", "labs-leaderboard-sweatlas-tw@Performance Comparison 第 8 行", "arxiv-swe-atlas@Table 1", "arxiv-swe-atlas@附录 J judge"]
+    }
+  }
+}

@@ -1,0 +1,593 @@
+{
+  "id": "paperbench",
+  "name": "PaperBench",
+  "full_name": "PaperBench: Evaluating AI's Ability to Replicate AI Research",
+  "aliases": [
+    "PaperBench Code-Dev"
+  ],
+  "status": "active",
+  "categories": [
+    "coding",
+    "agent"
+  ],
+  "summary": "OpenAI 的论文复现基准：让 agent 从零复现 20 篇 ICML 2024 Spotlight/Oral 论文（读懂贡献、写出代码库、跑出实验结果），全部任务拆成 8,316 个可单独判分的 rubric 叶子要求，rubric 与论文原作者共建，由 LLM 裁判自动判分；发布时最强 agent 平均复现分 21.0%，未超过 ML 博士人类基线。",
+  "interpretation": "高分代表「读论文 → 独立写出可运行代码库 → 复现出结果」的长程研究工程能力强；但分数对脚手架与时限口径极其敏感（Claude 3.5 Sonnet 换脚手架 21.0%→16.1%，o1 反向 13.2%→24.4%），Code-Dev 变体与全量分弱相关不可互比，41.4% 人类基线只是 3 篇子集口径，2026 年厂商自报分数还更换了裁判与运行框架，不能与官方榜单同排。",
+  "measures": [
+    {
+      "area": "Code Development",
+      "focus": "提交代码库里是否正确实现了论文要求的功能（看源码本身，不依赖执行）",
+      "share": "未披露（三类叶子按节点重要性加权；单篇 rubric 节点 94–2,551 个不等）",
+      "format": "叶子二元判分（满足 / 不满足）",
+      "cite": [
+        "paper@section-2-4",
+        "paper@section-3-1",
+        "paper@appendix-g"
+      ]
+    },
+    {
+      "area": "Execution",
+      "focus": "reproduce.sh 执行链路是否能跑通并产出部分结果（允许部分完成）",
+      "share": "未披露",
+      "format": "叶子二元判分，允许部分得分",
+      "cite": [
+        "paper@section-2-4",
+        "paper@appendix-g"
+      ]
+    },
+    {
+      "area": "Result Match",
+      "focus": "执行产出中是否有复现论文具体结果的证据（数值、图表对上原文）",
+      "share": "未披露",
+      "format": "叶子二元判分（从执行日志与输出核对）",
+      "cite": [
+        "paper@section-2-4",
+        "paper@appendix-g"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "在作者已有代码库或他人复现基础上做「改装式复现」——黑名单机制直接禁用这两类资源",
+      "cite": [
+        "paper@section-2-5"
+      ]
+    },
+    {
+      "text": "提出新研究想法或原创科学发现——任务被限定为按论文推断并复现既有成果，agent 全程看不到 rubric",
+      "cite": [
+        "paper@section-2-1"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 20,
+    "splits": [
+      "正式集 20 篇 ICML 2024 Spotlight/Oral 论文",
+      "开发集 2 篇 NeurIPS 2024 Workshop 论文",
+      "内部留存集（未公开）"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "expert-curated（20 篇 ICML 2024 论文，rubric 由各篇原作者核验签署）",
+    "public_sample": true,
+    "totals": "20 篇论文 · 共 8,316 个可判分叶子要求 · 单篇 rubric 节点 94–2,551 个 · 另有 2 篇开发集论文与不公开的内部留存集",
+    "cite": [
+      "openai-index-paperbench@abstract",
+      "paper@section-3",
+      "paper@section-3-1",
+      "repo@readme-intro"
+    ],
+    "construction": [
+      {
+        "k": "论文筛选",
+        "text": "覆盖 ICML 2024 十余个主题，按筛选规则挑 Spotlight/Oral 论文；团队联系了 42 位作者，最终 20 位同意共建 rubric。",
+        "cite": [
+          "paper@appendix-b"
+        ]
+      },
+      {
+        "k": "rubric 与原作者共建",
+        "text": "研究工程师逐篇起草 rubric 与补遗文档，经内部评审后交原作者在正式协议下核验修订；单篇耗时数周，平均每篇 rubric+补遗合计数十小时量级。",
+        "cite": [
+          "paper@section-3-1",
+          "paper@appendix-c"
+        ]
+      },
+      {
+        "k": "叶子粒度",
+        "text": "要求树自顶向下分解，直到熟悉论文的专家能在 15 分钟内核验单个叶子是否满足。",
+        "cite": [
+          "paper@section-3-1"
+        ]
+      },
+      {
+        "k": "判分权重",
+        "text": "叶子二元判分后，父节点取子节点得分的加权平均，逐层上传到根节点得到单篇复现分；主指标为 20 篇平均。",
+        "cite": [
+          "paper@section-2-3"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "replication-score",
+      "name": "平均复现得分（Replication Score）",
+      "direction": "越高越好",
+      "description": "单篇根节点得分来自叶子二元判分的加权平均，主指标为 20 篇平均；全部叶子满足才得 100%",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@section-2-3",
+        "openai-index-paperbench@abstract"
+      ]
+    },
+    {
+      "id": "code-dev-score",
+      "name": "PaperBench Code-Dev 得分",
+      "direction": "越高越好",
+      "description": "跳过执行、只判 Code Development 节点的轻量口径；与全量分弱相关（o1 的 Pearson r=0.48），不能互相换算",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@section-2-6"
+      ]
+    }
+  ],
+  "default_protocol": {
+    "raw": "agent 在 Ubuntu 24.04 Docker 容器（单张 A10 GPU、可联网，按篇黑名单禁用作者代码库与他人复现）里读论文与补遗，不给 rubric，最长 12 小时产出含 reproduce.sh 的代码库；随后把提交拷入全新 VM 干净执行 reproduce.sh（上限 12 小时，实测 agent 脚本平均 5.5 分钟跑完）；最后用 o3-mini(high) 的 SimpleJudge 逐叶子二元判分（2025-03 价格下单篇判分约 $66）。",
+    "cite": [
+      "paper@section-5-1",
+      "paper@section-2-1",
+      "paper@section-2-2",
+      "paper@section-2-5",
+      "paper@section-4-1"
+    ],
+    "variants": [
+      {
+        "text": "BasicAgent vs IterativeAgent：官方两种脚手架；同一模型换脚手架分数大幅变动且排名翻转（Claude 3.5 Sonnet 21.0%→16.1%，o1 13.2%→24.4%、36 小时上限 26.0%）。",
+        "cite": [
+          "paper@section-5-2",
+          "repo@leaderboard",
+          "paper@section-5-4"
+        ]
+      },
+      {
+        "text": "PaperBench Code-Dev：跳过执行、只判 Code Development 节点，不需要 GPU，判分成本约降 85%，与全量分弱相关。",
+        "cite": [
+          "paper@section-2-6",
+          "repo@code-dev"
+        ]
+      },
+      {
+        "text": "第三方自评口径：MiniMax M3 用 Claude Code + Ralph-Loop 跑 12 小时、19 篇可复现子集、Opus-4.6 裁判（数值未在正文披露）；Qwen3.8-Max 官方模型卡为 BasicAgent + Code-Dev 模式、Claude Opus 4.6 裁判、3 次平均。",
+        "cite": [
+          "minimax-blog-minimax-m3@paperbench-note",
+          "qwen-hf-card@footnote-8"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2025-04-02",
+      "label": "arXiv v1 提交、OpenAI 官网发布，官方榜单成绩均为同日口径",
+      "cite": [
+        "arxiv-listing@submission-history",
+        "repo@leaderboard"
+      ]
+    },
+    {
+      "id": "v3",
+      "date": "2025-04-07",
+      "label": "arXiv v3 最后修订（本页核对所用版本）",
+      "cite": [
+        "arxiv-listing@submission-history"
+      ]
+    },
+    {
+      "id": "minimax-m3-selfreport",
+      "date": "2026-06-01",
+      "label": "MiniMax M3 发布页给出 PaperBench 自评口径（Claude Code + Ralph-Loop、19 篇子集、Opus-4.6 裁判），数值未在正文披露",
+      "cite": [
+        "minimax-blog-minimax-m3@paperbench-note"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "LLM 裁判不如专家且非确定",
+      "impact": "默认裁判 o3-mini(high) 在 JudgeEval 上宏 F1 约 0.83，其中 Code Development 类仅约 0.72，是三类中最难判准的；且模型调用非确定，同一提交重复判分会有波动。",
+      "severity": "高",
+      "response": "官方开源 JudgeEval 与裁判方案可复评；附录 H 表明按深度 3 剪枝 rubric 可把判分成本再降约 10 倍而精度只略降。",
+      "reader": "换裁判模型（如厂商自评用 Opus 4.6）的分数与官方 o3-mini 口径不可比；引用分数先看裁判口径。",
+      "cite": [
+        "paper@section-4-2",
+        "paper@appendix-g",
+        "paper@section-7",
+        "paper@appendix-h"
+      ]
+    },
+    {
+      "issue": "脚手架与时限口径敏感",
+      "impact": "同一模型换脚手架或时限分数大幅变动且排名翻转；厂商自评还更换了运行框架（Claude Code / Ralph-Loop）、子集（19 篇）与裁判（Opus 4.6）。",
+      "severity": "高",
+      "response": "官方榜单把 BasicAgent 与 IterativeAgent 分列并标明时限与运行次数；本站引用时在结果表附口径列。",
+      "reader": "先核对脚手架、时限、裁判、子集四个口径标签再比较，见 official_results 口径列。",
+      "cite": [
+        "paper@section-5-2",
+        "repo@leaderboard",
+        "minimax-blog-minimax-m3@paperbench-note",
+        "qwen-hf-card@footnote-8"
+      ]
+    },
+    {
+      "issue": "数据污染风险",
+      "impact": "入选论文的作者代码库与他人在线复现可能已进入训练语料，模型可能内化解法而虚高分数。",
+      "severity": "中",
+      "response": "按篇黑名单禁用作者代码库与其他在线复现；论文依赖论文集的新近性缓解，并保留不公开的内部留存集。",
+      "reader": "高分应结合留存集或更新论文集的复核结果看，单次公开集分数保留余地。",
+      "cite": [
+        "paper@section-7",
+        "paper@section-2-5"
+      ]
+    },
+    {
+      "issue": "运行与判分成本高",
+      "impact": "o1 IterativeAgent 12 小时单篇 rollout 约 $400 API 额度，o3-mini 判分单篇约 $66；全量多模型多 seed 跑一轮开销可观。",
+      "severity": "中",
+      "response": "Code-Dev 变体无需 GPU、判分成本约降 85%；附录 H 剪枝方案再降约 10 倍。",
+      "reader": "看到低预算复现的分数先确认是全量还是 Code-Dev 口径。",
+      "cite": [
+        "paper@section-7",
+        "paper@section-4-1",
+        "paper@section-2-6"
+      ]
+    },
+    {
+      "issue": "题量小且方差高",
+      "impact": "只有 20 篇论文，单次运行方差高，官方建议多个 seed 取平均才能准确度量 agent 表现。",
+      "severity": "中",
+      "response": "官方结果均为每配置 3 次运行并报告标准误；论文明确建议他人用多个 seed。",
+      "reader": "个位数百分点的差距在本基准上不足为凭。",
+      "cite": [
+        "paper@section-7",
+        "paper@appendix-i"
+      ]
+    }
+  ],
+  "notes": "OpenAI Preparedness 发布，rubric 数据集与评测代码开源；MiniMax / Qwen 的自评口径见 default_protocol.variants 与 official_results。",
+  "official_sources": [
+    {
+      "kind": "site",
+      "url": "https://openai.com/index/paperbench/"
+    },
+    {
+      "kind": "site",
+      "url": "https://www.minimax.io/blog/minimax-m3"
+    },
+    {
+      "kind": "site",
+      "url": "https://qwen.ai/blog?id=qwen3.8"
+    }
+  ],
+  "related_benchmarks": [
+    "mlebench"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-13",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "PaperBench: Evaluating AI's Ability to Replicate AI Research（arXiv:2504.01848，v3，2025-04-07）",
+        "url": "https://arxiv.org/pdf/2504.01848",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "openai/preparedness · project/paperbench README（评测代码与官方榜单）",
+        "url": "https://raw.githubusercontent.com/openai/preparedness/main/project/paperbench/README.md",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "openai-index-paperbench",
+        "kind": "announcement",
+        "title": "OpenAI 官网发布页：Evaluating AI's Ability to Replicate AI Research",
+        "url": "https://openai.com/index/paperbench/",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "arxiv-listing",
+        "kind": "site",
+        "title": "arXiv 2504.01848 摘要页（提交历史 v1–v3）",
+        "url": "https://export.arxiv.org/abs/2504.01848",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "minimax-blog-minimax-m3",
+        "kind": "blog",
+        "title": "MiniMax M3 发布页（2026-06-01，PaperBench 自评口径脚注）",
+        "url": "https://www.minimax.io/blog/minimax-m3",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "qwen-hf-card",
+        "kind": "docs",
+        "title": "Qwen3.8-2.4T-A95B 官方模型卡（Benchmark Results 表与脚注 8）",
+        "url": "https://huggingface.co/Qwen/Qwen3.8-2.4T-A95B/raw/main/README.md",
+        "accessed": "2026-11-13"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "OpenAI（Preparedness 团队）",
+        "cite": [
+          "openai-index-paperbench@authors"
+        ]
+      },
+      "first_release": {
+        "v": "2025-04-02（arXiv v1，同日官网发布）",
+        "cite": [
+          "arxiv-listing@submission-history"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "openai-index-paperbench@abstract",
+        "repo@readme-intro"
+      ],
+      "interpretation": [
+        "paper@section-5-2",
+        "paper@section-5-4"
+      ]
+    },
+    "problem": {
+      "text": "SWE-bench 类基准测的是「在既有仓库里修 issue」，测不出从一篇论文出发独立搭出可运行代码库并复现结果的研究工程能力；PaperBench 把这件事拆成与原作者共建的可判分 rubric 树来量化。",
+      "cite": [
+        "openai-index-paperbench@abstract",
+        "paper@section-2-3"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "论文发布时最强 agent",
+        "value": "21.0%",
+        "note": "Claude 3.5 Sonnet (New) + 开源脚手架，BasicAgent、12 小时、3 次运行；同期 o1 为 13.2%。",
+        "cite": [
+          "openai-index-paperbench@abstract",
+          "paper@section-5-2"
+        ]
+      },
+      {
+        "label": "官方仓库榜单最高",
+        "value": "26.0%",
+        "note": "o1 (high) + IterativeAgent、36 小时上限、3 次运行（2025-04-02 口径）。",
+        "cite": [
+          "repo@leaderboard",
+          "paper@section-5-4"
+        ]
+      },
+      {
+        "label": "ML 博士人类基线",
+        "value": "41.4%",
+        "note": "3 篇子集、48 小时、每篇取 3 次尝试最好成绩；同子集 o1 为 26.6%。人类在 24 小时后反超 agent。",
+        "cite": [
+          "paper@section-1",
+          "paper@section-5-4",
+          "paper@figure-3"
+        ]
+      },
+      {
+        "label": "厂商自报最高（口径不可比）",
+        "value": "93.0（Qwen3.8-Max 自测）",
+        "note": "Qwen 官方模型卡 Benchmark Results 表中的 PaperBench 数值；脚注注明为 BasicAgent + Code-Dev 模式、Claude Opus 4.6 裁判、3 次平均、单次最长 12 小时——与官方全量复现分（o3-mini 裁判、含执行）不可比。",
+        "cite": [
+          "qwen-hf-card@benchmark-table",
+          "qwen-hf-card@footnote-8"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 Code-Dev 口径分数（o1 的 43.4%、Qwen 自报的 93.0）与全量复现分 21%–26% 排在一起比——两者只共享名字，不共享口径。",
+        "cite": [
+          "paper@section-2-6",
+          "qwen-hf-card@footnote-8"
+        ]
+      },
+      {
+        "text": "把不同脚手架 / 时限的分数混排（官方表把 BasicAgent 与 IterativeAgent 分列；o1 换 IterativeAgent 与 36 小时上限后从 13.2% 升到 26.0%）。",
+        "cite": [
+          "repo@leaderboard",
+          "paper@section-5-2"
+        ]
+      },
+      {
+        "text": "把 41.4% 人类基线当成 20 篇全量口径——它只基于 3 篇子集、48 小时、每篇 3 次取最好。",
+        "cite": [
+          "paper@section-1",
+          "paper@figure-3"
+        ]
+      },
+      {
+        "text": "看到厂商自报高分就认为「论文复现接近解决」——自评换了框架、子集与裁判，且官方提醒本基准方差高、需多 seed。",
+        "cite": [
+          "minimax-blog-minimax-m3@paperbench-note",
+          "paper@appendix-i"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "OpenAI（Preparedness 团队）",
+        "cite": [
+          "openai-index-paperbench@authors"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "Giulio Starace、Oliver Jaffe、Dane Sherburn、James Aung 等 13 人署名（另署 OpenAI）",
+        "cite": [
+          "openai-index-paperbench@authors"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2025-04-02 arXiv v1 提交并官网发布 → 2025-04-07 arXiv v3 定稿 → 2026-06-01 MiniMax M3 发布页以自评口径引用 → 其后 Qwen3.8 官方模型卡在基准表中自报 Code-Dev 口径成绩",
+        "cite": [
+          "arxiv-listing@submission-history",
+          "minimax-blog-minimax-m3@paperbench-note",
+          "qwen-hf-card@benchmark-table"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "rubric 数据集存放在 openai/frontier-evals（Git-LFS，需手动拉取），评测代码在 openai/preparedness 的 project/paperbench",
+        "cite": [
+          "repo@dataset",
+          "repo@readme-intro"
+        ]
+      },
+      {
+        "k": "判分成本",
+        "v": "o3-mini SimpleJudge 单篇约 $66（约 50M 输入 + 2M 输出 token，2025-03-21 价格）；Code-Dev 口径单篇约 $10；o1 IterativeAgent 12 小时单篇 rollout 约 $400",
+        "cite": [
+          "paper@section-4-1",
+          "paper@section-2-6",
+          "paper@section-7"
+        ]
+      },
+      {
+        "k": "人类基线安排",
+        "v": "招募顶尖 ML 博士做基线：兼职、四周窗口，每篇论文 3 次尝试，工时表记录有效工作时间",
+        "cite": [
+          "openai-index-paperbench@abstract",
+          "paper@section-5-4"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-13",
+        "columns": [
+          "来源",
+          "模型 / Agent",
+          "得分",
+          "口径"
+        ],
+        "rows": [
+          [
+            "论文 Table 4",
+            "Claude 3.5 Sonnet (New) · BasicAgent",
+            "21.0% ± 0.8",
+            "12h、3 次运行"
+          ],
+          [
+            "论文 Table 4",
+            "o1 (high) · BasicAgent",
+            "13.2% ± 0.3",
+            "12h、3 次运行"
+          ],
+          [
+            "论文 Table 4",
+            "DeepSeek-R1 · BasicAgent",
+            "6.0% ± 0.3",
+            "12h、3 次运行"
+          ],
+          [
+            "论文 Table 4",
+            "GPT-4o · BasicAgent",
+            "4.1% ± 0.1",
+            "12h、3 次运行"
+          ],
+          [
+            "论文 Table 4",
+            "Gemini-2.0-Flash · BasicAgent",
+            "3.2% ± 0.2",
+            "12h、3 次运行"
+          ],
+          [
+            "论文 Table 4",
+            "o3-mini (high) · BasicAgent",
+            "2.6% ± 0.2",
+            "12h、3 次运行"
+          ],
+          [
+            "官方仓库榜单",
+            "o1 (high) · IterativeAgent",
+            "26.0% ± 0.3",
+            "36h 上限、3 次运行（2025-04-02）"
+          ],
+          [
+            "官方仓库榜单",
+            "o1 (high) · IterativeAgent",
+            "24.4% ± 0.7",
+            "24h 上限、3 次运行（2025-04-02）"
+          ],
+          [
+            "官方仓库榜单",
+            "Claude 3.5 Sonnet · IterativeAgent",
+            "16.1% ± 0.1",
+            "12h、3 次运行（2025-04-02）"
+          ],
+          [
+            "官方仓库榜单",
+            "o3-mini (high) · IterativeAgent",
+            "8.5% ± 0.8",
+            "12h、3 次运行（2025-04-02）"
+          ],
+          [
+            "论文",
+            "o1 (high) · IterativeAgent（Code-Dev）",
+            "43.4%",
+            "只判 Code Development 节点、跳过执行"
+          ],
+          [
+            "论文",
+            "ML 博士人类基线（3 次取最好）",
+            "41.4%",
+            "3 篇子集、48 小时；同子集 o1 为 26.6%"
+          ],
+          [
+            "Qwen3.8 官方模型卡",
+            "Qwen3.8-Max",
+            "93.0",
+            "BasicAgent + Code-Dev 模式、Claude Opus 4.6 裁判、3 次平均、单次 ≤12h（自测）"
+          ],
+          [
+            "MiniMax M3 发布页",
+            "MiniMax M3",
+            "未披露（正文无数值，仅图表）",
+            "Claude Code + Ralph-Loop 12h、19 篇子集、Opus-4.6 裁判（自测）"
+          ]
+        ]
+      },
+      "cite": [
+        "paper@table-4",
+        "repo@leaderboard",
+        "paper@section-1",
+        "qwen-hf-card@benchmark-table",
+        "minimax-blog-minimax-m3@paperbench-note"
+      ]
+    }
+  }
+}

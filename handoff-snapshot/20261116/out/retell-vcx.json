@@ -1,0 +1,577 @@
+{
+  "id": "retell-vcx",
+  "name": "Retell vCX Benchmark",
+  "full_name": "Retell vCX Benchmark（vCX：v = voice，CX = customer experience，即呼叫中心坐席的日常工作；官方另有只取最难轮次的 vCX-Hard 变体）",
+  "aliases": [],
+  "status": null,
+  "categories": [
+    "agent"
+  ],
+  "summary": "Retell vCX Benchmark 是语音客服 Agent 平台 Retell AI 自建的公开模型榜单（bench.retellai.com）：用真实生产通话里的高难度多轮对话给各家大模型打分，四个分项——指令遵循、接地（答案是否来自给定资料而非模型自己编）、工具调用、口语化——等权平均成 Capability Score，同时公布首句延迟与每分钟成本。",
+  "interpretation": "高分说明该模型在 Retell 实际接线的多轮通话里更听指令、更少编造、更会在正确时机调用工具，并且首句接话更快；它不说明模型在别的 harness、别的语料、别的裁判下同样好——题目、数据与判分脚本都不公开，外部无法按同一协议复跑，因此 Capability Score 只能作为选型输入之一，不能当作可复现的实验结论。",
+  "measures": [
+    {
+      "area": "指令遵循（Instruction Following）",
+      "focus": "多轮通话中按系统提示、业务规则与角色设定行动，不越权、不偏离（前端类比：像严格遵守 ESLint 规则与 CI 配置的代码）。题目未公开，无原题可引。",
+      "share": "等权计入 Capability Score（各套件题量占比未披露）",
+      "format": "百分比得分",
+      "cite": "bench@Capability Score 计算说明"
+    },
+    {
+      "area": "接地（Grounding）",
+      "focus": "答案是否锚定在给定的知识库与上下文里，而不是模型自行补齐（前端类比：类型检查只认声明文件，不给 any 放行）。题目未公开，无原题可引。",
+      "share": "等权计入 Capability Score（各套件题量占比未披露）",
+      "format": "百分比得分",
+      "cite": "bench@Capability Score 计算说明"
+    },
+    {
+      "area": "工具调用（Tool Calling）",
+      "focus": "是否在正确时机选择并执行正确工具；vCX-Hard 的失败分析显示漏调与多调占绝大多数，选错工具极少。题目未公开，无原题可引。",
+      "share": "等权计入 Capability Score（各套件题量占比未披露）",
+      "format": "百分比得分",
+      "cite": "bench@Capability Score 计算说明"
+    },
+    {
+      "area": "口语化（Colloquial）",
+      "focus": "输出接近自然对话而非书面朗读稿的程度；该套件未评分时不参与平均。题目未公开，无原题可引。",
+      "share": "等权计入 Capability Score（各套件题量占比未披露）",
+      "format": "百分比得分",
+      "cite": "bench@Capability Score 计算说明"
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "不测整体通话体验：语气、打断处理、延迟稳定性都不在四个套件内（vCX-Hard 口径只覆盖幻觉与工具调用两类失败）。",
+      "cite": "vcx-hard-blog@Limitations and what is next"
+    },
+    {
+      "text": "不测客户自己的最难通话——那部分需要仿真测试在自己的场景上跑，官方明确把它列为基准看不到的案例。",
+      "cite": "vcx-hard-blog@From findings to production"
+    },
+    {
+      "text": "不测持续变化的线上质量：基准跑在固定集合上，生产流量一直在变，官方把这部分交给 AI QA。",
+      "cite": "vcx-hard-blog@From findings to production"
+    }
+  ],
+  "dataset": {
+    "sample_count": 3589,
+    "splits": [
+      "幻觉（接地失败）集 2,075 例",
+      "工具调用集 1,514 例",
+      "live 四套件各自的题量：未披露"
+    ],
+    "languages": [
+      "未披露"
+    ],
+    "source_type": "Retell 客户的生产通话流量（专有数据，不公开）",
+    "public_sample": false,
+    "totals": "官方唯一披露的题量口径来自 2026-06-04 的 vCX-Hard 公告：幻觉集 2,075 例 + 工具调用集 1,514 例 = 3,589 例；当前 live 四套件各自的题量未披露，数据为专有生产流量、不对外公开。",
+    "cite": "vcx-hard-blog@How we built the dataset",
+    "construction": [
+      {
+        "k": "采样窗口",
+        "text": "2026-02-06 至 2026-05-01 的生产通话流量，约每 15 天取一个 30 分钟窗口，只取前三个月通话量超过 1,000 通的组织。",
+        "cite": "vcx-hard-blog@How we built the dataset"
+      },
+      {
+        "k": "组织级均衡",
+        "text": "按组织而非按通话采样，避免少数大客户主导集合，使分布贴近真实部署而非单个客户。",
+        "cite": "vcx-hard-blog@How we built the dataset"
+      },
+      {
+        "k": "多阶段挖掘",
+        "text": "轻量预分类器挑候选轮次（数字声明、转接前时刻、工具报错、重复或缺失调用）→ LLM 分类器确认是否真发生失败并标注类别与严重度 → 二次复核该轮 → 生成正确参考解答用于判分。",
+        "cite": "vcx-hard-blog@How we built the dataset"
+      },
+      {
+        "k": "只取最难轮次",
+        "text": "每个案例都从真实生产通话中挖掘，非手写、非合成；只保留模型之间真正拉开差距的困难轮次。",
+        "cite": "vcx-hard-blog@How we built the dataset"
+      },
+      {
+        "k": "判分",
+        "text": "LLM 评委团（多个前沿模型组成的 panel）按描述性评分细则与生成的参考解答给每个案例打分，分歧在团内调和；官方明示绝对分随细则与评委变化，只把排名当信号。",
+        "cite": "vcx-hard-blog@How we grade"
+      },
+      {
+        "k": "公开与更新",
+        "text": "结果只以榜单形式公开，题目与判分脚本不开放；官方称会随新模型发布持续更新 live 榜单。",
+        "cite": "vcx-hard-blog@Limitations and what is next"
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "浏览器打开 bench.retellai.com，默认视图为 All Providers + All Reasoning、按 Capability Score 降序；每个模型一行，给出 Capability Score、四个分项、首句延迟中位数（ms）与每分钟成本（美元），行内标注该行所用的推理档位。",
+    "cite": "bench@筛选与排序",
+    "variants": [
+      {
+        "text": "推理档位：同一模型在 none / low / medium / high / interleaved 等设置下分数不同，榜单在每行用「· none」「· low」等标签标注所用档位；不固定档位做横向比较会失真。",
+        "cite": "bench@榜单表格"
+      },
+      {
+        "text": "生产口径 vs 最佳口径：vCX-Hard 论文给每个模型两个视图——production（关推理，线上真实运行方式）与 best（最强推理设置，天花板），非幻觉率上两者平均差约 5 个百分点，工具调用上差距更大。",
+        "cite": "vcx-hard-blog@Results"
+      },
+      {
+        "text": "供应商与变体过滤：榜单提供 All Providers / All Reasoning / Fast & Ultrafast 过滤与按 Capability Score 排序；OpenAI 2026-10-13 引用的快照明确标注「All providers · None/low reasoning · Fast variants excluded」，与默认视图不是同一集合。",
+        "cite": "openai-index-retell-ai@Choosing OpenAI models for the demands of a live call"
+      },
+      {
+        "text": "厂商转述的延迟口径矛盾：OpenAI 页面称 2026-10-13 批次 GPT‑6 Astra 与 GPT‑6 Sol 首句延迟中位数均为 883 ms、GPT‑5.6 Luna 为 497 ms；本页 2026-11-13 核对的 live 榜单为 Astra 1,139 ms、Sol 610 ms、Luna 326 ms，同一指标两个口径不一致。",
+        "cite": "openai-index-retell-ai@Keeping calls responsive as volume grows"
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "capability-score",
+      "name": "Capability Score",
+      "direction": "越高越好",
+      "description": "指令遵循、接地、工具调用、口语化四项的等权平均；口语化未评分时平均其余三项，任一项未评分则该行显示短横线。",
+      "range": "百分比",
+      "unit": "%",
+      "cite": "bench@Capability Score 计算说明"
+    },
+    {
+      "id": "instruction-following",
+      "name": "指令遵循（Instruction Following）",
+      "direction": "越高越好",
+      "description": "多轮通话中遵循系统提示、业务规则与角色约束的程度。",
+      "range": "百分比",
+      "unit": "%",
+      "cite": "bench@榜单表头"
+    },
+    {
+      "id": "grounding",
+      "name": "接地（Grounding）",
+      "direction": "越高越好",
+      "description": "答案锚定在给定知识库与上下文、不虚构的比例。",
+      "range": "百分比",
+      "unit": "%",
+      "cite": "bench@榜单表头"
+    },
+    {
+      "id": "tool-calling",
+      "name": "工具调用（Tool Calling）",
+      "direction": "越高越好",
+      "description": "在正确时机选择并执行正确工具；漏调与多调都计为失败。",
+      "range": "百分比",
+      "unit": "%",
+      "cite": "bench@榜单表头"
+    },
+    {
+      "id": "colloquial",
+      "name": "口语化（Colloquial）",
+      "direction": "越高越好",
+      "description": "输出接近自然口语对话而非书面朗读稿的程度。",
+      "range": "百分比",
+      "unit": "%",
+      "cite": "bench@榜单表头"
+    },
+    {
+      "id": "latency",
+      "name": "首句延迟中位数（Latency）",
+      "direction": "越低越好",
+      "description": "从通话接入到模型说出第一句的中位延迟；部分语音到语音模型未公布该值。",
+      "range": "毫秒",
+      "unit": "ms",
+      "cite": "bench@榜单表格"
+    }
+  ],
+  "versions": [
+    {
+      "id": "vcx-hard-2026-06-04",
+      "date": "2026-06-04",
+      "label": "vCX-Hard 首次公布：27 个模型 / 50 种配置，幻觉集 2,075 例 + 工具调用集 1,514 例，production 与 best 双视角",
+      "cite": "vcx-hard-blog@vCX-Hard: Benchmarking Leading AI Models on Real Contact Center Calls"
+    },
+    {
+      "id": "public-benchmark-2026-09-29",
+      "date": "2026-09-29",
+      "label": "公开榜单上线（changelog《A public benchmark for voice AI models》），承诺随新模型发布更新",
+      "cite": "bench-launch@A public benchmark for voice AI models"
+    },
+    {
+      "id": "openai-batch-2026-10-13",
+      "date": "2026-10-13",
+      "label": "OpenAI 引用的榜单快照：GPT‑6 Astra 指令遵循 89.7% 居首；Astra 与 Sol 首句延迟中位数 883 ms、Luna 497 ms",
+      "cite": "openai-index-retell-ai@Choosing OpenAI models for the demands of a live call"
+    },
+    {
+      "id": "live-2026-11-13",
+      "date": "2026-11-13",
+      "label": "本页核对日：live 榜单 Tell-1 以 94.4% 居首，最低为 GPT-5-Nano 56.4%",
+      "cite": "bench@榜单表格"
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "自建自评且自家模型居首：榜单由 Retell AI 搭建，数据与判分均不公开，而 Capability Score 榜首 Tell-1 是 Retell 自己的模型",
+      "impact": "读者无法区分「模型更好」与「更适配自家 harness」；厂商既办赛又参赛，排名需要打折扣看",
+      "severity": "高",
+      "response": "官方称 Retell 是模型中立的，并同时公布其他厂商模型在单项上的领先：Tell-1 只在口语化与延迟领先，接地、指令遵循、工具调用仍由其他模型领先",
+      "reader": "把 Capability Score 当作选型输入之一而非结论；关键决策前用自己的通话做仿真测试",
+      "cite": "bench-launch"
+    },
+    {
+      "issue": "题目、数据与判分脚本不公开",
+      "impact": "外部无法按同一协议复跑或验证，只能采信榜单快照与官方方法描述",
+      "severity": "高",
+      "response": "官方公开了 vCX-Hard 的采样、挖掘与判分方法描述，并称会随新模型发布持续更新 live 榜单",
+      "reader": "引用时写明抓取日期与过滤条件，不要把它当作可复现实验",
+      "cite": "vcx-hard-blog@Limitations and what is next"
+    },
+    {
+      "issue": "只取最难轮次（vCX-Hard 口径）",
+      "impact": "分数反映最难通话而非平均通话质量，绝对分被刻意压低，榜首约 88%",
+      "severity": "中",
+      "response": "官方明示这是设计目标：全量生产分布上多数前沿模型已过 90%，区分度不足",
+      "reader": "不要把 88% 读成「模型不可用」；它衡量的是困难子集",
+      "cite": "vcx-hard-blog@Why we grade on the hardest turns"
+    },
+    {
+      "issue": "LLM 评委团判分带自身偏差",
+      "impact": "绝对分随评分细则与评委组合变化，官方自称只把排名当信号",
+      "severity": "中",
+      "response": "官方用多个强评委而非单个，分歧在 panel 内调和",
+      "reader": "关注排名与相对差距，不要关注小数点后一位",
+      "cite": "vcx-hard-blog@How we grade"
+    },
+    {
+      "issue": "口径差异与厂商数据矛盾",
+      "impact": "同一指标在不同快照下不一致：OpenAI 页面 2026-10-13 报 GPT‑6 Astra 与 Sol 首句延迟中位数 883 ms、Luna 497 ms，而本页 2026-11-13 核对的 live 榜单为 Astra 1,139 ms、Sol 610 ms",
+      "severity": "中",
+      "response": "未见官方回应",
+      "reader": "比较延迟时固定同一快照与同一过滤条件，并注明抓取日期",
+      "cite": "openai-index-retell-ai@Keeping calls responsive as volume grows"
+    },
+    {
+      "issue": "不覆盖整体通话体验",
+      "impact": "语气、打断处理、延迟稳定性、转人工前的简报等平台行为都不在四个套件内",
+      "severity": "低",
+      "response": "官方指向平台侧的仿真测试与 AI QA 作为补充",
+      "reader": "把这四项当作质量下限，不要当作完整体验评估",
+      "cite": "vcx-hard-blog@Limitations and what is next"
+    }
+  ],
+  "notes": "2026-11-13 升级为 benchmark-profile/v2：来源全部重新核对（live 榜单、上线公告、vCX-Hard 公告、Retell 博客、OpenAI 客户案例）。官方唯一披露的题量口径来自 2026-06-04 vCX-Hard 公告（2,075 + 1,514 = 3,589 例），live 四套件题量未披露。发现一处口径矛盾：OpenAI 页面 2026-10-13 批次的首句延迟中位数与 live 榜单不一致，已写入 limitations。保留 v1 建档记录：2026-10-27 建档于 OpenAI 官网客户案例文章《Retell uses OpenAI models to help power 100M monthly calls》，归档见 models/2026-10-27-openai-retell-vcx/。",
+  "official_sources": [
+    {
+      "kind": "leaderboard",
+      "url": "https://bench.retellai.com"
+    },
+    {
+      "kind": "announcement",
+      "url": "https://www.retellai.com/changelog/voice-ai-model-benchmark"
+    },
+    {
+      "kind": "blog",
+      "url": "https://www.retellai.com/blog/vcx-hard-benchmark"
+    },
+    {
+      "kind": "site",
+      "url": "https://openai.com/index/retell-ai"
+    },
+    {
+      "kind": "blog",
+      "url": "https://www.retellai.com/blog/conductor-is-everywhere"
+    }
+  ],
+  "related_benchmarks": [],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-13",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      {
+        "id": "bench",
+        "kind": "leaderboard",
+        "title": "vCX benchmark（live leaderboard）",
+        "url": "https://bench.retellai.com",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "bench-launch",
+        "kind": "announcement",
+        "title": "A public benchmark for voice AI models（changelog，2026-09-29）",
+        "url": "https://www.retellai.com/changelog/voice-ai-model-benchmark",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "vcx-hard-blog",
+        "kind": "blog",
+        "title": "vCX-Hard: Benchmarking Leading AI Models on Real Contact Center Calls（2026-06-04）",
+        "url": "https://www.retellai.com/blog/vcx-hard-benchmark",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "conductor-blog",
+        "kind": "blog",
+        "title": "What's New in Conductor: Bringing Voice Agent Observability to Every Page",
+        "url": "https://www.retellai.com/blog/conductor-is-everywhere",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "openai-index-retell-ai",
+        "kind": "site",
+        "title": "Retell uses OpenAI models to help power 100M monthly calls",
+        "url": "https://openai.com/index/retell-ai",
+        "accessed": "2026-11-13"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Retell AI",
+        "cite": "bench-launch"
+      },
+      "first_release": {
+        "v": "未披露（可确认不晚于 2026-09-29；2026-06-04 的 vCX-Hard 公告已把 bench.retellai.com 称作 live benchmark）",
+        "cite": "bench-launch"
+      }
+    },
+    "cites": {
+      "summary": [
+        "bench@vCX benchmark",
+        "bench@Capability Score 计算说明",
+        "vcx-hard-blog@Introducing vCX-Hard"
+      ],
+      "interpretation": [
+        "bench@榜单表格",
+        "vcx-hard-blog@How we grade",
+        "vcx-hard-blog@Limitations and what is next"
+      ]
+    },
+    "problem": {
+      "text": "选语音模型过去只能靠演示和品牌名：同一个模型在 demo 里好听，上线后却在最难的通话轮次上漏调工具、编造政策。Retell 要用自己接线的真实生产流量，把「哪个模型适合跑电话」变成可横向比较的证据。",
+      "cite": "vcx-hard-blog@Why we built this"
+    },
+    "ladder": [
+      {
+        "label": "表中最低分行（非随机基线）",
+        "value": "56.4% Capability Score（GPT-5-Nano）",
+        "note": "榜单未给随机基线与人类基线；表中最低一行为 GPT-5-Nano",
+        "cite": "bench@榜单表格"
+      },
+      {
+        "label": "vCX-Hard 生产口径（关推理，2026-06-04）",
+        "value": "84.8% 非幻觉率（GPT-5.5）",
+        "note": "线上真实运行方式；同模型开推理为 88.0%",
+        "cite": "vcx-hard-blog@Results"
+      },
+      {
+        "label": "vCX-Hard 生产口径工具调用（2026-06-04）",
+        "value": "85.7%（Gemini-3.1-Pro，关推理）",
+        "note": "GPT-5.5 同口径为 75.6%，开推理才以 88.3% 领先",
+        "cite": "vcx-hard-blog@Results"
+      },
+      {
+        "label": "vCX-Hard 最佳口径（2026-06-04）",
+        "value": "约 88% 非幻觉率（GPT-5.5）",
+        "note": "官方称榜首约 88% 且这是设计使然",
+        "cite": "vcx-hard-blog@Why we grade on the hardest turns"
+      },
+      {
+        "label": "live 榜 Capability Score 最高（2026-11-13）",
+        "value": "94.4%（Tell-1）",
+        "note": "Retell 自家模型；只在口语化与延迟领先，接地 / 指令遵循 / 工具调用由其他模型领先",
+        "cite": "bench@榜单表格"
+      },
+      {
+        "label": "live 榜单项最高：指令遵循（2026-11-13）",
+        "value": "89.7%（GPT-6-Astra）",
+        "note": "OpenAI 2026-10-13 快照亦引用该值",
+        "cite": "bench@榜单表格"
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      },
+      {
+        "label": "饱和参考线",
+        "value": "全量生产分布上多数前沿模型已过 90%",
+        "note": "官方据此把 vCX-Hard 改为只判最难轮次",
+        "cite": "vcx-hard-blog@Why we grade on the hardest turns"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 88% 读成「模型不可用」。vCX-Hard 的分母只是最难的那部分轮次；全量分布上多数前沿模型已过 90%。",
+        "cite": "vcx-hard-blog@Why we grade on the hardest turns"
+      },
+      {
+        "text": "把 Capability Score 第一名当成全项第一。榜首 Tell-1 只在口语化与延迟领先，接地、指令遵循、工具调用分别由其他模型领先。",
+        "cite": "bench-launch"
+      },
+      {
+        "text": "忽略推理档位做横向比较。同一模型关推理与开推理在非幻觉率上平均差约 5 个百分点，工具调用上差距更大（GPT-5.5 从 88.3% 掉到 75.6%）。",
+        "cite": "vcx-hard-blog@Results"
+      },
+      {
+        "text": "把延迟当成质量分。延迟与成本是独立公布的运营列，且不同快照之间口径会变（OpenAI 页面与 live 榜不一致）。",
+        "cite": "openai-index-retell-ai@Keeping calls responsive as volume grows"
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "Retell AI（语音客服 Agent 平台；榜单与平台同属一家，非独立第三方）",
+        "cite": "bench-launch"
+      },
+      {
+        "k": "榜单位置",
+        "v": "bench.retellai.com，单页应用，默认 All Providers + All Reasoning、按 Capability Score 排序",
+        "cite": "bench@vCX benchmark"
+      },
+      {
+        "k": "名称含义",
+        "v": "v = voice，CX = customer experience（呼叫中心坐席的日常工作）；Hard 指方法——只对最难轮次判分",
+        "cite": "vcx-hard-blog@Introducing vCX-Hard"
+      },
+      {
+        "k": "vCX-Hard 变体",
+        "v": "2026-06-04 公布，27 个模型 / 50 种配置，产出幻觉与工具调用两个失败模式集，用 LLM 评委团判分",
+        "cite": "vcx-hard-blog@Introducing vCX-Hard"
+      },
+      {
+        "k": "数据与代码位置",
+        "v": "题目与判分脚本未公开；数据为 Retell 客户的生产通话流量（专有）",
+        "cite": "vcx-hard-blog@How we built the dataset"
+      },
+      {
+        "k": "客户侧规模（第三方页面转述）",
+        "v": "OpenAI 客户案例称 Retell 平台服务超过 4,000 家企业，月通话量从 2026 年初 3,000 万增至 9 月超过 1 亿",
+        "cite": "openai-index-retell-ai"
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-13",
+        "columns": [
+          "#",
+          "模型（厂商 · 推理档位）",
+          "Capability Score",
+          "指令遵循",
+          "接地",
+          "工具调用",
+          "口语化",
+          "首句延迟(ms)",
+          "每分钟成本(USD)"
+        ],
+        "rows": [
+          [
+            "1",
+            "Tell-1（Retell AI · interleaved）",
+            "94.4%",
+            "88.6%",
+            "97.2%",
+            "95.4%",
+            "96.6%",
+            "72",
+            "$0.0350"
+          ],
+          [
+            "2",
+            "GPT-6.1-Sol（OpenAI · low）",
+            "93.4%",
+            "88.5%",
+            "96.8%",
+            "95.4%",
+            "92.7%",
+            "1,166",
+            "$0.0640"
+          ],
+          [
+            "3",
+            "GPT-6-Astra（OpenAI · low）",
+            "93.2%",
+            "89.7%",
+            "96.7%",
+            "94.6%",
+            "91.6%",
+            "1,139",
+            "$0.3200"
+          ],
+          [
+            "4",
+            "Gemini-4-Argon（Google · low）",
+            "92.6%",
+            "88.0%",
+            "96.7%",
+            "95.8%",
+            "89.9%",
+            "3,956",
+            "$0.1280"
+          ],
+          [
+            "5",
+            "GPT-6.1-Terra（OpenAI · none）",
+            "92.4%",
+            "87.1%",
+            "95.8%",
+            "93.7%",
+            "92.8%",
+            "581",
+            "$0.0320"
+          ],
+          [
+            "6",
+            "GPT-6-Sol（OpenAI · none）",
+            "92.3%",
+            "86.2%",
+            "97.1%",
+            "93.7%",
+            "92.1%",
+            "610",
+            "$0.0640"
+          ],
+          [
+            "7",
+            "Claude-5.5-Opus（Anthropic · low）",
+            "92.2%",
+            "83.8%",
+            "97.4%",
+            "97.0%",
+            "90.5%",
+            "2,276",
+            "$0.1280"
+          ],
+          [
+            "8",
+            "GPT-5.5（OpenAI · none）",
+            "91.9%",
+            "85.6%",
+            "96.6%",
+            "93.5%",
+            "92.0%",
+            "1,000",
+            "$0.1600"
+          ],
+          [
+            "9",
+            "Claude-5.5-Sonnet（Anthropic · none）",
+            "91.2%",
+            "81.4%",
+            "96.1%",
+            "95.6%",
+            "91.6%",
+            "950",
+            "$0.0640"
+          ],
+          [
+            "10",
+            "Grok-Voice-3.0（xAI S2S · high）",
+            "91.2%",
+            "82.4%",
+            "95.1%",
+            "91.9%",
+            "95.2%",
+            "—",
+            "$0.1350"
+          ]
+        ]
+      },
+      "cite": "bench@榜单表格"
+    }
+  }
+}

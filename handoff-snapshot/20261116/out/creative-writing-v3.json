@@ -1,0 +1,447 @@
+{
+  "id": "creative-writing-v3",
+  "name": "Creative Writing v3",
+  "full_name": "EQ-Bench Creative Writing Benchmark v3",
+  "aliases": ["Creative Writing v3", "EQ-Bench Creative Writing v3", "创意写作 v3"],
+  "status": "active",
+  "categories": ["preference"],
+  "summary": "EQ-Bench 榜单的创意写作赛道 v3：对 32 道写作题各生成 3 次共 96 篇，先由量规评委给单篇打分并推断初始 Elo，再与相邻模型两两对决，用改造过的 Glicko 评级系统折算成榜单 Elo；Elo 越高只表示越受 LLM 评委偏好。",
+  "interpretation": "高分 = 更受两位 LLM 评委偏好的英语长文创作，不代表客观正确或通用写作能力：官方明确创意写作没有对错、榜单只是粗略指引。同一模型的量规分与 Elo 排名经常不一致（对决让评委更能区分，量规分受系统性偏差更小但区分度更低）。跨时间比较还要注意 Elo 会随新模型加入整体位移，官方靠两个锚点抵消。",
+  "measures": [
+    {
+      "area": "科幻与奇幻",
+      "focus": "经典科幻、生物朋克、鲸鱼朋克、舒适科幻、奇幻与歌特奇幻的设定推演、世界观自洽与类型语感",
+      "share": "约 21.9%（7/32）",
+      "format": "指定时代/世界观的场景写作，题面附字数要求",
+      "cite": ["cw-prompts@creative_writing_prompts_v3.json"]
+    },
+    {
+      "area": "叙事视角与形式实验",
+      "focus": "非常规第一人称、身体与空间感知、书信体等视角和形式约束下的叙事控制力",
+      "share": "约 21.9%（7/32）",
+      "format": "指定人称/时态/字数的场景写作",
+      "cite": ["cw-prompts@creative_writing_prompts_v3.json"]
+    },
+    {
+      "area": "同人与 SCP",
+      "focus": "既有世界观内的二创与 SCP 文档体，考验设定一致、文体模仿与收束",
+      "share": "约 15.6%（5/32）",
+      "format": "指定世界观与文体的短篇写作",
+      "cite": ["cw-prompts@creative_writing_prompts_v3.json"]
+    },
+    {
+      "area": "爱情与浪漫",
+      "focus": "浪漫关系推进、暧昧与情感张力，含黑色浪漫、当代恋爱戏剧",
+      "share": "12.5%（4/32）",
+      "format": "场景写作",
+      "cite": ["cw-prompts@creative_writing_prompts_v3.json"]
+    },
+    {
+      "area": "恐怖",
+      "focus": "超现实恐怖、民俗恐怖与青少年恐怖的氛围铺陈与恐惧节奏",
+      "share": "约 9.4%（3/32）",
+      "format": "场景写作",
+      "cite": ["cw-prompts@creative_writing_prompts_v3.json"]
+    },
+    {
+      "area": "幽默与荒诞",
+      "focus": "反乌托邦喜剧与荒诞桥段的喜剧节奏和语体控制",
+      "share": "约 6.3%（2/32）",
+      "format": "场景写作",
+      "cite": ["cw-prompts@creative_writing_prompts_v3.json"]
+    },
+    {
+      "area": "历史",
+      "focus": "古罗马等历史场景的物质细节、感官描写与时代语感",
+      "share": "约 6.3%（2/32）",
+      "format": "指定时代与视角的场景写作",
+      "cite": ["cw-prompts@creative_writing_prompts_v3.json"]
+    },
+    {
+      "area": "成长与日常戏剧",
+      "focus": "成长节点、青少年处境与日常人际冲突的心理真实度",
+      "share": "约 6.3%（2/32）",
+      "format": "场景写作",
+      "cite": ["cw-prompts@creative_writing_prompts_v3.json"]
+    },
+    {
+      "area": "两两对决的 9 条评判标准",
+      "focus": "人物真实性与洞察、新颖有趣、文字功底、情节/人物选择/隐喻的连贯、指令遵循、世界与氛围、避免角色对白情节陈词、避免华丽辞藻堆砌、避免过度比喻",
+      "share": "判分口径（非题量）：每条标准都必须分出胜负，无平局",
+      "format": "胜方每条得 + 到 +++++，+ 数作为 Glicko-2 的胜差权重",
+      "cite": ["eqbench-about@The Pairwise Judging Prompt"]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "不测角色扮演/对话式 RP 能力——官方明确这不是 roleplay eval。",
+      "cite": ["eqbench-about@What the benchmark is not"]
+    },
+    {
+      "text": "不测英语以外的语言写作——目前只评英语创作。",
+      "cite": ["eqbench-about@What the benchmark is not"]
+    },
+    {
+      "text": "不测事实正确性或知识准确性——没有标准答案，也不核查论据是否可验证。",
+      "cite": ["eqbench-about@What the benchmark is not"]
+    },
+    {
+      "text": "不测长上下文遵循、工具调用或多轮指令精确性——只评 32 个固定写作提示下的单次产出，指令遵循只是 9 条评判标准里的一条。",
+      "cite": ["eqbench-about@The Pairwise Judging Prompt"]
+    }
+  ],
+  "dataset": {
+    "sample_count": 96,
+    "splits": ["单一题库，无 train/test 划分", "每题 3 次迭代生成（32 题 × 3 = 96 个样本）"],
+    "languages": ["en"],
+    "source_type": "作者人工撰写并公开的题库（EQ-bench/creative-writing-bench 仓库）",
+    "public_sample": "https://raw.githubusercontent.com/EQ-bench/creative-writing-bench/main/data/creative_writing_prompts_v3.json",
+    "totals": "32 道题 × 3 次迭代 = 96 个生成样本；题面 category 标签共 23 种，本站归并为 8 个题材族；全部英语，题面要求 1000 词量级",
+    "cite": ["cw-prompts@creative_writing_prompts_v3.json", "eqbench-cw-repo@README"],
+    "construction": [
+      {
+        "k": "题库来源",
+        "text": "32 道题由作者人工撰写并公开在仓库 data/creative_writing_prompts_v3.json，每题含 category、title、writing_prompt 与 10–11 条 seed_modifiers。",
+        "cite": ["cw-prompts@creative_writing_prompts_v3.json"]
+      },
+      {
+        "k": "选题标准",
+        "text": "题目按淘汰法挑选，故意让较弱模型也觉得难，从而在头部区间保持区分度；官方说明题面要求覆盖幽默、浪漫、空间感与非常规第一人称视角。",
+        "cite": ["eqbench-about@Benchmark Philosophy"]
+      },
+      {
+        "k": "生成",
+        "text": "对待测模型跑满 32 道题 × 3 次迭代共 96 篇，温度 0.7、min_p 0.1。",
+        "cite": ["eqbench-cw-repo@README"]
+      },
+      {
+        "k": "长度归一",
+        "text": "输出统一截断到 4000 字符，再把各模型放到同一长度基准上比较。",
+        "cite": ["eqbench-about@Mitigating Bias"]
+      },
+      {
+        "k": "Elo 历史数据",
+        "text": "复现榜单口径的 Elo 必须使用仓库提供的 creative_bench_runs.json，其中含计算所需的历史对局数据。",
+        "cite": ["eqbench-cw-repo@README"]
+      },
+      {
+        "k": "提交与收录",
+        "text": "只接受 HuggingFace 上人人可下载的开放权重模型，作者在自己这边复验结果后才上榜。",
+        "cite": ["eqbench-about@How to Submit"]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "对待测模型跑 32 道题 × 3 次迭代（96 篇，温度 0.7、min_p 0.1）→ 输出截断到 4000 字符 → 量规评委给每篇打一个量规分，并用该分推断初始 Elo → 与榜单相邻模型做稀疏两两对决（逐条标准给 + 到 +++++）→ 用改造过的 Glicko 评级系统（按 + 数加权胜差）迭代到名次稳定 → 与最终邻域做全面对决得出榜单 Elo → 归一化时把 DeepSeek-R1 锚定为 1500、ministral-3b 锚定为 200。",
+    "cite": ["eqbench-about@How the benchmark works", "eqbench-about@Score Normalisation", "eqbench-cw-repo@README"],
+    "variants": [
+      {
+        "text": "长度口径：输出统一截断到 4000 字符；评委提示里明确「输出有时会被截断以保证长度一致，不要因此扣分，只按现有内容评判」。",
+        "cite": ["eqbench-about@Mitigating Bias", "eqbench-about@Judging notes"]
+      },
+      {
+        "text": "偏差口径：位置偏差靠所有对决正反各跑一次再平均缓解；自偏袒、正负性偏差、NSFW 规避、风格偏好与 slop 偏好被官方列为未做经验控制。",
+        "cite": ["eqbench-about@Mitigating Bias"]
+      },
+      {
+        "text": "评委口径存在来源差异：官网公告 2026-10-25 起量规评委为 GLM 5.3（OpenRouter，低推理强度）、两两对决评委为 Claude Opus 5（Anthropic API）；仓库 README 仍写推荐 Claude Sonnet 4.6 以对齐榜单。复现时以官网公告为准，并在报告里写明所用评委与日期。",
+        "cite": ["eqbench-about@News 2026-10-25", "eqbench-cw-repo@README"]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "elo",
+      "name": "Elo Score",
+      "direction": "越高越好",
+      "description": "榜单主指标：相邻模型两两对决的累计胜负经改造的 Glicko 评级系统（按 + 数加权胜差）折算，再按锚点归一化。当前榜单 147 条记录的实测区间为 200.0–2176.9。",
+      "range": [200, 2176.9],
+      "unit": "分",
+      "cite": ["eqbench-about@How the benchmark works", "eqbench-creative-writing-html@榜单"]
+    },
+    {
+      "id": "rubric",
+      "name": "Rubric Score",
+      "direction": "越高越好",
+      "description": "量规评委给单篇打的分（不经对决），官方未披露满分；当前榜单实测 31.85–83.15（不含占位行）。与 Elo 排名经常不一致。",
+      "range": [31.85, 83.15],
+      "unit": "分（满分未披露）",
+      "cite": ["eqbench-about@How the benchmark works", "eqbench-about@Rubric vs Elo Scores", "eqbench-creative-writing-html@榜单"]
+    },
+    {
+      "id": "slop",
+      "name": "Slop",
+      "direction": "越低越好",
+      "description": "LLM 高频套话（GPT-isms）的出现频率，用主 slop 表匹配统计。榜单单元格形如「1.2 i」，后缀 i 的含义官方未披露。",
+      "range": null,
+      "unit": "频率指数",
+      "cite": ["eqbench-creative-writing-html@Slop Score"]
+    },
+    {
+      "id": "repetition",
+      "name": "Repetition",
+      "direction": "越低越好",
+      "description": "输出中最高频词、二元组与三元组的频率之和，数值越高说明用词越重复。",
+      "range": null,
+      "unit": "频率和",
+      "cite": ["eqbench-creative-writing-html@Repetition Metric"]
+    }
+  ],
+  "versions": [
+    {
+      "id": "v3",
+      "date": "2025-03-28",
+      "label": "评测系统成型：源码仓库 EQ-bench/creative-writing-bench 创建并首次提交（README 即 v3 口径；这是仓库创建日，不是官方对外发布日）",
+      "cite": ["cw-repo-meta@created_at", "cw-repo-commits@首个提交"]
+    },
+    {
+      "id": "judge-2026-10-25",
+      "date": "2026-10-25",
+      "label": "榜单公告更换评委：量规评委改用 GLM 5.3（OpenRouter，低推理强度），两两对决评委改用 Claude Opus 5（Anthropic API）",
+      "cite": ["eqbench-about@News 2026-10-25"]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "主观性与品味差异",
+      "impact": "分数只反映两位 LLM 评委的偏好，官方明确创意写作没有对错、榜单只是粗略指引，也不代表某个人群的品味。",
+      "severity": "高",
+      "response": "属设计定位而非缺陷，官方在页面上直接写明这些边界。",
+      "reader": "把 Elo 当榜单内的相对名次读，不当写作能力绝对值；下结论前先看官方给出的样例输出。",
+      "cite": ["eqbench-about@Limitations of the benchmark", "eqbench-about@What the benchmark is not"]
+    },
+    {
+      "issue": "Elo 锚点随新模型漂移",
+      "impact": "Elo 求解器在加入新模型时会整体移动分数，官方靠 DeepSeek-R1=1500、ministral-3b=200 两个锚点抵消；不同时间抓取的同一模型分数仍可能变动。",
+      "severity": "中",
+      "response": "官方说明用锚点归一化来应对。",
+      "reader": "跨时间比较时先看同一模型的名次和分数是否变动，再判断是否真有进步。",
+      "cite": ["eqbench-about@Score Normalisation"]
+    },
+    {
+      "issue": "评委口径在官网与仓库之间不一致",
+      "impact": "官网公告（2026-10-25）写量规评委 GLM 5.3、对决评委 Claude Opus 5；仓库 README 仍写推荐 Claude Sonnet 4.6 以对齐榜单。两边未互相更新，按不同文档复现会得到不同评委。",
+      "severity": "中",
+      "response": "未见官方对差异的说明。",
+      "reader": "复现或引用前以官网公告为准，并在自己的记录里写明评委模型与抓取日期。",
+      "cite": ["eqbench-about@News 2026-10-25", "eqbench-cw-repo@README"]
+    },
+    {
+      "issue": "未控制的评委偏差",
+      "impact": "自偏袒、正负性偏差、NSFW 规避、风格偏好与 slop 偏好均被官方列为未做经验控制；长度偏差只靠 4000 字符截断缓解，位置偏差靠双向取平均缓解。",
+      "severity": "中",
+      "response": "官方列出但明确不控制。",
+      "reader": "对风格极端（极短或极繁）、含敏感内容或与评委同源的模型分数保持怀疑。",
+      "cite": ["eqbench-about@Mitigating Bias"]
+    },
+    {
+      "issue": "只测英语长文创作，题库规模小",
+      "impact": "仅英语；题库 32 题、题材集中在西方类型文学，无法外推到其他语言、非虚构写作或通用写作能力。",
+      "severity": "低",
+      "response": "官方明确 English Only。",
+      "reader": "非英语写作或其他文体请换用其他基准，不要用这个分数下结论。",
+      "cite": ["eqbench-about@What the benchmark is not", "eqbench-cw-repo@README"]
+    },
+    {
+      "issue": "成本与复现门槛",
+      "impact": "单模型评测约 10 美元 API 费用；必须使用仓库的 creative_bench_runs.json 历史对局数据才能得到可比的 Elo；且只收开放权重模型，闭源模型需作者代测。",
+      "severity": "低",
+      "response": "官方给出提交流程（HuggingFace 公开开放权重，作者复验后上榜）。",
+      "reader": "自测前先算 API 预算并下载历史对局文件；引用厂商自测数时确认其评委与口径。",
+      "cite": ["eqbench-about@Cost", "eqbench-about@How to Submit", "eqbench-cw-repo@README"]
+    }
+  ],
+  "notes": "xAI Grok 4.1 公告提到测了 Creative Writing v3 但未公布分数；与 EQ-Bench 3 是同一榜单站的不同赛道。官网（2026-10-25 起 GLM 5.3 / Claude Opus 5 任评委）与仓库 README（推荐 Claude Sonnet 4.6）口径不一致，复现前先读官网公告。",
+  "official_sources": [
+    { "kind": "site", "url": "https://eqbench.com/creative_writing.html" },
+    { "kind": "site", "url": "https://eqbench.com/about.html" },
+    { "kind": "repo", "url": "https://github.com/EQ-bench/creative-writing-bench" },
+    { "kind": "dataset", "url": "https://raw.githubusercontent.com/EQ-bench/creative-writing-bench/main/data/creative_writing_prompts_v3.json" },
+    { "kind": "site", "url": "https://x.ai/news/grok-4-1" }
+  ],
+  "related_benchmarks": ["eq-bench3"],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "eqbench-creative-writing-html",
+        "kind": "leaderboard",
+        "title": "EQ-Bench Creative Writing v3 官方榜单",
+        "url": "https://eqbench.com/creative_writing.html",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "eqbench-about",
+        "kind": "site",
+        "title": "EQ-Bench About（含 Creative Writing v3 方法、偏差与局限说明）",
+        "url": "https://eqbench.com/about.html",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "eqbench-cw-repo",
+        "kind": "repo",
+        "title": "EQ-bench/creative-writing-bench 仓库 README（v3 评测系统与复现说明）",
+        "url": "https://github.com/EQ-bench/creative-writing-bench",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "cw-prompts",
+        "kind": "dataset",
+        "title": "creative_writing_prompts_v3.json（32 道题面）",
+        "url": "https://raw.githubusercontent.com/EQ-bench/creative-writing-bench/main/data/creative_writing_prompts_v3.json",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "cw-repo-meta",
+        "kind": "repo",
+        "title": "GitHub 仓库元数据（created_at / stars / license）",
+        "url": "https://api.github.com/repos/EQ-bench/creative-writing-bench",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "cw-repo-commits",
+        "kind": "repo",
+        "title": "GitHub 提交历史（首个提交）",
+        "url": "https://api.github.com/repos/EQ-bench/creative-writing-bench/commits?per_page=100",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "x-news-grok-4-1",
+        "kind": "announcement",
+        "title": "xAI：Grok 4.1 发布公告",
+        "url": "https://x.ai/news/grok-4-1",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Samuel J. Paech（EQ-Bench 个人项目）",
+        "cite": ["eqbench-about@Cite EQ-Bench"]
+      },
+      "first_release": {
+        "v": "2025-03-28（源码仓库创建并首次提交；README 即 v3 评测系统）",
+        "cite": ["cw-repo-meta@created_at", "cw-repo-commits@首个提交"]
+      }
+    },
+    "cites": {
+      "summary": ["eqbench-cw-repo@README", "eqbench-about@How the benchmark works"],
+      "interpretation": ["eqbench-about@What the benchmark is not", "eqbench-about@Rubric vs Elo Scores"]
+    },
+    "problem": {
+      "text": "上一版创意写作评测（v2）在头部区间已经饱和，评委分不开顶尖模型的强弱；v3 因此重做了题面与判分——题面按淘汰法选到连较弱模型也觉得难，判分从单篇量规换成两两对决加 Elo 排名，把区分度留给评委。",
+      "cite": ["eqbench-about@Benchmark Philosophy"]
+    },
+    "ladder": [
+      {
+        "label": "归一化锚点（弱端）",
+        "value": "200",
+        "note": "官方把 ministral-3b 锚定为 200；当前榜单末位 llama-3.2-1b-instruct 也正好是 200.0。",
+        "cite": ["eqbench-about@Score Normalisation", "eqbench-creative-writing-html@榜单"]
+      },
+      {
+        "label": "归一化锚点（中段）",
+        "value": "1500",
+        "note": "官方把 DeepSeek-R1 锚定为 1500；该模型当前在榜第 66 位，Elo 1500.0。",
+        "cite": ["eqbench-about@Score Normalisation", "eqbench-creative-writing-html@榜单"]
+      },
+      {
+        "label": "榜单当前最高",
+        "value": "2176.9",
+        "note": "gpt-6-astra（第 1 位）。量规分最高的是第 2 位 kimi-k3.1-pro 的 83.15，两个指标的头部并不一致。",
+        "cite": ["eqbench-creative-writing-html@榜单"]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      },
+      {
+        "label": "人类基线",
+        "value": "论文未给出",
+        "note": "官方没有发布人类写作者对照分数；v3 也没有伴随论文，方法只写在官网与仓库 README。",
+        "cite": ["eqbench-about@Limitations of the benchmark"]
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 Slop / Repetition / Length 当成质量分——它们是诊断列：Slop 与 Repetition 越低越好，Length 只是输出长度，都不进 Elo 计算。",
+        "cite": ["eqbench-creative-writing-html@Slop Score", "eqbench-creative-writing-html@Repetition Metric"]
+      },
+      {
+        "text": "把量规分和 Elo 分当成一回事——同一模型两个分数排名经常不一致，官方解释是对决让评委更能区分单篇，而量规评分受系统性偏差更小但区分度更低。",
+        "cite": ["eqbench-about@Rubric vs Elo Scores"]
+      },
+      {
+        "text": "跨时间直接比 Elo 数值——Elo 求解器在加入新模型时会整体移动分数，官方靠 DeepSeek-R1=1500、ministral-3b=200 两个锚点抵消，但历史名次仍可能变动。",
+        "cite": ["eqbench-about@Score Normalisation"]
+      },
+      {
+        "text": "看到厂商公告提到 Creative Writing v3 就以为公布了分数——xAI 的 Grok 4.1 公告只说测了该基准，并说明正在和作者沟通上榜单，没有给出 CW v3 数字。",
+        "cite": ["x-news-grok-4-1@Creative Writing"]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "Samuel J. Paech 的 EQ-Bench 项目（创意写作赛道）；官方引用论文是 EQ-Bench 情感智能基准 arXiv:2312.06281",
+        "cite": ["eqbench-about@Cite EQ-Bench"]
+      },
+      {
+        "k": "自我定位",
+        "v": "榜单页自我描述为「A LLM-judged creative writing benchmark」；v3 没有专属论文，方法只写在官网与仓库 README",
+        "cite": ["eqbench-creative-writing-html@页首", "eqbench-cw-repo@README"]
+      },
+      {
+        "k": "与 EQ-Bench 3 的关系",
+        "v": "同一榜单站的不同赛道；榜单页的 Paper 链接指向 EQ-Bench 总论文 arXiv:2312.06281，不是 v3 专属论文",
+        "cite": ["eqbench-creative-writing-html@页首"]
+      },
+      {
+        "k": "题库",
+        "v": "32 道题公开在仓库 data/creative_writing_prompts_v3.json，每题带 category、title、writing_prompt 与 10–11 条 seed_modifiers；题面要求 1000 词量级",
+        "cite": ["cw-prompts@creative_writing_prompts_v3.json"]
+      },
+      {
+        "k": "复现门槛",
+        "v": "自测约 10 美元 API 费用/模型，且必须使用仓库的 creative_bench_runs.json 历史对局数据才能得到可比的 Elo",
+        "cite": ["eqbench-about@Cost", "eqbench-cw-repo@README"]
+      },
+      {
+        "k": "收录范围",
+        "v": "只收录 HuggingFace 上公开可得的开放权重模型，作者复验后上榜；当前榜单共 147 条记录",
+        "cite": ["eqbench-about@How to Submit", "eqbench-creative-writing-html@榜单"]
+      },
+      {
+        "k": "仓库状态",
+        "v": "GitHub 仓库 2025-03-28 创建，最近一次推送 2026-06-24；约 150 stars，未声明开源许可证",
+        "cite": ["cw-repo-meta@stargazers_count", "cw-repo-meta@license"]
+      },
+      {
+        "k": "第三方采用",
+        "v": "xAI Grok 4.1 公告提到测了 Creative Writing v3，并说明正在和作者沟通上榜单，但未公布分数",
+        "cite": ["x-news-grok-4-1@Creative Writing"]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-14",
+        "columns": ["排名", "模型", "Elo Score", "Rubric Score", "Slop", "Repetition", "Length", "备注"],
+        "rows": [
+          ["1", "gpt-6-astra", "2176.9", "79.70", "1.2 i", "3.5", "6191", "当前榜首"],
+          ["2", "kimi-k3.1-pro", "2172.6", "83.15", "1.3 i", "3.7", "5825", "新入榜；量规分为全场最高"],
+          ["3", "claude-fable-5-1", "2155.3", "81.35", "1.1 i", "3.6", "5841", ""],
+          ["4", "claude-opus-5", "2135.0", "81.30", "0.9 i", "4.3", "6003", "两两对决评委（官网公告口径）"],
+          ["5", "gpt-6-sol", "2126.0", "80.25", "1.2 i", "3.6", "6182", ""],
+          ["7", "GLM-5.3", "2076.4", "82.20", "1.2 i", "3.2", "5913", "量规评委（官网公告口径）"],
+          ["26", "claude-sonnet-4-6", "1811.0", "77.65", "1.4 i", "4.1", "5876", "仓库 README 推荐的复现评委"],
+          ["66", "DeepSeek-R1", "1500.0", "68.15", "4.3 i", "4.6", "5352", "官方归一化锚点（1500）"],
+          ["146", "gpt-3.5-turbo-0613", "450.3", "42.45", "7.4 i", "13.9", "3400", ""],
+          ["147", "llama-3.2-1b-instruct", "200.0", "31.85", "8.5 i", "19.1", "5290", "官方归一化锚点（200）；榜尾"]
+        ]
+      },
+      "cite": ["eqbench-creative-writing-html@榜单"]
+    }
+  }
+}

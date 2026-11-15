@@ -1,0 +1,511 @@
+{
+  "id": "openai-cobol-migration",
+  "name": "OpenAI COBOL Migration Evaluation",
+  "full_name": null,
+  "aliases": [
+    "COBOL 迁移评测",
+    "OpenAI COBOL migration evaluation"
+  ],
+  "status": null,
+  "categories": [
+    "coding"
+  ],
+  "summary": "OpenAI 自建的代码迁移评测：给模型一个已有 COBOL 程序，要求改写成 C++、Java、Kotlin、Python 或 Rust，且改写后程序的可观测输出必须与原程序逐字节一致；分数是「迁移后行为保持的准确率」。OpenAI 在 2026-10-19 的官网文章中公布：GPT-6.1 Sol 低推理强度 86.6%、更高推理强度 97.9%，同档对照 GPT-5.6 Sol 为 5.4%。",
+  "interpretation": "分数读作「改写后行为保持一致的 COBOL 程序占比（%）」，越高说明模型既读懂了代码里的业务逻辑，也拿捏住了 COBOL 语言自身的行为。读它时注意四点：① 官方点名的难点是 COBOL 定点运算默认丢弃多余小数位——改写时若改成四舍五入，程序可以不报错却算出不同的财务结果，所以「能编译能跑」远不等于「行为一致」；② 更高推理强度档官方自称「使评测接近饱和」，这一档区分度有限，两档口径不同也不能直接比；③ 这是 OpenAI 自建自报的评测，题目与评分细则未公开，外部无法复跑，86.6% 应读成「OpenAI 在自家隐藏测试上的自测结果」；④ 同句给出的成本口径（API 成本为对照的 61%）是成本对比，不是分值。",
+  "measures": [
+    {
+      "area": "COBOL 程序行为保持迁移",
+      "focus": "把已有 COBOL 程序改写成另一种语言，并保持程序行为不变；官方明确要求同时理解业务逻辑和 COBOL 的语言自身行为",
+      "share": "未披露（官方只公布这一个迁移评测的总分，未公布题量与各目标语言的占比）",
+      "format": "隐藏测试：改写后程序在可观测输出上与原程序逐字节一致，全部测试通过才算一次成功迁移",
+      "cite": [
+        "openai-index@§2 任务定义",
+        "openai-index@§2 判分",
+        "openai-index@§2 成功判定"
+      ]
+    },
+    {
+      "area": "COBOL 语言自身行为",
+      "focus": "定点运算丢弃多余小数位、舍入规则、缺记录处理等只在 COBOL 里成立的细节，以及只存在于代码里的业务规则",
+      "share": "未披露（官方未说明题目在这类难点上的分布）",
+      "format": "同一套隐藏测试覆盖：改写时若把这些细节改成四舍五入，程序可以不报错却算出不同的财务结果，测试即判失败",
+      "cite": [
+        "openai-index@§2 难点",
+        "openai-index@§2 舍入陷阱",
+        "openai-index@§2 业务规则"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "模型在主流语言上的通用编码能力（源语言固定为 COBOL，且任务是改造既有程序，不是从零写新程序）",
+      "cite": [
+        "openai-index@§2 任务定义",
+        "openai-index@§2 语言行为要求"
+      ]
+    },
+    {
+      "text": "从零搭建新系统的能力（这是姊妹评测 MultiLangBench 的项目：从零实现一个 SQLite 兼容的数据库引擎）",
+      "cite": [
+        "openai-index@§1 MultiLangBench 定位",
+        "multilangbench-repo@README 首段"
+      ]
+    },
+    {
+      "text": "迁移后代码的可维护性、性能与安全性（页面只判输出是否一致，没有评估这三项）",
+      "cite": [
+        "openai-index@§2 判分"
+      ]
+    },
+    {
+      "text": "真实主机环境的迁移工程量：官方自己说明，用于生产软件仍需专家复核，并对照系统的业务规则和依赖做测试",
+      "cite": [
+        "openai-index@§2 生产环境提醒",
+        "devops-cobol@真实迁移复杂度"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 0,
+    "splits": [
+      "官方未公开任何训练/测试划分，只说明用一套 hidden tests 判定"
+    ],
+    "languages": [
+      "COBOL"
+    ],
+    "source_type": "OpenAI 自建且未公开的隐藏测试集（页面未公布程序数量、程序来源与评分细则；随文章一同开源的 MultiLangBench 仓库只有 SQLite 构建任务的材料，不含本评测题目）",
+    "public_sample": false,
+    "totals": "题目总量未披露：OpenAI 只公布了成绩，没有公布 COBOL 程序数量或测试用例数，本评测的题目与评分细则也未随 MultiLangBench 开源。头部卡「题量」处的 0 表示「未披露」，不代表 0 道题。",
+    "cite": [
+      "openai-index@§2 判分",
+      "devto-hidden-tests@仓库只含 SQLite",
+      "thenewstack-cobol@无法独立检查"
+    ],
+    "construction": [
+      {
+        "k": "任务来源",
+        "text": "已有 COBOL 程序。官方没有说明这些程序从哪来、有多少道、是否来自真实业务系统。",
+        "cite": [
+          "openai-index@§2 任务定义"
+        ]
+      },
+      {
+        "k": "目标语言",
+        "text": "C++、Java、Kotlin、Python 或 Rust，模型把源程序改写成其中一种并保持其行为。",
+        "cite": [
+          "openai-index@§2 任务定义"
+        ]
+      },
+      {
+        "k": "通过条件",
+        "text": "在同一套隐藏测试上，改写后程序的可观测输出必须与原程序逐字节一致；只有全部测试通过才算一次成功迁移。",
+        "cite": [
+          "openai-index@§2 判分",
+          "openai-index@§2 成功判定"
+        ]
+      },
+      {
+        "k": "难点设计",
+        "text": "官方把 COBOL 定点运算默认丢弃多余小数位这类语言自身行为设为陷阱：改写时若改成四舍五入，程序可以不报错却算出不同的财务结果。",
+        "cite": [
+          "openai-index@§2 难点",
+          "openai-index@§2 舍入陷阱"
+        ]
+      },
+      {
+        "k": "业务规则",
+        "text": "COBOL 程序常处理金融交易与业务记录，舍入规则、缺记录处理等细节反映的是业务需求；官方也指出这类规则可能只存在于代码中。",
+        "cite": [
+          "openai-index@§2 业务规则",
+          "openai-index@维护难点"
+        ]
+      },
+      {
+        "k": "公开程度",
+        "text": "本评测的题目、样本量与评分细则均未公开；随文章开源的 MultiLangBench 仓库只覆盖 SQLite 构建任务，第三方报道同样确认了这一点。",
+        "cite": [
+          "openai-index@§1 开源说明",
+          "devto-hidden-tests@仓库只含 SQLite",
+          "thenewstack-cobol@缺乏测试集"
+        ]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "给模型一个已有 COBOL 程序，要求改写成 C++、Java、Kotlin、Python 或 Rust；用隐藏测试判定，测试要求改写后程序在可观测输出上与原程序逐字节一致，只有全部测试通过才算迁移成功。成绩按「迁移后行为保持的准确率」报告，并区分低推理强度与更高推理强度两档。",
+    "cite": [
+      "openai-index@§2 任务定义",
+      "openai-index@§2 判分",
+      "openai-index@§2 成绩"
+    ],
+    "variants": [
+      {
+        "text": "推理强度分两档：GPT-6.1 Sol 低推理强度 86.6%、更高推理强度 97.9%。两档是不同口径，不能混在同一列里比较。",
+        "cite": [
+          "openai-index@§2 成绩",
+          "openai-index@§2 饱和"
+        ]
+      },
+      {
+        "text": "成本口径不是分数：同一句里的「API 成本为对照的 61%」和摘要段的「成本低 39%」都是成本对比，不是准确率。",
+        "cite": [
+          "openai-index@§2 成绩",
+          "openai-index@摘要段"
+        ]
+      },
+      {
+        "text": "对照模型与姊妹评测要分开：低推理强度下的对照是 GPT-5.6 Sol 的 5.4%；MultiLangBench 上的 GPT-6 Astra / Luna 成绩属于另一个评测，不能拿来解释本评测的分数。",
+        "cite": [
+          "openai-index@§2 成绩",
+          "openai-index@§1 MultiLangBench 定位"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "migration_accuracy",
+      "name": "迁移后行为保持准确率",
+      "direction": "越高越好",
+      "description": "在隐藏测试上全部通过（改写后程序的可观测输出与原 COBOL 程序逐字节一致）的程序占比",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "openai-index@§2 判分",
+        "openai-index@§2 成功判定",
+        "openai-index@§2 成绩"
+      ]
+    }
+  ],
+  "versions": [
+    {
+      "id": "2026-10-19",
+      "date": "2026-10-19",
+      "label": "OpenAI 官网文章《Advancing coding in low-resource programming languages》首次公布本评测成绩；官方未给评测正式名称与版本号，此处以文章发布日期作为口径快照",
+      "note": "评测集与评分细则未公开；同篇文章同时公布姊妹评测 MultiLangBench 并开源其测试套件",
+      "cite": [
+        "openai-news-rss@pubDate",
+        "openai-news-rss@description",
+        "openai-index@§1 开源说明"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "厂商自建自报，未经独立复核",
+      "impact": "评测由 OpenAI 自己设计、在自己的模型上运行，成绩由 OpenAI 在官网文章中发布；没有论文、没有第三方榜单可对照。",
+      "severity": "高",
+      "response": "页面称评测设计参考了开发者与企业客户的反馈，但没有公布评测集，也没有独立复核安排。",
+      "reader": "把它当厂商自报口径读，不要当中立榜单；想与别家模型横向比较，需要对方在同一套隐藏测试上跑过——目前外部做不到。",
+      "cite": [
+        "devops-cobol@独立性质疑",
+        "thenewstack-cobol@无法独立检查"
+      ]
+    },
+    {
+      "issue": "评测集与评分细则未公开，无法复跑",
+      "impact": "题目数量、程序来源、测试用例与判分细节均未公开，外部无法重建同一套测试，也无法核对任务分布与难度。",
+      "severity": "高",
+      "response": "文章只说明用隐藏测试并要求逐字节一致；随文章开源的 MultiLangBench 仓库只含 SQLite 构建任务，不含本评测材料。",
+      "reader": "看到 86.6% / 97.9% 时，读成「OpenAI 在自家未公开测试集上的自测结果」，无法独立验证。",
+      "cite": [
+        "thenewstack-cobol@缺乏测试集",
+        "thenewstack-cobol@数据未公开",
+        "devto-hidden-tests@不可复跑",
+        "devto-hidden-tests@仓库只含 SQLite",
+        "openai-index@§2 判分"
+      ]
+    },
+    {
+      "issue": "更高推理强度档位已接近饱和",
+      "impact": "官方自己写 97.9%「使评测接近饱和」，这一档很难再区分模型强弱。",
+      "severity": "中",
+      "response": "官方在文章中点明了这一点，但没有给出更难的子集或后续版本。",
+      "reader": "引用成绩时优先用低推理强度档；两档之间的差距说明任务对推理预算敏感，不代表模型能力线性提升。",
+      "cite": [
+        "openai-index@§2 饱和",
+        "openai-index@§2 成绩"
+      ]
+    },
+    {
+      "issue": "没有分目标语言成绩",
+      "impact": "官方只给总体准确率，C++、Java、Kotlin、Python、Rust 五种目标语言各自的成绩与题量分布都没有公布。",
+      "severity": "中",
+      "response": "文章未说明是否会补充分语言结果。",
+      "reader": "如果你的迁移目标集中在某一种语言，这个总分的参考价值有限。",
+      "cite": [
+        "openai-index@§2 任务定义",
+        "openai-index@§2 成绩"
+      ]
+    },
+    {
+      "issue": "单个 benchmark 程序不等于真实主机遗产系统",
+      "impact": "真实迁移还涉及 copybook、JCL、数据存储、批处理调度和没有文档的集成；本评测只测单个程序的行为保持。",
+      "severity": "中",
+      "response": "官方自己也说明，用于生产软件仍需专家复核，并对照系统的业务规则和依赖做测试。",
+      "reader": "不要把 86.6% 直接换算成迁移项目的成功率或工时估算。",
+      "cite": [
+        "devops-cobol@真实迁移复杂度",
+        "devops-cobol@测试 harness 缺失",
+        "openai-index@§2 生产环境提醒"
+      ]
+    }
+  ],
+  "notes": "新铸 id：2026-10-25 建档于 OpenAI 官网文章《Advancing coding in low-resource programming languages》（https://openai.com/index/low-resource-programming-languages），该文把它称作「our COBOL migration evaluation」，未给正式名称。此前账本无此基准的引用记录。归档见 models/2026-10-19-gpt-6-multilangbench-cobol-migration/。\n2026-11-13 升级为 benchmark-profile/v2 深度档案：补齐逐条 cite 与逐字证据，新增评测定位、判分口径、分数阶梯、常见误读与第三方质疑。评测集仍未公开，题量按「未披露」记 0（占位，非 0 道题）。",
+  "official_sources": [
+    {
+      "kind": "site",
+      "url": "https://openai.com/index/low-resource-programming-languages"
+    }
+  ],
+  "related_benchmarks": [
+    "multilangbench"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-13",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      {
+        "id": "openai-index",
+        "kind": "site",
+        "title": "Advancing coding in low-resource programming languages（OpenAI 官方文章，2026-10-19）",
+        "url": "https://openai.com/index/low-resource-programming-languages",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "openai-news-rss",
+        "kind": "site",
+        "title": "OpenAI News RSS（条目 pubDate 与 description，用于确认文章发布日期）",
+        "url": "https://openai.com/news/rss.xml",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "multilangbench-repo",
+        "kind": "repo",
+        "title": "openai/MultiLangBench（随文章开源的姊妹评测仓库，Apache-2.0）",
+        "url": "https://github.com/openai/MultiLangBench",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "devops-cobol",
+        "kind": "blog",
+        "title": "OpenAI Puts COBOL Migration to the Test, and Its Newest Models Mostly Pass（DevOps.com，2026-10-21）",
+        "url": "https://devops.com/openai-puts-cobol-migration-to-the-test-and-its-newest-models-mostly-pass",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "devto-hidden-tests",
+        "kind": "blog",
+        "title": "OpenAI's COBOL migration score jumped from 5.4% to 86.6% — the tests are hidden（dev.to，2026-10-20）",
+        "url": "https://dev.to/gabrielanhaia/openais-cobol-migration-score-jumped-from-54-to-866-the-tests-are-hidden-29go",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "thenewstack-cobol",
+        "kind": "blog",
+        "title": "OpenAI's COBOL Migration Benchmark（The New Stack，2026-10-22）",
+        "url": "https://thenewstack.io/penai-cobol-migration-benchmark",
+        "accessed": "2026-11-13"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "OpenAI",
+        "cite": [
+          "openai-news-rss@description"
+        ]
+      },
+      "first_release": {
+        "v": "2026-10-19（OpenAI 官网文章首次公布）",
+        "cite": [
+          "openai-news-rss@pubDate"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "openai-index@§2 任务定义",
+        "openai-index@§2 判分",
+        "openai-index@§2 成绩",
+        "openai-news-rss@pubDate"
+      ],
+      "interpretation": [
+        "openai-index@§2 难点",
+        "openai-index@§2 饱和",
+        "openai-index@§2 成绩",
+        "thenewstack-cobol@无法独立检查"
+      ]
+    },
+    "problem": {
+      "text": "主流编码评测的对象是从零写新代码，而企业里大量关键系统是几十年前的 COBOL：文档可能不完整、原始开发者可能已离职、重要业务规则可能只存在于代码中。无论修 bug 还是换语言，团队都必须保留系统赖以运行的行为，但当时没有基准衡量「迁移后行为是否保持一致」。OpenAI 为此自建了本评测，与 MultiLangBench 并列：一个测从零构建，一个测保持既有软件的行为。",
+      "cite": [
+        "openai-index@维护难点",
+        "openai-index@迁移必要性",
+        "openai-index@两评测引入段",
+        "openai-index@§2 任务定义"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "对照模型：GPT-5.6 Sol（低推理强度）",
+        "value": "5.4%",
+        "note": "同一评测、同一推理强度档；官方未给这一档的成本口径。",
+        "cite": [
+          "openai-index@§2 成绩"
+        ]
+      },
+      {
+        "label": "GPT-6.1 Sol（低推理强度）",
+        "value": "86.6%",
+        "note": "同句给出的「API 成本为对照的 61%」是成本口径，不是分数。",
+        "cite": [
+          "openai-index@§2 成绩",
+          "openai-index@摘要段"
+        ]
+      },
+      {
+        "label": "GPT-6.1 Sol（更高推理强度）",
+        "value": "97.9%",
+        "note": "官方称这一档「使评测接近饱和」，区分度有限。",
+        "cite": [
+          "openai-index@§2 饱和"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把「API 成本为对照的 61%」当成准确率的一部分：它是成本口径，摘要段的对应表述是「成本低 39%」，与 86.6% 不是一回事。",
+        "cite": [
+          "openai-index@§2 成绩",
+          "openai-index@摘要段"
+        ]
+      },
+      {
+        "text": "拿 97.9% 说「COBOL 迁移已被解决」：官方自己写了这一档接近饱和，并明确说用于生产软件仍需专家复核、对照业务规则与依赖做测试。",
+        "cite": [
+          "openai-index@§2 饱和",
+          "openai-index@§2 生产环境提醒"
+        ]
+      },
+      {
+        "text": "把低推理强度与更高推理强度的分数放在同一列比较：两档是不同口径（86.6% vs 97.9%），跨档比较会高估提升幅度。",
+        "cite": [
+          "openai-index@§2 成绩"
+        ]
+      },
+      {
+        "text": "把这个分数当成通用编码能力：源语言固定为 COBOL、任务固定为迁移既有程序；从零构建新系统的能力由姊妹评测 MultiLangBench 测量，两者不能互相替代。",
+        "cite": [
+          "openai-index@两评测引入段",
+          "multilangbench-repo@README 定位"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "OpenAI",
+        "cite": [
+          "openai-news-rss@description"
+        ]
+      },
+      {
+        "k": "首次发布",
+        "v": "2026-10-19，随官网文章《Advancing coding in low-resource programming languages》公布；官方未给评测正式名称与版本号",
+        "cite": [
+          "openai-news-rss@pubDate",
+          "openai-news-rss@description"
+        ]
+      },
+      {
+        "k": "评测定位",
+        "v": "与 MultiLangBench 并列的两个自评测之一：MultiLangBench 测「从零构建」，本评测测「保持既有软件的行为」",
+        "cite": [
+          "openai-index@两评测引入段",
+          "openai-index@§1 MultiLangBench 定位"
+        ]
+      },
+      {
+        "k": "为什么做这个评测",
+        "v": "COBOL、Fortran、Visual Basic 等低资源语言可供模型学习的代码与文档远少于 Python / JavaScript，却支撑关键基础设施。官方给出的口径（引 IBM）：COBOL 支撑超过 40% 的网上银行系统、80% 的线下信用卡交易和 95% 的 ATM 交易",
+        "cite": [
+          "openai-index@首段",
+          "openai-index@低资源语言背景"
+        ]
+      },
+      {
+        "k": "维护这类软件的难点",
+        "v": "文档可能不完整、原始开发者可能已离职、重要业务规则可能只存在于代码中；无论修 bug 还是迁移，都必须保留系统赖以运行的行为",
+        "cite": [
+          "openai-index@维护难点",
+          "openai-index@迁移必要性"
+        ]
+      },
+      {
+        "k": "数据与代码位置",
+        "v": "本评测的题目与评分细则未公开。随文章开源的只有 MultiLangBench 的评测搭建与测试套件（GitHub: openai/MultiLangBench，Apache-2.0）：其 README 说明这是「一个语言模型实现 SQLite 3.40.1」的评测，并提示全量约 24k 个测试开销大，只应使用以 00 / 01 / 02 开头的 272 个测试",
+        "cite": [
+          "openai-index@§1 开源说明",
+          "devops-cobol@MultiLangBench 开源",
+          "multilangbench-repo@README 首段",
+          "multilangbench-repo@README 测试规模"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-13",
+        "columns": [
+          "来源",
+          "模型",
+          "推理强度",
+          "迁移后行为保持准确率",
+          "成本口径"
+        ],
+        "rows": [
+          [
+            "官网文章 §2",
+            "GPT-5.6 Sol",
+            "低",
+            "5.4%",
+            "未给出"
+          ],
+          [
+            "官网文章 §2",
+            "GPT-6.1 Sol",
+            "低",
+            "86.6%",
+            "API 成本为对照的 61%"
+          ],
+          [
+            "官网文章 §2",
+            "GPT-6.1 Sol",
+            "更高",
+            "97.9%",
+            "未给出"
+          ],
+          [
+            "官网文章摘要段",
+            "GPT-6.1 Sol",
+            "低",
+            "86.6%",
+            "成本低 39%"
+          ]
+        ]
+      },
+      "cite": [
+        "openai-index@§2 成绩",
+        "openai-index@摘要段"
+      ]
+    }
+  }
+}

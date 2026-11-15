@@ -1,0 +1,637 @@
+{
+  "id": "videoreasonbench",
+  "name": "VideoReasonBench",
+  "full_name": "VideoReasonBench: Can MLLMs Perform Vision-Centric Complex Video Reasoning?（视觉中心的复杂视频推理）",
+  "aliases": [],
+  "status": null,
+  "categories": [
+    "multimodal",
+    "reasoning"
+  ],
+  "summary": "视觉中心的复杂视频推理基准：240 段视频、1,440 道题。每段视频对一个只在片头或片尾露面的隐藏状态（latent state）连续施加 5–14 步可观察操作，题目分回忆、推断、预测三个递进层级，答案必须靠逐步积累画面里的证据推出来，没法靠常识或文字蒙对。",
+  "interpretation": "高分说明模型能按顺序记住大量细粒度操作、推断被遮住的隐藏状态并据此做反事实推理。官方横评 18 个 MLLM，只有开启思考的 Gemini-2.5-Pro 到 56.0%，人类基线 73.8%，开源旗舰最高 7.2%。但它只覆盖 6 类受控演示视频，不代表开放世界视频理解；而且把视频换成文字摘要后同一模型分数反而大幅上升，说明当前失分主因是细粒度视觉感知而非推理。",
+  "measures": [
+    {
+      "area": "Level 1 · Recall Order（回忆操作顺序）",
+      "focus": "按时间顺序复述视频里对隐藏状态做过的操作；示例题型为「视频中第 1 到第 10 个被移动的蓝色方块分别是哪些」",
+      "share": "240 题（六项技能题量均等，合计 1,440 题）",
+      "format": "自由文本答案，由文本 LLM 裁判对照标准答案判分",
+      "cite": [
+        "paper@§2.1.2 Questions",
+        "paper@§2.2 Data Construction",
+        "paper@§2.3 Evaluation Scheme"
+      ]
+    },
+    {
+      "area": "Level 1 · Recall Count（回忆操作次数）",
+      "focus": "数某一类操作在视频里出现了几次；示例题型为「视频中『向上』这个动作执行了多少次」",
+      "share": "240 题（六项技能题量均等）",
+      "format": "自由文本答案，LLM 裁判判分",
+      "cite": [
+        "paper@§2.1.2 Questions",
+        "paper@§2.2 Data Construction",
+        "paper@§2.3 Evaluation Scheme"
+      ]
+    },
+    {
+      "area": "Level 2 · Infer State（推断隐藏状态）",
+      "focus": "根据观察到的操作推出某个时刻被遮住的隐藏状态；示例题型为「视频结束时棋盘上的数字排列是怎样的」",
+      "share": "240 题（六项技能题量均等）",
+      "format": "自由文本答案，LLM 裁判判分",
+      "cite": [
+        "paper@§2.1.2 Questions",
+        "paper@§2.2 Data Construction",
+        "paper@§2.3 Evaluation Scheme"
+      ]
+    },
+    {
+      "area": "Level 2 · Compare State（比较两个时刻的隐藏状态）",
+      "focus": "比较片头与片尾两个隐藏状态的差异；示例题型为「开始和结束时两套数字排列在哪些格子上不同」",
+      "share": "240 题（六项技能题量均等）",
+      "format": "自由文本答案，LLM 裁判判分",
+      "cite": [
+        "paper@§2.1.2 Questions",
+        "paper@§2.2 Data Construction",
+        "paper@§2.3 Evaluation Scheme"
+      ]
+    },
+    {
+      "area": "Level 3 · Predict State（预测未来状态）",
+      "focus": "在推断出的状态基础上再执行一串给定操作，预测最终状态；示例题型为「若当前状态与视频结束时相同，再依次执行 upward, downward, upward，最终排列是什么」",
+      "share": "240 题（六项技能题量均等）",
+      "format": "自由文本答案，LLM 裁判判分",
+      "cite": [
+        "paper@§2.1.2 Questions",
+        "paper@§2.2 Data Construction",
+        "paper@§2.3 Evaluation Scheme"
+      ]
+    },
+    {
+      "area": "Level 3 · Predict Operation（反推所需操作）",
+      "focus": "给出目标状态，反推出要执行的操作序列；这一类没有唯一标准答案，改用模拟验证",
+      "share": "240 题（六项技能题量均等）",
+      "format": "无标准答案：用文本 LLM 从回答里抽出操作序列，再用与视频生成相同的函数模拟状态转移，检验是否达到目标状态",
+      "cite": [
+        "paper@§2.1.2 Questions",
+        "paper@§2.2 Data Construction",
+        "paper@§2.3 Evaluation Scheme"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "不测开放世界视频的感知鲁棒性：作者明确说视频相对「干净」，没有运动模糊、遮挡等开放场景的视觉歧义。",
+      "cite": [
+        "paper@附录 E"
+      ]
+    },
+    {
+      "text": "不测知识驱动型视频问答：论文把「任务由知识驱动、不重度依赖视觉内容」列为现有基准的缺陷，本基准的设计前提就是把视觉信息当作必要线索。",
+      "cite": [
+        "paper@§1",
+        "paper@Abstract"
+      ]
+    },
+    {
+      "text": "不测语音或字幕信息抽取：题库视频是程序生成的动画、命令行界面截图或人工实拍演示，论文未提及任何语音/字幕输入通道。",
+      "cite": [
+        "paper@§2.2.1 Video Engine"
+      ]
+    },
+    {
+      "text": "不测模型改进方法：论文定位是建立评测基准，明确表示不提出提升 MLLM 视频推理能力的具体方法。",
+      "cite": [
+        "paper@附录 E"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 1440,
+    "splits": [
+      "主集：240 段视频 × 每段 6 题（6 项技能各 1 题）= 1,440 题，论文未提及公开的训练/测试拆分",
+      "人类基线子集：从 1,440 题中随机抽取 240 题（每项技能 40 题），由三位作者独立标注"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "程序生成 + 人工实拍（Matplotlib 动画 / 命令行界面截图 / 实拍演示视频）",
+    "public_sample": true,
+    "totals": "240 段视频、1,440 道题：6 类演示视频各 60 段，6 项技能各 240 题；每题平均 81.5 个词（最长 262），完整提示词平均 198.8 个词（最长 420），视频平均 54.3 秒（最长 154.8 秒），每段视频含 5–14 步操作",
+    "cite": [
+      "paper@§2.2 Data Construction",
+      "paper@Table 1",
+      "paper@§3.1 Experimental Setups"
+    ],
+    "construction": [
+      {
+        "k": "定义任务形态",
+        "text": "把视频抽象成一串状态转移：操作序列在画面里完全可见，而状态只在片头或片尾露出一次，迫使模型用密集操作序列撑起视觉复杂度、用隐藏状态推断撑起推理复杂度。",
+        "cite": [
+          "paper@§2.1 Task Definition"
+        ]
+      },
+      {
+        "k": "视频引擎生成视频",
+        "text": "给定状态规模 N 与操作数 T，先随机初始化状态，再按各类演示的预定义规则生成操作与状态转移，形成指导视频制作的「脚本」。Number / Circle / Cup 用 Python Matplotlib 程序生成，File 在命令行界面模拟文件操作并截图，Card / Chip 由人工实拍。",
+        "cite": [
+          "paper@§2.2.1 Video Engine"
+        ]
+      },
+      {
+        "k": "问题引擎生成题目与答案",
+        "text": "按「演示类型 × 推理技能」定义问题模板，例如 Number 演示的 Infer State 模板是「What is the arrangement of numbers on the board at the {timestamp} of the video?」；提示词附带该演示的状态转移规则说明和「Final Answer:」答案提示，答案由手工规则从状态转移数据自动导出。",
+        "cite": [
+          "paper@§2.2.2 Question Engine"
+        ]
+      },
+      {
+        "k": "设计评分方案",
+        "text": "除 Predict Operation 外所有题目都配标准答案，用文本 LLM 裁判判对错；Predict Operation 没有标准答案，改为抽取操作序列后用与视频生成相同的函数模拟状态转移、验证是否达到目标状态。",
+        "cite": [
+          "paper@§2.3 Evaluation Scheme"
+        ]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "闭卷单轮：把采样视频帧与完整提示词一起送给模型，模型在「Final Answer:」后给出最终答案。官方用 Qwen2.5-72B 作为文本裁判，输入问题、标准答案和模型回答来判定对错，并改造 VLMEvalKit 框架支持本基准。专有模型走官方 API，按 1fps 采帧并设帧数上限（GPT-4o / o4-mini 为 50 帧、Seed1.5-VL 为 128 帧、Gemini 系列不设上限）；开源模型用公开 checkpoint 本地推理，默认取 32 帧（高效型）或 64 帧（旗舰型），温度默认 0.0。人类基线由三位作者在 240 题子集（每项技能 40 题）上独立自由作答，平均每题 223.2 秒。",
+    "cite": [
+      "paper@§3.1 Experimental Setups",
+      "paper@附录 C.1",
+      "paper@Table 2"
+    ],
+    "variants": [
+      {
+        "text": "思考开 / 关：同一模型差距明显——Gemini-2.5-Flash 关闭思考 18.8%、开启 27.4%；不同思考预算下的分数不可直接比。",
+        "cite": [
+          "paper@§3.2 Main Results",
+          "paper@§3.3.1 Effect of Thinking"
+        ]
+      },
+      {
+        "text": "vid2txt（把视频换成文字摘要）：Seed1.5-VL 从 11.5% 升到 69.4%、Gemini-2.5-Flash 从 27.4% 升到 72.2%，与看视频的分数完全不是同一把尺子。",
+        "cite": [
+          "paper@§3.2 Main Results"
+        ]
+      },
+      {
+        "text": "视觉输入量：全视频 / 随机砍半 / 单中心帧 / 纯文本四档，Gemini-2.5-Flash 从 27.4% 掉到 12.2%、0.5%、1.0%，报分数时必须说明用了多少帧。",
+        "cite": [
+          "paper@§3.3.2 Effect of Vision Reliance",
+          "paper@Table 3"
+        ]
+      },
+      {
+        "text": "人类基线只在随机抽取的 240 题子集上测得，与模型的全量 1,440 题成绩不是同一次抽样，直接对比要留余地。",
+        "cite": [
+          "paper@Table 2"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "accuracy",
+      "name": "准确率",
+      "direction": "越高越好",
+      "description": "裁判判定与标准答案一致的题目占比。Predict Operation 一类没有标准答案，改为模拟模型给出的操作序列、检验最终状态是否达到目标状态。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§2.3 Evaluation Scheme",
+        "paper@§3.1 Experimental Setups"
+      ]
+    }
+  ],
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2025-05-29",
+      "label": "arXiv v1 首发（arXiv:2505.23359）",
+      "cite": [
+        "paper@Submission history"
+      ]
+    },
+    {
+      "id": "v2-iclr2026",
+      "date": "2026-03-17",
+      "label": "arXiv v2，论文标注为 ICLR 2026 会议论文（本页核对所用版本）",
+      "cite": [
+        "paper@Submission history",
+        "paper@标题页"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "只覆盖 6 类受控演示视频",
+      "impact": "视频是程序生成动画、命令行截图或人工实拍的干净演示，没有运动模糊、遮挡、视角变化等开放世界的感知噪声；在这类视频上的高分不能外推到真实视频理解。",
+      "severity": "高",
+      "response": "论文在 Limitations 中明确承认，并把「引入开放世界视频」列为后续方向；附录 A.2 另用 LMArena 视觉榜排名佐证其与真实人类偏好的相关性。",
+      "reader": "把分数当作「受控场景下的视觉推理能力」，不要当作通用视频理解能力。",
+      "cite": [
+        "paper@附录 E",
+        "paper@附录 A.2"
+      ]
+    },
+    {
+      "issue": "失分主因是细粒度视觉感知，不是推理",
+      "impact": "把视频换成文字摘要后同一模型分数大幅上升（Seed1.5-VL 11.5%→69.4%，Gemini-2.5-Flash 27.4%→72.2%）；输入砍到单帧时相对下降 98.2%，而既有基准最大只掉 28.3%。低分很大程度来自「看不准密集操作序列」。",
+      "severity": "高",
+      "response": "论文把细粒度时序感知列为当前 MLLM 的主要瓶颈之一，并明确表示不提出改进方法，只把它作为后续方向。",
+      "reader": "看到低分先分清是「没看懂画面」还是「推理错了」；跨基准比较时优先看有没有 vid2txt 对照。",
+      "cite": [
+        "paper@§3.2 Main Results",
+        "paper@§3.3.2 Effect of Vision Reliance",
+        "paper@附录 E"
+      ]
+    },
+    {
+      "issue": "评测口径差异大，分数不可直接横比",
+      "impact": "思考开关、视觉输入帧数、温度与最大 token 上限都会改变分数；论文对专有模型用 1fps 采帧并设帧数上限、对开源模型取 32/64 帧，不同复现很容易不可比。",
+      "severity": "中",
+      "response": "论文在附录 C.1 给出每个模型的推理配置表并改造 VLMEvalKit 供复现；附录 A.1 用答案改写与更换裁判（Qwen3-235B-A22B）两种方式验证裁判稳定性，平均准确率差异在 1% 以内。",
+      "reader": "比对前先确认帧采样、思考档位、温度与裁判是否一致。",
+      "cite": [
+        "paper@附录 C.1",
+        "paper@附录 A.1",
+        "paper@§3.1 Experimental Setups"
+      ]
+    },
+    {
+      "issue": "规模偏小且有一类没有唯一答案",
+      "impact": "1,440 题、240 段视频，单项技能仅 240 题，几个百分点的波动可能来自题目难度分布；Predict Operation 一类有多种合法操作序列，只能靠模拟验证，不同复现的实现可能不同。",
+      "severity": "中",
+      "response": "该类用与视频生成相同的状态转移函数做模拟验证；人类基线同样只抽 240 题并由三位作者独立标注。论文还给出状态规模与操作数对分数的影响，说明难度可按这两个参数缩放。",
+      "reader": "看单项技能分数时留意样本量；比较 Predict Operation 成绩时确认模拟验证实现一致。",
+      "cite": [
+        "paper@§2.3 Evaluation Scheme",
+        "paper@§3.1 Experimental Setups",
+        "paper@§3.3.3 Effect of Video Complexity"
+      ]
+    },
+    {
+      "issue": "来源之间发表状态标注不一致",
+      "impact": "官网 BibTeX 引用块写作 arXiv preprint（year={2025}），而论文 v2 页面标注为 ICLR 2026 会议论文，按官网条目引用容易引成预印本。",
+      "severity": "低",
+      "response": "以 arXiv v2（2026-03-17）与论文页面的 ICLR 2026 标注为准。",
+      "reader": "引用请写 ICLR 2026 / arXiv:2505.23359v2。",
+      "cite": [
+        "site@Citation",
+        "paper@标题页"
+      ]
+    }
+  ],
+  "notes": "arXiv:2505.23359v2（ICLR 2026）；项目页 llyx97.github.io/video_reason_bench/；数据集 huggingface.co/datasets/lyx97/reasoning_videos",
+  "official_sources": [
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2505.23359"
+    },
+    {
+      "kind": "site",
+      "url": "https://llyx97.github.io/video_reason_bench/"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/lyx97/reasoning_videos"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/llyx97/video_reason_bench"
+    }
+  ],
+  "related_benchmarks": [
+    "videoholmes",
+    "minerva",
+    "video-mme",
+    "mmvu",
+    "video-mmmu",
+    "tempcompass"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "VideoReasonBench: Can MLLMs Perform Vision-Centric Complex Video Reasoning?（arXiv:2505.23359v2，ICLR 2026）",
+        "url": "https://arxiv.org/abs/2505.23359",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "site",
+        "kind": "site",
+        "title": "VideoReasonBench 项目页（摘要 / 总览 / 榜单 / 示例题）",
+        "url": "https://llyx97.github.io/video_reason_bench/",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "北京大学（多媒体信息处理国家重点实验室、计算机学院）× Moonshot AI，南京大学参与",
+        "cite": [
+          "paper@标题页"
+        ]
+      },
+      "first_release": {
+        "v": "2025-05-29（arXiv v1）",
+        "cite": [
+          "paper@Submission history"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "paper@Abstract",
+        "paper@§2.2 Data Construction",
+        "paper@§2.1.2 Questions"
+      ],
+      "interpretation": [
+        "paper@§3.2 Main Results",
+        "paper@附录 E",
+        "paper@§3.3.2 Effect of Vision Reliance"
+      ]
+    },
+    "problem": {
+      "text": "既有视频基准的题目多是短视频、知识驱动的问答，不依赖视觉内容也能答，长思维链的优势体现不出来；VideoReasonBench 把「隐藏状态 + 一串可观察操作」做成视频，答案必须一步步从画面里累积的证据推出来，从而同时测出视觉推理深度和思考预算的收益。",
+      "cite": [
+        "paper@§1",
+        "paper@Abstract"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "开源旗舰模型（72B+）",
+        "value": "7.2%",
+        "note": "Qwen2.5-VL 72B 为开源最高，InternVL3 78B 5.8%；10B 以下高效模型全部低于 2%。",
+        "cite": [
+          "paper@§3.2 Main Results"
+        ]
+      },
+      {
+        "label": "论文发布时最好（专有模型）",
+        "value": "56.0%",
+        "note": "Gemini-2.5-Pro-0506，开启思考，全量 1,440 题。",
+        "cite": [
+          "paper@§3.2 Main Results",
+          "paper@Abstract"
+        ]
+      },
+      {
+        "label": "换成文字摘要（vid2txt）",
+        "value": "72.2%",
+        "note": "Gemini-2.5-Flash 在文字摘要口径下达 72.2%、Seed1.5-VL 69.4%，比它们自己看视频高得多——这一档不是同一把尺子，只说明瓶颈在视觉感知。",
+        "cite": [
+          "paper@§3.2 Main Results"
+        ]
+      },
+      {
+        "label": "人类基线",
+        "value": "73.8%",
+        "note": "三位作者在随机抽取的 240 题子集（每项技能 40 题）上独立标注，平均每题 223.2 秒。",
+        "cite": [
+          "paper@Table 2",
+          "paper@§3.2 Main Results"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 vid2txt 分数和看视频的分数排在一起比——文字摘要口径下 Gemini-2.5-Flash 能到 72.2%，比它自己看视频的 27.4% 高得多，两者衡量的不是同一种能力。",
+        "cite": [
+          "paper@§3.2 Main Results"
+        ]
+      },
+      {
+        "text": "看到低分就判定模型不会推理——论文分析显示更直接的瓶颈是细粒度时序感知：换成文字摘要后同一模型分数大幅上升，砍掉一半帧就掉 55.5%。",
+        "cite": [
+          "paper@§3.2 Main Results",
+          "paper@§3.3.2 Effect of Vision Reliance"
+        ]
+      },
+      {
+        "text": "把人类 73.8% 当成全量 1,440 题的成绩——它只在随机抽取的 240 题子集（每项技能 40 题）上测得。",
+        "cite": [
+          "paper@Table 2"
+        ]
+      },
+      {
+        "text": "忽略思考档位——Gemini-2.5-Flash 关闭思考 18.8%、开启 27.4%；论文还显示思考预算增加时本基准提升约 9%，而四个既有视频基准全部不到 2.5%。",
+        "cite": [
+          "paper@§3.2 Main Results",
+          "paper@§3.3.1 Effect of Thinking"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "北京大学（多媒体信息处理国家重点实验室、计算机学院）× Moonshot AI，南京大学参与",
+        "cite": [
+          "paper@标题页"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "Yuanxin Liu、Kun Ouyang、Haoning Wu（项目负责人）、Yi Liu、Lin Sui、Xinhao Li、Yan Zhong、Y. Charles、Xinyu Zhou、Xu Sun（通讯作者）",
+        "cite": [
+          "paper@标题页"
+        ]
+      },
+      {
+        "k": "发表状态",
+        "v": "ICLR 2026 会议论文；arXiv:2505.23359v2 [cs.CV]（2026-03-17）",
+        "cite": [
+          "paper@标题页",
+          "paper@Submission history"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2025-05-29 arXiv v1 首发 → 2026-03-17 arXiv v2（ICLR 2026）",
+        "cite": [
+          "paper@Submission history"
+        ]
+      },
+      {
+        "k": "题目形态",
+        "v": "6 类演示视频各 60 段：Number（N×N 滑块数字谜）、Circle（红圈在格子间移动并翻转黑白子）、Cup（交换杯子及其内容物）、File（在文件路径间创建/删除/复制/移动）、Card（向牌堆顶加牌或底部抽牌）、Chip（向杯中添加或移除筹码）；每段视频对一个只在片头或片尾出现的隐藏状态施加 5–14 步操作",
+        "cite": [
+          "paper@§2.1.1 Videos",
+          "paper@§2.2 Data Construction"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "数据集 huggingface.co/datasets/lyx97/reasoning_videos，代码 github.com/llyx97/video_reason_bench，项目页 llyx97.github.io/video_reason_bench/；官方评测基于改造版 VLMEvalKit",
+        "cite": [
+          "paper@标题页",
+          "paper@§3.1 Experimental Setups"
+        ]
+      },
+      {
+        "k": "榜单提交方式",
+        "v": "官网榜单不支持自助提交，需把结果（JSON 或 XLSX）邮件发送到 liuyuanxin@stu.pku.edu.cn",
+        "cite": [
+          "site"
+        ]
+      },
+      {
+        "k": "许可与声明",
+        "v": "官网内容采用 CC BY-NC 4.0；官网模板改编自 Panda-70M 与 Video-MMMU；论文声明用 LLM 协助文字润色与语法检查",
+        "cite": [
+          "site",
+          "paper@附录 D"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-03-17",
+        "columns": [
+          "来源",
+          "模型",
+          "思考",
+          "总体准确率",
+          "口径"
+        ],
+        "rows": [
+          [
+            "论文 Table 2",
+            "Human",
+            "—（223.2 秒/题）",
+            "73.8%",
+            "240 题子集（每项技能 40 题）"
+          ],
+          [
+            "论文 Table 2",
+            "Gemini-2.5-Pro-0506",
+            "✓",
+            "56.0%",
+            "全量 1,440 题"
+          ],
+          [
+            "论文 Table 2",
+            "Gemini-2.5-Flash",
+            "✓",
+            "27.4%",
+            "全量 1,440 题"
+          ],
+          [
+            "论文 Table 2",
+            "Gemini-2.5-Flash",
+            "✗",
+            "18.8%",
+            "全量 1,440 题"
+          ],
+          [
+            "论文 Table 2",
+            "Seed1.5-VL",
+            "✓",
+            "11.5%",
+            "全量 1,440 题"
+          ],
+          [
+            "论文 Table 2",
+            "o4-mini",
+            "✓",
+            "10.7%",
+            "全量 1,440 题"
+          ],
+          [
+            "论文 Table 2",
+            "Gemini-2.0-Flash",
+            "✗",
+            "10.4%",
+            "全量 1,440 题"
+          ],
+          [
+            "论文 Table 2",
+            "GPT-4o",
+            "✗",
+            "6.9%",
+            "全量 1,440 题"
+          ],
+          [
+            "论文 Table 2",
+            "Qwen2.5-VL 72B",
+            "✗",
+            "7.2%",
+            "开源旗舰最高"
+          ],
+          [
+            "论文 Table 2",
+            "InternVL3 78B",
+            "✗",
+            "5.8%",
+            "开源"
+          ],
+          [
+            "论文 Table 2",
+            "Kimi-VL-A3B",
+            "✗",
+            "1.4%",
+            "高效模型（<10B）"
+          ],
+          [
+            "论文 Table 2",
+            "Qwen2.5-VL 7B",
+            "✗",
+            "1.3%",
+            "高效模型（<10B）"
+          ],
+          [
+            "论文 Table 2",
+            "Gemini-2.5-Flash（vid2txt）",
+            "✓",
+            "72.2%",
+            "视频换成文字摘要"
+          ],
+          [
+            "论文 Table 2",
+            "Seed1.5-VL（vid2txt）",
+            "✓",
+            "69.4%",
+            "视频换成文字摘要"
+          ],
+          [
+            "论文 Table 2",
+            "Gemini-2.0-Flash（vid2txt）",
+            "✗",
+            "40.9%",
+            "视频换成文字摘要"
+          ],
+          [
+            "论文 Table 2",
+            "Qwen2.5-VL 72B（vid2txt）",
+            "✗",
+            "22.3%",
+            "视频换成文字摘要"
+          ],
+          [
+            "官网榜单",
+            "Gemini-2.5-Pro-0506",
+            "✓",
+            "56.0%",
+            "与论文 Table 2 一致"
+          ]
+        ]
+      },
+      "cite": [
+        "paper@Table 2",
+        "site"
+      ]
+    }
+  }
+}

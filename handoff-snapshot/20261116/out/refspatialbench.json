@@ -1,0 +1,595 @@
+{
+  "id": "refspatialbench",
+  "name": "RefSpatial-Bench",
+  "full_name": "RefSpatial-Bench: A Benchmark for Multi-step Spatial Referring",
+  "aliases": [],
+  "status": "active",
+  "categories": [
+    "multimodal"
+  ],
+  "summary": "真实杂乱室内场景里的多步空间指代基准，共 277 题：Location 100 题找出唯一目标物体、Placement 100 题找出可放置物体的空位、Unseen 77 题考没见过的空间关系组合；每题一句英文指代表达，模型输出一个 2D 点，落在人工标注的真值 mask 内即算成功，指标是平均成功率。",
+  "interpretation": "高平均成功率意味着模型能顺着多级锚点把搜索范围逐层收窄到物体或空位上，能通过遮挡、相近物体和「从左数第二个」这类数量/顺序约束定位。它只回答「点在哪」，不代表机械臂能真的完成抓放。Gemini-2.5-Pro 在这个基准上只有 46.96 / 24.21 / 27.14，而在 RefSpatial 上做过 SFT+RFT 的 RoboRefer-2B-RFT 达到 52.00 / 54.00 / 41.56——两边训练数据口径不同，这个差距不能读成纯粹的模型能力差。",
+  "measures": [
+    {
+      "area": "多步空间指代定位（Location）",
+      "focus": "真实杂乱场景里，按一句指代表达找出唯一目标物体；表达可带颜色/形状、空间顺序（如「从左数第二把椅子」）或空间锚点，需要多步推理",
+      "share": "100 题 / 277（约 36%）",
+      "format": "输出单个 2D 点，落入目标物体 mask 判对",
+      "cite": [
+        "dataset@任务说明",
+        "paper@附录 C"
+      ]
+    },
+    {
+      "area": "自由空间放置（Placement）",
+      "focus": "根据一句话找出可以放置物体的空位；查询常同时涉及多个锚点、层级引用或隐含的放置关系，推理步数最多到 5",
+      "share": "100 题 / 277（约 36%）",
+      "format": "输出单个 2D 点，落入目标空位 mask 判对",
+      "cite": [
+        "dataset@任务说明",
+        "paper@附录 C"
+      ]
+    },
+    {
+      "area": "未见组合泛化（Unseen）",
+      "focus": "从 Location/Placement 抽出的 77 题，空间关系组合在训练数据 RefSpatial 里没出现过，专门用来评做过 SFT/RFT 之后的泛化",
+      "share": "77 题 / 277（约 28%）",
+      "format": "输出单个 2D 点，落入 mask 判对；官方警告未用 RefSpatial 训练过的模型不应在此集上评测",
+      "cite": [
+        "dataset@任务说明",
+        "dataset@警告",
+        "paper@§4.2"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "不测机械臂能不能真把东西抓起来、放下去：基准只判断点有没有指对，抓取与放置的执行成功率另在论文的仿真器与真实机器人实验里报告。",
+      "cite": [
+        "paper@§4.4"
+      ]
+    },
+    {
+      "text": "不测多轮对话、工具调用或长文本生成：每题就是一张图加一句英文指代表达，答案是一个 2D 点。",
+      "cite": [
+        "dataset@任务说明"
+      ]
+    },
+    {
+      "text": "不测人类指代里的歧义与概率偏好：题目由程序化流程生成再人工标注，论文附录 G 明确指出这类数据缺位。",
+      "cite": [
+        "paper@附录 G"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 277,
+    "splits": [
+      "location（100 行）",
+      "placement（100 行）",
+      "unseen（77 行）"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "真实杂乱场景图片 + 程序化生成的指代 QA 对 + 人工标注 mask 与推理步数",
+    "public_sample": true,
+    "totals": "共 277 题：Location 100 + Placement 100 + Unseen 77（Unseen 从 Location/Placement 抽出）；每题一张图片、一个真值 mask、一句英文指代表达与目标物体名；HF 数据集卡片许可证为 Apache-2.0",
+    "cite": [
+      "dataset",
+      "paper@§4.2"
+    ],
+    "construction": [
+      {
+        "k": "场景来源",
+        "text": "真实世界的杂乱场景图片，官方描述为「基于真实杂乱场景，评测更复杂的多步空间指代与推理」。",
+        "cite": [
+          "dataset"
+        ]
+      },
+      {
+        "k": "题目生成",
+        "text": "底层 QA 对由程序化流程产出：生成的代码被视为最优推理，逐行转成文本，中间结果填入坐标/距离等结构化字段，得到带推理过程标注的 QA 对；基准题目再经人工标注 mask 与推理步数。",
+        "cite": [
+          "paper@附录 C"
+        ]
+      },
+      {
+        "k": "推理步数定义",
+        "text": "step = 能有效缩小搜索范围的锚点物体数 + 关联到锚点的空间关系数；viewer 不作锚点、忽略 on 关系、目标自身的内在属性不计步；实测超过 5 步后额外限定词的收益递减，因此封顶为 5。",
+        "cite": [
+          "paper@附录 C"
+        ]
+      },
+      {
+        "k": "难度分布",
+        "text": "约七成样本需要多步推理（最多 5 步）并带精确 mask；Location 只出现 1–3 步，Placement 与 Unseen 出现 4–5 步，Unseen 的平均提示词最长。",
+        "cite": [
+          "paper@摘要",
+          "paper@Table 11"
+        ]
+      },
+      {
+        "k": "扩展集",
+        "text": "2025-10-25 另发布 RefSpatial-Expand-Bench：扩到工厂、商店等室内场景，并加入街道、停车场、公园等室外场景，共 441 题（Location 241 + Placement 200）。",
+        "cite": [
+          "repo@更新日志",
+          "expandbench-hf"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "avg_success_rate",
+      "name": "平均成功率",
+      "direction": "越高越好",
+      "description": "逐样本判断预测点是否落在真值 mask 内（0/1），再对全部样本求平均；Location / Placement / Unseen 分别报告，论文另给按推理步数（1–5）的分解表",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@附录 E.3",
+        "dataset@评测说明"
+      ]
+    }
+  ],
+  "default_protocol": {
+    "raw": "模型对每张图输出一个 2D 点：HF 数据集卡片给出把 XML / 0–100 归一化坐标还原到像素坐标的示例代码，判据是该点是否落在人工标注的真值 mask 内。RoboRefer 论文默认用 RGB-D 输入，深度图由 DepthAnything V2 从 RGB 图像估计；官方仓库提供 Location / Placement / Unseen / all 四种 task_name 的评测脚本。",
+    "cite": [
+      "dataset@评测说明",
+      "paper@§4.2",
+      "repo@更新日志"
+    ],
+    "variants": [
+      {
+        "text": "RGB 与 RGB-D 两种输入口径：论文默认 RGB-D（深度由 DepthAnything V2 生成），在单步基准上同时报告纯 RGB 结果，两种口径不能直接混比。",
+        "cite": [
+          "paper@§4.2"
+        ]
+      },
+      {
+        "text": "是否在 RefSpatial 上训练过：官方卡片明确警告未用 RefSpatial 训练的模型不应在 Unseen 集上评测；跨模型比较前先确认训练数据口径。",
+        "cite": [
+          "dataset@警告"
+        ]
+      },
+      {
+        "text": "按推理步数（1–5）分解报告：官方另给每步成功率，但 Placement 的 5 步只有 7 题，单格数字波动很大。",
+        "cite": [
+          "paper@Table 11"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "date": "2025-06-04",
+      "label": "arXiv v1 提交（RoboRefer 论文，基准随论文首次公开）",
+      "cite": [
+        "paper@提交历史"
+      ]
+    },
+    {
+      "date": "2025-06-06",
+      "label": "RefSpatial-Bench 上线 Hugging Face（官方仓库更新日志）",
+      "cite": [
+        "repo@更新日志"
+      ]
+    },
+    {
+      "date": "2025-09-18",
+      "label": "RoboRefer 论文被 NeurIPS 2025 接收",
+      "cite": [
+        "repo@更新日志"
+      ]
+    },
+    {
+      "date": "2025-10-25",
+      "label": "发布扩展集 RefSpatial-Expand-Bench（441 题，新增室外与更多室内场景）",
+      "cite": [
+        "repo@更新日志",
+        "expandbench-hf"
+      ]
+    },
+    {
+      "date": "2026-01-03",
+      "label": "arXiv v4 修订（本档案引用的论文版本）",
+      "cite": [
+        "paper@提交历史"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "Location/Placement 与训练数据同源",
+      "impact": "这两个子集的空间关系组合与训练集 RefSpatial 有重合，论文只把 Unseen 行定位为「SFT/RFT 中省略的新组合」；在 RefSpatial 上做过 SFT/RFT 的模型（含 RoboRefer 自身）在这两个子集上占优，当成零样本泛化成绩会高估。",
+      "severity": "高",
+      "response": "跨模型比较只用 Unseen 集，或先确认对比双方都没见过 RefSpatial；论文 Table 2 同时给出三类模型，可按「专用训练 / 通用」分组读。",
+      "reader": "看到 50+ 的分数先问一句「这模型在 RefSpatial 上训练过吗」。",
+      "cite": [
+        "paper@§4.2"
+      ]
+    },
+    {
+      "issue": "题量小，按步分解后更小",
+      "impact": "总题量 277；Placement 的 5 步只有 7 题，一题对错就改十几个百分点，跨模型的逐步对比噪声很大。",
+      "severity": "中",
+      "response": "看合计分与多个子集的一致趋势，不要盯单格；论文的逐步表主要给自己模型做纵向对比。",
+      "reader": "逐步表里两位数以内的差距当噪声处理。",
+      "cite": [
+        "paper@Table 11",
+        "paper@Table 8"
+      ]
+    },
+    {
+      "issue": "场景与任务面窄",
+      "impact": "原版 277 题集中在室内杂乱场景、单句指代、无多轮交互；官方随后用 441 题的 Expand-Bench 补室外与更多室内类型，说明原覆盖面不足。",
+      "severity": "中",
+      "response": "需要室外或更多场景类型时改用 RefSpatial-Expand-Bench，或两套一起报。",
+      "reader": "不要把原版分数当成「空间指代能力」的全貌。",
+      "cite": [
+        "repo@更新日志",
+        "expandbench-hf"
+      ]
+    },
+    {
+      "issue": "判据只看一个点",
+      "impact": "预测点必须落在真值 mask 内才算对，对 mask 边界附近、遮挡造成的合理歧义没有容差，也不评估中间推理步骤是否正确。",
+      "severity": "中",
+      "response": "结合按步成功率或论文的过程奖励设计看推理质量，别只盯总分。",
+      "reader": "分数低不一定说明空间理解全错，可能只差在边界上。",
+      "cite": [
+        "paper@附录 E.3"
+      ]
+    },
+    {
+      "issue": "不覆盖人类指代歧义",
+      "impact": "题目由程序化流程生成，论文附录 G 指出真实机器人场景里的人类指令常常有歧义，需要概率偏好与空间可行性推理，RefSpatial 缺这类数据。",
+      "severity": "低",
+      "response": "要测这一类看论文附录 G 的真实案例与 RoboRefer 演示；官方后续方向是合成带意图的数据。",
+      "reader": "高分不等于能处理模糊的人类说法。",
+      "cite": [
+        "paper@附录 G"
+      ]
+    },
+    {
+      "issue": "纯文本转录会丢排名信息",
+      "impact": "论文表与 HF 卡片用加粗标 Top-1、下划线标 Top-2，文本化后无法区分，容易把近似成绩读成严格排序。",
+      "severity": "低",
+      "response": "以官方表格原页为准；本站表格只复现数值，不保留加粗/下划线。",
+      "reader": "看到「并列第一」先回原表确认加粗。",
+      "cite": [
+        "paper@Table 2 注"
+      ]
+    }
+  ],
+  "notes": "由 benchmark-profile/v2 建档；证据来自 RoboRefer 论文（arXiv:2506.04308v4）、HF 数据集卡片、官方仓库与项目主页。第三方采用见官方仓库更新日志（Qwen3-VL、Gemini-Robotics-1.5）。",
+  "official_sources": [
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2506.04308"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/BAAI/RefSpatial-Bench"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/Zhoues/RoboRefer"
+    },
+    {
+      "kind": "site",
+      "url": "https://seed.bytedance.com/en/blog/official-release-of-seed1-8-a-generalized-agentic-model"
+    }
+  ],
+  "related_benchmarks": [
+    "blink",
+    "embspatial-bench"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "RoboRefer: Towards Spatial Referring with Reasoning in Vision-Language Models for Robotics（arXiv:2506.04308v4，2026-01-03）",
+        "url": "https://arxiv.org/abs/2506.04308",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "dataset",
+        "kind": "dataset",
+        "title": "BAAI/RefSpatial-Bench（Hugging Face 数据集卡片）",
+        "url": "https://huggingface.co/datasets/BAAI/RefSpatial-Bench",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "Zhoues/RoboRefer（官方实现、评测代码与更新日志）",
+        "url": "https://github.com/Zhoues/RoboRefer",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "site",
+        "kind": "site",
+        "title": "RoboRefer 项目主页",
+        "url": "https://zhoues.github.io/RoboRefer/",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "expandbench-hf",
+        "kind": "dataset",
+        "title": "JingkunAn/RefSpatial-Expand-Bench（Hugging Face 数据集卡片）",
+        "url": "https://huggingface.co/datasets/JingkunAn/RefSpatial-Expand-Bench",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "seed",
+        "kind": "blog",
+        "title": "Official Release of Seed1.8: A Generalized Agentic Model（ByteDance Seed，2025-12-18）",
+        "url": "https://seed.bytedance.com/en/blog/official-release-of-seed1-8-a-generalized-agentic-model",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "北京智源人工智能研究院（BAAI）· 北京航空航天大学 · 北京大学",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      "first_release": {
+        "v": "2025-06-04（arXiv v1 提交；基准 6 月 6 日上线 Hugging Face）",
+        "cite": [
+          "paper@提交历史",
+          "repo@更新日志"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "dataset@任务说明",
+        "paper@摘要"
+      ],
+      "interpretation": [
+        "paper@Table 2",
+        "paper@§4.2"
+      ]
+    },
+    "problem": {
+      "text": "此前的机器人指代基准（RoboRefIt、Where2Place、RoboSpatial）都只到 2 步推理，测不了「离相机第二远的杯子旁边那块空位」这类多锚点组合；RefSpatial-Bench 用真实杂乱场景把步数推到 5 步，并以精确 mask 作判据，还专门留出关系组合没见过的 Unseen 集来分离训练收益与泛化能力。",
+      "cite": [
+        "paper@§4.2",
+        "paper@附录 E.3"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "通用大模型参照（未做专用空间训练）",
+        "value": "Gemini-2.5-Pro：Location 46.96 / Placement 24.21 / Unseen 27.14",
+        "note": "论文 Table 2；论文分析它在 2D 指代（颜色、图像空间定位）上很强，掉分主要在距离型 3D 关系与多约束组合。",
+        "cite": [
+          "paper@Table 2",
+          "paper@§4.2"
+        ]
+      },
+      {
+        "label": "论文发布时最好（在 RefSpatial 上做过 SFT+RFT）",
+        "value": "RoboRefer-2B-RFT：Location 52.00 / Placement 54.00 / Unseen 41.56",
+        "note": "论文 Table 2；与上一行不是同一训练口径，不能读成「同一个模型进步了多少」。",
+        "cite": [
+          "paper@Table 2"
+        ]
+      },
+      {
+        "label": "扩展集成绩（同一模型的纵向参考）",
+        "value": "RoboRefer-8B-SFT：Location 61.00 / Placement 60.00",
+        "note": "论文 Table 14；RefSpatial-Expand-Bench 共 441 题、含室外场景，只与自己的 2B 版比。",
+        "cite": [
+          "paper@Table 14",
+          "expandbench-hf"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      },
+      {
+        "label": "随机 / 人类基线",
+        "value": "论文未给出",
+        "note": "论文没有报告随机点或人类在该基准上的成绩，本站也不推算；不要用「蒙对概率」给这个分数量级定标。",
+        "cite": [
+          "paper@§4.2"
+        ]
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 Location/Placement 的分数当成干净的泛化成绩：这两个子集的空间关系组合与训练集 RefSpatial 有重合，只有 Unseen 集是为「没见过的组合」设计的。",
+        "cite": [
+          "paper@§4.2"
+        ]
+      },
+      {
+        "text": "把 2B-RFT 的 54.00 与 Gemini-2.5-Pro 的 24.21 直接读成「30 个点的能力差距」：前者在 RefSpatial 上做过 SFT+RFT，后者是通用模型，训练数据口径不同。",
+        "cite": [
+          "paper@Table 2"
+        ]
+      },
+      {
+        "text": "以为分数低就等于「看不懂空间」：论文指出 Gemini-2.5-Pro 在 2D 指代上很强，掉分主要来自距离型 3D 关系和多约束组合。",
+        "cite": [
+          "paper@§4.2"
+        ]
+      },
+      {
+        "text": "把文本表里的数字当严格排序：官方用加粗标 Top-1、下划线标 Top-2，纯文本复制会丢这层信息。",
+        "cite": [
+          "paper@Table 2 注"
+        ]
+      },
+      {
+        "text": "把扩展集（441 题）和原版（277 题）的分数放一起比：两者题量与场景分布都不同。",
+        "cite": [
+          "expandbench-hf",
+          "repo@更新日志"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "北京智源人工智能研究院（BAAI）与北京航空航天大学、北京大学；论文署名含北航软件学院、北大多媒体信息处理国家重点实验室与 BAAI。",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      {
+        "k": "配套模型与论文",
+        "v": "基准随 RoboRefer 论文发布：模型以 NVILA-2B/8B 为底座、SFT+RFT 训练，配套训练数据是同团队的 RefSpatial（2.5M 样本 / 20M QA、31 种空间关系、RGB-D）；论文已被 NeurIPS 2025 接收。",
+        "cite": [
+          "paper@§3.3.1",
+          "dataset"
+        ]
+      },
+      {
+        "k": "训练数据与基准的关系",
+        "v": "训练用 RefSpatial 数据集，精选约 100k 中等难度样本（通常 3 步推理）；基准是另一批人工标注题目，两者同源，只有 Unseen 子集保证关系组合不重合。",
+        "cite": [
+          "paper@附录 D.2",
+          "paper@§4.2"
+        ]
+      },
+      {
+        "k": "第三方采用",
+        "v": "官方仓库更新日志记录 Qwen3-VL 与 Gemini-Robotics-1.5 用它评测空间推理；字节 Seed 的 Seed1.8 发布博客也把它列入 2D/3D 空间理解评测。注意该博客分数面板以图片形式发布，具体 RefSpatial-Bench 分数无法从正文逐字摘录。",
+        "cite": [
+          "repo@更新日志",
+          "seed"
+        ]
+      },
+      {
+        "k": "官网与论文数字不一致",
+        "v": "项目主页写 RFT 模型比 Gemini-2.5-Pro 高 12.4%（平均准确率），arXiv v4 论文 Table 2 的对应差距是 17.4%；以最新论文为准。",
+        "cite": [
+          "site",
+          "paper@Table 2"
+        ]
+      },
+      {
+        "k": "许可证",
+        "v": "HF 数据集卡片与代码仓库均为 Apache-2.0。",
+        "cite": [
+          "dataset",
+          "repo"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-14",
+        "columns": [
+          "来源",
+          "模型",
+          "Location",
+          "Placement",
+          "Unseen",
+          "备注"
+        ],
+        "rows": [
+          [
+            "论文 Table 2",
+            "Gemini-2.5-Pro",
+            "46.96",
+            "24.21",
+            "27.14",
+            "通用模型；论文未注明输入模态"
+          ],
+          [
+            "论文 Table 2",
+            "SpaceLLaVA",
+            "5.82",
+            "4.31",
+            "4.02",
+            "论文未注明输入模态"
+          ],
+          [
+            "论文 Table 2",
+            "RoboPoint",
+            "22.87",
+            "9.27",
+            "8.40",
+            "论文未注明输入模态"
+          ],
+          [
+            "论文 Table 2",
+            "Molmo-7B",
+            "21.91",
+            "12.85",
+            "12.23",
+            "论文未注明输入模态"
+          ],
+          [
+            "论文 Table 2",
+            "Molmo-72B",
+            "45.77",
+            "14.74",
+            "21.24",
+            "论文未注明输入模态"
+          ],
+          [
+            "论文 Table 2",
+            "RoboRefer-2B-SFT",
+            "47.00",
+            "48.00",
+            "33.77",
+            "论文默认口径（RGB-D）"
+          ],
+          [
+            "论文 Table 2",
+            "RoboRefer-8B-SFT",
+            "52.00",
+            "53.00",
+            "37.66",
+            "论文默认口径（RGB-D）"
+          ],
+          [
+            "论文 Table 2",
+            "RoboRefer-2B-RFT",
+            "52.00",
+            "54.00",
+            "41.56",
+            "论文默认口径（RGB-D）"
+          ],
+          [
+            "论文 Table 14",
+            "RoboRefer-2B-SFT（Expand-Bench）",
+            "50.21",
+            "48.50",
+            "不适用",
+            "441 题扩展集，无 Unseen 子集"
+          ],
+          [
+            "论文 Table 14",
+            "RoboRefer-8B-SFT（Expand-Bench）",
+            "61.00",
+            "60.00",
+            "不适用",
+            "441 题扩展集，无 Unseen 子集"
+          ]
+        ]
+      },
+      "cite": [
+        "paper@Table 2",
+        "paper@Table 14"
+      ]
+    }
+  }
+}

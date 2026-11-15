@@ -1,0 +1,630 @@
+{
+  "id": "airs-bench",
+  "name": "AIRS-Bench",
+  "full_name": "AIRS-Bench: a Suite of Tasks for Frontier AI Research Science Agents",
+  "aliases": [
+    "AI Research Science Benchmark"
+  ],
+  "status": "active",
+  "categories": [
+    "agent"
+  ],
+  "summary": "Meta 开源的 AI 科研（AI Research Science）评测套件：20 个任务全部取自近年发表的机器学习论文，每个任务 = 一个 ⟨问题, 数据集, 指标⟩ 三元组 + 一个人类 SOTA 值。agent（一个基础 LLM + 一个脚手架）在 24 小时、1 张 H200 内自己写训练与评估代码，提交测试集预测，与人类 SOTA 比较。",
+  "interpretation": "分数是「平均归一化分」：每个任务的原始分先经 march of 9s 变换，再线性映射到 0（该任务实测最差）到 1（该任务的人类 SOTA）之间，最后跨任务平均。所以 1 等于「复现了论文报告的最好成绩」，超过 1 就是超过人类 SOTA。实测 14 个 agent 里最好的 Greedy gpt-oss-120b 只有 0.402，且约四成 run 交不出能算分的提交——这个基准远未饱和，低分首先说明「没把科研流程跑通」，而不是模型知识不够。",
+  "measures": [
+    {
+      "area": "Molecules and Proteins ML（分子与蛋白）",
+      "focus": "预测分子/蛋白性质、生化建模；例：QM9 分子性质预测，指标 MeanAbsoluteError",
+      "share": "5/20",
+      "format": "提交 test split 的预测文件，由任务自带 evaluate.py 打分",
+      "cite": [
+        "arxiv-2602-06855@§4.1",
+        "arxiv-2602-06855@§4.3.3"
+      ]
+    },
+    {
+      "area": "Question Answering（问答）",
+      "focus": "在给定上下文上做数学/自然语言问答；论文把问答归入最大的一块 NLP 份额",
+      "share": "4/20",
+      "format": "提交 test split 的预测文件，由任务自带 evaluate.py 打分",
+      "cite": [
+        "arxiv-2602-06855@§4.1"
+      ]
+    },
+    {
+      "area": "Text Extraction & Matching（文本抽取与匹配）",
+      "focus": "共指消解、语义相似度等；例：SICK 文本相似度，指标 Spearman Correlation",
+      "share": "3/20",
+      "format": "提交 test split 的预测文件，由任务自带 evaluate.py 打分",
+      "cite": [
+        "arxiv-2602-06855@§4.1",
+        "repo-airs-bench@README"
+      ]
+    },
+    {
+      "area": "Time Series（时间序列）",
+      "focus": "对时序数据做预测；论文未给出该类示例题",
+      "share": "3/20",
+      "format": "未披露（论文未说明该类的具体题型）",
+      "cite": [
+        "arxiv-2602-06855@§4.1"
+      ]
+    },
+    {
+      "area": "Code（代码）",
+      "focus": "代码生成与代码检索；例：APPS 代码生成 Pass@5、CodeXGLUE 代码检索 MRR",
+      "share": "2/20",
+      "format": "提交 test split 的预测文件，由任务自带 evaluate.py 打分",
+      "cite": [
+        "arxiv-2602-06855@§4.1",
+        "arxiv-2602-06855@§4.3.3"
+      ]
+    },
+    {
+      "area": "Text Classification（文本分类）",
+      "focus": "情感分析、文档分类、自然语言推断；例：SICK 自然语言推断 Accuracy、Yelp 评论情感 Accuracy",
+      "share": "2/20",
+      "format": "提交 test split 的预测文件，由任务自带 evaluate.py 打分",
+      "cite": [
+        "arxiv-2602-06855@§4.1",
+        "repo-airs-bench@Repo structure"
+      ]
+    },
+    {
+      "area": "Math（数学）",
+      "focus": "数学推理；例：SVAMP 数学词问题，指标 Accuracy",
+      "share": "1/20",
+      "format": "提交 test split 的预测文件，由任务自带 evaluate.py 打分",
+      "cite": [
+        "arxiv-2602-06855@§4.1",
+        "arxiv-2602-06855@§4.3.4"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "闭卷直接推理：任务不给基线代码，agent 必须自己生成训练与评估一个 ML 模型所需的代码",
+      "cite": [
+        "arxiv-2602-06855@§1"
+      ]
+    },
+    {
+      "text": "任务的理论上限：论文明确说即使 agent 超过人类基准，也没达到底层任务的理论性能上限",
+      "cite": [
+        "arxiv-2602-06855@Abstract"
+      ]
+    },
+    {
+      "text": "数据获取与清洗：数据集预先下载并挂载进 agent 容器，prepare.py 提前建好 train/test 划分，不考 agent 的数据工程",
+      "cite": [
+        "arxiv-2602-06855@§4.3.6",
+        "repo-airs-bench@Repo structure"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 20,
+    "splits": [
+      "train（agent 可见特征与标签）",
+      "test（agent 只可见特征，标签在评分时才由 evaluate_prepare.py 生成）"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "published papers（取自 2020–2025 年间报告过 SOTA 的论文与数据集，人工逐个建任务并复核 SOTA）",
+    "public_sample": true,
+    "multiple_choice_share": "不适用（提交测试集预测，不是选项作答）",
+    "multimodal_share": "未披露（论文只说数据含非结构化文本与表格、图等结构化模态）",
+    "totals": "20 个任务 · 来自 17 篇机器学习论文、16 个数据集 · 7 个大类：分子与蛋白 5、问答 4、文本抽取与匹配 3、时间序列 3、代码 2、文本分类 2、数学 1 · 每任务 = ⟨问题, 数据集, 指标⟩ + 人类 SOTA 值 · 语言为英文",
+    "cite": [
+      "arxiv-2602-06855@§4",
+      "arxiv-2602-06855@§4.1",
+      "repo-airs-bench@README"
+    ],
+    "construction": [
+      {
+        "k": "候选来源",
+        "text": "从 PapersWithCode 榜单、顶会/期刊/arXiv 论文里筛「2020–2025 年间发表过 SOTA 结果」的数据集，优先选 Hugging Face 上可得、有 train/test 划分的。",
+        "cite": [
+          "arxiv-2602-06855@§4"
+        ]
+      },
+      {
+        "k": "人工建任务与复核 SOTA",
+        "text": "逐个任务人工创建，并核对引用论文报告的数字、指标与数据划分是否一致；若发现更好成绩就更新该任务的 SOTA 值。",
+        "cite": [
+          "arxiv-2602-06855@§4"
+        ]
+      },
+      {
+        "k": "先做约 100 个再精选 20 个",
+        "text": "最初从约 85 篇论文/数据集做出并评测了约 100 个任务，再选出 20 个，以保证每个任务都可追溯、准确。",
+        "cite": [
+          "arxiv-2602-06855@§4"
+        ]
+      },
+      {
+        "k": "任务文件",
+        "text": "每任务一组文件：metadata.yaml（名称、HuggingFace 数据集指针、train/test 划分、研究问题、指标与 SOTA 信息）、project_description.md（给 agent 的题目）、prepare.py、evaluate.py、evaluate_prepare.py、utils.py；并同时提供 aira-dojo 与 MLGym 两套规格。",
+        "cite": [
+          "repo-airs-bench@Repo structure",
+          "arxiv-2602-06855@§4.3.4"
+        ]
+      },
+      {
+        "k": "防标签泄漏",
+        "text": "交给 agent 的 test split 不含标签；评分时才由 evaluate_prepare.py 生成测试标签，再用 evaluate.py 打分。",
+        "cite": [
+          "arxiv-2602-06855@§4.3.6",
+          "repo-airs-bench@Repo structure"
+        ]
+      },
+      {
+        "k": "SOTA 口径对 agent 保密",
+        "text": "所有实验都不告诉 agent SOTA 论文的方法或分数，只给任务规格本身。",
+        "cite": [
+          "arxiv-2602-06855@§5.1"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "valid-submission-rate",
+      "name": "有效提交率（VSR）",
+      "direction": "越高越好",
+      "description": "agent 在该任务所有 seed 中提交「符合任务要求且能算出分数」的 run 占比；分母含失败与无效提交，所以它同时衡量「交得出来」和「做得对」。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2602-06855@§5.2"
+      ]
+    },
+    {
+      "id": "normalized-score",
+      "name": "平均归一化分（NS）",
+      "direction": "越高越好",
+      "description": "先把原始分数经 march of 9s 变换 φ(s) = −log₁₀|s − s_opt|（s_opt 是该任务的理论最优，如分类准确率取 1.0、回归误差取 0.0），再线性映射到「该任务实测最差 = 0、人类 SOTA = 1」；任务内先按 seed 平均，再跨任务平均。失败与无效提交按 0 计。超过 1 表示超过人类 SOTA。",
+      "unit": "normalized score",
+      "cite": [
+        "arxiv-2602-06855@§5.2",
+        "repo-airs-bench@README"
+      ]
+    },
+    {
+      "id": "elo",
+      "name": "Elo 评分",
+      "direction": "越高越好",
+      "description": "把每个 agent 当成玩家，同一任务上两两比较原始分数当一局（分数高者胜，同分或都无效算平局），用 Bradley–Terry 模型拟合隐技能再换算成 Elo；人类 SOTA 作为额外玩家「SOTA」一起参赛，参照 Chatbot Arena 的做法。",
+      "unit": "Elo",
+      "cite": [
+        "arxiv-2602-06855@§5.2"
+      ]
+    }
+  ],
+  "default_protocol": {
+    "raw": "agent = 一个基础 LLM + 一个脚手架，由 harness 承载：aira-dojo 并行 harness 跑 One-Shot（只能解一次）与 Greedy（树搜索 best-first），MLGym 线性 harness 跑 ReAct。每个任务跑 24 小时、1 张 H200，至少 10 个 seed；数据集预先下载并挂载，agent 可联网、可用本地缓存的预训练权重（最新缓存到 2021 年），但拿不到 SOTA 论文的方法与分数。产出是 test split 的预测（如 submission.csv），由任务自带 evaluate.py 对照测试标签打分，再聚合成有效提交率、平均归一化分与 Elo。",
+    "cite": [
+      "arxiv-2602-06855@§5.1",
+      "arxiv-2602-06855@§5.2",
+      "repo-airs-bench@README"
+    ],
+    "variants": [
+      {
+        "text": "harness 口径：aira-dojo（One-Shot / Greedy）与 MLGym（ReAct）论文分别报告，不能混比；README 榜单把 MLGym 的两行与 AIRA-dojo 的放在同一张表里，型号名相同但 harness 不同。",
+        "cite": [
+          "repo-airs-bench@Leaderboard",
+          "arxiv-2602-06855@§5.1"
+        ]
+      },
+      {
+        "text": "归一化变换口径：默认用 march of 9s 变换，附录 B 另给 identity 变换的结果（图 12/13 与表 6）；两种口径下任务排序不同。",
+        "cite": [
+          "arxiv-2602-06855@附录 B",
+          "arxiv-2602-06855@§5.2"
+        ]
+      },
+      {
+        "text": "seed 数口径：README 榜单的 # seeds 列显示 Greedy 与 MLGym 用 10 seeds、One-Shot 用 20 seeds，跨行比较时误差棒口径不同。",
+        "cite": [
+          "repo-airs-bench@Leaderboard",
+          "arxiv-2602-06855@§5.1"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "arxiv-v1",
+      "date": "2026-02-06",
+      "label": "arXiv v1 首发（论文首次公开提交）",
+      "cite": [
+        "arxiv-2602-06855@arXiv 提交历史"
+      ]
+    },
+    {
+      "id": "arxiv-v3",
+      "date": "2026-02-16",
+      "label": "arXiv v3（本档案核对所用版本；v2 于 2026-02-09 修订）；同日 README 榜单 14 个 agent 的结果时间戳也是 2026-02-16",
+      "cite": [
+        "arxiv-2602-06855@arXiv 提交历史",
+        "repo-airs-bench@Leaderboard"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "总体数字有两个口径，且互不一致",
+      "impact": "§6.1 正文和图 7 的 Overall 柱都写 VSR 55.1%，图 7 图注却写 59.3%；图 8 的 Overall 柱是 0.212（恰为 14 个 agent 均分的简单平均，2.973/14，本站推算），图注写 24.1%。引用「总体」数字时不说明口径就会对不上。",
+      "severity": "中",
+      "response": "论文未解释差异；从柱标签可复算出「均值之均值」口径，图注口径疑为按 run 池化。",
+      "reader": "看到 55.1%/59.3% 或 21.2%/24.1% 先问是哪个口径；本档案正文默认引用正文与图柱口径，图注口径单独标注。",
+      "cite": [
+        "arxiv-2602-06855@§6.1",
+        "arxiv-2602-06855@Figure 7 注",
+        "arxiv-2602-06855@Figure 8 注",
+        "repo-airs-bench@Leaderboard"
+      ]
+    },
+    {
+      "issue": "约四成提交无效",
+      "impact": "总体有效提交率只有 55.1%（正文/图 7 柱）到 59.3%（图 7 注），即约四成 run 交不出能算分的提交；最好的 Greedy gpt-oss-120b 与 Greedy gpt-oss-20b 也分别有 6% 和 7% 的任务完全无效。",
+      "severity": "高",
+      "response": "论文把失败与无效提交按 0 分计入平均，避免只统计成功 run。",
+      "reader": "低分可能只是「没交上」而不是「做得差」；看任何分数都要同时看该 agent 的有效提交率。",
+      "cite": [
+        "arxiv-2602-06855@§6.1",
+        "arxiv-2602-06855@§5.2"
+      ]
+    },
+    {
+      "issue": "任务量小、覆盖面有限",
+      "impact": "只有 20 个任务、7 个大类，单个任务的分数波动会显著影响平均归一化分；论文自述最初做了约 100 个任务，最终只选 20 个。",
+      "severity": "中",
+      "response": "开源任务定义与评测代码，任务按 ⟨问题, 数据集, 指标⟩ 三元组组织以便扩展；论文称新任务易于接入。",
+      "reader": "跨任务平均分要配合逐任务分解看（论文 Figure 9 与附录表 6 给了 per-task 结果），不要只信一个总分。",
+      "cite": [
+        "arxiv-2602-06855@§4",
+        "arxiv-2602-06855@§7"
+      ]
+    },
+    {
+      "issue": "污染风险与 SOTA 会变旧",
+      "impact": "SOTA 取自 2020–2025 已发表结果，agent 的训练数据可能已包含这些论文与数据集；且 SOTA 会随新论文变旧，论文用人工复核缓解但无法消除。",
+      "severity": "中",
+      "response": "人工确认引用论文的数字、指标与数据划分一致，发现更好成绩就更新 SOTA；数据集尽量选自 HuggingFace 的 train/test 划分。",
+      "reader": "比较不同时间抓取的榜单时，先看该任务 metadata 里的 SOTA 值与 sota_year。",
+      "cite": [
+        "arxiv-2602-06855@§4",
+        "repo-airs-bench@Repo structure"
+      ]
+    },
+    {
+      "issue": "算力与时间预算受限",
+      "impact": "每次运行 24 小时 + 1 张 H200，本地缓存的预训练权重最新只到 2021 年；论文明确承认部分任务「本可受益于更多算力或时间」，并承认限制条件可能影响结果。",
+      "severity": "中",
+      "response": "所有任务统一约束，便于按 harness 做消融；附录 C 表 7 给出完整约束清单。",
+      "reader": "跨论文比较时，先确认对方的算力/时间预算是否也是 24 小时 × 1 张 GPU。",
+      "cite": [
+        "arxiv-2602-06855@§5.1",
+        "arxiv-2602-06855@§7"
+      ]
+    },
+    {
+      "issue": "命名不统一：MLGym vs ReAct",
+      "impact": "README 榜单写「MLGym CWM」「MLGym GPT-4o」，论文正文写「ReAct CWM」「ReAct GPT-4o」，指的是同一批 agent（LLM 相同、harness 不同）；照名字抄会把两处榜单对错行。",
+      "severity": "低",
+      "response": "本档案统一按论文术语记 scaffold 为 ReAct，并在附录 B 榜单来源列保留原名。",
+      "reader": "对不上号时，先确认看到的是 harness 名还是 scaffold 名。",
+      "cite": [
+        "repo-airs-bench@Leaderboard",
+        "arxiv-2602-06855@§6"
+      ]
+    }
+  ],
+  "notes": "Meta 自研并开源；Muse Spark 1.1 技术报告在 Cybersecurity/AI R&D 泳道引用。榜单表格单元格含 markdown 竖线，无法逐字摘录，附录 B 的数值与论文图 8 柱标签互相印证。",
+  "official_sources": [
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2602.06855"
+    },
+    {
+      "kind": "github",
+      "url": "https://github.com/facebookresearch/airs-bench"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/facebook/airs-bench"
+    }
+  ],
+  "related_benchmarks": [
+    "paperbench",
+    "frontier-science-research",
+    "mlebench",
+    "gaia2"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "arxiv-2602-06855",
+        "kind": "paper",
+        "title": "AIRS-Bench: a Suite of Tasks for Frontier AI Research Science Agents（arXiv:2602.06855，v3，2026-02-16）",
+        "url": "https://arxiv.org/abs/2602.06855",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "repo-airs-bench",
+        "kind": "repo",
+        "title": "facebookresearch/airs-bench（任务定义、评测代码与 Leaderboard）",
+        "url": "https://github.com/facebookresearch/airs-bench",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "hf-airs-bench",
+        "kind": "dataset",
+        "title": "facebook/airs-bench（Hugging Face 任务规格数据集）",
+        "url": "https://huggingface.co/datasets/facebook/airs-bench",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Meta（FAIR at Meta；另有 University of Oxford、University College London 的合作者）",
+        "cite": [
+          "arxiv-2602-06855@作者署名"
+        ]
+      },
+      "first_release": {
+        "v": "2026-02-06（arXiv v1）；本档案核对用 v3（2026-02-16）",
+        "cite": [
+          "arxiv-2602-06855@arXiv 提交历史"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "arxiv-2602-06855@Abstract",
+        "repo-airs-bench@README",
+        "hf-airs-bench@README"
+      ],
+      "interpretation": [
+        "arxiv-2602-06855@§5.2",
+        "repo-airs-bench@Leaderboard",
+        "arxiv-2602-06855@§6.1"
+      ]
+    },
+    "problem": {
+      "text": "已有 ML 基准多考单轮推理或知识问答，热门基准又已被训练数据污染；论文要的是一个考「完整科研工作流」、题目取自近期 SOTA 论文、并能干净对比人类 SOTA 的基准。",
+      "cite": [
+        "arxiv-2602-06855@§1",
+        "arxiv-2602-06855@Abstract"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "该任务实测最差（归一化分 0）",
+        "value": "0",
+        "note": "0 不是随机基线，而是所有 agent 所有 seed 在该任务上的最差成绩；论文未给随机或平庸基线。",
+        "cite": [
+          "repo-airs-bench@README",
+          "arxiv-2602-06855@§5.2"
+        ]
+      },
+      {
+        "label": "人类 SOTA（归一化分 1）",
+        "value": "1",
+        "note": "SOTA 取自该任务引用论文报告的最好成绩，同时作为 Elo 里的额外玩家参赛。",
+        "cite": [
+          "arxiv-2602-06855@§5.2",
+          "repo-airs-bench@README"
+        ]
+      },
+      {
+        "label": "论文最好（14 个 agent）",
+        "value": "0.402 ± 0.031",
+        "note": "Greedy gpt-oss-120b，10 seeds，见附录 B 榜单第一行。这是单个 agent 的平均归一化分，不是总体均分。",
+        "cite": [
+          "repo-airs-bench@Leaderboard",
+          "arxiv-2602-06855@§6.1"
+        ]
+      },
+      {
+        "label": "总体均分（论文两个口径）",
+        "value": "VSR 55.1%（正文/图 7 柱）或 59.3%（图 7 注）· 归一化分 0.212（图 8 柱）或 24.1%（图 8 注）",
+        "note": "同一指标论文给出两个数字，差异见「可信度与局限」第 1 条；本档案正文默认引用正文与图柱口径。",
+        "cite": [
+          "arxiv-2602-06855@§6.1",
+          "arxiv-2602-06855@Figure 7 注",
+          "arxiv-2602-06855@Figure 8 注"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把「MLGym CWM」和「Greedy CWM」当成同一行：README 榜单里 MLGym 是 harness 名（论文正文叫 ReAct），与 Greedy 是不同 scaffold，两行数值也不同，不能合并。",
+        "cite": [
+          "repo-airs-bench@Leaderboard",
+          "arxiv-2602-06855@§6"
+        ]
+      },
+      {
+        "text": "把低分直接等同于「模型不行」：约四成 run 交不出能算分的提交，低分首先来自无效提交；看分数必须同时看该 agent 的有效提交率。",
+        "cite": [
+          "arxiv-2602-06855@§6.1"
+        ]
+      },
+      {
+        "text": "把归一化分 0 当成随机基线：0 是该任务实测最差成绩，1 是人类 SOTA；高于 1 表示超过人类 SOTA，论文报告有 4 个任务出现这种情况。",
+        "cite": [
+          "repo-airs-bench@README",
+          "arxiv-2602-06855@§6.2"
+        ]
+      },
+      {
+        "text": "以为 agent 可以靠直接推理拿分：任务不给基线代码，agent 必须自己写训练与评估代码。",
+        "cite": [
+          "arxiv-2602-06855@§1"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "Meta（FAIR at Meta），合作机构含 University of Oxford、University College London",
+        "cite": [
+          "arxiv-2602-06855@作者署名"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "Alisia Lupidi、Bhavul Gauri、Thomas Simon Foster、Bassel Al Omari 为共同一作，另有 Despoina Magka 等；资深作者含 Jakob Foerster、Yoram Bachrach",
+        "cite": [
+          "arxiv-2602-06855@作者署名",
+          "hf-airs-bench@README"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2026-02-06 arXiv v1 → 2026-02-09 v2 → 2026-02-16 v3（本档案核对所用版本）；同日 README 榜单 14 个 agent 的结果时间戳",
+        "cite": [
+          "arxiv-2602-06855@arXiv 提交历史",
+          "repo-airs-bench@Leaderboard"
+        ]
+      },
+      {
+        "k": "代码与数据",
+        "v": "任务定义与评测代码在 GitHub（facebookresearch/airs-bench，CC BY-NC 4.0）；任务规格数据集在 Hugging Face（facebook/airs-bench），每任务同时提供 aira-dojo 与 MLGym 两套规格",
+        "cite": [
+          "repo-airs-bench@Repo structure",
+          "hf-airs-bench@README"
+        ]
+      },
+      {
+        "k": "harness 依赖",
+        "v": "并行 harness 用 facebookresearch/aira-dojo，线性 harness 用 facebookresearch/mlgym；两者都是外部开源项目，不属于本仓库",
+        "cite": [
+          "repo-airs-bench@README"
+        ]
+      },
+      {
+        "k": "计分口径",
+        "v": "除平均归一化分外，论文另报有效提交率与 Elo；Elo 用 Bradley–Terry 拟合，参照 Chatbot Arena 的做法，并把人类 SOTA 当额外玩家",
+        "cite": [
+          "arxiv-2602-06855@§5.2"
+        ]
+      }
+    ],
+    "official_results": {
+      "cite": [
+        "repo-airs-bench@Leaderboard",
+        "arxiv-2602-06855@Figure 8 注"
+      ],
+      "table": {
+        "as_of": "2026-02-16",
+        "columns": [
+          "Agent",
+          "Avg. norm. score",
+          "# seeds",
+          "Date"
+        ],
+        "rows": [
+          [
+            "Greedy gpt-oss-120b",
+            "0.402 ± 0.031",
+            "10",
+            "2026-02-16"
+          ],
+          [
+            "Greedy gpt-oss-20b",
+            "0.400 ± 0.032",
+            "10",
+            "2026-02-16"
+          ],
+          [
+            "Greedy o3-mini",
+            "0.391 ± 0.022",
+            "10",
+            "2026-02-16"
+          ],
+          [
+            "Greedy GPT-4o",
+            "0.309 ± 0.028",
+            "10",
+            "2026-02-16"
+          ],
+          [
+            "MLGym CWM",
+            "0.302 ± 0.026",
+            "10",
+            "2026-02-16"
+          ],
+          [
+            "Greedy CWM",
+            "0.287 ± 0.026",
+            "10",
+            "2026-02-16"
+          ],
+          [
+            "Greedy Devstral",
+            "0.179 ± 0.021",
+            "10",
+            "2026-02-16"
+          ],
+          [
+            "MLGym GPT-4o",
+            "0.178 ± 0.025",
+            "10",
+            "2026-02-16"
+          ],
+          [
+            "One-Shot o3-mini",
+            "0.171 ± 0.017",
+            "20",
+            "2026-02-16"
+          ],
+          [
+            "One-Shot gpt-oss-120b",
+            "0.161 ± 0.020",
+            "20",
+            "2026-02-16"
+          ],
+          [
+            "One-Shot gpt-oss-20b",
+            "0.077 ± 0.019",
+            "20",
+            "2026-02-16"
+          ],
+          [
+            "One-Shot GPT-4o",
+            "0.057 ± 0.015",
+            "20",
+            "2026-02-16"
+          ],
+          [
+            "One-Shot CWM",
+            "0.041 ± 0.011",
+            "20",
+            "2026-02-16"
+          ],
+          [
+            "One-Shot Devstral",
+            "0.018 ± 0.009",
+            "20",
+            "2026-02-16"
+          ]
+        ]
+      }
+    }
+  }
+}

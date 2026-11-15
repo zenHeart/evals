@@ -1,0 +1,750 @@
+{
+  "id": "mbpp",
+  "name": "MBPP",
+  "full_name": "Mostly Basic Programming Problems（大多为基础 Python 编程题）",
+  "aliases": [],
+  "status": null,
+  "categories": [
+    "coding"
+  ],
+  "summary": "MBPP 是 Google 2021 年放出的 974 道入门级 Python 编程题：每题只有一句话需求、一个参考实现和 3 个 assert 测试；评测时把需求和测试一起喂给模型，看它生成的代码能不能跑过全部 assert（前端类比：给你函数签名和单测，看实现能不能过 CI）。",
+  "interpretation": "高分说明模型能把自然语言需求翻成能过基础单测的短函数；它不代表能写长程序、多文件工程，也不代表代码质量或效率。原版每题只有 3 个测试，换成测试更全的 MBPP+ 口径后同一模型通常明显更低（例如 Qwen2.5-7B 基础版从 74.9 降到 62.9），所以 MBPP 90% 以上的分数要连测试口径一起读。",
+  "measures": [
+    {
+      "area": "数学运算",
+      "focus": "示例：计算球体体积（论文在描述这一类时给的原例）",
+      "share": "58%（随机抽 100 题打标签，一题可贴多个标签）",
+      "format": "一句话需求 + 3 个 assert，执行判定",
+      "cite": [
+        "paper@§2.1"
+      ]
+    },
+    {
+      "area": "列表 / 数组处理",
+      "focus": "示例：在有序数组中找出最小的缺失元素（论文 Figure 1 例题；注意它把数组和起止下标当成三个参数传进函数）",
+      "share": "43%（同上，可多标签）",
+      "format": "一句话需求 + 3 个 assert，执行判定",
+      "cite": [
+        "paper@§2.1",
+        "paper@Figure 1"
+      ]
+    },
+    {
+      "area": "字符串处理",
+      "focus": "示例：删除字符串中给定字符的第一次和最后一次出现（论文举的 task 11）",
+      "share": "19%（同上，可多标签）",
+      "format": "一句话需求 + 3 个 assert，执行判定",
+      "cite": [
+        "paper@§2.1",
+        "paper@§4.4"
+      ]
+    },
+    {
+      "area": "整数数列",
+      "focus": "论文未给出该类的具体例题；原文只说这类题需要 particular notable integer sequences 这类外部知识",
+      "share": "9%（同上，可多标签）",
+      "format": "一句话需求 + 3 个 assert，执行判定",
+      "cite": [
+        "paper@§2.1"
+      ]
+    },
+    {
+      "area": "其他数据结构",
+      "focus": "论文未给出该类的具体例题",
+      "share": "2%（同上，可多标签）",
+      "format": "一句话需求 + 3 个 assert，执行判定",
+      "cite": [
+        "paper@§2.1"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "长程序与工程级开发——论文第 9 节自述基准程序短而简单，尚未覆盖程序合成的广度与复杂度",
+      "cite": [
+        "paper@§9"
+      ]
+    },
+    {
+      "text": "代码质量、可读性与效率——论文只测功能正确性，并明确说 BLEU 这类文本相似度和合成性能相关性很差",
+      "cite": [
+        "paper@§3",
+        "paper@§4.7"
+      ]
+    },
+    {
+      "text": "对程序执行结果的预测（语义基础）——论文第 6 节的独立实验显示模型做不好，MBPP 本身不考这项",
+      "cite": [
+        "paper@§6.1",
+        "paper@Abstract"
+      ]
+    },
+    {
+      "text": "从更复杂文本合成代码——论文用同期发布的另一个数据集 MathQA-Python（23,914 题）来测",
+      "cite": [
+        "paper@§2.2",
+        "paper@Abstract"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 974,
+    "splits": [
+      "全量 974 题（Hugging Face full 子集，974 行）",
+      "人工校验子集 426 题（论文称 edited；仓库文件 sanitized-mbpp.json，HF sanitized 子集 427 行）",
+      "论文划分：10 题 few-shot 提示 / 500 题测试 / 374 题微调训练 / 90 题验证",
+      "HF full 子集切分：train 374 / test 500 / validation 90 / prompt 10"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "crowd-sourced（Google 内部众包池，参与者具备基础 Python 知识）",
+    "public_sample": true,
+    "totals": "全量 974 题，其中 426 题经作者人工校验 · 每题 = 一句话需求 + 1 个自包含函数 + 3 个 assert 测试 · 参考实现平均 6.8 行、中位 5 行、最长 50 行 · 题目为英文 · 常用划分：500 题测试集 + 374 题微调训练 + 90 题验证 + 10 题 few-shot 提示",
+    "cite": [
+      "paper@§2.1",
+      "repo@README",
+      "repo@Evaluation Details",
+      "dataset@Subset / Split",
+      "dataset@页首元数据"
+    ],
+    "construction": [
+      {
+        "k": "众包出题",
+        "text": "Google 内部众包池的参与者为每题写一段短问题陈述、一个自包含的 Python 函数解答，以及 3 个检查语义正确性的测试用例，并附一个能通过全部测试的参考解。",
+        "cite": [
+          "paper@§2.1",
+          "dataset@Source Data"
+        ]
+      },
+      {
+        "k": "出题约束",
+        "text": "要求需求具体到人能不加澄清就翻译成代码；代码自包含、不向控制台打印结果；允许参与者查阅互联网资料。",
+        "cite": [
+          "paper@§2.1"
+        ]
+      },
+      {
+        "k": "人工校验子集",
+        "text": "作者发现部分题函数签名不常见、缺少细节或有歧义，于是人工检查、编辑并裁剪出一批题目，得到 426 道人工校验题（edited / sanitized-mbpp.json）。",
+        "cite": [
+          "paper@§2.1",
+          "repo@README"
+        ]
+      },
+      {
+        "k": "切分",
+        "text": "10 题留作 few-shot 提示，500 题作测试集（few-shot 与微调都用它评估），374 题作微调训练，其余 90 题作验证；仓库 README 按任务号给出同样划分（1–10 提示、11–510 测试、511–600 验证、601–974 训练）。",
+        "cite": [
+          "paper@§2.1",
+          "repo@Evaluation Details"
+        ]
+      },
+      {
+        "k": "参考解验证",
+        "text": "作者程序化地检查了所有参考代码在 Python 3.6 下能通过各自全部测试，并开源了全部题目。",
+        "cite": [
+          "paper@§2.1"
+        ]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "提示词模板为「You are an expert Python programmer, and here is your task: {prompt} Your code should pass these tests:」后接该题的 3 个 assert，模型输出用 [BEGIN] / [DONE] 两个 token 界定。论文用 3-shot（取 task_ids 2、3、4 三个示例题拼进提示），在 500 题测试集（task IDs 11–510）上以温度 0.5 为每题采样 80 个解法，逐个执行并与该题 3 个 assert 比对，全部通过才算这道题解出。判分完全靠自动执行测试，不经过裁判模型。",
+    "cite": [
+      "repo@Evaluation Details",
+      "paper@§2.1",
+      "paper@§3"
+    ],
+    "variants": [
+      {
+        "text": "few-shot 示例数 0 / 1 / 2 / 3：同一个 137B 模型的「任一样本通过率」从 43.2% 到 59.0%，这几个数不能混排。",
+        "cite": [
+          "paper@Table 1"
+        ]
+      },
+      {
+        "text": "采样预算 1 次 vs 80 次：同一个 137B 3-shot 设置下，单样本通过率 16.77%，任一样本通过率 58.4%，差 40 多个百分点。",
+        "cite": [
+          "paper@Table 1"
+        ]
+      },
+      {
+        "text": "提示示例的具体选择：论文用不同随机种子换示例，成绩从 59.6% 到明显更低；把多个种子的结果集成可达 66.4%。",
+        "cite": [
+          "paper@§4.3"
+        ]
+      },
+      {
+        "text": "few-shot vs 微调：用 374 题、小学习率只训 100 步，论文称多数模型规模提升约 10 个百分点。",
+        "cite": [
+          "paper@§1",
+          "paper@§3"
+        ]
+      },
+      {
+        "text": "子集不同：全量 500 题测试集、论文 426 题人工校验集、HF sanitized 427 行、EvalPlus 榜单实际用的 399 题 hand-verified 子集，是四套题。",
+        "cite": [
+          "paper@§2.1",
+          "repo@README",
+          "dataset@Subset / Split",
+          "lb@Notes"
+        ]
+      },
+      {
+        "text": "0-shot vs 3-shot：Qwen2.5 技术报告等厂商口径是 0-shot，与原论文 3-shot 不可直接比。",
+        "cite": [
+          "qwen25@§5.2",
+          "repo@Evaluation Details"
+        ]
+      },
+      {
+        "text": "MBPP vs MBPP+：EvalPlus 为每题补足约 35 倍测试，MBPP+ v0.2.0 又移除 28 个破损任务（399→378 题）。",
+        "cite": [
+          "evalplusrepo@README",
+          "evalplusrepo@Changelog"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "pass-at-1",
+      "name": "pass@1（单样本通过率）",
+      "direction": "越高越好",
+      "description": "对每题生成一个解法，通过该题全部测试用例（原版为 3 个 assert）的比例；论文对应口径是「% of Samples Solving Task」，厂商发布引用 MBPP 时通常报这个数",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§4.1",
+        "repo@README"
+      ]
+    },
+    {
+      "id": "pass-at-k-80",
+      "name": "任一样本通过率（论文口径 80 次采样）",
+      "direction": "越高越好",
+      "description": "对每题采样 80 个解法，只要有任一样本通过全部测试就记为该题解决；论文称「% of Tasks Solved by *any* Sample」，社区常记作 pass@80",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§4.1",
+        "paper@§3"
+      ]
+    },
+    {
+      "id": "pass-at-1-greedy",
+      "name": "pass@1（贪心解码，EvalPlus 榜单口径）",
+      "direction": "越高更好",
+      "description": "EvalPlus 榜单以贪心解码生成的单个确定性样本计通过率，并固定用 MBPP-sanitized 的 399 题子集",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "lb@Notes"
+      ]
+    }
+  ],
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2021-08-16",
+      "label": "arXiv v1 发布，MBPP 与 MathQA-Python 随论文公开（该论文至今只有 v1）",
+      "cite": [
+        "paper"
+      ]
+    },
+    {
+      "id": "sanitized-subset",
+      "date": "论文未给出日期",
+      "label": "仓库以 sanitized-mbpp.json 提供人工校验子集，Hugging Face 拆出 sanitized 子集（427 行）；论文称 edited 集为 426 题，两者题量差 1，来源未解释",
+      "cite": [
+        "repo@README",
+        "paper@§2.1",
+        "dataset@Subset / Split"
+      ]
+    },
+    {
+      "id": "mbpp-plus-v020",
+      "date": "2024-04-17",
+      "label": "EvalPlus 把 MBPP+ 升级到 v0.2.0：移除 28 个破损任务（399→378 题），官方预计 pass@1 提升约 4 个百分点",
+      "cite": [
+        "evalplusrepo@Changelog"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "测试覆盖不足（每题只有 3 个 assert）",
+      "impact": "论文抽 50 道测试题另写对抗测试，估计约 12% 被计为「解出」的代码通不过对抗测试（66% → 58%）；EvalPlus 补足约 35 倍测试后，同一模型分数明显下降（Qwen2.5-7B 基础版 0-shot：MBPP 74.9 → MBPP+ 62.9）。",
+      "severity": "高",
+      "response": "EvalPlus 发布 MBPP+ 并持续修订；Hugging Face 数据带 challenge_test_list 字段放更严的测试；官方另有人工校验子集 sanitized-mbpp.json。",
+      "reader": "看到 MBPP 90% 以上先问是哪套测试；跨论文比较优先看 MBPP+ 或写清测试口径的分数。",
+      "cite": [
+        "paper@§4.4",
+        "evalplusrepo@README",
+        "qwen25@Table 4",
+        "dataset@Data Fields",
+        "repo@README"
+      ]
+    },
+    {
+      "issue": "评测口径高度不一致",
+      "impact": "few-shot 示例数（0–3）、采样预算（1 vs 80）、提示示例选择、是否微调、全集还是校验子集、0-shot 还是 3-shot，都会让分数差出几十个百分点；论文 Table 1 里同一个 137B 模型跨示例数从 43.2% 到 59.0%，单样本口径只有 16.77%。",
+      "severity": "高",
+      "response": "论文公开了提示格式与任务号划分；EvalPlus 榜单固定为贪心 pass@1 并说明所用子集；Google 未维护官方榜单。",
+      "reader": "比较前先对齐四项：示例数、采样数、题目子集、测试集版本。",
+      "cite": [
+        "paper@Table 1",
+        "repo@Evaluation Details",
+        "lb@Notes"
+      ]
+    },
+    {
+      "issue": "数据污染",
+      "impact": "题目自 2021 年公开后在互联网广泛流传，很可能已进入后来模型的训练数据；EvalPlus 榜单把避免污染的责任明确交给模型提供方。论文自查自家模型时只有 32/974（3.3%）道题有超过一半代码行能在预训练数据中匹配到，但那是 2021 年的模型，不能外推到今天。",
+      "severity": "中",
+      "response": "论文做了预训练重叠自查（§4.8）；EvalPlus 榜单提示提供方负责避免污染；未见官方留存集或滚动更新机制。",
+      "reader": "把 MBPP 高分当作「见过题」的下界，交叉看持续更新的基准（如 LiveCodeBench）再下结论。",
+      "cite": [
+        "paper@§4.8",
+        "lb@Notes"
+      ]
+    },
+    {
+      "issue": "题目表述歧义与题目质量",
+      "impact": "论文自述部分题函数签名不常见、缺少细节或有歧义；同样 100 道题，137B few-shot 在原始版上 63%、在人工编辑版上 79%，说明原题表述本身会压低分数。",
+      "severity": "中",
+      "response": "作者人工编辑出 426 题 edited 集合并开源；EvalPlus 进一步取 399 题 hand-verified 子集；HF 数据集卡承认描述可能不够明确。",
+      "reader": "先看清分数来自 974 题全集还是 426 / 427 / 399 题的校验子集。",
+      "cite": [
+        "paper@§2.1",
+        "paper@Table 2",
+        "repo@README",
+        "dataset@Other Known Limitations"
+      ]
+    },
+    {
+      "issue": "已接近饱和",
+      "impact": "题目短、难度入门，厂商 0-shot 口径已报到 84%–88%（Qwen2.5 技术报告 Table 6 / Table 7），前沿模型之间拉不开差距。",
+      "severity": "中",
+      "response": "论文第 9 节自述基准尚未覆盖程序合成的广度与复杂度；社区转向 MBPP+、BigCodeBench、SWE-bench 等更难基准。",
+      "reader": "把 MBPP 当基本功底线，不用它区分前沿模型。",
+      "cite": [
+        "paper@§9",
+        "qwen25@Table 6"
+      ]
+    },
+    {
+      "issue": "极少数情况下模型会读测试写死答案",
+      "impact": "论文举了一例：判断给定整数是否为 Woodall 数的题，模型直接返回「输入是 383 就 True，否则 False」，三个 assert 全过但解法是错的。",
+      "severity": "低",
+      "response": "论文用 §4.2 / §4.4 的数据判断这不是普遍问题；未见官方额外防护。",
+      "reader": "看到异常高的通过率时，抽查生成代码是否把测试输入写死。",
+      "cite": [
+        "paper@§4.5"
+      ]
+    },
+    {
+      "issue": "评测需要执行模型生成的代码",
+      "impact": "判分方式决定必须真实运行模型输出，运行不可信代码有安全风险。",
+      "severity": "低",
+      "response": "Hugging Face 数据集卡明确要求在安全环境中执行生成的 Python 代码。",
+      "reader": "自建评测时用容器或虚拟机隔离执行。",
+      "cite": [
+        "dataset@Considerations for Using the Data"
+      ]
+    }
+  ],
+  "notes": "Qwen 引用；经典三-shot 口径",
+  "official_sources": [
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/google-research-datasets/mbpp"
+    },
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2108.07732"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/google-research/google-research/tree/master/mbpp"
+    },
+    {
+      "kind": "site",
+      "url": "https://qwenlm.github.io/blog/qwen2.5/"
+    }
+  ],
+  "related_benchmarks": [
+    "humaneval",
+    "humanevalplus",
+    "apps",
+    "evalplus",
+    "multipl-e",
+    "bigcodebench",
+    "cruxeval"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-13",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "Program Synthesis with Large Language Models（arXiv:2108.07732v1，2021-08-16）",
+        "url": "https://arxiv.org/abs/2108.07732",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "google-research/google-research 的 mbpp 目录（数据集文件与 README）",
+        "url": "https://github.com/google-research/google-research/tree/master/mbpp",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "dataset",
+        "kind": "dataset",
+        "title": "google-research-datasets/mbpp（Hugging Face，full / sanitized 两个子集）",
+        "url": "https://huggingface.co/datasets/google-research-datasets/mbpp",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "evalplusrepo",
+        "kind": "repo",
+        "title": "evalplus/evalplus（MBPP+ 与变更日志）",
+        "url": "https://github.com/evalplus/evalplus",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "lb",
+        "kind": "leaderboard",
+        "title": "EvalPlus Leaderboard（MBPP / MBPP+ 榜单口径说明）",
+        "url": "https://evalplus.github.io/leaderboard.html",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "qwen25",
+        "kind": "paper",
+        "title": "Qwen2.5 Technical Report（arXiv:2412.15115，MBPP / MBPP+ 0-shot 结果）",
+        "url": "https://arxiv.org/abs/2412.15115",
+        "accessed": "2026-11-13"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Google Research",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      "first_release": {
+        "v": "2021-08-16（arXiv v1）",
+        "cite": [
+          "paper"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "paper@Abstract",
+        "paper@§2.1",
+        "repo@README"
+      ],
+      "interpretation": [
+        "paper@§9",
+        "paper@§4.4",
+        "qwen25@Table 4"
+      ]
+    },
+    "problem": {
+      "text": "HumanEval 只有 164 题，且每题给几个 I/O 示例的数量和格式不统一；APPS 等竞赛题集把算法思路包在故事里，成绩长期偏低。MBPP 想做一个题量更大、需求描述字面、每题固定 3 个 assert 的入门级 Python 合成基准，把评估拉回「生成并理解代码」本身。",
+      "cite": [
+        "paper@§1",
+        "paper@§8.3"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机 / 空提示基线",
+        "value": "论文未给出",
+        "note": "判分要求通过该题全部 3 个 assert，论文没有报告随机或空提示基线，本站也不推算。",
+        "cite": [
+          "repo@README"
+        ]
+      },
+      {
+        "label": "论文发布时最好（few-shot 137B，任一样本口径）",
+        "value": "59.6%",
+        "note": "500 题测试集、温度 0.5 采 80 个样本下的最好成绩；Table 1 的 3 示例行为 58.4%，作者注明存在运行间波动。",
+        "cite": [
+          "paper@Abstract",
+          "paper@Table 1"
+        ]
+      },
+      {
+        "label": "同一设置只看一次生成（pass@1）",
+        "value": "16.77%",
+        "note": "同一个 137B 3-shot 设置，只算单样本通过率；说明「采 80 次挑一个能过的」和「一次写对」差 40 多个百分点。",
+        "cite": [
+          "paper@Table 1"
+        ]
+      },
+      {
+        "label": "论文微调后",
+        "value": "论文未给出精确值（只写约 10 个百分点提升）",
+        "note": "用 374 题微调、小学习率只训 100 步；论文只在图 3 给曲线，正文与表格都没有微调后的具体数字。",
+        "cite": [
+          "paper@§1",
+          "paper@§3"
+        ]
+      },
+      {
+        "label": "人工编辑子集（与原版重合的 100 题）",
+        "value": "63% → 79%",
+        "note": "137B few-shot 在原始版与人工编辑版上的差距，反映题目表述本身对分数的影响。",
+        "cite": [
+          "paper@Table 2"
+        ]
+      },
+      {
+        "label": "人机对话协作（编辑集 50 题）",
+        "value": "30% → 超过 65%",
+        "note": "人工给 4 轮一句话提示后的解题率；题目集与协议都和上面几行不同，不能直接比。",
+        "cite": [
+          "paper@§5.1"
+        ]
+      },
+      {
+        "label": "第三方 0-shot 口径最高（Qwen2.5 技术报告 Table 6）",
+        "value": "88.2%（Qwen2.5-72B-Instruct）",
+        "note": "厂商自报、0-shot，报告未注明采样数；同表 Qwen2.5-Plus 85.5%、Llama-3.1-405B 84.5%。",
+        "cite": [
+          "qwen25@Table 6"
+        ]
+      },
+      {
+        "label": "测试加强口径参考（MBPP+）",
+        "value": "同一模型 MBPP 74.9 → MBPP+ 62.9",
+        "note": "Qwen2.5-7B 基础版 0-shot 下两套测试的差距；MBPP+ 的测试量约为原版 35 倍。这条线说明原版高分成分里有多少来自测试覆盖不足。",
+        "cite": [
+          "qwen25@Table 4",
+          "evalplusrepo@README"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 pass@1 和「任一样本通过率」当成同一回事：同一个 137B 3-shot 设置下分别是 16.77% 和 58.4%。",
+        "cite": [
+          "paper@Table 1"
+        ]
+      },
+      {
+        "text": "把厂商 0-shot 口径和论文 3-shot 口径排进同一张表。",
+        "cite": [
+          "qwen25@§5.2",
+          "repo@Evaluation Details"
+        ]
+      },
+      {
+        "text": "把 MBPP、MBPP+、sanitized 的 426 / 427 / 399 题子集分数混排——它们不是同一套题。",
+        "cite": [
+          "paper@§2.1",
+          "repo@README",
+          "lb@Notes"
+        ]
+      },
+      {
+        "text": "把 MBPP 高分理解成「能写复杂程序」：论文第 9 节明确说基准程序短而简单，没有覆盖程序合成的广度与复杂度。",
+        "cite": [
+          "paper@§9"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "Google Research",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "Jacob Austin、Augustus Odena（共同一作）、Maxwell Nye、Maarten Bosma、Henryk Michalewski、David Dohan、Ellen Jiang、Carrie Cai、Michael Terry、Quoc Le、Charles Sutton",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      {
+        "k": "出题者",
+        "v": "Google 内部众包池中具备基础 Python 知识的参与者；论文另说明创建过程是从零手工构建，未爬取在线编程平台",
+        "cite": [
+          "paper@§2.1",
+          "dataset@Source Data"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2021-08-16 arXiv v1 发布 → 2024-04-17 EvalPlus 发布 MBPP+ v0.2.0（399→378 题）",
+        "cite": [
+          "paper",
+          "evalplusrepo@Changelog"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "mbpp.jsonl 与 sanitized-mbpp.json 在 google-research/google-research 仓库的 mbpp 目录；Hugging Face google-research-datasets/mbpp 提供 full（974 行）与 sanitized（427 行）两个子集，许可 CC-BY-4.0",
+        "cite": [
+          "repo@README",
+          "dataset@Subset / Split",
+          "dataset@Licensing Information"
+        ]
+      },
+      {
+        "k": "同期数据集",
+        "v": "论文同时发布 MathQA-Python（23,914 题），把 MathQA 的领域专用语言解答改写成 Python，用来测从更复杂文本合成代码",
+        "cite": [
+          "paper@§2.2",
+          "paper@Abstract"
+        ]
+      },
+      {
+        "k": "名称写法",
+        "v": "论文摘要写作 Mostly Basic Programming Problems，官方仓库 README 标题写作 Mostly Basic Python Problems Dataset；两种写法指向同一数据集",
+        "cite": [
+          "paper@Abstract",
+          "repo@README"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-13",
+        "columns": [
+          "来源",
+          "模型 / 设置",
+          "口径与子集",
+          "指标",
+          "分数"
+        ],
+        "rows": [
+          [
+            "论文 Table 1",
+            "137B · few-shot，0 个示例",
+            "500 题测试集；温度 0.5 采 80 个样本",
+            "% of Problems Solved",
+            "43.2%"
+          ],
+          [
+            "论文 Table 1",
+            "137B · few-shot，1 个示例",
+            "同上",
+            "% of Problems Solved",
+            "55.2%"
+          ],
+          [
+            "论文 Table 1",
+            "137B · few-shot，2 个示例",
+            "同上",
+            "% of Problems Solved",
+            "59.0%"
+          ],
+          [
+            "论文 Table 1",
+            "137B · few-shot，3 个示例",
+            "同上",
+            "% of Problems Solved",
+            "58.4%"
+          ],
+          [
+            "论文 Table 1",
+            "137B · few-shot，3 个示例",
+            "同上",
+            "% of Samples Solving Task",
+            "16.77%"
+          ],
+          [
+            "论文 Table 2",
+            "137B · few-shot",
+            "100 题交集 · 原始版",
+            "% of Problems Solved",
+            "63%"
+          ],
+          [
+            "论文 Table 2",
+            "137B · few-shot",
+            "100 题交集 · 人工编辑版",
+            "% of Problems Solved",
+            "79%"
+          ],
+          [
+            "Qwen2.5 技术报告 Table 3",
+            "Qwen2.5-32B（base）",
+            "0-shot",
+            "MBPP（报告未注明采样数）",
+            "84.7%"
+          ],
+          [
+            "Qwen2.5 技术报告 Table 4",
+            "Qwen2.5-7B（base）",
+            "0-shot",
+            "MBPP（报告未注明采样数）",
+            "74.9%"
+          ],
+          [
+            "Qwen2.5 技术报告 Table 4",
+            "Qwen2.5-7B（base）",
+            "0-shot，MBPP+",
+            "MBPP+（报告未注明采样数）",
+            "62.9%"
+          ],
+          [
+            "Qwen2.5 技术报告 Table 6",
+            "Qwen2.5-72B-Instruct",
+            "0-shot",
+            "MBPP（报告未注明采样数）",
+            "88.2%"
+          ],
+          [
+            "Qwen2.5 技术报告 Table 6",
+            "Qwen2.5-Plus",
+            "0-shot",
+            "MBPP（报告未注明采样数）",
+            "85.5%"
+          ],
+          [
+            "Qwen2.5 技术报告 Table 7",
+            "Qwen2.5-32B-Instruct",
+            "0-shot",
+            "MBPP（报告未注明采样数）",
+            "84.5%"
+          ]
+        ]
+      },
+      "cite": [
+        "paper@Table 1",
+        "paper@Table 2",
+        "qwen25@Table 3",
+        "qwen25@Table 4",
+        "qwen25@Table 6",
+        "qwen25@Table 7"
+      ]
+    }
+  }
+}

@@ -1,0 +1,675 @@
+{
+  "id": "humaneval",
+  "name": "HumanEval",
+  "full_name": "HumanEval: Hand-Written Evaluation Set（OpenAI 发布的手写函数补全评测集）",
+  "aliases": [],
+  "status": "near-saturation",
+  "categories": [
+    "coding"
+  ],
+  "summary": "HumanEval 是 OpenAI 2021 年放出的 Python 代码评测集：164 道人工手写小题，每题给出函数签名和一段英文说明（docstring，即写在三引号里的文档字符串），模型要补全函数体，再由题目自带的单元测试判定对错；主指标 pass@1 是「采样一次就通过全部测试」的题目占比。",
+  "interpretation": "高分说明模型能把简短的英文需求写成能跑对的单个 Python 函数；它不说明能读懂仓库上下文、修改存量代码、自己写测试或澄清含糊需求。原版已接近饱和——EvalPlus 官方榜单上 2024 年的 o1 系列 pass@1 为 96.3%，同一批题换成更严的 HumanEval+ 只有 89.0%——单看 HumanEval 很难再区分模型强弱。",
+  "measures": [
+    {
+      "area": "语言理解（读懂英文需求）",
+      "focus": "示例题（论文附录 B 的 words_string）：输入是由逗号或空格分隔的单词字符串，要求拆成单词数组，题面自带输入输出样例",
+      "share": "未披露",
+      "format": "函数补全 + 单元测试判定",
+      "cite": [
+        "paper@§2.2",
+        "paper@附录 B"
+      ]
+    },
+    {
+      "area": "算法与简单数学",
+      "focus": "论文把算法与简单数学并列为考察方向；附录 B 另有 is_prime（判断素数）与 add_elements（取数组前 k 个最多两位数的元素求和）等题",
+      "share": "未披露",
+      "format": "函数补全 + 单元测试判定",
+      "cite": [
+        "paper@§2.2",
+        "paper@附录 B"
+      ]
+    },
+    {
+      "area": "推理（按题意串联多个步骤）",
+      "focus": "论文将 reasoning 与语言理解、算法、简单数学并列为考察方向，未按方向给出题量或示例题",
+      "share": "未披露",
+      "format": "未披露",
+      "cite": [
+        "paper@§2.2"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "多文件 / 仓库级工程能力：题目全是单个 Python 函数，不涉及读代码库上下文、改存量代码、依赖管理与写测试；LiveCodeBench 作者也指出 HumanEval 只覆盖自然语言到代码这一类任务",
+      "cite": [
+        "paper@§2.2",
+        "livecodebench@§1"
+      ]
+    },
+    {
+      "text": "正确性之外的代码质量：HumanEval 只以是否通过单元测试判定对错，不评估可读性、效率与安全性；代码效率另由 EvalPlus 的 EvalPerf 数据集评测",
+      "cite": [
+        "paper@§2.1",
+        "evalplus"
+      ]
+    },
+    {
+      "text": "Python 以外的语言：原版只有 Python 题；多语言版本是另一个基准 HumanEval-X（5 种语言共 820 题）",
+      "cite": [
+        "paper@§2.2",
+        "codegeex"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 164,
+    "splits": [
+      "单一评测集：论文与官方仓库 README 都没有定义 train / dev / test 拆分"
+    ],
+    "languages": [
+      "Python"
+    ],
+    "source_type": "hand-written（OpenAI 人工手写，非从既有代码库程序化抽取）",
+    "public_sample": true,
+    "totals": "共 164 道手写 Python 函数补全题，每题含函数签名、docstring、函数体和若干单元测试（原论文称平均 7.7 个测试/题）· 只覆盖 Python 单函数合成，部分题目与简单软件面试题相当 · 题目与题面为英文",
+    "cite": [
+      "paper@§2.2",
+      "paper@§1",
+      "repo"
+    ],
+    "construction": [
+      {
+        "k": "全部手写",
+        "text": "164 道题由人工手写，而不是从 GitHub 等来源程序化复制；作者解释原因是训练数据已包含大量公开题解（如 APPS 用到的 Codeforces 题）",
+        "cite": [
+          "paper@§2.2",
+          "paper@Figure 2"
+        ]
+      },
+      {
+        "k": "题目结构",
+        "text": "每题包含函数签名、docstring、函数体和若干单元测试，原论文称平均 7.7 个测试/题",
+        "cite": [
+          "paper@§2.2"
+        ]
+      },
+      {
+        "k": "考察方向",
+        "text": "考察语言理解、推理、算法和简单数学，部分题目与简单软件面试题相当",
+        "cite": [
+          "paper@§2.2"
+        ]
+      },
+      {
+        "k": "执行沙箱",
+        "text": "因为要执行模型生成的不受信代码，作者用 gVisor 容器运行时搭沙箱来跑单元测试，防止程序改动宿主机或外传数据",
+        "cite": [
+          "paper@§2.3"
+        ]
+      },
+      {
+        "k": "随论文发布",
+        "text": "数据集与评测框架随 Codex 论文一起发布在 GitHub openai/human-eval；该仓库 README 现已标注停止维护",
+        "cite": [
+          "repo",
+          "paper@§1"
+        ]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "把每题的题头（header）、函数签名和 docstring 拼成提示词；用核采样（nucleus sampling，top p = 0.95）生成代码，遇到 '\\nclass'、'\\ndef'、'\\n#'、'\\nif'、'\\nprint' 任一项就停止续写。每题采样 n = 200 个候选，统计通过单元测试的个数 c，用无偏估计公式计算 pass@k（k ≤ 100）；生成代码在 gVisor 沙箱里执行，避免不受信代码接触宿主机。",
+    "cite": [
+      "paper@§3.2",
+      "paper@§2.1",
+      "paper@§2.3"
+    ],
+    "variants": [
+      {
+        "text": "原版 HumanEval vs HumanEval+（EvalPlus）：同一批 164 题，但测试扩到约 80 倍并重写了错误的标准解，同模型分数普遍更低（论文报告最大降幅 pass@1 为 23.1 个百分点），两个口径不能直接比。",
+        "cite": [
+          "evalplus-paper@§3 Setup",
+          "evalplus-paper@§3",
+          "evalplus"
+        ]
+      },
+      {
+        "text": "HumanEval vs HumanEval-X：HumanEval-X 把题目扩展到 5 种语言共 820 题（Python、C++、Java、JavaScript、Go），考多语言生成与翻译，与只测 Python 单函数的 HumanEval 不可比。",
+        "cite": [
+          "codegeex"
+        ]
+      },
+      {
+        "text": "pass@1 的采样设置不同：原论文 Table 1 的 pass@1 来自 temperature 0.8 的随机采样，而 EvalPlus 官方榜单按贪心解码（greedy decoding）排 pass@1，两种数字不能混排。",
+        "cite": [
+          "paper@Figure 1",
+          "leaderboard"
+        ]
+      },
+      {
+        "text": "样本数与 k 的估计口径：官方脚本在样本数少于 k 时不估 pass@k，示例代码每题采 200 个样本、默认报 pass@1 / pass@10 / pass@100；不同 k 之间也要分开看。",
+        "cite": [
+          "repo"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "pass@1",
+      "name": "pass@1",
+      "direction": "越高越好",
+      "description": "每题只生成 1 个候选时通过全部单元测试的题目占比；原论文 Table 1 的 pass@1 用 temperature 0.8 采样",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@Table 1",
+        "paper@Figure 1"
+      ]
+    },
+    {
+      "id": "pass@10",
+      "name": "pass@10",
+      "direction": "越高越好",
+      "description": "每题生成 10 个候选、至少 1 个通过全部单元测试的概率（无偏估计）",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@Table 1",
+        "paper@§2.1"
+      ]
+    },
+    {
+      "id": "pass@100",
+      "name": "pass@100",
+      "direction": "越高越好",
+      "description": "每题生成 100 个候选、至少 1 个通过全部单元测试的概率（无偏估计），代表「多采样再挑一个」的上限",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@Table 1",
+        "paper@§2.1"
+      ]
+    }
+  ],
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2021-07-07",
+      "label": "arXiv v1 发布，论文与数据集首次公开",
+      "cite": [
+        "arxiv-abs@Submission history"
+      ]
+    },
+    {
+      "id": "v2",
+      "date": "2021-07-14",
+      "label": "arXiv v2（当前最新版，本档案核对所用版本）",
+      "cite": [
+        "paper@arXiv 页眉",
+        "arxiv-abs@Submission history"
+      ]
+    },
+    {
+      "id": "humaneval-x",
+      "date": "2023-03-30",
+      "label": "CodeGeeX 论文（arXiv:2303.17568）发布 HumanEval-X：同题意的 5 语言版共 820 题",
+      "cite": [
+        "codegeex-abs@Submission history",
+        "codegeex"
+      ]
+    },
+    {
+      "id": "humaneval-plus",
+      "date": "2023-05-02",
+      "label": "EvalPlus 论文（arXiv:2305.01210）提出 HumanEval+：同 164 题、测试扩约 80 倍并修正错误标准解",
+      "cite": [
+        "evalplus-abs@Submission history",
+        "evalplus-paper@§3 Setup"
+      ]
+    },
+    {
+      "id": "evalplus-v0.3.1",
+      "date": "2024-10-20",
+      "label": "EvalPlus v0.3.1 发布（含 HumanEval+ 数据集与代码效率评测 EvalPerf）",
+      "cite": [
+        "evalplus"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "训练数据污染与过拟合",
+      "impact": "题目与题解自 2021 年起就在公开仓库和衍生数据集中流通，可能进入训练集；LiveCodeBench 作者对比发现部分模型在 HumanEval 上好、在同期竞赛题上差，判断为对 HumanEval 过拟合。",
+      "severity": "高",
+      "response": "原论文只声明题目为手写、非程序化复制，并自承「不保证题目新颖」；EvalPlus 榜单把避免污染的责任交给模型提供方；未见 OpenAI 对 HumanEval 污染的专门回应。",
+      "reader": "把 HumanEval 分数当历史参考，与 HumanEval+ / LiveCodeBench / SWE-bench 等更新结果一起看。",
+      "cite": [
+        "paper@Figure 2",
+        "livecodebench@§1",
+        "leaderboard"
+      ]
+    },
+    {
+      "issue": "饱和、区分度不足",
+      "impact": "EvalPlus 官方榜单上 2024 年的 o1 Preview / o1 Mini 在原版 HumanEval 上 pass@1 已达 96.3%，头部模型挤在高位，几个点的差距接近噪声。",
+      "severity": "高",
+      "response": "官方仓库 README 已标注「停止维护、仅供历史参考」；社区用 HumanEval+（更严测试）、LiveCodeBench（时间窗防污染）、SWE-bench（真实仓库任务）接棒。",
+      "reader": "看到 95% 以上的 HumanEval 分数，不要把它当作模型能力排名的依据。",
+      "cite": [
+        "leaderboard-data",
+        "repo",
+        "livecodebench@§1"
+      ]
+    },
+    {
+      "issue": "测试覆盖不足与原题缺陷",
+      "impact": "EvalPlus 检查原版 HumanEval 的标准解，发现超过 10% 实现有误，于是重写并测试了全部标准解；换成 HumanEval+ 后同模型 pass@1 最大降 23.1 个百分点。另外原论文称平均 7.7 个测试/题，EvalPlus Table 2 记的平均值是 9.6（最大 1052），两边统计口径不一致。",
+      "severity": "中",
+      "response": "EvalPlus 以 HumanEval+ 修正（80× 测试 + 重写标准解 + 手工契约），并在 2024 年多次发布修复；OpenAI 仓库已停止维护，未见官方回应。",
+      "reader": "对比 HumanEval 与 HumanEval+ 的落差时，记住一部分落差来自原题缺陷而非模型退化。",
+      "cite": [
+        "evalplus-paper@§3 Setup",
+        "evalplus-paper@Table 2",
+        "evalplus-paper@脚注 2",
+        "evalplus"
+      ]
+    },
+    {
+      "issue": "任务面窄",
+      "impact": "只测单个 Python 函数的 docstring→code 合成，不覆盖多文件改动、调试、测试编写、依赖管理与需求澄清；论文本身也只把 HumanEval 定位为函数级功能正确性基准。",
+      "severity": "中",
+      "response": "论文未回应（这不在 HumanEval 的设计目标内）；后续基准以扩展能力面为卖点，LiveCodeBench 明确把「只测自然语言到代码」列为旧基准的不足。",
+      "reader": "需要工程能力证据时看 SWE-bench / aider / LiveCodeBench，不要只报 HumanEval。",
+      "cite": [
+        "paper@§2.2",
+        "livecodebench@§1"
+      ]
+    },
+    {
+      "issue": "运行环境与工程细节影响判分",
+      "impact": "评测要执行模型生成的不受信代码，官方 README 提醒必须在稳健沙箱中运行，并把执行调用故意注释掉；内存不足时部分正确程序可能被判失败。",
+      "severity": "低",
+      "response": "官方 README 的免责声明与 Known Issues 即回应；论文侧用 gVisor 沙箱运行测试。",
+      "reader": "复现别人的 HumanEval 分数时，注意沙箱与超时设置，异常低分先查运行环境。",
+      "cite": [
+        "repo",
+        "paper@§2.3"
+      ]
+    }
+  ],
+  "notes": "2024 后旗舰发布已基本退场（饱和），仅 2 家旧发布引用",
+  "official_sources": [
+    {
+      "kind": "site",
+      "url": "https://github.com/openai/human-eval"
+    },
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2107.03374"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/evalplus/evalplus"
+    }
+  ],
+  "related_benchmarks": [
+    "lcb",
+    "swebench",
+    "swe-lancer",
+    "aider",
+    "humanevalplus",
+    "apps",
+    "mbpp-evalplus"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-10",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-10",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "Evaluating Large Language Models Trained on Code（arXiv:2107.03374v2，2021-07-14）",
+        "url": "https://arxiv.org/pdf/2107.03374",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "arxiv-abs",
+        "kind": "paper",
+        "title": "arXiv:2107.03374 摘要页（含提交历史 v1 / v2）",
+        "url": "https://arxiv.org/abs/2107.03374",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "openai/human-eval（数据集与评测 harness，README 标注停止维护）",
+        "url": "https://github.com/openai/human-eval",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "evalplus",
+        "kind": "repo",
+        "title": "evalplus/evalplus（HumanEval+ 数据集、框架与发布记录）",
+        "url": "https://github.com/evalplus/evalplus",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "evalplus-paper",
+        "kind": "paper",
+        "title": "Is Your Code Generated by ChatGPT Really Correct?（EvalPlus，arXiv:2305.01210v3）",
+        "url": "https://arxiv.org/pdf/2305.01210",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "evalplus-abs",
+        "kind": "paper",
+        "title": "arXiv:2305.01210 摘要页（提交历史 v1 / v3）",
+        "url": "https://arxiv.org/abs/2305.01210",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "codegeex",
+        "kind": "repo",
+        "title": "THUDM/CodeGeeX README（HumanEval-X：820 题 / 5 语言）",
+        "url": "https://github.com/THUDM/CodeGeeX",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "codegeex-abs",
+        "kind": "paper",
+        "title": "arXiv:2303.17568 摘要页（CodeGeeX / HumanEval-X 提交历史）",
+        "url": "https://arxiv.org/abs/2303.17568",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "leaderboard",
+        "kind": "leaderboard",
+        "title": "EvalPlus 官方榜单（含口径说明 Notes）",
+        "url": "https://evalplus.github.io/leaderboard.html",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "leaderboard-data",
+        "kind": "leaderboard",
+        "title": "EvalPlus 官方榜单数据文件 results.json（pass@1：HumanEval / HumanEval+ / MBPP / MBPP+）",
+        "url": "https://evalplus.github.io/results.json",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "livecodebench",
+        "kind": "paper",
+        "title": "LiveCodeBench: Holistic and Contamination Free Evaluation of LLMs for Code（arXiv:2403.07974v2）",
+        "url": "https://arxiv.org/pdf/2403.07974",
+        "accessed": "2026-11-10"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "OpenAI（论文署名机构以 OpenAI 为主，另有 Anthropic 与 Zipline 的作者参与）",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      "first_release": {
+        "v": "2021-07-07（arXiv v1）",
+        "cite": [
+          "arxiv-abs@Submission history"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "paper@§2.2",
+        "paper@§2.1",
+        "paper@Abstract"
+      ],
+      "interpretation": [
+        "leaderboard-data",
+        "evalplus-paper@§3",
+        "livecodebench@§1"
+      ]
+    },
+    "problem": {
+      "text": "在 HumanEval 之前，代码生成模型主要用 BLEU 这类匹配指标与参考解比对，功能等价但写法不同的程序会被误判；作者要改用单元测试来判功能正确性，并放出一套手写小题，避免题目和解法早就出现在训练数据里。",
+      "cite": [
+        "paper@§2.1",
+        "paper@§2.2"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机 / 人类基线",
+        "value": "论文未给出",
+        "note": "论文没有报告随机基线，也没有人类在 HumanEval 上的成绩；论文只提到「修完一门计算机科学导论课的学生，预期能解出比 Codex-12B 更大比例的题」。",
+        "cite": [
+          "paper@§6"
+        ]
+      },
+      {
+        "label": "论文发布时最好",
+        "value": "28.81%（Codex-12B，pass@1）",
+        "note": "同一张表中 GPT-J 6B 为 11.62%、TabNine 2.58%、GPT-Neo 125M 0.75%；Codex-S（继续在正确实现的独立函数上微调）单样本 37.7%，100 样本里按平均对数概率挑一个达 44.5%，按通过测试挑一个达 77.5%。",
+        "cite": [
+          "paper@Table 1",
+          "paper@§1",
+          "paper@Figure 1"
+        ]
+      },
+      {
+        "label": "官方榜单最高",
+        "value": "96.3%（o1 Preview / o1 Mini，2024-09）",
+        "note": "EvalPlus 官方榜单按 pass@1 贪心解码排名，口径为 HumanEval+ v0.1.10；这两个模型在原版 HumanEval 上 96.3%，在 HumanEval+ 上 89.0%。",
+        "cite": [
+          "leaderboard-data",
+          "leaderboard"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      },
+      {
+        "label": "饱和度参考（HumanEval+ 口径）",
+        "value": "89.0%（同批模型在 HumanEval+ 上的 pass@1）",
+        "note": "原版 96.3% 的分数在更严的测试口径下只剩 89.0%；原版越接近顶部，越难区分模型强弱。这条线是本站按榜单现状写的参考，不是官方上限。",
+        "cite": [
+          "leaderboard-data",
+          "evalplus-paper@§3"
+        ]
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 HumanEval 和 HumanEval+ 的分数排在一起比——同一模型在 HumanEval+ 上普遍更低（论文报告最大降幅 pass@1 为 23.1 个百分点），榜单也明确标注自己用的是 HumanEval+ v0.1.10。",
+        "cite": [
+          "evalplus-paper@§3",
+          "leaderboard"
+        ]
+      },
+      {
+        "text": "把 96% 的 HumanEval 当成模型能胜任工程开发——LiveCodeBench 作者发现有些模型在 HumanEval 上好、在竞赛题上差，判断是对 HumanEval 过拟合。",
+        "cite": [
+          "livecodebench@§1"
+        ]
+      },
+      {
+        "text": "把 pass@1 和 pass@100 混为一谈——pass@100 允许采 100 个候选挑一个通过的，原论文里 Codex-12B 的 pass@1 是 28.81%、pass@100 是 72.31%。",
+        "cite": [
+          "paper@Table 1"
+        ]
+      },
+      {
+        "text": "以为通过单元测试就等于实现通用正确——判分只跑题目自带测试，HumanEval 不评估实现是否通用或高效，效率另有 EvalPerf 基准。",
+        "cite": [
+          "paper@§2.1",
+          "evalplus"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "OpenAI（论文署名机构含 OpenAI、Anthropic、Zipline）",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "共同一作 Mark Chen、Jerry Tworek、Heewoo Jun、Qiming Yuan、Henrique Ponde de Oliveira Pinto；通讯作者 Mark Chen 等",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2021-07-07 arXiv v1 → 2021-07-14 v2（当前最新）→ 2023-03 HumanEval-X → 2023-05 HumanEval+ → 2024-10 EvalPlus v0.3.1",
+        "cite": [
+          "arxiv-abs@Submission history",
+          "codegeex-abs@Submission history",
+          "evalplus-abs@Submission history",
+          "evalplus"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "数据集与评测框架在 GitHub openai/human-eval（README 标注停止维护）；HumanEval+ 在 evalplus/evalplus；HumanEval-X 在 THUDM/CodeGeeX 仓库并提供 HuggingFace 数据集",
+        "cite": [
+          "repo",
+          "evalplus",
+          "codegeex"
+        ]
+      },
+      {
+        "k": "论文定位",
+        "v": "HumanEval 是 Codex 论文的评测部分，用来测「从 docstring 合成函数」的功能正确性；Codex 的生产版本驱动了 GitHub Copilot",
+        "cite": [
+          "paper@Abstract",
+          "paper@§1"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-10",
+        "columns": [
+          "来源",
+          "模型",
+          "pass@1",
+          "pass@10",
+          "pass@100"
+        ],
+        "rows": [
+          [
+            "论文 Table 1",
+            "GPT-Neo 125M",
+            "0.75%",
+            "1.88%",
+            "2.97%"
+          ],
+          [
+            "论文 Table 1",
+            "GPT-Neo 1.3B",
+            "4.79%",
+            "7.47%",
+            "16.30%"
+          ],
+          [
+            "论文 Table 1",
+            "GPT-Neo 2.7B",
+            "6.41%",
+            "11.27%",
+            "21.37%"
+          ],
+          [
+            "论文 Table 1",
+            "GPT-J 6B",
+            "11.62%",
+            "15.74%",
+            "27.74%"
+          ],
+          [
+            "论文 Table 1",
+            "TabNine",
+            "2.58%",
+            "4.35%",
+            "7.59%"
+          ],
+          [
+            "论文 Table 1",
+            "Codex-12M",
+            "2.00%",
+            "3.62%",
+            "8.58%"
+          ],
+          [
+            "论文 Table 1",
+            "Codex-25M",
+            "3.21%",
+            "7.1%",
+            "12.89%"
+          ],
+          [
+            "论文 Table 1",
+            "Codex-42M",
+            "5.06%",
+            "8.8%",
+            "15.55%"
+          ],
+          [
+            "论文 Table 1",
+            "Codex-85M",
+            "8.22%",
+            "12.81%",
+            "22.4%"
+          ],
+          [
+            "论文 Table 1",
+            "Codex-300M",
+            "13.17%",
+            "20.37%",
+            "36.27%"
+          ],
+          [
+            "论文 Table 1",
+            "Codex-679M",
+            "16.22%",
+            "25.7%",
+            "40.95%"
+          ],
+          [
+            "论文 Table 1",
+            "Codex-2.5B",
+            "21.36%",
+            "35.42%",
+            "59.5%"
+          ],
+          [
+            "论文 Table 1",
+            "Codex-12B",
+            "28.81%",
+            "46.81%",
+            "72.31%"
+          ]
+        ]
+      },
+      "cite": [
+        "paper@Table 1"
+      ]
+    }
+  }
+}

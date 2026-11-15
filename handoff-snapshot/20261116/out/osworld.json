@@ -1,0 +1,670 @@
+{
+  "id": "osworld",
+  "name": "OSWorld",
+  "full_name": "OSWorld: Benchmarking Multimodal Agents for Open-Ended Tasks in Real Computer Environments（在真实计算机环境中评测多模态智能体的开放式任务）",
+  "aliases": [],
+  "status": "active",
+  "categories": [
+    "agent"
+  ],
+  "summary": "OSWorld 把智能体放进一台真实的 Ubuntu 虚拟机里，让它用鼠标键盘操作桌面和网页应用完成任务（改表格、修图、配系统、跨应用工作流等）；每个任务都配好初始状态脚本和执行式判分脚本，任务结束后直接检查最终的文件与系统状态。全基准 369 个 Ubuntu 任务，人类约 72.36%，论文发布时最好的模型只有 12.24%。",
+  "interpretation": "成功率 = 判分脚本确认最终状态正确的任务占比，可以取 0 到 1 之间的小数。高分说明模型在「看懂屏幕、点对位置、按正确顺序操作多个应用」上有端到端能力，也包含正确识别不可完成任务；它不代表能处理长时程真实工作流（那由 OSWorld 2.0 单独评测），也不衡量智能体的副作用与安全性。比较前必须核对四件事：369 题还是 361 题、步数上限（15/30/50/100）、观测方式（纯截图 / a11y tree / 截图+a11y tree / Set-of-Mark）、以及成绩来自原版、OSWorld-Verified 还是厂商自报。",
+  "measures": [
+    {
+      "area": "单应用任务",
+      "focus": "在单个应用内完成一件事，涉及快捷键、界面细节与精确鼠标控制；示例：用 VLC 和终端 ffmpeg 把视频里的字幕抽出来存成 subtitles.srt",
+      "share": "268（72.6%）",
+      "format": "自然语言指令 + pyautogui 动作序列，以 DONE 结束",
+      "cite": [
+        "paper@Table 3",
+        "paper@§3.3 Data Statistics",
+        "paper@§5.4 Qualitative Analysis"
+      ]
+    },
+    {
+      "area": "多应用工作流任务",
+      "focus": "跨应用与跨界面（GUI 与 CLI）协作完成一件事；示例：根据文件夹里的交易记录更新桌面上的记账表格，需要同时在文件管理器、LibreOffice Calc 与浏览器之间切换",
+      "share": "101（27.4%）",
+      "format": "自然语言指令 + pyautogui 动作序列，以 DONE 结束",
+      "cite": [
+        "paper@Table 3",
+        "paper@§3.3 Data Statistics",
+        "paper@§2.2.2 Initial Task Environment Setup"
+      ]
+    },
+    {
+      "area": "从其他基准集成的任务",
+      "focus": "为验证环境可复用的开放式任务创建能力，从 NL2Bash、Mind2Web、SheetCopilot、PPTC、GAIA 等单应用或领域专用基准迁入",
+      "share": "84（22.8%）",
+      "format": "与原任务一致的指令与判分方式",
+      "cite": [
+        "paper@Table 3",
+        "paper@§3.2 Tasks"
+      ]
+    },
+    {
+      "area": "不可完成（infeasible）任务",
+      "focus": "功能已下线或被用户臆想出来的操作，考察智能体能否判断「做不到」而不是硬猜；示例：切换到已经不可用的蓝牙开关",
+      "share": "30（8.1%）",
+      "format": "智能体需输出 FAIL 才得分",
+      "cite": [
+        "paper@Table 3",
+        "paper@§3.2 Tasks",
+        "paper@§5.1"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "手机等移动端操作：主基准只定义在 Ubuntu 上，Windows 任务仅用于分析，论文未把移动端纳入基准",
+      "cite": [
+        "paper@§3.1",
+        "paper@§3.2 Tasks"
+      ]
+    },
+    {
+      "text": "长时程、需要专业软件深度知识、视频理解、实时密集操作与异步完成的任务：官方报告明确说首版因时间与资源限制刻意避开了这些场景",
+      "cite": [
+        "verified-report@More Realistic and Controllable Evaluation"
+      ]
+    },
+    {
+      "text": "智能体的副作用与安全性：论文说当前评测函数只关注任务完成正确性，对智能体可能做出的多余破坏性动作几乎没有度量，也缺乏可靠的智能体安全指标",
+      "cite": [
+        "paper@§7 Conclusion and Future Work"
+      ]
+    },
+    {
+      "text": "判分脚本本身的可靠度：论文承认存在误判，并把进一步降低误报漏报留给后续工作",
+      "cite": [
+        "paper@§3.2 Quality control"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 369,
+    "splits": [
+      "Ubuntu 主基准：369 个任务（论文 Table 3 记为 369 (100%)）",
+      "Windows 分析集：43 个任务，因版权需用户自行激活后才能使用",
+      "361 题口径：8 个 Google Drive 任务可能因网络原因初始化失败，官方允许排除后按 361 题评测，但要求在报告里说明用了哪种做法"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "真实使用场景改编（官方指南与教程、TikTok/YouTube 技巧视频、WikiHow、Reddit/Quora/Superuser/StackOverflow、Coursera/Udemy 课程、个人博客）+ 作者按日常场景头脑风暴 + 从其他基准迁入",
+    "public_sample": true,
+    "totals": "369 个 Ubuntu 任务 + 43 个 Windows 分析任务；共 302 个不同初始状态、134 个执行式判分函数；单应用 268（72.6%）、多应用工作流 101（27.4%）、集成 84（22.8%）、不可完成 30（8.1%）；任务指令为英文，论文与官方示例中的指令均为英文原文",
+    "cite": [
+      "paper@Table 3",
+      "paper@§3.2 Tasks",
+      "site@FAQ"
+    ],
+    "construction": [
+      {
+        "k": "任务素材来源",
+        "text": "从官方指南与教程、TikTok/YouTube 技巧视频、WikiHow 等操作网站、Reddit/Quora/Superuser/StackOverflow 等问答论坛、Coursera/Udemy 课程与公开个人博客中挑选，按热度、有用性与多样性取舍。",
+        "cite": [
+          "paper@§3.2 Tasks"
+        ]
+      },
+      {
+        "k": "补足跨应用任务",
+        "text": "网上难以找到足够的多软件协作示例，因此由作者大量头脑风暴，把已有示例组合或从日常场景取材，再据实编写指令与配套文件。",
+        "cite": [
+          "paper@§3.2 Tasks"
+        ]
+      },
+      {
+        "k": "初始状态与判分配置",
+        "text": "每题准备所需文件并设定初始状态（下载文件、打开软件、调整窗口布局等），再挑选 getter 函数、evaluator 函数与参数组成配置文件；函数库中没有的就新写一个加进去。",
+        "cite": [
+          "paper@§2.2.2 Initial Task Environment Setup",
+          "paper@§3.2 Tasks"
+        ]
+      },
+      {
+        "k": "质量交叉检查",
+        "text": "每个示例由另外两位未参与标注的作者按智能体方式实际完成一遍，反馈指令不清、无法完成、边界崩溃与明显误判，并联合修订；人类表现与基线实验期间又做了四轮检查。",
+        "cite": [
+          "paper@§3.2 Quality control"
+        ]
+      },
+      {
+        "k": "标注投入",
+        "text": "9 名计算机专业学生（均为作者）耗时 3 个多月、约 1,800 人时（单应用 650 小时、工作流 750 小时、复查 400 小时），另花约 400 人时收集集成任务。",
+        "cite": [
+          "paper@§3.2 Tasks"
+        ]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "在虚拟机中给智能体一条自然语言指令，动作空间是 pyautogui 鼠标键盘代码（移动、点击、拖拽、输入、热键，外加 WAIT / FAIL / DONE 三个特殊动作），观测可以是完整桌面截图、XML 格式的无障碍树（a11y tree）、两者结合，或带编号框的 Set-of-Mark 截图。任务终止或达到步数上限后，运行该任务专属的执行式判分脚本，从虚拟机、云端与运行时界面取回关键数据并判定，返回 1、0 到 1 之间的小数或 0；对不可完成任务，智能体正确输出 FAIL 才得分。论文实验用 15 步上限、temperature 1.0、top-p 0.9，只把最近 3 轮观测与动作放进上下文，屏幕原分辨率 1920×1080。",
+    "cite": [
+      "paper@§2.1 Task Definition",
+      "paper@§2.2.3 Execution-Based Evaluation",
+      "paper@§2.3 Observation Space",
+      "paper@§2.4 Action Space",
+      "paper@§4.1"
+    ],
+    "variants": [
+      {
+        "text": "观测方式：纯截图 / a11y tree / 截图 + a11y tree / Set-of-Mark。论文实测同一模型在四种设置下差距很大（GPT-4V 纯截图 5.26%、截图+a11y tree 12.17%、Set-of-Mark 11.77%），四种口径不能放在一起比。",
+        "cite": [
+          "paper@Table 5",
+          "paper@§4.1"
+        ]
+      },
+      {
+        "text": "步数上限：论文用 15 步，官方榜单按 Max Steps 15 / 30 / 50 / 100 分列。同一模型（claude-sonnet-4-5-20250929）在 15 步是 42.9%、50 步是 58.1%、100 步是 62.9%，步数预算直接改变分数。",
+        "cite": [
+          "paper@§4.1",
+          "leaderboard@Results"
+        ]
+      },
+      {
+        "text": "题量口径：完整 369 题，或排除 8 个 Google Drive 任务后的 361 题。两种做法官方都认，但报告时必须说明用了哪一种。",
+        "cite": [
+          "site@FAQ"
+        ]
+      },
+      {
+        "text": "基准版本：原版 OSWorld 与 OSWorld-Verified（2025-07-28 修复 300+ 个社区反馈问题、迁到 AWS、更新了结果）不是同一套任务与判分，官方明确要求两者分开比较。",
+        "cite": [
+          "site@公告",
+          "verified-report@TL;DR"
+        ]
+      },
+      {
+        "text": "模型类别：官方榜单把 General model（通用模型 prompting 出电脑操作能力）、Specialized model（专为电脑操作训练）与 Agentic framework（多个模型编排成规划器 + 定位器）分开列，三类不可直接横比。",
+        "cite": [
+          "site@Benchmark",
+          "leaderboard@Results"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "success-rate",
+      "name": "任务成功率",
+      "direction": "越高越好",
+      "description": "任务结束后运行该任务专属的执行式判分脚本，检查最终文件、系统或界面状态是否达成任务目标（或对不可完成任务正确判定为不可完成）的任务占比；判分函数可返回 0 到 1 之间的小数作为部分分",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§2.1 Task Definition",
+        "paper@§2.2.3 Execution-Based Evaluation"
+      ]
+    }
+  ],
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2024-04-11",
+      "label": "arXiv v1 提交，论文、环境与基准首次公开（369 个 Ubuntu 任务）",
+      "cite": [
+        "paper@作者署名",
+        "repo@README"
+      ]
+    },
+    {
+      "id": "v2",
+      "date": "2024-05-30",
+      "label": "arXiv v2（本档案核对所用版本）",
+      "cite": [
+        "paper@作者署名"
+      ]
+    },
+    {
+      "id": "verified",
+      "date": "2025-07-28",
+      "label": "升级为 OSWorld-Verified：修复 300+ 个社区反馈问题、迁到 AWS 支持大规模并行（评测时间压缩到 1 小时内）、更新基准结果并新增只收官方复跑结果的 Verified 榜单",
+      "cite": [
+        "site@公告",
+        "repo@README",
+        "verified-report@TL;DR"
+      ]
+    },
+    {
+      "id": "osworld-2",
+      "date": "2026-06-26",
+      "label": "OSWorld 2.0 发布：108 个长时程真实工作流任务（人类完成单任务中位数约 1.6 小时，平均需 318 次工具调用），改用细粒度部分分与二元完成率两套指标，与 1.0 的成绩不可直接比较",
+      "cite": [
+        "site@公告",
+        "paper-v2@Abstract"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "判分脚本误判与任务噪声",
+      "impact": "每题一个手工判分脚本，难免漏掉其他正确解法或把错误结果判对；论文自述存在误报与漏报，并把进一步降低留给后续 red teaming。",
+      "severity": "高",
+      "response": "OSWorld-Verified 修了 300+ 个社区反馈问题，主要改判分函数而非改任务以保持分数连续性，并加了模糊匹配、颜色与单元格格式容错、多种正确解法都给满分等机制。",
+      "reader": "高分与低分之间几个点的差距，要先怀疑是不是判分脚本对不同解法的覆盖不同，再看模型能力。",
+      "cite": [
+        "paper@§3.2 Quality control",
+        "verified-report@Tasks"
+      ]
+    },
+    {
+      "issue": "外部服务与网络不稳定",
+      "impact": "任务依赖真实网页与云服务，会遇到反爬与验证码、IP 封禁、网页结构改版、预订类内容过期等问题，初始化或判分可能因非能力因素失败。",
+      "severity": "高",
+      "response": "Verified 版为强反爬站点加代理字段、换成功能等价的备用站点、给需要人机验证的任务分配固定 IP、把托管文件从 Google Drive 迁到 Hugging Face；同时官方允许排除 8 个 Google Drive 任务按 361 题评测。",
+      "reader": "看到异常低的分类分数（例如 thunderbird、multi_apps）时，先确认是不是环境初始化失败，而不是模型不会做。",
+      "cite": [
+        "verified-report@Tasks",
+        "site@FAQ"
+      ]
+    },
+    {
+      "issue": "评测口径不一致",
+      "impact": "观测方式、步数上限、369 还是 361 题、原版还是 Verified、通用模型还是智能体框架，都会显著改变分数；官方报告也指出 o3 在 9.1% 到 23.0% 之间随步数预算大幅波动。",
+      "severity": "高",
+      "response": "官方榜单按 Max Steps 与模型类别分列，Verified 榜单只收官方在统一环境下复跑的结果，并要求报告注明题量口径。",
+      "reader": "先核对口径标签（观测方式、步数、题量、版本、模型类别）再比较，见附录 B 的口径列。",
+      "cite": [
+        "paper@§4.1",
+        "leaderboard@Results",
+        "site@Benchmark",
+        "verified-report@Results"
+      ]
+    },
+    {
+      "issue": "任务与判分脚本公开带来污染与刷榜风险",
+      "impact": "任务配置与判分脚本全部公开可下载，可能被混入训练数据或被针对性调优，使公开集分数偏高；官方报告也点出有人自行改任务以拿更高分，导致分数越来越不可比。",
+      "severity": "中",
+      "response": "Verified 版建立官方公共评测平台，只有把智能体实现与轨迹交给官方复跑（或来自可信机构共享监控数据）的结果才能进 Verified 榜单；官方未设置私有留存集。",
+      "reader": "区分「官方复跑」与「厂商自报」；对自报分数保留余地，优先看 Verified 榜单。",
+      "cite": [
+        "verified-report@Why an Update",
+        "site@Public Evaluation",
+        "repo@README"
+      ]
+    },
+    {
+      "issue": "对界面布局与噪声不鲁棒",
+      "impact": "分数会随屏幕分辨率、轨迹历史长度、意外弹窗等设置变化；论文实测提高截图分辨率通常提升表现，而当前 VLM 智能体对 UI 布局与噪声不鲁棒。",
+      "severity": "中",
+      "response": "论文把这些结论写入分析章节，未见针对布局鲁棒性的基准侧修正。",
+      "reader": "复现别人成绩时，分辨率、历史上下文轮次与是否开代理都要对齐，否则差异可能来自设置而非模型。",
+      "cite": [
+        "paper@§5.2",
+        "paper@§4.2 Results"
+      ]
+    }
+  ],
+  "notes": "同 WebArena：社区驱动、厂商回避（Claude computer use 发布仅间接提及）",
+  "official_sources": [
+    {
+      "kind": "site",
+      "url": "https://os-world.github.io/"
+    },
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2404.07972"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/xlang-ai/OSWorld"
+    }
+  ],
+  "related_benchmarks": [
+    "terminalbench",
+    "tau-bench",
+    "webarena",
+    "gaia",
+    "bfcl",
+    "mlebench",
+    "androidworld",
+    "mind2web"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-10",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-10",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "OSWorld: Benchmarking Multimodal Agents for Open-Ended Tasks in Real Computer Environments（arXiv:2404.07972v2，2024-05-30）",
+        "url": "https://arxiv.org/abs/2404.07972",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "site",
+        "kind": "site",
+        "title": "OSWorld 官网（含 OSWorld-Verified 公告、任务统计、公共评测与 FAQ）",
+        "url": "https://os-world.github.io/",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "xlang-ai/OSWorld（环境、任务与评测脚本，Apache-2.0）",
+        "url": "https://github.com/xlang-ai/OSWorld",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "leaderboard",
+        "kind": "leaderboard",
+        "title": "OSWorld-Verified 官方榜单（默认视图，按 Max Steps 与模型类别分列）",
+        "url": "https://osworld-v1.xlang.ai/",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "verified-report",
+        "kind": "announcement",
+        "title": "Introducing OSWorld-Verified（XLANG Lab 官方报告，2025-07-28）",
+        "url": "https://xlang.ai/blog/osworld-verified",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "paper-v2",
+        "kind": "paper",
+        "title": "OSWorld 2.0: Benchmarking Computer Use Agents on Long-Horizon Real-World Tasks（arXiv:2606.29537v2，2026-07-13）",
+        "url": "https://arxiv.org/abs/2606.29537",
+        "accessed": "2026-11-10"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "香港大学（XLANG Lab）主导，合作方 Salesforce Research、卡内基梅隆大学、滑铁卢大学",
+        "cite": [
+          "site@作者署名"
+        ]
+      },
+      "first_release": {
+        "v": "2024-04-11（arXiv v1，论文 / 环境 / 基准同时公开）",
+        "cite": [
+          "repo@README",
+          "paper@作者署名"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "paper@Abstract",
+        "paper@§3.2 Tasks"
+      ],
+      "interpretation": [
+        "paper@§4.2 Results",
+        "site@Benchmark"
+      ]
+    },
+    "problem": {
+      "text": "此前的基准要么只给演示数据集、没有可交互环境，要么被限制在特定应用或领域里，既反映不了真实计算机使用的多样性与复杂度，也容不下不同解法的正确路径，从而限制了任务范围与智能体的可扩展性；同时它们多用统一的少量判分逻辑，难以可靠评判开放式任务。",
+      "cite": [
+        "paper@Abstract",
+        "paper@§1"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "论文发布时最好成绩",
+        "value": "12.24%",
+        "note": "GPT-4 读 a11y tree，15 步上限；同期 GPT-4o（a11y tree）11.36%、GPT-4V（截图 + a11y tree）12.17%、Claude-3-Opus（纯截图）2.42%。",
+        "cite": [
+          "paper@Table 5"
+        ]
+      },
+      {
+        "label": "OSWorld-Verified 发布时官方复跑最高",
+        "value": "60.76%",
+        "note": "CoACT-1（智能体框架）；官方报告称最好系统达到人类水平的 84.4%，并给出分层：智能体框架 45–61%、先进基础模型 35–44%、专用模型 25–40%。",
+        "cite": [
+          "verified-report@Results"
+        ]
+      },
+      {
+        "label": "人类参照",
+        "value": "72.36%",
+        "note": "未接触过题目与软件的计算机专业本科生；同条件 WebArena 纯网页任务为 88%，人类完成单任务中位耗时 111.94 秒。",
+        "cite": [
+          "paper@§3.4 Human Performance"
+        ]
+      },
+      {
+        "label": "官方 Verified 榜单当前最高",
+        "value": "86.0%",
+        "note": "claude-fable-5[1m]（Anthropic，General model，Max Steps 100，Runs 1，307.73/358）；2026-11-10 抓取的默认视图共 68 条，页面未注明结果更新日期。",
+        "cite": [
+          "leaderboard@Results"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把不同步数上限的分数排在一起比。同一模型在 15 步、50 步、100 步下能差 20 个百分点以上，官方报告也点出 o3 随步数预算在 9.1% 到 23.0% 之间波动。",
+        "cite": [
+          "leaderboard@Results",
+          "verified-report@Results"
+        ]
+      },
+      {
+        "text": "把纯截图、a11y tree、Set-of-Mark 的结果混在一起比。论文实测同一模型在四种观测设置下差距很大，且 a11y tree 与 Set-of-Mark 的收益因模型而异。",
+        "cite": [
+          "paper@Table 5",
+          "paper@§4.2 Results"
+        ]
+      },
+      {
+        "text": "把 OSWorld-Verified 前后的成绩直接对比，或把 369 题与 361 题口径混着比。Verified 修了 300+ 个问题并换了基础设施，官方明确要求两者分开比较、报告时注明题量口径。",
+        "cite": [
+          "site@公告",
+          "verified-report@TL;DR",
+          "site@FAQ"
+        ]
+      },
+      {
+        "text": "把 OSWorld 2.0 的成绩和本页的 1.0 成绩放在同一张表里。2.0 是 108 个长时程工作流、人类单任务中位数约 1.6 小时、平均 318 次工具调用，主指标也换成二元完成率与部分分，与 1.0 不可直接比较。",
+        "cite": [
+          "paper-v2@Abstract",
+          "site@公告"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "香港大学 XLANG Lab 主导，合作方 Salesforce Research、卡内基梅隆大学、滑铁卢大学",
+        "cite": [
+          "site@作者署名"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "Tianbao Xie、Danyang Zhang、Jixuan Chen、Xiaochuan Li、Siheng Zhao、Ruisheng Cao、Toh Jing Hua、Zhoujun Cheng、Dongchan Shin、Fangyu Lei、Yitao Liu、Yiheng Xu、Shuyan Zhou、Silvio Savarese、Caiming Xiong、Victor Zhong、Tao Yu",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2024-04-11 首发（arXiv v1）→ 2024-05-30 arXiv v2 → 2025-07-28 OSWorld-Verified → 2026-06-26 OSWorld 2.0",
+        "cite": [
+          "repo@README",
+          "site@公告",
+          "paper-v2@Abstract"
+        ]
+      },
+      {
+        "k": "覆盖软件",
+        "v": "Ubuntu 主基准聚焦 8 类代表性应用：Chrome、VLC、Thunderbird、VS Code、LibreOffice（Calc / Writer / Impress）、GIMP，加终端、文件管理器、图片查看器、PDF 查看器等系统基础应用",
+        "cite": [
+          "paper@§3.1"
+        ]
+      },
+      {
+        "k": "标注投入",
+        "v": "9 名计算机专业学生（均为作者）3 个多月、约 1,800 人时；每例初始状态约 1 人时，判分开发与审查约 2 人时",
+        "cite": [
+          "paper@§3.2 Tasks"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "环境与评测代码在 GitHub（Apache-2.0），任务示例在仓库 evaluation_examples 目录，官网提供数据查看器；OSWorld-Verified 起初始化文件与金标准文件迁到 Hugging Face",
+        "cite": [
+          "repo@README",
+          "verified-report@Tasks"
+        ]
+      },
+      {
+        "k": "Verified 榜单收录规则",
+        "v": "需与维护团队预约、在其侧运行智能体代码并公开实现与轨迹；或来自可信机构共享监控数据与轨迹。轨迹公开在 Hugging Face",
+        "cite": [
+          "site@Public Evaluation"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-10",
+        "columns": [
+          "来源",
+          "模型 / 智能体",
+          "成功率",
+          "步数上限",
+          "口径"
+        ],
+        "rows": [
+          [
+            "论文 Table 5",
+            "GPT-4（a11y tree）",
+            "12.24%",
+            "15",
+            "论文实验设置，temperature 1.0 / top-p 0.9"
+          ],
+          [
+            "论文 Table 5",
+            "GPT-4V（截图 + a11y tree）",
+            "12.17%",
+            "15",
+            "同上"
+          ],
+          [
+            "论文 Table 5",
+            "GPT-4o（a11y tree）",
+            "11.36%",
+            "15",
+            "同上"
+          ],
+          [
+            "论文 Table 5",
+            "Qwen-Max（a11y tree）",
+            "6.87%",
+            "15",
+            "同上"
+          ],
+          [
+            "论文 Table 5",
+            "Mixtral-8x7B（a11y tree）",
+            "2.98%",
+            "15",
+            "同上"
+          ],
+          [
+            "论文 Table 5",
+            "Claude-3-Opus（纯截图）",
+            "2.42%",
+            "15",
+            "同上"
+          ],
+          [
+            "论文 Table 5",
+            "人类（未接触题目的计算机专业本科生）",
+            "72.36%",
+            "未披露",
+            "论文人类评测"
+          ],
+          [
+            "OSWorld-Verified 报告",
+            "CoACT-1（智能体框架）",
+            "60.76%",
+            "未披露",
+            "官方复跑，报告未给步数"
+          ],
+          [
+            "OSWorld-Verified 报告",
+            "Claude 4 Sonnet",
+            "43.9%",
+            "50",
+            "官方复跑"
+          ],
+          [
+            "官方 Verified 榜单",
+            "claude-fable-5[1m]",
+            "86.0%",
+            "100",
+            "General model，Runs 1，307.73/358"
+          ],
+          [
+            "官方 Verified 榜单",
+            "claude-opus-5[1m]",
+            "83.4%",
+            "100",
+            "General model，Runs 1，300.2/360"
+          ],
+          [
+            "官方 Verified 榜单",
+            "Muse Spark 1.1",
+            "80.7%",
+            "100",
+            "General model，Runs 1，291.22/361"
+          ],
+          [
+            "官方 Verified 榜单",
+            "MiniMax M3",
+            "75.2%",
+            "100",
+            "General model，Runs 1，269.18/358"
+          ],
+          [
+            "官方 Verified 榜单",
+            "Kimi K2.6",
+            "73.1%",
+            "100",
+            "General model，Runs 1"
+          ],
+          [
+            "官方 Verified 榜单",
+            "claude-sonnet-4-5-20250929",
+            "62.9%",
+            "100",
+            "General model，Runs 1，226.35/360"
+          ],
+          [
+            "官方 Verified 榜单",
+            "claude-4-sonnet-20250514",
+            "43.9%",
+            "50",
+            "General model，Runs 1，158.42/361"
+          ],
+          [
+            "官方 Verified 榜单",
+            "claude-sonnet-4-5-20250929",
+            "42.9%",
+            "15",
+            "General model，Runs 1，154.80/361"
+          ]
+        ]
+      },
+      "cite": [
+        "paper@Table 5",
+        "verified-report@Results",
+        "leaderboard@Results"
+      ]
+    }
+  }
+}

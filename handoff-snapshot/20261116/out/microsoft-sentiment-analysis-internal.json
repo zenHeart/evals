@@ -1,0 +1,455 @@
+{
+  "id": "microsoft-sentiment-analysis-internal",
+  "name": "微软情感分类内部评测",
+  "full_name": "Microsoft Sentiment-Analysis-7B 内部情感分类评测",
+  "aliases": [],
+  "status": null,
+  "categories": [
+    "knowledge"
+  ],
+  "summary": "微软给 Sentiment-Analysis-7B（一个 7B 参数的文本生成模型）做的内部情感分类评测：输入一条用户消息，模型判断这句话对「Target」——也就是用户当时正在交互的那个服务、产品或 agent——的态度是 Negative / Neutral / Positive，用准确率计分。",
+  "interpretation": "72.8% 读作「在这个微软自建、未公开的内部评测集上，微调后的模型把约七成三的用户消息分对了类」；同一张表里未微调的基座 mistralai/Mistral-7B-Instruct-v0.2 是 62.0%，差距约 10.8 个百分点。它不说明通用情感理解能力：任务被限定在对 Target 的态度上，评测集的规模、构造和标注规则都没有公开，也没有人类基线和跨语言结果，因此不能和外部榜单或其他厂商报的准确率横向比较。",
+  "measures": [
+    {
+      "area": "对 Target 的用户消息情感三分类",
+      "focus": "判断一条用户消息对当前服务/产品/agent 的态度。Negative：含抱怨、挫败、指责，或陈述自己无法完成/失败；Neutral：与 Target 无关的提问或陈述、间接提到的事件、失败陈述后紧跟礼貌求助；Positive：系统提示词没有为它单列判定条件。示例消息 \"I'm having trouble logging in to my account.\" 被判为 Negative。",
+      "share": "未披露",
+      "format": "单条用户消息 → 第一个生成的 token 输出标签，其后跟一句解释",
+      "cite": [
+        "huggingface-microsoft-sentiment-anal@README",
+        "huggingface-microsoft-sentiment-anal@How to use"
+      ]
+    },
+    {
+      "area": "基座与微调模型的同集对照",
+      "focus": "在同一个内部评测集上比较 mistralai/Mistral-7B-Instruct-v0.2（62.0%）与 Sentiment-Analysis-7B（72.8%），用来展示这次强化学习微调的收益。",
+      "share": "未披露（模型卡未给出评测集题量，也未给出各类别占比）",
+      "format": "模型卡内一张两行的准确率对照表",
+      "cite": [
+        "huggingface-microsoft-sentiment-anal@Evaluation metrics"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "不测脱离 Target 的通用句子级情感（例如影评、商品评论这类没有指定对象的情感）。",
+      "cite": [
+        "alux-daily@04 Microsoft",
+        "huggingface-microsoft-sentiment-anal@README"
+      ]
+    },
+    {
+      "text": "不报告分类别表现：Negative / Neutral / Positive 各自的准确率、混淆情况，模型卡都没有给。",
+      "cite": [
+        "huggingface-microsoft-sentiment-anal@Evaluation metrics"
+      ]
+    },
+    {
+      "text": "不覆盖英语以外的语言：模型元数据的语言标签只有 en，也没有任何多语言结果。",
+      "cite": [
+        "hf-api",
+        "alux-daily@04 Microsoft"
+      ]
+    },
+    {
+      "text": "不含延迟、吞吐、显存占用等工程指标：模型卡只报告了准确率这一个数。",
+      "cite": [
+        "huggingface-microsoft-sentiment-anal@Evaluation metrics"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 0,
+    "splits": [
+      "未披露（模型卡未说明训练集与评测集如何拆分）"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "vendor_internal（微软内部用户消息，未公开）",
+    "public_sample": false,
+    "totals": "评测集规模未披露：模型卡只说训练用了约 300 条内部样例（a small internal training set of ~300 examples），没有给出评测集题量、拆分、语言构成或标注方式。头部卡「题量 0」表示没有可引用的公开题量，不是 0 题。",
+    "cite": [
+      "huggingface-microsoft-sentiment-anal@README",
+      "alux-daily@04 Microsoft"
+    ],
+    "construction": [
+      {
+        "k": "训练数据规模",
+        "text": "模型卡说明训练用的是一小批内部样例，约 300 条；这 300 条是训练集，不是评测集，评测集多大微软没有说。",
+        "cite": [
+          "huggingface-microsoft-sentiment-anal@README",
+          "alux-daily@04 Microsoft"
+        ]
+      },
+      {
+        "k": "标签来源",
+        "text": "训练不使用预定义标签，改用强化学习，并请一个 LLM 当裁判来给奖励。",
+        "cite": [
+          "huggingface-microsoft-sentiment-anal@README"
+        ]
+      },
+      {
+        "k": "判定口径",
+        "text": "系统提示词先定义 Target（用户当前正在交互的服务、产品或 agent，含其网站、app、API、客服），再给出规则：与 Target 无关 → Neutral；含抱怨/挫败/指责 → Negative；间接事件 → Neutral；陈述无法完成/失败 → Negative；失败陈述后接礼貌求助 → Neutral。",
+        "cite": [
+          "huggingface-microsoft-sentiment-anal@How to use"
+        ]
+      },
+      {
+        "k": "评测集构建",
+        "text": "未披露：模型卡没有说明评测集怎么来、多大、由谁标注、标注一致性如何。",
+        "cite": [
+          "huggingface-microsoft-sentiment-anal@README"
+        ]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "把用户消息连同模型卡给出的 system prompt 一起送给模型；模型第一个生成的 token 就是情感标签（Negative / Neutral / Positive），后面跟一句解释。想只拿标签，就把 max_new_tokens 设为 3 并关闭采样（do_sample=False）；想连解释一起拿，就把 max_new_tokens 提到 64。",
+    "cite": [
+      "huggingface-microsoft-sentiment-anal@How to use"
+    ],
+    "variants": [
+      {
+        "text": "max_new_tokens=3 只输出标签，max_new_tokens=64 输出标签加解释——两种设置拿到的文本不同，混用会让准确率口径不一致。",
+        "cite": [
+          "huggingface-microsoft-sentiment-anal@How to use"
+        ]
+      },
+      {
+        "text": "模型卡没有说明 72.8% 是在哪种 max_new_tokens、跑几次、什么温度下得到的，也没有给出评分脚本或裁判，因此这个数字无法按同样设置复现。",
+        "cite": [
+          "huggingface-microsoft-sentiment-anal@Evaluation metrics"
+        ]
+      },
+      {
+        "text": "训练用约 300 条内部样例，评测集是否与训练集同分布未说明；换一批自己的数据重测，结果可能差很多——博客明确说 72.8% 不是跨语言、跨业务的期望准确率。",
+        "cite": [
+          "alux-daily@04 Microsoft"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "accuracy",
+      "name": "准确率（accuracy）",
+      "direction": "越高越好",
+      "description": "在内部评测集上把用户消息分到正确情感类别的比例；模型卡只报告了这一个指标，且只给了基座与微调模型两个点。",
+      "range": "0%–100%",
+      "unit": "%",
+      "cite": [
+        "huggingface-microsoft-sentiment-anal@Evaluation metrics"
+      ]
+    }
+  ],
+  "versions": [
+    {
+      "id": "repo-created",
+      "date": "2026-10-17",
+      "label": "Hugging Face 仓库创建（首次提交 128ec13，00:51）",
+      "cite": [
+        "hf-commits@Commit History",
+        "hf-api"
+      ]
+    },
+    {
+      "id": "weights",
+      "date": "2026-10-20",
+      "label": "权重上传（02605a6，19:07，Upload folder using huggingface_hub）",
+      "cite": [
+        "hf-commits@Commit History"
+      ]
+    },
+    {
+      "id": "readme-1020",
+      "date": "2026-10-20",
+      "label": "README 当日两次更新（a56b051 19:19、c443f04 19:28）",
+      "cite": [
+        "hf-commits@Commit History"
+      ]
+    },
+    {
+      "id": "readme-1026",
+      "date": "2026-10-26",
+      "label": "README 更新为当前版本（ac33240，19:09），此后仓库未再改动（lastModified 2026-10-26T19:09:43Z）",
+      "cite": [
+        "hf-commits@Commit History",
+        "hf-api"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "评测集完全未公开",
+      "impact": "62.0% 与 72.8% 只能读作厂商在同一未公开集合上的自报对照：外部无法复现、无法审计，也不能和任何公开榜单的准确率并列比较。",
+      "severity": "高",
+      "response": "未见官方回应（模型卡未提及评测集）",
+      "reader": "把这个数字当成「微软自己跑的一次内部对照」，不要当成可引用的基准分数。",
+      "cite": [
+        "huggingface-microsoft-sentiment-anal@README",
+        "alux-daily@04 Microsoft"
+      ]
+    },
+    {
+      "issue": "训练集与评测集的关系不明",
+      "impact": "训练只用约 300 条内部样例，且未说明是否与评测集同分布；若两者高度重合，72.8% 会高估泛化表现。",
+      "severity": "高",
+      "response": "未见官方回应",
+      "reader": "在自己的匿名样本上重测后再决定是否采用；博客也建议对比「礼貌求助」与「直接抱怨」两类错误。",
+      "cite": [
+        "alux-daily@04 Microsoft"
+      ]
+    },
+    {
+      "issue": "没有人类基线，也没有随机基线",
+      "impact": "无法判断 72.8% 距离人类水平还有多远，也无法判断这个三分类任务本身的难度下限。",
+      "severity": "中",
+      "response": "未见官方回应",
+      "reader": "不要把这个分数当成「接近人类」的证据。",
+      "cite": [
+        "huggingface-microsoft-sentiment-anal@Evaluation metrics"
+      ]
+    },
+    {
+      "issue": "只有单一指标、单一设置",
+      "impact": "模型卡只给准确率，没有分类别准确率、混淆矩阵、置信区间、运行次数或温度；单次运行的波动可能就有几个百分点。",
+      "severity": "中",
+      "response": "未见官方回应",
+      "reader": "把 72.8% 当作约数读，不要解读出小数点后的精度。",
+      "cite": [
+        "huggingface-microsoft-sentiment-anal@Evaluation metrics"
+      ]
+    },
+    {
+      "issue": "语言与业务覆盖未知",
+      "impact": "元数据语言标签只有 en，模型卡没有多语言或跨业务的结果；72.8% 不是跨语言、跨业务的期望准确率。",
+      "severity": "中",
+      "response": "未见官方回应",
+      "reader": "用在英文客服类文本之外的场景前，必须用自己的样本验证。",
+      "cite": [
+        "hf-api",
+        "alux-daily@04 Microsoft"
+      ]
+    },
+    {
+      "issue": "Neutral 与 Negative 的边界靠自然语言规则约束",
+      "impact": "两类边界（例如「失败陈述 + 礼貌求助 → Neutral」）由提示词里的几条规则描述，模型在边界样本上可能不稳定，而官方没有给出这类样本所占比例。",
+      "severity": "低",
+      "response": "未见官方回应",
+      "reader": "对「礼貌求助」和「直接抱怨」这两类容易混淆的消息，抽样人工核对。",
+      "cite": [
+        "huggingface-microsoft-sentiment-anal@How to use",
+        "alux-daily@04 Microsoft"
+      ]
+    }
+  ],
+  "notes": "「题量」记 0：评测集规模未披露，0 表示没有可引用的公开题量，不是 0 题；训练用的是约 300 条内部样例。全部公开材料只有这个模型卡（README 含评测指标表、系统提示词与推理示例），没有随附的训练或评测代码仓库，也没有公开数据集。",
+  "official_sources": [
+    {
+      "kind": "site",
+      "url": "https://huggingface.co/microsoft/Sentiment-Analysis-7B"
+    }
+  ],
+  "related_benchmarks": [],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "huggingface-microsoft-sentiment-anal",
+        "kind": "site",
+        "title": "microsoft/Sentiment-Analysis-7B 模型卡（Hugging Face）",
+        "url": "https://huggingface.co/microsoft/Sentiment-Analysis-7B",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "hf-commits",
+        "kind": "site",
+        "title": "microsoft/Sentiment-Analysis-7B 提交历史（Hugging Face）",
+        "url": "https://huggingface.co/microsoft/Sentiment-Analysis-7B/commits/main",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "hf-api",
+        "kind": "site",
+        "title": "Hugging Face API：microsoft/Sentiment-Analysis-7B 模型元数据",
+        "url": "https://huggingface.co/api/models/microsoft/Sentiment-Analysis-7B",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "alux-daily",
+        "kind": "blog",
+        "title": "AI Agent Daily（2026-10-28）：Microsoft Releases a Target-Aware Sentiment Model",
+        "url": "https://alux-ai-agent-daily.vercel.app/daily/en/2026/10/28",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Microsoft（Hugging Face 组织 microsoft，仓库提交由 AnuarSh 签名）",
+        "cite": [
+          "hf-api",
+          "hf-commits@Commit History"
+        ]
+      },
+      "first_release": {
+        "v": "2026-10-20（权重上传；仓库 2026-10-17 创建）",
+        "cite": [
+          "hf-commits@Commit History",
+          "hf-api"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "huggingface-microsoft-sentiment-anal@README"
+      ],
+      "interpretation": [
+        "huggingface-microsoft-sentiment-anal@Evaluation metrics",
+        "alux-daily@04 Microsoft"
+      ]
+    },
+    "problem": {
+      "text": "通用句子级情感分类回答的是「这句话整体是正面还是负面」，而客服与产品场景真正要问的是「用户在生谁的气、生的是不是当前这个服务的气」——对象不同，标签就该不同。这个评测把情感判断绑定到一个明确的 Target 上，并用提示词把 Neutral 与 Negative 的边界写成可读的规则，让业务方可以直接检查判定口径，而不是只能换一个更大的模型。",
+      "cite": [
+        "alux-daily@04 Microsoft",
+        "huggingface-microsoft-sentiment-anal@README"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "基座模型（同一内部评测集）",
+        "value": "62.0%",
+        "note": "mistralai/Mistral-7B-Instruct-v0.2，未针对本任务微调。",
+        "cite": [
+          "huggingface-microsoft-sentiment-anal@Evaluation metrics"
+        ]
+      },
+      {
+        "label": "本模型（强化学习微调后）",
+        "value": "72.8%",
+        "note": "Sentiment-Analysis-7B；与基座相差约 10.8 个百分点，是模型卡给出的唯一对照。",
+        "cite": [
+          "huggingface-microsoft-sentiment-anal@Evaluation metrics"
+        ]
+      },
+      {
+        "label": "人类基线",
+        "value": "未披露",
+        "note": "模型卡没有报告人类标注者在这批内部消息上的准确率，本站也不推算。",
+        "cite": [
+          "huggingface-microsoft-sentiment-anal@Evaluation metrics"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 72.8% 当成通用情感分析的准确率。它只覆盖「对 Target 的态度」这个窄任务，和句子级情感分类不是一回事。",
+        "cite": [
+          "alux-daily@04 Microsoft"
+        ]
+      },
+      {
+        "text": "把约 300 条当成评测集大小。这 300 条是内部训练样例，评测集规模微软没有披露。",
+        "cite": [
+          "alux-daily@04 Microsoft"
+        ]
+      },
+      {
+        "text": "以为 72.8% 可以跨语言、跨业务外推。博客明确指出它不是跨语言或跨业务的期望准确率。",
+        "cite": [
+          "alux-daily@04 Microsoft"
+        ]
+      },
+      {
+        "text": "直接读模型的整段输出来取标签。标签固定是第一个生成的 token，必须用 max_new_tokens=3（或自行截断）才能稳定拿到，否则会把解释文字一起当成结果。",
+        "cite": [
+          "huggingface-microsoft-sentiment-anal@How to use"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "Microsoft；Hugging Face 组织为 microsoft，仓库提交由 AnuarSh 签名。",
+        "cite": [
+          "hf-api",
+          "hf-commits@Commit History"
+        ]
+      },
+      {
+        "k": "基座模型",
+        "v": "mistralai/Mistral-7B-Instruct-v0.2，模型卡正文与元数据 base_model 标签都指向它。",
+        "cite": [
+          "huggingface-microsoft-sentiment-anal@README",
+          "hf-api"
+        ]
+      },
+      {
+        "k": "训练方式",
+        "v": "强化学习，用一个 LLM 当裁判给奖励；约 300 条内部训练样例；不使用预定义标签。",
+        "cite": [
+          "huggingface-microsoft-sentiment-anal@README"
+        ]
+      },
+      {
+        "k": "许可",
+        "v": "MIT（Hugging Face 元数据标签 license:mit）；模型卡正文未另写许可条款。",
+        "cite": [
+          "hf-api"
+        ]
+      },
+      {
+        "k": "加载方式",
+        "v": "因果语言模型，用 AutoModelForCausalLM 加载；模型卡示例中 torch_dtype=torch.bfloat16。",
+        "cite": [
+          "huggingface-microsoft-sentiment-anal@How to use"
+        ]
+      },
+      {
+        "k": "元数据标签",
+        "v": "text-generation、text-classification、sentiment-analysis、reinforcement-learning、en。",
+        "cite": [
+          "hf-api"
+        ]
+      },
+      {
+        "k": "代码与数据位置",
+        "v": "公开材料只有这个模型卡（README 含评测指标表、系统提示词与推理示例）；没有随附训练或评测代码仓库，也没有公开数据集。",
+        "cite": [
+          "huggingface-microsoft-sentiment-anal@README"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-14",
+        "columns": [
+          "模型",
+          "准确率（accuracy）"
+        ],
+        "rows": [
+          [
+            "mistralai/Mistral-7B-Instruct-v0.2（基座，未微调）",
+            "62.0%"
+          ],
+          [
+            "Sentiment-Analysis-7B（ours）",
+            "72.8%"
+          ]
+        ]
+      },
+      "cite": [
+        "huggingface-microsoft-sentiment-anal@Evaluation metrics"
+      ]
+    }
+  }
+}

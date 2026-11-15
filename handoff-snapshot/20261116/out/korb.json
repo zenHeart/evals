@@ -1,0 +1,478 @@
+{
+  "id": "korb",
+  "name": "KernelBench",
+  "full_name": "KernelBench: Can LLMs Write Efficient GPU Kernels?（让大语言模型编写高效 GPU 内核的评测框架）",
+  "aliases": [
+    "KernelBench",
+    "Kernelsseum"
+  ],
+  "status": "active",
+  "categories": [
+    "coding"
+  ],
+  "summary": "KernelBench 是一套考「AI 能不能写出又快又对的 GPU 内核代码」的开源评测：给模型一个 PyTorch 写的算子（比如矩阵乘法、GELU），让它改写成 CUDA 等 GPU 底层 kernel，先用随机输入对答案判正确，再和 PyTorch 原版比墙钟时间。GPU kernel 可以理解为「把前端的 TypeScript 手写成 WebAssembly」那类底层性能优化工作——正确只是入场券，跑得快才拿分。",
+  "interpretation": "高分（fast_1 高）说明该模型在指定硬件上能独立写出功能正确、且比 PyTorch Eager 更快的底层计算代码，具备一定的性能工程能力；它不说明模型掌握并行算法理论（论文里几乎没有成功用上 Tensor Core 的案例），也不说明代码可移植——同一批 kernel 换 GPU 后 fast_1 明显变化，且高分可能来自钻正确性检查空子的假优化。",
+  "measures": [
+    {
+      "area": "Level 1 · 单一算子",
+      "focus": "一个基础运算的 kernel，如大矩阵乘法（C = A * B）、卷积、激活函数、归一化；论文举例 Level 1 包含卷积、矩阵-向量与矩阵-矩阵乘法、损失函数、激活函数和层归一化。",
+      "share": "100 题（共 250 题）",
+      "format": "每题给一个 PyTorch 参考类 Model，模型输出派生类 ModelNew（内含自定义 kernel），并附带 get_inputs() / get_init_inputs() 指定输入张量",
+      "cite": ["arxiv-2502-10517@§3.2"]
+    },
+    {
+      "area": "Level 2 · 算子序列与融合",
+      "focus": "多个基础算子可融合成一个 kernel 的 AI 负载，论文举例「卷积 + ReLU + bias」的组合；官方博客描述为主循环加 2–5 个 epilogue 算子。",
+      "share": "100 题（共 250 题）",
+      "format": "同 Level 1 的 Model / ModelNew 结构，难点在于算子融合",
+      "cite": ["arxiv-2502-10517@§3.2", "blog-kernelbench"]
+    },
+    {
+      "area": "Level 3 · 完整模型架构",
+      "focus": "支撑主流 AI 模型的完整架构，论文点名 AlexNet 与 MiniGPT，均采集自 GitHub 上的热门 PyTorch 仓库。",
+      "share": "50 题（共 250 题）",
+      "format": "同 Level 1 的 Model / ModelNew 结构，需要为整个 forward 流程写 kernel",
+      "cite": ["arxiv-2502-10517@§3.2"]
+    },
+    {
+      "area": "Level 4 · Hugging Face 架构（ aspirational ）",
+      "focus": "需要先去读 HuggingFace 源码再改动库才能完成的架构；官方博客明确这一级不做基线评测。",
+      "share": "20 题（论文 250 题之外，官方博客与仓库另列）",
+      "format": "程序化生成：用脚本替换模型名与 batch size、sequence length 等参数",
+      "cite": ["blog-kernelbench", "repo-kernelbench@README"]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "不测通用软件工程能力：题目固定为 GPU 计算 kernel，不涉及 Web、数据库、分布式系统等其它工程领域。",
+      "cite": ["arxiv-2502-10517@§1"]
+    },
+    {
+      "text": "不测多轮交互与长时程任务：默认协议是一次性生成（one-shot）加贪心解码，不给工具、不与人协作；多轮与迭代优化是论文里的附加实验而非主协议。",
+      "cite": ["arxiv-2502-10517@§4.1"]
+    },
+    {
+      "text": "不测训练与微调能力：官方明确不提供预定义的训练/验证/测试划分，也没有区分训练样本与测试样本的信息。",
+      "cite": ["blog-kernelbench"]
+    },
+    {
+      "text": "不测 kernel 的可移植性与可维护性：只在固定 GPU（NVIDIA L40S）上按墙钟时间评估，不评估跨硬件、跨版本、可读性或能耗。",
+      "cite": ["arxiv-2502-10517@§4.4"]
+    },
+    {
+      "text": "不测除前向传播以外的部分：官方博客说明当前只关注 forward pass。",
+      "cite": ["blog-kernelbench"]
+    }
+  ],
+  "dataset": {
+    "sample_count": 250,
+    "splits": [],
+    "languages": [
+      "Python",
+      "CUDA"
+    ],
+    "source_type": "人工编写 + LLM 或脚本生成 + GitHub 采集，全部经人工清理与验证（官方博客自述）",
+    "public_sample": "Hugging Face 数据集 ScalingIntelligence/KernelBench（页面显示 270 行，含 Level 4 aspirational 20 题）",
+    "totals": "论文主版本 250 题：Level 1 单一算子 100 题、Level 2 算子融合 100 题、Level 3 完整模型架构 50 题；官方博客与仓库另列 Level 4 aspirational 20 题，Hugging Face 数据集页面显示合计 270 行。v0.1 起 Level 1–3 的题量经过增删与重新缩放。",
+    "cite": ["arxiv-2502-10517@§3.2", "repo-kernelbench@README", "hf-dataset@数据集卡"],
+    "construction": [
+      {
+        "k": "任务来源",
+        "text": "任务混合三种来路：人工编写、由 LLM 或脚本生成、从 GitHub 采集；所有任务都经过人工清理和验证。",
+        "cite": ["blog-kernelbench"]
+      },
+      {
+        "k": "参考实现",
+        "text": "每题提供一个 PyTorch 参考类 Model，参考实现被清理成自包含的单文件，模块只保留 __init__ 和 forward（以及在 init/forward 中被调用的辅助函数）。",
+        "cite": ["blog-kernelbench"]
+      },
+      {
+        "k": "接口约定",
+        "text": "除 torch 模块外还提供 get_inputs() 和 get_init_inputs() 生成随机参数与输入；模型需要输出一个派生自 torch.nn.Module() 的新类 ModelNew，并在 forward 里写自定义优化。",
+        "cite": ["blog-kernelbench", "arxiv-2502-10517@§3.1"]
+      },
+      {
+        "k": "难度分级",
+        "text": "按包含的基础运算数量分三级：Level 1 单个基础运算，Level 2 多个可融合的基础运算，Level 3 完整 ML 架构（LLM 生成与 GitHub 真实架构如 MiniGPT 混合）。",
+        "cite": ["arxiv-2502-10517@§3.2", "blog-kernelbench"]
+      },
+      {
+        "k": "Level 4 的程序化生成",
+        "text": "Level 4 用脚本生成：HuggingFace 提供标准化 API 调用各类语言模型，于是用脚本替换模型名和 batch size、sequence length 等参数批量产出任务。",
+        "cite": ["blog-kernelbench"]
+      },
+      {
+        "k": "v0.1 的清洗与规模控制",
+        "text": "v0.1 重新缩放了 Level 1 和 Level 2 的张量维度与 batch size，并把运行时间超过 15ms 的题调小，目标是让 Level 1/2 的每题落在 H100 上 1–15ms 区间；同时引入混合分布随机测试。",
+        "cite": ["blog-v01"]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "默认协议为 one-shot 生成加贪心解码（temperature = 0）：提示词里只给一个 PyTorch Model 输入与 ModelNew 输出的简单示例（一个 add 算子），让模型直接产出 ModelNew；在 NVIDIA L40S 上先看能否编译，再用 5 组随机输入与 PyTorch 参考输出比对（绝对与相对容差 1e-02），通过的 kernel 才计时——重复多次取均值，变异系数需小于 3%。主指标 fast_1 = 既功能正确、加速比又大于 1（即比 PyTorch Eager 更快）的题目比例；p=0 时的 fast_0 即纯正确率。",
+    "cite": ["arxiv-2502-10517@§3.3", "arxiv-2502-10517@§4.1", "arxiv-2502-10517@附录 B.1", "repo-kernelbench@README", "blog-kernelbench"],
+    "variants": [
+      {
+        "text": "基线选择：论文同时报告 PyTorch Eager 与 torch.compile（默认模式）两种基线，同一模型对 torch.compile 的 fast_1 往往更高——OpenAI o1 的 Level 1 从 10% 升到 28%，Level 2 从 24% 降到 19%，方向不一致。",
+        "cite": ["arxiv-2502-10517@Table 1", "blog-kernelbench"]
+      },
+      {
+        "text": "精度口径：仓库当前所有已报告结果都是 fp32，另支持 fp16 与 bf16；换精度会让加速比不可比。",
+        "cite": ["repo-kernelbench@README"]
+      },
+      {
+        "text": "输入分布：v0 用常规随机分布，v0.1 引入 torch.rand_mix 混合分布（正态、均匀、拉普拉斯、指数、对数正态）与固定随机种子，正确性判定因此改变。",
+        "cite": ["blog-v01"]
+      },
+      {
+        "text": "采样预算：默认 one-shot 贪心；论文另测 pass@k（N=100，deepseek-coder temp=1.6、Llama 3.1 70B temp=0.8）与 repeated sampling k 至 100——DeepSeek-V3 在 Level 2 的 fast_1 从 one-shot 的 4% 升到 37%。",
+        "cite": ["arxiv-2502-10517@§5.1.1", "blog-kernelbench"]
+      },
+      {
+        "text": "调用轮数：论文 Table 2 的迭代优化实验固定 10 次调用预算，分别反馈历史生成（G）、执行结果（E）、计时 profile（P）；DeepSeek-R1 在 Level 2 从 36% 升到 72%。",
+        "cite": ["arxiv-2502-10517@Table 2"]
+      },
+      {
+        "text": "硬件与题量：论文基线与 Kernelsseum 榜单都在 NVIDIA L40S 上测；v0.1 把 Level 1/2 题量缩放到 H100 上 1–15ms，硬件与题量不同则分数不可比。",
+        "cite": ["blog-v01", "leaderboard"]
+      },
+      {
+        "text": "是否给硬件上下文：论文实验了在提示里加入 kernel 最佳实践示例与硬件规格，总体 fast_1 反而下降（OpenAI o1 的生成平均长 25%）。",
+        "cite": ["arxiv-2502-10517@§5.2.1"]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "fast_p",
+      "name": "fast_p（正确且加速比大于 p 的题目比例）",
+      "direction": "越高越好",
+      "description": "同时满足功能正确与加速比大于阈值 p 的题目占比，p 可调；论文与仓库主用 p=1，记作 fast_1。加速比定义为 PyTorch 参考墙钟时间除以生成 kernel 的墙钟时间。",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["repo-kernelbench@README", "arxiv-2502-10517@§3.3"]
+    },
+    {
+      "id": "fast_0",
+      "name": "fast_0（正确率）",
+      "direction": "越高越好",
+      "description": "p=0 时的 fast_p，即功能正确的题目比例，不含任何性能要求；论文用它区分「执行失败」与「功能不正确」两种失败模式。",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["arxiv-2502-10517@§6.1", "arxiv-2502-10517@Table 1"]
+    },
+    {
+      "id": "speedup",
+      "name": "加速比（speedup）",
+      "direction": "越高越好",
+      "description": "PyTorch 参考实现墙钟时间除以生成 kernel 墙钟时间，只在正确样本上计算；论文用 CUDA event 计时，预热 3 次后跑 100 次取均值，变异系数需小于 3%。",
+      "range": null,
+      "unit": "倍（x）",
+      "cite": ["arxiv-2502-10517@附录 B.1", "blog-kernelbench"]
+    },
+    {
+      "id": "compile_rate",
+      "name": "可编译率",
+      "direction": "越高越好",
+      "description": "生成的 kernel 在目标编程语言里语法有效、能编译的比例；官方博客把「编译 → 正确 → 性能」当作层层递进的三条判据。",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["blog-kernelbench"]
+    }
+  ],
+  "versions": [
+    {
+      "id": "v0",
+      "date": "2024-12-03",
+      "label": "首发：官方博客发布 KernelBench（250 题，100/100/50）与 Kernelsseum 逐题榜单，论文基线即出自这一版。",
+      "cite": ["blog-kernelbench", "repo-kernelbench@README"]
+    },
+    {
+      "id": "paper-v1",
+      "date": "2025-02-14",
+      "label": "论文 arXiv v1（arXiv:2502.10517v1）发布，后被 ICML '25 接收；仓库 README 以论文标题命名并标注 ICML '25。",
+      "cite": ["arxiv-2502-10517@Abstract", "repo-kernelbench@README"]
+    },
+    {
+      "id": "v0.1",
+      "date": "2025-07-27",
+      "label": "v0.1：新增结果有效性指南与物理不可能性判定、混合分布随机测试、固定题量与改进数值；Hugging Face 数据集同步更新到 v0.1。",
+      "cite": ["blog-v01", "repo-kernelbench@README"]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "Reward hacking：模型能绕过真实目标",
+      "impact": "fast_1 高的 kernel 可能只是钻了正确性检查的空子——不生成真 CUDA 而转调 torch/cuBLAS、生成了 CUDA 却从不调用、用显存复用做 no-op kernel、计时同步做假；官方自述修掉已知 exploit 后新的会再出现，且更难发现。",
+      "severity": "高",
+      "response": "v0.1 发布有效性指南与物理不可能性（speed-of-light）判定方法，并加入混合分布随机测试；同时用 H100 上的算力/带宽上限反推每题最短可行耗时。",
+      "reader": "把榜单名次当性能证据之前，先看该 kernel 是否通过有效性检查与 SoL 上限核算。",
+      "cite": ["blog-v01"]
+    },
+    {
+      "issue": "任务质量：第三方复评移除 43 道题",
+      "impact": "METR 复评 KernelBench 时，其质量过滤器移除了 43 道 Level 1–3 任务（判据包括输出落在 10^-2 噪声底、方差几乎不随随机种子变化、张量沿整轴均匀、可代数化简为常数如 mean(softmax(x))、RNN 携带隐藏状态等），意味着部分 fast_1 分数建立在可被弱题抬高的通过率上。",
+      "severity": "高",
+      "response": "官方给出的过滤原则是「只在任务根本不可修复时才替换」；METR 标记的激进归并与冗余运算若反映真实用法（如分类）或暴露非平凡边界情况则保留，其余打补丁修复。",
+      "reader": "跨论文比较 fast_1 前先确认题集版本——v0 与 v0.1 的题量与题目并不相同。",
+      "cite": ["blog-v01"]
+    },
+    {
+      "issue": "硬件泛化未系统验证",
+      "impact": "同一批 kernel 换 GPU 后 fast_1 明显变化：DeepSeek R1 在 Level 2 上 NVIDIA L40S 为 36%、A10G 为 47%；论文据此指出 one-shot 生成的 kernel 可能无法跨硬件泛化。",
+      "severity": "中",
+      "response": "论文用跨 GPU 实验（Figure 8/9）量化该差异，并在 §5.2 尝试把硬件规格写进上下文——但实测总体 fast_1 反而下降。",
+      "reader": "把某张卡上的分数外推到其它卡之前，先核对该卡上的实测数据。",
+      "cite": ["arxiv-2502-10517@§4.4", "arxiv-2502-10517@§5.2.1"]
+    },
+    {
+      "issue": "正确性判定偏松",
+      "impact": "绝对与相对容差取 1e-02，官方自称是「宽松阈值，允许精度变化与替代算法」，且每题只跑 5 组随机输入；附录 B.2 的 100 个 kernel 实验里 50 个正确、19 个数值不匹配、4 个形状不匹配、10 个运行时错误、17 个编译错误，且未观察到部分正确的情况。",
+      "severity": "中",
+      "response": "v0.1 引入 torch.rand_mix 混合分布与固定随机种子，收紧数值判定；官方博客也明确「错误但快的代码没有用处」，加速比只在正确样本上计算。",
+      "reader": "看到接近 1e-2 量级的输出差异不要当作等价；引用加速比时确认它只统计了正确样本。",
+      "cite": ["blog-kernelbench", "arxiv-2502-10517@附录 B.2"]
+    },
+    {
+      "issue": "无预定义 train/validation/test 划分",
+      "impact": "官方明确不提供预定义划分，也没有额外信息区分训练样本与测试样本；复用者容易把同一批题既当训练集又当测试集，使分数虚高。",
+      "severity": "中",
+      "response": "官方说明用户可按自身需要自建划分。",
+      "reader": "自建划分并记录切分方式，否则不同报告的 fast_1 不可比。",
+      "cite": ["blog-kernelbench"]
+    },
+    {
+      "issue": "部分题型长期无解，总分掩盖结构性问题",
+      "impact": "DeepSeek-V3 即便采 100 个样本，也没能为 Level 1 的一组 34 个卷积变体生成任何正确解；论文同时指出 Level 1 与 Level 3 的中位加速比低于 1，Level 2 仅略高于 1。",
+      "severity": "低",
+      "response": "论文将该现象归因于任务固有难度与采样预算的边际收益有限，建议按题型拆开看通过率。",
+      "reader": "看总分之外，按 Level 与题型子集拆开看通过率和加速比分布。",
+      "cite": ["arxiv-2502-10517@§5.1.1", "arxiv-2502-10517@附录 B.1"]
+    },
+    {
+      "issue": "榜单不自证，口径窄",
+      "impact": "Kernelsseum 只收录贪心评测产生的前 5 个 kernel，部分题没有任何正确解，也没有汇总成单一分数；官方声明不审查、不验证、不认可单个 kernel 或报告结果。",
+      "severity": "低",
+      "response": "仓库提供 run_and_check.py、greedy_analysis.py、benchmark_eval_analysis.py 等脚本供自行复跑与统计。",
+      "reader": "引用榜单数字时注明「贪心评测、NVIDIA L40S、仅每题前 5 名」，并自行复跑验证。",
+      "cite": ["leaderboard", "repo-kernelbench@README"]
+    }
+  ],
+  "notes": null,
+  "official_sources": [
+    {
+      "kind": "site",
+      "url": "https://github.com/ScalingIntelligence/KernelBench"
+    },
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2502.10517"
+    },
+    {
+      "kind": "site",
+      "url": "https://scalingintelligence.stanford.edu/blogs/kernelbench/"
+    },
+    {
+      "kind": "site",
+      "url": "https://scalingintelligence.stanford.edu/blogs/kernelbenchv01/"
+    },
+    {
+      "kind": "site",
+      "url": "https://scalingintelligence.stanford.edu/KernelBenchLeaderboard/"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/ScalingIntelligence/KernelBench"
+    }
+  ],
+  "related_benchmarks": [
+    "humaneval",
+    "lcb",
+    "swebench",
+    "swe-lancer",
+    "aider",
+    "humanevalplus"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-13",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      {
+        "id": "arxiv-2502-10517",
+        "kind": "paper",
+        "title": "KernelBench: Can LLMs Write Efficient GPU Kernels?（arXiv:2502.10517v1，ICML '25）",
+        "url": "https://arxiv.org/abs/2502.10517",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "repo-kernelbench",
+        "kind": "repo",
+        "title": "ScalingIntelligence/KernelBench 官方仓库 README",
+        "url": "https://github.com/ScalingIntelligence/KernelBench",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "hf-dataset",
+        "kind": "dataset",
+        "title": "Hugging Face 数据集卡 ScalingIntelligence/KernelBench",
+        "url": "https://huggingface.co/datasets/ScalingIntelligence/KernelBench",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "blog-kernelbench",
+        "kind": "blog",
+        "title": "KernelBench 官方发布博客（2024-12-03）",
+        "url": "https://scalingintelligence.stanford.edu/blogs/kernelbench/",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "blog-v01",
+        "kind": "blog",
+        "title": "KernelBench v0.1 官方博客（2025-07-27）",
+        "url": "https://scalingintelligence.stanford.edu/blogs/kernelbenchv01/",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "leaderboard",
+        "kind": "leaderboard",
+        "title": "Kernelsseum — KernelBench Top Solutions Per Problem（Nvidia L40S）",
+        "url": "https://scalingintelligence.stanford.edu/KernelBenchLeaderboard/",
+        "accessed": "2026-11-13"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "斯坦福大学与普林斯顿大学（论文作者机构）；代码、数据与榜单由斯坦福 Scaling Intelligence 团队维护",
+        "cite": ["arxiv-2502-10517@作者与机构", "repo-kernelbench@README"]
+      },
+      "first_release": {
+        "v": "2024-12-03 官方博客首发；论文 arXiv v1 为 2025-02-14",
+        "cite": ["blog-kernelbench", "arxiv-2502-10517@Abstract"]
+      }
+    },
+    "cites": {
+      "summary": ["arxiv-2502-10517@Abstract", "arxiv-2502-10517@§3.2", "arxiv-2502-10517@§3.3"],
+      "interpretation": ["arxiv-2502-10517@§6.1", "arxiv-2502-10517@§4.4", "blog-v01"]
+    },
+    "problem": {
+      "text": "此前的代码生成基准（HumanEval 一类）只判「输出对不对」，不判「跑得快不快」；而 GPU kernel 正是 correctness 与 performance 必须同时满足、且能自动验证的真实工程场景。论文指出 CUDA 在热门代码语料里占比极低（约 0.073%），属于训练数据中的低资源语言，模型缺少可学的样本，因此需要一个专门框架来度量并推动这项能力。",
+      "cite": ["arxiv-2502-10517@§1", "arxiv-2502-10517@§3.3"]
+    },
+    "ladder": [
+      {
+        "label": "判对即可的底线（fast_0，不限速度）",
+        "value": "论文未给出统一的 fast_0 汇总值（按模型与 Level 分别报告）",
+        "note": "论文 Table 1 只报 fast_1；fast_0 的分布见 Figure 2 的失败模式归类。",
+        "cite": ["arxiv-2502-10517@Table 1"]
+      },
+      {
+        "label": "论文发布时最好成绩（Table 1，PyTorch Eager 基线 fast_1）",
+        "value": "38%（DeepSeek R1，Level 1，torch.compile 基线）",
+        "note": "同表 PyTorch Eager 基线最好为 DeepSeek R1 Level 2 的 36%；论文总结为「匹配 PyTorch 基线的比例不足 20%」，p=1 时不足 15% 的 kernel 能超过 PyTorch。",
+        "cite": ["arxiv-2502-10517@Table 1", "arxiv-2502-10517@§4.3"]
+      },
+      {
+        "label": "带环境反馈的迭代优化（Table 2，Eager 基线 fast_1，10 次调用）",
+        "value": "72%（DeepSeek R1，Level 2，反馈 G+E+P）",
+        "note": "同设置 Level 1 为 43%、Level 3 为 18%；论文指出测试期方法的有效性最终取决于基座模型本身的能力。",
+        "cite": ["arxiv-2502-10517@Table 2"]
+      },
+      {
+        "label": "官方榜单单题最高加速比（Kernelsseum，贪心评测，NVIDIA L40S）",
+        "value": "超过 12 倍（Level 1 对角矩阵乘法）",
+        "note": "榜单只列每题前 5 名且不汇总成单一分数；论文同节指出 Level 1 与 Level 3 的中位加速比低于 1，属于离群值。",
+        "cite": ["leaderboard", "blog-kernelbench", "arxiv-2502-10517@附录 B.1"]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "误读：fast_1 = 100% 才算「会写」，低分说明完全不行。实际 fast_1 只要求加速比大于 1，论文报告的最好成绩也在 40% 以下，并明确「匹配 PyTorch 基线的比例不足 20%」；这是一个远未饱和的基准。",
+        "cite": ["arxiv-2502-10517@§4.3", "arxiv-2502-10517@Table 1"]
+      },
+      {
+        "text": "误读：出现 12 倍以上加速比，说明模型普遍能大幅超越 PyTorch。实际那是 Level 1 稀疏对角矩阵乘法（Problem 12/13）这类特定题的离群值；论文同节说明 Level 1 与 Level 3 的中位加速比低于 1，Level 2 仅略高于 1。",
+        "cite": ["blog-kernelbench", "arxiv-2502-10517@附录 B.1"]
+      },
+      {
+        "text": "误读：不同论文报的 fast_1 可以直接相减比较。实际 v0 与 v0.1 题集不同（v0.1 移除/替换了部分任务并重新缩放题量），基线（Eager / torch.compile）、精度（fp32 / fp16 / bf16）与硬件（L40S / A10G / H100）也都不同，口径不一致时分数不可比。",
+        "cite": ["blog-v01", "repo-kernelbench@README"]
+      },
+      {
+        "text": "误读：KernelBench 只是「又一道代码题」。它评的是性能工程：正确性只是入场券，计时与加速比才决定 fast_p；官方博客明确「错误但快的代码没有用处」，加速比只在正确样本上计算。",
+        "cite": ["repo-kernelbench@README", "blog-kernelbench"]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "斯坦福大学与普林斯顿大学；仓库、数据集与榜单由斯坦福 Scaling Intelligence 团队维护（域名 scalingintelligence.stanford.edu）。",
+        "cite": ["arxiv-2502-10517@作者与机构", "repo-kernelbench@README"]
+      },
+      {
+        "k": "核心作者",
+        "v": "Anne Ouyang、Simon Guo（共同第一作者）、Simran Arora、Alex L. Zhang、William Hu、Christopher Ré、Azalia Mirhoseini。",
+        "cite": ["arxiv-2502-10517@作者与机构"]
+      },
+      {
+        "k": "时间线",
+        "v": "2024-12-03 官方博客首发（含 Kernelsseum 榜单）；2025-02-14 论文 arXiv v1；2025-07-27 v0.1 更新；仓库 README 标注论文被 ICML '25 接收。",
+        "cite": ["blog-kernelbench", "arxiv-2502-10517@Abstract", "repo-kernelbench@README"]
+      },
+      {
+        "k": "为什么难",
+        "v": "CUDA 在热门代码语料 The Stack v1.2 中只占约 0.073%，属于训练数据里的低资源语言；且最优 kernel 依赖硬件平台特性。",
+        "cite": ["arxiv-2502-10517@§1", "arxiv-2502-10517@§4.4"]
+      },
+      {
+        "k": "数据与代码位置",
+        "v": "GitHub ScalingIntelligence/KernelBench（README 说明最新稳定版在 main 分支，Hugging Face 数据集已更新到 v0.1）；Hugging Face 数据集 ScalingIntelligence/KernelBench；榜单 Kernelsseum 在官网。",
+        "cite": ["repo-kernelbench@README", "hf-dataset@数据集卡"]
+      },
+      {
+        "k": "支持的后端",
+        "v": "除 CUDA 外还支持 triton、cute、tilelang、thunderkittens，AMD GPU 用 hip 后端；精度默认 fp32，另支持 fp16 与 bf16。",
+        "cite": ["repo-kernelbench@README"]
+      },
+      {
+        "k": "下游与生态集成",
+        "v": "仓库列出与 Harbor 的适配器、Caesar 多轮推理引擎（ICML '25，用于论文的迭代优化实验）、kernelbench-tinker（RLVR）、OpenEvolve 进化搜索集成，以及实验性的 roofline / 最大加速比分析。",
+        "cite": ["repo-kernelbench@README"]
+      },
+      {
+        "k": "已知的好案例",
+        "v": "论文记录的成功优化包括 GELU 融合（2.9 倍）、Softsign 融合（1.3 倍）、矩阵乘法加除法求和缩放的融合（2.6 倍）、用共享内存的余弦相似度（2.8 倍）与 triplet margin loss（2.0 倍）；但未发现成功使用 Tensor Core 的案例。",
+        "cite": ["arxiv-2502-10517@§6.1"]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2025-02-14",
+        "columns": [
+          "模型",
+          "Eager L1",
+          "Eager L2",
+          "Eager L3",
+          "compile L1",
+          "compile L2",
+          "compile L3"
+        ],
+        "rows": [
+          ["GPT-4o", "4%", "5%", "0%", "18%", "4%", "4%"],
+          ["OpenAI o1", "10%", "24%", "12%", "28%", "19%", "4%"],
+          ["DeepSeek V3", "6%", "4%", "8%", "20%", "2%", "2%"],
+          ["DeepSeek R1", "12%", "36%", "2%", "38%", "37%", "2%"],
+          ["Claude 3.5 Sonnet", "10%", "7%", "2%", "29%", "2%", "2%"],
+          ["Llama 3.1-70B Inst.", "3%", "0%", "0%", "11%", "0%", "0%"],
+          ["Llama 3.1-405B Inst.", "3%", "0%", "2%", "16%", "0%", "0%"]
+        ]
+      },
+      "cite": ["arxiv-2502-10517@Table 1"]
+    }
+  }
+}

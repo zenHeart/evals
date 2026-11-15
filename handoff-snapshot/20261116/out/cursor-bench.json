@@ -1,0 +1,691 @@
+{
+  "id": "cursor-bench",
+  "name": "CursorBench",
+  "full_name": "CursorBench（Cursor 官方智能体编码基准）",
+  "aliases": [
+    "CursorBench v3.2",
+    "CursorBench 4.0"
+  ],
+  "status": "active",
+  "categories": [
+    "coding"
+  ],
+  "summary": "Cursor 官方内部评测套件，用来自真实 Cursor IDE 会话的模糊、多文件任务评测编码智能体，覆盖正确性、代码质量、效率与交互行为四个维度，并按 reasoning effort 档位分别报分。",
+  "interpretation": "高分说明该模型在 Cursor 生产 harness 中完成真实、模糊、多文件任务的能力更强，Cursor 称这类分数与开发者实际体验到的模型质量更一致；但它不说明模型在其他 harness 或公开编码基准上同样强，也不单独代表代码质量或交互行为（这两项在论文中由单独的针对性评测覆盖）。4.0 任务集下头部模型分数已较接近，BenchLM 标注 saturation active，小差距不宜过度解读。",
+  "measures": [
+    {
+      "area": "正确性（Solution Correctness）",
+      "focus": "示例：从 terse bug report 和 datadog 日志交叉定位 esbuild 0.20.2 downleveling bug，修改多文件 retry loop 后通过隐式功能校验",
+      "share": "主指标（官方未给出各维度占比）",
+      "format": "agentic grader 判定通过/失败",
+      "cite": [
+        "cursorbench-blog@Intro",
+        "composer2-paper@Section 5",
+        "composer2-paper@Section 7.1"
+      ]
+    },
+    {
+      "area": "代码质量（Code Quality）",
+      "focus": "论文的针对性评测之一：code quality evaluation，同时评判代码与注释的质量",
+      "share": "未披露",
+      "format": "rubric 打分",
+      "cite": [
+        "cursorbench-blog@Intro",
+        "composer2-paper@Section 5"
+      ]
+    },
+    {
+      "area": "效率（Efficiency）",
+      "focus": "示例：完成任务的 token 中位数、端到端延迟、单任务推理成本",
+      "share": "Leaderboard 公开每任务 $ 成本、token 数与步数",
+      "format": "数值",
+      "cite": [
+        "cursorbench-leaderboard@Leaderboard",
+        "composer2-paper@Section 7.1"
+      ]
+    },
+    {
+      "area": "交互行为（Interaction Behavior）",
+      "focus": "论文的针对性评测之一：interruption evaluation，衡量模型在 rollout 中途被打断并收到用户反馈时的处理",
+      "share": "未披露",
+      "format": "rubric 打分",
+      "cite": [
+        "cursorbench-blog@Intro",
+        "composer2-paper@Section 5"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "纯代码补全或单文件函数级任务（CursorBench 任务规模中位数约 181 行改动、跨多文件，不覆盖简单 completion）",
+      "cite": [
+        "composer2-paper@Section 5"
+      ]
+    },
+    {
+      "text": "脱离 IDE agent harness 的裸模型能力（分数固定产生于 Cursor 生产 harness，并随 reasoning effort 档位显著变化）",
+      "cite": [
+        "composer2-paper@Section 7.1",
+        "cursorbench-leaderboard@Leaderboard"
+      ]
+    },
+    {
+      "text": "公开可验证的独立复现（任务集和 grader 均不公开，第三方无法独立运行完整评测）",
+      "cite": [
+        "cursorbench-blog@Building"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 0,
+    "splits": [
+      "内部私有任务集（不公开，官方未披露题量）",
+      "按版本迭代：3.0 / 3.1 / 3.2 / 4.0，各版本任务集不兼容"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "真实 Cursor IDE 会话（Cursor Blame 追踪 agent 请求 → 提交代码配对），来自内部代码库与受控来源",
+    "public_sample": false,
+    "totals": "任务集不公开、公开题量为 0，官方未披露总题量；官方只通过 leaderboard 报告相对排名、各 reasoning effort 档位得分，以及每任务平均成本、完成 token 中位数与步数中位数。",
+    "cite": [
+      "cursorbench-blog@Building",
+      "composer2-paper@Section 5",
+      "epoch-ai-cursorbench@Methodology"
+    ],
+    "construction": [
+      {
+        "k": "任务来源",
+        "text": "使用 Cursor Blame 将已提交代码追溯到产生它的 agent 请求，形成「开发者 query + 真实提交代码」配对；大量任务来自 Cursor 内部代码库与受控来源，降低训练数据泄露风险。",
+        "cite": [
+          "cursorbench-blog@Building"
+        ]
+      },
+      {
+        "k": "任务规模增长",
+        "text": "从初始版本到 CursorBench-3，代码行数与平均文件数大致翻倍；CursorBench-3 的中位数改动为 181 行，远高于 SWE-bench Verified/Multilingual 的 7–10 行。",
+        "cite": [
+          "composer2-paper@Section 5"
+        ]
+      },
+      {
+        "k": "任务描述刻意模糊",
+        "text": "任务描述中位数仅 390 字符（公开基准如 GitHub issue 为 1,185–3,055 字符），模拟开发者与 agent 交互时的 underspecified 表达。",
+        "cite": [
+          "composer2-paper@Section 5"
+        ]
+      },
+      {
+        "k": "定期刷新",
+        "text": "每隔数月更新任务套件，追踪开发者使用 agent 方式的变化；新版本任务集与前版本不兼容（如 3.x 与 4.0 不可比）。",
+        "cite": [
+          "cursorbench-blog@Building",
+          "epoch-ai-cursorbench@Methodology"
+        ]
+      },
+      {
+        "k": "主指标之外的针对性评测",
+        "text": "除 correctness 外，论文另有一组针对性评测：intent evaluation（模糊 prompt 处理）、instruction-following evaluation（system prompts, user prompts, rules, and skills）、eager editing evaluation（应当避免改代码的提问）、code quality evaluation（代码与注释质量）、interruption evaluation（rollout 中途被打断与用户反馈）；构建方式是「识别重要行为维度 → 选取能激发该维度的数据点 → 撰写 rubric」。",
+        "cite": [
+          "composer2-paper@Section 5"
+        ]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "在 Cursor 生产环境同一套 Anyrun harness 中运行 Cursor agent：初始化代码库环境与初始任务 prompt，然后按生产环境的真实方式执行 agent（多轮交互、可调用工具、改动多个文件）；用 agentic grader 评分，主指标为 correctness 准确率，官方对评测集做多轮遍历后聚合准确率以降低方差，并同时记录 completion tokens、端到端延迟与推理成本。",
+    "cite": [
+      "composer2-paper@Section 7.1",
+      "cursorbench-blog@Intro",
+      "cursorbench-blog@Building"
+    ],
+    "variants": [
+      {
+        "text": "Reasoning effort 档位：Low / Medium / High / Extra High / Max，不同档位分数与成本差异显著，不可跨档位比较同一模型。",
+        "cite": [
+          "cursorbench-leaderboard@Leaderboard",
+          "epoch-ai-cursorbench@Methodology"
+        ]
+      },
+      {
+        "text": "版本不兼容：CursorBench 3.x 与 4.0 任务集不同，分数不可直接比较；4.0 引入 long-horizon 新题型（edit / refactor / investigation / intent understanding / managing jobs / design adherence），Epoch AI 与 BenchLM 均说明 4.0 分数不能与 3.x 对比。",
+        "cite": [
+          "cursorbench-leaderboard@Changelog",
+          "epoch-ai-cursorbench@Methodology",
+          "benchlm-cursorbench@About CursorBench"
+        ]
+      },
+      {
+        "text": "厂商自建口径：CursorBench 由 Cursor 自建，任务集与 grader 均不公开，第三方无法独立运行；Cursor 官方榜单之外，聚合站只转述其公开结果——BenchLM 把 CursorBench 4.0 以 10% 权重计入其 Coding 参考分，并说明「A provider self-report is displayable evidence, not an independent run.」。",
+        "cite": [
+          "cursorbench-blog@Building",
+          "benchlm-cursorbench@About CursorBench",
+          "benchlm-cursorbench@Should you trust a CursorBench score?"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "cursorbench-score",
+      "name": "CursorBench Score（正确率）",
+      "direction": "越高越好",
+      "description": "agent 通过的任务占比，由 agentic grader 判定；Cursor 4.0 leaderboard 同时报告每任务平均成本（USD）、完成 token 中位数与步数中位数。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "cursorbench-leaderboard@Leaderboard",
+        "composer2-paper@Section 7.1"
+      ]
+    },
+    {
+      "id": "cost-per-task",
+      "name": "Avg Cost / Task",
+      "direction": "越低越好",
+      "description": "按各模型公开每百万 token 定价（input / cache read / cache write / output）乘以该任务实际消耗 token 计算的平均单任务成本。",
+      "range": null,
+      "unit": "USD",
+      "cite": [
+        "cursorbench-leaderboard@Leaderboard"
+      ]
+    },
+    {
+      "id": "median-tokens",
+      "name": "Median Completion Tokens",
+      "direction": "越低越好（同等分数下）",
+      "description": "完成任务的 token 中位数，用于衡量 token 效率。",
+      "range": null,
+      "unit": "tokens",
+      "cite": [
+        "cursorbench-leaderboard@Leaderboard"
+      ]
+    },
+    {
+      "id": "median-steps",
+      "name": "Median Steps",
+      "direction": "越低越好（同等分数下）",
+      "description": "完成任务的 agent 步数中位数。",
+      "range": null,
+      "unit": "steps",
+      "cite": [
+        "cursorbench-leaderboard@Leaderboard"
+      ]
+    }
+  ],
+  "versions": [
+    {
+      "id": "v3.0",
+      "date": "2026-03-11",
+      "label": "CursorBench 3.0 首次公开：聚焦 edit / refactor / bugfix 任务",
+      "cite": [
+        "cursorbench-leaderboard@Changelog"
+      ]
+    },
+    {
+      "id": "v3.1",
+      "date": "2026-05-19",
+      "label": "CursorBench 3.1：新增 codebase understanding / bugfinding / planning / code review 任务，升级部分 edit 任务评分标准",
+      "cite": [
+        "cursorbench-leaderboard@Changelog"
+      ]
+    },
+    {
+      "id": "v3.2",
+      "date": "2026-07-08",
+      "label": "CursorBench 3.2：新增 instruction following 与 advanced tool use 任务",
+      "cite": [
+        "cursorbench-leaderboard@Changelog"
+      ]
+    },
+    {
+      "id": "v4.0",
+      "date": "2026-09-10",
+      "label": "CursorBench 4.0：新增 long-horizon 任务（edit / refactor / investigation / intent understanding / managing jobs / design adherence），分数与 3.x 不兼容",
+      "cite": [
+        "cursorbench-leaderboard@Changelog",
+        "epoch-ai-cursorbench@Methodology"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "任务集不公开，无法独立复现",
+      "impact": "第三方研究者无法运行相同任务集验证厂商自报分数，榜单完全依赖 Cursor 自行公布的数据。",
+      "severity": "高",
+      "response": "未见公开任务集或独立评测代码；Cursor 仅通过官方 leaderboard 页面与博客发布结果。第三方聚合站（BenchLM）标注其任务集为 private，只能转述 Cursor 公布的分数。",
+      "reader": "将 CursorBench 分数视为厂商内部参考信号，而非可独立审计的客观指标。",
+      "cite": [
+        "cursorbench-blog@Building",
+        "benchlm-cursorbench@Freshness and provenance"
+      ]
+    },
+    {
+      "issue": "版本之间不兼容",
+      "impact": "3.x 与 4.0 任务集差异显著，跨版本分数不可比；厂商在发布新版本时旧榜单即失去参考价值。",
+      "severity": "高",
+      "response": "Cursor 在 changelog 中逐版本标注任务变更；Epoch AI 在 4.0 发布时归档了 3.x 数据，BenchLM 也把 3.2 行冻结为参考。但历史分数仍常被混用。",
+      "reader": "对比分数前先核对任务版本；3.x 与 4.0 不要放在一起排。",
+      "cite": [
+        "cursorbench-leaderboard@Changelog",
+        "epoch-ai-cursorbench@Methodology",
+        "benchlm-cursorbench@About CursorBench"
+      ]
+    },
+    {
+      "issue": "训练数据污染风险（Cursor 自有代码库）",
+      "impact": "任务来自 Cursor 内部代码库，使用 Cursor 训练的模型（如 Composer 系列）可能接触过类似代码；外部模型若在训练中使用了 Cursor 公开代码也存在风险。",
+      "severity": "中",
+      "response": "Cursor 声明大量任务来自内部代码库与受控来源，降低公开泄露风险；但 Cursor 在 Grok 4.5 发布博文脚注中承认，Grok 4.5 的训练数据意外包含了 Cursor 代码库的早期快照，导致其在该基准上占有优势，该数据已从后续模型中移除，同时 Cursor 在做更大规模的 CursorBench 更新。",
+      "reader": "对厂商自研模型在该基准上的高分保持审慎，关注是否有数据污染披露。",
+      "cite": [
+        "grok45-blog@Footnote",
+        "cursorbench-blog@Limitations"
+      ]
+    },
+    {
+      "issue": "Harness 绑定导致外部模型分数可能不代表其真实能力",
+      "impact": "同一模型在不同 harness（如 Claude Code vs API 直连）中表现可能差异显著；CursorBench 固定在 Cursor 生产 harness 中评测，分数不能直接外推到其他 IDE 或 agent 框架。",
+      "severity": "中",
+      "response": "未见官方回应；Cursor 认为这正是优势——分数反映真实用户体验，但独立研究者无法用其他 harness 复现。",
+      "reader": "模型 A 在 CursorBench 上高于模型 B，不等于 A 在其他 coding agent 环境里也更高。",
+      "cite": [
+        "cursorbench-blog@Intro",
+        "composer2-paper@Section 7.1"
+      ]
+    },
+    {
+      "issue": "Frontier 模型分数开始聚集",
+      "impact": "BenchLM 按模型取最高 effort 档汇总的前三名为 Gemini 4 Carbon 60.4%、Claude Fable 5.2 60.0%、Claude Opus 5.5 57.8%，相差 2.6 个百分点，并标注 Saturation Active；Cursor 官方榜单按「模型 × effort 档」逐行排名，前三行 60.4% / 60.1% / 60.0% 相差 0.4 个百分点。",
+      "severity": "低",
+      "response": "未见官方回应；论文称持续刷新任务集是为了让评测「remain aligned with the shifting frontier of real-world difficulty and not saturated」，4.0 即引入了更难的 long-horizon 题。",
+      "reader": "头部几个百分点的差距不要过度解读；官方并说明 Results are subject to variance, small differences in scores may not be statistically meaningful。",
+      "cite": [
+        "benchlm-cursorbench@Should you trust a CursorBench score?",
+        "cursorbench-leaderboard@Leaderboard",
+        "composer2-paper@Section 5"
+      ]
+    }
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-13",
+  "official_sources": [
+    {
+      "kind": "site",
+      "url": "https://cursor.com/cursorbench"
+    },
+    {
+      "kind": "blog",
+      "url": "https://cursor.com/blog/cursorbench"
+    }
+  ],
+  "related_benchmarks": [
+    "swebench",
+    "terminalbench",
+    "swebench-multilingual"
+  ],
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      {
+        "id": "cursorbench-leaderboard",
+        "kind": "site",
+        "title": "CursorBench Leaderboard（cursor.com/cursorbench，含 Changelog）",
+        "url": "https://cursor.com/cursorbench",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "cursorbench-blog",
+        "kind": "blog",
+        "title": "How we compare model quality in Cursor（Cursor Blog，2026-03-11）",
+        "url": "https://cursor.com/blog/cursorbench",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "composer2-paper",
+        "kind": "paper",
+        "title": "Composer 2 Technical Report（arXiv:2603.24477，v2，2026-03-26）— 含 CursorBench 方法论与 Table 1",
+        "url": "https://arxiv.org/abs/2603.24477",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "composer2-blog",
+        "kind": "blog",
+        "title": "Introducing Composer 2（Cursor Blog，2026-03-19）— 含 CursorBench 分数表",
+        "url": "https://cursor.com/blog/composer-2",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "grok45-blog",
+        "kind": "blog",
+        "title": "Introducing Grok 4.5（Cursor Blog，2026-07-08）— 含数据污染披露",
+        "url": "https://cursor.com/blog/grok-4-5",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "anthropic-opus-4-7",
+        "kind": "announcement",
+        "title": "Introducing Claude Opus 4.7（Anthropic，2026-04-16）",
+        "url": "https://www.anthropic.com/news/claude-opus-4-7",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "anthropic-opus-5",
+        "kind": "announcement",
+        "title": "Introducing Claude Opus 5（Anthropic，2026-07-24）",
+        "url": "https://www.anthropic.com/news/claude-opus-5",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "anthropic-fable-5-1",
+        "kind": "announcement",
+        "title": "Introducing Claude Fable 5.1 and Claude Mythos 5.1（Anthropic，2026-09）",
+        "url": "https://www.anthropic.com/claude-fable-and-mythos-5-1",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "xai-grok-4-6",
+        "kind": "announcement",
+        "title": "Introducing Grok 4.6（xAI，2026-08-12）",
+        "url": "https://x.ai/news/grok-4-6",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "benchlm-cursorbench",
+        "kind": "site",
+        "title": "CursorBench Leaderboard & Scores — November 2026（BenchLM，第三方聚合站）",
+        "url": "https://benchlm.ai/benchmarks/cursorbench",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "epoch-ai-cursorbench",
+        "kind": "site",
+        "title": "CursorBench 4.0（Epoch AI，方法论说明与版本不兼容声明）",
+        "url": "https://epoch.ai/benchmarks/cursorbench",
+        "accessed": "2026-11-13"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Cursor（Anysphere, Inc.）",
+        "cite": [
+          "cursorbench-blog@Intro",
+          "composer2-blog@Footer"
+        ]
+      },
+      "first_release": {
+        "v": "2026-03-11（CursorBench 3.0 首次在官方 Changelog 与博客公开）",
+        "cite": [
+          "cursorbench-leaderboard@Changelog",
+          "cursorbench-blog@Intro"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "cursorbench-blog@Intro",
+        "cursorbench-blog@Building",
+        "composer2-paper@Section 5",
+        "epoch-ai-cursorbench@Methodology"
+      ],
+      "interpretation": [
+        "cursorbench-blog@Intro",
+        "composer2-paper@Section 5",
+        "benchlm-cursorbench@Should you trust a CursorBench score?"
+      ]
+    },
+    "problem": {
+      "text": "公开编码基准（SWE-bench、Terminal-Bench）与真实开发脱节。Cursor 博客归为三点：alignment（多数 SWE 基准仍以 bug-fixing 为主，Terminal-Bench 偏抽象谜题）、grading（假设唯一标准答案，惩罚其他正确解法）、contamination（任务来自公开仓库并进入训练数据，前沿模型能凭记忆复现 gold patch，OpenAI 因此停报 SWE-bench Verified）。Composer 2 技术报告补第四点 narrow evaluation scope：现有编码评测主要只测功能正确性，而开发者还看重代码质量、可读性、延迟、成本与交互行为。Cursor 因此需要一套来自真实 IDE 会话、更能区分前沿模型且与开发者体验一致的评测体系。",
+      "cite": [
+        "cursorbench-blog@Limitations",
+        "composer2-paper@Section 5",
+        "cursorbench-blog@Building"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机 / naive 基线",
+        "value": "论文未给出",
+        "note": "官方未发布随机基线或 naive agent 基线；CursorBench 榜单只列模型分数，本站不推算。",
+        "cite": [
+          "cursorbench-leaderboard@Leaderboard",
+          "cursorbench-blog@Intro"
+        ]
+      },
+      {
+        "label": "论文 Table 1 最好成绩",
+        "value": "GPT-5.4 63.9%（CursorBench-3）",
+        "note": "同表 Composer 2 61.3%、Opus 4.6 High 58.2%、Composer 1.5 44.2%、Composer 1 38.0%；Table 1 对第三方模型按「our harness / self-reported」格式给出结果，GPT-5.4 的 CursorBench 列只列出一个数值。",
+        "cite": [
+          "composer2-paper@Table 1",
+          "composer2-blog@Table"
+        ]
+      },
+      {
+        "label": "厂商自报峰值（3.2 任务集）",
+        "value": "Fable 5.1 73.4%（max effort）",
+        "note": "Anthropic 2026-09 公告的 CursorBench 3.2.0 图表；Grok 4.5 因训练数据包含 Cursor 代码库快照，被 Cursor 从对比中排除。",
+        "cite": [
+          "anthropic-fable-5-1@Benchmarks",
+          "grok45-blog@Footnote"
+        ]
+      },
+      {
+        "label": "当前 4.0 官方榜单最高",
+        "value": "Gemini 4 Carbon High 60.4%",
+        "note": "CursorBench 4.0 与 3.x 任务集不同，分数不可直接比较；Fable 5.2 Max 以 60.0% 紧随其后。榜单页面未标注数据日期（Changelog 最新一条 2026-10-07 是定价更新，不是数据日期）。",
+        "cite": [
+          "cursorbench-leaderboard@Leaderboard",
+          "cursorbench-leaderboard@Changelog"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      },
+      {
+        "label": "饱和 / 噪声参考线",
+        "value": "BenchLM 汇总前三名相差 2.6 个百分点",
+        "note": "BenchLM 按模型取最高 effort 档汇总，前三为 Gemini 4 Carbon 60.4%、Claude Fable 5.2 60.0%、Claude Opus 5.5 57.8%，并标注 Saturation Active；Cursor 官方榜单按「模型 × effort 档」逐行排名，前三行 60.4% / 60.1% / 60.0% 相差 0.4 个百分点。官方并说明 Results are subject to variance, small differences in scores may not be statistically meaningful。",
+        "cite": [
+          "benchlm-cursorbench@Should you trust a CursorBench score?",
+          "cursorbench-leaderboard@Leaderboard"
+        ]
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "将 CursorBench 分数直接等同于模型在任意 coding agent 环境中的表现——分数高度依赖 Cursor 生产 harness（Anyrun），不同 harness 下同一模型表现可能差异显著。",
+        "cite": [
+          "cursorbench-blog@Intro",
+          "composer2-paper@Section 7.1"
+        ]
+      },
+      {
+        "text": "跨版本比较分数（如 3.2 的 73.4% vs 4.0 的 60.4%）——Cursor 的 changelog 显示 4.0 换了任务集，Epoch AI 与 BenchLM 均说明 4.0 分数不能与 3.x 对比。",
+        "cite": [
+          "cursorbench-leaderboard@Changelog",
+          "epoch-ai-cursorbench@Methodology",
+          "benchlm-cursorbench@About CursorBench"
+        ]
+      },
+      {
+        "text": "把 CursorBench 主分数等同于「代码质量高」或「适合生产部署」——主指标是 solution correctness；代码质量、效率与交互行为是 Cursor 另行评测的轴，论文中也由单独的针对性评测覆盖。",
+        "cite": [
+          "cursorbench-blog@Intro",
+          "composer2-paper@Section 5"
+        ]
+      },
+      {
+        "text": "忽视厂商自研模型的潜在数据优势——Cursor 在 Grok 4.5 发布博文脚注中说明，Grok 4.5 因训练数据意外包含 Cursor 代码库快照而在 CursorBench 上占有优势，该模型的结果已被排除在对比之外。",
+        "cite": [
+          "grok45-blog@Footnote",
+          "cursorbench-blog@Limitations"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "Cursor（cursor.com 页脚署 Anysphere, Inc.）",
+        "cite": [
+          "cursorbench-blog@Intro",
+          "composer2-blog@Footer"
+        ]
+      },
+      {
+        "k": "技术报告署名",
+        "v": "Composer 2 技术报告标题页只署「Cursor Research Team」，未列个人作者名单（文中出现的 Naman Jain、Michael Truell 等在 References 引用列表里，不是本文作者）",
+        "cite": [
+          "composer2-paper@Title page"
+        ]
+      },
+      {
+        "k": "首次公开时间",
+        "v": "2026-03-11（官方 Changelog 与博客首次公开 CursorBench 3.0）；配套的 Composer 2 技术报告 arXiv:2603.24477v2 标注日期为 2026-03-26",
+        "cite": [
+          "cursorbench-leaderboard@Changelog",
+          "composer2-paper@Title page"
+        ]
+      },
+      {
+        "k": "任务集来源",
+        "v": "真实 Cursor IDE 会话，通过 Cursor Blame 工具将代码提交追溯到 agent 请求；大量任务来自 Cursor 内部代码库与受控来源，不公开",
+        "cite": [
+          "cursorbench-blog@Building",
+          "composer2-paper@Section 5"
+        ]
+      },
+      {
+        "k": "公开数据集 / 代码",
+        "v": "未公开。Cursor 称 CursorBench 为 internal eval suite，任务集、grader 与评测代码均未提供公开下载。",
+        "cite": [
+          "cursorbench-blog@Intro",
+          "cursorbench-blog@Building"
+        ]
+      },
+      {
+        "k": "版本演化",
+        "v": "3.0（2026-03-11，初始 edit/refactor/bugfix）→ 3.1（2026-05-19，新增 codebase understanding / bugfinding / planning / code review）→ 3.2（2026-07-08，新增 instruction following / advanced tool use）→ 4.0（2026-09-10，新增 long-horizon 任务，与 3.x 不兼容）",
+        "cite": [
+          "cursorbench-leaderboard@Changelog"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-13",
+        "columns": [
+          "来源",
+          "模型",
+          "CursorBench",
+          "版本 / 说明"
+        ],
+        "rows": [
+          [
+            "Composer 2 论文 Table 1",
+            "GPT-5.4",
+            "63.9%",
+            "CursorBench-3；2026-03（表内最高）"
+          ],
+          [
+            "Composer 2 论文 Table 1",
+            "Composer 2",
+            "61.3%",
+            "CursorBench-3；2026-03"
+          ],
+          [
+            "Composer 2 论文 Table 1",
+            "Opus 4.6 High",
+            "58.2%",
+            "CursorBench-3；2026-03"
+          ],
+          [
+            "Composer 2 论文 Table 1",
+            "Composer 1.5",
+            "44.2%",
+            "CursorBench-3；2026-03"
+          ],
+          [
+            "Composer 2 论文 Table 1 / Cursor 官方博客表格",
+            "Composer 1",
+            "38.0%",
+            "CursorBench-3；2026-03（博客表格未标注具体版本）"
+          ],
+          [
+            "Cursor 官方 Leaderboard",
+            "Gemini 4 Carbon High",
+            "60.4%",
+            "CursorBench 4.0；页面未标注数据日期"
+          ],
+          [
+            "Cursor 官方 Leaderboard",
+            "Gemini 4 Carbon Medium",
+            "60.1%",
+            "CursorBench 4.0；页面未标注数据日期"
+          ],
+          [
+            "Cursor 官方 Leaderboard",
+            "Fable 5.2 Max",
+            "60.0%",
+            "CursorBench 4.0；页面未标注数据日期"
+          ],
+          [
+            "Cursor 官方 Leaderboard",
+            "Opus 5.5 Max",
+            "57.8%",
+            "CursorBench 4.0；页面未标注数据日期"
+          ],
+          [
+            "Cursor 官方 Leaderboard",
+            "Sonnet 5.5 Max",
+            "55.5%",
+            "CursorBench 4.0；页面未标注数据日期"
+          ],
+          [
+            "Cursor 官方 Leaderboard",
+            "Composer 2.5",
+            "27.7%",
+            "CursorBench 4.0；页面未标注数据日期"
+          ],
+          [
+            "Anthropic Fable 5.1 公告",
+            "Fable 5.1",
+            "73.4%",
+            "CursorBench 3.2；max effort；2026-09"
+          ],
+          [
+            "Anthropic Opus 5 公告",
+            "Opus 5",
+            "原文未给出具体分数",
+            "CursorBench 3.2；max effort；2026-07；公告表述为「在 Fable 5 峰值 0.5% 以内、成本约一半」"
+          ],
+          [
+            "xAI Grok 4.6 公告",
+            "Grok 4.6 High",
+            "69.9%",
+            "CursorBench 3.2；2026-08；公告为柱状图，数值按图例顺序读取，页面未逐一标明对应关系"
+          ],
+          [
+            "Anthropic Opus 4.7 公告（引述 Cursor CEO）",
+            "Opus 4.7",
+            "超过 70%（原文未给精确值）",
+            "CursorBench，版本未注明；2026-04"
+          ]
+        ]
+      },
+      "cite": [
+        "composer2-paper@Table 1",
+        "composer2-blog@Table",
+        "cursorbench-leaderboard@Leaderboard",
+        "anthropic-fable-5-1@Benchmarks",
+        "anthropic-opus-5@Performance",
+        "anthropic-opus-4-7@Quote",
+        "xai-grok-4-6@Evals"
+      ]
+    }
+  }
+}

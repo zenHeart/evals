@@ -1,0 +1,706 @@
+{
+  "id": "tomato",
+  "name": "TOMATO",
+  "full_name": "TOMATO: Assessing Visual Temporal Reasoning Capabilities in Multimodal Foundation Models（TOMATO 是 TempOral Reasoning MultimodAl EvaluaTiOn 的缩写，意为「视觉时序推理能力评估」）",
+  "aliases": [],
+  "status": "active",
+  "categories": [
+    "multimodal"
+  ],
+  "summary": "TOMATO 是 1,484 道人工标注的多选题，专考「必须按时间顺序比较多帧画面才能答对」的推理：物体朝哪边转、手朝哪边移、动作做了几次。题目分布在 1,417 个视频上，其中过半是作者自己录制和生成的；它还带三个诊断指标（多帧增益 κ、帧序敏感度 τ、帧信息差 ρ），用来证明这些题不是看一帧就能蒙对的。",
+  "interpretation": "高分说明模型能跨帧、按原始时间顺序整合视觉信息，而不是靠单帧线索猜。但论文的误差分析显示模型经常基于单帧信息臆测；换到反事实场景（第一人称视角、模拟人类动作）时 GPT-4o 掉 37.7 个百分点，Qwen2-VL-72B 掉 29.4 个百分点。人类看完整视频能到 95.2%，同样只看 16 帧时降到 79.7%，而发布时最好的模型只有 37.9%。",
+  "measures": [
+    {
+      "area": "Rotation（旋转方向）",
+      "focus": "判断主体朝哪个方向旋转；示例题：In which direction(s) does the object rotate?（物体朝哪个/哪些方向旋转）",
+      "share": "19.3%（286 题）",
+      "format": "单选题，全库平均每题 5.19 个选项",
+      "cite": [
+        "arxiv-2410-23266@Table 2",
+        "arxiv-2410-23266@Table 1",
+        "arxiv-2410-23266@§4.1"
+      ]
+    },
+    {
+      "area": "Direction（运动方向）",
+      "focus": "判断主体移动方向；示例题：In which direction(s) does the person's hand move?（人的手朝哪个方向移动）",
+      "share": "27.2%（403 题）",
+      "format": "单选题，全库平均每题 5.19 个选项",
+      "cite": [
+        "arxiv-2410-23266@Table 2",
+        "arxiv-2410-23266@Table 1",
+        "arxiv-2410-23266@§4.1"
+      ]
+    },
+    {
+      "area": "Velocity & Frequency（速度与频率）",
+      "focus": "判断速度变化或重复动作的频率；示例题：What is the speed pattern of the train?（火车的速度变化模式）",
+      "share": "14.2%（210 题）",
+      "format": "单选题，全库平均每题 5.19 个选项",
+      "cite": [
+        "arxiv-2410-23266@Table 2",
+        "arxiv-2410-23266@Table 1",
+        "arxiv-2410-23266@§4.1"
+      ]
+    },
+    {
+      "area": "Shape & Trend（轨迹形状与趋势）",
+      "focus": "分析主体运动轨迹的形状或总体趋势；示例题：What is the shape of the object that the person draws in the air?（人在空中画出的图形）",
+      "share": "15.0%（223 题）",
+      "format": "单选题，全库平均每题 5.19 个选项",
+      "cite": [
+        "arxiv-2410-23266@Table 2",
+        "arxiv-2410-23266@Table 1",
+        "arxiv-2410-23266@§4.1"
+      ]
+    },
+    {
+      "area": "Visual Cues（视觉线索）",
+      "focus": "不看音频，仅凭画面判断动作的先后或时机；示例题（来自 Music-AVQA）：Which musical instrument plays first?（哪个乐器先演奏）",
+      "share": "4.7%（70 题）",
+      "format": "单选题；部分题目沿用 Music-AVQA 原题",
+      "cite": [
+        "arxiv-2410-23266@Table 2",
+        "arxiv-2410-23266@§4.1",
+        "arxiv-2410-23266@Table 1"
+      ]
+    },
+    {
+      "area": "Action Count（动作计数）",
+      "focus": "数某个动作发生了多少次；示例题：How many collision(s) are there in the video?（CLEVRER）、How many times does the cat lick the water tap?（TGIF-QA）",
+      "share": "19.7%（292 题）",
+      "format": "单选题；TGIF-QA 与 Perception Test 保留原题，另生成接近标准答案的数值选项",
+      "cite": [
+        "arxiv-2410-23266@Table 2",
+        "arxiv-2410-23266@§4.3",
+        "arxiv-2410-23266@Table 1"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "静态图像理解：题目按「必须跨多帧」设计，单帧就能答对的题不进基准（用多帧增益 κ 验证）",
+      "cite": [
+        "arxiv-2410-23266@§3.1",
+        "arxiv-2410-23266@Table 3"
+      ]
+    },
+    {
+      "text": "音频理解：Visual Cues 任务明确要求在不看音频的情况下判断动作顺序",
+      "cite": [
+        "arxiv-2410-23266@§4.1"
+      ]
+    },
+    {
+      "text": "开放式问答与自由生成：全部题目都是带选项的选择题，答案只能是既定选项之一",
+      "cite": [
+        "arxiv-2410-23266@Table 1"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 1484,
+    "splits": [
+      "count（动作计数）292 题",
+      "direction（运动方向）403 题",
+      "rotation（旋转）286 题",
+      "shape_trend（形状与趋势）223 题",
+      "velocity_frequency（速度与频率）210 题",
+      "visual_cues（视觉线索）70 题"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "人工标注多选题；视频来自作者自录与自生成（805 个，56.8%）、YouTube（398 个，28.1%）与既有视频数据集（214 个，15.1%）",
+    "public_sample": true,
+    "totals": "1,484 道单选题（平均每题 5.19 个选项）分布在 1,417 个视频上，视频平均时长 9.21 秒、最长 72.74 秒；共 6 类任务、3 类视频场景，题目语言为英文。Hugging Face 上的 6 个 split 按任务划分，论文未另设训练/测试划分",
+    "cite": [
+      "arxiv-2410-23266@Table 1",
+      "dataset-hf-yale-nlp-tomato@README"
+    ],
+    "construction": [
+      {
+        "k": "先定任务",
+        "text": "用试点研究确定六类视觉时序推理任务：旋转方向、运动方向、速度与频率、轨迹形状与趋势、视觉线索（不看音频判断动作先后）、动作计数。",
+        "cite": [
+          "arxiv-2410-23266@§4.1",
+          "arxiv-2410-23266@附录 E.2"
+        ]
+      },
+      {
+        "k": "再备视频",
+        "text": "自录与自生成：编辑前 298 个、编辑后 805 个，覆盖全部六类任务；YouTube：编辑前 171 个源视频、编辑后 398 个；既有数据集：从 Music-AVQA 取 70 个、CLEVRER 50 个、TGIF-QA 50 个、Perception Test 44 个，共 214 个。",
+        "cite": [
+          "arxiv-2410-23266@§4.2"
+        ]
+      },
+      {
+        "k": "自建视频加三种编辑",
+        "text": "在 805 个自建视频上加入反事实场景、复合运动和放大视图，用来考察这些特征对模型表现的影响。",
+        "cite": [
+          "repo-yale-nlp-tomato@README"
+        ]
+      },
+      {
+        "k": "三阶段标注",
+        "text": "标注员初标 → 标注员之间交叉核对（不看彼此原始答案重新标一遍）→ 集体裁定分歧并终审。1,484 题中有 44 题需要集体裁定，其中 4 个视频被替换，其余修正答案。",
+        "cite": [
+          "arxiv-2410-23266@§4.3",
+          "arxiv-2410-23266@附录 E.3"
+        ]
+      },
+      {
+        "k": "沿用旧题目的处理",
+        "text": "TGIF-QA 与 Perception Test 保留原有问题，但额外生成接近标准答案的数值选项。",
+        "cite": [
+          "arxiv-2410-23266@§4.3"
+        ]
+      },
+      {
+        "k": "谁来标",
+        "text": "4 名标注者：数学硕士二年级、计算机科学与数学硕士二年级、机械工程硕士应届毕业生、计算机科学博士二年级学生。",
+        "cite": [
+          "arxiv-2410-23266@Table 10",
+          "arxiv-2410-23266@附录 E.1"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "accuracy",
+      "name": "准确率",
+      "direction": "越高越好",
+      "description": "多选题中答案与标准答案一致的题目占比，以百分数表示；论文表 7 除特别说明外每个模型都处理 16 帧",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2410-23266@§6.2",
+        "arxiv-2410-23266@Table 7",
+        "repo-yale-nlp-tomato@README"
+      ]
+    },
+    {
+      "id": "multi-frame-gain",
+      "name": "多帧增益 κ",
+      "direction": "越高越好",
+      "description": "从随机单帧换成均匀采样的 m 帧（论文取 m=16）后的相对性能提升；越高说明这道题越需要跨多帧推理",
+      "range": "未披露",
+      "unit": "percent",
+      "cite": [
+        "arxiv-2410-23266@§3.1",
+        "arxiv-2410-23266@§5"
+      ]
+    },
+    {
+      "id": "frame-order-sensitivity",
+      "name": "帧序敏感度 τ",
+      "direction": "越高越好",
+      "description": "把帧顺序打乱后性能下降的幅度；越高说明模型越依赖原始帧序",
+      "range": "未披露",
+      "unit": "percent",
+      "cite": [
+        "arxiv-2410-23266@§3.2",
+        "arxiv-2410-23266@§5"
+      ]
+    },
+    {
+      "id": "frame-information-disparity",
+      "name": "帧信息差 ρ",
+      "direction": "越低越好",
+      "description": "随机单帧换成人工挑选的信息量最大单帧后的相对性能提升；越低说明题目越不可能靠挑对一帧蒙对",
+      "range": "未披露",
+      "unit": "percent",
+      "cite": [
+        "arxiv-2410-23266@§3.3",
+        "arxiv-2410-23266@§5"
+      ]
+    }
+  ],
+  "default_protocol": {
+    "raw": "所有模型零样本评测。按帧采样的模型用统一系统提示词，要求只用给定的帧回答多选题，不得借助外部知识或常识；帧从视频中等间隔均匀采样，论文取 m=16。用规则从模型回答中解析选项，解析失败时再用 GPT-4o-mini 抽取。得分是百分数准确率。",
+    "cite": [
+      "arxiv-2410-23266@§A.2",
+      "arxiv-2410-23266@§B.1",
+      "arxiv-2410-23266@§3.1",
+      "repo-yale-nlp-tomato@README"
+    ],
+    "variants": [
+      {
+        "text": "输入形态：按帧采样的模型吃 16 帧；标注 ‡ 的模型（Gemini 1.5 pro、Gemini 2.0 Flash Exp 等）直接处理视频，帧数参数被忽略，两者不能直接比。",
+        "cite": [
+          "arxiv-2410-23266@Table 7",
+          "repo-yale-nlp-tomato@README"
+        ]
+      },
+      {
+        "text": "题目规模：表 7 的准确率是全部 1,484 题；三个诊断指标 κ/τ/ρ 只在约 200 道抽样题上、用 GPT-4o 与 Qwen2-VL-72B 两个模型测得，两者不是同一批题目。",
+        "cite": [
+          "arxiv-2410-23266@§5"
+        ]
+      },
+      {
+        "text": "人类基线有两种口径：看完整视频 95.2%，看 16 帧 79.7%；引用人类水平时要说明是哪一种。",
+        "cite": [
+          "arxiv-2410-23266@§6.1"
+        ]
+      },
+      {
+        "text": "答案解析：规则解析失败时改用 GPT-4o-mini 从原始回答中抽答案，模型输出格式差异会影响最终分数。",
+        "cite": [
+          "repo-yale-nlp-tomato@README",
+          "arxiv-2410-23266@§A.2"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2024-10-30",
+      "label": "arXiv v1 首发（cs.CV）",
+      "cite": [
+        "arxiv-2410-23266@arXiv 提交历史"
+      ]
+    },
+    {
+      "id": "v2",
+      "date": "2025-08-25",
+      "label": "arXiv v2 修订，作为 ICLR 2025 会议论文发表（本页核对所用版本）",
+      "cite": [
+        "arxiv-2410-23266@arXiv 提交历史",
+        "arxiv-2410-23266@标题"
+      ]
+    },
+    {
+      "id": "seed2-1-citation",
+      "date": "2026-06-23",
+      "label": "字节跳动 Seed 在 Seed2.1 发布文章中称其在 TOMATO 上达到行业领先水平（未给出具体分数）",
+      "cite": [
+        "seed-en-blog-seed2-1-official@正文"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "反事实场景下大幅掉分",
+      "impact": "同一批 101 对问答从真实人类场景换成模拟人类场景，GPT-4o 掉 37.7 个百分点、Qwen2-VL-72B 掉 29.4 个百分点；说明 37%–38% 的准确率依赖表层线索，而不是稳定的时序推理。",
+      "severity": "高",
+      "response": "作者把反事实场景作为自建视频的编辑目标之一写进基准设计，用它暴露该问题；论文未给出模型侧的修复方案。",
+      "reader": "看到某个模型 37% 上下的准确率时，要意识到视角或主体一换可能就掉三成，不要当成稳定的能力刻度。",
+      "cite": [
+        "arxiv-2410-23266@§6.4",
+        "arxiv-2410-23266@Table 8",
+        "repo-yale-nlp-tomato@README"
+      ]
+    },
+    {
+      "issue": "帧数超过 8 以后性能不再提升",
+      "impact": "模型从 1 帧到 8 帧有提升，超过 8 帧后进入平台期；论文认为这与时序感知的位置编码（如 M-RoPE）有关，说明多数模型并没有真正利用长时间跨度的帧序列。",
+      "severity": "高",
+      "response": "论文报告该结论并给出可能原因；未见官方因此调整评分口径或帧数默认值（仍为 16 帧）。",
+      "reader": "不要以为给模型更多帧就能提高 TOMATO 分数；比较不同帧数设置时要注明。",
+      "cite": [
+        "arxiv-2410-23266@§6.3"
+      ]
+    },
+    {
+      "issue": "官方仓库的榜单一节没有任何分数",
+      "impact": "GitHub README 的「2. Leaderboard」只有一句说明（分数以百分数准确率表示），没有列出任何模型成绩；目前唯一的官方数字来自论文表 7（2025-08-25 版本）。",
+      "severity": "中",
+      "response": "未见官方回应。",
+      "reader": "引用 TOMATO 成绩时只能落到论文表 7 或各厂商自报，并注明帧数、是否直接处理视频等口径。",
+      "cite": [
+        "repo-yale-nlp-tomato@README",
+        "arxiv-2410-23266@Table 7"
+      ]
+    },
+    {
+      "issue": "诊断指标只在约 200 题、2 个模型上测得",
+      "impact": "κ/τ/ρ 三个诊断值来自随机抽取的约 200 道题和 GPT-4o、Qwen2-VL-72B 两个模型，样本很小，不能外推到全部 1,484 题或其他模型。",
+      "severity": "中",
+      "response": "论文在 §5 说明抽样方法（随机抽约 200 题，人工为每题挑选信息量最大的单帧）；未见扩大样本的后续版本。",
+      "reader": "看到「多帧增益 66.3%」这类数字时，记住它是 200 题、2 个模型的口径；全部 1,484 题上的多帧增益是 81.0%。",
+      "cite": [
+        "arxiv-2410-23266@§5",
+        "arxiv-2410-23266@§1"
+      ]
+    },
+    {
+      "issue": "许可与数据集卡标注不一致",
+      "impact": "论文附录 D 写明 TOMATO 仅限学术研究、禁止任何形式的商业使用，且各视频来源分别受 CC0、CC-BY、CC BY-NC 4.0、CC BY-NC-SA 约束（TGIF-QA 仅限非商业）；Hugging Face 数据集卡却把许可标为 cc-by-sa-4.0（该许可本身允许商业使用）。两者对商业使用的规定冲突。",
+      "severity": "中",
+      "response": "未见官方回应该不一致。",
+      "reader": "工业界或产品要把 TOMATO 纳入内部评测前，先按论文附录 D 的逐项许可核对，不要只看数据集卡上的许可字段。",
+      "cite": [
+        "arxiv-2410-23266@附录 D",
+        "dataset-hf-yale-nlp-tomato@README"
+      ]
+    },
+    {
+      "issue": "最小的一类任务只有 70 题",
+      "impact": "Visual Cues 只占 4.7%（70 题），单题影响约 1.4 个百分点的总准确率，模型在这一类上的差距容易被小样本放大。",
+      "severity": "低",
+      "response": "未见官方回应。",
+      "reader": "比较模型在 visual_cues 子集上的差异时，先记住只有 70 题；论文表 7 中该类上 GPT-4o（58.6%）远高于其他模型，也要打这点折扣看。",
+      "cite": [
+        "arxiv-2410-23266@Table 2",
+        "arxiv-2410-23266@Table 7",
+        "dataset-hf-yale-nlp-tomato@README"
+      ]
+    }
+  ],
+  "notes": "ICLR 2025；Yale NLP 与 AI2；官方仓库榜单无数字，唯一官方成绩在论文表 7",
+  "official_sources": [
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2410.23266"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/yale-nlp/TOMATO"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/yale-nlp/TOMATO"
+    },
+    {
+      "kind": "site",
+      "url": "https://seed.bytedance.com/en/blog/seed2-1-officially-released-advancing-ai-productivity"
+    }
+  ],
+  "related_benchmarks": [
+    "mvbench",
+    "tempcompass"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-13",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      {
+        "id": "arxiv-2410-23266",
+        "kind": "paper",
+        "title": "TOMATO: Assessing Visual Temporal Reasoning Capabilities in Multimodal Foundation Models（arXiv:2410.23266v2，ICLR 2025）",
+        "url": "https://arxiv.org/abs/2410.23266",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "repo-yale-nlp-tomato",
+        "kind": "repo",
+        "title": "yale-nlp/TOMATO（官方仓库：数据说明、评测与解析脚本）",
+        "url": "https://github.com/yale-nlp/TOMATO",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "dataset-hf-yale-nlp-tomato",
+        "kind": "dataset",
+        "title": "yale-nlp/TOMATO（Hugging Face 数据集卡）",
+        "url": "https://huggingface.co/datasets/yale-nlp/TOMATO",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "seed-en-blog-seed2-1-official",
+        "kind": "site",
+        "title": "Seed2.1 Officially Released: Advancing AI Productivity（字节跳动 Seed，2026-06-23）",
+        "url": "https://seed.bytedance.com/en/blog/seed2-1-officially-released-advancing-ai-productivity",
+        "accessed": "2026-11-13"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Yale University 与 Allen Institute for AI（Yale NLP Lab）",
+        "cite": [
+          "arxiv-2410-23266@作者署名",
+          "dataset-hf-yale-nlp-tomato@README"
+        ]
+      },
+      "first_release": {
+        "v": "2024-10-30（arXiv v1）",
+        "cite": [
+          "arxiv-2410-23266@arXiv 提交历史"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "arxiv-2410-23266@摘要",
+        "arxiv-2410-23266@Table 1",
+        "arxiv-2410-23266@§4.2"
+      ],
+      "interpretation": [
+        "arxiv-2410-23266@§6.3",
+        "arxiv-2410-23266@§6.4",
+        "arxiv-2410-23266@Table 7",
+        "arxiv-2410-23266@§6.2"
+      ]
+    },
+    "problem": {
+      "text": "此前的视频理解基准里，很多题靠单帧、少数几帧或打乱顺序的帧就能答对，多模态基础模型的时序推理能力因此被高估。TOMATO 想用「必须跨多帧、且依赖原始帧序」的题目把这种能力单独测出来，并用 κ/τ/ρ 三个指标验证题目确实没有单帧捷径。",
+      "cite": [
+        "arxiv-2410-23266@§1",
+        "arxiv-2410-23266@摘要"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机猜一个选项",
+        "value": "18.5%",
+        "note": "论文表 7 的 Random Choice 基线；论文把这个基线标成 Random Choice (42)，但正文没有解释 (42) 的含义。",
+        "cite": [
+          "arxiv-2410-23266@Table 7"
+        ]
+      },
+      {
+        "label": "最常见选项",
+        "value": "21.0%",
+        "note": "论文表 7 的 Frequent Choice 基线（不标选项池大小）。",
+        "cite": [
+          "arxiv-2410-23266@Table 7"
+        ]
+      },
+      {
+        "label": "不给视频、只让 GPT-4o 猜",
+        "value": "23.1%",
+        "note": "Random (GPT-4o) 文本基线：完全看不到视频也能猜对两成以上，这是 TOMATO 分数的地板参考。",
+        "cite": [
+          "arxiv-2410-23266@§6.1",
+          "arxiv-2410-23266@Table 7"
+        ]
+      },
+      {
+        "label": "论文发布时最好的开源模型",
+        "value": "37.9%",
+        "note": "Qwen2-VL-72B，略高于 GPT-4o 的 37.7%；两者都显著低于人类水平。",
+        "cite": [
+          "arxiv-2410-23266@§6.2"
+        ]
+      },
+      {
+        "label": "人类（看完整视频）",
+        "value": "95.2%",
+        "note": "与最好模型的差距是 57.3 个百分点。",
+        "cite": [
+          "arxiv-2410-23266@§6.2"
+        ]
+      },
+      {
+        "label": "人类（只看 16 帧）",
+        "value": "79.7%",
+        "note": "与模型同口径的 16 帧输入；人类在帧数受限时也会大幅下降，所以 95.2% 不是模型的目标线。",
+        "cite": [
+          "arxiv-2410-23266@§6.1"
+        ]
+      },
+      {
+        "label": "单帧捷径参考线",
+        "value": "κ 81.0%（全量）／66.3%（200 题子集）；τ 34.1%；ρ 4.6%",
+        "note": "用来对照既有基准：论文在 §1 给出的对比是既有基准多帧增益不足 5%、帧序敏感度不足 8%、帧信息差超过 27%。这些诊断值只在约 200 题、2 个模型上测得。",
+        "cite": [
+          "arxiv-2410-23266@Table 3",
+          "arxiv-2410-23266@Table 5",
+          "arxiv-2410-23266@Table 6",
+          "arxiv-2410-23266@§1"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 TOMATO 的准确率和 MVBench、TempCompass 等基准的分数直接排在一起比——论文只在这几个基准上各抽约 200 题做诊断指标对比，题目和口径都不同，论文也没有报告跨基准的准确率对比表。",
+        "cite": [
+          "arxiv-2410-23266@§5"
+        ]
+      },
+      {
+        "text": "把 66.3% 和 81.0% 混为一谈：66.3% 是约 200 题子集上、与既有基准同口径比出来的多帧增益，81.0% 是全部 1,484 题上的多帧增益。",
+        "cite": [
+          "arxiv-2410-23266@§1",
+          "arxiv-2410-23266@Table 3"
+        ]
+      },
+      {
+        "text": "以为给模型更多帧分数就会上去——论文明确说 8 帧以后进入平台期。",
+        "cite": [
+          "arxiv-2410-23266@§6.3"
+        ]
+      },
+      {
+        "text": "把人类 95.2% 当成模型应该逼近的上限——人类只看 16 帧时只有 79.7%，这个数更接近模型的实际输入条件。",
+        "cite": [
+          "arxiv-2410-23266@§6.1"
+        ]
+      },
+      {
+        "text": "把 Hugging Face 数据集卡上的 cc-by-sa-4.0 当成可以商用——论文附录 D 明确禁止任何形式的商业使用。",
+        "cite": [
+          "dataset-hf-yale-nlp-tomato@README",
+          "arxiv-2410-23266@附录 D"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "Yale University 与 Allen Institute for AI；Hugging Face 上的组织是 Yale NLP Lab",
+        "cite": [
+          "arxiv-2410-23266@作者署名",
+          "dataset-hf-yale-nlp-tomato@README"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "Ziyao Shangguan、Chuhan Li（共同一作）、Yuxuan Ding、Yanan Zheng、Yilun Zhao、Tesca Fitzgerald、Arman Cohan",
+        "cite": [
+          "arxiv-2410-23266@作者署名",
+          "repo-yale-nlp-tomato@README"
+        ]
+      },
+      {
+        "k": "发表 venue",
+        "v": "ICLR 2025 会议论文",
+        "cite": [
+          "arxiv-2410-23266@标题"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2024-10-30 arXiv v1 → 2025-08-25 arXiv v2（ICLR 2025 会议论文，本页核对版本）→ 2026-06-23 字节跳动 Seed2.1 发布文章引用",
+        "cite": [
+          "arxiv-2410-23266@arXiv 提交历史",
+          "seed-en-blog-seed2-1-official@正文"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "代码与说明在 GitHub（yale-nlp/TOMATO）；视频需从 Google Drive 下载后解压到 /TOMATO 目录；QA 数据在 Hugging Face（yale-nlp/TOMATO，parquet，1,484 行，总大小 32.9 MB）",
+        "cite": [
+          "repo-yale-nlp-tomato@README",
+          "dataset-hf-yale-nlp-tomato@README"
+        ]
+      },
+      {
+        "k": "标注者",
+        "v": "4 名标注者，分别是数学硕士二年级、计算机科学与数学硕士二年级、机械工程硕士应届毕业生、计算机科学博士二年级学生",
+        "cite": [
+          "arxiv-2410-23266@Table 10",
+          "arxiv-2410-23266@附录 E.1"
+        ]
+      },
+      {
+        "k": "采用",
+        "v": "字节跳动 Seed 在 2026-06-23 的 Seed2.1 发布文章中称其在 TOMATO 上达到行业领先水平，文章未给出具体分数",
+        "cite": [
+          "seed-en-blog-seed2-1-official@正文"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2025-08-25",
+        "columns": [
+          "来源",
+          "模型 / 基线",
+          "总准确率",
+          "口径"
+        ],
+        "rows": [
+          [
+            "论文 Table 7",
+            "Random Choice",
+            "18.5%",
+            "随机猜一个选项"
+          ],
+          [
+            "论文 Table 7",
+            "Frequent Choice",
+            "21.0%",
+            "最常见选项"
+          ],
+          [
+            "论文 Table 7",
+            "Random (GPT-4o)",
+            "23.1%",
+            "不给视频的文本基线"
+          ],
+          [
+            "论文 Table 7",
+            "Phi 3.5 Vision",
+            "20.7%",
+            "零样本，16 帧"
+          ],
+          [
+            "论文 Table 7",
+            "Qwen2-VL-7B",
+            "31.5%",
+            "零样本，16 帧"
+          ],
+          [
+            "论文 Table 7",
+            "Claude 3.5 Sonnet",
+            "27.8%",
+            "零样本，16 帧"
+          ],
+          [
+            "论文 Table 7",
+            "Claude 3 Opus",
+            "28.2%",
+            "零样本，16 帧"
+          ],
+          [
+            "论文 Table 7",
+            "GPT-4o-mini",
+            "28.8%",
+            "零样本，16 帧"
+          ],
+          [
+            "论文 Table 7",
+            "Gemini 2.0 Flash Exp ‡",
+            "33.7%",
+            "零样本，直接处理视频"
+          ],
+          [
+            "论文 Table 7",
+            "Gemini 1.5 pro ‡",
+            "36.1%",
+            "零样本，直接处理视频"
+          ],
+          [
+            "论文 Table 7",
+            "GPT-4o",
+            "37.7%",
+            "零样本，16 帧"
+          ],
+          [
+            "论文 Table 7",
+            "Qwen2-VL-72B",
+            "37.9%",
+            "零样本，16 帧"
+          ],
+          [
+            "论文 Table 7",
+            "Human (Frames)",
+            "79.7%",
+            "人类看 16 帧"
+          ],
+          [
+            "论文 Table 7",
+            "Human (Videos)",
+            "95.2%",
+            "人类看完整视频"
+          ]
+        ]
+      },
+      "cite": [
+        "arxiv-2410-23266@Table 7"
+      ]
+    }
+  }
+}

@@ -1,0 +1,719 @@
+{
+  "id": "jointavbench",
+  "name": "JointAVBench",
+  "full_name": "JointAVBench: A Benchmark for Joint Audio-Visual Reasoning Evaluation",
+  "aliases": [
+    "JointAV-Bench"
+  ],
+  "status": null,
+  "categories": [
+    "multimodal"
+  ],
+  "summary": "严格声画耦合的音视频联合推理评测集：2,853 道四选一多选题，按 5 个认知维度 × 4 种音频信息类型 × 3 档场景跨度组织成 15 个任务，全部由「视觉 LLM + 音频 LLM + 通用 LLM 三阶段自动管线 → 人工复核 → 发布后 LLM 审计」生成；论文 v2 口径下最强模型 Gemini2.5-Pro 平均准确率 65.3%。",
+  "interpretation": "分数高说明模型能同时用上画面和声音、且没被单模态信息牵着走。但 65.3% 有明确前提：开源模型统一取约 7B 档、统一 32 帧采样、文本输入只给问题本身、跑在作者内部高分辨率片源上。用公开的 640×360 切片复现会对不上，跨模型横比前也要先看是否同一口径。论文只报准确率，没有随机基线，所以「离满分还差多少」不能换算成「比瞎猜好多少」。",
+  "measures": [
+    {
+      "area": "时序推理（Temporal）",
+      "focus": "定位对白/声音里提到的事件出现在第几秒，判断视听元素出现的先后顺序；对应任务 STL、VSSR、PTG",
+      "share": "未披露（论文未按维度公布题目数）",
+      "format": "四选一多选题",
+      "cite": [
+        "arxiv-2512-12772@Table 2"
+      ]
+    },
+    {
+      "area": "空间推理（Spatial）",
+      "focus": "由声音反推画面中发声体或说话人的位置；对应任务 SPL、SOOG、SOER",
+      "share": "未披露（论文未按维度公布题目数）",
+      "format": "四选一多选题",
+      "cite": [
+        "arxiv-2512-12772@Table 2"
+      ]
+    },
+    {
+      "area": "情绪推理（Emotion）",
+      "focus": "从语音情绪、语气或音乐情绪变化判断说话人情绪；对应任务 SPER、MPTI、MESI",
+      "share": "未披露（论文未按维度公布题目数）",
+      "format": "四选一多选题",
+      "cite": [
+        "arxiv-2512-12772@Table 2"
+      ]
+    },
+    {
+      "area": "情节推理（Plot）",
+      "focus": "跨场景的人物关系、情节推进顺序、情节发展预测与声音在叙事中的功能；对应任务 MPO、PDP、AFA、CRI",
+      "share": "未披露（论文未按维度公布题目数）",
+      "format": "四选一多选题",
+      "cite": [
+        "arxiv-2512-12772@Table 2"
+      ]
+    },
+    {
+      "area": "长视频推理（Long-form）",
+      "focus": "在跨场景与整部影片尺度上做细节记忆、全局关联；对应任务 CSA、AVDM",
+      "share": "未披露（论文未按维度公布题目数）",
+      "format": "四选一多选题",
+      "cite": [
+        "arxiv-2512-12772@Table 2"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "不测能靠单模态答出的题：论文把「严格声画耦合」写成基准构建的第一条要求，每个任务都要求整合视觉与音频信息才能生成答案",
+      "cite": [
+        "arxiv-2512-12772@§3.1"
+      ]
+    },
+    {
+      "text": "不测开放式生成质量：全榜只报四选一准确率，不评解释质量、幻觉、指令遵循或推理过程",
+      "cite": [
+        "arxiv-2512-12772@§4.1"
+      ]
+    },
+    {
+      "text": "不覆盖图片+音频这类静态模态组合，也不测音频孤立任务：Table 1 中 OmniBench 是 I&A、纯视频基准是 V，本数据集定位为 V&A",
+      "cite": [
+        "arxiv-2512-12772@Table 1"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 2853,
+    "splits": [
+      "单场景（<1 min）",
+      "多场景（1–10 min）",
+      "整部影片（>10 min）"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "synthetic（视觉 LLM + 音频 LLM + 通用 LLM 三阶段自动管线生成，人工复核后再做发布后 LLM 答案审计）",
+    "public_sample": true,
+    "multiple_choice_share": "100%（每题 1 个正确选项 + 3 个干扰项）",
+    "multimodal_share": "100%（视频 + 音频）",
+    "totals": "2,853 道四选一 MCQ，15 个任务，4 种音频信息类型，3 档场景跨度；片源取自 SF20K 的 1,046 部短片，平均时长 97.2 秒；自动管线共产出 3,974 题，人工复核后保留 71.8%。",
+    "cite": [
+      "arxiv-2512-12772@§3.4",
+      "arxiv-2512-12772@§3.3",
+      "arxiv-2512-12772@§3.1",
+      "arxiv-2512-12772@Table 1",
+      "hf-jointavbench@数据格式"
+    ],
+    "construction": [
+      {
+        "k": "片源筛选",
+        "text": "从 Short-Films 20K 取 1,072 部专业短片，剔除失效与灰度视频后保留 1,046 部作为题库片源",
+        "cite": [
+          "arxiv-2512-12772@§3.1"
+        ]
+      },
+      {
+        "k": "场景切分",
+        "text": "沿用 Panda-70m 的做法，用 PySceneDetect 把长视频切成语义一致的场景，再合并高相似度场景",
+        "cite": [
+          "arxiv-2512-12772@§3.2.1"
+        ]
+      },
+      {
+        "k": "多模态字幕",
+        "text": "用 Qwen2.5-VL 按 1 fps 给每个场景生成视觉字幕，用 Whisper-v3 转写对白并补时间戳；声音事件与音乐字幕分开生成",
+        "cite": [
+          "arxiv-2512-12772@附录 B.1",
+          "arxiv-2512-12772@附录 B.2"
+        ]
+      },
+      {
+        "k": "出题与干扰项",
+        "text": "三阶段自动管线共产出 3,974 道 MCQ，每题配 3 个似是而非的干扰项；干扰项在 QA 过滤之后才生成",
+        "cite": [
+          "arxiv-2512-12772@§3.3",
+          "arxiv-2512-12772@§3.2 干扰项",
+          "arxiv-2512-12772@附录 B.5"
+        ]
+      },
+      {
+        "k": "质检与人工复核",
+        "text": "先做多阶段自动质检（模态检查、逻辑检查、歧义检查等），再由人工按答案正确性、信息正确性、声画依赖、题目难度四项标准打分，最终保留 2,853 题",
+        "cite": [
+          "arxiv-2512-12772@§3.2 质检",
+          "arxiv-2512-12772@§3.3"
+        ]
+      },
+      {
+        "k": "发布后答案审计",
+        "text": "HF 上的审计版保持 2,853 题不变，用独立强 LLM 审计员与原标注做多数投票精修答案标签；论文声明所有实验结果都用审计后标签重算",
+        "cite": [
+          "hf-roverx@Overview",
+          "hf-roverx@Audit Note",
+          "arxiv-2512-12772@附录 A.4"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "accuracy",
+      "name": "Accuracy",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "direction": "higher",
+      "aggregation": "mean",
+      "description": "四选一多选题的平均正确率，是全榜唯一指标；论文未报随机基线，也未报置信区间或多次运行的方差",
+      "cite": [
+        "arxiv-2512-12772@§4.1"
+      ]
+    },
+    {
+      "id": "no-nu-modality-gain",
+      "name": "No / Nu（联合推理收益计数）",
+      "unit": "任务数",
+      "direction": "higher",
+      "description": "Table 4 定义：No 是 A+V 得分高于最佳单模态得分的任务数，Nu 是 A+V 低于最差单模态的任务数；用来判断模型是否真的吃到了双模态信息",
+      "cite": [
+        "arxiv-2512-12772@Table 4"
+      ]
+    }
+  ],
+  "default_protocol": {
+    "raw": "论文口径：开源模型用官方代码库默认配置，闭源模型用官方 API 默认配置；统一 32 帧采样；文本输入只给问题文本，不给字幕、描述等额外上下文；报告指标为准确率。为保证可比性，开源模型另取约 7B 参数档；全部实验可在单张 H-100（80G）上复现。",
+    "cite": [
+      "arxiv-2512-12772@§4.1",
+      "arxiv-2512-12772@附录 A.6"
+    ],
+    "variants": [
+      {
+        "text": "画质口径：论文实验跑的是作者内部高分辨率片源，公开发布的是 640×360 研究用切片，用公开切片跑出的分数可能与论文对不上",
+        "cite": [
+          "github-jointavbench@数据与画质"
+        ]
+      },
+      {
+        "text": "版本口径：GitHub、HF WayneZENG 镜像与项目页仍写 56.2%（v1 口径），论文 v2 与 HF roverx12345 审计版为 65.3%，两个数字不是同一次实验",
+        "cite": [
+          "arxiv-2512-12772@§4.2",
+          "hf-jointavbench@Abstract",
+          "hf-roverx@Overview"
+        ]
+      },
+      {
+        "text": "答案标签口径：审计版用独立强 LLM 审计员 + 多数投票精修标签，不增删题目；论文称所有实验结果都用审计后标签重算",
+        "cite": [
+          "hf-roverx@Audit Note",
+          "arxiv-2512-12772@附录 A.4"
+        ]
+      },
+      {
+        "text": "媒体形态口径：HF 审计版同时提供 benchmark 切片与 103 个 1920×1080 原始片源（含音轨），项目页则声明因内容限制不共享原始视频、只给 YouTube 链接",
+        "cite": [
+          "hf-roverx@Video Clips and Source Links",
+          "project-page@Dataset"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2025-12-14",
+      "label": "arXiv v1 提交（ICLR 2026 会议论文）",
+      "cite": [
+        "arxiv-2512-12772@v1/v2 提交历史",
+        "arxiv-2512-12772@ICLR 2026 会议论文"
+      ]
+    },
+    {
+      "id": "v2",
+      "date": "2026-05-14",
+      "label": "arXiv v2 修订（当前版本）",
+      "cite": [
+        "arxiv-2512-12772@v1/v2 提交历史"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "片源单一：全部题目来自 SF20K 一个数据集",
+      "impact": "数据分布可能有偏，换到其他片源、题材或语言上结论不一定成立",
+      "severity": "高",
+      "response": "论文在附录 D 明确承认这一点",
+      "reader": "把 65.3% 理解为「SF20K 式英语短片 + 15 个任务」这个切片上的成绩，不是通用音视频推理上限",
+      "cite": [
+        "arxiv-2512-12772@附录 D"
+      ]
+    },
+    {
+      "issue": "自动管线质量风险：字幕缺陷、LLM 过滤、干扰项生成与长视频证据歧义都可能带错",
+      "impact": "题目与答案可能存在噪声，尽管已经过人工复核并只保留 71.8%",
+      "severity": "高",
+      "response": "论文用多阶段自动质检 + 人工四项打分 + 发布后多数投票审计逐层压噪",
+      "reader": "看某个模型的细分维度分数前先看该维度题量，小样本维度波动大",
+      "cite": [
+        "arxiv-2512-12772@附录 D",
+        "arxiv-2512-12772@§3.3"
+      ]
+    },
+    {
+      "issue": "公开媒体与论文实验媒体不一致",
+      "impact": "公开切片是 640×360 研究衍生品，论文跑的是内部高分辨率片源，第三方复现分数可能对不上",
+      "severity": "中",
+      "response": "作者在 README 中明确说明了这一差异",
+      "reader": "复现时把画质当作已知变量，不要直接据此判定论文数字虚高",
+      "cite": [
+        "github-jointavbench@数据与画质"
+      ]
+    },
+    {
+      "issue": "不同来源的最好成绩口径不一致（56.2% vs 65.3%）",
+      "impact": "项目页、GitHub 与 HF WayneZENG 镜像仍写 56.2%，论文 v2 写 65.3%，引用时极易混淆",
+      "severity": "中",
+      "response": "本档案以论文 v2 与 HF 审计版为准，同时把两个数字都列出来源",
+      "reader": "引用最好成绩时注明口径与来源版本",
+      "cite": [
+        "arxiv-2512-12772@§4.2",
+        "hf-jointavbench@Abstract",
+        "project-page@结果"
+      ]
+    },
+    {
+      "issue": "闭源模型可能见过重叠内容且无法核验",
+      "impact": "专有模型的分数可能被高估，从而拉大与开源模型的表观差距",
+      "severity": "中",
+      "response": "论文承认没有公开的训练数据披露可供验证",
+      "reader": "横比专有模型与开源模型时给这份不确定性留出余量",
+      "cite": [
+        "arxiv-2512-12772@附录 D"
+      ]
+    },
+    {
+      "issue": "许可与版权边界不清",
+      "impact": "论文附录 H 声明 CC BY-NC-SA 4.0（禁商用），两个 HF 数据卡写的是 CC BY-SA 4.0（未禁商用）；视频还来自第三方 YouTube 上传",
+      "severity": "低",
+      "response": "以论文许可声明与上游版权方为准",
+      "reader": "研究与内部评测一般可用，商用前需先澄清许可冲突",
+      "cite": [
+        "arxiv-2512-12772@附录 H",
+        "hf-roverx@License",
+        "github-jointavbench@版权"
+      ]
+    }
+  ],
+  "notes": "本站模型账本：Seed 2.0 Lite 在 Visual-Audio Understanding 组记 69.5，Seed 2.0 Mini 记 52.7（来源 https://seed.bytedance.com/en/seed2 ，抓取于 2026-08-31）。这两行是厂商自报口径，与论文 Table 3 的实验设置不同，不能直接与 65.3% 横比。",
+  "official_sources": [
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2512.12772"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/WayneZENG/JointAVBench"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/roverx12345/jointavbench"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/roverx12345/JointAVBench"
+    },
+    {
+      "kind": "site",
+      "url": "https://roverx12345.github.io/jointavbench_webpage/"
+    },
+    {
+      "kind": "site",
+      "url": "https://openreview.net/forum?id=Zg1YH8R5GG"
+    }
+  ],
+  "related_benchmarks": [
+    "avmeme",
+    "worldsense",
+    "video-mme"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-13",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      {
+        "id": "arxiv-2512-12772",
+        "kind": "paper",
+        "title": "JointAVBench: A Benchmark for Joint Audio-Visual Reasoning Evaluation（arXiv:2512.12772v2，ICLR 2026 会议论文）",
+        "url": "https://arxiv.org/abs/2512.12772",
+        "accessed": "2026-11-13",
+        "note": "一手事实主源：构建流程、统计口径、Table 3 全榜结果、附录 A–H"
+      },
+      {
+        "id": "hf-jointavbench",
+        "kind": "dataset",
+        "title": "WayneZENG/JointAVBench（Hugging Face 镜像卡）",
+        "url": "https://huggingface.co/datasets/WayneZENG/JointAVBench",
+        "accessed": "2026-11-13",
+        "note": "镜像卡：最好成绩仍写 56.2%，音频类型写作 Speech emotion，许可写作 CC BY-SA 4.0"
+      },
+      {
+        "id": "hf-roverx",
+        "kind": "dataset",
+        "title": "roverx12345/jointavbench（官方审计发布卡）",
+        "url": "https://huggingface.co/datasets/roverx12345/jointavbench",
+        "accessed": "2026-11-13",
+        "note": "官方发布：2,853 题 + 103 个 1080p 原始片源；含发布后 LLM 审计说明"
+      },
+      {
+        "id": "github-jointavbench",
+        "kind": "repo",
+        "title": "roverx12345/JointAVBench",
+        "url": "https://github.com/roverx12345/JointAVBench",
+        "accessed": "2026-11-13",
+        "note": "官方代码与评测脚本仓库，README 说明公开切片为 640×360"
+      },
+      {
+        "id": "project-page",
+        "kind": "site",
+        "title": "JointAVBench 项目主页",
+        "url": "https://roverx12345.github.io/jointavbench_webpage/",
+        "accessed": "2026-11-13",
+        "note": "项目页：最好成绩写 56.2%，声明不共享原始视频"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "中国人民大学高瓴人工智能学院、百川智能、中关村学院（ICLR 2026 会议论文）",
+        "cite": [
+          "arxiv-2512-12772@作者署名",
+          "arxiv-2512-12772@ICLR 2026 会议论文"
+        ]
+      },
+      "first_release": {
+        "v": "2025-12-14（arXiv v1 提交）",
+        "cite": [
+          "arxiv-2512-12772@v1/v2 提交历史"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "arxiv-2512-12772@Abstract",
+        "arxiv-2512-12772@§3.4",
+        "arxiv-2512-12772@§4.2"
+      ],
+      "interpretation": [
+        "arxiv-2512-12772@§4.1",
+        "github-jointavbench@数据与画质",
+        "arxiv-2512-12772@§4.2"
+      ]
+    },
+    "problem": {
+      "text": "要训 Omni-LLM，就需要「只看画面答不出、只听声音也答不出」的题；但既有音视频数据集要么只覆盖少数几种音频信号、缺少严格声画耦合，要么没有跨场景的长视频任务。论文据此造一个把音频类型、认知能力、场景跨度三个方向都铺满的评测，用来逼模型做真正的联合推理。",
+      "cite": [
+        "arxiv-2512-12772@Abstract",
+        "arxiv-2512-12772@§3.1"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机猜测基线",
+        "value": "论文未给出",
+        "note": "四选一，理论随机水平约 25%；论文没有报告随机基线，本站也不把它当官方参考线。",
+        "cite": [
+          "arxiv-2512-12772@§4.1"
+        ]
+      },
+      {
+        "label": "论文最好成绩（v2 口径）",
+        "value": "65.3%",
+        "note": "Gemini2.5-Pro（Omni-LLM，闭源）；开源侧最高为 Qwen3-Omni 63.6%（30B）。",
+        "cite": [
+          "arxiv-2512-12772@§4.2",
+          "arxiv-2512-12772@Table 3"
+        ]
+      },
+      {
+        "label": "项目页 / GitHub / HF 镜像（v1 口径）",
+        "value": "56.2%",
+        "note": "三个第一方页面仍写 56.2%，与论文 v2 的 65.3% 不是同一次实验。",
+        "cite": [
+          "project-page@结果",
+          "github-jointavbench@结果",
+          "hf-jointavbench@Abstract"
+        ]
+      },
+      {
+        "label": "联合推理是否真的有用",
+        "value": "Qwen2.5-Omni：A+V 56.5% / 仅视频 49.7% / 仅音频 51.8%",
+        "note": "Table 4：A+V 高于最佳单模态的任务数 No=9，低于最差单模态 Nu=1；多数模型 No 大于 Nu。",
+        "cite": [
+          "arxiv-2512-12772@Table 4"
+        ]
+      },
+      {
+        "label": "场景跨度难度梯度",
+        "value": "单场景约 68% / 跨场景 42–50%",
+        "note": "项目页 v1 口径；论文另测出场景数从 0–20 增到 60 以上时准确率掉约 20%。",
+        "cite": [
+          "project-page@结果",
+          "arxiv-2512-12772@§4.2"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 56.2% 和 65.3% 当成同一次实验的两个版本数字。实际是 v1 与 v2 口径：三个第一方页面停在 56.2%，论文 v2 与 HF 审计版是 65.3%。",
+        "cite": [
+          "arxiv-2512-12772@§4.2",
+          "project-page@结果",
+          "hf-roverx@Overview"
+        ]
+      },
+      {
+        "text": "以为表里分数可以直接跨模型横比。论文对开源模型统一取约 7B 档、统一 32 帧、只给问题文本，闭源模型用官方 API 默认配置，换配置就不可比。",
+        "cite": [
+          "arxiv-2512-12772@§4.1"
+        ]
+      },
+      {
+        "text": "以为拿公开的 HF 数据就能复现论文分数。公开切片是 640×360 研究衍生品，论文跑的是作者内部高分辨率片源。",
+        "cite": [
+          "github-jointavbench@数据与画质"
+        ]
+      },
+      {
+        "text": "以为 2,853 题是人工逐条标注的原创题。实际由三阶段自动管线生成 3,974 题，人工复核保留 71.8%，发布后又用 LLM 审计多数投票精修标签。",
+        "cite": [
+          "arxiv-2512-12772@§3.3",
+          "hf-roverx@Audit Note"
+        ]
+      },
+      {
+        "text": "以为许可可以商用。论文附录 H 写 CC BY-NC-SA 4.0（禁商用），两个 HF 数据卡写的是 CC BY-SA 4.0，视频还来自第三方 YouTube 上传。",
+        "cite": [
+          "arxiv-2512-12772@附录 H",
+          "hf-roverx@License",
+          "github-jointavbench@版权"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方与作者",
+        "v": "中国人民大学高瓴人工智能学院、百川智能、中关村学院；作者 Jianghan Chao、Jianzhang Gao、Wenhui Tan、Yuchong Sun、Ruihua Song、Liyun Ru",
+        "cite": [
+          "arxiv-2512-12772@作者署名"
+        ]
+      },
+      {
+        "k": "发表场合",
+        "v": "ICLR 2026 会议论文；arXiv:2512.12772，v1 于 2025-12-14 提交，v2 于 2026-05-14 修订",
+        "cite": [
+          "arxiv-2512-12772@ICLR 2026 会议论文",
+          "arxiv-2512-12772@v1/v2 提交历史"
+        ]
+      },
+      {
+        "k": "资助与算力",
+        "v": "国家自然科学基金（No. 62276268）与百川智能资助；实验在 NVIDIA H-100 上完成，单卡 80G 可复现",
+        "cite": [
+          "arxiv-2512-12772@ACKNOWLEDGMENTS",
+          "arxiv-2512-12772@附录 A.6"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "代码与评测脚本在 GitHub roverx12345/JointAVBench（覆盖 10+ 模型）；数据在 Hugging Face，项目页声明不共享原始视频、只给 YouTube 链接，HF 审计版另提供 103 个 1080p 原始片源",
+        "cite": [
+          "github-jointavbench@支持模型",
+          "project-page@Dataset",
+          "hf-roverx@Video Clips and Source Links"
+        ]
+      },
+      {
+        "k": "LLM 使用声明",
+        "v": "论文附录 F 声明：研究过程中把 LLM 作为主要数据构建工具（数据生成、质检、实验），写作阶段用 LLM 润色与纠错",
+        "cite": [
+          "arxiv-2512-12772@附录 F"
+        ]
+      },
+      {
+        "k": "内容安全",
+        "v": "论文附录 G：以 SF20K 预过滤的安全内容为基础，生成阶段走官方 Qwen API 的内置安全机制筛查提示与输出",
+        "cite": [
+          "arxiv-2512-12772@附录 G"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-13",
+        "columns": [
+          "来源",
+          "模型",
+          "参数量",
+          "类型",
+          "Avg"
+        ],
+        "rows": [
+          [
+            "论文 Table 3",
+            "Gemini2.5-Pro",
+            null,
+            "Omni-LLM",
+            "65.3"
+          ],
+          [
+            "论文 Table 3",
+            "Qwen3-Omni",
+            "30B",
+            "Omni-LLM",
+            "63.6"
+          ],
+          [
+            "论文 Table 3",
+            "Gemini2.5-Flash",
+            null,
+            "Omni-LLM",
+            "58.0"
+          ],
+          [
+            "论文 Table 3",
+            "Qwen2.5-Omni",
+            "7B",
+            "Omni-LLM",
+            "56.5"
+          ],
+          [
+            "论文 Table 3",
+            "VideoLLaMA2",
+            "7B",
+            "Omni-LLM",
+            "46.8"
+          ],
+          [
+            "论文 Table 3",
+            "v-SALMONN-2+",
+            "7B",
+            "Omni-LLM",
+            "46.7"
+          ],
+          [
+            "论文 Table 3",
+            "OneLLM",
+            "7B",
+            "Omni-LLM",
+            "36.9"
+          ],
+          [
+            "论文 Table 3",
+            "v-SALMONN-o1",
+            "7B",
+            "Omni-LLM",
+            "36.4"
+          ],
+          [
+            "论文 Table 3",
+            "v-SALMONN",
+            "7B",
+            "Omni-LLM",
+            "35.8"
+          ],
+          [
+            "论文 Table 3",
+            "AVicuna",
+            "7B",
+            "Omni-LLM",
+            "31.0"
+          ],
+          [
+            "论文 Table 3",
+            "InternVL-2.5",
+            "8B",
+            "Video-LLM",
+            "51.7"
+          ],
+          [
+            "论文 Table 3",
+            "VideoLLaMA3",
+            "7B",
+            "Video-LLM",
+            "50.0"
+          ],
+          [
+            "论文 Table 3",
+            "Qwen2.5-VL",
+            "7B",
+            "Video-LLM",
+            "47.7"
+          ],
+          [
+            "论文 Table 3",
+            "LLaVA-Video",
+            "7B",
+            "Video-LLM",
+            "47.1"
+          ],
+          [
+            "论文 Table 3",
+            "GPT-4o",
+            null,
+            "Video-LLM",
+            "45.0"
+          ],
+          [
+            "论文 Table 3",
+            "Kimi-Audio",
+            "7B",
+            "Audio-LLM",
+            "45.6"
+          ],
+          [
+            "论文 Table 3",
+            "Qwen2-Audio",
+            "7B",
+            "Audio-LLM",
+            "39.5"
+          ],
+          [
+            "论文 Table 4",
+            "Qwen2.5-Omni（A+V）",
+            "7B",
+            "Omni-LLM",
+            "56.5"
+          ],
+          [
+            "论文 Table 4",
+            "Qwen2.5-Omni（仅视频）",
+            "7B",
+            "Omni-LLM",
+            "49.7"
+          ],
+          [
+            "论文 Table 4",
+            "Qwen2.5-Omni（仅音频）",
+            "7B",
+            "Omni-LLM",
+            "51.8"
+          ],
+          [
+            "项目页（v1 口径）",
+            "未点名模型",
+            null,
+            "Omni-LLM",
+            "56.2"
+          ]
+        ]
+      },
+      "cite": [
+        "arxiv-2512-12772@Table 3",
+        "arxiv-2512-12772@Table 4",
+        "project-page@结果"
+      ]
+    }
+  }
+}

@@ -1,0 +1,429 @@
+{
+  "id": "cc-ocr-bench-v2",
+  "name": "CC-OCR v2",
+  "full_name": "CC-OCR V2：真实世界视觉文档理解中大型多模态模型失败的细粒度归因（Fine-Grained Attribution of LMM Failures in Real-World Visual Document Understanding）",
+  "aliases": ["CC-OCR-Bench-V2"],
+  "status": null,
+  "categories": ["multimodal"],
+  "summary": "用真实采集的文档图像考察大模型「识字 + 处理」能力的评测集：5 条轨道、16 个子任务、74 个应用场景共 7,093 题，每道题额外标注光照、屏摄、成像质量等 10 个文档因素，用来把模型的失败归因到具体采集条件。",
+  "interpretation": "高分说明模型在翻拍、屏幕拍摄、复杂光照等真实条件下仍能稳定读出并处理文档；低分不等于不认字——论文显示总分相近的模型失败模式可能完全不同（有的错在区域定位，有的错在结构还原）。该分数不说明模型在干净合成文档上的上限，也不覆盖交互式文档流程。",
+  "measures": [
+    {
+      "area": "文字识别 Recognition",
+      "focus": "多场景自然图像文字 + 32 语种识别。示例题：识别一张翻拍的、中英混排并带手写批注的会议白板照片，输出全文转录。",
+      "share": "1,790 样本（自然场景识别 1,150 + 多语种识别 640）",
+      "format": "图像 → 全文转录字符串",
+      "cite": ["hf-cc-ocr-v2@子任务统计", "repo-cc-ocr-v2@README", "arxiv-2605-03903@§3"]
+    },
+    {
+      "area": "文档解析 Parsing",
+      "focus": "把文档解析成结构标记。覆盖复杂表格、公式、分子结构、通用文档与信息板五类子任务。",
+      "share": "826 样本（复杂表格 300 / 通用文档 300 / 公式 100 / 分子式 100 / 信息板 26）",
+      "format": "图像 → LaTeX / HTML / SMILES 等结构化标记",
+      "cite": ["hf-cc-ocr-v2@子任务统计", "repo-cc-ocr-v2@README"]
+    },
+    {
+      "area": "文档定位 Grounding",
+      "focus": "在文档图像中框出题目要求的文本或语义对象，考察「读对了」能否落到「指对位置」。",
+      "share": "1,468 样本（文本定位 734 + 目标定位 734）",
+      "format": "图像 → 边界框坐标",
+      "cite": ["hf-cc-ocr-v2@子任务统计", "repo-cc-ocr-v2@README"]
+    },
+    {
+      "area": "关键信息抽取 Extraction / KIE",
+      "focus": "按预定义 schema 抽取字段值。覆盖商业交易、公共服务、受监管档案三类真实表单场景。",
+      "share": "1,009 样本（商业交易 340 / 公共服务 369 / 受监管档案 300）",
+      "format": "图像 → 字段-值结构化结果",
+      "cite": ["hf-cc-ocr-v2@子任务统计", "repo-cc-ocr-v2@README"]
+    },
+    {
+      "area": "文档问答 QA",
+      "focus": "基于文档内容作答，含事实型与数值型题目。覆盖仪表盘、蓝图、金融文档四类子任务。",
+      "share": "2,000 样本（仪表盘数值 500 / 仪表盘事实 400 / 金融文档 1,000 / 蓝图 100）",
+      "format": "图像 + 问题 → 答案字符串",
+      "cite": ["hf-cc-ocr-v2@子任务统计", "hf-cc-ocr-v2@数据实例", "repo-cc-ocr-v2@README"]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "干净合成或渲染文档上的理想条件上限：基准明确「不复现任何特定生产环境的自然分布」，而是有意保留困难与易失败样本。",
+      "cite": ["arxiv-2605-03903@§2.1"]
+    },
+    {
+      "text": "文档域之外的一般视觉识别：前代基准里的交通标志、视频广告、网络迷因等样本在重建时被显式剔除。",
+      "cite": ["arxiv-2605-03903@§2.1"]
+    }
+  ],
+  "dataset": {
+    "sample_count": 7093,
+    "splits": [
+      "官方未划分 train / validation / test：7,093 题为一次性评测集，Hugging Face 数据卡只给出总量",
+      "按 5 条轨道 / 16 个子任务 / 74 个应用场景层级组织",
+      "可按 10 个文档类别与 10 个诊断维度二次切分做归因分析"
+    ],
+    "languages": [
+      "识别套件覆盖 32 种语言（共 640 个多语种识别样本）",
+      "Hugging Face 数据卡标注 English / Chinese"
+    ],
+    "source_type": "human_curated",
+    "public_sample": true,
+    "totals": "7,093 题：识别 1,790、问答 2,000、定位 1,468、抽取 1,009、解析 826；覆盖 10 类真实文档，识别套件内含 32 种语言",
+    "cite": ["hf-cc-ocr-v2@子任务统计", "arxiv-2605-03903@摘要", "arxiv-2605-03903@附录 A.4"],
+    "construction": [
+      {
+        "k": "重建而非追加",
+        "text": "以 CC-OCR v1 为底但整体重建，而非简单追加样本。先全面复查原基准，剔除三类实例：文档域之外的样本、标注不一致的样本、以及轻量模型也能稳定做对的过易样本。",
+        "cite": ["arxiv-2605-03903@§2.1"]
+      },
+      {
+        "k": "三路补充来源",
+        "text": "题量来自三个来源：继承自 CC-OCR 的样本、公开语料与网页收集的文档、以及真实文档处理环境中收集的挑战性案例。补充重点覆盖此前不足的任务、文档类别和语言。",
+        "cite": ["arxiv-2605-03903@附录 A.1", "arxiv-2605-03903@§2.1"]
+      },
+      {
+        "k": "样本级因素标注",
+        "text": "每道题在任务标签之外，还标注文档类别、语言，以及 10 个文档因素各一个互斥类别。因素包括成像方式、图像质量、光照与屏幕（刻画采集过程与呈现条件）、自然干扰、对抗或误导因素、字体与文本形态、混合布局、几何与排布、版面结构、语言。",
+        "cite": ["arxiv-2605-03903@§2.2"]
+      },
+      {
+        "k": "多阶段标注与质检",
+        "text": "主标 → 复核 → 共识裁决；结构化输出额外检查生成的标记是否保留原内容与结构关系，定位/抽取/问答的预测区域、字段关联与参考答案直接对照源文档核对。",
+        "cite": ["arxiv-2605-03903@附录 A.11"]
+      },
+      {
+        "k": "自动检查与难度过滤",
+        "text": "人工核验后先跑自动一致性检查（缺字段、非法输出格式、重复样本、类别指派不一致），再用多个代表性端侧模型做难度感知过滤，删掉所有过滤模型都能一致做对的样本。",
+        "cite": ["arxiv-2605-03903@附录 A.11"]
+      },
+      {
+        "k": "脱敏与授权",
+        "text": "来自生产环境的样本仅收录授权可公开再分发的部分，发布前移除敏感信息与个人身份信息。",
+        "cite": ["arxiv-2605-03903@附录 A.1"]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "所有模型使用同一套任务特定提示词，确定性解码、温度设为 0；端侧模型用 vLLM + FlashAttention 部署，服务端模型走各自官方 API。评分按轨道分别计算，论文 Table 2 的 Average 是五轨分数的简单算术平均（不按题量加权）。",
+    "cite": ["arxiv-2605-03903@§3", "arxiv-2605-03903@Table 2"],
+    "variants": [
+      {
+        "text": "端侧与服务端走不同推理路径（vLLM + FlashAttention 部署 vs 官方 API），跨组比较时推理框架、量化与版本不完全受控。",
+        "cite": ["arxiv-2605-03903@§3"]
+      },
+      {
+        "text": "同一家族的不同快照是分开参评的（如 Claude Opus 4.6 / 4.8、GPT-5.4 / 5.5、Kimi K2.5 / K2.6），模型标识与发布日期见论文 Table 5，引用时不可混为一个「Claude」或「GPT」成绩。",
+        "cite": ["arxiv-2605-03903@Table 2"]
+      },
+      {
+        "text": "总分是五轨简单平均，识别与问答分高、定位分低，只看 Average 会高估模型的文档定位能力；单轨引用与平均分引用可能得出不同排序。",
+        "cite": ["arxiv-2605-03903@§4.1"]
+      },
+      {
+        "text": "官方仓库 README 写「Extensive experiments on 14 advanced LMMs」，论文 Table 2 实际列出 17 个模型；引用实验规模时需注明口径。",
+        "cite": ["repo-cc-ocr-v2@README", "arxiv-2605-03903@Table 2"]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "five-track-average",
+      "name": "五轨宏平均分（Average）",
+      "direction": "越高越好",
+      "description": "论文 Table 2 的主汇总指标：对 Recognition / Parsing / Grounding / Extraction / QA 五条轨道分数取简单算术平均，不按各轨题量加权。用于跨模型总排名。",
+      "range": "0–100",
+      "unit": "分",
+      "cite": ["arxiv-2605-03903@Table 2", "arxiv-2605-03903@§4.1"]
+    },
+    {
+      "id": "recognition-multiset-micro-f1",
+      "name": "多集合 micro-F1（Recognition）",
+      "direction": "越高越好",
+      "description": "识别轨指标：按全文多集合方式比对预测与参考答案，在全库上聚合精确率与召回率的 micro 平均，而非逐样本平均。",
+      "range": "0–100",
+      "unit": "分",
+      "cite": ["arxiv-2605-03903@§3"]
+    },
+    {
+      "id": "parsing-ned-teds",
+      "name": "归一化编辑相似度 NED 与 TEDS（Parsing）",
+      "direction": "越高越好",
+      "description": "解析轨按子任务分流：通用文档、公式、分子结构用归一化编辑相似度；复杂表格用树编辑相似度 TEDS；信息板解析则把字符级 micro-F1 与 TEDS 加权合成一个分数。",
+      "range": "0–100",
+      "unit": "分",
+      "cite": ["arxiv-2605-03903@§3"]
+    },
+    {
+      "id": "grounding-miou-acc",
+      "name": "宏平均 mIoU 与 Acc@0.5（Grounding）",
+      "direction": "越高越好",
+      "description": "定位轨遵循视觉 grounding 协议：按 IoU 计算每个样本的交并比，主分数为对所有样本取宏平均的 mIoU；Acc@0.5 为 IoU 是否达到 0.5 的通过率，作为附加指标。",
+      "range": "0–100",
+      "unit": "分",
+      "cite": ["arxiv-2605-03903@§3"]
+    },
+    {
+      "id": "kie-field-micro-f1",
+      "name": "字段级 micro-F1（Extraction / KIE）",
+      "direction": "越高越好",
+      "description": "抽取轨沿用 KIE 工作的归一化字段级 micro-F1：未匹配到的真值字段计为假阴性，在全库上按字段聚合精确率与召回率。",
+      "range": "0–100",
+      "unit": "分",
+      "cite": ["arxiv-2605-03903@§3"]
+    },
+    {
+      "id": "qa-nls-containment",
+      "name": "归一化 Levenshtein 相似度 + 包含式精确匹配（QA）",
+      "direction": "越高越好",
+      "description": "问答轨沿用文档 VQA 评测：长答案用归一化 Levenshtein 相似度，短答案（按空白分词后词数极少）用包含式精确匹配，即预测中包含真值答案即得分。",
+      "range": "0–100",
+      "unit": "分",
+      "cite": ["arxiv-2605-03903@§3"]
+    }
+  ],
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2026-05-05",
+      "label": "CC-OCR v1（arXiv v1 首次提交）。前代基准覆盖识别 / 解析 / 抽取三类任务，7,058 样本、10 种语言，结果按 3 个任务类别与 39 个预定义子集组织。",
+      "cite": ["arxiv-2605-03903@提交历史", "arxiv-2605-03903@Table 1"]
+    },
+    {
+      "id": "v2",
+      "date": "2026-08-10",
+      "label": "CC-OCR v2（arXiv 当前版本）。扩到 5 条轨道、16 子任务、7,093 样本、10 个文档类别、32 语种识别套件，并新增 10 个样本级诊断维度与 17 个 LMM 的系统实验。",
+      "cite": ["arxiv-2605-03903@提交历史", "arxiv-2605-03903@摘要"]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "聚合平均分掩盖能力剖面差异",
+      "impact": "总分相近的模型失败模式可能完全不同，只按 Average 选型会误判模型在具体场景的适用性。",
+      "severity": "高",
+      "response": "论文在摘要与 §4.1 明确指出该问题，并提供按文档因素拆分的归因分析、按文档类别的分解表与 13 类失败类型案例。",
+      "reader": "把 Average 当粗筛，再按目标场景查对应单轨分数与相关文档因素的表现。",
+      "cite": ["arxiv-2605-03903@摘要", "arxiv-2605-03903@§4.1"]
+    },
+    {
+      "issue": "无人类基线与随机基线",
+      "impact": "无法判断 76.57 这类分数距离人类可用水平还有多远，也没有噪声下限可用来校准指标。",
+      "severity": "高",
+      "response": "论文只报告 17 个 LMM 之间的横向比较，未给出人类或随机基线；未见官方回应。",
+      "reader": "把分数理解为模型间的相对比较，不要当成绝对达标线。",
+      "cite": ["arxiv-2605-03903@§4.1"]
+    },
+    {
+      "issue": "Grounding 轨区分度集中且整体偏低",
+      "impact": "解析、抽取、定位三条轨明显难于识别与问答；定位轨 17 个模型中有 9 个不足 14 分，平均分主要由识别与问答拉动。",
+      "severity": "中",
+      "response": "论文按样本级文档因素做归因，并在附录 A.6 给出 13 类代表性失败类型（含空间定位偏移、字段-值错绑等）。",
+      "reader": "关心文档定位时直接看 Grounding 轨分数，不要只看 Average。",
+      "cite": ["arxiv-2605-03903@§4.1", "arxiv-2605-03903@Table 2", "arxiv-2605-03903@附录 A.6"]
+    },
+    {
+      "issue": "多语种表现不均衡",
+      "impact": "32 语种中阿拉伯语在各模型家族上退化最一致，韩语、卢森堡语、英语及多个长尾语种也出现大的模型间波动，没有单一模型通吃所有书写系统。",
+      "severity": "中",
+      "response": "论文在附录 A.4 给出全部 32 个语种子集的逐模型 micro-F1 热图与平均分，并指出头部模型在高资源语言上稳定。",
+      "reader": "面向多语种场景时查附录 A.4 的目标语种行，不要用识别轨均分代表全部语种。",
+      "cite": ["arxiv-2605-03903@附录 A.4"]
+    },
+    {
+      "issue": "实验规模口径在仓库与论文间不一致",
+      "impact": "官方仓库 README 称在 14 个先进 LMM 上实验，论文 Table 2 列出 17 个模型；直接引用「14」或「17」而不注明出处会造成矛盾。",
+      "severity": "中",
+      "response": "未见官方回应；论文 Table 2 与 Table 5 的模型清单为更完整的口径。",
+      "reader": "引用模型数量时以论文 Table 2 为准，并说明仓库 README 的表述不同。",
+      "cite": ["repo-cc-ocr-v2@README", "arxiv-2605-03903@Table 2"]
+    },
+    {
+      "issue": "样本分布不代表任何真实产线",
+      "impact": "为最大化覆盖度与诊断价值，基准有意保留困难与易失败案例，题目难度分布高于真实产线的自然分布。",
+      "severity": "低",
+      "response": "论文明确说明该设计取舍，并用文档因素标注支持按条件分解分析。",
+      "reader": "把绝对分当压力测试结果，不要直接换算成产线故障率。",
+      "cite": ["arxiv-2605-03903@§2.1"]
+    },
+    {
+      "issue": "数据卡标题与论文标题不一致",
+      "impact": "Hugging Face 数据卡标题为「CC-OCR V2: Benchmarking Large Multimodal Models for Literacy in Real-world Document Processing」，与 arXiv 论文标题措辞不同，作者排序也不同，容易被误当成两项工作。",
+      "severity": "低",
+      "response": "数据卡自带 arXiv 编号 2605.03903，与论文为同一份工作。",
+      "reader": "以 arXiv 2605.03903 为准，数据卡标题仅作别称参考。",
+      "cite": ["hf-cc-ocr-v2@数据集卡", "arxiv-2605-03903@摘要"]
+    }
+  ],
+  "official_sources": [
+    { "kind": "paper", "url": "https://arxiv.org/abs/2605.03903" },
+    { "kind": "dataset", "url": "https://huggingface.co/datasets/Eioss/CC-OCR-V2" },
+    { "kind": "repo", "url": "https://github.com/eioss/CC-OCR-V2" }
+  ],
+  "related_benchmarks": ["ocr-bench-v2", "omnidocbench"],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "arxiv-2605-03903",
+        "kind": "paper",
+        "title": "CC-OCR v2: Fine-Grained Attribution of LMM Failures in Real-World Visual Document Understanding（arXiv:2605.03903v2）",
+        "url": "https://arxiv.org/abs/2605.03903",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "hf-cc-ocr-v2",
+        "kind": "dataset",
+        "title": "Eioss/CC-OCR-V2 · Hugging Face Datasets",
+        "url": "https://huggingface.co/datasets/Eioss/CC-OCR-V2",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "repo-cc-ocr-v2",
+        "kind": "repo",
+        "title": "GitHub - Eioss/CC-OCR-V2",
+        "url": "https://github.com/eioss/CC-OCR-V2",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "东北大学与阿里巴巴集团（含 Qwen Team, Alibaba Group）研究者联合发布；代码与数据分别托管在 GitHub 的 Eioss 组织与 Hugging Face。",
+        "cite": ["arxiv-2605-03903@作者块", "repo-cc-ocr-v2@仓库信息"]
+      },
+      "first_release": {
+        "v": "2026-05-05（arXiv v1 首次提交；当前版本 v2 修订于 2026-08-10）",
+        "cite": ["arxiv-2605-03903@提交历史"]
+      }
+    },
+    "cites": {
+      "summary": ["arxiv-2605-03903@摘要", "hf-cc-ocr-v2@子任务统计"],
+      "interpretation": ["arxiv-2605-03903@摘要", "arxiv-2605-03903@§4.1"]
+    },
+    "problem": {
+      "text": "既有 OCR 基准要么任务范围偏离真实文档处理流程，要么假设采集条件一致，只给任务级或基准级总分，回答不了「模型在翻拍、屏摄、差光照的真实条件下还可靠吗」。CC-OCR v2 围绕真实文档处理中反复出现的 5 类操作重组评测，并用 10 个样本级文档因素把失败归因到具体采集条件与文档特征上。",
+      "cite": ["arxiv-2605-03903@§1", "arxiv-2605-03903@摘要"]
+    },
+    "ladder": [
+      {
+        "label": "随机 / 人类基线",
+        "value": "论文未给出",
+        "note": "论文只做 17 个 LMM 之间的横向比较，未报告随机基线与人类基线。",
+        "cite": ["arxiv-2605-03903@§4.1"]
+      },
+      {
+        "label": "论文中平均分最低的参评模型",
+        "value": "Step3-VL-10B，Average 40.96",
+        "note": "Table 2 中 17 个参评模型的平均分下限，可作为该基准的粗略难度参照。",
+        "cite": ["arxiv-2605-03903@Table 2"]
+      },
+      {
+        "label": "论文发布时最好成绩（Average）",
+        "value": "Qwen3.7-Plus，76.57",
+        "note": "与 Qwen3.6-Plus 的 76.50 几乎持平。单轨最好成绩：Recognition 93.99（Gemini 3.1 Pro）、Parsing 67.94（Kimi K2.5）、Grounding 69.57（Qwen3.7-Plus）、Extraction 69.38（Gemini 3.1 Pro）、QA 88.74（Kimi K2.5）。",
+        "cite": ["arxiv-2605-03903@§4.1", "arxiv-2605-03903@Table 2"]
+      },
+      {
+        "label": "多语种识别子集最好成绩",
+        "value": "Gemini 3.1 Pro，94.4",
+        "note": "附录 A.4 的 32 语种识别子集（640 样本）平均分，与 Table 2 的 Recognition 轨（1,790 样本）不是同一口径。",
+        "cite": ["arxiv-2605-03903@附录 A.4"]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 76.57 的五轨平均读成「模型会读文档了」。平均分被分数最高的识别与问答拉动；定位轨最好成绩只有 69.57，17 个模型中有 9 个不足 14 分。",
+        "cite": ["arxiv-2605-03903@§4.1", "arxiv-2605-03903@Table 2"]
+      },
+      {
+        "text": "把 CC-OCR v2 当成 CC-OCR 的增补子集。v2 剔除了 v1 中非文档域、标注不一致与过易样本后整体重建，两版的样本量、语言覆盖与任务类别都不同。",
+        "cite": ["arxiv-2605-03903@§2.1", "arxiv-2605-03903@Table 1"]
+      },
+      {
+        "text": "把多语种子集的 94.4 和 Table 2 识别轨的 93.99 当同一个数。前者是附录 A.4 的 32 语种识别子集平均，后者是 Recognition 轨全量平均，样本范围不同。",
+        "cite": ["arxiv-2605-03903@附录 A.4", "arxiv-2605-03903@Table 2"]
+      },
+      {
+        "text": "看到 Hugging Face 数据卡标题里的「Benchmarking LMMs for Literacy in Real-world Document Processing」就当成另一项工作。数据卡与 arXiv 论文指向同一编号 2605.03903，只是标题措辞与作者排序不同。",
+        "cite": ["hf-cc-ocr-v2@数据集卡", "arxiv-2605-03903@摘要"]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "东北大学与阿里巴巴集团（含 Qwen Team, Alibaba Group）联合发布，部分作者来自清华大学；代码与数据托管在 GitHub 的 Eioss 组织与 Hugging Face。",
+        "cite": ["arxiv-2605-03903@作者块", "repo-cc-ocr-v2@仓库信息"]
+      },
+      {
+        "k": "核心作者",
+        "v": "Chunyi Peng、Zhipeng Xu、Yuqi Xiong 等；论文标注 ∗ 为项目负责人、† 为通讯作者，Maosong Sun（清华大学）在列。",
+        "cite": ["arxiv-2605-03903@作者块"]
+      },
+      {
+        "k": "时间线",
+        "v": "arXiv v1 提交于 2026-05-05；v2（当前版本）修订于 2026-08-10。",
+        "cite": ["arxiv-2605-03903@提交历史"]
+      },
+      {
+        "k": "与前代的关系",
+        "v": "CC-OCR v1 覆盖识别 / 解析 / 抽取，7,058 样本、10 种语言，结果按 3 个任务类别与 39 个预定义子集组织；论文指出这些子集不构成可跨任务一致应用的样本级诊断分类体系。v2 扩到 5 轨并引入 10 个样本级诊断维度。",
+        "cite": ["arxiv-2605-03903@Table 1"]
+      },
+      {
+        "k": "数据与代码位置",
+        "v": "数据集 Eioss/CC-OCR-V2（MIT，总文件大小约 5.19 GB，上月下载 13,003 次，Dataset Viewer 已关闭）；代码仓库 Eioss/CC-OCR-V2（MIT，18 stars / 3 forks / 17 commits），仓库内含逐样本分数与汇总 CSV。",
+        "cite": ["hf-cc-ocr-v2@元数据", "repo-cc-ocr-v2@仓库信息"]
+      },
+      {
+        "k": "许可与再分发",
+        "v": "CC-OCR 以 MIT 许可发布，继承样本按原许可条款再分发；公开语料与网页文档遵循原提供方许可；生产环境样本仅收录授权可公开再分发的部分，发布前移除敏感信息与个人身份信息。",
+        "cite": ["arxiv-2605-03903@附录 A.1"]
+      },
+      {
+        "k": "评测工具链",
+        "v": "仓库提供 OpenAI 兼容 API 的推理脚本 src/request_openai.py 与统一评测入口 src/evaluate_results.py（支持 recognition / parsing / grounding / kie / vqa），另有批量 shell 脚本；EvalScope 也支持用 OpenAI 兼容端点评该基准。",
+        "cite": ["repo-cc-ocr-v2@README"]
+      },
+      {
+        "k": "标注质量自检",
+        "v": "论文用 Qwen3-VL-Embedding-2B 把图文对编码成多模态向量：t-SNSE 显示多个文档类型形成紧凑可分的簇（医疗文档与屏幕截图高度独立），并以 top-10 近邻标签一致率做定量核验。",
+        "cite": ["arxiv-2605-03903@附录 A.2"]
+      },
+      {
+        "k": "诊断维度一致性",
+        "v": "论文对四个代表性诊断维度报告了近邻标签一致率，并指出成像方式维度的宏一致率最高，说明该维度下的类别相对最可区分。",
+        "cite": ["arxiv-2605-03903@附录 A.2"]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-08-10",
+        "columns": ["模型", "部署", "Recognition", "Parsing", "Grounding", "Extraction", "QA", "Average"],
+        "rows": [
+          ["Step3-VL-10B", "端侧", "40.95", "29.36", "3.37", "56.50", "74.60", "40.96"],
+          ["InternVL3.5-8B", "端侧", "46.36", "53.99", "11.37", "54.75", "75.04", "48.30"],
+          ["MiniCPM-o 4.5-8B", "端侧", "61.09", "50.91", "13.75", "50.68", "83.41", "51.97"],
+          ["Qwen3.5-9B", "端侧", "83.89", "58.62", "47.06", "62.55", "84.64", "67.35"],
+          ["GPT-5.4", "服务端", "72.35", "62.59", "11.76", "57.94", "78.82", "56.69"],
+          ["Qwen-VL-Max", "服务端", "81.77", "54.92", "3.70", "64.40", "83.33", "57.62"],
+          ["Claude Opus 4.6", "服务端", "80.74", "58.69", "7.69", "63.00", "84.09", "58.84"],
+          ["Claude Sonnet 4.6", "服务端", "82.90", "61.84", "7.87", "63.02", "83.52", "59.83"],
+          ["Gemini 3.1 Flash", "服务端", "93.61", "64.67", "7.33", "62.17", "79.41", "61.44"],
+          ["GPT-5.5", "服务端", "74.30", "63.67", "41.15", "63.46", "78.62", "64.24"],
+          ["Claude Opus 4.8", "服务端", "82.89", "65.39", "2.59", "67.10", "86.75", "65.39"],
+          ["Gemini 3.1 Pro", "服务端", "93.99", "66.51", "37.07", "69.38", "83.98", "70.19"],
+          ["Kimi K2.6", "服务端", "84.74", "67.61", "56.70", "66.73", "88.50", "72.86"],
+          ["Seed 2.0 Pro", "服务端", "92.48", "66.78", "58.67", "63.80", "83.11", "72.97"],
+          ["Kimi K2.5", "服务端", "87.26", "67.94", "55.64", "67.13", "88.74", "73.34"],
+          ["Qwen3.6-Plus", "服务端", "92.31", "64.97", "69.37", "68.48", "87.34", "76.50"],
+          ["Qwen3.7-Plus", "服务端", "92.93", "64.32", "69.57", "68.53", "87.49", "76.57"]
+        ]
+      },
+      "cite": ["arxiv-2605-03903@Table 2"]
+    }
+  }
+}

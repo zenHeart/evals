@@ -1,0 +1,755 @@
+{
+  "id": "dense200",
+  "name": "Dense200",
+  "full_name": "Dense200（Rex-Omni 论文引入的密集小目标检测基准）",
+  "aliases": [
+    "Dense-200"
+  ],
+  "status": "active",
+  "categories": [
+    "multimodal"
+  ],
+  "summary": "Dense200 是 IDEA 研究院 Rex-Omni 论文（2025-10）引入的密集小目标检测基准：200 张人工收集的图、109 个类别、平均每图 91.2 个边界框，标注与图片在 Hugging Face 公开可下载；Qwen3.8-Max 等厂商发布表也引用它，但各家口径不同。",
+  "interpretation": "高分说明模型在拥挤场景里能把图中已标注类别的每个小目标都框出来或点出来，精度与召回都高；它不说明模型能自主发现新类别，也不说明计数准确（计数另用 MAE，视觉提示任务下多数 MLLM 的 MAE 仍差专用计数模型很远）。厂商自报分与论文 F1 口径不可直接比较。",
+  "measures": [
+    {
+      "area": "密集 / 小目标检测（文本提示，框输出）",
+      "focus": "对每张图逐类查询已标注类别，输出该类别的全部实例框；公开标注中的类别为具体物体名词（如 chicken、microorganisms、tomato）",
+      "share": "200 张图 / 109 个类别（论文口径）",
+      "format": "边界框检测，F1@IoU 0.5 / 0.95 / mIoU",
+      "cite": [
+        "paper@§5.3",
+        "paper@§5.1",
+        "dataset"
+      ]
+    },
+    {
+      "area": "物体指点（pointing，点输出）",
+      "focus": "对每个已标注类别预测物体位置点，点落在真值框经 SAM 生成的 mask 内判正确",
+      "share": "同一批 200 张图复用为指点基准（论文未给出单独题量）",
+      "format": "点输出，F1@Point",
+      "cite": [
+        "paper@§5.6",
+        "paper@Table 7"
+      ]
+    },
+    {
+      "area": "视觉提示检测（visual prompting）",
+      "focus": "每个真值类别随机采一个框作视觉提示，找出图中该类其余全部物体；同时用 MAE 考察计数",
+      "share": "同一批 200 张图复用（论文未给出单独题量）",
+      "format": "框输出 F1@IoU + 计数 MAE",
+      "cite": [
+        "paper@§5.5",
+        "paper@Table 6"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "开放词汇 / 自主类别发现：评测只查询图内已标注的真值类别，不考模型自行提出类别",
+      "cite": [
+        "paper@§5.1"
+      ]
+    },
+    {
+      "text": "检测 mAP 与置信度校准：论文明确说 AP 依赖置信度分数、对多模态模型不适用，因此不采用",
+      "cite": [
+        "paper@§5.1"
+      ]
+    },
+    {
+      "text": "指代表达理解（REC）：提示是真值类别名而非自然语言表达，复杂语言理解不在本基准考察范围",
+      "cite": [
+        "paper@§5.1"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 200,
+    "splits": [
+      "公开评测集 200 张（单一集，论文未划分 train / val / test）"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "manually collected（论文自述人工收集；原始图片来源未披露）",
+    "public_sample": true,
+    "totals": "200 张密集标注图像、109 个类别（论文口径），平均每图 91.2 个框、平均框尺寸 66.8×64.5 像素；本站统计公开标注文件为 200 行、每行一张图且只含 1 个类别、共出现 108 个不同类别名。任务形态为文本提示检测 / 指点 / 视觉提示三种，指标分别为 F1@IoU、F1@Point、F1@IoU+MAE",
+    "cite": [
+      "paper@§5.3",
+      "dataset",
+      "repo"
+    ],
+    "construction": [
+      {
+        "k": "图像收集",
+        "text": "论文称 Dense200 为 manually collected 的 200 张密集标注图像；论文未说明图片的原始来源、采集渠道，也未说明是否来自 SA-1B 等公开数据集。",
+        "cite": [
+          "paper@§5.3"
+        ]
+      },
+      {
+        "k": "密集标注",
+        "text": "每张图平均 91.2 个边界框，覆盖 109 个类别，平均框尺寸 66.8×64.5 像素（论文口径）。",
+        "cite": [
+          "paper@§5.3"
+        ]
+      },
+      {
+        "k": "公开发布",
+        "text": "图片打包为 dense200.tar.gz，标注以 JSONL 发布在 Hugging Face（Mountchicken/Rex-Omni-EvalData 的 _annotations/box_eval/Dense200.jsonl），字段含 image_path / categories / gt，dataset_name 为 Dense200、task_name 为 common_object_detection。",
+        "cite": [
+          "dataset",
+          "repo"
+        ]
+      },
+      {
+        "k": "评测接入",
+        "text": "Rex-Omni 仓库 Evaluation Guide 把 Dense200 列入 box_eval / point_eval / visual_prompt_eval 三种 --dataset 选项，评测数据从同一 Hugging Face 数据集下载。",
+        "cite": [
+          "repo"
+        ]
+      },
+      {
+        "k": "提示构造",
+        "text": "对多模态模型逐类查询（如「Detect dog in this image」），SEED1.5-VL 与 Rex-Omni 可一次查询全部类别；Rex-Omni 的评测使用 sampling temperature 0。",
+        "cite": [
+          "paper@§5.1"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "f1-iou",
+      "name": "F1@IoU（0.5 / 0.95 / mIoU）",
+      "direction": "越高越好",
+      "description": "检测主指标：Recall 与 Precision 按类别计算后取平均，F1 为两者调和平均；IoU 阈值 0.5 至 0.95、步长 0.05，报告 IoU=0.5、IoU=0.95 与阈值均值（mIoU）三档",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§5.1",
+        "paper@§5.3"
+      ]
+    },
+    {
+      "id": "f1-point",
+      "name": "F1@Point（物体指点）",
+      "direction": "越高越好",
+      "description": "指点指标：为每个真值框用 SAM 生成 mask，预测点落入对应 mask 判正确，再按检测方式计算 Recall / Precision / F1",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§5.6"
+      ]
+    },
+    {
+      "id": "mae-count",
+      "name": "MAE（物体计数，视觉提示任务）",
+      "direction": "越低越好",
+      "description": "预测物体数与真值物体数绝对差的全数据集平均，用于衡量密集场景下的计数能力",
+      "range": [
+        0,
+        null
+      ],
+      "unit": "count",
+      "cite": [
+        "paper@§5.5"
+      ]
+    }
+  ],
+  "default_protocol": {
+    "raw": "论文 §5.1 协议，Dense200 原样复用（§5.3）：对多模态模型逐类查询真值类别，输出该类别的全部框；Recall 与 Precision 按类别计算后平均，F1 取调和平均；IoU 阈值 0.5–0.95（步长 0.05），报告 F1@0.5、F1@0.95 与 mIoU。对闭集 / 开放集检测器，论文额外在 0–1（步长 0.01）的置信度阈值上扫描 F1 并取最高值（Table 4 中 Grounding DINO-Swin-T 一行标注阈值 0.25）；Rex-Omni 系列评测使用 sampling temperature 0。",
+    "cite": [
+      "paper@§5.1",
+      "paper@§5.3",
+      "paper@Table 4"
+    ],
+    "variants": [
+      {
+        "text": "任务形态不同则分数不可互换：同一批图有检测（F1@IoU）、指点（F1@Point）、视觉提示（F1@IoU + MAE）三种用法。",
+        "cite": [
+          "paper@§5.3",
+          "paper@§5.5",
+          "paper@§5.6"
+        ]
+      },
+      {
+        "text": "检测器与 MLLM 的 F1 口径不同：开放集 / 闭集检测器取置信度扫描后的最高 F1，MLLM 不做该扫描，两类数字并列时需注意。",
+        "cite": [
+          "paper@§5.1"
+        ]
+      },
+      {
+        "text": "厂商自报口径未披露：Qwen3.8-Max 发布博客给出 Dense200 87.0，但该行没有 footnote，未说明指标（F1@0.5 还是 mIoU）、提示与工具协议，与论文 F1 口径不可直接比较。",
+        "cite": [
+          "qwen",
+          "paper@Table 4"
+        ]
+      },
+      {
+        "text": "第三方复测存在细微差异：WeVisOne-VL 声明遵循 Rex-Omni 协议，但其指点判定在无 mask 时退回使用标注目标框（原论文用 SAM 生成 mask）。",
+        "cite": [
+          "wevis-paper@§5.1.4",
+          "paper@§5.6"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "arxiv-v1",
+      "date": "2025-10-14",
+      "label": "arXiv:2510.12798v1 提交，论文 §5.3 引入 Dense200（200 张图 / 109 类 / 平均每图 91.2 框）",
+      "cite": [
+        "paper",
+        "paper@§5.3"
+      ]
+    },
+    {
+      "id": "current",
+      "date": "2026-11-13",
+      "label": "本次核验时 arXiv 仍只有 v1，未见修订版；基准数据以 Hugging Face 的 Mountchicken/Rex-Omni-EvalData 为准",
+      "cite": [
+        "paper",
+        "dataset"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "厂商自报口径与论文口径混用",
+      "impact": "Qwen3.8-Max 发布博客在 Visual Perception & Grounding 组给出 Dense200 一行：Qwen3.8-Max 87.0、Gemini3.1-Pro 69.7、Qwen3.7-Plus 60.7、GPT5.6-Sol 55.3、Fable5 31.1、Opus4.8 20.8。该行无 footnote，指标、子集与协议均未披露；而论文口径下 Rex-Omni 为 78.4（F1@0.5）/ 58.3（mIoU）。两类数字不能排在同一张榜里比较。",
+      "severity": "高",
+      "response": "未见官方对该行口径的补充说明；本档案按来源分别标注口径。",
+      "reader": "看到 Dense200 分数先问口径：是论文 F1@IoU（哪一档）还是厂商未披露口径。",
+      "cite": [
+        "qwen",
+        "paper@Table 4"
+      ]
+    },
+    {
+      "issue": "规模小，单图影响大",
+      "impact": "全集仅 200 张图（平均每图 91.2 个框）。论文实验显示，仅把「全图只预测一个框且面积超过图像 95%」的大框预测移除，SFT 模型 mIoU 就从 44.9 升到 56.7，GRPO 模型从 58.3 升到 60.0——少量图片的行为异常即可显著改变总分。",
+      "severity": "中",
+      "response": "论文公开了失败模式定义与移除实验（Table 14），并指出 GRPO 后训练能把大框预测占比从 20.5% 降到 3.5%；未见标准误或置信区间报告。",
+      "reader": "200 张图上的几分差距要谨慎解读，优先看 mIoU 与失败模式分析，而不是单档 F1@0.5。",
+      "cite": [
+        "paper@§5.3",
+        "paper@Table 14"
+      ]
+    },
+    {
+      "issue": "图片来源与许可披露有限",
+      "impact": "论文只说 manually collected，未说明图片原始来源、标注规范与许可；Hugging Face 数据集仓库只提供数据文件，本次核验时没有 README / 数据集卡，也未声明许可。",
+      "severity": "中",
+      "response": "未见官方回应。",
+      "reader": "复现或商用前需自行确认数据许可与图片版权。",
+      "cite": [
+        "paper@§5.3",
+        "dataset"
+      ]
+    },
+    {
+      "issue": "类别数与公开文件不完全一致",
+      "impact": "论文称覆盖 109 个类别；本站统计公开标注文件 _annotations/box_eval/Dense200.jsonl 的 200 行，出现 108 个不同类别名，且每张图只标注 1 个类别，差异未见官方说明。",
+      "severity": "低",
+      "response": "未见官方回应。",
+      "reader": "引用类别数时注明是论文口径（109）还是公开文件口径（108）。",
+      "cite": [
+        "paper@§5.3",
+        "dataset"
+      ]
+    },
+    {
+      "issue": "本站早期档案的事实错误（本次已更正）",
+      "impact": "本站早期版本把 Dense200 记为「Qwen 自研、未公开数据集」，并称 Qwen 发布表该行有 footnote 13 口径。一手来源显示：Dense200 由 Rex-Omni 论文（IDEA，2025-10-14）引入并公开在 Hugging Face；Qwen 博客该行没有 footnote，footnote 13 只覆盖 QwenBlenderBench 与 QwenVisualOffice 两个内部基准。",
+      "severity": "低",
+      "response": "本档案已按一手来源改写，历史错误记录在此以备对照。",
+      "reader": "以本档案及其引用的一手来源为准。",
+      "cite": [
+        "paper@§5.3",
+        "dataset",
+        "qwen"
+      ]
+    }
+  ],
+  "notes": "Rex-Omni 论文 §5.3 引入并公开（HF Mountchicken/Rex-Omni-EvalData）；Qwen3.8-Max 发布表 Visual Perception & Grounding 组引用（87.0，口径未披露）",
+  "official_sources": [
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2510.12798"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/IDEA-Research/Rex-Omni"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/Mountchicken/Rex-Omni-EvalData"
+    },
+    {
+      "kind": "site",
+      "url": "https://qwen.ai/blog?id=qwen3.8"
+    }
+  ],
+  "related_benchmarks": [
+    "coco",
+    "countqa",
+    "refadv-s"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-13",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "Detect Anything via Next Point Prediction（arXiv:2510.12798v1，2025-10-14 提交）",
+        "url": "https://arxiv.org/abs/2510.12798",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "IDEA-Research/Rex-Omni Evaluation Guide（GitHub，Dense200 评测命令与数据下载说明）",
+        "url": "https://github.com/IDEA-Research/Rex-Omni",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "dataset",
+        "kind": "dataset",
+        "title": "Mountchicken/Rex-Omni-EvalData（Hugging Face，dense200.tar.gz 与 _annotations/box_eval/Dense200.jsonl）",
+        "url": "https://huggingface.co/datasets/Mountchicken/Rex-Omni-EvalData",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "qwen",
+        "kind": "announcement",
+        "title": "Qwen3.8-Max: A New Bar for Coding and Cowork（Qwen 官方博客，2026-08，Full Benchmark Table 含 Dense200 行）",
+        "url": "https://qwen.ai/blog?id=qwen3.8",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "wevis-paper",
+        "kind": "paper",
+        "title": "WeVisOne-VL: Unified Visual Perception from Objects to Pixels（arXiv:2610.31329v2，2026-10-24，第三方复测 Dense200）",
+        "url": "https://arxiv.org/abs/2610.31329",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "wevis-repo",
+        "kind": "repo",
+        "title": "Tencent/WeVisOne-VL（GitHub README，Dense200 headline 结果表）",
+        "url": "https://github.com/Tencent/WeVisOne-VL",
+        "accessed": "2026-11-13"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "International Digital Economy Academy（IDEA）· Rex-Omni 论文",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      "first_release": {
+        "v": "2025-10-14（arXiv:2510.12798v1 提交）",
+        "cite": [
+          "paper"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "paper@§5.3",
+        "dataset",
+        "qwen"
+      ],
+      "interpretation": [
+        "paper@Table 4",
+        "paper@§5.1",
+        "qwen"
+      ]
+    },
+    "problem": {
+      "text": "密集 / 小目标检测对遥感和计数等应用很关键，但已有基准以航拍交通场景为主（VisDrone 1,610 张图仅 10 类、框约 30.7×32.4 像素），而 MLLM 在这类场景会暴露出重复预测、大框预测、坐标偏移等问题，缺少一个覆盖日常类别、密度极高的基准来量化这种差距。Dense200 用 200 张人工收集的密集标注图（平均每图 91.2 框、109 类）补上这个空位。",
+      "cite": [
+        "paper@§5.3",
+        "paper@§5.1"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "论文表中的最低（密集检测 F1@IoU 0.5）",
+        "value": "0.8（Qwen2.5-VL-3B）",
+        "note": "论文 Table 4 密集检测 F1@0.5 的最低值；指点任务最低为 Qwen2.5-VL-7B 的 2.0（F1@Point）。",
+        "cite": [
+          "paper@Table 4",
+          "paper@Table 7"
+        ]
+      },
+      {
+        "label": "论文发布时最好（密集检测 F1@IoU 0.5）",
+        "value": "78.4（Rex-Omni；mIoU 58.3）",
+        "note": "同期 SEED1.5-VL 76.9、Grounding DINO-Swin-T 36.9；指点任务最高为 Rex-Omni 82.5（F1@Point）。",
+        "cite": [
+          "paper@Table 4",
+          "paper@Table 7"
+        ]
+      },
+      {
+        "label": "第三方论文复测最高（密集检测 F1@IoU 0.5）",
+        "value": "86.9（WeVisOne-VL-4B；均值 71.3）",
+        "note": "腾讯微信视觉 WeVisOne-VL（arXiv:2610.31329v2）按 Rex-Omni 协议复测；指点一栏 LocateAnything-3B 87.6 高于 WeVisOne-VL-4B 的 87.0。",
+        "cite": [
+          "wevis-paper@Table 2",
+          "wevis-paper@Table 5"
+        ]
+      },
+      {
+        "label": "厂商自报（口径未披露）",
+        "value": "87.0（Qwen3.8-Max）",
+        "note": "Qwen3.8-Max 发布博客 Visual Perception & Grounding 组；未说明指标、子集与协议，不能与上面同口径行直接比较。",
+        "cite": [
+          "qwen"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把厂商博客的 87.0 当作论文 F1@0.5 口径下的领先幅度——博客未披露指标；论文口径下同表对比应为 Rex-Omni 78.4（F1@0.5）/ 58.3（mIoU），第三方复测最高为 WeVisOne-VL-4B 86.9 / 71.3。",
+        "cite": [
+          "qwen",
+          "paper@Table 4",
+          "wevis-paper@Table 2"
+        ]
+      },
+      {
+        "text": "以为 Dense200 是某家厂商的内部未公开基准——它随 Rex-Omni 论文公开，标注 JSONL 与图片都在 Hugging Face 可下载。",
+        "cite": [
+          "paper@§5.3",
+          "dataset",
+          "repo"
+        ]
+      },
+      {
+        "text": "把检测、指点、视觉提示三种分数互相比较——同一批图有三种任务形态，指标分别是 F1@IoU、F1@Point、F1@IoU + 计数 MAE。",
+        "cite": [
+          "paper@§5.3",
+          "paper@§5.5",
+          "paper@§5.6"
+        ]
+      },
+      {
+        "text": "看到 Grounding DINO-Swin-T 36.9 与部分 MLLM 接近就认为检测器全面更强——开放集检测器的 F1 是 0–1 置信度阈值扫描后的最高值，MLLM 不做此扫描，且 Table 4 中多个 MLLM 的 F1@0.5 低于 20。",
+        "cite": [
+          "paper@§5.1",
+          "paper@Table 4"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "International Digital Economy Academy（IDEA）",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "Qing Jiang、Junan Huo、Xingyu Chen、Yuda Xiong、Zhaoyang Zeng、Yihao Chen、Tianhe Ren、Junzhi Yu、Lei Zhang",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      {
+        "k": "载体论文",
+        "v": "Detect Anything via Next Point Prediction（arXiv:2510.12798v1，2025-10-14 提交，3B 模型 Rex-Omni 的技术报告）",
+        "cite": [
+          "paper"
+        ]
+      },
+      {
+        "k": "引入位置",
+        "v": "论文 §5.3 Dense and Tiny Object Detection，与 VisDrone 并列为本节两个密集检测基准",
+        "cite": [
+          "paper@§5.3"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "图片 dense200.tar.gz 与标注 _annotations/box_eval/Dense200.jsonl 在 Hugging Face（Mountchicken/Rex-Omni-EvalData）；box_eval / point_eval / visual_prompt_eval 的评测命令在 GitHub IDEA-Research/Rex-Omni 的 Evaluation Guide",
+        "cite": [
+          "dataset",
+          "repo"
+        ]
+      },
+      {
+        "k": "第三方采用",
+        "v": "腾讯微信视觉 WeVisOne-VL（arXiv:2610.31329v2，2026-10-24）把 Dense200 作为密集检测与指点基准，报告 WeVisOne-VL-4B 86.9 / 23.2 / 71.3（检测）与 87.0（指点）",
+        "cite": [
+          "wevis-paper@Table 2",
+          "wevis-paper@Table 5",
+          "wevis-repo"
+        ]
+      },
+      {
+        "k": "厂商引用",
+        "v": "Qwen3.8-Max 发布博客（2026-08）在 Full Benchmark Table 的 Visual Perception & Grounding 组报告 Dense200 行，未附指标说明",
+        "cite": [
+          "qwen"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-13",
+        "columns": [
+          "来源",
+          "模型",
+          "任务",
+          "分数",
+          "口径"
+        ],
+        "rows": [
+          [
+            "论文 Table 4",
+            "Grounding DINO-Swin-T",
+            "密集检测（框）",
+            "36.9 / 19.7 / 33.1",
+            "F1@IoU 0.5 / 0.95 / mIoU；表中标注阈值 0.25"
+          ],
+          [
+            "论文 Table 4",
+            "DeepSeek-VL2-Tiny",
+            "密集检测（框）",
+            "2.2 / 0.3 / 1.5",
+            "F1@IoU 0.5 / 0.95 / mIoU"
+          ],
+          [
+            "论文 Table 4",
+            "OVIS2.5-9B",
+            "密集检测（框）",
+            "14.0 / 0.0 / 5.1",
+            "F1@IoU 0.5 / 0.95 / mIoU"
+          ],
+          [
+            "论文 Table 4",
+            "OVIS2.5-2B",
+            "密集检测（框）",
+            "17.9 / 0.0 / 6.7",
+            "F1@IoU 0.5 / 0.95 / mIoU"
+          ],
+          [
+            "论文 Table 4",
+            "MiMo-VL-7B",
+            "密集检测（框）",
+            "29.7 / 0.4 / 15.9",
+            "F1@IoU 0.5 / 0.95 / mIoU"
+          ],
+          [
+            "论文 Table 4",
+            "Qwen2.5-VL-3B",
+            "密集检测（框）",
+            "0.8 / 0.1 / 0.5",
+            "F1@IoU 0.5 / 0.95 / mIoU"
+          ],
+          [
+            "论文 Table 4",
+            "Qwen2.5-VL-7B",
+            "密集检测（框）",
+            "1.1 / 0.1 / 0.6",
+            "F1@IoU 0.5 / 0.95 / mIoU"
+          ],
+          [
+            "论文 Table 4",
+            "DeepSeek-VL2-Small",
+            "密集检测（框）",
+            "16.0 / 3.9 / 12.7",
+            "F1@IoU 0.5 / 0.95 / mIoU"
+          ],
+          [
+            "论文 Table 4",
+            "SEED1.5-VL",
+            "密集检测（框）",
+            "76.9 / 5.3 / 53.2",
+            "F1@IoU 0.5 / 0.95 / mIoU"
+          ],
+          [
+            "论文 Table 4",
+            "Rex-Omni-SFT",
+            "密集检测（框）",
+            "60.2 / 10.6 / 46.4",
+            "F1@IoU 0.5 / 0.95 / mIoU"
+          ],
+          [
+            "论文 Table 4",
+            "Rex-Omni",
+            "密集检测（框）",
+            "78.4 / 10.3 / 58.3",
+            "F1@IoU 0.5 / 0.95 / mIoU"
+          ],
+          [
+            "论文 Table 7",
+            "OVIS2.5-2B",
+            "物体指点",
+            "36.4",
+            "F1@Point（点落入 SAM mask 判对）"
+          ],
+          [
+            "论文 Table 7",
+            "Qwen2.5-VL-3B",
+            "物体指点",
+            "4.3",
+            "F1@Point"
+          ],
+          [
+            "论文 Table 7",
+            "Qwen2.5-VL-7B",
+            "物体指点",
+            "2.0",
+            "F1@Point"
+          ],
+          [
+            "论文 Table 7",
+            "OVIS2.5-9B",
+            "物体指点",
+            "35.0",
+            "F1@Point"
+          ],
+          [
+            "论文 Table 7",
+            "Molmo-7B-D",
+            "物体指点",
+            "33.1",
+            "F1@Point"
+          ],
+          [
+            "论文 Table 7",
+            "SEED1.5-VL",
+            "物体指点",
+            "72.1",
+            "F1@Point"
+          ],
+          [
+            "论文 Table 7",
+            "Rex-Omni-SFT",
+            "物体指点",
+            "72.9",
+            "F1@Point"
+          ],
+          [
+            "论文 Table 7",
+            "Rex-Omni",
+            "物体指点",
+            "82.5",
+            "F1@Point"
+          ],
+          [
+            "论文 Table 6",
+            "BMNet+",
+            "视觉提示检测",
+            "MAE 14.6",
+            "仅报告计数 MAE"
+          ],
+          [
+            "论文 Table 6",
+            "CountTR",
+            "视觉提示检测",
+            "MAE 12.0",
+            "仅报告计数 MAE"
+          ],
+          [
+            "论文 Table 6",
+            "DAVE",
+            "视觉提示检测",
+            "MAE 8.7",
+            "仅报告计数 MAE"
+          ],
+          [
+            "论文 Table 6",
+            "T-Rex2",
+            "视觉提示检测",
+            "93.9 / 67.1 / 88.1（MAE 6.5）",
+            "F1@IoU 0.5 / 0.95 / mIoU + 计数 MAE"
+          ],
+          [
+            "论文 Table 6",
+            "Rex-Omni-SFT",
+            "视觉提示检测",
+            "65.1 / 11.1 / 50.0（MAE 50.9）",
+            "F1@IoU 0.5 / 0.95 / mIoU + 计数 MAE"
+          ],
+          [
+            "论文 Table 6",
+            "Rex-Omni",
+            "视觉提示检测",
+            "79.5 / 10.8 / 59.2（MAE 20.1）",
+            "F1@IoU 0.5 / 0.95 / mIoU + 计数 MAE"
+          ],
+          [
+            "Qwen3.8-Max 博客",
+            "Opus4.8",
+            "未披露",
+            "20.8",
+            "指标与协议未披露（该行无 footnote）"
+          ],
+          [
+            "Qwen3.8-Max 博客",
+            "Fable5",
+            "未披露",
+            "31.1",
+            "指标与协议未披露（该行无 footnote）"
+          ],
+          [
+            "Qwen3.8-Max 博客",
+            "Gemini3.1-Pro",
+            "未披露",
+            "69.7",
+            "指标与协议未披露（该行无 footnote）"
+          ],
+          [
+            "Qwen3.8-Max 博客",
+            "GPT5.6-Sol",
+            "未披露",
+            "55.3",
+            "指标与协议未披露（该行无 footnote）"
+          ],
+          [
+            "Qwen3.8-Max 博客",
+            "Qwen3.7-Plus",
+            "未披露",
+            "60.7",
+            "指标与协议未披露（该行无 footnote）"
+          ],
+          [
+            "Qwen3.8-Max 博客",
+            "Qwen3.8-Max",
+            "未披露",
+            "87.0",
+            "指标与协议未披露（该行无 footnote）"
+          ]
+        ]
+      },
+      "cite": [
+        "paper@Table 4",
+        "paper@Table 6",
+        "paper@Table 7",
+        "qwen"
+      ]
+    }
+  }
+}

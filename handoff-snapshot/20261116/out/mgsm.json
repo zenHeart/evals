@@ -1,0 +1,646 @@
+{
+  "id": "mgsm",
+  "name": "MGSM",
+  "full_name": "Multilingual Grade School Math（多语言小学数学）",
+  "aliases": [
+    "多语言小学数学",
+    "MGSM benchmark"
+  ],
+  "status": "active",
+  "categories": [
+    "chinese",
+    "reasoning"
+  ],
+  "summary": "MGSM 是把 GSM8K 官方测试列表前 250 道小学应用题人工翻译成 10 种语言得到的多语言数学推理基准：同一道题换一种语言问，答案统一写成阿拉伯数字，因此不同语言的分数差可以直接归到「语言」这一个变量上。",
+  "interpretation": "高分说明模型能脱离英语的表面形式完成多步算术推理，原论文里最好的 PaLM-540B 做到跨语言平均约 55%。但它只覆盖小学难度、每语言 250 题、10 种语言，既推不到更难的数学，也不测语言内的知识；2025 年的复核论文进一步指出原始数据里有翻译错误、答案抽取口径不统一，会把跨语言差距明显放大，所以看到具体分数要先问用的是原始版还是修正版。",
+  "measures": [
+    {
+      "area": "十语言多步算术推理（主）",
+      "focus": "同一批 GSM8K 题目在各语言上的多步算术推理；示例（德语）：Roger 有 5 个网球，又买 2 罐每罐 3 个的网球，问现在共有几个",
+      "share": "每语言 250 题，10 语言合计 2,500 条",
+      "format": "数值短答案（阿拉伯数字整数）",
+      "cite": [
+        "paper@Abstract",
+        "paper@§2",
+        "paper@Table 1"
+      ]
+    },
+    {
+      "area": "英语参照",
+      "focus": "同一批题的英文原文，论文 Table 3 的 EN 列；仓库另附 mgsm_en.tsv",
+      "share": "250 题（与各语言是同一批题）",
+      "format": "同上",
+      "cite": [
+        "paper@Table 3",
+        "repo"
+      ]
+    },
+    {
+      "area": "低资源语言子集",
+      "focus": "论文把 SW / BN / TE / TH 归为 underrepresented languages，并指出斯瓦希里语与孟加拉语在 PaLM 预训练数据中占比不足 0.01%",
+      "share": "4 种语言，1,000 条",
+      "format": "同上",
+      "cite": [
+        "paper@Figure 1",
+        "paper@§4.2"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "更难的数学（竞赛题、高中题、多步证明）：题目全部是小学应用题，每题按官方解答需 2–8 步",
+      "cite": [
+        "paper@§2",
+        "paper@Figure 2"
+      ]
+    },
+    {
+      "text": "开放生成与表达质量：答案是整数数值，论文把答案固定为阿拉伯数字以便跨语言预测，判分只看最终数值",
+      "cite": [
+        "paper@§2 脚注 1",
+        "gap@§5.3.1"
+      ]
+    },
+    {
+      "text": "常识推理与词义判断：论文把这两类放到 XCOPA 与 XL-WiC 上单独做，不属于 MGSM 本身",
+      "cite": [
+        "paper@§5"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 2500,
+    "splits": [
+      "test：每语言 250 题（论文主评测集）",
+      "train：每语言 8 条人工翻译的 few-shot 示例（只有 Hugging Face 镜像提供）"
+    ],
+    "languages": [
+      "bn",
+      "zh",
+      "fr",
+      "de",
+      "ja",
+      "ru",
+      "es",
+      "sw",
+      "te",
+      "th"
+    ],
+    "source_type": "human-translated（GSM8K 官方测试题由付费专业译员人工翻译）",
+    "public_sample": true,
+    "totals": "同一批 GSM8K 测试题共 250 题，人工翻译成 10 种语言（仓库另附英文原文），每语言 250 条、合计 2,500 条；答案为整数阿拉伯数字，每题需 2–8 步推理。",
+    "cite": [
+      "paper@§2",
+      "repo",
+      "dataset"
+    ],
+    "construction": [
+      {
+        "k": "取题",
+        "text": "以 GSM8K 为基础数据源，从 GSM8K 官方测试示例列表里取前 250 个示例，不重新出题。",
+        "cite": [
+          "paper@§2"
+        ]
+      },
+      {
+        "k": "选语言",
+        "text": "除英语外选 10 种类型多样的语言，横跨 8 个语系，并覆盖 mC4 等预训练数据集里不同表示级别的语言：孟加拉语、中文、法语、德语、日语、俄语、西班牙语、斯瓦希里语、泰卢固语、泰语。",
+        "cite": [
+          "paper@§2"
+        ]
+      },
+      {
+        "k": "人工翻译",
+        "text": "聘请付费专业译员翻译这 250 题：中文与德语各 2 人、俄语 3 人、泰语 5 人，其余目标语言各 1 人；全部译员是目标语母语者，且至少有 2 年英-目标语翻译经验，开译前都签署了不使用机器翻译的声明。",
+        "cite": [
+          "paper@§2"
+        ]
+      },
+      {
+        "k": "质量核验",
+        "text": "供应商随机抽一个子集交给另一名译员复核翻译质量，并与主流机器翻译提供商做 n-gram 重叠检查，确认没有使用机器翻译工具；核验通过的译文作为 gold standard。",
+        "cite": [
+          "paper@§2"
+        ]
+      },
+      {
+        "k": "答案与示例统一",
+        "text": "GSM8K 的答案原本就写成阿拉伯数字，各语言保持一致以便跨语言预测；few-shot 示例题也按语言人工翻译（Hugging Face 镜像的 train split 每语言 8 条）。",
+        "cite": [
+          "paper@§2 脚注 1",
+          "dataset"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "accuracy",
+      "name": "准确率",
+      "direction": "越高越好",
+      "description": "答对题数占该语言 250 题的百分比；论文按语言分列，并给出跨语言平均（AVG）以及高资源（HRL）/ 低资源（URL）分组平均",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@Table 3"
+      ]
+    },
+    {
+      "id": "cross-lingual-gap",
+      "name": "跨语言准确率差",
+      "direction": "越低越好",
+      "description": "某语言准确率与英语准确率之差；2025 年的复核论文用它量化跨语言差距，修正数据并统一抽取后，最强模型的跨语言最大差降到 1.2%–2.0%",
+      "range": [
+        -100,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "gap@§6"
+      ]
+    }
+  ],
+  "default_protocol": {
+    "raw": "论文主口径：few-shot 提示（PaLM 全部语言 6-shot；GPT-3 因 API 2048 token 上限在部分语言减少示例数）＋ 贪心解码（temperature τ = 0），比较四种解法——DIRECT（直接给答案）、NATIVE-COT（用问题语言写推理链）、EN-COT（用英语写推理链）、TRANSLATE-EN（先用 Google Translate API 译成英语再英语推理），示例题为同语言的人工翻译题。论文正文没有说明如何从模型输出里抽取最终数值。",
+    "cite": [
+      "paper@Table 3 注",
+      "paper@§4",
+      "paper@§3",
+      "paper@附录 A.1"
+    ],
+    "variants": [
+      {
+        "text": "解法策略不可比：PaLM-540B 的跨语言均分从 DIRECT 的 18.6% 到 TRANSLATE-EN 的 55.0%，相差约 36 个点。",
+        "cite": [
+          "paper@Table 3"
+        ]
+      },
+      {
+        "text": "few-shot 示例来源语言不可比：换成多语言混合示例后，NATIVE-COT 均分从 48.1% 掉到 29.8%。",
+        "cite": [
+          "paper@Table 4"
+        ]
+      },
+      {
+        "text": "示例条数不可比：GPT-3 各语言示例数 1–6 不等（ru 1、zh 5、ja 4、th/te/bn 1、sw 6），PaLM 固定 6-shot。",
+        "cite": [
+          "paper@Table 7"
+        ]
+      },
+      {
+        "text": "答案抽取口径不可比：社区常用的 Kaggle 抽取按语言固定答案前缀取最后一个数字，不处理各语言千分位与小数点差异；2025 年后的复核改为直接取最后一个数字，并额外把孟加拉文原生数字映射回阿拉伯数字。",
+        "cite": [
+          "gap@§5.3",
+          "gap@§5.3.1"
+        ]
+      },
+      {
+        "text": "数据集版本不可比：原始 MGSM 与修正版 MGSM-Rev2 题目不同（Rev2 改了题），但文件格式一致、可直接互换。",
+        "cite": [
+          "rev2"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2022-10-06",
+      "label": "arXiv:2210.03057 v1 首发（cs.CL），250 题 × 10 语言",
+      "cite": [
+        "paper"
+      ]
+    },
+    {
+      "id": "iclr-2023",
+      "date": "2023-02-01",
+      "label": "ICLR 2023 接收为 poster（OpenReview 页面标注 Published: 01 Feb 2023）",
+      "cite": [
+        "openreview"
+      ]
+    },
+    {
+      "id": "mgsm-rev2",
+      "date": "2025-10-31",
+      "label": "发布修正版 MGSM-Rev2（GitHub 仓库创建于 2025-10-31）：修正翻译错误、改写歧义题，仍是 250 题 × 10 语言，格式与原版一致可互换",
+      "cite": [
+        "rev2",
+        "rev2@GitHub API 元数据"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "翻译错误",
+      "impact": "2025 年的复核论文在 MGSM 里发现多处细微翻译错误，例如德语把 every second glass 译成 jedes weitere Glas（意为「每一杯」）、把 Tuesday 译成 Donnerstag（星期四），尽管测试集是人工翻译的；该论文最终改写了英文原题 22 道（8.8%）以消除歧义，并按语言统计了改动条目。翻译错误会让某些语言的分数被系统性压低。",
+      "severity": "高",
+      "response": "原论文作者之一的 Markus Freitag 参与发布修正版 MGSM-Rev2；仓库说明称修正了两道错误的英文题并改写了歧义题，用 Gemini 重新翻译全部题目，再逐题验证在现行大模型下可解。",
+      "reader": "看到 MGSM 分数先确认是原始版还是 Rev2；尤其不要用原始版的跨语言差距给模型能力排序。",
+      "cite": [
+        "gap@Abstract",
+        "gap@§5.1",
+        "gap@§5.2",
+        "rev2",
+        "rev2@GitHub API 描述"
+      ]
+    },
+    {
+      "issue": "答案抽取口径不统一",
+      "impact": "社区常用的 Kaggle 抽取按语言固定的答案前缀取最后一个数字，假设 '.' 是小数点、不处理各语言千分位与小数点差异；模型若输出孟加拉文原生数字还会被直接判错。复核论文显示，仅把孟加拉文数字映射回阿拉伯数字，Gemma 27B 的孟加拉语准确率就从 45.2% 升到 91.2%。",
+      "severity": "高",
+      "response": "复核论文给出建议：直接取模型回复里最后一个数字，并按各语言格式处理分隔符；MGSM-Rev2 只发布数据文件与替换记录，没有附带统一判分脚本。",
+      "reader": "比较不同来源的 MGSM 分数前，先问判分脚本怎么抽数字；跨语言差距小数点后几位的差异不要当真。",
+      "cite": [
+        "gap@§5.3",
+        "gap@§5.3.1",
+        "gap@§6",
+        "rev2",
+        "rev2@GitHub API 目录"
+      ]
+    },
+    {
+      "issue": "规模小且已接近饱和",
+      "impact": "每语言只有 250 题；复核论文指出原论文里 PaLM-540B 平均 55%，而近年模型平均准确率已超过 90%——原始数据上 Gemini 2.5 Pro 的英语准确率 97.6%，修正数据加统一抽取后 11 种语言基本都在 97% 以上，测试集对最强模型已基本解出。",
+      "severity": "中",
+      "response": "Rev2 作者认为该基准对最强模型已基本解出，但对较小模型仍是有效的跨语言评测；原论文与 Rev2 都没有给出扩容计划。",
+      "reader": "对前沿模型，MGSM 上剩下的差距更可能来自题目噪声和判分口径，而不是推理能力。",
+      "cite": [
+        "gap@§2",
+        "gap@Table 1",
+        "gap@Table 3",
+        "gap@§6",
+        "rev2"
+      ]
+    },
+    {
+      "issue": "训练污染未评估",
+      "impact": "题目直接取自公开的 GSM8K 官方测试列表，而 GSM8K 被广泛用于训练与微调；原论文只报告了 GPT-3 与 PaLM 两个 2022 年的模型，没有评估污染，也没有留存集或私有测试集。",
+      "severity": "中",
+      "response": "未见官方回应。",
+      "reader": "把 MGSM 分数当成绝对能力要保留余地；优先看是否有 Rev2 或新题集上的复核结果。",
+      "cite": [
+        "paper@§2",
+        "paper@§4"
+      ]
+    },
+    {
+      "issue": "覆盖面窄",
+      "impact": "只有小学数学应用题一种任务、10 种语言，答案必须是整数；非拉丁语系的分词与本地数字系统差异没有被覆盖（论文脚注只把「把阿拉伯数字映射到本地数字」列为未来工作，附录 A.1 提到低资源语言同样内容会占更多 token）。",
+      "severity": "低",
+      "response": "论文脚注把跨语言数字系统列为未来工作；未见其他官方回应。",
+      "reader": "MGSM 只是多语言推理的一个切面，不要用它单独给模型的多语言能力下结论。",
+      "cite": [
+        "paper@§2 脚注 1",
+        "paper@附录 A.1"
+      ]
+    }
+  ],
+  "official_sources": [
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2210.03057"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/google-research/url-nlp"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/juletxara/mgsm"
+    },
+    {
+      "kind": "site",
+      "url": "https://openreview.net/forum?id=fR3wGCk-IXp"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/google-research-datasets/MGSM-Rev2"
+    },
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2511.05162"
+    }
+  ],
+  "related_benchmarks": [
+    "ceval",
+    "cmmlu",
+    "supercclue",
+    "compassrank",
+    "floris",
+    "finben",
+    "gsm8k",
+    "math500"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-13",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "Language Models are Multilingual Chain-of-Thought Reasoners（arXiv:2210.03057 v1，2022-10-06）",
+        "url": "https://arxiv.org/abs/2210.03057",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "openreview",
+        "kind": "site",
+        "title": "OpenReview：Language models are multilingual chain-of-thought reasoners（ICLR 2023 poster）",
+        "url": "https://openreview.net/forum?id=fR3wGCk-IXp",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "google-research/url-nlp 的 mgsm 目录（官方数据与 exemplars.py）",
+        "url": "https://github.com/google-research/url-nlp",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "dataset",
+        "kind": "dataset",
+        "title": "juletxara/mgsm（Hugging Face 数据集卡）",
+        "url": "https://huggingface.co/datasets/juletxara/mgsm",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "gap",
+        "kind": "paper",
+        "title": "Mind the Gap... or Not? How Translation Errors and Evaluation Details Skew Multilingual Results（arXiv:2511.05162 v2，2026-06-22）",
+        "url": "https://arxiv.org/abs/2511.05162",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "rev2",
+        "kind": "repo",
+        "title": "google-research-datasets/MGSM-Rev2（修正版数据与替换记录）",
+        "url": "https://github.com/google-research-datasets/MGSM-Rev2",
+        "accessed": "2026-11-13"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Google Research（论文署名机构还包含 Toyota Technological Institute at Chicago、Stanford University、Dartmouth College）",
+        "cite": [
+          "paper@作者单位"
+        ]
+      },
+      "first_release": {
+        "v": "2022-10-06（arXiv:2210.03057 v1）",
+        "cite": [
+          "paper"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "paper@Abstract",
+        "paper@§2",
+        "repo"
+      ],
+      "interpretation": [
+        "paper@§4.1",
+        "gap@§6",
+        "gap@§5.3"
+      ]
+    },
+    "problem": {
+      "text": "2022 年之前，英语思维链推理的进展和多语言 NLP 的进展之间是断的：现有多语言基准大多只需要简单推理步骤，衡量不了需要多步复杂推理的多语言能力。MGSM 用同一批题的多语言人工翻译版把这个断层测出来，并顺带检验「用英语写推理链是否优于用母语」。",
+      "cite": [
+        "paper@§1",
+        "paper@§3"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机猜测基线",
+        "value": "论文未给出",
+        "note": "答案是开放数值、没有固定选项，论文没有给随机概率，本站也不推算。",
+        "cite": [
+          "paper@§2"
+        ]
+      },
+      {
+        "label": "论文发布时最好成绩",
+        "value": "55.0%（跨语言平均）",
+        "note": "PaLM-540B，TRANSLATE-EN，6-shot，同语言示例；同期 GPT-3 (text-davinci-002) 同设置 45.6%，两个模型的 DIRECT 都低于 20%。",
+        "cite": [
+          "paper@Table 3",
+          "paper@§1"
+        ]
+      },
+      {
+        "label": "低资源 vs 高资源语言差",
+        "value": "约 3 个百分点（44.9% vs 47.9%）",
+        "note": "PaLM-540B NATIVE-COT 下，四个低资源语言平均 44.9%、六个高资源语言平均 47.9%；这是原论文的核心正面结论。",
+        "cite": [
+          "paper@§4.2"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      },
+      {
+        "label": "饱和参考线",
+        "value": "98.8%–100.0%（11 语言）",
+        "note": "2025 年复核论文用修正数据加统一抽取后，Gemini 2.5 Pro 在 11 种语言上为 98.8%–100.0%。这是修正版口径，不能和原始版分数直接比。",
+        "cite": [
+          "gap@Table 3"
+        ]
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 NATIVE-COT 和 EN-COT 的分数当同一口径比——论文发现用英语写推理链普遍更好（PaLM-540B 均分 51.3% vs 48.1%），这个差距本身就是结论的一部分。",
+        "cite": [
+          "paper@§4.1",
+          "paper@Table 3"
+        ]
+      },
+      {
+        "text": "把「低资源语言分数低」直接读成模型跨语言能力差——2025 年复核发现翻译错误和答案抽取口径解释了大部分差距，修正后最强模型的跨语言最大差只有 1.2%–2.0%，且英语不再是得分最高的语言。",
+        "cite": [
+          "gap@§6"
+        ]
+      },
+      {
+        "text": "把 MGSM 高分理解成数学能力强——它只覆盖小学难度、每语言 250 题、10 种语言，论文把它定位为第一个多语言算术推理基准。",
+        "cite": [
+          "paper@Abstract",
+          "paper@§7"
+        ]
+      },
+      {
+        "text": "以为有官方榜单或唯一主分数——Hugging Face 数据集卡的「Supported Tasks and Leaderboards」一栏写的是 Needs More Information，论文报告的是按语言分列的准确率。",
+        "cite": [
+          "dataset",
+          "paper@Table 3"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "Google Research（论文署名机构还包含 Toyota Technological Institute at Chicago、Stanford University、Dartmouth College）",
+        "cite": [
+          "paper@作者单位"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "共同一作 Freda Shi、Mirac Suzgun；其余作者 Markus Freitag、Xuezhi Wang、Suraj Srivats、Soroush Vosoughi、Hyung Won Chung、Yi Tay、Sebastian Ruder、Denny Zhou、Dipanjan Das、Jason Wei",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      {
+        "k": "译员构成",
+        "v": "付费专业译员：中文与德语各 2 人、俄语 3 人、泰语 5 人，其余目标语言各 1 人；全部为目标语母语者、至少有 2 年英-目标语翻译经验，开译前签署不使用机器翻译的声明",
+        "cite": [
+          "paper@§2"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2022-10-06 arXiv v1 → 2023-02-01 ICLR 2023 poster → 2025-10-31 MGSM-Rev2 仓库创建 → 2026-06-22 复核论文 arXiv v2",
+        "cite": [
+          "paper",
+          "openreview",
+          "rev2@GitHub API 元数据",
+          "gap@arXiv 版本头"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "官方仓库 google-research/url-nlp 的 mgsm 目录（每语言一个 .tsv 加 exemplars.py）；Hugging Face 镜像 juletxara/mgsm；修正版 google-research-datasets/MGSM-Rev2",
+        "cite": [
+          "repo",
+          "dataset",
+          "rev2"
+        ]
+      },
+      {
+        "k": "许可",
+        "v": "Hugging Face 卡片标注 CC BY-SA 4.0，并说明 GSM8K 为 MIT；MGSM-Rev2 同为 CC BY-SA 4.0",
+        "cite": [
+          "dataset",
+          "rev2"
+        ]
+      },
+      {
+        "k": "与 GSM8K 的关系",
+        "v": "取 GSM8K 官方测试示例列表的前 250 题人工翻译，不是重新出题；HF 卡片把源数据集标为 extended|gsm8k",
+        "cite": [
+          "paper@§2",
+          "dataset"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-13",
+        "columns": [
+          "来源",
+          "模型",
+          "提示设置",
+          "AVG",
+          "EN",
+          "ZH",
+          "BN",
+          "SW"
+        ],
+        "rows": [
+          [
+            "论文 Table 3",
+            "GPT-3 (text-davinci-002)",
+            "DIRECT",
+            "11.7",
+            "16.0",
+            "12.4",
+            "0.8",
+            "4.4"
+          ],
+          [
+            "论文 Table 3",
+            "GPT-3 (text-davinci-002)",
+            "NATIVE-COT",
+            "26.4",
+            "53.6",
+            "28.4",
+            "0.4",
+            "6.4"
+          ],
+          [
+            "论文 Table 3",
+            "GPT-3 (text-davinci-002)",
+            "EN-COT",
+            "31.6",
+            "53.6",
+            "28.4",
+            "5.6",
+            "9.6"
+          ],
+          [
+            "论文 Table 3",
+            "GPT-3 (text-davinci-002)",
+            "TRANSLATE-EN",
+            "45.6",
+            "53.6",
+            "48.8",
+            "41.2",
+            "37.6"
+          ],
+          [
+            "论文 Table 3",
+            "PaLM-540B",
+            "DIRECT",
+            "18.6",
+            "22.0",
+            "22.0",
+            "17.2",
+            "15.6"
+          ],
+          [
+            "论文 Table 3",
+            "PaLM-540B",
+            "NATIVE-COT",
+            "48.1",
+            "62.4",
+            "48.4",
+            "46.0",
+            "35.2"
+          ],
+          [
+            "论文 Table 3",
+            "PaLM-540B",
+            "EN-COT",
+            "51.3",
+            "62.4",
+            "55.6",
+            "46.4",
+            "44.4"
+          ],
+          [
+            "论文 Table 3",
+            "PaLM-540B",
+            "TRANSLATE-EN",
+            "55.0",
+            "62.4",
+            "59.6",
+            "53.2",
+            "51.2"
+          ]
+        ]
+      },
+      "cite": [
+        "paper@Table 3"
+      ]
+    }
+  }
+}

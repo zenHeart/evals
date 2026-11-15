@@ -1,0 +1,685 @@
+{
+  "id": "mcp-universe",
+  "name": "MCP-Universe",
+  "full_name": "MCP-Universe: Benchmarking Large Language Models with Real-World Model Context Protocol Servers",
+  "aliases": [],
+  "status": null,
+  "categories": [
+    "agent"
+  ],
+  "summary": "MCP-Universe 是 Salesforce AI Research 2025-08 发布的智能体工具调用基准：231 个任务、6 个领域、11 个真实 MCP 服务器，全部配执行式判分器（格式 / 静态 / 动态）自动核对，主口径是 ReAct 智能体的整体成功率。论文里最强的 GPT-5 也只有 43.72%，官方榜单（2026-11 查看）最高为 Gemini-3-Pro-Preview 的 44.59%。",
+  "interpretation": "读分先分清口径：论文主口径是 ReAct 智能体 + 整体成功率，官方榜单另分 ReAct Track、Function Calls Track 和 Overall Track（取两轨最高），跨轨数字不能直接比。整体成功率是 6 个领域的汇总，而领域间差距极大（3D Designing 最好 52.63%，Location Navigation 全员低于 35%），所以单看总分容易高估模型在陌生工具生态里的可用性。它同时压测三件事：交互步数带来的长上下文膨胀、对陌生工具精确用法的不熟悉、以及必须联网取实时 ground truth 的任务——这三点是它区别于普通工具调用基准的主要地方。",
+  "measures": [
+    {
+      "area": "Web Searching（网页搜索）",
+      "focus": "Google Search MCP 负责检索、Fetch MCP 抓取指定 URL 内容；任务类型含人物识别、实体发现、指标匹配、复杂推理与事实查询",
+      "share": "55 题（23.8%）",
+      "format": "执行式判分（动态判分器核对实时检索结果）",
+      "cite": [
+        "arxiv-2508-14704@Table 2",
+        "arxiv-2508-14704@§3.3"
+      ]
+    },
+    {
+      "area": "Location Navigation（地理位置导航）",
+      "focus": "官方 Google Maps MCP；任务类型含路线规划、最优停靠点选择、地点搜索、场所查找，需处理真实地理数据",
+      "share": "45 题（19.5%）",
+      "format": "执行式判分",
+      "cite": [
+        "arxiv-2508-14704@Table 2",
+        "arxiv-2508-14704@§3.3"
+      ]
+    },
+    {
+      "area": "Financial Analysis（金融分析）",
+      "focus": "Yahoo Finance MCP 实时行情；任务类型含组合分析、财务报表、交易策略、机构持仓、分红分析",
+      "share": "40 题（17.3%）",
+      "format": "执行式判分（动态判分器依赖实时行情）",
+      "cite": [
+        "arxiv-2508-14704@Table 2",
+        "arxiv-2508-14704@§3.3"
+      ]
+    },
+    {
+      "area": "Browser Automation（浏览器自动化）",
+      "focus": "Playwright MCP；任务类型含旅行预订、体育数据分析、学术调研、平台探索、地图导航",
+      "share": "39 题（16.9%）",
+      "format": "执行式判分",
+      "cite": [
+        "arxiv-2508-14704@Table 2",
+        "arxiv-2508-14704@§3.3"
+      ]
+    },
+    {
+      "area": "Repository Management（仓库管理）",
+      "focus": "GitHub MCP 暴露真实版本控制工具；任务类型含项目搭建、issue 跟踪、自动化配置、代码集成",
+      "share": "33 题（14.3%）",
+      "format": "执行式判分",
+      "cite": [
+        "arxiv-2508-14704@Table 2",
+        "arxiv-2508-14704@§3.3"
+      ]
+    },
+    {
+      "area": "3D Designing（三维设计）",
+      "focus": "Blender MCP；任务类型含物体创建、资产操作、材质设置、灯光配置、渲染参数、场景层级",
+      "share": "19 题（8.2%）",
+      "format": "执行式判分",
+      "cite": [
+        "arxiv-2508-14704@Table 2",
+        "arxiv-2508-14704@§3.3"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "不测无工具的纯模型内能力：任务筛选规则明确「不用 MCP 服务器就能轻松完成」的任务算过易，会重新设计，所以脱离这些服务器几乎无法作答。",
+      "cite": [
+        "arxiv-2508-14704@§3.4"
+      ]
+    },
+    {
+      "text": "不测开放式/主观产出质量：判分是执行式的（格式合规、时间无关内容匹配、实时 ground truth 核对），论文明确不采用 LLM-as-a-Judge。",
+      "cite": [
+        "arxiv-2508-14704@abstract",
+        "arxiv-2508-14704@§3.4"
+      ]
+    },
+    {
+      "text": "多模态输入（图片/音频/视频题）：论文未披露此类任务，任务与判分器均为文本交互。",
+      "cite": [
+        "arxiv-2508-14704@Table 2"
+      ]
+    },
+    {
+      "text": "成本与延迟：论文只把平均交互步数（AS）作为效率参考，未报告 token 成本或墙钟时间。",
+      "cite": [
+        "arxiv-2508-14704@Table 3"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 231,
+    "splits": [
+      "论文未划分训练/测试集，231 个任务是同一评测集",
+      "官方站点把同一基准按智能体接口分成 ReAct Track 与 Function Calls Track 两条赛道，Overall Track 取两轨最高"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "人工设计任务 + 真实 MCP 服务器实时数据（动态判分器需联网拉取实时 ground truth）",
+    "public_sample": true,
+    "totals": "231 个任务 / 6 个领域 / 11 个 MCP 服务器 / 服务器内共 133 个工具 / 84 个独立判分器（格式 4 个 4.8%、静态 32 个 38.1%、动态 48 个 57.1%）；任务与判分器均在官方 GitHub 公开",
+    "cite": [
+      "arxiv-2508-14704@Table 2",
+      "arxiv-2508-14704@附录 A",
+      "arxiv-2508-14704@附录 B"
+    ],
+    "construction": [
+      {
+        "k": "领域与服务器选型",
+        "text": "6 个核心领域各配官方 MCP 服务器：Google Maps（Location Navigation）、GitHub（Repository Management）、Yahoo Finance（Financial Analysis）、Blender（3D Designing）、Playwright（Browser Automation）、Google Search + Fetch（Web Searching）；另接 Notion、Weather、Date、Calculator 四个辅助服务器以提高任务复杂度。论文说明其中多数是官方服务器，部分基于官方 API。",
+        "cite": [
+          "arxiv-2508-14704@§3.3",
+          "arxiv-2508-14704@附录 A"
+        ]
+      },
+      {
+        "k": "任务类型设计",
+        "text": "每个领域设计 4–5 类任务（如 Location Navigation 的路线规划、最优停靠点、地点搜索、场所查找；Repository Management 的项目搭建、issue 跟踪、自动化配置、代码集成），覆盖该领域的真实使用方式。",
+        "cite": [
+          "arxiv-2508-14704@§3.3"
+        ]
+      },
+      {
+        "k": "过易任务筛除",
+        "text": "若一个任务不用 MCP 服务器就能被 LLM 轻松完成，或接上服务器后五次重试内能稳定解决，就判定为简单任务并重新头脑风暴，保证难度来自真实工具使用。",
+        "cite": [
+          "arxiv-2508-14704@§3.4"
+        ]
+      },
+      {
+        "k": "执行式判分器",
+        "text": "每个任务配独立判分器，分三类：格式判分器检查输出是否严格遵循格式要求；静态判分器核对答案不随时间变化的任务（路线中的城市数、球员进球数、历史股价等，正确答案人工收集）；动态判分器的正确答案需随实时数据更新（未来日期航班价格、某地天气、GitHub issue 数等），由程序自动拉取。",
+        "cite": [
+          "arxiv-2508-14704@§3.4"
+        ]
+      },
+      {
+        "k": "不用 LLM 当裁判",
+        "text": "论文明确不采用 LLM-as-a-Judge：需要实时知识的任务不适合 LLM 裁判，且 LLM 裁判本身存在风格偏好问题。",
+        "cite": [
+          "arxiv-2508-14704@§2"
+        ]
+      },
+      {
+        "k": "公开与可复现",
+        "text": "全部任务与判分器放在官方 GitHub；附录另给出 30 个任务示例和 3 个判分器示例，评测框架带 UI 一并开源。",
+        "cite": [
+          "arxiv-2508-14704@附录 A",
+          "arxiv-2508-14704@附录 B"
+        ]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "主口径是 ReAct 智能体：模型先根据当前观察生成 thought，再基于该 thought 生成下一步 action，循环到提交答案；所有模型 temperature 设为 1.0，GPT-OSS 因指令遵循能力差改用 OpenAI Agent SDK。判分完全执行式——格式判分器查格式、静态判分器查时间无关内容、动态判分器在评测时自动拉取实时 ground truth；论文报告整体成功率（Overall Success Rate）、平均判分得分（AE）与平均交互步数（AS）三个数。",
+    "cite": [
+      "arxiv-2508-14704@§4.1",
+      "arxiv-2508-14704@附录 C",
+      "arxiv-2508-14704@Table 3"
+    ],
+    "variants": [
+      {
+        "text": "ReAct vs Function Calls vs 企业智能体框架：站点把结果拆成 ReAct Track、Function Calls Track 与 Overall Track（两轨取最高），论文另测 Cursor Agent 与 OpenAI Agent SDK 作 backbone；同一模型换框架分数会变（o3 + Agent SDK 31.60% vs o3 + ReAct 26.41%）。",
+        "cite": [
+          "mcp-universe-site@leaderboard",
+          "arxiv-2508-14704@Table 5"
+        ]
+      },
+      {
+        "text": "探索阶段（缓解陌生工具）：正式答题前允许 LLM 先探索工具用法，再带已获得的工具知识用 ReAct 解题；对部分模型/领域有提升，但不是普遍有效。",
+        "cite": [
+          "arxiv-2508-14704@§4.4"
+        ]
+      },
+      {
+        "text": "摘要智能体（缓解长上下文）：每步插入摘要智能体压缩 MCP 服务器原始输出，结果好坏不一。",
+        "cite": [
+          "arxiv-2508-14704@§4.3"
+        ]
+      },
+      {
+        "text": "接入更多无关服务器：全部任务同时接 7 个 MCP 服务器（94 个工具）会引入额外噪声，多个域分数明显下降（Claude-4.0-Sonnet 的 Location Navigation 从 22.22% 掉到 11.11%）。",
+        "cite": [
+          "arxiv-2508-14704@§4.5"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "success-rate",
+      "name": "整体成功率",
+      "direction": "越高越好",
+      "description": "执行式判分器判定为成功的任务占比（Overall Success Rate）；论文主口径为 ReAct 智能体，站点另给 Function Calls 与 Overall 两条赛道",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2508-14704@Table 3",
+        "mcp-universe-site@leaderboard"
+      ]
+    },
+    {
+      "id": "average-evaluator-score",
+      "name": "平均判分得分",
+      "direction": "越高越好",
+      "description": "全部任务判分器得分的平均值（AE），反映部分得分而非只看成败",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2508-14704@Table 3"
+      ]
+    },
+    {
+      "id": "average-steps",
+      "name": "平均交互步数",
+      "direction": "越低越好",
+      "description": "完成任务平均使用的交互步数（AS），只作效率参考，不等于答案质量更好",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "steps",
+      "cite": [
+        "arxiv-2508-14704@Table 3"
+      ]
+    },
+    {
+      "id": "evaluator-type-success-rate",
+      "name": "分判分类型成功率",
+      "direction": "越高越好",
+      "description": "按判分器类型拆开的成功率：格式（输出合规）、静态（时间无关内容）、动态（实时 ground truth），用来区分「不会按格式输出」和「内容做不对」",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2508-14704@Table 4"
+      ]
+    }
+  ],
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2025-08-20",
+      "label": "arXiv v1 发布：231 个任务、6 领域、11 个 MCP 服务器、84 个执行式判分器（本页核对所用版本）",
+      "cite": [
+        "arxiv-2508-14704"
+      ]
+    },
+    {
+      "id": "site-current",
+      "date": "2026-11-14",
+      "label": "官方榜单现行状态（查看日，页面未标注结果更新日期）：ReAct / Function Calls / Overall 三条赛道，已收录论文发布后的模型，如 Gemini-3-Pro-Preview 44.59%",
+      "cite": [
+        "mcp-universe-site@leaderboard"
+      ]
+    },
+    {
+      "id": "repo-current",
+      "date": "2026-11-14",
+      "label": "开源仓库演进（查看日）：基准之外新增 MCPMark 评测支持、MCP+ 上下文管理与 Deep Research Agent",
+      "cite": [
+        "github-repo@README"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "领域间差距极大，总分掩盖短板",
+      "impact": "整体成功率是 6 个领域的汇总值。Location Navigation 所有 LLM 都低于 35%，GPT-4.1 与 GPT-4o 甚至低于 10%；Repository Management 只有 GPT-5 超过 30%；3D Designing 只有 GPT-5 超过 50%。一个看着不错的总体分可能完全来自个别领域。",
+      "severity": "高",
+      "response": "论文按领域逐列报告，官方榜单同样按 6 个领域分列，可以定位短板。",
+      "reader": "先看目标领域的分数，再看总体分；拿它当「平均工具调用可用率」会高估实际能力。",
+      "cite": [
+        "arxiv-2508-14704@§4.2",
+        "mcp-universe-site@leaderboard"
+      ]
+    },
+    {
+      "issue": "长上下文随交互步数快速膨胀",
+      "impact": "论文实测 token 数量随交互步数快速增长，Location Navigation、Browser Automation、Financial Analysis 三个域尤其严重（Google Maps 一次返回多个地点的详细信息、Playwright 可能返回整页 HTML、Yahoo Finance 按时间区间返回大量行情）。",
+      "severity": "高",
+      "response": "论文做了摘要智能体的初步实验，但只在部分模型/域有效，作者列为待解决问题。",
+      "reader": "长任务上掉分可能来自上下文管理而非工具调用本身；比较模型时注意步数（AS）差异。",
+      "cite": [
+        "arxiv-2508-14704@§4.3",
+        "arxiv-2508-14704@abstract"
+      ]
+    },
+    {
+      "issue": "实时数据导致结果难以精确复现",
+      "impact": "动态判分器（占全部判分器 57.1%）的 ground truth 要在评测时联网拉取，行情、航班价格、天气、issue 数都会变化，同一模型在不同日期的分数不保证一致。",
+      "severity": "中",
+      "response": "论文把判分器与任务全部开源，并区分静态/动态两类，便于理解哪些题会漂移。",
+      "reader": "跨论文、跨榜单比分数时留出余量，几个百分点可能来自数据时点而非模型差异。",
+      "cite": [
+        "arxiv-2508-14704@Table 2",
+        "arxiv-2508-14704@§3.4"
+      ]
+    },
+    {
+      "issue": "对陌生工具的精确用法不熟悉",
+      "impact": "论文把这单列为 unknown-tools 挑战：LLM 智能体常不熟悉 MCP 服务器的精确用法（如 Yahoo Finance 的起止日期不能相同），导致调用失败。",
+      "severity": "中",
+      "response": "论文提出探索阶段作为缓解手段，但提升不普遍。",
+      "reader": "低分不等于「不会推理」，可能是参数用错；看分判类型成功率能区分格式问题与内容问题。",
+      "cite": [
+        "arxiv-2508-14704@§4.4",
+        "arxiv-2508-14704@abstract"
+      ]
+    },
+    {
+      "issue": "工具空间规模有限且对噪声敏感",
+      "impact": "基准只覆盖 11 个服务器、133 个工具；实验显示把服务器扩到 7 个（94 个工具）就明显掉分，说明分数对工具空间构成敏感，不能直接外推到更大生态。",
+      "severity": "中",
+      "response": "论文把「接入更多无关服务器」作为独立实验报告，并称框架可扩展以接入新服务器。",
+      "reader": "看到厂商在自家工具集上的高分手，先问工具数量和这 11 个服务器是否可比。",
+      "cite": [
+        "arxiv-2508-14704@§4.5",
+        "arxiv-2508-14704@Table 2"
+      ]
+    },
+    {
+      "issue": "分数受智能体框架选择影响",
+      "impact": "同一个 backbone 换框架分数就变：Claude-4.0-Sonnet 用 ReAct 29.44%、用 Cursor Agent 26.41%（Cursor 在 Browser Automation 43.59% 更高，但 Web Searching 只有 7.27%）；o3 用 OpenAI Agent SDK 31.60%、用 ReAct 26.41%。",
+      "severity": "低",
+      "response": "论文固定主口径为 ReAct 并单独报告框架对比；站点用赛道标签区分接口差异。",
+      "reader": "比分数前确认赛道/框架标签，企业框架的数字不能和裸 ReAct 数字混排。",
+      "cite": [
+        "arxiv-2508-14704@Table 5",
+        "arxiv-2508-14704@abstract"
+      ]
+    }
+  ],
+  "notes": "DeepSeek 引用；Salesforce Research 发布",
+  "official_sources": [
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2508.14704"
+    },
+    {
+      "kind": "site",
+      "url": "https://mcp-universe.github.io"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/SalesforceAIResearch/MCP-Universe"
+    },
+    {
+      "kind": "site",
+      "url": "https://api-docs.deepseek.com/zh-cn/news/news251201"
+    }
+  ],
+  "related_benchmarks": [],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "arxiv-2508-14704",
+        "kind": "paper",
+        "title": "MCP-Universe: Benchmarking Large Language Models with Real-World Model Context Protocol Servers（arXiv:2508.14704v1，Salesforce AI Research，2025-08-20）",
+        "url": "https://arxiv.org/abs/2508.14704",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "mcp-universe-site",
+        "kind": "site",
+        "title": "mcp-universe.github.io 官方榜单（ReAct / Function Calls / Overall 三条赛道）",
+        "url": "https://mcp-universe.github.io",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "github-repo",
+        "kind": "repo",
+        "title": "SalesforceAIResearch/MCP-Universe（任务、判分器与评测框架，Apache-2.0）",
+        "url": "https://github.com/SalesforceAIResearch/MCP-Universe",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Salesforce AI Research",
+        "cite": [
+          "arxiv-2508-14704@作者署名"
+        ]
+      },
+      "first_release": {
+        "v": "2025-08-20（arXiv v1）",
+        "cite": [
+          "arxiv-2508-14704"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "arxiv-2508-14704@abstract",
+        "arxiv-2508-14704@Table 2",
+        "arxiv-2508-14704@Table 3"
+      ],
+      "interpretation": [
+        "arxiv-2508-14704@§4.2",
+        "arxiv-2508-14704@§5",
+        "mcp-universe-site@leaderboard"
+      ]
+    },
+    "problem": {
+      "text": "MCP 已成为连接 LLM 与外部数据源和工具的标准，但现有 MCP 基准要么过于简单、要么只测孤立方面：MCPWorld 依赖 GUI 且不含时变任务，MCP-RADAR 把 HumanEval、GSM8k 这类静态数据集改写成 MCP 场景，MCPEval 与 LiveMCPBench 用 LLM 当裁判（不适合实时知识，且 LLM 裁判有风格偏好）。MCP-Universe 用 11 个真实 MCP 服务器和执行式判分重测，把长程多轮工具调用、长上下文、大型陌生工具空间和实时数据放进同一把尺子。",
+      "cite": [
+        "arxiv-2508-14704@abstract",
+        "arxiv-2508-14704@§2"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "人类基线",
+        "value": "论文未给出",
+        "note": "论文只对比 LLM 与不同智能体框架，没有人类参考线，本站也不推算。",
+        "cite": [
+          "arxiv-2508-14704@Table 3"
+        ]
+      },
+      {
+        "label": "论文最佳开源模型（GLM-4.5）",
+        "value": "24.68%",
+        "note": "论文明确 GLM-4.5 是最佳开源 LLM，整体成功率高于部分闭源模型（o4-mini、Claude-3.7-Sonnet）。",
+        "cite": [
+          "arxiv-2508-14704@Table 3"
+        ]
+      },
+      {
+        "label": "论文最佳整体（GPT-5，ReAct）",
+        "value": "43.72%",
+        "note": "同时是最高平均判分得分（60.23）；Web Searching 45.45%、Financial Analysis 67.50%、3D Designing 52.63%。",
+        "cite": [
+          "arxiv-2508-14704@Table 3"
+        ]
+      },
+      {
+        "label": "官方榜单 ReAct Track 最高（GPT-5-High）",
+        "value": "44.16%",
+        "note": "站点 ReAct 赛道，查看日 2026-11-14；页面未标注结果更新日期。",
+        "cite": [
+          "mcp-universe-site@leaderboard"
+        ]
+      },
+      {
+        "label": "官方榜单 Function Calls Track 最高（Gemini-3-Pro-Preview）",
+        "value": "44.59%",
+        "note": "站点 Function Calls 赛道；Overall Track 的规则是取两轨最高，因此跨轨数字不可直接比较。",
+        "cite": [
+          "mcp-universe-site@leaderboard"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 43.72% 理解成「模型已经会用 MCP 工具」——它是 6 个领域的平均值，Location Navigation 全员低于 35%，GPT-4.1 与 GPT-4o 甚至低于 10%。",
+        "cite": [
+          "arxiv-2508-14704@§4.2"
+        ]
+      },
+      {
+        "text": "把 ReAct Track 和 Function Calls Track 的分数排在一起比——站点明确 Overall Track 取两轨最高，两条赛道接口不同，口径不能混。",
+        "cite": [
+          "mcp-universe-site@leaderboard"
+        ]
+      },
+      {
+        "text": "把站点正文的「best model (GPT-5) 43.72%」当成榜单最新结论——同一页表格里已有 44.59% 的条目，正文滞后于表格。",
+        "cite": [
+          "mcp-universe-site@leaderboard"
+        ]
+      },
+      {
+        "text": "以为低分是模型不会按格式输出——非推理模型的格式判分普遍高于 90%（Claude-4.0-Sonnet 98.29%），主要失败发生在内容生成。",
+        "cite": [
+          "arxiv-2508-14704@Table 4"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "Salesforce AI Research",
+        "cite": [
+          "arxiv-2508-14704@作者署名"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "Ziyang Luo、Zhiqi Shen、Wenzhuo Yang（共同一作），Zirui Zhao、Prathyusha Jwalapuram、Amrita Saha、Doyen Sahoo，资深作者 Silvio Savarese、Caiming Xiong、Junnan Li",
+        "cite": [
+          "arxiv-2508-14704@作者署名"
+        ]
+      },
+      {
+        "k": "协议背景",
+        "v": "MCP（Model Context Protocol）已成为连接 LLM 与外部数据源和工具的转换性标准，在主流 AI 厂商与开发平台快速普及，这正是基准要测的对象",
+        "cite": [
+          "arxiv-2508-14704@abstract"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "任务、判分器与可扩展评测框架在 GitHub 开源（Apache-2.0），框架带 UI / dashboard，便于接入新智能体与新 MCP 服务器",
+        "cite": [
+          "arxiv-2508-14704@附录 A",
+          "arxiv-2508-14704@附录 B",
+          "github-repo@about"
+        ]
+      },
+      {
+        "k": "相关基准",
+        "v": "MCPWorld 依赖 GUI 且不含时变任务；MCP-RADAR 把 HumanEval、GSM8k 改写成 MCP 场景但 ground truth 不随时间变；MCPEval 与 LiveMCPBench 采用 LLM-as-a-Judge",
+        "cite": [
+          "arxiv-2508-14704@§2"
+        ]
+      },
+      {
+        "k": "后续演进",
+        "v": "开源仓库在基准之外扩展了 MCPMark 评测支持、MCP+ 上下文管理与 Deep Research Agent，自我定位从单一基准变成智能体开发生态",
+        "cite": [
+          "github-repo@README"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-14（论文 Table 3 / Table 5 + 官方榜单查看日）",
+        "columns": [
+          "来源",
+          "模型 / 框架",
+          "整体成功率",
+          "平均判分得分",
+          "平均步数",
+          "口径"
+        ],
+        "rows": [
+          [
+            "论文 Table 3",
+            "GPT-5",
+            "43.72%",
+            "60.23",
+            "8.22",
+            "ReAct（论文最佳）"
+          ],
+          [
+            "论文 Table 3",
+            "Grok-4",
+            "33.33%",
+            "49.01",
+            "7.75",
+            "ReAct"
+          ],
+          [
+            "论文 Table 3",
+            "Claude-4.0-Sonnet",
+            "29.44%",
+            "50.61",
+            "7.46",
+            "ReAct"
+          ],
+          [
+            "论文 Table 3",
+            "o3",
+            "26.41%",
+            "38.95",
+            "4.82",
+            "ReAct"
+          ],
+          [
+            "论文 Table 3",
+            "GLM-4.5",
+            "24.68%",
+            "41.16",
+            "7.33",
+            "ReAct（论文最佳开源）"
+          ],
+          [
+            "论文 Table 3",
+            "Kimi-K2",
+            "19.05%",
+            "35.10",
+            "6.07",
+            "ReAct"
+          ],
+          [
+            "论文 Table 3",
+            "Qwen3-Coder",
+            "19.91%",
+            "37.78",
+            "7.78",
+            "ReAct"
+          ],
+          [
+            "论文 Table 3",
+            "Qwen3-235B",
+            "18.18%",
+            "38.53",
+            "5.74",
+            "ReAct"
+          ],
+          [
+            "论文 Table 3",
+            "DeepSeek-V3",
+            "14.29%",
+            "35.82",
+            "5.06",
+            "ReAct"
+          ],
+          [
+            "论文 Table 3",
+            "GPT-OSS-120B",
+            "11.26%",
+            "26.34",
+            "未给出",
+            "OpenAI Agent SDK（指令遵循差，不走 ReAct）"
+          ],
+          [
+            "论文 Table 5",
+            "Claude-4.0-Sonnet + Cursor Agent",
+            "26.41%",
+            "未列出",
+            "未列出",
+            "企业智能体框架"
+          ],
+          [
+            "论文 Table 5",
+            "o3 + OpenAI Agent SDK",
+            "31.60%",
+            "未列出",
+            "未列出",
+            "企业智能体框架"
+          ],
+          [
+            "官方榜单",
+            "GPT-5-High",
+            "44.16%",
+            "62.82",
+            "6.84",
+            "ReAct Track（查看日最高）"
+          ],
+          [
+            "官方榜单",
+            "Gemini-3-Pro-Preview",
+            "44.59%",
+            "61.67",
+            "7.80",
+            "Function Calls Track（查看日最高）"
+          ]
+        ]
+      },
+      "cite": [
+        "arxiv-2508-14704@Table 3",
+        "arxiv-2508-14704@Table 5",
+        "mcp-universe-site@leaderboard"
+      ]
+    }
+  }
+}

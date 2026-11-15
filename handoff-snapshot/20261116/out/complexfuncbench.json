@@ -1,0 +1,360 @@
+{
+  "id": "complexfuncbench",
+  "name": "ComplexFuncBench",
+  "full_name": "ComplexFuncBench: Exploring Multi-Step and Constrained Function Calling under Long-Context Scenario（长上下文下的多步与带约束函数调用评测）",
+  "aliases": [],
+  "status": "active",
+  "categories": ["agent"],
+  "summary": "智谱 AI 与清华大学出品的复杂函数调用评测：函数取自 Booking.com 的 43 个实时 API，覆盖酒店、航班、景点、租车、出租车 5 个域，共 1,000 道题。难点不在「给一段 Schema 选一个函数、填几个显式参数」，而在多步调用链、用户口头约束，以及从隐含信息里推出参数值——论文的例子：New York 与 NY、Narita International Airport 与 Tokyo Narita International Airport 算同一取值；单题上下文可达 128k。",
+  "interpretation": "高分意味着模型能在 128k 上下文里连续多步调用函数、按用户约束筛选、从隐含信息推出参数值，并给出完整且与 API 返回一致的最终回答。目前最好成绩只有约 61% 成功率（Claude-3.5-Sonnet 61.00；本站账本当前最高 61.2），离「可交付」还很远；10B 以下模型基本做不了（GLM-4-9B 9.40、Qwen2.5-7B 5.0）。同一个 Llama-3.1 系列从 8B 到 405B 全在 5% 以下，说明这道坎不是参数量能单独跨过的。",
+  "measures": [
+    {
+      "area": "单轮内的多步调用",
+      "focus": "一次用户请求要连续发起多个函数调用且顺序正确；平均每题 3.26 步、5.07 次调用",
+      "share": "未披露（论文未给五个方面的题量占比）",
+      "format": "交互式多步函数调用，模型每步生成下一步调用",
+      "cite": ["arxiv-2501-10132@§2.2", "arxiv-2501-10132@Abstract"]
+    },
+    {
+      "area": "用户给定约束",
+      "focus": "参数要满足用户口头给出的限制（价格、日期、地点等），需要按约束筛选而不是全部返回",
+      "share": "未披露（论文未给五个方面的题量占比）",
+      "format": "带约束条件的参数填装",
+      "cite": ["arxiv-2501-10132@§1", "repo-complexfuncbench@README"]
+    },
+    {
+      "area": "参数值推理",
+      "focus": "参数值不直接给出，要从用户话语的隐含信息和前面的 API 返回里推出来",
+      "share": "未披露（论文未给五个方面的题量占比）",
+      "format": "精确参数值匹配（同一取值的不同写法按语义判等价）",
+      "cite": ["arxiv-2501-10132@§1", "arxiv-2501-10132@§3.1"]
+    },
+    {
+      "area": "长参数值",
+      "focus": "某些参数值本身超过 500 token，要靠从 API 返回里定位并原文带出（论文示例是 booking 的 token / key 类参数）",
+      "share": "未披露（论文未给五个方面的题量占比）",
+      "format": "长参数值的精确匹配",
+      "cite": ["repo-complexfuncbench@README", "arxiv-2501-10132@§4.3.1"]
+    },
+    {
+      "area": "128k 长上下文",
+      "focus": "函数列表与逐步累积的 API 返回合起来可到 128k，考长上下文里的信息定位与不丢线索",
+      "share": "未披露（论文未给五个方面的题量占比）",
+      "format": "128k 上下文长度输入（论文只选 128k 上下文长度的模型参评）",
+      "cite": ["arxiv-2501-10132@Abstract", "arxiv-2501-10132@§4.1"]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "单轮 schema 拟合：题目要求多步链式调用，不是「给一段函数定义选一个、填几个显式参数」就结束",
+      "cite": ["arxiv-2501-10132@§1", "arxiv-2501-10132@Table 1"]
+    },
+    {
+      "text": "真实副作用执行：调用不落地，ComplexEval 用标注好的 API 响应回填对话，不会真的下单或预订",
+      "cite": ["arxiv-2501-10132@§3.1", "arxiv-2501-10132@§1"]
+    },
+    {
+      "text": "多轮对话、长程 Agent 任务（规划、记忆、跨会话状态推进、工具组合执行）",
+      "cite": ["arxiv-2501-10132@§1", "arxiv-2501-10132@Table 1"]
+    },
+    {
+      "text": "代码生成与非英文：数据集语言只有英文",
+      "cite": ["dataset-hf"]
+    },
+    {
+      "text": "答案的独立事实核查：Completeness / Correctness 由 GPT-4o 当裁判打 0–2 分，不是人工逐一核验",
+      "cite": ["arxiv-2501-10132@§3.2", "arxiv-2501-10132@附录 B.4"]
+    }
+  ],
+  "dataset": {
+    "sample_count": 1000,
+    "splits": ["单一 train split（Hugging Face 上只有 default / train，无独立测试集）"],
+    "languages": ["en"],
+    "source_type": "real-world API scenarios（开源）：函数来自 Booking.com 实时 API，题目由 GPT-4o 生成初稿后人工标注",
+    "public_sample": true,
+    "multiple_choice_share": "0（无选择题，全是函数调用任务）",
+    "multimodal_share": "0（纯文本）",
+    "totals": "1,000 题 = 600 单域（酒店 / 航班 / 租车 / 景点各 150）+ 400 跨域；平均 3.26 步、5.07 次调用；43 个实时 API、5 个域；语言仅英文",
+    "cite": ["arxiv-2501-10132@§2.2", "arxiv-2501-10132@§2.1", "dataset-hf"],
+    "construction": [
+      {
+        "k": "① 建函数集",
+        "text": "从 RapidAPI 上的 Booking.com 收集 43 个实时 API，覆盖酒店、航班、景点、租车、出租车 5 个域；论文直言官网函数描述「不完整甚至错误」，因此人工逐条改写补全。",
+        "cite": ["arxiv-2501-10132@§2.1"]
+      },
+      {
+        "k": "② 粗生成（GPT-4o 起草）",
+        "text": "随机抽函数、设计提示词，让 GPT-4o 生成 1,000 条 query，并用它的 function calling 接口自动标注调用路径；论文承认自动标注错误严重（参数值错、调用顺序错），只当初稿用。",
+        "cite": ["arxiv-2501-10132@§2.1.1"]
+      },
+      {
+        "k": "③ 细粒度标注（资深标注员）",
+        "text": "从初稿挑 100 条路径相对完整的样本，做三件事：改写 query 补全细节（如出租车到达时间、酒店入住日期）、增删调用并调整顺序凑出最短有效路径、修正参数错误；再去歧义——删掉功能重叠的函数、删掉会让后续参数出现多种取值的 API 返回，直到 100 条全部通过质检。",
+        "cite": ["arxiv-2501-10132@§2.1.2"]
+      },
+      {
+        "k": "④ 泛化（初级标注员）",
+        "text": "以 100 条模板为样例让 GPT-4o 改写地点、约束等要素，每条再生成 9 条新 query，规模从 100 扩到 1,000；同一模板的 10 条 query 共享同一条调用路径、只改参数值，由初级标注员填参数值并删 API 返回去歧义。",
+        "cite": ["arxiv-2501-10132@§2.1.3"]
+      },
+      {
+        "k": "⑤ 数据构成",
+        "text": "最终 1,000 题：600 单域（酒店 / 航班 / 租车 / 景点各 150）+ 400 跨域；出租车域因只有两个函数，只出现在跨域题里。",
+        "cite": ["arxiv-2501-10132@§2.2"]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "success-rate",
+      "name": "Success Rate（成功率）",
+      "direction": "越高越好",
+      "description": "整题跑通的比例：多步调用全部走完、最终回答被判定完成任务的题目占比。这是头部卡的主要指标。",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["arxiv-2501-10132@§3.1", "arxiv-2501-10132@Table 2"]
+    },
+    {
+      "id": "call-accuracy",
+      "name": "Call Accuracy（调用准确率）",
+      "direction": "越高越好",
+      "description": "正确函数调用数占总函数调用数的比例，按样本汇总。它通常比 Success Rate 高 20 个百分点左右，因为题没跑通也可能大部分调用是对的。",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["arxiv-2501-10132@§3.1"]
+    },
+    {
+      "id": "completeness",
+      "name": "Completeness（完整性）",
+      "direction": "越高越好",
+      "description": "GPT-4o 判最终回答是否覆盖用户全部要求：0 = 完全没覆盖、1 = 部分覆盖、2 = 全覆盖，取全样本平均。",
+      "range": [0, 2],
+      "unit": "score",
+      "cite": ["arxiv-2501-10132@§3.2"]
+    },
+    {
+      "id": "correctness",
+      "name": "Correctness（正确性）",
+      "direction": "越高越好",
+      "description": "GPT-4o 判回答是否准确且与 API 返回一致：0 = 全错、1 = 部分对、2 = 全对，取全样本平均。",
+      "range": [0, 2],
+      "unit": "score",
+      "cite": ["arxiv-2501-10132@§3.2"]
+    }
+  ],
+  "default_protocol": {
+    "raw": "ComplexEval 自动评测，同时判函数调用和最终回答。函数调用分三步：① 格式检查——函数在可用列表里、必填参数齐全、参数类型符合描述，不过关就用一条特定错误信息当 API 返回，让模型自行纠错；② 匈牙利映射——对格式正确的调用，用 bge-large-en-v1.5 把「函数名 + 参数」拼成字符串编码成文本 embedding，算余弦相似度后用匈牙利算法做一对一匹配；③ 多维匹配判等价——规则匹配（两次调用完全一致）、响应匹配（返回的 API 结果一致）、GPT-4o 语义匹配（同一取值的不同写法算等价）。判等价的就把该步标注的 API 返回回填进对话历史、更新剩余标准调用列表，继续让模型生成下一步，直到给出最终回答。回答质量另由 GPT-4o 打 Completeness 与 Correctness（各 0–2 分）。",
+    "cite": ["arxiv-2501-10132@§3.1", "arxiv-2501-10132@§3.2", "arxiv-2501-10132@Figure 3"],
+    "variants": [
+      {
+        "text": "生成口径：所有模型统一 greedy sampling、最长生成 2048 token；闭源模型设 tool_choice=\"auto\" 让模型自己选工具。换温度或采样参数的结果不能直接与论文比。",
+        "cite": ["arxiv-2501-10132@附录 B.1"]
+      },
+      {
+        "text": "响应式评测需要自备 RapidAPI 的 Booking.com API key（订阅 booking-com15），否则拿不到真实 API 返回；开源模型要自己用 vLLM 起服务（示例 --max_model_len 131072）。",
+        "cite": ["repo-complexfuncbench@README"]
+      },
+      {
+        "text": "复现命令：python evaluation.py --model_name {model_name} --proc_num {proc_num} 跑推理，再用 python print_results.py --result_dir {result_dir} 出表。",
+        "cite": ["repo-complexfuncbench@README"]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2025-01-17",
+      "label": "arXiv v1 发布（cs.CL，1,517 KB），论文与评测框架 ComplexEval 首次公开；仓库与 Hugging Face 数据集同步上线，此后未检索到新版本",
+      "cite": ["arxiv-2501-10132@Submission history"]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "GPT-4o 既是出题人又是裁判，还是被测模型之一",
+      "impact": "数据初稿由 GPT-4o 生成、调用等价性与回答质量由 GPT-4o 判定，而 GPT-4o 又以 60.50 的成绩在榜上。生成端偏好会让题目分布贴近 GPT-4o 的能力形状，裁判端偏好会系统性抬高它的 Completeness / Correctness。",
+      "severity": "高",
+      "response": "未见官方回应。论文只说明自动标注错误严重、因此引入人工标注，没有讨论生成器 / 裁判与被测模型重合的影响。",
+      "reader": "把 GPT-4o 与其它模型的差距理解为「同一裁判口径下的相对排序」，不是绝对能力差；论文未提供换裁判的结果，重排可能性存在。",
+      "cite": ["arxiv-2501-10132@§2.1.1", "arxiv-2501-10132@§3.1", "arxiv-2501-10132@§3.2"]
+    },
+    {
+      "issue": "规模小、单一 API 生态",
+      "impact": "只有 1,000 题、43 个函数、5 个域，全部来自 Booking.com 一个生态，平均 3.26 步。换到数据库、内部系统、代码执行等别的工具生态时，这个分数没有迁移性。",
+      "severity": "中",
+      "response": "未见官方回应（论文未讨论跨生态泛化）。",
+      "reader": "当「长上下文多步函数调用」的专项信号看，别当通用 Agent 能力；0.10%–61.00% 的跨度主要来自单生态内的难度。",
+      "cite": ["arxiv-2501-10132@§2.2", "arxiv-2501-10132@§4.1"]
+    },
+    {
+      "issue": "公开可下载，污染风险论文未讨论",
+      "impact": "数据集在 Hugging Face 公开（apache-2.0，上月约 6,762 次下载），题目和标准调用路径都能直接拿到；论文没有报告任何污染检测，也没有私有留存集。",
+      "severity": "中",
+      "response": "未见官方回应。",
+      "reader": "对 2025-01 之后训练的模型，这个分数可能含记忆成分；看分数时同时看模型 cutoff 和本站账本的 retrieved_at。",
+      "cite": ["dataset-hf"]
+    },
+    {
+      "issue": "标准答案是「人工选出的最短路径」",
+      "impact": "一题可能有多条有效调用路径，论文只保留资深标注员标注的最短路径作标准答案，并删掉会让后续参数产生歧义的 API 返回。走另一条合理路径的模型会被判错。",
+      "severity": "中",
+      "response": "ComplexEval 的三种匹配口径（规则 / 响应 / GPT-4o 语义）与「标准调用列表动态更新」就是为缓解这一点设计的。",
+      "reader": "Success Rate 度量的是「贴近标准路径」，不等于「任务真的被完成」；Call Accuracy 普遍更高正与此有关。",
+      "cite": ["arxiv-2501-10132@§2.1.2", "arxiv-2501-10132@§3.1"]
+    },
+    {
+      "issue": "论文正文与榜单数字不一致（GLM-4-9B）",
+      "impact": "§4.2 正文写 GLM-4-9B「only achieved a success rate of 8.4%」，而论文 Table 2 与官方仓库 Leaderboard 都是 9.40。",
+      "severity": "低",
+      "response": "未见官方回应；仓库 Leaderboard（9.40）与论文表格一致，本站采用 9.40。",
+      "reader": "引用 10B 以下模型的数字时以表格和仓库为准，正文那句话更可能是笔误。",
+      "cite": ["arxiv-2501-10132@§4.2", "arxiv-2501-10132@Table 2", "repo-complexfuncbench@README Leaderboard"]
+    }
+  ],
+  "notes": "智谱 AI（Zhipu AI）与清华大学出品；Hunyuan-A13B Instruct 在 Agent 组登记行 61.2（厂商自报）。仓库与 Hugging Face 数据集已从 THUDM 迁到 zai-org，两个地址目前都能打开。",
+  "official_sources": [
+    { "kind": "paper", "url": "https://arxiv.org/abs/2501.10132" },
+    { "kind": "repo", "url": "https://github.com/zai-org/ComplexFuncBench" },
+    { "kind": "dataset", "url": "https://huggingface.co/datasets/zai-org/ComplexFuncBench" }
+  ],
+  "related_benchmarks": ["bfcl", "cfbench", "t-eval", "c3-bench", "tau-bench"],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "arxiv-2501-10132",
+        "kind": "paper",
+        "title": "ComplexFuncBench: Exploring Multi-Step and Constrained Function Calling under Long-Context Scenario（arXiv:2501.10132v1，2025-01-17）",
+        "url": "https://arxiv.org/abs/2501.10132",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "repo-complexfuncbench",
+        "kind": "repo",
+        "title": "ComplexFuncBench 官方仓库（README 含 Leaderboard 与复现步骤；THUDM 已迁移至 zai-org）",
+        "url": "https://github.com/zai-org/ComplexFuncBench",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "dataset-hf",
+        "kind": "dataset",
+        "title": "Hugging Face 数据集 zai-org/ComplexFuncBench（apache-2.0）",
+        "url": "https://huggingface.co/datasets/zai-org/ComplexFuncBench",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": { "v": "智谱 AI（Zhipu AI）× 清华大学", "cite": ["arxiv-2501-10132@作者署名"] },
+      "first_release": { "v": "2025-01-17（arXiv v1）", "cite": ["arxiv-2501-10132@Submission history"] }
+    },
+    "cites": {
+      "summary": ["arxiv-2501-10132@Abstract", "arxiv-2501-10132@§2.1", "arxiv-2501-10132@§2.2", "arxiv-2501-10132@§3.1", "repo-complexfuncbench@README"],
+      "interpretation": ["arxiv-2501-10132@§4.2", "arxiv-2501-10132@Table 2", "repo-complexfuncbench@README Leaderboard"]
+    },
+    "problem": {
+      "text": "已有函数调用基准把参数直接写在 query 里，只要求一步调用；真实场景里用户往往只给隐含信息，模型要自己从用户约束和 API 返回里推出参数值，还要连续多步调用、在最长 128k 的上下文里干活。论文认为传统规则匹配也撑不住这类任务——NY 和 New York 这种同一取值的不同写法会被判成不等价。",
+      "cite": ["arxiv-2501-10132@§1", "arxiv-2501-10132@Abstract"]
+    },
+    "ladder": [
+      {
+        "label": "论文报告的最高成功率（闭源）",
+        "value": "61.00（Claude-3.5-Sonnet 20241022）",
+        "note": "同表 GPT-4o 60.50、GLM-4-Long 57.10；即论文 Table 2 / 仓库 Leaderboard 的 Overall Success Rate。",
+        "cite": ["arxiv-2501-10132@§4.2", "repo-complexfuncbench@README Leaderboard"]
+      },
+      {
+        "label": "论文报告的最强开源模型",
+        "value": "40.10（Qwen2.5-72B）",
+        "note": "同为开源，Llama-3.1-405B 4.00、Llama-3.1-70B 2.70、Llama-3.1-8B 0.10，整个 Llama-3.1 系列都没过 5%。",
+        "cite": ["arxiv-2501-10132@§4.2", "repo-complexfuncbench@README Leaderboard"]
+      },
+      {
+        "label": "10B 以下模型的上限",
+        "value": "9.40（GLM-4-9B）",
+        "note": "论文正文写作 8.4%，与表格 / 仓库的 9.40 不一致；Qwen2.5-7B 为 5.0。",
+        "cite": ["arxiv-2501-10132@§4.2", "repo-complexfuncbench@README Leaderboard"]
+      },
+      { "label": "本站账本当前最高", "auto": "ledger-top" },
+      {
+        "label": "人类参考线",
+        "value": "论文未给出",
+        "note": "论文没有人类基线，也没有随机基线；本站不推算。",
+        "cite": ["arxiv-2501-10132@Table 2"]
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 Success Rate 和 Call Accuracy 当一回事：前者是整题跑通，后者是单次调用调对。Claude-3.5-Sonnet 是 61.00 对 79.27，Qwen2.5-72B 是 40.10 对 58.32。",
+        "cite": ["arxiv-2501-10132@§3.1", "repo-complexfuncbench@README Leaderboard"]
+      },
+      {
+        "text": "把 Completeness / Correctness 当百分比：它们是 0–2 的平均分（0 全错、1 部分对、2 全对），1.84 不是 1.84%。",
+        "cite": ["arxiv-2501-10132@§3.2"]
+      },
+      {
+        "text": "以为跑评测会真的下单：调用不落地，ComplexEval 用标注好的 API 响应回填对话；格式不过关时回一条特定错误信息，考的正是模型能否自行纠错。",
+        "cite": ["arxiv-2501-10132@§3.1", "arxiv-2501-10132@§1"]
+      },
+      {
+        "text": "以为 61% 代表通用工具调用能力：这是 Booking.com 单一生态下「多步 + 带约束 + 128k 上下文」的专项口径，和 BFCL 那种单轮 schema 题不是一回事（论文 Table 1 自己做了这个区分）。",
+        "cite": ["arxiv-2501-10132@Table 1", "arxiv-2501-10132@§4.1"]
+      },
+      {
+        "text": "看到错误分布里参数类错误占比高，就以为模型「不会选函数」：论文的分析是 value_error 占了各模型错误的显著部分（Qwen2.5-72B 高达 78.8%），而 func_error 相对少见——问题更多出在参数值上。",
+        "cite": ["arxiv-2501-10132@§4.3.1", "arxiv-2501-10132@§1"]
+      }
+    ],
+    "background": [
+      { "k": "发布方", "v": "智谱 AI（Zhipu AI）与清华大学", "cite": ["arxiv-2501-10132@作者署名"] },
+      { "k": "核心作者", "v": "Lucen Zhong、Zhengxiao Du、Xiaohan Zhang、Haiyi Hu、Jie Tang", "cite": ["arxiv-2501-10132@作者署名"] },
+      {
+        "k": "时间线",
+        "v": "2025-01-17 arXiv v1 提交（cs.CL，1,517 KB）；官方仓库 4 个 commit、182 star / 30 fork；Hugging Face 数据集 apache-2.0、上月约 6,762 次下载、40.2 MB。仓库与数据集已从 THUDM 迁到 zai-org，两个地址均可访问。",
+        "cite": ["arxiv-2501-10132@Submission history", "repo-complexfuncbench@README", "dataset-hf"]
+      },
+      {
+        "k": "函数来源",
+        "v": "RapidAPI 上的 Booking.com（booking-com15）43 个实时 API，覆盖酒店、航班、景点、租车、出租车 5 个域；官网描述不完整甚至错误，由人工逐条改写补全。",
+        "cite": ["arxiv-2501-10132@§2.1", "repo-complexfuncbench@README"]
+      },
+      {
+        "k": "数据与代码",
+        "v": "数据集在 Hugging Face 公开，默认只有 train split，查看器当前不可用；仓库提供 evaluation.py / print_results.py，响应式评测需自备 Booking.com API key，开源模型需自建 vLLM 服务。",
+        "cite": ["dataset-hf", "repo-complexfuncbench@README"]
+      },
+      {
+        "k": "评测框架",
+        "v": "ComplexEval：格式检查 → bge-large-en-v1.5 embedding + 匈牙利映射 → 规则 / 响应 / GPT-4o 三维匹配；回答质量另由 GPT-4o 打 0–2 分。论文用 12 个模型、6 家机构做横向对比。",
+        "cite": ["arxiv-2501-10132@Figure 3", "arxiv-2501-10132@§3.1", "arxiv-2501-10132@§3.2", "arxiv-2501-10132@§4.1"]
+      },
+      {
+        "k": "档案边界",
+        "v": "论文没有独立的 Limitations 章节；污染风险、人类基线、五个方面的题量占比均未讨论，本站一律按「未披露」处理，不做推算。",
+        "cite": ["arxiv-2501-10132@§6"]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-14",
+        "columns": ["来源", "模型", "Overall Success Rate", "Overall Call Acc.", "Completeness", "Correctness"],
+        "rows": [
+          ["论文 Table 2 / 仓库 Leaderboard", "Claude-3.5-Sonnet (20241022)", "61.00", "79.27", "1.84", "1.85"],
+          ["论文 Table 2 / 仓库 Leaderboard", "GPT-4o (2024-08-06)", "60.50", "80.55", "1.66", "1.75"],
+          ["论文 Table 2 / 仓库 Leaderboard", "GLM-4-Long", "57.10", "76.35", "1.72", "1.74"],
+          ["论文 Table 2 / 仓库 Leaderboard", "GPT-4-Turbo (2024-04-09)", "49.50", "71.38", "1.72", "1.81"],
+          ["论文 Table 2 / 仓库 Leaderboard", "Claude-3.5-Haiku (20241022)", "45.80", "69.50", "1.79", "1.71"],
+          ["论文 Table 2 / 仓库 Leaderboard", "Qwen2.5-72B", "40.10", "58.32", "1.80", "1.75"],
+          ["论文 Table 2 / 仓库 Leaderboard", "Mistral Large 2", "20.10", "48.78", "0.94", "1.0"],
+          ["论文 Table 2 / 仓库 Leaderboard", "GLM-4-9B", "9.40", "27.97", "1.15", "1.03"],
+          ["论文 Table 2 / 仓库 Leaderboard", "Qwen2.5-7B", "5.0", "18.19", "1.5", "1.47"],
+          ["论文 Table 2 / 仓库 Leaderboard", "Llama-3.1-405B", "4.00", "11.87", "0.43", "0.30"],
+          ["论文 Table 2 / 仓库 Leaderboard", "Llama-3.1-70B", "2.70", "8.17", "0.67", "0.36"],
+          ["论文 Table 2 / 仓库 Leaderboard", "Llama-3.1-8B", "0.10", "1.34", "0.18", "0.09"]
+        ]
+      },
+      "cite": ["arxiv-2501-10132@Table 2", "repo-complexfuncbench@README Leaderboard", "arxiv-2501-10132@§4.1", "arxiv-2501-10132@§4.2"]
+    }
+  }
+}

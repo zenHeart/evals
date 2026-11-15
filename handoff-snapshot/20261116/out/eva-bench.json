@@ -1,0 +1,651 @@
+{
+  "id": "eva-bench",
+  "name": "EVA-Bench",
+  "full_name": "EVA-Bench (Experience and Voice-Agent Benchmark)",
+  "aliases": [
+    "EVA Benchmark",
+    "ServiceNow EVA-Bench",
+    "EVA-Bench Data"
+  ],
+  "status": "active",
+  "categories": [
+    "agent"
+  ],
+  "summary": "ServiceNow 开源的企业语音智能体基准：213 个合成企业客服场景（航空客服管理 / 医疗 HR / 企业 IT 服务管理），用机器人对机器人的完整多轮语音对话，同时评「任务做对了吗」与「对话体验好不好」。框架本体 MIT 许可，数据集在 Hugging Face 公开。",
+  "interpretation": "分数是两条通过率的组合：EVA-A pass@1（任务准确率：工具调用、忠实度、语音保真三项全过）与 EVA-X pass@1（对话体验：轮次接管、对话推进、简洁度三项全过）。论文 v3 的结论是没有任何系统在这两条上同时超过 0.5，唯一同时超过 0.4 的是 GPT-Realtime-1.5（0.47 / 0.57）。厂商自报的数字口径完全不同：xAI 2026-10-14 公告称 Grok Voice 3.0 拿到「最高准确率 74%」，但没公布指标定义、试验次数与系统架构，不能与论文表内数字对齐。读这个基准还要记住论文结论：单次试验分数会系统性高估可部署质量，EVA-A 上 pass@k 与 pass^k 的中位差是 0.44。",
+  "measures": [
+    {
+      "area": "任务准确率（EVA-A）",
+      "focus": "Task Completion：工具调用序列与最终数据库状态是否达成用户 must-have 目标；Faithfulness：助手回答是否忠于工具返回；Speech Fidelity：说出口的内容是否忠于助手真实文本输出——论文称这是端到端语音智能体基准中唯一在音频层评测语音输出质量的指标。",
+      "share": "6 个主指标中的 3 个",
+      "format": "0/1 判定与评委打分归一到 [0,1] 后，按 pass@1 / pass@k / pass^k 汇总",
+      "cite": [
+        "paper@Table 14",
+        "paper@§3.2.1 EVA-A",
+        "paper@§3.2.4 Pass Criteria"
+      ]
+    },
+    {
+      "area": "对话体验（EVA-X）",
+      "focus": "Conversation Progression：对话是否朝用户目标推进；Conciseness：是否冗长重复；Turn-Taking：抢话、沉默与轮次长度控制。论文结论里架构差距几乎全来自这一项。",
+      "share": "6 个主指标中的 3 个",
+      "format": "LLM 评委按 1–3 分量表归一到 [0,1]；Turn-Taking 为确定性计算",
+      "cite": [
+        "paper@Table 14",
+        "paper@§5 Conclusion"
+      ]
+    },
+    {
+      "area": "语音链路诊断",
+      "focus": "Authentication Success、Response Latency、Speakability、STT WER、Tool Call Validity、Transcription Key Entities 六项，用于定位失败原因——例如论文测得关键实体转写准确率与 Task Completion 的 Pearson r = 0.93。",
+      "share": "6 个诊断指标，不计入 EVA-A / EVA-X",
+      "format": "按场景与按系统聚合报告，不参与通过判定",
+      "cite": [
+        "paper@Table 14",
+        "paper@§4.4 Failure Mode Analysis"
+      ]
+    },
+    {
+      "area": "扰动鲁棒性",
+      "focus": "法语口音、咖啡厅噪声、两者叠加三类受控扰动，声学与行为条件可独立变化。口音对 cascade 的准确率打击最大（平均降 10 个百分点，最差系统 17），S2S 准确率无显著退化。",
+      "share": "90 个场景（每域 30 个）× 3 类扰动 × 3 次试验",
+      "format": "与干净条件对比，报告掉点幅度与显著性；所有系统共用同一子集",
+      "cite": [
+        "paper@§4.1 Experiment Setup",
+        "paper@§4.3 Robustness Analysis",
+        "paper@§3.1 Controlled Perturbations"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "英语以外的语言：全部场景仅英语，模拟也只用英语（论文在 Limitations 与 Ethics Statement 两处声明）。",
+      "cite": [
+        "paper@Limitations",
+        "paper@Ethics Statement"
+      ]
+    },
+    {
+      "text": "法语口音与咖啡厅噪声以外的扰动：鲁棒性实验只含这两类（加叠加），且论文承认口音与说话人身份混在一起。",
+      "cite": [
+        "paper@Limitations"
+      ]
+    },
+    {
+      "text": "真实电话网络与真实后端系统：所有工具走声明式 mock executor，音频还经历 PCM-to-µ-law 有损转换，测不到真实 API 的失败模式、延迟波动、部分响应与 schema 漂移。",
+      "cite": [
+        "paper@Limitations"
+      ]
+    },
+    {
+      "text": "用户打断的系统性压力：模拟器不系统性生成打断，论文明确说这会低估轮次接管鲁棒性。",
+      "cite": [
+        "paper@Limitations"
+      ]
+    },
+    {
+      "text": "组件级 ASR / TTS / LLM 的单独能力：EVA-Bench 评的是端到端通话，ASR 与 TTS 只出现在诊断指标里。",
+      "cite": [
+        "paper@Table 14",
+        "site"
+      ]
+    },
+    {
+      "text": "成本与部署难度：论文只把运行成本作为复现开销讨论，不作为被测能力。",
+      "cite": [
+        "paper@附录 B.4"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 213,
+    "splits": [
+      "干净条件：全部 213 个场景 × 5 次试验",
+      "扰动子集：随机抽取 90 个场景（每域 30 个）× 3 类扰动 × 3 次试验"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "合成企业场景（SyGra 图式生成管线生成场景，GPT-5.4 生成参考答案与终态，再多模型共识与人工抽查校验）",
+    "public_sample": true,
+    "totals": "213 个场景 / 40 条工作流 / 121 个工具：CSM 50 场景 · 7 工作流 · 15 工具 · 平均 3.14 次调用；HRSD 83 · 12 · 47 · 8.7（工具最密集）；ITSM 80 · 21 · 59 · 8.3（覆盖最广）。场景按 1–4 条必需工作流分级，每个场景自带独立 initial_scenario_db；每模型 1,875 个评测样本（213×5 + 90×3×3）。Hugging Face 上 213 行、共 10.2 MB。",
+    "cite": [
+      "paper@Table 9",
+      "paper@Appendix C.2",
+      "paper@§4.1 Experiment Setup",
+      "paper@附录 B.4",
+      "dataset@Domains",
+      "dataset"
+    ]
+  },
+  "metrics": [
+    {
+      "id": "eva_a_pass1",
+      "name": "EVA-A pass@1（任务准确率通过率）",
+      "direction": "越高越好",
+      "description": "首次试验即满足准确率通过标准（Task Completion = 1.0 ∧ Faithfulness ≥ 0.5 ∧ Speech Fidelity ≥ 0.95）的对话占比",
+      "range": [
+        0,
+        1
+      ],
+      "unit": "ratio",
+      "cite": [
+        "paper@§3.2.4 Pass Criteria",
+        "paper@§3.2.4 Pass Metric Definitions"
+      ]
+    },
+    {
+      "id": "eva_x_pass1",
+      "name": "EVA-X pass@1（对话体验通过率）",
+      "direction": "越高越好",
+      "description": "首次试验即满足体验通过标准（Turn-Taking ≥ 0.8 ∧ Conversation Progression ≥ 0.5 ∧ Conciseness ≥ 0.5）的对话占比",
+      "range": [
+        0,
+        1
+      ],
+      "unit": "ratio",
+      "cite": [
+        "paper@§3.2.4 Pass Criteria",
+        "paper@§3.2.4 Pass Metric Definitions"
+      ]
+    },
+    {
+      "id": "task_completion",
+      "name": "Task Completion（任务完成）",
+      "direction": "越高越好",
+      "description": "按域策略检查工具调用序列与最终数据库状态是否达成 must-have 目标，确定性判定 0/1，通过阈值 1.0",
+      "range": [
+        0,
+        1
+      ],
+      "unit": "ratio",
+      "cite": [
+        "paper@Table 14"
+      ]
+    },
+    {
+      "id": "faithfulness",
+      "name": "Faithfulness（忠实度）",
+      "direction": "越高越好",
+      "description": "模型评委按 1–3 分量表判断助手回答是否忠于工具返回，归一到 [0,1]，通过阈值 0.50",
+      "range": [
+        0,
+        1
+      ],
+      "unit": "ratio",
+      "cite": [
+        "paper@Table 14"
+      ]
+    },
+    {
+      "id": "speech_fidelity",
+      "name": "Speech Fidelity（语音保真）",
+      "direction": "越高越好",
+      "description": "大音频模型评委在音频层判断说出口的内容是否忠于助手真实文本输出，通过阈值 0.95",
+      "range": [
+        0,
+        1
+      ],
+      "unit": "ratio",
+      "cite": [
+        "paper@Table 14",
+        "paper@§3.2.1 EVA-A"
+      ]
+    },
+    {
+      "id": "conversation_progression",
+      "name": "Conversation Progression（对话推进）",
+      "direction": "越高越好",
+      "description": "模型评委判断对话是否在朝用户目标推进，通过阈值 0.50",
+      "range": [
+        0,
+        1
+      ],
+      "unit": "ratio",
+      "cite": [
+        "paper@Table 14"
+      ]
+    },
+    {
+      "id": "conciseness",
+      "name": "Conciseness（简洁度）",
+      "direction": "越高越好",
+      "description": "模型评委判断回答是否冗长、重复，通过阈值 0.50",
+      "range": [
+        0,
+        1
+      ],
+      "unit": "ratio",
+      "cite": [
+        "paper@Table 14"
+      ]
+    },
+    {
+      "id": "turn_taking",
+      "name": "Turn-Taking（轮次接管）",
+      "direction": "越高越好",
+      "description": "确定性计算的抢话、沉默与轮次长度指标，通过阈值 0.80；论文结论中 S2S 与 cascade 的 EVA-X 差距几乎全部来自这一项",
+      "range": [
+        0,
+        1
+      ],
+      "unit": "ratio",
+      "cite": [
+        "paper@Table 14",
+        "paper@§5 Conclusion"
+      ]
+    },
+    {
+      "id": "diagnostics",
+      "name": "诊断指标（不计入主分）",
+      "direction": "不适用（诊断用途）",
+      "description": "Authentication Success、Response Latency、Speakability、STT WER、Tool Call Validity、Transcription Key Entities；用于定位失败链路，不参与通过判定",
+      "range": null,
+      "unit": "mixed",
+      "cite": [
+        "paper@Table 14",
+        "paper@§4.4 Failure Mode Analysis"
+      ]
+    }
+  ],
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2026-05-13",
+      "label": "arXiv v1 提交（970 KB）；Hugging Face 数据集卡标注 Published May 13",
+      "cite": [
+        "paper@arXiv 摘要页",
+        "dataset"
+      ]
+    },
+    {
+      "id": "v2",
+      "date": "2026-05-27",
+      "label": "arXiv v2（971 KB）",
+      "cite": [
+        "paper@arXiv 摘要页"
+      ]
+    },
+    {
+      "id": "v3",
+      "date": "2026-09-09",
+      "label": "arXiv v3（当前版本，716 KB）：213 场景 / 3 个企业域 / 受控扰动套件 / 多试验测量；论文 Comments 标注 Accepted to EMNLP 2026 (Findings)",
+      "cite": [
+        "paper@arXiv 首页",
+        "paper@Abstract",
+        "paper@arXiv 摘要页"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "模拟器代理假设",
+      "impact": "论文自己把「bot-to-bot 模拟 + 已验证的用户模拟器是真实呼叫交互的有效代理」列为假设；且模拟器不系统性生成打断，轮次接管鲁棒性被低估。",
+      "severity": "高",
+      "response": "论文用用户行为保真与用户语音保真两位评委做运行时校验，不达标的对话自动重生；把 Turn-Taking 单列为主指标，并在官网把「任务做对了吗」和「对话体验好不好」并列成两个评估维度。",
+      "reader": "高分读成「在这个模拟器分布上好」，不要直接外推到真实电话客服。",
+      "cite": [
+        "paper@Limitations",
+        "paper@§3.1 Runtime Simulation Validation",
+        "site@Evaluation Dimensions"
+      ]
+    },
+    {
+      "issue": "语言与扰动覆盖窄",
+      "impact": "仅英语；鲁棒性只测法语口音与咖啡厅噪声（加叠加），论文承认口音与说话人身份混在一起；12 个系统的样本量不足以做广泛推断。",
+      "severity": "中",
+      "response": "论文在 Limitations 与 Ethics Statement 双处声明；扰动套件设计成声学与行为条件可独立变化，可后续扩展。",
+      "reader": "不要把鲁棒性结论推广到其他口音、其他噪声、其他语言。",
+      "cite": [
+        "paper@Limitations",
+        "paper@Ethics Statement",
+        "paper@§3.1 Controlled Perturbations"
+      ]
+    },
+    {
+      "issue": "mock 后端与有损音频链路",
+      "impact": "所有工具走声明式 mock executor：schema 贴近真实 API，但抓不到失败模式、延迟波动、部分响应与 schema 漂移；音频还经历 PCM-to-µ-law 有损转换。",
+      "severity": "中",
+      "response": "论文显式声明，并在诊断指标里保留 Tool Call Validity 与 Response Latency 供定位。",
+      "reader": "分数不代表在生产真实 API 上的表现。",
+      "cite": [
+        "paper@Limitations",
+        "paper@Table 14"
+      ]
+    },
+    {
+      "issue": "评委偏置与试验随机性",
+      "impact": "四个评委指标可能系统性偏好与训练分布相似的输出；论文测得试验随机性占评委指标总方差的 40.4–80.4%，而评委随机性只占 5.5–37.5%。",
+      "severity": "中",
+      "response": "论文用 IAA-J κ 0.777–0.845 对标人类标注一致性，干净条件强制 k = 5 次试验，并同时报告 pass@1 / pass@k / pass^k。",
+      "reader": "单次跑分别当真，至少看 k 次分布；一两个点的差距多在噪声里。",
+      "cite": [
+        "paper@Limitations",
+        "paper@§4.2 Evaluation Reliability",
+        "paper@§4.1 Experiment Setup"
+      ]
+    },
+    {
+      "issue": "二值任务完成、无部分得分",
+      "impact": "Task Completion 是 0/1，多意图或部分完成的任务会被压成失败。",
+      "severity": "低",
+      "response": "场景按 1–4 条必需工作流分级（单意图 / 多意图 / 对抗意图），并按域给出诊断指标供拆解。",
+      "reader": "低分要结合 Transcription Key Entities 等诊断，区分是「没听懂实体」还是「策略选错」。",
+      "cite": [
+        "paper@Appendix C.2",
+        "paper@Table 14",
+        "paper@§4.4 Failure Mode Analysis"
+      ]
+    },
+    {
+      "issue": "复现需要商业 API",
+      "impact": "完整复现要 ElevenLabs Agents 与商业模型 API，论文按 token、每秒音频、每字符分别估算成本，并提醒这是不小的算力投入。",
+      "severity": "低",
+      "response": "框架本体 MIT 许可开源，数据集在 Hugging Face 公开（213 行 / 10.2 MB）。",
+      "reader": "开源的是框架与数据，不等于零成本复现官方数字。",
+      "cite": [
+        "paper@Limitations",
+        "paper@附录 B.4",
+        "repo@About 侧栏",
+        "dataset"
+      ]
+    }
+  ],
+  "default_protocol": {
+    "raw": "端到端「语音进、判定出」：用户模拟器与被测智能体跑完整多轮语音对话，Task Completion 与 Turn-Taking 用确定性规则判定，Faithfulness / Speech Fidelity / Conciseness / Conversation Progression 由模型评委打分。一条对话在准确率上通过当且仅当 (Task Completion = 1.0) ∧ (Faithfulness ≥ 0.5) ∧ (Speech Fidelity ≥ 0.95)，在体验上通过当且仅当 (Turn-Taking ≥ 0.8) ∧ (Conversation Progression ≥ 0.5) ∧ (Conciseness ≥ 0.5)。",
+    "cite": [
+      "paper@§3.2.4 Pass Criteria",
+      "repo@README"
+    ],
+    "variants": [
+      {
+        "text": "干净条件 vs 扰动条件：干净条件跑全部 213 个场景 × 5 次试验；扰动只在随机抽取的 90 场景子集上跑 × 3 类扰动 × 3 次试验，且所有系统共用同一子集，两者的绝对分不能直接互推。",
+        "cite": [
+          "paper@§4.1 Experiment Setup"
+        ]
+      },
+      {
+        "text": "pass@1 / pass@k / pass^k 三种汇总口径：pass@1 看平均表现，pass@k 看 k 次里至少一次通过（峰值），pass^k 看 k 次全部通过（可靠）。论文结论是单次试验分数会系统性高估可部署质量，EVA-A 上中位差 0.44。",
+        "cite": [
+          "paper@§3.2.4 Pass Metric Definitions",
+          "paper@§5 Conclusion"
+        ]
+      },
+      {
+        "text": "用户模拟器二选一：ElevenLabs Agents 为推荐且已验证的选项；OpenAI Realtime 是实验性替代，尚未大规模验证，应视为 beta；助手轮转写用 Whisper 而非 ElevenLabs ScribeV2.2Realtime。",
+        "cite": [
+          "repo@README"
+        ]
+      },
+      {
+        "text": "口音扰动需要 ElevenLabs 呼叫方，纯开源配置下不出口音变体。",
+        "cite": [
+          "repo@README"
+        ]
+      }
+    ]
+  },
+  "notes": "证据账本中 1 次引用；由 xAI Grok Voice 3.0 页引入（ServiceNow 高级产品总监 Nitin Aggarwal 在同页给出背书）。v2 档案：论文 v3、GitHub 仓库、官网、Hugging Face 数据集卡、xAI 公告五类来源逐字核验；厂商自报成绩与论文口径分列，不可互推。",
+  "official_sources": [
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2605.13841"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/ServiceNow/eva"
+    },
+    {
+      "kind": "site",
+      "url": "https://servicenow.github.io/eva"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/ServiceNow-AI/eva-bench"
+    },
+    {
+      "kind": "announcement",
+      "url": "https://x.ai/news/grok-voice-3"
+    }
+  ],
+  "related_benchmarks": [
+    "tau-voice",
+    "bigbench-audio"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "EVA-Bench: A Benchmark for Evaluating End-to-End Voice Agents (arXiv:2605.13841v3, cs.SD)",
+        "url": "https://arxiv.org/abs/2605.13841",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "site",
+        "kind": "site",
+        "title": "EVA-Bench — ServiceNow 官方项目页",
+        "url": "https://servicenow.github.io/eva",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "ServiceNow/eva — GitHub 仓库（MIT）",
+        "url": "https://github.com/ServiceNow/eva",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "dataset",
+        "kind": "dataset",
+        "title": "ServiceNow-AI/eva-bench — Hugging Face 数据集卡",
+        "url": "https://huggingface.co/datasets/ServiceNow-AI/eva-bench",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "x-news-grok-voice-3",
+        "kind": "announcement",
+        "title": "Introducing Grok Voice 3.0 — xAI 官方新闻（2026-10-14）",
+        "url": "https://x.ai/news/grok-voice-3",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "ServiceNow AI Research",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      "first_release": {
+        "v": "2026-05-13（arXiv v1 提交；Hugging Face 数据集卡标注 Published May 13）",
+        "cite": [
+          "paper@arXiv 摘要页",
+          "dataset"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "paper@Abstract",
+        "paper@§3.1 Conversation Simulation",
+        "site"
+      ],
+      "interpretation": [
+        "paper@§4.3 Main Findings",
+        "x-news-grok-voice-3",
+        "paper@Limitations"
+      ]
+    },
+    "problem": {
+      "text": "组件级基准把 ASR、TTS、LLM 拆开打分，看不到端到端通话里的复合失败，也没有人同时回答「任务做对了吗」和「对话体验好不好」。EVA-Bench 用机器人对机器人的完整多轮语音对话，把这两个问题放进同一次通话里评。",
+      "cite": [
+        "site",
+        "paper@Abstract"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "论文中同时过 0.4 的最好系统",
+        "value": "GPT-Realtime-1.5：EVA-A pass@1 0.47 / EVA-X pass@1 0.57",
+        "note": "论文 v3 明确没有任何系统在 EVA-A 与 EVA-X 的 pass@1 上同时超过 0.5，GPT-Realtime-1.5 是唯一同时超过 0.4 的。",
+        "cite": [
+          "paper@§4.3 Main Findings"
+        ]
+      },
+      {
+        "label": "厂商自报最高准确率",
+        "value": "74%（Grok Voice 3.0）",
+        "note": "xAI 2026-10-14 公告称这是 EVA-Bench 上最高准确率，并称其在准确率与客户体验的联合打分上最好；公告未说明指标定义、试验次数与系统架构，不能与论文表内数字直接对齐。",
+        "cite": [
+          "x-news-grok-voice-3",
+          "x-news-grok-voice-3@ServiceNow 引述"
+        ]
+      },
+      {
+        "label": "峰值与可靠的差距（参考线）",
+        "value": "中位 0.44（EVA-A pass@k − pass^k）",
+        "note": "论文结论：单次试验分数会系统性高估可部署质量。这条线不是官方上限，是读分时该打的折。",
+        "cite": [
+          "paper@§5 Conclusion"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 74% 读成「语音智能体已经能上生产」——那是厂商自报准确率，口径未公布；论文里没有任何系统在 EVA-A 与 EVA-X 的 pass@1 上同时超过 0.5。",
+        "cite": [
+          "x-news-grok-voice-3",
+          "paper@§4.3 Main Findings"
+        ]
+      },
+      {
+        "text": "把 pass@k 和 pass^k 混着比：前者是 k 次里至少一次通过（峰值），后者是 k 次全部通过（可靠）。论文结论说单次试验分数会系统性高估可部署质量，EVA-A 上中位差 0.44。",
+        "cite": [
+          "paper@§3.2.4 Pass Metric Definitions",
+          "paper@§5 Conclusion"
+        ]
+      },
+      {
+        "text": "把 EVA-Bench 当成语音组件评测：它评的是端到端通话，ASR 与 TTS 只在诊断指标里出现；官网原话是它抓的是「组件级基准会漏掉的复合失败」。",
+        "cite": [
+          "paper@Table 14",
+          "site"
+        ]
+      },
+      {
+        "text": "以为跑分要雇真人听众：机器人对机器人架构加已验证的用户模拟器全程自动，从语音进到判定出都没有人参与。",
+        "cite": [
+          "repo@README",
+          "paper@§3.1 Conversation Simulation"
+        ]
+      },
+      {
+        "text": "把「200+ 真实企业场景」理解成真实通话录音：论文伦理声明明确全部场景合成，没有真实呼叫数据、录音或 PII；「真实」指的是任务形态贴近真实客服。",
+        "cite": [
+          "x-news-grok-voice-3@ServiceNow 引述",
+          "paper@Ethics Statement"
+        ]
+      },
+      {
+        "text": "把一次跑分当真：论文测得试验随机性占评委指标总方差的 40.4–80.4%，而评委随机性只占 5.5–37.5%，所以官方口径强制多次试验并同时给 pass@1 / pass@k / pass^k。",
+        "cite": [
+          "paper@§4.2 Evaluation Reliability",
+          "paper@§4.1 Experiment Setup"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "ServiceNow AI Research",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "Tara Bogavelli、Gabrielle Gauthier Melançon、Katrina Stankiewicz、Oluwanifemi Bamgbose、Fanny Riols、Hoang H. Nguyen 等 13 人",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      {
+        "k": "发表状态",
+        "v": "arXiv 预印本（cs.SD），Comments 标注 Accepted to EMNLP 2026 (Findings)",
+        "cite": [
+          "paper@arXiv 摘要页"
+        ]
+      },
+      {
+        "k": "评测框架归属",
+        "v": "NOWAI-Bench 基准套件的一部分；框架代码在 GitHub（ServiceNow/eva，MIT 许可），数据集在 Hugging Face（ServiceNow-AI/eva-bench，213 行 / 10.2 MB）",
+        "cite": [
+          "site",
+          "repo@About 侧栏",
+          "dataset"
+        ]
+      },
+      {
+        "k": "用户模拟器",
+        "v": "推荐 ElevenLabs Agents（已验证）；OpenAI Realtime 为实验性替代，尚未大规模验证",
+        "cite": [
+          "repo@README"
+        ]
+      },
+      {
+        "k": "被测系统",
+        "v": "论文评了 12 个系统：7 个 cascade、2 个 hybrid、3 个 S2S",
+        "cite": [
+          "paper@§4.1 Experiment Setup",
+          "repo@README"
+        ]
+      },
+      {
+        "k": "版本命名分歧",
+        "v": "Hugging Face 卡片把一篇第三方文章列在「Articles mentioning」下，其标题写作「EVA-Bench Data 2.0: 3 Domains, 121 Tools, 213 Scenarios」；论文 Table 9 中三个域的工具数之和恰为 121、工作流之和为 40。是否把这一版称作「2.0」取决于引用哪一方，本站以论文为准。",
+        "cite": [
+          "dataset",
+          "paper@Table 9"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-14",
+        "columns": [
+          "来源",
+          "系统",
+          "准确率 / 通过率",
+          "口径"
+        ],
+        "rows": [
+          [
+            "论文 §4.3",
+            "GPT-Realtime-1.5",
+            "EVA-A pass@1 0.47 / EVA-X pass@1 0.57",
+            "干净条件，k = 5；论文明确它是唯一同时超过 0.4 的系统"
+          ],
+          [
+            "xAI 公告（2026-10-14）",
+            "Grok Voice 3.0",
+            "74%（公告称「最高准确率」）",
+            "厂商自报；指标定义、试验次数、系统架构均未公布"
+          ]
+        ]
+      },
+      "cite": [
+        "paper@§4.3 Main Findings",
+        "x-news-grok-voice-3"
+      ]
+    }
+  }
+}

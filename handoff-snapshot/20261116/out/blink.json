@@ -1,0 +1,518 @@
+{
+  "id": "blink",
+  "name": "BLINK",
+  "full_name": "BLINK: Multimodal Large Language Models Can See but Not Perceive",
+  "aliases": [
+    "Blink",
+    "BLINK Benchmark"
+  ],
+  "status": "active",
+  "categories": [
+    "multimodal"
+  ],
+  "summary": "BLINK 把 14 个经典计算机视觉任务改写成 3,807 道多选题，专测多模态大模型「看得见但感知不到」的基础视觉能力；人类平均 95.70%，发布时最强的 GPT-4V 只有 51.26%，仅比随机猜测（38.09%）高 13.17 个百分点。",
+  "interpretation": "主指标是 14 个子任务的等权平均准确率，越高越好。高分意味着模型具备接近人类的基础视觉感知（相对深度、视觉对应、多视角推理等），而不是靠语言先验或密集 caption 猜答案；贴近或低于随机猜测说明模型在该子任务上几乎没有建立视觉判断。注意 BLINK 只测感知，不测识别型 VQA、领域知识与语言推理，也不能外推到开放世界里的全部视觉感知能力。",
+  "measures": [
+    {
+      "area": "视觉对应（Visual Correspondence）",
+      "focus": "在两幅同场景、不同视角的图里找出与参考点同一个物理点，像素级对应；这是专用 CV 模型领先 GPT-4V 最多的一项（62.8 个百分点）。测试集人类 99.42% / 随机 25%。",
+      "share": "344 题",
+      "format": "4 选 1，选项是候选点（带红色圆圈视觉提示）",
+      "cite": ["paper@§3.2", "paper@Table 1", "dataset@Subset B"]
+    },
+    {
+      "area": "语义对应（Semantic Correspondence）",
+      "focus": "在两幅不同实例的图里找出语义相同但外观不同的部件点，考的是越过外观差异的语义对齐。测试集人类 96.07% / 随机 25%。",
+      "share": "279 题",
+      "format": "4 选 1，选项是候选点（视觉提示）",
+      "cite": ["paper@§3.2", "paper@Table 1", "dataset@Subset B"]
+    },
+    {
+      "area": "功能对应（Functional Correspondence）",
+      "focus": "找出跨物体功能相同的点（如搅拌时功能对应的部位），需要从功能反推结构。测试集人类 80.77% / 随机 25%，是人类最低的子任务之一。",
+      "share": "260 题",
+      "format": "4 选 1，选项是候选点（视觉提示）",
+      "cite": ["paper@§3.2", "paper@Table 1", "dataset@Subset A"]
+    },
+    {
+      "area": "相对深度（Relative Depth）",
+      "focus": "判断图上两个点哪个离相机更近，测几何与三维理解。测试集人类 99.19% / 随机 50%。",
+      "share": "248 题",
+      "format": "2 选 1（两点，视觉提示）",
+      "cite": ["paper@§3.2", "paper@Table 1", "dataset@Subset B"]
+    },
+    {
+      "area": "相对反射率（Relative Reflectance）",
+      "focus": "判断两个点的表面色（去掉光照后的 albedo）哪个更深，或大致相同，测材料与光照属性理解。测试集人类 95.14% / 随机 33.33%。",
+      "share": "268 题",
+      "format": "3 选 1（A 更深 / B 更深 / 大致相同，视觉提示）",
+      "cite": ["paper@§3.2", "paper@Table 1", "dataset@Subset B"]
+    },
+    {
+      "area": "空间关系（Spatial Relation）",
+      "focus": "判断「床在餐桌右边吗」这类断言的真假，专测 left/right 等空间词与图像的对应。测试集人类 98.25% / 随机 50%。",
+      "share": "286 题",
+      "format": "2 选 1（是 / 否）",
+      "cite": ["paper@§3.2", "paper@Table 1", "dataset@Subset B"]
+    },
+    {
+      "area": "多视角推理（Multi-view Reasoning）",
+      "focus": "看同一物体的两帧判断相机在向左还是向右移动；论文把三维运动简化成二分类，对当前模型仍然很难。测试集人类 92.48% / 随机 50%。",
+      "share": "266 题",
+      "format": "2 选 1（左 / 右，双图输入）",
+      "cite": ["paper@§3.2", "paper@Table 1", "dataset@Subset B"]
+    },
+    {
+      "area": "物体定位（Object Localization）",
+      "focus": "在两个边界框里选出更准确包住目标物体的那个；混淆框是对真值框加高斯噪声得到的，考细粒度定位而非粗定位。测试集人类 98.00% / 随机 50%。",
+      "share": "247 题",
+      "format": "2 选 1（两个框，视觉提示）",
+      "cite": ["paper@§3.2", "paper@Table 1", "dataset@Subset B"]
+    },
+    {
+      "area": "计数（Counting）",
+      "focus": "数图中某类物体或部位的数量，除正确数字外随机取 3 个混淆数字，考检测、识别与组合推理。测试集人类 93.75% / 随机 25%。",
+      "share": "240 题",
+      "format": "4 选 1（数字）",
+      "cite": ["paper@§3.2", "paper@Table 1", "dataset@Subset A"]
+    },
+    {
+      "area": "拼图（Jigsaw）",
+      "focus": "从两个候选碎块里选出能补上 3×3 网格缺口的正确那块，考按形状、颜色、纹理连续性对齐图块。测试集人类 99.00% / 随机 50%。",
+      "share": "300 题",
+      "format": "2 选 1（选项是图像碎块）",
+      "cite": ["paper@§3.2", "paper@Table 1", "dataset@Subset B"]
+    },
+    {
+      "area": "艺术风格（Art Style）",
+      "focus": "给一幅参考画，从两幅候选画里挑出风格最接近的一幅；不要求知道画家或流派名词，只做直接图像比较。测试集人类 95.30% / 随机 50%。",
+      "share": "234 题",
+      "format": "2 选 1（选项是图像）",
+      "cite": ["paper@§3.2", "paper@Table 1", "dataset@Subset A"]
+    },
+    {
+      "area": "伪造检测（Forensic Detection）",
+      "focus": "在真实照片与 SDXL 依 COCO caption 生成的假图之间挑出真图，假图与真图描述相似场景。测试集人类 100.00% / 随机 25%。",
+      "share": "264 题",
+      "format": "4 选 1（选项是图像）",
+      "cite": ["paper@§3.2", "paper@Table 1", "dataset@Subset A", "paper@§3.2 SDXL"]
+    },
+    {
+      "area": "视觉相似性（Visual Similarity）",
+      "focus": "给参考图，从两幅候选图里挑出主体相同的那幅（拍摄条件与姿态不同），高层实例级相似判断。测试集人类 96.70% / 随机 50%。",
+      "share": "271 题",
+      "format": "2 选 1（选项是图像）",
+      "cite": ["paper@§3.2", "paper@Table 1", "dataset@Subset B"]
+    },
+    {
+      "area": "IQ 测试（IQ Test）",
+      "focus": "看若干示例，选出延续其模式或与其空间一致的图，图形类比推理，不需要领域知识；也是唯一不由普通被试标注的子任务。测试集人类 80.00% / 随机 25%。",
+      "share": "300 题",
+      "format": "4 选 1（选项是图像）",
+      "cite": ["paper@§3.2", "paper@Table 1", "dataset@Subset A"]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "识别型 VQA、OCR 与需要领域知识的问答：论文明确把它和 MMMU 这类基准区分开，BLINK 的题目不需要领域知识",
+      "cite": ["paper@§3.1", "paper@§1"]
+    },
+    {
+      "text": "把图像换成密集 caption 后仍然答得出的「伪多模态」题——BLINK 的选题标准就是密集 caption 化之后答不出",
+      "cite": ["paper@§3.1"]
+    },
+    {
+      "text": "语言能力、世界知识与通用推理：只隔离测感知，不测模型的语言或知识本身",
+      "cite": ["paper@§5"]
+    },
+    {
+      "text": "开放世界里的全部视觉感知能力：论文在附录 D 自述复用了已有图像数据集，没有覆盖 wild 中的全部感知能力",
+      "cite": ["paper@附录 D"]
+    },
+    {
+      "text": "长时序视频理解：多视角推理只从视频里抽两帧判断相机左右移动，不测连续视频推理",
+      "cite": ["paper@§3.2"]
+    }
+  ],
+  "dataset": {
+    "sample_count": 3807,
+    "splits": [
+      "验证集 val 1,901 题（公开，含标准答案、提示词与基线预测）",
+      "测试集 test 1,906 题（题目公开、答案不公开，经 EvalAI 提交）"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "repurposed（改写已有 CV 数据集 + 人工采集 + SDXL 合成图）",
+    "public_sample": true,
+    "multiple_choice_share": "100%",
+    "multimodal_share": "100%（每题至少 1 张图；2,218 题含多张图）",
+    "totals": "3,807 题 · 7,358 张图 · val 1,901 / test 1,906 · 14 个子任务（表中「占比」列是各子任务在 3,807 题里的题量）· 1,946 题带视觉提示 · 2,747 题的选项本身就是图像区域 · 2,218 题含多张图（2 张 1,149 / 3 张 805 / 4 张 264）· 300 题附人工解释 · 题目与选项为英文",
+    "cite": ["paper@Abstract", "paper@附录 A.5", "paper@Table 1"],
+    "construction": [
+      {
+        "k": "选题原则",
+        "text": "14 个任务选自经典计算机视觉问题或多模态 LLM 的近期应用，共同标准是「把图像换成任务无关的密集 caption 后答不出」；覆盖从像素级（相对反射率）到图像级（伪造检测）、从低层模式匹配（视觉对应）到高层理解（视觉相似性）的多个层次。",
+        "cite": ["paper@§3.1"]
+      },
+      {
+        "k": "题型改写",
+        "text": "所有任务统一改写为多选题；选项可以是文本或图像，问题本身可以是单图或多图，并同时配文字提示与视觉提示（圆圈、框、掩码三类）。",
+        "cite": ["paper@§3.1", "paper@附录 A.1"]
+      },
+      {
+        "k": "数据来源",
+        "text": "HPatches（视觉对应）、Intrinsic Images in the Wild（相对反射率）、Depth in the Wild（相对深度）、Visual Spatial Reasoning（空间关系）、Wild6D（多视角）、TARA（拼图）、WikiArt（艺术风格）、LVIS（物体定位）、TallyQA（计数）、DreamSim（视觉相似性）、SPair-71k（语义对应）、FunKPoint（功能对应）；伪造检测用 SDXL 依 COCO caption 生成假图、再按同一 caption 人工检索真实照片；IQ 测试从公开、授权友好的来源人工采集。",
+        "cite": ["paper@§3.2", "paper@§3.2 SDXL"]
+      },
+      {
+        "k": "人工质控",
+        "text": "作者人工过完全部采集数据并滤除有歧义的样本；每个任务的测试样本图像互不重复。",
+        "cite": ["paper@§3.2"]
+      },
+      {
+        "k": "选项与解释",
+        "text": "选项数 2–4 个；2,747 题的选项直接是图像中的区域，2,218 题含多张图，300 题附人工撰写的解释。",
+        "cite": ["paper@附录 A.5"]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "accuracy",
+      "name": "平均准确率",
+      "direction": "越高越好",
+      "description": "14 个子任务准确率的等权简单平均（论文写作 mean accuracy；由随机基线 38.09% 恰等于各任务随机率的等权平均可验证）。官方表格同时报告验证集与测试集两个平均分。",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["paper@Table 1", "paper@§4.2"]
+    },
+    {
+      "id": "random_baseline",
+      "name": "随机猜测基线",
+      "direction": "参照线（越低说明题目越能拉开差距）",
+      "description": "论文按任务给出的随机正确率为 25%（4 选项）、33.33%（3 选项）或 50%（2 选项），14 个任务等权平均得 38.09%，验证集与测试集相同。",
+      "cite": ["paper@Table 1"]
+    },
+    {
+      "id": "human_baseline",
+      "name": "人类基线",
+      "direction": "参照线（上限）",
+      "description": "每个子任务由两位论文作者标注取平均，人类一致率 80–99%；全集平均 95.70%（验证集 95.67%）。",
+      "cite": ["paper@附录 A.4", "paper@Table 1"]
+    }
+  ],
+  "default_protocol": {
+    "raw": "按 VLMEvalKit 的标准设置做 zero-shot 评测：temperature=0、retry 10，全程不缩放图像；不支持多图输入的模型把多张图拼接后输入；先用一组预定义规则从输出中抽取选项，失败时再交给 GPT-3.5-turbo 把预测对齐到给定选项（或判定为无法匹配）。官网榜单口径为使用数据集自带提示词的 zero-shot。",
+    "cite": ["paper@§4.1", "paper@附录 A.3", "zeyofu-blink@Leaderboard"],
+    "variants": [
+      {
+        "text": "验证集 vs 测试集：val 1,901 题公开答案与基线预测，test 1,906 题答案不公开、只能经 EvalAI 提交；论文表 1 两列都给，官网 mini-leaderboard 也分列，两者不能混着比。",
+        "cite": ["repo@Data Release", "repo@Test Split", "paper@Table 1"]
+      },
+      {
+        "text": "test 题量口径不一致：仓库 README 写 1,907 题，论文 Table 1 / Table 3 写 1,906 题，差 1 题；引用 test 集数字时以论文为准并注明出处。",
+        "cite": ["repo@Test Split", "paper@Table 1"]
+      },
+      {
+        "text": "多图输入的两种处理（原生多图 vs 拼接后单图）分数不同，论文对不支持的模型统一采用拼接，并另给了拼接口径的对照表。",
+        "cite": ["paper@§4.1"]
+      },
+      {
+        "text": "自一致性口径：论文另用 GPT-4V 在 temperature=1.0 下跑 5 次，自一致性 48.38%、平均单次约 38.1%；这不是主榜 zero-shot 口径，不能与 51.26% 直接比。",
+        "cite": ["paper@§4.2"]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2024-04-18",
+      "label": "arXiv v1 发布",
+      "cite": ["paper@arXiv 版本信息"]
+    },
+    {
+      "id": "evalai",
+      "date": "2024-04-24",
+      "label": "测试集评测上线 EvalAI，开放外部提交",
+      "cite": ["repo@News 2024-04"]
+    },
+    {
+      "id": "gemini-1-5-pro",
+      "date": "2024-05-18",
+      "label": "仓库记录 Gemini 1.5 Pro 在 BLINK 上取得大幅提升",
+      "cite": ["repo@News 2024-05"]
+    },
+    {
+      "id": "gpt-4o-scores",
+      "date": "2024-06-16",
+      "label": "仓库补充 GPT-4o 与 GPT-4 Turbo 的分数与模型输出",
+      "cite": ["repo@News 2024-06"]
+    },
+    {
+      "id": "eccv-2024",
+      "date": "2024-07-01",
+      "label": "BLINK 被 ECCV 2024 接收",
+      "cite": ["repo@News"]
+    },
+    {
+      "id": "v4",
+      "date": "2024-07-03",
+      "label": "arXiv 修订至 v4；官网上线验证集榜单",
+      "cite": ["paper@arXiv 版本信息", "repo@News 2024-07-03"]
+    },
+    {
+      "id": "v2-profile",
+      "date": "2026-11-14",
+      "label": "本站按 benchmark-profile/v2 重新逐条核验（论文 v4、官方项目页、代码仓库、HF 数据集）",
+      "cite": ["paper@arXiv 版本信息", "zeyofu-blink@Leaderboard", "repo@README", "dataset@License"]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "基线模型年代与版本漂移",
+      "impact": "论文测于 2024 年 3–5 月（GPT-4V 于 2024-03，GPT-4 Turbo 与 GPT-4o 于 2024-05），Table 1 的绝对分数对今天的前沿模型没有代表性。",
+      "severity": "高",
+      "response": "官网维护验证集榜单跟踪社区进展；本站「当前最高」只从本站证据账本取，不手写。",
+      "reader": "不要把论文里的 51.26% 当成当前最好水平；比较时看清结果来自论文、官网榜单还是本站账本。",
+      "cite": ["paper@附录 B", "zeyofu-blink@Leaderboard"]
+    },
+    {
+      "issue": "测试集答案不公开且题量口径不一致",
+      "impact": "test 1,906 题答案不公开，外部无法独立复算，只能经 EvalAI 提交；仓库 README 写 1,907 题，与论文 Table 1 / Table 3 的 1,906 差 1 题。",
+      "severity": "中",
+      "response": "论文公开 val 1,901 题的答案、提示词与基线预测，社区多在验证集上对比；题量差异以论文为准。",
+      "reader": "看到 test 集分数先确认是哪个集；val 与 test 不能混着比。",
+      "cite": ["repo@Test Split", "paper@Table 1", "repo@Data Release"]
+    },
+    {
+      "issue": "任务覆盖不全",
+      "impact": "论文自述复用了已有图像数据集，没有覆盖开放世界里的全部视觉感知能力；14 个任务只是抽样。",
+      "severity": "中",
+      "response": "论文在附录 D 明确写出这一点；官方未给出扩充任务的时间表。",
+      "reader": "把 BLINK 读成「感知能力抽样体检」，不要读成「通用视觉感知总分」。",
+      "cite": ["paper@附录 D"]
+    },
+    {
+      "issue": "伪造检测子任务的时效性",
+      "impact": "该子任务的假图由 SDXL 依 COCO caption 生成、真图按同一 caption 人工检索；生成模型迭代后，「分辨 SDXL 假图」与「分辨最新模型假图」不是同一难度。",
+      "severity": "中",
+      "response": "论文附录 D 说明该子任务图像来自公开检索；官方未随生成模型演进而滚动替换数据。",
+      "reader": "Forensic 子任务分数高不代表能分辨任意新生成图像。",
+      "cite": ["paper@§3.2 SDXL", "paper@附录 D"]
+    },
+    {
+      "issue": "人类基线的构造方式",
+      "impact": "人类分数由两位论文作者标注取平均，一致率 80–99%，最低的是艺术风格与功能对应；IQ 测试为 100 题抽样、两位作者各标 50 题。95.70% 不是独立人类样本的随机抽样结果。",
+      "severity": "低",
+      "response": "论文附录 A.4 明确说明标注方式与一致率区间。",
+      "reader": "把 95.70% 当「作者标注的人类近似上限」，不是人类总体均值。",
+      "cite": ["paper@附录 A.4"]
+    },
+    {
+      "issue": "密集 caption 对照实验的范围有限",
+      "impact": "「多模态基准多被压缩成识别任务」的结论只在 BLINK、MMBench、MMMU 三个集上做了 Caption + LLM 对照，外推范围仅限这三个集。",
+      "severity": "低",
+      "response": "论文 §4.3 报告 Caption + LLM 在 BLINK 上退化为随机猜测，在 MMBench 上则优于 GPT-4V。",
+      "reader": "这是有条件结论，不是关于所有多模态基准的普遍定律。",
+      "cite": ["paper@§4.3"]
+    }
+  ],
+  "notes": "原档案备注「字节 Seed 引用」未获证实：本次重新抓取该 Seed 1.8 官方发布博客全文，未检索到 BLINK 字样，因此本版不把它列入 official_sources 与 profile.sources。",
+  "official_sources": [
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2404.12390"
+    },
+    {
+      "kind": "site",
+      "url": "https://zeyofu.github.io/blink/"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/zeyofu/BLINK_Benchmark"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/BLINK-Benchmark/BLINK"
+    }
+  ],
+  "related_benchmarks": [
+    "mmbench",
+    "mmmu",
+    "mmvet",
+    "muirbench",
+    "hallusionbench"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "BLINK: Multimodal Large Language Models Can See but Not Perceive（arXiv:2404.12390，v4，2024-07-03 修订）",
+        "url": "https://arxiv.org/abs/2404.12390",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "zeyofu-blink",
+        "kind": "site",
+        "title": "BLINK 官方项目页（ECCV 2024，含验证集榜单）",
+        "url": "https://zeyofu.github.io/blink/",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "zeyofu/BLINK_Benchmark（评测代码、README 与 mini-leaderboard）",
+        "url": "https://github.com/zeyofu/BLINK_Benchmark",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "dataset",
+        "kind": "dataset",
+        "title": "BLINK-Benchmark/BLINK（Hugging Face 数据集卡片）",
+        "url": "https://huggingface.co/datasets/BLINK-Benchmark/BLINK",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "宾夕法尼亚大学、华盛顿大学、Allen Institute for AI、加州大学戴维斯分校、哥伦比亚大学、康奈尔大学（论文署名机构）",
+        "cite": ["zeyofu-blink@作者机构"]
+      },
+      "first_release": {
+        "v": "2024-04-18（arXiv v1；v4 于 2024-07-03 修订）",
+        "cite": ["paper@arXiv 版本信息"]
+      }
+    },
+    "cites": {
+      "summary": ["paper@Abstract", "paper@§4.2"],
+      "interpretation": ["paper@§5", "paper@§4.2", "paper@附录 D"]
+    },
+    "problem": {
+      "text": "已有热门多模态基准把感知和语言知识、推理混在一起：论文举的例子是「这只 hummingbird 为什么叫 ruby-throated」和「接下来会发生什么」，视觉部分只剩识别或粗描述，其余交给语言模型；把图像换成密集 caption 后，「盲」GPT-4 照样答得不错。BLINK 要补的正是这块——用经典计算机视觉任务造一批「人类一眨眼就能答、但无法用自然语言中转」的题，量化模型与人类在基础感知上的差距。",
+      "cite": ["paper@§1", "paper@§3.1"]
+    },
+    "ladder": [
+      {
+        "label": "随机猜测基线",
+        "value": "38.09%",
+        "note": "14 个子任务随机正确率的等权平均；各任务随机率为 25%（4 选项）/ 33.33%（3 选项）/ 50%（2 选项），验证集与测试集相同。",
+        "cite": ["paper@Table 1"]
+      },
+      {
+        "label": "7B / 13B 开源模型区间",
+        "value": "35%–42%",
+        "note": "论文报告 7B 与 13B 开源多模态 LLM 的平均准确率落在 35–42%，与随机猜测（38.09%）相当。",
+        "cite": ["paper@§4.2"]
+      },
+      {
+        "label": "论文发布时最好（测试集）",
+        "value": "51.26%",
+        "note": "GPT-4V(ision)（2024-03 测）；同期 Gemini Pro 45.72%、Claude 3 OPUS 44.11%、LLaVA-v1.6-34B 45.05%，只比随机高 6.02–13.17 个百分点。",
+        "cite": ["paper@§4.2", "paper@Table 1"]
+      },
+      {
+        "label": "人类平均",
+        "value": "95.70%",
+        "note": "两位论文作者标注取平均；验证集 95.67%，标注一致率 80–99%。这是参照上限，不是独立人类样本均值。",
+        "cite": ["paper@Table 1", "paper@附录 A.4"]
+      },
+      {
+        "label": "论文内专用 CV 模型参考（验证集）",
+        "value": "96.51%–97.58%",
+        "note": "DIFT 在视觉对应 96.51%、DepthAnything 在相对深度 97.58%、LoFTR 在多视角 90.22%、DIFT 在语义对应 71.22%、DIRE 在伪造检测 68.94%、Ordinal Shading 在相对反射率 77.61%。专用模型比 GPT-4V 高 18%–57%，说明差距在感知维度而非题目不可解。",
+        "cite": ["paper@Table 2", "paper@§4.3"]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 GPT-4V 的 51.26% 理解成「模型只会一半的视觉任务」。14 个子任务难度极不均：IQ 测试与功能对应上人类也只有约 80%，而模型在空间关系、艺术风格、计数上明显高于随机；低分主要来自视觉对应、语义对应、伪造检测这几类。",
+        "cite": ["paper@Table 1", "paper@§4.2"]
+      },
+      {
+        "text": "因为 BLINK 分低就断言多模态模型「看不懂图」。论文自己的结论是感知能力被高估、且专用 CV 模型能解这些题——差距在特定感知维度，不在「有没有视觉」。",
+        "cite": ["paper@§5", "paper@Table 2"]
+      },
+      {
+        "text": "用 BLINK 分数直接跨厂商排名。官方口径是数据集自带提示词下的 zero-shot，temperature=0、retry 10、不缩放图像；换提示词、换分辨率、换多图拼接方式都会变。",
+        "cite": ["paper@§4.1", "zeyofu-blink@Leaderboard"]
+      },
+      {
+        "text": "把验证集和测试集分数混在一起比。val 1,901 题公开答案与基线预测，test 1,906 题答案不公开；论文表 1 两列都给，官网 mini-leaderboard 也分列。",
+        "cite": ["paper@Table 1", "repo@Data Release"]
+      },
+      {
+        "text": "看到「Caption + LLM 在 BLINK 上失败」就推广成「所有多模态基准都能被 caption 化」。论文只在 BLINK、MMBench、MMMU 三个集上做了这个对照。",
+        "cite": ["paper@§4.3"]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "宾夕法尼亚大学、华盛顿大学、Allen Institute for AI、加州大学戴维斯分校、哥伦比亚大学、康奈尔大学（论文署名机构）",
+        "cite": ["zeyofu-blink@作者机构"]
+      },
+      {
+        "k": "核心作者",
+        "v": "Xingyu Fu、Yushi Hu（共同第一）、Bangzheng Li、Yu Feng、Haoyu Wang、Xudong Lin、Dan Roth、Noah A. Smith、Wei-Chiu Ma、Ranjay Krishna",
+        "cite": ["zeyofu-blink@作者机构"]
+      },
+      {
+        "k": "发表场合",
+        "v": "ECCV 2024（2024-07-01 仓库宣布接收）；论文以 arXiv 预印本于 2024-04-18 首发，2024-07-03 修订至 v4",
+        "cite": ["repo@News", "paper@arXiv 版本信息"]
+      },
+      {
+        "k": "评测规模",
+        "v": "论文评测 16–17 个多模态 LLM（§1 写 17，§4.1 与附录 B 写 16），覆盖 7B、13B、34B 三档；GPT-4V 测于 2024-03，GPT-4 Turbo 与 GPT-4o 测于 2024-05",
+        "cite": ["paper@§1", "paper@附录 B"]
+      },
+      {
+        "k": "许可",
+        "v": "数据集卡片与代码仓库均为 Apache-2.0",
+        "cite": ["dataset@License", "repo@License"]
+      },
+      {
+        "k": "提交通道",
+        "v": "测试集答案不公开，外部提交走 EvalAI；验证集答案、提示词与基线预测随仓库公开",
+        "cite": ["repo@Test Split", "repo@Data Release"]
+      },
+      {
+        "k": "配套榜单",
+        "v": "官网提供验证集榜单跟踪社区进展（2024-07-03 上线），口径为数据集自带提示词的 zero-shot",
+        "cite": ["zeyofu-blink@Leaderboard", "repo@News 2024-07-03"]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-14",
+        "columns": ["来源", "模型 / 参照", "验证集", "测试集", "口径"],
+        "rows": [
+          ["论文 Table 1", "Random Choice", "38.09%", "38.09%", "14 个子任务等权平均"],
+          ["论文 Table 1", "Human", "95.67%", "95.70%", "两位论文作者标注取平均"],
+          ["论文 Table 1", "Claude 3 OPUS", "44.05%", "44.11%", "zero-shot，2024 年测"],
+          ["论文 Table 1", "GPT-4V(ision)", "51.14%", "51.26%", "2024-03 测；论文发布时最好"],
+          ["论文 Table 1", "GPT-4 Turbo", "54.61%", "53.89%", "2024-05 测"],
+          ["论文 Table 1", "GPT-4o", "60.04%", "59.03%", "2024-05 测；论文表内最高"],
+          ["论文 Table 2（dev）", "DIFT（视觉对应）", "96.51%", "—", "专用 CV 模型"],
+          ["论文 Table 2（dev）", "DepthAnything（相对深度）", "97.58%", "—", "专用 CV 模型"],
+          ["论文 Table 2（dev）", "LoFTR（多视角推理）", "90.22%", "—", "专用 CV 模型"],
+          ["仓库 mini-leaderboard", "Gemini Pro 1.0", "45.2%", "45.7%", "官网榜单，保留 1 位小数"],
+          ["仓库 mini-leaderboard", "LLaVA-1.6-34B", "46.8%", "45.1%", "官网榜单，保留 1 位小数"],
+          ["仓库 mini-leaderboard", "Claude 3 Opus", "44.1%", "—", "官网榜单，保留 1 位小数"],
+          ["仓库 mini-leaderboard", "GPT-4o", "60.0%", "59.0%", "官网榜单，保留 1 位小数"]
+        ]
+      },
+      "cite": ["paper@Table 1", "paper@Table 2", "repo@Mini-Leaderboard"]
+    }
+  }
+}

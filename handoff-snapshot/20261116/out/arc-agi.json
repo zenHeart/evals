@@ -1,0 +1,869 @@
+{
+  "id": "arc-agi",
+  "name": "ARC-AGI",
+  "full_name": "Abstraction and Reasoning Corpus for Artificial General Intelligence（抽象与推理语料库，论文中简称 ARC）",
+  "aliases": [],
+  "status": null,
+  "categories": [
+    "reasoning"
+  ],
+  "summary": "ARC-AGI 是一组彩色网格拼图题：每题只给几组「输入网格→输出网格」示例，要求归纳出背后的变换规则，再自己画出测试输入对应的输出网格。它 2019 年由 François Chollet 提出，现由 ARC Prize Foundation 维护，设计目标是「对人类容易、对 AI 难」，并已从静态网格题（ARC-AGI-1/2）扩展到交互式游戏环境（ARC-AGI-3）。",
+  "interpretation": "高分说明模型能在只看到少量示例的新任务上快速归纳规则并无一差错地复现，也就是论文定义的「技能获取效率」；官方把 AGI 定义为「学习效率能匹配人类的系统」，所以分数要和每任务成本一起看。它不代表语言理解、知识广度或开放式科研能力，也不覆盖多步交互（后者是 ARC-AGI-3 才引入的题型）。同一张官方榜单上 ARC-AGI-1 最高 98.5%、ARC-AGI-2 最高 95.0%、ARC-AGI-3（Standard）最高 62.7%，跨版本、跨算力、跨评测集的分数不能直接比。",
+  "measures": [
+    {
+      "area": "对象性先验（Objectness priors，ARC-AGI-1/2）",
+      "focus": "把网格解析成「物体」：按颜色连续性或空间相邻切分、识别被噪声或遮挡的对象、对象接触时产生的影响（一个物体被平移到与另一个相撞、线条长到撞上障碍物后反弹）",
+      "share": "未披露（论文只列出先验类别，未给各类题量）",
+      "format": "输入/输出网格对：demonstration→test",
+      "cite": [
+        "paper@§III.1.2"
+      ]
+    },
+    {
+      "area": "数字与计数先验（ARC-AGI-1/2）",
+      "focus": "数数、按大小排序、比较数量（哪个形状或符号出现最多/最少/次数相同）、按固定次数重复图案，以及加减；示例题：数出唯一物体并挑出出现次数最多的那个（论文 Figure 10）",
+      "share": "未披露（论文未给各类题量）",
+      "format": "输入/输出网格对；论文称所有数量都小于约 10",
+      "cite": [
+        "paper@§III.1.2",
+        "paper@Figure 10"
+      ]
+    },
+    {
+      "area": "基础几何与拓扑先验（ARC-AGI-1/2）",
+      "focus": "线条、矩形、对称、旋转、平移、缩放与弹性形变、包含/被包含、连线与正交投影、复制与重复；示例题：绕标记点画出图形的对称版本（论文 Figure 11）",
+      "share": "未披露（论文未给各类题量）",
+      "format": "输入/输出网格对",
+      "cite": [
+        "paper@§III.1.2",
+        "paper@Figure 11"
+      ]
+    },
+    {
+      "area": "目标导向先验（ARC-AGI-1/2）",
+      "focus": "把输入/输出网格理解成一个有意图过程的起点与终点；论文认为这个先验对解题不是必需，但很可能有用",
+      "share": "未披露（论文未给各类题量）",
+      "format": "输入/输出网格对",
+      "cite": [
+        "paper@§III.1.2"
+      ]
+    },
+    {
+      "area": "符号解释、组合推理与上下文规则（ARC-AGI-2 的重点难点）",
+      "focus": "符号要被赋予超出视觉形态的意义；多条相互作用的规则要同时应用；规则要按上下文选择；官方示例题为 ARC-AGI-2 Public Eval #e3721c99、#cbebaa4b、#b5ca7ac4，这些题都被至少 2 人在 2 次尝试内解出、且当时无一被前沿推理系统解出",
+      "share": "未披露（官方未按难点给题量）",
+      "format": "输入/输出网格对；题型与 ARC-AGI-1 相同",
+      "cite": [
+        "blog-arc-agi-2-report",
+        "site-arc-agi-2"
+      ]
+    },
+    {
+      "area": "交互式探索与规划（ARC-AGI-3）",
+      "focus": "在没有说明的电子游戏式环境里多步行动达成长程目标，考察探索、规划、记忆、目标获取与对齐；官方称 1,000+ 关卡、150+ 个环境，每个环境手工打造且新颖，无法靠记忆通过",
+      "share": "未披露（官方只给总量 1,000+ 关卡 / 150+ 环境，未按能力给占比）",
+      "format": "游戏环境中的多步动作序列；按动作效率计分",
+      "cite": [
+        "site-arc-agi-3",
+        "blog-2025-results"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "语言与后天获得的知识：论文明确说 ARC 只假设接近人类先天先验的「核心知识先验」，避免依赖语言这类必须后天获得的信息；题目是 10 种颜色符号组成的网格，不含自然语言",
+      "cite": [
+        "paper@§III.1.2"
+      ]
+    },
+    {
+      "text": "交互式、多步试错的问题求解（ARC-AGI-1/2）：模型是一次性输入→输出；论文自己把「格式过于封闭和二元」列为弱点，并设想让被测者与示例生成器反复交互——这个方向要到 ARC-AGI-3 才落地",
+      "cite": [
+        "paper@§III.2",
+        "site-arc-agi-3"
+      ]
+    },
+    {
+      "text": "泛化程度的定量度量与测试效度：论文明说不提供泛化度的定量度量，也未经大样本人类统计研究建立效度（分数对其他非测试活动的预测力未知）",
+      "cite": [
+        "paper@§III.2"
+      ]
+    },
+    {
+      "text": "成本与效率（ARC-AGI-1 不测）：官方从 ARC-AGI-2 起才要求所有 ARC-AGI 报告同时给出每任务成本，ARC-AGI-3 进一步改成动作效率",
+      "cite": [
+        "site-arc-agi-2",
+        "blog-arc-agi-2-launch"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 800,
+    "splits": [
+      "ARC-AGI-1 训练集：400 题（公开；官方定位为练习与开发用的 playground）",
+      "ARC-AGI-1 公开评测集：400 题（公开；用于跑最终算法）",
+      "ARC-AGI-1 半私有评测集：100 题（不公开；2024 年中期引入，用于测试闭源模型）",
+      "ARC-AGI-1 私有评测集：100 题（不公开；ARC Prize 竞赛依据，2020/2022/2023/2024 决赛榜单用它；论文写作时该集为 200 题）",
+      "ARC-AGI-2 训练集：1,000 题（公开；未经人类难度校准，从「对人类和 AI 都很难」到「都很容易」分布）",
+      "ARC-AGI-2 公开评测集：120 题（公开；经人类实测校准）",
+      "ARC-AGI-2 半私有评测集：120 题（不公开；用于 Kaggle 实时榜与 ARC Prize 官方榜单）",
+      "ARC-AGI-2 私有评测集：120 题（不公开；用于 Kaggle 决赛榜）",
+      "ARC-AGI-3：1,000+ 关卡 / 150+ 个环境（官方只给总量；公开演示集与半私有集分开报告，官方称公开演示比半私有集更难）"
+    ],
+    "languages": [
+      "无自然语言题目（10 种颜色符号构成的网格，官方与论文均未把语言列为被测能力）"
+    ],
+    "source_type": "人工构造（论文：多数任务不是程序生成的，手工构造以提升任务多样性；ARC-AGI-3 官方称每个环境手工打造且新颖）",
+    "public_sample": true,
+    "totals": "ARC-AGI-1 公开 800 题（训练 400 + 公开评测 400），另有半私有评测 100 题与私有评测 100 题（论文写作时私有集为 200 题，合计 1,000 题）；ARC-AGI-2 共 1,360 题（训练 1,000 + 公开/半私有/私有评测各 120）；ARC-AGI-3 官方只写 1,000+ 关卡、150+ 个环境，未给精确题数。ARC-AGI-1/2 每题平均 3.3 组 demonstration、一般 1 组 test，网格为 0–9 的整数矩阵、尺寸 1x1 到 30x30。",
+    "cite": [
+      "paper@§III.1.1",
+      "site-arc-agi-1",
+      "site-arc-agi-2",
+      "site-arc-agi-3",
+      "repo"
+    ],
+    "construction": [
+      {
+        "k": "人工逐题构造",
+        "text": "论文说 ARC 任务「多数不是程序生成的」，反对用一个静态「母程序」批量生成——那样反推出母程序就能通关；手工构造用于提升任务多样性、降低出现未知捷径的风险。",
+        "cite": [
+          "paper@§III.1.3"
+        ]
+      },
+      {
+        "k": "只假设核心知识先验",
+        "text": "论文显式列出四类先验（对象性、目标导向、数字与计数、基础几何与拓扑），并避免依赖先验清单之外的任何信息（例如语言），以保证人类与 AI 在相同信息下可比。",
+        "cite": [
+          "paper@§III.1.2"
+        ]
+      },
+      {
+        "k": "demonstration→test 的任务形态",
+        "text": "每题给若干组 demonstration（输入网格→输出网格，平均 3.3 组），被测者据此推出规则，再对 test 输入从零构造输出网格——自己决定高宽、放哪些符号、放在哪。",
+        "cite": [
+          "paper@§III.1.1",
+          "repo"
+        ]
+      },
+      {
+        "k": "人类可行性把关",
+        "text": "论文说进入 ARC 的每道题都至少被一个三人高 IQ 小组（成员互不交流）解出；ARC-AGI-2 起改为第一方实测——圣地亚哥现场 400 多名公众完成 1,417 道候选题，只保留「至少 2 人在 2 次尝试内解出」的题。",
+        "cite": [
+          "paper@§III.1.4",
+          "blog-arc-agi-2-report"
+        ]
+      },
+      {
+        "k": "私有集与防污染机制",
+        "text": "论文用私有评测集强制「开发者不可能提前知道题目」，使「开发者可感知的泛化」可被度量；官方进一步要求模型厂商签零数据保留协议，并大致每年发布新版本，把前沿信号换到新题上。",
+        "cite": [
+          "paper@§III.1.1",
+          "policy"
+        ]
+      },
+      {
+        "k": "ARC-AGI-3 的游戏环境",
+        "text": "官方称 ARC-AGI-3 用电子游戏式环境，智能体多步行动达成长程目标，游戏不给任何说明，玩家必须自己探索出规则；每个环境手工打造且新颖，因此无法靠记忆通关，且 100% 环境人类可解。",
+        "cite": [
+          "site-arc-agi-3"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "accuracy",
+      "name": "任务准确率",
+      "direction": "越高越好",
+      "description": "成功解出的任务占评测集的比例。判定为完全匹配：必须对该题全部 test 示例都给出逐格正确的输出网格，该题才算解出（二元判定），因此也是「每题 0 或 1」的通过率。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§III.1.1",
+        "repo"
+      ]
+    },
+    {
+      "id": "cost-per-task",
+      "name": "每任务成本",
+      "direction": "越低越好",
+      "description": "解出一个任务平均花费的美元，按零售 API 价格（每百万 token 单价）计；官方从 ARC-AGI-2 起要求所有 ARC-AGI 报告都同时给出该指标，用来比较人类与 AI 的学习效率。",
+      "unit": "USD/task",
+      "cite": [
+        "site-arc-agi-2",
+        "blog-arc-agi-2-launch",
+        "policy"
+      ]
+    },
+    {
+      "id": "action-efficiency",
+      "name": "动作效率",
+      "direction": "越低越好",
+      "description": "ARC-AGI-3 的指标：完成一个目标平均需要多少动作，衡量被测者把环境信息转化成有效策略的能力。",
+      "unit": "actions per goal",
+      "cite": [
+        "site-arc-agi-3"
+      ]
+    }
+  ],
+  "default_protocol": {
+    "raw": "评测时先给出该题的 demonstration 输入/输出对，被测者据此归纳变换规则，再对 test 输入网格从零构造输出网格（自己决定尺寸、颜色与位置）。判定为完全匹配：必须对该题全部 test 示例都给出逐格正确的输出，该题才算解出；分数＝成功解出的任务占评测集的比例。ARC Prize 官方口径为每任务 2 次尝试取最好（pass@2）；ARC-AGI-1/2 默认不开任何工具（含代码执行与联网搜索），模型作为直接输入→输出预测器评测，没有 agent 外壳；ARC-AGI-3 是交互式，模型在环境内逐步行动，按动作效率计分。",
+    "cite": [
+      "paper@§III.1.1",
+      "blog-arc-agi-2-launch",
+      "policy",
+      "site-arc-agi-3"
+    ],
+    "variants": [
+      {
+        "text": "尝试次数：论文与官方仓库给每个 test 输入 3 次尝试，ARC Prize 现行口径是 pass@2（2 次尝试取最好）；两者不是同一个分数。",
+        "cite": [
+          "paper@§III.1.1",
+          "repo",
+          "blog-arc-agi-2-launch"
+        ]
+      },
+      {
+        "text": "测试时算力与推理档位：同一个 o3-preview 在低算力下 76%、放开算力限制后 88%；官方榜单按 reasoning effort（Minimal→Max）分列，同一模型不同档位差出几十个百分点。",
+        "cite": [
+          "blog-o3-analysis",
+          "leaderboard"
+        ]
+      },
+      {
+        "text": "评测集与版本：ARC-AGI-1 分公开/半私有/私有，ARC-AGI-2 三套各 120 题，ARC-AGI-3 分公开演示与半私有；官方榜单把 v1/v2/v3 分成不同数据集，跨数据集分数不可混排。",
+        "cite": [
+          "site-arc-agi-1",
+          "site-arc-agi-2",
+          "leaderboard"
+        ]
+      },
+      {
+        "text": "是否允许测试时搜索与程序合成：官方发布时对比表里 o3-preview、o1-pro 标注为「CoT + Search/Synthesis」，o3-mini-high、r1、gpt-4.5 标注为「Single CoT」或「Pure LLM」，成本相差两个数量级（约 $200/task vs 约 $0.29/task）。",
+        "cite": [
+          "blog-arc-agi-2-launch"
+        ]
+      },
+      {
+        "text": "ARC-AGI-3 的 harness：官方分别报告 Standard harness（最小化、provider 中立，可自带笔记）与 Provider Adapter harness（保留不透明推理状态、长对话压缩），同一模型两套分数可差 20 个百分点以上。",
+        "cite": [
+          "policy",
+          "leaderboard"
+        ]
+      },
+      {
+        "text": "未返回完整输出的处理：官方榜单注明「无法产出完整测试输出的模型，剩余任务一律记为错误」，高推理档位常因超时大面积不返回，官方据此拒绝公布该档位成绩。",
+        "cite": [
+          "leaderboard",
+          "blog-o3-analysis"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2019-11-05",
+      "label": "随论文 On the Measure of Intelligence 发布（arXiv v1；v2 为 2019-11-25）。论文口径：训练 400 题 + 评测 600 题，其中公开评测 400、私有评测 200，共 1,000 题",
+      "cite": [
+        "paper",
+        "paper@§III.1.1"
+      ]
+    },
+    {
+      "id": "arc-prize-2024",
+      "date": "2024-06-11",
+      "label": "ARC Prize 2024 启动（官方博客 06.11.24 Announcing ARC Prize）；ARC-AGI-1 半私有评测集于 2024 年中期引入，官方未给精确日期",
+      "cite": [
+        "blog-index",
+        "site-arc-agi-1"
+      ]
+    },
+    {
+      "id": "o3-breakthrough",
+      "date": "2024-12-20",
+      "label": "o3-preview 首次突破：官方榜单记录 ARC-AGI-1 半私有集 75.7%（低算力），官方博客另记低算力 76%、放开算力 88%",
+      "cite": [
+        "leaderboard",
+        "blog-o3-analysis"
+      ]
+    },
+    {
+      "id": "arc-agi-2",
+      "date": "2025-03-24",
+      "label": "ARC-AGI-2 与 ARC Prize 2025 发布：训练 1,000 题 + 公开/半私有/私有评测各 120 题，评测集改为经人类实测校准，并首次要求同时报告每任务成本",
+      "cite": [
+        "blog-index",
+        "site-arc-agi-2",
+        "blog-arc-agi-2-launch"
+      ]
+    },
+    {
+      "id": "arc-agi-2-report",
+      "date": "2025-05-20",
+      "label": "ARC-AGI-2 技术报告发布：400 名公众、1,417 道候选题的第一方人类实测数据；当时前沿模型在 ARC-AGI-2 上均未超过 5%",
+      "cite": [
+        "blog-arc-agi-2-report"
+      ]
+    },
+    {
+      "id": "arc-prize-2025-results",
+      "date": "2025-12-05",
+      "label": "ARC Prize 2025 结果与分析：Kaggle 最高 24%（ARC-AGI-2 私有集，$0.20/task）；官方验证的最高商用模型 Opus 4.5 为 37.6%（$2.20/task）",
+      "cite": [
+        "blog-2025-results"
+      ]
+    },
+    {
+      "id": "arc-agi-3",
+      "date": "2026-03-25",
+      "label": "ARC-AGI-3 发布：首个交互式推理基准，官方称 1,000+ 关卡、150+ 个环境；2026 年 ARC Prize 奖池 $2,000,000，结果定于 2026-12-04 公布",
+      "cite": [
+        "site-arc-agi-3",
+        "arcprize-home"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "高算力口径：分数可以被测试时算力「买」上去",
+      "impact": "同一个 o3-preview 低算力 76%、放开算力限制后 88%；官方榜单最高分多个模型的成本超过 $20K/任务（GPT-6 Astra $26.1K、Claude Fable 5.2 $21.9K）。官方明说 brute-force 搜索在无限资源下终会解出 ARC，而这不代表智能，因此只看准确率会高估模型的「智能」。",
+      "severity": "高",
+      "response": "官方从 ARC-AGI-2 起要求所有 ARC-AGI 报告同时给出每任务成本，榜单改为分数×成本双轴；官方评测单次运行上限 $10,000，Kaggle 竞赛限制约 $50 算力并禁止联网 API。",
+      "reader": "比较分数前先看成本列与 reasoning effort 档位；厂商自报的「无限制算力」演示不能和榜单常规口径并列。",
+      "cite": [
+        "blog-o3-analysis",
+        "blog-arc-agi-2-launch",
+        "leaderboard",
+        "policy"
+      ]
+    },
+    {
+      "issue": "半私有集污染与「知识过拟合」",
+      "impact": "官方承认半私有集任务要发给第三方 API，随时间可能有限泄漏，所以叫「半」私有；官方 2025 年分析认为 ARC-AGI-1/2 正在被过拟合（无法区分无意还是有意的），证据是 Gemini 3 Deep Think 在推理中直接使用了正确的 ARC 颜色映射；OpenAI 也说过 o3-preview 训练时包含 75% 的 ARC-AGI-1 数据集。",
+      "severity": "高",
+      "response": "零数据保留协议、大致每年发布新版本把信号换到新题、持续监测公开集与半私有集的分差（分差收窄即视为半私有集正在被过拟合的迹象）；未见针对已污染题目的剔除机制说明。",
+      "reader": "看分数时要区分评测集（公开/半私有/私有）与版本；半私有集上的历史分数随时间可能偏高。",
+      "cite": [
+        "policy",
+        "blog-2025-results",
+        "blog-o3-analysis"
+      ]
+    },
+    {
+      "issue": "版本与口径多次变化，历史分数不可直接比",
+      "impact": "论文写作时私有评测集为 200 题，官方现行 ARC-AGI-1 页面是半私有 100 + 私有 100（半私有集 2024 年中期才引入）；论文给每个 test 输入 3 次尝试，现行口径是 pass@2；论文没有给出数值化人类基线，而官方榜单给出多个人类行（至少 2 人解出 98.0%、平均测试者 77.0%），口径各不相同。",
+      "severity": "中",
+      "response": "官方在测试政策中显式说明各版本公开集与半私有集的一致性判据（ARC-AGI-1 ±10 个百分点、ARC-AGI-2 ±3、ARC-AGI-3 ±15），并在榜单脚注标注估算与临时成本；论文侧的旧口径未见修订说明。",
+      "reader": "引用 ARC-AGI 分数时连同版本、评测集、尝试次数与算力档位一起写；跨版本比较结论要打折。",
+      "cite": [
+        "paper@§III.1.1",
+        "site-arc-agi-1",
+        "leaderboard",
+        "policy"
+      ]
+    },
+    {
+      "issue": "「人类 100%」只在特定口径下成立",
+      "impact": "ARC-AGI-2 的 100% 指「至少 2 人在 2 次尝试内解出」，不是平均人类水平：同页写的平均测试者分数是 60%，ARC-AGI-1 平均测试者 77.0%（至少 2 人解出为 98.0%）。论文则只说每题至少被三人高 IQ 小组中的一人解出，未给数值基线。",
+      "severity": "中",
+      "response": "官方从 ARC-AGI-2 起做第一方人类实测（400+ 人、1,417 题）并公开人类数据；论文侧计划未来做大样本人类统计研究。",
+      "reader": "看到「人类 100%」要问是「至少两人通过」还是「平均分」；把它当人类上限会夸大差距。",
+      "cite": [
+        "site-arc-agi-2",
+        "leaderboard",
+        "blog-arc-agi-2-launch",
+        "paper@§III.1.4"
+      ]
+    },
+    {
+      "issue": "grid-only：不覆盖语言、知识与多步交互",
+      "impact": "题目是 0–9 整数网格，论文刻意不依赖语言等后天知识，因此 ARC 分数不能外推到语言理解、知识问答或开放式科研；ARC-AGI-1/2 还是一次性输入→输出，论文自认格式「过于封闭和二元」，缺少交互式假设检验。",
+      "severity": "中",
+      "response": "官方用 ARC-AGI-3 引入交互式游戏环境，考察探索、规划、记忆、目标获取与对齐，并按动作效率计分；语言类能力由其他基准覆盖。",
+      "reader": "ARC 分数只说明少样本规则归纳与（3 代起）交互适应，不要当作通用智能总分。",
+      "cite": [
+        "paper@§III.2",
+        "paper@§III.1.2",
+        "site-arc-agi-3"
+      ]
+    },
+    {
+      "issue": "规模有限、效度未建立、可能被捷径攻破",
+      "impact": "论文自列弱点：ARC-AGI-1 总共只有 1,000 题，任务间可能存在概念重叠，可能被 shortcut 策略绕过所需能力；泛化度没有定量度量；测试效度（对其他非测试活动的预测力）未经大样本人类统计研究建立。",
+      "severity": "低",
+      "response": "官方用公开竞赛众包 shortcut（若存在应在竞赛中快速出现）、持续增加新题，并以 ARC-AGI-2/3 换新题；论文称计划未来用人类表现估计泛化难度并做效度研究。",
+      "reader": "把 ARC 当作「流体智力方向的探针」而非稳定常模；题量小意味着单个模型的分差要结合成本一起看。",
+      "cite": [
+        "paper@§III.2"
+      ]
+    }
+  ],
+  "notes": "xAI 首发 SOTA 叙事、字节跟进",
+  "official_sources": [
+    {
+      "kind": "site",
+      "url": "https://arcprize.org/"
+    },
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/1911.01547"
+    },
+    {
+      "kind": "site",
+      "url": "https://arcprize.org/arc-agi/1"
+    },
+    {
+      "kind": "site",
+      "url": "https://arcprize.org/arc-agi/2"
+    },
+    {
+      "kind": "site",
+      "url": "https://arcprize.org/arc-agi/3"
+    },
+    {
+      "kind": "leaderboard",
+      "url": "https://arcprize.org/leaderboard"
+    },
+    {
+      "kind": "docs",
+      "url": "https://arcprize.org/policy"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/fchollet/ARC"
+    }
+  ],
+  "related_benchmarks": [
+    "gpqa",
+    "aime24",
+    "math500",
+    "gsm8k",
+    "frontiermath",
+    "livebench"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-10",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-10",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "On the Measure of Intelligence（arXiv:1911.01547v2，2019-11-25 修订；François Chollet，Google）",
+        "url": "https://arxiv.org/abs/1911.01547",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "fchollet/ARC（ARC-AGI-1 任务数据与人类测试界面 README）",
+        "url": "https://github.com/fchollet/ARC",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "site-arc-agi-1",
+        "kind": "site",
+        "title": "ARC-AGI-1 官方页（About 与数据集表）",
+        "url": "https://arcprize.org/arc-agi/1",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "site-arc-agi-2",
+        "kind": "site",
+        "title": "ARC-AGI-2 官方页（数据集结构、校准与效率说明）",
+        "url": "https://arcprize.org/arc-agi/2",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "site-arc-agi-3",
+        "kind": "site",
+        "title": "ARC-AGI-3 官方页（交互式推理基准与时间线）",
+        "url": "https://arcprize.org/arc-agi/3",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "leaderboard",
+        "kind": "leaderboard",
+        "title": "ARC Prize Verified Leaderboard（ARC-AGI-1/2/3，120 个模型）",
+        "url": "https://arcprize.org/leaderboard",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "policy",
+        "kind": "docs",
+        "title": "ARC Prize Verified Official Testing Policy（官方测试政策）",
+        "url": "https://arcprize.org/policy",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "blog-arc-agi-2-launch",
+        "kind": "announcement",
+        "title": "Announcing ARC-AGI-2 and ARC Prize 2025（2025-03-24）",
+        "url": "https://arcprize.org/blog/announcing-arc-agi-2-and-arc-prize-2025",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "blog-arc-agi-2-report",
+        "kind": "blog",
+        "title": "ARC-AGI-2: A New Challenge for Frontier AI Reasoning Systems（技术报告，2025-05-20）",
+        "url": "https://arcprize.org/blog/arc-agi-2-technical-report",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "blog-o3-analysis",
+        "kind": "blog",
+        "title": "Analyzing o3 and o4-mini with ARC-AGI（2025-04-22）",
+        "url": "https://arcprize.org/blog/analyzing-o3-with-arc-agi",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "blog-2025-results",
+        "kind": "blog",
+        "title": "ARC Prize 2025 Results & Analysis（2025-12-05）",
+        "url": "https://arcprize.org/blog/arc-prize-2025-results-analysis",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "blog-index",
+        "kind": "blog",
+        "title": "ARC Prize 官方博客索引（用于确认各篇公告发布日期）",
+        "url": "https://arcprize.org/blog",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "arcprize-home",
+        "kind": "site",
+        "title": "arcprize.org 首页（基金会定位、AGI 定义与 2026 奖池）",
+        "url": "https://arcprize.org/",
+        "accessed": "2026-11-10"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "论文署名 Google, Inc.（作者 François Chollet）；2024 年 4 月起由 ARC Prize Foundation（非营利）维护",
+        "cite": [
+          "paper",
+          "policy"
+        ]
+      },
+      "first_release": {
+        "v": "2019-11-05（arXiv v1；v2 为 2019-11-25）",
+        "cite": [
+          "paper"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "paper@§III.1.1",
+        "site-arc-agi-1",
+        "policy"
+      ],
+      "interpretation": [
+        "paper@§II.2.1",
+        "arcprize-home",
+        "leaderboard"
+      ]
+    },
+    "problem": {
+      "text": "2019 年前后，AI 评测主要在比特定任务的技能（国际象棋、图像分类、电子游戏），而技能可以被无限先验或无限训练数据「买」到，从而掩盖系统自身的泛化能力；同时深度学习方法在窄任务上强、在人类式泛化上明显不足。ARC 想按论文给的标准，用只依赖先天先验、且开发者不可能提前见过的新任务来衡量「技能获取效率」，并让人类与 AI 在同一测试程序下可比。",
+      "cite": [
+        "paper@Abstract",
+        "paper@§I.3.1",
+        "paper@§II.2.1",
+        "site-arc-agi-1"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "论文发布时的 AI 水平（2019）",
+        "value": "论文未给出",
+        "note": "论文只说「就我们所知，ARC 不被任何现有机器学习技术（含深度学习）所能接近」，没有报告任何数值分数。",
+        "cite": [
+          "paper@§III.1.4"
+        ]
+      },
+      {
+        "label": "人类平均测试者（ARC-AGI-1 半私有集）",
+        "value": "77.0%",
+        "note": "官方榜单 Avg. Mturker 行；同一数据集上「至少 2 人解出」的 Human Panel 为 98.0%，Stem Grad 为 98.0%。",
+        "cite": [
+          "leaderboard"
+        ]
+      },
+      {
+        "label": "首次突破（2024-12-20，o3-preview 低算力）",
+        "value": "75.7%",
+        "note": "ARC-AGI-1 半私有集；官方博客另记低算力 76%、放开算力限制后 88%，后者官方称为「无限制测试时资源」下的演示。",
+        "cite": [
+          "leaderboard",
+          "blog-o3-analysis"
+        ]
+      },
+      {
+        "label": "官方榜单当前最高（ARC-AGI-1）",
+        "value": "98.5%",
+        "note": "2026-11-09 Claude Fable 5.2 等多个模型并列；同榜单 ARC-AGI-2 最高 95.0%（GPT-6 Astra，$26.1K）、ARC-AGI-3 Standard 最高 62.7%（同模型）。",
+        "cite": [
+          "leaderboard"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      },
+      {
+        "label": "ARC-AGI-2 人类面板参考线",
+        "value": "100%（至少 2 人解出）；平均测试者 60%",
+        "note": "官方称 ARC-AGI-2 全部任务都被至少 2 人在 2 次尝试内解出；2025-03-24 发布时前沿推理系统只有个位数（o3-preview-low 4%）。",
+        "cite": [
+          "site-arc-agi-2",
+          "blog-arc-agi-2-launch"
+        ]
+      },
+      {
+        "label": "ARC-AGI-3 人类可解性参考线",
+        "value": "100% 环境人类可解（官方表述，未给人类分数）",
+        "note": "ARC-AGI-3 按动作效率而非准确率比较人类与 AI；官方榜单该版本 Standard harness 最高 62.7%。",
+        "cite": [
+          "site-arc-agi-3",
+          "leaderboard"
+        ]
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 ARC-AGI-1 的 98.5% 当成「通用智能已达标」——同一张榜单上 ARC-AGI-2 最高 95.0%、ARC-AGI-3 Standard 最高 62.7%，而且这些高分的成本普遍在 $20K/任务量级。",
+        "cite": [
+          "leaderboard"
+        ]
+      },
+      {
+        "text": "把 o3 的 75.7% 和 88% 当同一个口径——前者是低算力下的半私有集成绩，后者是官方放开算力限制后的演示，官方明确说这不是生产版 o3 的预期水平。",
+        "cite": [
+          "leaderboard",
+          "blog-o3-analysis"
+        ]
+      },
+      {
+        "text": "以为可以联网搜索或用代码执行——官方默认不给 ARC-AGI-1/2 开任何工具（包括代码执行与联网搜索），模型是直接输入→输出预测器，没有 agent 外壳。",
+        "cite": [
+          "policy"
+        ]
+      },
+      {
+        "text": "把「人类 100%」当成平均人类水平——它指「至少 2 人在 2 次尝试内解出」；平均测试者分数 ARC-AGI-1 为 77.0%、ARC-AGI-2 为 60%。",
+        "cite": [
+          "site-arc-agi-2",
+          "leaderboard"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "论文署名 Google, Inc.；2024 年 4 月起由 François Chollet 与 Mike Knoop 共同创立的 ARC Prize Foundation（非营利）维护，会长 Greg Kamradt",
+        "cite": [
+          "paper",
+          "policy"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "François Chollet（Keras 作者，论文唯一作者；ARC Prize Foundation 联合创始人）",
+        "cite": [
+          "paper",
+          "site-arc-agi-1",
+          "policy"
+        ]
+      },
+      {
+        "k": "治理与透明度",
+        "v": "非营利，公开披露捐赠方且赞助方不获得私有/半私有数据或方法论特权；测试方法由独立学术小组（Todd Gureckis、Melanie Mitchell、Vishal Misra）审查；官方测试政策公开，模型配置、逐任务输出、耗时与成本公开在 Hugging Face",
+        "cite": [
+          "policy"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2019-11-05 ARC-AGI-1 → 2024-06-11 ARC Prize 2024 → 2024-12-20 o3-preview 首次突破（75.7%）→ 2025-03-24 ARC-AGI-2 与 ARC Prize 2025 → 2026-03-25 ARC-AGI-3",
+        "cite": [
+          "paper",
+          "blog-index",
+          "leaderboard",
+          "site-arc-agi-3"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "任务数据在 GitHub（论文写 github.com/fchollet/ARC，ARC-AGI-1 训练/评测各 400 题，任务为 JSON，网格为 0–9 整数矩阵、1x1–30x30）；官方评测用开源 ARC-AGI Benchmarking 仓库逐模型配置运行",
+        "cite": [
+          "repo",
+          "policy"
+        ]
+      },
+      {
+        "k": "竞赛与奖金",
+        "v": "ARC Prize 2025/2026 与 Kaggle 合办；2026 年奖池 $2,000,000，Kaggle 提交限约 $50 算力且禁止联网 API，官方验证单次运行上限 $10,000；2026 年竞赛已结束，结果定于 2026-12-04 公布",
+        "cite": [
+          "blog-arc-agi-2-launch",
+          "arcprize-home",
+          "policy"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-10",
+        "columns": [
+          "来源",
+          "日期",
+          "系统",
+          "ARC-AGI-1",
+          "ARC-AGI-2",
+          "ARC-AGI-3（Standard）",
+          "成本"
+        ],
+        "rows": [
+          [
+            "官方榜单",
+            "—",
+            "Human Panel（至少 2 人解出）",
+            "98.0%",
+            "100.0%",
+            "—",
+            "—"
+          ],
+          [
+            "官方榜单",
+            "—",
+            "Avg. Mturker（平均测试者）",
+            "77.0%",
+            "—",
+            "—",
+            "—"
+          ],
+          [
+            "官方榜单",
+            "—",
+            "Stem Grad",
+            "98.0%",
+            "—",
+            "—",
+            "—"
+          ],
+          [
+            "官方榜单",
+            "2024-12-20",
+            "o3 (Preview)",
+            "75.7%",
+            "4.0%",
+            "—",
+            "—"
+          ],
+          [
+            "官方榜单",
+            "2025-04-16",
+            "o3",
+            "60.8%",
+            "6.5%",
+            "—",
+            "—"
+          ],
+          [
+            "官方榜单",
+            "2025-11-18",
+            "Gemini 3 Pro",
+            "75.0%",
+            "31.1%",
+            "—",
+            "—"
+          ],
+          [
+            "官方榜单",
+            "2025-11-24",
+            "Opus 4.5",
+            "80.0%",
+            "37.6%",
+            "—",
+            "—"
+          ],
+          [
+            "官方榜单",
+            "2025-12-11",
+            "Gemini 3 Pro (Refinement)",
+            "90.5%",
+            "54.2%",
+            "—",
+            "—"
+          ],
+          [
+            "官方榜单",
+            "2026-09-02",
+            "GPT-6 Astra",
+            "98.5%",
+            "95.0%",
+            "62.7%",
+            "$26.1K"
+          ],
+          [
+            "官方榜单",
+            "2026-11-09",
+            "Claude Fable 5.2",
+            "98.5%",
+            "93.8%",
+            "81.2%",
+            "$21.9K"
+          ],
+          [
+            "o3 分析博客",
+            "2025-04-22",
+            "o3-preview（低算力，半私有集）",
+            "76%",
+            "—",
+            "—",
+            "—"
+          ],
+          [
+            "o3 分析博客",
+            "2025-04-22",
+            "o3-preview（放开算力限制，半私有集）",
+            "88%",
+            "—",
+            "—",
+            "—"
+          ],
+          [
+            "ARC Prize 2025 结果博客",
+            "2025-12-05",
+            "NVARC（Kaggle 2025 第 1 名，私有集）",
+            "—",
+            "24%",
+            "—",
+            "$0.20/task"
+          ],
+          [
+            "ARC Prize 2025 结果博客",
+            "2025-12-05",
+            "Opus 4.5 (Thinking, 64k)，官方验证",
+            "—",
+            "37.6%",
+            "—",
+            "$2.20/task"
+          ]
+        ]
+      },
+      "cite": [
+        "leaderboard",
+        "blog-o3-analysis",
+        "blog-2025-results"
+      ]
+    }
+  }
+}

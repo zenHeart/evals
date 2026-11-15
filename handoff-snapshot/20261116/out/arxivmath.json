@@ -1,0 +1,489 @@
+{
+  "id": "arxivmath",
+  "name": "ArXivMath",
+  "full_name": "ArXivMath: Evaluating LLMs on Mathematical Research Problems From Recent ArXiv Papers",
+  "aliases": [
+    "ArXiv-Math",
+    "ARXIVMath"
+  ],
+  "status": "active",
+  "categories": [
+    "reasoning"
+  ],
+  "summary": "MathArena（SRI Lab at ETH Zurich 与 INSAIT）从最近一个月发表的 arXiv 论文摘要里抽研究级数学题，每月换新题以抗污染；首版 40 题全部公开，主指标是最终答案准确率。",
+  "interpretation": "首版六个配置横评里 GPT-5.2 (high) 60.07% 最高、Gemini-3-Pro 56.53% 次之，同模型低推理档 GPT-5.2 (low) 只有 40.13%。官方同时明确：最终答案准确率只覆盖研究能力的窄切片，不能理解成模型能独立写出六成新数学论文。站点此后按月扩版，跨版本分数不是同一套题，不能直接比。",
+  "measures": [
+    {
+      "area": "2025-12 版本（首版前半）",
+      "focus": "2025 年 12 月论文摘要抽出的最终答案题；官方定性分析里最难的是 Q6（有向图不规则性计数，正确答案 45），六个配置全部答错",
+      "share": "17 题（首版 17/40）",
+      "format": "最终答案题",
+      "cite": [
+        "matharena-arxivmath@Manual filtering",
+        "matharena-arxivmath@Qualitative Analysis"
+      ]
+    },
+    {
+      "area": "2026-01 版本（首版后半）",
+      "focus": "2026 年 1 月论文摘要抽题；Q11（多格骨牌深洞极限）全部尝试答对，Q1 只有 8.33% 的尝试答对",
+      "share": "23 题（首版 23/40）",
+      "format": "最终答案题",
+      "cite": [
+        "matharena-arxivmath@Manual filtering",
+        "matharena-arxivmath@Qualitative Analysis"
+      ]
+    },
+    {
+      "area": "2026-02 起的按月版本",
+      "focus": "每月一批新题；官方 2026-11-09 的更新日志显示已发布到 2026-10 版本，站点另给跨月 Overall 汇总；2026-09 版每版 53 题",
+      "share": "未逐版披露（2026-09 版为 53 题）",
+      "format": "最终答案题",
+      "cite": [
+        "leaderboard-arxivmath",
+        "repo-matharena"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "证明写作与严谨论证——自动化证明验证在研究级数学上还不可靠，官方只出有唯一最终答案的题",
+      "cite": [
+        "matharena-arxivmath@Question extraction"
+      ]
+    },
+    {
+      "text": "自主科研能力——官方明确说最终答案准确率只是研究能力的窄切片",
+      "cite": [
+        "matharena-arxivmath@Answer parsing and verification"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 103,
+    "splits": [
+      "train（103 行；competition 字段按发表月份分四类：arxiv/december / arxiv/january / arxiv/february / arxiv/march）",
+      "首版 40 题 = 2025-12 十七题 + 2026-01 二十三题",
+      "2026-02 起站点按月新增版本（更新日志显示已到 2026-10）"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "real-world（arXiv 论文主结果，摘要抽取 + 多级过滤 + 人工复核）",
+    "public_sample": true,
+    "totals": "Hugging Face 主数据集 MathArena/arxivmath 共 103 行（train 单 split，competition 字段按发表月份分四类）· 首版 40 题（2025-12 十七题 + 2026-01 二十三题）· 2026-09 版每版 53 题 · 题目为英文，题型为最终答案",
+    "cite": [
+      "hf-arxivmath",
+      "matharena-arxivmath",
+      "repo-matharena"
+    ],
+    "construction": [
+      {
+        "k": "选题范围",
+        "text": "每月从当月发表的约 4,000 篇数学论文开始，每个版本只取最近一个月内发表的论文。",
+        "cite": [
+          "matharena-arxivmath@Data collection"
+        ]
+      },
+      {
+        "k": "摘要抽题",
+        "text": "用 GPT-5.2（medium reasoning）读论文摘要，挑出有明确最终答案的研究级问题；这一步筛掉约 90% 的论文，每月留下约 400 个候选。",
+        "cite": [
+          "matharena-arxivmath@Question extraction"
+        ]
+      },
+      {
+        "k": "自动过滤",
+        "text": "对候选再用 GPT-5.2 跑四道过滤，之后每月只剩约 60 题。",
+        "cite": [
+          "matharena-arxivmath@Automated filtering"
+        ]
+      },
+      {
+        "k": "人工复核",
+        "text": "最后人工审完所有剩余题目，确保定义清晰、非平凡、有意思；首版定稿为 2025-12 十七题 + 2026-01 二十三题。",
+        "cite": [
+          "matharena-arxivmath@Manual filtering"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "final-answer-accuracy",
+      "name": "最终答案准确率",
+      "direction": "越高越好",
+      "description": "规则解析抽取最终答案并与标准答案比对（LaTeX + Sympy）；答错或无法解析的响应交给 Gemini-3-Flash 兜底判定，判对后再人工复核。主结果不含文献检索工具。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "matharena-arxivmath@Answer parsing and verification",
+        "matharena-arxivmath@Literature search tool"
+      ]
+    }
+  ],
+  "default_protocol": {
+    "raw": "模型按提示词要求把最终答案放进 \\boxed{}；评测方用规则解析（LaTeX + Sympy）抽取答案并与标准答案比对，未解析或答错的响应交给 Gemini-3-Flash 兜底判定、判对后人工复核；每个模型用厂商推荐超参，主结果不含文献检索工具。",
+    "cite": [
+      "matharena-arxivmath@Answer parsing and verification",
+      "matharena-arxivmath@Prompts",
+      "matharena-arxivmath@Literature search tool"
+    ],
+    "variants": [
+      {
+        "text": "每月换题：每个版本只取最近一个月发表的论文，站点把每个模型在各月版本上的成绩分列，跨月 Overall 汇总是另一套口径。",
+        "cite": [
+          "matharena-arxivmath@Introduction",
+          "leaderboard-arxivmath"
+        ]
+      },
+      {
+        "text": "每题重复运行 4 次（官方默认 --n 4），榜单给出的是多次运行的聚合结果。",
+        "cite": [
+          "leaderboard-arxivmath",
+          "repo-matharena"
+        ]
+      },
+      {
+        "text": "带文献检索 vs 不带：官方实验里两种口径相差不到 3 个百分点，因增加复杂度与延迟，主结果不含检索。",
+        "cite": [
+          "matharena-arxivmath@Literature search tool"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2026-02-04",
+      "label": "首版发布：2025-12（17 题）+ 2026-01（23 题）共 40 题，六个配置横评，题目与模型输出全部公开",
+      "cite": [
+        "matharena-arxivmath"
+      ]
+    },
+    {
+      "id": "monthly",
+      "date": "2026-11-09",
+      "label": "官方更新日志显示已按月发布到 2026-10 版本，站点提供各月版本与跨月 Overall 汇总；2026-09 版每版 53 题",
+      "cite": [
+        "leaderboard-arxivmath",
+        "repo-matharena"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "主指标只覆盖最终答案",
+      "impact": "最终答案准确率不衡量推理过程质量、证明严谨性与中间步骤正确性；官方明确它只是研究能力的窄切片。",
+      "severity": "高",
+      "response": "把它当作「能否独立得到最终答案」的窄指标，不要外推到科研能力。",
+      "reader": "想把分数读成科研能力的读者",
+      "cite": [
+        "matharena-arxivmath@Answer parsing and verification"
+      ]
+    },
+    {
+      "issue": "污染风险",
+      "impact": "数学博士抽查约 20 题，约 30% 可凭论文引用的先行工作推出答案；官方判断不影响模型间相对比较，但会抬高绝对分数，因此保留这些题并公开声明。",
+      "severity": "中",
+      "response": "绝对分数按上偏读，比较模型时以同版本内的相对差距为主。",
+      "reader": "关心绝对分数含金量的读者",
+      "cite": [
+        "matharena-arxivmath@A note on contamination"
+      ]
+    },
+    {
+      "issue": "题目来自未经同行评审的预印本",
+      "impact": "arXiv 论文未必经过同行评审，部分可能含错误或未证明的结论，题面正确性依赖摘要抽取与多级过滤。",
+      "severity": "中",
+      "response": "官方给出两条降低风险的理由：模型在该基准上表现较好说明题目总体可解；低分题上模型是简单失误或答案发散，而不是题目本身有硬伤。",
+      "reader": "担心题目本身有错的读者",
+      "cite": [
+        "matharena-arxivmath@A note on correctness"
+      ]
+    },
+    {
+      "issue": "题量小、单题权重大",
+      "impact": "首版 40 题，一道题就是 2.5 个百分点；月度版本每题量级相近，小幅波动会被放大。",
+      "severity": "中",
+      "response": "把 3 个百分点以内的差异当噪声，结合同一模型在不同版本上的表现看趋势。",
+      "reader": "拿两个模型分数直接排名次的读者",
+      "cite": [
+        "matharena-arxivmath@Manual filtering"
+      ]
+    },
+    {
+      "issue": "数据集与站点版本不同步",
+      "impact": "Hugging Face 主数据集停在 103 行（2025-12 至 2026-03），站点已发布到 2026-10 版本，公开数据集看不到最新月度版本。",
+      "severity": "中",
+      "response": "需要最新月度题目时以 MathArena 站点与官方仓库的版本配置为准。",
+      "reader": "想直接下载全部题目的读者",
+      "cite": [
+        "hf-arxivmath",
+        "repo-matharena"
+      ]
+    },
+    {
+      "issue": "评分依赖 LLM 兜底判定",
+      "impact": "数学输出形式多样导致约 1% 的响应被规则解析误判为错，需 Gemini-3-Flash 兜底加人工复核，存在残余判定噪声。",
+      "severity": "低",
+      "response": "官方只把 LLM judge 用于答错或无法解析的响应，并对判对的项逐条人工复核。",
+      "reader": "想复现评测结果的读者",
+      "cite": [
+        "matharena-arxivmath@Answer parsing and verification"
+      ]
+    }
+  ],
+  "notes": "证据账本未收录第三方复现；一手来源为 MathArena 官方文章、Hugging Face 主数据集与官方仓库",
+  "official_sources": [
+    {
+      "kind": "site",
+      "url": "https://matharena.ai/arxivmath/"
+    },
+    {
+      "kind": "site",
+      "url": "https://matharena.ai/?view=problem&comp=overall--arxivmath"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/MathArena/arxivmath"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/eth-sri/matharena"
+    }
+  ],
+  "related_benchmarks": [
+    "frontiermath",
+    "hlehle",
+    "brokenarxiv",
+    "math500"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-13",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      {
+        "id": "matharena-arxivmath",
+        "kind": "site",
+        "title": "MathArena 官方文章 ArXivMath: Evaluating LLMs on Mathematical Research Problems From Recent ArXiv Papers（2026-02-04）",
+        "url": "https://matharena.ai/arxivmath/",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "hf-arxivmath",
+        "kind": "dataset",
+        "title": "Hugging Face 主数据集 MathArena/arxivmath",
+        "url": "https://huggingface.co/datasets/MathArena/arxivmath",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "leaderboard-arxivmath",
+        "kind": "leaderboard",
+        "title": "MathArena 站点 ArXivMath Overall 榜单与更新日志",
+        "url": "https://matharena.ai/?view=problem&comp=overall--arxivmath",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "repo-matharena",
+        "kind": "repo",
+        "title": "eth-sri/matharena（评测代码与各版本 harness 配置）",
+        "url": "https://github.com/eth-sri/matharena",
+        "accessed": "2026-11-13"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "MathArena —— SRI Lab at ETH Zurich 与 INSAIT（部分经费来自 Google 评测资助）",
+        "cite": [
+          "matharena-arxivmath@作者署名"
+        ]
+      },
+      "first_release": {
+        "v": "2026-02-04（首版 40 题）",
+        "cite": [
+          "matharena-arxivmath"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "matharena-arxivmath",
+        "matharena-arxivmath@Data collection",
+        "matharena-arxivmath@Manual filtering",
+        "hf-arxivmath"
+      ],
+      "interpretation": [
+        "matharena-arxivmath@Figure 1",
+        "matharena-arxivmath@Answer parsing and verification"
+      ]
+    },
+    "problem": {
+      "text": "热门研究级基准要么私有（FrontierMath、MathScienceBench、IMProofBench、EternalMath），要么出题后变成静态题库（BrokenMath、HLE），社区缺少公开且持续更新的研究级数学评测；ArXivMath 要补的就是这个位置。",
+      "cite": [
+        "matharena-arxivmath@Introduction"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "首版最低配置",
+        "value": "40.13%",
+        "note": "GPT-5.2 (low)，首版六个配置里最低；同模型换到 high 推理档能到 60.07%。",
+        "cite": [
+          "matharena-arxivmath@Figure 1"
+        ]
+      },
+      {
+        "label": "首版最高配置",
+        "value": "60.07%",
+        "note": "GPT-5.2 (high)，官方正文概括为 60%；第二名为 Gemini-3-Pro 56.53%。",
+        "cite": [
+          "matharena-arxivmath@Figure 1",
+          "matharena-arxivmath@Introduction"
+        ]
+      },
+      {
+        "label": "站点跨月 Overall 汇总",
+        "value": "以 MathArena 榜单页实时值为准",
+        "note": "榜单页实时更新，且 Overall 是把不同月份版本聚合后的口径，与首版 40 题不可比；本档案不写固定数值。",
+        "cite": [
+          "leaderboard-arxivmath"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把榜单页的 Expected performance（80.6% ±2.5% 之类）当成 ArXivMath 分数——那一列是对所有未下线竞赛做归一化后再用 IRT 拟合的模型综合实力，不是这套题的实测成绩。",
+        "cite": [
+          "leaderboard-arxivmath@Expected performance"
+        ]
+      },
+      {
+        "text": "把跨月 Overall 汇总和单月版本列混着看：ArXivMath 每月换题，Overall 是跨月聚合，两者不是同一套题。",
+        "cite": [
+          "matharena-arxivmath@Introduction",
+          "leaderboard-arxivmath"
+        ]
+      },
+      {
+        "text": "把 60% 准确率理解成模型能独立写出六成新数学论文——官方明确否认这个推论。",
+        "cite": [
+          "matharena-arxivmath@Answer parsing and verification"
+        ]
+      },
+      {
+        "text": "把 Hugging Face 上的 103 行当成 ArXivMath 的全部题目——那只是主数据集（2025-12 至 2026-03），站点月度版本更新。",
+        "cite": [
+          "hf-arxivmath",
+          "repo-matharena"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "MathArena 平台（NeurIPS 2025 Datasets & Benchmarks）；ArXivMath 由 SRI Lab at ETH Zurich 与 INSAIT 创建，部分经费来自 Google 评测资助。",
+        "cite": [
+          "matharena-arxivmath@作者署名",
+          "repo-matharena"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "Jasper Dekoninck、Tim Gehrunger、Martin Vechev（2026-02-04 官方文章署名）。",
+        "cite": [
+          "matharena-arxivmath@作者署名"
+        ]
+      },
+      {
+        "k": "三条设计原则",
+        "v": "Open（题目与模型输出全部公开）、Dynamic（每月发布新版本）、Uncontaminated（从新发表论文抽题以降低训练污染）。",
+        "cite": [
+          "matharena-arxivmath@Introduction"
+        ]
+      },
+      {
+        "k": "官方提示词",
+        "v": "要求模型把最终答案放进 \\boxed{}。",
+        "cite": [
+          "matharena-arxivmath@Prompts"
+        ]
+      },
+      {
+        "k": "评测代码与日志",
+        "v": "官方仓库 eth-sri/matharena 收录全部评测代码；含完整推理轨迹与解答的运行日志公开在 Hugging Face 的 MathArena 组织下。",
+        "cite": [
+          "repo-matharena"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2026-02-04 首版 40 题 → 按月发布新版本，2026-11-09 更新日志显示已到 2026-10 版。",
+        "cite": [
+          "matharena-arxivmath",
+          "leaderboard-arxivmath"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-02-04",
+        "columns": [
+          "来源",
+          "模型",
+          "准确率",
+          "口径"
+        ],
+        "rows": [
+          [
+            "官方 Figure 1",
+            "GPT-5.2 (high)",
+            "60.07%",
+            "首版 40 题"
+          ],
+          [
+            "官方 Figure 1",
+            "Gemini-3-Pro",
+            "56.53%",
+            "首版 40 题"
+          ],
+          [
+            "官方 Figure 1",
+            "Grok-4.1-Fast (Reasoning)",
+            "51.63%",
+            "首版 40 题"
+          ],
+          [
+            "官方 Figure 1",
+            "Gemini-3-Flash",
+            "50.77%",
+            "首版 40 题"
+          ],
+          [
+            "官方 Figure 1",
+            "DeepSeek-v3.2 (Think)",
+            "49.3%",
+            "首版 40 题"
+          ],
+          [
+            "官方 Figure 1",
+            "GPT-5.2 (low)",
+            "40.13%",
+            "首版 40 题"
+          ]
+        ]
+      },
+      "cite": [
+        "matharena-arxivmath@Figure 1"
+      ]
+    }
+  }
+}

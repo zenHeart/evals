@@ -1,0 +1,851 @@
+{
+  "id": "emma",
+  "name": "EMMA",
+  "full_name": "EMMA（Enhanced MultiModal reAsoning Benchmark，增强多模态推理基准）",
+  "aliases": [
+    "Enhanced MultiModal reAsoning"
+  ],
+  "status": "active",
+  "categories": [
+    "multimodal"
+  ],
+  "summary": "多模态推理基准：2,788 道题覆盖数学、物理、化学、代码四个学科，专测「有机多模态推理」——不把图像转成文字描述、必须同时看懂文字和图像才能答对的能力。",
+  "interpretation": "分数是四学科的 Overall 准确率（0–100%），越高代表跨模态推理越强。论文发布时最强模型 o1 在平衡子集 EMMA-mini 上只有 45.75%，落后人类专家 32 个百分点；把候选答案扩到 16 个也补不上这个差距，最好配置仍差 27%。低分主要反映视觉推理短板，而不是知识或语言能力不足。",
+  "measures": [
+    {
+      "area": "数学（Math）",
+      "focus": "五类视觉推理技能：2D 变换、3D 空间模拟、路径追踪/视角变换模拟、多跳视觉物体计数、模式推理；共同点是脱离图像就无法作答",
+      "share": "32%（892 / 2,788 题）",
+      "format": "562 道选择题 + 330 道自由填答题",
+      "cite": [
+        "paper@附录 B.1"
+      ]
+    },
+    {
+      "area": "物理（Physics）",
+      "focus": "五类：3D 场模拟、图表推理（速度-时间/位移-时间/轨迹图）、多跳视觉推理、路径追踪（光的折射）、视觉分解模拟；考查对电场、磁场与受力的视觉化理解",
+      "share": "5.6%（156 / 2,788 题）",
+      "format": "全部选择题",
+      "cite": [
+        "paper@附录 B.1"
+      ]
+    },
+    {
+      "area": "化学（Chemistry）",
+      "focus": "五类技能：知识型计数（数化学键）、图表推理、结构识别、反应模拟、反应模拟 Pro；以「箭头推电子」式有机化学反应模拟为核心，反应模拟 Pro 的选项本身就是图像",
+      "share": "42%（1,176 / 2,788 题）",
+      "format": "除知识型计数为自由填答外，其余全部选择题",
+      "cite": [
+        "paper@附录 B.1",
+        "paper@附录 B.2"
+      ]
+    },
+    {
+      "area": "代码（Coding）",
+      "focus": "四类可视化编程任务：给定图像选生成它的代码、给定代码选生成的图像、无原图时选该改什么、有原图时选该改什么；全部围绕 matplotlib/seaborn 图表，从零构造",
+      "share": "20%（564 / 2,788 题）",
+      "format": "全部选择题",
+      "cite": [
+        "paper@附录 B.2"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "纯文本推理能力——出题时先用 GPT-4o 描述图像再喂给模型，能答对的题直接丢弃，留下来的题无法靠读文字解出",
+      "cite": [
+        "paper@§3.2"
+      ]
+    },
+    {
+      "text": "开放式生成、长对话与指令遵循等通用语言能力——标准答案短且可判定，不需要用 MLLM 当裁判",
+      "cite": [
+        "paper@§3.1"
+      ]
+    },
+    {
+      "text": "工具调用、代码执行与多轮 Agent 行为——评测是单轮零样本问答，不让模型跑代码或调工具",
+      "cite": [
+        "paper@§3.1",
+        "repo@Evaluation"
+      ]
+    },
+    {
+      "text": "物理学科的广度——物理只有 156 题，论文自己承认这部分「代表性不足」并建议后续扩充",
+      "cite": [
+        "paper@§6",
+        "paper@附录 B.1"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 2788,
+    "splits": [
+      "EMMA 全集：2,788 题，学科不均衡（化学 1,176 / 数学 892 / 代码 564 / 物理 156）",
+      "EMMA-mini：400 题，每学科 100 题的平衡子集，论文中 o1 与测试时扩展实验只用这一档"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "混合来源：992 题从已有基准经两步过滤筛出，1,796 题与领域专家合作全新构造",
+    "public_sample": true,
+    "multiple_choice_share": "约 72%（2,002 / 2,788 题为选择题）。按附录 B 的学科题型加总复核一致：数学 562 + 物理 156（物理全为选择题）+ 化学 720（1,176 减 456 道自由填答）+ 代码 564（代码全为选择题）= 2,002。",
+    "multimodal_share": "约 93%（2,599 题题干含图像；另有 195 题仅在选项中含图，298 题含多张图）",
+    "totals": "合计 2,788 题 = 992 题筛自已有基准 + 1,796 题新造；四学科为化学 1,176 / 数学 892 / 代码 564 / 物理 156；每道题平均关联 2.11 个技能标签。",
+    "cite": [
+      "paper@Table 1",
+      "paper@§3.1",
+      "paper@附录 B.1",
+      "paper@附录 B.2"
+    ],
+    "construction": [
+      {
+        "k": "第一道过滤：文字即可解的题一律丢弃",
+        "text": "先用 GPT-4o 给题目中的图像生成描述，把「原题文本 + 生成的描述」一起交给 MLLM；能在这个条件下答对的题直接剔除，保证题目真的需要图像。",
+        "cite": [
+          "paper@§3.2"
+        ]
+      },
+      {
+        "k": "第二道过滤：三个大模型各质询十次",
+        "text": "对每道候选题目，分别查询 Llama3-70B-Instruct、GPT-4o、Qwen2-72B-Instruct 各十次；任一模型答对至少五次即丢弃。",
+        "cite": [
+          "paper@§3.2"
+        ]
+      },
+      {
+        "k": "技能标签体系",
+        "text": "先按学科建立细粒度多模态推理技能分类体系，再给每道题打标签；标签由领域专家创建，或由 GPT-4o 生成后经专家核验。",
+        "cite": [
+          "paper@§3.1"
+        ]
+      },
+      {
+        "k": "按技能补题",
+        "text": "按分类体系统计各技能的题量并定向补题：数学素材来自 Math-Vista 与 RAVEN，物理来自 Learn AP Physics、Khan Academy 及已有基准，代码的「种子可视化」来自 CharXiv 与 matplotlib 官方示例库。",
+        "cite": [
+          "paper@附录 B.1",
+          "paper@附录 B.2",
+          "paper@附录 B.3"
+        ]
+      },
+      {
+        "k": "化学定向扩充",
+        "text": "从 SMiCRM 的分子图像出发，用 RDKit 分析化学性质后构造 746 道新题；另与化学博士生合作标注反应结果，贡献 210 道反应模拟题；反应模拟的答案由化学博士生构造并核验。",
+        "cite": [
+          "paper@附录 B.2"
+        ]
+      },
+      {
+        "k": "平衡子集",
+        "text": "从全集随机抽取 400 题（每学科 100 题）构成 EMMA-mini，用于分学科均衡的横向对比。",
+        "cite": [
+          "paper@§4.1"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "accuracy",
+      "name": "准确率（Accuracy）",
+      "direction": "越高越好",
+      "description": "抽取出的答案与标准答案一致的题目占比；主指标是 Overall，另按学科与细粒度技能标签分别统计",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@Table 2",
+        "repo@Evaluation"
+      ]
+    },
+    {
+      "id": "per-category-accuracy",
+      "name": "分类准确率（Per-category Accuracy）",
+      "direction": "越高越好",
+      "description": "按技能标签分别统计的准确率，用于定位模型在视觉推理的哪一环出错（论文据此做 CoT 与错误类型分析）",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§3.1",
+        "paper@§5.1"
+      ]
+    },
+    {
+      "id": "pass-at-n",
+      "name": "Pass@N",
+      "direction": "越高越好",
+      "description": "生成 N 个候选答案时至少一个正确的概率；论文用它作为测试时扩展策略的性能上限参考，而非可交付成绩",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§4.3",
+        "paper@Table 3"
+      ]
+    }
+  ],
+  "default_protocol": {
+    "raw": "零样本直接问答：把题干（含图像与选项）原样交给模型，不提供示例、不给工具，让模型直接输出最终答案。判分时先用规则或 GPT-4o 从回答中抽取答案，再与标准答案比对；题库答案短且可判定，因此不需要用 MLLM 当裁判。官方仓库提供 Fast-eval（规则抽取，更快）与 LLMs-eval（GPT-4o 辅助抽取，更准）两种实现，最终分数由 evaluation/calculate_acc.py 汇总。",
+    "cite": [
+      "paper@§3.1",
+      "paper@§4.1",
+      "repo@Evaluation"
+    ],
+    "variants": [
+      {
+        "text": "全集 vs EMMA-mini：受速率限制，o1 只在 400 题的 EMMA-mini 上评测，其余模型两个集都测；论文的测试时扩展实验也只在 EMMA-mini 上做。",
+        "cite": [
+          "paper@§4.1",
+          "paper@Table 2"
+        ]
+      },
+      {
+        "text": "无 CoT vs CoT prompting：论文同时报告两种提示策略；官网的结论是 CoT 在重视觉推理的任务上反而掉分，却在文本 CoT 理论上有用的任务上帮助闭源模型。",
+        "cite": [
+          "paper@§4.1",
+          "site@Leaderboard"
+        ]
+      },
+      {
+        "text": "单次 vs 测试时扩展：对 EMMA-mini 试了多数投票、Best-of-N、锦标赛式选择三种策略，N 取 1 / 2 / 4 / 8 / 16，并报告 Pass@N 作为上限。",
+        "cite": [
+          "paper@§4.3",
+          "paper@Table 3"
+        ]
+      },
+      {
+        "text": "Fast-eval vs LLMs-eval：规则抽取更快，GPT-4o 辅助抽取在答案抽取环节更准，二者共用同一份 calculate_acc.py 汇总脚本。",
+        "cite": [
+          "repo@Evaluation"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2025-01-09",
+      "label": "arXiv v1 发布（arXiv:2501.05444v1）；论文、官网与 GitHub 仓库同日上线",
+      "cite": [
+        "paper",
+        "site@News"
+      ]
+    },
+    {
+      "id": "lb-2025-01-28",
+      "date": "2025-01-28",
+      "label": "官网榜单更新，加入 Gemini-2.0-Flash-Thinking-0121 与 QVQ-72B-Preview 成绩",
+      "cite": [
+        "site@News"
+      ]
+    },
+    {
+      "id": "lb-2025-03-02",
+      "date": "2025-03-02",
+      "label": "官网榜单更新，加入 claude-3-7-sonnet-20250219 与 kimi-k1.5-Preview 成绩",
+      "cite": [
+        "site@News"
+      ]
+    },
+    {
+      "id": "lb-2025-04-30",
+      "date": "2025-04-30",
+      "label": "官网榜单更新，Gemini-2.5-pro-exp-03-25 登上 EMMA-Mini 榜首，o4-mini、o3 分列二三位",
+      "cite": [
+        "site@News"
+      ]
+    },
+    {
+      "id": "icml-spotlight",
+      "date": "2025-05-01",
+      "label": "论文被 ICML 2025 接收为 Spotlight（Top 2.6%）",
+      "cite": [
+        "site@News"
+      ]
+    },
+    {
+      "id": "vlmevalkit",
+      "date": "2025-05-31",
+      "label": "VLMEvalKit 宣布支持 EMMA，评测链路进入主流开源工具",
+      "cite": [
+        "site@News",
+        "repo@README"
+      ]
+    },
+    {
+      "id": "icml-oral",
+      "date": "2025-06-08",
+      "label": "论文升级为 ICML 2025 Oral（Top 1%）",
+      "cite": [
+        "site@News"
+      ]
+    },
+    {
+      "id": "lb-2025-06-16",
+      "date": "2025-06-16",
+      "label": "官网榜单快照（本档案 official_results 的 as_of）：加入 SRPO（7B / 32B）与 Skywork-R1V2-38B 成绩，并已含 gemini-3-pro-preview、Skywork-R1V3-38B",
+      "cite": [
+        "site@News",
+        "site@Leaderboard"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "物理子集过小，学科分布不均衡",
+      "impact": "物理只有 156 题（5.6%），全集被化学（42%）与数学（32%）主导；分学科的物理分数置信度低，模型间几个百分点的差距可能只是抽样噪声。",
+      "severity": "高",
+      "response": "论文承认物理部分代表性不足并建议扩充；要比较物理能力时优先看 EMMA-mini（每学科 100 题）并多次运行取方差。",
+      "reader": "不要把全集 Overall 当成四学科平均——化学占比接近一半，Overall 很大程度反映化学表现。",
+      "cite": [
+        "paper@§6",
+        "paper@附录 B.1"
+      ]
+    },
+    {
+      "issue": "训练数据污染未做审计",
+      "impact": "1,796 道新造题没有独立的污染分析，992 道筛自已有基准的题也无法排除被前沿模型见过；分数可能被高估，且闭源旗舰模型的训练集不可查，偏差方向不明。",
+      "severity": "高",
+      "response": "论文未报告污染审计，也没有 held-out 版本；引用成绩时应注明这是公开榜单结果，模型是否见过题目未知。",
+      "reader": "跨代际比较时留意模型发布日期：2025 年上半年之后发布的模型，其分数包含污染的可能性更高。",
+      "cite": [
+        "paper@§3.1",
+        "paper@附录 B.3"
+      ]
+    },
+    {
+      "issue": "人类基线三套口径互不一致",
+      "impact": "论文 Table 2 的 EMMA-mini 人类专家为 77.75%（各学科 75.00 / 64.50 / 86.00 / 85.50，均值 77.25）；官网榜单却列 Human Expert (High) 91.75 与 (Low) 77.50（各学科 80 / 66 / 78 / 85，均值 77.25）。三个数字互不相同，且官网 (Low) 的各学科均值与自身 Overall 也对不上。",
+      "severity": "中",
+      "response": "本站分来源标注：论文口径引 77.75%，官网口径引 77.50% 与 91.75%；比较人类基线前先确认引的是哪一份。",
+      "reader": "「落后人类 32%」「落后人类 27%」这类结论随口径而变，不要跨来源混用。",
+      "cite": [
+        "paper@Table 2",
+        "paper@§4.2",
+        "site@Leaderboard"
+      ]
+    },
+    {
+      "issue": "两步过滤可能残留「感知即答」的题",
+      "impact": "过滤依赖 GPT-4o 生成的图像描述和三个 LLM 的各十次质询，任一模型答对五次即丢弃；反过来，没被丢弃的题仍可能被视觉感知更强的模型直接解掉，而不需要真正的视觉推理。",
+      "severity": "中",
+      "response": "论文的错误分类显示感知错误占 30.19%，说明「感知即答」仍是主要失败模式之一；建议与分类准确率一起读。",
+      "reader": "分数高不等于视觉推理强，也可能只是感知能力强。",
+      "cite": [
+        "paper@§3.2",
+        "paper@§5.1"
+      ]
+    },
+    {
+      "issue": "人类基线样本极小",
+      "impact": "每学科只请 2 名人类专家并取平均分，4 名专家的均值不能代表人类上限，论文也未报告专家间一致性。",
+      "severity": "中",
+      "response": "官网后续拆出 (High) / (Low) 两档人类基线，部分弥补了单点估计的问题；论文口径仍是单一均值。",
+      "reader": "把人类专家分数当参考区间，不要当硬上限。",
+      "cite": [
+        "paper@§4.2",
+        "site@Leaderboard"
+      ]
+    },
+    {
+      "issue": "技能标签部分由 GPT-4o 辅助生成",
+      "impact": "细粒度标签由领域专家创建或由 GPT-4o 生成后经专家核验，标签本身带有噪声，分类准确率的对比因此多一层不确定性。",
+      "severity": "低",
+      "response": "论文说明所有标签均由专家创建或经专家核验；误差分析仍显示视觉推理错误是最大类别（52.83%），主要结论方向稳健。",
+      "reader": "分类维度的精确数值不必过度解读，看量级与排序即可。",
+      "cite": [
+        "paper@§3.1",
+        "paper@§5.1"
+      ]
+    }
+  ],
+  "notes": "本条目原写作「Honda Research 的多模态推理套件」，经核对论文署名更正为电子科技大学、中山大学、华盛顿大学、Microsoft、香港中文大学（Yunzhuo Hao 等 7 位作者）。原 official_sources 只挂了字节 Seed1.8 发布博客，但该文全文未提及 EMMA，已删除并替换为论文、官网、GitHub 仓库与 Hugging Face 数据集四个一手来源。人类基线存在口径差异：论文 Table 2 为 77.75%，官网榜单为 Human Expert (High) 91.75 / (Low) 77.50，引用时需注明来源。",
+  "official_sources": [
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2501.05444"
+    },
+    {
+      "kind": "site",
+      "url": "https://emma-benchmark.github.io"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/EMMA-Bench/EMMA"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/luckychao/EMMA"
+    }
+  ],
+  "related_benchmarks": [
+    "mathvision",
+    "mathvista",
+    "olympiadbench",
+    "mmmu"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "EMMA: An Enhanced MultiModal ReAsoning Benchmark（arXiv:2501.05444v1，2025-01-09）",
+        "url": "https://arxiv.org/abs/2501.05444",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "site",
+        "kind": "site",
+        "title": "EMMA 官方站点（含榜单、News、Overview、错误分析）",
+        "url": "https://emma-benchmark.github.io",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "EMMA-Bench/EMMA GitHub 仓库（README 与 Evaluation 说明）",
+        "url": "https://github.com/EMMA-Bench/EMMA",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "dataset",
+        "kind": "dataset",
+        "title": "Hugging Face 数据集 luckychao/EMMA",
+        "url": "https://huggingface.co/datasets/luckychao/EMMA",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "电子科技大学、中山大学、华盛顿大学、Microsoft、香港中文大学",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      "first_release": {
+        "v": "2025-01-09（arXiv v1；官网与 GitHub 仓库同日上线）",
+        "cite": [
+          "paper",
+          "site@News"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "paper@Abstract",
+        "paper@Table 1"
+      ],
+      "interpretation": [
+        "paper@§4.2",
+        "paper@§4.3",
+        "paper@Table 2"
+      ]
+    },
+    "problem": {
+      "text": "现有多模态基准里混着大量「把图像里的文字读出来就能答」的题，测的是感知而非推理；同时视觉推理失败缺少细粒度分类，看不出模型具体差在哪一环。EMMA 要同时解决这两件事：用两步过滤保证题目真的需要图像，再给每道题打上细粒度的多模态推理技能标签，让失败模式可定位、可归因。",
+      "cite": [
+        "paper@Abstract",
+        "paper@§3.2",
+        "paper@§3.1"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机猜测基线",
+        "value": "18.08%（全集）/ 22.75%（EMMA-mini）",
+        "note": "四选一选择题的随机水平。论文正文说最低分模型 LLaVA-OneVision-72B 在 EMMA-mini 上 25.25%，只比随机高 2.5%，与 22.75% 互相印证。",
+        "cite": [
+          "paper@Table 2",
+          "paper@§4.2"
+        ]
+      },
+      {
+        "label": "论文发布时最好成绩",
+        "value": "45.75%（EMMA-mini，o1）",
+        "note": "比最佳非推理模型 Qwen2-VL 高 8.5%，但落后人类专家 32 个百分点；受速率限制，o1 未在全集上评测。",
+        "cite": [
+          "paper@§4.2",
+          "paper@Table 2"
+        ]
+      },
+      {
+        "label": "人类专家（论文口径）",
+        "value": "77.75%（EMMA-mini）",
+        "note": "每学科 2 名专家取平均（75.00 / 64.50 / 86.00 / 85.50）。官网另列 Human Expert (High) 91.75 与 (Low) 77.50 两档，口径不同，不可混用。",
+        "cite": [
+          "paper@Table 2",
+          "paper@§4.2",
+          "site@Leaderboard"
+        ]
+      },
+      {
+        "label": "测试时扩展上限（Pass@N，N=16）",
+        "value": "81.50%（EMMA-mini，Gemini 2.0 Flash Thinking）",
+        "note": "论文把 Pass@N 作为扩展策略的性能上限而非可交付成绩；同一模型多数投票 N=16 实际只到 50.75%，比 N=1 高 7.25%。",
+        "cite": [
+          "paper@Table 3",
+          "paper@§4.3"
+        ]
+      },
+      {
+        "label": "官网榜单最高",
+        "value": "70.75%（EMMA-Mini，gemini-2.5-pro-exp-03-25）",
+        "note": "官网榜单自 2025-04-30 起由该模型居首；同一页上 Human Expert (High) 为 91.75%。",
+        "cite": [
+          "site@Leaderboard",
+          "site@News"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把全集 Overall 当成四个学科的平均——化学占 42%，全集 Overall 主要由化学表现决定；要学科均衡请看 EMMA-mini。",
+        "cite": [
+          "paper@附录 B.1",
+          "paper@§4.1"
+        ]
+      },
+      {
+        "text": "把「落后人类 32%」和「落后人类 27%」混着用——前者是论文 Table 2 中 o1 单次问答对 77.75% 人类基线的差距，后者是测试时扩展最好配置对同一基线的差距，而官网的人类基线又是另一套数字。",
+        "cite": [
+          "paper@Table 2",
+          "paper@§4.3",
+          "site@Leaderboard"
+        ]
+      },
+      {
+        "text": "以为 CoT 一定有用——官网发现 CoT 在重视觉推理的任务上反而掉分，只在文本 CoT 理论上有用的任务上帮助闭源模型。",
+        "cite": [
+          "site@Leaderboard"
+        ]
+      },
+      {
+        "text": "以为分数低是知识不够——错误分析中视觉推理错误占 52.83%、感知错误占 30.19%，两者合计超过八成，主要短板在视觉而不在知识。",
+        "cite": [
+          "paper@§5.1"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "电子科技大学、中山大学、华盛顿大学、Microsoft、香港中文大学；Yunzhuo Hao、Jiawei Gu、Huichen Will Wang、Linjie Li、Zhengyuan Yang、Lijuan Wang、Yu Cheng 共 7 位作者。",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      {
+        "k": "发表历程",
+        "v": "2025-01-09 arXiv v1 公开；2025-05-01 被 ICML 2025 接收为 Spotlight（Top 2.6%）；2025-06-08 升级为 Oral（Top 1%）。",
+        "cite": [
+          "paper",
+          "site@News"
+        ]
+      },
+      {
+        "k": "要解决的问题",
+        "v": "已有基准里大量题目「看一眼文字就能答」，测的是感知而非推理。EMMA 用两步过滤清掉这类题，只留必须同时动用语言与视觉才能解的题。",
+        "cite": [
+          "paper@Abstract",
+          "paper@§3.2"
+        ]
+      },
+      {
+        "k": "与 MMMU-Pro 等基准的关系",
+        "v": "MMMU-Pro 等已引入过滤式流水线；EMMA 在其基础上进一步细化，并显式挑选重视觉推理的任务，而不是「文本加一次视觉扫描」就能解的类型。",
+        "cite": [
+          "paper@§3.2",
+          "paper@Table 2"
+        ]
+      },
+      {
+        "k": "出题素材来源",
+        "v": "已有基准（Math-Vista、RAVEN、ScienceQA 等）、CharXiv 图表集、matplotlib 官方示例库、Learn AP Physics、Khan Academy，以及与领域专家和化学博士生的人工合作。",
+        "cite": [
+          "paper@附录 B.1",
+          "paper@附录 B.2",
+          "paper@附录 B.3"
+        ]
+      },
+      {
+        "k": "生态与采用",
+        "v": "VLMEvalKit 已支持 EMMA；官网维护含闭源与开源模型的榜单，Hugging Face 提供 jsonl 格式的数据集下载，GitHub 仓库提供 Fast-eval 与 LLMs-eval 两套评测脚本。",
+        "cite": [
+          "site@News",
+          "repo@README",
+          "dataset"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2025-06-16",
+        "columns": [
+          "来源",
+          "模型",
+          "参数规模",
+          "CoT",
+          "EMMA 全集 Overall",
+          "EMMA-Mini Overall",
+          "口径备注"
+        ],
+        "rows": [
+          [
+            "官网榜单",
+            "Human Expert (High)",
+            null,
+            null,
+            null,
+            "91.75",
+            "人类专家上限参考；各学科 88 / 97 / 96 / 86"
+          ],
+          [
+            "官网榜单",
+            "Human Expert (Low)",
+            null,
+            null,
+            null,
+            "77.50",
+            "人类专家下限参考；各学科 80 / 66 / 78 / 85（均值 77.25，与 Overall 略有出入）"
+          ],
+          [
+            "官网榜单",
+            "gemini-2.5-pro-exp-03-25",
+            null,
+            null,
+            null,
+            "70.75",
+            "EMMA-Mini 榜首"
+          ],
+          [
+            "官网榜单",
+            "gemini-2.5-pro(06-05)",
+            null,
+            null,
+            null,
+            "69.5",
+            ""
+          ],
+          [
+            "官网榜单",
+            "gemini-3-pro-preview",
+            null,
+            null,
+            null,
+            "69.25",
+            ""
+          ],
+          [
+            "官网榜单",
+            "o4-mini",
+            null,
+            null,
+            null,
+            "61.25",
+            ""
+          ],
+          [
+            "官网榜单",
+            "o3",
+            null,
+            null,
+            null,
+            "59.25",
+            ""
+          ],
+          [
+            "官网榜单",
+            "claude-3-7-sonnet-20250219",
+            null,
+            null,
+            null,
+            "56.50",
+            ""
+          ],
+          [
+            "官网榜单",
+            "gemini-2.0-flash-thinking-exp-01-21",
+            null,
+            "✓",
+            "42.50",
+            "48.00",
+            "论文测试时扩展实验的主模型"
+          ],
+          [
+            "官网榜单",
+            "o1",
+            null,
+            null,
+            null,
+            "45.75",
+            "论文报告的最好成绩（EMMA-mini）"
+          ],
+          [
+            "官网榜单",
+            "gemini-2.0-flash-thinking-exp-1219",
+            null,
+            null,
+            "38.06",
+            "43.50",
+            ""
+          ],
+          [
+            "官网榜单",
+            "Qwen2.5-VL-72B-Instruct",
+            "72B",
+            "✗",
+            "38.56",
+            "40.5",
+            "开源模型全集最高（无 CoT 档）"
+          ],
+          [
+            "官网榜单",
+            "Skywork-R1V3-38B",
+            "38B",
+            null,
+            null,
+            "40.25",
+            ""
+          ],
+          [
+            "官网榜单",
+            "Qwen2.5-VL-72B-Instruct",
+            "72B",
+            "✓",
+            "36.06",
+            "39.25",
+            ""
+          ],
+          [
+            "官网榜单",
+            "InternVL3-78B",
+            "78B",
+            "✗",
+            "34.79",
+            "38.5",
+            ""
+          ],
+          [
+            "官网榜单",
+            "qwen2-vl-72b-instruct",
+            "72B",
+            "✗",
+            "33.46",
+            "37.25",
+            ""
+          ],
+          [
+            "官网榜单",
+            "claude 3.5 sonnet",
+            null,
+            "✓",
+            "37.23",
+            "37.00",
+            ""
+          ],
+          [
+            "官网榜单",
+            "gemini 2.0 flash",
+            null,
+            "✓",
+            "29.12",
+            "36.25",
+            ""
+          ],
+          [
+            "官网榜单",
+            "gpt-4o",
+            null,
+            "✓",
+            "32.71",
+            "36.00",
+            ""
+          ],
+          [
+            "官网榜单",
+            "kimi-k1.5-preview",
+            null,
+            null,
+            null,
+            "33.75",
+            ""
+          ],
+          [
+            "官网榜单",
+            "QVQ-72B-Preview",
+            "72B",
+            null,
+            null,
+            "32.00",
+            ""
+          ],
+          [
+            "官网榜单",
+            "llava-onevision-72b",
+            null,
+            "✓",
+            "23.82",
+            "25.25",
+            "论文报告的最低分（EMMA-mini）"
+          ],
+          [
+            "官网榜单",
+            "random choice",
+            null,
+            null,
+            "18.08",
+            "22.75",
+            "随机基线"
+          ],
+          [
+            "官网榜单",
+            "VL-Rethinker-72B",
+            "72B",
+            null,
+            "38.9*",
+            null,
+            "星号：结果由作者提供"
+          ],
+          [
+            "官网榜单",
+            "SRPO-7B",
+            "7B",
+            null,
+            "29.6*",
+            null,
+            "星号：结果由作者提供"
+          ],
+          [
+            "官网榜单",
+            "SRPO-32B",
+            "32B",
+            null,
+            "38.2*",
+            null,
+            "星号：结果由作者提供"
+          ]
+        ]
+      },
+      "cite": [
+        "site@Leaderboard",
+        "paper@Table 2"
+      ]
+    }
+  }
+}

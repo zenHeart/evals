@@ -1,0 +1,713 @@
+{
+  "id": "madqa",
+  "name": "MADQA",
+  "full_name": "Strategic Navigation or Stochastic Search? How Agents and Humans Reason Over Document Collections",
+  "aliases": [
+    "Multimodal Agentic Document QA"
+  ],
+  "status": "active",
+  "categories": [
+    "agent",
+    "multimodal"
+  ],
+  "summary": "800 份真实异构 PDF 上的 2,250 道全人工出题文档 QA：把「agent 能否在文档集合里做策略性检索-导航-推理」拆成可判分的封闭世界任务，并用 accuracy-effort 权衡刻画搜索成本。",
+  "interpretation": "原始准确率上，最佳 agent（Gemini 3 Pro BM25 Agent 82.2%）已追平使用同一检索工具的人类检索员（82.2%），但两者答对的题 largely 不同（逐题一致率 Cohen's κ=0.24），agent 靠暴力试错弥补策略不足；换成 oracle 检索的人类是 99.4%，仍有约 18% 的「oracle 差距」。因此高分应读成「在宽计算预算下把检索做对了」，不等于推理能力排名，也不等于知不知道自己不会。",
+  "measures": [
+    {
+      "area": "跨页 / 跨文档多跳检索与导航",
+      "focus": "证据分散在多个页面或多份文档里，必须迭代改写查询、跳转、聚合；8.3% 为同文档跨页（X-Page），9.0% 为跨文档（X-Doc）",
+      "share": "17.3% 多跳（其余 82.7% 单跳）",
+      "format": "精确匹配短答案 + 引用证据页",
+      "cite": [
+        "arxiv-2603-12180@§2.2 Annotation Statistics",
+        "arxiv-2603-12180@附录 A.1 Dataset Card"
+      ]
+    },
+    {
+      "area": "多模态视觉理解（版面 / 表格 / 图形）",
+      "focus": "答案依赖 layout、表格结构、复选框、图形等非文本信息；只有 42% 的题能只靠自由文本答出",
+      "share": "58% 需要非文本信息",
+      "format": "同一题同时考视觉与检索",
+      "cite": [
+        "arxiv-2603-12180@§2.3 视觉必要性",
+        "arxiv-2603-12180@附录 A.1 Dataset Card"
+      ]
+    },
+    {
+      "area": "封闭世界抽取式问答",
+      "focus": "答案必须取自语料、不得动用参数化知识；出题时明确禁止标注员使用外部知识",
+      "share": "100% 题目",
+      "format": "答案 token 须出现在证据页中",
+      "cite": [
+        "arxiv-2603-12180@§1.2 属性",
+        "arxiv-2603-12180@附录 A.1 Dataset Card"
+      ]
+    },
+    {
+      "area": "证据归因与定位",
+      "focus": "每题为「最小证据页集」，用 Page F1 / Doc F1 衡量引用是否精准，惩罚漏引与乱引",
+      "share": "100% 题目",
+      "format": "页级归因（不做 bounding box 级）",
+      "cite": [
+        "arxiv-2603-12180@§3.2 检索与归因",
+        "arxiv-2603-12180@附录 F.2"
+      ]
+    },
+    {
+      "area": "努力校准与搜索效率",
+      "focus": "同样的准确率下花了多少步、多少钱；用 Kuiper 统计量衡量「努力是否花在该花的地方」，并报告步数与推理成本",
+      "share": "仅 agentic 口径（非 agentic 系统不适用）",
+      "format": "Kuiper + 步数 + 推理成本（USD）",
+      "cite": [
+        "arxiv-2603-12180@§3.3 效率与校准",
+        "arxiv-2603-12180@Table 3 注"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "细粒度版面理解（表格单元格、表单字段、bounding box 级定位）：只标到页级，作者自己把它列为局限",
+      "cite": [
+        "arxiv-2603-12180@§7 标注粒度与任务范围"
+      ]
+    },
+    {
+      "text": "参数化知识问答：封闭世界假设下，靠模型记忆答对反而算污染，不是本事",
+      "cite": [
+        "arxiv-2603-12180@§1.2 属性",
+        "arxiv-2603-12180@§2.3 参数化知识 vs 接地"
+      ]
+    },
+    {
+      "text": "长程规划、文档编辑、往外部系统录数据、带真实副作用的端到端自动化等工作流能力",
+      "cite": [
+        "arxiv-2603-12180@§7 标注粒度与任务范围"
+      ]
+    },
+    {
+      "text": "对抗输入下的鲁棒性与安全（PDF 内嵌 prompt injection、欺骗性版面、恶意格式）",
+      "cite": [
+        "arxiv-2603-12180@§7 鲁棒性与安全"
+      ]
+    },
+    {
+      "text": "非英文、非美国文档上的表现：语料仅英文且以美国文档为主",
+      "cite": [
+        "arxiv-2603-12180@§7 覆盖与代表性"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 2250,
+    "splits": [
+      "train 1,550 题（答案与证据随数据发布）",
+      "dev 200 题（含 ground truth）",
+      "test 500 题（只放输入，答案与证据隐藏，供榜单评测）"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "human_curated（专业标注 vendor 全职员工，累计 1,200+ 小时）",
+    "public_sample": true,
+    "multiple_choice_share": "未披露（论文只说明含 yes/no 与二选一类题目，未给占比）",
+    "multimodal_share": "58%（需要 layout/表格/图形等非文本信息）",
+    "totals": "2,250 题 / 800 份 PDF / 18,619 页（单份中位 5 页、均值 23.3 页、最大 859 页）/ 12.2M tokens（按 Qwen3 tokenizer）/ 13 个高层领域、63 个细类",
+    "cite": [
+      "arxiv-2603-12180@§2.1 取数与过滤",
+      "arxiv-2603-12180@Table 2",
+      "arxiv-2603-12180@附录 A.1 Dataset Card",
+      "hf-madqa@Splits"
+    ],
+    "construction": [
+      {
+        "k": "文档来源",
+        "text": "人工从 DocumentCloud 挑 PDF，刻意找「最多 30 份相关文档」的簇（连续报告、同一主题卷宗等），才能造出真实的跨文档多跳题。",
+        "cite": [
+          "arxiv-2603-12180@§2.1 取数与过滤"
+        ]
+      },
+      {
+        "k": "出题与质检",
+        "text": "累计 1,200+ 小时专业标注；20 名候选标注员先做同题试点，用 GPT-5 配 oracle 证据页复核，只留零错误的人上场；定稿后把基线和人类都答不对的题再过一遍，替换不到 1%、扩展金标不到 5%。",
+        "cite": [
+          "arxiv-2603-12180@§2.2 出题与质检",
+          "arxiv-2603-12180@附录 A.1 Dataset Card"
+        ]
+      },
+      {
+        "k": "污染与可猜性",
+        "text": "让前沿模型只凭题面猜答案：可猜率 9.1%–15.2%（均值 11.2%），其中约 3% 来自 yes/no 与二选一的随机机会，剩余约 8% 归因于公开文档的训练数据污染；作者明说无法完全消除记忆优势。",
+        "cite": [
+          "arxiv-2603-12180@§2.3 参数化知识 vs 接地",
+          "arxiv-2603-12180@§7 公开文档与训练数据暴露"
+        ]
+      },
+      {
+        "k": "词法可解性下界",
+        "text": "用题面 n-gram 去检索金标证据页：unigram 精度只有约 0.03%、bigram 约 2.6%、trigram 召回掉到约 51%，说明靠词面重叠解不了，必须语义理解。",
+        "cite": [
+          "arxiv-2603-12180@§2.3 词法重叠 vs 推理"
+        ]
+      },
+      {
+        "k": "训练 / 开发 / 测试划分",
+        "text": "按古典测验理论（CTT）逐题算难度与区分度来划分子集，保证测试集仍能区分强弱模型；并显式留出 20% 的测试题作为「Sentinel Pool」——当前没有模型能解，保住基准的长期区分度。",
+        "cite": [
+          "arxiv-2603-12180@§2.4  principled 划分",
+          "arxiv-2603-12180@附录 A.1 Dataset Card"
+        ]
+      },
+      {
+        "k": "许可与文档托管",
+        "text": "题目、答案与证据映射以 CC BY-NC 4.0 发布；PDF 本身不由作者托管，只给 DocumentCloud 上第三方（媒体、政府、非营利组织）上传文档的索引，作者不拥有也不控制这些文档。",
+        "cite": [
+          "arxiv-2603-12180@附录 A.1 Dataset Card",
+          "hf-madqa@许可与免责"
+        ]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "被测系统拿到的输入是 800 份 PDF 组成的语料加一个自然语言问题，要输出答案和最小证据页集；agentic 口径通常配一个 BM25 检索工具，默认步数预算 N=10。判分用混合式 Accuracy：先做字符串精确匹配，不中再交给 LLM 裁判（Gemini 2.5 Flash + function calling，G-Eval 式五条准则），三档 Correct=1.0 / Partial=0.5 / Incorrect=0.0，再按 Rogan-Gladen 公式做裁判偏差校正（q1=0.980、q0=1.000）；归因用 Page F1 与 Doc F1 对「唯一引用页集合 vs 人工最小证据集」；努力校准用 Kuiper 统计量与步数，并报告 ± 置信区间与推理成本。",
+    "cite": [
+      "arxiv-2603-12180@§3.1 答案正确性",
+      "arxiv-2603-12180@附录 F.1 Accuracy Metric",
+      "arxiv-2603-12180@§3.2 检索与归因",
+      "arxiv-2603-12180@§3.3 效率与校准",
+      "repo-oxrml-madqa@Quick Start"
+    ],
+    "variants": [
+      {
+        "text": "agentic（BM25 检索工具 / RLM）与非 agentic（Gemini File Search、OpenAI File Search、HEAVEN 等 managed RAG）是两套口径：非 agentic 系统计算预算固定，论文不给它们算 Kuiper，两类分数不能直接排在一起。",
+        "cite": [
+          "arxiv-2603-12180@Table 3 注",
+          "arxiv-2603-12180@§4 基线"
+        ]
+      },
+      {
+        "text": "判分入口分两档：官方 eval CLI 默认跑 Accuracy / ANLS* / Semantic Accuracy / Page F1 / Kuiper，加 --semantic 才启用 LLM 语义裁判；论文主表用的是带 LLM 裁判的口径。",
+        "cite": [
+          "repo-oxrml-madqa@Repository Structure",
+          "repo-oxrml-madqa@Quick Start"
+        ]
+      },
+      {
+        "text": "努力度量可换：步数（默认）与 token 类度量的秩相关 >0.85、Kuiper 差异 <20%，但「一步」到底含多少计算取决于工具设计，跨系统比 Kuiper 要先对齐 agent/tooling。",
+        "cite": [
+          "arxiv-2603-12180@§3.3 效率与校准",
+          "arxiv-2603-12180@§7 努力作为不确定性代理"
+        ]
+      },
+      {
+        "text": "步数预算 N 会改排名：论文默认 N=10，N≤3 时 Gemini 3 Pro 会被人类和 Claude Sonnet 4.5 反超，所以论文里的分数是宽预算下的渐近性能，不等于实时场景最优。",
+        "cite": [
+          "arxiv-2603-12180@§7 排名对预算敏感",
+          "arxiv-2603-12180@Figure 9 注"
+        ]
+      },
+      {
+        "text": "人类基线有两套：用同一个 BM25 工具（82.2%）和用 oracle 检索（99.4%），后者还消掉了任务认知负荷，两个数不能混用。",
+        "cite": [
+          "arxiv-2603-12180@Table 3",
+          "arxiv-2603-12180@§4 人类基线"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "accuracy",
+      "name": "Accuracy（混合式：精确匹配 + LLM 语义裁判）",
+      "direction": "越高越好",
+      "description": "裁判判为 Correct 记 1.0、Partial 记 0.5、Incorrect 记 0.0，多份等价标准答案取最高分，再按裁判灵敏度/特异度做 Rogan-Gladen 偏差校正；论文同时报 ± 置信区间。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2603-12180@附录 F.1 Accuracy Metric",
+        "arxiv-2603-12180@§3.1 答案正确性"
+      ]
+    },
+    {
+      "id": "page-f1",
+      "name": "Page F1（页级归因）",
+      "direction": "越高越好",
+      "description": "系统最终回答里引用的唯一页面集合与人工标注最小证据页集合的 F1，同时惩罚漏引和乱引，用来衡量是否精准导航到答案所在页。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2603-12180@§3.2 检索与归因",
+        "arxiv-2603-12180@附录 F.2"
+      ]
+    },
+    {
+      "id": "doc-f1",
+      "name": "Doc F1（文档级归因）",
+      "direction": "越高越好",
+      "description": "把粒度放宽到文档的 F1；和 Page F1 对着看能诊断「找对文档但没定位到页」的最后一公里失败。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2603-12180@§3.2 检索与归因",
+        "arxiv-2603-12180@附录 F.2"
+      ]
+    },
+    {
+      "id": "kuiper",
+      "name": "Kuiper 统计量（努力校准）",
+      "direction": "越低越好",
+      "description": "按步数排序后画累积准确率偏差曲线，取 K = max Dk − min Dk，衡量准确率随努力变化的幅度：低分表示努力不变形、终止时机校准得好，高分表示在最后解不出的难题上空烧预算。论文报告值约在 14.6（人类）到 73.2（GPT-5 Mini BM25 Agent）之间；非 agentic 系统不适用。",
+      "cite": [
+        "arxiv-2603-12180@§3.3 效率与校准",
+        "arxiv-2603-12180@Table 3"
+      ]
+    },
+    {
+      "id": "step-count",
+      "name": "步数（tool calls）",
+      "direction": "越低越好",
+      "description": "完成一道题用掉的离散步骤数，默认的努力度量；论文另给 token 类度量与它的秩相关 >0.85。",
+      "cite": [
+        "arxiv-2603-12180@§3.3 效率与校准"
+      ]
+    },
+    {
+      "id": "inference-cost",
+      "name": "推理成本（USD）",
+      "direction": "越低越好",
+      "description": "跑测试集推理花的钱，论文用对数坐标画准确率-成本散点；作者提示 RLM 一类方案可能烧掉大量输入 token 却不比 BM25 方案更准。",
+      "cite": [
+        "arxiv-2603-12180@§5 结果与分析",
+        "arxiv-2603-12180@Figure 7"
+      ]
+    },
+    {
+      "id": "anls",
+      "name": "ANLS*",
+      "direction": "越高越好",
+      "description": "官方 eval CLI 提供的另一种答案匹配指标；论文试过但认为过严（人工复核发现 ANLS* 打 0 分的预测里约 35% 其实是对的），因此没有把它作为主指标。",
+      "cite": [
+        "repo-oxrml-madqa@Repository Structure",
+        "arxiv-2603-12180@§3.1 脚注 2"
+      ]
+    }
+  ],
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2026-03-12",
+      "label": "arXiv v1 提交（8,301 KB）",
+      "cite": [
+        "arxiv-2603-12180@Submission history"
+      ]
+    },
+    {
+      "id": "v2",
+      "date": "2026-03-20",
+      "label": "arXiv v2 修订，当前引用版本；数据集与评测代码同步释出",
+      "cite": [
+        "arxiv-2603-12180@Submission history",
+        "repo-oxrml-madqa@README"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "语料覆盖：只有英文、以美国文档为主",
+      "impact": "格式惯例、机构术语、文档体裁都偏美国，分数不一定能搬到非英文或其他行政体系的场景；企业内部私有文档几乎不在分布内。",
+      "severity": "高",
+      "response": "作者把语料构成与偏差写进附录 A.1 数据集卡，并明确说不要外推到非英文场景。",
+      "reader": "拿 MADQA 分数论证「中文/日文文档也行」没有依据；跨语言比较请另找基准。",
+      "cite": [
+        "arxiv-2603-12180@§7 覆盖与代表性",
+        "arxiv-2603-12180@附录 A.1 Dataset Card"
+      ]
+    },
+    {
+      "issue": "公开文档的预训练暴露与数据污染",
+      "impact": "文档都在 DocumentCloud 公开可查，部分内容可能进过预训练；可猜率 9.1%–15.2%（均值 11.2%），其中约 8% 归因于污染，而且可能不成比例地利好某些模型家族。",
+      "severity": "高",
+      "response": "作者用「只给题面让模型猜」量化了这条上界，并划出 20% 的 Sentinel Pool；但明说无法保证完全消除记忆优势。",
+      "reader": "报分数时最好同时报可猜率区间；小幅领先（几个百分点）可能只是污染差异，不是能力差异。",
+      "cite": [
+        "arxiv-2603-12180@§2.3 参数化知识 vs 接地",
+        "arxiv-2603-12180@§7 公开文档与训练数据暴露"
+      ]
+    },
+    {
+      "issue": "LLM 裁判残余噪声，且正确性与归因分开计分",
+      "impact": "裁判虽与人类达成 κ=0.88，仍不逐条人工复核，格式边角与歧义表面形式会带来残余误差；答案对但引用不全照样拿分，反之也可能答案错却因引用干净而拉高归因分。",
+      "severity": "中",
+      "response": "作者用 100 条分层抽样多轮校准提示词，把一致性从 82% 提到 90%，并按 200 条人工评估测出 q1=0.980 / q0=1.000 后做 Rogan-Gladen 校正。",
+      "reader": "看准确率的同时看 Page F1：只有准确率涨、Page F1 不涨，可能是「蒙对答案、乱引页面」。",
+      "cite": [
+        "arxiv-2603-12180@附录 F.1 Accuracy Metric",
+        "arxiv-2603-12180@§7 评测方法与残余噪声"
+      ]
+    },
+    {
+      "issue": "排名对步数预算 N 敏感",
+      "impact": "论文默认 N=10；N≤3 时 Gemini 3 Pro 会被人类和 Claude Sonnet 4.5 反超，论文里的高分是宽预算下的渐近性能。",
+      "severity": "中",
+      "response": "作者给出 Accuracy@N 曲线，并建议从标量准确率转向预算感知的评测曲线。",
+      "reader": "实时或低成本场景不要直接抄榜单第一名；按自己的预算区间看曲线。",
+      "cite": [
+        "arxiv-2603-12180@§7 排名对预算敏感",
+        "arxiv-2603-12180@Figure 9 注"
+      ]
+    },
+    {
+      "issue": "只标到页级，且只测「带归因的 QA」",
+      "impact": "找对文档、抽错表单字段这类细粒度失败诊断不出来；长程规划、文档编辑、外部系统录入、端到端自动化都不在评测范围。",
+      "severity": "中",
+      "response": "作者说明页级是为了可靠标注并与检索系统的工作方式对齐，并把这些排除项写进 §7。",
+      "reader": "把 MADQA 当成「文档智能体能力全检」会高估；它只覆盖 attributed QA 这一段。",
+      "cite": [
+        "arxiv-2603-12180@§7 标注粒度与任务范围"
+      ]
+    },
+    {
+      "issue": "「努力=不确定性」的设定依赖系统实现",
+      "impact": "一步能打包多少计算、检索多少上下文、多少延迟，随工具设计和模型接口而变；不同实现之间 Kuiper 不可直接比。",
+      "severity": "中",
+      "response": "作者建议在同一 agent/tooling 体系内比较，并同时报 token、墙钟时间或美元成本。",
+      "reader": "跨框架抄 Kuiper 数字前，先确认「一步」的定义一致。",
+      "cite": [
+        "arxiv-2603-12180@§7 努力作为不确定性代理"
+      ]
+    },
+    {
+      "issue": "不做对抗性与安全评测，且语料含公开记录里的个人信息",
+      "impact": "PDF 内嵌 prompt injection、欺骗性版面、恶意格式都不测；公开记录可能带 PII，MADQA 只发布题目、答案与文档 ID，不发布文档本身。",
+      "severity": "中",
+      "response": "作者声明基准面向研究与评测，要求使用者按机构规范处理、脱敏和再分发检索到的内容。",
+      "reader": "别把 MADQA 高分当成「能安全上线处理来路不明 PDF」的证据。",
+      "cite": [
+        "arxiv-2603-12180@§7 鲁棒性与安全",
+        "arxiv-2603-12180@附录 A.1 Dataset Card"
+      ]
+    }
+  ],
+  "notes": "官方榜单是 Hugging Face Space（Snowflake/MADQA-Leaderboard），页面由 JS 渲染，本次核验只取到页面框架未取到成绩，因此本站不引用榜单数据；附录 B 的快照全部取自论文 Table 3（arXiv v2）。",
+  "official_sources": [
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2603.12180"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/OxRML/MADQA"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/OxRML/MADQA"
+    },
+    {
+      "kind": "leaderboard",
+      "url": "https://huggingface.co/spaces/Snowflake/MADQA-Leaderboard"
+    }
+  ],
+  "related_benchmarks": [
+    "officeqa-pro",
+    "omnidocbench"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "arxiv-2603-12180",
+        "kind": "paper",
+        "title": "Strategic Navigation or Stochastic Search?（arXiv:2603.12180v2 [cs.CL]，2026-03-20）",
+        "url": "https://arxiv.org/abs/2603.12180",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "hf-madqa",
+        "kind": "dataset",
+        "title": "OxRML/MADQA（Hugging Face 数据集卡，需同意条款）",
+        "url": "https://huggingface.co/datasets/OxRML/MADQA",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "repo-oxrml-madqa",
+        "kind": "repo",
+        "title": "OxRML/MADQA（官方基线与评测 CLI 仓库）",
+        "url": "https://github.com/OxRML/MADQA",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Snowflake AI Research × University of Oxford（Reasoning with Machines Lab），合作方含 Instabase、Hugging Face、UNC-Chapel Hill CVC",
+        "cite": [
+          "arxiv-2603-12180@作者署名",
+          "hf-madqa@机构"
+        ]
+      },
+      "first_release": {
+        "v": "2026-03-12（arXiv v1）",
+        "cite": [
+          "arxiv-2603-12180@Submission history"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "arxiv-2603-12180@Abstract",
+        "hf-madqa@数据集说明"
+      ],
+      "interpretation": [
+        "arxiv-2603-12180@§5.2 人机对比",
+        "arxiv-2603-12180@Table 3"
+      ]
+    },
+    "problem": {
+      "text": "多模态 agent 被寄望去自动化文档密集的工作流，但「它们是真会策略性推理，还是在随机试错」没有基准能回答：现有文档评测要么问题由 MLLM 生成、要么复用老数据集文档，污染和偏差都说不清。MADQA 用全人工出题 + 800 份真实异构 PDF，把这件事变成可判分的问题，并额外用 accuracy-effort 权衡去衡量「搜得准不准、省不省」。",
+      "cite": [
+        "arxiv-2603-12180@Abstract",
+        "arxiv-2603-12180@§1.1 动机"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "无文档检索的纯猜上界",
+        "value": "9.1%–15.2%（均值 11.2%）",
+        "note": "让前沿模型只凭题面猜答案测出来的；其中约 3% 来自 yes/no 与二选一的随机机会，其余约 8% 归因于公开文档的训练数据污染。",
+        "cite": [
+          "arxiv-2603-12180@§2.3 参数化知识 vs 接地"
+        ]
+      },
+      {
+        "label": "论文最好（非 agentic / managed RAG）",
+        "value": "78.6%",
+        "note": "Gemini 3 Pro File Search；这一类系统计算预算固定，论文不报 Kuiper。",
+        "cite": [
+          "arxiv-2603-12180@Table 3"
+        ]
+      },
+      {
+        "label": "论文最好（agentic）",
+        "value": "82.2%",
+        "note": "Gemini 3 Pro BM25 Agent（±2.0，Page F1 78.5、Doc F1 90.2、Kuiper 25.8）。",
+        "cite": [
+          "arxiv-2603-12180@Table 3"
+        ]
+      },
+      {
+        "label": "人类检索员（同一 BM25 工具）",
+        "value": "82.2%",
+        "note": "准确率与最佳 agent 持平，但 Kuiper 只有 14.6，明显更会分配精力；逐题一致率 κ=0.24，答对的题 largely 不同。",
+        "cite": [
+          "arxiv-2603-12180@Table 3",
+          "arxiv-2603-12180@§5.2 人机对比"
+        ]
+      },
+      {
+        "label": "人类 + oracle 检索",
+        "value": "99.4%",
+        "note": "去掉检索工具不完美带来的影响后的人类上限；agent 与它之间约 18% 的差距被作者称为「Oracle Gap」。",
+        "cite": [
+          "arxiv-2603-12180@Table 3",
+          "arxiv-2603-12180@§5.2 人机对比"
+        ]
+      },
+      {
+        "label": "Sentinel Pool 子集基线",
+        "value": "0%",
+        "note": "测试集里刻意留出 20%「当前没有模型能解」的题，保证模型继续进步时基准仍有区分度。",
+        "cite": [
+          "arxiv-2603-12180@§2.4  principled 划分"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 82.2% 读成「agent 的推理已经追平人类」——追平的只是原始准确率；逐题一致率 κ=0.24，人和模型答对的题 largely 不同，是互补而非等价。",
+        "cite": [
+          "arxiv-2603-12180@§5.2 人机对比"
+        ]
+      },
+      {
+        "text": "把 File Search / HEAVEN 这类非 agentic 分数和 BM25 Agent、RLM 分数排在一起比——两套口径不同，非 agentic 系统论文根本不报 Kuiper。",
+        "cite": [
+          "arxiv-2603-12180@Table 3 注"
+        ]
+      },
+      {
+        "text": "只看准确率、不看校准——GPT-5 BM25 Agent 准确率 77.7%，Kuiper 却高达 52.6，远差于 82.2%/25.8 的 Gemini 3 Pro；准确率不告诉你模型知不知道自己不会。",
+        "cite": [
+          "arxiv-2603-12180@§5 结果与分析",
+          "arxiv-2603-12180@Table 3"
+        ]
+      },
+      {
+        "text": "忽略步数预算直接抄榜单第一名——N≤3 时排名会反掉，论文分数是宽预算下的渐近性能，实时场景要另看 Accuracy@N 曲线。",
+        "cite": [
+          "arxiv-2603-12180@§7 排名对预算敏感"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "Snowflake AI Research 与 University of Oxford（Reasoning with Machines Lab）牵头，合作方包括 Instabase、Hugging Face、UNC-Chapel Hill Computer Vision Center。",
+        "cite": [
+          "arxiv-2603-12180@作者署名",
+          "hf-madqa@机构"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "Łukasz Borchmann、Jordy Van Landeghem、Michał Turski、Shreyansh Padarha、Ryan Othniel Kearns、Adam Mahdi、Niels Rogge、Clémentine Fourrier、Siwei Han、Huaxiu Yao、Artemis Llabrés、Yiming Xu、Dimosthenis Karatzas、Hao Zhang、Anupam Datta（共 15 人）。",
+        "cite": [
+          "repo-oxrml-madqa@Citation",
+          "arxiv-2603-12180@标题页"
+        ]
+      },
+      {
+        "k": "任务形式",
+        "v": "Agentic Document Collection VQA：给定文档集合 C 和问题 q，产出答案 a 与最小证据页集 E；论文用六条形式化属性（抽取式、多跳、封闭世界、接地归因、agentic、视觉）把它和普通文档 QA 区分开。",
+        "cite": [
+          "arxiv-2603-12180@附录 A.2 期望属性"
+        ]
+      },
+      {
+        "k": "语料托管与许可",
+        "v": "PDF 只在 DocumentCloud 上由第三方托管，基准发布的是「文档名 → 下载链接」的索引；题目、答案与证据映射为 CC BY-NC 4.0，评测代码 Apache-2.0。",
+        "cite": [
+          "hf-madqa@许可与免责",
+          "repo-oxrml-madqa@License"
+        ]
+      },
+      {
+        "k": "与同类基准的差异",
+        "v": "作者批评 ViDoRe 用 MLLM 生成问题、VIMDoc 与 DOUBLE-BENCH 复用 DocVQA/Wikipedia 老文档带来污染；MADQA 的对策是全人工出题 + 新鲜真实 PDF + 古典测验理论划分子集。",
+        "cite": [
+          "arxiv-2603-12180@§1.1 动机"
+        ]
+      },
+      {
+        "k": "规模与形态",
+        "v": "Hugging Face 数据集卡标注为 Text / Document（parquet）、英文、1K–10K 规模，任务标签为 Visual Document Retrieval 与 Visual Question Answering。",
+        "cite": [
+          "hf-madqa@数据集说明"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-03-20",
+        "columns": [
+          "来源",
+          "系统",
+          "口径",
+          "Accuracy",
+          "Page F1",
+          "Doc F1",
+          "Kuiper ↓"
+        ],
+        "rows": [
+          [
+            "论文 Table 3",
+            "Gemini 3 Pro BM25 Agent",
+            "agentic",
+            "82.2 ± 2.0",
+            "78.5 ± 1.8",
+            "90.2 ± 1.3",
+            "25.8"
+          ],
+          [
+            "论文 Table 3",
+            "Claude Sonnet 4.5 (2025-09) BM25 Agent",
+            "agentic",
+            "80.6 ± 2.1",
+            "79.1 ± 1.8",
+            "93.0 ± 1.1",
+            "35.1"
+          ],
+          [
+            "论文 Table 3",
+            "GPT-5 (2025-08) BM25 Agent",
+            "agentic",
+            "77.7 ± 2.2",
+            "74.2 ± 2.0",
+            "86.5 ± 1.5",
+            "52.6"
+          ],
+          [
+            "论文 Table 3",
+            "Gemini 3 Pro File Search",
+            "非 agentic",
+            "78.6 ± 2.2",
+            "70.1 ± 2.0",
+            "94.2 ± 1.0",
+            "–"
+          ],
+          [
+            "论文 Table 3",
+            "Gemini 2.5 Flash File Search",
+            "非 agentic",
+            "71.8 ± 2.4",
+            "52.2 ± 2.2",
+            "80.9 ± 1.8",
+            "–"
+          ],
+          [
+            "论文 Table 3",
+            "M3DocRAG",
+            "非 agentic",
+            "61.6 ± 2.6",
+            "68.2 ± 2.1",
+            "82.6 ± 1.7",
+            "–"
+          ],
+          [
+            "论文 Table 3",
+            "Gemini 3 Pro RLM",
+            "agentic（RLM）",
+            "73.8 ± 2.3",
+            "69.1 ± 2.1",
+            "89.8 ± 1.4",
+            "22.9"
+          ],
+          [
+            "论文 Table 3",
+            "Human BM25 Agent",
+            "人类基线",
+            "82.2 ± 2.0",
+            "79.3 ± 1.8",
+            "93.4 ± 1.1",
+            "14.6"
+          ],
+          [
+            "论文 Table 3",
+            "Human Oracle Retriever",
+            "人类基线（oracle）",
+            "99.4 ± 0.4",
+            "–",
+            "–",
+            "–"
+          ]
+        ]
+      },
+      "cite": [
+        "arxiv-2603-12180@Table 3"
+      ]
+    }
+  }
+}

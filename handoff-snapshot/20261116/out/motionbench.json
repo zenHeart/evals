@@ -1,0 +1,724 @@
+{
+  "id": "motionbench",
+  "name": "MotionBench",
+  "full_name": "MotionBench: Benchmarking and Improving Fine-grained Video Motion Understanding for Vision Language Models（视觉语言模型的细粒度视频运动理解：基准测试与改进）",
+  "aliases": [],
+  "status": "active",
+  "categories": [
+    "multimodal"
+  ],
+  "summary": "MotionBench 是清华大学与智谱 AI 发布的视频理解基准：5,385 段短视频配 8,052 道四选一题，专门考察「运动层级感知」——看清视频里出现了什么动作、动作的先后顺序、重复次数、参与运动的小物体和镜头怎么移，而不是笼统判断这段视频讲了什么。论文实测当时前沿视频 VLM 的平均准确率都低于 60%，而四选一的随机基线是 25%。",
+  "interpretation": "高分说明模型在被压到很低帧率的输入下仍能分辨细碎、快速的动作细节，这是异常检测、体育回放、医学操作视频等场景的基本功；但它不代表能理解长视频的事件线与故事线（MotionBench 的视频时长多在 10 秒以内），也不代表开放式描述能力。读分前必须先看口径：论文和官方榜单里各模型的输入设置从 1fps、2fps 到固定 16/24/30/64 帧不等，低帧率会明显压分。",
+  "measures": [
+    {
+      "area": "Action Order（动作顺序 AO）",
+      "focus": "一个复杂动作由多个连续运动组成，考这些运动的先后次序。真实示例题（论文附录 15）：「What is the sequence of ball movement in the video?」",
+      "share": "36%（2,950 题，论文 Figure 2）",
+      "format": "四选一单选",
+      "cite": [
+        "paper@Figure 2",
+        "paper@附录 15",
+        "paper-html@§3.1"
+      ]
+    },
+    {
+      "area": "Camera Motion（镜头运动 CM）",
+      "focus": "相机自身的运动类型与轨迹，以及多种运动的组合顺序。真实示例题（论文附录 15）：「Does the camera perform any movement during the scene?」（选项含「Yes, it zooms in.」「No, it remains static.」）",
+      "share": "18%（1,417 题，论文 Figure 2）",
+      "format": "四选一单选",
+      "cite": [
+        "paper@Figure 2",
+        "paper@附录 15",
+        "paper-html@§3.1"
+      ]
+    },
+    {
+      "area": "Motion-related Objects（运动相关物体 MO）",
+      "focus": "认出参与运动互动的小物体。真实示例题（论文附录 15）：「What did this person take with his right hand?」（选项为螺丝、图钉、螺母、笔芯）",
+      "share": "14%（1,147 题，论文 Figure 2）",
+      "format": "四选一单选",
+      "cite": [
+        "paper@Figure 2",
+        "paper@附录 15",
+        "paper-html@§3.1"
+      ]
+    },
+    {
+      "area": "Location-related Motion（位置相关运动 LM）",
+      "focus": "运动发生前后的相对位置变化，或某一指定位置上的动作。真实示例题（论文附录 15）：「What movement trajectory does the horse follow?」",
+      "share": "12%（1,003 题，论文 Figure 2）",
+      "format": "四选一单选",
+      "cite": [
+        "paper@Figure 2",
+        "paper@附录 15",
+        "paper-html@§3.1"
+      ]
+    },
+    {
+      "area": "Motion Recognition（动作识别 MR）",
+      "focus": "判断片段里出现了什么动作。真实示例题（论文附录 15）：「Which facial movement occurs with the woman on the right?」",
+      "share": "10%（781 题，论文 Figure 2）",
+      "format": "四选一单选",
+      "cite": [
+        "paper@Figure 2",
+        "paper@附录 15",
+        "paper-html@§3.1"
+      ]
+    },
+    {
+      "area": "Repetition Count（重复计数 RC）",
+      "focus": "数快速重复动作的次数（点头、跳跃这类细微运动）。真实示例题（论文附录 15）：「Please count the number of repeated actions in the video.」（选项为 3 / 6 / 9 / 4）",
+      "share": "10%（774 题，论文 Figure 2）",
+      "format": "四选一单选",
+      "cite": [
+        "paper@Figure 2",
+        "paper@附录 15",
+        "paper-html@§3.1"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "事件级与故事级理解：论文 Table 1 把 MotionBench 标为 motion level，把 LVBench、LongVideoBench、MovieChat-1K 等标为 event & story level；MotionBench 不测跨片段叙事与长时程一致性。",
+      "cite": [
+        "paper@Table 1"
+      ]
+    },
+    {
+      "text": "开放式视频描述：全部题目都是四选一选择题。论文另外发布的 5,000 段人工细粒度运动描述（caption 数据集）不参与基准评分。",
+      "cite": [
+        "paper-html@§3.2",
+        "repo@Caption dataset"
+      ]
+    },
+    {
+      "text": "仅凭单帧或常识就能答对的题：构建时用 GPT-4o、Qwen2-VL、GLM-4V-plus 只喂第一帧作答，被所有图像 VLM 答对的题直接丢弃。",
+      "cite": [
+        "paper-html@附录 9.3"
+      ]
+    },
+    {
+      "text": "长视频：视频时长集中在 10 秒以内（运动事件通常只发生在很短的片段里），不覆盖长时程理解。",
+      "cite": [
+        "paper-html@§3.2"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 8052,
+    "splits": [
+      "dev 4,020 题（标准答案公开，可本地评测）",
+      "test 4,034 题（答案不公开，提交到官方榜单）"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "多源混合：网络视频与自采电影片段（Panda-70M、Pexels）、三个公开数据集（MedVid、SportsSloMo、HA-ViD）与 Unity3D 渲染的合成视频；人工撰写动态描述 → GPT-4o 生成题目 → 图像 VLM 过滤 + 人工复核",
+    "public_sample": true,
+    "totals": "5,385 段视频 / 8,052 道四选一题（dev 4,020 + test 4,034），视频时长多在 10 秒以内，标注密度 68.4；六类任务的题数在论文 Figure 2 中合计 8,072，比 §3.2 写明的 8,052 多 20 题（论文未说明差异）。",
+    "cite": [
+      "paper@Table 1",
+      "paper@Table 2",
+      "paper-html@§3.2",
+      "repo@Dataset"
+    ],
+    "construction": [
+      {
+        "k": "视频采集与筛选",
+        "text": "从 7 个来源取视频：Panda-70M、Pexels 与自采电影片段属「交互复杂的视频」（按 Panda-70M 的方法用场景检测切成事件级片段，共 2,355 段）；MedVid、SportsSloMo、HA-ViD 属「特定领域视频」（要求 min(H, W) > 448 且时长在 3–60 秒，共 2,430 段）；另用 Unity 渲染引擎自合成了 600 段虚拟场景视频。",
+        "cite": [
+          "paper@Table 2",
+          "paper-html@§3.1"
+        ]
+      },
+      {
+        "k": "人工写动态描述",
+        "text": "交互复杂的视频无法逐题标注，先由人工写聚焦「动态变化」的描述：15 名本科以上学历标注员做 20 个工作日，日薪约 250 元人民币，全部标注经二次复核。",
+        "cite": [
+          "paper-html@附录 9.1"
+        ]
+      },
+      {
+        "k": "GPT-4o 生成题目",
+        "text": "用 GPT-4o 按「内容维度 × 问题逻辑维度」的二维分类体系，为每段视频描述生成 6 个四选一问题；提示词要求选项清晰唯一、避免歧义与主观表述。",
+        "cite": [
+          "paper-html@§3.1",
+          "paper-html@附录 9.2"
+        ]
+      },
+      {
+        "k": "图像 VLM 过滤 + 人工筛选",
+        "text": "用 GPT-4o、Qwen2-VL、GLM-4V-plus 只以首帧作答，全部答对的题丢弃；再人工剔掉措辞不当或答案有歧义的题并归类，这一类最终保留 4,922 个问答对（约为生成量的一半）。",
+        "cite": [
+          "paper-html@附录 9.3",
+          "paper-html@§3.1"
+        ]
+      },
+      {
+        "k": "特定领域与虚拟视频的标注",
+        "text": "特定领域视频按既定任务类型直接人工标注，共 2,530 个问答对；虚拟视频本身带有 ground truth，自动构造题目与选项，共 600 个问答对。",
+        "cite": [
+          "paper-html@§3.1"
+        ]
+      },
+      {
+        "k": "人工终检",
+        "text": "10 名标注员用 5 天检查所有 GPT-4o 生成的问答对，检查点为题目合理性、类别正确性、与视频的相关性、选项准确性和答案唯一性；日薪约 250 元人民币，全部经二次复核。",
+        "cite": [
+          "paper-html@附录 9.4"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "accuracy",
+      "name": "平均准确率（Accuracy）",
+      "direction": "越高越好",
+      "description": "四选一题中模型选项与标准答案一致的占比；论文与官方榜单都分别统计 dev 与 test 两个子集。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper-html@§3.1",
+        "paper@Table 3"
+      ]
+    },
+    {
+      "id": "per-category-accuracy",
+      "name": "分类别准确率",
+      "direction": "越高越好",
+      "description": "MR / LM / CM / MO / AO / RC 六个任务类别各自的准确率，用于定位模型在哪类运动感知上失效；论文 Table 3 与官方榜单都按这六类分列。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@Table 3",
+        "site@Leaderboard"
+      ]
+    }
+  ],
+  "default_protocol": {
+    "raw": "模型对每道题直接作答；官方评测脚本用正则表达式取回答中第一个大写字母作为预测，并在每题末尾追加「Only reply with the best option.」以保证指令遵循。准确率按 dev（4,020 题，标准答案公开）与 test（4,034 题，答案不公开、提交榜单）分别计算。",
+    "cite": [
+      "paper-html@§3.1",
+      "paper@Table 3",
+      "repo@Dataset"
+    ],
+    "variants": [
+      {
+        "text": "输入帧率 / 帧数：论文 Table 3 和官方榜单都逐行记录输入设置，从 1fps、2fps 到固定 16 / 24 / 30 / 64 帧不等。论文自己指出更高帧率输入才能提升运动理解，因此帧率不同的分数不能直接比。",
+        "cite": [
+          "paper@Table 3",
+          "paper-html@Abstract"
+        ]
+      },
+      {
+        "text": "dev 与 test：dev 集标准答案公开、可本地复现；test 集答案不公开，只能把答案文件提交到官方榜单（HF Space / 项目页），榜单成绩由各团队自报。",
+        "cite": [
+          "repo@Dataset",
+          "site@Leaderboard"
+        ]
+      },
+      {
+        "text": "架构与压缩比：论文第 5.2 节的压缩方法对比都在 GLM-4V-9B 上重新实现、固定解码序列长度，与厂商用自家大模型自报的分数不同源；表中的 TE Fusion 一行是作者提出的方法（GLM-4V-9B，16 帧输入，压缩比 4）。",
+        "cite": [
+          "paper-html@§5.2",
+          "paper@Table 3"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2025-01-06",
+      "label": "arXiv v1 首发，数据集与评测代码同步公开（5,385 视频 / 8,052 题）",
+      "cite": [
+        "repo@News"
+      ]
+    },
+    {
+      "id": "cvpr-2025",
+      "date": "2025-02-27",
+      "label": "被 CVPR 2025 接收",
+      "cite": [
+        "repo@News"
+      ]
+    },
+    {
+      "id": "leaderboard-2025-12",
+      "date": "2025-12-05",
+      "label": "官方榜单录入 Gemini-3-Pro-Preview（test 平均 70.4%，为榜单当前最高）",
+      "cite": [
+        "site@Leaderboard"
+      ]
+    },
+    {
+      "id": "v2",
+      "date": "2026-05-12",
+      "label": "arXiv v2 修订（本档案核对所用版本）",
+      "cite": [
+        "paper@版头"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "输入帧率口径不统一",
+      "impact": "同一模型用 1fps 和 64 帧采样会差很多：论文 Table 3 与官方榜单的 Frames 列从 1fps、2fps 到 16 / 24 / 30 / 64 帧不等，低帧率输入会显著压分。论文自己也说明更高帧率输入和 TE Fusion 才能提升运动理解。",
+      "severity": "高",
+      "response": "论文在 Table 3 逐行标注 #Frames，官方榜单保留 Frames 列；没有统一帧率门槛，也没有要求提交者按同一设置复现。",
+      "reader": "比较两个分数前先看 Frames 列，帧率不同的分数不要直接排大小。",
+      "cite": [
+        "paper@Table 3",
+        "paper-html@Abstract"
+      ]
+    },
+    {
+      "issue": "榜单自报、test 集不可独立复现",
+      "impact": "test 集 4,034 题的答案不公开，成绩由各团队自行提交；榜单上多个模型只报了 test，dev 列为空。",
+      "severity": "中",
+      "response": "官方公开 dev 集标准答案与评测脚本（scripts/test_acc.py），并提供提交入口；未见对自报成绩的独立复核说明。",
+      "reader": "把榜单分数当自报值看，同时关注帧率、参数量和提交日期。",
+      "cite": [
+        "repo@Dataset",
+        "site@Leaderboard",
+        "paper@Table 3"
+      ]
+    },
+    {
+      "issue": "标注与自动生成误差",
+      "impact": "论文 §14 承认可能存在人工与自动工具造成的偶尔错误或不一致；题目由 GPT-4o 依据人工描述生成，再经人工抽检。",
+      "severity": "中",
+      "response": "人工写动态描述并二次复核；用图像 VLM 过滤掉仅凭首帧可答的题；10 名标注员用 5 天终检全部生成题目（题目合理性、类别、相关性、选项准确性、答案唯一性）。",
+      "reader": "个别题目的选项或答案可能有噪声，单题对不齐不代表整体判断失效。",
+      "cite": [
+        "paper-html@§14",
+        "paper-html@附录 9.4",
+        "paper-html@附录 9.3"
+      ]
+    },
+    {
+      "issue": "数据多样性偏差",
+      "impact": "论文 §14 说明视频虽来自多个来源，但在地理、文化和语境多样性上仍可能有固有偏差，会影响结论向其他场景的泛化。",
+      "severity": "中",
+      "response": "未见官方回应（论文仅在 §14 提示这一风险）。",
+      "reader": "把分数理解为这些来源分布上的平均水平，不要外推到未覆盖的场景。",
+      "cite": [
+        "paper-html@§14"
+      ]
+    },
+    {
+      "issue": "只覆盖运动层级且视频偏短",
+      "impact": "视频时长集中在 10 秒以内，六类任务全是四选一；无法反映长视频与时序推理，也不评测开放式描述能力。",
+      "severity": "低",
+      "response": "论文把 MotionBench 定位为运动层级感知的专项基准，并在 Table 1 中与其他层级的基准并列对照。",
+      "reader": "需要长视频或开放式能力时，另看 LVBench / Video-MME / LongVideoBench 等基准。",
+      "cite": [
+        "paper-html@§3.2",
+        "paper@Table 1"
+      ]
+    },
+    {
+      "issue": "论文内部题量数字不一致",
+      "impact": "§3.2 写 8,052 题，Table 3 的 dev / test 分别是 4,020 与 4,034（合计 8,054），Figure 2 的六类计数合计 8,072；三处相差 2–20 题，论文未说明。",
+      "severity": "低",
+      "response": "未见官方回应。",
+      "reader": "引用总题量时以 §3.2 的 8,052 为准；占比按 Figure 2 的原样数字看，用占比回推总量会有几十题误差。",
+      "cite": [
+        "paper-html@§3.2",
+        "paper@Table 3",
+        "paper@Figure 2"
+      ]
+    },
+    {
+      "issue": "许可与复现门槛",
+      "impact": "数据集为 CC-BY-NC-SA-4.0，仅限非商业学术用途；MedVid、SportsSloMo、HA-ViD 的原始视频不随基准分发，需自行下载并按映射文件切片。",
+      "severity": "低",
+      "response": "仓库给出原始数据集地址、映射文件与切片步骤；如涉侵权可联系作者移除。",
+      "reader": "工业使用需另找授权；复现前先按 README 准备视频文件。",
+      "cite": [
+        "dataset@卡片",
+        "repo@Dataset",
+        "repo@License"
+      ]
+    }
+  ],
+  "notes": "清华大学 + 智谱 AI，CVPR 2025；论文同时提出 Through-Encoder（TE）Fusion 视频压缩架构",
+  "official_sources": [
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2501.02955"
+    },
+    {
+      "kind": "site",
+      "url": "https://motion-bench.github.io/"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/zai-org/MotionBench"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/THUDM/MotionBench"
+    },
+    {
+      "kind": "leaderboard",
+      "url": "https://huggingface.co/spaces/THUDM/MotionBench"
+    }
+  ],
+  "related_benchmarks": [
+    "mvbench",
+    "video-mme",
+    "lvbench",
+    "longvideobench",
+    "tempcompass",
+    "egoschema"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-13",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "MotionBench（arXiv:2501.02955v2，2026-05-12）PDF 全文，pdftotext -layout 提取",
+        "url": "https://arxiv.org/abs/2501.02955",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "paper-html",
+        "kind": "paper",
+        "title": "MotionBench arXiv HTML 全文（LaTeXML 版，v2，含表格）",
+        "url": "https://arxiv.org/html/2501.02955v2",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "site",
+        "kind": "site",
+        "title": "MotionBench 项目页（含 Leaderboard）",
+        "url": "https://motion-bench.github.io/",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "zai-org/MotionBench（官方代码与 README）",
+        "url": "https://github.com/zai-org/MotionBench",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "dataset",
+        "kind": "dataset",
+        "title": "THUDM/MotionBench（Hugging Face 数据集卡）",
+        "url": "https://huggingface.co/datasets/THUDM/MotionBench",
+        "accessed": "2026-11-13"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "清华大学与智谱 AI（Zhipu AI）；论文标注由 Wenyi Hong、Zhuoyi Yang 在智谱 AI 实习期间完成",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      "first_release": {
+        "v": "2025-01-06（arXiv v1，数据集与代码同步公开）",
+        "cite": [
+          "repo@News"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "paper-html@Abstract",
+        "paper-html@§1",
+        "paper@Table 1"
+      ],
+      "interpretation": [
+        "paper@Table 3",
+        "site@Leaderboard",
+        "paper-html@§3.2"
+      ]
+    },
+    "problem": {
+      "text": "论文用 GPT-4o 给现有基准的题目打了粒度标签：MVBench 里运动类题目占比不到 30%，VideoMME 不到 20%，LVBench、LongVideoBench、MovieChat-1K 等直接标为事件级或故事级——现有基准几乎没有专门测「运动层级感知」的题，而且多数基准只依赖单一数据源。MotionBench 用 7 个来源的视频和 6 类运动任务把这一层单独拆出来测。",
+      "cite": [
+        "paper@Table 1",
+        "paper-html@§1",
+        "paper-html@§2.1"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机猜测基线",
+        "value": "25%",
+        "note": "四选一；论文 Table 3 的 Random 行在 dev、test 与六个类别上都是 0.25。",
+        "cite": [
+          "paper@Table 3"
+        ]
+      },
+      {
+        "label": "人类表现",
+        "value": "论文未给出",
+        "note": "论文 Table 3 只报告模型成绩，没有人类基线；因此无法从这张表判断当前分数距人类还有多远。",
+        "cite": [
+          "paper@Table 3"
+        ]
+      },
+      {
+        "label": "论文发布时最好",
+        "value": "58%（test）",
+        "note": "Qwen2VL-72B（1fps）与 TE Fusion（GLM-4V-9B，16 帧、压缩比 4）在 test 集同为 0.58；论文称当时最好的模型都低于 60%。",
+        "cite": [
+          "paper@Table 3",
+          "paper-html@§5.1"
+        ]
+      },
+      {
+        "label": "官方榜单最高",
+        "value": "70.4%（test）",
+        "note": "Gemini-3-Pro-Preview，榜单日期 2025-12-05，dev 69.9%；榜单未注明统一评测口径，该行 Frames 列为「-」。",
+        "cite": [
+          "site@Leaderboard"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      },
+      {
+        "label": "难度参考线",
+        "value": "所有模型都答错的题目占 11%–18%",
+        "note": "论文按视频时长统计：0–4 秒短片有 11%–14% 的题所有模型都答错，超过 18 秒的视频升到 18%。这条线说明题目有区分度，但不是官方上限。",
+        "cite": [
+          "paper-html@§5.1"
+        ]
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把榜单上不同帧率的分数排在一起比——Frames 列从 1fps、2fps 到 64 帧不等，低帧率会明显压分。",
+        "cite": [
+          "site@Leaderboard",
+          "paper@Table 3"
+        ]
+      },
+      {
+        "text": "把 GPT-4o 纯文本 33% 理解成「题目靠常识就能猜」——构建时已经用图像 VLM 过滤掉仅凭首帧和常识可答的题，这 33% 来自语言先验。",
+        "cite": [
+          "paper@Table 3",
+          "paper-html@附录 9.3"
+        ]
+      },
+      {
+        "text": "把 MotionBench 高分当成通用视频理解能力——它只测六类运动层级任务、视频多在 10 秒以内，不覆盖事件级与故事级理解。",
+        "cite": [
+          "paper@Table 1",
+          "paper-html@§3.2"
+        ]
+      },
+      {
+        "text": "把 TE Fusion 的成绩当成基准自带的对比线——它是作者提出的压缩架构，在 GLM-4V-9B 上以 16 帧、压缩比 4 重新实现，与厂商自报分数不同源。",
+        "cite": [
+          "paper@Table 3",
+          "paper-html@§5.1"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "清华大学与智谱 AI（Zhipu AI）；论文标注工作由 Wenyi Hong、Zhuoyi Yang 在智谱 AI 实习期间完成",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "共同一作 Wenyi Hong、Yean Cheng、Zhuoyi Yang；其他作者 Weihan Wang、Lefan Wang、Xiaotao Gu、Shiyu Huang；通讯作者 Yuxiao Dong、Jie Tang",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      {
+        "k": "发表",
+        "v": "CVPR 2025（2025-02-27 接收）",
+        "cite": [
+          "repo@News"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2025-01-06 首发 → 2025-02-27 CVPR 2025 接收 → 2025-12-05 官方榜单录入 Gemini-3-Pro-Preview → 2026-05-12 arXiv v2 修订",
+        "cite": [
+          "repo@News",
+          "site@Leaderboard",
+          "paper@版头"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "数据集在 Hugging Face（THUDM/MotionBench，核心文件 video_info.meta.jsonl，dev 带标准答案、test 不带）；评测代码与提交通道在 GitHub（zai-org/MotionBench）和 HF Space",
+        "cite": [
+          "repo@Dataset",
+          "dataset@卡片"
+        ]
+      },
+      {
+        "k": "许可",
+        "v": "CC-BY-NC-SA-4.0，仅限非商业学术用途；MedVid、SportsSloMo、HA-ViD 的原始视频不随基准分发",
+        "cite": [
+          "dataset@卡片",
+          "repo@Dataset"
+        ]
+      },
+      {
+        "k": "配套数据",
+        "v": "另发布 5,000 段视频的人工细粒度运动描述（caption 数据集），标注密度 12.63 词/秒，与基准标注流程同批完成",
+        "cite": [
+          "repo@Caption dataset",
+          "paper-html@§1"
+        ]
+      },
+      {
+        "k": "配套方法",
+        "v": "论文同时提出 Through-Encoder（TE）Fusion：在视觉编码阶段把相邻 k 帧分组做组内自注意力，再做时空压缩；在 MotionBench、MVBench、LVBench、Video-MME 的消融中取得最好结果",
+        "cite": [
+          "paper-html@§4",
+          "paper-html@Abstract"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-13",
+        "columns": [
+          "来源",
+          "模型",
+          "Dev Avg",
+          "Test Avg",
+          "口径"
+        ],
+        "rows": [
+          [
+            "论文 Table 3",
+            "Random（基线）",
+            "25%",
+            "25%",
+            "四选一随机；原表为 0–1 小数，本表统一换算为百分比"
+          ],
+          [
+            "论文 Table 3",
+            "GPT-4o（纯文本）",
+            "33%",
+            "33%",
+            "无视频输入"
+          ],
+          [
+            "论文 Table 3",
+            "Gemini 1.5 Pro",
+            "51%",
+            "50%",
+            "1fps"
+          ],
+          [
+            "论文 Table 3",
+            "InternVL-40B",
+            "55%",
+            "54%",
+            "8 帧"
+          ],
+          [
+            "论文 Table 3",
+            "GLM-4V-plus",
+            "54%",
+            "55%",
+            "30 帧"
+          ],
+          [
+            "论文 Table 3",
+            "Qwen2VL-72B",
+            "57%",
+            "58%",
+            "1fps"
+          ],
+          [
+            "论文 Table 3",
+            "TE Fusion（ours）",
+            "58%",
+            "58%",
+            "GLM-4V-9B，16 帧，压缩比 4"
+          ],
+          [
+            "官方榜单",
+            "Gemini-3-Pro-Preview",
+            "69.9%",
+            "70.4%",
+            "2025-12-05；Frames 未标注"
+          ],
+          [
+            "官方榜单",
+            "GPT-5.1",
+            "66.2%",
+            "66.2%",
+            "2025-11-12；Frames 未标注"
+          ],
+          [
+            "官方榜单",
+            "Gemini-2.5-Pro",
+            "65.8%",
+            "66.3%",
+            "2025-03-25；Frames 未标注"
+          ],
+          [
+            "官方榜单",
+            "Claude-Opus-4.5",
+            "未列出",
+            "65.9%",
+            "2025-11-25；Frames 未标注"
+          ],
+          [
+            "官方榜单",
+            "GLM-4.5V",
+            "61.42%",
+            "62.39%",
+            "2025-08-27；2fps；106B(A12B)"
+          ],
+          [
+            "官方榜单",
+            "Seed1.5-VL",
+            "58.81%",
+            "59.44%",
+            "2025-08-27；2fps"
+          ],
+          [
+            "官方榜单",
+            "TE Fusion",
+            "58%",
+            "58%",
+            "2024-11-25；16 帧；9B"
+          ],
+          [
+            "官方榜单",
+            "Qwen2-VL-72B",
+            "57%",
+            "58%",
+            "2024-11-25；1fps；72B"
+          ]
+        ]
+      },
+      "cite": [
+        "paper@Table 3",
+        "site@Leaderboard"
+      ]
+    }
+  }
+}

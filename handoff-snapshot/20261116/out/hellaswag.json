@@ -1,0 +1,670 @@
+{
+  "id": "hellaswag",
+  "name": "HellaSwag",
+  "full_name": "HellaSwag: Can a Machine Really Finish Your Sentence?（缩写自 Harder Endings, Longer contexts, and Low-shot Activities for Situations With Adversarial Generations；中文意译：机器真能续完你的句子吗）",
+  "aliases": [],
+  "status": "near-saturation",
+  "categories": [
+    "knowledge"
+  ],
+  "summary": "HellaSwag 是一套「四选一续写题」：给一段场景描述（来自 ActivityNet 视频字幕或 WikiHow 教程），从 4 个候选结尾里挑出人类真实写下的那一个，答对率就是分数。它对人类几乎白送（约 95.6%），发布时最强模型不到 48%。",
+  "interpretation": "高分说明模型能稳定分辨「人写的续写」和「机器生成但看着合理的续写」，也就是在给定场景里挑出最合理后续事件的能力强。但它不证明模型在建模世界状态：论文自己发现打乱候选结尾的词序只掉不到 10 个点，并提醒未来模型可能只靠表层模式就答对；而且这个刻度已经用完了——官网榜单最高分 95.3%（GPT-4 base 10-shot）与人类 95.6% 基本持平，2024 年 11 月起官方停止接收提交。",
+  "measures": [
+    {
+      "area": "ActivityNet 视频描述续写",
+      "focus": "示例：一个女人在屋外拿着水桶，狗绕着跑想躲洗澡，正解是「把狗弄湿，它又跑掉了」；错项由语言模型生成、经对抗过滤挑出",
+      "share": "测试集约 3.5K / 10K（约 35%）",
+      "format": "四选一；正解是视频的下一句真实字幕",
+      "cite": [
+        "paper@Table 1",
+        "paper@Figure 1"
+      ]
+    },
+    {
+      "area": "WikiHow 教程步骤续写",
+      "focus": "示例：「如何捉蜻蜓」给出一段操作说明，从 4 个后续步骤里挑真实的那一步；上下文最多 3 句，续写固定为 2 句",
+      "share": "测试集约 6.5K / 10K（约 65%）",
+      "format": "四选一；正解是教程里的下一步",
+      "cite": [
+        "paper@Table 1",
+        "paper@§4.2",
+        "site"
+      ]
+    },
+    {
+      "area": "In-domain 类别子集",
+      "focus": "训练集里出现过的活动 / 教程类别（如 Riding a bike），考察同分布下的区分能力",
+      "share": "测试集约 5K / 10K（50%）",
+      "format": "与整体一致：四选一",
+      "cite": [
+        "paper@Table 1",
+        "site"
+      ]
+    },
+    {
+      "area": "Zero-shot 类别子集",
+      "focus": "训练时没见过的类别，用来考模型能不能泛化到新情境",
+      "share": "测试集约 5K / 10K（50%）",
+      "format": "与整体一致：四选一",
+      "cite": [
+        "paper@Table 1",
+        "paper@§4.4"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "开放式生成能力：题目是四选一，模型只需给候选结尾打分或给出选项，不需要自己写出续写句子",
+      "cite": [
+        "paper@§5"
+      ]
+    },
+    {
+      "text": "常识推理之外的能力：没有代码、数学运算、多语言、长文档或工具调用，题目语言只有英文",
+      "cite": [
+        "paper@§7",
+        "dataset"
+      ]
+    },
+    {
+      "text": "对分布外场景的鲁棒性：作者明确说未来模型可能「只靠抓表层模式」就答对，因此分数不等价于真正理解常识",
+      "cite": [
+        "paper@§6.2"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 59950,
+    "splits": [
+      "train 39,905",
+      "validation 10,042",
+      "test 10,003"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "混合来源：ActivityNet 视频字幕与 WikiHow 教程段落的真实下一句作为正解，错误选项由语言模型生成后经对抗过滤与人工筛选",
+    "public_sample": true,
+    "totals": "官方数据集卡公布 train 39,905 + validation 10,042 + test 10,003，合计 59,950 题；论文写作时称共 70k 题（25k ActivityNet + 45k WikiHow 上下文），两者不一致，详见局限。测试集约 35% 来自 ActivityNet、65% 来自 WikiHow；按类别可见性又各切出 5K in-domain 与 5K zero-shot（两组有重叠，合计仍为 10K）。全部为英文四选一选择题。",
+    "cite": [
+      "dataset@Data Splits",
+      "paper@Table 1",
+      "paper@§1"
+    ],
+    "construction": [
+      {
+        "k": "取材",
+        "text": "ActivityNet Captions 提供带时间戳的视频字幕和活动类别标签（如 jumping rope）；另外从 WikiHow 抓取 80k 条上下文与后续段落，主题从「怎么折纸猫头鹰」到「怎么应对银行抢劫」。",
+        "cite": [
+          "paper@§4.1",
+          "paper@§4.2"
+        ]
+      },
+      {
+        "k": "生成候选错项",
+        "text": "用领域内数据训练的语言模型大规模过采样候选错误续写，再交给一个判别器集成去筛掉那些容易被判为「生成」的样本。",
+        "cite": [
+          "paper@§2"
+        ]
+      },
+      {
+        "k": "对抗过滤迭代",
+        "text": "每轮把数据随机切成 Dtrain 和 Dtest，判别器在 Dtrain 上学习区分真实与生成续写，然后把 Dtest 里容易被判对的生成续写替换成新的对抗样本，直到判别器精度收敛；最后再由人工剔掉看着太真实的对抗结尾。生成端试过一/二/三句长度，最终固定用两句续写。",
+        "cite": [
+          "paper@§2",
+          "paper@§4.2"
+        ]
+      },
+      {
+        "k": "人工校验",
+        "text": "人工验证时给标注者一段上下文和 6 个候选结尾（1 个真实 + 5 个对抗生成），被评为「像真的」的机器续写会被换掉；最后保留人工一致性最高的 25k 个 ActivityNet 上下文和 45k 个 WikiHow 上下文。ActivityNet 上还多做了几轮人工过滤，把人类表现从 60% 拉到 94%。",
+        "cite": [
+          "paper@§4.3"
+        ]
+      },
+      {
+        "k": "类别切分",
+        "text": "用 WikiHow 与 ActivityNet 自带的类别标签，为验证集和测试集各构造一个 5k 的 in-domain 子集和一个 5k 的 zero-shot 子集，用来分别衡量同分布与泛化表现。",
+        "cite": [
+          "paper@§4.4"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "accuracy",
+      "name": "准确率（四选一）",
+      "direction": "越高越好",
+      "description": "在 4 个候选结尾中选到正确结尾的题目占比；随机基线为 25%",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@Table 1 注",
+        "paper@Table 1"
+      ]
+    }
+  ],
+  "default_protocol": {
+    "raw": "官方口径：给定上下文和一个候选结尾，模型给该结尾打一个 logit，四个候选里分数最高的是预测；论文基线用四类交叉熵训练，人类基线由 5 名独立众包工人做同一道四选一题后多数投票得出，指标统一为准确率。",
+    "cite": [
+      "paper@§5"
+    ],
+    "variants": [
+      {
+        "text": "测试集 vs 验证集：官网榜单只收测试集成绩，而官网同时注明「大多数人一直用验证集」；两者题量都在 1 万左右但不是同一批题，分数不能混排。",
+        "cite": [
+          "site",
+          "paper@Table 1"
+        ]
+      },
+      {
+        "text": "微调 vs 少样本提示：榜单第一行是 GPT-4 base 10-shot（95.3%），榜上其余多为微调模型；提示样本数不同也会改变分数。",
+        "cite": [
+          "site"
+        ]
+      },
+      {
+        "text": "acc vs acc_norm：lm-evaluation-harness 的 hellaswag 任务同时输出两种指标，按候选结尾长度归一化后的 acc_norm 与 acc 数值不同。",
+        "cite": [
+          "harness"
+        ]
+      },
+      {
+        "text": "默认 split：harness 的任务配置里 validation_split 为 validation、test_split 为 null，即默认在验证集上评测，与官方榜单的测试集口径不同。",
+        "cite": [
+          "harness"
+        ]
+      },
+      {
+        "text": "子集口径：论文分别报告 overall / in-domain / zero-shot / ActivityNet / WikiHow 五组数字，只报其中一组不可与别人的另一组直接比。",
+        "cite": [
+          "paper@Table 1 注"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "arxiv-v1",
+      "date": "2019-05-19",
+      "label": "arXiv v1 发布（该编号至今只有 v1 一个版本）",
+      "cite": [
+        "paper"
+      ]
+    },
+    {
+      "id": "acl-2019",
+      "date": "2019-07-28",
+      "label": "论文收录于 ACL 2019（第 57 届 ACL 年会论文集）；官网引用条目给的年号为 2019",
+      "cite": [
+        "site"
+      ]
+    },
+    {
+      "id": "hellaswag-pro",
+      "date": "2025-02-17",
+      "label": "第三方发布双语鲁棒性变体 HellaSwag-Pro：11,200 题，用 7 类问题变体考中英文下的常识推理稳定性（ACL 2025 Findings）",
+      "cite": [
+        "pro@Submission history",
+        "pro@Abstract",
+        "pro@Comments"
+      ]
+    },
+    {
+      "id": "repo-takedown",
+      "date": "2026-09-14",
+      "label": "wikiHow 提出版权下架通知，官方代码仓库 rowanz/hellaswag 被 GitHub 封禁（日期取自该 DMCA 通知的文件名）",
+      "cite": [
+        "dmca"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "已饱和，刻度用完",
+      "impact": "官网榜单最高成绩是 2023-03-08 提交的 GPT-4 base 10-shot 95.3%，与人类 95.6% 基本持平；此后再无更高成绩，官方已于 2024 年 11 月关闭提交。当前主流模型在这个基准上普遍贴近人类，头部几名只差几个点。",
+      "severity": "高",
+      "response": "未见官方回应：官方没有发布更难的新版本，只保留了原榜单并关闭提交。",
+      "reader": "看到 90% 以上的 HellaSwag 分数不要当作强区分度信号；比较前沿模型请换更新或更难的基准。",
+      "cite": [
+        "site"
+      ]
+    },
+    {
+      "issue": "题目质量与构造效度受质疑",
+      "impact": "有分析称 HellaSwag 31% 的题干不合语法、85% 的题含有无意义的错误选项、8% 的题存在多个正确答案，研究者据此认为它不该用于模型评测；这与论文自己报告的「打乱候选结尾词序后 BERT 只掉不到 10 个点」指向同一类问题——分数可能来自表层线索而非常识。",
+      "severity": "高",
+      "response": "未见官方回应。原论文未披露题目质量的审计数字，官方仓库又因 DMCA 被下架，外部已无法核对原始构建脚本。",
+      "reader": "把 HellaSwag 分数当作单一筛选或排序依据有风险；高分段几个点的差距可能同时混有题目噪声。",
+      "cite": [
+        "blog",
+        "paper@§3.2",
+        "paper@§3.3",
+        "dmca"
+      ]
+    },
+    {
+      "issue": "版权下架导致官方仓库不可用",
+      "impact": "2026-09-14 wikiHow 提出版权下架通知，GitHub 封禁了官方仓库 rowanz/hellaswag；测试集约 65% 的题目来自 WikiHow 抓取段落，官方给出的许可标注为 MIT。",
+      "severity": "高",
+      "response": "Hugging Face 上的数据集副本仍可访问，许可信息仍标注 MIT；官方没有发布迁移或替换仓库的说明。",
+      "reader": "复现、再分发或长期依赖前，先确认当前还能访问哪个副本、许可是什么。",
+      "cite": [
+        "dmca",
+        "dataset@Licensing Information",
+        "paper@Table 1"
+      ]
+    },
+    {
+      "issue": "数据污染",
+      "impact": "第三方污染报告在 10,042 道测试题中检出 1,247 题（12.4%）与 2020.10–2023.10 的网络语料重叠，且绝大多数是题干与答案同时出现；同一报告显示模型在「脏」子集上分数更高，最高提升约 14 个点。Llama-2 自报的比例是 848/10042（8.4%）。",
+      "severity": "中",
+      "response": "未见 HellaSwag 官方回应；数据集仍公开可下载，官方没有提供防污染切分。",
+      "reader": "看到 95% 以上的分数，先问清是验证集还是测试集、有没有做污染过滤。",
+      "cite": [
+        "contamination@Table 1",
+        "contamination@Table 1 注",
+        "contamination@Abstract",
+        "contamination@§7.2"
+      ]
+    },
+    {
+      "issue": "对抗筛选带来的分布偏差",
+      "impact": "题目是按「难倒当时那几代判别器」挑出来的，早期分数被人为压到接近随机（BERT-Large 47.3%、随机 25%）；后续提升里有一部分是对这种题目分布的适应，作者也提醒模型可能靠表层模式答对。",
+      "severity": "中",
+      "response": "论文建议用更强的判别器迭代构造下一代基准；社区随后出现 HellaSwag-Pro 这类用 7 类变体测鲁棒性的派生基准。",
+      "reader": "不要把从 47% 到 95% 的涨幅当成同等幅度的常识能力增长，可同时看变体或扰动下的分数。",
+      "cite": [
+        "paper@§5",
+        "paper@§6.2",
+        "pro@Abstract"
+      ]
+    },
+    {
+      "issue": "题量口径不一致",
+      "impact": "论文称最终数据集共 70k 题（25k ActivityNet + 45k WikiHow 上下文），而官方数据集卡实际公布的三个 split 合计 59,950 题，差约 1 万。",
+      "severity": "低",
+      "response": "未见官方说明差异原因。",
+      "reader": "引用题量时区分「论文口径 70k」和「实际发布 59,950」。",
+      "cite": [
+        "paper@§1",
+        "paper@§4.3",
+        "dataset@Data Splits"
+      ]
+    }
+  ],
+  "notes": null,
+  "official_sources": [
+    {
+      "kind": "site",
+      "url": "https://rowanzellers.com/hellaswag/"
+    },
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/1905.07830"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/Rowan/hellaswag"
+    }
+  ],
+  "related_benchmarks": [
+    "mmlu",
+    "mmlu-pro",
+    "mmlu-redux",
+    "winogrande",
+    "drop",
+    "gpqa-index",
+    "arc-challenge"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-13",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "HellaSwag: Can a Machine Really Finish Your Sentence?（arXiv:1905.07830v1，2019-05-19）",
+        "url": "https://arxiv.org/abs/1905.07830",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "site",
+        "kind": "site",
+        "title": "rowanzellers.com/hellaswag 官网（含 HellaSwag Leaderboard）",
+        "url": "https://rowanzellers.com/hellaswag/",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "dataset",
+        "kind": "dataset",
+        "title": "Rowan/hellaswag（Hugging Face 数据集卡）",
+        "url": "https://huggingface.co/datasets/Rowan/hellaswag",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "harness",
+        "kind": "repo",
+        "title": "EleutherAI/lm-evaluation-harness · hellaswag 任务配置",
+        "url": "https://github.com/EleutherAI/lm-evaluation-harness/blob/main/lm_eval/tasks/hellaswag/hellaswag.yaml",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "contamination",
+        "kind": "paper",
+        "title": "An Open-Source Data Contamination Report for Large Language Models（arXiv:2310.17589v3）",
+        "url": "https://arxiv.org/abs/2310.17589",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "blog",
+        "kind": "blog",
+        "title": "What Training Dataset Transparency Mandates Hide（TechPolicy.Press，2026-10-29）",
+        "url": "https://techpolicy.press/what-training-dataset-transparency-mandates-hide",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "dmca",
+        "kind": "docs",
+        "title": "github/dmca · 2026-09-14-wikihow.md（wikiHow 版权下架通知）",
+        "url": "https://github.com/github/dmca/blob/master/2026/09/2026-09-14-wikihow.md",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "pro",
+        "kind": "paper",
+        "title": "HellaSwag-Pro: A Large-Scale Bilingual Benchmark for Evaluating the Robustness of LLMs in Commonsense Reasoning（arXiv:2502.11393v2）",
+        "url": "https://arxiv.org/abs/2502.11393",
+        "accessed": "2026-11-13"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "University of Washington（Paul G. Allen School of Computer Science & Engineering）× Allen Institute for Artificial Intelligence（AI2）",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      "first_release": {
+        "v": "2019-05-19（arXiv v1）",
+        "cite": [
+          "paper"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "paper@Abstract",
+        "site",
+        "paper@§1"
+      ],
+      "interpretation": [
+        "paper@§6.2",
+        "site",
+        "paper@§3.2"
+      ]
+    },
+    "problem": {
+      "text": "SWAG 被 BERT 迅速打到 86% 以上、接近人类水平，作者要判断这是否说明机器真的会做常识推理。HellaSwag 的做法是换更强的生成器（GPT）和判别器（BERT-Large）把对抗过滤重做一遍，并把上下文拉长、复杂度调高，落到一个「对人类荒谬、对模型容易上当」的区间，再看模型离开同分布训练数据后还能不能答对。",
+      "cite": [
+        "paper@§1",
+        "paper@§4"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机猜测基线",
+        "value": "25.0%",
+        "note": "四选一；论文 Table 1 的 Chance 行与官网榜单的 Random Performance 行都是 25.0。",
+        "cite": [
+          "site"
+        ]
+      },
+      {
+        "label": "人类表现",
+        "value": "95.6%",
+        "note": "5 名众包工人多数投票；分数据源为 ActivityNet 94.0、WikiHow 96.5。",
+        "cite": [
+          "site"
+        ]
+      },
+      {
+        "label": "论文发布时最好",
+        "value": "47.3%",
+        "note": "BERT-Large，测试集 overall。它同时就是对抗过滤用的判别器——把数据集对 BERT 变得对抗，顺带也对其他模型变得对抗（ESIM+ELMo 在 SWAG 上 59.3%，在 HellaSwag 上只有 33.3%）。",
+        "cite": [
+          "paper@§5"
+        ]
+      },
+      {
+        "label": "官网榜单最高",
+        "value": "95.3%",
+        "note": "GPT-4 base 10-shot，2023-03-08 提交，测试集 overall；已与人类 95.6% 基本持平，此后再无更高提交。",
+        "cite": [
+          "site"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      },
+      {
+        "label": "污染参考线",
+        "value": "测试集约 12.4% 与网络语料重叠",
+        "note": "第三方报告在 10,042 道测试题中检出 1,247 题（12.4%）重叠（检索窗口 2020.10–2023.10），其中绝大多数题干与答案同时出现；Llama-2 自报 848/10042（8.4%）。这不是官方上限，只是提示分数里可能混有记忆成分。",
+        "cite": [
+          "contamination@Table 1",
+          "contamination@§7.2"
+        ]
+      },
+      {
+        "label": "作者当年的算力外推（历史参考）",
+        "value": "约 10^9 GPU 小时",
+        "note": "论文 Figure 12 按对数线性外推，认为不做算法或算力改进就要达到人类水平需要 10^9 GPU 小时（10 万 GPU 年）。这是 2019 年的估计，与后来的实际进展不符，只说明当时作者认为这个基准还有很长一段路。",
+        "cite": [
+          "paper@Figure 12"
+        ]
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 95% 以上的 HellaSwag 分数当成「常识推理很强」的证据——题目对人类几乎白送，头部模型已追平人类，这把刻度已经拉不开差距。",
+        "cite": [
+          "site"
+        ]
+      },
+      {
+        "text": "把官网榜单成绩和自己的评测成绩直接比——榜单只收测试集且以微调模型为主，社区更常用验证集加少样本提示，harness 默认还在验证集上跑。",
+        "cite": [
+          "site",
+          "harness"
+        ]
+      },
+      {
+        "text": "把 acc 和 acc_norm 混在一张表里比——harness 同时输出这两个指标，数值不一样。",
+        "cite": [
+          "harness"
+        ]
+      },
+      {
+        "text": "以为干扰项都是「语法正确的错句」——有分析称 85% 的题含有无意义错项、31% 的题干不合语法、8% 的题有多个正确答案。",
+        "cite": [
+          "blog"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "University of Washington（Paul G. Allen School of Computer Science & Engineering）与 Allen Institute for Artificial Intelligence（AI2）",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "Rowan Zellers、Ari Holtzman、Yonatan Bisk、Ali Farhadi、Yejin Choi",
+        "cite": [
+          "site",
+          "paper@作者署名"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2019-05-19 arXiv v1 首发；论文收录于 ACL 2019（第 57 届 ACL 年会论文集）；2024-11 官网关闭榜单提交；2026-09-14 官方仓库因 wikiHow 的 DMCA 通知被 GitHub 封禁",
+        "cite": [
+          "paper",
+          "site",
+          "dmca"
+        ]
+      },
+      {
+        "k": "名字由来",
+        "v": "HellaSwag 是 Harder Endings, Longer contexts, and Low-shot Activities for Situations With Adversarial Generations 的缩写（论文脚注原文写作 Lowshot）",
+        "cite": [
+          "paper@脚注 1"
+        ]
+      },
+      {
+        "k": "前身与差异",
+        "v": "前身是 2018 年的 SWAG（同为四选一视频字幕续写）。SWAG 的生成器是两层 LSTM、判别器较浅，BERT 很快打到 86% 以上；HellaSwag 改用 GPT 生成、BERT-Large 做判别器重做对抗过滤，并新增 WikiHow 作为第二数据源",
+        "cite": [
+          "paper@§2",
+          "paper@§1",
+          "paper@§4"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "数据集在 Hugging Face（Rowan/hellaswag，许可标注 MIT）；评测代码所在的官方仓库 github.com/rowanz/hellaswag 已因 DMCA 被封禁；第三方 lm-evaluation-harness 的 hellaswag 任务默认在验证集上评，指标为 acc 与 acc_norm",
+        "cite": [
+          "dataset@Licensing Information",
+          "dmca",
+          "harness"
+        ]
+      },
+      {
+        "k": "派生基准",
+        "v": "HellaSwag-Pro（2025-02-17，ACL 2025 Findings）用 7 类问题变体构造了 11,200 道中英双语题，专门测模型是「理解常识」还是「记住了表达模式」",
+        "cite": [
+          "pro@Submission history",
+          "pro@Abstract",
+          "pro@Comments"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-13",
+        "columns": [
+          "来源",
+          "模型",
+          "测试集 overall 准确率",
+          "口径"
+        ],
+        "rows": [
+          [
+            "论文 Table 1",
+            "BERT-Large",
+            "47.3%",
+            "测试集 overall（2019 年论文报告的最好成绩）"
+          ],
+          [
+            "论文 Table 1",
+            "ESIM+ELMo",
+            "33.3%",
+            "测试集 overall"
+          ],
+          [
+            "官网榜单",
+            "Human Performance（Zellers et al. '19）",
+            "95.6%",
+            "测试集 overall；榜单参考行，非排名"
+          ],
+          [
+            "官网榜单",
+            "GPT4 base 10-shot",
+            "95.3%",
+            "测试集 overall；2023-03-08 提交，榜单最高"
+          ],
+          [
+            "官网榜单",
+            "ALUM（MSR）",
+            "85.6%",
+            "测试集 overall"
+          ],
+          [
+            "官网榜单",
+            "RoBERTa（Facebook AI）",
+            "85.2%",
+            "测试集 overall"
+          ],
+          [
+            "官网榜单",
+            "G-DAug-inf",
+            "83.7%",
+            "测试集 overall"
+          ],
+          [
+            "官网榜单",
+            "HighOrderGN + RoBERTa",
+            "82.2%",
+            "测试集 overall"
+          ],
+          [
+            "官网榜单",
+            "Grover-Mega",
+            "75.4%",
+            "测试集 overall"
+          ],
+          [
+            "官网榜单",
+            "Grover-Large",
+            "57.2%",
+            "测试集 overall"
+          ],
+          [
+            "官网榜单",
+            "BERT-Large",
+            "47.3%",
+            "测试集 overall"
+          ],
+          [
+            "官网榜单",
+            "GPT",
+            "41.7%",
+            "测试集 overall"
+          ],
+          [
+            "官网榜单",
+            "BERT-Base",
+            "40.5%",
+            "测试集 overall"
+          ],
+          [
+            "官网榜单",
+            "LSTM+BERT",
+            "36.2%",
+            "测试集 overall"
+          ],
+          [
+            "官网榜单",
+            "Random Performance",
+            "25.0%",
+            "随机基线"
+          ]
+        ]
+      },
+      "cite": [
+        "site",
+        "paper@§5"
+      ]
+    }
+  }
+}

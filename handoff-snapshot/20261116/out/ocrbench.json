@@ -1,0 +1,686 @@
+{
+  "id": "ocrbench",
+  "name": "OCRBench",
+  "full_name": "OCRBench: On the Hidden Mystery of OCR in Large Multimodal Models",
+  "aliases": [],
+  "status": "near-saturation",
+  "categories": [
+    "multimodal"
+  ],
+  "summary": "面向大型多模态模型的 OCR 综合评测：论文完整测试覆盖 29 个数据集，评测集本体是 1,000 道经人工筛选与校正的问答对，分成文本识别、场景文本 VQA、文档 VQA、关键信息抽取、手写数学表达识别五类，得分累加满分 1000。2023 年 5 月发布，2024 年 12 月被 Science China Information Sciences 接收。",
+  "interpretation": "OCRBench 总分（0–1000）衡量的是「常规文本读取」的综合水平：文本识别 300 题、场景文本 VQA 200 题、文档 VQA 200 题、KIE 200 题，只有 100 题考手写数学表达。头部模型已进入 85–90 分区间（论文汇总表最高 852，后继论文记录 Qwen2.5-VL 88.8%），论文本身也判断该基准已快速饱和；因此 90 分上下主要说明常规文本读取稳定，区分度集中在难例、手写与指令遵循。本站账本另登记 Kimi K2.5 视觉协议读 92.3。",
+  "measures": [
+    {
+      "area": "文本识别",
+      "focus": "常规、不规则、艺术、手写、数字串、非语义六类文本图像，每类 50 张共 300 张",
+      "share": "30%（300 / 1000）",
+      "format": "问「What is written in the image」，判据是标准答案是否出现在模型输出里",
+      "cite": [
+        "arxiv-2305-07895@附录 A",
+        "arxiv-2305-07895@§3.1"
+      ]
+    },
+    {
+      "area": "场景文本 VQA",
+      "focus": "STVQA、TextVQA、ESTVQA(EN)、OCRVQA 四个场景文本数据集，各 50 题",
+      "share": "20%（200 / 1000）",
+      "format": "按任务配提示词，如数字串问「What is the number in the image?」",
+      "cite": [
+        "arxiv-2305-07895@附录 A",
+        "arxiv-2305-07895@§3.1"
+      ]
+    },
+    {
+      "area": "文档 VQA",
+      "focus": "DocVQA、ChartQA(Aug.)、ChartQA(Hum.)、InfoVQA 四个文档与图表数据集，各 50 题",
+      "share": "20%（200 / 1000）",
+      "format": "要求模型直接引用图中文字作答，考察细粒度文档阅读",
+      "cite": [
+        "arxiv-2305-07895@附录 A",
+        "arxiv-2305-07895@§3.3"
+      ]
+    },
+    {
+      "area": "关键信息抽取（KIE）",
+      "focus": "SROIE 67 题、FUNSD 66 题、POIE 67 题，按字段名提问抽取收据/表单中的值",
+      "share": "20%（200 / 1000）",
+      "format": "SROIE 用「公司/日期/地址/总额」四类自然语言问句；FUNSD 与 POIE 用「What is the value for '{key}'?」",
+      "cite": [
+        "arxiv-2305-07895@附录 A",
+        "arxiv-2305-07895@§3.1"
+      ]
+    },
+    {
+      "area": "手写数学表达识别（HMER）",
+      "focus": "HME100k 抽 100 张手写数学表达式图像",
+      "share": "10%（100 / 1000）",
+      "format": "要求用 LaTeX 写出图中的公式，考结构化输出而非自由文本",
+      "cite": [
+        "arxiv-2305-07895@附录 A",
+        "arxiv-2305-07895@§3.1"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "文本检测与文字定位：不要求给出文字框坐标，论文 §4 把检测类任务明确列为待补缺口。",
+      "cite": [
+        "arxiv-2305-07895@§4 Future Work"
+      ]
+    },
+    {
+      "text": "多语种文档与多场景拍摄文本：论文 §4 自述这两类覆盖不足；附录 A 只按任务给出抽样数量，没有逐题标注语言。",
+      "cite": [
+        "arxiv-2305-07895@§4 Future Work",
+        "arxiv-2305-07895@附录 A"
+      ]
+    },
+    {
+      "text": "自由文本生成质量与非 OCR 类视觉推理（通用场景推理、细粒度计数等）：判据只看标准答案是否出现在输出中。",
+      "cite": [
+        "arxiv-2305-07895@§3.1 Evaluation Metric and Evaluation Dataset"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 1000,
+    "splits": [
+      "单一评测集 1,000 题（Hugging Face 上只有 test split，1k rows，无训练/验证拆分）"
+    ],
+    "languages": [
+      "en",
+      "zh"
+    ],
+    "source_type": "multi-dataset OCR compilation（从论文测试涉及的 29 个数据集抽样，开源）",
+    "public_sample": true,
+    "totals": "1,000 题 = 文本识别 300 + 场景文本 VQA 200 + 文档 VQA 200 + KIE 200 + HMER 100；论文完整测试覆盖 29 个数据集，这 1,000 题按附录 A 从中抽样；Hugging Face 上仅 test split、共 1,000 行、约 67.6 MB",
+    "cite": [
+      "arxiv-2305-07895@附录 A",
+      "hf-ocrbench",
+      "ocrbench-readme@Data"
+    ],
+    "construction": [
+      {
+        "k": "组成与抽样",
+        "text": "五类任务共 1,000 题：文本识别 300（六类各 50）、场景文本 VQA 200（四个数据集各 50）、文档 VQA 200（四个数据集各 50）、KIE 200（SROIE 67 / FUNSD 66 / POIE 67）、HMER 100（HME100k）。",
+        "cite": [
+          "arxiv-2305-07895@附录 A"
+        ]
+      },
+      {
+        "k": "判据统一",
+        "text": "所有任务共用一个判据：标准答案是否出现在模型输出里。为降低误判，过滤掉答案少于 4 个符号的题目，并从部分大数据集中抽 3,000 题进入完整测试。",
+        "cite": [
+          "arxiv-2305-07895@§3.1 Evaluation Metric and Evaluation Dataset"
+        ]
+      },
+      {
+        "k": "提示词",
+        "text": "英文识别统一用「What is written in the image」，数字串用「What is the number in the image?」，手写数学表达要求输出 LaTeX；KIE 按字段名提问（SROIE 问公司/日期/地址/总额，FUNSD 与 POIE 问「What is the value for '{key}'?」）。",
+        "cite": [
+          "arxiv-2305-07895@§3.1"
+        ]
+      },
+      {
+        "k": "答案清洗",
+        "text": "1,000 个问答对全部经人工筛选与校正，并为错误答案提供备选正确候选；KIE 任务另加「Answer this question using the text in the image directly.」限制输出格式。",
+        "cite": [
+          "arxiv-2305-07895@§3.3",
+          "repo-multimodalocr@OCRBench"
+        ]
+      },
+      {
+        "k": "来源语言",
+        "text": "论文测试涉及 29 个数据集，其中包含 ReCTS、ESTVQA(CN) 等中文集；Hugging Face 数据预览里也能看到 ctw（中文场景文本）行，但附录 A 未逐题标注语言。",
+        "cite": [
+          "arxiv-2305-07895@附录 A",
+          "hf-ocrbench"
+        ]
+      },
+      {
+        "k": "公开形态",
+        "text": "Hugging Face 数据集 echo840/OCRBench 只含 test split、1,000 行；仓库发布的是 Table 3 用的测试数据与图像，评测可用仓库脚本、VLMEvalKit 或 lmms-eval。",
+        "cite": [
+          "hf-ocrbench",
+          "ocrbench-readme@Data",
+          "ocrbench-readme@Evaluation"
+        ]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "每张图配一条固定任务提示词，模型作答后按统一判据判断「标准答案是否出现在输出中」；为降低误判，答案少于 4 个符号的题目被过滤，部分大数据集只抽 3,000 题进入完整测试。最终分数是五类任务得分累加，满分 1000（等同于答对率百分比乘 10）。",
+    "cite": [
+      "arxiv-2305-07895@§3.1 Evaluation Metric and Evaluation Dataset",
+      "arxiv-2305-07895@Table 3"
+    ],
+    "variants": [
+      {
+        "text": "原始分 vs 百分制：论文 Table 3 / Table 4 用 0–1000 的答对题数（Gemini 659），后继论文改用百分制报同一份 1,000 题（Qwen2.5-VL 88.8%），两种口径不能排进同一个榜。",
+        "cite": [
+          "arxiv-2305-07895@Table 3",
+          "arxiv-2501-00321@引言"
+        ]
+      },
+      {
+        "text": "输入分辨率：论文附录 B 指出多数被测 LMM 的输入限制在 224 或 336，少数模型到 896 甚至 2560，直接影响文档 VQA 与 KIE 的分数，跨模型比较前要先看分辨率。",
+        "cite": [
+          "arxiv-2305-07895@附录 B"
+        ]
+      },
+      {
+        "text": "复现通道：仓库自带评测脚本，也支持 VLMEvalKit 与 lmms-eval；不同 harness 的提示词与判据实现细节可能与论文略有出入。",
+        "cite": [
+          "ocrbench-readme@Evaluation"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "ocrbench-total",
+      "name": "OCRBench 总分（0–1000）",
+      "direction": "越高越好",
+      "description": "五类任务答对题数累加，满分 1000，等同于答对率百分比乘 10",
+      "range": [
+        0,
+        1000
+      ],
+      "unit": "题",
+      "cite": [
+        "arxiv-2305-07895@Table 3",
+        "arxiv-2305-07895@§3.1 Evaluation Metric and Evaluation Dataset"
+      ]
+    },
+    {
+      "id": "component-score",
+      "name": "五类任务分项得分",
+      "direction": "越高越好",
+      "description": "文本识别、场景文本 VQA、文档 VQA、KIE、HMER 各自答对题数，上限分别为 300 / 200 / 200 / 200 / 100，累加即总分；用于定位短板（如 GPT4V 与 Gemini 的 HMER 只有 9 和 8）",
+      "range": [
+        0,
+        1000
+      ],
+      "unit": "题",
+      "cite": [
+        "arxiv-2305-07895@Table 3"
+      ]
+    }
+  ],
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2023-05-13",
+      "label": "arXiv 首发（Hugging Face 数据集卡片标注 Published May 13, 2023），1,000 题、论文测试覆盖 29 个数据集",
+      "cite": [
+        "hf-ocrbench",
+        "arxiv-2305-07895@摘要"
+      ]
+    },
+    {
+      "id": "v7",
+      "date": "2024-08-26",
+      "label": "arXiv v7 修订：本档案核验所用版本，Table 4 汇总各模型最新成绩",
+      "cite": [
+        "arxiv-2305-07895"
+      ]
+    },
+    {
+      "id": "journal",
+      "date": "2024-12-11",
+      "label": "被 Science China Information Sciences 接收（期刊版 DOI 10.1007/s11432-024-4235-6）",
+      "cite": [
+        "repo-multimodalocr@News",
+        "repo-multimodalocr@Citation"
+      ]
+    },
+    {
+      "id": "v2",
+      "date": "2024-12-31",
+      "label": "同团队发布后继基准 OCRBench v2（31 场景 / 23 任务 / 1 万题，另设 1,500 条私测集），v1 此后不再扩充",
+      "cite": [
+        "repo-multimodalocr@News",
+        "arxiv-2501-00321@Table 1"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "规模小、单项样本量低",
+      "impact": "1,000 题分摊到 5 类 17 个来源数据集，多数来源只有 50 题（KIE 三个来源 66–67 题）；单个样本出错会直接推动总分，几个点的差距可能只是噪声。",
+      "severity": "中",
+      "response": "团队以 OCRBench v2 扩到 1 万题并加入私测集；v1 论文本身未修订。",
+      "reader": "两个模型差 10 分以内不要当成能力差距；先确认是否同一 harness、同一提示词。",
+      "cite": [
+        "arxiv-2305-07895@附录 A",
+        "arxiv-2501-00321@Table 1",
+        "arxiv-2501-00321@贡献列表"
+      ]
+    },
+    {
+      "issue": "已接近饱和",
+      "impact": "论文 Table 4 汇总的最好成绩 852 / 1000（85.2%）；后继论文记录 Qwen2.5-VL 已达 88.8%，并据此判断该基准「数据多样性与数量有限、容易快速饱和」。",
+      "severity": "高",
+      "response": "团队 2024-12-31 发布 OCRBench v2（31 场景、23 任务、更高难例占比），v1 不再扩充。",
+      "reader": "v1 拿到 90 分上下主要说明常规文本读取稳定；要区分难例能力请看 OCRBench v2。",
+      "cite": [
+        "arxiv-2305-07895@Table 4",
+        "arxiv-2501-00321@引言",
+        "repo-multimodalocr@News"
+      ]
+    },
+    {
+      "issue": "任务覆盖有缺口",
+      "impact": "论文 §4 自述缺少多语种文档、多场景拍摄文本以及文本检测类任务；因此高分不代表能定位文字或处理中文文档。",
+      "severity": "中",
+      "response": "论文把这几项列为未来工作；后继 OCRBench v2 加入文本定位等任务（31 场景 / 23 任务）。",
+      "reader": "需要文字定位或中文文档能力时，换用带定位的基准（如 OCRBench v2、OmniDocBench）。",
+      "cite": [
+        "arxiv-2305-07895@§4 Future Work",
+        "arxiv-2501-00321@Table 1"
+      ]
+    },
+    {
+      "issue": "评测口径不完全一致",
+      "impact": "GPT4V 因 OpenAI 安全审核拒答了 84 张图，实际作答题目少于其他模型；论文附录 B 指出输入分辨率 224 / 336 与 896 / 2560 的模型在文档 VQA 与 KIE 上表现差异明显；lmms-eval 与 VLMEvalKit 各自实现判据，细节可能与论文有出入。",
+      "severity": "中",
+      "response": "论文公开了提示词与判据，仓库提供评测脚本并推荐用 VLMEvalKit / lmms-eval 复现。",
+      "reader": "比较前先确认 harness、提示词与输入分辨率；GPT4V 的绝对分要打折看。",
+      "cite": [
+        "arxiv-2305-07895@§3.3",
+        "arxiv-2305-07895@附录 B",
+        "ocrbench-readme@Evaluation"
+      ]
+    },
+    {
+      "issue": "污染与刷榜风险",
+      "impact": "1,000 题及答案可公开下载（Hugging Face / Google Drive），可能进入训练数据或被针对性调优，使公开集分数偏高；论文没有评估污染，也没有留存集。",
+      "severity": "中",
+      "response": "v1 论文未提出缓解措施；同团队到 OCRBench v2 才引入 1,500 条从零标注的私测集。",
+      "reader": "看到接近满分的结果，优先找在 OCRBench v2 或私测集上的复现。",
+      "cite": [
+        "ocrbench-readme@Data",
+        "hf-ocrbench",
+        "arxiv-2501-00321@贡献列表"
+      ]
+    }
+  ],
+  "default_protocol_note": null,
+  "notes": "Kimi K2.5 附录视觉表登记行（对照 GPT-5.2 80.7* / Claude 4.5 Opus 86.5* / Gemini 3 Pro 90.3* / Qwen3-VL 87.5），是 interpretation 与本站账本取值的来源。",
+  "official_sources": [
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2305.07895"
+    },
+    {
+      "kind": "github",
+      "url": "https://github.com/yuliang-liu/multimodalocr"
+    },
+    {
+      "kind": "site",
+      "url": "https://huggingface.co/datasets/echo840/OCRBench"
+    }
+  ],
+  "related_benchmarks": [
+    "ocr-bench-v2",
+    "omnidocbench",
+    "docvqa",
+    "infovqa",
+    "charxiv-reasoning"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "arxiv-2305-07895",
+        "kind": "paper",
+        "title": "OCRBench: on the hidden mystery of OCR in large multimodal models（arXiv:2305.07895v7）",
+        "url": "https://arxiv.org/abs/2305.07895",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "arxiv-2501-00321",
+        "kind": "paper",
+        "title": "OCRBench v2: An Improved Benchmark for Evaluating Large Multimodal Models in Visual Text Localization and Reasoning（arXiv:2501.00321）",
+        "url": "https://arxiv.org/abs/2501.00321",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "repo-multimodalocr",
+        "kind": "repo",
+        "title": "yuliang-liu/multimodalocr（OCRBench 官方仓库，含 News 与引用信息）",
+        "url": "https://github.com/yuliang-liu/multimodalocr",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "hf-ocrbench",
+        "kind": "dataset",
+        "title": "echo840/OCRBench（Hugging Face 数据集卡片）",
+        "url": "https://huggingface.co/datasets/echo840/OCRBench",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "ocrbench-readme",
+        "kind": "docs",
+        "title": "OCRBench 仓库 README（数据与评测说明）",
+        "url": "https://github.com/yuliang-liu/multimodalocr/tree/main/OCRBench",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "华中科技大学（HUST）主导，合作方含 Microsoft Research Redmond、北京科技大学、中科院自动化所、华南理工大学；通讯作者 Xiang Bai",
+        "cite": [
+          "arxiv-2305-07895@作者署名"
+        ]
+      },
+      "first_release": {
+        "v": "2023-05-13（arXiv 首发；Hugging Face 数据集卡片标注 Published May 13, 2023）",
+        "cite": [
+          "hf-ocrbench",
+          "arxiv-2305-07895"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "arxiv-2305-07895@摘要",
+        "arxiv-2305-07895@附录 A",
+        "repo-multimodalocr@News"
+      ],
+      "interpretation": [
+        "arxiv-2305-07895@Table 3",
+        "arxiv-2305-07895@Table 4",
+        "arxiv-2501-00321@引言"
+      ]
+    },
+    "problem": {
+      "text": "当时评测多模态模型的榜单（MMBench、MME 等）主要用是非题和选择题，只能考「知不知道」，没法考「读不读得对图里的字」；同时主流 LMM 的输入分辨率只有 224×224，在 OCR 数据上的表现几乎没有被系统测过。OCRBench 想把散落在各处的 OCR 任务收成一个统一判据的 1,000 题评测，回答「LMM 的 OCR 能力到底行不行、差在哪」。",
+      "cite": [
+        "arxiv-2305-07895@§2.1",
+        "arxiv-2305-07895@§3.1 Evaluation Metric and Evaluation Dataset"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "论文发布时最好（论文 Table 3，作者自测）",
+        "value": "659 / 1000（65.9%）",
+        "note": "Gemini：文本识别 215 + 场景 VQA 174 + 文档 VQA 128 + KIE 134 + HMER 8；同表 GPT4V 645、Monkey 514。GPT4V 有 84 张图因安全审核拒答。",
+        "cite": [
+          "arxiv-2305-07895@Table 3",
+          "arxiv-2305-07895@§3.3"
+        ]
+      },
+      {
+        "label": "论文汇总榜最高（论文 Table 4）",
+        "value": "852 / 1000（85.2%）",
+        "note": "MiniCPM-V2.6（OpenBMB），第二 InternVL2-Llama3-76B 842。该表由作者从其他论文汇总而来，不是作者统一口径重跑的。",
+        "cite": [
+          "arxiv-2305-07895@Table 4"
+        ]
+      },
+      {
+        "label": "后继论文记录的同榜成绩",
+        "value": "88.8%（≈ 888 / 1000）",
+        "note": "OCRBench v2 论文记录 Qwen2.5-VL 在 OCRBench 上 88.8%，并据此论证该基准已快速饱和；同段给出 DocVQA 96.4%（人类 98.1%）作对照。",
+        "cite": [
+          "arxiv-2501-00321@引言"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      },
+      {
+        "label": "人类基线",
+        "value": "论文未给出",
+        "note": "v1 论文没有报告人类在 OCRBench 上的成绩；只给了各数据集上专用监督方法的 SOTA 作参照（NST 上 LMM 平均掉 57.0%，而专用识别方法只掉约 4.6%）。",
+        "cite": [
+          "arxiv-2305-07895@Table 1",
+          "arxiv-2305-07895@§3.2"
+        ]
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 0–1000 的原始总分当成百分制：论文 Table 3 的 659 是答对题数，等同 65.9%；后继论文用 88.8% 报同一份 1,000 题，两种口径不能混着排。",
+        "cite": [
+          "arxiv-2305-07895@Table 3",
+          "arxiv-2501-00321@引言"
+        ]
+      },
+      {
+        "text": "把高分理解成「能定位文字」：v1 不考文本检测与定位，论文 §4 明确把这类任务列为待补缺口。",
+        "cite": [
+          "arxiv-2305-07895@§4 Future Work"
+        ]
+      },
+      {
+        "text": "把高分理解成「通用模型已经超越专用 OCR」：论文结论说与领域专用监督方法仍有显著差距，针对性技术仍然必要。",
+        "cite": [
+          "arxiv-2305-07895@§5 Conclusion"
+        ]
+      },
+      {
+        "text": "把 GPT4V 的绝对分当稳定可比：它因 OpenAI 安全审核拒答了 84 张图，实际作答题目少于其他模型。",
+        "cite": [
+          "arxiv-2305-07895@§3.3"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "华中科技大学（HUST）主导，合作方含 Microsoft Research Redmond、北京科技大学、中科院自动化所、华南理工大学；通讯作者 Xiang Bai",
+        "cite": [
+          "arxiv-2305-07895@作者署名"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "Yuliang Liu、Zhang Li、Mingxin Huang、Biao Yang、Wenwen Yu、Chunyuan Li、Xucheng Yin、Cheng-lin Liu、Lianwen Jin、Xiang Bai",
+        "cite": [
+          "repo-multimodalocr@OCRBench"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2023-05-13 arXiv 首发 → 2024-02-25 进 VLMEvalKit → 2024-03-26 进 lmms-eval → 2024-12-11 被 Science China Information Sciences 接收 → 2024-12-31 团队发布 OCRBench v2 → 2025-09-18 OCRBench v2 中 NeurIPS 2025 Datasets & Benchmarks Track",
+        "cite": [
+          "hf-ocrbench",
+          "repo-multimodalocr@News"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "1,000 题在 Hugging Face（echo840/OCRBench，仅 test split）与仓库提供的下载渠道；评测脚本在仓库 OCRBench/scripts，也可用 VLMEvalKit 或 lmms-eval。",
+        "cite": [
+          "hf-ocrbench",
+          "ocrbench-readme@Data",
+          "ocrbench-readme@Evaluation"
+        ]
+      },
+      {
+        "k": "生态采用",
+        "v": "被 VLMEvalKit（2024-02）与 lmms-eval（2024-03）收录；团队仓库另维护 MDPBench 与 OCRBench v2 榜单，OCRBench v2 于 2025-09 中 NeurIPS 2025 Datasets & Benchmarks Track。",
+        "cite": [
+          "repo-multimodalocr@News",
+          "ocrbench-readme@Data"
+        ]
+      },
+      {
+        "k": "后继版本",
+        "v": "OCRBench v2（arXiv:2501.00321）：31 场景 / 23 任务 / 1 万条人工核验问答对，另设 1,500 条从零标注的私测集；2025-09 中 NeurIPS 2025 Datasets & Benchmarks Track。",
+        "cite": [
+          "arxiv-2501-00321@Table 1",
+          "arxiv-2501-00321@贡献列表",
+          "repo-multimodalocr@News"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2024-08-26",
+        "columns": [
+          "来源",
+          "模型",
+          "总分（/1000）",
+          "文本识别（/300）",
+          "场景文本 VQA（/200）",
+          "文档 VQA（/200）",
+          "KIE（/200）",
+          "HMER（/100）"
+        ],
+        "rows": [
+          [
+            "论文 Table 3",
+            "Gemini",
+            "659",
+            "215",
+            "174",
+            "128",
+            "134",
+            "8"
+          ],
+          [
+            "论文 Table 3",
+            "GPT4V",
+            "645",
+            "167",
+            "163",
+            "146",
+            "160",
+            "9"
+          ],
+          [
+            "论文 Table 3",
+            "Monkey",
+            "514",
+            "174",
+            "161",
+            "91",
+            "88",
+            "0"
+          ],
+          [
+            "论文 Table 3",
+            "mPLUG-Owl2",
+            "366",
+            "153",
+            "153",
+            "41",
+            "19",
+            "0"
+          ],
+          [
+            "论文 Table 3",
+            "LLaVAR",
+            "346",
+            "186",
+            "122",
+            "25",
+            "13",
+            "0"
+          ],
+          [
+            "论文 Table 3",
+            "LLaVA1.5-13B",
+            "331",
+            "176",
+            "129",
+            "19",
+            "7",
+            "0"
+          ],
+          [
+            "论文 Table 3",
+            "LLaVA1.5-7B",
+            "297",
+            "160",
+            "117",
+            "15",
+            "5",
+            "0"
+          ],
+          [
+            "论文 Table 3",
+            "mPLUG-Owl",
+            "297",
+            "172",
+            "104",
+            "18",
+            "3",
+            "0"
+          ],
+          [
+            "论文 Table 3",
+            "BLIVA",
+            "291",
+            "165",
+            "103",
+            "22",
+            "1",
+            "0"
+          ],
+          [
+            "论文 Table 3",
+            "InstructBLIP",
+            "276",
+            "168",
+            "93",
+            "14",
+            "1",
+            "0"
+          ],
+          [
+            "论文 Table 3",
+            "BLIP2",
+            "235",
+            "154",
+            "71",
+            "10",
+            "0",
+            "0"
+          ],
+          [
+            "论文 Table 3",
+            "MiniGPT4V2",
+            "157",
+            "124",
+            "29",
+            "4",
+            "0",
+            "0"
+          ],
+          [
+            "论文 Table 4",
+            "MiniCPM-V2.6",
+            "852",
+            "—",
+            "—",
+            "—",
+            "—",
+            "—"
+          ],
+          [
+            "论文 Table 4",
+            "InternVL2-Llama3-76B",
+            "842",
+            "—",
+            "—",
+            "—",
+            "—",
+            "—"
+          ]
+        ]
+      },
+      "cite": [
+        "arxiv-2305-07895@Table 3",
+        "arxiv-2305-07895@Table 4"
+      ]
+    }
+  }
+}

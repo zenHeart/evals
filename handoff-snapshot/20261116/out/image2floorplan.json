@@ -1,0 +1,448 @@
+{
+  "id": "image2floorplan",
+  "name": "Image2FloorPlan（字节）",
+  "full_name": "Image2FloorPlan（多张实拍室内照片 → 房间连通图）",
+  "aliases": [],
+  "status": null,
+  "categories": [
+    "multimodal"
+  ],
+  "summary": "Image2FloorPlan 是字节跳动 Seed 自建的内部评测集：给模型同一个公寓的多张实拍室内照片，让它重建这套房子的户型。考的不是「画一张好看的图」，而是把户型整理成结构化的房间连通图（哪些房间相邻、哪里有门和通道），再和人工标注的标准答案比对。",
+  "interpretation": "高分说明模型能把许多局部照片拼成对全局空间结构的正确理解，并用机器可校验的形式输出；不代表它懂建筑制图规范，也不代表能直接交付可用的户型图纸。目前唯一公开的数字来自 Seed2.1 模型卡表 3 的厂商自报口径，分数经基线归一化，跨厂商可比性未经验证。",
+  "measures": [
+    {
+      "area": "空间结构生成",
+      "focus": "从同一公寓的多张实拍室内照片推断房间及其相邻、门、通道关系；模型卡把「从许多局部视图推断全局空间结构并以机器可校验形式输出」单列为多模态 Agent 的第三类任务，与文档理解、开放式真实任务并列，Image2FloorPlan 属于这一类",
+      "share": "未披露（模型卡未给出该类任务在其多模态评测中的占比）",
+      "format": "多张真实照片输入 + 结构化房间连通图输出",
+      "cite": [
+        "seed-en-modelcard-pdf@§2.4",
+        "seed-en-modelcard-pdf@§2.4.2 Image2Floorplan"
+      ]
+    },
+    {
+      "area": "多模态 Agent 长程执行",
+      "focus": "所有基准都在统一的 in-house 多模态 Agent harness 下跑完整流程：感知、工具调用、代码执行与长程控制，而不是孤立的视觉问答；官方强调现有 harness 多为「文本 + 工具」循环，遇到富媒体输入会被降采样或截断",
+      "share": "未披露",
+      "format": "Agent 任务（多轮、可用工具与代码执行）",
+      "cite": [
+        "seed-en-modelcard-pdf@§2.4.1",
+        "seed-en-modelcard-pdf@§2.4"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "不评测生成图纸的视觉质量或建筑制图规范性：期望输出是结构化的房间连通图，而不是一张自由格式图像。",
+      "cite": [
+        "seed-en-modelcard-pdf@§2.4.2 Image2Floorplan"
+      ]
+    },
+    {
+      "text": "不覆盖文档理解、GUI 操作等其他模态能力——那是同一张表里 Claw-Eval、Office QA Pro、WildClawBench 等基准的职责。",
+      "cite": [
+        "seed-en-modelcard-pdf@§2.4.2"
+      ]
+    },
+    {
+      "text": "模型卡未披露题量、题目来源、标注流程、提示词、尝试次数、人类基线与随机基线。",
+      "cite": [
+        "seed-en-modelcard-pdf@§2.4.2 Image2Floorplan"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 0,
+    "splits": [],
+    "languages": [],
+    "source_type": "vendor_internal",
+    "public_sample": false,
+    "totals": "题量未披露：模型卡只说每道题提供一个公寓的多张真实室内照片，没有给出题目总数、数据拆分与语言；这是 Seed 自建的内部集，数据与标注均未公开，本站按 0 题记账。",
+    "cite": [
+      "seed-en-modelcard-pdf@§2.4.2 Image2Floorplan"
+    ],
+    "construction": [
+      {
+        "k": "输入",
+        "text": "每道题提供同一个公寓的多张真实室内照片，覆盖它的各个房间以及房间之间的连接关系。",
+        "cite": [
+          "seed-en-modelcard-pdf@§2.4.2 Image2Floorplan"
+        ]
+      },
+      {
+        "k": "任务",
+        "text": "Agent 需要根据这些照片重建该公寓的平面户型图。",
+        "cite": [
+          "seed-en-modelcard-pdf@§2.4.2 Image2Floorplan"
+        ]
+      },
+      {
+        "k": "期望输出",
+        "text": "输出结构化的房间连通图，需指明房间及其相邻关系、门与通道关系，而不是一张自由格式的图像。",
+        "cite": [
+          "seed-en-modelcard-pdf@§2.4.2 Image2Floorplan"
+        ]
+      },
+      {
+        "k": "标准答案",
+        "text": "标准答案是人工标注的真实户型连通图（human-annotated ground-truth graphs）。",
+        "cite": [
+          "seed-en-modelcard-pdf@§2.4.2 Image2Floorplan"
+        ]
+      },
+      {
+        "k": "判分",
+        "text": "用考虑房间匹配、连通性与整体拓扑的加权图相似度指标比对预测与标准答案，并对基线归一化，使最终分数反映真实的重建质量。",
+        "cite": [
+          "seed-en-modelcard-pdf@§2.4.2 Image2Floorplan"
+        ]
+      },
+      {
+        "k": "运行环境",
+        "text": "在统一的 in-house 多模态 Agent harness 下完成，串联感知、工具调用、代码执行与长程控制。",
+        "cite": [
+          "seed-en-modelcard-pdf@§2.4.1"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "avg-score",
+      "name": "Avg Score（平均分，经基线归一化）",
+      "direction": "越高越好",
+      "description": "预测房间连通图与人工标注标准答案之间的加权图相似度，考虑房间匹配、连通性与整体拓扑，并对基线归一化。",
+      "range": "未披露（模型卡未给分度区间与缩放方式）",
+      "unit": "分",
+      "cite": [
+        "seed-en-modelcard-pdf@§2.4.2 Image2Floorplan",
+        "seed-en-modelcard-pdf@Table 3"
+      ]
+    }
+  ],
+  "default_protocol": {
+    "raw": "模型卡表 3 中 Image2FloorPlan 一行使用的指标是 Avg Score：先算预测连通图与人工标注图的加权图相似度，再对基线归一化。模型卡未披露每题的提示词、尝试次数、工具集与推理档位。",
+    "cite": [
+      "seed-en-modelcard-pdf@Table 3",
+      "seed-en-modelcard-pdf@§2.4.2 Image2Floorplan"
+    ],
+    "variants": [
+      {
+        "text": "同一张表内指标不统一：Claw-Eval [Multimodal] 用 Pass^3（三次全过），Image2FloorPlan、Office QA Pro、WildClawBench 用 Avg Score，表内数字不能横向直接比较。",
+        "cite": [
+          "seed-en-modelcard-pdf@Table 3 表注"
+        ]
+      },
+      {
+        "text": "公开的 Seed2.1 模型页 Evaluation Results 表未收录 Image2FloorPlan（也未收录 Claw-Eval (MM)），数字只出现在模型卡表 3，两处收录范围不同。",
+        "cite": [
+          "seed-en-seed2-1-page@Evaluation Results"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "seed21-disclosure",
+      "date": "2026-06-23",
+      "label": "随 Seed2.1 系列发布博客与 Seed2.1 Model Card 首次公开披露（内部集，数据仍未公开）",
+      "cite": [
+        "seed-en-blog-seed2-1-official@日期/分类",
+        "seed-en-modelcard-pdf@Table 3"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "内部集未公开，无法独立复现",
+      "impact": "题量、题目来源、标注规范、提示词与判分代码均未披露，第三方无法复现或交叉验证表 3 的数字。",
+      "severity": "高",
+      "response": "未见官方回应；官方定位为 Seed 自建的内部评测集。",
+      "reader": "把 48.0 / 35.9 当厂商自报的内部口径引用，不要当成公开榜单成绩。",
+      "cite": [
+        "seed-en-modelcard-pdf@§2.4.2 Image2Floorplan",
+        "seed-en-blog-seed2-1-official@图注"
+      ]
+    },
+    {
+      "issue": "分数经基线归一化，绝对含义不明",
+      "impact": "模型卡只说分数对基线归一化，未给出基线定义与缩放方式，跨表、跨版本的绝对分数不可比。",
+      "severity": "高",
+      "response": "模型卡仅说明归一化的目的是让最终分数反映真实重建质量，未给出公式。",
+      "reader": "只比较同一张表内的相对高低，不要跨表比绝对分，也不要把 48.0 读成答对了 48% 的题目。",
+      "cite": [
+        "seed-en-modelcard-pdf@§2.4.2 Image2Floorplan"
+      ]
+    },
+    {
+      "issue": "无人类基线与噪声参考线",
+      "impact": "模型卡未给出人类表现、随机基线或标注者分歧率，无法判断当前最好成绩距离人类还有多远。",
+      "severity": "中",
+      "response": "未见官方回应。",
+      "reader": "不要把表内最高分理解为接近人类水平。",
+      "cite": [
+        "seed-en-modelcard-pdf@Table 3"
+      ]
+    },
+    {
+      "issue": "公开模型页不收录该基准",
+      "impact": "Seed2.1 官方模型页的 Evaluation Results 表既没有 Image2FloorPlan 也没有 Claw-Eval (MM)，与模型卡的收录范围不一致。",
+      "severity": "中",
+      "response": "未见官方回应。",
+      "reader": "引用数字以模型卡表 3 为准，并注明它未出现在公开模型页。",
+      "cite": [
+        "seed-en-seed2-1-page@Evaluation Results"
+      ]
+    },
+    {
+      "issue": "任务口径在博客与模型卡之间不一致",
+      "impact": "发布博客把任务描述成「理解多张真实照片并绘制平面户型图」，模型卡进一步限定期望输出为结构化房间连通图而非图像；按博客理解会高估其「画图」成分。",
+      "severity": "中",
+      "response": "模型卡给出更精确的任务定义。",
+      "reader": "以模型卡的结构化连通图输出为准。",
+      "cite": [
+        "seed-en-modelcard-pdf@§2.4.2 Image2Floorplan",
+        "seed-en-blog-seed2-1-official@图注"
+      ]
+    }
+  ],
+  "notes": "厂商内部/未公开：Seed2.1 Model Card 表 3 收录其 Avg Score 数字，数据与判分代码未公开；官方发布博客称其为 internally developed evaluation set。",
+  "official_sources": [
+    {
+      "kind": "paper",
+      "url": "https://lf3-static.bytednsdoc.com/obj/eden-cn/lapzild-tss/ljhwZthlaukjlkulzlp/seed2.1/Seed2_1_Model_Card.pdf"
+    },
+    {
+      "kind": "site",
+      "url": "https://seed.bytedance.com/en/blog/seed2-1-officially-released-advancing-ai-productivity"
+    },
+    {
+      "kind": "site",
+      "url": "https://seed.bytedance.com/en/seed2_1"
+    }
+  ],
+  "related_benchmarks": [
+    "claw-eval",
+    "claweval-mm",
+    "wildclawbench",
+    "mobileworld",
+    "agents-last-exam",
+    "creativework"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "seed-en-modelcard-pdf",
+        "kind": "paper",
+        "title": "Seed2.1 Model Card: Agentic Intelligence for Productivity（ByteDance Seed 技术报告 PDF，含表 3 多模态 Agent 评测）",
+        "url": "https://lf3-static.bytednsdoc.com/obj/eden-cn/lapzild-tss/ljhwZthlaukjlkulzlp/seed2.1/Seed2_1_Model_Card.pdf",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "seed-en-blog-seed2-1-official",
+        "kind": "blog",
+        "title": "Seed2.1 Officially Released: Advancing AI Productivity（ByteDance Seed 官方发布博客，2026-06-23）",
+        "url": "https://seed.bytedance.com/en/blog/seed2-1-officially-released-advancing-ai-productivity",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "seed-zh-blog-seed2-1",
+        "kind": "blog",
+        "title": "Seed2.1 正式发布，深入 AI 生产力（ByteDance Seed 官方发布博客中文版）",
+        "url": "https://seed.bytedance.com/zh/blog/seed2-1-officially-released-advancing-ai-productivity",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "seed-en-seed2-1-page",
+        "kind": "site",
+        "title": "Seed2.1 官方模型页（含 Evaluation Results 表与 Showcase 区）",
+        "url": "https://seed.bytedance.com/en/seed2_1",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "字节跳动 Seed（Bytedance Seed）",
+        "cite": [
+          "seed-en-modelcard-pdf@封面"
+        ]
+      },
+      "first_release": {
+        "v": "2026-06-23（随 Seed2.1 系列发布博客与 Seed2.1 Model Card 首次公开披露）",
+        "cite": [
+          "seed-en-blog-seed2-1-official@日期/分类"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "seed-en-modelcard-pdf@§2.4.2 Image2Floorplan",
+        "seed-en-blog-seed2-1-official@图注"
+      ],
+      "interpretation": [
+        "seed-en-modelcard-pdf@§2.4.2 Image2Floorplan",
+        "seed-en-modelcard-pdf@Table 3"
+      ]
+    },
+    "problem": {
+      "text": "现有多模态 harness 大多围绕「文本 + 工具」循环搭建，遇到富媒体场景会失效：输入常被降采样或截断，富媒体输出也难以生成和检查。Seed2.1 模型卡因此把「从许多局部视图推断全局空间结构，并以精确、机器可校验的形式输出」单列为多模态 Agent 的第三类任务，Image2FloorPlan 对应其中的空间结构生成。",
+      "cite": [
+        "seed-en-modelcard-pdf@§2.4",
+        "seed-en-modelcard-pdf@§2.4.2 Image2Floorplan"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "公开数字中的最高分（表 3 内最高）",
+        "value": "55.1",
+        "note": "Gemini-3.1 Pro；同表 Seed2.1 Pro 为 48.0、Seed2.1 Turbo 为 35.9",
+        "cite": [
+          "seed-en-modelcard-pdf@Table 3"
+        ]
+      },
+      {
+        "label": "字节自家模型（Seed2.1 Pro）",
+        "value": "48.0",
+        "note": "模型卡称 Pro 相比 Turbo 提升明显，并接近最强前沿模型",
+        "cite": [
+          "seed-en-modelcard-pdf@Table 3",
+          "seed-en-modelcard-pdf@§2.4.2"
+        ]
+      },
+      {
+        "label": "人类表现",
+        "value": "未披露",
+        "note": "模型卡未给人类基线",
+        "cite": [
+          "seed-en-modelcard-pdf@§2.4.2 Image2Floorplan"
+        ]
+      },
+      {
+        "label": "归一化基线",
+        "value": "未披露",
+        "note": "分数对基线归一化，但基线定义与缩放方式未给出",
+        "cite": [
+          "seed-en-modelcard-pdf@§2.4.2 Image2Floorplan"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "误读一：这是「生成户型图」的图像生成基准。实际期望输出是结构化的房间连通图，标注的是房间、相邻关系、门与通道，不是一张图。",
+        "cite": [
+          "seed-en-modelcard-pdf@§2.4.2 Image2Floorplan"
+        ]
+      },
+      {
+        "text": "误读二：48.0 表示答对了 48% 的题目。分数是加权图相似度并经基线归一化，模型卡未给出缩放方式，不能读成通过率。",
+        "cite": [
+          "seed-en-modelcard-pdf@§2.4.2 Image2Floorplan"
+        ]
+      },
+      {
+        "text": "误读三：这是公开榜单成绩，可自行下载测试。它是 Seed 自建的内部评测集，数据与标注均未公开，数字只出现在模型卡表 3。",
+        "cite": [
+          "seed-en-blog-seed2-1-official@图注",
+          "seed-en-modelcard-pdf@§2.4.2 Image2Floorplan"
+        ]
+      },
+      {
+        "text": "误读四：官方模型页也会列这个基准。Seed2.1 模型页的 Evaluation Results 表既没有 Image2FloorPlan 也没有 Claw-Eval (MM)，只在模型卡表 3 收录。",
+        "cite": [
+          "seed-en-seed2-1-page@Evaluation Results"
+        ]
+      },
+      {
+        "text": "误读五：模型页展示的「从户型图生成交互页面」就是这个评测在测的能力。那是模型页 Showcase 区的应用演示，与评测集的输入输出方向相反。",
+        "cite": [
+          "seed-en-seed2-1-page@Showcase 区"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "字节跳动 Seed（Bytedance Seed）；出处文档为 Seed2.1 Model Card: Agentic Intelligence for Productivity。",
+        "cite": [
+          "seed-en-modelcard-pdf@封面"
+        ]
+      },
+      {
+        "k": "首次公开披露",
+        "v": "2026-06-23：发布博客以图注说明其定位，同日发布的 Seed2.1 Model Card 表 3 给出分数。",
+        "cite": [
+          "seed-en-blog-seed2-1-official@日期/分类",
+          "seed-en-modelcard-pdf@Table 3"
+        ]
+      },
+      {
+        "k": "在 Seed 评测体系中的位置",
+        "v": "模型卡把多模态任务分三类：文档理解、开放式真实任务、空间结构生成；Image2Floorplan 对应第三类。",
+        "cite": [
+          "seed-en-modelcard-pdf@§2.4"
+        ]
+      },
+      {
+        "k": "运行环境",
+        "v": "所有基准都在统一的 in-house 多模态 Agent harness 下评测，串联感知、工具调用、代码执行与长程控制，而非孤立的视觉问答。",
+        "cite": [
+          "seed-en-modelcard-pdf@§2.4.1"
+        ]
+      },
+      {
+        "k": "官方对外口径（英文博客）",
+        "v": "称其为 internally developed evaluation set，并把 Image2FloorPlan 与 Claw-Eval (MM) 并列进 Visual Agent 竞争力描述；同时强调「评估上更关注模型在实际工作流中的表现，而非仅依赖静态基准分数」。",
+        "cite": [
+          "seed-en-blog-seed2-1-official@图注",
+          "seed-en-blog-seed2-1-official@多模态能力段",
+          "seed-en-blog-seed2-1-official@引言"
+        ]
+      },
+      {
+        "k": "官方对外口径（中文博客）",
+        "v": "中文版称「Image2FloorPlan 为内部自建评测集，考察的任务为理解多张真实照片并绘制平面户型图」，并称 Seed2.1 在 Claw-Eval (MM) 等 Visual Agent 相关基准上整体表现较强。",
+        "cite": [
+          "seed-zh-blog-seed2-1@图注",
+          "seed-zh-blog-seed2-1@多模态能力段"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-06-23",
+        "columns": [
+          "Benchmark",
+          "Metric",
+          "GPT-5.5",
+          "Claude-4.7 Opus",
+          "Gemini-3.1 Pro",
+          "Seed2.1 Turbo",
+          "Seed2.1 Pro"
+        ],
+        "rows": [
+          [
+            "Image2FloorPlan (Inhouse)",
+            "Avg Score",
+            "50.7",
+            "50.2",
+            "55.1",
+            "35.9",
+            "48.0"
+          ]
+        ]
+      },
+      "cite": [
+        "seed-en-modelcard-pdf@Table 3",
+        "seed-en-modelcard-pdf@Table 3 表注"
+      ]
+    }
+  }
+}

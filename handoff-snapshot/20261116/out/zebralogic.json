@@ -1,0 +1,374 @@
+{
+  "id": "zebralogic",
+  "name": "ZebraLogic",
+  "full_name": "ZebraLogic: On the Scaling Limits of LLMs for Logical Reasoning（斑马逻辑：大模型逻辑推理的扩展极限）",
+  "aliases": ["ZebraLogicBench"],
+  "status": "active",
+  "categories": ["reasoning"],
+  "summary": "ZebraLogic 是 Ai2 等团队出的逻辑推理评测：1,000 道逻辑网格谜题（俗称斑马谜题），题目由约束满足问题（CSP）程序化生成，难度可以用「搜索空间有多大」精确调档。模型读一段自然语言线索，推出每栋房子在每个属性上的取值，全填对才算解出。",
+  "interpretation": "高分说明模型在隔离了领域知识的纯逻辑约束下能做完多步消解；但它只覆盖逻辑网格这一小类推理，而且论文的核心结论是搜索空间一大准确率就陡降——作者称之为「复杂度诅咒」，加大模型和加推理时算力都没完全压住。引用厂商自报的高分前，先核对解码方式与选样口径是否一致。",
+  "measures": [
+    {
+      "area": "逻辑网格推理（约束满足）",
+      "focus": "逻辑网格谜题（Zebra puzzle / Einstein's Riddle）：N 栋房子排成一行，每栋有若干属性，按自然语言线索推出每栋在每个属性上的唯一取值。示例题以「There are 3 houses, numbered 1 to 3 from left to right, as seen from across the street.」开头，随后给若干条线索。",
+      "share": "1,000 题，25 种网格尺寸（N、M ∈ {2, ..., 6}），每种 40 题",
+      "format": "填空式网格，模型输出各属性的最终取值，不是选择题",
+      "cite": ["arxiv-2502-01100@§2.3", "arxiv-2502-01100@§2.2", "arxiv-2502-01100@Abstract"]
+    },
+    {
+      "area": "推理复杂度分层",
+      "focus": "同一批题目按搜索空间 |S| 分四档报告成绩：Small（<10³）、Medium（10³~10⁶）、Large（10⁶~10¹⁰）、X-Large（≥10¹⁰）。论文实测：整卷 81.0% 的 o1-full 在 X-Large 档只有 42.5%，而同期多数模型在该档接近 0.0%。",
+      "share": "四档题量按网格尺寸分配；X-Large 档为 5×5、6×4、5×6、6×5、6×6 共 5 种尺寸",
+      "format": "分档准确率，论文按 Small / Medium / Large / X-Large 四列报告",
+      "cite": ["arxiv-2502-01100@§2.5", "arxiv-2502-01100@Table 1", "arxiv-2502-01100@§3.1"]
+    },
+    {
+      "area": "推理过程长度（辅助分析）",
+      "focus": "论文另测 o1 类模型的 hidden chain-of-thought token 数：o1-mini 平均 5,144.6、o1-preview 平均 5,346.3 个隐藏推理 token，而 GPT-4o-mini 与 GPT-4o 分别只有 502.9 和 543.7。",
+      "share": "论文报告上述两组均值，未给出占比",
+      "format": "平均隐藏推理 token 数（o1 的推理过程对用户不可见）",
+      "cite": ["arxiv-2502-01100@§6.1"]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "不评估领域知识或世界知识：论文把「把纯逻辑推理从领域知识里隔离出来」列为理想评测框架的第一条设计目标，题目线索全部来自逻辑约束。",
+      "cite": ["arxiv-2502-01100@§1"]
+    },
+    {
+      "text": "不评估多模态能力：Hugging Face 数据卡标注 Modalities: Text，全部是纯文本谜题。",
+      "cite": ["hf-dataset@数据集卡"]
+    },
+    {
+      "text": "不评估推理过程质量：只有网格里每个格子都填对才算解出这道题，中间步骤、是否回溯、是否自洽都不计分。",
+      "cite": ["arxiv-2502-01100@§3"]
+    },
+    {
+      "text": "不覆盖逻辑网格以外的推理形式（数学证明、程序综合、因果推断等）：论文把自己定位成逻辑网格谜题的受控基准，不是通用推理评测。",
+      "cite": ["arxiv-2502-01100@§8"]
+    }
+  ],
+  "dataset": {
+    "sample_count": 1000,
+    "splits": ["grid_mode 1,000 题（test）", "mc_mode 3.26k 行（论文未说明其用途）"],
+    "languages": ["en"],
+    "source_type": "程序化生成（作者按约束满足问题构造，用 SAT 求解器校验线索必要性）",
+    "public_sample": true,
+    "multimodal_share": "0%（HF 数据卡标注 Modalities: Text）",
+    "totals": "论文主版本 1,000 题（25 种网格尺寸 × 40 题），每题平均 10.4 条线索（中位数 9）；HF 数据集卡另有 mc_mode 子集，页面统计总行数 4,259。",
+    "cite": ["arxiv-2502-01100@§2.3", "hf-dataset@数据集卡"],
+    "construction": [
+      {
+        "k": "定义属性与取值",
+        "text": "先定义一组属性和每个属性的取值集合，每个属性至少 6 个可能取值，并且样本里始终包含 Name 属性。",
+        "cite": ["arxiv-2502-01100@§2.3"]
+      },
+      {
+        "k": "构造唯一解并校验线索必要性",
+        "text": "在约束满足问题框架下构造谜题；用 SAT 求解器校验删掉任一线索 p 后，剩余线索集 C′ = C \\ {p} 是否仍唯一确定原解 S，即确认每条线索都是必要的。",
+        "cite": ["arxiv-2502-01100@§2.3"]
+      },
+      {
+        "k": "线索抽样",
+        "text": "线索选择用加权抽样，更简单的线索类型给更高概率，用来控制难度分布。",
+        "cite": ["arxiv-2502-01100@§2.3"]
+      },
+      {
+        "k": "尺寸与题量",
+        "text": "网格尺寸 N、M ∈ {2, ..., 6}，共 25 种尺寸，每种 40 题，合计 1,000 题；每例线索数平均 10.4、中位数 9。",
+        "cite": ["arxiv-2502-01100@§2.3"]
+      },
+      {
+        "k": "提示词格式",
+        "text": "用预定义的 one-shot 提示词模板格式化题目，要求模型输出推理步骤和 JSON 格式的最终结果。",
+        "cite": ["arxiv-2502-01100@§2.3"]
+      },
+      {
+        "k": "难度度量",
+        "text": "用两个互补指标量化难度：搜索空间大小 (N!)^M（N 为房子数、M 为属性数），以及 Z3 SMT 求解器解同一题的平均冲突数（每题跑 32 次取平均）。",
+        "cite": ["arxiv-2502-01100@§2.5"]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "one-shot in-context learning：先给一道示例谜题及其完整推理过程，再给待解题，模型用贪心解码输出「推理步骤 + JSON 格式的最终结果」，解析后与标准答案比对。整题准确率要求网格里每个格子都填对才算解出；论文同时报告更宽松的 cell-level accuracy。",
+    "cite": ["arxiv-2502-01100@§3", "arxiv-2502-01100@§2.3"],
+    "variants": [
+      {
+        "text": "o1 系列不做纯贪心解码，论文对它跑三次取最好结果——同一模型在两种设置下不可直接比。",
+        "cite": ["arxiv-2502-01100@§3"]
+      },
+      {
+        "text": "表 2 的 Best-of-N 系列：BoN-Oracle 用标准答案选优，是 pass@k 意义上的 oracle 上界（GPT-4o 从 31.7% 抬到 69.1%）；多数投票和奖励模型选择是可选优的实用方法，同设置下分别只到 38.0% 和 33.9%。",
+        "cite": ["arxiv-2502-01100@Table 2", "arxiv-2502-01100@§5"]
+      },
+      {
+        "text": "自我验证提示并没有稳定收益：GPT-4o 单次自验 33.0%，两次自验反而回落到 32.1%。",
+        "cite": ["arxiv-2502-01100@Table 2"]
+      },
+      {
+        "text": "厂商自报口径：Kimi K2 发布博客的对比表里所有模型都是 non-thinking 模型，与论文里 o1 / DeepSeek-R1 这类推理模型不是同一套设置。",
+        "cite": ["kimi-blog-kimi-k2"]
+      },
+      {
+        "text": "HF 数据集另有 mc_mode 子集（3.26k 行），论文未说明其用途；引用题量时要区分 grid_mode 的 1,000 题和数据卡统计的 4,259 总行数。",
+        "cite": ["hf-dataset@数据集卡"]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "grid-level-accuracy",
+      "name": "整题准确率（grid-level / puzzle-level accuracy）",
+      "direction": "越高越好",
+      "description": "只有网格里每个格子都填对才算解出这道题，按解出题数占总题数的比例计分；论文的主指标",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["arxiv-2502-01100@§3"]
+    },
+    {
+      "id": "cell-level-accuracy",
+      "name": "单元格准确率（cell-level accuracy）",
+      "direction": "越高越好",
+      "description": "单个格子填对的比例，比整题准确率宽松；论文作为辅助指标报告",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["arxiv-2502-01100@§3"]
+    }
+  ],
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2025-02-03",
+      "label": "arXiv v1 首次提交",
+      "cite": ["arxiv-2502-01100@提交历史"]
+    },
+    {
+      "id": "v2",
+      "date": "2025-07-15",
+      "label": "arXiv v2 修订（本页核对所用版本），Comments 标注 Accepted to ICML 2025",
+      "cite": ["arxiv-2502-01100@提交历史", "arxiv-2502-01100@Comments"]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "复杂度诅咒：难度一升分数就崩",
+      "impact": "论文的核心结论。整卷分数主要由简单题撑起来：搜索空间超过约 10⁷ 后多数模型就做不动，X-Large 档（|S| ≥ 10¹⁰）上 o1-preview 只有 17.0%、其余模型基本为 0.0%；模型规模变大带来的收益在高难度档也明显衰减。作者认为这同时涉及推理时算力不足，不是单靠堆参数能解决的。",
+      "severity": "高",
+      "response": "论文建议显式训练分步推理（如强化学习）并扩大带回溯机制的推理 token，同时指出 o1 这类模型的隐藏推理 token 数会随题目冲突数上升，但并未给出能跨过阈值的方法。",
+      "reader": "看 ZebraLogic 分数必须同时看它在 X-Large 档的表现；只念整卷均分会严重高估模型的逻辑推理能力。",
+      "cite": ["arxiv-2502-01100@§1", "arxiv-2502-01100@§3.2", "arxiv-2502-01100@Table 1", "arxiv-2502-01100@§3.1"]
+    },
+    {
+      "issue": "评测口径不统一，跨来源分数不可比",
+      "impact": "论文主表是 one-shot 贪心解码（o1 例外，跑三次取最好）；表 2 的 BoN-Oracle 是 pass@k oracle 上界；Kimi 博客的表格则全部是 non-thinking 模型。三套数字放进同一张对比图会得出错误结论。",
+      "severity": "高",
+      "response": "论文在自己那节里固定了提示词、解码与解析脚本，但对外部榜单口径没有约束力；未见厂商侧的统一说明。",
+      "reader": "比较两个模型的 ZebraLogic 分数前，先确认是否同一解码方式、是否推理模型、是否用了选样上界。",
+      "cite": ["arxiv-2502-01100@§3", "arxiv-2502-01100@Table 2", "kimi-blog-kimi-k2"]
+    },
+    {
+      "issue": "题量与口径在论文和数据卡之间不一致",
+      "impact": "论文说 1,000 题；HF 数据集卡把数据分成 grid_mode（1k 行）和 mc_mode（3.26k 行）两个子集，页面统计总行数 4,259。数据卡 README 为空，没有说明两个子集的关系，也没有许可协议。",
+      "severity": "中",
+      "response": "未见官方回应（数据集卡 README 为空）。",
+      "reader": "引用题量时写清是 grid_mode 的 1,000 题还是数据卡总行数；许可协议在数据卡上未披露。",
+      "cite": ["hf-dataset@数据集卡", "arxiv-2502-01100@§2.3"]
+    },
+    {
+      "issue": "只评最终答案，不评推理过程",
+      "impact": "评分只看最终网格是否全对，猜对和解对在该指标上等价；论文尝试的自我验证提示也没有稳定收益（33.0% vs 两次自验 32.1%）。",
+      "severity": "中",
+      "response": "论文在表 2 探索了 Best-of-N 与自我验证作为改进手段，但没有把过程质量纳入正式指标。",
+      "reader": "高分不代表推理路径可靠；要评估过程请配合人工检查或另做过程级评测。",
+      "cite": ["arxiv-2502-01100@§3", "arxiv-2502-01100@Table 2"]
+    },
+    {
+      "issue": "公开题库存在污染风险",
+      "impact": "题目可直接从 Hugging Face 下载，而论文把「尽量减少数据泄漏、防止训练数据记忆」列为理想评测框架的条件之一，却没有任何去污染或留存集的结果报告。",
+      "severity": "中",
+      "response": "未见官方回应（论文未报告污染检测结果）。",
+      "reader": "对训练截止晚于数据集公开时间的模型，分数要打问号；论文本身没有给出量化证据。",
+      "cite": ["arxiv-2502-01100@§1", "hf-dataset@数据集卡"]
+    }
+  ],
+  "notes": "ICML 2025 接收；HF 数据卡 README 为空，许可协议未披露",
+  "official_sources": [
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2502.01100"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/allenai/ZebraLogicBench"
+    },
+    {
+      "kind": "leaderboard",
+      "url": "https://huggingface.co/spaces/allenai/ZebraLogic"
+    },
+    {
+      "kind": "site",
+      "url": "https://www.kimi.ai/blog/kimi-k2"
+    }
+  ],
+  "related_benchmarks": ["logicvista", "hyperlogic", "bbh"],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-13",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      {
+        "id": "arxiv-2502-01100",
+        "kind": "paper",
+        "title": "ZebraLogic: On the Scaling Limits of LLMs for Logical Reasoning（arXiv:2502.01100 v2，2025-07-15，ICML 2025）",
+        "url": "https://arxiv.org/abs/2502.01100",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "hf-dataset",
+        "kind": "dataset",
+        "title": "allenai/ZebraLogicBench（Hugging Face 数据集卡）",
+        "url": "https://huggingface.co/datasets/allenai/ZebraLogicBench",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "kimi-blog-kimi-k2",
+        "kind": "blog",
+        "title": "Kimi K2 发布博客（含 ZebraLogic 对比表）",
+        "url": "https://www.kimi.ai/blog/kimi-k2",
+        "accessed": "2026-11-13"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "University of Washington、Allen Institute for AI（Ai2）、Stanford University",
+        "cite": ["arxiv-2502-01100@首页"]
+      },
+      "first_release": {
+        "v": "2025-02-03（arXiv v1）",
+        "cite": ["arxiv-2502-01100@提交历史"]
+      }
+    },
+    "cites": {
+      "summary": ["arxiv-2502-01100@Abstract", "arxiv-2502-01100@§2.3"],
+      "interpretation": ["arxiv-2502-01100@§1", "arxiv-2502-01100@§3.2", "kimi-blog-kimi-k2"]
+    },
+    "problem": {
+      "text": "在 ZebraLogic 之前，逻辑推理基准要么把逻辑推理和领域知识混在一起（数学题、百科题都要求先懂行），要么难度不可控——同一份卷子里简单题和难题差在哪说不清，也没法回答「到底要多复杂的推理，模型才会开始崩」。ZebraLogic 用程序化生成把复杂度变成可调参数：网格尺寸直接决定搜索空间 (N!)^M，再配一个独立指标 Z3 冲突数；题目从代码生成，也天然压低了训练集污染的可能。",
+      "cite": ["arxiv-2502-01100@§1", "arxiv-2502-01100@§2.5"]
+    },
+    "ladder": [
+      {
+        "label": "随机猜测基线",
+        "value": "论文未给出",
+        "note": "论文没有报告整卷的随机基线分数，本站也不推算。",
+        "cite": ["arxiv-2502-01100@Table 1"]
+      },
+      {
+        "label": "论文发布时最好",
+        "value": "81.0%（o1-full，整卷 grid-level accuracy）",
+        "note": "同期最好的开源权重模型 DeepSeek-R1 为 78.7%，最好的非推理开源模型 Sonnet-3.5-1022 为 36.2%；但 X-Large 档上 o1-full 只有 42.5%。",
+        "cite": ["arxiv-2502-01100@Table 1"]
+      },
+      {
+        "label": "厂商自报最高",
+        "value": "89.0%（Kimi-K2-Instruct）",
+        "note": "Kimi K2 发布博客对比表，表内注明所有模型都是 non-thinking 口径，与论文的 one-shot 贪心解码不是同一套设置，不可直接与上一步比。",
+        "cite": ["kimi-blog-kimi-k2@基准对比表", "kimi-blog-kimi-k2"]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      },
+      {
+        "label": "难度天花板参考线",
+        "value": "X-Large 档最好 42.5%（o1-full）",
+        "note": "搜索空间 ≥10¹⁰ 的题目上，论文表内除 o1 系列外多数模型是 0.0%。这条线说明「整卷 80%+」和「难题组接近 0」可以同时成立。",
+        "cite": ["arxiv-2502-01100@Table 1", "arxiv-2502-01100@§3.1"]
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把不同口径的分数排在一起比：论文表 1 是 one-shot 贪心解码（o1 例外，三次取最好），表 2 的 BoN-Oracle 是 pass@k oracle 上界，Kimi 博客表格则全是 non-thinking 模型。",
+        "cite": ["arxiv-2502-01100@§3", "arxiv-2502-01100@Table 2", "kimi-blog-kimi-k2"]
+      },
+      {
+        "text": "把 cell-level accuracy 当成整题解出率：论文规定只有网格里每个格子都填对才算解出这道题，cell-level 是另一个更宽松的指标。",
+        "cite": ["arxiv-2502-01100@§3"]
+      },
+      {
+        "text": "看到整卷高分就认为逻辑推理已接近解决：X-Large 档上多数模型仍是 0.0%，且作者明确说模型规模变大在高难度档收益递减。",
+        "cite": ["arxiv-2502-01100@Table 1", "arxiv-2502-01100@§3.2"]
+      },
+      {
+        "text": "把 ZebraLogic 当通用推理评测：它刻意隔离领域知识，只覆盖逻辑网格谜题这一类约束满足问题，且题目可从 Hugging Face 直接下载。",
+        "cite": ["arxiv-2502-01100@§1", "hf-dataset@数据集卡"]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "University of Washington、Allen Institute for AI（Ai2）、Stanford University",
+        "cite": ["arxiv-2502-01100@首页"]
+      },
+      {
+        "k": "核心作者",
+        "v": "Bill Yuchen Lin、Ronan Le Bras、Kyle Richardson、Ashish Sabharwal、Radha Poovendran、Peter Clark、Yejin Choi",
+        "cite": ["arxiv-2502-01100@首页"]
+      },
+      {
+        "k": "时间线",
+        "v": "2025-02-03 arXiv v1 → 2025-07-15 v2，Comments 标注 Accepted to ICML 2025；HF 数据集卡页面显示 Updated Dec 23, 2025",
+        "cite": ["arxiv-2502-01100@提交历史", "arxiv-2502-01100@Comments", "hf-dataset@数据集卡"]
+      },
+      {
+        "k": "理论性质",
+        "v": "论文证明 ZebraLogic 问题是 NP-complete（由 Quasigroup / Latin square 完成问题归约）",
+        "cite": ["arxiv-2502-01100@§2.4"]
+      },
+      {
+        "k": "复杂度度量",
+        "v": "两个互补指标：搜索空间大小 (N!)^M，以及 Z3 SMT 求解器解同一题的平均冲突数（每题跑 32 次取平均）",
+        "cite": ["arxiv-2502-01100@§2.5"]
+      },
+      {
+        "k": "数据与代码",
+        "v": "数据集在 Hugging Face（allenai/ZebraLogicBench），官方榜单 Space 地址为 https://hf.co/spaces/allenai/ZebraLogic（论文首页给出）",
+        "cite": ["hf-dataset@数据集卡", "arxiv-2502-01100@首页"]
+      },
+      {
+        "k": "作者自评定位",
+        "v": "「a controlled benchmark of logic grid puzzles that highlights the scaling limits of LLM-based reasoning through carefully adjustable complexity」",
+        "cite": ["arxiv-2502-01100@§8"]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-13",
+        "columns": ["来源", "模型", "整卷准确率", "Small (<10³)", "Medium (10³~10⁶)", "Large (10⁶~10¹⁰)", "X-Large (≥10¹⁰)", "cell-level 准确率"],
+        "rows": [
+          ["论文 Table 1", "o1-full", "81.0%", "97.2%", "92.1%", "78.0%", "42.5%", "78.7%"],
+          ["论文 Table 1", "DeepSeek-R1", "78.7%", "98.4%", "95.7%", "73.5%", "28.5%", "80.5%"],
+          ["论文 Table 1", "o1-preview", "71.4%", "98.1%", "88.2%", "59.5%", "17.0%", "75.1%"],
+          ["论文 Table 1", "o1-mini", "59.7%", "87.5%", "76.8%", "39.0%", "12.0%", "70.3%"],
+          ["论文 Table 1", "Claude Sonnet 3.5", "36.2%", "84.7%", "28.9%", "4.0%", "1.0%", "54.3%"],
+          ["论文 Table 1", "Llama-3.1-405B", "32.6%", "81.3%", "22.5%", "1.5%", "0.0%", "45.8%"],
+          ["论文 Table 1", "GPT-4o", "31.7%", "80.0%", "19.6%", "2.5%", "0.5%", "50.3%"],
+          ["论文 Table 1", "Gemini-1.5-Pro", "30.5%", "75.3%", "20.7%", "3.0%", "0.0%", "50.8%"],
+          ["论文 Table 1", "Llama-3.1-8B", "12.8%", "39.4%", "0.7%", "0.0%", "0.0%", "13.7%"],
+          ["论文 Table 1", "Phi-3.5-4B", "6.4%", "19.4%", "0.7%", "0.0%", "0.0%", "6.0%"],
+          ["论文 Table 2", "GPT-4o（基线）", "31.7%", "80.0%", "19.6%", "2.5%", "0.5%", "未报告"],
+          ["论文 Table 2", "GPT-4o + BoN-Oracle N=128", "69.1%", "99.7%", "92.9%", "49.0%", "7.0%", "未报告"],
+          ["论文 Table 2", "GPT-4o + BoN-Oracle N=32", "60.3%", "98.4%", "81.1%", "28.0%", "2.5%", "未报告"],
+          ["论文 Table 2", "GPT-4o + Majority-Voting N=32", "38.0%", "84.1%", "34.3%", "7.0%", "0.5%", "未报告"],
+          ["论文 Table 2", "GPT-4o + BoN-RM N=32", "33.9%", "77.8%", "28.9%", "4.5%", "0.0%", "未报告"],
+          ["论文 Table 2", "GPT-4o + Self-Verify", "33.0%", "82.2%", "22.1%", "2.5%", "0.0%", "未报告"],
+          ["论文 Table 2", "GPT-4o + Self-Verify (x2)", "32.1%", "80.0%", "21.4%", "2.5%", "0.0%", "未报告"],
+          ["Kimi K2 博客", "Kimi-K2-Instruct", "89.0%", "—", "—", "—", "—", "—"]
+        ]
+      },
+      "cite": ["arxiv-2502-01100@Table 1", "arxiv-2502-01100@Table 2", "kimi-blog-kimi-k2@基准对比表"]
+    }
+  }
+}

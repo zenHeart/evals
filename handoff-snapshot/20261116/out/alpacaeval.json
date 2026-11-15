@@ -1,0 +1,594 @@
+{
+  "id": "alpacaeval",
+  "name": "AlpacaEval 2.0",
+  "full_name": "AlpacaEval: An Automatic Evaluator of Instruction-following Models",
+  "aliases": [
+    "AlpacaEval",
+    "AlpacaEval 1.0",
+    "AlpacaEval 2.0",
+    "AlpacaEval-LC",
+    "Length-Controlled AlpacaEval"
+  ],
+  "status": "active",
+  "categories": [
+    "preference"
+  ],
+  "summary": "805 条来自 Alpaca web demo 的真实用户指令：被测模型和 GPT-4 Preview (11/06) 参考答案各答一题，由同一个 GPT-4 Preview 当裁判逐条判偏好，再把 805 个偏好转成 0–100% 的胜率。默认报长度控制（LC）口径，把「写得长就赢」的偏倚压掉。",
+  "interpretation": "50% = 和 GPT-4 Preview 参考答案打平（互换对比双方时两个胜率相加为 100%）；高于 50% 表示裁判更偏好被测模型。原始胜率和 LC 胜率不能混着比：原始口径会被一句「请详细回答」刷高，LC 口径把长度差置零后再平均，更接近真实偏好。",
+  "measures": [
+    {
+      "area": "通用指令跟随（开放式问答）",
+      "focus": "单个开放式指令下，被测模型回答 vs GPT-4 Preview 参考答案，GPT-4 Preview 裁判更偏好哪一个",
+      "share": "805 题全量；官方未按指令子类公布占比",
+      "format": "两两对比偏好 → 胜率（0–100%）",
+      "cite": [
+        "arxiv-2404-04475@§2 Related work",
+        "tatsu-lab-alpaca-eval@About"
+      ]
+    },
+    {
+      "area": "输出长度偏倚（同一 805 题换口径）",
+      "focus": "把「长度差」这一项置零后重新平均偏好，衡量去掉长度偏倚后的相对水平",
+      "share": "与上一行同一批 805 题，仅换判口径，不增题",
+      "format": "长度控制胜率（LC win rate，0–100%）",
+      "cite": [
+        "repo@More information",
+        "repo@Major updates"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "安全性与有害性：官网明确写「AlpacaEval does not evaluate the safety of any of the models」。",
+      "cite": [
+        "tatsu-lab-alpaca-eval@AlpacaEval limitations"
+      ]
+    },
+    {
+      "text": "代码、数学、工具调用等专项能力：题目是通用用户指令（general user instructions），不是能力专项集。",
+      "cite": [
+        "tatsu-lab-alpaca-eval@About",
+        "tatsu-lab-alpaca-eval@AlpacaEval limitations"
+      ]
+    },
+    {
+      "text": "多轮对话、长上下文与超长生成：单轮指令、单次生成，生成上限 2000 token。",
+      "cite": [
+        "repo@Differences with AlpacaFarm"
+      ]
+    },
+    {
+      "text": "非英语与复杂指令：论文说题目是 a set of relatively simple English instructions，去偏机制只在这套题上验证过。",
+      "cite": [
+        "arxiv-2404-04475@§6 Limitations"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 805,
+    "splits": [],
+    "languages": [
+      "en"
+    ],
+    "source_type": "真实用户提交给 Alpaca web demo 的指令，经 AlpacaFarm 评测集加工",
+    "public_sample": true,
+    "totals": "805 条指令；人工两两标注 17,701 条（22 个模型 vs text-davinci-003 参考）；人工交叉标注 2,596 条（650 题 × 4 人）",
+    "cite": [
+      "repo@Data Release",
+      "arxiv-2404-04475@§2 Related work"
+    ],
+    "construction": [
+      {
+        "k": "指令来源",
+        "text": "固定 805 条指令，选自 Alpaca web demo 上的真实用户交互，作为用户请求的代表性样本。",
+        "cite": [
+          "arxiv-2404-04475@§2 Related work"
+        ]
+      },
+      {
+        "k": "与 AlpacaFarm 评测集的关系",
+        "text": "AlpacaEval 是 AlpacaFarm 自动两两偏好模拟器的改进与简化版，直接沿用其评测集。",
+        "cite": [
+          "repo@Differences with AlpacaFarm"
+        ]
+      },
+      {
+        "k": "指令与输入字段合并",
+        "text": "把 instruction 和 input 两个字段合并成单个 instruction 字段，影响 AlpacaFarm 评测集中 1/4 的样本（全部来自 self-instruct 子集）。",
+        "cite": [
+          "repo@Data Release"
+        ]
+      },
+      {
+        "k": "参考输出重新生成",
+        "text": "重新生成 text-davinci-003 的参考输出，这次不限制输出长度。",
+        "cite": [
+          "repo@Data Release"
+        ]
+      },
+      {
+        "k": "生成上限",
+        "text": "AlpacaFarm 时代上限 300 token，AlpacaEval 改为 2000 token。",
+        "cite": [
+          "repo@Differences with AlpacaFarm"
+        ]
+      },
+      {
+        "k": "人工标注池",
+        "text": "标注来自 Amazon Mechanical Turk 上 16 名众包工人；另抽 650 题每题收 4 人标注做交叉标注。",
+        "cite": [
+          "repo@Data Release"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "lc_win_rate",
+      "name": "长度控制胜率（LC win rate）",
+      "direction": "越高越好",
+      "description": "对每个模型拟合逻辑回归（指令 + 模型 + 与基线的长度差）预测偏好，再把长度差置 0 后平均得到的偏好概率；官网把它作为默认头条指标。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "repo@More information",
+        "repo@Major updates"
+      ]
+    },
+    {
+      "id": "win_rate",
+      "name": "原始胜率（win rate）",
+      "direction": "越高越好",
+      "description": "裁判在 805 条指令上偏好被测模型的期望概率，直接用偏好比例平均，不控制长度。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2404-04475@§2 Related work"
+      ]
+    },
+    {
+      "id": "human_agreement",
+      "name": "与人类标注的一致程度",
+      "direction": "越高越好",
+      "description": "自动裁判与人类多数标注的一致率；官方称 AlpacaEval 与人工标注高度一致，榜序与人工榜序高度相关，并称其一致率（66.4）略高于人类彼此之间（65.7）。",
+      "unit": "percent",
+      "cite": [
+        "tatsu-lab-alpaca-eval@About",
+        "repo@Related work"
+      ]
+    }
+  ],
+  "default_protocol": {
+    "raw": "让被测模型与 GPT-4 Preview (11/06) 参考答案在 805 条指令上各生成一个回答，用 GPT-4 Preview (11/06) 当裁判逐条判偏好，再把 805 个偏好转成胜率；官方默认口径是长度控制（LC）胜率。",
+    "cite": [
+      "tatsu-lab-alpaca-eval@About",
+      "arxiv-2404-04475@§2 Related work",
+      "repo@AlpacaEval 2.0"
+    ],
+    "variants": [
+      {
+        "text": "原始胜率：直接用裁判给出的偏好比例平均，不控制输出长度；对「请详细回答」这类 verbosity 提示很敏感。",
+        "cite": [
+          "arxiv-2404-04475@§4.1 Gameability"
+        ]
+      },
+      {
+        "text": "LC 胜率：对每个模型拟合逻辑回归（指令 + 模型 + 长度差），把长度差置 0 后平均；官网默认口径，也是论文主推的去偏版本。",
+        "cite": [
+          "repo@More information",
+          "repo@Major updates"
+        ]
+      },
+      {
+        "text": "AlpacaEval 1.0 vs 2.0：1.0 参考模型是 Davinci003、裁判是二值偏好；2.0 起参考换成 GPT-4 Preview (11/06)，裁判改用 logprob 算连续偏好得到加权胜率。",
+        "cite": [
+          "tatsu-lab-alpaca-eval@About",
+          "repo@AlpacaEval 2.0"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2023-05",
+      "label": "AlpacaEval 1.0 首发（仓库 bibtex：year 2023, month 5；参考模型 text-davinci-003，二值偏好裁判）",
+      "cite": [
+        "repo@Citation",
+        "tatsu-lab-alpaca-eval@About"
+      ]
+    },
+    {
+      "id": "v2",
+      "date": "2024-01-03",
+      "label": "升级 AlpacaEval 2.0：基线与裁判都换成 GPT4-turbo",
+      "cite": [
+        "repo@Major updates"
+      ]
+    },
+    {
+      "id": "v2-lc",
+      "date": "2024-03-12",
+      "label": "改用长度控制（LC）胜率，作为去偏版本",
+      "cite": [
+        "repo@Major updates"
+      ]
+    },
+    {
+      "id": "paper-v2",
+      "date": "2025-03-10",
+      "label": "论文 arXiv:2404.04475v2（AlpacaEval-LC 方法论证）",
+      "cite": [
+        "arxiv-2404-04475@标题与作者"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "原始胜率存在长度偏倚，可被 prompt 刷分",
+      "impact": "只改裁判提示里的 verbosity 要求，基线自己就从 22.9% 漂到 64.3%；跨 verbosity 提示的归一化标准差 25%。",
+      "severity": "高",
+      "response": "官方 2024-03-12 起默认改用 LC 胜率（同实验下降到 41.9%–51.6%，归一化标准差 10%），论文称榜序对 verbosity 提示基本稳定。",
+      "reader": "看到「胜率」先确认是 LC 还是原始口径；两个口径的数值不可直接比较。",
+      "cite": [
+        "arxiv-2404-04475@§4.1 Gameability",
+        "repo@Major updates"
+      ]
+    },
+    {
+      "issue": "LC 口径可能偏向用裁判模型输出微调过的模型",
+      "impact": "官网提示：长度控制能缓解 GPT-4 的长度偏倚，但可能有利于在其输出上微调过的模型。",
+      "severity": "高",
+      "response": "官方只做提示，没有给出量化修正；本站不对该风险做数值推断。",
+      "reader": "对被评测模型是否用 GPT-4 输出做过微调要保持警惕，必要时结合其他评测看。",
+      "cite": [
+        "tatsu-lab-alpaca-eval@页面提示"
+      ]
+    },
+    {
+      "issue": "题目偏简单、只覆盖英语",
+      "impact": "论文 Limitations 明确说题目是 relatively simple English instructions，且去偏机制只在这套题、这套裁判提示上验证过；官网也说评测集虽然多样但主要是简单指令。",
+      "severity": "中",
+      "response": "官方呼吁社区贡献更难、更复杂的评测集（如工具调用方向），并公开人工标注与分析工具。",
+      "reader": "高分不等于通用能力强；复杂指令、多语言、安全维度要另找评测。",
+      "cite": [
+        "arxiv-2404-04475@§6 Limitations",
+        "tatsu-lab-alpaca-eval@AlpacaEval limitations"
+      ]
+    },
+    {
+      "issue": "不评估安全性",
+      "impact": "官网明确写不评估任何模型的安全性；榜单高排名不提供任何安全性信息。",
+      "severity": "高",
+      "response": "官方把安全性评测列为欢迎贡献的方向之一。",
+      "reader": "不要用 AlpacaEval 排名推断模型安全性。",
+      "cite": [
+        "tatsu-lab-alpaca-eval@AlpacaEval limitations"
+      ]
+    },
+    {
+      "issue": "裁判自身有偏倚（LLM judge 自偏）",
+      "impact": "论文 Table 2 的结论是「LLM judges self-bias but the ranking is surprisingly stable」，即裁判偏好特定模式，但榜单排序相对稳健。",
+      "severity": "中",
+      "response": "官方提供人工标注与对比指标，便于社区自建裁判并分析偏倚。",
+      "reader": "可以信任相对排序，不要过度解读单个模型几个百分点的绝对差。",
+      "cite": [
+        "arxiv-2404-04475@§5 Table 2",
+        "tatsu-lab-alpaca-eval@About"
+      ]
+    },
+    {
+      "issue": "榜单条目验证程度分层，不都是官方核过",
+      "impact": "榜单按 filter 列分 community / minimal / verified：只有 verified 表示核心维护者解码过该模型输出并跑过评测，且官方只对前 5 名做复核。",
+      "severity": "中",
+      "response": "官方在仓库写明 verified 的定义与「只验前 5 名」的资源限制；榜首的对抗样本条目也被保留在榜上。",
+      "reader": "引用榜上分数前先看 filter 列；榜首的 NullModel (adversarial) 是对抗样本，不是模型能力。",
+      "cite": [
+        "repo@Contributing",
+        "leaderboard-2@榜首两行"
+      ]
+    }
+  ],
+  "notes": null,
+  "official_sources": [
+    {
+      "kind": "site",
+      "url": "https://tatsu-lab.github.io/alpaca_eval/"
+    },
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2404.04475"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/tatsu-lab/alpaca_eval"
+    },
+    {
+      "kind": "leaderboard",
+      "url": "https://raw.githubusercontent.com/tatsu-lab/alpaca_eval/main/docs/data_AlpacaEval_2/weighted_alpaca_eval_gpt4_turbo_leaderboard.csv"
+    }
+  ],
+  "related_benchmarks": [
+    "arena",
+    "mtbench",
+    "ifeval",
+    "arenahard",
+    "wildbench"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "arxiv-2404-04475",
+        "kind": "paper",
+        "title": "Length-Controlled AlpacaEval: A Simple Way to Debias Automatic Evaluators（arXiv:2404.04475v2）",
+        "url": "https://arxiv.org/abs/2404.04475",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "tatsu-lab-alpaca-eval",
+        "kind": "site",
+        "title": "tatsu-lab.github.io/alpaca_eval — AlpacaEval 官网榜单与说明",
+        "url": "https://tatsu-lab.github.io/alpaca_eval/",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "tatsu-lab/alpaca_eval — README（版本、数据发布、口径说明）",
+        "url": "https://github.com/tatsu-lab/alpaca_eval",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "leaderboard-2",
+        "kind": "leaderboard",
+        "title": "weighted_alpaca_eval_gpt4_turbo_leaderboard.csv — AlpacaEval 2.0 榜单原始数据",
+        "url": "https://raw.githubusercontent.com/tatsu-lab/alpaca_eval/main/docs/data_AlpacaEval_2/weighted_alpaca_eval_gpt4_turbo_leaderboard.csv",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "斯坦福大学（论文署名 Yann Dubois、Balázs Galambosi、Percy Liang、Tatsunori B. Hashimoto；Galambosi 为独立研究者）；榜单与代码由 tatsu-lab 维护",
+        "cite": [
+          "arxiv-2404-04475@标题与作者",
+          "repo@Citation"
+        ]
+      },
+      "first_release": {
+        "v": "2023-05（仓库 bibtex：year 2023, month 5）",
+        "cite": [
+          "repo@Citation"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "arxiv-2404-04475@§2 Related work",
+        "tatsu-lab-alpaca-eval@About",
+        "repo@AlpacaEval 2.0"
+      ],
+      "interpretation": [
+        "arxiv-2404-04475@§2 Related work",
+        "arxiv-2404-04475@§4.1 Gameability",
+        "repo@More information"
+      ]
+    },
+    "problem": {
+      "text": "评指令跟随能力通常要人来跟模型反复对话，慢、贵、难复现。AlpacaEval 用一个强 LLM（GPT-4）当裁判，把「模型答得好不好」变成几分钟能跑完、可复现的自动两两对比。",
+      "cite": [
+        "repo@Overview"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "50% = 与参考基线打平",
+        "value": "50%",
+        "note": "胜率取值 [0%, 100%]，互换对比双方时两个胜率相加为 100%，模型和自己比恒为 50%。",
+        "cite": [
+          "arxiv-2404-04475@§2 Related work",
+          "leaderboard-2@基线行"
+        ]
+      },
+      {
+        "label": "参考基线本身",
+        "value": "LC 50.0% / 原始 50.0%",
+        "note": "GPT-4 Preview (11/06) 同时是参考答案和自动裁判，自比为 50%。",
+        "cite": [
+          "leaderboard-2@基线行"
+        ]
+      },
+      {
+        "label": "榜单当前第一（未验证条目）",
+        "value": "LC 86.5% / 原始 76.9%",
+        "note": "NullModel (adversarial)，链接指向 Cheating-LLM-Benchmarks，是对抗样本而非正常模型。",
+        "cite": [
+          "leaderboard-2@榜首两行"
+        ]
+      },
+      {
+        "label": "榜单当前第二（未验证条目）",
+        "value": "LC 78.5% / 原始 77.6%",
+        "note": "SelfMoA + gemma-2-9b-it-WPO-HB，社区提交。",
+        "cite": [
+          "leaderboard-2@榜首两行"
+        ]
+      },
+      {
+        "label": "verified 条目中的最高",
+        "value": "LC 51.9% / 原始 57.5%",
+        "note": "Yi-Large Preview；同表 GPT-4 (03/14) 为 LC 35.3% / 原始 22.1%，GPT-4 Turbo (04/09) 为 LC 55.0% / 原始 46.1%。",
+        "cite": [
+          "leaderboard-2@verified 行",
+          "leaderboard-2@GPT-4 行",
+          "leaderboard-2@GPT-4 Turbo 行"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 50% 当成「及格线」。它只是与 GPT-4 Preview 参考答案打平的意思，没有任何分数线含义。",
+        "cite": [
+          "arxiv-2404-04475@§2 Related work"
+        ]
+      },
+      {
+        "text": "拿原始胜率和 LC 胜率直接比大小。两者是不同口径，原始口径可被 verbosity 提示刷高几十个百分点。",
+        "cite": [
+          "arxiv-2404-04475@§4.1 Gameability"
+        ]
+      },
+      {
+        "text": "看到榜首 86.5% 就认为模型远胜 GPT-4。那是 NullModel (adversarial) 对抗样本，官方仍把它留在榜上。",
+        "cite": [
+          "leaderboard-2@榜首两行"
+        ]
+      },
+      {
+        "text": "以为榜上每条都是官方核过的。filter 列分 community / minimal / verified，只有 verified 表示核心维护者解码输出并跑过评测，且官方只验前 5 名。",
+        "cite": [
+          "repo@Contributing",
+          "leaderboard-2@CSV 表头"
+        ]
+      },
+      {
+        "text": "用 AlpacaEval 排名推断安全性、代码能力或多语言能力。官网明确说不评估安全性，题目是简单的英语通用指令。",
+        "cite": [
+          "tatsu-lab-alpaca-eval@AlpacaEval limitations",
+          "arxiv-2404-04475@§6 Limitations"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "斯坦福大学；论文署名 Yann Dubois、Balázs Galambosi、Percy Liang、Tatsunori B. Hashimoto",
+        "cite": [
+          "arxiv-2404-04475@标题与作者"
+        ]
+      },
+      {
+        "k": "仓库署名作者",
+        "v": "Xuechen Li、Tianyi Zhang、Yann Dubois、Rohan Taori、Ishaan Gulrajani、Carlos Guestrin、Percy Liang、Tatsunori B. Hashimoto（alpaca_eval 仓库 bibtex）",
+        "cite": [
+          "repo@Citation"
+        ]
+      },
+      {
+        "k": "基准出身",
+        "v": "AlpacaEval 是 AlpacaFarm 自动两两偏好模拟器的改进与简化版，直接沿用 AlpacaFarm 评测集（805 条）。",
+        "cite": [
+          "repo@Differences with AlpacaFarm"
+        ]
+      },
+      {
+        "k": "人工标注规模",
+        "v": "17,701 条两两标注（22 个模型 vs text-davinci-003 参考，16 名 MTurk 众包工人）+ 2,596 条交叉标注（650 题 × 4 人）；README 称其验证自 20K 人工标注。",
+        "cite": [
+          "repo@Data Release",
+          "repo@Overview"
+        ]
+      },
+      {
+        "k": "与人类的一致性",
+        "v": "README 称其与人工多数标注的一致率（66.4）略高于人类彼此之间（65.7）；官网称与人工标注高度一致、榜序与人工榜序高度相关。",
+        "cite": [
+          "repo@Related work",
+          "tatsu-lab-alpaca-eval@About"
+        ]
+      },
+      {
+        "k": "去偏版本与 Arena 相关性",
+        "v": "论文：长度控制把与 LMSYS Chatbot Arena 的 Spearman 相关从 0.94 提到 0.98；README 同一处写「from 0.93 to 0.98」，两个数字不一致，本站以论文为准并保留差异记录。",
+        "cite": [
+          "arxiv-2404-04475@§4.2 Correlation",
+          "repo@More information"
+        ]
+      },
+      {
+        "k": "2.0 的裁判改动",
+        "v": "裁判改用 gpt4_turbo、提示改为只输出单个 token 以进一步降本提速、并用 logprob 算连续偏好得到加权胜率（1.0 为二值偏好）。",
+        "cite": [
+          "repo@AlpacaEval 2.0"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-14",
+        "columns": [
+          "模型",
+          "LC 胜率",
+          "原始胜率",
+          "平均输出长度（token）",
+          "验证等级"
+        ],
+        "rows": [
+          [
+            "NullModel (adversarial)（对抗样本，非正常模型）",
+            "86.5%",
+            "76.9%",
+            "872",
+            "community"
+          ],
+          [
+            "SelfMoA + gemma-2-9b-it-WPO-HB",
+            "78.5%",
+            "77.6%",
+            "3261",
+            "community"
+          ],
+          [
+            "GPT-4 Turbo (04/09)",
+            "55.0%",
+            "46.1%",
+            "1802",
+            "minimal"
+          ],
+          [
+            "GPT-4 Preview (11/06)（参考基线）",
+            "50.0%",
+            "50.0%",
+            "2049",
+            "minimal"
+          ],
+          [
+            "Yi-Large Preview",
+            "51.9%",
+            "57.5%",
+            "2335",
+            "verified"
+          ],
+          [
+            "GPT-4 (03/14)",
+            "35.3%",
+            "22.1%",
+            "1371",
+            "verified"
+          ]
+        ]
+      },
+      "cite": [
+        "leaderboard-2@CSV 表头",
+        "leaderboard-2@榜首两行",
+        "leaderboard-2@基线行",
+        "leaderboard-2@GPT-4 Turbo 行",
+        "leaderboard-2@verified 行",
+        "leaderboard-2@GPT-4 行"
+      ]
+    }
+  }
+}

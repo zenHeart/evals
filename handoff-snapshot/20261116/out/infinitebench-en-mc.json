@@ -1,0 +1,487 @@
+{
+  "id": "infinitebench-en-mc",
+  "name": "InfiniteBench (EN.MC)",
+  "full_name": "InfiniteBench（∞Bench）En.MC 子任务：在长篇小说上下文上的英文四选一问答",
+  "aliases": [],
+  "status": null,
+  "categories": [
+    "longctx"
+  ],
+  "summary": "InfiniteBench（∞Bench）是清华大学计算机科学与技术系 2024 年 2 月公开的长上下文评测集，共 12 个任务、3946 道题，平均长度约 200K token。En.MC 是其中一个英文子任务：把一整部长篇小说交给模型，回答一道四选一选择题，按选项字母判准确率；229 道题，平均输入 184.4K token、平均输出 5.3 token。",
+  "interpretation": "En.MC 分数越高，说明模型在 100K+ token 的上下文里定位并利用细节的能力越强。它只判一个字母：答非所问、输出多个字母或一个字母都不输出都记 0 分，因此分数对提示词模板和答案解析方式敏感，跨论文直接比分数需谨慎。它不衡量写作、摘要、代码、数学或短上下文常识，也不等于“能安全处理 200K 文档”的工程结论；超过模型上下文窗口的题会被删中段处理，此时答错反映的是截断而非能力。",
+  "measures": [
+    {
+      "area": "长篇小说细节理解（∞Bench 的 novels 域）",
+      "focus": "给出小说全文，回答一道关于角色或情节细节的四选一问题。同库 En.QA 的问句样例为“What color dress did A wear when A met B for the second time?”，En.MC 的问句形式与之同源，只是额外给出 A–D 四个选项。",
+      "share": "229 题，占 ∞Bench 全部 3946 题的约 5.8%（229/3946，由本站按两个来源的题量相除得出）",
+      "format": "四选一单选（A/B/C/D），模型只输出一个字母",
+      "cite": [
+        "paper@Table 2",
+        "paper@§3.1.1"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "不测开放式生成：En.MC 只判选项字母，回答里的解释、推理链和文风不计分。",
+      "cite": [
+        "paper@Table 3"
+      ]
+    },
+    {
+      "text": "不测短上下文常识、代码、数学与中文能力：这些由 ∞Bench 的 Code.*、Math.*、Zh.QA 等子任务分别承担。",
+      "cite": [
+        "paper@§2"
+      ]
+    },
+    {
+      "text": "不证明模型能处理超过自身上下文窗口的输入：超长样本被删中段处理，答案可能正好落在被删掉的段落里。",
+      "cite": [
+        "paper@§4.2",
+        "lara@§2.1"
+      ]
+    },
+    {
+      "text": "不覆盖 100K token 以上的极端长度：论文 Limitations 明确说支持到 100K 的上下文对需要分析更大数据集的场景仍显不足。",
+      "cite": [
+        "paper@Limitations"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 229,
+    "splits": [
+      "longbook_choice_eng"
+    ],
+    "languages": [
+      "English"
+    ],
+    "source_type": "人工标注的真实小说（经实体替换改写）长上下文问答",
+    "public_sample": "Hugging Face 数据集卡公开该 split，数据集许可 apache-2.0，总文件大小约 2.5 GB；代码与数据文件见 GitHub 仓库 data/ 目录下的 longbook_choice_eng.jsonl",
+    "totals": "En.MC 共 229 道人工标注的四选一题，平均输入 184.4K token、平均输出 5.3 token；题目来自经过实体替换的小说文本。",
+    "cite": [
+      "paper@Table 2",
+      "repo@README",
+      "hf-infinitebench@README"
+    ],
+    "construction": [
+      {
+        "k": "选题源",
+        "text": "从公开学习辅导网站抓取小说与导读材料作为语料。",
+        "cite": [
+          "paper@§3.1.1"
+        ]
+      },
+      {
+        "k": "关键实体替换",
+        "text": "训练时把标注者选定的显著实体（如主角姓名）替换成无关名字，生成“fake novels”（假小说），以此规避训练数据污染；所有英文任务共用同一套改写后的小说。",
+        "cite": [
+          "paper@§3.1.1"
+        ]
+      },
+      {
+        "k": "出题",
+        "text": "作者基于假小说人工标注多选题，并为每道题构造四个选项，标注要求是把选项设计得有挑战性。",
+        "cite": [
+          "paper@§3.1.1",
+          "paper@附录 C"
+        ]
+      },
+      {
+        "k": "质检",
+        "text": "标注由论文作者无偿完成，每条标注至少由另外两名标注者复核。",
+        "cite": [
+          "paper@附录 C"
+        ]
+      },
+      {
+        "k": "超长输入截断",
+        "text": "当输入超过被测模型的上下文窗口（论文以 128K 为例）时，删除中段并把首尾拼接。",
+        "cite": [
+          "paper@§4.2"
+        ]
+      },
+      {
+        "k": "分发",
+        "text": "数据放在 Hugging Face 数据集与 GitHub 仓库，仓库同时提供评测代码。",
+        "cite": [
+          "repo@README",
+          "hf-infinitebench@README"
+        ]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "零样本直接问答。提示词为“Read the book and answer the question.”后接 <context> 与 Question: <question>，再跟“Only one of the following options is correct, tell me the answer using one single letter (A, B, C, or D). Don't say anything else.”，最后列出 A.–D. 四个选项；YaRN-Mistral 的变体在选项后追加“The correct option is:”。使用默认解码参数，En.MC 的最大输出长度为 40 token。若模型没有输出任何选项字母，视为空预测并记 0 分。",
+    "cite": [
+      "paper@附录 B.6",
+      "paper@Table 5",
+      "paper@Table 3"
+    ],
+    "variants": [
+      {
+        "text": "被测模型与调用方式不同：论文用 GPT-4 官方 API（总花费约 5000 美元）、Claude 2 网页手工输入（约 160 美元会员费）、Kimi-Chat 免费、YaRN-Mistral 在单张 A100 80GB 上推理（每题约 10 分钟）。",
+        "cite": [
+          "paper@附录 D"
+        ]
+      },
+      {
+        "text": "截断策略不同：输入超过模型窗口时删中段拼首尾，窗口长度不同的模型实际读到的文本并不相同。",
+        "cite": [
+          "paper@§4.2"
+        ]
+      },
+      {
+        "text": "是否允许外部检索预处理：论文明确提醒用户不要使用外部检索预处理以保证评测公平。",
+        "cite": [
+          "paper@§3.1.1"
+        ]
+      },
+      {
+        "text": "第三方复现口径：LaRA 把超长样本切成多段分别送入、让模型先判断是否可答再投票汇总，该口径下 Qwen-2.5-7B 得 87.9、高于 GPT-4o 的 76.0，与官方表格不可直接比较。",
+        "cite": [
+          "lara@Table 1",
+          "lara@§2.1"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "accuracy",
+      "name": "准确率（Accuracy）",
+      "direction": "越高越好",
+      "description": "四选一单选，按模型最终输出的选项字母与标准答案比对；未输出任何选项字母记 0 分。",
+      "range": "0–100%",
+      "unit": "%",
+      "cite": [
+        "repo@README",
+        "paper@Table 3"
+      ]
+    }
+  ],
+  "versions": [
+    {
+      "id": "arxiv-v1",
+      "date": "2024-02-21",
+      "label": "arXiv v1 首次公开（cs.CL）",
+      "cite": [
+        "paper@arXiv 提交历史"
+      ]
+    },
+    {
+      "id": "arxiv-v3",
+      "date": "2024-02-24",
+      "label": "arXiv v3，本档案所据版本",
+      "cite": [
+        "paper@arXiv 页眉",
+        "paper@arXiv 提交历史"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "训练数据污染风险。小说取自公开学习辅导网站，作者用“关键实体替换”制造假小说来规避，但仍有部分小说未做替换；第三方复现还发现部分替换不成功，问题里提到的实体在上下文里根本不存在。",
+      "impact": "模型可能靠记忆原文而非阅读上下文得分，分数被高估。",
+      "severity": "高",
+      "response": "论文说明部分小说因太新或冷门、模型认不出其中实体而未做替换；LaRA 建议按时间线选材以防泄漏。",
+      "reader": "看到 70% 以上的高分时，先确认模型是否见过原文，再判断其长上下文能力。",
+      "cite": [
+        "paper@附录 C",
+        "paper@§3.1.1",
+        "lara@§2.1"
+      ]
+    },
+    {
+      "issue": "长度上限与删中段截断。基准只支持到 100K token，超过模型窗口的样本被删中段，答案可能正好落在中段。",
+      "impact": "在 128K 以下窗口的模型上测得的低分混杂了截断带来的损失，不能直接等同于能力差距。",
+      "severity": "高",
+      "response": "论文在 Limitations 中把“探索模型处理百万 token 的能力”列为后续方向；未见针对 En.MC 的官方修订。",
+      "reader": "对比不同窗口长度的模型时，先查各自实际看到的上下文是否一致。",
+      "cite": [
+        "paper@Limitations",
+        "paper@§4.2",
+        "lara@§2.1"
+      ]
+    },
+    {
+      "issue": "判分依赖精确匹配与答案解析。模型不输出选项字母即记 0 分，换提示词模板或换答案解析逻辑会改变分数。",
+      "impact": "同一模型在不同提示词下的分数不可比，也可能低估能给出正确内容但不按格式作答的模型。",
+      "severity": "中",
+      "response": "论文在 Limitations 中说明为新模型评估需要定制化重新设计。",
+      "reader": "复现时固定提示词与答案解析方式，否则不要跨报告比分。",
+      "cite": [
+        "paper@Table 3",
+        "paper@Limitations"
+      ]
+    },
+    {
+      "issue": "题量与题材多样性有限。229 道题，题材受小说来源限制，作者自认基准“可能不够多样或广泛，不足以全面评估模型能力”。",
+      "impact": "单个模型的分数波动区间有限，细微差距的统计意义不强。",
+      "severity": "中",
+      "response": "论文承认这是多数基准共有的约束；未见官方扩充计划。",
+      "reader": "把 En.MC 当成长上下文能力的粗筛，不要当成唯一依据。",
+      "cite": [
+        "paper@Limitations",
+        "paper@Table 2"
+      ]
+    }
+  ],
+  "notes": "Llama 3 论文在长上下文章节引用了 En.MC 的零样本结果（405B 83.4 ± 4.8），可作为官方后续参考点。",
+  "official_sources": [
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2402.13718"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/OpenBMB/InfiniteBench"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/xinrongzhang2022/InfiniteBench"
+    }
+  ],
+  "related_benchmarks": [
+    "ruler",
+    "longbench",
+    "zeroscrolls-quality"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-13",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "∞Bench: Extending Long Context Evaluation Beyond 100K Tokens（arXiv:2402.13718v3）",
+        "url": "https://arxiv.org/pdf/2402.13718",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "OpenBMB/InfiniteBench GitHub 仓库与 README",
+        "url": "https://github.com/OpenBMB/InfiniteBench",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "hf-infinitebench",
+        "kind": "dataset",
+        "title": "Hugging Face 数据集卡 xinrongzhang2022/InfiniteBench",
+        "url": "https://huggingface.co/datasets/xinrongzhang2022/InfiniteBench",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "llama31-paper",
+        "kind": "paper",
+        "title": "The Llama 3 Herd of Models（arXiv:2407.21783）",
+        "url": "https://arxiv.org/pdf/2407.21783",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "lara",
+        "kind": "paper",
+        "title": "LaRA: Benchmarking Retrieval-Augmented Generation and Long-Context LLMs — No Silver Bullet for LC or RAG Routing（arXiv:2502.09977v2）",
+        "url": "https://arxiv.org/abs/2502.09977",
+        "accessed": "2026-11-13"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "清华大学计算机科学与技术系（Department of Computer Science and Technology, Tsinghua University）；代码与数据由 OpenBMB 在 GitHub 仓库维护，数据集发布在 Hugging Face",
+        "cite": [
+          "paper@作者单位",
+          "repo@README"
+        ]
+      },
+      "first_release": {
+        "v": "2024-02-21（arXiv v1 首次公开）",
+        "cite": [
+          "paper@arXiv 提交历史"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "paper@§2",
+        "paper@Table 2",
+        "repo@README"
+      ],
+      "interpretation": [
+        "paper@Table 3",
+        "paper@§4.2",
+        "paper@Limitations",
+        "lara@§2.1"
+      ]
+    },
+    "problem": {
+      "text": "在 ∞Bench 之前，公开的长上下文基准普遍只覆盖 10K token 左右的上下文，无法评估和比较模型处理更长上下文的能力；论文据此提出第一个平均数据长度超过 100K token 的 LLM 基准，并要求任务真正依赖长程依赖而非片段检索。",
+      "cite": [
+        "paper@Abstract",
+        "paper@§2"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机基线（四选一）",
+        "value": "论文未给出",
+        "note": "En.MC 为四选一单选，但论文未报告随机基线，本档不做推算。",
+        "cite": [
+          "paper@§3.1.1"
+        ]
+      },
+      {
+        "label": "论文发布时最好成绩（2024-02，arXiv v3 主表）",
+        "value": "72.49%（Kimi-Chat）",
+        "note": "同表 GPT-4 67.25%、Claude 2 62.88%、YaRN-Mistral-7B 27.95%；12 个任务的平均分 GPT-4 45.63 最高。",
+        "cite": [
+          "paper@Table 3"
+        ]
+      },
+      {
+        "label": "其他官方模型论文报告的最好成绩",
+        "value": "83.4 ± 4.8（Llama 3 405B）",
+        "note": "来自 Llama 3 论文的长上下文附表（Table 21），同表 GPT-4 72.0 ± 5.8、GPT-4o 82.5 ± 4.9、Claude 3.5 Sonnet 未报告；该论文在正文中称其 405B 在该任务上优于所有其他模型。",
+        "cite": [
+          "llama31-paper@Table 21",
+          "llama31-paper@§5.2.6"
+        ]
+      },
+      {
+        "label": "第三方复现最高（LaRA，分段+投票口径）",
+        "value": "87.9%（Qwen-2.5-7B）",
+        "note": "该口径把超长样本切段后分别送入并投票，与官方表格不可直接比较。",
+        "cite": [
+          "lara@Table 1"
+        ]
+      },
+      {
+        "label": "噪声与饱和参考线",
+        "value": "论文未给出",
+        "note": "论文未给人类基线与饱和线；长度消融显示模型性能普遍随输入变长而下降，论文也未观察到一致的“lost in the middle”现象。",
+        "cite": [
+          "paper@§5.1"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 70% 以上的分数读成“模型读懂了整本小说”。En.MC 只判一个字母，答案可能靠定位单个段落得到；同库任务已被第三方指出可被外部检索预处理轻易解出，论文也因此呼吁不要使用外部检索。",
+        "cite": [
+          "paper@§3.1.1",
+          "lara@§2.1"
+        ]
+      },
+      {
+        "text": "把不同论文的 En.MC 分数直接对比。Llama 3 论文的 Table 2 与 Table 21 对 GPT-4 分别记 72.1 与 72.0；各家的提示词模板、截断策略、解码参数和调用方式也并不一致。",
+        "cite": [
+          "llama31-paper@Table 2",
+          "llama31-paper@Table 21",
+          "paper@附录 D"
+        ]
+      },
+      {
+        "text": "以为答错就是上下文窗口不够长。超过模型窗口的样本会被删中段处理，答案可能正好落在被删掉的中段，此时失败反映的是截断而非能力。",
+        "cite": [
+          "paper@§4.2",
+          "lara@§2.1"
+        ]
+      },
+      {
+        "text": "以为这是中英双语通用的评测。En.MC 只覆盖英文小说；中文小说问答是 ∞Bench 的另一个子任务 Zh.QA。",
+        "cite": [
+          "paper@§2",
+          "paper@Table 2"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方与作者",
+        "v": "清华大学计算机科学与技术系；作者为 Xinrong Zhang、Yingfa Chen、Shengding Hu、Zihang Xu、Junhao Chen、Moo Khai Hao、Xu Han、Zhen Leng Thai、Shuo Wang、Zhiyuan Liu、Maosong Sun。",
+        "cite": [
+          "paper@作者单位"
+        ]
+      },
+      {
+        "k": "代码与数据位置",
+        "v": "论文 arXiv:2402.13718；代码与数据在 GitHub OpenBMB/InfiniteBench（MIT 许可），数据集在 Hugging Face xinrongzhang2022/InfiniteBench（apache-2.0），En.MC 对应文件 longbook_choice_eng.jsonl。",
+        "cite": [
+          "repo@README",
+          "hf-infinitebench@README"
+        ]
+      },
+      {
+        "k": "全库规模",
+        "v": "∞Bench 共 12 个任务、5 个域（retrieval、code、math、novels、dialogue），3946 道题，平均长度约 200K token。",
+        "cite": [
+          "paper@§2"
+        ]
+      },
+      {
+        "k": "正式发表",
+        "v": "2024 年 8 月以长文形式发表于第 62 届 ACL 年会（Volume 1: Long Papers），论文集合出版方为 Association for Computational Linguistics，页码 15262–15277。",
+        "cite": [
+          "hf-infinitebench@Citation"
+        ]
+      },
+      {
+        "k": "评测成本（论文口径）",
+        "v": "GPT-4 走官方 API，全基准花费约 5000 美元；Claude 2 网页手工输入，约 160 美元会员费；Kimi-Chat 免费；YaRN-Mistral 单卡 A100 80GB，每题约 10 分钟。",
+        "cite": [
+          "paper@附录 D"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2024-02-24",
+        "columns": [
+          "模型",
+          "En.MC 准确率（%）"
+        ],
+        "rows": [
+          [
+            "Kimi-Chat",
+            "72.49"
+          ],
+          [
+            "GPT-4",
+            "67.25"
+          ],
+          [
+            "Claude 2",
+            "62.88"
+          ],
+          [
+            "Yi-34B-200K",
+            "38.43"
+          ],
+          [
+            "Yi-6B-200K",
+            "36.68"
+          ],
+          [
+            "YaRN-Mistral-7B",
+            "27.95"
+          ],
+          [
+            "ChatGLM-3-6B-128K",
+            "10.48"
+          ]
+        ]
+      },
+      "cite": [
+        "paper@Table 3",
+        "repo@README"
+      ]
+    }
+  }
+}

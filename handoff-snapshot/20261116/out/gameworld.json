@@ -1,0 +1,419 @@
+{
+  "id": "gameworld",
+  "name": "GameWorld",
+  "full_name": "GameWorld: Towards Standardized and Verifiable Evaluation of Multimodal Game Agents",
+  "aliases": [],
+  "status": "active",
+  "categories": [
+    "agent"
+  ],
+  "summary": "34 款浏览器游戏、170 个任务的游戏智能体评测：统一 Computer-Use 与 Generalist 两种动作接口，在推理期暂停的浏览器沙盒里跑，从序列化 gameAPI 状态算成功率与归一化进度。",
+  "interpretation": "分数衡量「在固定动作预算内把任务推进到什么程度」：SR 是是否达成目标（0/1），PG 是从起始分到目标分的归一化进度（0–1，未完成也拿部分分）。论文 18 组模型-接口组合中最强 agent 整体 PG 仅 41.9、SR 仅 21.2%，远低于同预算的人类新手基线（64.1 PG / 55.3 SR），所以低分是设计预期而非模型异常。跨接口、跨协议（100 步论文口径 vs 400 步 Fine-Control 口径）的数字不可直接比较。",
+  "measures": [
+    {
+      "area": "浏览器游戏任务完成",
+      "focus": "Runner / Arcade / Platformer / Puzzle / Simulation 五类共 170 个任务，每任务一条自然语言指令 + 定量目标 + 状态可验证 evaluator",
+      "share": "100%（170/170 任务）",
+      "format": "单 episode：截图观察 → 每步一个动作 → 读状态判分",
+      "cite": ["paper@§3.2", "paper@§3.3"]
+    },
+    {
+      "area": "双接口同台对比",
+      "focus": "同一模型在 Computer-Use Agent（直接发键鼠）与 Generalist MLLM（Semantic Action Parsing 语义动作空间）两种接口下的成绩差",
+      "share": "18 组模型-接口组合（8 CUA + 10 Generalist）",
+      "format": "同一批任务、同一运行时与 verifier 下跑两种接口",
+      "cite": ["paper@§4.1", "site@FAQ"]
+    },
+    {
+      "area": "五级能力课程诊断",
+      "focus": "按能力瓶颈把 34 款游戏分层：L1 基本控制与时机落地 / L2 System-1 反应控制 / L3 System-2 空间导航 / L4 符号推理与策略 / L5 开放世界协调与管理",
+      "share": "34 款游戏全部分层（附加分析，不计入主榜）",
+      "format": "每层平均任务进度的雷达图剖面",
+      "cite": ["paper@§4.4"]
+    },
+    {
+      "area": "实时交互（GameWorld-RT）",
+      "focus": "推理期间环境不暂停，响应延迟本身成为任务难度的一部分",
+      "share": "2 个开源 backbone × 2 接口的附加分析",
+      "format": "单独基准变体，结果不与默认暂停口径混读",
+      "cite": ["paper@§4.5.1"]
+    },
+    {
+      "area": "记忆与动作有效性诊断",
+      "focus": "上下文记忆轮数对 prompt 长度、时延与 PG 的影响；无效动作率 IAR（No-Tool-Call + Out-of-Space）",
+      "share": "附加分析，不计入主榜",
+      "format": "消融表 + 无效动作分类统计",
+      "cite": ["paper@§4.5.2", "paper@§4.5.3"]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "不测响应速度本身：默认口径在推理期间暂停游戏，成绩反映决策质量而非快慢；速度只在 GameWorld-RT 变体里作为任务难度的一部分被考察。",
+      "cite": ["paper@§3.4", "paper@§4.5.1"]
+    },
+    {
+      "text": "不用视觉启发式、OCR 或 VLM/LLM-as-judge 判分，也不评判轨迹过程是否「像人」——只看任务终局状态是否达标。",
+      "cite": ["paper@§3.5", "site@FAQ"]
+    },
+    {
+      "text": "不测通用语言能力（对话、长文本、代码生成），也不测游戏之外的数字 agent 任务；范围限定在这 34 款浏览器游戏内。",
+      "cite": ["paper@§3.2"]
+    },
+    {
+      "text": "不提供向新游戏自动扩容的协议：每加入一个环境都要单独设计指令集、注册语义动作、埋状态字段，动作空间与任务强耦合。",
+      "cite": ["paper@§7"]
+    }
+  ],
+  "dataset": {
+    "sample_count": 170,
+    "splits": [],
+    "languages": [
+      "en"
+    ],
+    "source_type": "第三方浏览器游戏 + 人工编写的自然语言任务指令，每任务配定量目标与状态可验证 evaluator",
+    "public_sample": true,
+    "totals": "34 款浏览器游戏 / 170 个任务 / 233 个任务相关状态字段（平均每游戏 6.85 个）；另有 1,020 条公开完整轨迹（53.2 GB）",
+    "cite": ["paper@§3.2", "paper@§3.5", "dataset@数据集卡"],
+    "construction": [
+      {
+        "k": "选游戏",
+        "text": "按五个能力维度挑选 34 款浏览器游戏，覆盖 Runner、Arcade、Platformer、Puzzle、Simulation；交互结构从 2048、扫雷的稀疏棋盘推理，到 Temple Run 2、Pac-Man 的连续实时控制，再到 Monkey Mart、Minecraft Clone 的开放模拟，视觉呈现同时包含 2D 与 3D 视角。",
+        "cite": ["paper@§3.3", "site@首页"]
+      },
+      {
+        "k": "写任务",
+        "text": "每个游戏配若干条自然语言任务指令，每条带一个定量目标和一个可验证 evaluator；指令只给目标、不给中间引导，agent 必须在固定步数预算内从视觉观察自主决策。",
+        "cite": ["paper@§3.2", "site@首页"]
+      },
+      {
+        "k": "埋状态探针",
+        "text": "为每个游戏注入结构化 JavaScript 桥，把序列化 gameAPI 状态（生命周期状态、终局元数据、任务相关玩法变量如分数、关卡、坐标、生命、金币、检查点）直接暴露给 evaluator；共埋 233 个任务相关状态字段。",
+        "cite": ["paper@§3.5"]
+      },
+      {
+        "k": "接运行时",
+        "text": "每款游戏跑在独立浏览器实例里，遵循「截图 → 查询模型 → 执行一个动作」的观察-动作循环；首次决策前和每次 reset 后等待游戏进入可操作状态（readiness gate），并支持可配置游戏速度与确定性随机种子。",
+        "cite": ["paper@§3.4"]
+      },
+      {
+        "k": "公开资产",
+        "text": "完整游戏库单独放在 gameworld-project/GameWorld-Games；1,020 条已公开完整轨迹（Qwen3.8-Flash-Next / Gemini-3.8-Flash / GPT-6.1-Terra × General/CUA，53.2 GB）托管在 Hugging Face。",
+        "cite": ["repo@README", "dataset@数据集卡"]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "默认口径为「暂停-推理」协议：模型每一步先看一张游戏截图，输出恰好一个交互命令，按固定时长执行（通常 200–500 ms，随游戏而定），单任务动作预算 100 步；推理期间游戏暂停，因此分数反映决策质量而非响应速度。每步从序列化 gameAPI 状态读任务分数，算 SR（是否达标）与 PG（progress = clip[0,1]((q_max − b)/(τ − b))，b 为起始分、τ 为目标分，取 run 内最远归一化进度）。若任务配置 reset-on-fail，终局失败后环境重置并继续在同一预算内跑，run 级最佳进度保留，单次早期失误不会把整轮清零。",
+    "cite": ["paper@§4.1", "paper@§3.4", "paper@§3.5"],
+    "variants": [
+      {
+        "text": "GameWorld-RT（实时变体）：推理期间环境继续运行，响应延迟成为任务本身的一部分；其结果与默认暂停口径不可直接比较，因为同样动作预算下有效游戏时长包含了推理时间。",
+        "cite": ["paper@§4.5.1"]
+      },
+      {
+        "text": "Fine-Control Protocol（400 步上限）：官方仓库当前推荐的更高频统一交互协议，分支 fine-control-400-steps-202608、协议 id fine-control-2026-08，每 episode 上限 400 步；官方 leaderboard 用的就是这一口径，与论文的 100 步口径分数不可直接比较。",
+        "cite": ["repo@README", "repo@Leaderboard", "dataset@数据集卡"]
+      },
+      {
+        "text": "上下文记忆轮数消融：0/1/2 轮记忆会显著拉长 prompt 与时延（Generalist 约 1.3k→3.1k tokens、5.5→8.6 s/step；CUA 约 1.9k→5.6k tokens、7.2→12.8 s/step），且两种接口的 PG 走向相反。",
+        "cite": ["paper@§4.5.2"]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "sr",
+      "name": "Success Rate（成功率 SR）",
+      "direction": "higher",
+      "description": "一次运行是否达成任务目标的比例，单次运行取值为 0 或 1，聚合后按百分比报告；是「有没有做成」的门槛信号。",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["paper@§4.2", "site@FAQ"]
+    },
+    {
+      "id": "pg",
+      "name": "Progress（归一化进度 PG）",
+      "direction": "higher",
+      "description": "在固定步数预算内达到的最远归一化进度：progress = clip[0,1]((q_max − b)/(τ − b))，b 为任务起始分、τ 为目标分；给未完成运行部分分，是主排名依据。",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["paper@§4.2", "site@FAQ"]
+    },
+    {
+      "id": "iar",
+      "name": "Invalid Action Rate（无效动作率 IAR）",
+      "direction": "lower",
+      "description": "提出的动作中通不过工具调用解析、角色约束或解析器检查的比例，拆成 No-Tool-Call（未发出可执行工具调用）与 Out-of-Space（调用落到合法动作空间之外）两类；作为指令遵循可靠性的辅助信号，不计入主榜。",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["paper@§4.5.3"]
+    }
+  ],
+  "versions": [
+    {
+      "id": "v1-techreport",
+      "date": "2026-04-08",
+      "label": "arXiv v1 技术报告 + 项目主页上线，确立 100 步动作预算的默认「暂停-推理」口径",
+      "cite": ["paper@Abstract", "repo@更新日志"]
+    },
+    {
+      "id": "v1-1-eccv",
+      "date": "2026-06",
+      "label": "被 ECCV 2026 接收；同月被 Seed-2.1 Model Card 用作统一数字 agent 基准（月份精度，仓库更新日志未给具体日期）",
+      "cite": ["repo@更新日志"]
+    },
+    {
+      "id": "v2-fine-control",
+      "date": "2026-08",
+      "label": "推出 Fine-Control Protocol（分支 fine-control-400-steps-202608，协议 id fine-control-2026-08，400 步上限）；官方 leaderboard 切换至该口径（月份据分支/协议号推断）",
+      "cite": ["repo@README", "dataset@数据集卡"]
+    },
+    {
+      "id": "v2-1-award",
+      "date": "2026-09",
+      "label": "获 MDA Workshop @ ECCV 2026 Best Paper Runner-Up 并受邀 spotlight talk（月份精度）",
+      "cite": ["repo@更新日志"]
+    },
+    {
+      "id": "v3-external-harness",
+      "date": "2026-10",
+      "label": "第三方视觉 harness VISTA 用 GPT-5.6 Sol 报出 63.3% SR（非官方口径变更，是外部 harness 结果）（月份精度）",
+      "cite": ["repo@更新日志"]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "绝对分数仍然很低，上限信号强于排序信号",
+      "impact": "最强 agent 整体 SR 仅 12.4–21.2%、PG 39.8–41.9%，远低于同预算的人类新手基线（55.3 SR / 64.1 PG）；作为「当前能力远未成熟」的证据很硬，但相邻模型间的区分度有限。",
+      "severity": "高",
+      "response": "把 PG 当主要信号、SR 当门槛；跨模型比较优先看整体 PG 与五级课程剖面，不要只解读 SR；排名相邻的差距自行重跑验证。",
+      "reader": "看到低分不要判定「评测坏了」或「模型退化」——任务本身就是长程、部分可观测的闭环控制。",
+      "cite": ["paper@§4.2", "paper@§4.3"]
+    },
+    {
+      "issue": "两套协议口径不可混读",
+      "impact": "论文主表用 100 步动作预算，官方仓库当前 leaderboard 用 Fine-Control Protocol 400 步上限；同一模型在两套数字下的分数不可直接比较。",
+      "severity": "高",
+      "response": "引用任何 GameWorld 分数必须同时说明协议与步数预算；跨论文/仓库对比要么重跑，要么明确标注口径差异。",
+      "reader": "看到同一模型两个不同分数时，先查是 100 步还是 400 步口径。",
+      "cite": ["paper@§4.1", "repo@Leaderboard"]
+    },
+    {
+      "issue": "默认口径完全屏蔽响应速度",
+      "impact": "推理期间游戏暂停，延迟被彻底移除；GameWorld-RT 虽补上实时维度，但只覆盖 2 个开源 backbone × 2 接口，样本很薄，外推范围有限。",
+      "severity": "中",
+      "response": "关心部署时效时另看 GameWorld-RT，并明确其结论仅来自这四组设置。",
+      "reader": "不要用暂停口径的分数推断「这个 agent 玩得快不快」。",
+      "cite": ["paper@§3.4", "paper@§4.5.1"]
+    },
+    {
+      "issue": "记忆模块是选择性收益而非普适增益",
+      "impact": "增加记忆轮数显著拉长 prompt 与时延（CUA 从约 7.2 s/step 升到 12.8 s/step），且 CUA 接口的 PG 随记忆增加单调下降，只有 Generalist 接口小幅上升。",
+      "severity": "中",
+      "response": "把记忆长度当超参调，不要默认越长越好；报成绩时固定并披露记忆配置。",
+      "reader": "复现别人成绩时要核对记忆轮数，否则可能复现不出来。",
+      "cite": ["paper@§4.5.2"]
+    },
+    {
+      "issue": "接入新游戏需手工设计指令与动作空间",
+      "impact": "每加一个环境都要单独写指令集、注册语义动作、埋状态字段，动作空间与任务强耦合，论文明确这限制了向新游戏自动扩容；Semantic Action Parsing 的自动化生产被列为 future work。",
+      "severity": "中",
+      "response": "当前跨游戏扩展按新任务重新配置；自动化对齐方案落地前不要预期零配置扩容。",
+      "reader": "不要期待「把任意网页游戏丢进来就能跑」。",
+      "cite": ["paper@§7"]
+    },
+    {
+      "issue": "游戏版权与访问合规由使用者自负",
+      "impact": "benchmark 混合专有与开源浏览器游戏；使用者需自行购买或取得合法访问权，项目声明仅用于研究与 benchmark 用途，不授予第三方游戏资产的访问、复制、分发、修改或商业使用权。",
+      "severity": "中",
+      "response": "部署前确认每款游戏的许可与服务条款；分发或改造游戏资产前先取得授权。",
+      "reader": "内网部署或二次分发前先过合规，不要直接打包游戏资产。",
+      "cite": ["paper@附录 F"]
+    },
+    {
+      "issue": "鲁棒性重跑只覆盖两个开源 backbone",
+      "impact": "十次全量重跑只做了 Qwen3-VL-30B-A3B 与 Qwen3-VL-235B-A22B 各两个接口；其他模型的 run-to-run 波动没有实测数据，论文也明确「相近系统的很小差距不应在没有重跑证据的情况下被夸大」。",
+      "severity": "低",
+      "response": "比较接近的模型时自行重跑；引用单次运行分数时标注其未经重跑验证。",
+      "reader": "排名相邻 1–2 位的模型差距可能落在噪声内。",
+      "cite": ["paper@§4.3"]
+    }
+  ],
+  "notes": "v1 期「字节 Seed 引用」已核实：Seed-2.1 Model Card 把 GameWorld 用作统一数字 agent 基准，Seed-1.8 同时是被评测模型之一；benchmark 本身由 NUS 与牛津大学发布。原 official_sources 里的 Seed 博客全文未提及 GameWorld，已从来源中移除。",
+  "official_sources": [
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2604.07429"
+    },
+    {
+      "kind": "site",
+      "url": "https://gameworld-project.github.io/"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/gameworld-project/gameworld"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/yyyang/gameworld-benchmark-trajectories"
+    }
+  ],
+  "related_benchmarks": [
+    "androidworld",
+    "osworld",
+    "webarena"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "arxiv-2604-07429",
+        "kind": "paper",
+        "title": "GameWorld: Towards Standardized and Verifiable Evaluation of Multimodal Game Agents（arXiv:2604.07429v1 技术报告）",
+        "url": "https://arxiv.org/abs/2604.07429",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "site",
+        "kind": "site",
+        "title": "GameWorld 项目主页（Game Agent Benchmark）",
+        "url": "https://gameworld-project.github.io/",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "gameworld-project/GameWorld 官方仓库 README 与更新日志",
+        "url": "https://github.com/gameworld-project/gameworld",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "dataset",
+        "kind": "dataset",
+        "title": "yyyang/gameworld-benchmark-trajectories（Hugging Face 数据集卡）",
+        "url": "https://huggingface.co/datasets/yyyang/gameworld-benchmark-trajectories",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "新加坡国立大学（NUS）× 牛津大学",
+        "cite": ["paper@作者署名", "site@首页"]
+      },
+      "first_release": {
+        "v": "2026-04-08（arXiv v1 技术报告与项目主页）",
+        "cite": ["paper@Abstract", "repo@更新日志"]
+      }
+    },
+    "cites": {
+      "summary": ["paper@Abstract", "paper@§1", "site@首页"],
+      "interpretation": ["paper@§4.2", "site@FAQ", "paper@§4.1"]
+    },
+    "problem": {
+      "text": "把多模态大模型当成游戏 agent 评测，长期卡在三点：动作接口不统一——有的模型直接发原始键鼠，有的在语义动作空间里规划，同台比较没有共同分母；判分不可靠——主流游戏基准靠 OCR、像素启发式或 VLM-as-judge，噪声大且难复现；延迟与能力纠缠——实时游戏里推理慢一秒角色可能已掉下平台，容易把「想得慢」误判成「玩得差」。GameWorld 用一套归一化到原子键鼠事件的统一控制空间、一个推理期可暂停的浏览器沙盒，以及直接读序列化 gameAPI 状态的结果性 evaluator 同时解决这三点。",
+      "cite": ["paper@§1", "paper@§2.1", "paper@§3.4", "paper@§3.5"]
+    },
+    "ladder": [
+      {
+        "label": "默认暂停口径 · 最强 agent（论文 Table 6）",
+        "value": "41.9 PG / 21.2 SR（Gemini-3-Flash-Preview，Generalist 接口）",
+        "note": "18 组模型-接口组合中 PG 最高；CUA 接口最高为 Seed-1.8 的 39.8 PG / 20.0 SR。",
+        "cite": ["paper@§4.2", "paper@Table 6"]
+      },
+      {
+        "label": "Fine-Control 400 步口径 · 官方 leaderboard 最高",
+        "value": "76.79 PG / 61.18 SR（GPT-6.1-Terra，General 接口，1 run/task）",
+        "note": "同模型 CUA 接口为 72.53 PG / 55.29 SR；Qwen 系分数为 3 run 平均，Gemini/GPT 为 1 run。与上一行不同口径，不可直接比较。",
+        "cite": ["repo@Leaderboard"]
+      },
+      {
+        "label": "人类新手基线（同 100 步动作预算）",
+        "value": "64.1 PG / 55.3 SR（Novice Player）",
+        "note": "两位 CS 研究生中无先前游戏与任务接触的那位。",
+        "cite": ["paper@§4.2"]
+      },
+      {
+        "label": "人类专家基线（同 100 步动作预算）",
+        "value": "82.6 PG / 77.1 SR（Expert Player）",
+        "note": "另一位事先学习全部游戏规则并练习操作的参与者。",
+        "cite": ["paper@§4.2"]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "「分数这么低，说明评测或模型坏了」——低分是设计预期：任务本身是长程、部分可观测的闭环控制，最强 agent 也只有 21.2% SR，同预算的人类新手只有 55.3% SR。",
+        "cite": ["paper@§4.2"]
+      },
+      {
+        "text": "「论文说 41.9，leaderboard 说 76.79，谁对」——两套口径：论文 Table 6 是 100 步动作预算的默认暂停协议，官方 leaderboard 是 Fine-Control Protocol 400 步上限，分数不可直接比较。",
+        "cite": ["paper@§4.1", "repo@Leaderboard"]
+      },
+      {
+        "text": "「GameWorld 测的是模型反应速度」——默认口径在推理期间暂停游戏，速度被完全屏蔽；延迟只在 GameWorld-RT 变体里作为任务难度的一部分出现，且其结果要单独解读。",
+        "cite": ["paper@§3.4", "paper@§4.5.1"]
+      },
+      {
+        "text": "「分数是看图猜或让另一个模型当裁判打出来的」——SR/PG 全部从序列化 gameAPI 状态计算，不经过 OCR、像素启发式或 VLM-as-judge。",
+        "cite": ["paper@§3.5", "site@FAQ"]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "新加坡国立大学（NUS）与牛津大学；论文为 Technical Report，通讯作者 Hwee Tou Ng 与 Mike Zheng Shou。",
+        "cite": ["paper@作者署名", "site@首页"]
+      },
+      {
+        "k": "核心作者",
+        "v": "Mingyu Ouyang、Siyuan Hu（共同第一作者）、Kevin Qinghong Lin、Hwee Tou Ng、Mike Zheng Shou。",
+        "cite": ["site@引用"]
+      },
+      {
+        "k": "评测模型",
+        "v": "13 个基础模型共 18 组模型-接口组合：10 个专有模型（Claude-Sonnet-4.6、Gemini-2.5-Computer-Use、Gemini-3-Flash-Preview、GLM-4.6V、GPT-5.2、Grok-4.1-Fast-Reasoning、Kimi-K2.5、OpenAI-Computer-Use、Qwen3-VL-Plus、Seed-1.8）与 3 个开源模型（Qwen3-VL-235B-A22B、Qwen3-VL-30B-A3B、UI-TARS-1.5-7B）；带 computer-use 能力的模型会同时按两种接口评测。",
+        "cite": ["paper@§4.1"]
+      },
+      {
+        "k": "时间线",
+        "v": "2026-04 上线技术报告与项目页 → 2026-06 被 ECCV 2026 接收并进入 Seed-2.1 Model Card → 2026-08 推出 Fine-Control Protocol（400 步）→ 2026-09 获 MDA Workshop @ ECCV 2026 Best Paper Runner-Up → 2026-10 第三方 harness VISTA 报出 63.3% SR。",
+        "cite": ["repo@更新日志"]
+      },
+      {
+        "k": "数据与代码",
+        "v": "游戏库在 gameworld-project/GameWorld-Games；1,020 条公开轨迹（53.2 GB）在 Hugging Face yyyang/gameworld-benchmark-trajectories；本地运行需 Python 3.12 + Playwright Chromium + 各厂商 API key（或用 vLLM 自托管模型），通过 --config 指定 <game_id>+<task_id>+<model_spec> 预设启动单次评测。",
+        "cite": ["repo@README", "dataset@数据集卡"]
+      },
+      {
+        "k": "引用与联系",
+        "v": "BibTeX key 为 ouyang2026gameworld；项目欢迎提交新 agent 结果，联系邮箱 yyyangwhu@gmail.com。",
+        "cite": ["site@引用"]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-14",
+        "columns": ["模型", "每任务 run 数", "CUA SR", "CUA PG", "General SR", "General PG"],
+        "rows": [
+          ["Qwen3.5-9B", "3", "14.51%", "35.09%", "17.65%", "39.32%"],
+          ["Qwen3.5-27B", "3", "21.96%", "41.79%", "16.27%", "39.59%"],
+          ["Qwen3.5-35B-A3B", "3", "22.94%", "43.82%", "19.41%", "39.38%"],
+          ["Qwen3.5-122B-A10B", "3", "23.14%", "45.23%", "19.02%", "41.87%"],
+          ["Qwen3.6-27B", "3", "21.18%", "43.60%", "18.82%", "43.25%"],
+          ["Qwen3.6-35B-A3B", "3", "19.22%", "40.57%", "15.69%", "38.84%"],
+          ["Qwen3.8-27B", "3", "29.22%", "54.64%", "24.12%", "49.34%"],
+          ["Qwen3.8-Flash-Next", "3", "36.86%", "61.48%", "29.80%", "55.86%"],
+          ["Gemini-3.8-Flash", "1", "36.47%", "60.11%", "42.35%", "63.52%"],
+          ["GPT-6.1-Terra", "1", "55.29%", "72.53%", "61.18%", "76.79%"]
+        ]
+      },
+      "cite": ["repo@Leaderboard"]
+    }
+  }
+}

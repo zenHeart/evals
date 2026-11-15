@@ -1,0 +1,558 @@
+{
+  "id": "gdpval-mm",
+  "name": "GDPval-MM（MiniMax）",
+  "full_name": null,
+  "aliases": [
+    "GDPval-MM",
+    "MiniMax 内部 Cowork Agent 评测框架"
+  ],
+  "status": "active",
+  "categories": [
+    "agent"
+  ],
+  "summary": "MiniMax 内部的 Cowork Agent 评测框架：以开源 GDPval 测试集为任务来源，用 LLM-as-a-judge 对完整轨迹做成对（胜/平/负）判定，同时按各厂商官方 API 定价统计每任务 token 成本；M2.5 自报平均胜率 59.0%。",
+  "interpretation": "59.0% 是两两对比里的平均胜率，不是答对率或任务完成率——GDPval-MM 没有标准答案，判分来自 LLM 裁判对两条完整轨迹的比较；对手是官方未列名的「主流模型」，所以它适合看 MiniMax 自家代际变化，不适合直接和别的厂商自报分数横比。",
+  "measures": [
+    {
+      "area": "办公交付物质量",
+      "focus": "Word、PowerPoint、Excel 金融建模等高价值工作场景的最终交付物；底层 GDPval 任务的交付物形态是文档、幻灯、图表、表格与多媒体",
+      "share": "未披露",
+      "format": "成对比较（两条完整轨迹交给 LLM 裁判）",
+      "cite": [
+        "minimax-news-minimax-m25@正文·评测框架",
+        "openai-gdpval@任务形态"
+      ]
+    },
+    {
+      "area": "Agent 轨迹专业性",
+      "focus": "模型跑完任务的完整轨迹是否专业，与交付物质量放在一起判定",
+      "share": "未披露",
+      "format": "成对比较：LLM-as-a-judge 判定胜/平/负",
+      "cite": [
+        "minimax-news-minimax-m25@正文·评测框架",
+        "minimax-news-minimax-m25@基准说明表"
+      ]
+    },
+    {
+      "area": "每任务 token 成本",
+      "focus": "按各厂商官方 API 定价（无 cache）累计每个任务的平均 token 花费，用来把能力折算成生产力收益",
+      "share": "未披露",
+      "format": "成本核算（不是打分项）",
+      "cite": [
+        "minimax-news-minimax-m25@基准说明表·成本口径",
+        "minimax-news-minimax-m25@正文·评测框架"
+      ]
+    },
+    {
+      "area": "底层任务分布",
+      "focus": "题目来自开源 GDPval：44 个职业、覆盖美国 GDP 前 9 大行业，任务附带参考文件与上下文",
+      "share": "未披露（GDPval 原版金集为每职业 5 题）",
+      "format": "任务级，一次性提交交付物",
+      "cite": [
+        "openai-gdpval@职业与行业",
+        "openai-gdpval@数据集规模",
+        "gdpval-hf@数据集卡片"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "不给标准答案式正确率：判成是两两比较的胜/平/负，没有唯一答案可对，也不输出「答对几题」。",
+      "cite": [
+        "minimax-news-minimax-m25@基准说明表",
+        "gdpval-paper@§4.1 主指标"
+      ]
+    },
+    {
+      "text": "不拿人类专家当对手：GDPval 原版论文的主指标是模型交付物对比行业专家交付物的盲评胜率，GDPval-MM 官方文本写的是与「主流模型」对比。",
+      "cite": [
+        "minimax-news-minimax-m25@正文·胜率",
+        "gdpval-paper@§4.1 主指标"
+      ]
+    },
+    {
+      "text": "不测多轮交互：底层 GDPval 任务是精确规定的一次性（one-shot）任务，不涉及澄清、协商与反复改稿。",
+      "cite": [
+        "gdpval-paper@§3 任务属性",
+        "openai-gdpval@一次性设定"
+      ]
+    },
+    {
+      "text": "不测代码工程：任务交付物是文档、幻灯、图表、表格与多媒体，编程能力由 SWE-Bench 等基准单独评测。",
+      "cite": [
+        "openai-gdpval@任务形态",
+        "minimax-news-minimax-m25@正文·办公场景"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 220,
+    "splits": [
+      "开源 GDPval 金集 220 题（MiniMax 未说明是否全部使用、是否另有私有扩充）"
+    ],
+    "languages": [
+      "未披露"
+    ],
+    "source_type": "vendor_internal（MiniMax 自建框架，题目取自开源 GDPval）",
+    "public_sample": false,
+    "totals": "底层开源 GDPval 金集 220 题（44 个职业 × 每职业 5 题）；MiniMax 未披露 GDPval-MM 实际用了多少题、是否私有扩充、题目语言——这里的 220 是底层公开数据集的题量，不是 GDPval-MM 的官方题量。框架本身未公开。",
+    "cite": [
+      "minimax-news-minimax-m25@基准说明表",
+      "openai-gdpval@数据集规模",
+      "openai-gdpval@题量分布",
+      "gdpval-hf@数据集卡片"
+    ],
+    "construction": [
+      {
+        "k": "题目来源",
+        "text": "基于开源 GDPval 测试集；GDPval 原版覆盖 44 个职业、美国 GDP 前 9 大行业，全集 1,320 题，任务取自行业专家的真实工作产出。",
+        "cite": [
+          "minimax-news-minimax-m25@基准说明表",
+          "gdpval-paper@§2 规模",
+          "openai-gdpval@职业与行业"
+        ]
+      },
+      {
+        "k": "专家与质检",
+        "text": "出题与评审由平均 14 年经验的行业专家完成；全集每题平均 5 次人工评审（最少 3 次），专家平均要花 7 小时完成一道题。",
+        "cite": [
+          "openai-gdpval@数据集规模",
+          "gdpval-paper@§2 评审次数",
+          "gdpval-paper@§2 工作量"
+        ]
+      },
+      {
+        "k": "任务形态",
+        "text": "任务附带参考文件与上下文，交付物是文档、幻灯、图表、表格与多媒体；金集每题最多要解析 17 个参考文件（全集 38 个）。",
+        "cite": [
+          "openai-gdpval@任务形态",
+          "gdpval-paper@§2 参考文件"
+        ]
+      },
+      {
+        "k": "评测框架",
+        "text": "MiniMax 自建 agentic 评测框架：模型跑完整任务轨迹，由 LLM-as-a-judge 对两条完整轨迹做 pairwise 胜/平/负判定，同时评估交付物质量与轨迹专业性。",
+        "cite": [
+          "minimax-news-minimax-m25@基准说明表",
+          "minimax-news-minimax-m25@正文·评测框架",
+          "minimax-m25-repo@基准说明表"
+        ]
+      },
+      {
+        "k": "成本口径",
+        "text": "每任务平均 token 成本按各厂商官方 API 定价（无 cache）计算，用于估算生产力收益；具体金额未披露。",
+        "cite": [
+          "minimax-news-minimax-m25@基准说明表·成本口径"
+        ]
+      },
+      {
+        "k": "未披露项",
+        "text": "MiniMax 未公布：题目数量与是否只用公开金集、判分裁判模型与版本、每任务评分次数、平局计分方式、是否重复运行、是否改用 GDPval 的公开自动评分服务。",
+        "cite": [
+          "minimax-news-minimax-m25@基准说明表",
+          "minimax-news-minimax-m25@正文·胜率"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "win-rate",
+      "name": "平均胜率（pairwise，vs 主流模型）",
+      "direction": "越高越好",
+      "description": "LLM-as-a-judge 对两条完整轨迹判定胜/平/负后的平均胜率；官方口径是与「主流模型」对比，M2.5 自报 59.0%。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "minimax-news-minimax-m25@正文·胜率",
+        "minimax-news-minimax-m25@基准说明表",
+        "minimax-m25-cn@正文·胜率"
+      ]
+    },
+    {
+      "id": "token-cost",
+      "name": "每任务平均 token 成本",
+      "direction": "越低越好",
+      "description": "按各厂商官方 API 定价（无 cache）累计的每任务平均 token 花费，用来把能力折算成生产力收益；官方未披露具体金额。",
+      "range": null,
+      "unit": "美元/任务",
+      "cite": [
+        "minimax-news-minimax-m25@基准说明表·成本口径"
+      ]
+    }
+  ],
+  "default_protocol": {
+    "raw": "MiniMax 内部框架：以开源 GDPval 测试集为任务来源，模型在自建 agentic 框架里跑完整任务轨迹，再由 LLM-as-a-judge 对两条完整轨迹做成对比较并判定胜/平/负；同时按各厂商官方 API 定价（无 cache）累计每任务 token 成本。裁判模型、运行次数、温度、平局计分方式官方均未披露。",
+    "cite": [
+      "minimax-news-minimax-m25@基准说明表",
+      "minimax-news-minimax-m25@正文·评测框架",
+      "minimax-news-minimax-m25@基准说明表·成本口径"
+    ],
+    "variants": [
+      {
+        "text": "对比对象口径：官方只说「主流模型」，未列名、未给版本，也没说是模型间对比；第三方博客转述的官方对比表里出现了其他模型，但官方只把对比图作为图片发布，文本中除 59.0% 外没有可引用数值。",
+        "cite": [
+          "minimax-news-minimax-m25@正文·胜率",
+          "blog-m25-compare@办公场景段"
+        ]
+      },
+      {
+        "text": "平局与平均方式未披露：官方只写 pairwise 胜/平/负判定与「平均胜率」，没说平局按 0.5 胜计还是剔除、平均过多少条轨迹、是否重复运行。",
+        "cite": [
+          "minimax-news-minimax-m25@基准说明表",
+          "minimax-news-minimax-m25@正文·胜率"
+        ]
+      },
+      {
+        "text": "成本口径是官方 API 标价且不带缓存，和带缓存、私有部署或批量折扣下的实际账单不是一回事。",
+        "cite": [
+          "minimax-news-minimax-m25@基准说明表·成本口径"
+        ]
+      },
+      {
+        "text": "底层任务继承 GDPval 的一次性（one-shot）、非交互设定，不引入多轮澄清或工具环境。",
+        "cite": [
+          "gdpval-paper@§3 任务属性",
+          "openai-gdpval@一次性设定"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2026-02-12",
+      "label": "随 MiniMax M2.5 公告首次公布：内部 Cowork Agent 评测框架，M2.5 平均胜率 59.0%",
+      "cite": [
+        "minimax-news-minimax-m25@标题与日期",
+        "minimax-news-minimax-m25@正文·胜率",
+        "minimax-m25-cn@基准说明表"
+      ]
+    },
+    {
+      "id": "superseded",
+      "date": "2026-06-01",
+      "label": "MiniMax M3 公告改用 GDPval-Rubrics（pointwise + 公开 rubrics），未再报告 GDPval-MM",
+      "cite": [
+        "minimax-m3@标题与日期",
+        "minimax-m3@基准说明表"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "厂商自报，外部无法复现",
+      "impact": "题目清单、裁判模型、提示词与运行配置都没公开，59.0% 只能当厂商声明读。",
+      "severity": "高",
+      "response": "没有官方补救；要独立验证只能回到底层公开的 GDPval 金集自建同源评测。",
+      "reader": "引用时写明是 MiniMax 自报，不要写成「GDPval-MM 实测」。",
+      "cite": [
+        "minimax-news-minimax-m25@基准说明表",
+        "minimax-news-minimax-m25@正文·评测框架"
+      ]
+    },
+    {
+      "issue": "对比对象未列名",
+      "impact": "「主流模型」没有名单、版本与口径，平均值无法和别的厂商自报分数横比。",
+      "severity": "高",
+      "response": "官方对比图只以图片发布，文本里只有 59.0%；第三方转述的数值无法逐字核验，本站不采用。",
+      "reader": "跨厂商横比前先确认任务集、裁判和平局处理是否一致。",
+      "cite": [
+        "minimax-news-minimax-m25@正文·胜率",
+        "blog-m25-compare@办公场景段"
+      ]
+    },
+    {
+      "issue": "LLM 裁判带来口径依赖",
+      "impact": "判分由 LLM-as-a-judge 完成；GDPval 原版的实验性自动评分器与人类专家一致率 66%，比人类评审者之间的 71% 低 5 个百分点——换裁判模型结论可能移动。",
+      "severity": "中",
+      "response": "MiniMax 未披露裁判模型与版本；底层 GDPval 提供公开的自动评分服务可作对照。",
+      "reader": "几个百分点内的胜负差距，先怀疑裁判口径再谈模型能力。",
+      "cite": [
+        "minimax-news-minimax-m25@基准说明表",
+        "gdpval-paper@§4.2 自动评分",
+        "openai-gdpval@人工评分方式"
+      ]
+    },
+    {
+      "issue": "题量与语言未披露",
+      "impact": "MiniMax 只说基于开源 GDPval 测试集，没说用多少题、是否私有扩充、题目语言；本站按底层公开金集 220 题计。",
+      "severity": "中",
+      "response": "需要向 MiniMax 索取细节，或自建同源评测。",
+      "reader": "不要把 220 题读成 GDPval-MM 的官方题量。",
+      "cite": [
+        "minimax-news-minimax-m25@基准说明表",
+        "openai-gdpval@数据集规模",
+        "gdpval-hf@数据集卡片"
+      ]
+    },
+    {
+      "issue": "框架已被 GDPval-Rubrics 取代",
+      "impact": "2026-06-01 的 M3 公告里，MiniMax 的 GDPval 系内部评测换成 GDPval-Rubrics（公开 GDPval 案例 + 公开 rubrics 的 pointwise 评分，环境对齐 GDPval-AA scaffolding），未再出现 GDPval-MM；59.0% 之后没有同口径更新。",
+      "severity": "中",
+      "response": "后续 MiniMax 公告改用 GDPval-Rubrics 口径，另见 gdpval-rubrics 档案。",
+      "reader": "比较 M3 及以后模型时不要沿用 GDPval-MM 的 59.0%。",
+      "cite": [
+        "minimax-m3@基准说明表",
+        "minimax-m3@标题与日期"
+      ]
+    },
+    {
+      "issue": "一次性任务，无交互",
+      "impact": "底层 GDPval 是精确规定的一次性任务，测不到多轮澄清、反复改稿这类真实办公行为；OpenAI 也自述这只是早期一步。",
+      "severity": "低",
+      "response": "关注底层 GDPval 后续迭代（官方称会加强交互性与情境细腻度）。",
+      "reader": "把分数理解为「单轮交付物质量」，不是完整工作流。",
+      "cite": [
+        "gdpval-paper@§3 任务属性",
+        "openai-gdpval@一次性设定",
+        "openai-gdpval@局限自述"
+      ]
+    }
+  ],
+  "notes": "厂商内部评测框架，题目清单/裁判/运行配置均未公开；底层开源 GDPval 金集（220 题）本身公开。官方对比图只以图片发布，文本中只有 59.0% 一个数字；第三方博客转述的对比表数值无法逐字核验，本站不作为事实断言。本站账本已收录 M2.5 的 59.0%（vendor_reported）。",
+  "official_sources": [
+    {
+      "kind": "site",
+      "url": "https://www.minimax.io/news/minimax-m25"
+    },
+    {
+      "kind": "site",
+      "url": "https://www.minimax.io/blog/minimax-m3"
+    }
+  ],
+  "related_benchmarks": [
+    "gdpval",
+    "gdpval-rubrics",
+    "gdpval-aa"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "minimax-news-minimax-m25",
+        "kind": "site",
+        "title": "MiniMax M2.5: Built for Real-World Productivity（官方公告，2026-02-12）",
+        "url": "https://www.minimax.io/news/minimax-m25",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "minimax-m25-cn",
+        "kind": "site",
+        "title": "MiniMax M2.5 官方公告中文版（更快更强更智能，为真实世界生产力而生）",
+        "url": "https://www.minimaxi.com/blog/minimax-m25",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "minimax-m25-repo",
+        "kind": "repo",
+        "title": "MiniMax-AI/MiniMax-M2.5（GitHub README，含基准说明表镜像）",
+        "url": "https://github.com/MiniMax-AI/MiniMax-M2.5",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "minimax-m3",
+        "kind": "site",
+        "title": "MiniMax M3: Frontier Coding, 1M Context, Native Multimodality（官方公告，2026-06-01）",
+        "url": "https://www.minimax.io/blog/minimax-m3",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "gdpval-paper",
+        "kind": "paper",
+        "title": "GDPval: Evaluating AI Model Performance on Real-World Economically Valuable Tasks（arXiv:2510.04374）",
+        "url": "https://arxiv.org/pdf/2510.04374",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "openai-gdpval",
+        "kind": "site",
+        "title": "OpenAI：Measuring the performance of our models on real-world tasks（GDPval 介绍页）",
+        "url": "https://openai.com/index/gdpval/",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "gdpval-hf",
+        "kind": "dataset",
+        "title": "openai/gdpval（Hugging Face 数据集卡片，220 题金集）",
+        "url": "https://huggingface.co/datasets/openai/gdpval",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "blog-m25-compare",
+        "kind": "blog",
+        "title": "腾讯云开发者社区：MiniMax-M2.5 开源实测解读（2026-03-02，第三方）",
+        "url": "https://developer.cloud.tencent.com/article/2633053",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "MiniMax（稀宇科技）",
+        "cite": [
+          "minimax-news-minimax-m25@标题与日期"
+        ]
+      },
+      "first_release": {
+        "v": "2026-02-12（随 MiniMax M2.5 公告）",
+        "cite": [
+          "minimax-news-minimax-m25@标题与日期"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "minimax-news-minimax-m25@正文·评测框架",
+        "minimax-news-minimax-m25@基准说明表",
+        "minimax-news-minimax-m25@基准说明表·成本口径",
+        "minimax-news-minimax-m25@正文·胜率"
+      ],
+      "interpretation": [
+        "minimax-news-minimax-m25@基准说明表",
+        "minimax-news-minimax-m25@正文·胜率",
+        "gdpval-paper@§4.1 主指标"
+      ]
+    },
+    "problem": {
+      "text": "Word、PowerPoint、Excel 金融建模这类高价值办公场景里，模型要交出完整交付物，还要走完一整套 agent 轨迹；MiniMax 需要一个能同时衡量交付物质量、轨迹专业性，并把能力折算成成本效益的内部框架，于是基于开源 GDPval 测试集搭了 GDPval-MM。",
+      "cite": [
+        "minimax-news-minimax-m25@正文·办公场景",
+        "minimax-news-minimax-m25@正文·评测框架"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "两两比较的无差异线",
+        "value": "50%",
+        "note": "成对胜率里「与对手没有差别」大约对应 50%（平局若按 0.5 胜计）；官方未披露 GDPval-MM 的平局处理，这条线只是读图参考，不是官方数字。",
+        "cite": [
+          "gdpval-paper@§4.1 胜率定义",
+          "gdpval-paper@§4.1 胜率动机"
+        ]
+      },
+      {
+        "label": "MiniMax M2.5 自报成绩",
+        "value": "59.0%",
+        "note": "官方公告文本里唯一的数字：与「主流模型」对比的平均胜率；对比模型未列名，官方对比图以图片发布。",
+        "cite": [
+          "minimax-news-minimax-m25@正文·胜率",
+          "minimax-m25-cn@正文·胜率"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 59.0% 读成「答对 59% 的题」或任务完成率——它是两两比较的平均胜率，含平局判定，没有标准答案可对。",
+        "cite": [
+          "minimax-news-minimax-m25@基准说明表",
+          "gdpval-paper@§4.1 胜率定义"
+        ]
+      },
+      {
+        "text": "以为对手是人类专家——GDPval 原版的主指标是模型 vs 行业专家盲评，GDPval-MM 官方文本写的是与「主流模型」对比。",
+        "cite": [
+          "gdpval-paper@§4.1 主指标",
+          "minimax-news-minimax-m25@正文·胜率"
+        ]
+      },
+      {
+        "text": "以为 59.0% 说明赢过所有对比模型——官方只说「主流模型」的平均胜率，没给名单和分布，平均值可能被弱对手拉高。",
+        "cite": [
+          "minimax-news-minimax-m25@正文·胜率"
+        ]
+      },
+      {
+        "text": "把 token 成本当成实际推理账单——口径是各厂商官方 API 标价且不带缓存，真实支出还取决于吞吐、缓存与部署方式。",
+        "cite": [
+          "minimax-news-minimax-m25@基准说明表·成本口径"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "MiniMax（稀宇科技）；GDPval-MM 是其内部评测框架，不是独立第三方基准",
+        "cite": [
+          "minimax-news-minimax-m25@基准说明表"
+        ]
+      },
+      {
+        "k": "首次出现",
+        "v": "2026-02-12 随 MiniMax M2.5 发布公告公布，同文还列出 MEWC、Finance Modeling 等其他内部基准",
+        "cite": [
+          "minimax-news-minimax-m25@标题与日期",
+          "minimax-m25-repo@基准说明表·MEWC"
+        ]
+      },
+      {
+        "k": "底层数据",
+        "v": "OpenAI GDPval（arXiv:2510.04374）：44 个职业、美国 GDP 前 9 大行业，全集 1,320 题，开源金集 220 题，另提供公开自动评分服务",
+        "cite": [
+          "gdpval-paper@Abstract",
+          "openai-gdpval@数据集规模"
+        ]
+      },
+      {
+        "k": "与 GDPval 的差异",
+        "v": "GDPval 主指标是模型交付物 vs 行业专家交付物的盲评比；GDPval-MM 是模型间两两对比 + LLM 裁判，并把轨迹专业性与 token 成本一起看",
+        "cite": [
+          "gdpval-paper@§4.1 主指标",
+          "minimax-news-minimax-m25@正文·评测框架"
+        ]
+      },
+      {
+        "k": "后续演变",
+        "v": "2026-06-01 MiniMax M3 公告起，GDPval 系内部评测改为 GDPval-Rubrics（公开案例 + 公开 rubrics 的 pointwise 评分）",
+        "cite": [
+          "minimax-m3@基准说明表",
+          "minimax-m3@标题与日期"
+        ]
+      },
+      {
+        "k": "数据可用性",
+        "v": "底层 GDPval 金集在 Hugging Face 公开（openai/gdpval，220 题，带 canary 字符串）；GDPval-MM 框架本身未开源",
+        "cite": [
+          "gdpval-hf@数据集卡片",
+          "gdpval-hf@canary",
+          "gdpval-paper@Abstract"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-02-12",
+        "columns": [
+          "指标",
+          "MiniMax M2.5",
+          "说明"
+        ],
+        "rows": [
+          [
+            "GDPval-MM 平均胜率（pairwise）",
+            "59.0%",
+            "与「主流模型」对比；对比模型官方未列名，对比图以图片发布"
+          ],
+          [
+            "每任务平均 token 成本",
+            "未披露",
+            "口径：各厂商官方 API 定价，无 cache"
+          ]
+        ]
+      },
+      "cite": [
+        "minimax-news-minimax-m25@正文·胜率",
+        "minimax-news-minimax-m25@基准说明表·成本口径"
+      ]
+    }
+  }
+}

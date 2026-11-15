@@ -1,0 +1,616 @@
+{
+  "id": "librispeech",
+  "name": "LibriSpeech",
+  "full_name": "LibriSpeech: An ASR Corpus Based on Public Domain Audio Books",
+  "aliases": [
+    "LibriSpeech ASR corpus",
+    "OpenSLR SLR12",
+    "SLR12"
+  ],
+  "status": "near-saturation",
+  "categories": [
+    "multimodal"
+  ],
+  "summary": "约 1,000 小时 16kHz 英文朗读语音语料，音频取自 LibriVox 公版有声书、文本对 Project Gutenberg 公版书；7 个 split 合计 292,367 条 utterance，test-clean / test-other 上的词错率（WER）是英文 ASR 最通用的基线。",
+  "interpretation": "WER 越低越好。论文自己的 960 小时 DNN 模型加完整 4-gram 重打分只做到 test-clean 5.51% / test-other 13.97%；到 2021 年 SOTA 已降到 test-clean 约 1.4%，低于当年自报的人类水平参考线。test-clean 已经饱和，1–2 个百分点的差距不再说明通用语音能力的强弱——Whisper 论文明确显示 LibriSpeech 上的接近度与离分布鲁棒性并不一致。读这个分数时应同时看 test-other 和离分布数据集。",
+  "measures": [
+    {
+      "area": "朗读英语识别基线（test-clean）",
+      "focus": "清晰朗读语音的转写词错率；论文用 WSJ si-84 模型的识别 WER 把说话人排序后取「更容易」的一半",
+      "share": "test-clean 5.4 小时 / 40 位说话人",
+      "format": "音频 → 逐字文本，按词错率 WER 判分",
+      "cite": [
+        "paper@Table 1",
+        "paper@§3.2"
+      ]
+    },
+    {
+      "area": "较难声学条件（test-other）",
+      "focus": "录音质量与口音更难的另一半说话人，衡量同一模型在两种条件下的退化幅度",
+      "share": "test-other 5.1 小时 / 33 位说话人",
+      "format": "同上，与 test-clean 同一模型对照",
+      "cite": [
+        "paper@Table 1",
+        "paper@§3.2"
+      ]
+    },
+    {
+      "area": "训练规模梯度",
+      "focus": "100 / 360 / 500 小时三档训练子集带来的边际收益（论文 Table 3 的 SAT 与 DNN 曲线）",
+      "share": "train-clean-100 100.6 小时 / 251 人；train-clean-360 363.6 小时 / 921 人；train-other-500 496.7 小时 / 1,166 人",
+      "format": "不同训练量下的 WER 对比",
+      "cite": [
+        "paper@Table 1",
+        "paper@Table 3"
+      ]
+    },
+    {
+      "area": "作为参照系的鲁棒性研究",
+      "focus": "以 LibriSpeech 当「分布内」参照，衡量模型在 12 个其他语音数据集上的离分布退化（Whisper 论文的用法，不是本语料原生题型）",
+      "share": "不适用（跨数据集比较）",
+      "format": "WER 与相对误差下降（RER）",
+      "cite": [
+        "whisper-paper@§3.3"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "自发对话、电话 / 远场 / 强噪声场景的语音：语料全部是朗读式有声书，论文只把它定位为 read speech 语料；Whisper 论文正是用 LibriSpeech 当分布内反衬，说明这类场景要另测",
+      "cite": [
+        "paper@摘要",
+        "whisper-paper@§3.3"
+      ]
+    },
+    {
+      "text": "多语言识别：只有英文。Whisper 论文用的多语言版本是另一个数据集 Multilingual LibriSpeech（MLS），不属于本语料",
+      "cite": [
+        "hf@语言",
+        "whisper-paper@§3.4"
+      ]
+    },
+    {
+      "text": "长时程连续音频理解：训练音频按任意超过 0.3 秒的静音切成短段、单段最长 35 秒，测试音频只在句子边界切分",
+      "cite": [
+        "paper@§2.4"
+      ]
+    },
+    {
+      "text": "语音之外的能力（知识问答、推理、代码）：语料只提供音频与转写文本，论文把它定位为「用于训练和评测语音识别系统」的语料",
+      "cite": [
+        "paper@摘要"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 292367,
+    "splits": [
+      "train-clean-100（28,539 条 / 100.6 小时）",
+      "train-clean-360（104,014 条 / 363.6 小时）",
+      "train-other-500（148,688 条 / 496.7 小时）",
+      "dev-clean（2,703 条 / 5.4 小时）",
+      "dev-other（2,864 条 / 5.3 小时）",
+      "test-clean（2,620 条 / 5.4 小时）",
+      "test-other（2,939 条 / 5.1 小时）"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "corpus（LibriVox 公版有声书 + Project Gutenberg 文本）",
+    "public_sample": true,
+    "totals": "7 个 split 合计 292,367 条 utterance、约 1,000 小时（条数为 HF 数据集卡分表相加；小时数与说话人数见论文 Table 1）。HF 卡头部另写 Number of rows: 584,734，那是 all / clean / other 三个互相重叠的配置行数之和，本站题量取分表口径。",
+    "cite": [
+      "hf@分表",
+      "paper@Table 1",
+      "hf@卡头部"
+    ],
+    "construction": [
+      {
+        "k": "文本归一化与发音词典",
+        "text": "每本书的文本转大写、去标点、展开常见缩写与非规范词；发音词典基于 CMUdict 并去掉重音标记，词表外用 Sequitur G2P 生成发音。",
+        "cite": [
+          "paper@§2.1"
+        ]
+      },
+      {
+        "k": "两阶段音频-文本对齐",
+        "text": "先用 Smith-Waterman 算法在识别结果与章节文本之间找最佳对齐区，再用音素级 bigram 解码图逐词校验、有偏差即拒；随后把不超过 35 秒的长段用动态规划切成短段。",
+        "cite": [
+          "paper@§2.2",
+          "paper@§2.4"
+        ]
+      },
+      {
+        "k": "说话人筛选与 clean / other 划分",
+        "text": "用 WSJ si-84 子集训练的声学模型配该书文本的 bigram 语言模型识别全库，按 WER 给说话人排序、从中间一刀切成 clean 与 other；另用 LIUM 说话人分离工具排除多说话人章节，并人工滤掉音质过差的录音。",
+        "cite": [
+          "paper@§3.2",
+          "paper@§3.1"
+        ]
+      },
+      {
+        "k": "分区与每人配额",
+        "text": "clean 池随机取 20 男 20 女做开发集、再重复一次做测试集，每位说话人约 8 分钟（每集约 5 小时 20 分）；other 池的开发 / 测试集不随机，而是刻意选更难的数据。训练集每位说话人限 25 分钟，避免单人时长失衡。",
+        "cite": [
+          "paper@§3.2"
+        ]
+      },
+      {
+        "k": "配套语言模型与去重叠",
+        "text": "从约 22,000 本 Gutenberg 候选书里，剔除开发 / 测试集所依据的书、标题 3-gram 余弦相似度超过 0.7 的书，以及 5-gram 与开发 / 测试集重叠超过 1% 的书，最终留下约 14,500 本、约 8.03 亿 token 作为语言模型训练文本；3-gram 与 4-gram 均在线发布。",
+        "cite": [
+          "paper@§4",
+          "openslr-11@模型文件"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "wer",
+      "name": "WER（词错率）",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "direction": "lower",
+      "aggregation": null,
+      "description": "识别结果与参考转写按词对齐后的错误词占比（替换 + 删除 + 插入），以百分比表示；论文用它衡量自动转写相对书本参考文本的差异，HF 数据集卡也称它是该语料最常用的评测指标。",
+      "cite": [
+        "paper@§3.2",
+        "hf@任务与指标"
+      ]
+    }
+  ],
+  "default_protocol": {
+    "raw": "在 test-clean / test-other 上解码，识别结果与参考转写按词对齐后计算词错率 WER（%），越低越好。论文 Table 3 / Table 4 的每个数字都带完整 4-gram 语言模型重打分，第一遍解码用阈值 3×10⁻⁷ 剪枝的 3-gram。",
+    "cite": [
+      "paper@Table 3",
+      "paper@§5"
+    ],
+    "variants": [
+      {
+        "text": "带 LM 重打分 vs 零样本端到端：论文数字全部是「声学模型 + 完整 4-gram 重打分」，与零样本模型（如 Whisper large-v2 的 test-clean 2.5%）不是同一口径，不能直接比。",
+        "cite": [
+          "paper@Table 3",
+          "whisper-paper@§3.3"
+        ]
+      },
+      {
+        "text": "LM 规模：Table 4 给出同一 960 小时 DNN 模型下，从剪枝 3-gram（test-clean 8.02%）到完整 4-gram（5.51%）的增益。",
+        "cite": [
+          "paper@Table 4"
+        ]
+      },
+      {
+        "text": "文本归一化：Whisper 论文自述在算 WER 前对文本做了大量标准化，个别数据集上 WER 因此下降可达 50%；跨论文比较先看归一化规则。",
+        "cite": [
+          "whisper-paper@§3.1"
+        ]
+      },
+      {
+        "text": "测试集切分口径：测试音频只在句子边界切分，训练音频按任意超过 0.3 秒的静音切分，切分规则会影响 WER。",
+        "cite": [
+          "paper@§2.4"
+        ]
+      },
+      {
+        "text": "说话人隔离：为保证训练 / 开发 / 测试集之间没有说话人重叠，语料排除了以多朗读人为主的 LibriVox 题材，并用说话人分离工具复核。",
+        "cite": [
+          "paper@§3.1"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2015",
+      "label": "ICASSP 2015 论文版语料（OpenSLR SLR12，CC BY 4.0），论文摘要口径 1,000 小时 / 16kHz",
+      "cite": [
+        "paper@标题页",
+        "openslr-12"
+      ]
+    },
+    {
+      "id": "no-v2",
+      "date": "2026-11-13",
+      "label": "截至本次核验未见官方 v2：OpenSLR SLR12 页面仍标注 ICASSP 2015（submitted）论文与同一批 tarball；后续变化只出现在第三方镜像（如 HF openslr/librispeech_asr）",
+      "cite": [
+        "openslr-12",
+        "hf"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "训练集饱和，对前沿模型没有区分度",
+      "impact": "test-clean 的 SOTA 已降到约 1.4%（2021 年，比 Deep Speech 2 的 5.3% 又降 73%），低于当年自报的人类水平参考线 5.8%；训练集几乎被所有英语语音模型见过，1–2 个百分点的差距不再反映通用能力。",
+      "severity": "高",
+      "response": "同时看 test-other 与离分布数据集；Whisper 论文明确建议把零样本与离分布表现一起报告，避免用 LibriSpeech 上的接近度高估模型。",
+      "reader": "看到 test-clean 1.x%–2% 不要理解为「语音问题已解决」；跨论文比较先确认是否带 4-gram 重打分。",
+      "cite": [
+        "whisper-paper@§3.3",
+        "paper@Table 3"
+      ]
+    },
+    {
+      "issue": "LibriSpeech 上的差距与离分布鲁棒性不一致",
+      "impact": "Whisper 论文发现：与 LibriSpeech 上表现最接近的监督模型相比，零样本 Whisper 在另外 12 个语音数据集上平均少犯 55.2% 的错；同一个 LibriSpeech 分数对应的真实鲁棒性可以差一倍。",
+      "severity": "高",
+      "response": "把 LibriSpeech 当分布内参照而不是终点；选型时补一组噪声 / 口音 / 长时程数据。",
+      "reader": "只按 LibriSpeech 排名选模型，会系统性高估它在真实场景的表现。",
+      "cite": [
+        "whisper-paper@§3.3"
+      ]
+    },
+    {
+      "issue": "文本侧暴露面",
+      "impact": "开发 / 测试集依据的有声书文本来自公版 Project Gutenberg 书籍，书本身公开可得；语料只对语言模型训练文本做了去重叠，不防止模型在别处见过这些书的文字。",
+      "severity": "中",
+      "response": "论文 §4 只说明语言模型训练材料剔除了与开发 / 测试集重叠的书；引用分数时说明训练数据来源。",
+      "reader": "公版书的文本不构成保密测试集。",
+      "cite": [
+        "paper@§4",
+        "paper@§3.1"
+      ]
+    },
+    {
+      "issue": "领域与音质偏窄",
+      "impact": "全部是朗读式有声书；LibriVox 上传的音频是 MP3 压缩，且站方的降噪 / 音量规范化指引执行不一致，因此语料里同时存在未处理的噪声音频和被自动降噪的音频。",
+      "severity": "中",
+      "response": "论文只把它定位为 read speech 语料；需要对话 / 远场 / 电话场景时换专用数据集。",
+      "reader": "在电话或会议语音上的 WER 通常远高于 LibriSpeech。",
+      "cite": [
+        "paper@§5",
+        "paper@摘要"
+      ]
+    },
+    {
+      "issue": "镜像统计口径不一致",
+      "impact": "HF 数据集卡头部写 Number of rows: 584,734，而同一张卡按 7 个 split 相加是 292,367 条（584,734 恰为 all / clean / other 三个互相重叠配置之和）；引用题量时容易差一倍。",
+      "severity": "低",
+      "response": "本站采用分表口径 292,367；引用 HF 卡数字时注明它是配置行数还是 split 行数。",
+      "reader": "看到 584,734 不要当成 utterance 总数。",
+      "cite": [
+        "hf@卡头部",
+        "hf@分表"
+      ]
+    },
+    {
+      "issue": "说话人隐私与使用约束",
+      "impact": "HF 数据集卡声明语料由自愿献声的朗读者构成，并要求使用者不要试图识别说话人身份；原始 LibriVox 音频与朗读者信息仍在公开渠道。",
+      "severity": "低",
+      "response": "遵守 CC BY 4.0 署名要求与数据集卡的使用约定，不要拿语料做说话人身份识别。",
+      "reader": "做说话人相关研究前先看数据集卡的约束条款。",
+      "cite": [
+        "hf@隐私",
+        "openslr-12@许可"
+      ]
+    }
+  ],
+  "notes": "benchmark-profile/v2 档案。WER 口径（是否带 4-gram 重打分、文本归一化规则）见 default_protocol；论文 Table 3 / Table 4 的原始数字见附录 B。本站不手写榜单最高分。",
+  "official_sources": [
+    {
+      "kind": "site",
+      "url": "https://www.openslr.org/12/"
+    },
+    {
+      "kind": "paper",
+      "url": "https://www.danielpovey.com/files/2015_icassp_librispeech.pdf"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/openslr/librispeech_asr"
+    }
+  ],
+  "related_benchmarks": [
+    "wenetspeech",
+    "fleurs",
+    "wildspeech"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-13",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "LibriSpeech: An ASR Corpus Based on Public Domain Audio Books（ICASSP 2015，官方 PDF）",
+        "url": "https://www.danielpovey.com/files/2015_icassp_librispeech.pdf",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "openslr-12",
+        "kind": "site",
+        "title": "LibriSpeech ASR corpus（OpenSLR SLR12 官方页）",
+        "url": "https://www.openslr.org/12/",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "openslr-11",
+        "kind": "site",
+        "title": "LibriSpeech language models, vocabulary and G2P models（OpenSLR SLR11）",
+        "url": "https://www.openslr.org/11/",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "hf",
+        "kind": "dataset",
+        "title": "openslr/librispeech_asr（Hugging Face 数据集卡）",
+        "url": "https://huggingface.co/datasets/openslr/librispeech_asr",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "whisper-paper",
+        "kind": "paper",
+        "title": "Robust Speech Recognition via Large-Scale Weak Supervision（Whisper，ICML 2022）",
+        "url": "https://arxiv.org/pdf/2212.04356",
+        "accessed": "2026-11-13"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Johns Hopkins University（Center for Language and Speech Processing & Human Language Technology Center of Excellence）",
+        "cite": [
+          "paper@标题页"
+        ]
+      },
+      "first_release": {
+        "v": "2015（ICASSP 2015 论文，页码 5206–5210）；OpenSLR SLR12 页面未标注具体发布日期，SLR11 页面称配套语言模型拟在 2014 年 10 月 ICASSP 截稿前发布",
+        "cite": [
+          "paper@标题页",
+          "openslr-12",
+          "openslr-11@发布时间"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "paper@摘要",
+        "hf@数据集摘要",
+        "hf@分表"
+      ],
+      "interpretation": [
+        "paper@Table 3",
+        "whisper-paper@§3.3"
+      ]
+    },
+    "problem": {
+      "text": "2015 年之前，英文朗读语音里没有既够大又能自由下载的语料：论文用来做对齐的 VoxForge 只有约 100 小时英语语音，且说话人性别与单人时长严重失衡。LibriSpeech 用公版有声书加自动对齐做出约 1,000 小时可自由下载的语料，并同时放出 Kaldi 脚本与配套语言模型，让结果可复现。",
+      "cite": [
+        "paper@§1",
+        "paper@摘要"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "论文最好基线（960 小时 DNN + 完整 4-gram 重打分）",
+        "value": "test-clean 5.51% / test-other 13.97%",
+        "note": "论文 Table 3；同表 SAT 960h 为 test-clean 8.04% / test-other 22.65%。",
+        "cite": [
+          "paper@Table 3"
+        ]
+      },
+      {
+        "label": "论文口径的人类水平参考",
+        "value": "test-clean 5.8%（Deep Speech 2 自报）",
+        "note": "Whisper 论文引述：2015 年 Deep Speech 2 报告在 LibriSpeech test-clean 上达到人类水平，人类错误率记为 5.8%。",
+        "cite": [
+          "whisper-paper@§3.3"
+        ]
+      },
+      {
+        "label": "当前 SOTA 量级",
+        "value": "test-clean 约 1.4%（2021 年，Whisper 论文引述）",
+        "note": "比 Deep Speech 2 的 5.3% 又降 73%，已低于上述人类参考线；本站不自行维护榜单数值。",
+        "cite": [
+          "whisper-paper@§3.3"
+        ]
+      },
+      {
+        "label": "零样本参照（Whisper large-v2，论文正文口径）",
+        "value": "test-clean 2.5%",
+        "note": "论文称这大约相当于现代监督基线或 2019 年年中的 SOTA；该数字经过论文自述的文本标准化，且不带外部语言模型重打分。",
+        "cite": [
+          "whisper-paper@§3.3"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 test-clean 的 WER 当成语音识别整体水平。Whisper 论文的结论正相反：LibriSpeech 上表现接近的模型，换到其他数据集上的差距可以差一倍。",
+        "cite": [
+          "whisper-paper@§3.3"
+        ]
+      },
+      {
+        "text": "把带 4-gram 重打分的数字和零样本端到端数字排在一起比。论文 Table 3 / Table 4 的每个数字都带完整 4-gram 语言模型重打分。",
+        "cite": [
+          "paper@Table 3",
+          "paper@Table 4"
+        ]
+      },
+      {
+        "text": "把 HF 卡头部的 584,734 当成 utterance 总数。7 个 split 相加是 292,367 条，头部数字是 all / clean / other 三个重叠配置之和。",
+        "cite": [
+          "hf@卡头部",
+          "hf@分表"
+        ]
+      },
+      {
+        "text": "以为 1,000 小时都是「干净」语音。按论文 Table 1，clean 训练部分约 460 小时（100.6 + 363.6），other 训练部分约 500 小时，开发 / 测试集也分两档。",
+        "cite": [
+          "paper@Table 1",
+          "paper@§3.2"
+        ]
+      },
+      {
+        "text": "把 Multilingual LibriSpeech（MLS）当成本语料的多语言版。它是另一个数据集，Whisper 论文单独引用。",
+        "cite": [
+          "whisper-paper@§3.4"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "Johns Hopkins University（Center for Language and Speech Processing & HLTCOE）；语料由 Vassil Panayotov 主理，Daniel Povey 与 Sanjeev Khudanpur 协助",
+        "cite": [
+          "paper@标题页",
+          "openslr-12"
+        ]
+      },
+      {
+        "k": "首发",
+        "v": "ICASSP 2015 论文（页码 5206–5210）；OpenSLR SLR11 页面称配套语言模型拟在 2014 年 10 月 ICASSP 截稿前发布",
+        "cite": [
+          "hf@引用",
+          "openslr-11@发布时间"
+        ]
+      },
+      {
+        "k": "数据来源",
+        "v": "LibriVox 志愿朗读的公版有声书，音频与 Project Gutenberg 文本对齐后切分",
+        "cite": [
+          "paper@摘要",
+          "openslr-12"
+        ]
+      },
+      {
+        "k": "许可",
+        "v": "CC BY 4.0；SLR11 的语言模型资源为 public domain",
+        "cite": [
+          "openslr-12@许可",
+          "openslr-11"
+        ]
+      },
+      {
+        "k": "配套资源",
+        "v": "Kaldi 示例脚本（论文随附）；SLR11 提供语言模型训练文本、200K 词表、G2P 模型与 3/4-gram ARPA 模型，其中 4-gram 用于重打分",
+        "cite": [
+          "paper@§1",
+          "openslr-11@模型文件"
+        ]
+      },
+      {
+        "k": "生态采用",
+        "v": "HF openslr/librispeech_asr 镜像月下载量 10 万余次、600 余个派生模型；HF 卡另链 PapersWithCode 外部榜单（2026-11-13 重抓被重定向，本站不引用其数值）",
+        "cite": [
+          "hf@卡头部",
+          "hf@外部榜单"
+        ]
+      },
+      {
+        "k": "现状",
+        "v": "Whisper 论文称，由于 LibriSpeech 在现代语音识别研究中的中心地位和已有大量基于它的公开模型，它被用作参照数据集",
+        "cite": [
+          "whisper-paper@§3.3"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-13",
+        "columns": [
+          "来源",
+          "模型 / 配置",
+          "test-clean WER",
+          "test-other WER",
+          "口径"
+        ],
+        "rows": [
+          [
+            "论文 Table 3",
+            "SAT 100h",
+            "9.32%",
+            "31.52%",
+            "GMM + 完整 4-gram 重打分"
+          ],
+          [
+            "论文 Table 3",
+            "SAT 460h",
+            "8.34%",
+            "28.11%",
+            "同上"
+          ],
+          [
+            "论文 Table 3",
+            "SAT 960h",
+            "8.04%",
+            "22.65%",
+            "同上"
+          ],
+          [
+            "论文 Table 3",
+            "DNN 100h",
+            "6.59%",
+            "22.52%",
+            "DNN + 完整 4-gram 重打分"
+          ],
+          [
+            "论文 Table 3",
+            "DNN 460h",
+            "5.78%",
+            "19.12%",
+            "同上"
+          ],
+          [
+            "论文 Table 3",
+            "DNN 960h",
+            "5.51%",
+            "13.97%",
+            "同上（论文最好成绩）"
+          ],
+          [
+            "论文 Table 4",
+            "DNN 960h + 3-gram 剪枝 3e-7",
+            "8.02%",
+            "19.41%",
+            "第一遍解码口径"
+          ],
+          [
+            "论文 Table 4",
+            "DNN 960h + 3-gram 剪枝 1e-7",
+            "7.21%",
+            "17.66%",
+            "格重打分"
+          ],
+          [
+            "论文 Table 4",
+            "DNN 960h + 3-gram 完整",
+            "5.74%",
+            "14.77%",
+            "格重打分"
+          ],
+          [
+            "论文 Table 4",
+            "DNN 960h + 4-gram 完整",
+            "5.51%",
+            "13.97%",
+            "格重打分（= Table 3 最好行）"
+          ],
+          [
+            "Whisper 论文 §3.3",
+            "Whisper large-v2（零样本）",
+            "2.5%",
+            "正文未给出",
+            "零样本，无外部 LM；论文自述文本标准化"
+          ]
+        ]
+      },
+      "cite": [
+        "paper@Table 3",
+        "paper@Table 4",
+        "whisper-paper@§3.3"
+      ]
+    }
+  }
+}

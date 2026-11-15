@@ -1,0 +1,597 @@
+{
+  "id": "artificial-analysis-image-arena",
+  "name": "AA-Image-Editing v2.1",
+  "full_name": "Artificial Analysis Image Editing Arena（AA-Image-Editing v2.1）",
+  "aliases": [
+    "Artificial Analysis Image Editing Arena",
+    "AA-Image-Editing",
+    "Artificial Analysis Image Arena",
+    "Artificial Analysis 图像编辑竞技场"
+  ],
+  "status": null,
+  "categories": [
+    "preference"
+  ],
+  "summary": "Artificial Analysis 的公开图像编辑竞技场（当前版本 AA-Image-Editing v2.1）：给两个模型同一张原图和同一句编辑指令，让通过筛选的人工评审盲选更喜欢的那张结果，再用 Bradley-Terry 模型（前端类比：给每个模型记一个会随胜负浮动的隐藏分，一场对局只更新两个当事人的分，把所有对局一次性解出来）把所有票折算成 Elo 分排名；除了总榜，还按 10 种真实用途 × 7 类编辑动作出分类榜。",
+  "interpretation": "高分只说明一件事：在同样的原图 + 同样的编辑指令下，通过筛选的人工评审更常偏好这个模型的输出。它是人类偏好排序，不是像素级保真度这类可复算指标。读分注意四点：① Elo 是相对分，总榜与所有分类榜都以 FLUX.2 [dev] = 1000 为锚，跨榜、跨版本比较没有意义；② 每行都带 95% 区间，区间重叠就是分不出高下（榜首三名的名次区间互为 1–3）；③ 榜单每天随新票变动，厂商公告里的「第几名」只是公告当天的快照；④ 图像编辑（AA-Image-Editing）与文生图（AA-Image-T2I）是两套独立计分的基准，同一模型在两边名次可以不同。",
+  "measures": [
+    {
+      "area": "用途场景（Use Case）",
+      "focus": "提示按真实用户场景打标，共 10 类：营销与广告、零售与电商、真人影视、动画与游戏、建筑与房地产、效率与知识工作、UI/UX 设计、消费品、社交媒体与创作者内容、前沿",
+      "share": "10 类；官方只说明按用途与能力组合均匀抽样，未给出各类占比",
+      "format": "同一张原图 + 一条编辑指令，两个模型输出二选一盲选",
+      "cite": [
+        "aa-methodology-image@Prompt Taxonomy",
+        "aa-methodology-image@Sampling Methodology"
+      ]
+    },
+    {
+      "area": "编辑动作（Editing Action）",
+      "focus": "共 7 类：对象级编辑、场景与风格、增强与修复、构图与取景、保持身份的编辑、文字或符号编辑、需要推理的编辑",
+      "share": "7 类；占比未披露",
+      "format": "同上，按主要能力标签归入子榜",
+      "cite": [
+        "aa-methodology-image@Prompt Taxonomy"
+      ]
+    },
+    {
+      "area": "总体偏好（Overall）",
+      "focus": "全部票合起来拟合的总 Elo；锚点模型 FLUX.2 [dev] 固定为 1000，当前榜首 GPT Image 2.6 Sunburst (max) 为 1210 ±13",
+      "share": "—",
+      "format": "Bradley-Terry 拟合后的 Elo 分 + 95% 区间",
+      "cite": [
+        "aa-methodology-image@AA-Image-Editing v2.1 Methodology",
+        "aa-image-editing-leaderboard@表格"
+      ]
+    },
+    {
+      "area": "分类榜（Category）",
+      "focus": "按用途场景 × 编辑动作组合出的子榜，以及开源权重子榜；每个子榜同样以 FLUX.2 [dev] = 1000 为锚",
+      "share": "未披露",
+      "format": "Elo 分 + 95% 区间",
+      "cite": [
+        "aa-methodology-image@AA-Image-Editing v2.1 Methodology",
+        "aa-image-editing-leaderboard@FAQ"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "不测从零生成图片：文生图是另一个基准 AA-Image-T2I v2.1，两个榜分开计分，同一模型在两边名次可以不同。",
+      "cite": [
+        "aa-methodology-image@AA-Image-Editing v2.1 Methodology",
+        "aa-image-editing-leaderboard@FAQ"
+      ]
+    },
+    {
+      "text": "不测参考图生成（Reference to Image）：官方把它当作与本榜独立的基准，不在本榜内。",
+      "cite": [
+        "aa-methodology-image@AA-Image-Editing v2.1 Methodology"
+      ]
+    },
+    {
+      "text": "不测客观保真度：官方指标只有 Elo（人类偏好）、每千张图价格与生成耗时，没有 PSNR / SSIM 一类可复算的图像质量指标。",
+      "cite": [
+        "aa-methodology-image@Scope & Background"
+      ]
+    },
+    {
+      "text": "不测私有部署与本地权重：只覆盖公开可用的 serverless 端点，演示产品、硬件 showcase 与专用或私有部署不在范围内。",
+      "cite": [
+        "aa-methodology-image@Scope & Background"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 83,
+    "splits": "无公开划分：单一在线竞技场榜单，官方未公布题集条数、测试集划分与总投票数",
+    "languages": "en",
+    "source_type": "官方在线竞技场（Artificial Analysis 自建提示集 + 盲选投票）；提示为英文、人工撰写",
+    "public_sample": true,
+    "totals": "题量一栏为 2026-11-14 榜单上参评的模型数（83 个），不是题集条数：官方只披露提示集每月刷新、按用途与能力均匀抽样，未公开题集条数与总投票数",
+    "cite": [
+      "aa-image-editing-leaderboard@表格",
+      "aa-methodology-image@Prompt Curation and Refresh"
+    ],
+    "construction": [
+      {
+        "k": "题目形态",
+        "text": "每条提示是一对：一张源图 + 针对它写的编辑指令；编辑模型每次调用再配一张来自策展集的参考图。",
+        "cite": [
+          "aa-methodology-image@Prompt Curation and Refresh"
+        ]
+      },
+      {
+        "k": "题目来源",
+        "text": "提示模拟真实用户写法，参考匿名众包提示数据与人工维护的实时提示语料；全部为英文、人工撰写。",
+        "cite": [
+          "aa-methodology-image@Prompt Curation and Refresh"
+        ]
+      },
+      {
+        "k": "打标与抽样",
+        "text": "每条提示打 1 个用途场景标签 + 1 个主要能力标签，并在每个用途 × 能力组合上均匀抽样。",
+        "cite": [
+          "aa-methodology-image@Sampling Methodology"
+        ]
+      },
+      {
+        "k": "刷新与淘汰",
+        "text": "提示集每月刷新；与随机无法区分的提示会被标记退役、不再进入竞技场，官方称这样可防止榜单被过拟合。",
+        "cite": [
+          "aa-methodology-image@Prompt Curation and Refresh"
+        ]
+      },
+      {
+        "k": "投票与拟合",
+        "text": "评审在不显示模型身份的条件下，对同一提示的两份输出二选一；所有票一次性用 Bradley-Terry 拟合，再换算到 Elo 刻度。",
+        "cite": [
+          "aa-methodology-image@AA-Image-Editing v2.1 Methodology"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "elo",
+      "name": "Elo 评分（总榜）",
+      "direction": "越高越好",
+      "description": "盲选票经 Bradley-Terry 拟合后的相对质量分，锚点 FLUX.2 [dev] = 1000；当前榜首 GPT Image 2.6 Sunburst (max) 1210 ±13（95% 区间 1197 to 1223）",
+      "range": null,
+      "unit": "elo",
+      "cite": [
+        "aa-methodology-image@AA-Image-Editing v2.1 Methodology",
+        "aa-image-editing-leaderboard@表格"
+      ]
+    },
+    {
+      "id": "rank",
+      "name": "总榜名次",
+      "direction": "越低越好",
+      "description": "按 Elo 排序的名次；榜首三名的名次区间互为 1–3，当前榜尾为第 83 名 Step1X-Edit（590 ±37）",
+      "range": null,
+      "unit": "rank",
+      "cite": [
+        "aa-image-editing-leaderboard@表格"
+      ]
+    },
+    {
+      "id": "category_elo",
+      "name": "分类榜 Elo",
+      "direction": "越高越好",
+      "description": "按用途场景 × 编辑动作拟合的子榜分数，同样以 FLUX.2 [dev] = 1000 为锚；筛选视图与分类榜的区间列取自该模型自身的置信区间",
+      "range": null,
+      "unit": "elo",
+      "cite": [
+        "aa-methodology-image@AA-Image-Editing v2.1 Methodology",
+        "aa-methodology-image@Statistical method"
+      ]
+    },
+    {
+      "id": "samples",
+      "name": "样本数（Samples）",
+      "direction": "越高越好",
+      "description": "该模型参与盲选的样本数：榜首 6,447、锚点 FLUX.2 [dev] 9,550；票数太少或不再维护的模型会离开榜单",
+      "range": null,
+      "unit": "count",
+      "cite": [
+        "aa-image-editing-leaderboard@表格",
+        "aa-methodology-image@Statistical method"
+      ]
+    },
+    {
+      "id": "price_per_1k_images",
+      "name": "每千张图价格",
+      "direction": "越低越好",
+      "description": "在模型方 API 上生成 1,000 张 1024×1024 图的费用（默认设置），与 Elo 同榜展示；当前榜首为 $210.72 /1k imgs",
+      "range": null,
+      "unit": "USD / 1k images",
+      "cite": [
+        "aa-image-editing-leaderboard@脚注",
+        "aa-image-editing-leaderboard@表格"
+      ]
+    }
+  ],
+  "default_protocol": {
+    "raw": "两个模型对同一张原图 + 同一句编辑指令各生成 1 张图（统一 1024×1024、1:1 比例、种子 42；最低支持分辨率高于 1024×1024 的模型按其最低支持分辨率生成后再降采样到 1024×1024），通过筛选并验证的评审在不显示模型身份的条件下二选一；全部票用 Bradley-Terry 一次性拟合并换算成 Elo，总榜与所有分类榜都以 FLUX.2 [dev] = 1000 为锚；只统计 AA-Image-Editing v2 测试集上、且双方都属于 AA-Image-Editing v2.1 的模型之间的票。",
+    "cite": [
+      "aa-methodology-image@Scope & Background",
+      "aa-methodology-image@AA-Image-Editing v2.1 Methodology"
+    ],
+    "variants": [
+      {
+        "text": "总榜 / 分类榜 / 开源权重子榜是三种口径：分类榜只用该用途 × 编辑动作的票拟合，名次可以和总榜差很多，三者不能混着排。",
+        "cite": [
+          "aa-methodology-image@AA-Image-Editing v2.1 Methodology",
+          "aa-image-editing-leaderboard@FAQ"
+        ]
+      },
+      {
+        "text": "端点口径：只测公开 serverless 端点；模型换到新的竞技场托管方后，它在旧输出上的票不再计入，Elo 与名次可能跳变。",
+        "cite": [
+          "aa-methodology-image@Scope & Background",
+          "aa-methodology-image@AA-Image-Editing v2.1 Methodology"
+        ]
+      },
+      {
+        "text": "版本口径：v2.1 换了更严格的统计算法（置信区间纳入其他所有模型的不确定性，区间列改为模拟整个榜单），与 v2.0 及更早的名次不可直接比。",
+        "cite": [
+          "aa-methodology-image@Statistical method"
+        ]
+      },
+      {
+        "text": "生成条件归一：统一 1024×1024、每提示 1 张图、种子 42，但最低支持分辨率更高的模型是「先按其最低分辨率生成再降采样」，跨模型的实际生成条件并不完全相同。",
+        "cite": [
+          "aa-methodology-image@Scope & Background"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "aa-image-editing-v2-1",
+      "date": "2026-10-27",
+      "label": "AA-Image-Editing v2.1 榜单被官方通告引用的日期（= Microsoft AI 发布通告的日期）；v2.1 本身上线日期在方法页与榜单页均未披露",
+      "cite": [
+        "microsoft-news-mai-image-2-7-debut@正文"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "题集规模与总投票数未公开",
+      "impact": "方法页只说提示集每月刷新、按用途与能力组合均匀抽样，没有给出题集条数、总投票数，也没有各用途 / 编辑动作的占比；外部无法复跑，也无法判断某个分类榜的样本是否够。",
+      "severity": "高",
+      "response": "官方未回应（方法页未公布任何规模数字）",
+      "reader": "分类名次当方向性参考，不要当精确分数；看结论前先看该行的 Samples 列。",
+      "cite": [
+        "aa-methodology-image@Prompt Curation and Refresh",
+        "aa-methodology-image@Sampling Methodology"
+      ]
+    },
+    {
+      "issue": "名次是滚动快照，厂商公告与当前榜单会不一致",
+      "impact": "Elo 每天随新票变动：MAI-Image-2.7 在 2026-10-27 的 Microsoft AI 通告里是 Artificial Analysis 图像编辑榜「第 2」，2026-11-14 的榜单上是第 4（名次区间 1–4）；最近 30 天还有 12 个新模型入榜。",
+      "severity": "中",
+      "response": "榜单页标注最近 30 天新增模型；锚点模型固定不变以保持刻度稳定。",
+      "reader": "引用名次必须带日期；本档案表格快照为 2026-11-14 抓取。",
+      "cite": [
+        "microsoft-news-mai-image-2-7-debut@正文",
+        "aa-image-editing-leaderboard@表格"
+      ]
+    },
+    {
+      "issue": "置信区间把每张票当独立，可能偏窄",
+      "impact": "官方明示：若同一评审或同一提示的票彼此相关，区间会偏窄，模型间的真实差距可能被高估。",
+      "severity": "中",
+      "response": "官方在方法页直接说明该假设及其后果。",
+      "reader": "差距小于 95% 区间时，不要解读为真实差距。",
+      "cite": [
+        "aa-methodology-image@Statistical method"
+      ]
+    },
+    {
+      "issue": "统计方法随版本变更",
+      "impact": "v2.1 更换了更严格的 Elo 与置信区间算法（纳入其他所有模型的不确定性、区间列改为模拟整榜），与 v2.0 及更早版本的名次不可直接比较。",
+      "severity": "中",
+      "response": "方法页「Changes from v2.0」逐项列出变更内容。",
+      "reader": "跨版本比名次前先确认版本号。",
+      "cite": [
+        "aa-methodology-image@Statistical method"
+      ]
+    },
+    {
+      "issue": "评审构成未公开",
+      "impact": "官方只说评审经过筛选与验证、机构不接受任何厂商为上榜或好评付费，未公布人数、地域、酬劳与筛选标准。",
+      "severity": "中",
+      "response": "官方仅作独立性声明。",
+      "reader": "把它当作一群筛选过的人类偏好代理，不是全体用户偏好。",
+      "cite": [
+        "aa-methodology-image@Scope & Background"
+      ]
+    },
+    {
+      "issue": "换托管方即丢历史票",
+      "impact": "模型迁到新的竞技场托管方后，它在旧输出上的票不再计入，Elo 与名次可能突然跳变。",
+      "severity": "低",
+      "response": "官方在测试集口径里写明该规则。",
+      "reader": "看到某模型名次突变，先查是否换了端点或托管方。",
+      "cite": [
+        "aa-methodology-image@AA-Image-Editing v2.1 Methodology"
+      ]
+    },
+    {
+      "issue": "覆盖范围限于公开 serverless 端点",
+      "impact": "不测私有部署、本地权重与演示产品；参考图生成是另一个基准，不在本榜内。",
+      "severity": "低",
+      "response": "官方方法页划定覆盖范围。",
+      "reader": "榜上名次说明的是「这个公开端点」的偏好胜率，不等于模型本身的上限。",
+      "cite": [
+        "aa-methodology-image@Scope & Background"
+      ]
+    }
+  ],
+  "notes": "新铸 id：2026-10-27 建档于 Microsoft AI 官方发布通告《MAI Image 2.7 debuts above GPT Image 2.5 Flare on Artificial Analysis and #3 on Arena》（https://microsoft.ai/news/mai-image-2-7-debut/），该文公布 MAI-Image-2.7 在 Artificial Analysis 图像编辑榜上的名次。此前账本无此基准的引用记录。榜单原始站点：https://artificialanalysis.ai/ 。归档见 models/2026-10-27-mai-image-2-7/。 2026-11-14 升级为 benchmark-profile/v2：补入官方方法页与 AA-Image-Editing v2.1 榜单页两条一手来源；原 v1 中「名次爬升图注明 Evaluated 22 Oct 2026」在 Microsoft AI 原文中查不到对应文字，已删除。头部「题量」为当前榜单参评模型数（83 个），因为官方未公开题集条数与总投票数。",
+  "official_sources": [
+    {
+      "kind": "site",
+      "title": "Image Generation Benchmarking Methodology — Artificial Analysis（含 AA-Image-Editing v2.1 方法说明）",
+      "url": "https://artificialanalysis.ai/methodology/image"
+    },
+    {
+      "kind": "leaderboard",
+      "title": "AA-Image-Editing v2.1 Leaderboard — Top AI Image Models | Artificial Analysis",
+      "url": "https://artificialanalysis.ai/image/leaderboard/editing"
+    },
+    {
+      "kind": "site",
+      "title": "Artificial Analysis（首页 Image Editing Arena 入口）",
+      "url": "https://artificialanalysis.ai/"
+    }
+  ],
+  "related_benchmarks": [],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "aa-methodology-image",
+        "kind": "site",
+        "title": "Image Generation Benchmarking Methodology — Artificial Analysis（含 AA-Image-Editing v2.1 方法说明）",
+        "url": "https://artificialanalysis.ai/methodology/image",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "aa-image-editing-leaderboard",
+        "kind": "leaderboard",
+        "title": "AA-Image-Editing v2.1 Leaderboard — Top AI Image Models | Artificial Analysis",
+        "url": "https://artificialanalysis.ai/image/leaderboard/editing",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "microsoft-news-mai-image-2-7-debut",
+        "kind": "announcement",
+        "title": "MAI Image 2.7 debuts above GPT Image 2.5 Flare on Artificial Analysis and #3 on Arena（Microsoft AI，2026-10-27）",
+        "url": "https://microsoft.ai/news/mai-image-2-7-debut/",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "artificialanalysis",
+        "kind": "site",
+        "title": "Artificial Analysis 首页（Image Editing Arena 入口）",
+        "url": "https://artificialanalysis.ai/",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "cites": {
+      "summary": [
+        "aa-image-editing-leaderboard@FAQ",
+        "aa-methodology-image@AA-Image-Editing v2.1 Methodology"
+      ],
+      "interpretation": [
+        "aa-methodology-image@Statistical method",
+        "aa-image-editing-leaderboard@表格",
+        "microsoft-news-mai-image-2-7-debut@正文"
+      ]
+    },
+    "header": {
+      "publisher": {
+        "v": "Artificial Analysis（独立分析机构，自建榜单）",
+        "cite": [
+          "artificialanalysis@首页"
+        ]
+      },
+      "first_release": {
+        "v": "未披露（方法页与榜单页均未给出 AA-Image-Editing v2.1 的上线日期）",
+        "cite": [
+          "aa-methodology-image@AA-Image-Editing v2.1 Methodology"
+        ]
+      }
+    },
+    "problem": {
+      "text": "图像编辑的难点分散在不同环节：增强修复、改文字、保持人物身份、按场景推理是几类不同的活，一个总分分不出「哪个模型适合哪类活」。AA-Image-Editing v2.1 用 10 种真实用途 × 7 类编辑动作把盲选票拆开拟合，既出总榜也出分类榜，并固定一个锚点模型保持刻度可比。",
+      "cite": [
+        "aa-methodology-image@AA-Image-Editing v2.1 Methodology",
+        "microsoft-news-mai-image-2-7-debut@正文"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "当前榜首",
+        "value": "Elo 1210 ±13（GPT Image 2.6 Sunburst (max)，95% 区间 1197 to 1223）",
+        "note": "2026-11-14 抓取的榜单页；第 2、3 名的名次区间与它重叠（1–3）",
+        "cite": [
+          "aa-image-editing-leaderboard@表格"
+        ]
+      },
+      {
+        "label": "Elo 锚点",
+        "value": "1000（FLUX.2 [dev]，固定值）",
+        "note": "总榜与所有分类榜的参考点；它自身在总榜排第 54（名次区间 51–58）",
+        "cite": [
+          "aa-methodology-image@AA-Image-Editing v2.1 Methodology",
+          "aa-image-editing-leaderboard@表格"
+        ]
+      },
+      {
+        "label": "开源权重最高",
+        "value": "Elo 1138（H3-Image）",
+        "note": "其后为 Fibo 2.0（Elo 1085）与 Qwen-Image-2.1（Elo 1084）",
+        "cite": [
+          "aa-image-editing-leaderboard@FAQ"
+        ]
+      },
+      {
+        "label": "当前榜尾",
+        "value": "Elo 590 ±37（Step1X-Edit，第 83 名）",
+        "note": "当前榜单共 83 个模型；榜首与榜尾相差约 620 Elo",
+        "cite": [
+          "aa-image-editing-leaderboard@表格"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把编辑榜名次当成模型的综合图像能力：文生图是另一个基准 AA-Image-T2I v2.1，两边分开计分。",
+        "cite": [
+          "aa-methodology-image@Scope & Background",
+          "aa-image-editing-leaderboard@FAQ"
+        ]
+      },
+      {
+        "text": "把厂商公告的名次当永久事实：Elo 每日随新票变动，MAI-Image-2.7 在 2026-10-27 的通告里是「第 2」，2026-11-14 的榜单上是第 4。",
+        "cite": [
+          "microsoft-news-mai-image-2-7-debut@正文",
+          "aa-image-editing-leaderboard@表格"
+        ]
+      },
+      {
+        "text": "忽略区间重叠：榜首三名的名次区间互为 1–3，实际是分不出高下，不是稳定的 1、2、3 名。",
+        "cite": [
+          "aa-image-editing-leaderboard@表格"
+        ]
+      },
+      {
+        "text": "把 Elo 差值当线性分数：Elo 只反映偏好胜率的相对强度，1210 与 1198 相差 12 分不代表「好一成」。",
+        "cite": [
+          "aa-methodology-image@AA-Image-Editing v2.1 Methodology"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "Artificial Analysis（独立分析机构；方法页声明不接受任何厂商为上榜或好评付费）",
+        "cite": [
+          "aa-methodology-image@Scope & Background",
+          "artificialanalysis@首页"
+        ]
+      },
+      {
+        "k": "当前版本",
+        "v": "AA-Image-Editing v2.1；官方把它与 Reference to Image 视为两个独立基准",
+        "cite": [
+          "aa-methodology-image@AA-Image-Editing v2.1 Methodology"
+        ]
+      },
+      {
+        "k": "锚点模型",
+        "v": "FLUX.2 [dev] 固定为 1000，作为总榜与所有分类榜的参考点",
+        "cite": [
+          "aa-methodology-image@AA-Image-Editing v2.1 Methodology"
+        ]
+      },
+      {
+        "k": "提示集维护",
+        "v": "英文、人工撰写，每月刷新；区分度不足的提示会被标记退役",
+        "cite": [
+          "aa-methodology-image@Prompt Curation and Refresh"
+        ]
+      },
+      {
+        "k": "数据与代码位置",
+        "v": "官方只公开方法说明与榜单页面，未发布题集、原始投票数据或复现代码",
+        "cite": [
+          "aa-methodology-image@Prompt Curation and Refresh"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-14",
+        "columns": [
+          "名次",
+          "名次区间",
+          "模型",
+          "Elo",
+          "95% 区间",
+          "Samples",
+          "发布时间",
+          "每千张图价格"
+        ],
+        "rows": [
+          [
+            "1",
+            "1-3",
+            "GPT Image 2.6 Sunburst (max)",
+            "1210 ±13",
+            "1197 to 1223",
+            "6,447",
+            "Nov 2026",
+            "$210.72 /1k imgs"
+          ],
+          [
+            "2",
+            "1-4",
+            "GPT Image 2.6 Flare (max)",
+            "1206 ±13",
+            "1193 to 1219",
+            "6,661",
+            "Nov 2026",
+            "$210.72 /1k imgs"
+          ],
+          [
+            "3",
+            "1-4",
+            "GPT Image 2.5 Sunburst (max)",
+            "1201 ±11",
+            "1190 to 1212",
+            "18,837",
+            "Sep 2026",
+            "$210.72 /1k imgs"
+          ],
+          [
+            "4",
+            "1-4",
+            "MAI-Image-2.7-Preview",
+            "1198 ±14",
+            "1184 to 1212",
+            "5,424",
+            "Oct 2026",
+            "No API available"
+          ],
+          [
+            "5",
+            "5",
+            "GPT Image 2.5 Flare (max)",
+            "1184 ±11",
+            "1173 to 1195",
+            "19,707",
+            "Sep 2026",
+            "$210.72 /1k imgs"
+          ],
+          [
+            "54",
+            "51-58",
+            "FLUX.2 [dev]（锚点）",
+            "1000（Anchor）",
+            "—",
+            "9,550",
+            "Nov 2025",
+            "$24.00 /1k imgs"
+          ],
+          [
+            "83",
+            "83",
+            "Step1X-Edit",
+            "590 ±37",
+            "553 to 627",
+            "3,065",
+            "Apr 2025",
+            "$30.00 /1k imgs"
+          ]
+        ]
+      },
+      "cite": [
+        "aa-image-editing-leaderboard@表格",
+        "aa-image-editing-leaderboard@脚注"
+      ]
+    }
+  }
+}

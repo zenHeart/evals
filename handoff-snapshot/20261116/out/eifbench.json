@@ -1,0 +1,559 @@
+{
+  "id": "eifbench",
+  "name": "EIFBENCH",
+  "full_name": "EIFBENCH：Extremely Complex Instruction Following Benchmark for Large Language Models（极端复杂指令跟随基准）",
+  "aliases": [],
+  "status": null,
+  "categories": [
+    "reasoning",
+    "agent"
+  ],
+  "summary": "EIFBENCH 是阿里通义实验室发布的「多指令 + 多约束」指令跟随基准：一道题里同时放 6–12 条指令、每条再挂若干条硬约束（内容 / 情境 / 风格 / 格式四类），共 1,000 题，分纯文本、双人对话、多人对话三种场景。评测用 GPT-4o 当裁判逐条判定约束是否满足，输出 ILA（一条指令下所有约束全过才算该指令成功）与 CLA（逐约束满足率）两个 0–1 分数，越高越好。",
+  "interpretation": "高分说明模型能在一次回答里同时满足多条指令与大量约束。ILA 低常常不是因为不会做单件事，而是一条约束漏掉就整条指令判失败，因此 ILA 绝对分数普遍偏低（论文 Table 4 中多数模型低于 0.3）。该基准只衡量约束满足情况，不衡量知识广度或推理能力，也不涉及工具调用与多智能体协作。",
+  "measures": [
+    {
+      "area": "纯文本场景（Plain Text）",
+      "focus": "单轮问答式的多指令任务，覆盖分类、信息抽取、文本生成等八类任务；示例形态是给一段材料再加一串约束，要求一次生成同时满足全部约束的文本。",
+      "share": "450 题（全库共 1,000 题）",
+      "format": "指令 + 约束清单进，模型自由生成一段文本出，GPT-4o 逐约束判 0/1",
+      "cite": [
+        "arxiv-2506-08375@Table 2",
+        "arxiv-2506-08375@§2.1.1"
+      ]
+    },
+    {
+      "area": "双人对话场景（Dyadic Dialogue）",
+      "focus": "两人多轮对话，约束同时作用于对话内容与对话形态；示例是限定角色口吻、轮次与必含信息的双人交谈。",
+      "share": "450 题（全库共 1,000 题）",
+      "format": "对话历史 + 约束清单进，模型续写多轮对白出，GPT-4o 逐约束判 0/1",
+      "cite": [
+        "arxiv-2506-08375@Table 2"
+      ]
+    },
+    {
+      "area": "多人对话场景（Multi-party Dialogue）",
+      "focus": "三人及以上的协作讨论，发言角色、轮次与内容要同时受约束；示例是多人围绕同一主题辩论且每人需满足不同约束。",
+      "share": "100 题（全库共 1,000 题）",
+      "format": "场景设定 + 角色约束进，模型生成多人讨论记录出，GPT-4o 逐约束判 0/1",
+      "cite": [
+        "arxiv-2506-08375@Table 2"
+      ]
+    },
+    {
+      "area": "八类任务类型",
+      "focus": "分类、信息抽取、文本生成、对话系统、推理与逻辑、语言风格、评测与验证、编程相关；编程相关考察代码生成、调试与解释，不是让模型真正跑代码。",
+      "share": "未披露",
+      "format": "每类任务下再叠加多条约束，按同一套 ILA / CLA 指标评分",
+      "cite": [
+        "arxiv-2506-08375@§2.1.1"
+      ]
+    },
+    {
+      "area": "四类约束类型",
+      "focus": "内容约束（主题、必含 / 禁含、数值精度等）、情境约束、风格约束（语气与文风）、格式约束（输出格式、句式、层级结构）。",
+      "share": "未披露",
+      "format": "约束以清单形式与指令一起给出，逐条独立判定",
+      "cite": [
+        "arxiv-2506-08375@§2.1.2",
+        "arxiv-2506-08375@附录 A"
+      ]
+    },
+    {
+      "area": "四种任务组合模式",
+      "focus": "并行（同时考虑多个维度）、串行（链式依赖）、条件（按条件适配）、嵌套（层级结构），决定同一题内多条指令如何组合。",
+      "share": "未披露",
+      "format": "与场景、任务类型交叉出现，共用同一套指标",
+      "cite": [
+        "arxiv-2506-08375@§2.1.1"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "工具调用与多智能体协作：八类任务全是文本生成（分类、抽取、生成、对话、推理、风格、评测、编程相关），题库与指标都只针对一次生成的文本，没有外部工具或 API 调用环节。",
+      "cite": [
+        "arxiv-2506-08375@§2.1.1"
+      ]
+    },
+    {
+      "text": "知识广度与推理能力本身：指标只看约束是否被满足，答得对不对由各任务自己的约束兜底，不是一个知识或推理总分。",
+      "cite": [
+        "arxiv-2506-08375@§2.3"
+      ]
+    },
+    {
+      "text": "多语言能力：题库以中文指令为主，论文自述这限制了它在多语言场景的适用性。",
+      "cite": [
+        "arxiv-2506-08375@Limitations"
+      ]
+    },
+    {
+      "text": "人类水平基线：论文没有报告人类在该基准上的得分，只报告了模型与人工评分之间的一致性（PCC 与 Fleiss' Kappa）。",
+      "cite": [
+        "arxiv-2506-08375@§5.4"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 1000,
+    "splits": [
+      "纯文本 450 题",
+      "双人对话 450 题",
+      "多人对话 100 题"
+    ],
+    "languages": [
+      "zh"
+    ],
+    "source_type": "混合来源：纯文本样本取自既有工作，双人对话经清洗并用 LLM 压缩，多人对话由 LLM 合成，全部经模型与人工双重质检",
+    "public_sample": true,
+    "totals": "1,000 道题：纯文本 450 / 双人对话 450 / 多人对话 100；每题 6–12 条指令，平均约束数分别为 73.27 / 73.38 / 80.26 条。",
+    "cite": [
+      "arxiv-2506-08375@Table 2",
+      "arxiv-2506-08375@§2.4"
+    ],
+    "construction": [
+      {
+        "k": "约束与任务分类体系",
+        "text": "先把约束分为内容、情境、风格、格式四类，任务分为八类，并定义并行、串行、条件、嵌套四种任务组合模式。",
+        "cite": [
+          "arxiv-2506-08375@§2.1.2",
+          "arxiv-2506-08375@§2.1.1"
+        ]
+      },
+      {
+        "k": "多场景数据采集",
+        "text": "纯文本样本取自既有工作；双人对话在原语料上清洗并用 LLM 压缩；多人对话由 LLM 合成，构造不同场景与参与人数。",
+        "cite": [
+          "arxiv-2506-08375@§2.2"
+        ]
+      },
+      {
+        "k": "任务扩展",
+        "text": "在采集到的样本上扩展任务组合，把单条指令扩成一条实例内的多条指令。",
+        "cite": [
+          "arxiv-2506-08375@§2.2"
+        ]
+      },
+      {
+        "k": "约束扩展",
+        "text": "为每条指令追加约束，规模控制在 6–12 条指令的中等难度区间，保证任务多样且可完成。",
+        "cite": [
+          "arxiv-2506-08375@§2.4"
+        ]
+      },
+      {
+        "k": "质量控制",
+        "text": "用 Qwen2.5-72B-Instruct 校验指令清晰度、约束逻辑一致性与任务可行性，再由三名认证标注专家人工复核，删冗余约束、改不可行任务、消歧义表述。",
+        "cite": [
+          "arxiv-2506-08375@§2.4"
+        ]
+      },
+      {
+        "k": "回答生成与评测",
+        "text": "收集各模型回答，用 GPT-4o 以 LLM-as-judge 方式逐约束判定是否满足，再汇总为 ILA 与 CLA。",
+        "cite": [
+          "arxiv-2506-08375@§2.3"
+        ]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "用 GPT-4o 作为裁判模型，以 LLM-as-judge 方式对每个约束单独判定是否满足（0/1），再汇总成两个指标：ILA 把一条指令下的全部约束都满足才算该指令成功，按实例内指令数取平均；CLA 按实例内所有约束取平均。开源模型在 4×Nvidia A100 80GB + vLLM 下推理，全程约 30 分钟；GPT-4o 评判耗时 4–10 小时。",
+    "cite": [
+      "arxiv-2506-08375@§2.3",
+      "arxiv-2506-08375@§5.2"
+    ],
+    "variants": [
+      {
+        "text": "SegPO 实验里 ILA / CLA 改由 Qwen2.5-72B-Instruct 评判，而不是主表的 GPT-4o，两套分数不能直接比。",
+        "cite": [
+          "arxiv-2506-08375@§4"
+        ]
+      },
+      {
+        "text": "Qwen3-32B 与 Qwen3-235B-A22B 同时报告了开 / 关 thinking 两档，同一模型占两行、数值不同，比较时要看清是哪一档。",
+        "cite": [
+          "arxiv-2506-08375@Table 4"
+        ]
+      },
+      {
+        "text": "官方仓库把数据集切成 single / dialogue / party 三类，分别用一条命令评测，跑哪一类决定分数对应哪个场景。",
+        "cite": [
+          "repo-hope-rita-eifbench@README"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "ila",
+      "name": "ILA（Instruction-Level Accuracy，指令级全过率）",
+      "direction": "越高越好",
+      "description": "一条指令下的所有约束都满足，该指令才算成功，再按实例内指令数取平均；是最严格的主指标。",
+      "range": [
+        0,
+        1
+      ],
+      "unit": "比例",
+      "cite": [
+        "arxiv-2506-08375@§2.3"
+      ]
+    },
+    {
+      "id": "cla",
+      "name": "CLA（Constraint-Level Accuracy，约束级满足率）",
+      "direction": "越高越好",
+      "description": "逐个约束判定是否满足后取平均，粒度更细，用于定位具体违反了哪条约束。",
+      "range": [
+        0,
+        1
+      ],
+      "unit": "比例",
+      "cite": [
+        "arxiv-2506-08375@§2.3"
+      ]
+    }
+  ],
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2025-06-10",
+      "label": "arXiv v1 首次公开；官方仓库同日宣布发布 EIFBench 与 SegPO",
+      "cite": [
+        "arxiv-2506-08375@提交历史",
+        "repo-tongyi-ccaif-complex-if@README"
+      ]
+    },
+    {
+      "id": "emnlp-2025",
+      "date": "2025-08-21",
+      "label": "EIFBench 与 SegPO 被 EMNLP 2025 主会接收",
+      "cite": [
+        "repo-tongyi-ccaif-complex-if@README"
+      ]
+    },
+    {
+      "id": "v2",
+      "date": "2025-09-16",
+      "label": "arXiv v2 修订版，本档案引用的版本",
+      "cite": [
+        "arxiv-2506-08375@提交历史"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "题库以中文指令为主",
+      "impact": "非中文场景的结论不能直接外推；论文把这一点列为自身局限，称其限制了多语言适用性。",
+      "severity": "高",
+      "response": "未见官方回应（论文仅在 Limitations 中提出）",
+      "reader": "把它当中文极端指令跟随的度量，不要当多语言通用指标。",
+      "cite": [
+        "arxiv-2506-08375@Limitations"
+      ]
+    },
+    {
+      "issue": "依赖 GPT-4o 作为裁判",
+      "impact": "裁判的漏判与误判会直接进入分数；论文用 50 个实例、3 位专家核对，PCC 平均 0.9231 / 0.9210 / 0.9191，500 条约束的 Fleiss' Kappa 平均 0.7371 / 0.7442 / 0.7357。",
+      "severity": "中",
+      "response": "论文报告了与人工评分的一致性（PCC 与 Fleiss' Kappa）",
+      "reader": "把分数当近似值看，几个百分点的差距不必过度解读。",
+      "cite": [
+        "arxiv-2506-08375@§5.4"
+      ]
+    },
+    {
+      "issue": "ILA 是全有或全无的严格指标",
+      "impact": "一条指令下漏掉任一条约束即整条判失败，绝对分数普遍偏低，Table 4 中多数模型 ILA 低于 0.3。",
+      "severity": "中",
+      "response": "论文同时给出 CLA 作为细粒度补充，两个指标从粗到细逐层看",
+      "reader": "比较模型时同时看 ILA 与 CLA，只看 ILA 会低估模型。",
+      "cite": [
+        "arxiv-2506-08375@§5.3.1",
+        "arxiv-2506-08375@§2.3"
+      ]
+    },
+    {
+      "issue": "任务间关系偏弱",
+      "impact": "复杂度主要来自约束数量叠加，缺少多步推理、条件执行这类真实任务依赖，与真实工作流的耦合度有限。",
+      "severity": "中",
+      "response": "未见官方回应（论文提出任务间关系可进一步增强）",
+      "reader": "高分不等于能编排复杂的多步工作流。",
+      "cite": [
+        "arxiv-2506-08375@Limitations"
+      ]
+    },
+    {
+      "issue": "三种场景题量不均衡",
+      "impact": "多人对话只有 100 题，该场景分数的抽样波动比其他两个场景大。",
+      "severity": "低",
+      "response": "未见官方回应",
+      "reader": "多人对话场景的排名差异要谨慎解读。",
+      "cite": [
+        "arxiv-2506-08375@Table 2"
+      ]
+    }
+  ],
+  "notes": "由通义实验室（Tongyi Lab, Alibaba Group）发布，本档案引用 arXiv v2（2025-09-16）。原 v1 档案把它归到字节 Seed 名下并引用 Seed 博客，该博客正文未提及 EIFBENCH，属错误归属，已从官方来源中移除。",
+  "official_sources": [
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2506.08375"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/Hope-Rita/EIFBench"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/Tongyi-CCAI/Complex-IF"
+    }
+  ],
+  "related_benchmarks": [
+    "ifeval",
+    "cfbench"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "arxiv-2506-08375",
+        "kind": "paper",
+        "title": "EIFBENCH: Extremely Complex Instruction Following Benchmark for Large Language Models（arXiv:2506.08375，v2）",
+        "url": "https://arxiv.org/abs/2506.08375",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "repo-hope-rita-eifbench",
+        "kind": "repo",
+        "title": "Hope-Rita/EIFBench（评测代码与数据集入口）",
+        "url": "https://github.com/Hope-Rita/EIFBench",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "repo-tongyi-ccaif-complex-if",
+        "kind": "repo",
+        "title": "Tongyi-CCAI/Complex-IF（通义复杂指令跟随与推理项目主页，含 News 与引用条目）",
+        "url": "https://github.com/Tongyi-CCAI/Complex-IF",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "通义实验室（Tongyi Lab, Alibaba Group）",
+        "cite": [
+          "arxiv-2506-08375@作者署名",
+          "repo-tongyi-ccaif-complex-if@README"
+        ]
+      },
+      "first_release": {
+        "v": "2025-06-10（arXiv v1）",
+        "cite": [
+          "arxiv-2506-08375@提交历史"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "arxiv-2506-08375@Abstract",
+        "arxiv-2506-08375@Table 2",
+        "arxiv-2506-08375@§2.1.1",
+        "arxiv-2506-08375@§2.1.2",
+        "arxiv-2506-08375@§2.3"
+      ],
+      "interpretation": [
+        "arxiv-2506-08375@§2.3",
+        "arxiv-2506-08375@§5.3.1",
+        "arxiv-2506-08375@§2.1.1",
+        "arxiv-2506-08375@Limitations"
+      ]
+    },
+    "problem": {
+      "text": "此前的指令跟随基准各自只覆盖一种组合：IFEval、INFOBench 是单指令单约束，CFBench、ComplexBench 是单指令多约束，SIFo 是多指令单约束；没有一个基准同时覆盖多指令 × 多约束 × 多数据类型，而真实场景里的指令恰恰是这个形态。EIFBENCH 用 74.01 条平均指令、8.24 条平均约束的密度把这三维同时拉满。",
+      "cite": [
+        "arxiv-2506-08375@Table 1",
+        "arxiv-2506-08375@§1"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "论文最好成绩（纯文本 ILA）",
+        "value": "0.2480",
+        "note": "GPT-4o；同表 Claude-3.5-Sonnet 仅 0.0896，多数开源模型低于 0.22。",
+        "cite": [
+          "arxiv-2506-08375@Table 4"
+        ]
+      },
+      {
+        "label": "论文最好成绩（纯文本 CLA）",
+        "value": "0.8308",
+        "note": "Qwen2.5-72B-Instruct；CLA 远高于 ILA，说明约束大多能满足、难的是同时全满足。",
+        "cite": [
+          "arxiv-2506-08375@Table 4"
+        ]
+      },
+      {
+        "label": "论文最好成绩（多人对话 ILA）",
+        "value": "0.3326",
+        "note": "GPT-o3-mini；该场景题量仅 100 题，波动更大。",
+        "cite": [
+          "arxiv-2506-08375@Table 4"
+        ]
+      },
+      {
+        "label": "7B 基座模型起点",
+        "value": "0.0503",
+        "note": "Qwen2.5-7B-Instruct 在纯文本上的 ILA，为 Table 5 的起点。",
+        "cite": [
+          "arxiv-2506-08375@Table 5"
+        ]
+      },
+      {
+        "label": "官方 SegPO 训练后（同基座）",
+        "value": "0.1460",
+        "note": "Qwen2.5-7B-Instruct w/ SegPO，纯文本 ILA；论文称相对基座与 GRPO 平均提升 14.85% 与 3.40%。",
+        "cite": [
+          "arxiv-2506-08375@Table 5",
+          "arxiv-2506-08375@§5.3.2"
+        ]
+      },
+      {
+        "label": "人类基线",
+        "value": "论文未给出",
+        "note": "论文只报告模型与人工的一致性，没有人类在该基准上的得分。",
+        "cite": [
+          "arxiv-2506-08375@§5.4"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "以为 EIFBENCH 考工具调用或多智能体：八类任务全是文本生成，约束也全是对输出文本的要求，题库里没有工具环节。",
+        "cite": [
+          "arxiv-2506-08375@§2.1.1"
+        ]
+      },
+      {
+        "text": "把低分读成「模型不会做这件事」：ILA 要求一条指令下所有约束同时满足，漏一条约束整条指令即判失败，所以绝对分数天然偏低。",
+        "cite": [
+          "arxiv-2506-08375@§2.3"
+        ]
+      },
+      {
+        "text": "把约束增多导致的分数下滑当成模型退步：论文附录明确说性能随指令数与约束数增加而逐步下降，且约束数增加的影响更明显。",
+        "cite": [
+          "arxiv-2506-08375@附录 C.1"
+        ]
+      },
+      {
+        "text": "把它当多语言指标读：题库以中文指令为主，非中文表现不在它的度量范围内。",
+        "cite": [
+          "arxiv-2506-08375@Limitations"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "通义实验室（Tongyi Lab, Alibaba Group）；论文由 Alibaba Research Intern Program 支持。",
+        "cite": [
+          "arxiv-2506-08375@作者署名",
+          "arxiv-2506-08375@Limitations"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "Tao Zou、Xinghua Zhang、Haiyang Yu、Minzheng Wang、Fei Huang、Yongbin Li（通讯作者）。",
+        "cite": [
+          "arxiv-2506-08375@作者署名"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2025-06-10 arXiv v1 发布；2025-08-21 被 EMNLP 2025 主会接收；2025-09-16 arXiv v2 修订。",
+        "cite": [
+          "arxiv-2506-08375@提交历史",
+          "repo-tongyi-ccaif-complex-if@README",
+          "arxiv-2506-08375@Comments"
+        ]
+      },
+      {
+        "k": "数据与代码位置",
+        "v": "论文称代码与数据集公开；Hope-Rita/EIFBench 仓库提供 generate.py、6_evaluation.py、8_metric.py 与 eval.sh，评测前需在 configs/config.yaml 里配置 API key 与 endpoint。",
+        "cite": [
+          "arxiv-2506-08375@§5.2",
+          "repo-hope-rita-eifbench@README"
+        ]
+      },
+      {
+        "k": "配套训练算法",
+        "v": "同一篇论文提出 Segment Policy Optimization（SegPO），把推理机制与段级评估引入优势计算，与 GRPO 对比后在 Qwen2.5-7B-Instruct 上取得提升。",
+        "cite": [
+          "arxiv-2506-08375@§4",
+          "repo-tongyi-ccaif-complex-if@README"
+        ]
+      },
+      {
+        "k": "与相邻基准的关系",
+        "v": "定位是填补多指令 × 多约束的空白；论文表 1 中与 CIF-Bench、FollowBench、ComplexBench、CFBench、SIFo 逐项对比，相关既有基准本站另立条目（ifeval、cfbench）。",
+        "cite": [
+          "arxiv-2506-08375@Table 1"
+        ]
+      },
+      {
+        "k": "附录样例",
+        "v": "论文附录 D 给出一个完整实例：围绕成语「画蛇添足」的写作任务，约束包含必须详述该成语的历史背景与出处、句长须为 20–30 个汉字等。",
+        "cite": [
+          "arxiv-2506-08375@附录 D"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2025-09-16",
+        "columns": [
+          "分组",
+          "模型",
+          "纯文本 ILA",
+          "纯文本 CLA",
+          "双人对话 ILA",
+          "双人对话 CLA",
+          "多人对话 ILA",
+          "多人对话 CLA"
+        ],
+        "rows": [
+          ["闭源", "GPT-4o", "0.2480", "0.6518", "0.2166", "0.5631", "0.2226", "0.5786"],
+          ["闭源", "Claude-3.5-Sonnet", "0.0896", "0.3951", "0.0919", "0.4142", "0.0663", "0.3865"],
+          ["闭源", "GPT-4o-mini", "0.0826", "0.5299", "0.0930", "0.4892", "0.0952", "0.6001"],
+          ["闭源", "Claude-3.5-Haiku", "0.0332", "0.2214", "0.0251", "0.1613", "0.0142", "0.1081"],
+          ["闭源", "gemini-1.5-Pro", "0.1669", "0.6705", "0.2717", "0.7461", "0.1972", "0.7693"],
+          ["闭源", "gemini-2.0-Flash", "0.2291", "0.7028", "0.1813", "0.5779", "0.1681", "0.5383"],
+          ["闭源", "GPT-o3-mini", "0.1743", "0.7210", "0.0805", "0.5901", "0.3326", "0.8672"],
+          ["开源", "LLaMA3.1-8B-Instruct", "0.0127", "0.2918", "0.0069", "0.1845", "0.0024", "0.2898"],
+          ["开源", "LLaMA3.1-70B-Instruct", "0.0222", "0.3696", "0.0250", "0.3297", "0.0156", "0.3774"],
+          ["开源", "Qwen2-7B-Instruct", "0.0261", "0.3531", "0.0269", "0.2954", "0.0136", "0.3666"],
+          ["开源", "Qwen2-72B-Instruct", "0.0823", "0.5924", "0.1336", "0.6458", "0.0878", "0.6345"],
+          ["开源", "Qwen2.5-7B-Instruct", "0.0503", "0.5051", "0.0742", "0.5526", "0.0572", "0.5878"],
+          ["开源", "Qwen2.5-72B-Instruct", "0.1983", "0.7565", "0.2787", "0.7657", "0.2636", "0.8308"],
+          ["开源", "QwQ-32B", "0.0884", "0.4724", "0.0909", "0.4220", "0.0820", "0.5439"],
+          ["开源", "DeepSeek-V3", "0.1955", "0.6836", "0.1864", "0.7206", "0.1664", "0.7395"],
+          ["开源", "DeepSeek-R1", "0.2219", "0.6860", "0.3486", "0.7906", "0.2251", "0.7465"],
+          ["开源", "Qwen3-32B", "0.2050", "0.7694", "0.2513", "0.7799", "0.2299", "0.8078"],
+          ["开源", "Qwen3-32B w/o thinking", "0.2073", "0.7703", "0.2396", "0.7794", "0.2119", "0.7445"],
+          ["开源", "Qwen3-235B-A22B", "0.1700", "0.6712", "0.2328", "0.7296", "0.2120", "0.7462"],
+          ["开源", "Qwen3-235B-A22B w/o thinking", "0.1775", "0.6692", "0.2252", "0.7282", "0.2011", "0.7444"]
+        ]
+      },
+      "cite": [
+        "arxiv-2506-08375@Table 4"
+      ]
+    }
+  }
+}

@@ -1,0 +1,638 @@
+{
+  "id": "seqqa",
+  "name": "SeqQA",
+  "full_name": "SeqQA（Sequence Question Answering，序列问答）——LAB-Bench / LABBench2 的分子生物学序列子任务",
+  "aliases": [
+    "LAB-Bench SeqQA",
+    "LABBench2 SeqQA2"
+  ],
+  "status": "active",
+  "categories": [
+    "knowledge"
+  ],
+  "summary": "SeqQA 考的是「把一段 DNA 或蛋白质序列当字符串，按分子生物学规则算出答案」：给你序列，让你判断翻译出的氨基酸、限制酶会切出几个片段、该用哪对引物做 PCR。题型是选择题，每题还额外带一个「信息不足」选项，模型可以用它拒答。它是 LAB-Bench（FutureHouse 的生物研究能力基准）15 个子任务之一，共 750 题；2026 年的 LABBench2 把它升级为 SeqQA2，改为 20 类共 400 题，序列可以直接写在提示词里、放在文件里，或要求模型自己去检索。",
+  "interpretation": "高分说明模型能把长序列当精确字符串处理，并按生物学规则一步步推演（前端类比：一段必须逐字符正确的字符串解析，错一个碱基整题就错）。它不代表会查文献、会设计完整实验——那是 LitQA2、DbQA、CloningScenarios 等子任务的职责。LABBench2 显示带代码工具会明显抬高 SeqQA2 分数，而「自己检索序列」的变体分数最低，所以不同口径的 SeqQA 分数不能直接排在一起。论文报告的人类基线（博士级生物学家、允许用工具）在 SeqQA 上总体优于所有被测模型，但在给了模板序列的引物选择（PCR-seq-enzprimers）等子任务上被模型追上或超过。",
+  "measures": [
+    {
+      "area": "PCR 与引物设计（8/15 子任务）",
+      "focus": "给基因或序列，按酶切位点、Gibson 接头或长度要求选出/设计正确的引物对；示例题：「我想用限制-连接克隆把 <GENE> 基因从 E. coli 克隆进质粒 pUC19」，要求给出最终使用的两条引物",
+      "share": "未披露（论文未按家族拆分题量；附录 C.7 列出的 15 个子任务名中有 8 个属此类）",
+      "format": "选择题（含「信息不足」选项），答案须把字母包在 [ANSWER] 与 [/ANSWER] 标签之间",
+      "cite": [
+        "arxiv-2407-10362@附录 C.7",
+        "arxiv-2407-10362@附录 C.7.1",
+        "arxiv-2407-10362@附录 D.1"
+      ]
+    },
+    {
+      "area": "限制酶消化（2/15 子任务）",
+      "focus": "给一段序列和一组酶，算会切出几个片段（RE-seq-numfrags）或各片段长度（RE-seq-lenfrags）",
+      "share": "未披露（论文未按家族拆分题量；附录 C.7 列出的 15 个子任务名中有 2 个属此类）",
+      "format": "选择题（含「信息不足」选项）",
+      "cite": [
+        "arxiv-2407-10362@附录 C.7",
+        "arxiv-2407-10362@Table 1"
+      ]
+    },
+    {
+      "area": "ORF 与翻译（4/15 子任务）",
+      "focus": "给 DNA 序列，判断开放阅读框的位置与长度（ORF-seq-numlen）、翻译出的氨基酸序列/个数（ORF-seq-AAseq / AAid），或翻译效率（ORF-transeff）",
+      "share": "未披露（论文未按家族拆分题量；附录 C.7 列出的 15 个子任务名中有 4 个属此类）",
+      "format": "选择题（含「信息不足」选项）",
+      "cite": [
+        "arxiv-2407-10362@附录 C.7",
+        "arxiv-2407-10362@Table 1"
+      ]
+    },
+    {
+      "area": "序列基本属性（1/15 子任务）",
+      "focus": "算 GC 含量等序列统计量（Prop-seq-gcpercent）",
+      "share": "未披露（论文未按家族拆分题量；附录 C.7 列出的 15 个子任务名中有 1 个属此类）",
+      "format": "选择题（含「信息不足」选项）",
+      "cite": [
+        "arxiv-2407-10362@附录 C.7",
+        "arxiv-2407-10362@Table 1"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "文献检索与信息整合——那是 LitQA2 / DbQA 的职责；SeqQA 的输入序列直接给在题面或文件里",
+      "cite": [
+        "arxiv-2407-10362@Abstract",
+        "arxiv-2604-09554@Table 1"
+      ]
+    },
+    {
+      "text": "湿实验执行与完整实验设计——ProtocolQA（写协议）和 CloningScenarios / CloningQA（克隆场景）负责",
+      "cite": [
+        "arxiv-2407-10362@Abstract",
+        "arxiv-2604-09554@§4.3"
+      ]
+    },
+    {
+      "text": "开放式问答：LAB-Bench 一代的 SeqQA 全是选择题；LABBench2 的 SeqQA2 改为按子任务定制验证函数判分，但仍不测开放式科学问答",
+      "cite": [
+        "arxiv-2604-09554@§2.3"
+      ]
+    },
+    {
+      "text": "不覆盖全部生物学研究能力——作者明说 LABBench2 不追求也没做到全面覆盖",
+      "cite": [
+        "arxiv-2604-09554@§4.3"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 400,
+    "splits": [
+      "LABBench2 SeqQA2：400 题（20 个子任务类型 × 20 个变体；Hugging Face 数据集需同意条款）",
+      "LAB-Bench SeqQA：750 题 / 15 个子任务；Hugging Face 公开子集 SeqQA 600 行，另留 20% 私有"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "programmatic（程序化生成 + 定制验证函数判分）",
+    "public_sample": true,
+    "multiple_choice_share": "一代 100%（LAB-Bench SeqQA 全为选择题）；LABBench2 SeqQA2 改用定制验证函数判分",
+    "totals": "当前主版本 LABBench2 SeqQA2 共 400 题（20 个子任务类型 × 20 个变体），序列可按 inline / 文件 / 检索三种方式交付；前代 LAB-Bench SeqQA 为 750 题 / 15 个子任务，Hugging Face 公开子集 600 行（约为全集 80%），另留 20% 私有用于监测污染。题型为选择题，人类在 SeqQA 上的覆盖率基准为 64%。",
+    "cite": [
+      "arxiv-2604-09554@Table 1",
+      "arxiv-2604-09554@§2.3.1",
+      "arxiv-2407-10362@Table 1",
+      "hf-lab-bench@数据集卡",
+      "hf-lab-bench@Files and versions",
+      "hf-labbench2@数据集卡"
+    ],
+    "construction": [
+      {
+        "k": "模板 → 公式化扩题",
+        "text": "每个子任务类型先由内部生物学家写成一道问题模板，再公式化扩展成 20 个变体题，用不同的输入序列或数据（设计的序列或真实基因序列）。",
+        "cite": [
+          "arxiv-2604-09554@§2.3.1"
+        ]
+      },
+      {
+        "k": "程序化生成（一代 LAB-Bench）",
+        "text": "LAB-Bench 的 SeqQA 题目大多由程序生成：基因与序列从公开基因组 fasta 里抽取，引物按长度区间取子串并对反向链做反转互补，酶从固定候选列表里随机选。",
+        "cite": [
+          "arxiv-2407-10362@附录 C.7",
+          "arxiv-2407-10362@附录 C.7.1",
+          "arxiv-2407-10362@§2.1"
+        ]
+      },
+      {
+        "k": "难度与真实性升级（二代）",
+        "text": "SeqQA2 相比一代新增若干子任务类别，并要求模型从文件里读序列或自行检索序列，而不是只写在提示词里。",
+        "cite": [
+          "arxiv-2604-09554@§2.3"
+        ]
+      },
+      {
+        "k": "判分方式",
+        "text": "每个子任务配定制验证函数，例如用模型设计的引物做一次计算机内（in silico）PCR 来判定对错；论文提到部分子任务存在多个合理解（如引物设计）。",
+        "cite": [
+          "arxiv-2604-09554@§2.3"
+        ]
+      },
+      {
+        "k": "公开 / 私有拆分",
+        "text": "LAB-Bench 每个子任务留 20% 私有、公开 80%，用于监测训练污染；Hugging Face 上的 SeqQA 公开子集为 600 行，2025-02-18 曾修订部分 SeqQA 题目以处理限制酶使用问题。",
+        "cite": [
+          "arxiv-2407-10362@附录 B.1",
+          "hf-lab-bench@数据集卡",
+          "hf-lab-bench@Files and versions"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "accuracy",
+      "name": "准确率（accuracy）",
+      "direction": "越高越好",
+      "description": "答对题数 / 总题数；选了「信息不足」的题也计入分母",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2407-10362@附录 D.3",
+        "arxiv-2407-10362@§2.2"
+      ]
+    },
+    {
+      "id": "precision",
+      "name": "精确率（precision，论文也称 selective accuracy）",
+      "direction": "越高越好",
+      "description": "答对题数 / 未选「信息不足」的题数，衡量「在敢答的题上答对多少」",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2407-10362@附录 D.3"
+      ]
+    },
+    {
+      "id": "coverage",
+      "name": "覆盖率（coverage）",
+      "direction": "无好坏方向（仅作参考）",
+      "description": "未选「信息不足」的题数 / 总题数，衡量模型敢答多少；论文图表报告，但论文不给这个指标的好坏定义",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2407-10362@附录 D.3",
+        "arxiv-2407-10362@§2.2.2"
+      ]
+    }
+  ],
+  "default_protocol": {
+    "raw": "LAB-Bench 口径：所有模型用同一条 0-shot chain-of-thought 提示词（「The following is a multiple choice question about biology. Please answer by responding with the letter of the correct answer. Think step by step.」），要求把答案字母包在 [ANSWER] 与 [/ANSWER] 标签之间以便自动解析；选项顺序随机打乱；每题额外加一个「Insufficient information to answer the question.」选项，模型可以用它拒答。被测模型完全不带任何工具（含联网），而人类基线（博士级生物学家）可以用互联网和免费 DNA 序列操作软件。LABBench2 口径：改用每个子任务的定制验证函数判分（如用模型设计的引物做 in silico PCR），序列交付有 inline / 文件 / 检索三种模式，并普遍提供工具增强与 agent 设置。",
+    "cite": [
+      "arxiv-2407-10362@附录 D.1",
+      "arxiv-2407-10362@§2.2",
+      "arxiv-2407-10362@§2.3",
+      "arxiv-2604-09554@§2.3",
+      "arxiv-2604-09554@Table 1",
+      "repo-labbench2@README"
+    ],
+    "variants": [
+      {
+        "text": "无工具 vs 带工具：LAB-Bench 明确不给模型任何工具；LABBench2 的结果普遍带工具增强，论文称工具使用（很可能是代码执行）会大幅抬高 SeqQA2 与 CloningQA 分数，是跨模型的「均衡器」——两代分数不能直接比。",
+        "cite": [
+          "arxiv-2407-10362@§2.2",
+          "arxiv-2604-09554@§3.4"
+        ]
+      },
+      {
+        "text": "序列交付方式：inline（写进提示词）/ 文件 / 检索三种模式的分数不同，论文称 inline 略好、文件接近、检索明显最差；官方 harness 默认 file 模式，而论文 Figure 4 用的是 inject 模式。",
+        "cite": [
+          "arxiv-2604-09554@§3.4",
+          "arxiv-2604-09554@Figure 4",
+          "repo-labbench2@README"
+        ]
+      },
+      {
+        "text": "题目版本与私有集：LAB-Bench 的 Table 2 / Table 3 是在「公开+私有全集」上、每次模型跑三次取平均的结果，而 Hugging Face 只放公开 80% 子集；复现时若只用公开集，数字会和论文表不完全一致。",
+        "cite": [
+          "arxiv-2407-10362@Table 2",
+          "arxiv-2407-10362@附录 B.1",
+          "hf-lab-bench@数据集卡"
+        ]
+      },
+      {
+        "text": "准确率 vs 精确率：模型大量选「信息不足」时两者会显著分离——论文把拒答题计入准确率分母、不计入精确率分母。报告哪一个必须看清楚。",
+        "cite": [
+          "arxiv-2407-10362@附录 D.3"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2024-07-14",
+      "label": "LAB-Bench arXiv v1 发布，SeqQA 750 题 / 15 个子任务（本页 Table 2 / Table 3 数值取自 2024-07-17 的 v3）",
+      "cite": [
+        "arxiv-2407-10362@arXiv 提交历史",
+        "arxiv-2407-10362@Table 1"
+      ]
+    },
+    {
+      "id": "hf-public",
+      "date": "2025-02-18",
+      "label": "Hugging Face 公开子集更新：修订部分 SeqQA 题目以处理限制酶使用问题",
+      "cite": [
+        "hf-lab-bench@数据集卡"
+      ]
+    },
+    {
+      "id": "seqqa2",
+      "date": "2026-02-04",
+      "label": "LABBench2 arXiv v1 发布，SeqQA 升级为 SeqQA2：400 题 / 20 类，新增文件与检索两种序列交付模式",
+      "cite": [
+        "arxiv-2604-09554@arXiv 提交历史",
+        "arxiv-2604-09554@Table 1",
+        "arxiv-2604-09554@§2.3"
+      ]
+    },
+    {
+      "id": "labbench2-v2",
+      "date": "2026-05-05",
+      "label": "LABBench2 arXiv v2（本页核对所用版本）",
+      "cite": [
+        "arxiv-2604-09554@arXiv 提交历史"
+      ]
+    },
+    {
+      "id": "harness",
+      "date": "2026-10-15",
+      "label": "官方评测 harness 更新（健壮性改进等）",
+      "cite": [
+        "repo-labbench2@README"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "人类基线与模型不同口径",
+      "impact": "LAB-Bench 的博士级人类受评者可以用互联网和免费 DNA 序列操作软件，模型却完全不带工具；作者自己也说这个对比不完全公平。因此 SeqQA 上「人类 > 模型」的差距里混入了工具差异。",
+      "severity": "高",
+      "response": "论文在 §3.3 明确指出该对比不均衡，并解释 LAB-Bench 设计上不给模型任何工具（包括联网）；论文未补充同口径的人类基线实验。",
+      "reader": "不要把 LAB-Bench 的人类线当作模型无工具能力的上限；比较时先认准口径。",
+      "cite": [
+        "arxiv-2407-10362@§2.3",
+        "arxiv-2407-10362@§3.3",
+        "arxiv-2407-10362@§2.2"
+      ]
+    },
+    {
+      "issue": "工具与序列交付方式显著改变分数",
+      "impact": "LABBench2 显示代码类工具会大幅抬高 SeqQA2 分数，inline / 文件 / 检索三种序列交付方式的成绩也不可互换；官方 harness 默认 file 模式，与论文 Figure 4 的 inject 模式不同，另外论文注明 GPT 5.2 Pro 的 Response API 不接受相应文件类型，人为压低了它的文件模式成绩。",
+      "severity": "高",
+      "response": "论文按模式分别报告（Figure 4A）并在图中标注该异常；官方仓库的 harness 同时提供三种 --mode。",
+      "reader": "看任何 SeqQA 分数先问三件事：带不带工具、序列怎么给、默认哪个模式。",
+      "cite": [
+        "arxiv-2604-09554@§3.4",
+        "arxiv-2604-09554@Figure 4",
+        "repo-labbench2@README"
+      ]
+    },
+    {
+      "issue": "聚合分数掩盖具体短板",
+      "impact": "SeqQA2 各类别表现高度不均：需要从长序列里定位或操作特定子序列的任务（引物设计、氨基酸识别）在所有模型上最差，聚合分会把这些瓶颈抹平。",
+      "severity": "中",
+      "response": "论文给出按子任务的热力图（Figure 4B）并建议按子任务开发与评估；官方未单独发布 SeqQA2 的数值子任务分数表。",
+      "reader": "引用总分时同时看子任务分解，别把「SeqQA 分数」当成单一能力。",
+      "cite": [
+        "arxiv-2604-09554@§3.2",
+        "arxiv-2604-09554@Figure 4"
+      ]
+    },
+    {
+      "issue": "精确字符串处理仍然脆弱",
+      "impact": "即使操作本身概念上简单，正确性也依赖逐字符保真度和正确使用工具；论文把对长而精确序列的脆弱处理列为真实部署的主要限制之一，并建议提供专用序列操作工具。",
+      "severity": "中",
+      "response": "论文在 §4.1 / §4.2 给出该诊断与「专用序列工具」建议；官方 harness 支持文件交付以绕开超长提示词限制。",
+      "reader": "模型在 SeqQA 上的错误常是字符串或工具使用错误，不是生物学知识不会。",
+      "cite": [
+        "arxiv-2604-09554@§4.1",
+        "arxiv-2604-09554@§4.2"
+      ]
+    },
+    {
+      "issue": "论文内部数字不一致",
+      "impact": "§2.3 称 Claude 3.5 Sonnet 在 ORF-transeff 上「0.88 to 0.75 precision」胜过人类，但 Table 2（准确率）Sonnet 为 0.88、Table 3（精确率）Sonnet 为 0.92、人类为 0.75——正文把准确率数值说成了精确率。",
+      "severity": "中",
+      "response": "未见官方更正；本页以 Table 2 / Table 3 的表格值为准。",
+      "reader": "引用单个子任务数字时回到附录表核对，别只引正文句子。",
+      "cite": [
+        "arxiv-2407-10362@§2.3",
+        "arxiv-2407-10362@Table 2",
+        "arxiv-2407-10362@Table 3"
+      ]
+    },
+    {
+      "issue": "公开集污染风险与复现门槛",
+      "impact": "LAB-Bench 公开约 80% 并保留 20% 私有以监测污染，但公开集可下载仍可能进入训练数据；LABBench2 数据集在 Hugging Face 上需要同意条款才能访问，第三方复现受限。",
+      "severity": "中",
+      "response": "官方保留私有子集监测污染，LABBench2 数据集设门禁；官方另提供公开 harness 供复现。",
+      "reader": "跨时间比较时留意题目修订（如 2025-02-18 的限制酶修订）与数据访问门槛。",
+      "cite": [
+        "arxiv-2407-10362@附录 B.1",
+        "hf-lab-bench@数据集卡",
+        "hf-labbench2@数据集卡",
+        "repo-labbench2@README"
+      ]
+    },
+    {
+      "issue": "覆盖面有限",
+      "impact": "作者明说 LABBench2 不追求覆盖全部生物学研究能力，只取易测量且基础的能力子集；SeqQA2 也不包含湿实验执行。",
+      "severity": "低",
+      "response": "论文把边界写进 §4.3；未见扩展计划的时间表。",
+      "reader": "SeqQA 好不等于能独立做生物研究。",
+      "cite": [
+        "arxiv-2604-09554@§4.3"
+      ]
+    }
+  ],
+  "notes": "SeqQA2 的成绩在 LABBench2 论文里只以图（Figure 1 / 2 / 4）呈现，论文未给数值表，因此本页附录 B 只收录 LAB-Bench 一代 Table 2 / Table 3 的 SeqQA 全子任务数值。",
+  "official_sources": [
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2407.10362"
+    },
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2604.09554"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/futurehouse/lab-bench"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/EdisonScientific/labbench2"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/EdisonScientific/labbench2"
+    }
+  ],
+  "related_benchmarks": [
+    "labbench2",
+    "bio-design-tools"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "arxiv-2407-10362",
+        "kind": "paper",
+        "title": "LAB-Bench: Measuring Capabilities of Language Models for Biology Research（arXiv:2407.10362，v3，2024-07-17）",
+        "url": "https://arxiv.org/abs/2407.10362",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "arxiv-2604-09554",
+        "kind": "paper",
+        "title": "LABBench2: An Improved Benchmark for AI Systems Performing Biology Research（arXiv:2604.09554，v2，2026-05-05）",
+        "url": "https://arxiv.org/abs/2604.09554",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "hf-lab-bench",
+        "kind": "dataset",
+        "title": "futurehouse/lab-bench（Hugging Face，CC-BY-SA-4.0，公开约 80%）",
+        "url": "https://huggingface.co/datasets/futurehouse/lab-bench",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "hf-labbench2",
+        "kind": "dataset",
+        "title": "EdisonScientific/labbench2（Hugging Face，需同意条款）",
+        "url": "https://huggingface.co/datasets/EdisonScientific/labbench2",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "repo-labbench2",
+        "kind": "repo",
+        "title": "EdisonScientific/labbench2（官方评测 harness）",
+        "url": "https://github.com/EdisonScientific/labbench2",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "LAB-Bench：FutureHouse Inc.（旧金山）；LABBench2：Edison Scientific Inc. × FutureHouse",
+        "cite": [
+          "arxiv-2407-10362@作者署名",
+          "arxiv-2604-09554@作者署名"
+        ]
+      },
+      "first_release": {
+        "v": "2024-07-14（LAB-Bench arXiv v1；本页表格数值取自 2024-07-17 的 v3）",
+        "cite": [
+          "arxiv-2407-10362@arXiv 提交历史"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "arxiv-2407-10362@Abstract",
+        "arxiv-2407-10362@Table 1",
+        "arxiv-2604-09554@Table 1",
+        "arxiv-2604-09554@§2.3"
+      ],
+      "interpretation": [
+        "arxiv-2407-10362@§2.3",
+        "arxiv-2407-10362@§2.2.2",
+        "arxiv-2604-09554@§3.4",
+        "arxiv-2604-09554@§4.1"
+      ]
+    },
+    "problem": {
+      "text": "通用大模型不擅长操作长字符串，而当时没有一个基准系统测量模型对 DNA / 蛋白质序列的理解与操纵，尤其是常见分子生物学实验流程里的那种。SeqQA 用 15 个公式化子任务把这件事变成可自动判分的选择题。到 LABBench2，一代的多选题形式已被打满，论文靠提高任务保真度重新拉开差距：改成文件或检索交付序列，并报告从 LAB-Bench 到 LABBench2 各任务族准确率一致下降 26–46 个百分点（原文写作 −26% to −46%）。",
+      "cite": [
+        "arxiv-2407-10362@§2.2.2",
+        "arxiv-2407-10362@§2.2",
+        "arxiv-2604-09554@§2.3",
+        "arxiv-2604-09554@§3.1"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机猜测基线",
+        "value": "论文未给出",
+        "note": "SeqQA 是选择题并含「信息不足」选项，论文没有报告 SeqQA 的随机基线，只说模型精确率「远高于随机预期」。本站不推算。",
+        "cite": [
+          "arxiv-2407-10362@§2.2.2"
+        ]
+      },
+      {
+        "label": "LAB-Bench 整体水平（无工具）",
+        "value": "精确率约 40%–50%",
+        "note": "论文对 SeqQA 的整体表述：各模型精确率在 40%–50% 区间，明显高于随机；个别子任务（如 PCR-seq-enzprimers）精确率超过 0.90。",
+        "cite": [
+          "arxiv-2407-10362@§2.2.2"
+        ]
+      },
+      {
+        "label": "LAB-Bench 人类基线（SeqQA，允许用工具）",
+        "value": "精确率 0.43–1.00（按 Table 3 逐行）",
+        "note": "最低为 ORF-seq-numlen 的 0.43，最高为 PCR-seq-primers 与 Prop-seq-gcpercent 的 1.00；人类总体优于模型，但在 PCR-seq-enzprimers 上被 Claude 3.5 Sonnet 追上或超过（见「常见误读」与「局限」）。",
+        "cite": [
+          "arxiv-2407-10362@Table 3",
+          "arxiv-2407-10362@§2.3"
+        ]
+      },
+      {
+        "label": "LABBench2 SeqQA2 最好成绩",
+        "value": "论文未给出（仅图示）",
+        "note": "LABBench2 论文只以 Figure 1 / 2 / 4 呈现 SeqQA2 成绩，没有数值表；本站不据图估算。",
+        "cite": [
+          "arxiv-2604-09554@Figure 4",
+          "arxiv-2604-09554@§3.4"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 SeqQA 当成「生物知识考试」——它考的是序列操作与推演，题目大多程序化生成，答案不依赖文献检索。",
+        "cite": [
+          "arxiv-2407-10362@附录 C.7",
+          "arxiv-2407-10362@§2.1"
+        ]
+      },
+      {
+        "text": "把 LAB-Bench 的 SeqQA 分数和 LABBench2 的 SeqQA2 分数直接比——两代在任务保真度、工具可用性、序列交付方式上都不同，论文报告的一致落差是 −26% 到 −46%。",
+        "cite": [
+          "arxiv-2604-09554@§3.1",
+          "arxiv-2604-09554@§3.4"
+        ]
+      },
+      {
+        "text": "只看准确率不看精确率——模型可以靠选「信息不足」拒答来「显得」不确定，准确率把拒答题计入分母而精确率不计，两者会明显分离。",
+        "cite": [
+          "arxiv-2407-10362@附录 D.3",
+          "arxiv-2407-10362@§2.2"
+        ]
+      },
+      {
+        "text": "把单个子任务的高分当成整体能力——论文明确说聚合分会掩盖具体瓶颈技能，而 SeqQA2 表现最差的恰恰是最需要精确定位子序列的那几类。",
+        "cite": [
+          "arxiv-2604-09554@§3.2"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "核心作者",
+        "v": "LAB-Bench：Jon M. Laurent、Joseph D. Janizek、Michael Ruzo、Michaela M. Hinks、Michael J. Hammerling、Siddharth Narayanan、Manvitha Ponnapati、Andrew D. White、Samuel G. Rodriques；LABBench2：Jon M Laurent、Albert Bou、Michael Pieler、Conor Igoe、Alex Andonian 等 12 人",
+        "cite": [
+          "arxiv-2407-10362@作者署名",
+          "arxiv-2604-09554@作者署名"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2024-07-14 LAB-Bench arXiv v1（SeqQA 750 题）→ 2025-02-18 Hugging Face 公开子集修订部分 SeqQA 题目 → 2026-02-04 LABBench2 arXiv v1（SeqQA2 400 题）→ 2026-05-05 arXiv v2",
+        "cite": [
+          "arxiv-2407-10362@arXiv 提交历史",
+          "hf-lab-bench@数据集卡",
+          "arxiv-2604-09554@arXiv 提交历史"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "LAB-Bench 公开子集在 Hugging Face futurehouse/lab-bench（SeqQA 600 行，CC-BY-SA-4.0）；LABBench2 数据集在 Hugging Face EdisonScientific/labbench2（需同意条款），评测 harness 在 GitHub EdisonScientific/labbench2",
+        "cite": [
+          "hf-lab-bench@Files and versions",
+          "hf-labbench2@数据集卡",
+          "repo-labbench2@README"
+        ]
+      },
+      {
+        "k": "运行方式",
+        "v": "官方 harness：uv run python -m evals.run_evals --agent anthropic:claude-opus-4-5 --tag seqqa2 --limit 5；文件处理模式用 --mode 选 file（默认）/ inject / retrieve",
+        "cite": [
+          "repo-labbench2@README"
+        ]
+      },
+      {
+        "k": "在 LAB-Bench 中的位置",
+        "v": "SeqQA 是 LAB-Bench 8 个类别之一（15 个子任务 / 750 题；全基准共 2,457 题），另有 LitQA2、SuppQA、FigQA、TableQA、DbQA、ProtocolQA、CloningScenarios",
+        "cite": [
+          "arxiv-2407-10362@Table 1",
+          "arxiv-2407-10362@Abstract"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2024-07-17",
+        "columns": [
+          "指标",
+          "子任务",
+          "人类",
+          "Claude 3.5 Sonnet",
+          "Claude 3 Opus",
+          "Gemini 1.5 Pro",
+          "GPT-4o",
+          "GPT-4 Turbo",
+          "Claude 3 Haiku",
+          "Llama 3 70B"
+        ],
+        "rows": [
+          ["准确率", "ORF-seq-AAid", "0.91", "0.07", "0.03", "0.02", "0.16", "0.07", "0.17", "0.19"],
+          ["准确率", "ORF-seq-AAseq", "0.88", "0.87", "0.67", "0.41", "0.50", "0.39", "0.57", "0.49"],
+          ["准确率", "ORF-seq-numlen", "0.31", "0.00", "0.07", "0.05", "0.11", "0.07", "0.26", "0.23"],
+          ["准确率", "ORF-transeff", "0.38", "0.87", "0.64", "0.47", "0.48", "0.29", "0.47", "0.45"],
+          ["准确率", "PCR-gene-enzprimers", "0.83", "0.57", "0.75", "0.47", "0.60", "0.49", "0.61", "0.58"],
+          ["准确率", "PCR-gene-gibshindprimers", "0.71", "0.61", "0.48", "0.43", "0.64", "0.13", "0.57", "0.45"],
+          ["准确率", "PCR-gene-gibssmaprimers", "0.73", "0.65", "0.34", "0.16", "0.45", "0.29", "0.51", "0.58"],
+          ["准确率", "PCR-geneprimers-enz", "0.94", "0.73", "0.76", "0.66", "0.74", "0.66", "0.83", "0.37"],
+          ["准确率", "PCR-len-primers", "0.90", "0.29", "0.37", "0.02", "0.12", "0.10", "0.13", "0.06"],
+          ["准确率", "PCR-primers-len", "0.90", "0.35", "0.29", "0.15", "0.13", "0.19", "0.26", "0.21"],
+          ["准确率", "PCR-seq-enzprimers", "0.81", "0.94", "0.80", "0.54", "0.83", "0.67", "0.86", "0.73"],
+          ["准确率", "PCR-seq-primers", "1.00", "0.97", "0.83", "0.48", "0.73", "0.52", "0.81", "0.47"],
+          ["准确率", "Prop-seq-gcpercent", "1.00", "0.59", "0.45", "0.39", "0.29", "0.18", "0.39", "0.35"],
+          ["准确率", "RE-seq-lenfrags", "0.83", "0.12", "0.13", "0.07", "0.17", "0.07", "0.21", "0.19"],
+          ["准确率", "RE-seq-numfrags", "0.71", "0.10", "0.13", "0.17", "0.09", "0.12", "0.12", "0.15"],
+          ["精确率", "ORF-seq-AAid", "0.91", "0.13", "0.13", "0.09", "0.23", "0.15", "0.19", "0.19"],
+          ["精确率", "ORF-seq-AAseq", "0.88", "0.89", "0.70", "0.67", "0.50", "0.50", "0.57", "0.49"],
+          ["精确率", "ORF-seq-numlen", "0.43", "0.00", "0.28", "0.18", "0.14", "0.27", "0.26", "0.29"],
+          ["精确率", "ORF-transeff", "0.75", "0.92", "0.71", "0.67", "0.66", "0.49", "0.52", "0.46"],
+          ["精确率", "PCR-gene-enzprimers", "0.88", "0.78", "0.87", "0.80", "0.64", "0.60", "0.61", "0.58"],
+          ["精确率", "PCR-gene-gibshindprimers", "0.79", "0.71", "0.75", "0.71", "0.75", "0.67", "0.57", "0.45"],
+          ["精确率", "PCR-gene-gibssmaprimers", "0.78", "0.70", "0.40", "0.54", "0.47", "0.72", "0.51", "0.58"],
+          ["精确率", "PCR-geneprimers-enz", "0.98", "0.91", "0.84", "0.69", "0.77", "0.75", "0.83", "0.39"],
+          ["精确率", "PCR-len-primers", "0.90", "0.29", "0.45", "0.07", "0.14", "0.13", "0.14", "0.06"],
+          ["精确率", "PCR-primers-len", "0.90", "0.37", "0.38", "0.19", "0.15", "0.26", "0.26", "0.22"],
+          ["精确率", "PCR-seq-enzprimers", "0.83", "0.95", "0.83", "0.73", "0.86", "0.78", "0.86", "0.73"],
+          ["精确率", "PCR-seq-primers", "1.00", "0.98", "0.91", "0.64", "0.76", "0.56", "0.82", "0.47"],
+          ["精确率", "Prop-seq-gcpercent", "1.00", "0.59", "0.50", "0.41", "0.32", "0.23", "0.40", "0.36"],
+          ["精确率", "RE-seq-lenfrags", "0.86", "0.33", "0.26", "0.17", "0.25", "0.27", "0.22", "0.19"],
+          ["精确率", "RE-seq-numfrags", "0.74", "0.28", "0.18", "0.22", "0.11", "0.22", "0.12", "0.16"]
+        ]
+      },
+      "cite": [
+        "arxiv-2407-10362@Table 2",
+        "arxiv-2407-10362@Table 3"
+      ]
+    }
+  }
+}

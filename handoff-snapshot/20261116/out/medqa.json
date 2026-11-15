@@ -1,0 +1,462 @@
+{
+  "id": "medqa",
+  "name": "MedQA (USMLE)",
+  "full_name": "MedQA：医学考试开放式多选题问答数据集（What Disease does this Patient Have? A Large-scale Open Domain Question Answering Dataset from Medical Exams）",
+  "aliases": [],
+  "status": "active",
+  "categories": [
+    "knowledge"
+  ],
+  "summary": "MedQA 是从美国、中国大陆、台湾三地医师资格考试真题整理出来的医学选择题库，共 61,097 题，覆盖英语、简体中文、繁体中文；每题固定 4 个选项，其中最常用的英语子集（USMLE）有 12,723 题、测试集 1,273 题。2020 年发布时最强基线在英语测试集上只有 36.7%，它因此长期被当作医疗 AI 的入门门槛；目前公开报道的最好成绩是 91.1%（Med-Gemini-L 1.0）。",
+  "interpretation": "高分说明模型在「医学知识型四选一题」上接近题库上限，不等于能看病：题库只有选择题标准答案，不测问诊对话、诊断推理过程与临床处置，部分真题里原本附带的图片和化验值在题库中是缺失的。题目本身也有噪声——Google DeepMind 的医师委员会重标注发现约 3.8% 的测试题缺关键信息、2.9% 疑似标签错误、0.7% 有歧义，把这两类题过滤掉，同一个模型能从 91.1% 涨到 91.8%。看分数前先分清三件事：是英语 1,273 题测试集还是其他语言子集、4 选项口径还是原始题目、原版还是已去污染/剔错题的版本。",
+  "measures": [
+    {
+      "area": "医学知识问答（选择题）",
+      "focus": "临床病例型四选一：题干给一段病史、查体与化验结果，从 4 个选项里选出最可能的病因或诊断；示例：27 岁男性尿痛、3 天前起病、近期有无保护性行为、尿培养阴性，选项为沙眼衣原体／系统性红斑狼疮／结核分枝杆菌／梅毒螺旋体",
+      "share": "USMLE 子集约 98.0% 为病例型题（type 2）",
+      "format": "四选一，标准答案是单个选项",
+      "cite": [
+        "arxiv-2009-13081@Table 1",
+        "arxiv-2009-13081@Table 6"
+      ]
+    },
+    {
+      "area": "跨语言医学文本",
+      "focus": "同一批考试题按来源分成英语、简体中文、繁体中文三套，可对比模型在不同语言医学文本上的表现；配套教材语料也分英文与简体中文两种",
+      "share": "英语 12,723 题／简体中文 34,251 题／繁体中文 14,123 题",
+      "format": "四选一",
+      "cite": [
+        "arxiv-2009-13081@摘要",
+        "arxiv-2009-13081@Table 3",
+        "arxiv-2009-13081@Table 4"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "开放式问诊、诊断推理过程与自由文本作答——题库只提供选择题标准答案，没有可供对照的解答文本",
+      "cite": [
+        "paper-med-gemini@§2.1"
+      ]
+    },
+    {
+      "text": "多模态能力——题目以纯文字呈现，部分真题原本附带的图片、实验室结果在题库里是缺失的",
+      "cite": [
+        "paper-med-gemini@§4.1"
+      ]
+    },
+    {
+      "text": "真实临床处置与安全性——题目是用病人病例模拟临床情境的考题（type 2），不含真实病人、随访结局与用药风险后果",
+      "cite": [
+        "arxiv-2009-13081@Table 6"
+      ]
+    },
+    {
+      "text": "检索与长文档证据定位——教材语料单独发布，原论文的检索实验只用于分析基线表现，主指标仍是纯答题准确率",
+      "cite": [
+        "arxiv-2009-13081@§5.2 Baseline Results",
+        "arxiv-2009-13081@Table 10"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 61097,
+    "splits": [
+      "train（约 80%）",
+      "dev（约 10%）",
+      "test（约 10%）"
+    ],
+    "languages": [
+      "en",
+      "zh-Hans",
+      "zh-Hant"
+    ],
+    "source_type": "真题汇编（来自公开的医师资格考试，含真实考题与模拟题）",
+    "public_sample": true,
+    "multiple_choice_share": "100%（四选一）",
+    "totals": "三语言合计 61,097 题：英语 12,723＋简体中文 34,251＋繁体中文 14,123；按题目维度去重后随机划分 train/dev/test＝80%/10%/10%（USMLE 为 10,178/1,272/1,273），每题固定 4 个选项；另附 18 本英文与 33 本简体中文医学教材作为检索语料",
+    "cite": [
+      "arxiv-2009-13081@Table 2",
+      "arxiv-2009-13081@Table 3",
+      "arxiv-2009-13081@摘要"
+    ],
+    "construction": [
+      {
+        "k": "题目来源",
+        "text": "从美国（USMLE）、中国大陆（MCMLE）、台湾（TWMLE）的医师资格考试收集题目与候选答案；包含真实考题与模拟题，材料均为网上公开可获取。",
+        "cite": [
+          "arxiv-2009-13081@§3.2 Data Collection"
+        ]
+      },
+      {
+        "k": "清洗与划分",
+        "text": "去掉重复题目后按题目维度随机划分 80% 训练、10% 开发、10% 测试。",
+        "cite": [
+          "arxiv-2009-13081@§3.2 Data Collection"
+        ]
+      },
+      {
+        "k": "选项规范化",
+        "text": "打乱选项顺序，并对 USMLE 与 MCMLE 随机删除一个错误选项，使每题固定为 4 个选项（1 个正确、3 个错误）。",
+        "cite": [
+          "arxiv-2009-13081@§3.2 Data Collection"
+        ]
+      },
+      {
+        "k": "配套教材语料",
+        "text": "USMLE 配 18 本英文医学教材，MCMLE 配 33 本中国大陆官方考试指定简体中文教材；原为 PDF，经 OCR 转成文本，只在研究用途许可下发布。",
+        "cite": [
+          "arxiv-2009-13081@§3.2 Data Collection",
+          "arxiv-2009-13081@Table 4"
+        ]
+      },
+      {
+        "k": "教材覆盖率标注",
+        "text": "论文统计教材对题目所需知识点的覆盖率：USMLE 88.0%、MCMLE 100.0%、TWMLE 87.0%。",
+        "cite": [
+          "arxiv-2009-13081@Table 5"
+        ]
+      },
+      {
+        "k": "发布形态",
+        "text": "题目以 jsonl 发布，提供官方随机 train/dev/test 划分；US 与 Mainland of China 另发 4_options 版本，并附 Metamap 抽取的医学相关短语。",
+        "cite": [
+          "repo-medqa@README"
+        ]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "从官方随机划分的 test 集取题，模型对每道四选一题给出一个选项，按预测答案与标准答案的一致率计算 accuracy（百分比）；Med-Gemini 沿用 Singhal et al. (2023a) 的输入输出格式与评测方法，指标为 prediction accuracy。",
+    "cite": [
+      "arxiv-2009-13081@§3.2 Data Collection",
+      "arxiv-2009-13081@Table 8",
+      "paper-med-gemini@§3.1"
+    ],
+    "variants": [
+      {
+        "text": "4 选项 vs 原始题目：原论文对 USMLE 与 MCMLE 随机删除一个错误选项才把题目压成 4 选项，官方仓库另发 4_options 版本；用原始题目跑出来的分数与论文表格不可直接比。",
+        "cite": [
+          "arxiv-2009-13081@§3.2 Data Collection",
+          "repo-medqa@README"
+        ]
+      },
+      {
+        "text": "英语 vs 简体/繁体中文：三个子集题量与难度差异极大（发布时最好成绩 36.7%／70.1%／42.0%），跨子集分数不能横向排。",
+        "cite": [
+          "arxiv-2009-13081@摘要",
+          "arxiv-2009-13081@Table 7"
+        ]
+      },
+      {
+        "text": "是否剔除污染与错题：Med-PaLM 2 报告 512 连续字符口径下 0.9% 重叠、收紧到 120 字符后为 11.15%；Med-Gemini 用医师委员会重标注并过滤题目。带不带这些处理，分数不可比。",
+        "cite": [
+          "paper-med-palm-2@§4.1 Multiple-choice evaluation",
+          "paper-med-gemini@§4.1"
+        ]
+      },
+      {
+        "text": "微调 vs 提示：Med-PaLM 2 的 86.5% 来自只在 MedQA 上指令微调的版本，85.4% 来自统一模型加集成精炼提示，两者口径不同。",
+        "cite": [
+          "paper-med-palm-2@§4.1 Multiple-choice evaluation"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "accuracy",
+      "name": "准确率",
+      "direction": "越高越好",
+      "description": "预测答案与标准答案一致的题目占比，单位为百分点",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2009-13081@Table 7",
+        "arxiv-2009-13081@Table 8",
+        "paper-med-gemini@§3.1"
+      ]
+    }
+  ],
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2020-09-28",
+      "label": "arXiv v1 首发：三语言题库、教材语料与基线代码公开；论文页脚标注 AAAI 2021 版权，正式发表的月/日未在论文中披露",
+      "cite": [
+        "arxiv-2009-13081@页眉",
+        "arxiv-2009-13081@页脚"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "训练数据污染 / 题目重叠",
+      "impact": "Med-PaLM 2 用 512 连续字符口径测得 MedQA 与训练语料的重叠为 0.9%，把口径收紧到 120 字符后升到 11.15%；意味着相当一部分题目可能已出现在前沿模型的训练语料里。",
+      "severity": "高",
+      "response": "未见 MedQA 官方回应；原论文只做了题目去重与按题划分，未处理与后世模型训练语料的重叠。",
+      "reader": "看到 85% 以上的分数先问版本与去污染处理；0.9% 与 11.15% 来自不同重叠口径，不能混用。",
+      "cite": [
+        "paper-med-palm-2@§3.4 Overlap analysis",
+        "paper-med-palm-2@§4.1 Multiple-choice evaluation"
+      ]
+    },
+    {
+      "issue": "标签错误与题目信息缺失",
+      "impact": "Google DeepMind 每题至少请三位医师独立重标注：委员会一致投票下 3.8% 的题缺关键信息、2.9% 疑似标签错误、0.7% 有歧义；过滤这两类题后成绩从 91.1% 升到 91.8%±0.2%，改用多数票可达 92.9%±0.38%，但最多丢弃 20.9% 的不确定题。",
+      "severity": "高",
+      "response": "未见 MedQA 官方回应；Med-Gemini 表示将公开其对 MedQA (USMLE) 的重标注版本。",
+      "reader": "高分段 1 个百分点量级的差距可能只是题目噪声；比较前看清是原版、过滤版还是多数票版。",
+      "cite": [
+        "paper-med-gemini@§4.1",
+        "paper-med-gemini@附录 C.2",
+        "paper-med-gemini@§8 Data Availability"
+      ]
+    },
+    {
+      "issue": "题目可能过时",
+      "impact": "部分真题的标准答案随医学指南更新可能已经过时（论文原文表述为 potentially outdated ground-truth answers）。",
+      "severity": "中",
+      "response": "未见官方回应。",
+      "reader": "单题对错不要当成医学结论。",
+      "cite": [
+        "paper-med-gemini@§4.1"
+      ]
+    },
+    {
+      "issue": "没有人类基线",
+      "impact": "原论文明确不报告人类表现，理由是人类考生分数方差极大（最好的医学生接近满分，差的无法通过考试）；因此 36.7% 这类数字没有同表的人类参照可换算。",
+      "severity": "中",
+      "response": "论文给出的理由是方差过大，未提供替代的人类基线。",
+      "reader": "不要把 36.7% 直接理解成「远低于医生水平」——论文没有给人类分数，这类比较来自站外引用而非原文。",
+      "cite": [
+        "arxiv-2009-13081@§5.2 Baseline Results"
+      ]
+    },
+    {
+      "issue": "题型与选项结构偏差",
+      "impact": "USMLE 子集约 98.0% 是用病人病例模拟临床情境的题型（type 2），MCMLE/TWMLE 的 type 1 占比高得多；原论文的检索分析显示 USMLE 开发集抽样中 68.0% 在 top-25 检索段落里找不到证据，作者认为证据检索差是基线低的主要原因。",
+      "severity": "中",
+      "response": "论文给出了题型构成与检索失败模式的定性分析，未调整题库。",
+      "reader": "模型可能靠语言线索与选项先验而非知识作答；跨子集比较前先看题型构成。",
+      "cite": [
+        "arxiv-2009-13081@Table 6",
+        "arxiv-2009-13081@Table 9",
+        "arxiv-2009-13081@§5.2 Baseline Results"
+      ]
+    },
+    {
+      "issue": "数据分发与许可",
+      "impact": "题目与教材通过 Google Drive 目录分发，教材只在研究用途许可下发布；长期可访问性依赖第三方网盘。",
+      "severity": "低",
+      "response": "论文说明教材按研究用途许可发布。",
+      "reader": "复现时先确认网盘链接与许可条款是否仍有效。",
+      "cite": [
+        "arxiv-2009-13081@§3.2 Data Collection",
+        "repo-medqa@README"
+      ]
+    }
+  ],
+  "notes": "英语 USMLE 测试集（1,273 题）是后续论文最常引用的子集；本页涉及的其他数字若不注明子集，均为三语言合计或论文原表数值。",
+  "official_sources": [
+    {
+      "kind": "site",
+      "url": "https://github.com/jind11/MedQA"
+    },
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2009.13081"
+    }
+  ],
+  "related_benchmarks": [
+    "mmlu",
+    "mmlu-pro",
+    "mmlu-redux",
+    "winogrande",
+    "hellaswag",
+    "drop"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "arxiv-2009-13081",
+        "kind": "paper",
+        "title": "What Disease does this Patient Have? A Large-scale Open Domain Question Answering Dataset from Medical Exams（arXiv:2009.13081v1）",
+        "url": "https://arxiv.org/abs/2009.13081",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "repo-medqa",
+        "kind": "repo",
+        "title": "jind11/MedQA（数据与基线代码仓库 README）",
+        "url": "https://github.com/jind11/MedQA",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "paper-med-palm-2",
+        "kind": "paper",
+        "title": "Med-PaLM 2 — Towards Expert-Level Medical Question Answering with Language Models（arXiv:2305.09617）",
+        "url": "https://arxiv.org/pdf/2305.09617",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "paper-med-gemini",
+        "kind": "paper",
+        "title": "Advancing Multimodal Medical Capabilities of Gemini（arXiv:2404.18416）",
+        "url": "https://arxiv.org/pdf/2404.18416",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "MIT 计算机科学与人工智能实验室（CSAIL）与华中科技大学同济医学院（论文署名机构）",
+        "cite": [
+          "arxiv-2009-13081@标题页"
+        ]
+      },
+      "first_release": {
+        "v": "2020-09-28（arXiv v1）",
+        "cite": [
+          "arxiv-2009-13081@页眉"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "arxiv-2009-13081@摘要",
+        "arxiv-2009-13081@Table 3",
+        "paper-med-gemini@§4.1"
+      ],
+      "interpretation": [
+        "paper-med-gemini@§4.1",
+        "arxiv-2009-13081@§5.2 Baseline Results",
+        "paper-med-palm-2@§4.1 Multiple-choice evaluation"
+      ]
+    },
+    "problem": {
+      "text": "此前的多选题问答基准（如 ARC、OpenBookQA）以通用领域为主；医学方向的中文版前作没有发布数据，英文版前作只公开了 454 题，规模不足以训练和评测需要大量专业知识的模型。MedQA 首次把三地医师资格考试真题整理成公开的大规模多语言选择题库，并配套教材语料，用来衡量模型在需要进阶领域知识的开放式多选题上的表现。",
+      "cite": [
+        "arxiv-2009-13081@§1 Introduction",
+        "arxiv-2009-13081@§6 Conclusion"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机猜测基线（四选一）",
+        "value": "25.0%",
+        "note": "论文表 8 的 CHANCE 行在 USMLE 与 TWMLE 的 dev/test 上均为 25.0。",
+        "cite": [
+          "arxiv-2009-13081@Table 8"
+        ]
+      },
+      {
+        "label": "论文发布时最好（英语 USMLE test）",
+        "value": "36.7%",
+        "note": "BioBERT-Large；论文未给人类基线（理由是人类考生分数方差过大）。",
+        "cite": [
+          "arxiv-2009-13081@Table 8",
+          "arxiv-2009-13081@§5.2 Baseline Results"
+        ]
+      },
+      {
+        "label": "论文发布时最好（简体中文 MCMLE test）",
+        "value": "70.1%",
+        "note": "RoBERTa-large-wwm-ext；繁体中文 TWMLE test 最好为 42.0%。",
+        "cite": [
+          "arxiv-2009-13081@Table 7",
+          "arxiv-2009-13081@Table 8"
+        ]
+      },
+      {
+        "label": "外部公开报道最高（英语 USMLE test）",
+        "value": "91.1%",
+        "note": "Med-Gemini-L 1.0（2024）；Med-PaLM 2 为 86.5%（仅在 MedQA 上指令微调的版本）／85.4%（统一模型＋集成精炼提示）。",
+        "cite": [
+          "paper-med-gemini@§4.1",
+          "paper-med-palm-2@§4.1 Multiple-choice evaluation"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      },
+      {
+        "label": "题目噪声参考线",
+        "value": "91.8% ± 0.2%",
+        "note": "把缺关键信息与疑似标签错误的题过滤掉后同一模型的成绩（原 91.1%）；改用多数票可达 92.9% ± 0.38%，但最多丢弃 20.9% 的不确定题。接近这条线后，几个百分点的差距可能来自题目质量而非模型能力。",
+        "cite": [
+          "paper-med-gemini@§4.1"
+        ]
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 61,097 当成英语题量——英语子集只有 12,723 题、测试集 1,273 题；论文报告的 36.7%／70.1% 来自各自语言的 test 集，跨语言不能横向排。",
+        "cite": [
+          "arxiv-2009-13081@摘要",
+          "arxiv-2009-13081@Table 3"
+        ]
+      },
+      {
+        "text": "把 4 选项分数和原始题目的分数混着比——原论文对 USMLE 与 MCMLE 随机删掉一个错误选项才得到 4 选项，官方仓库另发 4_options 版本；用原始题目跑的结果与论文表格不可直接比。",
+        "cite": [
+          "arxiv-2009-13081@§3.2 Data Collection",
+          "repo-medqa@README"
+        ]
+      },
+      {
+        "text": "把 90% 以上读成「能当医生」——题库只测选择题知识，且存在题目信息缺失与标签错误；论文发布时干脆没有给出人类基线，因为人类考生分数方差太大。",
+        "cite": [
+          "paper-med-gemini@§4.1",
+          "arxiv-2009-13081@§5.2 Baseline Results"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "MIT 计算机科学与人工智能实验室（CSAIL）与华中科技大学同济医学院",
+        "cite": [
+          "arxiv-2009-13081@标题页"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "Di Jin、Eileen Pan、Nassim Oufattole、Wei-Hung Weng、Hanyi Fang、Peter Szolovits",
+        "cite": [
+          "arxiv-2009-13081@标题页"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2020-09-28 arXiv v1 首发；论文页脚标注 AAAI 版权（2021），正式发表的月/日未在论文中披露",
+        "cite": [
+          "arxiv-2009-13081@页眉",
+          "arxiv-2009-13081@页脚"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "代码与数据说明在 GitHub jind11/MedQA，题目与教材经 Google Drive 下载（US／Mainland of China／Taiwan District 三个目录，jsonl 格式），仓库显示 MIT license；教材只在研究用途许可下发布",
+        "cite": [
+          "repo-medqa@README",
+          "arxiv-2009-13081@§3.2 Data Collection"
+        ]
+      },
+      {
+        "k": "与前作的差异",
+        "v": "论文指出中文版前作未发布数据、英文版前作仅公开 454 题；MedQA 是首个公开的大规模多语言医学考试选择题库",
+        "cite": [
+          "arxiv-2009-13081@§1 Introduction"
+        ]
+      }
+    ]
+  }
+}

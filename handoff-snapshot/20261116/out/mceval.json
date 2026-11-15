@@ -1,0 +1,410 @@
+{
+  "id": "mceval",
+  "name": "McEval",
+  "full_name": "McEval: Massively Multilingual Code Evaluation（大规模多语言代码评测）",
+  "aliases": ["MCEVAL"],
+  "status": "active",
+  "categories": ["coding"],
+  "summary": "40 语种、16,031 题的人工编写多语言代码评测基准，覆盖代码生成、代码解释与四类代码补全，以贪心 Pass@1 为主要指标；题目带发布日期，可按时段取「未见题」子集读真实泛化。",
+  "interpretation": "McEval 的分数是执行类通过率（越高越好），衡量模型在 40 种编程语言上「写出能过全部测试用例的代码」「用自然语言解释代码」以及「按上下文补全代码」的能力。论文与官网都显示闭源 GPT 系列领先、开源侧 DeepSeekCoder-Instruct 33B 最强。官网另称 GPT-4-turbo 与 Claude-3-Opus 在各类场景最好、开源 DS-Ins-33B 与 Phind-34B 最好，但论文表格里既没有 Claude 也没有 Phind 两行——引用名次时以论文表格为准，详见「可信度与局限」第一条。",
+  "measures": [
+    {
+      "area": "多语言代码生成",
+      "focus": "读自然语言问题描述，生成能通过全部隐藏测试用例的代码",
+      "share": "2,007 题（约 12.5%）",
+      "format": "函数级代码生成，沙箱执行测试用例判分",
+      "cite": ["paper@Table 5", "paper@§2.3 Code Generation", "paper@gen2k"]
+    },
+    {
+      "area": "多语言代码解释",
+      "focus": "给定代码反向产出自然语言解释，再用解释重新生成代码（two-pass）",
+      "share": "2,007 题（约 12.5%）",
+      "format": "Code→自然语言→Code 两段生成；论文明确指出 BLEU 这类纯文本相似度会被 n-gram 匹配拖累、给不出准确分数",
+      "cite": ["paper@Table 5", "paper@§2.3 Code Explanation", "paper@bleu"]
+    },
+    {
+      "area": "多语言代码补全 · 单行",
+      "focus": "在上下文里补全单行代码",
+      "share": "2,998 题（约 18.7%）",
+      "format": "行内补全题，与其余补全子任务一样按 Pass@1 报告",
+      "cite": ["paper@Table 5", "paper@comp", "paper@Table 2"]
+    },
+    {
+      "area": "多语言代码补全 · 多行",
+      "focus": "在上下文里补全连续多行代码",
+      "share": "2,998 题（约 18.7%）",
+      "format": "多行补全题，按 Pass@1 报告",
+      "cite": ["paper@Table 5", "paper@comp", "paper@Table 2"]
+    },
+    {
+      "area": "多语言代码补全 · 片段",
+      "focus": "补全中间被挖空的代码片段",
+      "share": "4,014 题（约 25.0%）",
+      "format": "片段补全题，按 Pass@1 报告",
+      "cite": ["paper@Table 5", "paper@comp", "paper@Table 2"]
+    },
+    {
+      "area": "多语言代码补全 · 片段（轻量）",
+      "focus": "片段补全的平衡版本：每道题配齐全部相关代码，样本更少、推理更快",
+      "share": "2,007 题（约 12.5%）",
+      "format": "片段补全（light）题，按 Pass@1 报告",
+      "cite": ["paper@Table 5", "paper@comp", "paper@span light"]
+    },
+    {
+      "area": "维度切片：语种 / 范式 / 场景 / 难度",
+      "focus": "把 40 个语种按 5 种编程范式、11 类应用场景重组，并按算法复杂度分 Easy / Medium / Hard 三级，用于分组看分",
+      "share": "贯穿全部 16,031 题（切片统计，不单独计分）",
+      "format": "分组统计与分语言 Pass@1 表",
+      "cite": ["mceval@paradigms", "mceval@difficulty", "paper@objori", "paper@Table 5 说明"]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "多文件 / 仓库级工程编程。题目是竞赛式单文件函数题（仓库给出的数据格式字段为 task_id / prompt / canonical_solution / test / entry_point / signature），不涉及跨文件依赖、构建系统或大型代码库编辑。",
+      "cite": ["repo@rawgen", "paper@tasks3"]
+    },
+    {
+      "text": "代码风格与工程规范。生成类判分只问「是否通过全部测试用例」（通过记 1、否则记 0），不评价可读性、命名、复杂度或安全性。",
+      "cite": ["paper@§2.3 Code Generation", "paper@pass1"]
+    },
+    {
+      "text": "选择题 / 知识问答。三类任务都是执行类，没有选项式题型（因此 multiple_choice_share 为 0）。",
+      "cite": ["paper@execute", "paper@pass1"]
+    },
+    {
+      "text": "训练指令语料 McEval-Instruct（约 110K）不计分。它只用于训练 mCoder 等模型，不是评测对象。",
+      "cite": ["paper@instruct110k", "repo@intro"]
+    }
+  ],
+  "dataset": {
+    "sample_count": 16031,
+    "splits": [
+      "McEval 评测集 16,031 题 = 生成 2,007 + 解释 2,007 + 单行补全 2,998 + 多行补全 2,998 + 片段补全 4,014 + 片段补全(light) 2,007",
+      "McEval-Instruct 约 110K 指令语料（训练用，不计入评测题量）"
+    ],
+    "languages": ["AWK", "C", "C++", "C#", "Clisp", "Coffee", "Dart", "Elisp", "Elixir", "Erlang", "Fortran", "F#", "Go", "Groovy", "Haskell", "Html", "Java", "JS", "Json", "Julia", "Kotlin", "Lua", "MD", "Pascal", "Perl", "PHP", "Power", "Python", "R", "Racket", "Ruby", "Rust", "Scala", "Scheme", "Shell", "Swift", "Tcl", "TS", "VB", "VimL"],
+    "source_type": "人工编写（Hand-Written）：从 LeetCode / AtCoder / Codeforces 周期性竞赛收集题目，再由专业开发者重写并双人独立标注",
+    "public_sample": true,
+    "multiple_choice_share": "0（三类任务均为执行类，无选项式题型）",
+    "multimodal_share": "未披露",
+    "totals": "16,031 题 = 生成 2,007 + 解释 2,007 + 单行补全 2,998 + 多行补全 2,998 + 片段补全 4,014 + 片段补全(light) 2,007（占比按此合计四舍五入）。论文 Table 5 另记录测试用例共 10,086 个，并给出一组难度数字 1,221 / 401 / 385——三者合计恰为 2,007，但论文未说明这组数字适用于哪个子任务，本站不做推断。配套训练语料 McEval-Instruct 约 110K 不计入题量。",
+    "cite": ["paper@Table 5", "paper@Table 5 说明", "paper@comp", "paper@instruct110k", "repo@intro", "mceval@intro", "paper@Table 6"],
+    "construction": [
+      {
+        "k": "题目来源",
+        "text": "从 LeetCode、AtCoder、Codeforces 的周期性竞赛收集题目，官网称以此「持续构建一个覆盖多种代码相关场景的整体基准」。",
+        "cite": ["mceval@collect", "mceval@首页标语"]
+      },
+      {
+        "k": "人工标注",
+        "text": "招募 10 名计算机专业软件开发者作为多语言编程标注者，要求对相应语言有 proven proficiency；官网称标注采用一套完整、系统的人工流程。",
+        "cite": ["paper@annotators", "mceval@annotation"]
+      },
+      {
+        "k": "双人独立标注",
+        "text": "每个代码片段由至少两名标注者独立标注以降低主观偏差，分歧通过共识或资深标注者裁决解决。",
+        "cite": ["paper@twoannot", "paper@consensus"]
+      },
+      {
+        "k": "质量抽检",
+        "text": "再由三名志愿者评估基准自身的正确性（论文称可达 90% 准确率）并修正错误。",
+        "cite": ["paper@volunteers", "paper@附录 A.2 质量控制"]
+      },
+      {
+        "k": "语言与场景覆盖",
+        "text": "40 种编程语言归入 5 种编程范式与 11 类应用场景；论文进一步按范式报告模型表现。",
+        "cite": ["mceval@paradigms", "paper@objori"]
+      },
+      {
+        "k": "难度分级",
+        "text": "按算法复杂度分为 Easy / Medium / Hard 三级（论文另一处写作 Easy/Middle/Hard，并提到同时看功能复杂度）。",
+        "cite": ["mceval@difficulty", "paper@difficulty"]
+      },
+      {
+        "k": "配套训练语料",
+        "text": "McEval-Instruct 约 110K，由自建问答对与开源收集两部分组成；另有 50K 训练样本专供 mCoder-Python。",
+        "cite": ["paper@instruct110k", "paper@py50k"]
+      },
+      {
+        "k": "去污染",
+        "text": "论文在训练设置中注明「通过移除与 McEval 完全匹配的样本来做数据去污染」。",
+        "cite": ["paper@decontam"]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "pass1",
+      "name": "Pass@1（贪心）",
+      "direction": "越高越好",
+      "description": "贪心解码、一次生成即通过全部测试用例的比例（%）。论文明确采用 Kulal et al. 2019 / Chen et al. 2021 的 Pass@1 定义，三类任务共用；补全子任务同样以 Pass@1 报告。",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["paper@pass1", "paper@tab1cap", "paper@Table 2"]
+    },
+    {
+      "id": "avgall",
+      "name": "Avgall（40 语种平均 Pass@1）",
+      "direction": "越高越好",
+      "description": "全部 40 个语种 Pass@1 的算术平均，论文用它做跨语种、跨模型的横向比较，各表末列均为 Avgall。",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["paper@avgall", "paper@Table 2 Avgall"]
+    }
+  ],
+  "default_protocol": {
+    "raw": "三类任务统一用贪心 Pass@1（%）。代码生成：把模型输出丢进沙箱执行测试用例，全部通过记 r=1、否则 r=0；需要文件处理的题目，则把生成代码的文件处理结果与参考答案比对。代码解释：采用 Code→自然语言→Code 两段生成，论文说明 BLEU 这类文本相似度指标受 n-gram 匹配限制、给不出准确分数。补全：四个子任务（单行 / 多行 / 片段 / 片段 light）同样按 Pass@1 报告。跨 40 个语种的分数取算术平均得到 Avgall。论文共评测 23 个 7B–72B 模型；闭源模型走官方 API 生成答案，本地模型用仓库提供的 Docker 镜像（multilingualnlp/mceval）推理与评分。",
+    "cite": ["paper@§2.3 Code Generation", "paper@§2.3 Code Explanation", "paper@bleu", "paper@pass1", "paper@avgall", "paper@23models", "paper@closedapi", "mceval@fileproc", "repo@docker"],
+    "variants": [
+      {
+        "text": "闭源 vs 本地：闭源模型通过官方 API 服务生成答案；开源/本地模型在仓库 Docker 环境内推理（同时提供 torch 与 vLLM 两套推理脚本）。",
+        "cite": ["paper@closedapi", "repo@docker"]
+      },
+      {
+        "text": "分任务分表报告：论文按代码生成（Table 1）、代码补全（Table 2）、代码解释（Table 3）分别给出逐语种 Pass@1 与 Avgall，官网榜单同样分任务展示，跨表比较要注意口径。",
+        "cite": ["paper@Table 1", "paper@Table 2", "paper@Table 3"]
+      },
+      {
+        "text": "mCoder 训练配置（论文配套基线）：基于 CodeQwen1.5，8×NVIDIA A800-80GB，2 epoch、cosine 调度、学习率 2e-5（3% warmup）、batch size 512、序列截断 4096，训练单模型约 5 小时。",
+        "cite": ["paper@§4.1 Optimization", "mceval@opt", "mceval@优化细节", "mceval@训练耗时"]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2024-06-11",
+      "label": "arXiv v1 首发（2406.07436v1），指令语料、评测基准与榜单同步上线 mceval.github.io",
+      "cite": ["paper@avail", "repo@official"]
+    },
+    {
+      "id": "current",
+      "date": "2026-11-14",
+      "label": "本次档案逐条核验：arXiv 仍为 v1，官网、GitHub 仓库与 HuggingFace 数据集均可访问，未见新版本公告",
+      "cite": ["mceval@站点头部声明", "hf-dataset@Dataset card"]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "官网结论与论文表格不一致",
+      "impact": "官网称「GPT-4-turbo 和 Claude-3-Opus 在不同场景下表现最好」，但论文 Table 1 的 Avgall 最高是 GPT-4o (240513) 的 65.2，且论文全文未出现 Claude 系列；官网称开源最好为「DS-Ins-33B 和 Phind-34B」，论文表格里同样没有 Phind。直接转述官网结论会引用到论文中不存在的模型。",
+      "severity": "中",
+      "response": "引用具体名次与分数时以论文 Table 1/2/3 为准；官网表述作为作者观点单独标注，不与表格数字混排。",
+      "reader": "看到「Claude-3-Opus 最好」这类转述，回到论文表格核对模型名与 Avgall。",
+      "cite": ["mceval@best", "mceval@open", "paper@tab1cap", "paper@§4.2"]
+    },
+    {
+      "issue": "训练数据污染风险",
+      "impact": "官网污染分析发现：DeepSeek 模型在其发布日（2023 年 9 月）之后上线的 LeetCode 题目上性能骤降，提示更早的题目可能已被污染；相比之下 GPT 模型在各月份表现相对稳定。这类污染在整体均分上看不出来。",
+      "severity": "高",
+      "response": "用题目自带的发布日期切出「训练截止日之后」的未见题子集再比；对任何宣称的分数先问模型的训练截止日。",
+      "reader": "同一模型在不同月份题目上的分差，往往比模型间差距更能说明污染。",
+      "cite": ["mceval@deepseek", "mceval@contam", "mceval@cutoff"]
+    },
+    {
+      "issue": "语种间表现严重不均，平均分掩盖短板",
+      "impact": "论文分析显示代码 LLM 在面向对象与多范式语言（高资源）上明显更好，在函数式与过程式语言（低资源）上更差；标记语言（Json、Markdown）因代码结构复杂、难以用自然语言准确描述而整体偏差。40 语种平均会把这些差距抹平。",
+      "severity": "中",
+      "response": "按语种、按编程范式切片看分，不要只看 Avgall；官网与论文都提供分语言表格。",
+      "reader": "Avgall 高不代表每种语言都可用，尤其不代表冷门语言可用。",
+      "cite": ["paper@objori", "paper@§4.2 markup"]
+    },
+    {
+      "issue": "基准自身质量依赖人工标注，存在残余错误",
+      "impact": "题目由标注者重写，经双人独立标注加三人抽检（论文称正确率可达 90%），意味着存在约一成的残余问题；10,086 个测试用例本身的正确性直接决定判分结果，测试用例写错会让「模型做错」变成假阴性。",
+      "severity": "中",
+      "response": "对个别题目上的异常分数，先检查测试用例与参考实现，再归因于模型。",
+      "reader": "模型答错不总是模型的问题，也可能是题目或测试用例的问题。",
+      "cite": ["paper@annotators", "paper@twoannot", "paper@volunteers", "paper@Table 5"]
+    },
+    {
+      "issue": "与 HumanEval 的关系易被误读",
+      "impact": "官网进一步分析发现：在 HumanEval 上表现好的模型可能存在对该基准的过拟合；论文也指出 MultiPL-E 等基准的其他语言由 Python 样本翻译而来，数据多样性受损。McEval 与它们不是同一件事，也不能互相替代。",
+      "severity": "低",
+      "response": "把 HumanEval 分数当入门信号；多语言能力与真实性看 McEval，尤其是带发布日期的未见题子集。",
+      "reader": "HumanEval 满分不等于多语言代码能力，也不代表没过拟合。",
+      "cite": ["mceval@overfit", "paper@multipledegrade", "paper@Table 6"]
+    }
+  ],
+  "notes": "Qwen2.5 技术报告以图片形式引用 McEval 对比（该博客正文检索不到 McEval 字样，故未纳入来源）；官网自述站点源码借用自 LiveCodeBench；arXiv 至今仍为 v1。",
+  "official_sources": [
+    { "kind": "site", "url": "https://mceval.github.io" },
+    { "kind": "paper", "url": "https://arxiv.org/abs/2406.07436" },
+    { "kind": "repo", "url": "https://github.com/MCEVAL/McEval" },
+    { "kind": "dataset", "url": "https://huggingface.co/datasets/Multilingual-Multimodal-NLP/McEval" }
+  ],
+  "related_benchmarks": ["humaneval", "humanevalplus", "mbpp", "multipl-e", "bigcodebench", "cruxeval", "lcb"],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "McEval: Massively Multilingual Code Evaluation（arXiv:2406.07436v1，2024-06-11）",
+        "url": "https://arxiv.org/abs/2406.07436",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "mceval",
+        "kind": "site",
+        "title": "McEval 官网（含榜单与提交说明）",
+        "url": "https://mceval.github.io",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "MCEVAL/McEval 官方代码仓库",
+        "url": "https://github.com/MCEVAL/McEval",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "hf-dataset",
+        "kind": "dataset",
+        "title": "HuggingFace 数据集 Multilingual-Multimodal-NLP/McEval",
+        "url": "https://huggingface.co/datasets/Multilingual-Multimodal-NLP/McEval",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "北京航空航天大学 CCSE 等高校联合团队（论文署名单位含 CCSE, Beihang University、University of British Columbia、University of Waterloo、北京信息科技大学、上海交通大学；通信邮箱 challenging@buaa.edu.cn，第一作者 Linzheng Chai）",
+        "cite": ["paper@作者单位", "paper@作者单位2", "paper@通信邮箱", "mceval@作者列表", "mceval@BibTeX"]
+      },
+      "first_release": {
+        "v": "2024-06-11（arXiv:2406.07436v1）",
+        "cite": ["paper@avail"]
+      }
+    },
+    "cites": {
+      "summary": ["mceval@intro", "mceval@collect", "paper@Table 5", "mceval@contam", "paper@pass1"],
+      "interpretation": ["paper@abstract", "mceval@cutoff", "mceval@overfit", "paper@Table 1"]
+    },
+    "problem": {
+      "text": "现有多语言代码基准要么语种太少，要么是把 Python 样本机器翻译成其他语言（如 MultiPL-E），数据多样性受损；社区需要一个不源自 HumanEval / MBPP、同时包含指令语料与评测集的大规模多语言编程基准。",
+      "cite": ["paper@need", "paper@multipledegrade", "paper@conclusion"]
+    },
+    "ladder": [
+      {
+        "label": "论文代码生成最高（GPT-4o 240513）",
+        "value": "65.2%",
+        "note": "Table 1 的 Avgall；同表开源最高为 DeepSeekCoder-Instruct 33B 的 54.3，论文方法 MCODER 7B 为 46.7。",
+        "cite": ["paper@tab1cap", "paper@Table 1"]
+      },
+      {
+        "label": "论文代码解释最高（GPT-4o 240513）",
+        "value": "65.8%",
+        "note": "Table 3 的 Avgall；开源最高为 DeepSeekCoder-Instruct 33B 的 55.8，MCODER 7B 为 51.4。",
+        "cite": ["paper@Table 3"]
+      },
+      {
+        "label": "论文代码补全最高（GPT-4 Turbo，单行）",
+        "value": "82.7%",
+        "note": "Table 2 的 Avgall；同表多行 76.6、片段 75.0、片段(light) 76.5，MCODER 7B 分别为 78.9 / 72.2 / 62.6 / 63.1。",
+        "cite": ["paper@Table 2", "paper@avgall"]
+      },
+      {
+        "label": "人类 / 随机基线",
+        "value": "未披露",
+        "note": "论文未报告人类基线与随机基线，本站不做推算。",
+        "cite": ["paper@pass1"]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "「16,031 题 ÷ 40 语种 ≈ 每语种 400 题」——错。16,031 是六类任务的合计量；生成与解释任务各 2,007 题、每语种近 50 题，补全四个子任务题量另算（2,998 / 2,998 / 4,014 / 2,007）。",
+        "cite": ["mceval@intro", "mceval@stats", "paper@Table 5", "paper@comp"]
+      },
+      {
+        "text": "「McEval-Instruct 110K 也是评测集」——错。它是训练用指令语料，不计入评测题量，也不参与 Pass@1 计分。",
+        "cite": ["paper@instruct110k", "repo@intro"]
+      },
+      {
+        "text": "「40 语种就是 40 种主流编程语言」——McEval 含 Html、Json、Markdown 等标记语言，论文自己也指出这类语言因结构复杂而整体偏差；官方另按 5 种编程范式与 11 类应用场景重新归类。",
+        "cite": ["mceval@paradigms", "paper@§4.2 markup"]
+      },
+      {
+        "text": "「榜单第一就是最强」——官网明确要求用 GitHub 仓库里的评测脚本自行跑评测后再提交榜单，论文本身也只评了 23 个 7B–72B 模型；榜单口径随提交而变化，不等于全量横评。",
+        "cite": ["mceval@submit", "mceval@Submitting Custom Models", "paper@23models"]
+      },
+      {
+        "text": "「总分高说明没有污染」——官网正是用发布日期切片才发现 DeepSeek 系列在 2023 年 9 月之后上线的题目上性能骤降，这种污染在整体均分上看不出来。",
+        "cite": ["mceval@deepseek", "mceval@cutoff"]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "论文第一作者为 Linzheng Chai，仓库 BibTeX 列出前 10 位作者后接 and others；单位以北航 CCSE 为主，另有 UBC、Waterloo、北京信息科技大学、上海交通大学；通信邮箱 challenging@buaa.edu.cn。",
+        "cite": ["mceval@作者列表", "paper@作者单位", "paper@作者单位2", "paper@通信邮箱", "mceval@BibTeX"]
+      },
+      {
+        "k": "首发与载体",
+        "v": "2024-06-11 以 arXiv:2406.07436v1 发布；指令语料、评测基准与榜单统一放在 mceval.github.io，仓库为其官方代码实现。",
+        "cite": ["paper@avail", "repo@official", "repo@intro"]
+      },
+      {
+        "k": "站点技术来源",
+        "v": "官网自述「本站源码借用自 LiveCodeBench」，因此其页面结构与 LiveCodeBench 榜单高度相似。",
+        "cite": ["mceval@站点头部声明"]
+      },
+      {
+        "k": "配套训练资产",
+        "v": "mCoder 训练代码已开源（CodeQwen1.5 与 DeepSeek-Coder 作为基座），权重在论文发布时标注为「即将提供下载」；论文另报告仅用 Python 数据微调 CodeQwen-1.5-Python 即可在多数语言上显著提升的跨语言迁移结论。",
+        "cite": ["repo@mcoder", "repo@weights", "paper@transfer"]
+      },
+      {
+        "k": "与同类基准的定位",
+        "v": "论文 Table 6 对比 MultiPL-E、MBXP、HumanEval-X、HumanEval-XL 与 McEval，作者称 McEval 在语种多样性与题量两方面都是对现有基准的显著补充——它是该对比中唯一同时覆盖 40 语种且为人工编写的基准。",
+        "cite": ["paper@Table 6", "paper@tab6note", "paper@multipledegrade"]
+      },
+      {
+        "k": "数据与许可",
+        "v": "评测集与 McEval-Instruct 均在 HuggingFace 提供下载，数据许可为 CC-BY-SA-4.0，代码仓库为 MIT。",
+        "cite": ["hf-dataset@card", "hf-dataset@Dataset card", "repo@license"]
+      },
+      {
+        "k": "提交方式",
+        "v": "第三方模型需先用 GitHub 仓库中的评测脚本自行完成评测，再把结果提交到官网榜单。",
+        "cite": ["mceval@submit", "mceval@Submitting Custom Models"]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2024-06-11",
+        "columns": ["来源", "任务", "模型", "参数量", "Avgall (Pass@1 %)"],
+        "rows": [
+          ["论文 Table 1", "代码生成", "GPT-4o (240513)", "未披露", "65.2"],
+          ["论文 Table 1", "代码生成", "GPT-4 Turbo (231106)", "未披露", "63.4"],
+          ["论文 Table 1", "代码生成", "GPT-3.5 Turbo (240125)", "未披露", "52.6"],
+          ["论文 Table 1", "代码生成", "DeepSeekCoder-Instruct", "33B", "54.3"],
+          ["论文 Table 1", "代码生成", "Codestral-v0.1", "未披露", "50.5"],
+          ["论文 Table 1", "代码生成", "Yi-Large-Turbo", "未披露", "46.6"],
+          ["论文 Table 1", "代码生成", "MCODER（本文方法）", "7B", "46.7"],
+          ["论文 Table 2", "代码补全 · 单行", "GPT-4 Turbo (231106)", "未披露", "82.7"],
+          ["论文 Table 2", "代码补全 · 单行", "MCODER（本文方法）", "7B", "78.9"],
+          ["论文 Table 2", "代码补全 · 多行", "GPT-4 Turbo (231106)", "未披露", "76.6"],
+          ["论文 Table 2", "代码补全 · 多行", "MCODER（本文方法）", "7B", "72.2"],
+          ["论文 Table 2", "代码补全 · 片段", "GPT-4 Turbo (231106)", "未披露", "75.0"],
+          ["论文 Table 2", "代码补全 · 片段", "MCODER（本文方法）", "7B", "62.6"],
+          ["论文 Table 2", "代码补全 · 片段(light)", "GPT-4 Turbo (231106)", "未披露", "76.5"],
+          ["论文 Table 2", "代码补全 · 片段(light)", "MCODER（本文方法）", "7B", "63.1"],
+          ["论文 Table 3", "代码解释", "GPT-4o (240513)", "未披露", "65.8"],
+          ["论文 Table 3", "代码解释", "GPT-4 Turbo (231106)", "未披露", "62.6"],
+          ["论文 Table 3", "代码解释", "DeepSeekCoder-Instruct", "33B", "55.8"],
+          ["论文 Table 3", "代码解释", "GPT-3.5 Turbo (240125)", "未披露", "47.9"],
+          ["论文 Table 3", "代码解释", "Yi-Large-Turbo", "未披露", "50.6"],
+          ["论文 Table 3", "代码解释", "MCODER（本文方法）", "7B", "51.4"]
+        ]
+      },
+      "cite": ["paper@tab1cap", "paper@Table 2", "paper@Table 3", "paper@avgall"]
+    }
+  }
+}

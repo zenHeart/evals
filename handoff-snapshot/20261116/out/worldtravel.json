@@ -1,0 +1,402 @@
+{
+  "id": "worldtravel",
+  "name": "WorldTravel",
+  "full_name": "WorldTravel: A Realistic Multimodal Travel-Planning Benchmark with Tightly Coupled Constraints（紧耦合约束下的真实多模态旅行规划基准）",
+  "aliases": [],
+  "status": null,
+  "categories": [
+    "agent",
+    "multimodal"
+  ],
+  "summary": "ByteDance Seed 与 Humanlaya Data 于 2026-02-09 在 arXiv 发布的旅行规划智能体基准：150 道欧洲城市真实行程题，每题平均 15+ 条互相牵制的「硬约束」（时间锚点，如博物馆固定入场时段）与「软约束」（花费计算、酒店选择）。智能体通过 8 个 API 从网页截图里读取约束参数，再输出一份行程 JSON；评分不用裁判模型，而是逐条布尔校验函数。当前最好成绩 GPT-5.2 纯文本可行率 32.67%，换成网页截图输入降到 19.33%。",
+  "interpretation": "高分只说明「这份行程在纸面上满足全部硬约束」，不等于真能订到票：环境是预先写死的静态网页，不含余票变化、延误、支付失败等现实因素。跨模型比较必须先看口径——论文分纯文本与多模态两种设置，字节 Seed1.8 发布页另用 best of 5 报出 47.2，三个数字不可直接互比。",
+  "measures": [
+    {
+      "area": "时空可行性（硬约束）",
+      "focus": "能否排出一份满足全部时间锚点的日程：定时入场时段、最短游览时长、安检缓冲、午休闭馆、换乘衔接。例：10:00 进卢浮宫且 13:00 画廊闭馆，留给午餐的窗口很窄，还要赶 15:20 的欧洲之星。",
+      "share": "未披露（论文未给硬/软约束占比；附录 F 统计每题硬约束 6–13 条）",
+      "format": "每个约束映射一个布尔校验函数，全部通过才算可行",
+      "cite": ["paper@§3.2", "paper@Table 1", "paper@§1"]
+    },
+    {
+      "area": "网页界面参数感知",
+      "focus": "能否从渲染后的网页截图里读出约束参数（营业时间、余票、标价、可选时段），而不是只会解析结构化 JSON。",
+      "share": "未披露",
+      "format": "8 个 API 全部返回网页截图，无结构化数据接口",
+      "cite": ["paper@§3.3", "paper@附录 D"]
+    },
+    {
+      "area": "决策正确性（软约束）",
+      "focus": "在可行的行程里是否选对：按页面标价算对总花费、在多个候选酒店中选中用户指定的那家、搭配正确的菜单组合。",
+      "share": "未披露",
+      "format": "布尔校验函数，仅在硬约束全部满足后计分",
+      "cite": ["paper@§3.2", "paper@附录 E"]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "真实预订与动态环境：不测余票变化、延误、支付失败等随机因素，环境是预先写死的静态网页。",
+      "cite": ["paper@§3.1", "paper@§3.3"]
+    },
+    {
+      "text": "行程质量与主观体验：没有裁判模型或人工打分，只校验约束是否满足，不评价「玩得好不好」。",
+      "cite": ["paper@§3.4", "paper@附录 E"]
+    },
+    {
+      "text": "多日 / 跨城连续行程：题目按单城市组织，论文给出的样例输出只含单一日期。",
+      "cite": ["paper@附录 B", "paper@附录 H.2"]
+    },
+    {
+      "text": "多轮澄清交互：题目一次性给全，工具调用上限 30 次，不测「先问清楚再规划」。",
+      "cite": ["paper@附录 H.1"]
+    }
+  ],
+  "dataset": {
+    "sample_count": 150,
+    "splits": [
+      "论文未给出 train / test 拆分；按城市均分，每城 30 题"
+    ],
+    "languages": [
+      "未披露（论文未声明题目语言，附录示例为英文）"
+    ],
+    "source_type": "专家人工出题 + LLM 生成静态网页；事实数据取自官方场馆网站，实操数据取自旅游平台与用户评论",
+    "public_sample": false,
+    "totals": "150 题（柏林、维也纳、罗马、巴塞罗那、佛罗伦萨各 30 题）；每题 10–23 条紧耦合约束、平均 15+，含 0–5 个时间锚点；WorldTravel-Webscape 环境含 2,003 个静态网页、36 个景点、25 家餐厅、26 家酒店；题目语言未披露",
+    "cite": ["paper@§3.5", "paper@附录 F"],
+    "construction": [
+      {
+        "k": "双源取数",
+        "text": "标注员从官方场馆网站取事实数据（营业时间与午休、阶梯定价、定时入场名额），从旅游平台与用户评论取实操数据（建议游玩时长、安检排队缓冲）。",
+        "cite": ["paper@§3.3", "paper@附录 A"]
+      },
+      {
+        "k": "合成网页环境",
+        "text": "用 LLM 撰写静态 HTML 页面并人工复核，刻意引入视觉与结构差异以避免模板过拟合，共 2,003 个网页。",
+        "cite": ["paper@§3.3", "paper@附录 F"]
+      },
+      {
+        "k": "专家出题",
+        "text": "任务作者围绕时间可行性出题，各城侧重不同（罗马考预约通道取舍与排队时长，佛罗伦萨考楼梯多、不适合老人）。",
+        "cite": ["paper@§3.3", "paper@附录 B"]
+      },
+      {
+        "k": "收紧耦合",
+        "text": "先构造高耦合可行场景，再通过变换用户画像（语言、人数、年龄、预算）与任务设置派生出多道题；为保证解唯一，先写参考行程再反改网页（调余票、封时段、限游览时长）。",
+        "cite": ["paper@§3.3", "paper@附录 C"]
+      },
+      {
+        "k": "三轮质检",
+        "text": "每题经作者自审、独立交叉求解、外部验证三轮。",
+        "cite": ["paper@§3.3", "paper@附录 C"]
+      },
+      {
+        "k": "手写参考解",
+        "text": "所有参考解由任务作者手写。",
+        "cite": ["paper@附录 C"]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "智能体通过 8 个 API（景点预订、餐厅订位、酒店搜索、路线规划）获取约束参数：纯文本设置下 API 返回结构化文字描述，多模态设置下返回渲染后的网页截图。模型输出一份行程 JSON，每个约束对应一个布尔校验函数，全部通过才算可行——无裁判模型、无人工评判。",
+    "cite": ["paper@§3.4", "paper@§4.1"],
+    "variants": [
+      {
+        "text": "纯文本 vs 多模态：同一批题目、同一批模型，只改 API 返回格式。GPT-5.2 从 32.67% 降到 19.33%（-13.34 pp），两种设置的分数不可混用。",
+        "cite": ["paper@§4.2"]
+      },
+      {
+        "text": "Feasibility-Only 消融：去掉软约束后 GPT-5.2 从 32.67% 升到 33.33%（+0.66 pp），说明瓶颈几乎全在硬约束。",
+        "cite": ["paper@§5.2"]
+      },
+      {
+        "text": "Gold-θ 消融：在 30 道最高耦合题上直接给出全部硬约束参数，GPT-5.2 仍是 36.67%（+0 pp），硬约束违反率反而从 18.16% 升到 20.64%。",
+        "cite": ["paper@§5.1"]
+      },
+      {
+        "text": "Seed1.8 的 47.2 按 best of 5 计分，与论文的单次可行率不是同一口径。",
+        "cite": ["seed-en-blog-official-release"]
+      },
+      {
+        "text": "开源模型统一 temperature 1.0 / top-p 0.7，闭源模型用官方 API 默认设置，解码配置并不一致。",
+        "cite": ["paper@§4.1"]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "feasibility_rate",
+      "name": "Feasibility Rate（可行率）",
+      "direction": "越高越好",
+      "description": "行程满足全部硬约束的任务占比，衡量在紧耦合时间约束下构造可执行日程的能力；一次排期失误可能让整份行程失效。",
+      "range": "0–100",
+      "unit": "%",
+      "cite": ["paper@§3.4"]
+    },
+    {
+      "id": "constraint_violation",
+      "name": "Constraint Violation（硬约束违反率）",
+      "direction": "越低越好",
+      "description": "被违反的硬约束占全部硬约束的比例，用于诊断部分满足的程度。",
+      "range": "0–100",
+      "unit": "%",
+      "cite": ["paper@§3.4"]
+    },
+    {
+      "id": "optimality_feasible",
+      "name": "Optimality | Feasible（可行解内最优性）",
+      "direction": "越高越好",
+      "description": "在已经可行的行程里离散决策是否选对：按标价算对总花费、在多个候选实体中选中用户偏好那家。",
+      "range": "0–100",
+      "unit": "%",
+      "cite": ["paper@§3.4", "paper@§3.2"]
+    }
+  ],
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2026-02-09",
+      "label": "arXiv v1 首发：150 题 / 5 城，评测 10 个 LLM（纯文本）与 7 个 VLM（多模态）；目前仅此一个版本",
+      "cite": ["paper@标题页", "paper@Table 3"]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "题集与环境未公开",
+      "impact": "外部无法复现或独立复核，本站只能引用论文自报数字",
+      "severity": "高",
+      "response": "论文未说明开放计划，Seed1.8 发布页也未给出题集或环境链接",
+      "reader": "当作研究团队自报的读数，不要当成可复现的公开榜单",
+      "cite": ["paper@§3.5", "seed-en-blog-official-release"]
+    },
+    {
+      "issue": "评测口径不唯一",
+      "impact": "同一模型在不同设置下相差 13 pp 以上（32.67% 纯文本 / 19.33% 多模态 / 47.2 best of 5），跨来源比较容易失真",
+      "severity": "高",
+      "response": "论文与发布页都写明了各自口径，但未给出换算关系",
+      "reader": "看任何 WorldTravel 数字前，先确认是哪种设置、是否 best of N",
+      "cite": ["paper@§4.2", "seed-en-blog-official-release"]
+    },
+    {
+      "issue": "静态合成环境",
+      "impact": "不含余票变化、延误、支付等真实因素，可行率会高于真实场景",
+      "severity": "中",
+      "response": "论文明确这是有意的取舍：去掉随机噪声，保留时间耦合与信息碎片化",
+      "reader": "高分说明逻辑与感知达标，不说明订得到票",
+      "cite": ["paper@§3.1"]
+    },
+    {
+      "issue": "规模小且城市集中",
+      "impact": "150 题集中在 5 个欧洲城市，单题权重约 0.67 pp，城市级差异易被放大",
+      "severity": "中",
+      "response": "论文未给出扩题计划",
+      "reader": "城市级结论（如哪座城最难）每城只有 30 题",
+      "cite": ["paper@§3.5"]
+    },
+    {
+      "issue": "人类基线仅 30 题样本",
+      "impact": "77.86% 的人类可行率来自 30 题抽样，与模型的 150 题不同基准",
+      "severity": "中",
+      "response": "论文在表注中标明了样本量",
+      "reader": "不要把 77.86% 与模型分数直接相减当作「人机差距」",
+      "cite": ["paper@Table 3"]
+    },
+    {
+      "issue": "软约束设计偏封闭",
+      "impact": "最优性指标只校验成本计算与实体选择；去掉软约束几乎不影响可行率（+0.66 pp）",
+      "severity": "低",
+      "response": "论文在消融实验中说明了这一点",
+      "reader": "高 Optimality | Feasible 不代表行程更优",
+      "cite": ["paper@§5.2"]
+    },
+    {
+      "issue": "一次性输出、无多轮修复",
+      "impact": "工具调用上限 30 次且只输出单份行程 JSON，不测发现错误后自我修正",
+      "severity": "低",
+      "response": "论文未讨论多轮修复设置",
+      "reader": "低分可能部分来自缺少试错机会",
+      "cite": ["paper@附录 H.1"]
+    }
+  ],
+  "notes": "v1 曾记为「厂商内部/未公开」；2026-11-14 依据 arXiv:2602.08367v1 与 Seed1.8 发布页重写为 v2 深度档案。",
+  "official_sources": [
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2602.08367v1"
+    },
+    {
+      "kind": "site",
+      "url": "https://seed.bytedance.com/en/blog/official-release-of-seed1-8-a-generalized-agentic-model"
+    }
+  ],
+  "related_benchmarks": [],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "WorldTravel: A Realistic Multimodal Travel-Planning Benchmark with Tightly Coupled Constraints（arXiv:2602.08367v1，2026-02-09）",
+        "url": "https://arxiv.org/abs/2602.08367v1",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "seed-en-blog-official-release",
+        "kind": "site",
+        "title": "Official Release of Seed1.8: A Generalized Agentic Model（ByteDance Seed，2025-12-18）",
+        "url": "https://seed.bytedance.com/en/blog/official-release-of-seed1-8-a-generalized-agentic-model",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "ByteDance Seed 与 Humanlaya Data",
+        "cite": ["paper@§7", "paper@标题页"]
+      },
+      "first_release": {
+        "v": "2026-02-09（arXiv v1）",
+        "cite": ["paper@标题页"]
+      }
+    },
+    "cites": {
+      "summary": ["paper@摘要", "paper@§3.5"],
+      "interpretation": ["paper@§4.2", "seed-en-blog-official-release"]
+    },
+    "problem": {
+      "text": "旧基准把旅行规划拆成彼此独立的子问题：要么给结构化 JSON 但约束松耦合（局部失败不拖垮全局），要么用截图但不考密集约束推理，也没人同时压测「从网页里读参数」这一步。WorldTravel 用每题 15+ 条互相牵制的时间锚点加网页截图环境，把这两件事放在一起考。",
+      "cite": ["paper@§1", "paper@§3.3"]
+    },
+    "ladder": [
+      {
+        "label": "人类基线（30 题样本）",
+        "value": "77.86%",
+        "note": "5 位研究生学历标注者，仅 30 题",
+        "cite": ["paper@Table 3", "paper@§4.1"]
+      },
+      {
+        "label": "论文最好成绩 · 纯文本",
+        "value": "32.67%",
+        "note": "GPT-5.2，150 题单次",
+        "cite": ["paper@§4.2"]
+      },
+      {
+        "label": "论文最好成绩 · 多模态",
+        "value": "19.33%",
+        "note": "GPT-5.2，网页截图输入",
+        "cite": ["paper@§6"]
+      },
+      {
+        "label": "Gold-θ 上限参考",
+        "value": "36.67%",
+        "note": "30 道最高耦合题、直接给出全部硬约束参数",
+        "cite": ["paper@§5.1"]
+      },
+      {
+        "label": "容量拐点",
+        "value": "约 10 条约束",
+        "note": "超过后平均可行率跌到 3% 左右",
+        "cite": ["paper@§5.3"]
+      },
+      {
+        "label": "厂商自报（不同口径）",
+        "value": "47.2",
+        "note": "Seed1.8 发布页，best of 5",
+        "cite": ["seed-en-blog-official-release"]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "「GPT-5.2 只有 32.67%，说明它不会排行程」——错在口径：32.67% 是 150 道题里满足全部硬约束的比例；它的可行解内最优性有 85.34%，掉分主要来自时间耦合而非不会选酒店。",
+        "cite": ["paper@Table 3", "paper@§4.2"]
+      },
+      {
+        "text": "「Seed1.8 的 47.2 高于论文的 32.67%，说明 Seed1.8 更强」——两个数字不同口径：47.2 是 best of 5，论文是单次可行率，且发布页注明部分结果引自公开技术报告。",
+        "cite": ["seed-en-blog-official-release"]
+      },
+      {
+        "text": "「人类 77.86%，模型离人还差 45 pp」——人类基线只测了 30 题抽样，模型分数是全部 150 题，两者不同基准。",
+        "cite": ["paper@Table 3"]
+      },
+      {
+        "text": "「多模态更低只是因为看不懂网页」——论文把它归为 Perception-Action Gap：参数获取与规划推理是两个独立瓶颈，直接把参数喂给模型（Gold-θ）也只到 36.67%。",
+        "cite": ["paper@§5.1"]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "ByteDance Seed 与 Humanlaya Data；项目主导 Zexuan Wang、Chenghao Yang、Yingqi Que，通讯 Zhoufutu Wen",
+        "cite": ["paper@§7"]
+      },
+      {
+        "k": "首次发布",
+        "v": "2026-02-09，arXiv:2602.08367v1（cs.CL），目前仅 v1",
+        "cite": ["paper@标题页"]
+      },
+      {
+        "k": "题量与拆分",
+        "v": "150 题 / 5 个欧洲城市各 30 题；论文未给出 train/test 拆分",
+        "cite": ["paper@§3.5"]
+      },
+      {
+        "k": "约束构成",
+        "v": "每题 10–23 条约束（平均 15+），其中硬约束 6–13 条；80% 以上的题含 2 个以上定时入场时段",
+        "cite": ["paper@§3.5", "paper@附录 F"]
+      },
+      {
+        "k": "网页环境",
+        "v": "WorldTravel-Webscape：2,003 个静态网页、36 个景点、25 家餐厅、26 家酒店；8 个 API 全部返回网页截图，与 TravelPlanner 等返回 JSON 的基准形成对照",
+        "cite": ["paper@§3.5", "paper@Table 2"]
+      },
+      {
+        "k": "数据与代码位置",
+        "v": "论文未给出公开获取地址（无仓库 / 数据集 / 项目页链接）",
+        "cite": ["paper@附录 F"]
+      },
+      {
+        "k": "时间线",
+        "v": "2025-12-18 Seed1.8 发布页首次把 WorldTravel 作为应用任务对外披露（47.2，best of 5）；2026-02-09 论文公开",
+        "cite": ["seed-en-blog-official-release", "paper@标题页"]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-14",
+        "columns": [
+          "设置",
+          "模型",
+          "可行率 Feasibility Rate (%) ↑",
+          "硬约束违反率 Constraint Violation (%) ↓",
+          "可行解内最优性 Optimality | Feasible (%) ↑"
+        ],
+        "rows": [
+          ["人类（30 题样本）", "Human Performance", "77.86", "6.48", "84.76"],
+          ["纯文本", "GPT-5.2", "32.67", "21.92", "85.34"],
+          ["纯文本", "Claude-Opus-4.5", "21.33", "25.76", "73.22"],
+          ["纯文本", "GPT-5.1", "16.67", "32.85", "83.80"],
+          ["纯文本", "Gemini-3-Pro", "14.67", "32.87", "77.34"],
+          ["纯文本", "Deepseek v3.2", "14.00", "34.16", "70.63"],
+          ["纯文本", "Claude-Sonnet-4.5", "10.00", "34.43", "59.77"],
+          ["纯文本", "Doubao-1.8-Pro", "8.67", "37.79", "77.18"],
+          ["纯文本", "Gemini-2.5-Pro", "8.00", "41.14", "83.19"],
+          ["纯文本", "GLM-4.6", "8.00", "43.44", "64.16"],
+          ["纯文本", "Qwen-3-A235B", "2.67", "50.47", "60.00"],
+          ["多模态", "GPT-5.2", "19.33", "33.18", "76.83"],
+          ["多模态", "Claude-Opus-4.5", "14.00", "30.86", "77.61"],
+          ["多模态", "Gemini-3-Pro", "8.00", "40.10", "80.41"],
+          ["多模态", "Doubao-1.8-Pro", "4.00", "46.63", "63.33"],
+          ["多模态", "GPT-5.1", "2.67", "47.98", "75.00"],
+          ["多模态", "Claude-Sonnet-4.5", "2.67", "44.51", "55.00"],
+          ["多模态", "Gemini-2.5-Pro", "1.33", "52.71", "60.00"]
+        ]
+      },
+      "cite": ["paper@Table 3"]
+    }
+  }
+}

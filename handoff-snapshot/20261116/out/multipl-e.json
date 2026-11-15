@@ -1,0 +1,829 @@
+{
+  "id": "multipl-e",
+  "name": "MultiPL-E",
+  "full_name": "MultiPL-E（Multi-Programming Language Evaluation of Large Language Models of Code，多编程语言代码生成评测）",
+  "aliases": [],
+  "status": null,
+  "categories": [
+    "coding"
+  ],
+  "summary": "MultiPL-E 用一批约 200 行的小编译器，把 HumanEval 和 MBPP 这两套 Python 代码题连函数签名、单元测试、注释里的术语一起翻译成其他编程语言，做出 19 种语言共用同一批题的并行评测。判分方式只有一个：模型补全出来的函数，能不能通过该语言下编译出来的隐藏单元测试（可以类比成把同一份 Jest 用例分别改写成 JUnit、go test 再各跑一遍）。",
+  "interpretation": "高分说明模型在该编程语言上，能根据自然语言描述写出功能正确的函数。它不衡量代码质量、安全性、可读性或工程能力，也不代表能胜任该语言里的真实项目——论文自己把这两套题描述为基础编程题与简单面试题的混合。跨语言横向比较时还要先看清三件事：分数来自 HumanEval 派生题还是 MBPP 派生题、用的是哪一个数据集版本、提示有没有被翻译。",
+  "measures": [
+    {
+      "area": "HumanEval 派生（MultiPL-HumanEval）",
+      "focus": "从函数签名 + 自然语言 docstring + doctests 补全函数体，用隐藏单元测试判定；论文示例为 HumanEval 第 136 题 largest_smallest_integers（返回列表里最大负数与最小正数组成的元组）",
+      "share": "3,059 题（161 题 × 19 语言）",
+      "format": "单函数补全 + 隐藏单元测试断言",
+      "cite": [
+        "paper@§3.1",
+        "paper@附录 B.2",
+        "paper@Figure 1",
+        "paper@§2.1"
+      ]
+    },
+    {
+      "area": "MBPP 派生（MultiPL-MBPP）",
+      "focus": "原 MBPP 把同一批断言既当提示又当测试，MultiPL-E 把断言从提示中删掉、按断言隐含的函数名与参数个数补上函数签名，只留自然语言描述；提示里没有 doctests",
+      "share": "7,619 题（401 题 × 19 语言）",
+      "format": "单函数补全 + 隐藏单元测试断言",
+      "cite": [
+        "paper@§3.1",
+        "paper@§3.3.1",
+        "paper@附录 B.2"
+      ]
+    },
+    {
+      "area": "编程语言覆盖面",
+      "focus": "19 种语言（Python 加 18 个目标语言），按 TIOBE 排名与 GitHub 频率加权分成高频 / 中频 / 低频 / 小众四档；其中 8 种此前从未用于 NL2Code 评测，约半数为静态类型检查语言",
+      "share": "19 种语言；每种语言一个约 200 行的编译器",
+      "format": "同一批题在每种语言下各编译出一份提示与一套测试",
+      "cite": [
+        "paper@§3.2",
+        "paper@§1"
+      ]
+    },
+    {
+      "area": "题目涉及的数据类型",
+      "focus": "论文按 HumanEval 题目的类型标注把题目分成布尔、字典、列表、元组、仅基础类型五组，比较不同语言在各组上的 pass@1；字典类只有 3 题",
+      "share": "未披露各组题量占比（论文只说明字典类 3 题，并提醒该类样本过少）",
+      "format": "按题目类型分组的 pass@1 对比 + 混合效应模型",
+      "cite": [
+        "paper@§6.4"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "代码质量：可读性、可维护性、性能、内存与安全都不在范围内，判定只有「通过该题全部隐藏单元测试」或「未通过」。",
+      "cite": [
+        "paper@§2.3"
+      ]
+    },
+    {
+      "text": "真实工程任务：论文把 HumanEval 与 MBPP 描述为基础编程题与简单面试题的混合，同一套题既考脚本语言也考系统语言，而这些语言程序员的典型任务差别很大。",
+      "cite": [
+        "paper@§7"
+      ]
+    },
+    {
+      "text": "仓库级或多文件编程：每题只要求补全单个函数体，编译器明确不翻译函数体之外的语句与表达式。",
+      "cite": [
+        "paper@§3.3",
+        "paper@§2.1"
+      ]
+    },
+    {
+      "text": "语言惯用写法：判定只认功能正确，生成代码是否符合该语言社区的注释与命名风格不在考察范围内（论文只把注释风格当作影响分数的提示设计因素）。",
+      "cite": [
+        "paper@§6.3.1"
+      ]
+    },
+    {
+      "text": "训练数据污染：Codex 训练集不公开，论文只能用「18 个新语言上的表现与 Python 相当或更好」间接论证训练/测试重叠影响很小，没有直接的污染检测手段。",
+      "cite": [
+        "paper@§5.1.2"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 10678,
+    "splits": [
+      "test（HumanEval 与 MBPP 派生题在数据集卡里都只有 test 拆分）"
+    ],
+    "languages": [
+      "Python",
+      "Bash",
+      "C++",
+      "C#",
+      "D",
+      "Go",
+      "Java",
+      "JavaScript",
+      "Julia",
+      "Lua",
+      "Perl",
+      "PHP",
+      "R",
+      "Racket",
+      "Ruby",
+      "Rust",
+      "Scala",
+      "Swift",
+      "TypeScript"
+    ],
+    "source_type": "compiler-translated（由 HumanEval / MBPP 的 Python 原题经小型编译器机械转写，非人工新写）",
+    "public_sample": true,
+    "totals": "论文口径共 10,678 题：MultiPL-HumanEval 3,059 题（161 题 × 19 语言）+ MultiPL-MBPP 7,619 题（401 题 × 19 语言）。题型全部是「给函数签名与自然语言描述，补全函数体，跑隐藏单元测试」；HumanEval 派生题多数带 doctests，MBPP 派生题不带。当前 Hugging Face 数据集的语言数已超过论文口径：数据集卡按 SRCDATA-LANG 逐配置列出题量，其中 humaneval 有 24 个语言配置、mbpp 有 23 个（Dart 只有 HumanEval 派生），且各配置题量不再统一（如 R 161 题、Go 154 题）。",
+    "cite": [
+      "paper@附录 B.2",
+      "paper@§3.2",
+      "dataset@Dataset Summary"
+    ],
+    "construction": [
+      {
+        "k": "选定源基准",
+        "text": "选 HumanEval 与 MBPP 这两个最常用的 Python NL2Code 基准。HumanEval 的 164 题都带正确性测试、多数在提示里带 doctests，且题目都是收发一阶值的函数，便于单元测试与翻译。",
+        "cite": [
+          "paper@§3.1"
+        ]
+      },
+      {
+        "k": "改造 MBPP 提示",
+        "text": "原 MBPP 把同一批断言既当提示又当测试；MultiPL-E 把断言从提示中删掉、改为隐藏单元测试，并按断言隐含的函数名与参数个数机械补上函数签名。",
+        "cite": [
+          "paper@§3.1",
+          "paper@§3.3.1"
+        ]
+      },
+      {
+        "k": "写每语言编译器与评测脚本",
+        "text": "每种目标语言一个约 200 行的编译器，只翻译四类信息：函数签名、简单单元测试、描述预期行为的注释、以及静态类型语言需要的类型标注；函数体由模型生成，编译器不翻。另有一个容器化沙箱负责编译、按超时运行、在单元测试上校验并把每次输出分类为成功 / 语法错误等，每种语言配一个约 20 行的评测脚本。",
+        "cite": [
+          "paper@§1",
+          "paper@§3.3"
+        ]
+      },
+      {
+        "k": "值到值编译与深度相等",
+        "text": "用递归函数把 Python 值编译成目标语言的值（元组和列表在 JavaScript 里都编译成数组；R 里同质列表编译成向量），等式判定换成各语言的深度相等函数，如 JavaScript 的 assert.deepEqual、R 的 identical。",
+        "cite": [
+          "paper@§3.3.1"
+        ]
+      },
+      {
+        "k": "术语与 doctest 翻译",
+        "text": "规则化地把注释里的 Python 术语换成目标语言的习惯说法（Python 的 list 近似 C++ 的 vector）；示例统一成 Python doctest 格式（前置 >>>）并做值到值编译，但所有目标语言都保留 Python doctest 语法。",
+        "cite": [
+          "paper@§1",
+          "paper@§3.3.3"
+        ]
+      },
+      {
+        "k": "清洗与剔除",
+        "text": "HumanEval 164 题里剔除 3 道提示带 Python 辅助函数的题、把 2 道随机测试改成单元测试；对某些静态类型语言，最多 5 道带不可翻译类型的题编译失败。论文称这些改动对 Python 结果影响不显著。",
+        "cite": [
+          "paper@§3.4",
+          "paper@附录 B.3"
+        ]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "模型拿到该语言下的提示（函数签名 + 自然语言描述 + 可能的 doctests）后补全函数体。论文用温度 0.2 采 200 个补全估计 pass@1，用温度 0.8 采 200 个补全估计 pass@10 / pass@100，估计量是 HumanEval 一文提出的无偏采样估计；生成代码在容器沙箱里编译运行，通过该题全部隐藏单元测试才算这一条补全正确。",
+    "cite": [
+      "paper@§4.2",
+      "paper@§2.3",
+      "paper@§1"
+    ],
+    "variants": [
+      {
+        "text": "提示翻译口径：论文跑过 Original Prompt / Test-only Translation / Full Translation / No Doctests 四种消融；Hugging Face 数据集自 v3.0 起不再发布这些消融配置，只保留在 revision d23b094 及更早版本里。",
+        "cite": [
+          "paper@§6.1",
+          "dataset@The MultiPL-E Ablations",
+          "dataset@Changelog Version 3.0"
+        ]
+      },
+      {
+        "text": "数据集版本：v0.3.0 修过一批会拉低静态类型语言分数的提示与测试 bug（Java 在 HumanEval 上约提高 2%）；v3.0 换了提示与测试并新增 4 种语言；v3.1.1 修 TypeScript 提示 bug；v3.3 修了一个会影响所有 Lua 结果的多余停止符。跨版本分数不可直接比较。",
+        "cite": [
+          "dataset@Changelog Version 0.3.0",
+          "dataset@Changelog Version 3.0",
+          "dataset@Changelog Version 3.1.1",
+          "dataset@Changelog Version 3.3"
+        ]
+      },
+      {
+        "text": "采样配置：pass@1 用温度 0.2、pass@10 / pass@100 用温度 0.8，每题 200 个补全；同期 MBXP 用贪心解码、每题只生成一个候选程序，两者不可比。",
+        "cite": [
+          "paper@§4.2",
+          "paper@§8"
+        ]
+      },
+      {
+        "text": "测试可见性：MultiPL-E 用隐藏单元测试判分，MBXP 把同一批单元测试同时写进提示，模型能看到自己将被判分的测试。",
+        "cite": [
+          "paper@§8"
+        ]
+      },
+      {
+        "text": "提示里的注释风格与参数命名：换成多行注释会让 Racket 的 pass@1 升 1.9%、却让 PHP 降 3.1%；去掉 Perl 的参数命名提示会让 pass@1 降 8%。",
+        "cite": [
+          "paper@§6.3.1",
+          "paper@§6.3.2"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "pass@1",
+      "name": "pass@1（单次通过率）",
+      "direction": "越高越好",
+      "description": "模型生成的一个补全通过该题全部隐藏单元测试的概率估计；论文按温度 0.2、每题 200 个补全、用无偏采样估计计算",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§4.2"
+      ]
+    },
+    {
+      "id": "pass@10",
+      "name": "pass@10（十次通过率）",
+      "direction": "越高越好",
+      "description": "10 个补全中至少一个通过全部单元测试的概率估计；论文按温度 0.8、每题 200 个补全计算",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§4.2"
+      ]
+    },
+    {
+      "id": "pass@100",
+      "name": "pass@100（百次通过率）",
+      "direction": "越高越好",
+      "description": "100 个补全中至少一个通过全部单元测试的概率估计；计算方式与 pass@10 相同",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§4.2"
+      ]
+    }
+  ],
+  "versions": [
+    {
+      "id": "arxiv-v1",
+      "date": "2022-08-17",
+      "label": "arXiv v1 首发（MultiPL-E: A Scalable and Extensible Approach to Benchmarking Neural Code Generation）",
+      "cite": [
+        "arxiv-abs@Submission history",
+        "arxiv-abs@标题"
+      ]
+    },
+    {
+      "id": "arxiv-v4",
+      "date": "2022-12-19",
+      "label": "arXiv v4，本档案核对所用论文版本（v1 2022-08-17 → v2 2022-08-19 → v3 2022-11-08 → v4 2022-12-19）",
+      "cite": [
+        "arxiv-abs@Submission history"
+      ]
+    },
+    {
+      "id": "dataset-v2",
+      "date": "2022-10-03",
+      "label": "Hugging Face 数据集 v2：加入 MBPP 派生题",
+      "cite": [
+        "history@Version 2: added MBPP"
+      ]
+    },
+    {
+      "id": "dataset-v2.1",
+      "date": "2022-12-11",
+      "label": "Hugging Face 数据集 v2.1：扩充 MBPP 题量",
+      "cite": [
+        "history@Version 2.1: support more MBPP"
+      ]
+    },
+    {
+      "id": "dataset-v3.0",
+      "date": "2024-07-06",
+      "label": "Hugging Face 数据集 v3.0：更换提示与测试，新增 Clojure / Elixir / Haskell / OCaml，不再发布提示消融配置",
+      "cite": [
+        "history@MultiPL-E v3 prompts and tests",
+        "dataset@Changelog Version 3.0"
+      ]
+    },
+    {
+      "id": "dataset-v3.1",
+      "date": "2024-09-16",
+      "label": "Hugging Face 数据集 v3.1：新增 Dart（只有 HumanEval 派生配置）",
+      "cite": [
+        "history@Version 3.1",
+        "dataset@Changelog Version 3.1"
+      ]
+    },
+    {
+      "id": "dataset-v3.1.1",
+      "date": "2024-11-18",
+      "label": "Hugging Face 数据集 v3.1.1：修复影响 MBPP 派生题的 TypeScript 提示 bug",
+      "cite": [
+        "history@Upload dataset (2024-11-18)",
+        "dataset@Changelog Version 3.1.1"
+      ]
+    },
+    {
+      "id": "dataset-v3.2",
+      "date": "2025-01-06",
+      "label": "Hugging Face 数据集 v3.2：新增 Ada",
+      "cite": [
+        "history@Upload dataset (2025-01-06)",
+        "dataset@Changelog Version 3.2"
+      ]
+    },
+    {
+      "id": "dataset-v3.3",
+      "date": "2025-07-15",
+      "label": "Hugging Face 数据集 v3.3：修复 Lua 多余停止符（官方称重测 Lua 结果会相同或略高）",
+      "cite": [
+        "history@Upload dataset (2025-07-15)",
+        "dataset@Changelog Version 3.3"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "题目不代表各语言的真实任务",
+      "impact": "论文把这一条列为首要效度威胁：HumanEval 与 MBPP 是基础编程题与简单面试题的混合，同一套题既考脚本语言也考系统语言，而这些语言程序员的日常工作差别很大，因此单语言高分不能外推到该语言的实际项目。",
+      "severity": "高",
+      "response": "论文在 Threats to Validity 中如实陈述该问题，未提出修正方案；编译器与数据集保持开放，便于自行补充更贴近真实任务的基准。",
+      "reader": "把 MultiPL-E 分数当作「该语言上函数级代码生成可用性」的参考，不要当作工程生产力结论。",
+      "cite": [
+        "paper@§7"
+      ]
+    },
+    {
+      "issue": "数据集版本之间改过提示与测试",
+      "impact": "v0.3.0 修了一批会拉低静态类型语言分数的 bug（Java 在 HumanEval 上约提高 2%）；v3.0 更换提示与测试、新增 4 种语言，并对 Racket / R / Julia / D 的若干题做了仅空白的改动；v3.1.1 修 TypeScript 提示 bug；v3.3 修了一个会影响所有 Lua 结果的多余停止符。同一模型在不同版本上的分数不可直接比较。",
+      "severity": "高",
+      "response": "官方在数据集卡 Changelog 里逐版本记录改动与影响，v3.0 另提供 diffs_v3.0 目录；论文数据表称暂无常设勘误表，已确认的错误会在仓库中致谢。",
+      "reader": "看到 MultiPL-E 分数先问是哪个数据集版本；跨版本比较前读 Changelog 对应条目。",
+      "cite": [
+        "dataset@Changelog Version 0.3.0",
+        "dataset@Changelog Version 3.0",
+        "dataset@Changelog Version 3.1.1",
+        "dataset@Changelog Version 3.3",
+        "paper@附录 B.6"
+      ]
+    },
+    {
+      "issue": "对提示设计高度敏感",
+      "impact": "换注释风格让 Racket pass@1 升 1.9%、PHP 降 3.1%；去掉 Perl 参数命名提示降 8%；去掉 doctests 会显著拉低 Bash、PHP、Perl、R、Rust、Swift、TypeScript。论文认为单个语言的通过率还能靠更精细的语言特定工作继续提高，说明当前数字里含有实现者选择的空间。",
+      "severity": "中",
+      "response": "论文公开四种提示消融与逐语言统计结果，把敏感性本身作为发现报告，并给出各语言的停止序列与参考版本（论文附录 A）。",
+      "reader": "比较不同来源的 MultiPL-E 分数时，先确认提示是原始版、仅译 doctests 版还是全译版。",
+      "cite": [
+        "paper@§6.3.1",
+        "paper@§6.3.2",
+        "paper@§6.1",
+        "paper@§7"
+      ]
+    },
+    {
+      "issue": "官方数据集卡自身的语言数不一致",
+      "impact": "数据集卡摘要写「支持 22 种编程语言」，但卡里按 SRCDATA-LANG 列出了 24 个不同语言代码的 humaneval 配置；Dart 在 v3.1 加入却只有 HumanEval 派生配置，没有 mbpp-dart。引用「支持多少种语言」时容易各说各话。",
+      "severity": "中",
+      "response": "未见官方回应（摘要文本未随 Ada 支持同步更新）",
+      "reader": "以数据集卡列出的配置清单为准，不要引用摘要里的语言数。",
+      "cite": [
+        "dataset@Dataset Summary"
+      ]
+    },
+    {
+      "issue": "训练数据重叠难以排除",
+      "impact": "Codex 训练集不公开，可能已在 Python 版 HumanEval 的解法上训练过，从而抬高其 Python 分数；论文只能用「在 18 个新语言上与 Python 相当或更好」间接论证重叠影响很小。",
+      "severity": "中",
+      "response": "论文给出上述间接论证，并保持编译器可扩展以便加入新语言做对照；未见专门的污染检测。",
+      "reader": "把 Python 上的绝对分数与 18 个翻译语言上的分数一起看，单看 Python 分数要保留余地。",
+      "cite": [
+        "paper@§5.1.2"
+      ]
+    },
+    {
+      "issue": "各语言题量不完全相同",
+      "impact": "HumanEval 164 题里剔除 3 题、改写 2 题，某些静态类型语言上最多 5 题因类型不可翻译而编译失败；当前数据集卡里各语言配置题量也不再统一（如 R 161 题、Go 154 题），题量少的配置上单个题目的权重更高。",
+      "severity": "低",
+      "response": "论文在 §3.4 与数据表附录里逐条说明改动，并称这些改动对 Python 结果影响不显著。",
+      "reader": "跨语言比较时注意题量差异，尤其是题量明显偏少的配置。",
+      "cite": [
+        "paper@§3.4",
+        "paper@附录 B.3",
+        "dataset@Dataset Summary"
+      ]
+    }
+  ],
+  "notes": "Kimi/Qwen 引用",
+  "official_sources": [
+    {
+      "kind": "github",
+      "url": "https://github.com/nuprl/MultiPL-E"
+    },
+    {
+      "kind": "site",
+      "url": "https://www.kimi.ai/blog/kimi-k2"
+    },
+    {
+      "kind": "site",
+      "url": "https://qwenlm.github.io/blog/qwen2.5/"
+    },
+    {
+      "kind": "site",
+      "url": "https://qwen.ai/blog?id=qwen3.8-flash-next"
+    },
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2208.08227"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/nuprl/MultiPL-E"
+    }
+  ],
+  "related_benchmarks": [
+    "humaneval",
+    "mbpp"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-13",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "MultiPL-E: A Scalable and Extensible Approach to Benchmarking Neural Code Generation（arXiv:2208.08227v4，2022-12-19，pdftotext 全文）",
+        "url": "https://arxiv.org/abs/2208.08227",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "arxiv-abs",
+        "kind": "paper",
+        "title": "arXiv:2208.08227 摘要页（标题、作者与投稿历史）",
+        "url": "https://arxiv.org/abs/2208.08227",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "nuprl/MultiPL-E 仓库 README（名称全称、使用方式、新增语言流程、Credits）",
+        "url": "https://github.com/nuprl/MultiPL-E",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "citation",
+        "kind": "repo",
+        "title": "nuprl/MultiPL-E CITATION.cff（期刊版论文题目、期刊与 DOI）",
+        "url": "https://github.com/nuprl/MultiPL-E/blob/main/CITATION.cff",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "dataset",
+        "kind": "dataset",
+        "title": "nuprl/MultiPL-E Hugging Face 数据集卡（摘要、配置清单、Changelog、消融说明）",
+        "url": "https://huggingface.co/datasets/nuprl/MultiPL-E",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "history",
+        "kind": "dataset",
+        "title": "nuprl/MultiPL-E Hugging Face 提交历史（commits API，用于确认各数据集版本日期）",
+        "url": "https://huggingface.co/api/datasets/nuprl/MultiPL-E/commits/main",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "leaderboard",
+        "kind": "leaderboard",
+        "title": "Big Code Models Leaderboard / multilingual-code-evals（BigCode，官方仓库 README 指向；其后端数据文件 code_eval_board.csv，HumanEval-Python 与 11 个 MultiPL-E 语言的 pass@1）",
+        "url": "https://huggingface.co/spaces/bigcode/multilingual-code-evals",
+        "accessed": "2026-11-13"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "以 Northeastern University 为主的多校团队（Northeastern / Wellesley / Oberlin / Stevens Institute of Technology / UMass Amherst）",
+        "cite": [
+          "repo@Credits",
+          "paper@§1 脚注"
+        ]
+      },
+      "first_release": {
+        "v": "2022-08-17（arXiv v1）",
+        "cite": [
+          "arxiv-abs@Submission history"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "paper@Abstract",
+        "paper@§1",
+        "paper@§3.2"
+      ],
+      "interpretation": [
+        "paper@§7",
+        "paper@§5.2.1"
+      ]
+    },
+    "problem": {
+      "text": "代码生成模型大多在多语言代码上训练，却几乎只在 Python 基准上被评测——Python 既是研究人员最熟悉的语言，也是训练数据里占比最高的语言，于是「模型能不能把一门语言的知识泛化到另一门」在当时缺少可测的手段。MultiPL-E 用编译器把两套 Python 基准并行翻译成 18 种语言，让同一批题能在多种语言上用一致的单元测试判分。",
+      "cite": [
+        "paper@§1",
+        "paper@Abstract"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "论文引用的人类基线（HumanEval Python）",
+        "value": "36%",
+        "note": "论文引 Fried 等报告的 HumanEval Python 最好成绩，用作「这套题有多难」的参照；它不是 MultiPL-E 上的成绩。",
+        "cite": [
+          "paper@§3.1"
+        ]
+      },
+      {
+        "label": "论文最好成绩（MultiPL-HumanEval，Python）",
+        "value": "45.9%",
+        "note": "Codex code-davinci-002，pass@1，温度 0.2、每题 200 个补全；同期 CodeGen-16B-multi 为 19.2%，InCoder 结果复现其原论文。",
+        "cite": [
+          "paper@§5.1.1"
+        ]
+      },
+      {
+        "label": "论文最好成绩（MultiPL-MBPP，Python）",
+        "value": "60.3%",
+        "note": "Codex code-davinci-002；同期 InCoder-6.7B 为 15.5%，低于其原论文报告的 19.4%（原论文用单次补全而非 200 样本无偏估计）。",
+        "cite": [
+          "paper@§5.2.2"
+        ]
+      },
+      {
+        "label": "BigCode 榜单 12 语言平均最高",
+        "value": "63.38%",
+        "note": "Qwen2.5-Coder-32B-Instruct，BigCode 多语言代码评测榜单（HumanEval-Python 加 11 个 MultiPL-E 语言）pass@1 平均；同一榜单中 SantaCoder-1.1B 平均 4.92%，可作低端参照。",
+        "cite": [
+          "leaderboard@data/code_eval_board.csv"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      },
+      {
+        "label": "饱和参考线",
+        "value": "论文未给出",
+        "note": "MultiPL-E 没有官方饱和线。论文只给出难度判断：57 个模型/语言组合里有 51 个是 MBPP 派生分数更高，并据此认为 HumanEval 派生是更有用的基准。",
+        "cite": [
+          "paper@§5.2.1"
+        ]
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "以为 MultiPL-E 支持任意语言，或「支持 20 多种语言」——论文口径是 18 个目标语言加 Python 共 19 种，且要求目标语言有 Python 数据类型的自然对应物，C 和 SQL 因此被排除在外。",
+        "cite": [
+          "paper@§3.2",
+          "paper@§3.4"
+        ]
+      },
+      {
+        "text": "把某语言比 Python 高几分当成「模型更擅长这门语言」——论文用混合效应模型做显著性检验，Codex 在 JavaScript 上虽比 Python 高 2.3%，差异并不显著（p = 0.43）。",
+        "cite": [
+          "paper@§5.1.2"
+        ]
+      },
+      {
+        "text": "把 HumanEval 派生和 MBPP 派生的分数放进同一张表比较——MBPP 明显更容易，57 个模型/语言组合里只有 6 个是 HumanEval 派生更高，论文据此认为 HumanEval 派生更有用。",
+        "cite": [
+          "paper@§5.2.1"
+        ]
+      },
+      {
+        "text": "用困惑度（perplexity）判断模型在某语言上的能力——论文发现两者没有强相关：JavaScript 与 TypeScript 的困惑度最高，Codex 却在这两门语言上表现最好。",
+        "cite": [
+          "paper@§5.1.4"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "以 Northeastern University 为主的多校团队；论文脚注说明作者按字母序排列、学生在前导师在后",
+        "cite": [
+          "repo@Credits",
+          "paper@§1 脚注"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "Federico Cassano、John Gouwar、Daniel Nguyen、Sydney Nguyen、Luna Phipps-Costin、Donald Pinckney、Ming-Ho Yee、Yangtian Zi、Carolyn Jane Anderson、Molly Q Feldman、Arjun Guha、Michael Greenberg、Abhinav Jangda（共 13 人）",
+        "cite": [
+          "repo@Credits"
+        ]
+      },
+      {
+        "k": "论文与期刊",
+        "v": "arXiv:2208.08227（v1 2022-08-17，v4 2022-12-19）；期刊版题目改为 MultiPL-E: A Scalable and Polyglot Approach to Benchmarking Neural Code Generation，发表于 IEEE Transactions on Software Engineering，2023 年，DOI 10.1109/TSE.2023.3267446",
+        "cite": [
+          "citation@preferred-citation",
+          "citation@title",
+          "arxiv-abs@Submission history"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2022-05 至 2022-10 采集数据 → 2022-08-17 arXiv v1 → 2022-09-28 Hugging Face 数据集初始提交 → 2022-10-03 数据集 v2 加入 MBPP → 2022-12-19 arXiv v4 → 2024-07-06 数据集 v3.0 → 2025-07-15 数据集 v3.3",
+        "cite": [
+          "paper@附录 B.2",
+          "arxiv-abs@Submission history",
+          "history@Initial commit",
+          "history@Version 2: added MBPP",
+          "history@MultiPL-E v3 prompts and tests",
+          "history@Upload dataset (2025-07-15)"
+        ]
+      },
+      {
+        "k": "评测模型",
+        "v": "论文评测 Codex code-davinci-002、CodeGen-16B 多语言版、InCoder-6.7B 三个模型；其中 Codex 的训练集与规模未公开",
+        "cite": [
+          "paper@§4.1",
+          "paper@§5.1.2"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "翻译好的提示与测试在 Hugging Face（nuprl/MultiPL-E）；编译器、评测框架与执行容器在 GitHub；BigCode Code Generation LM Harness 内置 MultiPL-E 支持",
+        "cite": [
+          "repo@Introduction",
+          "repo@Adding Support"
+        ]
+      },
+      {
+        "k": "榜单现状",
+        "v": "MultiPL-E 作者未维护统一榜单；官方仓库 README 指向 BigCode 的 Multilingual Code Models Evaluation 榜单，该榜单收录 HumanEval-Python 与 11 个 MultiPL-E 语言的 pass@1（本页附录 B 即取自该榜单数据文件）",
+        "cite": [
+          "repo@Introduction",
+          "leaderboard@data/code_eval_board.csv"
+        ]
+      },
+      {
+        "k": "资助",
+        "v": "美国国家科学基金会（NSF）部分资助；另感谢 Northeastern Research Computing 支持 Discovery 集群",
+        "cite": [
+          "paper@附录 B.1"
+        ]
+      },
+      {
+        "k": "维护与勘误",
+        "v": "论文数据表称由原作者维护，暂无常设勘误表，已确认的错误会在仓库中致谢；后续语言由社区贡献者通过 PR 加入（Dart、Ada、Clojure、Elixir、Haskell、OCaml）",
+        "cite": [
+          "paper@附录 B.6",
+          "repo@Adding Support",
+          "dataset@Changelog Version 3.2",
+          "dataset@Changelog Version 3.0"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-13",
+        "columns": [
+          "来源",
+          "模型",
+          "Python（HumanEval）",
+          "Java",
+          "JavaScript",
+          "C++",
+          "Lua",
+          "D",
+          "12 语言平均"
+        ],
+        "rows": [
+          [
+            "BigCode 榜单",
+            "Qwen2.5-Coder-32B-Instruct",
+            "83.2",
+            "73.69",
+            "76.05",
+            "81.95",
+            "46.04",
+            "26.98",
+            "63.38"
+          ],
+          [
+            "BigCode 榜单",
+            "Nxcode-CQ-7B-orpo",
+            "87.23",
+            "60.91",
+            "71.69",
+            "68.04",
+            "37.24",
+            "23.22",
+            "55.24"
+          ],
+          [
+            "BigCode 榜单",
+            "Qwen2.5-Coder-32B",
+            "57.1",
+            "65.49",
+            "65.07",
+            "64.35",
+            "57.25",
+            "32.3",
+            "55.07"
+          ],
+          [
+            "BigCode 榜单",
+            "CodeQwen1.5-7B-Chat",
+            "87.2",
+            "61.04",
+            "70.31",
+            "67.85",
+            "32.89",
+            "22.71",
+            "54.95"
+          ],
+          [
+            "BigCode 榜单",
+            "OpenCodeInterpreter-DS-33B",
+            "75.23",
+            "54.8",
+            "69.06",
+            "64.47",
+            "57.76",
+            "22.31",
+            "53.32"
+          ],
+          [
+            "BigCode 榜单",
+            "CodeFuse-DeepSeek-33b",
+            "76.83",
+            "60.76",
+            "66.46",
+            "65.22",
+            "52.8",
+            "24.36",
+            "51.69"
+          ],
+          [
+            "BigCode 榜单",
+            "DeepSeek-Coder-33b-instruct",
+            "80.02",
+            "52.03",
+            "65.13",
+            "62.36",
+            "50.92",
+            "17.85",
+            "49.99"
+          ],
+          [
+            "BigCode 榜单",
+            "Phind-CodeLlama-34B-v2",
+            "71.95",
+            "54.06",
+            "65.34",
+            "59.59",
+            "44.27",
+            "14.12",
+            "48.7"
+          ],
+          [
+            "BigCode 榜单",
+            "Artigenz-Coder-DS-6.7B",
+            "70.89",
+            "56.84",
+            "66.16",
+            "59.75",
+            "44.56",
+            "20.09",
+            "48.19"
+          ],
+          [
+            "BigCode 榜单",
+            "DeepSeek-Coder-7b-instruct",
+            "80.22",
+            "53.34",
+            "65.8",
+            "59.66",
+            "47.78",
+            "21.59",
+            "48.17"
+          ],
+          [
+            "BigCode 榜单",
+            "SantaCoder-1.1B",
+            "18.12",
+            "15.0",
+            "15.47",
+            "6.2",
+            "0.1",
+            "0.0",
+            "4.92"
+          ]
+        ]
+      },
+      "cite": [
+        "leaderboard@data/code_eval_board.csv"
+      ]
+    }
+  }
+}

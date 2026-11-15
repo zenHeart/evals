@@ -1,0 +1,391 @@
+{
+  "id": "mme-cc",
+  "name": "MME-CC",
+  "full_name": "A Challenging Multi-Modal Evaluation Benchmark of Cognitive Capacity",
+  "aliases": [],
+  "status": "active",
+  "categories": ["multimodal"],
+  "summary": "MME-CC 是字节跳动 Seed 与南京大学发布的视觉认知评测：11 个推理任务、1,173 道题，题目信息全部在图片里（语言无关），按空间推理、几何推理、视觉知识推理三类组织，用 DeepSeek-V3-0324 当裁判判定自由作答题的对错，再汇总成 0-100 的分类分与总分。",
+  "interpretation": "总分是三类分的算术平均（可用 Table 4 复核：Gemini-2.5-Pro 三类为 23.80 / 29.56 / 74.63，均值 42.66）；论文没有另写加权公式。分数高说明模型在纯视觉输入下能跨视角保持方向与实体一致，并遵守反事实指令。当前最高分 Gemini-2.5-Pro 42.66，人类基线 95.86（99 题抽样）。空间与几何两类普遍不超过 30%，Maze 没有任何模型超过 2%——整体分低是当前常态，不要用 42.66 与人类 95.86 的差距推断「能力差一半」。",
+  "measures": [
+    {
+      "area": "空间推理（Spatial Reasoning, SR）",
+      "focus": "卫星图匹配、室内方向判断、室内去重计数：跨视角保持方向感与实体同一性",
+      "share": "319 / 1,173 题（约 27%）",
+      "format": "1 张或多张静态图片 + 自然语言问题，自由作答（FF），答案含方向、配对、计数或序列",
+      "cite": ["arxiv-2511-03146@Table 2", "arxiv-2511-03146@Figure 1"]
+    },
+    {
+      "area": "几何推理（Geometric Reasoning, GR）",
+      "focus": "五子棋变体、华容道、迷宫、拼图、图表修改：规则约束下的路径规划、布局匹配与图表数值改写",
+      "share": "605 / 1,173 题（约 52%）",
+      "format": "1 张或多张静态图片 + 自然语言问题，自由作答（FF），答案为走法序列、路径、拼图配置或数值",
+      "cite": ["arxiv-2511-03146@Table 2", "arxiv-2511-03146@Figure 1"]
+    },
+    {
+      "area": "视觉知识推理（Visual Knowledge Reasoning, VKR）",
+      "focus": "Sandbagging、反事实指令、找错答案：识别刻意低水平发挥、按指令改写前提、在图片里定位错误答案",
+      "share": "249 / 1,173 题（约 21%）",
+      "format": "1 张或多张静态图片 + 自然语言问题，自由作答（FF），答案为判断、选项定位或改写结果",
+      "cite": ["arxiv-2511-03146@Table 2", "arxiv-2511-03146@Figure 1"]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "文本推理与知识问答：题面文字不含解题信息，答案必须从图里读出来，因此纯文本知识题无法通过。",
+      "cite": ["arxiv-2511-03146@§2.3 Benchmark Statistics"]
+    },
+    {
+      "text": "选择题技巧与选项先验：11 个任务全是自由作答（FF），没有选项可猜；只有卫星图匹配附录给出了 2.4% 的盲猜上界。",
+      "cite": ["arxiv-2511-03146@Table 3", "arxiv-2511-03146@附录 A.1.1"]
+    },
+    {
+      "text": "通用多模态能力：不测 OCR 精度、视频理解、文档问答、细粒度描述；输入是 1 张或多张静态图片，任务是 11 类视觉认知。",
+      "cite": ["arxiv-2511-03146@Table 2", "arxiv-2511-03146@Table 3"]
+    }
+  ],
+  "dataset": {
+    "sample_count": 1173,
+    "splits": ["单一评测集 1,173 题（论文未划分 train/test split）"],
+    "languages": ["en"],
+    "source_type": "人工标注 + 网络来源图片（街景 / 房产 VR / 游戏截图 / 摄影 / 网络图片 / 内部问答集）",
+    "public_sample": false,
+    "totals": "11 个任务共 1,173 题；SR 319 题、GR 605 题、VKR 249 题；按 Doubao-Seed-1.6-vision-0815 统计，全库平均输入 4,166 token、输出 3,904 token。",
+    "cite": ["arxiv-2511-03146@Table 2", "arxiv-2511-03146@Figure 1"],
+    "construction": [
+      {
+        "k": "任务定义与试跑",
+        "text": "每个子任务先用精心挑选的图片做 5-10 个示例的试点集，用 GPT-4o 与 Gemini-2.5-Pro 试跑，验证任务确实能被完成但不容易。",
+        "cite": ["arxiv-2511-03146@§2.1 Data Construction Pipeline"]
+      },
+      {
+        "k": "取图与标注",
+        "text": "定义稳定后从多样、合规授权的来源采集图片：卫星图匹配来自 Google Maps，室内方向与去重计数来自真实房产 VR，五子棋与华容道为摄影作品，迷宫为自动生成，图表修改与 Sandbagging、反事实任务为网络图片，找错答案为内部问答集。",
+        "cite": ["arxiv-2511-03146@§2.1 Data Collection", "arxiv-2511-03146@Table 2"]
+      },
+      {
+        "k": "后处理",
+        "text": "所有采集图片走统一后处理：分配 ID、裁剪及相关调整。",
+        "cite": ["arxiv-2511-03146@§2.1 Image Post-processing & Model-based Filtering"]
+      },
+      {
+        "k": "模型过滤",
+        "text": "对后处理图片做模型化过滤，筛掉过易、重复或区分度不足的样本；这一步删掉了初始数据池约 50%。",
+        "cite": ["arxiv-2511-03146@§2.1 Data Construction Pipeline"]
+      },
+      {
+        "k": "人工质检",
+        "text": "10 人团队（6 名标注员 + 3 名子任务负责人 + 1 名总负责人）；每题双人交叉核对参考答案，分歧升级到子任务负责人终裁，每题至少两轮评审，并对零准确率样本做随机抽查。",
+        "cite": ["arxiv-2511-03146@§2.1 Data Construction Pipeline", "arxiv-2511-03146@§2.2 Data Quality Assurance", "arxiv-2511-03146@Table 1"]
+      },
+      {
+        "k": "分级校验",
+        "text": "附录 B 用两级自适应质控：先抽约 15 题试点提炼规则并全员校验，出错率高的子任务（室内方向推理、华容道）由资深子任务负责人 100% 亲自校验。",
+        "cite": ["arxiv-2511-03146@附录 B"]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "overall",
+      "name": "Overall",
+      "direction": "higher_is_better",
+      "description": "空间推理、几何推理、视觉知识推理三类分的算术平均，取值 0-100。",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["arxiv-2511-03146@Table 4", "arxiv-2511-03146@§3.2 Main Results"]
+    },
+    {
+      "id": "sr",
+      "name": "Spatial Reasoning (SR)",
+      "direction": "higher_is_better",
+      "description": "空间推理 3 个任务的平均分，取值 0-100。",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["arxiv-2511-03146@Table 4"]
+    },
+    {
+      "id": "gr",
+      "name": "Geometric Reasoning (GR)",
+      "direction": "higher_is_better",
+      "description": "几何推理 5 个任务的平均分，取值 0-100；官网把同一列标为 General Reasoning。",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["arxiv-2511-03146@Table 4", "mmcc-site@Abstract"]
+    },
+    {
+      "id": "vkr",
+      "name": "Visual Knowledge Reasoning (VKR)",
+      "direction": "higher_is_better",
+      "description": "视觉知识推理 3 个任务的平均分，取值 0-100。",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["arxiv-2511-03146@Table 4"]
+    },
+    {
+      "id": "judge-agreement",
+      "name": "裁判一致率",
+      "direction": "higher_is_better",
+      "description": "LLM 裁判与人工判定的一致率；论文在 99 题抽样（每类 33 题）上报告 95%。",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["arxiv-2511-03146@§3.1 Evaluation Metrics"]
+    }
+  ],
+  "default_protocol": {
+    "raw": "闭卷评测：不给检索、工具或示例，直接看图答题；每道题由 DeepSeek-V3-0324 作为裁判判定自由作答案的对错，逐题给 0 或 1 分。闭源模型用官方推理 API 的默认设置；开源模型统一 temperature=1.0、top-p=0.7，其余超参用各自默认。人类基线由 5 名未参与出题的学生完成 99 题抽样（每类 33 题）。",
+    "variants": [
+      {
+        "text": "人类基线是 99 题抽样子集，不是 1,173 题全集，与模型分数不同题、不可直接相减。",
+        "cite": ["arxiv-2511-03146@Table 4 注", "mmcc-site@Key Findings"]
+      },
+      {
+        "text": "论文 Table 5 是「先描述图片再作答」的提示词消融，与 Table 4 主实验设置不同，两组数字不可混用。",
+        "cite": ["arxiv-2511-03146@Table 5", "arxiv-2511-03146@§4.2"]
+      },
+      {
+        "text": "Table 4 的 Reasoning 列区分模型是否开启推理模式（✓/✗），同模型两个档位分数不同（如 Doubao-Seed-1.6-vision-0815 Think 40.08 vs Nonthink 25.96）。",
+        "cite": ["arxiv-2511-03146@Table 4"]
+      }
+    ],
+    "cite": ["arxiv-2511-03146@§3.1 Evaluation Metrics", "arxiv-2511-03146@§3.1 Experimental Setup"]
+  },
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2025-11-05",
+      "label": "arXiv v1（cs.CL）首发",
+      "cite": ["arxiv-2511-03146@Submission history"]
+    },
+    {
+      "id": "v2",
+      "date": "2025-12-28",
+      "label": "arXiv v2 修订（本页核对所用版本）",
+      "cite": ["arxiv-2511-03146@Submission history"]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "数据集未公开可验证",
+      "impact": "2026-11-14 核验时，论文与官网都没有给出可下载的数据集地址；外部拿不到 1,173 题，无法复核题目质量，也无法检测模型是否见过这些题。",
+      "severity": "高",
+      "response": "论文只给了项目页地址，项目页的 Arxiv / HuggingFace 按钮是占位链接；论文未提供下载渠道。",
+      "reader": "任何 MME-CC 分数只能采信论文 Table 4 或官网榜单，不要当成可自行复现的公开基准。",
+      "cite": ["mmcc-site@Data Description", "arxiv-2511-03146@Table 4"]
+    },
+    {
+      "issue": "正文与表格数字不一致",
+      "impact": "§4.1 写 GPT-5 (high) 空间推理 30.3%、Gemini-2.5-Pro 视觉知识推理 70.7%，但 Table 4 分别是 30.63 和 74.63；官网还把 Gemini-2.5-Flash 的 72.90 标成 VKR 最优，与「Gemini-2.5-Pro 领先」的表述冲突。引用哪一边会直接影响结论。",
+      "severity": "中",
+      "response": "论文未说明差异原因，也未发布勘误。",
+      "reader": "以 Table 4 / 官网榜单为准，正文百分比只当定性描述。",
+      "cite": ["arxiv-2511-03146@§3.2 Main Results", "arxiv-2511-03146@Table 4", "mmcc-site@Key Findings"]
+    },
+    {
+      "issue": "分类命名与归类不一致",
+      "impact": "官网把第二类叫 General Reasoning（GR），论文同一列叫 Geometric Reasoning；论文 Table 2 把 Chart Modification 归到几何类（49 题），附录 A.3.3 却把它归到视觉知识推理。跨来源对分数时容易对错行。",
+      "severity": "中",
+      "response": "论文未说明差异原因。",
+      "reader": "看榜单先确认 SR/GR/VKR 三列口径；论文 Table 2 与附录 A 对 Chart Modification 的归类不同。",
+      "cite": ["mmcc-site@Abstract", "arxiv-2511-03146@Table 2", "arxiv-2511-03146@附录 A.3.3"]
+    },
+    {
+      "issue": "单一 LLM 裁判 + 小样本人工核对",
+      "impact": "对错由 DeepSeek-V3-0324 单模型判定；可靠性只在 99 题（每类 33 题）抽样上与人工核对，一致率 95%。自由作答题（走法序列、计数、改图表数值）有被判错的余地，抽样外的裁判偏差无法排除。",
+      "severity": "中",
+      "response": "论文报告 95% 抽样一致率，并在附录 C 公开裁判提示词。",
+      "reader": "1-2 分的差距当噪声；跨论文比较先看裁判模型是否一致。",
+      "cite": ["arxiv-2511-03146@§3.1 Evaluation Metrics", "arxiv-2511-03146@附录 C"]
+    },
+    {
+      "issue": "人类基线是抽样子集",
+      "impact": "Human 95.86 来自 5 名未参与出题、持有高等学位的学生，只做了 99 题抽样，不是 1,173 题全集，也不能当作人类上限。",
+      "severity": "中",
+      "response": "论文在 Table 4 脚注注明 n=99 与学生背景。",
+      "reader": "「模型比人类低 53 分」这类说法不严谨，人类分数来自不同题目子集。",
+      "cite": ["arxiv-2511-03146@Table 4 注", "mmcc-site@Key Findings"]
+    },
+    {
+      "issue": "对抗式筛题偏差",
+      "impact": "后处理阶段用模型过滤，删掉了初始数据池约 50%（过易、重复、无区分度）；题目分布偏向难倒当时模型，早期低分有一部分来自筛题。",
+      "severity": "低",
+      "response": "论文披露了过滤比例；未见针对筛选偏差的修正。",
+      "reader": "不要把 3%→10% 的涨幅当成等幅能力进步。",
+      "cite": ["arxiv-2511-03146@§2.1 Data Construction Pipeline"]
+    }
+  ],
+  "notes": "字节 Seed × 南京大学；论文 Table 4 与官网榜单数值一致。数据集未公开可下载。",
+  "official_sources": [
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2511.03146"
+    },
+    {
+      "kind": "site",
+      "url": "https://randomtutu.github.io/MME-CC"
+    }
+  ],
+  "related_benchmarks": ["zerobench", "mathvista", "mmmu", "mmstar", "cv-bench"],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "arxiv-2511-03146",
+        "kind": "paper",
+        "title": "MME-CC: A Challenging Multi-Modal Evaluation Benchmark of Cognitive Capacity（arXiv:2511.03146v2，cs.CL）",
+        "url": "https://arxiv.org/abs/2511.03146",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "mmcc-site",
+        "kind": "site",
+        "title": "MME-CC 项目页与榜单（randomtutu.github.io/MME-CC）",
+        "url": "https://randomtutu.github.io/MME-CC",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "ByteDance Seed × 南京大学",
+        "cite": ["arxiv-2511-03146@作者署名"]
+      },
+      "first_release": {
+        "v": "2025-11-05（arXiv v1）",
+        "cite": ["arxiv-2511-03146@Submission history"]
+      }
+    },
+    "cites": {
+      "summary": ["arxiv-2511-03146@Abstract", "arxiv-2511-03146@Table 2", "mmcc-site@Abstract"],
+      "interpretation": ["arxiv-2511-03146@§3.2 Main Results", "arxiv-2511-03146@Table 4", "arxiv-2511-03146@§4.3"]
+    },
+    "problem": {
+      "text": "现有多模态基准要么偏向文本推理（论文点名 MathVista 与 MMMU 系列「过度偏向 MLLM 的文本空间推理能力」），要么只是罗列各类视觉任务、缺少分类体系与深入分析（论文点名 ZeroBench）。MME-CC 要把「视觉中心」的认知能力单独拿出来：11 个任务按空间、几何、视觉知识三类组织，题目信息全部在图片里，再用 16 个模型系统比较强弱、CoT 模式与错误模式。",
+      "cite": ["arxiv-2511-03146@§1 Introduction"]
+    },
+    "ladder": [
+      {
+        "label": "随机盲猜上界（仅卫星图匹配，附录 A.1.1）",
+        "value": "≤2.4%",
+        "note": "两个不同正确答案时盲猜准确率 ≤ 1/(7×6)；其余任务论文未给随机基线。",
+        "cite": ["arxiv-2511-03146@附录 A.1.1"]
+      },
+      {
+        "label": "论文发布时最强开源（GLM-4.5V）",
+        "value": "30.45",
+        "note": "Table 4；同期闭源最高 42.66。",
+        "cite": ["arxiv-2511-03146@Table 4"]
+      },
+      {
+        "label": "论文发布时最高分（Gemini-2.5-Pro）",
+        "value": "42.66",
+        "note": "Overall；三类为 23.80 / 29.56 / 74.63。",
+        "cite": ["arxiv-2511-03146@§3.2 Main Results"]
+      },
+      {
+        "label": "官网榜单当前最高分（Gemini-2.5-Pro）",
+        "value": "42.66",
+        "note": "榜单第 1 名，与论文 Table 4 一致；GPT-5 (high) 40.25 次之。",
+        "cite": ["mmcc-site@Leaderboard"]
+      },
+      {
+        "label": "本站账本当前最高分",
+        "auto": "ledger-top"
+      },
+      {
+        "label": "最难子任务参考线（Maze，论文 §4.2）",
+        "value": "≤2%",
+        "note": "没有任何模型超过 2%，可用来判断难度上限是否被触及。",
+        "cite": ["arxiv-2511-03146@§4.2"]
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把官网的 GR 当成另一种任务——官网写 General Reasoning，论文写 Geometric Reasoning，命名不同但榜单数值一致；真正要注意的是论文 Table 2 把 Chart Modification 算进几何类，附录 A.3.3 又算进视觉知识推理。",
+        "cite": ["mmcc-site@Abstract", "arxiv-2511-03146@Table 2", "arxiv-2511-03146@附录 A.3.3"]
+      },
+      {
+        "text": "把「language-independent」理解成不用读题——它指解题信息全在图片里、文字没有答案线索；提示词本身仍是英文，而且指令类任务（Sandbagging、反事实指令）恰恰要求读懂文字指令。",
+        "cite": ["arxiv-2511-03146@§2.3 Benchmark Statistics", "arxiv-2511-03146@Table 3"]
+      },
+      {
+        "text": "拿人类 95.86 当全集人类表现——那是 5 名学生在 99 题抽样上的成绩，不是 1,173 题全集。",
+        "cite": ["arxiv-2511-03146@Table 4 注", "mmcc-site@Key Findings"]
+      },
+      {
+        "text": "把低分归因于模型「不会看图」——VKR 能到 74.63，失分集中在跨视角方向判断、多视图实体同一性和遵守反事实指令。",
+        "cite": ["arxiv-2511-03146@§3.2 Main Results", "arxiv-2511-03146@§4.3"]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "ByteDance Seed 与南京大学；论文未为多数贡献者标注机构，统一说明来自 ByteDance Seed。",
+        "cite": ["arxiv-2511-03146@作者署名", "arxiv-2511-03146@§7 Contributions"]
+      },
+      {
+        "k": "核心作者",
+        "v": "Kaiyuan Zhang、Chenghao Yang、Zhoufutu Wen、Sihang Yuan、Qiuyu Wang、Chaoyi Huang（† 通讯作者）；arXiv 共署名 22 位作者。",
+        "cite": ["arxiv-2511-03146@Submission history"]
+      },
+      {
+        "k": "标注团队",
+        "v": "10 人：6 名标注员 + 3 名有 3 年以上相关领域经验的子任务负责人 + 1 名主导过 3 个以上公开基准的总负责人；标注前需读手册并通过资格考试。",
+        "cite": ["arxiv-2511-03146@Table 1", "arxiv-2511-03146@§2.1 Data Construction Pipeline"]
+      },
+      {
+        "k": "出题与质检",
+        "v": "双人交叉核对参考答案，分歧升级到子任务负责人终裁，每题至少两轮评审；室内方向推理与华容道 100% 由资深负责人亲自校验，其余子任务先抽 15 题试点提炼规则再全员校验。",
+        "cite": ["arxiv-2511-03146@§2.2 Data Quality Assurance", "arxiv-2511-03146@附录 B"]
+      },
+      {
+        "k": "时间线",
+        "v": "2025-11-05 arXiv v1（cs.CL）→ 2025-12-28 v2；项目页与榜单已上线。",
+        "cite": ["arxiv-2511-03146@Submission history", "mmcc-site@Data Pipeline"]
+      },
+      {
+        "k": "数据与代码",
+        "v": "论文只给了项目页地址；项目页顶部是 Arxiv / HuggingFace / Abstract 等导航按钮，本站未找到数据集仓库或下载地址。",
+        "cite": ["arxiv-2511-03146@首页脚注", "mmcc-site@Data Description"]
+      },
+      {
+        "k": "对比基准",
+        "v": "论文 Table 3 与 MME、MMMU、MMBench、MMStar、ZeroBench 对比，强调 MME-CC 任务信息全部来自图片、输出为自由作答。",
+        "cite": ["arxiv-2511-03146@Table 3"]
+      },
+      {
+        "k": "评测模型",
+        "v": "16 个 MLLM（8 闭源 + 8 开源），闭源用官方 API 默认设置，开源统一 temperature=1.0、top-p=0.7。",
+        "cite": ["arxiv-2511-03146@Table 4", "arxiv-2511-03146@§3.1 Experimental Setup"]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-14",
+        "columns": ["来源", "模型", "Overall", "SR", "GR", "VKR", "推理档位"],
+        "rows": [
+          ["论文 Table 4", "Human（n=99 抽样）", "95.86", "95.83", "95.83", "95.92", "—"],
+          ["论文 Table 4", "Gemini-2.5-Pro", "42.66", "23.80", "29.56", "74.63", "✓"],
+          ["论文 Table 4", "GPT-5 (high)", "40.25", "30.63", "23.64", "66.47", "✓"],
+          ["论文 Table 4", "Doubao-Seed-1.6-vision-0815 (Think)", "40.08", "22.03", "31.50", "66.70", "✓"],
+          ["论文 Table 4", "Gemini-2.5-Flash", "37.57", "18.60", "21.21", "72.90", "✓"],
+          ["论文 Table 4", "o4-mini (high)", "35.00", "25.00", "21.96", "58.03", "✓"],
+          ["论文 Table 4", "GPT-4.1", "32.14", "27.90", "12.22", "56.30", "✗"],
+          ["论文 Table 4", "GLM-4.5V", "30.45", "13.27", "13.34", "64.73", "✓"],
+          ["论文 Table 4", "GPT-4o-1120", "26.88", "22.60", "10.12", "47.93", "✗"],
+          ["论文 Table 4", "Doubao-Seed-1.6-vision-0815 (Nonthink)", "25.96", "23.63", "23.82", "30.43", "✗"],
+          ["论文 Table 4", "Qwen2.5-VL-72B-Instruct", "23.59", "12.47", "8.96", "49.33", "✗"],
+          ["论文 Table 4", "MiMo-VL-7B-RL", "20.90", "9.30", "11.10", "42.30", "✓"],
+          ["论文 Table 4", "GLM-4.1V-9B-Thinking", "19.30", "8.73", "9.22", "39.93", "✓"],
+          ["论文 Table 4", "Qwen2.5-VL-32B-Instruct", "14.39", "9.03", "8.56", "25.57", "✗"],
+          ["论文 Table 4", "InternVL3-8B", "11.36", "7.30", "2.38", "24.40", "✗"],
+          ["论文 Table 4", "Keye-VL-8B-Preview", "9.65", "7.70", "2.04", "19.20", "✗"],
+          ["论文 Table 4", "Qwen2.5-VL-7B-Instruct", "7.50", "4.70", "3.22", "14.57", "✗"]
+        ]
+      },
+      "cite": ["arxiv-2511-03146@Table 4", "mmcc-site@Leaderboard"]
+    }
+  }
+}

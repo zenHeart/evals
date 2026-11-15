@@ -1,0 +1,620 @@
+{
+  "id": "crossvid",
+  "name": "CrossVid",
+  "full_name": "CrossVid: A Comprehensive Benchmark for Evaluating Cross-Video Reasoning in Multimodal Large Language Models（跨视频推理综合基准）",
+  "aliases": [],
+  "status": "active",
+  "categories": [
+    "multimodal",
+    "reasoning"
+  ],
+  "summary": "CrossVid 是小红书（Xiaohongshu）发布的跨视频推理（CVR）基准，已被 AAAI 2026 主会接收。它提供 5,331 个视频片段和 9,015 道问答，覆盖 4 个能力维度下的 10 个任务。所谓跨视频推理，指模型必须同时看多个内容不同的视频，把分散在各视频里的证据对齐、比较并按时间串起来才能答题——单视频基准测不到这件事。",
+  "interpretation": "口径是准确率（越高越好），答对题目的占比。高分说明模型能把多个视频里的证据联合起来用；它不说明单视频理解更强——论文错误分析显示主要失败来自关键帧漏看和跨视频比较，而不是看不懂单个视频。当前最好成绩 Gemini-2.5-Pro 50.4%，人类基线 89.2%，差距仍然明显，论文自己的结论是 CVR 对当前 MLLM 仍是显著挑战。",
+  "measures": [
+    {
+      "area": "比较分析（Comparative Analysis）",
+      "focus": "从多个视频里抽取任务相关信息做比较；示例题（Culinary Comparison，单选）：「What distinguishes the final seasoning step in Video 4 compared to others?」",
+      "share": "4 个任务（BU、NC、CC、PEA）；论文 Table 6 题量：NC 1,221、CC 798、PEA 953、BU 848",
+      "format": "单选 / 多选",
+      "cite": [
+        "repo-crossvid@README",
+        "arxiv-2511-12263@Table 6",
+        "arxiv-2511-12263@Table 7",
+        "hf-crossvid@页面元数据"
+      ]
+    },
+    {
+      "area": "时序理解（Temporal Understanding）",
+      "focus": "跨多个视频做时间定位与时序推理；示例题（Functional Step Alignment，封闭式生成）：「Which step in Video 2 is functionally equivalent to the step shown between 57s and 68s in Video 1?」",
+      "share": "3 个任务（PI、FSA、PSS）；论文 Table 6 题量：FSA 2,241、PSS 664、PI 251",
+      "format": "单选 / 封闭式生成",
+      "cite": [
+        "arxiv-2511-12263@Table 6",
+        "arxiv-2511-12263@Table 7"
+      ]
+    },
+    {
+      "area": "多视角推理（Multi-view Reasoning）",
+      "focus": "两路不同无人机同步俯拍同一路段的视频，问跨视角空间关系；示例题（Multi-view Object Counting，单选）：「When obj1 is parallel to the red bus, how many cars are moving in view A?」",
+      "share": "2 个任务（MSR、MOC）；论文 Table 6 题量：MSR 595、MOC 571",
+      "format": "单选",
+      "cite": [
+        "arxiv-2511-12263@Table 6",
+        "arxiv-2511-12263@Table 7",
+        "arxiv-2511-12263@CrossVid Benchmark"
+      ]
+    },
+    {
+      "area": "开放式问答（Free-form QA）",
+      "focus": "比较两段视频并给出完整准确的开放答案；示例题（Comparative Culinary QA，开放式生成）：「How do the two videos differ in their methods of cooking the chickpeas for chana masala?」",
+      "share": "1 个任务（CCQA）；论文 Table 6 题量：873",
+      "format": "开放式生成",
+      "cite": [
+        "arxiv-2511-12263@Table 6",
+        "arxiv-2511-12263@Table 7",
+        "repo-crossvid@README"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "单视频深度理解。每道题都要求多个视频同时输入，论文在附录统计里明确「每个 query 至少引用一组 2 个视频」，不存在只给一个视频的题目。",
+      "cite": [
+        "arxiv-2511-12263@附录 Statistical Details"
+      ]
+    },
+    {
+      "text": "音频-视觉联合推理。Hugging Face 数据集卡列出的模态只有 Image / Tabular / Text，没有 Audio。",
+      "cite": [
+        "hf-crossvid@页面元数据"
+      ]
+    },
+    {
+      "text": "多轮工具调用与 Agent 式解题。论文要求模型直接给出答案，没有给工具、没有多轮交互环节。",
+      "cite": [
+        "arxiv-2511-12263@Experimental Settings"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 9015,
+    "splits": [
+      "train（HF 数据集卡只列出这一个 split，10 个子集都挂在它下面）"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "real-world（6 个公开视频数据集重新剪辑）",
+    "public_sample": true,
+    "totals": "5,331 个视频片段、9,015 道问答、10 个任务；视频平均长度 215 秒，单个 query 平均要看约 770 秒视频；视频来自 Animal Kingdom、MovieChat-1K、YouCook2、VisDrone、Charades、Assembly101 六个公开数据集；语言只有英文，HF 标注大小在 1K–10K 之间。",
+    "cite": [
+      "arxiv-2511-12263@Table 1",
+      "arxiv-2511-12263@Table 6",
+      "arxiv-2511-12263@CrossVid Benchmark",
+      "arxiv-2511-12263@附录 Statistical Details",
+      "repo-crossvid@README",
+      "hf-crossvid@页面元数据"
+    ],
+    "construction": [
+      {
+        "k": "视频分组",
+        "text": "先按任务预定义视频数量，再把最合适的视频人工指派给对应任务（如烹饪视频天然有连续步骤，适合时序类任务）；随后按原始数据集标签把视频聚类，只有同标签的视频才会归为一组供后续出题。",
+        "cite": [
+          "arxiv-2511-12263@Data Annotation",
+          "arxiv-2511-12263@CrossVid Benchmark"
+        ]
+      },
+      {
+        "k": "帧级描述",
+        "text": "密集抽帧后按时间相邻性把帧分组（每组 2–8 帧；若原始数据集带时间戳元数据，如 YouCook2 的步骤区间，则按时间戳分组），交给 Qwen2.5-VL-72B 生成帧级描述，并把原始数据集元数据一并输入以提升理解准确性。",
+        "cite": [
+          "arxiv-2511-12263@Data Annotation",
+          "arxiv-2511-12263@附录 Annotation Details"
+        ]
+      },
+      {
+        "k": "自动出题",
+        "text": "从同一视频组里随机抽够题目需要的视频数，把它们的帧级描述交给 DeepSeek-R1 生成问答；提示词要求模型分析给定视频之间的关系、按任务要求出题，并输出支持答案的理由。",
+        "cite": [
+          "arxiv-2511-12263@Data Annotation"
+        ]
+      },
+      {
+        "k": "人工粗筛",
+        "text": "10 名专家标注员做三轮过滤：先剔除与视频理解无关的问题，再剔除只引用某一个视频的问题，最后剔除主观或需要哲学推理、领域专业知识的问题。",
+        "cite": [
+          "arxiv-2511-12263@Data Annotation"
+        ]
+      },
+      {
+        "k": "精修与对齐",
+        "text": "标注员改写问题消除歧义；先独立作答、不参考 DeepSeek-R1 的输出，再参考答案，保证答案唯一正确；对 PSS 任务做时序重对齐（前一段提前 1–5 秒、后续段做等量后移）以规避「镜头角度连续性」这类捷径；开放题额外检查评分点是否覆盖关键信息。",
+        "cite": [
+          "arxiv-2511-12263@Data Annotation"
+        ]
+      },
+      {
+        "k": "独立质检",
+        "text": "另一组专家对精修后的问答池独立评估，形成最终池；MSR 与 MOC 两个多视角任务因为目标小、需要精确空间关系，采用完全人工标注。",
+        "cite": [
+          "arxiv-2511-12263@Data Annotation",
+          "arxiv-2511-12263@附录 Manual Annotation"
+        ]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "论文口径：取每个模型能接受的最大帧数作为每次查询的总帧数（22 个模型从 24 帧到 440 帧不等），总帧数在所有输入视频间均分、每个视频内均匀采样，长边缩放到 360 像素；temperature=0，系统提示词为 \"You are a helpful video analyzer.\"；要求模型直接作答，不开启 CoT；指标是准确率。",
+    "cite": [
+      "arxiv-2511-12263@附录 Implementation Details",
+      "arxiv-2511-12263@Experimental Settings",
+      "arxiv-2511-12263@Table 8"
+    ],
+    "variants": [
+      {
+        "text": "帧预算不统一。Table 8 里 22 个模型每 query 的总帧数从 24（LLaVA-OV-72B）到 440（ERNIE-4.5-VL-A3B）不等，论文明确说明取每个模型能接受的最大帧数；帧数不同的分数不能直接横比。",
+        "cite": [
+          "arxiv-2511-12263@附录 Implementation Details",
+          "arxiv-2511-12263@Table 8"
+        ]
+      },
+      {
+        "text": "官方仓库脚本另有一套口径参数。README 说明每次推理采样的总帧数由 --frames 控制（默认 128）、长边分辨率由 --length 控制（默认 360），并注明「每段视频均匀采样相同帧数并缩放到长边 360px」；用仓库默认值跑出来的分数与论文表格里逐模型不同的帧预算不是同一口径。",
+        "cite": [
+          "repo-crossvid@README"
+        ]
+      },
+      {
+        "text": "开 CoT 与不开 CoT。论文 Table 4 对 4 个模型做了对比：GPT-4.1 从 45.2% 降到 44.9%、MiniCPM-o 2.6 从 25.6% 降到 23.7%，而 Qwen2.5-VL-72B 从 34.4% 升到 39.5%；论文结论是 CoT 并不总能提升准确率。",
+        "cite": [
+          "arxiv-2511-12263@Table 4"
+        ]
+      },
+      {
+        "text": "厂商自报口径未披露。Seed2.0 与 Seed2.1 的报告都只用一行给出 CrossVid 分数，没有说明帧预算、提示词与裁判设置，与论文口径不可直接比较。",
+        "cite": [
+          "seed20@Table 9",
+          "seed21@Table 10"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "accuracy",
+      "name": "准确率",
+      "direction": "越高越好",
+      "description": "答对题目占比。选择题要求回答与标准答案选项完全一致才算对（标准答案是 AB 时，答 A 或 ABC 均算错）；PSS 任务要求输出视频片段的正确顺序；开放式 CCQA 由 GPT-4.1 当裁判，先逐评分点检查是否覆盖得 1 分，再对已覆盖的点检查细节是否与标准答案一致再加 1 分，最后用「覆盖分+准确度分」除以评分点总数的两倍。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2511-12263@附录 Evaluation Metrics",
+        "arxiv-2511-12263@Experimental Settings"
+      ]
+    }
+  ],
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2025-11-15",
+      "label": "arXiv v1 提交，同日 Hugging Face 数据集公开",
+      "cite": [
+        "arxiv-2511-12263@首页脚注",
+        "hf-crossvid@页面元数据"
+      ]
+    },
+    {
+      "id": "v2",
+      "date": "2025-11-30",
+      "label": "arXiv v2 修订（当前版本）",
+      "cite": [
+        "arxiv-2511-12263@首页脚注"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "帧预算不统一，横比分数会失真",
+      "impact": "Table 8 里 22 个模型每 query 的总帧数从 24 到 440 不等。论文 Table 3 的消融显示，同一个 Qwen2.5-VL-72B 帧数从 32 增到 256，总体准确率从 33.8% 升到 39.5%，开放题 CCQA 上提升可达 15.1%。帧数差异带来的差距与模型能力差距混在一起。",
+      "severity": "高",
+      "response": "论文在附录说明采用「每个模型能接受的最大帧数」，并在 Table 3 给出帧数敏感性分析；未提供统一帧预算下的复跑结果。",
+      "reader": "比较两个模型的 CrossVid 分数前，先查 Table 8 的 #Frames 列；差距只有几个点时，要按帧预算差异打折看。",
+      "cite": [
+        "arxiv-2511-12263@Table 8",
+        "arxiv-2511-12263@Table 3",
+        "arxiv-2511-12263@附录 Implementation Details"
+      ]
+    },
+    {
+      "issue": "均匀采样会漏关键帧",
+      "impact": "总帧数要均分到多个视频上，每个视频分到的帧很少；论文错误分析把「关键帧丢失」列为四类主要错误之首，并指出帧数越多的模型关键帧错误越少。论文还提到帧数过多会引入无关内容造成干扰，两个方向都会拉低分数。",
+      "severity": "高",
+      "response": "论文错误分析承认这一点，并指出关键帧选择有助过滤无关线索；未在基准内提供自适应采样方案。",
+      "reader": "低分可能只是采样漏帧，不等于推理能力差；看到关键帧类错误时，不要直接推断模型不懂跨视频推理。",
+      "cite": [
+        "arxiv-2511-12263@Error Analysis",
+        "arxiv-2511-12263@Table 3",
+        "arxiv-2511-12263@Experimental Settings"
+      ]
+    },
+    {
+      "issue": "公开面窄，没有私有测试集，污染风险无法排除",
+      "impact": "Hugging Face 数据集卡只列出 train 一个 split，10 个任务的子集全部挂在 train 下面；题目与视频都在公开仓库里。评测集与训练集不分离，模型见过题目的可能性无法从公开信息排除。",
+      "severity": "中",
+      "response": "未见官方回应",
+      "reader": "看到异常高的分数时，先考虑是否见过题目；论文没有提供污染检测或去污染结果。",
+      "cite": [
+        "hf-crossvid@页面元数据"
+      ]
+    },
+    {
+      "issue": "厂商自报分数口径不透明",
+      "impact": "Seed2.0 报告 Table 9 给 CrossVid 60.3（Seed2.0 Pro），Seed2.1 模型卡 Table 10 给 65.0（Seed2.1 Pro），都高于论文当时最好的 Gemini-2.5-Pro 50.4%；但两份材料都没写 CrossVid 上的帧预算、提示词和裁判设置。",
+      "severity": "中",
+      "response": "未见官方回应",
+      "reader": "把厂商自报值与论文表格分开看，不要混进同一张排名；两者相差十几个点，其中有多少来自口径差异无法从公开信息判断。",
+      "cite": [
+        "seed20@Table 9",
+        "seed21@Table 10",
+        "arxiv-2511-12263@Main Results"
+      ]
+    },
+    {
+      "issue": "领域与语言偏斜",
+      "impact": "10 个任务里 4 个（CC、FSA、PSS、CCQA）的视频全部来自 YouCook2 烹饪数据集；语言只有英文。论文称覆盖 32 种体裁、来自 6 个公开数据集，但体裁多样性与任务级偏斜同时存在。",
+      "severity": "中",
+      "response": "论文以「覆盖 32 种体裁、来自 6 个公开数据集」作为多样性依据；未按体裁或领域给出分层成绩。",
+      "reader": "烹饪类以外的真实跨视频场景（如安防、体育、工业巡检）上的表现无法从这个总分推断。",
+      "cite": [
+        "arxiv-2511-12263@Table 6",
+        "arxiv-2511-12263@CrossVid Benchmark",
+        "hf-crossvid@页面元数据"
+      ]
+    },
+    {
+      "issue": "任务级样本量差距大",
+      "impact": "Table 6 里最少的 PI 只有 251 题，最多的 FSA 有 2,241 题。小任务上单题波动会明显影响该任务分数。",
+      "severity": "低",
+      "response": "论文按任务来源与可获取视频量分配题目，未说明为何 PI 题量偏少。",
+      "reader": "看单任务分数时留意题量；PI 这类小任务上几个百分点的变化对应不了多少题。",
+      "cite": [
+        "arxiv-2511-12263@Table 6"
+      ]
+    },
+    {
+      "issue": "论文与 HF 数据集卡的任务级条数不一致",
+      "impact": "论文 Table 6 给 CCQA 873 题、MSR 595 题、MOC 571 题；HF 数据集卡对应子集显示 CCQA 872 rows、MSR 594 rows、MOC 566 rows。FSA（2,241 与 2.25k）和 NC（1,221 与 1.22k）只是四舍五入差异，前三个不是。",
+      "severity": "低",
+      "response": "未见官方回应",
+      "reader": "按任务下钻时以论文 Table 6 为准；HF 卡片上的行数可能是发布后的微调。",
+      "cite": [
+        "arxiv-2511-12263@Table 6",
+        "hf-crossvid@页面元数据"
+      ]
+    }
+  ],
+  "notes": "证据账本 175 条逐字摘录（见 evidence/crossvid.evidence.json）；论文 arXiv:2511.12263v2，AAAI 2026 主会接收。",
+  "official_sources": [
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2511.12263"
+    },
+    {
+      "kind": "github",
+      "url": "https://github.com/chuntianli666/CrossVid"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/Chuntianli/CrossVid"
+    }
+  ],
+  "related_benchmarks": [
+    "video-mme",
+    "videoreasonbench",
+    "mvbench"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-13",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      {
+        "id": "arxiv-2511-12263",
+        "kind": "paper",
+        "title": "CrossVid: A Comprehensive Benchmark for Evaluating Cross-Video Reasoning in Multimodal Large Language Models（arXiv:2511.12263v2，AAAI 2026 主会）",
+        "url": "https://arxiv.org/abs/2511.12263",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "repo-crossvid",
+        "kind": "repo",
+        "title": "GitHub: chuntianli666/CrossVid（官方评测脚本仓库 README）",
+        "url": "https://github.com/chuntianli666/CrossVid",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "hf-crossvid",
+        "kind": "dataset",
+        "title": "Hugging Face 数据集卡：Chuntianli/CrossVid",
+        "url": "https://huggingface.co/datasets/Chuntianli/CrossVid",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "seed20",
+        "kind": "paper",
+        "title": "Seed2.0 技术报告（arXiv:2607.00248），Table 9 与 §3.2 报告 CrossVid 成绩",
+        "url": "https://arxiv.org/abs/2607.00248",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "seed21",
+        "kind": "paper",
+        "title": "Seed2.1 Model Card（官方 PDF），Table 10 报告 CrossVid 成绩",
+        "url": "https://lf3-static.bytednsdoc.com/obj/eden-cn/lapzild-tss/ljhwZthlaukjlkulzlp/seed2.1/Seed2_1_Model_Card.pdf",
+        "accessed": "2026-11-13"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "小红书（Xiaohongshu Inc., China）；论文被 AAAI 2026 主会接收",
+        "cite": [
+          "arxiv-2511-12263@首页脚注"
+        ]
+      },
+      "first_release": {
+        "v": "2025-11-15（arXiv v1 提交，同日 Hugging Face 数据集公开）",
+        "cite": [
+          "arxiv-2511-12263@首页脚注",
+          "hf-crossvid@页面元数据"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "arxiv-2511-12263@摘要",
+        "arxiv-2511-12263@Introduction",
+        "arxiv-2511-12263@CrossVid Benchmark"
+      ],
+      "interpretation": [
+        "arxiv-2511-12263@摘要",
+        "arxiv-2511-12263@Main Results",
+        "arxiv-2511-12263@Error Analysis"
+      ]
+    },
+    "problem": {
+      "text": "已有工作有两条路都不够：一类视频理解基准只做单视频分析，测不到模型同时推理多个视频的能力；另一类「多视角」基准拍的是同一场景的不同机位，模型不需要跨视频整合证据。论文认为此前没有大规模、系统标注的通用 CVR 基准，CrossVid 就是为补这个空缺而建。",
+      "cite": [
+        "arxiv-2511-12263@Introduction",
+        "arxiv-2511-12263@摘要",
+        "arxiv-2511-12263@CrossVid Benchmark"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "人类基线",
+        "value": "89.2%",
+        "note": "论文报告的人类总体平均准确率；论文主结果以此作对照，指出所有 MLLM 的平均水平明显低于人类。",
+        "cite": [
+          "arxiv-2511-12263@Main Results"
+        ]
+      },
+      {
+        "label": "论文发布时最好（闭源）",
+        "value": "50.4%",
+        "note": "Gemini-2.5-Pro，128 帧；论文摘要与主结果都给出这个数。",
+        "cite": [
+          "arxiv-2511-12263@摘要",
+          "arxiv-2511-12263@Table 8"
+        ]
+      },
+      {
+        "label": "论文发布时最好（开源）",
+        "value": "35.1%",
+        "note": "GLM-4.1V-9B-Thinking（256 帧）。论文在 10B 参数组里把它和 MiMo-7B（28.3%）列为前两名，分别领先第三名 9.5% 和 2.7%。",
+        "cite": [
+          "arxiv-2511-12263@Main Results",
+          "arxiv-2511-12263@Table 8"
+        ]
+      },
+      {
+        "label": "帧预算参考线",
+        "value": "33.8% → 39.5%",
+        "note": "同一个 Qwen2.5-VL-72B，帧数从 32 增到 256 的总体准确率变化；开放题 CCQA 上提升更大。这条线说明帧预算本身就能搬动 5.7 个百分点，读小差距时要先扣掉这部分。",
+        "cite": [
+          "arxiv-2511-12263@Table 3"
+        ]
+      },
+      {
+        "label": "厂商自报最高",
+        "value": "65.0%",
+        "note": "Seed2.1 Pro（Seed2.1 模型卡 Table 10）；Seed2.0 Pro 为 60.3%。两份材料都未披露 CrossVid 上的帧预算、提示词与裁判设置。",
+        "cite": [
+          "seed21@Table 10",
+          "seed20@Table 9"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把不同帧预算下跑出来的分数排在一起比。Table 8 里每模型帧数从 24 到 440 不等，而 Table 3 显示帧数本身能搬动 5.7 个百分点（同一模型 32→256 帧）。",
+        "cite": [
+          "arxiv-2511-12263@Table 8",
+          "arxiv-2511-12263@Table 3"
+        ]
+      },
+      {
+        "text": "把人类 89.2% 读成「基准已接近饱和」。论文主结果的结论是全部 MLLM 的平均水平明显低于人类，最好的 Gemini-2.5-Pro 也只有 50.4%，距离人类仍有明显差距。",
+        "cite": [
+          "arxiv-2511-12263@Main Results"
+        ]
+      },
+      {
+        "text": "以为开 CoT 一定更好。Table 4 里 GPT-4.1 和 MiniCPM-o 2.6 开 CoT 后反而下降，论文明确说 CoT 并不总能提升准确率，较大的模型才更能从提示优化中受益。",
+        "cite": [
+          "arxiv-2511-12263@Table 4"
+        ]
+      },
+      {
+        "text": "把 CrossVid 的成绩当成「视频理解整体能力」。它的每道题都要求同时输入多个视频（至少 2 个），测的是跨视频证据整合；单视频基准上的高分不能直接搬过来，反过来也一样。",
+        "cite": [
+          "arxiv-2511-12263@附录 Statistical Details",
+          "arxiv-2511-12263@Introduction"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "小红书（Xiaohongshu Inc., China）；论文被 AAAI 2026 主会接收，版权归 AAAI 所有。",
+        "cite": [
+          "arxiv-2511-12263@首页脚注"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "Jingyao Li、Jingyun Wang、Molin Tan（三人共同一作）、Haochen Wang、Cilin Yan、Likun Shi、Jiayin Cai、Xiaolong Jiang、Yao Hu。",
+        "cite": [
+          "arxiv-2511-12263@首页脚注"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2025-11-15 arXiv v1 提交并公开 HF 数据集 → 2025-11-30 v2 修订 → AAAI 2026 主会接收。",
+        "cite": [
+          "arxiv-2511-12263@首页脚注",
+          "hf-crossvid@页面元数据"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "评测脚本在 GitHub，仓库采用 MIT License；问答标注在 Hugging Face，采用 CC BY 4.0（仅覆盖原始标注、基准设计与文档）；源视频沿用各原始数据集的许可。",
+        "cite": [
+          "repo-crossvid@README",
+          "hf-crossvid@数据集卡"
+        ]
+      },
+      {
+        "k": "评测规模",
+        "v": "论文评了 22 个 MLLM，参数量 7B–78B，含闭源 API 与开源权重两类，另有 MoE 架构；开源模型在 8× Nvidia H800（80GB）上跑。",
+        "cite": [
+          "arxiv-2511-12263@Experimental Settings",
+          "arxiv-2511-12263@附录 Implementation Details"
+        ]
+      },
+      {
+        "k": "视频来源",
+        "v": "Animal Kingdom、MovieChat-1K、YouCook2、VisDrone、Charades、Assembly101 六个公开数据集；MSR/MOC 两个任务用 VisDrone 里 44 对同步无人机俯拍路面视频。论文称基准覆盖 32 种体裁，单个 query 的视频时长从 1 分钟到 1 小时以上。",
+        "cite": [
+          "arxiv-2511-12263@CrossVid Benchmark",
+          "arxiv-2511-12263@附录 Manual Annotation"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-13",
+        "columns": [
+          "来源",
+          "模型",
+          "总体准确率",
+          "帧预算",
+          "口径"
+        ],
+        "rows": [
+          [
+            "论文 Table 2",
+            "Human",
+            "89.2%",
+            "未披露",
+            "论文口径"
+          ],
+          [
+            "论文 Table 2",
+            "Gemini-2.5-Pro",
+            "50.4%",
+            "128 帧",
+            "论文口径"
+          ],
+          [
+            "论文 Table 2",
+            "GPT-4.1",
+            "45.2%",
+            "< 50 帧",
+            "论文口径"
+          ],
+          [
+            "论文 Table 2",
+            "Doubao-1.5-VL-pro",
+            "44.3%",
+            "256 帧",
+            "论文口径"
+          ],
+          [
+            "论文 Table 2",
+            "GLM-4.1V-9B-Thinking",
+            "35.1%",
+            "256 帧",
+            "论文口径（开源最好）"
+          ],
+          [
+            "论文 Table 2",
+            "MiMo-7B",
+            "28.3%",
+            "256 帧",
+            "论文口径"
+          ],
+          [
+            "论文 Table 2",
+            "VideoLLaMA3-7B",
+            "15.3%",
+            "180 帧",
+            "论文口径"
+          ],
+          [
+            "论文 Table 3",
+            "Qwen2.5-VL-72B（32 帧）",
+            "33.8%",
+            "32 帧",
+            "帧数消融"
+          ],
+          [
+            "论文 Table 3",
+            "Qwen2.5-VL-72B（256 帧）",
+            "39.5%",
+            "256 帧",
+            "帧数消融"
+          ],
+          [
+            "Seed2.0 报告 Table 9",
+            "Seed2.0 Pro",
+            "60.3%",
+            "未披露",
+            "厂商自报"
+          ],
+          [
+            "Seed2.1 模型卡 Table 10",
+            "Seed2.1 Pro",
+            "65.0%",
+            "未披露",
+            "厂商自报"
+          ]
+        ]
+      },
+      "cite": [
+        "arxiv-2511-12263@Table 2",
+        "arxiv-2511-12263@Table 3",
+        "arxiv-2511-12263@Table 8",
+        "seed20@Table 9",
+        "seed21@Table 10"
+      ]
+    }
+  }
+}

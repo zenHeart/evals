@@ -1,0 +1,801 @@
+{
+  "id": "factscore",
+  "name": "FActScore",
+  "full_name": "FActScore: Fine-grained Atomic Evaluation of Factual Precision in Long Form Text Generation（长文本生成事实精度的细粒度原子化评估）",
+  "aliases": [],
+  "status": "active",
+  "categories": [
+    "knowledge",
+    "safety"
+  ],
+  "summary": "FActScore 把模型写的人物传记拆成「原子事实」——一句只讲一个信息点的短句，再逐条去英文维基百科里查证，最后算「被知识源支持的原子事实占比」。前端类比：像把一篇文章的每句话各跑一次单元测试，最后报的是通过率，而不是整篇一个 pass/fail。",
+  "interpretation": "高分说明这段传记里可核查的细节大多站得住；但它只测「精度」不测「召回」——漏掉没说的事实不计入，模型靠少写或拒答也能拿高分。它还把英文维基百科当成唯一真相，维基没写的会被判成不被支持。",
+  "measures": [
+    {
+      "area": "标注集（labeled）人物传记",
+      "focus": "从 Wikidata 选「实例为人」且有英文维基页面的实体，按「出现频率 × 国籍」分成 20 类后均匀随机抽样；用固定提示词让受测模型写一篇传记，人工逐条标注",
+      "share": "183 个人物实体",
+      "format": "开放式长文生成（无选择题），人工把生成内容拆成原子事实后逐条判定 Supported / Not-supported / Irrelevant",
+      "cite": [
+        "repo@## To evaluate your own LM",
+        "paper@§A.1 Sampling human entities",
+        "paper@§3.3 Data"
+      ]
+    },
+    {
+      "area": "未标注集（unlabeled）人物传记",
+      "focus": "同一套流程但不做人工标注，改用自动评估器给 13 个受试者（12 个 LM + 人类写的传记）打分，共 6,500 条生成；官方仓库的可复现结果表用的就是这一套",
+      "share": "500 个人物实体，6,500 条生成",
+      "format": "开放式长文生成，自动评估器（检索 + 语言模型）逐条判定",
+      "cite": [
+        "repo@## To evaluate your own LM",
+        "paper@§4.3.1 Setup"
+      ]
+    },
+    {
+      "area": "实体稀有度分层",
+      "focus": "论文按实体稀有度报告分数：越稀有的人物，分数掉得越狠，ChatGPT 从约 80% 掉到 16%",
+      "share": "20 个类别（频率 × 国籍）",
+      "format": "分层统计（Figure 2 按稀有度分档）",
+      "cite": [
+        "paper@§1",
+        "paper@Figure 2"
+      ]
+    },
+    {
+      "area": "事实在文中的位置",
+      "focus": "同一条生成里，位置越靠后的原子事实分数越低（越到后面模型越容易放飞）",
+      "share": "未披露（论文只给趋势，未给每档数量）",
+      "format": "按事实在生成中的次序分组统计",
+      "cite": [
+        "paper@Figure 2"
+      ]
+    },
+    {
+      "area": "多语言拓展（原论文之外）",
+      "focus": "后续工作把 FActScore 扩展到多语言，发现用维基当知识源会低估中低资源语言的真实 FActScore，且原子事实拆分这一步对模型大小很敏感",
+      "share": "未披露",
+      "format": "沿用「拆原子事实 → 检索知识源 → 判定」流程，换成多语言知识源",
+      "cite": [
+        "multilingual@Abstract",
+        "multilingual@§4.3 Knowledge Source",
+        "multilingual@§7 Conclusion"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "事实召回（recall）：该说而没说的信息完全不计入分数，论文明确说 FActScore 只考虑精度",
+      "cite": [
+        "paper@§3.1 Definition"
+      ]
+    },
+    {
+      "text": "流畅度、连贯性、相关性、一致性与创造性——论文把这列为超出本文范围",
+      "cite": [
+        "paper@§4.3.2 Results"
+      ]
+    },
+    {
+      "text": "更微妙、开放式、可辩论的事实（论文称这类场景下 FActScore 不适用）",
+      "cite": [
+        "paper@Limitations"
+      ]
+    },
+    {
+      "text": "包含有意或隐晦欺骗的文本（论文称这类文本可能不适合用 FActScore）",
+      "cite": [
+        "paper@Limitations"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 500,
+    "splits": [
+      "labeled：183 个人物实体（人工逐条标注，对应论文第 3 节与第 4.2 节）",
+      "unlabeled：500 个人物实体（自动评估器打分，对应论文第 4.3 节与仓库 README 结果表，共 6,500 条生成）"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "Wikidata 抽样的人物实体作题目，英文维基百科（2023-04-01 dump）作知识源；传记由被测 LM 生成，原子事实由人工分解并标注",
+    "public_sample": true,
+    "totals": "两套人物实体：labeled 183 个（人工标注）、unlabeled 500 个（自动评估，6,500 条生成）；题型只有开放式长文传记生成，没有选择题；知识源为 2023-04-01 的英文维基百科 dump，检索时限制只取该人物主题页内、最多 256 token 的段落",
+    "cite": [
+      "repo@## To evaluate your own LM",
+      "paper@§3.3 Data",
+      "paper@§B.1 Implementation details",
+      "paper@Table 5"
+    ],
+    "construction": [
+      {
+        "k": "抽样人物",
+        "text": "从 Wikidata 选「实例为人」且有英文维基页面的实体，按出现频率和国籍两个维度分成 20 类，再在所有类别上均匀随机抽样，得到 183 个待标注实体。",
+        "cite": [
+          "paper@§A.1 Sampling human entities",
+          "paper@§3.3 Data"
+        ]
+      },
+      {
+        "k": "生成传记",
+        "text": "把固定提示词「Tell me a bio of <entity>」送给受测 LM，原样保留生成结果，并用规则识别、过滤掉拒答不写的生成。",
+        "cite": [
+          "paper@§3.3 Data",
+          "repo@## To evaluate your own LM"
+        ]
+      },
+      {
+        "k": "拆原子事实",
+        "text": "为省标注时间，先用 InstructGPT 把生成自动拆成原子事实，再交给人类专家修订；实测人类专家对 InstructGPT 的拆分结果做了 18% 的再拆分和 34% 的合并。",
+        "cite": [
+          "paper@§3.3 Data",
+          "paper@§A.2 Details in generating atomic facts"
+        ]
+      },
+      {
+        "k": "逐条标注",
+        "text": "另一批标注者给每个原子事实打三选一标签：Supported / Not-supported / Irrelevant，判定依据是英文维基百科该人物页面；标注者经 Upwork 招募，时薪 15–25 美元，折算单条生成约 4 美元。三个受测模型的标注者间一致率为 96% / 90% / 88%。",
+        "cite": [
+          "paper@§3.3 Data",
+          "paper@§A.3 More details on annotator recruitment"
+        ]
+      },
+      {
+        "k": "自动评估器",
+        "text": "用英文维基 2023-04-01 dump 作知识源，GTR 稠密检索取主题页内 top-5 段落，再让 LM_EVAL 以零次提示判断每个原子事实 True/False；可再叠一层非参数概率（BM25 + single-mask NPM，阈值 0.3）做集成。论文报告自动评估相对人工评估的误差低于 2%。",
+        "cite": [
+          "paper@§B.1 Implementation details",
+          "paper@§4.1 Model",
+          "paper@§4.2 Evaluation of Estimators",
+          "paper@Abstract"
+        ]
+      },
+      {
+        "k": "两套实体集",
+        "text": "官方仓库同时放出 labeled（183 实体）与 unlabeled（500 实体）两套题目清单，前者对齐论文第 3 节与第 4.2 节的人工数据，后者对齐第 4.3 节的自动评估数据。",
+        "cite": [
+          "repo@## To evaluate your own LM"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "factscore",
+      "name": "FActScore（原子事实支持率）",
+      "direction": "越高越好",
+      "description": "被知识源支持的原子事实数除以该回答的原子事实总数，以百分数表示；只算精度，漏说的事实不计入",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§3.1 Definition",
+        "repo@## To evaluate your own LM"
+      ]
+    },
+    {
+      "id": "init-score",
+      "name": "FActScore（不含长度惩罚）",
+      "direction": "越高越好",
+      "description": "仓库输出的 init_score，即不加长度惩罚的原始支持率；与正式 FActScore 的差别只在惩罚项",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "repo@## To evaluate your own LM",
+        "repo@## Running FActScore using a command line"
+      ]
+    },
+    {
+      "id": "error-rate",
+      "name": "评估器误差率（ER）",
+      "direction": "越低越好",
+      "description": "自动评估器给出的 FActScore 与人工标注值之间的绝对差；论文称整体误差低于 2%，Table 3 按「评估器 × 受测模型」给出逐格 ER",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@Abstract",
+        "paper@Table 3"
+      ]
+    }
+  ],
+  "default_protocol": {
+    "raw": "题目是「Tell me a bio of <entity>」，受测模型原样生成一篇人物传记（论文用规则识别并过滤拒答）。生成先被拆成原子事实（官方流程先用 InstructGPT 自动拆、人工修订），再逐条对照英文维基百科 2023-04-01 dump 判定 Supported / Not-supported / Irrelevant。自动评估时，检索被限制在该人物主题页内、取最多 256 token 的段落，top-5，再让 LM_EVAL 以零次提示输出 True/False（拿不到 logit 的商用模型则看生成文本里是否出现 True/False）。论文人类评估用人工标注；论文自动评估与官方仓库默认用 retrieval+ChatGPT，也可选 retrieval+llama+npm，两者 Pearson 相关 0.99。",
+    "cite": [
+      "paper@§3.3 Data",
+      "paper@§4.1 Model",
+      "paper@§B.1 Implementation details",
+      "repo@## To evaluate your own LM",
+      "repo@## Running FActScore using a command line",
+      "repo@## To use a custom knowledge source"
+    ],
+    "variants": [
+      {
+        "text": "labeled（183 实体，人工标注）与 unlabeled（500 实体，自动评估）是两套题，分数不可直接互相比；官方仓库要求按「想对齐哪一节数据」选对应清单。",
+        "cite": [
+          "repo@## To evaluate your own LM"
+        ]
+      },
+      {
+        "text": "人工评估 vs 自动评估：论文第 3 节的 42.5% / 58.3% / 71.5% 是人工标注结果，第 4.3 节与仓库结果表是自动评估器结果，两者口径不同。",
+        "cite": [
+          "paper@Table 1",
+          "paper@§4.3.1 Setup"
+        ]
+      },
+      {
+        "text": "仓库结果表把同一批模型按两种评估器分列：FActScore from (A)（retrieval+ChatGPT）与 from (B)（retrieval+llama+npm），同一模型两列差好几点（如 GPT-4 为 73.1 与 59.9）。",
+        "cite": [
+          "repo@README 结果表"
+        ]
+      },
+      {
+        "text": "长度惩罚 gamma 默认 10（约等于 2 句话，少于就扣分），可设 0 彻底关闭；对应 score 与 init_score 两个输出，论文称通常不改变系统间排序。",
+        "cite": [
+          "repo@## Running FActScore using a command line",
+          "repo@## To evaluate your own LM"
+        ]
+      },
+      {
+        "text": "知识源可替换：默认英文维基 2023-04-01，换成自定义知识源后分数会变；多语言分析进一步指出知识源的覆盖与质量直接决定估计出的 FActScore。",
+        "cite": [
+          "repo@## To use a custom knowledge source",
+          "multilingual@§4.3 Knowledge Source"
+        ]
+      },
+      {
+        "text": "厂商口径可能反过来：x.ai 在 Grok 4.1 公告里把 FActScore 图表标注为「Lower score is better」（Grok 4 Fast 9.89、Grok 4.1 2.97），并说明评测用的是带联网搜索工具的非推理模型——与论文「无工具、越高越好」的方向相反，公告未说明该数值是否为不支持事实的比例。",
+        "cite": [
+          "grok@FActScore 图表",
+          "grok@Methodology",
+          "grok@Reduced Hallucinations"
+        ]
+      },
+      {
+        "text": "受测模型是否自带检索也会改变可比性：论文三个受测模型里只有 PerplexityAI 内置商用搜索引擎，它的 71.5% 因此不能和另外两个无检索模型的分数等同看待。",
+        "cite": [
+          "paper@§3.2 Studied LMs",
+          "paper@Table 1"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2023-05-23",
+      "label": "arXiv v1 提交（23 May 2023 17:06:00 UTC）",
+      "cite": [
+        "arxiv-abs@Submission history"
+      ]
+    },
+    {
+      "id": "v2",
+      "date": "2023-10-11",
+      "label": "arXiv v2 修订（11 Oct 2023 05:27:50 UTC），本档案核对所用版本",
+      "cite": [
+        "arxiv-abs@Submission history",
+        "paper@arXiv 版本信息"
+      ]
+    },
+    {
+      "id": "pypi-0.2.0",
+      "date": "2023-10-14",
+      "label": "PyPI 包 factscore 上传 0.2.0 版本",
+      "cite": [
+        "pypi@JSON API"
+      ]
+    },
+    {
+      "id": "data-release",
+      "date": "2023-11-04",
+      "label": "官方仓库公告放出人工标注数据与 12 个 LM 的 FActScore 结果",
+      "cite": [
+        "repo@## Announcement"
+      ]
+    },
+    {
+      "id": "repo-last-push",
+      "date": "2025-04-13",
+      "label": "官方仓库最后一次推送（仓库未归档，README 与代码此后未再更新）",
+      "cite": [
+        "repo-meta@repository"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "只测精度，不测召回",
+      "impact": "漏掉没说的事实不计入分数；一个经常拒答或每条只写一两个事实的模型可以拿到不低的 FActScore。论文自己在 Limitations 里承认这与精度/召回的固有权衡有关，并建议同时报告弃答率和平均原子事实数。",
+      "severity": "高",
+      "response": "论文在 Limitations 与第 4.3 节建议把 FActScore 与弃答率、平均原子事实数一起报告；仓库输出同时给出 respond_ratio 与 num_facts_per_response。",
+      "reader": "单看 FActScore 一个数不够，必须连同弃答率和每条事实数一起读；对「惜字如金」的模型要额外小心。",
+      "cite": [
+        "paper@§3.1 Definition",
+        "paper@Limitations"
+      ]
+    },
+    {
+      "issue": "知识源即真理：维基没写就算不支持",
+      "impact": "判定完全依赖英文维基百科页面。附录 A.5 随机抽 30 条 ChatGPT 的「不被支持」事实去全网验证，发现 10%（3/30）其实成立，只是维基没写；多语言分析进一步指出维基在中低资源语言覆盖不足，会系统性低估真实 FActScore。",
+      "severity": "高",
+      "response": "论文在附录 A.5 与附录 B.5 给出量化与概念验证；官方仓库支持替换自定义知识源。多语言问题由后续工作指出，原论文未见回应。",
+      "reader": "把分数理解为「与 2023-04 英文维基的一致程度」，不是「与现实世界的一致程度」；稀有实体和小语种场景要明显打折。",
+      "cite": [
+        "paper@§A.5 Qualitative Analysis",
+        "multilingual@Abstract",
+        "multilingual@§4.3 Knowledge Source",
+        "paper@§B.5 Feasibility in applying FACTSCORE to other domains"
+      ]
+    },
+    {
+      "issue": "自动评估器本身有误差，且随方法而变",
+      "impact": "Retrieve→LM 单独使用可能高估 FActScore，论文报告在受测模型是 Instruct-LLAMA 时最多高估 17%；不同评估器组合的误差率在 Table 3 里从 0.1 到 39.6 不等，集成方法才把误差压到 1% 量级。",
+      "severity": "中",
+      "response": "论文比较四种评估器变体并给出误差率，推荐集成 Retrieve→LM + NP；仓库默认 retrieval+ChatGPT，并给出与 retrieval+llama+npm 的 0.99 相关性。",
+      "reader": "看到自动评估的 FActScore 时，先确认用的是哪种评估器；跨论文比较要核对是否同一评估器配置。",
+      "cite": [
+        "paper@§4.2 Evaluation of Estimators",
+        "paper@Table 3",
+        "paper@§B.2 Segment-level vs. system-level evaluation"
+      ]
+    },
+    {
+      "issue": "静态英文维基快照与知识截止",
+      "impact": "默认知识源固定为 2023-04-01 的英文维基 dump，此后发生的事实一律判为不被支持；检索还被限制在人物主题页内，页外证据一律不看。",
+      "severity": "中",
+      "response": "仓库提供自定义知识源的预处理流程，可换成更新或更全的来源；原论文未提供更新版快照。",
+      "reader": "这是 2023 年的快照口径；拿今天的模型跑，新发生的事实会被系统性扣分。",
+      "cite": [
+        "paper@§B.1 Implementation details",
+        "repo@## To use a custom knowledge source"
+      ]
+    },
+    {
+      "issue": "只覆盖客观、非辩论性的人物传记",
+      "impact": "论文选传记作测试场景，理由正是传记客观、含具体信息且维基覆盖合理；换成更微妙、开放式、可辩论或含欺骗的文本，指标前提就不成立。",
+      "severity": "中",
+      "response": "论文在 Limitations 明确划出适用边界，把其他域的应用留作未来工作（附录 B.5 只做了科学文献的概念验证）。",
+      "reader": "不要把它推广成「通用事实性指标」；换域（对话、摘要、多语言、主观文本）需要重新验证。",
+      "cite": [
+        "paper@Limitations",
+        "paper@§B.5 Feasibility in applying FACTSCORE to other domains"
+      ]
+    },
+    {
+      "issue": "公开题面与公开知识源，缺乏污染检测",
+      "impact": "实体清单和维基快照都是公开可下载的，被测模型可能见过这些页面；本档案核对的论文与仓库材料中没有报告任何污染检测或留存集。",
+      "severity": "中",
+      "response": "未见官方回应。",
+      "reader": "公开集分数要保留余地，优先看是否有留存集或新实体集上的复核结果。",
+      "cite": [
+        "repo@## To evaluate your own LM",
+        "repo@## To use a custom knowledge source"
+      ]
+    },
+    {
+      "issue": "厂商报数口径与论文不一致",
+      "impact": "x.ai 在 Grok 4.1 公告中以「Lower score is better」呈现 FActScore，并用带联网搜索的非推理模型评测，数字方向与论文相反；公告没有说明该数值是不支持事实的比例还是别的定义。",
+      "severity": "低",
+      "response": "未见官方回应（该公告不是 FActScore 官方发布方）。",
+      "reader": "看到厂商页上的 FActScore，先找方向标注和工具说明，不要直接和论文数字比大小。",
+      "cite": [
+        "grok@FActScore 图表",
+        "grok@Methodology"
+      ]
+    }
+  ],
+  "notes": "EMNLP 2023 主会论文；官方仓库提供 183 个标注实体与 500 个未标注实体两套题，默认知识源为 2023-04-01 英文维基",
+  "official_sources": [
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2305.14251"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/shmsw25/FActScore"
+    },
+    {
+      "kind": "paper",
+      "url": "https://aclanthology.org/2023.emnlp-main.741/"
+    },
+    {
+      "kind": "site",
+      "url": "https://x.ai/news/grok-4-1"
+    }
+  ],
+  "related_benchmarks": [
+    "truthfulqa",
+    "simpleqa",
+    "facts-suite",
+    "factsg",
+    "longform-writing"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-13",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "FActScore: Fine-grained Atomic Evaluation of Factual Precision in Long Form Text Generation（arXiv:2305.14251v2 [cs.CL] 11 Oct 2023）",
+        "url": "https://arxiv.org/pdf/2305.14251",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "arxiv-abs",
+        "kind": "paper",
+        "title": "arXiv abs 页 2305.14251（含投稿历史）",
+        "url": "https://arxiv.org/abs/2305.14251",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "anthology",
+        "kind": "paper",
+        "title": "ACL Anthology：2023.emnlp-main.741（EMNLP 2023 正式发表页）",
+        "url": "https://aclanthology.org/2023.emnlp-main.741/",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "shmsw25/FActScore（官方仓库 README）",
+        "url": "https://github.com/shmsw25/FActScore",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "repo-meta",
+        "kind": "repo",
+        "title": "GitHub API：shmsw25/FActScore 仓库元数据",
+        "url": "https://api.github.com/repos/shmsw25/FActScore",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "pypi",
+        "kind": "site",
+        "title": "PyPI JSON API：factscore 包信息",
+        "url": "https://pypi.org/pypi/factscore/json",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "multilingual",
+        "kind": "paper",
+        "title": "An Analysis of Multilingual FActScore（arXiv:2406.19415v1，2024-06-20）",
+        "url": "https://arxiv.org/abs/2406.19415",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "grok",
+        "kind": "announcement",
+        "title": "x.ai：Grok 4.1 公告（Reduced Hallucinations 一节引用 FActScore）",
+        "url": "https://x.ai/news/grok-4-1",
+        "accessed": "2026-11-13"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "University of Washington、University of Massachusetts Amherst、Allen Institute for AI、Meta AI（论文作者署名机构；代码与数据由作者以官方仓库和 PyPI 包发布）",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      "first_release": {
+        "v": "2023-05-23（arXiv v1）",
+        "cite": [
+          "arxiv-abs",
+          "arxiv-abs@Submission history"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "paper@Abstract",
+        "arxiv-abs",
+        "paper@§3.1 Definition"
+      ],
+      "interpretation": [
+        "paper@§3.1 Definition",
+        "paper@§4.3.2 Results",
+        "paper@Limitations"
+      ]
+    },
+    "problem": {
+      "text": "此前的长文本事实性评测要么用二元好坏判断（而真实生成往往是「一半有依据一半没有」的混合体），要么靠代理指标（如数命名实体），都拉不开细粒度差距；同时人工评估又慢又贵。FActScore 想同时解决这两件事：把评估下沉到原子事实一级，并用「检索 + 强语言模型」把人工评估的成本压下来。",
+      "cite": [
+        "arxiv-abs",
+        "paper@Abstract"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机猜测基线",
+        "value": "论文未给出",
+        "note": "FActScore 是精度型指标，没有「猜对多少题」的随机基线；论文未报告，本站也不推算。",
+        "cite": [
+          "paper@§3.1 Definition"
+        ]
+      },
+      {
+        "label": "论文人工评估（发布时）",
+        "value": "71.5%",
+        "note": "PerplexityAI，183 个 labeled 实体上的人工标注结果；同期 ChatGPT 58.3%、InstructGPT 42.5%。PerplexityAI 自带商用搜索引擎，三者不完全是同一口径。",
+        "cite": [
+          "paper@Table 1",
+          "paper@§3.4 Results",
+          "paper@§3.2 Studied LMs"
+        ]
+      },
+      {
+        "label": "官方仓库结果表最高",
+        "value": "73.1%",
+        "note": "GPT-4，500 个 unlabeled 实体、自动评估器 (A) retrieval+ChatGPT；同一模型换评估器 (B) 为 59.9%。该表最高一行的 % respond 为 88.2，# facts 为 60.8。",
+        "cite": [
+          "repo@README 结果表"
+        ]
+      },
+      {
+        "label": "人类写的传记",
+        "value": "论文未给出具体数值",
+        "note": "Figure 3 把人类写的传记排在 13 个受试者之首，正文结论是「所有 LM 的事实性都明显低于人类」，但没有给出人类 FActScore 的百分数；Table 5 只给了人类的 % responding 88.8 与每条 29.0 个原子事实。",
+        "cite": [
+          "paper@§4.3.2 Results",
+          "paper@Table 5"
+        ]
+      },
+      {
+        "label": "评估器误差参考线",
+        "value": "误差低于 2%（自动 vs 人工）",
+        "note": "论文摘要报告自动评估相对人工的整体误差低于 2%；Table 3 中最低的 ER 为 0.1（I-LLAMA 的 Retrieve→LM，受测 PerplexityAI）。超过这条线的分数差异更可能来自题目和判定噪声，而不是模型差距。",
+        "cite": [
+          "paper@Abstract",
+          "paper@Table 3"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 FActScore 当「准确率」读——它只惩罚不被支持的事实，不惩罚漏说的事实；Irrelevant（与题目无关）是单独一类，也不计入分母。",
+        "cite": [
+          "paper@§3.1 Definition",
+          "paper@Table 1"
+        ]
+      },
+      {
+        "text": "把不同来源的数字排在一起比：论文 Table 1 的 ChatGPT 58.3%（183 labeled + 人工）和仓库结果表的 ChatGPT 71.6%（500 unlabeled + 自动评估器 A）不是一回事。",
+        "cite": [
+          "paper@Table 1",
+          "repo@README 结果表"
+        ]
+      },
+      {
+        "text": "看到厂商页上「FActScore 越低越好」就以为指标方向变了——那是公告自己的标注，且评测用的是带联网搜索的非推理模型，与论文口径相反。",
+        "cite": [
+          "grok@FActScore 图表",
+          "grok@Methodology"
+        ]
+      },
+      {
+        "text": "以为「维基没写就是假的」——附录 A.5 抽样显示 10% 被判为不支持的事实在全网其实成立，只是不在该人物维基页面上。",
+        "cite": [
+          "paper@§A.5 Qualitative Analysis"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "University of Washington、University of Massachusetts Amherst、Allen Institute for AI、Meta AI",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "Sewon Min、Kalpesh Krishna、Xinxi Lyu、Mike Lewis、Wen-tau Yih、Pang Wei Koh、Mohit Iyyer、Luke Zettlemoyer、Hannaneh Hajishirzi",
+        "cite": [
+          "paper@作者署名",
+          "anthology@ACL Anthology"
+        ]
+      },
+      {
+        "k": "正式发表",
+        "v": "EMNLP 2023 主会论文（ACL Anthology 标注 2023 年 12 月，起始页 12076，DOI 10.18653/v1/2023.emnlp-main.741）",
+        "cite": [
+          "anthology@citation meta"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2023-05-23 arXiv v1 → 2023-10-11 arXiv v2 → 2023-10-14 PyPI 0.2.0 → 2023-11-04 仓库放出人工标注数据 → 2023-12 EMNLP 发表",
+        "cite": [
+          "arxiv-abs",
+          "paper@arXiv 版本信息",
+          "pypi@JSON API",
+          "repo@## Announcement"
+        ]
+      },
+      {
+        "k": "代码与数据",
+        "v": "官方仓库 shmsw25/FActScore（MIT 许可，2023-05-22 建库，2025-04-13 最后推送，约 461 stars，未归档）；人工标注数据另附 Google Drive 直链；PyPI 包名 factscore",
+        "cite": [
+          "repo@README",
+          "repo-meta@repository",
+          "repo@## Announcement",
+          "pypi@JSON API"
+        ]
+      },
+      {
+        "k": "提示词",
+        "v": "「Question: Tell me a bio of <entity>.」（实体名同时是维基页面标题）",
+        "cite": [
+          "repo@## To evaluate your own LM"
+        ]
+      },
+      {
+        "k": "成本",
+        "v": "人工评估约 4 美元/条生成（标注者时薪 15–25 美元）；自动评估约 1 美元/100 句；论文称若用人工评估第 4.3 节那批近期发布的 LM 要花约 6.5 万美元",
+        "cite": [
+          "paper@§3.3 Data",
+          "repo@## Running FActScore using a command line",
+          "paper@§5 Conclusion"
+        ]
+      },
+      {
+        "k": "知识源",
+        "v": "默认英文维基百科 2023-04-01 dump，页面切成最多 256 token 的段落，检索限定在该人物主题页内、取 top-5",
+        "cite": [
+          "paper@§B.1 Implementation details",
+          "repo@## To use a custom knowledge source"
+        ]
+      },
+      {
+        "k": "跨域可行性",
+        "v": "论文附录 B.5 用科学文献当知识源做了概念验证：人类 FActScore 66.20、模型 73.61、误差率 7.41，并把更大范围的应用留作未来工作",
+        "cite": [
+          "paper@§B.5 Feasibility in applying FACTSCORE to other domains"
+        ]
+      },
+      {
+        "k": "后续工作",
+        "v": "多语言 FActScore 分析（arXiv:2406.19415）指出知识源质量直接决定估计值，且原子事实拆分这一步对模型大小很敏感",
+        "cite": [
+          "multilingual@§7 Conclusion",
+          "multilingual@§4.3 Knowledge Source"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-13",
+        "columns": [
+          "来源",
+          "模型 / 受试者",
+          "FActScore",
+          "口径"
+        ],
+        "rows": [
+          [
+            "论文 Table 1",
+            "InstructGPT",
+            "42.5%",
+            "183 个 labeled 实体，人工标注"
+          ],
+          [
+            "论文 Table 1",
+            "ChatGPT",
+            "58.3%",
+            "同上"
+          ],
+          [
+            "论文 Table 1",
+            "PerplexityAI",
+            "71.5%",
+            "同上；该模型自带商用搜索引擎"
+          ],
+          [
+            "仓库 README 结果表",
+            "GPT-4",
+            "73.1%",
+            "500 个 unlabeled 实体，自动评估器 (A) retrieval+ChatGPT"
+          ],
+          [
+            "仓库 README 结果表",
+            "ChatGPT",
+            "71.6%",
+            "同上"
+          ],
+          [
+            "仓库 README 结果表",
+            "Alpaca 65B",
+            "55.6%",
+            "同上"
+          ],
+          [
+            "仓库 README 结果表",
+            "InstructGPT",
+            "52.8%",
+            "同上"
+          ],
+          [
+            "仓库 README 结果表",
+            "Alpaca 13B",
+            "47.7%",
+            "同上"
+          ],
+          [
+            "仓库 README 结果表",
+            "Vicuna 13B",
+            "46.6%",
+            "同上"
+          ],
+          [
+            "仓库 README 结果表",
+            "Alpaca 7B",
+            "39.7%",
+            "同上"
+          ],
+          [
+            "仓库 README 结果表",
+            "Vicuna 7B",
+            "38.9%",
+            "同上"
+          ],
+          [
+            "仓库 README 结果表",
+            "MPT Chat 7B",
+            "30.1%",
+            "同上"
+          ],
+          [
+            "仓库 README 结果表",
+            "Oasst Pythia 12B",
+            "25.1%",
+            "同上"
+          ],
+          [
+            "仓库 README 结果表",
+            "Dolly 12B",
+            "21.7%",
+            "同上"
+          ],
+          [
+            "仓库 README 结果表",
+            "StableLM tuned 7B",
+            "17.3%",
+            "同上"
+          ],
+          [
+            "x.ai Grok 4.1 公告",
+            "Grok 4 Fast (Non-Reasoning)",
+            "9.89",
+            "公告图表标注「Lower score is better」；非推理模型 + 联网搜索；方向与论文相反"
+          ],
+          [
+            "x.ai Grok 4.1 公告",
+            "Grok 4.1 (Non-Reasoning)",
+            "2.97",
+            "同上"
+          ]
+        ]
+      },
+      "cite": [
+        "paper@Table 1",
+        "repo@README 结果表",
+        "grok@FActScore 图表"
+      ]
+    }
+  }
+}

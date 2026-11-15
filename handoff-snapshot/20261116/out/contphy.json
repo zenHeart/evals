@@ -1,0 +1,577 @@
+{
+  "id": "contphy",
+  "name": "ContPhy",
+  "full_name": "ContPhy: Continuum Physical Concept Learning and Reasoning from Videos",
+  "aliases": [
+    "Continuum Physical Dataset",
+    "ContPRO 基准"
+  ],
+  "status": "active",
+  "categories": [
+    "multimodal",
+    "reasoning"
+  ],
+  "summary": "ContPhy（Continuum Physical Dataset）是 ICML 2024 发布的视频物理常识基准：用 Unity 引擎程序化生成流体、绳-滑轮、布、软球四类「连续体」场景视频，让模型从视频里判断密度、粘度、质量、张力、弹性、塑性、弯曲柔度、摩擦等物理属性，并做预测、反事实、目标驱动三类动态推理。共 2,000 段视频、6,500 道多选题，答案由仿真真值直接给出。",
+  "interpretation": "准确率越高越好，但读之前必须先分清口径：论文对同一题型同时报「逐选项（per-option）」和「逐题（per-question）」两种准确率，后者要求该多选题的每个选项都答对才算对，同题型两者常差 2–3 倍。2024 年论文里最强的非神谕模型只拿到 77.7%（绳场景反事实逐选项），而同题型人工 90.2%；唯一大幅超过人工的 ContPRO 是直接读点云真值的神谕模型，不代表可达到的上限。因此跨论文比 ContPhy 分数时，必须同时确认题型、口径，以及评测是否用了点云/3D 真值。",
+  "measures": [
+    {
+      "area": "物理属性判断（Property）",
+      "focus": "密度、粘度、质量、张力、弹性、塑性、弯曲柔度、拉伸柔度、摩擦等连续体物理属性的大小比较与数值关系",
+      "share": "约 46%",
+      "format": "多选题（3–4 个选项，含「无法判断」类）；属性题按多分类处理，报准确率",
+      "cite": [
+        "arxiv-2402-06119@§3.1",
+        "arxiv-2402-06119@§5.1",
+        "physical-reasoning-project@首页"
+      ]
+    },
+    {
+      "area": "时间预测（Predictive）",
+      "focus": "根据已观察到的过程预测后续动态：碰撞是否发生、最终落点、被盖住物体的最终姿态",
+      "share": "约 22%",
+      "format": "二选一或 3–4 选项；逐选项与逐题双口径",
+      "cite": [
+        "arxiv-2402-06119@§3.1",
+        "arxiv-2402-06119@Table 2",
+        "physical-reasoning-project@Cloth"
+      ]
+    },
+    {
+      "area": "反事实推断（Counterfactual）",
+      "focus": "改变或移除某个初始条件后结果是否改变（如抽走红棍后橙色流体会不会进青色容器）",
+      "share": "约 20%",
+      "format": "二选一；逐选项与逐题双口径",
+      "cite": [
+        "arxiv-2402-06119@§3.1",
+        "arxiv-2402-06119@Table 2",
+        "physical-reasoning-project@Fluid"
+      ]
+    },
+    {
+      "area": "目标驱动推理（Goal-driven）",
+      "focus": "给出能达成目标的干预动作（如该移走哪根棍子、增减哪个方块的质量才能让指定物体进指定容器）",
+      "share": "约 11%",
+      "format": "多选（含「以上都不行」类选项）；逐选项与逐题双口径",
+      "cite": [
+        "arxiv-2402-06119@§3.1",
+        "arxiv-2402-06119@Table 2",
+        "physical-reasoning-project@Fluid"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "不测真实世界的复杂交互：论文自己承认真实物理交互会涉及更多物体和物理因素，而这些不在数据集内。",
+      "cite": [
+        "arxiv-2402-06119@§6"
+      ]
+    },
+    {
+      "text": "不测自然语言层面的多样表达：题目由预定义词表的问题引擎生成，与自然语言有差距。",
+      "cite": [
+        "arxiv-2402-06119@§6"
+      ]
+    },
+    {
+      "text": "不把「只看题目不看视频」的能力算作被考查对象：RND / FRQ / B-LSTM 这些盲模型是用来分析语言偏置的对照组，不是基准要测的能力。",
+      "cite": [
+        "arxiv-2402-06119@§5.1"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 6500,
+    "splits": [
+      "训练 50%",
+      "验证 20%",
+      "测试 30%"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "程序化合成：Unity 仿真渲染 + 问题引擎模板生成 + Gemini 改写题面",
+    "public_sample": true,
+    "totals": "2,000 段视频 / 6,500 题；绳场景 2,000 题，流体、布、软球各 1,500 题；每个场景 500 段定长视频（流体 250 帧、绳 150、布 145、软球 120），30 fps，Full HD 1920×1080；训练 50% / 验证 20% / 测试 30%；题型占比 属性约 46% / 预测约 22% / 反事实约 20% / 目标驱动约 11%（四项合计 99%，原论文按四舍五入给出）。",
+    "cite": [
+      "arxiv-2402-06119@§3.1",
+      "arxiv-2402-06119@附录 8.1.3",
+      "hf-dataset@Files"
+    ],
+    "construction": [
+      {
+        "k": "视频生成",
+        "text": "用 Unity 引擎仿真并渲染，按 6 个顺序步骤自底向上生成：采样（随机选场景布局、相机参数与初始条件）→ 初始化 → 预仿真 → 渲染 → 后仿真 → 输出。每个场景固定 500 段视频，帧数按场景不同（流体 250、绳 150、布 145、软球 120），30 fps，Full HD 1920×1080。",
+        "cite": [
+          "arxiv-2402-06119@§3.2",
+          "arxiv-2402-06119@附录 8.1.3"
+        ]
+      },
+      {
+        "k": "问题引擎",
+        "text": "自建问题引擎分三步生成问答对：模板设计（大量问题与选项模板）→ 采样（检索仿真结果，把可能对象的属性与模板组合，确定正确答案）→ 重采样（保证答案分布均衡）。",
+        "cite": [
+          "arxiv-2402-06119@§3.2"
+        ]
+      },
+      {
+        "k": "题型与真值",
+        "text": "属性题按「所有可能答案中的多分类」处理；动态题按「每个问题-选项对二分类」处理。答案由仿真真值给出，标注包含对象级、点级、事件级的多模态 4D 状态。",
+        "cite": [
+          "arxiv-2402-06119@§5.1",
+          "physical-reasoning-project@Dataset Details"
+        ]
+      },
+      {
+        "k": "语言改写",
+        "text": "为提升题目语言多样性，用 Gemini 作自动改写工具重述题面；论文在附录给出改写前后的题目统计对照表。",
+        "cite": [
+          "arxiv-2402-06119@附录 8.2.4",
+          "arxiv-2402-06119@Table 9"
+        ]
+      },
+      {
+        "k": "人工基线",
+        "text": "从测试集抽样视频-问题对做人工评估：16 人参与，回收 460 份有效答案，覆盖全部场景与题型。",
+        "cite": [
+          "arxiv-2402-06119@§5.3"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "accuracy-per-option",
+      "name": "逐选项准确率（per-option accuracy）",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "direction": "越高越好",
+      "aggregation": "mean",
+      "description": "动态题按「问题-选项对」计正确率：每个选项单独判对错，只看单个判断是否正确，不看同一题其他选项答得怎么样。",
+      "cite": [
+        "arxiv-2402-06119@§5.1",
+        "arxiv-2402-06119@Table 2 注"
+      ]
+    },
+    {
+      "id": "accuracy-per-question",
+      "name": "逐题准确率（per-question accuracy）",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "direction": "越高越好",
+      "aggregation": "mean",
+      "description": "整题判对：该多选题的每个选项都答对，这道题才算对；因此数值通常明显低于同题型的逐选项准确率。",
+      "cite": [
+        "arxiv-2402-06119@§5.1",
+        "arxiv-2402-06119@Table 2 注"
+      ]
+    }
+  ],
+  "default_protocol": {
+    "raw": "属性题（物理属性）按多分类处理：从该题所有可能答案中选一个，报准确率。动态题（预测 / 反事实 / 目标驱动）按「每个问题-选项对二分类」处理，并同时报两种准确率——逐选项（per-option）：单个选项判断是否正确；逐题（per-question）：该题所有选项都答对才算对。论文 Table 2 的每个题型分 Opt. / Ques. 两行给出这两组数字，属性题只有一行。官方评测 Gemini 与 GPT-4V 时把每段视频降采样到 10 帧；ContPRO 的程序解析器用 GPT-4。",
+    "cite": [
+      "arxiv-2402-06119@§5.1",
+      "arxiv-2402-06119@Table 2 注",
+      "arxiv-2402-06119@§10.1",
+      "physical-reasoning-project@Experiments"
+    ],
+    "variants": [
+      {
+        "text": "两种口径不可混比：同题型下逐题准确率通常只有逐选项的一半左右。例如软球场景反事实，GPT-4V 逐选项 66.7% 而逐题 46.9%，人工在同一题型是 93.9% / 90.9%。跨来源比较前必须先确认对方报的是哪一种。",
+        "cite": [
+          "arxiv-2402-06119@Table 2"
+        ]
+      },
+      {
+        "text": "题型之间难度差极大：论文自己指出目标驱动题对当时的机器模型「过于困难」，需要物理常识并预测不可直接观测的信息。Table 2 里目标驱动逐题一列几乎所有模型低于 25%，而反事实逐选项普遍在 50% 以上——把不同题型平均成一个「ContPhy 准确率」会掩盖这一点（论文没有报告全集平均分）。",
+        "cite": [
+          "arxiv-2402-06119@§5.1",
+          "arxiv-2402-06119@Table 2"
+        ]
+      },
+      {
+        "text": "MLLM 结果对提示词高度敏感：论文在附录用 9 种不同提示方法（a–i）评 Gemini，同一切分的平均分从 4.7%（流体反事实逐题）到 55.9%（软球目标驱动逐选项）不等。厂商自报 ContPhy 分数时应同时说明用了哪种提示。",
+        "cite": [
+          "arxiv-2402-06119@§11.2",
+          "arxiv-2402-06119@Table 11"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "date": "2024-02-09",
+      "label": "arXiv v1 首次提交；Hugging Face 数据集同日发布",
+      "cite": [
+        "arxiv-2402-06119@版本信息",
+        "hf-dataset@Files"
+      ]
+    },
+    {
+      "date": "2024-07-21",
+      "label": "ICML 2024 正式发表（PMLR 235:61526-61558；PMLR 标注会议时间为 21–27 Jul）",
+      "cite": [
+        "pmlr-contphy@题录"
+      ]
+    },
+    {
+      "date": "2024-07-28",
+      "label": "arXiv v2（当前最新版，本档案核对版本）",
+      "cite": [
+        "arxiv-2402-06119@版本信息"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "两种准确率口径并存，跨来源数字常被混比",
+      "impact": "同一题型逐选项与逐题可差 2–3 倍（软球反事实 66.7% vs 46.9%）；只报一种口径会让模型看起来明显更好或更差。",
+      "severity": "高",
+      "response": "论文在 Table 2 对每个题型分 Opt. / Ques. 两行同时给出两组数字，项目页也声明「Accuracies are reported with per option and per question」；但论文没有规定哪一种为官方主指标。",
+      "reader": "比较前先确认口径；只看到一个数字时先按逐选项读（更乐观），再向对方要逐题数字。",
+      "cite": [
+        "arxiv-2402-06119@Table 2",
+        "physical-reasoning-project@Experiments"
+      ]
+    },
+    {
+      "issue": "题型难度差异极大，缺乏统一的全集平均分",
+      "impact": "目标驱动逐题几乎所有模型低于 25%，反事实逐选项普遍 50% 以上；引用方常挑对自己有利的题型子集报数。",
+      "severity": "高",
+      "response": "论文按题型分别报告，并解释目标驱动题「对当前机器模型过于困难」；未报告 6,500 题的总平均准确率。",
+      "reader": "不要跨题型平均，也不要把单题型分数说成「ContPhy 准确率」。",
+      "cite": [
+        "arxiv-2402-06119@§5.1",
+        "arxiv-2402-06119@Table 2"
+      ]
+    },
+    {
+      "issue": "神谕模型 ContPRO 的分数不是可达到上限",
+      "impact": "ContPRO 读点云真值做感知与仿真，在部分题型大幅超过人工（软球预测逐选项 92.4% vs 人工 72.5%）；把它当成普通模型的上限会误导。",
+      "severity": "高",
+      "response": "论文明确称其为 oracle model 并给出解释（流体/软球用 MPM 可精确预测短期位置，而人倾向给模糊估计）；代码仓库也写明「ContPRO is an oracle model, building upon the oracle 3D information (which is beyond our public dataset release)」。",
+      "reader": "看到 ContPRO 数字时先确认评测是否用了点云 / 3D 真值；公开数据集不含这部分信息。",
+      "cite": [
+        "arxiv-2402-06119@§5.2",
+        "arxiv-2402-06119@§4",
+        "github-contphy-public@README"
+      ]
+    },
+    {
+      "issue": "MLLM 结果对提示词与帧采样高度敏感",
+      "impact": "9 种提示方法的平均分从 4.7% 到 55.9%；Gemini / GPT-4V 评测时每段视频只降采样到 10 帧，且用的是 gemini-pro-vision 与 gpt-4-vision-preview 这两个 2024 年初的快照。",
+      "severity": "中",
+      "response": "论文在附录 Table 10 / Table 11 列出所用提示与 9 种变体，并声明这两个模型「从未在 ContPhy 上训练，且在本设置中只能看到离散帧」。",
+      "reader": "厂商自报 ContPhy 分数时，须同时给出提示词、帧数与模型快照，否则不同来源的数字不可比。",
+      "cite": [
+        "arxiv-2402-06119@§10.1",
+        "arxiv-2402-06119@§11.2",
+        "arxiv-2402-06119@§5.2"
+      ]
+    },
+    {
+      "issue": "题目语言多样性有限",
+      "impact": "题目由预定义词表的问题引擎生成，与自然语言有差距；在 ContPhy 上的高分不等于能读懂自然语言表述的物理题。",
+      "severity": "中",
+      "response": "作者用 Gemini 作自动改写工具提升多样性（附录有改写前后统计对照），但论文明确承认「与自然语言相比仍有差距」。",
+      "reader": "把 ContPhy 分数理解为「结构化题面下的物理推理」，不要外推到自由文本问答。",
+      "cite": [
+        "arxiv-2402-06119@§6",
+        "arxiv-2402-06119@附录 8.2.4"
+      ]
+    },
+    {
+      "issue": "代码与完整数据发布不完整，短期难以完整复现",
+      "impact": "公开仓库目前只放出绳场景的问题生成代码与调试用元数据，ContPRO 与多数基线标注「Comming soon」；作者称因个人原因释放进度可能较慢。",
+      "severity": "中",
+      "response": "项目页与仓库提供 ContPhy / ContPhy-Mini 数据集下载与论文复现说明，并提示基线请参考「official baseline repo」。",
+      "reader": "复现论文全部数字需要另找基线代码；引用具体数字时优先直接引用论文 Table 2。",
+      "cite": [
+        "github-contphy-public@README",
+        "physical-reasoning-project@Codebase & Dataset"
+      ]
+    },
+    {
+      "issue": "数据集可完整下载，存在被纳入训练集的污染风险",
+      "impact": "ContPhy 完整数据集（含全部题目与标注）可公开下载；论文未讨论污染或去污流程。",
+      "severity": "低",
+      "response": "论文未给出回应（未见任何污染相关的官方说明）。",
+      "reader": "看到 2024 年之后发布的模型在 ContPhy 上大幅超过人工时，先怀疑训练数据污染再下结论。",
+      "cite": [
+        "hf-dataset@Files",
+        "physical-reasoning-project@Codebase & Dataset"
+      ]
+    }
+  ],
+  "notes": "benchmark-profile/v2 深度档案；证据账本 83 条引文，覆盖 5 个一手来源（arXiv 论文、ICML/PMLR 论文集、项目主页、官方 GitHub 仓库、Hugging Face 数据集）。核对日期 2026-11-13。已知偏差：GitHub 仓库中 ContPRO 与多数基线代码标注「Comming soon」，论文 Table 2 的神谕模型分数短期难以完整复现；论文未报告 6,500 题的总平均准确率。",
+  "official_sources": [
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2402.06119"
+    },
+    {
+      "kind": "paper",
+      "url": "https://proceedings.mlr.press/v235/zheng24l.html"
+    },
+    {
+      "kind": "site",
+      "url": "https://physical-reasoning-project.github.io/"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/Cakeyan/ContPhy_Public"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/zzcnewly/ContPhy_Dataset"
+    }
+  ],
+  "related_benchmarks": [
+    "morse-500",
+    "mvbench",
+    "tomato"
+  ],
+  "content_status": "beta",
+  "last_verified_at": "2026-11-13",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      {
+        "id": "arxiv-2402-06119",
+        "kind": "paper",
+        "title": "ContPhy: Continuum Physical Concept Learning and Reasoning from Videos（arXiv:2402.06119v2）",
+        "url": "https://arxiv.org/abs/2402.06119",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "pmlr-contphy",
+        "kind": "paper",
+        "title": "ContPhy (ICML 2024) — Proceedings of Machine Learning Research 235:61526-61558",
+        "url": "https://proceedings.mlr.press/v235/zheng24l.html",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "physical-reasoning-project",
+        "kind": "site",
+        "title": "ContPhy 项目主页（论文、场景展示、ContPRO 说明、数据与代码入口）",
+        "url": "https://physical-reasoning-project.github.io/",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "github-contphy-public",
+        "kind": "repo",
+        "title": "GitHub: Cakeyan/ContPhy_Public（官方代码仓库）",
+        "url": "https://github.com/Cakeyan/ContPhy_Public",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "hf-dataset",
+        "kind": "dataset",
+        "title": "Hugging Face Datasets: zzcnewly/ContPhy_Dataset（官方数据集）",
+        "url": "https://huggingface.co/datasets/zzcnewly/ContPhy_Dataset",
+        "accessed": "2026-11-13"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "清华大学 / 武汉大学 / MIT-IBM Watson AI Lab / MIT / UMass Amherst（ICML 2024，PMLR 235）",
+        "cite": [
+          "physical-reasoning-project@作者与单位",
+          "pmlr-contphy@题录"
+        ]
+      },
+      "first_release": {
+        "v": "2024-02-09（arXiv v1；Hugging Face 数据集同日发布）",
+        "cite": [
+          "arxiv-2402-06119@版本信息",
+          "hf-dataset@Files"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "physical-reasoning-project@首页",
+        "arxiv-2402-06119@§3.1",
+        "arxiv-2402-06119@§3.2",
+        "pmlr-contphy@题录"
+      ],
+      "interpretation": [
+        "arxiv-2402-06119@Table 2",
+        "arxiv-2402-06119@Table 2 注",
+        "arxiv-2402-06119@§5.2",
+        "physical-reasoning-project@Experiments"
+      ]
+    },
+    "problem": {
+      "text": "此前的物理推理数据集主要围绕刚体这类简单视觉基元（立方体、球体及其碰撞）设计；ContPhy 把范围扩展到「连续体」——液体、软体（软球、布、绳）、刚体与铰接体（滑轮）——考模型能否从视频判断密度、质量、张力、弹性等物理属性，并据此预测、反事实推断或规划后续动态。",
+      "cite": [
+        "arxiv-2402-06119@§9",
+        "physical-reasoning-project@首页"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机猜 / 只看题目的语言基线",
+        "value": "4.5%–68.9%（Table 2 盲模型列 RND / FRQ / B-LSTM 的全部取值区间；3 选项属性题上纯随机约 30.0%）",
+        "cite": [
+          "arxiv-2402-06119@Table 2"
+        ]
+      },
+      {
+        "label": "论文里最强的非神谕模型（2024）",
+        "value": "77.7%（PhyDNet，绳场景反事实逐选项；同题型人工 90.2%，盲模型 B-LSTM 也有 74.0%）",
+        "cite": [
+          "arxiv-2402-06119@Table 2"
+        ]
+      },
+      {
+        "label": "人工参考线",
+        "value": "42.9%–93.9%（Table 2 Human 列全区间；最低为流体预测逐题 42.9%，最高为软球反事实逐选项 93.9%）",
+        "cite": [
+          "arxiv-2402-06119@Table 2"
+        ]
+      },
+      {
+        "label": "神谕模型 ContPRO（读点云真值，非可达到上限）",
+        "value": "2.3%–92.4%（Table 2 ContPRO 列全区间；最低为绳目标驱动逐题 2.3%，最高为软球预测逐选项 92.4%）",
+        "cite": [
+          "arxiv-2402-06119@Table 2",
+          "arxiv-2402-06119@§5.2"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把逐选项（per-option）和逐题（per-question）数字混在一张表里比。同题型两者可差 2–3 倍，混比会得出完全错误的模型排序。",
+        "cite": [
+          "arxiv-2402-06119@Table 2 注",
+          "arxiv-2402-06119@§5.1"
+        ]
+      },
+      {
+        "text": "把 ContPRO 的分数当成模型能达到的上限。ContPRO 直接读点云真值，论文自己叫它 oracle model，且公开数据集不含这部分 3D 信息。",
+        "cite": [
+          "arxiv-2402-06119@§4",
+          "github-contphy-public@README"
+        ]
+      },
+      {
+        "text": "把不同题型的分数平均成一个「ContPhy 准确率」。题型难度差极大（目标驱动逐题普遍 <25%，反事实逐选项 >50%），论文也没有报告全集平均分。",
+        "cite": [
+          "arxiv-2402-06119@§5.1",
+          "arxiv-2402-06119@Table 2"
+        ]
+      },
+      {
+        "text": "看到 2024 年 Gemini / GPT-4V 分数低就断定「模型完全不懂连续体物理」。这两个结果是在每段视频只降采样到 10 帧、用 gemini-pro-vision 与 gpt-4-vision-preview 快照、且模型从未在 ContPhy 上训练的条件下得到的。",
+        "cite": [
+          "arxiv-2402-06119@§10.1",
+          "arxiv-2402-06119@§5.2"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方与机构",
+        "v": "清华大学、武汉大学、MIT-IBM Watson AI Lab、MIT、UMass Amherst（ICML 2024 论文集题录）",
+        "cite": [
+          "physical-reasoning-project@作者与单位",
+          "pmlr-contphy@题录"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "Zhicheng Zheng*、Xin Yan*、Zhenfang Chen*、Jingzhou Wang、Qin Zhi Eddie Lim、Joshua B. Tenenbaum、Chuang Gan（* 为同等贡献）",
+        "cite": [
+          "physical-reasoning-project@作者与单位",
+          "pmlr-contphy@题录"
+        ]
+      },
+      {
+        "k": "发表信息",
+        "v": "ICML 2024（第 41 届国际机器学习大会），Proceedings of Machine Learning Research 235:61526-61558，2024；arXiv:2402.06119",
+        "cite": [
+          "pmlr-contphy@题录",
+          "physical-reasoning-project@首页"
+        ]
+      },
+      {
+        "k": "神谕模型 ContPRO",
+        "v": "神经-符号框架：视觉感知用 Mask R-CNN（ResNet-50 主干，在四场景训练集上微调）+ 物理仿真用 DPI-Net（绳 / 布）与 MPM（流体 / 软球）+ 程序解析用 ChatGPT 把问题转成可执行 Python + 符号执行输出答案；因需要点云作为输入，作者称其为 oracle model。",
+        "cite": [
+          "arxiv-2402-06119@§4",
+          "physical-reasoning-project@ContPRO"
+        ]
+      },
+      {
+        "k": "标注与真值",
+        "v": "传感器输出为多模态 4D 状态，覆盖对象级、点级、事件级；因此 ContPRO 可以直接查询质量、密度等属性与动态轨迹。",
+        "cite": [
+          "physical-reasoning-project@Dataset Details"
+        ]
+      },
+      {
+        "k": "数据与代码入口",
+        "v": "项目页 physical-reasoning-project.github.io（提供 ContPhy 完整数据集与 ContPhy-Mini 下载）；Hugging Face zzcnewly/ContPhy_Dataset（MIT 许可，查看器显示 13 行、总文件大小 11.5 GB，含 4 个 full zip 与 1 个 mini zip）；GitHub Cakeyan/ContPhy_Public（问题生成代码）。",
+        "cite": [
+          "physical-reasoning-project@Codebase & Dataset",
+          "hf-dataset@Files",
+          "github-contphy-public@README"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-13",
+        "columns": [
+          "来源",
+          "模型",
+          "场景 · 题型",
+          "准确率",
+          "口径"
+        ],
+        "rows": [
+          ["论文 Table 2", "RND（随机选答案）", "绳 · 属性", "30.0%", "属性题"],
+          ["论文 Table 2", "B-LSTM（只看题目的盲模型）", "绳 · 属性", "54.7%", "属性题"],
+          ["论文 Table 2", "ALPRO", "绳 · 属性", "60.7%", "属性题"],
+          ["论文 Table 2", "Gemini", "流体 · 属性", "10.0%", "属性题"],
+          ["论文 Table 2", "ContPRO（神谕）", "流体 · 属性", "78.0%", "属性题"],
+          ["论文 Table 2", "人工", "流体 · 属性", "75.8%", "属性题"],
+          ["论文 Table 2", "B-LSTM（只看题目的盲模型）", "绳 · 反事实", "74.0%", "逐选项"],
+          ["论文 Table 2", "GPT-4V", "绳 · 反事实", "42.0%", "逐选项"],
+          ["论文 Table 2", "PhyDNet", "绳 · 反事实", "77.7%", "逐选项"],
+          ["论文 Table 2", "人工", "绳 · 反事实", "90.2%", "逐选项"],
+          ["论文 Table 2", "GPT-4V", "软球 · 反事实", "66.7%", "逐选项"],
+          ["论文 Table 2", "人工", "软球 · 反事实", "93.9%", "逐选项"],
+          ["论文 Table 2", "GPT-4V", "软球 · 反事实", "46.9%", "逐题"],
+          ["论文 Table 2", "人工", "软球 · 反事实", "90.9%", "逐题"],
+          ["论文 Table 2", "人工", "流体 · 预测", "42.9%", "逐题"],
+          ["论文 Table 2", "ContPRO（神谕）", "流体 · 预测", "68.3%", "逐题"],
+          ["论文 Table 2", "ContPRO（神谕）", "软球 · 预测", "92.4%", "逐选项"],
+          ["论文 Table 2", "人工", "软球 · 预测", "72.5%", "逐选项"],
+          ["论文 Table 2", "Gemini", "绳 · 目标驱动", "12.1%", "逐题"],
+          ["论文 Table 2", "ContPRO（神谕）", "绳 · 目标驱动", "2.3%", "逐题"],
+          ["论文 Table 2", "人工", "绳 · 目标驱动", "84.0%", "逐题"],
+          ["论文 Table 11", "Gemini（9 种提示平均）", "流体 · 反事实", "4.7%", "逐题"],
+          ["论文 Table 11", "Gemini（9 种提示平均）", "软球 · 目标驱动", "55.9%", "逐选项"],
+          ["论文 §5.2", "ContPRO（神谕）", "流体 · 属性「stick number」", "96.9%", "论文正文单独给出"]
+        ]
+      },
+      "cite": [
+        "arxiv-2402-06119@Table 2",
+        "arxiv-2402-06119@Table 11",
+        "arxiv-2402-06119@§5.2"
+      ]
+    }
+  }
+}

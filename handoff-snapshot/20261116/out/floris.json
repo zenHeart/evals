@@ -1,0 +1,633 @@
+{
+  "id": "floris",
+  "name": "Flores-200",
+  "full_name": "FLORES-200 Evaluation Benchmark for Low-Resource and Multilingual Machine Translation（低资源与多语言机器翻译评测集）",
+  "aliases": [],
+  "status": null,
+  "categories": [
+    "chinese"
+  ],
+  "summary": "Meta AI（FAIR）发布的多语言机器翻译评测集：从 842 篇英文维基媒体文章中取出 3,001 句，由专业译者译成 204 种语言，再用 chrF++ / spBLEU 等自动指标衡量模型译文与人工参考译文的接近程度。",
+  "interpretation": "chrF++ / spBLEU 越高，说明模型译文与那条人工参考译文在字符、子词层面重合得越好；它只衡量与单条参考译文的相似度，不等于「翻译得对」。论文因此另做 XSTS 人工评测（1–5 分）检查意义保持——人工协议比自动指标更关注意义而非流畅度。",
+  "measures": [
+    {
+      "area": "英文译出（eng_Latn→xx）",
+      "focus": "从英文译到其他语言的方向；示例口径：NLLB-200 在这 201 个方向上平均 chrF++ 45.3 / spBLEU 27.1",
+      "share": "201 个方向",
+      "format": "模型译文与 1 条人工参考译文比对，自动指标计分",
+      "cite": [
+        "nllb@Table 33",
+        "nllb@§8.3.2"
+      ]
+    },
+    {
+      "area": "译入英文（xx→eng_Latn）",
+      "focus": "其他语言译回英文的方向；示例口径：NLLB-200 在这 201 个方向上平均 chrF++ 56.8 / spBLEU 38.0",
+      "share": "201 个方向",
+      "format": "同上",
+      "cite": [
+        "nllb@Table 33",
+        "nllb@§8.3.2"
+      ]
+    },
+    {
+      "area": "非英文互译（xx→yy）",
+      "focus": "不经过英文的语言对；示例口径：40,200 个方向上平均 chrF++ 35.6 / spBLEU 17.3，其中 38,162 个方向训练时从未见过",
+      "share": "40,200 个方向",
+      "format": "同上",
+      "cite": [
+        "nllb@Table 33",
+        "nllb@§8.3.2"
+      ]
+    },
+    {
+      "area": "人工质量评测（XSTS）",
+      "focus": "专业译员按 1–5 分评译文的意义保持；示例口径：NLLB-200 在 51 个方向上平均 4.22 分，3.3B 密集基线 3.66 分",
+      "share": "51 个翻译方向",
+      "format": "人工 5 分制打分，每方向用 1,012 句 devtest",
+      "cite": [
+        "nllb@§8.3.3",
+        "nllb@§7.2.1"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "不测「读起来自然 / 没有误译」这类需要人判断的质量：自动指标只对参考译文算重合度，论文把质检与 XSTS 人工评测单独做。",
+      "cite": [
+        "nllb@§7.2.1",
+        "nllb@§4.1.3"
+      ]
+    },
+    {
+      "text": "不测机器翻译以外的能力：数据集卡把它定位为「英文与低资源语言之间机器翻译」的基准，摘要、问答、代码等任务不在范围内。",
+      "cite": [
+        "hf-flores@Dataset Summary"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 3001,
+    "splits": [
+      "dev：997 句，公开",
+      "devtest：1,012 句，公开",
+      "test：隐藏，只能通过评测服务器提交（题量未披露）"
+    ],
+    "languages": [
+      "204 种语言（论文与官方 README 口径；HF 数据集卡写 200，NLLB-200 模型覆盖 202）",
+      "其中 4 种由拉丁字母版本转写而来：ace_Arab、bjn_Arab、min_Arab、taq_Tfng"
+    ],
+    "source_type": "英文维基媒体文章的人工翻译句子，多向平行（同一批句子译成所有语言）",
+    "public_sample": true,
+    "totals": "3,001 句多向平行句集 × 204 种语言，平均每句约 21 词；dev 997 句与 devtest 1,012 句公开，test 集隐藏。",
+    "cite": [
+      "nllb@§4.1.3",
+      "flores200-readme@Composition",
+      "hf-flores@Data Splits",
+      "hf-flores@Dataset Summary"
+    ],
+    "construction": [
+      {
+        "k": "选源",
+        "text": "从英文维基媒体项目的 842 篇不同文章中取句，共 3,001 句；Wikinews、WikiJunior、WikiVoyage 三个来源各约三分之一。",
+        "cite": [
+          "flores200-readme@Composition",
+          "nllb@§4.1.1"
+        ]
+      },
+      {
+        "k": "试译校准",
+        "text": "每种语言先让参译人员翻译同一批 200 句作为校准，通过后才进入正式翻译。",
+        "cite": [
+          "nllb@§4.1.1"
+        ]
+      },
+      {
+        "k": "专业翻译与转写",
+        "text": "由专业译者把同一批内容译成 200 多种语言；ace_Arab、bjn_Arab、min_Arab、taq_Tfng 四种语言不做人工翻译，而是从拉丁字母版本转写，转写质量阈值 95%。",
+        "cite": [
+          "nllb@§4.1.1",
+          "nllb@§4.1.2"
+        ]
+      },
+      {
+        "k": "抽样质检",
+        "text": "翻译完成后由 QA 团队抽 20% 样本做最终质检；只有质量分低于 90% 时才触发仲裁、返工与抽查。",
+        "cite": [
+          "nllb@§4.1.1",
+          "nature-pr@Author Rebuttal"
+        ]
+      },
+      {
+        "k": "修订与发布",
+        "text": "相比 FLORES-101，需要重新翻译的语言从 45 种降到 10 种；发布后又改进 5 种语言的质量（Quechua、Aymara、Cebuano、Kimbundu、Umbundu），这些语言的分数与 FLORES-101 会有差异。",
+        "cite": [
+          "nllb@§4.1.1",
+          "flores200-readme@Updates to Previous Languages"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "chrf++",
+      "name": "chrF++",
+      "direction": "越高越好",
+      "description": "基于字符 n 元组（n=1–6）的 F 值，再补上词一元组与二元组，衡量模型译文与参考译文的字符级重合度；README 给的命令是 sacrebleu -m chrf --chrf-word-order 2",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "nllb@§7.1",
+        "flores200-readme@Evaluation"
+      ]
+    },
+    {
+      "id": "spbleu",
+      "name": "spBLEU",
+      "direction": "越高越好",
+      "description": "用随 FLORES-200 一起发布的 SPM-200 分词器计算的 BLEU，已集成进 sacrebleu",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "flores101@§5.2",
+        "nllb@§8.1.1",
+        "nllb@§7.1"
+      ]
+    },
+    {
+      "id": "xsts",
+      "name": "XSTS 人工评分",
+      "direction": "越高越好",
+      "description": "专业译员对源句与机器译文按 1–5 分打分（1 最低、5 最高），重点关注意义保持而非流畅度",
+      "range": [
+        1,
+        5
+      ],
+      "unit": "point",
+      "cite": [
+        "nllb@§7.2.1",
+        "nllb@§8.3.3"
+      ]
+    }
+  ],
+  "default_protocol": {
+    "raw": "默认用 sacrebleu 的 chrF++：sacrebleu -m chrf --chrf-word-order 2 {ref_file}，把模型译文与 1 条人工参考译文比对计分；论文同时报告 spBLEU（SPM-200 分词器）与 XSTS 人工评测。",
+    "cite": [
+      "flores200-readme@Evaluation",
+      "nllb@§7.1",
+      "nllb@§7.2.1"
+    ],
+    "variants": [
+      {
+        "text": "chrF++ 与 spBLEU 不能混比：前者算字符 n 元组，后者用 SPM-200 子词，量纲不同，同一模型在两种指标下的排序可能不同。",
+        "cite": [
+          "nllb@§7.1",
+          "nllb@§8.1.1",
+          "flores101@§5.2"
+        ]
+      },
+      {
+        "text": "dev（997 句）与 devtest（1,012 句）是两套不同的题：论文报的是 devtest，只报 dev 的数字不能直接比。",
+        "cite": [
+          "hf-flores@Data Splits",
+          "nllb@§8.3.3"
+        ]
+      },
+      {
+        "text": "test 集隐藏，只能经评测服务器提交，不同提交快照之间不可比；FLORES-101 与 FLORES-200 对同一种语言的分数也不可比（部分语言在 FLORES-200 中重新翻译过）。",
+        "cite": [
+          "nllb@§4.1.3",
+          "flores200-readme@Updates to Previous Languages"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "flores-101",
+      "date": "2021-06-04",
+      "label": "FLORES-101 发布：101 种语言，3,001 句（dev 997 / devtest 1,012 / test 992）",
+      "cite": [
+        "flores-repo@Changelog",
+        "flores101@Table 1"
+      ]
+    },
+    {
+      "id": "flores-200",
+      "date": "2022-06-30",
+      "label": "FLORES-200 与 NLLB-Seed、NLLB-MD、Toxicity-200 一同发布",
+      "cite": [
+        "flores-repo@Changelog"
+      ]
+    },
+    {
+      "id": "nllb-paper",
+      "date": "2022-07-11",
+      "label": "NLLB 论文 arXiv v1 提交（本页主要引用其 v3，2022-08-25 最后修订）",
+      "cite": [
+        "nllb@arXiv 提交历史"
+      ]
+    },
+    {
+      "id": "repo-archived",
+      "date": "2023-11-21",
+      "label": "facebookresearch/flores 仓库被作者归档，转为只读",
+      "cite": [
+        "flores-repo"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "语言数量口径不一致",
+      "impact": "论文与官方 README 说 204 种语言，HF 数据集卡写 200，NLLB-200 模型覆盖 202；引用「支持多少语言」时数字会差几种。",
+      "severity": "中",
+      "response": "未见官方统一说明；三个数字都能在各自来源原文里查到（204 见论文与 Nature 审稿稿，200 见数据集卡，202 见 NLLB 论文的模型覆盖）。",
+      "reader": "看到 200 / 202 / 204 先分清说的是数据集还是模型。",
+      "cite": [
+        "nature-pr@Referee #1",
+        "nllb@§4.1.1",
+        "hf-flores@Languages",
+        "nllb@§8.3.2"
+      ]
+    },
+    {
+      "issue": "后继版本与仓库归档",
+      "impact": "仓库 2023-11-21 起归档只读，FLORES-200 本身不再更新；FLORES+ 由 Open Language Data Initiative 接手维护（当前 5.0 版、230 个语言变体），且其 blind test 集不由 OLDI 管理。",
+      "severity": "中",
+      "response": "HF 数据集卡标注了「本仓库不再更新」并指向 FLORES+；FLORES+ 数据集卡说明它最初由 Meta 的 FAIR 研究人员以 FLORES 之名发布。",
+      "reader": "新工作可考虑 FLORES+；引用旧结果时写清用的是 FLORES-200 还是 FLORES+。",
+      "cite": [
+        "flores-repo",
+        "hf-flores@Dataset Summary",
+        "flores-plus@Dataset Description"
+      ]
+    },
+    {
+      "issue": "质检只覆盖 20% 抽样",
+      "impact": "更严格的 QA 只对 20% 的样本做，且只有错误率超过 10% 才把数据集整库返工，因此数据里仍可能有错误；FLORES-101 被报告的问题在 FLORES-200 中依然存在。",
+      "severity": "中",
+      "response": "官方接受抽样质检的成本约束，把最低可接受质量定在 90%；Nature 审稿人认为在该门槛下存在质量问题的句子很少。",
+      "reader": "把 FLORES 当作高质量但非零错误的参考集：低分时同时怀疑模型和参考译文。",
+      "cite": [
+        "nature-pr@Author Rebuttal",
+        "nature-pr@Referee #1",
+        "nllb@§4.1.1"
+      ]
+    },
+    {
+      "issue": "4 种语言是转写而非翻译",
+      "impact": "ace_Arab、bjn_Arab、min_Arab、taq_Tfng 由拉丁字母版本转写而来（阈值 95%），这四格的分数与其他语言不同源。",
+      "severity": "低",
+      "response": "论文明确列出这 4 种语言及其 95% 转写质量阈值。",
+      "reader": "跨语言比较时把这 4 种语言单独看待。",
+      "cite": [
+        "nllb@§4.1.2"
+      ]
+    },
+    {
+      "issue": "少数语言的源语言不是英文",
+      "impact": "数据集卡说明有若干语言译自西班牙语、法语、俄语和现代标准阿拉伯语，而不是英文。",
+      "severity": "低",
+      "response": "数据集卡明确写出这一情况。",
+      "reader": "多向平行集的源语言不全是英文，比较时注意方向定义。",
+      "cite": [
+        "hf-flores@Dataset Summary"
+      ]
+    },
+    {
+      "issue": "源文章数在不同论文中不一致",
+      "impact": "FLORES-101 论文写这些句子来自 1,175 篇不同文章，FLORES-200 的论文与 README 都写 842 篇。",
+      "severity": "低",
+      "response": "FLORES-200 论文与官方 README 一致为 842 篇；1,175 篇是 FLORES-101 论文的数字，两版不能混用。",
+      "reader": "引用「来自多少篇文章」时先确认版本。",
+      "cite": [
+        "flores101@§4.2",
+        "nllb@§4.1.3",
+        "flores200-readme@Composition"
+      ]
+    }
+  ],
+  "notes": null,
+  "official_sources": [
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2207.04672"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/facebookresearch/flores"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/facebook/flores"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/openlanguagedata/flores_plus"
+    }
+  ],
+  "related_benchmarks": [
+    "ceval",
+    "cmmlu",
+    "supercclue",
+    "compassrank",
+    "mgsm",
+    "finben"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "nllb",
+        "kind": "paper",
+        "title": "No Language Left Behind: Scaling Human-Centered Machine Translation（arXiv:2207.04672，v3，最后修订 2022-08-25）",
+        "url": "https://arxiv.org/pdf/2207.04672",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "flores101",
+        "kind": "paper",
+        "title": "The FLoRes Evaluation Datasets for Low-Resource Machine Translation: Nepali-English（arXiv:2106.03193）",
+        "url": "https://arxiv.org/pdf/2106.03193",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "flores-repo",
+        "kind": "repo",
+        "title": "facebookresearch/flores（GitHub 仓库，2023-11-21 归档只读）",
+        "url": "https://github.com/facebookresearch/flores",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "flores200-readme",
+        "kind": "docs",
+        "title": "flores200/README.md（FLORES-200 官方说明：构成、指标、许可证）",
+        "url": "https://github.com/facebookresearch/flores/blob/main/flores200/README.md",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "hf-flores",
+        "kind": "dataset",
+        "title": "Dataset Card for Flores 200（Hugging Face，需同意条款才能下载文件）",
+        "url": "https://huggingface.co/datasets/facebook/flores",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "flores-plus",
+        "kind": "dataset",
+        "title": "Dataset Card for FLORES+（Open Language Data Initiative，当前 5.0 版）",
+        "url": "https://huggingface.co/datasets/openlanguagedata/flores_plus",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "nature-pr",
+        "kind": "docs",
+        "title": "Nature 论文 Referee #1 报告与作者 rebuttal（FLORES-200 审稿材料）",
+        "url": "https://static-content.springer.com/esm/art%3A10.1038%2Fs41586-024-07335-x/MediaObjects/41586_2024_7335_MOESM2_ESM.pdf",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Meta AI（FAIR）——FLORES+ 数据集卡写明 FLORES 最初由 Meta 的 FAIR 研究人员发布",
+        "cite": [
+          "flores-plus@Dataset Description"
+        ]
+      },
+      "first_release": {
+        "v": "2022-06-30（与 NLLB-Seed、NLLB-MD、Toxicity-200 一同发布）",
+        "cite": [
+          "flores-repo@Changelog"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "nllb@摘要",
+        "flores200-readme@Composition",
+        "hf-flores@Dataset Summary"
+      ],
+      "interpretation": [
+        "nllb@§7.1",
+        "nllb@§7.2.1",
+        "nllb@§8.3.3"
+      ]
+    },
+    "problem": {
+      "text": "FLORES-101 只覆盖 101 种语言；FLORES-200 把语言覆盖翻倍，让更多低资源语向的翻译质量能用同一把尺子量出来——代价是这些语言几乎没有平行数据，工程与数据难度都更高。",
+      "cite": [
+        "flores200-readme@引言",
+        "nllb@§4.1.1"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "论文自评的最大提升（FLORES-101，对比此前最好系统）",
+        "value": "约 +7.3 spBLEU（约 44%）",
+        "note": "NLLB-200 在 FLORES-101 devtest 上比此前最好的系统平均高 7.3 spBLEU，论文称之为 44% 的提升。",
+        "cite": [
+          "nllb@§8.3.1",
+          "nllb@Table 30"
+        ]
+      },
+      {
+        "label": "论文发布时最好（NLLB-200，FLORES-200 devtest 全方向平均）",
+        "value": "35.7 chrF++ / 17.5 spBLEU",
+        "note": "Table 33 全方向平均；英文译出 45.3 / 27.1，译入英文 56.8 / 38.0，非英文互译 35.6 / 17.3。",
+        "cite": [
+          "nllb@Table 33"
+        ]
+      },
+      {
+        "label": "与商用系统的差距（102 个低资源方向，Google Translate）",
+        "value": "译入英文 +3.3 chrF++；英文译出 −2.1 / −1.5 chrF++",
+        "note": "Table 34：低资源与极低资源方向上译入英文领先 3.3 chrF++，英文译出分别落后 2.1 与 1.5 chrF++。",
+        "cite": [
+          "nllb@Table 34"
+        ]
+      },
+      {
+        "label": "人工评测参考（NLLB-200 XSTS 平均）",
+        "value": "4.22 / 5",
+        "note": "51 个方向、每方向 1,012 句 devtest；同数据的 3.3B 密集基线为 3.66。",
+        "cite": [
+          "nllb@§8.3.3"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 FLORES-200 与 FLORES-101 的同语言分数直接对比——官方说明 Quechua、Aymara、Cebuano、Kimbundu、Umbundu 五种语言在 FLORES-200 中重新翻译过，两者分数会有差异。",
+        "cite": [
+          "flores200-readme@Updates to Previous Languages"
+        ]
+      },
+      {
+        "text": "只看 chrF++ 高就认为翻译得好——chrF++ 只算与单条参考译文的字符级重合，论文另外用 XSTS 人工评测查意义保持。",
+        "cite": [
+          "nllb@§7.1",
+          "nllb@§7.2.1"
+        ]
+      },
+      {
+        "text": "把「支持 202 种语言」当成数据集体量——202 是 NLLB-200 模型的语言覆盖；数据集本身按 204 种语言组织，数据集卡写 200。",
+        "cite": [
+          "nllb@§8.3.2",
+          "nature-pr@Referee #1",
+          "hf-flores@Languages"
+        ]
+      },
+      {
+        "text": "以为 test 集可以自己下载后本地评分——dev 与 devtest 公开，test 集隐藏，只能通过评测服务器提交。",
+        "cite": [
+          "nllb@§4.1.3"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "Meta AI（FAIR）",
+        "cite": [
+          "flores-plus@Dataset Description"
+        ]
+      },
+      {
+        "k": "论文与代码",
+        "v": "NLLB 论文（arXiv:2207.04672）与 facebookresearch/flores 仓库（flores200/README、许可证、更新日志）",
+        "cite": [
+          "nllb",
+          "flores-repo"
+        ]
+      },
+      {
+        "k": "数据许可",
+        "v": "CC-BY-SA 4.0（仓库许可证页与 HF 数据集卡一致）",
+        "cite": [
+          "flores-repo@Licenses",
+          "hf-flores@Licensing Information"
+        ]
+      },
+      {
+        "k": "数据位置与访问",
+        "v": "Hugging Face facebook/flores（需同意条款才能下载文件）；FLORES+ 在 openlanguagedata/flores_plus，blind test 集不由 OLDI 管理",
+        "cite": [
+          "hf-flores@访问条件",
+          "flores-plus@Dataset Description"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2021-06-04 FLORES-101 → 2022-06-30 FLORES-200 → 2022-07-11 NLLB 论文 v1 → 2023-11-21 仓库归档 → FLORES+ 由 Open Language Data Initiative 维护（当前 5.0，230 个语言变体）",
+        "cite": [
+          "flores-repo@Changelog",
+          "nllb@arXiv 提交历史",
+          "flores-repo",
+          "flores-plus@Dataset Description"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2022-07-11",
+        "columns": [
+          "方向组",
+          "chrF++",
+          "spBLEU",
+          "口径"
+        ],
+        "rows": [
+          [
+            "英文译出 eng_Latn→xx（全部）",
+            "45.3",
+            "27.1",
+            "201 个方向"
+          ],
+          [
+            "英文译出 · 高资源",
+            "54.9",
+            "38.3",
+            "Table 33 子列"
+          ],
+          [
+            "英文译出 · 低资源",
+            "41.9",
+            "23.1",
+            "Table 33 子列"
+          ],
+          [
+            "英文译出 · 极低资源",
+            "39.5",
+            "21.3",
+            "Table 33 子列"
+          ],
+          [
+            "译入英文 xx→eng_Latn（全部）",
+            "56.8",
+            "38.0",
+            "201 个方向"
+          ],
+          [
+            "译入英文 · 高资源",
+            "63.5",
+            "44.7",
+            "Table 33 子列"
+          ],
+          [
+            "译入英文 · 低资源",
+            "54.4",
+            "35.5",
+            "Table 33 子列"
+          ],
+          [
+            "译入英文 · 极低资源",
+            "54.4",
+            "35.6",
+            "Table 33 子列"
+          ],
+          [
+            "非英文互译 xx→yy（全部）",
+            "35.6",
+            "17.3",
+            "40,200 个方向"
+          ],
+          [
+            "非英文互译 · 有监督",
+            "39.7",
+            "20.3",
+            "Table 33 下半部"
+          ],
+          [
+            "非英文互译 · 零样本",
+            "35.4",
+            "17.2",
+            "Table 33 下半部"
+          ],
+          [
+            "全方向平均",
+            "35.7",
+            "17.5",
+            "201 + 201 + 40,200 个方向"
+          ]
+        ]
+      },
+      "cite": [
+        "nllb@Table 33"
+      ]
+    }
+  }
+}

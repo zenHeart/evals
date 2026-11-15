@@ -1,0 +1,387 @@
+{
+  "id": "ojbench",
+  "name": "OJ-Bench",
+  "full_name": "OJ-Bench（竞赛级编程在线评测基准）",
+  "aliases": ["OJBench"],
+  "status": "active",
+  "categories": ["coding"],
+  "summary": "OJ-Bench 是 232 道从中国信息学奥赛（NOI）与国际大学生程序设计竞赛（ICPC）真题中严格筛出的竞赛级编程题：模型读题后直接写完整程序，交给在线判题机在题目自带的全部测试点上运行，全部通过才算解决——连前沿推理模型也难以刷高。",
+  "interpretation": "高分说明模型能独立解出接近竞赛选手水平的算法题，并把代码写到全测试点皆过的正确度；但它不测软件工程能力（读大型代码库、按需求改动、协作），且同一模型 C++ 与 Python 两个口径可以差 10 分以上——读分数时先对齐语言、Pass@n 与测试方，再下结论。",
+  "measures": [
+    {
+      "area": "NOI 竞赛算法",
+      "focus": "中国信息学奥赛真题；难度由成功解题的选手投票标定（0–7 分，实际跨度 2–7）",
+      "share": "69%（159/232）",
+      "format": "读完整题面写完整程序，全部测试点 AC 记通过",
+      "cite": ["paper-html@Table 1", "paper-html@§2.1", "paper-html@§2.2"]
+    },
+    {
+      "area": "ICPC 竞赛算法",
+      "focus": "国际大学生程序设计竞赛真题；难度按真实赛场通过率折算",
+      "share": "31%（73/232）",
+      "format": "读完整题面写完整程序，全部测试点 AC 记通过",
+      "cite": ["paper-html@Table 1", "paper-html@§2.1", "paper-html@§2.2"]
+    },
+    {
+      "area": "难度分层",
+      "focus": "Easy 36 题 / Medium 79 题 / Hard 117 题，Hard 恰好过半，专门用来拉开头部模型",
+      "share": "Hard 50%（117/232）",
+      "format": "Pass@1 / Pass@8 按语言 × 难度分层报告",
+      "cite": ["paper-html@Table 1"]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "AI 辅助编程、物联网、区块链智能合约等新场景的代码能力（作者在附录明确说支持不足）",
+      "cite": ["paper-html@附录 A"]
+    },
+    {
+      "text": "编程竞赛的全部题型与赛场策略（作者自述评测无法覆盖竞赛全范围）",
+      "cite": ["paper-html@附录 A"]
+    },
+    {
+      "text": "软件工程能力：每题都是独立算法题，不涉及读大型代码库、按需求迭代、跨文件改动",
+      "cite": ["repo-ojbench@README"]
+    }
+  ],
+  "dataset": {
+    "sample_count": 232,
+    "splits": [
+      "Hugging Face 数据集 He-Ren/OJBench_testdata（ICPC / NOI 两目录 + prompts/full.jsonl）",
+      "每题同时提供 C++ 与 Python 两个语言版本的题面"
+    ],
+    "languages": ["en", "cpp", "python"],
+    "source_type": "竞赛真题（洛谷 NOI 题库 + ICPC 官网），非模型熟悉的面试题",
+    "public_sample": true,
+    "totals": "232 题（NOI 159 + ICPC 73）· Easy 36 / Medium 79 / Hard 117 · 难度分跨度 2–7 · 每题 C++ 与 Python 双语言题面 · 测试点用参赛选手的正确提交逐一校验过",
+    "cite": ["paper-html@Table 1", "paper-html@§2.1", "paper-html@§2.2", "repo-ojbench@README"],
+    "construction": [
+      {
+        "k": "选题来源",
+        "text": "为避免与现有基准重叠并纳入更有挑战的题，从洛谷（Luogu）上的 NOI 题库与 ICPC 官网收集历年竞赛真题。",
+        "cite": ["paper-html@§2.1"]
+      },
+      {
+        "k": "测试点校验",
+        "text": "用参赛选手的正确提交逐一验证收集到的测试点，剔除判不过的正确解对应样本。",
+        "cite": ["paper-html@§2.1"]
+      },
+      {
+        "k": "剔除特判题",
+        "text": "过滤掉原数据集中需要 special judge（自定义判题器）的题目，保证判题口径统一。",
+        "cite": ["paper-html@§2.1"]
+      },
+      {
+        "k": "翻译与人工复核",
+        "text": "NOI 题面先用 GPT-4o 从中文译成英文，再人工校对，确保语义与格式不走样。",
+        "cite": ["paper-html@§2.1"]
+      },
+      {
+        "k": "难度分级",
+        "text": "NOI 题按成功解题选手投票的 0–7 难度分（实际跨度 2–7）：2–3 记 Easy、4–5 记 Medium、6–7 记 Hard；ICPC 题按真实通过率折算：≥0.4 记 Easy、≤0.1 记 Hard、其余 Medium。",
+        "cite": ["paper-html@§2.2"]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "模型不带任何工具，读完整英文题面后一次写出完整程序；程序提交给 DMOJ judge-server，在题目自带的全部测试点上编译运行，全部通过（AC）才算解决。每题独立采样 8 个候选解；推理模型 max_tokens 放宽到 64k，温度等超参用各模型官方推荐值；按 Python 与 C++ 两个语言口径分别报告 Pass@1 与 Pass@8。",
+    "cite": ["paper-html@§2.3", "paper-html@§3.1", "paper-html@§2.4", "repo-ojbench@README"],
+    "variants": [
+      {
+        "text": "语言口径：仓库支持 Python / C++ 双语评测，同一模型两口径分数差异大，混排对比即误导。",
+        "cite": ["repo-ojbench@README", "paper-html@§4.2"]
+      },
+      {
+        "text": "厂商口径：Kimi K2 Thinking 的 OJ-Bench 分数在 temperature 1.0、256k 上下文、128k 思考预算下测得，编码分数取 5 次运行平均；其对照基线（带 *）是 Kimi 同条件自测，不是各官方成绩。",
+        "cite": ["kimi-blog-kimi-k2-thinking@Testing Details", "kimi-blog-kimi-k2-thinking@Baselines", "kimi-blog-kimi-k2-thinking@For Coding Tasks"]
+      },
+      {
+        "text": "快速判题模式：仓库另输出只用前 1/8、1/4、1/2 测试点的部分判定，仅供初筛，与全测试点口径不可比。",
+        "cite": ["repo-ojbench@README 判题"]
+      },
+      {
+        "text": "非思考模型组：Kimi K2 发布博客的对照表全部是非思考模型（含关掉扩展思考的 Claude），不能与思考模型的成绩混排。",
+        "cite": ["kimi-blog-kimi-k2@表格说明"]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "pass-at-1",
+      "name": "Pass@1",
+      "direction": "越高越好",
+      "description": "每题 1 个解的通过率；Pass@n 指一题采 n 个解、任一全部测试点 AC 即算过",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["paper-html@§3.1"]
+    },
+    {
+      "id": "pass-at-8",
+      "name": "Pass@8",
+      "direction": "越高越好",
+      "description": "每题 8 个解中至少 1 个通过的比例，反映模型多次尝试下的上限",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["paper-html@§3.1"]
+    }
+  ],
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2025-06-19",
+      "label": "arXiv v1 发表论文并公开数据集",
+      "cite": ["paper-ojbench@Submission history", "repo-ojbench@README News"]
+    },
+    {
+      "id": "v2",
+      "date": "2026-03-02",
+      "label": "arXiv v2 修订（本页核对所用版本）；2025-07 已开源评测代码",
+      "cite": ["paper-ojbench@Submission history", "repo-ojbench@README News"]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "语言口径分裂",
+      "impact": "同一模型 C++ 与 Python 的 Pass@1 可差 10 分以上（o4-mini：C++ 46.12 vs Python 33.30），跨来源榜单若不标语言，排名直接失真。",
+      "severity": "高",
+      "response": "论文与官方榜单都按语言分列；本站引用一律注明语言与 Pass@n。",
+      "reader": "看到分数先问三件事：什么语言、Pass@1 还是 Pass@8、谁测的。",
+      "cite": ["paper-html@Table 2", "repo-ojbench@README"]
+    },
+    {
+      "issue": "Hard 档大面积零分",
+      "impact": "Hard 占 117/232 题，论文期几乎所有非推理模型 Hard 通过率为 0，o4-mini 也只有 5.77——头部模型总分间几个点的差距主要由 Medium 档贡献，Hard 档对最强模型也几乎没有区分度。",
+      "severity": "高",
+      "response": "论文按 Easy/Medium/Hard 分层报告；官方榜单另设 By Difficulty 视图。",
+      "reader": "比较头部模型时看分层分，总分接近不等于能力接近。",
+      "cite": ["paper-html@§3.2", "paper-html@Table 2", "leaderboard-ojbench@By Difficulty (Pass Rate)"]
+    },
+    {
+      "issue": "题量小，单题权重大",
+      "impact": "232 题中 1 题约值 0.43 个百分点，两模型差 2 分可能只是四五道题的翻转；运行间波动不可忽略（Kimi 对编码任务取 5 次平均来压噪声）。",
+      "severity": "中",
+      "response": "论文每题跑 8 个候选解；厂商报分注明是否多次平均。",
+      "reader": "小于 2 分的差距当噪声看。",
+      "cite": ["kimi-blog-kimi-k2-thinking@For Coding Tasks", "paper-html@§3.1"]
+    },
+    {
+      "issue": "三套成绩来源口径不齐",
+      "impact": "论文（2025 年中模型、自建判题）、官方在线榜单（2026 年新模型、页面未注口径）、厂商博客（自选超参、基线自测）三套数字不能混排；论文自身 Table 2 与 Table 3 对 Qwen3-235B Hard Pass@1 还给出 4.27 与 1.07 两个不一致的数。",
+      "severity": "中",
+      "response": "引用时逐条注明来源与口径；论文内部冲突以主结果表 Table 2 为准。",
+      "reader": "先看分数出自哪张表，再决定信多少。",
+      "cite": ["paper-html@Table 2", "paper-html@Table 3", "kimi-blog-kimi-k2-thinking@Baselines"]
+    },
+    {
+      "issue": "题源公开，无去污染说明",
+      "impact": "题目与题解来自洛谷、ICPC 官网等公开平台，赛前题解和选手博客可能已进训练语料；论文未做污染分析（contamination 一词只出现在其参考文献标题里）。",
+      "severity": "中",
+      "response": "官方承诺在在线榜单持续更新新模型成绩，可借分数漂移间接观察。",
+      "reader": "新模型分数大涨时，把「训练期见过题」当成与「真的变强」并列的解释。",
+      "cite": ["paper-html@§2.1", "paper-html@首页脚注"]
+    },
+    {
+      "issue": "覆盖范围有边界",
+      "impact": "不覆盖 AI 辅助编程、物联网、区块链智能合约等新场景，作者也自述无法覆盖编程竞赛的全部范围。",
+      "severity": "低",
+      "response": "把它当「竞赛算法推理」专用标尺，与工程类基准配合使用。",
+      "reader": "不要用它外推模型的日常工程表现。",
+      "cite": ["paper-html@附录 A"]
+    }
+  ],
+  "notes": "Kimi 引用；含运行时限定的 OJ 判题",
+  "official_sources": [
+    { "kind": "paper", "url": "https://arxiv.org/abs/2506.16395" },
+    { "kind": "repo", "url": "https://github.com/He-Ren/OJBench" },
+    { "kind": "dataset", "url": "https://huggingface.co/datasets/He-Ren/OJBench_testdata" },
+    { "kind": "site", "url": "https://he-ren.github.io/OJBench-Leaderboard/" },
+    { "kind": "site", "url": "https://www.kimi.ai/blog/kimi-k2-thinking" },
+    { "kind": "site", "url": "https://www.kimi.ai/blog/kimi-k2" }
+  ],
+  "related_benchmarks": ["lcb", "apps"],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-13",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      {
+        "id": "paper-ojbench",
+        "kind": "paper",
+        "title": "OJBench: A Competition Level Code Benchmark For Large Language Models（arXiv:2506.16395，v2，2026-03-02）",
+        "url": "https://arxiv.org/abs/2506.16395",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "paper-html",
+        "kind": "paper",
+        "title": "OJBench 论文全文（arXiv HTML v2，本页正文摘录主要出处）",
+        "url": "https://arxiv.org/html/2506.16395",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "repo-ojbench",
+        "kind": "repo",
+        "title": "He-Ren/OJBench（GitHub 仓库：数据结构、判题环境与 API）",
+        "url": "https://github.com/He-Ren/OJBench",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "leaderboard-ojbench",
+        "kind": "leaderboard",
+        "title": "OJBench Leaderboard（官方在线榜单）",
+        "url": "https://he-ren.github.io/OJBench-Leaderboard/",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "kimi-blog-kimi-k2-thinking",
+        "kind": "blog",
+        "title": "Kimi K2 Thinking 发布博客（Moonshot AI）",
+        "url": "https://www.kimi.ai/blog/kimi-k2-thinking",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "kimi-blog-kimi-k2",
+        "kind": "blog",
+        "title": "Kimi K2 发布博客（Moonshot AI）",
+        "url": "https://www.kimi.ai/blog/kimi-k2",
+        "accessed": "2026-11-13"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "北京邮电大学、清华大学、中国科学院大学、北京大学与 Moonshot AI（月之暗面）联合团队",
+        "cite": ["paper-html@作者署名"]
+      },
+      "first_release": {
+        "v": "2025-06-19（arXiv v1）",
+        "cite": ["paper-ojbench@Submission history"]
+      }
+    },
+    "cites": {
+      "summary": ["paper-html@Abstract", "repo-ojbench@README"],
+      "interpretation": ["paper-html@Abstract", "paper-html@§4.2"]
+    },
+    "problem": {
+      "text": "LeetCode 难度的面试题基准（LiveCodeBench 主体）已被模型刷高、拉不开头部差距；OJ-Bench 用 NOI/ICPC 真赛题补上代码领域缺失的「竞赛级」标尺，重新测出头部模型的推理上限。",
+      "cite": ["paper-html@§1"]
+    },
+    "ladder": [
+      {
+        "label": "论文期非推理模型最好",
+        "value": "Pass@1 25.54（Python）",
+        "note": "DeepSeek-V3-0324（671B 参数，Hard 档仅 3.74%）；同期 Claude-3.5-Sonnet 同口径 10.40。",
+        "cite": ["paper-html@Table 2", "paper-html@§3.2"]
+      },
+      {
+        "label": "论文期开源推理最好",
+        "value": "Pass@1 26.02（Python）",
+        "note": "DeepSeek-R1 与 Qwen3-235B-A22B（25.97）超过 o1-mini、逼近 o1-20241217；两者换 C++ 反而不再涨分。",
+        "cite": ["paper-html@Table 2", "paper-html@§3.2"]
+      },
+      {
+        "label": "论文期闭源最好",
+        "value": "Pass@1 46.12 / Pass@8 61.21（C++）",
+        "note": "o4-mini；Python 口径最好为 Gemini-2.5-pro-exp 38.91。Hard 档 o4-mini 仅 5.77、Gemini-2.5-pro 9.48，远未饱和。",
+        "cite": ["paper-html@Table 2"]
+      },
+      {
+        "label": "官方在线榜单最高",
+        "value": "Pass@1 69.99 / Pass@8 79.74（C++）",
+        "note": "Gemini-3.0-pro，2026-11 快照；页面未标注各模型的测试口径与日期。",
+        "cite": ["leaderboard-ojbench@Overall (Pass@) 表"]
+      },
+      {
+        "label": "厂商自报参考（Kimi K2 Thinking）",
+        "value": "Pass@1 48.7（C++，无工具）",
+        "note": "128k 思考预算、编码分数取 5 次平均；同表 GPT-5（High）56.2* 为 Kimi 同条件自测。",
+        "cite": ["kimi-blog-kimi-k2-thinking@Coding Tasks 表", "kimi-blog-kimi-k2-thinking@Baselines"]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 C++ 与 Python 两个口径的分数混排比较：多数长思考模型 C++ 显著更高，R1 蒸馏系模型却 Python 更高，混排即误导。",
+        "cite": ["paper-html@§4.2"]
+      },
+      {
+        "text": "拿 OJ-Bench 与 LiveCodeBench 的百分数直接比大小：前者是竞赛难度、后者主体是面试难度，o4-mini 两边相差 30 分（63.70 vs 33.30）。",
+        "cite": ["paper-html@§1", "paper-html@Table 3"]
+      },
+      {
+        "text": "把厂商博客自测分数当官方榜：Kimi 博客带 * 的基线分是同条件重测，GPT-5 用的是 Kimi 设的 high 推理档。",
+        "cite": ["kimi-blog-kimi-k2-thinking@Baselines"]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "北京邮电大学、清华大学、中国科学院大学、北京大学与 Moonshot AI 联合团队（论文署名 13 人，一作 Zhexu Wang）",
+        "cite": ["paper-html@作者署名"]
+      },
+      {
+        "k": "时间线",
+        "v": "2025-06-19 arXiv v1 + 公开数据集 → 2025-07 开源评测代码 → 2026-03-02 arXiv v2 修订",
+        "cite": ["paper-ojbench@Submission history", "repo-ojbench@README News"]
+      },
+      {
+        "k": "判题机",
+        "v": "DMOJ judge-server（锁定提交 f098cd3a…），C++17（g++ ≥ 7.0）与 PyPy3 编译运行",
+        "cite": ["repo-ojbench@README"]
+      },
+      {
+        "k": "算力",
+        "v": "论文实验用两套 8×A100-80GB 集群，每个模型推理约 2 小时",
+        "cite": ["paper-html@附录 E"]
+      },
+      {
+        "k": "数据与代码",
+        "v": "题面与测试点在 Hugging Face（He-Ren/OJBench_testdata，仓库 AGPL-3.0）；官方承诺在在线榜单持续更新新模型成绩",
+        "cite": ["repo-ojbench@README", "paper-html@首页脚注"]
+      },
+      {
+        "k": "生态位",
+        "v": "论文定位：代码领域此前缺竞赛级基准——LiveCodeBench 主体是面试难度，CodeElo 依赖 CodeForces 模拟提交、题目难度方差大",
+        "cite": ["paper-html@§1"]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-13",
+        "columns": ["来源", "模型", "语言", "Pass@1", "Pass@8", "口径"],
+        "rows": [
+          ["论文 Table 2", "o4-mini", "C++", "46.12", "61.21", "无工具，2025 年中模型"],
+          ["论文 Table 2", "o4-mini", "Python", "33.30", "48.71", "无工具；Hard 档 5.77"],
+          ["论文 Table 2", "Gemini-2.5-pro-exp-03-25", "C++", "44.26", "56.47", "无工具"],
+          ["论文 Table 2", "Gemini-2.5-pro-exp-03-25", "Python", "38.91", "48.71", "无工具；Hard 档 9.48"],
+          ["论文 Table 2", "o3-mini", "C++", "40.25", "52.16", "无工具"],
+          ["论文 Table 2", "o1-20241217", "C++", "33.24", "47.84", "无工具"],
+          ["论文 Table 2", "Qwen3-235B-A22B", "Python", "25.97", "40.52", "无工具，开源最佳；Hard 档 4.27"],
+          ["论文 Table 2", "DeepSeek-R1", "Python", "26.02", "37.07", "无工具，开源"],
+          ["论文 Table 2", "DeepSeek-V3-0324", "Python", "25.54", "32.33", "无工具，非推理开源最佳；Hard 档 3.74"],
+          ["官方在线榜单", "Gemini-3.0-pro", "C++", "69.99", "79.74", "2026-11 快照，口径未注明"],
+          ["官方在线榜单", "claude-opus-4.6-thinking", "C++", "67.15", "76.72", "2026-11 快照"],
+          ["官方在线榜单", "Kimi-2.5-thinking", "C++", "56.95", "74.14", "2026-11 快照"],
+          ["官方在线榜单", "DeepSeek-v3.2", "C++", "51.72", "69.83", "2026-11 快照"],
+          ["Kimi K2 Thinking 博客", "Kimi K2 Thinking", "C++", "48.7", "—", "无工具，128k 思考预算，5 次平均"],
+          ["Kimi K2 Thinking 博客", "GPT-5 (High)", "C++", "56.2*", "—", "Kimi 同条件自测（带 *）"],
+          ["Kimi K2 Thinking 博客", "Claude-4.5-Sonnet (Thinking)", "C++", "30.4*", "—", "Kimi 同条件自测（带 *）"],
+          ["Kimi K2 Thinking 博客", "DeepSeek-V3.2", "C++", "38.2*", "—", "Kimi 同条件自测（带 *）"],
+          ["Kimi K2 博客", "Kimi-K2-Instruct", "未注明", "27.1", "—", "非思考模型组"],
+          ["Kimi K2 博客", "DeepSeek-V3-0324", "未注明", "24.0", "—", "非思考模型组"],
+          ["Kimi K2 博客", "Qwen3-235B-A22B (Non-thinking)", "未注明", "11.3", "—", "非思考模型组"],
+          ["Kimi K2 博客", "GPT-4.1", "未注明", "19.5", "—", "非思考模型组"]
+        ]
+      },
+      "cite": [
+        "paper-html@Table 2",
+        "leaderboard-ojbench@Overall (Pass@) 表",
+        "kimi-blog-kimi-k2-thinking@Coding Tasks 表",
+        "kimi-blog-kimi-k2@Coding Tasks 表"
+      ]
+    }
+  }
+}

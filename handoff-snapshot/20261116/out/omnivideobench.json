@@ -1,0 +1,560 @@
+{
+  "id": "omnivideobench",
+  "name": "OmniVideoBench",
+  "full_name": "OmniVideoBench: Towards Audio-Visual Understanding Evaluation for Omni MLLMs",
+  "aliases": [
+    "OmniVideoBench AV"
+  ],
+  "status": null,
+  "categories": [
+    "multimodal"
+  ],
+  "summary": "OmniVideoBench 是音画协同理解基准：在 628 条 YouTube / Bilibili 真实视频（数秒到 30 分钟）上人工出题，经「单模态可解删除 → 纯文本可解删除 → 人工复核」三阶段过滤出 1,000 道选择题，每题标注逐步推理链；13 种任务类型覆盖感知、时序、因果到假设推理。",
+  "interpretation": "高分说明模型真正联合使用了声音与画面——去掉音频后 Gemini-2.0-Flash 从 41.50 掉到 31.30（接近随机）。截至论文 v3 最好成绩 61.80%（Gemini-3.0-Pro），人类 82.69%，音画协同理解仍未解决；论文 v1 引言「无人过 60%」的说法已被 v3 结果表更新。",
+  "measures": [
+    {
+      "area": "细粒度感知 / 空间推理 / 属性比较 / 计数",
+      "focus": "示例（论文图 1）：海报在说话人的哪一侧——需先听音频定位说话人，再结合画面做空间判断",
+      "share": "未披露（论文图 3(b) 只给分布图，未列各类题数）",
+      "format": "选择题（数据样例为 A–D 四选一）",
+      "cite": [
+        "arxiv-2510-10689@§2.3",
+        "arxiv-2510-10689@Figure 1"
+      ]
+    },
+    {
+      "area": "时序理解 / 因果推理 / 假设推理",
+      "focus": "示例（GitHub 数据样例）：两人讨论冰块时为何注意到身后的超人——关键证据是超人踩木地板的声音，只看画面答不出",
+      "share": "未披露",
+      "format": "选择题（A–D 四选一）",
+      "cite": [
+        "arxiv-2510-10689@§2.3",
+        "github-repo@README Data Structure"
+      ]
+    },
+    {
+      "area": "背景与音乐理解",
+      "focus": "考低语义声学线索（音乐风格、节奏变化）与画面的关联；论文中最难的任务类型——最强的 Gemini-2.5-Pro 准确率也低于 50%",
+      "share": "未披露",
+      "format": "选择题（A–D 四选一）",
+      "cite": [
+        "arxiv-2510-10689@§3.4"
+      ]
+    },
+    {
+      "area": "摘要 / 关系推理 / 情感 / 指代 / 自我中心推理",
+      "focus": "论文中相对容易的两类：Gemini-2.5-Pro 在关系推理与摘要任务上的准确率超过 80%",
+      "share": "未披露",
+      "format": "选择题（A–D 四选一）",
+      "cite": [
+        "arxiv-2510-10689@§1"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "纯文本推理——过滤阶段专门删除了只凭常识或题面文字就能答对的题（DeepSeek-V3.1 纯文本输入只拿 27.60）",
+      "cite": [
+        "arxiv-2510-10689@§2.4",
+        "arxiv-2510-10689@Table 3"
+      ]
+    },
+    {
+      "text": "单模态（只看画面或只听音频）的独立能力——每道题都要求双模态联合，单模态可解的题已在过滤阶段删除",
+      "cite": [
+        "arxiv-2510-10689@§2.4"
+      ]
+    },
+    {
+      "text": "开放式生成回答——主协议为选择题，论文仅附带用开放式问答做对照实验",
+      "cite": [
+        "arxiv-2510-10689@§3.4",
+        "arxiv-2510-10689@Table 4"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 1000,
+    "splits": [
+      "公开评测集 1,000 题（未见官方 train/dev 划分）"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "real-world（YouTube 与 Bilibili 公开视频，限定 2024-06 后发布）",
+    "public_sample": true,
+    "totals": "628 条真实视频 · 1,000 道选择题 · 13 种任务类型 · 视频时长 4–1955 秒（平均 384.24 秒）· 480p–1080p · 音频类型 语音 762 / 音效 147 / 音乐 91 题 · 每题推理链平均 5.68 步（视觉步 54% / 音频步 46%）",
+    "cite": [
+      "arxiv-2510-10689@Table 1",
+      "arxiv-2510-10689@§2.5",
+      "arxiv-2510-10689@Table 2"
+    ],
+    "construction": [
+      {
+        "k": "视频收集",
+        "text": "从 YouTube 与 Bilibili 收集 2024 年 6 月之后发布的真实视频，分 8 大类（Vlog、新闻、卡通、体育、纪录片、电视、第一人称等）68 子类；排除带内嵌字幕的视频（防止模型靠字幕「作弊」），最低分辨率 480p。",
+        "cite": [
+          "arxiv-2510-10689@§2.2",
+          "arxiv-2510-10689@附录 B"
+        ]
+      },
+      {
+        "k": "人工出题",
+        "text": "人工编写选择题（题干 + 正确答案 + 干扰项），初始约 2,500 题，分属 13 种任务类型；要求答案唯一、不依赖分辨率与帧率。",
+        "cite": [
+          "arxiv-2510-10689@§2.3"
+        ]
+      },
+      {
+        "k": "单模态过滤",
+        "text": "用 Gemini 2.0 Flash（强音画感知）分别只给视频或只给音频作答，能靠单一模态答对的题直接删除，剩约 1,500 题。",
+        "cite": [
+          "arxiv-2510-10689@§2.4"
+        ]
+      },
+      {
+        "k": "纯文本过滤",
+        "text": "用 DeepSeek-V3.1 找出只凭文字信息（常识或题面线索）就能答的题，剩 1,103 题。",
+        "cite": [
+          "arxiv-2510-10689@§2.4"
+        ]
+      },
+      {
+        "k": "人工复核 + 推理链标注",
+        "text": "人工逐题复核答案正确性与唯一性，并为每题标注逐步推理链，最终得到 1,000 题。",
+        "cite": [
+          "arxiv-2510-10689@§2.4"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "accuracy",
+      "name": "准确率",
+      "direction": "越高越好",
+      "description": "选择题按选项字母直接判定；无人工裁判、无 pass@k",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2510-10689@附录 C.1",
+        "arxiv-2510-10689@Table 3"
+      ]
+    }
+  ],
+  "default_protocol": {
+    "raw": "输入完整视频（含音轨）+ 题目与选项，按附录 C.1 提示词要求「直接回答选项字母」，看不了视频也必须选一个更可能的选项；报告准确率。开源模型用官方 GitHub 仓库 eval 脚本，闭源模型走 API。",
+    "cite": [
+      "arxiv-2510-10689@附录 C.1",
+      "github-repo@README Evaluation"
+    ],
+    "variants": [
+      {
+        "text": "带音频 vs 纯视觉（--no_sound）：去掉音频后 Gemini-2.0-Flash 从 41.50 掉到 31.30；官网榜单为无音频模型单列口径并加标记，两种分数不可混排。",
+        "cite": [
+          "arxiv-2510-10689@Table 3",
+          "github-repo@README Evaluation"
+        ]
+      },
+      {
+        "text": "选择题 vs 开放式问答：去掉选项后所有模型大跌（Gemini-2.0-Flash 41.50 → 27.06，Gemini-2.5-Pro 相对降幅超 14%）；开放式只是论文对照实验，不是榜单口径。",
+        "cite": [
+          "arxiv-2510-10689@Table 4",
+          "arxiv-2510-10689@§3.4"
+        ]
+      },
+      {
+        "text": "帧数采样：论文把帧数固定为 32 / 64 / 128 / 256 做消融，帧数越多分数越高；主评测各模型的统一帧数设置未见披露，跨 setting 比较前先核对。",
+        "cite": [
+          "arxiv-2510-10689@§3.4"
+        ]
+      },
+      {
+        "text": "原生音频 vs 画面 + ASR 文字稿：论文用 Voxtral-Mini-3B 生成转写作对照，ASR 对语音类任务有帮助，但对音乐、音效类深度音频理解不可替代。",
+        "cite": [
+          "arxiv-2510-10689@§3.4"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2025-10-12",
+      "label": "arXiv v1 首发（HF 数据集同日上线）",
+      "cite": [
+        "arxiv-abs@Submission history",
+        "hf-omnivideobench@Sidebar"
+      ]
+    },
+    {
+      "id": "v2",
+      "date": "2026-02-14",
+      "label": "arXiv v2 修订",
+      "cite": [
+        "arxiv-abs@Submission history"
+      ]
+    },
+    {
+      "id": "v3",
+      "date": "2026-03-05",
+      "label": "arXiv v3（本页核对所用版本）：结果表含 Gemini-3.0-Pro（61.80）等新模型；引言「无人过 60%」表述未同步更新",
+      "cite": [
+        "arxiv-abs@Submission history",
+        "arxiv-2510-10689@Table 3",
+        "arxiv-2510-10689@§1"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "论文文本与结果表不同步",
+      "impact": "引言写「无模型达到 60%、最好的 Gemini-2.0-Pro 只有 58.90%」，但 v3 结果表里 58.90% 属于 Gemini-2.5-Pro，且新增的 Gemini-3.0-Pro 已到 61.80%；照抄引言会得出已过时的结论。",
+      "severity": "中",
+      "response": "未见官方说明（结果表与官网榜单均为 61.80）；本页以结果表为准。",
+      "reader": "读二手转述（新闻、模型卡）时先对照论文结果表或官网榜单。",
+      "cite": [
+        "arxiv-2510-10689@§1",
+        "arxiv-2510-10689@Table 3"
+      ]
+    },
+    {
+      "issue": "许可标注自相矛盾",
+      "impact": "HF 数据卡正文与 GitHub README 都写 CC-BY-NC-SA-4.0，但 HF 仓库元数据标签是 cc-by-nc-nd-4.0；商用与二次分发口径不清。数据集另声明仅限研究用途、不拥有原始视频版权。",
+      "severity": "中",
+      "response": "官方声明数据集仅限研究用途、原始视频版权归作者所有，可邮件联系下架；未见对许可标签矛盾的说明。",
+      "reader": "使用前按更严的 ND 口径评估，不要当成可改写分发的数据。",
+      "cite": [
+        "hf-omnivideobench@License",
+        "hf-omnivideobench@Sidebar",
+        "github-repo@README License"
+      ]
+    },
+    {
+      "issue": "选择题可能高估能力",
+      "impact": "去掉选项改开放式问答后所有模型大跌（Gemini-2.0-Flash 41.50 → 27.06，Gemini-2.5-Pro 相对降幅超 14%），MCQ 分数含选项线索与猜测成分。",
+      "severity": "中",
+      "response": "论文把开放式 QA 作为对照实验公布；未见修改主协议的打算。",
+      "reader": "不要把选择题分数直接当成开放场景的音视频理解水平。",
+      "cite": [
+        "arxiv-2510-10689@Table 4",
+        "arxiv-2510-10689@§3.4"
+      ]
+    },
+    {
+      "issue": "公开可下载带来的训练泄漏风险",
+      "impact": "数据集在 HF 公开（57.2 GB，需同意条款），视频来自公开平台，无法排除与厂商训练语料的重叠。",
+      "severity": "低",
+      "response": "官方把视频限定为 2024 年 6 月后发布以降低污染风险；未见留存集或污染检测。",
+      "reader": "厂商高分若伴随大规模公开视频训练，分数要打折扣看。",
+      "cite": [
+        "arxiv-2510-10689@附录 B",
+        "hf-omnivideobench@Sidebar"
+      ]
+    },
+    {
+      "issue": "参评模型必须具备原生音频输入",
+      "impact": "不支持音频的模型只能以纯视觉口径参评（分数结构性偏低），或外挂 ASR——论文实验显示 ASR 不能替代音乐、音效类音频理解。",
+      "severity": "低",
+      "response": "官网榜单为无音频模型单列口径并加标记；未见其他官方回应。",
+      "reader": "比较前先确认各模型是否都有音频通道、口径是否一致。",
+      "cite": [
+        "arxiv-2510-10689@§3.4",
+        "omnivideobench-omnivideobench-home@Leaderboard"
+      ]
+    }
+  ],
+  "notes": "本页为 benchmark-profile/v2 深度档案；论文 v3 引言与结果表存在不同步（见 limitations），HF 许可标签与正文不一致",
+  "official_sources": [
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2510.10689"
+    },
+    {
+      "kind": "site",
+      "url": "https://omnivideobench.github.io/omnivideobench_home/"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/NJU-LINK/OmniVideoBench"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/NJU-LINK/OmniVideoBench"
+    }
+  ],
+  "related_benchmarks": [
+    "video-mme",
+    "crossvid"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-13",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      {
+        "id": "arxiv-2510-10689",
+        "kind": "paper",
+        "title": "OmniVideoBench（arXiv:2510.10689，v3，2026-03-05）",
+        "url": "https://arxiv.org/abs/2510.10689",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "arxiv-abs",
+        "kind": "paper",
+        "title": "arXiv 2510.10689 摘要页（提交与修订历史）",
+        "url": "https://arxiv.org/abs/2510.10689",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "github-repo",
+        "kind": "repo",
+        "title": "NJU-LINK/OmniVideoBench（GitHub，评测代码与数据样例）",
+        "url": "https://github.com/NJU-LINK/OmniVideoBench",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "hf-omnivideobench",
+        "kind": "dataset",
+        "title": "NJU-LINK/OmniVideoBench（Hugging Face，需同意条款）",
+        "url": "https://huggingface.co/datasets/NJU-LINK/OmniVideoBench",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "omnivideobench-omnivideobench-home",
+        "kind": "site",
+        "title": "OmniVideoBench 官网（含榜单）",
+        "url": "https://omnivideobench.github.io/omnivideobench_home/",
+        "accessed": "2026-11-13"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "NJU-LINK Team（共同一作 Caorui Li、Yu Chen 来自东南大学，Yiyan Ji 来自南京大学；通讯作者 Jiaheng Liu，南京大学；合作者来自阿里、快手、M-A-P、中央音乐学院等机构）",
+        "cite": [
+          "arxiv-2510-10689@§6 Contributions"
+        ]
+      },
+      "first_release": {
+        "v": "2025-10-12（arXiv v1；HF 数据集同日上线）",
+        "cite": [
+          "arxiv-abs@Submission history",
+          "hf-omnivideobench@Sidebar"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "arxiv-2510-10689@Abstract",
+        "arxiv-2510-10689@Table 1"
+      ],
+      "interpretation": [
+        "arxiv-2510-10689@Table 3",
+        "arxiv-2510-10689@§3.2"
+      ]
+    },
+    "problem": {
+      "text": "现有视频基准要么以画面为主、音频只是配角，要么只用短视频片段、两模态逻辑不一致——测不出真正的音画协同推理；OmniVideoBench 用真实长视频（4–1955 秒）+ 双模态强制设计补这个缺口。",
+      "cite": [
+        "omnivideobench-omnivideobench-home@Home",
+        "arxiv-2510-10689@Table 2"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机猜测参考线",
+        "value": "论文未给出数值",
+        "note": "图 4 只画红线未标数值；论文称除 Qwen3-Omni 外开源模型接近随机（约 29–32%）。若按 A–D 四选一推算为 25%，此为本站推算、论文未官方给出。",
+        "cite": [
+          "arxiv-2510-10689@Figure 4",
+          "arxiv-2510-10689@§1"
+        ]
+      },
+      {
+        "label": "论文最好（v3 结果表）",
+        "value": "61.80%",
+        "note": "Gemini-3.0-Pro；人类 82.69%；v1 引言「最好 58.90%、无人过 60%」未随 v3 结果表更新。",
+        "cite": [
+          "arxiv-2510-10689@Table 3",
+          "arxiv-2510-10689@§3.2"
+        ]
+      },
+      {
+        "label": "官网榜单最高",
+        "value": "61.80%",
+        "note": "Gemini-3-Pro-Preview（2025-11-19），与论文结果表同源；榜单接受社区提交、官方审核后上榜。",
+        "cite": [
+          "omnivideobench-omnivideobench-home@Leaderboard",
+          "arxiv-2510-10689@Table 3"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      },
+      {
+        "label": "人类参考线",
+        "value": "82.69%",
+        "note": "10 名标注者（8 名多模态研究生 + 2 名音乐专家）无时间限制作答；分数越接近它，题目噪声与标注分歧的影响越大。",
+        "cite": [
+          "arxiv-2510-10689@§3.2"
+        ]
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把纯视觉口径和带音频口径的分数排在一起比——去掉音频后 Gemini-2.0-Flash 从 41.50 掉到 31.30，官网榜单为无音频模型单列口径。",
+        "cite": [
+          "arxiv-2510-10689@Table 3"
+        ]
+      },
+      {
+        "text": "把选择题分数当成开放式问答能力——去掉选项后 Gemini-2.0-Flash 只有 27.06。",
+        "cite": [
+          "arxiv-2510-10689@Table 4"
+        ]
+      },
+      {
+        "text": "把 30% 上下的成绩当能力证据——论文明确说除 Qwen3-Omni 外开源模型接近随机猜测。",
+        "cite": [
+          "arxiv-2510-10689@§1"
+        ]
+      },
+      {
+        "text": "照抄论文引言的「最好 58.90%、无人过 60%」——v3 结果表里 Gemini-3.0-Pro 已到 61.80%。",
+        "cite": [
+          "arxiv-2510-10689@§1",
+          "arxiv-2510-10689@Table 3"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "NJU-LINK Team（通讯作者 Jiaheng Liu，南京大学；共同一作 Caorui Li、Yu Chen 为东南大学，Yiyan Ji 为南京大学；合作者来自阿里、快手、M-A-P 等机构）",
+        "cite": [
+          "arxiv-2510-10689@§6 Contributions"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2025-10-12 arXiv v1 → 2026-02-14 v2 → 2026-03-05 v3；GitHub README 宣布被 ICLR 2026 接收为 Poster",
+        "cite": [
+          "arxiv-abs@Submission history",
+          "github-repo@README Events"
+        ]
+      },
+      {
+        "k": "人类基线",
+        "v": "10 名标注者（8 名多模态方向研究生 + 2 名音乐分析专家）无时间限制作答，准确率 82.69%",
+        "cite": [
+          "arxiv-2510-10689@§3.2"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "数据集在 Hugging Face（NJU-LINK/OmniVideoBench，需同意条款，57.2 GB）；评测脚本在 GitHub（开源模型本地跑、闭源模型走 API，--no_sound 做纯视觉对照）",
+        "cite": [
+          "hf-omnivideobench@Sidebar",
+          "github-repo@README Evaluation"
+        ]
+      },
+      {
+        "k": "视频来源",
+        "v": "YouTube 与 Bilibili 公开视频，限定 2024 年 6 月后发布以降低训练数据污染，排除内嵌字幕视频",
+        "cite": [
+          "arxiv-2510-10689@§2.2",
+          "arxiv-2510-10689@附录 B"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-13",
+        "columns": [
+          "来源",
+          "模型",
+          "准确率",
+          "口径"
+        ],
+        "rows": [
+          [
+            "论文 v3 表 3",
+            "人类（10 名标注者）",
+            "82.69%",
+            "无时间限制（§3.2）"
+          ],
+          [
+            "论文 v3 表 3",
+            "Gemini-3.0-Pro",
+            "61.80%",
+            "全量（音+视）"
+          ],
+          [
+            "论文 v3 表 3",
+            "Gemini-2.5-Pro",
+            "58.90%",
+            "全量（音+视）"
+          ],
+          [
+            "论文 v3 表 3",
+            "Gemini-3.0-Flash",
+            "55.10%",
+            "全量（音+视）"
+          ],
+          [
+            "论文 v3 表 3",
+            "Gemini-2.5-Flash",
+            "52.40%",
+            "全量（音+视）"
+          ],
+          [
+            "论文 v3 表 3",
+            "Gemini-2.0-Flash",
+            "41.50%",
+            "全量（音+视）"
+          ],
+          [
+            "论文 v3 表 3",
+            "Qwen3-Omni-30B-A3B",
+            "38.40%",
+            "全量（音+视）"
+          ],
+          [
+            "论文 v3 表 3",
+            "Qwen2.5-Omni-7B",
+            "29.30%",
+            "全量（音+视）"
+          ],
+          [
+            "论文 v3 表 3",
+            "Gemini-2.0-Flash",
+            "31.30%",
+            "纯视觉（无音频）"
+          ],
+          [
+            "论文 v3 表 3",
+            "Qwen2.5-Omni-7B",
+            "26.40%",
+            "纯视觉（无音频）"
+          ],
+          [
+            "论文 v3 表 3",
+            "DeepSeek-V3.1",
+            "27.60%",
+            "纯文本（官网榜单标记无视觉/无音频）"
+          ]
+        ]
+      },
+      "cite": [
+        "arxiv-2510-10689@Table 3",
+        "arxiv-2510-10689@§3.2",
+        "omnivideobench-omnivideobench-home@Leaderboard"
+      ]
+    }
+  }
+}

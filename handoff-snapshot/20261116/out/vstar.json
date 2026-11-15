@@ -1,0 +1,636 @@
+{
+  "id": "vstar",
+  "name": "V*Bench",
+  "full_name": "V*Bench（V* 视觉搜索基准，出自 SEAL 框架论文《V*: Guided Visual Search as a Core Mechanism in Multimodal LLMs》）",
+  "aliases": [],
+  "status": "active",
+  "categories": [
+    "multimodal"
+  ],
+  "summary": "V*Bench 是 SEAL 论文配套的视觉搜索基准：191 张来自 SAM（SA-1B）的高分辨率自然图（平均 2246×1582），题目由人工撰写，属性识别 115 题 + 空间关系推理 76 题，全部为选择题，用多选准确率计分。图大、目标小，GPT-4V 在这类题上也常失手。",
+  "interpretation": "分数高只说明模型能在信息密集的高分辨率大图里定位并看清被问到的那一处细节，不代表通用视觉能力。论文用 SEAL（Vicuna-7B + V* 视觉搜索）把总体分从 45.0 提到 75.3；同期 GPT-4V 54.97、Gemini Pro 48.16，随机猜 35.99，人类 98.95。",
+  "measures": [
+    {
+      "area": "属性识别",
+      "focus": "识别图中某个指定对象的属性（颜色、材质、姿态等）；难点在于必须先在密集的高分辨率图里找到这个对象",
+      "share": "115 / 191 题（约 60%）",
+      "format": "四选一，输出选项字母",
+      "cite": [
+        "paper@§4",
+        "vstar-seal"
+      ]
+    },
+    {
+      "area": "空间关系推理",
+      "focus": "判断两个对象之间的相对空间关系（左右、内外等）",
+      "share": "76 / 191 题（约 40%）",
+      "format": "二选一，输出选项字母",
+      "cite": [
+        "paper@§4",
+        "vstar-seal"
+      ]
+    },
+    {
+      "area": "探索性子集 · OCR",
+      "focus": "识别图中某些对象上的文字字符或数字；论文只作探索分析，不计入主表",
+      "share": "30 题",
+      "format": "选择题",
+      "cite": [
+        "paper@附录 B"
+      ]
+    },
+    {
+      "area": "探索性子集 · GPT-4V-hard",
+      "focus": "专挑 GPT-4V 答错而带视觉搜索的简单模型能答对的样本；论文只作探索分析，不计入主表",
+      "share": "17 题",
+      "format": "选择题",
+      "cite": [
+        "paper@附录 B"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "通用 VQA、图像描述、目标检测等常规视觉任务——本基准只问属性与空间关系两类细节问题",
+      "cite": [
+        "paper@§4"
+      ]
+    },
+    {
+      "text": "开放式生成——191 题全是选择题，只能输出选项字母",
+      "cite": [
+        "paper@§4",
+        "dataset"
+      ]
+    },
+    {
+      "text": "视频、文档、示意图等非自然照片——作者明确当前视觉搜索模型主要面向自然图像与常见物体",
+      "cite": [
+        "paper@§6"
+      ]
+    },
+    {
+      "text": "跨模型可比的搜索效率排名——搜索长度只在论文内部比较搜索策略，且只统计搜索后能成功定位的样本",
+      "cite": [
+        "paper@§5.3"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 191,
+    "splits": [
+      "公开测试集 191 题（Hugging Face 上只有一个 test 拆分）"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "SAM（SA-1B）中的高分辨率自然照片 + 人工撰写的问题与选项",
+    "public_sample": true,
+    "multiple_choice_share": "100%（191 题均为选择题：开放题 4 个选项、是非题 2 个选项）",
+    "totals": "191 题 = 属性识别 115 + 空间关系推理 76，另有 OCR 30 题与 GPT-4V-hard 17 题两个探索性子集（不并入主表）· 图像来自 SA-1B，平均分辨率 2246×1582 · Hugging Face 公开 test 拆分 191 行，只有 image / text / category / question_id / label 几个字段",
+    "cite": [
+      "paper@§4",
+      "paper@附录 B",
+      "dataset"
+    ],
+    "construction": [
+      {
+        "k": "选图",
+        "text": "从 SA-1B 中挑 191 张信息密集、所需视觉信息不易直接找到的高分辨率自然图，平均分辨率 2246×1582。",
+        "cite": [
+          "paper@§4"
+        ]
+      },
+      {
+        "k": "出题",
+        "text": "测试图与问题都由人工标注员挑选和撰写，保证不精确定位相关对象就很难直接猜对答案。",
+        "cite": [
+          "paper@§4"
+        ]
+      },
+      {
+        "k": "配选项",
+        "text": "为便于比较开源模型，给每道题配选项：开放题 4 个、是非题 2 个，并由人工复查消除歧义。",
+        "cite": [
+          "paper@§4"
+        ]
+      },
+      {
+        "k": "加探索子集",
+        "text": "额外收集 OCR 30 题与 GPT-4V-hard 17 题两个子集，只用于暴露当前系统（含 GPT-4V）的短板，不并入主表。",
+        "cite": [
+          "paper@附录 B"
+        ]
+      },
+      {
+        "k": "训练数据另建",
+        "text": "VQA LLM 另用构造的 46K 空间关系 VQA 数据和 LLaVA 指令微调子集训练，与测试集分开。",
+        "cite": [
+          "paper@附录 C",
+          "repo"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "accuracy",
+      "name": "多选准确率",
+      "direction": "越高越好",
+      "description": "属性识别 / 空间关系 / 总体三档准确率。端到端 MLLM 取对数似然最高的选项，工具系统与多模态聊天机器人直接输出选项字母。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@Table 1",
+        "paper@§5.1"
+      ]
+    },
+    {
+      "id": "search-length",
+      "name": "搜索长度",
+      "direction": "越低越好",
+      "description": "从初始图像到定位到目标所在 patch 所需的搜索步数，只统计搜索后能成功定位的样本；论文用它比较不同搜索策略，不是跨模型排行榜指标。",
+      "cite": [
+        "paper@§5.3"
+      ]
+    }
+  ],
+  "default_protocol": {
+    "raw": "191 题全部为选择题，答案是一个选项字母。端到端 MLLM 走对数似然：取 log-likelihood 最高的选项作为预测；LLM 工具系统与多模态聊天机器人则被直接提示输出选项，并在无法作答或选项都不对时选最可能的一项。Bard 与 GPT-4V 通过网页聊天接口评测（Accessed: Oct 31, 2023），Gemini Pro 通过 API 评测（Accessed: Dec 16, 2023）。",
+    "cite": [
+      "paper@§5.1"
+    ],
+    "variants": [
+      {
+        "text": "端到端模型（对数似然）vs 工具系统与聊天机器人（直接答选项）：两种打分方式不可混比，论文表 1 中两类结果是分节列出的。",
+        "cite": [
+          "paper@§5.1"
+        ]
+      },
+      {
+        "text": "带工具 vs 不带工具：第三方报告（Kimi K2.6 技术报告的 Visual Agents 图）把 V* 与「V* w/ python」并列，其脚注给出的工具设置为 max-tokens-per-step = 65,536、max-steps = 50，与论文的无工具口径不是一回事。",
+        "cite": [
+          "kimi-blog-kimi-k2-6"
+        ]
+      },
+      {
+        "text": "主表 191 题 vs 探索性子集（OCR 30 题、GPT-4V-hard 17 题）：子集只做探索分析，不计入总体分。",
+        "cite": [
+          "paper@附录 B"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2023-12-21",
+      "label": "arXiv v1 首发；项目页同日标注 Dec. 21, 2023",
+      "cite": [
+        "paper@arXiv 元数据",
+        "vstar-seal"
+      ]
+    },
+    {
+      "id": "v2",
+      "date": "2023-12-26",
+      "label": "arXiv v2（最后修订版，本页核对所用版本）",
+      "cite": [
+        "paper@arXiv 元数据"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "规模极小，分数噪声大",
+      "impact": "总共 191 题，属性 / 空间两档各百余题，单题约值 0.5–0.9 个百分点，模型间几个点的差距已接近噪声量级。",
+      "severity": "高",
+      "response": "只看同一张表、同一口径下的相对差距；本站不把不同论文或不同接口的数字重新归一后排名。",
+      "reader": "不要把几个百分点的排序当成稳定结论，也不要用它给模型能力下强判断。",
+      "cite": [
+        "paper@§4",
+        "paper@Table 1"
+      ]
+    },
+    {
+      "issue": "打分口径不统一，跨模型不可比",
+      "impact": "端到端模型用对数似然，工具系统与聊天机器人直接答选项；Bard / GPT-4V 走网页聊天（2023-10-31），Gemini Pro 走 API（2023-12-16），接口与日期都不同。",
+      "severity": "高",
+      "response": "论文在同一张表里分节列出各类系统；本站按原口径转录，不做跨类归一。",
+      "reader": "横向比较只在同类系统之间看，别把聊天机器人的分数和端到端模型的分数直接排到一起。",
+      "cite": [
+        "paper@§5.1"
+      ]
+    },
+    {
+      "issue": "只覆盖自然图像与常见物体",
+      "impact": "作者在结论中明确：当前视觉搜索模型主要面向自然图像和常见物体，要扩展到文档、示意图、长视频或开放世界，需要额外训练和新的算法设计。",
+      "severity": "中",
+      "response": "论文结论节直接写明适用边界；本站把这一点写进「不测什么」。",
+      "reader": "高分不能外推到文档 / 图表 / 视频类视觉任务。",
+      "cite": [
+        "paper@§6"
+      ]
+    },
+    {
+      "issue": "没有官方排行榜，结果停留在论文发表时",
+      "impact": "代码仓库与 Hugging Face 数据集卡只提供数据、标注格式说明和评测脚本，没有持续更新的榜单入口；表 1 是 2023 年的快照。",
+      "severity": "中",
+      "response": "本站只转录论文表 1，阶梯里的「官网结果表最高」一栏标注为未披露。",
+      "reader": "想看最新模型表现，需要自己下载数据和权重跑 vstar_bench_eval.py。",
+      "cite": [
+        "repo",
+        "dataset"
+      ]
+    },
+    {
+      "issue": "数据与标注来源单一，子集存在选择偏差",
+      "impact": "图像全部来自 SA-1B，题目与选项由同一批标注员撰写并复查；GPT-4V-hard 子集还是按「GPT-4V 答错」挑出来的，选择偏差明显。",
+      "severity": "低",
+      "response": "论文说明了人工复查流程与两个子集的构造方式。",
+      "reader": "GPT-4V-hard 上的分数只反映那 17 题，不能当成总体水平。",
+      "cite": [
+        "paper@§4",
+        "paper@附录 B"
+      ]
+    },
+    {
+      "issue": "与人类仍有明显差距",
+      "impact": "人类总体 98.95%，论文发布时最好的 SEAL 只有 75.39，GPT-4V 54.97，多数开源模型接近随机猜的 35.99%。",
+      "severity": "低",
+      "response": "论文把这当作「多模态系统需要视觉搜索能力」的论据，而不是通用视觉能力排名。",
+      "reader": "这个基准的设计目的就是拉开差距，别把低分直接读成「模型看不懂图」。",
+      "cite": [
+        "paper@Table 1"
+      ]
+    }
+  ],
+  "notes": "SEAL / V* 视觉搜索配套基准；Kimi K2.6 技术报告引用",
+  "official_sources": [
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/pdf/2312.14135"
+    },
+    {
+      "kind": "site",
+      "url": "https://vstar-seal.github.io/"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/penghao-wu/vstar"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/craigwu/vstar_bench"
+    },
+    {
+      "kind": "blog",
+      "url": "https://www.kimi.ai/blog/kimi-k2-6"
+    }
+  ],
+  "related_benchmarks": [
+    "mmbench",
+    "mmvet",
+    "popecv"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "V*: Guided Visual Search as a Core Mechanism in Multimodal LLMs（arXiv:2312.14135v2，2023-12-26）",
+        "url": "https://arxiv.org/pdf/2312.14135",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "vstar-seal",
+        "kind": "site",
+        "title": "V* 项目主页（vstar-seal.github.io，含 BibTeX 与示例）",
+        "url": "https://vstar-seal.github.io/",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "penghao-wu/vstar（PyTorch 实现、V*Bench 标注格式与评测脚本）",
+        "url": "https://github.com/penghao-wu/vstar",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "dataset",
+        "kind": "dataset",
+        "title": "craigwu/vstar_bench（Hugging Face，191 行 test 拆分）",
+        "url": "https://huggingface.co/datasets/craigwu/vstar_bench",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "kimi-blog-kimi-k2-6",
+        "kind": "blog",
+        "title": "Kimi K2.6 tech blog（Visual Agents 图列出 V* 与 V* w/ python）",
+        "url": "https://www.kimi.ai/blog/kimi-k2-6",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Penghao Wu 与 Saining Xie（项目页标注 UC San Diego 与 New York University）",
+        "cite": [
+          "paper@作者署名",
+          "vstar-seal"
+        ]
+      },
+      "first_release": {
+        "v": "2023-12-21（arXiv v1；项目页同日标注 Dec. 21, 2023）",
+        "cite": [
+          "paper@arXiv 元数据",
+          "vstar-seal"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "paper@摘要",
+        "paper@§4"
+      ],
+      "interpretation": [
+        "paper@Table 1",
+        "paper@Table 5"
+      ]
+    },
+    "problem": {
+      "text": "现有 MLLM 基准偏向覆盖面广的任务分类，拉不开差距；而视觉编码器多在 224×224 或 336×336 的低分辨率上训练，部署时图像又被进一步缩小，高分辨率大图里的细节容易被漏掉。V*Bench 专门考「在信息密集的高分辨率图里找到并看清被问到的那一处细节」。",
+      "cite": [
+        "paper@§1"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机猜测基线",
+        "value": "35.99%（总体；属性 26.73、空间 50.00）",
+        "note": "论文表 1 的 Random Guess 行。空间一档随机就是 50%，因为那是二选一题。",
+        "cite": [
+          "paper@Table 1"
+        ]
+      },
+      {
+        "label": "人类表现",
+        "value": "98.95%（总体；属性 98.26、空间 100.00）",
+        "note": "论文表 1 的 Human 行，作者用它说明基准尚未饱和。",
+        "cite": [
+          "paper@Table 1"
+        ]
+      },
+      {
+        "label": "论文发布时最好",
+        "value": "75.39%（SEAL，总体；属性 74.78、空间 76.31）",
+        "note": "Vicuna-7B + V* 视觉搜索；同期 GPT-4V 54.97、Gemini Pro 48.16、LLaVA-1.5 48.68。",
+        "cite": [
+          "paper@Table 1"
+        ]
+      },
+      {
+        "label": "官网结果表最高",
+        "value": "未披露",
+        "note": "仓库与数据集卡都没有可持续查询的官方榜单入口，表 1 即论文发表时的快照。",
+        "cite": [
+          "repo",
+          "dataset"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      },
+      {
+        "label": "搜索效率参考线",
+        "value": "V* Bench 上 LLM 引导搜索 4.65 步 vs 人眼注视 2.52–2.70 步；COCO-Search18 上 2.80 步",
+        "note": "搜索长度口径，只统计能成功定位的样本；论文称 V* 的效率已接近人类注视序列。",
+        "cite": [
+          "paper@Table 3",
+          "paper@Table 4"
+        ]
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 GPT-4V 的 54.97 读成「GPT-4V 看不懂图」——它只是在需要精确定位的高分辨率细节题上失手，论文也提到 GPT-4V 与 Gemini 在相对容易的属性题上表现更好。",
+        "cite": [
+          "paper@Table 1",
+          "paper@§5.1"
+        ]
+      },
+      {
+        "text": "把 75.39 读成「SEAL 的通用视觉能力超过 GPT-4V」——同一篇论文的表 5 显示加上视觉搜索模块后，MMBench、SEED-Bench、MM-Vet、LLaVAW 反而略有下降。",
+        "cite": [
+          "paper@Table 5"
+        ]
+      },
+      {
+        "text": "把搜索长度当成模型能力排名——它比较的是搜索策略，而且只统计搜索后能成功定位的样本。",
+        "cite": [
+          "paper@§5.3"
+        ]
+      },
+      {
+        "text": "把 191 题和探索性子集混在一起算总分——OCR 30 题与 GPT-4V-hard 17 题是另加的，不并入主表。",
+        "cite": [
+          "paper@附录 B"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "Penghao Wu、Saining Xie；项目页列出 UC San Diego 与 New York University 两个署名单位",
+        "cite": [
+          "paper@作者署名",
+          "vstar-seal"
+        ]
+      },
+      {
+        "k": "配套方法",
+        "v": "论文同时提出 SEAL 元架构（Show, SEArch, TelL）与 V*（LLM 引导的视觉搜索）算法，基准用于验证「多模态系统需要视觉搜索能力」这一主张",
+        "cite": [
+          "paper@摘要"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2023-12-21 arXiv v1 首发 → 2023-12-26 v2（本页所用版本）；项目页标注 Dec. 21, 2023",
+        "cite": [
+          "paper@arXiv 元数据",
+          "vstar-seal"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "数据集在 Hugging Face（craigwu/vstar_bench，191 行 test 拆分）；代码仓库 penghao-wu/vstar 提供 vstar_bench_eval.py、标注格式说明与预训练权重下载入口，MIT 许可",
+        "cite": [
+          "dataset",
+          "repo"
+        ]
+      },
+      {
+        "k": "训练数据",
+        "v": "VQA LLM 另用构造的 46K 空间关系 VQA 数据和 LLaVA 指令微调子集训练，与测试集分开",
+        "cite": [
+          "paper@附录 C",
+          "repo"
+        ]
+      },
+      {
+        "k": "第三方采用",
+        "v": "Kimi K2.6 技术报告的 Visual Agents 图中列出「V*」与「V* w/ python」，脚注说明带 Python 工具的设置为 max-tokens-per-step = 65,536、max-steps = 50，成绩以 avg@3 报告",
+        "cite": [
+          "kimi-blog-kimi-k2-6"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-14",
+        "columns": [
+          "来源",
+          "模型",
+          "属性（%）",
+          "空间（%）",
+          "总体（%）",
+          "口径"
+        ],
+        "rows": [
+          [
+            "论文 Table 1",
+            "Human",
+            "98.26",
+            "100.00",
+            "98.95",
+            "人工"
+          ],
+          [
+            "论文 Table 1",
+            "Random Guess",
+            "26.73",
+            "50.00",
+            "35.99",
+            "随机"
+          ],
+          [
+            "论文 Table 1",
+            "BLIP2",
+            "26.95",
+            "53.94",
+            "37.69",
+            "端到端，对数似然"
+          ],
+          [
+            "论文 Table 1",
+            "MiniGPT-4",
+            "30.43",
+            "50.00",
+            "38.22",
+            "端到端，对数似然"
+          ],
+          [
+            "论文 Table 1",
+            "LLaVA",
+            "23.47",
+            "53.94",
+            "35.59",
+            "端到端，对数似然"
+          ],
+          [
+            "论文 Table 1",
+            "InstructBLIP",
+            "25.21",
+            "47.36",
+            "34.02",
+            "端到端，对数似然"
+          ],
+          [
+            "论文 Table 1",
+            "Otter",
+            "26.95",
+            "56.57",
+            "38.74",
+            "端到端，对数似然"
+          ],
+          [
+            "论文 Table 1",
+            "LLaVA-1.5",
+            "43.47",
+            "56.57",
+            "48.68",
+            "端到端，对数似然"
+          ],
+          [
+            "论文 Table 1",
+            "MM-React",
+            "34.78",
+            "51.31",
+            "41.36",
+            "工具系统，直接答选项"
+          ],
+          [
+            "论文 Table 1",
+            "VisualChatGPT",
+            "30.43",
+            "48.68",
+            "37.69",
+            "工具系统，直接答选项"
+          ],
+          [
+            "论文 Table 1",
+            "Visprog",
+            "31.30",
+            "56.57",
+            "41.36",
+            "工具系统，直接答选项"
+          ],
+          [
+            "论文 Table 1",
+            "Bard",
+            "31.30",
+            "46.05",
+            "37.17",
+            "网页聊天（2023-10-31）"
+          ],
+          [
+            "论文 Table 1",
+            "Gemini Pro",
+            "40.86",
+            "59.21",
+            "48.16",
+            "API（2023-12-16）"
+          ],
+          [
+            "论文 Table 1",
+            "GPT-4V",
+            "51.30",
+            "60.52",
+            "54.97",
+            "网页聊天（2023-10-31）"
+          ],
+          [
+            "论文 Table 1",
+            "SEAL (Ours)",
+            "74.78",
+            "76.31",
+            "75.39",
+            "Vicuna-7B + V* 视觉搜索，对数似然"
+          ]
+        ]
+      },
+      "cite": [
+        "paper@Table 1",
+        "paper@§5.1"
+      ]
+    }
+  }
+}

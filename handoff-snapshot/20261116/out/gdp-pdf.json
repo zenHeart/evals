@@ -1,0 +1,753 @@
+{
+  "id": "gdp-pdf",
+  "name": "GDP.pdf",
+  "full_name": "GDP.pdf: Benchmarking Grounded Multimodal Reasoning over Professional PDF Documents（面向专业 PDF 文档的「grounded」多模态推理基准；grounded 指答案必须落在 PDF 里的证据上）",
+  "aliases": [],
+  "status": null,
+  "categories": [
+    "multimodal"
+  ],
+  "summary": "GDP.pdf 是 Surge AI 出的多模态推理基准：100 道题全部来自金融、医疗、法律等十个行业的专家真实工作流，每题直接喂一份原始 PDF 加一个从业者真会问的问题；判分不看答案像不像范文，而是逐条核对专家写的评分细则（rubric，即一组「是/否」判定项），全部符合才算这道题通过。当前官方榜单第一名约 35%，也就是最好的模型仍有约三分之二的题做不对。",
+  "interpretation": "高分说明模型能在长而杂的真实 PDF 里稳定定位到真正管用的那条证据——跨页表格对得齐、脚注和除外责任没漏、平面图符号数得对——而且每次都做对。低分不代表模型笨：同一批模型在 GPQA Diamond、MMMU Pro 这类通用榜上分数很高，论文专门用「Standard scores can be misleading」点出这个反差。它不衡量开放式创作、长程任务规划，也不代表可以无人监督地拿去做专业工作，论文明确说 2%–30.7% 这个区间「不是支持无人监督使用的数字」。",
+  "measures": [
+    {
+      "area": "专业文档里的证据定位（grounding）",
+      "focus": "示例（论文 Table 5，工程）：从数据表里读出指定环境亮度与波长对应的阈值辐照度，需要在对数坐标曲线上精确取点并确认源波长——模型找对了图，读出来的值却落在曲线合理范围之外",
+      "share": "未披露（论文按 11 项能力轴打标签，未给出各轴题数）",
+      "format": "自由文本答案，按该题 rubric 逐条判",
+      "cite": [
+        "paper@Table 5",
+        "paper@§1 Introduction"
+      ]
+    },
+    {
+      "area": "表格与图表理解",
+      "focus": "示例（论文 §5.3）：HR 福利题问员工增加一名受抚养人后方案费用怎么变；一个模型选错工龄档，另一个选对档却报出表里根本没有的数字",
+      "share": "未披露",
+      "format": "自由文本答案，按该题 rubric 逐条判",
+      "cite": [
+        "paper@§5.3 Failure Analysis"
+      ]
+    },
+    {
+      "area": "空间推理（平面图 / 图纸）",
+      "focus": "示例（论文 §5.3）：照明题里模型给没有灯具的房间报了灯具、又漏掉真有的灯具；窗户题因为没把另一页的门窗明细表和首层平面图对上而数错",
+      "share": "未披露",
+      "format": "自由文本答案，按该题 rubric 逐条判",
+      "cite": [
+        "paper@§5.3 Failure Analysis",
+        "paper@Table 3"
+      ]
+    },
+    {
+      "area": "脚注、交叉引用与修订覆盖",
+      "focus": "示例（论文 Table 5，HR）：按公告日期排出前五家提供带薪丧假的公司，一条脚注改了其中一家（Mastercard）的日期并把它移出前五，多数模型没用这条脚注；保险题则停在承保条款、没读到取消责任",
+      "share": "未披露",
+      "format": "自由文本答案，按该题 rubric 逐条判",
+      "cite": [
+        "paper@Table 5",
+        "paper@Table 3"
+      ]
+    },
+    {
+      "area": "该说不说的时候要说不（拒绝回答）",
+      "focus": "论文 §4：有些题问的是文档里没有的东西（图被涂黑、数值从未报告、结论不成立），模型必须明说而不是编一个听起来合理的答案",
+      "share": "未披露（论文 Table 2 只说 Question styles 里「some queries are deliberately unsupported」，未给数量）",
+      "format": "自由文本答案，按该题 rubric 逐条判",
+      "cite": [
+        "paper@§4 Evaluation Protocol"
+      ]
+    },
+    {
+      "area": "十个专业工作流域",
+      "focus": "领域为 Finance、Healthcare、Legal、STEM/Research、Engineering、Construction、Manufacturing/Supply Chain、Insurance、Real Estate、HR；文档形态含保单与表单、跨页表格、图表与信息图、数据表、平面图、长扫描契约与指南",
+      "share": "10 个领域 / 100 题（论文 Table 2 称 evenly distributed，未给各领域题数）",
+      "format": "每题为「1 份原始 PDF + 1 个自然语言问题」",
+      "cite": [
+        "paper@Table 2",
+        "paper@§1 Introduction",
+        "blog",
+        "aa-gdp"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "不考「不看文档只凭常识就能答」的题——论文 §3.2 说这类候选在选题阶段直接被拒，答案必须依赖随题提供的那份 PDF",
+      "cite": [
+        "paper@§3.2 Design Principles"
+      ]
+    },
+    {
+      "text": "不做 OCR、版面分析、图表 QA、文档 VQA 这类单能力分解评测；论文 Table 1 把 GDP.pdf 和这些基准家族分开列，定位是「专业问题的答案是否 grounded 在原始 PDF 的正确证据上」",
+      "cite": [
+        "paper@Table 1"
+      ]
+    },
+    {
+      "text": "不用工具、不给额外上下文，因此不衡量检索、代码执行与多轮工具调用；也不覆盖 agentic 场景（要探索工作区、跨文件找证据并产出交付物），官方把后者归给 GDPval",
+      "cite": [
+        "paper@§5.1 Evaluated Models",
+        "blog-train"
+      ]
+    },
+    {
+      "text": "不按答案与参考答桉的字面重合度打分——论文 §4 明确说不采用 ANLS 式重叠打分，因为「说了几乎一样的公司、用了几乎一样的词，仍然可能完全错误」",
+      "cite": [
+        "paper@§4 Evaluation Protocol"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 100,
+    "splits": [
+      "公开评测集 100 题（论文称全部公开，含源 PDF、prompt、rubric 与领域标签）",
+      "另有一批 1,465 道配套训练任务（companion tasks），与 100 题 holdout 分开，官方用它做过一次后训练"
+    ],
+    "languages": [
+      "未披露（官方未说明题目语言；论文与各页面示例均为英文）"
+    ],
+    "source_type": "expert-authored（在职工领域专家从自己经手的活里带来的原始 PDF 与真实问题，非人工合成）",
+    "public_sample": true,
+    "totals": "100 题 × 10 个领域（论文称均匀分布）· 每题 = 1 份原始 PDF + 1 个自然语言问题 + 1 份原子评分细则 + 参考答案 + 领域标签 + 能力轴标签 · Artificial Analysis 记录题库共 4,592 页源 PDF、1,275 条原子评分细则 · 官方口径为每题 5 次重复后取平均",
+    "cite": [
+      "paper@Abstract",
+      "paper@Table 2",
+      "aa-gdp",
+      "blog-train"
+    ],
+    "construction": [
+      {
+        "k": "候选来自真实工作",
+        "text": "领域专家从自己经手的活里挑一道，交上源 PDF、一句「这题在那行工作里为什么重要」的说明，以及一份第一版参考答案。",
+        "cite": [
+          "paper@§3.5 Collection and Curation Workflow",
+          "blog-openai"
+        ]
+      },
+      {
+        "k": "先过模型关",
+        "text": "几个前沿多模态模型试做候选，至少两个犯「实质性错误」才进入下一轮；实质性错误指最终答案错、漏掉决定性证据或编造，措辞层面的差异不算失败。",
+        "cite": [
+          "paper@§3.5 Collection and Curation Workflow",
+          "paper@§3.2 Design Principles"
+        ]
+      },
+      {
+        "k": "新颖性与歧义过滤",
+        "text": "只凭常识能答的、只有原提交者知道上下文的、或者问题本身有歧义（瓶颈在问题语义而非文档）的候选，在这一步被拒。",
+        "cite": [
+          "paper@§3.5 Collection and Curation Workflow",
+          "paper@§3.2 Design Principles"
+        ]
+      },
+      {
+        "k": "专家写原子 rubric",
+        "text": "专家写一组「是/否」判定项，覆盖答案必须包含的事实、算等价的表述、以及答案不能说的话；拒绝回答类题目的 rubric 还要写清「这时候应该说什么」。",
+        "cite": [
+          "paper@§3.5 Collection and Curation Workflow",
+          "paper@§4 Evaluation Protocol"
+        ]
+      },
+      {
+        "k": "打标签与工人备注",
+        "text": "给每题打能力轴标签（11 项能力轴分三层），并用大白话写清解析难点：合并单元格、脚注、被修订取代的小节、图例。",
+        "cite": [
+          "paper@§3.5 Collection and Curation Workflow",
+          "paper@Abstract"
+        ]
+      },
+      {
+        "k": "自洽性检查",
+        "text": "标准答案必须能过自己那套 rubric；一个故意写坏的输出必须在那道题核心的判定项上失败。",
+        "cite": [
+          "paper@§3.5 Collection and Curation Workflow"
+        ]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "给模型原始 PDF 加问题：PDF 以 base64 文件输入原生传入，用各家自己的文档处理，因此「怎么读这份 PDF」本身也是被测对象；不给工具、不给额外上下文。每题跑 5 次。每题的每条原子判定项单独交给 LLM 裁判（Gemini 3.5 Flash）做二值判定，裁判看不到源 PDF 也看不到参考答案；判定项写成自包含，只针对最终答复里该出现和不该出现的内容。榜单分是严格通过率（all_pass：该题全部判定项都过才算过）在 5 次运行上的平均（mean pass@1）。",
+    "cite": [
+      "paper@§5.1 Evaluated Models",
+      "paper@§4 Evaluation Protocol",
+      "repo@README"
+    ],
+    "variants": [
+      {
+        "text": "推理档位：榜单上同一模型不同档位分差明显，括号里的配置就是口径。例：GPT 5.5 (xHigh reasoning) 26%、Claude Opus 4.8 (Adaptive/Max) 24%、Gemini 3 Flash (High reasoning) 10%，跨档位直接排名会失真。",
+        "cite": [
+          "site@Leaderboard"
+        ]
+      },
+      {
+        "text": "第三方 harness：Artificial Analysis 用自己的实现跑同一题库——文档文本用 LiteParse 准备、给支持图像输入的模型额外加渲染页图、裁判换成 GPT-5.6 Luna Medium。其页面明确写「因为 harness、文档投递方式和裁判都不同，两套实现不应被当作可直接互换」。",
+        "cite": [
+          "aa-gdp"
+        ]
+      },
+      {
+        "text": "时间快照：榜单随新模型重跑。论文 Table 6 是 2026-07 快照（榜首 GPT-5.6 Sol 30.7%）；Surge 官网 2026-11-11 核对时榜首已是 GPT 6.1 Sol (Max reasoning) 35%；AA 同期榜首是 Muse Wonder Full (Max) 32.6%。三个数字来自三套口径，不能并列排名。",
+        "cite": [
+          "paper@Table 6",
+          "site@Leaderboard",
+          "aa-gdp"
+        ]
+      },
+      {
+        "text": "指标选择：all_pass（全过）与 mean criteria pass rate（平均判定项通过率）差得很远。官方博客 2026-04 的表里 GPT-5.5 (xHigh reasoning) 全过 25%、平均判定项通过率 76.76%；仓库 README 也说这两个指标分别对应 `all_pass/mean` 与 `mean_criteria/mean`。混着比会高估模型水平。",
+        "cite": [
+          "blog@GDP.pdf Benchmark Scores",
+          "repo@README"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "all-pass",
+      "name": "严格通过率（All-pass / strict pass rate）",
+      "direction": "越高越好",
+      "description": "该题全部原子判定项都通过的题目占比，每题 5 次运行取平均（mean pass@1）；这是榜单与论文排名用的主指标",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§5.1 Evaluated Models",
+        "paper@Table 6",
+        "repo@README"
+      ]
+    },
+    {
+      "id": "mean-criteria-pass",
+      "name": "平均判定项通过率（Mean criteria pass rate / mean rubric score）",
+      "direction": "越高越好",
+      "description": "单题 rubric 得分（通过的判定项数 / 总判定项数）的宏平均，保留部分得分，用于细粒度与切片分析；官方博客表中与 all-pass 并列给出",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "repo@README",
+        "blog@GDP.pdf Benchmark Scores",
+        "paper@Table 6"
+      ]
+    }
+  ],
+  "versions": [
+    {
+      "id": "release",
+      "date": "2026-04-14",
+      "label": "基准发布（论文 §5.1 原句「The benchmark was released on April 14, 2026」）；官方博客同日发布，当时榜首 GPT-5.5 (xHigh reasoning) 25%",
+      "cite": [
+        "paper@§5.1 Evaluated Models",
+        "blog@GDP.pdf Benchmark Scores"
+      ]
+    },
+    {
+      "id": "gpt-5-6-citation",
+      "date": "2026-07-09",
+      "label": "OpenAI 在 GPT-5.6 发布中引用 GDP.pdf，官方博客称这是 4 月发布以来首个超过 30% 的分数（GPT-5.6 Sol 30.7%）",
+      "cite": [
+        "blog-openai"
+      ]
+    },
+    {
+      "id": "arxiv-v1",
+      "date": "2026-07-13",
+      "label": "arXiv v1 提交，当时标题为「PDFParse: A Benchmark for Grounded Multimodal Reasoning over Professional PDF Documents」",
+      "cite": [
+        "paper@Submission history",
+        "paper@Comments"
+      ]
+    },
+    {
+      "id": "arxiv-v3",
+      "date": "2026-07-15",
+      "label": "arXiv v3（本档案核对版本）：结果更新到 2026-07 榜单，共 17 个模型，最好 30.7%、最差 2%",
+      "cite": [
+        "paper@Submission history",
+        "paper@Comments",
+        "paper@Abstract"
+      ]
+    },
+    {
+      "id": "kimi-posttrain",
+      "date": "2026-09-29",
+      "label": "官方博客：用 1,465 道 GDP.pdf 配套任务后训练 Kimi K2.7，holdout 严格通过率 11.0% → 24.5%，公开榜从第 35 名升到第 9 名",
+      "cite": [
+        "blog-train"
+      ]
+    },
+    {
+      "id": "live-snapshot",
+      "date": "2026-11-11",
+      "label": "本档案核对时官网榜单状态：榜首 GPT 6.1 Sol (Max reasoning) 35%，第二名 GPT 6 Astra (Max reasoning) 34.2%",
+      "cite": [
+        "site@Leaderboard"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "口径不可比：官方榜 / 第三方自建实现 / 论文快照是三套数",
+      "impact": "同一题库三套分：Surge 官网 2026-11-11 核对时榜首 GPT 6.1 Sol (Max reasoning) 35%；Artificial Analysis 用自己的 harness 与裁判，同期榜首 Muse Wonder Full (Max) 32.6%；论文 Table 6 的 2026-07 快照榜首 GPT-5.6 Sol 30.7%。AA 页面明确写因为 harness、文档投递方式和裁判都不同，两套实现不能直接互换。",
+      "severity": "高",
+      "response": "论文固定协议并公开 harness；AA 在自己的页面标注不可互换；官方未提供跨实现换算，也未见把第三方分数并入官方榜。",
+      "reader": "看分数先看是谁跑的、什么推理档位、哪一次快照；把官网分和 AA 分并列排名会得出错误结论。",
+      "cite": [
+        "site@Leaderboard",
+        "aa-gdp",
+        "paper@Table 6"
+      ]
+    },
+    {
+      "issue": "对抗式选题带来的分布偏差",
+      "impact": "每道题都是「至少两个前沿模型犯实质性错误」才入选，所以绝对通过率衡量的是「在 adversarially selected professional tasks 上的表现，而不是专业文档工作的整体水平」（论文 §6 原话）。低分里有一部分来自选题，而不是模型能力上限。",
+      "severity": "高",
+      "response": "论文在 §6 明确写出这一 caveat；筛选用一个模型池而非固定一对模型，以避开单一模型或家族的失败画像；官方未对筛选偏差做定量修正。",
+      "reader": "不要把 2%–35% 读成「模型只能做对三成文档工作」；它衡量的是被特意挑难的那批题。",
+      "cite": [
+        "paper@§6 Discussion",
+        "paper@§3.2 Design Principles"
+      ]
+    },
+    {
+      "issue": "裁判与被测模型同源，且只看最终答复",
+      "impact": "官方裁判是 Gemini 3.5 Flash，而 Gemini 3.5 Flash 也在被测模型之列；判定项只看最终答复里该出现和不该出现的内容，推理过程无法核验，裁判也拿不到源 PDF 和参考答案。",
+      "severity": "中",
+      "response": "论文主动点出裁判模型家族出现在被测模型中，并说明逐条判分比生成任务受限得多；判分实现随基准在仓库公开。未见关于裁判偏好的量化分析。",
+      "reader": "关注多模型之间的相对差距而非单点分数；不同厂商自报同模型分数时，先确认裁判是谁。",
+      "cite": [
+        "paper@§4 Evaluation Protocol",
+        "repo@README"
+      ]
+    },
+    {
+      "issue": "公开题库 + 已知配套训练集，污染与定向训练难以排除",
+      "impact": "论文称 100 题全部公开；官方另用 1,465 道配套任务后训练 Kimi K2.7，holdout 严格通过率从 11.0% 升到 24.5%、公开榜从第 35 名升到第 9 名，说明针对这套分布训练确实有效。公开题库加已知配套集的存在，使「为这道榜训练」成为可能。",
+      "severity": "中",
+      "response": "官方把配套训练集与 100 题 holdout 分开，并在博客公布迁移效果；论文保留原子 rubric 与能力轴标签，便于按切片复查。未见官方公布 holdout 污染检测或留出私有测试集。",
+      "reader": "看到某模型分数大涨时，先分清是通用能力提升还是在该题库分布上的适配；留意是否公布了 holdout 复核。",
+      "cite": [
+        "paper@Abstract",
+        "blog-train"
+      ]
+    },
+    {
+      "issue": "题库可获取性与本站核验",
+      "impact": "论文 Table 2 与仓库 README 都称完整题库在 Hugging Face 公开（Apache 2.0，第三方 PDF 保留原权利），AA 页面也称其「独立评测公开数据集」；但 Surge 榜单页只给 Blog / Research / Github 三个入口、没有数据集按钮，仓库里提交的 `task_packs/sample_pdf/` 只是合成占位题。本站 2026-11-11 以未登录方式访问 huggingface.co/datasets/surgeai/GDP.pdf 及其 API 均返回需授权，surgeai 组织的公开数据集列表里只有 DAYJOB 三个子集与 GDP.xlsx。",
+      "severity": "中",
+      "response": "官方在另一篇博客里写「The set is public on GitHub」，并把 harness 与合成示例任务包提交在仓库；第三方可经 AA 的示例任务页查看 5 道代表性题目、参考文档与逐条裁判理由。",
+      "reader": "复现者实际稳定拿到的是公开 harness；完整题库能否直接下载，取决于能否通过 Hugging Face 的授权，别默认它一定开放。",
+      "cite": [
+        "paper@Table 2",
+        "repo@README",
+        "blog-openai",
+        "aa-gdp"
+      ]
+    },
+    {
+      "issue": "决定性证据又小又局部，长度不是难度预测器",
+      "impact": "论文 §3.6：长度很难预测难度，最难的几道题里有些是对单张表或单张图的一行提问；跨两节比较、以及修订覆盖前文，远比预期更容易让最强模型产生自信的编造。脚注漏一条就整题归零（all_pass 口径下没有部分分）。",
+      "severity": "低",
+      "response": "论文把这类现象写进 Data Curation Insights，并按能力轴打标签以便按失败类型切片；仓库同时报告平均判定项通过率，便于看部分得分。",
+      "reader": "别用文档页数判断一道题难不难；真正的坑常常是脚注、除外责任、图例和被修订取代的小节。",
+      "cite": [
+        "paper@§3.6 Data Curation Insights",
+        "paper@Table 3",
+        "repo@README"
+      ]
+    }
+  ],
+  "notes": "Google Gemini 3.7 Flash / Anthropic Fable 5 引用；专业工作流 PDF 问答，与 GDPval 关联但独立成榜",
+  "official_sources": [
+    {
+      "kind": "site",
+      "url": "https://surgehq.ai/benchmarks/gdp-pdf"
+    },
+    {
+      "kind": "site",
+      "url": "https://blog.google/innovation-and-ai/models-and-research/gemini-models/introducing-gemini-3-7-flash/"
+    },
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2607.11192"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/surge-ai/gdp-pdf"
+    }
+  ],
+  "related_benchmarks": [
+    "gdpval",
+    "gdpval-aa",
+    "omnidocbench",
+    "docvqa",
+    "mmmu-pro",
+    "chartography"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-11",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-11",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "GDP.pdf: Benchmarking Grounded Multimodal Reasoning over Professional PDF Documents（arXiv:2607.11192v3，2026-07-15；证据文件含摘要页与论文全文）",
+        "url": "https://arxiv.org/abs/2607.11192",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "site",
+        "kind": "leaderboard",
+        "title": "Surge AI · GDP.pdf Benchmark 官方榜单页（2026-11-11 核对时的榜单状态）",
+        "url": "https://surgehq.ai/benchmarks/gdp-pdf",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "blog",
+        "kind": "blog",
+        "title": "GDP.pdf Benchmark: Can Frontier Models Master the Documents that Run the World?（Surge AI 官方博客，页面显示 2026-04-14）",
+        "url": "https://surgehq.ai/blog/gdp-pdf-can-100b-ai-models-master-the-documents-that-run-the-world",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "surge-ai/gdp-pdf（GDP.pdf Harness，基于 Inspect AI 的 uv 包）",
+        "url": "https://github.com/surge-ai/gdp-pdf",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "aa",
+        "kind": "site",
+        "title": "Artificial Analysis · Intelligence Benchmarking Methodology（Intelligence Index v5.0.1 成分表与版本历史）",
+        "url": "https://artificialanalysis.ai/methodology/intelligence-benchmarking",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "aa-gdp",
+        "kind": "site",
+        "title": "Artificial Analysis · GDP.pdf Benchmark（第三方独立实现的结果与方法说明）",
+        "url": "https://artificialanalysis.ai/evaluations/gdp-pdf",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "blog-train",
+        "kind": "blog",
+        "title": "What Does GDP.pdf Teach — Beyond PDFs?（Surge AI 官方博客，页面显示 2026-09-29）",
+        "url": "https://surgehq.ai/blog/gdp-pdf-post-training",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "blog-openai",
+        "kind": "blog",
+        "title": "OpenAI cites GDP.pdf in its GPT-5.6 release（Surge AI 官方博客，页面显示 2026-07-09）",
+        "url": "https://surgehq.ai/blog/openai-gpt-5-6-gdp-pdf-benchmark",
+        "accessed": "2026-11-11"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Surge AI（论文署名 Suhaas Garre*、Emily Ritchie、Sushant Mehta、Edwin Chen；通讯 suhaas@surgehq.ai）",
+        "cite": [
+          "paper"
+        ]
+      },
+      "first_release": {
+        "v": "2026-04-14（论文 §5.1 明确写出基准发布日；官方博客同日在页面上显示 2026-04-14）",
+        "cite": [
+          "paper@§5.1 Evaluated Models",
+          "blog"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "paper@Abstract",
+        "site",
+        "blog",
+        "aa-gdp"
+      ],
+      "interpretation": [
+        "paper@§6 Discussion",
+        "paper@Table 6",
+        "blog-openai",
+        "blog"
+      ]
+    },
+    "problem": {
+      "text": "此前的文档类基准把能力拆开测：OCR、版面分析、图表推理、表格 QA、文档 VQA，每一项分数都不说明模型能否回答「这个行业里的人真的会对着这份 PDF 问」的问题；输入也常被清理成提取出的文本、单张表或单张图，真实 PDF 的难点在清理过程中就被抹掉了。更麻烦的是失败不可见——模型引用的条款真实存在、页面上的数字也在，只是不是管辖用户问题的那一条。GDP.pdf 用专家真实工作里的原始 PDF 和问题，把「答案是否 grounded 在正确证据上」一次测完。",
+      "cite": [
+        "paper@Abstract",
+        "paper@Table 1",
+        "blog"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "人类专家 / 随机基线",
+        "value": "官方未给出",
+        "note": "论文与官方页面都没有报告人类专家通过率或随机基线；论文 Table 2 的 Reporting metrics 一行只列了 mean rubric score 与 strict pass rate 两个指标，本站不推算。",
+        "cite": [
+          "paper@Table 2"
+        ]
+      },
+      {
+        "label": "论文发布时最好（2026-07 快照）",
+        "value": "30.7%（GPT-5.6 Sol）",
+        "note": "Table 6 的 17 个模型区间是 2%–30.7%，论文称没有模型通过三分之一的题目；同表 Claude Fable 5 (Adaptive Max) 29.8% 居第二。",
+        "cite": [
+          "paper@Table 6",
+          "paper@Abstract"
+        ]
+      },
+      {
+        "label": "官方博客首发表最好（2026-04）",
+        "value": "25%（GPT-5.5, xHigh reasoning）",
+        "note": "同表该模型的平均判定项通过率是 76.76%；博客称当时没有前沿模型超过 25%、全部低于 30%。",
+        "cite": [
+          "blog@GDP.pdf Benchmark Scores",
+          "blog"
+        ]
+      },
+      {
+        "label": "Surge 官网当前榜单最高（2026-11-11 核对）",
+        "value": "35%（GPT 6.1 Sol, Max reasoning）",
+        "note": "第二名 GPT 6 Astra (Max reasoning) 34.2%，第三 Muse Wonder Full (Max reasoning) 33.2%；论文注明榜单随新模型与推理配置重跑，数字会变。",
+        "cite": [
+          "site@Leaderboard",
+          "paper@Table 6"
+        ]
+      },
+      {
+        "label": "Artificial Analysis 自建实现最高（2026-11-11 核对）",
+        "value": "32.6%（Muse Wonder Full, Max）",
+        "note": "AA 用 LiteParse 准备文档文本、给支持图像的模型加渲染页图、裁判为 GPT-5.6 Luna Medium，每题 5 次独立尝试；其页面明确说与 Surge 的实现不可直接互换。",
+        "cite": [
+          "aa-gdp"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      },
+      {
+        "label": "饱和参考线",
+        "value": "远未饱和（榜首约 35%，榜尾约 2%）",
+        "note": "论文 Table 6 的 2%–30.7% 与当前官网榜单的 2%–35% 都说明前沿模型连三分之一都过不了；论文明确说这个区间「不是支持无人监督使用的数字」。这条线是本站据原文区间描述整理，不是官方设的上限。",
+        "cite": [
+          "paper@Table 6",
+          "paper@§6 Discussion"
+        ]
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 Surge 官网分和 Artificial Analysis 分并列排名——两边的 harness、文档投递方式和裁判都不同，AA 自己写明不能直接互换。",
+        "cite": [
+          "aa-gdp"
+        ]
+      },
+      {
+        "text": "看到 30% 就说「模型只能做对三成文档工作」——每道题都是被特意挑到「至少两个前沿模型犯实质性错误」才入选的，论文说绝对通过率衡量的是 adversarially selected professional tasks，不是专业文档工作的整体水平。",
+        "cite": [
+          "paper@§6 Discussion",
+          "paper@§3.2 Design Principles"
+        ]
+      },
+      {
+        "text": "把 all_pass 和 mean criteria pass rate 混着比——官方博客 2026-04 的表里 GPT-5.5 (xHigh reasoning) 全过 25%、平均判定项通过率 76.76%，两个数差三倍，前者才是榜单口径。",
+        "cite": [
+          "blog@GDP.pdf Benchmark Scores",
+          "repo@README"
+        ]
+      },
+      {
+        "text": "因为 GPT-5.6 Sol 在 GPQA Diamond 94.6%、MMMU Pro 84.6% 就推定它文档能力也强——它在 GDP.pdf 上只有 30.7%，是 OpenAI 当次发布的旗舰模型里最低的能力分之一，官方专门用这个反差说明「standard scores can be misleading」。",
+        "cite": [
+          "blog-openai",
+          "paper@§6 Discussion"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方与作者",
+        "v": "Surge AI；论文署名 Suhaas Garre*（通讯 suhaas@surgehq.ai）、Emily Ritchie、Sushant Mehta、Edwin Chen",
+        "cite": [
+          "paper"
+        ]
+      },
+      {
+        "k": "论文形态",
+        "v": "arXiv:2607.11192，9 页；被 CVPR 2026 的 2nd Workshop on Knowledge-Intensive Multimodal Reasoning（KnowledgeMR）接收，non-archival，原题为「PDFParse: A Benchmark for Grounded Multimodal Reasoning over Professional PDF Documents」",
+        "cite": [
+          "paper@Comments"
+        ]
+      },
+      {
+        "k": "出题与判分的人",
+        "v": "在职工领域专家从自己工作里出题并写评分细则；官方博客举例为医师、律师、保险查勘员、银行职员等，官方博客还记录了一次急诊医师用 2026 治疗指南 PDF 提问、所有前沿模型都失败的案例",
+        "cite": [
+          "blog-openai",
+          "blog",
+          "paper@Table 2"
+        ]
+      },
+      {
+        "k": "题库规模",
+        "v": "100 题、10 个领域（论文称均匀分布）；Artificial Analysis 记录题库共 4,592 页源 PDF、1,275 条原子评分细则；每题带参考答案、领域标签与能力轴标签",
+        "cite": [
+          "paper@Table 2",
+          "aa-gdp",
+          "paper@Abstract"
+        ]
+      },
+      {
+        "k": "评测 harness",
+        "v": "公开仓库 surge-ai/gdp-pdf，基于 Inspect AI 的 uv 包，支持 `--epochs 5 --epochs-reducer \"mean,pass_at_5,at_least_5\"` 计算 Pass@K / Pass^K；仓库内 `task_packs/sample_pdf/` 是合成占位题",
+        "cite": [
+          "repo@README"
+        ]
+      },
+      {
+        "k": "第三方采用",
+        "v": "Artificial Analysis 从 v4.2（2026-09）起把 GDP.pdf 纳入 Intelligence Index（初始权重 10%，属 General 类），v5.0（2026-10）起权重降到 5% 并移入 Knowledge Work 类；Anthropic 在 Fable 5 / Mythos 5 系统卡里引用了 GDP.pdf，OpenAI 在 GPT-5.6 发布里也引用了它",
+        "cite": [
+          "aa",
+          "blog-openai"
+        ]
+      },
+      {
+        "k": "数据与代码位置",
+        "v": "论文与仓库 README 指向 Hugging Face 数据集 surgeai/GDP.pdf（Apache 2.0，第三方 PDF 保留原权利）；harness 在 GitHub；Artificial Analysis 另提供 5 道示例任务与逐条裁判理由",
+        "cite": [
+          "paper@Table 2",
+          "repo@README",
+          "aa-gdp"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2026-04-14 基准发布 → 2026-07-09 OpenAI 在 GPT-5.6 发布中引用 → 2026-07-13 arXiv v1、2026-07-15 v3 → 2026-09-29 官方用 1,465 道配套任务后训练 Kimi K2.7 → 2026-11-11 本站逐条核对",
+        "cite": [
+          "paper@§5.1 Evaluated Models",
+          "blog-openai",
+          "paper@Submission history",
+          "blog-train",
+          "site"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-11",
+        "columns": [
+          "来源",
+          "模型",
+          "严格通过率",
+          "口径"
+        ],
+        "rows": [
+          [
+            "Surge 官网榜单（2026-11-11 核对）",
+            "GPT 6.1 Sol (Max reasoning)",
+            "35%",
+            "官方榜；每题 5 次重复取平均"
+          ],
+          [
+            "Surge 官网榜单",
+            "GPT 6 Astra (Max reasoning)",
+            "34.2%",
+            "同上"
+          ],
+          [
+            "Surge 官网榜单",
+            "Muse Wonder Full (Max reasoning)",
+            "33.2%",
+            "同上"
+          ],
+          [
+            "Surge 官网榜单",
+            "Claude Opus 5.5 (Adaptive/Max)",
+            "30.6%",
+            "同上"
+          ],
+          [
+            "Surge 官网榜单",
+            "Gemini 3 Flash (High reasoning)",
+            "10%",
+            "同上"
+          ],
+          [
+            "Surge 官网榜单",
+            "Nemotron 3 Nano Omni",
+            "2%",
+            "同上"
+          ],
+          [
+            "论文 Table 6（2026-07 快照，17 个模型）",
+            "GPT-5.6 Sol",
+            "30.7%",
+            "论文口径；5 次运行取平均"
+          ],
+          [
+            "论文 Table 6",
+            "Claude Fable 5 (Adaptive Max)",
+            "29.8%",
+            "同上"
+          ],
+          [
+            "论文 Table 6",
+            "Mistral Large 3",
+            "2%",
+            "同上"
+          ],
+          [
+            "Surge 官方博客表（2026-04）",
+            "GPT-5.5 (xHigh reasoning)",
+            "25%",
+            "Score (100% rubrics)；平均判定项通过率 76.76%"
+          ],
+          [
+            "Surge 官方博客表",
+            "Mistral Large 3",
+            "2%",
+            "同上；平均判定项通过率 50.98%"
+          ],
+          [
+            "Artificial Analysis（2026-11-11 核对）",
+            "Muse Wonder Full (Max)",
+            "32.6%",
+            "AA 自建 harness；LiteParse 提文 + GPT-5.6 Luna Medium 裁判，每题 5 次"
+          ],
+          [
+            "Artificial Analysis",
+            "GPT-6 Astra (Xhigh)",
+            "32.2%",
+            "同上"
+          ],
+          [
+            "Artificial Analysis",
+            "GPT-6.1 Sol (High)",
+            "32.0%",
+            "同上"
+          ]
+        ]
+      },
+      "cite": [
+        "site@Leaderboard",
+        "paper@Table 6",
+        "blog@GDP.pdf Benchmark Scores",
+        "aa-gdp"
+      ]
+    }
+  }
+}

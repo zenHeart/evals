@@ -1,0 +1,482 @@
+{
+  "id": "oss-fuzz",
+  "name": "OSS-Fuzz（Anthropic 评测）",
+  "full_name": "OSS-Fuzz（Anthropic 内部网络安全评测；与 Google 的 OSS-Fuzz 项目同名，复用其开源仓库语料库）",
+  "aliases": [],
+  "status": null,
+  "categories": [
+    "safety"
+  ],
+  "summary": "OSS-Fuzz 是 Anthropic 自己搭的一套内部网络安全评测：让模型在 Google OSS-Fuzz 语料库里的真实开源项目上，基本不靠人工指导地先找出漏洞（代码里可被利用的缺陷），再把它写成可用的利用代码（能真正接管程序运行的程序）。官方只公开过极少数字，题目清单和判分细节都没有放出。",
+  "interpretation": "分数高说明这个版本的模型在真实开源代码上自主挖漏洞、写攻击代码的能力更强，可以作为 Anthropic 内部代际对比的参考；它不说明模型能替代人类安全工程师，也不说明每个被制造的崩溃都能在真实环境里被利用。同一模型「找漏洞」和「写利用」两件事可以差得很远——Anthropic 公布 Opus 5 时就明确指出这两项一近一远，所以不要用一个综合分去理解它。",
+  "measures": [
+    {
+      "area": "漏洞发现（在真实开源项目中制造崩溃）",
+      "focus": "模型对一个 fuzz 入口点（fuzzing 工具自动生成的调用入口）做测试，在无大量人工指导的情况下能造成的最严重崩溃落在哪一级",
+      "share": "未披露",
+      "format": "每个入口点跑一次；按五级严重度阶梯判级，tier 1 是基础崩溃，tier 5 是完整控制流劫持（攻击者完全接管程序的执行流程）",
+      "cite": [
+        "red-team-blog@§01",
+        "anthropic-news-claude-opus-5@正文"
+      ]
+    },
+    {
+      "area": "漏洞利用（把崩溃升级成可用攻击）",
+      "focus": "在已经完全打上补丁的真实目标上拿到完整控制流劫持",
+      "share": "未披露",
+      "format": "与漏洞发现共用同一套入口点与分级；官方在发布页把这两项分成左右两幅图分别报告",
+      "cite": [
+        "red-team-blog@§01",
+        "anthropic-news-claude-opus-5@正文"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "不测模型修漏洞、写补丁的能力。官方描述的产出只有「最严重崩溃落在哪一级」和「利用是否成功」，没有修好它这一环。",
+      "cite": [
+        "red-team-blog@§01"
+      ]
+    },
+    {
+      "text": "不覆盖真实操作系统与浏览器上的完整攻击链。那条线是同一团队另做的零日评测，且官方称已发现漏洞中超过 99% 尚未打补丁，细节按协同漏洞披露流程不公开。",
+      "cite": [
+        "red-team-blog@导语",
+        "red-team-blog@§02"
+      ]
+    },
+    {
+      "text": "不给跨厂商可比的总分。官方没有公布项目清单、入口点集合与分级阈值，也没有第三方复现，数字之间无法对账。",
+      "cite": [
+        "red-team-blog@§01",
+        "anthropic-news-claude-opus-5@正文"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 7000,
+    "splits": [
+      "约 1,000 个来自 Google OSS-Fuzz 语料库的开源仓库",
+      "约 7,000 个 fuzz 入口点，每个入口点跑一次，一次运行即一次独立任务"
+    ],
+    "languages": [
+      "未披露"
+    ],
+    "source_type": "vendor_internal",
+    "public_sample": false,
+    "totals": "约 1,000 个来自 Google OSS-Fuzz 语料库的开源仓库、约 7,000 个 fuzz 入口点，每点跑一次（2026-04 博客口径）；官方未公开项目清单、语言构成、提示词与分级阈值。",
+    "cite": [
+      "red-team-blog@§01"
+    ],
+    "construction": [
+      {
+        "k": "题目来源",
+        "text": "直接取 Google OSS-Fuzz 语料库里约 1,000 个真实开源项目，不另外造题。",
+        "cite": [
+          "red-team-blog@§01"
+        ]
+      },
+      {
+        "k": "任务单元",
+        "text": "以 fuzz 入口点为单元：约 7,000 个入口点，每个跑一次。",
+        "cite": [
+          "red-team-blog@§01"
+        ]
+      },
+      {
+        "k": "人工介入程度",
+        "text": "官方表述是「不要求大量人工指导」，但不等于完全无人参与；具体介入到什么程度未披露。",
+        "cite": [
+          "anthropic-news-claude-opus-5@正文"
+        ]
+      },
+      {
+        "k": "判分方式",
+        "text": "取一次运行中模型能造成的最严重崩溃，落到五级严重度阶梯上定级。",
+        "cite": [
+          "red-team-blog@§01"
+        ]
+      },
+      {
+        "k": "未公开部分",
+        "text": "项目清单、入口点列表、提示词、时间与算力预算、tier 阈值、利用判据均未公开。",
+        "cite": [
+          "red-team-blog@导语"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "crash-tier",
+      "name": "最严重崩溃等级（tier 1–5）",
+      "direction": "越高越好",
+      "description": "一次运行中模型能造成的最严重崩溃所处的等级：tier 1 是基础崩溃，tier 5 是完整控制流劫持。",
+      "range": [
+        1,
+        5
+      ],
+      "unit": "tier",
+      "cite": [
+        "red-team-blog@§01"
+      ]
+    },
+    {
+      "id": "tier-crash-count",
+      "name": "达到各等级的入口点数量",
+      "direction": "越高越好",
+      "description": "有多少个入口点被模型推到某一等级，例如官方公布的 tier 1 约 150–175 次、tier 5 完整控制流劫持 10 次这类计数。",
+      "unit": "次",
+      "cite": [
+        "red-team-blog@§01"
+      ]
+    }
+  ],
+  "default_protocol": {
+    "raw": "模型对一个 fuzz 入口点做测试，尽量在少量人工指导下制造崩溃；官方取这次运行里最严重的崩溃，按五级阶梯定级。找漏洞和写利用是两条分开的分数，官方在 Opus 5 发布页用左右两幅图分别呈现。运行次数、时间与算力预算、提示词、tier 阈值和利用判据均未公开。",
+    "cite": [
+      "red-team-blog@§01",
+      "anthropic-news-claude-opus-5@正文"
+    ],
+    "variants": [
+      {
+        "text": "找漏洞与写利用必须分开看：同一模型可以一项接近上一代旗舰、另一项明显落后，官方也是分开报告的。",
+        "cite": [
+          "anthropic-news-claude-opus-5@正文"
+        ]
+      },
+      {
+        "text": "入口点集合只给了约数（roughly 7000），不同代际模型是否跑完全同一集合没有说明，跨代际数字只能粗略比较。",
+        "cite": [
+          "red-team-blog@§01"
+        ]
+      },
+      {
+        "text": "目标是已经完全打补丁的真实项目，与未修补环境或 CTF 夺旗赛题目不是同一难度，不能直接换算。",
+        "cite": [
+          "red-team-blog@§01"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "first-public-methodology",
+      "date": "2026-04-07",
+      "label": "前沿红队博客首次公开这套内部评测的口径（约 1,000 个仓库 / 约 7,000 个入口点 / 五级阶梯）与 Mythos Preview、Sonnet 4.6、Opus 4.6 的成绩",
+      "cite": [
+        "red-team-blog@发布信息",
+        "red-team-blog@§01"
+      ]
+    },
+    {
+      "id": "opus-5-release",
+      "date": "2026-07-24",
+      "label": "Opus 5 发布页引用 OSS-Fuzz，对比 Opus 5 与 Mythos 5 的找漏洞与写利用能力；网页只给图示，未给坐标值",
+      "cite": [
+        "anthropic-news-claude-opus-5@正文"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "题集、项目清单与判分细节全部不公开",
+      "impact": "只有厂商自报的极少量数字，第三方无法复现或核验；官方只说约 1,000 个仓库、约 7,000 个入口点，没有可对账的清单。",
+      "severity": "高",
+      "response": "未见完整公开的官方回应；官方说明已发现漏洞中超过 99% 尚未打补丁，按协同漏洞披露流程不能披露细节。",
+      "reader": "把它当作厂商自报的内部数字，只适合同一厂商代际间粗略比较，不要当跨厂商可比分数。",
+      "cite": [
+        "red-team-blog@导语",
+        "red-team-blog@§01"
+      ]
+    },
+    {
+      "issue": "「找漏洞」和「写利用」分开报，且差距可能很大",
+      "impact": "只看到一个综合分会误判模型的风险水平；Opus 5 在找漏洞上接近 Mythos 5，写利用却明显落后。",
+      "severity": "中",
+      "response": "Anthropic 在发布页把两项分成左右两幅图分别报告，并明确说 Opus 5 的利用分数远落后于 Mythos 5。",
+      "reader": "两项都要看，不要合并成一个分数。",
+      "cite": [
+        "anthropic-news-claude-opus-5@正文"
+      ]
+    },
+    {
+      "issue": "与 Google 的 OSS-Fuzz 项目同名，容易混淆",
+      "impact": "读者可能以为这是 Google 的持续模糊测试服务。Google OSS-Fuzz 是基础设施，截至 2025 年 5 月已在 1,000 个项目里帮助发现并修复超过 13,000 个漏洞。",
+      "severity": "中",
+      "response": "未见官方回应（Anthropic 未在发布页说明命名来源）。",
+      "reader": "看到 OSS-Fuzz 先确认指的是 Anthropic 的内部模型评测，还是 Google 的模糊测试服务。",
+      "cite": [
+        "google-oss-fuzz-repo@README",
+        "red-team-blog@§01"
+      ]
+    },
+    {
+      "issue": "厂商有意不在网安任务上训练，能力是通用改进的下游结果",
+      "impact": "分数反映的是这个特定版本在不做网安专项训练时的表现，不等于模型上限；官方同时表示 Opus 5 没有推进高风险两用能力的前沿。",
+      "severity": "中",
+      "response": "Anthropic 表示有意避免在网安任务上训练 Opus 5，并通过 Project Glasswing 与 Cyber Verification Program 向符合条件的防御方开放这类能力。",
+      "reader": "分数是「当前这个版本」的，不要外推到模型全部能力。",
+      "cite": [
+        "anthropic-news-claude-opus-5@正文",
+        "glasswing@正文"
+      ]
+    },
+    {
+      "issue": "公布的是计数而非比例，且各等级披露粒度不同",
+      "impact": "tier 1/2 给的是约数区间，tier 3/4 只说少数几次，tier 5 给了精确的 10；跨等级无法做一致的统计比较。",
+      "severity": "低",
+      "response": "未见官方回应（原文未解释为什么各等级披露粒度不同）。",
+      "reader": "按等级分别读计数，不要自己换算成比例。",
+      "cite": [
+        "red-team-blog@§01"
+      ]
+    }
+  ],
+  "notes": "厂商内部评测，题集不公开，所有数字均为 Anthropic 自报；与 Google 的 OSS-Fuzz 项目同名但不同物。",
+  "official_sources": [
+    {
+      "kind": "site",
+      "url": "https://www.anthropic.com/news/claude-opus-5"
+    },
+    {
+      "kind": "site",
+      "url": "https://red.anthropic.com/2026/mythos-preview/"
+    },
+    {
+      "kind": "site",
+      "url": "https://www.anthropic.com/glasswing"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/google/oss-fuzz"
+    }
+  ],
+  "related_benchmarks": [
+    "cybergym"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "red-team-blog",
+        "kind": "site",
+        "title": "Evaluating Claude Mythos Preview's cybersecurity capabilities（Anthropic Frontier Red Team，2026-04-07）",
+        "url": "https://red.anthropic.com/2026/mythos-preview/",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "anthropic-news-claude-opus-5",
+        "kind": "site",
+        "title": "Introducing Claude Opus 5（Anthropic 新闻，2026-07-24）",
+        "url": "https://www.anthropic.com/news/claude-opus-5",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "glasswing",
+        "kind": "site",
+        "title": "Project Glasswing（Anthropic，2026-04-07）",
+        "url": "https://www.anthropic.com/glasswing",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "google-oss-fuzz-repo",
+        "kind": "repo",
+        "title": "google/oss-fuzz（Google 开源持续模糊测试项目 README）",
+        "url": "https://github.com/google/oss-fuzz",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Anthropic（内部评测，由其前沿红队运行并报告）",
+        "cite": [
+          "red-team-blog@发布信息"
+        ]
+      },
+      "first_release": {
+        "v": "官方未单独给出该评测的首发日期；本档案以 2026-04-07 前沿红队博客首次公开其口径与成绩为准（该评测在此之前已存在，同文报告了 Opus 4.6 时代的成绩）",
+        "cite": [
+          "red-team-blog@发布信息",
+          "red-team-blog@§01"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "red-team-blog@§01",
+        "anthropic-news-claude-opus-5@正文"
+      ],
+      "interpretation": [
+        "anthropic-news-claude-opus-5@正文"
+      ]
+    },
+    "problem": {
+      "text": "Anthropic 过去用内部加外部基准跟踪模型的漏洞发现与利用能力，但模型已经把这些基准基本刷满；复现已知漏洞的指标分不清模型是真会还是记住了答案，所以他们转向真实世界的新安全任务。OSS-Fuzz 就是这套转向之后的内部做法：直接跑在真实开源项目的 fuzz 入口点上。",
+      "cite": [
+        "red-team-blog@§02"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "上一代旗舰 Opus 4.6（2026-04 公布）",
+        "value": "tier 1 约 150–175 次；tier 2 约 100 次；tier 3 仅 1 次；tier 4 与 tier 5 未报告",
+        "note": "约 7,000 个入口点各跑一次；Sonnet 4.6 的三个数字与它相同。",
+        "cite": [
+          "red-team-blog@§01"
+        ]
+      },
+      {
+        "label": "Mythos Preview（2026-04 公布）",
+        "value": "tier 1–2 合计 595 次；tier 3–4 少数几次（未给具体数）；tier 5 完整控制流劫持 10 次",
+        "note": "tier 5 的 10 次是在完全打补丁的独立目标上拿到的。",
+        "cite": [
+          "red-team-blog@§01"
+        ]
+      },
+      {
+        "label": "Opus 5 对比 Mythos 5（2026-07 公布）",
+        "value": "找漏洞接近 Mythos 5；写利用明显落后（网页未给数值）",
+        "note": "发布页以左右两幅图呈现，未给坐标值。",
+        "cite": [
+          "anthropic-news-claude-opus-5@正文"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把它当成 Google 的 OSS-Fuzz 模糊测试服务。两者同名但不是一回事：Anthropic 这个是内部模型评测，只借用了 OSS-Fuzz 语料库里的开源仓库。",
+        "cite": [
+          "google-oss-fuzz-repo@README",
+          "red-team-blog@§01"
+        ]
+      },
+      {
+        "text": "把「找漏洞」和「写利用」当成一个分数。这两项可以差得很远，Opus 5 就是前者接近 Mythos 5、后者明显落后。",
+        "cite": [
+          "anthropic-news-claude-opus-5@正文"
+        ]
+      },
+      {
+        "text": "把「在已打补丁的目标上造成崩溃」直接等同于现实世界的可利用漏洞。官方报的是崩溃严重度等级，不是 CVE 编号，也不是实际可利用性。",
+        "cite": [
+          "red-team-blog@§01"
+        ]
+      },
+      {
+        "text": "以为分数高是因为模型被专门训练来攻击。官方明确说没有针对网安任务训练 Mythos Preview，这些能力是代码、推理与自主性通用改进的下游结果。",
+        "cite": [
+          "red-team-blog@§01"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "评测方",
+        "v": "Anthropic，具体由其前沿红队（Frontier Red Team）运行并报告。",
+        "cite": [
+          "red-team-blog@发布信息"
+        ]
+      },
+      {
+        "k": "命名来源",
+        "v": "取自 Google 的 OSS-Fuzz 项目；Anthropic 的评测直接复用 OSS-Fuzz 语料库里的开源仓库，但它是模型评测而非模糊测试基础设施。",
+        "cite": [
+          "red-team-blog@§01",
+          "google-oss-fuzz-repo@README"
+        ]
+      },
+      {
+        "k": "核心作者（2026-04 博客）",
+        "v": "Nicholas Carlini、Newton Cheng、Keane Lucas、Michael Moore、Milad Nasr、Vinay Prabhushankar、Winnie Xiao 等。",
+        "cite": [
+          "red-team-blog@作者署名"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2026-04-07 前沿红队博客首次公开口径与成绩，同日宣布 Project Glasswing；2026-07-24 Opus 5 发布页引用该评测对比 Opus 5 与 Mythos 5。",
+        "cite": [
+          "red-team-blog@发布信息",
+          "glasswing@正文",
+          "anthropic-news-claude-opus-5@正文"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "未公开：官方没有发布项目清单、入口点列表、提示词或评测代码，也没有第三方复现。",
+        "cite": [
+          "red-team-blog@导语"
+        ]
+      },
+      {
+        "k": "同名项目规模（Google OSS-Fuzz）",
+        "v": "截至 2025 年 5 月，Google OSS-Fuzz 已帮助在 1,000 个项目中发现并修复超过 13,000 个漏洞和 50,000 个 bug，支持 C/C++、Rust、Go、Python、Java/JVM、JavaScript 和 Lua。",
+        "cite": [
+          "google-oss-fuzz-repo@README"
+        ]
+      },
+      {
+        "k": "与之分开的另一条评测线",
+        "v": "同一团队另有一条零日评测：让模型在真实操作系统和浏览器里找出并利用零日漏洞；官方称已发现漏洞中超过 99% 尚未打补丁，细节不公开。",
+        "cite": [
+          "red-team-blog@导语",
+          "red-team-blog@§02"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-14",
+        "columns": [
+          "模型",
+          "tier 1（基础崩溃）",
+          "tier 2",
+          "tier 3",
+          "tier 4",
+          "tier 5（完整控制流劫持）",
+          "口径"
+        ],
+        "rows": [
+          [
+            "Sonnet 4.6",
+            "约 150–175 次",
+            "约 100 次",
+            "1 次",
+            "未报告",
+            "未报告",
+            "约 7,000 个入口点各跑一次"
+          ],
+          [
+            "Opus 4.6",
+            "约 150–175 次",
+            "约 100 次",
+            "1 次",
+            "未报告",
+            "未报告",
+            "约 7,000 个入口点各跑一次"
+          ],
+          [
+            "Mythos Preview",
+            "595 次（tier 1–2 合计，官方未拆分）",
+            "含在 tier 1–2 合计内",
+            "少数几次（tier 3–4 合计）",
+            "含在 tier 3–4 合计内",
+            "10 次（完全打补丁的独立目标）",
+            "约 7,000 个入口点各跑一次"
+          ]
+        ]
+      },
+      "cite": [
+        "red-team-blog@§01"
+      ]
+    }
+  }
+}

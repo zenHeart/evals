@@ -1,0 +1,800 @@
+{
+  "id": "bigcodebench",
+  "name": "BigCodeBench",
+  "full_name": "BigCodeBench: Benchmarking Code Generation with Diverse Function Calls and Complex Instructions",
+  "aliases": [],
+  "status": null,
+  "categories": [
+    "coding"
+  ],
+  "summary": "BigCodeBench 是 1,140 道 Python 函数级编程题：给模型一段结构化长 docstring，让它补全函数体，再用该题自带的 unittest 测试用例判分。每题平均 5.6 个测试用例、平均分支覆盖率 99%，横跨 139 个库和 7 个领域。",
+  "interpretation": "高分意味着模型能把多个真实库的函数按复杂指令串起来、写成一个能跑的函数。论文里 60 个被测模型在 Complete 口径的校准 Pass@1 最高 61.1%（GPT-4o），而 11 位标注者手写的 33 个参考解有 32 个全通过（约 97%）。这个分数只覆盖单函数级代码生成，不代表能修仓库级 issue，也不代表能维护长周期工程。",
+  "measures": [
+    {
+      "area": "计算 / 数据处理",
+      "focus": "数值计算、统计分析与机器学习数据处理；典型库 pandas、numpy、sklearn、scipy、statsmodels、tensorflow、sympy、nltk、cv2",
+      "share": "63%",
+      "format": "函数补全 + unittest 判分",
+      "cite": [
+        "arxiv-2406-15877@Figure 4"
+      ]
+    },
+    {
+      "area": "通用编程",
+      "focus": "标准库常用工具与数据结构；典型库 random、re、collections、itertools、string、operator、heapq、ast、functools、bisect、inspect、unicodedata",
+      "share": "44%",
+      "format": "函数补全 + unittest 判分",
+      "cite": [
+        "arxiv-2406-15877@Figure 4"
+      ]
+    },
+    {
+      "area": "可视化",
+      "focus": "绘图与图像输出；典型库 matplotlib、seaborn、PIL、folium、wordcloud、turtle、mpl_toolkits",
+      "share": "31%",
+      "format": "函数补全 + unittest 判分",
+      "cite": [
+        "arxiv-2406-15877@Figure 4"
+      ]
+    },
+    {
+      "area": "系统 / 文件",
+      "focus": "文件、进程、序列化与系统交互；典型库 os、json、csv、shutil、glob、subprocess、pathlib、sqlite3、io、zipfile、sys、logging、pickle、psutil",
+      "share": "30%",
+      "format": "函数补全 + unittest 判分",
+      "cite": [
+        "arxiv-2406-15877@Figure 4"
+      ]
+    },
+    {
+      "area": "时间处理",
+      "focus": "日期时间解析、时区与节假日；典型库 datetime、time、pytz、dateutil、holidays、calendar",
+      "share": "10%",
+      "format": "函数补全 + unittest 判分",
+      "cite": [
+        "arxiv-2406-15877@Figure 4"
+      ]
+    },
+    {
+      "area": "网络",
+      "focus": "HTTP 请求、邮件与网络协议；典型库 requests、urllib、bs4、socket、django、flask、ipaddress、smtplib、http、ssl、email",
+      "share": "8%",
+      "format": "函数补全 + unittest 判分",
+      "cite": [
+        "arxiv-2406-15877@Figure 4"
+      ]
+    },
+    {
+      "area": "密码学",
+      "focus": "哈希、编码与加解密；典型库 hashlib、base64、binascii、codecs、rsa、cryptography、hmac、secrets、Crypto",
+      "share": "5%",
+      "format": "函数补全 + unittest 判分",
+      "cite": [
+        "arxiv-2406-15877@Figure 4"
+      ]
+    },
+    {
+      "area": "NL 指令变体（Instruct 口径）",
+      "focus": "与 Complete 同一批题，但把结构化 docstring 改写成简短自然语言指令，剥掉参数表、交互示例等非必要细节，专门考「听懂人的需求」",
+      "share": "100%（与 Complete 同题）",
+      "format": "自然语言指令 → 代码 + unittest 判分",
+      "cite": [
+        "arxiv-2406-15877@§2.4",
+        "bigcode-bench@Notes"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "仓库级 / Agent 级任务：在真实仓库里定位文件、改多个文件、跑项目测试（HF 数据集卡明确把 SWE-bench 这类排除在外，论文附录也用它作对照）",
+      "cite": [
+        "hf-dataset@Curation Rationale",
+        "arxiv-2406-15877@附录 G.1 Saturation"
+      ]
+    },
+    {
+      "text": "把模型当 Agent 用：多轮交互、调用外部工具、在沙箱里试错（HF 数据集卡定位它是「基础 LLM 基准，不是 LLM Agent 基准」）",
+      "cite": [
+        "hf-dataset@Dataset Summary"
+      ]
+    },
+    {
+      "text": "非 Python 语言：作者明确说 BigCodeBench 是 Python-only，且不易扩展到其他语言",
+      "cite": [
+        "hf-dataset@Languages",
+        "arxiv-2406-15877@附录 G.1 Multilingualism"
+      ]
+    },
+    {
+      "text": "短小自包含的算法题：HumanEval / MBPP 那种纯算法题被 HF 数据集卡明确判为不适合，ODEX 这类简单任务同样被排除",
+      "cite": [
+        "hf-dataset@Curation Rationale"
+      ]
+    },
+    {
+      "text": "代码质量本身：可读性、性能、工程结构都不在判分范围内，只有测试用例通过与否",
+      "cite": [
+        "arxiv-2406-15877@§2"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 1140,
+    "splits": [
+      "BigCodeBench-Complete：1,140 题（结构化长 docstring 补全）",
+      "BigCodeBench-Instruct：1,140 题（简短自然语言指令，与 Complete 同题）",
+      "BigCodeBench-Hard：148 题（更高难度子集）",
+      "Hugging Face 上不设 split，默认全部按 train 加载"
+    ],
+    "languages": [
+      "python",
+      "en"
+    ],
+    "source_type": "GPT-4 合成 + 人工重构校验（种子来自 ODEX 的 Stack Overflow 用法片段）",
+    "public_sample": true,
+    "totals": "Full 集 1,140 题；Complete 与 Instruct 是同一批题的两种提示口径；Hard 子集 148 题。每题平均 5.6 个测试用例、平均分支覆盖率 99%；提示平均 1,112.5 字符 / 33.5 行，参考解平均 426.0 字符 / 10.0 行，平均圈复杂度 3.1。共 139 个库（77 个标准库 + 62 个外部库）、7 个领域、281 个标准库调用 + 442 个外部库调用。各领域占比按「题目里是否出现至少一个该领域库」统计，因此总和超过 100%。",
+    "cite": [
+      "arxiv-2406-15877@Abstract",
+      "arxiv-2406-15877@Table 1",
+      "github@News",
+      "hf-dataset@Data Splits",
+      "bigcode-bench@Notes"
+    ],
+    "construction": [
+      {
+        "k": "种子与 LLM 合成",
+        "text": "以 ODEX（Stack Overflow 上采集的「意图-代码骨架」配对）为种子示例，用 GPT-4 API（gpt-4-0613）在 2-shot in-context 演示下，把 API 用法片段扩写成带结构化 docstring 与测试的函数级任务。",
+        "cite": [
+          "arxiv-2406-15877@§2.1",
+          "hf-dataset@Source Data"
+        ]
+      },
+      {
+        "k": "去偏与扰动",
+        "text": "为抵消「模型偏爱自己的生成」导致的不公平，先把语义化的程序入口名换成哑函数名，再用 NL-Augmenter 的回译方法扰动 docstring 描述，最后用抽象语法树解析器校验，得到 4,718 个函数级样本。",
+        "cite": [
+          "arxiv-2406-15877@§2.1"
+        ]
+      },
+      {
+        "k": "半自动重构与测试生成",
+        "text": "在网页版 GPT-4 的 Code Interpreter 会话里由人驱动迭代重构：13 位作者按代码主题偏好各领 100 个随机任务，反复让 GPT-4 删无用 import、按 PEP-257 重整 docstring、对齐实现与说明、写并执行单元测试。GPT-4 写长文件时经常丢内容，剔除无效程序后剩 1,223 个带测试用例的重构任务。",
+        "cite": [
+          "arxiv-2406-15877@§2.2"
+        ]
+      },
+      {
+        "k": "三阶段人工校验",
+        "text": "Examination 按详细指南补测试用例、修 LLM 生成的 flaky 测试并把任务规范化；Pre-Evaluation 用 GPT-3.5-Turbo 试跑，看它怎么失败再回头补 docstring 细节；Cross-Checking 由另外 7 位标注者复核他人的题目，最后在 GitHub Container Registry 的沙箱里自动跑测试。",
+        "cite": [
+          "arxiv-2406-15877@§2.3"
+        ]
+      },
+      {
+        "k": "人工抽查参考解",
+        "text": "把 33 个定稿题目随机分给 11 位标注者（不含主标注者，一人当时不可用）写参考解，主标注者评估后确认 32 题（97%）能通过全部测试用例。",
+        "cite": [
+          "arxiv-2406-15877@§2.3"
+        ]
+      },
+      {
+        "k": "生成 Instruct 变体",
+        "text": "从 Complete 的提示里用一套预定义解析规则剥掉参数表、交互示例等非必要细节，改写成更自然的自然语言指令；由 5 位未参与前序阶段的作者抽查 prompt 与参考解是否一致。",
+        "cite": [
+          "arxiv-2406-15877@§2.4"
+        ]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "零样本、贪心解码（greedy decoding）下的 Pass@1：把完整指令交给模型，让它生成函数体，然后用该题自带的 unittest 测试用例执行判分。论文主实验按 Chen et al. (2021) 的无偏 Pass@K 估计量报告，提示词沿用 LiveCodeBench（Liu et al., 2024）的设定。由于模型经常漏掉生成里的必要前置代码导致测试失败，论文另报一版「校准 Pass@1」：把缺失的 setup 补上后再算。",
+    "cite": [
+      "arxiv-2406-15877@§4",
+      "arxiv-2406-15877@§4.1"
+    ],
+    "variants": [
+      {
+        "text": "Complete vs Instruct：Complete 给结构化长 docstring（平均 1,112.5 字符 / 33.5 行）做补全；Instruct 只给简短自然语言指令（平均 663.2 字符，其中代码 124.0 字符 / 11.7 行）。题目集相同但提示不同，两个口径的分数不能混比。",
+        "cite": [
+          "arxiv-2406-15877@Table 1",
+          "bigcode-bench@Notes",
+          "github@About"
+        ]
+      },
+      {
+        "text": "Full vs Hard：Hard 是从 Full 里挑出的 148 题高难度子集，官网用标签页分成两个榜单。",
+        "cite": [
+          "github@News",
+          "bigcode-bench@Notes"
+        ]
+      },
+      {
+        "text": "原始 vs 校准 Pass@1：校准版会替模型补上漏掉的前置代码，同一模型可能因此高出不少——GPT-4 在 Complete 上从 0.484 抬到 0.572。",
+        "cite": [
+          "arxiv-2406-15877@§4.1",
+          "arxiv-2406-15877@Table 6"
+        ]
+      },
+      {
+        "text": "贪心 vs 随机采样：主结果只用贪心；随机采样 Pass@1 / Pass@5（N=5，温度 0.8、top-p 0.95）只放在附录 L。",
+        "cite": [
+          "arxiv-2406-15877@§4"
+        ]
+      },
+      {
+        "text": "复现口径：官方默认批量推理，作者明确说结果会随 batch size 与推理框架版本变化，要更确定的结果需把 --bs 设为 1。",
+        "cite": [
+          "github@Quick Start"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "pass1",
+      "name": "Pass@1",
+      "direction": "越高越好",
+      "description": "贪心解码下，生成的代码通过该题全部 unittest 测试用例的题目比例",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2406-15877@§4"
+      ]
+    },
+    {
+      "id": "pass1-calibrated",
+      "name": "校准 Pass@1",
+      "direction": "越高越好",
+      "description": "把模型生成中漏掉的必要前置代码补上后再计算的 Pass@1，用于排除「漏前置代码」造成的假失败",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2406-15877@§4.1"
+      ]
+    },
+    {
+      "id": "pass5",
+      "name": "Pass@5",
+      "direction": "越高越好",
+      "description": "随机采样 5 个样本（温度 0.8、top-p 0.95）时至少一个通过全部测试用例的题目比例；论文只放在附录 L，未作为主结果",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2406-15877@§4"
+      ]
+    }
+  ],
+  "versions": [
+    {
+      "id": "v0.1.5",
+      "date": "2024-06-18",
+      "label": "GitHub News 宣布首发：1,140 题的 benchmark，PyPI 版本 0.1.5",
+      "cite": [
+        "github@News"
+      ]
+    },
+    {
+      "id": "arxiv-v1",
+      "date": "2024-06-22",
+      "label": "arXiv v1 提交（提交历史：22 Jun 2024）",
+      "cite": [
+        "arxiv-2406-15877@提交历史"
+      ]
+    },
+    {
+      "id": "v0.1.8",
+      "date": "2024-07-18",
+      "label": "发布 BigCodeBench-Hard 子集（148 题）与 PyPI 0.1.8",
+      "cite": [
+        "github@News"
+      ]
+    },
+    {
+      "id": "v0.2.0",
+      "date": "2024-10-06",
+      "label": "PyPI 0.2.0；此前 10-05 上线 Hugging Face 代码执行 API，10-01 宣布 Hard 上已评测 139 个模型",
+      "cite": [
+        "github@News"
+      ]
+    },
+    {
+      "id": "v0.2.2.dev2",
+      "date": "2025-01-22",
+      "label": "PyPI 0.2.2.dev2，累计评测 163 个模型",
+      "cite": [
+        "github@News"
+      ]
+    },
+    {
+      "id": "arxiv-v4-iclr",
+      "date": "2025-04-01",
+      "label": "arXiv v4（ICLR 2025 Oral 版）；本页核验所用版本",
+      "cite": [
+        "arxiv-2406-15877@提交历史",
+        "arxiv-2406-15877@页眉"
+      ]
+    },
+    {
+      "id": "repo-archived",
+      "date": "2026-07-20",
+      "label": "GitHub 仓库归档为只读（核验时官网榜单仍在线）",
+      "cite": [
+        "github@仓库状态"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "测试执行不稳定 / 判分噪声",
+      "impact": "作者在附录 G.1 Reliability 中说会尽量把不可控的 Pass@1 波动压在 0.6% 以下，但没有给出完整的重复实验方差；官方 README 又明确说批量推理的结果会随 batch size 与推理框架版本变化。",
+      "severity": "高",
+      "response": "固定贪心解码与测试环境；官方提供预生成样本和带实时执行会话的榜单；要更确定的结果需把 --bs 设为 1。",
+      "reader": "千分点以内的差距不要当真；看任何分数前先确认它来自论文、官方榜单还是自测复现。",
+      "cite": [
+        "arxiv-2406-15877@附录 G.1 Reliability",
+        "github@Quick Start"
+      ]
+    },
+    {
+      "issue": "覆盖率高不等于判得对",
+      "impact": "题目平均分支覆盖率 99%，但作者承认这只保证参考解被充分测到，不保证模型生成的代码能被现有用例正确判定。",
+      "severity": "中",
+      "response": "三阶段人工校验参考解与测试用例；用 unittest 封装断言程序行为，而不是简单的输入-输出比对。",
+      "reader": "通过率是逐题的二元结果，不代表代码质量，也不代表被测到了所有边界。",
+      "cite": [
+        "arxiv-2406-15877@附录 G.1 Rigorousness",
+        "arxiv-2406-15877@§2"
+      ]
+    },
+    {
+      "issue": "只覆盖 Python 与常见库",
+      "impact": "作者明确说 BigCodeBench 是 Python-only 且不易扩展到其他语言，也只覆盖常见库和日常编程任务；附录 G.2 计划做 BigCodeBench-OOD 来测分布外库的泛化。",
+      "severity": "中",
+      "response": "提出 OOD 变体计划；截至核验时未见已发布结果。",
+      "reader": "不要把这个分数外推到其他语言、小众库或陌生领域。",
+      "cite": [
+        "arxiv-2406-15877@附录 G.1 Multilingualism",
+        "arxiv-2406-15877@附录 G.1 Diversity",
+        "arxiv-2406-15877@附录 G.2"
+      ]
+    },
+    {
+      "issue": "污染与版本演化",
+      "impact": "附录 D 做了 10-gram 去重检查，最严格配置下与受测数据源重叠的题目不超过 2.5%；但作者也指出训练数据在持续演化，污染是长期问题。",
+      "severity": "中",
+      "response": "按 10-gram 与多个数据源比对并公开报告重叠比例。",
+      "reader": "看新模型分数时要留意它的训练截止时间与所用题库版本。",
+      "cite": [
+        "arxiv-2406-15877@附录 D",
+        "arxiv-2406-15877@附录 G.1 Evolution"
+      ]
+    },
+    {
+      "issue": "指令与用例带人类偏好",
+      "impact": "Hugging Face 数据集卡承认存在少量指令略有偏置或用例过于具体的题目。",
+      "severity": "低",
+      "response": "靠社区反馈与长期迭代缓解；数据集卡公开征集改进意见。",
+      "reader": "个别题目解法并不唯一，个别用例可能过度约束实现细节。",
+      "cite": [
+        "hf-dataset@Discussion of Biases"
+      ]
+    },
+    {
+      "issue": "执行成本",
+      "impact": "Hugging Face 数据集卡把 Efficiency 单独列为已知局限；官方 README 给出参考耗时：gradio 后端跑 Full 约 6-7 分钟、Hard 约 4-5 分钟，e2b 默认机型跑 Full 约 25-30 分钟。",
+      "severity": "低",
+      "response": "提供云端执行 API 与预生成样本，避免重复跑评测。",
+      "reader": "自己复现前先看 README 的耗时与后端选择。",
+      "cite": [
+        "hf-dataset@Other Known Limitations",
+        "github@Quick Start"
+      ]
+    },
+    {
+      "issue": "与仓库级基准不可互换",
+      "impact": "论文附录 G.1 Saturation 用 SWE-bench 作对照（当时最好的模型也只能解决不超过 30% 的真实 GitHub issue），HF 数据集卡也明确说它是「基础 LLM 基准」而非 LLM Agent 基准。",
+      "severity": "低",
+      "response": "定位在函数级代码生成；仓库级与 Agent 级任务由 SWE-bench 等基准覆盖。",
+      "reader": "不要把 BigCodeBench 高分理解成能自动定位并修复 issue。",
+      "cite": [
+        "arxiv-2406-15877@附录 G.1 Saturation",
+        "hf-dataset@Dataset Summary"
+      ]
+    }
+  ],
+  "notes": "官方 GitHub 仓库 2026-07-20 起归档为只读，核验时官网榜单仍在线；GitHub News 的首发日（2024-06-18）与 arXiv v1 提交日（2024-06-22）不一致，本页两个日期都保留。",
+  "official_sources": [
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2406.15877"
+    },
+    {
+      "kind": "site",
+      "url": "https://bigcode-bench.github.io/"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/bigcode-project/bigcodebench"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/bigcode/bigcodebench"
+    }
+  ],
+  "related_benchmarks": [
+    "humaneval",
+    "humanevalplus",
+    "mbpp",
+    "lcb",
+    "swebench",
+    "swe-lancer",
+    "aider"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "arxiv-2406-15877",
+        "kind": "paper",
+        "title": "BigCodeBench: Benchmarking Code Generation with Diverse Function Calls and Complex Instructions（arXiv:2406.15877 v4，ICLR 2025 Oral）",
+        "url": "https://arxiv.org/abs/2406.15877",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "bigcode-bench",
+        "kind": "site",
+        "title": "BigCodeBench Leaderboard（bigcode-bench.github.io）",
+        "url": "https://bigcode-bench.github.io/",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "github",
+        "kind": "repo",
+        "title": "bigcode-project/bigcodebench（含 News / About / Quick Start / Impact）",
+        "url": "https://github.com/bigcode-project/bigcodebench",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "hf-dataset",
+        "kind": "dataset",
+        "title": "bigcode/bigcodebench（Hugging Face 数据集卡）",
+        "url": "https://huggingface.co/datasets/bigcode/bigcodebench",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "BigCode Project（论文一作 Terry Yue Zhuo，共 33 位作者）",
+        "cite": [
+          "arxiv-2406-15877@作者署名",
+          "hf-dataset@Dataset Summary"
+        ]
+      },
+      "first_release": {
+        "v": "2024-06-18（GitHub News 宣布首发；arXiv v1 为 2024-06-22）",
+        "cite": [
+          "github@News",
+          "arxiv-2406-15877@提交历史"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "arxiv-2406-15877@Abstract",
+        "arxiv-2406-15877@Table 1"
+      ],
+      "interpretation": [
+        "arxiv-2406-15877@§4.1",
+        "arxiv-2406-15877@§2.3"
+      ]
+    },
+    "problem": {
+      "text": "HumanEval / MBPP 这类基准题目短、自包含、偏纯算法；SWE-bench 这类仓库级基准考的是 Agent 在真实仓库里定位并修改代码。BigCodeBench 想填中间那段：让基础 LLM（不是 Agent）在函数级任务里按复杂指令调用多个真实库的函数，把「会不会用库」单独测出来。",
+      "cite": [
+        "hf-dataset@Curation Rationale",
+        "arxiv-2406-15877@§1",
+        "hf-dataset@Dataset Summary"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "人类参考解",
+        "value": "约 97%",
+        "note": "论文把 33 个定稿题目随机分给 11 位标注者写参考解，其中 32 个（97%）通过全部测试用例。这是小样本人工抽查，不是完整的人类基线。",
+        "cite": [
+          "arxiv-2406-15877@§2.3",
+          "arxiv-2406-15877@Abstract"
+        ]
+      },
+      {
+        "label": "论文最好成绩（Complete 口径，校准 Pass@1）",
+        "value": "61.1%",
+        "note": "GPT-4o（2024-05-13）；同表 GPT-4-Turbo 58.2%、Claude-3 Opus 57.4%、DeepSeek-Coder-instruct 33B 51.1%。",
+        "cite": [
+          "arxiv-2406-15877@Table 6"
+        ]
+      },
+      {
+        "label": "论文最好成绩（Instruct 口径，校准 Pass@1）",
+        "value": "51.1%",
+        "note": "同为 GPT-4o；Instruct 口径普遍比 Complete 低约 10 个百分点。",
+        "cite": [
+          "arxiv-2406-15877@Table 7"
+        ]
+      },
+      {
+        "label": "官网榜单页当前第一",
+        "value": "35.8",
+        "note": "抓取到的榜单第一行是 Claude-3.7-Sonnet-20250219（temperature=1, length=12800, reasoning=3200）。该页用标签页切换 Hard/Full 与 Complete/Instruct，抓取内容未记录所处标签页，因此这个数值不能直接与论文的 Full 集分数比较。",
+        "cite": [
+          "bigcode-bench@榜单",
+          "bigcode-bench@Notes"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 Complete 和 Instruct 的分数排在一起比——题目相同但提示不同（长 docstring vs 简短指令），两个口径系统性差约 10 个百分点。",
+        "cite": [
+          "arxiv-2406-15877@Table 7",
+          "bigcode-bench@Notes"
+        ]
+      },
+      {
+        "text": "把 61.1% 理解成「接近人类」——同批人类参考解约 97%，且 61.1% 是 2024 年那一代模型的成绩；榜单页上后来居上的推理型模型属于另一个口径（见阶梯第 4 级的标签页说明）。",
+        "cite": [
+          "arxiv-2406-15877@§2.3",
+          "bigcode-bench@榜单"
+        ]
+      },
+      {
+        "text": "把 Hard（148 题）和 Full（1,140 题）两个榜单混读——官网是标签页切换，GitHub News 也把它们当两次独立发布。",
+        "cite": [
+          "github@News",
+          "bigcode-bench@Notes"
+        ]
+      },
+      {
+        "text": "以为「99% 分支覆盖率」等于「判分可靠」——作者明确说高覆盖只保证参考解被测到，不保证模型代码被现有用例正确判定。",
+        "cite": [
+          "arxiv-2406-15877@附录 G.1 Rigorousness"
+        ]
+      },
+      {
+        "text": "把 BigCodeBench 当成 Agent 或仓库级基准——HF 数据集卡定位它是「基础 LLM 基准，不是 LLM Agent 基准」，论文附录也用 SWE-bench 作对照。",
+        "cite": [
+          "hf-dataset@Dataset Summary",
+          "arxiv-2406-15877@附录 G.1 Saturation"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "BigCode Project（开放科学协作项目）；论文一作 Terry Yue Zhuo，共 33 位作者",
+        "cite": [
+          "arxiv-2406-15877@作者署名",
+          "hf-dataset@Dataset Summary"
+        ]
+      },
+      {
+        "k": "发表",
+        "v": "ICLR 2025 Oral（论文页眉标注为 conference paper）",
+        "cite": [
+          "arxiv-2406-15877@页眉"
+        ]
+      },
+      {
+        "k": "标注者",
+        "v": "20 位作者以标注者身份累计参与一年，其中 75% 有 5 年以上 Python 经验；重构阶段由 13 位作者各领 100 个随机任务；交叉复核另有 7 位标注者；Instruct 变体质控由 5 位未参与前序阶段的作者抽查",
+        "cite": [
+          "arxiv-2406-15877@§2",
+          "arxiv-2406-15877@§2.2",
+          "arxiv-2406-15877@§2.4"
+        ]
+      },
+      {
+        "k": "许可",
+        "v": "Apache License 2.0",
+        "cite": [
+          "hf-dataset@Licensing Information"
+        ]
+      },
+      {
+        "k": "采用",
+        "v": "GitHub README 的 Impact 一节列出 Zhipu AI、Alibaba Qwen、DeepSeek、Amazon AWS AI、Snowflake AI Research、ServiceNow Research、Meta AI、Cohere AI、Sakana AI、AI2",
+        "cite": [
+          "github@Impact"
+        ]
+      },
+      {
+        "k": "仓库现状",
+        "v": "2026-07-20 起归档为只读；核验时官网榜单仍可访问",
+        "cite": [
+          "github@仓库状态"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "题目在 Hugging Face（bigcode/bigcodebench），不设 split、默认按 train 加载；官方提供 PyPI 包 bigcodebench、云端代码执行 API 与预生成样本",
+        "cite": [
+          "hf-dataset@Data Splits",
+          "github@News"
+        ]
+      },
+      {
+        "k": "时间线分歧",
+        "v": "GitHub News 把首发日写作 2024-06-18，arXiv 提交历史是 2024-06-22；Hard 子集在仓库里写 148 题，官网写「~150 题」",
+        "cite": [
+          "github@News",
+          "arxiv-2406-15877@提交历史",
+          "bigcode-bench@Notes"
+        ]
+      },
+      {
+        "k": "论文版本",
+        "v": "本页核验使用 arXiv v4（2025-04-01，ICLR 2025 版式）",
+        "cite": [
+          "arxiv-2406-15877@提交历史"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-14",
+        "columns": [
+          "来源",
+          "模型",
+          "版本 / 规模",
+          "Complete 原始",
+          "Complete 校准",
+          "Instruct 原始",
+          "Instruct 校准",
+          "口径"
+        ],
+        "rows": [
+          [
+            "论文 Table 6 / 7",
+            "GPT-4o",
+            "2024-05-13",
+            "0.602",
+            "0.611",
+            "0.499",
+            "0.511",
+            "Full 集 · 贪心 Pass@1"
+          ],
+          [
+            "论文 Table 6 / 7",
+            "GPT-4-Turbo",
+            "2024-04-09",
+            "0.582",
+            "0.582",
+            "0.480",
+            "0.482",
+            "Full 集 · 贪心 Pass@1"
+          ],
+          [
+            "论文 Table 6 / 7",
+            "GPT-4",
+            "0613",
+            "0.484",
+            "0.572",
+            "0.459",
+            "0.460",
+            "Full 集 · 贪心 Pass@1"
+          ],
+          [
+            "论文 Table 6 / 7",
+            "GPT-3.5-Turbo",
+            "0125",
+            "0.506",
+            "0.506",
+            "0.382",
+            "0.391",
+            "Full 集 · 贪心 Pass@1"
+          ],
+          [
+            "论文 Table 6 / 7",
+            "Claude-3",
+            "Opus",
+            "0.568",
+            "0.574",
+            "0.452",
+            "0.455",
+            "Full 集 · 贪心 Pass@1"
+          ],
+          [
+            "论文 Table 6 / 7",
+            "Claude-3",
+            "Sonnet",
+            "0.534",
+            "0.538",
+            "0.425",
+            "0.427",
+            "Full 集 · 贪心 Pass@1"
+          ],
+          [
+            "论文 Table 6 / 7",
+            "Claude-3",
+            "Haiku",
+            "0.486",
+            "0.501",
+            "0.392",
+            "0.394",
+            "Full 集 · 贪心 Pass@1"
+          ],
+          [
+            "论文 Table 6 / 7",
+            "DeepSeek-Chat",
+            "V2",
+            "0.494",
+            "0.494",
+            "0.404",
+            "0.404",
+            "Full 集 · 贪心 Pass@1"
+          ],
+          [
+            "论文 Table 6 / 7",
+            "DeepSeek-Coder-instruct",
+            "33B",
+            "0.511",
+            "0.511",
+            "0.418",
+            "0.420",
+            "Full 集 · 贪心 Pass@1"
+          ],
+          [
+            "论文 Table 6 / 7",
+            "CodeLlama-instruct",
+            "70B",
+            "0.489",
+            "0.496",
+            "0.405",
+            "0.407",
+            "Full 集 · 贪心 Pass@1"
+          ],
+          [
+            "论文 Table 6 / 7",
+            "Llama3-instruct",
+            "70B",
+            "0.539",
+            "0.545",
+            "0.432",
+            "0.436",
+            "Full 集 · 贪心 Pass@1"
+          ],
+          [
+            "论文 Table 6 / 7",
+            "Qwen2-Instruct",
+            "72B",
+            "0.539",
+            "0.540",
+            "0.382",
+            "0.385",
+            "Full 集 · 贪心 Pass@1"
+          ]
+        ]
+      },
+      "cite": [
+        "arxiv-2406-15877@Table 6",
+        "arxiv-2406-15877@Table 7"
+      ]
+    }
+  }
+}

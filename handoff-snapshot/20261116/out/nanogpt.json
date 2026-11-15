@@ -1,0 +1,741 @@
+{
+  "id": "nanogpt",
+  "name": "NanoGPT Speedrun",
+  "full_name": "NanoGPT Speedrun（modded-nanogpt：在 8×H100 上把 124M 参数 GPT 训练到 FineWeb 验证损失 3.28 的墙钟时间竞速）",
+  "aliases": [
+    "NanoGPT",
+    "modded-nanogpt",
+    "NanoGPT speedrunning"
+  ],
+  "status": null,
+  "categories": [
+    "coding"
+  ],
+  "summary": "NanoGPT speedrun 是托管在 GitHub 仓库 modded-nanogpt 上的社区竞速基准：固定用 8 张 NVIDIA H100，训练一个 124M 参数的 GPT-2（small）规模语言模型，直到它在 FineWeb 验证集上的交叉熵损失降到 3.28，比谁花的墙钟时间最短。「交叉熵损失」是模型给正确下一个 token 的概率取负对数后再平均，3.28 大致相当于每个位置只在约 27 个候选 token 里猜。",
+  "interpretation": "时间越短，说明训练算法与系统工程的联合优化越强；它不说明模型更聪明——目标损失被钉在 3.28，所有纪录都处在同一质量档位。它也不说明方法能外推：作者明确说「按规模」是一个无法穷尽的类别，并承认部分提速手法（例如给网络强加结构的 logit softcapping）不太可能 scale。",
+  "measures": [
+    {
+      "area": "优化器与超参数",
+      "focus": "示例：Muon 用 Newton-Schulz 迭代把 SGD-momentum 的更新矩阵近似正交化；README 记载它把训到 3.28 的速度提升 1.35 倍，并在此后 12 条新纪录中一直是优化器首选",
+      "share": "未披露（README 未给出各技术的提速占比）",
+      "format": "以训练脚本中的优化器实现与超参改动计",
+      "cite": [
+        "repo@Muon",
+        "muon"
+      ]
+    },
+    {
+      "area": "模型架构改动",
+      "focus": "示例：旋转嵌入、QK-Norm、ReLU²、零初始化投影、值残差与嵌入 shortcut、多 token 预测、84.6M 行哈希 bigram/trigram 嵌入表（650 亿参数，按 GPU 分片）",
+      "share": "未披露",
+      "format": "以模型前向/反向的结构改动计；规则允许改架构，只锁数据管线",
+      "cite": [
+        "repo@开头",
+        "repo@规则"
+      ]
+    },
+    {
+      "area": "数值精度与注意力 kernel",
+      "focus": "示例：FP8 用于 MLP 前后向与 QKV 投影、非对称 rescale 与 softcap logits、Flash Attention 3 长-短滑动窗口配 YaRN 窗口预热",
+      "share": "未披露",
+      "format": "以 kernel 与精度策略计",
+      "cite": [
+        "repo@开头"
+      ]
+    },
+    {
+      "area": "数据与批次调度",
+      "focus": "示例：训练批次起点按 EoS 对齐、batch size 调度、最大序列长度调度、文档最大长度限制",
+      "share": "未披露",
+      "format": "以取数与批次组织方式计；底层 token 流不可改",
+      "cite": [
+        "repo@开头",
+        "repo@规则"
+      ]
+    },
+    {
+      "area": "分布式与系统工程",
+      "focus": "示例：reduce_scatter 取代 all_reduce、梯度通信与计算重叠、异步取数与建索引、CUDA-graph 捕获训练步与优化器",
+      "share": "未披露",
+      "format": "以通信/编译/图捕获等系统优化计",
+      "cite": [
+        "repo@开头"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "模型的语言或推理能力：目标损失固定为 3.28，所有通过线附近的纪录处于同一质量档位，差异只来自训练耗时",
+      "cite": [
+        "repo@规则",
+        "repo@目标指标说明"
+      ]
+    },
+    {
+      "text": "方法能否外移到更大规模训练：作者明确回应「按规模是一个无限类别……不可能完全证明」，并承认部分手法不太可能 scale",
+      "cite": [
+        "repo@FAQ"
+      ]
+    },
+    {
+      "text": "数据质量与标注正确率：规则禁止修改训练或验证数据管线，数据侧不参与竞争",
+      "cite": [
+        "repo@规则"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 10485760,
+    "splits": [
+      "训练流：FineWeb10B 的 GPT-2 预分词 token（fineweb_train_*.bin，全量 103 个分片、每片 1 亿 token；当前纪录运行只下载前 9 亿 token）",
+      "验证集：固定的 10,485,760 个 FineWeb 验证 token（fineweb_val_000000.bin）"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "real-world（FineWeb：CommonCrawl 清洗去重后的英文网页文本，用 GPT-2 BPE 预分词）",
+    "public_sample": true,
+    "totals": "验证规模固定为 10,485,760 个 FineWeb 验证 token；训练用 FineWeb10B 的 GPT-2 token 流，当前纪录运行下载前 9 亿 token；训练与验证的 token 流按规则不可修改",
+    "cite": [
+      "config",
+      "repo@规则",
+      "datascript",
+      "fineweb"
+    ],
+    "construction": [
+      {
+        "k": "目标损失的来历",
+        "text": "3.28 不是任意选的，而是跟随 Andrej Karpathy 用 llm.c 复现 GPT-2 (124M) 的结果；llm.c 原文写道「优化到最后会到约 3.29，相当于每个时间步都在 exp(3.29)≈27 个 token 里均匀猜」。",
+        "cite": [
+          "repo@开头",
+          "llmc"
+        ]
+      },
+      {
+        "k": "数据与分词",
+        "text": "训练与验证都用 FineWeb10B 的 GPT-2 token：仓库脚本从 HuggingFace 的 kjj0/fineweb10B-gpt2 下载 fineweb_val_000000.bin 与 fineweb_train_*.bin，省去重新分词的时间；上游 FineWeb 为 ODC-By 1.0。",
+        "cite": [
+          "datascript",
+          "fineweb10b",
+          "fineweb"
+        ]
+      },
+      {
+        "k": "验证规模写死",
+        "text": "配置里 val_tokens 固定为 10485760，并注明「验证数据用多少 token？为了保持可比，必须把它固定下来」。",
+        "cite": [
+          "config"
+        ]
+      },
+      {
+        "k": "数据管线锁定",
+        "text": "规则第一条：不得修改训练或验证数据管线；可以改 batch size、序列长度、注意力结构等，但不能改底层 token 流。",
+        "cite": [
+          "repo@规则"
+        ]
+      },
+      {
+        "k": "计时方式",
+        "text": "kernel 预热不计时。第 21 条纪录之后规则改为显式的、使用假数据的不计时预热段，并禁用 torch._inductor.config.coordinate_descent_tuning。",
+        "cite": [
+          "repo@计时变更"
+        ]
+      },
+      {
+        "k": "统计显著性",
+        "text": "提交必须给出足够运行日志，使平均验证损失 ≤3.28 达到 p<0.01；只优化系统性能、不碰 ML 的提交可豁免该要求。",
+        "cite": [
+          "repo@规则"
+        ]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "在 8 张 NVIDIA H100 上运行仓库的 track-1 训练脚本，从不计时的 kernel 预热段之后开始计时，训练到验证损失 ≤3.28 停止并做最终验证，记录总墙钟时间。新纪录必须在相同硬件上快于上一条，并提供足够运行日志满足 p<0.01。官方纪录的计时算力由 PrimeIntellect 赞助。",
+    "cite": [
+      "repo@规则",
+      "repo@运行说明",
+      "repo@计时变更"
+    ],
+    "variants": [
+      {
+        "text": "主赛道（Track 1，比墙钟时间）与优化赛道（Track 3，固定架构/数据/batch size 下最小化步数、墙钟不限）是两个不同指标，数字不能互相比。",
+        "cite": [
+          "repo@开头",
+          "track3"
+        ]
+      },
+      {
+        "text": "Track 2（GPT-2 Medium）把目标损失降到 2.92、模型为 350M 参数，与 Track 1 的 3.28 / 124M 不是同一任务。",
+        "cite": [
+          "repo@Track 2"
+        ]
+      },
+      {
+        "text": "第 21 条纪录前后计时规则不同：此前有 10 步不计时的预热宽限，此后改为显式预热段并禁用 coordinate_descent_tuning。README 自己就给同一配置记了 2.933 / 2.997 / 3.014 分钟三行。",
+        "cite": [
+          "repo@计时变更",
+          "repo@纪录表"
+        ]
+      },
+      {
+        "text": "GPU 数量可改（--nproc_per_node），README 称这不改变训练行为，但墙钟时间随之变化；显存不足时还需调小 FlexAttention 序列长度，这会真正改变训练。",
+        "cite": [
+          "repo"
+        ]
+      },
+      {
+        "text": "首次运行 torch.compile 会额外增加约 7 分钟延迟；规则禁止使用额外的 inductor / compile 参数。",
+        "cite": [
+          "repo@运行说明",
+          "repo@规则"
+        ]
+      },
+      {
+        "text": "通过线附近留了缓冲：README 说明当前纪录被刻意保持在 3.28 以下约 0.001–0.002，让验证更简单。",
+        "cite": [
+          "repo@规则"
+        ]
+      },
+      {
+        "text": "验证可在任意序列长度下进行，只要仍是合法的语言概率模型；不同序列长度下的验证损失不保证逐位可比。",
+        "cite": [
+          "repo@目标指标说明"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "wall-clock-time",
+      "name": "达到目标验证损失的训练墙钟时间",
+      "direction": "越低越好",
+      "description": "从计时开始到验证损失 ≤3.28 的总墙钟时间，含最终验证，不含 kernel 预热与首次 torch.compile",
+      "range": null,
+      "unit": "seconds",
+      "cite": [
+        "repo@规则",
+        "repo@运行说明"
+      ]
+    },
+    {
+      "id": "val-loss",
+      "name": "FineWeb 验证集交叉熵损失",
+      "direction": "越低越好",
+      "description": "在固定 10,485,760 个 FineWeb 验证 token 上的平均交叉熵损失；≤3.28 是纪录的通过线",
+      "range": null,
+      "unit": "nats/token",
+      "cite": [
+        "repo@目标指标说明",
+        "config"
+      ]
+    },
+    {
+      "id": "steps-to-target",
+      "name": "达到目标验证损失的训练步数（Track 3 口径）",
+      "direction": "越低越好",
+      "description": "优化赛道：固定数据集、batch size 与架构，不限制墙钟，比谁用更少步数到达 3.28",
+      "range": null,
+      "unit": "steps",
+      "cite": [
+        "track3"
+      ]
+    }
+  ],
+  "versions": [
+    {
+      "id": "repo-created",
+      "date": "2024-06-01",
+      "label": "GitHub 仓库 KellerJordan/modded-nanogpt 创建（仓库描述：NanoGPT (124M) in 90 seconds）",
+      "cite": [
+        "repo-meta"
+      ]
+    },
+    {
+      "id": "llmc-baseline",
+      "date": "2024-05-28",
+      "label": "起点基线：llm.c 复现 GPT-2 (124M)，README 纪录表记为 8×H100 上 45 分钟、约 10B token 达到约 3.29",
+      "cite": [
+        "repo@纪录表",
+        "llmc"
+      ]
+    },
+    {
+      "id": "first-record",
+      "date": "2024-06-06",
+      "label": "首个 speedrun 纪录 31.4 分钟（调学习率 + 旋转嵌入）",
+      "cite": [
+        "repo@纪录表"
+      ]
+    },
+    {
+      "id": "muon",
+      "date": "2024-10-04",
+      "label": "引入 Muon 优化器，纪录降到 24.9 分钟",
+      "cite": [
+        "repo@纪录表",
+        "muon"
+      ]
+    },
+    {
+      "id": "track2",
+      "date": "2025-01-18",
+      "label": "开放 Track 2（GPT-2 Medium，目标 2.92），首条纪录 29.3 分钟",
+      "cite": [
+        "repo@Track 2"
+      ]
+    },
+    {
+      "id": "timing-rule",
+      "date": "2025-02-01",
+      "label": "第 21 条纪录后改用新计时规则（显式不计时预热段、禁用 coordinate_descent_tuning）",
+      "cite": [
+        "repo@计时变更"
+      ]
+    },
+    {
+      "id": "track3",
+      "date": "2026-04-26",
+      "label": "开放 Track 3（比步数不比墙钟）；首批结果 3,600 步（Muon）、5,625 步（Adam）",
+      "cite": [
+        "track3"
+      ]
+    },
+    {
+      "id": "pi-frontier",
+      "date": "2026-08-15",
+      "label": "Prime Intellect 发布 NanoGPT Speedrun Frontier：153 次自主运行覆盖 18 个前沿模型，最好 2,726 步（Fable 5）",
+      "cite": [
+        "primeintellect",
+        "pi-leaderboard"
+      ]
+    },
+    {
+      "id": "record-92",
+      "date": "2026-08-30",
+      "label": "当前 Track 1 纪录 0.665 分钟（约 40 秒）：早期阶段采样 softmax、全 FP8 MLP 前后向、84.6M 行哈希 n-gram 表、ANVIL 优化器栈、CUDA-graph 全捕获",
+      "cite": [
+        "repo@纪录表",
+        "repo@开头"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "指标是工程效率，不是模型能力",
+      "impact": "所有纪录的验证损失都压在 3.28 附近，时长差异来自训练算法与系统优化；把它读成「模型更强」会完全错位。",
+      "severity": "高",
+      "response": "仓库用固定目标损失与锁定的数据管线把口径钉死，并在 FAQ 里直接回应「大概不会 scale、只是过拟合验证损失」这一质疑。",
+      "reader": "看到「X 秒训完 GPT-2」时，先确认它指这个竞速的墙钟纪录，而不是模型能力对比。",
+      "cite": [
+        "repo@规则",
+        "repo@FAQ"
+      ]
+    },
+    {
+      "issue": "跨时间、跨规则的数字不可直接比",
+      "impact": "第 21 条纪录前后计时规则不同；GPU 数量、torch 版本、是否允许 coordinate_descent_tuning 都会改变秒数。README 自己对同一配置就记了 2.933 / 2.997 / 3.014 分钟三行。",
+      "severity": "高",
+      "response": "规则要求新纪录在相同硬件上快于上一条；README 对重跑单独列行并注明「不是新纪录，只是用新规则/新 torch 重跑」。",
+      "reader": "比较两个纪录前，先确认它们在同一条规则线之后、同一硬件与 torch 版本上。",
+      "cite": [
+        "repo@纪录表",
+        "repo@计时变更",
+        "repo@规则"
+      ]
+    },
+    {
+      "issue": "验证损失本身有噪声",
+      "impact": "同一条配方换种子会漂移。Prime Intellect 实测同一模型 + harness 的两次运行在 24 agent-小时口径相差约 54 步、100 次实验口径约 43 步、30 万输出 token 口径约 40 步。",
+      "severity": "高",
+      "response": "Track 1 要求 p<0.01；Track 3 进一步要求 (3.28 − 平均损失) × √运行次数 ≥ 0.004，即假设 σ=0.0013 的单侧 z 检验。",
+      "reader": "几百毫秒或几十步的差距不要当成真实改进。",
+      "cite": [
+        "repo@规则",
+        "track3",
+        "primeintellect"
+      ]
+    },
+    {
+      "issue": "方法未必能外推到大规模训练",
+      "impact": "作者明确说「按规模是一个无限类别（要是方法只在 >100T 模型上失效怎么办？）」，并承认部分手法不太可能 scale。",
+      "severity": "中",
+      "response": "仓库给出 1.5B 的扩展结果：把 2024-10-18 版本的 speedrun 直接放大到 1.5B，用比 Karpathy 基线便宜 2.5 倍的成本拿到 GPT-2 (1.5B) 级 HellaSwag 表现。",
+      "reader": "把这里的纪录当作小规模训练技巧的有效性筛选器，不是大规模训练的行动指南。",
+      "cite": [
+        "repo@FAQ"
+      ]
+    },
+    {
+      "issue": "「人类纪录」与基线数字在不同来源不一致",
+      "impact": "Prime Intellect 2026-08 的页面写「Baseline 3,290 steps · human record 2,600」；而本次核对的仓库 Track 3 README 中，被接受的调优基线是 3,250 步、最新纪录是 2,690 步，基线训练量记为 3,550 步。口径与时间点都不同。",
+      "severity": "中",
+      "response": "Prime Intellect 说明其基线取「榜单上的调优基线条目，在它自己的验证标准下 3,290 步通过」，2,600 步当时是开放 PR 中的纪录声明；仓库 Track 3 仍在持续接受新结果。",
+      "reader": "引用「人类纪录」时必须同时说明来源与日期，不要跨页面混用。",
+      "cite": [
+        "primeintellect",
+        "pi-leaderboard",
+        "track3"
+      ]
+    },
+    {
+      "issue": "Track 3 榜单依赖社区自报与互查",
+      "impact": "Track 3 README 明说作者通常不在接受前自己复现，因此存在虚假结果被接受的可能。",
+      "severity": "中",
+      "response": "规则要求日志内嵌完整可复现代码、禁止 import 第三方优化器库、禁止按验证损失做逐运行的早停，并欢迎「怀疑性结果」作为长期防御。",
+      "reader": "对单条 Track 3 纪录保持适度怀疑，优先看有独立复现或后续工作引用的结果。",
+      "cite": [
+        "track3"
+      ]
+    }
+  ],
+  "notes": "纪录竞赛直接催生了 Muon 优化器等工作；Prime Intellect、METR、Intology 等把它当作 AI 自主科研评测的任务底座，Prime Intellect 转述 OpenAI 在 GPT-5.6 Sol 系统卡中使用 nanoGPT Track 1（单卡 H100、不到一天）",
+  "official_sources": [
+    {
+      "kind": "github",
+      "url": "https://github.com/KellerJordan/modded-nanogpt"
+    }
+  ],
+  "related_benchmarks": [
+    "program-bench",
+    "posttrain-bench",
+    "rsi-index"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-13",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "KellerJordan/modded-nanogpt README（NanoGPT speedrun 主仓：定义、纪录史、规则）",
+        "url": "https://github.com/KellerJordan/modded-nanogpt",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "repo-meta",
+        "kind": "repo",
+        "title": "KellerJordan/modded-nanogpt 仓库元数据（GitHub API）",
+        "url": "https://api.github.com/repos/KellerJordan/modded-nanogpt",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "track3",
+        "kind": "repo",
+        "title": "Modded-NanoGPT Optimization Benchmark（records/track_3_optimization README）",
+        "url": "https://github.com/KellerJordan/modded-nanogpt/tree/master/records/track_3_optimization",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "config",
+        "kind": "repo",
+        "title": "track_1_short/config.py（验证 token 数与运行配置）",
+        "url": "https://github.com/KellerJordan/modded-nanogpt/blob/master/track_1_short/config.py",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "datascript",
+        "kind": "repo",
+        "title": "data/cached_fineweb10B.py（数据下载脚本）",
+        "url": "https://github.com/KellerJordan/modded-nanogpt/blob/master/data/cached_fineweb10B.py",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "llmc",
+        "kind": "site",
+        "title": "karpathy/llm.c Discussion #481：Reproducing GPT-2 (124M) in llm.c in 90 minutes for $20",
+        "url": "https://github.com/karpathy/llm.c/discussions/481",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "muon",
+        "kind": "site",
+        "title": "Muon: An optimizer for hidden layers in neural networks（Keller Jordan）",
+        "url": "https://kellerjordan.github.io/posts/muon/",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "fineweb",
+        "kind": "dataset",
+        "title": "HuggingFaceFW/fineweb 数据集卡",
+        "url": "https://huggingface.co/datasets/HuggingFaceFW/fineweb",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "fineweb10b",
+        "kind": "dataset",
+        "title": "kjj0/fineweb10B-gpt2 数据集卡（GPT-2 预分词的 FineWeb10B）",
+        "url": "https://huggingface.co/datasets/kjj0/fineweb10B-gpt2",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "primeintellect",
+        "kind": "blog",
+        "title": "Measuring Autonomous AI Research（Prime Intellect，2026-08-15）",
+        "url": "https://www.primeintellect.ai/blog/measuring-autonomous-research",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "pi-leaderboard",
+        "kind": "leaderboard",
+        "title": "NanoGPT Speedrun Frontier（Prime Intellect 交互榜单）",
+        "url": "https://www.primeintellect.ai/research/nanogpt-speedrun",
+        "accessed": "2026-11-13"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Keller Jordan 与社区贡献者（仓库引用署名：Keller Jordan、Jeremy Bernstein、Brendan Rappazzo、Boza Vlado、You Jiacheng、Franz Cesista、Braden Koszarsky 等）",
+        "cite": [
+          "repo@引用"
+        ]
+      },
+      "first_release": {
+        "v": "2024-06-01（GitHub 仓库创建日）；首个 speedrun 纪录 2024-06-06",
+        "cite": [
+          "repo-meta",
+          "repo@纪录表"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "repo",
+        "llmc"
+      ],
+      "interpretation": [
+        "repo@FAQ"
+      ]
+    },
+    "problem": {
+      "text": "LLM 训练论文几乎各用一套自己的实验设置，基线常常没调好，社区很长时间内都无法判断一个声称大幅提速的优化器是否可信。speedrun 用一个固定、公开、任何人都能重跑的竞争任务，把基线变成「上一条纪录」，从而让「新方法是否真的更好」可以被独立验证。",
+      "cite": [
+        "muon",
+        "track3"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "起点基线（llm.c 复现 GPT-2 124M）",
+        "value": "45 分钟 / 约 10B token",
+        "note": "llm.c 原文：8×A100 上约 90 分钟、约 20 美元，用 100 亿 FineWeb token 训练 12 层 12 头 768 维的 124M Transformer，最后到约 3.29。README 纪录表把 8×H100 上的 45 分钟列为第 1 行。",
+        "cite": [
+          "repo@纪录表",
+          "llmc"
+        ]
+      },
+      {
+        "label": "首个 speedrun 纪录",
+        "value": "31.4 分钟",
+        "note": "2024-06-06，调学习率加旋转嵌入。",
+        "cite": [
+          "repo@纪录表"
+        ]
+      },
+      {
+        "label": "Muon 上线后的纪录",
+        "value": "24.9 分钟",
+        "note": "2024-10-04 引入 Muon。Muon 作者自述它把训到 3.28 的速度提升 1.35 倍，并在此后 12 条新纪录中一直是优化器首选（由 7 位不同研究者设定）。",
+        "cite": [
+          "repo@纪录表",
+          "muon"
+        ]
+      },
+      {
+        "label": "官方纪录表当前最高（Track 1 墙钟）",
+        "value": "0.665 分钟（约 40 秒）",
+        "note": "第 92 条纪录，2026-08-30。README 开头写「Under 40 seconds on 8xH100」「under 330M tokens」，而 llm.c 基线需要 45 分钟和 10B token。",
+        "cite": [
+          "repo@纪录表",
+          "repo@开头"
+        ]
+      },
+      {
+        "label": "Track 3 步数口径当前最高",
+        "value": "2,690 步",
+        "note": "2026-06-19 接受的第 46 条结果（3.2783，n=8）。该赛道不比墙钟，数字不能与上面的分钟数互比。",
+        "cite": [
+          "track3"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      },
+      {
+        "label": "噪声参考线",
+        "value": "同配方重跑仍有约 40–54 步波动（Prime Intellect 实测）",
+        "note": "这不是官方上限，而是判断「差距是否真实」的下限；官方规则另要求 p<0.01。",
+        "cite": [
+          "primeintellect",
+          "repo@规则"
+        ]
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把「45 分钟 → 约 40 秒」理解为模型能力提升——目标损失固定为 3.28，所有纪录都在同一质量档位。",
+        "cite": [
+          "repo@规则",
+          "repo@开头"
+        ]
+      },
+      {
+        "text": "把 Track 1 的墙钟秒数、Track 3 的步数和 Prime Intellect 榜单上的步数放在一起排名。",
+        "cite": [
+          "repo@开头",
+          "track3",
+          "primeintellect"
+        ]
+      },
+      {
+        "text": "把不同年份的纪录直接相减算「提速倍数」——第 21 条纪录前后计时规则变过，README 自己就给同一配置记了 2.933 / 2.997 / 3.014 分钟三行。",
+        "cite": [
+          "repo@纪录表",
+          "repo@计时变更"
+        ]
+      },
+      {
+        "text": "把 speedrun 里有效的手法当成大规模训练的最优实践——作者明确说其中一部分不太可能 scale。",
+        "cite": [
+          "repo@FAQ"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方与维护者",
+        "v": "Keller Jordan 发起，社区以 PR 形式共同推进；README 的贡献者列表已列到 70 余个账号，纪录表按 PR 编号记录每次改进。",
+        "cite": [
+          "repo@引用"
+        ]
+      },
+      {
+        "k": "代码位置",
+        "v": "GitHub KellerJordan/modded-nanogpt（MIT）。Track 1 训练器是 train_gpt.py 加 track_1_short/ 包，每次运行日志内嵌完整源码。",
+        "cite": [
+          "repo",
+          "repo-meta"
+        ]
+      },
+      {
+        "k": "数据位置",
+        "v": "FineWeb10B 的 GPT-2 预分词 token 托管在 HuggingFace kjj0/fineweb10B-gpt2；上游 FineWeb 为 ODC-By 1.0，约 15 万亿 token（GPT-2 分词）。",
+        "cite": [
+          "fineweb10b",
+          "fineweb"
+        ]
+      },
+      {
+        "k": "算力赞助",
+        "v": "README 写明官方纪录在 PrimeIntellect 的 8×H100 上计时，近期验证运行由 PrimeIntellect 赞助。",
+        "cite": [
+          "repo@运行说明"
+        ]
+      },
+      {
+        "k": "赛道划分",
+        "v": "Track 1（GPT-2 small，目标 3.28，比墙钟）、Track 2（GPT-2 Medium，目标 2.92，比墙钟）、Track 3（固定架构/数据/batch size，比步数）。",
+        "cite": [
+          "repo@Track 2",
+          "track3"
+        ]
+      },
+      {
+        "k": "外溢影响",
+        "v": "Muon 在本竞速中诞生并被后续纪录沿用；Prime Intellect、METR、Intology 等把 speedrun 当作 AI 自主科研评测任务，Prime Intellect 转述 OpenAI 在 GPT-5.6 Sol 系统卡中使用 nanoGPT Track 1（单卡 H100、不到一天）。",
+        "cite": [
+          "muon",
+          "primeintellect"
+        ]
+      },
+      {
+        "k": "仓库热度",
+        "v": "仓库创建于 2024-06-01，描述为「NanoGPT (124M) in 90 seconds」；本次核对时约 6,030 stars、927 forks。",
+        "cite": [
+          "repo-meta"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-13",
+        "columns": [
+          "来源",
+          "口径",
+          "成绩",
+          "日期"
+        ],
+        "rows": [
+          [
+            "README 纪录表 #1",
+            "Track 1 墙钟（起点基线）",
+            "45 分钟",
+            "2024-05-28"
+          ],
+          [
+            "README 纪录表 #2",
+            "Track 1 墙钟",
+            "31.4 分钟",
+            "2024-06-06"
+          ],
+          [
+            "README 纪录表 #3",
+            "Track 1 墙钟（引入 Muon）",
+            "24.9 分钟",
+            "2024-10-04"
+          ],
+          [
+            "README 纪录表 #20",
+            "Track 1 墙钟（首次 <3 分钟）",
+            "2.992 分钟",
+            "2025-01-16"
+          ],
+          [
+            "README 纪录表 #21",
+            "Track 1 墙钟（新规则重跑）",
+            "2.997 分钟",
+            "2025-02-01"
+          ],
+          [
+            "README 纪录表 #92",
+            "Track 1 墙钟（当前纪录）",
+            "0.665 分钟",
+            "2026-08-30"
+          ],
+          [
+            "Track 3 结果表 #36",
+            "Track 3 步数（被接受的调优基线）",
+            "3,250 步",
+            "2026-06-11"
+          ],
+          [
+            "Track 3 结果表 #46",
+            "Track 3 步数（当前纪录）",
+            "2,690 步",
+            "2026-06-19"
+          ],
+          [
+            "Prime Intellect 榜单",
+            "AI 自主运行（步数）",
+            "Fable 5：2,726 步（闭合 81.7%）",
+            "2026-08-15"
+          ],
+          [
+            "Prime Intellect 榜单",
+            "人类纪录（该实验口径）",
+            "2,600 步",
+            "2026-08-15"
+          ]
+        ]
+      },
+      "cite": [
+        "repo@纪录表",
+        "track3",
+        "pi-leaderboard"
+      ]
+    }
+  }
+}

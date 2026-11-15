@@ -1,0 +1,816 @@
+{
+  "id": "widesearch",
+  "name": "WideSearch",
+  "full_name": "WideSearch: Benchmarking Agentic Broad Info-Seeking（广度信息搜寻智能体基准）",
+  "aliases": [
+    "WideSearch Benchmark"
+  ],
+  "status": null,
+  "categories": [
+    "agent"
+  ],
+  "summary": "WideSearch 是字节跳动 Seed 团队开源的「广度信息收集」智能体基准：200 道人工策划的题（英文 100、中文 100）来自真实用户查询，每题给出一个预定义表头，要求智能体把散落在大量实体上的信息一次收齐、填成一张 Markdown 表格，再逐格与人工建立的标准答案自动比对。",
+  "interpretation": "高分说明智能体能在规模化收集中同时做到「不漏」和「不错」——先识别出全部满足条件的实体，再为每个实体把每一格都填对。它不代表能解决需要深度推理的单点难题，也不代表能写开放式研究报告；而且主指标 Success Rate 是全有或全无的表格级匹配，几个百分点的差距往往对应大量数据点的遗漏或错误。",
+  "measures": [
+    {
+      "area": "广度：实体集合识别",
+      "focus": "先完整找出满足查询约束的实体集合，再为每个实体建一行。示例题：找出美国常春藤与澳洲八大的土木工程硕士最低 GPA 要求（共 16 个实体），按国家、学校、联盟、GPA 四列成表。",
+      "share": "论文未按此维度披露题量",
+      "format": "Markdown 表格行（每个实体一行）",
+      "cite": [
+        "paper@§3.1",
+        "paper@§4.2"
+      ]
+    },
+    {
+      "area": "保真度：属性填充与逐格核验",
+      "focus": "按预定义表头为每个实体逐格取值，每格都要能客观核验。示例题：QS 2025 五大学科前五高校的学科排名、总排名、THE 排名、官网主页、常规申请截止日期、申请费，共 8 列。",
+      "share": "论文未按此维度披露题量",
+      "format": "表格单元格（exact_match / number_near / date_match / url_match / llm_judge）",
+      "cite": [
+        "paper@§3.1",
+        "paper@§3.5.1",
+        "dataset@Dataset Summary"
+      ]
+    },
+    {
+      "area": "结构化输出合规",
+      "focus": "必须输出可解析的 Markdown 表格，列名与列数和标准答案语义一致；不一致或表格无法解析直接判 0 分。",
+      "share": "200 题全部适用",
+      "format": "Markdown 表格",
+      "cite": [
+        "paper@§3.5.1"
+      ]
+    },
+    {
+      "area": "语言拆分",
+      "focus": "英文 100 题、中文 100 题等量分布；中文题平均答案数据量 2001.2、英文题 938.6（Table 1），中英两侧难度并不对称。",
+      "share": "英文 100 题 / 中文 100 题",
+      "format": "Markdown 表格",
+      "cite": [
+        "paper@§3.4",
+        "paper@Table 1"
+      ]
+    },
+    {
+      "area": "领域覆盖",
+      "focus": "18 个主题，中英两边题量最多的都是 Arts & Culture（各 23 题）；其余主题两侧分布不同，如中文侧 Business & Finance 19 题、英文侧 13 题。",
+      "share": "18 个主题（论文摘要另表述为 over 15 diverse domains）",
+      "format": "Markdown 表格",
+      "cite": [
+        "paper@§3.4",
+        "paper@Figure 5",
+        "paper@Abstract",
+        "site@Six Design Principles"
+      ]
+    },
+    {
+      "area": "检索广度（人工基线）",
+      "focus": "人工标注研究给出的单题工作量：平均耗时 2.33 小时、平均查阅 44.10 个唯一网页（中文 48.74、英文 39.46）；论文用这两个数字证明任务不是单点深挖而是规模化收集。",
+      "share": "30 名标注者、100 题子集（中英各 50）",
+      "format": "未披露（复杂度指标，非题型）",
+      "cite": [
+        "paper@§3.4"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "单点深度检索：找到一个难找的事实不是本基准的目标，论文把这类归为 DeepSearch。",
+      "cite": [
+        "paper@§1",
+        "paper@Figure 2"
+      ]
+    },
+    {
+      "text": "开放式报告写作与叙述综合：论文把「写不好」这类归为 DeepResearch；任务要求输出单个格式正确的表格，部分 DeepResearch 系统因为交长报告加多个表格而无法被程序化评测。",
+      "cite": [
+        "paper@§1",
+        "paper@§4.1"
+      ]
+    },
+    {
+      "text": "仅凭参数知识可答的题：构建阶段会用一组不带工具的强 LLM 过滤，只要有任何模型能靠内部知识答对就丢弃。",
+      "cite": [
+        "paper@§3.3"
+      ]
+    },
+    {
+      "text": "主观解读、时效性强、或依赖地域与意识形态语境的答案：六条设计原则中的「时间与语境不变性」明确排除。",
+      "cite": [
+        "paper@§3.2"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 200,
+    "splits": [
+      "WideSearch-en（英文 100 题）",
+      "WideSearch-zh（中文 100 题）",
+      "WideSearch-all（合并 200 题，论文 Table 5 另按此汇总）"
+    ],
+    "languages": [
+      "en",
+      "zh"
+    ],
+    "source_type": "人工从真实用户查询策划，标注员做穷尽式网络检索建立标准答案（每题一张 CSV 表）",
+    "public_sample": true,
+    "totals": "200 题（英文 100 + 中文 100）覆盖 18 个主题；标准答案为逐题一张 CSV，答案数据量（行×列）中文平均 2001.2、英文平均 938.6，数据量超过 5000 的题中文侧 6 道、英文侧 3 道。",
+    "cite": [
+      "paper@§3.4",
+      "paper@Table 1",
+      "dataset@Dataset Summary",
+      "dataset@Ground Truth Data"
+    ],
+    "construction": [
+      {
+        "k": "候选问题来源",
+        "text": "从真实用户查询的大池子出发，覆盖金融、教育、医疗、娱乐等领域；人工标注员筛选、改写、重构为清晰无歧义的候选题，拒掉含歧义或过简单的题（人工耗时少于 10 分钟或查阅少于 10 个唯一网页即拒）。",
+        "cite": [
+          "paper@§3.3",
+          "paper@Figure 3"
+        ]
+      },
+      {
+        "k": "标准答案标注与指标采集",
+        "text": "每道候选题分配给一名人工标注员，做穷尽式网络检索编译黄金标准答案，并记录总耗时、发出的查询数、每条查询的关键词、以及查阅过的唯一网页总数。",
+        "cite": [
+          "paper@§3.3"
+        ]
+      },
+      {
+        "k": "参数知识过滤",
+        "text": "把候选题交给一组不带工具的强 LLM；只要有任何模型能仅凭内部知识生成完整且正确的答案，该题即被丢弃，以保证任务必须靠搜索完成。",
+        "cite": [
+          "paper@§3.3"
+        ]
+      },
+      {
+        "k": "难度剪枝",
+        "text": "用标注员采集的指标做定量难度评估，未达最低复杂度阈值的题丢弃：人工完成少于 10 分钟，或查阅少于 10 个唯一网页。",
+        "cite": [
+          "paper@§3.3"
+        ]
+      },
+      {
+        "k": "迭代精修与校验",
+        "text": "通过前四轮的题组成临时基准；对每题先用商业智能体系统抓一个回答，自动评测流水线与人工专家同时打分，两者相似度低于 95% 阈值就把题目和黄金标注标记修订，循环到自动指标稳定复现人工判断。",
+        "cite": [
+          "paper@§3.3",
+          "paper@Figure 3"
+        ]
+      },
+      {
+        "k": "设计原则",
+        "text": "每道题由领域专家手工策划，须满足六条原则：高搜索量与广度、时间与语境不变性、客观可验证、公开可获取、依赖外部工具、场景多样。",
+        "cite": [
+          "paper@§3.2",
+          "site@Six Design Principles"
+        ]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "智能体拿到自然语言查询与预定义表头 S={C1..Cm}，通过搜索工具在真实 web 上填表并输出一个 Markdown 表格；论文自建的智能体框架标配一个搜索工具（Bing Search API）和一个网页阅读工具，且不强制模型自反思、不规定任务分解粒度。评测分三步：先做语法校验，回答不是可解析的 Markdown 表格、或列名列数与标准答案不一致（允许表面字符串不同但语义必须相同）即判 0 分；通过后按预定义主键与标准答案表做 join 对齐，识别匹配行、假阳性与假阴性；再逐格用 exact_match、数值近似、日期匹配、URL 匹配、LLM-as-a-judge 混合打分，默认裁判模型为 GPT-4.1-2025-04-14。论文与官网默认 N=4。",
+    "cite": [
+      "paper@§3.1",
+      "paper@§3.5.1",
+      "paper@§4.1",
+      "site@Key Metrics"
+    ],
+    "variants": [
+      {
+        "text": "单智能体框架 vs 多智能体框架：论文用同一批基模分别测两种框架，多智能体在 F1 上稳定更高（OpenAI o3 的 Item-F1 Avg@4 从 52.6 升到 57.3，SR Avg@4 从 4.5 升到 5.1），两种框架的分数不能混比。",
+        "cite": [
+          "paper@§4.1",
+          "paper@Table 2"
+        ]
+      },
+      {
+        "text": "自建框架 vs 商业端到端系统：论文原计划评 DeepResearch 系统，但这些系统常返回长报告加多个表格、无法程序化评测，最终改为评集成网页浏览模式，工具调用数一栏记为「-」；端到端分数与自建框架分数口径不同。",
+        "cite": [
+          "paper@§4.1"
+        ]
+      },
+      {
+        "text": "聚合方式：SR 用 Avg@N 与 Pass@N，Row-level / Item-level F1 用 Avg@N 与 Max@N；Max@N 与 Pass@N 取 N 次里的最好成绩，Avg@N 取平均，三者不可互换。",
+        "cite": [
+          "paper@§3.5.2",
+          "site@Key Metrics"
+        ]
+      },
+      {
+        "text": "第三方复现口径：Qwen3.8-Max 模型卡写明外部模型走 Claude Code harness、自家模型走 Qwen-Agent harness，均为 item-F1 四次平均；Kimi K2.5 博客注明 WideSearch 结果为 avg@4，无公开成绩的基准由 Kimi 按自家条件复测并标 *。这些数字与论文表格不在同一 harness 下，不能直接与论文分数并列。",
+        "cite": [
+          "qwen",
+          "kimi"
+        ]
+      },
+      {
+        "text": "推理档位与思考模式：论文把 Doubao-Seed-1.6 分为 Thinking / Non-Thinking 两个配置（同一 API 标识、不同生成参数），两者分数不同；厂商页面也按思考档位分别报数。",
+        "cite": [
+          "paper@附录 A",
+          "kimi"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "success_rate",
+      "name": "Success Rate（成功率，SR）",
+      "direction": "越高越好",
+      "description": "论文指定的主指标：仅当智能体生成的 Markdown 表格与标准答案表完全一致（内容与结构全部匹配）才计为完成，是全有或全无的任务级判分。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§3.5.2"
+      ]
+    },
+    {
+      "id": "item_f1",
+      "name": "Item-level F1（条目级 F1）",
+      "direction": "越高越好",
+      "description": "以表格单元格为最小比较单位，基于预测表项目多重集合 Pitems 与标准答案表项目多重集合 Gitems 计算 precision / recall / F1；用于识别部分成功与细微错误，社区与厂商页面普遍引用这一项。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§3.5.2",
+        "site@Key Metrics",
+        "qwen"
+      ]
+    },
+    {
+      "id": "row_f1",
+      "name": "Row-level F1（行级 F1）",
+      "direction": "越高越好",
+      "description": "以表格一行为信息单元（一条完整记录或一个实体），比较预测表行集合与标准答案行集合的 precision / recall / F1，衡量检索并正确结构化完整条目的能力。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§3.5.2"
+      ]
+    }
+  ],
+  "versions": [
+    {
+      "id": "arxiv-v1",
+      "date": "2025-08-11",
+      "label": "arXiv v1 提交（3,450 KB）",
+      "cite": [
+        "arxiv-abs@Submission history"
+      ]
+    },
+    {
+      "id": "release",
+      "date": "2025-08-11",
+      "label": "GitHub News 宣布 WideSearch Benchmark 发布（数据集在 Hugging Face 提供）",
+      "cite": [
+        "repo@News",
+        "dataset"
+      ]
+    },
+    {
+      "id": "arxiv-v2",
+      "date": "2025-08-28",
+      "label": "arXiv v2 修订（本档案核对所用版本；论文首页另标注 Date: August 29, 2025）",
+      "cite": [
+        "arxiv-abs@Submission history",
+        "paper@Abstract"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "评测口径不可比",
+      "impact": "同一模型在不同 harness 与工具集下分数差异明显：论文自建框架测出 OpenAI o3 多智能体 Item-F1 Avg@4 为 57.3；Qwen 模型卡用 Claude Code harness 测 Opus 4.8 得 72.9、用 Qwen-Agent harness 测自家 Qwen3.8-Max 得 81.9；Kimi 博客的 Claude 4.5 Opus 76.2* 与 DeepSeek V3.2 32.5* 还是厂商自行复测的。厂商自报普遍只写其中一种口径。",
+      "severity": "高",
+      "response": "论文固定系统提示词，并公开智能体框架与工具提示词（附录 C）和评测细节与裁判提示词（附录 D）；Qwen 与 Kimi 在各自页面注明 harness 与 avg@4 口径。未见统一第三方 harness。",
+      "reader": "比分数前先核对三件事：谁跑的 harness、工具集是什么、聚合方式是 Avg@N 还是 Max@N / Pass@N。",
+      "cite": [
+        "paper@§4.1",
+        "paper@附录 C",
+        "paper@附录 D",
+        "qwen",
+        "kimi"
+      ]
+    },
+    {
+      "issue": "Success Rate 全有或全无",
+      "impact": "主指标 SR 要求表格与标准答案完全一致；一道题常有上千个数据点（中文题平均 2001.2），多一条、少一条或错一条即整题失败，SR 因此长期被压在 5% 上下。",
+      "severity": "高",
+      "response": "论文同时报告 Row-level 与 Item-level F1，附录 B 给出 precision / recall 分解；并用 test-time scaling 说明单点检索并非瓶颈。",
+      "reader": "SR 看任务级可靠性，Item-F1 看细粒度准确度，两者要一起读，不要只引用 SR。",
+      "cite": [
+        "paper@§3.5.2",
+        "paper@Table 1",
+        "paper@§6",
+        "paper@附录 B"
+      ]
+    },
+    {
+      "issue": "标准答案公开可下载",
+      "impact": "任务文件 widesearch.jsonl 与逐题标准答案 CSV 都在 Hugging Face 公开，模型可能在训练期见过题目或标准答案，公开集分数有被推高的空间。",
+      "severity": "中",
+      "response": "论文的缓解手段集中在构建阶段：用不带工具的 LLM 做参数知识过滤，确保题目不能仅凭内部知识答对；未见公开的留存集或污染检测报告。",
+      "reader": "把高分理解为「该 harness 下的表现」；有独立留存集或新题复核会更有说服力。",
+      "cite": [
+        "dataset",
+        "paper@§3.3"
+      ]
+    },
+    {
+      "issue": "中英两侧难度与数据量不对称",
+      "impact": "中文题平均答案数据量 2001.2、英文题 938.6（Table 1），数据量超过 5000 的题中文侧 6 道、英文侧 3 道；Table 5 的分语言明细差异明显，不宜直接取 all 的均值比较模型。",
+      "severity": "中",
+      "response": "论文按语言分别给出 Table 5 明细，并提供 all / zh / en 三档汇总。",
+      "reader": "看分语言明细，不要只取 all 的均值。",
+      "cite": [
+        "paper@Table 1",
+        "paper@附录 B"
+      ]
+    },
+    {
+      "issue": "官方榜单停留在首发时点",
+      "impact": "官网 Leaderboard 与论文 Table 2 是同一批 2025 年中的模型（Claude Sonnet 4 / Gemini 2.5 Pro / OpenAI o3 / Kimi K2 / DeepSeek-R1 / Doubao-Seed-1.6），页面未标注更新日期，不能反映后续模型。",
+      "severity": "中",
+      "response": "未见官方持续更新榜单的说明；社区与厂商各自复测并发布成绩（如 Kimi K2.5 博客、Qwen3.8-Max 模型卡）。",
+      "reader": "想看当前水平要去厂商模型卡或第三方榜单，并核对 harness。",
+      "cite": [
+        "site@Leaderboard",
+        "paper@Table 2",
+        "kimi",
+        "qwen"
+      ]
+    },
+    {
+      "issue": "领域数在论文内部不一致",
+      "impact": "摘要写「over 15 diverse domains」，§3.4 与官网写 18 个主题；引用领域覆盖数时两个数字都能在原文找到。",
+      "severity": "低",
+      "response": "以论文正文 §3.4 与 Figure 5 的 18 个主题为准；未见官方对摘要数字的更正说明。",
+      "reader": "引用时写「18 个主题（论文摘要另表述为 over 15 domains）」。",
+      "cite": [
+        "paper@Abstract",
+        "paper@§3.4",
+        "site@Six Design Principles"
+      ]
+    }
+  ],
+  "notes": "字节 Seed 2025-08 发布并开源；论文主指标为 Success Rate，社区与厂商页面普遍引用 item-F1。",
+  "official_sources": [
+    {
+      "kind": "github",
+      "url": "https://github.com/ByteDance-Seed/WideSearch"
+    },
+    {
+      "kind": "site",
+      "url": "https://widesearch-seed.github.io/"
+    },
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2508.07999"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/ByteDance-Seed/WideSearch"
+    },
+    {
+      "kind": "site",
+      "url": "https://seed.bytedance.com/en/blog/official-release-of-seed1-8-a-generalized-agentic-model"
+    },
+    {
+      "kind": "site",
+      "url": "https://www.kimi.ai/blog/kimi-k2-5"
+    },
+    {
+      "kind": "repo",
+      "url": "https://huggingface.co/Qwen/Qwen3.8-2.4T-A95B"
+    }
+  ],
+  "related_benchmarks": [
+    "browsecomp",
+    "browsecomp-zh",
+    "gaia",
+    "xbench-deepsearch",
+    "deepsearchqa",
+    "researchrubrics",
+    "seal-0"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-11",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-11",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "WideSearch: Benchmarking Agentic Broad Info-Seeking（arXiv:2508.07999v2，2025-08-28）",
+        "url": "https://arxiv.org/abs/2508.07999",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "site",
+        "kind": "site",
+        "title": "WideSearch 项目主页（含设计原则、指标说明与 Leaderboard）",
+        "url": "https://widesearch-seed.github.io/",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "ByteDance-Seed/WideSearch（GitHub，任务说明与评测代码）",
+        "url": "https://github.com/ByteDance-Seed/WideSearch",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "dataset",
+        "kind": "dataset",
+        "title": "ByteDance-Seed/WideSearch（Hugging Face 数据集卡，含任务文件与标准答案结构）",
+        "url": "https://huggingface.co/datasets/ByteDance-Seed/WideSearch",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "kimi",
+        "kind": "announcement",
+        "title": "Kimi K2.5 发布博客（含 WideSearch item-f1 成绩与口径说明）",
+        "url": "https://www.kimi.ai/blog/kimi-k2-5",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "qwen",
+        "kind": "repo",
+        "title": "Qwen/Qwen3.8-2.4T-A95B 模型卡（含 WideSearch 成绩与 harness 说明）",
+        "url": "https://huggingface.co/Qwen/Qwen3.8-2.4T-A95B",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "arxiv-abs",
+        "kind": "paper",
+        "title": "arXiv:2508.07999 摘要页（Submission history：v1 2025-08-11、v2 2025-08-28）",
+        "url": "https://arxiv.org/abs/2508.07999",
+        "accessed": "2026-11-11"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "ByteDance Seed",
+        "cite": [
+          "paper@作者署名",
+          "repo"
+        ]
+      },
+      "first_release": {
+        "v": "2025-08-11（arXiv v1 提交，GitHub News 同日宣布 Benchmark 发布）",
+        "cite": [
+          "arxiv-abs@Submission history",
+          "repo@News"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "paper@Abstract",
+        "paper@§3.4",
+        "dataset@Dataset Summary"
+      ],
+      "interpretation": [
+        "paper@§3.5.2",
+        "paper@§6",
+        "paper@Table 2"
+      ]
+    },
+    "problem": {
+      "text": "现有智能体基准集中在两类「深」任务：DeepSearch 解决「找不到」的单点难事实，DeepResearch 解决「写不好」的报告综合。作者对真实用户查询的分析显示，还有一大类任务没被覆盖——它不需要深推理也不产出长报告，但要把散落在大量实体上的信息一次收齐并整理成结构化表格，难点在规模与保真而非认知复杂度。WideSearch 用「先识别完整实体集合、再按预定义表头逐格填值」的表格任务，把这块空白变成可自动判分的评测。",
+      "cite": [
+        "paper@§1",
+        "paper@§2.1",
+        "paper@Figure 2"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机猜测基线",
+        "value": "论文未给出",
+        "note": "任务输出是结构化 Markdown 表格而非选择题，论文没有定义随机基线；SR 只认与标准答案完全一致，随机填表实际为 0。",
+        "cite": [
+          "paper@§3.5.2"
+        ]
+      },
+      {
+        "label": "论文发布时最好（SR Avg@4）",
+        "value": "5.1%",
+        "note": "OpenAI o3，论文自建多智能体框架；同期单智能体最好 4.5%（同一模型），端到端系统最好 4.3%（Gemini 2.5 Pro）。",
+        "cite": [
+          "paper@Table 2"
+        ]
+      },
+      {
+        "label": "论文发布时最好（Item-F1 Avg@4）",
+        "value": "62.2%",
+        "note": "Claude Sonnet 4 (Thinking)，论文自建多智能体框架。",
+        "cite": [
+          "paper@Table 2"
+        ]
+      },
+      {
+        "label": "人类单人基线",
+        "value": "20.0%（SR）/ 82.4%（Item-F1）",
+        "note": "10 名标注员各独立完成 2 题（中英各 10 题），允许使用任意工具与任意时长。",
+        "cite": [
+          "paper@Table 2",
+          "paper@§4.1"
+        ]
+      },
+      {
+        "label": "人类交叉验证上限",
+        "value": "接近 100%（论文摘要表述）",
+        "note": "多名标注者反复交叉验证可达到接近 100% 成功率；这是论文给出的上界参照，不是单一受试者成绩。",
+        "cite": [
+          "paper@Abstract"
+        ]
+      },
+      {
+        "label": "单点检索能力参照线",
+        "value": "约 80%（Item-level F1 Max@N）",
+        "note": "test-time scaling 实验（Kimi K2，N 从 1 到 128）：单点检索的 Item-level F1 可接近 80 分，而表格级分数仍低于 20 分——瓶颈不在单点检索。",
+        "cite": [
+          "paper@§6",
+          "paper@Figure 7"
+        ]
+      },
+      {
+        "label": "厂商自报当前最高（item-F1）",
+        "value": "81.9",
+        "note": "Qwen3.8-Max，Qwen-Agent harness、item-F1 四次平均；同表 Fable 5 为 81.2（Claude Code harness）。Kimi 博客另报 Kimi K2.5 (Thinking) Agent Swarm 79.0。均非论文口径。",
+        "cite": [
+          "qwen",
+          "kimi"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把不同来源的 item-F1 数字排在同一列比较——论文自建框架、Qwen 的 Claude Code / Qwen-Agent harness、Kimi 的同条件复测，工具集与 harness 都不同。",
+        "cite": [
+          "paper@Table 2",
+          "qwen",
+          "kimi"
+        ]
+      },
+      {
+        "text": "把 SR 当成「模型能不能找到信息」——SR 是全有或全无的表格级匹配；论文的 test-time scaling 显示单点检索 item-F1 可接近 80%，失败主要来自完整性而非找不到。",
+        "cite": [
+          "paper@§3.5.2",
+          "paper@§6"
+        ]
+      },
+      {
+        "text": "把人类 20% 读成「题目出得不对」——论文同时给出多人交叉验证可接近 100%；20% 是单人独立完成的成绩，作者用它说明任务本身难。",
+        "cite": [
+          "paper@Table 2",
+          "paper@Abstract",
+          "paper@§4.2"
+        ]
+      },
+      {
+        "text": "以为必须用 DeepResearch 式长报告才能得高分——任务要求输出单个格式正确的 Markdown 表格，论文明确指出部分 DeepResearch 系统因为交报告加多个表格而无法被程序化评测。",
+        "cite": [
+          "paper@§3.5.1",
+          "paper@§4.1"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "ByteDance Seed（字节跳动 Seed 团队）",
+        "cite": [
+          "paper@作者署名",
+          "repo"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "共同一作 Ryan Wong、Jiawei Wang；其余作者 Junjie Zhao、Li Chen、Yan Gao、Long Zhang、Xuan Zhou、Zuo Wang、Kai Xiang、Ge Zhang、Wenhao Huang；通讯作者 Yang Wang、Ke Wang",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      {
+        "k": "首次发布",
+        "v": "arXiv v1 于 2025-08-11 提交，GitHub News 同日宣布 Benchmark 发布；arXiv v2 于 2025-08-28 修订（论文首页另标 Date: August 29, 2025）",
+        "cite": [
+          "arxiv-abs@Submission history",
+          "repo@News",
+          "paper@Abstract"
+        ]
+      },
+      {
+        "k": "许可",
+        "v": "GitHub 仓库为 MIT；Hugging Face 数据集卡标注 license: other",
+        "cite": [
+          "repo@License",
+          "dataset"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "数据集 ByteDance-Seed/WideSearch（Hugging Face，widesearch.jsonl + widesearch_gold/ 逐题标准答案 CSV）；评测代码 ByteDance-Seed/WideSearch（GitHub，MIT）",
+        "cite": [
+          "dataset",
+          "repo@License"
+        ]
+      },
+      {
+        "k": "题量与拆分",
+        "v": "200 题，英文 100 + 中文 100，18 个主题；论文 Table 5 另按 all / zh / en 汇报",
+        "cite": [
+          "paper@§3.4",
+          "paper@附录 B"
+        ]
+      },
+      {
+        "k": "人工成本基线",
+        "v": "30 名标注者在 100 题子集（中英各 50）上的研究：平均 2.33 小时/题（英文 2.29、中文 2.37），平均 44.10 个唯一网页/题（中文 48.74、英文 39.46）",
+        "cite": [
+          "paper@§3.4"
+        ]
+      },
+      {
+        "k": "自动评测与人工的一致性",
+        "v": "在 200 条商业系统回答上由人工专家逐条标注 item 正确性，自动流水线与人工判断的一致率全部超过 97.8%（o4-mini 98.3、Gemini 2.5 Pro 98.1、GPT-4.1 98.0、Doubao-Seed-1.6 Non-Thinking 97.8）",
+        "cite": [
+          "paper@§4.3",
+          "paper@Table 3"
+        ]
+      },
+      {
+        "k": "默认裁判模型",
+        "v": "GPT-4.1-2025-04-14；裁判提示词与列名 / 实体映射提示词见论文附录 D",
+        "cite": [
+          "paper@§3.5.1",
+          "paper@附录 D"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-11",
+        "columns": [
+          "来源",
+          "模型 / 系统",
+          "Item-F1 (Avg@4)",
+          "Success Rate (Avg@4)",
+          "口径"
+        ],
+        "rows": [
+          [
+            "论文 Table 2",
+            "OpenAI o3（多智能体框架）",
+            "57.3",
+            "5.1",
+            "论文自建框架；Bing 搜索 + 网页阅读工具"
+          ],
+          [
+            "论文 Table 2",
+            "Claude Sonnet 4 (Thinking)（多智能体框架）",
+            "62.2",
+            "3.6",
+            "同上"
+          ],
+          [
+            "论文 Table 2",
+            "Kimi K2（多智能体框架）",
+            "61.2",
+            "3.0",
+            "同上"
+          ],
+          [
+            "论文 Table 2",
+            "Gemini 2.5 Pro（多智能体框架）",
+            "57.4",
+            "2.0",
+            "同上"
+          ],
+          [
+            "论文 Table 2",
+            "Doubao-Seed-1.6 (Thinking)（多智能体框架）",
+            "54.6",
+            "2.5",
+            "同上"
+          ],
+          [
+            "论文 Table 2",
+            "Doubao-Seed-1.6 (Non-Thinking)（多智能体框架）",
+            "52.8",
+            "2.1",
+            "同上"
+          ],
+          [
+            "论文 Table 2",
+            "DeepSeek-R1（多智能体框架）",
+            "44.3",
+            "0.8",
+            "同上"
+          ],
+          [
+            "论文 Table 2",
+            "OpenAI o3（单智能体框架）",
+            "52.6",
+            "4.5",
+            "同上"
+          ],
+          [
+            "论文 Table 2",
+            "人类（单人独立完成）",
+            "82.4",
+            "20.0",
+            "10 名标注员各 2 题；允许任意工具与时长"
+          ],
+          [
+            "Kimi K2.5 博客",
+            "Kimi K2.5 (Thinking)",
+            "72.7",
+            "未列出",
+            "搜索 + 代码解释器 + 网页浏览；avg@4"
+          ],
+          [
+            "Kimi K2.5 博客",
+            "Claude 4.5 Opus (Extend Thinking)",
+            "76.2*",
+            "未列出",
+            "同上；* 为无公开成绩、由 Kimi 按自家条件复测"
+          ],
+          [
+            "Kimi K2.5 博客",
+            "Gemini 3 Pro (High Thinking Level)",
+            "57.0",
+            "未列出",
+            "同上"
+          ],
+          [
+            "Kimi K2.5 博客",
+            "DeepSeek V3.2 (Thinking)",
+            "32.5*",
+            "未列出",
+            "同上；* 含义同上"
+          ],
+          [
+            "Kimi K2.5 博客",
+            "Kimi K2.5 (Thinking)（Agent Swarm）",
+            "79.0",
+            "未列出",
+            "主 / 子智能体各最多 100 步；avg@4"
+          ],
+          [
+            "Qwen3.8-Max 模型卡",
+            "Qwen3.8-Max",
+            "81.9",
+            "未列出",
+            "Qwen-Agent harness；item-F1 四次平均"
+          ],
+          [
+            "Qwen3.8-Max 模型卡",
+            "Fable 5",
+            "81.2",
+            "未列出",
+            "Claude Code harness；同上"
+          ],
+          [
+            "Qwen3.8-Max 模型卡",
+            "Qwen3.7-Max",
+            "75.2",
+            "未列出",
+            "Qwen-Agent harness；同上"
+          ],
+          [
+            "Qwen3.8-Max 模型卡",
+            "Opus 4.8",
+            "72.9",
+            "未列出",
+            "Claude Code harness；同上"
+          ]
+        ]
+      },
+      "cite": [
+        "paper@Table 2",
+        "kimi",
+        "qwen"
+      ]
+    }
+  }
+}

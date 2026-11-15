@@ -1,0 +1,415 @@
+{
+  "id": "vision2web",
+  "name": "Vision2Web",
+  "full_name": "Vision2Web: A Hierarchical Benchmark for Visual Website Development with Agent Verification",
+  "aliases": [],
+  "status": "active",
+  "categories": ["coding", "multimodal"],
+  "summary": "给编码智能体一张 UI 原型图加需求文档，让它产出能跑的真网站；VLM 裁判看视觉还原度，GUI agent 跑测试工作流验功能正确性。",
+  "interpretation": "193 个任务分三级：静态网页 100 / 交互前端 66 / 全栈 27，层级越长程。Level 1 只计视觉分（VS），Level 2/3 加计功能分（FS）。论文表 3 里最强的 Claude-Opus-4.5 在全栈也只有 VS 38.4 / FS 57.6，Seed-1.8-VL 全栈 0/0 —— 分数随层级明显下滑；DSR 论文明确只作参考。",
+  "measures": [
+    {
+      "area": "视觉还原度（Visual Score, VS）",
+      "focus": "VLM 裁判把渲染页面和原型图按功能块逐一比对，按预设 rubric 打分后取平均，再对所有原型取平均；考布局、间距、对齐、文字、字体、颜色、图标、图片是否对得上",
+      "share": "三个层级都计 VS；Level 1 静态网页只有这一个指标",
+      "format": "0–100 连续分（组件级 rubric 为 1.0 / 0.75 / 0.5 / 0.25 / 0.0）",
+      "cite": ["paper@§3", "paper@附录 A.2"]
+    },
+    {
+      "area": "功能正确性（Functional Score, FS）",
+      "focus": "GUI agent 按专家设计的测试工作流逐节点操作页面，节点 = 一个自包含的验证子过程（目标–动作–校验），按通过的 functional verification nodes 占比计分",
+      "share": "Level 2 交互前端与 Level 3 全栈才计 FS",
+      "format": "0–100（通过节点数 / 该层级节点总数）",
+      "cite": ["paper@§3", "paper@§3.3"]
+    },
+    {
+      "area": "部署成功率（Deployment Success Rate, DSR）",
+      "focus": "产物能否在时限内用启动脚本固定端口跑起来；论文在表 3 标题里就写明它只是参考，不是官方指标",
+      "share": "三个层级都报告，但仅作参考",
+      "format": "0–100",
+      "cite": ["paper@Table 3"]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "不评代码质量、可维护性、测试覆盖率，也不覆盖软件工程全谱系（缺陷修复、重构、跨仓库改动等）——它只做端到端建站这一件事。",
+      "cite": ["paper@Limitations"]
+    },
+    {
+      "text": "不评通用智能：推理、长上下文记忆、数学与知识问答都不在计分范围内，Vision2Web 的分数不能换算成通用能力分数。",
+      "cite": ["paper@Limitations", "paper@§1"]
+    },
+    {
+      "text": "不评非建站类的真实开发约束：没有多人协作、遗留代码库接入、需求变更与线上运维环节。",
+      "cite": ["paper@Limitations"]
+    }
+  ],
+  "dataset": {
+    "sample_count": 193,
+    "splits": [
+      "test（唯一 split，三个 config 各一份：webpage 100 行 / frontend 66 行 / website 27 行）"
+    ],
+    "languages": ["English（HF 数据集卡标注）"],
+    "source_type": "公开真实网站，从 C4 验证集多阶段筛选而来（非合成任务）",
+    "public_sample": "Hugging Face zai-org/Vision2Web（parquet，含任务、UI 原型、测试工作流与资源）",
+    "multiple_choice_share": null,
+    "multimodal_share": null,
+    "totals": "193 个任务（静态网页 100 / 交互前端 66 / 全栈 27）、918 张原型图、1,255 个功能测试用例、21,516 个输入文件、16 个子类别 / 4 大领域",
+    "cite": ["paper@§2.3", "paper@Abstract", "repo-vision2web@README", "dataset@统计"],
+    "construction": [
+      {
+        "k": "来源",
+        "text": "全部任务只取自 C4（Raffel et al., 2020）验证集，避开热门网站以降低泄露风险。",
+        "cite": ["paper@§2.2"]
+      },
+      {
+        "k": "筛选",
+        "text": "三阶段流水线：结构评估（沿用 Design2Code 原则看 HTML 标签分布、DOM 深度、token 长度）筛到 63,515 个网站 → 内容筛选（VLM 打分，留 7,391 个功能丰富、模块清晰、视觉协调的页面）→ 人工复核。",
+        "cite": ["paper@§2.2"]
+      },
+      {
+        "k": "标注",
+        "text": "专家在环 + Claude Code 协作：Claude Code 把高层工作流改写成可执行的目标–动作–校验结构，专家复核边界用例，最后人工质检；策略按任务复杂度调整。",
+        "cite": ["paper@§3.3"]
+      },
+      {
+        "k": "规模",
+        "text": "单个任务的测试工作流 4–7 步、功能测试用例 1–24 个（HF 数据集字段 workflow_steps / num_test_cases）。",
+        "cite": ["dataset@HF 数据集查看器"]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "vs",
+      "name": "Visual Score（视觉分）",
+      "direction": "越高越好",
+      "description": "渲染页面与原型图的视觉一致度：VLM 裁判按功能块打 1.0/0.75/0.5/0.25/0.0，块级平均后再对原型平均",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["paper@§3", "paper@附录 A.2 评分标准"]
+    },
+    {
+      "id": "fs",
+      "name": "Functional Score（功能分）",
+      "direction": "越高越好",
+      "description": "该层级通过的 functional verification nodes 占全部节点的比例",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["paper@§3"]
+    },
+    {
+      "id": "dsr",
+      "name": "Deployment Success Rate（部署成功率）",
+      "direction": "越高越好",
+      "description": "部署在时限内成功启动的比例；论文声明只作参考，不是官方指标",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["paper@Table 3"]
+    }
+  ],
+  "default_protocol": {
+    "raw": "把 UI 原型图、需求描述与开发资产交给编码智能体，每个任务最多 3 次推理尝试；产物由智能体自己写启动脚本、固定在某个端口运行，超过 10 分钟或报错即记部署失败。评测不读源码，只看跑起来的页面：GUI agent（GLM-4.6V，按 WebVoyager 的任务执行协议）沿专家设计的测试工作流逐节点操作并判定，VLM 裁判（Gemini-3-Pro-Preview）在视觉节点上按组件 rubric 比对渲染结果与原型图。除另有说明，所有指标都在 0–100 上报告。",
+    "cite": ["paper@§4.1", "paper@§3", "leaderboard@提交要求", "leaderboard@评分"],
+    "variants": [
+      {
+        "text": "编码框架口径：论文同时报告 Claude Code 与 OpenHands 两套框架，同一模型在两套框架下分数不同（论文 Finding 4），跨框架不能直接比。",
+        "cite": ["paper@§4.2", "repo-vision2web@README"]
+      },
+      {
+        "text": "第三方口径：Qwen 博客用 Claude Code harness + gpt-5.4-2026-03-05 裁判、按 frontend/webpage/website 三类平均报 64.0，与论文表 3 的逐级分数不是同一口径，不要混排。",
+        "cite": ["qwen-blog-id-qwen3-8-flash-ne@表 1 脚注", "qwen-blog-id-qwen3-8-flash-ne@表 1"]
+      },
+      {
+        "text": "赛季口径：公开榜单按 3 个月一个赛季切分，每季可能换最新版 VLM 裁判与 GUI agent、增删改任务，跨赛季分数不可直接比。",
+        "cite": ["leaderboard@Seasons"]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2026-03-30",
+      "label": "首发：代码、评测工具与榜单一并开源",
+      "cite": ["repo-vision2web@News 2026.03.30"]
+    },
+    {
+      "id": "icml",
+      "date": "2026-04-30",
+      "label": "被 ICML 2026 接收为 Spotlight 论文",
+      "cite": ["repo-vision2web@News 2026.04.30", "paper@ICML 页脚"]
+    },
+    {
+      "id": "tool-2026-06",
+      "date": "2026-06-15",
+      "label": "功能测试切到 Claude Code + playwright-cli，推理侧新增 Codex 框架",
+      "cite": ["repo-vision2web@News 2026.06.15"]
+    },
+    {
+      "id": "arxiv-v3",
+      "date": "2026-07-20",
+      "label": "arXiv v3（本档案引用的论文版本）",
+      "cite": ["paper"]
+    },
+    {
+      "id": "tool-2026-08",
+      "date": "2026-08-26",
+      "label": "推理侧新增 Gemini CLI 框架",
+      "cite": ["repo-vision2web@News 2026.08.26"]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "自动化评测的残余误差",
+      "impact": "GUI agent 与 VLM 裁判都可能判错。节点级 218/250（87.2%）与人工一致；VLM 裁判与人工的 Spearman 相关平均 0.66、中位 0.80，而人工之间是 0.78 —— 裁判明显低于人类互评水平。",
+      "severity": "中",
+      "response": "官方做了人工校验与裁判敏感性分析，并称按季度把裁判和 GUI agent 换成最新骨干模型。",
+      "reader": "单个任务或单个组件的分数别过度解读；层级之间、模型之间的大幅差距更可信。",
+      "cite": ["paper@§4.4", "paper@Limitations"]
+    },
+    {
+      "issue": "任务覆盖面窄",
+      "impact": "只做端到端网站开发，明确不覆盖软件工程全谱系；强模型在孤立任务上的表现也不能可靠迁移到端到端系统构建。",
+      "severity": "中",
+      "response": "定位为视觉建站专项基准，与 SWE-Bench 类基准互补而非替代。",
+      "reader": "不要用 Vision2Web 分数推断通用编码能力或通用 Agent 能力。",
+      "cite": ["paper@Limitations"]
+    },
+    {
+      "issue": "评测成本高",
+      "impact": "要真跑部署、验行为、判视觉，比只看代码的指标贵得多；复现需要容器环境与多个模型 API。",
+      "severity": "中",
+      "response": "官方仓库提供 docker 沙箱与脚本化推理/评测流水线，沙箱内置 Claude Code、Codex、Gemini CLI、OpenHands 与 playwright-cli。",
+      "reader": "自评前先读官方 run_inference 流程，按框架分别准备凭据。",
+      "cite": ["paper@Limitations", "repo-vision2web@README"]
+    },
+    {
+      "issue": "许可证在三个官方出口不一致",
+      "impact": "仓库与 HF 数据集卡写 CC-BY-NC-SA-4.0（仅学术研究、禁止任何形式的商用）；项目站写 CC BY-SA 4.0；HF 侧栏元数据写 apache-2.0。三者互相矛盾，本站如实记录、不代为裁定。",
+      "severity": "高",
+      "response": "无官方澄清；引用数据或模型产物前应取得作者书面确认。",
+      "reader": "商用、再分发或纳入产品前，按最严格的 CC-BY-NC-SA-4.0 假设处理并联系作者。",
+      "cite": ["repo-vision2web@README", "dataset@⚠️ License", "site@License", "dataset@HF 元数据"]
+    },
+    {
+      "issue": "裁判与任务随版本漂移",
+      "impact": "GUI agent 与 VLM 裁判按季度更新，榜单任务也可能新增、修订或替换，同一模型在不同赛季会被重新评测。",
+      "severity": "中",
+      "response": "榜单按赛季归档，旧赛季结果仍可查；未变任务的推理产物会被复用重测。",
+      "reader": "引用任何榜单分数时写明赛季、裁判版本与日期。",
+      "cite": ["leaderboard@Seasons", "paper@§4.4"]
+    },
+    {
+      "issue": "公开榜单暂无成绩",
+      "impact": "项目站榜单当前显示当季无提交结果；论文表 3 的全部数字来自作者自评，不是公开榜单提交。",
+      "severity": "低",
+      "response": "提交推理产物后由维护方用当季裁判复测并更新榜单。",
+      "reader": "不要把表 3 当成榜单排名，也不要把作者自评和第三方提交混为一谈。",
+      "cite": ["site@Leaderboard", "site@Submit"]
+    }
+  ],
+  "notes": "论文表 3 为作者自评；公开榜单当前为空，按赛季滚动。",
+  "official_sources": [
+    { "kind": "paper", "url": "https://arxiv.org/pdf/2603.26648" },
+    { "kind": "repo", "url": "https://github.com/zai-org/Vision2Web" },
+    { "kind": "site", "url": "https://vision2web-bench.github.io/" },
+    { "kind": "dataset", "url": "https://huggingface.co/datasets/zai-org/Vision2Web" },
+    { "kind": "dataset", "url": "https://huggingface.co/datasets/zai-org/Vision2Web-Leaderboard" },
+    { "kind": "blog", "url": "https://qwen.ai/blog?id=qwen3.8-flash-next" }
+  ],
+  "related_benchmarks": ["webvoyager", "webvoyager-static", "swebench-mm", "swebench-multilingual"],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-15",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-15",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "Vision2Web: A Hierarchical Benchmark for Visual Website Development with Agent Verification（arXiv:2603.26648，v3，2026-07-20）",
+        "url": "https://arxiv.org/pdf/2603.26648",
+        "accessed": "2026-11-15"
+      },
+      {
+        "id": "repo-vision2web",
+        "kind": "repo",
+        "title": "GitHub: zai-org/Vision2Web（README 与 News）",
+        "url": "https://github.com/zai-org/Vision2Web",
+        "accessed": "2026-11-15"
+      },
+      {
+        "id": "site",
+        "kind": "site",
+        "title": "Vision2Web Project Page（vision2web-bench.github.io）",
+        "url": "https://vision2web-bench.github.io/",
+        "accessed": "2026-11-15"
+      },
+      {
+        "id": "dataset",
+        "kind": "dataset",
+        "title": "Hugging Face: zai-org/Vision2Web（数据集卡与元数据）",
+        "url": "https://huggingface.co/datasets/zai-org/Vision2Web",
+        "accessed": "2026-11-15"
+      },
+      {
+        "id": "leaderboard",
+        "kind": "leaderboard",
+        "title": "Hugging Face: zai-org/Vision2Web-Leaderboard（提交规则）",
+        "url": "https://huggingface.co/datasets/zai-org/Vision2Web-Leaderboard",
+        "accessed": "2026-11-15"
+      },
+      {
+        "id": "qwen-blog-id-qwen3-8-flash-ne",
+        "kind": "blog",
+        "title": "Qwen Blog: Qwen3.8 Flash Next（第三方对比口径）",
+        "url": "https://qwen.ai/blog?id=qwen3.8-flash-next",
+        "accessed": "2026-11-15"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "清华大学（Tsinghua University）× 智谱 AI（Zhipu AI / Z.ai）",
+        "cite": ["paper@作者单位", "paper@作者署名"]
+      },
+      "first_release": {
+        "v": "2026-03-30（代码、评测工具与榜单开源）",
+        "cite": ["repo-vision2web@News 2026.03.30"]
+      }
+    },
+    "cites": {
+      "summary": ["paper@Abstract", "site@Overview", "repo-vision2web@README"],
+      "interpretation": ["paper@§2.3", "paper@§4.2", "paper@Table 3"]
+    },
+    "problem": {
+      "text": "现有编码基准多停在局部代码编辑，多模态网站基准又多是静态页面复现，测不出现代 Web 开发真正难的部分：读视觉布局、理交互流、管应用状态、跨多页协调。Vision2Web 用「原型图 + 需求文档 → 能跑的真网站」这一条端到端链路，把智能体的能力从细粒度视觉理解一路测到整体系统构建。",
+      "cite": ["paper@§1", "site@Why Vision2Web"]
+    },
+    "ladder": [
+      {
+        "label": "Level 1 静态网页（OpenHands + Claude-Opus-4.5，桌面 VS）",
+        "value": "58.9",
+        "note": "只考视觉还原。同框架下 Gemini-3-Pro-Preview 桌面 63.3 更高，但它在长程任务上掉得厉害。",
+        "cite": ["paper@§4.2"]
+      },
+      {
+        "label": "Level 2 交互前端（同上，VS / FS）",
+        "value": "46.5 / 66.7",
+        "note": "功能分普遍高于视觉分：跑通交互比像素级还原容易。",
+        "cite": ["paper@§4.2"]
+      },
+      {
+        "label": "Level 3 全栈网站（同上，VS / FS）",
+        "value": "38.4 / 57.6",
+        "note": "层级越长程掉得越狠；Seed-1.8-VL 在全栈直接 0/0，Qwen 系模型大多完不成多模态编码任务。",
+        "cite": ["paper@§4.2", "paper@Table 3"]
+      },
+      {
+        "label": "论文中的静态页最高分（任意框架）",
+        "value": "63.3（Gemini-3-Pro-Preview + OpenHands，桌面）",
+        "note": "静态页最强不等于全栈最强：同一模型在全栈只有 11.7 / 22.6。",
+        "cite": ["paper@§4.2"]
+      },
+      {
+        "label": "公开榜单当前最高",
+        "value": "暂无（站点显示当季无提交结果）",
+        "note": "论文表 3 全部数字是作者自评，不是公开榜单提交；这条线是本站记录的事实，不是分数。",
+        "cite": ["site@Leaderboard"]
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 DSR 当成官方指标来排名。论文在表 3 标题里就写明 DSR 只作参考，不是官方指标。",
+        "cite": ["paper@Table 3"]
+      },
+      {
+        "text": "把不同编码框架的分数排在一起。同一模型在 Claude Code 与 OpenHands 下分数不同，论文专门把框架差异列成一条 Finding。",
+        "cite": ["paper@§4.2"]
+      },
+      {
+        "text": "把第三方口径的分数和论文表 3 混排。Qwen 博客那 64.0 用 Claude Code + gpt-5.4-2026-03-05 裁判、按三类平均，和论文逐级报告不是一回事。",
+        "cite": ["qwen-blog-id-qwen3-8-flash-ne@表 1 脚注"]
+      },
+      {
+        "text": "以为 193 个任务难度一致。三级从「照着原型写静态页」到「按需求文档搭全栈」跨度极大，必须分层看。",
+        "cite": ["paper@§2.3", "repo-vision2web@README"]
+      },
+      {
+        "text": "跨赛季比榜单分数。裁判和任务每季都可能换，官方明说不同赛季的分数不可直接比较。",
+        "cite": ["leaderboard@Seasons"]
+      },
+      {
+        "text": "把论文表 3 当成榜单现有排名。项目站榜单当前没有任何提交成绩。",
+        "cite": ["site@Leaderboard"]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "清华大学 × 智谱 AI（Zhipu AI / Z.ai）；通讯作者 Jie Tang",
+        "cite": ["paper@作者单位"]
+      },
+      {
+        "k": "论文与会议",
+        "v": "ICML 2026 Spotlight（PMLR 306，首尔）；arXiv:2603.26648，本档案引 v3（2026-07-20）",
+        "cite": ["paper@ICML 页脚", "repo-vision2web@News 2026.04.30"]
+      },
+      {
+        "k": "评测工具链",
+        "v": "GUI agent 裁判用 GLM-4.6V（按 WebVoyager 的任务执行协议），VLM 裁判用 Gemini-3-Pro-Preview；官方称按季度更新两者",
+        "cite": ["paper@§4.1", "paper@§4.4"]
+      },
+      {
+        "k": "裁判可信度",
+        "v": "节点级 218/250（87.2%）与人工一致；VLM 裁判与人工 Spearman 平均 0.66 / 中位 0.80，人工之间 0.78",
+        "cite": ["paper@§4.4"]
+      },
+      {
+        "k": "功能测试形态",
+        "v": "测试被形式化为有向依赖图：节点是自包含的验证子过程（目标–动作–校验），边表达顺序依赖与共享状态",
+        "cite": ["paper@§3"]
+      },
+      {
+        "k": "公开榜单机制",
+        "v": "按 3 个月一个赛季（提交元数据写 S1-2026）；只收推理产物（生成的代码/文件），由维护方用当季最新裁判评测，每任务最多 3 次推理尝试",
+        "cite": ["leaderboard@How to Submit", "leaderboard@提交要求"]
+      },
+      {
+        "k": "许可证",
+        "v": "仓库与 HF 数据集卡：CC-BY-NC-SA-4.0（仅学术、禁止商用）；项目站：CC BY-SA 4.0；HF 侧栏元数据：apache-2.0 —— 三处互相矛盾",
+        "cite": ["repo-vision2web@README", "dataset@⚠️ License", "site@License", "dataset@HF 元数据"]
+      },
+      {
+        "k": "任务分级定义",
+        "v": "Level 1 由多设备原型生成响应式可执行页面（只考 VS）；Level 2 由多原型加文本规格开发多页交互前端（VS+FS）；Level 3 由需求文档加原型搭完整全栈系统，含状态管理与后端逻辑（VS+FS）",
+        "cite": ["repo-vision2web@README"]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-15",
+        "columns": ["来源", "编码框架", "模型", "静态网页 Avg", "交互前端 VS / FS", "全栈 VS / FS", "静态 DSR", "交互 DSR", "全栈 DSR", "口径备注"],
+        "rows": [
+          ["论文 Table 3", "Claude Code", "Claude-Opus-4.5", "50.5", "46.1 / 63.6", "34.3 / 53.1", "94%", "98.5%", "92.6%", "0–100；DSR 仅参考"],
+          ["论文 Table 3", "Claude Code", "Claude-Sonnet-4.5", "40.0", "24.9 / 48.7", "14.5 / 26.8", "89%", "93.9%", "66.7%", "0–100；DSR 仅参考"],
+          ["论文 Table 3", "Claude Code", "GPT-5", "43.1", "23.3 / 64.7", "9.6 / 23.4", "97%", "98.5%", "85.2%", "0–100；DSR 仅参考"],
+          ["论文 Table 3", "Claude Code", "Gemini-3-Pro-Preview", "52.3", "13.3 / 14.6", "5.7 / 12.9", "92%", "65.2%", "63.0%", "0–100；DSR 仅参考"],
+          ["论文 Table 3", "Claude Code", "Gemini-3-Flash-Preview", "43.3", "13.1 / 27.9", "2.3 / 4.6", "92%", "78.8%", "63.0%", "0–100；DSR 仅参考"],
+          ["论文 Table 3", "Claude Code", "Seed-1.8-VL", "18.0", "7.0 / 13.3", "0.0 / 0.0", "43%", "36.4%", "0.0%", "0–100；DSR 仅参考"],
+          ["论文 Table 3", "Claude Code", "Qwen3-VL-32b-Instruct", "0.9", "0.0 / 0.0", "0.0 / 0.0", "3%", "0.0%", "0.0%", "0–100；DSR 仅参考"],
+          ["论文 Table 3", "Claude Code", "Qwen3-VL-8b-Instruct", "11.9", "0.0 / 0.0", "0.0 / 0.0", "46%", "0.0%", "0.0%", "0–100；DSR 仅参考"],
+          ["论文 Table 3", "OpenHands", "Claude-Opus-4.5", "53.4", "46.5 / 66.7", "38.4 / 57.6", "98%", "98.5%", "96.3%", "0–100；DSR 仅参考"],
+          ["论文 Table 3", "OpenHands", "Claude-Sonnet-4.5", "47.1", "32.4 / 59.0", "15.7 / 23.9", "100%", "97.0%", "66.7%", "0–100；DSR 仅参考"],
+          ["论文 Table 3", "OpenHands", "GPT-5", "44.7", "23.9 / 61.4", "18.3 / 49.7", "100%", "100%", "100%", "0–100；DSR 仅参考"],
+          ["论文 Table 3", "OpenHands", "Gemini-3-Pro-Preview", "55.8", "29.7 / 40.7", "11.7 / 22.6", "95%", "93.9%", "77.8%", "0–100；DSR 仅参考"],
+          ["论文 Table 3", "OpenHands", "Gemini-3-Flash-Preview", "47.8", "25.9 / 38.4", "7.7 / 17.2", "88%", "93.9%", "66.7%", "0–100；DSR 仅参考"],
+          ["论文 Table 3", "OpenHands", "Seed-1.8-VL", "1.3", "7.5 / 33.9", "0.0 / 0.0", "72%", "56.1%", "14.8%", "0–100；DSR 仅参考"],
+          ["论文 Table 3", "OpenHands", "Qwen3-VL-32b-Instruct", "0.0", "0.0 / 0.0", "0.0 / 0.0", "4%", "0.0%", "0.0%", "0–100；DSR 仅参考"],
+          ["论文 Table 3", "OpenHands", "Qwen3-VL-8b-Instruct", "0.1", "0.0 / 0.0", "0.0 / 0.0", "51%", "0.0%", "0.0%", "0–100；DSR 仅参考"],
+          ["Qwen 博客表 1", "Claude Code", "Qwen3.8-Flash-Next", "--", "--", "--", "--", "--", "--", "三类平均 64.0；gpt-5.4-2026-03-05 裁判；非论文口径，勿与上表混排"]
+        ]
+      },
+      "cite": ["paper@Table 3", "qwen-blog-id-qwen3-8-flash-ne@表 1", "qwen-blog-id-qwen3-8-flash-ne@表 1 脚注"]
+    }
+  }
+}

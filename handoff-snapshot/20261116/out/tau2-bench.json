@@ -1,0 +1,788 @@
+{
+  "id": "tau2-bench",
+  "name": "τ²-bench",
+  "full_name": "τ²-bench: Evaluating Conversational Agents in a Dual-Control Environment（双控制环境下的对话智能体评测）",
+  "aliases": [
+    "tau2-bench",
+    "Tau2 Bench",
+    "tau2bench",
+    "Tau2-Bench",
+    "τ-bench 2.0"
+  ],
+  "status": "active",
+  "categories": [
+    "agent"
+  ],
+  "summary": "τ²-bench 是 Sierra 出的客服对话智能体基准：一个 LLM 演用户、一个 LLM 演客服 Agent，双方各持一组工具、都能修改同一份共享环境状态（好比两个人同时编辑同一份 store，而不是只有一方有写权限），考的是 Agent 能否把用户引导着把故障解决。它在 τ-bench（只有 Agent 能操作环境）之上新增 telecom 双控制域，从单控制切到双控制时通过率大幅下降。",
+  "interpretation": "高分说明：在给定客服策略文档的前提下，Agent 既能正确调用自己的工具，又能用自然语言引导用户完成只有用户能做的操作，最终把环境改到题目要求的目标状态；同一道题连跑 k 次都成功还说明它稳定。高分不说明：它能应付真实用户（用户由 LLM 模拟，行为被工具和可观测状态约束）、能处理电信以外的域、或具备长期记忆与多模态能力；也不说明它在单控制（Agent 全权代办）下同样好——论文里这两个口径相差约 18–25 个百分点。",
+  "measures": [
+    {
+      "area": "telecom 双控制排障（论文新增域）",
+      "focus": "示例题 [service_issue]airplane_mode_on|unseat_sim_card：用户报『无服务』，Agent 需引导用户关闭飞行模式并重插 SIM 卡，最终断言服务状态为 connected",
+      "share": "114 题（测试集；组合生成总池 2,285 题）",
+      "format": "多轮对话 + 双方各自调用工具；用断言函数检查终态判分",
+      "cite": [
+        "paper@附录 A.2",
+        "paper@Table 1",
+        "paper@§3.3"
+      ]
+    },
+    {
+      "area": "retail 单控制对照（继承 τ-bench）",
+      "focus": "论文未给出该域示例题；Table 1 记录其数据库为 500 用户 / 50 商品 / 1,000 订单，Agent 工具 7 写 6 读，用户无工具",
+      "share": "115 题",
+      "format": "多轮对话 + Agent 工具调用；数据库终态比对 + 必须传达的信息",
+      "cite": [
+        "paper@Table 1",
+        "paper@§3.3"
+      ]
+    },
+    {
+      "area": "airline 单控制对照（继承 τ-bench）",
+      "focus": "论文未给出该域示例题；Table 1 记录其数据库为 500 用户 / 300 航班 / 2,000 预订，Agent 工具 6 写 6 读，用户无工具",
+      "share": "50 题",
+      "format": "多轮对话 + Agent 工具调用；数据库终态比对 + 必须传达的信息",
+      "cite": [
+        "paper@Table 1",
+        "paper@§3.3"
+      ]
+    },
+    {
+      "area": "推理与引导的分解诊断",
+      "focus": "同一道 telecom 题在三种模式下对比：Default（双控制协作）、No-User（Agent 拿到工单并独占全部工具）、Oracle Plan（直接给出工具调用序列）",
+      "share": "未披露（论文未给出该维度占比）",
+      "format": "消融对比 pass^1，用来分离推理错误与沟通/协调错误",
+      "cite": [
+        "paper@§4.2",
+        "paper@Figure 4"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "单控制下的纯工具链推理——telecom 的双控制正是它的新增点；单控制口径必须单独跑 No-User 模式，两个口径的分数不可比",
+      "cite": [
+        "paper@§4.2"
+      ]
+    },
+    {
+      "text": "真实人类用户的行为——用户由 gpt-4.1 模拟，行为被工具与可观测状态约束，论文没有人类基线",
+      "cite": [
+        "paper@§4.1",
+        "paper@§5 Conclusion"
+      ]
+    },
+    {
+      "text": "电信与客服之外的域——论文把扩展域覆盖列为待办，称其仍重度依赖人类专家",
+      "cite": [
+        "paper@§5 Conclusion"
+      ]
+    },
+    {
+      "text": "交互质量（礼貌、效率、是否说得清楚）——官方博客把『交互敏感奖励』列为未来方向，当前奖励只认终态",
+      "cite": [
+        "blog@正文"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 114,
+    "splits": [
+      "telecom（论文新增双控制域，测试集 114 题）",
+      "retail（继承 τ-bench，论文 115 题；当前仓库 1.x 为 114 题）",
+      "airline（继承 τ-bench，50 题）"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "synthetic（程序化组合生成，奖励可自动验证）",
+    "public_sample": true,
+    "totals": "论文的 telecom 域由 15 个原子子任务组组合出 2,285 道题，再按用户意图与子任务数均衡抽样 114 道作为测试集（service_issue 29 / mobile_data_issue 36 / mms_issue 49，子任务数 2–9）；连同继承自 τ-bench 的 retail 115 题与 airline 50 题，三域合计 279 题。题型全部是多轮对话加工具调用，语言为英文，没有公开的独立留存集。",
+    "cite": [
+      "paper@Table 1",
+      "paper@§3.2",
+      "paper@附录 A Table 3",
+      "repo@The benchmarks"
+    ],
+    "construction": [
+      {
+        "k": "阶段 1–2：域、库表与工具",
+        "text": "先用 LLM 生成产品需求文档（PRD）定义客服 CRM 的库表与函数，再由 LLM 写出实现、mock 数据库和单元测试，人工反复修订到测试全过；用户侧同样用 LLM 造一台 mock 手机，带信号强度等状态和 toggle_airplane_mode 这类开关。",
+        "cite": [
+          "paper@§3.2"
+        ]
+      },
+      {
+        "k": "阶段 3：原子子任务",
+        "text": "每个原子子任务由初始化 / 解法 / 断言三类函数构成，例如初始化 set_airplane_mode(True)、解法 toggle_airplane_mode()、断言 assert_service_status(\"connected\")；互斥或可互相替代的子任务归入同一组。",
+        "cite": [
+          "paper@§3.2"
+        ]
+      },
+      {
+        "k": "阶段 3：组合与自动校验",
+        "text": "从每组最多取一个子任务，把各自的函数调用拼接成复合任务；正确性由程序自动验证——先应用初始化再应用解法后终态满足全部断言，且在解法未全部应用前任务不得已被解决。",
+        "cite": [
+          "paper@§3.2"
+        ]
+      },
+      {
+        "k": "阶段 4：域策略文档",
+        "text": "基于整理好的任务与解法，让 LLM 生成域策略文档，指导 Agent 按步骤诊断和处理每一类用户意图。",
+        "cite": [
+          "paper@§3.2"
+        ]
+      },
+      {
+        "k": "阶段 5：抽样与用户人格",
+        "text": "从 2,285 题中按意图与子任务数均衡抽样 114 题；每道 telecom 题随机分配 None / Easy / Hard 三种用户人格之一，Hard 是一位 64 岁、对技术感到不安的退休图书馆管理员。",
+        "cite": [
+          "paper@§3.2",
+          "paper@附录 A.1"
+        ]
+      },
+      {
+        "k": "阶段 5：人工打磨",
+        "text": "工具、策略与原子子任务由人工联合修订以提升域质量；论文同时承认扩展域覆盖仍重度依赖人类专家。",
+        "cite": [
+          "paper@§3.2",
+          "paper@§5 Conclusion"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "pass-1",
+      "name": "pass^1（单次通过率）",
+      "direction": "越高越好",
+      "description": "同一道题跑 1 次的成功比例，按任务平均；τ-bench 把它定义为 k 次独立试跑全部成功概率在 k=1 时的特例，并作为比较模型的主指标。telecom 域的奖励来自断言函数对终态的检查。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "tau-paper@Pass^k metric",
+        "paper@§3.3"
+      ]
+    },
+    {
+      "id": "pass-hat-k",
+      "name": "pass^k（连续 k 次全部成功）",
+      "direction": "越高越好",
+      "description": "同一道题独立跑 k 次且每一次都成功的概率，按任务平均；用来暴露『偶尔做对、时常翻车』的不稳定性，k 越大掉得越快。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "tau-paper@Pass^k metric",
+        "paper@§2 Related Work"
+      ]
+    },
+    {
+      "id": "cost-per-task",
+      "name": "单任务成本",
+      "direction": "越低越好",
+      "description": "论文口径：gpt-4.1 Agent 配 gpt-4.1 用户模拟器时平均每任务 $0.086 / $0.059；全部域每任务跑 1 次约 $40。",
+      "cite": [
+        "paper@§4.2"
+      ]
+    }
+  ],
+  "default_protocol": {
+    "raw": "文本半双工多轮对话：Agent 与 LLM 用户模拟器交替发言或调用工具，一个回合只有一方行动；Agent 侧拿到域策略文档和通用提示词，用户模拟器侧拿到任务指令和通用提示词，工具以 OpenAI tools 格式提供。判分只看结果——telecom 域全部由断言函数检查终态（用户侧数据库状态）是否达标，奖励是 0/1。论文用 gpt-4.1-2025-04-14 充当用户模拟器，被测 Agent 为 gpt-4.1-mini-2025-04-14、gpt-4.1-2025-04-14、o4-mini-2025-04-16、claude-3-7-sonnet-20250219，每题跑 4 次、温度固定为 0。",
+    "cite": [
+      "paper@§3.1",
+      "paper@§3.3",
+      "paper@§4.1"
+    ],
+    "variants": [
+      {
+        "text": "单控制 vs 双控制：No-User 模式把用户侧工具也交给 Agent（附一张工单），Oracle Plan 模式直接给出工具调用序列；同一模型在 Default 与 No-User 之间相差约 18–25 个百分点，三种模式的分数不能混排。",
+        "cite": [
+          "paper@§4.2"
+        ]
+      },
+      {
+        "text": "用户模拟器设定：论文 telecom 用 gpt-4.1 当用户模拟器并随机分配 None / Easy / Hard 人格；换一个用户模型就会改变分数——第三方在 τ-bench retail 上实测不同用户 LLM 之间 Agent 成功率最高差约 9 个百分点。",
+        "cite": [
+          "paper@§4.1",
+          "sim-users@Abstract"
+        ]
+      },
+      {
+        "text": "pass@1 vs pass^k：榜单 2.0 与 voice-v1 按 1 次试跑计分，1.x 文本强烈建议每域至少 4 次；1 次与 4 次的平均分不可直接比较。",
+        "cite": [
+          "submission@Rules for every submission"
+        ]
+      },
+      {
+        "text": "版本口径：2.0 把英文 retail/telecom 各替换 50 道题、沟通检查从子串匹配换成语义裁判、更换 NL 断言裁判模型并修改英文提示词；官方明示 2.0 与 1.x 不可比，榜单分成两个标签页。",
+        "cite": [
+          "changelog@2.0.0",
+          "repo@Comparing with v1.0.1"
+        ]
+      },
+      {
+        "text": "任务子集：2.0 用每域 50 道冻结任务（airline_50 / retail_50 / telecom_50，默认规模 50、种子 42），而论文 telecom 是 114 题；子集工具可另建抽样，但官方子集的分母不变。",
+        "cite": [
+          "subsets@Frozen task subsets",
+          "repo@The benchmarks"
+        ]
+      },
+      {
+        "text": "域子集：telecom 是双控制，retail/airline 是单控制；只看 telecom 和看三域平均是两个不同的数。",
+        "cite": [
+          "paper@§4.2"
+        ]
+      },
+      {
+        "text": "自定义提交：修改提示词、增加工具、更换用户模拟器或任务选择都算 custom，榜单会分开标注并可能标记为 Unverified。",
+        "cite": [
+          "submission@Standard and custom submissions",
+          "submission@Verification System"
+        ]
+      },
+      {
+        "text": "当前仓库的奖励公式：任务奖励是 reward_basis 所列组件的乘积，默认为 [DB, COMMUNICATE]；airline / retail / telecom 都不把 ACTION 放进 reward_basis，即只认终态，不要求复现某一条参考轨迹。",
+        "cite": [
+          "eval@TL;DR"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "tau-bench",
+      "date": "2024-06-17",
+      "label": "τ-bench 原版（arXiv:2406.12045v1）：retail 115 题 + airline 50 题，单控制，提出 pass^k",
+      "cite": [
+        "tau-paper@版本头",
+        "tau-paper@Table 1"
+      ]
+    },
+    {
+      "id": "arxiv-v1",
+      "date": "2025-06-09",
+      "label": "τ²-bench 论文 arXiv v1 发布：新增 telecom 双控制域、组合式任务生成器与环境约束的用户模拟器；截至本次核验仍只有 v1，无修订版",
+      "cite": [
+        "paper@版本头",
+        "paper@Abstract"
+      ]
+    },
+    {
+      "id": "blog",
+      "date": "2025-06-10",
+      "label": "Sierra 官方博客发布解读（Victor Barres、Honghua Dong、Soham Ray、Karthik Narasimhan），称从独立模式切到交互模式成功率最多掉 25 个百分点",
+      "cite": [
+        "blog@作者与日期",
+        "blog@正文"
+      ]
+    },
+    {
+      "id": "v0.1.0",
+      "date": "2025-06-12",
+      "label": "仓库 0.1.0：框架首发，含 mock / airline / retail / telecom 四域，以及 no-user、oracle-plan、workflow policy 实验特性",
+      "cite": [
+        "changelog@0.1.0"
+      ]
+    },
+    {
+      "id": "v0.2.0",
+      "date": "2025-10-06",
+      "label": "0.2.0：上线网页版榜单与提交校验系统（CHANGELOG 写作 tau-bench.com，README 现指向 taubench.com）",
+      "cite": [
+        "changelog@0.2.0",
+        "repo@The benchmarks"
+      ]
+    },
+    {
+      "id": "v1.0.1",
+      "date": "2026-07-15",
+      "label": "1.0.1：修复 banking_knowledge 判分，该域此前成绩不可比（CHANGELOG 未填 1.0.0 的日期，只写 2026-MM-DD）",
+      "cite": [
+        "changelog@1.0.1",
+        "changelog@1.0.0"
+      ]
+    },
+    {
+      "id": "v2.0.0",
+      "date": "2026-10-19",
+      "label": "2.0.0（τ-bench 2.0）：六语言 τ-i18n 与全双工语音；英文 retail/telecom 各替换 50 题、沟通检查改语义裁判，官方声明与 1.x 不可比",
+      "cite": [
+        "changelog@2.0.0",
+        "repo@τ-bench 2.0"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "用户模拟器不是真人，且换一个用户模型就换一个分数",
+      "impact": "telecom 的用户由 gpt-4.1 充当，行为被工具和可观测状态约束；论文自己标注的模拟器错误率是 telecom 16%（关键错误 6%），但 retail 40%（关键 12%）、airline 47%（关键 13%）——同族域之间的模拟质量并不一致。第三方在 τ-bench retail 上实测：换用户 LLM，Agent 成功率最高差约 9 个百分点。",
+      "severity": "高",
+      "response": "论文把用户模拟器与环境工具、可观测状态紧耦合以约束行为，并公布三域错误率；结论段承认用户模拟器仍需改进，且尚未把这一方法应用到 airline / retail。",
+      "reader": "看到 retail / airline 的分数时，先把用户模拟器版本和该域错误率考虑进去；跨论文比较先核对用户模型是否是同一个。",
+      "cite": [
+        "paper@Table 2",
+        "paper@§5 Conclusion",
+        "sim-users@Abstract",
+        "beancount@哪些经得起推敲，哪些不能"
+      ]
+    },
+    {
+      "issue": "口径随版本漂移，跨版本分数不可比",
+      "impact": "2.0 替换了英文 retail / telecom 各 50 道题、把沟通检查从子串匹配换成语义裁判、更换 NL 断言裁判模型并修改英文提示词；1.0.1 又修过 banking_knowledge 判分。官方明示 2.0 与 1.x 不可比，榜单分成两个标签页，且目前没有 2.0 文本榜。",
+      "severity": "高",
+      "response": "官方把 1.x 与 2.0 分成两个榜单标签页并继续接受 1.x 提交，同时保留 v1.0.1 tag 供复现；冻结任务子集用 ID 摘要与内容哈希固定题目。",
+      "reader": "比较任何两个分数前，先确认它们来自 1.x 还是 2.0、几次试跑、哪个用户模拟器；本站账本每行都带口径。",
+      "cite": [
+        "changelog@2.0.0",
+        "repo@Comparing with v1.0.1",
+        "submission@Text-v1",
+        "subsets@Frozen task subsets"
+      ]
+    },
+    {
+      "issue": "域覆盖窄，扩展依赖人工专家",
+      "impact": "论文只新增 telecom 一个双控制域，另外两域继承自 τ-bench；结论段明确说扩展域覆盖仍重度依赖人类专家，尚未把域构建流程自动化。",
+      "severity": "中",
+      "response": "论文把自动化域构建列为未来工作；仓库后续版本陆续加入 banking_knowledge（97 题）与 intake（200+ 题）等域，但都不是论文里的双控制设计。",
+      "reader": "不要把 telecom 的结论外推到所有客服场景；跨域比较前先看该域是不是双控制。",
+      "cite": [
+        "paper@§5 Conclusion",
+        "changelog@1.0.0",
+        "repo@τ-bench 2.0"
+      ]
+    },
+    {
+      "issue": "没有建模专家—新手差距，也没有人类基线",
+      "impact": "结论段承认 τ²-bench 没有显式建模客服任务里固有的专家—新手差距；论文没有给出人类基线，只有 None / Easy / Hard 三种 LLM 用户人格。第三方研究进一步指出，用模拟用户做评测会系统性低估 Agent 在难题上的表现、高估其在中等难度题上的表现。",
+      "severity": "中",
+      "response": "论文把『理解用户心智模型并相应调整解释』列为未来方向；未见官方发布人类基线。",
+      "reader": "不要把 LLM 用户人格下的通过率当成『真人能用』的证据。",
+      "cite": [
+        "paper@§5 Conclusion",
+        "paper@§3.2",
+        "sim-users@Abstract"
+      ]
+    },
+    {
+      "issue": "长程与组合复杂度迅速吃掉分数",
+      "impact": "动作数增加时 pass^1 迅速下降，Default 模式下超过 7 个动作接近 0；不同意图的难度差异很大——service_issue 平均 2.31 个动作，mms_issue 平均 6.00 个、最多 12 个。",
+      "severity": "中",
+      "response": "论文用动作数 / 子任务数分箱和三种意图的分层设计把复杂度变成可控变量，并用组合式生成器提供扩展路径。",
+      "reader": "看到 90% 以上的 telecom 分数时，注意它来自 1.x 榜单的 4 次试跑与指定用户模拟器，且题目分布偏向简单意图。",
+      "cite": [
+        "paper@§4.2",
+        "paper@附录 A Table 4",
+        "paper@Figure 5"
+      ]
+    },
+    {
+      "issue": "通过率是二值结果分，过程错误不可见",
+      "impact": "telecom 只用断言函数判终态，漏掉一个关键步骤和完全失败得到同样的 0 分；论文用 No-User / Oracle Plan 两种消融模式部分补偿这种不可见性。",
+      "severity": "低",
+      "response": "官方文档说明奖励是各组件（DB / ENV_ASSERTION / COMMUNICATE / NL_ASSERTION / ACTION）的乘积，airline / retail / telecom 都不把 ACTION 放进 reward_basis，即只认终态；诊断用的 partial_action_reward 只是与一条参考轨迹的相似度信号。",
+      "reader": "分数相同不代表行为相同；要区分『漏说话』和『改错状态』必须看轨迹。",
+      "cite": [
+        "paper@§3.3",
+        "eval@TL;DR"
+      ]
+    }
+  ],
+  "notes": "证据账本中 7 次引用；Agent 叙事的第二代客服基准（τ-bench 之后）",
+  "official_sources": [
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2506.07982"
+    },
+    {
+      "kind": "github",
+      "url": "https://github.com/sierra-research/tau2-bench"
+    },
+    {
+      "kind": "site",
+      "url": "https://taubench.com"
+    },
+    {
+      "kind": "blog",
+      "url": "https://sierra.ai/blog/benchmarking-agents-in-collaborative-real-world-scenarios"
+    }
+  ],
+  "related_benchmarks": [
+    "tau-bench",
+    "bfcl",
+    "gaia",
+    "mcp-atlas",
+    "agentbench"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-10",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-10",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "τ²-Bench: Evaluating Conversational Agents in a Dual-Control Environment（arXiv:2506.07982v1，2025-06-09，Sierra）",
+        "url": "https://arxiv.org/abs/2506.07982",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "tau-paper",
+        "kind": "paper",
+        "title": "τ-bench: A Benchmark for Tool-Agent-User Interaction in Real-World Domains（arXiv:2406.12045v1，2024-06-17，前代基准）",
+        "url": "https://arxiv.org/abs/2406.12045",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "sierra-research/tau2-bench README（τ-bench 2.0）",
+        "url": "https://github.com/sierra-research/tau2-bench",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "changelog",
+        "kind": "repo",
+        "title": "sierra-research/tau2-bench CHANGELOG.md",
+        "url": "https://github.com/sierra-research/tau2-bench/blob/main/CHANGELOG.md",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "eval",
+        "kind": "docs",
+        "title": "官方文档：Task Schema and Evaluation（docs/evaluation.md）",
+        "url": "https://github.com/sierra-research/tau2-bench/blob/main/docs/evaluation.md",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "submission",
+        "kind": "docs",
+        "title": "官方文档：Submission guide（docs/leaderboard-submission.md）",
+        "url": "https://github.com/sierra-research/tau2-bench/blob/main/docs/leaderboard-submission.md",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "subsets",
+        "kind": "docs",
+        "title": "官方文档：Frozen task subsets（docs/task-subsets.md）",
+        "url": "https://github.com/sierra-research/tau2-bench/blob/main/docs/task-subsets.md",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "leaderboard",
+        "kind": "leaderboard",
+        "title": "taubench.com 官方榜单数据（visualizer-index.json，1.x 文本榜含 telecom 单元分）",
+        "url": "https://taubench.com/visualizer-index.json",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "blog",
+        "kind": "announcement",
+        "title": "Sierra 官方博客：τ²-bench: benchmarking agents in collaborative real-world scenarios（2025-06-10）",
+        "url": "https://sierra.ai/blog/benchmarking-agents-in-collaborative-real-world-scenarios",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "sim-users",
+        "kind": "paper",
+        "title": "Lost in Simulation: LLM-Simulated Users are Unreliable Proxies for Human Users in Agentic Evaluations（arXiv:2601.17087v2，2026-01-28，UC Irvine / Cohere，非基准作者的第三方研究）",
+        "url": "https://arxiv.org/abs/2601.17087",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "datalearner",
+        "kind": "blog",
+        "title": "DataLearner：如何评估大模型的 Agent 能力？τ²-Bench：评估双控对话智能体的新标准（2025-10-12，中文二手）",
+        "url": "https://datalearner.com/blog/1051760234119665",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "beancount",
+        "kind": "blog",
+        "title": "Bean Labs 研究日志：τ-bench：评估 AI 智能体在现实世界工具调用领域的可靠性（2026-06-12，中文二手评论）",
+        "url": "https://beancount.io/zh/bean-labs/research-logs/2026/06/12/tau-bench-tool-agent-user-interaction-real-world-domains",
+        "accessed": "2026-11-10"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Sierra（论文合作方：多伦多大学与 Vector Institute）",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      "first_release": {
+        "v": "2025-06-09（arXiv:2506.07982v1；官方博客 2025-06-10，仓库 0.1.0 为 2025-06-12）",
+        "cite": [
+          "paper@版本头",
+          "blog@作者与日期",
+          "changelog@0.1.0"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "paper@Abstract",
+        "paper@§1 Introduction",
+        "paper@§3.1"
+      ],
+      "interpretation": [
+        "paper@§4.2",
+        "paper@§5 Conclusion",
+        "sim-users@Abstract"
+      ]
+    },
+    "problem": {
+      "text": "τ-bench 这类单控制基准里用户只能提供信息、不能改变环境；而真实客服（尤其是技术支持）要靠用户自己重启手机、关闭飞行模式。不把『用户也能操作共享环境』建模进来，就测不到 Agent 的引导与协调能力，也没法把纯推理错误和沟通/协调错误分开。",
+      "cite": [
+        "paper@Abstract",
+        "paper@§1 Introduction"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机 / 人类基线",
+        "value": "论文未给出",
+        "note": "论文没有报告随机基线，也没有人类基线（用户由 LLM 模拟）；本站不推算。",
+        "cite": [
+          "paper@§4.1",
+          "paper@§5 Conclusion"
+        ]
+      },
+      {
+        "label": "论文发布时最好（telecom pass^1）",
+        "value": "49%",
+        "note": "claude-3.7-sonnet，与 airline 上 gpt-4.1 的 56% 接近；gpt-4.1 在 telecom 只有 34%，gpt-4.1-mini / o4-mini / claude-3.7-sonnet 均在 50% 左右。",
+        "cite": [
+          "paper@§1 Introduction",
+          "paper@§4.2"
+        ]
+      },
+      {
+        "label": "同模型单控制参考（No-User 模式）",
+        "value": "比双控制高 18 个百分点（gpt-4.1）",
+        "note": "论文口径：gpt-4.1 从 No-User 切到 Default 掉 18 个百分点，o4-mini 掉 25 个百分点。这条线衡量的是『双控制』本身值多少分，不是模型进步。",
+        "cite": [
+          "paper@§4.2",
+          "paper@Figure 4"
+        ]
+      },
+      {
+        "label": "官方榜单最高（telecom pass^1）",
+        "value": "97.81%",
+        "note": "taubench.com 1.x 文本榜：Qwen3.5-397B-A17B（Alibaba Cloud，2026-03-02 提交），4 次试跑、用户模拟器 gpt-5.2；同一条目三域平均 87.91%。这是 1.x 口径，与 2.0 不可比。",
+        "cite": [
+          "leaderboard@visualizer-index.json"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 pass^k 理解成『k 次里至少成功一次』——τ-bench 的定义是 k 次独立试跑全部成功；中文二手资料常写成『多次独立运行中成功的概率』。",
+        "cite": [
+          "tau-paper@Pass^k metric",
+          "datalearner@评测指标"
+        ]
+      },
+      {
+        "text": "把 2,285 当成题量——2,285 是 telecom 组合生成的总池，论文实际抽样 114 题作为测试集。",
+        "cite": [
+          "paper@§3.2"
+        ]
+      },
+      {
+        "text": "以为 τ²-bench 出自普林斯顿大学、或只是 τ-bench 的小升级——论文署名是 Sierra 与多伦多大学 / Vector Institute；真正的增量是新增双控制 telecom 域、组合式任务生成器与环境约束的用户模拟器。",
+        "cite": [
+          "paper@作者署名",
+          "datalearner@开头",
+          "datalearner@四个评测领域"
+        ]
+      },
+      {
+        "text": "把不同版本或不同用户模拟器下的分数排在一起比——官方明示 2.0 与 1.x 不可比，第三方也指出演进中的榜单条目可能在不同的用户模拟器版本与任务划分下评分。",
+        "cite": [
+          "changelog@2.0.0",
+          "beancount@哪些经得起推敲，哪些不能"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "Sierra；论文合作方为多伦多大学与 Vector Institute（Honghua Dong 为实习期间完成）",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "共同一作 Victor Barres、Honghua Dong；其余作者 Soham Ray、Xujie Si、Karthik Narasimhan",
+        "cite": [
+          "paper@作者署名",
+          "repo@Citation"
+        ]
+      },
+      {
+        "k": "论文状态",
+        "v": "arXiv 预印本，页脚标注 Preprint. Under review.；截至 2026-11-10 只有 v1，无修订版",
+        "cite": [
+          "paper@版本头"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2024-06 τ-bench → 2025-06-09 τ²-bench 论文 → 2025-06-12 仓库 0.1.0 → 2025-10-06 榜单上线 → 2026-10-19 仓库 2.0.0（多语言 + 语音）",
+        "cite": [
+          "tau-paper@版本头",
+          "paper@版本头",
+          "changelog@0.1.0",
+          "changelog@2.0.0"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "代码与数据在 github.com/sierra-research/tau2-bench，论文脚注给出同一地址；安装用 uv，要求 Python >=3.12, <3.14",
+        "cite": [
+          "repo@Quickstart"
+        ]
+      },
+      {
+        "k": "用户模拟器",
+        "v": "论文 telecom 用 gpt-4.1-2025-04-14；当前仓库 2.0 文本用户模拟器默认 gpt-5.5（reasoning low）",
+        "cite": [
+          "paper@§4.1",
+          "eval@Communication checks"
+        ]
+      },
+      {
+        "k": "官方榜单",
+        "v": "taubench.com；1.x 与 2.0 分开标签页，目前没有 2.0 文本榜；提交需 fork + PR，轨迹需外置存储，榜单分 Verified / Unverified",
+        "cite": [
+          "submission@Text-v1",
+          "submission@Verification System",
+          "repo@The benchmarks"
+        ]
+      },
+      {
+        "k": "成本参考",
+        "v": "论文口径：gpt-4.1 Agent 配 gpt-4.1 用户模拟器平均每任务 $0.086 / $0.059；全部域每任务跑 1 次约 $40",
+        "cite": [
+          "paper@§4.2"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-10",
+        "columns": [
+          "来源",
+          "模型",
+          "域",
+          "pass^1",
+          "口径"
+        ],
+        "rows": [
+          [
+            "论文 §4.2",
+            "gpt-4.1",
+            "retail",
+            "74%",
+            "双控制（用户模拟器 gpt-4.1）"
+          ],
+          [
+            "论文 §4.2",
+            "gpt-4.1",
+            "airline",
+            "56%",
+            "双控制（用户模拟器 gpt-4.1）"
+          ],
+          [
+            "论文 §4.2",
+            "gpt-4.1",
+            "telecom",
+            "34%",
+            "双控制（用户模拟器 gpt-4.1）"
+          ],
+          [
+            "论文 §4.2",
+            "o4-mini",
+            "telecom",
+            "约 50%",
+            "双控制（用户模拟器 gpt-4.1）"
+          ],
+          [
+            "论文 §4.2",
+            "gpt-4.1-mini",
+            "telecom",
+            "约 50%",
+            "双控制（用户模拟器 gpt-4.1）"
+          ],
+          [
+            "论文 §4.2",
+            "claude-3.7-sonnet",
+            "telecom",
+            "49%",
+            "双控制（用户模拟器 gpt-4.1）"
+          ],
+          [
+            "论文 Figure 4",
+            "gpt-4.1",
+            "telecom",
+            "34%（Default）",
+            "消融：No-User 模式高 18 个百分点"
+          ],
+          [
+            "taubench.com 1.x 文本榜",
+            "Qwen3.5-397B-A17B",
+            "telecom",
+            "97.81%",
+            "4 次试跑；用户模拟器 gpt-5.2"
+          ],
+          [
+            "taubench.com 1.x 文本榜",
+            "Qwen3.5-397B-A17B",
+            "三域平均",
+            "87.91%",
+            "4 次试跑；用户模拟器 gpt-5.2"
+          ],
+          [
+            "taubench.com 1.x 文本榜",
+            "Claude Opus 4.5",
+            "telecom",
+            "92.32%",
+            "4 次试跑；用户模拟器 gpt-5.2"
+          ],
+          [
+            "taubench.com 1.x 文本榜",
+            "GPT-5.2",
+            "telecom",
+            "89.69%",
+            "4 次试跑；用户模拟器 gpt-5.2"
+          ],
+          [
+            "taubench.com 1.x 文本榜",
+            "GPT-5.2（effort: none）",
+            "telecom",
+            "57.24%",
+            "4 次试跑；用户模拟器 gpt-5.2"
+          ]
+        ]
+      },
+      "cite": [
+        "paper@§4.2",
+        "paper@Figure 4",
+        "leaderboard@visualizer-index.json"
+      ]
+    }
+  }
+}

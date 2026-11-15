@@ -1,0 +1,685 @@
+{
+  "id": "mcpmark",
+  "name": "MCPMark",
+  "full_name": "MCPMark: A Benchmark for Stress-Testing Realistic and Comprehensive MCP Use（MCP 真实使用压力测试基准）",
+  "aliases": [
+    "MCP-Mark"
+  ],
+  "status": null,
+  "categories": [
+    "agent"
+  ],
+  "summary": "MCPMark 是一套专门压测 AI Agent 的 MCP（Model Context Protocol，让大模型通过统一接口调用外部工具/服务的协议）基准：127 道任务分别跑在文件系统、Notion、Playwright、GitHub、PostgreSQL 五个真实 MCP 服务上，每题从一份预设初始状态出发，要求模型用一串工具调用完成增删改查（CRUD），最后由固定脚本自动判分。",
+  "interpretation": "pass@1 高说明模型能在长链路、多工具、有状态的环境里把任务稳定走通；论文同时给出 pass@4 与 pass^4，因此「偶尔做对」和「每次都做对」会被分开。论文发布时最强的 gpt-5-medium 也只有 52.56% pass@1 与 33.86% pass^4，主流闭源模型多在 15%–30%——低分主要反映任务难度与链路长度，不代表模型能力退化。跨任务集版本、跨评分口径的分数不能直接相比。",
+  "measures": [
+    {
+      "area": "Filesystem 文件系统任务",
+      "focus": "例：Contact Information——从桌面多种文件格式中抽取联系人信息，再对收集到的关系数据做推理分析。",
+      "share": "30 / 127 题",
+      "format": "状态化 CRUD 任务（预设初始状态 + 程序化验证脚本）",
+      "cite": [
+        "arxiv-2509-24002@§2.2",
+        "tasks"
+      ]
+    },
+    {
+      "area": "Notion 文档协作任务",
+      "focus": "例：Change Color——进入 Toronto Guide 页面，把所有粉色元素改成其他颜色。",
+      "share": "28 / 127 题",
+      "format": "状态化 CRUD 任务（预设初始状态 + 程序化验证脚本）",
+      "cite": [
+        "arxiv-2509-24002@§2.2",
+        "tasks"
+      ]
+    },
+    {
+      "area": "Playwright 浏览器操作任务",
+      "focus": "例：NBA Statistics Analysis——注册体育分析账号、从论坛讨论中收集 NBA 球员数据、分析表现指标并汇总成统计报告。",
+      "share": "25 / 127 题",
+      "format": "状态化 CRUD 任务（预设初始状态 + 程序化验证脚本）",
+      "cite": [
+        "arxiv-2509-24002@§2.2",
+        "tasks"
+      ]
+    },
+    {
+      "area": "GitHub 仓库操作任务",
+      "focus": "例：Linting Ci Workflow——为所有 pull request 配置 ESLint 工作流做代码质量卡点。",
+      "share": "23 / 127 题",
+      "format": "状态化 CRUD 任务（预设初始状态 + 程序化验证脚本）",
+      "cite": [
+        "arxiv-2509-24002@§2.2",
+        "tasks"
+      ]
+    },
+    {
+      "area": "PostgreSQL 数据库任务",
+      "focus": "例：Transactional Inventory Transfer——创建带校验与审计日志的 PostgreSQL 函数，处理乐高套装之间的零件转移。",
+      "share": "21 / 127 题",
+      "format": "状态化 CRUD 任务（预设初始状态 + 程序化验证脚本）",
+      "cite": [
+        "arxiv-2509-24002@§2.2",
+        "tasks"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "不覆盖 100B 以下的小型开源模型——论文以基准难度为由明确不做这类评测。",
+      "cite": [
+        "arxiv-2509-24002@§3.1"
+      ]
+    },
+    {
+      "text": "不做 LLM-as-judge 式的开放问答或对话质量评判：论文 Table 1 把 MCPMark 的验证方式标为 Programmatic，每题都靠固定验证脚本判定终态。",
+      "cite": [
+        "arxiv-2509-24002@Table 1"
+      ]
+    },
+    {
+      "text": "官方 Verified 榜单不报告 pass@4 与 pass^4，只给单次运行（run-1）的 pass@1。",
+      "cite": [
+        "verified"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 127,
+    "splits": [
+      "standard（默认任务集，即 MCPMark Verified，127 题）",
+      "easy（轻量子集，每个 MCP 服务 10 题，共 50 题）"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "真实 MCP 服务上的镜像/隔离容器环境（Notion / GitHub / Filesystem / PostgreSQL / Playwright）",
+    "public_sample": true,
+    "totals": "127 道状态化 CRUD 任务、38 份预设初始状态，覆盖 5 个 MCP 服务（Filesystem 30 / Notion 28 / Playwright 25 / GitHub 23 / PostgreSQL 21）；题面平均 288.6 词，验证脚本平均 209.8 行；每道题平均需要 16.2 个执行轮次与 17.4 次工具调用。",
+    "cite": [
+      "arxiv-2509-24002@§1",
+      "arxiv-2509-24002@§2.2",
+      "repo@README",
+      "tasks"
+    ],
+    "construction": [
+      {
+        "k": "探索",
+        "text": "在给定初始环境状态下，人类专家与任务创建 Agent 共同探索环境，形成对环境的广度认知与深度上下文，作为后续出题的基础。",
+        "cite": [
+          "arxiv-2509-24002@§2.1"
+        ]
+      },
+      {
+        "k": "演化",
+        "text": "任务创建 Agent 提出新题面或改进旧题面，通过删减指令、加大信息检索难度、加长输入内容、要求更多交互步数等方式提升复杂度，人类专家保证题目仍然实用、可验证且足够难。",
+        "cite": [
+          "arxiv-2509-24002@§2.1"
+        ]
+      },
+      {
+        "k": "验证",
+        "text": "任务创建 Agent 起草程序化验证脚本，人类专家在任务执行 Agent 协助下完成任务，再运行并迭代打磨脚本直至与题面完全一致；专家还会调整最终环境状态，验证脚本能否同时识别成功与失败两种结局。",
+        "cite": [
+          "arxiv-2509-24002@§2.1"
+        ]
+      },
+      {
+        "k": "迭代",
+        "text": "重复演化与验证两步，逐步提高任务难度，同时保持自动可验证性与真实用户场景的真实感。",
+        "cite": [
+          "arxiv-2509-24002@§2.1"
+        ]
+      },
+      {
+        "k": "质控",
+        "text": "所有题目经过人类专家交叉评审和长达一个月的社区检查，以确保清晰、一致并与真实应用场景对齐；即便如此，每道题仍需 3–5 小时专家专注投入。",
+        "cite": [
+          "arxiv-2509-24002@§2.1"
+        ]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "每道题从一个预设初始状态出发，由内置编排框架 MCPMarkAgent（基于 LiteLLM 与 Model Context Protocol Python SDK）在标准化工具调用循环中执行模型；单次运行最多 100 轮、超时 3600 秒，验证结束后环境被重置回初始状态以消除副作用。论文口径下 pass@1 取 4 次独立运行的平均值并报告 mean ± std。",
+    "cite": [
+      "arxiv-2509-24002@§3.1",
+      "arxiv-2509-24002@§2.3",
+      "arxiv-2509-24002@§3.2"
+    ],
+    "variants": [
+      {
+        "text": "MCPMark Verified（2026-06-12 起为仓库默认任务集）：环境版本固定、标准验证脚本稳定，早期任务版本的结果已被官方标记为废弃且不可直接比较。",
+        "cite": [
+          "repo@README",
+          "pr264"
+        ]
+      },
+      {
+        "text": "官方 Verified 榜单只跑一次（run-1），不报告 pass@4 / pass^4，与论文的 4 次平均口径不可比。",
+        "cite": [
+          "verified"
+        ]
+      },
+      {
+        "text": "easy 子集：每个 MCP 服务 10 道轻量任务、共 50 道，定位冒烟测试与 CI，与 standard 127 题不可比。",
+        "cite": [
+          "repo@README"
+        ]
+      },
+      {
+        "text": "推理档位：gpt-5 从 low 到 medium 档 pass@1 由 46.85% 升到 52.56%，更换推理档位即更换口径。",
+        "cite": [
+          "arxiv-2509-24002@§4.1"
+        ]
+      },
+      {
+        "text": "单次运行取样差异：kimi-k2-7-code 的 Filesystem 分数取自其第二次记录运行（发布时标注为 run-1），其余服务取第一次运行。",
+        "cite": [
+          "verified"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "pass-at-1",
+      "name": "pass@1",
+      "direction": "越高越好",
+      "description": "单次运行内走通整条任务链路的成功率。论文口径为 4 次独立运行的平均值并给出标准差；官方 Verified 榜单只用第 1 次运行（run-1）。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2509-24002@§3.2",
+        "verified"
+      ]
+    },
+    {
+      "id": "pass-at-4",
+      "name": "pass@4",
+      "direction": "越高越好",
+      "description": "允许最多 4 次独立运行、至少一次成功即计成功，衡量重复尝试能覆盖多少困难用例。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2509-24002@§3.1"
+      ]
+    },
+    {
+      "id": "pass-pow-4",
+      "name": "pass^4",
+      "direction": "越高越好",
+      "description": "4 次独立运行全部成功才计成功，是最严格的口径，直接暴露模型运行的不可靠性。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2509-24002@§3.1"
+      ]
+    }
+  ],
+  "versions": [
+    {
+      "id": "v1.2.0",
+      "date": "2025-09-20",
+      "label": "仓库 CHANGELOG 中最早记录的版本：新增按模型的成本计算、聚合上报能力与 Notion 集成改进。",
+      "cite": [
+        "changelog@v1.2.0"
+      ]
+    },
+    {
+      "id": "arxiv-v1",
+      "date": "2025-09-28",
+      "label": "论文 arXiv v1 发布，确立 127 题 / 38 份初始状态 / 5 个 MCP 服务的规模与三指标口径。",
+      "cite": [
+        "arxiv-2509-24002@arXiv abs"
+      ]
+    },
+    {
+      "id": "verified",
+      "date": "2026-06-12",
+      "label": "MCPMark Verified：环境版本固定 + 标准验证脚本稳定，设为默认任务集，早期任务版本结果废弃。",
+      "cite": [
+        "pr264",
+        "repo@README"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "口径断层：Verified 任务集与早期版本不兼容",
+      "impact": "2026-06-12 之前跑出的分数无法与现在的 Verified 榜单直接比较，跨版本排名会失真。",
+      "severity": "高",
+      "response": "官方把早期任务版本标记为废弃，并要求新成绩以 MCPMark Verified 名义报告。",
+      "reader": "看到任何 MCPMark 分数，先问是哪个任务集、哪一版验证脚本。",
+      "cite": [
+        "repo@README",
+        "verified"
+      ]
+    },
+    {
+      "issue": "多次运行结果不一致",
+      "impact": "同一模型重复运行时分数波动明显，单次高分可能来自运气；论文用 pass^4 直接量化这一点。",
+      "severity": "高",
+      "response": "论文报告 mean ± std 并引入 pass^4；Verified 榜单改为单次 run-1 并在页面明确标注该口径。",
+      "reader": "比较模型时看标准差与 pass^4，不要只看点估计。",
+      "cite": [
+        "arxiv-2509-24002@§6",
+        "arxiv-2509-24002@§3.2"
+      ]
+    },
+    {
+      "issue": "隐式失败占错误的大多数",
+      "impact": "模型常常在没有任何报错的情况下给出错误结果，靠退出码或异常无法发现，错误难以自动归因。",
+      "severity": "中",
+      "response": "论文在 §4.2 单独分析隐式失败，但未给出自动检测方案。",
+      "reader": "通过率低不等于工具调用失败，关键看验证脚本判定的最终环境状态。",
+      "cite": [
+        "arxiv-2509-24002@§4.2"
+      ]
+    },
+    {
+      "issue": "构建管线难以规模化",
+      "impact": "每道题需要 3–5 小时专家投入，题库扩充速度受限，覆盖面增长慢。",
+      "severity": "中",
+      "response": "论文将其列为未来工作，未见官方扩容计划。",
+      "reader": "127 题的覆盖面有限，单个 MCP 服务只有 20–30 题。",
+      "cite": [
+        "arxiv-2509-24002@§6",
+        "arxiv-2509-24002@§2.1"
+      ]
+    },
+    {
+      "issue": "难度过陡，不利于小模型",
+      "impact": "100B 以下开源模型基本不在评测范围内，很难用小模型上的分数差距指导优化。",
+      "severity": "中",
+      "response": "仓库新增 50 道 easy 任务（每个 MCP 服务 10 道）供较小模型做冒烟测试与 CI。",
+      "reader": "小模型在 MCPMark 上的低分信息量有限，可先看 easy 子集。",
+      "cite": [
+        "arxiv-2509-24002@§6",
+        "repo@README"
+      ]
+    },
+    {
+      "issue": "长链路下历史不断累积",
+      "impact": "瓶颈不只是上下文窗口长度，而是 Agent 管理持续增长历史的能力，长任务更易在中后段失控。",
+      "severity": "中",
+      "response": "仓库后续加入 auto-compaction 支持，在评测中对长对话做摘要以避免上下文溢出。",
+      "reader": "轮数与令牌增长本身是压力的一部分，不是实现瑕疵。",
+      "cite": [
+        "arxiv-2509-24002@§6",
+        "repo@README"
+      ]
+    }
+  ],
+  "notes": "与本仓既有 mcp-mark 实体同指 MCPMark——本 id 由 Kimi K2.6 发布页行登记，合并留待数据卫生轮处理",
+  "official_sources": [
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2509.24002"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/eval-sys/mcpmark"
+    },
+    {
+      "kind": "leaderboard",
+      "url": "https://mcpmark.ai/leaderboard/verified"
+    }
+  ],
+  "related_benchmarks": [
+    "mcp-mark",
+    "toolathlon",
+    "bfcl",
+    "mcp-atlas"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "arxiv-2509-24002",
+        "kind": "paper",
+        "title": "MCPMark: A Benchmark for Stress-Testing Realistic and Comprehensive MCP Use（arXiv:2509.24002v1）",
+        "url": "https://arxiv.org/abs/2509.24002",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "site",
+        "kind": "site",
+        "title": "MCPMark 官网首页",
+        "url": "https://mcpmark.ai/",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "verified",
+        "kind": "leaderboard",
+        "title": "MCPMark Verified Leaderboard",
+        "url": "https://mcpmark.ai/leaderboard/verified",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "leaderboard",
+        "kind": "leaderboard",
+        "title": "MCPMark Legacy Leaderboard",
+        "url": "https://mcpmark.ai/leaderboard",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "tasks",
+        "kind": "dataset",
+        "title": "MCPMark 任务列表页",
+        "url": "https://mcpmark.ai/tasks",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "GitHub 仓库 eval-sys/mcpmark README",
+        "url": "https://github.com/eval-sys/mcpmark",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "changelog",
+        "kind": "repo",
+        "title": "mcpmark CHANGELOG.md",
+        "url": "https://raw.githubusercontent.com/eval-sys/mcpmark/main/CHANGELOG.md",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "pr264",
+        "kind": "announcement",
+        "title": "PR #264：Release: mcpmark verified — pinned versions + stabilized standard verifiers",
+        "url": "https://api.github.com/repos/eval-sys/mcpmark/pulls/264",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "EVAL SYS 发起，与 LobeHub · NUS TRAIL 合作",
+        "cite": [
+          "site"
+        ]
+      },
+      "first_release": {
+        "v": "2025-09-28（论文 arXiv v1 提交；仓库 CHANGELOG 最早条目 v1.2.0 为 2025-09-20）",
+        "cite": [
+          "arxiv-2509-24002@arXiv abs",
+          "changelog@v1.2.0"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "site",
+        "arxiv-2509-24002@Abstract"
+      ],
+      "interpretation": [
+        "arxiv-2509-24002@Abstract",
+        "arxiv-2509-24002@§3.2",
+        "arxiv-2509-24002@§3.1"
+      ]
+    },
+    "problem": {
+      "text": "既有 MCP 基准范围偏窄：任务多是浅层或偏读的交互，抓不住真实工作流的复杂度，难以探明模型在推理、规划、长上下文与工具使用上的边界。MCPMark 用 127 道带预设初始状态和程序化验证脚本的 CRUD 任务，把评测拉到真实 MCP 使用的压力场景。",
+      "cite": [
+        "arxiv-2509-24002@Abstract",
+        "arxiv-2509-24002@§1"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "论文中的最低分（gpt-4.1-nano）",
+        "value": "0.00%（pass@1，五个服务全部为 0）",
+        "note": "可作为噪声地板参考。",
+        "cite": [
+          "arxiv-2509-24002@Table 2"
+        ]
+      },
+      {
+        "label": "论文中最强开源模型",
+        "value": "24.80%（qwen3-coder-plus，pass@1）",
+        "note": "同期多个开源模型低于 10%。",
+        "cite": [
+          "arxiv-2509-24002@§3.2"
+        ]
+      },
+      {
+        "label": "论文发布时最好成绩",
+        "value": "52.56%（gpt-5-medium，pass@1）",
+        "note": "同期 pass^4 仅 33.86%；claude-sonnet-4 与 o3 低于 30% pass@1。",
+        "cite": [
+          "arxiv-2509-24002@Abstract"
+        ]
+      },
+      {
+        "label": "官方旧榜（Legacy，2025-12-15）最高",
+        "value": "57.5%（gpt-5-2-high，pass@1）",
+        "note": "同为 4 次平均口径，但模型代际已更新。",
+        "cite": [
+          "leaderboard"
+        ]
+      },
+      {
+        "label": "官方 Verified 榜当前最高",
+        "value": "96.06%（kimi-k3-max，run-1 单次）",
+        "note": "固定版本后的单次运行口径，与论文的 4 次平均不可直接比较。",
+        "cite": [
+          "verified"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 Verified 榜单的 96.06% 与论文里的 52.56% 直接比高低——前者是 2026 年固定版本后的单次 run-1，后者是论文口径下 4 次运行的平均，任务集与验证脚本都不同。",
+        "cite": [
+          "verified",
+          "arxiv-2509-24002@§3.2"
+        ]
+      },
+      {
+        "text": "看到 pass@1 只有 15%–30% 就断定模型退步——论文发布时主流闭源模型本就在这个区间，分数低是任务难度使然。",
+        "cite": [
+          "arxiv-2509-24002@§3.2"
+        ]
+      },
+      {
+        "text": "认为花的钱越多分越高——论文明确成本不是性能的代理，部分最贵的运行 pass@1 反而更低。",
+        "cite": [
+          "arxiv-2509-24002@§3.2"
+        ]
+      },
+      {
+        "text": "把 pass@1 当成「跑一次的成功率」——论文口径是 4 次独立运行的平均值，只有官方 Verified 榜单才是单次运行。",
+        "cite": [
+          "arxiv-2509-24002@§3.2"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "EVAL SYS 发起，与 LobeHub · NUS TRAIL 合作。",
+        "cite": [
+          "site"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "Zijian Wu、Xiangyan Liu、Xinyuan Zhang 等 15 位作者（arXiv abs 页署名）。",
+        "cite": [
+          "arxiv-2509-24002@arXiv abs"
+        ]
+      },
+      {
+        "k": "论文",
+        "v": "arXiv:2509.24002v1 [cs.CL]，2025-09-28 提交。",
+        "cite": [
+          "arxiv-2509-24002@arXiv abs"
+        ]
+      },
+      {
+        "k": "代码与题库",
+        "v": "GitHub eval-sys/mcpmark，Apache-2.0 许可；任务名称、说明与作者在 mcpmark.ai/tasks 公开浏览。",
+        "cite": [
+          "repo@README",
+          "tasks"
+        ]
+      },
+      {
+        "k": "榜单",
+        "v": "官网提供 Verified（默认）与 Legacy 两个榜单；Verified 榜更新至 2026-07-20，Legacy 榜更新至 2025-12-15。",
+        "cite": [
+          "verified",
+          "leaderboard"
+        ]
+      },
+      {
+        "k": "题目制作投入",
+        "v": "10 位背景各异的专家参与（含计算机博士生、前端设计师、全栈与 AI 基建工程师、AI 投资人），每道题约 3–5 小时专注投入，并经人类专家交叉评审与一个月社区检查。",
+        "cite": [
+          "arxiv-2509-24002@§2.1"
+        ]
+      },
+      {
+        "k": "平均交互规模",
+        "v": "每道题平均 16.2 个执行轮次、17.4 次工具调用；题面平均 288.6 词，验证脚本平均 209.8 行。",
+        "cite": [
+          "arxiv-2509-24002@Abstract",
+          "arxiv-2509-24002@§2.2"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-07-20",
+        "columns": [
+          "Rank",
+          "Model",
+          "Pass@1",
+          "Avg Time",
+          "Cost per run",
+          "Filesystem",
+          "Github",
+          "Notion",
+          "Playwright",
+          "Postgres"
+        ],
+        "rows": [
+          [
+            "1",
+            "MoonshotAI kimi-k3-max",
+            "96.06%",
+            "793.88s",
+            null,
+            "93.33%",
+            "95.65%",
+            "92.86%",
+            "100.00%",
+            "100.00%"
+          ],
+          [
+            "2",
+            "OpenAI gpt-5-5-xhigh",
+            "92.91%",
+            "582.08s",
+            null,
+            "86.67%",
+            "95.65%",
+            "89.29%",
+            "96.00%",
+            "100.00%"
+          ],
+          [
+            "3",
+            "OpenAI gpt-5-6-sol-max",
+            "92.91%",
+            "557.74s",
+            null,
+            "90.00%",
+            "95.65%",
+            "85.71%",
+            "100.00%",
+            "95.24%"
+          ],
+          [
+            "4",
+            "Claude claude-fable-5-max",
+            "86.61%",
+            "311.87s",
+            null,
+            "90.00%",
+            "82.61%",
+            "82.14%",
+            "92.00%",
+            "85.71%"
+          ],
+          [
+            "5",
+            "MoonshotAI kimi-k2-7-code",
+            "81.89%",
+            "403.89s",
+            null,
+            "76.67%",
+            "73.91%",
+            "85.71%",
+            "84.00%",
+            "90.48%"
+          ],
+          [
+            "6",
+            "Claude claude-opus-4-8-max",
+            "76.38%",
+            null,
+            null,
+            "86.67%",
+            "56.52%",
+            "78.57%",
+            "68.00%",
+            "90.48%"
+          ],
+          [
+            "7",
+            "MoonshotAI kimi-k2-6",
+            "72.83%",
+            null,
+            null,
+            "70.00%",
+            "60.87%",
+            "73.21%",
+            "76.00%",
+            "85.71%"
+          ],
+          [
+            "8",
+            "DeepSeek deepseek-v4-pro-max",
+            "71.65%",
+            "147.98s",
+            null,
+            "76.67%",
+            "47.83%",
+            "71.43%",
+            "72.00%",
+            "90.48%"
+          ]
+        ]
+      },
+      "cite": [
+        "verified"
+      ]
+    }
+  }
+}

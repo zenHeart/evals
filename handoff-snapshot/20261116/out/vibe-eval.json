@@ -1,0 +1,712 @@
+{
+  "id": "vibe-eval",
+  "name": "Vibe-Eval",
+  "full_name": "Vibe-Eval: A hard evaluation suite for measuring progress of multimodal language models",
+  "aliases": [
+    "VibeEval"
+  ],
+  "status": "active",
+  "categories": [
+    "multimodal"
+  ],
+  "summary": "Vibe-Eval 是 Reka 团队的 269 道开放式图文评测题（169 普通 + 100 高难），每题配人工写的标准答案，官方用 Reka Core 当纯文本裁判打 1–5 分；高难子集里有超过 50% 的题当时所有前沿模型都答不对。",
+  "interpretation": "分数越高说明模型在贴近日常的图文开放式任务上越接近参考答案。总分被 169 道普通题强烈主导，高难列更能拉开差距但题少方差大；裁判分是「与参考答案的吻合程度」而不是答对题数占比，几个百分点的差距不要当真。",
+  "measures": [
+    {
+      "area": "普通难度 · 日常图文问答",
+      "focus": "客观可判的视觉理解题：识别（名人、食物）、读屏（截图里的 App）、计数、简单读图推理；标注时不给难度或类别约束，题目分布自然涌现",
+      "share": "169 / 269 题（约 63%）",
+      "format": "单轮图文问答，参考答案可含推理步骤；示例：Who is this celebrity? / What food is in the picture and how many items are there?",
+      "cite": [
+        "paper@§2.1",
+        "paper@Table 1",
+        "dataset@数据集预览"
+      ]
+    },
+    {
+      "area": "高难 · 多步视觉推理与细节理解",
+      "focus": "专门构造到让 Reka Core 当时答错或只答对一部分的题，常需多步推理；示例：图片里藏字（GOOD VIBES ONLY）、攀岩线路表推理、有向图最短路径计算",
+      "share": "100 / 269 题（约 37%）",
+      "format": "单轮图文问答；参考答案含中间推理/演算步骤，裁判可给部分分",
+      "cite": [
+        "paper@§2.1",
+        "paper@Figure 1",
+        "paper@附录 A.1",
+        "dataset@数据集预览"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "纯文本能力（每道题都带图，不支持图片的模型无法参加评测）",
+      "cite": [
+        "paper@§2.1"
+      ]
+    },
+    {
+      "text": "多选题式的知识问答（作者明确对标 MMMU 的选择题形态，认为社区缺少多模态 chat 模型的开放式基准）",
+      "cite": [
+        "reka-news-vibe-eval"
+      ]
+    },
+    {
+      "text": "开放式、主观或答案有争议的生成（出题规则要求答案客观可判，且最好能不看图、只依据文字和标准答案判定）",
+      "cite": [
+        "paper@Table 1",
+        "paper@§2.2"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 269,
+    "splits": [
+      "test（单 split，269 行 = 169 difficulty-normal + 100 difficulty-hard）"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "团队自撰（Reka 成员分头撰写，图片自摄或使用宽松许可素材）",
+    "public_sample": true,
+    "totals": "269 题全部公开：GitHub Releases 提供含图 JSONL（data/vibe-eval.v1.jsonl），Hugging Face 同步提供 parquet（269 行，Apache-2.0）",
+    "cite": [
+      "paper@§2.1",
+      "paper@§2.2",
+      "repo@README",
+      "dataset"
+    ],
+    "construction": [
+      {
+        "k": "出题人",
+        "text": "全部提示词与标准答案由 Reka 团队成员自己撰写，每人贡献数量大致相等，成员分布在四大洲；不是社区众包。",
+        "cite": [
+          "paper@§2.2"
+        ]
+      },
+      {
+        "k": "出题规则",
+        "text": "普通题要求客观可判、图片自有或无许可限制、单轮、专家一分钟内能做完、参考答案尽量含推理步骤；高难题在此基础上要求专门构造到让 Reka Core 当时答错或部分答错。",
+        "cite": [
+          "paper@Table 1"
+        ]
+      },
+      {
+        "k": "质检",
+        "text": "收集完成后做两轮独立评审；只保留「答案有效性可以只依据文字与标准答案判定」的题，这样纯文本模型也能当裁判。",
+        "cite": [
+          "paper@§2.2"
+        ]
+      },
+      {
+        "k": "难度校准",
+        "text": "早期题目偏简单（Reka Core 与 GPT-4V 大多能解），团队改为按「Reka Core 当时解不了」挖硬负例，并说明这会人为压低 Core 的高难分。",
+        "cite": [
+          "paper@§2.2 Author's Note"
+        ]
+      },
+      {
+        "k": "反污染",
+        "text": "绝大多数图片是自己拍的照片或截图，作者称这把发布时的测试集泄漏可能性压到接近零；同时刻意不采用任何任务分类法，避免约束题目分布。",
+        "cite": [
+          "paper@§2.2"
+        ]
+      },
+      {
+        "k": "发布形态",
+        "text": "评测代码与数据随 GitHub 仓库发布，数据集文件为 data/vibe-eval.v1.jsonl，也可从 Releases 页下载；Hugging Face 提供同一数据的 parquet 版本。",
+        "cite": [
+          "repo@README",
+          "dataset"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "vibe-eval-score",
+      "name": "Vibe-Eval 得分（裁判分）",
+      "direction": "越高越好",
+      "description": "Reka Core 文本裁判按 1–5 整数给分：1 表示完全错误，5 表示完全解决且无误，可对含部分推理步骤的回答给部分分；论文与仓库排行榜把得分折算成百分数",
+      "range": [
+        1,
+        5
+      ],
+      "unit": "分（1–5 整数，对外报成 %）",
+      "cite": [
+        "paper@§2.1",
+        "paper@§2.3"
+      ]
+    },
+    {
+      "id": "human-preference-elo",
+      "name": "人工偏好 ELO",
+      "direction": "越高越好",
+      "description": "约 2 万次人工两两偏好（含平局）按 Bradley-Terry 模型拟合出的 ELO 分，只统计偏好强度超过最弱档的比较；论文表中 13 个模型从 566（Fuyu-8b）到 1290（GPT-4V），无绝对零点，只能横向比",
+      "cite": [
+        "paper@§2.4",
+        "paper@Table 3"
+      ]
+    }
+  ],
+  "default_protocol": {
+    "raw": "被评模型以 chat 形式对单轮图文提示零样本作答（不给示例，温度 0.0）；裁判用 reka-core-20240415，只喂入文字提示、模型生成和标准答案，按 1–5 整数打分，裁判连跑三次（温度 0.4）取均值。",
+    "cite": [
+      "paper@§2.3",
+      "paper@§3.1"
+    ],
+    "variants": [
+      {
+        "text": "裁判分 vs 人工偏好 ELO：论文同时给出两种口径，前者是轻量自动分，后者来自约 2 万次人工两两偏好；两者排名大致一致，但不能混排。",
+        "cite": [
+          "paper@§2.4",
+          "paper@§3.3"
+        ]
+      },
+      {
+        "text": "全集 / 普通 / 高难三档：总分被普通子集强烈主导，要看模型区分度必须同时看高难列。",
+        "cite": [
+          "paper@§3.2"
+        ]
+      },
+      {
+        "text": "论文表 vs 仓库排行榜：论文表是 2024-05 时点的 13 个模型，仓库排行榜额外收录了 Gemini Flash 2.0、Claude 3.5 Sonnet、GPT-4o、GPT-4o-mini、Grok Vision Beta、Pixtral Large 等后来的模型，页面未标注更新日期，两处数字不能混排。",
+        "cite": [
+          "repo@README"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "v1-announce",
+      "date": "2024-05-01",
+      "label": "Reka 官方博客宣布 Vibe-Eval（269 题，团队自撰）",
+      "cite": [
+        "reka-news-vibe-eval"
+      ]
+    },
+    {
+      "id": "v1-paper",
+      "date": "2024-05-03",
+      "label": "arXiv v1 论文提交，同时发布评测代码与数据（github.com/reka-ai/reka-vibe-eval）；数据集文件版本为 v1（vibe-eval.v1.jsonl），本站核验时未发现更新的数据版本",
+      "cite": [
+        "paper",
+        "repo@README"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "高难子集题少、方差大",
+      "impact": "高难子集只有 100 题，人工评分方差也明显高于普通题（博客与论文都记录了这一点），小样本方差使该基准「不适合测模型间的小差距或小幅改进」。",
+      "severity": "高",
+      "response": "论文建议把高难集当作能力探针而非精细排序工具；未见官方提高题量或给出置信区间的修订。",
+      "reader": "高难列上 2–3 个百分点的差距不要当真；看排序趋势比看点值更可靠。",
+      "cite": [
+        "paper@§3.4",
+        "reka-news-vibe-eval"
+      ]
+    },
+    {
+      "issue": "裁判本身有偏",
+      "impact": "Reka Core 相对人类偏宽松（高难题上尤其明显，倾向于打高分），且给分区间被压缩，强模型与弱模型的绝对分差不大。",
+      "severity": "高",
+      "response": "论文用约 2 万次人工两两偏好做交叉验证，报告自动分与人类偏好的一致性（普通 94.2% / 高难 97.2%），并保留人工 ELO 作为第二口径。",
+      "reader": "把裁判分当作相对排序信号，不要把它当成绝对能力测量；重要对比看人工 ELO 一栏。",
+      "cite": [
+        "paper@§3.4",
+        "paper@Table 5"
+      ]
+    },
+    {
+      "issue": "人工评估口径不稳",
+      "impact": "论文另组的专家评审对所有模型都近乎随机打分，只有 Gemini Pro 1.5 与 GPT-4V 明显高出；说明「人工分」这一口径本身随评审组变化很大。",
+      "severity": "中",
+      "response": "论文同时报告普通评审池与专家评审两组结果，并说明二者结论不同。",
+      "reader": "看到引用 Vibe-Eval 人工分的材料，先分清是普通评审池还是专家评审组。",
+      "cite": [
+        "paper@§3.4"
+      ]
+    },
+    {
+      "issue": "筛选偏差压低了 Reka 自家模型",
+      "impact": "高难题是按「Reka Core 当时解不了」挖出来的，论文与仓库都明确说明 Reka 模型的高难分会因此被人为压低（Reka Core 高难 38.2%，低于同系的 Reka Flash 39.2%）。",
+      "severity": "中",
+      "response": "论文在表 2 与仓库排行榜用 † 标注并附注说明；未见针对该偏差的分数修正。",
+      "reader": "比较 Reka 系与其他厂商模型时，把 † 标记的高难分当作有已知向下偏差的读数。",
+      "cite": [
+        "paper@§2.1",
+        "paper@Table 2",
+        "repo@README"
+      ]
+    },
+    {
+      "issue": "时效性与饱和",
+      "impact": "高难题只在一个时间点成立，论文明确说前沿模型进步后这些题终将饱和，需要不断补更难的题；本站核验时数据文件仍为 v1，仓库排行榜收录的新模型也停留在 2024 年发布的型号。",
+      "severity": "中",
+      "response": "论文承诺随前沿推进持续扩充更难的提示；仓库排行榜由官方继续追加新模型结果。",
+      "reader": "把它当成 2024 年的快照式基准；跨年比较模型时，确认所用题目版本与分数出自论文表还是仓库榜。",
+      "cite": [
+        "paper@§3.4",
+        "repo@README"
+      ]
+    },
+    {
+      "issue": "公开数据带来的污染风险",
+      "impact": "题目、图片与标准答案全部公开可下载，可能被并入训练数据；Hugging Face 数据集页本身就列出了在其上微调过的模型（hiiamsid/llama-3.2-vision-11B-VibeEval）。",
+      "severity": "中",
+      "response": "作者以「图片自摄 + 团队新造」把发布时的泄漏可能性压到接近零，但发布之后下载者自行微调不在控制范围内。",
+      "reader": "对发布后出现、且声明用过公开多模态数据的模型，分数要打折扣看。",
+      "cite": [
+        "paper@§2.2",
+        "dataset"
+      ]
+    },
+    {
+      "issue": "语言口径不一致",
+      "impact": "论文说提示词与标准答案为英文（可能夹带其他语言的内容），Hugging Face 数据卡的语言标注是 English / Polish / Chinese +1（language: en / pl / zh / ja），两处不一致。",
+      "severity": "低",
+      "response": "本站以论文口径为准，数据卡标注差异如实记录，未见官方澄清。",
+      "reader": "需要精确语言覆盖的结论不要只引数据卡标签。",
+      "cite": [
+        "paper@§2.1",
+        "dataset"
+      ]
+    }
+  ],
+  "notes": "Google Gemini 2.x/3 系列发布页多处引用；本站证据账本以 figure 形式记录其成绩",
+  "official_sources": [
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2405.02287"
+    },
+    {
+      "kind": "site",
+      "url": "https://reka.ai/news/vibe-eval"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/reka-ai/reka-vibe-eval"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/RekaAI/VibeEval"
+    },
+    {
+      "kind": "blog",
+      "url": "https://blog.google/technology/google-deepmind/google-gemini-ai-update-december-2024/"
+    },
+    {
+      "kind": "blog",
+      "url": "https://blog.google/products-and-platforms/products/gemini/gemini-2-5-model-family-expands/"
+    },
+    {
+      "kind": "blog",
+      "url": "https://blog.google/technology/google-deepmind/gemini-model-thinking-updates-march-2025"
+    }
+  ],
+  "related_benchmarks": [
+    "mmmu",
+    "mmvet"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-15",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-15",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "Vibe-Eval: A hard evaluation suite for measuring progress of multimodal language models（arXiv:2405.02287v1，2024-05-03）",
+        "url": "https://arxiv.org/abs/2405.02287",
+        "accessed": "2026-11-15"
+      },
+      {
+        "id": "reka-news-vibe-eval",
+        "kind": "site",
+        "title": "Reka 官方博客：Vibe-Eval（2024-05-01）",
+        "url": "https://reka.ai/news/vibe-eval",
+        "accessed": "2026-11-15"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "reka-ai/reka-vibe-eval（评测代码、数据文件与官方排行榜）",
+        "url": "https://github.com/reka-ai/reka-vibe-eval",
+        "accessed": "2026-11-15"
+      },
+      {
+        "id": "dataset",
+        "kind": "dataset",
+        "title": "RekaAI/VibeEval（Hugging Face，Apache-2.0，269 行）",
+        "url": "https://huggingface.co/datasets/RekaAI/VibeEval",
+        "accessed": "2026-11-15"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Reka AI（论文署名机构 Reka，共同一作 Piotr Padlewski、Max Bain、Matthew Henderson、Zhongkai Zhu）",
+        "cite": [
+          "paper@作者署名",
+          "dataset"
+        ]
+      },
+      "first_release": {
+        "v": "2024-05-01（Reka 博客宣布）；论文 arXiv v1 于 2024-05-03 提交，代码与数据同步发布",
+        "cite": [
+          "reka-news-vibe-eval",
+          "paper"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "paper@Abstract",
+        "paper@§2.1",
+        "paper@§2.2"
+      ],
+      "interpretation": [
+        "paper@§3.2",
+        "paper@§3.4",
+        "paper@§2.3"
+      ]
+    },
+    "problem": {
+      "text": "MMMU 等多模态基准本质上是多选题，社区还没有针对多模态 chat 模型的开放式基准；公开竞技场又难控制提示质量与难度、跨时间不可比。Vibe-Eval 想做一个小规模、可控、题目极难的开放式图文评测。",
+      "cite": [
+        "reka-news-vibe-eval",
+        "paper@§4"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机 / 瞎猜基线",
+        "value": "论文未给出",
+        "note": "论文只报告 13 个模型的得分，没有给 1–5 分制下的随机基线，本站也不推算。",
+        "cite": [
+          "paper@Table 2"
+        ]
+      },
+      {
+        "label": "论文发布时最差（全集）",
+        "value": "30.8%",
+        "note": "Fuyu-8b（Table 2：all 30.80 / hard 23.40 / normal 35.20）。",
+        "cite": [
+          "paper@Table 2"
+        ]
+      },
+      {
+        "label": "论文发布时最好（全集）",
+        "value": "60.4%",
+        "note": "Gemini Pro 1.5（Table 2：all 60.40 / hard 53.00 / normal 64.80），同期 GPT-4V 为 57.9%。",
+        "cite": [
+          "paper@Table 2"
+        ]
+      },
+      {
+        "label": "论文高难子集最高",
+        "value": "53.0%",
+        "note": "同为 Gemini Pro 1.5；高难列整体方差更大，这一列比全集更能拉开差距。",
+        "cite": [
+          "paper@Table 2",
+          "paper@§3.4"
+        ]
+      },
+      {
+        "label": "论文人工偏好 ELO 最高",
+        "value": "1290",
+        "note": "GPT-4V（Table 3：all 1290 / hard 1224 / normal 1277）；ELO 无绝对零点，只能横向比。",
+        "cite": [
+          "paper@Table 3"
+        ]
+      },
+      {
+        "label": "官方仓库排行榜最高",
+        "value": "67.1%",
+        "note": "Gemini Flash 2.0（all 67.1 / hard 52.3 / normal 75.9）；排行榜收录论文 13 个模型之外的新模型，页面未标注更新日期。",
+        "cite": [
+          "repo@README"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把总分当成高难能力：总分被 169 道普通题强烈主导，论文明确提醒这一点。",
+        "cite": [
+          "paper@§3.2"
+        ]
+      },
+      {
+        "text": "看到 Reka 系模型高难分低就判定它们更弱：高难题是按「Reka Core 解不了」挖出来的，论文表 2 与仓库排行榜都用 † 注明这会人为压低 Reka 模型的高难分。",
+        "cite": [
+          "paper@§2.1",
+          "repo@README"
+        ]
+      },
+      {
+        "text": "把大模型在高难题上输给 7B/8B 小模型当成噪声：论文专门记录了这种 inverse scaling 现象——Core、Claude Opus、Gemini Pro 1.5、GPT-4V 都解不了的题，Reka Edge（7B）与 Idefics-2（8B）反而解出。",
+        "cite": [
+          "paper@§2.2 Author's Note",
+          "reka-news-vibe-eval"
+        ]
+      },
+      {
+        "text": "把 1–5 裁判分当成准确率：裁判可给部分分，分数衡量的是「与参考答案的吻合程度」，不是答对题数占比。",
+        "cite": [
+          "paper@§2.3"
+        ]
+      },
+      {
+        "text": "把论文表和仓库排行榜的数字混排：前者是 2024-05 的 13 个模型，后者还收录了后来的模型且页面未标更新日期。",
+        "cite": [
+          "repo@README"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "Reka AI（论文署名机构 Reka）",
+        "cite": [
+          "paper@作者署名",
+          "dataset"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "Piotr Padlewski、Max Bain、Matthew Henderson、Zhongkai Zhu（共同一作）与 Nishant Relan、Hai Pham、Donovan Ong 等 20 人；末位作者含 Mikel Artetxe、Yi Tay",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      {
+        "k": "评测裁判",
+        "v": "Reka Core（reka-core-20240415）作为纯文本裁判；官方为该用途免费开放 Reka Core API",
+        "cite": [
+          "paper@§3.1",
+          "reka-news-vibe-eval"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "GitHub 仓库提供评测代码、生成脚本与排行榜（Apache-2.0）；Hugging Face 提供 parquet 版数据集（269 行）",
+        "cite": [
+          "repo@README",
+          "dataset"
+        ]
+      },
+      {
+        "k": "与同类基准的关系",
+        "v": "作者认为它补的是 MMMU 这类多选题基准留下的空位，也与公开竞技场互补：小规模、可控、题目极难，但代价是题量小、跨时间不可比",
+        "cite": [
+          "reka-news-vibe-eval",
+          "paper@§4"
+        ]
+      },
+      {
+        "k": "后续传播",
+        "v": "Google 在 Gemini 2.0 / 2.5 系列更新中引用 Vibe-Eval 成绩（如 Gemini 2.0 Flash Exp 56.3%、Gemini 2.5 Pro Exp 69.4%）；本站证据账本以 figure 形式收录这些发布成绩，口径见附录 C",
+        "cite": [
+          "dataset"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-15",
+        "columns": [
+          "来源",
+          "模型",
+          "all",
+          "hard",
+          "normal"
+        ],
+        "rows": [
+          [
+            "论文 Table 2",
+            "Gemini Pro 1.5",
+            "60.40",
+            "53.00",
+            "64.80"
+          ],
+          [
+            "论文 Table 2",
+            "GPT-4V",
+            "57.90",
+            "46.00",
+            "64.90"
+          ],
+          [
+            "论文 Table 2",
+            "Reka Core †",
+            "53.70",
+            "38.20",
+            "62.80"
+          ],
+          [
+            "论文 Table 2",
+            "Claude Opus",
+            "52.80",
+            "41.80",
+            "59.20"
+          ],
+          [
+            "论文 Table 2",
+            "Reka Flash",
+            "52.20",
+            "39.20",
+            "59.90"
+          ],
+          [
+            "论文 Table 2",
+            "Claude Sonnet",
+            "52.10",
+            "39.70",
+            "59.50"
+          ],
+          [
+            "论文 Table 2",
+            "Claude Haiku",
+            "49.80",
+            "38.50",
+            "56.40"
+          ],
+          [
+            "论文 Table 2",
+            "Llava-1.6-34b",
+            "48.60",
+            "39.90",
+            "53.70"
+          ],
+          [
+            "论文 Table 2",
+            "Reka Edge",
+            "45.40",
+            "32.20",
+            "53.10"
+          ],
+          [
+            "论文 Table 2",
+            "Llava-1.6-7b",
+            "43.70",
+            "35.30",
+            "48.60"
+          ],
+          [
+            "论文 Table 2",
+            "Idefics-2-8b",
+            "40.00",
+            "32.20",
+            "44.60"
+          ],
+          [
+            "论文 Table 2",
+            "Idefics-1-80b",
+            "36.00",
+            "32.10",
+            "38.30"
+          ],
+          [
+            "论文 Table 2",
+            "Fuyu-8b",
+            "30.80",
+            "23.40",
+            "35.20"
+          ],
+          [
+            "仓库排行榜",
+            "Gemini Flash 2.0",
+            "67.1",
+            "52.3",
+            "75.9"
+          ],
+          [
+            "仓库排行榜",
+            "Claude 3.5 Sonnet",
+            "66.0",
+            "54.0",
+            "73.1"
+          ],
+          [
+            "仓库排行榜",
+            "GPT-4o",
+            "64.7",
+            "52.3",
+            "72.0"
+          ],
+          [
+            "仓库排行榜",
+            "Gemini-1.5 Pro",
+            "63.8",
+            "52.3",
+            "70.6"
+          ],
+          [
+            "仓库排行榜",
+            "GPT-4o-mini",
+            "56.7",
+            "44.7",
+            "63.8"
+          ],
+          [
+            "仓库排行榜",
+            "Reka Flash †",
+            "56.0",
+            "39.3",
+            "65.8"
+          ],
+          [
+            "仓库排行榜",
+            "Pixtral Large",
+            "55.1",
+            "43.0",
+            "62.3"
+          ],
+          [
+            "仓库排行榜",
+            "Grok Vision Beta",
+            "54.2",
+            "37.1",
+            "64.2"
+          ],
+          [
+            "仓库排行榜",
+            "Gemini 1.5 Flash 8b",
+            "54.1",
+            "44.8",
+            "59.6"
+          ],
+          [
+            "仓库排行榜",
+            "Claude Opus",
+            "52.8",
+            "41.8",
+            "59.2"
+          ],
+          [
+            "仓库排行榜",
+            "Pixtral 12b",
+            "52.5",
+            "39.3",
+            "60.4"
+          ],
+          [
+            "仓库排行榜",
+            "Claude Haiku",
+            "48.5",
+            "31.6",
+            "58.2"
+          ]
+        ]
+      },
+      "cite": [
+        "paper@Table 2",
+        "repo@README"
+      ]
+    }
+  }
+}

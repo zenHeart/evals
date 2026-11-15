@@ -1,0 +1,711 @@
+{
+  "id": "ainstein-swe-bench",
+  "name": "AInstein-SWE-Bench",
+  "full_name": "AInsteinBench: Benchmarking Coding Agents on Scientific Repositories",
+  "aliases": [],
+  "status": null,
+  "categories": [
+    "coding"
+  ],
+  "summary": "字节跳动 Seed 与普林斯顿大学联合发布的科研代码智能体编程评测：让编程智能体在 PySCF、Qiskit、Einstein Toolkit、AMReX、OpenMM、RDKit 六个真实科研仓库里补全被删掉的功能代码，或按真实 PR 修 bug，由仓库自带测试判定是否算解决。",
+  "interpretation": "分数是「智能体交出的补丁/代码让该题测试全部通过的比例」（%Resolved），越高代表越能在真实科研代码库里干活。100% 意味着 244 题全部解决；论文报告的最好成绩是 Claude 4.5 Opus 的 44.0%，同期 GPT-4o 只有 7.0%，差距主要来自科学正确性而非单纯写代码。它衡量的是「懂代码也懂科学」的能力，与通用 SWE-Bench（Python 通用软件仓库为主）互补，两者分数不能互换比较。",
+  "measures": [
+    {
+      "area": "题型：功能实现（合成题）",
+      "focus": "把科研库里某个计算模块或功能删掉、遮住（典型是对 Einstein Toolkit 的 Cactus Thorn 做消融），只给文档、接口规范和剩余代码，让智能体重新实现缺失部分；对错由数值测试判定。",
+      "share": "未披露（论文未给两类题数）",
+      "format": "删除源码后的单文件补全，ET 类为 C/C++/Fortran",
+      "cite": [
+        "paper@§3.2",
+        "paper@§3.3",
+        "repo@README"
+      ]
+    },
+    {
+      "area": "题型：缺陷修复（仓库抓取题）",
+      "focus": "取自 GitHub 上真实且已合入主分支的 PR：给出 issue 描述、暴露失败的测试补丁和「修复前」代码，让智能体交出能通过全部测试的补丁；论文称这类任务里大多数是缺陷修复，且 bug 通常横跨多个文件。",
+      "share": "未披露（论文称多数仓库抓取题属此类）",
+      "format": "issue + 测试补丁 + 代码补丁（Multi-SWE-bench 类）",
+      "cite": [
+        "paper@§3.2",
+        "paper@§3.3"
+      ]
+    },
+    {
+      "area": "数值相对论（NR）",
+      "focus": "Einstein Toolkit + AMReX：在 Cactus 框架里补全时空度规、源项、视界寻找等 Fortran/C++ 模块；AMReX 侧偏高性能 AMR 网格框架的缺陷修复。论文说 Einstein Toolkit 因仓库内工具与测试基建充分而解决率偏高，AMReX 则因工程难度大而偏低。",
+      "share": "6 个仓库中占 2 个（Einstein Toolkit + AMReX）",
+      "format": "ET 类加权计分；AMReX 类按 PR 修 bug",
+      "cite": [
+        "paper@Table 2 注",
+        "paper@§4.2"
+      ]
+    },
+    {
+      "area": "量子信息（QI）",
+      "focus": "Qiskit：量子线路构造、算法实现与硬件后端接口；论文案例 C.2 要求理解 Solovay–Kitaev 算法在 Qiskit 里作用在 SO(3) 而非 SU(2)，从而必须处理全局相位歧义。",
+      "share": "6 个仓库中占 1 个（Qiskit）",
+      "format": "按 PR 修 bug / 实现功能，二值计分",
+      "cite": [
+        "paper@Table 2 注",
+        "paper@§5.1"
+      ]
+    },
+    {
+      "area": "分子动力学（MD）",
+      "focus": "OpenMM：力场分子动力学内核与接口缺陷；论文案例 C.1 要求补上 PME 自能项，还得扩展测试基础设施来区分真实的物理不变性与残余数值误差。",
+      "share": "6 个仓库中占 1 个（OpenMM）",
+      "format": "按 PR 修 bug，二值计分",
+      "cite": [
+        "paper@Table 2 注",
+        "paper@§5.1"
+      ]
+    },
+    {
+      "area": "量子化学（QC）",
+      "focus": "PySCF：高精度电子结构求解器的正确性与收敛性；论文案例涉及 ROHF 场景下 DIIS 的重设计，让原本不收敛的三重态氧计算恢复收敛。",
+      "share": "6 个仓库中占 1 个（PySCF）",
+      "format": "按 PR 修 bug，二值计分",
+      "cite": [
+        "paper@Table 2 注"
+      ]
+    },
+    {
+      "area": "化学信息学（CI）",
+      "focus": "RDKit：分子性质预测与指纹算法；论文明确指出这一类解决率最低，原因是任务大量依赖对分子三维结构的真正空间推理，而这是当前模型的短板。",
+      "share": "6 个仓库中占 1 个（RDKit）",
+      "format": "按 PR 修 bug，二值计分",
+      "cite": [
+        "paper@Table 2 注",
+        "paper@§4.2"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "纯概念性科学知识问答（论文的定位就是补上这类基准的空缺，不重复它们）",
+      "cite": [
+        "paper@Abstract",
+        "paper@§1"
+      ]
+    },
+    {
+      "text": "通用软件工程能力：题库全部来自科研仓库，覆盖不到前端、API 设计、通用业务系统这类主流软件范式",
+      "cite": [
+        "paper@§1"
+      ]
+    },
+    {
+      "text": "重计算科研工作流：需要长时仿真、大规模 MPI、GPU 内核或与外部系统通信的改动被明确排除在评测之外",
+      "cite": [
+        "paper@§5.2"
+      ]
+    },
+    {
+      "text": "科研流程里的非编码环节（读文献、写论文、数据分析、实验设计）：本评测只覆盖改代码、跑测试这一段",
+      "cite": [
+        "paper@§5.3"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 244,
+    "splits": [
+      "不划分训练/测试：244 题整体即评测集（论文未报告留存集或私有测试集）"
+    ],
+    "languages": [
+      "Python",
+      "C",
+      "C++",
+      "Fortran"
+    ],
+    "source_type": "真实科研仓库的已合并 PR（仓库抓取）+ 对仓库功能做消融后合成的补全题",
+    "public_sample": false,
+    "totals": "共 244 题，来自 6 个科研仓库（PySCF / Qiskit / Einstein Toolkit / AMReX / OpenMM / RDKit），归入 5 个科学域：数值相对论、量子信息、分子动力学、量子化学、化学信息学。两种题型：仓库抓取题（按 PR 修 bug）与合成题（删掉功能代码后重新实现）。各域题量论文未给。",
+    "cite": [
+      "paper@§3.5",
+      "paper@Table 2 注"
+    ],
+    "construction": [
+      {
+        "k": "两条出题流水线",
+        "text": "合成题：把代码库某功能（如 Einstein Toolkit 的 Thorn）删掉或遮住，基于文档、接口规范与剩余代码构造任务提示。仓库抓取题：题目来自 GitHub 上的 PR 及其关联 issue。",
+        "cite": [
+          "paper@§3.3",
+          "curation@Data Curation"
+        ]
+      },
+      {
+        "k": "PR 三条准入",
+        "text": "只保留同时满足三条的 PR：修的是明确的科学或数值 bug（排除文档、重构、大功能新增）；带能暴露失败并验证修复的测试更新；已合入主分支。之后沿用 SWE-bench / Multi-SWE-bench 的做法做 fail-to-pass 过滤，确认每题在重建环境里能从失败转为通过。",
+        "cite": [
+          "paper@§3.3"
+        ]
+      },
+      {
+        "k": "环境重建",
+        "text": "为每个 PR 重建一个贴近当时依赖栈的最小、隔离 Docker 容器，装好所需库、配好构建路径，保证跨机器可复现，并避免不同仓库或依赖版本互相干扰。",
+        "cite": [
+          "paper@§3.3"
+        ]
+      },
+      {
+        "k": "两道人工关",
+        "text": "领域专家做最终把关：先判断底层改动是否有科学意义、issue 描述是否足以让智能体只靠仓库内上下文推断失败模式；再审计测试补丁，处理两类失败——覆盖不足（放过伪修复）就补回归用例，过度覆盖（规定具体实现、拒绝合理替代）就删掉多余断言。",
+        "cite": [
+          "paper@§3.4"
+        ]
+      },
+      {
+        "k": "难度标注",
+        "text": "专家按科学深度与工程复杂度给经验性难度档（easy / medium / hard）并附文字反馈，可交叉验证；论文最终把分数桶成 easy [1, 2.33]、medium (2.33, 3.66]、hard (3.66, 5]。",
+        "cite": [
+          "paper@§3.4",
+          "paper@§4.2"
+        ]
+      },
+      {
+        "k": "公开范围",
+        "text": "公开仓库提供统一评测器、参考答案与 Docker 镜像清单，data/questions 目录里只有 et_converted.jsonl 与 msb_converted.jsonl 两个问题文件（README 称完整示例见这两个文件）；论文报告的 244 题并未随仓库提供，Multi-SWE-bench 类的 Docker 镜像还需向作者申请。",
+        "cite": [
+          "repo@README",
+          "questions@目录"
+        ]
+      },
+      {
+        "k": "候选池到 244 题的收缩",
+        "text": "仅 Einstein Toolkit 一条流水线跑一次就能定义 3k+ 道题，但作者说明并非全部可测，其中真正有物理意义的更少；最终 benchmark 只收 244 题。",
+        "cite": [
+          "curation@Data Curation"
+        ]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "统一使用论文自带的 CodeAct Agent：为每个实例开一个独立的 Docker 容器（含该 PR 对应的仓库快照与依赖），智能体通过受限命令行查看文件、修改代码、安装包、运行测试，按「先收集信息（搜代码、看测试失败）→ 提出具体修改 → 跑复现脚本 → 分析失败 → 再改」的 plan–act 循环迭代。判分两类口径：Einstein Toolkit 类按 build_points 40 / test_run_points 10 / test_accuracy_points 50 加权，数值容差 rtol 1e-6、atol 1e-12；Multi-SWE-bench 类为二值判定，通过全部测试给 resolve_points 100。答案形式也不同：ET 类交一个 C/C++/Fortran 源文件，MSB 类交一个补丁文件。",
+    "cite": [
+      "paper@§4.1",
+      "repo@Question Format",
+      "repo@README"
+    ],
+    "variants": [
+      {
+        "text": "题型口径不能混：ET 类是「删掉源码后补全单文件」的加权分，MSB 类是「按 PR 修 bug」的二值分，两类分数不能相加或直接平均。",
+        "cite": [
+          "repo@README",
+          "repo@Question Format"
+        ]
+      },
+      {
+        "text": "难度分层口径：论文按 easy [1, 2.33] / medium (2.33, 3.66] / hard (3.66, 5] 分桶，难度由领域专家人工判定；同一模型在困难档与简单档的解决率差距很大（如 Claude 4.5 Opus 30.2% vs 59.3%）。",
+        "cite": [
+          "paper@§4.2",
+          "paper@Table 2"
+        ]
+      },
+      {
+        "text": "环境成本：评测要拉预构建 Docker 镜像（README 提示准备 50GB+ 可用存储），MSB 类镜像需向作者申请，第三方完整复现需要作者配合。",
+        "cite": [
+          "repo@README"
+        ]
+      },
+      {
+        "text": "模型清单里有 Grok-4，但论文 Table 2 未给出它的任何成绩，因此无法参与排名。",
+        "cite": [
+          "paper@§4.1",
+          "paper@Table 2"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "resolved-rate",
+      "name": "解决率 %Resolved",
+      "direction": "越高越好",
+      "description": "智能体交出的补丁/代码让该题测试全部通过的比例，是论文的主指标；论文按整体、难度档、科学域分别报告",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§4.1",
+        "paper@Table 2"
+      ]
+    },
+    {
+      "id": "localization",
+      "name": "问题定位率",
+      "direction": "越高越好",
+      "description": "与「是否正确修复」分开统计：轨迹中是否触达该题必需的文件（编辑、查看或删除），论文用它判断瓶颈是否已从「找位置」转向「写对逻辑」",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§4.3"
+      ]
+    },
+    {
+      "id": "efficiency",
+      "name": "迭代效率",
+      "direction": "越低越好（用更少轮次解决）",
+      "description": "达到终态（成功或失败）所需的迭代轮数，论文用累计成功/失败轨迹随步数的曲线报告",
+      "range": [],
+      "unit": "轮",
+      "cite": [
+        "paper@§4.3"
+      ]
+    }
+  ],
+  "versions": [
+    {
+      "id": "arxiv-v1",
+      "date": "2025-12-24",
+      "label": "arXiv v1 首发（cs.SE）；论文页自述日期 2025-12-29，项目页指向 GitHub 仓库",
+      "cite": [
+        "paper@arXiv 元信息",
+        "paper@Date",
+        "paper@Project Page"
+      ]
+    },
+    {
+      "id": "oss-repo",
+      "date": "2026-11-14",
+      "label": "本页核验时的开源状态：仓库 Apache-2.0 授权、17 次提交，README 声明支持 Einstein Toolkit 与 Multi-SWE-bench 两种题型，附带统一评测器与最小可用智能体",
+      "cite": [
+        "repo@README"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "测试本身不是完美的科学裁判",
+      "impact": "论文自述：科研仓库的单元测试常常把「不完美的正确性条件」写成断言，而不是无懈可击的物理或数学不变式，于是可能太松（放过科学上无效的解）或太紧（拒绝合理但实现方式不同的修复）；假阳性/假阴性案例论文都有举。",
+      "severity": "高",
+      "response": "两道人工关专门审计测试补丁：覆盖不足就补回归用例，过度覆盖就删掉规定具体实现的断言；论文承认只能缓解最严重的个案，彻底消除仍是该流水线的主要瓶颈。",
+      "reader": "「测试全过」不等于「科学上正确」；同一道题的不同合理解法可能得到不同判定。",
+      "cite": [
+        "paper@§5.2",
+        "paper@§3.4"
+      ]
+    },
+    {
+      "issue": "题库偏向有成熟测试文化的仓库",
+      "impact": "论文承认：代码维护良好、基础设施一致、测试丰富的仓库更适合 PR 式评测，而测试稀疏或整体式设计的同等重要科研代码被低估；覆盖被限制在符合软件工程规范的代码上。",
+      "severity": "中",
+      "response": "论文明确承认这一偏差，未提出修正措施。",
+      "reader": "高分只代表在这 6 个仓库这类代码上强，不要外推到整个科研软件生态。",
+      "cite": [
+        "paper@§5.2"
+      ]
+    },
+    {
+      "issue": "只覆盖轻量容器内的任务",
+      "impact": "每题必须能在少量 CPU 的容器里靠现成包跑完；依赖长时仿真、大规模 MPI、GPU 重内核或与外部系统通信的 PR 被排除。论文说这类任务科研价值高且代表真实研究流程。",
+      "severity": "中",
+      "response": "论文明确划出这条边界，并说明纳入它们会显著增加环境重建、数据依赖与评测设计的复杂度，同时降低第三方可复现性。",
+      "reader": "本测覆盖不到 HPC 重负载场景，别把结论推广成「科研编程能力」全貌。",
+      "cite": [
+        "paper@§5.2"
+      ]
+    },
+    {
+      "issue": "污染风险未见官方说明",
+      "impact": "仓库抓取题直接取自 GitHub 公开且已合并的 PR，与模型训练语料可能重叠；论文 3.3 节描述的抓取与过滤流程中没有提到去污染处理。",
+      "severity": "中",
+      "response": "论文未报告去污染步骤，也未设不公开留存集。",
+      "reader": "跨版本比较时留意题目公开已有多久；对厂商自报分数保留余地。",
+      "cite": [
+        "paper@§3.3"
+      ]
+    },
+    {
+      "issue": "复现门槛：镜像需申请、磁盘占用大",
+      "impact": "README 说明 Multi-SWE-bench 类题目的 Docker 镜像 available upon request，拉取全部镜像需 50GB+ 可用存储；第三方完整复现需要作者配合。",
+      "severity": "低",
+      "response": "仓库提供 pull_images.sh（--sample / --all）与 dockerhub_images.txt，Einstein Toolkit 类镜像在 Docker Hub 公开，可先小规模试跑。",
+      "reader": "想自己复现先用 --sample 拉少量镜像；完整跑分要预留磁盘和时间。",
+      "cite": [
+        "repo@README"
+      ]
+    },
+    {
+      "issue": "跨文件推理仍是主要瓶颈",
+      "impact": "AMReX 的必需文件中位数达 5 个，是各仓库最高，且解决率明显偏低；论文把这归因于当前前沿模型缺少稳健的跨文件推理能力。",
+      "severity": "中",
+      "response": "论文在 4.3 节把它作为核心发现报告，未见针对性修正。",
+      "reader": "看到某个域分数低，先分清是任务性质（如 RDKit 的空间推理、AMReX 的工程难度）还是模型能力差距。",
+      "cite": [
+        "paper@§4.3",
+        "paper@§4.2"
+      ]
+    }
+  ],
+  "notes": "字节 Seed 引用；ByteDance Seed AInstein 项目开源",
+  "official_sources": [
+    {
+      "kind": "github",
+      "url": "https://github.com/ByteDance-Seed/AInsteinBench"
+    },
+    {
+      "kind": "site",
+      "url": "https://seed.bytedance.com/en/blog/official-release-of-seed1-8-a-generalized-agentic-model"
+    }
+  ],
+  "related_benchmarks": [
+    "swebench"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "paper-ainsteinbench-arxiv",
+        "kind": "paper",
+        "title": "AInsteinBench: Benchmarking Coding Agents on Scientific Repositories（arXiv:2512.21373v1, cs.SE）",
+        "url": "https://arxiv.org/abs/2512.21373",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "repo-ainsteinbench",
+        "kind": "repo",
+        "title": "GitHub: ByteDance-Seed/AInsteinBench（README、题型格式与评分配置）",
+        "url": "https://github.com/ByteDance-Seed/AInsteinBench",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "repo-curation-readme",
+        "kind": "repo",
+        "title": "GitHub: AInsteinBench curation/readme.md（数据构建流程说明）",
+        "url": "https://raw.githubusercontent.com/ByteDance-Seed/AInsteinBench/public/curation/readme.md",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "repo-questions-dir",
+        "kind": "repo",
+        "title": "GitHub: AInsteinBench data/questions 目录列表",
+        "url": "https://github.com/ByteDance-Seed/AInsteinBench/tree/public/data/questions",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "seed-en-blog-official-release",
+        "kind": "site",
+        "title": "ByteDance Seed 官方博客：Official Release of Seed1.8: A Generalized Agentic Model（2025-12-18）",
+        "url": "https://seed.bytedance.com/en/blog/official-release-of-seed1-8-a-generalized-agentic-model",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "ByteDance Seed × Princeton University",
+        "cite": [
+          "paper@署名页"
+        ]
+      },
+      "first_release": {
+        "v": "2025-12-24（arXiv v1）",
+        "cite": [
+          "paper@arXiv 元信息"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "paper@Abstract",
+        "paper@§3.5"
+      ],
+      "interpretation": [
+        "paper@§4.1",
+        "paper@Table 2"
+      ]
+    },
+    "problem": {
+      "text": "现有两类评测都不够用：科学推理基准只考概念问答，SWE 类基准又只覆盖通用软件仓库（论文点名 SWE-bench 里唯一的科研仓库是 Astropy，不具代表性），且反映不了数值稳定性约束、跨语言异构与 HPC 执行环境。缺一个能回答「模型能否在真实科研代码库里改代码、跑测试，并保住数值与物理正确」的基准。",
+      "cite": [
+        "paper@Abstract",
+        "paper@§1"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "论文报告的最低分",
+        "value": "7.0%",
+        "note": "GPT-4o，Table 2 中最弱；同期最强模型已到 44.0%。",
+        "cite": [
+          "paper@Table 2"
+        ]
+      },
+      {
+        "label": "同一模型的难度档差",
+        "value": "简单档 59.3% vs 困难档 30.2%",
+        "note": "均为 Claude 4.5 Opus；论文整体趋势是解决率随难度单调下降。",
+        "cite": [
+          "paper@Table 2",
+          "paper@§4.2"
+        ]
+      },
+      {
+        "label": "论文报告的最好成绩",
+        "value": "44.0%",
+        "note": "Claude 4.5 Opus；其后 Gemini 3 Pro 42.8%、DeepSeek V3.2 37.0%、Doubao Seed 1.8 36.7%、GPT-5-high 35.4%。Grok-4 在模型清单里但 Table 2 未给成绩。",
+        "cite": [
+          "paper@Table 2",
+          "paper@§4.1"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 44% 读成「模型已经能替代科研程序员」——论文自己说缺口仍在，且反复强调失败多来自科学正确性（不变量、空间推理、社区约定），不是单纯写不出代码。",
+        "cite": [
+          "paper@§5.1",
+          "paper@§5.3"
+        ]
+      },
+      {
+        "text": "把 ET 类与 MSB 类分数当同一种分：ET 类按构建/测试运行/数值精度 40/10/50 加权，MSB 类按是否通过全部测试二值给分，两者不能相加或平均。",
+        "cite": [
+          "repo@Question Format",
+          "repo@README"
+        ]
+      },
+      {
+        "text": "把不同科学域的解决率差距全归因于模型能力：论文明确指出 RDKit 低是因为任务依赖真正的三维空间推理，AMReX 低是因为仓库本身的工程难度，Einstein Toolkit 高是因为仓库内工具与测试基建充分。",
+        "cite": [
+          "paper@§4.2"
+        ]
+      },
+      {
+        "text": "把它当成「科学知识考试」——题目要求在真实仓库里产出能通过测试的代码，只背知识没有用；论文也明确说它不测开放式科研与自主科研能力。",
+        "cite": [
+          "paper@§1",
+          "paper@§5.3"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "ByteDance Seed 与 Princeton University；论文作者按名字首字母排序，部分署名是作者在公司的内部别名",
+        "cite": [
+          "paper@署名页",
+          "paper@§6"
+        ]
+      },
+      {
+        "k": "与 SWE 类基准的渊源",
+        "v": "PR 抓取与 fail-to-pass 过滤沿用 SWE-bench / Multi-SWE-bench 的做法，再扩展为容器化环境重建与领域专家人工校验",
+        "cite": [
+          "paper@§3.3",
+          "paper@§3.4"
+        ]
+      },
+      {
+        "k": "代码与评测入口",
+        "v": "统一评测器 evaluate_questions.py、最小可用智能体 scripts/run_agent.py、Docker 镜像清单 dockerhub_images.txt；ET 类镜像在 Docker Hub 公开，MSB 类需申请",
+        "cite": [
+          "repo@README"
+        ]
+      },
+      {
+        "k": "多仓库日志解析",
+        "v": "curation/msb 下已带 qiskit、pyscf、rdkit、openmm、amrexcodes 五类日志解析器，用于把测试输出解析成通过/失败",
+        "cite": [
+          "curation@Data Curation"
+        ]
+      },
+      {
+        "k": "与 Seed1.8 的关系",
+        "v": "Seed1.8（Doubao Seed 1.8）于 2025-12-18 发布，官方在文末称部分为其开发的评测数据集已公开或将开源；该博客正文与抓取文本中未出现 AInsteinBench 名称，也没有给出任何 AInsteinBench 分数（正文里的对比表在页面上是图片），因此本站的 AInsteinBench 成绩全部取自论文 Table 2",
+        "cite": [
+          "seed@正文"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2025-12-18 Seed1.8 发布 → 2025-12-24 arXiv v1 → 2025-12-29 论文页自述日期 → 本页 2026-11-14 核验时仓库 17 次提交",
+        "cite": [
+          "seed@正文",
+          "paper@arXiv 元信息",
+          "paper@Date",
+          "repo@README"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-14",
+        "columns": [
+          "来源",
+          "模型",
+          "解决率 %Resolved",
+          "困难档",
+          "中等档",
+          "简单档",
+          "数值相对论 NR",
+          "量子信息 QI",
+          "分子动力学 MD",
+          "量子化学 QC",
+          "化学信息学 CI"
+        ],
+        "rows": [
+          [
+            "论文 Table 2",
+            "Claude 4.5 Opus",
+            "44.0",
+            "30.2",
+            "38.8",
+            "59.3",
+            "44.1",
+            "67.6",
+            "53.7",
+            "38.3",
+            "19.6"
+          ],
+          [
+            "论文 Table 2",
+            "Gemini 3 Pro",
+            "42.8",
+            "17.0",
+            "44.7",
+            "59.3",
+            "45.8",
+            "62.2",
+            "51.9",
+            "36.2",
+            "19.6"
+          ],
+          [
+            "论文 Table 2",
+            "DeepSeek V3.2",
+            "37.0",
+            "20.8",
+            "33.0",
+            "55.6",
+            "33.9",
+            "63.1",
+            "46.2",
+            "34.0",
+            "10.8"
+          ],
+          [
+            "论文 Table 2",
+            "Doubao Seed 1.8",
+            "36.7",
+            "21.2",
+            "33.0",
+            "53.1",
+            "34.5",
+            "54.1",
+            "40.7",
+            "40.4",
+            "17.4"
+          ],
+          [
+            "论文 Table 2",
+            "GPT-5-high",
+            "35.4",
+            "13.2",
+            "32.0",
+            "50.6",
+            "35.6",
+            "54.1",
+            "40.7",
+            "34.0",
+            "8.7"
+          ],
+          [
+            "论文 Table 2",
+            "Claude 4.5 Sonnet",
+            "33.7",
+            "9.4",
+            "31.1",
+            "54.3",
+            "37.3",
+            "48.6",
+            "35.2",
+            "34.0",
+            "15.2"
+          ],
+          [
+            "论文 Table 2",
+            "GPT-5.1",
+            "32.9",
+            "15.1",
+            "31.1",
+            "48.2",
+            "35.6",
+            "51.4",
+            "35.2",
+            "34.0",
+            "10.9"
+          ],
+          [
+            "论文 Table 2",
+            "Kimi K2",
+            "29.1",
+            "11.3",
+            "26.2",
+            "46.9",
+            "35.5",
+            "51.3",
+            "31.5",
+            "25.5",
+            "4.3"
+          ],
+          [
+            "论文 Table 2",
+            "GLM 4.6",
+            "25.9",
+            "11.3",
+            "22.3",
+            "40.7",
+            "37.3",
+            "37.8",
+            "25.9",
+            "27.7",
+            "0.0"
+          ],
+          [
+            "论文 Table 2",
+            "Gemini 2.5 Pro",
+            "19.3",
+            "11.3",
+            "12.6",
+            "34.6",
+            "22.0",
+            "35.1",
+            "20.4",
+            "14.9",
+            "6.5"
+          ],
+          [
+            "论文 Table 2",
+            "GPT-4o",
+            "7.0",
+            "5.7",
+            "5.8",
+            "9.9",
+            "13.6",
+            "16.2",
+            "3.7",
+            "2.1",
+            "0.0"
+          ]
+        ]
+      },
+      "cite": [
+        "paper@Table 2"
+      ]
+    }
+  }
+}

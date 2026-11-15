@@ -1,0 +1,728 @@
+{
+  "id": "gdpval-aa",
+  "name": "GDPval-AA",
+  "full_name": "GDPval-AA v2.1（Artificial Analysis 对 OpenAI GDPval 数据集的独立评测框架：AA = Artificial Analysis）",
+  "aliases": [
+    "GDPval-AA v2",
+    "GDPval-AA v2.1",
+    "Artificial Analysis GDPval"
+  ],
+  "status": null,
+  "categories": [
+    "agent",
+    "preference"
+  ],
+  "summary": "GDPval-AA 是第三方评测机构 Artificial Analysis 在 OpenAI GDPval 公开数据集上做的独立复现：让模型在带 shell 和网页浏览的 Stirrup 智能体框架里跑 220 道真实职场任务（44 个职业、9 大行业），再把同一道题的两份模型成果匿名交给模型裁判盲评选优，用这些两两比较结果拟合出 Elo 分。",
+  "interpretation": "Elo 是相对分：高分只说明该模型的交付物在盲评两两比较中更常被裁判偏好，不说明它完成任务的通过率、绝对质量或速度成本。绝对数值随锚点模型（当前锚定 DeepSeek V4.1 Flash (max) = 1600）和版本变化整体平移，跨版本分数不能直接比。",
+  "measures": [
+    {
+      "area": "文档 / 幻灯片 / 表格 / 图示类交付物",
+      "focus": "示例任务（Audio and Video Technicians 职业）：为全国巡演乐队做一页横向排版的舞台点位图并导出 PDF，要用图形图标画出所有音箱、DI 盒、IEM 分线、麦克风、鼓组与监听喇叭，顶部并列输入/输出清单并按舞台方向编号；页面另列有 Retail Daily Task List、E-Stop Circuit Schematic 等示例题",
+      "share": "未披露（页面未给各类交付物的题量占比）",
+      "format": "文件交付物（官方列举 documents、slides、diagrams、spreadsheets）",
+      "cite": [
+        "aa-eval@Example Tasks & Submissions",
+        "aa-eval@Methodology"
+      ]
+    },
+    {
+      "area": "跨 9 大行业、44 种职业的真实职场任务",
+      "focus": "任务来自 OpenAI 与行业从业者合作开发的 GDPval 数据集，每题为「请求（常带参考文件）+ 交付物」，官方称用于反映真实世界的复杂度",
+      "share": "44 个职业 / 9 大行业（原文未给各行业或各职业的题量占比）",
+      "format": "单次任务提交一份或多份文件",
+      "cite": [
+        "aa-eval@Background",
+        "aa-eval@Methodology"
+      ]
+    },
+    {
+      "area": "沙盒文件系统 + 联网检索的智能体执行",
+      "focus": "任务要求模型在隔离 Linux 沙盒里读写文件、用 shell 处理文档、必要时联网抓取与搜索，并在轮次预算内把交付物作为文件提交",
+      "share": "220 道任务全部在此智能体环境下执行（原文未按能力维度再分占比）",
+      "format": "多轮智能体执行后调用 finish 工具提交文件路径",
+      "cite": [
+        "aa-eval@Frequently Asked Questions",
+        "aa-methodology@GDPval-AA v2.1"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "任务是否被完成（pass/fail 通过率）：GDPval-AA 只比较两份交付物的相对优劣，不判定任务目标是否达成",
+      "cite": [
+        "aa-eval@Frequently Asked Questions",
+        "aa-methodology@GDPval-AA v2.1"
+      ]
+    },
+    {
+      "text": "与 OpenAI 原版 GDPval 一致的人类专家盲评口径：原版以同业人类专家的两两排名为主指标，AA 改用模型裁判，两个分数不能互换",
+      "cite": [
+        "paper@§2.5 Human Expert Grading and Automated Grading",
+        "aa-methodology@GDPval-AA v2.1"
+      ]
+    },
+    {
+      "text": "速度、成本与 token 用量：这些在页面上是并列的独立坐标轴（每任务成本、输出 token、平均轮次），不是 Elo 的组成部分",
+      "cite": [
+        "aa-eval@Cost per Task",
+        "aa-eval@Output Tokens per Task"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 220,
+    "splits": [
+      "公开 OpenAI GDPval gold 子集 220 题（AA 实际使用的全部题量）",
+      "GDPval 全集 1,320 题（未开源，AA 不使用）"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "expert-authored（OpenAI 与行业专家共建的任务；AA 只用公开 gold 子集，自建 harness 与裁判面板）",
+    "public_sample": true,
+    "multiple_choice_share": "未披露（官方只说它不是选择题/短答题基准，而是完整交付物，未给选择题占比）",
+    "multimodal_share": "未披露（官方列举交付物含文档、幻灯片、图示、表格，未给需要多模态理解的题量占比）",
+    "totals": "AA 实际评测 220 题（等于 OpenAI 开源的 GDPval gold 子集全量，Hugging Face 数据集卡为 220 行）· 覆盖 44 个职业、9 大行业 · 每题产出一份或多份文件交付物 · 数据集语言为英文 · 注意 GDPval 全集为 1,320 题，AA 不使用，两个数不是一回事",
+    "cite": [
+      "aa-eval@Background",
+      "dataset",
+      "paper@§1"
+    ],
+    "construction": [
+      {
+        "k": "选题与职业",
+        "text": "OpenAI 先按 2024 年二季度行业增加值占 GDP 比例选出贡献超过 5% 的 9 个行业，再在每个行业里挑工资总额最高且「以数字任务为主」的 5 个职业（用 GPT-4o 按 O*NET 任务逐条分类，数字任务占比达 60% 才入选），共 44 个职业、合计年创收约 3 万亿美元。",
+        "cite": [
+          "paper@§2.1 Prioritizing Occupations"
+        ]
+      },
+      {
+        "k": "专家出题",
+        "text": "招募至少 4 年从业经验的行业专家（平均 14 年），须通过视频面试、背景调查、培训与测验；每题由专家照真实工作产出构造，分为请求（常带参考文件）与交付物两部分，并对照 O*NET 职业任务做归类。",
+        "cite": [
+          "paper@§2.2 Expert Recruitment",
+          "paper@§2.3 Task Creation"
+        ]
+      },
+      {
+        "k": "多轮质控",
+        "text": "全部 1,320 题经过自动化模型筛选加多轮人工评审的迭代流程，每题平均 5 次人工评审（最少 3 次）；gold 子集里 89.07% 的题被专家评为指令清晰。",
+        "cite": [
+          "paper@§2.4 Task Quality Control Pipeline",
+          "paper@附录 A.4.3 Task Specification"
+        ]
+      },
+      {
+        "k": "开源 gold 子集",
+        "text": "OpenAI 开源 220 题 gold 子集的提示词与参考文件，并已抹除可识别出题专家的信息；Hugging Face 数据集卡显示 220 行，sector 字段 9 个取值、occupation 字段 44 个取值。",
+        "cite": [
+          "paper@§4 Open-sourcing",
+          "dataset"
+        ]
+      },
+      {
+        "k": "AA 修补文件元数据",
+        "text": "AA 直接基于该公开 gold 子集跑评测；数据集中部分 Microsoft Office 文件缺失元数据或关系项损坏导致 LibreOffice 打不开，AA 只补了最小缺失元数据并修正损坏项，明确说明文档正文、幻灯片内容与版式未改。",
+        "cite": [
+          "aa-methodology@GDPval-AA v2.1"
+        ]
+      },
+      {
+        "k": "Stirrup 沙盒执行",
+        "text": "AA 用开源 harness Stirrup，为每道题新建 E2B 沙盒、放入该题参考文件并按任务集预装依赖（v2 起扩充依赖，含完整 TeX Live LaTeX 工具链与构建工具），模型自主调用工具，最多 250 轮内提交文件。",
+        "cite": [
+          "aa-methodology@GDPval-AA v2.1",
+          "stirrup"
+        ]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "分两阶段。提交阶段：模型在 Stirrup harness 的 E2B 沙盒里拿到任务提示词与参考文件，可自行调用六个工具——Web Fetch（抓网页正文转 markdown）、Web Search（Brave Search API，返回前 5 条带标题/URL/摘要的结果）、View Image（把沙盒内图片作为原生图像 token 读入，仅对视觉模型开放，图片先降采样到 100 万像素以内）、Code Exec（在沙盒执行 bash，返回退出码/stdout/stderr）、Finish（提交完成并指定文件）、Abandon Task（说明理由后放弃）；单轮定义为一条助手消息加其工具调用，上限 250 轮，接近上限时会告知剩余预算，单条 shell 命令 10 分钟超时，上下文用量超过 70% 时让模型总结任务状态后清空早期历史。评分阶段：同一题目的两份不同模型提交被随机匿名为 Submission A/B，由 GPT-5.6 Sol（medium reasoning）、Gemini 3.8 Flash（high reasoning）、Claude Opus 5（high effort）组成的三人裁判面板中抽样一人判优，裁判能看到任务、全部参考文件与全部提交文件（.pdf/.docx/.pptx/.xlsx 等同时按文本和图片两种形式解析，.zip 解压后逐文件解析，含音视频的题目路由给 Gemini 3.8 Flash）。采样分两段：先均衡采样（在任务、裁判、对手间平衡曝光）打底，再转 Elo 信息采样（优先让分数接近的模型配对）。最终 Elo 由 Bradley-Terry 模型对全部两两结果做最大似然拟合（平局各记半胜），95% 置信区间用三明治估计量计算，并把 DeepSeek V4.1 Flash (max) 钉在 1600 分作为唯一锚点，其余分数相对该锚点拟合。",
+    "cite": [
+      "aa-methodology@GDPval-AA v2.1",
+      "aa-eval@Methodology"
+    ],
+    "variants": [
+      {
+        "text": "版本口径：v1 的 Elo 以「人类专家表现 = 1000」为基线；v2 升级沙盒依赖、换成三裁判面板、轮次上限扩到 250；v2.1 只改 Elo 标定方式（锚点换成 DeepSeek V4.1 Flash (max) = 1600，并用 Crowd-BT 模型拟合）。官方明确说「Elo 分数会变，排名顺序基本保留」，因此跨版本分数不能直接比。",
+        "cite": [
+          "aa-methodology@Version History"
+        ]
+      },
+      {
+        "text": "题量子集口径：AA 只用 OpenAI 开源的 220 题 gold 子集，GDPval 全集是 1,320 题且未开源。第三方站点常把 1,320 当作 GDPval-AA 的题量，与 AA 实际跑的 220 不是一回事。",
+        "cite": [
+          "aa-eval@Background",
+          "blog"
+        ]
+      },
+      {
+        "text": "裁判与锚点口径：v2 之前裁判面板与锚点模型都换过——Intelligence Index v4.3.1 把 GDPval-AA v2 的两两裁判刷新为 Claude Opus 5、GPT-5.6 Sol、Gemini 3.8 Flash，v4.0 期间裁判还从 Gemini 3 Pro Preview 换成 Gemini 3.1 Pro Preview。换裁判或换锚点都会平移绝对分。",
+        "cite": [
+          "aa-methodology@Version History"
+        ]
+      },
+      {
+        "text": "与原版 GDPval 的口径差异：OpenAI 原版以同业人类专家的盲评两两排名为主指标（gold 子集每对人工评审平均超过 1 小时，且模型交付物要和人类专家交付物比），AA 改用模型裁判且只在模型之间比，因此 AA 的 Elo 与 OpenAI 的 win rate 不是同一个数。",
+        "cite": [
+          "paper@§2.5 Human Expert Grading and Automated Grading",
+          "aa-methodology@GDPval-AA v2.1"
+        ]
+      },
+      {
+        "text": "推理档位口径：非推理模型温度 0、推理模型 0.6（厂商另有建议时除外），同一模型的不同推理档位在榜上是独立行（如 Claude Opus 5.5 的 Max / Xhigh / High / Medium / Low 各占一行），跨档位比较等同于换配置。",
+        "cite": [
+          "aa-methodology@General Testing Parameters",
+          "aa-eval@GDPval-AA v2.1 Leaderboard"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "elo",
+      "name": "GDPval-AA v2.1 Elo",
+      "direction": "越高越好",
+      "description": "由同一题目的两份模型提交的盲评两两比较拟合出的 Bradley-Terry 相对实力分；平局各记半胜，95% 置信区间用三明治估计量计算，标定时把 DeepSeek V4.1 Flash (max) 钉在 1600 分。页面注明「Anchored to DeepSeek V4.1 Flash (max) at 1600 · Higher is better」。",
+      "range": [
+        -402,
+        1866
+      ],
+      "unit": "elo",
+      "cite": [
+        "aa-eval@GDPval-AA v2.1 Leaderboard",
+        "aa-methodology@GDPval-AA v2.1"
+      ]
+    },
+    {
+      "id": "cost-per-task",
+      "name": "每任务成本",
+      "direction": "越低越好",
+      "description": "跑完一个任务的平均花费（美元），按输入、缓存命中、缓存写入、推理、回答 token 分别计价后汇总；页面把它作为与 Elo 并列的独立坐标轴展示，并单独点名每任务成本最低的模型。",
+      "range": "未披露（页面以图表展示，未给出数值范围）",
+      "unit": "usd",
+      "cite": [
+        "aa-eval@Cost per Task",
+        "aa-eval@GDPval-AA v2.1: Elo vs. Cost per Task"
+      ]
+    },
+    {
+      "id": "output-tokens-per-task",
+      "name": "每任务输出 token 数",
+      "direction": "越低越好",
+      "description": "跑一个任务平均产出的回答 token 加推理 token 数量；页面把它作为独立坐标轴展示，并单独点名输出 token 最少的模型。",
+      "range": "未披露（页面以图表展示，未给出数值范围）",
+      "unit": "tokens",
+      "cite": [
+        "aa-eval@Output Tokens per Task",
+        "aa-eval@GDPval-AA v2.1: Output Tokens per Task"
+      ]
+    }
+  ],
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2026-01-01",
+      "label": "GDPval-AA 首次加入 Artificial Analysis Intelligence Index（Intelligence Index v4.0，官方公告称 v4 于 2026 年 1 月上线）；方法论页仅给出月份区间「January 2026—June 2026」，未给精确日期，本行的 2026-01-01 是月份起点、不是官方发布日",
+      "cite": [
+        "aa-methodology@Version History",
+        "aa-index-v5"
+      ]
+    },
+    {
+      "id": "v2",
+      "date": "2026-09-01",
+      "label": "GDPval-AA v2：沙盒依赖升级扩充、Elo 重新以人类专家表现为 1000 基线、改用三裁判面板、轮次上限扩到 250 且可提前放弃；截至该日 AA 官方文章记录的最高分为 1,853 Elo（Claude Fable 5.1 max，+130 over Fable 5），且与 Claude Opus 5 (max) 的 1,824 在置信区间内重叠",
+      "cite": [
+        "aa-methodology@Version History",
+        "aa-fable-5-1"
+      ]
+    },
+    {
+      "id": "v2.1",
+      "date": "2026-09-22",
+      "label": "GDPval-AA v2.1：只改 Elo 标定——锚点换成 DeepSeek V4.1 Flash (max) = 1600 并用 Crowd-BT 模型拟合；截至该日 AA 官方文章记录 Claude Opus 5.5 (max) 在 v2.1 上为 1,846 Elo。官方明确说 Elo 分数会变而排名顺序基本保留",
+      "cite": [
+        "aa-methodology@Version History",
+        "aa-opus-5-5"
+      ]
+    },
+    {
+      "id": "index-v5-removal",
+      "date": "2026-10-27",
+      "label": "Intelligence Index v5 上线，GDPval-AA v2.1 与 SciCode、AA-LCR v1.1 一起被移出指数；方法论页标注其为「Standalone evaluation (not part of Artificial Analysis Intelligence Index v5.0.1)」，并说明它曾是 v4.3.2 及以前版本的指数成分",
+      "cite": [
+        "aa-index-v5",
+        "aa-methodology@GDPval-AA v2.1"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "Elo 绝对值随锚点与版本平移，且随比较累积继续漂移",
+      "impact": "同一模型同一版本的 Elo 会变：v2 的锚点是「人类专家 = 1000」，v2.1 换成「DeepSeek V4.1 Flash (max) = 1600」，官方明说分数会变；Claude Opus 5.5 (max) 在 2026-09-22 的 v2.1 文章里是 1,846 Elo，到 2026-11-10 的榜单是 1,866 Elo，模型未变而分数移动了 20 分。把它当绝对能力分会把尺子变动误读成能力变动。",
+      "severity": "高",
+      "response": "官方在方法论页写「While Elo scores shift, rank ordering is largely preserved」，并为每个分数给出 95% 置信区间（三明治估计量）；未见官方提供跨版本分数换算表。",
+      "reader": "只比较同一版本、同一抓取日期的榜单；看分数时连同置信区间一起看，重叠区间内的名次差异不要当作结论。",
+      "cite": [
+        "aa-methodology@GDPval-AA v2.1",
+        "aa-opus-5-5",
+        "aa-eval@GDPval-AA v2.1 Leaderboard"
+      ]
+    },
+    {
+      "issue": "题量只有 220 且全部来自公开数据集，容易被针对性优化",
+      "impact": "220 题是 OpenAI 开源的 gold 子集全量，可自由下载（Hugging Face 数据集卡显示 279,495 次月下载，并列出多个在该数据集上微调的模型），存在被混进训练集或被专门调优的风险；题目规模也限制了区分度。",
+      "severity": "高",
+      "response": "官方未设置不公开的留存集；GDPval 全集 1,320 题未开源，AA 也无法使用。未见官方针对污染的专门修正。",
+      "reader": "看到某模型在该榜上突然领先时，先查它是否在 openai/gdpval 上做过微调；220 题的分数波动要按小样本看待。",
+      "cite": [
+        "aa-eval@Background",
+        "dataset",
+        "paper@§5 Limitations"
+      ]
+    },
+    {
+      "issue": "裁判是模型而非人类专家，存在裁判偏置",
+      "impact": "AA 的判优由 GPT-5.6 Sol、Gemini 3.8 Flash、Claude Opus 5 三个前沿模型组成的面板完成， Anthropic 与 OpenAI 的模型都在被测集合里，等于「同厂选手可能被同厂裁判评」。上游证据支持这种担忧：OpenAI 论文报告其基于 GPT-5-high 的自动评分器在评 OpenAI 自家模型时与人类专家的一致性反而更低，作者归因于模型偏爱自己的输出。",
+      "severity": "高",
+      "response": "官方把提交随机匿名为 A/B 以消除模型与位置偏置，并要求裁判同时看到任务、参考文件与全部提交文件；未见官方公布裁判与人类专家的一致性数据。",
+      "reader": "把 Elo 当作「在 AA 的裁判口径下谁更受偏好」，不要当作「人类专家认为谁更好」。",
+      "cite": [
+        "aa-methodology@GDPval-AA v2.1",
+        "paper@附录 A.6.2"
+      ]
+    },
+    {
+      "issue": "只测相对偏好，不测任务是否完成，也不测速度成本",
+      "impact": "两个都跑偏了的交付物也能比出高下；模型花多少轮、多少 token、多少钱与该分数无直接关系，页面把这些作为并列坐标轴单独展示。AA 自己也说传统基准测短答案/选择题，而它评的是完整交付物的相对质量。",
+      "severity": "中",
+      "response": "官方在页面上并列给出每任务成本、输出 token、平均轮次三张图，并在 FAQ 说明它是 pairwise grading on relative quality；未见官方提供任务完成率指标。",
+      "reader": "选型时把 Elo 和每任务成本、每任务 token 一起看，单看 Elo 会漏掉「更贵但只强一点」的情况。",
+      "cite": [
+        "aa-eval@Frequently Asked Questions",
+        "aa-eval@Cost per Task",
+        "aa-methodology@GDPval-AA v2.1"
+      ]
+    },
+    {
+      "issue": "上游数据集规模与覆盖面有限，且论文内部数字不一致",
+      "impact": "OpenAI 论文自述 GDPval 全集只有 44 个职业、每职业 30 题，是「有限的初次切割，不是对所有职业任务的全面评测」，且只覆盖能在电脑上完成的数字知识工作；论文正文写「Tasks require an average of 7 hours of work」，但附录表 3（gold 子集）给出平均完成时间 9.49 小时、表 4（全集）8.63 小时，同一论文内三个口径不一致。",
+      "severity": "中",
+      "response": "OpenAI 在论文局限一节列出数据集规模、只覆盖自包含知识工作、任务一次性不交互、自动评分器局限与成本五项限制，并称会扩大数据集；未见 AA 对此单独回应。",
+      "reader": "把 220 题的覆盖面理解为 44 个职业的抽样，不要外推到「所有知识工作」。",
+      "cite": [
+        "paper@§5 Limitations",
+        "paper@§1",
+        "paper@附录 A.4 Additional Task Characteristics"
+      ]
+    },
+    {
+      "issue": "第三方站点把题量与指标都记错，造成二手传播偏差",
+      "impact": "DataLearner 的 GDPval-AA 页面写「问题数量 1320」「评测指标 Accuracy · 越高越好」「发布机构 OpenAI」，并标注该榜单已停用——题量是 GDPval 全集而非 AA 实际跑的 220，指标是 Elo 而非 Accuracy，发布方是 Artificial Analysis 而非 OpenAI。引用二手数字时会把三个错误一起带走。",
+      "severity": "中",
+      "response": "该站自述「不同版本的分数默认不直接比较」，但未修正题量与指标字段；一手来源（AA 评测页与方法论页、OpenAI 论文、HF 数据集卡）均与它不一致。",
+      "reader": "引用 GDPval-AA 数字时回到 AA 官方评测页或方法论页核对，不要采信聚合站的 1320 / Accuracy 口径。",
+      "cite": [
+        "blog",
+        "aa-eval@Background",
+        "aa-eval@GDPval-AA v2.1 Leaderboard"
+      ]
+    },
+    {
+      "issue": "榜单只覆盖少数模型，且工程修补可能影响可比性",
+      "impact": "榜单标注「27 of 315 models」，多数模型没有该评测结果；AA 还为让 LibreOffice 能打开而修补了数据集中部分 Office 文件的元数据，虽然声明正文、幻灯片内容与版式未改，但这是对上游数据集的非上游改动。",
+      "severity": "低",
+      "response": "官方明示修补范围与不变更项（「Document body, slide content, and layout were not changed」），并在页面对无公开 API 的模型单独标注。",
+      "reader": "比较前先确认两个模型都在「27 of 315」之内；关注 AA 是否再次改动数据集文件。",
+      "cite": [
+        "aa-eval@GDPval-AA v2.1 Leaderboard",
+        "aa-methodology@GDPval-AA v2.1"
+      ]
+    }
+  ],
+  "notes": "证据账本中 12 次引用；与 gdpval（原版）是数据同源、评测口径不同的两个实体",
+  "official_sources": [
+    {
+      "kind": "site",
+      "url": "https://artificialanalysis.ai/evaluations/gdpval-aa"
+    },
+    {
+      "kind": "site",
+      "url": "https://artificialanalysis.ai/methodology/intelligence-benchmarking"
+    },
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2510.04374"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/openai/gdpval"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/ArtificialAnalysis/Stirrup"
+    }
+  ],
+  "related_benchmarks": [
+    "gdpval",
+    "aa-intelligence-index"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-10",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-10",
+    "sources": [
+      {
+        "id": "aa-eval",
+        "kind": "site",
+        "title": "GDPval-AA v2.1 Benchmark | Artificial Analysis（评测页，含榜单、示例任务与 FAQ）",
+        "url": "https://artificialanalysis.ai/evaluations/gdpval-aa",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "aa-methodology",
+        "kind": "site",
+        "title": "Intelligence Benchmarking | Artificial Analysis（方法论页，含 GDPval-AA v2.1 实现细节与版本历史）",
+        "url": "https://artificialanalysis.ai/methodology/intelligence-benchmarking",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "GDPval: Evaluating AI Model Performance on Real-World Economically Valuable Tasks（arXiv:2510.04374v1, 2025-10-05）",
+        "url": "https://arxiv.org/abs/2510.04374",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "dataset",
+        "kind": "dataset",
+        "title": "openai/gdpval（Hugging Face 数据集卡，220 行）",
+        "url": "https://huggingface.co/datasets/openai/gdpval",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "stirrup",
+        "kind": "repo",
+        "title": "ArtificialAnalysis/Stirrup（GitHub README，AA 开源智能体框架）",
+        "url": "https://github.com/ArtificialAnalysis/Stirrup",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "aa-index-v5",
+        "kind": "announcement",
+        "title": "Announcing Artificial Analysis Intelligence Index v5（2026-10-27）",
+        "url": "https://artificialanalysis.ai/articles/artificial-analysis-intelligence-index-v5",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "aa-fable-5-1",
+        "kind": "announcement",
+        "title": "Claude Fable 5.1 tops the Artificial Analysis Intelligence Index（2026-09-01）",
+        "url": "https://artificialanalysis.ai/articles/claude-fable-5-1",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "aa-opus-5-5",
+        "kind": "announcement",
+        "title": "Claude Opus 5.5 takes the top spot on the Artificial Analysis Intelligence Index（2026-09-22）",
+        "url": "https://artificialanalysis.ai/articles/claude-opus-5-5",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "blog",
+        "kind": "blog",
+        "title": "DataLearner：GDPval-AA 评测基准页（第三方聚合，2026-10-11 更新）",
+        "url": "https://www.datalearner.com/benchmarks/gdpval-aa",
+        "accessed": "2026-11-10"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Artificial Analysis（评测方与 harness 提供方）；底层数据集与 gold 子集由 OpenAI 发布",
+        "cite": [
+          "aa-eval@Methodology",
+          "paper@Abstract"
+        ]
+      },
+      "first_release": {
+        "v": "2026 年 1 月（GDPval-AA 随 Artificial Analysis Intelligence Index v4.0 上线；官方公告只给到月份，未给精确日期）",
+        "cite": [
+          "aa-methodology@Version History",
+          "aa-index-v5"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "aa-eval@Methodology",
+        "aa-eval@Background",
+        "aa-eval@Frequently Asked Questions"
+      ],
+      "interpretation": [
+        "aa-methodology@GDPval-AA v2.1",
+        "aa-eval@GDPval-AA v2.1 Leaderboard",
+        "aa-opus-5-5"
+      ]
+    },
+    "problem": {
+      "text": "MMLU、HLE 这类基准测的是短答案或选择题，已经拉不开前沿模型的差距，也回答不了「模型能不能真的把一份职业交付物做出来」。GDPval-AA 用 OpenAI 按 GDP 贡献自上而下抽样出的 44 个职业的真实任务，让模型在带 shell 和联网的沙盒里产出完整文件，再用两两盲评比相对质量——官方在 FAQ 里明确把它和「短答案/选择题基准」对立起来。",
+      "cite": [
+        "aa-eval@Frequently Asked Questions",
+        "paper@§1"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "人类专家基线",
+        "value": "1000 Elo（仅 v1 与 v2 的基线定义）",
+        "note": "v2 把 Elo 重新以人类专家表现为 1000 基线；v2.1 起锚点改为 DeepSeek V4.1 Flash (max) = 1600，人类专家基线不再直接对应一个分数。上游 OpenAI 论文另有人类口径参考：gold 子集上 Claude Opus 4.1 有 47.6% 的交付物被评为优于或平于人类专家交付物。",
+        "cite": [
+          "aa-methodology@Version History",
+          "paper@§3.1 Headline Results"
+        ]
+      },
+      {
+        "label": "锚点模型（当前标尺零点）",
+        "value": "1600 Elo（DeepSeek V4.1 Flash (max)）",
+        "note": "v2.1 把 DeepSeek V4.1 Flash (max) 钉在 1600，其余分数相对它拟合；榜单上该行置信区间为 -0 / +0，是唯一被钉住的模型。",
+        "cite": [
+          "aa-eval@GDPval-AA v2.1 Leaderboard",
+          "aa-methodology@GDPval-AA v2.1"
+        ]
+      },
+      {
+        "label": "官方榜单当前最高（2026-11-10）",
+        "value": "1866 Elo（Claude Opus 5.5 (Max, Default Fallback)）",
+        "note": "榜单标注「27 of 315 models」，置信区间 -26 / +26；第二、三名分别是 Kimi K3.1 Pro 1861（±28）与 Muse Wonder Full (Max) 1857（±25），前三名区间互相重叠。",
+        "cite": [
+          "aa-eval@GDPval-AA v2.1 Leaderboard"
+        ]
+      },
+      {
+        "label": "同版本历史最高（v2，2026-09-01）",
+        "value": "1853 Elo（Claude Fable 5.1 (max)）",
+        "note": "v2 口径下 AA 自称「我们测过的最高分」，且官方注明它与 Claude Opus 5 (max) 的 1824 置信区间重叠。与 v2.1 的 1866 不同版本，不能直接相比。",
+        "cite": [
+          "aa-fable-5-1"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      },
+      {
+        "label": "噪声参考线",
+        "value": "±16 至 ±29 Elo（榜单各行 95% 置信区间半宽）",
+        "note": "本页摘录的榜单行置信区间半宽在 16 到 29 之间，第一名与第二十一名的差距（1866 − 1681 = 185）远大于半宽，而相邻名次常在一个半宽之内。这条线是本站按榜单 CI 列统计的参考，不是官方给出的显著性阈值。",
+        "cite": [
+          "aa-eval@GDPval-AA v2.1 Leaderboard"
+        ]
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 GDPval-AA 的题量当成 1,320——那是 GDPval 全集，AA 实际只用 OpenAI 开源的 220 题 gold 子集。",
+        "cite": [
+          "aa-eval@Background",
+          "dataset",
+          "blog"
+        ]
+      },
+      {
+        "text": "把 Elo 当准确率或通过率读——它只是两两盲评的偏好拟合分，不表示完成了多少任务；页面写的指标名就是 Elo，不是 Accuracy。",
+        "cite": [
+          "aa-eval@Frequently Asked Questions",
+          "aa-methodology@GDPval-AA v2.1"
+        ]
+      },
+      {
+        "text": "把不同版本或不同抓取日期的 Elo 排在一起比——v1/v2 锚点是人类专家 1000，v2.1 锚点是 DeepSeek V4.1 Flash (max) 1600，且同一模型同一版本的分数还会随比较累积漂移（Claude Opus 5.5 max 从 1,846 到 1,866）。",
+        "cite": [
+          "aa-methodology@GDPval-AA v2.1",
+          "aa-opus-5-5"
+        ]
+      },
+      {
+        "text": "把 GDPval-AA 的 Elo 和 OpenAI 原版 GDPval 的 win rate 当成同一个数——原版用同业人类专家盲评、且和人类交付物比，AA 用模型裁判、只在模型之间比。",
+        "cite": [
+          "paper@§2.5 Human Expert Grading and Automated Grading",
+          "aa-methodology@GDPval-AA v2.1"
+        ]
+      },
+      {
+        "text": "把同一模型的不同推理档位当成同一次测量——榜单上 Max / Xhigh / High / Medium / Low 各占独立一行，分数差异来自配置而非模型。",
+        "cite": [
+          "aa-methodology@General Testing Parameters",
+          "aa-eval@GDPval-AA v2.1 Leaderboard"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "评测发布方",
+        "v": "Artificial Analysis（AA 为其缩写），在 OpenAI 公开数据集上独立复现并自建 harness 与裁判面板",
+        "cite": [
+          "aa-eval@Methodology",
+          "aa-methodology@GDPval-AA v2.1"
+        ]
+      },
+      {
+        "k": "底层数据发布方",
+        "v": "OpenAI；GDPval 论文共同一作 Tejal Patwardhan、Rachel Dias、Elizabeth Proehl、Grace Kim、Michele Wang 等 19 人（含 Michelle 之外的 Olivia Watkins、Simón Posada Fishman、Marwan Aljubeh、Phoebe Thacker 等，资深作者 Amelia Glaese、Jerry Tworek）",
+        "cite": [
+          "aa-eval@Publication",
+          "paper@Abstract"
+        ]
+      },
+      {
+        "k": "底层数据集",
+        "v": "openai/gdpval（Hugging Face），220 行，sector 字段 9 个取值、occupation 字段 44 个取值，每题为文本提示加一组参考文件",
+        "cite": [
+          "dataset"
+        ]
+      },
+      {
+        "k": "智能体框架",
+        "v": "Stirrup（GitHub: ArtificialAnalysis/Stirrup），官方 README 自称「轻量级智能体构建框架/起点模板」，内置代码执行、联网搜索与网页抓取、MCP 客户端、文档输入输出等能力",
+        "cite": [
+          "stirrup",
+          "aa-methodology@GDPval-AA v2.1"
+        ]
+      },
+      {
+        "k": "沙盒与依赖",
+        "v": "E2B 沙盒（官方称 e2b 是其智能体基准的主要沙盒供应商），每题新建实例、预装该题参考文件与任务集相关包，v2 起扩充依赖并含完整 TeX Live LaTeX 工具链与构建工具",
+        "cite": [
+          "aa-methodology@GDPval-AA v2.1",
+          "aa-methodology@General Testing Parameters"
+        ]
+      },
+      {
+        "k": "裁判面板（v2 起）",
+        "v": "GPT-5.6 Sol（medium reasoning）、Gemini 3.8 Flash（high reasoning）、Claude Opus 5（high effort），每次比较抽样一人",
+        "cite": [
+          "aa-methodology@GDPval-AA v2.1"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2025-10-05 OpenAI 发布 GDPval 论文并开源 220 题 gold 子集 → 2026 年 1 月 GDPval-AA 随 Intelligence Index v4.0 上线 → 2026 年 6–8 月升级到 v2（沙盒、三裁判、250 轮）→ 2026 年 9 月刷裁判面板并推出 v2.1（锚点改 DeepSeek V4.1 Flash (max) = 1600 + Crowd-BT）→ 2026-10-27 随 Intelligence Index v5 移出指数，转为独立评测",
+        "cite": [
+          "paper@Abstract",
+          "aa-methodology@Version History",
+          "aa-index-v5"
+        ]
+      },
+      {
+        "k": "与 Intelligence Index 的关系",
+        "v": "曾是 Intelligence Index 成分直至 v4.3.2，v5.0 起被移除；方法论页标注其为「Standalone evaluation (not part of Artificial Analysis Intelligence Index v5.0.1)」，但榜单仍提供 Elo 与 Intelligence Index 的对照图",
+        "cite": [
+          "aa-methodology@GDPval-AA v2.1",
+          "aa-index-v5",
+          "aa-eval@Elo vs. Intelligence Index"
+        ]
+      },
+      {
+        "k": "任务难度参考（上游口径）",
+        "v": "OpenAI 论文称任务平均需专家 7 小时完成，gold 子集每题最多解析 17 个参考文件（全集最多 38 个），67.7% 的任务至少涉及一个参考文件",
+        "cite": [
+          "paper@§1",
+          "paper@附录 A.4.1 Files and Attachments"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-10",
+        "columns": [
+          "名次",
+          "厂商",
+          "模型",
+          "Elo",
+          "CI",
+          "发布日期"
+        ],
+        "rows": [
+          [
+            "1",
+            "Anthropic",
+            "Claude Opus 5.5 (Max, Default Fallback)",
+            "1866",
+            "-26 / +26",
+            "Sep 2026"
+          ],
+          [
+            "2",
+            "Kimi",
+            "Kimi K3.1 Pro",
+            "1861",
+            "-28 / +28",
+            "Oct 2026"
+          ],
+          [
+            "3",
+            "Meta",
+            "Muse Wonder Full (Max)",
+            "1857",
+            "-25 / +25",
+            "Oct 2026"
+          ],
+          [
+            "4",
+            "Anthropic",
+            "Claude Sonnet 5.5 (Max, Default Fallback)",
+            "1838",
+            "-23 / +23",
+            "Sep 2026"
+          ],
+          [
+            "5",
+            "Anthropic",
+            "Claude Opus 5.5 (Xhigh, Default Fallback)",
+            "1835",
+            "-23 / +23",
+            "Sep 2026"
+          ],
+          [
+            "6",
+            "Anthropic",
+            "Claude Fable 5.2 (Max, Default Fallback)",
+            "1831",
+            "-27 / +27",
+            "Nov 2026"
+          ],
+          [
+            "10",
+            "DeepSeek",
+            "DeepSeek V4.1 Flash 1017 (Max)",
+            "1746",
+            "-21 / +21",
+            "Oct 2026"
+          ],
+          [
+            "43",
+            "DeepSeek",
+            "DeepSeek V4.1 Flash (Max)",
+            "1600",
+            "-0 / +0",
+            "Sep 2026"
+          ],
+          [
+            "315",
+            "Institute of Foundation Models",
+            "K2 Horizon 0.9B",
+            "−402",
+            "-20 / +20",
+            "Sep 2026"
+          ]
+        ]
+      },
+      "cite": [
+        "aa-eval@GDPval-AA v2.1 Leaderboard"
+      ]
+    }
+  }
+}

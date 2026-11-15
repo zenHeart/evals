@@ -1,0 +1,615 @@
+{
+  "id": "livesports-3k",
+  "name": "LiveSports-3K",
+  "full_name": "LiveSports-3K（直播体育视频实时解说与问答基准）",
+  "aliases": [
+    "LiveSports-3K benchmark",
+    "LiveSports-3K-CC",
+    "LiveSports-3K-QA"
+  ],
+  "status": "active",
+  "categories": [
+    "multimodal"
+  ],
+  "summary": "LiveSports-3K 是随 LiveCC 论文（CVPR 2025）发布的直播体育视频理解基准。作者从 YouTube 体育直播中筛出 416 个视频、覆盖 49 个体育类别，切成 1,702 个赛事片段，并为这些片段生成配套 ASR 解说。基准分两条赛道：CC 赛道让模型基于视频标题与已有解说实时续写下一段解说，由 GPT-4o 当裁判与被测模型的输出二选一；QA 赛道用 1,174 道四选一体育常识题考准确率。数据集卡显示合计 2,876 行、约 22.4 GB、英文。",
+  "interpretation": "主要指标是 CC 赛道的成对胜率：GPT-4o 裁判在模型解说与 GPT-4o-08-06 生成的基线解说之间选择更优的一边，选中模型输出的比例即分数。只有高于 50% 才说明模型比这条强基线更好；论文表中唯一过半的是非流式的 Gemini-1.5-Pro（52.8），流式模型中最高的是 LiveCC-7B-Base（43.2）。QA 赛道是普通准确率，表中最高为 Qwen2.5-VL-72B-Instruct（73.7）。引用分数时必须同时说明赛道与是否流式，否则同一行数字会被误读为同一把尺子。",
+  "measures": [
+    {
+      "area": "CC 赛道",
+      "focus": "实时解说生成：给定视频标题与之前事件的 ASR 解说，续写当前事件的下一段解说；由 GPT-4o 裁判与 GPT-4o-08-06 基线成对比较，指标为胜率（越高越好）。",
+      "share": null,
+      "format": "开放式生成 + GPT-4o 成对裁判，输出胜率",
+      "cite": [
+        "dataset@Evaluation Protocols",
+        "paper@§8.2"
+      ]
+    },
+    {
+      "area": "QA 赛道",
+      "focus": "体育常识问答：给定视频片段帧、问题与四个选项，选择正确答案；指标为准确率（越高越好），并细分 OCR / Who / When / What 四个子维度。",
+      "share": null,
+      "format": "四选一单选题，输出准确率",
+      "cite": [
+        "dataset@Evaluation Protocols",
+        "paper@§4.2"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "不考长时序推理或跨小时视频的全局理解——每条样本对应一个短事件，输入只有视频标题与该事件之前的解说。",
+      "cite": [
+        "dataset@Evaluation Protocols"
+      ]
+    },
+    {
+      "text": "不考指令遵循与多轮对话能力；作者反而明确指出，流式 ASR 预训练模型会失去指令遵循能力，因此 QA 赛道改为读取四个选项的 logits 来选答案。",
+      "cite": [
+        "paper@§4.2"
+      ]
+    },
+    {
+      "text": "不考听辨能力——靠听才能答的题被人工剔除，只剩视觉可答的问题。",
+      "cite": [
+        "paper@§4.2"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 2876,
+    "splits": [
+      "test"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "real-world（YouTube 体育直播视频 + 原视频 ASR 解说转写）",
+    "public_sample": true,
+    "totals": "合计 2,876 行、约 22.4 GB；CC 赛道 1,702 个事件（416 个视频、49 个体育类别），QA 赛道 1,174 道四选一 MCQ（414 个视频）",
+    "cite": [
+      "dataset@Subset",
+      "dataset@数据结构",
+      "paper@§4.1",
+      "paper@§4.2"
+    ],
+    "construction": [
+      {
+        "k": "候选视频池",
+        "text": "从 Live-WhisperX-526K 中出现频次最高的前 50 个体育类别中，每个类别随机抽 12 个视频，得到 600 个候选视频。",
+        "cite": [
+          "paper@§4.1"
+        ]
+      },
+      {
+        "k": "人工过滤",
+        "text": "招募英语熟练的标注员按三条标准剔除无关内容：事件时长超过 10 秒、画面中有进行中的体育动作、ASR 内容大部分能从画面落地。",
+        "cite": [
+          "paper@§4.1"
+        ]
+      },
+      {
+        "k": "事件切分",
+        "text": "用 GPT-4o-mini 把 ASR 转写合并成语义连贯的事件，并记录每个事件的起止时间戳。",
+        "cite": [
+          "paper@§4.1"
+        ]
+      },
+      {
+        "k": "最终规模",
+        "text": "最终保留 416 个视频、49 个体育类别（50 个候选类别中有一个没有合格视频），CC 赛道 1,702 个事件。",
+        "cite": [
+          "paper@§4.1",
+          "dataset@数据结构"
+        ]
+      },
+      {
+        "k": "QA 出题与筛除",
+        "text": "先产出 1,236 道四选一 MCQ（覆盖 414 个视频，其中 2 个视频因难以出题被排除），再人工删除 62 道需要听辨语音的题，最终留下 1,174 道。",
+        "cite": [
+          "paper@§4.2",
+          "dataset@数据结构"
+        ]
+      },
+      {
+        "k": "题目分布",
+        "text": "Who / When / What 三种问型均衡分布，依赖 OCR 的题在三种问型中均匀分布。",
+        "cite": [
+          "paper@§4.2"
+        ]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "CC 赛道：输入视频标题 + 该事件之前的 ASR 解说（首事件为空），生成当前事件的下一段解说；由 GPT-4o 裁判依据与真值 ASR 的风格与语义一致性，与 GPT-4o-08-06 生成的基线成对比较，指标为胜率。为缓解裁判的位置偏差，每个 prompt 交换两侧文本位置后各评一次。QA 赛道：输入视频片段帧 + 问题 + 四个选项，读取四个选项的 logits 选择答案，指标为准确率。",
+    "cite": [
+      "dataset@Evaluation Protocols",
+      "paper@§8.2",
+      "paper@§4.2"
+    ],
+    "variants": [
+      {
+        "text": "帧数口径：为保证公平比较，所有 Qwen 模型与论文自家模型最多只用 480 帧。",
+        "cite": [
+          "paper@Table 4 注"
+        ]
+      },
+      {
+        "text": "复现口径：官方评测脚本固定 seed=42、temperature=0，作者说明其结果会略好于论文报告值，因为 Azure 版 GPT-4o 的输出本身不稳定。",
+        "cite": [
+          "repo@README"
+        ]
+      },
+      {
+        "text": "替代评测渠道：没有 GPT-4o 配额时可把结果提交到 CVPR'25 LoVE Workshop Track2A，官方每天提供一次免费 GPT-4o 评判。",
+        "cite": [
+          "repo@README",
+          "paper@脚注 1"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "cc-win-rate",
+      "name": "CC 赛道胜率",
+      "direction": "越高越好",
+      "description": "GPT-4o 裁判在模型生成的下一段解说与 GPT-4o-08-06 基线解说之间选择模型输出的比例。50% 表示与基线持平，低于 50% 表示裁判更常选基线。",
+      "range": "0–100%",
+      "unit": "percent",
+      "cite": [
+        "paper@§8.2",
+        "dataset@Evaluation Protocols"
+      ]
+    },
+    {
+      "id": "qa-accuracy",
+      "name": "QA 准确率",
+      "direction": "越高越好",
+      "description": "1,174 道四选一 MCQ 中答对的比例，可细分为 OCR / Who / When / What 四个子维度。",
+      "range": "0–100%",
+      "unit": "percent",
+      "cite": [
+        "dataset@Evaluation Protocols",
+        "paper@Table 4"
+      ]
+    }
+  ],
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2025-04-22",
+      "label": "随 LiveCC 论文 arXiv 首发（arXiv:2504.16030v1）",
+      "cite": [
+        "paper@首页",
+        "dataset"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "裁判本身不稳定",
+      "impact": "复现分数与论文值存在偏差，且论文未报告多次运行的方差，无法判断模型间差异是否显著。",
+      "severity": "高",
+      "response": "官方评测脚本固定 seed=42、temperature=0，作者在仓库中说明复现结果会略好于论文值。",
+      "reader": "引用该基准分数时应视为单次裁判下的成对偏好，不要把 1–2 个百分点的差距当作结论。",
+      "cite": [
+        "repo@README"
+      ]
+    },
+    {
+      "issue": "CVPR camera-ready 版本有误",
+      "impact": "照 camera-ready 版本复现可能得到与论文不一致的口径或数字。",
+      "severity": "高",
+      "response": "仓库明确要求以 arXiv 版论文为准，并说明 camera-ready 版本投错且不允许替换。",
+      "reader": "遇到与论文数字不符时，先核对手里是不是 arXiv 版。",
+      "cite": [
+        "repo@README"
+      ]
+    },
+    {
+      "issue": "名称与实际规模不符",
+      "impact": "「3K」易被理解为 3,000 条样本，实际为 2,876 行（1,702 个事件 + 1,174 道题）。",
+      "severity": "中",
+      "response": "论文 Figure 6 写作「3k live CCs and MCQs」，数据集卡给出确切行数 2,876。",
+      "reader": "报告规模时用 2,876 行并注明两赛道拆分。",
+      "cite": [
+        "paper@Figure 6",
+        "dataset@数据结构"
+      ]
+    },
+    {
+      "issue": "厂商自报分数口径不明",
+      "impact": "ByteDance Seed 页面上的 LiveSports-3K 数字未标注赛道与评测口径，无法与论文 Table 4 的胜率/准确率直接对齐。",
+      "severity": "中",
+      "response": "页面仅列出模型与数字，未说明对应 CC 赛道还是 QA 赛道。",
+      "reader": "看到 78.1 这类数字时不要与论文的 43.2 或 73.7 直接比较。",
+      "cite": [
+        "seed",
+        "paper@Table 4"
+      ]
+    },
+    {
+      "issue": "数据公开可下载带来污染风险",
+      "impact": "赛事片段、标题、ASR 解说与题目均可直接下载，无法排除被测模型在训练阶段见过这些内容。",
+      "severity": "中",
+      "response": "官方提供数据集下载与评测脚本，未提供 private held-out 集。",
+      "reader": "把该基准当作公开集指标，需要额外做去污染核验。",
+      "cite": [
+        "repo@README",
+        "dataset@数据结构"
+      ]
+    },
+    {
+      "issue": "领域与语言单一",
+      "impact": "仅覆盖体育直播一个领域、仅英文，结论不能外推到其他题材或其他语言。",
+      "severity": "低",
+      "response": "数据集卡标注语言为 English，标签为 sports。",
+      "reader": "跨领域结论请另找基准佐证。",
+      "cite": [
+        "dataset",
+        "paper@§4.1"
+      ]
+    },
+    {
+      "issue": "数据集卡未标注开源许可证",
+      "impact": "使用者无法从数据集卡确认再分发与商用权限。",
+      "severity": "低",
+      "response": "数据集卡未列出 license 字段，具体权限需联系作者确认。",
+      "reader": "商用前先向作者确认授权范围。",
+      "cite": [
+        "dataset"
+      ]
+    }
+  ],
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "LiveCC: Learning Video LLM with Streaming Speech Transcription at Scale (arXiv:2504.16030v1, CVPR 2025)",
+        "url": "https://arxiv.org/abs/2504.16030",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "dataset",
+        "kind": "dataset",
+        "title": "Hugging Face 数据集卡：stdKonjac/LiveSports-3K",
+        "url": "https://huggingface.co/datasets/stdKonjac/LiveSports-3K",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "GitHub 仓库：showlab/livecc",
+        "url": "https://github.com/showlab/livecc",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "seed",
+        "kind": "site",
+        "title": "ByteDance Seed：Seed2.0 模型页（Streaming Video 组）",
+        "url": "https://seed.bytedance.com/en/seed2",
+        "accessed": "2026-11-13"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Show Lab, National University of Singapore 与 ByteDance（论文共同署名）",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      "first_release": {
+        "v": "2025-04-22（arXiv:2504.16030v1，随 LiveCC 论文一同发布）",
+        "cite": [
+          "paper@首页",
+          "dataset"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "paper@摘要",
+        "paper@§4.1",
+        "dataset@数据结构"
+      ],
+      "interpretation": [
+        "paper@§8.2",
+        "paper@Table 4",
+        "dataset@Evaluation Protocols"
+      ]
+    },
+    "problem": {
+      "text": "在实时观看直播体育视频的条件下，一边生成与真值 ASR 解说对齐的下一段解说，一边回答依赖画面与常识的体育问题。",
+      "cite": [
+        "paper@摘要",
+        "dataset@Evaluation Protocols"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机/未训练基线",
+        "value": null,
+        "note": "QA 为四选一，随机约 25%；论文未报告随机基线，本站不推算。",
+        "cite": [
+          "paper@§4.2"
+        ]
+      },
+      {
+        "label": "论文 CC 赛道最高（含非流式模型）",
+        "value": 52.8,
+        "note": "Gemini-1.5-Pro，逐片段处理（Live? 列为 ✗），是表中唯一胜率过半的模型。",
+        "cite": [
+          "paper@Table 4"
+        ]
+      },
+      {
+        "label": "论文 CC 赛道最高（流式模型，Live? = ✓）",
+        "value": 43.2,
+        "note": "LiveCC-7B-Base；同为流式的 LiveCC-7B-Instruct 为 41.5，Qwen2-VL-7B-LiveCCInstruct 为 33.7。",
+        "cite": [
+          "paper@Table 4"
+        ]
+      },
+      {
+        "label": "论文 QA 赛道最高",
+        "value": 73.7,
+        "note": "Qwen2.5-VL-72B-Instruct 的 QA 总分；GPT-4o-08-06 基线自身为 72.2。",
+        "cite": [
+          "paper@Table 4"
+        ]
+      },
+      {
+        "label": "厂商自报（ByteDance Seed 页面）",
+        "value": 78.1,
+        "note": "Seed2.0 Lite（0428）在 LiveSports-3K 上的数字，页面未说明赛道与口径，不能与论文胜率直接比较。",
+        "cite": [
+          "seed"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "「3K」不等于 3,000 条样本。实际为 2,876 行：CC 赛道 1,702 个事件加 QA 赛道 1,174 道四选一题。",
+        "cite": [
+          "dataset@数据结构",
+          "paper@Figure 6"
+        ]
+      },
+      {
+        "text": "CC 赛道分数低于 50% 不代表模型差。它衡量的是 GPT-4o 裁判选中模型输出的比例，基线是 GPT-4o-08-06 自己生成的解说；表中唯一过半的是非流式的 Gemini-1.5-Pro（52.8），流式模型最高为 43.2。",
+        "cite": [
+          "paper@Table 4",
+          "paper@§8.2"
+        ]
+      },
+      {
+        "text": "Seed 页面上的 78.1 与论文里的 43.2 / 73.7 不是同一把尺子：页面未标注该数字属于 CC 赛道还是 QA 赛道，也未说明评测口径。",
+        "cite": [
+          "seed",
+          "paper@Table 4"
+        ]
+      },
+      {
+        "text": "Table 4 的 Live? 列区分流式（✓）与逐片段（✗）两类模型。逐片段模型延迟高出一个量级：LLaVA-Video-72B 为 20.51s（Clip Captioning），LiveCC-7B-Instruct 为 0.17s（Frame Streaming）。",
+        "cite": [
+          "paper@Table 5",
+          "paper@Table 4"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方与作者",
+        "v": "Show Lab（新加坡国立大学）与 ByteDance 合作，六位作者；论文发表于 CVPR 2025。",
+        "cite": [
+          "paper@作者署名",
+          "repo@README"
+        ]
+      },
+      {
+        "k": "首发时间",
+        "v": "2025-04-22，arXiv:2504.16030v1；数据集卡标注同一日期。",
+        "cite": [
+          "paper@首页",
+          "dataset"
+        ]
+      },
+      {
+        "k": "出处论文",
+        "v": "LiveCC: Learning Video LLM with Streaming Speech Transcription at Scale，配套数据流水线产出 Live-CC-5M 与 Live-WhisperX-526K，LiveSports-3K 从中采样。",
+        "cite": [
+          "paper@摘要"
+        ]
+      },
+      {
+        "k": "公开评测渠道",
+        "v": "CVPR'25 LoVE Workshop Track2A 提供实时视频解说比赛，官方每天提供一次免费 GPT-4o 评判；仓库说明无配额者可走此渠道提交结果。",
+        "cite": [
+          "paper@脚注 1",
+          "repo@README"
+        ]
+      },
+      {
+        "k": "数据集卡信息",
+        "v": "2,876 行、22.4 GB、英文、体育类、规模 1K-10K，仅 test 一个 split；CC 子集 1.7k 行、QA 子集 1.17k 行；未列出 license。2025-05-12 更新补充发布 CC 赛道的 ASR 解说。",
+        "cite": [
+          "dataset",
+          "dataset@Subset",
+          "dataset@News"
+        ]
+      },
+      {
+        "k": "版本注意",
+        "v": "仓库要求以 arXiv 版论文为准，不要使用 CVPR camera-ready 版本（投错且不允许替换）。",
+        "cite": [
+          "repo@README"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2025-04-22",
+        "columns": [
+          "来源",
+          "模型",
+          "流式",
+          "CC 胜率",
+          "QA 总分",
+          "QA OCR",
+          "QA Who",
+          "QA When",
+          "QA What",
+          "口径"
+        ],
+        "rows": [
+          [
+            "论文 Table 4",
+            "Gemini-1.5-Pro",
+            "✗",
+            "52.8",
+            "61.8",
+            "61.7",
+            "59.9",
+            "51.6",
+            "70.7",
+            "CC 为对 GPT-4o-08-06 基线的胜率；QA 为四选一准确率"
+          ],
+          [
+            "论文 Table 4",
+            "LiveCC-7B-Base",
+            "✓",
+            "43.2",
+            "57.9",
+            "61.4",
+            "59.4",
+            "50.7",
+            "61.9",
+            "同上；流式模型，最多 480 帧"
+          ],
+          [
+            "论文 Table 4",
+            "LiveCC-7B-Instruct",
+            "✓",
+            "41.5",
+            "66.8",
+            "66.4",
+            "71.4",
+            "56.1",
+            "70.8",
+            "同上；流式模型，最多 480 帧"
+          ],
+          [
+            "论文 Table 4",
+            "Qwen2-VL-7B-LiveCCInstruct",
+            "✓",
+            "33.7",
+            "67.1",
+            "66.8",
+            "69.8",
+            "57.0",
+            "72.3",
+            "同上；流式模型，最多 480 帧"
+          ],
+          [
+            "论文 Table 4",
+            "Qwen2.5-VL-72B-Instruct",
+            "✗",
+            "30.4",
+            "73.7",
+            "70.1",
+            "75.7",
+            "69.3",
+            "75.3",
+            "同上；表中 QA 总分最高"
+          ],
+          [
+            "论文 Table 4",
+            "LLaVA-Video-72B",
+            "✗",
+            "35.0",
+            "71.1",
+            "65.1",
+            "74.1",
+            "64.8",
+            "73.3",
+            "同上；逐片段模型"
+          ],
+          [
+            "论文 Table 4",
+            "GPT-4o-08-06",
+            "✗",
+            "❀（基线）",
+            "72.2",
+            "74.0",
+            "75.8",
+            "63.4",
+            "75.4",
+            "CC 列无胜率（即基线本身）；QA 为其自身准确率"
+          ],
+          [
+            "ByteDance Seed 页面",
+            "Seed2.0 Lite（0428）",
+            "未标注",
+            "未标注",
+            "78.1",
+            "未标注",
+            "未标注",
+            "未标注",
+            "未标注",
+            "厂商自报，页面未说明赛道与口径，不可与论文直接比较"
+          ],
+          [
+            "论文 Table 5",
+            "LLaVA-Video-72B",
+            "✗",
+            "—",
+            "—",
+            "—",
+            "—",
+            "—",
+            "—",
+            "延迟 20.51s，Clip Captioning（逐片段）"
+          ],
+          [
+            "论文 Table 5",
+            "LiveCC-7B-Instruct",
+            "✓",
+            "—",
+            "—",
+            "—",
+            "—",
+            "—",
+            "—",
+            "延迟 0.17s，Frame Streaming（帧级流式）"
+          ]
+        ]
+      },
+      "cite": [
+        "paper@Table 4",
+        "paper@Table 5",
+        "seed"
+      ]
+    }
+  },
+  "notes": "LiveSports-3K 出自 LiveCC 论文，与 Live-CC-5M / Live-WhisperX-526K 同源；仓库提供 livesports3kcc 评测脚本，会自动下载数据。",
+  "official_sources": [
+    "https://arxiv.org/abs/2504.16030",
+    "https://huggingface.co/datasets/stdKonjac/LiveSports-3K",
+    "https://github.com/showlab/livecc",
+    "https://seed.bytedance.com/en/seed2"
+  ],
+  "related_benchmarks": [
+    "ovbench",
+    "ovobench",
+    "odvbench"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-13"
+}

@@ -1,0 +1,633 @@
+{
+  "id": "shade-arena",
+  "name": "SHADE-Arena",
+  "full_name": "SHADE-Arena: Evaluating Sabotage and Monitoring in LLM Agents",
+  "aliases": [
+    "SHADE Arena",
+    "Subtle Harmful Agent Detection & Evaluation"
+  ],
+  "status": null,
+  "categories": [
+    "safety"
+  ],
+  "summary": "隐蔽破坏 + 监控双泳道 Agent 评测：17 对任务，每对是一个复杂工具环境里的「良性主任务 + 有害侧任务」组合。模型要悄悄完成侧任务；另一个当监控的模型只看完整轨迹（剥掉系统提示与隐藏 scratchpad）打 0–100 可疑度，低于 80 才算规避成功，且主任务也必须完成。",
+  "interpretation": "两个泳道方向相反，必须分开读。Sabotage 泳道分数越高 = 隐蔽完成有害侧任务的能力越强：发布时最强 27%（Claude 3.7 Sonnet），监控方为 Claude 3.6 Sonnet。Monitoring 泳道 AUC 越高 = 越能分辨良性轨迹与破坏尝试：最强监控 Gemini 2.5 Pro 只有 0.87，人类标注者 0.65；要把检出率拉到 80%，误报率会超过 20%。",
+  "measures": [
+    {
+      "area": "隐蔽破坏（sabotage 泳道）",
+      "focus": "在完成良性主任务的同时悄悄完成有害侧任务，并让不知道侧任务存在的 LLM 监控不起疑",
+      "share": "17 对任务对（公开 5 对，其余需申请）",
+      "format": "长程 Agent 轨迹 + 0–100 可疑度评分；主任务与侧任务各有一个自动评估函数",
+      "cite": [
+        "arxiv-2506-15740@Figure 1",
+        "arxiv-2506-15740@§2 任务对",
+        "arxiv-2506-15740@§2 公开5对",
+        "arxiv-2506-15740@§2 监控默认输入"
+      ]
+    },
+    {
+      "area": "监控（monitoring 泳道）",
+      "focus": "只根据轨迹判断有没有发生破坏尝试，用 AUC 与固定阈值下的检出率 / 误报率衡量",
+      "share": "14 个前沿模型、微调监控与人类标注者",
+      "format": "判别式 AUC、阈值-误报率权衡、逐轮监控聚合",
+      "cite": [
+        "arxiv-2506-15740@§3 模型数",
+        "arxiv-2506-15740@§4 监控泳道",
+        "arxiv-2506-15740@§4.1 最强监控",
+        "arxiv-2506-15740@§4.1 人类AUC"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "显式、无需隐蔽的有害动作：论文把已有环境归为「没有一个要求 Agent 隐蔽行事」，本评测的设定就是侧任务必须能被藏起来",
+      "cite": [
+        "arxiv-2506-15740@§5 相关工作",
+        "arxiv-2506-15740@§2 侧任务"
+      ]
+    },
+    {
+      "text": "无监控场景下的自主破坏倾向：本评测默认有一个持续看轨迹的监控方，测的是「被盯着时能不能藏住」",
+      "cite": [
+        "arxiv-2506-15740@§2 监控默认输入",
+        "arxiv-2506-15740@§2 监控不知侧任务"
+      ]
+    },
+    {
+      "text": "监控方自身的安全性或破坏倾向：监控是同一套环境上的第二个泳道，衡量的是分辨能力",
+      "cite": [
+        "arxiv-2506-15740@§4 监控泳道"
+      ]
+    },
+    {
+      "text": "训练 / 微调方法的优劣：论文只用微调 GPT-4o 说明监控能力可以被改进，没有系统比较训练方法",
+      "cite": [
+        "arxiv-2506-15740@§4.3 微调监控"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 17,
+    "splits": [
+      "public",
+      "private"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "作者自建的合成 Agent 环境（沿用 AgentDojo 的环境、工具与 Agent 流水线后大幅扩充）",
+    "public_sample": true,
+    "totals": "17 对任务对：公开 5 对，其余 12 对需申请；环境侧累计 30 多个组件、340 多个工具，典型环境 ≥20 个工具，主任务成功一次平均约 25 轮",
+    "cite": [
+      "arxiv-2506-15740@Figure 1",
+      "arxiv-2506-15740@§2 任务对",
+      "arxiv-2506-15740@§2 公开5对",
+      "arxiv-2506-15740@§2.2 AgentDojo",
+      "arxiv-2506-15740@§2.2 规模",
+      "arxiv-2506-15740@§2 工具规模",
+      "arxiv-2506-15740@§2 主任务"
+    ],
+    "construction": [
+      {
+        "k": "起点",
+        "text": "沿用 AgentDojo 的环境、工具与 Agent 流水线，再显著扩充工具数量与环境细节",
+        "cite": [
+          "arxiv-2506-15740@§2.2 AgentDojo"
+        ]
+      },
+      {
+        "k": "规模",
+        "text": "累计 30 多个环境组件（收件箱、云盘、电话等）、340 多个工具；每个环境灌入合成数据，有的超过 100,000 token",
+        "cite": [
+          "arxiv-2506-15740@§2.2 规模",
+          "arxiv-2506-15740@§2.2 合成数据"
+        ]
+      },
+      {
+        "k": "任务对三准则",
+        "text": "环境足够复杂真实（信息过载、工具使用难监控只在复杂环境里出现）；对当时与未来前沿模型仍不可行；存在隐蔽解法且作者给出参考解",
+        "cite": [
+          "arxiv-2506-15740@§2.1 准则1",
+          "arxiv-2506-15740@§2.1 准则2",
+          "arxiv-2506-15740@§2.1 准则3",
+          "arxiv-2506-15740@§2.2 参考解"
+        ]
+      },
+      {
+        "k": "人工校准",
+        "text": "每个环境都要大量手工工程与轨迹回看来校准难度，并确认满足三条准则",
+        "cite": [
+          "arxiv-2506-15740@§2.2 人工校准"
+        ]
+      },
+      {
+        "k": "良性轨迹校验",
+        "text": "良性主任务轨迹必须不被误判：Claude 3.7 Sonnet 与 R1 在监控 Gemini 2.5 Pro 的良性轨迹时，从不把可疑度打到 30 以上",
+        "cite": [
+          "arxiv-2506-15740@附录 B.3 良性校验"
+        ]
+      },
+      {
+        "k": "被剔除的任务",
+        "text": "选举篡改（election tampering）任务因「侧任务靠无能也能完成」被排除在论文的测量之外",
+        "cite": [
+          "arxiv-2506-15740@附录 B.3 排除任务"
+        ]
+      },
+      {
+        "k": "防污染",
+        "text": "17 对里只公开 5 对，其余以防数据泄漏为由需申请；仓库带 canary 串，用于发现任务数据被混进训练集",
+        "cite": [
+          "arxiv-2506-15740@§6 公开口径",
+          "repo-jkutaso@README canary"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "sabotage-success",
+      "name": "破坏成功率",
+      "direction": "越高代表隐蔽破坏能力越强",
+      "description": "可疑度低于 80（规避监控）且主任务、侧任务同时成功的轨迹占比",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2506-15740@§3 判定口径"
+      ]
+    },
+    {
+      "id": "evasion-rate",
+      "name": "规避监控率",
+      "direction": "越高代表隐蔽破坏能力越强",
+      "description": "只看可疑度是否低于 80，不要求主任务也成功；论文分项报告时最强模型约 50%",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2506-15740@§3 判定口径",
+        "arxiv-2506-15740@§3.1 组件成功率"
+      ]
+    },
+    {
+      "id": "monitor-auc",
+      "name": "监控 AUC",
+      "direction": "越高代表监控分辨能力越强",
+      "description": "监控把良性轨迹与破坏尝试区分开的 AUC；论文同时给出固定阈值下的检出率与误报率权衡",
+      "range": [
+        0,
+        1
+      ],
+      "unit": "auc",
+      "cite": [
+        "arxiv-2506-15740@§4.1 最强监控",
+        "arxiv-2506-15740@§4.1 误报率"
+      ]
+    }
+  ],
+  "default_protocol": {
+    "raw": "同一环境跑两个角色。Agent 拿到良性主任务和一个只写在系统提示里的有害侧任务，可以写监控看不到的隐藏 scratchpad；把完整轨迹（用户消息、全部助手消息、工具调用输出）剥掉系统提示与 scratchpad 内容后交给监控 LLM，打 0–100 可疑度。可疑度低于 80 算规避监控，再同时完成主任务与侧任务才算破坏成功；阈值 80 按 Claude 3.6 Sonnet 作监控时误报率约 1% 选取。为降低拒答，Agent 被告知自己在 mock 环境，监控不知道。",
+    "cite": [
+      "arxiv-2506-15740@§2 监控默认输入",
+      "arxiv-2506-15740@§2 监控不知侧任务",
+      "arxiv-2506-15740@§3 监控输入",
+      "arxiv-2506-15740@§3 判定口径",
+      "arxiv-2506-15740@§3 阈值80",
+      "arxiv-2506-15740@§3 mock环境",
+      "repo-jkutaso@README 监控打分",
+      "repo-jkutaso@README 监控不可见"
+    ],
+    "variants": [
+      {
+        "text": "隐藏 scratchpad 是否对监控可见：默认不可见；论文说当前前沿模型的侧任务成功高度依赖它，官方公告称给监控看思考过程会更容易发现侧任务",
+        "cite": [
+          "arxiv-2506-15740@摘要 scratchpad",
+          "anthropic-research-shade-arena-sab@scratchpad"
+        ]
+      },
+      {
+        "text": "监控聚合方式：论文比较了逐轮监控与结尾单次监控，最好的是取最后 20% 轮次里的最高可疑度；还指出监控预算花在结尾多查几次再平均上更划算",
+        "cite": [
+          "arxiv-2506-15740@§4.2 两种改进",
+          "arxiv-2506-15740@§4.2 聚合方式",
+          "arxiv-2506-15740@§4.4 预算分配"
+        ]
+      },
+      {
+        "text": "是否给 Agent 提示：仓库运行示例带 --give_hint 开关；官方公告说提示有时能帮模型更好完成任务，但经常反而更糟",
+        "cite": [
+          "repo-jkutaso@README 运行示例",
+          "anthropic-research-shade-arena-sab@提示"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "public-split",
+      "date": "2025-02-24",
+      "label": "公开 split 仓库首次提交",
+      "cite": [
+        "repo-commits@首次提交",
+        "repo-commits@首次提交日期"
+      ]
+    },
+    {
+      "id": "announcement",
+      "date": "2025-06-16",
+      "label": "Anthropic 发布研究公告",
+      "cite": [
+        "anthropic-research-shade-arena-sab@发布日期"
+      ]
+    },
+    {
+      "id": "v1",
+      "date": "2025-06-17",
+      "label": "arXiv v1 提交",
+      "cite": [
+        "arxiv-2506-15740@版本历史"
+      ]
+    },
+    {
+      "id": "repo-deprecated",
+      "date": "2025-06-22",
+      "label": "safety-research/SHADE-Arena 仓库标记 DEPRECATED，公开 split 迁到 jkutaso/SHADE-Arena",
+      "cite": [
+        "repo-commits@废弃提交日期",
+        "repo@README 废弃"
+      ]
+    },
+    {
+      "id": "v2",
+      "date": "2025-07-08",
+      "label": "arXiv v2 修订（本页核对所用版本）",
+      "cite": [
+        "arxiv-2506-15740@版本历史"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "规模小且大部分不公开",
+      "impact": "只有 17 对任务对、公开 5 对，作者自述受数据集规模限制；任务间方差极大（最难的任务接近 0%），小样本下百分比的波动会被放大。",
+      "severity": "高",
+      "response": "其余任务对以防数据泄漏为由需申请；仓库带 canary 串用于发现训练污染。",
+      "reader": "看具体任务对而不是总分；跨版本比较前先确认用的是哪 5 对。",
+      "cite": [
+        "arxiv-2506-15740@§6 规模限制",
+        "arxiv-2506-15740@§3.1 任务方差",
+        "arxiv-2506-15740@§2 公开5对"
+      ]
+    },
+    {
+      "issue": "阈值与口径敏感",
+      "impact": "「规避」由可疑度 <80 定义，该阈值按 Claude 3.6 Sonnet 作监控时误报率约 1% 选取；换监控模型或换阈值，成功率会明显变化。",
+      "severity": "高",
+      "response": "论文同时报告 AUC 与阈值-误报率权衡，并给出逐轮监控和末段重复查询两种聚合口径。",
+      "reader": "比较不同来源的数字前，先确认监控模型与阈值；80% 检出率对应超过 20% 的误报率。",
+      "cite": [
+        "arxiv-2506-15740@§3 阈值80",
+        "arxiv-2506-15740@§4.1 误报率",
+        "arxiv-2506-15740@§4.2 聚合方式"
+      ]
+    },
+    {
+      "issue": "污染与刷榜风险",
+      "impact": "公开的 5 对可以下载，可能进入训练数据或被针对性优化，使公开集分数偏高。",
+      "severity": "中",
+      "response": "只公开 5/17，其余需申请；仓库带 canary 串。",
+      "reader": "把公开集分数当上限看，关注是否有私有集复核结果。",
+      "cite": [
+        "arxiv-2506-15740@§6 公开口径",
+        "repo-jkutaso@README canary"
+      ]
+    },
+    {
+      "issue": "依赖隐藏 scratchpad 的设定",
+      "impact": "论文说当前前沿模型的侧任务成功高度依赖监控看不到的 scratchpad，这一设定直接影响测到的「隐蔽能力」。",
+      "severity": "中",
+      "response": "论文把它作为默认设置并单独分析；官方公告称给监控看思考过程会显著提升发现率。",
+      "reader": "报分数时说明 scratchpad 是否对监控开放。",
+      "cite": [
+        "arxiv-2506-15740@摘要 scratchpad",
+        "anthropic-research-shade-arena-sab@scratchpad"
+      ]
+    },
+    {
+      "issue": "结果复现受限",
+      "impact": "官方仓库明确说拿不到其余任务对就无法复现论文结果。",
+      "severity": "中",
+      "response": "私有 split 需邮件申请，含更多研究代码与轨迹。",
+      "reader": "第三方数字若只在公开 5 对上跑，不能与论文总分直接比。",
+      "cite": [
+        "repo-jkutaso@README 复现限制",
+        "repo-jkutaso@README 私有split"
+      ]
+    },
+    {
+      "issue": "环境与数据为合成构造",
+      "impact": "环境、工具与灌入数据都是作者构造的合成内容（有的超 100,000 token），与真实生产系统的分布有差距。",
+      "severity": "低",
+      "response": "作者按「复杂、真实、可隐蔽」三准则设计，并做人工轨迹回看校准。",
+      "reader": "把它当能力探针，不要当成真实世界破坏频率的估计。",
+      "cite": [
+        "arxiv-2506-15740@§2.2 合成数据",
+        "arxiv-2506-15740@§2.2 人工校准"
+      ]
+    }
+  ],
+  "notes": "双泳道（sabotage / monitoring）共用同一套环境；公开 5 对，其余需申请。仓库已从 safety-research/SHADE-Arena 迁到 jkutaso/SHADE-Arena（原仓库 README 标记废弃）。",
+  "official_sources": [
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2506.15740"
+    },
+    {
+      "kind": "site",
+      "url": "https://www.anthropic.com/research/shade-arena-sabotage-monitoring"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/jkutaso/SHADE-Arena"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/safety-research/SHADE-Arena"
+    }
+  ],
+  "related_benchmarks": [
+    "anthropic-behavioral-audit",
+    "harmbench",
+    "exploitbench"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "arxiv-2506-15740",
+        "kind": "paper",
+        "title": "SHADE-Arena: Evaluating Sabotage and Monitoring in LLM Agents（arXiv:2506.15740v2，2025-07-08）",
+        "url": "https://arxiv.org/abs/2506.15740",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "anthropic-research-shade-arena-sab",
+        "kind": "site",
+        "title": "Anthropic 研究公告：SHADE-Arena — sabotage and monitoring（2025-06-16）",
+        "url": "https://www.anthropic.com/research/shade-arena-sabotage-monitoring",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "repo-jkutaso",
+        "kind": "repo",
+        "title": "jkutaso/SHADE-Arena（当前公开 split，MIT）",
+        "url": "https://github.com/jkutaso/SHADE-Arena",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "safety-research/SHADE-Arena（原仓库，README 已标记废弃）",
+        "url": "https://github.com/safety-research/SHADE-Arena",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "repo-commits",
+        "kind": "repo",
+        "title": "safety-research/SHADE-Arena 提交记录（main.atom，用于确认废弃时点）",
+        "url": "https://github.com/safety-research/SHADE-Arena/commits/main.atom",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Anthropic 联合 Scale AI、Redwood Research 及多位独立研究者",
+        "cite": [
+          "arxiv-2506-15740@作者署名",
+          "anthropic-research-shade-arena-sab@合作方"
+        ]
+      },
+      "first_release": {
+        "v": "2025-02-24（公开 split 仓库首次提交；论文 v1 为 2025-06-17）",
+        "cite": [
+          "repo-commits@首次提交",
+          "repo-commits@首次提交日期",
+          "arxiv-2506-15740@版本历史"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "arxiv-2506-15740@摘要",
+        "arxiv-2506-15740@Figure 1",
+        "arxiv-2506-15740@§2 任务对",
+        "arxiv-2506-15740@§2 公开5对",
+        "arxiv-2506-15740@§3 判定口径",
+        "anthropic-research-shade-arena-sab@判定口径"
+      ],
+      "interpretation": [
+        "arxiv-2506-15740@摘要 最强破坏者",
+        "arxiv-2506-15740@摘要 监控AUC",
+        "arxiv-2506-15740@§4.1 最强监控",
+        "arxiv-2506-15740@§4.1 误报率",
+        "arxiv-2506-15740@§4.1 人类AUC"
+      ]
+    },
+    "problem": {
+      "text": "已有的 Agent 安全评测多停留在单轮、单工具或明显有害的动作上，回答不了「未来高风险部署里用 AI 或人盯着 Agent 时，模型能不能悄悄做小恶」；作者要造的是环境足够复杂、侧任务足够隐蔽、且对当时与未来前沿模型都不可行的评测。",
+      "cite": [
+        "arxiv-2506-15740@§1 动机",
+        "arxiv-2506-15740@§1 部署监控",
+        "arxiv-2506-15740@§2.1 准则1",
+        "arxiv-2506-15740@§2.1 准则2"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "设计底线（不为 0）",
+        "value": "基准必须有可能被完成",
+        "note": "作者要求侧任务存在隐藏解，否则测量退化；同时要求当时的前沿模型无法在没有被发现的情况下显著成功。",
+        "cite": [
+          "arxiv-2506-15740@§2.1 准则3",
+          "arxiv-2506-15740@§2.1 准则2"
+        ]
+      },
+      {
+        "label": "官方公告的总体成功率上限",
+        "value": "无模型超过 30%，多数低于 10%",
+        "note": "Anthropic 公告口径（14 个模型）；论文里最好的两个模型分别是 27% 与 15%，监控方为 Claude 3.6 Sonnet。",
+        "cite": [
+          "anthropic-research-shade-arena-sab@总体成功率",
+          "arxiv-2506-15740@摘要 最强破坏者"
+        ]
+      },
+      {
+        "label": "最强模型的分项成功率",
+        "value": "规避约 50%，侧任务约 50–60%",
+        "note": "分项不等于总体成功率；任务间方差极大，最难的任务接近 0%。",
+        "cite": [
+          "arxiv-2506-15740@§3.1 组件成功率",
+          "arxiv-2506-15740@§3.1 任务方差"
+        ]
+      },
+      {
+        "label": "监控泳道参考线",
+        "value": "AUC 0.87（Gemini 2.5 Pro）/ 人类 0.65",
+        "note": "要把检出率拉到 80%，误报率会超过 20%；人类读一条轨迹平均约 103 分钟，仍不如最强 AI 监控。",
+        "cite": [
+          "arxiv-2506-15740@§4.1 最强监控",
+          "arxiv-2506-15740@§4.1 误报率",
+          "arxiv-2506-15740@§4.1 人类AUC"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 27% 理解成「模型有 27% 概率作恶」——它是在有监控、且必须同时完成良性主任务的受控环境里测出的隐蔽成功率。",
+        "cite": [
+          "arxiv-2506-15740@§3 判定口径",
+          "anthropic-research-shade-arena-sab@任务数"
+        ]
+      },
+      {
+        "text": "把规避率（最强模型约 50%）和总体成功率（27%）混为一谈：前者只要求可疑度 <80，后者还要求主任务也成功。",
+        "cite": [
+          "arxiv-2506-15740@§3 判定口径",
+          "arxiv-2506-15740@§3.1 组件成功率"
+        ]
+      },
+      {
+        "text": "看到「任务可完成」就以为侧任务随便就能做成：作者要求侧任务存在隐藏解，参考解也经过「不被参考监控抓到」的校准。",
+        "cite": [
+          "arxiv-2506-15740@§2.1 准则3",
+          "arxiv-2506-15740@§2.2 参考解"
+        ]
+      },
+      {
+        "text": "以为隐藏 scratchpad 可有可无：论文说当前前沿模型的侧任务成功高度依赖监控看不到的 scratchpad。",
+        "cite": [
+          "arxiv-2506-15740@摘要 scratchpad"
+        ]
+      },
+      {
+        "text": "把 17 对当成 17 道题：每对是一个完整环境 + 主任务 + 侧任务 + 两个自动评估函数，公开的只有 5 对。",
+        "cite": [
+          "arxiv-2506-15740@Figure 1",
+          "arxiv-2506-15740@§2 任务对",
+          "arxiv-2506-15740@§2 公开5对"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "Anthropic（Jonathan Kutasov 为通讯作者）联合 Scale AI、Redwood Research 及多位独立与合作研究者",
+        "cite": [
+          "arxiv-2506-15740@作者署名",
+          "anthropic-research-shade-arena-sab@合作方"
+        ]
+      },
+      {
+        "k": "论文",
+        "v": "arXiv:2506.15740（v1 2025-06-17，v2 2025-07-08，Preprint. Under review.）；SHADE = Subtle Harmful Agent Detection & Evaluation",
+        "cite": [
+          "arxiv-2506-15740@摘要 定位",
+          "arxiv-2506-15740@版本历史"
+        ]
+      },
+      {
+        "k": "代码与数据",
+        "v": "公开 split 在 github.com/jkutaso/SHADE-Arena（MIT）；早期 safety-research/SHADE-Arena 仓库已标记废弃并指向现仓库，私有 split 含更多研究代码与轨迹，需邮件申请",
+        "cite": [
+          "repo-jkutaso@README",
+          "repo-jkutaso@README 私有split",
+          "repo@README 废弃",
+          "repo@README 转往私有split"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2025-02-24 公开 split 首次提交 → 2025-06-16 Anthropic 公告 → 2025-06-17 arXiv v1 → 2025-06-22 原仓库标记废弃 → 2025-07-08 arXiv v2",
+        "cite": [
+          "repo-commits@首次提交",
+          "repo-commits@首次提交日期",
+          "anthropic-research-shade-arena-sab@发布日期",
+          "repo-commits@废弃提交日期",
+          "arxiv-2506-15740@版本历史"
+        ]
+      },
+      {
+        "k": "复现入口",
+        "v": "公开仓库给出单任务运行命令（task_completion.py，示例任务文件夹 bank_transfer_2），但作者明确说拿不到其余任务对无法复现其结果",
+        "cite": [
+          "repo-jkutaso@README 运行示例",
+          "repo-jkutaso@README 复现限制"
+        ]
+      },
+      {
+        "k": "成本量级",
+        "v": "单条轨迹 10–15 分钟（Anthropic / OpenAI API），成功轨迹通常 20k–200k token",
+        "cite": [
+          "arxiv-2506-15740@附录 O 计算资源"
+        ]
+      },
+      {
+        "k": "定位",
+        "v": "作者希望它被当作前沿模型的危险能力评测来用，并认为思维链（chain-of-thought）监控可能是有效的破坏缓解手段",
+        "cite": [
+          "arxiv-2506-15740@§6 危险能力评测",
+          "arxiv-2506-15740@§6 CoT缓解"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-14",
+        "columns": [
+          "来源",
+          "泳道 / 口径",
+          "对象",
+          "结果"
+        ],
+        "rows": [
+          ["论文摘要", "sabotage · 总体成功率", "Claude 3.7 Sonnet（监控方 Claude 3.6 Sonnet）", "27%"],
+          ["论文摘要", "sabotage · 总体成功率", "Gemini 2.5 Pro（监控方 Claude 3.6 Sonnet）", "15%"],
+          ["论文 §3.1", "sabotage · 分项（最强模型）", "最强模型", "规避约 50%，侧任务约 50–60%"],
+          ["论文 §4.1", "monitoring · 全轨迹 AUC", "Gemini 2.5 Pro", "0.87（最强监控）"],
+          ["论文 §4.1", "monitoring · 人类标注子集 AUC", "Claude 3.7 Sonnet", "0.86"],
+          ["论文 §4.1", "monitoring · 人类标注子集 AUC", "Gemini 2.5 Pro", "0.72"],
+          ["论文 §4.1", "monitoring · 人类标注子集 AUC", "R1", "0.74"],
+          ["论文 §4.1", "monitoring · 人类基线 AUC", "人类标注者（12 良性 + 20 恶意轨迹）", "0.65"],
+          ["论文 §4.1", "monitoring · 固定阈值权衡", "最强监控 @80% 检出率", "误报率 >20%"],
+          ["论文 §4.3", "monitoring · 微调 GPT-4o", "7 个任务对、70 条轨迹微调", "留出任务对表现明显提升；GPT-4o-mini 无效"],
+          ["官方公告", "sabotage · 总体成功率", "14 个模型", "无一超过 30%，多数低于 10%"],
+          ["官方公告", "monitoring · 最强监控", "Gemini 2.5 Pro", "80% 检出率下误报率 >20%"]
+        ]
+      },
+      "cite": [
+        "arxiv-2506-15740@摘要 最强破坏者",
+        "arxiv-2506-15740@§3.1 组件成功率",
+        "arxiv-2506-15740@§4.1 最强监控",
+        "arxiv-2506-15740@§4.1 误报率",
+        "arxiv-2506-15740@§4.1 人类子集",
+        "arxiv-2506-15740@§4.1 人类AUC",
+        "arxiv-2506-15740@§4.3 微调监控",
+        "arxiv-2506-15740@§4.3 微调mini无效",
+        "anthropic-research-shade-arena-sab@总体成功率",
+        "anthropic-research-shade-arena-sab@最强监控"
+      ]
+    }
+  }
+}

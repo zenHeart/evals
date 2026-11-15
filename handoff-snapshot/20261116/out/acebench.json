@@ -1,0 +1,674 @@
+{
+  "id": "acebench",
+  "name": "ACEBench",
+  "full_name": "ACEBench: Who Wins the Match Point in Tool Usage?",
+  "aliases": [
+    "AceBench"
+  ],
+  "status": "active",
+  "categories": [
+    "agent"
+  ],
+  "summary": "ACEBench 是中英双语的工具调用评测：Normal（基础调用）、Special（指令有缺陷）、Agent（多轮多步人机交互）三类共 2,000 条标注样本，配套 8 大域 68 子域的 4,538 个 API 和沙盒执行环境，用 AST 比对、二值判定、过程一致性自动判分。",
+  "interpretation": "总分是「三类准确率按各自样本量平方根加权」的总体准确率，越高越好。基础调用已接近饱和（论文表 2 里 GPT-4o 的 Normal 档 93.4%），真正拉开差距的是 Agent 档（GPT-4o 63.8%，论文称多数模型不足 50%）。读分前先对口径：论文表 2、官方榜单、仓库 README 是三套不同协议的数字，不能放在一起比。",
+  "measures": [
+    {
+      "area": "Normal · 基础工具调用",
+      "focus": "单轮与多轮对话里的函数调用；论文表 2 把它拆成 Atom、Single-Turn、Multi-Turn、Similar API、Preference、Summary 六个子项分别报告",
+      "share": "未披露（论文只用图 3 可视化数据构成，没有给三类各自的样本量）",
+      "format": "模型输出与标准答案做 AST 解析比对；一道题有多个合法答案时进候选答案池，命中任一即算对，判 1 或 0",
+      "cite": [
+        "paper-arxiv@Table 2",
+        "paper-arxiv@§3.2.1"
+      ]
+    },
+    {
+      "area": "Special · 指令有缺陷",
+      "focus": "参数不完整、参数写错、提问与函数能力无关三类缺陷指令，考模型能不能识别出来；论文表 3 按 Incomplete / Error / Irrelevant 分列",
+      "share": "未披露（同上）",
+      "format": "二值判定：正确识别得 1 分，否则 0 分",
+      "cite": [
+        "paper-arxiv@Table 3",
+        "paper-arxiv@§3.2.2"
+      ]
+    },
+    {
+      "area": "Agent · 多轮多步人机交互",
+      "focus": "由真实场景抽象出的多轮多步工具调用，按用户是否参与对话分 multi-turn 与 multi-step；环境侧是沙盒，用户侧由 GPT-4o 模拟",
+      "share": "未披露（同上）",
+      "format": "两个指标：端到端准确率（最终实例属性是否全部命中）与过程准确率（实际调用过程与理想过程的匹配度）",
+      "cite": [
+        "paper-arxiv@§3.2.3",
+        "paper-arxiv@§3.1.2"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "真实外部 API 的调用与副作用：题库用合成 API 搭建，论文明确说以真实 API 为参照而非直接调用",
+      "cite": [
+        "paper-arxiv@§3.1.1"
+      ]
+    },
+    {
+      "text": "用 LLM 当裁判的主观评判：论文表 1 把 ACEBench 标为 LLM-Free，判分全程规则化自动判定（注意这不等于整条链路没有 LLM，Agent 档用户侧仍是 GPT-4o）",
+      "cite": [
+        "paper-arxiv@Table 1",
+        "paper-arxiv@§3.2.3"
+      ]
+    },
+    {
+      "text": "与真实人类用户的多轮对话：Agent 档的用户侧由 GPT-4o 模拟，不是真人",
+      "cite": [
+        "paper-arxiv@§3.2.3"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 2000,
+    "splits": [
+      "中文（data_zh）",
+      "英文（data_en）"
+    ],
+    "languages": [
+      "zh",
+      "en"
+    ],
+    "source_type": "合成 API + 程序生成对话 + 专家构建 Agent 场景（Normal / Special 由 LLM 自动生成，Agent 由领域专家构建）",
+    "public_sample": true,
+    "totals": "2,000 条标注样本，中英两个平行版本且数据类型分布一致 · API 池 4,538 个、8 大域 68 子域 · 对话轮数 1–8 · 三类各自样本量未披露 · 数据全量公开在仓库 data_all 目录",
+    "cite": [
+      "paper-arxiv@§3.1",
+      "paper-arxiv@§3.1.3",
+      "repo-acebench@Data Analysis",
+      "repo-acebench@Data"
+    ],
+    "construction": [
+      {
+        "k": "合成 API",
+        "text": "用自演化方法构建层级化 API 上下文树，先依技术文档生成 API 再逐步扩展树，保证生成 API 的领域与功能覆盖；API 是合成的，以真实 API 为参照。",
+        "cite": [
+          "paper-arxiv@§3.1.1"
+        ]
+      },
+      {
+        "k": "对话生成",
+        "text": "每个评测实例从 API 池里选 3–6 个候选 API，多数随机选，需要特定功能的用图采样；简单或用例固定的走模板化生成，保证一致性。",
+        "cite": [
+          "paper-arxiv@§3.1.1"
+        ]
+      },
+      {
+        "k": "Agent 场景",
+        "text": "对真实交互场景（外卖、电信运维等）做系统抽象，设计带业务语义的功能模块并指定核心状态变量与属性集；再搭沙盒（标准化接口 + 动态属性管理 + 执行监控）；最后由专家按多轮对话规格设计题目。",
+        "cite": [
+          "paper-arxiv@§3.1.2"
+        ]
+      },
+      {
+        "k": "多级质检",
+        "text": "先过规则质检（API 定义清晰度、函数可执行性、对话准确性、样本一致性四个维度），再进模型质检并用投票机制求一致；剩余数据由三个 LLM 辅助人工筛查，flagged 条目走「两人独立评 + 第三人汇总修改」的两步专家复审，共做三轮优化。",
+        "cite": [
+          "paper-arxiv@§3.1.3"
+        ]
+      },
+      {
+        "k": "发布后修订",
+        "text": "2025-10-29 修正了 normal_atom_enum_9、normal_atom_number_17、normal_atom_list_34 三个子集的可能答案。",
+        "cite": [
+          "repo-acebench@Updates"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "overall-accuracy",
+      "name": "总体准确率（Overall Accuracy）",
+      "direction": "越高越好",
+      "description": "Normal、Special、Agent 三类准确率按各自样本量的平方根加权求和；论文没公布三类样本量，外部无法复算这个权重",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper-arxiv@§3.2.4"
+      ]
+    },
+    {
+      "id": "normal-accuracy",
+      "name": "Normal 准确率",
+      "direction": "越高越好",
+      "description": "函数调用输出与标准答案做 AST 解析，存在多个合法答案时命中候选答案池任一即算对",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper-arxiv@§3.2.1"
+      ]
+    },
+    {
+      "id": "special-accuracy",
+      "name": "Special 准确率",
+      "direction": "越高越好",
+      "description": "模型能否识别缺陷指令（缺参、错参、与函数能力无关），按题二值判定后取平均",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper-arxiv@§3.2.2"
+      ]
+    },
+    {
+      "id": "end-to-end-accuracy",
+      "name": "端到端准确率（EA）",
+      "direction": "越高越好",
+      "description": "Agent 档：沙盒中最终实例的属性与目标逐一比对，全部命中得 1 分否则 0 分",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper-arxiv@§3.2.3"
+      ]
+    },
+    {
+      "id": "process-accuracy",
+      "name": "过程准确率（PA）",
+      "direction": "越高越好",
+      "description": "Agent 档：实际函数调用过程与理想过程的匹配程度",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper-arxiv@§3.2.3"
+      ]
+    }
+  ],
+  "default_protocol": {
+    "raw": "按类别分别推理后判分：Normal 用 AST 解析比对函数调用输出（多个合法答案时进候选答案池）；Special 判模型是否识别出缺陷指令，二值打分；Agent 在沙盒里跑多轮对话（用户侧由 GPT-4o 模拟），同时算端到端准确率与过程准确率。总分是三类准确率按各自样本量平方根加权的 Overall Accuracy。",
+    "cite": [
+      "paper-arxiv@§3.2.1",
+      "paper-arxiv@§3.2.2",
+      "paper-arxiv@§3.2.3",
+      "paper-arxiv@§3.2.4"
+    ],
+    "variants": [
+      {
+        "text": "提示词三档：Standard / Condensed / Minimal。论文表 6 显示标准提示词总体准确率最高，Qwen2.5-3B-Instruct 在英文 Normal 上从 34.5% 掉到 27.8%，换提示词会改变分数。",
+        "cite": [
+          "paper-arxiv@Table 6",
+          "paper-arxiv@Conclusion"
+        ]
+      },
+      {
+        "text": "中英分榜与合并榜：论文表 2 是中英合并，另给中文、英文分榜；仓库 README 的榜单是第三套数字（gpt-4o-2024-11-20 overall 0.896），与论文表 2（GPT-4o 85.4%）协议不同，不能混比。",
+        "cite": [
+          "paper-arxiv@Table 2",
+          "repo-acebench@Leaderboard"
+        ]
+      },
+      {
+        "text": "Agent 档内部还分 multi-turn（用户参与对话）与 multi-step，论文表 4 对两者分别给 EA / PA 四列，和表 2 里那个单一 Agent 列不是同一个数。",
+        "cite": [
+          "paper-arxiv@Table 4",
+          "paper-arxiv@§3.1.2"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2025-01-22",
+      "label": "arXiv v1 首发",
+      "cite": [
+        "paper-arxiv@版本历史"
+      ]
+    },
+    {
+      "id": "v8",
+      "date": "2025-11-20",
+      "label": "arXiv v8 最新修订（本页核对所用版本）",
+      "cite": [
+        "paper-arxiv@版本历史"
+      ]
+    },
+    {
+      "id": "answer-fix-20251029",
+      "date": "2025-10-29",
+      "label": "仓库修订：修正 normal_atom_enum_9 / normal_atom_number_17 / normal_atom_list_34 三个子集的可能答案，修订前后的分数不可直接相比",
+      "cite": [
+        "repo-acebench@Updates"
+      ]
+    },
+    {
+      "id": "leaderboard-20250721",
+      "date": "2025-07-21",
+      "label": "官方榜单最后一次更新（Combined / Chinese / English 三个榜，闭源与开源分开列）",
+      "cite": [
+        "leaderboard-site@Last Updated"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "三套数字互不一致，且榜单已停更",
+      "impact": "同一个 GPT-4o，论文表 2 给 overall 85.4（Special 93.0 / Agent 63.8），仓库 README 榜单给 0.896（normal 0.927 / special 0.933 / agent 0.715）；官方榜单停在 2025-07-21。三者协议与量表都不同，横向比较会得出相反结论——例如 README 里 Qwen2.5-Coder-32B-Instruct overall 0.853，高于论文表 2 的 79.6。",
+      "severity": "高",
+      "response": "论文固定系统提示词与判分流程并公开代码；仓库 README 与官方榜单各自标注更新时间，但没有说明三套数字差异的原因。",
+      "reader": "比较前先确认数字来自论文表 2、官方榜单还是仓库 README；跨来源的排名不要直接排。",
+      "cite": [
+        "paper-arxiv@Table 2",
+        "repo-acebench@Leaderboard",
+        "leaderboard-site@Last Updated"
+      ]
+    },
+    {
+      "issue": "Agent 档的用户模拟器与被测模型同源",
+      "impact": "Agent 档的多轮对话由 GPT-4o 扮演用户，对话分布与追问方式都带着 GPT-4o 的习惯；被测模型若在训练中见过类似输出，得分可能偏高。论文表 1 把 ACEBench 标为 LLM-Free，指的是判分不依赖 LLM，不等于整条链路无 LLM 参与。",
+      "severity": "中",
+      "response": "论文明确说明了用户模拟器的用法并给出沙盒与判分流程；没有提供替换用户模拟器的选项。",
+      "reader": "Agent 档的分数要理解为「与 GPT-4o 扮演的用户协作的能力」，不是与真人协作的能力。",
+      "cite": [
+        "paper-arxiv@§3.2.3",
+        "paper-arxiv@Table 1"
+      ]
+    },
+    {
+      "issue": "题量小、三类构成不透明，总分权重不可复算",
+      "impact": "全库 2,000 条，三类各自的样本量没有公开，而 Overall Accuracy 的权重正是按三类样本量平方根算的，外部无法复算总分。论文也承认测试数据由 LLM 生成，与真实应用数据仍有差距。",
+      "severity": "中",
+      "response": "论文给出多级质检（规则 + 模型 + 两轮专家复审 + 三轮优化），数据全量公开可自行核查。",
+      "reader": "不要把几个百分点的差距当成显著差异；引用总分时注明它来自论文表 2。",
+      "cite": [
+        "paper-arxiv@§3.1",
+        "paper-arxiv@§3.2.4",
+        "paper-arxiv@Limitations"
+      ]
+    },
+    {
+      "issue": "数据全量公开，存在污染与针对性调优空间",
+      "impact": "data_all 目录把中英两类数据全部公开，可直接进入训练集或被针对性优化，使公开集分数偏高；仓库没有另设不公开的留存集。",
+      "severity": "中",
+      "response": "仓库同时公开数据与评测代码，社区可自行复现与审计；官方未就污染做专门修正。",
+      "reader": "对公开集上接近饱和的分数保留余地，优先看 Agent 档和远未饱和的子项。",
+      "cite": [
+        "repo-acebench@Data",
+        "paper-arxiv@Limitations"
+      ]
+    },
+    {
+      "issue": "提示词策略显著影响分数",
+      "impact": "论文表 6 在英文 Normal 上测了 Standard / Condensed / Minimal 三档，Qwen2.5-3B-Instruct 从 34.5% 掉到 27.8%，同一模型换提示词能差出约 7 个百分点。",
+      "severity": "低",
+      "response": "论文默认用标准提示词，并把推理提示词放在附录 D。",
+      "reader": "看厂商或第三方自报分数时，先确认用的是哪一档提示词。",
+      "cite": [
+        "paper-arxiv@Table 6",
+        "paper-arxiv@Conclusion"
+      ]
+    }
+  ],
+  "notes": "Kimi K2 引用（工具使用数据合成管线借鉴）",
+  "official_sources": [
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2501.12851"
+    },
+    {
+      "kind": "github",
+      "url": "https://github.com/chenchen0103/ACEBench"
+    },
+    {
+      "kind": "site",
+      "url": "https://chenchen0103.github.io/ACEBench/"
+    },
+    {
+      "kind": "site",
+      "url": "https://www.kimi.ai/blog/kimi-k2"
+    }
+  ],
+  "related_benchmarks": [
+    "bfcl"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "paper-arxiv",
+        "kind": "paper",
+        "title": "ACEBench: Who Wins the Match Point in Tool Usage?（arXiv:2501.12851，v8，2025-11-20）",
+        "url": "https://arxiv.org/abs/2501.12851",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "repo-acebench",
+        "kind": "repo",
+        "title": "chenchen0103/ACEBench（代码、数据与 README 榜单）",
+        "url": "https://github.com/chenchen0103/ACEBench",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "repo-license",
+        "kind": "repo",
+        "title": "chenchen0103/ACEBench LICENSE.md",
+        "url": "https://raw.githubusercontent.com/chenchen0103/ACEBench/main/LICENSE.md",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "leaderboard-site",
+        "kind": "leaderboard",
+        "title": "ACEBench 官方榜单（Combined / Chinese / English）",
+        "url": "https://chenchen0103.github.io/ACEBench/",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "leaderboard-data",
+        "kind": "leaderboard",
+        "title": "ACEBench 官方榜单数据 script.js（榜单实际数值来源）",
+        "url": "https://chenchen0103.github.io/ACEBench/script.js",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "kimi-blog-kimi-k2",
+        "kind": "announcement",
+        "title": "Kimi K2: Open Agentic Intelligence（2025-07）",
+        "url": "https://www.kimi.ai/blog/kimi-k2",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "中国科学技术大学 × 华为诺亚方舟实验室 × 上海交通大学",
+        "cite": [
+          "paper-arxiv@作者署名"
+        ]
+      },
+      "first_release": {
+        "v": "2025-01-22（arXiv v1）",
+        "cite": [
+          "paper-arxiv@版本历史"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "paper-arxiv@Abstract",
+        "paper-arxiv@§3.1",
+        "paper-arxiv@§3.1.3"
+      ],
+      "interpretation": [
+        "paper-arxiv@§3.2.4",
+        "paper-arxiv@Table 2",
+        "paper-arxiv@§4"
+      ]
+    },
+    "problem": {
+      "text": "已有工具使用基准有三类问题：评测场景窄，缺少真实多轮对话；维度粗，缺少细粒度与个性化考察；判分依赖 LLM 或真实 API 执行，成本高且不稳定。ACEBench 想用合成 API + 沙盒 + 规则化判分把这三件事一起解决。",
+      "cite": [
+        "paper-arxiv@Abstract",
+        "paper-arxiv@§1"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "论文表 2 最低",
+        "value": "11.3%",
+        "note": "Hammer2.1-3B 的 Overall Accuracy；同表最高是 GPT-4o 的 85.4%。",
+        "cite": [
+          "paper-arxiv@Table 2"
+        ]
+      },
+      {
+        "label": "Agent 档最高",
+        "value": "63.8%",
+        "note": "GPT-4o，仅 Agent 档；论文称多数模型在这一档不足 50%，所以它比 Normal 档更能分开模型。",
+        "cite": [
+          "paper-arxiv@Table 2",
+          "paper-arxiv@§4"
+        ]
+      },
+      {
+        "label": "官方榜单开源最高",
+        "value": "82.2%",
+        "note": "Kimi-k2-0711 的 Overall Accuracy；榜单最后更新 2025-07-21，同榜闭源最高仍是 GPT-4o 85.4%。",
+        "cite": [
+          "leaderboard-data",
+          "leaderboard-site@Last Updated"
+        ]
+      },
+      {
+        "label": "论文表 2 / 官方榜单闭源最高",
+        "value": "85.4%",
+        "note": "GPT-4o：Normal 93.4 / Special 93.0 / Agent 63.8。",
+        "cite": [
+          "paper-arxiv@Table 2"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把仓库 README 榜单和论文表 2 的数字排在一起比——同一个 GPT-4o 在一边是 0.896、在另一边是 85.4%，协议不同。",
+        "cite": [
+          "repo-acebench@Leaderboard",
+          "paper-arxiv@Table 2"
+        ]
+      },
+      {
+        "text": "看到论文表 1 里 ACEBench 标着 LLM-Free，就以为整条评测链没有 LLM——它只表示判分不依赖 LLM，Agent 档的用户侧仍是 GPT-4o 模拟的。",
+        "cite": [
+          "paper-arxiv@Table 1",
+          "paper-arxiv@§3.2.3"
+        ]
+      },
+      {
+        "text": "用 Special 档高分衡量「模型能处理模糊指令」——这一档只考识别缺陷（缺参、错参、与函数能力无关），二值判定，不考模型能不能把任务补救完成。",
+        "cite": [
+          "paper-arxiv@§3.2.2",
+          "paper-arxiv@Table 3"
+        ]
+      },
+      {
+        "text": "看到 Normal 档接近 90% 就认为工具调用已经解决——Normal 只含函数调用本身，同批模型在 Agent 档多数不足 50%。",
+        "cite": [
+          "paper-arxiv@Table 2",
+          "paper-arxiv@§4"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "中国科学技术大学、华为诺亚方舟实验室、上海交通大学；共同一作标注 †，论文说明工作完成于华为诺亚方舟实验室实习期间",
+        "cite": [
+          "paper-arxiv@作者署名"
+        ]
+      },
+      {
+        "k": "论文与代码",
+        "v": "arXiv:2501.12851（v8，2025-11-20；v1 为 2025-01-22）；代码与数据在 GitHub，仓库声明 MIT 许可证（LICENSE.md 的版权声明为 Microsoft Corporation）",
+        "cite": [
+          "paper-arxiv@标题页",
+          "paper-arxiv@版本历史",
+          "repo-acebench",
+          "repo-license"
+        ]
+      },
+      {
+        "k": "数据组织",
+        "v": "全量数据在 data_all 目录，按语言分 data_en 与 data_zh，每类下是 data_{category}.json；候选答案单独放在 possible_answer_en 与 possible_answer_zh",
+        "cite": [
+          "repo-acebench@Data"
+        ]
+      },
+      {
+        "k": "复现方式",
+        "v": "推理用 generate.py（--model / --category / --language，语言支持 en 与 zh），评测用 eval_main.py；本地模型名以 -local 结尾，调 Gemini 需要日本代理，调 OpenAI 需要配好 .env 与 http_proxy / https_proxy",
+        "cite": [
+          "repo-acebench@Inference",
+          "repo-acebench@Precautions"
+        ]
+      },
+      {
+        "k": "生态采用",
+        "v": "Kimi K2 技术博客称其工具使用数据合成管线借鉴了 ACEBench，用于规模化模拟真实工具使用场景",
+        "cite": [
+          "kimi-blog-kimi-k2@Agentic Data Synthesis"
+        ]
+      },
+      {
+        "k": "榜单",
+        "v": "官方榜单提供 Combined / Chinese / English 三个榜，闭源与开源分开列，最后更新 2025-07-21；榜单数值由页面内的 script.js 提供",
+        "cite": [
+          "leaderboard-site@Last Updated",
+          "leaderboard-data"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-14",
+        "columns": [
+          "来源",
+          "模型",
+          "Normal",
+          "Special",
+          "Agent",
+          "Overall",
+          "口径"
+        ],
+        "rows": [
+          [
+            "论文 Table 2",
+            "GPT-4o",
+            "93.4",
+            "93.0",
+            "63.8",
+            "85.4",
+            "中英合并"
+          ],
+          [
+            "论文 Table 2",
+            "GPT-4-Turbo",
+            "93.2",
+            "86.7",
+            "67.5",
+            "84.5",
+            "中英合并"
+          ],
+          [
+            "论文 Table 2",
+            "Qwen-Max",
+            "91.2",
+            "74.0",
+            "64.3",
+            "78.4",
+            "中英合并"
+          ],
+          [
+            "论文 Table 2",
+            "Qwen2.5-Coder-32B-Instruct",
+            "90.2",
+            "80.7",
+            "60.8",
+            "79.6",
+            "中英合并"
+          ],
+          [
+            "论文 Table 2",
+            "DeepSeek-V3",
+            "91.5",
+            "73.0",
+            "34.5",
+            "74.8",
+            "中英合并"
+          ],
+          [
+            "论文 Table 2",
+            "Qwen2.5-7B-Instruct",
+            "76.0",
+            "47.0",
+            "13.8",
+            "54.8",
+            "中英合并"
+          ],
+          [
+            "论文 Table 2",
+            "Hammer2.1-3B",
+            "22.4",
+            "1.0",
+            "1.5",
+            "11.3",
+            "中英合并"
+          ],
+          [
+            "官方榜单",
+            "Kimi-k2-0711",
+            "89.2",
+            "84.0",
+            "74.2",
+            "82.2",
+            "榜单 Combined（2025-07-21）"
+          ],
+          [
+            "官方榜单",
+            "Gemini-2.5-Pro-05-06",
+            "87.5",
+            "90.0",
+            "63.8",
+            "80.6",
+            "榜单 Combined（2025-07-21）"
+          ],
+          [
+            "仓库 README 榜单",
+            "gpt-4o-2024-11-20",
+            "0.927",
+            "0.933",
+            "0.715",
+            "0.896",
+            "README 旧口径，与论文表 2 不可比"
+          ],
+          [
+            "仓库 README 榜单",
+            "Qwen2.5-Coder-32B-Instruct-local",
+            "0.908",
+            "0.813",
+            "0.715",
+            "0.853",
+            "README 旧口径，与论文表 2 不可比"
+          ],
+          [
+            "仓库 README 榜单",
+            "Hammer2.1-3b-local",
+            "0.118",
+            "0.013",
+            "0.015",
+            "0.074",
+            "README 旧口径，与论文表 2 不可比"
+          ]
+        ]
+      },
+      "cite": [
+        "paper-arxiv@Table 2",
+        "leaderboard-data",
+        "repo-acebench@Leaderboard"
+      ]
+    }
+  }
+}

@@ -1,0 +1,710 @@
+{
+  "id": "vlmsarebiased",
+  "name": "VLMsAreBiased",
+  "full_name": "Vision Language Models are Biased（VLMBias）",
+  "aliases": [
+    "VLMBias",
+    "vlms-are-biased"
+  ],
+  "status": "active",
+  "categories": [
+    "multimodal"
+  ],
+  "summary": "VLMBias 给视觉语言模型（VLM：能读图的 LLM）看一批反事实图——五条腿的狗、四道杠的阿迪达斯 logo、14 道条纹的美国国旗——然后用中性提问让它数。同一批模型在原图上 100% 正确，在反事实图上平均只有 17.05%，而且 75.70% 的错误答案恰好是它记住的那个数。",
+  "interpretation": "分数低不代表模型不会数数：同一张图换成原版后它答得完全正确，所以掉分来自它用记忆里的常识（狗有四条腿、阿迪达斯有三道杠）覆盖了眼睛看到的内容。把背景抠掉、准确率会从 17.05% 涨到 38.14%，说明背景里的上下文（这是只狗、这是欧盟旗）才是触发记忆答案的开关。",
+  "measures": [
+    {
+      "area": "动物腿计数（Q1/Q2）",
+      "focus": "给知名动物加一条腿（3 条腿的鸟、5 条腿的哺乳动物），问“这只动物有几条腿”；示例：5 条腿的狗，正确答案是 5，模型答 4",
+      "share": "273 张反事实图（91 种动物 × 3 档分辨率）",
+      "format": "两个中性计数提问（How many legs… / Count the legs…），答案取数字",
+      "cite": [
+        "paper@§3.1"
+      ]
+    },
+    {
+      "area": "鞋类品牌 logo 计数（Q1/Q2）",
+      "focus": "数阿迪达斯 logo 的白杠数、耐克 swoosh 的曲线数；示例：4 道杠的阿迪达斯，正确答案是 4，模型答 3",
+      "share": "207 张反事实图（3 个汽车品牌 + 2 个鞋类品牌合计）",
+      "format": "两个中性计数提问，答案取数字",
+      "cite": [
+        "paper@§3.2 logo"
+      ]
+    },
+    {
+      "area": "国旗元素计数（Q1/Q2）",
+      "focus": "数星数或条纹数；示例：多加一条条纹的美国国旗（14 道条纹），正确答案是 14，模型答 13",
+      "share": "120 张反事实图（20 面国旗，各增删一个元素）",
+      "format": "两个中性计数提问，答案取数字",
+      "cite": [
+        "paper@§3.2 旗"
+      ]
+    },
+    {
+      "area": "棋盘棋子计数（Q1/Q2）",
+      "focus": "数国际象棋/中国象棋棋盘上的棋子数；示例：少一个车的起始棋盘",
+      "share": "144 张反事实图（每张增删或替换恰好一个棋子）",
+      "format": "两个中性计数提问，答案取数字",
+      "cite": [
+        "paper@§3.2 棋"
+      ]
+    },
+    {
+      "area": "游戏棋盘行列计数（Q1/Q2）",
+      "focus": "数棋盘的行数或列数；示例：被增删一行的国际象棋、围棋、数独、中国象棋棋盘",
+      "share": "84 张反事实图（4 种游戏）",
+      "format": "两个中性计数提问，答案取数字",
+      "cite": [
+        "paper@§3.2 盘"
+      ]
+    },
+    {
+      "area": "经典视错觉判断（Q3）",
+      "focus": "6 种视错觉（Müller-Lyer、Zöllner、Ebbinghaus、Vertical-Horizontal、Pogendorff、Ponzo）各出原版与答案反转的修改版；示例：“Are the two red circles equal in size?”正确答案 Yes，模型常答 No",
+      "share": "396 张图（(24 × 5 + 12) × 3 档分辨率）",
+      "format": "一个是/否（Y/N）识别提问",
+      "cite": [
+        "paper@§3.3"
+      ]
+    },
+    {
+      "area": "自研网格异常格计数（Q1/Q2）",
+      "focus": "网格里除异常格外都遵循同一对称递增规律，问异常格里有多少个形状或刻痕；示例：6×6 骰子格网中心格被抠掉一个圆点",
+      "share": "168 张图（2 种格型 × 2 种改法 × 14 个场景 × 3 档分辨率）",
+      "format": "两个中性计数提问，答案取数字",
+      "cite": [
+        "paper@§3.4"
+      ]
+    },
+    {
+      "area": "原图对照（sanity check）",
+      "focus": "同一批模型在未经修改的原图上回答同样的识别与计数问题，用来证明它们认识图里的对象；示例：原版阿迪达斯 logo，“How many stripes?”答 3",
+      "share": "458 个原图样本（HF original split）",
+      "format": "计数（count）+ 识别（id）两类提问",
+      "cite": [
+        "paper@Table 2"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "通用视觉计数能力：只覆盖 7 个高知名度对象的“签名元素”变体（腿、条纹、星、棋子、行列、错觉线段、网格图形），不测任意物体的计数，也不能外推到低频或陌生的对象",
+      "cite": [
+        "paper@§3.1",
+        "paper@§3.4"
+      ]
+    },
+    {
+      "text": "图像与视频生成质量：站点的 Sora 2 实验只是定性观察（Sora 会悄悄把反事实图重画成正常版本），没有计入任何分数",
+      "cite": [
+        "vlmsarebiased@附录-Sora"
+      ]
+    },
+    {
+      "text": "推理链长度、工具使用频率、思考 token 数等过程指标：这些只在附录里作为解释准确率的因素分析，不是 VLMBias 的评分项",
+      "cite": [
+        "paper@§5 讨论"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 2784,
+    "splits": [
+      "main（2,784 行）：1,392 张反事实图的 Q1+Q2 计数问题",
+      "identification（1,392 行）：同一批图的 Q3 是/否识别问题",
+      "withtitle（2,784 行）：Q1/Q2，但问题里带上了错觉或对象的名称",
+      "original（458 行）：原图的 count 与 id 对照问题",
+      "remove_background_q1q2（2,784 行）：抠掉背景后的 Q1/Q2 计数问题",
+      "remove_background_q3（1,392 行）：抠掉背景后的 Q3 识别问题"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "反事实合成图 + 人工审核：动物与 logo 用 Gemini-2.0 Flash / GPT-4o 生成或编辑后放入真实场景；国旗、棋子、棋盘、视错觉、网格共 5 类图用代码绘制；论文另用线性探针证明视觉编码器本身已编码了腿数信息（95.26%）",
+    "public_sample": true,
+    "multiple_choice_share": "仅 Q3 一类为二选一（Yes/No），共 1,392 行；其余为开放式计数，答案从花括号里取数字",
+    "multimodal_share": "100%（全部题目都带图）",
+    "totals": "HF 数据集共 6 个 split、23,188 行、2.99 GB；默认 config 为 v2，另有 v1-legacy 保留 ICLR 论文数据。核心规模是 1,392 张反事实图：每张图配 2 个计数提问（Q1、Q2）共 2,784 行，另配 1 个是/否识别提问（Q3）1,392 行。",
+    "cite": [
+      "dataset@数据集卡",
+      "dataset@README 表"
+    ],
+    "construction": [
+      {
+        "k": "选题",
+        "text": "挑 7 个“模型几乎一定记住”的高知名度域：动物、logo、国旗、棋子、棋盘、视错觉，以及一个作者从零设计的规律网格（用来把偏差来源从外部知识换成图内规律）。",
+        "cite": [
+          "vlmsarebiased@首页导语",
+          "paper@§3.4"
+        ]
+      },
+      {
+        "k": "造反事实图",
+        "text": "对每个对象做最小修改：加一条腿、加一道杠、加一颗星、少一个棋子、多一行棋盘、把错觉的正确答案反转、在规律网格里放一个异常格。动物与 logo 用 Gemini-2.0 Flash / GPT-4o 生成后人工筛选，其余 5 类用代码绘制。",
+        "cite": [
+          "paper@§3.1",
+          "paper@§3.2 logo"
+        ]
+      },
+      {
+        "k": "控变量",
+        "text": "每张图渲染 3 档分辨率（384 / 768 / 1152），保持原宽高比；每张图配 2 个写法不同的中性提问，用描述性语言（如 stylized curves）避免提示词本身带偏向。",
+        "cite": [
+          "paper@§3 控制"
+        ]
+      },
+      {
+        "k": "三档提问",
+        "text": "先在同一张原图上问识别 + 计数做 sanity check，再在反事实图上问同样的 Q1/Q2 计数问题和 Q3 是/否识别问题；Q3 在反事实图上的正确答案永远是 No。",
+        "cite": [
+          "paper@Table 2",
+          "paper@§4.3"
+        ]
+      },
+      {
+        "k": "评分",
+        "text": "从回答里取最后一个花括号内容；等于 ground_truth 记 correct，等于 expected_bias 记 bias-aligned；论文报的是 7 个任务的均值。",
+        "cite": [
+          "dataset@数据集卡"
+        ]
+      },
+      {
+        "k": "人类基线",
+        "text": "另做人类研究：78 名参与者在 0.2 到 2 秒内数反事实动物的腿，2 秒时正确率 93.75%、偏差率降到 5%。",
+        "cite": [
+          "vlmsarebiased@人类研究"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "counting-accuracy",
+      "name": "计数准确率",
+      "direction": "越高越好",
+      "description": "Q1 与 Q2 两个中性计数提问在反事实图上答对的比例，7 个域取平均；论文主表口径为 5 个 2025 年前沿 VLM 的 17.05%",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@Table 2",
+        "vlmsarebiased@Table 1"
+      ]
+    },
+    {
+      "id": "bias-rate",
+      "name": "偏差率",
+      "direction": "越低越好",
+      "description": "回答等于该题预定义的“符合常识的偏向答案”（如狗答 4、阿迪达斯答 3）的频率；论文 5 个 VLM 的均值为 75.70%，注意这个答案在反事实图上是错的",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§3 Bias Definition",
+        "vlmsarebiased@Finding 2"
+      ]
+    },
+    {
+      "id": "identification-accuracy",
+      "name": "是/否识别准确率",
+      "direction": "越高越好",
+      "description": "Q3（“Is this an animal with 4 legs?”）在反事实图上的正确率，正确答案为 No；原图上同题 100%，反事实图上 5 个 VLM 均值 25.11%",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "vlmsarebiased@Finding 2"
+      ]
+    }
+  ],
+  "default_protocol": {
+    "raw": "5 个 2025 年前沿 VLM（Gemini-2.5 Pro、Sonnet-3.7、GPT-4.1、o3、o4-mini），默认无工具；温度 1.0，o3 / o4-mini 的 reasoning effort 设为 medium；每题取回答中最后一个花括号内容做字符串精确匹配；论文报 7 个域的平均，另报原图 sanity check 与 5 次重复的方差（均值 17.89%、pass@5 26.55%）。",
+    "cite": [
+      "paper@附录 D 设置",
+      "paper@Table 2",
+      "paper@附录 Table 10"
+    ],
+    "variants": [
+      {
+        "text": "数据版本 v1 vs v2：HF 默认 config 是 v2，v1-legacy 保留 ICLR 论文数据；lmms-eval 走本仓默认 config 因此跑在 v2 上，而 VLMEvalKit 与 EvalScope 各自托管 v1 的副本，跨框架的数字不能直接比。",
+        "cite": [
+          "dataset@框架",
+          "repo@框架"
+        ]
+      },
+      {
+        "text": "无工具 vs 带工具：o4-mini 接 Python 工具（缩放、裁剪）只从 23.18% 提到 25.08%（+1.9），偏差率 71.03% → 68.92%，且只在 29.66% 的题目上真的用了工具。",
+        "cite": [
+          "paper@Table 14",
+          "paper@§5 人类"
+        ]
+      },
+      {
+        "text": "单次 vs 多次采样：论文 5 次重复的均值 17.89%，pass@5 26.55%，自报置信度 91.25%，一致性 92.79%——错得很稳定。",
+        "cite": [
+          "paper@附录 Table 10"
+        ]
+      },
+      {
+        "text": "分辨率：384 / 768 / 1152 三档之间只差 2.85 个点（15.43% → 18.28%），分辨率是次要因素。",
+        "cite": [
+          "paper@Table 21"
+        ]
+      },
+      {
+        "text": "提问变体：图内写上对象名称（“Ebbinghaus illusion”“Adidas”）平均 −4.49；改用“不要靠先验知识”的 debased prompt +1.87；答完让模型再检查一遍 +2.70。",
+        "cite": [
+          "vlmsarebiased@Finding 5"
+        ]
+      },
+      {
+        "text": "各实验室自评：厂商 model card 上的 VLMBias 分数是各家自己跑的，同一模型在不同卡上可以差 10 个点以上（Claude Opus 4.5 在 Google 的表里 32.7，在 ByteDance 的表里 21.4）。",
+        "cite": [
+          "vlmsarebiased@模型卡"
+        ]
+      },
+      {
+        "text": "专门训练过指向+计数的模型：Moondream / Molmo 三个模型均值 36.02%，约为 5 个通用 VLM（17.05%）的两倍，偏差率只有 34.50%。",
+        "cite": [
+          "paper@Table 17",
+          "vlmsarebiased@附录-A.16"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "arxiv-v1",
+      "date": "2025-05-29",
+      "label": "arXiv v1 首发（cs.LG / cs.CV），HF 数据集同日发布",
+      "cite": [
+        "arxiv-abs@版本历史",
+        "dataset@数据集卡"
+      ]
+    },
+    {
+      "id": "arxiv-v2",
+      "date": "2025-09-27",
+      "label": "arXiv v2 修订",
+      "cite": [
+        "arxiv-abs@版本历史"
+      ]
+    },
+    {
+      "id": "iclr-2026",
+      "date": "2026-01",
+      "label": "被 ICLR 2026 接收（站点 News 只写月份：Jan 2026 Accepted to ICLR 2026）",
+      "cite": [
+        "vlmsarebiased@News"
+      ]
+    },
+    {
+      "id": "arxiv-v4",
+      "date": "2026-04-19",
+      "label": "arXiv v4：ICLR 2026 camera-ready，本页核对所用版本",
+      "cite": [
+        "arxiv-abs@版本历史",
+        "paper@ICLR 2026"
+      ]
+    },
+    {
+      "id": "dataset-v2",
+      "date": "2026-11-10",
+      "label": "HF 数据集升到 v2 并成为默认 config：错觉图用 Pyllusion 重绘、问题改问红色元素、ID 重排并修复若干 v1 错误；v1 数据保留为 v1-legacy",
+      "cite": [
+        "repo@News",
+        "vlmsarebiased@News"
+      ]
+    },
+    {
+      "id": "site-2026-11",
+      "date": "2026-11-09",
+      "label": "站点更新：新增采用追踪（4 个 model card、17 个模型、12 篇论文、3 个框架）",
+      "cite": [
+        "vlmsarebiased@采用追踪"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "跨实验室自评不可比",
+      "impact": "厂商 model card 上的 VLMBias 分数是各家用自己的提示词、采样设置和数据副本跑出来的。同一个 Claude Opus 4.5 在 Google 的表里是 32.7，在 ByteDance 的表里是 21.4，差 10 个点以上；站点自己复跑的 GPT-6 Astra 是 84.10%，而目前各家自报最高是 Qwen3.8-Max 的 88.3%，两者口径不同。",
+      "severity": "高",
+      "response": "站点明确写了“分数抄自各卡自己的表，每个实验室自己跑评测”，并逐卡列出；论文主表固定 5 个模型和统一设置作为参照。",
+      "reader": "看到厂商自报的 VLMBias 分数，先问是论文口径、站点复跑还是各家自评，再决定能不能和别人并列。",
+      "cite": [
+        "vlmsarebiased@模型卡",
+        "vlmsarebiased@GPT-6 Astra",
+        "paper@Table 2"
+      ]
+    },
+    {
+      "issue": "数据版本与框架副本分裂",
+      "impact": "v1 与 v2 在错觉任务上不是同一批图（v2 重绘并把问题改成问红色元素），ID 也全部重排；lmms-eval 跑 v2，VLMEvalKit 和 EvalScope 各自托管 v1 副本，跨框架或跨版本比较会把数据差异当成模型差异。",
+      "severity": "高",
+      "response": "HF 同时提供 v1-legacy config；数据集卡与仓库都写明了各框架实际加载哪个版本；站点 News 标注了 v2 的变更范围。",
+      "reader": "核对分数出自 v1 还是 v2、以及用的是哪个框架，再横向比。",
+      "cite": [
+        "dataset@框架",
+        "repo@框架",
+        "repo@News"
+      ]
+    },
+    {
+      "issue": "域覆盖窄且高度精选",
+      "impact": "7 个域全部是“模型几乎一定背过”的高知名度对象， patterned grids 是作者自研的；动物域只有 91 种且以狗、鸟、马为主。低分说明在这类强先验对象上失效，不能推广成“VLM 视觉普遍不行”或“所有计数任务都不行”。",
+      "severity": "中",
+      "response": "论文同时给原图 100% 的 sanity check 和抠背景后的 38.14%，把“先验强”和“计数能力差”区分开；附录另测了低频对象的生成偏差。",
+      "reader": "把 17.05% 读成“在 7 个强先验域上的计数准确率”，不是通用视觉能力分。",
+      "cite": [
+        "paper@§3.1",
+        "paper@§5 讨论"
+      ]
+    },
+    {
+      "issue": "单次作答与温度设置",
+      "impact": "主表是 temperature 1.0 的单次作答，推理档位固定 medium；论文自己的 5 次重复给出均值 17.89%、pass@5 26.55%，说明单次数字本身有波动，且 pass@5 明显高于单次。",
+      "severity": "中",
+      "response": "论文按既有基准的默认设置执行，并在附录 Table 10 报告 5 次重复的均值、pass@5、自报置信度（91.25%）与一致性（92.79%）。",
+      "reader": "单点分数别过度解读；要看趋势和 pass@5 的区别。",
+      "cite": [
+        "paper@附录 D 设置",
+        "paper@附录 Table 10"
+      ]
+    },
+    {
+      "issue": "合成 logo 与国旗的版权与撤回条款",
+      "impact": "数据集里的合成商标和国旗只授权非商业研究用途、不构成任何背书，并且“可应要求移除”。这意味着数据集内容未来可能被部分删除，依赖它的分数不一定能复现。",
+      "severity": "中",
+      "response": "论文在 Ethics 一节写明授权范围与撤回条款；代码与数据公开在官网与 GitHub（MIT 许可的是代码）。",
+      "reader": "商业用途不要直接用这批图；复现时留意 split 内容是否变更。",
+      "cite": [
+        "paper@Ethics",
+        "repo@News"
+      ]
+    },
+    {
+      "issue": "主实验只有 5 个 2025 年一代模型",
+      "impact": "论文主表的 17.05% / 75.70% 来自 5 个 2025 年模型；附录补了 GPT-5（30.72%）与 Grok-4（17.71%）等，站点与厂商卡又覆盖了更晚的模型。不同世代的数字混在一张表里会误导。",
+      "severity": "中",
+      "response": "论文按“主表 5 模型 + 附录分批补充”组织，站点按发布时间分别记录 model card 分数。",
+      "reader": "比较时先对齐模型世代和口径。",
+      "cite": [
+        "paper@Table 2",
+        "vlmsarebiased@模型卡"
+      ]
+    },
+    {
+      "issue": "已知数据缺陷（部分已在 v2 修复）",
+      "impact": "v1 存在跨 split 重复 ID（246 个）、original 里 90 行车 logo 共用 6 个 ID、以及一个截断的 PNG（shoe_005_notitle_Q3_px768）；棋盘增删首行/列与增删末行/列得到同一张图（24 个样本里 6 个重复），这个问题 v1 和 v2 都还在。",
+      "severity": "低",
+      "response": "v2 重排全部 ID 并修复截断 PNG 与元数据缺失；数据集卡的“Known issue”明确记录了棋盘重复图，并说明答案本身是正确的。",
+      "reader": "用 v1 的老结果要知道这些坑；棋盘域的样本量比名义值略少。",
+      "cite": [
+        "dataset@已知问题",
+        "repo@News"
+      ]
+    }
+  ],
+  "notes": "站点统计（2026-11-09）：4 个 frontier model card、17 个模型、12 篇论文、3 个开源框架在用；采用追踪与引用数每周刷新。字节 Seed 1.8 官方博客报 62.0。",
+  "official_sources": [
+    {
+      "kind": "site",
+      "url": "https://vlmsarebiased.github.io/"
+    },
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2505.23941"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/anvo25/vlms-are-biased"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/anvo25/vlms-are-biased"
+    },
+    {
+      "kind": "blog",
+      "url": "https://seed.bytedance.com/en/blog/official-release-of-seed1-8-a-generalized-agentic-model"
+    }
+  ],
+  "related_benchmarks": [
+    "hallusionbench",
+    "vlmsareblind",
+    "countix",
+    "realworldqa"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-15",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-15",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "Vision Language Models are Biased（arXiv:2505.23941，v4，ICLR 2026 camera-ready）",
+        "url": "https://arxiv.org/pdf/2505.23941",
+        "accessed": "2026-11-15"
+      },
+      {
+        "id": "arxiv-abs",
+        "kind": "paper",
+        "title": "arXiv abs 页（含版本历史）",
+        "url": "https://arxiv.org/abs/2505.23941",
+        "accessed": "2026-11-15"
+      },
+      {
+        "id": "dataset",
+        "kind": "dataset",
+        "title": "Hugging Face anvo25/vlms-are-biased 数据集卡（v2）",
+        "url": "https://huggingface.co/datasets/anvo25/vlms-are-biased",
+        "accessed": "2026-11-15"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "GitHub anvo25/vlms-are-biased 仓库 README",
+        "url": "https://github.com/anvo25/vlms-are-biased",
+        "accessed": "2026-11-15"
+      },
+      {
+        "id": "vlmsarebiased",
+        "kind": "site",
+        "title": "vlmsarebiased.github.io 官网（含 News、附录实验与采用追踪）",
+        "url": "https://vlmsarebiased.github.io/",
+        "accessed": "2026-11-15"
+      },
+      {
+        "id": "seed-en-blog-official-release",
+        "kind": "blog",
+        "title": "ByteDance Seed 1.8 官方发布博客",
+        "url": "https://seed.bytedance.com/en/blog/official-release-of-seed1-8-a-generalized-agentic-model",
+        "accessed": "2026-11-15"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "KAIST × College of William and Mary × University of Alberta × Auburn University（ICLR 2026 会议论文）",
+        "cite": [
+          "paper@作者署名",
+          "paper@ICLR 2026"
+        ]
+      },
+      "first_release": {
+        "v": "2025-05-29（arXiv v1，HF 数据集同日发布）",
+        "cite": [
+          "arxiv-abs@版本历史",
+          "dataset@数据集卡"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "vlmsarebiased@首页导语",
+        "paper@摘要",
+        "paper@Table 2"
+      ],
+      "interpretation": [
+        "paper@Table 2",
+        "vlmsarebiased@Finding 3",
+        "paper@§5 讨论"
+      ]
+    },
+    "problem": {
+      "text": "此前证明 VLM 有偏差的证据几乎全是“把偏向句写进提示词”的是/否题（比如图里猫更小，却问“Is the mouse smaller than the cat?”），这样分不清错在图像还是在提示词；视错觉方向同理——o4-mini 在 IllusionVQA 上能拿到 71.49%，但论文怀疑那是背下了经典错觉、而不是真的在看图。VLMBias 改用中性提问 + 照片级真实的反事实图，把“图像本身贡献了多少偏差”单独测出来，并直接对标日常客观视觉任务（数腿、数杠、数星）。",
+      "cite": [
+        "paper@引言",
+        "paper@§3.3"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "硬币基线（Q3 二选一）",
+        "value": "50.00%",
+        "note": "附录 A.22 的 random baseline 行：并排给出原图与反事实图问“腿数是否相同”，正确答案永远是 No，模型只有 11.76% 答对。",
+        "cite": [
+          "vlmsarebiased@附录 A.22"
+        ]
+      },
+      {
+        "label": "人类（2 秒）",
+        "value": "93.75%",
+        "note": "78 名参与者看 0.2–2 秒数反事实动物的腿；0.2 秒时已有约一半答对（VLM 动物域 2.12%），2 秒到 93.75%，偏差率降到 5%。",
+        "cite": [
+          "vlmsarebiased@人类研究",
+          "paper@§5 人类"
+        ]
+      },
+      {
+        "label": "论文发布时最好（主表口径）",
+        "value": "20.25%",
+        "note": "o4-mini，5 个 2025 年 VLM 中的最高；同期 o3 18.50%、Sonnet-3.7 16.59%、Gemini-2.5 Pro 16.02%、GPT-4.1 13.88%，均值 17.05%，偏差率 75.70%。",
+        "cite": [
+          "paper@Table 2",
+          "vlmsarebiased@Table 1"
+        ]
+      },
+      {
+        "label": "站点复跑（2026-10）",
+        "value": "84.10%",
+        "note": "GPT-6 Astra（medium reasoning）在全部 2,784 个问题上复跑；偏差率 14.71%，但 31% 的题零思考 token，那部分准确率只有 71.28%。",
+        "cite": [
+          "vlmsarebiased@GPT-6 Astra"
+        ]
+      },
+      {
+        "label": "厂商自报最高",
+        "value": "88.3%",
+        "note": "Qwen3.8-Max（2026-08），站点称为“目前报过的最高”；同表 Gemini 3 Pro 50.6、Seed1.8 62.0、Seed2.0 Pro 77.4。各家自己跑，口径与上面几行不一致。",
+        "cite": [
+          "vlmsarebiased@模型卡",
+          "seed-en-blog-official-release@正文"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 17.05% 理解成“VLM 不会数数”——同一批模型在未经修改的原图上是 100%，问题出在它用记忆里的常识覆盖了眼睛看到的内容。",
+        "cite": [
+          "paper@Table 2",
+          "vlmsarebiased@Table 1"
+        ]
+      },
+      {
+        "text": "把 75.70% 偏差率当成错误率——偏差率数的是“答案恰好等于常识值”的比例，和准确率是两个独立指标；一个模型可以准确率极低而偏差率极高。",
+        "cite": [
+          "paper@§3 Bias Definition",
+          "vlmsarebiased@Finding 2"
+        ]
+      },
+      {
+        "text": "把抠背景后的 38.14% 当成“模型会数了”——那只说明背景上下文是触发器；即使把背景全去掉，准确率仍然远低于人类的 93.75%。",
+        "cite": [
+          "vlmsarebiased@Finding 3",
+          "vlmsarebiased@人类研究"
+        ]
+      },
+      {
+        "text": "把不同来源的 VLMBias 分数排进同一张榜——论文主表、站点复跑、厂商 model card 是三种口径，同一个 Claude Opus 4.5 在两张卡上分别是 32.7 和 21.4。",
+        "cite": [
+          "vlmsarebiased@模型卡",
+          "paper@Table 2"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方与作者",
+        "v": "An Vo（KAIST）、Khai-Nguyen Nguyen（College of William and Mary）、Mohammad Reza Taesiri（University of Alberta）、Vy Tuong Dang 与 Daeyoung Kim（KAIST）、Anh Totti Nguyen（Auburn University）",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2025-05-29 arXiv v1 与 HF 数据集 → 2025-12 进入 lmms-eval → 2026-01 被 ICLR 2026 接收 → 2026-04-19 arXiv v4（camera-ready）→ 2026-10 站点复跑 GPT-6 Astra → 2026-11-09 站点更新采用追踪 → 2026-11-10 HF 数据集升 v2",
+        "cite": [
+          "arxiv-abs@版本历史",
+          "vlmsarebiased@News",
+          "repo@News"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "HF 数据集 anvo25/vlms-are-biased（数据集卡 License: mit，6 split，23,188 行，2.99 GB）；评测代码、图像生成器与人类研究代码在 GitHub anvo25/vlms-are-biased（MIT 许可代码，115 stars）",
+        "cite": [
+          "dataset@数据集卡",
+          "repo@News"
+        ]
+      },
+      {
+        "k": "评测框架",
+        "v": "lmms-eval（跑 v2）、VLMEvalKit（自带 v1 副本）、EvalScope（自带 v1 副本）；另提供直接调 OpenAI / Anthropic / Gemini API 的 run_api.py + score.py",
+        "cite": [
+          "dataset@框架",
+          "repo@框架"
+        ]
+      },
+      {
+        "k": "采用情况",
+        "v": "站点统计（2026-11-09）：4 个 frontier model card、17 个模型、12 篇论文、3 个开源框架；引用 82 条（Semantic Scholar / OpenAlex，每周刷新）",
+        "cite": [
+          "vlmsarebiased@采用追踪",
+          "vlmsarebiased@引用数"
+        ]
+      },
+      {
+        "k": "关键机制证据",
+        "v": "线性探针显示 VLM 的视觉编码器已经编码了腿数（95.26%），说明信息进了模型但被语言先验压住；附录另测了并排对比（11.76% vs 硬币 50%）与指向式模型（36.02%）",
+        "cite": [
+          "paper@§A.8 线性探针",
+          "vlmsarebiased@附录 A.22",
+          "paper@Table 17"
+        ]
+      },
+      {
+        "k": "定性延伸",
+        "v": "站点另做 Sora 2 实验（不计分）：把反事实图交给视频模型，Sora 会悄悄把图重画成正常版本，再按正常版本“数”",
+        "cite": [
+          "vlmsarebiased@附录-Sora"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-15",
+        "columns": [
+          "来源",
+          "模型",
+          "计数准确率",
+          "偏差率",
+          "口径"
+        ],
+        "rows": [
+          ["论文主表 / 站点 Table 1", "Gemini-2.5 Pro", "16.02%", "76.79%", "反事实图 Q1/Q2，7 域均值；无工具"],
+          ["论文主表 / 站点 Table 1", "Sonnet-3.7", "16.59%", "76.63%", "同上"],
+          ["论文主表 / 站点 Table 1", "GPT-4.1", "13.88%", "76.62%", "同上"],
+          ["论文主表 / 站点 Table 1", "o3", "18.50%", "74.81%", "同上；reasoning medium"],
+          ["论文主表 / 站点 Table 1", "o4-mini", "20.25%", "73.66%", "同上；reasoning medium"],
+          ["论文主表 / 站点 Table 1", "均值（5 个 VLM）", "17.05%", "75.70%", "同上"],
+          ["论文 Table 12（开源，Sec. A.14；站点 Table 7）", "Pixtral-12B", "12.15%", "58.96%", "7 域均值"],
+          ["论文 Table 12（开源，Sec. A.14；站点 Table 7）", "Pixtral-Large-2411", "13.60%", "72.31%", "7 域均值"],
+          ["论文 Table 12（开源，Sec. A.14；站点 Table 7）", "Qwen2.5-VL-7B", "16.62%", "52.56%", "7 域均值"],
+          ["论文 Table 12（开源，Sec. A.14；站点 Table 7）", "Qwen2.5-VL-72B", "13.87%", "67.94%", "7 域均值"],
+          ["论文 Table 12（指向式，Sec. A.16；站点 Table 8）", "Moondream-2B", "33.27%", "46.78%", "先标记坐标再计数"],
+          ["论文 Table 12（指向式，Sec. A.16；站点 Table 8）", "Molmo-7B-D", "38.39%", "32.80%", "同上"],
+          ["论文 Table 12（指向式，Sec. A.16；站点 Table 8）", "Molmo-72B", "36.39%", "23.92%", "同上"],
+          ["论文 Table 12（Sec. A.13 节）", "Grok-4", "17.71%", "54.32%", "7 域均值"],
+          ["论文 Table 12（Sec. A.13 节）", "GPT-5", "30.72%", "57.36%", "7 域均值"],
+          ["论文 Table 12（工具，Sec. A.15）", "o4-mini (chat w/ tools)", "25.08%", "68.92%", "带 Python 工具"],
+          ["站点复跑 Table 5（2026-10）", "GPT-6 Astra", "84.10%", "14.71%", "全 2,784 题，medium reasoning"],
+          ["厂商 model card（2025-12）", "Seed1.8", "62.0%", "未列出", "各实验室自评"],
+          ["厂商 model card（2025-12）", "Gemini 3 Pro", "50.6%", "未列出", "各实验室自评"],
+          ["厂商 model card（2026-02）", "Seed2.0 Pro", "77.4%", "未列出", "各实验室自评"],
+          ["厂商 model card（2026-08）", "Qwen3.8-Max", "88.3%", "未列出", "各实验室自评，目前最高"]
+        ]
+      },
+      "cite": [
+        "paper@Table 2",
+        "paper@Table 17",
+        "paper@Table 14",
+        "vlmsarebiased@Table 1",
+        "vlmsarebiased@GPT-6 Astra",
+        "vlmsarebiased@模型卡",
+        "seed-en-blog-official-release@正文"
+      ]
+    }
+  }
+}

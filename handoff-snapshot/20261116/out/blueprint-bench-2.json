@@ -1,0 +1,485 @@
+{
+  "id": "blueprint-bench-2",
+  "name": "Blueprint-Bench 2",
+  "full_name": "Blueprint-Bench 2（Andon Labs 的公寓户型图空间推理评测）",
+  "aliases": [],
+  "status": "active",
+  "categories": ["agent", "multimodal", "reasoning"],
+  "summary": "Blueprint-Bench 2 是 Andon Labs 的智能体空间推理评测：每个智能体在同一个会话里顺序处理 50 套公寓、每套约 20 张室内照片，逐套产出 2D 户型图（房间布局、门洞连通、相对大小），官方用连通图相似度打分并归一化到随机基线=0、完美=1。截至 2026-11-13 官网榜单最高 0.586（Gemini 4 Carbon），与人类基线持平；2026-05 发布时官方点名「显著领先」的前三名已全部掉出前 10。",
+  "interpretation": "分数高说明模型能跨多张照片维持同一套空间坐标系、推出房间之间的门洞连接并保持比例感——官方点名的真正区分项是 Jaccard 连通性，而不是房间数（几乎所有模型房间数都已约 90%）。但它只测这一件事：不看房间功能名称、不看房间形状，也不代表能导航或控制机器人；而且人类基线只在 12 套公寓子集上测过、模型跑满 50 套，两边不同题。",
+  "measures": [
+    {
+      "area": "房间连通关系（Jaccard 边重叠）",
+      "focus": "判断哪些房间之间有门洞——六项里权重最高，也是官方点名的区分度所在",
+      "share": "50%",
+      "format": "连通图相似度子项",
+      "cite": ["paper@§2.3 Evaluation", "site2@Scoring"]
+    },
+    {
+      "area": "连通模式（度相关）",
+      "focus": "每个房间出门数量的匹配程度",
+      "share": "20%",
+      "format": "连通图相似度子项",
+      "cite": ["paper@§2.3 Evaluation", "site2@Scoring"]
+    },
+    {
+      "area": "图密度",
+      "focus": "实际连接数与可能连接数之比是否接近真值",
+      "share": "10%",
+      "format": "连通图相似度子项",
+      "cite": ["paper@§2.3 Evaluation", "site2@Scoring"]
+    },
+    {
+      "area": "房间数量",
+      "focus": "户型图中房间个数是否正确；官方称几乎所有模型这一项都已约 90%",
+      "share": "10%",
+      "format": "计数准确率子项",
+      "cite": ["paper@§2.3 Evaluation", "site2@Key findings"]
+    },
+    {
+      "area": "门数量",
+      "focus": "门洞个数是否正确",
+      "share": "5%",
+      "format": "计数准确率子项",
+      "cite": ["paper@§2.3 Evaluation", "site2@Scoring"]
+    },
+    {
+      "area": "门朝向",
+      "focus": "门洞开口方向的分布相似度",
+      "share": "5%",
+      "format": "分布相似度子项",
+      "cite": ["paper@§2.3 Evaluation", "site2@Scoring"]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "房间功能/类型识别（厨房、卧室、客厅）——论文明确说评分不给房间标类型，只比连通图",
+      "cite": ["paper@§2.4 Limitations and Alternatives"]
+    },
+    {
+      "text": "房间形状与几何细节——论文明确说评分不考虑房间形状",
+      "cite": ["paper@§2.4 Limitations and Alternatives"]
+    },
+    {
+      "text": "导航、机器人控制、3D 重建等下游空间能力——本评测只测「照片 → 2D 平面图」这一件事",
+      "cite": ["paper@§2.4 Limitations and Alternatives"]
+    },
+    {
+      "text": "指令遵循与输出格式合规本身——但它和空间能力混在同一个分数里：格式不合规的输出根本无法计分",
+      "cite": ["paper@§2.4 Limitations and Alternatives", "paper@§3 Results and Discussion"]
+    }
+  ],
+  "dataset": {
+    "sample_count": 50,
+    "splits": ["50 套公寓单一集合（论文与官网均未披露公开 train/test 划分）"],
+    "languages": ["未披露"],
+    "source_type": "private 公寓实拍照片 + 房源列表官方户型图作真值（仓库仅公开 1 个 datapoint）",
+    "public_sample": true,
+    "totals": "50 套公寓，每套约 20 张室内照片；仓库只公开 1 个 datapoint，其余私有 · 六项子指标加权平均后归一化到随机基线=0、完美=1",
+    "cite": ["paper@§2.1 Dataset", "paper@§2.2 Generation", "site2@Leaderboard", "repo@Community submissions"],
+    "construction": [
+      {
+        "k": "输入",
+        "text": "每套公寓约 20 张室内照片；图像模型直接生成户型图，LLM 则额外收到「生成 SVG 代码」的指令，再把 SVG 解析成图。",
+        "cite": ["paper@§2.1 Dataset", "paper@§2.2 Generation", "site2@The eval"]
+      },
+      {
+        "k": "输出格式",
+        "text": "房间用 10×10 像素红点表示，墙是黑色线段，门是叠加在黑线上的绿色线段；模型必须遵守这套格式规则才能被计分。",
+        "cite": ["paper@§2.1 Dataset"]
+      },
+      {
+        "k": "真值来源",
+        "text": "每套公寓的真值户型图改编自该公寓房源列表里的官方户型图。",
+        "cite": ["paper@§2.1 Dataset"]
+      },
+      {
+        "k": "公开范围",
+        "text": "仓库只放 1 个 datapoint；论文称保留多数数据私有，以避免针对数据集过拟合的提交。",
+        "cite": ["paper@§2.2 Generation", "repo@Community submissions"]
+      },
+      {
+        "k": "运行环境",
+        "text": "智能体路径下，官方脚本把室内图片放进 Docker 容器内的文件夹，告知规则与图片位置，要求模型在指定文件路径保存生成的图。",
+        "cite": ["paper@§2.2 Generation", "repo"]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "connectivity_similarity",
+      "name": "连通图相似度（总分）",
+      "direction": "越高越好",
+      "description": "六项子指标加权平均后的复合分，D4 对称下取最优，再归一化到随机基线=0、完美=1；官网榜单上的分数就是这个数",
+      "range": [0, 1],
+      "unit": "score",
+      "cite": ["paper@§2.3 Evaluation", "site2@Scoring"]
+    },
+    {
+      "id": "jaccard_edge_overlap",
+      "name": "Jaccard 边重叠",
+      "direction": "越高越好",
+      "description": "预测连通图与真值连通图之间相同「房间—房间」连接的重叠比例，权重 50%",
+      "cite": ["paper@§2.3 Evaluation", "site2@Scoring"]
+    },
+    {
+      "id": "degree_correlation",
+      "name": "度相关",
+      "direction": "越高越好",
+      "description": "每个房间门洞数量的相关程度，权重 20%",
+      "cite": ["paper@§2.3 Evaluation", "site2@Scoring"]
+    },
+    {
+      "id": "density_similarity",
+      "name": "图密度相似度",
+      "direction": "越高越好",
+      "description": "实际连接数与可能连接数之比的匹配程度，权重 10%",
+      "cite": ["paper@§2.3 Evaluation", "site2@Scoring"]
+    },
+    {
+      "id": "room_count",
+      "name": "房间数准确率",
+      "direction": "越高越好",
+      "description": "户型图中房间个数是否正确，权重 10%；官方称几乎所有模型这一项都已约 90%",
+      "cite": ["paper@§2.3 Evaluation", "site2@Key findings"]
+    },
+    {
+      "id": "door_count",
+      "name": "门数准确率",
+      "direction": "越高越好",
+      "description": "门洞个数是否正确，权重 5%",
+      "cite": ["paper@§2.3 Evaluation", "site2@Scoring"]
+    },
+    {
+      "id": "door_orientation",
+      "name": "门朝向分布相似度",
+      "direction": "越高越好",
+      "description": "门洞开口方向分布的相似程度，权重 5%",
+      "cite": ["paper@§2.3 Evaluation", "site2@Scoring"]
+    }
+  ],
+  "default_protocol": {
+    "raw": "智能体在单个会话中顺序处理 50 套公寓，每套看约 20 张室内照片并产出一张 2D 户型图；全程可访问一个跨公寓持久的记事本和编码工具。评分先把预测图解析成连通图（红点检出房间位置，房间按面积大小排序编号），再与真值算六项子指标的加权平均（Jaccard 50%、度相关 20%、密度 10%、房间数 10%、门数 5%、门朝向 5%），在 D4 对称（旋转/反射）下取最优匹配，最后归一化到随机基线=0、完美=1。",
+    "cite": ["syscard@§8.16.2", "paper@§2.3 Evaluation", "site2@Scoring", "site2@Agent notepad system"],
+    "variants": [
+      {
+        "text": "v1 单次生成 vs v2 智能体 + 持久记事本：v2 官方页自称是 agent-only 评测，基于原论文换了评测形态、改了评分并加了记事本，两代分数不能直接比。",
+        "cite": ["site2@Original Blueprint-Bench", "site2@Agent notepad system"]
+      },
+      {
+        "text": "图像模型直接画图 vs LLM 生成 SVG：v1 论文两条路径都支持并分别报告；v2 官方页只描述智能体口径。",
+        "cite": ["paper@§2.2 Generation", "site2@The eval"]
+      },
+      {
+        "text": "误差棒口径分歧：v2 官网写 standard error，v1 论文 Figure 5 写 standard deviation，两个官方页面不一致。",
+        "cite": ["site2@Leaderboard", "paper@Figure 5"]
+      },
+      {
+        "text": "人类基线只在 12 套公寓子集上测，模型跑满 50 套；两边不是同一批题。",
+        "cite": ["site2@Leaderboard 脚注", "paper@§3 Results and Discussion"]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2025-09-24",
+      "label": "Blueprint-Bench 首发：arXiv v1（9 页 8 图，投 ICLR 2026），50 套公寓；官网榜单随机基线 0.279、人类 0.547、最好模型 GPT-5 0.431",
+      "cite": ["paper@提交信息", "paper@首页", "site1"]
+    },
+    {
+      "id": "v2",
+      "date": "2026-05",
+      "label": "Blueprint-Bench 2 上线：agent-only + 跨公寓持久记事本 + 改进评分；人类基线 0.59（同样 12 套子集）；精确发布日未披露",
+      "cite": ["site2@Key findings", "site2@Original Blueprint-Bench", "site2@Leaderboard 脚注"]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "评分只看连通图，不看房间类型和形状",
+      "impact": "论文自列两条限制：房间没有类型标签，评分也不看房间形状。把客厅画成卧室、把 L 形房间画成方形的模型，只要门洞连接对，分数照样高——分数高不等于真看懂了户型。",
+      "severity": "高",
+      "response": "论文建议：一旦模型开始拿满分，就把评分算法改成更能表达的形式（例如纳入房间类型和形状）。在评分改版前，这一项无法从分数里排除。",
+      "reader": "把分数当成「连通关系理解」的单点指标，不要当成「户型图理解」的综合分。",
+      "cite": ["paper@§2.4 Limitations and Alternatives"]
+    },
+    {
+      "issue": "指令遵循与空间能力混在同一个分数里",
+      "impact": "不合格式规则的输出根本无法被算法计分。论文把多数模型低分归因于指令遵循差，官网也单独把「图像生成系统没遵守格式规则」列为指令遵循挑战——同一个低分可能来自两种完全不同的原因。",
+      "severity": "高",
+      "response": "论文明确说 Blueprint-Bench 应该测空间智能而不是指令遵循；但目前没有把两者拆开的公开口径。",
+      "reader": "看到低分先问一句：是没读懂空间，还是没按格式输出？只看总分分不出来。",
+      "cite": ["paper@§2.4 Limitations and Alternatives", "paper@§3 Results and Discussion", "site1"]
+    },
+    {
+      "issue": "人类基线与模型不是同一批题",
+      "impact": "官方脚注写明人类基线只在 12 套公寓子集上测，模型跑满 50 套；v1 论文图 7 同样注明数据来自 12 套而非 50 套。「追平人类」比较的不是同一批样本。",
+      "severity": "高",
+      "response": "官方在脚注用星号标出，但没有公布人类在 50 套全集上的分数。",
+      "reader": "「与人类基线持平」应读作「在官方那个 12 套子集口径下持平」，不是全集意义上的人类水平。",
+      "cite": ["site2@Leaderboard 脚注", "paper@§3 Results and Discussion"]
+    },
+    {
+      "issue": "公开数据只有一个 datapoint，第三方无法独立复现",
+      "impact": "仓库只放 1 个 datapoint，论文称其余数据私有以避免针对数据集过拟合的提交。第三方拿不到题，只能复现官方自己的分数。",
+      "severity": "中",
+      "response": "作者把开源动机写成「让社区验证结果并搭自己的系统」，并留了 community submissions 流程；但可验证范围受限于公开的那一个样本。",
+      "reader": "任何「我们内部复现了 Blueprint-Bench 2」的说法都无法用公开数据核对。",
+      "cite": ["paper@§2.2 Generation", "repo@Community submissions"]
+    },
+    {
+      "issue": "官方页正文与自家榜单不同步",
+      "impact": "v2 页「Key findings」仍写 2026-05 发布时的前三名（GPT 5.5、Gemini 3.1 Pro、Claude Opus 4.7）「显著领先其余模型」，但同一页榜单上这三个已掉到第 14、28、30 名，官方没有更新正文。",
+      "severity": "中",
+      "response": "本档案用两处不同 cite 分别记录正文与榜单；官方页本身未修正。",
+      "reader": "读结论以榜单为准，别只引 Key findings 那段文字。",
+      "cite": ["site2@Key findings", "site2@Leaderboard"]
+    },
+    {
+      "issue": "v2 的评分实现与 harness 细节未公开",
+      "impact": "v2 的六项权重与 D4 对称只在官网文字里描述，没有对应代码仓库；GitHub 仓库对应 v1，且已于 2026-11-05 被作者归档为只读。官方也未公布 prompt 原文和每个模型跑了几次。",
+      "severity": "中",
+      "response": "v1 论文给出完整的六项加权公式与算法步骤可作参照；v2「improved scoring」具体改了什么，官方未说明。",
+      "reader": "复现 v2 分数时权重和对称处理要按官网文字重写，不能直接套 v1 代码。",
+      "cite": ["site2@Scoring", "repo", "repo@仓库状态"]
+    },
+    {
+      "issue": "厂商自报分数与官网榜单口径、时点不同",
+      "impact": "Anthropic 系统卡报 Claude Fable 5 在 Blueprint-Bench 2 上 38.6% 并称对 GPT-5.5（36.2%）和 Gemini 3.5 Flash（33.6%）为 SOTA；官网当前榜单上 Claude Fable 5 是 0.386 并列第 11。数值一致，但「SOTA」这个说法已过期。",
+      "severity": "中",
+      "response": "系统卡另注其标准配置（adaptive thinking max effort、默认采样设置、5 次取平均），可据此判断口径；榜单侧未公布同等的运行次数。",
+      "reader": "引用 38.6% 时不要同时引用「SOTA」——那是 2026-06 的厂商口径。",
+      "cite": ["syscard@§8.16.2", "syscard@Table 8.1.A", "site2@Leaderboard"]
+    },
+    {
+      "issue": "误差棒口径两个官方页面不一致",
+      "impact": "v2 官网写误差棒是 standard error，v1 论文 Figure 5 写 standard deviation。两者含义不同，跨代比较方差时会用错。",
+      "severity": "低",
+      "response": "官方未说明为何改动；本档案在 default_protocol.variants 中显式记录该分歧。",
+      "reader": "跨代看方差时先确认用的是哪一种误差棒。",
+      "cite": ["site2@Leaderboard", "paper@Figure 5"]
+    },
+    {
+      "issue": "公寓来源地与题目语言未披露",
+      "impact": "论文只说每套公寓的真值户型图取自房源列表的官方户型图，没说房源来自哪个城市或国家，也没说题目与提示词的语言。官网示例 trace 的文件名带地名，但那是展示样例，论文和官网都没把来源地写成事实。",
+      "severity": "低",
+      "response": "本档案在 dataset.languages 记「未披露」，不做推断。",
+      "reader": "不要把官网示例文件名当成数据来源地的证据。",
+      "cite": ["paper@§2.1 Dataset"]
+    }
+  ],
+  "notes": "原稿把本评测记成「Anthropic 表内空间推理评测（未见公开发布）」，来源只有 Anthropic 的 Fable 5 新闻稿——那条页面既没有 benchmark 表、也没有 Blueprint 字样（表是图片）。实际发布方是 Andon Labs：论文 arXiv:2509.25229v1、官网 v1/v2 两个榜单页、官方仓库、以及 Anthropic 系统卡 §8.16.2 都是一手来源，已按证据重写。",
+  "official_sources": [
+    { "kind": "site", "url": "https://andonlabs.com/evals/blueprint-bench-2" },
+    { "kind": "site", "url": "https://andonlabs.com/evals/blueprint-bench" },
+    { "kind": "paper", "url": "https://arxiv.org/abs/2509.25229" },
+    { "kind": "repo", "url": "https://github.com/AndonLabs/Blueprint-Bench-generation" },
+    { "kind": "docs", "url": "https://www-cdn.anthropic.com/d00db56fa754a1b115b6dd7cb2e3c342ee809620.pdf" }
+  ],
+  "related_benchmarks": ["arc-agi", "mvbench", "vstar", "embspatial-bench", "vending-bench"],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-13",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "Blueprint-Bench: Comparing spatial intelligence of LLMs, agents and image models（arXiv:2509.25229v1，Andon Labs，2025-09-24）",
+        "url": "https://arxiv.org/pdf/2509.25229",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "site2",
+        "kind": "site",
+        "title": "Blueprint-Bench 2 官网（Andon Labs，含榜单、评分说明与 Key findings）",
+        "url": "https://andonlabs.com/evals/blueprint-bench-2",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "site1",
+        "kind": "site",
+        "title": "Blueprint-Bench 官网（Andon Labs，v1 榜单与结论）",
+        "url": "https://andonlabs.com/evals/blueprint-bench",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "AndonLabs/Blueprint-Bench-generation（GitHub，Apache-2.0，2026-11-05 归档为只读）",
+        "url": "https://github.com/AndonLabs/Blueprint-Bench-generation",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "syscard",
+        "kind": "docs",
+        "title": "Claude Fable 5 & Mythos 5 System Card（Anthropic，§8.16.2 Blueprint-Bench 2）",
+        "url": "https://www-cdn.anthropic.com/d00db56fa754a1b115b6dd7cb2e3c342ee809620.pdf",
+        "accessed": "2026-11-13"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Andon Labs",
+        "cite": ["paper@作者署名", "site2@Citation"]
+      },
+      "first_release": {
+        "v": "2025-09-24（Blueprint-Bench arXiv v1）；Blueprint-Bench 2 于 2026 年 5 月上线，精确发布日未披露",
+        "cite": ["paper@提交信息", "site2@Key findings"]
+      }
+    },
+    "cites": {
+      "summary": ["site2@The eval", "site2@Leaderboard", "paper@§2.1 Dataset", "site2@Key findings"],
+      "interpretation": ["paper@§2.3 Evaluation", "site2@Scoring", "site2@Key findings", "site2@Leaderboard 脚注"]
+    },
+    "problem": {
+      "text": "论文要回答的问题是：照片明明在多模态模型的训练分布内，为什么空间重建仍然做不好；作者想用「公寓照片 → 2D 户型图」这个任务，在 ARC 之外再量化一个当前模型的盲点。",
+      "cite": ["paper@§1", "paper@摘要"]
+    },
+    "ladder": [
+      {
+        "label": "随机基线",
+        "value": "0（归一化后）",
+        "note": "v1 原始分 0.279，v2 归一化后映射为 0；v2 榜单上 0.000** 即不高于随机基线。",
+        "cite": ["site2@Scoring", "site2@Leaderboard 脚注", "site1"]
+      },
+      {
+        "label": "v1 论文发布时最好",
+        "value": "0.431（GPT-5）",
+        "note": "v1 口径；同期随机基线 0.279、人类 0.547（人类仅 12 套子集）。",
+        "cite": ["site1"]
+      },
+      {
+        "label": "v2 人类基线",
+        "value": "0.59",
+        "note": "官方口径 0.59，仅在 12 套公寓子集上测。",
+        "cite": ["site2@Leaderboard", "site2@Leaderboard 脚注"]
+      },
+      {
+        "label": "v2 官网榜单最高",
+        "value": "0.586（Gemini 4 Carbon）",
+        "note": "与人类基线并列第一；官网拟合并标注趋势线 R²=0.85、+0.04/月。截至 2026-11-13 抓取。",
+        "cite": ["site2@Leaderboard"]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      },
+      {
+        "label": "厂商自报（Anthropic 系统卡）",
+        "value": "0.386（Claude Fable 5）",
+        "note": "2026-06 口径，称对 GPT-5.5（36.2%）与 Gemini 3.5 Flash（33.6%）为 SOTA；与当前榜单时点不同。",
+        "cite": ["syscard@§8.16.2"]
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 v1 和 v2 的分数排在一起比——v2 换成 agent-only、加了持久记事本并改了评分，官方明确说它是基于原论文的新评测。",
+        "cite": ["site2@Original Blueprint-Bench", "site2@Agent notepad system"]
+      },
+      {
+        "text": "把「与人类基线持平」读成「达到人类水平」——人类只在 12 套公寓上测，模型跑满 50 套。",
+        "cite": ["site2@Leaderboard 脚注", "paper@§3 Results and Discussion"]
+      },
+      {
+        "text": "看到房间数约 90% 就认为快解决了——官方点名真正的区分项是 Jaccard 连通性，低分模型恰恰错在「哪个房间连哪个房间」。",
+        "cite": ["site2@Key findings"]
+      },
+      {
+        "text": "把 Anthropic 系统卡的 38.6% 当成当前排名——那是厂商自报的历史口径，当前榜单上同名模型是 0.386、并列第 11。",
+        "cite": ["syscard@§8.16.2", "site2@Leaderboard"]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "Andon Labs（论文署名 + 官网 citation 双重确认）",
+        "cite": ["paper@作者署名", "site2@Citation"]
+      },
+      {
+        "k": "论文与作者",
+        "v": "Lukas Petersson、Axel Backlund、Hanna Petersson、Axel Wennström、Callum Sharrock、Arash Dabiri（Andon Labs）；论文 2025-09-23 成稿，arXiv:2509.25229v1，9 页 8 图，投 ICLR 2026",
+        "cite": ["paper@作者署名", "paper@首页", "paper@提交信息"]
+      },
+      {
+        "k": "时间线",
+        "v": "2025-09-24 arXiv v1 → 2026-05 Blueprint-Bench 2 上线（精确日未披露）→ 2026-06 Anthropic 系统卡引用并自报 38.6% → 2026-11-05 官方仓库归档为只读",
+        "cite": ["paper@提交信息", "site2@Key findings", "syscard@§8.16.2", "repo@仓库状态"]
+      },
+      {
+        "k": "代码与数据",
+        "v": "github.com/AndonLabs/Blueprint-Bench-generation，Apache-2.0，最新 commit 2025-10-02；仓库含 dataset / predictions / random_baseline 与 Docker 化运行环境",
+        "cite": ["repo", "repo@Latest commit", "repo@仓库状态"]
+      },
+      {
+        "k": "v1 结论",
+        "v": "论文称多数模型不高于随机基线，并把低分主要归因于指令遵循差导致输出无法计分；官网另称智能体式迭代 refinement 没有带来有意义的提升，说明瓶颈在空间理解而非方法",
+        "cite": ["paper@§3 Results and Discussion", "site1"]
+      },
+      {
+        "k": "v1 测试的智能体脚手架",
+        "v": "论文在 v1 中测了两种智能体脚手架：Codex CLI 与 Claude Code",
+        "cite": ["paper@§2.2 Generation"]
+      },
+      {
+        "k": "社区提交方式",
+        "v": "fork 仓库 → 开分支 → 写 submission.py 读取 ./dataset 并产出 ./submitted_predictions → 跑那一个 datapoint → 邮件 research@andonlabs.com 附三句方法说明",
+        "cite": ["repo@Community submissions"]
+      },
+      {
+        "k": "厂商引用",
+        "v": "Anthropic 在 Fable 5 & Mythos 5 系统卡中把 Blueprint-Bench 2 列为首次报告成绩的三个新评测之一，并给出其自报运行口径",
+        "cite": ["syscard@§8.16", "syscard@Table 8.1.A"]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-13",
+        "columns": ["排名", "模型", "分数"],
+        "rows": [
+          ["T1", "Gemini 4 Carbon", "0.586"],
+          ["T1", "Human*", "0.586"],
+          ["3", "Claude Fable 5.2", "0.566"],
+          ["4", "Gemini 4 Argon", "0.544"],
+          ["5", "Claude Opus 5.5", "0.512"],
+          ["6", "GPT-6 Astra", "0.497"],
+          ["7", "GPT-6.1 Sol", "0.432"],
+          ["8", "GPT-6.1 Terra", "0.421"],
+          ["9", "Claude Fable 5.1", "0.419"],
+          ["10", "Claude Sonnet 5.5", "0.393"],
+          ["T11", "Claude Fable 5", "0.386"],
+          ["T11", "Gemini 3.8 Flash", "0.386"],
+          ["13", "GPT-6 Sol", "0.369"],
+          ["14", "GPT-5.5", "0.362"],
+          ["T15", "Gemini 3.5 Flash", "0.336"],
+          ["T15", "GPT-5.6 Sol", "0.336"],
+          ["17", "Grok 4.6", "0.332"],
+          ["18", "Claude Haiku 5.5", "0.330"],
+          ["19", "Grok 4.7", "0.325"],
+          ["20", "Muse Wonder", "0.317"],
+          ["T21", "Gemini 3.6 Flash", "0.312"],
+          ["T21", "GPT-6 Luna", "0.312"],
+          ["23", "GPT-5.6 Terra", "0.308"],
+          ["24", "Claude Opus 5", "0.304"],
+          ["25", "Kimi K3", "0.295"],
+          ["26", "Grok 4.5", "0.273"],
+          ["27", "GPT-5.4", "0.271"],
+          ["28", "Gemini 3.1 Pro", "0.265"],
+          ["29", "Claude Sonnet 5", "0.249"],
+          ["30", "Claude Opus 4.7", "0.245"],
+          ["31", "GPT-5.6 Luna", "0.226"],
+          ["32", "Claude Opus 4.8", "0.145"],
+          ["33", "Claude Sonnet 4.6", "0.067"],
+          ["34", "Kimi K2.6", "0.039"],
+          ["T35", "Gemini 3 Flash", "0.000**"],
+          ["T35", "Grok 4.3", "0.000**"],
+          ["T35", "Gemini Robotics-ER 1.6", "0.000**"],
+          ["T35", "Claude Haiku 4.5", "0.000**"],
+          ["T35", "Grok 4.20 Reasoning", "0.000**"]
+        ]
+      },
+      "cite": ["site2@Leaderboard"]
+    }
+  }
+}

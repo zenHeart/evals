@@ -1,0 +1,983 @@
+{
+  "id": "mtvqa",
+  "name": "MTVQA",
+  "full_name": "MTVQA: Benchmarking Multilingual Text-Centric Visual Question Answering",
+  "aliases": [
+    "MTVQA-Test"
+  ],
+  "status": null,
+  "categories": [
+    "multimodal",
+    "chinese"
+  ],
+  "summary": "9 种低资源语言上由母语者逐条人工标注的文本中心 VQA（TEC-VQA）：测试集 2,116 图 / 6,778 条问答，全库 8,794 图 / 28,607 条；唯一指标是短答案精确匹配准确率。论文 Table 2 最好成绩 32.2（InternVL2.5 78B），人类基线 79.7，远未饱和。",
+  "interpretation": "高分意味着模型能读准并理解图内的多语言文字。本基准刻意绕开「先翻译再问答」的路线，所以视觉-文本错位会直接变成错答案：GPT-4V 原版只有 22.0，外接 OCR 后升到 28.3，瓶颈很大一部分在多语言文字识别而非推理；模型在拉丁字母语言（DE/FR/IT）上明显更好。把它当作多语言场景文字识别+理解的综合读数，不要单独解读为推理能力。",
+  "measures": [
+    {
+      "area": "图内文字直接读取",
+      "focus": "每图前 3 问只需读出图内文字即可作答，考察多语言文字的识别与定位",
+      "share": "论文未按类别给占比；按出题规则推算约占每图 5 问中的 60%",
+      "format": "一词/短语短答案，精确匹配",
+      "cite": [
+        "arxiv-2405-11985@§3.2 出题规则",
+        "arxiv-2405-11985@§4.2 评测提示词"
+      ]
+    },
+    {
+      "area": "图内文字推理",
+      "focus": "每图第 4/5 问需就图内文字做一步推理才能作答（答案仍须是图内文字）",
+      "share": "论文未按类别给占比；按出题规则推算约占每图 5 问中的 40%",
+      "format": "一词/短语短答案，精确匹配",
+      "cite": [
+        "arxiv-2405-11985@§3.2 出题规则"
+      ]
+    },
+    {
+      "area": "9 语种分别读数",
+      "focus": "AR/DE/FR/IT/JA/KO/RU/TH/VI 逐语种报告；样本量不均——测试集泰语仅 231 条，其余语种 558–1,048 条",
+      "share": "9 语种，量不均（论文未说明均值权重）",
+      "format": "按语种准确率 + 9 语种均值（论文 Avg. 列）",
+      "cite": [
+        "hf-mtvqa@Image Distribution Test QA 行",
+        "arxiv-2405-11985@§8 语言覆盖局限",
+        "arxiv-2405-11985@§4.3.3 拉丁字母优势"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "无文字图像上的通用视觉问答——每道题的答案都依赖图内文字",
+      "cite": [
+        "arxiv-2405-11985@§3.2 出题规则"
+      ]
+    },
+    {
+      "text": "英语与中文问答——9 语种不含 en/zh；论文 Table 1 的问答语言列也写作 9 种",
+      "cite": [
+        "arxiv-2405-11985@Table 1 MTVQA 行",
+        "bytedance-mtvqa@Overview 语种"
+      ]
+    },
+    {
+      "text": "文档版面与结构解析、长文档理解（属 OCRBench v2 / OmniDocBench 一类基准的范围）",
+      "cite": [
+        "arxiv-2405-11985@Table 1 表题"
+      ]
+    },
+    {
+      "text": "翻译式问答的质量——本基准正是为绕开翻译路线的意义丢失与上下文扭曲而建",
+      "cite": [
+        "bytedance-mtvqa@Comparisons with Existing Benchmarks 翻译路线局限",
+        "bytedance-mtvqa@Comparisons with Existing Benchmarks 人工标注解决错位"
+      ]
+    },
+    {
+      "text": "长文本生成、多轮对话与工具调用——唯一指标是单词/短语级精确匹配",
+      "cite": [
+        "arxiv-2405-11985@§4.3.1 拒用 ANLS",
+        "arxiv-2405-11985@§4.3.1 指标定义"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 6778,
+    "splits": [
+      "Test：2,116 图 / 6,778 条问答（公开评测只用这一档）",
+      "Train：6,678 图 / 21,829 条问答（论文仅用于指令微调对照）"
+    ],
+    "languages": [
+      "ar",
+      "de",
+      "fr",
+      "it",
+      "ja",
+      "ko",
+      "ru",
+      "th",
+      "vi"
+    ],
+    "source_type": "human_curated",
+    "public_sample": true,
+    "totals": "全库 8,794 图 / 28,607 条问答；测试集 2,116 图 / 6,778 条，训练集 6,678 图 / 21,829 条；覆盖 20+ 细粒度场景（菜单、logo、地图、账单、PPT、论文等）",
+    "cite": [
+      "arxiv-2405-11985@§3.3 总规模",
+      "bytedance-mtvqa@Overview 规模与场景",
+      "hf-mtvqa@Image Distribution Test Images 行",
+      "hf-mtvqa@Image Distribution Train QA 行",
+      "hf-mtvqa@Image Distribution 表头"
+    ],
+    "construction": [
+      {
+        "k": "图片来源",
+        "text": "约 30% 来自公开数据集、20% 网络抓取、50% 人工采集；测试集含 1,220 张文档场景图与 876 张自然场景图，合计覆盖 20+ 细粒度场景。",
+        "cite": [
+          "arxiv-2405-11985@§3.1 图片来源",
+          "arxiv-2405-11985@§3.1 测试集构成",
+          "arxiv-2405-11985@§3.1 场景覆盖",
+          "bytedance-mtvqa@Overview 规模与场景"
+        ]
+      },
+      {
+        "k": "标注流程（maker-checker）",
+        "text": "每语言分两个独立小组：一组基于图片出题并给答案，另一组评审与纠错；首轮每语言 3 名标注员产出初始问答，二轮做相关性评估、答案校验与去冗余，并用 GPT-4V 加人工过滤不道德的问答对。",
+        "cite": [
+          "arxiv-2405-11985@§3.2 maker-checker",
+          "arxiv-2405-11985@§3.2 每语言三名标注员",
+          "hf-mtvqa@Ethics Assessment"
+        ]
+      },
+      {
+        "k": "出题结构",
+        "text": "每图 5 问：前 3 问只需直接读图内文字，第 4/5 问需就图内文字推理；答案要求是一词或短语。",
+        "cite": [
+          "arxiv-2405-11985@§3.2 出题规则"
+        ]
+      },
+      {
+        "k": "标注员门槛",
+        "text": "须为对应语言母语者且已持续使用该语言至少 10 年，并具备大学及以上学历。",
+        "cite": [
+          "arxiv-2405-11985@§3.2 标注员门槛",
+          "arxiv-2405-11985@§3.2 学历要求"
+        ]
+      },
+      {
+        "k": "质检",
+        "text": "每语言 10% 抽样质检，不合格的问答对退回重标。",
+        "cite": [
+          "arxiv-2405-11985@§3.2 抽样质检"
+        ]
+      },
+      {
+        "k": "清洗漏斗",
+        "text": "先编 8,980 图，清洗后保留 8,895 图进入标注；首轮得到 28,906 条问答，经二轮标注与最终质检后定为 8,794 图 / 28,607 条。",
+        "cite": [
+          "arxiv-2405-11985@§3.3 清洗漏斗",
+          "arxiv-2405-11985@§3.3 二轮质检"
+        ]
+      },
+      {
+        "k": "成本",
+        "text": "图片采集约 2 个月 / 3 万美元，问答标注约 3 个月 / 6 万美元。",
+        "cite": [
+          "arxiv-2405-11985@§3.1 采集与标注成本"
+        ]
+      },
+      {
+        "k": "许可",
+        "text": "CC BY-NC 4.0；Hugging Face 数据集卡明确仅限学术用途、不支持商用。",
+        "cite": [
+          "repo-mtvqa@Licence",
+          "hf-mtvqa@Out-of-Scope usage"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "accuracy",
+      "name": "Accuracy（准确率）",
+      "direction": "越高越好",
+      "description": "预测答案与任一参考答案逐字匹配的问题占比，按语种分别报告并给出 9 语种均值。作者明确拒绝 ANLS：ANLS 下模型分数会高 5–10 个百分点，但同一 prompt 下的排序不变，且 ANLS 反映不出答案里的图内文字是否正确。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "aggregation": "mean",
+      "cite": [
+        "arxiv-2405-11985@§4.3.1 指标定义",
+        "arxiv-2405-11985@§4.3.1 拒用 ANLS",
+        "arxiv-2405-11985@Table 3 表题"
+      ]
+    }
+  ],
+  "default_protocol": {
+    "raw": "Test 划分、零样本、单一固定提示词的短答案精确匹配：提示词为「Answer the question using a word or phrase in the language of the question. + <Question>」，使用各模型默认生成配置、不调采样；按语种分别报告准确率并给出 9 语种均值。",
+    "cite": [
+      "arxiv-2405-11985@§4.2 评测提示词",
+      "arxiv-2405-11985@§4.2 默认生成配置",
+      "bytedance-mtvqa@Experiment Results 提示词",
+      "repo-mtvqa@Evaluation 评测代码"
+    ],
+    "variants": [
+      {
+        "text": "ANLS 口径：同一 prompt 下模型分数高 5–10 个百分点，排序不变（论文 Table 3）。两种口径的分数不能放进同一张榜比较。",
+        "cite": [
+          "arxiv-2405-11985@§4.3.1 拒用 ANLS",
+          "arxiv-2405-11985@Table 3 表题"
+        ]
+      },
+      {
+        "text": "外接 OCR 管线：先用字节跳动多语言 OCR API 把图内文字抽出来再交给 LLM——GPT-4V 从 22.0 升到 28.3，GPT-4 + OCR 为 21.6。这不是模型原生能力。",
+        "cite": [
+          "arxiv-2405-11985@§4.3.5 OCR 管线",
+          "arxiv-2405-11985@Table 4 OCR+GPT-4V 行",
+          "arxiv-2405-11985@Table 4 OCR+GPT-4 行",
+          "arxiv-2405-11985@Table 4 表题"
+        ]
+      },
+      {
+        "text": "训练集指令微调：Xcomposer2-4KHD 在 MTVQA 训练集上 SFT 后为 19.7，仍低于未微调的 GPT-4o（27.8）。",
+        "cite": [
+          "arxiv-2405-11985@Table 2 Xcomposer-SFT 行",
+          "arxiv-2405-11985@Table 2 表注",
+          "arxiv-2405-11985@Table 2 GPT-4o 行"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "arxiv-v1",
+      "date": "2024-05-20",
+      "label": "arXiv:2405.11985 v1 预印本公开（Hugging Face 数据集卡记录 Published May 20, 2024）",
+      "cite": [
+        "hf-mtvqa@数据集卡头部"
+      ]
+    },
+    {
+      "id": "release",
+      "date": "2024-06-04",
+      "label": "数据集与评测代码正式公开发布，覆盖 9 种使用广泛但低资源语言",
+      "cite": [
+        "repo-mtvqa@News 公开发布",
+        "repo-mtvqa@News 公开发布 语种",
+        "bytedance-mtvqa@News 发布"
+      ]
+    },
+    {
+      "id": "vlmevalkit",
+      "date": "2024-07-23",
+      "label": "接入 VLMEvalKit 与 OpenCompass",
+      "cite": [
+        "repo-mtvqa@News VLMEvalKit 支持"
+      ]
+    },
+    {
+      "id": "qwen2vl",
+      "date": "2024-08-30",
+      "label": "Qwen2-VL 72B 参评并超过 GPT-4o",
+      "cite": [
+        "repo-mtvqa@News Qwen2-VL 发布"
+      ]
+    },
+    {
+      "id": "internvl2",
+      "date": "2024-09-04",
+      "label": "InternVL2 76B 参评并超过 GPT-4V",
+      "cite": [
+        "repo-mtvqa@News InternVL2 登顶"
+      ]
+    },
+    {
+      "id": "internvl25",
+      "date": "2024-12-12",
+      "label": "InternVL2.5 78B 参评并取得当时最好成绩（官方仓库记 31.9）",
+      "cite": [
+        "repo-mtvqa@News InternVL2.5 登顶",
+        "repo-mtvqa@Leaderboard InternVL2.5 78B 行"
+      ]
+    },
+    {
+      "id": "helpy-v",
+      "date": "2025-03-25",
+      "label": "韩国 Elice 团队参评 Helpy-V Reasoning",
+      "cite": [
+        "repo-mtvqa@News Helpy-V",
+        "repo-mtvqa@Leaderboard Helpy-V Reasoning 行"
+      ]
+    },
+    {
+      "id": "acl2025",
+      "date": "2025-05-16",
+      "label": "论文被 ACL 2025 接收",
+      "cite": [
+        "repo-mtvqa@News ACL 2025 接收"
+      ]
+    },
+    {
+      "id": "arxiv-v5",
+      "date": "2025-06-11",
+      "label": "arXiv 更新至 v5 [cs.CV]（本页核对所用版本）",
+      "cite": [
+        "arxiv-2405-11985@标题页"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "9 语种均值的聚合口径不统一",
+      "impact": "论文 Table 2 的 InternVL2.5 78B 记 32.2、官方仓库记 31.9，而按该行 9 个语言值直接算术平均约为 30.7；Qwen2.5-VL 72B 一行同样对不上（表内 28.7，算术平均约 26.5）。其余各行（人类基线、GPT-4V、GPT-4o、Xcomposer-SFT、Table 4 两行）都能与算术平均对上。跨来源比均值会得到不可复现的结论。",
+      "severity": "高",
+      "response": "本站引用成绩时优先用逐语言值，均值一律标注出处；不把不同来源的均值当成同一口径。",
+      "reader": "看到「平均分」先问一句：这个平均是谁算的、怎么算的。",
+      "cite": [
+        "arxiv-2405-11985@Table 2 InternVL2.5 78B 行",
+        "repo-mtvqa@Leaderboard InternVL2.5 78B 行",
+        "arxiv-2405-11985@Table 2 Qwen2.5-VL 72B 行",
+        "repo-mtvqa@Leaderboard 表头"
+      ]
+    },
+    {
+      "issue": "主要瓶颈在图内文字识别，而不是推理",
+      "impact": "GPT-4V 原版 22.0，外接 OCR 后 28.3；OCR+GPT-4 也有 21.6。论文的失败案例分析同样指出坏案例集中在文字误识别与对视觉文字的误解。分数是多语言文字识别与理解的综合读数。",
+      "severity": "高",
+      "response": "论文同时报告 ANLS 与 Accuracy 两种口径，并做了外接 OCR 的对照实验，用来分离识别与推理的贡献。",
+      "reader": "挑模型时先看它的多语言 OCR 能力，再看这个分数。",
+      "cite": [
+        "arxiv-2405-11985@Table 4 OCR+GPT-4V 行",
+        "arxiv-2405-11985@Table 4 OCR+GPT-4 行",
+        "arxiv-2405-11985@§4.3.6 失败案例"
+      ]
+    },
+    {
+      "issue": "论文正文与表格自相矛盾",
+      "impact": "§4.3.3 正文写 Qwen2-VL 72B 以 30.9% 取得最高平均准确率、GPT-4o 第二（27.8%），但 Table 2 与 §1 都把 InternVL2.5 78B（32.2）排第一。直接引正文会得到错误排名。",
+      "severity": "中",
+      "response": "本站以 Table 2 与 §1 为准，并在「常见误读」中显式标注该矛盾。",
+      "reader": "引用排名时回到 Table 2，不要引段落里的单句话。",
+      "cite": [
+        "arxiv-2405-11985@§4.3.3 正文最好成绩",
+        "arxiv-2405-11985@§1 最好成绩",
+        "arxiv-2405-11985@Table 2 表题"
+      ]
+    },
+    {
+      "issue": "语种样本量不均，泰语显著偏少",
+      "impact": "测试集泰语仅 116 图 / 231 条，其余语种 558–1,048 条；泰语单点分数波动大，置信度明显更低。",
+      "severity": "中",
+      "response": "论文按语种分别报告；本站沿用逐语种读数，不做跨语种合并解读。",
+      "reader": "看到泰语分数大幅变化，先想样本量。",
+      "cite": [
+        "hf-mtvqa@Image Distribution Test QA 行",
+        "hf-mtvqa@Image Distribution Test Images 行"
+      ]
+    },
+    {
+      "issue": "语言覆盖仍不完整，且不含英语与中文",
+      "impact": "论文 Limitation 自陈：虽方言多样，但遗漏了许多使用人数较少的语言；9 语种里没有 en/zh。",
+      "severity": "中",
+      "response": "论文在 Table 1 与相关基准对比时只标 9 种问答语言；本站不外推到其他语种。",
+      "reader": "需要其他语种时另找基准，不要假设 MTVQA 覆盖。",
+      "cite": [
+        "arxiv-2405-11985@§8 语言覆盖局限",
+        "arxiv-2405-11985@Table 1 MTVQA 行",
+        "bytedance-mtvqa@Overview 语种"
+      ]
+    },
+    {
+      "issue": "官网榜单陈旧且有数字与日期笔误",
+      "impact": "官网 Leaderboard 最高为 GPT-4o 27.8，未包含 Qwen2-VL 72B 与 InternVL2.5 78B（这两个模型的成绩只出现在 arXiv 论文与官方仓库）；且 GPT-4V 的 DE 列写作 1.5（论文/Hugging Face 为 31.5）、QwenVL Max 的 KO 列写作 15.4（论文/Hugging Face 为 25.4）；News 里 GPT-4o 的日期写作 [2023-06-04]（仓库为 2024.06.04）。",
+      "severity": "低",
+      "response": "以 arXiv 论文与 GitHub README 为准；官网数字仅作历史记录，本页附录 B 同时列出并标注疑误。",
+      "reader": "在官网看到异常数字时，回论文表格核对。",
+      "cite": [
+        "bytedance-mtvqa@Leaderboard GPT-4V 行",
+        "bytedance-mtvqa@Leaderboard QwenVL Max 行",
+        "hf-mtvqa@LeaderBoard QwenVL Max 行",
+        "hf-mtvqa@LeaderBoard GPT-4V 行",
+        "bytedance-mtvqa@News GPT-4o 日期笔误",
+        "repo-mtvqa@News 公开发布"
+      ]
+    },
+    {
+      "issue": "许可限制商用",
+      "impact": "CC BY-NC 4.0，Hugging Face 数据集卡明确仅限学术用途、不支持商用；企业内评测与产品集成前需单独确认授权。",
+      "severity": "低",
+      "response": "数据集与代码分别在 Hugging Face 与 GitHub 公开，并附许可声明。",
+      "reader": "商用前先读 Hugging Face 数据卡上的 Out-of-Scope 说明。",
+      "cite": [
+        "repo-mtvqa@Licence",
+        "hf-mtvqa@Out-of-Scope usage"
+      ]
+    }
+  ],
+  "notes": "Qwen3.8-Max 表 2 出现（56.6 vs Gemini3.1-Pro 54.3 / GPT5.6-Sol 52.7）",
+  "official_sources": [
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2405.11985"
+    },
+    {
+      "kind": "site",
+      "url": "https://bytedance.github.io/MTVQA/"
+    },
+    {
+      "kind": "github",
+      "url": "https://github.com/bytedance/MTVQA"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/ByteDance/MTVQA"
+    }
+  ],
+  "related_benchmarks": [
+    "ocr-bench-v2",
+    "omnidocbench",
+    "chartqa"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "arxiv-2405-11985",
+        "kind": "paper",
+        "title": "MTVQA: Benchmarking Multilingual Text-Centric Visual Question Answering（arXiv:2405.11985v5 [cs.CV]，2025-06-11；ACL 2025）",
+        "url": "https://arxiv.org/abs/2405.11985",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "repo-mtvqa",
+        "kind": "repo",
+        "title": "bytedance/MTVQA（GitHub：README、当前 Leaderboard、News、BibTeX）",
+        "url": "https://github.com/bytedance/MTVQA",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "bytedance-mtvqa",
+        "kind": "site",
+        "title": "bytedance.github.io/MTVQA（官网：Overview、Comparisons、Leaderboard、News）",
+        "url": "https://bytedance.github.io/MTVQA/",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "hf-mtvqa",
+        "kind": "dataset",
+        "title": "ByteDance/MTVQA（Hugging Face 数据集卡：Image Distribution、LeaderBoard、许可、伦理）",
+        "url": "https://huggingface.co/datasets/ByteDance/MTVQA",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "ByteDance Inc.（与华中科技大学等团队合作）",
+        "cite": [
+          "arxiv-2405-11985@标题页 机构"
+        ]
+      },
+      "first_release": {
+        "v": "2024-05-20（arXiv v1）；数据与代码 2024-06-04 公开",
+        "cite": [
+          "hf-mtvqa@数据集卡头部",
+          "repo-mtvqa@News 公开发布"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "arxiv-2405-11985@§3.3 总规模",
+        "arxiv-2405-11985@Table 2 InternVL2.5 78B 行",
+        "arxiv-2405-11985@Table 2 Human 行",
+        "arxiv-2405-11985@§4.3.1 指标定义"
+      ],
+      "interpretation": [
+        "arxiv-2405-11985@摘要 定位",
+        "arxiv-2405-11985@Table 2 GPT-4V 行",
+        "arxiv-2405-11985@Table 4 OCR+GPT-4V 行",
+        "arxiv-2405-11985@§4.3.3 拉丁字母优势"
+      ]
+    },
+    "problem": {
+      "text": "以英语/中文为中心的 TEC-VQA 基准多靠现成翻译引擎扩展，会丢意义、扭曲上下文并引入语言偏差；MTVQA 改用 9 种低资源语言的母语者专家在真实场景图片上直接标注，直接测量图内多语言文字的识别与推理。",
+      "cite": [
+        "bytedance-mtvqa@Comparisons with Existing Benchmarks 翻译路线局限",
+        "bytedance-mtvqa@Comparisons with Existing Benchmarks 人工标注解决错位",
+        "bytedance-mtvqa@Comparisons with Existing Benchmarks 语言覆盖",
+        "arxiv-2405-11985@摘要 定位"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机/未披露基线",
+        "value": "论文未给出",
+        "note": "唯一指标是短答案精确匹配，论文没有报告整卷随机基线，本站也不推算。",
+        "cite": [
+          "arxiv-2405-11985@§4.3.1 指标定义"
+        ]
+      },
+      {
+        "label": "论文报告的最好成绩",
+        "value": "32.2（InternVL2.5 78B）",
+        "note": "Table 2 与 §1；但 §4.3.3 正文写 Qwen2-VL 72B 以 30.9% 最高，论文内部不一致。该行 9 个语言值的算术平均约为 30.7，均值口径需注意。",
+        "cite": [
+          "arxiv-2405-11985@Table 2 InternVL2.5 78B 行",
+          "arxiv-2405-11985@§1 最好成绩",
+          "arxiv-2405-11985@§4.3.3 正文最好成绩"
+        ]
+      },
+      {
+        "label": "官方仓库当前榜首",
+        "value": "31.9（InternVL2.5 78B）",
+        "note": "GitHub README Leaderboard；逐语言值与论文 Table 2 完全相同，仅 9 语种均值低 0.3，仓库未说明聚合口径。",
+        "cite": [
+          "repo-mtvqa@Leaderboard InternVL2.5 78B 行",
+          "repo-mtvqa@Leaderboard 表头"
+        ]
+      },
+      {
+        "label": "人类基线",
+        "value": "79.7（每语言 10 名母语者）",
+        "note": "论文 Table 2 的 9 语种均值，论文原文表述为「around 80%」，并称其 far beyond 当时最好的 MLLM。",
+        "cite": [
+          "arxiv-2405-11985@§4.3.2 人类基线",
+          "arxiv-2405-11985@Table 2 Human 行",
+          "arxiv-2405-11985@§4.3.3 远落后人类"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 InternVL2.5 78B 的 32.2 和 31.9 当成两个不同成绩——两者逐语言值完全相同，只是 9 语种均值的报告方/算法不同（论文 32.2、官方仓库 31.9），而按表内 9 个语言值直接算术平均约为 30.7。",
+        "cite": [
+          "arxiv-2405-11985@Table 2 InternVL2.5 78B 行",
+          "repo-mtvqa@Leaderboard InternVL2.5 78B 行"
+        ]
+      },
+      {
+        "text": "以为 Qwen2-VL 72B 是论文里的最强模型——Table 2 和 §1 都把 InternVL2.5 78B 排第一，只有 §4.3.3 正文写了 Qwen2-VL 72B 最高 30.9%。",
+        "cite": [
+          "arxiv-2405-11985@§4.3.3 正文最好成绩",
+          "arxiv-2405-11985@§1 最好成绩",
+          "arxiv-2405-11985@Table 2 表题"
+        ]
+      },
+      {
+        "text": "把官网（旧）Leaderboard 当作当前 SOTA——它最高只到 GPT-4o 27.8，且 GPT-4V 的 DE 列（1.5）与 QwenVL Max 的 KO 列（15.4）和论文/Hugging Face 的 31.5 / 25.4 对不上。",
+        "cite": [
+          "bytedance-mtvqa@Leaderboard GPT-4V 行",
+          "bytedance-mtvqa@Leaderboard QwenVL Max 行",
+          "hf-mtvqa@LeaderBoard QwenVL Max 行",
+          "hf-mtvqa@LeaderBoard GPT-4V 行"
+        ]
+      },
+      {
+        "text": "以为 MTVQA 覆盖英语或中文、或是 10 种语言——论文 Table 1 的问答语言列写作 9 种、视觉文字语言列写作 10 languages；实际 9 语种为 AR/DE/FR/IT/JA/KO/RU/TH/VI。",
+        "cite": [
+          "arxiv-2405-11985@Table 1 MTVQA 行",
+          "bytedance-mtvqa@Overview 语种",
+          "repo-mtvqa@News 公开发布 语种"
+        ]
+      },
+      {
+        "text": "把 ANLS 分数和 Accuracy 分数排进同一张榜——同一 prompt 下 ANLS 系统性高 5–10 个百分点。",
+        "cite": [
+          "arxiv-2405-11985@§4.3.1 拒用 ANLS",
+          "arxiv-2405-11985@Table 3 表题"
+        ]
+      },
+      {
+        "text": "把外接 OCR 的分数当成模型原生能力——OCR+GPT-4V（28.3）高于原版 GPT-4V（22.0）。",
+        "cite": [
+          "arxiv-2405-11985@Table 4 OCR+GPT-4V 行",
+          "arxiv-2405-11985@Table 2 GPT-4V 行"
+        ]
+      },
+      {
+        "text": "以为 32.2 已经接近饱和——人类基线 79.7，且模型在拉丁字母语言（DE/FR/IT）上明显更好，低分很大一部分来自多语言文字识别。",
+        "cite": [
+          "arxiv-2405-11985@Table 2 Human 行",
+          "arxiv-2405-11985@§4.3.3 拉丁字母优势"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "ByteDance Inc.，与华中科技大学等团队合作（arXiv 论文署名两处机构）",
+        "cite": [
+          "arxiv-2405-11985@标题页 机构"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "Jingqun Tang、Qi Liu、Yongjie Ye、Jinghui Lu、Shu Wei、Chunhui Lin、Wanqing Li（BibTeX 署名）",
+        "cite": [
+          "repo-mtvqa@Citation 作者",
+          "bytedance-mtvqa@Citation"
+        ]
+      },
+      {
+        "k": "论文版本",
+        "v": "arXiv:2405.11985，当前 v5 [cs.CV]（2025-06-11）；2025-05-16 被 ACL 2025 接收",
+        "cite": [
+          "arxiv-2405-11985@标题页",
+          "repo-mtvqa@News ACL 2025 接收",
+          "hf-mtvqa@数据集卡头部"
+        ]
+      },
+      {
+        "k": "定位",
+        "v": "第一个专注文本中心 VQA（TEC-VQA）的基准：9 种语言的高质量人类专家标注，6,778 条问答 / 2,116 张图",
+        "cite": [
+          "bytedance-mtvqa@Overview 定位",
+          "repo-mtvqa@简介"
+        ]
+      },
+      {
+        "k": "为什么不用翻译",
+        "v": "翻译式扩展会丢意义、扭曲上下文、带语言偏差并限制题型多样性；MTVQA 用人类专家标注消解视觉-文本错位，并覆盖更多低资源语言",
+        "cite": [
+          "bytedance-mtvqa@Comparisons with Existing Benchmarks 翻译路线局限",
+          "bytedance-mtvqa@Comparisons with Existing Benchmarks 人工标注解决错位",
+          "bytedance-mtvqa@Comparisons with Existing Benchmarks 语言覆盖"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "数据集在 Hugging Face（ByteDance/MTVQA，含 Image Distribution 统计），论文评测代码在 GitHub 仓库 scripts 目录；已接入 VLMEvalKit 与 OpenCompass",
+        "cite": [
+          "hf-mtvqa@数据说明",
+          "repo-mtvqa@Evaluation 评测代码",
+          "repo-mtvqa@News VLMEvalKit 支持"
+        ]
+      },
+      {
+        "k": "许可",
+        "v": "CC BY-NC 4.0，仅限学术用途",
+        "cite": [
+          "repo-mtvqa@Licence",
+          "hf-mtvqa@Out-of-Scope usage"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-14",
+        "columns": [
+          "来源",
+          "模型",
+          "AR",
+          "DE",
+          "FR",
+          "IT",
+          "JA",
+          "KO",
+          "RU",
+          "TH",
+          "VI",
+          "平均",
+          "口径"
+        ],
+        "rows": [
+          [
+            "论文 Table 2",
+            "Human（每语言 10 名母语者）",
+            "76.9",
+            "80.2",
+            "84.1",
+            "78.0",
+            "79.1",
+            "81.7",
+            "76.3",
+            "78.4",
+            "82.8",
+            "79.7",
+            "人类基线"
+          ],
+          [
+            "论文 Table 2",
+            "InternVL2.5 78B",
+            "15.9",
+            "39.0",
+            "45.6",
+            "42.9",
+            "21.1",
+            "33.9",
+            "12.2",
+            "23.8",
+            "41.5",
+            "32.2",
+            "开源；均值与 9 语言算术平均（约 30.7）不符"
+          ],
+          [
+            "论文 Table 2",
+            "Qwen2-VL 72B",
+            "20.7",
+            "36.5",
+            "44.1",
+            "42.8",
+            "21.6",
+            "37.4",
+            "15.6",
+            "17.7",
+            "41.6",
+            "30.9",
+            "开源"
+          ],
+          [
+            "论文 Table 2",
+            "Qwen2.5-VL 72B",
+            "17.2",
+            "34.2",
+            "38.5",
+            "35.2",
+            "18.4",
+            "29.6",
+            "13.9",
+            "9.5",
+            "41.6",
+            "28.7",
+            "开源；均值与 9 语言算术平均（约 26.5）不符"
+          ],
+          [
+            "论文 Table 2",
+            "GPT-4o",
+            "20.2",
+            "34.2",
+            "41.2",
+            "32.7",
+            "20.0",
+            "33.9",
+            "11.5",
+            "22.5",
+            "34.2",
+            "27.8",
+            "闭源"
+          ],
+          [
+            "论文 Table 2",
+            "GPT-4V",
+            "11.5",
+            "31.5",
+            "40.4",
+            "32.3",
+            "11.5",
+            "16.7",
+            "10.3",
+            "15.0",
+            "28.9",
+            "22.0",
+            "闭源"
+          ],
+          [
+            "论文 Table 2",
+            "Xcomposer-SFT",
+            "11.8",
+            "31.7",
+            "37.4",
+            "29.3",
+            "14.5",
+            "12.9",
+            "5.8",
+            "13.9",
+            "20.2",
+            "19.7",
+            "在 MTVQA 训练集上指令微调"
+          ],
+          [
+            "论文 Table 4",
+            "OCR+GPT-4",
+            "18.9",
+            "21.2",
+            "29.8",
+            "27.3",
+            "15.8",
+            "24",
+            "10.6",
+            "19",
+            "28.2",
+            "21.6",
+            "外接多语言 OCR API，非模型原生"
+          ],
+          [
+            "论文 Table 4",
+            "OCR+GPT-4V",
+            "22.3",
+            "35.1",
+            "42.6",
+            "36.7",
+            "19.2",
+            "32.1",
+            "12.1",
+            "20.9",
+            "34.1",
+            "28.3",
+            "外接多语言 OCR API，非模型原生"
+          ],
+          [
+            "GitHub README",
+            "InternVL2.5 78B",
+            "15.9",
+            "39.0",
+            "45.6",
+            "42.9",
+            "21.1",
+            "33.9",
+            "12.2",
+            "23.8",
+            "41.5",
+            "31.9",
+            "逐语言值与论文相同，均值低 0.3"
+          ],
+          [
+            "GitHub README",
+            "Helpy-V Reasoning",
+            "16.6",
+            "34.7",
+            "40.0",
+            "39.6",
+            "20.2",
+            "43.5",
+            "13.6",
+            "13.0",
+            "46.6",
+            "31.6",
+            "韩国 Elice 团队参评"
+          ],
+          [
+            "GitHub README",
+            "Qwen2-VL 72B",
+            "20.7",
+            "36.5",
+            "44.1",
+            "42.8",
+            "21.6",
+            "37.4",
+            "15.6",
+            "17.7",
+            "41.6",
+            "30.9",
+            "开源"
+          ],
+          [
+            "GitHub README",
+            "Qwen2-VL 7B",
+            "15.5",
+            "32.1",
+            "41.6",
+            "38.9",
+            "17.8",
+            "30.6",
+            "13.0",
+            "10.8",
+            "30.0",
+            "25.6",
+            "开源"
+          ],
+          [
+            "GitHub README",
+            "GPT-4o",
+            "20.2",
+            "34.2",
+            "41.2",
+            "32.7",
+            "20.0",
+            "33.9",
+            "11.5",
+            "22.5",
+            "34.2",
+            "27.8",
+            "闭源"
+          ],
+          [
+            "HF 数据集卡",
+            "GPT-4o",
+            "20.2",
+            "34.2",
+            "41.2",
+            "32.7",
+            "20.0",
+            "33.9",
+            "11.5",
+            "22.5",
+            "34.2",
+            "27.8",
+            "与论文 Table 2 一致"
+          ],
+          [
+            "HF 数据集卡",
+            "GPT-4V",
+            "11.5",
+            "31.5",
+            "40.4",
+            "32.3",
+            "11.5",
+            "16.7",
+            "10.3",
+            "15.0",
+            "28.9",
+            "22.0",
+            "与论文 Table 2 一致"
+          ],
+          [
+            "HF 数据集卡",
+            "QwenVL Max",
+            "7.7",
+            "31.4",
+            "37.6",
+            "30.2",
+            "18.6",
+            "25.4",
+            "10.4",
+            "4.8",
+            "23.5",
+            "21.1",
+            "KO=25.4（官网误作 15.4）"
+          ],
+          [
+            "官网（旧榜）",
+            "GPT-4o",
+            "20.2",
+            "34.2",
+            "41.2",
+            "32.7",
+            "20.0",
+            "33.9",
+            "11.5",
+            "22.5",
+            "34.2",
+            "27.8",
+            "overall 列即 9 语种均值；勿当作当前 SOTA"
+          ],
+          [
+            "官网（旧榜）",
+            "GPT-4V",
+            "11.5",
+            "1.5",
+            "40.4",
+            "32.3",
+            "11.5",
+            "16.7",
+            "10.3",
+            "15.0",
+            "28.9",
+            "22.0",
+            "DE 列疑为笔误（论文/HF 为 31.5）"
+          ],
+          [
+            "官网（旧榜）",
+            "QwenVL Max",
+            "7.7",
+            "31.4",
+            "37.6",
+            "30.2",
+            "18.6",
+            "15.4",
+            "10.4",
+            "4.8",
+            "23.5",
+            "21.1",
+            "KO 列疑为笔误（论文/HF 为 25.4）"
+          ]
+        ]
+      },
+      "cite": [
+        "arxiv-2405-11985@Table 2 表头",
+        "arxiv-2405-11985@Table 2 表题",
+        "arxiv-2405-11985@Table 2 表题与表注",
+        "repo-mtvqa@Leaderboard 表头",
+        "bytedance-mtvqa@Leaderboard 表头",
+        "bytedance-mtvqa@Leaderboard 说明",
+        "hf-mtvqa@LeaderBoard 表头"
+      ]
+    }
+  }
+}
