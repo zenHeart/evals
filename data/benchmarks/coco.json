@@ -1,7 +1,7 @@
 {
   "id": "coco",
   "name": "COCO",
-  "full_name": "Microsoft COCO: Common Objects in Context",
+  "full_name": "Microsoft COCO: Common Objects in Context（上下文中的常见物体）",
   "aliases": [
     "Common Objects in Context"
   ],
@@ -9,51 +9,473 @@
   "categories": [
     "multimodal"
   ],
-  "summary": "328k 图 / 250 万标注实例 / 91 目标类型（检测挑战常用 80 类）的经典视觉数据集；在厂商表中也常作 grounding/检测评测底座",
-  "interpretation": "COCO 本身是训练与评测双用的『公共操场』：检测/分割早已高度饱和，近年主要当 grounding 的回归基线。Qwen3.8-Max 表 grounding 组 78.7，Gemini3.1-Pro 72.4。",
+  "summary": "COCO 是 2014 年发布的图像数据集：32.8 万张复杂日常场景照片里标了约 250 万个物体实例，每个实例都带像素级掩码（沿物体边缘逐像素画出的轮廓），因此能同时评测目标检测（在图里找出并框出物体）、实例分割（把同一类别的不同个体逐像素分开）、人体关键点（定位人的关节）和图像字幕（为图写一句话）等任务。",
+  "interpretation": "COCO 分数高，说明模型在「常见物体 + 自然场景 + 每图实例多、小目标多」的设定下定位与识别更准；它不说明能认出类别表以外的物体（挑战赛只按 80 个类别评分），也不衡量 3D、遮挡程度或开放场景推理。检测与分割的 AP 已长期处于高位，近年更适合当公共回归基线；跨模型比较前必须先对齐 split 年份（2014 / 2015 / 2017）、类别口径（80 vs 91）与指标细节（IoU 阈值、maxDets、bbox 还是掩码）。",
   "measures": [
-    "目标检测/分割与 grounding 的基础回归"
+    {
+      "area": "目标检测（bounding box）",
+      "focus": "在复杂日常场景里检出并框出常见物体实例。论文 Table 1 逐类评测的 20 个 PASCAL 类别即 plane / bike / bird / boat / bottle / bus / car / cat / chair / cow / table / dog / horse / moto / person / plant / sheep / sofa / train / tv；官网错误分析以 person 类为示例",
+      "share": "约 41% 的实例是小目标（掩码面积 < 32²）、34% 中等（32²–96²）、24% 大（> 96²）",
+      "format": "每图最多取 100 个最高分检测框；主指标为 IoU=.50:.05:.95 上平均的 AP",
+      "cite": [
+        "paper@§3.2",
+        "site-detection-eval",
+        "paper@Table 1"
+      ]
+    },
+    {
+      "area": "实例分割（segmentation mask）",
+      "focus": "与检测共用同一套实例与匹配规则，只是把 IoU 算在掩码上；COCO 为每个实例提供多边形或 RLE 掩码，同一类别超过 10 个实例时剩余部分合并为一个 crowd 段",
+      "share": "未披露（官网未按子任务给出实例占比）",
+      "format": "crowd 区域在评测时被忽略、不计入检测器得分；bbox 与分割指标仅 IoU 计算对象不同",
+      "cite": [
+        "paper@§4.3",
+        "site-detection-2017",
+        "site-detection-eval"
+      ]
+    },
+    {
+      "area": "人体关键点检测",
+      "focus": "测试时不给定人物位置，模型要同时检出人并定位其关键点；官方用物体关键点相似度 OKS 代替 IoU 做匹配",
+      "share": "未披露（官方未给出各子任务的实例占比）",
+      "format": "每图最多取 20 个最高分检测；主指标为 OKS=.50:.05:.95 上平均的 AP",
+      "cite": [
+        "site-keypoints-eval"
+      ]
+    },
+    {
+      "area": "图像字幕生成",
+      "focus": "为每张图写一句描述场景重要内容的句子；收集时要求句子至少 8 个词、不以「There is」开头、不写不重要细节",
+      "share": "每张图 5 条参考描述（MS COCO c5）；另为随机抽取的 5,000 张测试图收集 40 条参考句（MS COCO c40）",
+      "format": "自由文本；自动指标为 BLEU / METEOR / ROUGE-L / CIDEr，2015 挑战赛的最终排名另由人工评审决定",
+      "cite": [
+        "paper@§4.5",
+        "captions-paper@§2",
+        "site-captions-eval",
+        "site-captions-2015"
+      ]
+    },
+    {
+      "area": "Stuff / 全景 / DensePose（2017 年后扩展）",
+      "focus": "论文 2014 版只标 thing 类别；stuff（天空、街道、草地等无明确个体边界的材料）分割、全景分割与 DensePose 是 2017–2020 年逐步加入的扩展任务",
+      "share": "未披露",
+      "format": "未披露（本档案未逐项核对各扩展任务的评测参数）",
+      "cite": [
+        "paper@§8",
+        "site-download",
+        "repo"
+      ]
+    }
   ],
   "does_not_measure": [
-    "细粒度长尾识别",
-    "开放词汇检测（需 LVIS 等扩展）"
+    {
+      "text": "stuff 类材料（天空、街道、草地等没有明确个体边界的类别）——论文明确说当前只标 things",
+      "cite": [
+        "paper@§8"
+      ]
+    },
+    {
+      "text": "类别表以外的物体与开放词汇识别——挑战赛固定按 80 个类别评分",
+      "cite": [
+        "site-detection-eval",
+        "paper@§6"
+      ]
+    },
+    {
+      "text": "3D 信息、遮挡程度、物体部件与整句场景描述以外的标签——论文把这些列为未来方向，2014 版未提供",
+      "cite": [
+        "paper@§8"
+      ]
+    },
+    {
+      "text": "person 以外类别的关键点——官方明确关键点目前只标 person 一个类别",
+      "cite": [
+        "site-keypoints-eval"
+      ]
+    }
   ],
   "dataset": {
-    "sample_count": null,
+    "sample_count": 328000,
     "splits": [
-      "train/val/test；80 类评测口径",
-      "91 目标类型（论文口径）"
+      "2014：train 82,783 / val 40,504 / test 40,775（论文 §6）",
+      "2015 累计：train 165,482 / val 81,208 / test 81,434（论文 §6）",
+      "2017（当前主流）：train 118K / val 5K / test 41K，另有 123K 未标注图像（官网 Download 页）",
+      "test 集真值隐藏、需上传评测服务器；2017 起 test 只剩 test-dev 与 test-challenge 两个 split"
     ],
     "languages": [
-      "en"
+      "未披露（论文与官网均未声明标注语言）"
     ],
     "source_type": "human_curated",
-    "public_sample": true
+    "public_sample": true,
+    "totals": "论文口径：328,000 张图、约 250 万个标注实例、91 个物体类别（2014 版只发布其中 80 类的分割标注）；平均每图 3.5 个类别、7.7 个实例；2014 train+val 有近 27 万个分割人物与 88.6 万个分割实例；2014 split 的字幕共 1,026,459 条。",
+    "cite": [
+      "paper@摘要",
+      "paper@§1",
+      "paper@§5",
+      "paper@§6",
+      "captions-paper@§2"
+    ],
+    "construction": [
+      {
+        "k": "定类别",
+        "text": "合并 PASCAL VOC 类别与高频可视物体词表得到 272 个候选，让 4–8 岁儿童补充日常物体名，再由合作者按 1–5 分投票并保持各超大类（动物、车辆、家具等）均衡；为保证向后兼容，PASCAL VOC 的全部类别都保留，最终定 91 类，且只收 entry-level 的 thing 类别。",
+        "cite": [
+          "paper@§3.1"
+        ]
+      },
+      {
+        "k": "收非标志性图",
+        "text": "图像主要来自 Flickr；不按单一物体类别搜索（那会返回大量居中、干净的标准照），而是搜「dog + car」这类物体两两组合与物体×场景组合，再用 AMT 任务从 128 张候选里剔除无效或标志性图片；每位摄影师在同一短时间窗内最多下载 5 张，最终得到 328,000 张图。",
+        "cite": [
+          "paper@§3.2"
+        ]
+      },
+      {
+        "k": "标类别（8 人投票）",
+        "text": "把 91 类归成 11 个超大类，工人先判断某超大类在图里是否存在，再把该类别的图标拖到一个实例上；每张图由 8 名工人标注，任一人标了就算该类别存在（误报留到后续阶段清），论文称此阶段花了约 2 万工时。",
+        "cite": [
+          "paper@§4",
+          "paper@§4.1"
+        ]
+      },
+      {
+        "k": "标实例并分割",
+        "text": "实例标注阶段每张图 8 名工人、每类最多标 10 个实例，约 1 万工时；分割阶段每个实例只由 1 人画，工人必须先通过该类别的训练任务（约三分之一通过），官方称每 1,000 个分割需 22 以上工时；再由 3–5 人投票验证，不合格的丢弃并回到未分割池。",
+        "cite": [
+          "paper@§4.2",
+          "paper@§4.3"
+        ]
+      },
+      {
+        "k": "人群与字幕",
+        "text": "同一类别在一张图里超过 10 个实例时，剩余实例合并标为一个 crowd 段，评测时忽略；另为每张图收集 5 条人工描述，字幕经 Amazon Mechanical Turk 收集，要求句子至少 8 个词。",
+        "cite": [
+          "paper@§4.3",
+          "paper@§4.5",
+          "captions-paper@§2"
+        ]
+      },
+      {
+        "k": "划分与发布",
+        "text": "显式去除近重复图并按摄影师与拍摄日期分组，避免跨 split 泄漏；train / val 标注公开、test 标注不公开；数据集分两半，2014 年发第一半，2015 年发另一半。",
+        "cite": [
+          "paper@§6"
+        ]
+      }
+    ]
   },
-  "metrics": [],
+  "metrics": [
+    {
+      "id": "ap",
+      "name": "AP（Average Precision，IoU=.50:.05:.95 上平均）",
+      "direction": "越高越好",
+      "description": "在 10 个 IoU 阈值上平均、再对全部 80 个类别平均的精确率-召回率曲线下面积；官网称这是决定挑战赛胜负的单一最重要指标",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "site-detection-eval"
+      ]
+    },
+    {
+      "id": "ap50",
+      "name": "APIoU=.50",
+      "direction": "越高越好",
+      "description": "单阈值 IoU=0.50 的 AP，即 PASCAL VOC 口径，比主指标宽松得多",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "site-detection-eval"
+      ]
+    },
+    {
+      "id": "ap75",
+      "name": "APIoU=.75",
+      "direction": "越高越好",
+      "description": "严格定位口径：预测与真值框的 IoU 达到 0.75 才算检出",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "site-detection-eval"
+      ]
+    },
+    {
+      "id": "ar",
+      "name": "AR（maxDets=100）",
+      "direction": "越高越好",
+      "description": "每图固定检测数上限下的最大召回，按类别与 IoU 平均；官方另报 maxDets=1 / 10 以及小 / 中 / 大目标分组",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "site-detection-eval"
+      ]
+    },
+    {
+      "id": "ap-scale",
+      "name": "APsmall / APmedium / APlarge",
+      "direction": "越高越好",
+      "description": "按掩码面积分组的 AP：small 面积 < 32²，medium 32²–96²，large > 96²；COCO 约 41% 的实例是小目标",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "site-detection-eval"
+      ]
+    },
+    {
+      "id": "oks-ap",
+      "name": "关键点 AP（OKS=.50:.05:.95 上平均）",
+      "direction": "越高越好",
+      "description": "关键点任务用物体关键点相似度 OKS 代替 IoU；每图最多 20 个检测，person 是唯一有关键点标注的类别",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "site-keypoints-eval"
+      ]
+    },
+    {
+      "id": "caption-metrics",
+      "name": "BLEU / METEOR / ROUGE-L / CIDEr",
+      "direction": "越高越好",
+      "description": "字幕任务的自动指标；2015 挑战赛的最终排名由人工评审决定，而非这些自动指标",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent（各指标量纲不同）",
+      "cite": [
+        "site-captions-eval",
+        "site-captions-2015"
+      ]
+    }
+  ],
   "default_protocol": {
-    "raw": "grounding/检测口径（Qwen3.8-Max 表 2 Visual Perception & Grounding 组）"
+    "raw": "检测 / 分割：公开 val 集可用本地评测代码复现，test 集真值隐藏、必须把结果 JSON 上传到评测服务器。默认参数为 iouThrs=[.5:.05:.95]（10 个 IoU 阈值）、recThrs=[0:.01:1]（101 个召回阈值）、areaRng=[all,small,medium,large]、maxDets=[1 10 100]，每图最多取 100 个最高分检测。关键点任务把 IoU 换成 OKS、每图最多 20 个检测。字幕任务需同时提交 val 与 test 两套结果，用 BLEU / METEOR / ROUGE-L / CIDEr 打分。",
+    "cite": [
+      "site-detection-eval",
+      "site-keypoints-eval",
+      "site-captions-eval"
+    ],
+    "variants": [
+      {
+        "text": "bbox AP 与分割 AP：匹配规则相同，只有 IoU 的计算对象不同（框 vs 掩码），两个数字不能当成同一个指标混排。",
+        "cite": [
+          "site-detection-eval"
+        ]
+      },
+      {
+        "text": "val 集（本地可复现）与 test-dev / test-challenge（上传服务器、真值隐藏）：2017 起 test 只剩这两个 split，此前是 dev / standard / reserve / challenge 四个。",
+        "cite": [
+          "site-detection-eval",
+          "site-detection-2017",
+          "site-download"
+        ]
+      },
+      {
+        "text": "split 年份：2017 把 train / val 从 83K/41K 重划为 118K/5K（图像完全相同、只是重新划分），2014 / 2015 / 2017 的数字不能混着比。",
+        "cite": [
+          "site-download"
+        ]
+      },
+      {
+        "text": "类别口径：论文提 91 个物体类别，2014 版只发布其中 80 类的分割标注，挑战赛按 80 类评分。",
+        "cite": [
+          "paper@§6",
+          "site-detection-eval"
+        ]
+      },
+      {
+        "text": "字幕任务：2015 挑战赛最终排名由人工评审决定；官方另限制每用户每天 1 次、最多 5 次提交，以防对测试集过拟合。",
+        "cite": [
+          "site-captions-2015",
+          "site-captions-eval"
+        ]
+      }
+    ]
   },
   "versions": [
     {
-      "id": "v1",
-      "label": "Microsoft COCO（ECCV 2014）",
-      "note": "arXiv:1405.0312；2017 年后为常用版本"
+      "id": "arxiv-v1",
+      "date": "2014-05-01",
+      "label": "arXiv v1 提交，论文首次公开",
+      "cite": [
+        "arxiv"
+      ]
+    },
+    {
+      "id": "arxiv-v3",
+      "date": "2015-02-21",
+      "label": "arXiv v3（本档案核对版本）：更新标注流程说明与图、新增数据集划分小节、更新作者列表",
+      "cite": [
+        "arxiv"
+      ]
+    },
+    {
+      "id": "captions-release",
+      "date": "2015-04-01",
+      "label": "官网 Captioning 2015 任务页记录：字幕训练 / 测试数据与评测软件同日发布",
+      "cite": [
+        "site-captions-2015"
+      ]
+    },
+    {
+      "id": "split-2017",
+      "date": "2017-09-30",
+      "label": "COCO 2017 Object Detection Task 提交截止；train / val 已改为 118K/5K，2017 split 成为后续所有任务的默认划分",
+      "cite": [
+        "site-detection-2017",
+        "site-download"
+      ]
+    },
+    {
+      "id": "stuff-panoptic-2018",
+      "date": "2018-06-17",
+      "label": "官网提示：2018 起提供全部 2017 图像的 stuff 与 panoptic 标注，该日期前下载的 stuff 标注需重新下载",
+      "cite": [
+        "site-download"
+      ]
+    },
+    {
+      "id": "cocorem",
+      "date": "2024-03-27",
+      "label": "第三方发布 COCO-ReM：修正 COCO-2017 掩码错误的精修标注集（arXiv:2403.18819）",
+      "cite": [
+        "cocorem"
+      ]
     }
   ],
   "limitations": [
-    "训练集高污染，作为前沿区分基准已失效",
-    "80 类口径与 91 类论文口径并存，引用需注明"
+    {
+      "issue": "标注错误与掩码质量",
+      "impact": "COCO-ReM 论文检查了 COCO（2017 版）数千个掩码，发现掩码边界不精确、实例标注不完整、掩码贴错类别等错误；评测 50 个检测器后发现预测更锐利掩码的模型在 COCO-ReM 上得分更高，说明它们在 COCO-2017 上被错误地扣了分。",
+      "severity": "高",
+      "response": "第三方发布 COCO-ReM 精修标注并主张后续研究改用它；未见 COCO 官方对掩码错误的回应。",
+      "reader": "看分割指标的高分段时要留意差距是否来自标注边界；比较前先确认用的是 COCO-2017 还是 COCO-ReM。",
+      "cite": [
+        "cocorem"
+      ]
+    },
+    {
+      "issue": "80 类与 91 类口径不一致",
+      "impact": "论文写 91 个物体类别，2014 版只发布其中 80 类的分割标注（hat、shoe、eyeglasses、mirror、window、door、street sign、plate、desk、blender、hair brush 这 11 类被排除），挑战赛与绝大多数论文按 80 类报数；引用时不注明口径会直接造成数量级误解。",
+      "severity": "高",
+      "response": "论文在数据集划分小节列出未收集分割的 11 类及原因，并说 2015 版可能补上；官网后续页面一律按 80 类描述。",
+      "reader": "「91 类」是论文类别表口径，「80 类」才是实际可评测口径；引用时写清楚用的是哪一个。",
+      "cite": [
+        "paper@§6",
+        "site-detection-eval"
+      ]
+    },
+    {
+      "issue": "区分度有限，更像回归基线",
+      "impact": "随高性能模型出现，社区已在讨论 COCO 的标注错误是否妨碍它可靠衡量进一步进展（COCO-ReM 论文的出发点）；官网 2019 与 2020 更新都写明各挑战赛数据不变，数据集与标注自 2018 后基本冻结。",
+      "severity": "高",
+      "response": "未见官方回应；官方在 2017–2020 持续办年度挑战赛，但数据本身停止变动。",
+      "reader": "把 COCO 当公共回归基线，而不是区分前沿模型的基准；本档案不手写当前榜单最高分，需要时以站点账本与原始论文为准。",
+      "cite": [
+        "cocorem",
+        "site-download"
+      ]
+    },
+    {
+      "issue": "训练数据污染",
+      "impact": "train2017 / val2017 的图像与标注公开可下载，同时是主流预训练与微调数据源；训练数据里见过 COCO 的模型，其 val 分数会偏高，而官方没有提供任何污染度说明。",
+      "severity": "中",
+      "response": "未见官方回应。",
+      "reader": "比较不同模型前先确认其训练数据是否包含 COCO；单看 COCO 分数不能证明泛化能力。",
+      "cite": [
+        "site-download",
+        "repo"
+      ]
+    },
+    {
+      "issue": "类别覆盖窄且只标 thing",
+      "impact": "91 / 80 个常见物体类别，不含 stuff 类材料，也不含细粒度或开放词汇类别；论文把 stuff、遮挡程度、部件标注都列为未来方向。",
+      "severity": "中",
+      "response": "论文说未来可能补 stuff 标注；官网 2018 起提供 stuff / panoptic 标注作为扩展，但检测挑战赛口径未变。",
+      "reader": "需要长尾或开放词汇能力时要另找基准；COCO 只覆盖常见物体。",
+      "cite": [
+        "paper@§8",
+        "site-download"
+      ]
+    },
+    {
+      "issue": "test 集不可本地复现且提交受限",
+      "impact": "test 真值隐藏，必须上传评测服务器；字幕挑战赛还限制每用户每天 1 次、最多 5 次提交，复现与迭代成本高。",
+      "severity": "中",
+      "response": "官方提供本地 val 集评测代码与结果格式说明；字幕提交限制是为避免对测试集过拟合。",
+      "reader": "能公开复现的是 val 集数字；看到 test-dev / test-challenge 数字要知道它来自上传服务器。",
+      "cite": [
+        "site-detection-eval",
+        "site-captions-eval"
+      ]
+    },
+    {
+      "issue": "关键点覆盖面窄",
+      "impact": "关键点只标 person 一个类别，且小目标（掩码面积 < 32²）不带关键点标注；对没有关键点的物体（含 crowd）使用基于「幻觉关键点」的宽松匹配启发式。",
+      "severity": "低",
+      "response": "官方在评测页写明该启发式，并说明目前 person 是唯一有关键点的类别。",
+      "reader": "关键点分数只反映人体姿态估计，不代表通用关键点能力。",
+      "cite": [
+        "site-keypoints-eval"
+      ]
+    },
+    {
+      "issue": "自动字幕指标与人工判断不完全一致",
+      "impact": "字幕论文明说自动指标并不总与人工判断对应，因此另用人工评审；其 Table 1 给出的人工一致性本身也不高（如 METEOR 0.252 / 0.335）。",
+      "severity": "低",
+      "response": "官方建了评测服务器统一指标实现，并表示希望每年补人工评估；2015 挑战赛最终排名即由人工评审决定。",
+      "reader": "字幕分数的几个点差距不要过度解读，尤其是不同论文用的指标实现可能不同。",
+      "cite": [
+        "captions-paper@§6",
+        "site-captions-2015",
+        "captions-paper@Table 1"
+      ]
+    },
+    {
+      "issue": "官方榜单数据可能不是最新",
+      "impact": "官网检测榜单注明结果从 CodaLab Detection Server 导入，可能不含最新结果。",
+      "severity": "低",
+      "response": "官方在榜单页给出该提示。",
+      "reader": "把官网榜单当历史快照；最新成绩要看原始论文或 CodaLab。",
+      "cite": [
+        "site-detection-leaderboard"
+      ]
+    }
   ],
-  "notes": "Qwen3.8-Max 表 2 出现（78.7 vs Qwen3.7-Plus 74.2 / Gemini3.1-Pro 72.4）；数据集由 COCO Consortium 维护",
+  "notes": "数据集型评测：分任务核对检测 / 分割 / 关键点 / 字幕的口径，勿跨口径比分。",
   "official_sources": [
+    {
+      "kind": "site",
+      "url": "https://cocodataset.org/"
+    },
     {
       "kind": "paper",
       "url": "https://arxiv.org/abs/1405.0312"
     },
     {
-      "kind": "site",
-      "url": "https://cocodataset.org/"
+      "kind": "repo",
+      "url": "https://github.com/cocodataset/cocoapi"
+    },
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/1504.00325"
     }
   ],
   "related_benchmarks": [
@@ -61,6 +483,326 @@
     "dense200",
     "countqa"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-09-01"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-13",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "Microsoft COCO: Common Objects in Context（arXiv:1405.0312v3 论文 PDF 全文，pdftotext 提取）",
+        "url": "https://arxiv.org/pdf/1405.0312",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "arxiv",
+        "kind": "paper",
+        "title": "arXiv 摘要页 arXiv:1405.0312（v1 2014-05-01 提交，v3 2015-02-21 修订）",
+        "url": "https://arxiv.org/abs/1405.0312",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "site",
+        "kind": "site",
+        "title": "COCO 官网首页（任务与榜单入口）",
+        "url": "https://cocodataset.org/",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "site-download",
+        "kind": "site",
+        "title": "官网 Download 页（split 列表与 2017–2020 更新记录）",
+        "url": "https://cocodataset.org/dataset/download.htm",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "site-detection-eval",
+        "kind": "docs",
+        "title": "官网 Detection Evaluation 页（12 项 AP / AR 指标与评测参数）",
+        "url": "https://cocodataset.org/dataset/detection-eval.htm",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "site-keypoints-eval",
+        "kind": "docs",
+        "title": "官网 Keypoint Evaluation 页（OKS 定义与人工表现）",
+        "url": "https://cocodataset.org/dataset/keypoints-eval.htm",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "site-captions-eval",
+        "kind": "docs",
+        "title": "官网 Caption Evaluation 页（BLEU / METEOR / ROUGE-L / CIDEr 与提交规则）",
+        "url": "https://cocodataset.org/dataset/captions-eval.htm",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "site-captions-2015",
+        "kind": "site",
+        "title": "官网 COCO 2015 Image Captioning Task 页（日期、人工评审）",
+        "url": "https://cocodataset.org/dataset/captions-2015.htm",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "site-detection-2017",
+        "kind": "site",
+        "title": "官网 COCO 2017 Object Detection Task 页（规模、日期、组织者）",
+        "url": "https://cocodataset.org/dataset/detection-2017.htm",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "site-detection-leaderboard",
+        "kind": "leaderboard",
+        "title": "官网 Detection Leaderboard 页（榜单列与来源说明）",
+        "url": "https://cocodataset.org/dataset/detection-leaderboard.htm",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "cocodataset/cocoapi 官方仓库 README（COCO API）",
+        "url": "https://raw.githubusercontent.com/cocodataset/cocoapi/master/README.txt",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "cocorem",
+        "kind": "paper",
+        "title": "Benchmarking Object Detectors with COCO: A New Path Forward（COCO-ReM，arXiv:2403.18819）",
+        "url": "https://arxiv.org/abs/2403.18819",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "captions-paper",
+        "kind": "paper",
+        "title": "Microsoft COCO Captions: Data Collection and Evaluation Server（arXiv:1504.00325 PDF 全文，pdftotext 提取）",
+        "url": "https://arxiv.org/pdf/1504.00325",
+        "accessed": "2026-11-13"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Microsoft Research 等高校与研究院联合发布；论文的全部众包标注经费由 Microsoft 提供",
+        "cite": [
+          "paper@§8"
+        ]
+      },
+      "first_release": {
+        "v": "2014-05-01（arXiv v1）；数据集第一半于 2014 年发布，第二半 2015 年发布",
+        "cite": [
+          "arxiv",
+          "paper@§6"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "paper@摘要",
+        "paper@§1",
+        "site-download"
+      ],
+      "interpretation": [
+        "site-detection-eval",
+        "paper@§6",
+        "cocorem"
+      ]
+    },
+    "problem": {
+      "text": "此前的分类与检测数据集只覆盖了场景理解的第一层难题：PASCAL VOC 20 个类别、约 1.1 万张图，且主要用边界框标注，定位精度受限。COCO 要把物体识别放回「场景理解」这个更大的问题里——用复杂日常场景、非标志性视角、每图更多实例，加上每个实例的像素级分割掩码，同时考察检测、精确 2D 定位与物体间的上下文推理。",
+      "cite": [
+        "paper@§2",
+        "arxiv"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机 / 平凡基线",
+        "value": "论文未给出",
+        "note": "论文只报告了 DPM 检测器基线，没有给随机或多数类基线；本站不推算。",
+        "cite": [
+          "paper@§7"
+        ]
+      },
+      {
+        "label": "论文发布时的检测基线（DPMv5-C，MS COCO 上平均 AP）",
+        "value": "19.1 AP",
+        "note": "在 55,000 张图子集、20 个 PASCAL 类别上评测；同一实现换用 PASCAL VOC 2012 训练时只有 16.9 AP，而 DPMv5-C 在 PASCAL VOC 2012 上为 26.8 AP。",
+        "cite": [
+          "paper@Table 1",
+          "paper@§7"
+        ]
+      },
+      {
+        "label": "人工标注一致性参考线（字幕任务）",
+        "value": "CIDEr-D 0.854（c5）/ 0.910（c40）",
+        "note": "字幕论文用「另一条人工描述去对照参考描述」测人工一致性：BLEU-1 为 0.663 / 0.880，METEOR 0.252 / 0.335，ROUGE-L 0.484 / 0.626。",
+        "cite": [
+          "captions-paper@Table 1"
+        ]
+      },
+      {
+        "label": "人工标注一致性参考线（关键点任务）",
+        "value": "人工 OKS 中位数约 .91",
+        "note": "官方用 5,000 张冗余标注的 val 图测得：OKS=.50 时人工近乎满分（95%），OKS 超过 .95 后人工表现快速下降。",
+        "cite": [
+          "site-keypoints-eval"
+        ]
+      },
+      {
+        "label": "2015 检测挑战赛冠军的错误构成（参考）",
+        "value": "ResNet（bbox）在 IoU=.75 上 AP .399",
+        "note": "官方错误分析：若定位完美可升至 .682，去掉背景误检可到 .870；说明当年误差主要来自定位不准与背景混淆。",
+        "cite": [
+          "site-detection-eval"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把「91 类」和「80 类」混用：91 是论文的类别表，80 才是 2014 版实际发布分割标注、挑战赛实际评分的类别数。",
+        "cite": [
+          "paper@§6",
+          "site-detection-eval"
+        ]
+      },
+      {
+        "text": "把 APIoU=.50 的分数和主指标 AP（.50:.05:.95 上平均）排在一起比：后者明显更严，官网称它才是决定胜负的单一最重要指标。",
+        "cite": [
+          "site-detection-eval"
+        ]
+      },
+      {
+        "text": "把 bbox AP 和分割 AP 当成同一个数：两者规则一致，只有 IoU 的计算对象不同（框 vs 掩码）。",
+        "cite": [
+          "site-detection-eval"
+        ]
+      },
+      {
+        "text": "以为 val 和 test 可互换、或 2014 / 2015 / 2017 的数字能混比：test 真值隐藏需上传服务器；2017 把 train / val 从 83K/41K 重划为 118K/5K，图像完全相同。",
+        "cite": [
+          "site-detection-eval",
+          "site-download"
+        ]
+      },
+      {
+        "text": "把 COCO 高分当成通用视觉能力：它只覆盖 80 / 91 个常见物体类别、只标 thing 不标 stuff，也不考 3D 或遮挡程度。",
+        "cite": [
+          "paper@§8",
+          "site-detection-eval"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "Microsoft Research 等高校与研究院联合发布；论文的全部众包标注经费由 Microsoft 提供，数据集由官方站点与 cocoapi 仓库维护",
+        "cite": [
+          "paper@§8",
+          "repo"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "Tsung-Yi Lin、Michael Maire、Serge Belongie、Lubomir Bourdev、Ross Girshick、James Hays、Pietro Perona、Deva Ramanan、C. Lawrence Zitnick、Piotr Dollár",
+        "cite": [
+          "arxiv"
+        ]
+      },
+      {
+        "k": "标注人力",
+        "v": "累计超过 70,000 工时；类别标注约 2 万工时、实例标注约 1 万工时，每 1,000 个分割需 22 以上工时，全部通过 Amazon Mechanical Turk 完成",
+        "cite": [
+          "paper@§8",
+          "paper@§4",
+          "paper@§4.1",
+          "paper@§4.2",
+          "paper@§4.3"
+        ]
+      },
+      {
+        "k": "图像与类别来源",
+        "v": "图像主要来自 Flickr；类别由 PASCAL VOC 与高频可视物体词表汇总成 272 个候选后投票选出 91 类，归入 11 个超大类，并保证 PASCAL VOC 类别全部保留",
+        "cite": [
+          "paper@§3.2",
+          "paper@§3.1"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2014-05-01 arXiv v1 → 2014 年发布数据集第一半、2015 年发布另一半 → 2015-04-01 字幕数据与评测软件发布 → 2017 把 train / val 重划为 118K/5K → 2018 增加 stuff / panoptic 标注 → 2019 与 2020 数据不变",
+        "cite": [
+          "arxiv",
+          "paper@§6",
+          "site-captions-2015",
+          "site-download"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "图像与标注从官网 Download 页经 gsutil rsync 获取（train2014 / val2014 / test2014 / test2015 / train2017 / val2017 / test2017 / unlabeled2017）；Matlab / Python / Lua API 在 GitHub cocodataset/cocoapi；FiftyOne Dataset Zoo 也提供 coco-2017",
+        "cite": [
+          "site-download",
+          "repo"
+        ]
+      },
+      {
+        "k": "任务组织",
+        "v": "官网把 COCO 组织为 2015–2020 的年度挑战：Detection / Keypoints / Stuff / Panoptic / DensePose / Captioning，各任务配评测说明与榜单；2017 检测任务由 Joint COCO and Places Recognition Challenge Workshop（ICCV 2017）承办",
+        "cite": [
+          "site",
+          "site-detection-2017"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-13",
+        "columns": [
+          "来源",
+          "模型",
+          "训练数据",
+          "评测集",
+          "平均 AP"
+        ],
+        "rows": [
+          [
+            "论文 Table 1",
+            "DPMv5-P",
+            "PASCAL VOC 2012",
+            "MS COCO（55,000 图子集，20 类）",
+            "16.9"
+          ],
+          [
+            "论文 Table 1",
+            "DPMv5-C",
+            "MS COCO（5,000 正样本 / 10,000 负样本）",
+            "MS COCO（同一子集）",
+            "19.1"
+          ],
+          [
+            "论文 Table 1",
+            "DPMv5-P",
+            "PASCAL VOC 2012",
+            "PASCAL VOC 2012",
+            "29.6"
+          ],
+          [
+            "论文 Table 1",
+            "DPMv5-C",
+            "MS COCO",
+            "PASCAL VOC 2012",
+            "26.8"
+          ]
+        ]
+      },
+      "cite": [
+        "paper@Table 1"
+      ]
+    }
+  }
 }
