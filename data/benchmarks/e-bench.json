@@ -1,46 +1,648 @@
 {
   "id": "e-bench",
-  "name": "e-bench",
-  "full_name": null,
+  "name": "E-Bench",
+  "full_name": "E-Bench: Benchmarking Multi-Step Tool-Use Agents in Real-World Product Scenarios",
   "aliases": [
-    "E-Bench"
+    "E-Bench",
+    "e-bench"
   ],
-  "status": null,
+  "status": "active",
   "categories": [
     "agent"
   ],
-  "summary": "腾讯混元自建评测，公开资料有限：hy3 / hy4-preview 发布页附录表的自建任务行，标注 (internal)；任务域与指标未公开",
-  "interpretation": "厂商自报口径，主要用于代际纵向对比，跨厂商可比性未知。页面附录读数：Hy3 50.2 → Hy4 preview 77.1；同表对照（腾讯转引）GPT-5.5 72.0、Claude Opus 4-8 68.8。",
-  "measures": [],
-  "does_not_measure": [],
-  "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": "vendor_internal",
-    "public_sample": null
-  },
-  "metrics": [],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [
-    "任务域、题集与指标定义均未公开；名称语义（enterprise/economic 等）无法从已捕获材料确认"
-  ],
-  "notes": "hy.tencent.com hy3 / hy4-preview 页附录图像转录；与 Hy-FinModelBench、ProdBench、Hy-SkillsWorld 同组出现",
-  "official_sources": [
+  "summary": "腾讯混元团队联合清华大学 AIR、东南大学发布的合成式智能体评测：323 道会真实改写数据库状态的多步工具调用任务，分布在王者荣耀、QQ 音乐、腾讯会议三个仿产品域。每题配一条 ground-truth 数据库 diff，用确定性状态比对判分，不设部分分、不用 LLM 裁判。11 个前沿模型里最好的 Kimi-K3 在基础口径 Avg@3 为 73.79%，11 模型均值只有 54.56%。",
+  "interpretation": "分数衡量的是「只拿到一句自然语言需求、只能调用该域 MCP 工具时，能不能把隐藏数据找全并把状态改对」。Avg@3 是单次尝试的典型水平，Pass@3 是三次里至少一次成功，Pass3 是三次全成功——后者才接近「敢不敢让它动线上状态」：基础口径下最强模型 Pass3 不到 60%，放开代码执行（E-Bench-Code）后仍不到 70%。三个域难度不均（王者荣耀最难、QQ 音乐最容易），跨模型比较前先看域构成。",
+  "measures": [
     {
-      "kind": "site",
-      "url": "https://hy.tencent.com/research/hy3"
+      "area": "全量数据获取（Full-Data Acquisition）",
+      "focus": "行动前把隐藏的目标集合完整取回，不凭部分证据下结论；论文称这一类直接对应信息缺口",
+      "share": "197 题",
+      "format": "多步检索后一次写入",
+      "cite": [
+        "paper@Table 1",
+        "paper@Table 4"
+      ]
     },
     {
-      "kind": "site",
-      "url": "https://hy.tencent.com/research/hy4-preview"
+      "area": "多条件筛选（Multi-Condition Filtering）",
+      "focus": "识别同时满足多个约束或状态的实体",
+      "share": "72 题",
+      "format": "先筛后改",
+      "cite": [
+        "paper@Table 1"
+      ]
+    },
+    {
+      "area": "聚合与计算（Aggregation and Computation）",
+      "focus": "对取回的状态做计数、排名、汇总等聚合运算",
+      "share": "159 题",
+      "format": "聚合结果驱动写入",
+      "cite": [
+        "paper@Table 1"
+      ]
+    },
+    {
+      "area": "跨步依赖（Cross-Step Dependency）",
+      "focus": "后一步工具调用的参数依赖前一步的返回结果，需串起很长的调用序列",
+      "share": "207 题",
+      "format": "顺序多步调用",
+      "cite": [
+        "paper@Table 1"
+      ]
+    },
+    {
+      "area": "精确边界判断（Precise Boundary Judgment）",
+      "focus": "阈值、边界、排名、容量、可用性的精确判定，差一点就算错",
+      "share": "144 题",
+      "format": "判定后写入",
+      "cite": [
+        "paper@Table 1"
+      ]
+    },
+    {
+      "area": "跨实体级联（Cross-Entity Cascade）",
+      "focus": "把一个操作或决策传播到相关联的实体类型",
+      "share": "106 题",
+      "format": "批量级联修改",
+      "cite": [
+        "paper@Table 1"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "真实业务数据上的表现：环境与任务全部合成，不含任何线上记录、脏数据、权限与并发",
+      "cite": [
+        "paper@摘要",
+        "paper@§3.5"
+      ]
+    },
+    {
+      "text": "开放式对话、长文写作、知识问答等非工具调用能力：任务只有「自然语言需求 → 多步工具调用 → 状态改写」一种形态",
+      "cite": [
+        "paper@§3.1"
+      ]
+    },
+    {
+      "text": "代码能力本身：基础口径明确禁掉代码执行，E-Bench-Code 是另一个口径，两者分数不能混比",
+      "cite": [
+        "paper@§3.4"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 323,
+    "splits": [
+      "E-Bench（基础口径，仅域内 MCP 工具）",
+      "E-Bench-Code（额外授予 exec_code）"
+    ],
+    "languages": [
+      "zh",
+      "en"
+    ],
+    "source_type": "全合成（合成数据库 + 特权生成器出题）",
+    "public_sample": false,
+    "totals": "323 题（王者荣耀 110 / QQ 音乐 104 / 腾讯会议 109）· 41 张表、345 列、69 条外键关系、76,317 行、逾 60 万数据单元 · 单题 ground-truth diff 平均 24.9 行改动（域间 9.5–48.5，单题 3–221）· 题集与环境均未开源",
+    "cite": [
+      "paper@Table 2",
+      "paper@§3.5"
+    ],
+    "construction": [
+      {
+        "k": "两阶段解耦",
+        "text": "先造环境再造题：把关系模式转成表级依赖图，按拓扑序填表，根表（歌手 / 部门 / 会议室）先生成，下游表等依赖物化后再填，参照完整性由构造保证而不是事后修补。",
+        "cite": [
+          "paper@§3.2"
+        ]
+      },
+      {
+        "k": "受限合成",
+        "text": "用强 LLM 当受限合成器而非自由生成整库：填表时给它 schema、关键标注、生成要求、全局领域上下文与相关既有记录，且只能通过插入工具落库，由数据库在插入时强制主键唯一与外键有效。",
+        "cite": [
+          "paper@§3.2"
+        ]
+      },
+      {
+        "k": "确定性校验修复",
+        "text": "填充完成后跑确定性校验与修复脚本，修掉 LLM 合成数据里残留的时序倒挂、聚合计数不符、状态字段冲突等问题，再在库上构建域专属 MCP 工具并用单元测试验证工具语义与数据库一致。",
+        "cite": [
+          "paper@§3.2"
+        ]
+      },
+      {
+        "k": "生成方特权",
+        "text": "出题方（Claude Opus 4.7）在临时数据库副本上可直接查全局状态并跑代码；解题方只看到一句自然语言需求和公开域工具——这个不对称同时制造了信息缺口与工具缺口。",
+        "cite": [
+          "paper@§3.3"
+        ]
+      },
+      {
+        "k": "三重校验",
+        "text": "候选题目交给 GPT-5.5、Claude Opus 4.7、GLM-5.1 三个校验器（与生成方同样的全信息工具）复现，至少两个与 ground truth 一致才收录，再剔掉弱基线能轻易做对的题，并按能力类型分层。",
+        "cite": [
+          "paper@§3.3"
+        ]
+      },
+      {
+        "k": "题目形态",
+        "text": "每域约一百道互不相同的题；附录案例同时给出原始中文用户请求与英文翻译。",
+        "cite": [
+          "paper@§3.5",
+          "paper@附录 B"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "avg3",
+      "name": "Avg@3",
+      "direction": "越高越好",
+      "description": "单次尝试的典型水平：所有题 × 3 次试验的逐次成功率平均",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§4.1"
+      ]
+    },
+    {
+      "id": "pass-at-3",
+      "name": "Pass@3",
+      "direction": "越高越好",
+      "description": "三次试验里至少一次成功即算该题解出",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§4.1"
+      ]
+    },
+    {
+      "id": "pass3",
+      "name": "Pass3",
+      "direction": "越高越好",
+      "description": "三次试验全部成功才算该题解出，衡量可靠性与可重复性；与 Pass@3 的差距即稳定性差距",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§4.1"
+      ]
+    },
+    {
+      "id": "interaction-cost",
+      "name": "MCP 工具调用数 / 轮次 / token / 单题 API 成本",
+      "direction": "越低越好（成本类）",
+      "description": "交互成本指标，用于成本-性能帕累托分析；论文按每任务总 API 成本（美元）与 Avg@3 作图",
+      "cite": [
+        "paper@§4.6",
+        "paper@Table 5"
+      ]
+    }
+  ],
+  "default_protocol": {
+    "raw": "每题在一个全新的隔离数据库副本上独立跑 3 次，防止跨试验干扰；模型以最高可用思考档位经统一 harness 只调用该域 MCP 工具并管理多轮交互循环（基础口径不含代码执行）；最终数据库状态与 ground-truth diff 做确定性规则比对，完全一致才算成功，无部分分、无 LLM 裁判。",
+    "cite": [
+      "paper@§4.1",
+      "paper@§3.4"
+    ],
+    "variants": [
+      {
+        "text": "E-Bench-Code：每域额外授予一个 exec_code 工具，把工具缺口部分补上；两种口径分数不能混比。",
+        "cite": [
+          "paper@§3.4",
+          "paper@Table 2"
+        ]
+      },
+      {
+        "text": "Muse-Spark-1.1 因 Meta 内容审核，只在它自己能无内容策略失败跑完的 265 题子集上报告，与 323 题全集不可直接比。",
+        "cite": [
+          "paper@附录 A.5",
+          "paper@Table 6"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2026-07-26",
+      "label": "arXiv v1 发布（cs.AI，Comments: 29 pages, 14 figures, 6 tables）；PDF 内页日期写作 2026-7-28，与提交日不一致",
+      "cite": [
+        "paper@arXiv 提交信息",
+        "paper"
+      ]
+    },
+    {
+      "id": "code-variant",
+      "date": "2026-07-26",
+      "label": "同文给出 E-Bench-Code 变体：每域多授予一个 exec_code 工具，用于量化代码执行能把性能天花板抬高多少",
+      "cite": [
+        "paper@§3.4"
+      ]
+    },
+    {
+      "id": "ebench-2-0-internal",
+      "date": "2026-11-04",
+      "label": "腾讯 Hy4 正式版发布看板出现 E-Bench 2.0（标注 internal，Hy4 记 70.0，同格 Opus 80.0）；题集与评分口径未公开，与论文 323 题版无法对应，本站未收录其成绩",
+      "cite": [
+        "hy4-board@评测看板"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "题集与环境不开源",
+      "impact": "外部无法自行复现或逐题核对，只能采信论文表格；也无法用作自家模型的日常回归。论文以「防止针对基准的训练与过拟合」为由明确不开源。",
+      "severity": "高",
+      "response": "把论文表格当一次性快照；重大结论等第三方独立复现或厂商开放子集后再下判断。",
+      "reader": "任何「我们在 E-Bench 上拿了 X 分」的自报都缺少可核验路径，先问清口径、题量与是否 E-Bench-Code。",
+      "cite": [
+        "paper@Figure 1 注"
+      ]
+    },
+    {
+      "issue": "厂商后继版本口径不可核验",
+      "impact": "腾讯 Hy4 发布看板上的 E-Bench 2.0 标注 internal，任务集、题量与评分口径均未公开，与论文 323 题口径无法对应；该看板作者也提醒 internal 或带星号的格子横向比较要打折。",
+      "severity": "高",
+      "response": "本站只收录论文口径的 323 题结果，E-Bench 2.0 读数仅记入版本历史并标注 internal。",
+      "reader": "看到 E-Bench 2.0 的分数不要和论文表 3 的分数放在一起比。",
+      "cite": [
+        "hy4-board@评测看板",
+        "hy4-board@结论"
+      ]
+    },
+    {
+      "issue": "合成环境与真实业务有差距",
+      "impact": "环境是合成数据库加模拟产品语义，不含真实数据的脏数据、权限体系与并发写入；论文把扩展到真实 domain CLI 与线上产品后端列为未来工作，说明当前尚未覆盖。",
+      "severity": "中",
+      "response": "论文通过外键约束、图导向填充与确定性校验保证环境内部自洽；跨域与真实后端扩展尚未实现。",
+      "reader": "把 E-Bench 当能力探针，不要当上线前验收。",
+      "cite": [
+        "paper@§3.5"
+      ]
+    },
+    {
+      "issue": "Pass@3 与 Pass3 差距大",
+      "impact": "同一模型三次全成的比例远低于至少一次成：Kimi-K3 从 87.62% Pass@3 掉到 58.82% Pass3；由于要求状态精确改写且无部分分，这种不稳定在实务上意味着还不能放心托付。",
+      "severity": "中",
+      "response": "论文同时报三个严格度递增的指标，并在正文明确指出可靠性是核心瓶颈。",
+      "reader": "判断「能不能交给它改状态」看 Pass3，不要看 Avg@3。",
+      "cite": [
+        "paper@§4.2"
+      ]
+    },
+    {
+      "issue": "题量小、单题权重高",
+      "impact": "323 题 × 3 次试验，一题成败对 Avg@3 的影响约 0.33 个百分点（本站按 1/323 推算），排名靠近的模型间差距噪声不小。",
+      "severity": "低",
+      "response": "论文按能力类型与产品域分层分析，并同时给出 Pass@3 / Pass3；本站不额外推算置信区间。",
+      "reader": "3 分以内的排名差异不要当真。",
+      "cite": [
+        "paper@§4.1"
+      ]
+    },
+    {
+      "issue": "调用次数与分数正相关，容易被误读成效率",
+      "impact": "基础口径下工具调用越多分越高（33 个 模型×域 样本上 r=+0.57），调用少往往只是过早行动而非高效；到 E-Bench-Code 下相关性反号（r=-0.36），因为多个域调用可被压进一个 exec_code。",
+      "severity": "低",
+      "response": "论文用成本-性能帕累托前沿区分，并明确两种口径下相关性方向相反。",
+      "reader": "不要用「调用少所以强」读基础口径的分数；跨口径比效率先看清工具集。",
+      "cite": [
+        "paper@§4.6"
+      ]
+    }
+  ],
+  "notes": "评测域为腾讯自家产品（王者荣耀 / QQ 音乐 / 腾讯会议），出题方与产品方同属腾讯；E-Bench 2.0 为厂商内部后继版本，本站未收录其成绩。",
+  "official_sources": [
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2607.23722"
     }
   ],
   "related_benchmarks": [
     "skillsbench",
     "hy-companybench"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-09-01"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-13",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "E-Bench: Benchmarking Multi-Step Tool-Use Agents in Real-World Product Scenarios（arXiv:2607.23722v1 [cs.AI]，2026-07-26）",
+        "url": "https://arxiv.org/abs/2607.23722",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "hy4-board",
+        "kind": "blog",
+        "title": "码事漫谈：腾讯混元 Hy4 正式版发布了（腾讯云开发者社区，2026-11-04）",
+        "url": "https://cloud.tencent.com/developer/article/2776053",
+        "accessed": "2026-11-13"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "腾讯混元团队 × 清华大学智能产业研究院（AIR）× 东南大学计算机科学与工程学院",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      "first_release": {
+        "v": "2026-07-26（arXiv v1 提交）",
+        "cite": [
+          "paper@arXiv 提交信息"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "paper@摘要",
+        "paper@§3.5",
+        "paper@§4.2"
+      ],
+      "interpretation": [
+        "paper@§4.1",
+        "paper@§4.2",
+        "paper@§4.3"
+      ]
+    },
+    "problem": {
+      "text": "已有工具调用基准多聚焦孤立 API 调用或短轨迹，要么难扩展要么不可控；公开题集又可能被提前见过，分数反映的是记忆而不是主动获取隐藏状态的能力。E-Bench 想造一个完整、可控、便宜可扩又能安全发布的产品环境，在「必须交互才能解」的前提下测多步工具调用。",
+      "cite": [
+        "paper@§1",
+        "paper@§3.1"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "论文 11 模型均值",
+        "value": "54.56%（Avg@3，基础口径）",
+        "note": "典型智能体单次尝试约有一半任务失败。",
+        "cite": [
+          "paper@§4.2"
+        ]
+      },
+      {
+        "label": "论文最好成绩",
+        "value": "73.79%（Kimi-K3，Avg@3，基础口径）",
+        "note": "放开代码执行后最好为 Opus-4.8 的 81.11%；Pass3 基础口径最高 58.82%，E-Bench-Code 最高 68.66%。",
+        "cite": [
+          "paper@Table 3"
+        ]
+      },
+      {
+        "label": "厂商内部后继版本参考",
+        "value": "70.0（Hy4，E-Bench 2.0，internal）",
+        "note": "腾讯 Hy4 发布看板口径，同格 Opus 80.0、GPT-6.1 Sol 66.8、DeepSeek 65.3；题集与评分未公开，不能与论文 323 题口径对比。",
+        "cite": [
+          "hy4-board@评测看板"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 E-Bench 当成用真实业务数据搭的评测。环境与任务全部合成，论文摘要即强调 fully synthetic，数据是 LLM 在约束下填进空库的。",
+        "cite": [
+          "paper@摘要"
+        ]
+      },
+      {
+        "text": "把 E-Bench 2.0 的分和论文表 3 的分放在一起比。前者是腾讯内部口径、题集未公开，看板作者也提醒 internal 格子横向比要打折。",
+        "cite": [
+          "hy4-board@结论"
+        ]
+      },
+      {
+        "text": "只报 Avg@3 不看 Pass3。同一模型三次全成的比例可能比至少一次成低 15 个百分点以上， Avg@3 高不等于稳定。",
+        "cite": [
+          "paper@§4.2"
+        ]
+      },
+      {
+        "text": "基础口径和 E-Bench-Code 口径混比。后者每题多一个 exec_code 工具，按能力类型看增益集中在计算密集型项（多条件筛选、全量获取、聚合计算）。",
+        "cite": [
+          "paper@§3.4",
+          "paper@§4.4"
+        ]
+      },
+      {
+        "text": "跨域直接平均。三个域难度差得多（基础口径域均 Avg@3：王者荣耀 43.64%、腾讯会议 58.87%、QQ 音乐 61.39%），模型在不同域上的排位也会变。",
+        "cite": [
+          "paper@§4.3"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "腾讯混元团队（Hunyuan Team, Tencent）；清华大学智能产业研究院（AIR）；东南大学计算机科学与工程学院",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "Weihuang Zheng、Tianyuan Zou（共同一作），Eileen Ye、Alphet Liu、Youyong Kong、Ya-Qin Zhang、Duran Zheng、Maxm Pan（通讯）",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      {
+        "k": "首发形态",
+        "v": "arXiv 预印本（cs.AI），仅 v1；截至本站核验未见期刊或会议版本",
+        "cite": [
+          "paper@arXiv 提交信息"
+        ]
+      },
+      {
+        "k": "出题与校验模型",
+        "v": "出题用 Claude Opus 4.7（持 query_sql / exec_code）；校验用 GPT-5.5、Claude Opus 4.7、GLM-5.1 三个模型，至少两个复现一致才收录",
+        "cite": [
+          "paper@§3.3"
+        ]
+      },
+      {
+        "k": "可用性",
+        "v": "环境与题集均未开源，论文表格是唯一公开结果；附录只给轨迹案例，不给题目全集",
+        "cite": [
+          "paper@Figure 1 注"
+        ]
+      },
+      {
+        "k": "厂商后续",
+        "v": "2026-11-04 腾讯 Hy4 正式版发布看板列入 E-Bench 2.0（internal），该格 Hy4 记 70.0，是看板上唯一挤进前二的一项",
+        "cite": [
+          "hy4-board@评测看板"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-13",
+        "columns": [
+          "来源",
+          "模型",
+          "E-Bench Avg@3",
+          "E-Bench Pass@3",
+          "E-Bench Pass3",
+          "E-Bench-Code Avg@3",
+          "E-Bench-Code Pass@3",
+          "E-Bench-Code Pass3"
+        ],
+        "rows": [
+          [
+            "论文 Table 3",
+            "Kimi-K3",
+            "73.79%",
+            "87.62%",
+            "58.82%",
+            "77.61%",
+            "88.70%",
+            "65.80%"
+          ],
+          [
+            "论文 Table 3",
+            "GPT-5.5",
+            "72.03%",
+            "82.97%",
+            "57.59%",
+            "77.19%",
+            "87.32%",
+            "66.90%"
+          ],
+          [
+            "论文 Table 3",
+            "Opus-4.8",
+            "68.78%",
+            "84.33%",
+            "50.81%",
+            "81.11%",
+            "92.61%",
+            "68.66%"
+          ],
+          [
+            "论文 Table 3",
+            "Grok-4.5",
+            "66.10%",
+            "80.50%",
+            "52.32%",
+            "69.24%",
+            "82.66%",
+            "55.75%"
+          ],
+          [
+            "论文 Table 3",
+            "GLM-5.2",
+            "52.32%",
+            "71.52%",
+            "30.96%",
+            "60.99%",
+            "81.69%",
+            "42.25%"
+          ],
+          [
+            "论文 Table 3",
+            "Qwen-3.7-Max",
+            "50.88%",
+            "70.59%",
+            "30.34%",
+            "61.92%",
+            "80.99%",
+            "44.01%"
+          ],
+          [
+            "论文 Table 3",
+            "Hy3",
+            "50.15%",
+            "74.30%",
+            "26.63%",
+            "64.40%",
+            "85.56%",
+            "44.01%"
+          ],
+          [
+            "论文 Table 3",
+            "Seed-2.1-Pro",
+            "47.94%",
+            "65.33%",
+            "28.79%",
+            "53.04%",
+            "75.35%",
+            "30.99%"
+          ],
+          [
+            "论文 Table 3",
+            "Gemini-3.5-Flash",
+            "42.62%",
+            "64.71%",
+            "21.98%",
+            "62.54%",
+            "82.39%",
+            "40.49%"
+          ],
+          [
+            "论文 Table 3",
+            "MiniMax-M3",
+            "41.07%",
+            "62.85%",
+            "20.12%",
+            "46.85%",
+            "74.65%",
+            "21.13%"
+          ],
+          [
+            "论文 Table 3",
+            "DeepSeek-V4-Pro",
+            "34.47%",
+            "53.56%",
+            "17.34%",
+            "47.68%",
+            "72.89%",
+            "25.35%"
+          ],
+          [
+            "论文 Table 6（Muse-Spark-1.1 可完成的 265 题子集，勿与全集比）",
+            "Muse-Spark-1.1",
+            "61.6%",
+            "75.8%",
+            "46.0%",
+            "69.9%",
+            "84.2%",
+            "53.2%"
+          ],
+          [
+            "Hy4 发布看板（E-Bench 2.0，internal，口径未公开）",
+            "Hy4",
+            "70.0",
+            "未披露",
+            "未披露",
+            "未披露",
+            "未披露",
+            "未披露"
+          ]
+        ]
+      },
+      "cite": [
+        "paper@Table 3",
+        "paper@Table 6",
+        "hy4-board@评测看板"
+      ]
+    }
+  }
 }
