@@ -1,45 +1,244 @@
 {
   "id": "countqa",
   "name": "CountQA",
-  "full_name": "CountQA: How Well Do MLLMs Count in the Wild?",
+  "full_name": "CountQA: How Well Do MLLMs Count in the Wild?（MLLM 在真实场景中数得准吗）",
   "aliases": [],
   "status": null,
   "categories": [
     "multimodal"
   ],
-  "summary": "1,500+ 道高密度真实场景计数问答：杂乱、遮挡、目标密集；发布时 15 个 MLLM 最佳仅 42.9%（Google Research）",
-  "interpretation": "计数是『最基础的认知短板』探针：不是模型不会认物体，而是数不过来。两年内旗舰从 42.9 爬到 72-82 分段（Qwen3.8-Max 82.4），进步真实可测。",
+  "summary": "Google Research 团队发布的真实场景物体计数基准：1,528 个问答对挂在 1,001 张作者实拍的高密度、多遮挡日常图片上，真值计数在拍摄现场逐张人工核定。任务是回归式输出一个整数，主指标 Exact Match；发布时测的 15 个 MLLM 里最好的 Gemini 2.5 Pro 也只有 42.93% EM——旗舰模型连一半都数不准，且物体越多分越低（51 个以上段落至 13.9%）。",
+  "interpretation": "高分说明模型能把杂乱真实场景里的视觉信息翻译成准确数量——这是下游「比较多少、盘点、核验」类任务的底层能力，不是数学推理分。读分时三条硬约束：一，EM 与宽松口径 RA@5%/RA@10% 差 10 到 15 个百分点，混排会系统性夸大；二，物体数量段决定难度（1–5 个段最好也只 60.3%，51+ 段崩到 13.9%），跨段不可比；三，cluttered/focused 切片有混淆变量（cluttered 平均 11.5 个目标反而低于 focused 的 15.7），不能当抗干扰分读。截至 2026-11 核对，论文与数据集卡均未提供官方 leaderboard，第三方自评分数若未复刻官方提示词与解析器（Gemini 2.5 Flash 抽数、temperature=0），与论文 Table 2 不可直接对比。",
   "measures": [
-    "真实高密度场景的物体计数"
+    {
+      "area": "多模态感知",
+      "focus": "直接枚举（How many X?）：真实实拍场景、高物体密度、遮挡、杂物，目标是「野生的」计数而非网图标志性物体",
+      "share": "主体题型",
+      "format": "回归式单整数输出，精确匹配判分",
+      "cite": [
+        "arxiv-2508-06585@Abstract",
+        "arxiv-2508-06585@§3.1"
+      ]
+    },
+    {
+      "area": "多模态推理",
+      "focus": "简单组合计数（如 How many sharpies and pens do you see combined?）：先分别识别再跨类求和，顺带考属性绑定（颜色+形状+类别过滤）",
+      "share": "少数题型",
+      "format": "回归式单整数输出",
+      "cite": [
+        "arxiv-2508-06585@§3.2",
+        "arxiv-2508-06585@附录 B"
+      ]
+    },
+    {
+      "area": "鲁棒性切片",
+      "focus": "按物体数量段（1–5 / 6–10 / 11–20 / 21–50 / 51+）与 focused / cluttered 两个维度切分分析失败模式",
+      "share": "分析维度（1,001 张图中 Focused 524 张 / Cluttered 477 张）",
+      "format": "EM / RA 分桶",
+      "cite": [
+        "arxiv-2508-06585@§5.2",
+        "arxiv-2508-06585@Table 1"
+      ]
+    }
   ],
   "does_not_measure": [
-    "检测框输出（COCO 负责）",
-    "区域指代（Ref-Adv 负责）"
+    {
+      "text": "比较、奇偶、逻辑等数值推理题（Are there more X's than Y's? / Is the number of X's even or odd?）——论文明确列为未覆盖、留给扩展",
+      "cite": [
+        "arxiv-2508-06585@§7"
+      ]
+    },
+    {
+      "text": "专用计数系统的水平（检测器、密度回归、zero-shot counting 框架）——评测刻意只收可用自然语言提示的通用 MLLM",
+      "cite": [
+        "arxiv-2508-06585@§4.1"
+      ]
+    },
+    {
+      "text": "人群密度计数——ShanghaiTech / UCF-QNRF / JHU-CROWD++ / NWPU-Crowd 等单一类别人群基准已覆盖，CountQA 不做这个",
+      "cite": [
+        "arxiv-2508-06585@§2"
+      ]
+    }
   ],
   "dataset": {
-    "sample_count": null,
+    "sample_count": 1528,
     "splits": [
-      "1,500+ QA 对（手工拍摄真实场景）"
+      "test（唯一拆分，1,528 QA 对 / 1,001 张图，全量公开）"
     ],
     "languages": [
-      "en"
+      "英语（问题与元数据）"
     ],
     "source_type": "human_curated",
-    "public_sample": true
+    "public_sample": true,
+    "totals": "1,528 QA 对 / 1,001 张实拍图；10 个场景类别、441 种物体；答案 0–400，均值 12.1、中位数 9、标准差 16.6；Focused 图 524 张 / Cluttered 图 477 张",
+    "cite": [
+      "arxiv-2508-06585@Table 1",
+      "hf-countqa@Dataset card"
+    ],
+    "construction": [
+      {
+        "k": "图片采集",
+        "text": "作者步行实拍室内外日常场景（货架上的物件、碗里的水果、停车场的车、电线上的鸟），刻意避开大规模网图里过度代表的标志性物体类，专收「长尾」日常物",
+        "cite": [
+          "arxiv-2508-06585@§3.1"
+        ]
+      },
+      {
+        "k": "真值标注",
+        "text": "GT 计数在拍摄现场 in situ 确定：标注者可绕场景多角度查看实物、复核遮挡、多次重数，再回看照片核对人眼可数性与 GT 一致，把事后看图标注的歧义压到最低",
+        "cite": [
+          "arxiv-2508-06585@§3.1"
+        ]
+      },
+      {
+        "k": "出题",
+        "text": "1,528 个 QA 对由 Gemini 2.5 Flash 按 GT 半自动生成自然语言问题：既有直接题（How many eggs do you see?），也有要聚合多类物体的组合题；答案直接取自高置信 GT",
+        "cite": [
+          "arxiv-2508-06585@§3.2"
+        ]
+      },
+      {
+        "k": "元数据",
+        "text": "每张图人工归入 10 个预定义场景类别之一，并打 is_focused 标签（清晰主体 vs 视觉繁忙/杂物多），用于显式测抗噪；另附全场景可数物体清单",
+        "cite": [
+          "arxiv-2508-06585@§3.2"
+        ]
+      },
+      {
+        "k": "发布",
+        "text": "数据集以 CC BY 4.0 在 Hugging Face 公开（Jayant-Sravan/CountQA，2025-08-08 上架，约 621 MB、1,001 行，每行一图可挂多问，含 full_config 序列化元数据）",
+        "cite": [
+          "hf-countqa@Dataset card"
+        ]
+      }
+    ]
   },
-  "metrics": [],
-  "default_protocol": null,
+  "metrics": [
+    {
+      "id": "em",
+      "name": "Exact Match（EM，主指标）",
+      "direction": "越高越好",
+      "description": "解析出的最终数字与真值整数完全一致的题目百分比",
+      "cite": [
+        "arxiv-2508-06585@§4.2"
+      ]
+    },
+    {
+      "id": "ra5",
+      "name": "RA@5%",
+      "direction": "越高越好",
+      "description": "预测数落在真值 ±5% 内即算对的宽松准确率，面向大计数题给更细的梯度",
+      "cite": [
+        "arxiv-2508-06585@§4.2"
+      ]
+    },
+    {
+      "id": "ra10",
+      "name": "RA@10%",
+      "direction": "越高越好",
+      "description": "预测数落在真值 ±10% 内即算对的宽松准确率",
+      "cite": [
+        "arxiv-2508-06585@§4.2"
+      ]
+    }
+  ],
+  "default_protocol": {
+    "raw": "计数任务框成回归问题：zero-shot、统一系统提示词（计数助手，输出一个整数、别无其他，全文见论文附录 C），所有模型 temperature=0；模型输出不是纯整数时，用 Gemini 2.5 Flash 当重写器从冗长文本中抽第一个数字再判分",
+    "cite": [
+      "arxiv-2508-06585@§4.2",
+      "arxiv-2508-06585@附录 C"
+    ],
+    "variants": [
+      {
+        "text": "EM 与 RA@5% / RA@10% 是三套口径：RA 允许 ±5% / ±10% 误差，同一模型 RA@10% 普遍比 EM 高 10–15 个百分点，不能混排",
+        "cite": [
+          "arxiv-2508-06585@§4.2"
+        ]
+      },
+      {
+        "text": "换提示词或解析链路即偏离论文口径：论文摘要承诺接收后开源数据集与代码，数据集已上架 HF，但截至 2026-11 未检索到官方评测代码仓库，第三方复现需自建解析并注明",
+        "cite": [
+          "arxiv-2508-06585@Abstract",
+          "hf-countqa@Dataset card"
+        ]
+      }
+    ]
+  },
   "versions": [
     {
       "id": "v1",
-      "label": "CountQA（2025-08）",
-      "note": "arXiv:2508.06585；15 个 MLLM 最佳 42.9%"
+      "date": "2025-08-08",
+      "label": "arXiv v1 提交；同日 Hugging Face 数据集上架",
+      "cite": [
+        "arxiv-abs@Submission history",
+        "hf-countqa@Dataset card"
+      ]
+    },
+    {
+      "id": "v2",
+      "date": "2025-09-09",
+      "label": "arXiv v2（当前版本，cs.AI）",
+      "cite": [
+        "arxiv-abs@Submission history"
+      ]
     }
   ],
   "limitations": [
-    "题目数中等，方差需多次运行控制"
+    {
+      "issue": "题型范围窄：只测直接枚举与简单组合计数",
+      "impact": "比较多少、奇偶判断、逻辑运算都不在卷内；EM 高不能外推成「数量推理强」",
+      "severity": "高",
+      "response": "论文把这几类题明确列为未来扩展方向",
+      "reader": "引用时表述为「精确计数」，不要扩大成数学或数量推理能力",
+      "cite": [
+        "arxiv-2508-06585@§7"
+      ]
+    },
+    {
+      "issue": "地域与文化偏差：图片全部来自作者生活的环境",
+      "impact": "「日常物体」的分布带区域偏向，不同全球/文化/社会经济场景的物体未必覆盖",
+      "severity": "高",
+      "response": "论文建议用同一 in situ 方法在更多国际地点扩采数据",
+      "reader": "跨地域、跨文化场景的结论不要直接搬用",
+      "cite": [
+        "arxiv-2508-06585@§7"
+      ]
+    },
+    {
+      "issue": "规模换质量：in situ 真值采集费人力，总量 1,528 题",
+      "impact": "Table 2 的 95% bootstrap 置信区间约 ±1.4 至 ±2.6 个百分点，几个点以内的模型差距可能在噪声内",
+      "severity": "中",
+      "response": "论文报告了各行的 bootstrap 置信区间，并明确这是质量优先的取舍",
+      "reader": "比较模型先看置信区间是否重叠，不要只看名次",
+      "cite": [
+        "arxiv-2508-06585@Table 2",
+        "arxiv-2508-06585@§7"
+      ]
+    },
+    {
+      "issue": "cluttered / focused 切片存在混淆变量",
+      "impact": "cluttered 图平均目标数（11.5）反而低于 focused（15.7）；o4-mini、Qwen VL Max 在 cluttered 上还略好，「抗杂乱」结论可能被计数难度掩盖",
+      "severity": "中",
+      "response": "论文 §5.3 明确点出该混淆并给出解释（难度下降抵消了感知挑战）",
+      "reader": "不要把两个子集的分差直接解读为抗干扰能力差异",
+      "cite": [
+        "arxiv-2508-06585@§5.3"
+      ]
+    },
+    {
+      "issue": "单一公开 test 拆分，无留出集",
+      "impact": "全量数据 2025-08-08 起公开可得，发布更晚的模型若在训练中见过图片，分数会被抬高且无从检测",
+      "severity": "中",
+      "response": "论文未讨论防污染审计；对比跨代模型时需自留时间切分证据",
+      "reader": "对晚于 2025-08 发布的模型，分数与论文 Table 2 的对比只作参考",
+      "cite": [
+        "hf-countqa@Dataset card",
+        "arxiv-2508-06585@§3.1"
+      ]
+    }
   ],
-  "notes": "Qwen3.8-Max 表 2 Visual Perception & Grounding 组出现（82.4 vs Gemini3.1-Pro 72.8 / Opus4.8 41.3）",
+  "notes": "2026-11-13 升级为 benchmark-profile/v2。v1 笔记里的「Qwen3.8-Max 82.4（表 2 Visual Perception & Grounding 组）」来自模型方技术报告而非 CountQA 论文，本页正文不采用，站内成绩走附录 C 账本（ladder 的 ledger-top 行）。官方评测代码仓库截至本日未检索到。",
   "official_sources": [
     {
       "kind": "paper",
@@ -54,6 +253,294 @@
     "visfactor",
     "refadv-s"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-09-01"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-13",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      {
+        "id": "arxiv-2508-06585",
+        "kind": "paper",
+        "title": "CountQA: How Well Do MLLMs Count in the Wild?（arXiv:2508.06585，v2，2025-09-09）",
+        "url": "https://arxiv.org/abs/2508.06585",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "hf-countqa",
+        "kind": "dataset",
+        "title": "Jayant-Sravan/CountQA — Hugging Face 数据集卡（CC BY 4.0）",
+        "url": "https://huggingface.co/datasets/Jayant-Sravan/CountQA",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "arxiv-abs",
+        "kind": "paper",
+        "title": "arXiv 2508.06585 摘要页（版本提交历史：v1 2025-08-08 / v2 2025-09-09）",
+        "url": "https://arxiv.org/abs/2508.06585",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "gr-pub",
+        "kind": "site",
+        "title": "Google Research 出版页：CountQA: How Well Do MLLMs Count in the Wild?",
+        "url": "https://research.google/pubs/pub1042117/",
+        "accessed": "2026-11-13"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Google Research（Jayant Sravan Tamarapalli、Rynaa Grover、Sahiti Yerramilli 属 Google，Nilay Pande 属 Waymo；四人共同一作）",
+        "cite": [
+          "gr-pub@出版页",
+          "arxiv-2508-06585@§1"
+        ]
+      },
+      "first_release": {
+        "v": "2025-08-08（arXiv v1，同日 HF 数据集上架）",
+        "cite": [
+          "arxiv-abs@Submission history",
+          "hf-countqa@Dataset card"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "arxiv-2508-06585@Abstract",
+        "arxiv-2508-06585@Table 2",
+        "arxiv-2508-06585@§3.1"
+      ],
+      "interpretation": [
+        "arxiv-2508-06585@§5.2",
+        "arxiv-2508-06585@§5.3",
+        "arxiv-2508-06585@§4.2"
+      ]
+    },
+    "problem": {
+      "text": "已有评测测不到「通用 MLLM 在真实场景里能不能数数」：人群计数数据集（ShanghaiTech 等）只盯单一类别，通用 VQA（VQA v2 / GQA / Vibe-Eval）里的数字题零星不成体系。CountQA 用作者实拍、现场核定真值的高密度日常图片，把这块空位补上",
+      "cite": [
+        "arxiv-2508-06585@§2",
+        "arxiv-2508-06585@Abstract"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "1–5 物体段 · 论文最好",
+        "value": "60.3% EM",
+        "note": "Gemini 2.5 Pro 在人类可以瞬间目测的 subitizing 段也只有六成——难度下限就不低",
+        "cite": [
+          "arxiv-2508-06585@§5.2"
+        ]
+      },
+      {
+        "label": "论文发布时全卷最好",
+        "value": "42.93% EM",
+        "note": "Gemini 2.5 Pro（95% bootstrap ±2.48）；开源最好 Pixtral Large 2411（124B）23.40%，差距近 20 个百分点",
+        "cite": [
+          "arxiv-2508-06585@Table 2"
+        ]
+      },
+      {
+        "label": "51+ 物体段 · 论文最好",
+        "value": "13.9% EM",
+        "note": "Gemini 2.5 Pro 在最高数量段崩塌，多数模型个位数——密集场景近乎完全失败",
+        "cite": [
+          "arxiv-2508-06585@§5.2"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 EM 和 RA@5% / RA@10% 放在一起排名：同一模型 RA@10% 往往比 EM 高 15 个百分点左右，混排会系统性抬高读数",
+        "cite": [
+          "arxiv-2508-06585@Table 2"
+        ]
+      },
+      {
+        "text": "把「物体一多分就低」读成数学差：论文把根因定位在感知侧——序列枚举失败、视觉细节经有损模态投影后丢失，模型常保留近似量感（RA 与 EM 的差距随计数增大而拉宽）",
+        "cite": [
+          "arxiv-2508-06585@§5.4",
+          "arxiv-2508-06585@§5.2"
+        ]
+      },
+      {
+        "text": "把 cluttered 子集分解读成抗干扰能力：该切片平均物体数（11.5）低于 focused（15.7），难度本身更低，o4-mini 与 Qwen VL Max 在 cluttered 上反而略好",
+        "cite": [
+          "arxiv-2508-06585@§5.3"
+        ]
+      },
+      {
+        "text": "拿第三方自评分数直接对论文 Table 2：论文用统一系统提示词、temperature=0、Gemini 2.5 Flash 解析器；换掉任一环节就不可比",
+        "cite": [
+          "arxiv-2508-06585@§4.2"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "Google Research 出版页署名 Jayant Tamarapalli、Rynaa Grover、Nilay Pande、Sahiti Yerramilli，条目标注 arXiv preprint arXiv:2508.06585 (2025)；论文内四人为共同一作，Nilay Pande 属 Waymo",
+        "cite": [
+          "gr-pub@出版页",
+          "arxiv-2508-06585@§1"
+        ]
+      },
+      {
+        "k": "版本",
+        "v": "arXiv v1 提交 2025-08-08，v2（当前版）2025-09-09，归 cs.AI；HF 数据集 2025-08-08 上架",
+        "cite": [
+          "arxiv-abs@Submission history",
+          "hf-countqa@Dataset card"
+        ]
+      },
+      {
+        "k": "许可与获取",
+        "v": "HF 数据集 CC BY 4.0，约 621 MB、1,001 行，字段含 image / questions / answers / objects / categories / is_focused / full_config；论文摘要承诺接收后开源数据集与代码，数据集已兑现，官方评测代码仓库截至 2026-11 未检索到",
+        "cite": [
+          "hf-countqa@Dataset card",
+          "arxiv-2508-06585@Abstract"
+        ]
+      },
+      {
+        "k": "失败模式（论文定性分析）",
+        "v": "小数量段也有 off-by-one（数棉花糖差一）；同一张 14 颗杏仁图，Gemini 2.5 Pro 答 15、Llava 13b 只答 9；15 件杂乱夹克几乎全错（唯一对的是总分最低档的 Llava 34b）；属性绑定（white hexagons、red thumb pins）错误率极高——错在数之前的视觉解析",
+        "cite": [
+          "arxiv-2508-06585@附录 B"
+        ]
+      },
+      {
+        "k": "论文自归因",
+        "v": "架构侧三个嫌疑：视觉→语言的有损线性投影、CLIP/SigLIP 类编码器为语义对齐优化而牺牲细粒度分辨、固定低分辨率输入把小物体糊掉；论文 §8 披露写作用生成式 AI 工具润色语言",
+        "cite": [
+          "arxiv-2508-06585@§5.4"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-13",
+        "columns": [
+          "模型",
+          "参数",
+          "EM (%)",
+          "RA@5% (%)",
+          "RA@10% (%)"
+        ],
+        "rows": [
+          [
+            "Gemini 2.5 Pro",
+            "闭源 API",
+            "42.93 ± 2.48",
+            "45.99 ± 2.50",
+            "58.34 ± 2.47"
+          ],
+          [
+            "OpenAI o4-mini",
+            "闭源 API",
+            "34.42 ± 2.38",
+            "35.56 ± 2.40",
+            "45.71 ± 2.50"
+          ],
+          [
+            "OpenAI o3",
+            "闭源 API",
+            "34.16 ± 2.38",
+            "36.13 ± 2.41",
+            "45.94 ± 2.49"
+          ],
+          [
+            "Gemini 2.5 Flash",
+            "闭源 API",
+            "32.59 ± 2.35",
+            "36.80 ± 2.50",
+            "46.51 ± 2.58"
+          ],
+          [
+            "Claude 4 Sonnet",
+            "闭源 API",
+            "31.07 ± 2.32",
+            "32.39 ± 2.35",
+            "43.34 ± 2.49"
+          ],
+          [
+            "Qwen VL Max",
+            "闭源 API",
+            "30.45 ± 2.31",
+            "31.96 ± 2.34",
+            "44.55 ± 2.49"
+          ],
+          [
+            "Mistral Medium",
+            "闭源 API",
+            "21.07 ± 2.04",
+            "24.74 ± 2.16",
+            "33.97 ± 2.37"
+          ],
+          [
+            "Pixtral Large 2411（开源最好）",
+            "124B",
+            "23.40 ± 2.12",
+            "25.07 ± 2.17",
+            "33.73 ± 2.37"
+          ],
+          [
+            "Mistral-small3.1-24b",
+            "24B",
+            "20.75 ± 2.03",
+            "22.97 ± 2.11",
+            "32.40 ± 2.38"
+          ],
+          [
+            "Gemma3 27b",
+            "27B",
+            "16.10 ± 1.84",
+            "16.95 ± 1.88",
+            "23.49 ± 2.12"
+          ],
+          [
+            "Gemma3 12b",
+            "12B",
+            "15.31 ± 1.81",
+            "16.49 ± 1.86",
+            "22.19 ± 2.08"
+          ],
+          [
+            "Gemma3 4b",
+            "4B",
+            "12.43 ± 1.66",
+            "12.83 ± 1.67",
+            "17.15 ± 1.89"
+          ],
+          [
+            "Llava 13b",
+            "13B",
+            "10.93 ± 1.57",
+            "11.98 ± 1.67",
+            "15.36 ± 1.86"
+          ],
+          [
+            "Llava 34b",
+            "34B",
+            "9.10 ± 1.44",
+            "9.23 ± 1.45",
+            "13.74 ± 1.73"
+          ],
+          [
+            "Llava 7b",
+            "7B",
+            "8.37 ± 1.39",
+            "9.98 ± 1.63",
+            "13.89 ± 1.88"
+          ]
+        ]
+      },
+      "cite": [
+        "arxiv-2508-06585@Table 2"
+      ]
+    }
+  }
 }
