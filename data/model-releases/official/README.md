@@ -4246,3 +4246,131 @@ Gemini Robotics 2.5 的 DeepMind 官方 RSS `pubDate` 为 `Mon, 09 Nov 2026 19:5
 - **候选数**：700 → 702；general/vertical 未决候选 **0**
 - **检查点**：`last_scan_at=2026-11-14`；`last_max_release_date=2026-11-12`（**锚点只前进不回退**——本批最大发布日 2026-09-10 早于既有锚点，故不覆盖）；覆盖页窗口同步为 `2026-10-29 ~ 2026-11-14`
 - **本批新增技能条目**：`discovery-channels.md` 增 3 条已知抓取障碍 —— Anthropic `/news` 页面级日期徽标、OpenAI 部分发布页的 `data-dotcom-chart` 客户端渲染（与 RSC vega 通道逐页判定的区别）、MiniMax 官方基准图 CDN 三路由全 404
+
+## 第六十七批（2026-11-15 CST / 2026-11-15 UTC 增量窗口 2026-10-29 ~ 2026-11-15：窗口内确无新发布；存量回填 5 个 release —— OpenAI GPT‑5.3‑Codex‑Spark / GPT‑5.2‑Codex / GPT‑Rosalind 5.5 + Anthropic Claude Opus 4.5 / Claude Sonnet 4.6）
+
+### 本批窗口与前置
+
+- **增量窗口**：锚点 `ledger_max_release_date = 2026-11-12` 回退 14 天重叠 → `window_since = 2026-10-29`、`window_until = 2026-11-15`（UTC）。
+- **基线**：`origin/main` @ `934433b`；分支 `model-release-daily-20261115T010212Z`。
+- **开工前收口（Step 0）**：开工时存在**情况 A** —— 上一轮（第六十六批）断在「开 PR → 合并」之间，OPEN PR #82（分支 `model-release-daily-20261114T231815Z`）的 CI「Build & Publish」为绿（run 43654110945，success），按流程**先确认 CI 为绿再 squash 合并**（`gh pr merge --squash --delete-branch=false`，远端分支保留）；GraphQL 首次返回 502、`mergePullRequest` 报「Merge already in progress」，改用 REST `PUT /repos/zenHeart/evals/pulls/82/merge` 成功合并（sha `934433b`）。**未重跑第六十六批**，从合并后的 `origin/main` 开本轮新分支。工作树开工时干净（非空则按情况 C 立即停止），本机 git 身份沿用仓库既有配置。
+
+### 入口复扫（Step 1）
+
+`node .claude/skills/ingest-releases/scripts/scan.mjs --write` 对 18 家在册厂商的官方域名入口逐一复扫（失败与动态页均落进 `data/model-coverage.json`，不静默跳过）。另走定点通道复扫，并**逐条打印窗口内条目标题**（不只统计条数）：
+
+| 通道 | 总条目 | 窗口内 | 结论 |
+|---|---:|---:|---|
+| OpenAI RSS `news/rss.xml` | 1387 | 51 | 窗口内最新为 2026-11-13；模型发布只有 `Introducing Images 2.6`（11-04）、`GPT‑6 Cyber`（11-05）、`LifeVal`（11-02）、`Accelerating engineering for the physical world`（11-03）、`A thousand fewer paths to root`（11-04）——**均已建档或已在前批登记为候选** |
+| DeepMind RSS `blog/rss.xml` | 100 | 9 | Gemini 4 Hydrogen（11-12）、AlphaGenome 2（11-11）、Gemini 4 Carbon / AlphaProof Code / AI 天气数据集（11-10）、Gemini Robotics 2.5（11-09）、Gemini Omni 1.2 Flash（11-05）等**均已建档** |
+| Mistral RSS `rss.xml` | 94 | 2 | `Le Chonk` 系列（10-29 / 11-05），均已建档或属 Studio 产品文章 |
+| Google AI RSS | 20 | 9 | Gemini 4 Hydrogen、Decisions API、Gemini 4 Carbon、Omni 1.2 Flash 等**均已建档**，其余为搜索 / 应用 / 企业功能更新 |
+| Google 根 RSS | 20 | 20 | 同上，无新模型发布 |
+| Google 开发者 RSS | — | — | **本轮该 URL 404**（见下方「本批新增技能条目」） |
+| Anthropic `/news` | — | — | 顶部「November 15, 2026」仍是**页面级日期徽标**（随日期滚动，前批记为 November 14），其后真正的最新文章是 2026-11-09 的 `Introducing Claude Fable 5.2 and Claude Mythos 5.2`（已建档） |
+| Anthropic `platform.claude.com` 模型总表 | — | — | 当前在册模型：Claude Fable 5.2 / Opus 5.5 / Sonnet 5.5 / Haiku 5.5 + specialized（Mythos 5.2 / Fable 5.1 / Mythos 5.1 / Fable 5 / Mythos 5）与 legacy 全列，无窗口内新型号 |
+| Meta `research.meta.ai` | — | — | 最新仍是 `Muse Ember`（11-09，已建档）、`Bringing Specialized Models to Muse and Meta AI`（11-06，已建档）；`Muse Wonder`（10-12）与 `Muse Spark Open`（10-15）已建档 |
+| DeepSeek `/updates` | — | — | 最新 `Date: 2026-11-13`「Releasing the full suite of application APIs」——**开放既有 `deepseek-flash` 模型的 web search / file input / URL reading 等参数**，非新模型发布 |
+| MiniMax 平台模型日志 | — | — | 最新 `Nov. 10, 2026` MiniMax H3 Image（已建档） |
+| Kimi blog + whats-new | — | — | 最新 2026-10-24 Kimi K3.1 Pro（已建档） |
+| 腾讯混元 `publicList` API | 11 | — | 最新 `Introducing Hy4`（11-04，已建档）、`Hyra 2.0`（11-04 之前，已建档） |
+| 豆包 `sitemap.xml` | 35 | — | 最新 `seedream-5-5`（11-09，已建档）；**lastmod 是页面更新时间不是发布日** |
+| GLM `docs.z.ai/release-notes` | — | — | 窗口内日期命中 **0**，最新仍是 2026-08-26 |
+| xAI `docs.x.ai/docs/models` | — | — | 导航标 `Grok 4.7 = Latest`，无窗口内新 slug |
+| StepFun `platform.stepfun.com/docs/sitemap.xml` | 148 | — | 模型指南含 `step-5-preview` / `step-3.7-flash` / `stepaudio-3-*`，**均已建档**，无窗口内新条目 |
+| Microsoft `new-sitemap.xml` + `model-sitemap.xml` | 38 / 7 | — | **in-window lastmod 的文章逐个实取 JSON-LD `datePublished`，全部落在窗口外**（`mai-transcribe-2` 2026-09-03、`mai-transcribe-1` 2026-04-02、`mai-image-2-efficient` 2026-04-14、`frontier-pre-training` 2026-10-15、`building-medical-superintelligence` 2026-10-22、`introducing-copilot-health` 2026-03-12、`mai-image-2-6` 2026-08-10、`health-check` 2026-03-10）→ **lastmod ≠ 发布日，窗口内无新发布** |
+| OpenAI `sitemap.xml/release/` | 86 | — | 仅取 slug 清单（lastmod 不可当日期），窗口内新发布同 RSS 结论 |
+| Thinking Machines `news/` | — | — | 最新 `Introducing Inkling 2 Small`（11-05，已建档） |
+| 小米 MiMo blog | — | — | 最新 `MiMo-V2-Flash`（2025-12-16，已建档） |
+| Particle 官网 / 文档 | — | — | 仍只有 `Particle-1`（已建档） |
+| Qwen 官方研究索引 API `api/v2/article/retrieval?type=qwen_ai` | 40 | **0** | 最新 2026-09-20（已建档），**窗口内 0 篇** |
+| HF 官方组织 API（Qwen / tencent / moonshotai / MiniMaxAI / deepseek-ai / zai-org / stepfun-ai / microsoft / meta-llama / mistralai） | — | 5 | 窗口内新建仓：`tencent/Qwen3.8-27B-DSpine-b16`（11-07，**投机解码 drafter 研究产物、非模型发布**）、`moonshotai/Kimi-K3.1-Pro`（11-02，已建档）、`MiniMaxAI/MiniMax-H3-Image`（11-03，已建档）、`MiniMaxAI/MiniMax-H3-Image-PE`（11-08，同源 PE 权重变体）、`microsoft/Mage-VL-Cowork`（11-30 之前，已建档） |
+
+**窗口结论：窗口内确无未建档的新发布**，转入**存量回填**轨道。
+
+### 本批新建档（5 个 release，全部为存量回填）
+
+| release | 厂商 | 发布日 | 发布日证据 | evidence |
+|---|---|---|---|---|
+| `openai/gpt-5-3-codex-spark` | OpenAI | 2026-02-12 | 页面印刷日期行 `February 12, 2026` + 类目 `Product / Release` + 正文首句「Today, we're releasing a research preview of GPT‑5.3‑Codex‑Spark…」 | 5 条 verified（Terminal-Bench 2.0 58.4% + SWE-Bench Pro ×4 推理档位） |
+| `openai/gpt-5-2-codex` | OpenAI | 2025-12-18 | 页面印刷日期行 `December 18, 2025` + 类目 `Product / Release` + H1 | 3 条 verified（SWE-Bench Pro 56.4%、Terminal-Bench 2.0 64.0%、Professional CTF 88.1%） |
+| `openai/gpt-rosalind-5-5` | OpenAI | 2026-06-03 | 页面印刷日期行 `June 3, 2026` + 类目 `Product / Research / Release` + 正文首句「We're introducing a new model update to our GPT‑Rosalind series…」 | 10 条 verified（LifeSciBench 总体 + 6 个工作流 + MedChemBench + GeneBench + LabWorkBench） |
+| `anthropic/claude-opus-4-5` | Anthropic | 2025-11-24 | JSON-LD `datePublished=2025-11-24` + 模型文档页 `Released: November 24, 2025` + API snapshot `claude-opus-4-5-20251101` | 12 条 verified（9 项基准总表 + BrowseComp-Plus 两个条件） |
+| `anthropic/claude-sonnet-4-6` | Anthropic | 2026-02-17 | JSON-LD `datePublished=2026-02-17` + 模型文档页 `Released: February 17, 2026` | 15 条 verified（12 行基准总表 + ARC-AGI-2 high effort 脚注值） |
+
+**取数口径分成两类，两类都逐格核对过**：
+
+- **OpenAI 三档 = 页面内嵌 vega-lite 数据集（机读，不是位图）**：`vegaLiteSpec.data.values` 写在 Next.js RSC 载荷里（整体是转义 JSON，须先反转义再做括号配平才能 `JSON.parse`）。**页面可见文本里一个百分数都没有**，正文只给相对结论（如「achieves state-of-the-art performance on SWE-Bench Pro and Terminal-Bench 2.0」）——只读正文必然误判「无数值」。三页共取到 **11 份载荷**（Codex‑Spark 2 份、Codex 5.2 **3** 份、Rosalind **5** 份），比首轮按「可见文本里找百分比」的口径多出 2 份（Codex 5.2 的 Professional CTF、Rosalind 的 GeneBench 与 LabWorkBench）。
+- **Anthropic 两档 = 位图总表 + 正文明文脚注**：页面 `<table>` 计数为 0、`vegaLiteSpec` / `data-data` 计数均为 0，评测数值全在位图里。核心是一张 **2600×2236（Opus 4.5）/ 2600×2960（Sonnet 4.6）的基准对比总表**，表内数字是**印刷数字**、可逐格核对，按站内既有 Anthropic 条目（`claude-sonnet-4-5` / `claude-opus-4-6`）的同一先例记 `evidence_type: "image-transcription"`；同页 8~2 张**单基准柱状图只有坐标轴刻度、没有印刷数据标签**，按「不臆造数值」纪律**一律不建行**（读轴刻度等于自己插值）。BrowseComp-Plus 与 ARC-AGI-2 high effort 取自**正文明文脚注**。
+
+**协议字段来自官方自己的方法学段落**（不是推测）：
+
+- Opus 4.5「Methodology」段：`All evals were run with a 64K thinking budget, interleaved scratchpads, 200K context window, default effort (high), default sampling settings (temperature, top_p), and averaged over 5 independent trials. Exceptions: SWE-bench Verified (no thinking budget) and Terminal Bench (128K thinking budget).` → 逐行写入 `protocol`（SWE-bench Verified 的 `token_budget` 记 null、Terminal-bench 2.0 记 128K）。官方只说「default sampling settings」而**未给具体数值**，故 `temperature` / `top_p` 一律 null。
+- Sonnet 4.6「Footnotes」段逐条给出：Terminal-Bench 2.0 用 **Terminus-2 harness**、1× guaranteed/3× ceiling 资源分配、每题 5–15 samples、**thinking 关闭**；SWE-bench Verified **10 trials 平均**；HLE「with tools」用 web search / web fetch / code execution / programmatic tool calling / 50k 触发的 context compaction（上限 3M total tokens）/ max reasoning effort / adaptive thinking + domain blocklist 去污染；BrowseComp 用 web search / web fetch / programmatic tool calling / context compaction（上限 10M total tokens）/ max reasoning effort / **thinking 关闭**；ARC-AGI-2 用 max 与 high 两档、120K thinking budget；MMMU-Pro 改用 Claude Sonnet 4 判分。
+
+**跨页冲突不调和（各自记行 + notes 标注）**：
+
+- Opus 4.5 的 Terminal-Bench 2.0：本发布页总表记 **59.3%**，Sonnet 4.6 发布文对照表记 **59.8%** → Opus 4.5 条目取自身页面的 59.3%。
+- Sonnet 4.5 的 Terminal-Bench 2.0：Sonnet 4.6 发布文对照表记 **51.0%**，Sonnet 4.5 自己发布文记 **50.0%** → 各自 release 取自身页面。
+- **OpenAI 三档与既有档案的区分**：`openai/gpt-rosalind-5-5` 是官方明示的「a new model update」（**另起 release，不改写既有 `openai/gpt-rosalind`**），两者是两次不同发布、数值不可混用；`gpt-5-3-codex-spark` 与既有 `gpt-6-*` 系列、`gpt-5-2-codex` 与既有 `gpt-5-2` 同理，均按独立发布建档。
+
+### 新建 benchmark id（4 个，均标 `new-benchmark`，兜底页由账本自动生成）
+
+| id | 出处 | 为什么不建实体 |
+|---|---|---|
+| `professional-ctf` | OpenAI 自建 Professional Capture-the-Flag (CTF) eval（Linux 环境里的多步真实攻防） | 题集、题量、判分流程官方均未公开，外部不可复跑；站内 `curated-ctfs` 是 Meta 报告里的策展 CTF（198 题、pass@1/pass@5 双口径），**不是同一套题，不归并** |
+| `medchembench` | OpenAI 本次发布自建药物化学基准 | 题集与 rubric 官方未公开 |
+| `labworkbench` | OpenAI 本次发布新引入的湿实验基准（官方原文「We introduce a new evaluation」） | 题集是专有湿实验数据，官方声明未污染，外部无法核验 |
+| `browsecomp-plus` | Anthropic 脚注 04 的 BrowseComp-Plus（fetch-enabled 版） | 题集规模与判分流程官方未公开；站内既有 `browsecomp` 是原始 BrowseComp，不混用 |
+
+- 4 个 id 已在 `data/compare-rules.json` 的 `unmapped_ids` 逐条写明「为何不进对照」，`tests/compare-audit.test.mjs` 的 **undecided / stranded / orphans 三项均为 0**。
+- **未建实体不等于可以不算分**：`swebench-pro` 的 5 行（Codex‑Spark ×4 + Codex 5.2 ×1）在建档时曾用图表原始字段名 `passrate`，被对照审计判为「指标与计分口径不同」（stranded 4 条），已统一改为该档案的主指标口径 `resolved_rate`（= Pass@1 resolved rate），并在 notes 里写明字段名映射。
+
+### 覆盖对账与未决候选清零
+
+- 本批把 **5 条已到期（`next_backfill_at ≤ 2026-11-15`）的存量回填候选**逐条收口（`release_id` / `archive_status:"archived"` / `archive_path` / `evidence_status`，清 `exclusion_reason` 与 `next_backfill_at`）：
+  `openai-4a841ea7ec7c` → `gpt-5-3-codex-spark`、`openai-cd8d6c8023f2` → `gpt-5-2-codex`、`openai-ba562226725d` → `gpt-rosalind-5-5`、`anthropic-7e389b0b8a7a` → `claude-opus-4-5`、`anthropic-cbaf022d464f` → `claude-sonnet-4-6`。
+- reconcile 之后 general/vertical 未决候选为 **0**；候选总数 702 → **702**（本批只收口既有候选，未新增候选）。
+- 仍有 **34 条存量回填缺口候选**待后续批次处理（Qwen 29 条 + `glm-9156c37fb1c2` GLM-Image + `microsoft-0507e8631dd6` Mage-ViT + `microsoft-4adfece45166` Mage-VL + `xai-342a02be3966` Grok Imagine Video 1.5 + `openai-fed198f10f4d` Aardvark）。
+
+### 跳过清单
+
+| 对象 | 厂商 | 原因 |
+|---|---|---|
+| Professional CTF / MedChemBench / GeneBench / LabWorkBench 的**未标注任务散点** | OpenAI | 散点每个模型有 3~5 个点，页面**不标注每个点对应哪道任务**；只按官方正文印出的那一个数建行，其余点值原样写进 notes，**不臆造任务名** |
+| Opus 4.5 / Sonnet 4.6 的 8~2 张单基准柱状图 | Anthropic | 只有坐标轴刻度、无印刷数据标签；读轴刻度等于自己插值，按「不臆造数值」纪律不建行（数值以总表图片为准） |
+| Opus 4.5 的内部 benchmark 与内部 take-home exam | Anthropic | 官方未给基准名与绝对分，只给相对论断，不建无名行 |
+| Opus 4.5 的 token 效率相对差（up to 65% / 76% / 48% fewer tokens、4.3 个百分点） | Anthropic | 差值不是绝对分，不建行 |
+| Sonnet 4.6 的用户主观偏好（70% / 59% of the time）与内部基准（Financial Services Benchmark、保险基准 94%） | Anthropic | 用户偏好不是基准分；内部基准官方未给基准名 |
+| GPT‑Rosalind 发布页上那张 DOM 表 | OpenAI | 内容是 DMD 基因治疗临床试验的方法学评审表（Package Item / Key Failure Mode / What Would Be Needed），与模型评测无关，未取任何数值 |
+| `deepseek-flash` 的 2026-11-13 公告 | DeepSeek | 是「把 web search / file input / URL reading 等参数开放给开发者」的应用 API 套件发布，模型本身早已在册，按产品更新不建档 |
+| `tencent/Qwen3.8-27B-DSpine-b16`（2026-11-07） | 腾讯 | 投机解码 drafter 研究产物（同前批 `tencent/Qwen3-8B-DSpine-b16` 判定），非独立模型发布 |
+| `MiniMaxAI/MiniMax-H3-Image-PE`（2026-11-08） | MiniMax | H3-Image 的提示词扩展权重，与已建档 H3-Image 同源，官方无独立发布文与独立评测 |
+| Microsoft 窗口内 lastmod 的 8 篇文章 | 微软 | 逐个实取 JSON-LD `datePublished` 后确认发布日全部落在窗口外，**lastmod 不等于发布日** |
+| Google 开发者 RSS 本轮 404 | Google | 该 URL 当轮不可用，已由 `blog.google/rss/`（根 RSS，20/20 条窗口内）与 `blog.google/technology/ai/rss/`（9 条）两条可用通道覆盖同一批发布文 |
+
+### 待人工核验
+
+本批 **45 条 evidence 全部为 verified、无数值缺口**：OpenAI 11 份图表载荷逐格机读；Anthropic 两张总表图片的印刷数字逐格核对（Opus 4.5 的 9 项基准 + BrowseComp-Plus 两条件；Sonnet 4.6 的 12 行基准 + ARC-AGI-2 high effort 脚注值）。**本批没有需要人工读图才能确认的行**，也没有 pending 行。
+
+需要人工补的只有两处**非数值**缺口（不影响 evidence 状态）：Anthropic 的 8~2 张无标签柱状图若官方日后印出带标签版本，可再补行；`professional-ctf` / `medchembench` / `labworkbench` / `browsecomp-plus` 的 benchmark 实体待官方公开题集与判分口径后补建。
+
+### 门禁
+
+| 门禁 | 结果 |
+|---|---|
+| `node scripts/reconcile-coverage.mjs` | ✓ exit 0；5 条候选自动收口，未决候选 0 |
+| `node scripts/validate-model-coverage.mjs` | ✓ exit 0 |
+| `node scripts/validate-data.mjs` | ✓ PASS — taxonomy 9 类 / vendors 18 / **benchmarks 510** / **releases 248（official 234）** / **evidence edges 4058**；profile 模板档案 82 个通过校验 |
+| `node --test tests/*.test.mjs` | ✓ **全绿**（含对照审计 undecided / stranded / orphans 三项均为 0、归档哈希一致性用例） |
+| `npm run build` | ✓ exit 0 — 书校验 + EPUB + 全站构建 + validate-site 全绿 |
+
+### 汇总
+
+- **新增 release**：5 个（**全部为存量回填**：`openai/gpt-5-3-codex-spark` 5 条、`openai/gpt-5-2-codex` 3 条、`openai/gpt-rosalind-5-5` 10 条、`anthropic/claude-opus-4-5` 12 条、`anthropic/claude-sonnet-4-6` 15 条）
+- **新增 evidence**：45 条 = **45 verified** + 0 pending
+- **新增 benchmark id**：4 个（`professional-ctf`、`medchembench`、`labworkbench`、`browsecomp-plus`，均标 new-benchmark，兜底页已生成；本批**未建实体**）
+- **新增归档目录**：5 个（`models/2026-02-12-gpt-5-3-codex-spark/`、`models/2025-12-18-gpt-5-2-codex/`、`models/2026-06-03-gpt-rosalind-5-5/`、`models/2025-11-24-claude-opus-4-5/`、`models/2026-02-17-claude-sonnet-4-6/`），均含 `page.html` + `images/` + `index.md` + `manifest.json`（逐文件 sha256）
+- **新增厂商**：无
+- **候选数**：702 → 702；general/vertical 未决候选 **0**
+- **检查点**：`last_scan_at=2026-11-15`；`last_max_release_date=2026-11-12`（**锚点只前进不回退**——本批最大发布日 2026-06-03 早于既有锚点，故不覆盖）；覆盖页窗口同步为 `2026-10-29 ~ 2026-11-15`
