@@ -1,36 +1,365 @@
 {
   "id": "claweval-mm",
   "name": "ClawEval-MM",
-  "full_name": null,
+  "full_name": "Claw-Eval 多模态任务组（Claw-Eval Multimodal，101 题）",
   "aliases": [],
   "status": null,
-  "categories": [
-    "agent",
-    "multimodal"
-  ],
-  "summary": "Claw-Eval 的多模态子集",
-  "interpretation": "Claw-Eval 公开基准的多模态子集（豆包写作 Claw-Eval (MM)），评分口径与主基准相同、越高越好；注意各厂商披露的子集/任务组可能不同，跨家对比需先对齐口径。",
-  "measures": [],
-  "does_not_measure": [],
-  "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
-  },
-  "metrics": [],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [],
-  "notes": "Qwen3.8 引用；同一公开 Claw-Eval 基准的多模态档（豆包 Seed2.1 写作 Claw-Eval (MM)）",
-  "official_sources": [
+  "categories": ["agent", "multimodal"],
+  "summary": "Claw-Eval 套件的多模态任务组：101 道人工核验评分的题，让智能体在隔离沙箱里主动感知视频、文档与图像，并交付网页、SVG 动画、视频剪辑等可视化产物。每题独立跑 3 次，用 Pass@3 与平均分衡量能力上限，用 Pass^3 衡量可靠性下限。",
+  "interpretation": "分数高说明模型在有工具的真实沙箱里能可靠完成视觉感知与生成任务，而且三次都做对（Pass^3），而不是偶尔蒙对一次（Pass@3）。两者差距很大：多模态组最高 Pass^3 只有 25.7%，而同一模型在通用组能到 70.8%，所以只报 Pass@3 会把「会做」误读成「稳定做对」。",
+  "measures": [
     {
-      "kind": "site",
-      "url": "https://qwen.ai/blog?id=qwen3.8-flash-next"
+      "area": "视频理解与定位（Video）",
+      "focus": "简单 QA 与视频定位：智能体要看视频再回答和定位关键片段，属于主动感知类任务。",
+      "share": "53 / 101 题",
+      "format": "开放式判定：确定性匹配、LLM 视觉评估或两者结合；LLM 裁判为 Gemini-3-Flash（temperature=0）。论文未给出各域的判定方式占比。",
+      "cite": ["paper-claw@§3.2 Table 2", "paper-claw@§4.2", "paper-claw@附录 C.2"]
+    },
+    {
+      "area": "文档与图像理解（Doc & Image）",
+      "focus": "图表解读与跨页推理：从文档和图像中抽取、比对并综合信息。",
+      "share": "22 / 101 题",
+      "format": "开放式判定：确定性匹配、LLM 视觉评估或两者结合；LLM 裁判为 Gemini-3-Flash（temperature=0）。论文未给出各域的判定方式占比。",
+      "cite": ["paper-claw@§3.2 Table 2", "paper-claw@§4.2", "paper-claw@附录 C.2"]
+    },
+    {
+      "area": "代码化视觉生成（Code）",
+      "focus": "网页生成、SVG 动画与视频剪辑：把理解转成可运行、可交付的视觉产物。",
+      "share": "26 / 101 题",
+      "format": "开放式判定：确定性匹配、LLM 视觉评估或两者结合；LLM 裁判为 Gemini-3-Flash（temperature=0）。论文未给出各域的判定方式占比。",
+      "cite": ["paper-claw@§3.2 Table 2", "paper-claw@§4.2", "paper-claw@附录 C.2"]
     }
   ],
-  "related_benchmarks": [],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "does_not_measure": [
+    {
+      "text": "文本-only 模型的多模态能力：14 个受评模型里只有 9 个支持视觉输入，多模态组不对其余 5 个开放。",
+      "cite": ["paper-claw@§4.1"]
+    },
+    {
+      "text": "通用工作流与多轮对话能力：那分别是同套件的 General（161 题）和 Multi-turn（38 题）任务组，且组间排名会反转，多模态分不能外推到这两类。",
+      "cite": ["paper-claw@§4.1", "paper-claw@§4.3"]
+    },
+    {
+      "text": "静态知识问答：任务要跑完整执行生命周期并产出可检验产物，不是一问一答的静态题。",
+      "cite": ["paper-claw@§3.1"]
+    },
+    {
+      "text": "token 效率：官方站点的「Pass³ vs. Token Efficiency」效率图自述只覆盖 General 任务，多模态组没有官方效率数据。",
+      "cite": ["site-claw@榜单"]
+    }
+  ],
+  "dataset": {
+    "sample_count": 101,
+    "splits": [
+      "multimodal：101 题，多模态智能体任务（网页生成、视频 QA、文档抽取等）",
+      "同套件另有 general 161 题与 multi_turn 38 题，不计入本档"
+    ],
+    "languages": ["en", "zh"],
+    "source_type": "human-verified：rubric 由人工编写并核验；整套 300 题中 250 题为原创设计，50 题改编自既有基准但保留原提示与评分标准。",
+    "public_sample": true,
+    "totals": "多模态组 101 题（Video 53 / Doc & Image 22 / Code 26）· 整套 300 题、2,159 条 rubric（平均 7.2 条/题）· 任务语言 en 或 zh · 数据集 300 行、2.88 GB（含 fixtures.tar.gz），MIT 许可",
+    "cite": ["paper-claw@§3.2 Table 2", "paper-claw@§5.4", "paper-claw@§3.3", "hf-dataset@Dataset Structure"],
+    "construction": [
+      {
+        "k": "三阶段出题",
+        "text": "任务设计（定目标能力、写提示、指定工具与资产、起草评分方案）→ 环境与 rubric 实现（mock 服务、沙箱资产、确定性或判定式评分项）→ 二审与试点验证（第二人复核泄漏与正确性，并在多个前沿模型上试点，不过就改或删）。",
+        "cite": ["paper-claw@附录 D.1"]
+      },
+      {
+        "k": "原创与改编比例",
+        "text": "300 题里 250 题（83.3%）为原创；其余 50 题（16.7%）改编自既有基准：OfficeQA 10、PinchBench 14、FinanceQA 12、OneMillion-Bench 5、Video-MME 5、LongVideoBench 4。论文未说明这些改编题各归入哪个任务组。",
+        "cite": ["paper-claw@附录 D.1"]
+      },
+      {
+        "k": "人工核验",
+        "text": "rubric 由人工编写并核验，仓库称 300 题每题都带 human-verified rubrics。",
+        "cite": ["paper-claw@§3.3", "repo-claw@Tasks"]
+      },
+      {
+        "k": "评分证据",
+        "text": "执行阶段独立采集三条证据：执行轨迹、服务端审计日志、执行后环境快照，判分时才揭示，避免智能体自证。",
+        "cite": ["paper-claw@§3.1"]
+      },
+      {
+        "k": "rubric 类型",
+        "text": "rubric 项分为确定性检查（文件内容、工具参数、禁止动作）与判定式检查（用 LLM 裁判评文本质量、推理连贯性、视觉保真度）。",
+        "cite": ["paper-claw@§3.3"]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "pass-3-all",
+      "name": "Pass^3（三次全过率）",
+      "direction": "越高越好",
+      "description": "3 次试验分数都达到 0.75 的任务占比，衡量可靠性下限；仓库把 Pass^3 列为主指标，官方榜单也按它排序。",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["paper-claw@§4.2", "repo-claw@Evaluation Logic", "site-claw@榜单"]
+    },
+    {
+      "id": "pass-at-3",
+      "name": "Pass@3（任一试验通过率）",
+      "direction": "越高越好",
+      "description": "3 次试验里至少一次达到 0.75 的任务占比，衡量能力上限；厂商披露 ClawEval-MM 时主要报这一列。",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["paper-claw@§4.2", "hf-qwen-model@Vision Language 脚注"]
+    },
+    {
+      "id": "average-score",
+      "name": "Average Score（平均任务分）",
+      "direction": "越高越好",
+      "description": "3 次试验任务分的均值，由完成度、安全性与鲁棒性合成；论文与厂商都报这一列。",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["paper-claw@§4.2", "hf-qwen-model@Vision Language 脚注"]
+    }
+  ],
+  "default_protocol": {
+    "raw": "每道题在独立 Docker 沙箱里跑 3 次独立试验；除 temperature=0 外都用默认参数，支持思考的模型开启思考；主结果的错误注入率为 0。General 与 Multimodal 的开放式 rubric 由 Gemini-3-Flash（temperature=0）评判，Multi-turn 由 Claude-Opus-4.6（temperature=0.7）同时充当模拟用户与裁判。任务分 = 安全性 × (0.8 × 完成度 + 0.2 × 鲁棒性)，单次试验分数达到 0.75 记为通过。",
+    "cite": ["paper-claw@§4.2", "paper-claw@附录 E.1", "site-claw@榜单"],
+    "variants": [
+      {
+        "text": "厂商自报口径：Qwen 在自家模型卡的 Vision Language 表里用「Multimodal tool use ClawEval-MM」一行报 Qwen3.8-Flash-Next Pass@3 64.4 / Average 60.4，只给这两列，未说明任务数、沙箱与裁判配置；论文 Table 4 里同基准最高 Pass@3 是 55.5（GPT-5.4），两者不能直接比。",
+        "cite": ["hf-qwen-model@Vision Language", "hf-qwen-model@Vision Language 脚注", "paper-claw@Table 4"]
+      },
+      {
+        "text": "只报多模态子集 vs 整套 300 题：组间排名会反转，Claude-Opus-4.6 在通用组排第 1、多模态组排第 2，GPT-5.4 在通用组排第 3、多模态组排第 1。",
+        "cite": ["paper-claw@§4.3"]
+      },
+      {
+        "text": "带/不带错误注入：论文在 3 个模型的 General 任务上按 0.0、0.2、0.4、0.6 注入错误，Pass@3 基本不动而 Pass^3 明显下滑；多模态组没有对应的注入实验。",
+        "cite": ["paper-claw@§5.2"]
+      },
+      {
+        "text": "厂商任务组范围不同：MiniMax 明确说它只评了 General 任务组（161 题）、裁判 Gemini 3.0 Flash、指标 Pass³，它报的 Claw-Eval 数字不是多模态档。",
+        "cite": ["minimax-blog"]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2026-04-07",
+      "label": "arXiv v1 首次公开",
+      "cite": ["paper-claw@arXiv 提交历史"]
+    },
+    {
+      "id": "v2",
+      "date": "2026-05-01",
+      "label": "arXiv v2",
+      "cite": ["paper-claw@arXiv 提交历史"]
+    },
+    {
+      "id": "v3",
+      "date": "2026-05-07",
+      "label": "arXiv v3，本档案所据版本",
+      "cite": ["paper-claw@arXiv 提交历史"]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "一致性问题：Pass@3 与 Pass^3 差距大",
+      "impact": "多模态组最高 Pass^3 仅 25.7%（Pass@3 55.5）；视频域一致性转换率 ρ=0.37，跨 9 个模型的平均 Pass^3 只有 10.7%。单次成功的分数会显著高估可靠交付能力。",
+      "severity": "高",
+      "response": "论文固定 3 次独立试验并同时报 Score/Pass@3/Pass^3，仓库把 Pass^3 升为主指标；论文与仓库均未给出针对多模态组的重试或一致性改进机制。",
+      "reader": "看交付可靠性请以 Pass^3 为准，把 Pass@3 当能力上限。",
+      "cite": ["paper-claw@§5.4", "paper-claw@Table 4", "repo-claw@Evaluation Logic"]
+    },
+    {
+      "issue": "口径不可比：厂商自报数字与论文分组数据混用",
+      "impact": "Qwen 自报 Pass@3 64.4，高于论文最高 55.5；MiniMax 只评了 161 题的 General 组；豆包把 Claw-Eval (MM) 归进 Visual Agent benchmarks 且未给分。跨厂商表格里的同名项可能不是同一批题。",
+      "severity": "高",
+      "response": "论文固定 scaffold、工具、裁判与 3 次试验并开源代码与数据；对厂商自报数字没有逐条复核。",
+      "reader": "先确认数字来自论文 Table 4 还是厂商模型卡，再看任务组与指标定义。",
+      "cite": ["hf-qwen-model@Vision Language", "minimax-blog", "seed-blog", "paper-claw@§4.1"]
+    },
+    {
+      "issue": "组覆盖有限：只评 9 个视觉模型，且域间分布不均",
+      "impact": "14 个模型里 5 个不参与多模态组；101 题里 Video 53、Doc & Image 22、Code 26，域间难度差很大（平均 Pass^3 10.7% 对 32.3%），小样本域的单模型排名不稳。",
+      "severity": "中",
+      "response": "论文明确限定 vision-capable 模型并给出分域结果；未见扩充计划。",
+      "reader": "比较时只用同域结果；Doc & Image 只有 22 题，几道题的差距就是几个百分点。",
+      "cite": ["paper-claw@§4.1", "paper-claw@§5.4"]
+    },
+    {
+      "issue": "潜在污染：改编题来自既有视频与文档基准",
+      "impact": "300 题中 50 题（16.7%）改编自既有基准，其中 Video-MME 5 题、LongVideoBench 4 题；论文称保留原提示与评分标准以支持跨基准比较，但未说明这些改编题归入哪个任务组，也未给出去污染说明。",
+      "severity": "中",
+      "response": "改编题保留原始 prompt 与评分标准用于跨基准对比；运行时环境重新实现以适配三阶段流水线。",
+      "reader": "视频域分数可能包含在其他基准上出现过的题，做跨基准比较时注意。",
+      "cite": ["paper-claw@附录 D.1", "hf-dataset@Acknowledgements"]
+    },
+    {
+      "issue": "裁判是 LLM：开放式 rubric 由 Gemini-3-Flash 判定",
+      "impact": "论文用人工参考分核验裁判：多模态组抽 100 个判定式 rubric 项，Gemini-3-Flash 与人工参考分的完全一致率为 95.0%（表 9）；rubric 充分性人工审计抽 50 道多模态题，对齐 92.0%、覆盖 92.0%、证据可核 94.0%（表 8）。",
+      "severity": "低",
+      "response": "用 LLM 裁判加人工抽审双重校验，裁判温度设为 0。",
+      "reader": "绝对分含裁判偏差，比较同一版本内的结果比跨版本更可靠。",
+      "cite": ["paper-claw@附录 F.3", "paper-claw@附录 F.2", "paper-claw@§4.2"]
+    },
+    {
+      "issue": "试验间方差大",
+      "impact": "多模态与多轮组的标准差系统性高于通用组（通用组中位 σ=1.2%），与更低的转换率一致。",
+      "severity": "低",
+      "response": "3 次试验取平均并按任务组报 ±σ。",
+      "reader": "两个模型差 1 到 2 个百分点时，先看 σ 再下结论。",
+      "cite": ["paper-claw@附录 G"]
+    }
+  ],
+  "background": [
+    {
+      "k": "发布方",
+      "v": "北京大学（计算机学院 · 多媒体信息处理国家重点实验室）与香港大学。",
+      "cite": ["paper-claw@作者单位", "hf-dataset@Core Contributors"]
+    },
+    {
+      "k": "核心作者",
+      "v": "Bowen Ye、Rang Li（共同第一作者）、Qibin Yang、Yuanxin Liu、Linli Yao、Hanglong Lv（北大）；Zhihui Xie、Chenxin An、Lei Li†（项目负责人）、Lingpeng Kong、Qi Liu（港大）；Zhifang Sui、Tong Yang（北大）。",
+      "cite": ["paper-claw@作者单位", "hf-dataset@Core Contributors"]
+    },
+    {
+      "k": "这是什么",
+      "v": "Claw-Eval 套件的多模态任务组：300 题三组（General 161 / Multimodal 101 / Multi-turn 38）中的 Multimodal 组；厂商也写作 Claw-Eval (MM)。",
+      "cite": ["paper-claw@§3.2 Table 2", "seed-blog"]
+    },
+    {
+      "k": "评测范围",
+      "v": "只评 9 个支持视觉输入的前沿模型，共 14 个受评模型；裁判为 Gemini-3-Flash（temperature=0）。",
+      "cite": ["paper-claw@§4.1", "paper-claw@§4.2"]
+    },
+    {
+      "k": "数据与代码",
+      "v": "数据集 claw-eval/Claw-Eval（MIT，300 行，2.88 GB，含 fixtures.tar.gz）；代码 github.com/claw-eval/claw-eval；榜单 claw-eval.github.io。",
+      "cite": ["hf-dataset@License", "repo-claw@Tasks"]
+    },
+    {
+      "k": "时间线",
+      "v": "arXiv v1 2026-04-07 → v2 2026-05-01 → v3 2026-05-07（本档案所据版本）；仓库更新日志另有 v0.0.0（2026.3）、v1.0.0、v1.1.0（300 题 9 类，主指标改为 Pass^3）并集成 EvalScope。",
+      "cite": ["paper-claw@arXiv 提交历史", "repo-claw@Updates"]
+    },
+    {
+      "k": "引用它的团队",
+      "v": "仓库致谢 Meta（Muse Spark）、KAT-Coder-V2、Kimi、Qwen、Tencent Hunyuan、Xiaomi MiMo、Z.AI/GLM、Ant Ling 公开引用或评测；Qwen3.8-Flash-Next 的模型卡与豆包 Seed2.1 的发布博客都点了 ClawEval-MM 或 Claw-Eval (MM)。",
+      "cite": ["repo-claw@Get Involved", "hf-qwen-model@Vision Language", "seed-blog"]
+    },
+    {
+      "k": "官方榜单现状",
+      "v": "claw-eval.github.io 按 Pass^3 排序发布整体成绩（Completion / Robustness / Safety / Avg Score 等列）；本档案核验时（2026-11-14）站点页面只有这一张整体表，未见多模态分组入口，其效率图也自述只覆盖 General 任务。多模态分组成绩以论文 Table 4 为准。",
+      "cite": ["site-claw@榜单"]
+    }
+  ],
+  "notes": "Qwen3.8-Flash-Next 模型卡与豆包 Seed2.1 发布博客都点名 ClawEval-MM / Claw-Eval (MM)，但都只作能力佐证、未按论文口径复现；本档案的多模态分组数据一律以 arXiv:2604.06132v3 Table 4 为准。",
+  "official_sources": [
+    { "kind": "site", "url": "https://claw-eval.github.io/" },
+    { "kind": "repo", "url": "https://github.com/claw-eval/claw-eval" },
+    { "kind": "dataset", "url": "https://huggingface.co/datasets/claw-eval/Claw-Eval" },
+    { "kind": "paper", "url": "https://arxiv.org/abs/2604.06132" },
+    { "kind": "docs", "url": "https://huggingface.co/Qwen/Qwen3.8-Flash-Next" }
+  ],
+  "related_benchmarks": ["claw-eval", "vision2web", "recreationbench", "androidworld", "osworld", "longvideobench", "officeqa"],
+  "content_status": "verified",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      { "id": "paper-claw", "kind": "paper", "title": "Claw-Eval: Towards Trustworthy Evaluation of Autonomous Agents (arXiv:2604.06132v3)", "url": "https://arxiv.org/pdf/2604.06132", "accessed": "2026-11-14" },
+      { "id": "site-claw", "kind": "site", "title": "Claw-Eval: A Transparent Benchmark for Real-World Agents（官方榜单）", "url": "https://claw-eval.github.io/", "accessed": "2026-11-14" },
+      { "id": "repo-claw", "kind": "repo", "title": "claw-eval/claw-eval: Claw-Eval is an evaluation harness for evaluating LLM as agents. All tasks verified by humans.", "url": "https://github.com/claw-eval/claw-eval", "accessed": "2026-11-14" },
+      { "id": "hf-dataset", "kind": "dataset", "title": "claw-eval/Claw-Eval · Datasets at Hugging Face", "url": "https://huggingface.co/datasets/claw-eval/Claw-Eval", "accessed": "2026-11-14" },
+      { "id": "hf-qwen-model", "kind": "docs", "title": "Qwen/Qwen3.8-Flash-Next 模型卡 · Vision Language 评测表", "url": "https://huggingface.co/Qwen/Qwen3.8-Flash-Next", "accessed": "2026-11-14" },
+      { "id": "seed-blog", "kind": "blog", "title": "Seed2.1 Officially Released: Advancing AI Productivity", "url": "https://seed.bytedance.com/en/blog/seed2-1-officially-released-advancing-ai-productivity", "accessed": "2026-11-14" },
+      { "id": "minimax-blog", "kind": "blog", "title": "MiniMax M3: Frontier Coding, 1M Context, Native Multimodality — All in One Model", "url": "https://www.minimax.io/blog/minimax-m3", "accessed": "2026-11-14" }
+    ],
+    "header": {
+      "publisher": { "v": "北京大学（计算机学院 · 多媒体信息处理国家重点实验室）与香港大学", "cite": ["paper-claw@作者单位", "hf-dataset@Core Contributors"] },
+      "first_release": { "v": "2026-04-07（arXiv v1）", "cite": ["paper-claw@arXiv 提交历史"] }
+    },
+    "cites": {
+      "summary": ["paper-claw@§5.4", "paper-claw@§4.2", "paper-claw@Table 4"],
+      "interpretation": ["paper-claw@§5.4", "paper-claw@Table 4", "repo-claw@Evaluation Logic"]
+    },
+    "problem": {
+      "text": "此前的智能体基准大多只看对话轨迹打分，安全与鲁棒性没有独立度量，模态和交互形态也窄。Claw-Eval 用执行轨迹、服务端审计日志、执行后环境快照三条独立证据通道做轨迹感知判分，并设多模态任务组补上模态覆盖：智能体要自己决定看哪些片段、读哪些页面，再产出可交付的视觉结果。",
+      "cite": ["paper-claw@Abstract", "paper-claw@§3.1", "paper-claw@§3.2 Table 2"]
+    },
+    "ladder": [
+      {
+        "label": "域间均值参考线",
+        "value": "Video 10.7% / Doc & Image 32.3% / Code 23.9%",
+        "note": "跨 9 个模型的平均 Pass^3；一致性转换率 ρ 分别为 0.37 / 0.53 / 0.48，视频域最不稳。",
+        "cite": ["paper-claw@§5.4"]
+      },
+      {
+        "label": "论文 Table 4 最低",
+        "value": "Pass^3 13.9%（Pass@3 34.6 / Score 36.6）",
+        "note": "GLM 5V Turbo，9 个视觉模型里的最低 Pass^3。",
+        "cite": ["paper-claw@Table 4"]
+      },
+      {
+        "label": "论文 Table 4 最好",
+        "value": "Pass^3 25.7%（Pass@3 55.5 / Score 54.4）",
+        "note": "GPT-5.4；同一模型在通用组 Pass^3 为 70.8%。",
+        "cite": ["paper-claw@Table 4", "paper-claw@§4.3"]
+      },
+      {
+        "label": "厂商自报口径（勿直接比）",
+        "value": "Pass@3 64.4 / Average 60.4",
+        "note": "Qwen3.8-Flash-Next 在 Qwen 自家模型卡披露，高于论文 Table 4 最高 Pass@3 55.5；未说明任务数、沙箱与裁判配置。",
+        "cite": ["hf-qwen-model@Vision Language"]
+      },
+      {
+        "label": "人类基线",
+        "value": "论文未给出",
+        "note": "论文的人体研究只用于核验 rubric 充分性与裁判一致性，没有报告人类在多模态组上的分数。",
+        "cite": ["paper-claw@附录 F.2", "paper-claw@附录 F.3"]
+      },
+      { "label": "本站账本当前最高", "auto": "ledger-top" }
+    ],
+    "misreadings": [
+      {
+        "text": "把厂商自报的 ClawEval-MM 分数和论文 Table 4 直接比。Qwen 模型卡报 Qwen3.8-Flash-Next Pass@3 64.4，比论文最高的 55.5（GPT-5.4）还高，但两者任务数、harness、裁判配置都没对齐，Qwen 那一行也只给了 Pass@3 与 Average 两列。",
+        "cite": ["hf-qwen-model@Vision Language", "paper-claw@Table 4"]
+      },
+      {
+        "text": "只报 Pass@3 不报 Pass^3。多模态组最高 Pass^3 只有 25.7%，与最高 Pass@3 55.5 差约 30 个百分点；「会做」和「三次都做对」是两件事。",
+        "cite": ["paper-claw@Table 4", "repo-claw@Evaluation Logic"]
+      },
+      {
+        "text": "把多模态分当成通用智能体能力。多模态组只对 9 个视觉模型评测，且组间排名会反转（GPT-5.4 通用组第 3、多模态组第 1）；MiniMax 那条 Claw-Eval 分数甚至只来自 161 题的 General 组。",
+        "cite": ["paper-claw@§4.1", "paper-claw@§4.3", "minimax-blog"]
+      },
+      {
+        "text": "把三个域的均值当成整体水平。视频域平均 Pass^3 只有 10.7%，Doc & Image 32.3%；而且没有模型通吃——视频域最强是 Claude-Opus-4.6/Sonnet-4.6（15.4%），Doc & Image 是 GPT-5.4（54.5%），Code 是 MiMo-V2-Omni（33.3%）。",
+        "cite": ["paper-claw@§5.4"]
+      }
+    ],
+    "background": [
+      { "k": "官方站点", "v": "claw-eval.github.io，页面标题为 A Transparent Benchmark for Real-World Agents。", "cite": ["site-claw@榜单"] }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-14",
+        "columns": ["来源", "模型", "Average Score", "Pass@3", "Pass^3", "口径"],
+        "rows": [
+          ["论文 Table 4", "GPT 5.4", "54.4", "55.5", "25.7", "多模态组 101 题，3 次独立试验"],
+          ["论文 Table 4", "Claude Opus 4.6", "54.7", "52.5", "24.8", "多模态组 101 题，3 次独立试验"],
+          ["论文 Table 4", "Claude Sonnet 4.6", "50.9", "43.6", "23.8", "多模态组 101 题，3 次独立试验"],
+          ["论文 Table 4", "Qwen 3.5 397A17B", "50.2", "37.6", "20.8", "多模态组 101 题，3 次独立试验"],
+          ["论文 Table 4", "Gemini 3.1 Pro", "45.7", "50.4", "15.8", "多模态组 101 题，3 次独立试验"],
+          ["论文 Table 4", "MiMo V2 Omni", "44.4", "50.2", "15.8", "多模态组 101 题，3 次独立试验"],
+          ["论文 Table 4", "Gemini 3 Flash", "47.0", "39.6", "14.8", "多模态组 101 题，3 次独立试验"],
+          ["论文 Table 4", "Kimi K2.5", "37.6", "34.6", "14.8", "多模态组 101 题，3 次独立试验"],
+          ["论文 Table 4", "GLM 5V Turbo", "36.6", "34.6", "13.9", "多模态组 101 题，3 次独立试验"],
+          ["Qwen 模型卡", "Qwen3.8-Flash-Next", "60.4", "64.4", "未列出", "厂商自报，只给 Pass@3 与 Average 两列"],
+          ["Qwen 模型卡", "Qwen3.8-27B", "56.9", "57.4", "未列出", "厂商自报，只给 Pass@3 与 Average 两列"],
+          ["Qwen 模型卡", "Qwen3.7-Plus", "60.1", "57.4", "未列出", "厂商自报，只给 Pass@3 与 Average 两列"],
+          ["Qwen 模型卡", "Claude-Opus-4.6 (Max)", "54.7", "52.5", "未列出", "厂商自报；与论文 Table 4 的 Claude Opus 4.6 数值一致"]
+        ]
+      },
+      "cite": ["paper-claw@Table 4", "hf-qwen-model@Vision Language"]
+    }
+  }
 }
