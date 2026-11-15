@@ -1,71 +1,466 @@
 {
   "id": "benchcad",
   "name": "BenchCAD",
-  "full_name": "BenchCAD: A Comprehensive, Industry-Standard Benchmark for Programmatic CAD",
+  "full_name": "BenchCAD: A Comprehensive, Industry-Standard Benchmark for Programmatic CAD（工业级程序化 CAD 基准）",
   "aliases": [],
   "status": null,
   "categories": [
     "multimodal",
     "coding"
   ],
-  "summary": "工业级 CAD 参数化编程基准：17,900 个执行验证的 CadQuery 程序、106 个工业零件族，含视觉问答/代码问答/图生代码/指令引导编辑四类任务；BenchCAD 2.0 改用 0–1 平均分口径（见 versions）",
-  "interpretation": "OpenAI GPT-5.6 页公布 BenchCAD 三档为 70.6/62.3/63.1、前代 GPT-5.5 为 44.4；论文结论是当前模型多能恢复粗外轮廓，但难以生成忠实的参数化 CAD 程序，因此高分不等于完整工程语义还原。 2026-11-03 OpenAI 研究文给出 BenchCAD 2.0 的 0–1 平均分口径：GPT-6 Astra 在最高推理档为 0.594，官方另称一个未具名的内部模型达 0.875；2.0 与百分制 1.x 不是同一量纲，跨版本不可直比。",
+  "summary": "BenchCAD 是工业级程序化 CAD 基准：17,900 个经沙箱执行验证的 CadQuery 参数化程序、106 个工业零件族，其中 52/106（49%）家族的参数锚定 ISO/DIN/EN/ASME/IEC 标准表；它用视觉问答、代码问答、图生代码、指令引导编辑四类任务，把「感知—参数抽象—可执行程序合成」拆开评分。2026-10-12 起的 BenchCAD 2.0 改为六类硬件工程任务（零件/装配/PCB 接线）加 100 个保留案例的 0–1 平均分。",
+  "interpretation": "高分说明模型能从渲染图或工程图恢复几何，并合成可执行、可编辑的 CadQuery 程序。但论文结论是当前模型多能恢复粗外轮廓，却在细微 3D 结构、工业设计参数解读和必要操作（扫掠、放样、扭转变形）上失败，因此高分不等于忠实的参数化还原，更不等于可制造。读分数前必须先看口径：论文用 0–1 分，OpenAI GPT-5.6 发布表用百分制（Sol 70.6% / Terra 62.3% / Luna 63.1%，前代 GPT-5.5 44.4%），BenchCAD 2.0/2.1 用 0–1 平均分——三者的量纲、split 与是否用工具都不同，跨版本不可直比。",
   "measures": [
-    "从图像或文本恢复 3D 结构与工程参数",
-    "可执行的参数化 CAD 程序合成（图像到代码、指令引导编辑）",
-    "零件族层面的泛化（含未见零件族）"
+    {
+      "area": "图生代码 Vision2Code（img2cq，1.0）",
+      "focus": "从四张标准视图生成可执行 CadQuery 程序；零件族示例：DIN 338 扭钻、ISO 23509 锥齿轮这类标准件",
+      "share": "未披露（论文未给四类任务的题量占比）",
+      "format": "输出 Python 代码，重新执行后与 ground-truth STEP 比体素 IoU",
+      "cite": [
+        "paper@§3.2",
+        "paper@§3.1"
+      ]
+    },
+    {
+      "area": "视觉问答 Vision QA（qa_img，1.0）",
+      "focus": "给多视图渲染图答数值题；论文模板示例：「how many teeth does the visible gear have?」（可见齿轮有几颗齿）",
+      "share": "2,400 题（与 Code QA 同题配对，图像/代码两种条件共 4,800 条记录）",
+      "format": "只输出 JSON 数字数组；比例题 ±5% 容差、整数题精确匹配",
+      "cite": [
+        "paper@附录 J",
+        "paper@§4.3",
+        "paper@Table 2"
+      ]
+    },
+    {
+      "area": "代码问答 Code QA（qa_code，1.0）",
+      "focus": "同一批题但直接给 CadQuery 源码；模板示例：「what is the ratio of root-to-tip diameter?」（根圆与齿顶圆直径比）",
+      "share": "2,400 题（与 Vision QA 配对，隔离视觉识别造成的失败）",
+      "format": "同上；论文中最好 Code QA 约 0.838，最好 Vision QA 为 0.587",
+      "cite": [
+        "paper@附录 J",
+        "paper@§5.1",
+        "paper@Table 9"
+      ]
+    },
+    {
+      "area": "指令引导编辑 CodeEdit（edit_code，1.0）",
+      "focus": "给原程序和一条自然语言指令做最小修改；示例指令：「Increase the cylinder radius from 4.5 to 5.85.」",
+      "share": "748 对（Table 15 按最小改动的结构分 T1–T5 五型：180 / 104 / 111 / 199 / 154）",
+      "format": "归一化准确率（headroom-normalised improvement，Eq. 1）",
+      "cite": [
+        "paper@§3.2",
+        "paper@Table 15",
+        "paper@附录 N"
+      ]
+    },
+    {
+      "area": "六类硬件工程任务（2.0/2.1）",
+      "focus": "带尺寸图纸→零件、给定零件→装配、图纸+零件→零件与装配、四视图→零件、装配视图→零件与装配、PCB 六张渲染→接线图",
+      "share": "Core 100 个保留案例（公开集规模未披露）",
+      "format": "0–1 平均分：零件 0.8 几何重叠 + 0.2 拓扑，装配另加摆放位置，PCB 比接线图",
+      "cite": [
+        "repo2@README",
+        "blog2@How we score"
+      ]
+    }
   ],
   "does_not_measure": [
-    "几何渲染与出图质量",
-    "非 CAD 领域的通用工程能力"
+    {
+      "text": "可制造性与物理性能：2.0 官方明说评分只覆盖几何、零件摆放与电路连接，不覆盖可制造性或物理性能",
+      "cite": [
+        "blog2@How we score"
+      ]
+    },
+    {
+      "text": "完整工业 CAD 覆盖面：零件由专家按标准参数化家族生成，不是从真实工程仓库抽取，缺少手绘制造公差、未记录的设计意图与装配信息（论文附录 A 自述）",
+      "cite": [
+        "paper@附录 A"
+      ]
+    },
+    {
+      "text": "标准符合性：家族只在 ISO 等参数范围内采样并强制参数间关系，不校验该标准要求的全部制造公差与材料规格（官方原话：standard-anchored does not mean standard-compliant）",
+      "cite": [
+        "paper@附录 A"
+      ]
+    },
+    {
+      "text": "CAD 之外的通用工程或科研能力：基准只覆盖论文 §3.2 定义的四类（1.0）/ 六类（2.0）任务",
+      "cite": [
+        "paper@附录 I"
+      ]
+    }
   ],
   "dataset": {
     "sample_count": 17900,
-    "splits": [],
+    "splits": [
+      "BenchCAD 1.0 主集：17,900 个执行验证 CadQuery 程序（106 族）",
+      "BenchCAD-QA：2,400 题，图像/代码两种条件（共 4,800 条记录）",
+      "BenchCAD-Edit：748 对编辑样本",
+      "BenchCAD 2.0 Public set（规模未披露）",
+      "BenchCAD 2.0 Core：100 个保留案例，按评估专用协议申请"
+    ],
     "languages": [
       "en"
     ],
-    "source_type": "real-world（工业零件参数化设计，执行验证）",
-    "public_sample": true
+    "source_type": "程序化生成 + 标准锚定（领域专家按工业标准手工建模，再参数化采样；非真实工程仓库抽取）",
+    "public_sample": true,
+    "totals": "1.0：17,900 个程序（每件含 CadQuery 源码、STEP、四视图渲染、参数 JSON、op list）+ 2,400 配对 QA + 748 编辑对；2.0：Core 100 个保留案例（公开集规模未披露）",
+    "cite": [
+      "paper@§3.1",
+      "paper@Table 7",
+      "dataset@README",
+      "blog2"
+    ],
+    "construction": [
+      {
+        "k": "专家建模（P1）",
+        "text": "每个零件族由领域专家直接按工业标准手工构建，解标准规定的几何方程，产出严格遵循工程约定与参数间约束的参数化模型。",
+        "cite": [
+          "paper@§3.1"
+        ]
+      },
+      {
+        "k": "标准表锚定（P2）",
+        "text": "有工业对应件的参数从真实规格表采样（ISO 22 V 带横截面、DIN 338 扭钻直径、ISO 23509 锥齿轮分度圆–模数关系）；52/106（49%）家族锚定 47 个 ISO/DIN/EN/ASME/IEC 代码。",
+        "cite": [
+          "paper@§3.1",
+          "paper@Table 5"
+        ]
+      },
+      {
+        "k": "分族分档采样",
+        "text": "家族可再分 subfamily（如公/母螺纹紧固件共享螺纹参数表），每族三档难度 easy/medium/hard；按 family×subfamily×tier 采样参数并生成 CadQuery 程序。",
+        "cite": [
+          "paper@§3.1",
+          "paper@附录 E"
+        ]
+      },
+      {
+        "k": "沙箱执行验证",
+        "text": "程序在沙箱子进程执行；解析/导入错误、运行时报错、超过 30 s、退化体积（≤10⁻⁶ mm³ 或变换链行列式为负）一律隔离剔除。",
+        "cite": [
+          "paper@§3.1",
+          "paper@附录 E"
+        ]
+      },
+      {
+        "k": "专家签字后发布",
+        "text": "通过的执行结果渲染成多视图，交领域专家目视签字，只有全阶段通过的记录才进入发布（17,900 as of May 2026）。",
+        "cite": [
+          "paper@§3.1"
+        ]
+      },
+      {
+        "k": "QA 与编辑对构建",
+        "text": "QA 模板按家族参数化（每族 6–12 个），用已验证参数值确定性实例化得到金答案，第二名作者复核歧义与可见性；编辑对从已验证记录出发改参数或 op 得到目标件，再过同一验证管线，并按模板写自然语言指令。",
+        "cite": [
+          "paper@附录 J",
+          "paper@附录 N"
+        ]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "1.0：模型看一张规范化四视图合成图（参考实现为 524×524 px、四张 256×256 对角视图、4 px 白边；Hugging Face 里的 view_*/composite 列是 128 px 预览，不是评测输入），只输出 CadQuery 代码（cadquery 预导入为 cq、最终实体存到 result），代码被重新执行后与 ground-truth STEP 比体素 IoU；QA 用固定系统提示词、只输出 JSON 数字数组；编辑任务要求最小改动。每类任务另设盲基线（黑图 / 无代码 / 原程序不改）。2.0：离线沙箱内有 Python 标准库、CadQuery、NumPy、SciPy 和图像裁剪工具，没有内置渲染工具，每轮写一个 Python 程序；v2.0 最多 30 轮，v2.1 为 60 轮 + 50 万输出 token 且跨轮携带推理。全部自动评分，无 LLM 裁判。",
+    "cite": [
+      "repo@README",
+      "paper@附录 L",
+      "paper@§4.1",
+      "blog2@Results",
+      "repo2@README"
+    ],
+    "variants": [
+      {
+        "text": "无工具 vs 带 Python 工具/沙箱：同一模型在 1,000 文件子集上差距巨大（Claude Sonnet 5.5 无工具 0.747、带工具 0.963），两种口径不能混排。",
+        "cite": [
+          "leaderboard@Vision2Code 表"
+        ]
+      },
+      {
+        "text": "全量重判 vs 1,000 文件子集厂商自报：官网重判的 Gemini 3.1 Pro thinking 为 0.2890，OpenAI 自报的 GPT-5.6 Sol 为 0.7060（split 未披露），二者不可比。",
+        "cite": [
+          "leaderboard@Vision2Code 表",
+          "leaderboard@Vision2Code 脚注"
+        ]
+      },
+      {
+        "text": "harness 版本：v2.0（30 轮、推理不跨轮）与 v2.1（60 轮 + 500k token、跨轮携带推理）官方明说分数不可比。",
+        "cite": [
+          "blog21@What changed",
+          "leaderboard@BenchCAD 2.0 Core 注"
+        ]
+      },
+      {
+        "text": "渲染分辨率：256 / 512 / 768 px 都会改变分数，且 thinking 模型在 768 px 上非单调下降。",
+        "cite": [
+          "paper@Table 18"
+        ]
+      },
+      {
+        "text": "IoU 与视图口径：单轴对齐 vs 24 轴旋转不变（后者专门捕捉「几何对但建在错误工作平面」），四视图 vs 单前视图也会改变分数。",
+        "cite": [
+          "paper@Table 17"
+        ]
+      },
+      {
+        "text": "标准 harness vs 定制 harness（Claude Code / Codex）：2.1 起分成两张榜，官方明说互不可比。",
+        "cite": [
+          "leaderboard@BenchCAD 2.1 定制 harness 表"
+        ]
+      }
+    ]
   },
   "metrics": [
     {
-      "id": "accuracy",
-      "name": "Accuracy",
-      "range": [
-        0,
-        100
-      ],
-      "unit": "percent",
-      "direction": "higher",
-      "aggregation": "mean"
-    },
-    {
-      "id": "average_score_0_1",
-      "name": "平均分（0–1）",
+      "id": "voxel-iou",
+      "name": "体素 IoU（Vision2Code 主指标）",
+      "direction": "越高越好",
+      "description": "预测代码执行出的实体与 ground-truth STEP 的占用网格交并比",
       "range": [
         0,
         1
       ],
       "unit": "score",
-      "direction": "higher",
-      "aggregation": "官方口径的平均分（average score），0–1 标度，对应 BenchCAD 2.0"
+      "cite": [
+        "paper@§3.2",
+        "leaderboard@Vision2Code 说明"
+      ]
+    },
+    {
+      "id": "iou-score",
+      "name": "IoU-score（官网榜头名指标）",
+      "direction": "越高越好",
+      "description": "体素 IoU × 执行率，执行失败的输出记 0",
+      "range": [
+        0,
+        1
+      ],
+      "unit": "score",
+      "cite": [
+        "leaderboard@Vision2Code 说明"
+      ]
+    },
+    {
+      "id": "composite-total",
+      "name": "综合 total 分",
+      "direction": "越高越好",
+      "description": "论文 Table 10 的复合分（IoU、Chamfer 距离、essential-op recall、执行率合成）",
+      "range": [
+        0,
+        1
+      ],
+      "unit": "score",
+      "cite": [
+        "paper@Table 10"
+      ]
+    },
+    {
+      "id": "chamfer-distance",
+      "name": "Chamfer 距离",
+      "direction": "越低越好",
+      "description": "预测与 ground truth 表面之间的平均距离，几何误差辅助指标",
+      "range": "未披露（论文未给理论上界）",
+      "unit": "distance",
+      "cite": [
+        "paper@Table 10"
+      ]
+    },
+    {
+      "id": "essential-op-recall",
+      "name": "essential-op recall",
+      "direction": "越高越好",
+      "description": "关键 CAD 操作被正确召回的比例",
+      "range": [
+        0,
+        1
+      ],
+      "unit": "score",
+      "cite": [
+        "paper@Table 10"
+      ]
+    },
+    {
+      "id": "exec-rate",
+      "name": "执行率 exec_pct",
+      "direction": "越高越好",
+      "description": "生成代码能干净运行并产出实体的比例",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@Table 10"
+      ]
+    },
+    {
+      "id": "edit-normalized-accuracy",
+      "name": "归一化编辑准确率 Acc_norm",
+      "direction": "越高越好",
+      "description": "编辑任务把 original→target 的 IoU 差距走了多少（1 = 完全走到目标），按配对难度归一",
+      "range": [
+        0,
+        1
+      ],
+      "unit": "score",
+      "cite": [
+        "paper@§3.2",
+        "paper@附录 R"
+      ]
+    },
+    {
+      "id": "qa-accuracy",
+      "name": "QA 准确率",
+      "direction": "越高越好",
+      "description": "数值题判对比例：比例题 ±5% 容差、整数题精确匹配；仓库另述为 symmetric ratio accuracy",
+      "range": [
+        0,
+        1
+      ],
+      "unit": "score",
+      "cite": [
+        "paper@§4.3",
+        "repo@README",
+        "paper@附录 R"
+      ]
+    },
+    {
+      "id": "core-average-score",
+      "name": "Core 平均分（BenchCAD 2.0/2.1）",
+      "direction": "越高越好",
+      "description": "100 个保留案例的等权平均，0–1；未提交记 0",
+      "range": [
+        0,
+        1
+      ],
+      "unit": "score",
+      "cite": [
+        "blog2@How we score",
+        "oai-eng@Measuring progress on engineering tasks"
+      ]
     }
   ],
-  "default_protocol": {
-    "raw": "视觉问答 / 代码问答 / 图像到代码生成 / 指令引导代码编辑四类任务分别评分；OpenAI 页另印 python-tool 变体行"
-  },
   "versions": [
     {
+      "id": "1.0",
+      "date": "2026-05-11",
+      "label": "arXiv v1 首发（官网现称 BenchCAD 1.0）：17,900 个执行验证程序、106 零件族、四类任务",
+      "cite": [
+        "arxiv-abs@Submission history",
+        "paper@Abstract"
+      ]
+    },
+    {
+      "id": "1.0-v2",
+      "date": "2026-05-12",
+      "label": "arXiv v2 修订（本档案核对所用版本）",
+      "cite": [
+        "arxiv-abs@Submission history"
+      ]
+    },
+    {
       "id": "2.0",
-      "label": "BenchCAD 2.0（2026-11-03 OpenAI 官方口径：0–1 平均分）",
-      "note": "官方在新版中改用 0–1 平均分（average score）。账本既有 6 条百分制 evidence 属 1.x 口径（官方未给 1.x 版本号，故既有行不挂版本号）。2.0 与 1.x 不是同一量纲，跨版本不可直比。"
+      "date": "2026-10-12",
+      "label": "BenchCAD 2.0：六类硬件工程任务 + 100 案例保留集 Core，0–1 平均分，harness v2.0（30 轮）",
+      "cite": [
+        "blog2@Results",
+        "news@2026-10-12"
+      ]
+    },
+    {
+      "id": "2.1",
+      "date": "2026-11-05",
+      "label": "BenchCAD 2.1：新标准 harness（60 轮 / 50 万输出 token / 跨轮携带推理）+ 定制 harness 榜单；与 2.0 分数不可比",
+      "cite": [
+        "blog21@What changed"
+      ]
     }
   ],
   "limitations": [
-    "微调与强化学习可提升分布内成绩，但对未见零件族泛化仍有限（论文结论）"
+    {
+      "issue": "跨版本、跨口径不可比",
+      "impact": "同一模型名下有多种分数：论文 0–1 分、OpenAI 发布表百分制（GPT-5.6 Sol 70.6%）、2.0/2.1 的 0–1 平均分、全量重判（Gemini 3.1 Pro thinking 0.2890）与 1,000 文件子集厂商自报（0.7060）差距巨大；v2.0 与 v2.1 官方明说不可比。混排会得出错误结论。",
+      "severity": "高",
+      "response": "官方在榜单上区分 self-reported 与 re-graded、标注 split 与 harness 版本，并明说 2.1 与 2.0 分数不可比。",
+      "reader": "比较任何两个数之前，先确认 harness 版本、split、是否重判、有无工具。",
+      "cite": [
+        "leaderboard@Vision2Code 脚注",
+        "blog21@What changed",
+        "oai-gpt56@Computer use 表"
+      ]
+    },
+    {
+      "issue": "污染与刷榜",
+      "impact": "1.0 的 17,900 条数据在 Hugging Face 公开可下载，可能进入训练集或被针对性调优；2.0 的 Core 若不保留也会很快饱和。",
+      "severity": "高",
+      "response": "2.0 起把 100 个 Core 案例完全保留，只按评估专用协议向研究者与模型方开放；1.0 数据集卡未披露访问限制。",
+      "reader": "看 2.0/2.1 的 Core 分数比看 1.0 公开集分数更能反映泛化；1.0 公开集高分要保留余地。",
+      "cite": [
+        "blog2",
+        "dataset@README"
+      ]
+    },
+    {
+      "issue": "几何匹配不等于可用的工程设计",
+      "impact": "分数只覆盖几何重叠、零件摆放与电路连接，不覆盖公差、可制造性与物理性能；论文也显示模型常在细微结构、参数解读和必要操作上失败。",
+      "severity": "中",
+      "response": "2.0 增加装配位置与 PCB 接线评分，官方明说评分不覆盖可制造性；论文用 L1–L4 能力分层把失败归因到具体层级。",
+      "reader": "把 BenchCAD 分数当作「能不能合成可执行参数化程序」的证据，不要当作「能不能投产」。",
+      "cite": [
+        "blog2@How we score",
+        "blog2@Where models lose points",
+        "paper@§1"
+      ]
+    },
+    {
+      "issue": "渲染细节显著改变分数",
+      "impact": "视图分辨率（256 / 512 / 768 px）、视图数量（四视图 vs 单前视图）和坐标系口径（单轴 vs 24 轴）都改变分数；Anthropic 把早期模型从 128 px 视图改到 256 px 重跑，Fable 5.1 从 0.437/0.843 变成 0.606/0.926。HF 里的预览图列不是评测输入，用它们测得的分数与参考实现不可比。",
+      "severity": "中",
+      "response": "仓库把 524×524 四视图定为规范输入并公开渲染代码，同时用 issue #54 明确预览列不用于评测。",
+      "reader": "复现或比对时先确认输入渲染规格；看到厂商自报分先问「什么分辨率、几个视图、哪个 split」。",
+      "cite": [
+        "news@2026-09-22",
+        "repo@README",
+        "paper@Table 17"
+      ]
+    },
+    {
+      "issue": "分布外泛化仍有限",
+      "impact": "SFT+RL 在分布内把 Qwen3-VL-2B 的 total 从 0.0084 提到 0.7682；但保留 10 个机械家族不参与训练时（ood-rl B），OOD 只有 0.4604，而训练时见过这些家族的 iid-rl(D) OOD 为 0.8214——对没见过的零件族泛化仍是开放问题。",
+      "severity": "中",
+      "response": "论文把 IID/OOD 分开报告并给出 per-operation recall 消融；未见官方专门修正。",
+      "reader": "分布内高分不代表能迁移到没见过的零件族。",
+      "cite": [
+        "paper@§5.3",
+        "paper@Table 6"
+      ]
+    },
+    {
+      "issue": "论文内部数字不一致",
+      "impact": "Table 4 记 BenchCAD 标准代码数为 43，而 §3.1、Table 1、Table 5 与仓库 README 均为 47；§2 称 49 个 CadQuery 操作而 Table 19 合计 46；§5.1 写 gemini-3.1-pro-thinking total 0.318 而 Table 10 为 0.3970；§5.3 写 CodeGen 0.7631 而 Table 10 为 0.7682（Table 6 的 iid-rl(D) IID 为 0.7635）。",
+      "severity": "低",
+      "response": "未见官方回应（预印本未修订这些数字）。",
+      "reader": "以论文表格与官网榜单为准，正文括注数字仅作参考。",
+      "cite": [
+        "paper@Table 4",
+        "paper@Table 5",
+        "paper@Table 19",
+        "paper@§5.1"
+      ]
+    },
+    {
+      "issue": "v2.0 harness 的未提交案例计分错误",
+      "impact": "一个 GPT-6 Astra (max) 的 Task 6 案例因工作目录里遗留的 graph 被计 0.50，而模型从未提交；按提示词规则应计 0，其均分应为 0.589 而非 0.594。",
+      "severity": "低",
+      "response": "官方保留已发布数字不变，并在 v2.1 修复该规则。",
+      "reader": "0.59 与 0.594 的差异来自这一条规则的执行，不是模型变化。",
+      "cite": [
+        "leaderboard@BenchCAD 2.0 Core 注"
+      ]
+    }
   ],
-  "notes": "2026-05 提交 arXiv（Haozhe Zhang 等）；证据账本中 OpenAI GPT-5.6 页 14 行引用（含第三方对照列） BenchCAD 2.0（2026-11-03 官方口径）已入库：GPT-6 Astra 最高推理档 0.594（0–1 平均分，vendor_reported），来源 https://openai.com/index/accelerating-engineering-for-the-physical-world ，归档 models/2026-11-03-openai-benchcad-2-0/。",
+  "notes": "2026-05 arXiv 提交（Haozhe Zhang 等，University of Virginia / UCSD / Rice）；证据账本中 OpenAI GPT-5.6 页 14 行引用（含第三方对照列）BenchCAD 2.0（2026-11-03 官方口径）已入库：GPT-6 Astra 最高推理档 0.594（0–1 平均分，vendor_reported），来源 https://openai.com/index/accelerating-engineering-for-the-physical-world ，归档 models/2026-11-03-openai-benchcad-2-0/。",
   "official_sources": [
     {
       "kind": "paper",
@@ -74,12 +469,455 @@
     {
       "kind": "site",
       "url": "https://huggingface.co/papers/2605.10865"
+    },
+    {
+      "kind": "site",
+      "url": "https://benchcad.com/"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/BenchCAD/BenchCAD"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/BenchCAD/BenchCAD-main"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/BenchCAD-org/benchcad-2-main"
     }
   ],
   "related_benchmarks": [
     "program-bench",
     "swebench-pro"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-11-04"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-11",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-11",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "BenchCAD: A Comprehensive, Industry-Standard Benchmark for Programmatic CAD（arXiv:2605.10865v2 全文，pdftotext）",
+        "url": "https://arxiv.org/pdf/2605.10865",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "arxiv-abs",
+        "kind": "paper",
+        "title": "arXiv abs 页 2605.10865（摘要与提交历史）",
+        "url": "https://arxiv.org/abs/2605.10865",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "dataset",
+        "kind": "dataset",
+        "title": "BenchCAD/BenchCAD（Hugging Face 数据集卡，CC-BY-4.0）",
+        "url": "https://huggingface.co/datasets/BenchCAD/BenchCAD",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "BenchCAD/BenchCAD-main（GitHub，1.0 评测代码与 README/LEADERBOARD）",
+        "url": "https://github.com/BenchCAD/BenchCAD-main",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "repo2",
+        "kind": "repo",
+        "title": "BenchCAD-org/benchcad-2-main（GitHub，2.0/2.1 harness README）",
+        "url": "https://github.com/BenchCAD-org/benchcad-2-main",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "leaderboard",
+        "kind": "leaderboard",
+        "title": "benchcad.com 官方榜单（2.1 Core / 2.0 Core / Vision2Code）",
+        "url": "https://benchcad.com/leaderboard/",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "news",
+        "kind": "site",
+        "title": "benchcad.com News（各实验室采用 BenchCAD 的时间轴）",
+        "url": "https://benchcad.com/news/",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "blog2",
+        "kind": "blog",
+        "title": "Introducing BenchCAD 2.0（官方博客，2026-10-12）",
+        "url": "https://benchcad.com/blog/benchcad-2.html",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "blog21",
+        "kind": "blog",
+        "title": "BenchCAD 2.1（官方博客，2026-11-05）",
+        "url": "https://benchcad.com/blog/benchcad-2-1.html",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "oai-gpt56",
+        "kind": "announcement",
+        "title": "GPT-5.6: Frontier intelligence that scales with your ambition（OpenAI，2026-07-09）",
+        "url": "https://openai.com/index/gpt-5-6/",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "oai-eng",
+        "kind": "announcement",
+        "title": "Accelerating engineering for the physical world（OpenAI，2026-11-03）",
+        "url": "https://openai.com/index/accelerating-engineering-for-the-physical-world/",
+        "accessed": "2026-11-11"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "弗吉尼亚大学 / 加州大学圣地亚哥分校 / 莱斯大学的研究团队（论文署名）；榜单与官方博客由 BenchCAD Team 维护",
+        "cite": [
+          "paper@作者署名",
+          "repo@README"
+        ]
+      },
+      "first_release": {
+        "v": "2026-05-11（arXiv:2605.10865 v1）",
+        "cite": [
+          "arxiv-abs@Submission history"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "paper@Abstract",
+        "paper@§3.1",
+        "blog2"
+      ],
+      "interpretation": [
+        "paper@Abstract",
+        "paper@§1",
+        "oai-gpt56@Computer use 表",
+        "blog2@How we score"
+      ]
+    },
+    "problem": {
+      "text": "此前的 CAD 代码生成基准只用单一端到端几何指标（IoU 或 Chamfer 距离）给渲染结果打分，而两个程序外轮廓可能相似、可编辑性与工程细节差异很大：单一分数既高估能力，也分不清差距来自视觉感知、参数抽象还是代码合成；程序编辑与设计问答也被孤立研究。BenchCAD 用执行验证的程序作 ground truth，把评测拆成四类任务与 L1–L4 能力层级来定位瓶颈。",
+      "cite": [
+        "paper@§1",
+        "paper@§2",
+        "paper@§3.2"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "盲输入基线（1.0）",
+        "value": "Vision2Code 0.1102 / Vision QA 0.375 / Code QA 0.223 / CodeEdit 0.000",
+        "note": "黑图、无代码、原程序不改三种盲输入的论文成绩（gpt-4o 黑图 total 0.1102；blank image 0.375；blank code 0.223；no-change 0.000）。论文未报告整卷随机基线。",
+        "cite": [
+          "paper@Table 10",
+          "paper@Table 2",
+          "paper@Table 9",
+          "paper@Table 3"
+        ]
+      },
+      {
+        "label": "论文发布时最好（1.0）",
+        "value": "Vision2Code total 0.7682；Vision QA 0.587；Code QA 0.838；CodeEdit 0.865",
+        "note": "Vision2Code 最高是自家训练的 qwen3-2b-rl-iid（IoU 0.7520、执行率 98.9%）；前沿闭源最好为 gemini-3.1-pro (thinking) total 0.3970。",
+        "cite": [
+          "paper@Table 10",
+          "paper@Table 2",
+          "paper@Table 9",
+          "paper@Table 3"
+        ]
+      },
+      {
+        "label": "官网 Vision2Code 榜最高（无工具）",
+        "value": "0.747",
+        "note": "Claude Sonnet 5.5 (max)，1,000 文件子集、厂商自报体素 IoU，未经 BenchCAD 重判。",
+        "cite": [
+          "leaderboard@Vision2Code 表"
+        ]
+      },
+      {
+        "label": "官网 Vision2Code 榜最高（带工具）",
+        "value": "0.963",
+        "note": "Claude Sonnet 5.5 (max)，同为 1,000 文件子集厂商自报；GPT-6 Astra 的 0.959 只有带工具分。",
+        "cite": [
+          "leaderboard@Vision2Code 表",
+          "news@2026-09-03"
+        ]
+      },
+      {
+        "label": "官网重判最高（全量 split）",
+        "value": "0.2890",
+        "note": "Gemini 3.1 Pro (thinking)，BenchCAD 用参考 harness 自己重判的 IoU-score，与厂商自报子集分不可比。",
+        "cite": [
+          "leaderboard@Vision2Code 表"
+        ]
+      },
+      {
+        "label": "BenchCAD 2.0 Core 参考线",
+        "value": "0.59（v2.0 harness）",
+        "note": "GPT-6 Astra (max)，100 个保留案例的 0–1 平均分；OpenAI 另报同模型 0.594、未发布内部模型 0.875。",
+        "cite": [
+          "leaderboard@BenchCAD 2.0 Core 表",
+          "oai-eng@Measuring progress on engineering tasks"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 OpenAI GPT-5.6 发布表里的 BenchCAD 百分制（Sol 70.6%、Terra 62.3%、Luna 63.1%、GPT-5.5 44.4%）和论文的 0–1 分或 2.0 的 0–1 平均分直接比大小——量纲、split 与是否用工具都不同。",
+        "cite": [
+          "oai-gpt56@Computer use 表",
+          "paper@Table 10"
+        ]
+      },
+      {
+        "text": "看到 0.959 / 0.963 这类带工具分数就认为模型「会做 CAD」——那是 1,000 文件子集上的体素 IoU，多数为厂商自报未重判；同一模型无工具分低得多（Claude Sonnet 5.5 0.747 vs 0.963）。",
+        "cite": [
+          "leaderboard@Vision2Code 表",
+          "leaderboard@Vision2Code 脚注"
+        ]
+      },
+      {
+        "text": "把 2.0 的 0.594 / 0.875 当成工程任务成功率或可制造性——官方明说分数覆盖几何、装配位置与电路连接，两者相差的 0.281 是基准分的绝对差。",
+        "cite": [
+          "blog2@How we score",
+          "oai-eng@Measuring progress on engineering tasks"
+        ]
+      },
+      {
+        "text": "以为 GPT-6 Astra 在 BenchCAD 上有官方「无工具」分——OpenAI 只公布了带 Python 工具的 0.959，没有无工具分。",
+        "cite": [
+          "news@2026-09-03",
+          "leaderboard@Vision2Code 表"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "学术团队：弗吉尼亚大学、加州大学圣地亚哥分校、莱斯大学（论文署名）；基准、榜单与官方博客由 BenchCAD Team 维护",
+        "cite": [
+          "paper@作者署名",
+          "repo@README"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "Haozhe Zhang、Kaichen Liu、Miaomiao Chen（共同一作），Lei Li、Shaojie Yang、Cheng Peng；通讯作者 Haozhe Zhang 与 Hanjie Chen",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2026-05-11 arXiv v1 → 2026-06-10 Anthropic 成为首个报告 BenchCAD 的前沿实验室 → 2026-07-09 OpenAI GPT-5.6 发布表纳入 → 2026-10-12 BenchCAD 2.0 → 2026-11-03 OpenAI 内部模型 0.875 → 2026-11-05 BenchCAD 2.1 → 2026-11-09 Claude Fable 5.2 登上 2.1 榜",
+        "cite": [
+          "arxiv-abs@Submission history",
+          "news@2026-06-10",
+          "news@2026-07-09",
+          "blog21@What changed"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "1.0 数据在 Hugging Face（BenchCAD/BenchCAD，CC-BY-4.0，edit-bench / code_gen / QA 三个 config），评测代码在 GitHub（BenchCAD/BenchCAD-main，MIT）；2.0/2.1 harness 在 BenchCAD-org/benchcad-2-main，Core 保留集按评估专用协议申请",
+        "cite": [
+          "dataset@README",
+          "repo@README",
+          "repo2@README",
+          "blog2"
+        ]
+      },
+      {
+        "k": "经费与致谢",
+        "v": "论文 datasheet：数据集由作者个人经费资助；2.0 博文感谢 Anthropic 与 OpenAI 提供构建与评测所用 API credits",
+        "cite": [
+          "paper@附录 I",
+          "blog2@Acknowledgments"
+        ]
+      },
+      {
+        "k": "被采用情况",
+        "v": "Anthropic 与 OpenAI 的系统卡/发布表、Moonshot 与 xAI 的发布都报告了 BenchCAD 成绩；官方 News 称 OpenAI 是继 Anthropic 之后第二家在旗舰发布里报告该基准的前沿实验室",
+        "cite": [
+          "news@2026-07-09",
+          "news@2026-11-09"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-11",
+        "columns": [
+          "来源",
+          "模型",
+          "分数",
+          "口径"
+        ],
+        "rows": [
+          [
+            "论文 Table 10",
+            "qwen3-2b-rl-iid",
+            "total 0.7682",
+            "IoU 0.7520；exec 98.9%（自家训练，分布内）"
+          ],
+          [
+            "论文 Table 10",
+            "CADEvolve v3",
+            "total 0.6014",
+            "IoU 0.7497；exec 92.7%（CAD 专用基线）"
+          ],
+          [
+            "论文 Table 10",
+            "gemini-3.1-pro (thinking)",
+            "total 0.3970",
+            "IoU 0.2790；exec 79.8%（前沿闭源最好）"
+          ],
+          [
+            "论文 Table 10",
+            "gpt-4o (black img)",
+            "total 0.1102",
+            "盲基线（黑图）"
+          ],
+          [
+            "论文 Table 2",
+            "gemini-3.1-pro",
+            "0.587",
+            "Vision QA 总分（qa_img）"
+          ],
+          [
+            "论文 Table 2",
+            "blank image (baseline)",
+            "0.375",
+            "盲基线（黑图）"
+          ],
+          [
+            "论文 Table 9",
+            "gemini-3.1-pro-thinking",
+            "0.838",
+            "Code QA 总分（qa_code）"
+          ],
+          [
+            "论文 Table 9",
+            "blank code (baseline)",
+            "0.223",
+            "盲基线（无代码）"
+          ],
+          [
+            "论文 Table 3",
+            "GPT-5.3 (thinking)",
+            "0.865",
+            "CodeEdit 归一化准确率"
+          ],
+          [
+            "论文 Table 3",
+            "Baseline (no change)",
+            "0.000",
+            "盲基线（不改原程序）"
+          ],
+          [
+            "OpenAI GPT-5.6 发布表",
+            "GPT-5.6 Sol",
+            "70.6%",
+            "无工具；厂商自报，split 未披露"
+          ],
+          [
+            "OpenAI GPT-5.6 发布表",
+            "GPT-5.6 Terra",
+            "62.3%",
+            "同上"
+          ],
+          [
+            "OpenAI GPT-5.6 发布表",
+            "GPT-5.6 Luna",
+            "63.1%",
+            "同上"
+          ],
+          [
+            "OpenAI GPT-5.6 发布表",
+            "GPT-5.5",
+            "44.4%",
+            "同上（前代）"
+          ],
+          [
+            "OpenAI GPT-5.6 发布表",
+            "GPT-5.6 Sol（python tool）",
+            "83.4%",
+            "带 Python 工具；split 与尝试次数未披露"
+          ],
+          [
+            "官网 Vision2Code 榜",
+            "Claude Sonnet 5.5 (max)",
+            "0.747 / 0.963",
+            "无工具 / 带工具；1,000 文件子集厂商自报"
+          ],
+          [
+            "官网 Vision2Code 榜",
+            "Gemini 3.1 Pro (thinking)",
+            "0.2890",
+            "全量 split，BenchCAD 重判 IoU-score"
+          ],
+          [
+            "BenchCAD 2.0 Core",
+            "GPT-6 Astra (max)",
+            "0.59",
+            "v2.0 harness，100 保留案例"
+          ],
+          [
+            "BenchCAD 2.0 Core",
+            "Claude Opus 5.5 (max)",
+            "0.57",
+            "同上"
+          ],
+          [
+            "OpenAI 2026-11-03",
+            "OpenAI 内部模型（未发布）",
+            "0.875",
+            "BenchCAD 2.0 平均分，Codex，2.0 scorer"
+          ],
+          [
+            "BenchCAD 2.1 Core（标准 harness）",
+            "Claude Fable 5.2 (max)",
+            "0.754",
+            "来自 Anthropic 系统卡"
+          ],
+          [
+            "BenchCAD 2.1 Core（标准 harness）",
+            "Claude Opus 5.5 (max)",
+            "0.490",
+            "5 次平均，±95% 0.013"
+          ],
+          [
+            "BenchCAD 2.1 Core（定制 harness）",
+            "Claude Fable 5.2 (max)",
+            "0.835",
+            "Claude Code，来自 Anthropic 系统卡"
+          ]
+        ]
+      },
+      "cite": [
+        "paper@Table 10",
+        "paper@Table 2",
+        "paper@Table 3",
+        "paper@Table 9",
+        "oai-gpt56@Computer use 表",
+        "leaderboard@Vision2Code 表",
+        "leaderboard@BenchCAD 2.0 Core 表",
+        "oai-eng@Measuring progress on engineering tasks",
+        "leaderboard@BenchCAD 2.1 Core 表",
+        "leaderboard@BenchCAD 2.1 定制 harness 表"
+      ]
+    }
+  }
 }
