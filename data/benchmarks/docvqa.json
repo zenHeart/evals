@@ -1,30 +1,344 @@
 {
   "id": "docvqa",
   "name": "DocVQA",
-  "full_name": null,
-  "aliases": [],
-  "status": null,
+  "full_name": "DocVQA（Document Visual Question Answering，文档图像视觉问答）",
+  "aliases": [
+    "Document Visual Question Answering"
+  ],
+  "status": "active",
   "categories": [
     "multimodal"
   ],
-  "summary": "文档图片问答（发票/表单）",
-  "interpretation": "看发票/表单/文档回答问题。OCR 类产品的核心指标。",
-  "measures": [],
-  "does_not_measure": [],
+  "summary": "DocVQA 是 5 万道针对真实文档图片（发票、报表、表单、信函、手写件）的问答：模型只看到文档图像，答案必须是图里某段连续文字，所以既要读对文字，也要看懂表格、表单和版面。论文把它当主榜指标的是 ANLS——答案差几个字时按相似度给部分分，不让 OCR 小错误被重罚。",
+  "interpretation": "高分说明模型能在真实文档图像上定位并抽出答案，且对 OCR 噪声有一定容忍度；它不说明模型理解图表、照片里的文字或手写（论文实测这三类与人类差距最大），也不覆盖跨文档检索、答案需要改写成列表或数字的任务——答案是文档里逐字出现的单个连续片段。",
+  "measures": [
+    {
+      "area": "table/list（表格 / 列表）",
+      "focus": "答案在表格或列表里，需要理解行列结构；论文示例：问凭据上的 Extension Number，标准答案 (910) 741-0673",
+      "share": "未披露（Figure 3 有占比图，正文未给数值）",
+      "format": "文档图像中的连续文字片段（抽取式）",
+      "cite": [
+        "paper@§3.2 Statistics and Analysis",
+        "paper@Figure 7"
+      ]
+    },
+    {
+      "area": "form（表单）",
+      "focus": "信息以 key:value 形式出现；论文示例：问表格上方的下划线标题，标准答案 Indications for implantation",
+      "share": "未披露（Figure 3 有占比图，正文未给数值）",
+      "format": "文档图像中的连续文字片段（抽取式）",
+      "cite": [
+        "paper@§3.2 Statistics and Analysis",
+        "paper@附录 B"
+      ]
+    },
+    {
+      "area": "layout（版面）",
+      "focus": "需要空间 / 版面信息才能定位答案，例如问标题、表头上方的内容；论文实测这类上 BERT 会答错（答成 total aneurism）",
+      "share": "未披露（Figure 3 有占比图，正文未给数值）",
+      "format": "文档图像中的连续文字片段（抽取式）",
+      "cite": [
+        "paper@§3.2 Statistics and Analysis",
+        "paper@Figure 7"
+      ]
+    },
+    {
+      "area": "running text（正文段落）",
+      "focus": "答案来自句子或段落；论文示例见附录 B 图 B.3",
+      "share": "未披露（Figure 3 有占比图，正文未给数值）",
+      "format": "文档图像中的连续文字片段（抽取式）",
+      "cite": [
+        "paper@§3.2 Statistics and Analysis",
+        "paper@附录 B"
+      ]
+    },
+    {
+      "area": "handwritten（手写）",
+      "focus": "答案写在手写内容里；论文示例：表单里手写的日期",
+      "share": "未披露（Figure 3 有占比图，正文未给数值）",
+      "format": "文档图像中的连续文字片段（抽取式）",
+      "cite": [
+        "paper@§3.2 Statistics and Analysis",
+        "paper@附录 B"
+      ]
+    },
+    {
+      "area": "yes/no（是否）",
+      "focus": "答案为「是 / 否」类判断；论文示例见附录 B 图 B.1",
+      "share": "未披露（Figure 3 有占比图，正文未给数值）",
+      "format": "文档图像中的连续文字片段（抽取式）",
+      "cite": [
+        "paper@附录 B"
+      ]
+    },
+    {
+      "area": "photograph（照片中的文字）",
+      "focus": "答案来自照片里的文字；论文示例见附录 B 图 B.4，附录 C 图 C.2 显示 M4C 在这类题上优于 BERT",
+      "share": "未披露（Figure 3 有占比图，正文未给数值）",
+      "format": "文档图像中的连续文字片段（抽取式）",
+      "cite": [
+        "paper@附录 B",
+        "paper@附录 C"
+      ]
+    },
+    {
+      "area": "figure（图表）",
+      "focus": "答案基于图表 / 曲线图；论文实测这是模型最弱的一类，附录 C 图 C.4 中两个模型都答错",
+      "share": "未披露（Figure 3 有占比图，正文未给数值）",
+      "format": "文档图像中的连续文字片段（抽取式）",
+      "cite": [
+        "paper@附录 B",
+        "paper@附录 C",
+        "paper@Figure 8"
+      ]
+    },
+    {
+      "area": "other（其他）",
+      "focus": "不属于上述类型的问题；论文只说明共 9 种类型，未逐类展开定义",
+      "share": "未披露（Figure 3 有占比图，正文未给数值）",
+      "format": "文档图像中的连续文字片段（抽取式）",
+      "cite": [
+        "paper@Figure 3"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "跨文档检索：给定问题从一个文档集合里找出所有相关文档，那是 2020 挑战赛的 Task 2，用 MAP 排名，和本数据集不是同一个任务",
+      "cite": [
+        "challenge2020"
+      ]
+    },
+    {
+      "text": "自由改写 / 多片段 / 数值计算型答案：本数据集的答案始终是文档图像中单个连续文字片段",
+      "cite": [
+        "datasetpage",
+        "paper@§3.1 Data Collection"
+      ]
+    },
+    {
+      "text": "信息图（infographic）问答：那是 2021 版挑战赛新增 Task 3 对应的 InfographicVQA 数据集，允许答案来自问题本身或需要计算",
+      "cite": [
+        "site"
+      ]
+    }
+  ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
+    "sample_count": 50000,
+    "splits": [
+      "train：39,463 题 / 10,194 图",
+      "validation：5,349 题 / 1,286 图",
+      "test：5,188 题 / 1,287 图"
+    ],
+    "languages": [
+      "en（论文未显式声明语言；图 1 与附录的问题 - 答案示例均为英文）"
+    ],
+    "source_type": "真实行业文档图像（UCSF Industry Documents Library），含印刷、打字、手写与原生数字文本",
+    "public_sample": true,
+    "totals": "50,000 题 / 12,767 张文档图，取自 6,071 份 1900–2018 年的行业文档（tobacco、food、drug、fossil fuel、chemical 五大行业，多数来自 1960–2000 年）；按 80-10-10 随机拆分；问题分 9 种类型；平均答案 2.17 词、平均问题 8.12 词，35,362 题（70.72%）互不重复",
+    "cite": [
+      "paper@§3.2 Statistics and Analysis",
+      "paper@§3.1 Data Collection",
+      "datasetpage"
+    ],
+    "construction": [
+      {
+        "k": "挑文档页面",
+        "text": "从 UCSF Industry Documents Library 的各合集里下载文档并手工挑选页面；库里多数文档已二值化、图像质量受损，作者刻意少用二值化图，并优先挑含表格、表单、列表和图的页面。",
+        "cite": [
+          "paper@§3.1 Data Collection"
+        ]
+      },
+      {
+        "k": "第一阶段标注",
+        "text": "远程工人通过 Web 工具看一张文档图，最多提 10 个问答对；要求问题能用图里的文字回答、答案逐字摘自文档，并鼓励为同一题给多个标准答案。",
+        "cite": [
+          "paper@§3.1 Data Collection"
+        ]
+      },
+      {
+        "k": "第二阶段复核",
+        "text": "另一批工人只看图和问题（看不到第一阶段的答案）重新作答，同时给每题打一个或多个问题类型标签；语言有问题或题意不清的题可被标记并剔除。",
+        "cite": [
+          "paper@§3.1 Data Collection"
+        ]
+      },
+      {
+        "k": "第三阶段终审",
+        "text": "两阶段答案完全不一致的题进入作者终审，作者直接编辑、接受或丢弃该问答对。",
+        "cite": [
+          "paper@§3.1 Data Collection"
+        ]
+      },
+      {
+        "k": "随机拆分",
+        "text": "全部问答按 80-10-10 随机切成 train / validation / test 三个拆分。",
+        "cite": [
+          "paper@§3.2 Statistics and Analysis"
+        ]
+      },
+      {
+        "k": "发布渠道",
+        "text": "数据集、代码与榜单入口在 docvqa.org，数据本体从 Robust Reading Challenge 竞赛页的 Single Document Visual Question Answering 条目下载。",
+        "cite": [
+          "datasetpage",
+          "paper@Abstract"
+        ]
+      }
+    ]
   },
-  "metrics": [],
   "default_protocol": {
-    "raw": "ANLS 相似度"
+    "raw": "单文档 VQA：输入一张文档图像和一个自然语言问题，输出答案文本。官方 2020 挑战赛 Task 1 用 ANLS 排名，答案大小写不敏感、空格敏感，答案词表不封闭（可以是文档里出现的任意词）。论文基线的 OCR token 来自一款商业 OCR 软件，答案与任一标准答案逐个比对。",
+    "cite": [
+      "paper@§5.1 Evaluation Metrics",
+      "paper@§5.2 Experimental setup",
+      "challenge2020"
+    ],
+    "variants": [
+      {
+        "text": "Task 1（单文档 VQA，ANLS 排名）与 Task 2（文档集合检索，MAP 排名）是 2020 挑战赛的两个任务，分数不可比；本档案只覆盖 Task 1 的数据集。",
+        "cite": [
+          "challenge2020"
+        ]
+      },
+      {
+        "text": "人类参考线只由机构内少数志愿者在 test split 上作答得到，不是大规模众包，和模型分数的可比性有限。",
+        "cite": [
+          "paper@§5.2 Experimental setup"
+        ]
+      },
+      {
+        "text": "论文基线的分数强依赖 OCR 与答案词表：heuristic 词表取训练集里出现超过一次的 4,341 个答案，M4C 固定词表取最高频的 5,000 个答案词，换 OCR 引擎或词表会明显改变结果。",
+        "cite": [
+          "paper@§5.2 Experimental setup",
+          "paper@§5.3 Results"
+        ]
+      },
+      {
+        "text": "VQA 类基线的分数还随「是否用固定词表 / 动态词表大小 / 是否用物体特征」变化：LoRRA 去掉固定词表后大幅下降，M4C 的动态词表从 50 扩到 500 时 ANLS 提升约 50%，两者都不能跨设置比较。",
+        "cite": [
+          "paper@§5.3 Results",
+          "paper@Table 2"
+        ]
+      }
+    ]
   },
-  "versions": [],
-  "limitations": [],
-  "notes": null,
+  "metrics": [
+    {
+      "id": "anls",
+      "name": "ANLS（平均归一化 Levenshtein 相似度）",
+      "direction": "越高越好",
+      "description": "主指标。把预测答案与每个标准答案的归一化编辑相似度取最大再对题目平均；因为 OCR 不可能完美，答案差几个字时仍能拿到部分分，不会被重罚。最初为 ST-VQA 提出。",
+      "range": [
+        0,
+        1
+      ],
+      "unit": "ratio",
+      "cite": [
+        "paper@§5.1 Evaluation Metrics"
+      ]
+    },
+    {
+      "id": "accuracy",
+      "name": "准确率（精确匹配）",
+      "direction": "越高越好",
+      "description": "预测答案与任一标准答案完全一致的题目占比；只差一点也记 0 分。论文用它做辅助指标和人类表现口径。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§5.1 Evaluation Metrics"
+      ]
+    }
+  ],
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2020-07-01",
+      "label": "arXiv v1 首发（9,113 KB）",
+      "cite": [
+        "paper"
+      ]
+    },
+    {
+      "id": "v2",
+      "date": "2020-12-13",
+      "label": "arXiv v2 修订（11,929 KB）",
+      "cite": [
+        "paper"
+      ]
+    },
+    {
+      "id": "v3",
+      "date": "2021-01-05",
+      "label": "arXiv v3（11,751 KB），即 WACV 2021 接收版，本档案核对所用版本",
+      "cite": [
+        "paper",
+        "datasetpage"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "图表、照片文字与手写是最弱项",
+      "impact": "论文 Figure 8 显示最好基线与人类的差距主要集中在 figure、photograph、handwritten 等类型上，作者原话是「需要更能理解图表和照片文字的模型，也需要更好的手写识别器」；把这些类型的分数和表格 / 表单类的分数混在一起看，会高估整体文档理解能力。",
+      "severity": "高",
+      "response": "论文只在结论里指出方向；官方随后把该类任务拆到 2021 版挑战赛的 Task 3（Infographics VQA）单独推进，InfographicVQA 数据集 2021-04 放出预印本。",
+      "reader": "看分类型成绩再下结论；总分接近 0.7 时，图表和照片文字类可能仍明显低于表格类。",
+      "cite": [
+        "paper@Figure 8",
+        "paper@§5.3 Results",
+        "site"
+      ]
+    },
+    {
+      "issue": "强依赖 OCR 质量",
+      "impact": "论文全部基线的 OCR token 来自商业 OCR 软件；ANLS 指标本身就是为容忍 OCR 错误而设计，附录 C 图 C.5 仍给出「定位对了但因 OCR 错误答错」的实例。换 OCR 引擎或文档质量变差时，分数会系统性变化。",
+      "severity": "中",
+      "response": "主指标改用 ANLS 而非精确匹配；论文未提出摆脱 OCR 依赖的方案。",
+      "reader": "比较不同模型时先确认它们用的是同一套 OCR 输出还是自己重跑 OCR。",
+      "cite": [
+        "paper@§5.1 Evaluation Metrics",
+        "paper@§5.2 Experimental setup",
+        "paper@附录 C"
+      ]
+    },
+    {
+      "issue": "抽取式单片段答案上限明显偏高",
+      "impact": "只要答案恰好是 OCR 输出的子串就能拿分，这个上界在 val / test 上分别是 85.64% / 87.00% 准确率，远高于当时最好模型（0.665 ANLS / 55.77%）；说明「定位到片段」和「理解文档」不是一回事，高分可能只来自串匹配。",
+      "severity": "中",
+      "response": "论文同时给出 OCR 子序列上界（76.37% / 77.00%）并说明子串匹配可能误配（答案「2」会匹配到「2020」里的 2）；未见官方修改答案形式。",
+      "reader": "看到接近 0.8–0.9 的分数时，先分清是子串匹配上界还是真正的问答成绩。",
+      "cite": [
+        "paper@Table 1",
+        "paper@§5.3 Results"
+      ]
+    },
+    {
+      "issue": "论文数字与当前水平不可比",
+      "impact": "论文报告的最好成绩是 2020 年的基线；官方榜单挂在 RRC 平台持续开放提交，docvqa.org 只公布 2020 年冠军队伍、不列分数，本档案未接入该榜单，因此无法给出「当前最高分」。",
+      "severity": "中",
+      "response": "官方在 RRC 榜单用不同颜色标出挑战赛期间的提交，2021 版结束后榜单公开；本站未同步这些数字。",
+      "reader": "引用 DocVQA 分数时注明是论文基线还是某次挑战赛结果，并去 RRC 榜单核对最新排名。",
+      "cite": [
+        "challenge2020",
+        "site"
+      ]
+    },
+    {
+      "issue": "领域与来源单一",
+      "impact": "文档全部来自 UCSF Industry Documents Library 的 5 个行业（tobacco、food、drug、fossil fuel、chemical），年份集中在 1960–2000 年，且优先挑了表格、表单、图较多的页面，不代表一般办公文档或现代数字文档的分布。",
+      "severity": "低",
+      "response": "论文说明挑选时刻意减少二值化图像、优先多结构页面；未见官方扩充来源的计划。",
+      "reader": "把结论迁移到自家文档前，先看文档类型、年代和图像质量是否接近这个分布。",
+      "cite": [
+        "paper@§3.1 Data Collection"
+      ]
+    }
+  ],
+  "notes": "2020 挑战赛 Task 1 数据集；2021 版起重心转向 InfographicVQA（Task 3）",
   "official_sources": [
     {
       "kind": "site",
@@ -33,16 +347,285 @@
     {
       "kind": "paper",
       "url": "https://arxiv.org/abs/2007.00398"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://www.docvqa.org/datasets/docvqa"
+    },
+    {
+      "kind": "leaderboard",
+      "url": "https://rrc.cvc.uab.es/?ch=17"
     }
   ],
   "related_benchmarks": [
+    "infovqa",
+    "chartqa",
+    "ocrbench",
     "mmmu",
     "mathvista",
     "popecv",
-    "chartqa",
     "mmvet",
     "vizwiz"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-28"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-13",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "DocVQA: A Dataset for VQA on Document Images（arXiv:2007.00398，v3，2021-01-05，WACV 2021）",
+        "url": "https://arxiv.org/abs/2007.00398",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "site",
+        "kind": "site",
+        "title": "docvqa.org 官网首页（任务定位、新闻时间线、人员与致谢）",
+        "url": "https://www.docvqa.org/",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "datasetpage",
+        "kind": "dataset",
+        "title": "docvqa.org 数据集页：DocVQA dataset（2020 Challenge task 1 dataset）",
+        "url": "https://www.docvqa.org/datasets/docvqa",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "challenge2020",
+        "kind": "site",
+        "title": "docvqa.org 挑战赛 2020 页（任务定义、评测口径、RRC 榜单与冠军）",
+        "url": "https://www.docvqa.org/challenges/2020",
+        "accessed": "2026-11-13"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "IIIT Hyderabad 与 CVC（Universitat Autònoma de Barcelona）研究团队；论文被 WACV 2021 接收",
+        "cite": [
+          "paper@作者署名",
+          "datasetpage"
+        ]
+      },
+      "first_release": {
+        "v": "2020-07-01（arXiv v1）",
+        "cite": [
+          "paper"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "paper@Abstract",
+        "paper@§3.2 Statistics and Analysis",
+        "paper@§5.1 Evaluation Metrics"
+      ],
+      "interpretation": [
+        "paper@Figure 8",
+        "paper@§3.1 Data Collection",
+        "paper@§5.3 Results"
+      ]
+    },
+    "problem": {
+      "text": "此前的文档图像理解研究以信息抽取模块为主（字符识别、表格抽取、键值对抽取），看不到抽取出来的信息最终要用来做什么；而通用 VQA 与场景文字 VQA 要么只针对特定元素（图表、书封），要么根本不是真实文档。DocVQA 把问题还原成通用形式：在真实、多样的文档图像上用自然语言提问，答案必须来自文档本身的文字。",
+      "cite": [
+        "paper@§1 Introduction",
+        "paper@§2 Related Datasets and Tasks"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机 / 多数答案基线",
+        "value": "0.00–0.90%（Acc）",
+        "note": "随机答案、随机 OCR token、最长 OCR token、多数答案在 val / test 上都不到 1% 准确率。",
+        "cite": [
+          "paper@Table 1",
+          "paper@§5.3 Results"
+        ]
+      },
+      {
+        "label": "OCR 子串匹配上界",
+        "value": "85.64%（val）/ 87.00%（test）Acc",
+        "note": "答案只要是 OCR 输出的子串就得分；子序列上界为 76.37% / 77.00%。这条线说明「定位到片段」不等于理解文档。",
+        "cite": [
+          "paper@Table 1",
+          "paper@§5.3 Results"
+        ]
+      },
+      {
+        "label": "论文发布时最好",
+        "value": "0.665 ANLS / 55.77% Acc（test）",
+        "note": "bert-large-squad（SQuAD 1.1 预训练后在 DocVQA 微调）；同期最好 VQA 模型 M4C 为 0.391 ANLS / 24.81% Acc。",
+        "cite": [
+          "paper@Table 3",
+          "paper@Table 2",
+          "paper@§5.3 Results"
+        ]
+      },
+      {
+        "label": "人类参考",
+        "value": "0.981 ANLS / 94.36% Acc（test）",
+        "note": "由机构内少数志愿者在 test split 上作答得到；论文结论是模型与人类差距仍大。",
+        "cite": [
+          "paper@Abstract",
+          "paper@Table 1",
+          "paper@§5.2 Experimental setup"
+        ]
+      },
+      {
+        "label": "官方榜单最高",
+        "value": "本站未接入",
+        "note": "官方榜单挂在 RRC 平台（rrc.cvc.uab.es/?ch=17）持续开放提交，docvqa.org 只公布 2020 年冠军队伍、不给分数，本站不推算。",
+        "cite": [
+          "challenge2020"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把高 ANLS 当成「理解文档」——OCR 子串匹配上界就有 85% 以上准确率，高分可能主要来自定位到正确片段。",
+        "cite": [
+          "paper@Table 1",
+          "paper@§5.3 Results"
+        ]
+      },
+      {
+        "text": "把 2020 挑战赛 Task 1（单文档 VQA，ANLS）和 Task 2（文档集合检索，MAP）的分数排在一起比。",
+        "cite": [
+          "challenge2020"
+        ]
+      },
+      {
+        "text": "拿论文里的 0.665 当作当前最好水平——榜单在 RRC 持续更新，论文数字只是 2020 年的基线。",
+        "cite": [
+          "challenge2020",
+          "paper@Table 3"
+        ]
+      },
+      {
+        "text": "以为答案可以自由总结或改写成列表 / 数字——本数据集的答案始终是文档图像中单个连续文字片段。",
+        "cite": [
+          "datasetpage",
+          "paper@§3.1 Data Collection"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "IIIT Hyderabad 与 CVC（Universitat Autònoma de Barcelona）；论文被 WACV 2021 接收",
+        "cite": [
+          "paper@作者署名",
+          "datasetpage"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "Minesh Mathew（IIIT Hyderabad）、Dimosthenis Karatzas（CVC）、C.V. Jawahar（IIIT Hyderabad）；挑战赛组委会另有 Rubèn Pérez Tito、R. Manmatha、Ernest Valveny 等",
+        "cite": [
+          "paper@作者署名",
+          "site"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2020-05 挑战赛结束并公布结果 → 2020-06 CVPR 2020 workshop 公布竞赛总结 → 2020-07-01 arXiv v1 → 2021-01-05 arXiv v3（WACV 2021）→ 2021-04 InfographicVQA 预印本、2021 版挑战赛结束并公开榜单 → 2026-01 ICDAR 2026 开办 DocVQA2026 多域文档推理竞赛",
+        "cite": [
+          "paper",
+          "site"
+        ]
+      },
+      {
+        "k": "标注与资助",
+        "v": "标注由 Amazon 支持，KWINS（Kerala Women in Nano Startups）团队协助联系女性自由职业者；资助方为 MeitY（印度政府）、CERCA、AWS Machine Learning Research Award (2019) 与项目 TIN2017-89779-P",
+        "cite": [
+          "site",
+          "paper@Acknowledgements"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "数据集从 RRC 竞赛页的 Single Document Visual Question Answering 条目下载；论文、代码与榜单入口集中在 docvqa.org",
+        "cite": [
+          "datasetpage",
+          "paper@Abstract"
+        ]
+      },
+      {
+        "k": "联系与后续",
+        "v": "联系邮箱 docvqa@cvc.uab.es；同项目后续数据集 InfographicVQA、DocCVQA、BenthamQA and HW-SQuAD 也在官网数据集栏目下",
+        "cite": [
+          "site"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-13",
+        "columns": [
+          "来源",
+          "方法",
+          "ANLS",
+          "准确率",
+          "拆分"
+        ],
+        "rows": [
+          [
+            "论文 Table 1",
+            "人类参考（少数志愿者）",
+            "0.981",
+            "94.36%",
+            "test"
+          ],
+          [
+            "论文 Table 1",
+            "OCR 子串上界（heuristic）",
+            "未给出",
+            "85.64%（val）/ 87.00%（test）",
+            "val / test"
+          ],
+          [
+            "论文 Table 1",
+            "OCR 子序列上界（heuristic）",
+            "未给出",
+            "76.37%（val）/ 77.00%（test）",
+            "val / test"
+          ],
+          [
+            "论文 Table 1",
+            "多数答案（heuristic）",
+            "0.017",
+            "0.90%（val）/ 0.89%（test）",
+            "val / test"
+          ],
+          [
+            "论文 Table 2",
+            "M4C 最佳设置（动态词表 500）",
+            "0.391",
+            "24.81%",
+            "test"
+          ],
+          [
+            "论文 Table 3",
+            "bert-large-squad（SQuAD 1.1 预训练 + DocVQA 微调）",
+            "0.665",
+            "55.77%",
+            "test"
+          ]
+        ]
+      },
+      "cite": [
+        "paper@Table 1",
+        "paper@Table 2",
+        "paper@Table 3"
+      ]
+    }
+  }
 }
