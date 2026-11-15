@@ -4374,3 +4374,130 @@ Gemini Robotics 2.5 的 DeepMind 官方 RSS `pubDate` 为 `Mon, 09 Nov 2026 19:5
 - **新增厂商**：无
 - **候选数**：702 → 702；general/vertical 未决候选 **0**
 - **检查点**：`last_scan_at=2026-11-15`；`last_max_release_date=2026-11-12`（**锚点只前进不回退**——本批最大发布日 2026-06-03 早于既有锚点，故不覆盖）；覆盖页窗口同步为 `2026-10-29 ~ 2026-11-15`
+
+## 第六十八批（2026-11-16 CST / 2026-11-15 UTC 增量窗口 2026-10-29 ~ 2026-11-15：窗口内确无新发布；存量回填 1 个 release —— OpenAI GPT‑5.2）
+
+### 本批窗口与前置
+
+- **增量窗口**：锚点 `ledger_max_release_date = 2026-11-12` 回退 14 天重叠 → `window_since = 2026-10-29`、`window_until = 2026-11-15`（UTC）。本批新增的 release 发布日为 2025-12-11（存量回填），**早于既有锚点，按「锚点只前进不回退」纪律不覆盖锚点**。
+- **基线**：`origin/main` @ `f994f7d`；分支 `model-release-daily-20261115T231641Z`；独立 worktree `../.worktrees/evals/model-release-daily-20261115T231641Z`（**不在本地 `main` 上作业**——本地 `main` 与 `origin/main` 长期分叉，本地落后 98 个提交）。
+- **执行器互斥（开工前确认）**：OpenClaw 的 `workflow:daily-model-releases-and-provider-refresh`（declaration id `db2e30ef-541a-49e2-af4a-bcdff12831e9`，cron `15 7 * * *` Asia/Shanghai，agent `walle`）实取 `cron get` 回读为 **`enabled: false`**——该声明在上一批已显式停用，本批开工前再次回读确认仍为停用状态，因此本仓的每日入库由本调度**独占**执行，不存在两个执行器跑同一 cycle 的可能。该声明上次运行的失败原因为 `source_branch_mismatch`（与另一执行器的分支指纹冲突），停用正是为消除该冲突。
+- **工作树状态**：开工时干净（非空则按情况 C 立即停止）；本机 git 身份沿用仓库既有配置；新 worktree 需先 `npm ci` 补装 `jszip`（否则 `build:epub` 会因缺依赖中断）。
+
+### 入口复扫（Step 1）
+
+`node .claude/skills/ingest-releases/scripts/scan.mjs --write` 对 18 家在册厂商的 **46 个官方域名入口**逐一实扫，exit 0，**全部 46 个入口的 `last_scanned_at` 均刷新到 `2026-11-15T23:17:18Z`**（失败与动态页照落 `data/model-coverage.json`，不静默跳过）。候选 702 → **705**（+3）。
+
+随后按 `references/discovery-channels.md` 的渠道表**逐通道定点复核**（下表为实取结果，非统计推断）。本批的三路并行厂商巡检子任务运行 100 分钟未产出任何输出，已终止，改由本会话按渠道表直接实取复核——**下表每一行都有实取依据**：
+
+| 通道 | 实取结果 | 结论 |
+|---|---|---|
+| OpenAI RSS `news/rss.xml` | 1387 条，窗口内 **53** 条 | 逐条标题+链接比对：模型发布只有 `Introducing Images 2.6`（11-04，已建档）、`GPT‑6 Cyber`（11-05，已建档）、`Accelerating engineering for the physical world`（11-03，已建档）、`A thousand fewer paths to root`（11-04，已登记）、`LifeVal`（11-02，已登记为基准发布）；11-15 的 `A step toward defining the Standard Model on a lattice` 与 `Our new blog for science` **实取全文核验：正文零百分数**，分别是科研合作文章与博客栏目上线公告 |
+| DeepMind RSS `blog/rss.xml` | 100 条，窗口内 **9** 条 | Gemini 4 Hydrogen / AlphaGenome 2 / AlphaProof Code / Gemini Robotics 2.5 **均已建档**；`Opening the datasets behind our AI weather models`（数据集发布）、`Agentic cheminformatics with Google Antigravity`（产品文章）非模型发布 |
+| Google AI RSS + 根 RSS | 20 条 / 20 条，窗口内 9 / 20 | Gemini Decisions API、Gemini 4 Hydrogen、Gemini Omni 1.2 Flash **均已建档**；其余为搜索 / 应用 / 企业功能 / 创意工具更新 |
+| Mistral RSS `rss.xml` | 94 条，窗口内 **2** 条 | `Le Chonk: Built for Coders, Trusted by Defenders`（10-29，已建档）、`Le Chonk brings the brains. Studio puts it to work`（11-05，已登记） |
+| 腾讯混元 `publicList` API | 13 条，窗口内 **2** 条 | `Hy4 正式发布`（11-03）、`Hyra 2.0`（11-01），**均已建档**（detail 接口只认数字 id，slug 会 404） |
+| Qwen 研究索引 API `article/retrieval?type=qwen_ai` | 40 条，**窗口内 0** | 最新一篇 2026-09-20（Qwen-Image-2.1）。注：该接口 **POST 返回 405，必须用 GET** |
+| MiniMax 官方模型日志 | 窗口内 **0** | 最新条目 `Nov. 10, 2026`（MiniMax H3 Image，已建档），下一条即 2026-10-19 |
+| Anthropic newsroom + 模型总表 | `/news` 逐篇实取 JSON-LD `datePublished`；模型总表列出 Fable 5.2 / Opus 5.5 / Sonnet 5.5 / Haiku 5.5 | 窗口内最新是 **2026-11-10 IPO 路演公告**（已登记）与 **2026-11-09 `Introducing Claude Fable 5.2 and Claude Mythos 5.2`**（已建档）；索引页顶部日期徽标会随日期滚动，不可当发布日 |
+| Meta `research.meta.ai/blog` | 窗口内 2 条 | `Muse Wonder`（10-12）、`Bringing Specialized Models to Muse and Meta AI`（11-09）**均已建档** |
+| DeepSeek `/updates` | 窗口内 1 条 | `Date: 2026-11-13`「Releasing the full suite of application APIs」——开放既有 `deepseek-flash` 的 web search / file input / URL reading 等参数，**非新模型发布** |
+| Kimi blog + whats-new | 窗口内 **0** / **0** | blog 最新 2026-10-24（Kimi K3.1 Pro，已建档）；whats-new 最新 2026-05-29 |
+| xAI `docs.x.ai/docs/models` + release-notes | 200，型号行 6 | 最新仍是 `Grok 4.7 = Latest`，无窗口内新 slug |
+| GLM `z.ai/blog` / `docs.z.ai/release-notes` | **404** / 200 | release-notes 最新 2026-08-26，窗口内 0。`z.ai/blog` 404 与上一批一致（登记为 inaccessible） |
+| 豆包 `seed.bytedance.com/sitemap.xml` | 窗口内 lastmod **1** 条 | 仅 `…introducing-seedream-5-5`（11-09，已建档）；**lastmod 是页面更新时间不是发布日** |
+| 小米 `mimo.xiaomi.com/blog` | 窗口内 **0** | 最新 `Introducing MiMo-V2-Flash`（December 16, 2025，已建档） |
+| Thinking Machines `news/` + `sitemap.xml` | news 窗口内 0；sitemap 148 条 lastmod 全为 **站点重建戳 2026-11-05**（另有 4 条文档页 11-07/11-09/11-11 二次改动） | `/news/` 17 条 + `/model-card/` 3 张（inkling / inkling-small / inkling-2-small）**全部已建档**，最新发布文为 11-05 Inkling 2 Small |
+| Microsoft `new-sitemap.xml` | 38 篇**逐篇实取 JSON-LD `datePublished`**，窗口内 **0** 篇 | lastmod 不等于发布日；本轮 38 篇的真实发布日全部落在窗口外 |
+| HF 官方组织 API（Qwen / tencent / moonshotai / MiniMaxAI / deepseek-ai / zai-org / stepfun-ai / microsoft / meta-llama / mistralai） | 窗口内新建仓 **5** 个 | `tencent/Qwen3.8-27B-DSpine-b16`（11-07，**投机解码 drafter 研究产物、非模型发布**）、`moonshotai/Kimi-K3.1-Pro`（11-02，已建档）、`MiniMaxAI/MiniMax-H3-Image`（11-03，已建档）、`MiniMaxAI/MiniMax-H3-Image-PE`（11-08，**PE 权重变体**，无独立发布文与独立评测）、`microsoft/Mage-VL-Cowork`（10-30，已建档） |
+
+**窗口结论：窗口内确无未建档的新发布**，转入**存量回填**轨道。
+
+### 本批新建档（1 个 release，为存量回填）
+
+| release | 厂商 | 发布日 | 发布日证据 | evidence |
+|---|---|---|---|---|
+| `openai/gpt-5-2` | OpenAI | 2025-12-11 | 官方发布文页面印刷日期行 `December 11, 2025` + H1 `Introducing GPT‑5.2` + 副标题 `The most advanced frontier model for professional work and long-running agents.`；slug `introducing-gpt-5-2` 在 `openai.com/sitemap.xml/release/` 可查（与 `introducing-gpt-5-2-codex` 是两个独立 slug） | **58 条 verified**（GPT‑5.2 Thinking 43 条 / Pro 12 条 / Instant 3 条） |
+
+**为什么本批做这一档**：自第五十三批起，账本已确认 GPT‑5.2 在 OpenAI 2026-11-06 BioBasicsBench 发布文里的 5 档官方分值（none 24.0% / low 28.7% / medium 30.7% / high 30.5% / xhigh 31.2%），但当时「本仓无 GPT‑5.2 的独立 release 档案，也未找到可定位其发布日的官方发布文」，按「不拿抓取日冒充发布日期」与「只追加、不臆造」纪律**暂缓建档**，并注明「留待存量回填轨道补齐发布日证据」。本批在发布 sitemap 中定位到官方发布文 `introducing-gpt-5-2`（印刷日 2025-12-11），**发布日证据链补齐**，故正式建档。BioBasicsBench 的 5 档分值仍留在 `biobasicsbench` 基准实体与既有批次报告中，**不在新 release 重复建行**。
+
+**取数口径**：本页评测数据**不是位图**，而是 **12 张服务端渲染的 DOM `<table>`**（每格均为可机读文本），按契约记 `evidence_type: "text"` / `status: "verified"`。页面另有 11 段 vega-lite 载荷（Next.js RSC 载荷里的 `vegaLiteSpec.data.values`），但其数据集用 `datasets` **命名引用**而非内联 `values`，绝对值不直接落在载荷里，且同一数值已由 DOM 表格给出，故**不重复从载荷取值**，避免一数两源。
+
+**自家模型列**：页面明写 *"Below, we report comprehensive benchmark scores for GPT‑5.2 Thinking, along with a subset for GPT‑5.2 Pro."* 因此只取 **GPT‑5.2 Thinking** 与 **GPT‑5.2 Pro** 两列建行；GPT‑5.1 Thinking / GPT‑5.1 Instant 为竞品列，按契约**只进 notes 不建行**。表 1（Mental health evaluations）另含 GPT‑5.2 Instant 列，故该表取 Instant 与 Thinking 两列。
+
+**协议字段来自官方脚注（不是推测）**：*"Models were run with maximum available reasoning effort in our API (xhigh for GPT‑5.2 Thinking & Pro, and high for GPT‑5.1 Thinking), except for the professional evals, where GPT‑5.2 Thinking was run with reasoning effort heavy, the maximum available in ChatGPT Pro."* → `protocol.reasoning_effort`：professional evals（GDPval、投行表格建模、ChatGPT 回答错误率）记 `heavy`，其余记 `xhigh`；表 6「w/ search」行另记 `protocol.tools = "search"`。官方**未明示** harness、shots、温度、top_p、token 预算、轮次、跑次数、聚合方式与判分器，protocol 12 键一律 `null`。
+
+**跨页冲突不调和（各自记行 + notes 标注）**：GPT‑5.4 发布页引用 GPT‑5.2 的 FrontierMath Tier 1–3 为 **40.7%**、Tier 4 为 **18.8%** 与 **31.3%**，与 GPT‑5.2 本页自报的 **40.3% / 14.6%** 不一致；本 release 取本页自报值，两处差异已在相关行的 notes 逐条标注来源页。
+
+**口径提示（同一 benchmark 不同口径，不可直接比较）**：本站 `swe-lancer` / `IC SWE Diamond` 的既有行（`o3-o4-mini` 发布页）记录的是**美元酬金**（`metric: earned_payout`, `unit: usd`），而 GPT‑5.2 发布页给的是**百分比任务成功率 74.6%**（并附脚注「omits 40/237 problems that did not run on our infrastructure」，即分母 197 题）。本批按页面原值建行（`metric: task_success_rate`），并在 notes 写明与美元口径不可直接比较。
+
+### 新建 benchmark id（3 个，均标 `new-benchmark`，兜底页由账本自动生成）
+
+| id | 出处 | 为什么不建实体 |
+|---|---|---|
+| `investment-banking-spreadsheet` | OpenAI 内部投行分析师表格建模基准（建三表模型、杠杆收购模型等） | 题集与判分流程官方均未公开、不可外部复跑；站内 `finance-agent` 是公开基准，不混用 |
+| `chatgpt-answer-accuracy` | OpenAI 内部 ChatGPT 回答事实性评测（去标识化 ChatGPT 查询集） | 题集不公开；错误检测由其它模型完成，官方声明「may make errors themselves」，口径不可外部核验 |
+| `openai-mental-health-safety` | OpenAI 内部「Mental health evaluations」（0–1 量表） | 量表满分含义与判分细则未在页面给出（细节在 system card）；**与站内已有的 `mentalhealthbench`（deploymentsafety.openai.com 的开放基准，1,215 段合成对话 + rubric 打分）不是同一评测**，故不归并 |
+
+- 3 个 id 已在 `data/compare-rules.json` 的 `unmapped_ids` 逐条写明「为何不进对照」，`tests/compare-audit.test.mjs` 的 **undecided / stranded / orphans 三项均为 0**。
+- **未建实体不等于可以不算分**：本批 58 行全部按所属 benchmark 档案的主指标口径书写（`accuracy` / `resolved_rate` / `pass_rate` / `pass_at_1` / `f1` / `win_or_tie_rate` / `win_rate` / `without_error_rate` / `task_success_rate` / `safety_response_score`），没有出现「指标写法对不上而被悄悄丢掉」的行。
+
+### 覆盖对账与未决候选清零
+
+- 本批把 **1 条存量回填候选**收口（`release_id: "gpt-5-2"` / `archive_status: "archived"` / `archive_path: "models/2025-12-11-gpt-5-2"` / `evidence_status: "reported"`，清 `exclusion_reason` 与 `next_backfill_at`）：
+  `openai-5f721228af36`（family `GPT-5.2`）→ `gpt-5-2`。
+- 入口扫描新增 3 条候选，逐条实取核验后**全部按「非独立模型发布」排除**（不静默丢弃，均写明理由）：
+  `openai-2e8f421d2ee2`（格点 QCD 科研合作文章，2026-11-15，通篇零评测数值）、`thinking-machines-59685e2d163e` 与 `thinking-machines-c0d9f1e997ee`（HF **社区讨论帖**，非官方发布文，讨论对象是既有量化衍生权重）。
+- 另**主动登记** 1 条此前未进候选表的已核验条目：`openai-5a014341bc`（LifeVal，2026-11-02 基准发布文）——该 URL 的官方分值已按「自家模型列」建行在 `openai/gpt-5-4`（4 条）、`openai/gpt-5-5`（4 条）、`openai/gpt-5-6`（5 条）、`openai/gpt-6-astra`（5 条）共 18 条 evidence，基准实体 `data/benchmarks/lifeval.json` 的 `official_sources` 指回本页；本批实取正文核验：5 处百分数均为生活任务示例分，**非模型评测表**。登记进候选表是为了让后续批次不会重复发现它。
+- reconcile 之后 general/vertical 未决候选为 **0**；候选总数 702 → **706**。
+- 仍有 **38 条存量回填缺口候选**待后续批次处理（Qwen 29 条 + Google 3 条 + OpenAI 3 条 + GLM 1 条 + MiniMax 1 条 + 腾讯 1 条）。
+
+### 跳过清单
+
+| 对象 | 厂商 | 原因 |
+|---|---|---|
+| `A step toward defining the Standard Model on a lattice`（2026-11-15） | OpenAI | 官方科研合作文章：叙述 GPT‑6 Astra 协助研究者完成一个格点 QCD 方向数学证明的过程，**实取全文通篇零百分数、零基准分**；非独立模型发布 |
+| `Our new blog for science`（2026-11-15） | OpenAI | 博客栏目上线公告，**实取全文零百分数**；产品/栏目更新 |
+| `Introducing ChatGPT Wallet`（2026-11-13） | OpenAI | 产品发布，无模型、无评测分值 |
+| `Daybreak Red is now available in AWS GovCloud (US-East)`（2026-11-04） | OpenAI | 既有模型（GPT‑5.6 Cyber Daybreak Red，已建档）的**云区上线公告**，实取全文零百分数 |
+| `Supporting research on AI and children's safety`（2026-11-12） | OpenAI | 研究资助与政策声明，实取全文零百分数 |
+| `Control Room: A central system to track and stop model workloads`（2026-11-09） | OpenAI | 内部基础设施公告，实取全文零百分数 |
+| `CodeRabbit scales agentic software development and ships 20x more`（2026-11-09） | OpenAI | **客户案例文章**（与前批 `openai-7d972df501d0` 同一判定）；文中「GPT‑6 Astra 捕获约 50% 问题」是客户方转述的估计值，不是厂商自报的基准分，不建行 |
+| `Opening the datasets behind our AI weather models`（2026-11-10） | Google | 数据集开放发布，非模型发布 |
+| `Anthropic launches roadshow for proposed initial public offering`（2026-11-10） | Anthropic | IPO 路演公告（已登记候选），非模型发布 |
+| `Releasing the full suite of application APIs`（2026-11-13） | DeepSeek | 开放既有 `deepseek-flash` 模型的 web search / file input / URL reading 等参数，模型本身早已在册 |
+| `tencent/Qwen3.8-27B-DSpine-b16`（2026-11-07） | 腾讯 | 投机解码 drafter 研究产物（同前批判定），非独立模型发布 |
+| `MiniMaxAI/MiniMax-H3-Image-PE`（2026-11-08） | MiniMax | H3-Image 的提示词扩展权重，与已建档 H3-Image 同源，官方无独立发布文与独立评测 |
+| HF 讨论帖 ×2 | Thinking Machines | 社区讨论帖，非官方发布文；讨论对象是既有量化衍生权重 |
+| GPT‑5.2 的「>11x 速度、<1% 成本」「错误率少 30%」等相对论断 | OpenAI | 相对倍数与相对降幅不是绝对基准分，不建行（写入 notes） |
+
+### 待人工核验
+
+本批 **58 条 evidence 全部为 verified、无数值缺口**：12 张 DOM 表格逐格机读，协议档位来自官方脚注明示。
+
+需要人工补的只有两处**非数值**缺口（不影响 evidence 状态）：
+
+1. **GPT‑5.2 发布页表 1「Mental health evaluations」的 0–1 量表定义**——页面未给出满分含义与判分细则（细节在 system card），本批按页面原值照录并在 notes 写明；若日后官方公布口径，可回填 `metric` 的更精确命名。
+2. **3 个新铸 benchmark id 的实体档案**——待官方公开题集与判分口径后补建（`data/benchmark-profile-backlog.json` 的棘轮机制要求新建实体必须带合规 profile，写不出有来源的档案就先让证据兜底页顶着）。
+
+本批**没有需要人工读图才能确认的行**，也没有 pending 行。
+
+### 门禁
+
+| 门禁 | 结果 |
+|---|---|
+| `node scripts/reconcile-coverage.mjs` | ✓ exit 0；候选自动收口，未决候选 0 |
+| `node scripts/validate-model-coverage.mjs` | ✓ exit 0 |
+| `node scripts/validate-data.mjs` | ✓ PASS — taxonomy 9 类 / vendors 18 / **benchmarks 510** / **releases 249（official 235）** / **evidence edges 4116**；profile 模板档案 155 个通过校验 |
+| `node --test tests/*.test.mjs` | ✓ **全绿 140/140**（含对照审计 undecided / stranded / orphans 三项均为 0、归档哈希一致性用例） |
+| `npm run build` | ✓ exit 0 — 书校验 + EPUB + 全站构建 + validate-site 全绿（1113 个 HTML / 41945 个内部引用链接检查、293 个时间轴 / 2332 个事件卡片时序单调性、155 个评测页档案模板渲染检查） |
+
+### 汇总
+
+- **新增 release**：1 个（**存量回填**：`openai/gpt-5-2`，58 条 evidence）
+- **新增 evidence**：58 条 = **58 verified** + 0 pending（GPT‑5.2 Thinking 43 / GPT‑5.2 Pro 12 / GPT‑5.2 Instant 3；覆盖 24 个不同 benchmark）
+- **新增 benchmark id**：3 个（`investment-banking-spreadsheet`、`chatgpt-answer-accuracy`、`openai-mental-health-safety`，均标 new-benchmark，兜底页已生成；本批**未建实体**）
+- **新增归档目录**：1 个（`models/2025-12-11-gpt-5-2/`），含 `page.html`（803,949 字节）+ `images/`（5 张本发布内容示例图）+ `index.md` + `manifest.json`（逐文件 sha256）
+- **新增厂商**：无
+- **候选数**：702 → **706**（入口扫描 +3，均按非模型发布排除；另主动登记 1 条已核验的 LifeVal 基准发布文）；general/vertical 未决候选 **0**
+- **检查点**：`last_scan_at=2026-11-15`；`last_max_release_date=2026-11-12`（**锚点只前进不回退**——本批最大发布日 2025-12-11 早于既有锚点，故不覆盖）；覆盖页窗口同步为 `2026-10-29 ~ 2026-11-15`
