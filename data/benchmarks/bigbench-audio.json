@@ -1,67 +1,652 @@
 {
   "id": "bigbench-audio",
   "name": "Big Bench Audio",
-  "full_name": null,
+  "full_name": "Big Bench Audio（大基准音频推理集，Artificial Analysis 出品）",
   "aliases": [
     "BBH-Audio",
-    "Big Bench Audio run"
+    "Big Bench Audio run",
+    "BBA"
   ],
   "status": null,
   "categories": [
     "multimodal",
     "reasoning"
   ],
-  "summary": "语音音频理解与推理评测集：给模型一段真实音频（含口语提问与环境声），回答其中的知识与推理问题",
-  "interpretation": "分数是准确率（百分比，越高越好），与 ASR 字错率完全不是一个东西——模型先把声音听对、再把答案想对，两个环节合成一个正确率。2026-09/2026-10 公开水位：Grok Voice 3.0 98.5%、Gemini 3.8 Live 97.7%、Grok Voice 2.0 97.2%、GPT-Live-1 (Astra) 90.1%。Gemini 3.8 Live 的 97.7% 在 xAI 表与 Google 自家发布页两处一致。同一基准也用来折算每任务运行成本（美元/任务）。",
+  "summary": "Artificial Analysis 出品的音频推理评测集：把 Big Bench Hard 里 4 类共 1,000 道文字推理题用 23 个合成语音念成音频文件，让模型听题、开口作答，再由裁判模型判定答案对错。它测的是「语音进来、语音出去」的端到端推理准确率，不是听写正确率。",
+  "interpretation": "高分说明模型在不看文字、只听音频的条件下仍能把这四类推理题做对，并且说出口的答案能被裁判判定为正确；它不说明模型听得准、说得自然，也不说明换到真实噪声、其他口音或多轮对话里同样可靠。当前官方榜单头部挤在 98.7%–99.7% 的约 1 个百分点内，头部内部的位次差异远小于「低于 90% 与高于 99%」的档位差；同一道题在 Text to Text 配置下能到 92%，在 Speech to Speech 配置下只有 66%，跨配置的数字不能排进同一张表。",
   "measures": [
-    "语音音频场景下的知识问答正确率",
-    "口语化提问与含噪音频的理解与推理"
+    {
+      "area": "Formal Fallacies（形式谬误）",
+      "focus": "听一段自然语言陈述，判断其中的结论能否从这些陈述逻辑推出。官方示例：关于 Glenna 与 Tamara 朋友关系的一段推理，问 Is the argument deductively valid or invalid?，该题官方答案为 invalid",
+      "share": "250 题 / 共 1,000 题",
+      "format": "二值判定（valid / invalid）",
+      "cite": [
+        "aa-methodology-speech@Speech Reasoning",
+        "hf-dataset-big-bench-audio"
+      ]
+    },
+    {
+      "area": "Navigate（导航）",
+      "focus": "听一串导航步骤，判断执行后是否回到起点。官方示例：Take 10 steps. Turn around. Take 4 steps. Take 6 steps. Turn around. 之后是否回到起点，示例题给出 Yes / No 两个选项",
+      "share": "250 题 / 共 1,000 题",
+      "format": "二值判定",
+      "cite": [
+        "aa-methodology-speech@Speech Reasoning",
+        "hf-blog-big-bench-audio"
+      ]
+    },
+    {
+      "area": "Object Counting（数数）",
+      "focus": "听一段物品清单，数出某一类物品的数量。官方示例：I have three blackberries, two strawberries, an apple, three oranges… How many fruits do I have?",
+      "share": "250 题 / 共 1,000 题",
+      "format": "数值作答",
+      "cite": [
+        "aa-methodology-speech@Speech Reasoning"
+      ]
+    },
+    {
+      "area": "Web of Lies（真假链）",
+      "focus": "听一串「谁在说谎」的陈述，判断最后一人的话是否为真。官方示例：Leda tells the truth. Alexis says Leda lies. Sal says Alexis lies… Does Gwenn tell the truth?",
+      "share": "250 题 / 共 1,000 题",
+      "format": "二值判定",
+      "cite": [
+        "aa-methodology-speech@Speech Reasoning"
+      ]
+    }
   ],
   "does_not_measure": [
-    "ASR 转写字符错误率",
-    "语音合成的自然度"
+    {
+      "text": "不测听写/转写准确率：作答音频会先用 Whisper 转写成文本，再交给裁判模型判定，模型不需要输出文字。",
+      "cite": [
+        "hf-blog-big-bench-audio@Evaluation Methodology"
+      ]
+    },
+    {
+      "text": "不测合成语音的自然度或音色相似度，音频只作为题干与答案的载体。",
+      "cite": [
+        "hf-dataset-big-bench-audio",
+        "hf-blog-big-bench-audio"
+      ]
+    },
+    {
+      "text": "不测视觉能力：选题时刻意排除了重度依赖视觉元素的类别。",
+      "cite": [
+        "hf-blog-big-bench-audio",
+        "hf-dataset-big-bench-audio@Dataset Creation"
+      ]
+    },
+    {
+      "text": "不测非英语、非美式/英式口音的鲁棒性：全部音频为英文合成语音。",
+      "cite": [
+        "hf-dataset-big-bench-audio@Discussion of Biases"
+      ]
+    }
   ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": "音频问答与推理题（第三方评测方整理）",
-    "public_sample": false
+    "sample_count": 1000,
+    "splits": [
+      "未划分训练/测试拆分：Hugging Face 上只有 train 一个 split，1,000 行"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "Big Bench Hard 文字题的音频化版本（多家厂商 TTS 合成语音）",
+    "public_sample": true,
+    "totals": "1,000 条音频题，来自 Big Bench Hard 的 4 个类别（各 250 题），全部为英文合成语音，Hugging Face 以 MIT 许可公开（1,000 行，总大小 319 MB）。",
+    "cite": [
+      "hf-dataset-big-bench-audio",
+      "aa-methodology-speech@Speech Reasoning"
+    ],
+    "construction": [
+      {
+        "k": "选题",
+        "text": "从 Big Bench Hard 里挑出适合音频评测的 4 类推理题，排除重度依赖符号、或需要靠拼写消歧的类别，并要求入选类别在文字设定下人类评分均值高于 80%、最高分达到 100%。",
+        "cite": [
+          "hf-dataset-big-bench-audio@Dataset Creation",
+          "hf-blog-big-bench-audio"
+        ]
+      },
+      {
+        "k": "文本处理",
+        "text": "Big Bench Hard 的文字题原文照抄，在每题末尾追加字符串 \". Answer the question\"，避免音频生成时漏读结尾的答案选项（原做法会把未读全的选项判为关键失败）。",
+        "cite": [
+          "hf-dataset-big-bench-audio@Dataset Creation"
+        ]
+      },
+      {
+        "k": "语音生成",
+        "text": "用 23 个语音配置生成音频，来自 OpenAI（HD/SD 各 6 个音色）、Microsoft Azure（8 个美/英音色）、Amazon Polly（3 个 Long Form 音色），生成时随机选择音色。",
+        "cite": [
+          "hf-dataset-big-bench-audio@Dataset Creation"
+        ]
+      },
+      {
+        "k": "质量校验",
+        "text": "把生成音频转写后与源文本计算归一化 Levenshtein 距离（1 表示完全一致），低于阈值 0.85 的全部人工复核；该流程标记了 35 个音频文件，复核后未发现与题面不符的情况。",
+        "cite": [
+          "hf-dataset-big-bench-audio@Dataset Creation"
+        ]
+      },
+      {
+        "k": "样本字段",
+        "text": "每条样本含 category、official_answer、file_name、id 四个字段，音频为 mp3 文件。",
+        "cite": [
+          "hf-dataset-big-bench-audio"
+        ]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "被测模型收到一段音频文件，需要生成一段音频作答。官方先把作答音频用 OpenAI Whisper 转成文本，再把候选答案、官方答案、原题一起交给裁判模型，让它判定 CORRECT 或 INCORRECT。Artificial Analysis 榜单上的 Big Bench Audio 分数在发布时使用 Anthropic Claude 3.5 Sonnet (Oct '24) 作裁判；v1.1 起换成 Claude Sonnet 4.6，v1.2 又更新了裁判模型与判分 harness（未披露换成哪个）。发布时的论文结果取三次独立评测的平均。",
+    "cite": [
+      "aa-methodology-speech@Speech Reasoning",
+      "hf-blog-big-bench-audio@Evaluation Methodology",
+      "aa-methodology-speech@Version History"
+    ],
+    "variants": [
+      {
+        "text": "同一份题集跑四种配置，分数不可混排：官方测 Speech to Speech（音频进、音频出）、Speech to Text（音频进、文字出）、Text to Speech（文字进、音频出）、Text to Text（文字进、文字出）。发布时 GPT-4o 系列三档为 Text to Text 92%、Text to Speech 74%、Speech to Speech 66%。",
+        "cite": [
+          "hf-blog-big-bench-audio@Evaluation Methodology",
+          "hf-blog-big-bench-audio@Results"
+        ]
+      },
+      {
+        "text": "裁判模型与分母定义变过两次，跨版本分数不可直接比：v1.0（2024-12 至 2026-03）用 Claude Sonnet 3.5，准确率按「非错误回答中答对的比例」计算，不惩罚不回答；v1.1（2026-03 至 2026-05）改用 Claude Sonnet 4.6，准确率改为 1,000 题中答对的数量，不回答也计入分母；v1.2（2026-05 至今）更新裁判模型与判分 harness，以更可靠地识别冗长回答中的正确答案。",
+        "cite": [
+          "aa-methodology-speech@Version History"
+        ]
+      },
+      {
+        "text": "榜单上的速度与成本不是本基准的准确率：Time to First Audio 是在 Big Bench Audio 题集上测的首音频平均时延；每任务成本按固定 40 题 Big Bench Audio 子集计算。",
+        "cite": [
+          "aa-methodology-speech@Speech Reasoning",
+          "aa-leaderboard-s2s",
+          "x-news-grok-voice-3"
+        ]
+      },
+      {
+        "text": "第三方论文用同一数据集但另一套口径：Step-Audio-R1 论文在 speech-to-text 设定下报 98.7%，在自建 speech-to-speech 设定下报 96.1%，与 Artificial Analysis 榜单的 speech-to-speech 口径不同源。",
+        "cite": [
+          "arxiv-step-audio-r1@Table 1",
+          "arxiv-step-audio-r1@Table 2"
+        ]
+      }
+    ]
   },
   "metrics": [
     {
       "id": "accuracy",
-      "name": "准确率",
+      "name": "Speech Reasoning 准确率（Big Bench Audio）",
+      "direction": "越高越好",
+      "description": "1,000 道音频推理题中被裁判模型判定为 CORRECT 的比例；v1.0 口径为「非错误回答中答对的比例」，v1.1 起为「1,000 题中答对的数量」。",
       "range": [
         0,
         100
       ],
       "unit": "percent",
-      "direction": "higher",
-      "aggregation": "mean"
+      "cite": [
+        "aa-methodology-speech@Speech Reasoning",
+        "aa-methodology-speech@Version History"
+      ]
     }
   ],
-  "versions": [],
-  "limitations": [
-    "题面以英语语音为主，中文与方言覆盖未知",
-    "由第三方组织评测，各厂商自报行的运行协议可能不同"
+  "versions": [
+    {
+      "id": "v1.0",
+      "date": "2024-12-20",
+      "label": "首次发布：1,000 题音频（四类各 250 题），裁判为 Claude Sonnet 3.5，准确率按「非错误回答中答对的比例」计算，不惩罚不回答",
+      "cite": [
+        "hf-blog-big-bench-audio",
+        "hf-dataset-big-bench-audio",
+        "aa-methodology-speech@Version History"
+      ]
+    }
   ],
-  "default_protocol": null,
-  "notes": "证据账本中 2 次引用；Google Gemini 3.8 Live 页与 xAI Grok Voice 3.0 页交叉印证同一份 Artificial Analysis 评测",
+  "limitations": [
+    {
+      "issue": "头部饱和，区分度接近耗尽",
+      "impact": "官方榜单前五名为 98.7%–99.7%，全部落在约 1 个百分点内；1 分以内的位次差异很可能来自裁判模型单次判定的波动，而不是能力差异。",
+      "severity": "高",
+      "response": "未见官方回应；官方照常公布榜单与版本史。",
+      "reader": "比较头部模型时不要解读 1 个百分点以内的名次差异；本页把 98%–99% 区间标为低区分度区。",
+      "cite": [
+        "aa-leaderboard-s2s@Frequently Asked Questions"
+      ]
+    },
+    {
+      "issue": "口径不可比：四种配置、两个裁判版本、两套分母",
+      "impact": "Text to Text 92% 与 Speech to Speech 66% 可以同时成立；同一个模型在 v1.0 与 v1.1 下也会因为「不回答是否计入分母」而系统性偏移。",
+      "severity": "高",
+      "response": "官方方法论页公开了四种配置的定义与版本史，并在 v1.2 更新了判分 harness。",
+      "reader": "看到任何 Big Bench Audio 数字，先确认配置、基准版本与裁判模型，再横向比较。",
+      "cite": [
+        "aa-methodology-speech@Version History",
+        "hf-blog-big-bench-audio@Results"
+      ]
+    },
+    {
+      "issue": "第三方口径与官方榜单口径混用",
+      "impact": "Step-Audio-R1 论文在同一数据集上报出 speech-to-text 98.7% 与自建 speech-to-speech 96.1%，与 Artificial Analysis 榜单数字不同源；把这些数字排进同一张表会得出错误结论。",
+      "severity": "中",
+      "response": "论文未说明其裁判与配置与 Artificial Analysis 一致。",
+      "reader": "区分「Artificial Analysis 榜单口径」与「论文自报口径」，后者只适合看同一论文内的趋势。",
+      "cite": [
+        "arxiv-step-audio-r1@Table 1",
+        "arxiv-step-audio-r1@Table 2"
+      ]
+    },
+    {
+      "issue": "题库公开，存在训练污染风险",
+      "impact": "1,000 条音频与官方答案在 Hugging Face 公开（MIT 许可），模型可能见过题目；本基准没有隐藏测试集，也不公布留出集。",
+      "severity": "中",
+      "response": "未见官方回应。",
+      "reader": "把 99% 以上的分数当作「见过题仍会答错」的下界参考，而不是纯能力证据。",
+      "cite": [
+        "hf-dataset-big-bench-audio"
+      ]
+    },
+    {
+      "issue": "语言与口音覆盖单一",
+      "impact": "全部音频为英文合成语音，以美式与英式口音为主；对其他语言、口音、语速与真实噪声环境的表现无法从本基准推断。",
+      "severity": "中",
+      "response": "官方在数据集卡「Discussion of Biases」明确披露，并提示过拟合本基准可能忽视低资源语言与口音。",
+      "reader": "不要把本基准分数迁移到中文或带噪场景。",
+      "cite": [
+        "hf-dataset-big-bench-audio@Discussion of Biases"
+      ]
+    },
+    {
+      "issue": "裁判是 LLM，判定本身可能出错",
+      "impact": "答案对错由裁判模型判定，裁判误判会直接进入分数；v1.0 口径下「不回答」不扣分，可能被静默失败或拒答的模型抬高分数。",
+      "severity": "中",
+      "response": "v1.1 起把未回答计入分母，v1.2 更新 harness 以识别冗长回答中的正确答案。",
+      "reader": "跨版本比较时注意分母定义；对拒答率高的模型，v1.0 数字偏乐观。",
+      "cite": [
+        "aa-methodology-speech@Version History",
+        "hf-blog-big-bench-audio@Evaluation Methodology"
+      ]
+    }
+  ],
+  "notes": "证据账本引用覆盖 8 个来源；Artificial Analysis 榜单、xAI 发布页与 Google 发布页对 Gemini 3.8 Live 的 97.7% 互相印证，Step-Audio-R1 论文的 98.7% 是另一套 speech-to-text 口径，不可与本榜单混排。",
   "official_sources": [
     {
-      "kind": "site",
+      "kind": "leaderboard",
+      "url": "https://artificialanalysis.ai/speech-to-speech"
+    },
+    {
+      "kind": "docs",
+      "url": "https://artificialanalysis.ai/methodology/speech-to-speech-benchmarking"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/ArtificialAnalysis/big_bench_audio"
+    },
+    {
+      "kind": "announcement",
       "url": "https://x.ai/news/grok-voice-3"
     },
     {
-      "kind": "site",
-      "url": "https://blog.google/technology/ai/gemini-3-8-live/"
+      "kind": "announcement",
+      "url": "https://blog.google/innovation-and-ai/models-and-research/gemini-models/gemini-3-8-live-gemini-3-8-live-extended-thinking"
     }
   ],
   "related_benchmarks": [
     "aa-speech-to-speech",
     "tau-voice"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-10-19"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-13",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      {
+        "id": "hf-blog-big-bench-audio",
+        "kind": "blog",
+        "title": "The Big Bench Audio Dataset — Evaluating Audio Reasoning（Hugging Face 博客，2024-12-20）",
+        "url": "https://huggingface.co/blog/big-bench-audio-release",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "hf-dataset-big-bench-audio",
+        "kind": "dataset",
+        "title": "ArtificialAnalysis/big_bench_audio · Datasets at Hugging Face",
+        "url": "https://huggingface.co/datasets/ArtificialAnalysis/big_bench_audio",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "aa-methodology-speech",
+        "kind": "docs",
+        "title": "Speech to Speech Benchmarking Methodology | Artificial Analysis",
+        "url": "https://artificialanalysis.ai/methodology/speech-to-speech-benchmarking",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "aa-leaderboard-s2s",
+        "kind": "leaderboard",
+        "title": "Speech to Speech Models and Providers Analysis | Artificial Analysis",
+        "url": "https://artificialanalysis.ai/speech-to-speech",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "x-news-grok-voice-3",
+        "kind": "announcement",
+        "title": "Grok Voice 3 — xAI News",
+        "url": "https://x.ai/news/grok-voice-3",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "blog-gemini-3-8-live",
+        "kind": "announcement",
+        "title": "Introducing Gemini 3.8 Live and 3.8 Live Extended Thinking — Google 博客",
+        "url": "https://blog.google/innovation-and-ai/models-and-research/gemini-models/gemini-3-8-live-gemini-3-8-live-extended-thinking",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "gemini-api-changelog",
+        "kind": "docs",
+        "title": "Gemini API 更新日志（changelog）",
+        "url": "https://ai.google.dev/gemini-api/docs/changelog",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "arxiv-step-audio-r1",
+        "kind": "paper",
+        "title": "Step-Audio-R1（arXiv:2511.15848v2，StepFun-Audio Team）",
+        "url": "https://arxiv.org/pdf/2511.15848v2",
+        "accessed": "2026-11-13"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Artificial Analysis",
+        "cite": [
+          "hf-blog-big-bench-audio",
+          "aa-methodology-speech@Speech Reasoning"
+        ]
+      },
+      "first_release": {
+        "v": "2024-12-20（Hugging Face 发布博客当日，数据集卡同步上线）",
+        "cite": [
+          "hf-blog-big-bench-audio",
+          "hf-dataset-big-bench-audio"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "hf-dataset-big-bench-audio",
+        "aa-methodology-speech@Speech Reasoning",
+        "hf-blog-big-bench-audio"
+      ],
+      "interpretation": [
+        "aa-leaderboard-s2s@Frequently Asked Questions",
+        "aa-methodology-speech@Speech Reasoning",
+        "hf-blog-big-bench-audio@Results"
+      ]
+    },
+    "problem": {
+      "text": "原生「语音进、语音出」的模型出现后，缺少一个能回答「省掉文字这一层，模型会不会变笨」的基准：已有的 Big Bench Hard 只有文字版，直接念成音频又会踩到符号题与拼写消歧题的坑。Big Bench Audio 用 23 个合成语音把 4 类适合音频的推理题做成 1,000 条音频，并同时测 Speech to Speech / Speech to Text / Text to Speech / Text to Text 四种配置，把「听」与「说」各自的损耗分开量化。",
+      "cite": [
+        "hf-blog-big-bench-audio",
+        "hf-dataset-big-bench-audio@Dataset Creation"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机 / 人类基线",
+        "value": "论文未给出（随机基线未报告）",
+        "note": "官方没有报告整卷随机基线。可参考的是：入选的 4 个类别在文字设定下人类评分均值高于 80%、最高分 100%；形式谬误、导航、真假链三类是二值判定，数数题要求给出具体数目。",
+        "cite": [
+          "hf-dataset-big-bench-audio@Dataset Creation",
+          "aa-methodology-speech@Speech Reasoning"
+        ]
+      },
+      {
+        "label": "发布时最好成绩（2024-12）",
+        "value": "66%（Speech to Speech，GPT-4o Realtime Preview Oct '24）",
+        "note": "同题 Text to Text 配置 92%、Text to Speech 74%；官方把这约 26 个百分点的落差称为 speech reasoning gap。",
+        "cite": [
+          "hf-blog-big-bench-audio@Results"
+        ]
+      },
+      {
+        "label": "官方榜单当前最高",
+        "value": "99.7%（StepAudio 3 Realtime）",
+        "note": "榜单共 44 个模型，其中 37 个有 Speech Reasoning 成绩；第二为 Qwen Audio 3.0 Realtime Plus 99.2%，第三 Phonic 1 (High) 98.9%。",
+        "cite": [
+          "aa-leaderboard-s2s@Frequently Asked Questions"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      },
+      {
+        "label": "口径跨度参考线（非官方上限）",
+        "value": "59.1%–98.7%",
+        "note": "同一数据集在不同配置与裁判下能拉开近 40 个百分点：Step-Audio-R1 论文的 speech-to-text 表中，Step-Audio 2 为 59.1%、Step-Audio-R1 为 98.7%；其自建 speech-to-speech 表中 Step-Audio-R1 Realtime 为 96.1%。差距主要来自口径，不是能力。",
+        "cite": [
+          "arxiv-step-audio-r1@Table 1",
+          "arxiv-step-audio-r1@Table 2"
+        ]
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 Big Bench Audio 当成语音识别（ASR）评测：它只判答案对错，作答音频先被 Whisper 转写成文本再交给裁判模型，模型不需要输出文字。",
+        "cite": [
+          "hf-blog-big-bench-audio@Evaluation Methodology"
+        ]
+      },
+      {
+        "text": "把 speech-to-speech 分数与 speech-to-text / text-to-text 分数排进同一张表：同题四种配置能差 26 个百分点以上，官方测四种配置就是为了量化这个差。",
+        "cite": [
+          "hf-blog-big-bench-audio@Results",
+          "hf-blog-big-bench-audio@Evaluation Methodology"
+        ]
+      },
+      {
+        "text": "把厂商发布页的分数与榜单最高分直接对比：xAI 与 Google 报的 98.5% / 97.7% 是特定推理档位（Grok Voice 3.0、Gemini 3.8 Live Ext. Thinking High）下的数字，榜单最高 99.7% 来自 StepAudio 3 Realtime，三者不是同一次横评。",
+        "cite": [
+          "x-news-grok-voice-3",
+          "blog-gemini-3-8-live",
+          "aa-leaderboard-s2s@Frequently Asked Questions"
+        ]
+      },
+      {
+        "text": "把榜单的「速度」「成本」当成本基准的分数：Time to First Audio 是在 Big Bench Audio 题集上测的首音频时延，每任务成本按固定 40 题子集计算，两者都不是准确率。",
+        "cite": [
+          "aa-methodology-speech@Speech Reasoning",
+          "aa-leaderboard-s2s",
+          "x-news-grok-voice-3"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "Artificial Analysis（独立模型评测机构，联系方式 info@artificialanalysis.ai）",
+        "cite": [
+          "hf-blog-big-bench-audio",
+          "hf-dataset-big-bench-audio"
+        ]
+      },
+      {
+        "k": "数据集策展人",
+        "v": "Micah Hill-Smith、George Cameron、Will Bosler",
+        "cite": [
+          "hf-dataset-big-bench-audio"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2024-12-20 发布（v1.0）→ 2026-03 v1.1 换裁判并改分母 → 2026-05 v1.2 更新判分 harness；Artificial Analysis Speech to Speech Index 2026-06 上线（Big Bench Audio 占 33.3%），2026-08 v2.0 起占 25%",
+        "cite": [
+          "aa-methodology-speech@Version History",
+          "hf-blog-big-bench-audio"
+        ]
+      },
+      {
+        "k": "上游数据",
+        "v": "Big Bench Hard（Suzgun et al., 2022，arXiv:2210.09261）与 BIG-bench（Srivastava et al., 2022，arXiv:2206.04615）",
+        "cite": [
+          "hf-dataset-big-bench-audio"
+        ]
+      },
+      {
+        "k": "数据与代码位置",
+        "v": "Hugging Face 数据集 ArtificialAnalysis/big_bench_audio，MIT 许可，1,000 行、总大小 319 MB，最近一月下载 15,072 次",
+        "cite": [
+          "hf-dataset-big-bench-audio"
+        ]
+      },
+      {
+        "k": "榜单与方法论",
+        "v": "artificialanalysis.ai/speech-to-speech 的 Speech Reasoning 板块，配套方法论页 artificialanalysis.ai/methodology/speech-to-speech-benchmarking",
+        "cite": [
+          "aa-leaderboard-s2s",
+          "aa-methodology-speech@Speech Reasoning"
+        ]
+      },
+      {
+        "k": "模型侧关联事件",
+        "v": "Gemini 3.8 Live 与 Gemini 3.8 Live Extended Thinking 于 2026-09-15 GA；Google 发布页称 Extended Thinking 档在 Big Bench Audio 上得 97.7%",
+        "cite": [
+          "gemini-api-changelog",
+          "blog-gemini-3-8-live"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-13",
+        "columns": [
+          "来源",
+          "模型",
+          "Big Bench Audio 准确率",
+          "口径 / 配置"
+        ],
+        "rows": [
+          [
+            "官方榜单 FAQ",
+            "StepAudio 3 Realtime",
+            "99.7%",
+            "Speech to Speech；榜单最高"
+          ],
+          [
+            "官方榜单 FAQ",
+            "Qwen Audio 3.0 Realtime Plus",
+            "99.2%",
+            "同上"
+          ],
+          [
+            "官方榜单 FAQ",
+            "Phonic 1 (High)",
+            "98.9%",
+            "同上"
+          ],
+          [
+            "官方榜单 FAQ",
+            "Eleven Realtime v1 Max",
+            "98.8%",
+            "同上"
+          ],
+          [
+            "官方榜单 FAQ",
+            "Qwen3.5 Omni Plus Realtime",
+            "98.7%",
+            "同上"
+          ],
+          [
+            "xAI 发布页",
+            "Grok Voice 3.0",
+            "98.5%",
+            "Speech to Speech；Artificial Analysis 2026-10-13 数据"
+          ],
+          [
+            "xAI 发布页",
+            "Gemini 3.8 Live (Ext. Thinking, High)",
+            "97.7%",
+            "同上"
+          ],
+          [
+            "xAI 发布页",
+            "Grok Voice 2.0",
+            "97.2%",
+            "同上"
+          ],
+          [
+            "xAI 发布页",
+            "GPT-Live-1 (Astra, Medium)",
+            "90.1%",
+            "同上"
+          ],
+          [
+            "Google 发布页",
+            "Gemini 3.8 Live Extended Thinking",
+            "97.7%",
+            "Speech to Speech"
+          ],
+          [
+            "HF 发布博客（2024-12-20）",
+            "GPT-4o Realtime Preview (Oct '24)",
+            "66%",
+            "Speech to Speech；发布时最好"
+          ],
+          [
+            "HF 发布博客（2024-12-20）",
+            "GPT-4o 系列（Text to Speech 档）",
+            "74%",
+            "Text to Speech；中间档"
+          ],
+          [
+            "HF 发布博客（2024-12-20）",
+            "GPT-4o (Aug '24)",
+            "92%",
+            "Text to Text；同题文字档"
+          ],
+          [
+            "Step-Audio-R1 论文 Table 2",
+            "Step-Audio-R1 Realtime",
+            "96.1%",
+            "论文自建 Speech to Speech 口径"
+          ],
+          [
+            "Step-Audio-R1 论文 Table 1",
+            "Step-Audio-R1",
+            "98.7%",
+            "论文 Speech to Text 口径"
+          ],
+          [
+            "Step-Audio-R1 论文 Table 1",
+            "Gemini 2.5 Pro",
+            "96.1%",
+            "论文 Speech to Text 口径"
+          ],
+          [
+            "Step-Audio-R1 论文 Table 1",
+            "Gemini 3 Pro",
+            "92.1%",
+            "论文 Speech to Text 口径"
+          ],
+          [
+            "Step-Audio-R1 论文 Table 1",
+            "Step-Audio 2",
+            "59.1%",
+            "论文 Speech to Text 口径"
+          ]
+        ]
+      },
+      "cite": [
+        "aa-leaderboard-s2s@Frequently Asked Questions",
+        "x-news-grok-voice-3",
+        "blog-gemini-3-8-live",
+        "hf-blog-big-bench-audio@Results",
+        "arxiv-step-audio-r1@Table 1",
+        "arxiv-step-audio-r1@Table 2"
+      ]
+    }
+  }
 }
