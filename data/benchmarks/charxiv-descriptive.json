@@ -1,70 +1,454 @@
 {
   "id": "charxiv-descriptive",
   "name": "CharXiv (Descriptive)",
-  "full_name": "CharXiv: Charting Gaps in Realistic Chart Understanding in Multimodal Large Language Models",
-  "aliases": [
-    "CharXiv-DQ",
-    "CharXiv descriptive split"
-  ],
-  "status": null,
+  "full_name": "CharXiv: Charting Gaps in Realistic Chart Understanding in Multimodal LLMs",
+  "aliases": [],
+  "status": "active",
   "categories": [
     "multimodal"
   ],
-  "summary": "普林斯顿 NLP CharXiv 的 descriptive（描述性问答）子集：真实 arXiv 论文图表上的事实读图题",
-  "interpretation": "描述性读图（读数值/趋势/可答性判断，不要求跨元素综合推理），准确率越高越好；与 reasoning 子集（charxiv-reasoning）分开计分——Seed 2.0 页 InfoGraphics 组读 94.5，头部已近饱和，区分度主要在 reasoning 子集。",
+  "summary": "CharXiv 的描述性问答子集：2,323 张从 arXiv 预印本里人工挑出的真实科学图表，每张配 4 道读图题（其中 1 道故意不可答），共 9,292 道。题目只要求读出标题、坐标轴、图例、刻度、数值范围这类基本元素，不要求跨元素综合推理。公开的验证集是 1,000 张图、4,000 道题。",
+  "interpretation": "分数是 0–100 的准确率，越高越好，由 GPT-4o 裁判从回答里抽出答案后做二元判定，衡量的是「读准没有」而不是推理深度。论文发布时 GPT-4o 拿 84.45，比人类 92.10 低 7.65 个百分点；2025 年官方榜单上 o3 (high) 已到 95.00、反超人类。也就是说这个子集对前沿模型已接近够用，差距主要要看 reasoning 子集；另外官方只公开验证集答案，测试集无法自测。",
   "measures": [
-    "真实学术图表的单点事实读取",
-    "对图表不可回答问题的判别力"
+    {
+      "area": "信息提取（information extraction）",
+      "focus": "读出图表的基本元素：图内文字与数字、通用文字与数字、标题、坐标轴标签、连续图例、最大值、数值范围、左右/高低边界刻度",
+      "share": "未披露",
+      "format": "短答案：单个数值、标签名或几个词的短语",
+      "cite": [
+        "paper@§3.2",
+        "paper@Figure 4",
+        "paper@App. L.1"
+      ]
+    },
+    {
+      "area": "枚举（enumeration）",
+      "focus": "数出图表里同类元素有多少个：图里的数字个数、通用数字个数、线条数、标签数",
+      "share": "未披露",
+      "format": "整数计数",
+      "cite": [
+        "paper@§3.2",
+        "paper@Figure 4"
+      ]
+    },
+    {
+      "area": "模式识别（pattern recognition）",
+      "focus": "判断子图布局是几行几列、图里有没有相交的线条",
+      "share": "未披露",
+      "format": "「n by m」行列格式，或 yes / no",
+      "cite": [
+        "paper@§3.2",
+        "paper@Figure 4",
+        "paper@App. L.1"
+      ]
+    },
+    {
+      "area": "计数（counting）",
+      "focus": "数离散标签的个数，以及所有坐标轴上显式标注刻度的总数（含坐标轴跨多个子图共享的情况）",
+      "share": "未披露",
+      "format": "整数计数",
+      "cite": [
+        "paper@§3.2",
+        "paper@Figure 4",
+        "paper@App. L.1"
+      ]
+    },
+    {
+      "area": "组合性（compositionality）",
+      "focus": "把多个子图、多条坐标轴的信息合起来才能答的题，是描述题里最依赖跨子图理解的一组",
+      "share": "未披露",
+      "format": "整数计数（跨全部坐标轴的显式标注刻度总数）",
+      "cite": [
+        "paper@§3.2",
+        "paper@Figure 4",
+        "paper@App. L.1"
+      ]
+    }
   ],
   "does_not_measure": [
-    "跨视觉元素的综合推理（reasoning 子集）",
-    "自然图像理解"
+    {
+      "text": "跨视觉元素的综合推理（比较、计算、趋势外推那类题走 reasoning 子集，单独计分）",
+      "cite": [
+        "site@首页",
+        "dataset@Dataset Card"
+      ]
+    },
+    {
+      "text": "自然图像、示意图等非图表视觉内容（管线第一步就把非图表图筛掉了）",
+      "cite": [
+        "paper@§3.1"
+      ]
+    },
+    {
+      "text": "图表之外的领域知识（论文举例：把图例里的缩写映射到具体算法需要外部知识）",
+      "cite": [
+        "paper@§2"
+      ]
+    }
   ],
   "dataset": {
-    "sample_count": null,
+    "sample_count": 9292,
     "splits": [
-      "descriptive（描述题）"
+      "验证集：1,000 张图 / 4,000 道描述题（答案公开）",
+      "测试集：1,323 张图（答案置 null，官方不公开）"
     ],
     "languages": [
       "en"
     ],
-    "source_type": "real-world（arXiv 论文图表）",
-    "public_sample": true
+    "source_type": "real-world（arXiv 预印本真实图表，非模板生成）",
+    "public_sample": true,
+    "totals": "2,323 张图 × 4 道描述题 = 9,292 题，其中 2,323 题（25%）标注为不可答；描述题模板共 19 种，归入 5 组。验证集 1,000 张图（4,000 题）答案公开，测试集 1,323 张图答案不公开。论文图 4 按答案类型逐项给出题量与占比（如 text in chart 1,044 题占 45%、max value 724 题占 7.8%、human-written 1,378 题占 59.3%），但五个分组的组级题量论文没有直接给出，故上表占比记为未披露。",
+    "cite": [
+      "paper@Table 2",
+      "paper@§3.2",
+      "paper@§1",
+      "paper@Figure 4",
+      "paper@§1 脚注 4"
+    ],
+    "construction": [
+      {
+        "k": "取图范围",
+        "text": "抓取 2020 年 1 月到 2023 年 9 月八个学科的全部 arXiv 预印本，从源文件里抽图，统一重渲染成高分辨率 JPEG，长边缩到 1024 像素。",
+        "cite": [
+          "paper@§3.1"
+        ]
+      },
+      {
+        "k": "筛掉非图表",
+        "text": "先用预训练 SigLIP 视觉编码器做视觉预筛：候选图要与 MathVista 已有图表的平均图像 embedding 余弦相似度 ≥ 0.65，目的是提高视觉多样性——arXiv 源文件里大多数图是示意图和自然图像，不是图表。",
+        "cite": [
+          "paper@§3.1"
+        ]
+      },
+      {
+        "k": "人工精选与去重",
+        "text": "每个学科每年从预筛结果里随机抽 750 张候选交给人工挑选；再删掉与其他候选两两余弦相似度 ≥ 0.95 的图，以及不清晰或标注不清的图。四步管线走完共 2,323 张。",
+        "cite": [
+          "paper@§3.1"
+        ]
+      },
+      {
+        "k": "描述题模板",
+        "text": "共设计 19 个描述题模板，归入信息提取、枚举、模式识别、计数、组合性五组；每张图配 4 道描述题，其中 1 道故意设计成不可答。",
+        "cite": [
+          "paper@§3.2"
+        ]
+      },
+      {
+        "k": "人工校验",
+        "text": "题目来源为人工撰写 1,378 题（59.3%）、GPT 启发 497 题（21.4%）、GPT 生成 448 题（19.3%）；所有图表和题目都经过人工挑选、整理与核验。",
+        "cite": [
+          "paper@Figure 4",
+          "site@首页"
+        ]
+      },
+      {
+        "k": "可答性标注",
+        "text": "9,292 道描述题里 2,323 道（25%）标注为不可答；不可答题要求模型明确回答「不适用」才能拿到分。",
+        "cite": [
+          "paper@Figure 4",
+          "paper@App. L.2"
+        ]
+      }
+    ]
   },
   "metrics": [
     {
       "id": "accuracy",
-      "name": "Accuracy",
-      "range": [0, 100],
+      "name": "描述题准确率",
+      "direction": "越高越好",
+      "description": "GPT-4o 裁判判定回答与标准答案一致的题目占比；标准答案为「不适用」的题必须回答不适用才算对",
+      "range": [
+        0,
+        100
+      ],
       "unit": "percent",
-      "direction": "higher",
-      "aggregation": "mean"
+      "cite": [
+        "paper@§3.3",
+        "paper@App. L.2"
+      ]
+    },
+    {
+      "id": "inex-accuracy",
+      "name": "信息提取组准确率（INEX）",
+      "direction": "越高越好",
+      "description": "信息提取组的逐题准确率，官网榜单与论文表格都按组单列这一列",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "leaderboard@val_result.csv",
+        "paper@Table 3"
+      ]
+    },
+    {
+      "id": "enum-accuracy",
+      "name": "枚举组准确率（ENUM）",
+      "direction": "越高越好",
+      "description": "枚举组的逐题准确率",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "leaderboard@val_result.csv",
+        "paper@Table 3"
+      ]
+    },
+    {
+      "id": "patt-accuracy",
+      "name": "模式识别组准确率（PATT）",
+      "direction": "越高越好",
+      "description": "模式识别组的逐题准确率",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "leaderboard@val_result.csv",
+        "paper@Table 3"
+      ]
+    },
+    {
+      "id": "cntg-accuracy",
+      "name": "计数组准确率（CNTG）",
+      "direction": "越高越好",
+      "description": "计数组的逐题准确率",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "leaderboard@val_result.csv",
+        "paper@Table 3"
+      ]
+    },
+    {
+      "id": "comp-accuracy",
+      "name": "组合性组准确率（COMP）",
+      "direction": "越高越好",
+      "description": "组合性组的逐题准确率，论文发布时人类 92.86 而 GPT-4o 只有 59.82，是描述题里差距最大的一组",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "leaderboard@val_result.csv",
+        "paper@Table 3"
+      ]
     }
   ],
+  "default_protocol": {
+    "raw": "零样本评测：每类题型配一套自然语言指令，不给示例；题目带多子图时会在问题前加「第 m 行第 n 列子图」前缀。判分不用精确匹配，由 GPT-4o 从模型回答里抽出最终答案，与标准答案比对后给 0/1 二元分；标准答案是「不适用」时，模型必须明确回答不适用才拿 1 分。官网榜单口径与此一致，全部基于验证集。",
+    "cite": [
+      "site@首页",
+      "paper@§3.3",
+      "paper@App. L.2"
+    ],
+    "variants": [
+      {
+        "text": "验证集 vs 测试集：论文表格和官网榜单都只报验证集 1,000 张图的成绩，测试集 1,323 张图的答案被官方置空，外部无法自行复现测试集分数。",
+        "cite": [
+          "site@首页",
+          "paper@§1 脚注 4",
+          "repo@README Data"
+        ]
+      },
+      {
+        "text": "输入分辨率门槛：论文只评能处理 ≥ 448×448 输入、且在 MathVista testmini 上拿到至少 36 分的通用多模态大模型；成绩受输入分辨率约束的模型在论文表格里用星号标出，不宜与不受限的模型直接比。",
+        "cite": [
+          "paper@§4.1",
+          "paper@Table 3 注"
+        ]
+      },
+      {
+        "text": "裁判版本绑定：答案抽取与 0/1 判定全部由 GPT-4o 完成，判分规则见论文附录 L.2，因此分数与这个裁判的判定标准绑定。",
+        "cite": [
+          "paper@§3.3",
+          "paper@App. L.2"
+        ]
+      },
+      {
+        "text": "榜单时间截面：官网榜单最新收录的是 2025 年前沿模型（o3 (high)、o4 mini (high)、o1 (high)、Qwen2.5-VL 72B、Doubao 1.5 Pro 等），更晚发布的模型没有官方成绩，横向比较要看清是不是同一批模型。",
+        "cite": [
+          "leaderboard@val_result.csv"
+        ]
+      }
+    ]
+  },
   "versions": [
     {
-      "id": "v1",
-      "label": "CharXiv（NeurIPS 2024）",
-      "note": "本实体只对应 descriptive 子集；reasoning 子集另算"
+      "id": "arxiv-v1",
+      "date": "2024-06-26",
+      "label": "arXiv v1 发布（cs.CL），论文报告 2,323 张图 / 9,292 道描述题",
+      "cite": [
+        "paper@v1 页眉",
+        "paper@§1"
+      ]
+    },
+    {
+      "id": "pipeline-v1",
+      "date": "2024-07-24",
+      "label": "完整评测管线 v1.0 发布",
+      "cite": [
+        "repo@README News"
+      ]
+    },
+    {
+      "id": "neurips-2024",
+      "date": "2024-10-10",
+      "label": "被 NeurIPS 2024 Datasets & Benchmarks Track 接收，同月入选 NeurIPS 2024 Multimodal Algorithmic Reasoning Workshop 并作 spotlight",
+      "cite": [
+        "repo@README News"
+      ]
+    },
+    {
+      "id": "leaderboard-2024-12",
+      "date": "2024-12-25",
+      "label": "榜单更新，加入 o1、Qwen2-VL、Pixtral、InternVL 2.5、Llama 3.2 Vision、NVLM、Molmo、Llava OneVision、Phi 3.5 等",
+      "cite": [
+        "repo@README News"
+      ]
+    },
+    {
+      "id": "frontier-adoption",
+      "date": "2025-04-14",
+      "label": "被 GPT-4.1、Qwen2.5-VL、InternVL2.5、Doubao-1.5-pro 等前沿模型评测采用",
+      "cite": [
+        "repo@README News"
+      ]
     }
   ],
   "limitations": [
-    "图表全部来自 arXiv，领域分布偏学术"
-  ],
-  "default_protocol": null,
-  "notes": "与 charxiv-reasoning 同源分拆；Seed 2.0 页 InfoGraphics 组行 CharXiv-DQ",
-  "official_sources": [
     {
-      "kind": "paper",
-      "url": "https://arxiv.org/abs/2406.18521"
+      "issue": "人类参考线本身不高（描述题 92.10）",
+      "impact": "论文报告人类在描述题上只有 92.10 准确率，意味着约 8% 的题连人都答不对；模型分数越接近这条线，模型间差距越难和人类标注、自动判分的噪声分开。",
+      "severity": "高",
+      "response": "论文把这归因于自动判分出问题或人类受试者失误，但未给出修正后的分数；未见官方回应。",
+      "reader": "92.10 不是满分线，o3 (high) 的 95.00 已经越过它，但越过人类线不等于题目被完全做对。",
+      "cite": [
+        "paper@§5 Conclusion",
+        "leaderboard@val_result.csv"
+      ]
     },
+    {
+      "issue": "判分依赖 GPT-4o 单裁判",
+      "impact": "答案抽取与 0/1 判定都由 GPT-4o 完成，25% 的题标准答案是「不适用」，判定口径直接影响分数；换裁判或换提示词可能改变结果。",
+      "severity": "中",
+      "response": "论文在附录 L.2 写明判分规则，仓库放出完整评测管线（v1.0），但未报告裁判一致性或更换裁判的对照。",
+      "reader": "比较不同来源的 CharXiv 分数时，先确认裁判模型和提示词是否一致。",
+      "cite": [
+        "paper@§3.3",
+        "paper@App. L.2",
+        "repo@README News"
+      ]
+    },
+    {
+      "issue": "四分之一题目故意不可答",
+      "impact": "每张图 4 道题里有 1 道（共 2,323 题，25%）设计成不可答，考的是模型会不会说「不适用」；把它当普通读图题准备会系统性丢分。",
+      "severity": "中",
+      "response": "判分规则明确要求回答「不适用」才得分，数据集卡也写明每图 4 题中 3 可答 1 不可答。",
+      "reader": "报「读图准确率」时要说清这 25% 是否包含在内。",
+      "cite": [
+        "paper@§3.2",
+        "paper@App. L.2",
+        "dataset@Dataset Card"
+      ]
+    },
+    {
+      "issue": "测试集答案不公开",
+      "impact": "1,323 张测试图的标准答案被置 null，外部只能自测验证集，官方榜单也只报验证集成绩；测试集上发生了什么无法独立核验。",
+      "severity": "中",
+      "response": "论文说明这是为了防止数据泄漏，与 MathVista、MMMU 的做法一致；官方未提供私有测试通道。",
+      "reader": "看到「CharXiv 分数」时默认它是验证集口径。",
+      "cite": [
+        "paper@§1 脚注 4",
+        "repo@README Data"
+      ]
+    },
+    {
+      "issue": "图表来源单一：arXiv 预印本",
+      "impact": "2,323 张图全部来自 2020-01 至 2023-09 八个学科的 arXiv 预印本，学术图表之外的类型（财报、仪表盘、信息图）没有覆盖，管线还明确剔除了非图表图。",
+      "severity": "中",
+      "response": "未见官方扩展计划；CharXiv 的定位就是学术图表评测。",
+      "reader": "不要把 CharXiv 成绩外推到任意图表理解场景。",
+      "cite": [
+        "paper@§3.1"
+      ]
+    },
+    {
+      "issue": "榜单时间截面滞后",
+      "impact": "官网榜单最新条目是 2025 年前沿模型，之后发布的模型没有官方成绩；论文表格停留在 2024 年的模型集合，两张表混排会高估老模型的相对位置。",
+      "severity": "中",
+      "response": "仓库维护者按版本节奏更新榜单，最近两次集中更新是 2024-12-25 与 2025-04-14；本站核验时未见更晚更新。",
+      "reader": "看附录 B 时注意区分「论文 Table 3」和「官网榜单」两个来源，个别行只填了 reasoning 列、没有描述题分数。",
+      "cite": [
+        "leaderboard@val_result.csv",
+        "repo@README News"
+      ]
+    },
+    {
+      "issue": "已披露的标注错误落在 reasoning 子集",
+      "impact": "数据集卡 Erratum 记录 0.jpg 的 reasoning 答案标错（社区用户 linus106 在 issue #2 中发现）；描述题部分未见同类勘误。",
+      "severity": "低",
+      "response": "官方在数据集卡 Erratum 中公开记录。",
+      "reader": "同一实体同时覆盖 descriptive / reasoning 两个子集，看到 0.jpg 相关讨论时注意区分是哪个子集。",
+      "cite": [
+        "dataset@Dataset Erratum"
+      ]
+    },
+    {
+      "issue": "使用许可受限",
+      "impact": "数据集卡明确只允许用于评测模型，不可用于训练；问题部分采用 CC BY-SA 4.0，图表版权归原 arXiv 作者，代码为 Apache-2.0。",
+      "severity": "低",
+      "response": "许可证在仓库与数据集卡中写明。",
+      "reader": "想拿 CharXiv 数据做训练或商用前先看许可。",
+      "cite": [
+        "dataset@Dataset Usage",
+        "dataset@Dataset License",
+        "repo@README License"
+      ]
+    },
+    {
+      "issue": "仓库 README 的图片总数与论文不一致",
+      "impact": "论文和数据集卡都写 2,323 张图，仓库 README 写的是「总共只有 2333 images」，两个数字差 10。",
+      "severity": "低",
+      "response": "以论文和数据集卡为准（2,323）；README 数字未见官方更正。",
+      "reader": "引用图表总数时用 2,323。",
+      "cite": [
+        "repo@README",
+        "paper@§3.1",
+        "dataset@Dataset Card"
+      ]
+    }
+  ],
+  "notes": "与 charxiv-reasoning 同源分拆：同一批 2,323 张图上，描述题（本实体）与 reasoning 题分开计分。图表总数以论文/数据集卡的 2,323 为准，仓库 README 的 2333 与论文不一致。",
+  "official_sources": [
     {
       "kind": "site",
       "url": "https://charxiv.github.io/"
     },
     {
-      "kind": "github",
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2406.18521"
+    },
+    {
+      "kind": "repo",
       "url": "https://github.com/princeton-nlp/CharXiv"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/princeton-nlp/CharXiv"
+    },
+    {
+      "kind": "leaderboard",
+      "url": "https://charxiv.github.io/data/val_result.csv"
     }
   ],
   "related_benchmarks": [
@@ -73,6 +457,488 @@
     "docvqa",
     "chartography"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-09-01"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "CharXiv: Charting Gaps in Realistic Chart Understanding in Multimodal LLMs（arXiv:2406.18521v1，cs.CL，2024-06-26）",
+        "url": "https://arxiv.org/abs/2406.18521",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "site",
+        "kind": "site",
+        "title": "CharXiv 项目主页（charxiv.github.io）",
+        "url": "https://charxiv.github.io/",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "princeton-nlp/CharXiv 代码仓库（README 与 News）",
+        "url": "https://github.com/princeton-nlp/CharXiv",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "dataset",
+        "kind": "dataset",
+        "title": "HuggingFace 数据集卡 princeton-nlp/CharXiv",
+        "url": "https://huggingface.co/datasets/princeton-nlp/CharXiv",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "leaderboard",
+        "kind": "leaderboard",
+        "title": "CharXiv 官方榜单 val_result.csv（验证集成绩）",
+        "url": "https://charxiv.github.io/data/val_result.csv",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "普林斯顿语言与智能研究所（PLI）、威斯康星大学麦迪逊分校、香港大学",
+        "cite": [
+          "paper@v1 页眉"
+        ]
+      },
+      "first_release": {
+        "v": "2024-06-26（arXiv:2406.18521v1，cs.CL）",
+        "cite": [
+          "paper@v1 页眉"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "paper@§1",
+        "paper@§3.2",
+        "dataset@Dataset Card"
+      ],
+      "interpretation": [
+        "paper@§3.3",
+        "paper@§4.2",
+        "paper@§5 Conclusion",
+        "leaderboard@val_result.csv"
+      ]
+    },
+    "problem": {
+      "text": "此前的图表基准多用模板生成的同质化图表和固定句式问题，把模型的真实读图能力估高了；CharXiv 想用真实论文图表加人工设计的问题，把这道差距测出来。",
+      "cite": [
+        "paper@§2"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机基线（Random，GPT-4o 生成随机答案）",
+        "value": "19.85",
+        "note": "描述题随机基线，论文表格与官网榜单都收录了这一行。",
+        "cite": [
+          "leaderboard@val_result.csv",
+          "paper@Table 3"
+        ]
+      },
+      {
+        "label": "论文发布时最好（闭源）",
+        "value": "84.45",
+        "note": "GPT-4o，比人类低 7.65 个百分点。",
+        "cite": [
+          "paper@§4.2",
+          "paper@Table 3"
+        ]
+      },
+      {
+        "label": "论文发布时最好（开源）",
+        "value": "58.50",
+        "note": "InternVL Chat V1.5，比 GPT-4o 低 25.95 个百分点。",
+        "cite": [
+          "paper@§4.2",
+          "paper@Table 3"
+        ]
+      },
+      {
+        "label": "人类参考线",
+        "value": "92.10",
+        "note": "人类描述题准确率；同批受试者在 reasoning 题上只有 80.50。",
+        "cite": [
+          "paper@§5 Conclusion",
+          "leaderboard@val_result.csv"
+        ]
+      },
+      {
+        "label": "官方榜单当前最高",
+        "value": "95.00",
+        "note": "o3 (high)，描述题已越过人类线；但它的 reasoning 78.60 仍低于人类 80.50。",
+        "cite": [
+          "leaderboard@val_result.csv"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把描述题分数和 reasoning 分数混在一起看。CharXiv 一张榜里两套题：描述题读基本元素，reasoning 题要跨元素综合；本实体只覆盖前者。",
+        "cite": [
+          "site@首页",
+          "paper@§1"
+        ]
+      },
+      {
+        "text": "拿 2025 年榜单行和论文表格行直接比。官网榜单后加的模型（o3 (high)、o4 mini (high)、o1 (high) 等）与论文 2024 年的模型集合不是同一批，个别行只填了 reasoning 列、没有描述题分数。",
+        "cite": [
+          "leaderboard@val_result.csv"
+        ]
+      },
+      {
+        "text": "把「超过人类」理解成「题目被做对了」。o3 (high) 描述题 95.00 高于人类 92.10，但它 reasoning 78.60 仍低于人类 80.50；而且人类线本身受自动判分和受试者失误影响。",
+        "cite": [
+          "leaderboard@val_result.csv",
+          "paper@§5 Conclusion"
+        ]
+      },
+      {
+        "text": "以为测试集也能自测。测试集 1,323 张图的答案被官方置 null，公开渠道只有验证集 1,000 张图的成绩。",
+        "cite": [
+          "paper@§1 脚注 4",
+          "repo@README Data"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "普林斯顿语言与智能研究所（PLI）、威斯康星大学麦迪逊分校、香港大学",
+        "cite": [
+          "paper@v1 页眉"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "Zirui Wang、Mengzhou Xia、Luxi He、Howard Chen、Yitao Liu、Richard Zhu、Kaiqu Liang、Xindi Wu、Haotian Liu、Sadhika Malladi、Alexis Chevalier、Sanjeev Arora、Danqi Chen",
+        "cite": [
+          "paper@v1 页眉"
+        ]
+      },
+      {
+        "k": "首发",
+        "v": "arXiv:2406.18521v1（cs.CL），2024-06-26",
+        "cite": [
+          "paper@v1 页眉"
+        ]
+      },
+      {
+        "k": "会议接收",
+        "v": "NeurIPS 2024 Datasets & Benchmarks Track；同月入选 NeurIPS 2024 Multimodal Algorithmic Reasoning Workshop 并作 spotlight",
+        "cite": [
+          "repo@README News"
+        ]
+      },
+      {
+        "k": "代码与许可",
+        "v": "评测代码仓库当前版本 v1.0，代码 Apache-2.0；数据集问题部分 CC BY-SA 4.0，图表版权归原 arXiv 作者",
+        "cite": [
+          "repo@README",
+          "repo@README License",
+          "dataset@Dataset License"
+        ]
+      },
+      {
+        "k": "题目来源构成",
+        "v": "人工撰写 1,378 题（59.3%）、GPT 启发 497 题（21.4%）、GPT 生成 448 题（19.3%），全部经人工挑选、整理与核验",
+        "cite": [
+          "paper@Figure 4",
+          "site@首页"
+        ]
+      },
+      {
+        "k": "学科分布",
+        "v": "八个学科各 286–294 张图：计算机科学 292、电子工程与系统科学 291、数学 286、物理 294、定量生物 293、定量金融 289、统计学 291、经济学 287",
+        "cite": [
+          "paper@Figure 4"
+        ]
+      },
+      {
+        "k": "年份分布",
+        "v": "2020 年 581 张、2021 年 585 张、2022 年 584 张、2023 年 573 张",
+        "cite": [
+          "paper@Figure 4"
+        ]
+      },
+      {
+        "k": "子图数量分布",
+        "v": "单子图 896 张（28.6%）、2–4 个子图 876 张（37.7%）、5 个及以上 551 张（23.7%）",
+        "cite": [
+          "paper@Figure 4"
+        ]
+      },
+      {
+        "k": "与 reasoning 子集的关系",
+        "v": "同一批 2,323 张图上另有 reasoning 问题，本实体只覆盖描述性问题（每图 4 道），reasoning 成绩在 charxiv-reasoning 单列",
+        "cite": [
+          "dataset@Dataset Card",
+          "paper@§1"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-14",
+        "columns": [
+          "来源",
+          "模型",
+          "权重",
+          "描述题总分",
+          "INEX",
+          "ENUM",
+          "PATT",
+          "CNTG",
+          "COMP"
+        ],
+        "rows": [
+          [
+            "论文 Table 3",
+            "Human",
+            "N/A",
+            "92.10",
+            "91.40",
+            "91.20",
+            "95.63",
+            "93.38",
+            "92.86"
+          ],
+          [
+            "论文 Table 3",
+            "Random (GPT-4o)",
+            "N/A",
+            "19.85",
+            "21.65",
+            "16.71",
+            "23.80",
+            "25.70",
+            "5.36"
+          ],
+          [
+            "论文 Table 3",
+            "GPT-4o",
+            "Proprietary",
+            "84.45",
+            "82.44",
+            "89.18",
+            "90.17",
+            "85.50",
+            "59.82"
+          ],
+          [
+            "论文 Table 3",
+            "GPT-4V",
+            "Proprietary",
+            "79.92",
+            "78.29",
+            "85.79",
+            "88.21",
+            "80.92",
+            "41.07"
+          ],
+          [
+            "论文 Table 3",
+            "Claude 3 Sonnet",
+            "Proprietary",
+            "73.65",
+            "75.74",
+            "81.92",
+            "76.64",
+            "72.26",
+            "8.48"
+          ],
+          [
+            "论文 Table 3",
+            "Claude 3 Haiku",
+            "Proprietary",
+            "65.08",
+            "69.87",
+            "69.98",
+            "64.85",
+            "61.83",
+            "8.04"
+          ],
+          [
+            "论文 Table 3",
+            "Claude 3 Opus",
+            "Proprietary",
+            "71.55",
+            "75.62",
+            "73.69",
+            "73.58",
+            "70.48",
+            "26.79"
+          ],
+          [
+            "论文 Table 3",
+            "Gemini 1.0 Pro",
+            "Proprietary",
+            "54.37",
+            "67.97",
+            "39.23",
+            "60.48",
+            "62.60",
+            "8.93"
+          ],
+          [
+            "论文 Table 3",
+            "Reka Core",
+            "Proprietary",
+            "55.60",
+            "58.90",
+            "50.52",
+            "65.72",
+            "71.25",
+            "10.71"
+          ],
+          [
+            "论文 Table 3",
+            "Reka Flash",
+            "Proprietary",
+            "56.45",
+            "61.39",
+            "48.59",
+            "69.87",
+            "72.52",
+            "7.14"
+          ],
+          [
+            "论文 Table 3",
+            "Qwen-VL-Max",
+            "Proprietary",
+            "41.48",
+            "50.42",
+            "28.41",
+            "53.71",
+            "51.15",
+            "4.46"
+          ],
+          [
+            "论文 Table 3",
+            "InternVL Chat V1.5",
+            "Open",
+            "58.50",
+            "69.63",
+            "52.95",
+            "53.06",
+            "64.63",
+            "5.80"
+          ],
+          [
+            "官网榜单",
+            "Claude 3.5 Sonnet",
+            "Proprietary",
+            "84.30",
+            "82.62",
+            "88.86",
+            "90.61",
+            "90.08",
+            "48.66"
+          ],
+          [
+            "官网榜单",
+            "Gemini 1.5 Pro",
+            "Proprietary",
+            "71.97",
+            "81.79",
+            "64.73",
+            "79.48",
+            "76.34",
+            "15.18"
+          ],
+          [
+            "官网榜单",
+            "GPT-4o mini",
+            "Proprietary",
+            "74.92",
+            "74.91",
+            "82.81",
+            "69.21",
+            "79.13",
+            "35.71"
+          ],
+          [
+            "官网榜单",
+            "Qwen2.5-VL 72B",
+            "Open",
+            "87.40",
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          [
+            "官网榜单",
+            "Doubao 1.5 Pro",
+            "Proprietary",
+            "84.30",
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          [
+            "官网榜单",
+            "o1 (high)",
+            "Proprietary",
+            "88.90",
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          [
+            "官网榜单",
+            "o4 mini (high)",
+            "Proprietary",
+            "94.30",
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          [
+            "官网榜单",
+            "o3 (high)",
+            "Proprietary",
+            "95.00",
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          [
+            "官网榜单",
+            "Claude 3.7 Sonnet",
+            "Proprietary",
+            "未报告（该行只填 reasoning 列）",
+            null,
+            null,
+            null,
+            null,
+            null
+          ]
+        ]
+      },
+      "cite": [
+        "leaderboard@val_result.csv",
+        "paper@Table 3"
+      ]
+    }
+  }
 }
