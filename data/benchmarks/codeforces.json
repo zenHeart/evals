@@ -1,65 +1,394 @@
 {
   "id": "codeforces",
   "name": "Codeforces",
-  "full_name": "Codeforces Competitive Programming Platform",
+  "full_name": "Codeforces 竞技编程平台（Codeforces Competitive Programming Platform）",
   "aliases": ["CodeForces Elo", "Codeforces rating"],
   "status": null,
   "categories": [
     "coding"
   ],
-  "summary": "Codeforces 竞赛编程平台的等级分（Elo）与题目通过率，被厂商用作算法编码能力的第三方锚点",
-  "interpretation": "Codeforces 平台数据被厂商用作算法编码第三方锚点：Elo 等级分衡量与人类选手分布的相对位置（「超过 99% 人类选手」类说法即以该分布为参照），题目通过率则是百分比；两者都不是绝对能力分，跨榜只看相对位次。",
+  "summary": "Codeforces 是 Mike Mirzayanov 维护的竞技编程平台：它给每位参赛选手维护一个 Elo 变体等级分（rating），并用公开题库出题办赛。平台本身不为模型排名，厂商是把模型解搬进模拟或自建 harness，再把成绩换算成可与人类选手分布对比的 Elo 或题目通过率。",
+  "interpretation": "高 Elo 只说明模型在一批算法题上相对人类选手分布的位置高，不代表能做软件工程：题目是独立算法题，没有仓库、测试与协作上下文。而且 Elo 是相对分，官方明确「全体选手同时变强时 rating 不变才是合理解」；不同厂商的取题场次、每题提交次数、计时方式都不同，跨榜只能看同口径下的相对位次。",
   "measures": [
-    "竞赛算法题在限定时间内的通过能力",
-    "与人类选手分布对标的 Elo 等级分"
+    {
+      "area": "Elo 等级分（与人类选手分布对标）",
+      "focus": "把模型在若干场比赛中的模拟成绩折算成可与官方 Rating 榜对比的整数等级分；示例口径：OpenAI 把 o3 早期 checkpoint 的成绩折算为 2724（99.8 百分位），官方 Rating 榜当时第一为 Benq 3676",
+      "share": "未披露（平台不按题型或难度公布任何模型成绩）",
+      "format": "整数等级分（Elo 变体）",
+      "cite": [
+        "rating-rules@正文",
+        "oai-paper@§4.1",
+        "site@Top rated"
+      ]
+    },
+    {
+      "area": "题目通过率 / 解题数",
+      "focus": "使用方自选题集上 Accepted 题数占比；平台侧只公布每题 solvedCount（解题人数），通过率的分子分母由使用方定义。示例口径：CodeElo 对 2024-05-04 至 2024-11-04 的 54 场比赛共 387 题，每题最多 8 次尝试",
+      "share": "未披露（平台不发布统一的通过率口径）",
+      "format": "百分比或 Accepted 题数",
+      "cite": [
+        "api-objects@ProblemStatistics",
+        "codeelo@§4.1",
+        "codeelo@§3.3.1"
+      ]
+    },
+    {
+      "area": "单场赛制与题量",
+      "focus": "一场 rated round 的题量、时长与罚分逐场由官方公告给出；示例：Codeforces Round 1134 (Div. 4) 为 8 题、2 小时 15 分钟、ICPC 规则、错误提交罚时 10 分钟、赛后 12 小时开放 hack",
+      "share": "未披露（平台不发布统一题量，逐场公告）",
+      "format": "整数题数 + 时长 + 罚分规则",
+      "cite": [
+        "div4-round@Here are the format details"
+      ]
+    }
   ],
   "does_not_measure": [
-    "真实软件工程（无仓库/测试/协作上下文）",
-    "代码可维护性与工程规范",
-    "非算法类编码任务"
+    {
+      "text": "真实软件工程能力：题目是独立算法题，赛制只有「写解法 → 判题」，没有仓库、测试套件、依赖管理与协作上下文",
+      "cite": [
+        "faq@What are the rules of the contests?"
+      ]
+    },
+    {
+      "text": "模型是否被允许参赛：官方《Rule Restricting the Use of AI》适用于所有 rated round 的参赛者，禁止把题面喂给 AI 换取现成代码，平台不为模型提供合规参赛通道",
+      "cite": [
+        "ai-rule@正文"
+      ]
+    },
+    {
+      "text": "题目难度标注不是模型分数：官方 API 的 Problem.rating 是题目属性，与选手/模型等级分是同名不同义的两个数字",
+      "cite": [
+        "api-objects@Problem",
+        "codeelo@§3.2"
+      ]
+    }
   ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "source_type": "real-world（公开竞赛题库）",
-    "languages": ["en"],
-    "public_sample": true
+    "sample_count": 11511,
+    "splits": [
+      "公开题库 problemset.problems（本次核对时逐条计数 11,511 道编程题，其中 317 题无 rating 标注）",
+      "比赛列表 contest.list（本次核对时 2,168 场，其中 2,162 场已结束、6 场尚未开始）",
+      "选手 Rating 榜 /ratings（仅列近 6 个月有参赛记录者，本次核对时 133,221 人）"
+    ],
+    "languages": [
+      "en",
+      "ru"
+    ],
+    "source_type": "real-world（平台公开题库与真实比赛记录；题目来自历届比赛，赛后进入公开题库）",
+    "public_sample": true,
+    "totals": "官方 problemset.problems 接口当前返回 11,511 道编程题（本次逐条计数）；contest.list 返回 2,168 场比赛（2,162 场已结束）；官方 Rating 榜共 133,221 名选手。题目带 algorithm tags，官方 API 另提供每题 solvedCount 与 problem rating（难度）。",
+    "cite": [
+      "api-problems@result.problems",
+      "api-contests@result",
+      "ratings-last@Rating 表末行",
+      "api-methods@problemset.problems",
+      "api-methods@contest.list"
+    ],
+    "construction": [
+      {
+        "k": "出题与激励",
+        "text": "题目由社区作者出题并协调，官方对 Div 1 + Div 2 round 作者支付 1150 USDT、Div 2 round 作者支付 450 USDT；官方 FAQ 称每月约办六场比赛，参赛免费且对所有人开放。",
+        "cite": [
+          "anniversary@正文",
+          "faq@What should I do to participate in contests?"
+        ]
+      },
+      {
+        "k": "赛制",
+        "text": "一场 round 的题量与时长逐场公告。示例（Codeforces Round 1134 Div. 4，2026-11-09 公告）：8 题、2 小时 15 分钟、ICPC 规则、错误提交罚时 10 分钟、赛后 12 小时开放 hack（hack 不额外加分）。",
+        "cite": [
+          "div4-round@Here are the format details",
+          "div4-round@发布日期"
+        ]
+      },
+      {
+        "k": "判题",
+        "text": "赛中提交先过 pretest；赛后所有通过 pretest 且未被 hack 的解法再跑最终测试集，然后重算 rating。官方 FAQ 的描述是：赛后在最终测试集上测试所有通过 pretest 且未被 hack 的解法。",
+        "cite": [
+          "faq@What are the rules of the contests?",
+          "div4-round@Here are the format details"
+        ]
+      },
+      {
+        "k": "rating 计算",
+        "text": "rating 是 Elo 的多人推广：官方称其基本思想是把 Elo 推广到支持多人对局；赛前按两两胜负概率算期望排名 seed，赛后取 seed 与实际排名的几何平均数反推出表现等级分 R，变化量取 (R − r)/2；随后做两次反通胀修正，使所有变化之和接近 0 且非正。",
+        "cite": [
+          "rating-rules@正文"
+        ]
+      },
+      {
+        "k": "新账号 rating",
+        "text": "新账号显示 rating 为 0，但计算 rating 变化时按 1400；前 6 场按 500 / 350 / 250 / 150 / 100 / 50 递补显示值，合计恰为 1400，之后显示值与计算值一致。",
+        "cite": [
+          "ranks-2020@正文"
+        ]
+      },
+      {
+        "k": "题目难度标注",
+        "text": "官方 API 只把 Problem.rating 定义为「Problem rating (difficulty)」，未给出口径；第三方论文描述其含义为「rating 为 x 的选手首次见到该题有 50% 概率通过」，并明确题目难度与选手等级分是两个概念。",
+        "cite": [
+          "api-objects@Problem",
+          "codeelo@§3.2"
+        ]
+      }
+    ]
   },
   "metrics": [
     {
       "id": "elo",
-      "name": "Codeforces Elo",
-      "range": [0, 4000],
+      "name": "Codeforces rating（Elo 等级分）",
+      "direction": "越高越好",
+      "description": "官方为每位选手维护的整数等级分，是 Elo 的多人推广；赛后按全场排名与赛前 rating 重算，并做反通胀修正。官方 API 的 RatingChange 对象暴露 oldRating / newRating。",
+      "range": "整数；官方未声明上下界（本次核对时官方 Rating 榜实测最低 -38、最高 3676）",
       "unit": "elo",
-      "direction": "higher",
-      "aggregation": null
+      "cite": [
+        "rating-rules@正文",
+        "api-objects@RatingChange",
+        "ratings-last@Rating 表末行",
+        "site@Top rated"
+      ]
     },
     {
       "id": "pass-rate",
-      "name": "题目通过率",
-      "range": [0, 100],
+      "name": "题目通过率（解题数 / 题数）",
+      "direction": "越高越好",
+      "description": "使用方自定义的二次指标：在自选题集上 Accepted 题数除以题目数。平台本身只公布每题 solvedCount（解题人数）与逐场 standings，不发布统一的「通过率」口径；第三方以「通过全部测试点才算 Accepted、部分通过不计分」对齐平台标准。",
+      "range": "0-100",
       "unit": "percent",
-      "direction": "higher",
-      "aggregation": "mean"
+      "cite": [
+        "api-objects@ProblemStatistics",
+        "codeelo@§3.3.1"
+      ]
     }
   ],
+  "default_protocol": {
+    "raw": "平台侧：选手在 rated round 中限时解题，提交先过 pretest，赛后统一在最终测试集上重测并重算 rating。评测侧没有统一协议，全部是厂商或第三方自建 harness。OpenAI 的口径：取 2023 年末至 2024 年、均在训练数据截止之后的 Div. 1 比赛，跑完整测试集，每题允许 10 次独立提交、任一次通过即记解出；为削弱模型并行思考的优势，主结果把每道解出题的得分记为「同失败次数人类选手得分的中位数」，再用最大似然估计模型 rating。CodeElo 的口径：取 2024-05-04 至 2024-11-04 的 54 场比赛共 387 题，每题最多 8 次尝试，假设模型在第 1 分钟内提交因而不计时罚，但成功前的失败尝试仍计罚分。",
+    "cite": [
+      "faq@What are the rules of the contests?",
+      "rating-rules@正文",
+      "oai-paper@附录 B.1",
+      "oai-paper@附录 B.2",
+      "oai-paper@附录 B.3",
+      "oai-paper@附录 B.4",
+      "codeelo@§4.1"
+    ],
+    "variants": [
+      {
+        "text": "取题场次与时间窗不同：OpenAI 用训练截止之后的 Div. 1 比赛，并排除一场含交互题的比赛；CodeElo 用 2024-05-04 至 2024-11-04 的 54 场（以 Div. 2 / 3 / 4 为主）。两者题集与难度分布不同，Elo 不可直接互比。",
+        "cite": [
+          "oai-paper@附录 B.1",
+          "codeelo@§4.1"
+        ]
+      },
+      {
+        "text": "每题提交次数不同：OpenAI 允许 10 次独立提交、任一次通过即记解出；CodeElo 只允许 8 次尝试。提交预算直接改变通过率与折算出的 Elo。",
+        "cite": [
+          "oai-paper@附录 B.2",
+          "codeelo@§4.1"
+        ]
+      },
+      {
+        "text": "计时口径不同：OpenAI 主结果用人类同失败次数得分的中位数代替模型真实思考时间，并说明若按最大并行假设会得到更高 rating；CodeElo 假设模型第 1 分钟内提交、完全不计时罚，只计失败尝试罚分。",
+        "cite": [
+          "oai-paper@附录 B.3",
+          "codeelo@§4.1"
+        ]
+      },
+      {
+        "text": "只报一个 Elo 数字、不披露口径：Google 官方公告只写「Attaining a staggering Elo of 3455 on Codeforces」，取题场次、时间窗、限时与提交次数均未披露。",
+        "cite": [
+          "google-blog@正文"
+        ]
+      },
+      {
+        "text": "平台规则本身禁止 AI 参赛：官方《Rule Restricting the Use of AI》适用于所有 rated round 的参赛者（含 Out of competition 参与者），因此所有模型成绩都来自平台外的模拟或自建 harness，而不是官方榜单。",
+        "cite": [
+          "ai-rule@正文"
+        ]
+      }
+    ]
+  },
   "versions": [
     {
-      "id": "rolling",
-      "label": "滚动题库",
-      "note": "持续新增比赛题；引用时必须注明取题场次与时间窗"
+      "id": "rating-formulas-open",
+      "date": "2015-10-25",
+      "label": "官方博客《Open Codeforces Rating System》公开 rating 计算公式（标题标注 updated on October 2015）",
+      "cite": [
+        "rating-rules@发布日期",
+        "rating-rules@正文"
+      ]
+    },
+    {
+      "id": "ranks-2015",
+      "date": "2015-10-01",
+      "label": "《The Second Revolution of Colors and Titles》公布新的颜色 / 头衔分界表（2900+ Legendary Grandmaster、2600-2899 International Grandmaster 等）",
+      "cite": [
+        "ranks-2015@发布日期",
+        "ranks-2015@Table of ranks"
+      ]
+    },
+    {
+      "id": "ranks-2018",
+      "date": "2018-05-03",
+      "label": "rating 分界调整：橙色（Master）下界降到 2100，Legendary Grandmaster 下界升到 3000；同时开办 Div. 3（官方成绩限 rating < 1600）",
+      "cite": [
+        "ranks-2018@发布日期",
+        "ranks-2018@正文"
+      ]
+    },
+    {
+      "id": "ranks-2020",
+      "date": "2020-05-24",
+      "label": "新账号 rating 计算方式调整：显示值 0、计算变化按 1400，前 6 场递补显示值",
+      "cite": [
+        "ranks-2020@发布日期",
+        "ranks-2020@正文"
+      ]
+    },
+    {
+      "id": "tourist-4000",
+      "date": "2024-08-30",
+      "label": "官方宣布 tourist 达到 4000 rating（竞技编程史上首次），并新增头衔 Tourist",
+      "cite": [
+        "tourist-4000@发布日期",
+        "tourist-4000@正文"
+      ]
+    },
+    {
+      "id": "ai-rule",
+      "date": "2024-09-14",
+      "label": "《Rule Restricting the Use of AI》（revision 2024-09-14）生效，限制 rated round 内使用 AI 解题",
+      "cite": [
+        "ai-rule@发布日期",
+        "ai-rule@标题"
+      ]
+    },
+    {
+      "id": "codeelo-v2",
+      "date": "2025-01-03",
+      "label": "CodeElo（arXiv:2501.01257v2）发布，提供把模型解提交到平台并与人类可比的 Elo 评级方法",
+      "cite": [
+        "codeelo@v2 页眉"
+      ]
+    },
+    {
+      "id": "oai-report-v2",
+      "date": "2025-02-18",
+      "label": "OpenAI 技术报告 arXiv:2502.06807v2，含 Codeforces 模拟评测方法附录 B",
+      "cite": [
+        "oai-paper@v2 页眉"
+      ]
+    },
+    {
+      "id": "gemini-deep-think",
+      "date": "2026-02-12",
+      "label": "Google 官方公告 Gemini 3 Deep Think 在 Codeforces 取得 Elo 3455",
+      "cite": [
+        "google-blog@发布日期",
+        "google-blog@正文"
+      ]
+    },
+    {
+      "id": "round-1134",
+      "date": "2026-11-09",
+      "label": "Codeforces Round 1134 (Div. 4) 公告（本档案核验时的在办赛事：8 题、2 小时 15 分钟）",
+      "cite": [
+        "div4-round@发布日期",
+        "div4-round@Here are the format details"
+      ]
     }
   ],
   "limitations": [
-    "Elo 对标高度依赖取题分布与限时设置，跨厂商 harness 不可直接比",
-    "历史题库公开多年，污染风险高",
-    "平台本身不是为 LLM 评测设计，官方不维护模型榜单"
+    {
+      "issue": "评测口径不统一，跨厂商分数不可直接比",
+      "impact": "OpenAI 用训练截止后的 Div. 1 比赛、每题 10 次独立提交、按人类同失败次数得分中位数计时；CodeElo 用 2024-05-04 至 2024-11-04 的 54 场比赛、每题 8 次尝试、不计时罚；Google 只公布 Elo 3455 一个数字。三者的题集、难度分布、提交预算与计时方式都不同。",
+      "severity": "高",
+      "response": "未见官方回应：平台不为模型提供统一评测协议，官方规则反而限制 AI 在 rated round 中使用。",
+      "reader": "比较任何两个 Codeforces Elo 前，先确认取题场次、时间窗、每题提交次数与计时口径；口径不同的数字不要排在同一张表里。",
+      "cite": [
+        "oai-paper@附录 B.1",
+        "oai-paper@附录 B.2",
+        "oai-paper@附录 B.3",
+        "codeelo@§4.1",
+        "google-blog@正文",
+        "ai-rule@正文"
+      ]
+    },
+    {
+      "issue": "平台不维护模型榜单，成绩全部由厂商或第三方自报",
+      "impact": "官方 Rating 榜只收录人类选手（本次核对时 133,221 人，第一为 Benq 3676），没有任何模型条目；模型成绩来自官方公告或论文自报，没有统一的提交、复核与版本管理流程。",
+      "severity": "高",
+      "response": "平台侧无模型榜单；官方只发布了限制 AI 使用的规则，并呼吁选手不要用 AI 解题。",
+      "reader": "把任何模型 Elo 当作「厂商自报」而非官方榜单成绩；看不到原始评测说明（题集、提交次数、计时）的分数不要采信。",
+      "cite": [
+        "ratings-last@Rating 表头",
+        "ratings-last@Rating 表末行",
+        "site@Top rated",
+        "ai-rule@正文",
+        "div4-round@正文"
+      ]
+    },
+    {
+      "issue": "污染风险",
+      "impact": "官方 problemset.problems 接口返回全部公开编程题，题目与赛后数据可自由访问，模型可能已在训练数据中见过；第三方因此限定只取训练截止之后的比赛，并用 embedding 检索做污染检查，还排除了一场含交互题的比赛。",
+      "severity": "中",
+      "response": "平台侧无应对（题目公开是平台设计，官方 FAQ 明确往届比赛可用于备战）；评测侧的应对是限定取题时间窗并做 embedding 污染检查。",
+      "reader": "看到未说明取题时间窗的 Codeforces 成绩，先怀疑它是否包含已公开赛题。",
+      "cite": [
+        "api-methods@problemset.problems",
+        "faq@What is Codeforces?",
+        "oai-paper@§2.1",
+        "oai-paper@附录 B.1"
+      ]
+    },
+    {
+      "issue": "Elo 是相对分，不是绝对能力",
+      "impact": "官方明确 rating 应当相对而非绝对：若因为某种魔法全体选手同时变强一倍，保持 rating 不变才是唯一合理解。因此「超过 99% 人类选手」只说明在该分布中的相对位置，会随人类整体水平与参赛结构变化。",
+      "severity": "中",
+      "response": "官方在 rating 规则说明中明确这一点，并用反通胀修正把平均变化压到 0 附近。",
+      "reader": "不要把 Elo 涨幅直接换算成能力提升幅度；跨年份、跨参赛结构的比较要额外谨慎。",
+      "cite": [
+        "rating-rules@正文",
+        "oai-paper@§4.1"
+      ]
+    },
+    {
+      "issue": "反作弊规则直接影响「AI 参赛」这一用法本身",
+      "impact": "官方《Rule Restricting the Use of AI》禁止在 rated round 中把题面、摘要、片段或子问题喂给 AI 换取现成代码或解法描述，也禁止用 AI 根据判题反馈修错；官方同时说明若两名选手代码匹配且赛前不存在于公网，即视为作弊证据。",
+      "severity": "中",
+      "response": "官方已发布专门规则并称会随 AI 发展调整；官方博文也呼吁选手不要用 AI 解题或使用其他作弊手段。",
+      "reader": "任何「AI 在 Codeforces 正式参赛并进入官方榜」的说法都偏离平台规则；实际做法都是平台外模拟。",
+      "cite": [
+        "ai-rule@正文",
+        "div4-round@正文"
+      ]
+    },
+    {
+      "issue": "题目难度 rating 与选手等级分同名不同义",
+      "impact": "官方 API 中 Problem.rating 是题目难度，RatingChange.newRating 是选手赛后等级分；第三方或读者把两者混用时，会把「题目难度 3500」误读成「模型水平 3500」。",
+      "severity": "低",
+      "response": "官方 API 文档分别定义了两个字段；第三方论文也专门说明这是两个不同概念。",
+      "reader": "看到 rating 数字先确认它是题目属性还是选手 / 模型属性。",
+      "cite": [
+        "api-objects@Problem",
+        "api-objects@RatingChange",
+        "codeelo@§3.2"
+      ]
+    }
   ],
-  "notes": "证据账本中 9 次引用；『超过 99% 人类选手』类叙事的原始出处",
+  "notes": "证据账本中 9 次引用；『超过 99% 人类选手』类叙事的原始出处（OpenAI 技术报告口径为 99.8 百分位）",
   "official_sources": [
     {
       "kind": "site",
       "url": "https://codeforces.com/"
+    },
+    {
+      "kind": "site",
+      "url": "https://codeforces.com/blog/entry/20762"
+    },
+    {
+      "kind": "docs",
+      "url": "https://codeforces.com/apiHelp"
     }
   ],
   "related_benchmarks": [
@@ -69,6 +398,403 @@
     "bigcodebench",
     "aime-25"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-11",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-11",
+    "sources": [
+      {
+        "id": "site",
+        "kind": "site",
+        "title": "Codeforces 官网首页（Top rated 榜与页脚版权信息）",
+        "url": "https://codeforces.com/",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "rating-rules",
+        "kind": "site",
+        "title": "Open Codeforces Rating System [updated on October 2015]（官方 rating 规则说明，MikeMirzayanov）",
+        "url": "https://codeforces.com/blog/entry/20762",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "ranks-2015",
+        "kind": "site",
+        "title": "The Second Revolution of Colors and Titles（官方颜色 / 头衔分界表）",
+        "url": "https://codeforces.com/blog/entry/20638",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "ranks-2018",
+        "kind": "site",
+        "title": "Codeforces: Updates in rating and rounds（橙色下界 2100、LGM 下界 3000、Div. 3）",
+        "url": "https://codeforces.com/blog/entry/59228",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "ranks-2020",
+        "kind": "site",
+        "title": "Codeforces: Soon We Will Change the Rating Calculation for New Accounts（新账号 rating 规则）",
+        "url": "https://codeforces.com/blog/entry/77890",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "tourist-4000",
+        "kind": "announcement",
+        "title": "Congratulations: Tourist has reached a rating of 4000!（新增头衔 Tourist）",
+        "url": "https://codeforces.com/blog/entry/133401",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "ai-rule",
+        "kind": "announcement",
+        "title": "Rule Restricting the Use of AI [revision 2024-09-14]（官方 AI 使用规则）",
+        "url": "https://codeforces.com/blog/entry/133941",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "div4-round",
+        "kind": "announcement",
+        "title": "Codeforces Round 1134 (Div. 4) 公告（赛制格式与参赛资格）",
+        "url": "https://codeforces.com/blog/entry/158631",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "anniversary",
+        "kind": "site",
+        "title": "Codeforces celebrates its 15th anniversary!（平台沿革与出题激励）",
+        "url": "https://codeforces.com/blog/entry/138982",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "faq",
+        "kind": "docs",
+        "title": "Codeforces Help / FAQ（赛制、判题、rating 与分区）",
+        "url": "https://codeforces.com/help",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "api-help",
+        "kind": "docs",
+        "title": "Codeforces API 说明（Introduction：限流、lang 参数）",
+        "url": "https://codeforces.com/apiHelp",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "api-methods",
+        "kind": "docs",
+        "title": "Codeforces API Methods（problemset.problems / contest.list / user.ratedList 等）",
+        "url": "https://codeforces.com/apiHelp/methods",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "api-objects",
+        "kind": "docs",
+        "title": "Codeforces API Return objects（Problem / ProblemStatistics / Contest / RatingChange）",
+        "url": "https://codeforces.com/apiHelp/objects",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "api-problems",
+        "kind": "dataset",
+        "title": "官方 API 响应 problemset.problems（本次核对时逐条计数 11,511 道编程题）",
+        "url": "https://codeforces.com/api/problemset.problems",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "api-contests",
+        "kind": "dataset",
+        "title": "官方 API 响应 contest.list（本次核对时 2,168 场比赛）",
+        "url": "https://codeforces.com/api/contest.list",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "ratings-last",
+        "kind": "leaderboard",
+        "title": "Codeforces 官方 Rating 榜末页（/ratings/page/667，本次核对时共 133,221 名选手）",
+        "url": "https://codeforces.com/ratings/page/667",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "oai-paper",
+        "kind": "paper",
+        "title": "Competitive Programming with Large Reasoning Models（OpenAI 技术报告，arXiv:2502.06807v2，2025-02-18）",
+        "url": "https://arxiv.org/abs/2502.06807",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "codeelo",
+        "kind": "paper",
+        "title": "CodeElo: Benchmarking Competition-level Code Generation of LLMs with Human-comparable Elo Ratings（arXiv:2501.01257v2，2025-01-03）",
+        "url": "https://arxiv.org/abs/2501.01257",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "google-blog",
+        "kind": "announcement",
+        "title": "Gemini 3 Deep Think: Advancing science, research and engineering（Google 官方博客，2026-02-12）",
+        "url": "https://blog.google/innovation-and-ai/models-and-research/gemini-models/gemini-3-deep-think/",
+        "accessed": "2026-11-11"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Mike Mirzayanov（Codeforces 创始人 / 主要维护者；站点页脚版权方，官方规则与 rating 说明均以其账号发布）",
+        "cite": [
+          "site@页脚",
+          "anniversary@正文"
+        ]
+      },
+      "first_release": {
+        "v": "2010 年（官方未给出精确日期；15 周年博文 2025-01-29 称「15 年前」部署第一版，页脚为 Copyright 2010-2026）",
+        "cite": [
+          "anniversary@发布日期",
+          "anniversary@正文",
+          "site@页脚"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "site@页脚",
+        "rating-rules@正文",
+        "oai-paper@§2.1"
+      ],
+      "interpretation": [
+        "rating-rules@正文",
+        "ai-rule@正文",
+        "oai-paper@附录 B.4"
+      ]
+    },
+    "problem": {
+      "text": "平台侧要解决的是：Elo 原本为两人对局设计，Codeforces 要把等级分推广到多人比赛，让场次大小不同的成绩可以互相比较，并用反通胀修正抑制分数膨胀。评测侧要解决的是：既有代码基准在自建机器上评测，会出现执行环境错位、不支持 special judge、拿不到私有测试集的问题；第三方的做法是用机器人把模型解直接提交到平台，用官方判题结果换来计算口径，并给出与人类可比的 Elo。",
+      "cite": [
+        "rating-rules@正文",
+        "codeelo@Abstract",
+        "codeelo@§1",
+        "oai-paper@§1"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "新账号起始 rating（官方口径）",
+        "value": "显示 0，计算变化按 1400；首场后显示 500+d₁",
+        "note": "官方规则：新账号显示 rating 为 0，但计算 rating 变化时按 1400；前 6 场按 500 / 350 / 250 / 150 / 100 / 50 递补显示值，合计恰为 1400。",
+        "cite": [
+          "ranks-2020@正文"
+        ]
+      },
+      {
+        "label": "OpenAI 技术报告（2025-02-18）自报最好成绩",
+        "value": "2724（99.8 百分位）",
+        "note": "o3 早期 checkpoint；取题为训练截止后的 Div. 1 比赛，每题 10 次独立提交，按人类同失败次数得分中位数计时。",
+        "cite": [
+          "oai-paper@§4.1",
+          "oai-paper@附录 B.1"
+        ]
+      },
+      {
+        "label": "Google 官方公告（2026-02-12）自报",
+        "value": "Elo 3455",
+        "note": "Gemini 3 Deep Think；公告只给出 Elo 数字，取题场次、时间窗、限时与提交次数均未披露。",
+        "cite": [
+          "google-blog@正文"
+        ]
+      },
+      {
+        "label": "官方 Rating 榜当前第一（人类选手）",
+        "value": "3676",
+        "note": "Benq；官方 Rating 榜本次核对时共 133,221 名选手，榜末 rating 为 -38。榜上没有任何模型条目。",
+        "cite": [
+          "site@Top rated",
+          "ratings-last@Rating 表末行"
+        ]
+      },
+      {
+        "label": "官方头衔上限参考",
+        "value": "4000+ 为 Tourist",
+        "note": "官方 2024-08-30 宣布 tourist 达到 4000 rating，并为 4000+ 设立新头衔 Tourist；这是官方公开的头衔分界最高一档。",
+        "cite": [
+          "tourist-4000@正文"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把不同来源的 Elo 当成同一把尺子排名：OpenAI、CodeElo、Google 三家的取题场次、每题提交次数与计时口径都不同，其中 Google 只公布数字不披露口径。",
+        "cite": [
+          "oai-paper@附录 B.1",
+          "codeelo@§4.1",
+          "google-blog@正文"
+        ]
+      },
+      {
+        "text": "把 Codeforces Elo 当成绝对能力分：官方明确 rating 应当相对而非绝对，全体选手同时变强时 rating 不变才是合理解。",
+        "cite": [
+          "rating-rules@正文"
+        ]
+      },
+      {
+        "text": "以为 Codeforces 官方给模型排名：官方 Rating 榜只列人类选手，且官方规则限制在 rated round 中使用 AI 解题。",
+        "cite": [
+          "ratings-last@Rating 表头",
+          "ai-rule@正文"
+        ]
+      },
+      {
+        "text": "把题目难度 rating 和选手 / 模型等级分混为一谈：官方 API 里这是两个不同字段，含义与量纲都不同。",
+        "cite": [
+          "api-objects@Problem",
+          "api-objects@RatingChange"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "Mike Mirzayanov（站点页脚版权方；官方规则与 rating 说明均以其账号发布）",
+        "cite": [
+          "site@页脚",
+          "anniversary@正文"
+        ]
+      },
+      {
+        "k": "上线时间",
+        "v": "2010 年；官方未给出精确日期（15 周年博文发布于 2025-01-29，称「15 年前」部署第一版；页脚 Copyright 2010-2026）",
+        "cite": [
+          "anniversary@发布日期",
+          "anniversary@正文",
+          "site@页脚"
+        ]
+      },
+      {
+        "k": "规模（本次核验时）",
+        "v": "官方 problemset.problems 返回 11,511 道编程题（逐条计数，其中 317 题无 rating 标注）；contest.list 返回 2,168 场比赛（2,162 场已结束）；官方 Rating 榜共 133,221 名选手",
+        "cite": [
+          "api-problems@result.problems",
+          "api-contests@result",
+          "ratings-last@Rating 表末行"
+        ]
+      },
+      {
+        "k": "rating 规则演变",
+        "v": "2015-10-25 公开 rating 公式 → 2015-10-01 新颜色 / 头衔分界表 → 2018-05-03 橙色下界降到 2100、LGM 下界升到 3000、开办 Div. 3 → 2020-05-24 新账号 rating 显示 0 / 计算按 1400 → 2024-08-30 新增 4000+ 头衔 Tourist",
+        "cite": [
+          "rating-rules@发布日期",
+          "ranks-2015@发布日期",
+          "ranks-2018@发布日期",
+          "ranks-2020@发布日期",
+          "tourist-4000@发布日期"
+        ]
+      },
+      {
+        "k": "头衔与分区",
+        "v": "官方 2015 分界表：2900+ Legendary Grandmaster、2600-2899 International Grandmaster、2400-2599 Grandmaster、2300-2399 International Master、2200-2299 Master、1900-2199 Candidate Master、1600-1899 Expert、1400-1599 Specialist、1200-1399 Pupil、0-1199 Newbie；2018 年起橙色（Master）从 2100 起、LGM 从 3000 起。FAQ 另说明 rating < 1900 属第二分区、1900+ 属第一分区",
+        "cite": [
+          "ranks-2015@Table of ranks",
+          "ranks-2018@正文",
+          "faq@What are the rating and the divisions?"
+        ]
+      },
+      {
+        "k": "数据与接口",
+        "v": "官方 API 公开题库、比赛列表、Rating 变更与逐题解题人数；限流为每 2 秒 1 次；题名等本地化字段可选 en / ru",
+        "cite": [
+          "api-help@Introduction",
+          "api-methods@problemset.problems",
+          "api-objects@ProblemStatistics"
+        ]
+      },
+      {
+        "k": "出题激励",
+        "v": "Div 1 + Div 2 round 作者 1150 USDT，Div 2 round 作者 450 USDT（2025-01 官方 15 周年博文）",
+        "cite": [
+          "anniversary@正文"
+        ]
+      },
+      {
+        "k": "赛制强度",
+        "v": "官方 FAQ 称每月约办六场比赛、参赛免费开放；一场 round 的题量与时长逐场公告（示例：Round 1134 Div. 4 为 8 题、2 小时 15 分钟）",
+        "cite": [
+          "faq@What should I do to participate in contests?",
+          "div4-round@Here are the format details"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-11",
+        "columns": [
+          "来源",
+          "模型",
+          "Codeforces rating / 百分位",
+          "评测口径"
+        ],
+        "rows": [
+          [
+            "OpenAI 技术报告 §2.1",
+            "gpt-4o",
+            "808（11 百分位）",
+            "模拟 CodeForces 竞赛；该节未展开提交次数与计时细节"
+          ],
+          [
+            "OpenAI 技术报告 §2.1",
+            "o1-preview",
+            "1258（62 百分位）",
+            "同上"
+          ],
+          [
+            "OpenAI 技术报告 §2.1",
+            "o1",
+            "1673（89 百分位）",
+            "同上"
+          ],
+          [
+            "OpenAI 技术报告 §3.3",
+            "o1-ioi",
+            "1807（超过 93% 参赛者）",
+            "模拟竞赛，完整测试集 + 相应时间 / 内存限制"
+          ],
+          [
+            "OpenAI 技术报告 §3.3",
+            "o1-ioi + 公开测试过滤",
+            "2092（96 百分位）",
+            "同上；加一层「未过公开测试即丢弃」的过滤"
+          ],
+          [
+            "OpenAI 技术报告 §3.3",
+            "o1-ioi + 完整测试时策略",
+            "2214（98 百分位）",
+            "同上；再加人工设计的测试时选择策略"
+          ],
+          [
+            "OpenAI 技术报告 §4.1",
+            "o3（早期 checkpoint）",
+            "2724（99.8 百分位）",
+            "训练截止后的 Div. 1 比赛；每题 10 次独立提交；按同失败次数人类选手得分中位数计时"
+          ],
+          [
+            "Google 官方公告（2026-02-12）",
+            "Gemini 3 Deep Think",
+            "Elo 3455",
+            "未披露（公告只给 Elo 数字）"
+          ]
+        ]
+      },
+      "cite": [
+        "oai-paper@§2.1",
+        "oai-paper@§3.3",
+        "oai-paper@§4.1",
+        "oai-paper@附录 B.1",
+        "oai-paper@附录 B.2",
+        "oai-paper@附录 B.3",
+        "google-blog@正文"
+      ]
+    }
+  }
 }
