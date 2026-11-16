@@ -1,48 +1,487 @@
 {
   "id": "gsm8k",
   "name": "GSM8K",
-  "full_name": null,
-  "aliases": [],
+  "full_name": "GSM8K（Grade School Math 8K，小学数学应用题 8K）",
+  "aliases": [
+    "grade-school-math",
+    "GSM8k",
+    "Grade School Math 8K"
+  ],
   "status": "near-saturation",
   "categories": [
     "reasoning"
   ],
-  "summary": "8500 道小学应用题，CoT 时代开山基准（已饱和 95%+）",
-  "interpretation": "小学应用题。95 分只是及格线意义上的“会算数了”——它 2021 年出生，如今已无区分度。",
-  "measures": [],
-  "does_not_measure": [],
-  "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
-  },
-  "metrics": [],
-  "default_protocol": {
-    "raw": "8-shot，#### 数字标记"
-  },
-  "versions": [],
-  "limitations": [],
-  "notes": null,
-  "official_sources": [
+  "summary": "GSM8K 是 OpenAI 2021 年发布的约 8,800 道小学数学应用题（训练 7,473 + 测试 1,319，论文按 8.5K 表述），每题需 2–8 步推理，解答以自然语言写出、最终答案放在 #### 之后，是「思维链微调 + 验证器」路线的开山基准。",
+  "interpretation": "95 分以上只说明模型会做小学算术应用题，不再有区分度。Scale AI 的 GSM1k 对照研究显示，部分模型家族在 GSM8k 上存在系统性过拟合（两个集子上差距最高 8 个点），所以 GSM8k 的高分要按「可能含记忆成分」打折看。",
+  "measures": [
     {
-      "kind": "site",
-      "url": "https://huggingface.co/datasets/openai/gsm8k"
+      "area": "多步算术文字题（唯一题型）",
+      "focus": "示例：Natalia 四月向 48 位朋友卖了发夹，五月卖了一半，问两月共卖多少（标准答案 72，解答含 <<48+24=72>> 计算器注释）",
+      "share": "未披露（论文未按主题或难度给出题目占比）",
+      "format": "自然语言分步解答 + #### 后的最终数值答案",
+      "cite": [
+        "dataset@Data Instances",
+        "paper@§2 Dataset"
+      ]
     },
+    {
+      "area": "推理步数与知识范围",
+      "focus": "每题 2–8 步，只用四则运算与早期代数概念，绝大多数题不需要显式设变量；作者称「聪明中学生应能解出每一题」",
+      "share": "2–8 步（论文未给步数分布）",
+      "format": "自然语言解答（禁止纯算式）",
+      "cite": [
+        "paper@§2 Dataset"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "初等代数以外的数学：论文明确题目不超出 early Algebra 水平，并刻意把难度控制在「对当时前沿模型有挑战但可解」的区间",
+      "cite": [
+        "paper@§2 Dataset"
+      ]
+    },
+    {
+      "text": "竞赛级数学难题：作者把 MATH 定位为更大更复杂的基准，GSM8K 与之是难度分工而非替代",
+      "cite": [
+        "paper@§3.1 Related Datasets"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 8792,
+    "splits": [
+      "train 7,473",
+      "test 1,319（数据集卡另提供同规模的 socratic 配置）"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "human-authored（Upwork 自由职业者起步 + Surge AI 规模化人工出题）",
+    "public_sample": true,
+    "totals": "共 8,792 题（论文表述为 8.5K：训练 7.5K + 测试 1K）· 全部为英文小学算术文字题，2–8 步推理 · 答案为非负整数的最终数值 · 数据集卡 MIT 许可，附 socratic 配置",
+    "cite": [
+      "dataset@Data Splits",
+      "paper@§2 Dataset",
+      "dataset@Licensing Information"
+    ],
+    "construction": [
+      {
+        "k": "人工出题",
+        "text": "起步 1,000 题由 Upwork 自由职业者创作，随后交由 Surge AI 扩大收集；出题时可参考 few-shot GPT-3 自动生成的种子题（可直接用、改编或完全自创）。",
+        "cite": [
+          "paper@附录 A"
+        ]
+      },
+      {
+        "k": "答案一致性质检",
+        "text": "收集完成后让工人重解全部题目（不重解自己写的题），答案不一致的修复或丢弃；再抽较小子集复核，仍有 1.7% 存在分歧，作者估计这就是含破坏性错误或歧义的题目比例。",
+        "cite": [
+          "paper@附录 A"
+        ]
+      },
+      {
+        "k": "反模板化",
+        "text": "用工件间两两相似度分数向工人提供反馈，防止复用题目场景与模板，保证题目多样性。",
+        "cite": [
+          "paper@附录 A",
+          "paper@§2 Dataset"
+        ]
+      },
+      {
+        "k": "计算器注释",
+        "text": "解答中的 <<...>> 计算器注释并非人工标注，由硬编码逻辑加微调语言模型生成；论文使用的初版计算器有实现 bug，修复后在完整训练集上使 verification 提升约 1%。",
+        "cite": [
+          "paper@附录 C"
+        ]
+      },
+      {
+        "k": "答案格式约定",
+        "text": "最终数值答案是解答最后一行、以 #### 前缀；官方判定方式是解析 #### 之后的数值，去掉注释则删掉所有 << 开头 >> 结尾的字符串。",
+        "cite": [
+          "repo@Dataset Details",
+          "repo@Solution Extracting",
+          "repo@Calculation Annotations"
+        ]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "论文主协议：微调模型后以低温（T=0）单次采样生成完整自然语言解答，解析 #### 后的最终数值与标准答案比对（final answer accuracy / test solve rate）；verification 协议为每题采样 100 个解答、用验证器打分后返回得分最高者。",
+    "cite": [
+      "paper@§4 Methods",
+      "repo@Solution Extracting",
+      "paper@§4.2 Verification"
+    ],
+    "variants": [
+      {
+        "text": "finetuning（T=0 单样本）与 verification（100 采样 + 验证器重排）算力差一个量级，分数不可直接横比。",
+        "cite": [
+          "paper@§4 Methods",
+          "paper@§4.2 Verification"
+        ]
+      },
+      {
+        "text": "few-shot 数与提示词：GSM1k 复现统一用 5 个 GSM8k 训练集示例的标准化提示词，其作者明确说明这样测出的 GSM8k 数字可能低于各厂商自报的最优提示词成绩。",
+        "cite": [
+          "gsm1k@§4 Results"
+        ]
+      },
+      {
+        "text": "是否使用计算器注释：训练集默认注入 <<...>> 注释，测试时模型选择使用注释则由计算器覆盖采样；官方提供去除注释的数据处理方式。",
+        "cite": [
+          "paper@§4 Methods",
+          "repo@Calculation Annotations"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "accuracy",
+      "name": "Final Answer Accuracy（Test Solve Rate）",
+      "direction": "越高越好",
+      "description": "模型解答中 #### 之后的最终数值与标准答案一致的题目占比",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§4 Methods",
+        "repo@Solution Extracting"
+      ]
+    },
+    {
+      "id": "test-at-n",
+      "name": "test@N",
+      "direction": "越高越好",
+      "description": "允许对每题独立猜 N 次时至少答对一次的题目占比，论文用 T=0.7 采样测 test@100 以刻画解空间覆盖度",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§4.1 Finetuning"
+      ]
+    }
+  ],
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2021-10-27",
+      "label": "arXiv v1 提交",
+      "cite": [
+        "abs"
+      ]
+    },
+    {
+      "id": "v2",
+      "date": "2021-11-18",
+      "label": "arXiv v2（本页核对所用版本，含附录 A–F）",
+      "cite": [
+        "abs"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "污染与刷榜",
+      "impact": "测试集公开可下载。GSM1k 复现发现部分模型家族在 GSM1k 上最多掉 8 个点，Phi 与 Mistral 家族几乎每个版本和规模都系统性偏高；模型生成 GSM8k 测试题的似然与 GSM8k/GSM1k 差距正相关（Spearman r²=0.36），提示存在部分记忆。",
+      "severity": "高",
+      "response": "GSM1k 作者暂不公开 GSM1k 以防再次污染，并开源全部评测代码；OpenAI 仓库已标记 Archive（代码按原样提供，不再更新），未见官方后续回应。",
+      "reader": "看到 GSM8k 分数先问口径是 GSM8k 还是 GSM1k；>95% 的 GSM8k 成绩含过拟合成分。",
+      "cite": [
+        "gsm1k@Abstract",
+        "gsm1k@§5.1",
+        "gsm1k@§5.2",
+        "repo"
+      ]
+    },
+    {
+      "issue": "基准饱和",
+      "impact": "GSM1k 论文记录 2024 年 6 月前沿模型自报成绩已超过 95%，基准失去区分最强模型的能力。",
+      "severity": "中",
+      "response": "GSM1k 作者预设退出条件：三个不同 lineage 的开源模型在 GSM1k 达到 95% 或 2025 年 6 月（先到者）即公开 GSM1k，因为他们判断届时小学算术已不足以衡量模型发布。",
+      "reader": "95%+ 的 GSM8k 分数只能当门槛指标，不能用于排名。",
+      "cite": [
+        "gsm1k@§2",
+        "gsm1k@§3 GSM1k"
+      ]
+    },
+    {
+      "issue": "题目质量噪声",
+      "impact": "论文两处口径略有差异：§2 称估计不到 2% 的题目含破坏性错误，附录 A 的第二轮复核为 1.7% 分歧率；GSM1k 脚注另指出 GSM8k 有少数题目答案不是正整数、疑似错误。",
+      "severity": "低",
+      "response": "论文公开了人工重解与一致性检查流程；仓库 Archive 后未见修订版本。",
+      "reader": "个别题目争议不影响整体趋势，但复测自家模型时可预期约 1–2% 的题目分歧。",
+      "cite": [
+        "paper@§2 Dataset",
+        "paper@附录 A",
+        "gsm1k@§4 Results"
+      ]
+    },
+    {
+      "issue": "评测口径敏感",
+      "impact": "few-shot 数、提示词模板、答案抽取规则都会改变分数；GSM1k 用标准化设置复测得到的 GSM8k 数字可能低于厂商自报基准数字。",
+      "severity": "中",
+      "response": "GSM1k 公开评测代码并报告了替代提示词、few-shot 数量与来源的消融，过拟合趋势在各消融下一致。",
+      "reader": "跨论文比较 GSM8k 分数前，先核对 few-shot 数、提示词与答案抽取方式。",
+      "cite": [
+        "gsm1k@§4 Results"
+      ]
+    }
+  ],
+  "notes": "CoT 微调与 verifier 路线的开山基准；现已饱和，常用 GSM1k 作为去污染对照",
+  "official_sources": [
     {
       "kind": "paper",
       "url": "https://arxiv.org/abs/2110.14168"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/openai/gsm8k"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/openai/grade-school-math"
     }
   ],
   "related_benchmarks": [
-    "gpqa",
-    "aime24",
+    "gsm1k",
+    "math",
     "math500",
-    "frontiermath",
-    "livebench",
-    "hlehle"
+    "aime24",
+    "hlehle",
+    "livebench"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-28"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-10",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-10",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "Training Verifiers to Solve Math Word Problems（arXiv:2110.14168v2，2021-11-18）",
+        "url": "https://arxiv.org/abs/2110.14168",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "abs",
+        "kind": "site",
+        "title": "arXiv:2110.14168 摘要页（提交与修订日期）",
+        "url": "https://arxiv.org/abs/2110.14168",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "openai/grade-school-math（数据集、计算器与评测代码，已 Archive）",
+        "url": "https://github.com/openai/grade-school-math",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "dataset",
+        "kind": "dataset",
+        "title": "openai/gsm8k（Hugging Face 数据集卡）",
+        "url": "https://huggingface.co/datasets/openai/gsm8k",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "gsm1k",
+        "kind": "paper",
+        "title": "A Careful Examination of Large Language Model Performance on Grade School Arithmetic（arXiv:2405.00332v4，NeurIPS 2024 Datasets & Benchmarks）",
+        "url": "https://arxiv.org/abs/2405.00332",
+        "accessed": "2026-11-10"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "OpenAI",
+        "cite": [
+          "paper@作者署名",
+          "paper@Acknowledgements"
+        ]
+      },
+      "first_release": {
+        "v": "2021-10-27（arXiv v1；v2 2021-11-18）",
+        "cite": [
+          "abs"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "paper@Abstract",
+        "paper@§2 Dataset"
+      ],
+      "interpretation": [
+        "gsm1k@§2",
+        "paper@§2 Dataset"
+      ]
+    },
+    "problem": {
+      "text": "2021 年的语言模型在多步数学推理上仍然脆弱：自回归生成一旦某步出错就无法自我纠正，而当时的数学数据集要么太小、要么模板化严重、要么只给算式不给自然语言解答。GSM8K 用人工出题、自然语言解答和「对前沿模型有挑战但不无解」的难度补上这个空档，用来诊断失败模式并支持验证器方法研究。",
+      "cite": [
+        "paper@Abstract",
+        "paper@§3.1 Related Datasets"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "人类基线",
+        "value": "论文未给出数值",
+        "note": "论文只给定性表述「聪明中学生应能解出每一题」；GSM1k 复现中人类在 15 分钟限时内平均解 4.07±0.93 题（GSM1k 为 4.36±1.11）。",
+        "cite": [
+          "paper@§2 Dataset",
+          "gsm1k@§3.2.2 Human Solve Rates"
+        ]
+      },
+      {
+        "label": "论文发布时最好",
+        "value": "论文未给出精确数值表",
+        "note": "论文结果以图呈现：完整训练集上 6B verification 略优于 175B finetuning，约相当于 30 倍模型规模提升；6B 微调写自然语言步骤为 20.6%，改为直接输出最终答案降到 5.2%。",
+        "cite": [
+          "paper@§6 Conclusion",
+          "paper@§4.1 Finetuning"
+        ]
+      },
+      {
+        "label": "饱和参考线",
+        "value": "超过 95%（2024-06 前沿模型自报）",
+        "note": "GSM1k 论文转述的前沿模型自报数字；同研究用 GSM1k 对照测得部分家族掉分最高 8 个点。",
+        "cite": [
+          "gsm1k@§2",
+          "gsm1k@Abstract"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 GSM8k 95%+ 当成纯推理能力——GSM1k 对照显示部分模型家族存在系统性过拟合，GSM8k 与 GSM1k 差距最高 8 个点。",
+        "cite": [
+          "gsm1k@Abstract",
+          "gsm1k@§5.1"
+        ]
+      },
+      {
+        "text": "把不同提示词、few-shot 数下的分数直接横比——GSM1k 用标准化 5-shot 复测，作者明确其 GSM8k 数字可能低于厂商自报。",
+        "cite": [
+          "gsm1k@§4 Results"
+        ]
+      },
+      {
+        "text": "以为题目是模型生成的——题目全部由人类工人创作（可用 few-shot GPT-3 种子题作参考），GSM1k 甚至明确不用任何 LLM 造题。",
+        "cite": [
+          "paper@附录 A",
+          "gsm1k@§3 GSM1k"
+        ]
+      },
+      {
+        "text": "把 verifier 的提升当成免费午餐——verification 每题要采样 100 个解答再重排，论文称 100 次采样已能在适中算力下拿到大部分收益。",
+        "cite": [
+          "paper@§4.2 Verification",
+          "paper@§5.1 Test Time Compute"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "OpenAI",
+        "cite": [
+          "paper@作者署名",
+          "paper@Acknowledgements"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "Karl Cobbe、Vineet Kosaraju（共同一作）、Mohammad Bavarian、Mark Chen、Heewoo Jun、Lukasz Kaiser、Matthias Plappert、Jerry Tworek、Jacob Hilton、Reiichiro Nakano、Christopher Hesse、John Schulman",
+        "cite": [
+          "paper@作者署名",
+          "abs"
+        ]
+      },
+      {
+        "k": "数据标注方",
+        "v": "Surge AI（起步 1,000 题来自 Upwork 自由职业者）",
+        "cite": [
+          "paper@附录 A",
+          "dataset@Source Data",
+          "paper@Acknowledgements"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2021-10-27 arXiv v1 → 2021-11-18 v2 → 2024-11-22 GSM1k 对照研究 v4（NeurIPS 2024 Datasets & Benchmarks Track）",
+        "cite": [
+          "abs",
+          "gsm1k"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "数据集在 Hugging Face（openai/gsm8k，MIT 许可），原始 jsonl 与评测代码在 GitHub；仓库已标记 Archive（代码按原样提供，不再更新）",
+        "cite": [
+          "dataset@Licensing Information",
+          "repo@Dataset Details",
+          "repo"
+        ]
+      },
+      {
+        "k": "附带数据",
+        "v": "仓库另提供 socratic 配置（每步前自动插入苏格拉底式子问题，论文实验未采用）与 6B/175B 模型的示例解答文件",
+        "cite": [
+          "repo@Socratic Dataset"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-10",
+        "columns": [
+          "模型",
+          "GSM8k",
+          "GSM1k",
+          "差值（GSM8k−GSM1k）"
+        ],
+        "rows": [
+          [
+            "Yi-6B-Chat",
+            "43.7%",
+            "35.7%",
+            "8.0 个点"
+          ],
+          [
+            "math-shepherd-mistral-7b-rl",
+            "82.6%",
+            "75.4%",
+            "7.2 个点"
+          ],
+          [
+            "phi-2",
+            "56.6%",
+            "50.4%",
+            "6.3 个点"
+          ],
+          [
+            "Meta-Llama-3-8B-Instruct",
+            "75.2%",
+            "69.0%",
+            "6.2 个点"
+          ]
+        ]
+      },
+      "cite": [
+        "gsm1k@附录 F"
+      ]
+    }
+  }
 }
