@@ -4501,3 +4501,94 @@ Gemini Robotics 2.5 的 DeepMind 官方 RSS `pubDate` 为 `Mon, 09 Nov 2026 19:5
 - **新增厂商**：无
 - **候选数**：702 → **706**（入口扫描 +3，均按非模型发布排除；另主动登记 1 条已核验的 LifeVal 基准发布文）；general/vertical 未决候选 **0**
 - **检查点**：`last_scan_at=2026-11-15`；`last_max_release_date=2026-11-12`（**锚点只前进不回退**——本批最大发布日 2025-12-11 早于既有锚点，故不覆盖）；覆盖页窗口同步为 `2026-10-29 ~ 2026-11-15`
+
+## 第六十九批（2026-11-17 CST / 2026-11-16 UTC 增量窗口 2026-10-29 ~ 2026-11-16：窗口内确无新模型发布；存量回填 5 个 release —— 阶跃星辰 StepAudio 3 家族 + HealthAdminBench 明文分值补录 2 处）
+
+### 本批窗口与前置
+
+- **增量窗口**：锚点 `ledger_max_release_date = 2026-11-12` 回退 14 天重叠 → `window_since = 2026-10-29`、`window_until = 2026-11-16`（UTC）。本批新增的 5 个 release 发布日为 2026-09-11 / 2026-09-12（存量回填），**早于既有锚点，按「锚点只前进不回退」纪律不覆盖锚点**。
+- **基线**：`origin/main` @ `6ea247e`；分支 `model-release-daily-20261116T231840Z`；独立 worktree `../.worktrees/evals/model-release-daily-20261116T231840Z`（**不在本地 `main` 上作业**——本地 `main` 与 `origin/main` 长期分叉，本地落后 186 个提交）。
+- **执行器互斥（开工前确认）**：OpenClaw 的 `workflow:daily-model-releases-and-provider-refresh`（declaration id `db2e30ef-541a-49e2-af4a-bcdff12831e9`，cron `15 7 * * *` Asia/Shanghai，agent `walle`）实取 OpenClaw 自动化存储（`~/.openclaw/state/openclaw.sqlite`，**只读回读**）确认 `enabled` 列 = `0`、job JSON 内 `enabled` = `false`——该声明仍处于停用状态，因此本仓的每日入库由本调度**独占**执行，不存在两个执行器跑同一 cycle 的可能。同时逐条回读全部 6 条 cron job，其余 5 条（`heartbeat:tars`、`memory-core:memory-dreaming-promotion`、`skill-collection-review:walle`、`skill-collection-review:tars`、`nn-ai-feedback-daily`）均与本 cycle 无关，**无第二个 evals 执行器**。该声明上次运行的失败原因为 `source_branch_mismatch`（与另一执行器的分支指纹冲突），停用正是为消除该冲突。
+- **工作树状态**：开工时干净（新建 worktree，`git status` 无改动）；本机 git 身份沿用仓库既有配置。
+
+### 入口复扫（Step 1）
+
+`node .claude/skills/ingest-releases/scripts/scan.mjs --write` 对 18 家在册厂商的 **46 个官方域名入口**逐一实扫，exit 0，**全部 46 个入口的 `last_scanned_at` 均刷新到 `2026-11-16T23:20:07.252Z`**（失败与动态页照落 `data/model-coverage.json`，不静默跳过）。
+
+随后按 `references/discovery-channels.md` 的渠道表**逐通道定点复核**（下表为实取结果，非统计推断）：
+
+| 通道 | 实取结果 | 结论 |
+|---|---|---|
+| OpenAI RSS `news/rss.xml` | 1398 条，2026-11-14 起 **11** 条 | 逐条标题+链接比对并对其中 2 条**实取全文核验**：`Our first phase of embedded assessments`（11-16，**可见文本百分比命中 0 处**，是 pilot embedded assessors 评估治理公告）、`Advancing computer-use agents for healthcare teams`（11-16，产品公告——其分值已按存量回填落账，见下）。其余 9 条为计划扩展、科研合作、伙伴关系、客服案例、博客栏目上线等，**窗口内确无新模型发布** |
+| Google 根 RSS `blog.google/rss/` | 20 条，2026-11-14 起 **15** 条 | `Google TPU and GPU performance: MLPerf v6.1 results`（**实取全文**：硬件训练吞吐，不是模型发布）与 `The era of autonomous attacks has arrived`（GTIG 威胁追踪报告，实取全文百分比命中 0 处）均非模型发布；其余为 Ask Maps / 搜索 / 广告工具 / Gemini 应用功能更新 |
+| Google AI RSS `blog.google/technology/ai/rss/` | 20 条，1 条 | Ask Maps 功能更新，非模型发布 |
+| DeepMind RSS `blog/rss.xml` | 100 条，2026-11-14 起 **0** 条 | 窗口内无新条目 |
+| Mistral RSS `rss.xml` | 94 条，2026-11-14 起 **0** 条 | 窗口内无新条目 |
+
+候选 706 → **716**（+10：入口扫描 +4；`reconcile-coverage` 为 5 个新 release 自动补 4 条 `release-*` 候选；本批主动登记 2 条实取全文核验过的官方文章）。general/vertical 未决候选 **0**。
+
+### 存量回填 1：阶跃星辰 StepAudio 3 家族（5 个 release，19 条 evidence）
+
+StepFun 的官方模型页此前在发现通道里长期挂着 5 条「回填缺口候选」（`stepfun.ai/docs/en/guides/models/stepaudio-3-{asr,gen,music,tts,realtime}`）。本批按渠道表指定的 `platform.stepfun.com/docs/zh/guides/models/<model>.md` 变体（`.md` 直出正文，含模型 ID、计费与明文评测数值）**逐条实取全文**，并按仓库既有纪律「发布日取技术报告或公告（StepAudio 3 取 arXiv 2609.12945 = 2026-09-11）」用官方技术报告的 published 日期定发布日：
+
+| release | 发布日 | 日期证据 | evidence |
+|---|---|---|---|
+| `stepaudio-3-asr-max` | 2026-09-11 | 家族锚点 arXiv 2609.12945（通道表既有口径；模型页本身未印发布日） | **7**（4 本模型绝对值 + 3 竞品/上一代对照） |
+| `stepaudio-3-gen` | 2026-09-11 | arXiv 2609.12945《StepAudio 3 Gen Technical Report》published | **4**（真人感 TTS Elo 1755.3 / 胜率 82.0%；音色设计 Elo 1668.5 / 胜率 75.5%） |
+| `stepaudio-3-music` | 2026-09-11 | arXiv 2609.16034《StepAudio 3 Music Technical Report》published | **4**（1 verified + 3 pending） |
+| `stepaudio-3-tts` | 2026-09-11 | 同 2609.12945（官方 TTS 页的「技术报告」直链该报告，摘要明确覆盖 zero-shot TTS） | **0**（占位发布，status=pending） |
+| `stepaudio-3-realtime` | 2026-09-12 | arXiv 2609.14005《StepAudio 3 Realtime Technical Report》published（v3 updated 2026-10-12，发布日仍取首次 published） | **4**（StepAudioChat 73.0 / MMSU 90.6 / AA Full-Duplex Bench 98.9 Overall / τ-Voice 56.0%） |
+
+**抽取口径要点**：
+
+- `stepaudio-3-asr-max` 的 7 条全部是**正文散文明文**（非图表）：上下文推理错误率 0.57%、垂类专名平均错误率 3.81%、无语音测试准确率 99%、AISHELL-6 悄悄话 CER 3.97%，外加同句印出的 StepAudio 2.5 ASR 1.59% / 豆包 ASR 2.0 1.00% / 上一代 AISHELL-6 5.36% 三条 `comparison_cited` 对照行。
+- 官方另印一组**相对降幅百分比**（相对上一代中文 9.3% / 英文 25.0% / 方言 22.3% / 垂类 42.1% / 中英混说 27.9%；相对豆包 ASR 2.0 中文通用 18.6% / 英文 60.4% / 重口音 23.3% / 长音频 40.3% / 上下文推理 43.0%）。**降幅不是基准绝对分值，一律不建行**，只在归档 `index.md` 与账本 notes 留痕。
+- `stepaudio-3-gen` 的 4 条取自官方产品页「评测表现」一节的**正文段落明文**；配图 `assets/tts-elo-chinese.png` 与 `assets/vd-arena.png` 的 alt 文本给出同一组数值并补充领先幅度与逐局战绩（500 局 410 胜 / 39 平 / 51 负），本批以正文段落口径录入、**未做像素级视觉转写**；逐对手胜率只在 alt 文本给出，不单独建行。
+- `stepaudio-3-music` 的 AA Music Arena Vocals Quality Elo 1105 取自技术报告摘要明文（官方自述 preliminary 初步榜）；AudioBox、MuQ-MuLan、SongBench 三项官方只给「最高 / competitive」的结论、数值在技术报告 PDF 图表内，按「无数值不臆造」口径**建行但 value 留空**、`score_status=not_extracted`、`status=pending`，不做视觉转写。
+- `stepaudio-3-tts` **0 条 evidence**：官方 TTS 模型页与技术报告摘要均未给出本模型的独立分值。TTS 赛道的盲测 Elo 由官方产品在 **StepAudio 3 Gen** 名下公布，已记于 `stepaudio-3-gen`，**不重复计入本条**，避免同一评测跨模型重复计数。
+- `stepaudio-3-realtime` 的 4 条全部取自技术报告**摘要明文**（官方模型页本身未印任何分值）；StepAudioChat 的「reasoning mode」条件落在 `benchmark_variant` 与 notes，MMSU / Full-Duplex Bench 的单位官方未明示故记 `index`。
+- 规格字段：参数量与上下文长度官方均未明示，一律 `null`；计费按模型页标注记录（Gen / Music / Realtime 的 `-preview` 名字是**限免期间**模型名），官方价目表自北京时间 2026-11-23 起执行的新价与模型页现价差异写入 `pricing.note`。
+
+### 存量回填 2：HealthAdminBench 明文分值补录进既有 OpenAI release（+2 条 evidence）
+
+本批在 OpenAI 官方医疗 computer-use 产品文（`https://openai.com/index/advancing-computer-use-for-healthcare-teams`，栏目 Product，日期 2026-11-16）**实取全文**，正文明文印有：GPT‑6 Astra 在 **HealthAdminBench**（Stanford 研究者自建的独立基准，官网 `https://som-shahlab.github.io/health-admin-bench-website/`）上得 **94.3% 的可得 rubric 分**，GPT‑6 Luna 得 **91.8%**，且明示「Both models were evaluated at maximum reasoning effort」（协议字段 `reasoning_effort` 记 `maximum`）。
+
+据此**追加 2 条 verified evidence 行**（仅追加，未改动任何既有行、数值与状态，release 级 status 维持 verified）：
+
+- `openai/gpt-6-astra` 41 → **42** 条，新增 `openai-gpt-6-astra--healthadminbench`
+- `openai/gpt-6-sol-and-luna` 29 → **30** 条，新增 `openai-gpt-6-sol-and-luna--healthadminbench`（Luna 侧）
+
+同句另印成本口径「costing 98% less at 8.5 cents per task」——**绝对成本与相对降幅都不是基准分值，不建行**，只写入两条 release 的 notes。该文是产品/方案公告而非模型发布文，故候选按「非独立模型发布」排除、**不另建 release**。
+
+### 待人工核验
+
+1. **12 个新铸 benchmark id 的实体档案**——`stepaudio-asr-context-reasoning`、`stepaudio-asr-domain-terms`、`stepaudio-asr-no-speech`、`aishell-6`、`chinese-human-likeness-arena`、`voice-design-arena`、`artificial-analysis-music-arena-vocals`、`audiobox`、`muq-mulan`、`songbench`、`stepaudio-chat`、`healthadminbench`：题集与判分口径均未公开，按棘轮机制**先不建实体**，由兜底详情页承载，待官方公开后补建带合规 `profile` 的档案。
+2. **`stepaudio-3-tts` 的官方评测**——若官方另发 TTS 专属评测页或模型卡，可另建 release 追加证据行，不改本档。
+3. **`stepaudio-3-music` 技术报告 PDF 内的三张图表**（AudioBox 三项子分、MuQ-MuLan 相似度、SongBench 分数）——本批不做视觉转写，人工读图确认后可翻 `verified` 并补绝对值。
+
+本批**没有需要人工读图才能确认的行**：3 条 pending 行的数值本就不在官方摘要中（官方只给结论），其余 18 条均为明文绝对值。
+
+### 门禁
+
+| 门禁 | 结果 |
+|---|---|
+| `node scripts/reconcile-coverage.mjs` | ✓ exit 0；候选自动收口，未决候选 0 |
+| `node scripts/validate-model-coverage.mjs` | ✓ exit 0 |
+| `node scripts/validate-data.mjs` | ✓ PASS — taxonomy 9 类 / vendors 18 / **benchmarks 510** / **releases 254（official 240）** / **evidence edges 4137** |
+| `node scripts/compare-audit.mjs` | ✓ orphans 0 / undecided 0 / stranded 0（12 个新铸 id 已在 `data/compare-rules.json` 的 `unmapped_ids` 登记不进对照的理由） |
+| `node --test tests/*.test.mjs` | ✓ **全绿 140/140** |
+| `npm run sync:skills:check` | ✓ 通过（技能镜像零漂移） |
+| `npm run validate` | ✓ passed for 32 chapters |
+| `npm run build:epub:official` | ✓ EPUB 32 章 / 486 KB |
+| `npm run build:web` | ✓ 32 章页面 + **510 实体页 + 287 自动证据页**（新铸 id 的兜底页）+ sitemap 803 URL |
+| `npm run validate:site` | ✓ **全部通过**（1130 个 HTML / 42593 个内部引用 / 295 个时间轴 / 2343 个事件卡片 / 198 个评测页档案） |
+
+### 汇总
+
+- **新增 release**：**5 个**（`stepfun/stepaudio-3-asr-max`、`stepfun/stepaudio-3-gen`、`stepfun/stepaudio-3-music`、`stepfun/stepaudio-3-tts`、`stepfun/stepaudio-3-realtime`，全部为存量回填）
+- **新增 evidence**：**21 条** = **18 verified** + **3 pending**（StepAudio 家族 19 条：ASR 7 / Gen 4 / Music 1+3 / TTS 0 / Realtime 4；HealthAdminBench 补录 2 条）
+- **新增 benchmark id**：**12 个**（均标 new-benchmark，本批**未建实体**）
+- **新增归档目录**：**5 个**（`models/2026-09-11-stepaudio-3-{asr-max,gen,music,tts}/`、`models/2026-09-12-stepaudio-3-realtime/`），各含 `page.html` + `page.md`（官方 `.md` 直出正文）+ 官方来源快照（arXiv abs 页 / 官方产品页）+ `index.md` + `manifest.json`（逐文件 sha256）
+- **新增厂商**：无
+- **候选数**：706 → **716**（+10）；general/vertical 未决候选 **0**
+- **检查点**：`last_scan_at=2026-11-16`；`last_max_release_date=2026-11-12`（**锚点只前进不回退**——本批最大发布日 2026-09-12 早于既有锚点，故不覆盖）；覆盖页窗口同步为 `2026-10-29 ~ 2026-11-16`
