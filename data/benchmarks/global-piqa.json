@@ -1,37 +1,511 @@
 {
   "id": "global-piqa",
   "name": "Global PIQA",
-  "full_name": null,
+  "full_name": "Global PIQA（多语言参与式常识推理基准）",
   "aliases": [],
-  "status": null,
+  "status": "active",
   "categories": [
     "knowledge"
   ],
-  "summary": "多语言常识物理直觉问答（Cohere）",
-  "interpretation": "100+ 语种母语者手写物理常识二选一，随机基线 50%；Gemini 2.5 Pro 平均 91.7%、小样人类评测约 95%，低资源语言明显更弱（个别语言最佳模型不足 70%）。",
-  "measures": [],
-  "does_not_measure": [],
+  "summary": "Global PIQA 是 65+ 个国家、350+ 位研究者用母语手工编写的多语言常识推理基准：每题给一句提示和两个候选解（类似单选题），看模型能否选出符合物理或文化常识的那个。非平行 split 覆盖 136 种语言各 100 题，专治「平均分很高、低资源语言拉胯」的盲区。",
+  "interpretation": "平均分高只说明模型在英语和高资源语言上接近人类水平（临时小样人类均值约 95.1%）；单语言下钻才是这个基准的真正信号——整体最强的 Gemini 3.1 Pro 在平行 split 的最好与最差语言间差 68 个百分点（英语 100% vs Ekpeye 32%），开源最强的 Gemma 4 31B 在撒哈拉以南非洲语言均值只有 60.5%。跨语言直比请用平行 split（同一批题译成 131 种语言），文化维度看非平行 split。",
+  "measures": [
+    {
+      "area": "日常/物理常识判断（非平行 split）",
+      "focus": "给一句提示和两个候选解，选出符合物理、时间、文化或世界常识的那个；文化特定题（本地食物、习俗等）占 59.9%",
+      "share": "136 语言 × 100 题；文化特定题 59.9%",
+      "format": "二选一",
+      "cite": [
+        "gpiqa-paper@§3.2",
+        "gpiqa-paper@§3.3",
+        "gpiqa-paper@§3.4"
+      ]
+    },
+    {
+      "area": "文化无关常识（平行 split）",
+      "focus": "103 道英语母语者原创的「文化无关」题（物体属性/交互、时空推理、计数），机翻成 131 种语言后母语者校正",
+      "share": "131 语言 × 103 题（Ekpeye 为 101 题）",
+      "format": "四选一",
+      "cite": [
+        "gpiqa-paper@§4",
+        "gpiqa-paper@§4.1",
+        "hf-global-piqa-parallel@dataset card"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "不测文化特定知识（平行 split）：题目刻意写成「文化无关」，文化维度要看非平行 split",
+      "cite": [
+        "gpiqa-paper@§4.1"
+      ]
+    },
+    {
+      "text": "不测英语 PIQA 原题记忆：非平行 split 明确排除英语 PIQA 直译题，题面全部由母语者原创",
+      "cite": [
+        "gpiqa-paper@§3.2"
+      ]
+    },
+    {
+      "text": "不评开放式生成质量：生成式作答也只按最终答案字符串匹配计分，文风与解释不参与评分",
+      "cite": [
+        "gpiqa-paper@§5.1"
+      ]
+    }
+  ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
+    "sample_count": 13600,
+    "splits": [
+      "non-parallel（官方主 split：136 语言 × 100 题，母语者原创，含文化特定题）",
+      "parallel（131 语言 × 103 题，英语原创题机翻 + 母语者校正，四选一）"
+    ],
+    "languages": [
+      "141 个语言变体（两 split 合计口径：五大洲、19 个语系、24 种文字）",
+      "非平行 split 136 个 / 平行 split 131 个"
+    ],
+    "source_type": "参与式众包：65+ 国 350+ 位研究者/母语者手工撰写，146 个作者组",
+    "public_sample": "https://huggingface.co/datasets/mrlbenchmarks/global-piqa-nonparallel",
+    "totals": "官方非平行 split 136 语言 × 100 题；平行 split 131 语言 × 103 题（Ekpeye 101）。合计覆盖 141 个语言变体、五大洲、19 个语系、24 种文字",
+    "cite": [
+      "gpiqa-paper@§3.4",
+      "gpiqa-paper@§4.1",
+      "gpiqa-paper@Abstract"
+    ],
+    "construction": [
+      {
+        "k": "组织与出题",
+        "text": "作为 MRL @ EMNLP 2025 共享任务组织：146 个作者组用本语言手写至少 100 题，全部经母语者检查；128 组完全手写（不用 LLM），全项目累计 350+ 位贡献者、65+ 国、180+ 机构",
+        "cite": [
+          "gpiqa-paper@§3.2",
+          "gpiqa-paper@§C",
+          "hf-global-piqa-nonparallel@dataset card"
+        ]
+      },
+      {
+        "k": "清洗与子采样",
+        "text": "清洗后全量 29.1K 题、136 个语言码，再子采样出官方 split：每语言 100 题，其中文化特定题占 59.9%、LLM 辅助撰写的仅 4.1%",
+        "cite": [
+          "gpiqa-paper@§3.3",
+          "gpiqa-paper@§3.4"
+        ]
+      },
+      {
+        "k": "母语校验",
+        "text": "每题至少 1 位母语者人工验证；97.8% 的题经多位母语者反复校验，92.6% 附人工核校的英语翻译",
+        "cite": [
+          "gpiqa-paper@§3.4"
+        ]
+      },
+      {
+        "k": "平行 split 构建",
+        "text": "两位英语母语者写 103 道「文化无关」题，用 Gemini 2.5 Pro / Gemini 3.0 Flash 机翻成 131 种语言，再由母语者校正（平均每题改 24.9 个字符）；6 题因歧义被剔除",
+        "cite": [
+          "gpiqa-paper@§4"
+        ]
+      }
+    ]
   },
-  "metrics": [],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [],
-  "notes": "Qwen 引用",
+  "metrics": [
+    {
+      "id": "accuracy",
+      "name": "准确率（accuracy）",
+      "direction": "越高越好",
+      "description": "选对正确候选解的题目占比；官方按语言报告，跨语言取均值（mean accuracy）",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "gpiqa-paper@§5.3"
+      ]
+    }
+  ],
+  "default_protocol": {
+    "raw": "两种官方格式：cloze（按候选解似然挑答案）与 generation（生成答案，最多 2048 个 token，字符串匹配判分），论文正文默认报告生成式结果；两种格式在 LM Evaluation Harness 都有实现。闭源系统开思考模式评测：Gemini/Claude 给 1024-token 思考预算，GPT-5.4 用 medium 档",
+    "cite": [
+      "gpiqa-paper@§5.1",
+      "gpiqa-paper@§5.2",
+      "gpiqa-paper@§G"
+    ],
+    "variants": [
+      {
+        "text": "cloze vs 生成式：cloze 对纯预训练模型（不加 few-shot）偏难，论文推荐生成式口径",
+        "cite": [
+          "gpiqa-paper@§5.1"
+        ]
+      },
+      {
+        "text": "split 口径：非平行 split 二选一、平行 split 四选一，两个 split 的分数不能直接混比",
+        "cite": [
+          "gpiqa-paper@§4"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "arxiv-v1",
+      "date": "2025-10-28",
+      "label": "arXiv v1 首次提交",
+      "cite": [
+        "arxiv-2510-24081@submission history"
+      ]
+    },
+    {
+      "id": "arxiv-v2",
+      "date": "2026-05-29",
+      "label": "arXiv v2（当前版本）",
+      "cite": [
+        "arxiv-2510-24081@submission history"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "低资源语言断崖",
+      "impact": "整体最强的 Gemini 3.1 Pro 在平行 split 最好与最差语言间差 68 个百分点（英语 100% vs Ekpeye 32%）；开源最强 Gemma 4 31B 欧洲语言均值 88.1%、撒哈拉以南非洲语言仅 60.5%，高资源语言 91.0% vs 低资源语言 75.0%",
+      "severity": "高",
+      "response": "论文按大洲与资源档分组报告，逐语言完整结果公开在官方 GitHub（eval_results 目录）",
+      "reader": "必须下钻到语言明细；平均分会掩盖低资源语言崩塌",
+      "cite": [
+        "gpiqa-paper@§H.3",
+        "gpiqa-paper@§5.3",
+        "gpiqa-github@README"
+      ]
+    },
+    {
+      "issue": "每语言仅约 100 题",
+      "impact": "单语言分数置信区间宽，语言间小差异不可靠；官方数据卡 Limitations 自述此问题",
+      "severity": "中",
+      "response": "官方希望参与式方法未来产出更大数据集",
+      "reader": "单语言名次别当真，优先看跨语言规律",
+      "cite": [
+        "hf-global-piqa-nonparallel@dataset card",
+        "hf-global-piqa-parallel@dataset card"
+      ]
+    },
+    {
+      "issue": "人类基线是临时小样",
+      "impact": "「约 95% 人类水平」来自 15 位标注员的 ad hoc 评测（均值 95.1%、个体最低 91%），不是正式大规模人类基线",
+      "severity": "中",
+      "response": "论文据此估计人类水平至少 90%、可能到 95%",
+      "reader": "与人类水平比较时记住这是估计区间，不是精确锚点",
+      "cite": [
+        "gpiqa-paper@§F"
+      ]
+    },
+    {
+      "issue": "平行 split 由 Gemini 系模型机翻",
+      "impact": "译文可能偏向所用翻译模型；作者自述翻译类基准会传播英语中心视角",
+      "severity": "低",
+      "response": "母语者逐题人工校正（平均每题改 24.9 个字符、约 12.9% 字符）；6 题因歧义剔除",
+      "reader": "跨语言直比可以用平行 split，但别把它当文化评测",
+      "cite": [
+        "gpiqa-paper@§4",
+        "hf-global-piqa-parallel@dataset card"
+      ]
+    },
+    {
+      "issue": "许可证限制用途",
+      "impact": "CC BY-SA 4.0 下仍禁止用 Global PIQA 训练 AI 系统或作为合成数据种子，仅限 LLM 评测",
+      "severity": "低",
+      "response": "官方 README 与数据卡明示该限制",
+      "reader": "评测可用；混进训练管线违反许可",
+      "cite": [
+        "gpiqa-github@README"
+      ]
+    }
+  ],
+  "notes": "多家前沿模型发布成绩引用（Qwen3.7-Max、Gemini 3 系列等，见本站账本）",
   "official_sources": [
     {
-      "kind": "site",
-      "url": "https://qwen.ai/blog?id=qwen3.7"
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2510.24081"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/mrlbenchmarks/global-piqa-nonparallel"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/mrlbenchmarks/global-piqa-parallel"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/mrlbenchmarks/global-piqa"
     }
   ],
   "related_benchmarks": [
-    "mmlu"
+    "mmlu",
+    "mgsm",
+    "mmmlu"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-13",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      {
+        "id": "gpiqa-paper",
+        "kind": "paper",
+        "title": "Global PIQA: Evaluating Commonsense Reasoning Across 100+ Languages and Cultures（arXiv 2510.24081v2，2026-05-29）",
+        "url": "https://arxiv.org/pdf/2510.24081",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "arxiv-2510-24081",
+        "kind": "site",
+        "title": "arXiv 2510.24081 摘要页（版本提交历史）",
+        "url": "https://arxiv.org/abs/2510.24081",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "hf-global-piqa-nonparallel",
+        "kind": "dataset",
+        "title": "Hugging Face Datasets: mrlbenchmarks/global-piqa-nonparallel（官方非平行 split 数据卡）",
+        "url": "https://huggingface.co/datasets/mrlbenchmarks/global-piqa-nonparallel",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "hf-global-piqa-parallel",
+        "kind": "dataset",
+        "title": "Hugging Face Datasets: mrlbenchmarks/global-piqa-parallel（官方平行 split 数据卡）",
+        "url": "https://huggingface.co/datasets/mrlbenchmarks/global-piqa-parallel",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "gpiqa-github",
+        "kind": "repo",
+        "title": "GitHub: mrlbenchmarks/global-piqa（官方补充材料与逐语言结果）",
+        "url": "https://github.com/mrlbenchmarks/global-piqa",
+        "accessed": "2026-11-13"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Tyler A. Chang（UC San Diego）、Catherine Arnett（EleutherAI）与第 5 届 MRL 工作坊作者群（350+ 位贡献者）",
+        "cite": [
+          "arxiv-2510-24081@authors",
+          "gpiqa-paper@§C"
+        ]
+      },
+      "first_release": {
+        "v": "2025-10-28（arXiv v1）",
+        "cite": [
+          "arxiv-2510-24081@submission history"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "gpiqa-paper@Abstract",
+        "gpiqa-paper@§3.4"
+      ],
+      "interpretation": [
+        "gpiqa-paper@Abstract",
+        "gpiqa-paper@§F",
+        "gpiqa-paper@§H.3",
+        "gpiqa-paper@§5.3"
+      ]
+    },
+    "problem": {
+      "text": "多语言评测长期靠「把英语基准翻译出去」：既把英语中心视角带进每种语言，也测不到文化特定常识，低资源语言覆盖更少。Global PIQA 反过来让 65+ 国母语研究者用本语言直接出题，并用「非平行 + 平行」两个 split 把文化特定评测与跨语言公平对比分开。",
+      "cite": [
+        "gpiqa-paper@Abstract",
+        "hf-global-piqa-parallel@dataset card"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机猜测基线",
+        "value": "论文未给出",
+        "note": "非平行 split 为二选一、平行 split 为四选一；论文未报告随机基线。",
+        "cite": [
+          "gpiqa-paper@§3.2",
+          "gpiqa-paper@§4"
+        ]
+      },
+      {
+        "label": "人类（临时小样，非平行 split）",
+        "value": "约 95.1%",
+        "note": "15 位标注员 ad hoc 评测均值，个体最低 91%；论文估计人类水平在 90%–95% 区间。",
+        "cite": [
+          "gpiqa-paper@§F"
+        ]
+      },
+      {
+        "label": "最强开源权重模型（论文 v2）",
+        "value": "84.9%（非平行均值）",
+        "note": "Gemma 4 31B；同一模型平行 split 均值 82.4%，高资源语言 91.0% vs 低资源语言 75.0%。",
+        "cite": [
+          "gpiqa-paper@§5.3"
+        ]
+      },
+      {
+        "label": "整体最强模型（论文 v2）",
+        "value": "论文未给出单一总分",
+        "note": "Gemini 3.1 Pro 为整体最优：平行 split 英语 100%、Ekpeye 32%，差距 68%。",
+        "cite": [
+          "gpiqa-paper@§H.3"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "「平均分高」≠每种语言都强：整体最优的 Gemini 3.1 Pro 在平行 split 最好与最差语言间差 68%；6/12 种语言（平行/非平行）连最优模型都不到 90%",
+        "cite": [
+          "gpiqa-paper@§H.3",
+          "gpiqa-paper@§5.3"
+        ]
+      },
+      {
+        "text": "Global PIQA 不是英语 PIQA 的翻译版：非平行 split 明确排除英语 PIQA 直译题，题面由各语言母语者原创（文化特定题占 59.9%）",
+        "cite": [
+          "gpiqa-paper@§3.2",
+          "gpiqa-paper@§3.3"
+        ]
+      },
+      {
+        "text": "两个 split 不能混着比：非平行是二选一母语原创题，平行是四选一英语机翻题（刻意文化无关）",
+        "cite": [
+          "gpiqa-paper@§4",
+          "gpiqa-paper@§4.1"
+        ]
+      },
+      {
+        "text": "平行 split 分数高也不代表文化知识强：Lingala、Plateau Malagasy 从平行到非平行分别掉 20/19 个百分点，说明语言能力 ≠ 文化常识",
+        "cite": [
+          "gpiqa-paper@§5.3"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布背景",
+        "v": "作为 MRL @ EMNLP 2025 共享任务诞生：非平行 split 即共享任务本身，平行 split 是后续补充",
+        "cite": [
+          "hf-global-piqa-nonparallel@dataset card",
+          "hf-global-piqa-parallel@dataset card"
+        ]
+      },
+      {
+        "k": "数据与代码位置",
+        "v": "数据在 Hugging Face（mrlbenchmarks/global-piqa-nonparallel 与 -parallel，CC BY-SA 4.0）；补充材料、各组数据集说明与逐语言评测结果在 GitHub mrlbenchmarks/global-piqa；cloze/生成两种格式均在 LM Evaluation Harness 有实现",
+        "cite": [
+          "gpiqa-github@README",
+          "gpiqa-paper@§5.1"
+        ]
+      },
+      {
+        "k": "与英语 PIQA 的关系",
+        "v": "题型沿用英语 PIQA（Bisk et al., 2020）：一句 prompt + 候选解；但题目全新原创，不含英语 PIQA 直译",
+        "cite": [
+          "gpiqa-paper@§3.2"
+        ]
+      },
+      {
+        "k": "命名口径差异",
+        "v": "GitHub 仓库简介写「Physical Commonsense Reasoning」，论文标题为「Commonsense Reasoning」，引用以论文为准",
+        "cite": [
+          "gpiqa-github@About",
+          "arxiv-2510-24081@title"
+        ]
+      },
+      {
+        "k": "模型覆盖",
+        "v": "v2 论文共评 146 个模型：7 个闭源 + 139 个开源权重（300M–120B 参数）",
+        "cite": [
+          "gpiqa-paper@§G",
+          "gpiqa-paper@§5.2"
+        ]
+      },
+      {
+        "k": "使用限制",
+        "v": "CC BY-SA 4.0；仅限 LLM 评测，禁止用于训练 AI 系统或作为合成数据种子",
+        "cite": [
+          "gpiqa-github@README"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-05-29",
+        "columns": [
+          "模型（闭源系统）",
+          "最佳语言",
+          "最佳准确率",
+          "最差语言",
+          "最差准确率",
+          "差距"
+        ],
+        "rows": [
+          [
+            "GPT-5.4",
+            "spa_latn_peru",
+            "99%",
+            "ekp_latn",
+            "28%",
+            "71%"
+          ],
+          [
+            "GPT-5.4 Mini",
+            "sin_sinh",
+            "95%",
+            "ekp_latn",
+            "18%",
+            "77%"
+          ],
+          [
+            "GPT-5.4 Nano",
+            "srp_cyrl",
+            "92%",
+            "bam_latn",
+            "20%",
+            "72%"
+          ],
+          [
+            "Claude Sonnet 4.6",
+            "fin_latn",
+            "99%",
+            "ekp_latn",
+            "20%",
+            "79%"
+          ],
+          [
+            "Gemini 3.1 Pro",
+            "eng_latn",
+            "100%",
+            "ekp_latn",
+            "32%",
+            "68%"
+          ],
+          [
+            "Gemini 3 Flash",
+            "srp_cyrl",
+            "99%",
+            "ekp_latn",
+            "33%",
+            "66%"
+          ],
+          [
+            "Gemini 3.1 Flash Lite",
+            "nob_latn",
+            "96%",
+            "ekp_latn",
+            "24%",
+            "72%"
+          ]
+        ]
+      },
+      "cite": [
+        "gpiqa-paper@§H.3"
+      ]
+    }
+  }
 }
