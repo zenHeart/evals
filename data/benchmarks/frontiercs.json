@@ -1,41 +1,730 @@
 {
   "id": "frontiercs",
   "name": "FrontierCS",
-  "full_name": null,
-  "aliases": [],
-  "status": null,
-  "categories": [
-    "coding"
+  "full_name": "FrontierCS: Evolving Challenges for Evolving Intelligence",
+  "aliases": [
+    "Frontier-CS",
+    "FrontierCS 2"
   ],
-  "summary": "开放式可验证 CS 基准（240 道无已知最优解题）",
-  "interpretation": "开放式可验证 CS 基准（论文口径 156 题）：题目无已知最优解，模型提交可执行程序、由专家参考解加自动评测器客观部分打分（越高越好）；前沿模型仍显著落后人类专家，分数低属设计预期。",
-  "measures": [],
-  "does_not_measure": [],
+  "status": "active",
+  "categories": [
+    "coding",
+    "agent"
+  ],
+  "summary": "FrontierCS 是一套开放式计算机科学基准：156 道专家出的题（算法轨 107 + 科研轨 49），模型必须交出可执行程序，由确定性评测器按 0–100 连续打分（平凡基线 0 分、人类参考 60 分）。论文口径下 9 个前沿模型单轮、无工具作答，最好只有 29.37 分，人类专家 95.41。",
+  "interpretation": "分数越高，说明模型在「最优解未知、但任何解都能被自动校验并打分」的任务上越接近人类专家。它不测多轮或带工具的 agent 能力，而且 156 题的规模让单题权重偏高。2026-10 上线的 FrontierCS 2 换成 agent 口径（5 小时 wall-clock、隐藏 workload 上逐指标超过人类参考才算通过），主指标是 FCI，与论文的 Score@1 不能直接比。",
+  "measures": [
+    {
+      "area": "算法轨 · 优化（Optimization）",
+      "focus": "改编自编程竞赛并改写为开放式、部分给分的变体；目标是逼近未知的全局最优，而非穷举",
+      "share": "18.6%（29/156）",
+      "format": "提交可执行程序，评测器在生成实例上按任务指标打分；除题目显式说明外运行时间不计分",
+      "cite": [
+        "paper@§3.1 Algorithmic Problems",
+        "paper@§1 Introduction",
+        "paper@Figure 2"
+      ]
+    },
+    {
+      "area": "算法轨 · 构造（Constructive）",
+      "focus": "从零构造一个满足约束的解，同样没有唯一标准答案",
+      "share": "17.3%（27/156）",
+      "format": "同上：可执行程序 + 自动评测器，输出格式即契约",
+      "cite": [
+        "paper@§3.1 Algorithmic Problems",
+        "paper@Figure 2"
+      ]
+    },
+    {
+      "area": "算法轨 · 交互（Interactive）",
+      "focus": "需要与评测环境往返交互后才能给出最终解的开方式任务",
+      "share": "32.7%（51/156）",
+      "format": "同上：可执行程序 + 自动评测器",
+      "cite": [
+        "paper@§3.1 Algorithmic Problems",
+        "paper@Figure 2"
+      ]
+    },
+    {
+      "area": "科研轨（Research Problems）",
+      "focus": "来自 CS 博士生未解决的真实研究问题，覆盖 OS、HPC、AI、DB、PL、Security 六大领域；按论文 Figure 2 读出 OS 8 / HPC 19 / AI 6 / DB 7 / PL 5 / Security 4",
+      "share": "31.4%（49/156）",
+      "format": "每题必须提供 evaluate.sh，给出 0–100 的标准化分数；评测器必须确定，不得用 LLM 当裁判",
+      "cite": [
+        "paper@§3.2 Research Problems",
+        "paper@Figure 2"
+      ]
+    },
+    {
+      "area": "FrontierCS 2 · 论文贡献复现",
+      "focus": "从论文自带仓库中删掉该论文的核心贡献，agent 负责写回去，对隐藏 workload 逐指标与人类参考比较；公开 48 个任务、13 个领域（按官网 Tasks 页读出：MLSys 6、Machine Learning 9、Database 9、HPC 4、PL 4、Architecture 3、Network 3、Cryptography 3、Security 2、Robotics 2、Theory 1、Bioinformatics 1、Software Engineering 1）",
+      "share": "另立口径（48 个公开任务，私有集 100+）",
+      "format": "agent 在自己的 AWS 环境中跑 5 小时 wall-clock，可多次提交 patch，只看最终提交",
+      "cite": [
+        "site@首页",
+        "site@Questions",
+        "site@Tasks"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "多轮、agentic、带工具调用与 evolve 式框架下的表现——论文明确把这类评测留给未来工作",
+      "cite": [
+        "paper@§4.1 Setup"
+      ]
+    },
+    {
+      "text": "答案式（封闭题）正确率：模型必须实现可执行程序，不能直接输出一个答案",
+      "cite": [
+        "paper@Abstract"
+      ]
+    },
+    {
+      "text": "主观或用 LLM 当裁判的打分：科研轨要求评测器确定、不得使用 LLM judge",
+      "cite": [
+        "paper@§3.2 Research Problems"
+      ]
+    },
+    {
+      "text": "v1 算法轨的真实运行时间（除题目显式说明外不计入评分；FrontierCS 2 另设速度类指标，如每秒操作数可达人类参考的 1.84 倍）",
+      "cite": [
+        "paper@§3.1 Algorithmic Problems",
+        "site@Case studies"
+      ]
+    }
+  ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
+    "sample_count": 156,
+    "splits": [
+      "Algorithmic Problems 107 题（优化 29 / 构造 27 / 交互 51）",
+      "Research Problems 49 题（OS 8 / HPC 19 / AI 6 / DB 7 / PL 5 / Security 4）",
+      "FrontierCS 2 公开集 48 个科研任务（13 个领域）",
+      "FrontierCS 2 私有集 100+ 个任务（题量未精确公布）"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "expert-authored（CS 博士生与竞赛选手出题；FrontierCS 2 取自已发表论文及其开源代码）",
+    "public_sample": true,
+    "multiple_choice_share": "0%（均为提交可执行程序的开放题）",
+    "totals": "v1 共 156 题 = 算法轨 107（优化 29 / 构造 27 / 交互 51）+ 科研轨 49（OS 8 / HPC 19 / AI 6 / DB 7 / PL 5 / Security 4）；仓库公布均值的口径是 179 题，排除输出格式变更的 problem 61，无提交记 0 分。FrontierCS 2 公开 48 个任务 / 13 个领域，私有集 100+ 个。",
+    "cite": [
+      "paper@§3 Problem Collection",
+      "paper@§3.1 Algorithmic Problems",
+      "paper@§3.2 Research Problems",
+      "repo-frontier-cs@Scoring principles",
+      "site@首页",
+      "site@Tasks",
+      "site@Private set"
+    ],
+    "construction": [
+      {
+        "k": "三阶段策划管道",
+        "text": "Proposal → Implementation → Review：由资质对标 ICPC World Finalist 的专家提交候选题目，附原始出处与预期修改说明，再进入实现与评审。",
+        "cite": [
+          "paper@§3 Problem Collection"
+        ]
+      },
+      {
+        "k": "算法轨来源",
+        "text": "107 题改编自编程竞赛，改写成开放式、部分给分的变体；除显式说明外运行时间不计入评分，分数相对平凡基线与强人类参考给出。",
+        "cite": [
+          "paper@§3.1 Algorithmic Problems"
+        ]
+      },
+      {
+        "k": "科研轨来源",
+        "text": "请 CS 博士生把自己未解决的研究问题做成题目并实现评测容器；每题必须支持 evaluate.sh 自动评分（0–100），评测器确定且不得用 LLM 当裁判；每个变体在统计总量时算作独立题目。",
+        "cite": [
+          "paper@§3.2 Research Problems"
+        ]
+      },
+      {
+        "k": "FrontierCS 2 任务构造",
+        "text": "从论文自己的仓库里删掉该论文的贡献，agent 负责写回，并被拿去和论文发布的代码（人类参考）在隐藏 workload 上逐指标比较。",
+        "cite": [
+          "site@首页",
+          "site@Questions"
+        ]
+      },
+      {
+        "k": "公开与私有",
+        "text": "v1 的参考解不公开，算法测试用例自 2026-05-26 起公开，可本地、批量与 agent 评测；FrontierCS 2 的 48 个任务、评测器与裁判打包成一个公开评测环境。",
+        "cite": [
+          "repo-frontier-cs@Evaluating and Submitting Results",
+          "repo-frontier-cs@News",
+          "site@Questions"
+        ]
+      },
+      {
+        "k": "任务演进机制",
+        "text": "支持三种互补的任务演进形式，并采用版本化难度调度，以便模型变强后仍保持区分度；题面描述与任务实例化环境相互分离。",
+        "cite": [
+          "paper@§3.3 Update Policy",
+          "paper@§7 Conclusion"
+        ]
+      }
+    ]
   },
-  "metrics": [],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [],
-  "notes": "字节 Seed 引用",
+  "metrics": [
+    {
+      "id": "score-at-1",
+      "name": "Score@1",
+      "direction": "越高越好",
+      "description": "单次试验的得分，0–100 连续分；相对两个参考点给出：人类专家写的参考解与一个平凡基线解",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "points",
+      "cite": [
+        "paper@§4.2 Metrics",
+        "paper@§3.1 Algorithmic Problems",
+        "repo-frontier-cs@Scoring principles"
+      ]
+    },
+    {
+      "id": "score-at-k",
+      "name": "Score@5 / Avg@5",
+      "direction": "越高越好",
+      "description": "Score@k 取 k 次试验中的最高分，Avg@k 取平均分；论文同时报告两者，因为模型存在随机性且多次尝试进步明显",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "points",
+      "cite": [
+        "paper@§4.2 Metrics"
+      ]
+    },
+    {
+      "id": "pass-at-k",
+      "name": "Pass@1 / Pass@5",
+      "direction": "越高越好",
+      "description": "取得非零分（即产出超过最平凡基线的有效解）的题目占比",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§4.2 Metrics",
+        "paper@§4.3 Table 1"
+      ]
+    },
+    {
+      "id": "fci",
+      "name": "FCI（FrontierCS Capabilities Index）",
+      "direction": "越高越好",
+      "description": "FrontierCS 2 主指标：Epoch AI ECI 的 fork，按「每个指标相对人类参考的胜负」与「最终分数距参考多远」拟合，把模型和任务放到同一把刻度上；最难任务位于 FDI 102.2",
+      "range": [
+        0,
+        110
+      ],
+      "unit": "index",
+      "cite": [
+        "site@FCI"
+      ]
+    },
+    {
+      "id": "pass-rate-fc2",
+      "name": "通过率（beat reference）",
+      "direction": "越高越好",
+      "description": "FrontierCS 2 的通过判定：最终提交必须在任务检查的每个指标、每个隐藏 workload 上都超过人类参考；总均分更高不够",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "site@Questions",
+        "site@Leaderboard"
+      ]
+    }
+  ],
+  "default_protocol": {
+    "raw": "论文口径：模型单轮直接输出可执行代码（不使用任何 agent 框架，没有代码编辑器、Python 环境或外部工具，也不能先跑代码看单测结果再迭代），每次 LLM 请求超时 20 分钟；程序在生成的实例上运行，由任务特定评测器在资源上限内按指标打分，分数相对平凡基线与人类专家参考解给出（参考 = 60 分，超过参考按对数尺度加分并封顶 100）。",
+    "cite": [
+      "paper@§4.1 Setup",
+      "paper@§4.2 Metrics",
+      "paper@§1 Introduction",
+      "repo-frontier-cs@Scoring principles"
+    ],
+    "variants": [
+      {
+        "text": "FrontierCS 2 的 agent 口径：每个 run 有 5 小时 wall-clock 预算，agent 只能看到自己的仓库、每次 patch 在开发 workload 上的分数和一条消息；隐藏 workload、评测器与参考解都留在裁判侧。",
+        "cite": [
+          "site@Questions"
+        ]
+      },
+      {
+        "text": "Harbor 适配器下的多轮提交口径：最终校验记录「最终方案分数」与「最佳成功迭代提交」中的较高者，与论文的单轮定稿不同。",
+        "cite": [
+          "repo-frontier-cs@Harbor"
+        ]
+      },
+      {
+        "text": "多轮、agentic、带工具调用与 evolve 式框架的评测论文明确留给未来工作，因此这类框架的分数不能和论文的单轮分数直接比较。",
+        "cite": [
+          "paper@§4.1 Setup"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "arxiv-v1",
+      "date": "2025-12-17",
+      "label": "arXiv v1 发布（arXiv:2512.15699v1 [cs.LG] 17 Dec 2025）：156 题双轨基准",
+      "cite": [
+        "paper",
+        "paper@标题"
+      ]
+    },
+    {
+      "id": "icml-2026",
+      "date": "2026-04-30",
+      "label": "被 ICML 2026 接收",
+      "cite": [
+        "repo-frontier-cs@News"
+      ]
+    },
+    {
+      "id": "public-testcases",
+      "date": "2026-05-26",
+      "label": "算法题测试用例公开，可本地、批量与 agent 评测；参考解仍不公开",
+      "cite": [
+        "repo-frontier-cs@News",
+        "repo-frontier-cs@Evaluating and Submitting Results"
+      ]
+    },
+    {
+      "id": "seed-21-model-card",
+      "date": "2026-06-23",
+      "label": "进入字节 Seed 2.1 Model Card 的前沿研究评测",
+      "cite": [
+        "repo-frontier-cs@News"
+      ]
+    },
+    {
+      "id": "frontiercs-2",
+      "date": "2026-10-20",
+      "label": "FrontierCS 2 上线：48 个科研任务、13 个领域，每任务取自一篇已发表论文及其作者发布的代码，agent 必须超过原代码（论文 arXiv:2610.29932，代码 github.com/FrontierCS/FrontierCS-2）",
+      "cite": [
+        "repo-frontier-cs@News",
+        "site@首页",
+        "site@Questions"
+      ]
+    },
+    {
+      "id": "site-2026-11-12",
+      "date": "2026-11-12",
+      "label": "官网更新至 November 12, 2026（本页核对所用版本）：960 次运行、20 个模型、48 个任务",
+      "cite": [
+        "site@首页",
+        "site@Questions"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "单轮、无工具的评测协议",
+      "impact": "论文口径下模型不能跑代码、看不到单测结果、无法迭代，一次输出即定稿；这与真实工程与研究场景差距明显，也会系统性压低分数。",
+      "severity": "高",
+      "response": "论文明确把多轮、agentic、带工具调用的评测留给未来工作；2026-10 上线的 FrontierCS 2 改为 5 小时 agent 口径。",
+      "reader": "比较前先看清口径：论文 Table 1 是单轮无工具，FrontierCS 2 是 5 小时 agent，两者不能混排。",
+      "cite": [
+        "paper@§4.1 Setup",
+        "site@Questions"
+      ]
+    },
+    {
+      "issue": "题目规模小、单题权重高",
+      "impact": "v1 只有 156 题，其中科研轨仅 49 题；个别题的表现差异就能明显改变均分，也让按领域的细分统计更不稳。",
+      "severity": "中",
+      "response": "FrontierCS 2 扩到 48 个公开任务 / 13 个领域，并宣布私有集将超过 100 个任务；论文用 Score@5 与 Avg@5 缓解随机性。",
+      "reader": "两三个题的差距不要当成能力代差；看分时同时看 Score@1 与 Score@5。",
+      "cite": [
+        "paper@§3 Problem Collection",
+        "paper@§4.2 Metrics",
+        "site@Tasks",
+        "site@Private set"
+      ]
+    },
+    {
+      "issue": "部分给分偏向「能跑而非最优」",
+      "impact": "0–100 连续打分会奖励 merely workable 的实现；论文报告模型常常死磕小的低影响优化，而忽略带来大幅提升的核心算法选择。",
+      "severity": "高",
+      "response": "参考解定为 60 分、超过参考按对数尺度加分并封顶 100，以限制极端改进的影响；论文把这归结为微优化陷阱并单独讨论。",
+      "reader": "看分别看 Score@5 与 Avg@5 的差；非零分（Pass@k）只说明「没崩」，不等于找到好算法。",
+      "cite": [
+        "paper@§5.2 Micro-Optimization Trap",
+        "paper@Abstract",
+        "repo-frontier-cs@Scoring principles",
+        "paper@§4.2 Metrics"
+      ]
+    },
+    {
+      "issue": "随机性与推理档位敏感",
+      "impact": "模型存在明显随机性：Score@5 比 Score@1 高 6.40–22.69 分；提高推理档位也不一定更好，论文报告从 medium 到 high 反而从 15.336 降到 12.626。",
+      "severity": "中",
+      "response": "论文固定 20 分钟超时与单轮协议，并同时报告 Avg@5 / Score@5 / Pass@1 / Pass@5 多口径。",
+      "reader": "单次 Score@1 的跨模型比较要打折；先确认厂商报的是哪一档推理努力。",
+      "cite": [
+        "paper@§5.1 Reasoning Effort",
+        "paper@§4.3 Algorithmic Problems",
+        "paper@§4.2 Metrics"
+      ]
+    },
+    {
+      "issue": "FrontierCS 2 的通过判定与提交选择",
+      "impact": "只要有一个指标或一个隐藏 workload 没超过人类参考就不通过；agent 可能停在一个会失败的版本上，而更早的版本反而能过，且作者明确说不校正这个选择。",
+      "severity": "中",
+      "response": "最终分数对每个指标、每个隐藏 workload 取平均，因此一处的大的增益可能掩盖另一处的损失；隐藏 workload 与裁判不公开。",
+      "reader": "通过率低不代表模型没有能力超过参考；读榜时同时看 FCI 与逐领域通过率。",
+      "cite": [
+        "site@Questions",
+        "site@Leaderboard"
+      ]
+    },
+    {
+      "issue": "复现成本与私有集不可核",
+      "impact": "官网披露 Claude Opus 5.5 全量跑完 48 个任务约需 US$1,000 API + US$300 GPU + US$100 CPU；私有集超过 100 个任务但尚未公布，无法独立复核。",
+      "severity": "低",
+      "response": "48 个公开任务、评测器与裁判打包成一个评测环境，可装入用户自己的 AWS 账号；参考解与隐藏 workload 保留在裁判侧。",
+      "reader": "自测要先算成本；对私有集上的任何声明都只能等官方公布。",
+      "cite": [
+        "site@Questions",
+        "site@Private set"
+      ]
+    }
+  ],
+  "notes": "ICML 2026 接收；被字节 Seed 2.1 Model Card 引用做前沿研究评测（2026-06-23）",
   "official_sources": [
     {
-      "kind": "github",
-      "url": "https://github.com/FrontierCS/Frontier-CS"
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2512.15699"
+    },
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2610.29932"
     },
     {
       "kind": "site",
-      "url": "https://seed.bytedance.com/en/blog/seed2-1-officially-released-advancing-ai-productivity"
+      "url": "https://frontier-cs.org"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/FrontierCS/Frontier-CS"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/FrontierCS/FrontierCS-2"
     }
   ],
   "related_benchmarks": [
-    "apps"
+    "apps",
+    "codeforces",
+    "scicode",
+    "paperbench",
+    "mlebench"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "FrontierCS: Evolving Challenges for Evolving Intelligence（arXiv:2512.15699v1，2025-12-17，ICML 2026）",
+        "url": "https://arxiv.org/abs/2512.15699",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "repo-frontier-cs",
+        "kind": "repo",
+        "title": "FrontierCS/Frontier-CS（评分原则、Harbor 适配器、提交口径与 News 时间线）",
+        "url": "https://github.com/FrontierCS/Frontier-CS",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "site",
+        "kind": "site",
+        "title": "frontier-cs.org（FrontierCS 2：任务、通过判定、FCI/FDI、排行榜与案例，更新至 2026-11-12）",
+        "url": "https://frontier-cs.org",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "UC Berkeley、Princeton、UCSD、Georgia Tech 等联合团队（Qiuyang Mang、Wenhao Chai 等共同一作）",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      "first_release": {
+        "v": "2025-12-17（arXiv v1）",
+        "cite": [
+          "paper"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "paper@Abstract",
+        "paper@§3 Problem Collection",
+        "paper@§4.1 Setup",
+        "paper@§4.3 Algorithmic Problems"
+      ],
+      "interpretation": [
+        "paper@§4.1 Setup",
+        "site@Questions",
+        "site@FCI"
+      ]
+    },
+    "problem": {
+      "text": "热门编码基准大多是封闭题：有唯一最优解、以通过与否判定。而计算机科学的前沿问题本质开放，需要在质量、效率与鲁棒性之间做权衡。FrontierCS 因此只收「全局最优未知或实际上不可达、但任何提案都能被确定性地校验有效性并由自动评测器打分」的任务，用可执行程序而不是答案来重新拉开模型差距。",
+      "cite": [
+        "paper@§1 Introduction"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "平凡基线",
+        "value": "0 分",
+        "note": "分数相对平凡基线与强人类参考给出；取得超过平凡基线的有效解即计入 Pass@k。",
+        "cite": [
+          "paper@§4.2 Metrics",
+          "paper@§3.1 Algorithmic Problems"
+        ]
+      },
+      {
+        "label": "人类专家参考",
+        "value": "60 分（= 参考解）",
+        "note": "匹配人类参考解得 60 分，超过它按对数尺度加分并封顶 100；这是刻度的锚点，不是上限。",
+        "cite": [
+          "repo-frontier-cs@Scoring principles"
+        ]
+      },
+      {
+        "label": "论文 Table 1 最强模型（算法轨 Score@1）",
+        "value": "29.37 分（Gemini 3.0 Pro）",
+        "note": "其余 7 个模型为 5.84–14.95 分；Score@5 比 Score@1 高 6.40–22.69 分。",
+        "cite": [
+          "paper@§4.3 Algorithmic Problems"
+        ]
+      },
+      {
+        "label": "人类专家实际上限",
+        "value": "95.41 分",
+        "note": "同一批算法轨题上人类专家的 Score@1；论文据此判断前沿模型仍显著落后。",
+        "cite": [
+          "paper@§4.3 Algorithmic Problems"
+        ]
+      },
+      {
+        "label": "科研轨最好成绩",
+        "value": "Score@1 29.40 / Score@5 47.21",
+        "note": "Claude Opus 4.5 拿到最好的一次性结果，GPT 5.1 Thinking 在多样本下领先。",
+        "cite": [
+          "paper@§4.4 Research Problems"
+        ]
+      },
+      {
+        "label": "FrontierCS 2 最难任务",
+        "value": "FDI 102.2",
+        "note": "在 FCI 刻度上高于所有已测模型，因此这把刻度不像通过率那样容易饱和；FCI 与论文 Score@1 不同尺度。",
+        "cite": [
+          "site@FCI"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把论文的单轮无工具分数和 FrontierCS 2 的 5 小时 agent 成绩排在同一列里比。",
+        "cite": [
+          "paper@§4.1 Setup",
+          "site@Questions"
+        ]
+      },
+      {
+        "text": "把非零分当成「做对了」——Pass@k 只说明产出了超过最平凡基线的有效解，论文同时指出模型常停在 merely workable 的实现上。",
+        "cite": [
+          "paper@§4.2 Metrics",
+          "paper@Abstract"
+        ]
+      },
+      {
+        "text": "把 179 题当成题库总量——那是仓库算均值用的口径，排除了输出格式变更的 problem 61；题库是 156 题。",
+        "cite": [
+          "repo-frontier-cs@Scoring principles",
+          "paper@§3 Problem Collection"
+        ]
+      },
+      {
+        "text": "把 FrontierCS 2 的高均分当成通过——只有一个指标或一个隐藏 workload 没超过人类参考就不算通过。",
+        "cite": [
+          "site@Questions"
+        ]
+      },
+      {
+        "text": "以为调高推理档位一定更好——论文报告从 medium 到 high 反而从 15.336 降到 12.626。",
+        "cite": [
+          "paper@§5.1 Reasoning Effort"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "UC Berkeley、Princeton University、UCSD、X-camp Academy、Georgia Tech 等联合团队",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "共同一作 Qiuyang Mang、Wenhao Chai、Zhifei Li、Huanzhi Mao、Shang Zhou、Alexander Du、Hanchen Li、Shu Liu 等；导师 Aleksandra Korolova、Peter Henderson、Pramod Viswanath 等",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      {
+        "k": "题目来源",
+        "v": "算法轨改编自编程竞赛（部分题目改编自 ALE-bench 与 ADRS），科研轨由 CS 博士生从未解决的研究问题构建；FrontierCS 2 取自已发表论文及其开源代码",
+        "cite": [
+          "paper@§3.2 Research Problems",
+          "repo-frontier-cs@Acknowledgments",
+          "site@首页"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2025-12-17 arXiv v1 → 2026-04-30 ICML 2026 接收 → 2026-05-26 算法测试用例公开 → 2026-06-23 进入 Seed 2.1 Model Card → 2026-10-20 FrontierCS 2 上线 → 2026-11-12 官网更新",
+        "cite": [
+          "paper",
+          "repo-frontier-cs@News",
+          "site@首页"
+        ]
+      },
+      {
+        "k": "代码与环境",
+        "v": "v1 仓库要求 Python 3.11+ 与 Docker 24+，MIT 许可；FrontierCS 2 的 48 个任务、评测器与裁判打包为公开评测环境，可装入用户自己的 AWS 账号",
+        "cite": [
+          "repo-frontier-cs@README",
+          "site@Questions"
+        ]
+      },
+      {
+        "k": "FrontierCS 2 覆盖",
+        "v": "960 次运行、20 个模型、48 个任务；Kimi K2.7 固定记为 5 分并参与拟合但不上榜；私有集超过 100 个任务",
+        "cite": [
+          "site@Questions",
+          "site@Private set"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-14",
+        "columns": [
+          "来源",
+          "轨",
+          "模型",
+          "Score@1",
+          "口径"
+        ],
+        "rows": [
+          [
+            "论文 Table 1",
+            "算法轨",
+            "人类专家",
+            "95.41",
+            "单轮、无工具、20 分钟超时"
+          ],
+          [
+            "论文 Table 1",
+            "算法轨",
+            "Gemini 3.0 Pro",
+            "29.37",
+            "同上"
+          ],
+          [
+            "论文 Table 1",
+            "算法轨",
+            "Claude Opus 4.5",
+            "14.95",
+            "同上"
+          ],
+          [
+            "论文 Table 1",
+            "算法轨",
+            "Grok 4",
+            "13.67",
+            "同上"
+          ],
+          [
+            "论文 Table 1",
+            "算法轨",
+            "Gemini 2.5 Pro",
+            "12.53",
+            "同上"
+          ],
+          [
+            "论文 Table 1",
+            "算法轨",
+            "GPT 5.1 Thinking",
+            "11.80",
+            "同上"
+          ],
+          [
+            "论文 Table 1",
+            "算法轨",
+            "GPT 5 Thinking",
+            "10.87",
+            "同上"
+          ],
+          [
+            "论文 Table 1",
+            "算法轨",
+            "Claude Opus 4.1",
+            "6.91",
+            "同上"
+          ],
+          [
+            "论文 Table 1",
+            "算法轨",
+            "Claude Sonnet 4.5",
+            "5.84",
+            "同上"
+          ],
+          [
+            "论文 Table 2",
+            "科研轨",
+            "Claude Opus 4.5",
+            "29.40",
+            "同上（该轨最好的一次性结果）"
+          ],
+          [
+            "论文 Table 2",
+            "科研轨",
+            "GPT 5.1 Thinking",
+            "Score@5 47.21",
+            "同上（多样本下领先）"
+          ]
+        ]
+      },
+      "cite": [
+        "paper@§4.3 Algorithmic Problems",
+        "paper@§4.4 Research Problems"
+      ]
+    }
+  }
 }
