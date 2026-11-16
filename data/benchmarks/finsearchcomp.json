@@ -1,31 +1,310 @@
 {
   "id": "finsearchcomp",
   "name": "FinSearchComp",
-  "full_name": null,
+  "full_name": "FinSearchComp: Towards a Realistic, Expert-Level Evaluation of Financial Search and Reasoning（金融搜索与推理的真实、专家级评测）",
   "aliases": [],
   "status": null,
   "categories": [
     "agent",
     "chinese"
   ],
-  "summary": "全开源金融搜索与推理智能体评测（T1/T2/T3 三档）",
-  "interpretation": "复现金融分析师的真实检索链路：查政策、找数据、算结论，考带工具的金融研究能力，中英混合题。",
-  "measures": [],
-  "does_not_measure": [],
+  "summary": "FinSearchComp 是字节跳动 Seed 与哥伦比亚大学商学院联合开源的金融搜索智能体评测：635 道由 70 位金融专家出的题，考「模型 + 搜索工具」能不能像分析师一样查到当天的股价、翻出指定日期的财报、并把多个报告拼成结论。这里考的不是模型记住多少知识，而是它会不会自己调工具、核来源、对口径（单位、币种、财年、TTM）。",
+  "interpretation": "高分说明这个「模型 + 工具」组合能在开放的金融数据源上稳定拿到正确数字，包括当天实时行情和多年前的财报口径。但它不说明模型会做投资判断，也不说明换一个搜索后端、换一天重跑还能拿到同样分数——T1 的正确答案每天都在变，官方统一在市场收盘后评测并按资产类别设容差带。",
+  "measures": [
+    {
+      "area": "T1 时效数据获取（Time-Sensitive Data Fetching）",
+      "focus": "考答案每天或盘中就会变的数据：最新收盘价、新公告、指引更新。官方示例「IBM latest close price.」（官网 T1 示例）；论文给出的真题还包括「Latest closing price of Bloom Energy(NYSE)」「USD/THB price today」「Latest price of S&P 500」。关键是新鲜度管理、日历处理、股票代码别名与多源冲突取舍。",
+      "share": "244 题（Global 134 + Greater China 110）",
+      "format": "实时报价类数值；按资产类别设差异化细则：主流市场股票与指数只在非交易时段评测、仅允许四舍五入误差；其他区域指数落在当日高低点之间即算对；汇率取当日高低区间外加缓冲",
+      "cite": [
+        "paper@§2.2",
+        "paper@Table 2",
+        "paper@§2.3",
+        "paper@Figure 4",
+        "paper@§2.6",
+        "site@T1 示例"
+      ]
+    },
+    {
+      "area": "T2 简单历史查询（Simple Historical Lookup）",
+      "focus": "考固定时点的事实，需要回到正确的历史披露并对齐公司报告日历。示例：星巴克截至 2020-09-27 的总资产（答案 $29374.5 million，允许舍入误差）；论文真题还有「What was the closing value of the VIX on April 25, 2022?」「In April 2015, what was the CPI of Russia?」。难点是对齐 FY / TTM / 季度口径、处理重述、保证单位与币种不失真。",
+      "share": "219 题（Global 119 + Greater China 100）",
+      "format": "数值答案，题目里写死单位与小数位；论文实测这是最高频的任务类型（分析师每人每天 10–30 次这类查询）",
+      "cite": [
+        "paper@§2.2",
+        "paper@Table 2",
+        "paper@§2.3",
+        "paper@Figure 4",
+        "site@T2 示例"
+      ]
+    },
+    {
+      "area": "T3 复杂历史调查（Complex Historical Investigation）",
+      "focus": "考跨多期取数、聚合与综合推理。示例：2010 年 1 月至 2025 年 4 月标普 500 哪个月单月涨幅最大（答案 Apr 2020（12.68%），允许 ±0.1% 误差）；论文真题还有「找出 2020-01-01 至 2024-12-31 伦敦金单日跌超 80 美元的具体日期并按日期排序成表」。难点是长窗口取数、公司行为调整、单位归一与多步计算不出错。",
+      "share": "172 题（Global 84 + Greater China 88）",
+      "format": "多步计算 / 列表 / 表格型答案，实际需要 API 或 SQL 取结构化数据；论文实测只有 Grok 4 (web) 与 GPT-5-Thinking (web) 在此超过 30 分",
+      "cite": [
+        "paper@§2.2",
+        "paper@Table 2",
+        "paper@§2.3",
+        "paper@Figure 4",
+        "site@T3 示例",
+        "paper@§4.4"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "不测不带工具时的纯参数记忆：论文实测无搜索的模型在 T1 一律 0 分；作者明确指出无搜索时 T2/T3 的非零分来自预训练记忆，往往是过时或口径错的数据。",
+      "cite": [
+        "paper@§4.1"
+      ]
+    },
+    {
+      "text": "不测投资判断与决策质量：设计上每题只有一个完全客观的答案，评分只核数字/事实对不对，不评估结论是否合理、是否是可执行的投资建议。",
+      "cite": [
+        "paper@§2.2"
+      ]
+    },
+    {
+      "text": "不测报告写作与长文生成：官网把它定位为「先证明能高精度找到并处理数据，作为后续产出高质量答案的原材料」，交付物是数字而不是分析报告。",
+      "cite": [
+        "site"
+      ]
+    }
+  ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
+    "sample_count": 635,
+    "splits": [
+      "Global（全球市场子集）337 题：T1 134 / T2 119 / T3 84",
+      "Greater China（大中华市场子集）298 题：T1 110 / T2 100 / T3 88"
+    ],
+    "languages": [
+      "en",
+      "zh"
+    ],
+    "source_type": "expert-authored（70 位金融专家原创；答案只取自上市公司官方备案、政府与监管网站、专业金融数据库，并经多专家盲审）",
+    "public_sample": true,
+    "totals": "公开 635 题（论文与数据集卡都只描述这一套完整公开数据，未提及留存集或私有测试集）· Global 337 题 + Greater China 298 题 · 三档任务 T1 244 / T2 219 / T3 172 · 题目同时使用英文与中文，论文未给出中英各自题量 · 答案以数值为主（论文 Figure 3：整数约 59.8%、小数约 39.4%、字符串约 0.8%）· 约 78.6% 的题按「允许区间 / 容差」判定，约 21.4% 为精确匹配 · 主题覆盖 10 类（论文未给出每类题量）",
+    "cite": [
+      "paper@§2.5",
+      "paper@Figure 3",
+      "paper@Figure 4",
+      "paper@§2.1",
+      "paper@Abstract",
+      "dataset"
+    ],
+    "construction": [
+      {
+        "k": "T1：API 可验证的动态答案",
+        "text": "金融专家手工设计可经 API 验证的时效性问题（股价、汇率、金属价格等），并为每题准备调用代码去取实时数据点；专家再把 API 结果与实时数据核对，确保结果正确且及时，并按不同资产的波动特征（股票、外汇）设定允许误差。",
+        "cite": [
+          "paper@§2.3",
+          "site@Data Construction"
+        ]
+      },
+      {
+        "k": "T2/T3：官方源与专业数据库取材",
+        "text": "T2 从两类来源取材：（i）专家从公司备案、监管机构网站、统计局挑选文件并抽取关键数据点出题；（ii）用定义一致的专业金融数据库历史数据出题。T3 由专家按真实专业场景设计并用可靠数据源求答案，或从已验证的数据库表格出发标注，每张表筛出 2–5 题并记录确定答案。",
+        "cite": [
+          "paper@§2.3"
+        ]
+      },
+      {
+        "k": "70 人专家池与盲审仲裁",
+        "text": "70 位专家分成 50 人标注组（金融硕士以上学历、在金融机构在职，经领域考核筛选）与 20 人资深复核组（来自 Citadel、J.P. Morgan、Deutsche Bank、Nomura、Citigroup、Credit Suisse、华夏基金、中欧资产、中信证券、华泰证券等）。出题后由另一位或两位专家在看不到答案的情况下独立解题，结果不一致或有歧义时由资深专家仲裁，据此改题、改答案或整题弃用。全程约 180 小时专家投入 + 60 小时资深专家投入。",
+        "cite": [
+          "paper@§2.4",
+          "site@Answer Verification"
+        ]
+      },
+      {
+        "k": "显式消歧规则",
+        "text": "出题时在题干里写死定义标准（静态 PE vs PE-TTM、名义 GDP vs 实际 GDP、GAAP vs 非 GAAP、币种、行业分类标准、小数位），把答案写成数值区间或给定精度容差，并回避易被追溯调整的指标（如 GDP、非农就业），以及前复权/后复权价、PE-TTM 的 Earnings 定义、双重上市公司市值算法等各机构算法不一致的指标。",
+        "cite": [
+          "paper@§2.4"
+        ]
+      },
+      {
+        "k": "多源交叉验证",
+        "text": "所有答案只来自上市公司官方备案、政府与监管机构网站、专业金融数据库，并用两个官方网站互证，或用专业数据库对官方网站核验；论文称在此过程中发现部分知名专业数据库存在定义口径不一致或计算错误并予以回避。",
+        "cite": [
+          "paper@§2.4"
+        ]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "默认口径是「模型 + 工具」端到端跑开放检索：设计上每题至少要求一次外部工具调用，每题只有一个完全客观的答案。评分用 LLM-as-a-Judge（用另一个大模型当裁判）：先把候选答案和一组评分细则（rubric）映射成 0 或 1，分数就是判定结果的指示函数。T1 先执行 API 命令取实时答案，再按资产类别细则判定；T2、T3 答案是静态的，按预先标注的误差范围判定。为保证时效可比，所有 T1 统一在相关市场收盘后开始评测。",
+    "cite": [
+      "paper@§2.2",
+      "paper@§2.6"
+    ],
+    "variants": [
+      {
+        "text": "带搜索 / 带金融插件 vs 纯 API 无搜索：论文实测无搜索的模型在 T1 全部 0 分；这两类结果不能放在同一张表里比。",
+        "cite": [
+          "paper@§4.1",
+          "site@Key Findings 2"
+        ]
+      },
+      {
+        "text": "web 产品 vs API：论文把 12 个 web 产品与 9 个 API 分成两组报告。同一底座差距很大——Gemini2.5-pro (web) 的 Global 平均 42.6，Gemini2.5-pro (API) 只有 11.9，后者不带搜索。",
+        "cite": [
+          "paper@Table 5",
+          "paper@§3"
+        ]
+      },
+      {
+        "text": "整卷 vs 只跑一个子任务：Moonshot 的 Kimi K2 Thinking 公告只报 FinSearchComp-T3（47.4），并说明该子任务独立跑 4 次取平均、步数上限 300、裁判用 o3-mini、裁判提示词逐字取自官方仓库。这个数字既不是整卷分，也不能和论文的 T3 单项分直接对照（论文里 Kimi k2 (web) 的 Global T3 是 10.7）。",
+        "cite": [
+          "kimi@Agentic Search Tasks 表",
+          "kimi",
+          "paper@Table 5"
+        ]
+      },
+      {
+        "text": "评测窗口：论文成绩采自 2025 年 8 月 1–20 日，T1 全部在当地市场收盘后评。T1 的正确答案随日期变化，跨时间的 T1 分数没有可比性。",
+        "cite": [
+          "paper@§3",
+          "paper@§2.6"
+        ]
+      }
+    ]
   },
   "metrics": [
-    "accuracy"
+    {
+      "id": "accuracy",
+      "name": "准确率（0-1 误差口径）",
+      "direction": "越高越好",
+      "description": "论文采用 0-1 误差作为指标：T1 先执行 API 命令拿到实时答案，其余任务答案是静态的，然后由 LLM 按评分细则判定，判 1 记对、判 0 记错，最终分数即判定函数输出的均值，也就是判对的题目占比。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§2.6"
+      ]
+    },
+    {
+      "id": "task-level-accuracy",
+      "name": "分任务准确率（T1 / T2 / T3）",
+      "direction": "越高越好",
+      "description": "按三个任务族分别统计的准确率。论文的核心结论之一就是分数从 T1 到 T3 单调下降，说明难度递进设计成立；分任务看比只看总平均更能定位失败环节。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§4.2",
+        "paper@Table 5"
+      ]
+    }
   ],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [],
-  "notes": "字节 Seed/Kimi/MiniMax 引用；ICLR 2026",
+  "versions": [
+    {
+      "id": "repo-initial",
+      "date": "2025-09-12",
+      "label": "官方仓库 randomtutu/FinSearchComp 首次提交（早于论文公开）",
+      "cite": [
+        "repo-history"
+      ]
+    },
+    {
+      "id": "arxiv-v1",
+      "date": "2025-09-16",
+      "label": "arXiv v1 发布（cs.LG）；数据集与评测代码同步公开，Hugging Face 数据仓库为 ByteSeedXpert/FinSearchComp",
+      "cite": [
+        "paper",
+        "dataset"
+      ]
+    },
+    {
+      "id": "t1-ground-truth-fix",
+      "date": "2025-11-02",
+      "label": "仓库提交修复 T1 港股 ground truth 取值与多处 AkShare 调用（arXiv 仍只有 v1，官网未发新版本说明）",
+      "cite": [
+        "repo-history",
+        "repo@Dataset note"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "T1 答案随时间变化，跨时间不可比",
+      "impact": "T1 共 244 题（论文 Figure 4），正确答案每天甚至盘中就会变。官方靠「统一在市场收盘后评测 + 按资产类别设容差带」来控制，但论文没有给出重测一致性或跨数据源一致性的数据；换一天重跑、换一个行情源，T1 分数就会漂移。",
+      "severity": "高",
+      "response": "论文按资产类别设差异化评分细则（主流市场股票与指数只在非交易时段评测、仅允许舍入误差；其他区域指数落在当日高低区间；汇率取高低区间外加缓冲），并统一在收盘后启动评测；T1 的 ground truth 由 API 实时取数。仓库在 2025-11-02 还修过一次 T1 港股 ground truth 取值。",
+      "reader": "看 T1 分数前先确认评测日期；不同日期的 T1 分数不要直接排高低，也不要和 Historical 类任务的平均分混读。",
+      "cite": [
+        "paper@§2.6",
+        "paper@Figure 4",
+        "repo-history",
+        "repo@Dataset note"
+      ]
+    },
+    {
+      "issue": "ground truth 依赖第三方公开 API，且发布后有修订",
+      "impact": "官方仓库 README 明说部分 ground truth 步骤依赖公开 AkShare API、只覆盖部分数据，因此额外提供 akshare 兼容版本数据文件；默认文件与 akshare 版本不完全等价，用不同文件跑出的分数不可比。T1 的取值在发布一个半月后还被修过一次。",
+      "severity": "高",
+      "response": "官方同时发布 data/finsearchcomp_data.json 与 data/finsearchcomp_akshare_version.json，快速上手命令默认用后者；仓库 2025-11-02 修复 T1 港股 ground truth 与多处 AkShare 调用。",
+      "reader": "复现时先确认用的是哪个数据文件，跨复现比较要固定同一个文件；看到 2025-11 之前的 T1 结果要留意是否受取值缺陷影响。",
+      "cite": [
+        "repo@Dataset note",
+        "repo-history"
+      ]
+    },
+    {
+      "issue": "裁判是 LLM，存在判定噪声",
+      "impact": "0/1 判定完全由 LLM-as-a-Judge 给出。论文称在每库约 400 例的人工核验子集上与人工标注一致率约 95%，按任务看在 91.5%–99.8% 之间；这意味着 1–2 个百分点的分差可能来自裁判判定差异，T3 这类答案结构复杂（列表、表格、多要点）的题更容易受影响。",
+      "severity": "中",
+      "response": "论文做了人工核验子集并公布一致率；大部分答案按区间或容差判定以吸收舍入与数据修订差异；官方仓库提供裁判提示词。",
+      "reader": "两个模型差 1–2 分时不要下结论；优先看分任务（T1/T2/T3）差距和失败模式，而不是总平均的小数点后一位。",
+      "cite": [
+        "paper@§2.6",
+        "paper@Table 3",
+        "repo"
+      ]
+    },
+    {
+      "issue": "全量公开、无留存集，可被针对性优化",
+      "impact": "635 题全部公开（Hugging Face 单文件，CC-BY-4.0），论文与数据集卡都只描述这一套完整公开数据，未提及留存集或私有测试集；厂商可以针对题目或题型调优，公开集分数可能偏高。",
+      "severity": "中",
+      "response": "未见官方回应；论文未设置留存集或污染检测机制。",
+      "reader": "把 FinSearchComp 分数当作「公开集上的相对位置」；优先看分任务表现与失败模式，而不是绝对分数。",
+      "cite": [
+        "dataset",
+        "paper@Abstract"
+      ]
+    },
+    {
+      "issue": "web 产品口径不可控，工具集成本身就是变量",
+      "impact": "web 产品那一组的分数同时取决于底座模型和该产品背后的搜索/插件集成。论文自己给出 DeepSeek-R1 在 DeepSeek 官网 28.8、接入 YuanBao 金融插件后更高的对比，并实测金融插件给 T1 带来 31.9 个百分点的提升；同一模型换产品，分数可以差一倍。",
+      "severity": "中",
+      "response": "论文把 web 产品与 API 分成两组分别报告，并做了金融插件的消融对比；未见统一搜索后端的官方协议。",
+      "reader": "跨厂商比较时认准「web 产品」或「API」分组，不要混排；引用分数时连同产品/工具一起写。",
+      "cite": [
+        "paper@§4.4",
+        "paper@§4.2",
+        "paper@Table 5"
+      ]
+    },
+    {
+      "issue": "论文内部数字口径不一致",
+      "impact": "摘要写「21 models (products)」，§3 写「22 mainstream models (products)」，而 Table 5 实际列 12 个 web 产品 + 9 个 API = 21 个模型，外加一行人类基线。引用参评模型数量时容易写错。",
+      "severity": "低",
+      "response": "未见官方回应（arXiv 目前只有 v1）。",
+      "reader": "引用参评规模时写「21 个模型（外加 50 位人类专家基线）」，并注明论文摘要与正文口径不一致。",
+      "cite": [
+        "paper@Abstract",
+        "paper@§3",
+        "paper@Table 5"
+      ]
+    }
+  ],
+  "notes": "字节 Seed × 哥伦比亚大学商学院；ICLR 2026；被 ByteDance Seed1.8 与 Moonshot Kimi K2 Thinking 公告引用",
   "official_sources": [
     {
       "kind": "site",
@@ -34,6 +313,14 @@
     {
       "kind": "paper",
       "url": "https://arxiv.org/abs/2509.13160"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/randomtutu/FinSearchComp"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/ByteSeedXpert/FinSearchComp"
     },
     {
       "kind": "site",
@@ -49,8 +336,280 @@
     }
   ],
   "related_benchmarks": [
-    "swe-lancer"
+    "swe-lancer",
+    "browsecomp",
+    "browsecomp-zh",
+    "finance-agent",
+    "xpertbench"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-13",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "FinSearchComp: Towards a Realistic, Expert-Level Evaluation of Financial Search and Reasoning（arXiv:2509.13160，v1，2025-09-16）",
+        "url": "https://arxiv.org/abs/2509.13160",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "site",
+        "kind": "site",
+        "title": "FinSearchComp 官网（含榜单、数据构建与关键结论）",
+        "url": "https://randomtutu.github.io/FinSearchComp/",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "randomtutu/FinSearchComp（官方评测代码与 README）",
+        "url": "https://github.com/randomtutu/FinSearchComp",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "repo-history",
+        "kind": "repo",
+        "title": "randomtutu/FinSearchComp 提交历史（GitHub API）",
+        "url": "https://api.github.com/repos/randomtutu/FinSearchComp/commits?per_page=100",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "dataset",
+        "kind": "dataset",
+        "title": "ByteSeedXpert/FinSearchComp（Hugging Face 数据集卡，CC-BY-4.0）",
+        "url": "https://huggingface.co/datasets/ByteSeedXpert/FinSearchComp",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "seed",
+        "kind": "announcement",
+        "title": "ByteDance Seed：Official Release of Seed1.8: A Generalized Agentic Model（2025-12-18）",
+        "url": "https://seed.bytedance.com/en/blog/official-release-of-seed1-8-a-generalized-agentic-model",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "kimi",
+        "kind": "blog",
+        "title": "Moonshot：Introducing Kimi K2 Thinking（第三方引用，含 FinSearchComp-T3 复现口径）",
+        "url": "https://www.kimi.ai/blog/kimi-k2-thinking",
+        "accessed": "2026-11-13"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "ByteDance Seed × Columbia Business School（哥伦比亚大学商学院）",
+        "cite": [
+          "paper@标题页"
+        ]
+      },
+      "first_release": {
+        "v": "2025-09-16（arXiv v1；数据集与代码同步公开）",
+        "cite": [
+          "paper",
+          "dataset"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "paper@Abstract",
+        "paper@§2.2",
+        "paper@Figure 4"
+      ],
+      "interpretation": [
+        "paper@Figure 1 注",
+        "paper@§4.1",
+        "paper@§2.6"
+      ]
+    },
+    "problem": {
+      "text": "论文把现有基准的问题分成两类：一类是 FinQA、ConvFinQA、FinanceQA 这类金融问答集，它们把相关文本预先喂给模型，绕过了开放域检索，评的是「给了材料之后的推理」而不是「自己找数据」；另一类是 BrowseComp、BrowseComp-ZH、BrowseComp-Plus 这类通用浏览基准，它们刻意做成了领域无关的「找难找的短答案」，不要求时间有效性、单位/币种归一、报告日历对齐（TTM vs FY vs 季度）与跨源核对。已有的 Finance Agent Benchmark 虽然是端到端，但只用静态历史数据、可以靠记忆蒙对，且局限在自建的检索系统里。FinSearchComp 要补的正是「开放检索 + 金融专业性 + 时效性 + 端到端」这四项同时成立的空白。",
+      "cite": [
+        "paper@Abstract",
+        "paper@§5 Related Work",
+        "paper@Table 1"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "无检索能力的下界参考",
+        "value": "T1 全部 0 分；整卷最低 0.8（Qwen3-235B-A22B-2507 API）",
+        "note": "不带搜索的 API 模型在 T1 一律 0 分（拿不到当天数据），T2/T3 仍能靠预训练记忆拿到低分。论文没有报告随机猜测基线，本站也不推算。",
+        "cite": [
+          "paper@§4.1",
+          "paper@Table 5"
+        ]
+      },
+      {
+        "label": "人类专家基线",
+        "value": "Global 75.0 / Greater China 88.3（合计 81.6）",
+        "note": "由另外 50 位未参与出题的金融专家在可用搜索工具的条件下完成，取平均分；分任务为 Global T1 100.0 / T2 73.3 / T3 51.4，Greater China T1 100.0 / T2 88.1 / T3 76.7。",
+        "cite": [
+          "paper@Figure 1 注",
+          "paper@§3",
+          "paper@Table 5"
+        ]
+      },
+      {
+        "label": "论文发布时最好成绩",
+        "value": "Global 68.9（Grok 4 (web)）；Greater China 54.2（DouBao (web)）",
+        "note": "Grok 4 (web) 领先第二名 GPT-5-Thinking (web) 5.0 个百分点，距人类专家还差 6.1 个百分点；Greater China 子集上所有模型距人类专家都差 34 个百分点以上。",
+        "cite": [
+          "paper@§1",
+          "paper@Abstract"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      },
+      {
+        "label": "裁判噪声参考线",
+        "value": "LLM-as-a-Judge 与人工核验一致率约 95%",
+        "note": "论文在每个数据集上抽 4–5 个模型、共约 400 例做人工核验，一致率约 95%；按任务看在 91.5%–99.8% 之间。小于这个量级的分差可能落在裁判判定差异里。这条线是本站按一致率换算的参考，不是官方上限。",
+        "cite": [
+          "paper@§2.6",
+          "paper@Table 3"
+        ]
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把整卷分和只报一个子任务的数字排在一起比：Moonshot 公告里的 FinSearchComp 47.4 只是 T3 一个子任务，而且独立跑 4 次取平均、步数上限 300、裁判用 o3-mini；论文里 Kimi k2 (web) 的整卷 Global 分是 29.5、T3 是 10.7。两组数字口径不同。",
+        "cite": [
+          "kimi@Agentic Search Tasks 表",
+          "kimi",
+          "paper@Table 5"
+        ]
+      },
+      {
+        "text": "把 Global 子集的高分当成中文金融能力：两个子集的市场、披露体系与题目语言都不同。论文的核心发现之一就是「主场优势」——美国模型在 Global 上强、中国模型在 Greater China 上强，作者把它归因于语料地理、语言与市场惯例、检索基础设施差异。",
+        "cite": [
+          "paper@§4.3",
+          "paper@§2.1",
+          "site@Key Findings 3"
+        ]
+      },
+      {
+        "text": "以为「带搜索」就是同一起跑线：论文实测 DeepSeek-R1 在 DeepSeek 官网 28.8，接入 YuanBao 金融插件后明显更高，金融插件单项给 T1 带来 31.9 个百分点提升。同一底座模型换产品，分数可以差一倍，工具集成是主要变量。",
+        "cite": [
+          "paper@§4.4",
+          "paper@§4.2"
+        ]
+      },
+      {
+        "text": "把 T1 分数当成稳定能力：T1 的正确答案每天变，官方统一在市场收盘后评测并按资产类别设容差带；换一天重跑，T1 分数没有可比性。官网也明确说「不带搜索工具的模型在时效任务上普遍拿 0 分」。",
+        "cite": [
+          "paper@§2.6",
+          "site@Key Findings 2"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "ByteDance Seed 与 Columbia Business School（论文署名页：1 ByteDance Seed, 2 Columbia Business School）",
+        "cite": [
+          "paper@标题页"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "共同一作 Liang Hu、Jianpeng Jiao、Jiashuo Liu、Yanle Ren、Zhoufutu Wen（通讯）、Kaiyuan Zhang、Xuanliang Zhang；顾问 Hongseok Namkoong（Columbia Business School）、Wenhao Huang、Yuwen Tang。部分贡献者在 ByteDance Seed 实习",
+        "cite": [
+          "paper@Contributions"
+        ]
+      },
+      {
+        "k": "出题与复核",
+        "v": "70 位金融专家（50 人标注组 + 20 人资深复核组），来自 Citadel、J.P. Morgan、Deutsche Bank、Nomura、Citigroup、Credit Suisse、华夏基金、中欧资产、中信证券、华泰证券等机构；人类基线另请 50 位未参与出题的金融专家",
+        "cite": [
+          "paper@§2.4",
+          "paper@§3"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2025-09-12 官方仓库首次提交 → 2025-09-16 arXiv v1 与 Hugging Face 数据集发布 → 2025-11-02 仓库修复 T1 港股 ground truth 取值",
+        "cite": [
+          "repo-history",
+          "paper",
+          "dataset"
+        ]
+      },
+      {
+        "k": "评测窗口",
+        "v": "论文全部成绩采自 2025 年 8 月 1 日至 20 日；T1 在各地市场收盘后评，以保证模型间时效可比",
+        "cite": [
+          "paper@§3"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "数据集在 Hugging Face（ByteSeedXpert/FinSearchComp，CC-BY-4.0）；评测代码与项目主页在 GitHub（randomtutu/FinSearchComp，README 提供 conda 安装与 chat/eval 两步命令）；官网同时挂出 Xpert 平台榜单入口",
+        "cite": [
+          "dataset",
+          "repo",
+          "site@Leaderboard"
+        ]
+      },
+      {
+        "k": "被引用",
+        "v": "ByteDance Seed1.8 发布公告把 FinSearchComp 与 XpertBench 并列为其金融/商业类任务评测；Moonshot Kimi K2 Thinking 公告在「Agentic Search Tasks」里报了 FinSearchComp-T3 复现分",
+        "cite": [
+          "seed",
+          "kimi@Agentic Search Tasks 表"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-13",
+        "columns": [
+          "模型",
+          "组别",
+          "Global T1",
+          "Global T2",
+          "Global T3",
+          "Global 平均",
+          "Greater China T1",
+          "Greater China T2",
+          "Greater China T3",
+          "Greater China 平均",
+          "总平均"
+        ],
+        "rows": [
+          ["Human Performance", "人类基线", "100.0", "73.3", "51.4", "75.0", "100.0", "88.1", "76.7", "88.3", "81.6"],
+          ["Grok 4", "web 产品", "87.3", "68.1", "51.2", "68.9", "64.9", "67.0", "23.9", "51.9", "60.4"],
+          ["GPT-5-Thinking", "web 产品", "76.9", "67.2", "47.6", "63.9", "60.4", "63.0", "15.9", "46.4", "55.2"],
+          ["Gemini2.5-pro", "web 产品", "56.0", "44.5", "27.4", "42.6", "51.9", "46.0", "12.5", "36.8", "39.7"],
+          ["DouBao", "web 产品", "61.2", "33.6", "22.6", "39.1", "88.3", "63.0", "11.4", "54.2", "46.7"],
+          ["DouBao-Thinking", "web 产品", "34.3", "33.6", "21.4", "29.8", "62.2", "61.0", "23.9", "49.0", "39.4"],
+          ["YuanBao-HunYuan-T1-Thinking", "web 产品", "59.0", "18.5", "11.9", "29.8", "82.0", "58.0", "11.5", "50.5", "40.1"],
+          ["YuanBao-DeepSeek-V3", "web 产品", "53.0", "24.4", "14.3", "30.5", "81.1", "55.0", "10.2", "48.8", "39.7"],
+          ["YuanBao-DeepSeek-R1", "web 产品", "53.7", "22.7", "13.1", "29.8", "84.7", "58.0", "14.8", "52.5", "41.2"],
+          ["Kimi k2", "web 产品", "30.6", "47.1", "10.7", "29.5", "35.1", "73.0", "6.8", "38.3", "33.9"],
+          ["Qwen3-235B-A22B-2507", "web 产品", "60.2", "37.8", "14.3", "37.4", "18.1", "42.0", "5.7", "21.9", "29.7"],
+          ["DeepSeek-R1", "web 产品", "17.9", "19.3", "14.3", "17.2", "56.8", "51.0", "13.6", "40.5", "28.8"],
+          ["ERNIE-X1", "web 产品", "23.9", "15.1", "10.7", "16.6", "62.2", "49.0", "11.4", "40.8", "28.7"],
+          ["Gemini2.5-pro (Google Search)", "API", "42.5", "47.1", "25.0", "38.2", "28.8", "52.0", "13.6", "31.5", "34.8"],
+          ["Gemini2.5-pro", "API", "0.0", "22.7", "13.1", "11.9", "2.2", "12.0", "10.2", "8.1", "10.0"],
+          ["Hunyuan-T1-latest", "API", "14.2", "19.3", "13.1", "15.5", "19.8", "52.0", "8.0", "26.6", "21.1"],
+          ["Kimi k2", "API", "0.0", "23.5", "10.7", "11.4", "0.0", "14.0", "8.0", "7.3", "9.4"],
+          ["DeepSeek-R1", "API", "0.0", "14.3", "9.5", "7.9", "0.0", "7.0", "6.8", "4.6", "6.3"],
+          ["ERNIE-X1", "API", "0.0", "10.1", "8.3", "6.1", "0.0", "11.0", "6.8", "5.9", "6.0"],
+          ["DouBao", "API", "0.0", "16.0", "4.8", "6.9", "0.0", "6.0", "8.0", "4.7", "5.8"],
+          ["DouBao-Thinking", "API", "0.0", "11.8", "11.9", "7.9", "0.0", "7.0", "2.3", "3.1", "5.5"],
+          ["Qwen3-235B-A22B-2507", "API", "0.0", "2.5", "1.2", "1.2", "0.0", "0.0", "1.1", "0.4", "0.8"]
+        ]
+      },
+      "cite": [
+        "paper@Table 5",
+        "paper@附录 B"
+      ]
+    }
+  }
 }
