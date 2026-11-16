@@ -1,32 +1,358 @@
 {
   "id": "gaia2",
   "name": "GAIA-2",
-  "full_name": null,
-  "aliases": [],
-  "status": null,
+  "full_name": "Gaia2（Meta 在 ARE 平台上构建的通用智能体基准，GAIA 的后继）",
+  "aliases": [
+    "Gaia2",
+    "Gaia-2",
+    "gaia2"
+  ],
+  "status": "active",
   "categories": [
     "agent"
   ],
-  "summary": "Meta ARE 通用智能体基准（GAIA 后继，动态场景）",
-  "interpretation": "800 个模拟环境场景（执行/搜索/适应性/时间/歧义五项核心能力，加 Agent2Agent 与噪声两个增广能力），核心指标是 overall success rate 加分能力成功率（越高越好）；环境时间流动、事件动态发生，读分重点看 agent 在动态场景下的执行与适应性而非纯检索。",
-  "measures": [],
-  "does_not_measure": [],
+  "summary": "Gaia2 是 Meta 在自研 ARE 平台上搭的通用智能体基准：800 个人工标注、可自动验证的手机模拟环境场景，覆盖执行、搜索、适应性、时间、歧义 5 项核心能力（另有 Agent2Agent 协作与噪声两项增广），环境时间持续流动、事件异步发生，agent 必须边等边改计划。",
+  "interpretation": "总分是各能力 split 的 Pass@1 再平均（每个场景跑 3 次取平均），0–100 越高越好。论文里最好成绩是 GPT-5 (high) 42.1；但执行/搜索已接近饱和，而时间维度上「推理越强反而越慢」，所以单看总分会高估那些聪明但不及时的模型。官方也明说它不是 AGI 级基准，且排行榜是自报结果、口径并不统一。",
+  "measures": [
+    {
+      "area": "执行（Execution）",
+      "focus": "多个写操作、可能要求特定顺序，读操作用于填充参数；示例：把所有 24 岁及以下的联系人年龄上调一岁",
+      "share": "160/800（20%）",
+      "format": "oracle 写操作匹配后判定 Pass@1",
+      "cite": [
+        "paper-are@§3.2",
+        "paper-are@§3.2 执行示例"
+      ]
+    },
+    {
+      "area": "搜索（Search）",
+      "focus": "跨 app 多次读操作聚合信息；示例：统计「每周至少聊过一次」的联系人，回答我的朋友大多住在哪个城市",
+      "share": "160/800（20%）",
+      "format": "oracle 写操作匹配后判定 Pass@1",
+      "cite": [
+        "paper-are@§3.2",
+        "paper-are@§3.2 搜索示例"
+      ]
+    },
+    {
+      "area": "适应性（Adaptability）",
+      "focus": "环境变化是 agent 自己动作的后果，需要监控并按新信息改计划；示例：帮朋友约看房，她改主意就按她的建议重约",
+      "share": "160/800（20%）",
+      "format": "oracle 写操作匹配后判定 Pass@1",
+      "cite": [
+        "paper-are@§3.2"
+      ]
+    },
+    {
+      "area": "时间（Time）",
+      "focus": "在时限内动作、持续监控事件、维护时间关系；示例：给同事发消息问谁叫车，3 分钟没回复就叫默认出租车",
+      "share": "160/800（20%）",
+      "format": "oracle 写操作匹配后判定 Pass@1",
+      "cite": [
+        "paper-are@§3.2",
+        "paper-are@§3.2 时间上限"
+      ]
+    },
+    {
+      "area": "歧义（Ambiguity）",
+      "focus": "任务不可能、自相矛盾或有多个合理解，做错会有负面后果，考的是识别问题并追问用户；示例：每天 18:00 排 1 小时瑜伽，有冲突先问我",
+      "share": "160/800（20%）",
+      "format": "oracle 写操作匹配后判定 Pass@1",
+      "cite": [
+        "paper-are@§3.2"
+      ]
+    },
+    {
+      "area": "Agent2Agent（协作，增广项）",
+      "focus": "把 app 换成有自主性的 sub-agent，主 agent 不能再直接调工具，只能发消息协调、共享状态、设子目标；默认全部替换（r = 1）",
+      "share": "增广项（Agent2Agent 与 Noise 两项合计 +320）",
+      "format": "oracle 写操作匹配后判定 Pass@1",
+      "cite": [
+        "paper-are@§3.1 增广",
+        "paper-are@§3.2 Agent2Agent"
+      ]
+    },
+    {
+      "area": "噪声（Noise，增广项）",
+      "focus": "对同一批场景加系统性扰动：改工具签名/描述、随机失败（默认概率 0.1）、注入无关环境事件（默认 10 次/分钟）",
+      "share": "增广项（Agent2Agent 与 Noise 两项合计 +320）",
+      "format": "oracle 写操作匹配后判定 Pass@1",
+      "cite": [
+        "paper-are@§3.1 增广",
+        "paper-are@§3.2 噪声"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "自我改进、记忆与长时程决策：论文明确这些前沿能力「未被显式评测」（ARE 平台提供了研究基础，但 Gaia2 不考）",
+      "cite": [
+        "paper-are@§5 未测能力"
+      ]
+    },
+    {
+      "text": "通用人工智能：作者明说在今天的模型远未解决 Gaia2 的情况下，也不把它当成「AGI 级」基准，并预期会被快速爬坡",
+      "cite": [
+        "paper-are@§1 非 AGI"
+      ]
+    },
+    {
+      "text": "代码执行型 agent 与任意 Python 工具：论文把「code agents」列为需要额外工程的未来方向（阻塞调用、沙箱与模拟时间同步），当前口径是 ReAct-like 工具调用",
+      "cite": [
+        "paper-are@§5 Code agents"
+      ]
+    }
+  ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
+    "sample_count": 800,
+    "splits": [
+      "单一 validation split：800 个核心场景，含 oracle events 与 ground truth（用于开发与排行榜提交）",
+      "Gaia2-mini：160 场景代表性子集，用于低成本评测与增广实验",
+      "Agent2Agent / Noise 增广：由 mini 派生，合计 +320，总计 1,120"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "human-authored（专业标注员在 ARE GUI 中创作场景，环境宇宙为合成数据）",
+    "public_sample": true,
+    "totals": "核心 800 场景 = 5 项核心能力各 160；另有 Gaia2-mini 160 场景与 Agent2Agent/Noise 增广 320 场景，总计 1,120。单一 validation split、含 oracle events 与 ground truth。语言英文；数据许可 CC BY 4.0，合成数据由 Llama 3.3 与 Llama 4 Maverick 生成；下载需登录 Hugging Face。",
+    "cite": [
+      "paper-are@§3.1",
+      "paper-are@§3.2",
+      "hf-gaia2@Dataset Structure",
+      "hf-gaia2@Licensing"
+    ],
+    "construction": [
+      {
+        "k": "场景创作",
+        "text": "标注员按能力分类指引在 GUI 图形编辑器里建场景，要求每个场景只难在一项能力上，方便读出强弱项；因「人觉得难」不等于「模型觉得难」，难度再用内部 agent 校准。",
+        "cite": [
+          "paper-are@§3.3"
+        ]
+      },
+      {
+        "k": "四轮人工 QA",
+        "text": "每个新建场景由不同标注员多轮校验：A 建 prompt 与 Oracle Event 图，B、C 在看不到前人解法的前提下各自独立建图并可就歧义修订 prompt，D 对照三份解法确认一致，不一致可驳回或小幅改写。",
+        "cite": [
+          "paper-are@§3.3 QA",
+          "paper-are@§3.3 四位标注员"
+        ]
+      },
+      {
+        "k": "自动护栏与后置评估",
+        "text": "Pre-QA 用图编辑器阻止不合 Mobile 建模约束的 DAG 保存（如每轮必须以 send_message_to_user 结束）；Post-QA 看模型成功率——100% 说明太简单，0% 说明写错或不可解，借此捞出漏网的坏场景。",
+        "cite": [
+          "paper-are@§3.3 后置 QA"
+        ]
+      },
+      {
+        "k": "数据生成与组成",
+        "text": "场景建在 10 个完全合成的 ARE 宇宙上（含少量维基百科文章样本），合成数据是 Llama 3.3 与 Llama 4 Maverick 的输出；agent 对用户/联系人的消息要求短、好解析、语气中性，并排除敏感话题与 PII。",
+        "cite": [
+          "hf-gaia2@Sensitivity",
+          "hf-gaia2@Licensing"
+        ]
+      },
+      {
+        "k": "公开版转换",
+        "text": "发布的场景会做清洗与预处理，剔除 oracle events、提示与评测不需要的元数据，只保留核心场景结构；真值（oracle events）只随 validation split 提供。",
+        "cite": [
+          "hf-gaia2@Transformations",
+          "hf-gaia2@Dataset Structure"
+        ]
+      },
+      {
+        "k": "访问与使用约束",
+        "text": "数据集在 Hugging Face（需登录），官方明确要求不要在这份评测数据上训练，并鼓励用 ARE 框架另造数据。",
+        "cite": [
+          "hf-gaia2@Forking"
+        ]
+      }
+    ]
   },
-  "metrics": [],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [],
-  "notes": "Meta Muse 引用；Meta Agents Research Environments 发布",
+  "default_protocol": {
+    "raw": "统一 ReAct-like scaffold（刻意不用厂商 tool-calling API，保证与provider 无关）：≥128K 上下文、temperature 0.5、每轮 16,000 token、单场景最多 200 步，上下文超限即判失败；每个场景跑 3 次取平均。评分由 ARE Verifier 完成——把 agent 的写操作与标注的 oracle 写操作逐一比对，参数按类型走 soft（LLM judge）或 hard（精确匹配），并检查因果依赖与相对时间；judge 固定 Llama 3.3 70B Instruct、temperature 0。101 个工具与环境描述全部放进 system prompt。",
+    "cite": [
+      "paper-are@§4.1",
+      "paper-are@§2.3",
+      "paper-are@§3.1 评分",
+      "blog-gaia2@How does Gaia2 run?"
+    ],
+    "variants": [
+      {
+        "text": "Gaia2-mini（160）vs 全集（800）：论文的增广与消融实验都基于 mini，主打低成本；两者分数不能直接横向比。",
+        "cite": [
+          "paper-are@§3.1 Gaia2-mini"
+        ]
+      },
+      {
+        "text": "推理档位：同一模型 GPT-5 从 minimal 到 high 差 24 分（18.2 → 42.1），厂商自报不写档位就等于没写口径。",
+        "cite": [
+          "paper-are@Table 2"
+        ]
+      },
+      {
+        "text": "时间上限：Time 场景默认上限 5 分钟；论文另测 30 分钟上限，GPT-5 (high) 在执行/搜索上分别掉 10 分和 20 分。",
+        "cite": [
+          "paper-are@§5 30 分钟上限",
+          "paper-are@§3.2 时间上限"
+        ]
+      },
+      {
+        "text": "增广强度可调：Agent2Agent 的替换比例 r（默认 1）、噪声的工具失败概率（默认 0.1）与环境事件频率（默认 10 次/分钟）都是参数，改一个就换一个口径。",
+        "cite": [
+          "paper-are@§3.2 噪声",
+          "paper-are@§3.2 Agent2Agent"
+        ]
+      },
+      {
+        "text": "通知策略：默认中等详细度，只推高优先级事件、过滤低优先级背景通知，配置不同会影响 agent 看到的信息量。",
+        "cite": [
+          "paper-are@§4.1"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "overall-pass-at-1",
+      "name": "总体 Pass@1（成功率）",
+      "direction": "越高越好",
+      "description": "各能力 split 的 Pass@1 再取平均；单场景 3 次运行取平均，0–100",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper-are@§3.1 评分",
+        "hf-gaia2@Evaluation Metrics"
+      ]
+    },
+    {
+      "id": "per-split-pass-at-1",
+      "name": "分能力 Pass@1",
+      "direction": "越高越好",
+      "description": "单个能力 split（执行/搜索/歧义/适应性/时间/噪声/Agent2Agent）的成功率，是论文表 2 的主口径",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper-are@Table 2",
+        "hf-gaia2@Evaluation Metrics"
+      ]
+    }
+  ],
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2025-09-21",
+      "label": "arXiv v1 发布：ARE 平台 + Gaia2 基准（论文与数据集同步公开）",
+      "cite": [
+        "arxiv-abs@提交历史"
+      ]
+    },
+    {
+      "id": "blog",
+      "date": "2025-09-22",
+      "label": "Hugging Face 博客《Gaia2 and ARE》发布，开放社区评测入口",
+      "cite": [
+        "blog-gaia2@页头"
+      ]
+    },
+    {
+      "id": "v2",
+      "date": "2025-12-10",
+      "label": "arXiv v2 修订（更新作者顺序与致谢），本页核对所用版本",
+      "cite": [
+        "arxiv-abs@提交历史"
+      ]
+    },
+    {
+      "id": "gaia2-mini",
+      "date": "2025-09-21",
+      "label": "Gaia2-mini（160 场景）随论文提供，用于快速评测与增广实验",
+      "cite": [
+        "paper-are@§3.1 Gaia2-mini"
+      ]
+    },
+    {
+      "id": "omnilingual-gaia2",
+      "date": "未披露",
+      "label": "仓库新增 Omnilingual-Gaia2：Gaia2 的多语言翻译版（facebook/omnilingual-gaia2），把评测扩展到英文以外；具体发布日期未披露",
+      "cite": [
+        "gh-are@README"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "口径高度依赖推理档位、时间上限与 scaffold",
+      "impact": "同一模型 GPT-5 minimal/low/high 相差 24 分（18.2 → 42.1）；Time 场景放到 30 分钟上限，GPT-5 (high) 执行/搜索各掉 10/20 分；ReAct-like scaffold、上下文长度、通知详细度也都影响分数。厂商自报常只给最好那一档。",
+      "severity": "高",
+      "response": "论文固定统一 scaffold 与超参并公开细节，同时鼓励提交替代编排；仓库明确排行榜只是 observational 对比，不宣称模型排名定论。",
+      "reader": "比较前先对齐推理档位、时间上限、scaffold 与 split（mini 还是全集），再看附录 B 每行的口径列。",
+      "cite": [
+        "paper-are@Table 2",
+        "paper-are@§4.1",
+        "paper-are@§5 30 分钟上限",
+        "gh-are@README"
+      ]
+    },
+    {
+      "issue": "搜索类已接近饱和，构造新题越来越难",
+      "impact": "论文承认 Gaia2-Search 很快触顶——标注员追不上前沿模型，与 HLE 类似的饱和压力；搜索/执行的高分已难区分最强模型，对「真实世界稳健性」的指示意义有限。",
+      "severity": "中",
+      "response": "作者转向「简单任务 + 复杂环境」、提高 verifier–agent 不对称（给校验器更好工具与更多算力）、探索标量奖励；ARE 抽象支持不重新标注就扩展新环境。",
+      "reader": "搜索分数高不等于稳健；歧义、适应性、噪声、时间才是当前最能拉开差距的 split。",
+      "cite": [
+        "paper-are@§5 搜索饱和",
+        "blog-gaia2@Results"
+      ]
+    },
+    {
+      "issue": "校验器本身是 LLM-as-judge，可靠性有边界",
+      "impact": "ARE Verifier 在 450 条人工标注轨迹上 agreement 0.98 / precision 0.99 / recall 0.95，明显优于纯 LLM judge 基线（0.72 / 0.53 / 0.83），但仍是模型判定；论文也指出 rubric judge 在写操作密集任务上容易被 reward hacking。",
+      "severity": "中",
+      "response": "oracle 写操作逐一匹配 + 因果图与时间窗检查 + hard/soft 分级；论文提出持续提高 verifier–agent 不对称来对抗绕过。",
+      "reader": "0.98 的一致率是在这批轨迹上得到的，不等于所有场景；接近满分时要给校验误差留余地。",
+      "cite": [
+        "paper-are@Table 1",
+        "paper-are@§5 搜索饱和"
+      ]
+    },
+    {
+      "issue": "官方材料之间数字不一致",
+      "impact": "HF 数据集卡把 5 个能力 config 与 mini 都写成 200 scenarios，论文与 HF 数据查看器都是每 split 160；博客说「1000 brand new human-created scenarios」，论文是核心 800 + 增广 320 = 1,120。",
+      "severity": "低",
+      "response": "本站以论文 v2 为准；数据集卡的 200 与博客的 1000 视为未同步的旧文案，分歧已在正文标注。",
+      "reader": "看到 200 或 1000 这类数字，先分辨它来自卡片文案还是论文口径。",
+      "cite": [
+        "hf-gaia2@Dataset Structure",
+        "paper-are@§3.1 增广",
+        "blog-gaia2@任务组"
+      ]
+    }
+  ],
+  "notes": "Meta 自家模型（Muse-Glimmer-30B）在模型卡里自报 Gaia2 43.3；数据集由 Meta Agents Research Environments 发布",
   "official_sources": [
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2509.17158"
+    },
     {
       "kind": "dataset",
       "url": "https://huggingface.co/datasets/meta-agents-research-environments/gaia2"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/facebookresearch/meta-agents-research-environments"
+    },
+    {
+      "kind": "blog",
+      "url": "https://huggingface.co/blog/gaia2"
     },
     {
       "kind": "site",
@@ -34,8 +360,304 @@
     }
   ],
   "related_benchmarks": [
-    "gaia"
+    "gaia",
+    "androidworld",
+    "osworld",
+    "webarena"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "paper-are",
+        "kind": "paper",
+        "title": "ARE: Scaling Up Agent Environments and Evaluations（arXiv:2509.17158 PDF，v2，2025-12-10）",
+        "url": "https://arxiv.org/pdf/2509.17158",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "arxiv-abs",
+        "kind": "paper",
+        "title": "arXiv:2509.17158 摘要页（v1/v2 提交历史与作者署名）",
+        "url": "https://arxiv.org/abs/2509.17158",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "hf-gaia2",
+        "kind": "dataset",
+        "title": "meta-agents-research-environments/gaia2（Hugging Face 数据集卡）",
+        "url": "https://huggingface.co/datasets/meta-agents-research-environments/gaia2",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "blog-gaia2",
+        "kind": "blog",
+        "title": "Gaia2 and ARE: Empowering the Community to Evaluate Agents（Hugging Face 博客，2025-09-22）",
+        "url": "https://huggingface.co/blog/gaia2",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "gh-are",
+        "kind": "repo",
+        "title": "facebookresearch/meta-agents-research-environments（README 与 gaia2-cli）",
+        "url": "https://github.com/facebookresearch/meta-agents-research-environments",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "huggingface-meta-models-muse-glimmer",
+        "kind": "site",
+        "title": "meta-models/Muse-Glimmer-30B（Hugging Face 模型卡，Benchmarks 表）",
+        "url": "https://huggingface.co/meta-models/Muse-Glimmer-30B",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Meta（论文署名 Romain Froger 等 24 位作者，含 Grégoire Mialon、Thomas Scialom）",
+        "cite": [
+          "arxiv-abs@摘要页"
+        ]
+      },
+      "first_release": {
+        "v": "2025-09-21（arXiv v1）",
+        "cite": [
+          "arxiv-abs@提交历史"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "paper-are@§3.1",
+        "hf-gaia2@Dataset Overview"
+      ],
+      "interpretation": [
+        "paper-are@§3.1 评分",
+        "paper-are@§4.2",
+        "paper-are@§1 非 AGI",
+        "gh-are@README"
+      ]
+    },
+    "problem": {
+      "text": "GAIA 发布两年，最简单级别对模型已经太容易、社区也快攻克最难题，需要一个新的更难 agent 基准；同时现有基准缺少动态、时间感知与多Agent协作场景，多数只测静态任务。Gaia2 的做法是把环境做成时间连续流动、事件异步发生的模拟手机，让 agent 在「边等边改计划」里暴露静态基准看不到的失败模式。",
+      "cite": [
+        "blog-gaia2@Intro",
+        "hf-gaia2@Motivations"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机/空操作基线",
+        "value": "未披露",
+        "note": "论文与数据集卡都没有报告随机或空操作基线；场景以 send_message_to_user 收尾，空操作无法通过校验。本站不推算。",
+        "cite": [
+          "paper-are@§3.2"
+        ]
+      },
+      {
+        "label": "论文发布时最好（Table 2）",
+        "value": "42.1%",
+        "note": "GPT-5 (high)，ReAct-like scaffold、temperature 0.5、每场景 3 次运行；同期最强开源 Kimi-K2 20.1%，Llama 3.3 70B Instruct 4.4%。",
+        "cite": [
+          "paper-are@Table 2",
+          "paper-are@§4.2"
+        ]
+      },
+      {
+        "label": "模型卡自报最高",
+        "value": "43.3%",
+        "note": "Muse-Glimmer-30B High Reasoning（Meta 自家模型卡 Benchmarks 表），同表 Gemma4-31B Thinking 36.4、Qwen3.6-27B Thinking 40.0；未说明是否跑在 Gaia2-mini、也未给评测日期，不能与论文表 2 直接排。",
+        "cite": [
+          "huggingface-meta-models-muse-glimmer@Benchmarks 表"
+        ]
+      },
+      {
+        "label": "人类参考线",
+        "value": "原理上 100%（非实测）",
+        "note": "官方博客：场景不需要专门知识，人类原则上应该能拿 100%，便于开发者调试；但论文里非专业标注员解题比所有模型都慢。",
+        "cite": [
+          "blog-gaia2@Intro",
+          "paper-are@§4.2 人类基线"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把总分当成「通用智能」——作者明说这不是 AGI 级基准，而且智能不等于效率：推理强的模型在时间维度上系统性更差。",
+        "cite": [
+          "paper-are@§1 非 AGI",
+          "paper-are@§5 时间逆扩展"
+        ]
+      },
+      {
+        "text": "把不同推理档位的分数排在一起——GPT-5 minimal 18.2 与 high 42.1 相差 24 分，档位不同就不可比。",
+        "cite": [
+          "paper-are@Table 2"
+        ]
+      },
+      {
+        "text": "把 Gaia2 分数当作 GAIA 分数的延续——两者环境不同（静态只读 vs 动态可写），Gaia2 是 GAIA 的后继基准而不是同一批题加难。",
+        "cite": [
+          "gh-are@README",
+          "blog-gaia2@Intro"
+        ]
+      },
+      {
+        "text": "以为排行榜是官方统一复测——仓库明说那是 self-published 的自报结果，口径由提交方自己决定。",
+        "cite": [
+          "gh-are@README"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "Meta；论文 24 位作者以 Romain Froger 领衔，包含 Grégoire Mialon、Thomas Scialom 等",
+        "cite": [
+          "arxiv-abs@摘要页"
+        ]
+      },
+      {
+        "k": "运行平台",
+        "v": "ARE（Meta Agents Research Environments）：事件驱动、时间推进、与 agent 异步运行的模拟环境；代码 MIT 许可，托管在 GitHub，另有容器化 gaia2-cli",
+        "cite": [
+          "gh-are@README"
+        ]
+      },
+      {
+        "k": "运行形态",
+        "v": "手机模拟环境（Email、Calendar、Contacts、Shopping、FileSystem、Chats 等）加一个模拟用户的历史记录；101 个工具与环境描述全部进 system prompt",
+        "cite": [
+          "blog-gaia2@How does Gaia2 run?",
+          "paper-are@§3.1"
+        ]
+      },
+      {
+        "k": "验证方式",
+        "v": "标注员同时给出 Oracle Event 图作为真值；ARE Verifier 比对 agent 写操作与 oracle 写操作（soft/hard + 因果 + 时间），judge 用 Llama 3.3 70B Instruct、temperature 0",
+        "cite": [
+          "paper-are@§2.3",
+          "paper-are@§4.1"
+        ]
+      },
+      {
+        "k": "数据与许可",
+        "v": "数据集在 Hugging Face（需登录才能访问），CC BY 4.0；合成数据为 Llama 3.3 与 Llama 4 Maverick 的输出，受各自许可约束",
+        "cite": [
+          "hf-gaia2@Licensing"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2025-09-21 arXiv v1 → 2025-09-22 HF 博客 → 2025-12-10 arXiv v2 → 之后仓库加入 Omnilingual-Gaia2 多语言扩展",
+        "cite": [
+          "arxiv-abs@提交历史",
+          "blog-gaia2@页头",
+          "gh-are@README"
+        ]
+      },
+      {
+        "k": "多语言扩展",
+        "v": "Omnilingual-Gaia2（facebook/omnilingual-gaia2）是 Gaia2 的多语言翻译版，用于英文以外的 agent 评测，翻译管线在 gaia2-cli/mt",
+        "cite": [
+          "gh-are@README"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-14",
+        "columns": [
+          "来源",
+          "模型",
+          "总体 Pass@1",
+          "口径"
+        ],
+        "rows": [
+          [
+            "论文 Table 2",
+            "Llama 3.3 70B Instruct",
+            "4.4%",
+            "ReAct-like scaffold，temperature 0.5，每场景 3 次运行"
+          ],
+          [
+            "论文 Table 2",
+            "Llama 4 Maverick",
+            "7.4%",
+            "同上"
+          ],
+          [
+            "论文 Table 2",
+            "GPT-4o",
+            "7.4%",
+            "同上"
+          ],
+          [
+            "论文 Table 2",
+            "Qwen3-235B",
+            "11.6%",
+            "同上"
+          ],
+          [
+            "论文 Table 2",
+            "Grok-4",
+            "15.7%",
+            "同上"
+          ],
+          [
+            "论文 Table 2",
+            "Kimi-K2",
+            "20.1%",
+            "同上"
+          ],
+          [
+            "论文 Table 2",
+            "Gemini-2.5-Pro",
+            "25.8%",
+            "同上"
+          ],
+          [
+            "论文 Table 2",
+            "Claude-4-Sonnet",
+            "34.8%",
+            "同上"
+          ],
+          [
+            "论文 Table 2",
+            "GPT-5 (minimal)",
+            "18.2%",
+            "同上"
+          ],
+          [
+            "论文 Table 2",
+            "GPT-5 (low)",
+            "34.6%",
+            "同上"
+          ],
+          [
+            "论文 Table 2",
+            "GPT-5 (high)",
+            "42.1%",
+            "同上；论文中最高"
+          ],
+          [
+            "模型卡 Benchmarks 表",
+            "Muse-Glimmer-30B High Reasoning",
+            "43.3%",
+            "模型卡自报；未说明是否 Gaia2-mini，无评测日期"
+          ]
+        ]
+      },
+      "cite": [
+        "paper-are@Table 2",
+        "huggingface-meta-models-muse-glimmer@Benchmarks 表"
+      ]
+    }
+  }
 }
