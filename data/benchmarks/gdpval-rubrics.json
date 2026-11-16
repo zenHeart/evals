@@ -2,34 +2,504 @@
   "id": "gdpval-rubrics",
   "name": "GDPval-Rubrics（MiniMax）",
   "full_name": null,
-  "aliases": [],
-  "status": null,
+  "aliases": [
+    "GPDval-Rubrics"
+  ],
+  "status": "active",
   "categories": [
     "agent"
   ],
-  "summary": "MiniMax 用公开 GDPval 案例与 rubrics 的内部评测",
-  "interpretation": "MiniMax 用公开 GDPval 案例与 rubrics 做的内部评测（自述 Internal evaluation）；分数为厂商自报得分率，同一数据不同判分器下可比性有限，主要看 MiniMax 代际间相对提升。",
-  "measures": [],
-  "does_not_measure": [],
+  "summary": "GDPval-Rubrics 是 MiniMax 在 M3 发布中给出的厂商内部评测口径：案例取自 OpenAI 公开的 GDPval 数据集，按公开的评分细则逐条打分（pointwise），运行环境对齐第三方 GDPval-AA 的 agentic scaffolding。底层题目与细则都是公开资产，但 MiniMax 只公开了这一句口径说明。",
+  "interpretation": "分数是「按公开 rubrics 逐条打分后的得分率」，看的是交付物是否满足专家写明的检查项，不是人类专家偏好的胜负。因此它不能和 GDPval 原版的 win rate、GDPval-AA 的 Elo 直接换算；可用的是同一厂商在同一口径下的前后代对比。",
+  "measures": [
+    {
+      "area": "职业覆盖",
+      "focus": "44 个职业，取自对美国 GDP 贡献前 9 的行业；任务是这些职业从业者的真实工作，交付物是文档、幻灯片、图表、表格与多媒体",
+      "share": "全集每职业 30 题；公开 gold 子集每职业 5 题",
+      "format": "文档 / 幻灯片 / 图表 / 表格 / 多媒体",
+      "cite": [
+        "gdpval-paper",
+        "gdpval-paper@§2.1",
+        "openai-gdpval@How we built the dataset",
+        "openai-gdpval"
+      ]
+    },
+    {
+      "area": "长时程单发任务",
+      "focus": "平均约 7 小时专家工作量的单次任务，最长可达数周；prompt 与参考文件一次性给全，不交互",
+      "share": "未披露（MiniMax 选了哪些案例未公布）",
+      "format": "prompt + 参考文件 → 交付物文件",
+      "cite": [
+        "gdpval-paper@§1",
+        "gdpval-paper@§5",
+        "minimax-blog-minimax-m3"
+      ]
+    },
+    {
+      "area": "评分细则（rubrics）",
+      "focus": "任务作者为本职业编写的逐条检查项，带分值；MiniMax 按这些公开细则做 pointwise 打分",
+      "share": "未披露（用了哪些 rubric 条目未公布）",
+      "format": "逐条判据计分（如要求交付物为 .xlsx 工作簿）",
+      "cite": [
+        "openai-gdpval",
+        "gdpval-dataset",
+        "minimax-blog-minimax-m3"
+      ]
+    },
+    {
+      "area": "工具与运行环境",
+      "focus": "环境对齐 GDPval-AA scaffolding：agentic 循环中给模型 shell 与网页浏览能力",
+      "share": "未披露",
+      "format": "shell + 网页浏览",
+      "cite": [
+        "gdpval-aa",
+        "gdpval-aa@FAQ",
+        "minimax-blog-minimax-m3"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "人类专家偏好的胜负——这一口径用 rubrics 逐点评分，不做 GDPval 原版的盲评两两对比",
+      "cite": [
+        "minimax-blog-minimax-m3",
+        "gdpval-paper@§2.5"
+      ]
+    },
+    {
+      "text": "体力劳动与线下工作——GDPval 初版只覆盖计算机上的知识工作，手工与实体任务不在其中",
+      "cite": [
+        "gdpval-paper@§5"
+      ]
+    },
+    {
+      "text": "多轮交互与需求澄清——任务一次性给全上下文，不测反复迭代",
+      "cite": [
+        "gdpval-paper@§5"
+      ]
+    },
+    {
+      "text": "工具调用的过程质量——判分对象是最终交付物与细则，不是过程",
+      "cite": [
+        "gdpval-aa@FAQ",
+        "minimax-blog-minimax-m3"
+      ]
+    }
+  ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
+    "sample_count": 220,
+    "splits": [
+      "公开 gold 子集 220 题（MiniMax 口径说明称案例取自公开 GDPval 数据集）",
+      "MiniMax 实际选用案例数：未披露"
+    ],
     "languages": [],
-    "source_type": "vendor_internal",
-    "public_sample": null
+    "source_type": "vendor_internal（厂商内部跑测；题目与 rubrics 来自 OpenAI 公开资产）",
+    "public_sample": true,
+    "totals": "公开 gold 子集 220 题（44 个职业 × 5 题）· 全集 1,320 题（44 个职业 × 30 题）· 交付物为文档 / 幻灯片 / 图表 / 表格 / 多媒体 · MiniMax 实际选用案例数未披露",
+    "cite": [
+      "gdpval-dataset",
+      "openai-gdpval@How we built the dataset",
+      "gdpval-paper@§2.1",
+      "minimax-blog-minimax-m3"
+    ],
+    "construction": [
+      {
+        "k": "选行业",
+        "text": "初始 9 个行业按对美国 GDP 贡献超过 5% 选取，数据依据为圣路易斯联储。",
+        "cite": [
+          "openai-gdpval@How we chose occupations"
+        ]
+      },
+      {
+        "k": "选职业",
+        "text": "用 O*NET 的任务数据判定职业是否以知识工作为主：至少 60% 的组成任务不涉及体力劳动才算合格，最终得到 44 个职业。",
+        "cite": [
+          "openai-gdpval@How we chose occupations",
+          "gdpval-paper@§2.1"
+        ]
+      },
+      {
+        "k": "出题",
+        "text": "每个职业由资深从业者编写代表性任务，这些专家平均 14 年经验，题目取自真实工作产物（法律简报、工程图纸、护理计划等）。",
+        "cite": [
+          "openai-gdpval",
+          "gdpval-paper"
+        ]
+      },
+      {
+        "k": "评审",
+        "text": "全部 1,320 题经过自动模型筛选加多轮人工评审；平均每题 5 轮人工评审，最少 3 轮。",
+        "cite": [
+          "gdpval-paper@§2.4",
+          "openai-gdpval"
+        ]
+      },
+      {
+        "k": "写评分细则",
+        "text": "任务作者同时为本职业编写详细评分细则，用于提高判分的一致性与透明度；公开 gold 子集的每条任务记录都附带这些细则。",
+        "cite": [
+          "openai-gdpval",
+          "gdpval-dataset"
+        ]
+      },
+      {
+        "k": "MiniMax 侧口径",
+        "text": "案例取自公开 GDPval 数据集，按公开 rubrics 逐点（pointwise）打分，运行环境对齐 GDPval-AA scaffolding。",
+        "cite": [
+          "minimax-blog-minimax-m3"
+        ]
+      }
+    ]
   },
-  "metrics": [],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [],
-  "notes": "厂商内部/未公开——M3 页自述 Internal evaluation（底层数据公开）",
+  "metrics": [
+    {
+      "id": "rubric-score-rate",
+      "name": "rubric 逐点得分率",
+      "direction": "越高越好",
+      "description": "按公开 rubrics 的逐条判据计分后的得分率；MiniMax 未公布聚合方式（是否按权重归一、是否含负向扣分项），也未公布分数本身",
+      "cite": [
+        "minimax-blog-minimax-m3",
+        "gdpval-dataset"
+      ]
+    },
+    {
+      "id": "win-rate",
+      "name": "win rate（GDPval 原版口径，非本评测指标）",
+      "direction": "越高越好",
+      "description": "专家盲评两两对比中，模型交付物被评为更好或与人类持平的题目占比；列出来只为说明本口径与上游口径的差别",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "gdpval-paper@§1",
+        "gdpval-paper@§3.1"
+      ]
+    }
+  ],
+  "default_protocol": {
+    "raw": "MiniMax 自述口径：案例取自公开 GDPval 数据集，按公开 rubrics 逐点打分，环境对齐 GDPval-AA scaffolding。判分模型、系统提示词、运行次数、是否归一与通过阈值均未披露。",
+    "cite": [
+      "minimax-blog-minimax-m3"
+    ],
+    "variants": [
+      {
+        "text": "pointwise（按 rubrics 逐条打分）≠ GDPval 原版的 pairwise win rate（专家盲评两两对比）：分子分母都不同，不能互相换算。",
+        "cite": [
+          "minimax-blog-minimax-m3",
+          "gdpval-paper@§1"
+        ]
+      },
+      {
+        "text": "「环境对齐 GDPval-AA scaffolding」只指工具与运行方式，不等于复用 AA 的判分：AA 用 LLM judge 两两对比后转 Elo。",
+        "cite": [
+          "gdpval-aa@FAQ",
+          "gdpval-aa"
+        ]
+      },
+      {
+        "text": "GDPval 原版另有一个自动判分器，与人类专家一致率 66%（人类评分者间 71%），OpenAI 明确它尚不能替代专家评审；自动打分时要当心同类偏差。",
+        "cite": [
+          "gdpval-paper@§2.5",
+          "openai-gdpval"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "m3-2026-06",
+      "date": "2026-06-01",
+      "label": "MiniMax M3 发布，博客评测脚注给出 GPDval-Rubrics 口径（公开案例 + 公开 rubrics 逐点评分，环境对齐 GDPval-AA scaffolding）；原文拼写为 GPDval",
+      "cite": [
+        "minimax-blog-minimax-m3"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "不可复现",
+      "impact": "MiniMax 只公开了一句口径说明：选用案例、判分模型、系统提示词、运行次数与聚合方式均未公布，外部无法复算其分数。",
+      "severity": "高",
+      "response": "厂商未提供复现材料；本档案只收录口径说明，不引用其数值。",
+      "reader": "把它当作厂商自报的一次性结果，不要当作可复现基准。",
+      "cite": [
+        "minimax-blog-minimax-m3"
+      ]
+    },
+    {
+      "issue": "pointwise 与 pairwise 不可比",
+      "impact": "rubrics 逐点打分与 GDPval 原版的专家盲评 win rate、GDPval-AA 的 Elo 分子分母都不同；混在一张表里排名会误导。",
+      "severity": "高",
+      "response": "只在同一判分方式、同一题目子集内比较。",
+      "reader": "看到「GDPval 得分」先问是 win rate、Elo 还是 rubric 得分率。",
+      "cite": [
+        "minimax-blog-minimax-m3",
+        "gdpval-paper@§1",
+        "gdpval-aa@FAQ"
+      ]
+    },
+    {
+      "issue": "样本量与选用分布未披露",
+      "impact": "公开子集 220 题、全集 1,320 题，但 MiniMax 用了其中哪些案例、是否覆盖全部 44 个职业均未公布，无法估计分数的波动范围。",
+      "severity": "中",
+      "response": "厂商未披露；本档案题量处只标公开集规模。",
+      "reader": "不要把 220 或 1,320 当作 MiniMax 的实际题量。",
+      "cite": [
+        "minimax-blog-minimax-m3",
+        "gdpval-dataset",
+        "gdpval-paper@§2.1"
+      ]
+    },
+    {
+      "issue": "公开题目 + 公开细则的污染风险",
+      "impact": "题目与评分细则都在公开数据集里，模型若在训练中见过这些材料，得分会高于真实泛化水平；这一点对任何使用公开 GDPval 数据的口径都成立。",
+      "severity": "中",
+      "response": "题目与细则公开是这一口径的固有属性；论文另有一个「欠上下文 GDPval」实验，可用来判断模型对提示完整度的依赖。",
+      "reader": "跨版本比较时注意模型训练截止时间与数据发布时间的关系。",
+      "cite": [
+        "gdpval-paper@§4",
+        "gdpval-paper@§5",
+        "gdpval-dataset"
+      ]
+    },
+    {
+      "issue": "自动判分与人类专家仍有差距",
+      "impact": "GDPval 原版的自动判分器与人类专家一致率 66%，比人类评分者间的 71% 低 5 个百分点；用 rubrics 自动打分存在同类偏差。",
+      "severity": "中",
+      "response": "OpenAI 把自动判分器作为实验性研究服务发布，不用它替代专家评审。",
+      "reader": "rubrics 提高的是一致性，不等于人类判断。",
+      "cite": [
+        "gdpval-paper@§2.5",
+        "openai-gdpval"
+      ]
+    },
+    {
+      "issue": "规模与覆盖有限",
+      "impact": "全集仅 44 个职业 × 30 题，且只覆盖计算机上的知识工作；论文明确它是初步版本。",
+      "severity": "低",
+      "response": "OpenAI 称会继续扩充职业、行业与任务类型，并提高交互性。",
+      "reader": "不要把 44 个职业的结果外推到全部职业。",
+      "cite": [
+        "gdpval-paper@§5",
+        "openai-gdpval"
+      ]
+    }
+  ],
+  "notes": "口径出自 MiniMax M3 发布博客脚注（原文拼写 GPDval-Rubrics，页面日期 2026-06-01）；MiniMax 自报数值只出现在结果表图片里，正文无逐字文本，本档案不引用。同厂商的 gdpval-mm 是另一套内部口径（Cowork），判分方式不同。",
   "official_sources": [
     {
       "kind": "site",
       "url": "https://www.minimax.io/blog/minimax-m3"
+    },
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2510.04374"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/openai/gdpval"
     }
   ],
-  "related_benchmarks": [],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "related_benchmarks": [
+    "gdpval",
+    "gdpval-aa",
+    "gdpval-mm"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "minimax-blog-minimax-m3",
+        "kind": "blog",
+        "title": "MiniMax M3: Frontier Coding, 1M Context, Native Multimodality — All in One Model（2026-06-01）",
+        "url": "https://www.minimax.io/blog/minimax-m3",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "gdpval-paper",
+        "kind": "paper",
+        "title": "GDPval: Evaluating AI Model Capabilities on Economically Valuable Tasks（arXiv:2510.04374）",
+        "url": "https://arxiv.org/abs/2510.04374",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "openai-gdpval",
+        "kind": "site",
+        "title": "Measuring the performance of our models on real-world tasks（OpenAI GDPval 发布页）",
+        "url": "https://openai.com/index/gdpval/",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "gdpval-dataset",
+        "kind": "dataset",
+        "title": "openai/gdpval（Hugging Face，220 题公开 gold 子集，含 rubric_pretty / rubric_json 字段）",
+        "url": "https://huggingface.co/datasets/openai/gdpval",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "gdpval-aa",
+        "kind": "leaderboard",
+        "title": "GDPval-AA v2.1（Artificial Analysis 独立评测榜）",
+        "url": "https://artificialanalysis.ai/evaluations/gdpval-aa",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "MiniMax（口径出自其 M3 发布博客；题目与 rubrics 归 OpenAI）",
+        "cite": [
+          "minimax-blog-minimax-m3"
+        ]
+      },
+      "first_release": {
+        "v": "2026-06-01（MiniMax M3 发布，博客页标注日期）",
+        "cite": [
+          "minimax-blog-minimax-m3"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "minimax-blog-minimax-m3",
+        "gdpval-dataset",
+        "gdpval-aa"
+      ],
+      "interpretation": [
+        "minimax-blog-minimax-m3",
+        "gdpval-paper@§1",
+        "gdpval-aa@FAQ"
+      ]
+    },
+    "problem": {
+      "text": "GDPval 原版靠人类专家盲评两两对比判优劣，贵且慢；MiniMax 这一口径改用公开 rubrics 逐点评分，把「专家觉得哪个好」换成「是否满足写明的要求」，从而能在内部反复跑。",
+      "cite": [
+        "gdpval-paper@§2.5",
+        "gdpval-paper@§1",
+        "minimax-blog-minimax-m3"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "GDPval 原版：人类专家基线",
+        "value": "略过半任务被追平或超过",
+        "note": "论文 §3.1 的 win rate 口径；该口径最好成绩为 Claude Opus 4.1 的 47.6%（220 题公开 gold 子集）。这是 pairwise 口径，不是 rubric 得分率。",
+        "cite": [
+          "gdpval-paper@§3.1"
+        ]
+      },
+      {
+        "label": "本评测（rubrics 逐点得分率）",
+        "value": "未披露",
+        "note": "MiniMax 未在正文公布分数；本档案不引用其数值，理由见「可信度与局限」第一条。",
+        "cite": [
+          "minimax-blog-minimax-m3"
+        ]
+      },
+      {
+        "label": "GDPval-AA v2.1 榜首（对照口径）",
+        "value": "Elo 1866",
+        "note": "Claude Opus 5.5 (Max, Default Fallback)；AA 口径为 agentic 环境 + LLM judge 两两对比，锚点 DeepSeek V4.1 Flash (max) = 1600，越高越好。",
+        "cite": [
+          "gdpval-aa@Leaderboard"
+        ]
+      },
+      {
+        "label": "GDPval-AA v2.1 上的 MiniMax-M3（对照口径）",
+        "value": "Elo 1250",
+        "note": "AA 榜该行记录时间为 2026 年 6 月，区间 ±16；这是 AA 的 Elo 口径，不是 MiniMax 自报的 rubric 得分率。",
+        "cite": [
+          "gdpval-aa@Leaderboard"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 MiniMax 的 rubric 得分率和 GDPval 原版的 win rate、GDPval-AA 的 Elo 排进同一张表——三者的分子分母都不同。",
+        "cite": [
+          "minimax-blog-minimax-m3",
+          "gdpval-paper@§1",
+          "gdpval-aa@FAQ"
+        ]
+      },
+      {
+        "text": "看到「环境对齐 GDPval-AA scaffolding」就以为复用了 AA 的判分——AA 用 LLM judge 两两对比转 Elo，MiniMax 用公开 rubrics 逐点打分。",
+        "cite": [
+          "gdpval-aa@FAQ",
+          "minimax-blog-minimax-m3"
+        ]
+      },
+      {
+        "text": "把「题目与 rubrics 公开」等同于「评测公开」——公开的是底层资产，MiniMax 的选用案例、判分实现与逐题结果均未公布。",
+        "cite": [
+          "gdpval-dataset",
+          "minimax-blog-minimax-m3"
+        ]
+      },
+      {
+        "text": "把 220 或 1,320 当作 MiniMax 的实际题量——这两个数字分别是 OpenAI 的公开集与全集规模。",
+        "cite": [
+          "gdpval-dataset",
+          "gdpval-paper@§2.1",
+          "minimax-blog-minimax-m3"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "评测方",
+        "v": "MiniMax；口径出自其 M3 发布博客的评测脚注（原文拼写 GPDval-Rubrics）",
+        "cite": [
+          "minimax-blog-minimax-m3"
+        ]
+      },
+      {
+        "k": "上游基准",
+        "v": "OpenAI GDPval（arXiv:2510.04374）：44 个职业、美国 GDP 前 9 行业，全集 1,320 题、公开 gold 子集 220 题",
+        "cite": [
+          "gdpval-paper",
+          "gdpval-dataset"
+        ]
+      },
+      {
+        "k": "任务与细则作者",
+        "v": "各职业资深从业者，平均 14 年经验；题目基于真实工作产物，评分细则由任务作者编写",
+        "cite": [
+          "gdpval-paper",
+          "openai-gdpval"
+        ]
+      },
+      {
+        "k": "细则形态",
+        "v": "逐条检查项带分值，例如「最终交付物为 .xlsx 格式的 Excel 工作簿」；公开 gold 子集的每条任务记录都附带这些细则",
+        "cite": [
+          "gdpval-dataset",
+          "openai-gdpval"
+        ]
+      },
+      {
+        "k": "对照口径",
+        "v": "GDPval-AA v2.1（Artificial Analysis）：220 题 + Stirrup agentic harness，LLM judge 两两对比转 Elo，锚点 DeepSeek V4.1 Flash (max) = 1600",
+        "cite": [
+          "gdpval-aa",
+          "gdpval-aa@Leaderboard"
+        ]
+      },
+      {
+        "k": "判分基准线",
+        "v": "GDPval 原版自动判分器与人类专家一致率 66%，人类评分者间一致率 71%",
+        "cite": [
+          "gdpval-paper@§2.5"
+        ]
+      }
+    ]
+  }
 }
