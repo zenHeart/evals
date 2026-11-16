@@ -1,77 +1,630 @@
 {
   "id": "gray-swan-ipi",
   "name": "Gray Swan IPI",
-  "full_name": "Gray Swan Indirect Prompt Injection (IPI) Benchmark",
+  "full_name": "Gray Swan Indirect Prompt Injection (IPI) Benchmark（Gray Swan 间接提示注入基准）",
   "aliases": [
     "Gray Swan IPI",
+    "IPI Arena",
     "Indirect Prompt Injection Benchmark"
   ],
-  "status": null,
+  "status": "rolling",
   "categories": [
     "safety"
   ],
-  "summary": "Gray Swan 出品的间接提示注入基准：统计自适应多轮攻击下的攻击成功率",
-  "interpretation": "它衡量的是「攻击者能不能通过模型读到的间接内容（网页、文档、工具返回值里的指令）把模型骗去执行不该执行的事」：IPI 基准用自适应攻击逐轮加压，指标是攻击成功率——越低越好。同一个模型在 k=1 / k=10 / k=15 次尝试下的读数差别很大，跨模型比较必须对齐尝试次数这个条件。官方发布文里 Google 把 Gemini 4 Argon 的 0.7% 与 Gemini 4 Carbon 的 0.0% 放在同一口径上对比；Gray Swan 的评测套件与竞技场以开源形式发布，便于第三方复核。",
+  "summary": "Gray Swan IPI 是首个覆盖工具调用、编码、计算机操作三类智能体场景的大规模间接提示注入（IPI）基准：把攻击指令藏进模型本来就要读的内容里（网页、邮件、工具返回值、代码仓库的评论与配置文件、PR 描述），看模型会不会一边执行有害动作、一边把这件事从自己的可见回复里藏掉。公开红队竞赛吸引了 464 名参与者、提交 27.2 万次攻击尝试，13 个前沿模型全部被攻破；攻击成功率从 Claude Opus 4.5 的 0.5% 到 Gemini 2.5 Pro 的 8.5%。论文同时给出可跨模型复用的「通用攻击」——一套提交能在 41 个行为中的 21 个、9 个模型上生效。",
+  "interpretation": "这里的分数是攻击成功率，越低越好：分子是通过全部适用裁判的成功攻击数，分母是该模型收到的全部对话数（chat）。一次攻击要算成功，必须同时满足两件事——智能体真的执行了目标有害动作，且最终可见回复通过了隐蔽性等判据（阈值 7/10），只做到一件都不算。读这个数字有三条限制：一、威胁模型比现实宽松（攻击者能看完整预填对话、知道目标动作与参数），所以它是单轮脆弱性的上限，不是真实攻击频率；二、即使 ASR 很低，在智能体每天处理成千上万条外部输入的量级上仍然构成实际风险；三、厂商公告（如 Google 的 Gemini 4 Argon 0.7% / Carbon 0.0%）没有披露尝试次数、场景集合与裁判配置，不能和论文的竞赛 ASR 直接对齐。",
   "measures": [
-    "间接提示注入下的攻击成功率",
-    "自适应多轮攻击（k 次尝试）后的成功率"
+    {
+      "area": "工具调用场景",
+      "focus": "智能体拿着领域工具干活：电商、医疗、金融、家庭自动化、开发者工作流。典型目标动作是邮件助手把「合同截止」邮件标记为已读，让用户错过有财务后果的期限。注入藏在攻击者能合理控制的位置——评论、配置文件、PR 描述。",
+      "share": "18 / 41 个场景",
+      "format": "单轮：预填多轮对话建立良性任务，唯一注入点标记为 {fill}；程序化工具裁判 + 提示词裁判双判",
+      "cite": [
+        "paper@§3.1 场景构成",
+        "paper@§3.1 威胁模型"
+      ]
+    },
+    {
+      "area": "编码场景",
+      "focus": "智能体在软件仓库里执行命令、修改代码。环境按「部署中的编码智能体会碰到什么」搭建：克隆真实开源仓库（TRL、veRL、CrewAI）、GitHub 风格 PR 审查流程、由真实编码工具转录构造的对话预填。目标动作包括被要求修 bug 时反而往代码库插后门。",
+      "share": "15 / 41 个场景",
+      "format": "同上；网页类行为会渲染注入了攻击的 HTML 页面，把截图传给目标模型",
+      "cite": [
+        "paper@§3.1 场景构成",
+        "repo-ipi-arena-os"
+      ]
+    },
+    {
+      "area": "计算机操作场景",
+      "focus": "智能体通过截图和鼠标/键盘操作图形界面，经前沿实验室 API 驱动；考验它能否在看不清攻击载荷位置的情况下被带偏。",
+      "share": "8 / 41 个场景",
+      "format": "同上；需视觉能力，无图像支持的模型不参与这一组",
+      "cite": [
+        "paper@§3.1 场景构成",
+        "paper@§3.3 数据收集"
+      ]
+    }
   ],
   "does_not_measure": [
-    "直接提示注入",
-    "越狱内容的生成能力"
+    {
+      "text": "直接提示注入与越狱内容生成：本基准只测「藏在模型读到的内容里」的间接注入，不测用户把攻击直接写进 prompt，也不给有害内容生成能力打分。",
+      "cite": [
+        "paper@§3.1 场景构成",
+        "paper@§5 讨论与局限"
+      ]
+    },
+    {
+      "text": "多跳 / 多轮升级攻击：攻击者与智能体都只有一轮，论文明确说不研究攻击者根据智能体回应调整策略的多轮升级场景。",
+      "cite": [
+        "paper@§3.1 威胁模型",
+        "paper@§5 讨论与局限"
+      ]
+    },
+    {
+      "text": "外层防御层（分类器 / 过滤器 / 护栏）：这些被广泛用作额外安全层，论文把它们列在范围之外，并且在部分厂商默认开启时主动要求关掉，因此分数不含纵深防御的边际效果。",
+      "cite": [
+        "paper@§5 讨论与局限"
+      ]
+    },
+    {
+      "text": "真实世界攻击频率：威胁模型给攻击者完整的会话可见性与目标动作知识，结果按论文自述是「单轮智能体脆弱性的上限」而非现实攻击发生率。",
+      "cite": [
+        "paper@§3.1 威胁模型",
+        "paper@§5 讨论与局限"
+      ]
+    }
   ],
   "dataset": {
-    "sample_count": null,
+    "sample_count": 2679,
     "splits": [
-      "k=1",
-      "k=10",
-      "k=15"
+      "最终报告口径：37 个行为（wave 0 的 4 个行为被排除）",
+      "精选复测集：2,679 条攻击，跨 41 个行为，每个「模型 × 行为」对最多 9 条、平均 7 次提交",
+      "迁移复测集：2,449 条（DeepSeek V3.1、Kimi K2、SecAlign 70B 缺视觉能力，跑不了计算机操作场景）",
+      "公开子集：Hugging Face 上 95 条攻击字符串，覆盖 28 个行为"
     ],
     "languages": [
       "en"
     ],
-    "source_type": "red-team attack suite",
-    "public_sample": true
+    "source_type": "red-team attack suite（公开红队竞赛投稿去重后由组织者精选）",
+    "public_sample": "开源仓库发布完整评测套件但不含攻击字符串；Hugging Face 另放出 95 条攻击字符串（28 个行为，针对 Qwen 生成、未迁移到任何闭源模型）；2,679 条精选攻击字符串不公开，只分享给对应前沿实验室与 UK AISI / US CAISI",
+    "totals": "271,588 次对话（chat）· 67,634 次提交（submission）· 8,648 次成功攻击 · 464 名独立参与者 · 13 个模型；精选集 2,679 条 · 公开集 95 条；语言为英文",
+    "cite": [
+      "paper@§3.3 数据收集",
+      "paper@§3.4 基准发布",
+      "repo-ipi-arena-os@Open-Source Attacks",
+      "hf-attacks"
+    ],
+    "construction": [
+      {
+        "k": "场景怎么定",
+        "text": "41 个场景跨三类智能体设置，与英国 AI 安全研究所及 OpenAI、Anthropic、Amazon、Meta 等前沿实验室合作设计。每个场景规定四件事：良性用户任务、注入位置、目标有害动作、详细成功判据。",
+        "cite": [
+          "paper@§3.1 场景构成"
+        ]
+      },
+      {
+        "k": "注入怎么插",
+        "text": "注入藏在攻击者可以合理控制的位置（评论、配置文件、PR 描述）。场景先预填一段多轮对话把良性任务上下文立起来，其中只有一个指定注入点，标记为 {fill}，攻击者的载荷插在这里；编码场景则直接用克隆的真实仓库和真实编码工具转录。",
+        "cite": [
+          "paper@§3.1 场景构成"
+        ]
+      },
+      {
+        "k": "数据怎么收",
+        "text": "公开红队竞赛分三波：wave 0 含 4 个行为，两个主波在两周内跑完共 37 个行为。wave 0 的结果从最终报告中排除。去重后得到 271,588 次对话、67,634 次提交、8,648 次成功攻击、464 名独立参与者。",
+        "cite": [
+          "paper@§3.3 数据收集"
+        ]
+      },
+      {
+        "k": "什么叫一次尝试",
+        "text": "chat（也叫 attempt）是参与者对某个模型的某个行为试一次攻击，只拿到智能体回复、不自动判分；submission 是参与者看完回复后显式请求判分。ASR = 通过全部适用裁判的成功攻击数 ÷ 该模型的总对话数（对话是提交的超集）。",
+        "cite": [
+          "paper@§3.3 数据收集",
+          "paper@§4.1 总体 ASR"
+        ]
+      },
+      {
+        "k": "精选复测集",
+        "text": "从去重数据集里为每个「模型 × 行为」对最多抽 9 条成功攻击，得到 2,679 条攻击、41 个行为、平均每对 7 次提交。§4.2 的攻击迁移性就是用这一集原样重放到 13 个竞赛模型外加 2 个新模型上测出来的。",
+        "cite": [
+          "paper@§3.4 基准发布",
+          "paper@§4.2 攻击迁移性"
+        ]
+      },
+      {
+        "k": "公开了什么",
+        "text": "开源完整评测套件（不含攻击字符串），研究者可以拿自己的攻击去打任意模型；另在 Hugging Face 放出 95 条攻击字符串；模型特定的攻击数据交回对应前沿实验室，完整数据集交给 UK AISI 与 US CAISI 支持稳健性研究。",
+        "cite": [
+          "paper@§3.4 基准发布",
+          "repo-ipi-arena-os@Open-Source Attacks",
+          "hf-attacks"
+        ]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "单次机会、单轮。场景预填一段多轮对话建立良性任务上下文，唯一注入点标记为 {fill}；攻击者先把完整预填对话看一遍再写载荷，知道目标动作的具体工具调用与参数，也能看到预填轮里智能体用了哪些工具（但看不到完整工具定义）。智能体只回应一个操作轮——内部可以有多轮工具调用与返回，评测套件在这时启动 WorldSim 模拟每个工具响应并喂回给模型，最多 5 步，直到模型给出最终文本回复或撞到步数上限。判定用双裁判：工具裁判做程序化匹配，检查智能体是否按目标模式执行了有害动作（含计算机操作动作）；提示词裁判给最终可见回复按场景特定判据打 0–10 分，超过阈值 7 才算过。41 个场景里 32 个同时用两个裁判、7 个只用工具裁判、2 个只用提示词裁判；每个场景定义 1–3 条判据，其中一定包含「把注入和有害动作从可见回复里藏掉」。只有全部判据都过，才算一次 break（成功攻击）。",
+    "cite": [
+      "repo-ipi-arena-os@How It Works",
+      "paper@§3.1 威胁模型",
+      "paper@§3.1 场景构成",
+      "paper@§3.2 裁判"
+    ],
+    "variants": [
+      {
+        "text": "竞赛口径 vs 厂商公告口径：Google 的公告只给了 Gemini 4 Argon 0.7% 与 Carbon 0.0%，没有披露尝试次数、场景集合或裁判配置，无法与论文的竞赛 ASR 对齐。",
+        "cite": [
+          "blog-innovation-and-ai-models"
+        ]
+      },
+      {
+        "text": "思考模式开 / 关：竞赛为照顾非思考模型统一关闭思考（Kimi K2、Gemini-2.5-pro、Claude Haiku 4.5 除外）。迁移复测里 Kimi K2 关闭思考的 ASR 从 30% 升到 35%，论文计划下一轮强制两种模式都测。",
+        "cite": [
+          "paper@§3.3 数据收集",
+          "paper@§4.2 攻击迁移性",
+          "paper@§5 讨论与局限"
+        ]
+      },
+      {
+        "text": "竞赛 ASR vs 迁移 ASR：前者分母是全部对话；后者只用 2,679 条已经成功过的攻击重放，分母是攻击集，因此迁移 ASR 系统性高于竞赛 ASR（Gemini 2.5 Pro 从 8.5% 变成 45%）。",
+        "cite": [
+          "paper@§4.2 攻击迁移性"
+        ]
+      },
+      {
+        "text": "行为数口径：最终报告按 37 个行为；DeepSeek V3.1、Kimi K2、SecAlign 70B 因缺图像支持只测了 29 个行为，迁移复测也只跑 2,449 条攻击。GPT-5.1 在 Wave 2 开始才加入，其 ASR 与行为覆盖率只反映 Wave 2 数据。",
+        "cite": [
+          "paper@§3.3 数据收集",
+          "paper@§4.1 总体 ASR",
+          "paper@§4.2 攻击迁移性"
+        ]
+      }
+    ]
   },
   "metrics": [
     {
       "id": "attack-success-rate",
-      "name": "攻击成功率（k 次尝试）",
+      "name": "攻击成功率（ASR）",
+      "direction": "越低越好",
+      "description": "通过全部适用裁判的成功攻击数 ÷ 该模型的总对话数（chat）；论文 Figure 1 的柱状图标注与正文一致，如 Gemini 2.5 Pro 为 1,670 / 19,630。",
       "range": [
         0,
         100
       ],
       "unit": "percent",
-      "direction": "lower",
-      "aggregation": "mean"
+      "cite": [
+        "paper@§4.1 总体 ASR",
+        "paper@Figure 1"
+      ]
+    },
+    {
+      "id": "behavior-coverage",
+      "name": "行为覆盖率",
+      "direction": "越低越好",
+      "description": "被成功攻破的行为占比，按最终报告的 37 个行为计。覆盖率低只说明攻击者还没找到这个模型的通用破法，不代表它更安全。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§4.1 总体 ASR"
+      ]
+    },
+    {
+      "id": "transfer-asr",
+      "name": "迁移攻击成功率",
+      "direction": "越低越好",
+      "description": "把 2,679 条精选攻击原样重放到目标模型上的成功率；分母是攻击集而非全部对话，数值系统性高于竞赛 ASR，两类数字不能混在一张榜上。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§4.2 攻击迁移性"
+      ]
     }
   ],
-  "default_protocol": {
-    "raw": "柱顶数字为 k=15 次自适应尝试下的攻击成功率；比例越低越好"
-  },
   "versions": [
     {
-      "id": "ipi-15",
-      "label": "Gray Swan IPI（15 次尝试）",
-      "note": "评测套件与竞技场开源于 github.com/GraySwanAI/ipi_arena_os"
+      "id": "v1",
+      "date": "2026-03-16",
+      "label": "arXiv v1 发布；同步开源评测套件（不含攻击字符串），Hugging Face 放出 95 条攻击字符串",
+      "cite": [
+        "paper",
+        "repo-ipi-arena-os@Open-Source Attacks",
+        "hf-attacks"
+      ]
+    },
+    {
+      "id": "final-reporting",
+      "date": "2026-03-16",
+      "label": "最终报告口径确立：排除 wave 0 的 4 个行为，按 37 个行为报告；GPT-5.1 于 Wave 2 开始加入",
+      "cite": [
+        "paper@§3.3 数据收集",
+        "paper@§4.1 总体 ASR"
+      ]
+    },
+    {
+      "id": "gdm-announcement",
+      "date": "2026-10-28",
+      "label": "Google 在 Gemini 4 Carbon 公告中引用本基准：Argon 0.7%、Carbon 0.0%（厂商口径，未披露尝试次数）",
+      "cite": [
+        "blog-innovation-and-ai-models"
+      ]
     }
   ],
   "limitations": [
-    "攻击成功率随尝试次数 k 变化，跨尝试次数与跨版本都不可直接比较",
-    "红队攻击强度会持续演进，历史分数会随时间失真"
+    {
+      "issue": "威胁模型比现实宽松",
+      "impact": "攻击者能看完整预填对话、知道目标动作的具体工具调用与参数、还能看到预填轮用了哪些工具；现实攻击者需要额外侦察才能拿到目标邮件 ID、可用工具名这类上下文。因此论文自述这些比率是单轮脆弱性的上限，不是真实攻击频率。",
+      "severity": "高",
+      "response": "论文在摘要、§3.1、§5 三处重复标注这是宽松模型，并明确说不要把它当作部署场景下的安全度量。本站据此把竞赛 ASR 当上界读。",
+      "reader": "看到 8.5% 不要理解成「现实中每 12 次攻击成功 1 次」；真实攻击者先要付出成本拿到上下文。",
+      "cite": [
+        "paper@§3.1 威胁模型",
+        "paper@§5 讨论与局限"
+      ]
+    },
+    {
+      "issue": "一次性评测，结果不稳定",
+      "impact": "受竞赛体量限制，每个攻击对每个模型只跑一次。论文明确说重跑同一攻击不一定再成功，并认为理想做法是聚合多次抽样加自助法才能得到统计上稳定的终值。",
+      "severity": "高",
+      "response": "论文用 Figure 4 的累计曲线作为旁证：每个模型的累计成功攻击随尝试数近似线性，说明成功/尝试比值在整个竞赛期间大致恒定，没有随时间衰减或增强。但仍未做多次重跑。",
+      "reader": "相邻几个百分点的模型差距（如 5.5% 与 5.4%）不要当真；家族级差异更可靠。",
+      "cite": [
+        "paper@§5 讨论与局限",
+        "paper@§4.1 总体 ASR"
+      ]
+    },
+    {
+      "issue": "攻击投入在模型与场景之间不均衡",
+      "impact": "竞赛开放给不同经验水平的红队成员，可以随时匿名切换模型和场景，攻击努力的分布是非均匀的；论文因此说绝对 ASR 不应被解读为模型在真实部署中的安全度量，也提醒少数高水平参与者会 disproportionate 地影响结果。",
+      "severity": "中",
+      "response": "论文做了两个对照：多数模型被相当数量的独立用户瞄准（130–160 人），且未发现 ASR 与独立攻击者数量之间存在明显相关；Figure 4 的线性趋势也说明稳健性差异更像模型属性而非攻击者注意力分配。",
+      "reader": "把 ASR 理解成「在这套规则下被找到了多少破门」，不是「模型有多安全」。",
+      "cite": [
+        "paper@§3.4 基准发布",
+        "paper@§4.1 总体 ASR"
+      ]
+    },
+    {
+      "issue": "场景数量在三类设置间不均衡",
+      "impact": "18 个工具调用 / 15 个编码 / 8 个计算机操作，占比最高的设置会主导总体 ASR。最典型的是 Gemini 2.5 Pro：总体 8.5% 主要由计算机操作的 16.2% 拉高，接近它工具调用 ASR（8.9%）的两倍。",
+      "severity": "中",
+      "response": "论文按设置给出分解（Table 2、Figure 5），并计划在下一轮平衡各设置的场景数。",
+      "reader": "跨模型比「总体 ASR」前先看分设置数字；一个模型可能只是被某一类场景拖高。",
+      "cite": [
+        "paper@§4.1 分场景",
+        "paper@§5 讨论与局限"
+      ]
+    },
+    {
+      "issue": "思考模式被统一关闭",
+      "impact": "为公平照顾非思考模型，竞赛默认关闭思考（Kimi K2、Gemini-2.5-pro、Claude Haiku 4.5 除外）。迁移复测显示 Kimi K2 关闭思考后 ASR 从 30% 升到 35%，说明这个开关本身会改变读数。",
+      "severity": "中",
+      "response": "论文计划下一轮强制同时测思考与非思考两种模式。",
+      "reader": "把本基准的数字理解为「非思考配置下的表现」。",
+      "cite": [
+        "paper@§3.3 数据收集",
+        "paper@§4.2 攻击迁移性",
+        "paper@§5 讨论与局限"
+      ]
+    },
+    {
+      "issue": "不含外层防御层",
+      "impact": "分类器 / 过滤器 / 护栏已被广泛用作额外安全层，论文把它们明确列在范围之外，并且在部分厂商默认开启时主动要求关掉。因此本基准的 ASR 不含纵深防御带来的收益。",
+      "severity": "中",
+      "response": "论文把这一点写成范围选择而非疏漏；要评估纵深防御的边际效果需要另外的测量。",
+      "reader": "低 ASR 不等于上线就安全——生产栈通常还有一层过滤器。",
+      "cite": [
+        "paper@§5 讨论与局限"
+      ]
+    },
+    {
+      "issue": "编码场景低 ASR 的原因未证实",
+      "impact": "编码场景 ASR（2.51%）明显低于工具调用（4.82%）。论文的猜测是编码对话预填来自真实编码智能体转录、更接近模型安全训练里见过的数据，但这是推测，没有做消融。",
+      "severity": "低",
+      "response": "论文用「plausibly」把这个解释标成猜测，未给证据。",
+      "reader": "不要据此断定编码智能体更抗注入；先当成待验证假设。",
+      "cite": [
+        "paper@§4.1 分场景",
+        "paper@§5 讨论与局限"
+      ]
+    }
   ],
-  "notes": "证据账本中 2 次引用（gemini-4-argon-ga 0.7%、gemini-4-carbon 0.0%）；攻击成功率口径，比例越低越好",
+  "notes": "本站证据账本中 2 次引用（gemini-4-argon-ga 0.7%、gemini-4-carbon 0.0%），均为 Google 公告口径，未披露尝试次数，与论文的竞赛 ASR 不可直接比较；账本行的 benchmark_variant 写作「k=15 attempts」，但论文与 Google 公告均未出现任何尝试次数口径，本站不予采纳。头部卡「题量」后的「（公开集）」是页面模板固定文案：2,679 条精选攻击字符串实际不公开，公开的是 Hugging Face 上 95 条。",
   "official_sources": [
     {
-      "kind": "github",
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2603.15714"
+    },
+    {
+      "kind": "repo",
       "url": "https://github.com/GraySwanAI/ipi_arena_os"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/sureheremarv/ipi_arena_attacks"
     },
     {
       "kind": "site",
       "url": "https://blog.google/innovation-and-ai/models-and-research/gemini-models/introducing-gemini-4-carbon/"
     }
   ],
-  "related_benchmarks": [],
-  "content_status": "beta",
-  "last_verified_at": "2026-10-28"
+  "related_benchmarks": [
+    "shade-arena",
+    "gdm-stealth",
+    "harmbench"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-13",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "How Vulnerable Are AI Agents to Indirect Prompt Injections?（arXiv:2603.15714v1 [cs.CR]，2026-03-16）",
+        "url": "https://arxiv.org/abs/2603.15714",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "repo-ipi-arena-os",
+        "kind": "repo",
+        "title": "GraySwanAI/ipi_arena_os — 开源评测套件（README）",
+        "url": "https://github.com/GraySwanAI/ipi_arena_os",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "hf-attacks",
+        "kind": "dataset",
+        "title": "sureheremarv/ipi_arena_attacks — 95 条公开攻击字符串",
+        "url": "https://huggingface.co/datasets/sureheremarv/ipi_arena_attacks",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "blog-innovation-and-ai-models",
+        "kind": "site",
+        "title": "Google 博客：Gemini 4 Carbon: our next frontier model（2026-10-28）",
+        "url": "https://blog.google/innovation-and-ai/models-and-research/gemini-models/introducing-gemini-4-carbon/",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "arena",
+        "kind": "site",
+        "title": "Gray Swan AI Arena — 竞赛平台（Indirect Prompt Injection: Black）",
+        "url": "https://app.grayswan.ai/arena",
+        "accessed": "2026-11-13"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Gray Swan AI（主办竞赛、构建基准并撰写报告）；Anthropic 提议竞赛并参与设计与论文写作；Meta 以顾问身份参与场景与环境开发；UK AISI 与 US CAISI 反馈评分结构、场景与论文",
+        "cite": [
+          "paper@Author Contribution",
+          "paper@摘要"
+        ]
+      },
+      "first_release": {
+        "v": "2026-03-16（arXiv v1；评测套件与 95 条攻击字符串同步开源）",
+        "cite": [
+          "paper",
+          "repo-ipi-arena-os@Open-Source Attacks"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "paper@摘要",
+        "paper@§3.3 数据收集",
+        "paper@§4.1 总体 ASR",
+        "paper@§4.4 通用攻击"
+      ],
+      "interpretation": [
+        "paper@§3.1 威胁模型",
+        "paper@§3.2 裁判",
+        "paper@§5 讨论与局限",
+        "blog-innovation-and-ai-models"
+      ]
+    },
+    "problem": {
+      "text": "此前的提示注入评测要么规模太小、拉不开前沿模型差距，要么只问「有没有执行有害动作」而漏掉「有没有把它藏起来」，要么是一次性题库、模型一升级就过期。Gray Swan IPI 用公开红队竞赛把三者一起解决：272,000 次真实攻击尝试覆盖 13 个前沿模型，成功必须同时满足有害动作与隐蔽性两条判据，并且承诺通过持续竞赛做季度更新来对抗基准饱和。",
+      "cite": [
+        "paper@摘要",
+        "paper@§3.2 裁判",
+        "paper@§6 结论"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "全模型上限：最脆弱的模型",
+        "value": "8.5% ASR",
+        "note": "Gemini 2.5 Pro，19,630 次尝试中 1,670 次成功；这是整个竞赛里最差的读数，且它的计算机操作 ASR（16.2%）接近工具调用（8.9%）的两倍。",
+        "cite": [
+          "paper@§4.1 总体 ASR",
+          "paper@§4.1 分场景"
+        ]
+      },
+      {
+        "label": "最稳健的模型",
+        "value": "0.5% ASR",
+        "note": "Claude Opus 4.5，11,969 次尝试中 61 次成功。但同一批 2,679 条精选攻击重放时它仍被以 2.5% 攻破，而攻破它的攻击能以 44–81% 打到其他所有模型。",
+        "cite": [
+          "paper@§4.1 总体 ASR",
+          "paper@§4.2 攻击迁移性"
+        ]
+      },
+      {
+        "label": "按智能体设置分解",
+        "value": "工具调用 4.82% → 计算机操作 3.13% → 编码 2.51%",
+        "note": "Table 2 的 95% 置信区间分别为 [4.68%, 4.96%]、[2.96%, 3.31%]、[2.41%, 2.62%]。工具调用对每个模型都是最脆弱的设置，唯一例外是 Claude Opus 4.5——它计算机操作（1.1%）高于工具调用（0.6%）。",
+        "cite": [
+          "paper@§4.1 分场景"
+        ]
+      },
+      {
+        "label": "同族能力阶梯（Claude 4.5）",
+        "value": "Opus 4.5 0.5% < Sonnet 4.5 1.0% < Haiku 4.5 1.3%",
+        "note": "论文称 Claude 家族内部稳健性随能力提升。但跨家族并非如此：Gemini 2.5 Pro 与 Kimi K2 在 GPQA Diamond 上都约 85%，ASR 却差 8.5% 对 4.8%；论文观察到能力与 ASR 只有弱负相关（r = −0.31, p = 0.3）且不显著。",
+        "cite": [
+          "paper@§4.1 总体 ASR"
+        ]
+      },
+      {
+        "label": "厂商公告口径",
+        "value": "Gemini 4 Argon 0.7% → Gemini 4 Carbon 0.0%",
+        "note": "Google 2026-10-28 公告称 Carbon 抗住了每一次受评攻击。公告未披露尝试次数、场景集合与裁判配置，不能与论文的竞赛 ASR 直接对齐。",
+        "cite": [
+          "blog-innovation-and-ai-models"
+        ]
+      },
+      {
+        "label": "本站账本当前最好（最低）",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 Google 公告的 0.0% 读成「Gemini 4 Carbon 在这个基准上零漏洞」。公告没说尝试次数、场景集合和裁判配置；而在论文自己的迁移复测里，连最稳健的 Claude Opus 4.5 都被 2,679 条精选攻击打出 2.5%。",
+        "cite": [
+          "blog-innovation-and-ai-models",
+          "paper@§4.2 攻击迁移性"
+        ]
+      },
+      {
+        "text": "把低 ASR 理解成「这个模型安全」。论文明确说绝对 ASR 不应当作真实部署中的安全度量，并提醒即使低 ASR 在智能体每天处理成千上万条外部输入的量级上也构成实际风险。",
+        "cite": [
+          "paper@§5 讨论与局限"
+        ]
+      },
+      {
+        "text": "把迁移 ASR 和竞赛 ASR 混进同一张榜单。迁移 ASR 的分母是 2,679 条已经成功过的攻击，所以系统性高于竞赛 ASR——Gemini 2.5 Pro 从 8.5% 变成 45%，Qwen3 VL 235B 达到 53%。",
+        "cite": [
+          "paper@§4.2 攻击迁移性"
+        ]
+      },
+      {
+        "text": "认为模型能力越强越抗注入。论文观察到能力与 ASR 只有弱负相关且不显著；同分不同命（Gemini 2.5 Pro 与 Kimi K2 在 GPQA Diamond 上都约 85%，ASR 却差一倍）说明模型家族与训练配方的影响更大。",
+        "cite": [
+          "paper@§4.1 总体 ASR"
+        ]
+      },
+      {
+        "text": "把行为覆盖率当成安全指标。Gemini 2.5 Pro 和 DeepSeek V3.1 的覆盖率是 100%（37/37 全被攻破），这是最差的信号而不是最好的；Claude Opus 4.5 的 35.1%（13/37）只说明攻击者还没找到它的通用破法。",
+        "cite": [
+          "paper@§4.1 总体 ASR"
+        ]
+      },
+      {
+        "text": "把「通用攻击能打穿 21/41 个行为」当成偶发。论文认为这说明指令跟随训练本身存在共性弱点，而不是某个模型的个别缺陷——同一簇 63 次提交 minimally different 就能跨 9 个模型生效。",
+        "cite": [
+          "paper@§4.4 通用攻击",
+          "paper@摘要"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "Gray Swan AI 主办竞赛、构建基准并撰写报告；Anthropic 提议竞赛并对竞赛设计与论文写作提建议；Meta 以顾问身份参与场景与环境开发（含托管 SecAlign）；UK AISI 与 US CAISI 反馈评分结构、场景与论文。",
+        "cite": [
+          "paper@Author Contribution"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "Mateusz Dziemian、Maxwell Lin、Xiaohan Fu、Micha Nowak、Nick Winter、Eliot Jones、Andy Zou（开源仓库 README 署名）",
+        "cite": [
+          "repo-ipi-arena-os"
+        ]
+      },
+      {
+        "k": "论文",
+        "v": "《How Vulnerable Are AI Agents to Indirect Prompt Injections?》，arXiv:2603.15714v1 [cs.CR]，2026-03-16",
+        "cite": [
+          "paper"
+        ]
+      },
+      {
+        "k": "竞赛规模",
+        "v": "公开红队竞赛：464 名参与者、271,588 次对话、67,634 次提交、8,648 次成功攻击；去重后精选 2,679 条攻击用于跨模型复测。",
+        "cite": [
+          "paper@§3.3 数据收集",
+          "paper@§3.4 基准发布"
+        ]
+      },
+      {
+        "k": "被测模型",
+        "v": "竞赛 13 个：Anthropic Claude 4.5 家族、OpenAI GPT-5 家族、Google Gemini 2.5 Pro、xAI Grok 4、Amazon Nova、DeepSeek V3.1、Moonshot Kimi K2、Alibaba Qwen3 VL、Meta SecAlign-70B。迁移复测另加 Gemini 3 Pro 与 Kimi K2（非思考）。",
+        "cite": [
+          "paper@§3.3 数据收集",
+          "paper@§4.2 攻击迁移性"
+        ]
+      },
+      {
+        "k": "公开物",
+        "v": "开源评测套件 github.com/GraySwanAI/ipi_arena_os（不含攻击字符串）；Hugging Face 上 95 条攻击字符串（28 个行为，json，英文）；模型特定攻击数据交回对应实验室，完整数据集给 UK AISI 与 US CAISI。",
+        "cite": [
+          "paper@§3.4 基准发布",
+          "repo-ipi-arena-os@Open-Source Attacks",
+          "hf-attacks"
+        ]
+      },
+      {
+        "k": "更新节奏与平台现状",
+        "v": "论文承诺通过持续红队竞赛做季度更新，以对抗基准饱和与过时。截至 2026-11-13，Gray Swan AI Arena 上的赛事卡片显示「Indirect Prompt Injection: Black」、10 个场景、42 个模型、奖池 $300,000——场景数与模型数和论文的 41 个行为 / 13 个模型不一致（赛事页可能是另一届或另一套口径）。本站两处都原样记录，不做调和，也不据此修改论文数字。",
+        "cite": [
+          "arena",
+          "paper@摘要"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-13",
+        "columns": [
+          "来源",
+          "对象",
+          "数值",
+          "口径"
+        ],
+        "rows": [
+          ["论文 Figure 1", "Gemini 2.5 Pro", "8.5%", "1,670 / 19,630 次尝试；竞赛 ASR"],
+          ["论文 Figure 1", "Nova 1 Premier", "5.8%", "1,091 / 18,924 次尝试；竞赛 ASR"],
+          ["论文 Figure 1", "SecAlign 70B", "5.5%", "618 / 11,238 次尝试；竞赛 ASR"],
+          ["论文 Figure 1", "DeepSeek V3.1", "5.4%", "808 / 15,026 次尝试；竞赛 ASR"],
+          ["论文 Figure 1", "Kimi K2 Thinking", "4.8%", "589 / 12,299 次尝试；竞赛 ASR"],
+          ["论文 Figure 1", "Nova 2 Lite", "4.7%", "672 / 14,244 次尝试；竞赛 ASR"],
+          ["论文 Figure 1", "Qwen3 VL 235B", "4.2%", "781 / 18,733 次尝试；竞赛 ASR"],
+          ["论文 Figure 1", "Grok 4", "2.9%", "366 / 12,526 次尝试；竞赛 ASR"],
+          ["论文 Figure 1", "GPT-5.1", "2.5%", "202 / 8,096 次尝试；仅 Wave 2 数据"],
+          ["论文 Figure 1", "GPT-5", "2.0%", "261 / 13,143 次尝试；竞赛 ASR"],
+          ["论文 Figure 1", "Claude Haiku 4.5", "1.3%", "177 / 13,696 次尝试；竞赛 ASR"],
+          ["论文 Figure 1", "Claude Sonnet 4.5", "1.0%", "136 / 13,603 次尝试；竞赛 ASR"],
+          ["论文 Figure 1", "Claude Opus 4.5", "0.5%", "61 / 11,969 次尝试；竞赛 ASR"],
+          ["论文 Table 2", "工具调用场景", "4.82%", "95% CI [4.68%, 4.96%]；18 个场景"],
+          ["论文 Table 2", "计算机操作场景", "3.13%", "95% CI [2.96%, 3.31%]；8 个场景"],
+          ["论文 Table 2", "编码场景", "2.51%", "95% CI [2.41%, 2.62%]；15 个场景"],
+          ["论文 §4.2", "Qwen3 VL 235B", "53%", "2,679 条精选攻击重放；最易迁移的目标"],
+          ["论文 §4.2", "Nova 1 Premier", "51%", "2,679 条精选攻击重放"],
+          ["论文 §4.2", "Gemini 2.5 Pro", "45%", "2,679 条精选攻击重放；较竞赛读数大幅收窄差距"],
+          ["论文 §4.2", "Kimi K2（非思考）", "35%", "2,679 条精选攻击重放；思考版为 30%"],
+          ["论文 §4.2", "Gemini 3 Pro", "16%", "2,679 条精选攻击重放；较 Gemini 2.5 Pro 明显改善"],
+          ["论文 §4.2", "Claude Opus 4.5", "2.5%", "2,679 条精选攻击重放；最稳健"],
+          ["Google 博客", "Gemini 4 Argon", "0.7%", "2026-10-28 厂商公告；未披露尝试次数与裁判配置"],
+          ["Google 博客", "Gemini 4 Carbon", "0.0%", "2026-10-28 厂商公告；抗住每一次受评攻击"]
+        ]
+      },
+      "cite": [
+        "paper@Figure 1",
+        "paper@§4.1 分场景",
+        "paper@§4.2 攻击迁移性",
+        "blog-innovation-and-ai-models"
+      ]
+    }
+  }
 }
