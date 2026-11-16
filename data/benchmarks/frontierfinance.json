@@ -1,46 +1,829 @@
 {
   "id": "frontierfinance",
   "name": "FrontierFinance",
-  "full_name": null,
+  "full_name": "FrontierFinance: A Challenging Benchmark for Measuring Frontier Intelligence of Finance Agents",
   "aliases": [],
-  "status": null,
+  "status": "active",
   "categories": [
     "agent",
     "reasoning"
   ],
-  "summary": "Samaya AI 出品的金融领域专家级评测，覆盖 6 类投资场景、220 道专家设计的问题、11,543 项细粒度评估标准。",
-  "interpretation": "分数越高代表模型在投资研究、公司估值、资产配置等专业金融任务上的回答越接近专家级。每道题用细粒度 rubric 评估，覆盖准确性、分析严谨性、可审计性与计算可复现性。当前公开报分数在 50-70% 区间，开源权重模型与闭源前沿模型的差距约 10-15 个百分点。",
+  "summary": "Samaya AI 于 2026-07-09 发布的开放式金融智能体评测：220 道金融专家撰写的问题，每题配一组原子化、可逐条核验的专家 rubric（共 11,543 条，平均每题 52.5 条），覆盖投资者工作流从筛选发现、公司与行业研究到财报事件的六类场景。评分不比对标准答案，而是让 LLM 裁判按 checklist 逐条判定长答案是否满足每条标准；主指标是宏平均的 Rubric Qualification Rate（全部 rubric 与必备 rubric 两个变体），并另报每 query 的成本与延迟。",
+  "interpretation": "读法要点有三。其一，分数是「长答案逐条满足专家标准的比例」的宏平均，不是选择题准确率，单题波动天然更大。其二，harness 是主导变量：同一模型在纯网页搜索、开源 Finance Agent v2、Samaya 自研三种 harness 下能差出十几个百分点，论文明确说 harness 类型才是性能的主导因素，跨 harness 的名次不能直接比。其三，官方口径下目前最高 58.9%，离饱和还很远；成本一栏各家统计范围不一致，只有延迟是可直接比的。",
   "measures": [
-    "金融信息检索与核验",
-    "公司估值与预测",
-    "金融研究流程",
-    "事实与假设分离",
-    "结论可追溯到原始来源"
+    {
+      "area": "Financial Data Extraction / 金融数据抽取与建模",
+      "focus": "示例题：拆解 BP 上游、下游与综合天然气及可再生能源板块过去 6 年的运营指标（题面日期 2025-10-09）",
+      "share": "70 题 / 31.8%",
+      "format": "开放式长答案，按 52.5 条/题的专家 rubric 逐条判定",
+      "cite": [
+        "paper@Table 6",
+        "paper@附录 A"
+      ]
+    },
+    {
+      "area": "Sector, Industry & Macro / 行业与宏观",
+      "focus": "示例题：Booking Holdings、Expedia、Airbnb 等头部 OTA 的订房晚数与收入如何对比（2025-03-29）",
+      "share": "38 题 / 17.3%",
+      "format": "同上",
+      "cite": [
+        "paper@Table 6",
+        "paper@附录 A"
+      ]
+    },
+    {
+      "area": "Earnings & Events / 财报与事件",
+      "focus": "示例题：ABBVIE 上一次财报电话会有哪些正面与负面要点（2025-05-01）",
+      "share": "36 题 / 16.4%",
+      "format": "同上",
+      "cite": [
+        "paper@Table 6",
+        "paper@附录 A"
+      ]
+    },
+    {
+      "area": "Company Research / 公司研究",
+      "focus": "示例题：英特尔过去两年营收放缓由什么驱动（2025-05-18）",
+      "share": "32 题 / 14.5%",
+      "format": "同上",
+      "cite": [
+        "paper@Table 6",
+        "paper@附录 A"
+      ]
+    },
+    {
+      "area": "Coverage & Catalyst Monitoring / 覆盖与催化剂跟踪",
+      "focus": "示例题：Alphabet 与 Microsoft 的 AI 战略在过去 8 个季度里如何分化（2025-06-09）",
+      "share": "27 题 / 12.3%",
+      "format": "同上",
+      "cite": [
+        "paper@Table 6",
+        "paper@附录 A"
+      ]
+    },
+    {
+      "area": "Screening & Discovery / 筛选与发现",
+      "focus": "示例题：哪些 MedTech 公司会从 2025 年新总统政权的关税与制造灵活性中受益、哪些会受到负面冲击（2025-05-24）",
+      "share": "17 题 / 7.7%",
+      "format": "同上",
+      "cite": [
+        "paper@Table 6",
+        "paper@附录 A"
+      ]
+    }
   ],
-  "does_not_measure": [],
+  "does_not_measure": [
+    {
+      "text": "交易执行、组合管理、风控与仓位建议：六类场景只覆盖研究工作流（筛选发现、公司研究、数据抽取、行业宏观、覆盖跟踪、财报事件），不含下单与组合优化",
+      "cite": [
+        "paper@Table 6",
+        "samaya-blog-frontier-finance@定位"
+      ]
+    },
+    {
+      "text": "对未来事件的预测能力：每道题都带 as-of 日期、rubric 只反映该日期之前的世界状态，且论文明确排除预测型问题，agent 必须真的去检索而不能靠参数记忆",
+      "cite": [
+        "paper@§3.1 Timestamped annotation"
+      ]
+    },
+    {
+      "text": "精确匹配式的答案正确率：评分是 LLM 裁判对长答案逐条 checklist 判定并多数投票，不是答案字符串或数值比对",
+      "cite": [
+        "hf-dataset@§4",
+        "paper@§5.1"
+      ]
+    }
+  ],
   "dataset": {
     "sample_count": 220,
-    "splits": [],
-    "languages": ["en"],
-    "source_type": "expert_designed",
-    "public_sample": null
+    "splits": [
+      "公开集 220 题（frontier_finance_public.jsonl，含全部 11,543 条 rubric）",
+      "内部留存集约 4,300 题（论文称留作内部开发与未来发布，未公开）"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "expert-authored（金融专家人工撰写，四阶段策审管线）",
+    "public_sample": true,
+    "totals": "220 题 · 11,543 条来源可归因的专家 rubric · 平均每题 52.5 条 · 6 类 use case，每题归属且仅归属一类 · 每题平均 1.9 个能力标签（220 题共 410 个）· rubric 按八类内容 taxonomy 分类，事实型数据抽取占 74% · 数据集与评分代码均开放",
+    "cite": [
+      "paper@§3.1 Stage 4",
+      "paper@§3.1 Stage 2",
+      "hf-dataset@§1",
+      "hf-dataset@§3"
+    ],
+    "construction": [
+      {
+        "k": "四阶段专家管线",
+        "text": "构建完全由金融专家执行，包括前买方股票分析师、卖方研究助理与投行人士；前三个阶段共产出超过 4,500 条完整标注的研究 query，再从中分层抽样出 220 题公开发布，其余约 4,300 题留作内部开发与未来发布。",
+        "cite": [
+          "paper@§3.1",
+          "paper@§3.1 Stage 4"
+        ]
+      },
+      {
+        "k": "rubric 粒度与必备性",
+        "text": "每题平均 52.5 条 rubric，用于充分给长答案打分；每条 rubric 带布尔 must_have 标签，缺了它答案就明显不完整，因此指标分「全部 rubric」与「必备子集」两个变体。",
+        "cite": [
+          "paper@§3.1 Stage 2",
+          "paper@§7"
+        ]
+      },
+      {
+        "k": "时间戳与可检索性",
+        "text": "每道 query 带日期字段，其 rubric 只反映该日期之前的世界状态；论文进一步排除预测型问题，使 agent 必须真正检索而非复述参数知识。",
+        "cite": [
+          "paper@§3.1 Timestamped annotation"
+        ]
+      },
+      {
+        "k": "use case 与能力标签",
+        "text": "每题归属六类 use case 之一（数据抽取最多，占 32%，但没有任何一类主导），并可同时打多个能力标签（平均 1.9 个），反映真实任务会复合多种技能。",
+        "cite": [
+          "paper@Table 6",
+          "paper@§3.2 Use cases",
+          "paper@§3.2 Capabilities"
+        ]
+      },
+      {
+        "k": "来源可归因",
+        "text": "每条 rubric 都可归因到具体数据来源：SEC 文件是最大单一来源，但占比不到 40%，其余主要是公司自发内容、专业知识与市场数据。",
+        "cite": [
+          "paper@§4.1",
+          "paper@Table 9"
+        ]
+      }
+    ]
   },
-  "metrics": [],
   "default_protocol": {
-    "raw": "细粒度 rubric 评估（11,543 项评估标准）"
+    "raw": "被评测系统在固定 harness 下逐题作答：网页搜索 harness（各厂商官方搜索 API）、开源 Finance Agent v2 harness（用 LangChain 重新实现 agent 编排，并设 200 次工具调用 / 300 秒上限）、Samaya 自研 harness（加同样上限以便公平对比），推理档位取各模型 API 默认值。作答结束后进入 checklist 式评分：把该题全部 rubric 连同题面、题面日期与系统答案交给 LLM 裁判，逐条判定是否满足；每条 rubric 由三个裁判模型（GPT 5.4、Gemini 3.1 Pro、Claude Sonnet 4.6）独立判定后多数投票，逐题得到 rubric 满足率，再对所有题取宏平均。",
+    "cite": [
+      "paper@§5",
+      "paper@§5.1",
+      "hf-dataset@§4",
+      "repo@法官配置",
+      "repo@Metrics",
+      "bench-site@Notes"
+    ],
+    "variants": [
+      {
+        "text": "harness 不可比：网页搜索 / Finance Agent v2 / Samaya 自研三组分别排名，论文说 harness 类型是性能的主导因素；FA v2 是 LangChain 重写的编排并统一加 200 次调用、300 秒上限，Legacy Samaya System 也用同一上限。",
+        "cite": [
+          "paper@§5",
+          "paper@§6",
+          "bench-site@Notes"
+        ]
+      },
+      {
+        "text": "推理档位不统一：各模型用自己 API 默认的 thinking / reasoning 档位（high、medium、max 等），不是同一档位之间的对比。",
+        "cite": [
+          "bench-site@Notes"
+        ]
+      },
+      {
+        "text": "裁判与实现绑定分数：评分细节（裁判出错如何处理、无响应如何计分、宏平均还是微平均）由开源评分代码定义，论文固定用三个默认裁判；换成别的裁判面板或自己实现评分都会移动分数。",
+        "cite": [
+          "repo@Metrics",
+          "repo@法官配置"
+        ]
+      },
+      {
+        "text": "官方榜单未公布 Samaya Sterling 的 use case 与 rubric 类别细分，因此榜首在各场景的强弱暂时无法核对。",
+        "cite": [
+          "bench-site@Compare systems"
+        ]
+      }
+    ]
   },
-  "versions": [],
-  "limitations": [],
-  "notes": "由 Samaya AI 维护；当前分数按厂商页脚注 220 题、11,543 项评估标准记。",
+  "metrics": [
+    {
+      "id": "r-all",
+      "name": "Rubric Qualification Rate（全部 rubric，宏平均）",
+      "direction": "越高越好",
+      "description": "每条 rubric 由 LLM 裁判判定是否被答案满足，逐题求满足率，再对所有题取宏平均；论文刻意用宏平均而非微平均，让模型不能靠少数高 rubric 数的题拉分。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§5.1",
+        "repo@Metrics"
+      ]
+    },
+    {
+      "id": "r-must-have",
+      "name": "Rubric Qualification Rate（必备 rubric 子集，宏平均）",
+      "direction": "越高越好",
+      "description": "只在 must_have 子集上按同样方式计算的资格率；论文报告 R_all 与 R_must-have 两个变体，两者在全部受测系统上相关性为 𝑟 = 0.99，可互相代理。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§5.1",
+        "paper@§7"
+      ]
+    },
+    {
+      "id": "cost-per-query",
+      "name": "每 query 成本",
+      "direction": "越低越好",
+      "description": "按 agentic LLM 的 API 成本计，不含外部 API、存储与数据索引费用，缓存与非缓存输入 token 分别计价；官方榜单注明 Samaya Sterling 的成本口径比其他系统宽，只能同口径内比较。",
+      "range": null,
+      "unit": "USD/query",
+      "cite": [
+        "paper@§5.1 Cost",
+        "bench-site@Notes"
+      ]
+    },
+    {
+      "id": "latency-per-query",
+      "name": "每 query 延迟",
+      "direction": "越低越好",
+      "description": "从收到 query 到给出完整答案的墙钟时间，在所有题上平均；是各栏里口径最一致、最可直接比的一项。",
+      "range": null,
+      "unit": "seconds",
+      "cite": [
+        "paper@Table 4"
+      ]
+    }
+  ],
+  "versions": [
+    {
+      "id": "blog-2026-07-09",
+      "date": "2026-07-09",
+      "label": "官方博客首发：220 题 + 11,543 条 rubric，自研 agent 系统自报 50.8%，当时「标准金融 harness 下最好的前沿模型」为 Claude Fable 5 的 49.2%",
+      "cite": [
+        "samaya-blog-frontier-finance@发布日期",
+        "samaya-blog-frontier-finance@结果",
+        "samaya-blog-frontier-finance@定位"
+      ]
+    },
+    {
+      "id": "arxiv-v1",
+      "date": "2026-08-12",
+      "label": "arXiv v1 技术报告（arXiv:2608.11683，论文标注日期 2026-08-13）：补全四阶段构建管线、Bradley-Terry 难度建模与三 harness 对比；自研 Samaya（high effort）56.0%，最好开源权重模型为 Kimi K3 46.4%",
+      "cite": [
+        "paper@论文日期",
+        "paper@Abstract",
+        "paper@§6"
+      ]
+    },
+    {
+      "id": "leaderboard-2026-11-09",
+      "date": "2026-11-09",
+      "label": "官方榜单页面更新至 November 9, 2026：榜首为 Samaya Sterling 58.9%（$0.61 / 282 s），并注明 Legacy Samaya System 的结果反映 2026 年 10 月之前的性能",
+      "cite": [
+        "bench-site@榜单",
+        "bench-site@Notes"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "时间污染",
+      "impact": "题目与 rubric 冻结在各题自己的 as-of 日期（公开示例为 2025-03 至 2025-10），未来模型可能靠训练数据里的参数知识直接作答，而不是真的去检索和用工具——这恰恰是本评测想测的能力。",
+      "severity": "高",
+      "response": "论文把题面日期作为检索截止时间输入给系统，并排除预测型问题；提出的缓解手段是定期用更新的题面日期重新标注。",
+      "reader": "跨年份比较分数时要给污染留余地：新模型的涨幅里有一部分可能来自记忆而非检索。",
+      "cite": [
+        "paper@§8",
+        "paper@§3.1 Timestamped annotation"
+      ]
+    },
+    {
+      "issue": "口径不可比（harness、推理档位、成本统计）",
+      "impact": "论文明确说 harness 类型是性能的主导因素，三组 harness 的工具预算不同；各模型用各自的默认推理档位；成本统计范围也不一致——官方榜单注明 Samaya Sterling 的成本含研究模型、工具与辅助模型并计入缓存 token，其他系统只算 agentic 模型成本；GPT 5.5 网页搜索版有 64/220 题触发 AI 护栏返回空响应；Gemini 3.1 Pro 网页搜索版的成本还是低估。",
+      "severity": "高",
+      "response": "论文对 FA v2 与 Legacy Samaya System 统一加 200 次调用 / 300 秒上限；榜单用脚注逐条说明上述例外。",
+      "reader": "先看 harness 分组、推理档位与脚注再比分差；成本列只能在同一口径内比，延迟列最可靠。",
+      "cite": [
+        "paper@§6",
+        "paper@§5",
+        "bench-site@Notes"
+      ]
+    },
+    {
+      "issue": "场景主观性",
+      "impact": "Screening & Discovery 等场景「什么才算好答案」本身主观，rubric 再细也难以完全消除评分者偏好。",
+      "severity": "中",
+      "response": "论文靠题量与每题 52.5 条 rubric 的数量取得统计功效，并公开全部 rubric 供外部复核。",
+      "reader": "最难场景（即使最好系统也只到约 33%）上的分差，要连同主观性一起看。",
+      "cite": [
+        "paper@§8",
+        "paper@Abstract"
+      ]
+    },
+    {
+      "issue": "同一「最好成绩」在不同版本间移动",
+      "impact": "自研系统的最好成绩在博客是 50.8%、论文是 56.0%、2026-11-09 榜单是 Samaya Sterling 的 58.9%，三次都不是同一个系统配置；博客称当时最好的开源权重模型是 GPT-5.5 的 43.5%，论文改称 Kimi K3 的 46.4%。",
+      "severity": "中",
+      "response": "论文与榜单各自注明 harness、推理档位与系统版本；本页按时间线分列在 versions 与附录结果表。",
+      "reader": "引用任何数字都要带来源和日期，不要把三个版本的数字混在一张表里排序。",
+      "cite": [
+        "samaya-blog-frontier-finance@结果",
+        "paper@Abstract",
+        "bench-site@榜单"
+      ]
+    },
+    {
+      "issue": "榜首缺场景级细分",
+      "impact": "官方榜单未发布 Samaya Sterling 的 use case 与 rubric 类别拆分，无法核对榜首在不同场景的强弱分布。",
+      "severity": "低",
+      "response": "页面明示「尚未发布」。",
+      "reader": "关于榜首的场景级结论暂缺，目前只能看总分。",
+      "cite": [
+        "bench-site@Compare systems"
+      ]
+    }
+  ],
+  "notes": "本站口径：220 题 / 11,543 条 rubric / 每题 52.5 条 / 四阶段管线取自 arXiv:2608.11683v1；榜单行取自 samaya.ai/benchmarks/frontier-finance（页面标注 November 9, 2026）。语言一栏：论文与数据集卡均未单独声明，按公开示例题面与 rubric 文本记为英文。",
   "official_sources": [
     {
-      "kind": "site",
+      "kind": "blog",
+      "title": "Introducing FrontierFinance（官方博客，2026-07-09）",
       "url": "https://samaya.ai/blog/frontier-finance"
+    },
+    {
+      "kind": "paper",
+      "title": "FrontierFinance（arXiv:2608.11683v1，2026-08-12）",
+      "url": "https://arxiv.org/abs/2608.11683"
+    },
+    {
+      "kind": "site",
+      "title": "FrontierFinance benchmark（官方榜单与数据浏览器）",
+      "url": "https://samaya.ai/benchmarks/frontier-finance"
+    },
+    {
+      "kind": "dataset",
+      "title": "samaya-ai/FrontierFinance（Hugging Face）",
+      "url": "https://huggingface.co/datasets/samaya-ai/FrontierFinance"
+    },
+    {
+      "kind": "repo",
+      "title": "samaya-ai/frontier-finance（评分代码，Apache-2.0）",
+      "url": "https://github.com/samaya-ai/frontier-finance"
     }
   ],
   "related_benchmarks": [
     "gdpval-aa"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-09-20"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "FrontierFinance: A Challenging Benchmark for Measuring Frontier Intelligence of Finance Agents（arXiv:2608.11683v1）",
+        "url": "https://arxiv.org/abs/2608.11683",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "bench-site",
+        "kind": "site",
+        "title": "FrontierFinance benchmark（官方榜单，页面标注 November 9, 2026）",
+        "url": "https://samaya.ai/benchmarks/frontier-finance",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "hf-dataset",
+        "kind": "dataset",
+        "title": "samaya-ai/FrontierFinance（Hugging Face 数据集卡）",
+        "url": "https://huggingface.co/datasets/samaya-ai/FrontierFinance",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "samaya-ai/frontier-finance（评分代码仓库）",
+        "url": "https://github.com/samaya-ai/frontier-finance",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "samaya-blog-frontier-finance",
+        "kind": "blog",
+        "title": "Introducing FrontierFinance（Samaya AI 官方博客，2026-07-09）",
+        "url": "https://samaya.ai/blog/frontier-finance",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Samaya AI",
+        "cite": [
+          "repo@README"
+        ]
+      },
+      "first_release": {
+        "v": "2026-07-09（官方博客首发，220 题 + 11,543 条 rubric）",
+        "cite": [
+          "samaya-blog-frontier-finance@发布日期",
+          "samaya-blog-frontier-finance@定位"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "paper@Abstract",
+        "paper@§3.1 Stage 4",
+        "hf-dataset@§1",
+        "paper@§5.1",
+        "bench-site@榜单"
+      ],
+      "interpretation": [
+        "paper@§5.1",
+        "paper@§6",
+        "paper@§5.1 Cost",
+        "bench-site@Notes"
+      ]
+    },
+    "problem": {
+      "text": "AI agent 已经越来越多地用于专业投资研究，但当时没有基准能覆盖完整投资者工作流的复杂度：已有金融基准主要考金融数据抽取这一窄切片（前沿模型已基本饱和），而基于参考答案的指标和通用 LLM-as-a-judge 打分，都应付不了真实分析师问题那种开放式、长形式的答案。FrontierFinance 想用专家写的可核验标准来测这一整段工作流。",
+      "cite": [
+        "paper@Abstract",
+        "samaya-blog-frontier-finance@定位"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "论文口径 · 最好开源权重模型",
+        "value": "46.4%",
+        "note": "Kimi K3（FA v2 harness，max 档，$0.90 / 336 s）；论文称开源与闭源的平均差距只有 4.8 个百分点。",
+        "cite": [
+          "paper@§6",
+          "paper@Table 4"
+        ]
+      },
+      {
+        "label": "论文口径 · 最好闭源前沿模型",
+        "value": "49.2%",
+        "note": "Claude Fable 5（FA v2 harness，high 档，$4.06 / 164.5 s）。",
+        "cite": [
+          "paper@Abstract",
+          "paper@Table 4"
+        ]
+      },
+      {
+        "label": "论文口径 · 自研系统最好",
+        "value": "56.0%",
+        "note": "Samaya（high effort，自研 harness，$1.81 / 277.8 s），论文称其比最强前沿模型低约 2.2 倍成本。",
+        "cite": [
+          "paper@Abstract",
+          "paper@Table 4"
+        ]
+      },
+      {
+        "label": "官方榜单当前最高",
+        "value": "58.9%",
+        "note": "Samaya Sterling（2026-11-09 榜单，$0.61 / 282 s）；注意其成本口径比其他系统宽，见 limitations。",
+        "cite": [
+          "bench-site@榜单",
+          "bench-site@Notes"
+        ]
+      },
+      {
+        "label": "最难 use case 的天花板",
+        "value": "约 33%（Screening & Discovery）",
+        "note": "论文：即使最好系统在筛选发现场景也只到 33%，行业与宏观 39%；这两个场景对所有系统都是最难的。",
+        "cite": [
+          "paper@Abstract"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 58.9%、56.0%、49.2% 当成同一套配置下的前三名——它们分别是 2026-11-09 榜单的 Samaya Sterling、论文里的 Samaya (high effort) 和 Claude Fable 5，harness、推理档位与成本口径都不同。",
+        "cite": [
+          "bench-site@榜单",
+          "paper@Abstract",
+          "paper@§6"
+        ]
+      },
+      {
+        "text": "跨 harness 比名次：同一个 Claude Opus 4.8 在网页搜索组是 33.0%、在 FA v2 组是 45.0%，论文说 harness 类型才是性能的主导因素，所以两组不能合成一张榜。",
+        "cite": [
+          "paper@§6",
+          "paper@Table 4"
+        ]
+      },
+      {
+        "text": "把分数当准确率读：这是 11,543 条专家标准上「逐条满足率」的宏平均，不是 220 道选择题的对错率；宏平均也意味着模型不能靠少数题刷分。",
+        "cite": [
+          "paper@§5.1",
+          "paper@§3.1 Stage 2"
+        ]
+      },
+      {
+        "text": "看到 GPT 5.5 网页搜索版只有 20.7% 就判定它「崩了」：榜单脚注说明低分主要来自 64/220 题触发 AI 护栏返回空响应，属于系统外因素。",
+        "cite": [
+          "bench-site@Notes"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "Samaya AI（同时是榜单上自研系统 Samaya Sterling 的提供方，即被评测方之一）",
+        "cite": [
+          "repo@README",
+          "bench-site@榜单"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "Yuhao Zhang、O. Ozan Koyluoglu、Thejas Venkatesh、Richard Diehl Martinez、Vishank Bhatia、Arash Alidoust、Ashwin Paranjape（Samaya AI）",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      {
+        "k": "出题与致谢",
+        "v": "全部四阶段由金融专家执行，含前买方股票分析师、卖方研究助理与投行人士；论文另致谢 Jack Hessel、Jack Santos Silva、Mingyi Yang 参与早期数据收集。",
+        "cite": [
+          "paper@§3.1",
+          "paper@致谢"
+        ]
+      },
+      {
+        "k": "前身",
+        "v": "2025 年的 Criteria-Eval 博客提出 rubric 式评测框架，是本内部基准的基石；该内部基准累计超过 4,500 条完整标注 query，FrontierFinance 是从中 curated 出的公开子集。",
+        "cite": [
+          "samaya-blog-frontier-finance@前身",
+          "paper@§3.1 Stage 4"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2026-07-09 官方博客首发 → 2026-08-12/13 arXiv v1 技术报告 → 2026-11-09 官方榜单（Samaya Sterling 58.9%）",
+        "cite": [
+          "samaya-blog-frontier-finance@发布日期",
+          "paper@论文日期",
+          "bench-site@榜单"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "数据集在 Hugging Face（samaya-ai/FrontierFinance，单一 JSONL，CC-BY-4.0）；评分代码在 GitHub（Apache-2.0），默认裁判面板为 Claude Sonnet 4.6 / Gemini 3.1 Pro / GPT 5.4。",
+        "cite": [
+          "hf-dataset@§3",
+          "repo@License",
+          "repo@法官配置"
+        ]
+      },
+      {
+        "k": "语言",
+        "v": "论文与数据集卡均未单独声明语言；公开的 6 个示例题面与全部 rubric 文本均为英文",
+        "cite": [
+          "paper@附录 A",
+          "hf-dataset@§1"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-14",
+        "columns": [
+          "来源",
+          "系统",
+          "harness / 推理档位",
+          "R_all (%)",
+          "R_must-have (%)",
+          "平均延迟 (s)",
+          "平均成本 ($/query)"
+        ],
+        "rows": [
+          [
+            "论文 Table 4",
+            "Samaya (high effort)",
+            "自研 / –",
+            "56.0",
+            "61.7",
+            "277.8",
+            "1.81"
+          ],
+          [
+            "论文 Table 4",
+            "Samaya",
+            "自研 / –",
+            "52.9",
+            "58.5",
+            "218.1",
+            "0.93"
+          ],
+          [
+            "论文 Table 4",
+            "Claude Fable 5",
+            "FA v2 / high",
+            "49.2",
+            "57.6",
+            "164.5",
+            "4.06"
+          ],
+          [
+            "论文 Table 4",
+            "GPT 5.6 Sol",
+            "FA v2 / medium",
+            "46.8",
+            "57.2",
+            "170.7",
+            "3.03"
+          ],
+          [
+            "论文 Table 4",
+            "Kimi K3",
+            "FA v2 / max",
+            "46.4",
+            "56.4",
+            "336.0",
+            "0.90"
+          ],
+          [
+            "论文 Table 4",
+            "Gemini 3.6 Flash",
+            "FA v2 / medium",
+            "46.3",
+            "54.2",
+            "163.6",
+            "2.41"
+          ],
+          [
+            "论文 Table 4",
+            "Claude Opus 4.8",
+            "FA v2 / high",
+            "45.0",
+            "53.7",
+            "155.8",
+            "2.61"
+          ],
+          [
+            "论文 Table 4",
+            "GPT 5.5",
+            "FA v2 / medium",
+            "43.5",
+            "53.2",
+            "233.0",
+            "2.80"
+          ],
+          [
+            "论文 Table 4",
+            "GLM 5.2",
+            "FA v2 / max",
+            "42.8",
+            "50.1",
+            "296.5",
+            "0.63"
+          ],
+          [
+            "论文 Table 4",
+            "DeepSeek V4 Pro",
+            "FA v2 / high",
+            "40.5",
+            "50.1",
+            "202.6",
+            "0.68"
+          ],
+          [
+            "论文 Table 4",
+            "Gemini 3.1 Pro",
+            "FA v2 / high",
+            "30.5",
+            "39.7",
+            "221.9",
+            "1.72"
+          ],
+          [
+            "论文 Table 4",
+            "Claude Opus 4.8",
+            "网页搜索 / high",
+            "33.0",
+            "40.6",
+            "53.9",
+            "1.47"
+          ],
+          [
+            "论文 Table 4",
+            "Gemini 3.1 Pro",
+            "网页搜索 / high",
+            "30.7",
+            "39.4",
+            "91.1",
+            "未获得（官方称无法从搜索 API 公平估算）"
+          ],
+          [
+            "论文 Table 4",
+            "GPT 5.5",
+            "网页搜索 / medium",
+            "20.7",
+            "26.5",
+            "192.1",
+            "0.55"
+          ],
+          [
+            "官方榜单 2026-11-09",
+            "Samaya Sterling",
+            "自研 / –",
+            "58.9",
+            "未列出",
+            "282",
+            "0.61"
+          ],
+          [
+            "官方榜单 2026-11-09",
+            "Legacy Samaya System (high effort)",
+            "自研 / –",
+            "56.0",
+            "未列出",
+            "278",
+            "1.81"
+          ],
+          [
+            "官方榜单 2026-11-09",
+            "Claude Fable 5.1 · Finance Agent v2",
+            "FA v2 / high",
+            "55.9",
+            "未列出",
+            "268",
+            "6.89"
+          ],
+          [
+            "官方榜单 2026-11-09",
+            "Muse Spark Open · Finance Agent v2",
+            "FA v2 / xhigh",
+            "53.7",
+            "未列出",
+            "234",
+            "1.38"
+          ],
+          [
+            "官方榜单 2026-11-09",
+            "Legacy Samaya System",
+            "自研 / –",
+            "52.9",
+            "未列出",
+            "214",
+            "0.93"
+          ],
+          [
+            "官方榜单 2026-11-09",
+            "Muse Wonder 1.0 · Finance Agent v2",
+            "FA v2 / –",
+            "52.6",
+            "未列出",
+            "292",
+            "3.35"
+          ],
+          [
+            "官方榜单 2026-11-09",
+            "Kimi K3.1 Pro · Finance Agent v2",
+            "FA v2 / max",
+            "51.7",
+            "未列出",
+            "449",
+            "1.56"
+          ],
+          [
+            "官方榜单 2026-11-09",
+            "Claude Opus 5.5 · Finance Agent v2",
+            "FA v2 / high",
+            "50.9",
+            "未列出",
+            "148",
+            "1.87"
+          ],
+          [
+            "官方榜单 2026-11-09",
+            "Gemini 3.8 Flash · Finance Agent v2",
+            "FA v2 / medium",
+            "50.0",
+            "未列出",
+            "247",
+            "1.21"
+          ],
+          [
+            "官方榜单 2026-11-09",
+            "Ling 3.0 Flash Fin · Finance Agent v2",
+            "FA v2 / –",
+            "46.6",
+            "未列出",
+            "318",
+            "0.05"
+          ]
+        ]
+      },
+      "cite": [
+        "paper@Table 4",
+        "bench-site@榜单",
+        "bench-site@Notes"
+      ]
+    }
+  }
 }
