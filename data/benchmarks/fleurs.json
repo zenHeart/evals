@@ -1,7 +1,7 @@
 {
   "id": "fleurs",
   "name": "FLEURS",
-  "full_name": "FLEURS: Few-shot Learning Evaluation of Universal Representations of Speech",
+  "full_name": "FLEURS: Few-shot Learning Evaluation of Universal Representations of Speech（通用语音表征的少样本学习评测）",
   "aliases": [
     "FLeurs"
   ],
@@ -9,31 +9,349 @@
   "categories": [
     "multimodal"
   ],
-  "summary": "Google 的 n-way 平行多语语音基准（102 语种，每语言约 12 小时音频）：ASR / 语言识别 / 语音翻译等任务的数据底座",
-  "interpretation": "各发布读的泳道不同：Seed 2.0 页读 15 语 S2TT（zh/en 与其他语言互译）74.7，ASR 行另有 WER/CER（越低越好）——跨报告比较前先对齐任务、语种集合与分数方向。",
+  "summary": "FLEURS 是 Meta AI Research、Google Research 与卡内基梅隆大学合作发布的 102 语种平行语音数据集：同一批英文维基百科句子在每种语言里由母语者朗读并配人工转写，因此同编号句子在任意两种语言间互为翻译（论文称 n-way parallel）。论文用它测三类任务——语音识别（ASR，把语音转成文字）、语种识别（LangID，判断语音属于哪种语言）和语音/文本跨模态检索。",
+  "interpretation": "FLEURS 分数高说明模型在朗读式、维基百科领域的多语种语音理解上强；它不覆盖自发口语、噪声环境与方言，也不代表生产环境可用。论文自报的 102 语种平均字符错误率（CER，把识别文本和标准转写按字符比对后的错误率）为 14.6%，但同一模型在西欧语组是 10.6%、在中日韩语组是 25.0%，单一平均分会掩盖语种差距。",
   "measures": [
-    "多语种语音识别与语音翻译",
-    "跨语言语音表征质量"
+    {
+      "area": "语音识别（ASR）",
+      "focus": "把每段朗读语音转成该语言文字。论文在预训练模型上加两层 LSTM、用 CTC loss、6100 字符词表（取自 SRC NORM），在全部 102 个语种上微调，不用语言模型做假设打分。示例成绩（w2v-bert-51 (0.6B)）：意大利语（it）CER 2.6%，乌尔都语（ur）CER 82.9%",
+      "share": "未披露（论文未给任务间占比）",
+      "format": "字符错误率 CER（越低越好），按 7 个地理语组与全部 102 语种分别平均",
+      "cite": [
+        "paper@Table 4",
+        "paper@Table 7",
+        "paper@§4.1"
+      ]
+    },
+    {
+      "area": "语种识别（Speech LangID）",
+      "focus": "判断一段语音属于 102 个语种中的哪一个。论文强调 train 与 dev/test 的说话人不重叠，考的是不靠说话人身份泛化",
+      "share": "未披露（论文未给任务间占比）",
+      "format": "宏平均准确率（越高越好）",
+      "cite": [
+        "paper@§4.2",
+        "paper@Table 5"
+      ]
+    },
+    {
+      "area": "跨模态语音-文本检索",
+      "focus": "给定语音查询，从英文文本库中检索对应译文，或反向检索。HF 数据集卡说明检索只用 15 种语言作查询、英文作键",
+      "share": "15 语种（作查询语种）",
+      "format": "P@1（越高越好）",
+      "cite": [
+        "paper@§4.3",
+        "paper@Table 6",
+        "hf-fleurs@3. Retrieval"
+      ]
+    },
+    {
+      "area": "语音翻译（S2TT / T2ST）",
+      "focus": "摘要与 §1 把 Translation 列为适用任务，TFDS 目录也称 XTREME-S 覆盖语音到文本翻译；但论文实验只覆盖 ASR、LangID 与检索，未给翻译基线与分数",
+      "share": "未披露（论文未给任务间占比）",
+      "format": "未披露（论文未报告该任务的基线与指标）",
+      "cite": [
+        "paper@Abstract",
+        "paper@§1",
+        "tfds@Description"
+      ]
+    }
   ],
   "does_not_measure": [
-    "单语种深度语音理解",
-    "语音生成质量"
+    {
+      "text": "朗读式之外的语音：自发口语、噪声环境、方言与代码混说。论文 Table 1 把 FLEURS 的语域标为 Wikipedia、语音类型标为 Read，录音原样保留（安静或嘈杂环境），采样率 16 kHz、单段不超过 30 秒",
+      "cite": [
+        "paper@Table 1",
+        "paper@§2.1"
+      ]
+    },
+    {
+      "text": "102 语种以外的语言。HF 数据集卡自述「benchmark misses many languages that are all equally important」",
+      "cite": [
+        "hf-fleurs@Discussion of Biases"
+      ]
+    },
+    {
+      "text": "生产环境鲁棒性。HF 数据集卡指出朗读式设置与更嘈杂的生产设置之间存在已知差距",
+      "cite": [
+        "hf-fleurs@Other Known Limitations"
+      ]
+    },
+    {
+      "text": "带语言模型或束搜索假设打分的 ASR（论文明确基线不用语言模型），以及语音到语音翻译（S2ST）的基线（论文未报告）",
+      "cite": [
+        "paper@§4.1",
+        "paper@§1"
+      ]
+    }
   ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [
-      "multi（102 语种）"
+    "sample_count": 384060,
+    "splits": [
+      "train 271,798（all 配置）",
+      "validation 34,452（all 配置）",
+      "test 77,810（all 配置）",
+      "另按语种拆出 102 个单语种配置（如 af_za、hi_in），各配置的切分规模不同"
     ],
-    "source_type": "n-way parallel speech corpus（开源）",
-    "public_sample": true
+    "languages": [
+      "102 语种（FLoRes-101 的 101 种翻译语种加英语；Table 9 列出全部 ISO 代码）"
+    ],
+    "source_type": "n-way parallel read speech（朗读式人工录音 + 复用上游人工译文作转写，句子级 n-way 平行）",
+    "public_sample": true,
+    "totals": "102 语种、每语言约 12 小时语音监督（论文摘要）；TFDS 与 Hugging Face 的 all 配置合计 384,060 条音频（train 271,798 / validation 34,452 / test 77,810）。句子层面官方口径为 2,009 条 n-way parallel 句子（HF 卡）／约 2,000 条（TFDS），每句实际收 1–3 条录音、平均 2.3 条。总语音时长约 1.4k 小时（论文 Table 1），其中 train 987h、dev 120h、test 283h（Table 3）。",
+    "cite": [
+      "paper@Abstract",
+      "paper@Table 1",
+      "paper@Table 3",
+      "hf-fleurs@Dataset Description",
+      "tfds@xtreme_s/fleurs.all",
+      "hf-size"
+    ],
+    "construction": [
+      {
+        "k": "取句",
+        "text": "从机器翻译基准 FLoRes-101 取句：FLoRes-101 含 3001 句英文维基百科句子、由人工译成 101 种语言；因其测试集不公开，FLEURS 只用公开的 dev 与 devtest，共 2009 句。",
+        "cite": [
+          "paper@§2.1"
+        ]
+      },
+      {
+        "k": "切分",
+        "text": "把这 2009 句重新切成 train / dev / test，分别 1509 / 150 / 350 句，目标比例 7:1:2；train 与 test 的说话人不重叠，单段音频不超过 30 秒。",
+        "cite": [
+          "paper@§2.1"
+        ]
+      },
+      {
+        "k": "录音",
+        "text": "对 102 种语言的每一句，请 3 位不同的母语者各录一条，尽量保证性别比例不低于 30/70%；HF 卡称实际每句收 1–3 条、平均 2.3 条。",
+        "cite": [
+          "paper@§2.1",
+          "hf-fleurs@Dataset Creation"
+        ]
+      },
+      {
+        "k": "质检",
+        "text": "每条录音再由其他工人核验是否与输入句子对应，不合格的丢弃，最终每句保留 0–3 条；论文称第一版约 21.5% 的句子因三次录音都未通过核验而缺失，并计划在后续版本补齐。",
+        "cite": [
+          "paper@§2.1"
+        ]
+      },
+      {
+        "k": "文本处理",
+        "text": "转写直接复用 FLoRes 人工译者的英文译文，并维护各语言原始译文；提供 SRC RAW / SRC NORM / SRC CHAR 三种版本，SRC CHAR 经 NFC + FST 规范化、小写、去标点、按字符切分并以 | 作词边界，ASR 用这一版。",
+        "cite": [
+          "paper@§2.2"
+        ]
+      },
+      {
+        "k": "不做增强",
+        "text": "所有录音原样保留（安静或嘈杂环境），不做 SpecAugment、变速、混响等数据增强；采样率 16 kHz。",
+        "cite": [
+          "paper@§2.1"
+        ]
+      }
+    ]
   },
-  "metrics": [],
-  "versions": [],
-  "limitations": [
-    "各发布取的语种子集与任务不同，分数不可直接比"
+  "default_protocol": {
+    "raw": "论文没有按 k-shot 少样本提示评测，而是从大规模预训练模型整集微调：ASR 在预训练模型上加两层 LSTM、用 CTC loss、6100 字符词表（取自 SRC NORM），在全部 102 个语种上微调，不用语言模型做假设打分，报 % 字符错误率；LangID 按论文引用的分类方式微调，报宏平均准确率；检索训练定长语音/文本向量，用 additive margin softmax 加 in-batch negative，报 P@1。两个基座：只用 429k 小时、51 语种无标注语音预训练的 w2v-bert-51 (0.6B)，以及同样语音外加 101 语种 10TiB 以上无标注文本的 mSLAM (0.6B)。",
+    "cite": [
+      "paper@§3.1",
+      "paper@§4.1",
+      "paper@§4.2",
+      "paper@§4.3"
+    ],
+    "variants": [
+      {
+        "text": "指标方向与单位：ASR 用字符错误率 CER（越低越好），LangID 与检索用越高越好的准确率 / P@1；第三方榜把成绩换算成 1−词错误率，与论文的 CER 不能直接比较。",
+        "cite": [
+          "paper@§4.1",
+          "llm-stats@About this benchmark"
+        ]
+      },
+      {
+        "text": "预训练是否见过该语种：论文把 54 个 seen 与 48 个 unseen 语种分开报告，混在一个平均分会隐藏零样本差距。",
+        "cite": [
+          "paper@§3.2",
+          "paper@§4.1.2"
+        ]
+      },
+      {
+        "text": "基座选择：mSLAM（语音+文本）在 ASR 上比 w2v-bert-51（纯语音）平均 CER 高 0.5 个百分点，论文称退化主要出现在 SA、SSA、CJK 语组。",
+        "cite": [
+          "paper@Table 4",
+          "paper@§4.1.1"
+        ]
+      },
+      {
+        "text": "检索任务的语种范围：HF 卡说明检索只用 15 种语言作查询、英文作键，与 102 语种全量的 ASR / LangID 覆盖面不同。",
+        "cite": [
+          "hf-fleurs@3. Retrieval"
+        ]
+      },
+      {
+        "text": "转写版本：论文提供 SRC RAW / SRC NORM / SRC CHAR 三种，ASR 应用 SRC CHAR；用错版本分数不可比。",
+        "cite": [
+          "paper@§2.2"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "cer",
+      "name": "字符错误率（CER）",
+      "direction": "越低越好",
+      "description": "ASR 主指标：预测文本与人工转写按字符对齐后的错误字符占比（替换 + 插入 + 删除），论文对 102 个语种取平均",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§4.1",
+        "paper@Table 4"
+      ]
+    },
+    {
+      "id": "lid-accuracy",
+      "name": "语种识别宏平均准确率",
+      "direction": "越高越好",
+      "description": "LangID 指标：判断语音属于 102 个语种中哪一个的宏平均准确率；train 与 dev/test 的说话人不重叠",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§4.2",
+        "paper@Table 5"
+      ]
+    },
+    {
+      "id": "p-at-1",
+      "name": "检索 P@1",
+      "direction": "越高越好",
+      "description": "跨模态检索指标：给定语音查询时排名第一的文本是否为对应译文（或反向），论文报告全部语种平均",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§4.3",
+        "paper@Table 6"
+      ]
+    }
   ],
-  "default_protocol": null,
+  "versions": [
+    {
+      "id": "arxiv-v1",
+      "date": "2022-05-25",
+      "label": "arXiv v1 首发（cs.CL），也是 arXiv 目前唯一版本；论文称第一版约 21.5% 句子因录音未通过核验而缺失，并计划在后续版本补齐",
+      "cite": [
+        "paper",
+        "paper@§2.1"
+      ]
+    },
+    {
+      "id": "hf-repo-created",
+      "date": "2022-04-19",
+      "label": "Hugging Face 数据集仓库 google/fleurs 创建（早于 arXiv 首发约五周）",
+      "cite": [
+        "hf-meta"
+      ]
+    },
+    {
+      "id": "hf-repo-latest",
+      "date": "2026-05-15",
+      "label": "Hugging Face 仓库最近一次更新（HF API lastModified）；TFDS 侧数据集版本为 2.0.0「Initial release on TFDS, FLEURS-only」，TFDS 未给该版本日期",
+      "cite": [
+        "hf-meta",
+        "tfds@Versions"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "朗读式单领域语音",
+      "impact": "FLEURS 全部是朗读的维基百科句子（Table 1：域 Wikipedia、语音类型 Read），没有自发口语、噪声、方言与代码混说；HF 卡明确说朗读式设置与更嘈杂的生产设置之间存在已知差距。在此之上的分数不能外推到真实产品场景。",
+      "severity": "高",
+      "response": "未见官方回应（HF 数据集卡仅作说明，未提供其他领域的数据或分数）",
+      "reader": "把 FLEURS 当成多语种朗读式 ASR / LangID 的横向标尺，不要当成语音系统整体能力",
+      "cite": [
+        "paper@Table 1",
+        "hf-fleurs@Other Known Limitations"
+      ]
+    },
+    {
+      "issue": "语种覆盖不均与低资源语种短板",
+      "impact": "102 语种每语言仅约 12 小时监督；论文自报 mSLAM 平均 CER 14.6%，但西欧语组 10.6%、中日韩语组 25.0%，Table 7 中单语种从 2.6%（it）到 82.9%（ur）。48 个语种的语音未出现在预训练数据中，其 CER 明显高于全局平均。",
+      "severity": "高",
+      "response": "论文把降低地理语组间差距列为未来工作方向；本次核验未见数据集扩容的官方动作",
+      "reader": "看分数先看语种子集与语组拆分；跨语组的平均分要按语组分别读",
+      "cite": [
+        "paper@Table 4",
+        "paper@Table 7",
+        "paper@§4.1.2",
+        "paper@§4.1.1"
+      ]
+    },
+    {
+      "issue": "部分句子没有可用录音",
+      "impact": "论文称第一版约 21.5% 的句子因三次录音都未通过核验而缺失，每句最终保留 0–3 条录音；不同语种与切分的实际题量因此不齐（all 配置 train 271,798、validation 34,452、test 77,810）。",
+      "severity": "中",
+      "response": "论文称计划在后续版本补齐；本次核验未见官方公布补齐后的数字",
+      "reader": "不要假设每个语种的 train / dev / test 都等量；比较前先确认具体语种与切分",
+      "cite": [
+        "paper@§2.1",
+        "hf-fleurs@dataset_info"
+      ]
+    },
+    {
+      "issue": "转写质量依赖上游人工译文，错误类型集中",
+      "impact": "FLEURS 的转写直接复用 FLoRes-101 人工译者的译文，未重新转写；论文另指出替换错误在所有语组占主导，CJK 因大量同音字最难，乌尔都语因与印地语声学相近且被转写为天城文而错误偏高。",
+      "severity": "中",
+      "response": "论文建议引入语种信息并与语言模型融合；未见官方修订转写",
+      "reader": "高错误率语种的分数要同时看错误类型，不能只读一个 CER 数字",
+      "cite": [
+        "paper@§2.2",
+        "paper@§4.1.1"
+      ]
+    },
+    {
+      "issue": "与公开文本语料可能重叠",
+      "impact": "FLEURS 只用 FLoRes-101 公开的 dev / devtest（其测试集不公开，故未采用），而这批句子在机器翻译领域被广泛使用，模型可能在文本侧见过同批句子。",
+      "severity": "中",
+      "response": "论文只说明因测试集不公开而改用 dev / devtest；未见针对文本侧重叠的官方处理",
+      "reader": "对文本侧见过同批句子的模型，语音任务的分数要保留余地",
+      "cite": [
+        "paper@§2.1"
+      ]
+    },
+    {
+      "issue": "每语言时长口径不一致",
+      "impact": "论文摘要写「approximately 12 hours of speech supervision per language」，Table 3 的 train 语音时长合计 987h（102 语种，约 9.7 小时/语种），HF 卡写「Training sets have around 10 hours of supervision」。三个口径不一致。",
+      "severity": "低",
+      "response": "未见官方回应",
+      "reader": "引用「每语言多少小时」时说明用的是哪个口径",
+      "cite": [
+        "paper@Abstract",
+        "paper@Table 3",
+        "hf-fleurs@Dataset Description"
+      ]
+    },
+    {
+      "issue": "第三方成绩为自报且口径混杂",
+      "impact": "llm-stats 榜收录 8 个模型，其中 7 个自报、1 个未验证；分数被换算成 1−词错误率，未说明语种子集，不能与论文的 CER 直接比较。",
+      "severity": "低",
+      "response": "该榜自述成绩为自报；FLEURS 没有官方榜单",
+      "reader": "把第三方数字当参考，不当官方排名",
+      "cite": [
+        "llm-stats@FAQ",
+        "llm-stats@About this benchmark"
+      ]
+    }
+  ],
   "notes": "Seed 2.0 页 S2TT 行 Fleurs(15 langs)(zh/en<->xx) = 74.70 vs Gemini-3.1-Pro 73.14",
   "official_sources": [
     {
@@ -43,13 +361,361 @@
     {
       "kind": "site",
       "url": "https://huggingface.co/datasets/google/fleurs"
+    },
+    {
+      "kind": "docs",
+      "url": "https://www.tensorflow.org/datasets/catalog/xtreme_s"
+    },
+    {
+      "kind": "site",
+      "url": "https://research.google/pubs/fleurs-few-shot-learning-evaluation-of-universal-representations-of-speech/"
     }
   ],
   "related_benchmarks": [
     "covost2",
     "mmsu",
-    "wildspeech"
+    "wildspeech",
+    "librispeech",
+    "bigbench-audio"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-09-01"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-11",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-11",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "FLEURS: Few-shot Learning Evaluation of Universal Representations of Speech（arXiv:2205.12446v1，2022-05-25）",
+        "url": "https://arxiv.org/abs/2205.12446",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "google-research",
+        "kind": "site",
+        "title": "Google Research 出版物页（含 SLT 2022 发表信息）",
+        "url": "https://research.google/pubs/fleurs-few-shot-learning-evaluation-of-universal-representations-of-speech/",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "hf-fleurs",
+        "kind": "dataset",
+        "title": "google/fleurs（Hugging Face 数据集卡，含 dataset_info 切分行数）",
+        "url": "https://huggingface.co/datasets/google/fleurs",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "tfds",
+        "kind": "docs",
+        "title": "TensorFlow Datasets 目录：xtreme_s（FLEURS）",
+        "url": "https://www.tensorflow.org/datasets/catalog/xtreme_s",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "hf-size",
+        "kind": "dataset",
+        "title": "Hugging Face datasets-server size API：google/fleurs 配置 all",
+        "url": "https://datasets-server.huggingface.co/size?dataset=google%2Ffleurs&config=all",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "hf-meta",
+        "kind": "dataset",
+        "title": "Hugging Face API：google/fleurs 仓库元数据（createdAt / lastModified）",
+        "url": "https://huggingface.co/api/datasets/google/fleurs",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "llm-stats",
+        "kind": "leaderboard",
+        "title": "LLM Stats：FLEURS Leaderboard（第三方聚合，成绩为厂商自报）",
+        "url": "https://llm-stats.com/benchmarks/fleurs",
+        "accessed": "2026-11-11"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Meta AI Research、Google Research 与卡内基梅隆大学（作者 Alexis Conneau、Min Ma、Simran Khanuja、Yu Zhang、Vera Axelrod、Siddharth Dalmia、Jason Riesa、Clara Rivera、Ankur Bapna）",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      "first_release": {
+        "v": "2022-05-25（arXiv v1）",
+        "cite": [
+          "paper"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "paper@Abstract",
+        "google-research@Abstract",
+        "hf-fleurs@Dataset Description"
+      ],
+      "interpretation": [
+        "paper@Table 4",
+        "paper@Table 7",
+        "hf-fleurs@Other Known Limitations"
+      ]
+    },
+    "problem": {
+      "text": "2022 年之前，公开的多语语音评测大多只覆盖 8–60 个语种（论文 §1 原话「in between 8 and 60 languages each」），VoxLingua107 虽有 107 个语种但没有转写；作者称 FLEURS 是当时唯一跨 100 个以上语种、同时带平行文本与平行语音的数据集，目标是「enable speech technology in more languages and catalyze research in low-resource speech understanding」。",
+      "cite": [
+        "paper@§1",
+        "paper@Abstract",
+        "paper@Table 1"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机 / 多数类基线",
+        "value": "论文未给出",
+        "note": "FLEURS 的 LangID 是 102 类分类，但论文没有报告随机或多数类基线，本站也不推算。",
+        "cite": [
+          "paper@§4.2",
+          "paper@Table 5"
+        ]
+      },
+      {
+        "label": "论文发布时最好（论文自报基线）",
+        "value": "mSLAM (0.6B)：102 语种平均 CER 14.6%",
+        "note": "同一模型 LangID 宏平均准确率 73.3%、语音到文本检索 P@1 76.9%；w2v-bert-51 (0.6B) 对应为 CER 14.1%、准确率 71.4%。论文只与自己的两个基座比较，未报告其他系统。",
+        "cite": [
+          "paper@Table 4",
+          "paper@§4.2",
+          "paper@§4.3"
+        ]
+      },
+      {
+        "label": "语组间差距参考线",
+        "value": "CER 10.6%（西欧语组）～25.0%（中日韩语组）",
+        "note": "mSLAM (0.6B) 的语组平均；Table 7 中单语种最好 2.6%（it）、最差 82.9%（ur）。102 语种的平均分会掩盖这一差距。",
+        "cite": [
+          "paper@Table 4",
+          "paper@Table 7"
+        ]
+      },
+      {
+        "label": "第三方聚合榜当前最高",
+        "value": "0.959（Qwen2.5-Omni-7B）",
+        "note": "llm-stats 榜 2026-11-11 更新，8 个模型中 7 个自报、1 个未验证；该榜把成绩换算成 1−词错误率，未说明语种子集，不能与论文的 CER 直接比较。",
+        "cite": [
+          "llm-stats@Current leaders",
+          "llm-stats@FAQ"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 FLEURS 名字里的 few-shot 当成「论文报告了 k-shot 结果」：论文的基线全部是整集微调，论文只说它适合评测 data-efficient 的多语种预训练表征。",
+        "cite": [
+          "paper@§5",
+          "paper@§3.1"
+        ]
+      },
+      {
+        "text": "把第三方榜的 0.959 与论文的 CER 14.6% 直接比：前者是 1−词错误率、厂商自报、未说明语种子集，后者是 102 语种平均字符错误率。",
+        "cite": [
+          "llm-stats@About this benchmark",
+          "paper@Table 4"
+        ]
+      },
+      {
+        "text": "把 102 语种的平均分当成「每个语种都这么好」：论文 Table 7 显示单语种 CER 从 2.6%（it）到 82.9%（ur）。",
+        "cite": [
+          "paper@Table 7"
+        ]
+      },
+      {
+        "text": "以为题量是 2009 句 × 102 语种 × 3 条录音：官方 all 配置实际是 384,060 条音频（train 271,798 / validation 34,452 / test 77,810），因为部分句子三次录音都未通过核验。",
+        "cite": [
+          "hf-size",
+          "paper@§2.1"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "Meta AI Research、Google Research 与卡内基梅隆大学",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "Alexis Conneau、Min Ma、Simran Khanuja、Yu Zhang、Vera Axelrod、Siddharth Dalmia、Jason Riesa、Clara Rivera、Ankur Bapna（前两位标注同等贡献，首位与末位标注同等指导）",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      {
+        "k": "发表 venue",
+        "v": "IEEE Spoken Language Technology Workshop（SLT）2022；arXiv 仅 v1 一版",
+        "cite": [
+          "google-research",
+          "paper"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2022-04-19 HF 数据集仓库创建 → 2022-05-25 arXiv v1 首发 → SLT 2022 发表 → 2026-05-15 HF 仓库最近一次更新",
+        "cite": [
+          "hf-meta",
+          "paper",
+          "google-research"
+        ]
+      },
+      {
+        "k": "数据与代码位置",
+        "v": "论文未设独立 GitHub 仓库；论文脚注给出的入口是 TensorFlow Datasets（xtreme_s）与 Hugging Face（google/xtreme_s，现为 google/fleurs）。TFDS 侧数据集版本 2.0.0，HF 侧同为 2.0.0",
+        "cite": [
+          "paper@脚注 1",
+          "tfds@Versions",
+          "hf-fleurs@Dataset Description"
+        ]
+      },
+      {
+        "k": "语种与语系",
+        "v": "102 语种覆盖 17 个语系、27 种书写系统，按 7 个地理语组归类（WE 25、EE 16、CMN 12、SSA 20、SA 14、SEA 11、CJK 4）；Table 9 给出每个语种的 ISO 代码、语系与估算使用人数（百万）",
+        "cite": [
+          "paper@§2.3",
+          "paper@Table 4",
+          "paper@Table 9"
+        ]
+      },
+      {
+        "k": "seen / unseen 语种",
+        "v": "54 个语种的语音出现在预训练数据中（seen），48 个没有（unseen）；论文称未见语种的 CER 明显高于全局平均",
+        "cite": [
+          "paper@§3.2",
+          "paper@§4.1.2"
+        ]
+      },
+      {
+        "k": "题量口径",
+        "v": "句子层面：官方口径为 2,009 条 n-way parallel 句子（HF 卡）／约 2,000 条（TFDS），每句平均 2.3 条录音。音频层面：HF datasets-server 与 TFDS 的 all 配置一致给出 train 271,798 / validation 34,452 / test 77,810，合计 384,060 条（datasets-server 直接给出 num_rows 384060，非本站相乘）",
+        "cite": [
+          "hf-fleurs@Dataset Description",
+          "tfds@Description",
+          "hf-fleurs@dataset_info",
+          "hf-size"
+        ]
+      },
+      {
+        "k": "每语言时长口径",
+        "v": "论文摘要「approximately 12 hours of speech supervision per language」；Table 3 的 train 语音时长合计 987h（约 9.7 小时/语种）；HF 卡「Training sets have around 10 hours of supervision」。三个口径不一致",
+        "cite": [
+          "paper@Abstract",
+          "paper@Table 3",
+          "hf-fleurs@Dataset Description"
+        ]
+      },
+      {
+        "k": "许可与体量",
+        "v": "HF 数据集卡标注 CC-BY 许可，下载约 350 GB；all 配置 parquet 约 315 GB",
+        "cite": [
+          "hf-fleurs@Additional Information",
+          "hf-fleurs@Dataset Description",
+          "hf-size"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-11",
+        "columns": [
+          "来源",
+          "模型",
+          "任务",
+          "成绩",
+          "口径"
+        ],
+        "rows": [
+          [
+            "论文 Table 4",
+            "w2v-bert-51 (0.6B)",
+            "ASR，102 语种平均",
+            "CER 14.1%",
+            "整集微调；无语言模型；SRC NORM 建 6100 字符词表"
+          ],
+          [
+            "论文 Table 4",
+            "mSLAM (0.6B)",
+            "ASR，102 语种平均",
+            "CER 14.6%",
+            "同上"
+          ],
+          [
+            "论文 Table 4",
+            "w2v-bert-51 (0.6B)",
+            "ASR，西欧语组（25 语种）",
+            "CER 10.7%",
+            "同上"
+          ],
+          [
+            "论文 Table 4",
+            "mSLAM (0.6B)",
+            "ASR，西欧语组（25 语种）",
+            "CER 10.6%",
+            "同上"
+          ],
+          [
+            "论文 Table 4",
+            "w2v-bert-51 (0.6B)",
+            "ASR，中日韩语组（4 语种）",
+            "CER 24.6%",
+            "同上"
+          ],
+          [
+            "论文 Table 4",
+            "mSLAM (0.6B)",
+            "ASR，中日韩语组（4 语种）",
+            "CER 25.0%",
+            "同上"
+          ],
+          [
+            "论文 Table 5",
+            "w2v-bert-51 (0.6B)",
+            "语种识别，102 语种宏平均",
+            "准确率 71.4%",
+            "微调；train / dev / test 说话人不重叠"
+          ],
+          [
+            "论文 Table 5",
+            "mSLAM (0.6B)",
+            "语种识别，102 语种宏平均",
+            "准确率 73.3%",
+            "同上"
+          ],
+          [
+            "论文 Table 6",
+            "mSLAM (0.6B)",
+            "语音到文本检索，全部语种",
+            "P@1 76.9%",
+            "仅微调 mSLAM；additive margin softmax + in-batch negative"
+          ],
+          [
+            "论文 Table 6",
+            "mSLAM (0.6B)",
+            "文本到语音检索，全部语种",
+            "P@1 74.4%",
+            "同上"
+          ]
+        ]
+      },
+      "cite": [
+        "paper@Table 4",
+        "paper@Table 5",
+        "paper@Table 6",
+        "paper@§4.3"
+      ]
+    }
+  }
 }
