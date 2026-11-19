@@ -1,62 +1,724 @@
 {
-  "id": "speech-agent-arena",
-  "name": "Speech Agent Arena",
-  "full_name": null,
-  "aliases": [
-    "Speech Agent Arena Elo"
-  ],
-  "status": null,
-  "categories": [
-    "preference",
-    "agent"
-  ],
-  "summary": "语音智能体真人盲测竞技场：让真人对两套语音助手做盲测两两对比，用胜率折算成 Elo 排名",
-  "interpretation": "分数是 Elo（越高越好），本质是主观偏好而非客观正确率——它回答的是「哪套语音助手听起来更顺手」，不是「哪套答得更对」。跨基准别混读：同一模型可以在 Big Bench Audio 上准确率更高、在这个竞技场 Elo 更低。2026-10 公开水位（Artificial Analysis 口径）：Grok Voice 3.0 1070、GPT-Live-1 (Astra) 1048、Grok Voice 2.0 1011、Gemini 3.8 Live 990。",
-  "measures": [
-    "真人对语音智能体整体体验的盲测偏好",
-    "两两对比下的相对语音交互质量"
-  ],
-  "does_not_measure": [
-    "任务完成率与事实正确率",
-    "延迟与成本"
-  ],
-  "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": "真人盲测投票（第三方评测方组织）",
-    "public_sample": false
+ "id": "speech-agent-arena",
+ "name": "Speech Agent Arena",
+ "full_name": "Speech Agent Arena（Artificial Analysis 语音智能体竞技场）",
+ "aliases": [
+  "Speech Agent Arena Elo",
+  "AA Speech Agent Arena"
+ ],
+ "status": "active",
+ "categories": [
+  "preference",
+  "agent"
+ ],
+ "summary": "Artificial Analysis 的真人盲测语音竞技场：一名参与者在同一场景下分别与两个隐藏的语音到语音模型各打一通实时语音，事后选出自己更喜欢的一段，这些两两投票用 Bradley–Terry 最大似然折成 Elo；带工具的场景另由 LLM 裁判统计任务成功率（Task Success Rate）。",
+ "interpretation": "Elo 是相对偏好分（越高越好），锚点是固定为 1000 的 GPT-Realtime-1.5，不是绝对能力刻度，也不是正确率。它回答「参与者更喜欢和哪个模型说话」；「事有没有办成」要看同一行的 Task Success Rate，两个指标在这个榜上经常不一致：2026-11-14 读取的榜单里，Gemini 3.1 Flash Live Minimal 偏好 1089 排第 2、任务成功率只有 74.6%，Grok Voice 3.0 偏好 1059、任务成功率 94.8%。跨时间比较也要小心：新模型加入会让 Elo 整体重算，xAI 在 2026-10-13 引用的 Grok Voice 3.0 是 1070，同一模型在当前榜单是 1059。",
+ "measures": [
+  {
+   "area": "整体对话偏好（Overall Preference）",
+   "focus": "参与者分别与两个隐藏模型完成同一场景的通话后，记录自己更喜欢哪一段对话；这是榜单主指标",
+   "share": "主榜 Overall Preference（Elo）",
+   "format": "真人在线盲测两两对比 + 通话后 forced overall preference",
+   "cite": [
+    "aa-methodology@Speech Agent Arena / Overview",
+    "aa-arena-overview@How it works"
+   ]
   },
-  "metrics": [
-    {
-      "id": "elo",
-      "name": "竞技场 Elo",
-      "range": [
-        0,
-        2000
-      ],
-      "unit": "elo",
-      "direction": "higher",
-      "aggregation": "mean"
-    }
+  {
+   "area": "分类别偏好（Agentic / Non-agentic）",
+   "focus": "同一批两两投票按场景类型分开拟合：agentic 场景带工具，non-agentic 场景不带工具、靠系统提示词里的信息完成对话",
+   "share": "15 个 agentic 场景 / 20 个 non-agentic 场景（共 35 个）",
+   "format": "与主榜同一批投票，分组重算 Elo",
+   "cite": [
+    "aa-methodology@Speech Agent Arena / Metrics",
+    "aa-methodology@Speech Agent Arena / Dataset"
+   ]
+  },
+  {
+   "area": "任务成功率（Task Success Rate）",
+   "focus": "带工具的场景里，模型是否用正确的工具、正确的调用次数和正确的参数，完成场景要求的最终任务调用",
+   "share": "仅 15 个 agentic 场景",
+   "format": "两步 LL 裁判：先判参与者资格，再查必需最终调用与参数",
+   "cite": [
+    "aa-arena-overview@Task Success Rate",
+    "aa-methodology@Speech Agent Arena / Task Success Rate"
+   ]
+  },
+  {
+   "area": "诊断性偏好信号",
+   "focus": "参与者在总体投票之外回答的诊断问题、收听或语言问题与文字反馈",
+   "share": "不计入 Elo，单独记录",
+   "format": "通话后问卷",
+   "cite": [
+    "aa-arena-overview@Participants",
+    "aa-methodology@Speech Agent Arena / Overview"
+   ]
+  }
+ ],
+ "does_not_measure": [
+  {
+   "text": "语音推理与知识问答的正确率——那是 Big Bench Audio 等基准的职责，本竞技场只测偏好与工具调用",
+   "cite": [
+    "aa-arena-announce@Opening"
+   ]
+  },
+  {
+   "text": "会话动力学（停顿、轮次切换、打断处理）——方法论把它归到 Conversational Dynamics（Full Duplex Bench），且该成分自指数 v2.0 起已不在指数里",
+   "cite": [
+    "aa-arena-announce@Opening",
+    "aa-methodology@Version History"
+   ]
+  },
+  {
+   "text": "时延与单价：TTFA 与价格不是竞技场的输出指标，只在官方文章里作为解释偏好差异和成本差异的分析出现",
+   "cite": [
+    "aa-methodology@Speed",
+    "aa-arena-announce@Key results"
+   ]
+  },
+  {
+   "text": "参与者录音与转录内容——官方明确不公开，示例录音要等录音授权确认并完成个人信息审阅之后才放",
+   "cite": [
+    "aa-methodology@Speech Agent Arena / Publication rules"
+   ]
+  },
+  {
+   "text": "页面演示通话的成绩含义——overview 页面放出的四段示例对话，官方说明不计入榜单结果",
+   "cite": [
+    "aa-arena-overview@Example conversations"
+   ]
+  }
+ ],
+ "dataset": {
+  "sample_count": 35,
+  "splits": [
+   "Agentic（带工具调用）15 个场景",
+   "Non-agentic（不带工具，用系统提示词里的信息完成对话）20 个场景",
+   "除「新病人预约牙医」一个示例外，场景模型提示词、工具 schema 与参与者说明未公开"
   ],
-  "versions": [],
-  "limitations": [
-    "Elo 依赖当期参评模型集合，新模型加入会整体重算，历史分数不可直接对比",
-    "真人偏好样本量与人群构成未公开"
+  "languages": [],
+  "source_type": "真人盲测投票（付费、经筛选的第三方参与者，由 Artificial Analysis 组织）",
+  "public_sample": false,
+  "totals": "共 35 个场景：15 个带工具 + 20 个不带工具。这里的样本数按场景计，不按通话计——每名参与者在一个场景下分别与两个模型各通一次话；每个模型的总出场次数在榜单 Samples 列逐模型给出（如 Cartesia Managed Agents 685 次），场景层面没有汇总数字。语言与地区构成未披露。",
+  "cite": [
+   "aa-methodology@Speech Agent Arena / Dataset",
+   "aa-arena-announce@Overview",
+   "aa-methodology@Speech Agent Arena / Publication rules"
   ],
-  "default_protocol": null,
-  "notes": "证据账本中 1 次引用；由 xAI Grok Voice 3.0 页引入，是 AA Speech-to-Speech Index 的真人偏好分项",
-  "official_sources": [
-    {
-      "kind": "site",
-      "url": "https://x.ai/news/grok-voice-3"
-    }
+  "construction": [
+   {
+    "k": "场景构成",
+    "text": "35 个场景 = 15 个 agentic（模型可调用与任务相关的工具）+ 20 个 non-agentic（无工具，靠系统提示词里给的信息把对话走完）。",
+    "cite": [
+     "aa-methodology@Speech Agent Arena / Dataset"
+    ]
+   },
+   {
+    "k": "公开程度",
+    "text": "除新病人预约牙医这一个示例，场景模型提示词、工具 schema 与参与者说明目前私有，官方给出的理由是降低过拟合。",
+    "cite": [
+     "aa-arena-announce@Overview"
+    ]
+   },
+   {
+    "k": "参与者",
+    "text": "使用合格池里的付费、经筛选第三方参与者来执行并评估智能体交互；同一个指定任务由同一名参与者分别与两个模型完成。",
+    "cite": [
+     "aa-arena-announce@Overview",
+     "aa-arena-overview@Participants"
+    ]
+   },
+   {
+    "k": "单轮流程",
+    "text": "参与者拿到一个场景（情境、目标与所需细节）→ 分别与 Model A、Model B 各打一通实时语音 → 记录盲测总体偏好并回答诊断问题 → 工具场景再进任务成功率评估。",
+    "cite": [
+     "aa-arena-overview@How it works"
+    ]
+   },
+   {
+    "k": "模型输入",
+    "text": "每个模型收到描述角色、场景上下文与指定信息的系统提示词；agentic 场景另附一组可调用的工具 schema（牙医示例里是 save_customer_details、check_availability、book_slot、get_account_details、escalate_to_supervisor、end_call）。",
+    "cite": [
+     "aa-arena-overview@What models receive"
+    ]
+   },
+   {
+    "k": "任务成功率判定材料",
+    "text": "agentic 场景的单独评估使用指定场景、完整转录、必需最终调用定义、工具 schema 与按时间排序的工具轨迹。",
+    "cite": [
+     "aa-arena-overview@Task Success Rate"
+    ]
+   },
+   {
+    "k": "演示录音",
+    "text": "官方页面放出的示例对话只是演示，官方明确这些录音不计入榜单结果。",
+    "cite": [
+     "aa-arena-overview@Example conversations"
+    ]
+   }
+  ]
+ },
+ "metrics": [
+  {
+   "id": "preference-elo",
+   "name": "竞技场 Elo（Preference Elo）",
+   "direction": "越高越好",
+   "description": "两两偏好的 Bradley–Terry 最大似然估计，GPT-Realtime-1.5 固定为 1000 作为标尺；全部场景、agentic、non-agentic 各算一套",
+   "unit": "elo",
+   "cite": [
+    "aa-methodology@Speech Agent Arena / Metrics"
+   ]
+  },
+  {
+   "id": "task-success-rate",
+   "name": "任务成功率（Task Success Rate）",
+   "direction": "越高越好",
+   "description": "合格通话里模型做出正确最终任务调用的比例；参与者偏离与不可验证案例在计算前剔除",
+   "range": [
+    0,
+    100
+   ],
+   "unit": "percent",
+   "cite": [
+    "aa-arena-overview@Task Success Rate",
+    "aa-methodology@Speech Agent Arena / Metrics"
+   ]
+  },
+  {
+   "id": "appearances",
+   "name": "出场次数（Samples）",
+   "direction": "越多置信区间越窄（不是分数）",
+   "description": "该模型在榜上的出场次数，直接决定 Elo 与成功率的置信宽度；总体结果要求至少 100 次出场",
+   "unit": "count",
+   "cite": [
+    "aa-methodology@Speech Agent Arena / Publication rules",
+    "aa-arena-leaderboard@Overall Preference"
+   ]
+  }
+ ],
+ "default_protocol": {
+  "raw": "每轮由一名真人参与者抽到一个场景，分别与两个隐藏模型实时语音通话，通话后记录 forced overall preference 并回答诊断问题；这些两两投票用 Bradley–Terry 最大似然拟合 Preference Elo，GPT-Realtime-1.5 固定为 1000 作为标尺，近似 95% 置信区间用与 TTS Arena 相同的 Hessian 方法。带工具的场景另走任务成功率：Judge 1 先判参与者资格（是否尝试了指定任务、是否实质停留在任务范围内、是否给过模型合理机会），Judge 2 再查必需最终调用是否齐全、工具与调用次数是否正确、schema 必需参数是否与参与者最终口头请求一致；成功率的 95% 区间用 Wilson score interval。",
+  "cite": [
+   "aa-methodology@Speech Agent Arena / Overview",
+   "aa-methodology@Speech Agent Arena / Metrics",
+   "aa-methodology@Speech Agent Arena / Task Success Rate",
+   "aa-methodology@Speech Agent Arena / Publication rules"
   ],
-  "related_benchmarks": [
-    "aa-speech-to-speech",
-    "tau-voice"
+  "variants": [
+   {
+    "text": "Overall Preference / Agentic / Non-agentic 三套 Elo 分别用 Bradley–Terry 拟合，不能互相混排。",
+    "cite": [
+     "aa-methodology@Speech Agent Arena / Metrics"
+    ]
+   },
+   {
+    "text": "原生音频模型与 Default Cascaded System（提供商的 STT + LLM + TTS 标准管线）同榜；工具注册方式分 session-level 与 pre-registered，官方标注截至 2026 年 7 月的组合。",
+    "cite": [
+     "aa-arena-leaderboard@Default Cascaded System"
+    ]
+   },
+   {
+    "text": "总体结果只在模型至少 100 次出场、且 95% 置信区间半宽不大于 75 时才公布；样本不足的模型不上总体榜。",
+    "cite": [
+     "aa-methodology@Speech Agent Arena / Publication rules"
+    ]
+   },
+   {
+    "text": "进入 Speech to Speech Index 的不是榜单 Elo 本身，而是 Arena Score：把模型达到发布资格时冻结的 Elo 换算成对 800 Elo 基线的期望偏好，公式为 100 / (1 + 10^((800 − frozen Elo) / 400))。",
+    "cite": [
+     "aa-methodology@Speech to Speech Index"
+    ]
+   }
+  ]
+ },
+ "versions": [
+  {
+   "id": "launch",
+   "date": "2026-08-24",
+   "label": "Speech Agent Arena 上线并发布公告：Gemini 3.1 Flash Live Preview - Minimal 以 1,046 Elo 领先整体偏好，GPT-Realtime-1.5 为 1,000，Grok Voice Think Fast 2.0 High 以 94.7% 领先任务成功率",
+   "cite": [
+    "aa-arena-announce@Key results",
+    "aa-arena-announce@Overview"
+   ]
+  }
+ ],
+ "limitations": [
+  {
+   "issue": "Elo 随参评模型集合重算",
+   "impact": "偏好分只对当期同榜模型有意义。新模型加入会整体重算，历史数字不能直接相比：上线公告里 Gemini 3.1 Flash Live Preview - Minimal 是 1,046，当前榜单同族模型是 1,089；xAI 在 2026-10-13 引用的 Grok Voice 3.0 是 1,070，当前榜单是 1,059。",
+   "severity": "高",
+   "response": "榜单给每个模型都附 95% 置信区间与出场次数；总体结果要求至少 100 次出场且区间半宽不大于 75 才公布；进入 Speech to Speech Index 时改用达到发布资格时冻结的 Elo。",
+   "reader": "比较 Elo 前先确认是不是同一批模型、同一天抓的数；引用时带上来源与抓取日期。",
+   "cite": [
+    "aa-arena-leaderboard@Overall Preference",
+    "aa-arena-announce@Key results",
+    "x-news-grok-voice-3@Benchmark table",
+    "aa-methodology@Speech to Speech Index"
+   ]
+  },
+  {
+   "issue": "偏好高不等于任务完成",
+   "impact": "同一行里两个指标经常背离：Gemini 3.1 Flash Live Minimal 偏好 1,089（第 2）但任务成功率 74.6%，Grok Voice 3.0 偏好 1,059、任务成功率 94.8%。把 Elo 当能力分读会得出相反结论。",
+   "severity": "高",
+   "response": "官方在发布公告里点明这一点，并把 Task Success Rate 作为独立指标发布，用 LL 裁判单独评估。",
+   "reader": "同时看 Elo 和 Task Success Rate 两列；只按一个指标换模型，结论可能反过来。",
+   "cite": [
+    "aa-arena-announce@Key results",
+    "aa-arena-leaderboard@Overall Preference"
+   ]
+  },
+  {
+   "issue": "场景与提示词私有，外部无法复现",
+   "impact": "除新病人预约牙医一个示例外，场景模型提示词、工具 schema 与参与者说明都未公开，外部不能独立复现或审计，也难以判断是否被针对性优化。",
+   "severity": "中",
+   "response": "官方称私有是为降低过拟合；参与者录音与转录不公开，示例要等录音授权确认并完成个人信息审阅后才放。",
+   "reader": "把结论当官方口径引用，别当成可复现实验；关注后续公开的示例与场景。",
+   "cite": [
+    "aa-arena-announce@Overview",
+    "aa-methodology@Speech Agent Arena / Publication rules"
+   ]
+  },
+  {
+   "issue": "任务成功率由 LL 裁判判定",
+   "impact": "Judge 1（参与者资格）与 Judge 2（必需最终调用与参数）都是同一套 GPT-4.1 配置，裁判自身的错误会直接进入分数；官方也注明模型系统提示词、工具 schema 与评估提示词可能变动。",
+   "severity": "中",
+   "response": "官方给出 Wilson 95% 置信区间，并在计算前剔除参与者偏离与不可验证案例；支持性调用与 end_call 不计为任务完成。",
+   "reader": "任务成功率的差距小于置信区间重叠时不要下结论；跨版本比较要留意评估提示词可能变过。",
+   "cite": [
+    "aa-methodology@Speech Agent Arena / Task Success Rate",
+    "aa-arena-overview@Task Success Rate",
+    "aa-methodology@Speech Agent Arena / Publication rules"
+   ]
+  },
+  {
+   "issue": "参与者人群构成未披露",
+   "impact": "参与者是付费、经筛选的第三方，但人数、地区、母语、听力与设备情况均未披露；偏好可能对特定口音、音色或网络条件敏感。",
+   "severity": "中",
+   "response": "官方未披露对应的修正或分层报告。",
+   "reader": "把它读成「一群付费测试者在英语语音通话里的偏好」，不要当成普适人类偏好。",
+   "cite": [
+    "aa-arena-announce@Overview",
+    "aa-arena-overview@Participants"
+   ]
+  },
+  {
+   "issue": "厂商引用与官方口径会出现数字不一致",
+   "impact": "xAI 的 Grok Voice 3.0 页面用 Artificial Analysis 2026-10-13 的数据：Grok Voice 3.0 1,070、Grok Voice 2.0 1,011、GPT-Live-1 (Astra, Medium) 1,048、Gemini 3.8 Live (Ext. Thinking, High) 990；当前官方榜单分别是 1,059、991、1,027、1,074。差异来自 Elo 重算，不是数据错误，但不带日期的二手引用会对不上。",
+   "severity": "中",
+   "response": "官方榜单持续更新并给出区间；xAI 页面标注了数据来源日期。",
+   "reader": "看到厂商稿里的竞技场分数，先找当天的官方榜单核对；引用时写清是哪一天的口径。",
+   "cite": [
+    "x-news-grok-voice-3@Benchmark table",
+    "aa-arena-leaderboard@Overall Preference"
+   ]
+  },
+  {
+   "issue": "演示录音容易被当成成绩依据",
+   "impact": "官方 overview 页面放出四段示例通话，但官方明确这些演示录音不计入榜单结果。",
+   "severity": "低",
+   "response": "官方在示例区直接注明。",
+   "reader": "听示范录音可以，别把里面的模型表现当成榜单成绩。",
+   "cite": [
+    "aa-arena-overview@Example conversations"
+   ]
+  }
+ ],
+ "notes": "本站账本中 1 次引用，由 xAI Grok Voice 3.0 发布页引入。进入 Artificial Analysis Speech to Speech Index 时用的是 Arena Score（冻结 Elo 换算），不是榜单 Elo 本身；该指数 v2.0 起把 Conversational Dynamics（Full Duplex Bench）换成了 Task Success Rate，四项成分各占 25%。",
+ "official_sources": [
+  {
+   "kind": "site",
+   "url": "https://artificialanalysis.ai/speech-to-speech/arena"
+  },
+  {
+   "kind": "site",
+   "url": "https://artificialanalysis.ai/speech-to-speech/arena/overview"
+  },
+  {
+   "kind": "site",
+   "url": "https://artificialanalysis.ai/methodology/speech-to-speech-benchmarking"
+  },
+  {
+   "kind": "site",
+   "url": "https://artificialanalysis.ai/articles/announcing-the-speech-agent-arena"
+  },
+  {
+   "kind": "site",
+   "url": "https://x.ai/news/grok-voice-3"
+  }
+ ],
+ "related_benchmarks": [
+  "aa-speech-to-speech",
+  "tau-voice",
+  "full-duplex-bench"
+ ],
+ "content_status": "reviewed",
+ "last_verified_at": "2026-11-14",
+ "profile": {
+  "template": "benchmark-profile/v2",
+  "verified_at": "2026-11-14",
+  "sources": [
+   {
+    "id": "aa-arena-announce",
+    "kind": "site",
+    "title": "Announcing the Speech Agent Arena: Compare Speech agents in real world conversations（2026-08-24）",
+    "url": "https://artificialanalysis.ai/articles/announcing-the-speech-agent-arena",
+    "accessed": "2026-11-14"
+   },
+   {
+    "id": "aa-arena-overview",
+    "kind": "site",
+    "title": "Speech Agent Arena Overview & Examples（轮次流程、场景类型、工具 schema、任务成功率）",
+    "url": "https://artificialanalysis.ai/speech-to-speech/arena/overview",
+    "accessed": "2026-11-14"
+   },
+   {
+    "id": "aa-methodology",
+    "kind": "site",
+    "title": "Speech to Speech Benchmarking Methodology（Speech Agent Arena 一节 + 指数与版本历史）",
+    "url": "https://artificialanalysis.ai/methodology/speech-to-speech-benchmarking",
+    "accessed": "2026-11-14"
+   },
+   {
+    "id": "aa-arena-leaderboard",
+    "kind": "leaderboard",
+    "title": "Speech Agent Arena Leaderboard（Overall Preference 榜 + Default Cascaded System 表）",
+    "url": "https://artificialanalysis.ai/speech-to-speech/arena",
+    "accessed": "2026-11-14"
+   },
+   {
+    "id": "x-news-grok-voice-3",
+    "kind": "site",
+    "title": "Introducing Grok Voice 3.0（xAI，2026-10-14；内表数据来源标注为 Artificial Analysis, 2026-10-13）",
+    "url": "https://x.ai/news/grok-voice-3",
+    "accessed": "2026-11-14"
+   }
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-10-19"
+  "header": {
+   "publisher": {
+    "v": "Artificial Analysis",
+    "cite": [
+     "aa-methodology@Speech Agent Arena / Overview",
+     "aa-arena-announce@Opening"
+    ]
+   },
+   "first_release": {
+    "v": "2026-08-24（发布公告日）",
+    "cite": [
+     "aa-arena-announce@Overview"
+    ]
+   }
+  },
+  "cites": {
+   "summary": [
+    "aa-methodology@Speech Agent Arena / Overview",
+    "aa-methodology@Speech Agent Arena / Metrics",
+    "aa-methodology@Speech Agent Arena / Task Success Rate",
+    "aa-arena-overview@How it works",
+    "aa-arena-announce@Overview"
+   ],
+   "interpretation": [
+    "aa-methodology@Speech Agent Arena / Metrics",
+    "aa-arena-leaderboard@Overall Preference",
+    "x-news-grok-voice-3@Benchmark table"
+   ]
+  },
+  "problem": {
+   "text": "已有的语音到语音基准分别覆盖推理、模拟智能体任务与会话动力学（停顿、轮次切换、打断），但都没有回答「用户在真实任务里到底更喜欢和哪个模型说话，以及它有没有真的把事办成」。Speech Agent Arena 用真人在线盲测对比补上这一块，同时输出偏好与工具调用完成度。",
+   "cite": [
+    "aa-arena-announce@Opening",
+    "aa-methodology@Speech Agent Arena / Overview"
+   ]
+  },
+  "ladder": [
+   {
+    "label": "Elo 标尺锚点",
+    "value": "1000（GPT-Realtime-1.5 固定）",
+    "note": "官方把 GPT-Realtime-1.5 固定为 1000，作为本榜 Elo 标尺的参考点；该行同时给出 921 次出场与 85.1% 任务成功率。",
+    "cite": [
+     "aa-arena-leaderboard@Anchor",
+     "aa-methodology@Speech Agent Arena / Metrics"
+    ]
+   },
+   {
+    "label": "上线首日最好",
+    "value": "1,046（Gemini 3.1 Flash Live Preview - Minimal）",
+    "note": "2026-08-24 公告口径；同批 GPT-Realtime-1.5 为 1,000，任务成功率由 Grok Voice Think Fast 2.0 High 以 94.7% 领先。",
+    "cite": [
+     "aa-arena-announce@Key results"
+    ]
+   },
+   {
+    "label": "当前榜单第 1（Overall Preference）",
+    "value": "1111 ±29（Cartesia Managed Agents）",
+    "note": "2026-11-14 读取；685 次出场，任务成功率 91.7%（Wilson 95% CI 88.3%–94.3%）。",
+    "cite": [
+     "aa-arena-leaderboard@Overall Preference"
+    ]
+   },
+   {
+    "label": "当前榜单任务成功率最高",
+    "value": "94.8%（Grok Voice 3.0）",
+    "note": "偏好 1059 ±28、668 次出场，TSR CI 91.6%–96.8%；它不在偏好第 1，说明两个指标在这个榜上不等价。",
+    "cite": [
+     "aa-arena-leaderboard@Overall Preference"
+    ]
+   },
+   {
+    "label": "本站账本当前最高",
+    "auto": "ledger-top"
+   }
+  ],
+  "misreadings": [
+   {
+    "text": "把 Elo 当成任务完成能力读——偏好第 2 的 Gemini 3.1 Flash Live Minimal 任务成功率只有 74.6%，偏好 1059 的 Grok Voice 3.0 是 94.8%。",
+    "cite": [
+     "aa-arena-leaderboard@Overall Preference",
+     "aa-arena-announce@Key results"
+    ]
+   },
+   {
+    "text": "把不同日期抓到的 Elo 直接对比——新模型加入会整体重算，xAI 2026-10-13 的 1070 和现在的 1059 是同一个模型。",
+    "cite": [
+     "x-news-grok-voice-3@Benchmark table",
+     "aa-arena-leaderboard@Overall Preference"
+    ]
+   },
+   {
+    "text": "把 Agentic / Non-agentic 的 Elo 和 Overall Preference 排进同一列——三套分数是分开拟合的。",
+    "cite": [
+     "aa-methodology@Speech Agent Arena / Metrics"
+    ]
+   },
+   {
+    "text": "把 Samples 当成独立投票人数——它统计的是该模型的出场次数，一次对比里两个模型各出场一次。",
+    "cite": [
+     "aa-methodology@Speech Agent Arena / Publication rules",
+     "aa-methodology@Speech Agent Arena / Overview"
+    ]
+   },
+   {
+    "text": "以为 1000 分是人类水平或绝对刻度——它只是 GPT-Realtime-1.5 这个锚点的位置，Elo 是相对分。",
+    "cite": [
+     "aa-arena-leaderboard@Anchor"
+    ]
+   },
+   {
+    "text": "把 Arena Score 当成 Elo 读——Arena Score = 100 / (1 + 10^((800 − frozen Elo) / 400))，只用于 Speech to Speech Index，且用的是达到发布资格时冻结的 Elo。",
+    "cite": [
+     "aa-methodology@Speech to Speech Index"
+    ]
+   },
+   {
+    "text": "把页面上的示例对话录音当成成绩——官方明确这些演示录音不计入榜单结果。",
+    "cite": [
+     "aa-arena-overview@Example conversations"
+    ]
+   }
+  ],
+  "background": [
+   {
+    "k": "发布方",
+    "v": "Artificial Analysis（语音到语音基准体系中的一个维度）",
+    "cite": [
+     "aa-methodology@Speech Agent Arena / Overview"
+    ]
+   },
+   {
+    "k": "上线时间",
+    "v": "2026-08-24，发布公告《Announcing the Speech Agent Arena: Compare Speech agents in real world conversations》",
+    "cite": [
+     "aa-arena-announce@Overview"
+    ]
+   },
+   {
+    "k": "场景规模",
+    "v": "35 个场景：15 个 agentic（带工具）+ 20 个 non-agentic（不带工具）；除牙医示例外，提示词与工具 schema 私有",
+    "cite": [
+     "aa-methodology@Speech Agent Arena / Dataset",
+     "aa-arena-announce@Overview"
+    ]
+   },
+   {
+    "k": "参与者",
+    "v": "合格池中的付费、经筛选第三方参与者；参与者录音与转录不公开",
+    "cite": [
+     "aa-arena-announce@Overview",
+     "aa-methodology@Speech Agent Arena / Publication rules"
+    ]
+   },
+   {
+    "k": "同榜的级联系统",
+    "v": "榜单同时收录 Default Cascaded System（提供商的 STT + LLM + TTS 标准管线），官方标注截至 2026 年 7 月的组合与工具注册方式，例如 Deepgram Voice Agent = Nova-3 / GPT-4o Mini / Aura-2，session-level 工具注册",
+    "cite": [
+     "aa-arena-leaderboard@Default Cascaded System"
+    ]
+   },
+   {
+    "k": "在 Speech to Speech Index 里的位置",
+    "v": "v1.1（2026 年 8 月）把本竞技场纳入指数；v2.0（2026 年 8 月至今）用 Task Success Rate 换掉 Conversational Dynamics（Full Duplex Bench），四项成分各 25%：Big Bench Audio、𝜏-Voice、Arena Score、Task Success Rate。方法论只给到月份，未给具体日期。",
+    "cite": [
+     "aa-methodology@Version History",
+     "aa-methodology@Speech to Speech Index"
+    ]
+   },
+   {
+    "k": "进入指数用的分数",
+    "v": "Arena Score：把模型 Elo 换算成对 800 Elo 基线的期望偏好，使用达到发布资格时冻结的 Elo，公式 100 / (1 + 10^((800 − frozen Elo) / 400))",
+    "cite": [
+     "aa-methodology@Speech to Speech Index"
+    ]
+   },
+   {
+    "k": "语言与地区",
+    "v": "未披露（方法论里的模拟客户与语音人格属于 𝜏-Voice 的 Agentic Performance，不归本竞技场）",
+    "cite": [
+     "aa-methodology@Speech Agent Arena / Overview"
+    ]
+   },
+   {
+    "k": "本站收录",
+    "v": "本站账本中 1 次引用，由 xAI Grok Voice 3.0 发布页引入",
+    "cite": [
+     "x-news-grok-voice-3@Benchmark table"
+    ]
+   }
+  ],
+  "official_results": {
+   "table": {
+    "as_of": "2026-11-14",
+    "columns": [
+     "来源",
+     "模型",
+     "Elo",
+     "Elo 95% CI",
+     "出场次数",
+     "任务成功率",
+     "TSR 95% CI"
+    ],
+    "rows": [
+     [
+      "当前榜单",
+      "Cartesia Managed Agents",
+      "1111",
+      "1083–1140",
+      "685",
+      "91.7%",
+      "88.3%–94.3%"
+     ],
+     [
+      "当前榜单",
+      "Gemini 3.1 Flash Live Minimal",
+      "1089",
+      "1064–1114",
+      "990",
+      "74.6%",
+      "69.4%–79.2%"
+     ],
+     [
+      "当前榜单",
+      "Gemini 3.8 Live",
+      "1074",
+      "1047–1101",
+      "606",
+      "93.2%",
+      "89.0%–95.8%"
+     ],
+     [
+      "当前榜单",
+      "Gemini 3.1 Flash Live High",
+      "1062",
+      "1037–1086",
+      "957",
+      "71.8%",
+      "66.4%–76.7%"
+     ],
+     [
+      "当前榜单",
+      "Grok Voice 3.0",
+      "1059",
+      "1031–1086",
+      "668",
+      "94.8%",
+      "91.6%–96.8%"
+     ],
+     [
+      "当前榜单",
+      "GPT-Live-1 (Sol, low)",
+      "1037",
+      "1012–1062",
+      "773",
+      "90.9%",
+      "87.2%–93.7%"
+     ],
+     [
+      "当前榜单",
+      "GPT-Live-1 (Astra, medium)",
+      "1027",
+      "1002–1052",
+      "736",
+      "87.4%",
+      "82.9%–90.8%"
+     ],
+     [
+      "当前榜单",
+      "GPT-Realtime-1.5（Elo 锚点）",
+      "1000",
+      "未列出",
+      "921",
+      "85.1%",
+      "80.8%–88.6%"
+     ],
+     [
+      "当前榜单",
+      "Grok Voice 2.0",
+      "991",
+      "966–1016",
+      "669",
+      "94.6%",
+      "91.4%–96.7%"
+     ],
+     [
+      "xAI 页面（数据日期 2026-10-13）",
+      "Grok Voice 3.0",
+      "1070",
+      "未列出",
+      "未列出",
+      "94.8%",
+      "未列出"
+     ],
+     [
+      "xAI 页面（数据日期 2026-10-13）",
+      "Grok Voice 2.0",
+      "1011",
+      "未列出",
+      "未列出",
+      "94.6%",
+      "未列出"
+     ],
+     [
+      "xAI 页面（数据日期 2026-10-13）",
+      "GPT-Live-1 (Astra, Medium)",
+      "1048",
+      "未列出",
+      "未列出",
+      "87.4%",
+      "未列出"
+     ],
+     [
+      "xAI 页面（数据日期 2026-10-13）",
+      "Gemini 3.8 Live (Ext. Thinking, High)",
+      "990",
+      "未列出",
+      "未列出",
+      "89.1%",
+      "未列出"
+     ]
+    ]
+   },
+   "cite": [
+    "aa-arena-leaderboard@Overall Preference",
+    "x-news-grok-voice-3@Benchmark table"
+   ]
+  }
+ }
 }
