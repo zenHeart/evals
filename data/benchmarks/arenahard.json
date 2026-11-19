@@ -1,30 +1,403 @@
 {
   "id": "arenahard",
-  "name": "Arena Hard",
-  "full_name": null,
-  "aliases": [],
-  "status": null,
+  "name": "Arena-Hard",
+  "full_name": "Arena-Hard-Auto（含 Arena-Hard-Auto-v0.1 与 Arena-Hard-v2.0）",
+  "aliases": [
+    "Arena-Hard-Auto",
+    "Arena-Hard-Auto-v0.1",
+    "Arena-Hard-v2.0",
+    "Arena-Hard-v2.0-Preview"
+  ],
+  "status": "active",
   "categories": [
     "preference"
   ],
-  "summary": "从 Arena 真实难题中抽 500 道，LLM judge 离线复现",
-  "interpretation": "从 Arena 真实难题抽 500 道，离线用裁判复现 Arena 排名。",
-  "measures": [],
-  "does_not_measure": [],
+  "summary": "Arena-Hard-Auto 用一条自动流水线（BenchBuilder）从 Chatbot Arena 的 20 万条真实用户提问里筛出 500 道高难度开放题，再让 LLM 当裁判、让被测模型和固定基线模型打擂台，把胜负换算成「对基线的胜率分」。论文称它每评一个模型约 20 美元，却拿到与人工偏好排名 98.6% 的一致率，题目量只有 Chatbot Arena 的几百分之一。",
+  "interpretation": "分数是 Bradley-Terry 回归出来的相对胜率，50.0 就是基线模型自己的水平，往上表示比基线强。它测的是「裁判偏好下的相对强弱」，不是答对率，也不能读成「会做百分之多少的题」。换裁判（GPT-4.1 / Gemini-2.5 / Claude）、开关风格控制、换题集（hard prompt / creative writing）都会让同一个模型差出好几分，跨表比较前必须先对齐这三件事。",
+  "measures": [
+    {
+      "area": "开放式问答（hard prompt）",
+      "focus": "从真实用户提问筛出的高难度题：v0.1 以开放式软件工程、数学、知识问答为主；v2.0 保留 500 道难题，另加 250 道创意写作题",
+      "share": "v2.0 共 750 题，其中 hard prompt 500 题",
+      "format": "单轮、英文、开放式长回答；没有标准答案，由 LLM 裁判做两两偏好判断",
+      "cite": [
+        "arxiv-2406-11939@§4.2",
+        "repo-arena-hard@About",
+        "arxiv-2406-11939@Abstract"
+      ]
+    },
+    {
+      "area": "提示质量维度（筛题标准，不是题目内容）",
+      "focus": "7 项质量标准：Specificity / Domain Knowledge / Complexity / Problem-Solving / Creativity / Technical Accuracy / Real-world Application，每项 0 或 1 分，合计 0–7 分",
+      "share": "不适用",
+      "format": "LLM 注释器（GPT-4-Turbo，博客另提 GPT-3.5-Turbo）逐条打 0–7 分；GPT-4-Turbo 与人工标签一致率 85.6%",
+      "cite": [
+        "arxiv-2406-11939@§4.1",
+        "arxiv-2406-11939@§4.2",
+        "blog-arena-hard-2024@Arena-Hard Pipeline"
+      ]
+    },
+    {
+      "area": "基准自身质量指标（元指标，评的是基准而不是模型）",
+      "focus": "Separability with Confidence（置信区间不重叠的模型对占比）、Agreement with Confidence（与人工偏好在可分开模型对上的一致率）、Pair Rank Brier Score（胜负概率预测质量）",
+      "share": "不适用",
+      "format": "以 Chatbot Arena 前 20 名模型的人工排名为参照；论文 Table 1 用 Arena-Hard-Auto / MT-Bench / AlpacaEval 2 / Chatbot Arena 四列对比",
+      "cite": [
+        "arxiv-2406-11939@§3",
+        "arxiv-2406-11939@Table 1",
+        "repo-arena-hard@Evaluate Benchmarks"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "多轮对话与非英文交互——论文在局限性里明确说当前不覆盖这两类，博客也重申基准不评多轮交互",
+      "cite": [
+        "arxiv-2406-11939@§7",
+        "blog-arena-hard-2024@Potential self-bias & prompt selection bias"
+      ]
+    },
+    {
+      "text": "答案的事实正确性、安全性与有害性——裁判只判偏好不判对错，一个流畅但错误的回答可能赢过正确但生硬的回答；两个裁判都被观察到偏好更长的输出",
+      "cite": [
+        "arxiv-2406-11939@§5",
+        "blog-arena-hard-2024@Verbosity: does the LLM Judge prefer longer responses?"
+      ]
+    },
+    {
+      "text": "绝对能力水位——分数是相对固定基线的胜率，不是答对率，也无法换算成「能解出百分之多少的题」",
+      "cite": [
+        "arxiv-2406-11939@§6.1",
+        "blog-arena-hard-2024@Full Leaderboard with GPT-4-Turbo as judge"
+      ]
+    },
+    {
+      "text": "对裁判自身偏好的免疫力——用 Claude 当裁判时 Claude 家族分数普遍上升，v0.1 榜单脚注也注明 GPT-4-Turbo 的高分可能来自 GPT-4 裁判偏爱自家输出",
+      "cite": [
+        "blog-arena-hard-2024@GPT-4-Turbo or Claude as Judge?",
+        "blog-arena-hard-2024@Full Leaderboard with GPT-4-Turbo as judge",
+        "arxiv-2406-11939@§6.6"
+      ]
+    }
+  ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
+    "sample_count": 750,
+    "splits": [
+      "Arena-Hard-Auto-v0.1：500 题（2024-04 首发）",
+      "Arena-Hard-v2.0-Preview hard prompt：500 题",
+      "Arena-Hard-v2.0-Preview creative writing：250 题（取自 Chatbot Arena）"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "crowd-sourced（Chatbot Arena 真实用户提问，经 BenchBuilder 自动筛选与质量打分）",
+    "public_sample": true,
+    "multiple_choice_share": "未披露（题目全部是开放式提问，论文与仓库均未给出题型占比）",
+    "multimodal_share": "未披露（论文与仓库均未说明是否含多模态题）",
+    "totals": "v2.0 共 750 题 = 500 道真实用户难题 + 250 道创意写作题；v0.1 为 500 题。题目全部是英文单轮开放式提问，没有标准答案，靠 LLM 裁判与基线模型两两对比打分。",
+    "cite": [
+      "arxiv-2406-11939@§4.2",
+      "repo-arena-hard@About",
+      "blog-arena-hard-2024@Results"
+    ],
+    "construction": [
+      {
+        "k": "取料",
+        "text": "从 Chatbot Arena 收集的 20 万条用户提问开始，去掉重复项、多轮对话和非英文内容，只保留第一轮英文提问。",
+        "cite": [
+          "arxiv-2406-11939@§4.2",
+          "blog-arena-hard-2024@Arena-Hard Pipeline"
+        ]
+      },
+      {
+        "k": "聚类",
+        "text": "用 BERTopic 做主题建模：先用 OpenAI 的 text-embedding-3-small 给每条提问编码，再用 UMAP 降维，最后用 HDBSCAN 层次聚类，得到 4,000 多个主题簇；每个簇再由 LLM 总结命名。",
+        "cite": [
+          "arxiv-2406-11939@§4.2",
+          "blog-arena-hard-2024@Arena-Hard Pipeline"
+        ]
+      },
+      {
+        "k": "质量打分",
+        "text": "LLM 注释器按 7 项质量标准给每条提问打 0–7 分；论文报告 GPT-4-Turbo 的标签与人工一致率 85.6%。",
+        "cite": [
+          "arxiv-2406-11939@§4.1",
+          "arxiv-2406-11939@§4.2",
+          "blog-arena-hard-2024@Arena-Hard Pipeline"
+        ]
+      },
+      {
+        "k": "筛题",
+        "text": "丢掉 prompt 得分低于 6 的提问和簇均分低于 5 的主题簇；博客口径是从剩下的簇里随机抽 250 个高分簇、每簇取 2 条，凑成 500 题；论文口径是随机选 250 个簇、每簇抽 2 条。",
+        "cite": [
+          "arxiv-2406-11939@§4.2",
+          "blog-arena-hard-2024@Results"
+        ]
+      },
+      {
+        "k": "v2.0 扩充",
+        "text": "2025-04-23 的 v2.0 换了一批新难题，并从 Chatbot Arena 引入 250 道创意写作题，合计 750 题；裁判换成 GPT-4.1 与 Gemini-2.5。",
+        "cite": [
+          "repo-arena-hard@News",
+          "repo-arena-hard@About"
+        ]
+      }
+    ]
   },
-  "metrics": [],
+  "metrics": [
+    {
+      "id": "win-rate",
+      "name": "对基线胜率（Arena Score）",
+      "direction": "越高越好",
+      "description": "两两比较按 Bradley-Terry 模型回归出系数，再换算成对基线模型的胜率；50.0 即基线模型自身水平",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2406-11939@§5",
+        "arxiv-2406-11939@§6.1",
+        "blog-arena-hard-2024@Full Leaderboard with GPT-4-Turbo as judge"
+      ]
+    },
+    {
+      "id": "separability",
+      "name": "Separability with Confidence",
+      "direction": "越高越好",
+      "description": "置信区间不重叠的模型对占比，衡量基准能不能把两个模型自信地分开",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2406-11939@§3",
+        "repo-arena-hard@Evaluate Benchmarks",
+        "arxiv-2406-11939@Table 1"
+      ]
+    },
+    {
+      "id": "agreement",
+      "name": "Agreement with Confidence",
+      "direction": "越高越好",
+      "description": "与参照基准在「能自信分开」的模型对上的排名一致程度：一致记 +1、不一致记 -1、无法分开记 0，按模型对取平均",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2406-11939@§3",
+        "arxiv-2406-11939@Table 1",
+        "arxiv-2406-11939@Table 3"
+      ]
+    },
+    {
+      "id": "brier",
+      "name": "Pair Rank Brier Score",
+      "direction": "越低越好",
+      "description": "对模型对胜负的概率预测质量，惩罚「自信地判错」",
+      "range": [
+        0,
+        1
+      ],
+      "unit": "dimensionless",
+      "cite": [
+        "arxiv-2406-11939@§3",
+        "repo-arena-hard@Evaluate Benchmarks"
+      ]
+    },
+    {
+      "id": "spearman",
+      "name": "Spearman Correlation",
+      "direction": "越高越好",
+      "description": "与人工偏好排名的秩相关；论文和博客都指出它不考虑方差，会低估顶尖模型之间的差距",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2406-11939@Table 1",
+        "blog-arena-hard-2024@Table 1"
+      ]
+    }
+  ],
   "default_protocol": {
-    "raw": "GPT-4 judge + 风格控制"
+    "raw": "被测模型对每道题作答；裁判模型（v0.1 官方用 gpt-4-1106-preview，v2.0 官方配置用 Gemini-2.5）先用自己的思路解一遍题，再把两个回答按 5 档偏好打分（A 远胜 / A 略胜 / 平手 / B 略胜 / B 远胜）。同一题交换两个回答的位置再判一次（two-game），500 题 × 2 = 1000 次判定；两两比较按 Bradley-Terry 模型回归，换算成对基线模型的胜率分，95% 置信区间用 100 轮 bootstrap 得到。",
+    "cite": [
+      "arxiv-2406-11939@§5",
+      "blog-arena-hard-2024@Results",
+      "blog-arena-hard-2024@Full Leaderboard with GPT-4-Turbo as judge",
+      "arxiv-2406-11939@§6.1"
+    ],
+    "variants": [
+      {
+        "text": "裁判模型：v2.0 官方配置用 Gemini-2.5，仓库同时给出 GPT-4.1 裁判的榜；论文还测过 GPT-4-Turbo、Claude-3-Opus、Gemini-1.5-Pro 和 Ensemble-as-Judges。换裁判后同一模型分数不同，两张榜不能混排。",
+        "cite": [
+          "repo-arena-hard@Leaderboard",
+          "arxiv-2406-11939@Table 4",
+          "arxiv-2406-11939@§5"
+        ]
+      },
+      {
+        "text": "风格控制开关：开控制时把回答 token 长度、markdown 标题/加粗/列表密度作为 Bradley-Terry 回归里的独立变量；不开时「提示模型答得更详细」就能明显刷分。",
+        "cite": [
+          "arxiv-2406-11939@§6.5",
+          "arxiv-2406-11939@Table 5",
+          "blog-style-control"
+        ]
+      },
+      {
+        "text": "题集：hard prompt（500 题）与 creative writing（250 题）是两张独立的榜，后者用 GPT-4.1 与 Gemini-2.5 的 Ensemble 裁判，仓库称它是创意写作的最佳配置。",
+        "cite": [
+          "repo-arena-hard@Leaderboard",
+          "repo-arena-hard@About"
+        ]
+      },
+      {
+        "text": "基线模型：v0.1 官方基线是 gpt-4-0314（榜上即 50.0）；v2.0 官方榜里 gpt-4.1、gpt-4.5-preview、o3-mini-2025-01-31 三行都是 50.0，仓库没有说明哪一个是基线。",
+        "cite": [
+          "arxiv-2406-11939@§6.1",
+          "blog-arena-hard-2024@Full Leaderboard with GPT-4-Turbo as judge",
+          "repo-arena-hard@Leaderboard"
+        ]
+      },
+      {
+        "text": "判定次数与聚合：v0.1 每模型 1000 次判定且只完整评一次；官方建议 Ensemble-as-Judges 用两个裁判独立推理后聚合结果。",
+        "cite": [
+          "arxiv-2406-11939@§5",
+          "arxiv-2406-11939@§6.6",
+          "blog-arena-hard-2024@Variance in GPT-4 judgments"
+        ]
+      }
+    ]
   },
-  "versions": [],
-  "limitations": [],
-  "notes": null,
+  "versions": [
+    {
+      "id": "v0.1",
+      "date": "2024-04-19",
+      "label": "LMSYS 博客首发 Arena-Hard-Auto-v0.1：500 题，gpt-4-1106-preview 裁判，基线 gpt-4-0314；GPT-4-Turbo 得分 82.6",
+      "cite": [
+        "blog-arena-hard-2024",
+        "blog-arena-hard-2024@Full Leaderboard with GPT-4-Turbo as judge"
+      ]
+    },
+    {
+      "id": "arxiv-v1",
+      "date": "2024-06-17",
+      "label": "arXiv v1 提交，BenchBuilder 流水线与三项基准质量指标首次成文",
+      "cite": [
+        "arxiv-2406-11939@提交历史"
+      ]
+    },
+    {
+      "id": "style-control",
+      "date": "2024-08-29",
+      "label": "LMSYS 博客《Does style matter?》提出把风格当独立变量的 Bradley-Terry 回归；Arena-Hard-Auto 于 2024-10-14 支持 Style Control",
+      "cite": [
+        "blog-style-control",
+        "repo-arena-hard@News"
+      ]
+    },
+    {
+      "id": "arxiv-v2",
+      "date": "2024-10-14",
+      "label": "arXiv v2 修订，Tianhao Wu 加入作者列表",
+      "cite": [
+        "arxiv-2406-11939@版本行",
+        "arxiv-2406-11939@作者署名"
+      ]
+    },
+    {
+      "id": "v2.0",
+      "date": "2025-04-23",
+      "label": "Arena-Hard-v2.0：500 道新难题 + 250 道创意写作题（共 750 题），裁判换成 GPT-4.1 与 Gemini-2.5；Hugging Face 数据集页显示 2025-04-24 更新",
+      "cite": [
+        "repo-arena-hard@News",
+        "repo-arena-hard@About",
+        "hf-arena-hard-auto"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "官方数字前后不一致",
+      "impact": "博客（2024-04）报 agreement 89.1%、单次评测成本 $25、每模型平均 1,000 个 prompt；论文 Table 1 报 90.9%、$20、500 个 prompt；论文 §6.2 正文又写 90.8%，与自己的 Table 1（90.9%）不一致。MT-bench 的 agreement 在博客 Table 1 是 26.1%，正文却写「考虑 95% CI 后从 91.3% 掉到 22.6%」，而 22.6% 是 MT-bench 的 separability。",
+      "severity": "中",
+      "response": "本站以论文 Table 1 为准，博客数字在版本与背景里标注为发布时口径。",
+      "reader": "引用一致率时先确认是博客口径还是论文口径，两者相差约 2 个百分点；涉及 MT-bench 的表述要区分 agreement 与 separability。",
+      "cite": [
+        "blog-arena-hard-2024@Table 1",
+        "arxiv-2406-11939@Table 1",
+        "arxiv-2406-11939@§6.2"
+      ]
+    },
+    {
+      "issue": "裁判敏感与自偏",
+      "impact": "同一个模型换裁判会差好几分：o3-2025-04-16 在 GPT-4.1 裁判榜是 87.0，在 Gemini-2.5 裁判官方配置是 85.9；用 Claude 当裁判时 Claude 家族分数普遍上升；官方自己在 v0.1 榜单脚注注明 GPT-4-Turbo 的 82.6 分可能来自 GPT-4 裁判偏爱自家输出。",
+      "severity": "高",
+      "response": "v2.0 主推 Ensemble-as-Judges（GPT-4.1 + Gemini-2.5）并默认开风格控制；论文用扩展的 Bradley-Terry 回归与多裁判聚合降低偏差。",
+      "reader": "跨模型比较只用同一张表；看到「GPT-4 裁判 + 无风格控制」的旧榜，对 GPT 家族分数保留怀疑。",
+      "cite": [
+        "repo-arena-hard@Leaderboard",
+        "blog-arena-hard-2024@GPT-4-Turbo or Claude as Judge?",
+        "blog-arena-hard-2024@Full Leaderboard with GPT-4-Turbo as judge",
+        "arxiv-2406-11939@§6.6"
+      ]
+    },
+    {
+      "issue": "长度与 markdown 可操纵",
+      "impact": "关掉风格控制时，只要提示模型「答得更详细」，Llama-3.1-70B-Instruct 的 Arena Score 就从 41.7 抬到 53.5；两个裁判都被观察到偏好更长的输出。",
+      "severity": "中",
+      "response": "风格控制把长度与 markdown 密度当独立变量回归掉，论文称受控后无法再靠改长度或 markdown 用法刷分。",
+      "reader": "看到旧榜高分先确认是否开了 style control；消融实验里 length 是主导风格因素，其余 markdown 效应是二阶的，且长度与实质质量的正相关可能是未观测的混杂因素。",
+      "cite": [
+        "arxiv-2406-11939@Table 5",
+        "blog-arena-hard-2024@Verbosity: does the LLM Judge prefer longer responses?",
+        "arxiv-2406-11939@§6.5",
+        "blog-style-control@Ablation",
+        "blog-style-control@Limitations and Future Work"
+      ]
+    },
+    {
+      "issue": "判定方差与评测预算",
+      "impact": "temperature=0 时 GPT-4-Turbo 仍会产生轻微不同的判定；受预算限制每个模型只完整评一次，官方建议用置信区间判断模型是否真的分开。",
+      "severity": "中",
+      "response": "官方在榜上给 95% CI，并提供 Separability with Confidence 与 Pair Rank Brier Score 衡量基准的可分性。",
+      "reader": "差距落在彼此置信区间内的两名模型不要硬排先后。",
+      "cite": [
+        "blog-arena-hard-2024@Variance in GPT-4 judgments",
+        "arxiv-2406-11939@§6.1",
+        "repo-arena-hard@Evaluate Benchmarks"
+      ]
+    },
+    {
+      "issue": "覆盖面缺口",
+      "impact": "不评多轮对话和非英文交互；7 项质量标准偏技术域，可能漏掉其他类型的难题；题库固定，靠发新版（v2.0）而不是滚动更新。",
+      "severity": "中",
+      "response": "v2.0 补了 250 道创意写作题；仓库保留旧榜单供回溯比较。",
+      "reader": "把它当「英文单轮开放问答」的偏好基准，不要外推到多轮、多语言或 agent 场景。",
+      "cite": [
+        "arxiv-2406-11939@§7",
+        "repo-arena-hard@News"
+      ]
+    },
+    {
+      "issue": "资产分散且快照缺日期",
+      "impact": "题目与预生成回答在 Hugging Face（3.31 GB），代码在 GitHub 且仓库已迁到 Arena-OSS/arena-hard-auto；v2.0-Preview 榜单页脚没有更新日期，旧榜单文件只标到「Updated: 11/14」且没有年份。",
+      "severity": "低",
+      "response": "本站 official_results 快照统一标注核对日期 2026-11-19。",
+      "reader": "引用榜上分数时带上「裁判 + 风格控制 + 题集」三要素和核对日期。",
+      "cite": [
+        "hf-arena-hard-auto",
+        "repo-arena-hard@Leaderboard",
+        "past-leaderboards"
+      ]
+    }
+  ],
+  "notes": "仓库 News 最后一条是 2025-04-23 的 v2.0；本站 2026-11-19 核对时未看到更新。",
   "official_sources": [
     {
       "kind": "site",
@@ -33,6 +406,14 @@
     {
       "kind": "paper",
       "url": "https://arxiv.org/abs/2406.11939"
+    },
+    {
+      "kind": "blog",
+      "url": "https://lmsys.org/blog/2024-04-19-arena-hard/"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/lmarena-ai/arena-hard-auto"
     }
   ],
   "related_benchmarks": [
@@ -42,6 +423,283 @@
     "ifeval",
     "wildbench"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-28"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-19",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-19",
+    "sources": [
+      {
+        "id": "arxiv-2406-11939",
+        "kind": "paper",
+        "title": "From Crowdsourced Data to High-Quality Benchmarks: Arena-Hard and BenchBuilder Pipeline（arXiv:2406.11939，v2，2024-10-14）",
+        "url": "https://arxiv.org/abs/2406.11939",
+        "accessed": "2026-11-19"
+      },
+      {
+        "id": "repo-arena-hard",
+        "kind": "repo",
+        "title": "lm-sys/arena-hard → Arena-OSS/arena-hard-auto（README、榜单、News 与 Evaluate Benchmarks）",
+        "url": "https://github.com/lm-sys/arena-hard",
+        "accessed": "2026-11-19"
+      },
+      {
+        "id": "blog-arena-hard-2024",
+        "kind": "blog",
+        "title": "Arena-Hard-Auto（LMSYS 博客，2024-04-19）",
+        "url": "https://lmsys.org/blog/2024-04-19-arena-hard/",
+        "accessed": "2026-11-19"
+      },
+      {
+        "id": "blog-style-control",
+        "kind": "blog",
+        "title": "Does style matter? Disentangling style and substance in Chatbot Arena（LMSYS 博客，2024-08-29）",
+        "url": "https://lmsys.org/blog/2024-08-28-style-control/",
+        "accessed": "2026-11-19"
+      },
+      {
+        "id": "past-leaderboards",
+        "kind": "docs",
+        "title": "Arena-Hard-Auto 旧榜单（past_leaderboards.md）",
+        "url": "https://raw.githubusercontent.com/lmarena/arena-hard-auto/main/misc/past_leaderboards.md",
+        "accessed": "2026-11-19"
+      },
+      {
+        "id": "hf-arena-hard-auto",
+        "kind": "dataset",
+        "title": "lmarena-ai/arena-hard-auto（Hugging Face，存放预生成回答与判定）",
+        "url": "https://huggingface.co/datasets/lmarena-ai/arena-hard-auto",
+        "accessed": "2026-11-19"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "UC Berkeley（LMSYS Org，现 LMArena）",
+        "cite": [
+          "arxiv-2406-11939@作者署名",
+          "blog-arena-hard-2024"
+        ]
+      },
+      "first_release": {
+        "v": "2024-04-19（LMSYS 博客首发 Arena-Hard-Auto-v0.1；arXiv v1 为 2024-06-17）",
+        "cite": [
+          "blog-arena-hard-2024",
+          "arxiv-2406-11939@提交历史"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "arxiv-2406-11939@Abstract",
+        "arxiv-2406-11939@§4.2",
+        "repo-arena-hard@About"
+      ],
+      "interpretation": [
+        "arxiv-2406-11939@§5",
+        "arxiv-2406-11939@§6.1",
+        "blog-arena-hard-2024@Table 1"
+      ]
+    },
+    "problem": {
+      "text": "Chatbot Arena 的人工两两投票最接近真实偏好，但每次评测要跑上千次人工对比，慢且贵；MT-Bench 这类固定问答基准又容易被刷到饱和、拉不开最强模型之间的差距。Arena-Hard-Auto 想用自动化手段拿到接近人工偏好的排名：题库从真实提问里自动筛，裁判用 LLM 代替人。",
+      "cite": [
+        "arxiv-2406-11939@Abstract",
+        "blog-arena-hard-2024",
+        "arxiv-2406-11939@Table 1"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "v0.1 基线（=50.0）",
+        "value": "50.0（gpt-4-0314）",
+        "note": "v0.1 官方用 gpt-4-0314 当基线模型做两两比较，基线自己在榜上就是 50.0。",
+        "cite": [
+          "blog-arena-hard-2024@Full Leaderboard with GPT-4-Turbo as judge",
+          "arxiv-2406-11939@§6.1"
+        ]
+      },
+      {
+        "label": "v0.1 发布时最好",
+        "value": "82.6（gpt-4-turbo-2024-04-09）",
+        "note": "gpt-4-1106-preview 当裁判、未开风格控制；官方脚注注明高分可能来自 GPT-4 裁判偏爱自家输出。",
+        "cite": [
+          "blog-arena-hard-2024@Full Leaderboard with GPT-4-Turbo as judge"
+        ]
+      },
+      {
+        "label": "v0.1 风格控制榜最高",
+        "value": "88.7（Llama-3.3-Nemotron-Super-49B-v1-Feedback-Edit-ITS）",
+        "note": "旧榜单文件（past_leaderboards）只标了「Updated: 11/14」，没有年份。",
+        "cite": [
+          "past-leaderboards"
+        ]
+      },
+      {
+        "label": "v2.0 官方配置榜最高",
+        "value": "85.9（o3-2025-04-16）",
+        "note": "Hard Prompt + Style Control + Gemini-2.5 裁判；页面未标注更新日期，本站于 2026-11-19 核对。",
+        "cite": [
+          "repo-arena-hard@Leaderboard"
+        ]
+      },
+      {
+        "label": "v2.0 创意写作配置最高",
+        "value": "90.8（gemini-2.5）",
+        "note": "Creative Writing + GPT-4.1/Gemini-2.5 Ensemble 裁判；另一套题、另一套裁判，不能和 hard prompt 榜混排。",
+        "cite": [
+          "repo-arena-hard@Leaderboard"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把不同裁判、不同题集的分数排进同一张榜——v2.0 的 hard prompt 榜和 creative writing 榜是两套题两套裁判，gemini-2.5 在两榜分别是 79.0 和 90.8。",
+        "cite": [
+          "repo-arena-hard@Leaderboard"
+        ]
+      },
+      {
+        "text": "以为 50.0 是「及格线」——50.0 是基线模型自身的胜率；v2.0 官方榜里 gpt-4.1、gpt-4.5-preview、o3-mini-2025-01-31 三行都是 50.0，仓库没有说明哪一个是基线。",
+        "cite": [
+          "repo-arena-hard@Leaderboard",
+          "arxiv-2406-11939@§6.1"
+        ]
+      },
+      {
+        "text": "把 98.6% 当成「和人工偏好几乎一致」的通用结论——98.6% 是「开了风格控制的 Arena-Hard-Auto」对「开了风格控制的 Chatbot Arena Hard Prompt」的结果；论文 Table 1 对全体 Chatbot Arena 英文榜的一致率是 90.9%。",
+        "cite": [
+          "arxiv-2406-11939@§6.3",
+          "arxiv-2406-11939@Table 1",
+          "arxiv-2406-11939@Table 3"
+        ]
+      },
+      {
+        "text": "只看题量判断基准质量——论文主张用 Separability with Confidence 这类带置信区间的指标，并明确指出 Spearman 不考虑方差、可能给出误导性的相关度。",
+        "cite": [
+          "arxiv-2406-11939@§3",
+          "blog-arena-hard-2024@Table 1"
+        ]
+      },
+      {
+        "text": "看到旧榜里 GPT-4-Turbo 82.6 就认为它当年最强——那是 GPT-4 裁判打出来的，官方自己标注了自偏可能；同一篇博客里换成 Claude 裁判时 Claude 家族分数普遍上升。",
+        "cite": [
+          "blog-arena-hard-2024@Full Leaderboard with GPT-4-Turbo as judge",
+          "blog-arena-hard-2024@GPT-4-Turbo or Claude as Judge?"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "UC Berkeley，LMSYS Org（现 LMArena）",
+        "cite": [
+          "arxiv-2406-11939@作者署名",
+          "blog-arena-hard-2024"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "Tianle Li、Wei-Lin Chiang、Evan Frick、Lisa Dunlap、Banghua Zhu、Joseph E. Gonzalez、Ion Stoica；arXiv v2 起加入 Tianhao Wu",
+        "cite": [
+          "arxiv-2406-11939@作者署名",
+          "blog-arena-hard-2024"
+        ]
+      },
+      {
+        "k": "配套论文",
+        "v": "《From Crowdsourced Data to High-Quality Benchmarks: Arena-Hard and BenchBuilder Pipeline》，arXiv:2406.11939，v1 2024-06-17、v2 2024-10-14",
+        "cite": [
+          "arxiv-2406-11939@提交历史",
+          "arxiv-2406-11939@版本行"
+        ]
+      },
+      {
+        "k": "聚类技术",
+        "v": "BERTopic + OpenAI text-embedding-3-small + UMAP + HDBSCAN，把 20 万条提问归成 4,000 多个主题簇",
+        "cite": [
+          "arxiv-2406-11939@§4.2",
+          "blog-arena-hard-2024@Arena-Hard Pipeline"
+        ]
+      },
+      {
+        "k": "建榜与评测成本",
+        "v": "论文 §4.3：在 20 万条提问上跑 BenchBuilder，用 GPT-4-Turbo 注释约 $500，换 Llama-3-70B-Instruct 注释约 $45；Table 1 记单次模型评测约 $20",
+        "cite": [
+          "arxiv-2406-11939@§4.3",
+          "arxiv-2406-11939@Table 1"
+        ]
+      },
+      {
+        "k": "仓库与旧榜迁移",
+        "v": "本站抓取的 github.com/lm-sys/arena-hard 页面给出的仓库地址是 github.com/Arena-OSS/arena-hard-auto；旧榜单文件迁到 lmarena/arena-hard-auto 的 misc/past_leaderboards.md",
+        "cite": [
+          "repo-arena-hard@Leaderboard",
+          "past-leaderboards"
+        ]
+      },
+      {
+        "k": "数据与预生成答案",
+        "v": "Hugging Face lmarena-ai/arena-hard-auto 存放 v0.1 与 v2.0-Preview 的预生成模型回答与判定，总体积 3.31 GB，上月下载 3,817 次（2026-11-19 核对）",
+        "cite": [
+          "hf-arena-hard-auto"
+        ]
+      },
+      {
+        "k": "指标与脚本",
+        "v": "仓库 show_result.py 支持 --control-features 跑风格控制；「Evaluate Benchmarks」一节给出三项基准质量指标的定义与 notebook",
+        "cite": [
+          "repo-arena-hard@Style Control",
+          "repo-arena-hard@Evaluate Benchmarks"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-19",
+        "columns": [
+          "排名",
+          "模型",
+          "分数 (%)",
+          "95% CI (%)"
+        ],
+        "rows": [
+          ["1", "o3-2025-04-16", "85.9", "(-0.8 / +0.9)"],
+          ["2", "o4-mini-2025-04-16-high", "79.1", "(-1.4 / +1.2)"],
+          ["3", "gemini-2.5", "79.0", "(-2.1 / +1.8)"],
+          ["4", "o4-mini-2025-04-16", "74.6", "(-1.8 / +1.6)"],
+          ["5", "gemini-2.5-flash", "68.6", "(-1.6 / +1.6)"],
+          ["6", "o3-mini-2025-01-31-high", "66.1", "(-1.5 / +2.1)"],
+          ["7", "o1-2024-12-17-high", "61.0", "(-2.0 / +2.1)"],
+          ["8", "claude-3-7-sonnet-20250219-thinking-16k", "59.8", "(-2.0 / +1.8)"],
+          ["9", "Qwen3-235B-A22B", "58.4", "(-1.9 / +2.1)"],
+          ["10", "deepseek-r1", "58.0", "(-2.2 / +2.0)"],
+          ["11", "o1-2024-12-17", "55.9", "(-2.2 / +1.8)"],
+          ["12", "gpt-4.5-preview", "50.0", "(-1.9 / +2.0)"],
+          ["13", "o3-mini-2025-01-31", "50.0", "(-0.0 / +0.0)"],
+          ["14", "gpt-4.1", "50.0", "(-1.9 / +1.7)"],
+          ["15", "gpt-4.1-mini", "46.9", "(-2.4 / +2.1)"],
+          ["16", "Qwen3-32B", "44.5", "(-2.2 / +2.1)"],
+          ["17", "QwQ-32B", "43.5", "(-2.5 / +2.1)"],
+          ["18", "Qwen3-30B-A3B", "33.9", "(-1.6 / +1.5)"],
+          ["19", "claude-3-5-sonnet-20241022", "33.0", "(-2.3 / +1.8)"],
+          ["20", "s1.1-32B", "22.3", "(-1.7 / +1.5)"],
+          ["21", "llama4-maverick-instruct-basic", "17.2", "(-1.5 / +1.2)"],
+          ["22", "Athene-V2-Chat", "16.4", "(-1.4 / +1.4)"],
+          ["23", "gemma-3-27b-it", "15.0", "(-1.4 / +1.0)"],
+          ["24", "Qwen3-4B", "15.0", "(-1.1 / +1.5)"],
+          ["25", "gpt-4.1-nano", "13.7", "(-1.1 / +1.0)"],
+          ["26", "Llama-3.1-Nemotron-70B-Instruct-HF", "10.3", "(-0.8 / +1.0)"],
+          ["27", "Qwen2.5-72B-Instruct", "10.1", "(-0.9 / +1.3)"],
+          ["28", "OpenThinker2-32B", "3.2", "(-0.3 / +0.3)"]
+        ]
+      },
+      "cite": [
+        "repo-arena-hard@Leaderboard"
+      ]
+    }
+  }
 }
