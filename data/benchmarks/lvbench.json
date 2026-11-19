@@ -1,30 +1,310 @@
 {
   "id": "lvbench",
   "name": "LVBench",
-  "full_name": null,
+  "full_name": "LVBench: An Extreme Long Video Understanding Benchmark（极端长视频理解基准）",
   "aliases": [],
-  "status": null,
+  "status": "active",
   "categories": [
     "multimodal"
   ],
-  "summary": "小时级超长视频理解问答（THUDM）",
-  "interpretation": "视频长度拉到 1 小时以上，考跨小时的信息记忆与检索，是 Video-MME 之后的更长档挑战。",
-  "measures": [],
-  "does_not_measure": [],
+  "summary": "LVBench 是智谱AI 与清华大学发布的超长视频理解基准：103 条平均 4,101 秒（约 68 分钟）的 YouTube 长视频、共 117 小时，配 1,549 道四选一题，考模型在小时级时间跨度上的实体识别、事件理解、关键信息检索、时间定位、推理与总结。",
+  "interpretation": "高分说明模型能在小时级视频里跨时段定位并提取关键信息，且不是靠语言捷径蒙对（论文用 0 帧对照实验验证过）；但它不说明模型能利用音频、能写开放式总结，也不覆盖两小时以上的视频。官方榜单把不同帧采样口径的模型放在同一张表里，跨行比分数前必须先核对 Frames 列。",
+  "measures": [
+    {
+      "area": "实体识别（ER）",
+      "focus": "在整条视频里识别并跟踪关键实体（人、物体、地点）及其关系与动作；示例题：为什么比赛中穿白色 4 号球员撞倒了穿紫色 17 号球员？",
+      "share": "43.6%",
+      "format": "四选一单选题",
+      "cite": [
+        "paper@Figure 2",
+        "paper@§3.2",
+        "paper@§3.4"
+      ]
+    },
+    {
+      "area": "事件理解（EU）",
+      "focus": "视频类型分类、重要事件检测与场景转换理解；论文未给出该类示例题",
+      "share": "41.9%",
+      "format": "四选一单选题",
+      "cite": [
+        "paper@Figure 2",
+        "paper@§3.2"
+      ]
+    },
+    {
+      "area": "关键信息检索（KIR）",
+      "focus": "提取视频中呈现的视觉文字、数值等精确信息；示例题：公司在会议上报告的收入增长率是多少？",
+      "share": "18.7%",
+      "format": "四选一单选题",
+      "cite": [
+        "paper@Figure 2",
+        "paper@§3.2"
+      ]
+    },
+    {
+      "area": "时间定位（TG）",
+      "focus": "在时间轴上定位事件、判断事件时长与先后顺序；示例题：29:30 发生了什么？",
+      "share": "14.2%",
+      "format": "四选一单选题",
+      "cite": [
+        "paper@Figure 2",
+        "paper@§3.2"
+      ]
+    },
+    {
+      "area": "推理（Rea）",
+      "focus": "因果理解、情绪理解、意图解读与未来预测；示例题：实验为什么失败？",
+      "share": "12.9%",
+      "format": "四选一单选题",
+      "cite": [
+        "paper@Figure 2",
+        "paper@§3.2"
+      ]
+    },
+    {
+      "area": "总结（Sum）",
+      "focus": "跨全片综合信息、提炼关键进展与核心主题；论文未给出该类示例题",
+      "share": "3.7%",
+      "format": "四选一单选题",
+      "cite": [
+        "paper@Figure 2",
+        "paper@§3.2"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "音频理解：论文 Limitations 明确说基准排除了音频数据，因为当时多数模型缺乏有效的音频处理能力。",
+      "cite": [
+        "paper@Limitations"
+      ]
+    },
+    {
+      "text": "开放式生成与长文总结质量：提示词要求模型直接输出选项字母、不要解释，全部题目都是四选一，不考自由生成。",
+      "cite": [
+        "paper@§4.1"
+      ]
+    },
+    {
+      "text": "「纯文本就能答对」的语言捷径题：这类题已在构建时被 GLM-4 与 GPT-4 的无视觉作答过滤掉，本基准不再测量语言偏见。",
+      "cite": [
+        "paper@§3.4"
+      ]
+    },
+    {
+      "text": "时间段定位精度：标注了每题的 clue duration（答题所需的最短视频片段），但官方指标只有准确率，没有报告定位重叠度之类的时间定位指标。",
+      "cite": [
+        "paper@§3.3",
+        "paper@Table 2"
+      ]
+    }
+  ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
+    "sample_count": 1549,
+    "splits": [
+      "单一评测集：1,549 题 / 103 条视频（附录 A.2 明确说不存在推荐的 train/val/test 划分，整个数据集只用于评测）"
+    ],
+    "languages": [
+      "未披露（论文与数据集卡均未声明问答语言；论文中的示例题为英文）"
+    ],
+    "source_type": "YouTube 公开视频 + 人工标注（雇佣专业标注员，附录 A.3：平均每条视频 30 美元）",
+    "public_sample": true,
+    "totals": "103 条视频共 117 小时，1,549 道四选一题（1 个正确选项 + 3 个干扰项），平均视频时长 4,101 秒（约 68 分钟）；六项能力标注占比合计超过 100%，因为一道题可同时考多种能力（共组合出 26 种细粒度题型）。",
+    "cite": [
+      "paper@Table 1",
+      "paper@§3.1",
+      "paper@§3.3",
+      "paper@附录 A.2",
+      "paper@附录 B"
+    ],
+    "construction": [
+      {
+        "k": "视频采集",
+        "text": "从 YouTube 的搜索与推荐算法出发，用覆盖 6 个大类的关键词（体育赛事、纪录片、事件记录、生活日常、电视剧、卡通动画）收集初始 500 条视频。",
+        "cite": [
+          "paper@§3.1"
+        ]
+      },
+      {
+        "k": "五条质量过滤",
+        "text": "按主角清晰可辨、叙事结构连贯、事件密度（平均每 5 分钟至少一个显著事件）、画面质量（最低 720p）、模态独立（关键信息必须走视觉通道）五条标准筛选，最终保留 103 条视频、共 117 小时。",
+        "cite": [
+          "paper@§3.1"
+        ]
+      },
+      {
+        "k": "三阶段标注",
+        "text": "阶段一标注员完整看片并标记显著事件、场景转换与关键实体；阶段二出题，题量随时长缩放（平均每小时 24 题）并须覆盖全部六项能力；阶段三构造 4 个选项（1 正确 + 3 干扰项，干扰项与正确项格式和长度相近），同时人工标注每题所需的 clue duration 起止时间戳。",
+        "cite": [
+          "paper@§3.3"
+        ]
+      },
+      {
+        "k": "质控一：压时间定位题",
+        "text": "发现标注员倾向把多数题标成时间定位型（靠给出时间范围限定指称）会降低难度，于是要求annotator 在保证指称唯一的前提下尽量减少时间型题目。",
+        "cite": [
+          "paper@§3.4"
+        ]
+      },
+      {
+        "k": "质控二：滤掉无视觉可答题",
+        "text": "用 GLM-4 和 GPT-4 在完全没有视觉输入的情况下分别作答全部题目；两个模型输出相同且都命中标准答案的题被剔除，过滤后得到 1,549 道题。",
+        "cite": [
+          "paper@§3.4"
+        ]
+      },
+      {
+        "k": "标注成本",
+        "text": "标注由受雇的专业标注员完成，报酬为平均每条视频 30 美元。",
+        "cite": [
+          "paper@附录 A.3"
+        ]
+      }
+    ]
   },
   "metrics": [
-    "accuracy"
+    {
+      "id": "accuracy",
+      "name": "准确率（Overall 与六项能力分项）",
+      "direction": "越高越好",
+      "description": "模型输出的选项字母与标准答案一致的题目占比；按 ER / EU / KIR / TG / Rea / Sum 六个能力分项与 Overall 总体分别报告，满分 100。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@Table 2",
+        "paper@§4.1"
+      ]
+    }
   ],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [],
-  "notes": "字节 Seed/Qwen 引用；THUDM 发布",
+  "default_protocol": {
+    "raw": "每题把问题和四个选项拼成固定提示词，要求模型从选项中直接输出代表所选答案的字母、不要给解释；拿到回答后先用正则表达式抽取答案，抽不到再用 LLM 抽取，最后按字母与标准答案比对算准确率。论文对 13 个不支持长视频的模型统一抽固定帧数（如 32 或 96 帧）送进去，对 13 个原生支持长视频的模型按每秒 1 帧送帧、超出模型处理能力再降采样。",
+    "cite": [
+      "paper@§4.1"
+    ],
+    "variants": [
+      {
+        "text": "帧采样口径：论文对非原生模型采 32/96 帧、对原生模型按 1 fps 送帧；官方榜单上同一个 GPT-4o 有三行不同帧数的结果（10 帧 27.0、60 帧 48.9、348 帧 30.8），帧数更多分数反而更低，跨行比较必须先核对 Frames 列。",
+        "cite": [
+          "paper@§4.1",
+          "site@Leaderboard"
+        ]
+      },
+      {
+        "text": "是否原生长视频支持：论文把参评模型分成「非原生」与「原生」两组分别列表；Gemini-1.5 Pro 虽能处理最长 10 小时的视频，但其公开接口限制为 1 小时以内，实际按 1 小时口径处理。",
+        "cite": [
+          "paper@§4.1"
+        ]
+      },
+      {
+        "text": "音频开关：基准本身不含音频轨道，支持音频的模型版本在本基准上体现不出该能力，分数只反映纯视觉口径。",
+        "cite": [
+          "paper@Limitations"
+        ]
+      },
+      {
+        "text": "答案抽取方式：正则匹配失败时改用 LLM 抽取答案，论文未披露该 LLM 的型号与提示词，复现时这一步会带来口径差异。",
+        "cite": [
+          "paper@§4.1"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2024-06-12",
+      "label": "arXiv v1 首发（官方仓库 News 写作 2024.06.11 发布）",
+      "cite": [
+        "arxiv@Submission history",
+        "repo@News"
+      ]
+    },
+    {
+      "id": "v2",
+      "date": "2024-10-23",
+      "label": "arXiv v2",
+      "cite": [
+        "arxiv@Submission history"
+      ]
+    },
+    {
+      "id": "v3",
+      "date": "2025-08-09",
+      "label": "arXiv v3（当前最新版，本档案核对所用版本）",
+      "cite": [
+        "arxiv@Submission history",
+        "paper"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "官方榜单口径不齐（帧数、模型版本、日期混排）",
+      "impact": "榜单把不同帧采样、不同发布日期的模型放在同一张表里排序：同为 GPT-4o，10 帧 27.0、60 帧 48.9、348 帧 30.8，帧数更多分数反而更低；榜首 Deep Video Discovery 的 Frames 列是「-」，未披露帧数。不核对 Frames 与 Date 列就直接排名会得出错误结论。",
+      "severity": "高",
+      "response": "榜单提供 Frames / LLM / Params / Date 列供核对；未见官方统一采样口径或要求提交方声明帧数的说明。",
+      "reader": "比较任何两个分数前先看 Frames 列与 Date 列；引用分数时把帧数口径一起写出来。",
+      "cite": [
+        "site@Leaderboard"
+      ]
+    },
+    {
+      "issue": "不含音频",
+      "impact": "论文 Limitations 明确排除音频数据，测不到解说、对白、音效等声音线索对长视频理解的贡献；带音频能力的模型也无法在本基准上体现。",
+      "severity": "中",
+      "response": "论文称未来工作会加入音频信息，以增强多模态理解的评估框架。",
+      "reader": "把 LVBench 分数当作纯视觉口径看待；需要音频口径时另找基准。",
+      "cite": [
+        "paper@Limitations"
+      ]
+    },
+    {
+      "issue": "视频不随数据集分发，依赖 YouTube 外部资源",
+      "impact": "数据集只提供 video_info.meta.jsonl 和下载脚本，原始视频需自行从 YouTube 下载；论文承认无法保证原视频长期不变，可能下架或被替换，直接影响可复现性。",
+      "severity": "中",
+      "response": "论文称已创建并存储视频副本，可在获得原视频作者许可后提供给数据集使用者；仓库提供 download.sh 脚本。",
+      "reader": "复现时记录视频 ID、下载日期与文件哈希；分数对不上时先核查视频版本是否变化。",
+      "cite": [
+        "paper@Limitations",
+        "repo@Download"
+      ]
+    },
+    {
+      "issue": "许可限制：仅限学术研究",
+      "impact": "数据集与原始视频按 CC-BY-NC-SA-4.0 授权，官方明确禁止任何形式的商业使用，且声明不拥有原始视频文件版权。",
+      "severity": "中",
+      "response": "官方在仓库与数据集卡中给出侵权联系方式，承诺收到请求后移除对应内容。",
+      "reader": "工业界选型或产品宣传不能把 LVBench 结果当作无限制公开基准引用，需先确认许可边界。",
+      "cite": [
+        "repo@License",
+        "dataset@License"
+      ]
+    },
+    {
+      "issue": "部分原生长视频模型的低分源于指令遵循失败而非理解失败",
+      "impact": "论文失败分析显示：提示词已把输出限制在四个选项内，Gemini-1.5 Pro 仍有 20.9% 的回答超出给定选项（如「以上选项都不对」），MovieChat 与 LWM 则强烈偏向选 A。这些模型的低分混杂了输出格式失败。",
+      "severity": "中",
+      "response": "论文用答案分布分析定位该现象，推测是缺少长视频指令数据；未见修改题目或调整评分规则的后续动作。",
+      "reader": "看到原生长视频模型分数异常低时，先分清是理解失败还是格式失败，再下结论。",
+      "cite": [
+        "paper@§4.3"
+      ]
+    },
+    {
+      "issue": "题量小、未报告统计精度",
+      "impact": "全部成绩只建立在 1,549 题、103 条视频上，论文未报告置信区间或多次运行的方差，同一模型的排名可能受单题波动影响。",
+      "severity": "低",
+      "response": "未见官方回应。",
+      "reader": "两个模型相差一两个百分点时不要当成稳定差距。",
+      "cite": [
+        "paper@附录 A.2"
+      ]
+    }
+  ],
+  "notes": "智谱AI / 清华大学发布；被 ByteDance Seed、Qwen 等发布引用",
   "official_sources": [
     {
       "kind": "github",
@@ -33,6 +313,14 @@
     {
       "kind": "paper",
       "url": "https://arxiv.org/abs/2406.08035"
+    },
+    {
+      "kind": "site",
+      "url": "https://lvbench.github.io/"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/THUDM/LVBench"
     },
     {
       "kind": "site",
@@ -48,8 +336,357 @@
     }
   ],
   "related_benchmarks": [
+    "longvideobench",
+    "mlvu",
+    "video-mme",
+    "egoschema",
+    "mvbench",
+    "tempcompass",
     "longbench"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-11",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-11",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "LVBench: An Extreme Long Video Understanding Benchmark（arXiv:2406.08035v3，2025-08-09）",
+        "url": "https://arxiv.org/abs/2406.08035",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "arxiv",
+        "kind": "paper",
+        "title": "arXiv:2406.08035 摘要页（含提交历史）",
+        "url": "https://arxiv.org/abs/2406.08035",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "zai-org/LVBench 仓库 README（THUDM/LVBench 重定向至此）",
+        "url": "https://github.com/THUDM/LVBench",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "dataset",
+        "kind": "dataset",
+        "title": "THUDM/LVBench（Hugging Face 数据集卡）",
+        "url": "https://huggingface.co/datasets/THUDM/LVBench",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "site",
+        "kind": "site",
+        "title": "LVBench 项目页 lvbench.github.io（含官方 Leaderboard）",
+        "url": "https://lvbench.github.io/",
+        "accessed": "2026-11-15"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "智谱AI（Zhipu AI）× 清华大学",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      "first_release": {
+        "v": "2024-06-12（arXiv v1；官方仓库 News 记载 2024.06.11 发布）",
+        "cite": [
+          "arxiv@Submission history",
+          "repo@News"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "paper@Abstract",
+        "paper@Table 1",
+        "paper@§3.1",
+        "paper@§3.2"
+      ],
+      "interpretation": [
+        "paper@§4.5",
+        "paper@Limitations",
+        "site@Leaderboard"
+      ]
+    },
+    "problem": {
+      "text": "此前的长视频基准视频仍然太短：Table 1 里 LongVideoBench 平均 473 秒、MovieChat-1K 564 秒、MoVQA 992 秒、Video-MME 1,018 秒，都在 10 分钟量级，考不了「持续数小时」的时间理解；LVBench 把长视频门槛定在 30 分钟以上，平均 4,101 秒，专测跨小时的长期记忆与信息检索。",
+      "cite": [
+        "paper@Table 1",
+        "paper@§3.1"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机猜测基线",
+        "value": "论文未给出",
+        "note": "每题四选一（1 正确 + 3 干扰项），等概率猜测为 25%；论文只在 0 帧对照实验里描述各模型「接近随机猜测」，没有报告随机基线的具体数字，本站也不推算。",
+        "cite": [
+          "paper@§3.3",
+          "paper@§4.5"
+        ]
+      },
+      {
+        "label": "论文发布时最好成绩",
+        "value": "67.4%",
+        "note": "Gemini-2.5-Pro（Table 2，按 1 fps 送帧）；同期 Seed1.5-VL-Thinking 64.6%、Seed1.5-VL 64.0%、GPT-4o-20241120 48.9%。",
+        "cite": [
+          "paper@Table 2"
+        ]
+      },
+      {
+        "label": "人类基线",
+        "value": "94.4%",
+        "note": "论文 Table 3 的人类平均准确率（体育 96.3 / 纪录片 89.8 / 事件记录 87.4 / 生活 98.4 / 电视剧 97.2 / 卡通 95.8），与当时最强模型相差约 27 个百分点。",
+        "cite": [
+          "paper@Table 3"
+        ]
+      },
+      {
+        "label": "官方榜单当前最高",
+        "value": "74.2%",
+        "note": "Deep Video Discovery（Microsoft，日期 2025-5-29，Frames 列为「-」，未披露帧数口径）。",
+        "cite": [
+          "site@Leaderboard"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      },
+      {
+        "label": "无视觉参考线",
+        "value": "论文未给出（0 帧条件下各模型接近随机猜测）",
+        "note": "0 帧对照实验用来验证题目不能靠语言捷径答对；论文没有给出 0 帧条件下的具体分数。",
+        "cite": [
+          "paper@§4.5"
+        ]
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把榜单上同一模型的不同帧数条目当成同一次评测来比：GPT-4o 在官网榜单上有 10 帧 27.0、60 帧 48.9、348 帧 30.8 三行，帧数更多分数反而更低。",
+        "cite": [
+          "site@Leaderboard"
+        ]
+      },
+      {
+        "text": "把 README 的「最长两小时」当成平均时长：论文 Table 1 给出的是平均 4,101 秒，最长视频时长论文未披露。",
+        "cite": [
+          "dataset@Introduce",
+          "paper@Table 1"
+        ]
+      },
+      {
+        "text": "以为视频随数据集一起发布：官方只提供 video_info.meta.jsonl 与下载脚本，原始视频需自行从 YouTube 下载。",
+        "cite": [
+          "repo@Download",
+          "paper@Limitations"
+        ]
+      },
+      {
+        "text": "把六项能力占比（43.6 / 41.9 / 18.7 / 14.2 / 12.9 / 3.7）当成互斥分类：合计超过 100%，因为一道题可同时考多种能力，共组合出 26 种细粒度题型。",
+        "cite": [
+          "paper@Figure 2",
+          "paper@附录 B"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "智谱AI（Zhipu AI）与清华大学；论文标注的通讯作者为 Xiaotao Gu、Shiyu Huang、Yuxiao Dong",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "Weihan Wang、Zehai He、Wenyi Hong、Yean Cheng、Xiaohan Zhang、Ji Qi、Ming Ding、Xiaotao Gu、Shiyu Huang、Bin Xu、Yuxiao Dong、Jie Tang",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2024-06-11/12 首次发布 → 2024.08.2（README 原文写法）上线 Hugging Face Spaces 排行榜 → 2024-10-23 arXiv v2 → 2025-08-09 arXiv v3",
+        "cite": [
+          "repo@News",
+          "arxiv@Submission history"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "数据集卡在 Hugging Face（THUDM/LVBench，只给 video_info.meta.jsonl 与下载脚本）；评测代码在 GitHub 仓库 scripts/test_acc.py；项目页 lvbench.github.io 挂官方榜单",
+        "cite": [
+          "repo@Download",
+          "repo@Get Evaluation Results",
+          "site"
+        ]
+      },
+      {
+        "k": "资助",
+        "v": "国家自然科学基金（62425601、62495063）与新基石科学基金会 XPLORER PRIZE",
+        "cite": [
+          "paper@Acknowledgments"
+        ]
+      },
+      {
+        "k": "标注方式",
+        "v": "受雇专业标注员在专用服务器下载视频后用标注平台人工标注，平均每条视频 30 美元；附录 A.2 说明不存在推荐的数据划分",
+        "cite": [
+          "paper@附录 A.3",
+          "paper@附录 A.2"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-11",
+        "columns": [
+          "来源",
+          "模型",
+          "ER (%)",
+          "EU (%)",
+          "KIR (%)",
+          "TG (%)",
+          "Rea (%)",
+          "Sum (%)",
+          "Overall (%)"
+        ],
+        "rows": [
+          [
+            "论文 Table 2",
+            "Gemini-2.5-Pro",
+            "64.5",
+            "67.5",
+            "72.8",
+            "65.9",
+            "66.5",
+            "58.6",
+            "67.4"
+          ],
+          [
+            "论文 Table 2",
+            "Seed1.5-VL-Thinking",
+            "65.4",
+            "63.4",
+            "68.0",
+            "53.6",
+            "63.7",
+            "46.6",
+            "64.6"
+          ],
+          [
+            "论文 Table 2",
+            "Seed1.5-VL",
+            "64.3",
+            "64.0",
+            "64.7",
+            "52.3",
+            "65.0",
+            "51.7",
+            "64.0"
+          ],
+          [
+            "论文 Table 2",
+            "MR.Video",
+            "59.8",
+            "57.4",
+            "71.4",
+            "58.8",
+            "57.7",
+            "50.0",
+            "60.8"
+          ],
+          [
+            "论文 Table 2",
+            "Gemini-2.5-Flash",
+            "55.2",
+            "55.5",
+            "63.8",
+            "52.7",
+            "55.5",
+            "44.8",
+            "56.7"
+          ],
+          [
+            "论文 Table 2",
+            "AdaReTaKe",
+            "53.0",
+            "50.7",
+            "62.2",
+            "45.5",
+            "54.7",
+            "37.9",
+            "53.3"
+          ],
+          [
+            "论文 Table 2",
+            "GPT-4o-20241120",
+            "48.9",
+            "49.5",
+            "48.1",
+            "40.9",
+            "50.3",
+            "50.0",
+            "48.9"
+          ],
+          [
+            "论文 Table 2",
+            "VideoLLaMA3-7B",
+            "45.8",
+            "42.4",
+            "47.8",
+            "35.9",
+            "45.8",
+            "36.2",
+            "45.3"
+          ],
+          [
+            "论文 Table 2",
+            "Qwen2.5-VL-72B",
+            "44.2",
+            "40.9",
+            "55.6",
+            "37.7",
+            "45.2",
+            "34.5",
+            "44.0"
+          ],
+          [
+            "论文 Table 2",
+            "TimeChat",
+            "21.9",
+            "21.7",
+            "25.9",
+            "22.7",
+            "25.0",
+            "24.1",
+            "22.3"
+          ],
+          [
+            "官网榜单",
+            "Deep Video Discovery",
+            "73.4",
+            "73.3",
+            "80.4",
+            "72.3",
+            "70.6",
+            "74.1",
+            "74.2"
+          ]
+        ]
+      },
+      "cite": [
+        "paper@Table 2",
+        "site@Leaderboard"
+      ]
+    }
+  }
 }
