@@ -1,47 +1,643 @@
 {
-  "id": "wildbench",
-  "name": "WildBench",
-  "full_name": null,
-  "aliases": [],
-  "status": null,
-  "categories": [
-    "preference"
-  ],
-  "summary": "真实用户难任务 1k 条，多 judge 聚合",
-  "interpretation": "真实用户难题 1000 条，多裁判聚合。卖点：任务真实性。",
-  "measures": [],
-  "does_not_measure": [],
-  "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
+ "id": "wildbench",
+ "name": "WildBench",
+ "full_name": "WildBench: Benchmarking LLMs with Challenging Tasks from Real Users in the Wild",
+ "aliases": [],
+ "status": "active",
+ "categories": [
+  "preference"
+ ],
+ "summary": "WildBench 是 AI2 的自动评测框架：从 WildChat 一百万余条真实人机对话里筛出 1,024 条英文难任务，每题配一份 5–10 问的检查清单交给 GPT-4-Turbo 当裁判——要么给单个回答打 1–10 分（WB-Score），要么与三个固定基线模型两两比（WB-Reward）。论文报告 WB-Reward 与 Chatbot Arena 困难题 Elo 的皮尔逊相关达到 0.98。",
+ "interpretation": "高分意味着模型在真实用户会问的多约束、长上下文任务上答得更完整，而且这个排名与人类投票的 Arena Elo（Hard-English 困难题）对得上。WB-Score 先减 5 再乘 2，5 分代表「勉强可接受」，所以 0 分附近是及格线，不是随机水平。它不说明模型知识更渊博、更安全或更会做 Agent 规划——论文把这些列为同等重要但不在本基准范围内的维度。",
+ "measures": [
+  {
+   "area": "信息寻求与建议（Info Seeking）",
+   "focus": "用户索取具体信息或事实，或征求个人与专业上的建议；论文把 Information seeking 与 Advice seeking 合并成这一组",
+   "share": "未披露（论文只列 12 类定义与 Figure 3 分布图，正文未给各类占比）",
+   "format": "给一段最多四轮的对话历史，生成下一轮回复",
+   "cite": [
+    "arxiv-2406-04770@附录 A",
+    "arxiv-2406-04770@§2.2"
+   ]
   },
-  "metrics": [],
-  "default_protocol": {
-    "raw": "GPT-4/Claude 双 judge + Elo"
+  {
+   "area": "编程与调试（Coding & Debugging）",
+   "focus": "写代码、审代码、修 bug；Figure 4 的示例题属于这一类：用户要一个能取「最后一个匹配值」的公式",
+   "share": "未披露（同上；论文只指出 AlpacaEval 与 ArenaHard 在该类占比过高，未给 WildBench 自身比例）",
+   "format": "同上",
+   "cite": [
+    "arxiv-2406-04770@附录 A",
+    "arxiv-2406-04770@Figure 4"
+   ]
   },
-  "versions": [],
-  "limitations": [],
-  "notes": null,
-  "official_sources": [
-    {
-      "kind": "site",
-      "url": "https://github.com/allenai/WildBench"
-    },
-    {
-      "kind": "paper",
-      "url": "https://arxiv.org/abs/2406.04770"
-    }
+  {
+   "area": "推理与规划（Reasoning & Planning）",
+   "focus": "需要逻辑思考、解决复杂问题的查询，以及帮忙制定活动与项目计划的请求",
+   "share": "未披露（同上）",
+   "format": "同上",
+   "cite": [
+    "arxiv-2406-04770@附录 A"
+   ]
+  },
+  {
+   "area": "数学与数据分析（Math & Data）",
+   "focus": "数学概念与计算，以及解读数据、统计或做分析型任务",
+   "share": "未披露（同上）",
+   "format": "同上",
+   "cite": [
+    "arxiv-2406-04770@附录 A"
+   ]
+  },
+  {
+   "area": "创意任务（Creative Tasks）",
+   "focus": "论文把剩余类别归到这一组；示例是写一篇关于 G20 峰会影响、要求 1,200 字以上的文章",
+   "share": "未披露（同上）",
+   "format": "同上",
+   "cite": [
+    "arxiv-2406-04770@附录 A",
+    "arxiv-2406-04770@§3.1"
+   ]
+  },
+  {
+   "area": "长上下文多轮对话",
+   "focus": "带最多四轮对话历史的任务，反映较长的人机交互；论文说 WildBench 的查询长度也比同类基准更长",
+   "share": "超过 20% 的样本轮数多于两轮（Figure 8）",
+   "format": "同上",
+   "cite": [
+    "arxiv-2406-04770@§2.2",
+    "arxiv-2406-04770@Table 1"
+   ]
+  }
+ ],
+ "does_not_measure": [
+  {
+   "text": "安全、公平、逻辑推理、Agent 规划、幻觉检测——论文明确把这些列为同等重要但不在本基准范围内的维度",
+   "cite": [
+    "arxiv-2406-04770@§5"
+   ]
+  },
+  {
+   "text": "非英文任务：构建时明确只保留英文数据并过滤掉非英文任务，数据集卡的语言字段也只有 English",
+   "cite": [
+    "arxiv-2406-04770@§2.1",
+    "hf-dataset-wildbench@数据集卡"
+   ]
+  },
+  {
+   "text": "内容审核：论文说重点在评能力而非内容审核，构建时直接移除了 toxic 对话",
+   "cite": [
+    "arxiv-2406-04770@§2.1"
+   ]
+  },
+  {
+   "text": "多模态与工具调用：1,024 条样本全是英文文本对话，论文与数据集卡都没有报告任何图像、音频或工具使用场景",
+   "cite": [
+    "arxiv-2406-04770@Table 1",
+    "hf-dataset-wildbench@数据集卡"
+   ]
+  }
+ ],
+ "dataset": {
+  "sample_count": 1024,
+  "splits": [
+   "test（Hugging Face 上 v1-legacy / v2 / v2-hard 三个配置都只有 test 切分）",
+   "论文另称对外提供公开验证集，同时保留一份永不公开的 WildChat 子集做防污染"
   ],
-  "related_benchmarks": [
-    "arena",
-    "mtbench",
-    "alpacaeval",
-    "ifeval",
-    "arenahard"
+  "languages": [
+   "en"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-28"
+  "source_type": "真实用户对话日志（AI2 WildChat 项目采集的人机对话）",
+  "public_sample": true,
+  "totals": "1,024 条英文任务（Hugging Face：v1-legacy 1,024 行、v2 1,024 行、v2-hard 256 行，合计 2,304 行，parquet 合计 7,778,986 字节）· 每条带一段最多四轮的对话历史，Table 1 记录的查询长度 978.5 字符、提示长度 3,402.1 字符 · 12 个任务类别（分析时合并为 5 组）· 公开在 Hugging Face",
+  "cite": [
+   "arxiv-2406-04770@§2.1",
+   "arxiv-2406-04770@Table 1",
+   "arxiv-2406-04770@附录 A",
+   "hf-dataset-size@/size",
+   "hf-dataset-wildbench@数据集卡"
+  ],
+  "construction": [
+   {
+    "k": "取数",
+    "text": "从 WildChat 的一百万条真实人机对话里筛：去掉短于 10 token 或长于 3,000 token 的请求，排除超过五轮的对话，只保留英文，移除 toxic 对话；再用 SentenceBERT 余弦相似度 >0.9 去重，每个设备只留最后一段对话。",
+    "cite": [
+     "arxiv-2406-04770@§2.1"
+    ]
+   },
+   {
+    "k": "挑难度",
+    "text": "用 GPT-4-Turbo、Claude-3-Sonnet 和 Opus 给任务打难度分，三个模型都判 very easy 或 easy 的直接剔除；从剩下池子里随机抽 1,500 条，使类别分布接近原数据集。",
+    "cite": [
+     "arxiv-2406-04770@§2.1"
+    ]
+   },
+   {
+    "k": "人工把关",
+    "text": "先用 GPT-4-Turbo 概括每条查询的意图，再让人工审稿据此删掉说不通的任务，最终保留 1,024 条；论文说还人工复核了任务确实有挑战性且覆盖多个类别。",
+    "cite": [
+     "arxiv-2406-04770@§2.1"
+    ]
+   },
+   {
+    "k": "防污染",
+    "text": "与 WildChat 团队协调，保证采样的任务不会出现在公开的 WildChat 数据集里；另外留一份永不公开的 WildChat 子集，对外提供公开验证集并公开构建流程。",
+    "cite": [
+     "arxiv-2406-04770@§2.1",
+     "arxiv-2406-04770@§5"
+    ]
+   },
+   {
+    "k": "生成检查清单",
+    "text": "每题由 GPT-4-Turbo 和 Claude-3-Opus 联合生成 5–10 个可解释、易核验的问题；论文说清单问题也经过人工核验，确保清晰、可解释、与评测相关。",
+    "cite": [
+     "arxiv-2406-04770@§3.1",
+     "repo-wildbench@README"
+    ]
+   },
+   {
+    "k": "许可与再发布",
+    "text": "论文附录 B 说数据按 AI2 ImpACT license 发布，Hugging Face 数据集卡写的是 CC BY（两者不一致，见局限）；数据集卡另附「不得用 WildChat 数据造成伤害」的使用限制。",
+    "cite": [
+     "arxiv-2406-04770@附录 B",
+     "hf-dataset-wildbench@数据集卡"
+    ]
+   }
+  ]
+ },
+ "default_protocol": {
+  "raw": "每题先让 GPT-4-Turbo 与 Claude-3-Opus 生成检查清单，再由 GPT-4-Turbo 当裁判：WB-Score 按清单给回答打 1–10 分后取平均并按 (S−5)×2 重标定；WB-Reward 让裁判在受评模型与三个固定基线（GPT-4-Turbo-0429、Claude-3-Haiku、Llama-2-70B-chat）之间做五档判断，Mix 版取三个基线的平均。胜者比败者长 K 字符时把「略胜/略负」降级为平局，K=500 相关性最好，K=∞ 关闭惩罚。",
+  "cite": [
+   "arxiv-2406-04770@§3.1",
+   "arxiv-2406-04770@§3.2",
+   "arxiv-2406-04770@§3.3",
+   "arxiv-2406-04770@§4.3",
+   "repo-wildbench@README"
+  ],
+  "variants": [
+   {
+    "text": "K 的取值（100/200/500/1000/∞）：论文发现 K=500 与人类判断相关性最高，K=∞ 等于关闭长度惩罚；Table 2 报告的就是无长度惩罚口径，榜单网页可自定义 K。",
+    "cite": [
+     "arxiv-2406-04770@§3.2",
+     "arxiv-2406-04770@§4.3",
+     "arxiv-2406-04770@Table 3"
+    ]
+   },
+   {
+    "text": "用哪个基线算 WB-Reward：论文分别报告 GPT4T / Haiku / Llama2 三个单基线版本和取平均的 Mix 版，并说用 Haiku 当基线相关性最好（P-Cortop 0.985），Mix 版 0.984。",
+    "cite": [
+     "arxiv-2406-04770@§4.2",
+     "arxiv-2406-04770@Table 3"
+    ]
+   },
+   {
+    "text": "成本与速度：论文说 WB-Score 约 10 分钟、约 5 美元一个模型，WB-Reward 因为要跑三个基线贵 3–4 倍；两者用同一批题目和清单，官方榜单两个都报。",
+    "cite": [
+     "arxiv-2406-04770@§4.3",
+     "repo-wildbench@README"
+    ]
+   }
+  ]
+ },
+ "metrics": [
+  {
+   "id": "wb-reward-mix",
+   "name": "WB-Reward-Mix",
+   "direction": "越高越好",
+   "description": "受评模型与三个固定基线模型两两比较后的平均奖励，在 1,024 题上取平均。论文口径为 +1/+0.5/0/−0.5/−1，仓库 README 把同一套判断记作 100/50/0/−50/−100（两种刻度不一致，见局限）。",
+   "range": [
+    -100,
+    100
+   ],
+   "unit": "point",
+   "cite": [
+    "arxiv-2406-04770@§3.2",
+    "repo-wildbench@README"
+   ]
+  },
+  {
+   "id": "wb-score",
+   "name": "WB-Score",
+   "direction": "越高越好",
+   "description": "GPT-4-Turbo 按检查清单给单个回答打 1–10 分，全集平均后按 (S−5)×2 重标定；5 分代表勉强可接受的回答。",
+   "range": [
+    -8,
+    10
+   ],
+   "unit": "point",
+   "cite": [
+    "arxiv-2406-04770@§3.3",
+    "repo-wildbench@README"
+   ]
+  },
+  {
+   "id": "wb-reward-single",
+   "name": "WB-Reward（单基线）",
+   "direction": "越高越好",
+   "description": "与单一基线模型比较的 WB-Reward，论文分别报告 GPT4T / Haiku / Llama2 三个单基线版本。",
+   "range": [
+    -100,
+    100
+   ],
+   "unit": "point",
+   "cite": [
+    "arxiv-2406-04770@§3.2",
+    "arxiv-2406-04770@Table 3"
+   ]
+  },
+  {
+   "id": "wb-elo",
+   "name": "WB-Elo",
+   "direction": "越高越好",
+   "description": "附录 F 引入的榜单指标：把 WB-Reward 与 WB-Score 转成一批评比，在已有 LMSYS Elo 上做 Elo 更新，用于更快更稳地刷新榜单；论文未给出该指标的取值范围定义。",
+   "range": null,
+   "unit": "Elo 分",
+   "cite": [
+    "arxiv-2406-04770@附录 F"
+   ]
+  }
+ ],
+ "limitations": [
+  {
+   "issue": "官方口径与仓库口径不一致（WB-Reward 刻度）",
+   "impact": "论文 §3.2 把五档判断记成 +1/+0.5/0/−0.5/−1，仓库 README 记成 100/50/0/−50/−100。同一批结果换口径读数字差 100 倍，引用时不说明出处会被当成两个指标。",
+   "severity": "中",
+   "response": "论文与仓库同时在线，未见一方更新对齐；本档案在指标描述里并列两种刻度。",
+   "reader": "看到 WB-Reward 数值先确认是论文刻度还是仓库刻度，别把 35.7 和 3,570 混为一谈。",
+   "cite": [
+    "arxiv-2406-04770@§3.2",
+    "repo-wildbench@README"
+   ]
+  },
+  {
+   "issue": "许可声明自相矛盾",
+   "impact": "论文附录 B 说数据按 AI2 ImpACT license 发布，Hugging Face 数据集卡写的是 CC BY。想复用数据做产品的人拿不到一致答案。",
+   "severity": "中",
+   "response": "论文另附「数据出问题由作者担责」的声明，数据集卡另附 Ai2 Responsible Use Guidelines；未见单一声明覆盖两者。",
+   "reader": "要商用或再分发前，以 Hugging Face 数据集卡条款为准并联系 AI2 确认。",
+   "cite": [
+    "arxiv-2406-04770@附录 B",
+    "hf-dataset-wildbench@数据集卡"
+   ]
+  },
+  {
+   "issue": "WB-Score 相关性数字两处不一致",
+   "impact": "§4.3 正文说带检查清单的 WB-Score 皮尔逊相关是 0.925，Table 3 里同一行写 0.940；引用哪个数字会直接影响「和 ArenaHard 谁更准」的结论。",
+   "severity": "中",
+   "response": "论文未说明哪个是最终值；Table 3 是相关性总表，正文是消融实验叙述。",
+   "reader": "做指标选型时按 Table 3 读，并注明存在 0.925 / 0.940 两个数字。",
+   "cite": [
+    "arxiv-2406-04770@§4.3",
+    "arxiv-2406-04770@Table 3"
+   ]
+  },
+  {
+   "issue": "单裁判加固定静态题集",
+   "impact": "整套指标依赖 GPT-4-Turbo 当裁判，论文过多裁判（GPT-4、Claude 3 Opus、Mistral-Large）后认为排名影响很小并推荐单裁判，但这仍是自我偏好风险；同时 1,024 条题集自 2024 年起未随模型能力扩容。",
+   "severity": "中",
+   "response": "论文用检查清单缓解自评偏差并保留一份永不公开的 WildChat 子集，官方榜单持续更新模型，但题目本身未见扩容。",
+   "reader": "把它当成 2024 年前后任务分布上的一个参照点，别当成随模型进步自动更新的活基准；跨年份比较要先确认是不是同一批 1,024 题。",
+   "cite": [
+    "arxiv-2406-04770@§3.1",
+    "arxiv-2406-04770@§4.3",
+    "arxiv-2406-04770@§5"
+   ]
+  },
+  {
+   "issue": "版本时间对不上",
+   "impact": "论文 §2.1 自述 V1 在 2024 年 3 月、V2 在 2024 年 5 月发布，arXiv 提交史是 v1 2024-06-07、v2 2024-10-05；引用「首发时间」时两边会差几个月。",
+   "severity": "低",
+   "response": "论文未解释差异；本档案以 arXiv 提交史作为可核验日期，同时保留论文自述。",
+   "reader": "引用 WildBench 的发布时间时，说明用的是 arXiv 时间戳还是论文自述。",
+   "cite": [
+    "arxiv-2406-04770@§2.1",
+    "arxiv-2406-04770@提交史"
+   ]
+  },
+  {
+   "issue": "无人类基线上限",
+   "impact": "论文报告的是与 Chatbot Arena Elo 的相关性，没有给出人类在 WildBench 上的得分，也没有公布题目错误率审计。",
+   "severity": "低",
+   "response": "论文未披露人类在 WildBench 上的表现。",
+   "reader": "不要把 WB-Score 的高分直接理解为「接近人类水平」。",
+   "cite": [
+    "arxiv-2406-04770@§4.2"
+   ]
+  }
+ ],
+ "versions": [
+  {
+   "date": "2024-06-07",
+   "label": "arXiv v1 提交（论文自述 V1 发布于 2024 年 3 月，两者不一致）",
+   "cite": [
+    "arxiv-2406-04770@提交史",
+    "arxiv-2406-04770@§2.1"
+   ]
+  },
+  {
+   "date": "2024-10-05",
+   "label": "arXiv v2（当前版本；论文自述 V2 发布于 2024 年 5 月）",
+   "cite": [
+    "arxiv-2406-04770@提交史",
+    "arxiv-2406-04770@§2.1"
+   ]
+  },
+  {
+   "date": "2025-12-23",
+   "label": "Hugging Face WildBench Collection 更新，提供 v1-legacy / v2 / v2-hard 三个配置",
+   "cite": [
+    "hf-dataset-wildbench@数据集卡",
+    "hf-dataset-size@/size"
+   ]
+  }
+ ],
+ "content_status": "reviewed",
+ "last_verified_at": "2026-11-14",
+ "official_sources": [
+  {
+   "kind": "repo",
+   "url": "https://github.com/allenai/WildBench"
+  },
+  {
+   "kind": "paper",
+   "url": "https://arxiv.org/abs/2406.04770"
+  },
+  {
+   "kind": "dataset",
+   "url": "https://huggingface.co/datasets/allenai/WildBench"
+  },
+  {
+   "kind": "docs",
+   "url": "https://huggingface.co/spaces/allenai/WildBench"
+  }
+ ],
+ "related_benchmarks": [
+  "arena",
+  "mtbench",
+  "alpacaeval",
+  "ifeval",
+  "arenahard"
+ ],
+ "notes": null,
+ "profile": {
+  "template": "benchmark-profile/v2",
+  "verified_at": "2026-11-14",
+  "sources": [
+   {
+    "id": "arxiv-2406-04770",
+    "kind": "paper",
+    "title": "WildBench: Benchmarking LLMs with Challenging Tasks from Real Users in the Wild（arXiv v2）",
+    "url": "https://arxiv.org/abs/2406.04770",
+    "accessed": "2026-11-14"
+   },
+   {
+    "id": "repo-wildbench",
+    "kind": "repo",
+    "title": "allenai/WildBench 仓库 README",
+    "url": "https://github.com/allenai/WildBench",
+    "accessed": "2026-11-14"
+   },
+   {
+    "id": "hf-dataset-wildbench",
+    "kind": "dataset",
+    "title": "Hugging Face 数据集卡 allenai/WildBench",
+    "url": "https://huggingface.co/datasets/allenai/WildBench",
+    "accessed": "2026-11-14"
+   },
+   {
+    "id": "hf-dataset-size",
+    "kind": "dataset",
+    "title": "Hugging Face datasets-server size 接口 allenai/WildBench",
+    "url": "https://datasets-server.huggingface.co/size?dataset=allenai%2FWildBench",
+    "accessed": "2026-11-14"
+   }
+  ],
+  "header": {
+   "publisher": {
+    "v": "Allen Institute for AI（AI2）",
+    "cite": [
+     "arxiv-2406-04770@附录 B"
+    ]
+   },
+   "first_release": {
+    "v": "2024-06-07（arXiv v1 提交日；论文自述 V1 发布于 2024 年 3 月）",
+    "cite": [
+     "arxiv-2406-04770@提交史",
+     "arxiv-2406-04770@§2.1"
+    ]
+   }
+  },
+  "cites": {
+   "summary": [
+    "arxiv-2406-04770@摘要",
+    "arxiv-2406-04770@§2.1",
+    "repo-wildbench@README"
+   ],
+   "interpretation": [
+    "arxiv-2406-04770@§3.3",
+    "arxiv-2406-04770@§4.2",
+    "arxiv-2406-04770@§5"
+   ]
+  },
+  "problem": {
+   "text": "MMLU 这类多选题基准测不到真实用户提出的开放式问题；Chatbot Arena 靠人投票又贵又慢；已有的自动替代品任务分布失衡——AlpacaEval 只有 6% 编程和 3% 数学，ArenaHard 超过 57% 是编程调试。WildBench 想用便宜可复现的自动裁判，在贴近真实分布的任务上重现人类排序。",
+   "cite": [
+    "arxiv-2406-04770@§1",
+    "arxiv-2406-04770@§2.2"
+   ]
+  },
+  "ladder": [
+   {
+    "label": "三个基线中最弱（Llama-2-70B-chat）",
+    "value": "Mix −26.8 · WB-Score 39.2 · WB-Elo 1070",
+    "note": "论文 Table 2 里三个固定基线中最弱的一个，所有受评模型都以它为下界参照。",
+    "cite": [
+     "arxiv-2406-04770@Table 2"
+    ]
+   },
+   {
+    "label": "论文报告的最弱模型（Gemma-2B-it）",
+    "value": "Mix −74.1 · WB-Score 6.2 · WB-Elo 980",
+    "note": "Table 2 中 40 个模型的末位，可当分数下界参考。",
+    "cite": [
+     "arxiv-2406-04770@Table 2"
+    ]
+   },
+   {
+    "label": "论文报告的最好模型（GPT-4o-0513）",
+    "value": "Mix 35.7 · WB-Score 65.3 · WB-Elo 1293",
+    "note": "Table 2 子集榜单第 1 名；Elo 取 Hard-English 2024-05-20，无长度惩罚口径。",
+    "cite": [
+     "arxiv-2406-04770@Table 2",
+     "arxiv-2406-04770@§4.2"
+    ]
+   },
+   {
+    "label": "官方实时榜单当前最高",
+    "value": "未披露",
+    "note": "官方实时榜单在 Hugging Face Spaces allenai/WildBench；论文附录 F 只给出 2024-06-05 与 2024-09-01 两个时点的全量榜单，本站未抓取榜单快照，不代填。",
+    "cite": [
+     "arxiv-2406-04770@附录 F"
+    ]
+   },
+   {
+    "label": "本站账本当前最高",
+    "auto": "ledger-top"
+   }
+  ],
+  "misreadings": [
+   {
+    "text": "把 WB-Score 当成百分制准确率：它是 1–10 分减 5 再乘 2，5 分只是「勉强可接受」，0 分附近是及格线。",
+    "cite": [
+     "arxiv-2406-04770@§3.3"
+    ]
+   },
+   {
+    "text": "把 WB-Reward 的数字当成胜率：论文记 +1/+0.5/0/−0.5/−1，仓库 README 记 100/50/0/−50/−100，两者是同一套判断的不同刻度。",
+    "cite": [
+     "arxiv-2406-04770@§3.2",
+     "repo-wildbench@README"
+    ]
+   },
+   {
+    "text": "以为 WildBench 测的是长上下文极限：它只带最多四轮对话历史，论文说它「反映更长的人机交互」，但并没有把上下文推到模型窗口上限。",
+    "cite": [
+     "arxiv-2406-04770@§2.2"
+    ]
+   },
+   {
+    "text": "以为榜单上所有模型都用同一套长度惩罚：Table 2 报的是无长度惩罚口径，K 可由用户在榜单网页自定义，K=500 才是论文推荐值。",
+    "cite": [
+     "arxiv-2406-04770@§3.2",
+     "arxiv-2406-04770@§4.3"
+    ]
+   }
+  ],
+  "background": [
+   {
+    "k": "发布方",
+    "v": "Allen Institute for AI（AI2）",
+    "cite": [
+     "arxiv-2406-04770@附录 B"
+    ]
+   },
+   {
+    "k": "核心作者",
+    "v": "Bill Yuchen Lin、Yuntian Deng、Khyathi Chandu、Faeze Brahman、Abhilasha Ravichander、Valentina Pyatkin、Nouha Dziri、Ronan Le Bras、Yejin Choi",
+    "cite": [
+     "arxiv-2406-04770@提交史"
+    ]
+   },
+   {
+    "k": "数据来源",
+    "v": "AI2 WildChat 项目采集的真实用户对话；数据集卡注明 WildBench 是 WildChat 的子集，禁止用 WildChat 数据造成伤害",
+    "cite": [
+     "arxiv-2406-04770@§2.1",
+     "hf-dataset-wildbench@数据集卡"
+    ]
+   },
+   {
+    "k": "时间线",
+    "v": "2024-06-07 arXiv v1 → 2024-10-05 arXiv v2（论文自述 V1/V2 分别在 2024 年 3 月与 5 月发布）→ 论文附录 F 的全量榜单截至 2024-06-05 与 2024-09-01 → Hugging Face 数据集 Collection 更新于 2025-12-23",
+    "cite": [
+     "arxiv-2406-04770@提交史",
+     "arxiv-2406-04770@§2.1",
+     "arxiv-2406-04770@附录 F",
+     "hf-dataset-wildbench@数据集卡"
+    ]
+   },
+   {
+    "k": "评测成本",
+    "v": "WB-Score 约 10 分钟、约 5 美元一个模型；WB-Reward 因要跑三个基线贵 3–4 倍；论文共评了 40 个 LLM",
+    "cite": [
+     "arxiv-2406-04770@§4.3",
+     "arxiv-2406-04770@§6"
+    ]
+   },
+   {
+    "k": "数据与代码",
+    "v": "数据在 Hugging Face allenai/WildBench（v1-legacy / v2 / v2-hard）；评测与生成脚本在 GitHub allenai/WildBench；实时榜单在 Hugging Face Spaces allenai/WildBench",
+    "cite": [
+     "hf-dataset-wildbench@数据集卡",
+     "arxiv-2406-04770@附录 C",
+     "arxiv-2406-04770@附录 F",
+     "repo-wildbench@README"
+    ]
+   }
+  ],
+  "official_results": {
+   "table": {
+    "as_of": "2024-05-20",
+    "columns": [
+     "来源",
+     "模型",
+     "WB-Reward Mix",
+     "WB-Score",
+     "WB-Elo",
+     "口径"
+    ],
+    "rows": [
+     [
+      "论文 Table 2",
+      "GPT-4o-0513",
+      "35.7",
+      "65.3",
+      "1293",
+      "Elo 取 Hard-English 2024-05-20；无长度惩罚"
+     ],
+     [
+      "论文 Table 2",
+      "GPT-4-Turbo-0409",
+      "34.6",
+      "64.7",
+      "1251",
+      "同上"
+     ],
+     [
+      "论文 Table 2",
+      "Claude 3 Opus",
+      "20.1",
+      "63.1",
+      "1232",
+      "同上"
+     ],
+     [
+      "论文 Table 2",
+      "Llama-3-70B-Inst",
+      "21",
+      "60.4",
+      "1213",
+      "同上"
+     ],
+     [
+      "论文 Table 2",
+      "Claude 3 Haiku",
+      "-8.5",
+      "50.4",
+      "1169",
+      "同上；三个基线之一"
+     ],
+     [
+      "论文 Table 2",
+      "Llama-2-70B-chat",
+      "-26.8",
+      "39.2",
+      "1070",
+      "同上；三个基线之一"
+     ],
+     [
+      "论文 Table 2",
+      "Gemma-2B-it",
+      "-74.1",
+      "6.2",
+      "980",
+      "同上；40 个模型中的末位"
+     ]
+    ]
+   },
+   "cite": [
+    "arxiv-2406-04770@Table 2",
+    "arxiv-2406-04770@§4.2"
+   ]
+  }
+ }
 }
