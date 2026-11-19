@@ -1,56 +1,172 @@
 {
   "id": "graphwalks",
   "name": "GraphWalks",
-  "full_name": "GraphWalks: a multi hop reasoning long context benchmark",
+  "full_name": "GraphWalks: a multi hop reasoning long context benchmark（多跳长上下文图推理基准）",
   "aliases": ["Graphwalks"],
-  "status": null,
-  "categories": [
-    "longctx"
-  ],
-  "summary": "OpenAI 出品的长上下文多跳图推理基准：在有向边列表上执行 BFS / parents 操作，含 128K 与 1M 上下文档",
-  "interpretation": "在有向边表上执行 BFS/parents 操作（128K 与 1M 上下文档），按返回集合的 F1 计分（0-100，越高越好）；同一模型在不同上下文档位的 F1 差直接反映长上下文多跳推理衰减。",
+  "status": "active",
+  "categories": ["longctx"],
+  "summary": "OpenAI 2025 年 4 月发布的合成基准：把一张有向图（节点用十六进制哈希命名）的边列表填满上下文窗口，要求模型从指定节点做广度优先搜索（BFS）或列出所有父节点，按返回节点集合的 F1 计分，分 128K 以下与 1M 上下文档。",
+  "interpretation": "F1 高说明模型能在超长上下文里跨多个位置聚合信息并精确列出结果集合；它不说明模型能读懂自然语言长文档，也不等于任务级准确率——漏报一个节点和多报一个节点都扣分，且 Anthropic 改过空集计分与 BFS 提示词，跨来源分数不能直接比。",
   "measures": [
-    "超长上下文中的多跳图遍历推理",
-    "跨全上下文多点聚合（而非单点大海捞针）",
-    "答案集合的精确性"
+    {
+      "area": "广度优先搜索（BFS）",
+      "focus": "从随机节点出发按深度遍历图，只返回恰好处于指定深度 N 的节点。示例提示词（数据集卡原文）：if asked for a breadth-first search (bfs), only return the nodes that are reachable at that depth, do not return the starting node。图与答案中的节点均以十六进制哈希表示。",
+      "share": "未披露（数据集卡只按 problem_type 标为 bfs 或 parents，未公布两类题量占比）",
+      "format": "节点 id 列表，与标准答案集合比对后算 F1",
+      "cite": ["hf-graphwalks@示例提示词", "hf-graphwalks@Data schema"]
+    },
+    {
+      "area": "parents（父节点查询）",
+      "focus": "给定一个节点，返回所有有边指向它的节点，且不能把给定节点本身算进去。示例提示词（数据集卡原文）：if asked for the parents of a node, only return the nodes that have an edge leading to the given node, do not return the given node itself。",
+      "share": "未披露（同上，两类题量占比未公布）",
+      "format": "节点 id 列表，与标准答案集合比对后算 F1",
+      "cite": ["hf-graphwalks@示例提示词"]
+    }
   ],
   "does_not_measure": [
-    "自然语言长文档理解",
-    "真实语料问答",
-    "代码仓库长上下文"
+    {
+      "text": "自然语言长文档的理解与检索——OpenAI 把它定位为对 MRCR 的补充，任务语料是程序生成的有向边列表。",
+      "cite": ["openai-index-gpt-4-1@Long context 段"]
+    },
+    {
+      "text": "带工具的 agentic 能力——固定为单轮、无系统提示、无工具；Epoch AI 指出开放工具会把被测能力从「长上下文处理」变成「跑 BFS/parents 算法的能力」。",
+      "cite": ["epoch-review@评测设置", "epoch-review@工具限制"]
+    },
+    {
+      "text": "任务级准确率——分数是集合级 F1，不是「做对多少题」的比例。",
+      "cite": ["epoch-review@评分", "epoch-review@分数解读"]
+    }
   ],
   "dataset": {
     "sample_count": 1150,
     "splits": ["128k 及更短", "1m"],
-    "source_type": "synthetic",
     "languages": ["en"],
-    "public_sample": true
+    "source_type": "synthetic",
+    "public_sample": true,
+    "totals": "共 1,150 题、319 MB；其中 >128K 档 400 题（256K 与 1M 上下文各 200 题），其余题在 128K 及以下。输入 2,709–1,748,364 字符（中位数 110,284）；图规模 44–69,867 条边、9–69,867 个节点；答案 0–6,943 个节点；BFS 深度 1–39。",
+    "cite": ["hf-graphwalks@数据集统计", "epoch-review@任务规模"],
+    "construction": [
+      {
+        "k": "任务形态",
+        "text": "模型拿到一份有向边列表形式的图（节点用十六进制哈希命名，所有节点度数至少为 1）和一段操作说明，返回操作结果的节点集合。",
+        "cite": ["hf-graphwalks@示例提示词"]
+      },
+      {
+        "k": "题型",
+        "text": "problem_type 只有两类：bfs（广度优先搜索）或 parents（父节点查询）。",
+        "cite": ["hf-graphwalks@Data schema"]
+      },
+      {
+        "k": "提示结构",
+        "text": "数据集卡写的是「a 3-shot example followed by the graph and the operation to be performed」；Epoch AI 复核发现实际每条 prompt 是 4-shot（两类各 2 个示例）。",
+        "cite": ["hf-graphwalks@Data schema", "epoch-review@提示结构"]
+      },
+      {
+        "k": "答题设置",
+        "text": "单轮、无系统提示、无工具；Epoch AI 记录的复现口径是 1M-token 上下文输入、最多 128k 输出 token、不做压缩。",
+        "cite": ["epoch-review@评测设置"]
+      },
+      {
+        "k": "发布与修正",
+        "text": "2025-04-12 首次发布；2026-02-27 修复生成 bug：graphwalks_128k_and_shorter.parquet 里 24/400 条 parents 样本的 ground truth 误含根节点，同时把 BFS 提示改成「只返回恰好处于目标深度的节点」。数据集卡致谢 Claude Opus 4.6 系统卡指出 parents 样本问题。",
+        "cite": ["hf-graphwalks@changelog"]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "把 prompt 直接作为 user message 发给模型（无系统提示、无工具、单轮），从回答里抽取节点 id 集合，与标准答案集合算 F1。数据集卡给出的计分代码：recall = n_overlap / n_golden、precision = n_overlap / n_sampled，f1 = 2 * (recall * precision) / (recall + precision)（recall + precision 为 0 时记 0）；当标准答案与预测都为空时记 recall = precision = f1 = 1.0。",
+    "cite": ["hf-graphwalks@Extraction and Grading", "epoch-review@评测设置"],
+    "variants": [
+      {
+        "text": "上下文档位不能混比：OpenAI 在博客附录 A 分别报告 BFS / parents × <128k / >128k 四个数，Epoch AI 指出 BFS <128k 是最常被引用的那一档。",
+        "cite": ["openai-index-gpt-4-1@附录 A · Long context evals 表", "epoch-review@OpenAI 报告的四个数"]
+      },
+      {
+        "text": "Anthropic 自行改了三处评测：空集 ground truth 的 F1 由 0 改为 1.0、删掉 24 条因自环而误标的 parents 样本的 target node、把 BFS 提示改成「恰好深度 N（不是到 N 为止）」。其 1M 变体还靠内部设置突破 1M API token 上限才能跑。",
+        "cite": ["opus46-card@§2.18.2"]
+      },
+      {
+        "text": "Anthropic 表里的「256K subset of 1M」是从 1M 题里筛出能在 1M token 限制内复现的子集（对 GraphWalks 1M 实际等于选 256k 长度的题），与 OpenAI 的 <128K 档不是同一批题，且该行来自 Anthropic 内部评测。",
+        "cite": ["opus46-card@Table 2.18.A 注"]
+      },
+      {
+        "text": "指标单位：OpenAI 表格以百分数报告（61.7%），而数据集卡与 Epoch AI 描述的 F1 范围是 0–1。",
+        "cite": ["openai-index-gpt-4-1@Long context 段", "epoch-review@评分"]
+      }
+    ]
   },
   "metrics": [
     {
       "id": "f1",
-      "name": "Precision / Recall F1",
+      "name": "集合 F1（Precision / Recall F1）",
+      "direction": "越高越好",
+      "description": "把模型输出解析成节点 id 集合，与标准答案集合算精确率与召回率的调和平均；官方表格以百分数（0–100）报告。Epoch AI 提示该分数不是「做对题目的比例」。",
       "range": [0, 100],
       "unit": "percent",
-      "direction": "higher",
-      "aggregation": "mean"
+      "aggregation": "mean",
+      "cite": ["hf-graphwalks@Extraction and Grading", "epoch-review@评分", "epoch-review@分数解读"]
     }
   ],
   "versions": [
     {
       "id": "v1",
-      "label": "GraphWalks（2025-04 首发，随 GPT-4.1）",
-      "note": "2026-02 修正 24 道 parents 样本的 ground truth 并澄清 BFS 提示（Claude Opus 4.6 系统卡指出）"
+      "date": "2025-04-12",
+      "label": "首次发布（数据集卡 changelog：Initial dataset published；随 GPT-4.1 博客公开）",
+      "cite": ["hf-graphwalks@changelog", "openai-index-gpt-4-1"]
+    },
+    {
+      "id": "bugfix-2026-02-27",
+      "date": "2026-02-27",
+      "label": "数据修正：24/400 条 parents 样本 ground truth 误含根节点；BFS 提示澄清为「只返回恰好处于目标深度的节点」；未升版本号",
+      "cite": ["hf-graphwalks@changelog", "epoch-review@Temporal stability"]
     }
   ],
   "limitations": [
-    "合成图任务，与真实长文档能力有差距",
-    "答案为节点集合，F1 对漏检/多检的处理与直觉不完全一致"
+    {
+      "issue": "题目与判分被改过，但没有版本号",
+      "impact": "2026-02-27 的 ground truth 修正与 BFS 提示词澄清改变了题目内容和可接受答案，数据集卡只记在 changelog、没有版本号，Epoch AI 明确说这会让不同版本分数不可比；Anthropic 另报了三处自行的评测修改（空集 F1、24 条自环误标、BFS 提示改写）。",
+      "severity": "高",
+      "response": "OpenAI 在数据集卡 changelog 公开了修正内容并致谢指出问题的一方；未见版本号或重新报告旧分数的说明。",
+      "reader": "看到 GraphWalks 分数先确认跑在 2026-02-27 之前还是之后；跨来源比较时确认对方是否改过提示词与空集计分。",
+      "cite": ["hf-graphwalks@changelog", "epoch-review@Temporal stability", "opus46-card@§2.18.2"]
+    },
+    {
+      "issue": "长输出可能撞上模型输出上限",
+      "impact": "BFS 答案最多可达数千个节点，Epoch AI 以 GPT-4.1 的 32,768 token 输出上限为例，指出长上下文 BFS 任务的输出可能超出模型输出上限；<128K 档不受影响。",
+      "severity": "中",
+      "response": "未见官方回应；Epoch AI 说明 <128k 切片不受影响。",
+      "reader": "比较 1M 档分数时确认模型的输出上限与是否发生截断。",
+      "cite": ["epoch-review@Output limits"]
+    },
+    {
+      "issue": "1M 档无法用公开 API 复现",
+      "impact": "Anthropic 报告 GraphWalks 1M 变体有一半题目超出 1M API token 上限，公开 API 跑不了，其 1M 与 256K 子集结果来自内部设置下的评测。",
+      "severity": "中",
+      "response": "Anthropic 在表格脚注说明不可复现的原因，并附上 <1M 子集（256K subset）结果。",
+      "reader": "看到 1M 档 GraphWalks 分数时，确认它是否来自超出公开 API 上限的内部评测。",
+      "cite": ["opus46-card@Table 2.18.A 注"]
+    },
+    {
+      "issue": "合成数据与真实能力之间有差距",
+      "impact": "数据是程序生成的，Epoch AI 明确提示高分不一定迁移到需要额外能力与推理的真实场景（例如大代码库工作）。",
+      "severity": "中",
+      "response": "OpenAI 在博客里把 GraphWalks 定位为对 MRCR 的补充。",
+      "reader": "把 GraphWalks 当作长上下文多跳推理的一个探针，不要当作通用长文档能力的证明。",
+      "cite": ["epoch-review@分数解读", "openai-index-gpt-4-1@Long context 段"]
+    },
+    {
+      "issue": "数据集卡文档与实际不一致",
+      "impact": "数据 schema 把 prompt 描述成 3-shot 示例，实际是 4-shot（两类各 2 个）。",
+      "severity": "低",
+      "response": "Epoch AI 记录为 minor documentation issue；数据集卡本身未改。",
+      "reader": "复现时按实际 prompt 结构写 few-shot 示例数量。",
+      "cite": ["epoch-review@文档瑕疵", "hf-graphwalks@Data schema"]
+    }
   ],
-  "notes": "GPT-5 等旗舰发布的长上下文常用档；与 MRCR 并列出现",
+  "notes": "GPT-4.1 发布时与 MRCR 并列的长上下文评测；2026 年仍被 Anthropic 等第三方系统卡引用",
   "official_sources": [
     {
-      "kind": "site",
+      "kind": "dataset",
       "url": "https://huggingface.co/datasets/openai/graphwalks"
     },
     {
@@ -58,12 +174,170 @@
       "url": "https://openai.com/index/gpt-4-1/"
     }
   ],
-  "related_benchmarks": [
-    "mrcr",
-    "ruler",
-    "niah",
-    "longbench"
-  ],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "related_benchmarks": ["mrcr", "ruler", "niah", "longbench"],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-19",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-19",
+    "sources": [
+      {
+        "id": "hf-graphwalks",
+        "kind": "dataset",
+        "title": "openai/graphwalks · Datasets at Hugging Face",
+        "url": "https://huggingface.co/datasets/openai/graphwalks",
+        "accessed": "2026-11-19"
+      },
+      {
+        "id": "openai-index-gpt-4-1",
+        "kind": "site",
+        "title": "Introducing GPT-4.1 in the API",
+        "url": "https://openai.com/index/gpt-4-1/",
+        "accessed": "2026-11-19"
+      },
+      {
+        "id": "opus46-card",
+        "kind": "docs",
+        "title": "Claude Opus 4.6 System Card（PDF）",
+        "url": "https://assets.claude.com/6a5fa276ac68b9aeb0c8b6af5fa36326e0e166dd.pdf",
+        "accessed": "2026-11-19"
+      },
+      {
+        "id": "epoch-review",
+        "kind": "site",
+        "title": "Epoch AI · GraphWalks benchmark review",
+        "url": "https://epoch.ai/benchmarks/graphwalks/review",
+        "accessed": "2026-11-19"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "OpenAI",
+        "cite": ["openai-index-gpt-4-1", "hf-graphwalks@数据集卡标题"]
+      },
+      "first_release": {
+        "v": "2025-04-12（数据集卡 changelog：initial dataset published；随 GPT-4.1 博客公开）",
+        "cite": ["hf-graphwalks@changelog"]
+      }
+    },
+    "cites": {
+      "summary": ["hf-graphwalks@changelog", "openai-index-gpt-4-1@Long context 段", "hf-graphwalks@数据集统计"],
+      "interpretation": ["epoch-review@分数解读", "epoch-review@评分", "opus46-card@§2.18.2"]
+    },
+    "problem": {
+      "text": "OpenAI 认为 MRCR 这类「读一遍就能做对」的长上下文检索任务考不到多跳推理：真实的长上下文场景需要在上下文里跨多个位置跳转聚合。GraphWalks 正是为这一点设计，且答案可程序化核验。",
+      "cite": ["openai-index-gpt-4-1@Long context 段"]
+    },
+    "ladder": [
+      {
+        "label": "随机猜测基线",
+        "value": "未给出",
+        "note": "答案是变长节点集合（0–6,943 个节点），没有固定选项数；OpenAI 与 Epoch AI 都没给随机基线，本站也不推算。",
+        "cite": ["epoch-review@任务规模"]
+      },
+      {
+        "label": "发布时官方表格最好",
+        "value": "72.3%（GPT-4.5，BFS <128K）",
+        "note": "GPT-4.1 博客附录 A 的 Long context evals 表：BFS <128K 一档 GPT-4.5 72.3%、OpenAI o1 (high) 62.0%、GPT-4.1 61.7%、GPT-4o (2024-11-20) 41.7%；parents <128K 一档最高也是 GPT-4.5 的 72.6%。",
+        "cite": ["openai-index-gpt-4-1@附录 A · Long context evals 表"]
+      },
+      {
+        "label": "发布时主推模型成绩",
+        "value": "61.7%（GPT-4.1，BFS <128K）",
+        "note": "OpenAI 称这一成绩与 o1 持平、明显超过 GPT-4o；同表 BFS >128K 只有 19.0%。",
+        "cite": ["openai-index-gpt-4-1@Long context 段"]
+      },
+      {
+        "label": "第三方系统卡报告的最高分",
+        "value": "95.4（F1×100，max effort）",
+        "note": "Claude Opus 4.6 在 GraphWalks Parents 256K subset of 1M 上的 95.4（max），64k extended thinking 下为 95.1；该口径经过 Anthropic 三处评测修改，且 256K 子集行来自其内部评测，与 OpenAI 的表不可直接比。",
+        "cite": ["opus46-card@Table 2.18.A", "opus46-card@Table 2.18.A 注"]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 GraphWalks 分数当成「答对题目的比例」——它是集合级 F1，漏报和多报都扣分。",
+        "cite": ["epoch-review@评分", "epoch-review@分数解读"]
+      },
+      {
+        "text": "把 <128K 档与 >128K 档（或 Anthropic 的 256K 子集）的分数排在一起比——题目长度、提示词版本与判分细节都不同。",
+        "cite": ["openai-index-gpt-4-1@附录 A · Long context evals 表", "opus46-card@Table 2.18.A 注"]
+      },
+      {
+        "text": "以为博客里的 61.7% 是准确率（accuracy）——博客原文写 accuracy，但指标定义是 F1。",
+        "cite": ["openai-index-gpt-4-1@Long context 段", "hf-graphwalks@Extraction and Grading"]
+      },
+      {
+        "text": "把合成图上的高分直接读成「能处理大代码库」——Epoch AI 提示合成数据的高分不一定迁移到真实能力。",
+        "cite": ["epoch-review@分数解读"]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "OpenAI；数据集卡托管在 Hugging Face（openai/graphwalks），parquet 格式，MIT 许可",
+        "cite": ["hf-graphwalks@许可证与格式", "openai-index-gpt-4-1"]
+      },
+      {
+        "k": "首发时间与载体",
+        "v": "2025-04-12 首次发布，随 GPT-4.1（支持最高 1M token 上下文）公开",
+        "cite": ["hf-graphwalks@changelog", "openai-index-gpt-4-1@上下文窗口"]
+      },
+      {
+        "k": "数据与评测代码位置",
+        "v": "数据集在 Hugging Face（1,150 行 / 319 MB）；答案抽取与 F1 计分代码直接写在数据集卡的 Extraction and Grading 一节",
+        "cite": ["hf-graphwalks@数据集统计", "hf-graphwalks@Extraction and Grading"]
+      },
+      {
+        "k": "第三方复核",
+        "v": "Epoch AI 的基准复核结论为 Verified：独立解题器复现了全部 1,150 题的答案",
+        "cite": ["epoch-review@复核结论"]
+      },
+      {
+        "k": "2026 年仍在被引用",
+        "v": "Anthropic 的 Claude Opus 4.6 系统卡用 GraphWalks 的 1M 与 256K 子集变体做长上下文评估，并报告了三处评测修改",
+        "cite": ["opus46-card@§2.18.2"]
+      },
+      {
+        "k": "官方结果去哪看",
+        "v": "数据集卡的 OpenAI results 一节指向 GPT-4.1 博客",
+        "cite": ["hf-graphwalks@OpenAI results"]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-19",
+        "columns": ["来源", "模型", "变体", "F1", "口径"],
+        "rows": [
+          ["GPT-4.1 博客附录 A", "GPT-4.1", "BFS <128K", "61.7%", "官方自报"],
+          ["GPT-4.1 博客附录 A", "GPT-4.1 mini", "BFS <128K", "61.7%", "官方自报"],
+          ["GPT-4.1 博客附录 A", "GPT-4.1 nano", "BFS <128K", "25.0%", "官方自报"],
+          ["GPT-4.1 博客附录 A", "GPT-4o (2024-11-20)", "BFS <128K", "41.7%", "官方自报"],
+          ["GPT-4.1 博客附录 A", "GPT-4o mini", "BFS <128K", "29.0%", "官方自报"],
+          ["GPT-4.1 博客附录 A", "OpenAI o1 (high)", "BFS <128K", "62.0%", "官方自报"],
+          ["GPT-4.1 博客附录 A", "OpenAI o3-mini (high)", "BFS <128K", "51.0%", "官方自报"],
+          ["GPT-4.1 博客附录 A", "GPT-4.5", "BFS <128K", "72.3%", "官方自报"],
+          ["GPT-4.1 博客附录 A", "GPT-4.1", "BFS >128K", "19.0%", "官方自报"],
+          ["GPT-4.1 博客附录 A", "GPT-4.1 mini", "BFS >128K", "15.0%", "官方自报"],
+          ["GPT-4.1 博客附录 A", "GPT-4.1 nano", "BFS >128K", "2.9%", "官方自报"],
+          ["GPT-4.1 博客附录 A", "GPT-4.1", "Parents <128K", "58.0%", "官方自报"],
+          ["GPT-4.1 博客附录 A", "GPT-4.5", "Parents <128K", "72.6%", "官方自报"],
+          ["GPT-4.1 博客附录 A", "GPT-4.1", "Parents >128K", "25.0%", "官方自报"],
+          ["Claude Opus 4.6 系统卡 Table 2.18.A", "Claude Opus 4.6", "BFS 1M", "41.2（64k）/ 38.7（max）", "5 次平均、1M 上下文、默认采样；该变体无法用公开 API 复现"],
+          ["Claude Opus 4.6 系统卡 Table 2.18.A", "Claude Opus 4.6", "BFS 256K subset of 1M", "61.5（64k）/ 61.1（max）", "Anthropic 内部评测；子集为 1M 题中可在 1M token 限制内复现的部分"],
+          ["Claude Opus 4.6 系统卡 Table 2.18.A", "Claude Opus 4.6", "Parents 1M", "71.1（64k）/ 72.0（max）", "同 BFS 1M 口径"],
+          ["Claude Opus 4.6 系统卡 Table 2.18.A", "Claude Opus 4.6", "Parents 256K subset of 1M", "95.1（64k）/ 95.4（max）", "Anthropic 内部评测"],
+          ["Claude Opus 4.6 系统卡 Table 2.18.A", "Claude Sonnet 4.5", "BFS 1M", "25.6（64k）", "同 BFS 1M 口径"],
+          ["Claude Opus 4.6 系统卡 Table 2.18.A", "Claude Sonnet 4.5", "BFS 256K subset of 1M", "44.9（64k）", "Anthropic 内部评测"],
+          ["Claude Opus 4.6 系统卡 Table 2.18.A", "Claude Sonnet 4.5", "Parents 1M", "50.2（64k）", "同 BFS 1M 口径"],
+          ["Claude Opus 4.6 系统卡 Table 2.18.A", "Claude Sonnet 4.5", "Parents 256K subset of 1M", "81.0（64k）", "Anthropic 内部评测"]
+        ]
+      },
+      "cite": ["openai-index-gpt-4-1@附录 A · Long context evals 表", "opus46-card@Table 2.18.A"]
+    }
+  }
 }
