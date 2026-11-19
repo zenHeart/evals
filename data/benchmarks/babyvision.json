@@ -1,43 +1,649 @@
 {
   "id": "babyvision",
   "name": "BabyVision",
-  "full_name": null,
-  "aliases": [],
-  "status": null,
-  "categories": [
-    "multimodal"
+  "full_name": "BabyVision: Visual Reasoning Beyond Language（婴儿视觉：超越语言的视觉推理）",
+  "aliases": [
+    "BabyVision-Mini",
+    "BabyVision-Gen"
   ],
-  "summary": "剥离语言先验的前语言视觉推理评测",
-  "interpretation": "388 题剥离语言先验的前语言视觉推理（22 子类），与人类对照：成人平均 94.1，而最强模型 Gemini3-Pro 仅 49.7、落后 6 岁儿童——分数远低于人类说明多模态旗舰仍缺基础视觉原语。",
-  "measures": [],
-  "does_not_measure": [],
+  "status": "active",
+  "categories": [
+    "multimodal",
+    "reasoning"
+  ],
+  "summary": "BabyVision 是 388 道只靠眼睛就能做的前语言视觉推理题（22 个子类、4 个大类），每题配一张图、答案不依赖文字量和常识；它要剥掉语言先验，直接测「看得懂」这一层。和 3–12 岁儿童对照的结果是：成人平均 94.1 分，而当时最强的 Gemini3-Pro-Preview 只有 49.7 分。",
+  "interpretation": "高分说明模型真正具备了人类在学会语言之前就有的视觉原语（细粒度辨别、沿路径追踪、3D 心象、图形规律归纳），而不是靠文本推理兜底。BabyVision 的低分不等于模型笨——它专门挑「语言描述会丢信息」的题，所以分数要跟前语言视觉能力对齐着读，不能和 MMMU 这类知识型多模态基准横向比。",
+  "measures": [
+    {
+      "area": "细粒度辨别（Fine-grained Discrimination）",
+      "focus": "在高度相似的图案里找出细微差异：找不同、找相同、找影子、数同类图案、补全缺失部分、图形重建",
+      "share": "42.0%（163 题 / 8 个子类）",
+      "format": "多选 + 填空（坐标、编号配对、数量）",
+      "cite": [
+        "arxiv-2601-06521@§3",
+        "arxiv-2601-06521@§3.2"
+      ]
+    },
+    {
+      "area": "视觉追踪（Visual Tracking）",
+      "focus": "在交叉、遮挡中保持对同一条线的身份认同：走迷宫、连线路、地铁线路图、沿连线认数字和字母",
+      "share": "21.4%（83 题 / 5 个子类）",
+      "format": "多选 + 填空（路线、颜色、单词）",
+      "cite": [
+        "arxiv-2601-06521@§3",
+        "arxiv-2601-06521@§3.2"
+      ]
+    },
+    {
+      "area": "空间感知（Spatial Perception）",
+      "focus": "从 2D 输入构建并操作 3D 心象：三视图、立方体展开、折纸、数堆叠立方体、3D 图形补全",
+      "share": "23.5%（91 题 / 5 个子类）",
+      "format": "多选 + 填空（选项字母、立方体数量）",
+      "cite": [
+        "arxiv-2601-06521@§3",
+        "arxiv-2601-06521@§3.2"
+      ]
+    },
+    {
+      "area": "视觉模式识别（Visual Pattern Recognition）",
+      "focus": "从少量样例里归纳抽象变换规则：旋转、镜像、叠加、逻辑规律",
+      "share": "13.1%（51 题 / 4 个子类）",
+      "format": "多选为主",
+      "cite": [
+        "arxiv-2601-06521@§3",
+        "arxiv-2601-06521@§3.2"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "知识密集型多模态推理：学科知识、OCR 式文字读取、文化常识——构建时会把「含大量文字」「需要文化背景」的图直接过滤掉",
+      "cite": [
+        "arxiv-2601-06521@§3.1"
+      ]
+    },
+    {
+      "text": "开放式、主观的视觉问答（没有唯一可判定的视觉解）",
+      "cite": [
+        "arxiv-2601-06521@§3.1"
+      ]
+    },
+    {
+      "text": "语言能力本身：论文的设计目标就是把视觉能力从语言能力里拆出来，题目答案应能主要靠视觉分析得出",
+      "cite": [
+        "arxiv-2601-06521@§2.1",
+        "arxiv-2601-06521@§3.1"
+      ]
+    }
+  ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
+    "sample_count": 388,
+    "splits": [
+      "BabyVision 主集 388 题（135 多选 + 253 填空）",
+      "BabyVision-Mini 20 题（与 3/6/10/12 岁儿童对照用）",
+      "BabyVision-Gen 280 题（生成模型赛道，21 个子类）",
+      "RLVR 训练集 1,400 例（同一流水线另建，不进评测）"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "人工构建（儿童教材与标准化视觉测验定范围 → 网络图片扩集 → 人工出题 + 双盲专家复核）",
+    "public_sample": true,
+    "multiple_choice_share": "34.8%（135 题）",
+    "multimodal_share": "100%（每题配唯一一张图片）",
+    "totals": "主集 388 题：细粒度辨别 163 / 视觉追踪 83 / 空间感知 91 / 视觉模式识别 51；其中多选 135 题（34.8%）、填空 253 题（65.2%），答案分布做了均衡以压制位置偏差。另有 20 题的 BabyVision-Mini 儿童对照子集、280 题的 BabyVision-Gen 生成赛道、1,400 例同流水线训练集。题目语言论文未明说，公开示例均为英文。",
+    "cite": [
+      "arxiv-2601-06521@§3.2",
+      "arxiv-2601-06521@§4.1",
+      "arxiv-2601-06521@§5.2"
+    ],
+    "construction": [
+      {
+        "k": "1. 定范围与选种子",
+        "text": "以发展心理学为据界定「早期视觉」范围：参考 12 岁以下儿童教材和标准化视觉测验，确定 4 个顶层类别、22 个子类；每个子类人工挑 4–5 张种子图，共约 100 张高质量种子作为扩集原型。",
+        "cite": [
+          "arxiv-2601-06521@§3.1"
+        ]
+      },
+      {
+        "k": "2. 扩集与过滤",
+        "text": "用种子图做反向图片搜索和关键词检索，从网上爬相似图；只保留允许学术使用的图片（遵守版权），含大量文字、需要文化常识、内容不当的图一律剔除，此阶段产出约 4,000 张候选图。",
+        "cite": [
+          "arxiv-2601-06521@§3.1"
+        ]
+      },
+      {
+        "k": "3. 人工出题与双盲质检",
+        "text": "每张候选图由受训标注者判断能否支撑一个符合分类的视觉题（依赖读文字或文化背景的丢弃）；对合格图写出题目、答案，并附详细「解题过程」证明答案正确。所有标注再过双盲专家复核，两位独立专家都认可答案和推理逻辑才收录；分歧退回原作者修改，改后仍有争议的永久弃用。",
+        "cite": [
+          "arxiv-2601-06521@§3.1"
+        ]
+      }
+    ]
   },
-  "metrics": [],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [],
-  "notes": "字节 Seed/GLM 引用；与 3-12 岁儿童对照",
+  "metrics": [
+    {
+      "id": "accuracy-avg3",
+      "name": "Avg@3 准确率",
+      "direction": "越高越好",
+      "description": "同一模型三次随机运行的 Pass@1 准确率的平均值，论文同时报告运行间标准差 σ",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2601-06521@§5.1",
+        "arxiv-2601-06521@§5.2"
+      ]
+    },
+    {
+      "id": "judge-agreement",
+      "name": "自动裁判一致率",
+      "direction": "越高越好",
+      "description": "LLM 裁判与人工判定的一致程度：MLLM 赛道用 Qwen3-Max 判语义等价（与人 100% 一致）；Gen 赛道用 Gemini-3-Flash 比三张图，与人工一致 96.1%（269/280，F1=0.924）",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2601-06521@§3.3",
+        "arxiv-2601-06521@§4.2"
+      ]
+    }
+  ],
+  "default_protocol": {
+    "raw": "所有模型用同一提示词模板：question + “Think about the question and give your final answer in format”。闭源模型走官方 API、不改默认参数，只把推理档位拉到可调的最高档；开源模型按各自论文建议的温度取值，未注明时用 1.0。判分用 LLM-as-judge：把模型输出答案和标准答案交给 Qwen3-Max 判断语义等价（论文称与人工 100% 一致）。主指标是 Avg@3，即三次随机运行 Pass@1 的平均。",
+    "cite": [
+      "arxiv-2601-06521@§3.3",
+      "arxiv-2601-06521@§5.1"
+    ],
+    "variants": [
+      {
+        "text": "无工具 vs 带工具：论文 Table 1/2 全部是无工具 Avg@3；官方榜单 2026 年的前排条目大多标了 (with tools)，两者不能放在一起比。",
+        "cite": [
+          "bv-leaderboard@timeline",
+          "arxiv-2601-06521@§5.1"
+        ]
+      },
+      {
+        "text": "主集 388 题 vs BabyVision-Mini 20 题：Mini 只用于和儿童做发育对照，20 题的置信区间远大于 388 题，不要互相换算。",
+        "cite": [
+          "arxiv-2601-06521@§5.2"
+        ]
+      },
+      {
+        "text": "MLLM 赛道 vs BabyVision-Gen 生成赛道：Gen 是另一套评法（让模型画/标注出解，再用 Gemini-3-Flash 比图），论文明说两者的结果不能直接比较。",
+        "cite": [
+          "arxiv-2601-06521@§5.3"
+        ]
+      },
+      {
+        "text": "Thinking vs 非 Thinking、不同参数规模：论文额外评了 Qwen3VL-235B/32B/8B/4B 的 Thinking 与 Instruct 变体，规模收益并不单调（4B 14.6% 略高于 8B 13.1%）。",
+        "cite": [
+          "arxiv-2601-06521@§5.2"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2026-01-10",
+      "label": "arXiv v1 首发（Sat, 10 Jan 2026 10:42:44 UTC）",
+      "cite": [
+        "arxiv-2601-06521@Submission history"
+      ]
+    },
+    {
+      "id": "blog",
+      "date": "2026-01-12",
+      "label": "官方博客《BabyVision: Visual Reasoning Beyond Language》发布，榜单页标注 Updated 2026-01-12",
+      "cite": [
+        "bv-blog@Introduction",
+        "bv-leaderboard@hero"
+      ]
+    },
+    {
+      "id": "v2",
+      "date": "2026-07-07",
+      "label": "arXiv v2 修订（Tue, 7 Jul 2026 15:04:59 UTC，26 页），本页核对所用版本",
+      "cite": [
+        "arxiv-2601-06521@Submission history"
+      ]
+    },
+    {
+      "id": "leaderboard-latest",
+      "date": "2026-08-03",
+      "label": "官方榜单最后更新（Last updated: Aug. 3, 2026），时间线新增 Qwen3.8-Max 等条目",
+      "cite": [
+        "bv-leaderboard@timeline"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "人类基线样本极小且来源单一",
+      "impact": "成人基线只有 16 人（均持学士及以上学位）做完全部 388 题；儿童对照每组 20 人，且 3–12 岁受试者全部来自同一所学校（论文脚注明确提示结果可能因人群、教育背景、文化语境而异）。94.1% 这条线因此有可观的不确定度。",
+      "severity": "高",
+      "response": "论文脚注主动披露了单一学校来源的限制；未报告置信区间，也未做多人群复测。",
+      "reader": "把 94.1% 当参照系而不是精确上限；模型与人类差几个点时不要过度解读。",
+      "cite": [
+        "arxiv-2601-06521@§5.2"
+      ]
+    },
+    {
+      "issue": "榜单口径混杂：带工具与无工具并列",
+      "impact": "论文分数全部是无工具 Avg@3（最好 49.7%），而 2026 年官方榜单时间线前排几乎都标了 (with tools)（最高 Qwen3.8-Max 91.3%）。同一张图上两类条目混排，直接读会高估「视觉能力」本身的进步。",
+      "severity": "高",
+      "response": "榜单在模型名后用 (with tools) / (no tools) 标注，页面注明「Blue = Open, Orange = Proprietary」；论文侧固定了无工具协议。两侧未做口径对齐。",
+      "reader": "比较前先看模型名后面的工具标注；要复现论文结论就按无工具 Avg@3 跑。",
+      "cite": [
+        "bv-leaderboard@timeline",
+        "arxiv-2601-06521@§5.1"
+      ]
+    },
+    {
+      "issue": "官网摘要卡与榜单数据不一致",
+      "impact": "榜单页头部三张卡仍显示论文期数字（Best AI Model 49.7%、Gap to Human 44.4%），而同页时间线最高已到 91.3%。卡片没有随榜单更新，单独截取卡片会严重低估当前最好成绩。",
+      "severity": "中",
+      "response": "页面标注「Benchmarks / Updated 2026-01-12」与「Last updated: Aug. 3, 2026」两个日期，时间线本身是新的；未见对卡片数字的修订说明。",
+      "reader": "以时间线和 Leaderboard 表为准，不要引用头部三张卡的 49.7% 当「当前 SOTA」。",
+      "cite": [
+        "bv-leaderboard@hero",
+        "bv-leaderboard@timeline"
+      ]
+    },
+    {
+      "issue": "BabyVision-Gen 与主赛道不可比",
+      "impact": "Gen 赛道换了一套任务子集（280 题、21 个子类，少了一个不适合生成式表达的子类）和一套评法（模型在图上标注，Gemini-3-Flash 与人工标准解比对），最好成绩只有 18.3%。把它和 MLLM 的 49.7% 放一起排名是没有意义的。",
+      "severity": "中",
+      "response": "论文在 §5.3 明确写出「结果不能直接与 BabyVision 上的 MLLM 实验相比」，并披露裁判与人工一致率 96.1%（F1=0.924）。",
+      "reader": "Gen 分数只在与其它生成模型比较时有意义。",
+      "cite": [
+        "arxiv-2601-06521@§5.3",
+        "arxiv-2601-06521@§4.1"
+      ]
+    },
+    {
+      "issue": "污染与刷榜风险",
+      "impact": "388 题和 1,400 例训练集都公开可下载（Hugging Face + GitHub），可能被混入预训练或被针对性调优，使后续公开集分数偏高；榜单接受自行提交成绩，缺少留出集复核。",
+      "severity": "中",
+      "response": "论文用「同流水线但更大图源、去重」的另建训练集做 RLVR 研究，并公布该训练集与 BabyVision 的难度差（34.2% vs 13.1%），但没有设置私有留出集。",
+      "reader": "看到某模型分数突增时，先查它是否用过公开数据训练；跨版本比较优先看无工具口径。",
+      "cite": [
+        "arxiv-2601-06521@§6.2",
+        "gh-repo@README"
+      ]
+    },
+    {
+      "issue": "规模收益不单调，结论不宜外推",
+      "impact": "Qwen3VL 家族内 235B 22.2% > 32B 17.4% > 8B 13.1%，但 4B 反而 14.6% 略高于 8B；论文据此认为这类早期视觉能力不能只靠堆参数解决。单次评测的这类小差距也可能来自运行波动（各模型 σ 在 0–16 个百分点之间）。",
+      "severity": "低",
+      "response": "论文报告 Avg@3 与 σ，并在讨论中指出需要架构或训练层面的创新。",
+      "reader": "不要把几个点的规模差异当成稳定趋势。",
+      "cite": [
+        "arxiv-2601-06521@§5.2"
+      ]
+    },
+    {
+      "issue": "二手转述存在数字与模型名错误",
+      "impact": "本站此前的记录与部分转述把 GPT-5.2 报成 34.8%（论文与榜单均为 34.4%），也有二手摘要把模型名误写成 Gemini-1.5-Pro-Preview（实为 Gemini3-Pro-Preview）。",
+      "severity": "低",
+      "response": "以 arXiv v2 原文与官方榜单为准；本档案已按原文更正。",
+      "reader": "引用具体分数时回到论文 Table 1 或官方榜单页，不要采信转述。",
+      "cite": [
+        "arxiv-2601-06521@§5.2",
+        "bv-leaderboard@timeline"
+      ]
+    }
+  ],
+  "notes": "2026-01 新基准；官方榜单持续更新且带工具/无工具口径混杂，引用时须注明来源与日期",
   "official_sources": [
     {
       "kind": "paper",
       "url": "https://arxiv.org/abs/2601.06521"
     },
     {
-      "kind": "site",
-      "url": "https://seed.bytedance.com/en/blog/seed2-1-officially-released-advancing-ai-productivity"
+      "kind": "repo",
+      "url": "https://github.com/UniPat-AI/BabyVision"
+    },
+    {
+      "kind": "leaderboard",
+      "url": "https://unipat.ai/benchmarks/BabyVision"
     },
     {
       "kind": "site",
-      "url": "https://z.ai/blog/glm-5.3-flash"
+      "url": "https://unipat.ai/blog/BabyVision"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/UnipatAI/collections"
     }
   ],
-  "related_benchmarks": [],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "related_benchmarks": [
+    "blink",
+    "mmmu",
+    "mmstar",
+    "mmvp",
+    "hle-vl",
+    "mathvista",
+    "vstar"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-19",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-19",
+    "sources": [
+      {
+        "id": "arxiv-2601-06521",
+        "kind": "paper",
+        "title": "BabyVision: Visual Reasoning Beyond Language（arXiv:2601.06521v2，26 页，2026-07-07）",
+        "url": "https://arxiv.org/abs/2601.06521",
+        "accessed": "2026-11-19"
+      },
+      {
+        "id": "gh-repo",
+        "kind": "repo",
+        "title": "UniPat-AI/BabyVision（评测代码、数据打包与 BibTeX）",
+        "url": "https://github.com/UniPat-AI/BabyVision",
+        "accessed": "2026-11-19"
+      },
+      {
+        "id": "bv-leaderboard",
+        "kind": "leaderboard",
+        "title": "unipat.ai/benchmarks/BabyVision（官方榜单与成绩时间线）",
+        "url": "https://unipat.ai/benchmarks/BabyVision",
+        "accessed": "2026-11-19"
+      },
+      {
+        "id": "bv-blog",
+        "kind": "site",
+        "title": "unipat.ai/blog/BabyVision（官方博客，2026-01-12）",
+        "url": "https://unipat.ai/blog/BabyVision",
+        "accessed": "2026-11-19"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "UniPat AI × xbench 联合阿里巴巴、MoonShot AI、StepFun、北京大学、清华大学、UW–Madison、Princeton、NTU、0G Labs 等 11 家机构",
+        "cite": [
+          "bv-blog@Introduction"
+        ]
+      },
+      "first_release": {
+        "v": "2026-01-10（arXiv v1；v2 为 2026-07-07）",
+        "cite": [
+          "arxiv-2601-06521@Submission history"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "arxiv-2601-06521@abstract",
+        "arxiv-2601-06521@§3.2",
+        "arxiv-2601-06521@§5.2"
+      ],
+      "interpretation": [
+        "arxiv-2601-06521@§6.1",
+        "arxiv-2601-06521@§5.2"
+      ]
+    },
+    "problem": {
+      "text": "MMMU、MathVista 这类多模态基准里已经混进了大量语言捷径——MMStar 甚至测出模型不看图也能在 MMMU 上拿到 42.9%。现有基准大多取自成人专家任务、靠语义识别而非感知原语，测不出「人在学会语言之前就会的那层视觉」。BabyVision 要补的就是这个空档：把视觉能力从语言能力里拆开，直接和 3–12 岁儿童比。",
+      "cite": [
+        "arxiv-2601-06521@§2.1",
+        "arxiv-2601-06521@abstract"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机猜测基线",
+        "value": "论文未给出",
+        "note": "253/388 是填空题，论文没有报告整卷随机基线；多选部分按选项数折算需要额外假设，本站不推算。",
+        "cite": [
+          "arxiv-2601-06521@§3.2"
+        ]
+      },
+      {
+        "label": "论文主集最好成绩（无工具 Avg@3）",
+        "value": "49.7%",
+        "note": "Gemini3-Pro-Preview；次位 GPT-5.2 34.4%、Doubao-1.8 30.2%，其余大幅落后。开源最好为 Qwen3VL-235B-Thinking 22.2%。",
+        "cite": [
+          "arxiv-2601-06521@§5.2"
+        ]
+      },
+      {
+        "label": "成人人类基线（16 人做完全部 388 题）",
+        "value": "94.1%",
+        "note": "受试者均持学士及以上学位；这是官方榜单图中的虚线参考线。",
+        "cite": [
+          "arxiv-2601-06521@§5.2",
+          "bv-leaderboard@timeline"
+        ]
+      },
+      {
+        "label": "3 岁儿童参考线（BabyVision-Mini 20 题）",
+        "value": "多数前沿模型低于该线",
+        "note": "论文未在正文给出各年龄组具体分数（见图 1）；只说明多数前沿 MLLM 远低于 3 岁儿童均值，Gemini3-Pro-Preview 是唯一稳定高于 Age-3 区间的模型，但仍落后典型 6 岁儿童约 20 个百分点。",
+        "cite": [
+          "arxiv-2601-06521@§5.2"
+        ]
+      },
+      {
+        "label": "官方榜单当前最高（2026-08-03）",
+        "value": "91.3%",
+        "note": "Qwen3.8-Max（带工具）；同模型无工具为 82.0%。榜单时间线前排多为带工具条目，与论文无工具口径不可直接比。",
+        "cite": [
+          "bv-leaderboard@timeline"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把榜单上带工具的分数和论文的无工具 Avg@3 排在一起比——榜单前排几乎都标了 (with tools)，混排会高估视觉能力本身的进步。",
+        "cite": [
+          "bv-leaderboard@timeline",
+          "arxiv-2601-06521@§5.1"
+        ]
+      },
+      {
+        "text": "把榜单页头部三张卡（Best AI Model 49.7% / Gap to Human 44.4%）当成当前最好成绩——那两张卡还是论文期数字，同页时间线最高已到 91.3%。",
+        "cite": [
+          "bv-leaderboard@hero",
+          "bv-leaderboard@timeline"
+        ]
+      },
+      {
+        "text": "把 BabyVision-Gen 的 18.3% 和 MLLM 主赛道的 49.7% 直接比——Gen 换了任务子集和评法，论文明说两者不可直接比较。",
+        "cite": [
+          "arxiv-2601-06521@§5.3"
+        ]
+      },
+      {
+        "text": "把 BabyVision 低分读成「模型不行」——它专门挑语言描述会丢信息的题，低分只说明缺前语言视觉原语，不代表知识型多模态推理也差。",
+        "cite": [
+          "arxiv-2601-06521@§6.1"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "UniPat AI 与 xbench 联合发布，合作机构含阿里巴巴、MoonShot AI、StepFun、北京大学、清华大学、UW–Madison、Princeton、NTU、0G Labs",
+        "cite": [
+          "bv-blog@Introduction"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "共同一作 Liang Chen、Weichu Xie、Yiyan Liang、Hongfeng He、Hans Zhao；通讯 Liang Chen、Kuan Li（均 UniPat AI）",
+        "cite": [
+          "arxiv-2601-06521@abstract"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2026-01-10 arXiv v1 → 2026-01-12 官方博客与榜单上线 → 2026-07-07 arXiv v2（26 页）→ 2026-08-03 榜单最后更新",
+        "cite": [
+          "arxiv-2601-06521@Submission history",
+          "bv-leaderboard@timeline"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "GitHub 仓库提供 babyvision_eval/（evaluate_model.py、compute_score.py、run_inference.sh）与 babyvision_gen_eval/（inference.py、evaluate.py、summarize_results.py），数据打成 babyvision_data.zip / babyvision_gen_data.zip / mllm_results.zip；数据集在 Hugging Face UnipatAI/collections",
+        "cite": [
+          "gh-repo@README"
+        ]
+      },
+      {
+        "k": "训练研究",
+        "v": "论文用 Qwen3-VL-8B-Thinking + GRPO（8×H800、约 3 天、18 epoch、rollout n=10、clip higher 0.28、EasyR1）做 RLVR 探索，总分 13.1% → 17.9%（+4.8），视觉追踪几乎无收益",
+        "cite": [
+          "arxiv-2601-06521@§6.2"
+        ]
+      },
+      {
+        "k": "引用格式",
+        "v": "BibTeX key 为 chen2026babyvisionvisualreasoninglanguage，eprint 2601.06521，primaryClass cs.CV",
+        "cite": [
+          "gh-repo@README"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-08-03",
+        "columns": [
+          "来源",
+          "模型",
+          "分数",
+          "口径"
+        ],
+        "rows": [
+          [
+            "论文 Table 1",
+            "Gemini3-Pro-Preview",
+            "49.7%",
+            "主集 388 题，无工具 Avg@3，最高推理档"
+          ],
+          [
+            "论文 Table 1",
+            "GPT-5.2",
+            "34.4%",
+            "同上"
+          ],
+          [
+            "论文 Table 1",
+            "Doubao-1.8",
+            "30.2%",
+            "同上"
+          ],
+          [
+            "论文 Table 2",
+            "Qwen3VL-235B-Thinking",
+            "22.2%",
+            "开源最好，同上口径"
+          ],
+          [
+            "论文 Table 2",
+            "InternVL3.5-241B",
+            "19.2%",
+            "同上"
+          ],
+          [
+            "论文 Table 2",
+            "GLM4.6V",
+            "17.6%",
+            "同上"
+          ],
+          [
+            "论文 Table 2",
+            "MimoVL-7B-RL",
+            "15.1%",
+            "同上"
+          ],
+          [
+            "论文 Table 2",
+            "Step3",
+            "14.7%",
+            "同上"
+          ],
+          [
+            "论文 Table 2",
+            "KimiVL-A3B",
+            "12.4%",
+            "同上"
+          ],
+          [
+            "论文 Table 2",
+            "Qwen3-VL-8B-Thinking（GRPO 后）",
+            "17.9%",
+            "RLVR 训练后（训练前 13.1%）"
+          ],
+          [
+            "论文 Table 3",
+            "NanoBanana-Pro",
+            "18.3%",
+            "BabyVision-Gen 280 题，Gemini-3-Flash 裁判"
+          ],
+          [
+            "论文 Table 3",
+            "GPT-Image-1.5",
+            "9.8%",
+            "同上"
+          ],
+          [
+            "论文 Table 3",
+            "Qwen-Image-Edit-2511",
+            "4.8%",
+            "同上"
+          ],
+          [
+            "官方榜单时间线",
+            "Qwen3.8-Max",
+            "91.3%",
+            "带工具（with tools），2026-08-03"
+          ],
+          [
+            "官方榜单时间线",
+            "Qwen3.8-Max",
+            "82.0%",
+            "无工具（no tools）"
+          ],
+          [
+            "官方榜单时间线",
+            "Fable 5 (max)",
+            "90.5%",
+            "带工具，2026-06-09"
+          ],
+          [
+            "官方榜单时间线",
+            "GPT-5.6 Sol (max)",
+            "88.9%",
+            "带工具，2026-06-26"
+          ],
+          [
+            "官方榜单时间线",
+            "Kimi K3",
+            "85.7%",
+            "带 Python 工具，2026-07-14"
+          ]
+        ]
+      },
+      "cite": [
+        "arxiv-2601-06521@§5.2",
+        "arxiv-2601-06521@§5.3",
+        "arxiv-2601-06521@§6.2",
+        "bv-leaderboard@timeline"
+      ]
+    }
+  }
 }
