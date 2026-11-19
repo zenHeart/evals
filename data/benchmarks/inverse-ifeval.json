@@ -1,29 +1,299 @@
 {
   "id": "inverse-ifeval",
   "name": "Inverse IFEval",
-  "full_name": null,
+  "full_name": "Inverse IFEval: Can LLMs Unlearn Stubborn Training Conventions to Follow Real Instructions?（逆向 IFEval：违背训练习惯的指令遵循评测）",
   "aliases": [],
   "status": null,
   "categories": [
     "reasoning"
   ],
-  "summary": "逆向约束指令执行（违背训练习惯的指令）",
-  "interpretation": "逆向约束指令执行准确率（0-100，越高越好）：要求模型故意违反惯常格式或训练习惯作答；分数低说明模型被对齐成了惯性输出，是对正向 IFEval 的补集检验。",
-  "measures": [],
-  "does_not_measure": [],
+  "summary": "Inverse IFEval 是 1,012 道中英双语「反习惯」指令题：题目故意要求模型做监督微调（SFT，用标准格式数据继续训练模型）教它别做的事，比如写代码不许加注释、选择题四个选项全是错的、10 道简单题只许 5 道答对。它测的是论文所说的认知惯性（cognitive inertia）——模型被训练习惯绑住，听不进和习惯冲突的指令。",
+  "interpretation": "总分 0–100，越高越好，反映「指令」与「训练习惯」冲突时模型选择听指令的程度。高分不说明正向指令遵循也强：IFEval 上排名第 5 的模型在本基准可能掉到第 15，两个分数要分开读；它也不衡量模型的知识量和代码能力。",
+  "measures": [
+    {
+      "area": "Question Correction（改错题）",
+      "focus": "题干本身有错的选择题：模型要先指出题目有问题，再给出正确解法，而不是在错误选项里硬选一个。示例题：某电视厂两个车间每天分别装 36 台和 40 台，问 20 天共装多少台，而选项只有 1516–1519，四个全错。",
+      "share": "90 题（中文 45 + 英文 45）",
+      "format": "选择题改错 + 自由作答，由裁判按评分细则打分",
+      "cite": [
+        "paper@附录 A",
+        "paper@Table 2"
+      ]
+    },
+    {
+      "area": "Intentional Textual Flaws（故意写错别字）",
+      "focus": "要求输出里按指定数量埋错。示例题：写恰好三句话，第一句 1 个错别字、第二句 2 个、第三句 3 个，且要严格遵守、不管常规语法。",
+      "share": "86 题（中文 43 + 英文 43）",
+      "format": "自由生成，裁判核对错别字数量与句数",
+      "cite": [
+        "paper@附录 A",
+        "paper@Table 2"
+      ]
+    },
+    {
+      "area": "Code without Comments（无注释代码）",
+      "focus": "要求写能跑的代码但不加任何注释。示例题：写一条 MySQL dump 导出命令，变量名只能是一个字母加一个数字，代码块之外不能有任何文字。",
+      "share": "198 题（中文 99 + 英文 99，8 类中最多）",
+      "format": "代码生成，裁判检查注释、命名与输出范围",
+      "cite": [
+        "paper@附录 A",
+        "paper@Table 2"
+      ]
+    },
+    {
+      "area": "Counter-Conventional Formatting（反常规排版）",
+      "focus": "要求给出结构化建议但不许多分段、编号或列表符号。示例题：给出十条健身建议，且不能分成多段、不能用编号列表或项目符号。",
+      "share": "82 题（中文 41 + 英文 41，8 类中最少）",
+      "format": "自由生成，裁判检查格式约束",
+      "cite": [
+        "paper@附录 A",
+        "paper@Table 2"
+      ]
+    },
+    {
+      "area": "Deliberately Incorrect Answers（故意答错）",
+      "focus": "10 道简单题里只许 5 道答对，其余必须答错。考的是自我监控与输出控制，不是知识。",
+      "share": "186 题（中文 93 + 英文 93）",
+      "format": "问答，裁判按「对/错是否符合指定数量」打分",
+      "cite": [
+        "paper@附录 A",
+        "paper@Table 2"
+      ]
+    },
+    {
+      "area": "Instructional Induction（指令诱导）",
+      "focus": "用训练数据里高频出现的题型外壳套一个不同的问题。示例题是鸡兔同笼的变形题，不问各有几只，而问笼子里有几种动物，看模型会不会顺着固有套路答非所问。",
+      "share": "154 题（中文 77 + 英文 77）",
+      "format": "问答，裁判对照标准答案",
+      "cite": [
+        "paper@附录 A",
+        "paper@Table 2"
+      ]
+    },
+    {
+      "area": "Mid-turn Instruction Modification（中途改指令）",
+      "focus": "同一轮对话里指令被反复修改或否定，模型要忽略被作废的旧指令、只执行最后有效的那条。示例题是一连串宝石问题之后，最终有效指令变成「三角形有几条边」。",
+      "share": "108 题（中文 54 + 英文 54）",
+      "format": "长提示（含被修改的旧指令），裁判按最终有效指令打分",
+      "cite": [
+        "paper@附录 A",
+        "paper@Table 2"
+      ]
+    },
+    {
+      "area": "Counterfactual Answering（反事实作答）",
+      "focus": "给一段与事实不符的文本，要求只依据该文本作答且不许纠正。示例题是一段把《巴斯克维尔的猎犬》作者写成与史实不符的短文，问「根据这段文字，作者是谁」。",
+      "share": "108 题（中文 54 + 英文 54）",
+      "format": "阅读理解 + 问答，裁判按文本内容打分",
+      "cite": [
+        "paper@附录 A",
+        "paper@Table 2"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "正向、符合训练习惯的指令遵循能力（那是 IFEval 的方向；本基准的题目刻意要求违反习惯）",
+      "cite": [
+        "paper@Table 1",
+        "paper@§3.2.3"
+      ]
+    },
+    {
+      "text": "这些反习惯指令在真实生产场景里的实用价值——论文明确说不主张它们在实际意义上有用，只把它们类比为人类 IQ 测试那样的分布外挑战",
+      "cite": [
+        "paper@§2.1"
+      ]
+    },
+    {
+      "text": "模型的知识量或代码能力本身：计算机科学、法律、生物等领域只是题目外壳，判分依据是指令遵循保真度",
+      "cite": [
+        "dataset@Evaluation Protocol"
+      ]
+    }
+  ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
+    "sample_count": 1012,
+    "splits": [
+      "论文与数据集卡均未给出 train/test 拆分，1,012 题整体作为评测集"
+    ],
+    "languages": [
+      "zh",
+      "en"
+    ],
+    "source_type": "LLM 生成 + 人工种子题与专家审核（论文 Table 1 归类为 LLM-constructed & Human Writers）",
+    "public_sample": true,
+    "totals": "1,012 题（中文 506 + 英文 506）· 8 类反习惯指令，每类 82–198 题、同一类型中英题量相同 · 覆盖 23 个知识领域，计算机科学最多、占 20.2% · 平均题长 625.8、平均参考答案长 469.7（论文未给单位）",
+    "cite": [
+      "paper@§2.4",
+      "paper@Table 2",
+      "dataset@Key Features"
+    ],
+    "construction": [
+      {
+        "k": "观察与反转",
+        "text": "系统分析常用 SFT 数据集，归纳「遵循最佳实践」一类标准作答范式，再把这些范式反转成 8 类刻意偏离常规的反习惯指令。",
+        "cite": [
+          "paper@§2.2"
+        ]
+      },
+      {
+        "k": "专家写种子题",
+        "text": "邀请有 LLM 训练经验的标注专家为每个类型手写种子题；除核心团队外，产品、工程、运营背景的评审独立评估每一道题，只有全体一致判「合格」才进种子集。",
+        "cite": [
+          "paper@§2.2",
+          "paper@§2.3"
+        ]
+      },
+      {
+        "k": "大规模生成与自动过滤",
+        "text": "按预定义学科分类引导多个大模型协作生成，为每个指令类型设计专用生成模板；每个「领域 × 类型」组合先出 20 个候选，再按长度约束与语义相似度做自动过滤，覆盖不足的领域补生成，并做跨模型一致性校验。",
+        "cite": [
+          "paper@§2.2"
+        ]
+      },
+      {
+        "k": "人工验证与校准",
+        "text": "所有机器生成的题目再过专家评审，重点查三类问题：类型是否一致、题干是否清晰、评分细则是否可校准。",
+        "cite": [
+          "paper@§2.3"
+        ]
+      }
+    ]
   },
-  "metrics": [],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [],
-  "notes": "字节 Seed 引用；IFEval 的反向约束变体",
+  "metrics": [
+    {
+      "id": "overall-score",
+      "name": "总分（Overall Score）",
+      "direction": "越高越好",
+      "description": "裁判按指令遵循保真度打 0–100 分后的总体均分，论文按英文、中文两版分别报告",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "分",
+      "cite": [
+        "dataset@Evaluation Protocol",
+        "paper@§2.5"
+      ]
+    },
+    {
+      "id": "judge-accuracy",
+      "name": "裁判准确率",
+      "direction": "越高越好",
+      "description": "裁判打分与人工核验的标准分一致的比例，用来衡量自动评分本身可不可信",
+      "range": "论文未给出（只报告 88% 与 98% 两个值）",
+      "unit": "percent",
+      "cite": [
+        "paper@§2.5"
+      ]
+    }
+  ],
+  "default_protocol": {
+    "raw": "采用「LLM-as-a-Judge」自动判分：每道题由裁判模型对照数据集自带的标准答案与评分细则给分。论文按指令类型分别测试多个模型、给每个类型部署打分最准的那个，形成自适应的裁判模型矩阵，并把裁判准确率从基线 88% 提到 98%。分数为 0–100，依据是指令遵循保真度；数据集每行还附带判分模板与裁判系统提示词，复现判分口径时可以直接取用。",
+    "cite": [
+      "paper@§2.5",
+      "dataset@Evaluation Protocol",
+      "dataset"
+    ],
+    "variants": [
+      {
+        "text": "中英两个版本分开报分：论文 Table 3 给英文、中文两张表，GLM-4.5 与 Qwen3-235B-A22B-Thinking 的中文分明显高于英文分，跨语言比较要先看清是哪一版。",
+        "cite": [
+          "paper@附录 B.2",
+          "paper@Table 3"
+        ]
+      },
+      {
+        "text": "单次作答 vs Best-of-N：论文附录 B.1 另报 N=1/16/32 的 Best-of-N，N=32 时 5 个受测模型里有 4 个接近或超过 90 分，这个口径和单次采样不可比。",
+        "cite": [
+          "paper@附录 B.1"
+        ]
+      },
+      {
+        "text": "思考档位：论文同时评了 thinking 与非 thinking 模型，非思考模型在本基准上排名明显更低；数据集卡称思考机制平均带来约 15% 提升。",
+        "cite": [
+          "paper@§3.2.3",
+          "dataset@Key Findings"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2025-09-04",
+      "label": "arXiv v1（cs.CL）提交，Hugging Face 数据集同步上线，1,012 题；论文首页写作日期为 2025-09-05，数据集卡记为 2025-09-04",
+      "cite": [
+        "paper",
+        "dataset"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "评分由 LLM 裁判完成，判错会直接变成模型的分",
+      "impact": "裁判准确率从 88% 优化到 98%，仍不是 100%；题型越特殊（故意答错、无注释代码、反事实作答）越依赖评分细则的措辞，单个题目的 0/1 判定存在噪声",
+      "severity": "中",
+      "response": "论文按指令类型分别选最准的裁判模型组成自适应矩阵，并优化裁判模板结构与系统提示词，报告准确率 98%；未见针对误判案例的公开审计",
+      "reader": "看总分和类型级均分，不要把单个题目的判定当结论",
+      "cite": [
+        "paper@§2.5",
+        "dataset@Evaluation Protocol"
+      ]
+    },
+    {
+      "issue": "题目是人为构造的反习惯任务，与真实用途有距离",
+      "impact": "论文自己说明不主张这些指令在实际意义上有用，把它们类比为人类 IQ 测试那样的分布外挑战；用它推断真实场景的指令遵循会跑偏",
+      "severity": "中",
+      "response": "论文把它定位为诊断工具，并论证长尾用户请求是后训练数据覆盖不到的一类问题",
+      "reader": "把它当成「指令与训练习惯冲突时」的诊断分数，不是通用能力总分",
+      "cite": [
+        "paper@§2.1"
+      ]
+    },
+    {
+      "issue": "总题量偏小，8 类之间样本量不均",
+      "impact": "每类只有 82–198 题，且中英各半，单一语言下每类只剩几十题；类型级分数的几个点波动可能来自题目抽样而非模型差异，论文没有报告置信区间",
+      "severity": "中",
+      "response": "论文在 Table 2 公开每类题量与平均长度，未给出抽样误差分析",
+      "reader": "重点看总体分与跨模型排序，类型级小差距不要过度解读",
+      "cite": [
+        "paper@Table 2",
+        "paper@§2.4"
+      ]
+    },
+    {
+      "issue": "公开数据集存在污染风险，论文未讨论",
+      "impact": "数据集自 2025-09-04 起公开可下载，可能进入之后模型的训练数据，使后来者分数偏高；论文没有报告污染检测，也没有保留私有留存集",
+      "severity": "中",
+      "response": "论文未讨论该风险，未见官方回应",
+      "reader": "比较不同时间公布的模型分数时，把数据公开日期考虑进去",
+      "cite": [
+        "paper@§1"
+      ]
+    },
+    {
+      "issue": "许可证与独立评测代码未随论文给出",
+      "impact": "数据集卡没有标注 license，论文也没有指向独立的评测代码仓库，二次复现与商用授权需要自行确认",
+      "severity": "低",
+      "response": "数据集卡未列 license 字段，未见官方回应",
+      "reader": "引用或二次分发前先看 Hugging Face 页面当前状态",
+      "cite": [
+        "dataset"
+      ]
+    }
+  ],
+  "notes": "字节 Seed 出品；IFEval 的反向约束变体，2025-09-04 公开",
   "official_sources": [
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2509.04292"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/m-a-p/Inverse_IFEval"
+    },
     {
       "kind": "site",
       "url": "https://seed.bytedance.com/en/blog/official-release-of-seed1-8-a-generalized-agentic-model"
@@ -32,6 +302,308 @@
   "related_benchmarks": [
     "ifeval"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "Inverse IFEval: Can LLMs Unlearn Stubborn Training Conventions to Follow Real Instructions?（arXiv:2509.04292v1 [cs.CL]，2025-09-04）",
+        "url": "https://arxiv.org/abs/2509.04292",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "dataset",
+        "kind": "dataset",
+        "title": "m-a-p/Inverse_IFEval（Hugging Face 数据集卡）",
+        "url": "https://huggingface.co/datasets/m-a-p/Inverse_IFEval",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "seed-en-blog-official-release",
+        "kind": "blog",
+        "title": "Official Release of Seed1.8: A Generalized Agentic Model（ByteDance Seed，2025-12-18）",
+        "url": "https://seed.bytedance.com/en/blog/official-release-of-seed1-8-a-generalized-agentic-model",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "ByteDance Seed（与南京大学、北京大学、北京邮电大学合作）",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      "first_release": {
+        "v": "2025-09-04（arXiv v1 与 Hugging Face 数据集同日上线；论文首页写作日期为 2025-09-05）",
+        "cite": [
+          "paper",
+          "dataset"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "paper@Abstract",
+        "paper@§2.1",
+        "dataset@Key Features"
+      ],
+      "interpretation": [
+        "paper@§3.2.3",
+        "dataset@Evaluation Protocol"
+      ]
+    },
+    "problem": {
+      "text": "IFEval 一类基准考的是「按常规格式把事做对」，模型靠后训练养成的习惯就能拿高分。作者要补的是反方向那一格：当指令明确要求违反训练习惯时，模型还听不听指令。论文称此前没有工作关注这种逆向指令场景。",
+      "cite": [
+        "paper@§1",
+        "paper@§4"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机 / 人类基线",
+        "value": "论文未给出",
+        "note": "判分是裁判逐题打分，论文没有报告随机基线，也没有人类基线分数。",
+        "cite": [
+          "paper@§2.5"
+        ]
+      },
+      {
+        "label": "论文发布时最好成绩",
+        "value": "75.66（英文）/ 76.52（中文）",
+        "note": "o3-high；同表最低的是 Qwen3-30B-A3B-Instruct，英文 30.43、中文 31.42。",
+        "cite": [
+          "paper@Table 3",
+          "paper@§3.1"
+        ]
+      },
+      {
+        "label": "Best-of-N=32 参考线",
+        "value": "5 个受测模型中 4 个接近或超过 90",
+        "note": "论文据此认为基准仍在这些模型能力范围内；这是采样 32 次取最好的口径，不能和单次作答分数比。",
+        "cite": [
+          "paper@附录 B.1"
+        ]
+      },
+      {
+        "label": "IFEval 排名对照",
+        "value": "IFEval 第 5 → Inverse IFEval 第 15",
+        "note": "Qwen3-235B-A22B-Instruct 在同一批模型上的排名变化，是论文用来说明本基准测到额外维度的主要证据。",
+        "cite": [
+          "paper@§3.2.3"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把本基准高分理解成正向指令遵循也强——论文的排名对比显示两个基准会大幅换位，IFEval 第 5 的模型在这里排第 15。",
+        "cite": [
+          "paper@§3.2.3"
+        ]
+      },
+      {
+        "text": "把 0–100 分当成「答对了百分之几」——分是裁判按指令遵循保真度给出的分数，不是答对题数占比。",
+        "cite": [
+          "dataset@Evaluation Protocol"
+        ]
+      },
+      {
+        "text": "把非思考模型和思考模型的分数排在一起比——非思考模型在本基准上排名明显更低，混排会误判差距来源。",
+        "cite": [
+          "paper@§3.2.3"
+        ]
+      },
+      {
+        "text": "把单次作答分数和 Best-of-N 分数混为一谈——N=32 时多个模型接近或超过 90 分。",
+        "cite": [
+          "paper@附录 B.1"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "ByteDance Seed，与南京大学、北京大学、北京邮电大学合作",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "共同一作 Qinyan Zhang、Xinping Lei、Ruijie Miao；通讯作者 Jiaheng Liu、Tong Yang、Zaiyuan Wang、Ge Zhang；指导 Wenhao Huang",
+        "cite": [
+          "paper@§6 Contributions and Acknowledgments"
+        ]
+      },
+      {
+        "k": "测的能力",
+        "v": "论文称之为 Counter-intuitive Ability / Counter-Cognitive Ability：压住 SFT 形成的惯性、执行与训练习惯冲突的指令",
+        "cite": [
+          "paper@Abstract"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "数据集在 Hugging Face（m-a-p/Inverse_IFEval，1,012 行、13.7 MB，数据集卡未标注 license）；判分模板与裁判系统提示词随数据给出，论文未指向独立评测代码仓库",
+        "cite": [
+          "dataset",
+          "paper@§1"
+        ]
+      },
+      {
+        "k": "姊妹基准",
+        "v": "IFEval：541 题英文，指标为 Accuracy；本基准是中英双语 1,012 题，改用 LLM-as-a-Judge 打分",
+        "cite": [
+          "paper@Table 1"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2025-09-04 arXiv v1 与数据集上线 → 2025-12-18 字节 Seed1.8 发布博客提到部分为其开发的评测数据集已公开或将开源（博客未点名本基准）",
+        "cite": [
+          "paper",
+          "dataset",
+          "seed-en-blog-official-release"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-14",
+        "columns": [
+          "来源",
+          "模型",
+          "语言",
+          "总分",
+          "Question Correction",
+          "Counterfactual Answering"
+        ],
+        "rows": [
+          [
+            "论文 Table 3",
+            "o3-high",
+            "英文",
+            "75.66",
+            "56.67",
+            "82.10"
+          ],
+          [
+            "论文 Table 3",
+            "o3-mini",
+            "英文",
+            "74.67",
+            "62.59",
+            "75.93"
+          ],
+          [
+            "论文 Table 3",
+            "GPT-5-high",
+            "英文",
+            "73.72",
+            "60.00",
+            "76.54"
+          ],
+          [
+            "论文 Table 3",
+            "Gemini-2.5-pro",
+            "英文",
+            "70.55",
+            "53.33",
+            "76.54"
+          ],
+          [
+            "论文 Table 3",
+            "Claude-4-Opus-Thinking",
+            "英文",
+            "67.16",
+            "29.63",
+            "85.19"
+          ],
+          [
+            "论文 Table 3",
+            "Doubao-Seed-1.6-thinking-0715",
+            "英文",
+            "62.22",
+            "14.81",
+            "75.93"
+          ],
+          [
+            "论文 Table 3",
+            "GLM-4.5",
+            "英文",
+            "58.30",
+            "22.22",
+            "74.69"
+          ],
+          [
+            "论文 Table 3",
+            "Qwen3-235B-A22B-Instruct",
+            "英文",
+            "40.28",
+            "34.81",
+            "51.85"
+          ],
+          [
+            "论文 Table 3",
+            "DeepSeek-V3.1",
+            "英文",
+            "34.42",
+            "17.78",
+            "61.73"
+          ],
+          [
+            "论文 Table 3",
+            "Qwen3-30B-A3B-Instruct",
+            "英文",
+            "30.43",
+            "27.04",
+            "45.68"
+          ],
+          [
+            "论文 Table 3",
+            "o3-high",
+            "中文",
+            "76.52",
+            "55.56",
+            "74.07"
+          ],
+          [
+            "论文 Table 3",
+            "GPT-5-high",
+            "中文",
+            "76.02",
+            "62.22",
+            "64.81"
+          ],
+          [
+            "论文 Table 3",
+            "Claude-4-Opus-Thinking",
+            "中文",
+            "73.81",
+            "39.26",
+            "80.86"
+          ],
+          [
+            "论文 Table 3",
+            "Doubao-Seed-1.6-thinking-0715",
+            "中文",
+            "67.13",
+            "37.78",
+            "69.75"
+          ]
+        ]
+      },
+      "cite": [
+        "paper@Table 3"
+      ]
+    }
+  }
 }
