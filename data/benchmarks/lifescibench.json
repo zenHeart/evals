@@ -1,81 +1,577 @@
 {
   "id": "lifescibench",
   "name": "LifeSciBench",
-  "full_name": "LifeSciBench: Evaluating Language Models on Realistic, Expert-Level Tasks in the Life Sciences",
+  "full_name": "LifeSciBench: Evaluating Language Models on Realistic, Expert-Level Tasks in the Life Sciences（生命科学中真实、专家级任务的语言模型评测）",
   "aliases": [],
   "status": null,
   "categories": [
     "knowledge"
   ],
-  "summary": "OpenAI 出品的生命科学专家级任务基准：750 道自由作答任务覆盖 7 类工作流 × 7 个生物领域，以专家撰写的 rubric 评分",
-  "interpretation": "单轮、允许联网的设定下，最强模型 GPT-Rosalind 归一化 rubric 得分 0.576、任务通过率（rubric ≥70%）仅 36.1%，GPT-5.5 为 0.519/25.7%；读分时注意通过率远低于 rubric 均分——大量任务处于「拿了部分分但未通过」状态。",
+  "summary": "LifeSciBench 是 OpenAI 出的生命科学基准：750 道自由作答题，由 173 位有博士级训练和生物技术/制药行业经验的科学家撰写，覆盖 7 类科研工作流 × 7 个生物领域，每题配一份专家写的评分细则（rubric，即把期望回答拆成一条条可逐项判分的科学主张、计算、决策与理由），全库共 19,020 条。",
+  "interpretation": "高分说明模型能在单轮、允许不受限联网的设定下，按科学家期待的细节、论证、限定说明和格式完成真实科研任务；它不说明模型能加速药物研发或具备通用科研能力——论文明确说这只是任务级能力的证据，不是下游科研影响的直接度量。读分时注意归一分和通过率是两个指标：GPT-Rosalind 是 0.576 与 36.1%，大量任务处于「拿到部分 rubric 分数但没到 70% 通过线」的状态。",
   "measures": [
-    "证据处理与分析、设计与优化、科学推理、验证与运营、转化、科学传播等七类工作流",
-    "带真实研究工件（序列、图像、表格、PDF、化学结构）的任务执行",
-    "按 19,020 条原子 rubric 条目的部分给分"
+    {
+      "area": "证据处理（Evidence handling）",
+      "focus": "示例题：拿到合作者送样的质粒测序数据，说出这个构建体打算表达什么蛋白、有哪些报告基因/筛选标记、由哪些启动子驱动，以及要让蛋白在哺乳动物细胞里可溶表达该做哪些序列改造。",
+      "share": "未披露（论文未给出各工作流的任务数）",
+      "format": "自由作答；评分细则按序列识别、蛋白结构域、启动子与标记、可溶表达改造分组逐项给分",
+      "cite": [
+        "paper@Table 1",
+        "paper@附录 D.3"
+      ]
+    },
+    {
+      "area": "分析（Analysis）",
+      "focus": "示例题：用附件里的 FFPE 宫颈癌切片 Visium 数据把 spot 聚成 4 个 k-means 群、标注每群主要细胞类型，再按肿瘤区与非肿瘤区的抗原表达差异推荐 1–2 个最有潜力的靶向疗法（ADC、TCE 或 CAR-T），并报告抗原流行率、比值比（odds ratio）与特异度。",
+      "share": "未披露（论文未给出各工作流的任务数）",
+      "format": "自由作答 + 定量输出；细则按聚类注释与治疗推荐两组给分",
+      "cite": [
+        "paper@Table 1",
+        "paper@附录 D.1"
+      ]
+    },
+    {
+      "area": "设计与优化（Design and optimization）",
+      "focus": "示例题：给定载体序列和 NDC80(A)、linker(B)、HaloTag(C) 三段序列，设计一套无缝 Golden Gate 克隆方案，把 A-B-C 按读框装进载体已有的 BsmBI 位点，片段引物用 18 bp 退火区、各接头 4 bp 等长突出端且不引入额外氨基酸，并写出各接头在正链上 5'→3' 的序列。",
+      "share": "未披露（论文未给出各工作流的任务数）",
+      "format": "自由作答 + 精确序列/接头输出；细则按接头与各片段引物逐项给分",
+      "cite": [
+        "paper@Table 1",
+        "paper@附录 D.2"
+      ]
+    },
+    {
+      "area": "科学推理（Scientific reasoning）",
+      "focus": "示例题：评估一套 3 标志物（Slc17a7/VGLUT1、Slc17a6/VGLUT2、Slc32a1/VGAT）海马空间转录组 panel 是否适合做 ROI 选择、神经元分割与兴奋/抑制分类，判断图像更像 RNA 原位杂交还是蛋白免疫荧光，选出最合适的 ROI 剖析模式，并在只有 4 个通道（DAPI + 三标志物）时提出替代 panel 与成像改进。",
+      "share": "未披露（论文未给出各工作流的任务数）",
+      "format": "自由作答；细则覆盖标志物解读、ROI 模式选择、必需验证、最终判断与 4 通道 panel 设计",
+      "cite": [
+        "paper@Table 1",
+        "paper@附录 D.4"
+      ]
+    },
+    {
+      "area": "验证与运营（Validation and operations）",
+      "focus": "示例题：批判性复审一项肝活检 NASH 研究（80 例 NASH 患者 + 40 名健康对照，Illumina EPIC v2 芯片）的 DNA 甲基化分析——作者把 GrimAge v2 直接套在 EPIC v2 beta 矩阵上、用默认 ComBat 在 beta 值上做批处理校正、把重复探针对直接平均，要求判断这三处方法学处理是否成立。",
+      "share": "未披露（论文未给出各工作流的任务数）",
+      "format": "自由作答；论文称该示例题的全部评分标准都已列出",
+      "cite": [
+        "paper@Table 1",
+        "paper@附录 D.6"
+      ]
+    },
+    {
+      "area": "转化（Translation）",
+      "focus": "示例题：人类遗传学指向 PILRA R78 为保护态、G78 为风险态，iPSC 来源微胶质细胞中 R78 配体结合少约 50% 且促炎因子分泌更低；NSG×5XFAD 人源微胶质细胞移植瘤里 PILRA 敲除与拮抗抗体都复现了表型——问这些体内证据是否足以支持开发抗阿尔茨海默病的 PILRA 拮抗抗体，并要求评估该模型的转化强度与主要局限。",
+      "share": "未披露（论文未给出各工作流的任务数）",
+      "format": "自由作答；细则分「移植瘤模型局限」与「缺失的外周生物学与转化风险」两组",
+      "cite": [
+        "paper@Table 1",
+        "paper@附录 D.5"
+      ]
+    },
+    {
+      "area": "科学传播（Scientific communication）",
+      "focus": "论文与官方公告均未给出该类示例题；论文定义为「面向特定受众或决策场景总结、改写、解释或传达科学发现」。官方公告里那段关于微肌营养不良基因治疗加速审批的长答复属于证据处理，不归入本类。",
+      "share": "9 题（官方公告给出；论文未给出其余各类任务数）",
+      "format": "自由作答",
+      "cite": [
+        "paper@Table 1",
+        "site"
+      ]
+    }
   ],
   "does_not_measure": [
-    "多轮迭代科研协作（评测为单轮）",
-    "湿实验实际操作能力",
-    "多选题型的学科知识记忆"
+    {
+      "text": "多轮迭代科研协作：评测是单轮的，模型只收到一次提示与工件、直接给出最终回答，不允许多轮澄清、纠正或迭代反馈，而真实使用几乎总是多轮。",
+      "cite": [
+        "paper@§3.3 Task Formulation",
+        "paper@§7 Limitations & Future Work"
+      ]
+    },
+    {
+      "text": "下游科研影响与研发加速：论文明确说 LifeSciBench 上的表现应解读为「真实科学约束下的任务级能力」证据，不是对下游科研影响的直接估计。",
+      "cite": [
+        "paper@§7 Limitations & Future Work"
+      ]
+    },
+    {
+      "text": "选择题式的学科知识回忆：全库没有多选题，评分不依赖标准字符串匹配或选择题判分，而是靠任务专属 rubric 逐条打分。",
+      "cite": [
+        "paper@§5.3 Grader Validation"
+      ]
+    },
+    {
+      "text": "当前范围之外的科学专业与任务类型：论文说基准只覆盖跨生命科学普遍相关的核心工作流，许多科学专业和任务类型被排除在外。",
+      "cite": [
+        "paper@§7 Limitations & Future Work"
+      ]
+    }
   ],
   "dataset": {
     "sample_count": 750,
     "splits": [
-      "七类工作流",
-      "七个生物领域（基因组学到临床与转化科学）"
+      "论文未设训练/验证/测试拆分；结论称 5 个前沿模型在全部 750 题上评测",
+      "分析用分层：7 类科研工作流 / 7 个生物领域 / 7 类证据类型 / rubric 类别 / 答案格式"
     ],
     "languages": [
-      "en"
+      "en（论文未显式声明语言；任务提示与评分细则示例均为英文）"
     ],
-    "source_type": "real-world（173 位博士级科学家撰写，1,062 个附件工件，453 位评审独立验证）",
-    "public_sample": null
+    "source_type": "expert-authored（173 位具博士级训练与生物技术或制药行业经验的专家科学家撰写，453 位未参与出题的独立评审人验证；专家贡献者由 Tacit Co. 协调，个人名单应供应商要求未列出）",
+    "public_sample": false,
+    "totals": "750 题 · 7 类科研工作流 × 7 个生物领域 · 1,062 个附件工件 · 19,020 条专家评分细则（平均每题 25 条）· 79% 需多步推理或决策（平均每题 4 步）· 53% 需解读或综合至少一个附件 · 37 题在提示中提供 URL · 题型为自由作答，无选择题",
+    "cite": [
+      "paper@Table 2",
+      "paper@§3.5 Dataset Composition",
+      "site"
+    ],
+    "construction": [
+      {
+        "k": "先定分类体系",
+        "text": "调研在职生命科学家在应用研究环境里最常用的工作流，把回答归纳为七个核心类别，再据此出题，以兼顾通用科研能力与领域专门知识。",
+        "cite": [
+          "paper@§3.1 Benchmark Organization & Coverage"
+        ]
+      },
+      {
+        "k": "专家出题",
+        "text": "173 位专家科学家出题，每人须有相关学科博士学位和至少两年生物技术或制药行业实践经验；题目写成「科学家向博学同事提问」式的自然语言自由作答题，附上回答问题所需的工件。",
+        "cite": [
+          "paper@§3.2 Expert Writer Cohort",
+          "paper@§3.3 Task Formulation"
+        ]
+      },
+      {
+        "k": "多轮内审",
+        "text": "任务受理前的修订轮数不设上限；获接纳的任务平均经历 6 轮自主进行的自动化审查，并完成至少 2 轮专家评审。每轮检查四类：题目与细则一致性、科学雄心（是否超出记忆与简单检索）、事实核查、拼写语法与格式。",
+        "cite": [
+          "paper@§3.4 Review Process"
+        ]
+      },
+      {
+        "k": "一致率门槛",
+        "text": "评审锚定可验证的正确答案或强专家共识，要求相关领域专家同意率至少达到 90%，以保证任务有科学依据、清晰到可以判分。",
+        "cite": [
+          "paper@§3.4 Review Process"
+        ]
+      },
+      {
+        "k": "独立验证",
+        "text": "453 位未参与出题的评审人单独验证；其中 97% 有博士或同等学历，平均 12 年领域经验、14 篇同行评审论文，88% 至少获过一次奖项或资助。四个维度（真实世界相关性、科学推理与领域技能对齐、科学依据、总体有用性）的一致率均超过 96%。",
+        "cite": [
+          "paper@§4 Benchmark Validation"
+        ]
+      },
+      {
+        "k": "评分细则写法",
+        "text": "rubric 按六条原则撰写：具体性、原子性（一条只判一个主张/计算/决策/约束）、可评判性、有依据、非冗余、操作有用性。",
+        "cite": [
+          "paper@附录 C Rubric Writing Guidelines"
+        ]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "单轮：模型只收到一次任务提示与全部相关工件，直接产出最终回答，不允许多轮澄清、纠正或迭代反馈；允许 unrestricted Internet browsing（不受限联网检索）。判分不靠字符串匹配或选择题，而是按任务专属 rubric 逐条打分：单题得分 = 获得分数 ÷ 该题 rubric 总分，任务级通过线为 70%。除另有说明外，聚合结果按问题加权，每题等权，不按 rubric 长度、样本数或标准条数加权。",
+    "cite": [
+      "paper@§3.3 Task Formulation",
+      "paper@§5.1 Evaluation Protocol",
+      "paper@§5.2 Metrics",
+      "paper@§5.3 Grader Validation"
+    ],
+    "variants": [
+      {
+        "text": "带附件 vs 纯文本：官方公告口径写作「tasks with artifacts or URLs」，GPT-Rosalind 通过率 45.1% → 28.1%、GPT-5.5 29.9% → 21.9%；论文口径写作「tasks requiring attached artifacts」，GPT-Rosalind 44.5% → 28.6%、GPT-5.5 29.5% → 22.2%。两组数字口径不同，不能混排。",
+        "cite": [
+          "site",
+          "paper@§6.3.2 Artifact Heavy & Operationally Constrained Tasks"
+        ]
+      },
+      {
+        "text": "归一分 vs 通过率：论文同时报告问题加权归一化 rubric 得分（0–1）与任务通过率（0–100%），GPT-Rosalind 为 0.576 与 36.1%。0.576 不是 57.6%，两个指标不能互相换算。",
+        "cite": [
+          "paper@§5.2 Metrics",
+          "paper@§6.1 Results"
+        ]
+      },
+      {
+        "text": "模型集合固定为 5 个（GPT-5.4、GPT-5.5、GPT-Rosalind、Gemini 3.1 Pro、Grok 4.3），附件按各模型所用评测接口交付；换模型集合或换工件交付方式得到的结果不可直接对比。",
+        "cite": [
+          "paper@§5 Experimental Setup & Grader Validation"
+        ]
+      }
+    ]
   },
   "metrics": [
     {
       "id": "normalized-rubric-score",
-      "name": "Normalized rubric score",
+      "name": "归一化 rubric 得分（Normalized rubric score）",
+      "direction": "越高越好",
+      "description": "单题获得 rubric 分数除以该题总分，再对全部任务取等权平均；给正确的中间推理以部分分",
       "range": [
         0,
         1
       ],
       "unit": "ratio",
-      "direction": "higher",
-      "aggregation": "mean"
+      "cite": [
+        "paper@§5.2 Metrics"
+      ]
     },
     {
       "id": "task-pass-rate",
-      "name": "Task pass rate（单任务 rubric 得分 ≥70%）",
+      "name": "任务通过率（Task pass rate）",
+      "direction": "越高越好",
+      "description": "单题归一化 rubric 得分达到或超过 70% 任务阈值的任务占比；比归一分更严格",
       "range": [
         0,
         100
       ],
       "unit": "percent",
-      "direction": "higher",
-      "aggregation": "mean"
+      "cite": [
+        "paper@§5.2 Metrics",
+        "site"
+      ]
     }
   ],
-  "default_protocol": {
-    "raw": "单轮、允许 unrestricted 联网；rubric 条目加权计分，任务通过阈值 rubric ≥70%"
-  },
-  "versions": [],
-  "limitations": [
-    "由 OpenAI 建榜且被评模型多为 OpenAI 系",
-    "单轮设定无法反映真实科研的迭代性",
-    "公开放可能受安全与许可限制"
+  "versions": [
+    {
+      "id": "initial",
+      "date": "2026-06-17",
+      "label": "OpenAI 发布 LifeSciBench：官方公告与预印本论文（本页核对所用版本）",
+      "cite": [
+        "rss",
+        "paper",
+        "site"
+      ]
+    }
   ],
-  "notes": "2026-06 发布；证据账本中 OpenAI GPT-5.6 页 5 行引用（含第三方对照列）",
+  "limitations": [
+    {
+      "issue": "出题方与被评模型同属 OpenAI（身份冲突）",
+      "impact": "论文披露 LifeSciBench 由 OpenAI 开发、被评系统包含 OpenAI 模型；5 个受评模型里 3 个是 OpenAI 系，最高分 GPT-Rosalind 正是 OpenAI 自家的生命科学专用模型。提示词、工件交付方式与 rubric 判分实现都不对外，第三方无法独立复核跑分。",
+      "severity": "高",
+      "response": "论文在 Disclosures 中明示这一机构背景并要求读者据此解读；截至本次核验未见第三方独立复现或审计。",
+      "reader": "把 LifeSciBench 分数当作 OpenAI 自述口径；跨厂商比较前先确认提示词、工件交付与判分实现是否一致。",
+      "cite": [
+        "paper@附录 A.4",
+        "paper@§5 Experimental Setup & Grader Validation",
+        "paper@§6.1 Results"
+      ]
+    },
+    {
+      "issue": "可复现性受限：任务、rubric 与工件未公开",
+      "impact": "论文说任务、rubric、工件或评测材料的公开发布可能受许可、隐私、专有信息或生物安全考虑限制，构建与发布评审期间已排除或限制可能带来生物安全风险的内容。截至本次核验未找到官方公开的数据集、仓库或榜单，第三方既无法复现，也无法横向补测其他模型。",
+      "severity": "高",
+      "response": "论文给出披露但未承诺公开时间表；官方公告页未提供数据集或代码下载入口。",
+      "reader": "只能引用论文与公告内的数字；没有公开数据集意味着无法验证数据污染，也无法核对自动判分的一致性。",
+      "cite": [
+        "paper@附录 A.5"
+      ]
+    },
+    {
+      "issue": "单轮设定与真实科研的迭代性不符",
+      "impact": "评测禁止多轮澄清与迭代反馈，而论文承认真实使用几乎总是多轮；论文同时说基准不覆盖部署型研究项目的完整动态（跨领域协作、新数据生成、财务与运营约束）。",
+      "severity": "中",
+      "response": "论文在 Limitations 中说明单轮是目前基准构造的标准做法，并把「把基准表现与真实研究工作流里的部署研究挂钩」列为下一步。",
+      "reader": "不要把 LifeSciBench 高分理解成「能加速药物研发」或「能独立推进一个课题」。",
+      "cite": [
+        "paper@§3.3 Task Formulation",
+        "paper@§7 Limitations & Future Work"
+      ]
+    },
+    {
+      "issue": "同一组数字在官方公告与论文间不一致",
+      "impact": "「纯文本 vs 带附件」通过率：公告为 GPT-Rosalind 45.1%/28.1%、GPT-5.5 29.9%/21.9%（口径 artifacts or URLs）；论文为 44.5%/28.6% 与 29.5%/22.2%（口径 attached artifacts）。此外公告还给出论文正文没有的工作流级通过率（如 Design, Optimization & Prediction 30.7%、Analysis 30.3%）与答案格式通过率（数值 14.8%、序列/结构 24.0%、构建体生成 27.3%）。",
+      "severity": "中",
+      "response": "未见官方说明差异原因；本页以论文数字为准，同时保留公告数字备查。",
+      "reader": "引用这组数字时注明出自公告还是论文，不要把两处数字排进同一张表。",
+      "cite": [
+        "site",
+        "paper@§6.3.2 Artifact Heavy & Operationally Constrained Tasks"
+      ]
+    },
+    {
+      "issue": "判分一致性数据未列出",
+      "impact": "论文说做过 rubric 自动打分与独立专家打分的一致性 spot-validation，并列出要报告的指标（得分相关性、平均绝对误差、通过/未通过一致率、分歧模式），特别关注重工件与精确输出任务，但正文没有给出这些数值；披露章节只说明自动或模型辅助打分是对着 rubric 而非自由偏好判断。",
+      "severity": "低",
+      "response": "论文承诺报告这些指标但正文未列数值；A.3 给出打分方式的定性说明。",
+      "reader": "不要把 rubric 分数当作完全客观的自动判定；在看不到一致率数据前，给小幅差距保留余地。",
+      "cite": [
+        "paper@§5.3 Grader Validation",
+        "paper@附录 A.3"
+      ]
+    }
+  ],
+  "notes": "2026-06-17 发布；官方公告与论文在「纯文本 vs 带附件」通过率上数字不一致（45.1%/28.1% vs 44.5%/28.6%），本页以论文为准。截至本次核验未找到公开数据集、仓库或官方榜单。",
   "official_sources": [
     {
       "kind": "site",
       "url": "https://openai.com/index/introducing-life-sci-bench/"
+    },
+    {
+      "kind": "paper",
+      "url": "https://cdn.openai.com/pdf/b4299379-0a97-4ffa-8b9b-c3fbb299caa9/lifescibench_preprint.pdf"
     }
   ],
   "related_benchmarks": [
     "genebench",
     "healthbench",
-    "anthropic-life-sciences-internal"
+    "anthropic-life-sciences-internal",
+    "lab-bench",
+    "labbench2",
+    "bixbench"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-09-01"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-13",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "LifeSciBench: Evaluating Language Models on Realistic, Expert-Level Tasks in the Life Sciences（OpenAI 预印本 PDF，26 页）",
+        "url": "https://cdn.openai.com/pdf/b4299379-0a97-4ffa-8b9b-c3fbb299caa9/lifescibench_preprint.pdf",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "site",
+        "kind": "site",
+        "title": "Introducing LifeSciBench（OpenAI 官方公告）",
+        "url": "https://openai.com/index/introducing-life-sci-bench/",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "rss",
+        "kind": "announcement",
+        "title": "OpenAI News RSS（Introducing LifeSciBench，pubDate 2026-06-17）",
+        "url": "https://openai.com/news/rss.xml",
+        "accessed": "2026-11-13"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "OpenAI（与 Tacit Labs 共同署名；专家贡献者由 Tacit Co. 协调）",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      "first_release": {
+        "v": "2026-06-17（OpenAI 官方公告与预印本论文）",
+        "cite": [
+          "rss"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "paper@Abstract",
+        "paper@Table 2",
+        "site"
+      ],
+      "interpretation": [
+        "paper@§5.2 Metrics",
+        "paper@§7 Limitations & Future Work",
+        "paper@§6.3.4"
+      ]
+    },
+    "problem": {
+      "text": "论文梳理的现有生命科学基准各缺一块：LAB-Bench / LABBench2 靠近真实生物研究任务但仍测不出专家级科学判断；BixBench 考智能体式计算生物学但已被前沿模型基本做满；GeneBench 做多阶段定量生物学却几乎只覆盖计算生物学。共同缺口是：没有一个基准同时具备广度与深度，能判断模型能否权衡不完美证据、跨实验约束推理、清楚论证下一步并产出专家可直接使用的输出。LifeSciBench 用「7 类科研工作流 × 7 个生物领域 + 每题一份专家 rubric」来补这个缺口。",
+      "cite": [
+        "paper@§2 Related Work",
+        "paper@§1 Introduction"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "论文报告的最低单模型成绩",
+        "value": "0.399 / 13.0%",
+        "note": "Grok 4.3（问题加权归一化 rubric 得分 / 任务通过率），5 个受评模型中最低。",
+        "cite": [
+          "paper@§6.1 Results"
+        ]
+      },
+      {
+        "label": "人类基线",
+        "value": "论文未给出",
+        "note": "论文与官方公告均未报告人类专家在 LifeSciBench 上的成绩；不要把模型分数直接和「人类水平」对比。",
+        "cite": [
+          "paper@§5 Experimental Setup & Grader Validation",
+          "site"
+        ]
+      },
+      {
+        "label": "论文发布时最好成绩",
+        "value": "0.576 / 36.1%",
+        "note": "GPT-Rosalind；同期 GPT-5.5 为 0.519 / 25.7%，Gemini 3.1 Pro 为 0.515 / 23.6%，GPT-5.4 为 0.479 / 20.7%。",
+        "cite": [
+          "paper@§6.1 Results"
+        ]
+      },
+      {
+        "label": "官方榜单最高",
+        "value": "论文未给出",
+        "note": "截至本次核验未找到 LifeSciBench 的官方榜单、公开数据集或代码仓库；论文与公告中的对比只覆盖上述 5 个模型。",
+        "cite": [
+          "paper@§5 Experimental Setup & Grader Validation"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      },
+      {
+        "label": "饱和参考线",
+        "value": "266 题（35.5%）最佳模型通过率 ≥ 70%",
+        "note": "论文按「任一受评模型在该题的最高通过率」分箱：171 题（22.8%）无任何模型通过，261 题（34.8%）最佳通过率低于 20%，422 题（56.3%）低于 50%。基准远未饱和，目前也没有随机基线可作对照。",
+        "cite": [
+          "paper@Table 3",
+          "paper@§6.3.1 Benchmark Headroom"
+        ]
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 0.576 读成 57.6%：归一化 rubric 得分与任务通过率是两个指标，GPT-Rosalind 的 0.576 和 36.1% 必须分开引用，不能互相换算。",
+        "cite": [
+          "paper@§5.2 Metrics",
+          "paper@§6.1 Results"
+        ]
+      },
+      {
+        "text": "把通过率低理解成「模型不懂生物」：官方公告称约 14% 的任务里模型拿到大量 rubric 分数却没过通过线，论文称 GPT-Rosalind 有 109 题通过率低于 20% 但 rubric 得分仍 ≥50%。瓶颈在于可靠地满足全部约束，而不只是知识缺口。",
+        "cite": [
+          "site",
+          "paper@§6.3.4"
+        ]
+      },
+      {
+        "text": "把小类别的百分比当稳定排名：科学传播类只有 9 题，论文说这一类样本小、估计值要谨慎解读，公告也明确提醒。",
+        "cite": [
+          "paper@§6.2.1",
+          "site"
+        ]
+      },
+      {
+        "text": "把带附件与纯文本的通过率排进同一张表：公告口径是「artifacts or URLs」（45.1% → 28.1%），论文口径是「attached artifacts」（44.5% → 28.6%），数字和口径都不同。",
+        "cite": [
+          "site",
+          "paper@§6.3.2 Artifact Heavy & Operationally Constrained Tasks"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "OpenAI；论文另列 Tacit Labs 共同作者，专家贡献者通过 Tacit Co. 协调，个人名单应供应商要求未在论文中列出",
+        "cite": [
+          "paper@作者署名",
+          "paper@§3.2 Expert Writer Cohort"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "Amelia Liu、Andrew Ho、Anne Marie Droste、David Martin、Edmund Wong、Edward Zhou、Isabelle Zhou、Joshua Park、Joy Jiao、Katie-Rose Skelly、Kenny Kim、Kevin Rao、Masatoshi Uehara、Max Marion、Nicole Fitzgerald、Rachel Dias、Suyash Shringarpure、Yuan Yuan、Yunyun Wang（署名 1 = OpenAI，2 = Tacit Labs）",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2026-06-17 OpenAI 官方公告与预印本论文发布（RSS pubDate 为 2026-06-17）",
+        "cite": [
+          "rss"
+        ]
+      },
+      {
+        "k": "出题与验证队伍",
+        "v": "173 位专家科学家出题（相关学科博士学位 + 至少两年生物技术或制药行业经验）；453 位未参与出题的评审人独立验证，97% 有博士或同等学历，平均 12 年领域经验、14 篇同行评审论文，88% 至少获过一次奖项或资助",
+        "cite": [
+          "paper@§3.2 Expert Writer Cohort",
+          "paper@§4 Benchmark Validation"
+        ]
+      },
+      {
+        "k": "受评模型",
+        "v": "GPT-5.4、GPT-5.5、GPT-Rosalind、Gemini 3.1 Pro、Grok 4.3，共 5 个前沿通用或领域专用模型",
+        "cite": [
+          "paper@§5 Experimental Setup & Grader Validation"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "截至本次核验未找到官方公开的数据集、代码仓库或榜单；预印本 PDF 由 OpenAI CDN 提供，官方公告页未给下载入口",
+        "cite": [
+          "paper@附录 A.5"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-13",
+        "columns": [
+          "来源",
+          "模型",
+          "归一化 rubric 得分",
+          "任务通过率",
+          "备注"
+        ],
+        "rows": [
+          [
+            "论文 §6.1",
+            "Grok 4.3",
+            "0.399",
+            "13.0%",
+            "5 个受评模型中最低"
+          ],
+          [
+            "论文 §6.1",
+            "GPT-5.4",
+            "0.479",
+            "20.7%",
+            "—"
+          ],
+          [
+            "论文 §6.1",
+            "Gemini 3.1 Pro",
+            "0.515",
+            "23.6%",
+            "在 214 题上单独领先"
+          ],
+          [
+            "论文 §6.1",
+            "GPT-5.5",
+            "0.519",
+            "25.7%",
+            "—"
+          ],
+          [
+            "论文 §6.1",
+            "GPT-Rosalind",
+            "0.576",
+            "36.1%",
+            "750 题中 386 题单题均分最高"
+          ],
+          [
+            "论文 §6.2.1",
+            "GPT-Rosalind",
+            "0.718",
+            "未给出",
+            "科学传播类均分（该类仅 9 题）"
+          ],
+          [
+            "论文 §6.2.1",
+            "GPT-Rosalind",
+            "0.712",
+            "未给出",
+            "转化类均分"
+          ]
+        ]
+      },
+      "cite": [
+        "paper@§6.1 Results",
+        "paper@§6.2.1"
+      ]
+    }
+  }
 }
