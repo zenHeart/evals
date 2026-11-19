@@ -1,64 +1,583 @@
 {
-  "id": "odvbench",
-  "name": "ODV-Bench",
-  "full_name": null,
-  "aliases": [
-    "ODVBench"
-  ],
-  "status": null,
-  "categories": [
-    "multimodal"
-  ],
-  "summary": "面向自动驾驶场景的实时流式视频理解基准（StreamForest 论文提出，NeurIPS 2025）：考在线实时感知与未来预测",
-  "interpretation": "准确率口径，强调边流边答与短时未来预测，分数受帧率与延迟预算影响；Seed2.0 页以「ODVBench」行列出（Lite 66.0 / Pro 72.5 / Mini 65.1），与流式组 OVBench/OVOBench 并列，本仓判定其为同一 ODV-Bench。",
-  "measures": [
-    "流式输入下的实时感知",
-    "基于当前流的未来预测"
-  ],
-  "does_not_measure": [
-    "离线全片理解",
-    "音频理解"
-  ],
-  "dataset": {
-    "sample_count": null,
-    "splits": [
-      "real-time perception",
-      "future prediction"
-    ],
-    "languages": [],
-    "source_type": "real-world（自动驾驶流式视频）",
-    "public_sample": true
+ "id": "odvbench",
+ "name": "ODV-Bench",
+ "full_name": "ODV-Bench（自动驾驶场景在线视频理解基准；论文与官网均未展开 ODV 三个字母的含义）",
+ "aliases": [
+  "ODVBench"
+ ],
+ "status": "active",
+ "categories": [
+  "multimodal"
+ ],
+ "summary": "ODV-Bench 是 6,322 道单选题组成的流式视频理解基准：画面按 1 FPS 逐帧送达，模型在提问时刻只能看到该时刻之前的内容，回答认交通标志、查历史信息、预测他车动作、判断风险等 12 类自动驾驶任务。",
+ "interpretation": "高分说明模型在「边看边答」的条件下既能做好实时感知，也能基于已看到的画面预测短期未来；但它不说明模型离线看完整片更强，也不说明会开车，而且 2–4 个选项的选择题存在猜对空间，微调过驾驶数据的分数不能与零样本分数直接比。",
+ "measures": [
+  {
+   "area": "静态目标（1,639 题 / 247 个视频）",
+   "focus": "识别与检索静止交通要素：实时交通感知（RTP，问画面里某个框是什么标志）、幻觉检测（HD，画面没提就答「无法判断」）、关键信息提取（KIE）、交通变化检测（TCD）、驾驶决策（DDM）、历史交通记忆（PTM，问几秒前信号灯什么颜色，只能靠已流过的画面）。",
+   "share": "1,639 题 / 247 个视频",
+   "format": "单选题，选项 2–4 个",
+   "cite": [
+    "arxiv-2509-24871@附录 C.1.1",
+    "arxiv-2509-24871@附录 C.2",
+    "homepage@任务列表",
+    "arxiv-2509-24871@Figure 6"
+   ]
   },
-  "metrics": [
-    {
-      "id": "accuracy",
-      "name": "Accuracy",
-      "range": [
-        0,
-        100
-      ],
-      "unit": "percent",
-      "direction": "higher",
-      "aggregation": "mean"
-    }
+  {
+   "area": "动态目标（2,973 题 / 162 个视频）",
+   "focus": "预测运动中的道路参与者：动作预测（AP，问框里的公交车接下来会横穿还是变道）、位置预测（LP，问下一秒目标框在哪）、距离预测（DP，问自车与目标在变近还是变远）。",
+   "share": "2,973 题 / 162 个视频",
+   "format": "单选题，选项 2–4 个",
+   "cite": [
+    "arxiv-2509-24871@附录 C.1.2",
+    "arxiv-2509-24871@附录 C.2",
+    "arxiv-2509-24871@Figure 6"
+   ]
+  },
+  {
+   "area": "多目标交互事件（1,710 题 / 781 个视频）",
+   "focus": "风险与事故：风险预测（RP，问未来一段时间内是否会出现显著交通风险）、风险分析（RA，问风险来自哪里、可能导致什么事故）、事故原因回答（ARA，问事故由什么造成、如何避免）。",
+   "share": "1,710 题 / 781 个视频",
+   "format": "单选题，选项 2–4 个",
+   "cite": [
+    "arxiv-2509-24871@附录 C.1.3",
+    "arxiv-2509-24871@附录 C.2",
+    "arxiv-2509-24871@Figure 6"
+   ]
+  }
+ ],
+ "does_not_measure": [
+  {
+   "text": "离线全片理解：评测协议要求模型只处理提问时刻之前已经到达的画面，先看完再答的成绩不适用这套口径。",
+   "cite": [
+    "arxiv-2509-24871@§5.1"
+   ]
+  },
+  {
+   "text": "车辆控制与轨迹规划：全部题目是选择题，模型输出选项，不输出方向盘、油门或轨迹。",
+   "cite": [
+    "arxiv-2509-24871@附录 C.2"
+   ]
+  },
+  {
+   "text": "通用流式视频理解与非英文场景：题目全部来自自动驾驶场景，输入只有视频与文本（数据集字段为 task、subtask、question、answer、video、candidates、start、end、fps），没有音频，论文也没有声明题目语言（官方数据集浏览页示例均为英文）。",
+   "cite": [
+    "hfodv@数据集浏览",
+    "arxiv-2509-24871@附录 C.2"
+   ]
+  }
+ ],
+ "dataset": {
+  "sample_count": 6322,
+  "splits": [
+   "静态目标：247 个视频 / 1,639 题",
+   "动态目标：162 个视频 / 2,973 题",
+   "多目标交互事件：781 个视频 / 1,710 题",
+   "Hugging Face 上只有单个 train 拆分（6,348 行）"
   ],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [
-    "场景域集中于自动驾驶，泛化结论有限"
+  "languages": [
+   "en"
   ],
-  "notes": "arXiv 2509.24871（StreamForest，NeurIPS 2025）；证据账本 2 行（字节）",
-  "official_sources": [
-    {
-      "kind": "paper",
-      "url": "https://arxiv.org/abs/2509.24871"
-    }
+  "source_type": "real-world（来自 6 个既有自动驾驶数据集的第一人称行车视频）",
+  "public_sample": true,
+  "totals": "6,322 道单选题，来自 1,190 段第一人称行车视频（每段 5–90 秒，平均提问时刻 18.9 秒），每题 2–4 个选项；Hugging Face 数据集卡显示 6,348 行，与论文差 26 条（见「可信度与局限」）。",
+  "cite": [
+   "arxiv-2509-24871@附录 C.2",
+   "hfodv@数据集卡"
   ],
-  "related_benchmarks": [
-    "ovbench",
-    "ovobench",
-    "video-mme"
+  "construction": [
+   {
+    "k": "视频筛选",
+    "text": "从自动驾驶领域 6 个数据集（覆盖正常行驶到突发事故）里挑视频，用标注过滤加 YOLO 检测的半自动流程筛出与任务相关的片段，再辅以人工抽查。",
+    "cite": [
+     "arxiv-2509-24871@§4.2"
+    ]
+   },
+   {
+    "k": "元标注生成",
+    "text": "标注完善的数据集直接把已有标签转成任务专用的时空元标注；其余先用 VLLM 和 YOLO 生成粗标注，再做结构化人工校验。",
+    "cite": [
+     "arxiv-2509-24871@§4.2"
+    ]
+   },
+   {
+    "k": "选择题生成",
+    "text": "为每个任务写模板，用细粒度标注填充生成问答对；再从候选选项池里挑似是而非的干扰项，避免靠排除法蒙对。",
+    "cite": [
+     "arxiv-2509-24871@§4.2"
+    ]
+   },
+   {
+    "k": "质量控制",
+    "text": "多轮人工复核题意、答案与干扰项的合理性；再按视频长度按比例抽样，兼顾场景多样性与任务类型均衡。",
+    "cite": [
+     "arxiv-2509-24871@§4.2"
+    ]
+   }
+  ]
+ },
+ "default_protocol": {
+  "raw": "流式问答：帧按 1 FPS 送入模型，提问时模型只能看到该时刻之前的画面（论文在 5.1 节明确这一点），答完一个选项即判分；论文报告的全部结果为 zero-shot，视觉 token 默认上限 8192。",
+  "cite": [
+   "arxiv-2509-24871@§5.1",
+   "arxiv-2509-24871@§5",
+   "arxiv-2509-24871@Table 1"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-09-01"
+  "variants": [
+   {
+    "text": "零样本 vs 驾驶域微调：Table 1 中 StreamForest 59.9% 是零样本，StreamForest (FT-drive) 71.2% 额外用了 89K 驾驶场景流式 QA 微调，两者不能放在一起比。",
+    "cite": [
+     "arxiv-2509-24871@§5.1",
+     "arxiv-2509-24871@附录 B.2"
+    ]
+   },
+   {
+    "text": "流式输入 vs 固定帧数采样：Table 1 的 #Frames 列同时含 1fps 与 64/32/256 帧；官网用 ⭐ 标出真正流式输入的模型，Qwen2.5-VL 虽然也是 1 fps 但未标 ⭐，说明它只是按 1 帧/秒采样。",
+    "cite": [
+     "arxiv-2509-24871@Table 1",
+     "homepage@Leaderboard"
+    ]
+   },
+   {
+    "text": "视觉 token 预算：默认 8192，压到 1024 时论文称八个基准的平均准确率仍保留 96.8%，不同预算下的分数不能直接横比。",
+    "cite": [
+     "arxiv-2509-24871@§5",
+     "arxiv-2509-24871@摘要"
+    ]
+   },
+   {
+    "text": "视频帧率口径：论文评测按 1 FPS，Hugging Face 数据集卡的 fps 字段为 10–30（原始视频帧率），复现时要按论文口径重采样。",
+    "cite": [
+     "arxiv-2509-24871@§5",
+     "hfodv@数据集浏览"
+    ]
+   }
+  ]
+ },
+ "metrics": [
+  {
+   "id": "accuracy",
+   "name": "准确率",
+   "direction": "越高越好",
+   "description": "所选选项与标准答案一致的题目占比；除 Overall 外还按 12 个子任务和三个任务类（静态 / 动态 / 事件）分别报告。",
+   "range": [
+    0,
+    100
+   ],
+   "unit": "percent",
+   "cite": [
+    "arxiv-2509-24871@Table 1",
+    "homepage@任务列表"
+   ]
+  }
+ ],
+ "versions": [
+  {
+   "id": "neurips-2025-spotlight",
+   "date": "2025-09-19",
+   "label": "论文被 NeurIPS 2025 接收为 Spotlight（仓库更新日志；论文脚注亦标注为 NeurIPS 2025）。",
+   "cite": [
+    "repo@Updates",
+    "arxiv-2509-24871@NeurIPS 2025"
+   ]
+  },
+  {
+   "id": "v1",
+   "date": "2025-09-29",
+   "label": "arXiv v1 上线（cs.CV），同日公开 StreamForest 模型、数据与代码，ODV-Bench 随论文首次发布。",
+   "cite": [
+    "arxiv-2509-24871@arXiv 版头",
+    "repo@Updates"
+   ]
+  }
+ ],
+ "limitations": [
+  {
+   "issue": "官方榜首分数来自驾驶域微调模型，与零样本分数不可比",
+   "impact": "Table 1 中 StreamForest (FT-drive) 71.2% 比同表零样本的 59.9% 高 11.3 个百分点，也高于表内所有零样本模型；若不分口径排名，会把「训练数据同域」的增益算成模型能力。",
+   "severity": "高",
+   "response": "论文在 5.1 节分别给出零样本与微调两组数字，并说明 FT-drive 使用自建驾驶域数据 OnlineIT-drive。",
+   "reader": "比较前先确认是零样本还是微调；引用「ODV-Bench 最高分」时注明口径。",
+   "cite": [
+    "arxiv-2509-24871@§5.1",
+    "arxiv-2509-24871@附录 B.2"
+   ]
+  },
+  {
+   "issue": "全为 2–4 选项单选题，随机基线不可忽略，而论文未报告",
+   "impact": "按 2–4 个选项均匀猜，随机基线在 25%–50% 之间；HD 这类 2 选项任务尤其明显（Flash-VStream 的 HD 只有 1.6%，MiniCPM-V2.6 的 HD 却有 87.8%），论文没有给出各子任务随机基线，低分任务难以区分「不会」与「反着选」。",
+   "severity": "中",
+   "response": "论文未报告随机基线，只在 HD 任务中设置「Unable to say」选项来控制幻觉。",
+   "reader": "看子任务分数时结合选项数判断，2 选项任务要过半才算强于瞎猜。",
+   "cite": [
+    "arxiv-2509-24871@附录 C.2",
+    "arxiv-2509-24871@Table 1"
+   ]
+  },
+  {
+   "issue": "题量在论文与官方数据集卡之间不一致",
+   "impact": "论文附录 C.2 写 6,322 个问答对，Hugging Face 上 MCG-NJU/ODV-Bench 显示 6,348 行，相差 26；以百分比口径引用时会随分母不同而漂移。",
+   "severity": "中",
+   "response": "未见官方说明。",
+   "reader": "引用题量时写明取自论文还是数据集卡。",
+   "cite": [
+    "arxiv-2509-24871@附录 C.2",
+    "hfodv@数据集卡"
+   ]
+  },
+  {
+   "issue": "场景域窄，结论不能外推到通用流式视频",
+   "impact": "1,190 段视频全部来自自动驾驶数据集，题目只覆盖交通要素、车辆行人与风险事故；在其他流式基准（StreamingBench、OVBench、OVO-Bench）上的成绩需另测。",
+   "severity": "中",
+   "response": "论文把 ODV-Bench 定位为下游任务泛化验证，并在 StreamingBench、OVBench、OVO-Bench 上同时报告流式成绩。",
+   "reader": "把它当作驾驶域流式理解的专项基准，不要当作通用流式视频基准。",
+   "cite": [
+    "arxiv-2509-24871@§4.2",
+    "arxiv-2509-24871@§5.1"
+   ]
+  },
+  {
+   "issue": "视频需自备目录，复现路径以仓库 README 为准",
+   "impact": "视频版权分散在 6 个来源数据集，仓库 README 要求评测时按各任务的 DATA_LIST 手动指定本地视频目录；Hugging Face 上的 ODV-Bench 数据集虽含视频（14.1 GB），但仍需按 README 组织目录，跨机器复现成本高。",
+   "severity": "中",
+   "response": "README 给出下载与 DATA_LIST 配置说明。",
+   "reader": "复现前先确认能拿到来源数据集的视频并按 DATA_LIST 指路。",
+   "cite": [
+    "readme@评测说明",
+    "hfodv@数据集卡"
+   ]
+  },
+  {
+   "issue": "微调数据与基准同域，存在污染风险",
+   "impact": "OnlineIT-drive 用 89K 驾驶场景流式 QA 微调，与 ODV-Bench 同属自动驾驶域；FT-drive 在 KIE 上拿到 100.0%，论文没有做基准题目是否进入训练数据的核查。",
+   "severity": "中",
+   "response": "论文未讨论基准污染问题。",
+   "reader": "把 FT-drive 的分数视为同域微调后的参考上界，而非泛化能力。",
+   "cite": [
+    "arxiv-2509-24871@附录 B.2",
+    "arxiv-2509-24871@Table 1"
+   ]
+  }
+ ],
+ "notes": "ODV-Bench 与 StreamForest 模型论文同篇发布；属流式（online）视频基准，与 OVBench、OVO-Bench 并列。",
+ "official_sources": [
+  {
+   "kind": "paper",
+   "url": "https://arxiv.org/abs/2509.24871"
+  },
+  {
+   "kind": "repo",
+   "url": "https://github.com/MCG-NJU/StreamForest"
+  },
+  {
+   "kind": "dataset",
+   "url": "https://huggingface.co/datasets/MCG-NJU/ODV-Bench"
+  },
+  {
+   "kind": "site",
+   "url": "https://happyzqy.github.io/StreamForest/"
+  }
+ ],
+ "related_benchmarks": [
+  "ovbench",
+  "ovobench",
+  "video-mme"
+ ],
+ "content_status": "reviewed",
+ "last_verified_at": "2026-11-13",
+ "profile": {
+  "template": "benchmark-profile/v2",
+  "verified_at": "2026-11-13",
+  "header": {
+   "publisher": {
+    "v": "南京大学多媒体计算组（MCG-NJU）牵头，联合上海人工智能实验室、浙江大学、华为诺亚方舟实验室与 Yinwang Intelligent Tech.；Hugging Face 组织页名为 Multimedia Computing Group-Nanjing University。",
+    "cite": [
+     "arxiv-2509-24871@作者署名",
+     "hfodv@数据集卡"
+    ]
+   },
+   "first_release": {
+    "v": "2025-09-29（arXiv v1；同日公开模型、数据与代码）",
+    "cite": [
+     "arxiv-2509-24871@arXiv 版头",
+     "repo@Updates"
+    ]
+   }
+  },
+  "cites": {
+   "summary": [
+    "arxiv-2509-24871@摘要",
+    "arxiv-2509-24871@§4"
+   ],
+   "interpretation": [
+    "arxiv-2509-24871@§5.1",
+    "arxiv-2509-24871@附录 C.2"
+   ]
+  },
+  "problem": {
+   "text": "已有流式视频基准多由离线视频数据集改造而来，题目以静态场景描述和逐步叙述人机交互为主，看不出自动驾驶这种高风险、多主体、需要实时决策的场景能力；ODV-Bench 用带时间戳的第一人称驾驶视频，把「此刻看到什么」和「接下来会发生什么」放进同一套题。",
+   "cite": [
+    "arxiv-2509-24871@§4",
+    "arxiv-2509-24871@§4.1"
+   ]
+  },
+  "ladder": [
+   {
+    "label": "论文未给出随机基线",
+    "value": "论文未给出",
+    "note": "全部为 2–4 选项单选题，均匀猜约 25%–50%；论文没有报告，本站也不推算。",
+    "cite": [
+     "arxiv-2509-24871@附录 C.2"
+    ]
+   },
+   {
+    "label": "论文发布时最好（零样本）",
+    "value": "59.9%",
+    "note": "StreamForest 7B，1 fps，未用驾驶域数据微调；同表最好离线模型 Qwen2.5-VL 为 55.6%。",
+    "cite": [
+     "arxiv-2509-24871@Table 1"
+    ]
+   },
+   {
+    "label": "论文发布时最好（驾驶域微调）",
+    "value": "71.2%",
+    "note": "StreamForest (FT-drive) 7B，用 89K 驾驶场景流式 QA 微调后得到。",
+    "cite": [
+     "arxiv-2509-24871@§5.1",
+     "arxiv-2509-24871@Table 1"
+    ]
+   },
+   {
+    "label": "官网榜单最高",
+    "value": "71.2%",
+    "note": "项目主页 Leaderboard 默认按总体准确率排序，榜首同为 StreamForest (FT-drive)。",
+    "cite": [
+     "homepage@Leaderboard"
+    ]
+   },
+   {
+    "label": "人类参考线",
+    "value": "91.4%",
+    "note": "论文 Table 1 的 Human Agents 行；论文正文未描述人类评测流程。",
+    "cite": [
+     "arxiv-2509-24871@Table 1"
+    ]
+   },
+   {
+    "label": "本站账本当前最高",
+    "auto": "ledger-top"
+   }
+  ],
+  "misreadings": [
+   {
+    "text": "把 FT-drive 的 71.2% 和零样本模型的 59.9%、55.6% 排进同一张榜。前者用过 89K 驾驶域数据微调，与基准同域，不是同一口径。",
+    "cite": [
+     "arxiv-2509-24871@§5.1",
+     "arxiv-2509-24871@附录 B.2"
+    ]
+   },
+   {
+    "text": "把 Table 1 里的离线模型当成「看完整片」的成绩。#Frames 列的 64/32/256 是固定帧数采样，不是流式；官网用 ⭐ 标出真正流式输入的模型。",
+    "cite": [
+     "arxiv-2509-24871@Table 1",
+     "homepage@Leaderboard"
+    ]
+   },
+   {
+    "text": "看到 KIE 100.0% 就认为模型全面领先。同一行里 DDM 只有 32.7%、HD 17.1%，子任务之间差距极大。",
+    "cite": [
+     "arxiv-2509-24871@Table 1"
+    ]
+   },
+   {
+    "text": "把 ODV-Bench 高分理解成「能开车」。它只测流式视频问答，模型输出选项，不输出轨迹或控制指令。",
+    "cite": [
+     "arxiv-2509-24871@附录 C.2"
+    ]
+   }
+  ],
+  "background": [
+   {
+    "k": "发布方",
+    "v": "南京大学多媒体计算组（MCG-NJU）牵头，联合上海人工智能实验室、浙江大学、华为诺亚方舟实验室、Yinwang Intelligent Tech.；Hugging Face 组织页名为 Multimedia Computing Group-Nanjing University。",
+    "cite": [
+     "arxiv-2509-24871@作者署名",
+     "hfodv@数据集卡"
+    ]
+   },
+   {
+    "k": "核心作者",
+    "v": "共同一作（论文署名带 ∗ 标记）Xiangyu Zeng、Kefan Qiu、Qingyu Zhang；Limin Wang 为末位作者（署名带 † 标记，原文未在正文说明标记含义）。",
+    "cite": [
+     "arxiv-2509-24871@作者署名"
+    ]
+   },
+   {
+    "k": "时间线",
+    "v": "2025-09-19 论文被 NeurIPS 2025 接收为 Spotlight；2025-09-29 arXiv v1 上线并公开模型、数据与代码。",
+    "cite": [
+     "repo@Updates",
+     "arxiv-2509-24871@arXiv 版头"
+    ]
+   },
+   {
+    "k": "数据与代码",
+    "v": "代码与模型在 GitHub MCG-NJU/StreamForest；基准在 Hugging Face MCG-NJU/ODV-Bench（MIT 许可，6,348 行）；训练与测试集标注在 MCG-NJU/StreamForest-Annodata。",
+    "cite": [
+     "repo",
+     "hfodv@数据集卡",
+     "hfcollection@Collection"
+    ]
+   },
+   {
+    "k": "配套模型",
+    "v": "论文同时提出流式视频理解模型 StreamForest（Persistent Event Memory Forest + Fine-grained Spatiotemporal Window），ODV-Bench 是其下游泛化评测之一；Hugging Face 上 StreamForest-Qwen2-7B / 8B 更新于 2025-09-29。",
+    "cite": [
+     "repo",
+     "hfcollection@Collection"
+    ]
+   },
+   {
+    "k": "同类基准",
+    "v": "论文同时在 StreamingBench、OVBench、OVO-Bench 上报告流式成绩，在 VideoMME、MLVU、MVBench、PerceptionTest 上报告离线成绩。",
+    "cite": [
+     "arxiv-2509-24871@§5.1"
+    ]
+   }
+  ],
+  "sources": [
+   {
+    "id": "arxiv-2509-24871",
+    "kind": "paper",
+    "title": "StreamForest: Efficient Online Video Understanding with Persistent Event Memory（arXiv:2509.24871v1）",
+    "url": "https://arxiv.org/abs/2509.24871",
+    "accessed": "2026-11-13"
+   },
+   {
+    "id": "homepage",
+    "kind": "site",
+    "title": "StreamForest 项目主页（含 ODV-Bench Leaderboard 与 12 项任务列表）",
+    "url": "https://happyzqy.github.io/StreamForest/",
+    "accessed": "2026-11-13"
+   },
+   {
+    "id": "repo",
+    "kind": "repo",
+    "title": "GitHub - MCG-NJU/StreamForest",
+    "url": "https://github.com/MCG-NJU/StreamForest",
+    "accessed": "2026-11-13"
+   },
+   {
+    "id": "readme",
+    "kind": "repo",
+    "title": "StreamForest README（raw）",
+    "url": "https://raw.githubusercontent.com/MCG-NJU/StreamForest/main/README.md",
+    "accessed": "2026-11-13"
+   },
+   {
+    "id": "hfodv",
+    "kind": "dataset",
+    "title": "Hugging Face - MCG-NJU/ODV-Bench",
+    "url": "https://huggingface.co/datasets/MCG-NJU/ODV-Bench",
+    "accessed": "2026-11-13"
+   },
+   {
+    "id": "hfcollection",
+    "kind": "dataset",
+    "title": "Hugging Face Collection - MCG-NJU/streamforest-and-odvbench",
+    "url": "https://huggingface.co/collections/MCG-NJU/streamforest-and-odvbench-68da5d8a88f3cf453bca0e09",
+    "accessed": "2026-11-13"
+   }
+  ],
+  "official_results": {
+   "table": {
+    "as_of": "2026-11-13",
+    "columns": [
+     "模型",
+     "规模",
+     "输入",
+     "总体准确率"
+    ],
+    "rows": [
+     [
+      "Human Agents",
+      null,
+      null,
+      "91.4%"
+     ],
+     [
+      "StreamForest (FT-drive)",
+      "7B",
+      "1 fps（流式 ⭐）",
+      "71.2%"
+     ],
+     [
+      "StreamForest",
+      "7B",
+      "1 fps（流式 ⭐）",
+      "59.9%"
+     ],
+     [
+      "Qwen2.5-VL",
+      "7B",
+      "1 fps（非流式）",
+      "55.6%"
+     ],
+     [
+      "VideoChat-Online",
+      "4B",
+      "1 fps（流式 ⭐）",
+      "54.5%"
+     ],
+     [
+      "VideoChat-Flash",
+      "7B",
+      "256 帧",
+      "54.4%"
+     ],
+     [
+      "InternVL2.5",
+      "8B",
+      "32 帧",
+      "54.2%"
+     ],
+     [
+      "LLaVA-OneVision",
+      "7B",
+      "64 帧",
+      "51.6%"
+     ],
+     [
+      "LongVA",
+      "7B",
+      "64 帧",
+      "50.2%"
+     ],
+     [
+      "MiniCPM-V2.6",
+      "7B",
+      "64 帧",
+      "49.8%"
+     ],
+     [
+      "Dispider",
+      "7B",
+      "1 fps（流式 ⭐）",
+      "45.2%"
+     ],
+     [
+      "Flash-VStream",
+      "7B",
+      "1 fps（流式 ⭐）",
+      "35.7%"
+     ]
+    ]
+   },
+   "cite": [
+    "arxiv-2509-24871@Table 1",
+    "homepage@Leaderboard"
+   ]
+  }
+ }
 }
