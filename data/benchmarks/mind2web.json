@@ -1,41 +1,365 @@
 {
   "id": "mind2web",
   "name": "Mind2Web",
-  "full_name": null,
+  "full_name": "Mind2Web: Towards a Generalist Agent for the Web（面向通用 Web 智能体的数据集与基准）",
   "aliases": [],
   "status": null,
-  "categories": [
-    "agent"
-  ],
-  "summary": "真实网站通用 Web 智能体评测",
-  "interpretation": "137 个真实网站、31 个域、2,000+ 任务，按步级成功率与任务级成功率读分（论文口径为 macro 平均准确率）；设定是静态离线页面，分数高不等于在线可用（在线能力另测 Online-Mind2Web）。",
-  "measures": [],
-  "does_not_measure": [],
-  "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
-  },
-  "metrics": [],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [],
-  "notes": "Qwen3-coder 引用；OSU 发布",
-  "official_sources": [
+  "categories": ["agent"],
+  "summary": "Mind2Web 是面向网页智能体（web agent，能自己操作浏览器完成任务的程序）的真实网站基准：2,350 条任务各配一句高层目标和一条人工操作轨迹，覆盖 137 个真实网站、31 个领域。评测在离线网页快照上进行，按「选对元素 + 做对操作」逐步判分。",
+  "interpretation": "高分说明智能体在见过或没见过的网站上，能按人类示范的步骤复现任务；步成功率要求单步的元素和操作都对，任务成功率要求每一步都对，所以任务级分数天然偏低。它测的是离线快照上的复现能力，不等同于能直接操作线上网站（线上能力由 Online-Mind2Web 单独测），也不测多模态、长时程交互或安全行为。",
+  "measures": [
     {
-      "kind": "github",
-      "url": "https://github.com/OSU-NLP-Group/Mind2Web"
+      "area": "跨任务泛化（Cross-Task）",
+      "focus": "训练时见过该网站，但同样的任务没出现过；考同一网站内换目标还能不能做。",
+      "share": "252 题（69 个网站）",
+      "format": "一句高层目标 + 人工操作轨迹（点哪个元素 + 做什么操作）",
+      "cite": ["paper@§4.1 Experimental Setup"]
     },
     {
-      "kind": "site",
-      "url": "https://qwenlm.github.io/blog/qwen3-coder/"
+      "area": "跨网站泛化（Cross-Website）",
+      "focus": "测试网站从未在训练中出现，但同领域网站见过；考换一套页面结构还能不能用。",
+      "share": "177 题（每个剩余的顶层领域取 10 个网站）",
+      "format": "同上",
+      "cite": ["paper@§4.1 Experimental Setup"]
+    },
+    {
+      "area": "跨领域泛化（Cross-Domain）",
+      "focus": "整个顶层领域连同其网站全部 held out；考进入一个全新领域。",
+      "share": "912 题（73 个网站，剔除 Information 与 Service 两个顶层领域）",
+      "format": "同上",
+      "cite": ["paper@§4.1 Experimental Setup"]
+    },
+    {
+      "area": "操作类型分布",
+      "focus": "每步动作由「目标元素 + 操作」组成；规范操作只有 Click / Type / Select 三类，Hover 与 Press Enter 在数据里并入 Click。",
+      "share": "未披露（论文未给三类操作的题量占比）",
+      "format": "（目标元素, 操作）二元组",
+      "cite": ["paper@§2.1 Task Definition", "dataset"]
     }
   ],
-  "related_benchmarks": [
-    "webarena"
+  "does_not_measure": [
+    {
+      "text": "线上真实网站的端到端可用性——评测跑在数据采集时缓存下来的离线快照上，动作没被缓存会直接判失败。",
+      "cite": ["paper@§6 Limitations and Potential Societal Impact", "online-repo@README"]
+    },
+    {
+      "text": "多模态能力——官方 MindAct 只用网页快照的文本，虽然数据里带了截图。",
+      "cite": ["paper@§6 Limitations and Potential Societal Impact"]
+    },
+    {
+      "text": "页面动态变化与长时程交互——每步独立编码，只把上一步动作当历史；用户也不能在中途修改需求。",
+      "cite": ["paper@§6 Limitations and Potential Societal Impact"]
+    },
+    {
+      "text": "非英文网站与非美国用户场景——网站按 SimilarWeb 美国流行度挑选，标注者全部来自 Amazon Mechanical Turk。",
+      "cite": ["paper@§6 Limitations and Potential Societal Impact", "dataset"]
+    }
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "dataset": {
+    "sample_count": 2350,
+    "splits": [
+      "训练集 1,009 题（73 个网站）",
+      "测试 Cross-Task 252 题（69 个网站，任务没出现过）",
+      "测试 Cross-Website 177 题（每个剩余顶层领域 10 个网站）",
+      "测试 Cross-Domain 912 题（73 个网站，整个领域 held out）"
+    ],
+    "languages": ["en"],
+    "source_type": "真实网站（real-world websites）+ 人工在 Amazon Mechanical Turk 上示范的操作轨迹",
+    "public_sample": true,
+    "totals": "2,350 题 / 137 个网站 / 31 个二级领域（隶属 5 个顶层领域）；每题一句高层目标 + 2–37 步人工操作轨迹，平均 7.3 步；页面平均 1,135 个元素，清洗后 580 个。",
+    "cite": ["paper@Abstract", "paper@Table 1", "repo-mind2web@README"],
+    "construction": [
+      {
+        "k": "选网站",
+        "text": "从 Travel、Shopping、Service、Entertainment、Information 五个顶层领域拆出 31 个二级领域，按 SimilarWeb 美国流行度在每个二级领域人工挑 3–5 个代表网站，共 137 个。",
+        "cite": ["paper@§2.2 Data Collection"]
+      },
+      {
+        "k": "出题（MTurk）",
+        "text": "标注员在指定网站上提出开放式、需要多轮交互、只描述高层目标（不给逐步指令）的任务。",
+        "cite": ["paper@§2.2 Data Collection", "paper@§2.1 Task Definition"]
+      },
+      {
+        "k": "示范操作（MTurk）",
+        "text": "作者用自研的、基于 Playwright 的标注工具在真实浏览器里逐步演示：每步先点选元素、再确认并选择操作，同时记录交互轨迹与网页快照。",
+        "cite": ["paper@§2.2 Data Collection"]
+      },
+      {
+        "k": "作者校验",
+        "text": "作者逐条核对动作与描述是否一致、步骤是否干净、起止点是否合理：2,411 条里丢弃 61 条，保留 2,350 条，其中 390 条改过任务描述、187 条删掉多余步骤。",
+        "cite": ["paper@§2.2 Data Collection", "site"]
+      },
+      {
+        "k": "预处理",
+        "text": "按可见性与语义信息清洗 HTML，页面平均元素从 1,135 降到 580，训练集目标元素召回率 94.7%。",
+        "cite": ["paper@§4.2 Data Preprocessing and Evaluation"]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "评测在离线网页快照上进行：每步把任务描述、当前页面（清洗后的候选元素，取候选生成模型排名前 50）和已执行动作历史交给智能体，预测「目标元素 + 操作」。Element Accuracy 对照该步所有可接受元素；Operation F1 对 Type / Select 还要比对输入值；步成功率要求元素和操作都对；任务成功率要求整条任务每一步都对。论文报的是按任务宏平均（macro）的分数。",
+    "cite": ["paper@§4.2 Data Preprocessing and Evaluation", "paper@§3.1 Candidate Generation", "repo-mind2web@README"],
+    "variants": [
+      {
+        "text": "候选池大小：论文多数实验用 top-50 候选；GPT-4 因预算只用 50 条任务和 top-10 候选，两者不可直接比。",
+        "cite": ["repo-mind2web@README", "paper@Table 2 注"]
+      },
+      {
+        "text": "宏平均 vs 微平均：官方仓库早期脚本只报 micro 平均，会被步数多的任务带偏；2023-10-30 起改为同时报两种，与论文数字比较必须用 macro。",
+        "cite": ["repo-mind2web@README"]
+      },
+      {
+        "text": "智能体架构与规模：MindAct（小模型候选排序 + Flan-T5 / GPT-3.5 / GPT-4 预测动作）与直接用分类头或直接生成的基线不是同一套协议；Flan-T5B / L / XL 三档分数差异也明显。",
+        "cite": ["paper@§1 Introduction", "paper@Table 2"]
+      },
+      {
+        "text": "离线快照 vs 线上网站：Mind2Web 是离线快照评测，Online-Mind2Web 直接操作真实网站，两者分数不可比。",
+        "cite": ["online-repo@README"]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "step-success-rate",
+      "name": "步成功率（Step Success Rate）",
+      "direction": "越高越好",
+      "description": "单步预测的元素与操作都正确的比例；论文按任务宏平均报告，是头部主指标。",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["paper@§4.2 Data Preprocessing and Evaluation", "paper@Table 2 注"]
+    },
+    {
+      "id": "task-success-rate",
+      "name": "任务成功率（Success Rate）",
+      "direction": "越高越好",
+      "description": "整条任务所有步骤都成功才算成功，任一环节出错即整题失败，因此数值天然偏低。",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["paper@§4.2 Data Preprocessing and Evaluation"]
+    },
+    {
+      "id": "element-accuracy",
+      "name": "元素准确率（Element Accuracy）",
+      "direction": "越高越好",
+      "description": "选中的元素是否落在该步所有可接受元素集合内。",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["paper@§4.2 Data Preprocessing and Evaluation"]
+    },
+    {
+      "id": "operation-f1",
+      "name": "操作 F1（Operation F1）",
+      "direction": "越高越好",
+      "description": "预测操作的 token 级 F1；对 Click 等价于准确率，对 Type / Select 还要比对输入值。",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["paper@§4.2 Data Preprocessing and Evaluation"]
+    },
+    {
+      "id": "recall-at-50",
+      "name": "候选召回 Recall@50",
+      "direction": "越高越好",
+      "description": "候选生成阶段目标元素是否排进前 50 名；MindAct 用 86M 参数的 DeBERTa 基座达 88.9% / 85.3% / 85.7%。",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["paper@§4.3 Results"]
+    }
+  ],
+  "versions": [
+    {
+      "id": "arxiv-v1",
+      "date": "2023-06-09",
+      "label": "arXiv 预印本首发（v1）",
+      "cite": ["paper@arXiv Submission history"]
+    },
+    {
+      "id": "v1-release",
+      "date": "2023-06-13",
+      "label": "官网放出训练 / 测试数据与代码库",
+      "cite": ["site"]
+    },
+    {
+      "id": "raw-dump",
+      "date": "2023-07-03",
+      "label": "放出原始 dump（交互轨迹、网络流量、截图等）",
+      "cite": ["site"]
+    },
+    {
+      "id": "mindact-code",
+      "date": "2023-08-06",
+      "label": "仓库放出 MindAct 微调代码与模型",
+      "cite": ["site", "repo-mind2web@README"]
+    },
+    {
+      "id": "macro-metrics",
+      "date": "2023-10-30",
+      "label": "评测脚本更新，同时报告 macro 与 micro 平均准确率（论文口径为 macro）",
+      "cite": ["repo-mind2web@README"]
+    },
+    {
+      "id": "arxiv-v3",
+      "date": "2023-12-09",
+      "label": "arXiv v3（补入附录材料，本页核对所用版本）",
+      "cite": ["paper@首页", "paper@arXiv Comments"]
+    },
+    {
+      "id": "multimodal",
+      "date": "2024-03-18",
+      "label": "放出 Multimodal-Mind2Web 数据集（HTML 配截图）",
+      "cite": ["site"]
+    },
+    {
+      "id": "online",
+      "date": "2025-03-25",
+      "label": "放出 Online-Mind2Web（300 个真实网站的在线任务）",
+      "cite": ["site", "online-repo@README"]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "离线快照评测",
+      "impact": "动作若未在采集时缓存会立即判失败；同一任务常有多条完成路径，容易产生假阴性，压低任务成功率。",
+      "severity": "高",
+      "response": "作者在数据集里附上完整网络流量，为将来的重放与探索留出空间；官方另建在真实网站上端到端评测的 Online-Mind2Web。",
+      "reader": "看到很低的 SR 不要直接推断线上不可用；要看 Online-Mind2Web 或带人工协助的结果。",
+      "cite": ["paper@§6 Limitations and Potential Societal Impact", "online-repo@README"]
+    },
+    {
+      "issue": "口径不一致（macro/micro、候选池、模型规模）",
+      "impact": "仓库早期脚本只报 micro 平均，会被步数多的任务带偏；GPT-4 结果只覆盖 50 条任务和 top-10 候选；不同 Flan-T5 规模分数差异明显。",
+      "severity": "中",
+      "response": "2023-10-30 官方更新评测脚本同时报告两种平均；论文对 GPT-4 用星号标注子集口径。",
+      "reader": "比较分数前先确认 macro/micro、候选池大小和子集；本附录 B 的口径列给出了每条收录结果的说明。",
+      "cite": ["repo-mind2web@README", "paper@Table 2 注"]
+    },
+    {
+      "issue": "数据覆盖偏差",
+      "impact": "网站按 SimilarWeb 美国流行度挑选、以英文站点为主；标注者全部来自 Amazon Mechanical Turk，任务与网站只代表网上可完成任务的一个子集。",
+      "severity": "中",
+      "response": "作者说明协议可扩展到更多网站与人群，但截至论文版本未见多语言版本。",
+      "reader": "不要把英文站上的分数推广到其他语言或地区的网页。",
+      "cite": ["paper@§6 Limitations and Potential Societal Impact", "dataset"]
+    },
+    {
+      "issue": "操作集合表述不一致",
+      "impact": "项目网站写支持四种操作（Click、Hover、Type、Select），论文写三种（Click 含 Hover 与 Press Enter）；HF 数据卡说明 HOVER 与 ENTER 在数据里被映射为 CLICK。",
+      "severity": "低",
+      "response": "数据字段 original_op 保留原始标注，清洗后的 op 只有 CLICK / TYPE / SELECT。",
+      "reader": "复现时按清洗后的三类操作对齐，不要按四种操作统计。",
+      "cite": ["site", "paper@§2.1 Task Definition", "dataset"]
+    },
+    {
+      "issue": "测试集需申请、公开镜像不完整",
+      "impact": "Hugging Face 上的数据集只放训练集 1,009 条，测试拆分要按仓库指引另行获取；HF 卡片把 Cross Domain 题量写成「9,12 instances」，与论文 / GitHub 的 912 不一致。",
+      "severity": "低",
+      "response": "测试集按仓库说明申请以防数据泄漏；卡片笔误未见官方更正。",
+      "reader": "引用题量时以论文 §4.1 与 GitHub README 为准。",
+      "cite": ["dataset", "repo-mind2web@README"]
+    }
+  ],
+  "notes": "数据与代码分开发布：Hugging Face 只放训练集，测试集按仓库指引获取；在线能力另见 Online-Mind2Web。",
+  "official_sources": [
+    { "kind": "paper", "url": "https://arxiv.org/abs/2306.06070" },
+    { "kind": "site", "url": "https://osu-nlp-group.github.io/Mind2Web/" },
+    { "kind": "repo", "url": "https://github.com/OSU-NLP-Group/Mind2Web" },
+    { "kind": "dataset", "url": "https://huggingface.co/datasets/osunlp/Mind2Web" }
+  ],
+  "related_benchmarks": ["webarena", "online-mind2web", "webvoyager"],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      { "id": "paper", "kind": "paper", "title": "Mind2Web: Towards a Generalist Agent for the Web（arXiv:2306.06070v3，2023-12-09）", "url": "https://arxiv.org/abs/2306.06070", "accessed": "2026-11-14" },
+      { "id": "site", "kind": "site", "title": "Mind2Web 项目官网（任务示例、数据说明与更新日志）", "url": "https://osu-nlp-group.github.io/Mind2Web/", "accessed": "2026-11-14" },
+      { "id": "repo-mind2web", "kind": "repo", "title": "OSU-NLP-Group/Mind2Web（数据字段、拆分、评测脚本、许可）", "url": "https://github.com/OSU-NLP-Group/Mind2Web", "accessed": "2026-11-14" },
+      { "id": "dataset", "kind": "dataset", "title": "osunlp/Mind2Web（Hugging Face，仅训练集）", "url": "https://huggingface.co/datasets/osunlp/Mind2Web", "accessed": "2026-11-14" },
+      { "id": "online-repo", "kind": "repo", "title": "OSU-NLP-Group/Online-Mind2Web（在线版基准）", "url": "https://github.com/OSU-NLP-Group/Online-Mind2Web", "accessed": "2026-11-14" }
+    ],
+    "header": {
+      "publisher": { "v": "The Ohio State University（OSU NLP Group）", "cite": ["paper@作者署名"] },
+      "first_release": { "v": "2023-06-09（arXiv 预印本 v1）；2023-06-13 放出训练 / 测试数据与代码库", "cite": ["paper@arXiv Submission history", "site"] }
+    },
+    "cites": {
+      "summary": ["paper@Abstract", "paper@Table 1", "site"],
+      "interpretation": ["paper@§4.2 Data Preprocessing and Evaluation", "paper@§6 Limitations and Potential Societal Impact", "online-repo@README"]
+    },
+    "problem": {
+      "text": "此前的网页智能体数据集要么用简化 / 模拟的网站，要么只覆盖有限几个网站和任务，考不出「换个没用过的网站还能不能用」的泛化能力。Mind2Web 用 137 个真实网站的离线快照，把任务、元素、操作都按真实复杂度建模，并给出跨任务 / 跨网站 / 跨领域三层泛化拆分。",
+      "cite": ["paper@Abstract", "paper@Table 1"]
+    },
+    "ladder": [
+      {
+        "label": "规则 / 分类基线",
+        "value": "步成功率未披露",
+        "note": "论文没有报告随机或规则基线；同一批对比里最弱的分类基线（DeBERTaB 直接选元素）三个拆分的元素准确率为 26.8% / 21.6% / 24.5%。",
+        "cite": ["paper@Table 2"]
+      },
+      {
+        "label": "论文发布时最好（arXiv v3，2023-12-09）",
+        "value": "步成功率 52.0% / 任务成功率 5.2%（Cross-Task）",
+        "note": "MindAct + Flan-T5XL；跨网站 38.9% / 5.1%，跨领域 39.6% / 2.9%。GPT-4 口径不同（50 题 + top-10 候选，步成功率 36.2% / 30.1% / 26.4%）。",
+        "cite": ["paper@§4.3 Results", "paper@Table 2"]
+      },
+      {
+        "label": "人类水平",
+        "value": "论文未给出",
+        "note": "Mind2Web 原版论文没有报告人类在这三个拆分上的成绩；官方另建的 Online-Mind2Web 才给出人类对照（WebJudge 与人类判分一致率 86%、成功率差 3.8%）。",
+        "cite": ["paper@§4.3 Results", "online-repo@README"]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      },
+      {
+        "label": "饱和 / 噪声参考线",
+        "value": "未披露",
+        "note": "论文没有定义饱和线；官方结论是距离真正可泛化的智能体仍有可观差距，且任务级 SR 对单步错误极敏感（一步错即整题失败）。",
+        "cite": ["paper@§4.3 Results"]
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把任务成功率当成「模型能不能用这个网站」——SR 要求每一步都对，一步错整题判负，数值天然偏低。",
+        "cite": ["paper@§4.2 Data Preprocessing and Evaluation"]
+      },
+      {
+        "text": "把离线快照上的分数直接当成线上可用性——未缓存的动作会立即失败，官方另建 Online-Mind2Web 测线上。",
+        "cite": ["paper@§6 Limitations and Potential Societal Impact", "online-repo@README"]
+      },
+      {
+        "text": "拿 micro 平均的数字和论文的 macro 平均对比——仓库早期脚本只报 micro，会被步数多的任务带偏。",
+        "cite": ["repo-mind2web@README"]
+      },
+      {
+        "text": "以为测试集和训练集一样可以直接从 Hugging Face 下载——HF 只放训练集 1,009 条，测试拆分需按仓库指引获取。",
+        "cite": ["dataset"]
+      }
+    ],
+    "background": [
+      { "k": "发布方", "v": "The Ohio State University（OSU NLP Group）", "cite": ["paper@作者署名"] },
+      { "k": "核心作者", "v": "Xiang Deng、Yu Gu、Boyuan Zheng、Shijie Chen、Samuel Stevens、Boshi Wang、Huan Sun、Yu Su", "cite": ["paper@作者署名"] },
+      { "k": "发表", "v": "NeurIPS 2023 Datasets and Benchmarks Track（Spotlight）；arXiv:2306.06070，v3 为 2023-12-09", "cite": ["paper@首页脚注", "paper@arXiv Comments", "paper@首页"] },
+      { "k": "官方智能体", "v": "MindAct：先用 86M 参数的 DeBERTa 基座做候选元素排序，再用 Flan-T5 / GPT-3.5 / GPT-4 预测动作", "cite": ["paper@§1 Introduction", "paper@§4.3 Results"] },
+      { "k": "数据与代码", "v": "GitHub OSU-NLP-Group/Mind2Web 放数据字段、拆分与评测脚本；Hugging Face osunlp/Mind2Web 仅训练集 1,009 条、约 6.74 GB", "cite": ["repo-mind2web@README", "dataset"] },
+      { "k": "许可", "v": "数据集 CC-BY-4.0，代码 MIT", "cite": ["repo-mind2web@Licensing Information"] },
+      { "k": "时间线", "v": "2023-06-13 数据与代码 → 2023-07-03 原始 dump → 2023-08-06 MindAct 微调代码与模型 → 2023-10-30 macro/micro 指标 → 2024-03-18 Multimodal-Mind2Web → 2025-03-25 Online-Mind2Web", "cite": ["site", "repo-mind2web@README"] }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2023-12-09",
+        "columns": ["方法", "Cross-Task 步SR", "Cross-Task 任务SR", "Cross-Website 步SR", "Cross-Website 任务SR", "Cross-Domain 步SR", "Cross-Domain 任务SR", "口径"],
+        "rows": [
+          ["MindAct + Flan-T5B", "41.0%", "4.0%", "29.5%", "1.7%", "31.6%", "1.6%", "全集 / macro 平均"],
+          ["MindAct + Flan-T5L", "50.3%", "7.1%", "35.3%", "1.1%", "37.3%", "2.7%", "全集 / macro 平均"],
+          ["MindAct + Flan-T5XL", "52.0%", "5.2%", "38.9%", "5.1%", "39.6%", "2.9%", "全集 / macro 平均"],
+          ["MindAct + GPT-3.5", "17.4%", "0.8%", "16.2%", "0.6%", "18.6%", "1.0%", "全集 / macro 平均"],
+          ["MindAct + GPT-4*", "36.2%", "2.0%", "30.1%", "2.0%", "26.4%", "2.0%", "50 题 + top-10 候选"],
+          ["生成基线（Flan-T5B 直接生成）", "17.5%", "0.0%", "11.0%", "0.0%", "11.9%", "0.4%", "全集 / macro 平均"]
+        ]
+      },
+      "cite": ["paper@Table 2", "paper@Table 2 注"]
+    }
+  }
 }
