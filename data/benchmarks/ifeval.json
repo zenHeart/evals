@@ -1,47 +1,665 @@
 {
   "id": "ifeval",
   "name": "IFEval",
-  "full_name": null,
+  "full_name": "IFEval（Instruction-Following Eval；论文题为 Instruction-Following Evaluation for Large Language Models，指令遵循评估基准）",
   "aliases": [],
-  "status": null,
+  "status": "active",
   "categories": [
     "preference"
   ],
-  "summary": "可验证指令遵循（字数/格式/关键词约束）",
-  "interpretation": "考“听话”：字数限制、格式要求、关键词约束——全部可机器验证，没有裁判主观性。",
-  "measures": [],
-  "does_not_measure": [],
-  "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
-  },
-  "metrics": [],
-  "default_protocol": {
-    "raw": "规则判分，无 judge 主观性"
-  },
-  "versions": [],
-  "limitations": [],
-  "notes": null,
-  "official_sources": [
+  "summary": "IFEval 是 Google（与 Yale University 合作）2023 年 11 月发布的指令遵循基准：把「听话」拆成 25 类能用程序判定的可验证指令，随机拼进 541 条英文 prompt，模型回复由确定性规则逐条核对，不需要人工，也不调用 LLM 裁判。（前端类比：像 TypeScript 的 type guard——不用人眼看，程序直接给出真或假。）",
+  "interpretation": "高分说明模型在机械执行显式、可量化的输出约束时可靠；但它不说明回答有质量，也不说明模型理解了指令意图——IFEval 只检查形式是否满足。2023 年 GPT-4 的 prompt-level strict 准确率是 76.89%，与 loose 只差 2.4 个百分点，说明失败大多不是格式噪音；IFBench（2025）进一步显示 IFEval 已高度饱和（2B 参数模型也能到 80% 以上），同批模型换成 58 个全新约束后会掉到 50% 以下。",
+  "measures": [
     {
-      "kind": "site",
-      "url": "https://github.com/google-research/instruction-following-eval"
+      "area": "关键词与字母频率（Keywords，4 条指令）",
+      "focus": "示例：「Include keywords {keyword1}, {keyword2} in your response」「In your response, the word word should appear {N} times.」「Do not include keywords {forbidden words} in the response.」「In your response, the letter {letter} should appear {N} times.」",
+      "share": "Table 1 中该类含 4 条指令（共 25 条）",
+      "format": "字符串包含 / 词频与字母频次计数",
+      "cite": [
+        "paper@Table 1"
+      ]
     },
+    {
+      "area": "长度约束（Length Constraints，4 条指令）",
+      "focus": "示例：「Your response should contain {N} paragraphs. You separate paragraphs using the markdown divider: * * *」「Answer with at least / around / at most {N} words.」",
+      "share": "Table 1 中该类含 4 条指令（共 25 条）",
+      "format": "词数 / 句数 / 段落数统计与首词比对",
+      "cite": [
+        "paper@Table 1"
+      ]
+    },
+    {
+      "area": "可检测格式（Detectable Format，6 条指令）",
+      "focus": "示例：「Entire output should be wrapped in JSON format.」「Your answer must contain a title, wrapped in double angular brackets, such as <<poem of joy>>.」「Your answer must contain exactly {N} bullet points.」",
+      "share": "Table 1 中该类含 6 条指令（共 25 条）",
+      "format": "JSON 解析 / 结构计数 / 选项匹配",
+      "cite": [
+        "paper@Table 1"
+      ]
+    },
+    {
+      "area": "大小写（Change Cases，3 条指令）",
+      "focus": "示例：「Your entire response should be in English, capital letters only.」「Your entire response should be in English, and in all lowercase letters. No capital letters are allowed.」",
+      "share": "Table 1 中该类含 3 条指令（共 25 条）",
+      "format": "字符范围检测 / 全大写词计数",
+      "cite": [
+        "paper@Table 1"
+      ]
+    },
+    {
+      "area": "可检测内容（Detectable Content，2 条指令）",
+      "focus": "示例：「At the end of your response, please explicitly add a postscript starting with {postscript marker}」「The response must contain at least {N} placeholders represented by square brackets, such as [address].」",
+      "share": "Table 1 中该类含 2 条指令（共 25 条）",
+      "format": "后缀匹配 / 占位符计数",
+      "cite": [
+        "paper@Table 1"
+      ]
+    },
+    {
+      "area": "组合元指令（Combination，2 条指令）",
+      "focus": "示例：「First, repeat the request without change, then give your answer」「Give two different responses. Responses and only responses should be separated by 6 asterisk symbols: ******.」",
+      "share": "Table 1 中该类含 2 条指令（共 25 条）",
+      "format": "前缀复述比对 / 分隔符切分",
+      "cite": [
+        "paper@Table 1"
+      ]
+    },
+    {
+      "area": "首尾约束（Start with / End with，2 条指令）",
+      "focus": "示例：「Finish your response with this exact phrase {end phrase}. No other words should follow this phrase.」「Wrap your entire response with double quotation marks.」",
+      "share": "Table 1 中该类含 2 条指令（共 25 条）",
+      "format": "结尾精确匹配 / 引号包裹",
+      "cite": [
+        "paper@Table 1"
+      ]
+    },
+    {
+      "area": "响应语言（Language，1 条指令）",
+      "focus": "示例：「Your ENTIRE response should be in {language}, no other language is allowed.」；数据集里实例化过的语言包括 Korean（如「Use only Korean in your response」）",
+      "share": "Table 1 中该类含 1 条指令（共 25 条）",
+      "format": "语言检测（langdetect）",
+      "cite": [
+        "paper@Table 1",
+        "paper@§6 List of Prompts"
+      ]
+    },
+    {
+      "area": "标点禁用（Punctuation，1 条指令）",
+      "focus": "示例：「In your entire response, refrain from the use of any commas.」",
+      "share": "Table 1 中该类含 1 条指令（共 25 条）",
+      "format": "标点符号扫描",
+      "cite": [
+        "paper@Table 1"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "回答的内容质量、事实正确性与帮助程度——规则只检查形式（要求输出 JSON 时不会验证字段值是否正确），内容对错不影响得分。",
+      "cite": [
+        "paper@§1 Introduction",
+        "paper@Table 1"
+      ]
+    },
+    {
+      "text": "主观或模糊的指令（论文举例「write with a funny tone」）——这类要求没有可判定标准，IFEval 有意只收可验证指令。",
+      "cite": [
+        "paper@§1 Introduction"
+      ]
+    },
+    {
+      "text": "多轮对话中的约束保持——IFEval 是单轮 prompt-response；Multi-IF 实测所有受测模型每多一轮失败率上升（o1-preview 的平均准确率从第一轮 0.877 降到第三轮 0.707）。",
+      "cite": [
+        "multi-if-paper"
+      ]
+    },
+    {
+      "text": "非英文与语言特有指令——IFEval 的 prompt 全为英文，M-IFEval 指出这限制了结论对其他语言的适用性，并补充了法语 / 日语 / 西班牙语及语言特有指令。",
+      "cite": [
+        "m-ifeval-paper"
+      ]
+    },
+    {
+      "text": "没见过的全新约束——IFEval 只有 25 个固定模板；IFBench 用 58 个新约束测得 GPT-4.1、Claude 3.7 Sonnet 低于 50%。",
+      "cite": [
+        "ifbench-paper"
+      ]
+    },
+    {
+      "text": "多模态指令（如「generate at least 3 images of ...」）——论文把这类列为未来工作，当前版本只处理文本。",
+      "cite": [
+        "paper@§4 Discussion and Future Work"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 541,
+    "splits": [
+      "train（541 条；HF 镜像只有 train 一个分割，无官方 test）"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "人工枚举 25 类指令模板 + few-shot 过滤与改写 + 人工逐条编辑",
+    "public_sample": true,
+    "totals": "541 条英文 prompt（仅 train 分割），每条挂 1–3 条可验证指令（据 M-IFEval Table 4 对原数据集的统计：305 条含 1 条指令、179 条含 2 条、57 条含 3 条）；HF 镜像为 541 行文本、Apache-2.0、未设门禁；论文摘要写「around 500 prompts」，正文与数据卡都是 541。",
+    "cite": [
+      "paper@§1 Introduction",
+      "hf-dataset",
+      "m-ifeval-paper"
+    ],
+    "construction": [
+      {
+        "k": "枚举 25 类可验证指令",
+        "text": "先列出 25 类能用简单、可解释、确定性程序验证的指令，归入 9 个组（Keywords、Length Constraints、Detectable Format、Change Cases、Detectable Content、Combination、Start with / End with、Language、Punctuation）。",
+        "cite": [
+          "paper@Table 1",
+          "paper@§1 Introduction"
+        ]
+      },
+      {
+        "k": "基础任务 + 随机追加 1–3 条指令",
+        "text": "以一个基础 prompt（如「write an essay」）为底，末尾随机附加 1–3 条可验证指令，生成初步 prompt 集合。",
+        "cite": [
+          "paper@§2.1 Prompt Synthesis"
+        ]
+      },
+      {
+        "k": "few-shot 剔除逻辑冲突",
+        "text": "用 few-shot prompting 找出逻辑上互相冲突的组合（如同时要求 5 段和少于 20 词）并删除。",
+        "cite": [
+          "paper@§2.1 Prompt Synthesis"
+        ]
+      },
+      {
+        "k": "few-shot 改写增加多样性",
+        "text": "再用一次 few-shot prompting 把每条 prompt 改写成不同措辞，避免分不清模型是真会遵循还是只会某种 phrasing。",
+        "cite": [
+          "paper@§2.1 Prompt Synthesis"
+        ]
+      },
+      {
+        "k": "人工逐条检查编辑",
+        "text": "研究者对改写后的 prompt 逐条人工检查与编辑；全部 prompt 列在论文附录 6。",
+        "cite": [
+          "paper@§2.1 Prompt Synthesis",
+          "paper@§6 List of Prompts"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "prompt_level_strict_acc",
+      "name": "Prompt-level Strict Accuracy",
+      "direction": "越高越好",
+      "description": "一条 prompt 内全部可验证指令都被严格满足的 prompt 占比（%）；主指标，最能反映模型在组合约束下的可靠程度。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§3 Evaluation Results",
+        "lm-eval"
+      ]
+    },
+    {
+      "id": "inst_level_strict_acc",
+      "name": "Instruction-level Strict Accuracy",
+      "direction": "越高越好",
+      "description": "按单条可验证指令统计被严格满足的比例（%）。通常高于 prompt-level，因为一条 prompt 里部分指令失败不影响其他指令计数。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§3 Evaluation Results",
+        "lm-eval"
+      ]
+    },
+    {
+      "id": "prompt_level_loose_acc",
+      "name": "Prompt-level Loose Accuracy",
+      "direction": "越高越好",
+      "description": "判分前对输出做 8 种文本变换，再按 prompt 统计全部指令通过的比例。用于估计格式噪音造成的假阴性，通常略高于 strict。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§2.2 IFEval Metrics",
+        "lm-eval"
+      ]
+    },
+    {
+      "id": "inst_level_loose_acc",
+      "name": "Instruction-level Loose Accuracy",
+      "direction": "越高越好",
+      "description": "按单条指令做同样的 8 种变换后判分并平均，用于估计单条指令被格式噪音误判为失败的比例。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§2.2 IFEval Metrics",
+        "lm-eval"
+      ]
+    }
+  ],
+  "default_protocol": {
+    "raw": "社区标准口径（lm-evaluation-harness 的 ifeval 任务，配置版本 4.0）：零样本（num_fewshot=0）、贪心解码（do_sample=false、temperature=0.0）、max_gen_toks=1280，跑 train 分割；判分由确定性程序完成，不调用 LLM 裁判。原论文只说明通过 API 采集 GPT-4（2023 年 11 月）与 PaLM 2 S（2023 年 8 月）的回复，未公开解码超参。",
+    "cite": [
+      "lm-eval",
+      "paper@§2.2 IFEval Metrics",
+      "paper@§3 Evaluation Results"
+    ],
+    "variants": [
+      {
+        "text": "严格判分 vs 宽松判分：严格判分直接字符串匹配；宽松判分在匹配前对输出做 8 种变换（去 Markdown 修饰符、去首行、去末行，以及两两组合、三者组合，外加恒等变换），两者分数不可直接比。",
+        "cite": [
+          "paper@§2.2 IFEval Metrics"
+        ]
+      },
+      {
+        "text": "prompt-level vs instruction-level：prompt-level 要求一条 prompt 内全部指令通过才算通过，inst-level 按每条指令单独计；GPT-4 的 strict 分数因此从 76.89% 变成 83.57%。",
+        "cite": [
+          "paper@§3 Evaluation Results",
+          "paper@Table 3"
+        ]
+      },
+      {
+        "text": "生成口径：论文未公开生成回复的解码参数与提示模板；lm-eval 口径是贪心解码 + 1280 token 上限，改用采样、chat 模板或不同上限都会改变分数。",
+        "cite": [
+          "paper@§3 Evaluation Results",
+          "lm-eval"
+        ]
+      },
+      {
+        "text": "指令参数实例化：同一类指令的参数（词数阈值、关键词、语言、结尾句）在生成时随机取，论文只说明有「参数」与「措辞」两类变体，未给出参数分布表；换一套参数就是另一批题。",
+        "cite": [
+          "paper@§2.1 Prompt Synthesis",
+          "paper@§1 Introduction"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2023-11-14",
+      "label": "arXiv v1 提交（提交者 Le Hou；截至 2026-11-13 只有一个版本，无后续修订）",
+      "cite": [
+        "paper"
+      ]
+    },
+    {
+      "id": "hf-mirror",
+      "date": "2023-12-22",
+      "label": "Hugging Face 数据集 google/IFEval 建仓（页面元数据 createdAt；lastModified 为 2024-08-14）",
+      "cite": [
+        "hf-dataset"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "只测形式，不测内容",
+      "impact": "IFEval 对输出内容不做语义判断：格式完美但内容错误的回答同样得满分，分数不能当作回答质量、事实正确性或帮助程度的代理指标。",
+      "severity": "高",
+      "response": "论文把这一点写成设计取舍——只收「可验证指令」以换取客观、可复现的判分；未来工作只提到扩展到多模态，未计划引入内容质量评估。",
+      "reader": "把 IFEval 当作「格式执行可靠性」的体检；内容质量另用基准或人工评估。",
+      "cite": [
+        "paper@§1 Introduction",
+        "paper@Table 1",
+        "paper@§4 Discussion and Future Work"
+      ]
+    },
+    {
+      "issue": "模板集合小且公开，存在过拟合与污染风险",
+      "impact": "541 条 prompt 与 25 个模板公开可下载，可能进入训练数据或被针对性调优。IFBench（NeurIPS 2025 Datasets & Benchmarks）实测 IFEval 已快速饱和：许多领先模型在 2B 参数规模就有 80% 以上，而同一批模型在 58 个全新约束上 GPT-4.1、Claude 3.7 Sonnet 低于 50%。",
+      "severity": "高",
+      "response": "论文未来工作写了「增加可验证指令的多样性和数量」，但截至 2026-11-13 官方未发布新约束集；泛化问题由第三方基准（IFBench、Multi-IF、M-IFEval）补上。",
+      "reader": "高 IFEval 分数只说明在这个固定模板集上可靠；要判断泛化，看 IFBench 一类全新约束的结果。",
+      "cite": [
+        "ifbench-paper",
+        "paper@§4 Discussion and Future Work",
+        "hf-dataset"
+      ]
+    },
+    {
+      "issue": "判分口径敏感：strict 有假阴性，loose 有假阳性",
+      "impact": "模型用 Markdown 加粗写结尾句（如 **P.S. ...**）会让严格匹配判失败；宽松判分靠删首行/末行降噪，却可能把不满足字数要求的输出判为通过（论文原例）。GPT-4 的 strict/loose 差距是 prompt-level 2.4 个百分点、inst-level 1.8 个百分点。",
+      "severity": "中",
+      "response": "论文同时给出 strict 与 loose 两个口径，并明确 loose 是原始口径的补充而非替代，建议两者都报告。",
+      "reader": "比较分数前先确认口径；strict 与 loose 差距越大，失败里格式噪音占比越高。",
+      "cite": [
+        "paper@§2.2 IFEval Metrics",
+        "paper@Table 3"
+      ]
+    },
+    {
+      "issue": "单轮、仅英文，场景覆盖有限",
+      "impact": "IFEval 是单轮 prompt-response，prompt 全为英文，不覆盖多轮约束保持与其他语言。Multi-IF 用 4,501 段三轮对话覆盖 8 种语言，实测所有受测模型每多一轮失败率上升（o1-preview 平均准确率从第一轮 0.877 降到第三轮 0.707）；M-IFEval 补充法 / 日 / 西三语与语言特有指令。",
+      "severity": "中",
+      "response": "未见 Google 官方回应；扩展由第三方完成（Meta 的 Multi-IF、Lightblue KK 的 M-IFEval）。",
+      "reader": "多轮或非英文场景下，IFEval 分数不能直接外推。",
+      "cite": [
+        "multi-if-paper",
+        "m-ifeval-paper"
+      ]
+    },
+    {
+      "issue": "基线陈旧，无官方 leaderboard",
+      "impact": "论文只报告 GPT-4（2023 年 11 月采集）与 PaLM 2 S（2023 年 8 月采集）两个模型，并注明二者参数量差异大、不可直接比较；IFEval 没有官方持续维护的榜单，社区以 lm-evaluation-harness 自评为主，各厂商自报口径不一。",
+      "severity": "低",
+      "response": "未见官方回应。",
+      "reader": "对比分数时核对模型版本、采集时间与判分口径；隔代的分数不要直接排。",
+      "cite": [
+        "paper@Table 3",
+        "lm-eval"
+      ]
+    }
+  ],
+  "notes": "IFEval 无官方 leaderboard；社区标准实现是 lm-evaluation-harness 的 ifeval 任务（配置版本 4.0，跑 google/IFEval 的 train 分割）。直接后续工作：IFBench（58 个新约束，AI2，NeurIPS 2025）、Multi-IF（多轮 + 8 语言，Meta）、M-IFEval（法 / 日 / 西，2025-02）。仓库 README 声明它不是官方支持的 Google 产品。",
+  "official_sources": [
     {
       "kind": "paper",
       "url": "https://arxiv.org/abs/2311.07911"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/google-research/google-research/tree/master/instruction_following_eval"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/google/IFEval"
+    },
+    {
+      "kind": "docs",
+      "url": "https://github.com/EleutherAI/lm-evaluation-harness/blob/main/lm_eval/tasks/ifeval/ifeval.yaml"
     }
   ],
   "related_benchmarks": [
-    "arena",
-    "mtbench",
     "alpacaeval",
+    "mtbench",
+    "arena",
     "arenahard",
-    "wildbench"
+    "wildbench",
+    "ifbench",
+    "multiif"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-28"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-13",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "Instruction-Following Evaluation for Large Language Models（arXiv:2311.07911v1，2023-11-14，仅此一个版本）",
+        "url": "https://arxiv.org/abs/2311.07911",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "google-research/google-research —— instruction_following_eval 子目录（IFEval 官方代码、数据与判分程序）",
+        "url": "https://github.com/google-research/google-research/tree/master/instruction_following_eval",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "hf-dataset",
+        "kind": "dataset",
+        "title": "google/IFEval（Hugging Face，Apache-2.0，541 行，仅 train 分割，未设门禁）",
+        "url": "https://huggingface.co/datasets/google/IFEval",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "lm-eval",
+        "kind": "repo",
+        "title": "EleutherAI/lm-evaluation-harness —— lm_eval/tasks/ifeval/ifeval.yaml（任务配置，metadata version 4.0）",
+        "url": "https://github.com/EleutherAI/lm-evaluation-harness/blob/main/lm_eval/tasks/ifeval/ifeval.yaml",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "ifbench-paper",
+        "kind": "paper",
+        "title": "Generalizing Verifiable Instruction Following（IFBench，arXiv:2507.02833v3，2025-11-11；NeurIPS 2025 Datasets and Benchmarks）",
+        "url": "https://arxiv.org/abs/2507.02833",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "multi-if-paper",
+        "kind": "paper",
+        "title": "Multi-IF: Benchmarking LLMs on Multi-Turn and Multilingual Instructions Following（arXiv:2410.15553v2，2024-11-13，Meta GenAI）",
+        "url": "https://arxiv.org/abs/2410.15553",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "m-ifeval-paper",
+        "kind": "paper",
+        "title": "M-IFEval: Multilingual Instruction-Following Evaluation（arXiv:2502.04688v1，2025-02-07，Lightblue KK / Arkema）",
+        "url": "https://arxiv.org/abs/2502.04688",
+        "accessed": "2026-11-13"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Google（论文署名机构 ♮ Google）与 Yale University（§ Yale University，第一作者 Jeffrey Zhou 所属）；仓库 README 声明「This is not an officially supported Google product.」",
+        "cite": [
+          "paper@作者署名",
+          "repo"
+        ]
+      },
+      "first_release": {
+        "v": "2023-11-14（arXiv v1，提交者 Le Hou）",
+        "cite": [
+          "paper"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "paper@Abstract",
+        "paper@§1 Introduction",
+        "paper@Table 1"
+      ],
+      "interpretation": [
+        "paper@§2.2 IFEval Metrics",
+        "paper@Table 3",
+        "ifbench-paper"
+      ]
+    },
+    "problem": {
+      "text": "论文把已有评估分成三类并各有缺陷：人工评估耗时、昂贵、依赖标注者且难复现；用模型当裁判又受评估器自身能力限制，评估器不可靠时信号会误导；定量基准虽标准化可扩展，却缺少对生成式指令遵循这类任务的细粒度评测（论文只提到 Sun et al. 2023 一篇计数相关的工作）。IFEval 的做法是把指令约束写成能用简单程序验证的形式，让判分完全自动、客观、可复现。",
+      "cite": [
+        "paper@§1 Introduction"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机猜测基线",
+        "value": "论文未给出",
+        "note": "IFEval 是规则判分而非选择题，随机输出几乎必然违反字数 / 格式约束，论文未报告随机基线，本站也不推算。",
+        "cite": [
+          "paper@§2.2 IFEval Metrics"
+        ]
+      },
+      {
+        "label": "论文发布时最好（prompt-level strict）",
+        "value": "76.89%",
+        "note": "GPT-4（2023-11 采集）；同期 PaLM 2 S（2023-08 采集）为 43.07%，两者相差 33.82 个百分点，论文注明参数量差异大、不可直接比较。",
+        "cite": [
+          "paper@Table 3"
+        ]
+      },
+      {
+        "label": "官方榜单最高",
+        "value": "不存在（IFEval 无官方 leaderboard）",
+        "note": "论文只报告了 GPT-4 与 PaLM 2 S 两个模型；此后的分数来自厂商自报或第三方用 lm-evaluation-harness 复现，口径不一，本站不汇总。",
+        "cite": [
+          "paper@Table 3",
+          "lm-eval"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      },
+      {
+        "label": "饱和 / 泛化参考线",
+        "value": "IFBench：GPT-4.1、Claude 3.7 Sonnet 低于 50%",
+        "note": "IFBench 用 58 个全新约束实测：IFEval 上许多领先模型在 2B 参数就有 80% 以上，换成新约束后掉到 50% 以下；IF-RLVR 训练后的 TÜLU 模型在 IFEval 上能到 92.2%，说明原模板集已被做穿。",
+        "cite": [
+          "ifbench-paper"
+        ]
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 prompt-level strict 和 inst-level loose 混在一起排名——前者要求一条 prompt 内全部指令通过，后者允许格式噪音容错，两者不在一个尺度（GPT-4 同为 strict：76.89% vs 83.57%）。",
+        "cite": [
+          "paper@§3 Evaluation Results",
+          "paper@Table 3",
+          "lm-eval"
+        ]
+      },
+      {
+        "text": "把 IFEval 高分等同于「模型更懂用户意图」或「回答更有帮助」——IFEval 只检查形式约束，内容对错不影响得分。",
+        "cite": [
+          "paper@§1 Introduction",
+          "paper@Table 1"
+        ]
+      },
+      {
+        "text": "看到 2023 年的 76.89% 就以为这个基准还很难或已经饱和——它是当时 GPT-4 的 prompt-level strict；IFBench（2025）显示模板集本身已高度饱和，真正的区分度在全新约束上。",
+        "cite": [
+          "paper@Table 3",
+          "ifbench-paper"
+        ]
+      },
+      {
+        "text": "把论文摘要的「around 500 prompts」当成另一个数据集——摘要取整，正文与 HF 数据卡都是 541 条 prompt。",
+        "cite": [
+          "paper@Abstract",
+          "paper@§1 Introduction",
+          "hf-dataset"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "Google（论文署名 ♮ Google）与 Yale University（§ Yale University）；IFEval 代码与数据放在 google-research 仓库，README 声明「This is not an officially supported Google product.」",
+        "cite": [
+          "paper@作者署名",
+          "repo"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "Jeffrey Zhou（§ Yale University，∗ 工作在 Google 完成）、Tianjian Lu、Swaroop Mishra、Siddhartha Brahma、Sujoy Basu、Yi Luan、Denny Zhou、Le Hou（以上 ♮ Google；† 通讯作者 lehou@google.com）",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2023-11-14 arXiv v1 提交（仅此一个版本，无后续修订）→ 2023-12-22 Hugging Face 镜像建仓 → 2024-11 Multi-IF、2025-02 M-IFEval、2025-07/11 IFBench 等第三方扩展陆续出现",
+        "cite": [
+          "paper",
+          "hf-dataset",
+          "multi-if-paper",
+          "m-ifeval-paper",
+          "ifbench-paper"
+        ]
+      },
+      {
+        "k": "数据与代码位置",
+        "v": "代码、原始 prompt 与判分程序在 google-research 仓库的 instruction_following_eval 子目录（输入为 prompt/response 的 jsonl）；数据集镜像为 Hugging Face google/IFEval（541 行、Apache-2.0、未设门禁）",
+        "cite": [
+          "repo",
+          "hf-dataset"
+        ]
+      },
+      {
+        "k": "评测框架集成",
+        "v": "lm-evaluation-harness 内置 ifeval 任务（配置版本 4.0）：dataset_path google/IFEval、test_split train、num_fewshot 0、贪心解码（temperature 0.0）、max_gen_toks 1280，输出 4 项指标",
+        "cite": [
+          "lm-eval"
+        ]
+      },
+      {
+        "k": "致谢",
+        "v": "论文致谢 Tom Kwiatkowski 与 Olivier Bachem 的建议，以及 Hongkun Yu 与 Melvin Johnson 对项目的支持",
+        "cite": [
+          "paper@§4 Discussion and Future Work"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-13",
+        "columns": [
+          "来源",
+          "模型",
+          "IFEval 分数",
+          "口径"
+        ],
+        "rows": [
+          [
+            "论文 Table 3",
+            "GPT-4（2023-11 采集）",
+            "76.89",
+            "prompt-level strict-accuracy"
+          ],
+          [
+            "论文 Table 3",
+            "PaLM 2 S（2023-08 采集）",
+            "43.07",
+            "prompt-level strict-accuracy"
+          ],
+          [
+            "IFBench 论文 Table 3",
+            "TÜLU-sft",
+            "72.8",
+            "prompt-level loose-accuracy"
+          ],
+          [
+            "IFBench 论文 Table 3",
+            "TÜLU-DPO",
+            "81.1",
+            "prompt-level loose-accuracy"
+          ],
+          [
+            "IFBench 论文 Table 3",
+            "TÜLU",
+            "82.4",
+            "prompt-level loose-accuracy"
+          ],
+          [
+            "IFBench 论文 Table 3",
+            "IF-RLVR TÜLU-DPO 8b",
+            "92.2",
+            "prompt-level loose-accuracy"
+          ],
+          [
+            "IFBench 论文 Table 3",
+            "IF-RLVR qwen2.5 7b",
+            "87.8",
+            "prompt-level loose-accuracy"
+          ]
+        ]
+      },
+      "cite": [
+        "paper@Table 3",
+        "ifbench-paper@Table 3"
+      ]
+    }
+  }
 }
