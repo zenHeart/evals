@@ -1,30 +1,352 @@
 {
   "id": "humanevalplus",
   "name": "HumanEval+",
-  "full_name": null,
-  "aliases": [],
-  "status": null,
+  "full_name": "HumanEval+（EvalPlus 强化版 HumanEval）",
+  "aliases": [
+    "HumanEval Plus",
+    "humaneval_plus",
+    "EvalPlus HumanEval+"
+  ],
+  "status": "active",
   "categories": [
     "coding"
   ],
-  "summary": "HumanEval 增强 80 倍测试用例，防漏判",
-  "interpretation": "HumanEval 加了 80 倍测试用例：防“碰巧通过”。分数普遍比原版低 10-20 分，更真实。",
-  "measures": [],
-  "does_not_measure": [],
+  "summary": "HumanEval+ 把 OpenAI HumanEval 的 164 道 Python 函数题配上平均 764.1 个测试（原版每题平均 9.6 个，约 80 倍）并修正原版参考答案，专门抓出「靠原版少量测试蒙对」的错误实现。",
+  "interpretation": "同一模型换成 HumanEval+ 后分数通常明显下降（论文里 GPT-4 从 88.4% 掉到 76.2%，全部受评模型的最大降幅为 pass@1 19.3 个百分点），所以高分意味着代码在大量边界输入下仍成立；跨版本、跨基准比较前必须先看清用的是哪一套测试。",
+  "measures": [
+    {
+      "area": "函数级程序合成（全部 164 题）",
+      "focus": "每题给一个 Python 函数签名和 docstring 让模型补全，题目与原版 HumanEval 完全同批",
+      "share": "100%（164 题）",
+      "format": "补全单个 Python 函数，产出可执行代码",
+      "cite": [
+        "arxiv-2305-01210@§2.1"
+      ]
+    },
+    {
+      "area": "边界输入契约",
+      "focus": "83/164 题带人工编写的输入契约，约束参数合法取值范围，把「只在合法输入上正确」的实现暴露出来",
+      "share": "约 51%（83/164 题）",
+      "format": "契约断言 + 采样/变异生成的大量输入",
+      "cite": [
+        "arxiv-2305-01210@§2.1"
+      ]
+    },
+    {
+      "area": "测试规模",
+      "focus": "每题平均 764.1 个测试（中位 982.5，最少 12、最多 1,100）；原版 HumanEval 每题平均只有 9.6 个",
+      "share": "约 80×（对比原版）",
+      "format": "断言测试 + 与参考答案差分对拍",
+      "cite": [
+        "arxiv-2305-01210@Table 2",
+        "arxiv-2305-01210@§2.1"
+      ]
+    },
+    {
+      "area": "快速版（HumanEval+-MINI）",
+      "focus": "用测试集约减算法把套件压到每题平均 16.1 个测试，比完整版小 47 倍，官方称严格度基本持平，用于大量采样场景",
+      "share": "约 1/47（对比完整版）",
+      "format": "约减后的测试套件（--mini）",
+      "cite": [
+        "arxiv-2305-01210@§4 mini",
+        "repo-evalplus-releases@v0.1.5"
+      ]
+    },
+    {
+      "area": "难度构成（论文定性观察）",
+      "focus": "论文按 HumanEval pass rate 排序观察：简单题（两数相加、字符串长度）最易；多条件（word splitting）、完整性（is-prime 处理负数）、推理（Tribonacci 序列）、效率（n-th prime Fibonacci number）最难",
+      "share": "未披露（论文只给定性描述，没有分类占比）",
+      "format": "按 pass rate 排序的分布图（Figure 3）",
+      "cite": [
+        "arxiv-2305-01210@§4 难度分析"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "代码效率：HumanEval+ 只判功能正确性；效率由同仓的 EvalPerf 单独评测（初始 118 个编码任务）",
+      "cite": [
+        "repo-evalplus-releases@v0.3.1"
+      ]
+    },
+    {
+      "text": "多文件工程、仓库级改动与真实依赖：164 题全是单函数 Python 合成，不含跨文件改动或第三方 API 调用",
+      "cite": [
+        "arxiv-2305-01210@§2.1"
+      ]
+    },
+    {
+      "text": "对数据污染的免疫力：题库公开且被众多模型团队采用，榜单只要求模型提供方自行避免污染",
+      "cite": [
+        "leaderboard-evalplus@Notes",
+        "repo-evalplus@README 采用方"
+      ]
+    }
+  ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
+    "sample_count": 164,
+    "splits": [
+      "test（HuggingFace 数据集唯一 split，164 行）"
+    ],
+    "languages": [
+      "python"
+    ],
+    "source_type": "human-written（沿用 OpenAI HumanEval 的人工题目；测试用例与参考答案由 EvalPlus 扩充和重写）",
+    "public_sample": true,
+    "totals": "164 道 Python 函数题（与原版 HumanEval 同题）· 每题平均 764.1 个测试（原版 9.6 个）· 其中 83 题带人工编写的输入契约 · HF 公开数据集为单一 test split、parquet 格式、英文",
+    "cite": [
+      "dataset-evalplus-humanevalplus@viewer",
+      "dataset-evalplus-humanevalplus@sidebar",
+      "arxiv-2305-01210@Table 2",
+      "arxiv-2305-01210@§2.1"
+    ],
+    "construction": [
+      {
+        "k": "题目来源",
+        "text": "直接沿用 OpenAI HumanEval 的 164 道人工编写题目，每题提供函数签名和 docstring 作为模型输入。",
+        "cite": [
+          "arxiv-2305-01210@§2.1"
+        ]
+      },
+      {
+        "k": "测试扩充",
+        "text": "每题先用 3 个不同提示让 ChatGPT 生成约 30 个种子输入，再做类型感知变异，在一小时预算内生成 1,000 个额外输入，合计增加 80 倍独立测试。",
+        "cite": [
+          "arxiv-2305-01210@§2.1",
+          "arxiv-2305-01210@§1 贡献列表"
+        ]
+      },
+      {
+        "k": "契约标注",
+        "text": "164 题中有 83 题由人工编写输入契约，用于约束合法输入范围，让违反前提的实现无法通过。",
+        "cite": [
+          "arxiv-2305-01210@§2.1"
+        ]
+      },
+      {
+        "k": "参考答案重写",
+        "text": "原版 HumanEval 有超过 10% 的参考答案实现有误（论文另计 18 题 / 11% 的缺陷），EvalPlus 重新实现并测试了全部参考答案。",
+        "cite": [
+          "arxiv-2305-01210@§2.1",
+          "arxiv-2305-01210@§4 缺陷分析"
+        ]
+      },
+      {
+        "k": "mini 版约减",
+        "text": "用测试集约减算法（覆盖分析、变异击杀、样本击杀）把套件压成 HumanEval+-MINI，每题平均 16.1 个测试，小 47 倍而严格度基本持平。",
+        "cite": [
+          "arxiv-2305-01210@§4 mini",
+          "repo-evalplus-releases@v0.1.5"
+        ]
+      }
+    ]
   },
-  "metrics": [],
   "default_protocol": {
-    "raw": "更严的 pass@1"
+    "raw": "把函数签名 + docstring 交给模型生成实现，再用 HumanEval+ 的测试套件运行；每个测试单独计时，上限为 max(200ms, 4× 参考答案耗时)，浮点比较按题目标注的容忍度执行。论文用无偏 pass@k 估计量：每个模型在 4 个温度（0.2 / 0.4 / 0.6 / 0.8）下各随机采样 200 个程序，外加一路贪心解码，k 取 1 / 10 / 100；GPT-4 只做贪心解码，ChatGPT 额外做 0.8 温度采样。",
+    "cite": [
+      "arxiv-2305-01210@§3",
+      "arxiv-2305-01210@§2.3",
+      "arxiv-2305-01210@§2.3 实验设置",
+      "arxiv-2305-01210@附录 超时"
+    ],
+    "variants": [
+      {
+        "text": "贪心 vs 采样：论文 Table 3 的 k=1⋆ 是贪心 pass@1，官方榜单也按贪心 pass@1 排名；把贪心分数和多温度 pass@k 混进同一列会高估或低估模型。",
+        "cite": [
+          "arxiv-2305-01210@Table 3 注",
+          "leaderboard-evalplus@Notes"
+        ]
+      },
+      {
+        "text": "数据集版本：论文用 2023 年的 HumanEval+，此后契约与参考答案多次修订（v0.1.6 → v0.1.7 → v0.1.9 → v0.1.10），榜单现按 v0.1.10 计分；不同版本的数字不能直接比。",
+        "cite": [
+          "repo-evalplus-releases@v0.2.0",
+          "repo-evalplus-releases@v0.3.1",
+          "leaderboard-evalplus@Notes"
+        ]
+      },
+      {
+        "text": "完整版 vs mini 版：mini 每题平均 16.5 个测试（比完整版小 47 倍），速度快但严格度不同，--mini 的分数不能和完整版混排。",
+        "cite": [
+          "repo-evalplus-releases@v0.1.5"
+        ]
+      },
+      {
+        "text": "直接补全 vs chat 设置：榜单用 ✨ 标出以 chat 设置评测的模型，其余是直接代码补全，两类分数不宜直接对比。",
+        "cite": [
+          "leaderboard-evalplus@Notes"
+        ]
+      }
+    ]
   },
-  "versions": [],
-  "limitations": [],
-  "notes": null,
+  "metrics": [
+    {
+      "id": "pass-at-1-greedy",
+      "name": "pass@1（贪心）",
+      "direction": "越高越好",
+      "description": "贪心解码下一次生成即通过全部测试的题目占比；官方榜单用它排名",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2305-01210@Table 3 注",
+        "leaderboard-evalplus@Notes"
+      ]
+    },
+    {
+      "id": "pass-at-k",
+      "name": "pass@k（k=1/10/100）",
+      "direction": "越高越好",
+      "description": "用无偏估计量在 n 个采样中统计至少 k 个通过全部测试的比例；论文在 4 个温度各采 200 个样本后报告",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2305-01210@§3",
+        "arxiv-2305-01210@§2.3"
+      ]
+    }
+  ],
+  "versions": [
+    {
+      "id": "arxiv-v1",
+      "date": "2023-05-02",
+      "label": "论文 arXiv v1 提交，HumanEval+ 随 EvalPlus v0.1.0 首次公开（仓库新闻：HumanEval+ is released!）",
+      "cite": [
+        "arxiv-2305-01210@abs",
+        "repo-evalplus@README 新闻"
+      ]
+    },
+    {
+      "id": "v0.1.5",
+      "date": "2023-06-02",
+      "label": "HumanEval+[mini] 发布：每题平均 16.5 个测试，比完整版（avg 774.8）小 47 倍",
+      "cite": [
+        "repo-evalplus-releases@v0.1.5",
+        "repo-evalplus@README 新闻"
+      ]
+    },
+    {
+      "id": "v0.1.6",
+      "date": "2023-06-26",
+      "label": "改用更保守的超时设置以适配慢机器；HumanEval+ 契约与参考答案小修（P129/P148/P75/P53/P0/P3/P9/P140）",
+      "cite": [
+        "repo-evalplus-releases@v0.1.6",
+        "repo-evalplus@README 新闻"
+      ]
+    },
+    {
+      "id": "v0.1.7",
+      "date": "2023-09-06",
+      "label": "官方榜单上线；HumanEval+ 修复 3 处契约、移除 32 题极端输入",
+      "cite": [
+        "repo-evalplus-releases@v0.1.7",
+        "repo-evalplus@README 新闻"
+      ]
+    },
+    {
+      "id": "arxiv-v3",
+      "date": "2023-10-30",
+      "label": "论文更新到 v3（arXiv:2305.01210v3 [cs.SE]）",
+      "cite": [
+        "arxiv-2305-01210@首页"
+      ]
+    },
+    {
+      "id": "v0.2.0",
+      "date": "2023-11-24",
+      "label": "MBPP+ 发布；HumanEval+ 数据集升级到 v0.1.9（测试 0/3/9/148、prompt 114、契约 1/2/99/35/28/32/160）",
+      "cite": [
+        "repo-evalplus-releases@v0.2.0",
+        "repo-evalplus@README 新闻"
+      ]
+    },
+    {
+      "id": "v0.2.1",
+      "date": "2024-04-02",
+      "label": "HumanEval+ 与 MBPP+ 上架 HuggingFace 并可通过 bigcode-evaluation-harness 使用；修 HumanEval/32 的 oracle；单测试超时默认 0.5s",
+      "cite": [
+        "repo-evalplus-releases@v0.2.1",
+        "repo-evalplus@README 新闻"
+      ]
+    },
+    {
+      "id": "v0.3.1",
+      "date": "2024-10-20",
+      "label": "EvalPerf（代码效率）并入仓库，v0.3.0 因依赖损坏被撤；HumanEval+ 数据集维护到 v0.1.10（契约与 oracle）",
+      "cite": [
+        "repo-evalplus-releases@v0.3.1",
+        "repo-evalplus-releases@v0.3.1 注",
+        "repo-evalplus@README 新闻"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "数据集口径随版本漂移",
+      "impact": "论文（2023）与今天的榜单用的不是同一版测试：v0.1.6 起反复修契约、参考答案与输入，榜单现按 v0.1.10 计分；同一模型在不同版本上的分数不可直接比较。",
+      "severity": "高",
+      "response": "官方在每个 release 里逐条列出修订（任务号 + 修订类型），榜单页注明所用数据集版本。",
+      "reader": "比较两个模型前先确认 HumanEval+ 版本号；拿论文数字对比今天的榜单数字要谨慎。",
+      "cite": [
+        "repo-evalplus-releases@v0.2.0",
+        "repo-evalplus-releases@v0.3.1",
+        "leaderboard-evalplus@Notes"
+      ]
+    },
+    {
+      "issue": "论文自身数字不一致",
+      "impact": "论文 Table 2 记 HumanEval+ 平均 764.1 个测试，Table 4 注却写 774.8，release note 也用 774.8；引用测试规模时两个数字都能在官方材料里找到。",
+      "severity": "中",
+      "response": "官方未说明差异原因（未披露）。",
+      "reader": "看到 764 与 774 不必困惑，都是官方口径；本站按出处分别标注。",
+      "cite": [
+        "arxiv-2305-01210@Table 2",
+        "arxiv-2305-01210@Table 4 注",
+        "repo-evalplus-releases@v0.1.5"
+      ]
+    },
+    {
+      "issue": "判分依赖参考答案正确性",
+      "impact": "EvalPlus 靠参考答案与生成代码差分对拍，而原版 HumanEval 有 18 题（11%）参考答案本身有缺陷：5 题漏边界输入、10 题逻辑错误、3 题性能不足；参考答案错则判分也错。",
+      "severity": "中",
+      "response": "官方重写并测试了全部参考答案，后续版本继续修 oracle（v0.2.1 修 HumanEval/32，v0.1.10 再修契约与 oracle）。",
+      "reader": "异常低分先排查测试环境（超时、依赖、Python 版本），不要直接当成模型失败。",
+      "cite": [
+        "arxiv-2305-01210@§4 缺陷分析",
+        "arxiv-2305-01210@§2.1",
+        "repo-evalplus-releases@v0.2.1"
+      ]
+    },
+    {
+      "issue": "数据污染风险",
+      "impact": "HumanEval+ 是公开题库，且被 Meta Llama 3.1/3.3、Allen AI TÜLU、Qwen2.5-Coder、DeepSeek-Coder V2 等团队采用；榜单只要求模型提供方自行避免污染，污染可能性需读者自行判断。",
+      "severity": "中",
+      "response": "榜单用 💚/💙 标注模型的开放权重与开放数据程度，作为污染可能性的参考信号。",
+      "reader": "看到异常高分先查该模型的数据开放程度与训练数据截止时间。",
+      "cite": [
+        "leaderboard-evalplus@Notes",
+        "repo-evalplus@README 采用方"
+      ]
+    },
+    {
+      "issue": "覆盖面窄",
+      "impact": "164 题全是单函数 Python 合成，不含多文件工程、第三方 API、代码效率与需求澄清，无法反映这些维度上的能力。",
+      "severity": "低",
+      "response": "官方另出 EvalPerf（效率，118 任务）与 MBPP+；bigcode-evaluation-harness 也同时支持 APPS、DS-1000 等任务。",
+      "reader": "把 HumanEval+ 当作「函数级正确性」证据，不要当成通用编码能力。",
+      "cite": [
+        "arxiv-2305-01210@§2.1",
+        "repo-evalplus-releases@v0.3.1",
+        "repo-bigcode-evaluation-harness@README"
+      ]
+    }
+  ],
+  "notes": "HumanEval+ 与 MBPP+ 同属 EvalPlus；效率向评测见 EvalPerf（v0.3.1 起并入仓库）。",
   "official_sources": [
     {
       "kind": "site",
@@ -43,6 +365,300 @@
     "aider",
     "apps"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-28"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "arxiv-2305-01210",
+        "kind": "paper",
+        "title": "Is Your Code Generated by ChatGPT Really Correct? Rigorous Evaluation of Large Language Models for Code Generation（arXiv:2305.01210v3）",
+        "url": "https://arxiv.org/abs/2305.01210",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "repo-evalplus",
+        "kind": "repo",
+        "title": "evalplus/evalplus 仓库（README：About、新闻、采用方）",
+        "url": "https://github.com/evalplus/evalplus",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "repo-evalplus-releases",
+        "kind": "repo",
+        "title": "evalplus/evalplus Releases（v0.1.5 – v0.3.1）",
+        "url": "https://github.com/evalplus/evalplus/releases",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "dataset-evalplus-humanevalplus",
+        "kind": "dataset",
+        "title": "HuggingFace 数据集 evalplus/humanevalplus",
+        "url": "https://huggingface.co/datasets/evalplus/humanevalplus",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "leaderboard-evalplus",
+        "kind": "leaderboard",
+        "title": "EvalPlus 官方榜单（evalplus.github.io/leaderboard.html）",
+        "url": "https://evalplus.github.io/leaderboard.html",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "leaderboard-evalplus-results",
+        "kind": "leaderboard",
+        "title": "EvalPlus 榜单数据（results.json）",
+        "url": "https://evalplus.github.io/results.json",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "repo-bigcode-evaluation-harness",
+        "kind": "repo",
+        "title": "bigcode-project/bigcode-evaluation-harness 仓库（第三方评测脚手架）",
+        "url": "https://github.com/bigcode-project/bigcode-evaluation-harness",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "EvalPlus 团队（University of Illinois Urbana-Champaign / Nanjing University；论文发表于 NeurIPS 2023 与 COLM 2024）",
+        "cite": [
+          "arxiv-2305-01210@作者与单位",
+          "repo-evalplus@About"
+        ]
+      },
+      "first_release": {
+        "v": "2023-05-02（论文 arXiv v1 提交；EvalPlus v0.1.0 起提供 HumanEval+）",
+        "cite": [
+          "arxiv-2305-01210@abs",
+          "repo-evalplus@README 新闻"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "arxiv-2305-01210@§2.1",
+        "arxiv-2305-01210@Table 2",
+        "repo-evalplus@README About"
+      ],
+      "interpretation": [
+        "arxiv-2305-01210@Table 3",
+        "arxiv-2305-01210@§4"
+      ]
+    },
+    "problem": {
+      "text": "HumanEval 每题平均只有 9.6 个测试，测试不足会把错误的 LLM 代码判成通过，甚至让模型排名失真——论文里 Phind-CodeLlama-34B 与 WizardCoder-CodeLlama-34B 在 HumanEval+ 上反超 ChatGPT，在原版 HumanEval 上却没有。HumanEval+ 用 80 倍测试 + 人工契约 + 重写参考答案来补这个缺口。",
+      "cite": [
+        "arxiv-2305-01210@Table 2",
+        "arxiv-2305-01210@Table 3",
+        "arxiv-2305-01210@摘要"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "同题原版 HumanEval（GPT-4 贪心 pass@1⋆，对照）",
+        "value": "88.4%",
+        "note": "原版每题平均只有 9.6 个测试，所以分数更高；两个数字的差就是 HumanEval+ 识别出的漏判。",
+        "cite": [
+          "arxiv-2305-01210@Table 3",
+          "arxiv-2305-01210@Table 2"
+        ]
+      },
+      {
+        "label": "论文最好成绩（HumanEval+，GPT-4 贪心 pass@1⋆）",
+        "value": "76.2%",
+        "note": "论文报告全部受评模型的最大降幅为 pass@1 19.3 个百分点；Phind-CodeLlama-34B 67.1%、WizardCoder-CodeLlama-34B 64.6%。",
+        "cite": [
+          "arxiv-2305-01210@Table 3",
+          "arxiv-2305-01210@§4"
+        ]
+      },
+      {
+        "label": "官方榜单当前最高（HumanEval+ v0.1.10，贪心 pass@1）",
+        "value": "89.0%",
+        "note": "O1 Preview 与 O1 Mini（均为 2024 年 9 月）并列 89.0%；其后是 Qwen2.5-Coder-32B-Instruct 与 GPT 4o 87.2%、DeepSeek-V3 86.6%。",
+        "cite": [
+          "leaderboard-evalplus-results@O1 Preview (Sept 2024)",
+          "leaderboard-evalplus-results@O1 Mini (Sept 2024)",
+          "leaderboard-evalplus-results@Qwen2.5-Coder-32B-Instruct",
+          "leaderboard-evalplus-results@GPT 4o (Aug 2024)",
+          "leaderboard-evalplus-results@DeepSeek-V3 (Nov 2024)",
+          "leaderboard-evalplus@标题"
+        ]
+      },
+      {
+        "label": "本站账本当前最高（厂商自报）",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 HumanEval 和 HumanEval+ 的分数排进同一列——两者是不同的测试集，同模型通常差约 10 个百分点（GPT-4 差 12.2，ChatGPT 差 9.8）。",
+        "cite": [
+          "arxiv-2305-01210@Table 3"
+        ]
+      },
+      {
+        "text": "把高分当成「工程上正确」——它只表示在 164 个单函数任务的测试输入上全部通过，不覆盖效率、可维护性与真实工程约束；原版参考答案本身就有 18 题有缺陷。",
+        "cite": [
+          "arxiv-2305-01210@§4 缺陷分析",
+          "arxiv-2305-01210@§2.1"
+        ]
+      },
+      {
+        "text": "把榜单上的 MBPP+ 分数当成 HumanEval+——榜单同时收录两套评测，且 MBPP / MBPP+ 用的是 MBPP-sanitized 中人工复核过的 399 题子集。",
+        "cite": [
+          "leaderboard-evalplus@Notes"
+        ]
+      },
+      {
+        "text": "用 ✨ 标记的 chat 设置分数和直接补全分数直接对比，或把不同 HumanEval+ 版本、mini 与完整版的分数混排。",
+        "cite": [
+          "leaderboard-evalplus@Notes",
+          "repo-evalplus-releases@v0.1.5"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "论文",
+        "v": "Is Your Code Generated by ChatGPT Really Correct? Rigorous Evaluation of Large Language Models for Code Generation（arXiv:2305.01210；NeurIPS 2023 / COLM 2024）",
+        "cite": [
+          "arxiv-2305-01210@首页",
+          "repo-evalplus@About"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "Jiawei Liu、Chunqiu Steven Xia（共同一作）、Yuyao Wang、Lingming Zhang",
+        "cite": [
+          "arxiv-2305-01210@作者与单位"
+        ]
+      },
+      {
+        "k": "机构",
+        "v": "University of Illinois Urbana-Champaign、Nanjing University",
+        "cite": [
+          "arxiv-2305-01210@作者与单位"
+        ]
+      },
+      {
+        "k": "发布方 / 维护方",
+        "v": "EvalPlus 团队（GitHub: evalplus/evalplus，Apache-2.0；仓库自述「Rigourous evaluation of LLM-synthesized code - NeurIPS 2023 & COLM 2024」）",
+        "cite": [
+          "repo-evalplus@About"
+        ]
+      },
+      {
+        "k": "采用方",
+        "v": "Meta Llama 3.1 与 3.3、Allen AI TÜLU 1/2/3、Qwen2.5-Coder、CodeQwen 1.5、DeepSeek-Coder V2、Qwen2、Snowflake Arctic、StarCoder2、Magicoder、WizardCoder 等模型团队",
+        "cite": [
+          "repo-evalplus@README 采用方"
+        ]
+      },
+      {
+        "k": "第三方脚手架",
+        "v": "bigcode-evaluation-harness 把 HumanEval+ 列入其 Python 代码生成任务，支持 completion 与 FIM 两种模式",
+        "cite": [
+          "repo-bigcode-evaluation-harness@README"
+        ]
+      },
+      {
+        "k": "姊妹评测",
+        "v": "MBPP+（同仓，MBPP 的 35 倍测试版）与 EvalPerf（代码效率，初始 118 个任务）",
+        "cite": [
+          "repo-evalplus@README About",
+          "repo-evalplus-releases@v0.3.1"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-14",
+        "columns": [
+          "来源",
+          "模型",
+          "HumanEval+ pass@1⋆（贪心）",
+          "同题 HumanEval pass@1⋆（贪心）",
+          "口径"
+        ],
+        "rows": [
+          [
+            "论文 Table 3",
+            "GPT-4",
+            "76.2%",
+            "88.4%",
+            "论文设置：4 个温度各 200 样本 + 贪心；GPT-4 仅贪心"
+          ],
+          [
+            "论文 Table 3",
+            "ChatGPT",
+            "63.4%",
+            "73.2%",
+            "同上；ChatGPT 另做 0.8 温度采样"
+          ],
+          [
+            "论文 Table 3",
+            "Phind-CodeLlama-34B",
+            "67.1%",
+            "71.3%",
+            "论文设置"
+          ],
+          [
+            "论文 Table 3",
+            "WizardCoder-CodeLlama-34B",
+            "64.6%",
+            "73.2%",
+            "论文设置"
+          ],
+          [
+            "官方榜单",
+            "O1 Preview (Sept 2024)",
+            "89.0%",
+            "未列出",
+            "HumanEval+ v0.1.10，贪心 pass@1"
+          ],
+          [
+            "官方榜单",
+            "O1 Mini (Sept 2024)",
+            "89.0%",
+            "未列出",
+            "同上"
+          ],
+          [
+            "官方榜单",
+            "Qwen2.5-Coder-32B-Instruct",
+            "87.2%",
+            "未列出",
+            "同上"
+          ],
+          [
+            "官方榜单",
+            "GPT 4o (Aug 2024)",
+            "87.2%",
+            "未列出",
+            "同上"
+          ],
+          [
+            "官方榜单",
+            "DeepSeek-V3 (Nov 2024)",
+            "86.6%",
+            "未列出",
+            "同上"
+          ]
+        ]
+      },
+      "cite": [
+        "arxiv-2305-01210@Table 3",
+        "leaderboard-evalplus-results@O1 Preview (Sept 2024)",
+        "leaderboard-evalplus-results@O1 Mini (Sept 2024)",
+        "leaderboard-evalplus-results@Qwen2.5-Coder-32B-Instruct",
+        "leaderboard-evalplus-results@GPT 4o (Aug 2024)",
+        "leaderboard-evalplus-results@DeepSeek-V3 (Nov 2024)",
+        "leaderboard-evalplus@Notes"
+      ]
+    }
+  }
 }
