@@ -1,33 +1,399 @@
 {
   "id": "mlebench",
   "name": "MLE-bench",
-  "full_name": null,
+  "full_name": "MLE-bench: Evaluating Machine Learning Agents on Machine Learning Engineering",
   "aliases": [],
-  "status": null,
+  "status": "active",
   "categories": [
     "agent"
   ],
-  "summary": "75 个 Kaggle 真实比赛端到端（特征/训练/提交）",
-  "interpretation": "完整跑一个 Kaggle 比赛：清洗、特征、训练、提交。ML 工程师的完整工作流模拟。",
-  "measures": [],
-  "does_not_measure": [],
+  "summary": "用 75 个已结束的 Kaggle 竞赛考察 AI 代理的端到端机器学习工程能力：代理在 Docker 容器里最多跑 24 小时（36 vCPU / 440GB 内存 / 单张 24GB A10 GPU），最后只交一份 CSV；成绩按 Kaggle 官方奖牌规则与该竞赛的 Private leaderboard 快照比较，主指标是「任一奖牌率」——拿到铜牌及以上的竞赛占比。",
+  "interpretation": "分数 = 拿到铜牌及以上的竞赛占比，它同时要求两件事：把竞赛完整跑通并产出有效提交，以及成绩达到该竞赛按参赛队数分档的奖牌线。论文用人类上限给这个指标定标：作者说它的天花板对标「最优秀 Kaggle 选手多年累计的成绩」，历史上只有 9 个人在 75 个不同竞赛拿过奖牌；而 Kaggle Grandmaster 的门槛只是 5 枚金牌，o1-preview 平均已能拿 7 枚（作者列了三条 caveat）。所以论文发布时 16.9% 的最好成绩不代表接近人类专家，只代表当时最强的模型能稳定完成约六分之一竞赛的完整工程流程。官方榜单上 2026 年的最高分是 64.44%（Famou-Agent 2.0 + Gemini-3-Pro-Preview），但那是不同代理、不同模型、不同年份的成绩，与论文基线不可直接相比。",
+  "measures": [
+    {
+      "area": "低复杂度竞赛（Lite 子集）",
+      "focus": "官方口径下资深 ML 工程师 2 小时内能做出合理方案（不含训练时间）；官方明确建议算力不够时只用这一档",
+      "share": "22 题（论文正文按 30% 计）",
+      "format": "Kaggle 式端到端任务：读描述 → 准备数据 → 训练调参 → 交 CSV",
+      "cite": [
+        "arxiv-2410-07095@§2.1",
+        "repo-mle-bench@Lite评估"
+      ]
+    },
+    {
+      "area": "中复杂度竞赛",
+      "focus": "2–10 小时可解",
+      "share": "38 题（论文正文按 50% 计）",
+      "format": "同上",
+      "cite": [
+        "arxiv-2410-07095@§2.1"
+      ]
+    },
+    {
+      "area": "高复杂度竞赛",
+      "focus": "10 小时以上",
+      "share": "15 题（论文正文按 20% 计）",
+      "format": "同上",
+      "cite": [
+        "arxiv-2410-07095@§2.1"
+      ]
+    },
+    {
+      "area": "开发集（不计入主结果）",
+      "focus": "用于开发代理、避免对测试集过拟合",
+      "share": "7 题",
+      "format": "同全集",
+      "cite": [
+        "arxiv-2410-07095@§2.1"
+      ]
+    },
+    {
+      "area": "表格 / 结构化数据",
+      "focus": "含 tabular-playground-series-dec-2021、new-york-city-taxi-fare-prediction、nomad2018-predict-transparent-conductors、random-acts-of-pizza 等",
+      "share": "未披露（论文只给 15 个类别名，未列各类题数）",
+      "format": "表格回归 / 分类，交 CSV",
+      "cite": [
+        "arxiv-2410-07095@Figure 6",
+        "repo-mle-bench@Lite评估"
+      ]
+    },
+    {
+      "area": "视觉 / 图像",
+      "focus": "Figure 6 的类别含 Image Classification、Image Segmentation、Image (Other)；Lite 表里有 dog-breed-identification、siim-isic-melanoma-classification、plant-pathology-2020-fgvc7 等",
+      "share": "未披露（论文只给类别名，未列各类题数）",
+      "format": "图像分类 / 分割 / 回归，交 CSV",
+      "cite": [
+        "arxiv-2410-07095@Figure 6",
+        "repo-mle-bench@Lite评估"
+      ]
+    },
+    {
+      "area": "文本 / 序列到序列",
+      "focus": "Figure 6 的类别含 Text Classification；Lite 表里有 spooky-author-identification、jigsaw-toxic-comment-classification-challenge、text-normalization-challenge-english-language 等",
+      "share": "未披露（论文只给类别名，未列各类题数）",
+      "format": "文本分类 / 序列转写，交 CSV",
+      "cite": [
+        "arxiv-2410-07095@Figure 6",
+        "repo-mle-bench@Lite评估"
+      ]
+    },
+    {
+      "area": "音频",
+      "focus": "Figure 6 的类别含 Audio Classification；Lite 表里有 mlsp-2013-birds 等",
+      "share": "未披露（论文只给类别名，未列各类题数）",
+      "format": "音频分类，交 CSV",
+      "cite": [
+        "arxiv-2410-07095@Figure 6",
+        "repo-mle-bench@Lite评估"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "开放式科研与问题定义能力——作者明说 MLE-bench 只收录问题陈述清晰、数据集干净、指标明确的竞赛，而真实 AI R&D 常常连问题陈述都不清楚",
+      "cite": [
+        "arxiv-2410-07095@§6"
+      ]
+    },
+    {
+      "text": "人类 Kaggle 竞赛的真实体验——MLE-bench 用自建 train/test 切分、重新实现评分代码，并把 Kaggle 奖牌逻辑套到所有竞赛上（包括原本不发牌的竞赛）",
+      "cite": [
+        "arxiv-2410-07095@§6",
+        "arxiv-2410-07095@§2.2"
+      ]
+    },
+    {
+      "text": "超过 24 小时的持续工作——官方基准口径是每竞赛 24 小时；100 小时是论文的附加实验，榜单上另有 12 小时和 36 小时的行",
+      "cite": [
+        "arxiv-2410-07095@§3",
+        "repo-mle-bench@基准测试",
+        "repo-mle-bench@排行榜"
+      ]
+    },
+    {
+      "text": "近期竞赛的真实难度——论文发现模型能在 2013–2022 年的竞赛上拿牌，2022 年之后的竞赛（通常也更难）基本拿不到",
+      "cite": [
+        "arxiv-2410-07095@Figure 9"
+      ]
+    }
+  ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
+    "sample_count": 75,
+    "splits": [
+      "主集 75 个竞赛：低复杂度 22 / 中 38 / 高 15",
+      "开发集 7 个竞赛（不参与主结果）",
+      "Lite 子集 = 低复杂度 22 个竞赛（官方推荐的轻量口径）"
+    ],
+    "languages": [
+      "en（竞赛描述与提交格式为英文）",
+      "ru（含俄语数据竞赛，如 text-normalization-challenge-russian-language）"
+    ],
+    "source_type": "Kaggle 已结束的公开竞赛 + 官方从公开训练集重切的 train/test + 自实现评分逻辑 + 各竞赛 Private leaderboard 快照",
+    "public_sample": true,
+    "totals": "75 个主竞赛 + 7 个开发竞赛；每个竞赛含任务描述、数据集（Kaggle 多数不公布测试集，官方用准备脚本把公开训练集重切成训练/测试，默认取 10%）、本地评分逻辑和该竞赛的 Private leaderboard 快照；从零准备全量数据约需两天",
+    "cite": [
+      "arxiv-2410-07095@§2.1",
+      "repo-mle-bench@数据集"
+    ],
+    "construction": [
+      {
+        "k": "候选池",
+        "text": "从 Meta Kaggle 数据集列的 5,673 个已结束 Kaggle 竞赛出发，先按时间、是否发牌、是否要求提交代码等条件筛掉一部分，再人工筛掉不相关的。",
+        "cite": [
+          "arxiv-2410-07095@§2.1"
+        ]
+      },
+      {
+        "k": "人工筛选标准",
+        "text": "保留的竞赛必须要求 ML 工程能力才能拿牌，且与当代 ML 相关；最终入选 75 个，覆盖 15 个问题类别。",
+        "cite": [
+          "arxiv-2410-07095@附录A.1",
+          "arxiv-2410-07095@Figure 6"
+        ]
+      },
+      {
+        "k": "复杂度标注",
+        "text": "按「资深 ML 工程师做出合理方案所需时间」分档：2 小时以下为低、2–10 小时为中、10 小时以上为高（不含模型训练时间）。",
+        "cite": [
+          "arxiv-2410-07095@§2.1"
+        ]
+      },
+      {
+        "k": "重建测试集",
+        "text": "Kaggle 通常不公布测试集，官方用示例提交在重建测试集和原测试集上的分数相近来确认分布一致，然后取原训练集的 10% 作为新测试集。",
+        "cite": [
+          "arxiv-2410-07095@§2.1"
+        ]
+      },
+      {
+        "k": "重写评分",
+        "text": "按竞赛描述里的评测指标逐竞赛实现本地评分逻辑（指标从 AUROC 到领域特定损失函数都有），因此提交可以在本地打分。",
+        "cite": [
+          "arxiv-2410-07095@§2.1"
+        ]
+      },
+      {
+        "k": "人类基线",
+        "text": "用各竞赛 Kaggle 公开 leaderboard 建立人类基线；由于公开榜容易过拟合，论文统一采用 Private leaderboard。",
+        "cite": [
+          "arxiv-2410-07095@§2.2",
+          "arxiv-2410-07095@Abstract"
+        ]
+      }
+    ]
   },
-  "metrics": [],
+  "metrics": [
+    {
+      "id": "any-medal-percentage",
+      "name": "任一奖牌率（Any Medal %）",
+      "direction": "越高越好",
+      "description": "拿到铜牌及以上奖牌的竞赛占比；主指标，与 Private leaderboard 快照按人数分档的奖牌线比较",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2410-07095@§2.2"
+      ]
+    },
+    {
+      "id": "above-median-percentage",
+      "name": "超过中位数率",
+      "direction": "越高越好",
+      "description": "成绩超过该竞赛 leaderboard 中位数的竞赛占比",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2410-07095@Table 2"
+      ]
+    },
+    {
+      "id": "valid-submission-percentage",
+      "name": "有效提交率",
+      "direction": "越高越好",
+      "description": "产出合法提交的竞赛占比；论文发现代理经常卡在这一步（连格式合法都做不到）",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2410-07095@§3.1"
+      ]
+    }
+  ],
   "default_protocol": {
-    "raw": "Kaggle 官方评分 + 奖牌换算"
+    "raw": "每个竞赛：Docker 容器内最多 24 小时，36 vCPU / 440GB 内存 / 4095 GiB SSD / 单张 24GB A10 GPU，至少 3 个随机种子，报告 Any Medal (%) 的 mean ± SEM。代理只需提交 CSV，本地校验服务器只验证提交格式是否合法、不限提交次数但不给分。提交必须由一个独立于代理的模型产生，禁止代理凭自身世界知识直接写预测、禁止预测来自人类。官方用 GPT-4o 对代理日志做违规分析，并用 Dolos 把代理代码与该竞赛 Kaggle top 50 notebook 比对，相似度超过 60% 送人工复核。主指标「任一奖牌率」= 拿到铜牌及以上的竞赛占比；奖牌线按参赛队数分档（0–99 队铜牌为前 40%，250–999 队铜牌为前 100 名，1000+ 队铜牌为前 10%，金门槛每多 500 队再加 1 名），并与 Private leaderboard 快照比较。",
+    "cite": [
+      "arxiv-2410-07095@§3",
+      "arxiv-2410-07095@§2.3",
+      "arxiv-2410-07095@§2.3.1",
+      "arxiv-2410-07095@§2.2",
+      "arxiv-2410-07095@Table 1",
+      "repo-mle-bench@基准测试"
+    ],
+    "variants": [
+      {
+        "text": "多尝试（pass@k）：o1-preview 从 pass@1 的 16.9% 翻倍到 pass@8 的 34.1%——单次成绩和多尝试成绩不能混排。",
+        "cite": [
+          "arxiv-2410-07095@§1"
+        ]
+      },
+      {
+        "text": "时长：GPT-4o 24 小时 8.7%、100 小时 11.8%（100 小时实验同时把最大节点数提到 5,000）。",
+        "cite": [
+          "arxiv-2410-07095@§3.4"
+        ]
+      },
+      {
+        "text": "硬件：GPT-4o 在 CPU-only 9.1%、标准单 A10 8.7%、双 A10 10.2% 之间，差异在误差范围内。",
+        "cite": [
+          "arxiv-2410-07095@Table 3"
+        ]
+      },
+      {
+        "text": "脚手架：同一模型换脚手架差距极大（GPT-4o：AIDE 8.7%、OpenHands 4.4%、MLAB 0.8%）。",
+        "cite": [
+          "arxiv-2410-07095@Table 2"
+        ]
+      },
+      {
+        "text": "Lite 子集（22 个低复杂度竞赛）vs 全集：官方只允许在 Low == Lite 同一列内比较。",
+        "cite": [
+          "repo-mle-bench@Lite评估"
+        ]
+      },
+      {
+        "text": "榜单上部分提交标注 Test-set feedback（用了测试集反馈）或注明「用失败 seed 补齐」来算均值，官方把它们单列一张表并注明不可直接比。",
+        "cite": [
+          "repo-mle-bench@排行榜",
+          "repo-mle-bench@排行榜脚注"
+        ]
+      },
+      {
+        "text": "污染对照：人工把竞赛描述改写以混淆来源后，GPT-4o 分数与原版基本一致（8.4% vs 8.5%）。",
+        "cite": [
+          "arxiv-2410-07095@Table 4"
+        ]
+      }
+    ]
   },
-  "versions": [],
-  "limitations": [],
-  "notes": null,
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2024-10-09",
+      "label": "arXiv v1 提交（论文首次公开）",
+      "cite": [
+        "arxiv-2410-07095@提交历史"
+      ]
+    },
+    {
+      "id": "v6",
+      "date": "2025-02-26",
+      "label": "arXiv v6 / ICLR 2025 会议版（本页核对所用版本）",
+      "cite": [
+        "arxiv-2410-07095@提交历史"
+      ]
+    },
+    {
+      "id": "lb-2024-10-08",
+      "date": "2024-10-08",
+      "label": "官方榜单录入论文基线（AIDE + o1-preview 17.12 ± 0.61 等）",
+      "cite": [
+        "repo-mle-bench@排行榜"
+      ]
+    },
+    {
+      "id": "lb-pause",
+      "date": "2026-04-24",
+      "label": "官方暂停接收新榜单提交，理由是现有流程不足以保证提交公平可比；计划在 openai/frontier-evals 发布 v2 并在榜单加 version 列区分 v1/v2 结果",
+      "cite": [
+        "repo-mle-bench@已知问题"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "数据污染风险（全部是公开竞赛）",
+      "impact": "75 个竞赛都是公开 Kaggle 竞赛，模型可能训练过竞赛详情、公开解答甚至数据集（含测试集）。论文的熟悉度分析与混淆描述实验没有发现 GPT-4o 的成绩被系统性抬高，但作者明确说这只说明「我们测试的模型」如此，不保证未来模型，而且难以检测「只学到高层策略」这类复用。",
+      "severity": "高",
+      "response": "论文做了三项检测：GPT-4o 基础模型对竞赛的熟悉度与其在该竞赛上的表现无相关性；人工混淆竞赛描述后成绩基本不变；Dolos 抄袭检测（与该竞赛 top 50 notebook 比对、相似度超 60% 送人工复核）未发现抄袭。官方仓库另附规则违规检测器与抄袭检测器。",
+      "reader": "看厂商自报分数时先问一句「这个模型的知识截止点是否覆盖竞赛发布期」；竞赛越老、越热门，污染越可能已经发生。",
+      "cite": [
+        "arxiv-2410-07095@§6",
+        "arxiv-2410-07095@§4.1",
+        "arxiv-2410-07095@§4.2",
+        "arxiv-2410-07095@附录A.4",
+        "repo-mle-bench@其他"
+      ]
+    },
+    {
+      "issue": "已知数据集与评分缺陷",
+      "impact": "官方仓库列出的问题包括：smartphone-decimeter-2022 的公开测试文件泄漏到「拿满分变得轻而易举」；random-acts-of-pizza 的 giver_username_if_known 字段泄漏结果（官方说该竞赛应删除）；dog-breed-identification 的测试图来自公开标注语料，代理可能发现并利用；tensorflow-speech-recognition-challenge 的 prepare.py 把测试标签范围搞错；另有 checksum 不匹配、样本提交缺列、3 个过于拥挤的表格竞赛等。",
+      "severity": "高",
+      "response": "官方明确说因为已有榜单提交而推迟修复，计划在 v2 批量修复，并在榜单加 version 列区分 v1/v2 结果。",
+      "reader": "同一模型在 v1 与 v2 上的分数不可直接比；看到接近满分的低复杂度分数，先怀疑是否踩到泄漏。",
+      "cite": [
+        "repo-mle-bench@已知问题"
+      ]
+    },
+    {
+      "issue": "评测口径不一致",
+      "impact": "代理（AIDE / MLAB / OpenHands / 自研）、底层模型、时长（12 / 24 / 36 / 100 小时）、尝试次数（pass@1 到 pass@8）、是否使用测试集反馈都会显著改变分数；部分行还注明「用失败 seed 补齐」来算均值。论文自身也存在小口径差：Table 2 记 GPT-4o (AIDE) 任一奖牌 8.7 ± 0.5，Table 9 记 8.6 ± 0.5；OpenHands + GPT-4o 在 Table 2 是 4.4 ± 1.4、Table 9 是 5.1 ± 1.3。官方榜单复跑论文基线也给出不同数值（AIDE + o1-preview 17.12 ± 0.61 vs 论文 16.9 ± 1.1）。",
+      "severity": "高",
+      "response": "官方给出基准配置（至少 3 seeds、报 mean ± SEM、24 小时、36 vCPU + 单 A10、按 Low/Medium/High/All 分列）；2026-04-24 起暂停接收新提交，理由是现有流程不足以保证公平可比。",
+      "reader": "比较前先对齐代理、模型、时长、seeds、split 列和是否使用测试集反馈；不确定就只看同代际、同口径的行。",
+      "cite": [
+        "repo-mle-bench@基准测试",
+        "repo-mle-bench@排行榜",
+        "arxiv-2410-07095@Table 2",
+        "arxiv-2410-07095@Table 9"
+      ]
+    },
+    {
+      "issue": "与真实 Kaggle 竞赛的差异",
+      "impact": "MLE-bench 用自建 train/test 切分（默认取原训练集 10%）并重新实现评分代码，不是 Kaggle 原始私有测试集；论文还发现模型能在 2013–2022 年的竞赛上拿牌，2022 年之后的竞赛基本拿不到。",
+      "severity": "中",
+      "response": "论文用示例提交在重建测试集与原测试集上的分数相近来确认分布一致，并称已按各竞赛描述仔细实现评分逻辑。",
+      "reader": "把 MLE-bench 奖牌当作「与当年同场人类选手等效」的近似，不要当成 Kaggle 历史名次。",
+      "cite": [
+        "arxiv-2410-07095@§6",
+        "arxiv-2410-07095@§2.1",
+        "arxiv-2410-07095@Figure 9"
+      ]
+    },
+    {
+      "issue": "任务覆盖面偏窄",
+      "impact": "只收录问题陈述清晰、数据集干净、指标明确的竞赛；作者明说真实 AI R&D 常常连问题陈述都不清楚，定义问题和指标本身就是核心工作。",
+      "severity": "中",
+      "response": "作者把它定位为「ML 工程能力」的度量而非 AI R&D 全能力，并用它讨论对 Preparedness Framework 等自主性度量的意义。",
+      "reader": "MLE-bench 高分不等于能自主做研究。",
+      "cite": [
+        "arxiv-2410-07095@§6",
+        "arxiv-2410-07095@§1"
+      ]
+    },
+    {
+      "issue": "资源与成本门槛",
+      "impact": "一轮主实验 = 24 小时 × 75 竞赛 = 1,800 GPU 小时；token 开销也很大（o1-preview + AIDE 一个 seed 平均 1.275 亿输入 token、1,500 万输出 token）。",
+      "severity": "中",
+      "response": "官方推荐 Lite 子集（22 个低复杂度竞赛、158GB 数据，全集 3.3TB）降低成本，并提醒缩减算力可能损伤成绩（论文有硬件与时长对照）。",
+      "reader": "跨论文比较时注意是否用了 Lite 或缩减资源；Low == Lite 列的分数天然高于 Medium / High 列。",
+      "cite": [
+        "arxiv-2410-07095@§6",
+        "repo-mle-bench@Lite评估",
+        "arxiv-2410-07095@Table 3"
+      ]
+    }
+  ],
+  "notes": "官方榜单自 2026-04-24 起暂停接收新提交；论文复杂度占比在正文（22/38/15 = 30%/50%/20%）与 Figure 6 题注（29%/51%/20%）之间不一致，本页按正文写",
   "official_sources": [
     {
-      "kind": "site",
+      "kind": "repo",
       "url": "https://github.com/openai/mle-bench"
     },
     {
@@ -36,13 +402,421 @@
     }
   ],
   "related_benchmarks": [
+    "paperbench",
     "terminalbench",
     "tau-bench",
     "webarena",
     "osworld",
     "gaia",
-    "bfcl"
+    "bfcl",
+    "dsbench-hard"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-28"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-13",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      {
+        "id": "arxiv-2410-07095",
+        "kind": "paper",
+        "title": "MLE-bench: Evaluating Machine Learning Agents on Machine Learning Engineering（arXiv:2410.07095 v6，ICLR 2025）",
+        "url": "https://arxiv.org/abs/2410.07095",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "repo-mle-bench",
+        "kind": "repo",
+        "title": "openai/mle-bench（数据集构建代码、评分逻辑、官方榜单与已知问题）",
+        "url": "https://github.com/openai/mle-bench",
+        "accessed": "2026-11-13"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "OpenAI",
+        "cite": [
+          "arxiv-2410-07095@作者署名"
+        ]
+      },
+      "first_release": {
+        "v": "2024-10-09（arXiv v1 提交）",
+        "cite": [
+          "arxiv-2410-07095@提交历史"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "arxiv-2410-07095@Abstract",
+        "arxiv-2410-07095@§2.1",
+        "arxiv-2410-07095@§2.2",
+        "arxiv-2410-07095@§3"
+      ],
+      "interpretation": [
+        "arxiv-2410-07095@§2.2",
+        "arxiv-2410-07095@§3.1",
+        "repo-mle-bench@排行榜"
+      ]
+    },
+    "problem": {
+      "text": "HumanEval、MBPP、SWE-bench 这类基准测的是「按自然语言描述写代码」，很少有基准整体衡量端到端的 ML 工程：准备数据、训练模型、调试、迭代。Weco AI 发布 AIDE 时宣称在 Kaggle 数据科学竞赛上击败超过 50% 的人类选手，但论文复现发现当时最强的模型只在约 10% 的竞赛上超过中位数；MLAgentBench 只有 13 个任务，且只要求相对基线提升 10%。MLE-bench 用 75 个真实竞赛加人类 leaderboard 快照，把「AI 代理 vs 人类 Kaggle 选手」放到同一把尺子上。",
+      "cite": [
+        "arxiv-2410-07095@§5",
+        "arxiv-2410-07095@§4",
+        "arxiv-2410-07095@§2.2"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "论文最低基线（MLAB + GPT-4o）",
+        "value": "0.8% ± 0.5",
+        "note": "任一奖牌率；同为 GPT-4o，换脚手架差距极大（AIDE 8.7%、OpenHands 4.4%）。",
+        "cite": [
+          "arxiv-2410-07095@Table 2"
+        ]
+      },
+      {
+        "label": "论文发布时最好（o1-preview + AIDE，pass@1）",
+        "value": "16.9% ± 1.1",
+        "note": "o1-preview 用 16 seeds；官方榜单同配置记 17.12 ± 0.61。",
+        "cite": [
+          "arxiv-2410-07095@§3.1",
+          "arxiv-2410-07095@Table 2",
+          "repo-mle-bench@排行榜"
+        ]
+      },
+      {
+        "label": "多尝试上限（o1-preview + AIDE，pass@8）",
+        "value": "34.1%",
+        "note": "同一模型把尝试次数从 1 提到 8，分数翻倍——这不是单次能力提升。",
+        "cite": [
+          "arxiv-2410-07095@§1"
+        ]
+      },
+      {
+        "label": "官方榜单当前最高（All 列，可比口径）",
+        "value": "64.44% ± 1.18",
+        "note": "Famou-Agent 2.0 + Gemini-3-Pro-Preview，24 小时，2026-02-23；其 Low == Lite 列 80.3%、High 列 42.22%。",
+        "cite": [
+          "repo-mle-bench@排行榜"
+        ]
+      },
+      {
+        "label": "不可直接比的更高分",
+        "value": "77.78% ± 0.44",
+        "note": "Disarray（Claude-Opus-4.5 / Claude-Sonnet-4.5 / GPT-5.2-Codex / Gemini-3-Pro-Preview 集成，标注 Test-set feedback），官方单列一张表并注明不可与主榜比较。",
+        "cite": [
+          "repo-mle-bench@排行榜"
+        ]
+      },
+      {
+        "label": "人类参考线",
+        "value": "论文未给出百分比",
+        "note": "论文只说该指标的天花板对标「最优秀 Kaggle 选手多年累计的成绩」：历史上只有 9 个人在 75 个不同 Kaggle 竞赛拿过奖牌；Kaggle Grandmaster 需 5 枚金牌，而 o1-preview 平均已能拿 7 枚（作者列了三条 caveat）。",
+        "cite": [
+          "arxiv-2410-07095@§2.2",
+          "arxiv-2410-07095@脚注5",
+          "arxiv-2410-07095@§3.1"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 pass@1 和多尝试（pass@8）的分数排在一起比——同一模型可以靠尝试次数把分数翻倍。",
+        "cite": [
+          "arxiv-2410-07095@§1"
+        ]
+      },
+      {
+        "text": "把 Lite / Low 列当成全集分数——低复杂度 22 题的分数系统性高于 Medium / High，官方只允许在同一列内比较。",
+        "cite": [
+          "repo-mle-bench@Lite评估"
+        ]
+      },
+      {
+        "text": "把榜单所有行当同一口径——部分提交标注 Test-set feedback 或注明「用失败 seed 补齐」，官方自 2026-04-24 起暂停接收新提交就是为了解决可比性。",
+        "cite": [
+          "repo-mle-bench@排行榜",
+          "repo-mle-bench@已知问题"
+        ]
+      },
+      {
+        "text": "把 MLE-bench 奖牌理解成 Kaggle 真实排名——MLE-bench 用自建测试切分和重写的评分代码，并把 Kaggle 奖牌规则套到所有竞赛上（包括原本不发牌的竞赛）。",
+        "cite": [
+          "arxiv-2410-07095@§6",
+          "arxiv-2410-07095@§2.2"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "OpenAI",
+        "cite": [
+          "arxiv-2410-07095@作者署名"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "Jun Shern Chan、Neil Chowdhury、Oliver Jaffe、James Aung、Dane Sherburn、Evan Mays、Giulio Starace（前七位同等贡献，作者顺序随机）、Kevin Liu、Leon Maksin、Tejal Patwardhan、Lilian Weng、Aleksander Mądry",
+        "cite": [
+          "arxiv-2410-07095@作者署名",
+          "repo-mle-bench@作者"
+        ]
+      },
+      {
+        "k": "发表与版本",
+        "v": "arXiv:2410.07095，v1 于 2024-10-09 提交，v6（ICLR 2025 会议版）2025-02-26 修订；本页核对 v6",
+        "cite": [
+          "arxiv-2410-07095@提交历史"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "github.com/openai/mle-bench：数据集构建代码、评分逻辑、代理实现与官方榜单；数据经 Kaggle API 下载（需 kaggle.json），从零准备约需两天",
+        "cite": [
+          "repo-mle-bench@数据集",
+          "arxiv-2410-07095@§2.1"
+        ]
+      },
+      {
+        "k": "运行环境",
+        "v": "Azure Standard_NV36ads_A10_v5（36 AMD EPYC 74F3v vCPU、440GB 内存、单张 24GB A10 GPU、4095 GiB SSD），Ubuntu 20.04 容器内运行，代理基于 mlebench-env 基础镜像",
+        "cite": [
+          "arxiv-2410-07095@附录A.5",
+          "arxiv-2410-07095@§3",
+          "repo-mle-bench@环境"
+        ]
+      },
+      {
+        "k": "提交格式",
+        "v": "答案必须以 CSV 提交；本地校验服务器只验证格式合法性",
+        "cite": [
+          "repo-mle-bench@评分提交",
+          "arxiv-2410-07095@§2.3"
+        ]
+      },
+      {
+        "k": "奖牌阈值",
+        "v": "按参赛队数分档：0–99 队铜牌为前 40%、100–249 队铜牌为前 40%、250–999 队铜牌为前 100 名、1000+ 队铜牌为前 10%；金门槛每多 500 队再加 1 名（来源：Kaggle 2024）",
+        "cite": [
+          "arxiv-2410-07095@Table 1"
+        ]
+      },
+      {
+        "k": "评测成本",
+        "v": "一轮主实验 1,800 GPU 小时；Lite 子集 22 个竞赛、158GB 数据（全集 3.3TB）",
+        "cite": [
+          "arxiv-2410-07095@§6",
+          "repo-mle-bench@Lite评估"
+        ]
+      },
+      {
+        "k": "安全政策引用",
+        "v": "论文提到 OpenAI Preparedness Framework、Anthropic RSP、Google DeepMind Frontier Safety Framework 都把 MLE-bench 作为自主性度量引用",
+        "cite": [
+          "arxiv-2410-07095@§1"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-13",
+        "columns": [
+          "来源",
+          "代理",
+          "模型",
+          "Low == Lite (%)",
+          "Medium (%)",
+          "High (%)",
+          "All (%)",
+          "时长(h)",
+          "日期",
+          "口径说明"
+        ],
+        "rows": [
+          [
+            "论文 Table 2",
+            "AIDE",
+            "o1-preview",
+            "34.3 ± 2.4",
+            "8.8 ± 1.1",
+            "10.0 ± 1.9",
+            "16.9 ± 1.1",
+            "24",
+            "论文未给出",
+            "任一奖牌率；o1-preview 用 16 seeds"
+          ],
+          [
+            "论文 Table 2",
+            "AIDE",
+            "GPT-4o (2024-08-06)",
+            "19.0 ± 1.3",
+            "3.2 ± 0.5",
+            "5.6 ± 1.0",
+            "8.7 ± 0.5",
+            "24",
+            "论文未给出",
+            "36 seeds；Table 9 记 8.6 ± 0.5"
+          ],
+          [
+            "论文 Table 2",
+            "AIDE",
+            "Claude 3.5 Sonnet",
+            "19.4 ± 4.9",
+            "2.6 ± 1.5",
+            "2.3 ± 2.3",
+            "7.6 ± 1.8",
+            "24",
+            "论文未给出",
+            "3 seeds"
+          ],
+          [
+            "论文 Table 2",
+            "AIDE",
+            "Llama 3.1 405B",
+            "8.3 ± 2.6",
+            "1.2 ± 0.8",
+            "0.0 ± 0.0",
+            "3.0 ± 1.0",
+            "24",
+            "论文未给出",
+            "3 seeds"
+          ],
+          [
+            "论文 Table 2",
+            "MLAB",
+            "GPT-4o",
+            "4.2 ± 1.5",
+            "0.0 ± 0.0",
+            "0.0 ± 0.0",
+            "0.8 ± 0.5",
+            "24",
+            "论文未给出",
+            "MLAB 脚手架；Table 9 记 1.3 ± 0.5"
+          ],
+          [
+            "论文 Table 2",
+            "OpenHands",
+            "GPT-4o",
+            "11.5 ± 3.4",
+            "2.2 ± 1.3",
+            "1.9 ± 1.9",
+            "4.4 ± 1.4",
+            "24",
+            "论文未给出",
+            "Table 9 记 5.1 ± 1.3"
+          ],
+          [
+            "论文 Table 3",
+            "AIDE",
+            "GPT-4o",
+            "—",
+            "—",
+            "—",
+            "9.1 ± 1.0",
+            "24",
+            "论文未给出",
+            "CPU-only 变体"
+          ],
+          [
+            "论文 Table 3",
+            "AIDE",
+            "GPT-4o",
+            "—",
+            "—",
+            "—",
+            "8.7 ± 0.5",
+            "24",
+            "论文未给出",
+            "标准单 A10；36 seeds"
+          ],
+          [
+            "论文 Table 3",
+            "AIDE",
+            "GPT-4o",
+            "—",
+            "—",
+            "—",
+            "10.2 ± 2.0",
+            "24",
+            "论文未给出",
+            "双 A10 变体"
+          ],
+          [
+            "论文 Table 4",
+            "AIDE",
+            "GPT-4o",
+            "—",
+            "—",
+            "—",
+            "8.4 ± 1.0",
+            "24",
+            "论文未给出",
+            "混淆竞赛描述；原版 8.5 ± 0.6"
+          ],
+          [
+            "官方榜单",
+            "Famou-Agent 2.0",
+            "Gemini-3-Pro-Preview",
+            "80.3 ± 1.52",
+            "64.04 ± 2.32",
+            "42.22 ± 2.22",
+            "64.44 ± 1.18",
+            "24",
+            "2026-02-23",
+            "主榜；源码未公开"
+          ],
+          [
+            "官方榜单",
+            "AIBuildAI",
+            "Claude-Opus-4.6",
+            "77.27 ± 0.00",
+            "61.40 ± 0.88",
+            "46.67 ± 0.00",
+            "63.11 ± 0.44",
+            "24",
+            "2026-03-06",
+            "主榜"
+          ],
+          [
+            "官方榜单",
+            "AIDE",
+            "o1-preview",
+            "35.91 ± 1.86",
+            "8.45 ± 0.43",
+            "11.67 ± 1.27",
+            "17.12 ± 0.61",
+            "24",
+            "2024-10-08",
+            "论文基线复跑入榜"
+          ],
+          [
+            "官方榜单·附加",
+            "Disarray",
+            "多模型 ensemble",
+            "90.91 ± 0.00",
+            "72.81 ± 0.88",
+            "71.11 ± 2.22",
+            "77.78 ± 0.44",
+            "24",
+            "2026-02-03",
+            "Test-set feedback，不可与主榜直接比"
+          ]
+        ]
+      },
+      "cite": [
+        "arxiv-2410-07095@Table 2",
+        "arxiv-2410-07095@Table 3",
+        "arxiv-2410-07095@Table 4",
+        "arxiv-2410-07095@Table 9",
+        "repo-mle-bench@排行榜"
+      ]
+    }
+  }
 }
