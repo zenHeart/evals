@@ -3,58 +3,360 @@
   "name": "AutomationBench",
   "full_name": "AutomationBench",
   "aliases": ["Zapier AutomationBench", "Automation Bench"],
-  "status": null,
+  "status": "active",
   "categories": [
     "agent"
   ],
-  "summary": "Zapier 出品的业务自动化基准：通过 REST API 跨应用编排销售/市场/运营/支持/财务/HR 的真实工作流",
-  "interpretation": "Zapier 业务自动化基准：销售/市场/运营/支持/财务/HR 六域各 100 题（公开集 600 题、47 个模拟 SaaS 工具），严格口径=全部断言通过才计 1 分，越高越好；2026 年中最强约 50%——真实业务工作流远未攻破。",
+  "summary": "Zapier 出的跨应用业务工作流基准：6 个业务域、47 个模拟 SaaS 应用、约 500 个 API 端点。智能体只有 search + execute 两个工具，要自己发现端点、按业务策略执行，最后只按最终环境状态的确定性断言打分。",
+  "interpretation": "高分代表模型能在多个 SaaS 应用之间可靠完成真实业务工作流。但榜单分是严格口径——每条断言都必须成立，「大部分完成」仍然 0 分；而且公开集、官方私有集、Artificial Analysis 的 -AA 口径和 Prime Intellect 修复后的口径分数相差极大，跨口径比较没有意义。",
   "measures": [
-    "跨 SaaS 应用的多步工作流编排",
-    "REST API 工具调用的正确性",
-    "真实业务流程的完成度"
+    {
+      "area": "跨应用工作流编排",
+      "focus": "单条指令横跨 CRM、收件箱、日历、消息平台等多个应用，要自己找端点、按策略文档执行，并把数据写进每个相关系统",
+      "share": "未披露（论文未按能力维度给占比）",
+      "format": "一条自然语言业务指令 → 多步 API 调用 → 终态断言",
+      "cite": [
+        "arxiv-2604-18934@Abstract",
+        "arxiv-2604-18934@§2 任务构成"
+      ]
+    },
+    {
+      "area": "自主 API 发现",
+      "focus": "端点名事先不知道，靠 search 对全部 API schema 做 BM25 关键词检索（top-k 5）找出候选，再用 execute 发请求",
+      "share": "未披露",
+      "format": "search + execute 两个工具",
+      "cite": [
+        "arxiv-2604-18934@§3 工具接口"
+      ]
+    },
+    {
+      "area": "策略遵循与干扰导航",
+      "focus": "分层业务规则（含覆盖默认值的策略文档）、近似重名记录、过期数据行、无关记录等噪声；并用负向断言防「群发邮件」式碰运气",
+      "share": "未披露",
+      "format": "终态断言同时含正向与负向检查",
+      "cite": [
+        "arxiv-2604-18934@§2 加固手段",
+        "arxiv-2604-18934@§4 评分"
+      ]
+    },
+    {
+      "area": "业务域覆盖",
+      "focus": "Sales / Marketing / Operations / Support / Finance / HR 六域，公开集每域 100 题",
+      "share": "每域 100/600 题（约 17%）",
+      "format": "六域等量分布",
+      "cite": [
+        "arxiv-2604-18934@§2 任务构成",
+        "repo-automationbench@Overview"
+      ]
+    },
+    {
+      "area": "防护栏遵守（仅 Artificial Analysis 的 -AA 口径）",
+      "focus": "AA 把「智能体动作前就已成立的检查」设为 guardrail，任一 guardrail 违反即整题 0 分；Zapier 官方口径没有这一项",
+      "share": "未披露",
+      "format": "目标完成占比 + 违反计数",
+      "cite": [
+        "aa-automationbench@Score",
+        "aa-automationbench@Background"
+      ]
+    }
   ],
   "does_not_measure": [
-    "GUI / 浏览器操作",
-    "移动端自动化",
-    "代码仓库工程任务"
+    {
+      "text": "GUI / 浏览器与计算机操作：论文把它和 WebArena、OSWorld 这类基准区分开，只走 REST API",
+      "cite": [
+        "arxiv-2604-18934@§1",
+        "arxiv-2604-18934@Table 1"
+      ]
+    },
+    {
+      "text": "对话式澄清与人机协作：一条指令之后全程非交互，智能体不能提问，也没有人在环里",
+      "cite": [
+        "site-benchmarks@How AutomationBench works",
+        "arxiv-2604-18934@§2 题目门槛"
+      ]
+    },
+    {
+      "text": "代码工程与仓库级开发任务：官网明确说它测的是跨应用业务工作，不是 coding / browsing / QA / 通用推理",
+      "cite": [
+        "site-benchmarks@FAQ"
+      ]
+    },
+    {
+      "text": "过程与路径优劣：只看最终状态，调了哪些工具、什么顺序都不计分，低效只体现在成本上",
+      "cite": [
+        "arxiv-2604-18934@§4 评分"
+      ]
+    },
+    {
+      "text": "主观判断本身：需要判断的任务要求把决定写成结构化状态变化，不断言自由文本",
+      "cite": [
+        "arxiv-2604-18934@§2 主观性"
+      ]
+    }
   ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "source_type": "authored（真实业务工作流）",
-    "languages": ["en"],
-    "public_sample": true
+    "sample_count": 600,
+    "splits": [
+      "公开集 600 题（6 域 × 100，供研究与实验）",
+      "私有留存集 600+ 题（6 域 × 100+，不公开且更难，官方榜单口径）",
+      "simple 基础域 200 题（不计入榜单分，只验证基础工具使用）"
+    ],
+    "languages": [
+      "未披露"
+    ],
+    "source_type": "authored（按 Zapier 真实客户工作流模式合成）",
+    "public_sample": true,
+    "totals": "公开 600 题（6 域 × 100）+ 私有留存 600+ 题（6 域 × 100+，不公开）+ simple 基础域 200 题（不计分）；共 47 个模拟 SaaS 应用、约 500 个 API 端点",
+    "cite": [
+      "arxiv-2604-18934@§2 任务构成",
+      "repo-automationbench@Overview",
+      "repo-automationbench@Simple Domain"
+    ],
+    "construction": [
+      {
+        "k": "任务来源",
+        "text": "从 Zapier Agents 服务真实客户收到的负反馈里聚类出「难搭」的工作流模式，取各域相关条目喂给模型找灵感，再人工多轮打磨真实性、难度与应用多样性；不使用 PII 或客户机密数据。",
+        "cite": [
+          "arxiv-2604-18934@§2 任务构成"
+        ]
+      },
+      {
+        "k": "生成模型",
+        "text": "任务生成用了 Opus 4.6、GPT 5.3 Codex 和 Gemini 3。",
+        "cite": [
+          "arxiv-2604-18934@§2 任务构成"
+        ]
+      },
+      {
+        "k": "加固手段",
+        "text": "加入无关数据、把关键信息藏在工具调用响应里、让信息位置有歧义、给错误项起相似名字、设置带覆盖优先级的多层业务规则；私有集另有额外加固，以防在小规模题集上过拟合。",
+        "cite": [
+          "arxiv-2604-18934@§2 加固手段",
+          "arxiv-2604-18934@§2 任务构成"
+        ]
+      },
+      {
+        "k": "题目准入门槛",
+        "text": "每题必须至少产生一次可观察的状态变更、能用基于不变量的检查判定、不能有自由文本式的成功标准、需要判断时必须把决定写进系统状态，且只能给一条指令然后非交互跑完。",
+        "cite": [
+          "arxiv-2604-18934@§2 题目门槛"
+        ]
+      },
+      {
+        "k": "公开 / 私有分工",
+        "text": "至少一半任务私有；公开集用于研究与实验，官方榜单跑私有集。私有任务有时会随版本更新变得更难，以把顶部分数维持在相近水平。",
+        "cite": [
+          "arxiv-2604-18934@§2 任务构成",
+          "repo-automationbench@Public vs. Official Scores"
+        ]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "给模型一条自然语言业务指令和一个预先填好的模拟企业环境（CRM 记录、收件箱、表格、支持工单等）。智能体只有两个工具：search 对全部 API schema 做 BM25 关键词检索并返回 top-k 5，execute 模仿 curl/fetch（method、url、body）。单题最多 50 步。跑完后不看它说了什么，只用确定性断言检查最终环境状态——每条断言都必须成立才算完成。",
+    "cite": [
+      "arxiv-2604-18934@§3 工具接口",
+      "arxiv-2604-18934@§4 评分",
+      "site-benchmarks@How AutomationBench works"
+    ],
+    "variants": [
+      {
+        "text": "工具面：api（默认，BM25 top-k 5）/ zapier（Zapier 内部 action 的 schema，通常比 api 高）/ limited_zapier（只给该任务必需的 Zapier 工具）。论文里 Gemini 3.1 Pro 三档分别为 9.6% / 12.8% / 14.3%。",
+        "cite": [
+          "repo-automationbench@CLI Options",
+          "arxiv-2604-18934@§7 结果"
+        ]
+      },
+      {
+        "text": "打分口径：task_completed_correctly（严格，全部断言通过才算 1）与 partial_credit（断言满足比例，仅诊断与 RL 奖励）。Prime Intellect 审计后建议改报严格分。",
+        "cite": [
+          "repo-automationbench@Scoring",
+          "pi-audit@AutomationBench"
+        ]
+      },
+      {
+        "text": "评测集：公开 600 题集用于研究实验，官方榜单跑不公开的私有集；Prime Intellect 的修复只作用在公开集上，因此它的分数系统性偏高。",
+        "cite": [
+          "site-benchmarks@Official metric",
+          "pi-audit@AutomationBench"
+        ]
+      }
+    ]
   },
   "metrics": [
     {
-      "id": "success-rate",
-      "name": "工作流成功率",
-      "range": [0, 100],
+      "id": "task-completed-correctly",
+      "name": "工作流完成率（严格通过率）",
+      "direction": "越高越好",
+      "description": "全部断言通过的任务占比；simple 域不计入，官方榜单即为这一项",
+      "range": [
+        0,
+        100
+      ],
       "unit": "percent",
-      "direction": "higher",
-      "aggregation": "mean"
+      "cite": [
+        "repo-automationbench@Scoring",
+        "site-benchmarks@Official metric"
+      ]
+    },
+    {
+      "id": "partial-credit",
+      "name": "断言满足比例",
+      "direction": "越高越好",
+      "description": "单题中满足的断言比例，用于诊断、密集训练信号与 RL 奖励，不属于榜单分",
+      "range": [
+        0,
+        1
+      ],
+      "unit": "ratio",
+      "cite": [
+        "repo-automationbench@Scoring",
+        "site-benchmarks@One task, end to end"
+      ]
+    },
+    {
+      "id": "cost-per-task",
+      "name": "单题成本",
+      "direction": "越低越好",
+      "description": "每任务平均 token 成本（美元），与分数并列报告，用来区分同分模型的效率",
+      "unit": "USD",
+      "cite": [
+        "arxiv-2604-18934@§4 评分",
+        "site-benchmarks@Leaderboard 1.0.6"
+      ]
+    },
+    {
+      "id": "aa-score",
+      "name": "目标完成占比（AutomationBench-AA 口径）",
+      "direction": "越高越好",
+      "description": "AA 口径：任务目标的平均完成比例，任一 guardrail 违反整题 0 分；与 Zapier 严格通过率不可直接比较",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "aa-automationbench@Score",
+        "aa-automationbench@Background"
+      ]
     }
   ],
   "versions": [
     {
       "id": "v1",
-      "label": "AutomationBench（2026-04）",
-      "note": "arXiv:2604.18934；Artificial Analysis 另有独立评测版 AutomationBench-AA"
+      "date": "2026-04-21",
+      "label": "arXiv:2604.18934v1 发布；论文报告的最好成绩是 Opus 4.7 (max) 9.9%（$1.80/题）",
+      "cite": [
+        "arxiv-2604-18934",
+        "arxiv-2604-18934@§6 Leaderboard"
+      ]
+    },
+    {
+      "id": "leaderboard-1-0-6",
+      "date": "2026-11-16",
+      "label": "官网榜单 1.0.6（本档案核对时看到的版本，页面未标注发布日期）：最高 Gemini 4 Carbon (High) 53.88%（$2.12/题）",
+      "cite": [
+        "site-benchmarks@Leaderboard 1.0.6"
+      ]
+    },
+    {
+      "id": "aa-657",
+      "date": "2026-11-16",
+      "label": "Artificial Analysis 的 AutomationBench-AA 上线：657 题、29/256 个模型有分，最高 Gemini 4 Carbon (High) 77.8%（目标占比口径）",
+      "cite": [
+        "aa-automationbench",
+        "aa-automationbench@Score"
+      ]
+    },
+    {
+      "id": "pi-audit",
+      "date": "2026-11-03",
+      "label": "Prime Intellect 发布公开评测审计并开源修复（PI-AutomationBench）：修好公开集后 Claude Opus 5.5 @ max 92.15%（严格 70.83%），同时预告 AutomationBench v1.5",
+      "cite": [
+        "pi-audit",
+        "pi-audit@AutomationBench"
+      ]
     }
   ],
   "limitations": [
-    "工作流设计来自 Zapier 场景，偏向其 API 生态",
-    "依赖第三方应用 API 的稳定性，环境漂移影响复现"
+    {
+      "issue": "公开集分数 ≠ 官方榜分",
+      "impact": "官方榜单跑不公开且更难的私有集，公开集仅供研究实验；在公开集上提升只保证方向一致，不保证等幅迁移。",
+      "severity": "高",
+      "response": "README 明确把两边分开报告，并说明私有集会随版本变更难，以维持顶部分数的挑战性。",
+      "reader": "看到任何 AutomationBench 分数，先问一句：公开集还是私有集？",
+      "cite": [
+        "repo-automationbench@Public vs. Official Scores",
+        "site-benchmarks@Official metric"
+      ]
+    },
+    {
+      "issue": "口径漂移导致跨时间、跨来源不可比",
+      "impact": "同一模型在论文里 9.9%、官网 1.0.6 榜上 53.88%，相差近 5 倍；工具面、推理档位、fallback 策略、分类器严格度都会改变分数。",
+      "severity": "高",
+      "response": "影响分数的变更会尽量重跑所有模型并更新分数；变更在 README 与官网说明。",
+      "reader": "比较两个数字前，先对齐工具面、推理档位、fallback 与评测集这四件事。",
+      "cite": [
+        "arxiv-2604-18934@§7 结果",
+        "site-benchmarks@Leaderboard 1.0.6",
+        "repo-automationbench@Public vs. Official Scores"
+      ]
+    },
+    {
+      "issue": "第三方口径分裂",
+      "impact": "Artificial Analysis 用 657 题算目标占比（最高 77.8%），Prime Intellect 修完公开集后报 92.15%（严格 70.83%）；两者与 Zapier 严格口径都不是同一把尺子。",
+      "severity": "高",
+      "response": "AA 与 PI 都写明了口径差异；PI 明确说它的运行模式与 Zapier 报告的 api_fetch 不同，分数不可直接比较。",
+      "reader": "引用分数必须同时带上口径与来源，不要把这些数字混排成一张表。",
+      "cite": [
+        "aa-automationbench@Background",
+        "pi-audit@AutomationBench"
+      ]
+    },
+    {
+      "issue": "合成数据的真实性与「不可能任务」风险",
+      "impact": "任务由模型基于客户工作流模式合成，可能存在不真实或根本无法完成的题目；规模与复杂度也让全量人工审查无法在合理时间内完成。",
+      "severity": "中",
+      "response": "作者抽样人工检查以降低风险，并持续审计 bug 与不现实复杂度，重大变更会改版本号。",
+      "reader": "极端低分先怀疑题目本身，再怀疑模型。",
+      "cite": [
+        "arxiv-2604-18934@§5 局限"
+      ]
+    },
+    {
+      "issue": "仍有未发现的题目 bug",
+      "impact": "README 自述「还有很多没抓到的 bug」；判分是确定性断言，题目或断言写错会直接给出错误的 0/1。",
+      "severity": "中",
+      "response": "开放 issue 与联系渠道收集 bug 和不公平任务。",
+      "reader": "本地复现与官方不一致时，先排查是不是题目或断言的问题。",
+      "cite": [
+        "repo-automationbench@Found a bug or unfair task?"
+      ]
+    },
+    {
+      "issue": "只看终态，不评估过程质量",
+      "impact": "到达终态的路径不计分，低效或多轮重试只反映在成本上；两个同分模型的真实可用性可能差很多。",
+      "severity": "低",
+      "response": "官方在榜单里并列报告 Cost (USD per run)。",
+      "reader": "同分时看成本，别只看通过率。",
+      "cite": [
+        "arxiv-2604-18934@§4 评分",
+        "site-benchmarks@Leaderboard 1.0.6"
+      ]
+    }
   ],
   "notes": "证据账本中 8 次引用；『业务自动化 Agent』叙事锚点",
   "official_sources": [
+    {
+      "kind": "site",
+      "url": "https://zapier.com/benchmarks"
+    },
     {
       "kind": "paper",
       "url": "https://arxiv.org/abs/2604.18934"
     },
     {
-      "kind": "github",
+      "kind": "repo",
       "url": "https://github.com/zapier/AutomationBench"
     }
   ],
@@ -64,6 +366,256 @@
     "toolathlon",
     "bfcl"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-16",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-16",
+    "sources": [
+      {
+        "id": "arxiv-2604-18934",
+        "kind": "paper",
+        "title": "AutomationBench（arXiv:2604.18934v1 [cs.AI]，2026-04-21）",
+        "url": "https://arxiv.org/abs/2604.18934",
+        "accessed": "2026-11-16"
+      },
+      {
+        "id": "repo-automationbench",
+        "kind": "repo",
+        "title": "zapier/AutomationBench（README：域构成、公开集通过率、CLI 与评分说明）",
+        "url": "https://github.com/zapier/AutomationBench",
+        "accessed": "2026-11-16"
+      },
+      {
+        "id": "site-benchmarks",
+        "kind": "site",
+        "title": "zapier.com/benchmarks（AutomationBench 榜单 1.0.6、方法与 FAQ）",
+        "url": "https://zapier.com/benchmarks",
+        "accessed": "2026-11-16"
+      },
+      {
+        "id": "aa-automationbench",
+        "kind": "leaderboard",
+        "title": "Artificial Analysis: AutomationBench-AA: Agentic SaaS Workflow Benchmark",
+        "url": "https://artificialanalysis.ai/evaluations/automationbench-aa",
+        "accessed": "2026-11-16"
+      },
+      {
+        "id": "pi-audit",
+        "kind": "blog",
+        "title": "Prime Intellect: Learnings from Auditing Public Evaluations（2026-11-03）",
+        "url": "https://www.primeintellect.ai/blog/auditing-public-evaluations",
+        "accessed": "2026-11-16"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Zapier（两位论文作者均为 @zapier.com）",
+        "cite": [
+          "arxiv-2604-18934"
+        ]
+      },
+      "first_release": {
+        "v": "2026-04-21（arXiv v1）",
+        "cite": [
+          "arxiv-2604-18934"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "arxiv-2604-18934@Abstract",
+        "arxiv-2604-18934@§2 任务构成",
+        "repo-automationbench@Overview"
+      ],
+      "interpretation": [
+        "repo-automationbench@Scoring",
+        "site-benchmarks@Official metric",
+        "aa-automationbench@Background",
+        "pi-audit@AutomationBench"
+      ]
+    },
+    "problem": {
+      "text": "现有软件自动化基准很少同时覆盖跨应用协调、自主 API 发现和策略遵循这三件事。AutomationBench 用 Zapier 平台上的真实工作流模式把三者放进同一条任务，并按企业真正关心的「数据有没有落到对的系统」来判分。",
+      "cite": [
+        "arxiv-2604-18934@Abstract",
+        "arxiv-2604-18934@§1"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "论文发布时最好（2026-04）",
+        "value": "9.9%",
+        "note": "Opus 4.7 (max)，$1.80/题；论文明确说当时的前沿模型都在 10% 以下。",
+        "cite": [
+          "arxiv-2604-18934@§7 结果",
+          "arxiv-2604-18934@§6 Leaderboard"
+        ]
+      },
+      {
+        "label": "公开 600 题集最好",
+        "value": "50.3%",
+        "note": "Claude Opus 5 (max)，README 报告，每个模型取最高可用推理档。",
+        "cite": [
+          "repo-automationbench@Public vs. Official Scores"
+        ]
+      },
+      {
+        "label": "官方榜 1.0.6 最高",
+        "value": "53.88%",
+        "note": "Gemini 4 Carbon (High)，$2.12/题，跑的是不公开的私有集。",
+        "cite": [
+          "site-benchmarks@Leaderboard 1.0.6"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      },
+      {
+        "label": "第三方修复后公开集（参考，非官方口径）",
+        "value": "92.15%（严格 70.83%）",
+        "note": "Prime Intellect 修好公开集后 Claude Opus 5.5 @ max 的成绩；PI 同时提示部分得分口径已接近饱和，建议改报严格分或迁往 v1.5。",
+        "cite": [
+          "pi-audit@AutomationBench"
+        ]
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把论文里的 9.9% 和官网榜上的 53.88% 当成同一把尺子——前者是 2026-04 论文报告的最好成绩，后者是 1.0.6 榜单在更难私有集上的当前最好成绩。",
+        "cite": [
+          "arxiv-2604-18934@§7 结果",
+          "site-benchmarks@Leaderboard 1.0.6"
+        ]
+      },
+      {
+        "text": "把 Artificial Analysis 的 77.8% 当成 Zapier 严格通过率——那是 AA 的「目标完成占比」口径，guardrail 一违反整题 0 分，题量也不是 600。",
+        "cite": [
+          "aa-automationbench@Background",
+          "aa-automationbench@Score"
+        ]
+      },
+      {
+        "text": "把 partial_credit 当榜单分——它只是断言满足比例，用于诊断和 RL 奖励；官方分是 task_completed_correctly。",
+        "cite": [
+          "repo-automationbench@Scoring",
+          "site-benchmarks@One task, end to end"
+        ]
+      },
+      {
+        "text": "以为差一两条断言也算过关——严格口径下每条断言都必须成立，「大部分完成」仍然是 0 分。",
+        "cite": [
+          "site-benchmarks@FAQ",
+          "site-benchmarks@One task, end to end"
+        ]
+      },
+      {
+        "text": "把模型自报的完成当成完成——最常见失败模式就是假自信：Opus 的失败里 72%、Gemini 91%、GPT-5.4 84% 属于这一类。",
+        "cite": [
+          "site-benchmarks@FAQ"
+        ]
+      },
+      {
+        "text": "把不同工具面的分数排在一起——api / zapier / limited_zapier 三档不可比，论文里同一模型三档能差 4.7 个百分点。",
+        "cite": [
+          "arxiv-2604-18934@§7 结果",
+          "repo-automationbench@CLI Options"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "Zapier；两位论文作者的邮箱均为 @zapier.com",
+        "cite": [
+          "arxiv-2604-18934"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "Daniel Shepard、Robin Salimans",
+        "cite": [
+          "arxiv-2604-18934"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2026-04-21 arXiv v1 → 2026 年 7 月 README 启用更严格分类器（Fable 5 分数为重跑后结果）→ 2026-11-03 Prime Intellect 公开审计并开源修复、预告 v1.5",
+        "cite": [
+          "arxiv-2604-18934",
+          "repo-automationbench@Public vs. Official Scores",
+          "pi-audit"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "公开集、CLI（--toolset / --reasoning-effort / --max-steps 等）与结果可视化器在 GitHub zapier/AutomationBench；Prime Intellect Environments Hub 提供托管环境",
+        "cite": [
+          "repo-automationbench@Overview",
+          "repo-automationbench@Prime Intellect Environments Hub"
+        ]
+      },
+      {
+        "k": "第三方独立评测",
+        "v": "Artificial Analysis 的 AutomationBench-AA：657 题、六个业务域、29/256 个模型有分、无公开 API，用目标占比作头条指标",
+        "cite": [
+          "aa-automationbench",
+          "aa-automationbench@Background"
+        ]
+      },
+      {
+        "k": "设计对标",
+        "v": "论文 Table 1 与 WebArena / Mind2Web / OSWorld / ToolBench / API-Bank / AppWorld / τ³-bench 对比：AutomationBench 是唯一同时勾选 API 发现、终态评分、跨应用与业务规则的基准",
+        "cite": [
+          "arxiv-2604-18934@Table 1"
+        ]
+      },
+      {
+        "k": "任务规模来源",
+        "v": "47 个模拟应用、约 500 个 API 端点；官网称其模式来自 Zapier 平台每月 20 亿+ 任务、370 万家公司",
+        "cite": [
+          "arxiv-2604-18934@§2 任务构成",
+          "site-benchmarks@Hero"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-16",
+        "columns": [
+          "来源",
+          "模型",
+          "分数",
+          "成本/题",
+          "口径"
+        ],
+        "rows": [
+          ["论文 §6（2026-04）", "Opus 4.7 (max)", "9.9%", "$1.80", "私有集；api 工具面"],
+          ["论文 §6（2026-04）", "Gemini 3.1 Pro (high)", "9.6%", "$0.54", "同上"],
+          ["论文 §6（2026-04）", "GPT 5.4 (high)", "7.6%", "$1.93", "同上"],
+          ["论文 §6（2026-04）", "Sonnet 4.6 (max)", "5.3%", "$1.81", "同上"],
+          ["论文 §6（2026-04）", "Haiku 4.5", "1.5%", "$0.18", "同上"],
+          ["论文 §6（2026-04）", "GPT 5.4 (no reasoning)", "1.2%", "$0.19", "同上"],
+          ["官网榜 1.0.6", "Gemini 4 Carbon (High)", "53.88%", "$2.12", "私有集；api 模式"],
+          ["官网榜 1.0.6", "Gemini 4 Carbon (Medium)", "52.97%", "$1.65", "同上"],
+          ["官网榜 1.0.6", "Claude Fable 5.2 (default fallbacks, Max)", "51.45%", "$4.64", "同上"],
+          ["官网榜 1.0.6", "Gemini 4 Argon (High)", "51.29%", "$1.70*", "同上（*标准目录价）"],
+          ["官网榜 1.0.6", "GPT-6 Astra (Max)", "41.40%", "$1.73", "同上"],
+          ["README 公开集", "Claude Opus 5 (max)", "50.3%", "未列出", "公开 600 题集；最高推理档"],
+          ["README 公开集", "Kimi K3 (max)", "46.67%", "未列出", "同上"],
+          ["README 公开集", "Claude Fable 5 (max)", "46.17%", "未列出", "同上（2026-07 更严分类器之后）"],
+          ["AutomationBench-AA", "Gemini 4 Carbon (High)", "77.8%", "未列出", "657 题；目标占比口径"],
+          ["PI 修复后公开集", "Claude Opus 5.5 @ max", "92.15%（严格 70.83%）", "未列出", "公开集；部分得分口径"]
+        ]
+      },
+      "cite": [
+        "arxiv-2604-18934@§6 Leaderboard",
+        "site-benchmarks@Leaderboard 1.0.6",
+        "repo-automationbench@Public vs. Official Scores",
+        "aa-automationbench@Score",
+        "pi-audit@AutomationBench"
+      ]
+    }
+  }
 }
