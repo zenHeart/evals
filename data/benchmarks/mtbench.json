@@ -1,38 +1,399 @@
 {
   "id": "mtbench",
   "name": "MT-Bench",
-  "full_name": null,
-  "aliases": [],
-  "status": null,
+  "full_name": "MT-Bench（多轮对话基准；出自论文《Judging LLM-as-a-Judge with MT-Bench and Chatbot Arena》）",
+  "aliases": [
+    "MT-bench",
+    "mt_bench",
+    "mt-bench",
+    "MT-Bench (Zheng et al., 2023)"
+  ],
+  "status": "active",
   "categories": [
     "preference"
   ],
-  "summary": "80 道多轮对话题，GPT-4 当裁判打分（1-10）",
-  "interpretation": "80 道多轮对话题，让 GPT-4 当裁判打 1-10 分。LLM-as-Judge 的开山之作，如今更多是历史地位。",
-  "measures": [],
-  "does_not_measure": [],
+  "summary": "LMSYS 出的 80 道多轮对话题（每题固定 2 轮，共 160 轮），让 GPT-4 当「自动化裁判」给每个回答打 1-10 分，再把所有轮的平均分乘上轮数，报成满分 160 的总分。它是「用大模型当评测裁判」（LLM-as-a-Judge）这条路线的开山基准，FastChat 官方至今仍把它列为推荐的默认评测方式。",
+  "interpretation": "高分只代表 GPT-4 这个裁判更偏好它：更贴合指令、第二轮接得住追问、表达更清楚。它不保证事实正确、数学算对，也不保证换一个裁判模型分数不变——论文实测 GPT-4 在数学题上会判错，且交换两个回答的先后位置就会改变结论。",
+  "measures": [
+    {
+      "area": "写作 Writing",
+      "focus": "开放式生成，如写一篇最近去夏威夷的旅行博客，要求突出文化体验和必看景点",
+      "share": "10 题（8 个类别之一）",
+      "format": "多轮对话，固定 2 轮",
+      "cite": [
+        "arxiv-2306-05685@Table 1",
+        "arxiv-2306-05685@§2.2"
+      ]
+    },
+    {
+      "area": "角色扮演 Roleplay",
+      "focus": "在给定人设下持续作答，考设定保持与语气一致",
+      "share": "10 题（8 个类别之一）",
+      "format": "多轮对话，固定 2 轮",
+      "cite": [
+        "arxiv-2306-05685@§2.2"
+      ]
+    },
+    {
+      "area": "信息抽取 Extraction",
+      "focus": "从给定材料中抽出指定字段，考结构化输出与忠实度",
+      "share": "10 题（8 个类别之一）",
+      "format": "多轮对话，固定 2 轮",
+      "cite": [
+        "arxiv-2306-05685@§2.2"
+      ]
+    },
+    {
+      "area": "推理 Reasoning",
+      "focus": "常见逻辑与常识推理题",
+      "share": "10 题（8 个类别之一）",
+      "format": "多轮对话，固定 2 轮",
+      "cite": [
+        "arxiv-2306-05685@§2.2"
+      ]
+    },
+    {
+      "area": "数学 Math",
+      "focus": "如已知 f (x) = 4x³ − 9x − 14 求 f (2)，再追问求 f (x) = 0 的 x",
+      "share": "10 题（8 个类别之一）",
+      "format": "多轮对话，固定 2 轮",
+      "cite": [
+        "arxiv-2306-05685@Table 1",
+        "arxiv-2306-05685@§2.2"
+      ]
+    },
+    {
+      "area": "编程 Coding",
+      "focus": "小段代码编写与修改，第二轮通常是追加约束",
+      "share": "10 题（8 个类别之一）",
+      "format": "多轮对话，固定 2 轮",
+      "cite": [
+        "arxiv-2306-05685@§2.2"
+      ]
+    },
+    {
+      "area": "知识 I（STEM）",
+      "focus": "理工科知识问答",
+      "share": "10 题（8 个类别之一）",
+      "format": "多轮对话，固定 2 轮",
+      "cite": [
+        "arxiv-2306-05685@§2.2"
+      ]
+    },
+    {
+      "area": "知识 II（人文社科）",
+      "focus": "人文与社会科学知识问答",
+      "share": "10 题（8 个类别之一）",
+      "format": "多轮对话，固定 2 轮",
+      "cite": [
+        "arxiv-2306-05685@§2.2"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "不测事实与数学的正确性：GPT-4 当裁判时自己算错也会把错答案判对。论文 Table 4 记录三个裁判在 10 道数学题上的失败率为 14/20（Claude-v1）、6/20（GPT-3.5）、3/20（GPT-4），并单列「裁判在数学与推理题上能力有限」为一条局限。",
+      "cite": [
+        "arxiv-2306-05685@Table 4",
+        "arxiv-2306-05685@§3.3"
+      ]
+    },
+    {
+      "text": "不测安全与无害：论文明确写本工作强调 helpfulness、基本忽略 safety，诚实与无害没有进默认评分提示词。",
+      "cite": [
+        "arxiv-2306-05685@§6"
+      ]
+    },
+    {
+      "text": "不测知识与推理储备本身：论文用同一批模型在 MMLU、TruthfulQA 与 MT-bench 上对比，结论是没有任何单一基准能判定模型质量，需要综合评估。",
+      "cite": [
+        "arxiv-2306-05685@§5"
+      ]
+    },
+    {
+      "text": "不测超过 2 轮的多轮能力，也不做细粒度能力拆分：每题固定 2 轮；第三方评测指出它只覆盖两轮对话与粗粒度能力，不足以反映真实多轮对话的复杂度。",
+      "cite": [
+        "mtbench101@§2"
+      ]
+    }
+  ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
+    "sample_count": 80,
+    "splits": [
+      "human（3.36k 行）",
+      "gpt4_pair（2.4k 行）"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "人工编写题库 + 专家级人工成对标注",
+    "public_sample": "https://huggingface.co/datasets/lmsys/mt_bench_human_judgments",
+    "totals": "80 道多轮对话题 × 每题 2 轮 = 160 轮；覆盖 8 个类别、每类 10 题。随论文放出约 3K 票专家成对偏好与约 30K 条带人类偏好的对话；公开数据集卡为 3.3K 条专家成对偏好。",
+    "cite": [
+      "arxiv-2306-05685@§2.2",
+      "arxiv-2306-05685@摘要",
+      "hf-judgments@Dataset card"
+    ],
+    "construction": [
+      {
+        "k": "定类别",
+        "text": "从 Chatbot Arena 的用户 prompt 中归纳出 8 类常见提问：写作、角色扮演、抽取、推理、数学、编程、知识 I（STEM）、知识 II（人文社科）。",
+        "cite": [
+          "arxiv-2306-05685@§2.2"
+        ]
+      },
+      {
+        "k": "出题",
+        "text": "每个类别手工设计 10 道多轮问题。官方博客按轮计数，写「共 160 题」；论文口径是 80 题、每题 2 轮共 160 轮，以论文为准。",
+        "cite": [
+          "arxiv-2306-05685@§2.2",
+          "lmsys-blog"
+        ]
+      },
+      {
+        "k": "控难度",
+        "text": "题目要能区分模型，优先挑常见模型会答错或答得差的难题，避免所有模型都能答对。",
+        "cite": [
+          "arxiv-2306-05685@§2.2"
+        ]
+      },
+      {
+        "k": "生成回答",
+        "text": "用 6 个模型分别回答全部 80 题：GPT-4、GPT-3.5、Claude-V1、Vicuna-13B、Alpaca-13B、LLaMA-13B。",
+        "cite": [
+          "arxiv-2306-05685@§4.1"
+        ]
+      },
+      {
+        "k": "人工标注",
+        "text": "招募 58 位专家级标注者（多为研究生）做成对比较，每人至少评 20 道随机多轮题，共约 3K 票。",
+        "cite": [
+          "arxiv-2306-05685@§4.1",
+          "arxiv-2306-05685@摘要"
+        ]
+      },
+      {
+        "k": "公开数据",
+        "text": "3.3K 条人类成对偏好以 lmsys/mt_bench_human_judgments 公开（CC-BY-4.0），字段含 question_id、model_a、model_b、winner、judge、conversation_a、conversation_b、turn。",
+        "cite": [
+          "hf-judgments@Dataset card"
+        ]
+      }
+    ]
   },
-  "metrics": [],
+  "metrics": [
+    {
+      "id": "mt_bench_score",
+      "name": "MT-Bench Score（单轮均分 × 轮数）",
+      "direction": "越高越好",
+      "description": "GPT-4 单答案打分（1-10）在所有轮上的平均分，再乘以轮数；官方主表按 80 题 × 2 轮报满分 160 的折算分。",
+      "range": "单轮原始分 1-10；官方榜单折算分 0-160",
+      "unit": "分",
+      "cite": [
+        "arxiv-2306-05685@§5",
+        "lmsys-blog@Table 1"
+      ]
+    },
+    {
+      "id": "agreement_with_humans",
+      "name": "与人类裁判一致率",
+      "direction": "越高越好",
+      "description": "GPT-4 判定与专家人类标注的一致比例。论文报告去掉平局后达 85%，高于人类彼此之间的 81%。",
+      "range": "0-100%",
+      "unit": "%",
+      "cite": [
+        "arxiv-2306-05685@§4.2"
+      ]
+    },
+    {
+      "id": "judge_consistency",
+      "name": "裁判自身一致性（交换位置后）",
+      "direction": "越高越好",
+      "description": "把两个回答的先后位置互换后，裁判给出相同结论的比例，用来量化位置偏差。GPT-4 默认提示词下为 65.0%。",
+      "range": "0-100%",
+      "unit": "%",
+      "cite": [
+        "arxiv-2306-05685@Table 2"
+      ]
+    },
+    {
+      "id": "judge_failure_rate",
+      "name": "裁判失败率",
+      "direction": "越低越好",
+      "description": "在「重复列表」长度攻击与数学题上，裁判被误导或判错的比例。",
+      "range": "0-100%",
+      "unit": "%",
+      "cite": [
+        "arxiv-2306-05685@Table 3",
+        "arxiv-2306-05685@Table 4"
+      ]
+    }
+  ],
   "default_protocol": {
-    "raw": "LLM-as-Judge 开山实现；已被 Arena Hard 等取代趋势"
+    "raw": "默认口径是单答案打分（single-answer grading）：把「问题 + 助手回答」交给 GPT-4，让它先写一段短评再按 1-10 打分，格式固定为 \"Rating: [[N]]\"；每一轮各得一个分，最后对所有轮取平均。官方榜单报的是平均分 × 160 轮的折算分，满分 160。",
+    "cite": [
+      "judge-docs@README",
+      "arxiv-2306-05685@Figure 6",
+      "arxiv-2306-05685@§5"
+    ],
+    "variants": [
+      {
+        "text": "成对比较（pairwise comparison）：给裁判两个回答判谁更好或平局，产出相对排序而非 1-10 分；候选模型增多时比较对数按平方增长，扩展性差。",
+        "cite": [
+          "arxiv-2306-05685@§3.1"
+        ]
+      },
+      {
+        "text": "参考答案引导打分（reference-guided grading）：先让裁判自己独立解一遍，再把它的答案作为参考展示在提示词里；10 道数学题上把失败率从 70% 降到 15%，但要求题目自带可判定的参考解。",
+        "cite": [
+          "arxiv-2306-05685@§3.4"
+        ]
+      },
+      {
+        "text": "少样本裁判（few-shot judge）：在提示词里附几个打分样例，把 GPT-4 与人类的一致率从 65.0% 提到 77.5%，代价是提示词变长、API 调用贵 4 倍。",
+        "cite": [
+          "arxiv-2306-05685@§3.4"
+        ]
+      },
+      {
+        "text": "换裁判模型或换提示词版本，绝对分会漂移：论文明确指出绝对分比相对成对结论更容易随裁判模型变化而波动，跨裁判比较绝对分没有意义。",
+        "cite": [
+          "arxiv-2306-05685@§3.1"
+        ]
+      },
+      {
+        "text": "只报第一轮分（单轮口径）分数显著偏高，不能与两轮均分直接比：官方榜单显示 GPT-4 第一轮 8.96、第二轮 9.03，而 WizardLM-13B 从 7.12 掉到 5.59。",
+        "cite": [
+          "lmsys-blog@Table 2"
+        ]
+      }
+    ]
   },
-  "versions": [],
-  "limitations": [],
+  "versions": [
+    {
+      "id": "arxiv-v1",
+      "date": "2023-06-09",
+      "label": "arXiv v1 首次提交（Judging LLM-as-a-Judge with MT-Bench and Chatbot Arena）",
+      "cite": [
+        "arxiv-2306-05685@提交历史"
+      ]
+    },
+    {
+      "id": "blog-release",
+      "date": "2023-06-22",
+      "label": "LMSYS 博客第 8 期发布 MT-Bench 与 Vicuna-33B，并把 MT-bench 分数并入 Chatbot Arena 榜单",
+      "cite": [
+        "lmsys-blog"
+      ]
+    },
+    {
+      "id": "arxiv-v4",
+      "date": "2023-12-24",
+      "label": "arXiv 更新到 v4（本档案依据的版本）",
+      "cite": [
+        "arxiv-2306-05685@提交历史"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "裁判自身数学与推理能力不足",
+      "impact": "数学题上裁判会把错答案判成对的：Table 4 记录失败率 14/20（Claude-v1）、6/20（GPT-3.5）、3/20（GPT-4）；「重复列表」长度攻击下三个裁判的失败率分别为 91.3%、91.3%、8.7%。",
+      "severity": "高",
+      "response": "论文提出 reference-guided grading（10 道数学题失败率 70%→15%）与思维链提示作为缓解，并建议数学/推理题改用参考解打分；未见官方在默认流程中启用。",
+      "reader": "看到某个模型在数学类明显掉分时，先怀疑裁判判错，不要直接推断模型不会算。",
+      "cite": [
+        "arxiv-2306-05685@§3.3",
+        "arxiv-2306-05685@Table 4",
+        "arxiv-2306-05685@Table 3"
+      ]
+    },
+    {
+      "issue": "位置偏差",
+      "impact": "裁判系统性偏好排在前面的回答。GPT-4 默认提示词下交换位置只有 65.0% 给出一致结论，30.0% 偏向第一个回答、5.0% 偏向第二个；论文举了 GPT-3.5 与 Vicuna-13B 互换位置后 GPT-4 改判的实例。",
+      "severity": "高",
+      "response": "论文建议交换位置跑两次再取结论；实测把提示词改成 rename 可把一致率从 65.0% 提到 66.2%，改善有限。",
+      "reader": "同一对回答交换位置后分数不一致，说明该题在该裁判下不可判，不要只报其中一个方向的分。",
+      "cite": [
+        "arxiv-2306-05685@§3.3",
+        "arxiv-2306-05685@Table 2"
+      ]
+    },
+    {
+      "issue": "题量小且只覆盖两轮",
+      "impact": "80 题、每题 2 轮。论文自己说没有任何单一基准能判定模型质量；第三方评测指出它只覆盖两轮对话与粗粒度能力，不足以反映真实多轮对话的复杂度。",
+      "severity": "中",
+      "response": "官方表示正把题库扩到 MT-Bench-1K（从 Chatbot Arena 接入高质量 prompt 并用 LLM 自动生成新题），但截至本档案核验日未给出该版本的公开成绩与榜单。",
+      "reader": "两个模型分差在 1 分以内时不要当作稳定差异，样本量不支持。",
+      "cite": [
+        "lmsys-blog",
+        "mtbench101@§2",
+        "arxiv-2306-05685@§5"
+      ]
+    },
+    {
+      "issue": "长度（ verbosity ）偏差",
+      "impact": "裁判偏爱更长更啰嗦的回答，即使没有新增信息；论文用「重复列表」攻击量化了这一效应。",
+      "severity": "中",
+      "response": "论文用该攻击量化各裁判的失败率，并指出 GPT-4 的防御明显好于其他裁判；未见官方在默认提示词中加固。",
+      "reader": "回答显著变长带来的涨分要打折看，先确认是否真的多了信息。",
+      "cite": [
+        "arxiv-2306-05685@§3.3"
+      ]
+    },
+    {
+      "issue": "自我增强偏差",
+      "impact": "裁判偏爱自己家族模型生成的回答：GPT-4 给自己约 10% 更高胜率，Claude-v1 给自己约 25% 更高胜率；GPT-3.5 不偏爱自己。",
+      "severity": "中",
+      "response": "论文说明数据量小、差异有限，无法断定存在稳定的自我增强偏差，需要受控实验；未给出定量修正。",
+      "reader": "用 GPT-4 当裁判评测 OpenAI 系列模型时，要意识到存在正向倾斜的可能。",
+      "cite": [
+        "arxiv-2306-05685@§3.3"
+      ]
+    },
+    {
+      "issue": "只评有用性，不评安全与多维质量",
+      "impact": "论文明确写本工作强调 helpfulness、基本忽略 safety；在 helpfulness 内部也把准确度、相关性、创造性等维度合并成了单一分数。",
+      "severity": "中",
+      "response": "论文认为改默认提示词即可评这些维度，但没有提供现成口径与基线。",
+      "reader": "安全测试与多维质量评估不能拿 MT-Bench 分代替。",
+      "cite": [
+        "arxiv-2306-05685@§6"
+      ]
+    },
+    {
+      "issue": "来源之间口径不一致",
+      "impact": "官方博客写「每类 10 题，共 160 题」，论文口径是 80 题 / 160 轮；博客正文写「评测 28 个指令微调模型」，Table 1 实际列了 31 行。",
+      "severity": "低",
+      "response": "以论文最新版（v4）与博客表格实际行为准；论文与表格互为补充。",
+      "reader": "看到「160 题」不要以为是两倍题量；引用榜单规模时按表格实际行数。",
+      "cite": [
+        "lmsys-blog",
+        "arxiv-2306-05685@§2.2"
+      ]
+    }
+  ],
   "notes": null,
   "official_sources": [
     {
-      "kind": "site",
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2306.05685"
+    },
+    {
+      "kind": "repo",
       "url": "https://github.com/lm-sys/FastChat"
     },
     {
-      "kind": "paper",
-      "url": "https://arxiv.org/abs/2306.05685"
+      "kind": "site",
+      "url": "https://lmsys.org/blog/2023-06-22-leaderboard/"
+    },
+    {
+      "kind": "docs",
+      "url": "https://github.com/lm-sys/FastChat/tree/main/fastchat/llm_judge"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/lmsys/mt_bench_human_judgments"
     }
   ],
   "related_benchmarks": [
@@ -42,6 +403,466 @@
     "arenahard",
     "wildbench"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-28"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "arxiv-2306-05685",
+        "kind": "paper",
+        "title": "Judging LLM-as-a-Judge with MT-Bench and Chatbot Arena（arXiv:2306.05685，v4）",
+        "url": "https://arxiv.org/abs/2306.05685",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "repo-fastchat",
+        "kind": "repo",
+        "title": "lm-sys/FastChat 仓库（MT-bench 官方实现与评测入口，Apache-2.0）",
+        "url": "https://github.com/lm-sys/FastChat",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "lmsys-blog",
+        "kind": "site",
+        "title": "LMSYS Blog：Chatbot Arena Leaderboard Week 8 — Introducing MT-Bench and Vicuna-33B（2023-06-22）",
+        "url": "https://lmsys.org/blog/2023-06-22-leaderboard/",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "judge-docs",
+        "kind": "docs",
+        "title": "FastChat fastchat/llm_judge README（MT-bench 评测命令与默认模式）",
+        "url": "https://github.com/lm-sys/FastChat/tree/main/fastchat/llm_judge",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "hf-judgments",
+        "kind": "dataset",
+        "title": "Hugging Face 数据集 lmsys/mt_bench_human_judgments（3.3K 条专家成对偏好，CC-BY-4.0）",
+        "url": "https://huggingface.co/datasets/lmsys/mt_bench_human_judgments",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "mtbench101",
+        "kind": "paper",
+        "title": "MT-Bench-101: A Fine-grained Benchmark for Evaluating Large Language Models in Multi-turn Dialogues（arXiv:2402.14762）",
+        "url": "https://arxiv.org/abs/2402.14762",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "LMSYS Org（Chatbot Arena 与 FastChat 的同一团队；FastChat 仓库自我描述为训练、服务与评测大模型的开放平台）",
+        "cite": [
+          "lmsys-blog",
+          "repo-fastchat"
+        ]
+      },
+      "first_release": {
+        "v": "2023-06-09（arXiv v1 提交）；2023-06-22 随 LMSYS 博客公开发布并进入 Chatbot Arena 榜单",
+        "cite": [
+          "arxiv-2306-05685@提交历史",
+          "lmsys-blog"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "arxiv-2306-05685@§2.2",
+        "arxiv-2306-05685@§5",
+        "repo-fastchat@README",
+        "judge-docs@README"
+      ],
+      "interpretation": [
+        "arxiv-2306-05685@§3.3",
+        "arxiv-2306-05685@Table 2",
+        "arxiv-2306-05685@§3.1"
+      ]
+    },
+    "problem": {
+      "text": "MMLU 这类传统基准分不出「对齐过的聊天模型」和它的基座模型——论文原话是这些基准 cannot effectively tell the difference between these aligned models and the base models。用户主观上明显更偏好对齐后的模型，基准分数却不动，说明基准测的和用户在意的不是一回事，于是需要一个直接测多轮对话有用性的基准。",
+      "cite": [
+        "arxiv-2306-05685@§2.1"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "近似地板：未做对话微调的基座",
+        "value": "2.61 / 160（LLaMA-13B）",
+        "note": "论文 Table 8 中同为 LLaMA-13B 的基座行；论文未给出随机猜的基线，这一行可当近似下限。",
+        "cite": [
+          "arxiv-2306-05685@Table 8"
+        ]
+      },
+      {
+        "label": "论文发布时（2023-06）公开最好成绩",
+        "value": "8.99 / 160（GPT-4，MMLU 86.4）",
+        "note": "论文 Table 8 的 GPT-4 行；同期 GPT-3.5 为 7.94（MMLU 70.0）。",
+        "cite": [
+          "arxiv-2306-05685@Table 8"
+        ]
+      },
+      {
+        "label": "官方榜单最高（2023-06-22，时间窗 4 月 24 日—6 月 19 日）",
+        "value": "8.99 / 160（GPT-4）",
+        "note": "LMSYS 博客 Table 1 实际列 31 行（正文写 28 个模型）；榜首与榜末 StableLM-Tuned-Alpha-7B（2.75）相差约 6.24 分。",
+        "cite": [
+          "lmsys-blog@Table 1"
+        ]
+      },
+      {
+        "label": "区分度与多轮稳定性参考线",
+        "value": "第二轮掉分 0.07（GPT-4）至 1.53（WizardLM-13B）",
+        "note": "同一榜单的两轮分差可当作经验区间：掉分越大说明多轮一致性越差，1 分以内的总分别当作稳定差异。",
+        "cite": [
+          "lmsys-blog@Table 2"
+        ]
+      },
+      {
+        "label": "饱和参考线",
+        "value": "论文未给出饱和阈值",
+        "note": "论文未定义 MT-Bench 的饱和分数线；官方只说题目集是精简集，正在扩展到 MT-Bench-1K。",
+        "cite": [
+          "lmsys-blog"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "「MT-Bench 有 160 道题」——同一套题：论文口径是 80 道多轮问题、每题 2 轮共 160 轮，官方博客按轮计数写成 160 题。",
+        "cite": [
+          "arxiv-2306-05685@§2.2",
+          "lmsys-blog"
+        ]
+      },
+      {
+        "text": "「满分是 10 分」——榜单报的是单轮均分乘 160 轮的折算分，满分 160；原始的 GPT-4 单答案打分才是 1-10。",
+        "cite": [
+          "arxiv-2306-05685@§5"
+        ]
+      },
+      {
+        "text": "「分高就是更聪明、知识更多」——裁判主要看是否有帮助、是否贴合指令，事实与数学正确性不在评分范围内，数学题上裁判自己会判错。",
+        "cite": [
+          "arxiv-2306-05685@§3.3",
+          "arxiv-2306-05685@§5"
+        ]
+      },
+      {
+        "text": "「换个裁判或换个提示词版本，分数还可比」——论文明确指出绝对分比相对成对结论更容易随裁判模型变化而波动，跨裁判比绝对分没有意义。",
+        "cite": [
+          "arxiv-2306-05685@§3.1"
+        ]
+      },
+      {
+        "text": "「80 题足以区分所有模型」——官方自己说题目集是精简集、正在扩到 MT-Bench-1K；三轮以上对话与细粒度能力要另看 MT-Bench-101。",
+        "cite": [
+          "lmsys-blog",
+          "mtbench101@§2"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "LMSYS Org，与 Chatbot Arena、FastChat 同一团队；FastChat 是 Vicuna 与 Chatbot Arena 的发布仓库。",
+        "cite": [
+          "lmsys-blog",
+          "repo-fastchat"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "博客署名 Lianmin Zheng、Wei-Lin Chiang、Ying Sheng、Hao Zhang；论文为 LMSYS 团队工作。",
+        "cite": [
+          "lmsys-blog"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2023-06-09 arXiv v1 → 2023-06-22 博客发布并并入 Chatbot Arena 榜单 → 2023-12-24 更新到 v4（本档案依据）。",
+        "cite": [
+          "arxiv-2306-05685@提交历史",
+          "lmsys-blog"
+        ]
+      },
+      {
+        "k": "代码位置",
+        "v": "FastChat 仓库 fastchat/llm_judge：gen_model_answer.py 生成回答 → gen_judgment.py 生成裁判判定 → show_result.py 汇总成绩。",
+        "cite": [
+          "judge-docs@README"
+        ]
+      },
+      {
+        "k": "人类标注数据",
+        "v": "lmsys/mt_bench_human_judgments：3.3K 条专家成对偏好（human 3.36k 行 + gpt4_pair 2.4k 行），CC-BY-4.0。",
+        "cite": [
+          "hf-judgments@Dataset card"
+        ]
+      },
+      {
+        "k": "官方定位",
+        "v": "FastChat README 称 MT-bench 是「给你的模型做基准测试的新推荐方式」；论文称用 LLM-as-a-judge 逼近人类偏好高度可行。",
+        "cite": [
+          "repo-fastchat@README",
+          "arxiv-2306-05685@§5"
+        ]
+      },
+      {
+        "k": "与 Chatbot Arena 的关系",
+        "v": "官方把 MT-Bench 定位为 Chatbot Arena 这个众包式评测的质量受控补充；博客榜单同时给出 MT-bench 分数、Arena Elo（42K 匿名投票）与 MMLU。",
+        "cite": [
+          "lmsys-blog"
+        ]
+      },
+      {
+        "k": "许可",
+        "v": "FastChat 仓库 Apache-2.0；人类标注数据集 CC-BY-4.0。",
+        "cite": [
+          "repo-fastchat@README",
+          "hf-judgments@Dataset card"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2023-06-22",
+        "columns": [
+          "模型",
+          "MT-bench 分数",
+          "Arena Elo",
+          "MMLU",
+          "许可"
+        ],
+        "rows": [
+          [
+            "GPT-4",
+            "8.99",
+            "1227",
+            "86.4",
+            "Proprietary"
+          ],
+          [
+            "GPT-3.5-turbo",
+            "7.94",
+            "1130",
+            "70.0",
+            "Proprietary"
+          ],
+          [
+            "Claude-v1",
+            "7.90",
+            "1178",
+            "75.6",
+            "Proprietary"
+          ],
+          [
+            "Claude-instant-v1",
+            "7.85",
+            "1156",
+            "61.3",
+            "Proprietary"
+          ],
+          [
+            "Vicuna-33B",
+            "7.12",
+            null,
+            "59.2",
+            "Non-commercial"
+          ],
+          [
+            "WizardLM-30B",
+            "7.01",
+            null,
+            "58.7",
+            "Non-commercial"
+          ],
+          [
+            "Guanaco-33B",
+            "6.53",
+            "1065",
+            "57.6",
+            "Non-commercial"
+          ],
+          [
+            "Tulu-30B",
+            "6.43",
+            null,
+            "58.1",
+            "Non-commercial"
+          ],
+          [
+            "Guanaco-65B",
+            "6.41",
+            null,
+            "62.1",
+            "Non-commercial"
+          ],
+          [
+            "OpenAssistant-LLaMA-30B",
+            "6.41",
+            null,
+            "56.0",
+            "Non-commercial"
+          ],
+          [
+            "PaLM-Chat-Bison-001",
+            "6.40",
+            "1038",
+            null,
+            "Proprietary"
+          ],
+          [
+            "Vicuna-13B",
+            "6.39",
+            "1061",
+            "52.1",
+            "Non-commercial"
+          ],
+          [
+            "MPT-30B-chat",
+            "6.39",
+            null,
+            "50.4",
+            "CC-BY-NC-SA-4.0"
+          ],
+          [
+            "WizardLM-13B",
+            "6.35",
+            "1048",
+            "52.3",
+            "Non-commercial"
+          ],
+          [
+            "Vicuna-7B",
+            "6.00",
+            "1008",
+            "47.1",
+            "Non-commercial"
+          ],
+          [
+            "Baize-v2-13B",
+            "5.75",
+            null,
+            "48.9",
+            "Non-commercial"
+          ],
+          [
+            "Nous-Hermes-13B",
+            "5.51",
+            null,
+            "49.3",
+            "Non-commercial"
+          ],
+          [
+            "MPT-7B-Chat",
+            "5.42",
+            "956",
+            "32.0",
+            "CC-BY-NC-SA-4.0"
+          ],
+          [
+            "GPT4All-13B-Snoozy",
+            "5.41",
+            "986",
+            "43.0",
+            "Non-commercial"
+          ],
+          [
+            "Koala-13B",
+            "5.35",
+            "992",
+            "44.7",
+            "Non-commercial"
+          ],
+          [
+            "MPT-30B-Instruct",
+            "5.22",
+            null,
+            "47.8",
+            "CC-BY-SA 3.0"
+          ],
+          [
+            "Falcon-40B-Instruct",
+            "5.17",
+            null,
+            "54.7",
+            "Apache 2.0"
+          ],
+          [
+            "H2O-Oasst-OpenLLaMA-13B",
+            "4.63",
+            null,
+            "42.8",
+            "Apache 2.0"
+          ],
+          [
+            "Alpaca-13B",
+            "4.53",
+            "930",
+            "48.1",
+            "Non-commercial"
+          ],
+          [
+            "ChatGLM-6B",
+            "4.50",
+            "905",
+            "36.1",
+            "Non-commercial"
+          ],
+          [
+            "OpenAssistant-Pythia-12B",
+            "4.32",
+            "924",
+            "27.0",
+            "Apache 2.0"
+          ],
+          [
+            "RWKV-4-Raven-14B",
+            "3.98",
+            "950",
+            "25.6",
+            "Apache 2.0"
+          ],
+          [
+            "Dolly-V2-12B",
+            "3.28",
+            "850",
+            "25.7",
+            "MIT"
+          ],
+          [
+            "FastChat-T5-3B",
+            "3.04",
+            "897",
+            "47.7",
+            "Apache 2.0"
+          ],
+          [
+            "StableLM-Tuned-Alpha-7B",
+            "2.75",
+            "871",
+            "24.4",
+            "CC-BY-NC-SA-4.0"
+          ],
+          [
+            "LLaMA-13B",
+            "2.61",
+            "826",
+            "47.0",
+            "Non-commercial"
+          ]
+        ]
+      },
+      "cite": [
+        "lmsys-blog@Table 1"
+      ]
+    }
+  }
 }
