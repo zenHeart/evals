@@ -1,28 +1,427 @@
 {
   "id": "mobileworld",
   "name": "MobileWorld",
-  "full_name": null,
+  "full_name": "MobileWorld: Benchmarking Autonomous Mobile Agents in Agent-User Interactive and MCP-Augmented Environments",
   "aliases": [],
-  "status": null,
+  "status": "active",
   "categories": [
     "agent"
   ],
-  "summary": "201 任务 20 应用的移动 GUI 智能体基准",
-  "interpretation": "201 个任务 × 20 个应用的移动 GUI 基准（平均 27.8 步、跨应用任务 62.2%），成功率口径；最佳 agentic 框架 51.7%、端到端模型 20.9%——它是 AndroidWorld（已 90%+ 饱和）的加难接棒者，低分是难度设计使然。",
-  "measures": [],
-  "does_not_measure": [],
+  "summary": "MobileWorld 是 201 个任务、20 个应用的移动端智能体基准：用自托管的开源应用（Mattermost 代 Slack、Mastodon 代 X/Twitter、Taodian 代淘宝）把环境完全可控，并在标准 GUI 操作之外新增「主动向用户澄清」和「调用 MCP 工具」两类任务，考的是长程跨应用流程。论文里最好的 agentic 框架 51.7%、最好的端到端模型 20.9%。",
+  "interpretation": "MobileWorld 上的成功率可以直接横向比（同一套确定性判分、统一 max 50 步），但要先知道它比 AndroidWorld 难得多：平均 27.8 步对 14.3 步、跨应用任务 62.2% 对 9.5%。所以 AndroidWorld 上 90%+ 的模型在这里往往只有几十分，低分是难度设计使然，不是模型退步。高分主要说明三件事：能跨应用长程编排、该问用户时会问、该调工具时会调。另外官方榜单只统一公布 GUI-Only 一列，跨条目比较前必须先看该行的 runs / max_steps / 历史图片数。",
+  "measures": [
+    {
+      "area": "GUI-Only 任务",
+      "focus": "只用标准移动 UI 操作完成用户目标，分任务完成与信息检索两类；不含工具调用，也不需要向用户提问",
+      "share": "116 / 201（57.7%）",
+      "format": "点击 / 滑动 / 输入等 GUI 动作；文本匹配或后端校验",
+      "cite": [
+        "arxiv-2512-19432@Table 5",
+        "arxiv-2512-19432@§3.1"
+      ]
+    },
+    {
+      "area": "Agent-User Int. 任务",
+      "focus": "任务目标里故意省略关键信息，不主动 ask_user 澄清就无法完成，考的是「知不知道要问、问得准不准、问得省不省」",
+      "share": "45 / 201（22.4%）",
+      "format": "GUI + ask_user；用户侧由 GPT-4.1 模拟，持有关键信息",
+      "cite": [
+        "arxiv-2512-19432@Table 5",
+        "arxiv-2512-19432@§3.1",
+        "arxiv-2512-19432@§4.3"
+      ]
+    },
+    {
+      "area": "MCP-Aug. 任务",
+      "focus": "必须把 MCP 工具调用和 GUI 操作编排在一起才能完成，考「什么时候该用工具、工具和界面怎么接」",
+      "share": "40 / 201（19.9%）",
+      "format": "GUI + mcp_call；5 个 MCP server / 64 个工具（Amap Maps 15、GitHub 26、Jina AI 3、Stockstar 16、arXiv 4）",
+      "cite": [
+        "arxiv-2512-19432@Table 5",
+        "arxiv-2512-19432@Table 3",
+        "arxiv-2512-19432@§3.2"
+      ]
+    },
+    {
+      "area": "跨应用流程",
+      "focus": "单个任务要协调多个应用；一半以上任务涉及两个及以上应用，是 MobileWorld 难度的主要来源",
+      "share": "62.2% 跨应用（AndroidWorld 为 9.5%）",
+      "format": "单应用 76、双应用 100、三应用及以上 25",
+      "cite": [
+        "arxiv-2512-19432@§3.4",
+        "arxiv-2512-19432@Table 5",
+        "arxiv-2512-19432@§1"
+      ]
+    },
+    {
+      "area": "判分方式分布",
+      "focus": "每个任务只用一种确定性判分：自托管后端数据库、本地存储检查、文本匹配、应用回调；不用模型当裁判",
+      "share": "数据库 95（47.3%）/ 存储 74（36.8%）/ 文本 22（10.9%）/ 回调 10（5.0%）",
+      "format": "确定性校验（数据库查询、ADB 存储检查、字符串比对、回调接口）",
+      "cite": [
+        "arxiv-2512-19432@Table 5",
+        "arxiv-2512-19432@§3.2",
+        "arxiv-2512-19432@Figure 3"
+      ]
+    },
+    {
+      "area": "应用域覆盖",
+      "focus": "通信消息 108、生产力与事务 76、社交 41、MCP 服务 40、浏览器与媒体 26、电商 16、系统设置 10、导航地图 10；约 95% 任务跑在第三方应用上",
+      "share": "8 个域 / 20 个应用",
+      "format": "自托管开源应用 + 少量系统应用；附录 Table 8 逐应用列了任务数",
+      "cite": [
+        "arxiv-2512-19432@Table 5",
+        "arxiv-2512-19432@§3.4",
+        "arxiv-2512-19432@附录 B.1"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "开放式、主观解读类任务：论文只定义可确定性校验的任务，没有开放式生成、人工偏好或主观评价类题型。",
+      "cite": [
+        "arxiv-2512-19432@§3.2"
+      ]
+    },
+    {
+      "text": "人类成绩与随机基线：论文 Table 6/7 和官网榜单都只报模型与智能体框架的结果，没有人类成绩或随机策略基线，无法判断任务的「人类可达上限」。",
+      "cite": [
+        "arxiv-2512-19432@Table 6",
+        "leaderboard-json@results"
+      ]
+    },
+    {
+      "text": "安全性、隐私与成本：第 4.2 节的指标只覆盖成功率、步数、提问数、UIQ 与 MCP 调用数，没有安全越权、隐私泄露、token 成本或时延类指标。",
+      "cite": [
+        "arxiv-2512-19432@§4.2"
+      ]
+    }
+  ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
+    "sample_count": 201,
+    "splits": [
+      "GUI-Only 116（57.7%）",
+      "Agent-User Int. 45（22.4%）",
+      "MCP-Aug. 40（19.9%）"
+    ],
+    "languages": [
+      "未披露"
+    ],
+    "source_type": "自托管开源应用环境 + LLM 合成/互联网来源的预置初始状态",
+    "public_sample": true,
+    "totals": "201 个任务 / 20 个应用；GUI-Only 116（57.7%）、Agent-User Int. 45（22.4%）、MCP-Aug. 40（19.9%）；单应用 76（37.8%）、双应用 100（49.8%）、三应用及以上 25（12.4%）；判分以数据库校验 95（47.3%）与本地存储检查 74（36.8%）为主，文本匹配 22（10.9%）、应用回调 10（5.0%）；约 95% 任务在第三方应用上；MCP 侧共 5 个 server / 64 个工具。",
+    "cite": [
+      "arxiv-2512-19432@Table 5",
+      "arxiv-2512-19432@§3.4",
+      "leaderboard@Overview"
+    ],
+    "construction": [
+      {
+        "k": "初始状态预置",
+        "text": "所有任务基于 MobileWorld 初始系统状态构建，预置联系人、短信、邮件、日历事件与文件；这些材料由 LLM 合成或来自互联网。",
+        "cite": [
+          "arxiv-2512-19432@§3.3"
+        ]
+      },
+      {
+        "k": "模拟用户",
+        "text": "为响应智能体的澄清请求，部署一个 LLM 模拟用户智能体：单独配置的 LLM，持有完整任务目标与相关背景上下文。",
+        "cite": [
+          "arxiv-2512-19432@§3.3"
+        ]
+      },
+      {
+        "k": "可解性校验",
+        "text": "每个任务先由智能体验证可解：得 1.0 表示在给定条件下可解；得 0.0 则重试该任务，最多五次。",
+        "cite": [
+          "arxiv-2512-19432@§3.3"
+        ]
+      },
+      {
+        "k": "应用环境",
+        "text": "用流行开源项目搭稳定、可复现的应用环境：Mattermost（企业通信，Slack 的开源替代）、Mastodon（社交，X/Twitter 的开源替代）、Mall4Uni（电商）。",
+        "cite": [
+          "arxiv-2512-19432@§3.2"
+        ]
+      },
+      {
+        "k": "状态快照",
+        "text": "用 AVD 快照固化完整设备状态，每个任务从同一初始状态开始；后端数据目录同样快照，任务前恢复，保证可复现。",
+        "cite": [
+          "arxiv-2512-19432@§3.2",
+          "repo@README"
+        ]
+      }
+    ]
   },
-  "metrics": [],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [],
-  "notes": "字节 Seed 引用；含 MCP 与人机交互",
+  "metrics": [
+    {
+      "id": "sr",
+      "name": "成功率（SR）",
+      "direction": "越高越好",
+      "description": "成功完成的任务占比；每题 0/1，任务目标完全达成记 1",
+      "cite": [
+        "arxiv-2512-19432@§4.2"
+      ]
+    },
+    {
+      "id": "gui-only-sr",
+      "name": "GUI-Only SR",
+      "direction": "越高越好",
+      "description": "GUI-Only 任务子集上的成功率（论文按 116 题计算）",
+      "cite": [
+        "arxiv-2512-19432@§4.2",
+        "arxiv-2512-19432@Table 6"
+      ]
+    },
+    {
+      "id": "interaction-sr",
+      "name": "Interaction SR",
+      "direction": "越高越好",
+      "description": "agent-user interaction 任务子集上的成功率（论文按 45 题计算）",
+      "cite": [
+        "arxiv-2512-19432@§4.2",
+        "arxiv-2512-19432@Table 6"
+      ]
+    },
+    {
+      "id": "mcp-sr",
+      "name": "MCP SR",
+      "direction": "越高越好",
+      "description": "MCP-augmented 任务子集上的成功率（论文按 40 题计算）",
+      "cite": [
+        "arxiv-2512-19432@§4.2",
+        "arxiv-2512-19432@Table 6"
+      ]
+    },
+    {
+      "id": "ave-steps",
+      "name": "平均完成步数（Ave. Steps）",
+      "direction": "越低越好",
+      "description": "全部执行轨迹的平均动作步数（含成功与失败回合）；论文注明要在成功率相当时比较",
+      "cite": [
+        "arxiv-2512-19432@§4.2"
+      ]
+    },
+    {
+      "id": "ave-queries",
+      "name": "平均提问次数（Ave. Queries）",
+      "direction": "越低越好",
+      "description": "agent-user interaction 任务上平均触发 ask_user 的次数；理想是既成功又少问",
+      "cite": [
+        "arxiv-2512-19432@§4.2"
+      ]
+    },
+    {
+      "id": "uiq",
+      "name": "用户交互质量（UIQ）",
+      "direction": "越高越好",
+      "description": "同时衡量提问的有效性与效率：交互任务成功且提问少得分高；在非交互任务上乱用 ask_user 会被计入分母受罚",
+      "cite": [
+        "arxiv-2512-19432@§4.2"
+      ]
+    },
+    {
+      "id": "ave-mcp-calls",
+      "name": "平均 MCP 调用次数（Ave. MCP Calls）",
+      "direction": "描述性指标，无固定优劣方向",
+      "description": "MCP-augmented 任务上平均调用 MCP 工具的次数，反映智能体使用外部工具的倾向",
+      "cite": [
+        "arxiv-2512-19432@§4.2"
+      ]
+    }
+  ],
+  "default_protocol": {
+    "raw": "默认口径：最多 50 步、temperature 0.0；agentic 框架下通用 LMM 当 planner、UI-Ins-7B 当 grounding executor（planner 只输出目标 UI 元素的自然语言描述，由 executor 预测像素坐标）；交互任务的用户侧用 GPT-4.1；开源模型用 vLLM 在 8×NVIDIA H20 上部署，闭源模型走官方 API；端到端模型用官方实现适配到 MobileWorld。",
+    "cite": [
+      "arxiv-2512-19432@§4.3",
+      "arxiv-2512-19432@§4.1",
+      "arxiv-2512-19432@§4.2"
+    ],
+    "variants": [
+      {
+        "text": "agentic 框架 vs 端到端模型：框架跑全部任务类别；端到端模型只跑兼容任务——不支持工具调用的排除 MCP 任务，没有提问动作的排除交互任务。所以端到端行的 Overall / MCP 列常为空，两类不能直接比。",
+        "cite": [
+          "arxiv-2512-19432@§4.3",
+          "arxiv-2512-19432@Table 6"
+        ]
+      },
+      {
+        "text": "论文表 vs 官网榜单：论文 Table 6 按 116 / 45 / 40 报三列，官网榜单按 117 / 44 / 40 加权且只统一公布 GUI-Only 一列，两边子集口径差 1 题。",
+        "cite": [
+          "arxiv-2512-19432@Table 6",
+          "leaderboard@Data Statistics",
+          "leaderboard-json@task_counts"
+        ]
+      },
+      {
+        "text": "运行次数、步数上限与历史图片数不一致：44 条榜单记录里 40 条 runs=1、4 条 runs=3；seek-use 的 max_steps 为空（其规划轮次 10–75、GUI 动作不设上限）；Kimi-K2.5 的分数按 3 张历史图报出，Claude-Opus-4.7 因幻觉问题只用 1 张历史图，Claude-Opus-4.6 因 API 限制有任务未跑完。",
+        "cite": [
+          "leaderboard-json@results"
+        ]
+      },
+      {
+        "text": "命令行开关改变评测集：不加 --enable_user_interaction 就只跑 GUI-only 任务，不加 --enable_mcp 就不含 MCP 任务。",
+        "cite": [
+          "repo@README"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "arxiv-v1",
+      "date": "2025-12-22",
+      "label": "arXiv v1 发布（published 2025-12-22T14:31:28Z）",
+      "cite": [
+        "arxiv-api@published"
+      ]
+    },
+    {
+      "id": "arxiv-v3",
+      "date": "2025-12-30",
+      "label": "arXiv v3（本档案核对版本，updated 2025-12-30T07:15:15Z）：201 任务 / 20 应用，Table 5/6/7 数据定稿",
+      "cite": [
+        "arxiv-2512-19432@页眉",
+        "arxiv-api@updated"
+      ]
+    },
+    {
+      "id": "mattermost-fix",
+      "date": "2026-04-15",
+      "label": "Mattermost 会话过期修复：此前拉取的 Docker 镜像会对 Mattermost 任务产生假阴性",
+      "cite": [
+        "repo@README Updates"
+      ]
+    },
+    {
+      "id": "traj-viewer",
+      "date": "2026-04-22",
+      "label": "榜单新增 Claude-Opus-4.7 与 Kimi-K2.6，开放轨迹查看器",
+      "cite": [
+        "repo@README Updates"
+      ]
+    },
+    {
+      "id": "arena",
+      "date": "2026-04-29",
+      "label": "上线 Arena 对比页（同任务并排看两条轨迹），开始接受社区提交结果",
+      "cite": [
+        "repo@README Updates",
+        "leaderboard@Overview"
+      ]
+    },
+    {
+      "id": "kimi-k3-gpt56",
+      "date": "2026-07-29",
+      "label": "榜单新增 Kimi-K3（74.4% GUI-Only）与 GPT-5.6-Sol（70.1% GUI-Only），轨迹可在查看器与 Arena 浏览",
+      "cite": [
+        "repo@README Updates",
+        "leaderboard-json@results"
+      ]
+    },
+    {
+      "id": "qwen-ui-agent",
+      "date": "2026-07-30",
+      "label": "Qwen-UI-Agent 报 82.1%（GUI-Only），为当前官网榜单最高",
+      "cite": [
+        "repo@README Updates",
+        "leaderboard-json@results"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "榜单口径不可比",
+      "impact": "官网只统一公布 GUI-Only（117 题）一列：44 条记录里只有 28 条有 User-Int.、12 条有 MCP；运行次数（40 条 runs=1、4 条 runs=3）、max_steps（seek-use 为空）、历史图片数（Kimi-K2.5 按 3 张图报分、Claude-Opus-4.7 只用 1 张图、Claude-Opus-4.6 因 API 限制有任务未跑完）都不一致。",
+      "severity": "高",
+      "response": "榜单提供 leaderboard.json 与逐条 notes 说明口径，并提供轨迹下载供复核。",
+      "reader": "跨模型比较前先看该行的 runs / max_steps / 历史图片数；缺列代表没测，不代表 0 分。",
+      "cite": [
+        "leaderboard@Data Statistics",
+        "leaderboard-json@results"
+      ]
+    },
+    {
+      "issue": "Mattermost 假阴性（2026-04-15 前的镜像）",
+      "impact": "若在 2026-04-15 前拉取 Docker 镜像，Mattermost 相关任务可能因模拟器快照中的认证令牌过期而被误判为失败，压低分数。",
+      "severity": "高",
+      "response": "官方要求 git pull 最新代码，修复在任务初始化时自动执行，无需重建 Docker 镜像。",
+      "reader": "复现旧结果前先确认代码版本，否则看到的下滑可能是环境问题而不是模型问题。",
+      "cite": [
+        "repo@README Updates"
+      ]
+    },
+    {
+      "issue": "论文与官网题量不一致",
+      "impact": "论文 Table 5 为 GUI-Only 116 / 交互 45 / MCP 40，官网榜单 task_counts 为 117 / 44 / 40；两边总和都是 201，但子集口径差 1 题，论文未说明差异。",
+      "severity": "中",
+      "response": "暂无官方说明；论文正文写的交互 22.4%、MCP 19.9% 与 116 / 45 / 40 自洽。",
+      "reader": "引用子集题量时注明来自论文还是官网，两者相差 1 题。",
+      "cite": [
+        "arxiv-2512-19432@Table 5",
+        "leaderboard-json@task_counts",
+        "arxiv-2512-19432@§3.4"
+      ]
+    },
+    {
+      "issue": "Table 6 的 Overall 列无法按题量复算",
+      "impact": "论文同时给出 Overall 与三列分类成功率，但按 116 / 45 / 40 的题量加权得不到 Overall 值；论文未给出加权规则，也未说明「-」（未测）条目如何计入。",
+      "severity": "中",
+      "response": "论文未提供复算说明；本档案只原样转录，不自行推算。",
+      "reader": "不要把 Overall 当成三列的平均，也不要把空列当 0。",
+      "cite": [
+        "arxiv-2512-19432@Table 6",
+        "arxiv-2512-19432@§4.3"
+      ]
+    },
+    {
+      "issue": "MCP 工具数两处不一致",
+      "impact": "正文 §3.2 写「These 61 tools」，Table 5 写 Total MCP Tools 64；按 Table 3 各行相加为 64（15+26+3+16+4）。",
+      "severity": "中",
+      "response": "论文未解释差异；以 Table 3 / Table 5 的 64 为准更稳妥。",
+      "reader": "引用工具数时注明出处，61 与 64 都出现在论文里。",
+      "cite": [
+        "arxiv-2512-19432@§3.2",
+        "arxiv-2512-19432@Table 5",
+        "arxiv-2512-19432@Table 3"
+      ]
+    },
+    {
+      "issue": "附录 Table 8 只列 15 个应用",
+      "impact": "附录 B.1 的 Table 8 仅列出 15 个应用，任务数合计 304，与「20 应用 / 201 任务」对不上；论文未说明它是子集还是统计口径不同。",
+      "severity": "中",
+      "response": "暂无；Table 5 的域统计才是总量口径。",
+      "reader": "不要用 Table 8 的任务数加总当作题量。",
+      "cite": [
+        "arxiv-2512-19432@附录 B.1",
+        "arxiv-2512-19432@Table 5"
+      ]
+    },
+    {
+      "issue": "厂商声明缺分数与口径",
+      "impact": "字节 Seed 官方博客称 Seed2.1 在 MobileWorld 上取得最高分，但未给分数、未说明子集与步数上限，官网榜单也没有 Seed2.1 条目，无法核验。",
+      "severity": "中",
+      "response": "本档案只记录该声明存在，不纳入分数阶梯与官方结果快照。",
+      "reader": "看到「MobileWorld 最高分」类宣传时，先要分数、子集和步数口径。",
+      "cite": [
+        "seed-en-blog-seed2-1-official@正文",
+        "leaderboard-json@results"
+      ]
+    },
+    {
+      "issue": "缺少人类与随机基线",
+      "impact": "论文与榜单都没有人类成绩或随机策略基线，无法判断任务的「人类可达上限」，也难以解释某个低分是模型问题还是任务本身难。",
+      "severity": "低",
+      "response": "暂无；论文用 AndroidWorld 上 90%+ 的结果作为难度对照。",
+      "reader": "不要用人类直觉推断某题一定可解。",
+      "cite": [
+        "arxiv-2512-19432@§1",
+        "leaderboard-json@results"
+      ]
+    }
+  ],
+  "notes": "第三方引用：字节 Seed 官方博客（2026-06-23）；官方仓库与官网 BibTeX 标注 ACL 2026",
   "official_sources": [
     {
       "kind": "paper",
@@ -30,12 +429,366 @@
     },
     {
       "kind": "site",
+      "url": "https://tongyi-mai.github.io/MobileWorld/"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/Tongyi-MAI/MobileWorld"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/Tongyi-MAI/MobileWorld"
+    },
+    {
+      "kind": "blog",
       "url": "https://seed.bytedance.com/en/blog/seed2-1-officially-released-advancing-ai-productivity"
     }
   ],
   "related_benchmarks": [
     "androidworld"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-13",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      {
+        "id": "arxiv-2512-19432",
+        "kind": "paper",
+        "title": "MobileWorld 论文（arXiv:2512.19432v3 [cs.CL]，2025-12-30；PDF 文本版）",
+        "url": "https://arxiv.org/abs/2512.19432",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "arxiv-api",
+        "kind": "paper",
+        "title": "arXiv API 元数据（id_list=2512.19432，published / updated / 作者列表）",
+        "url": "https://export.arxiv.org/api/query?id_list=2512.19432",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "leaderboard",
+        "kind": "site",
+        "title": "MobileWorld 官网（Overview / Leaderboard / Data Statistics / Task Examples / Arena）",
+        "url": "https://tongyi-mai.github.io/MobileWorld/",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "leaderboard-json",
+        "kind": "leaderboard",
+        "title": "官网榜单数据 leaderboard.json（task_counts + 44 条 results）",
+        "url": "https://tongyi-mai.github.io/MobileWorld/leaderboard.json",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "Tongyi-MAI/MobileWorld GitHub 仓库（README：Updates / Overview / Installation / Quick Start / Citation）",
+        "url": "https://github.com/Tongyi-MAI/MobileWorld",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "seed-en-blog-seed2-1-official",
+        "kind": "blog",
+        "title": "ByteDance Seed 官方博客：Seed2.1 Officially Released: Advancing AI Productivity（2026-06-23）",
+        "url": "https://seed.bytedance.com/en/blog/seed2-1-officially-released-advancing-ai-productivity",
+        "accessed": "2026-11-13"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Tongyi Lab（阿里巴巴集团）× 香港科技大学（广州）× 佛罗里达大学",
+        "cite": [
+          "arxiv-2512-19432@作者署名"
+        ]
+      },
+      "first_release": {
+        "v": "2025-12-22（arXiv v1；v3 为 2025-12-30，本档案核对版本）",
+        "cite": [
+          "arxiv-api@published",
+          "arxiv-2512-19432@页眉"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "arxiv-2512-19432@摘要",
+        "leaderboard@Overview",
+        "arxiv-2512-19432@Table 6"
+      ],
+      "interpretation": [
+        "arxiv-2512-19432@摘要",
+        "arxiv-2512-19432@§1",
+        "leaderboard@Data Statistics"
+      ]
+    },
+    "problem": {
+      "text": "AndroidWorld 这类在线移动基准已被前沿模型做到 90% 以上、接近饱和；它同时假设用户指令信息完备、只测单应用 GUI 操作，也没有基准把「GUI 操作 + 向用户澄清 + 调 MCP 工具」放在同一套可控环境里考。MobileWorld 用自托管开源应用做到环境完全可控且判分确定性，重新拉开模型差距。",
+      "cite": [
+        "arxiv-2512-19432@§1",
+        "arxiv-2512-19432@摘要"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "论文发布时最好（agentic 框架）",
+        "value": "51.7%",
+        "note": "GPT-5 + UI-Ins-7B 的 Overall；三类分别 54.0 / 62.2 / 51.6。",
+        "cite": [
+          "arxiv-2512-19432@Table 6"
+        ]
+      },
+      {
+        "label": "论文发布时最好（端到端模型）",
+        "value": "20.9%",
+        "note": "Doubao-1.5-UI-TARS 的 Overall；三类分别 26.3 / 32.4 / 未测。",
+        "cite": [
+          "arxiv-2512-19432@Table 6"
+        ]
+      },
+      {
+        "label": "对照：AndroidWorld 上最好",
+        "value": "90%+（论文引述）",
+        "note": "论文称 AndroidWorld 上最好智能体已超 90%，同类框架在 MobileWorld 上只到 51.7%；落差来自难度设计（27.8 对 14.3 步、62.2% 对 9.5% 跨应用）。",
+        "cite": [
+          "arxiv-2512-19432@§1"
+        ]
+      },
+      {
+        "label": "官网榜单当前最高（GUI-Only）",
+        "value": "82.1%",
+        "note": "Qwen-UI-Agent（阿里巴巴，2026-07-30）；官网只统一公布 GUI-Only 一列，其余两列多数条目未报。",
+        "cite": [
+          "leaderboard-json@results",
+          "repo@README Updates"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 MobileWorld 的 51.7% 和 AndroidWorld 的 90%+ 当成模型退步——论文明确说这是基准难度设计（平均步数、跨应用占比都接近翻倍）带来的落差。",
+        "cite": [
+          "arxiv-2512-19432@§1"
+        ]
+      },
+      {
+        "text": "把榜单里空着的 User-Int. / MCP 列当成 0 分——多数端到端模型根本没测这两类任务（不支持工具调用、没有提问动作）。",
+        "cite": [
+          "arxiv-2512-19432@§4.3",
+          "leaderboard-json@results"
+        ]
+      },
+      {
+        "text": "以为 201 个任务都能用纯 GUI 操作完成——45 个任务不主动问用户就无法完成，40 个必须调用 MCP 工具，两类合计占 42.3%。",
+        "cite": [
+          "arxiv-2512-19432@Table 5",
+          "arxiv-2512-19432@§3.1"
+        ]
+      },
+      {
+        "text": "以为判分靠模型裁判——四种判分全部是确定性校验（数据库、本地存储、文本匹配、应用回调），论文明确说这样可消除 MLLM-as-a-judge 的评测噪声。",
+        "cite": [
+          "arxiv-2512-19432@§3.2",
+          "arxiv-2512-19432@Figure 3"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "Tongyi Lab（阿里巴巴集团）、香港科技大学（广州）、佛罗里达大学",
+        "cite": [
+          "arxiv-2512-19432@作者署名"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "Quyu Kong、Xu Zhang（共同一作）、Zhenyu Yang、Nolan Gao、Chen Liu、Panrong Tong、Chenglin Cai、Hanzhang Zhou、Jianan Zhang、Liangyu Chen、Zhidan Liu、Steven Hoi、Yue Wang（通信作者）",
+        "cite": [
+          "arxiv-api@作者列表"
+        ]
+      },
+      {
+        "k": "发表状态",
+        "v": "arXiv:2512.19432v3（2025-12-30）；官方仓库与官网 BibTeX 标注 ACL 2026 接收",
+        "cite": [
+          "arxiv-2512-19432@页眉",
+          "repo@README Citation"
+        ]
+      },
+      {
+        "k": "运行环境",
+        "v": "Docker-in-Docker：rooted AVD + 自托管应用后端 + 编排用 API server；宿主需 Docker（特权容器）、KVM 加速、Python 3.12+",
+        "cite": [
+          "arxiv-2512-19432@§3.2",
+          "repo@README Installation"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "数据集在 Hugging Face（Tongyi-MAI/MobileWorld），评测代码与文档在 GitHub，榜单数据为 leaderboard.json；许可证 Apache-2.0",
+        "cite": [
+          "leaderboard@导航",
+          "repo@README"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2025-12-22 arXiv v1 → 2025-12-30 v3 → 2026-04-15 Mattermost 假阴性修复 → 2026-04-29 Arena 与社区提交 → 2026-07-30 Qwen-UI-Agent 82.1%",
+        "cite": [
+          "arxiv-api@published",
+          "repo@README Updates"
+        ]
+      },
+      {
+        "k": "第三方引用示例",
+        "v": "字节 Seed 官方博客（2026-06-23）称 Seed2.1 在 MobileWorld 上取得最高分，未给分数；同期称在 OSWorld 上仍有竞争力",
+        "cite": [
+          "seed-en-blog-seed2-1-official@正文"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-13",
+        "columns": [
+          "来源",
+          "模型",
+          "Overall",
+          "GUI-Only",
+          "User-Int.",
+          "MCP",
+          "口径"
+        ],
+        "rows": [
+          [
+            "论文 Table 6",
+            "GPT-5 + UI-Ins-7B",
+            "51.7",
+            "54.0",
+            "62.2",
+            "51.6",
+            "max 50 步；agentic 框架"
+          ],
+          [
+            "论文 Table 6",
+            "Gemini-3-Pro + UI-Ins-7B",
+            "46.3",
+            "55.6",
+            "24.4",
+            "48.6",
+            "同上"
+          ],
+          [
+            "论文 Table 6",
+            "Claude-4.5-Sonnet + UI-Ins-7B",
+            "43.8",
+            "47.8",
+            "37.8",
+            "50.0",
+            "同上"
+          ],
+          [
+            "论文 Table 6",
+            "Doubao-1.5-UI-TARS",
+            "20.9",
+            "26.3",
+            "32.4",
+            "未测",
+            "端到端模型；MCP 任务未测"
+          ],
+          [
+            "论文 Table 6",
+            "Qwen3-VL-235B-A22B",
+            "9.5",
+            "12.8",
+            "4.4",
+            "5.4",
+            "端到端模型"
+          ],
+          [
+            "官网榜单",
+            "Qwen-UI-Agent",
+            "未公布",
+            "82.1",
+            "未报",
+            "未报",
+            "端到端；runs=1，3 张历史图"
+          ],
+          [
+            "官网榜单",
+            "seek-use (DeepSeek V4.1 Flash)",
+            "未公布",
+            "77.78",
+            "未报",
+            "未报",
+            "agentic；max_steps 为空，规划轮次 10–75、GUI 动作不设上限"
+          ],
+          [
+            "官网榜单",
+            "Kimi-K3",
+            "未公布",
+            "74.4",
+            "未报",
+            "未报",
+            "端到端；runs=1，3 张历史图"
+          ],
+          [
+            "官网榜单",
+            "Wuying-Mobile-27B",
+            "未公布",
+            "73.5",
+            "56.8",
+            "未报",
+            "端到端；2 张历史图"
+          ],
+          [
+            "官网榜单",
+            "Micar-GUI-Agent (Claude Sonnet 5.5)",
+            "未公布",
+            "70.9",
+            "未报",
+            "未报",
+            "agentic；max_steps 计 LLM 交互轮，一轮可执行多个动作"
+          ],
+          [
+            "官网榜单",
+            "GPT-5.6-Sol",
+            "未公布",
+            "70.1",
+            "未报",
+            "未报",
+            "端到端；3 张历史图"
+          ],
+          [
+            "官网榜单",
+            "MagicGUI-Agent (GPT-5.4 + Seed-1.8)",
+            "未公布",
+            "66.7",
+            "65.9",
+            "未报",
+            "agentic"
+          ],
+          [
+            "官网榜单",
+            "KnowAct-GUIClaw",
+            "未公布",
+            "64.1",
+            "未报",
+            "未报",
+            "agentic；基于 Kimi-K2.6 + GUI 记忆，任务为重跑结果"
+          ]
+        ]
+      },
+      "cite": [
+        "arxiv-2512-19432@Table 6",
+        "leaderboard-json@results"
+      ]
+    }
+  }
 }
