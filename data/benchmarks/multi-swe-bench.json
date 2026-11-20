@@ -1,38 +1,378 @@
 {
   "id": "multi-swe-bench",
   "name": "Multi-SWE-Bench",
-  "full_name": null,
+  "full_name": "Multi-SWE-bench: A Multilingual Benchmark for Issue Resolving（多语言 GitHub issue 修复基准）",
   "aliases": [
     "Multi-SWE-bench"
   ],
-  "status": null,
+  "status": "active",
   "categories": [
     "coding"
   ],
-  "summary": "多语言真实 GitHub issue 修复评测（Java/C++/Go 等）",
-  "interpretation": "SWE-bench 的多语言扩展：换 6-8 种语言的真实仓库修 bug，考语言面广的工程能力。",
-  "measures": [],
-  "does_not_measure": [],
+  "summary": "Multi-SWE-bench 把 SWE-bench 的「读 GitHub issue、改代码、跑测试」任务搬到 Java、TypeScript、JavaScript、Go、Rust、C、C++ 七种语言上：1,632 道从 2,456 个候选 PR 里经 68 名标注员人工核验筛出的题目，每道都带可复现的 Docker 环境和测试补丁，用来衡量模型在非 Python 语言上修真实仓库问题的能力。",
+  "interpretation": "解决率高说明模型在该语言上能定位并修好真实仓库问题。但论文表 4 里 9 个模型 × 3 个 agent 框架在七种非 Python 语言上的解决率，绝大多数格子低于 10%，最高一格也只有 Java 的约 23%；同一模型换 agent 框架能差出近 10 个百分点，所以单个语言几个点的差距要打折看。高分同样不代表能处理 hard 档（人工估时 ≥1 小时）题目——论文报告这类题上现有模型与 agent 大多无效。",
+  "measures": [
+    {
+      "area": "Go",
+      "focus": "示例仓库 cli/cli、zeromicro/go-zero、grpc/grpc-go；论文记录的失败案例 cli__cli-513 属于耗尽 50 轮交互上限仍未提交",
+      "share": "428 题（约 26%）",
+      "format": "仓库级 patch，按项目自带测试套件判定",
+      "cite": [
+        "paper@Table 1",
+        "paper@§6.3 Case Study"
+      ]
+    },
+    {
+      "area": "JavaScript",
+      "focus": "示例仓库 sveltejs/svelte、iamkun/dayjs、axios/axios；论文记录 dayjs 仓库中 Tree-sitter 抽不出箭头函数结构导致无法定位，svelte 案例中 agent 调 pnpm 起长驻进程把容器搞崩",
+      "share": "356 题（约 22%）",
+      "format": "仓库级 patch，按项目自带测试套件判定",
+      "cite": [
+        "paper@Table 1",
+        "paper@§6.3 Case Study"
+      ]
+    },
+    {
+      "area": "Rust",
+      "focus": "示例仓库 clap-rs/clap、tokio-rs/tokio、BurntSushi/ripgrep；论文记录 clap-rs__clap-5520 属于耗尽 50 轮交互上限仍未提交",
+      "share": "239 题（约 15%）",
+      "format": "仓库级 patch，按项目自带测试套件判定",
+      "cite": [
+        "paper@Table 1",
+        "paper@§6.3 Case Study"
+      ]
+    },
+    {
+      "area": "TypeScript",
+      "focus": "示例仓库 mui/material-ui、vuejs/core、darkreader/darkreader；论文记录 mui__material-ui-25852 这类仓库因抽取出的结构超出模型上下文上限，固定流程直接无法定位",
+      "share": "224 题（约 14%）",
+      "format": "仓库级 patch，按项目自带测试套件判定",
+      "cite": [
+        "paper@Table 1",
+        "paper@§6.3 Case Study"
+      ]
+    },
+    {
+      "area": "Java",
+      "focus": "示例仓库 alibaba/fastjson2、elastic/logstash、apache/dubbo、mockito/mockito；论文记录 elastic__logstash-14898 属于定位错误导致的失败",
+      "share": "128 题（约 8%）",
+      "format": "仓库级 patch，按项目自带测试套件判定",
+      "cite": [
+        "paper@Table 1",
+        "paper@§6.3 Case Study"
+      ]
+    },
+    {
+      "area": "C",
+      "focus": "示例仓库 facebook/zstd、jqlang/jq、ponylang/ponyc；论文指出 C/C++ 侧 agent 跑测时产生的 .o / .bin 二进制产物会挡住 git apply",
+      "share": "128 题（约 8%）",
+      "format": "仓库级 patch，按项目自带测试套件判定",
+      "cite": [
+        "paper@Table 1",
+        "paper@§6.5 Troubleshooting"
+      ]
+    },
+    {
+      "area": "C++",
+      "focus": "示例仓库 nlohmann/json、fmtlib/fmt、simdjson/simdjson；论文记录 nlohmann__json-4537 属于先复现问题再修好的成功案例",
+      "share": "129 题（约 8%）",
+      "format": "仓库级 patch，按项目自带测试套件判定",
+      "cite": [
+        "paper@Table 1",
+        "paper@§6.3 Case Study"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "不测需要一小时以上人工工时的难题：hard 档（估时 ≥1 小时）题目上，论文报告现有 LLM 与 agent 大多无效、解决率接近 0",
+      "cite": [
+        "paper@§6.1.1",
+        "paper@§3.2 Features of Multi-SWE-bench"
+      ]
+    },
+    {
+      "text": "不测环境搭建与依赖配置：每个 PR 的 Docker 环境由官方预先构建并公开镜像，agent 直接在容器里跑，不考从零配环境",
+      "cite": [
+        "paper@§3.1.3 Phase 3: Environment Determination"
+      ]
+    },
+    {
+      "text": "不测需求澄清与协作沟通：模型侧拿到的输入只有 issue 描述、base commit 等 PR 元数据与修复前的仓库，没有与人来回确认需求的环节",
+      "cite": [
+        "paper@§3.1.2 Phase 2: Pull Request Crawling"
+      ]
+    },
+    {
+      "text": "不按题型单独给分：论文把题目分成 bug fix / new feature / feature optimization 三类并分别报告解决率，但基准本身只有一个总分口径",
+      "cite": [
+        "paper@§6.2.1 Issue Type"
+      ]
+    }
+  ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
+    "sample_count": 1632,
+    "splits": [
+      "完整集 1,632 题（39 个仓库 × 7 种非 Python 语言）",
+      "mini 子集 400 题（覆盖 8 语言，2025-04-15 发布）",
+      "flash 子集 300 题（2025-07-15 发布）",
+      "Multi-SWE-RL 训练集 4,723 题（76 仓库 × 7 语言，未经人工核验，与评测集分开）"
+    ],
+    "languages": [
+      "java",
+      "typescript",
+      "javascript",
+      "go",
+      "rust",
+      "c",
+      "cpp"
+    ],
+    "source_type": "real-github-pr（真实 GitHub issue + 已合并 PR，双人独立标注 + 交叉复核）",
+    "public_sample": true,
+    "totals": "1,632 道题，来自 39 个 GitHub 仓库、7 种非 Python 语言；每题 = issue 描述 + 修复前仓库快照 + test.patch / fix.patch，配可复现 Docker 镜像。各语言题量按论文 Table 1 与 Table 2 汇总，Go 最多（428 题，约 26%）、JavaScript 次之（356 题，约 22%）；medium + hard 合计约 77%（论文口径，SWE-bench Verified 为 61.2%）。按论文 Table 3 的标注问卷，绝大多数实例没有严重问题。NeurIPS 2025 定稿版把 500 题 Python（SWE-bench Verified）拆分并入，总量变为 2,132 题 / 8 语言。",
+    "cite": [
+      "paper@Table 1",
+      "paper@Table 2",
+      "paper@§3.2 Features of Multi-SWE-bench",
+      "paper@§6.1.1",
+      "repo@News",
+      "dataset",
+      "neurips"
+    ],
+    "construction": [
+      {
+        "k": "Phase 1 选仓库",
+        "text": "按语言挑选 GitHub 仓库：500+ star、至少六个月活跃维护、带 CI/CD 配置（如 .github/workflows/），且最新 commit 在干净环境里可构建可测试；优先 Google 搜索里常被推荐为高质量、维护良好的仓库。",
+        "cite": [
+          "paper@§3.1.1 Phase 1: Repository Selection"
+        ]
+      },
+      {
+        "k": "Phase 2 抓 PR",
+        "text": "收集仓库全部 PR 并过滤：必须关联至少一个 GitHub issue、必须改动测试文件、必须已合并进主分支；随后采集 issue 描述、base commit、fix.patch、test.patch 等元数据。",
+        "cite": [
+          "paper@§3.1.2 Phase 2: Pull Request Crawling"
+        ]
+      },
+      {
+        "k": "Phase 3 配环境",
+        "text": "人工审阅 CI/CD 配置、README 与试跑记录，把依赖分成 repo-common 与 PR-specific 两类，生成 Dockerfile 并构建镜像；构建或启动失败且修不好就丢弃该 PR，确保每个 PR 都有干净可用的容器环境。",
+        "cite": [
+          "paper@§3.1.3 Phase 3: Environment Determination"
+        ]
+      },
+      {
+        "k": "Phase 4 按测试迁移筛题",
+        "text": "与 SWE-bench 只跑相关测试不同，这里在三种设置下跑完整测试套件：base commit（Run.log）、只打 test.patch（Test.log）、test.patch + fix.patch 都打（Fix.log），并追踪 PASSED / FAILED / NONE / SKIPPED 的状态迁移。出现 ANY→PASSED→FAILED 的 PR 丢弃（防回归），没有 ANY→FAILED→PASSED 的 PR 丢弃（无有效修复），PASSED→NONE/SKIPPED→FAILED 这类异常迁移也丢弃。",
+        "cite": [
+          "paper@§3.1.4 Phase 4: Pull Request Filtering"
+        ]
+      },
+      {
+        "k": "Phase 5 人工核验",
+        "text": "外包 68 名标注员（按语言工作量分配，要求目标语言两年以上经验与相关学士及以上学位），标注前一小时培训；每题两人独立标注后交叉复核得出唯一标签，另有 14 名工程师组成内部质检团队出参考答案，要求每语言外包标注准确率不低于 80%。最终按问卷条件 Q2.1=0 & Q3.1∈{2,3} & Q4.1∈{2,3} 筛出 1,632 题，标注结果全部公开。",
+        "cite": [
+          "paper@§3.1.5 Phase 5: Manual Verification"
+        ]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "给模型 issue 描述和修复前的仓库快照，让它产出 patch；官方 harness 在 Docker 容器中对 base commit 依次施加 test.patch 与 fix.patch，跑完整测试套件（不是只跑相关测试），按测试状态迁移判定。数据集用 f2p_tests / p2p_tests / s2p_tests / n2p_tests 四组字段描述判定依据。主指标是解决率 = 解决的问题数 / 总问题数。",
+    "cite": [
+      "paper@§3.1.4 Phase 4: Pull Request Filtering",
+      "paper@§5.2 Evaluation Metrics",
+      "dataset@Data Instances Structure"
+    ],
+    "variants": [
+      {
+        "text": "agent 框架口径：论文用 MagentLess（改造版 Agentless）、MSWE-agent、MopenHands 三个框架，同一模型换框架分数差很多（Claude-3.7-Sonnet 在 Java 上从约 14% 到约 23%）；官方榜单还混入 RepoRepair、InfCode、iSWE-Agent、CodeArts Agent 等第三方框架，跨框架数字不能直接排名。",
+        "cite": [
+          "paper@Table 4",
+          "leaderboard"
+        ]
+      },
+      {
+        "text": "子集口径：完整集 1,632 题、mini 400 题、flash 300 题是三套不同的题，官方为 mini 与 flash 分别给出轻量子集说明，分数不能与完整集互相比对。",
+        "cite": [
+          "repo@News"
+        ]
+      },
+      {
+        "text": "Python 拆分口径：NeurIPS 2025 定稿版把 500 题 Python（SWE-bench Verified）并入，总量变 2,132 题 / 8 语言；只报非 Python 七语言的老口径与之不可比。",
+        "cite": [
+          "neurips",
+          "dataset"
+        ]
+      },
+      {
+        "text": "提交可信度口径：官方榜单条目带 oss / verified 标记，Java、C、C++ 当前最高分来自未开源且未提供可核验运行记录的提交（oss=false、verified=false），与开源可复现提交的可信度不同。",
+        "cite": [
+          "leaderboard"
+        ]
+      }
+    ]
   },
   "metrics": [
-    "resolve_rate"
+    {
+      "id": "resolve_rate",
+      "name": "解决率（Resolved Rate）",
+      "direction": "越高越好",
+      "description": "被判定为已解决的问题占全部问题的比例；判定依据是施加候选 patch 后应当通过的测试是否全部通过",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§5.2 Evaluation Metrics",
+        "paper@§3.1.4 Phase 4: Pull Request Filtering"
+      ]
+    },
+    {
+      "id": "success_location",
+      "name": "文件级定位准确率（Success Location）",
+      "direction": "越高越好",
+      "description": "模型生成的 patch 命中的文件与标准答案 fix.patch 的文件一致的比例，衡量故障定位能力",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§5.2 Evaluation Metrics"
+      ]
+    },
+    {
+      "id": "average_cost",
+      "name": "每题平均成本（Average Cost）",
+      "direction": "越低越好",
+      "description": "解一道题平均花掉的 API 费用，按美元计；论文按模型 × 框架 × 语言分别报告",
+      "unit": "usd",
+      "cite": [
+        "paper@§5.2 Evaluation Metrics"
+      ]
+    }
   ],
-  "default_protocol": {
-    "raw": "agent 产出 patch，按官方测试通过判定"
-  },
-  "versions": [],
-  "limitations": [],
-  "notes": "Kimi/MiniMax/豆包/Qwen 多家引用；另有写法 Multi-SWE-bench",
+  "versions": [
+    {
+      "id": "v1-arxiv",
+      "date": "2025-04-03",
+      "label": "arXiv v1 首发（arXiv:2504.02605v1）：7 种非 Python 语言、1,632 题；同日发布 Multi-SWE-bench 与 Multi-SWE-RL 数据集",
+      "cite": [
+        "paper",
+        "repo@News"
+      ]
+    },
+    {
+      "id": "mini",
+      "date": "2025-04-15",
+      "label": "发布 Multi-SWE-bench mini：400 题轻量子集，覆盖 8 语言，用于降低算力成本",
+      "cite": [
+        "repo@News"
+      ]
+    },
+    {
+      "id": "flash",
+      "date": "2025-07-15",
+      "label": "发布 Multi-SWE-bench flash：300 题精选子集，面向快速评测与 agent rollout",
+      "cite": [
+        "repo@News"
+      ]
+    },
+    {
+      "id": "hints-field",
+      "date": "2025-09-18",
+      "label": "给全部实例增加 hints 字段，说明 test.patch 与 fix.patch 中新定义的变量",
+      "cite": [
+        "repo@News"
+      ]
+    },
+    {
+      "id": "neurips-camera-ready",
+      "date": "2025-09-19",
+      "label": "被 NeurIPS 2025 Datasets and Benchmarks 接收；定稿摘要改为 8 语言、2,132 题（含 500 题 Python 拆分）",
+      "cite": [
+        "repo@News",
+        "neurips"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "评测不确定性与测试日志不一致",
+      "impact": "论文 Troubleshooting 一节记录：Java 与 C 的测试因线程并发过高偶尔表现不稳定，导致 run.log 结果不一致；Test.log 与 Fix.log 的测试条数也会因 fix.patch 合并测试路径而不同；部分仓库在打 fix.patch 前根本编译不过；Java 并发线程的测试输出会交错到无法用规则解析。这意味着同一 patch 重跑可能得到不同结果。",
+      "severity": "高",
+      "response": "官方缓解手段：降低评测并行度、测试名统一小写、剔除带时间戳或随机后缀的动态命名测试、用硬编码过滤剥离 C/C++ 二进制产物。论文未给出重跑方差或一致性数据。",
+      "reader": "重跑同一提交出现几个点波动时，先怀疑环境与并发，不要直接当成能力差异。",
+      "cite": [
+        "paper@§6.5 Troubleshooting"
+      ]
+    },
+    {
+      "issue": "测试设计缺陷与训练污染（同源方法论的外部审计结论）",
+      "impact": "OpenAI 在 2026 年停止报告 SWE-bench Verified：其审计称 59.4% 的受审题目存在会拒绝功能正确解的测试设计或题目描述问题，并称所有受测前沿模型都能复现标准补丁或题面细节，说明至少见过部分题目与解答。Multi-SWE-bench 与 SWE-bench 同源——沿用 SWE-bench-verified 标注规范、题目取自公开 GitHub PR——这些风险同样覆盖它的 Python 拆分与七语言题。论文本身未报告针对 Multi-SWE-bench 的污染审计。",
+      "severity": "高",
+      "response": "Multi-SWE-bench 官方未见针对性回应；其自身缓解手段是双人独立标注 + 交叉复核 + 14 人质检团队 + 每语言 80% 准确率门槛，并公开全部标注结果。",
+      "reader": "把厂商自报的 Multi-SWE-bench 分数当作污染风险未知的公开集分数；跨厂商比较前先核对框架、子集与提交可信度。",
+      "cite": [
+        "openai",
+        "paper@§3.1.5 Phase 5: Manual Verification",
+        "dataset"
+      ]
+    },
+    {
+      "issue": "题量与语言数在不同官方材料里不一致",
+      "impact": "arXiv v1、GitHub README、Hugging Face 数据集卡都是 7 语言 / 1,632 题；NeurIPS 2025 定稿摘要与 slides 是 8 语言 / 2,132 题（把 500 题 Python Verified 拆分算进来），官方榜单也有 8 个语言页。不说明口径就会算错总量。",
+      "severity": "中",
+      "response": "未见官方出统一说明；README 的 News 时间线可用于对齐版本。",
+      "reader": "看到 1,632 与 2,132 两个数字时，先确认对方指的是非 Python 核心集还是含 Python 拆分的定稿版。",
+      "cite": [
+        "neurips",
+        "dataset",
+        "repo",
+        "leaderboard"
+      ]
+    },
+    {
+      "issue": "仓库覆盖集中，少量大库主导总分",
+      "impact": "仓库筛选门槛是 500+ star、六个月活跃维护、带 CI/CD；最终 39 个仓库里 cli/cli 一库占 397 题（约 24%）、sveltejs/svelte 占 272 题（约 17%），单库的测试结构会明显影响该语言乃至总分的分布。",
+      "severity": "中",
+      "response": "论文按语言、难度、仓库规模与语言熵分别报告解决率，并公布每个仓库的统计；未见官方调整仓库分布。",
+      "reader": "看分语言、分难度的细分数字，不要只看一个总分。",
+      "cite": [
+        "paper@Table 1",
+        "paper@§3.1.1 Phase 1: Repository Selection"
+      ]
+    },
+    {
+      "issue": "难度分档依赖标注员的时间估计",
+      "impact": "论文用标注员估计的修复时长把题目分成 easy（≤15 分钟）/ medium（15 分钟–1 小时）/ hard（≥1 小时），并指出这比 token 数、文件跨度等表层指标更合理；但它仍是主观估计，论文也提到某些 easy 题存在大规模重复性改动（如 Rust）。",
+      "severity": "低",
+      "response": "论文公开了时长分布与分档统计；未见官方报告标注者一致性检验。",
+      "reader": "跨论文比较 hard 档解决率时，记住分档标准是人工估时而非客观度量。",
+      "cite": [
+        "paper@§3.2 Features of Multi-SWE-bench"
+      ]
+    }
+  ],
+  "notes": "Kimi/MiniMax/豆包/Qwen 多家引用；另有写法 Multi-SWE-bench。arXiv 上仅有 v1；NeurIPS 2025 定稿版题量与语言数有变化，见 versions 与 limitations。",
   "official_sources": [
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2504.02605"
+    },
     {
       "kind": "github",
       "url": "https://github.com/multi-swe-bench/multi-swe-bench"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/ByteDance-Seed/Multi-SWE-bench"
+    },
+    {
+      "kind": "site",
+      "url": "https://multi-swe-bench.github.io/"
     },
     {
       "kind": "site",
@@ -49,9 +389,317 @@
   ],
   "related_benchmarks": [
     "swebench",
+    "swebench-multilingual",
+    "swebench-pro",
+    "swe-lancer",
     "lcb",
     "humaneval"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-11",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-11",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "Multi-SWE-bench: A Multilingual Benchmark for Issue Resolving（arXiv:2504.02605v1，2025-04-03，ByteDance Seed）",
+        "url": "https://arxiv.org/abs/2504.02605",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "multi-swe-bench/multi-swe-bench README（语言清单、News 时间线、Features、Citation、License）",
+        "url": "https://github.com/multi-swe-bench/multi-swe-bench",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "dataset",
+        "kind": "dataset",
+        "title": "ByteDance-Seed/Multi-SWE-bench（Hugging Face 数据集卡）",
+        "url": "https://huggingface.co/datasets/ByteDance-Seed/Multi-SWE-bench",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "leaderboard",
+        "kind": "leaderboard",
+        "title": "Multi-SWE-bench 官方榜单数据（站点加载的 leaderboard.json，8 个语言页）",
+        "url": "https://raw.githubusercontent.com/multi-swe-bench/experiments/refs/heads/dist/leaderboard.json",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "neurips",
+        "kind": "site",
+        "title": "NeurIPS 2025 Poster 页面（定稿摘要：8 语言、2,132 题）",
+        "url": "https://neurips.cc/virtual/2025/poster/121692",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "openai",
+        "kind": "blog",
+        "title": "OpenAI：Why we no longer evaluate SWE-bench Verified（SWE-bench 同源方法论的污染与测试缺陷审计）",
+        "url": "https://openai.com/index/why-we-no-longer-evaluate-swe-bench-verified/",
+        "accessed": "2026-11-11"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "字节跳动 Seed 团队（ByteDance Seed）",
+        "cite": [
+          "repo",
+          "paper@作者署名"
+        ]
+      },
+      "first_release": {
+        "v": "2025-04-03（arXiv v1；数据集同日上线 Hugging Face）",
+        "cite": [
+          "paper",
+          "repo@News"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "paper@Abstract",
+        "dataset",
+        "paper@§3.1.5 Phase 5: Manual Verification"
+      ],
+      "interpretation": [
+        "paper@Table 4",
+        "paper@§6.1.1"
+      ]
+    },
+    "problem": {
+      "text": "SWE-bench 只有 12 个 Python 仓库的 2,294 个 issue，而真实工程里 Java、TypeScript、JavaScript、Go、Rust、C、C++ 各有独立的编程范式、惯用写法与运行时行为；已有的多语言基准（Multilingual-HumanEval、HumanEval-X、MBXP）又只到程序级，不做仓库级 issue 修复。Multi-SWE-bench 要把仓库级 issue 修复搬到这七种语言上，并为每个 PR 配上可复现的 Docker 环境和经人工核验的标注。",
+      "cite": [
+        "paper@§1",
+        "paper@§2 Related Work",
+        "paper@Abstract"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机 / 无意义基线",
+        "value": "论文未给出",
+        "note": "任务是仓库级补丁生成，没有可随机猜的选项；论文没有报告随机或空 patch 基线，本站也不推算。",
+        "cite": [
+          "paper@§5.2 Evaluation Metrics"
+        ]
+      },
+      {
+        "label": "论文发布时最好（非 Python 七语言，表 4 全表最高格）",
+        "value": "约 23.4%",
+        "note": "MSWE-agent + Claude-3.7-Sonnet 在 Java 上；同期 MagentLess + Claude-3.7-Sonnet 在同语言为约 14.1%，同一模型换框架差约 9 个百分点。",
+        "cite": [
+          "paper@Table 4"
+        ]
+      },
+      {
+        "label": "论文发布时最好（Python 拆分，500 题）",
+        "value": "约 52.2%",
+        "note": "MopenHands + Claude-3.7-Sonnet；这是论文表 4 里唯一接近一半的语言，也是「泛化有限」结论的对照组。",
+        "cite": [
+          "paper@Table 4",
+          "paper@§6.1.1"
+        ]
+      },
+      {
+        "label": "官方榜单当前最高（分语言，2026-11-11 抓取）",
+        "value": "C 约 53.9%；C++ 约 47.3%；Java 约 43.8%；TypeScript 约 27.2%；Rust 约 15.9%；JavaScript 约 17.1%；Go 约 12.6%",
+        "note": "依次为 CodeArts Agent + CodeArts-GLM-5.1（C、C++）、CodeArts Agent + CodeArts-MiniMax-M2.5（Java）、RepoRepair + Claude-3.5-Sonnet(Oct)（TypeScript）、MopenHands + Claude-3.7-Sonnet（Rust）、RepoRepair + Claude-4.5-Sonnet（JavaScript）、MopenHands + Gemini-2.5-Pro（Go）。其中 C / C++ / Java 三条为未开源且未提供可核验运行记录的提交。",
+        "cite": [
+          "leaderboard"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      },
+      {
+        "label": "重跑一致性 / 噪声参考线",
+        "value": "论文未给出",
+        "note": "论文只定性记录 Java 与 C 测试偶发不稳定并通过降低并行度缓解，没有给出重跑方差或噪声上限，本站也不推算。",
+        "cite": [
+          "paper@§6.5 Troubleshooting"
+        ]
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 1,632 和 2,132 当成两个不同基准——后者是 NeurIPS 2025 定稿版把 500 题 Python 拆分并入后的总量，前者是非 Python 七语言核心集。",
+        "cite": [
+          "neurips",
+          "dataset"
+        ]
+      },
+      {
+        "text": "把不同 agent 框架的分数排在一起比——论文自己显示同一模型换框架差距很大（Java 上约 14% 对约 23%）。",
+        "cite": [
+          "paper@Table 4"
+        ]
+      },
+      {
+        "text": "把 mini（400 题）或 flash（300 题）的分数与完整集分数比——三者是三套不同的题。",
+        "cite": [
+          "repo@News"
+        ]
+      },
+      {
+        "text": "看到 Python 页约 52% 就认为多语言能力跟上来了——该拆分来自 SWE-bench Verified，论文的核心结论恰是非 Python 语言泛化有限。",
+        "cite": [
+          "paper@§6.1.1",
+          "neurips"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "字节跳动 Seed 团队（ByteDance Seed，2023 年成立，定位 AI 基础模型研发）",
+        "cite": [
+          "repo",
+          "paper@作者署名"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "项目负责人 Daoguang Zan，与 Kai Shen 共同为通讯作者；共同一作 Zhirong Huang。arXiv 署名 19 人，另含 Wei Liu、Hanwu Chen、Linhao Zhang、Shulin Xin、Lu Chen、Qi Liu、Xiaojian Zhong、Aoyan Li、Siyao Liu、Yongsheng Xiao、Liangqiang Chen、Yuyu Zhang、Jing Su、Tianyu Liu、Rui Long、Liang Xiang；NeurIPS 页面署名另加入 Ming Ding。",
+        "cite": [
+          "paper@作者署名",
+          "repo@Citation",
+          "neurips"
+        ]
+      },
+      {
+        "k": "标注方式",
+        "v": "68 名外包标注员按语言工作量分配，要求目标语言两年以上经验与相关学士及以上学位，标注前一小时培训；每题两人独立标注后交叉复核，14 名工程师组成内部质检团队出参考答案并要求每语言准确率不低于 80%。",
+        "cite": [
+          "paper@§3.1.5 Phase 5: Manual Verification"
+        ]
+      },
+      {
+        "k": "难度定义",
+        "v": "按标注员估计的修复时长分档：easy（≤15 分钟）、medium（15 分钟–1 小时）、hard（≥1 小时）；论文用这套时间分档替代 token 数、文件跨度等表层指标。",
+        "cite": [
+          "paper@§3.2 Features of Multi-SWE-bench"
+        ]
+      },
+      {
+        "k": "题型构成",
+        "v": "基于标注结果把全部实例分为三类：bug fix、new feature、feature optimization；论文报告解决率沿该顺序递减（以 Claude-3.7-Sonnet + MSWE-agent 的 Java 为例：约 18.0% / 约 3.9% / 约 1.6%）。",
+        "cite": [
+          "paper@§6.2.1 Issue Type"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2025-04-03 arXiv v1 与数据集首发 → 2025-04-15 mini（400 题）→ 2025-07-15 flash（300 题）→ 2025-09-18 增加 hints 字段 → 2025-09-19 NeurIPS 2025 Datasets and Benchmarks 接收（定稿版 8 语言 / 2,132 题）",
+        "cite": [
+          "repo@News",
+          "paper",
+          "neurips"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "数据集在 Hugging Face（ByteDance-Seed/Multi-SWE-bench，CC0，需遵守上游项目各自许可）；评测代码、Docker 镜像与标注结果在 GitHub（multi-swe-bench/multi-swe-bench，Apache-2.0）；官方榜单在 multi-swe-bench.github.io，数据由 multi-swe-bench/experiments 仓库的 leaderboard.json 驱动。",
+        "cite": [
+          "dataset@License",
+          "repo@License",
+          "leaderboard"
+        ]
+      },
+      {
+        "k": "关联数据集 Multi-SWE-RL",
+        "v": "同期发布的 RL 训练集：4,723 道容器化 issue-resolving 实例，覆盖 76 个开源仓库、7 种语言；用同一套流水线构建但不含 Phase 5 人工核验。",
+        "cite": [
+          "paper@§4 Multi-SWE-RL Open-Source Community"
+        ]
+      },
+      {
+        "k": "论文自评规模",
+        "v": "论文称产出 1,632 道高质量实例耗时约一年，并以此论证需要开源社区协作来规模化 RL 环境建设。",
+        "cite": [
+          "paper@§7 Conclusions and Future Works",
+          "repo@Features"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-11",
+        "columns": [
+          "来源",
+          "语言（题量）",
+          "模型 / 框架",
+          "解决率",
+          "提交日期"
+        ],
+        "rows": [
+          [
+            "官方榜单",
+            "Python·Verified 拆分（500 题）",
+            "MopenHands + Claude-3.7-Sonnet",
+            "52.2%（261/500）",
+            "2025-03-29"
+          ],
+          [
+            "官方榜单",
+            "Java（128 题）",
+            "CodeArts Agent + CodeArts-MiniMax-M2.5",
+            "43.75%（56/128）",
+            "2026-03-27"
+          ],
+          [
+            "官方榜单",
+            "TypeScript（224 题）",
+            "RepoRepair + Claude-3.5-Sonnet(Oct)",
+            "27.23%（61/224）",
+            "2025-09-10"
+          ],
+          [
+            "官方榜单",
+            "Rust（239 题）",
+            "MopenHands + Claude-3.7-Sonnet",
+            "15.90%（38/239）",
+            "2025-03-29"
+          ],
+          [
+            "官方榜单",
+            "JavaScript（356 题）",
+            "RepoRepair + Claude-4.5-Sonnet",
+            "17.13%（61/356）",
+            "2026-02-02"
+          ],
+          [
+            "官方榜单",
+            "Go（428 题）",
+            "MopenHands + Gemini-2.5-Pro",
+            "12.62%（54/428）",
+            "2025-04-26"
+          ],
+          [
+            "官方榜单",
+            "C（128 题）",
+            "CodeArts Agent + CodeArts-GLM-5.1",
+            "53.91%（69/128）",
+            "2026-06-24"
+          ],
+          [
+            "官方榜单",
+            "C++（129 题）",
+            "CodeArts Agent + CodeArts-GLM-5.1",
+            "47.29%（61/129）",
+            "2026-07-14"
+          ]
+        ]
+      },
+      "cite": [
+        "leaderboard",
+        "paper@Table 1"
+      ]
+    }
+  }
 }
