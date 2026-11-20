@@ -1,0 +1,603 @@
+{
+  "id": "medchembench",
+  "name": "MedChemBench",
+  "full_name": "MedChemBench: Evaluating complex multimodal reasoning in medicinal chemistry（OpenAI 药物化学多模态推理基准，论文简称 MCB）",
+  "aliases": [
+    "MCB"
+  ],
+  "status": null,
+  "categories": [
+    "knowledge",
+    "reasoning",
+    "multimodal"
+  ],
+  "summary": "OpenAI 自建的回溯型多模态药物化学推理基准：99 道题取自 117 篇近期发表的论文与专利，覆盖 761 个不同的评分分子结构。每题给一段科学叙述加分子结构图、实验表格、曲线与蛋白-配体图，要求模型在多个互相冲突的约束下做出「先推进哪个化合物」这类项目决策。",
+  "interpretation": "读这个分数要先认清三件事。第一，83.3% 不是「答对了 83% 的题」，而是「平均拿到了 8 成 rubric 分量」：每道题满分归一为 1 分，模型得分 = 该题拿到的分 ÷ 该题满分预算，然后在 99 题上等权平均。所以 100% 意味着把每个评分维度都做满，而不是每道题都答对。第二，这个基准大量使用部分给分（partial credit）：数值预测按预测值与实测值的倍数误差连续给分（差到 2 倍或 1/2 只给一半分），候选选择按与参考答案的 Jaccard 相似度给分，科学解释由模型评委逐条打 0 / 0.5 / 1 分。因此两个模型相差 2 个百分点，往往只意味着某道题上多拿了几分，而不是「多做对了一道题」。第三，榜单是 OpenAI 自家 GPT 模型家族之间的排名，不是第三方评测：参评的 11 个模型全部出自 OpenAI，评分用到的科学解释裁判也是 OpenAI 自家的 GPT-6 Astra（medium 推理档）。另外，推理档位会直接改变分数，跨档位不能横比——官方公告里 GPT-6 Astra 在 xhigh 档 83.3%、在 max 档 83.8%，而论文里 11 个模型共享的 xhigh 档区间是 35.02% ~ 83.33%。",
+  "measures": [
+    {
+      "area": "分子结构（Molecular structures）",
+      "focus": "按题目给出的化学图与化学基团拼装出目标分子，原子连接关系与指定的立体化学都要正确",
+      "share": "37.49%",
+      "format": "输出等规 SMILES；判分用 RDKit 转成规范等规 SMILES（保留指定立体化学与同位素）后逐字比对，结构完全一致得满分，不一致 / 无效 / 缺失记 0 分",
+      "cite": [
+        "openai-paper"
+      ]
+    },
+    {
+      "area": "科学推理（Scientific reasoning）",
+      "focus": "基于题目提供的证据解释判断理由，例如为什么在若干候选里选某个化合物、某个结构改动可能带来什么后果",
+      "share": "35.78%",
+      "format": "由独立评委（GPT-6 Astra，medium 推理档）按每题 rubric 逐条打 0 / 0.5 / 1 分；评委可看到题面、图像、评分标准与作答",
+      "cite": [
+        "openai-paper"
+      ]
+    },
+    {
+      "area": "排序与候选选择（Ranking and selection）",
+      "focus": "按题目给定的约束（活性、选择性、细胞活性、暴露、安全等）对化合物排序，或选出要推进的候选集合",
+      "share": "17.51%",
+      "format": "要求完整排序时按成对次序比对（顺序正确 1 分、颠倒 0 分、判为并列 0.5 分）；要求选集合时按预测集合与参考答案的 Jaccard 相似度给分，多选或漏选都扣分",
+      "cite": [
+        "openai-paper"
+      ]
+    },
+    {
+      "area": "性质预测（Property predictions）",
+      "focus": "预测分子性质与药代性质，数值与类别都要与原文报告值一致",
+      "share": "8.92%（数值与类别预测合计；另有 0.30% 为技术性响应与可用性检查，不单列）",
+      "format": "数值预测按倍数误差连续给分：credit = min(p, t) / max(p, t)（预测值是实测值的 2 倍或 1/2 只给一半分）；类别预测答对标签满分、答错 0 分；提示里已经给出的实测值必须复现正确",
+      "cite": [
+        "openai-paper"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "不测「模型能不能真的做成新药」：官方公告自述这些结果不能说明模型能发现新药或改进实验室决策；本基准是回溯式的历史案例复盘，不是前瞻性实验。",
+      "cite": [
+        "openai-announcement",
+        "openai-paper"
+      ]
+    },
+    {
+      "text": "不覆盖临床开发阶段：论文写明本基准覆盖临床前药物发现，临床阶段在范围之外。",
+      "cite": [
+        "openai-paper"
+      ]
+    },
+    {
+      "text": "不测工具使用与多轮迭代：每次作答单轮、无工具、无反馈、无新实验；论文也承认单轮协议无法评估模型通过计算、追加证据或迭代修订来纠错的能力。",
+      "cite": [
+        "openai-announcement",
+        "openai-paper"
+      ]
+    },
+    {
+      "text": "不提供公开题库与提交通道：本次核验（2026-11-20）在官方公告与论文页面上都没有找到 99 题题集、公开仓库或提交入口，外部无法复跑。",
+      "cite": [
+        "openai-announcement",
+        "openai-paper"
+      ]
+    },
+    {
+      "text": "不测通用化学知识记忆：题目围绕具体项目的决策点构造（每题都有生物学背景、化合物系列与已有实验数据），不是化学常识问答。",
+      "cite": [
+        "openai-paper"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 99,
+    "splits": [
+      "全部 99 题（等权计入总分）",
+      "七个任务类别：integrated lead selection 48 题、SAR forecasting 26 题、ADME and delivery 8 题、molecular design and enumeration 6 题、safety and liabilities 4 题、retrosynthesis 4 题、assay biology and mechanism 3 题"
+    ],
+    "languages": [
+      "英文（题目与来源文献均为英文；未见其他语言版本）"
+    ],
+    "source_type": "vendor_internal（OpenAI 自建自跑，题目取自公开论文与专利中的回顾性案例）",
+    "public_sample": false,
+    "totals": "99 题 / 117 篇近期发表的论文与专利 / 761 个不同的评分分子结构；每个「模型 × 推理档位」设置每题保留 10 条响应，11 个模型 × 61 个设置合计 60,390 条响应。官方只公开了论文与公告，题集本身未发布。",
+    "cite": [
+      "openai-paper",
+      "openai-announcement"
+    ],
+    "construction": [
+      {
+        "k": "来源",
+        "text": "99 道题取自 117 篇近期发表的科学论文与专利（来源文献的中位发表年份为 2025）。入选标准是「提出了一个清晰的药物化学问题，且提供了足够的证据来重建一个化合物系列或设计问题」。",
+        "cite": [
+          "openai-paper"
+        ]
+      },
+      {
+        "k": "任务形态",
+        "text": "每题先给科学叙述（生物学背景与治疗目标或靶点、起始化合物或化学系列、后续实验及其结果），再给一个待完成的决策任务；题目同时含文字与图像（分子结构、实验表格、曲线、设计图、蛋白-配体复合物），模型须返回严格 JSON。",
+        "cite": [
+          "openai-paper"
+        ]
+      },
+      {
+        "k": "信息留出",
+        "text": "来源文献中在决策点之后才报告的实验结果从提示里撤走，只用来确定参考答案与评分标准；因此这是一套回溯式（retrospective）基准，测的是「对单一历史案例的复现一致性」。",
+        "cite": [
+          "openai-paper"
+        ]
+      },
+      {
+        "k": "题目类别",
+        "text": "七个任务类别对应药物发现流程的不同环节：整合型先导选择 48 题、SAR 预测 26 题、ADME 与递送 8 题、分子设计与枚举 6 题、安全性与风险 4 题、逆合成 4 题、检测生物学与机理 3 题。",
+        "cite": [
+          "openai-paper"
+        ]
+      },
+      {
+        "k": "科学领域覆盖",
+        "text": "按题目涉及的科学内容标注且互不排斥：效力与选择性 75/99、ADME 与暴露 54/99、结构导向推理 51/99、细胞与转化药理 39/99、分子设计 37/99、安全性与风险 11/99、合成 5/99；85 道题跨一个以上领域。",
+        "cite": [
+          "openai-paper"
+        ]
+      },
+      {
+        "k": "作答与采样",
+        "text": "每个「模型 × 推理档位」设置下每题保留 10 条响应；完成了但无效的输出与拒答按 0 分计入，缺失的响应与缺失的评分不按 0 分计入；API 错误与未完成用同样的请求恢复，恢复过程不按答案质量筛除。",
+        "cite": [
+          "openai-paper"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "score_percent",
+      "name": "可得分比例得分（percent of available credit）",
+      "direction": "越高越好",
+      "description": "每题满分归一为 1 分；模型得分 = 该题获得的 rubric 分 ÷ 该题满分预算，先在 10 条保留响应上取平均，再对 99 题等权平均，因此 rubric 更大的题不会在总分里占更大权重。100% 表示拿满所有评分分量，不是「答对 100% 的题」。",
+      "range": "0–100",
+      "unit": "percent",
+      "cite": [
+        "openai-paper"
+      ]
+    },
+    {
+      "id": "component_credit_percent",
+      "name": "单组件可得分比例（component attainment）",
+      "direction": "越高越好",
+      "description": "四个评分组件各自的可得分比例（分子结构、科学解释、排名与候选选择、数值预测）。组件分先在各自适用的题目内归一再平均，适用题数分别是 92、91、86、21，与总分的归一方式不同，因此组件分不能直接加总回总分。",
+      "range": "0–100",
+      "unit": "percent",
+      "cite": [
+        "openai-paper"
+      ]
+    }
+  ],
+  "default_protocol": {
+    "raw": "每个「模型 × 推理档位」设置下，模型对 99 道题各发一次单轮请求（文本与图像按规定顺序给出，要求返回严格 JSON、顶层一个 answer 对象）；每题保留 10 条响应，API 错误与未完成用未改动的请求恢复。计分时用该题获得的 rubric 分除以该题满分预算，在 10 条保留响应上取平均（完成的无效输出记 0 分），再对 99 题等权平均。分子结构用 RDKit 转规范等规 SMILES 逐字比对；排序按成对次序；候选集合按 Jaccard 相似度；数值预测按倍数误差 credit = min(p, t) / max(p, t) 连续给分；科学解释由独立评委（GPT-6 Astra，medium 推理档）按 0 / 0.5 / 1 打分。报告的区间是 95% 百分位自助区间（5,000 次任务级 bootstrap），重采样单位是任务而不是来源文献。",
+    "cite": [
+      "openai-paper"
+    ],
+    "variants": [
+      {
+        "text": "推理档位：11 个模型按评测时各自可用的全部档位评测（none / low / medium / high / xhigh / max），共 61 个「模型 × 推理档位」设置；xhigh 是 11 个模型共享的最高档，跨模型横比应取该档。",
+        "cite": [
+          "openai-paper"
+        ]
+      },
+      {
+        "text": "官方两个口径不一致：2026-11-20 公告的图 2 写「51 combinations across nine models from GPT-5.6 onward」，而论文写 61 个设置、11 个模型；引用参评规模时以论文的 61 为准。",
+        "cite": [
+          "openai-announcement",
+          "openai-paper"
+        ]
+      },
+      {
+        "text": "GPT-6 Sol 与 GPT-6 Luna 是在供应商 2026 年 9 月图像编码修复之前评测的，官方没有测量该修复对这两个模型结果的影响。",
+        "cite": [
+          "openai-paper"
+        ]
+      },
+      {
+        "text": "污染敏感性检查：把来源 DOI 或专利号写进提示后重跑 99 题（9 个模型、xhigh 档），平均分变化在 −0.23 ~ +0.80 个百分点之间，各模型 95% 置信区间都包含 0、模型排序不变；官方明确说明这个检查不能证明来源材料不在训练数据里。",
+        "cite": [
+          "openai-paper"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2026-06-03",
+      "label": "OpenAI《Introducing new capabilities to GPT‑Rosalind》发布文首次公开提及 MedChemBench，只印出 GPT‑Rosalind 27.5% 对 GPT‑5.5 25.1% 两个数（该文称 MedChemBench 覆盖多模态化学结构理解、SAR、药效 / 毒性 / ADME 预测、多参数先导优化决策与逆合成），当时未公开题量、类别与评分口径",
+      "cite": [
+        "openai-gpt-rosalind"
+      ]
+    },
+    {
+      "id": "v2",
+      "date": "2026-11-20",
+      "label": "OpenAI 发布专门公告《Can AI help scientists identify promising drug candidates?》（栏目 Research / Release / Science，2026-11-20）并挂出同名论文（论文署期 2026-11-09），首次公开完整口径：99 题、117 篇论文与专利、761 个评分分子结构、七个任务类别、四个评分组件、11 个模型 × 61 个「模型 × 推理档位」设置",
+      "cite": [
+        "openai-announcement",
+        "openai-paper"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "厂商自报自评，无第三方复现",
+      "impact": "基准、题目、评分细则与裁判全部由 OpenAI 自己掌控，参评的 11 个模型也全是 OpenAI 自家 GPT 家族；分数只能作为厂商叙事参考，不能当作独立的能力刻度。",
+      "severity": "高",
+      "response": "未见官方回应",
+      "reader": "引用时把它读成「OpenAI 自家模型在 OpenAI 自家基准上的相对名次」，不要当成跨厂商结论。",
+      "cite": [
+        "openai-paper"
+      ]
+    },
+    {
+      "issue": "题集与提交通道不公开",
+      "impact": "外部拿不到 99 道题，也无法提交作答，任何人都不能独立复算这些分数，连「模型 A 是否真的比模型 B 多对了两道题」都无法核对。",
+      "severity": "高",
+      "response": "官方只公开论文与公告（2026-11-20 核验范围内未见仓库或提交入口）",
+      "reader": "只看相对位次与官方给出的区间，不要把这些分数当可验证的实验结果引用。",
+      "cite": [
+        "openai-announcement",
+        "openai-paper"
+      ]
+    },
+    {
+      "issue": "科学解释由自家模型当裁判",
+      "impact": "占可得分份额 35.78% 的「科学解释」组件由独立评委 GPT-6 Astra（medium 推理档）打分，与被评模型同厂同族；论文自己也把「开放式设计与合成题仍部分绑定参考答案」列为待改进项。",
+      "severity": "中",
+      "response": "论文在 Discussion 里提出需要「独立药物化学家的评估」来验证判分是否可靠，尚未完成",
+      "reader": "把总分拆开看：结构、排序、数值是确定性判分，科学解释这一大块是有模型裁判的。",
+      "cite": [
+        "openai-paper"
+      ]
+    },
+    {
+      "issue": "回溯式单案例，性能只反映对历史案例的复现一致性",
+      "impact": "官方写明数值预测等任务主要衡量「在既定条件下与单一历史案例的一致程度」，未必有代表性；同一项目里换个条件，正确答案可能就变了。",
+      "severity": "中",
+      "response": "论文提出后续应在新收集或前瞻性案例上验证",
+      "reader": "把分数读成「复现历史研究判断的一致度」，不是「预测未来实验结果的能力」。",
+      "cite": [
+        "openai-paper"
+      ]
+    },
+    {
+      "issue": "训练数据污染无法排除",
+      "impact": "来源文献中位发表年份是 2025，晚于很多模型的训练截止；官方做过加 DOI / 专利号的对照实验（平均变化 −0.23 ~ +0.80 个百分点、区间都含 0、排序不变），但明确说这不能证明来源材料不在训练数据里。",
+      "severity": "中",
+      "response": "官方做了对照实验并公开了结论，同时说明其局限",
+      "reader": "高分里可能混有记忆成分，尤其在来源较新的题目上。",
+      "cite": [
+        "openai-paper"
+      ]
+    },
+    {
+      "issue": "基准已接近饱和",
+      "impact": "论文自述 GPT-6 Astra 在 max 档拿到 83.83%，基准「close to saturation in its current form」；继续用同一套题区分模型的边际价值在下降。",
+      "severity": "中",
+      "response": "官方称未来版本需要更难，并承诺随模型进步持续更新",
+      "reader": "看到头部模型分数挤在 80 多的时候，先怀疑区分度而不是先比较模型。",
+      "cite": [
+        "openai-paper"
+      ]
+    },
+    {
+      "issue": "单轮协议，不测纠错与迭代能力",
+      "impact": "每次作答单轮、无工具、无反馈、无新实验，因此模型「发现做错了再回头改」的能力完全不在分数里。",
+      "severity": "低",
+      "response": "论文提出未来做一条 agent 轨（检索、算性质、验结构、多步修订）来补这块",
+      "reader": "不要把本分数当成「模型在真实项目里能自己查证再下结论」的能力。",
+      "cite": [
+        "openai-announcement",
+        "openai-paper"
+      ]
+    },
+    {
+      "issue": "官方两个页面对参评规模的口径不一致",
+      "impact": "公告图 2 写「51 combinations across nine models from GPT-5.6 onward」，论文写 61 个设置、11 个模型；不注明来源时容易引错分母。",
+      "severity": "低",
+      "response": "未见官方澄清",
+      "reader": "写参评规模时注明出处（论文 = 61 个设置 / 11 个模型）。",
+      "cite": [
+        "openai-announcement",
+        "openai-paper"
+      ]
+    }
+  ],
+  "notes": "OpenAI 自建自跑的药物化学回溯式多模态基准。本批（2026-11-20，第七十三批）新建实体：此前账本只在 gpt-rosalind-5-5.json 里以「new-benchmark」登记过 medchembench 这个 id（那一行 27.5% 来自 2026-06-03 的 GPT‑Rosalind 发布页，推理档位未标，与本次 xhigh 档不是同一口径，不能直接横比）。GPT-6.2 Astra 的 84.5%（xhigh）只出现在官方公告里，其 release 文件不在当前分支，因此该数值只记录在本实体的 official_results 快照中，不建 evidence 行。评分裁判为 OpenAI 自家 GPT-6 Astra（medium 档），只用于「科学解释」一项；其余三项为确定性判分。另需注意：OpenAI 2026-08-26 的 GPT‑5.6 发布页表格里另有一行标注为「MedChemBench (Internal)」的内部评测（GPT-5.6 Sol 48.3%），早于公开公告且口径不同，不要与本基准的 58.2% 混用。",
+  "official_sources": [
+    {
+      "kind": "site",
+      "url": "https://openai.com/index/introducing-medchembench/"
+    },
+    {
+      "kind": "paper",
+      "url": "https://cdn.openai.com/pdf/09c4ec60-a32e-4652-837b-1811368a3bb0/medchembench-paper.pdf"
+    }
+  ],
+  "related_benchmarks": [
+    "superchem",
+    "lifescibench",
+    "genebench"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-20",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-20",
+    "sources": [
+      {
+        "id": "openai-announcement",
+        "kind": "announcement",
+        "title": "Can AI help scientists identify promising drug candidates?（OpenAI 研究文章，栏目 Research / Release / Science，2026-11-20 发布）",
+        "url": "https://openai.com/index/introducing-medchembench/",
+        "accessed": "2026-11-20"
+      },
+      {
+        "id": "openai-paper",
+        "kind": "paper",
+        "title": "MedChemBench: Evaluating complex multimodal reasoning in medicinal chemistry（OpenAI 论文 PDF，署期 2026-11-09，由公告页「Read the paper」链接给出）",
+        "url": "https://cdn.openai.com/pdf/09c4ec60-a32e-4652-837b-1811368a3bb0/medchembench-paper.pdf",
+        "accessed": "2026-11-20"
+      },
+      {
+        "id": "openai-gpt-rosalind",
+        "kind": "site",
+        "title": "Introducing new capabilities to GPT‑Rosalind（OpenAI 发布文，2026-06-03 发布，2026-09-11 更新）",
+        "url": "https://openai.com/index/introducing-new-capabilities-to-gpt-rosalind/",
+        "accessed": "2026-11-20"
+      },
+      {
+        "id": "openai-gpt-5-6",
+        "kind": "site",
+        "title": "GPT‑5.6（OpenAI 发布文，2026-08-26；表内含一行标注为「MedChemBench (Internal)」的内部评测）",
+        "url": "https://openai.com/index/gpt-5-6/",
+        "accessed": "2026-11-20"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "OpenAI（论文作者 Jeremy Li、Andrew Ho、Suyash Shringarpure、Amelia Liu、Paul Humphries、Joy Jiao，均隶属 OpenAI）",
+        "cite": [
+          "openai-paper"
+        ]
+      },
+      "first_release": {
+        "v": "2026-06-03（OpenAI《Introducing new capabilities to GPT‑Rosalind》发布文首次提及）；2026-11-20 发布专门公告与论文",
+        "cite": [
+          "openai-gpt-rosalind",
+          "openai-announcement"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "openai-announcement",
+        "openai-paper"
+      ],
+      "interpretation": [
+        "openai-paper",
+        "openai-announcement"
+      ]
+    },
+    "problem": {
+      "text": "药物化学的瓶颈不只是「找到靶点」，而是多参数优化：改一处结构，活性、选择性、暴露与代谢稳定性会一起动，而手上的证据还不完整、目标还互相冲突。OpenAI 想量化的是模型能不能在真实项目语境里同时读懂分子结构与实验证据，然后做出「先推进哪个化合物」这类决策。所以 MedChemBench 不是通用化学知识问答，而是把 99 个真实项目的决策点回放出来，看模型怎么判断。",
+      "cite": [
+        "openai-paper",
+        "openai-announcement"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "官方公布的总分最高值",
+        "value": "GPT-6.2 Astra 84.5%（xhigh 推理档，占可得分比例）",
+        "note": "2026-11-20 官方公告首段的明文值。该 release 的账本行不在当前分支，故只作为基准快照记录，不建 evidence 行。",
+        "cite": [
+          "openai-announcement"
+        ]
+      },
+      {
+        "label": "论文口径下的总分最高值",
+        "value": "GPT-6 Astra 83.83%（max 推理档，95% 区间 81.27–86.20%）",
+        "note": "论文 Results 段；公告里同一数值四舍五入写成 83.8%。",
+        "cite": [
+          "openai-paper"
+        ]
+      },
+      {
+        "label": "全模型共享档位（xhigh）上的最高分",
+        "value": "GPT-6 Astra 83.33%（11 个模型共享 xhigh 档，区间 35.02% ~ 83.33%）",
+        "note": "论文 Results 段；这一档是唯一能被所有参评模型覆盖的档位，跨模型比较应取它。",
+        "cite": [
+          "openai-paper"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "误把 83.3% 读成「答对了 83% 的题」：它是 rubric 可得分比例，数值预测、候选选择与科学解释都按部分给分（partial credit）连续记分，不是题目正确率。",
+        "cite": [
+          "openai-paper"
+        ]
+      },
+      {
+        "text": "误把它当成可复现的公开榜单：99 道题没有公开仓库与提交入口，外部既不能重跑也不能提交。",
+        "cite": [
+          "openai-announcement",
+          "openai-paper"
+        ]
+      },
+      {
+        "text": "误把 2026-06-03 GPT‑Rosalind 发布文里的 27.5% / 25.1% 与本页 xhigh 档的数字直接比较：那是另一次发布页上的另一口径（当时未标推理档位、题量与评分方式也没公开），不是同一档位下的同一件事。",
+        "cite": [
+          "openai-gpt-rosalind"
+        ]
+      },
+      {
+        "text": "误把 OpenAI GPT-5.6 发布页上标注为「MedChemBench (Internal)」的内部评测数值（GPT-5.6 Sol 48.3%、Terra 35%、Luna 30.4%、GPT-5.5 35.5%）当成本基准的成绩：那是标注为 (Internal) 的内部评测，与 2026-11-20 公开公告的 99 题 MedChemBench 不是同一件事，两者数值不能互相替换。",
+        "cite": [
+          "openai-gpt-5-6"
+        ]
+      },
+      {
+        "text": "误以为跨推理档位的分数可以横比：同一个 GPT-6 Astra 在 xhigh 是 83.3%、在 max 是 83.8%，论文里 11 个模型共享 xhigh 档的区间是 35.02% ~ 83.33%。",
+        "cite": [
+          "openai-announcement",
+          "openai-paper"
+        ]
+      },
+      {
+        "text": "误把分子结构组件的 95.4% 当成整体水平：结构只占可得分份额的 37.49%，而排名与选择（17.51%）加数值预测（8.92%）合计只有 26.43%，官方说这两项「只拿到约一半的可得分」。",
+        "cite": [
+          "openai-announcement",
+          "openai-paper"
+        ]
+      },
+      {
+        "text": "误以为这是跨厂商榜单：参评的 11 个模型全部是 OpenAI 自家 GPT 家族，科学解释的打分裁判也是 OpenAI 自家的 GPT-6 Astra。",
+        "cite": [
+          "openai-paper"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "OpenAI；论文署期 2026-11-09，作者 Jeremy Li、Andrew Ho、Suyash Shringarpure、Amelia Liu、Paul Humphries、Joy Jiao，均隶属 OpenAI。",
+        "cite": [
+          "openai-paper"
+        ]
+      },
+      {
+        "k": "基准形态",
+        "v": "回溯型多模态基准：每题取自一篇已发表论文或专利中的一个药物化学决策点，把决策点之后的实验结果从提示里撤走，只用来确定参考答案与评分标准。",
+        "cite": [
+          "openai-paper"
+        ]
+      },
+      {
+        "k": "题目规模",
+        "v": "99 题、117 篇论文与专利、761 个不同的评分分子结构；来源文献的中位发表年份是 2025；85 道题跨一个以上科学领域。",
+        "cite": [
+          "openai-paper"
+        ]
+      },
+      {
+        "k": "评分构成",
+        "v": "分子结构 37.49%、科学解释 35.78%、排名与候选选择 17.51%、数值与类别预测 8.92%、技术性响应与可用性 0.30%。",
+        "cite": [
+          "openai-paper"
+        ]
+      },
+      {
+        "k": "评测规模",
+        "v": "11 个 GPT 模型（GPT-5.2 / 5.4 / 5.5 / 5.6 Luna / 5.6 Terra / 5.6 Sol / 6 Luna / 6 Sol / 6 Astra / 6.1 Sol / 6.1 Terra）、61 个「模型 × 推理档位」设置，每设置每题 10 条保留响应，合计 60,390 条响应。",
+        "cite": [
+          "openai-paper"
+        ]
+      },
+      {
+        "k": "官方公开渠道",
+        "v": "2026-11-20 的官方公告《Can AI help scientists identify promising drug candidates?》与公告页「Read the paper」链接出的同名论文 PDF；2026-06-03 的 GPT‑Rosalind 发布文是更早的一次公开提及；2026-08-26 的 GPT‑5.6 发布文表格里另有一行标注为「MedChemBench (Internal)」的内部评测（GPT-5.6 Sol 48.3%），早于公开公告，口径不同。",
+        "cite": [
+          "openai-announcement",
+          "openai-gpt-rosalind",
+          "openai-gpt-5-6"
+        ]
+      },
+      {
+        "k": "数据与代码位置",
+        "v": "本次核验（2026-11-20）覆盖官方公告、论文 PDF、GPT‑Rosalind 发布文与 GPT‑5.6 发布文，四处均未给出 99 题题集的公开仓库或提交入口。",
+        "cite": [
+          "openai-announcement",
+          "openai-paper"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-20",
+        "columns": [
+          "模型",
+          "推理档位",
+          "结果（占可得分比例）",
+          "来源与口径"
+        ],
+        "rows": [
+          [
+            "GPT-6.2 Astra",
+            "xhigh",
+            "84.5%",
+            "OpenAI 2026-11-20 公告首段；该 release 的账本行在其它分支，本实体只作基准快照"
+          ],
+          [
+            "GPT-6 Astra",
+            "max",
+            "83.8%（论文 83.83%，区间 81.27–86.20%）",
+            "公告正文与论文 Results 段；官方公布的最高总分"
+          ],
+          [
+            "GPT-6 Astra",
+            "xhigh",
+            "83.3%（论文 83.33%）",
+            "公告正文与论文 Results 段；11 个模型共享的档位，区间 35.02% ~ 83.33%"
+          ],
+          [
+            "GPT-6 Astra",
+            "xhigh（分子结构组件，非总分）",
+            "95.4%（论文 95.37%）",
+            "公告正文与论文 Results 段；该组件占可得分份额 37.49%"
+          ],
+          [
+            "GPT-6.1 Sol",
+            "xhigh",
+            "82.0%",
+            "公告正文；论文同档另给分子结构组件 93.70%"
+          ],
+          [
+            "GPT-6.1 Sol",
+            "max",
+            "82.89%（区间 80.52–85.23%）",
+            "论文 Results 段；max 档与 xhigh 档不可直接比较"
+          ],
+          [
+            "GPT-6.1 Terra",
+            "xhigh",
+            "75.1%",
+            "公告正文；论文同档另给分子结构组件 92.18%"
+          ],
+          [
+            "GPT-6.1 Terra",
+            "max",
+            "77.56%（区间 74.98–79.95%）",
+            "论文 Results 段；max 档与 xhigh 档不可直接比较"
+          ],
+          [
+            "GPT-5.6 Sol",
+            "xhigh",
+            "58.2%（论文 58.23%）",
+            "公告正文与论文 Results 段；论文记其比 GPT-5.5 高 8.97 个百分点"
+          ],
+          [
+            "GPT-6 Luna",
+            "xhigh",
+            "35.02%",
+            "论文 Results 段（11 个模型共享档位的最低值）；公告正文未印该绝对值"
+          ]
+        ]
+      },
+      "cite": [
+        "openai-announcement",
+        "openai-paper"
+      ]
+    }
+  }
+}
