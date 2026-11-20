@@ -1,41 +1,398 @@
 {
   "id": "maxife",
   "name": "MaXIFE",
-  "full_name": null,
+  "full_name": "MaXIFE: Multilingual and Cross-lingual Instruction Following Evaluation（多语言与跨语言指令跟随评测）",
   "aliases": [],
   "status": null,
-  "categories": [
-    "preference"
-  ],
-  "summary": "OPPO 多语言指令跟随评测（23 语言 23 设定）",
-  "interpretation": "OPPO 多语言指令跟随评测（23 个单语 + 22 个跨语设定），按 strict 与 loose 两种约束满足率报告（越高越好）；优先看 strict 口径与 47 个指令子类明细，语言间落差反映多语指令跟随短板。",
-  "measures": [],
-  "does_not_measure": [],
-  "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
-  },
-  "metrics": [],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [],
-  "notes": "Qwen 引用",
-  "official_sources": [
+  "categories": ["preference"],
+  "summary": "MaXIFE 是 ACL 2025 提出的多语言指令跟随基准：23 种语言、每种 795 个平行基础问题搭配 47 类可验证指令（共 1,667 条指令、18,285 条数据），用规则脚本与 Claude-3.5 Sonnet 评判两条路径打分，按 Loose / Strict 两种口径报告约束满足率。",
+  "interpretation": "分数越高，说明模型在该语言下越能同时满足多条可程序化校验的指令。它只衡量「指令约束有没有被做到」，不衡量回答是否正确、有用或安全。跨语言、跨模型比较前必须先对齐口径（单语提示还是英语指令 + 目标语回答、Loose 还是 Strict），并优先看 Strict 口径与 47 个指令子类明细——语言之间的落差就是多语指令跟随的短板。",
+  "measures": [
     {
-      "kind": "github",
-      "url": "https://github.com/OPPO-Mente-Lab/MaXIFE"
+      "area": "可验证指令的约束满足（23 个单语设定）",
+      "focus": "47 个指令子类下模型是否逐条满足约束，覆盖格式、重复、关键词、引用、字数、表情、风格、语气、语种切换等",
+      "share": "主口径：全部 1,667 条指令求平均，每语言 795 个提示",
+      "format": "单轮问答，每个基础问题挂 1-3 条指令，脚本或评判模型按 0-1 给分",
+      "cite": ["pdf@§3.1", "pdf@§4.4"]
     },
     {
-      "kind": "site",
-      "url": "https://qwen.ai/blog?id=qwen3.7"
+      "area": "跨语指令跟随（22 个跨语设定）",
+      "focus": "用英语下达指令、要求以目标语言回答时，指令是否仍然被满足",
+      "share": "22 个数据集，与同模型同语言的单语结果对照报告",
+      "format": "英语指令 + 目标语回答，同样汇总为 Loose / Strict 分",
+      "cite": ["repo-maxife@README", "pdf@§6.4 Limitations"]
+    },
+    {
+      "area": "语言资源层级对比",
+      "focus": "高/中/低资源语言上的满足率落差，以及个别语言的反常表现",
+      "share": "23 种语言按资源层级分组的平均分 + 每语言逐模型明细",
+      "format": "分层平均表 + 逐语言表格（含每个子类的分数）",
+      "cite": ["pdf@§3.2", "pdf@§6.1.1"]
+    },
+    {
+      "area": "评判方式本身的一致性",
+      "focus": "模型评判（Claude-3.5 Sonnet）与人工评判的一致率，为模型评判背书",
+      "share": "附录中的抽样验证，不是主指标",
+      "format": "从英语、马来语、祖鲁语抽取 100 条指令做模型与人工双评",
+      "cite": ["pdf@附录 B.3"]
     }
   ],
-  "related_benchmarks": [
-    "ifeval"
+  "does_not_measure": [
+    {
+      "text": "回答的事实正确性、知识广度与有用性——只校验指令约束是否被满足，答非所问但格式合规也可能拿到满分。",
+      "cite": ["pdf@§4.4"]
+    },
+    {
+      "text": "多轮对话中的指令保持、上下文记忆与指令冲突消解——数据是单轮 prompt，每条样本由一个基础问题加 1-3 条指令构成。",
+      "cite": ["pdf@§3.1"]
+    },
+    {
+      "text": "23 种语言之外的语言，以及非英语起点或终点的其他跨语方向；新增语言需要按仓库流程自行构建与格式化数据。",
+      "cite": ["pdf@§6.4 Limitations", "repo-maxife@README"]
+    }
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "dataset": {
+    "sample_count": 1667,
+    "splits": [
+      "单语：23 个语言各自的平行数据集（仓库 data/input/[language].jsonl）",
+      "跨语：22 个「英语指令 → 目标语言」数据集（english_to_[language].jsonl）"
+    ],
+    "languages": [
+      "English", "Chinese", "Japanese", "French", "Italian", "Portuguese", "Swedish",
+      "Filipino", "Romanian", "Indonesian", "Malay", "Turkish", "Korean", "Bengali", "Hindi",
+      "Kyrgyz", "Armenian", "Georgian", "Malagasy", "Zulu", "Tamil", "Telugu", "Quechua"
+    ],
+    "source_type": "问卷收集 + LLM 扩展 + 人工翻译审校的可验证指令集",
+    "public_sample": true,
+    "totals": "23 语言 × 795 个平行基础问题 = 18,285 条数据；每条挂 1-3 条指令，去重后共 1,667 条可验证指令；指令分 11 个大类 / 47 个子类，其中规则评测覆盖 7 大类 32 个子类，其余交给模型评判；23 种语言按资源分高（7 种）/ 中（8 种）/ 低（8 种）三层。",
+    "cite": ["pdf@§3.1", "repo-maxife@README"],
+    "construction": [
+      {
+        "k": "问卷收集",
+        "text": "31 名 LLM 高频用户填写问卷，回收 39 条原始数据去重得 29 条元数据；另收 37 条数据点，筛选分类得 30 条并归纳出 11 个指令大类。",
+        "cite": ["pdf@附录 A.3"]
+      },
+      {
+        "k": "LLM 扩展",
+        "text": "用 GPT-4o 与 Claude-3.5 Sonnet 把基础问题扩展到 795 条；从既有指令池中筛出并模板化 18 条可扩展指令，最终形成 47 条指令。",
+        "cite": ["pdf@§3.1"]
+      },
+      {
+        "k": "平行翻译",
+        "text": "795 条基础问题体量大，用 LLM 翻译后由母语者复核纠正；47 条指令交给专业人工译者，并按语言特性加注（如孟加拉语要求用阿拉伯数字）。",
+        "cite": ["pdf@§3.1", "repo-maxife@README"]
+      },
+      {
+        "k": "质量控制",
+        "text": "论文称实施了严格的翻译质量控制，并在附录 A.5 单列质量控制机制说明审查规则。",
+        "cite": ["pdf@§6.4 Limitations", "pdf@附录 A.5"]
+      },
+      {
+        "k": "组装成样本",
+        "text": "每条基础问题与 1-3 条指令组合成一条数据，得到每语言 795 条平行数据，合计 795 × 23 = 18,285 条。",
+        "cite": ["pdf@§3.1"]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "每个语言用 795 个平行提示词（覆盖 47 种指令类型），所有被测模型温度设为 0。规则可判的 7 个大类 32 个子类走脚本：部分是 0/1 二分，部分按输出贴合程度分档给分；规则判不了的交给 Claude-3.5 Sonnet 按固定提示词评判。最后在全部 1,667 条指令上求平均得到 Loose Score，Strict Score 则把任何不满 1 的指令得分直接归零。",
+    "cite": ["pdf@§5.2", "pdf@§4.2", "pdf@附录 B.4", "pdf@§4.4"],
+    "variants": [
+      {
+        "text": "Loose Score vs Strict Score：同一输出两种口径可以差很多（论文示例 50% vs 25%），跨论文比较必须同口径。",
+        "cite": ["pdf@§4.4"]
+      },
+      {
+        "text": "单语提示 vs 英语指令 + 目标语回答：GPT-3.5 Turbo 的低资源语言平均从 31.53% 升到 52.73%，两种设定不能混比。",
+        "cite": ["pdf@Table 2"]
+      },
+      {
+        "text": "规则评测只覆盖 32/47 个子类，其余依赖 Claude-3.5 Sonnet 判定；更换评判模型或提示词会改变分数。",
+        "cite": ["pdf@§4.2", "pdf@§4.3"]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "loose-score",
+      "name": "Loose Score（宽松满足率）",
+      "direction": "越高越好",
+      "description": "全部 1,667 条指令得分的平均值；单条指令按遵循程度在 0-1 之间给分，1 表示完全遵循该指令。",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["pdf@§4.4"]
+    },
+    {
+      "id": "strict-score",
+      "name": "Strict Score（严格满足率）",
+      "direction": "越高越好",
+      "description": "把任何不满 1 的指令得分归零后再平均，只有完全遵循才算通过；比 Loose Score 更严苛。",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["pdf@§4.4", "pdf@附录 C.1"]
+    },
+    {
+      "id": "subcategory-score",
+      "name": "指令子类得分",
+      "direction": "越高越好",
+      "description": "11 个大类与 47 个子类各自的满足率，用于定位具体短板；仓库的 overall_results.xlsx 直接给出这些明细。",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["repo-maxife@README"]
+    }
+  ],
+  "versions": [
+    {
+      "id": "arxiv-v1",
+      "date": "2025-06-02",
+      "label": "arXiv:2506.01776 v1 提交",
+      "cite": ["arxiv@提交历史"]
+    },
+    {
+      "id": "arxiv-v2",
+      "date": "2025-06-03",
+      "label": "arXiv v2 修订（Comments 标注 ACL 2025 Main Conference）",
+      "cite": ["arxiv@提交历史", "arxiv@Comments"]
+    },
+    {
+      "id": "acl-2025",
+      "date": "2025-07",
+      "label": "ACL 2025 正式发表（Anthology 元数据只给到月份 July 2025；DOI 10.18653/v1/2025.acl-long.698，页码 14252-14332）",
+      "cite": ["paper@元数据"]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "marks 同时被列为规则类与模型类",
+      "impact": "§4.1 把 marks 归入 7 个规则类，又归入 4 个模型类，原文未说明该类究竟由脚本还是模型判定；复现时容易选错实现，导致与他人结果不可比。",
+      "severity": "中",
+      "response": "未见官方回应；仓库中的 instruction_evaluator.py 是判定实现，但论文未写其归属。",
+      "reader": "复现 marks 子类前先读仓库源码确认判定路径，并在自报结果时注明。",
+      "cite": ["pdf@§4.1"]
+    },
+    {
+      "issue": "跨语测试是单向的",
+      "impact": "只覆盖英语指令 → 目标语言回答，不测其他语向，也无法反映语言间的复杂互动；只看「跨语」标签会高估模型的多语能力。",
+      "severity": "中",
+      "response": "论文在 Limitations 中承认这一点，并把「更多样的跨语言交互模式」列为未来工作。",
+      "reader": "看到跨语成绩先确认方向是英→X，并与同一模型同一语言的单语结果对照着看。",
+      "cite": ["pdf@§6.4 Limitations"]
+    },
+    {
+      "issue": "低资源语言的翻译偏差难以避免",
+      "impact": "论文称已实施严格翻译质量控制，但跨语言转换偏差不可避免；Quechua 这类极低资源语言的细微语义偏移会直接影响分数。",
+      "severity": "中",
+      "response": "论文如实披露，并给出质量控制机制（附录 A.5）与孟加拉语数字一类的语言特例处理。",
+      "reader": "低资源语言的绝对分数要留余地，跨语言的相对落差比绝对值更可靠。",
+      "cite": ["pdf@§6.4 Limitations", "repo-maxife@README"]
+    },
+    {
+      "issue": "自动评测框架可能漏掉语言特性",
+      "impact": "框架未必覆盖所有语言特有特征，可能给评测结果带来轻微的系统性偏差。",
+      "severity": "低",
+      "response": "论文如实披露，未给出量化修正。",
+      "reader": "把语言间的小幅差异当信号而非定论。",
+      "cite": ["pdf@§6.4 Limitations"]
+    },
+    {
+      "issue": "结果分析停留在现象描述",
+      "impact": "对「瑞典语有时优于英语」这类现象只做了记录，缺少模型内部的细粒度机制分析。",
+      "severity": "低",
+      "response": "论文将其列为未来工作。",
+      "reader": "不要从单个语言的反常表现反推模型能力成因。",
+      "cite": ["pdf@§6.4 Limitations"]
+    },
+    {
+      "issue": "仓库地址在论文脚注与官方组织间不一致",
+      "impact": "论文脚注给出 github.com/Goslingliu/MaXIFE，官方组织仓库是 github.com/OPPO-Mente-Lab/MaXIFE，两处并存，按脚注地址可能找不到或未同步。",
+      "severity": "低",
+      "response": "未见官方回应；本档案以 OPPO-Mente-Lab 仓库作为代码与数据来源。",
+      "reader": "下载代码时用本页给出的官方仓库地址。",
+      "cite": ["pdf@§1 脚注 1", "repo-maxife@README"]
+    },
+    {
+      "issue": "作者姓名在不同来源拼写不一致",
+      "impact": "arXiv 页面作 Jing Chang，ACL Anthology 作 Chang Jing，论文 BibTeX 作 ChangJing, ChangJing；按姓名检索该作者成果会漏。",
+      "severity": "低",
+      "response": "未见官方回应。",
+      "reader": "引用作者时以 ACL Anthology 记录为准。",
+      "cite": ["arxiv@作者", "paper@作者署名", "repo-maxife@README 引用格式"]
+    }
+  ],
+  "notes": "指令类型由 IFEval 的 25 个扩展到 47 个并新增模型评判模块；论文另称代码与数据公开（脚注仓库与官方组织仓库并存，见 limitations）。",
+  "official_sources": [
+    { "kind": "repo", "url": "https://github.com/OPPO-Mente-Lab/MaXIFE" },
+    { "kind": "paper", "url": "https://aclanthology.org/2025.acl-long.698/" },
+    { "kind": "paper", "url": "https://arxiv.org/abs/2506.01776" }
+  ],
+  "related_benchmarks": ["ifeval"],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "pdf",
+        "kind": "paper",
+        "title": "MaXIFE: Multilingual and Cross-lingual Instruction Following Evaluation（ACL 2025 camera-ready PDF，含正文与附录 A-C）",
+        "url": "https://aclanthology.org/2025.acl-long.698.pdf",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "ACL Anthology 记录页 2025.acl-long.698（元数据、作者署名、DOI 与引用格式）",
+        "url": "https://aclanthology.org/2025.acl-long.698/",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "repo-maxife",
+        "kind": "repo",
+        "title": "OPPO-Mente-Lab/MaXIFE（官方代码与数据仓库 README 及 BibTeX）",
+        "url": "https://github.com/OPPO-Mente-Lab/MaXIFE",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "arxiv",
+        "kind": "paper",
+        "title": "arXiv:2506.01776 v2（摘要页：提交历史、Comments、作者）",
+        "url": "https://arxiv.org/abs/2506.01776",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "OPPO AI Center（深圳）与早稻田大学；论文由 Association for Computational Linguistics 出版，代码仓库归属 OPPO-Mente-Lab",
+        "cite": ["pdf@p.1 作者单位", "repo-maxife@README"]
+      },
+      "first_release": {
+        "v": "2025-06-02（arXiv:2506.01776 v1 提交；论文正式发表于 ACL 2025，2025 年 7 月）",
+        "cite": ["arxiv@提交历史", "paper@元数据"]
+      }
+    },
+    "cites": {
+      "summary": ["pdf@摘要", "repo-maxife@README 引用格式", "pdf@§3.1"],
+      "interpretation": ["pdf@§4.4", "pdf@§3.1"]
+    },
+    "problem": {
+      "text": "已有指令跟随评测多集中在单语（尤其英语）场景，且以固定规则评判为主，难以刻画多语言与跨语言设定下的差异。MaXIFE 用 23 种语言的平行数据加上规则/模型混合评判，把指令跟随评测扩展到多语与跨语场景。",
+      "cite": ["pdf@§2", "pdf@摘要"]
+    },
+    "ladder": [
+      {
+        "label": "随机基线",
+        "value": "未给出",
+        "note": "论文没有报告随机或空输出的基线，只给出 5 个商用模型的对照结果。",
+        "cite": ["pdf@§5.1"]
+      },
+      {
+        "label": "论文最好单语成绩（Loose Score）",
+        "value": "89.62%",
+        "note": "GPT-4o 在瑞典语上，是 Table 1 中该模型的最高分之一。",
+        "cite": ["pdf@Table 1"]
+      },
+      {
+        "label": "论文最好单语成绩（Loose Score，高资源语言平均）",
+        "value": "84.88%",
+        "note": "GPT-4o（Table 1 Average High）；同表 Claude-3.5 Sonnet 为 84.45%。",
+        "cite": ["pdf@Table 1"]
+      },
+      {
+        "label": "低资源语言平均（Loose Score）",
+        "value": "71.23% / 73.81%",
+        "note": "GPT-4o / Claude-3.5 Sonnet（Table 1 Average Low）；同表 GPT-3.5 Turbo 仅 31.53%。",
+        "cite": ["pdf@Table 1"]
+      },
+      {
+        "label": "论文最低单语成绩（Loose Score）",
+        "value": "29.52%",
+        "note": "GPT-3.5 Turbo 在克丘亚语（Quechua）上，为 Table 1 全表最低值。",
+        "cite": ["pdf@Table 1"]
+      },
+      {
+        "label": "Strict Score 口径下最好（高资源语言平均）",
+        "value": "79.02%",
+        "note": "GPT-4o（附录 C.1 Table 11 Average High）。",
+        "cite": ["pdf@附录 C.1"]
+      },
+      {
+        "label": "Strict Score 口径下最低（低资源语言平均）",
+        "value": "19.93%",
+        "note": "GPT-3.5 Turbo（附录 C.1 Table 11 Average Low）。",
+        "cite": ["pdf@附录 C.1"]
+      },
+      { "label": "本站账本当前最高", "auto": "ledger-top" }
+    ],
+    "misreadings": [
+      {
+        "text": "把 1,667 当成题量——1,667 是指令条数，实际数据是 23 语言 × 795 个基础问题 = 18,285 条。",
+        "cite": ["pdf@§3.1"]
+      },
+      {
+        "text": "以为 47 个指令子类全由规则脚本判定——规则只覆盖 7 个大类 32 个子类，其余交给 Claude-3.5 Sonnet 评判。",
+        "cite": ["pdf@§4.2", "pdf@§4.3"]
+      },
+      {
+        "text": "把不同口径的分数直接对比——单语提示与英语指令 + 目标语回答、Loose 与 Strict 都会显著改变数值（GPT-3.5 Turbo 低资源语言 31.53% vs 52.73%）。",
+        "cite": ["pdf@Table 2", "pdf@§4.4"]
+      },
+      {
+        "text": "以为一个总分就能说明问题——同一模型在 Marks 与 Repeat 上普遍低于其他类，47 个子类明细比总分更能定位短板。",
+        "cite": ["pdf@§6.2", "repo-maxife@README"]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方与作者",
+        "v": "OPPO AI Center（深圳）与早稻田大学；作者 Yile Liu、Ziwei Ma、Xiu Jiang、Jinglu Hu、Jing Chang、Liang Li。",
+        "cite": ["pdf@p.1 作者单位", "paper@作者署名"]
+      },
+      {
+        "k": "发表信息",
+        "v": "ACL 2025 主会长文（Volume 1: Long Papers），2025 年 7 月，维也纳；Anthology ID 2025.acl-long.698，DOI 10.18653/v1/2025.acl-long.698，页码 14252-14332。",
+        "cite": ["paper@元数据", "arxiv@标题", "arxiv@Comments"]
+      },
+      {
+        "k": "语言构成",
+        "v": "23 种语言按资源分三层：高资源 7 种（英语、中文、日语、法语、意大利语、葡萄牙语、瑞典语），中资源 8 种（菲律宾语、罗马尼亚语、印尼语、马来语、土耳其语、韩语、孟加拉语、印地语），低资源 8 种（吉尔吉斯语、亚美尼亚语、格鲁吉亚语、马达加斯加语、祖鲁语、泰米尔语、泰卢固语、克丘亚语）。",
+        "cite": ["pdf@Table 6", "pdf@§3.2"]
+      },
+      {
+        "k": "代码与数据",
+        "v": "官方仓库 github.com/OPPO-Mente-Lab/MaXIFE（MIT）：data/input 下每语言一个 jsonl 单语输入与 english_to_[语言].jsonl 跨语输入；运行 generate_eval.py 自动完成生成、评测与分析，输出三种 Excel（全部指令分、47 子类分、总 loose/strict 分）。",
+        "cite": ["repo-maxife@README"]
+      },
+      {
+        "k": "受评测模型",
+        "v": "论文基线为 5 个商用模型：Claude-3.5 Sonnet（2024-06-21）、GPT-4o（2024-05-13）、GPT-3.5 Turbo（2024-01-25）、Gemini-1.5 Pro 与 Gemini-1.5 Flash（均 2024-05-23）。",
+        "cite": ["pdf@§5.1", "pdf@附录 B.1"]
+      },
+      {
+        "k": "与 IFEval 的关系",
+        "v": "沿用 IFEval 的规则式可验证指令范式，指令类型由 25 个扩展到 47 个并新增模型评判模块；IFEval 仅支持英语，MaXIFE 支持 23 种语言。",
+        "cite": ["pdf@§2"]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-14",
+        "columns": ["来源", "口径", "模型", "高资源语言平均", "中资源语言平均", "低资源语言平均"],
+        "rows": [
+          ["论文 Table 1", "Loose Score（单语提示）", "GPT-4o", "84.88%", "82.49%", "71.23%"],
+          ["论文 Table 1", "Loose Score（单语提示）", "Claude-3.5 Sonnet", "84.45%", "82.53%", "73.81%"],
+          ["论文 Table 1", "Loose Score（单语提示）", "Gemini-1.5 Pro", "79.06%", "76.63%", "67.48%"],
+          ["论文 Table 1", "Loose Score（单语提示）", "Gemini-1.5 Flash", "76.93%", "72.26%", "65.84%"],
+          ["论文 Table 1", "Loose Score（单语提示）", "GPT-3.5 Turbo", "68.23%", "58.65%", "31.53%"],
+          ["论文 Table 11（附录 C.1）", "Strict Score（单语提示）", "GPT-4o", "79.02%", "76.03%", "63.14%"],
+          ["论文 Table 11（附录 C.1）", "Strict Score（单语提示）", "Claude-3.5 Sonnet", "78.62%", "76.29%", "66.81%"],
+          ["论文 Table 11（附录 C.1）", "Strict Score（单语提示）", "Gemini-1.5 Pro", "72.35%", "69.55%", "60.10%"],
+          ["论文 Table 11（附录 C.1）", "Strict Score（单语提示）", "Gemini-1.5 Flash", "69.29%", "63.25%", "57.08%"],
+          ["论文 Table 11（附录 C.1）", "Strict Score（单语提示）", "GPT-3.5 Turbo", "59.36%", "49.02%", "19.93%"],
+          ["论文 Table 2", "Loose Score（英语指令→目标语回答；括号内为同模型单语值）", "GPT-3.5 Turbo", "68.59%（单语 68.01%）", "67.04%（单语 58.65%）", "52.73%（单语 31.53%）"]
+        ]
+      },
+      "cite": ["pdf@Table 1", "pdf@Table 2", "pdf@附录 C.1"]
+    }
+  }
 }

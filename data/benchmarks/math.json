@@ -1,51 +1,359 @@
 {
   "id": "math",
   "name": "MATH",
-  "full_name": "Measuring Mathematical Problem Solving With the MATH Dataset",
+  "full_name": "Measuring Mathematical Problem Solving With the MATH Dataset（MATH：用竞赛数学题测量数学问题求解能力）",
   "aliases": ["MATH dataset", "Hendrycks MATH", "competition_math"],
   "status": null,
   "categories": [
     "reasoning"
   ],
-  "summary": "Hendrycks 等人的 12,500 道竞赛数学题基准（7 大领域 × 5 级难度），数学推理的经典分母",
-  "interpretation": "12,500 道竞赛数学题（7 领域 × 5 难度级），最终答案准确率（0-100，越高越好）；题源公开多年已属饱和基准，当前模型 90 分以上只剩判分规范化噪音，读难度请改看 AIME/FrontierMath 系。",
+  "summary": "MATH 是 2021 年发布的 12,500 道美国中学竞赛数学题基准：每题带 LaTeX 题目、完整分步解答和一个 \\boxed{} 最终答案，评测时只比对最终答案，因此可以全自动判分。它最早把「竞赛题 + 自动判分」做成规模化基准，后来最常用的形态是 OpenAI 留出的 500 题子集 MATH-500。",
+  "interpretation": "高分（最终答案与标准答案等价的题目比例）说明模型在这批竞赛题上能稳定推出正确结果；它不说明模型会写证明、能处理图片题，也不代表推理过程正确——答案对而推理错照样算对。题源公开已五年多，头部模型在 500 题口径上聚集在 96% 附近，剩余的百分点差距很大程度上是判分规范化与训练污染的噪音，前沿区分需要改用当年新题或未公开题源的基准交叉验证。",
   "measures": [
-    "竞赛数学多步推理",
-    "7 大数学领域覆盖",
-    "难度分级（1–5）下的能力剖面"
+    {
+      "area": "七大学科覆盖",
+      "focus": "Prealgebra、Algebra、Number Theory、Counting and Probability、Geometry、Intermediate Algebra、Precalculus；论文未给出各学科题量占比，也未按学科给示例题。例题见论文 Figure 3：设 a、b 为正实数且 a>b、ab=8，求 (a²+b²)/(a−b) 的最小值",
+      "share": "未披露（论文未给出学科题量占比）",
+      "format": "题目与解答均为 LaTeX，最终答案包在 \\boxed{} 里",
+      "cite": [
+        "paper@§3.1",
+        "paper@§3.1 Categorizing Problems",
+        "paper@Figure 3"
+      ]
+    },
+    {
+      "area": "难度分级（1–5 级）",
+      "focus": "难度沿用 AoPS 标注：AMC 8 的前几题常为 1 级，AIME 题为 5 级；论文报告 GPT-2 1.5B 在 1 级约 15%、5 级约 4%",
+      "share": "未披露（论文未给出各级题量）",
+      "format": "按学科 × 难度分别统计准确率",
+      "cite": [
+        "paper@§3.1 Categorizing Problems",
+        "paper@§4.2 Analyzing Model Performance"
+      ]
+    },
+    {
+      "area": "多步推理与分步解答",
+      "focus": "每题附完整分步解答；论文发现让模型先写完整解答再给答案反而让表现变差（GPT-2 1.5B 掉到 5.3%），把 99% 的解答给模型看也只到约 40%",
+      "share": "未披露",
+      "format": "默认提示只要求输出最终答案（⟨P⟩ Final Answer:），不要求写过程",
+      "cite": [
+        "paper@§3.1",
+        "paper@§4.3 Analyzing Step-by-Step Solutions",
+        "paper@§4.1 Experimental Setup"
+      ]
+    },
+    {
+      "area": "几何与图形（Asymptote）",
+      "focus": "几何题的图形用 Asymptote 矢量代码而不是位图表达，论文称这让纯文本模型第一次能被评测处理图形数学题",
+      "share": "未披露",
+      "format": "题目内嵌 Asymptote 代码，模型需生成图形命令",
+      "cite": [
+        "paper@§3.1 Formatting",
+        "paper@附录 A.3"
+      ]
+    },
+    {
+      "area": "答案形式（可自动判分）",
+      "focus": "最终答案规范化后唯一，因此用精确匹配而不是 BLEU 一类启发式指标；论文列出一串等价规则，如概率写最简分数、其他分数统一 \\frac{x}{y}、系数不写乘号、多变量按字母序、0.5 与 1/2 等价",
+      "share": "未披露",
+      "format": "\\boxed{} 内的 LaTeX 表达式，按等价规则与标准答案比对",
+      "cite": [
+        "paper@§1",
+        "paper@§3.1 Formatting",
+        "paper@§3.1 Automatically Assessing Generated Answers"
+      ]
+    }
   ],
   "does_not_measure": [
-    "证明写作（以最终答案为主）",
-    "多模态数学",
-    "抗污染（题源公开多年）"
+    {
+      "text": "证明书写与形式化定理证明：MATH 只要求给出最终答案，题目是竞赛式问答；论文把 Coq/HOList 一类形式化定理证明基准列为另一条技术路线",
+      "cite": [
+        "paper@§1",
+        "paper@§2 Related Work"
+      ]
+    },
+    {
+      "text": "多模态数学：图形用 Asymptote 文本代码编码而非图片，测不到读图能力",
+      "cite": [
+        "paper@§3.1 Formatting",
+        "paper@附录 A.3"
+      ]
+    },
+    {
+      "text": "过程正确性：只判最终答案，答案对而推理错仍算对；PRM800K 论文指出这种自动判分存在假阳性",
+      "cite": [
+        "lvsbs@§2.5",
+        "lvsbs@§3"
+      ]
+    },
+    {
+      "text": "抗污染：测试集题目在多个线上社区有讨论，很可能已进入预训练数据，基准本身无法排除分数虚高",
+      "cite": [
+        "lvsbs@§6.3"
+      ]
+    }
   ],
   "dataset": {
     "sample_count": 12500,
-    "splits": ["train 7,500", "test 5,000"],
-    "source_type": "competition（AMC/AIME 等竞赛题汇编）",
-    "languages": ["en"],
-    "public_sample": true
+    "splits": [
+      "train 7,500 题",
+      "test 5,000 题"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "competition（AMC 10 / AMC 12 / AIME 等竞赛题汇编，题目由 MAA 创建）",
+    "public_sample": true,
+    "totals": "12,500 题（7,500 训练 / 5,000 测试）· 七大学科 × 1–5 级难度 · 每题含 LaTeX 题目、分步解答与 \\boxed{} 最终答案，几何题图形用 Asymptote 代码 · 题目语言为英文（HF 数据集卡标注 language: en）",
+    "cite": [
+      "paper@Abstract",
+      "paper@§3.1",
+      "paper@§3.1 Formatting",
+      "dataset@元数据"
+    ],
+    "construction": [
+      {
+        "k": "题源采集",
+        "text": "题目来自 AMC 10、AMC 12、AIME 等数学竞赛，很多可从 aops.com/community/c3158_usa_contests 收集；这些竞赛横跨数十年，考察美国最强的中学生数学人才。",
+        "cite": [
+          "paper@§3.1"
+        ]
+      },
+      {
+        "k": "统一格式化",
+        "text": "题目与解答统一用 LaTeX 排版，图形用 Asymptote 矢量语言编码，避免异体符号和形式化证明语言。",
+        "cite": [
+          "paper@§3.1 Formatting",
+          "paper@附录 A.3"
+        ]
+      },
+      {
+        "k": "学科与难度标注",
+        "text": "按 AoPS 惯例把难度标为 1–5 级（AMC 8 前几题常为 1 级，AIME 题为 5 级），并归入七大学科。",
+        "cite": [
+          "paper@§3.1 Categorizing Problems"
+        ]
+      },
+      {
+        "k": "答案规范化规则",
+        "text": "为支持精确匹配，规定概率写最简分数、矩阵内分数用 x/y、其他分数统一 \\frac{x}{y}、系数不写乘号、多变量按字母序、多项式按降幂、单位可有可无、忽略空格、0.5 与 1/2 等等价写法。",
+        "cite": [
+          "paper@§3.1 Formatting"
+        ]
+      },
+      {
+        "k": "人类基线抽样",
+        "text": "从测试集随机抽 20 题交给 6 名参与者限时 1 小时手写作答；全部是计算机科学专业大学生，其中 4 位是论文作者。",
+        "cite": [
+          "paper@§3.1 Human-Level Performance",
+          "paper@附录 A.6"
+        ]
+      },
+      {
+        "k": "配套预训练集与许可",
+        "text": "同时发布 AMPS 预训练集（Khan Academy 10 万+ 题加 Mathematica 脚本生成的约 500 万题，共 23GB）；MATH 数据、AMPS 数据与开源代码采用 MIT 许可。",
+        "cite": [
+          "paper@§3.2",
+          "paper@附录 B Author Statement and License"
+        ]
+      }
+    ]
   },
   "metrics": [
     {
       "id": "accuracy",
-      "name": "Accuracy",
-      "range": [0, 100],
+      "name": "准确率（Accuracy）",
+      "direction": "越高越好",
+      "description": "模型最终答案经规范化后与标准答案等值的题目占比（精确匹配）",
+      "range": [
+        0,
+        100
+      ],
       "unit": "percent",
-      "direction": "higher",
-      "aggregation": "mean"
+      "cite": [
+        "paper@§3.1 Automatically Assessing Generated Answers",
+        "paper@§4.2 Analyzing Model Performance"
+      ]
+    },
+    {
+      "id": "answer-confidence-auroc",
+      "name": "答案置信度 AUROC",
+      "direction": "越高越好",
+      "description": "用模型自报的答案置信度区分答对与答错的能力：100% 为完美区分，50% 为随机；论文用 GPT-2 1.5B 测得 68.8%，说明模型基本判断不出自己会不会错",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§4.2 Error Detection"
+      ]
     }
   ],
+  "default_protocol": {
+    "raw": "原论文口径：先用 AMPS 预训练，再在 MATH 上微调自回归语言模型；默认提示是「⟨P⟩ Final Answer:」，让模型直接生成最终答案而不生成分步解答，仅生成答案时 beam search 的 beam 为 20；评测时解析输出中 \\boxed{} 包裹的内容，按等价规则与标准答案做精确匹配，主指标为准确率。few-shot 评测则在 prompt 前接 8 道带正确答案（不含解答）的题，temperature 0，最多生成 20 个 token。",
+    "cite": [
+      "paper@§4.1 Experimental Setup",
+      "paper@§3.1 Automatically Assessing Generated Answers",
+      "paper@§3.1 Formatting"
+    ],
+    "variants": [
+      {
+        "text": "few-shot 数：原论文 few-shot 用 8 题且不含解答；后来的主流口径是 zero-shot / CoT / reasoning 模型，与论文分数不可比。",
+        "cite": [
+          "paper@§4.1 Experimental Setup"
+        ]
+      },
+      {
+        "text": "答案抽取与判分实现：原论文用一串字符串等价规则；PRM800K 改用基于 sympy 的 grader，OpenAI 称它比 MATH 原规范化更少拒掉正确答案，但仍会漏判与误判；Vals AI 也换用了 PRM800K 的 grader。同一模型换判分器分数会变。",
+        "cite": [
+          "prm800k@Answer Grading",
+          "vals@Methodology"
+        ]
+      },
+      {
+        "text": "全集 5,000 题 vs 500 题子集：PRM800K 只留 500 题作测试集（其训练集并入了 4,500 道测试题），后续发布普遍只报 MATH-500；500 题上 1 题值 0.2 个百分点，两者不能直接比。",
+        "cite": [
+          "prm800k@MATH Splits",
+          "dataset@Dataset Card"
+        ]
+      },
+      {
+        "text": "单次生成 vs best-of-N 重排序：PRM800K 用奖励模型对大量采样解做 best-of-N 选择，78.2% 是重排序后的成绩，不是单次生成。",
+        "cite": [
+          "lvsbs@§1",
+          "lvsbs@§4"
+        ]
+      },
+      {
+        "text": "是否用工具 / 推理模型与温度：Vals AI 记录 reasoning 模型会强制温度、无法设为 0；带代码执行或搜索的口径与纯文本口径也不可比。",
+        "cite": [
+          "vals@Methodology"
+        ]
+      }
+    ]
+  },
   "versions": [
     {
       "id": "v1",
-      "label": "MATH（2021）",
-      "note": "衍生子集 MATH-500 是当前发布中最常用的评测档（另建档）"
+      "date": "2021-03-05",
+      "label": "arXiv v1 提交（1,943 KB）",
+      "cite": [
+        "arxiv@Submission history"
+      ]
+    },
+    {
+      "id": "v2",
+      "date": "2021-11-08",
+      "label": "arXiv v2 修订（本档案核对所用版本）；同年发表在 NeurIPS 2021 Datasets and Benchmarks Track",
+      "cite": [
+        "arxiv@Submission history",
+        "paper@页脚"
+      ]
+    },
+    {
+      "id": "math-500",
+      "date": "2023-05-31",
+      "label": "OpenAI 在 Let's Verify Step by Step 中改用非标准拆分：训练集并入 4,500 道测试题，只留 500 题作测试集，形成后来通行的 MATH-500 子集",
+      "cite": [
+        "lvsbs@arXiv v1 页眉",
+        "prm800k@MATH Splits",
+        "dataset@Dataset Card"
+      ]
+    },
+    {
+      "id": "third-party-resampling",
+      "date": "2026-01-09",
+      "label": "第三方榜单各自重新采样 500 题并更换判分器（Vals AI 数据更新至 2026-01-09），与 OpenAI 的 MATH-500 不是同一批题",
+      "cite": [
+        "vals-data@metadata",
+        "vals@Methodology"
+      ]
     }
   ],
   "limitations": [
-    "题源公开多年、污染严重，已属饱和基准",
-    "答案判分需规范化，LaTeX 等价性易误判"
+    {
+      "issue": "训练污染风险（题源公开多年）",
+      "impact": "MATH 测试集题目在多个线上社区有讨论，很可能已进入模型预训练数据；PRM800K 论文用字符串匹配去污仍无法保证无重叠。题源公开五年多后，头部模型在 500 题口径上已达 96% 以上，剩下的差距已难区分真实能力。",
+      "severity": "高",
+      "response": "PRM800K 论文报告了去污尝试与未见明显记忆迹象的观察，并明确说无法排除细微记忆；MATH 官方未见推出新版本、留存集或去污说明。",
+      "reader": "把 MATH / MATH-500 的高分当下限看；前沿区分改用当年新题或 FrontierMath 一类未公开题源的基准交叉验证。",
+      "cite": [
+        "lvsbs@§6.3",
+        "vals@Results"
+      ]
+    },
+    {
+      "issue": "答案判分依赖规范化，存在漏判与误判",
+      "impact": "判分靠解析 \\boxed{} 内容再加一串等价规则；OpenAI 明说其判分逻辑偏保守、有时会拒掉正确答案，也可能放进不正确答案。不同实现（原版规范化 vs sympy grader）之间的分数不可比。",
+      "severity": "高",
+      "response": "PRM800K 仓库公开 grader 并说明它比 MATH 原规范化更少拒掉正确答案；Vals AI 等第三方改用 PRM800K 的 grader。",
+      "reader": "跨论文比较前先确认判分实现；同一模型换 grader 分数会变。",
+      "cite": [
+        "prm800k@Answer Grading",
+        "paper@§3.1 Formatting",
+        "vals@Methodology"
+      ]
+    },
+    {
+      "issue": "只判最终答案，不判推理过程",
+      "impact": "最终答案对而推理错仍计为正确；PRM800K 论文指出自动判分存在这类假阳性，并说这一弱点在 MATH 上被放大。",
+      "severity": "中",
+      "response": "PRM800K 用 80 万条步级人工标注把过程质量纳入训练与 best-of-N 重排序；MATH 基准本身仍只报答案准确率。",
+      "reader": "高分模型可能在「答案对、过程错」的题上拿分，别把准确率当成推理质量。",
+      "cite": [
+        "lvsbs@§2.5",
+        "lvsbs@§3",
+        "prm800k@Data"
+      ]
+    },
+    {
+      "issue": "评测口径与数据拆分不统一",
+      "impact": "原论文是微调 + beam search + 8 题 few-shot；PRM800K 用非标准拆分（训练集并入 4,500 道测试题、只留 500 题）；第三方榜单自己重新采 500 题、换判分器、对 reasoning 模型无法固定温度。同一模型在不同口径下可差几个点。",
+      "severity": "中",
+      "response": "PRM800K 公开了其 500 题拆分文件；未见 MATH 官方统一口径或发布规范。",
+      "reader": "比较前确认四件事：5,000 题全集还是 500 题子集、是哪一批 500 题、用哪种 grader、是否推理模型/工具。",
+      "cite": [
+        "prm800k@MATH Splits",
+        "dataset@Dataset Card",
+        "vals@Methodology",
+        "paper@§4.1 Experimental Setup"
+      ]
+    },
+    {
+      "issue": "人类基线样本极小，论文内部描述不一致",
+      "impact": "40% 与 90% 这两个人类数字来自测试集随机 20 题、6 名计算机科学专业大学生（其中 4 位是论文作者）、限时 1 小时且不许用计算器；论文摘要与引言称其为「不爱数学的 CS 博士生」，附录 A.6 则说全部参与者是计算机科学专业大学生。",
+      "severity": "低",
+      "response": "论文附录 A.6 说明了参与者构成，并称该调查只为粗略估计人类水平；未见官方修订。",
+      "reader": "这两个数字只作量级参考，不要当作严格的人类上限。",
+      "cite": [
+        "paper@§3.1 Human-Level Performance",
+        "paper@§1",
+        "paper@附录 A.6"
+      ]
+    },
+    {
+      "issue": "难度 1–5 是学科内相对标注",
+      "impact": "论文说同学科内最易的题标 1 级、最难的标 5 级，因此级别只在该学科内有可比性，跨学科同级难度不一定等价；论文也未给出各级题量。",
+      "severity": "低",
+      "response": "论文按 AoPS 惯例标注，并在正文中明确说明了这一点。",
+      "reader": "跨学科比较同级准确率要谨慎；论文自己也是按学科 × 难度分别给结果。",
+      "cite": [
+        "paper@§3.1 Categorizing Problems",
+        "paper@Table 2"
+      ]
+    },
+    {
+      "issue": "论文与仓库给出的数据/代码地址不一致",
+      "impact": "论文附录 B 写数据与代码在 github.com/hendrycks/apps，而官方仓库实际是 github.com/hendrycks/math，其 README 又把下载链接指向 Hugging Face 上的 qwedsacf/competition_math 社区镜像。",
+      "severity": "低",
+      "response": "官方仓库 README 提供数据集 loader 与评测代码；未见官方更正论文中的链接。",
+      "reader": "下载以官方仓库 README 为准；引用时区分 MATH 本体与社区镜像版本。",
+      "cite": [
+        "paper@附录 B Dataset Intended Uses",
+        "repo@README"
+      ]
+    }
   ],
   "notes": "证据账本中 7 次引用；注意与 math500（子集）区分引用口径",
   "official_sources": [
@@ -56,6 +364,18 @@
     {
       "kind": "github",
       "url": "https://github.com/hendrycks/math"
+    },
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2305.20050"
+    },
+    {
+      "kind": "github",
+      "url": "https://github.com/openai/prm800k"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/HuggingFaceH4/MATH-500"
     }
   ],
   "related_benchmarks": [
@@ -66,6 +386,339 @@
     "hmmt25",
     "aime-25"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-10",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-10",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "Measuring Mathematical Problem Solving With the MATH Dataset（arXiv:2103.03874v2，NeurIPS 2021 Datasets and Benchmarks）",
+        "url": "https://arxiv.org/pdf/2103.03874",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "arxiv",
+        "kind": "paper",
+        "title": "arXiv:2103.03874 摘要页（提交历史：v1 2021-03-05 / v2 2021-11-08）",
+        "url": "https://arxiv.org/abs/2103.03874",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "hendrycks/math 官方仓库 README（数据集 loader、评测代码与下载链接）",
+        "url": "https://github.com/hendrycks/math",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "dataset",
+        "kind": "dataset",
+        "title": "HuggingFaceH4/MATH-500 数据集卡（500 题子集）",
+        "url": "https://huggingface.co/datasets/HuggingFaceH4/MATH-500",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "prm800k",
+        "kind": "repo",
+        "title": "openai/prm800k 仓库 README（PRM800K、MATH Splits 与答案判分说明）",
+        "url": "https://github.com/openai/prm800k",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "lvsbs",
+        "kind": "paper",
+        "title": "Let's Verify Step by Step（arXiv:2305.20050v1，PRM800K 与 500 题测试集）",
+        "url": "https://arxiv.org/abs/2305.20050",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "vals",
+        "kind": "leaderboard",
+        "title": "Vals AI MATH 500 榜单与方法论页（页面标注 dateModified 2026-01-09）",
+        "url": "https://www.vals.ai/benchmarks/math500",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "vals-data",
+        "kind": "leaderboard",
+        "title": "Vals AI MATH 500 榜单结果数据（页面加载的 JSON，updated 2026-01-09）",
+        "url": "https://www.vals.ai/_astro/benchmark_view_math500.BvFbu92X.json",
+        "accessed": "2026-11-10"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "UC Berkeley 与 UChicago 的研究团队（5 位作者署 UC Berkeley，Steven Basart 署 UChicago）；论文发表在 NeurIPS 2021 Datasets and Benchmarks Track",
+        "cite": [
+          "paper@标题与作者",
+          "paper@页脚"
+        ]
+      },
+      "first_release": {
+        "v": "2021-03-05（arXiv v1）",
+        "cite": [
+          "arxiv@Submission history"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "paper@Abstract",
+        "paper@§3.1",
+        "repo@README"
+      ],
+      "interpretation": [
+        "paper@§3.1 Automatically Assessing Generated Answers",
+        "lvsbs@§6.3",
+        "vals@Results"
+      ]
+    },
+    "problem": {
+      "text": "此前的数学基准要么靠形式化定理证明器（Coq 上的 HOList 有 1,602 条定理），要么是 DeepMind Mathematics 那样算法生成的「插件式计算」题，大模型已经能解；MMLU 这类选择题基准只有几百道数学题。MATH 要用自然语言加 LaTeX 书写的竞赛题，把数学问题求解做成能被自动判分、又明显难过当时模型的基准。",
+      "cite": [
+        "paper@Abstract",
+        "paper@§1",
+        "paper@§2 Related Work"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机/无依据基线",
+        "value": "论文未给出",
+        "note": "答案是自由文本精确匹配，论文没有报告随机基线；最难的 5 级题上 GPT-2 1.5B 只有约 4%。",
+        "cite": [
+          "paper@§4.2 Analyzing Model Performance"
+        ]
+      },
+      {
+        "label": "论文发布时的模型水平（最好）",
+        "value": "6.9%",
+        "note": "GPT-2 1.5B 微调，七学科平均（Table 2）；few-shot GPT-3 175B 为 5.2%，未用 AMPS 预训练的微调 GPT-3 13B 也是 5.2%。",
+        "cite": [
+          "paper@Table 2",
+          "paper@§4.2 Analyzing Model Performance"
+        ]
+      },
+      {
+        "label": "人类表现（测试集 20 题抽样）",
+        "value": "40%–90%",
+        "note": "不爱数学的参与者 8/20 = 40%，三届 IMO 金牌得主 18/20 = 90%；限时 1 小时、手算、6 人且含 4 位论文作者。",
+        "cite": [
+          "paper@§3.1 Human-Level Performance",
+          "paper@附录 A.6"
+        ]
+      },
+      {
+        "label": "过程监督 + best-of-N 重排序（2023）",
+        "value": "78.2%",
+        "note": "Let's Verify Step by Step 的过程监督模型，在 MATH 测试集留出的 500 题上解出 78.2%；这是重排序后的成绩，不是单次生成。",
+        "cite": [
+          "lvsbs@§1",
+          "lvsbs@Abstract",
+          "lvsbs@§4"
+        ]
+      },
+      {
+        "label": "第三方榜单当前最高",
+        "value": "96.4%",
+        "note": "Vals AI MATH 500（其自行抽取的 500 题 + PRM800K grader，数据更新至 2026-01-09）：Gemini 3 Pro Preview 96.4%、Grok 4 96.2%、GPT-5 96.0%；页面自述头部模型「超过 90%」。",
+        "cite": [
+          "vals-data@tasks.overall",
+          "vals@Results"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      },
+      {
+        "label": "饱和参考线",
+        "value": "约 96%（头部模型聚集区）",
+        "note": "500 题口径下 1 个百分点约等于 5 道题；头部已聚集在 96% 附近，剩余差距更可能是判分规范化与污染。这条线是本站据榜单数据归纳的参考，不是官方上限。",
+        "cite": [
+          "vals@Results",
+          "vals-data@tasks.overall"
+        ]
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 MATH 全集 5,000 题的分数和 MATH-500 子集的分数排在一起比——后者只有 500 题，1 题值 0.2 个百分点，而且不同来源的 500 题并不是同一批。",
+        "cite": [
+          "prm800k@MATH Splits",
+          "dataset@Dataset Card",
+          "vals@Methodology"
+        ]
+      },
+      {
+        "text": "把高分理解成「会做数学证明」或「推理正确」——MATH 只判最终答案，答案对而推理错照样算对。",
+        "cite": [
+          "paper@§1",
+          "lvsbs@§2.5"
+        ]
+      },
+      {
+        "text": "以为 MATH 还有前沿区分度——头部模型在 500 题口径上已到 96% 附近，剩下的差距很大程度上是判分规范化与污染造成的。",
+        "cite": [
+          "vals@Results",
+          "lvsbs@§6.3"
+        ]
+      },
+      {
+        "text": "把论文里的 40% / 90% 当作严格人类基线——样本只有 20 题、6 名计算机科学专业学生（4 位是论文作者）、限时 1 小时手算。",
+        "cite": [
+          "paper@§3.1 Human-Level Performance",
+          "paper@附录 A.6"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "UC Berkeley 与 UChicago 的研究团队；论文发表在 NeurIPS 2021 Datasets and Benchmarks Track",
+        "cite": [
+          "paper@标题与作者",
+          "paper@页脚"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "Dan Hendrycks、Collin Burns、Saurav Kadavath、Akul Arora、Steven Basart、Eric Tang、Dawn Song、Jacob Steinhardt",
+        "cite": [
+          "paper@标题与作者",
+          "repo@Citation"
+        ]
+      },
+      {
+        "k": "题目版权与许可",
+        "v": "MATH 题目由美国数学协会（MAA）创建；论文附录 B 讨论了研究复用的合规性，并说明 MATH 数据、AMPS 数据与开源代码采用 MIT 许可",
+        "cite": [
+          "paper@附录 B Legal Compliance",
+          "paper@附录 B Author Statement and License"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2021-03-05 arXiv v1 → 2021-11-08 arXiv v2（本档案核对版本）→ NeurIPS 2021 发表 → 2023-05-31 OpenAI 留出 500 题形成 MATH-500 → 2026-01-09 第三方榜单数据更新时头部已达 96.4%",
+        "cite": [
+          "arxiv@Submission history",
+          "paper@页脚",
+          "lvsbs@arXiv v1 页眉",
+          "vals-data@metadata"
+        ]
+      },
+      {
+        "k": "数据与代码位置",
+        "v": "官方仓库 github.com/hendrycks/math 提供数据集 loader 与评测代码，README 的下载链接指向 Hugging Face 上的 qwedsacf/competition_math 镜像；MATH-500 的源文件在 openai/prm800k 的 math_splits/ 下，HF 上有 HuggingFaceH4/MATH-500",
+        "cite": [
+          "repo@README",
+          "prm800k@MATH Splits",
+          "dataset@Dataset Card"
+        ]
+      },
+      {
+        "k": "MATH-500 子集由来",
+        "v": "OpenAI 为避免在 7,500 道训练题上过拟合，把 4,500 道测试题并入训练集，只留 500 道均匀随机抽取的题作评测；HF 数据集卡说明这 500 题来自 Let's Verify Step by Step",
+        "cite": [
+          "prm800k@MATH Splits",
+          "dataset@Dataset Card"
+        ]
+      },
+      {
+        "k": "PRM800K 关联",
+        "v": "Let's Verify Step by Step 用 MATH 题收集了 80 万条步级人工标注（PRM800K，覆盖 75K 条解答、12K 道题），过程监督模型在 MATH 测试集代表子集上解出 78%",
+        "cite": [
+          "lvsbs@Abstract",
+          "lvsbs@§2.4",
+          "prm800k@Data"
+        ]
+      },
+      {
+        "k": "AMPS 配套预训练集",
+        "v": "论文同时发布 AMPS：Khan Academy 10 万+ 题与 Mathematica 脚本生成的约 500 万题，共 23GB；论文称 AMPS 预训练带来的提升约等于参数量扩大 130 倍",
+        "cite": [
+          "paper@§3.2",
+          "paper@§4.2 Analyzing Model Performance"
+        ]
+      },
+      {
+        "k": "论文对扩展性的结论",
+        "v": "论文的结论是：按当时的趋势，单纯扩大参数与算力无法在 MATH 上取得强数学推理，需要算法层面的突破；这一判断后来被推理模型与过程监督的进展改写",
+        "cite": [
+          "paper@§5 Conclusion",
+          "paper@Abstract",
+          "lvsbs@§1"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-10",
+        "columns": [
+          "来源",
+          "模型",
+          "平均准确率（%）",
+          "口径"
+        ],
+        "rows": [
+          [
+            "论文 Table 2",
+            "GPT-2 0.1B",
+            "5.4",
+            "AMPS 预训练 + MATH 微调"
+          ],
+          [
+            "论文 Table 2",
+            "GPT-2 1.5B",
+            "6.9",
+            "AMPS 预训练 + MATH 微调"
+          ],
+          [
+            "论文 Table 2",
+            "GPT-3 13B（微调）",
+            "5.6",
+            "MATH 微调，未用 AMPS 预训练"
+          ],
+          [
+            "论文 Table 2",
+            "GPT-3 175B（few-shot）",
+            "5.2",
+            "prompt 前接 8 题，未用 AMPS 预训练"
+          ],
+          [
+            "论文 附录 A.5",
+            "BART-Large 0.4B",
+            "4.9",
+            "AMPS 预训练 + MATH 微调"
+          ],
+          [
+            "Vals AI 数据（2026-01-09）",
+            "Gemini 3 Pro Preview",
+            "96.4",
+            "Vals 自采 500 题 + PRM800K grader"
+          ],
+          [
+            "Vals AI 数据（2026-01-09）",
+            "Grok 4",
+            "96.2",
+            "同上"
+          ],
+          [
+            "Vals AI 数据（2026-01-09）",
+            "GPT-5",
+            "96.0",
+            "同上"
+          ]
+        ]
+      },
+      "cite": [
+        "paper@Table 2",
+        "paper@附录 A.5",
+        "vals-data@tasks.overall"
+      ]
+    }
+  }
 }

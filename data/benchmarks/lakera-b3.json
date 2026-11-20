@@ -1,68 +1,625 @@
 {
   "id": "lakera-b3",
   "name": "Lakera B3",
-  "full_name": "Lakera B3 AI Security Benchmark",
+  "full_name": "Breaking Agent Backbones: Evaluating the Security of Backbone LLMs in AI Agents（b3 基准）",
   "aliases": [
     "B3 AI Security Benchmark",
     "Lakera B3",
-    "Lakera b3-agent-security-benchmark"
+    "Lakera b3-agent-security-benchmark",
+    "b3 benchmark",
+    "Backbone Breaker Benchmark"
   ],
   "status": null,
   "categories": [
     "safety"
   ],
-  "summary": "Lakera 公开的 AI 安全防御基准：给模型投喂带提示注入的输入，衡量模型抵御间接提示注入攻击的比例（越接近 100% 越好）。",
-  "interpretation": "读分要认准方向：这里记的是「抵抗率」而非「攻击成功率」——分数越高说明模型越能扛住提示注入。厂商发布文里的 93.3% 指模型挡下了九成以上的注入攻击，而不是模型被攻陷的概率。该基准面向 Agent 场景，评估的是模型在被人为构造的恶意内容包围时的稳定性，与真实业务里提示注入的暴露面并不完全等价。",
+  "summary": "b3 是 Lakera 联合 ETH Zürich、英国 AI 安全研究院与牛津 OATML 做的 Agent 安全基准（论文题目 Breaking Agent Backbones，ICLR 2026）：它把骨干 LLM 从完整 Agent 里隔离出来，用 30 个威胁快照（10 个 Agent 应用 × L1/L2/L3 三档防御）和 210 条众包高分攻击衡量模型被攻陷的程度。论文主指标「漏洞分」取值 0–1、越低越好；Hugging Face 上的公开子集只有 630 条被剔掉高分攻击后的弱攻击，和论文用的 210 条不是同一批数据。",
+  "interpretation": "读分先认方向：论文的漏洞分越低越好，0.13（claude-haiku-4-5，开推理）是全表最好，0.63（gpt-4.1）是全表最差，图 2 右侧排名明确标注 lower score is better；这个分数由 210 条人工挑选的攻击聚合而来，不是「攻击成功率」。厂商发布文里常见的「93.3% 抵抗率」是另一个口径：Mistral 自己发布的百分比、越高越好，并且链接指向 HF 上的公开弱攻击子集，与论文漏洞分既不同向也不同数据，不能互相换算。论文两条主结论值得记住：对可切换推理的模型，开推理普遍降低漏洞分；模型大小与安全不相关。",
   "measures": [
-    "对间接提示注入攻击的抵抗力",
-    "Agent 场景下的输入鲁棒性"
+    {
+      "area": "骨干 LLM 的提示注入抵抗力",
+      "focus": "把 LLM 从完整 Agent 中隔离，只测单次 LLM 调用能否守住攻击；覆盖 6 类攻击目标（数据外泄、内容注入、决策与行为操纵、拒绝服务、系统与工具攻陷、内容策略绕过）",
+      "share": "30 个威胁快照（10 个 Agent 应用 × L1/L2/L3）",
+      "format": "每条攻击在指定系统提示下让模型作答，用该快照的 0–1 攻击得分判定是否达成攻击目标",
+      "cite": [
+        "paper@§2.2.2",
+        "paper@§3.1",
+        "paper@Figure 1"
+      ]
+    },
+    {
+      "area": "攻击投递向量：直接 vs 间接",
+      "focus": "直接指攻击者把攻击直接当用户输入传给 LLM；间接指攻击藏在网页、文档、本地文件和工具定义里被 LLM 读取",
+      "share": "Table 3 的 direct 子集覆盖 4 个应用、indirect 覆盖 6 个应用，各含 L1/L2/L3",
+      "format": "同一模型分别在 direct 与 indirect 子集上算漏洞分",
+      "cite": [
+        "paper@§2.2.2",
+        "paper@Table 3"
+      ]
+    },
+    {
+      "area": "三档防御等级",
+      "focus": "L1 系统提示几乎不设防；L2 用更复杂的系统提示；L3 在 L1 上加一个 LLM 自裁判",
+      "share": "每档 10 个快照，共 30 个；另有只含 L3 的 self-judge 子集",
+      "format": "同一条攻击在三档上分别评测",
+      "cite": [
+        "paper@§3.1",
+        "paper@Table 3"
+      ]
+    },
+    {
+      "area": "六类任务型攻击",
+      "focus": "DIO / IIO / DTI / ITI / DCE / DAIS 六类，论文图 2 左上按类别分别画分，并指出模型的安全属性随任务类型变化",
+      "share": "210 条攻击在各类的精确条数论文未披露",
+      "format": "按类别切分的漏洞分子集",
+      "cite": [
+        "paper@§2.2.2",
+        "paper@Figure 2",
+        "paper@§4.3"
+      ]
+    }
   ],
   "does_not_measure": [
-    "模型自身生成有害内容的能力",
-    "网络安全攻防任务完成率",
-    "通用任务准确率"
+    {
+      "text": "完整 Agent 的安全：论文明确只评骨干 LLM，Agent 的执行流、权限、工具链和传统软件漏洞都不在范围内",
+      "cite": [
+        "paper@§5",
+        "paper@附录 G"
+      ]
+    },
+    {
+      "text": "模型在正常任务上的能力与延迟：论文说没有考虑任何模型的实用性或延迟",
+      "cite": [
+        "paper@§5"
+      ]
+    },
+    {
+      "text": "多轮与多 Agent 攻击：论文只做单步威胁快照，并说明聚焦单步是为了覆盖足够多样的威胁来横评骨干 LLM",
+      "cite": [
+        "paper@§2.2.1"
+      ]
+    },
+    {
+      "text": "攻击被真实 RAG 系统检索到的概率：论文说这无法量化",
+      "cite": [
+        "paper@§5"
+      ]
+    },
+    {
+      "text": "最强的攻击：论文把最高质量的攻击从公开数据里移除，公开集只是低质量版本",
+      "cite": [
+        "paper@§3.2",
+        "hf-b3-agent-security-benchmark-weak@Dataset Summary"
+      ]
+    }
   ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
+    "sample_count": 630,
+    "splits": [
+      "公开集：Benchmark dataset（630 条，无标准 train/validation/test 划分）",
+      "论文评测集：210 条高分攻击（7 × 10 × 3），不随公开集发布"
+    ],
     "languages": [
       "en"
     ],
-    "source_type": "third_party_benchmark",
-    "public_sample": true
+    "source_type": "crowdsourced red teaming（游戏化红队挑战 Gandalf 的真人玩家攻击）",
+    "public_sample": true,
+    "totals": "公开集 630 条攻击（756 kB CSV）；论文评测用另外挑出的 210 条高分攻击（7 × 10 × 3），仅占全部采集量的 0.1%",
+    "cite": [
+      "hf-b3-agent-security-benchmark-weak@Files",
+      "hf-b3-agent-security-benchmark-weak@Dataset Structure",
+      "paper@§3.2"
+    ],
+    "construction": [
+      {
+        "k": "威胁快照怎么定",
+        "text": "先固定 10 个 Agent 应用（论文示例：一个做个性化训练计划、帮修自行车、给骑行线路建议的 AI 骑行教练），每个应用拆出 L1/L2/L3 三档防御，共 30 个快照；快照按设计只捕获单次 LLM 调用。",
+        "cite": [
+          "paper@§3.1",
+          "paper@Figure 1",
+          "paper@附录 B.4"
+        ]
+      },
+      {
+        "k": "众包采集",
+        "text": "用游戏化红队挑战让真人玩家攻打快照，玩家能看到应用反馈和 0–100 的分数；共 947 名用户、13,920 个会话，最终 194,331 条独立攻击，分 4 波发布以处理平台早期问题。",
+        "cite": [
+          "paper@§3.2"
+        ]
+      },
+      {
+        "k": "挑出高分攻击",
+        "text": "≥75 分的高分攻击约 1.09 万条，在 7 个骨干 LLM 上重新评测，最后每个快照 × 防御等级取 7 条，共 210 条（7 · 10 · 3）。",
+        "cite": [
+          "hf-b3-agent-security-benchmark-weak@Dataset Creation",
+          "paper@§3.2"
+        ]
+      },
+      {
+        "k": "公开集剔掉高分",
+        "text": "公开数据集移除质量最高的攻击，只留低质量版本；论文说这样也能让模型厂商更难对基准过拟合。",
+        "cite": [
+          "paper@§3.2",
+          "hf-b3-agent-security-benchmark-weak@Dataset Summary"
+        ]
+      },
+      {
+        "k": "判分不用 LLM 裁判",
+        "text": "Gandalf 的给分刻意避开 LLM-as-judge，否则玩家会去攻击裁判而不是真的达成攻击目标；单个快照的攻击得分是到 [0,1] 的函数。",
+        "cite": [
+          "paper@附录 D"
+        ]
+      }
+    ]
   },
   "metrics": [
     {
+      "id": "vulnerability-score",
+      "name": "漏洞分（vulnerability score）",
+      "direction": "越低越好",
+      "description": "模型在给定威胁快照子集上被攻击得手的程度，取值 0–1；论文用非参数 bootstrap 估 95% 置信区间，图 2 的排名就以它为依据。",
+      "range": [
+        0,
+        1
+      ],
+      "unit": "score",
+      "cite": [
+        "paper@§3.3",
+        "paper@Figure 2"
+      ]
+    },
+    {
+      "id": "attack-score",
+      "name": "单条攻击得分",
+      "direction": "越低越好",
+      "description": "单个威胁快照定义、取值 0–1 的攻击得分函数，判定一条攻击是否达成目标；漏洞分由它聚合而来。",
+      "range": [
+        0,
+        1
+      ],
+      "unit": "score",
+      "cite": [
+        "paper@附录 D"
+      ]
+    },
+    {
       "id": "attack-resistance-rate",
-      "name": "攻击抵抗率",
+      "name": "攻击抵抗率（厂商自报）",
+      "direction": "越高越好",
+      "description": "挡下的攻击占比（百分比）。本站账本里 Mistral Large 4 报 93.3%，来自其发布文并链接到 HF 公开弱攻击子集；与论文漏洞分不同向、也不同数据。",
       "range": [
         0,
         100
       ],
       "unit": "percent",
-      "direction": "higher",
-      "aggregation": "mean"
+      "cite": [
+        "mistral-large-4@Model Safety"
+      ]
     }
   ],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [
-    "由第三方（Lakera）维护，评测集版本与判分细则随平台更新",
-    "衡量的是注入攻击抵抗能力，与真实业务暴露面不完全等价",
-    "抵抗率高不代表模型在正常任务上能力更强，两者需分开读"
+  "default_protocol": {
+    "raw": "把骨干 LLM 从 Agent 里隔离：给定系统提示（L1/L2/L3 之一）和一条攻击，让模型跑一次调用，用该快照的 0–1 攻击得分判断是否达成攻击目标；在威胁快照子集上聚合得到漏洞分 V(m,T)，并用非参数 bootstrap 的经验分位数给出 95% 置信区间。每个模型用 210 条攻击、重复 N=5；可切换推理的模型分别测推理关闭与开启（2048 推理 token 或中等推理强度）。",
+    "cite": [
+      "paper@§3.3",
+      "paper@§4",
+      "paper@§2.2.1"
+    ],
+    "variants": [
+      {
+        "text": "推理开 / 关：可切换推理的模型在论文里两种配置各测一遍，论文说多数模型开推理后漏洞分明显下降，两种口径不能混在一起比。",
+        "cite": [
+          "paper@§4",
+          "paper@§4.2"
+        ]
+      },
+      {
+        "text": "威胁快照子集：Table 3 给出 direct（i ∈ {1, 4, 8, 9}）、indirect（i ∈ {2, 3, 5, 6, 7, 10}）和只含 L3 的 self-judge（全部 10 个应用）等子集，不同子集的分数不能直接比。",
+        "cite": [
+          "paper@Table 3"
+        ]
+      },
+      {
+        "text": "厂商自报口径：Mistral 发布文的 93.3% 抵抗率链接到 HF 公开弱攻击子集，与论文 210 条高分攻击上的漏洞分不是同一口径，方向也相反。",
+        "cite": [
+          "mistral-large-4@Model Safety",
+          "paper@§3.2"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "hf-dataset",
+      "date": "2025-10-26",
+      "label": "Hugging Face 公开 b3-agent-security-benchmark-weak：630 行 CSV、756 kB，只含低质量攻击",
+      "cite": [
+        "hf-b3-agent-security-benchmark-weak@Files",
+        "hf-b3-agent-security-benchmark-weak@Dataset Summary"
+      ]
+    },
+    {
+      "id": "v1",
+      "date": "2025-10-26",
+      "label": "arXiv v1 发布",
+      "cite": [
+        "paper@Submission history"
+      ]
+    },
+    {
+      "id": "v2",
+      "date": "2026-02-24",
+      "label": "arXiv v2 修订，标注为 ICLR 2026 会议论文（本页核对所用版本）",
+      "cite": [
+        "paper@Submission history",
+        "paper@p.1"
+      ]
+    }
   ],
-  "notes": "Mistral Large 4 发布文引用的官方数据集链接指向 Lakera/b3-agent-security-benchmark-weak",
+  "limitations": [
+    {
+      "issue": "公开集 ≠ 论文评测集",
+      "impact": "论文把最高质量的攻击从公开数据里移除：公开攻击的平均强度是 0.18，挑出的 210 条是 0.56。在公开集上跑出来的分数会明显好看。",
+      "severity": "高",
+      "response": "论文明确说这是为了让模型厂商更难对基准过拟合；高质量子集不随公开数据发布。",
+      "reader": "看到 HF 链接上的分数先问一句用的是哪批攻击；Mistral 的 93.3% 抵抗率链接的正是公开弱子集。",
+      "cite": [
+        "paper@§3.2",
+        "hf-b3-agent-security-benchmark-weak@Dataset Summary"
+      ]
+    },
+    {
+      "issue": "只测骨干 LLM，不测 Agent",
+      "impact": "威胁快照按设计只捕获单次 LLM 调用；完整 Agent 的执行流、权限、工具链和传统软件漏洞都不在范围内，论文也承认骨干安全只是 Agent 安全的一个组成部分。",
+      "severity": "中",
+      "response": "论文在附录 G 说明这样设计是为了不把 LLM 漏洞和传统软件缺陷混在一起。",
+      "reader": "不能把这个分数当成「上了这套系统提示就安全」的证据。",
+      "cite": [
+        "paper@§2.2.1",
+        "paper@§5",
+        "paper@附录 G"
+      ]
+    },
+    {
+      "issue": "不考虑能力与延迟",
+      "impact": "论文说没有考虑任何模型在目标任务上的实用性或延迟；安全更好的模型可能同时更不会干活。",
+      "severity": "中",
+      "response": "论文附录 C 的图 16 画了安全-效用权衡，可作方向参考，但本站未逐条核验其中数值。",
+      "reader": "选骨干模型时要自己另测能力，这个基准不替你回答。",
+      "cite": [
+        "paper@§5",
+        "paper@Figure 16"
+      ]
+    },
+    {
+      "issue": "众包采集有成本上限",
+      "impact": "论文说众包攻击很耗资源，等 AI 系统足够强之后这种采集方式可能撞上天花板。",
+      "severity": "中",
+      "response": "论文未给出替代方案。",
+      "reader": "这是一个时点快照，不是可以无限刷新新攻击的流水线。",
+      "cite": [
+        "paper@§5"
+      ]
+    },
+    {
+      "issue": "单步攻击只是下界",
+      "impact": "论文只做单步威胁快照，扛住单步不代表扛住多轮组合攻击。",
+      "severity": "中",
+      "response": "论文说聚焦单步是为了覆盖足够多样的威胁，以便在广泛的 Agent 应用场景里横评骨干 LLM。",
+      "reader": "把它当成「至少扛住一步」的下界证据。",
+      "cite": [
+        "paper@§2.2.1"
+      ]
+    },
+    {
+      "issue": "公开数据集的许可标注自相矛盾",
+      "impact": "HF 数据集卡片正文写 License: MIT，同一页面的结构化许可元数据却标注 other；要商用或再分发得先确认。",
+      "severity": "低",
+      "response": "站点未解释这一差异。",
+      "reader": "复现或商用前以 HF 页面的许可标签为准，并联系数据集作者。",
+      "cite": [
+        "hf-b3-agent-security-benchmark-weak@Licensing",
+        "hf-b3-agent-security-benchmark-weak@页面元数据"
+      ]
+    }
+  ],
+  "notes": "Mistral Large 4 发布文引用的官方数据集链接指向 Lakera/b3-agent-security-benchmark-weak；本站账本里该厂商自报的 93.3% 是「攻击抵抗率」（越高越好），与论文的漏洞分（越低越好）不是同一口径，也不能互换。",
   "official_sources": [
     {
-      "kind": "site",
+      "kind": "dataset",
       "url": "https://huggingface.co/datasets/Lakera/b3-agent-security-benchmark-weak"
+    },
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2510.22620"
+    },
+    {
+      "kind": "announcement",
+      "url": "https://mistral.ai/news/mistral-large-4/"
     }
   ],
   "related_benchmarks": [
     "aa-cyber-index",
     "cybench",
-    "cybergym"
+    "cybergym",
+    "gray-swan-ipi"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-10-26"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "Breaking Agent Backbones: Evaluating the Security of Backbone LLMs in AI Agents（arXiv:2510.22620 v2，ICLR 2026 会议论文）",
+        "url": "https://arxiv.org/abs/2510.22620",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "hf-b3-agent-security-benchmark-weak",
+        "kind": "dataset",
+        "title": "Lakera/b3-agent-security-benchmark-weak（Hugging Face，公开低质量攻击子集）",
+        "url": "https://huggingface.co/datasets/Lakera/b3-agent-security-benchmark-weak",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "mistral-large-4",
+        "kind": "announcement",
+        "title": "Mistral Large 4 发布文（Model Safety 一节）",
+        "url": "https://mistral.ai/news/mistral-large-4/",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Lakera AI（联合 ETH Zürich、UK AI Security Institute、牛津 OATML）",
+        "cite": [
+          "paper@p.1"
+        ]
+      },
+      "first_release": {
+        "v": "2025-10-26（arXiv v1；同日公开 Hugging Face 数据集）",
+        "cite": [
+          "paper@Submission history",
+          "hf-b3-agent-security-benchmark-weak@Files"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "paper@Abstract",
+        "paper@§3.2",
+        "paper@Figure 2"
+      ],
+      "interpretation": [
+        "paper@§4.2",
+        "paper@Figure 2",
+        "mistral-large-4@Model Safety"
+      ]
+    },
+    "problem": {
+      "text": "已有的 Agent 安全基准要么只覆盖特定漏洞、要么要求建模完整 Agent，业内缺少「换骨干 LLM 会怎样影响 Agent 安全」的系统证据，而手工红队又不可扩展。b3 想把骨干 LLM 从 Agent 里隔离出来，用大规模众包攻击给出可比较的安全排名。",
+      "cite": [
+        "paper@Abstract",
+        "paper@§1",
+        "paper@§2.2.1"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "全表最安全",
+        "value": "0.13",
+        "note": "claude-haiku-4-5（开推理）。论文说它在 L1/L2/L3 每一层都是最安全的。",
+        "cite": [
+          "paper@Figure 2",
+          "paper@§4.3"
+        ]
+      },
+      {
+        "label": "第二",
+        "value": "0.15",
+        "note": "claude-sonnet-4-5（开推理）。",
+        "cite": [
+          "paper@Figure 2",
+          "paper@§4.2"
+        ]
+      },
+      {
+        "label": "最强开源权重",
+        "value": "0.34",
+        "note": "kimi-k2-thinking（开推理），优于不带推理的 gpt-5.1。",
+        "cite": [
+          "paper@Figure 2",
+          "paper@§4.2"
+        ]
+      },
+      {
+        "label": "开源中档",
+        "value": "0.59",
+        "note": "qwen3-32b（开推理）。",
+        "cite": [
+          "paper@Figure 2"
+        ]
+      },
+      {
+        "label": "全表最差",
+        "value": "0.63",
+        "note": "gpt-4.1（不带推理）。",
+        "cite": [
+          "paper@Figure 2"
+        ]
+      },
+      {
+        "label": "本站账本当前记录（厂商自报口径，非论文漏洞分）",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把漏洞分当成「攻击成功率」或「被攻陷比例」：论文的漏洞分是攻击得手程度的聚合，取值 0–1、越低越好，图 2 右侧排名明确标注 lower score is better。",
+        "cite": [
+          "paper@§3.3",
+          "paper@Figure 2"
+        ]
+      },
+      {
+        "text": "把厂商自报的 93.3% 抵抗率和论文漏洞分放在一起比：前者是 Mistral 发布文里的百分比、越高越好，且链接到 HF 公开弱攻击子集；后者是 210 条高分攻击上的 0–1 分数、越低越好。两者既不同向也不同数据。",
+        "cite": [
+          "mistral-large-4@Model Safety",
+          "paper@§3.2"
+        ]
+      },
+      {
+        "text": "看到 HF 数据集就以为能复现论文排名：公开集刻意剔掉了最高质量的攻击（平均强度 0.18，而挑出的 210 条是 0.56），在上面跑出来的分会明显好看。",
+        "cite": [
+          "paper@§3.2",
+          "hf-b3-agent-security-benchmark-weak@Dataset Summary"
+        ]
+      },
+      {
+        "text": "以为模型越大越安全：论文说更大的版本在没有推理能力时相对更小的同类没有显著优势，有时还更差；参数量与安全不相关。",
+        "cite": [
+          "paper@§4.2",
+          "paper@Abstract"
+        ]
+      },
+      {
+        "text": "以为能力榜前面的模型更安全：论文点名 gpt-5.1 和 kimi-k2-thinking 这两家最高能力模型，在安全排名里只排第 8 和第 14。",
+        "cite": [
+          "paper@§4.2"
+        ]
+      },
+      {
+        "text": "把开推理和不开推理的分数混着比：论文对可切换推理的模型两种配置各测一遍，多数模型开推理后漏洞分明显下降。",
+        "cite": [
+          "paper@§4",
+          "paper@§4.2"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "Lakera AI，联合 ETH Zürich、UK AI Security Institute 与牛津 OATML",
+        "cite": [
+          "paper@p.1"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "共同一作 Julia Bazińska、Max Mathys；其他作者 Francesco Casucci、Mateo Rojas-Carulla、Xander Davies、Alexandra Souly；Niklas Pfister（署名带 †）",
+        "cite": [
+          "paper@p.1",
+          "hf-b3-agent-security-benchmark-weak@Authors"
+        ]
+      },
+      {
+        "k": "论文与发表",
+        "v": "Breaking Agent Backbones: Evaluating the Security of Backbone LLMs in AI Agents，arXiv:2510.22620，标注为 ICLR 2026 会议论文",
+        "cite": [
+          "paper@p.1",
+          "hf-b3-agent-security-benchmark-weak@Dataset Summary"
+        ]
+      },
+      {
+        "k": "众包平台",
+        "v": "攻击来自游戏化红队挑战 Gandalf；论文刻意不用 LLM-as-judge 给玩家打分",
+        "cite": [
+          "paper@§3.2",
+          "paper@附录 D"
+        ]
+      },
+      {
+        "k": "排名稳健性",
+        "v": "论文说排名对攻击挑选方式稳健，其中攻击质量影响最大，而聚合方式对排名没有影响",
+        "cite": [
+          "paper@§4.1"
+        ]
+      },
+      {
+        "k": "评测规模",
+        "v": "34 个常用 LLM，每个用 210 条攻击、重复 N=5；附录 E 的 Table 5 列出全部模型及其开发方与 API 提供方",
+        "cite": [
+          "paper@§4",
+          "paper@附录 E"
+        ]
+      },
+      {
+        "k": "复现入口",
+        "v": "基准集成在 Inspect 框架里，论文称已建公开代码仓库；HF 卡片说评测与判分代码将随 Inspect Evals 发布",
+        "cite": [
+          "paper@Reproducibility Statement",
+          "hf-b3-agent-security-benchmark-weak@Running the benchmark"
+        ]
+      },
+      {
+        "k": "公开数据",
+        "v": "Hugging Face 上的 b3-agent-security-benchmark-weak：630 行 CSV、756 kB，2025-10-26 发布，无标准 train/validation/test 划分",
+        "cite": [
+          "hf-b3-agent-security-benchmark-weak@Files"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-02-24",
+        "columns": [
+          "口径",
+          "来源",
+          "模型",
+          "分数",
+          "备注"
+        ],
+        "rows": [
+          [
+            "论文漏洞分（越低越好）",
+            "论文 Figure 2 右侧排名",
+            "claude-haiku-4-5（R）",
+            "0.13",
+            "全表最安全"
+          ],
+          [
+            "论文漏洞分（越低越好）",
+            "论文 Figure 2 右侧排名",
+            "claude-sonnet-4-5（R）",
+            "0.15",
+            ""
+          ],
+          [
+            "论文漏洞分（越低越好）",
+            "论文 Figure 2 右侧排名",
+            "kimi-k2-thinking（R）",
+            "0.34",
+            "最强开源权重"
+          ],
+          [
+            "论文漏洞分（越低越好）",
+            "论文 Figure 2 右侧排名",
+            "qwen3-32b（R）",
+            "0.59",
+            ""
+          ],
+          [
+            "论文漏洞分（越低越好）",
+            "论文 Figure 2 右侧排名",
+            "gpt-4.1",
+            "0.63",
+            "全表最差"
+          ],
+          [
+            "厂商自报抵抗率（越高越好）",
+            "Mistral Large 4 发布文",
+            "Mistral Large 4",
+            "93.3%",
+            "链接指向 HF 公开弱攻击子集，与上面几行不同口径"
+          ]
+        ]
+      },
+      "cite": [
+        "paper@Figure 2",
+        "mistral-large-4@Model Safety"
+      ]
+    }
+  }
 }

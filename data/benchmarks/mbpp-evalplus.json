@@ -1,28 +1,307 @@
 {
   "id": "mbpp-evalplus",
   "name": "MBPP (EvalPlus)",
-  "full_name": null,
-  "aliases": [],
-  "status": null,
+  "full_name": "Mostly Basic Programming Problems（EvalPlus 扩充测试版，即 MBPP+）",
+  "aliases": [
+    "MBPP+",
+    "EvalPlus MBPP"
+  ],
+  "status": "active",
   "categories": [
     "coding"
   ],
-  "summary": "基础 MBPP 集经 EvalPlus 工具评测（0-shot）",
-  "interpretation": "原 MBPP 数据用 EvalPlus 工具链以 0-shot 口径评测，pass@1（0-100，越高越好）；题面为入门级 Python，主要作基础代码能力筛查，读分时与 HumanEval 系并列看。",
-  "measures": [],
-  "does_not_measure": [],
+  "summary": "MBPP 是 Google 2021 年放出的 974 道入门级 Python 编程题，每题只配 3 个手写测试；EvalPlus 用「ChatGPT 生成种子输入 + 类型感知变异」把测试量扩充到约 35 倍，这就是 MBPP+。本档案对应 EvalPlus 榜单的 MBPP+ 口径：在同一批 399 道人工核验题目上，按贪心解码统计 pass@1。",
+  "interpretation": "pass@1 越高，说明模型一次生成就写出能通过该题全部测试的函数的概率越高。读分时要记住三件事：题目是入门级单函数（参考解平均 6.8 行），对前沿模型区分度有限；只配 3 个测试的原始口径会高估通过率，论文自己估计约 12% 被计为「通过」的程序经不起对抗测试；比较前先确认是 MBPP 还是 MBPP+、399 题还是 378 题、chat 还是 base 提示词。",
+  "measures": [
+    {
+      "area": "数学类问题",
+      "focus": "论文抽样 100 题打标签时占比最高；示例：计算球体体积",
+      "share": "58%",
+      "format": "写一个自包含 Python 函数，由测试断言语义判定",
+      "cite": [
+        "paper-mbpp@§2.1"
+      ]
+    },
+    {
+      "area": "列表处理",
+      "focus": "论文未给出该类示例题",
+      "share": "43%",
+      "format": "同上",
+      "cite": [
+        "paper-mbpp@§2.1"
+      ]
+    },
+    {
+      "area": "字符串处理",
+      "focus": "论文未给出该类示例题",
+      "share": "19%",
+      "format": "同上",
+      "cite": [
+        "paper-mbpp@§2.1"
+      ]
+    },
+    {
+      "area": "整数序列",
+      "focus": "论文点名这一类需要特定著名整数序列定义之类的冷门外部知识",
+      "share": "9%",
+      "format": "同上",
+      "cite": [
+        "paper-mbpp@§2.1"
+      ]
+    },
+    {
+      "area": "其他数据结构",
+      "focus": "论文未给出该类示例题",
+      "share": "2%",
+      "format": "同上",
+      "cite": [
+        "paper-mbpp@§2.1"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "代码运行效率与资源占用（EvalPlus 另立 EvalPerf，v0.3.1 起随包发布；MBPP+ 口径只判功能正确性）",
+      "cite": [
+        "repo-evalplus@README"
+      ]
+    },
+    {
+      "text": "多文件工程、竞赛级编程能力（题目限定为单函数、自包含、入门级，参考解平均 6.8 行）",
+      "cite": [
+        "paper-mbpp@§2.1"
+      ]
+    },
+    {
+      "text": "代码质量的代理指标（论文明确不用 token 准确率、BLEU 之类，只看测试是否通过）",
+      "cite": [
+        "paper-mbpp@§3"
+      ]
+    }
+  ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
+    "sample_count": 399,
+    "splits": [
+      "EvalPlus 榜单口径：399 题（从 MBPP-sanitized 427 题里挑出的形式良好子集）",
+      "MBPP 原始发布：test 500 / 微调 374 / 验证 90 / 少样本提示 10（共 974 题）",
+      "MBPP+ 自 v0.2.0（2024-04-17）起：378 题（移除 21 个损坏任务）"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "crowd-sourced 出题 + 人工核验编辑 + 自动测试扩充",
+    "public_sample": true,
+    "totals": "榜单口径 399 题；MBPP 原始共 974 题（test 500 / 微调 374 / 验证 90 / 少样本提示 10），其中人工核验后的 edited 集论文写 426 题、Hugging Face 上的 sanitized 配置为 427 题；MBPP+ 自 v0.2.0 起为 378 题。题型占比来自论文随机抽取 100 题的人工多标签统计，一题可带多个标签，合计可超过 100%。",
+    "cite": [
+      "paper-mbpp@§2.1",
+      "leaderboard@Notes",
+      "hf-mbpp@数据集卡片",
+      "repo-evalplus@README"
+    ],
+    "construction": [
+      {
+        "k": "众包出题",
+        "text": "Google 把题目众包给有基础 Python 知识的内部工人：每人写一段简短题面、一个解决问题的自包含 Python 函数、三个检查语义正确性的测试用例，再附一个能通过全部三个测试的参考解。",
+        "cite": [
+          "paper-mbpp@§2.1"
+        ]
+      },
+      {
+        "k": "人工核验编辑",
+        "text": "作者人工检查、编辑并裁剪一部分题目，得到 426 道 hand-verified 的 edited 集，确保函数签名标准、题面无歧义、测试与描述一致；Hugging Face 上的 sanitized 配置为 427 题，是第二轮标注者改进题面后的产物。",
+        "cite": [
+          "paper-mbpp@§2.1",
+          "hf-mbpp@数据集卡片"
+        ]
+      },
+      {
+        "k": "自动扩充测试",
+        "text": "EvalPlus 先用 ChatGPT 生成一批瞄准困难角落用例的高质量种子输入，再做类型感知变异批量生成新输入，最后与参考实现做差分测试；MBPP+ 的测试量约为原始 MBPP 的 35 倍。",
+        "cite": [
+          "paper-evalplus@§2.1",
+          "repo-evalplus@README"
+        ]
+      },
+      {
+        "k": "榜单取子集",
+        "text": "EvalPlus 榜单上的 MBPP 与 MBPP+ 两列都用 MBPP-sanitized（427 题）中筛出的 399 题子集，以保证题面形式良好（例如 test_list 本身没有错）。",
+        "cite": [
+          "leaderboard@Notes"
+        ]
+      },
+      {
+        "k": "发布后修订",
+        "text": "2024-04-17 MBPP+ 升到 v0.2.0，移除 21 个损坏任务（399 → 378 题），官方预计 pass@1 提升约 4 个百分点；2024-06-09 又修正了 3 个 MBPP+ 任务（459 / 102 / 559）的参考解。",
+        "cite": [
+          "repo-evalplus@README"
+        ]
+      }
+    ]
   },
-  "metrics": [],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [],
-  "notes": "Meta Llama 3.1 引用；Meta eval_details 将其与 MBPP（3-shot）分列，非 MBPP+ 扩展集",
+  "default_protocol": {
+    "raw": "在 399 题子集上让模型生成代码，用 MBPP+ 的扩充测试集判定是否全部通过，按贪心解码（每个任务一次生成）统计 pass@1；提示词分 base 与 chat 两种，默认由 tokenizer.chat_template 自动判定，可用 --force-base-prompt 强制按 base 评。论文原始口径不同：从测试集逐题用温度 0.5 采样 80 个程序，统计至少一个通过全部测试的比例。",
+    "cite": [
+      "leaderboard@Notes",
+      "repo-evalplus@README",
+      "paper-mbpp@§3"
+    ],
+    "variants": [
+      {
+        "text": "MBPP（原始 3 个测试）vs MBPP+（约 35 倍测试）：榜单上是两列，题目同为 399 题，MBPP+ 的分数明显更低，两者不能混排。",
+        "cite": [
+          "leaderboard@Notes",
+          "repo-evalplus@README"
+        ]
+      },
+      {
+        "text": "chat 设置 vs base 直补全：榜单用 ✨ 标注采用 chat 设置的模型，其余是直接代码补全，两种设置的分数不能直接比。",
+        "cite": [
+          "leaderboard@Notes",
+          "repo-evalplus@README"
+        ]
+      },
+      {
+        "text": "399 题 vs 378 题：MBPP+ v0.2.0 移除了 21 个损坏任务，官方预计两者相差约 4 个百分点；榜单页面注明用的是 MBPP+ v0.2.0。",
+        "cite": [
+          "repo-evalplus@README",
+          "leaderboard@Notes"
+        ]
+      },
+      {
+        "text": "0-shot 贪心 vs 论文的少样本 + 80 次采样口径：论文用 10 道题做少样本提示、每题采样 80 个程序，与榜单的一次生成口径不可直接比较。",
+        "cite": [
+          "paper-mbpp@§3",
+          "paper-mbpp@§2.1"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "pass-at-1-greedy",
+      "name": "pass@1（贪心解码）",
+      "direction": "越高越好",
+      "description": "一次生成即通过该题全部测试的题目占比；EvalPlus 榜单的排名口径",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "leaderboard@Notes",
+        "repo-evalplus@README"
+      ]
+    },
+    {
+      "id": "pass-at-k-sampled",
+      "name": "pass@k（论文口径，80 次采样）",
+      "direction": "越高越好",
+      "description": "每题用温度 0.5 采样 80 个程序，统计其中至少一个通过全部测试的比例，用来估计模型的能力上限",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper-mbpp@§3"
+      ]
+    }
+  ],
+  "versions": [
+    {
+      "id": "mbpp-v1",
+      "date": "2021-08-16",
+      "label": "MBPP 论文 arXiv v1 发布（arXiv:2108.07732v1），974 题，含 426 题人工核验 edited 集",
+      "cite": [
+        "paper-mbpp@作者署名",
+        "paper-mbpp@§2.1"
+      ]
+    },
+    {
+      "id": "mbpp-plus-v0.2.0",
+      "date": "2024-04-17",
+      "label": "MBPP+ 升到 v0.2.0：移除 21 个损坏任务（399 → 378 题），官方预计 pass@1 提升约 4 个百分点",
+      "cite": [
+        "repo-evalplus@README"
+      ]
+    },
+    {
+      "id": "gt-fix-2024-06",
+      "date": "2024-06-09",
+      "label": "修正 MBPP+ 三个任务（459 / 102 / 559）的参考解",
+      "cite": [
+        "repo-evalplus@README"
+      ]
+    },
+    {
+      "id": "evalplus-v0.3.1",
+      "date": "2024-10-20",
+      "label": "EvalPlus v0.3.1 发布：新增 EvalPerf 代码效率评测、一条命令跑完生成 + 后处理 + 评测",
+      "cite": [
+        "repo-evalplus@README"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "同名不同题量（399 / 378）",
+      "impact": "榜单页面写的是 399 题子集，但 MBPP+ 自 v0.2.0（2024-04-17）起已移除 21 个损坏任务变成 378 题，官方预计两者相差约 4 个百分点。同一个「MBPP+」名字下题量不同，跨时间、跨来源的分数不能直接相比。",
+      "severity": "高",
+      "response": "读分先确认所用 MBPP+ 版本与题量；本站以仓库发布记录为准，把 378 题记为当前 MBPP+ 发布状态，把 399 题记为榜单口径。",
+      "reader": "看到 MBPP+ 分数先问一句「399 还是 378」，再决定能不能和别的数字放一起。",
+      "cite": [
+        "repo-evalplus@README",
+        "leaderboard@Notes"
+      ]
+    },
+    {
+      "issue": "测试不足导致通过率高估",
+      "impact": "论文抽 50 道测试题手写对抗测试：原测试通过率 66%，加入对抗测试后降到 58%，据此估计约 12% 被计为「通过」的程序经不起对抗测试。MBPP+ 的约 35 倍扩充测试正是为缓解这一点，EvalPlus 论文显示在 HumanEval+ 上 pass@k 最多低 19.3–28.9 个百分点。",
+      "severity": "中",
+      "response": "优先采用 MBPP+ 而非原始 MBPP 口径；EvalPlus 用 ChatGPT 种子输入 + 类型感知变异 + 差分测试自动扩充测试量。",
+      "reader": "早期只有 3 个测试的 MBPP 结果要打折看；就算 MBPP+ 也不等于「真的写对」。",
+      "cite": [
+        "paper-mbpp@§4.4",
+        "paper-evalplus@Abstract",
+        "repo-evalplus@README"
+      ]
+    },
+    {
+      "issue": "入门级难度，区分度有限",
+      "impact": "974 题全部定位入门级，每题一个自包含函数，参考解平均 6.8 行、中位 5 行；对前沿模型已接近饱和，分差难以反映真实工程能力。",
+      "severity": "中",
+      "response": "与更难的基准（如 HumanEval+、SWE-bench 一类）配合使用，不用它单独衡量工程能力。",
+      "reader": "90 分以上不要再当成强区分度指标，多模型之间的几个点差距可信度低。",
+      "cite": [
+        "paper-mbpp@Abstract",
+        "paper-mbpp@§2.1"
+      ]
+    },
+    {
+      "issue": "数据污染排查责任在模型方",
+      "impact": "榜单只声明「模型提供方有责任避免数据污染」，并用 💚 / 💙 标注数据开放程度；论文对当时预训练数据的重叠分析显示只有 32 / 974 题（3.3%）有超过一半行匹配，但那是 2021 年的检查，不能替今天的模型免责。",
+      "severity": "中",
+      "response": "榜单按开放权重 / 开放数据的程度打标，提示可以具体排查污染的模型；未见官方留存集或去污染重测机制。",
+      "reader": "对不开训练数据的模型，MBPP+ 高分要保留余地，优先看有开放数据的模型之间的相对差距。",
+      "cite": [
+        "leaderboard@Notes",
+        "paper-mbpp@§4.8"
+      ]
+    },
+    {
+      "issue": "题量与标注口径不一致",
+      "impact": "论文 edited 集写 426 题，Hugging Face 上 sanitized 配置是 427 题；2024-06-09 还修正过 3 个任务的参考解。引用题量时容易张冠李戴。",
+      "severity": "低",
+      "response": "本站分别记录论文 edited 集（426）、HF sanitized 配置（427）、MBPP+ 发布（378）三个数字及各自出处。",
+      "reader": "引用题量时注明是论文 edited 集、HF sanitized 配置还是 MBPP+ 发布版本。",
+      "cite": [
+        "paper-mbpp@§2.1",
+        "hf-mbpp@数据集卡片",
+        "repo-evalplus@README"
+      ]
+    }
+  ],
+  "notes": "EvalPlus 榜单上 MBPP 与 MBPP+ 是两列，用同一批 399 题但测试量差约 35 倍；本档案对应 MBPP+（自动扩充测试）口径。",
   "official_sources": [
     {
       "kind": "github",
@@ -36,6 +315,216 @@
   "related_benchmarks": [
     "humanevalplus"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-13",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      {
+        "id": "paper-mbpp",
+        "kind": "paper",
+        "title": "Program Synthesis with Large Language Models（arXiv:2108.07732v1，2021-08-16）",
+        "url": "https://arxiv.org/abs/2108.07732",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "paper-evalplus",
+        "kind": "paper",
+        "title": "Is Your Code Generated by ChatGPT Really Correct? Rigorous Evaluation of Large Language Models for Code Generation（arXiv:2305.01210v3，NeurIPS 2023）",
+        "url": "https://arxiv.org/abs/2305.01210",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "repo-evalplus",
+        "kind": "repo",
+        "title": "evalplus/evalplus（README 含 MBPP+ 发布记录与使用者列表）",
+        "url": "https://github.com/evalplus/evalplus",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "leaderboard",
+        "kind": "leaderboard",
+        "title": "EvalPlus Leaderboard（evalplus.github.io/leaderboard.html，含评测口径说明）",
+        "url": "https://evalplus.github.io/leaderboard.html",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "hf-mbpp",
+        "kind": "dataset",
+        "title": "google-research-datasets/mbpp（Hugging Face，CC-BY-4.0）",
+        "url": "https://huggingface.co/datasets/google-research-datasets/mbpp",
+        "accessed": "2026-11-13"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "MBPP：Google Research；MBPP+ / EvalPlus：伊利诺伊大学厄巴纳-香槟分校与南京大学团队",
+        "cite": [
+          "paper-mbpp@作者署名",
+          "paper-evalplus@作者署名"
+        ]
+      },
+      "first_release": {
+        "v": "2021-08-16（MBPP arXiv v1）；MBPP+ 于 2024 年随 EvalPlus 仓库发布",
+        "cite": [
+          "paper-mbpp@作者署名",
+          "repo-evalplus@README"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "paper-mbpp@Abstract",
+        "paper-mbpp@§2.1",
+        "paper-evalplus@Abstract",
+        "repo-evalplus@README",
+        "leaderboard@Notes"
+      ],
+      "interpretation": [
+        "paper-mbpp@§4.4",
+        "paper-mbpp@§2.1",
+        "repo-evalplus@README"
+      ]
+    },
+    "problem": {
+      "text": "MBPP 每题只有 3 个众包工人手写的测试，测不全函数的语义：论文抽 50 题补写对抗测试后，通过率从 66% 掉到 58%。EvalPlus 用自动测试输入生成器把测试量扩大一个量级（MBPP+ 约为原始 MBPP 的 35 倍），让「通过」更接近「真的写对」。",
+      "cite": [
+        "paper-mbpp@§4.4",
+        "paper-evalplus@Abstract",
+        "repo-evalplus@README"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机猜测基线",
+        "value": "论文未给出",
+        "note": "判定标准是生成代码通过该题全部测试，随机程序几乎不可能通过；论文没有报告随机基线，本站也不推算。",
+        "cite": [
+          "paper-mbpp@§3"
+        ]
+      },
+      {
+        "label": "论文发布时最好",
+        "value": "59.6%",
+        "note": "137B 模型少样本口径（论文：从测试集逐题用温度 0.5 采样 80 个程序，统计至少一个通过）；换成 100 道人工核验题目后同设置从 63% 升到 79%。",
+        "cite": [
+          "paper-mbpp@Abstract",
+          "paper-mbpp@§4.9"
+        ]
+      },
+      {
+        "label": "官方榜单 MBPP+ 列最高",
+        "value": "未披露",
+        "note": "榜单的 MBPP 表由页面脚本渲染，静态抓取只拿到 HumanEval 两张表，本站不转写、不推算该列分数。",
+        "cite": [
+          "leaderboard@Notes"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      },
+      {
+        "label": "噪声参考线",
+        "value": "约 12% 的「通过」经不起对抗测试",
+        "note": "论文抽 50 题写对抗测试的估计（66% → 58%）；MBPP+ 用约 35 倍测试缓解，但这条线提醒只有 3 个测试的原始 MBPP 分数要打折看。这是论文的自评估计，不是官方上限。",
+        "cite": [
+          "paper-mbpp@§4.4",
+          "repo-evalplus@README"
+        ]
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把榜单的 MBPP 列和 MBPP+ 列当同一口径比——两列用同一批 399 题，但测试量差约 35 倍，MBPP+ 分数明显更低。",
+        "cite": [
+          "leaderboard@Notes",
+          "repo-evalplus@README"
+        ]
+      },
+      {
+        "text": "把 chat 设置（榜单标 ✨）和 base 直补全的分数排在一起比——提示词形态不同，结果不可直接比较。",
+        "cite": [
+          "leaderboard@Notes",
+          "repo-evalplus@README"
+        ]
+      },
+      {
+        "text": "把 974 / 500 / 427 / 399 / 378 混为一谈——原始 974 题里只有 500 题是论文测试集，榜单只用其中筛出的 399 题，MBPP+ 自 v0.2.0 起是 378 题。",
+        "cite": [
+          "paper-mbpp@§2.1",
+          "leaderboard@Notes",
+          "repo-evalplus@README"
+        ]
+      },
+      {
+        "text": "看到 90 分以上就认为模型「会写代码」——题目是入门级单函数、参考解平均 6.8 行，且原论文自己估计约 12% 的通过经不起对抗测试。",
+        "cite": [
+          "paper-mbpp@§2.1",
+          "paper-mbpp@§4.4"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "MBPP：Google Research；EvalPlus / MBPP+：伊利诺伊大学厄巴纳-香槟分校与南京大学团队",
+        "cite": [
+          "paper-mbpp@作者署名",
+          "paper-evalplus@作者署名"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "MBPP：Jacob Austin、Augustus Odena、Maxwell Nye、Maarten Bosma、Henryk Michalewski、David Dohan 等；EvalPlus：Jiawei Liu、Chunqiu Steven Xia、Yuyao Wang、Lingming Zhang",
+        "cite": [
+          "paper-mbpp@作者署名",
+          "paper-evalplus@作者署名"
+        ]
+      },
+      {
+        "k": "核心论文",
+        "v": "MBPP：arXiv:2108.07732（2021）；EvalPlus：arXiv:2305.01210，NeurIPS 2023",
+        "cite": [
+          "paper-mbpp@作者署名",
+          "paper-evalplus@作者署名"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2021-08-16 MBPP 发布 → 2023-05 EvalPlus 论文（NeurIPS 2023）→ 2024-04-17 MBPP+ v0.2.0（399 → 378）→ 2024-06-09 参考解修正 → 2024-10-20 EvalPlus v0.3.1",
+        "cite": [
+          "paper-mbpp@作者署名",
+          "paper-evalplus@作者署名",
+          "repo-evalplus@README"
+        ]
+      },
+      {
+        "k": "采用方",
+        "v": "EvalPlus 数据集的使用者包括 Meta Llama 3.1 / 3.3、Allen AI TÜLU 1/2/3、Qwen2.5-Coder、CodeQwen 1.5、DeepSeek-Coder V2、Qwen2、Snowflake Arctic、StarCoder2、Magicoder、WizardCoder",
+        "cite": [
+          "repo-evalplus@README"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "题目在 Hugging Face（google-research-datasets/mbpp，CC-BY-4.0，full 974 题 / sanitized 427 题两个配置），评测代码在 GitHub evalplus/evalplus，榜单在 evalplus.github.io",
+        "cite": [
+          "hf-mbpp@数据集卡片",
+          "repo-evalplus@README",
+          "leaderboard@Notes"
+        ]
+      },
+      {
+        "k": "与 HumanEval+ 的关系",
+        "v": "EvalPlus 论文本体只做了 HumanEval+（测试量扩大 80 倍），MBPP 被列为未来工作；MBPP+ 由 EvalPlus 仓库后续发布并维护",
+        "cite": [
+          "paper-evalplus@§5",
+          "paper-evalplus@§4",
+          "repo-evalplus@README"
+        ]
+      }
+    ]
+  }
 }

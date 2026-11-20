@@ -14,74 +14,562 @@
     "multimodal",
     "reasoning"
   ],
-  "summary": "OpenAI 2026-11-06 发布的湿实验室日常任务评测：100 道由一线湿实验室科学家用自己实验数据撰写的真实判读任务，覆盖蛋白方法、成像与流式细胞、定量与检测、核酸方法、分子克隆五个领域；模型输出结构化答案后，按专家撰写的评分细则逐条给分，最终分是「可得分信用额度的百分比」。",
-  "interpretation": "分值是 0–100 的「可得分百分比」（官方字段 mean_credit_pct）：每题按 rubric 逐条给分，再对 100 题取平均，所以它不是「答对题数比例」，而是「完成任务实际拿到的信用额度占比」，满分 100。官方把 7 个模型 × 37 个「模型 × 推理强度」设置各跑 5 次（每设置 500 条结果，全窗口共 18,500 条），误差棒是按整题重采样得到的 95% 置信区间。读分必须先对齐推理档位：无推理（none）到 xhigh 之间同一模型可差 5–15 个百分点，且各模型可用档位不同（GPT-5.2 / GPT-5.4 / GPT-5.5 只到 xhigh，GPT-6.1 Sol 与 GPT-6 Astra 从 low 起，GPT-5.6 Sol 与 GPT-6 Luna 另有 max）。整体水位（xhigh 档）：GPT-5.2 约 31%、GPT-5.4 约 33%、GPT-5.5 约 35%、GPT-6 Luna 约 38%、GPT-5.6 Sol 约 44%、GPT-6.1 Sol 约 62%、GPT-6 Astra 约 67%——GPT-6 家族内部差异极大，Astra 比同为 GPT-6 的 Luna 高近 30 个百分点，所以用它排名时必须同时给出模型与档位。它测的是「读懂原始实验数据、并判断证据是否足以支持结论」，不是知识问答。",
+  "summary": "OpenAI 与酶设计生物技术公司 Ligo 于 2026-11-06 发布的湿实验室日常判读评测：100 道任务的证据全部来自科学家自己实验的原始数据（凝胶与印迹图、菌落平板照片、显微栈、测序文件、酶标仪导出、台面操作视频），考模型能不能读懂数据、发现错误、并在证据不足以支持结论时拒绝下结论；分数按专家撰写的评分细则逐条给分，最终是「可得分信用额度的百分比」（mean reward）。",
+  "interpretation": "分数是 0–100 的「可得分百分比」：每题按 rubric 逐条给分（结论、数值、支撑推理、是否识别出证据不足分别给分），一个「模型 × 推理强度」设置对 100 题各跑 5 次后取平均——所以 66.7% 不等于「答对 67% 的题」，而是「拿到可用信用额度的 66.7%」，部分正确也能拿分。读分必须先对齐推理档位：官方报告 37 个「模型 × 推理强度」设置，同一模型跨档位差异明显，各模型可用档位也不同（xhigh 是七个模型都报告了的最高档，max 档仅部分模型有）。官方同页只发布 xhigh 档七模型表格：GPT‑6 Astra 66.7%（95% CI 60.3–73.1%）、GPT‑6.1 Sol 62.0%、GPT‑5.6 Sol 43.8%、GPT‑6 Luna 38.3%、GPT‑5.5 35.4%、GPT‑5.4 33.2%、GPT‑5.2 31.2%。两点必须同时说：一是 100 题的整题重采样 95% 置信区间半宽约 5–6.5 个百分点，相邻名次可能落在区间内；二是官方明确写「更高的基准分数并不意味着模型已能在实验室做出可靠判断」，并给出 GPT‑6 Astra 仍把菌落 PCR 的分组身份判反、把一片平板菌落多数约 12% 的案例。",
   "measures": [
-    "模型判读原始实验数据（凝胶图、菌落平板、显微图、仪器读数）并给出结论 / 数值 / 建议的完成质量",
-    "识别实验错误与对照失效的能力",
-    "在证据不足时主动指出「证据不足以支持结论」的能力",
-    "同一模型在不同 reasoning effort 档位下的表现差异",
-    "完成任务所需的平均输出 token 数（官方同图给出）"
+    {
+      "area": "蛋白方法（protein methods）",
+      "focus": "凝胶 / 印迹图与实验记录判读；例：从凝胶上读出 DNA 样品的分子量，结合阶梯图参考带确认条带身份",
+      "share": "未披露（正文仅列五个领域名，未按领域给题数）",
+      "format": "结构化答案 + rubric 逐条给分",
+      "cite": [
+        "openai-index-measuring-how-ai-a@任务构成段",
+        "openai-index-measuring-how-ai-a@任务难度段",
+        "openai-index-measuring-how-ai-a@Kind of data 表"
+      ]
+    },
+    {
+      "area": "成像与流式细胞（imaging and cytometry）",
+      "focus": "多通道显微图、z-stack 与流式原始数据判读；例：细胞在一串显微图里进出焦，GPT‑6 Astra 正确认出这是不同深度拍摄的 z-stack",
+      "share": "未披露（正文仅列五个领域名，未按领域给题数）",
+      "format": "结构化答案 + rubric 逐条给分",
+      "cite": [
+        "openai-index-measuring-how-ai-a@任务构成段",
+        "openai-index-measuring-how-ai-a@示例：z-stack",
+        "openai-index-measuring-how-ai-a@输入形态段"
+      ]
+    },
+    {
+      "area": "定量与检测（quantification and assays）",
+      "focus": "酶标仪导出、标准曲线、定量计算与计数；例：判死细胞染料信号时要考虑第二种染料的光也会进同一检测器，亮度本身不足以支撑结论",
+      "share": "未披露（正文仅列五个领域名，未按领域给题数）",
+      "format": "结构化答案 + rubric 逐条给分",
+      "cite": [
+        "openai-index-measuring-how-ai-a@任务构成段",
+        "openai-index-measuring-how-ai-a@示例：染料信号",
+        "openai-index-measuring-how-ai-a@输入形态段"
+      ]
+    },
+    {
+      "area": "核酸方法（nucleic acid methods）",
+      "focus": "测序原始文件（FASTQ / FASTA / GenBank）与凝胶判读等核酸日常操作",
+      "share": "未披露（正文仅列五个领域名，未按领域给题数）",
+      "format": "结构化答案 + rubric 逐条给分",
+      "cite": [
+        "openai-index-measuring-how-ai-a@任务构成段",
+        "openai-index-measuring-how-ai-a@Kind of data 表",
+        "openai-index-measuring-how-ai-a@输入形态段"
+      ]
+    },
+    {
+      "area": "分子克隆（molecular cloning）",
+      "focus": "菌落挑选、对照板校验与蓝白斑筛；例：GPT‑6 Astra 发现负对照板贴的是错误抗生素标签，拒绝把它当有效对照",
+      "share": "未披露（正文仅列五个领域名，未按领域给题数）",
+      "format": "结构化答案 + rubric 逐条给分",
+      "cite": [
+        "openai-index-measuring-how-ai-a@任务构成段",
+        "openai-index-measuring-how-ai-a@示例：错误抗生素",
+        "openai-index-measuring-how-ai-a@Kind of data 表"
+      ]
+    },
+    {
+      "area": "跨领域共性能力",
+      "focus": "多数任务同时考多种能力：生物知识、图像与数据判读、错误识别、协议理解；官方强调的核心是「证据不足以支持结论时不说结论」",
+      "share": "未披露（正文未按技能给题数）",
+      "format": "结构化答案 + rubric 逐条给分",
+      "cite": [
+        "openai-index-measuring-how-ai-a@技能段",
+        "openai-index-measuring-how-ai-a@任务定义段",
+        "openai-index-measuring-how-ai-a@作答与给分段"
+      ]
+    }
   ],
   "does_not_measure": [
-    "学科知识与应试能力（知识型基准需另看）",
-    "实验方案设计与实验执行本身（只判读既有数据）",
-    "安全性、有害性与事实性",
-    "多语言与中文任务表现（官方任务与场景以英文 / 欧美湿实验室为主）",
-    "真实生产环境中的科研产出（任务集为厂商自建，非生产流量）"
+    {
+      "text": "开放式科研能力：不考实验方案设计，也不做动手实验，只判读已经采集完的实验证据并给出结论 / 测量值 / 建议",
+      "cite": [
+        "openai-index-measuring-how-ai-a@任务定义段",
+        "openai-index-measuring-how-ai-a@作答与给分段"
+      ]
+    },
+    {
+      "text": "纯学科知识问答：生物知识与协议理解只在判读任务里被调用，不单独出知识题",
+      "cite": [
+        "openai-index-measuring-how-ai-a@技能段"
+      ]
+    },
+    {
+      "text": "安全性、有害性与事实性：官方只把 biosafety / biosecurity 列为「跟踪这些能力的影响」的动机，未设安全评测项",
+      "cite": [
+        "openai-index-measuring-how-ai-a@收尾段"
+      ]
+    },
+    {
+      "text": "跨厂商模型排名：官方只评了自家 7 个模型，结果不能外推成与其他厂商模型的位次",
+      "cite": [
+        "openai-index-measuring-how-ai-a@评测设置段",
+        "press"
+      ]
+    }
   ],
   "dataset": {
     "sample_count": 100,
     "splits": [
-      "Protein Methods 蛋白方法（25 题）",
-      "Imaging & Cytometry 成像与流式细胞（23 题）",
-      "Quantification & Assays 定量与检测（19 题）",
-      "Nucleic Acid Methods 核酸方法（17 题）",
-      "Molecular Cloning 分子克隆（16 题）"
+      "Protein Methods 蛋白方法",
+      "Imaging & Cytometry 成像与流式细胞",
+      "Quantification & Assays 定量与检测",
+      "Nucleic Acid Methods 核酸方法",
+      "Molecular Cloning 分子克隆"
     ],
-    "source_type": "vendor-authored wet-lab task suite（任务、实验数据与评分细则均由 OpenAI 内部湿实验室科学家撰写，每题经未参与撰写的内部 Ligo 科学家复核 + 一名在岗博士湿实验室科学家外部复核 + 最终内部复核）",
+    "source_type": "vendor-authored wet-lab task suite（任务、实验证据与评分细则均由 OpenAI / Ligo 湿实验室科学家撰写；每题经未参与撰写的 Ligo 科学家内部复核 + 一名在岗博士级湿实验室科学家外部复核 + 最终内部复核）",
     "languages": [
       "en"
     ],
-    "public_sample": null
+    "public_sample": null,
+    "totals": "共 100 题，覆盖五个湿实验室日常领域（蛋白方法、成像与流式细胞、定量与检测、核酸方法、分子克隆；官方未按领域公布题数）。输入是原始实验证据：凝胶与印迹 31 题、协议 / 笔记 / 规格 27 题、表格与仪器导出 20 题、台面 / 装置 / 试剂照片 18 题、显微成像 14 题、仪器屏幕与图 13 题、测序文件 12 题、协议视频 7 题、琼脂平板与菌落 7 题；另有 21 题附阶梯图、质粒图、pH 图等参考材料。同一任务可含多种数据，类别相互重叠。",
+    "cite": [
+      "openai-index-measuring-how-ai-a@任务构成段",
+      "openai-index-measuring-how-ai-a@输入形态段",
+      "openai-index-measuring-how-ai-a@Kind of data 表"
+    ],
+    "construction": [
+      {
+        "k": "题目来源",
+        "text": "湿实验室科学家把自己实验的数据变成 100 道题，每个问题配一份专家撰写的评分细则（rubric）。",
+        "cite": [
+          "openai-index-measuring-how-ai-a@构建与复核段"
+        ]
+      },
+      {
+        "k": "输入形态",
+        "text": "保留科学家日常使用的证据形态：凝胶与印迹图、平板照片、显微栈、测序 reads、酶标仪导出、台面操作视频；可附阶梯图、质粒图、pH 图等参考材料，一个任务可含多种数据。",
+        "cite": [
+          "openai-index-measuring-how-ai-a@输入形态段",
+          "openai-index-measuring-how-ai-a@Kind of data 表"
+        ]
+      },
+      {
+        "k": "三轮复核",
+        "text": "每题先由未参与撰写的 Ligo 科学家内部复核，再由一名在岗博士级湿实验室科学家外部复核，最后过一次内部复核；复核范围包括 prompt、实验证据、rubric、作者笔记和一次已评分的模型尝试。",
+        "cite": [
+          "openai-index-measuring-how-ai-a@构建与复核段"
+        ]
+      },
+      {
+        "k": "覆盖领域",
+        "text": "五个日常湿实验室领域：蛋白方法、成像与流式细胞、定量与检测、核酸方法、分子克隆；任务从「读凝胶上 DNA 样品的分子量」到完整的检测分析，都属于湿实验室人员应当能可靠完成的日常工作。",
+        "cite": [
+          "openai-index-measuring-how-ai-a@任务构成段",
+          "openai-index-measuring-how-ai-a@任务难度段"
+        ]
+      },
+      {
+        "k": "评分细则",
+        "text": "rubric 按条给分：视任务不同，考察结论、数值结果、支撑推理，或是否识别出「证据不足」。",
+        "cite": [
+          "openai-index-measuring-how-ai-a@评分标准段"
+        ]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "模型读入一个任务的原始实验证据，返回结构化答案（结论 / 测量值 / 建议，必要时附支撑推理）；按该任务的 rubric 逐条给分，折算为可得分百分比（mean reward）。每个「模型 × 推理强度」设置对全部 100 题各跑 5 次（每设置 500 条）后取平均，全窗口共 18,500 条结果；误差棒为整题重采样（同题的 5 次尝试保持在一起）得到的 95% 置信区间。官方未披露温度、top_p、few-shot 数、裁判模型等协议细节。",
+    "cite": [
+      "openai-index-measuring-how-ai-a@作答与给分段",
+      "openai-index-measuring-how-ai-a@评测设置段",
+      "openai-index-measuring-how-ai-a@mean reward 定义段",
+      "openai-index-measuring-how-ai-a@评分标准段"
+    ],
+    "variants": [
+      {
+        "text": "推理强度档位：官方报告 37 个「模型 × 推理强度」设置，档位从 none 到 max；xhigh 是七个模型都报告了的最高档，max 档只有部分模型有（官方写 where available）。跨档位分数不可比，比较必须同档。",
+        "cite": [
+          "openai-index-measuring-how-ai-a@评测设置段",
+          "openai-index-measuring-how-ai-a@Performance at xhigh 表"
+        ]
+      },
+      {
+        "text": "参评模型范围：官方只评了 GPT‑5.2 / GPT‑5.4 / GPT‑5.5 / GPT‑5.6 Sol / GPT‑6.1 Sol / GPT‑6 Luna / GPT‑6 Astra 七个自家模型，未纳入其他厂商模型，结果不构成跨厂商排名。",
+        "cite": [
+          "openai-index-measuring-how-ai-a@评测设置段",
+          "press"
+        ]
+      },
+      {
+        "text": "厂商自报口径：分数为 OpenAI 自报，无独立复跑；官方未披露采样参数，也未说明除模型判分之外是否有人工环节。",
+        "cite": [
+          "openai-index-measuring-how-ai-a@评测设置段",
+          "press"
+        ]
+      }
+    ]
   },
   "metrics": [
     {
-      "id": "mean-credit-pct",
-      "name": "Mean reward (percentage of available credit)",
+      "id": "mean-reward",
+      "name": "Mean reward（可得分信用额度百分比）",
+      "direction": "越高越好",
+      "description": "每题按 rubric 逐条给分后折算成「该题可得分额的百分比」，再对 100 题 × 5 次尝试取平均；0 分表示一分未得，100 分表示拿满可用信用额度，部分正确按条得分。",
       "range": [
         0,
         100
       ],
       "unit": "percent",
-      "direction": "higher",
-      "aggregation": "每题 5 次尝试取均值 → 100 题取均值（rubric 逐条给分后折算为可得分百分比）"
+      "cite": [
+        "openai-index-measuring-how-ai-a@作答与给分段",
+        "openai-index-measuring-how-ai-a@mean reward 定义段",
+        "openai-index-measuring-how-ai-a@评测设置段"
+      ]
+    },
+    {
+      "id": "output-tokens",
+      "name": "平均输出 tokens / 题",
+      "direction": "越低越好",
+      "description": "官方在 xhigh 表同列给出的效率侧指标：GPT‑6 Astra 用 4,704 tokens 拿到 66.7%，GPT‑5.2 用 27,620 tokens 只拿到 31.2%。它描述输出长度，不等于耗时或费用，也不与分数同向解读。",
+      "unit": "tokens",
+      "cite": [
+        "openai-index-measuring-how-ai-a@Performance at xhigh 表"
+      ]
     }
   ],
   "versions": [
     {
       "id": "2026-11-06",
-      "label": "BioBasicsBench 首版（2026-11-06 发布）",
-      "note": "首版即含 7 个 OpenAI 模型 × 37 个「模型 × 推理强度」设置的官方分值，每设置 5 次尝试 × 100 题，共 18,500 条结果；后续任务集或打分口径变更需另记版本"
+      "date": "2026-11-06",
+      "label": "首版发布：OpenAI 官方新闻 RSS 条目与官方发布文同日上线，含 7 个模型 × 37 个「模型 × 推理强度」设置 × 每设置 5 次尝试 × 100 题 = 18,500 条结果",
+      "cite": [
+        "rss",
+        "openai-index-measuring-how-ai-a@评测设置段"
+      ]
     }
   ],
   "limitations": [
-    "官方自建任务集，任务内容、实验数据与评分细则由 OpenAI 单方定义，外部无法复现验证",
-    "任务集与 rubric 未公开，无法复算，也无法核对判分一致性",
-    "95% 置信区间由整题重采样得到，只能反映题集抽样误差，不能覆盖 rubric 打分的主观性",
-    "同一模型不同 reasoning effort 之间分数不可直接比，跨模型比必须同时对齐档位",
-    "各模型可用档位不同（部分模型无 max 档、部分模型无 none 档），缺档时不可直接补值比较",
-    "本仓未收录 GPT-5.2 的独立 release 记录，其 5 档官方分值暂无对应证据行",
-    "本条数值为厂商自报，外部未做独立复跑"
+    {
+      "issue": "厂商自建自评，且只评自家模型",
+      "impact": "任务、实验证据与 rubric 均由 OpenAI 单方定义，参评的 7 个模型全是 OpenAI 自家模型；外部无法复跑，也不能据此推断与其他厂商模型的位次。",
+      "severity": "高",
+      "response": "未见官方回应；官方仅声明「更高的基准分数并不意味着模型已能在实验室做出可靠判断」，并表示会跟踪这些能力对 biosafety 与 biosecurity 的影响。",
+      "reader": "把它当作 OpenAI 的自报进展，不是中立榜单；引用时必须写清「OpenAI 自评、仅含自家模型」。",
+      "cite": [
+        "openai-index-measuring-how-ai-a@评测设置段",
+        "press",
+        "openai-index-measuring-how-ai-a@结论段",
+        "openai-index-measuring-how-ai-a@收尾段"
+      ]
+    },
+    {
+      "issue": "任务集与 rubric 未公开",
+      "impact": "100 道题、实验证据与评分细则均未提供公开下载，外部无法复算分数，也无法核对判分一致性；本档案的题量、领域与输入形态数字只能取自官方发布文本身。",
+      "severity": "高",
+      "response": "未见官方回应：发布文未给出数据集、代码仓库或榜单链接。",
+      "reader": "看到任何「复现了 BioBasicsBench 分数」的说法先追问数据来源；官方公开前只引用官方公布值。",
+      "cite": [
+        "openai-index-measuring-how-ai-a@评测设置段"
+      ]
+    },
+    {
+      "issue": "口径依赖推理档位，且各模型档位不齐",
+      "impact": "同一模型在不同 reasoning effort 下分数差异明显；各模型可用档位不同（部分有 max、部分从 low 起），缺档无法补值，跨档位比较会得出错误结论。",
+      "severity": "中",
+      "response": "官方在同页标注 xhigh 为七个模型都报告的最高档、max 档 where available，并按设置分别报告。",
+      "reader": "任何分数都要带档位读；看到跨档位的「提升」先确认是不是档位不同造成的。",
+      "cite": [
+        "openai-index-measuring-how-ai-a@评测设置段",
+        "openai-index-measuring-how-ai-a@Performance at xhigh 表",
+        "openai-index-measuring-how-ai-a@多模态段"
+      ]
+    },
+    {
+      "issue": "100 题抽样误差大",
+      "impact": "每题只跑 5 次、共 100 题，整题重采样的 95% 置信区间半宽约 5–6.5 个百分点，相邻模型的名次差可能落在区间内。",
+      "severity": "中",
+      "response": "官方用整题重采样（同题 5 次保持在一起）计算 95% CI，并在 xhigh 表中列出。",
+      "reader": "比名次前先看 CI 是否重叠；不要把 1–2 个百分点的差当成能力差。",
+      "cite": [
+        "openai-index-measuring-how-ai-a@mean reward 定义段",
+        "openai-index-measuring-how-ai-a@Performance at xhigh 表"
+      ]
+    },
+    {
+      "issue": "高分不等于可靠判断（官方自示失败案例）",
+      "impact": "官方展示 GPT‑6 Astra 仍把菌落 PCR 的分组身份判反（选了 4 / 6 / 7 / 8，参考为 5 / 9 / 10），并在一片平板上把菌落多数约 12%；对照、矛盾证据与计数三类问题仍在。",
+      "severity": "中",
+      "response": "官方在发布文里公开这些失败案例，并写入「更高的基准分数并不意味着模型已能在实验室做出可靠判断」。",
+      "reader": "把分数当「会读原始数据」的证据，不当「能进实验室做可靠判断」的证据。",
+      "cite": [
+        "openai-index-measuring-how-ai-a@示例：菌落 PCR",
+        "openai-index-measuring-how-ai-a@示例：菌落计数",
+        "openai-index-measuring-how-ai-a@结论段"
+      ]
+    }
   ],
-  "notes": "全站共 32 处引用（全部取自官方发布文内嵌 vega-lite data.values 机读值）。官方同页「Tasks by domain and tested skill」图另给出任务域与技能分布：Protein Methods 25 题、Imaging & Cytometry 23 题、Quantification & Assays 19 题、Nucleic Acid Methods 17 题、Molecular Cloning 16 题（合计 100）；全部任务中 tacit knowledge 88 题、multimodal analysis 88 题、error detection 68 题、protocol understanding 50 题、recognizing insufficient data 19 题（同一任务可覆盖多个技能，故各技能计数之和大于 100）。其中 GPT-5.2 在本仓无对应 release 记录，本批不新建 release、不建证据行，其 5 档 effort 分值（none 24.0% / low 28.7% / medium 30.7% / high 30.5% / xhigh 31.2%）仅留档于本实体说明与批次报告。",
+  "notes": "可核验来源只有三个：OpenAI 官方发布文、OpenAI 官方新闻 RSS（条目 pubDate 2026-11-06）、R&D World 2026-11-06 报道。官方发布文里的「37 设置逐档分值」图与「任务域 × 技能」分布图以内嵌图表数据渲染，不在可重抓核验的正文中，本页不引用其数值，领域与技能占比一律标注未披露；该图表的机读值连同 2026-11-06 的页面快照另存于本仓 models/2026-11-06-biobasicsbench/。GPT-5.2 在本仓无独立 release 记录，其逐档 effort 分值同样只留档于该目录，本页不建证据行。第三方报道（press）在无 UA 的直抓下会被 Cloudflare 拦截、jina 兜底也取不到正文，故验收脚本对其 4 条摘录计 unverified；这 4 条已用带 UA 的抓取逐条核对存在于直播页面（HTTP 200），引用时以官方发布文为主、该报道仅作旁证。",
   "official_sources": [
     {
       "kind": "site",
       "url": "https://openai.com/index/measuring-how-ai-agents-handle-wet-lab-science"
+    },
+    {
+      "kind": "announcement",
+      "url": "https://openai.com/news/rss.xml"
     }
   ],
-  "related_benchmarks": [],
-  "content_status": "beta",
-  "last_verified_at": "2026-11-06"
+  "related_benchmarks": [
+    "lifescibench",
+    "lab-bench",
+    "labbench2",
+    "biomysterybench"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-16",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-16",
+    "sources": [
+      {
+        "id": "openai-index-measuring-how-ai-a",
+        "kind": "site",
+        "title": "Measuring how AI agents handle everyday wet-lab science（OpenAI 官方发布文）",
+        "url": "https://openai.com/index/measuring-how-ai-agents-handle-wet-lab-science",
+        "accessed": "2026-11-16"
+      },
+      {
+        "id": "rss",
+        "kind": "announcement",
+        "title": "OpenAI 官方新闻 RSS（BioBasicsBench 条目，pubDate 2026-11-06）",
+        "url": "https://openai.com/news/rss.xml",
+        "accessed": "2026-11-16"
+      },
+      {
+        "id": "press",
+        "kind": "blog",
+        "title": "R&D World：OpenAI unveils BioBasicsBench, a benchmark to gauge how well AI agents read raw experimental data across 100 routine wet-lab tasks",
+        "url": "https://www.rdworldonline.com/openai-unveils-biobasicsbench-a-benchmark-to-gauge-how-well-ai-agents-read-raw-experimental-data-across-100-routine-wet-lab-tasks/",
+        "accessed": "2026-11-16"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "OpenAI（与酶设计生物技术公司 Ligo 合作开发，任务由湿实验室科学家用自己实验的数据撰写）",
+        "cite": [
+          "openai-index-measuring-how-ai-a@导语",
+          "openai-index-measuring-how-ai-a@构建与复核段"
+        ]
+      },
+      "first_release": {
+        "v": "2026-11-06",
+        "cite": [
+          "rss",
+          "press"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "openai-index-measuring-how-ai-a@任务定义段",
+        "openai-index-measuring-how-ai-a@导语",
+        "openai-index-measuring-how-ai-a@构建与复核段",
+        "openai-index-measuring-how-ai-a@输入形态段"
+      ],
+      "interpretation": [
+        "openai-index-measuring-how-ai-a@mean reward 定义段",
+        "openai-index-measuring-how-ai-a@评测设置段",
+        "openai-index-measuring-how-ai-a@Performance at xhigh 表",
+        "openai-index-measuring-how-ai-a@结论段",
+        "openai-index-measuring-how-ai-a@示例：菌落计数"
+      ]
+    },
+    "problem": {
+      "text": "现有基准用的是论文里挑过的图表和图像，看不到日常湿实验里的失败实验、模糊图像与相互矛盾的观察；而误读一张图或忽略对照组的问题，会让科学家得出错误结论、把时间花在回答不了问题的实验上。BioBasicsBench 要用原始实验证据，把「判读与判断」这段工作变成可测、可改进的目标。",
+      "cite": [
+        "openai-index-measuring-how-ai-a@问题段",
+        "openai-index-measuring-how-ai-a@导语",
+        "openai-index-measuring-how-ai-a@任务定义段"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机 / 人类基线",
+        "value": "论文未给出（未报告随机基线，也未报告人类湿实验室科学家基线；本站不推算）",
+        "note": "官方只报告模型成绩，发布文未给随机基线与人类专家基线。",
+        "cite": [
+          "openai-index-measuring-how-ai-a@评测设置段"
+        ]
+      },
+      {
+        "label": "发布时最好成绩",
+        "value": "66.7%",
+        "note": "GPT‑6 Astra，xhigh 档（官方发布文同页给出）；次高 GPT‑6.1 Sol 62.0%。",
+        "cite": [
+          "openai-index-measuring-how-ai-a@成绩段",
+          "openai-index-measuring-how-ai-a@Performance at xhigh 表"
+        ]
+      },
+      {
+        "label": "官方页面当前最高",
+        "value": "66.7%",
+        "note": "官方结果只在这一个发布页给出，没有独立 leaderboard；截至本次核验（2026-11-16）页面最高仍是 GPT‑6 Astra 的 66.7%（xhigh）。",
+        "cite": [
+          "openai-index-measuring-how-ai-a@成绩段",
+          "openai-index-measuring-how-ai-a@Performance at xhigh 表"
+        ]
+      },
+      {
+        "label": "饱和 / 噪声参考线",
+        "value": "论文未给出",
+        "note": "官方未定义饱和线。可参考的量级是：100 题整题重采样 95% CI 半宽约 5–6.5 个百分点，以及官方自示的失败案例（一片平板菌落多数约 12%）。",
+        "cite": [
+          "openai-index-measuring-how-ai-a@mean reward 定义段",
+          "openai-index-measuring-how-ai-a@示例：菌落计数"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 66.7% 当成「答对 67% 的题」或「67% 的实验成功率」——它是可得分信用额度的百分比，rubric 逐条给分，部分正确也能拿到分。",
+        "cite": [
+          "openai-index-measuring-how-ai-a@mean reward 定义段",
+          "openai-index-measuring-how-ai-a@作答与给分段"
+        ]
+      },
+      {
+        "text": "跨推理档位比分数：官方报告 37 个「模型 × 推理强度」设置，各模型可用档位不同，xhigh 之外还有 none / low / medium / high 与部分模型的 max；把不同档位的分放到一起排名无效。",
+        "cite": [
+          "openai-index-measuring-how-ai-a@评测设置段",
+          "openai-index-measuring-how-ai-a@Performance at xhigh 表"
+        ]
+      },
+      {
+        "text": "把高分读成「模型能在实验室做可靠判断」——官方明确写更高的分数并不意味着这一点，并给出 GPT‑6 Astra 判反菌落 PCR 分组、把菌落多数约 12% 的案例。",
+        "cite": [
+          "openai-index-measuring-how-ai-a@结论段",
+          "openai-index-measuring-how-ai-a@示例：菌落计数",
+          "openai-index-measuring-how-ai-a@示例：菌落 PCR"
+        ]
+      },
+      {
+        "text": "因为结果表里只有 OpenAI 模型，就把它当成模型能力的总体排名——官方只评了自家 7 个模型，未纳入其他厂商模型。",
+        "cite": [
+          "openai-index-measuring-how-ai-a@评测设置段",
+          "press"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方与合作方",
+        "v": "OpenAI；与酶设计生物技术公司 Ligo 合作开发，任务由湿实验室科学家用自己实验的数据撰写。",
+        "cite": [
+          "openai-index-measuring-how-ai-a@导语",
+          "openai-index-measuring-how-ai-a@构建与复核段"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "未披露：发布文未署名个人作者，也没有配套论文或技术报告。",
+        "cite": [
+          "openai-index-measuring-how-ai-a@评测设置段"
+        ]
+      },
+      {
+        "k": "发布时间线",
+        "v": "2026-11-06 上线：OpenAI 官方新闻 RSS 条目 pubDate 为 Fri, 06 Nov 2026 00:00:00 GMT；第三方媒体同日报道（R&D World 发布于 2026-11-06，文中写 OpenAI published Nov. 6）。",
+        "cite": [
+          "rss",
+          "press"
+        ]
+      },
+      {
+        "k": "任务构建与复核",
+        "v": "科学家用自己实验的数据出题并配专家撰写的评分细则；每题经未参与撰写的 Ligo 科学家内部复核、一名在岗博士级湿实验室科学家外部复核、最终内部复核；复核范围含 prompt、实验证据、rubric、作者笔记与一次已评分模型尝试。",
+        "cite": [
+          "openai-index-measuring-how-ai-a@构建与复核段"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "未披露：发布文未提供数据集、代码仓库或榜单链接，100 道题与 rubric 均未公开。",
+        "cite": [
+          "openai-index-measuring-how-ai-a@评测设置段"
+        ]
+      },
+      {
+        "k": "论文 / 预印本",
+        "v": "未披露：截至 2026-11-16 未检索到论文或 arXiv 预印本，唯一一手描述是官方发布文。",
+        "cite": [
+          "openai-index-measuring-how-ai-a@评测设置段"
+        ]
+      },
+      {
+        "k": "官方动机表述",
+        "v": "官方把 BioBasicsBench 定位为改进目标——判读原始实验数据、检查对照、识别不被支持的结论，并称跟踪这些能力有助于理解其对 biosafety 与 biosecurity 的影响。",
+        "cite": [
+          "openai-index-measuring-how-ai-a@收尾段"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-16",
+        "columns": [
+          "模型（xhigh 档）",
+          "Mean reward",
+          "95% CI",
+          "输出 tokens / 题"
+        ],
+        "rows": [
+          [
+            "GPT-6 Astra",
+            "66.7%",
+            "60.3–73.1%",
+            "4,704"
+          ],
+          [
+            "GPT-6.1 Sol",
+            "62.0%",
+            "55.6–68.4%",
+            "5,238"
+          ],
+          [
+            "GPT-5.6 Sol",
+            "43.8%",
+            "37.6–50.0%",
+            "9,099"
+          ],
+          [
+            "GPT-6 Luna",
+            "38.3%",
+            "32.3–44.5%",
+            "13,120"
+          ],
+          [
+            "GPT-5.5",
+            "35.4%",
+            "29.7–41.0%",
+            "11,135"
+          ],
+          [
+            "GPT-5.4",
+            "33.2%",
+            "28.3–38.4%",
+            "13,717"
+          ],
+          [
+            "GPT-5.2",
+            "31.2%",
+            "26.2–36.3%",
+            "27,620"
+          ]
+        ]
+      },
+      "cite": [
+        "openai-index-measuring-how-ai-a@Performance at xhigh 表",
+        "openai-index-measuring-how-ai-a@评测设置段"
+      ]
+    }
+  }
 }

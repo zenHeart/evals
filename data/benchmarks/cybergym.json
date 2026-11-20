@@ -1,54 +1,219 @@
 {
   "id": "cybergym",
   "name": "CyberGym",
-  "full_name": "CyberGym: Evaluating AI Agents' Real-World Cybersecurity Capabilities",
+  "full_name": "CyberGym: Evaluating AI Agents' Real-World Cybersecurity Capabilities at Scale",
   "aliases": ["Cyber Gym"],
-  "status": null,
+  "status": "active",
   "categories": [
     "agent",
     "safety"
   ],
-  "summary": "UC Berkeley 出品的网络安全 Agent 基准：188 个真实开源项目中的 1507 个真实漏洞，执行级判定漏洞发现与复现",
-  "interpretation": "UC Berkeley 网络安全 Agent 基准：188 个真实开源项目中的 1507 个真实漏洞，须在沙箱里实际触发/复现漏洞才算得分（执行级判定），成功率越高越好；比「纸面答题」式安全评测更硬。",
+  "summary": "UC Berkeley（Dawn Song 组 / RDI）出品的网络安全 Agent 基准：188 个真实开源项目里的 1,507 个真实漏洞，Agent 必须在沙箱中实际跑出一个 PoC——它在补丁前版本触发 sanitizer 崩溃、在补丁后版本不再崩溃——才算复现成功。",
+  "interpretation": "成功率 = 成功生成有效 PoC 的实例占比，执行级判定（不是文本匹配），越高代表漏洞复现能力越强。读数前先分清口径：论文全集 1,507 题最好 17.9%（OpenHands + Claude-Sonnet-4），GPT-5 开思考在 300 题子集上到 22.0%；官网榜单虽已报到 88.9%，但由各团队自评提交，scaffold、trials 次数、是否用 test-time memory、环境策略都不同，两套数字不能直接比。",
   "measures": [
-    "给定漏洞信息后发现并复现漏洞（触发 crash/PoC）",
-    "真实开源代码库中的安全分析",
-    "执行级（而非文本匹配）的任务验证"
+    {
+      "area": "漏洞复现（主任务，Level 1）",
+      "focus": "给定漏洞文字描述和未打补丁的代码库，生成能触发目标漏洞的 PoC；论文称这一档考察的是「把文字漏洞报告接到可运行 PoC 上」的能力",
+      "share": "主口径，论文与官网榜单都用它",
+      "format": "执行级判定：PoC 在补丁前版本触发 sanitizer 崩溃，且在补丁后版本不产生任何 sanitizer 崩溃",
+      "cite": ["arxiv-2506-02548@§3.2", "site-benchmark"]
+    },
+    {
+      "area": "盲复现（Level 0）",
+      "focus": "只给未打补丁的代码库、不给漏洞描述，考察从代码本身定位并复现漏洞；论文与官网都只报告这一档的整体复现率（约 3.5%）",
+      "share": "未披露各档位题量占比",
+      "format": "执行级判定：同 Level 1",
+      "cite": ["arxiv-2506-02548@§3.2", "site-benchmark"]
+    },
+    {
+      "area": "带线索复现（Level 2 / Level 3）",
+      "focus": "Level 2 在 Level 1 基础上追加崩溃栈轨迹（函数名、源文件、行号）；Level 3 再追加真实补丁 diff 与补丁后代码库，考察「从补丁反推利用」这一红蓝队都用得到的自动化环节",
+      "share": "辅助档位，官网明确其成功率显著高于作为主任务的 Level 1",
+      "format": "执行级判定：同 Level 1",
+      "cite": ["arxiv-2506-02548@§3.2", "site-benchmark"]
+    },
+    {
+      "area": "开放式零日发现",
+      "focus": "不给任何漏洞信息，让 Agent 在 OSS-Fuzz 项目的最新代码库上自主找新漏洞并产出可验证 PoC，再用 sanitizer 复核",
+      "share": "论文在 431 个项目 / 1,748 个入口可执行文件上运行的附加实验",
+      "format": "sanitizer 复核 + 人工确认",
+      "cite": ["arxiv-2506-02548@§5", "site-benchmark"]
+    }
   ],
   "does_not_measure": [
-    "漏洞修复与补丁编写",
-    "Web 渗透与社工攻击面",
-    "防御性安全运营（检测/响应）"
+    {
+      "text": "不测漏洞修复：任务止于产出 PoC，不要求写出补丁；补丁能力属于 Observatory 下 CyberGym-E2E 覆盖的阶段。",
+      "cite": ["cybergym"]
+    },
+    {
+      "text": "不测武器化利用：从「能触发崩溃的输入」到「可稳定拿到控制权的完整 exploit」不在本基准范围内，那是 ExploitGym 的内容。",
+      "cite": ["cybergym"]
+    },
+    {
+      "text": "不测内存安全之外的漏洞类型：判定依赖 sanitizer，收录项目绝大多数是 C/C++，Web、移动端、逻辑类漏洞等不在覆盖内。",
+      "cite": ["arxiv-2506-02548@§6", "arxiv-2506-02548@Table 5"]
+    },
+    {
+      "text": "不测防御性安全运营：CyberGym 主要评的是复现漏洞的能力，检测、响应、加固等蓝队动作不在其中。",
+      "cite": ["arxiv-2506-02548"]
+    }
   ],
   "dataset": {
     "sample_count": 1507,
-    "splits": [],
-    "source_type": "real-world vulnerabilities（OSS-Fuzz 等真实漏洞）",
-    "languages": [],
-    "public_sample": true
+    "splits": [
+      "Level 0：仅未打补丁代码库",
+      "Level 1：漏洞描述 + 未打补丁代码库（主任务口径）",
+      "Level 2：Level 1 + 崩溃栈轨迹",
+      "Level 3：Level 2 + 真实补丁 diff 与补丁后代码库",
+      "随机 300 题轻量子集（约占全集 20%）"
+    ],
+    "languages": ["c", "c++"],
+    "source_type": "real-world vulnerabilities（OSS-Fuzz 上真实发现并已修复的漏洞）",
+    "public_sample": true,
+    "totals": "1,507 个漏洞实例 / 188 个开源项目 · 漏洞披露时间跨 2017-01-01 至 2025-04-21 · 1,368 题取自 ARVO（截至 2024-07-31），另手工补收 139 个更新的漏洞 · 28 种 sanitizer 崩溃类型 · 项目中位 1,117 个文件、387,491 行代码 · Hugging Face 数据集 1,507 行、约 236 GB",
+    "cite": ["arxiv-2506-02548", "site-benchmark", "dataset-cybergym"],
+    "construction": [
+      {
+        "k": "漏洞来源",
+        "text": "全部取自 OSS-Fuzz 上真实发现并已修复的漏洞：每个实例由漏洞披露时的项目快照、修复补丁和 OSS-Fuzz 生成的崩溃输入构成，保证是真实代码库里的真实安全问题。",
+        "cite": ["arxiv-2506-02548", "site-benchmark"]
+      },
+      {
+        "k": "判定方式",
+        "text": "以 sanitizer 为 oracle：PoC 必须同时满足两点——在补丁前版本触发 sanitizer 崩溃，且在补丁后版本不再产生任何 sanitizer 崩溃；官方用 pre-patch / post-patch 两份可执行文件在 Docker 环境里跑判定。",
+        "cite": ["arxiv-2506-02548", "site-benchmark"]
+      },
+      {
+        "k": "质量过滤",
+        "text": "自动过滤器加人工校验：300 题子集上人工复核精度 96%，标注者间一致性 Cohen's κ = 0.82 ± 0.03（裁决前）。",
+        "cite": ["arxiv-2506-02548@附录 C"]
+      },
+      {
+        "k": "规模与长尾",
+        "text": "1,507 题是此前任何网络安全基准的七倍以上（后者最多约 200 题），分布在 188 个项目上且呈长尾：62.4% 的实例来自 Top 10 之外的项目。",
+        "cite": ["arxiv-2506-02548", "arxiv-2506-02548@Table 3"]
+      },
+      {
+        "k": "领域分布",
+        "text": "覆盖网络（cURL）、密码学（OpenSSL）、程序分析工具（GNU Binutils）、科学计算（OSGeo）、操作系统（QEMU）、多媒体（FFmpeg）等领域，构成难度梯度。",
+        "cite": ["arxiv-2506-02548@Table 3"]
+      },
+      {
+        "k": "数据获取",
+        "text": "Hugging Face 数据集共 1,507 行、约 236 GB；官方仓库另提供约 240 GB 的 benchmark 数据下载与约 10 TB 的完整服务端数据，需 Python + Docker 环境，并内置只允许访问白名单域名的代理。",
+        "cite": ["dataset-cybergym", "repo-cybergym"]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "主口径为 Level 1：Agent 拿到漏洞文字描述和未打补丁的代码库，在预置的 Docker 沙箱里反复迭代 PoC 并依据执行反馈修正，判定完全以 sanitizer 为准（补丁前崩、补丁后不崩）。论文侧固定用 OpenHands 作 agent scaffold，每个任务最多 100 轮迭代，平均每题约 2.0 美元 API 成本；成功率 = 成功 PoC 的实例占比，一个实例多次尝试中任一次成功即记为该实例解出。",
+    "cite": ["arxiv-2506-02548@§3.2", "arxiv-2506-02548", "site-benchmark"],
+    "variants": [
+      {
+        "text": "四个难度档位（Level 0–3）输入信息量不同，跨档位成功率不可直接比较；官网明确 Level 2 多给栈轨迹、Level 3 多给真实补丁后，成功率显著高于作为主任务的 Level 1。",
+        "cite": ["arxiv-2506-02548@§3.2", "site-benchmark"]
+      },
+      {
+        "text": "全集 1,507 题 vs 随机 300 题子集：论文的思考模式对比（GPT-5 7.7% → 22.0%）跑在 300 题子集上，非思考模式主表跑在全集上，两组数字口径不同。",
+        "cite": ["arxiv-2506-02548", "site-benchmark"]
+      },
+      {
+        "text": "scaffold 与 trials 口径：论文固定 OpenHands + 100 轮；官网榜单由各团队自评提交，trials 次数、是否启用 test-time memory、动态/静态环境策略都不同，官方说明这些是评测策略差异而非任务难度差异。",
+        "cite": ["site-benchmark@榜单", "site-benchmark", "repo-cybergym"]
+      }
+    ]
   },
   "metrics": [
     {
       "id": "success-rate",
-      "name": "漏洞触发成功率",
+      "name": "漏洞复现成功率",
+      "direction": "越高越好",
+      "description": "成功生成有效 PoC 的实例占比；PoC 有效 = 在补丁前版本触发 sanitizer 崩溃且补丁后版本不再崩溃",
       "range": [0, 100],
       "unit": "percent",
-      "direction": "higher",
-      "aggregation": "mean"
+      "aggregation": "mean",
+      "cite": ["arxiv-2506-02548", "site-benchmark"]
+    },
+    {
+      "id": "level-gap",
+      "name": "档位间成功率差距",
+      "direction": "差值越大不代表能力越强（输入信息量不同）",
+      "description": "Level 0 / 2 / 3 与 Level 1 的成功率之差，用来读「额外线索能替代多少 Agent 自主推理」",
+      "cite": ["arxiv-2506-02548@§3.2", "site-benchmark"]
+    },
+    {
+      "id": "zero-day-discovery",
+      "name": "零日漏洞发现数",
+      "direction": "越高代表真实世界影响越大",
+      "description": "开放式设置下 Agent 自主发现并经人工确认的此前未知漏洞数量（论文 34 个，另有 18 个历史不完整补丁）",
+      "cite": ["arxiv-2506-02548@§5", "arxiv-2506-02548"]
     }
   ],
   "versions": [
     {
       "id": "v1",
-      "label": "CyberGym（2025-06）",
-      "note": "arXiv:2506.02548；后续扩展 ExploitGym 覆盖武器化"
+      "date": "2025-06-03",
+      "label": "arXiv v1 首发：1,507 题 / 188 项目，Level 0–3 四档难度",
+      "cite": ["arxiv-2506-02548"]
+    },
+    {
+      "id": "v3-iclr2026",
+      "date": "2026-03-24",
+      "label": "arXiv v3 最新修订，作为 ICLR 2026 会议论文发表（本页核对所用版本）",
+      "cite": ["arxiv-2506-02548"]
     }
   ],
   "limitations": [
-    "以已知漏洞为起点，不测零日发现",
-    "依赖沙箱环境复现，环境版本影响结果"
+    {
+      "issue": "覆盖范围仅 C/C++ 内存安全",
+      "impact": "判定依赖 sanitizer，收录项目绝大多数是 C/C++，Web、移动端、逻辑类等漏洞不在覆盖内；作者自己也指出聚焦内存安全可能没有覆盖安全漏洞的全貌。",
+      "severity": "高",
+      "response": "官方把范围收窄到 C/C++ 内存安全是有意选择（这类漏洞在工业界高严重度漏洞中占 70% 以上），并通过 Observatory 的 ExploitGym / CyberGym-E2E / CyberBinGym 覆盖漏洞生命周期其他阶段。",
+      "reader": "把 CyberGym 的分数读成「C/C++ 内存安全复现能力」，不要读成「整体安全能力」。",
+      "cite": ["arxiv-2506-02548@§6", "arxiv-2506-02548@Table 5", "arxiv-2506-02548", "cybergym"]
+    },
+    {
+      "issue": "官网榜单口径不可比",
+      "impact": "榜单第 1 名 88.9%（2026-09-13）与论文最好的 17.9% 相差约 5 倍，但两者不是同一套评测：榜单由各团队自评提交，scaffold、trials 次数、是否用 test-time memory、环境策略都不同。",
+      "severity": "高",
+      "response": "官网在榜单上方明确标注「结果由各团队自评提交、agent 运行有随机性、分数可能变化」，并给出 dynamic / test-time mem. 等标签说明这是评测策略差异；论文侧则固定 OpenHands + 100 轮。",
+      "reader": "跨行比较前先看标签与来源；前沿系统之间几个百分点的差不宜直接读成能力差距。",
+      "cite": ["site-benchmark@榜单", "site-benchmark"]
+    },
+    {
+      "issue": "零日与不完整补丁计数在论文与官网之间不一致",
+      "impact": "论文 §5 写「9 个此前未报告的独有零日 + 18 个不完整补丁」，论文摘要与官网写「34 个零日 + 18 个不完整补丁」，官网另一处又写「17 个不完整补丁」。三者对 34 个零日、759 次崩溃 / 60 个项目、35 个在最新版仍崩溃的 PoC、平均 969 天是一致的。",
+      "severity": "中",
+      "response": "差异主要来自去重口径和「是否只算此前未报告」的边界，论文 §5 描述的是附加分析阶段，摘要/官网描述的是合计；引用时建议同时给出两个数字并注明出处。",
+      "reader": "看到「10 个零日」和「9 个零日」不要当成矛盾，先看去重口径。",
+      "cite": ["arxiv-2506-02548@§5", "arxiv-2506-02548", "site-benchmark"]
+    },
+    {
+      "issue": "数据污染风险已测但非零",
+      "impact": "CyberGym 的代码库与漏洞报告可能出现在 LLM 预训练语料中。论文按各模型知识截止日把实例切成前后两半，用 Fisher 精确检验与双比例 Z 检验比较，所有受评模型 p 值均大于 0.1，未见显著差异；PoC 长度分布在两个切分上也高度相似。",
+      "severity": "中",
+      "response": "论文补收 139 个 2024-07-31 之后披露的新漏洞以提高时效性，并把该切分分析作为标准污染检查；但这是「未检测到」，不等于「不存在」。",
+      "reader": "截止日之后的实例得分可以更放心一点，但不要把它当作零污染的证明。",
+      "cite": ["arxiv-2506-02548@§4.2", "arxiv-2506-02548"]
+    },
+    {
+      "issue": "成本与算力门槛",
+      "impact": "论文侧全集非思考模式评测约需 3,000 美元 API 额度；更全面的多 agent × 多模型评测官方口径是 4 万美元以上 API 额度加 1,000 H100 GPU 小时，平均每题约 2.0 美元。",
+      "severity": "中",
+      "response": "官方提供随机 300 题子集（约占 20%）用于轻量复现，仓库另提供约 240 GB 数据与约 10 TB 完整服务端数据供自建环境。",
+      "reader": "自测时优先用 300 题子集，并说明用的是哪一档、哪个 scaffold。",
+      "cite": ["arxiv-2506-02548", "repo-cybergym"]
+    },
+    {
+      "issue": "任务难度受 PoC 长度与描述歧义影响",
+      "impact": "成功率随 ground-truth PoC 长度上升显著下降：0–10 字节区间最高，超过 100 字节的实例（占全集 65.7%）只有约 10% 成功率；漏洞描述本身也可能有歧义。",
+      "severity": "低",
+      "response": "论文按 PoC 长度分段报告成功率并说明长度大致指示输入解析逻辑的复杂度；官方也提示描述歧义会让前沿系统间的微小分差不构成能力差距。",
+      "reader": "比较两个模型时，注意它们是否在同一长度段上被拉开。",
+      "cite": ["site-benchmark", "arxiv-2506-02548"]
+    }
   ],
-  "notes": "证据账本中 12 次引用；安全叙事厂商的执行级安全评测首选",
+  "notes": "安全叙事里少见的执行级判定基准；论文侧最好 17.9% / 22.0%，官网自评榜单已到 88.9%，两套口径不可混比；Observatory 下另有 ExploitGym / CyberGym-E2E / CyberBinGym 覆盖漏洞生命周期其他阶段",
   "official_sources": [
     {
       "kind": "paper",
@@ -56,11 +221,19 @@
     },
     {
       "kind": "site",
+      "url": "https://www.cybergym.io/cybergym"
+    },
+    {
+      "kind": "site",
       "url": "https://www.cybergym.io/"
     },
     {
-      "kind": "github",
+      "kind": "repo",
       "url": "https://github.com/sunblaze-ucb/cybergym"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/sunblaze-ucb/cybergym"
     }
   ],
   "related_benchmarks": [
@@ -68,6 +241,179 @@
     "exploitgym",
     "exploitbench"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-19",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-19",
+    "sources": [
+      {
+        "id": "arxiv-2506-02548",
+        "kind": "paper",
+        "title": "CyberGym: Evaluating AI Agents' Real-World Cybersecurity Capabilities at Scale（arXiv:2506.02548v3，ICLR 2026）",
+        "url": "https://arxiv.org/abs/2506.02548",
+        "accessed": "2026-11-19"
+      },
+      {
+        "id": "site-benchmark",
+        "kind": "site",
+        "title": "cybergym.io/cybergym 基准页（含 Level 1 榜单）",
+        "url": "https://www.cybergym.io/cybergym",
+        "accessed": "2026-11-19"
+      },
+      {
+        "id": "cybergym",
+        "kind": "site",
+        "title": "Frontier AI Cybersecurity Observatory（cybergym.io 首页，列出 CyberGym / ExploitGym / CyberGym-E2E / CyberBinGym）",
+        "url": "https://www.cybergym.io/",
+        "accessed": "2026-11-19"
+      },
+      {
+        "id": "repo-cybergym",
+        "kind": "repo",
+        "title": "sunblaze-ucb/cybergym（评测框架、数据下载、SUBMISSION.md 提交规范）",
+        "url": "https://github.com/sunblaze-ucb/cybergym",
+        "accessed": "2026-11-19"
+      },
+      {
+        "id": "dataset-cybergym",
+        "kind": "dataset",
+        "title": "sunblaze-ucb/cybergym（Hugging Face 数据集）",
+        "url": "https://huggingface.co/datasets/sunblaze-ucb/cybergym",
+        "accessed": "2026-11-19"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "UC Berkeley（Dawn Song 组 / RDI）",
+        "cite": ["arxiv-2506-02548"]
+      },
+      "first_release": {
+        "v": "2025-06-03（arXiv v1；v3 于 2026-03-24 修订，ICLR 2026 会议论文）",
+        "cite": ["arxiv-2506-02548"]
+      }
+    },
+    "cites": {
+      "summary": ["arxiv-2506-02548", "site-benchmark", "dataset-cybergym"],
+      "interpretation": ["arxiv-2506-02548@§4.1", "arxiv-2506-02548", "site-benchmark@榜单", "site-benchmark"]
+    },
+    "problem": {
+      "text": "此前的安全评测基准小（最多约 200 题）且静态（只比对文本输出），既覆盖不了真实代码库的规模，也反映不出「实际跑起来才知道对错」的安全任务。作者要建一个大规模、执行级判定、难度有梯度的漏洞复现基准，并量化前沿 Agent 离真实安全能力还有多远。",
+      "cite": ["arxiv-2506-02548", "arxiv-2506-02548@Table 3"]
+    },
+    "ladder": [
+      {
+        "label": "论文最好（非思考模式，全集 1,507 题）",
+        "value": "17.9%",
+        "note": "OpenHands + Claude-Sonnet-4；论文明确这是不启用思考机制时的最佳组合。",
+        "cite": ["arxiv-2506-02548@§4.1", "arxiv-2506-02548"]
+      },
+      {
+        "label": "论文最好（开思考，300 题子集）",
+        "value": "22.0%",
+        "note": "GPT-5 从 7.7%（minimal reasoning）升到 22.0%（high reasoning）；该对比跑在随机 300 题子集上，与全集口径不同。",
+        "cite": ["arxiv-2506-02548", "site-benchmark"]
+      },
+      {
+        "label": "跨 agent 组合上限（任一 scaffold 成功即算）",
+        "value": "18.4%",
+        "note": "同一模型下取多个 agent scaffold 的并集，接近最佳单条结果的两倍。",
+        "cite": ["arxiv-2506-02548@§3.2"]
+      },
+      {
+        "label": "跨模型组合上限（任一模型成功即算）",
+        "value": "27.2%",
+        "note": "所有模型结果取并集；论文用来说明不同 agent / 模型之间的重叠很低。",
+        "cite": ["arxiv-2506-02548"]
+      },
+      {
+        "label": "Level 0 盲复现（无漏洞描述）",
+        "value": "约 3.5%",
+        "note": "只给未打补丁代码库时能复现的实例比例。",
+        "cite": ["site-benchmark"]
+      },
+      {
+        "label": "官网榜单第 1（自评口径，不可与论文直接比）",
+        "value": "88.9%",
+        "note": "XekRung-1.5-27B-Preview + XekRung Agent，2026-09-13，Alibaba Security 提交。",
+        "cite": ["site-benchmark@榜单", "site-benchmark"]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把官网榜单 88.9% 和论文 17.9% 直接比，得出「模型一年半提升了 5 倍」的结论。两者口径不同：论文固定 OpenHands + 100 轮、跑全集；榜单由各团队自评，scaffold / trials / test-time memory / 环境策略都不一样。",
+        "cite": ["site-benchmark@榜单", "site-benchmark"]
+      },
+      {
+        "text": "以为 CyberGym 只考已知漏洞、不涉及零日。论文 §5 与官网都报告了在 431 个 OSS-Fuzz 项目上的开放式发现实验，共产出 34 个零日与 18 个历史不完整补丁。",
+        "cite": ["arxiv-2506-02548@§5", "site-benchmark"]
+      },
+      {
+        "text": "以为 PoC 在补丁后版本崩溃就是失败、没有信息量。论文专门分析这一类：全部 PoC 中有 759 个在补丁后版本触发崩溃（跨 60 个项目），其中 35 个在最新版仍能崩溃，另有一部分指向补丁不完整。",
+        "cite": ["arxiv-2506-02548@§5"]
+      },
+      {
+        "text": "把高成功率读成「安全问题被解决了」。CyberGym 测的是复现已知漏洞的能力，不测修复、不测武器化、也不测防御运营。",
+        "cite": ["cybergym", "arxiv-2506-02548"]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "UC Berkeley（Dawn Song 组 / RDI），同时运营 Frontier AI Cybersecurity Observatory",
+        "cite": ["arxiv-2506-02548", "cybergym"]
+      },
+      {
+        "k": "核心作者",
+        "v": "Zhun Wang、Tianneng Shi、Jingxuan He、Matthew Cai、Jialin Zhang、Dawn Song（UC Berkeley，前两位标注同等贡献）",
+        "cite": ["site-benchmark"]
+      },
+      {
+        "k": "发表形态",
+        "v": "ICLR 2026 会议论文；arXiv v1 于 2025-06-03 提交，v3 于 2026-03-24 修订（本页核对所用版本）",
+        "cite": ["arxiv-2506-02548"]
+      },
+      {
+        "k": "漏洞来源与时间线",
+        "v": "实例来自 OSS-Fuzz 上真实发现并已修复的漏洞，披露时间跨 2017-01-01 至 2025-04-21；1,368 题取自 ARVO 数据集（截至 2024-07-31），另手工补收 139 个更新的漏洞",
+        "cite": ["arxiv-2506-02548", "site-benchmark"]
+      },
+      {
+        "k": "判定机制",
+        "v": "以 sanitizer 为 oracle：PoC 需在补丁前版本触发 sanitizer 崩溃、在补丁后版本不崩溃；官方用 pre-patch / post-patch 两份可执行文件与 Docker 环境执行判定，Agent 依据执行反馈迭代",
+        "cite": ["arxiv-2506-02548", "site-benchmark"]
+      },
+      {
+        "k": "代码与数据",
+        "v": "Apache-2.0 许可的官方仓库提供评测框架、约 240 GB benchmark 数据下载、SUBMISSION.md 榜单提交规范（含成本上报与 writeup 要求）和只放行白名单域名的容器代理；Hugging Face 数据集 1,507 行、约 236 GB",
+        "cite": ["repo-cybergym", "dataset-cybergym"]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-16",
+        "columns": ["来源", "模型 / Agent", "成功率", "日期", "口径"],
+        "rows": [
+          ["官网榜单 #1", "XekRung-1.5-27B-Preview / XekRung Agent", "88.9%", "2026-09-13", "自评；Alibaba Security 提交"],
+          ["官网榜单 #2", "Gemini 3.8 Flash Cyber / Google Antigravity", "86.3%", "2026-09-10", "自评；Google 提交"],
+          ["官网榜单 #3", "GPT-5.5-Cyber / OpenAI Agent", "85.6%", "2026-06-22", "自评；OpenAI 提交"],
+          ["官网榜单 #7", "Claude Mythos Preview / Anthropic Agent", "83.1%", "2026-04-07", "自评；Anthropic 提交"],
+          ["官网榜单 #10", "Grok 4.6 / Grok Build", "79.7%", "2026-08-12", "自评；xAI 提交"],
+          ["官网榜单 #24", "Kimi K2.5 / Kimi Agent", "41.3%", "2026-02-02", "自评；Kimi 提交"],
+          ["官网榜单 #25", "GPT-5 / OpenHands", "39.4%", "2025-12-05", "CyberGym Team 提交"],
+          ["官网榜单 #27", "Claude Sonnet 4.5 / Anthropic Agent", "28.9%", "2025-09-29", "自评；Anthropic 提交"],
+          ["官网榜单 #30", "Claude Sonnet 4 / Anthropic Agent", "22.6%", "2025-09-29", "自评；Anthropic 提交"],
+          ["官网榜单 #31", "Claude Sonnet 4 / OpenHands", "17.9%", "2025-05-23", "CyberGym Team；与论文全集最佳一致"],
+          ["官网榜单 #33", "Claude Sonnet 3.7 / OpenHands", "11.9%", "2025-05-15", "CyberGym Team"],
+          ["官网榜单 #34", "GPT-4.1 / OpenHands", "9.4%", "2025-05-15", "CyberGym Team"],
+          ["官网榜单 #44", "SWE-Gym-32B / OpenHands", "0.1%", "2025-05-15", "CyberGym Team；SWE-bench 专用微调模型在此泛化差"]
+        ]
+      },
+      "cite": ["site-benchmark@榜单", "site-benchmark", "arxiv-2506-02548@§4.1"]
+    }
+  }
 }

@@ -1,30 +1,380 @@
 {
   "id": "apex-agents",
   "name": "APEX-Agents",
-  "full_name": "AI Productivity Index for Agents (APEX-Agents)",
+  "full_name": "AI Productivity Index for Agents（APEX-Agents，AI 智能体生产力指数）",
   "aliases": [],
   "status": null,
   "categories": [
     "agent"
   ],
-  "summary": "Mercor 长周期职业任务智能体评测（投行/咨询/法律）",
-  "interpretation": "让 agent 在虚拟办公环境里干投行、咨询、律所的真实活儿，按职业 rubric 打分，是 AI 能否当白领的代表榜。",
-  "measures": [],
-  "does_not_measure": [],
+  "summary": "Mercor 出的长周期「职业任务」智能体评测：题目由投行分析师、管理咨询师和公司律师按真实项目场景搭建。每个场景是一个装满文件的虚拟「世界」，里面带邮件、聊天、日历、表格、文档、PDF、演示等应用；agent 要自己从文件里找要求、跑工具、交出能用的交付物。每道题由专家写好若干条只能判「达到 / 未达到」的评分项（rubric），交给裁判模型逐条打分。",
+  "interpretation": "高分说明这个 agent 能在一次运行里把整道题的评分项全部做满——长程规划、跨应用找信息、把散落在邮件与表格里的要求凑齐并落地成文件的能力较强。它不说明更省钱（论文版榜首的 token 用量接近次名的 5 倍）、不说明行为安全（论文把 0.12% 的删除轨迹标为 rogue behavior）、也不说明能替代人类专家：场景再真实，也是预先定义好、可判对错的封闭环境。",
+  "measures": [
+    {
+      "area": "长程跨应用任务执行",
+      "focus": "在同一个世界里跨邮件、聊天、日历、表格、文档完成一个完整职业任务，例如按客户邮件里约定的口径更新财务模型，再把结果落成可交付文件",
+      "share": "v1.1 全部 240 个任务都是这一形态（每职业 80 个）",
+      "format": "开放式产出（控制台消息或文件）+ 二元 rubric 逐条判定",
+      "cite": [
+        "hf-mercor-apex-agents-v11@Dataset overview",
+        "mercor-blog-apex-agents@Task updates"
+      ]
+    },
+    {
+      "area": "跨文件信息整合",
+      "focus": "任务要求常散落在世界文件、邮件与文档惯例里，agent 要自己搜出来；v1.1 用三次专家审计把每个任务唯一正确答案所需的信息补进世界文件",
+      "share": "31 个世界共 5,182 个文件（Distribution 表平均每世界 167.2 个）",
+      "format": "agent 自主检索行为，间接体现在分数上",
+      "cite": [
+        "hf-mercor-apex-agents-v11@Dataset overview",
+        "mercor-blog-apex-agents@Task updates"
+      ]
+    },
+    {
+      "area": "通信检索意愿",
+      "focus": "模型是否主动翻通信找未明说的参数：Gemini 3.8 Flash 在 93.1% 的 run 中检索过通信；Kimi K3 与 GPT-5.6 Sol 只在大约 15% 的 run 中检索，但一旦检索，Kimi K3 拿到 29.7% 的任务级 Pass@1 提升",
+      "share": "官方按模型分别统计，未给出全体比例",
+      "format": "行为统计 + 任务级分数提升",
+      "cite": [
+        "mercor-blog-apex-agents@Performance"
+      ]
+    },
+    {
+      "area": "评分纪律（是否给出唯一答案）",
+      "focus": "是否按环境里唯一明确的答案作答，而不是罗列多个候选答案 hedge 掉风险——官方把后者称为 scattergunning",
+      "share": "v1.1 新增：换用能识别 scattergun 的裁判，并在系统提示里明令禁止；部分旧模型 Pass@1 扣分超过 20%",
+      "format": "裁判对 hedge 型评分项记 0 分",
+      "cite": [
+        "mercor-blog-apex-agents@Scattergunning",
+        "mercor-blog-apex-agents@Performance"
+      ]
+    },
+    {
+      "area": "职业领域覆盖",
+      "focus": "投行分析师、管理咨询师、公司律师三类，各有独立看板与任务集",
+      "share": "31 个世界：投行 8、咨询 11、法律 12；每职业 80 个任务",
+      "format": "分域看板（Corporate Lawyer / Management Consultant / Investment Banking Analyst）",
+      "cite": [
+        "hf-mercor-apex-agents-v11@Dataset overview",
+        "mercor-apex-apex-agents-leaderb@Jobs"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "不测联网信息获取：该版本不配置 web 搜索，agent 只能用手头文件，官方说明这是为了让评测可复现",
+      "cite": [
+        "hf-mercor-apex-agents-v11@Dataset overview",
+        "arxiv-2601-14242@§3.1"
+      ]
+    },
+    {
+      "text": "不测效率与成本：论文版榜首 Gemini 3 Flash 的 token 用量接近 GPT-5.2 的 5 倍、约 Gemini 3 Pro 的 8 倍，步数多 54%、工具调用多 22%，但这些都不进排名",
+      "cite": [
+        "arxiv-2601-14242@§5.1"
+      ]
+    },
+    {
+      "text": "不测安全与越权：论文只把 36 条（0.12%）含文件删除的轨迹标为 rogue behavior 并统计，安全性不是评分维度",
+      "cite": [
+        "arxiv-2601-14242@§5.1"
+      ]
+    },
+    {
+      "text": "不测多轮澄清：一次任务一次交付，没有与客户来回确认需求的环节；v1.1 反而要求模型从文件与通信里自己推断参数",
+      "cite": [
+        "mercor-blog-apex-agents@Task updates"
+      ]
+    }
+  ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
+    "sample_count": 240,
+    "splits": [
+      "无公开 train / validation / test 划分；v1.1 为 240 个任务的固定集合（每职业 80 个）"
+    ],
+    "languages": [
+      "English（数据集卡标注 Languages: English）"
+    ],
+    "source_type": "专家按真实项目场景人工构建：由 Mercor 专家网络中的执业从业者出题（榜单列名 Latham & Watkins、Skadden、Cravath、McKinsey、BCG、Goldman Sachs、Morgan Stanley、JPMorgan 等事务所与投行）",
+    "public_sample": "公开可下载（Hugging Face mercor/apex-agents-v1.1，CC-BY 4.0，需先同意访问条款）；参考 agent 代码在 GitHub，Apache-2.0",
+    "totals": "v1.1：31 个世界（投行 8 / 咨询 11 / 法律 12）、240 个任务（每职业 80 个）、955 条二元评分项（平均每题 3.98 条）、5,182 个世界文件（Distribution 表平均每世界 167.2 个）、每个任务都附金标准输出（206 个文本输出 + 34 个文件输出）、运行时 Harbor 0.20.0；许可 CC-BY 4.0，且条款明确禁止用于训练或微调。论文版（v1）规模更大：33 个世界、480 个任务，平均每世界 166 个文件",
+    "cite": [
+      "hf-mercor-apex-agents-v11@Dataset overview",
+      "mercor-blog-apex-agents@Task updates",
+      "arxiv-2601-14242@§3.1"
+    ],
+    "construction": [
+      {
+        "k": "1. 建世界",
+        "text": "专家先按自己执业中的真实项目写一个项目场景（交付方、客户、背景与目标、约束），再据此搭出一个带文件与应用状态的「世界」；论文版 33 个世界里 22 个全虚构、9 个把真实公司放进虚构场景、2 个混合",
+        "cite": [
+          "arxiv-2601-14242@§3.1"
+        ]
+      },
+      {
+        "k": "2. 配应用与工具",
+        "text": "每个世界固定暴露 9 类应用、共 63 个工具（日历、聊天、代码执行、文档、文件系统、邮件、PDF、表格、演示）；两个投行世界另接 EDGAR SEC、股票与金融市场、固定收益数据，追加 187 个工具；web 搜索全程关闭",
+        "cite": [
+          "arxiv-2601-14242@§3.1",
+          "hf-mercor-apex-agents-v11@Dataset overview"
+        ]
+      },
+      {
+        "k": "3. 出任务",
+        "text": "专家在世界文件基础上写长程、真实、有难度的任务，论文版每个世界 8–20 个；任务分文本输出（论文版 422 个）与文件输出（论文版 58 个，含文档、表格、演示）两类",
+        "cite": [
+          "arxiv-2601-14242@§3.2"
+        ]
+      },
+      {
+        "k": "4. 写评分项与金标准",
+        "text": "每道题配 1–10 条（论文版平均 4.06 条）自包含、短描述、只能判真/假的评分项，另附金标准输出（文本题给参考文本，文件题给专家做的成品文件）",
+        "cite": [
+          "arxiv-2601-14242@§3.3",
+          "hf-mercor-apex-agents-v11@Evaluation"
+        ]
+      },
+      {
+        "k": "5. 基线与质检",
+        "text": "论文版对 20% 的任务（n=96）让未参与出题的专家从零重做，验证可完成、rubric 公平、工时估算合理；10% 的任务发现 prompt/rubric/元数据小问题并级联修复到全库。重做样本专家自估 1.70 小时、实际 1.37 小时，高估 0.45 小时（33%）",
+        "cite": [
+          "arxiv-2601-14242@§3.5"
+        ]
+      },
+      {
+        "k": "6. 版本迭代（1.1）",
+        "text": "1.1 从原库精选每职业 80 个任务，经三次专家审计：前两次确保存在唯一且定义充分的正确答案，第三次核验世界文件里用于澄清决策的信息是否公平",
+        "cite": [
+          "mercor-blog-apex-agents@Task updates"
+        ]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "agent 通过 MCP 工具在容器化的世界里执行任务。官方参考实现 apex_loop_truncated_tools_agent 是一个最小的 LiteLLM 工具调用循环：工具输出截断到 200 行或 32K 字符，默认 100 个总步数（turns）、10,800 秒超时，与榜单跑法一致；论文版则对每道题设 250 步上限，超过即判失败。论文版每个 agent 对每道题跑 8 次（8 agents × 8 runs × 480 tasks = 30,720 条轨迹）。评分时裁判模型逐条独立判定每个评分项：只看任务提示、agent 输出和 agent 造成的世界变更，不看轨迹；文本题对照金标准参考文本，文件题对照专家金标准产物，每条返回 Met / Not met 加一句简短解释。论文版裁判为 Gemini 3 Flash（thinking 设为 low），共产生约 125,000 次判定。",
+    "cite": [
+      "gh-apex-loop-agent@README",
+      "arxiv-2601-14242@§4.1",
+      "arxiv-2601-14242@§4.2",
+      "hf-mercor-apex-agents-v11@Evaluation"
+    ],
+    "variants": [
+      {
+        "text": "版本口径：论文版 v1 是 480 个任务 / 33 个世界，1.1 是 240 个任务 / 31 个世界（每职业精选 80 个），任务措辞、世界文件与裁判都变过，两版分数不可直接比较",
+        "cite": [
+          "arxiv-2601-14242@§3.1",
+          "mercor-blog-apex-agents@Task updates",
+          "hf-mercor-apex-agents-v11@Dataset overview"
+        ]
+      },
+      {
+        "text": "裁判模型：v1 用 Gemini 3 Flash（thinking=low）；1.1 换成 DeepSeek-v4-Flash-0731（temperature=0.1），再用 GEPA 优化提示词——优化素材是 337 条轨迹里人工标注的 1,407 个评分项，另用 354 个留出评分项验证；同一份输出在两版裁判下得分不同",
+        "cite": [
+          "arxiv-2601-14242@§4.2",
+          "mercor-blog-apex-agents@Judge model changes"
+        ]
+      },
+      {
+        "text": "推理档位：榜单按思考/推理强度分列同名模型，例如 Sonnet 5.5 Max 记 75.5%、Sonnet 5.5 Medium 记 44.6%，档位差异远大于多数相邻名次差",
+        "cite": [
+          "mercor-apex-apex-agents-leaderb@榜单"
+        ]
+      },
+      {
+        "text": "运行次数与指标：论文版用 8 次运行报告 Pass@1 / Pass@8 / Pass^8；1.1 的官方讨论用 Pass@4 与 Pass^4。k 不同，「至少做对一次」和「每次都做对」的差距会显著变化",
+        "cite": [
+          "arxiv-2601-14242@§4.1",
+          "mercor-blog-apex-agents@Performance"
+        ]
+      },
+      {
+        "text": "harness 上限：步数、超时、工具输出截断长度若改动会直接改变能否完成任务（官方参考实现为 100 步 / 10,800 秒 / 200 行或 32K 字符，论文版以 250 步为失败线）",
+        "cite": [
+          "gh-apex-loop-agent@README",
+          "arxiv-2601-14242@§4.1"
+        ]
+      },
+      {
+        "text": "排名指标：官方 FAQ 称 Mean Score（平均通过评分项比例）是榜单主排名指标，而论文与榜单默认页的头条指标是 Pass@1（整卷全过的任务占比）",
+        "cite": [
+          "mercor-apex-apex-agents-leaderb@FAQ"
+        ]
+      }
+    ]
   },
   "metrics": [
-    "rubric_score"
+    {
+      "id": "pass_at_1",
+      "name": "Pass@1",
+      "direction": "越高越好",
+      "description": "单次运行中评分项全部通过的任务占比，即「一次就把整道题做全对」的任务比例；论文的头条指标，也是榜单默认页的排序依据",
+      "range": "0–100%",
+      "unit": "%",
+      "cite": [
+        "arxiv-2601-14242@§5",
+        "mercor-apex-apex-agents-leaderb@FAQ"
+      ]
+    },
+    {
+      "id": "mean_score",
+      "name": "Mean Score",
+      "direction": "越高越好",
+      "description": "所有任务的评分项通过率平均值，能给部分进度计分；官方 FAQ 称它是 APEX-Agents 榜单的主排名指标",
+      "range": "0–100%",
+      "unit": "%",
+      "cite": [
+        "mercor-apex-apex-agents-leaderb@FAQ"
+      ]
+    },
+    {
+      "id": "pass_at_k",
+      "name": "Pass@k",
+      "direction": "越高越好",
+      "description": "k 次独立运行中至少一次全部通过的任务占比；论文用 k=8，1.1 的官方分析用 k=4",
+      "range": "0–100%",
+      "unit": "%",
+      "cite": [
+        "arxiv-2601-14242@§5",
+        "mercor-blog-apex-agents@Performance"
+      ]
+    },
+    {
+      "id": "pass_pow_k",
+      "name": "Pass^k",
+      "direction": "越高越好",
+      "description": "k 次独立运行全部通过的任务占比，衡量稳定性而非运气；论文用 k=8，1.1 用 k=4",
+      "range": "0–100%",
+      "unit": "%",
+      "cite": [
+        "arxiv-2601-14242@§5",
+        "mercor-blog-apex-agents@Performance"
+      ]
+    },
+    {
+      "id": "criteria_pass_rate",
+      "name": "单题评分项通过率",
+      "direction": "越高越好",
+      "description": "单道题内通过的二元评分项比例，是 Mean Score 的题内粒度，能给部分完成度计分",
+      "range": "0–100%",
+      "unit": "%",
+      "cite": [
+        "arxiv-2601-14242@§5"
+      ]
+    }
   ],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [],
-  "notes": "Google/Kimi/MiniMax/xAI/字节 Seed 广泛引用；与 APEX-SWE 是不同评测",
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2026-01-20",
+      "label": "论文首发版：480 个任务 / 33 个世界（投行 10、咨询 11、法律 12），裁判为 Gemini 3 Flash（thinking=low），headline Pass@1 最高 24.0%（Gemini 3 Flash，Thinking=High）；v2 2026-01-27、v3 2026-02-23",
+      "cite": [
+        "arxiv-2601-14242@提交历史",
+        "arxiv-2601-14242@摘要"
+      ]
+    },
+    {
+      "id": "v1.1",
+      "date": "2026-09-08",
+      "label": "APEX-Agents 1.1：每职业精选 80 个任务共 240 个 / 31 个世界，换成 scattergun-aware 裁判（DeepSeek-v4-Flash-0731 + GEPA），官方称不再奖励非承诺式答案",
+      "cite": [
+        "mercor-blog-apex-agents@Task updates",
+        "mercor-blog-apex-agents@Judge model changes",
+        "hf-mercor-apex-agents-v11@Dataset overview"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "版本口径不一致，跨版本分数不可比",
+      "impact": "论文版 480 题的最高 Pass@1 是 24.0%，1.1 榜单 240 题已到 84.2%；题量、裁判模型（Gemini 3 Flash → DeepSeek-v4-Flash-0731 + GEPA）、任务措辞与世界文件全都变过。把两者当同一批题上的进步会严重高估模型能力提升",
+      "severity": "高",
+      "response": "官方在 1.1 博客中说明三道任务审计与新裁判，并称修订后基准「更可判别、更公平」，但未给出任务变更与裁判变更各自的贡献拆分",
+      "reader": "引用 APEX-Agents 分数时必须同时写明版本（论文版 v1 还是 1.1 榜单）、题量与裁判模型",
+      "cite": [
+        "arxiv-2601-14242@摘要",
+        "mercor-blog-apex-agents@Performance",
+        "mercor-apex-apex-agents-leaderb@榜单"
+      ]
+    },
+    {
+      "issue": "二元 rubric + 裁判模型存在可被套利的评分空间",
+      "impact": "评分项只检查「正确信息是否出现」，模型可以靠罗列多个候选答案（官方称 scattergunning）抬高分数。官方在 2026 年 7 月初发现后，把有该行为的模型从榜单撤分或不予发布；1.1 换裁判后，部分旧模型 Pass@1 扣分超过 20%",
+      "severity": "高",
+      "response": "1.1 用 GEPA 优化出的 scattergun-aware 裁判把 hedge 型评分项判 0，并在系统提示中显式禁止；代价是漏判率从 5.3% 升到 8.0%",
+      "reader": "看 1.1 之前的分数要先问一句是否受 scattergunning 影响；漏判率上升也意味着新裁判更严",
+      "cite": [
+        "mercor-blog-apex-agents@Scattergunning",
+        "mercor-blog-apex-agents@Judge model changes"
+      ]
+    },
+    {
+      "issue": "公开范围的官方说法自相矛盾",
+      "impact": "榜单正文写「整个 APEX-agents 数据集开源」，FAQ 又写「完整任务集保持私有，以防被拿去训练」；实际 HF 上发布的是 1.1 的 240 个任务包（需同意条款），论文版的 480 个任务未见对应公开产物",
+      "severity": "中",
+      "response": "未见官方回应",
+      "reader": "复现前先确认拿到的子集、版本与榜单是否一致，别把「开源」理解成全量",
+      "cite": [
+        "mercor-apex-apex-agents-leaderb@榜单",
+        "mercor-apex-apex-agents-leaderb@FAQ",
+        "hf-mercor-apex-agents-v11@Dataset overview"
+      ]
+    },
+    {
+      "issue": "小差距不可信",
+      "impact": "论文明确「低于 1 个百分点的差异应谨慎解读」；1.1 榜单给出的误差带普遍在 ±4–6 个百分点，相邻名次的差距多在噪声内",
+      "severity": "中",
+      "response": "论文用 McNemar 精确检验 + Benjamini–Hochberg 5% FDR 控制做两两比较，并报告任务级 bootstrap（10,000 次重采样）95% 置信区间；榜单直接给 ± 误差",
+      "reader": "不要把相邻名次的差距当作结论；看显著性检验而不是排名",
+      "cite": [
+        "arxiv-2601-14242@§5",
+        "mercor-apex-apex-agents-leaderb@榜单"
+      ]
+    },
+    {
+      "issue": "榜首与次名同为被评测对象，裁判存在自偏风险",
+      "impact": "论文版裁判 Gemini 3 Flash 同时是榜单第一名的模型，构成自偏风险；论文称通过「裁判不看轨迹」缓解，并报告裁判在 84 条自身评分项上出现 1 次假阳（假阳率 1.2%），但样本很小",
+      "severity": "中",
+      "response": "论文称裁判分级时不看 agent 轨迹，且对定义清晰的评分项自偏更低；1.1 已把裁判换成非被测的 DeepSeek-v4-Flash",
+      "reader": "论文版的绝对分数可视为「Gemini 3 Flash 评 Gemini 3 Flash」的结果，跨厂商比较时留意这一点",
+      "cite": [
+        "arxiv-2601-14242@§4.2",
+        "mercor-blog-apex-agents@Judge model changes"
+      ]
+    },
+    {
+      "issue": "效率、成本与行为安全不进排名",
+      "impact": "论文版榜首 token 用量接近次名 5 倍、约第三名 8 倍；36 条轨迹（0.12%）出现未被要求的文件删除，其中 GPT-5.2 最多（n=21）；超时率也随模型拉开差距（次名 GPT-5.2 为 2.7%），开源模型显著更高",
+      "severity": "中",
+      "response": "论文在附录报告了 token、步数、工具调用、超时率与 rogue 删除统计，但不纳入排名",
+      "reader": "选型时另看成本与行为日志，榜单高分不等于可上线",
+      "cite": [
+        "arxiv-2601-14242@§5.1"
+      ]
+    },
+    {
+      "issue": "数据集条款禁止训练，公开范围受条款约束",
+      "impact": "数据集卡写明 1.1 只允许用于模型评测，训练、微调、参数拟合与爬取均被禁止；同时「完整任务集保持私有」意味着外部无法拿到与榜单完全一致的全量集合",
+      "severity": "低",
+      "response": "官方以条款 + 私有全量集的方式控制污染，并称会持续审计基准",
+      "reader": "引用成绩时说明自己跑的是哪个子集；不要假设能拿到全量任务",
+      "cite": [
+        "hf-mercor-apex-agents-v11@Dataset overview",
+        "mercor-apex-apex-agents-leaderb@FAQ"
+      ]
+    },
+    {
+      "issue": "任务构造对「参数未明说」的依赖可能测得是检索而非推理",
+      "impact": "v1.1 刻意把偏好参数从系统提示挪进通信、表格与文档，要求模型像职业人士一样翻旧文件遵循组织惯例；检索失败的模型（Kimi K3、GPT-5.6 Sol 只在大约 15% 的 run 中检索通信）分数被压低",
+      "severity": "低",
+      "response": "官方称这是为了保留真实性（「职业人士不会把参数啰嗦一遍」），并用任务级提升数据佐证检索意愿的影响",
+      "reader": "分数低可能只是不愿翻通信，不等于不会算",
+      "cite": [
+        "mercor-blog-apex-agents@Task updates",
+        "mercor-blog-apex-agents@Performance"
+      ]
+    }
+  ],
+  "notes": "与 APEX-SWE 是同一家族的不同基准（APEX-SWE 测软件工程任务）；本档案同时覆盖论文版（v1，480 题）与当前线上 1.1 榜单（240 题），引用时须区分。",
   "official_sources": [
     {
       "kind": "paper",
@@ -36,21 +386,243 @@
     },
     {
       "kind": "site",
-      "url": "https://seed.bytedance.com/en/blog/seed2-1-officially-released-advancing-ai-productivity"
+      "url": "https://www.mercor.com/blog/introducing-apex-agents-1-1"
     },
     {
-      "kind": "site",
-      "url": "https://deepmind.google/models/gemini/pro/"
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/mercor/apex-agents-v1.1"
     },
     {
-      "kind": "site",
-      "url": "https://www.kimi.ai/blog/kimi-k3"
+      "kind": "repo",
+      "url": "https://github.com/Mercor-Intelligence/apex_loop_truncated_tools_agent"
     }
   ],
   "related_benchmarks": [
     "tau-bench",
-    "gaia"
+    "gaia",
+    "apex-swe"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-19",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-19",
+    "sources": [
+      {
+        "id": "arxiv-2601-14242",
+        "kind": "paper",
+        "title": "APEX-Agents (arXiv:2601.14242, v3)",
+        "url": "https://arxiv.org/abs/2601.14242",
+        "accessed": "2026-11-19"
+      },
+      {
+        "id": "mercor-apex-apex-agents-leaderb",
+        "kind": "leaderboard",
+        "title": "APEX-Agents Leaderboard — Mercor Research",
+        "url": "https://www.mercor.com/apex/apex-agents-leaderboard/",
+        "accessed": "2026-11-19"
+      },
+      {
+        "id": "mercor-blog-apex-agents",
+        "kind": "blog",
+        "title": "Introducing APEX-Agents 1.1 — Mercor",
+        "url": "https://www.mercor.com/blog/introducing-apex-agents-1-1",
+        "accessed": "2026-11-19"
+      },
+      {
+        "id": "hf-mercor-apex-agents-v11",
+        "kind": "dataset",
+        "title": "mercor/apex-agents-v1.1 — Hugging Face dataset card",
+        "url": "https://huggingface.co/datasets/mercor/apex-agents-v1.1",
+        "accessed": "2026-11-19"
+      },
+      {
+        "id": "gh-apex-loop-agent",
+        "kind": "repo",
+        "title": "Mercor-Intelligence/apex_loop_truncated_tools_agent (README)",
+        "url": "https://github.com/Mercor-Intelligence/apex_loop_truncated_tools_agent",
+        "accessed": "2026-11-19"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Mercor（Mercor Research）；榜单 FAQ 称与 Box、Harvey 合作开发",
+        "cite": [
+          "mercor-apex-apex-agents-leaderb@FAQ",
+          "arxiv-2601-14242@摘要"
+        ]
+      },
+      "first_release": {
+        "v": "2026-01-20（论文 arXiv v1 提交日；v3 为 2026-02-23）",
+        "cite": [
+          "arxiv-2601-14242@提交历史"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "arxiv-2601-14242@摘要",
+        "hf-mercor-apex-agents-v11@Dataset overview",
+        "mercor-apex-apex-agents-leaderb@榜单"
+      ],
+      "interpretation": [
+        "arxiv-2601-14242@§5.1",
+        "mercor-apex-apex-agents-leaderb@FAQ"
+      ]
+    },
+    "problem": {
+      "text": "此前的 agent 基准多为单应用、短程、答案可程序化判对错的编程或问答任务；而投行、咨询、法律这类职业工作的难度在于：要求散落在十几个文件和多套办公应用里、要跨很长的时间线推进、好坏由专业惯例而非唯一标准答案决定。APEX-Agents 的做法是把这类工作搬进一个带文件、应用状态与工具的虚拟「世界」，再用专家写的二元评分项把「做得好不好」变成可自动判定的信号。",
+      "cite": [
+        "mercor-apex-apex-agents-leaderb@榜单",
+        "arxiv-2601-14242@§3.1",
+        "arxiv-2601-14242@§3.3"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "论文版（v1，480 题）最好成绩",
+        "value": "Pass@1 24.0%",
+        "note": "Gemini 3 Flash（Thinking=High）；其后 GPT-5.2 23.0%、Claude Opus 4.5 与 Gemini 3 Pro 均 18.4%",
+        "cite": [
+          "arxiv-2601-14242@摘要",
+          "arxiv-2601-14242@§5"
+        ]
+      },
+      {
+        "label": "论文版 Pass@8 / Pass^8 参考",
+        "value": "Pass@8 40.0%（GPT-5.2）/ Pass^8 13.4%（Gemini 3 Flash）",
+        "note": "Pass@8 比 Pass@1 高约 15 个百分点，说明能力具备但不稳定；论文称未见饱和证据",
+        "cite": [
+          "arxiv-2601-14242@§5"
+        ]
+      },
+      {
+        "label": "人类专家基线",
+        "value": "论文未给出通过率",
+        "note": "论文只报告工时对照：对 20% 任务（n=96）从零重做，专家自估 1.70 小时、实际 1.37 小时（高估 33%）；未报告人类 Pass@1",
+        "cite": [
+          "arxiv-2601-14242@§3.5"
+        ]
+      },
+      {
+        "label": "当前官方榜单最高（1.1，240 题）",
+        "value": "Pass@1 84.2% ± 4.3%",
+        "note": "Gemini 4 Carbon High；第二名 Gemini 4 Argon High 82.4% ± 4.3%，第三名 Fable 5.2 Max 80.1% ± 4.7%",
+        "cite": [
+          "mercor-apex-apex-agents-leaderb@榜单"
+        ]
+      },
+      {
+        "label": "同一模型不同推理档位的跨度",
+        "value": "Sonnet 5.5 Max 75.5% vs Sonnet 5.5 Medium 44.6%",
+        "note": "档位选择造成的差距大于多数相邻名次差，是比较前必须先对齐的变量",
+        "cite": [
+          "mercor-apex-apex-agents-leaderb@榜单"
+        ]
+      },
+      {
+        "label": "噪声参考线",
+        "value": "论文：低于 1 个百分点的差异应谨慎解读",
+        "note": "1.1 榜单误差带约 ±4–6 个百分点；两两显著性用 McNemar 精确检验 + BH 5% FDR",
+        "cite": [
+          "arxiv-2601-14242@§5"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 1.1 榜单的 84.2% 与论文的 24.0% 当成同一批题上的进步——两版题量（480 → 240）、裁判（Gemini 3 Flash → DeepSeek-v4-Flash-0731 + GEPA）、任务措辞与世界文件都不同，跨度无法归因于模型能力",
+        "cite": [
+          "arxiv-2601-14242@摘要",
+          "mercor-blog-apex-agents@Judge model changes",
+          "mercor-apex-apex-agents-leaderb@榜单"
+        ]
+      },
+      {
+        "text": "把 Mean Score 和 Pass@1 当同一件事——Mean Score 是平均通过评分项比例（给部分分），Pass@1 是整卷全过的任务占比；官方 FAQ 说榜单主排名用 Mean Score，而论文头条与榜单默认页是 Pass@1",
+        "cite": [
+          "mercor-apex-apex-agents-leaderb@FAQ"
+        ]
+      },
+      {
+        "text": "把 APEX-Agents 和 APEX-SWE 混为一谈——两者同属 Mercor 的 APEX 家族但是不同基准，APEX-SWE 测软件工程任务，题目形态与评分都不同",
+        "cite": [
+          "mercor-apex-apex-agents-leaderb@FAQ"
+        ]
+      },
+      {
+        "text": "以为分数高就等于更省钱或更安全——论文版榜首 token 用量接近次名 5 倍，0.12% 的轨迹出现未被要求的文件删除，这些都不进排名",
+        "cite": [
+          "arxiv-2601-14242@§5.1"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "Mercor（Mercor Research）；榜单 FAQ 称与 Box、Harvey 合作开发",
+        "cite": [
+          "mercor-apex-apex-agents-leaderb@FAQ"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "论文共 24 位作者，领署 Bertie Vidgen、Austin Mann、Abby Fennelly、John Wright Stanly 等（Mercor）",
+        "cite": [
+          "arxiv-2601-14242@标题页"
+        ]
+      },
+      {
+        "k": "出题专家",
+        "v": "论文版由 256 位专家贡献，平均从业 12.9 年、中位 11.0 年；榜单列名来自 Latham & Watkins、Skadden、Cravath、McKinsey、BCG、Goldman Sachs、Morgan Stanley、JPMorgan 等机构的执业者",
+        "cite": [
+          "arxiv-2601-14242@§2",
+          "mercor-apex-apex-agents-leaderb@Jobs"
+        ]
+      },
+      {
+        "k": "数据与代码位置",
+        "v": "数据集：Hugging Face mercor/apex-agents-v1.1 与 Harbor Hub（CC-BY 4.0，需同意访问条款）；参考 agent：GitHub Mercor-Intelligence/apex_loop_truncated_tools_agent（Apache-2.0），运行时 Harbor 0.20.0；论文版另开源 Archipelago 执行与评测基础设施",
+        "cite": [
+          "hf-mercor-apex-agents-v11@Dataset overview",
+          "gh-apex-loop-agent@README",
+          "arxiv-2601-14242@摘要"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2026-01-20 论文 v1 提交；2026-01-27 v2；2026-02-23 v3；2026 年 7 月初官方发现 scattergunning；2026-09-08 发布 APEX-Agents 1.1",
+        "cite": [
+          "arxiv-2601-14242@提交历史",
+          "mercor-blog-apex-agents@Scattergunning",
+          "mercor-blog-apex-agents@Task updates"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-19",
+        "columns": [
+          "模型（档位）",
+          "Pass@1"
+        ],
+        "rows": [
+          ["Gemini 4 Carbon High", "84.2% ± 4.3%"],
+          ["Gemini 4 Argon High", "82.4% ± 4.3%"],
+          ["Fable 5.2 Max", "80.1% ± 4.7%"],
+          ["Hy4 High", "77.6% ± 4.5%"],
+          ["Sonnet 5.5 Max 2 efforts", "75.5% ± 4.7%"],
+          ["Sonnet 5.5 Max", "75.5% ± 4.7%"],
+          ["Sonnet 5.5 Medium", "44.6% ± 5.6%"]
+        ]
+      },
+      "cite": [
+        "mercor-apex-apex-agents-leaderb@榜单"
+      ]
+    }
+  }
 }

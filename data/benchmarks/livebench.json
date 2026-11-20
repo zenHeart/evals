@@ -1,30 +1,445 @@
 {
   "id": "livebench",
   "name": "LiveBench",
-  "full_name": null,
+  "full_name": "LiveBench 2.0（v1 论文题名：LiveBench: A Challenging, Contamination-Limited LLM Benchmark）",
   "aliases": [],
-  "status": null,
+  "status": "active",
   "categories": [
     "reasoning"
   ],
-  "summary": "每月换题的综合抗污染基准（数学/代码/推理/语言/数据网）",
-  "interpretation": "每月换新题的综合榜，从源头断绝“背题”。分数每月重算，看趋势比看单期有意义。",
-  "measures": [],
-  "does_not_measure": [],
+  "summary": "LiveBench 是答案可自动核对、靠换题抗污染的综合评测：v1 每月更新题目，2026-11-06 起升级为 LiveBench 2.0，改为 7 个套件 466 道真实任务（写应用、修 bug、做调研、做设计、操作浏览器、数据分析、推理），每套件对每个模型只跑一次，Overall 按套件加权平均。",
+  "interpretation": "高分说明模型能交付可用的真实产出（应用能按规则改对、bug 修好且不破坏既有行为、报告达到 rubric、文档版式达标），而不只是答对选择题；但它不说明模型划算——站点把「每次成功任务的成本」和分数并列发布，总分最高的 Claude Fable 5.2（xhigh）也最贵（$9.850），最便宜的 GPT-6 Luna 只有 $0.132 而 Overall 60.4。单次运行没有误差棒，1–2 分的差距不构成稳定差异。",
+  "measures": [
+    {
+      "area": "Long Agentic（长时程 Agent）",
+      "focus": "业务应用与既有系统上的多轮改造：财务合规应用（薪酬、预算、税务申报、审计记录在规则变化下逐轮改对）、运维商务应用、长周期运营（在模拟月份里运行既有系统，早期选择会累积）、受托运营、系统工程、性能优化（把真实程序跑快，用测量而非主观判断）。示例：给一份规则变化的税务申报应用连续提需求，看它逐轮交付的结果",
+      "share": "18 题（Overall 权重 ×2）",
+      "format": "应用/代码交付，确定性评分",
+      "cite": [
+        "v2-data@breakdown.json",
+        "v2-notes@notes.json",
+        "site-js@套件-Agentic",
+        "livebench@Leaderboard"
+      ]
+    },
+    {
+      "area": "Reasoning（推理）",
+      "focus": "短问答：心智理论（追踪短篇故事里谁知道、相信什么）、斑马谜题（由相互锁定的线索推出各自属性）、空间推理（2D/3D 形状与位置）、带导航的逻辑（判定谁说真话）。示例：读一段短故事，回答某角色是否知道某个事实",
+      "share": "202 题",
+      "format": "单一正确答案短问答，对 ground truth 判分",
+      "cite": [
+        "v2-data@breakdown.json",
+        "v2-notes@notes.json",
+        "site-js@套件-Reasoning"
+      ]
+    },
+    {
+      "area": "Coding（编码）",
+      "focus": "冻结代码库上的真实合并 PR bug 修复，另含 LLM API 集成、Agent 循环、计费与限额、云基础设施、产品与 UX、记忆与工具、硬修复（隐藏测试覆盖需求简报每一条，部分分按破损项折半）。示例：按需求简报修一个多站点产品缺陷，隐藏测试逐条检查，且不能破坏既有行为",
+      "share": "24 题（Overall 权重 ×1.5）",
+      "format": "确定性测试判分，造成回归记 0",
+      "cite": [
+        "v2-data@breakdown.json",
+        "v2-notes@notes.json",
+        "site-js@套件-Coding"
+      ]
+    },
+    {
+      "area": "Browser Use（浏览器操作）",
+      "focus": "真实 Web 应用里的多步任务：数据聚合（大记录集穷尽遍历与多维汇总）、顺序规划、分析驱动行动、结构完整性、约束遵循（既要格式精确，又要正确拒绝应用不允许的操作）。示例：在一个能用的网页应用里跨多页完成一次筛选、汇总与导出",
+      "share": "25 题",
+      "format": "真实浏览器操作，按通过任务占比计分",
+      "cite": [
+        "v2-data@breakdown.json",
+        "v2-notes@notes.json",
+        "site-js@套件-Browser"
+      ]
+    },
+    {
+      "area": "Data Analysis（数据分析）",
+      "focus": "小表上的短问答：连续增长（在带日期的值里找出连续增长的用户或实体）、表连接（把一张表的列映射到另一张表）、表格式转换（CSV 与 HTML 等格式互转）。示例：在一张杂乱的日期表里找出连续三个月增长的用户",
+      "share": "150 题",
+      "format": "单一正确答案短问答，对 ground truth 判分",
+      "cite": [
+        "v2-data@breakdown.json",
+        "v2-notes@notes.json",
+        "site-js@套件-DataAnalysis"
+      ]
+    },
+    {
+      "area": "Research（调研）",
+      "focus": "开放调研简报并产出书面报告：监管与合规（规则、备案、合规问题，答案须给出一手来源）、法律（法条、判例、合同问题并引用权威出处）、税务与财务（规则与数字，且要写出算术过程）、战略（市场与竞争分析）、科学与证据（科学与实证问题，引用已发表证据）。示例：就一项备案要求写出带引用的调研报告",
+      "share": "22 题",
+      "format": "书面报告，按 rubric 评分",
+      "cite": [
+        "v2-data@breakdown.json",
+        "v2-notes@notes.json",
+        "site-js@套件-Research"
+      ]
+    },
+    {
+      "area": "Design（设计）",
+      "focus": "文档类产出的版式与设计：DOCX 5 题（布局、结构与格式贴合简报）、PDF 8 题（排版成稿）、PPT 12 题（视觉设计与需求贴合）。示例：按一份需求简报做一套幻灯片，视觉与内容组织都要达标",
+      "share": "25 题（Overall 权重 ×1.5）",
+      "format": "产出文件的可视与结构化检查",
+      "cite": [
+        "v2-data@breakdown.json",
+        "v2-notes@notes.json",
+        "site-js@套件-Design"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "开放式科研与创造性问题解决：2.0 的 7 个套件都是可自动或半自动判分的任务（确定性测试、ground truth、rubric、可视检查），没有自由创作类任务。",
+      "cite": [
+        "site-js@方法论",
+        "v2-notes@notes.json"
+      ]
+    },
+    {
+      "text": "非英语能力：论文把非英语任务列为「未来」计划，本档案核对范围内没有非英语套件的官方说明。",
+      "cite": [
+        "arxiv-2406-19314@§7"
+      ]
+    },
+    {
+      "text": "通用多模态理解：多模态只作为入口条件出现——Browser Use 套件要求模型能接收截图，不能接收的模型在该套件记 0；除此之外没有针对图像/音频/视频理解的专门任务。",
+      "cite": [
+        "v2-notes@notes.json",
+        "site-js@图例"
+      ]
+    },
+    {
+      "text": "运行成本与延迟本身不是被测能力，但站点把它们与分数并列发布（每次成功任务的成本、$/1M 输出、输出冗长度），供「值不值」的判断使用。",
+      "cite": [
+        "livebench@Insights",
+        "site-js@成本"
+      ]
+    }
+  ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
+    "sample_count": 466,
+    "splits": [
+      "Long Agentic 18 题",
+      "Reasoning 202 题",
+      "Coding 24 题",
+      "Browser Use 25 题",
+      "Data Analysis 150 题",
+      "Research 22 题",
+      "Design 25 题（DOCX 5 / PDF 8 / PPT 12）"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "官方出题：v1 的题目取自近期发布的数学竞赛、arXiv 论文、新闻文章和数据集；2.0 改为官方构建的长时程真实任务（业务应用多轮改造、既有系统模拟月份运营、真实合并 PR 的 bug 修复、真实 Web 应用操作、rubric 调研简报、文档版式）",
+    "public_sample": true,
+    "multiple_choice_share": "未披露：官方只说明 Reasoning 与 Data Analysis 是单一正确答案的短问答，未给出题型占比",
+    "multimodal_share": "未披露：仅 Browser Use 套件（25 题）明确要求模型接收截图，其余套件未说明输入形态",
+    "totals": "7 个套件合计 466 题：Reasoning 202、Data Analysis 150、Long Agentic 18、Coding 24、Browser Use 25、Research 22、Design 25；每套件对每个模型只跑一次，套件分取该模型套件内任务分的均值（0–100）。",
+    "cite": [
+      "v2-data@breakdown.json",
+      "v2-cost@cost.csv",
+      "v2-notes@notes.json"
+    ],
+    "construction": [
+      {
+        "k": "套件与子任务",
+        "text": "2.0 每套件拆成若干子任务并各配一句说明：Long Agentic 6 个（财务合规、运维商务、长周期运营、受托运营、系统工程、性能优化），Reasoning 4 个（心智理论、斑马谜题、空间、带导航的逻辑），Coding 7 个（硬修复、LLM API 集成、Agent 循环、计费与限额、云基础设施、产品与 UX、记忆与工具），Browser Use 5 个（数据聚合、顺序规划、分析驱动行动、结构完整性、约束遵循），Data Analysis 3 个（连续增长、表连接、表格式转换），Research 5 个（监管合规、法律、税务财务、战略、科学证据），Design 3 个（DOCX、PDF、PPT）。",
+        "cite": [
+          "v2-data@breakdown.json"
+        ]
+      },
+      {
+        "k": "题目来源",
+        "text": "v1 的题目来自近期发布的竞赛、论文、新闻和数据集，并保留 Big-Bench Hard、AMPS、IFEval 等既有基准中更难、更抗污染的版本；2.0 的长时程套件改为真实业务场景——薪酬/预算/税务/审计记录类应用、冻结代码库上的真实合并 PR、能真实操作的 Web 应用。",
+        "cite": [
+          "arxiv-2406-19314@摘要",
+          "arxiv-2406-19314@§1",
+          "v2-data@breakdown.json"
+        ]
+      },
+      {
+        "k": "换题与留私（v1）",
+        "text": "v1 每月增删题目并维持 1000 题总量，平均每期替换 1/6、约半年整体刷新；新题延后一个月公开，使榜单始终保有 1/6 完全私有的题目。2026-01-08 的更新日志新增了积分与连续增长两道题，其中「连续增长」沿用为 2.0 Data Analysis 的子任务。",
+        "cite": [
+          "changelog@2024-07-26",
+          "arxiv-2406-19314@§2",
+          "changelog@2026-01-08",
+          "v2-data@breakdown.json"
+        ]
+      },
+      {
+        "k": "运行方式",
+        "text": "每个模型在每个套件只运行一次，使用其最高支持的推理档位；被测模型在运行中发出的每次调用都被记录，用于成本统计。",
+        "cite": [
+          "site-js@方法论",
+          "v2-notes@notes.json",
+          "site-js@成本"
+        ]
+      },
+      {
+        "k": "判分",
+        "text": "短答案套件对 ground truth 判分；Coding 用确定性测试，造成既有行为回归记 0；Research 按 rubric；Design 对产出文件做可视与结构化检查；Browser Use 按通过任务的占比计分。",
+        "cite": [
+          "v2-notes@notes.json",
+          "site-js@套件-Coding",
+          "site-js@套件-Browser"
+        ]
+      },
+      {
+        "k": "数据发布",
+        "text": "每个发布是一组静态文件：table.csv（每模型一行、每套件一列的原始 0–100 分）、breakdown.json（分套件与子任务明细）、notes.json（榜单说明）、cost.csv（成本与题量）；官方仓库提供使用方式，模型答案与判定可从 Hugging Face 下载。",
+        "cite": [
+          "site-js@数据",
+          "v2-table@table.csv",
+          "repo@Usage",
+          "repo@Data"
+        ]
+      }
+    ]
   },
-  "metrics": [],
   "default_protocol": {
-    "raw": "题目来自当月竞赛/新闻，时间戳防泄漏"
+    "raw": "模型在其最高支持的推理档位上，对每个套件运行一次；每道任务按 0–100 打分，套件分取该套件内任务分的均值；Overall 取该模型有成绩的套件按发布权重的加权平均（当前发布：Long Agentic ×2、Design ×1.5、Coding ×1.5，其余 ×1；2026-10-14 及之前的发布为等权）；运行无法测量的任务（一次重跑后仍失败）记 0，与失败任务同分且不从均值中剔除；成本统计被测模型的全部调用，按厂商刊例价计（缓存输入按缓存价），并折算为「每次成功任务的成本」=（总成本 ÷ 总任务数 ÷ 分数）× 100。",
+    "cite": [
+      "site-js@方法论",
+      "site-js@计分",
+      "site-js@总分",
+      "site-js@权重",
+      "site-js@成本",
+      "v2-notes@notes.json",
+      "livebench@Leaderboard"
+    ],
+    "variants": [
+      {
+        "text": "单次运行：每套件每模型只跑一次，站点不发布重复运行的方差或误差棒；无法测量的任务记 0，与真正失败同分。",
+        "cite": [
+          "site-js@方法论",
+          "site-js@成本",
+          "v2-notes@notes.json"
+        ]
+      },
+      {
+        "text": "推理档位：默认取模型最高支持档位，跨模型比较时档位未必对齐；Claude Fable 5.2 因 max 档总分更低（84.2 对 84.9）而按 xhigh 档展示，说明同一模型换档位 Overall 会变。",
+        "cite": [
+          "site-js@方法论",
+          "v2-notes@notes.json"
+        ]
+      },
+      {
+        "text": "空白格与 n/a：空白表示该套件仍在运行或重跑，对 Overall 无贡献；n/a 表示模型被有意排除；二者都不是 0 分，而无法完成工作的模型在该套件确实记 0。",
+        "cite": [
+          "site-js@图例",
+          "v2-notes@notes.json"
+        ]
+      },
+      {
+        "text": "输入能力门槛：不能接收截图的模型在 Browser Use 套件记 0，其 Overall 会被系统性拉低，与它的其他能力无关。",
+        "cite": [
+          "v2-notes@notes.json",
+          "site-js@图例"
+        ]
+      },
+      {
+        "text": "Overall 口径分歧：notes.json 写「每个套件等权」，排行榜脚注写的是加权平均；两种算法对同一模型给出的 Overall 不同，需以榜单脚注为准，并注意 2026-10-14 之前的发布是等权。",
+        "cite": [
+          "v2-notes@notes.json",
+          "livebench@Leaderboard",
+          "site-js@权重"
+        ]
+      },
+      {
+        "text": "v1 与 2.0 不可比：v1 是 6 个类别的准确率平均、单轮且 temperature 0；2.0 是 7 个套件的 0–100 加权分，允许工具与多轮执行。",
+        "cite": [
+          "arxiv-2406-19314@§4",
+          "arxiv-2406-19314@§5",
+          "site-js@方法论"
+        ]
+      }
+    ]
   },
-  "versions": [],
-  "limitations": [],
-  "notes": null,
+  "metrics": [
+    {
+      "id": "suite-score",
+      "name": "套件任务均分",
+      "direction": "越高越好",
+      "description": "单个套件内所有任务得分的均值（0–100），一次运行得出；无法测量的任务记 0，不从均值中剔除。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "v2-notes@notes.json",
+        "site-js@计分"
+      ]
+    },
+    {
+      "id": "overall",
+      "name": "Overall（发布权重加权平均）",
+      "direction": "越高越好",
+      "description": "该模型有成绩的套件按发布权重的加权平均；空白格与 n/a 不计入。当前发布权重：Long Agentic ×2、Design ×1.5、Coding ×1.5，其余 ×1。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "site-js@总分",
+        "livebench@Leaderboard"
+      ]
+    },
+    {
+      "id": "cost-per-successful-task",
+      "name": "每次成功任务的成本",
+      "direction": "越低越好",
+      "description": "（总成本 ÷ 总任务数 ÷ 分数）× 100，按所选范围统计；统计被测模型的全部调用，按厂商刊例价计，缓存输入按缓存价。站点把它与分数并列，作为「值不值」的判据。",
+      "unit": "usd_per_successful_task",
+      "cite": [
+        "livebench@Leaderboard",
+        "livebench@Insights",
+        "site-js@成本"
+      ]
+    }
+  ],
+  "versions": [
+    {
+      "id": "v1-launch",
+      "date": "2024-06-24",
+      "label": "LiveBench 首次上线（官网时间线标注 first；更新日志 2024-06-12 条目宣布初始 960 题、17 个任务 / 6 类）",
+      "cite": [
+        "livebench@首页",
+        "changelog@2024-06-12"
+      ]
+    },
+    {
+      "id": "v1-1000",
+      "date": "2024-07-26",
+      "label": "题量定为 1000，自此每期增删同量题目以维持总数",
+      "cite": [
+        "changelog@2024-07-26"
+      ]
+    },
+    {
+      "id": "paper-v2",
+      "date": "2025-04-18",
+      "label": "arXiv v2 修订版发布，作为 ICLR 2025 会议论文（Spotlight）",
+      "cite": [
+        "arxiv-2406-19314@arXiv",
+        "arxiv-2406-19314@脚注"
+      ]
+    },
+    {
+      "id": "v1-agentic-coding",
+      "date": "2025-05-30",
+      "label": "新增 agentic coding 类目，模型需在多轮、贴近真实的开发环境中解决真实 GitHub 仓库的问题",
+      "cite": [
+        "changelog@2025-05-30"
+      ]
+    },
+    {
+      "id": "v1-step-limit",
+      "date": "2025-10-03",
+      "label": "agentic 类目步数上限从 50 提高到 250",
+      "cite": [
+        "changelog@2025-10-03"
+      ]
+    },
+    {
+      "id": "v2",
+      "date": "2026-11-06",
+      "label": "LiveBench 2.0：7 个套件 466 题，改为长时程真实任务，并新增成本视角（当前发布）",
+      "cite": [
+        "livebench@首页",
+        "site-js@数据"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "Overall 口径自相矛盾",
+      "impact": "notes.json 写「每个套件等权」，排行榜脚注却是加权平均（Long Agentic ×2、Design ×1.5、Coding ×1.5）；同一模型用两种算法会得到不同的 Overall，且 2026-10-14 及之前的发布是等权，跨发布比较时权重还会变。",
+      "severity": "高",
+      "response": "站点在图例与脚注里给出了当前发布的权重，并称已发布数值不再变动；未见官方统一 notes.json 与脚注的说明。",
+      "reader": "看 Overall 时以榜单脚注的权重为准；跨发布比较先确认该期权重，并优先看分套件分数。",
+      "cite": [
+        "v2-notes@notes.json",
+        "livebench@Leaderboard",
+        "site-js@权重"
+      ]
+    },
+    {
+      "issue": "单次运行、无误差棒",
+      "impact": "每套件每模型只跑一次，长时程任务受工具链与环境波动影响大，几个百分点的差距无法与运行波动区分；无法测量的任务（一次重跑后仍失败）记 0，与真正失败同分，且不从均值中剔除。",
+      "severity": "高",
+      "response": "站点明示无法测量的任务记 0 并说明不从均值剔除；未见重复运行或置信区间的发布。",
+      "reader": "不要把 1–2 分的差距当作稳定差异，尤其是 Overall 接近的模型；看到套件 0 分时先确认是失败还是无法测量。",
+      "cite": [
+        "site-js@方法论",
+        "site-js@成本",
+        "v2-notes@notes.json"
+      ]
+    },
+    {
+      "issue": "污染口径与命名不一致",
+      "impact": "站点标题写 contamination-free，论文标题写 Contamination-Limited，论文正文也承认「LiveBench 有一小部分很可能已被最近的 LLMs 污染」；v1 靠月度换题和 1/6 私有题缓解，2.0 的长时程任务没有等价的换题机制说明。",
+      "severity": "中",
+      "response": "论文以私有留题与月度更新应对，并在正文明确写出污染边界；2.0 站点未披露换题或留私机制。",
+      "reader": "把它当作「污染受限」而非「无污染」；对 2.0 分数要额外留意训练数据对同类任务的覆盖。",
+      "cite": [
+        "arxiv-2406-19314@标题",
+        "arxiv-2406-19314@§6",
+        "site-js@版本切换"
+      ]
+    },
+    {
+      "issue": "套件构成不均衡",
+      "impact": "466 题里 Reasoning 202 题、Data Analysis 150 题，是两个短问答套件且题量最大；权重只把 Long Agentic ×2，并不能抵消构成差异，v1 的 18 任务 / 6 类口径与 2.0 也不可比。",
+      "severity": "中",
+      "response": "站点公开每套件题量与权重，并在脚注说明 Overall 算法；未见按套件等量化的说明。",
+      "reader": "看 Overall 的同时看分套件分数，别把综合分当成均衡能力。",
+      "cite": [
+        "v2-data@breakdown.json",
+        "livebench@Leaderboard",
+        "repo@Introduction"
+      ]
+    },
+    {
+      "issue": "输入能力门槛造成结构性 0 分",
+      "impact": "Browser Use 套件要求模型能接收截图，不能接收的模型在该套件直接记 0，其 Overall 被显著拉低，但这与它的其他能力无关。",
+      "severity": "中",
+      "response": "站点明示这类模型记 0 而非排除，并用 n/a 表示有意排除的情形。",
+      "reader": "看到某模型 Browser Use 为 0 时，先确认它是否支持截图输入。",
+      "cite": [
+        "v2-notes@notes.json",
+        "site-js@图例"
+      ]
+    },
+    {
+      "issue": "题目与任务未全部公开",
+      "impact": "官方仓库写着「并非所有题目都在 Huggingface 公开」；2.0 只公开分数与成本文件，外部无法逐题复现判分。",
+      "severity": "低",
+      "response": "仓库提供使用方式，模型答案与判定可从 Hugging Face 下载；2.0 以静态文件形式发布每期数据。",
+      "reader": "复现实验前先确认该发布号的题目是否公开，以及自己能拿到哪些中间产物。",
+      "cite": [
+        "repo@Usage",
+        "repo@Data",
+        "site-js@数据"
+      ]
+    },
+    {
+      "issue": "v1 题量与类目口径随版本漂移",
+      "impact": "更新日志 2024-06-12 记为 17 个任务 / 6 类，官方仓库与论文记 18 个任务 / 6 类；引用 v1 数字时来源不同会得到不同答案。",
+      "severity": "低",
+      "response": "论文与仓库为最新口径；更新日志保留了历史条目原样。",
+      "reader": "引用 v1 规模时说明取的是哪个时间点的口径。",
+      "cite": [
+        "changelog@2024-06-12",
+        "repo@Introduction",
+        "arxiv-2406-19314@§1"
+      ]
+    }
+  ],
   "official_sources": [
     {
       "kind": "site",
@@ -33,6 +448,10 @@
     {
       "kind": "paper",
       "url": "https://arxiv.org/abs/2406.19314"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/LiveBench/LiveBench"
     }
   ],
   "related_benchmarks": [
@@ -43,6 +462,392 @@
     "frontiermath",
     "hlehle"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-28"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-19",
+  "notes": null,
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-19",
+    "sources": [
+      {
+        "id": "livebench",
+        "kind": "site",
+        "title": "LiveBench 官网（LiveBench 2.0 首页、Leaderboard 与 Insights，release 2026-11-06）",
+        "url": "https://livebench.ai/",
+        "accessed": "2026-11-19"
+      },
+      {
+        "id": "arxiv-2406-19314",
+        "kind": "paper",
+        "title": "LiveBench: A Challenging, Contamination-Limited LLM Benchmark（arXiv:2406.19314v2，ICLR 2025 Spotlight）",
+        "url": "https://arxiv.org/abs/2406.19314",
+        "accessed": "2026-11-19"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "LiveBench/LiveBench 官方仓库 README",
+        "url": "https://github.com/LiveBench/LiveBench",
+        "accessed": "2026-11-19"
+      },
+      {
+        "id": "changelog",
+        "kind": "docs",
+        "title": "LiveBench 官方更新日志（changelog.md）",
+        "url": "https://raw.githubusercontent.com/LiveBench/LiveBench/main/changelog.md",
+        "accessed": "2026-11-19"
+      },
+      {
+        "id": "v2-data",
+        "kind": "dataset",
+        "title": "LiveBench 2.0 release 20261106 分套件明细（breakdown.json）",
+        "url": "https://livebench.ai/data/20261106/breakdown.json",
+        "accessed": "2026-11-19"
+      },
+      {
+        "id": "v2-notes",
+        "kind": "dataset",
+        "title": "LiveBench 2.0 release 20261106 榜单说明（notes.json）",
+        "url": "https://livebench.ai/data/20261106/notes.json",
+        "accessed": "2026-11-19"
+      },
+      {
+        "id": "v2-table",
+        "kind": "dataset",
+        "title": "LiveBench 2.0 release 20261106 分数表（table.csv）",
+        "url": "https://livebench.ai/data/20261106/table.csv",
+        "accessed": "2026-11-19"
+      },
+      {
+        "id": "v2-cost",
+        "kind": "dataset",
+        "title": "LiveBench 2.0 release 20261106 成本表（cost.csv）",
+        "url": "https://livebench.ai/data/20261106/cost.csv",
+        "accessed": "2026-11-19"
+      },
+      {
+        "id": "site-js",
+        "kind": "docs",
+        "title": "LiveBench 2.0 站点前端 bundle（方法论、图例、计分与成本口径文案）",
+        "url": "https://livebench.ai/static/js/main.cb056455.js",
+        "accessed": "2026-11-19"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Abacus.AI（论文脚注与站点均标注由其赞助）；论文署名机构为 Abacus.AI、NYU、Nvidia、UMD、USC、Columbia",
+        "cite": [
+          "arxiv-2406-19314@脚注",
+          "site-js@赞助",
+          "arxiv-2406-19314@作者"
+        ]
+      },
+      "first_release": {
+        "v": "2024-06-24（官网时间线标注的首次发布；更新日志 2024-06-12 条目已宣布初始 960 题、17 个任务 / 6 类）",
+        "cite": [
+          "livebench@首页",
+          "changelog@2024-06-12"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "livebench@首页",
+        "site-js@方法论",
+        "v2-notes@notes.json"
+      ],
+      "interpretation": [
+        "livebench@Insights",
+        "site-js@方法论",
+        "v2-notes@notes.json"
+      ]
+    },
+    "problem": {
+      "text": "静态基准被刷满、LLM 当裁判又有偏，换题只能缓解一半。LiveBench v1 用「近期新题 + 每题都有可验证的客观标准答案 + 自动判分」同时绕开污染与裁判偏差，覆盖多类任务；2.0 进一步把问题推向长时程——让模型在真实应用、真实代码库和真实浏览器里干活，并用确定性测试、ground truth 与 rubric 判分，使「能答对」变成「能交付」。",
+      "cite": [
+        "arxiv-2406-19314@摘要",
+        "arxiv-2406-19314@§1",
+        "arxiv-2406-19314@§3",
+        "repo@Introduction",
+        "livebench@首页"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "v1 论文发布时最好成绩",
+        "value": "低于 70% 准确率",
+        "note": "论文称 v1 的难度使最强模型也在 70% 以下；该数字是 v1 的准确率口径，与 2.0 的 0–100 加权分不同口径，不能直接比。",
+        "cite": [
+          "arxiv-2406-19314@摘要"
+        ]
+      },
+      {
+        "label": "2.0 当前榜单最高 Overall",
+        "value": "84.9（Claude Fable 5.2, xhigh）",
+        "note": "官网排行榜首位；table.csv 中该行的 Long Agentic 82.9、Reasoning 88.8、Coding 79.2、Browser 86.9、Data Analysis 81.5、Research 94.5、Design 85.1 与页面一致。",
+        "cite": [
+          "livebench@Leaderboard",
+          "v2-table@table.csv"
+        ]
+      },
+      {
+        "label": "2.0 当前榜单最低 Overall",
+        "value": "32.4（Gemma 4 31B open）",
+        "note": "同表最低分；table.csv 中该行 Browser Use 为 0.0，是拉低 Overall 的主因之一。",
+        "cite": [
+          "livebench@Leaderboard",
+          "v2-table@table.csv"
+        ]
+      },
+      {
+        "label": "成本参考线",
+        "value": "最低 $0.132（GPT-6 Luna）／最高 $9.850（Claude Fable 5.2, xhigh）",
+        "note": "站点 Insights 的「成本排名」按每次成功任务的成本从低到高排列；总分最高的模型同时也是最贵的。",
+        "cite": [
+          "livebench@Insights",
+          "livebench@Leaderboard"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 2.0 的 Overall 和 v1 的准确率直接比——2.0 是 0–100 的套件加权分，v1 是 6 个类别准确率的平均，口径不同。",
+        "cite": [
+          "site-js@总分",
+          "arxiv-2406-19314@§5"
+        ]
+      },
+      {
+        "text": "把「contamination-free」当成无污染——论文标题写的是 Contamination-Limited，正文也承认一小部分很可能已被污染。",
+        "cite": [
+          "arxiv-2406-19314@标题",
+          "arxiv-2406-19314@§6",
+          "site-js@版本切换"
+        ]
+      },
+      {
+        "text": "把某套件的 0 分当成模型完全不会——不能接收截图的模型在 Browser Use 记 0；空白格表示仍在运行、n/a 表示有意排除，二者都不是 0 分。",
+        "cite": [
+          "v2-notes@notes.json",
+          "site-js@图例"
+        ]
+      },
+      {
+        "text": "把分数高理解为划算——站点把每次成功任务的成本与分数并列发布，总分最高的模型（$9.850）恰好也是最贵的，而便宜模型（$0.132）Overall 只有 60.4。",
+        "cite": [
+          "livebench@Insights",
+          "livebench@Leaderboard"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方与赞助",
+        "v": "Abacus.AI（论文脚注与其赞助标注一致）；论文署名机构为 Abacus.AI、NYU、Nvidia、UMD、USC、Columbia。",
+        "cite": [
+          "arxiv-2406-19314@脚注",
+          "site-js@赞助",
+          "arxiv-2406-19314@作者"
+        ]
+      },
+      {
+        "k": "论文",
+        "v": "LiveBench: A Challenging, Contamination-Limited LLM Benchmark，arXiv:2406.19314v2（2025-04-18 修订），ICLR 2025 Spotlight；官方仓库标注同一篇为 Spotlight Paper。",
+        "cite": [
+          "arxiv-2406-19314@标题",
+          "arxiv-2406-19314@arXiv",
+          "arxiv-2406-19314@脚注",
+          "repo"
+        ]
+      },
+      {
+        "k": "任务与判分",
+        "v": "v1：18 个任务 / 6 类（数学、代码、推理、语言、指令遵循、数据分析），每题有可验证的客观标准答案，用自动判分而不用 LLM 当裁判；2.0：7 个套件 466 题，其中 5 个是 agentic（带工具完成端到端任务），Data Analysis 与 Reasoning 是单一答案短问答。",
+        "cite": [
+          "arxiv-2406-19314@§1",
+          "repo@Introduction",
+          "v2-data@breakdown.json",
+          "site-js@方法论"
+        ]
+      },
+      {
+        "k": "换题机制（v1）",
+        "v": "v1 每月更新，平均每期替换 1/6、约半年整体刷新；新题延后一个月公开，使榜单始终保有 1/6 完全私有的题目。2.0 站点未披露对应机制。",
+        "cite": [
+          "arxiv-2406-19314@§2",
+          "changelog@2024-07-26"
+        ]
+      },
+      {
+        "k": "数据与代码位置",
+        "v": "每个发布是一组静态文件（table.csv / breakdown.json / notes.json / cost.csv）；评测代码在 GitHub LiveBench/LiveBench，模型答案与判定可从 Hugging Face 的 livebench 组织下载。",
+        "cite": [
+          "site-js@数据",
+          "v2-table@table.csv",
+          "repo@Usage",
+          "repo@Data"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2024-06-24 首次发布（初始 960 题 / 17 任务）→ 2024-07-26 题量定为 1000 → 2025-04-18 arXiv v2（ICLR 2025 Spotlight）→ 2025-05-30 新增 agentic coding → 2025-10-03 步数上限 50→250 → 2026-11-06 LiveBench 2.0（7 套件 466 题）。",
+        "cite": [
+          "livebench@首页",
+          "changelog@2024-06-12",
+          "changelog@2024-07-26",
+          "arxiv-2406-19314@arXiv",
+          "changelog@2025-05-30",
+          "changelog@2025-10-03",
+          "site-js@数据"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-19",
+        "columns": [
+          "模型",
+          "Overall",
+          "Long Agentic",
+          "Design",
+          "Coding",
+          "Browser Use",
+          "Data Analysis",
+          "Research",
+          "Reasoning",
+          "每次成功任务成本"
+        ],
+        "rows": [
+          [
+            "Claude Fable 5.2 (xhigh)",
+            "84.9",
+            "82.9",
+            "85.1",
+            "79.2",
+            "86.9",
+            "81.5",
+            "94.5",
+            "88.8",
+            "$9.850"
+          ],
+          [
+            "GPT-6 Astra",
+            "84.5",
+            "75.6",
+            "80.0",
+            "87.5",
+            "91.3",
+            "83.0",
+            "90.6",
+            "92.7",
+            "$5.318"
+          ],
+          [
+            "Claude Fable 5.1",
+            "84.0",
+            "74.2",
+            "81.6",
+            "89.7",
+            "89.8",
+            "80.3",
+            "88.5",
+            "91.7",
+            "$8.364"
+          ],
+          [
+            "Gemini 4 Carbon",
+            "83.5",
+            "72.7",
+            "80.2",
+            "91.0",
+            "80.0",
+            "86.5",
+            "92.5",
+            "90.6",
+            "$2.024"
+          ],
+          [
+            "Claude Opus 5.5",
+            "83.4",
+            "72.8",
+            "83.3",
+            "87.1",
+            "88.4",
+            "80.3",
+            "88.9",
+            "92.2",
+            "$6.723"
+          ],
+          [
+            "GPT-6.1 Sol",
+            "81.4",
+            "65.6",
+            "79.6",
+            "82.1",
+            "93.3",
+            "82.7",
+            "90.0",
+            "92.6",
+            "$0.823"
+          ],
+          [
+            "GPT-6.1 Terra",
+            "78.8",
+            "56.2",
+            "79.7",
+            "89.2",
+            "93.1",
+            "82.3",
+            "79.1",
+            "88.7",
+            "$0.673"
+          ],
+          [
+            "Gemini 4 Argon",
+            "77.7",
+            "58.5",
+            "69.2",
+            "85.7",
+            "82.8",
+            "85.2",
+            "86.8",
+            "95.1",
+            "$1.822"
+          ],
+          [
+            "Gemini 4 Hydrogen",
+            "77.0",
+            "61.8",
+            "77.3",
+            "78.5",
+            "77.1",
+            "83.2",
+            "86.8",
+            "88.6",
+            "$1.924"
+          ],
+          [
+            "Claude Sonnet 5.5",
+            "77.0",
+            "63.4",
+            "81.3",
+            "77.2",
+            "89.3",
+            "59.5",
+            "88.0",
+            "91.6",
+            "$5.803"
+          ]
+        ]
+      },
+      "cite": [
+        "livebench@Leaderboard",
+        "v2-table@table.csv"
+      ]
+    }
+  }
 }

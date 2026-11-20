@@ -1,78 +1,376 @@
 {
   "id": "hyperlogic",
   "name": "HyperLogic",
-  "full_name": null,
+  "full_name": "HyperLogic: A Hard, Forward-Authored Chinese Logical Reasoning Benchmark with Execution-Derived Answers（前向出题、答案由执行推导的中文逻辑推理基准）",
   "aliases": [
-    "Tencent-HyperLogic"
+    "Tencent-HyperLogic",
+    "HyperLogic-Base",
+    "HyperLogic-Hard",
+    "HyperLogic-Seed",
+    "LLMEval-Logic"
   ],
   "status": "active",
   "categories": [
     "reasoning",
     "agent"
   ],
-  "summary": "腾讯官方出题的中文形式逻辑推理基准，分 Seed / Base / Hard 三层，标准答案由两套独立形式化编码经求解器推导",
-  "interpretation": "考的是「把自然语言推理题翻译成可计算的形式化问题」这件事本身。Seed 层（228 道单问题题）几乎不区分模型，七个前沿模型全在 84–90 分、彼此差不到 6 分；Base 层（195 道题、922 个子问）每题背景约 3300 字、子问平均 4.7 个，全部子问答对才算对题，模型与 Seed 相比普遍掉 12 分以上，七个模型被拉开 33 分（44.6–77.6）；Hard 层（100 道题、背景约 8700 字）耦合搜索空间更大，直接作答没有任何模型超过 16%，给沙箱 Agent 后每个模型提升 16.7–40.1 分，最好也只有 55.7%（额外给逻辑建模库 57.0%）。所以这个基准的判别力主要在 Base 与 Hard 两层：它量的是形式化建模与长程推理稳定性，不是知识量，也不是普通的多轮对话能力。",
+  "summary": "腾讯混元团队与复旦 2026-10-28 公开的中文形式逻辑推理基准：本科生先写题，两个不同模型家族的前沿 Agent 各自把题目译成可执行的有限域模型，由逻辑求解器执行推导标准答案，再经人类逻辑专家审计。全量 523 题（Seed 228 / Base 195·922 子问 / Hard 100），公开每层 30% 子集；七个前沿模型在 Base 上被拉开 33.0 个百分点（44.6–77.6%），Hard 上直接作答无人超过 16%。",
+  "interpretation": "高分意味着模型能把中文题面忠实翻译成可计算的形式化模型并稳定求解。Seed 层已接近饱和（七个模型 83.9–89.8%，彼此差 5.9 分），判别力集中在 Base 与 Hard：Base 一题要全部子问答对才算对；Hard 考的是「知道自己算不动、该写代码调求解器」——给代码沙箱让每个模型提升 16.7–40.1 分。跨模型比较必须同时看 Base 题目级与 Hard 的三种条件口径，公开 30% 子集上的分数不能与全量榜单并列。",
   "measures": [
-    "自然语言形式逻辑推理（把题面翻译成可计算模型并求解）",
-    "长背景下的多子问一致性（Base 层需全部子问答对）",
-    "Agent 写代码 + 求解器求解的能力（Hard 层沙箱条件）"
+    {
+      "area": "Seed 层 · 自然语言形式逻辑推理",
+      "focus": "有逻辑课程背景的本科生写的单问题种子（日常、机构、虚构场景）；已接近饱和，七个模型彼此只差 5.9 分",
+      "share": "228 题（全量）",
+      "format": "单问题，直接作答",
+      "cite": [
+        "arxiv-2605-19597@§3.1",
+        "arxiv-2605-19597@§4.1"
+      ]
+    },
+    {
+      "area": "Base 层 · 长背景多子问一致性",
+      "focus": "约 3,300 字共享背景加平均 4.7 个子问；主要错误是枚举不全/过多（占各模型错误 50–64%）与语义误读（12–26%）",
+      "share": "195 题 / 922 子问（全量）",
+      "format": "一题多子问，全部答对才计对",
+      "cite": [
+        "arxiv-2605-19597@§3.1",
+        "arxiv-2605-19597@§4.1"
+      ]
+    },
+    {
+      "area": "Hard 层 · 工具辅助的形式化与求解",
+      "focus": "约 8,700 字、状态空间更大且强耦合的单问题；直接作答无人超过 16%，给代码沙箱后最高 57.0%",
+      "share": "100 题（全量）",
+      "format": "单问题；直接作答 + 两种 Agent 条件",
+      "cite": [
+        "arxiv-2605-19597@§3.1",
+        "arxiv-2605-19597@§4.2"
+      ]
+    },
+    {
+      "area": "Hard 层 · Agent 计算路线",
+      "focus": "沙箱条件下模型写什么代码：纯 Python 枚举筛选、自选符号求解器、还是官方 logic modeling library；只用代码保存下来的尝试做归类，不单独计分",
+      "share": "Hard 层有保存代码的尝试",
+      "format": "代码路线占比统计",
+      "cite": [
+        "arxiv-2605-19597@§4.2"
+      ]
+    }
   ],
   "does_not_measure": [
-    "通用知识与事实记忆（Seed 层即已饱和）",
-    "写作、对话、指令跟随等非推理能力",
-    "数学计算能力（标准答案由求解器推导而非模型给出）"
+    {
+      "text": "通用知识与事实记忆——Seed 层已接近饱和，七个模型全部落在 83.9–89.8%，单独使用几乎没有判别力",
+      "cite": [
+        "arxiv-2605-19597@§4.1"
+      ]
+    },
+    {
+      "text": "数学演算与数值计算——标准答案由求解器执行形式化模型推导，不由被测模型给出",
+      "cite": [
+        "arxiv-2605-19597@§2.3"
+      ]
+    },
+    {
+      "text": "开放式、主观或无唯一答案的问题——发布要求两套独立编码给出一致的实质答案，歧义题澄清或剔除",
+      "cite": [
+        "arxiv-2605-19597@§2.4"
+      ]
+    },
+    {
+      "text": "英文题目与跨语言形式化——题库为中文，论文未报告英文版本",
+      "cite": [
+        "arxiv-2605-19597@§3.1"
+      ]
+    }
   ],
   "dataset": {
     "sample_count": 523,
     "splits": [
-      "Seed 228（全量）",
-      "Base 195（全量）",
-      "Hard 100（全量）"
+      "全量：Seed 228 题",
+      "全量：Base 195 题 / 922 子问",
+      "全量：Hard 100 题",
+      "公开子集：Seed 69 / Base 59 题 274 子问 / Hard 30，共 158 行",
+      "Hugging Face：seed / base / hard 三个 config，各一个 test split"
     ],
     "languages": [
       "zh"
     ],
-    "source_type": "public_subset",
-    "public_sample": "官方公开每层 30% 的题目与标准答案（Seed 69 / Base 59 / Hard 30）、直接作答 prompt 与语义评分脚本、Hard Agent 评测全流程；其余 70% 与全部形式化翻译保留在私有集合，公开子集分数不可复现全量榜单数值"
+    "source_type": "public_subset：每层固定均匀抽样 30% 并附标准答案；其余 70% 与全部形式化翻译保留在私有集合",
+    "public_sample": "官方公开每层 30% 的题目与标准答案（Seed 69 / Base 59 题 274 子问 / Hard 30）、直接作答 prompt 与语义评分器、Hard 两种 Agent 条件的完整载荷与 11 模块 translation 逻辑建模库；其余 70% 与全部形式化翻译不公开，公开子集分数不能复现全量榜单数值",
+    "totals": "全量 523 题 = Seed 228 + Base 195（922 子问）+ Hard 100；公开子集 158 行（Seed 69 + Base 59 + Hard 30），其中 Base 含 274 个子问",
+    "cite": [
+      "arxiv-2605-19597@§3.1",
+      "repo-hyperlogic@README What Is Released",
+      "hf-hyperlogic@数据集卡"
+    ],
+    "construction": [
+      {
+        "k": "出题起点",
+        "text": "有逻辑课程背景的本科生写 228 个短小自包含的单问题种子，覆盖日常、机构与虚构场景；作者不负责给出标准答案。",
+        "cite": [
+          "arxiv-2605-19597@§3.1"
+        ]
+      },
+      {
+        "k": "难度加固",
+        "text": "四角色 Agent 工作流（Decider / Background proposer / Question proposer / Reviewer）按策略库反复重写种子：Library-Base 用 6 个算子把推理链拉长（更多分支、更多干扰前提、更多子问、更多别名），产出 195 题 922 子问；Library-Hard 保留其中 4 个算子作为载体，再加 4 个加固轴——最小解释核、全局耦合约束、循环真值引用、耦合状态维度，每轴 4 种实现——产出 100 题。",
+        "cite": [
+          "arxiv-2605-19597@§2.1",
+          "arxiv-2605-19597@§2.2"
+        ]
+      },
+      {
+        "k": "答案生成",
+        "text": "两个来自不同模型家族的前沿 Agent（GPT-5.6 Sol + Codex、Claude Opus 5 + Claude Code）用同一套 logic modeling library，各自把题目编码成有限域理论 T=(V,Δ,Γ)，再由 SAT（CaDiCaL）/ SMT（Z3）/ BDD / 模型计数（Ganak）执行查询得出答案；题库支持可能性、必然性、唯一性、枚举、精确计数、不相容六类查询。",
+        "cite": [
+          "arxiv-2605-19597@§2.3"
+        ]
+      },
+      {
+        "k": "专家审计",
+        "text": "自动检查覆盖度、充分性与必要性，人类逻辑专家复核两套编码、答案与翻译轨迹，并专门检查「答案一致是否掩盖共享误读」；错误编码修正后重跑，歧义题澄清或剔除，只有两套修正编码给出一致实质答案的题目才发布。",
+        "cite": [
+          "arxiv-2605-19597@§2.4"
+        ]
+      },
+      {
+        "k": "公开抽样",
+        "text": "每层用 random.Random(\"2027:<tier>\") 独立无放回均匀抽样，放出 ceil(0.30 × 全量题数) 题；抽样脚本与对全量语料的 SHA-256 承诺在仓库中，可审计。",
+        "cite": [
+          "hf-hyperlogic@数据集卡 Selection"
+        ]
+      }
+    ]
   },
   "metrics": [
     {
-      "name": "Accuracy (%)",
-      "description": "全量基准准确率，3 次 rollout 的均值 ± 标准差"
+      "id": "accuracy",
+      "name": "准确率 Accuracy (%)",
+      "direction": "越高越好",
+      "description": "全量基准准确率，3 次 rollout 的均值 ± 标准差；Seed/Base 按直接作答报告，Hard 另报告两种 Agent 条件",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2605-19597@Table 1",
+        "repo-hyperlogic@README Leaderboard"
+      ]
     },
     {
-      "name": "Base Item",
-      "description": "题目级准确率：该题所有子问全部答对才计对"
+      "id": "base-item",
+      "name": "Base 题目级准确率 Base Item (%)",
+      "direction": "越高越好",
+      "description": "该题所有子问全部答对才计对；官方榜单按这一列排名",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2605-19597@§3.2",
+        "repo-hyperlogic@README Leaderboard"
+      ]
     },
     {
-      "name": "Base Sub-Q",
-      "description": "子问级准确率"
+      "id": "base-subq",
+      "name": "Base 子问级准确率 Base Sub-Q (%)",
+      "direction": "越高越好",
+      "description": "逐个子问判分，不要求整题全对；与题目级相差可达十几个百分点（GPT-5.6 Sol 为 92.6% vs 77.6%）",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2605-19597@§3.2",
+        "arxiv-2605-19597@Table 1"
+      ]
     },
     {
-      "name": "Hard Direct",
-      "description": "Hard 层直接作答（不经 Agent）准确率"
+      "id": "hard-direct",
+      "name": "Hard 直接作答准确率 Hard Direct (%)",
+      "direction": "越高越好",
+      "description": "单次模型调用、无工具；七个模型均未超过 16%",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2605-19597@Table 1",
+        "arxiv-2605-19597@§4.2"
+      ]
     },
     {
-      "name": "Hard Sandbox",
-      "description": "Hard 层给 Agent Docker 代码沙箱（condition c2）"
+      "id": "hard-sandbox",
+      "name": "Hard 沙箱准确率 Hard Sandbox (%)",
+      "direction": "越高越好",
+      "description": "联网沙箱加 shell，可写代码、可导入求解器（condition c2）",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2605-19597@Table 1",
+        "arxiv-2605-19597@§3.2"
+      ]
     },
     {
-      "name": "Hard + Library",
-      "description": "Hard 层给 Agent 代码沙箱 + 官方 11 模块 translation 逻辑建模库与 MANUAL.md（condition c3）"
+      "id": "hard-library",
+      "name": "Hard 沙箱加逻辑建模库准确率 Hard + Library (%)",
+      "direction": "越高越好",
+      "description": "在 c2 基础上额外提供官方 11 模块 translation 逻辑建模库与 MANUAL.md，用不用由模型自选（condition c3）",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2605-19597@Table 1",
+        "arxiv-2605-19597@§3.2"
+      ]
     }
   ],
   "default_protocol": {
-    "raw": "Accuracy (%)，3 次 rollout 的均值 ± 标准差，每个模型取其最高推理档（Grok 4.6 用 xhigh，其余用 max）；语义等价 LLM judge 判分（整题子问一起判）；拒答条目剔除出分母并单独统计"
+    "raw": "准确率（%），3 次 rollout 的均值 ± 标准差；每个模型取其评测路线支持的最高推理档（Grok 4.6 用 xhigh，其余 max）。Seed/Base 直接作答（单次调用、无工具）；Hard 另跑 c2 沙箱（联网 shell，可写代码、可导入求解器）与 c3 沙箱加官方 logic modeling library 及 MANUAL.md（可用可不用）。Agent 用 Codex（GPT-5.6 Sol）或 Claude Code（其余模型），每沙箱 2 CPU / 10 GB，单次尝试 3 小时墙钟。答案由 DeepSeek V4 Pro 按语义等价判定；未作答计错，API 拒答条目剔除出分母并单独统计（†）。官方榜单跑在全量上，按 Base 题目级准确率排名。",
+    "cite": [
+      "arxiv-2605-19597@§3.2",
+      "arxiv-2605-19597@Table 1",
+      "repo-hyperlogic@README Leaderboard",
+      "repo-hyperlogic@README Quick Start"
+    ],
+    "variants": [
+      {
+        "text": "直接作答 vs 沙箱 vs 沙箱加逻辑建模库：Hard 层三种口径，数值差异很大（最高 15.6% / 55.7% / 57.0%），不能混排。",
+        "cite": [
+          "arxiv-2605-19597@Table 1",
+          "arxiv-2605-19597@§4.2"
+        ]
+      },
+      {
+        "text": "题目级 vs 子问级：Base 一题只有全部子问都对才算对，题目级通常低十几个百分点（GPT-5.6 Sol 77.6% vs 92.6%）。",
+        "cite": [
+          "arxiv-2605-19597@§3.2",
+          "arxiv-2605-19597@Table 1"
+        ]
+      },
+      {
+        "text": "全量 vs 公开 30% 子集：官方榜单跑在全量上，公开子集分数不可与之比较；全量评测需联系发布方按同一协议代跑。",
+        "cite": [
+          "repo-hyperlogic@README What Is Released",
+          "repo-hyperlogic@README Evaluate Your Model",
+          "hf-hyperlogic@数据集卡"
+        ]
+      },
+      {
+        "text": "推理档位：Grok 4.6 用 xhigh，其余模型用 max；† 标记的分数已剔除 API 拒答条目。",
+        "cite": [
+          "repo-hyperlogic@README Leaderboard",
+          "arxiv-2605-19597@Table 1"
+        ]
+      }
+    ]
   },
-  "versions": [],
-  "limitations": [
-    "榜单为基准所有者（腾讯）自建自跑，非第三方独立评测，题目与判分流程由发布方控制",
-    "每层仅公开 30% 题目，公开子集分数不可复现全量数值，第三方复现存在偏差",
-    "Hard 层两个 Agent 条件依赖发布方自带的 Docker 沙箱与 translation 逻辑建模库，属自定义 Agentic 脚手架，与其他基准的单轮标准基线不可直接等同",
-    "仅覆盖 7 个前沿模型、单一语言（中文）、单一题集版本，未覆盖中低档模型与英文题",
-    "Seed 层已接近饱和（84–90 分），单独使用时几乎没有判别力"
+  "versions": [
+    {
+      "id": "v1-llmeval-logic",
+      "date": "2026-05-19",
+      "label": "arXiv:2605.19597 v1 提交，题名为 LLMEval-Logic: A Solver-Verified Chinese Benchmark for Logical Reasoning of LLMs with Adversarial Hardening",
+      "cite": [
+        "arxiv-2605-19597@提交历史"
+      ]
+    },
+    {
+      "id": "v2",
+      "date": "2026-10-02",
+      "label": "arXiv v2：大幅改写并更名为 HyperLogic（39 页），启用新的构建流程、数据分层与实验；本档案核对所用版本",
+      "cite": [
+        "arxiv-2605-19597@提交历史",
+        "repo-hyperlogic@README News"
+      ]
+    },
+    {
+      "id": "public",
+      "date": "2026-10-28",
+      "label": "GitHub 仓库与 Hugging Face 数据集公开：每层约 30% 题目与标准答案、直接作答 prompt 与评分器、Hard 两种 Agent 条件完整评测与逻辑建模库",
+      "cite": [
+        "repo-hyperlogic@README News",
+        "hf-hyperlogic@数据集卡"
+      ]
+    }
   ],
-  "notes": "仓库与数据集 2026-10-28 公开（README News 明示 \"This repository and the Hugging Face dataset go public\"），对应 arXiv 2605.19597 v2（2026-10-02 论文）。榜单按 Base 题目级准确率排名，官方在 Key Findings 中自述：推理长度与准确率不相关（Base 每次题中位推理长度 15.2k–52.7k token）；Hard 层六个模型在沙箱下主要写朴素 Python 枚举候选解而非调用求解器。",
+  "limitations": [
+    {
+      "issue": "标准答案仍无绝对正确保证",
+      "impact": "两套独立编码可能共享同一误读；论文自述这些检查无法提供绝对正确性保证，共享误解、被忽略的歧义或标注错误可能留在发布题目与参考答案里。",
+      "severity": "高",
+      "response": "双独立编码、多层自动审计（覆盖度 / 充分性 / 必要性）加人类专家复核；只有两套修正编码给出一致实质答案的题目才发布；审计中初判一致的题目有 27.0% 两套编码都需要修正。",
+      "reader": "把 27.0% 这个修正率当作答案噪声的量级参考，不要假定标准答案全对。",
+      "cite": [
+        "arxiv-2605-19597@附录 F",
+        "arxiv-2605-19597@附录 C.2"
+      ]
+    },
+    {
+      "issue": "公开子集与全量榜单不可比",
+      "impact": "每层只放 30%，公开子集分数不能复现全量数值；全量评测要联系发布方代跑。",
+      "severity": "高",
+      "response": "公开抽样脚本与对全量语料的 SHA-256 承诺；全量代跑按与榜单相同的协议执行。",
+      "reader": "看到 HyperLogic 分数先问是公开子集还是全量；跨基准比较时确认口径。",
+      "cite": [
+        "repo-hyperlogic@README What Is Released",
+        "repo-hyperlogic@README Evaluate Your Model",
+        "hf-hyperlogic@数据集卡"
+      ]
+    },
+    {
+      "issue": "榜单由发布方自建自跑",
+      "impact": "七个模型的结果全部出自论文/仓库同一批作者，题目、判分 prompt 与 Agent 脚手架的选择权在发布方手里；GPT-5.6 Sol 用 Codex、其余用 Claude Code，Agent 口径跨模型不完全对等。",
+      "severity": "中",
+      "response": "公开直接作答 prompt、语义评分器与 Hard Agent 全流程载荷，第三方可按同一协议复现公开子集。",
+      "reader": "复现时严格使用仓库的 evaluate.py 与 hard_agent/ 载荷；自建脚手架的分数不要与官方榜单并列。",
+      "cite": [
+        "arxiv-2605-19597@§3.2",
+        "repo-hyperlogic@README What Is Released"
+      ]
+    },
+    {
+      "issue": "Hard 层 Agent 口径是自定义脚手架",
+      "impact": "沙箱与 translation 库由发布方提供，属自定义 Agentic 脚手架；加库对七个模型的影响从 −6.0 到 +10.6 分不等，方向都不一致。",
+      "severity": "中",
+      "response": "完整公开两种条件的任务载荷与 11 模块库，并在论文中报告逐题配对变化。",
+      "reader": "Hard 的三个分数是三种口径，不是同一把尺子；加库分数更高不代表模型更强。",
+      "cite": [
+        "arxiv-2605-19597@§4.2",
+        "repo-hyperlogic@README What Is Released"
+      ]
+    },
+    {
+      "issue": "污染与刷榜",
+      "impact": "公开题目可下载，可能进入训练数据；官方明确以「题目公开后就不再测推理」为由只放 30%。",
+      "severity": "中",
+      "response": "保留 70% 私有集合，并对全部题目（含公开题）的形式化翻译保密，使公开集上的过拟合无法迁移到全量。",
+      "reader": "公开子集的高分要打折；只有全量代跑结果可与官方榜单并列。",
+      "cite": [
+        "repo-hyperlogic@README What Is Released"
+      ]
+    },
+    {
+      "issue": "覆盖面有限",
+      "impact": "只有 7 个前沿模型、单一语言（中文）、单一题集版本；未覆盖中低档模型，也没有英文题或跨语言对照；Seed 层已饱和，单独使用几乎没有判别力。",
+      "severity": "中",
+      "response": "论文未给出扩充计划；全量评测申请通道对第三方模型开放。",
+      "reader": "不要把它当作通用推理能力的排名；报告时区分 Seed / Base / Hard 三层。",
+      "cite": [
+        "arxiv-2605-19597@§3.1",
+        "arxiv-2605-19597@§4.1"
+      ]
+    }
+  ],
+  "notes": "仓库与数据集 2026-10-28 公开，对应 arXiv:2605.19597 v2（2026-10-02 修订并更名，v1 题名 LLMEval-Logic）。论文 Table 1 与仓库、Hugging Face 数据集卡上的榜单数值一致，未发现矛盾。榜单按 Base 题目级准确率排名；Hard 层沙箱条件下六个模型主要写朴素 Python 枚举候选解而非调用求解器。全量评测需联系发布方代跑，公开子集分数不可复现全量数值。",
   "official_sources": [
     {
       "kind": "repo",
@@ -89,8 +387,303 @@
   ],
   "related_benchmarks": [
     "hlehle",
-    "bbh"
+    "bbh",
+    "zebralogic"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-10-31"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-19",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-19",
+    "sources": [
+      {
+        "id": "arxiv-2605-19597",
+        "kind": "paper",
+        "title": "arXiv:2605.19597v2 HyperLogic: A Hard, Forward-Authored Chinese Logical Reasoning Benchmark with Execution-Derived Answers",
+        "url": "https://arxiv.org/abs/2605.19597",
+        "accessed": "2026-11-19"
+      },
+      {
+        "id": "repo-hyperlogic",
+        "kind": "repo",
+        "title": "GitHub · Tencent-Hunyuan/HyperLogic",
+        "url": "https://github.com/Tencent-Hunyuan/HyperLogic",
+        "accessed": "2026-11-19"
+      },
+      {
+        "id": "hf-hyperlogic",
+        "kind": "dataset",
+        "title": "Hugging Face 数据集 · tencent/HyperLogic",
+        "url": "https://huggingface.co/datasets/tencent/HyperLogic",
+        "accessed": "2026-11-19"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "复旦大学（Fudan University）· 腾讯混元团队（Hunyuan Team, Tencent）",
+        "cite": [
+          "arxiv-2605-19597@作者单位",
+          "repo-hyperlogic@README Overview"
+        ]
+      },
+      "first_release": {
+        "v": "2026-05-19 arXiv v1（题名 LLMEval-Logic）→ 2026-10-02 以 HyperLogic 之名发布 v2 → 2026-10-28 仓库与数据集公开",
+        "cite": [
+          "arxiv-2605-19597@提交历史",
+          "repo-hyperlogic@README News"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "arxiv-2605-19597@摘要",
+        "arxiv-2605-19597@§3.1",
+        "arxiv-2605-19597@§4.1"
+      ],
+      "interpretation": [
+        "arxiv-2605-19597@§4.1",
+        "arxiv-2605-19597@§4.2",
+        "repo-hyperlogic@README What Is Released"
+      ]
+    },
+    "problem": {
+      "text": "现有逻辑基准有两条路，各有硬伤。从形式结构反向生成文本的（RuleTaker、LogicBench、ZebraLogic、SATBench 一类）答案好算，但形式化在写题前就固定了，「选一个忠实的模型」这一步被跳过；从自然语言出发的（FOLIO 一类）保留了这个挑战，但难度难以扩展，答案可靠性也随难度下降——对 FOLIO 的系统审计发现 42.5% 的形式化是错的，修正标签会让准确率变动 11 到 23 个百分点。结果是五个主流基准上三个前沿模型相差不超过 3 分、三个已经 97–100%。此外，现有基准基本只测直接作答，很少看 Agent 用工具解逻辑题。HyperLogic 用同一条前向构建流水线同时解决「难度可扩展」和「答案可靠」：人写题、Agent 加固、两个不同模型家族的 Agent 各自形式化、求解器执行推导答案、人类专家审计后才发布。",
+      "cite": [
+        "arxiv-2605-19597@§1"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "Seed 层参考线（已饱和）",
+        "value": "83.9–89.8%",
+        "note": "七个前沿模型在 228 道种子题上的直接作答准确率，彼此相差 5.9 分；单独用 Seed 几乎拉不开模型。",
+        "cite": [
+          "arxiv-2605-19597@§4.1"
+        ]
+      },
+      {
+        "label": "Base 题目级（官方排名依据）",
+        "value": "44.6–77.6%",
+        "note": "195 题 922 子问，全部子问答对才计对；GPT-5.6 Sol 77.6% 居首，Doubao Seed 2.1 Pro 44.6% 垫底，跨度 33.0 分。",
+        "cite": [
+          "arxiv-2605-19597@Table 1"
+        ]
+      },
+      {
+        "label": "Hard 直接作答上限",
+        "value": "15.6%",
+        "note": "无工具单次调用的最高分（Claude Opus 5，† 已剔除 API 拒答题）；七个模型都未超过 16%。",
+        "cite": [
+          "arxiv-2605-19597@Table 1",
+          "arxiv-2605-19597@§4.2"
+        ]
+      },
+      {
+        "label": "Hard 沙箱 / 沙箱加逻辑建模库",
+        "value": "55.7% / 57.0%",
+        "note": "Claude Opus 5 在两种 Agent 条件下的最高分；沙箱让每个模型提升 16.7–40.1 分，加库再变 −6.0 至 +10.6 分。",
+        "cite": [
+          "arxiv-2605-19597@Table 1",
+          "arxiv-2605-19597@§4.2"
+        ]
+      },
+      {
+        "label": "与现有逻辑基准的分离度对比",
+        "value": "32.0 分",
+        "note": "三个前沿模型（GPT-5.6 Sol / GLM-5.3 / DeepSeek V4 Pro）在 max 推理档下的首尾差距：TruthQuest 0.5、SATBench 1.0、FOLIO 1.5、ZebraLogic 1.5、DivLogicEval 3.0、LogicBench 9.5、Multi-LogiEval 12.0，HyperLogic-Base 32.0；现有基准每个模型各用 200 题，HyperLogic-Base 为 195 题 3 次 rollout 均值。",
+        "cite": [
+          "arxiv-2605-19597@§1",
+          "arxiv-2605-19597@Table 2"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 Hard 的沙箱分数和直接作答分数排在一起比——同模型相差 16.7–40.1 分，这是三种不同口径。",
+        "cite": [
+          "arxiv-2605-19597@§4.2",
+          "arxiv-2605-19597@Table 1"
+        ]
+      },
+      {
+        "text": "把 Base 题目级和子问级准确率混为一谈——一题要全部子问都对才算对，题目级通常低十几个百分点。",
+        "cite": [
+          "arxiv-2605-19597@§3.2",
+          "arxiv-2605-19597@Table 1"
+        ]
+      },
+      {
+        "text": "认为给模型逻辑建模库一定更好——加库后五个模型升、两个降，变化幅度 −6.0 到 +10.6 分。",
+        "cite": [
+          "arxiv-2605-19597@§4.2"
+        ]
+      },
+      {
+        "text": "认为推理越长越准——Base 上每题中位推理长度从 15.2k 到 52.7k token，与准确率不相关；GLM-5.3 有 99/585 次跑完 131k 上限仍无可解析答案。",
+        "cite": [
+          "arxiv-2605-19597@§4.1"
+        ]
+      },
+      {
+        "text": "把公开 30% 子集上的分数当成榜单成绩——官方明确两者不可比。",
+        "cite": [
+          "hf-hyperlogic@数据集卡",
+          "repo-hyperlogic@README What Is Released"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "复旦大学 + 腾讯混元团队；GitHub 仓库归属 Tencent-Hunyuan 组织，数据集与仓库均以 Apache-2.0 许可发布。",
+        "cite": [
+          "arxiv-2605-19597@作者单位",
+          "repo-hyperlogic@README Overview",
+          "repo-hyperlogic@README License",
+          "hf-hyperlogic@数据集卡 License"
+        ]
+      },
+      {
+        "k": "作者",
+        "v": "19 位作者；名单以 * 标注共同一作（Ming Zhang、Qiyuan Peng），以 † 标注通讯作者（Ruizhi Yang、Qi Zhang、Maxm Pan）。",
+        "cite": [
+          "arxiv-2605-19597@Full Author List"
+        ]
+      },
+      {
+        "k": "生成式 AI 使用",
+        "v": "作者声明用生成式 AI 参与基准构建与评测（加固种子、形式化翻译、协助审计与修复、判分、错误分类），以及方法反馈、代码实现与调试、结果分析、图表与稿件撰写；参考答案由求解器计算并经人类专家监督的审计流程核对。",
+        "cite": [
+          "arxiv-2605-19597@AI Use Statement"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2026-05-19 arXiv v1（LLMEval-Logic）→ 2026-10-02 v2 更名 HyperLogic → 2026-10-28 仓库与数据集公开。",
+        "cite": [
+          "arxiv-2605-19597@提交历史",
+          "repo-hyperlogic@README News"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "Hugging Face tencent/HyperLogic 三个 config（seed / base / hard，各一个 test split，字段 id / title / background / question / answer）；GitHub 仓库含 evaluate.py、hard_agent/（两种条件载荷 + Docker runner + 11 模块 translation 库与 MANUAL.md）、build_public_subset.py 与 selection_manifest.json。",
+        "cite": [
+          "hf-hyperlogic@数据集卡 Usage",
+          "repo-hyperlogic@README What Is Released"
+        ]
+      },
+      {
+        "k": "公开子集规模",
+        "v": "Seed 69 题、Base 59 题含 274 个子问、Hard 30 题，共 158 行；答案按项整体保留，选中 Base 项的全部子问一起放出。",
+        "cite": [
+          "repo-hyperlogic@README What Is Released",
+          "hf-hyperlogic@数据集卡"
+        ]
+      },
+      {
+        "k": "全量评测",
+        "v": "私有 70% 不公开，需联系发布方，由其在与榜单相同的协议下代跑。",
+        "cite": [
+          "repo-hyperlogic@README Evaluate Your Model"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-19",
+        "columns": [
+          "模型",
+          "推理档",
+          "Seed",
+          "Base Item",
+          "Base Sub-Q",
+          "Hard Direct",
+          "Hard Sandbox",
+          "Hard + Library"
+        ],
+        "rows": [
+          [
+            "GPT-5.6 Sol",
+            "max",
+            "89.8 ±3.7",
+            "77.6 ±0.6",
+            "92.6 ±0.2",
+            "13.7 ±5.9",
+            "40.3 ±4.2",
+            "45.7 ±2.1"
+          ],
+          [
+            "Claude Opus 5",
+            "max",
+            "86.5 ±0.7",
+            "74.2† ±2.7",
+            "88.9† ±0.7",
+            "15.6† ±1.8",
+            "55.7 ±3.2",
+            "57.0 ±2.6"
+          ],
+          [
+            "Kimi K3",
+            "max",
+            "88.6 ±0.0",
+            "57.9 ±1.8",
+            "81.6 ±1.8",
+            "4.0 ±0.0",
+            "41.3 ±1.5",
+            "43.0 ±8.9"
+          ],
+          [
+            "Grok 4.6",
+            "xhigh",
+            "87.0 ±1.8",
+            "52.5 ±4.1",
+            "82.9 ±0.7",
+            "12.0 ±1.0",
+            "39.3 ±1.5",
+            "38.3 ±2.1"
+          ],
+          [
+            "DeepSeek V4 Pro",
+            "max",
+            "83.9 ±1.7",
+            "51.8 ±1.5",
+            "81.2 ±1.2",
+            "9.3 ±1.2",
+            "26.0 ±5.6",
+            "20.0 ±1.7"
+          ],
+          [
+            "GLM-5.3",
+            "max",
+            "87.3 ±0.9",
+            "45.6 ±3.2",
+            "67.2 ±4.9",
+            "3.0 ±1.0",
+            "20.7 ±0.6",
+            "31.3 ±5.1"
+          ],
+          [
+            "Doubao Seed 2.1 Pro",
+            "max",
+            "85.8 ±0.7",
+            "44.6 ±2.2",
+            "73.2 ±1.0",
+            "5.0 ±1.0",
+            "26.0 ±1.0",
+            "33.7 ±0.6"
+          ]
+        ]
+      },
+      "cite": [
+        "arxiv-2605-19597@Table 1",
+        "repo-hyperlogic@README Leaderboard",
+        "hf-hyperlogic@数据集卡 Leaderboard"
+      ]
+    }
+  }
 }

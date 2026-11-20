@@ -1,29 +1,266 @@
 {
   "id": "legal-agent-benchmark",
   "name": "Legal Agent Benchmark (Harvey LAB)",
-  "full_name": null,
+  "full_name": "Harvey Legal Agent Benchmark（LAB，Harvey 法律智能体基准）",
   "aliases": [],
   "status": null,
   "categories": [
     "agent",
     "knowledge"
   ],
-  "summary": "Harvey 开源法律智能体基准，长程法律任务",
-  "interpretation": "Harvey LAB 法律智能体基准（长程法律任务，榜单由 Vals AI 运营）：all-pass rubric 口径，全部 rubric 项通过才计通过，故绝对分偏低；读分看模型在法律工作流上的相对排名，跨版本任务集需注意迭代。",
-  "measures": [],
-  "does_not_measure": [],
+  "summary": "Harvey 开源的法律智能体基准：每道题给一段「合伙人对助理」式的简短指令和一个客户案卷（client matter）文件系统，智能体要在断网沙箱里读写文件、跨文档综合，产出可评审的法律交付物。评分用「全项通过（all-pass）」——一道题内联的所有 rubric 判分项全部通过才计 1 分，否则 0 分。",
+  "interpretation": "高分说明模型能在一个真实案卷上把该做的事一次做全，不是「大部分做对」；正因为全项通过，绝对分天然偏低（各运营方榜上约 4%–27%），而同批运行的判分项通过率仍在 94%–96%。读分应在同一口径内看相对排名，并同时看判分项通过率、单题成本与时延；Harvey 自测留出集、Vals AI 的 HLAB-Vals-1.1、Artificial Analysis 的 Harvey LAB-AA v1.1 用的是不同任务集、裁判面板与 harness，三个数字之间不可直接比较。",
+  "measures": [
+    {
+      "area": "企业并购（Corporate M&A）",
+      "focus": "示例题：分析 Crestview Software Solutions 一宗 4.58 亿美元、100% 股权收购中的控制权变更条款，产出含风险映射、逐合同分析、严重度评级与缓解建议的评审级备忘录",
+      "share": "当前仓库版本 156 题（最大的执业领域）；发布时为 1,250 题 / 24 个执业领域之一",
+      "format": "虚拟数据室（docx/pdf/xlsx 等混合文件）+ 简短指令 → .docx / .md 交付物",
+      "cite": ["harvey-blog", "repo-docs-eval@Tasks and Coverage"]
+    },
+    {
+      "area": "知识产权（Intellectual Property）",
+      "focus": "该执业领域的案卷任务，具体题型仓库未逐项披露",
+      "share": "当前仓库版本 147 题",
+      "format": "案卷文件 + 指令 → 该领域交付物",
+      "cite": ["repo-docs-eval@Tasks and Coverage"]
+    },
+    {
+      "area": "私募股权与创业投资（PE & VC）、公司治理与合规",
+      "focus": "分别为 99 题与 97 题，题型未逐项披露",
+      "share": "99 题 / 97 题",
+      "format": "案卷文件 + 指令 → 该领域交付物",
+      "cite": ["repo-docs-eval@Tasks and Coverage"]
+    },
+    {
+      "area": "其余执业领域（诉讼、房地产、税务、反垄断等）",
+      "focus": "信托与私人客户 77 题、诉讼与争议解决 52 题、房地产 / 网络安全与数据隐私 / 环境与 ESG 各 44 题、投资管理与基金 / 医疗与生命科学 各 43 题，另有 14 个领域（税务、反垄断、银行与金融、破产重整、资本市场、保险与再保险、结构化融资、能源、劳动雇佣、仲裁、国际贸易与制裁、移民、白领刑事辩护、IP 诉讼）",
+      "share": "各 43–77 题不等",
+      "format": "案卷文件 + 指令 → 该领域交付物",
+      "cite": ["repo-docs-eval@Tasks and Coverage"]
+    },
+    {
+      "area": "任务类型（work_type）",
+      "focus": "仓库把任务分为 analyze / draft / review / research 四类，未给出各类题量",
+      "share": "未披露",
+      "format": "task.json 中的 work_type 字段标注",
+      "cite": ["repo-docs-arch"]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "不测「读一份合同、回答一个问题」式的短程法律推理——那是 LegalBench、CUAD、LEXam 与 Harvey 早期 BigLaw Bench 的口径，LAB 的每道题都要求跨案卷综合并产出交付物。",
+      "cite": ["harvey-blog"]
+    },
+    {
+      "text": "不把「答对大部分要点」算完成：任务级没有部分学分，全部判分项通过才计 1.0。",
+      "cite": ["repo-docs-eval", "repo-docs-eval@Scoring Details"]
+    },
+    {
+      "text": "不覆盖开放网络检索：每次运行都在 per-task Podman 沙箱（--network=none）里执行，工具只覆盖工作区内的案卷文件。",
+      "cite": ["repo-docs-arch@Security Model"]
+    },
+    {
+      "text": "不依赖标准答案文件：判分由 LLM 裁判把交付物与每条判分项的 match_criteria 做语义比对，没有 golden reference output。",
+      "cite": ["repo-docs-eval@How the LLM Judge Works"]
+    }
+  ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
+    "sample_count": 2010,
+    "splits": [
+      "公开任务集（仓库 tasks/，2,010 题，MIT 许可随代码发布）",
+      "私有留出集 hold-out（不公开：Harvey 自有基线、Vals AI 与 Artificial Analysis 各使用 120 题子集）"
+    ],
+    "languages": [
+      "未披露（官方未标注任务语言）"
+    ],
+    "source_type": "真实客户案卷拆解出的任务 + 合成案卷（synthetic matter file）+ 专家撰写的 pass/fail rubric 判分项",
+    "public_sample": true,
+    "totals": "当前仓库文档口径 2,010 题、27 个执业领域、约 114,000 条 rubric 判分项；2026-05-06 首发时为 1,250 题、24 个执业领域、75,000+ 条判分项（两个数字都来自官方，属不同版本，不可混用）",
+    "cite": ["repo-docs-eval@Tasks and Coverage", "harvey-blog"],
+    "construction": [
+      {
+        "k": "从真实案卷出发",
+        "text": "Harvey 从各执业领域执业律师经手的真实客户案卷开始，把这些案卷拆成助理通常被委派的离散任务。",
+        "cite": ["harvey-blog"]
+      },
+      {
+        "k": "指令写成合伙人对助理的口吻",
+        "text": "指令平均约 50 词，用肯定句说明要什么，不解释期望的输出或风格；环境里混入关键文件与外围文件，把问题分散在多份文档中。",
+        "cite": ["harvey-blog@Defining a task"]
+      },
+      {
+        "k": "数据室里埋雷",
+        "text": "以并购题为例，数据室有八份重大合同，外加 10-K、递延补偿计划等可能相关也可能不相关的邻近材料，智能体要自己判断哪些文件要紧。",
+        "cite": ["harvey-blog"]
+      },
+      {
+        "k": "rubric 内联在 task.json",
+        "text": "每个任务在 task.json 里内联等权重的 pass/fail 判分项，每项用 match_criteria 说明裁判该看什么；控制权变更题的 rubric 有 57 条判分项，覆盖埋在案卷里的九个法律问题，每个问题拆成 4–9 条。",
+        "cite": ["repo-docs-eval", "harvey-blog"]
+      },
+      {
+        "k": "合成案卷与生成管线",
+        "text": "harness 读取的是合成案卷；致谢部分说明 Julio Pereyra 主导任务设计，开发了文档与场景生成管线来扩大出题规模。",
+        "cite": ["repo-docs-arch", "harvey-blog@Acknowledgements"]
+      }
+    ]
   },
-  "metrics": [],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [],
-  "notes": "Anthropic Opus 4.8/Fable 5 引用；榜单由 Vals AI 运营",
+  "default_protocol": {
+    "raw": "每道题在 per-task Podman 沙箱（--network=none --cap-drop=ALL，/workspace 可写、documents 只读、output 可写）里运行；智能体有六个工作区工具（bash、read、write、edit、glob、grep）加一个 finish 完成信号，文档解析交给 pandoc / MarkItDown / pandas / pdfplumber。判分由两个 LLM 裁判（默认 claude-sonnet-4-6 与 gpt-5.5，组合标签 lab-standard-dual-v1）各自对每条判分项独立给出 pass/fail，语义比对、温度 0.0、无标准答案文件；任务得分 = 1.0 当且仅当所有判分项通过，双裁判取算术平均，headline 是平均后的 all-pass rate。",
+    "cite": ["repo-docs-arch", "repo-docs-arch@Security Model", "repo-docs-arch@Tools", "repo-docs-eval", "repo-docs-eval@Standard dual-judge profile"],
+    "variants": [
+      {
+        "text": "裁判口径：2026-08-26 之前默认单裁判 claude-sonnet-4-6，之后改为 claude-sonnet-4-6 + gpt-5.5 双裁判平均（lab-standard-dual-v1）。十题 Opus 4.8 试验里，汇总判分项通过率从 78.9% 动到 80.6%，任务级 all-pass 从 10.0% 动到 15.0%；跨这条线的成绩不可比。",
+        "cite": ["repo-changelog@2026-08-26"]
+      },
+      {
+        "text": "文档读取方式：2026-11-05 起裁判读 .docx 时保留修订痕迹与批注。近期运行抽样 2,999 个 .docx 输出中 302 个（10%）读到的内容不同，合同红线与对方合同评审类任务受影响最大（394 个抽样里 153 个，39%）。",
+        "cite": ["repo-changelog@2026-11-05"]
+      },
+      {
+        "text": "缺失交付物：2026-11-11 起，交付物全部缺失或整场没有输出的判分项不再调用裁判、直接判 fail（此前裁判会读到 File not found，可能给「检查某事物不存在」的判分项放行）。",
+        "cite": ["repo-changelog@2026-11-11"]
+      },
+      {
+        "text": "第三方 harness：Vals AI 在 Harvey 的 harness 上叠加自有改进（上下文压缩、模型未调 finish 时提醒、单个工具结果体积上限、图片按图片读取等）；Artificial Analysis 用自己的 Stirrup harness 和三裁判面板，并加了幻觉门控。",
+        "cite": ["vals-ai-hlab@Methodology", "aa-lab-aa"]
+      },
+      {
+        "text": "任务集：Harvey 自有基线用「镜像公开集执业领域与任务分布的留出集」，Vals AI 用 120 题私有留出集，Artificial Analysis 用 Harvey 的 120 题私有任务集。三个口径的绝对分互不可比。",
+        "cite": ["harvey-blog-results", "vals-ai-hlab", "aa-lab-aa"]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "all-pass-rate",
+      "name": "任务全项通过率（all-pass rate）",
+      "direction": "越高越好",
+      "description": "所有 rubric 判分项都通过的任务占比；单题非 0 即 1，没有任务级部分学分。这是各运营方的头条指标。",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["repo-docs-eval", "repo-docs-eval@Scoring Details"]
+    },
+    {
+      "id": "criterion-pass-rate",
+      "name": "判分项通过率（criterion pass rate）",
+      "direction": "越高越好",
+      "description": "通过的判分项数 / 总判分项数，作为诊断指标披露：模型可以满足绝大多数判分项却仍然拿不到任务分。Vals AI 榜前几名在 94%–96%，任务通过率却只有 11%–27%。",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["repo-docs-eval", "vals-ai-hlab"]
+    },
+    {
+      "id": "dual-all-pass-rate",
+      "name": "双裁判全项通过率（dual all-pass rate）",
+      "direction": "越高越好",
+      "description": "两位裁判各自的任务全项通过值取算术平均，单题取 0.0 / 0.5 / 1.0；要求两位裁判都全项通过才是 1，严格双同意口径单独报告。",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["repo-docs-eval@Standard dual-judge profile"]
+    },
+    {
+      "id": "cost-and-latency",
+      "name": "单题成本与墙钟时长",
+      "direction": "越低越好",
+      "description": "每任务的美元成本与运行时长，Harvey 基线与 Vals AI 榜都单独报告；Harvey 基线中最强的 Opus 4.7 也最贵最慢（约 50.90 美元、约 22 分钟）。",
+      "unit": "USD / minutes per task",
+      "cite": ["harvey-blog-results", "vals-ai-hlab"]
+    },
+    {
+      "id": "hallucination-gated-all-pass-rate",
+      "name": "幻觉门控全项通过率（Hallucination-Gated All-Pass Rate）",
+      "direction": "越高更好",
+      "description": "Artificial Analysis 口径：交付物满足所有 rubric 判分项且不含实质幻觉才计分，三裁判平均；同时报告每题实质幻觉数。",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["aa-lab-aa"]
+    }
+  ],
+  "versions": [
+    {
+      "id": "v1-open-source",
+      "date": "2026-05-06",
+      "label": "首次开源发布：1,250 题 / 24 个执业领域 / 75,000+ 条判分项；官方明确首发不带榜单，因为预期数据集持续演进",
+      "cite": ["harvey-blog"]
+    },
+    {
+      "id": "initial-results",
+      "date": "2026-05-26",
+      "label": "Harvey 公布自有留出集初始基线：Claude Opus 4.7 以 7.1% 领先，前沿模型整体低于 10%",
+      "cite": ["harvey-blog-results"]
+    },
+    {
+      "id": "dual-judge-default",
+      "date": "2026-08-26",
+      "label": "默认判分从单裁判 claude-sonnet-4-6 改为 claude-sonnet-4-6 + gpt-5.5 双裁判平均（lab-standard-dual-v1），主分数文件变为 scores_dual.json；跨线成绩不可比",
+      "cite": ["repo-changelog@2026-08-26"]
+    },
+    {
+      "id": "current-docs-2026-11-13",
+      "date": "2026-11-13",
+      "label": "main 分支当前口径（本次核验所见）：2,010 题 / 27 个执业领域 / 约 114,000 条判分项；Artificial Analysis 的 Harvey LAB-AA v1.1 页面未标注发布日期，故不列版本条目",
+      "cite": ["repo-docs-eval@Tasks and Coverage", "aa-lab-aa"]
+    },
+    {
+      "id": "hlab-vals-1-1",
+      "date": "2026-11-11",
+      "label": "Vals AI HLAB-Vals-1.1 榜（120 题私有留出集、双裁判、禁网）：Gemini 4 Argon 以 27.08% 居首",
+      "cite": ["vals-ai-hlab"]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "all-pass 口径下绝对分极低，容易被误读成「模型做不了法律工作」",
+      "impact": "头部模型任务通过率只有 7%–27%，而同批判分项通过率在 94%–96%；只看任务分会大幅低估可用性。",
+      "severity": "高",
+      "response": "Harvey 同时公布判分项通过率作为诊断，并解释 all-pass 对应「高风险法律工作没有部分学分」的评审现实。",
+      "reader": "把任务通过率当同一口径内的相对排名读，并同时看判分项通过率。",
+      "cite": ["repo-docs-eval", "vals-ai-hlab", "harvey-blog"]
+    },
+    {
+      "issue": "三个运营方口径互不可比",
+      "impact": "Harvey 自测 7.1%（Opus 4.7）、Vals AI 27.08%（Gemini 4 Argon）、Artificial Analysis 13.1%（Muse Wonder Full）差异主要来自任务集、裁判面板与 harness，而非模型能力。",
+      "severity": "高",
+      "response": "Vals AI 明说其结果不与已归档的 v1 榜或 Artificial Analysis 的 Harvey LAB-AA 比较；Artificial Analysis 明说 v1.1 与 v1.0 不可比。",
+      "reader": "跨榜比较前先确认任务集、裁判配置与 harness 版本。",
+      "cite": ["vals-ai-hlab@Methodology", "aa-lab-aa", "harvey-blog-results"]
+    },
+    {
+      "issue": "任务规模口径在官方来源之间不一致",
+      "impact": "发布时说 1,250 题 / 24 个执业领域 / 75,000+ 条判分项，当前仓库文档是 2,010 题 / 27 个执业领域 / 约 114,000 条；用错口径会让题量与占比对不上。",
+      "severity": "中",
+      "response": "仓库用 CHANGELOG.md 记录会影响分数的变更，README 要求论文注明评估所用的 release 或 commit。",
+      "reader": "引用数字时注明来源版本与日期。",
+      "cite": ["harvey-blog", "repo-docs-eval@Tasks and Coverage", "repo-harvey-labs"]
+    },
+    {
+      "issue": "判分完全由 LLM 裁判完成，存在偏置与口径漂移",
+      "impact": "没有标准答案文件；裁判模型、提示词结构与 .docx 读取方式的变化都会移动分数（2026-11-05 的修订痕迹变更让 10% 的 .docx 输出读到不同内容）。",
+      "severity": "中",
+      "response": "默认双裁判取平均、裁判温度设为 0.0；Artificial Analysis 用三裁判并称自偏好极小。",
+      "reader": "关注判分项的裁判配置与 harness 版本。",
+      "cite": ["repo-docs-eval@How the LLM Judge Works", "repo-changelog@2026-11-05", "aa-lab-aa"]
+    },
+    {
+      "issue": "沙箱断网，不覆盖检索类法律工作",
+      "impact": "每次运行都在 --network=none 的沙箱里执行，智能体只能用案卷内文件；真实工作中常见的联网检索、法规库查询不在测量范围内。",
+      "severity": "中",
+      "response": "未见官方就检索范围缺失作专门回应；官方把案卷定义为「完成客户工作所需的封闭文档集合」。",
+      "reader": "不要把 LAB 低分解释成模型不会查法规。",
+      "cite": ["repo-docs-arch@Security Model", "harvey-blog"]
+    },
+    {
+      "issue": "成本与时延未进入头条指标",
+      "impact": "Harvey 基线中最强模型也最贵最慢（约 50.90 美元、约 22 分钟/题），只看准确率会高估可部署性。",
+      "severity": "低",
+      "response": "Harvey 与 Vals AI 都单独公布每任务成本与时长。",
+      "reader": "把成本/时延和任务通过率一起读。",
+      "cite": ["harvey-blog-results", "vals-ai-hlab"]
+    }
+  ],
+  "notes": "第三方榜由 Vals AI（HLAB-Vals-1.1）与 Artificial Analysis（Harvey LAB-AA v1.1）分别运营，口径互不可比；Anthropic Opus 4.8 公告引用 Harvey 应用研究负责人，称其为 LAB 上首个在 all-pass 标准上突破 10% 的模型",
   "official_sources": [
     {
       "kind": "github",
@@ -31,14 +268,213 @@
     },
     {
       "kind": "site",
-      "url": "https://www.anthropic.com/news/claude-fable-5-mythos-5"
+      "url": "https://www.harvey.ai/blog/introducing-harveys-legal-agent-benchmark"
     },
     {
       "kind": "site",
       "url": "https://www.anthropic.com/news/claude-opus-4-8"
     }
   ],
-  "related_benchmarks": [],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "related_benchmarks": [
+    "legalbench",
+    "biglaw-bench",
+    "gdpval",
+    "osworld",
+    "browsecomp",
+    "mcp-atlas",
+    "terminalbench",
+    "swebench-pro"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-13",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      {
+        "id": "repo-harvey-labs",
+        "kind": "repo",
+        "title": "harveyai/harvey-labs（README：任务集 + harness，MIT 许可）",
+        "url": "https://github.com/harveyai/harvey-labs",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "repo-docs-arch",
+        "kind": "docs",
+        "title": "harvey-labs docs/architecture.md（任务模型、harness、工具、沙箱、适配器）",
+        "url": "https://raw.githubusercontent.com/harveyai/harvey-labs/main/docs/architecture.md",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "repo-docs-eval",
+        "kind": "docs",
+        "title": "harvey-labs docs/eval-strategies.md（all-pass 评分、LLM 裁判、任务覆盖）",
+        "url": "https://raw.githubusercontent.com/harveyai/harvey-labs/main/docs/eval-strategies.md",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "repo-changelog",
+        "kind": "docs",
+        "title": "harvey-labs CHANGELOG.md（LAB Score-Impact Changelog：会影响分数的变更）",
+        "url": "https://raw.githubusercontent.com/harveyai/harvey-labs/main/CHANGELOG.md",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "harvey-blog",
+        "kind": "announcement",
+        "title": "Harvey 官方博客：Open-Sourcing Harvey's Long Horizon Legal Agent Benchmark（2026-05-06）",
+        "url": "https://www.harvey.ai/blog/introducing-harveys-legal-agent-benchmark",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "harvey-blog-results",
+        "kind": "announcement",
+        "title": "Harvey 官方博客：Initial Results on Legal Agent Benchmark（2026-05-26）",
+        "url": "https://www.harvey.ai/blog/legal-agent-benchmark-initial-results",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "vals-ai-hlab",
+        "kind": "leaderboard",
+        "title": "Vals AI：HLAB-Vals-1.1 Leaderboard and Methodology（2026-11-11 更新）",
+        "url": "https://www.vals.ai/benchmarks/hlab",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "aa-lab-aa",
+        "kind": "leaderboard",
+        "title": "Artificial Analysis：Harvey LAB-AA v1.1 Benchmark",
+        "url": "https://artificialanalysis.ai/evaluations/harvey-lab-aa",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "anthropic-news-claude-opus-4-8",
+        "kind": "site",
+        "title": "Anthropic：Claude Opus 4.8 发布公告（引述 Harvey 应用研究负责人）",
+        "url": "https://www.anthropic.com/news/claude-opus-4-8",
+        "accessed": "2026-11-13"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Harvey AI（Harvey），以 MIT 许可开源基准与 harness",
+        "cite": ["harvey-blog", "repo-harvey-labs"]
+      },
+      "first_release": {
+        "v": "2026-05-06（Harvey 官方博客宣布开源 LAB）",
+        "cite": ["harvey-blog"]
+      }
+    },
+    "cites": {
+      "summary": ["harvey-blog", "repo-docs-eval"],
+      "interpretation": ["repo-docs-eval@Scoring Details", "vals-ai-hlab", "aa-lab-aa", "harvey-blog-results"]
+    },
+    "problem": {
+      "text": "既有法律评测（LegalBench、CUAD、LEXam 和 Harvey 自己的 BigLaw Bench）评的是短程推理——读一份合同、回答一个问题、比较案例或分析论点；当时没有基准能说明长程法律工作的智能体进展。LAB 要给律所一个可读的「法律智能体进展指数」，用来判断哪些工作可以交给智能体、哪些必须留在人手里。",
+      "cite": ["harvey-blog"]
+    },
+    "ladder": [
+      {
+        "label": "Harvey 自有留出集最好成绩（2026-05-26 基线）",
+        "value": "7.1%（Claude Opus 4.7）",
+        "note": "同一基线里 Sonnet 4.6 为 5.4%、Opus 4.6 为 4.2%、GPT-5.5 为 2.1%、Gemini 3.5 Flash 为 0.8%；Harvey 称前沿模型整体低于 10%。",
+        "cite": ["harvey-blog-results"]
+      },
+      {
+        "label": "厂商引用的最高（Anthropic Opus 4.8 公告，2026 年）",
+        "value": "「首个在 all-pass 标准上整体突破 10% 的模型」（未给出具体分数）",
+        "note": "Harvey 应用研究负责人在 Anthropic Opus 4.8 公告中的引述。",
+        "cite": ["anthropic-news-claude-opus-4-8"]
+      },
+      {
+        "label": "Vals AI 榜最高（HLAB-Vals-1.1，2026-11-11）",
+        "value": "27.08%（Gemini 4 Argon）",
+        "note": "120 题私有留出集、双裁判、禁网；同榜该模型判分项通过率 96.30%，为榜上最高。",
+        "cite": ["vals-ai-hlab"]
+      },
+      {
+        "label": "Artificial Analysis 榜最高（Harvey LAB-AA v1.1）",
+        "value": "13.1%（Muse Wonder Full (Max)）",
+        "note": "120 题私有任务集、三裁判、Stirrup harness、幻觉门控口径；页面未标注版本发布日期。",
+        "cite": ["aa-lab-aa"]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把不同运营方的分数排在一起比——Harvey 自测、Vals AI、Artificial Analysis 用的是不同任务集、裁判和 harness，两家第三方都明说不可比。",
+        "cite": ["vals-ai-hlab@Methodology", "aa-lab-aa", "harvey-blog-results"]
+      },
+      {
+        "text": "把 7%–27% 的任务通过率读成「模型做不了法律工作」——同批运行的判分项通过率在 94%–96%，低分主要来自 all-pass 的全有或全无。",
+        "cite": ["repo-docs-eval", "vals-ai-hlab"]
+      },
+      {
+        "text": "把「1,250 题」当成当前题量——那是 2026-05 发布时的数字，当前仓库文档是 2,010 题。",
+        "cite": ["harvey-blog", "repo-docs-eval@Tasks and Coverage"]
+      },
+      {
+        "text": "以为 LAB 一开始就带榜单——Harvey 明确说首发时不带榜单，因为预期数据集会持续演进；榜单由第三方运营是后来的事。",
+        "cite": ["harvey-blog"]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "Harvey AI（法律 AI 公司）；基准、任务与 harness 以 MIT 许可开源在 GitHub，harness 与 grader 同时作为 lab-core Python 包发布",
+        "cite": ["repo-harvey-labs", "harvey-blog"]
+      },
+      {
+        "k": "核心作者",
+        "v": "公告由 Niko Grupen、Gabe Pereyra、Julio Pereyra 署名；致谢说明 Spencer Poff 是开源仓库技术负责人，Julio Pereyra 主导任务设计与文档/场景生成管线",
+        "cite": ["harvey-blog", "harvey-blog@Acknowledgements"]
+      },
+      {
+        "k": "时间线",
+        "v": "2026-05-06 开源发布 → 2026-05-26 公布自有留出集初始结果 → 2026-08-26 默认改双裁判 → 2026-11-11 Vals AI HLAB-Vals-1.1 榜更新",
+        "cite": ["harvey-blog", "harvey-blog-results", "repo-changelog@2026-08-26", "vals-ai-hlab"]
+      },
+      {
+        "k": "数据与代码",
+        "v": "任务与 harness 在 github.com/harveyai/harvey-labs（tasks/、lab_core/、docs/、CHANGELOG.md）；私有留出集不公开，第三方各用 120 题子集",
+        "cite": ["repo-harvey-labs", "vals-ai-hlab", "aa-lab-aa"]
+      },
+      {
+        "k": "第三方运营方",
+        "v": "Vals AI 运行 HLAB-Vals-1.1（Harvey 的 harness 加自有改进，禁网）；Artificial Analysis 独立运行 Harvey LAB-AA v1.1（Stirrup harness，与 Harvey 合作加入幻觉检查）",
+        "cite": ["vals-ai-hlab@Methodology", "aa-lab-aa"]
+      },
+      {
+        "k": "引用方式",
+        "v": "官方 BibTeX 为 harveylab2026，并要求论文注明评估所用的 release 或 commit，因为不同 release 的分数不总是可比",
+        "cite": ["repo-harvey-labs"]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-13",
+        "columns": ["来源", "模型", "分数", "判分项通过率", "口径"],
+        "rows": [
+          ["Harvey 留出集基线", "Claude Opus 4.7", "7.1%", "未列出", "Harvey harness，多模型族裁判多次判分取平均"],
+          ["Harvey 留出集基线", "Claude Sonnet 4.6", "5.4%", "未列出", "同上"],
+          ["Harvey 留出集基线", "Claude Opus 4.6", "4.2%", "未列出", "同上"],
+          ["Harvey 留出集基线", "GPT-5.5", "2.1%", "未列出", "同上"],
+          ["Harvey 留出集基线", "Gemini 3.5 Flash", "0.8%", "未列出", "同上"],
+          ["Vals AI HLAB-Vals-1.1", "Gemini 4 Argon", "27.08%", "96.30%", "120 题私有留出集，双裁判 GPT-5.5 + Claude Sonnet 4.6，禁网"],
+          ["Vals AI HLAB-Vals-1.1", "Muse Ember", "25.00%", "95.55%", "同上"],
+          ["Vals AI HLAB-Vals-1.1", "Muse Spark Open", "25.00%", "未列出", "同上"],
+          ["Vals AI HLAB-Vals-1.1", "Wonder", "23.75%", "96.01%", "同上"],
+          ["Vals AI HLAB-Vals-1.1", "Wonder Full", "23.33%", "96.13%", "同上"],
+          ["Vals AI HLAB-Vals-1.1", "Claude Sonnet 5.5", "10.42%", "未列出", "同上"],
+          ["Artificial Analysis LAB-AA v1.1", "Muse Wonder Full (Max)", "13.1%", "未列出", "120 题私有任务集，三裁判，Stirrup harness，幻觉门控 all-pass rate"],
+          ["Artificial Analysis LAB-AA v1.1", "Muse Wonder (Max)", "10.0%", "未列出", "同上"],
+          ["Artificial Analysis LAB-AA v1.1", "Grok 4.7 (Xhigh)", "9.4%", "未列出", "同上"]
+        ]
+      },
+      "cite": ["harvey-blog-results", "vals-ai-hlab", "aa-lab-aa"]
+    }
+  }
 }

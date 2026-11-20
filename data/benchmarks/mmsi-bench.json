@@ -1,35 +1,487 @@
 {
   "id": "mmsi-bench",
   "name": "MMSI-Bench",
-  "full_name": null,
+  "full_name": "MMSI-Bench: A Benchmark for Multi-Image Spatial Intelligence（多图像空间智能基准）",
   "aliases": [],
-  "status": null,
-  "categories": [
-    "multimodal"
+  "status": "active",
+  "categories": ["multimodal"],
+  "summary": "上海人工智能实验室等 7 家机构出品的多图像空间智能评测：1,000 道四选一多选题，每题给 2–10 张真实场景图片，并附人工标注的分步推理过程。随机猜测 25.0%，人类 97.2%，最强闭源模型 GPT-5 41.9%，最强开源模型 Qwen2.5-VL-72B 30.7%——人机落差接近 56 个百分点。",
+  "interpretation": "分数直接读作「多图空间推理距人类还有多远」。GPT-5 的 41.9% 意味着最强闭源模型也只答对约四成；把图片遮掉的盲测 GPT-4o 只有 22.7%（低于随机），说明这些题确实要靠跨图空间整合，语言先验和常识蒙不出来。论文附录还显示 MMSI-Bench 分数与下游具身导航/操作/主动感知任务表现强相关（Pearson 0.73–0.81），但它不是具身能力排行榜，也不能替代具身基准。",
+  "measures": [
+    {
+      "area": "位置关系推理（Positional Relationship）",
+      "focus": "六类两两空间关系：相机-相机、相机-物体、相机-区域、物体-物体、物体-区域、区域-区域；每题只用两张图，要求判断两者的相对位置或方位",
+      "share": "521 题（附录 F.7 计）",
+      "format": "四选一，附分步推理",
+      "cite": ["paper@Table 1", "repo@README Example", "paper@附录 F.7 Task Distribution"]
+    },
+    {
+      "area": "多步推理（Multi-Step Reasoning, MSR）",
+      "focus": "需要连续多步空间推理的复合任务（如导航），每题用两张以上图片；论文指出这是多数模型明显弱于单步任务的一类",
+      "share": "197 题（附录 F.7 计）",
+      "format": "四选一，附分步推理",
+      "cite": ["paper@附录 F.3 General Guidelines", "paper@Table 1", "paper@§4.2 Main Results"]
+    },
+    {
+      "area": "属性推理（Attribute）",
+      "focus": "测量类（Measurement，长度/大小/高度/距离等几何量）84 题 + 外观类（Appearance，形状等视觉特征）66 题",
+      "share": "150 题（附录 F.7 计）",
+      "format": "四选一，附分步推理",
+      "cite": ["paper@Table 1", "paper@附录 F.7 Task Distribution"]
+    },
+    {
+      "area": "运动推理（Motion）",
+      "focus": "相机自身运动 74 题 + 场景中物体运动 76 题；论文观察到多数模型（尤其开源模型）在这一类上明显更差",
+      "share": "150 题（附录 F.7 计）",
+      "format": "四选一，附分步推理",
+      "cite": ["paper@附录 F.7 Task Distribution", "paper@Table 1", "paper@§4.2 Main Results"]
+    }
   ],
-  "summary": "多图像空间智能推理评测",
-  "interpretation": "1,000 道多图像空间智能多选题（300+ 小时人工出题），随机基线 25%；人类 97%、GPT-5 推理 40%、最强开源约 30%——人机落差极大，分数直接读作「多图空间推理距人类的差距」。",
-  "measures": [],
-  "does_not_measure": [],
+  "does_not_measure": [
+    {
+      "text": "单图空间推理：每道题都设计成无法用单张图片回答，质检阶段还会剔除「能靠单张图或常识答对」的题",
+      "cite": ["paper@§3.2 Benchmark Construction Process"]
+    },
+    {
+      "text": "相机参数/属性类问题（焦距、相机型号等）：为保证题目对人类可答，作者主动排除了这一类",
+      "cite": ["paper@§3.1 Overview"]
+    },
+    {
+      "text": "区域（region）的运动：作者认为语义区域一般是静止的，因此不设区域运动任务",
+      "cite": ["paper@§3.1 Overview"]
+    },
+    {
+      "text": "通用常识与语言先验：遮图的盲测 GPT-4o 只有 22.7%，接近随机，说明这些题不能靠常识蒙对",
+      "cite": ["paper@Table 3", "paper@§4.2 Main Results"]
+    },
+    {
+      "text": "开放式生成、指令遵循、安全性等非空间能力：只统计多选题精确匹配正确率",
+      "cite": ["paper@§4.1 Evaluation Setup"]
+    },
+    {
+      "text": "具身控制能力本身：与下游具身任务的相关性只在附录 E.5 报告，论文没有把它当作具身基准的替代",
+      "cite": ["paper@附录 E.5 Correlation"]
+    }
+  ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
+    "sample_count": 1000,
+    "splits": ["test（Hugging Face 上仅此一个划分，1,000 行）"],
+    "languages": ["English"],
+    "source_type": "人工标注的真实场景多图 VQA（无模板、无合成数据）",
+    "public_sample": "全部 1,000 题公开：Hugging Face parquet，1.76 GB，CC BY 4.0",
+    "multiple_choice_share": "100%（每题四选一，只有一个正确选项）",
+    "multimodal_share": "100%（每题 2–10 张图片，平均 2.55 张）",
+    "totals": "1,000 题 / 1,990 张唯一图片 / 平均每题 2.55 张图（最多 10 张）/ 平均题长 130.28 字符 / 平均推理过程长 252.83 字符（最长 449 / 1,118）",
+    "cite": ["paper@Table 2", "paper@§3.2 Benchmark Construction Process", "dataset@HF Dataset Card", "paper@附录 B.6 License and Access"],
+    "construction": [
+      {
+        "k": "出题人",
+        "text": "6 名 3D 视觉研究员人工出题，累计 300+ 研究员小时，从超过 12 万张候选图中筛选出 1,000 题",
+        "cite": ["paper@§1", "paper@§3.2 Benchmark Construction Process", "repo@README Introduction"]
+      },
+      {
+        "k": "图片来源",
+        "text": "8 个公开真实场景数据集：Matterport3D 463 题、ScanNet 280 题、Ego4D 67 题、AgiBot-World 45 题、DTU 72 题、nuScenes 39 题、DAVIS 2017 29 题、Waymo 5 题；约 12% 来自室外数据集，全程不用合成数据",
+        "cite": ["paper@附录 F.1 Dataset Sources", "repo@README Why MMSI-Bench"]
+      },
+      {
+        "k": "题目形态",
+        "text": "四选一、无模板自由出题，每题配人工分步推理过程；除多步推理外，其他类别每题只用两张图",
+        "cite": ["paper@§3.2 Benchmark Construction Process", "paper@Table 2"]
+      },
+      {
+        "k": "多图必要性",
+        "text": "每道题都刻意设计成必须整合多张图片的信息才能推断场景，单张图片无法作答",
+        "cite": ["paper@§3.2 Benchmark Construction Process", "repo@README Why MMSI-Bench"]
+      },
+      {
+        "k": "干扰项",
+        "text": "错误选项由标注者刻意设计成似是而非的干扰项，用于降低猜测命中率",
+        "cite": ["paper@§3.2 Benchmark Construction Process", "repo@README Introduction"]
+      },
+      {
+        "k": "质检",
+        "text": "3 名独立于原始标注者的复核者全量检查，剔除有歧义的题、错误答案，以及能靠单张图或常识答出的题",
+        "cite": ["paper@§3.2 Benchmark Construction Process"]
+      },
+      {
+        "k": "难度分层",
+        "text": "2025-10-23 起在 Hugging Face 数据集中加入按人类答题时长归一化的难度标签：easy 605 题（约 40 秒）、medium 262 题（约 110 秒）、hard 133 题（超过约 110 秒或答错）",
+        "cite": ["repo@README News", "paper@附录 F.6 Difficulty Annotation", "dataset@HF Dataset Card"]
+      }
+    ]
   },
-  "metrics": [],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [],
-  "notes": "字节 Seed 引用",
+  "metrics": [
+    {
+      "id": "accuracy",
+      "name": "平均准确率（Avg.）",
+      "direction": "越高越好",
+      "description": "11 个任务类别准确率的简单平均；用精确匹配比对从模型输出中抽取出的答案与标准答案",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["paper@Table 3", "paper@§4.1 Evaluation Setup"]
+    },
+    {
+      "id": "reasoning-accuracy",
+      "name": "推理过程准确率",
+      "direction": "越高越好",
+      "description": "用自动标注器判断模型分步推理是否正确（需人工参考推理辅助）；GPT-4.5 / GPT-4o / Qwen2.5-VL-72B 分别为 37.5% / 29.9% / 21.5%，均低于各自的选择题正确率",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["paper@§5.2 Automated Error Analysis"]
+    }
+  ],
+  "default_protocol": {
+    "raw": "每题给若干张真实场景图片和四个选项；用统一后处理提示要求模型只输出选项字母（字母包在两个反引号内），再用正则从输出中抽取，与标准答案做精确匹配。官方所有模型统一 temperature=0、最大输出 2,048 token。人类分为 5 名未参与标注的成年评估者的平均正确率；随机猜测按四选项等概率取 25.0%。",
+    "cite": ["paper@§4.1 Evaluation Setup", "paper@附录 E.2 Implementation Details", "repo@README Answer Extraction", "paper@附录 E.3 Human Evaluation Setup"],
+    "variants": [
+      {
+        "text": "三种提示口径：直接作答（Direct）、零样本思维链（Linguistic CoT）、视觉提示（在拼接图上画出对应点连线）。论文显示 CoT 只对 GPT-4o 有轻微提升、对其他模型反而下降，视觉提示也只有轻微提升，三种口径的结果不能混着比。",
+        "cite": ["paper@附录 E.2 Implementation Details", "paper@§4.3 Prompting Techniques"]
+      },
+      {
+        "text": "循环测试（circular testing）口径：OpenCompass Spatial Leaderboard 用它压制随机猜测的影响，同模型在该口径下的分数（如 Seed-VL 1.5 20.3%）与论文主表不可直接比较。",
+        "cite": ["repo@README News"]
+      },
+      {
+        "text": "评测框架实现差异：VLMEvalKit 用它自带的默认答案抽取方法，而官方仓库用 MMSI-Bench 专用的 post-prompt 和正则，两边复现的分数会有出入。",
+        "cite": ["repo@README News"]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2025-05-30",
+      "label": "论文、基准数据与评测代码首次公开（arXiv v1）",
+      "cite": ["repo@README News"]
+    },
+    {
+      "id": "vlmevalkit",
+      "date": "2025-06-09",
+      "label": "接入 VLMEvalKit（使用其默认答案抽取方法）",
+      "cite": ["repo@README News"]
+    },
+    {
+      "id": "lmms-eval",
+      "date": "2025-06-18",
+      "label": "接入 LMMs-Eval 仓库",
+      "cite": ["repo@README News"]
+    },
+    {
+      "id": "opencompass",
+      "date": "2025-06-28",
+      "label": "接入 OpenCompass Spatial Leaderboard，提供循环测试口径",
+      "cite": ["repo@README News"]
+    },
+    {
+      "id": "hf-difficulty",
+      "date": "2025-10-23",
+      "label": "Hugging Face 数据集加入归一化人类答题时长与难度分层（按难度分层抽样以保持类别均衡）",
+      "cite": ["repo@README News", "dataset@HF Dataset Card"]
+    },
+    {
+      "id": "video-bench",
+      "date": "2025-12-16",
+      "label": "同团队发布视频空间智能基准 MMSI-Video-Bench",
+      "cite": ["repo@README News"]
+    },
+    {
+      "id": "easi",
+      "date": "2025-12-19",
+      "label": "发布统一空间智能评测套件 EASI（含 MMSI-Bench）",
+      "cite": ["repo@README News"]
+    },
+    {
+      "id": "iclr2026",
+      "date": "2026-01-26",
+      "label": "被 ICLR 2026 接收",
+      "cite": ["repo@README News", "paper@页脚"]
+    },
+    {
+      "id": "v3",
+      "date": "2026-05-23",
+      "label": "arXiv v3（ICLR 2026 camera-ready）：评测模型从 34 个增至 37 个，头部成绩更新为 GPT-5 41.9%、人类 97.2%",
+      "cite": ["paper@页脚", "paper@Table 3"]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "仓库 README 仍是 v1 口径，与论文最新版不一致",
+      "impact": "README 摘要写「评测 34 个 MLLM、o3 达 40%、人类 97%」，而论文 v3 已是「37 个 MLLM、GPT-5 41.9%、人类 97.2%」；仓库榜单还收录了论文表 3 里没有的成绩（Gemini-3-pro 49.2%、SenseNova-SI-1.2-InternVL3-8B 42.6%）。直接引 README 会得到过时数字。",
+      "severity": "高",
+      "response": "本站一律以 arXiv v3 论文为主口径，README 只用作版本与采纳时间线；引用时注明论文版本。",
+      "reader": "看到「34 个模型 / o3 40%」就是旧口径；看到 Gemini-3-pro、SenseNova-SI 等名字说明来自仓库实时榜单而非论文。",
+      "cite": ["repo@README Introduction", "paper@Table 3", "repo@README Leaderboard"]
+    },
+    {
+      "issue": "附录 F.7 的分任务题量与总数 1,000 对不上",
+      "impact": "F.7 逐个任务列出的样本数相加为 1,018（位置 521 + 属性 150 + 运动 150 + MSR 197），比摘要、表 2 和附录 F.1 的 1,000 多出 18 题；论文没有说明差异来源。",
+      "severity": "中",
+      "response": "本站题量口径取摘要 / 表 2 / 附录 F.1 的 1,000；分类占比只用附录 F.7 的相对比例，并在 measures.share 标注「附录 F.7 计」。",
+      "reader": "按附录 F.7 的单类题数推算占比时，分母用 1,018 而不是 1,000。",
+      "cite": ["paper@附录 F.7 Task Distribution", "paper@Table 2", "paper@附录 F.1 Dataset Sources"]
+    },
+    {
+      "issue": "题目全部来自公开数据集，污染与数据泄漏风险高",
+      "impact": "8 个来源中 Matterport3D（463 题）加 ScanNet（280 题）合计 743 题，占 74.3%；这两个数据集被广泛用于预训练和微调，模型可能见过原图。",
+      "severity": "中",
+      "response": "论文没有做污染审计；本站只提示风险，不给出污染校正后的分数。",
+      "reader": "跨时间比较时留意模型训练数据截止时间；若某模型训练集包含 Matterport3D / ScanNet，其分数可能偏高。",
+      "cite": ["paper@附录 F.1 Dataset Sources"]
+    },
+    {
+      "issue": "题量小，统计功效有限",
+      "impact": "1,000 题、四选一，1 个百分点约等于 10 题。论文自己也说规模与 MMStar（1,500 题）、MM-Vet（218 题）等同级，只有模板化的 VSI-Bench（5,000 题）明显更大。",
+      "severity": "中",
+      "response": "论文认为当前 MLLM 在该基准上仍有大量提升空间，1,000 题足以做有意义评估；本站对 1–2 个百分点以内的模型差距不作解读。",
+      "reader": "1 个百分点以内的先后不要当排名看。",
+      "cite": ["paper@附录 B.2 Limitations", "paper@Table 2"]
+    },
+    {
+      "issue": "自动错误类型标注器本身不可靠",
+      "impact": "只给标准答案时，GPT-4o 标注错误类型的正确率仅 53%；补上人工参考推理后才升到 78%。",
+      "severity": "低",
+      "response": "论文用带人工参考推理的版本做错误分析，并明确指出「仅有正确答案不足以评估推理过程」。",
+      "reader": "论文图 7 的错误类型分布依赖 78% 准确率的标注器，单模型结论仅供参考。",
+      "cite": ["paper@§5.2 Automated Error Analysis"]
+    },
+    {
+      "issue": "语言先验基线只测了一个模型",
+      "impact": "盲测基线只有 Blind GPT-4o（22.7%）一个数据点，无法据此排除其他模型的语言先验。",
+      "severity": "低",
+      "response": "论文以「接近随机猜测」作为证据说明任务需要真实视觉空间推理；本站沿用该论证但不外推到其他模型。",
+      "reader": "不能说「所有模型都不能靠语言先验做对」，只能说 GPT-4o 不能。",
+      "cite": ["paper@Table 3", "paper@§4.2 Main Results"]
+    },
+    {
+      "issue": "下游相关性证据单一",
+      "impact": "与下游任务的相关性只在 EmbodiedBench 的三个任务（EB-Navigation / EB-Manipulation / EB-Habitat）上验证，Pearson 相关系数 0.73–0.81。",
+      "severity": "低",
+      "response": "论文据此说「在 MMSI-Bench 上表现好的模型在具身控制与主动感知上也强」；本站把它当作相关性证据而非因果。",
+      "reader": "不要把 MMSI-Bench 高分直接当作具身操作能力。",
+      "cite": ["paper@附录 E.5 Correlation"]
+    },
+    {
+      "issue": "空间推理微调的收益有限",
+      "impact": "论文表 4 显示，在空间推理数据上微调过的模型相对其基座只有 marginal gains，说明该基准对「针对性刷分」不敏感。",
+      "severity": "低",
+      "response": "论文归因于这些模型的训练数据多由有限模板构建，难以泛化到 MMSI-Bench 的多样场景。",
+      "reader": "某模型「专门为空间推理微调过」而 MMSI-Bench 分数没动，是预期行为。",
+      "cite": ["paper@Table 4"]
+    }
+  ],
+  "notes": "官方引用入口含字节 Seed 博客（Seed1.8 用 MMSI-Bench 做空间智能评测）；本档案以 arXiv:2505.23764v3 论文为准口径，GitHub README 仅用于版本与采纳时间线。数据与代码：github.com/InternRobotics/MMSI-Bench、huggingface.co/datasets/RunsenXu/MMSI-Bench",
   "official_sources": [
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2505.23764"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/InternRobotics/MMSI-Bench"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/RunsenXu/MMSI-Bench"
+    },
     {
       "kind": "site",
       "url": "https://seed.bytedance.com/en/blog/official-release-of-seed1-8-a-generalized-agentic-model"
     }
   ],
-  "related_benchmarks": [],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "related_benchmarks": ["blink", "erqa", "muirbench", "refspatialbench", "embspatial-bench", "cv-bench", "mmstar", "mmvet", "hle-vl"],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "MMSI-Bench: A Benchmark for Multi-Image Spatial Intelligence（arXiv:2505.23764v3，ICLR 2026 camera-ready）",
+        "url": "https://arxiv.org/abs/2505.23764",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "InternRobotics/MMSI-Bench（论文官方代码仓库与实时榜单）",
+        "url": "https://github.com/InternRobotics/MMSI-Bench",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "dataset",
+        "kind": "dataset",
+        "title": "RunsenXu/MMSI-Bench（Hugging Face 数据集）",
+        "url": "https://huggingface.co/datasets/RunsenXu/MMSI-Bench",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "上海人工智能实验室（Shanghai AI Laboratory）等 7 家机构；代码托管于 InternRobotics",
+        "cite": ["paper@作者署名", "repo@README Citation", "repo@README About"]
+      },
+      "first_release": {
+        "v": "2025-05-30（论文、基准与评测代码首次公开；arXiv v1）",
+        "cite": ["repo@README News", "paper@页脚"]
+      }
+    },
+    "cites": {
+      "summary": ["paper@Abstract", "paper@Table 2", "paper@Table 3", "paper@§4.2 Main Results"],
+      "interpretation": ["paper@§4.2 Main Results", "paper@附录 E.5 Correlation", "paper@§4.1 Evaluation Setup"]
+    },
+    "problem": {
+      "text": "已有空间智能基准大多只考单图关系，覆盖不了真实部署里必须把多个视角、多个时刻的图像拼起来才能回答的问题。MMSI-Bench 想用一个全部人工出题、无模板、纯真实场景的多图基准，把「当前多模态大模型的多图空间推理离人类还有多远」测出来，并给出可用于自动错误分析的分步推理标注。",
+      "cite": ["paper@Abstract", "paper@附录 C Motivation for Multi-Image Input", "paper@§1"]
+    },
+    "ladder": [
+      {
+        "label": "盲测基线（遮图的 GPT-4o）",
+        "value": "22.7%",
+        "note": "甚至低于随机猜测，说明题目无法靠语言先验或常识蒙对",
+        "cite": ["paper@Table 3", "paper@§4.2 Main Results"]
+      },
+      {
+        "label": "随机猜测（四选一）",
+        "value": "25.0%",
+        "note": "论文按四选项等概率给出的期望准确率",
+        "cite": ["paper@Table 3", "paper@§4.1 Evaluation Setup"]
+      },
+      {
+        "label": "最强开源模型（Qwen2.5-VL-72B）",
+        "value": "30.7%",
+        "note": "论文表 3 开源组最高；多数开源模型在 25% 附近徘徊",
+        "cite": ["paper@§4.2 Main Results", "repo@README Why MMSI-Bench"]
+      },
+      {
+        "label": "最强闭源模型（GPT-5）",
+        "value": "41.9%",
+        "note": "论文表 3 全场最高（含开源）；同表 o3 41.0%、GPT-4.5 40.3%",
+        "cite": ["paper@§4.2 Main Results", "paper@Table 3"]
+      },
+      {
+        "label": "仓库实时榜单最高（Gemini-3-pro）",
+        "value": "49.2%",
+        "note": "来自 GitHub README 维护的榜单，论文表 3 未收录该模型；与论文口径不同，不要混排",
+        "cite": ["repo@README Leaderboard"]
+      },
+      {
+        "label": "人类水平（5 名评估者平均）",
+        "value": "97.2%",
+        "note": "未参与标注的成年评估者；11 个子类在 94.2%–98.9% 之间",
+        "cite": ["paper@Table 3", "paper@附录 E.3 Human Evaluation Setup"]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把「40%」当成当前最强模型分数。论文 v3 已更新为 GPT-5 41.9%；「o3 达 40%」是 v1 摘要的口径，仓库 README 至今仍这么写。",
+        "cite": ["repo@README Introduction", "paper@Table 3"]
+      },
+      {
+        "text": "把仓库榜单上的 Gemini-3-pro 49.2% 和论文表 3 的 GPT-5 41.9% 直接比大小。前者是仓库维护的实时榜单（含论文未收录模型），后者是论文固定的 37 模型口径。",
+        "cite": ["repo@README Leaderboard", "paper@Table 3"]
+      },
+      {
+        "text": "以为「人类 97%」是接近满分。人类分是 5 名未参与标注的评估者的平均，hard 档仍有人答错，它是参照线而不是上限。",
+        "cite": ["paper@附录 E.3 Human Evaluation Setup", "paper@附录 F.6 Difficulty Annotation"]
+      },
+      {
+        "text": "把 1,000 题当成 11 类均分。实际分布很不均：多步推理一类就有 197 题，位置关系 521 题，属性与运动各 150 题（附录 F.7 计）。",
+        "cite": ["paper@附录 F.7 Task Distribution"]
+      },
+      {
+        "text": "把 Avg. 当成等权合成以外的精细指标。Avg. 就是 11 个类别准确率的简单平均，而各类题量不同，实际权重并不相等。",
+        "cite": ["paper@Table 3"]
+      },
+      {
+        "text": "用 MMSI-Bench 分数推断具身操作能力。论文只报告了与 EmbodiedBench 三个任务的相关性（Pearson 0.73–0.81），既不是因果也不能替代具身基准。",
+        "cite": ["paper@附录 E.5 Correlation"]
+      },
+      {
+        "text": "把「最大的模型-人类差距」当成无限定语的官方结论。论文的表述是「据我们所知，在现有空间智能基准中，MMSI-Bench 展示了 SOTA 模型与人类之间最大的性能差距」，范围限定在空间智能基准。",
+        "cite": ["paper@§1", "paper@Table 5"]
+      },
+      {
+        "text": "以为思维链提示能显著拉升分数。论文实测 CoT 只对 GPT-4o 有轻微提升，对其他模型反而下降；视觉提示同样只有轻微提升。",
+        "cite": ["paper@§4.3 Prompting Techniques"]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "上海人工智能实验室领衔，联合香港中文大学、浙江大学、清华大学、上海交通大学、香港大学、北京师范大学；代码托管在 InternRobotics 组织下",
+        "cite": ["paper@作者署名", "repo@README Citation"]
+      },
+      {
+        "k": "论文与发表状态",
+        "v": "arXiv:2505.23764，v3 为 ICLR 2026 camera-ready（2026-05-23）；2026-01-26 被 ICLR 2026 接收",
+        "cite": ["paper@页脚", "repo@README News"]
+      },
+      {
+        "k": "数据与许可",
+        "v": "Hugging Face `RunsenXu/MMSI-Bench`，parquet 格式，1,000 行、1.76 GB，CC BY 4.0",
+        "cite": ["dataset@HF Dataset Card", "paper@附录 B.6 License and Access", "repo@README License"]
+      },
+      {
+        "k": "评测生态",
+        "v": "已被 VLMEvalKit、LMMs-Eval、OpenCompass Spatial Leaderboard 支持",
+        "cite": ["repo@README News"]
+      },
+      {
+        "k": "社区使用",
+        "v": "README 列出 31 个用 MMSI-Bench 做实验的工作，包括 VILASR、EASI、SpaceVista、SenseNova-SI、Seed1.8 等",
+        "cite": ["repo@README Adoption"]
+      },
+      {
+        "k": "为什么是多图",
+        "v": "论文附录 C 的核心论据：多图理解是视频理解的基础",
+        "cite": ["paper@附录 C Motivation for Multi-Image Input"]
+      },
+      {
+        "k": "任务分类学",
+        "v": "按相机 / 物体 / 区域三种空间元素划分出 10 类空间推理任务，再加 1 类多步推理，共 11 类",
+        "cite": ["paper@Table 1", "repo@README Example", "paper@§3.1 Overview"]
+      },
+      {
+        "k": "难度分布",
+        "v": "按人类答题时长分层：easy 605 题（约 40 秒）、medium 262 题（约 110 秒）、hard 133 题",
+        "cite": ["paper@附录 F.6 Difficulty Annotation"]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-05-23",
+        "columns": ["来源", "模型", "类型", "平均准确率", "与人类分差（百分点）"],
+        "rows": [
+          ["论文 Table 3", "Human Level", "人类", "97.2%", "—"],
+          ["论文 Table 3", "GPT-5", "闭源", "41.9%", "-55.3"],
+          ["论文 Table 3", "o3", "闭源", "41.0%", "-56.2"],
+          ["论文 Table 3", "GPT-4.5", "闭源", "40.3%", "-56.9"],
+          ["论文 Table 3", "Gemini-2.5-Pro", "闭源", "36.9%", "-60.3"],
+          ["论文 Table 3", "dots.vlm", "闭源", "34.1%", "-63.1"],
+          ["论文 Table 3", "GLM-4.5V-thinking", "闭源", "33.8%", "-63.4"],
+          ["论文 Table 3", "Doubao-1.5-pro", "闭源", "33.0%", "-64.2"],
+          ["论文 Table 3", "GPT-4.1", "闭源", "30.9%", "-66.3"],
+          ["论文 Table 3", "GPT-4o", "闭源", "30.3%", "-66.9"],
+          ["论文 Table 3", "Claude-3.7-Sonnet", "闭源", "30.2%", "-67.0"],
+          ["论文 Table 3", "Seed1.5-VL", "闭源", "29.7%", "-67.5"],
+          ["论文 Table 3", "Qwen2.5-VL-72B", "开源", "30.7%", "-66.5"],
+          ["论文 Table 3", "NVILA-15B", "开源", "30.5%", "-66.7"],
+          ["论文 Table 3", "DeepSeek-VL2-Small", "开源", "28.6%", "-68.6"],
+          ["论文 Table 3", "InternVL3-78B", "开源", "28.5%", "-68.7"],
+          ["论文 Table 3", "Qwen2.5-VL-32B", "开源", "27.7%", "-69.5"],
+          ["论文 Table 3", "Blind GPT-4o（遮图）", "基线", "22.7%", "-74.5"],
+          ["论文 Table 3", "Random Guessing", "基线", "25.0%", "-72.2"]
+        ]
+      },
+      "cite": ["paper@Table 3", "paper@Table 5"]
+    }
+  }
 }

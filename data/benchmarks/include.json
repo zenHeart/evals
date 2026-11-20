@@ -1,46 +1,419 @@
 {
   "id": "include",
   "name": "INCLUDE",
-  "full_name": null,
+  "full_name": "INCLUDE: Evaluating Multilingual Language Understanding with Regional Knowledge",
   "aliases": [],
-  "status": null,
-  "categories": [
-    "knowledge"
-  ],
-  "summary": "44 语种区域文化知识多语言评测（Cohere）",
-  "interpretation": "44 种语言、来自本地考试来源的区域文化知识问答，按各语言平均准确率读分（越高越好）；衡量「当地语言环境下的知识与推理」而非翻译能力，语言间落差直接反映区域覆盖短板。",
-  "measures": [],
-  "does_not_measure": [],
-  "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
-  },
-  "metrics": [],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [],
-  "notes": "Qwen 引用；CohereLabs 发布",
-  "official_sources": [
+  "status": "active",
+  "categories": ["knowledge"],
+  "summary": "多语种区域知识评测：用来自 52 个国家 1,926 场本地考试的 197,243 道四选一题，覆盖 44 种书面语言与 15 种文字体系，专测模型在「它会被真正部署的那种语言环境」里的知识与推理（EPFL / Cohere For AI 等，2024-11-29 发布）。",
+  "interpretation": "它要回答的是「离开英语还行不行」：题目由各国本地考试原卷抽取，答案由考试本身决定，所以区域知识、专业执照和文化常识会被直接测出来。读分数前先看清三件事——提示用题面语言还是英文、是否给思维链、生成长度上限；论文报告这些设置之间差异通常不超过 1 个百分点，但个别语种能差十几个百分点。论文同时给出 BASE / LITE 两个子集，实测各模型在两者上差异在 1% 以内，LITE 只是快速评估用的小样本。",
+  "measures": [
     {
-      "kind": "paper",
-      "url": "https://arxiv.org/abs/2411.19799"
+      "area": "人文学科与通识",
+      "focus": "社会科学、人文与常识类考题，是 BASE 内占比最大的一类",
+      "share": "13,294 题（BASE 内）",
+      "format": "四选一",
+      "cite": ["paper@Table 2"]
     },
     {
-      "kind": "site",
-      "url": "https://qwen.ai/blog?id=qwen3.7"
+      "area": "STEM",
+      "focus": "应用科学与理工科考题",
+      "share": "2,478 题（BASE 内）",
+      "format": "四选一",
+      "cite": ["paper@Table 2"]
     },
     {
-      "kind": "site",
-      "url": "https://qwen.ai/blog?id=qwen3.8-flash-next"
+      "area": "领域专门科目",
+      "focus": "商业与健康导向的专业教育科目",
+      "share": "1,964 题（BASE 内）",
+      "format": "四选一",
+      "cite": ["paper@Table 2"]
+    },
+    {
+      "area": "专业认证",
+      "focus": "各类专业认证考试",
+      "share": "3,165 题（BASE 内）",
+      "format": "四选一",
+      "cite": ["paper@Table 2"]
+    },
+    {
+      "area": "执照",
+      "focus": "航海、渔业与驾驶执照考试",
+      "share": "1,736 题（BASE 内）",
+      "format": "四选一",
+      "cite": ["paper@Table 2"]
     }
   ],
-  "related_benchmarks": [
-    "mmlu",
-    "mgsm"
+  "does_not_measure": [
+    {
+      "text": "44 种收录语言之外的语言：没进这套题的语言在题面里完全不出现，某一语言上的低分不能外推到其他语言",
+      "cite": ["paper@§7 结论"]
+    },
+    {
+      "text": "工具调用、检索增强与 Agent 式多步任务：题目全部是单轮四选一，没有工具/多轮交互口径",
+      "cite": ["paper@§4.1"]
+    },
+    {
+      "text": "多模态理解：抽取后凡是涉及图片或表格的样本都被过滤掉了",
+      "cite": ["paper@§3.1"]
+    },
+    {
+      "text": "可在完整 197,243 题上复现的公开分数：全集被作者扣住分批释放，外部目前只能在 BASE / LITE 两个子集上跑",
+      "cite": ["paper@附录 A.9", "paper@复现声明"]
+    }
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "dataset": {
+    "sample_count": 197243,
+    "splits": [
+      "INCLUDE 全集 197,243 题（作者扣住，未完整公开）",
+      "INCLUDE-BASE（每语种上限 550 题，含 STEM）",
+      "INCLUDE-LITE（每语种上限 250 题，只含区域专属域）",
+      "论文另留一份未公开的 held-out 集"
+    ],
+    "languages": [
+      "44 种书面语言（Chinese 12,977 题、资源等级 High；Czech 仅 50 题）",
+      "15 种文字体系"
+    ],
+    "source_type": "本地考试原卷抽取（学术考试、专业认证与执照、区域执照三类）",
+    "public_sample": true,
+    "multiple_choice_share": "100%（四选一）",
+    "multimodal_share": "0%（涉及图片或表格的题已在抽取后剔除）",
+    "totals": "全集 197,243 题；BASE：论文写 22,635 题、Hugging Face 卡写 22,637 题（Table 2 五类相加亦为 22,637）；LITE：论文写 10,770 题、HF 卡写 11,095 题；44 语种 / 15 文字 / 1,926 场考试 / 52 个国家 / 58 个知识域（HF 卡写 57 topics）",
+    "cite": ["paper@§3.1", "paper@§4.1", "dataset-base", "dataset-lite"],
+    "construction": [
+      {
+        "k": "题目来源",
+        "text": "与母语者和区域组织合作，收集三类本地考试：学术考试（覆盖多学科）、专业认证与执照（面向特定职业）、区域执照（由区域管理机构组织）。",
+        "cite": ["paper@§3.1"]
+      },
+      {
+        "k": "复用已发表基准",
+        "text": "把已发表的多语种基准题目整合进来补足域覆盖，共 78,637 题，占全集 39.8%；作者称这是迄今最大的多语种考试数据集合。",
+        "cite": ["paper@§3.1"]
+      },
+      {
+        "k": "自动抽取 + 人工过滤",
+        "text": "先自动抽取，再由母语者（论文共同作者）校对解析结果；涉及图片或表格的样本被剔除，最终统一成四选一。",
+        "cite": ["paper@§3.1", "paper@§4.1"]
+      },
+      {
+        "k": "知识类别标注",
+        "text": "按「是否依赖区域知识」分四类：region-agnostic 34.4%、region-explicit 18.8%、cultural 16.4%、region-implicit 30.4%。",
+        "cite": ["paper@§3.2"]
+      },
+      {
+        "k": "子集抽样",
+        "text": "BASE 每语种上限 550 题（500 题来自对应区域知识的域、50 题 STEM）；LITE 每语种上限 250 题，只含区域专属域。",
+        "cite": ["paper@§4.1"]
+      },
+      {
+        "k": "污染控制与释放",
+        "text": "对四个主流多语种模型逐语种估算污染率并报告；为降低基准饱和风险扣住全集、分批释放，另留一份 held-out 集。",
+        "cite": ["paper@附录 A.9"]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "accuracy",
+      "name": "准确率（Total Accuracy）",
+      "direction": "越高越好",
+      "description": "模型输出的选项与标准答案一致的题目占比；格式错误（没输出任何选项）默认算错并计入 Total Accuracy，Answer Accuracy 口径则不计格式错误",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["paper@§5.1", "paper@Table 3", "paper@Table 2"]
+    },
+    {
+      "id": "format-error-rate",
+      "name": "格式错误率",
+      "direction": "越低越好",
+      "description": "模型回答不符合规定响应格式、因而没有输出任何答案选项的比例",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["paper@Table 3"]
+    }
+  ],
+  "default_protocol": {
+    "raw": "四选一准确率，分别在 INCLUDE-BASE 与 INCLUDE-LITE 上评。提示语言默认用题面语言（In-Language, IL），同时报告英文提示口径；设置覆盖 5-shot 与 zero-shot 思维链；生成长度上限 5-shot 512 token、zero-shot CoT 1024 token；另用 Harness-Eval 框架跑一版做交叉核对。",
+    "cite": ["paper@§4.1", "paper@§4.2"],
+    "variants": [
+      {
+        "text": "提示语言：In-Language（题面语言）vs English prompt——两列都要看。多数模型差异在 1% 内，但 Qwen2.5-14B 和 Aya-expanse 在思维链设置下明显受益于英文提示。",
+        "cite": ["paper@§4.2", "paper@§5.1"]
+      },
+      {
+        "text": "是否加区域前缀（Regional Prompt, Reg.）：Reg.+IL 与 Reg.+Eng. 是另两列，Aya-expanse-32B 在 Reg.+Eng. 下能到 60.0%，比 IL 的 52.4% 高出一截，说明这个口径对部分模型影响很大。",
+        "cite": ["paper@Table 1"]
+      },
+      {
+        "text": "few-shot 设置：5-shot vs zero-shot vs zero-shot CoT——论文观察到各提示设置间差异很小，CoT 主要提升 Professional 与 STEM 类考试。",
+        "cite": ["paper@§5.1"]
+      },
+      {
+        "text": "子集：INCLUDE-BASE vs INCLUDE-LITE——各模型差异在 1% 以内，赶时间可以用 LITE。",
+        "cite": ["paper@§5.1"]
+      },
+      {
+        "text": "生成长度上限：50 / 100 / 200 / 512 token——放到 512 平均涨 3.1%，Uzbek +17.2%、Armenian +13.1%、Malayalam +12.9%，是最容易被忽略的口径变量。",
+        "cite": ["paper@§5.4"]
+      },
+      {
+        "text": "评测框架：论文自带脚本 vs Harness-Eval——两套结果同样在 1% 以内，可互相印证；HF 数据集卡上的榜就是 Harness-eval 口径。",
+        "cite": ["paper@§5.1", "dataset-base"]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2024-11-29",
+      "label": "arXiv v1 首发（arXiv:2411.19799v1 [cs.CL]），提出全集 197,243 题与 BASE / LITE 两个子集",
+      "cite": ["paper"]
+    },
+    {
+      "id": "hf-base-44",
+      "date": "2026-11-13",
+      "label": "Hugging Face 数据集卡 include-base-44（22,637 题、57 topics、apache-2.0、Harness-eval 榜）",
+      "cite": ["dataset-base"]
+    },
+    {
+      "id": "hf-lite-44",
+      "date": "2026-11-13",
+      "label": "Hugging Face 数据集卡 include-lite-44（11,095 题、include-base-44 的超集反向子集、apache-2.0）",
+      "cite": ["dataset-lite"]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "语种资源不均",
+      "impact": "44 种语言的资源可用性差异很大，导致各语言的学科分布与题量都不同；论文说这会让「跨语言比较学科表现」变复杂。",
+      "severity": "高",
+      "response": "论文在附录按语种列出资源等级与样本量，并用 R² 分析说明新收集数据与已有基准的差距。",
+      "reader": "跨语言排名比绝对分数更有意义；低资源语种的分数噪声更大，语种间平均分要先看题量。",
+      "cite": ["paper@局限", "paper@Table 8"]
+    },
+    {
+      "issue": "考试难度本身不一致",
+      "impact": "难度不只跨语种不同，同一语种内如果试卷来源不同也会有差异，题目难度方差大。",
+      "severity": "中",
+      "response": "论文把这一点同时列为局限与特点（题目来自反映本地文化的真实试卷），并按高层主题与学术域分层报告。",
+      "reader": "同一语种内不同学科域的分数差，可能来自试卷难度而非模型能力。",
+      "cite": ["paper@局限", "paper@Table 2"]
+    },
+    {
+      "issue": "区域知识标签粒度粗",
+      "impact": "区域性标签打在考试主题（exam topic）级而不是题目级，题目按大类主题被归类，与单题实际需要的区域知识可能有偏差。",
+      "severity": "中",
+      "response": "论文在正文承认该限制，未给出修正方案。",
+      "reader": "用这些标签筛「纯区域知识题」时会带入噪声，比例类结论要留余地。",
+      "cite": ["paper@局限"]
+    },
+    {
+      "issue": "题量与域数口径不一致",
+      "impact": "BASE：论文写 22,635 题、HF 卡写 22,637 题；LITE：论文写 10,770 题、HF 卡写 11,095 题；知识域论文写 58 个、HF 卡写 57 topics。",
+      "severity": "低",
+      "response": "本站以论文正文为主、HF 卡为对照，两个数字都列出；Table 2 五类样本相加为 22,637，与 HF 卡一致。",
+      "reader": "看到 22,635 / 22,637、10,770 / 11,095 不必判为抄错，是论文与数据集卡的口径差；引用时要说明用的是哪个来源。",
+      "cite": ["paper@§4.1", "paper@Table 2", "dataset-base", "dataset-lite"]
+    },
+    {
+      "issue": "数据污染",
+      "impact": "论文对 Aya-expanse-8B、XGLM-7B、Qwen-2.5-7B、LLaMA-3.1-8B 估出 0.02%–0.29% 的污染率，其中 LLaMA-3.1-8B 最高（0.29%）。",
+      "severity": "中",
+      "response": "扣住全集分批释放，另留 held-out 集；论文逐语种报告污染率。",
+      "reader": "训练数据里见过这些公开考试材料是可能的，绝对分数要留余地；检测没发现不等于没污染。",
+      "cite": ["paper@Table 7", "paper@附录 A.9"]
+    },
+    {
+      "issue": "错误集中在区域知识",
+      "impact": "人工抽看 150 个错误样本：38.6% 是缺区域知识、32% 是幻觉、26.7% 是事实错误、2.7% 是计算错误。",
+      "severity": "中",
+      "response": "论文按错误类型给出分布，把区域知识缺失列为最大单一来源。",
+      "reader": "模型在这套题上的主要失分点是知识覆盖，不是格式或推理流程；补区域知识比改 prompt 更可能提分。",
+      "cite": ["paper@附录 A.8"]
+    }
+  ],
+  "notes": "Cohere For AI 等 2024-11-29 发布；Hugging Face 上 CohereLabs 放出 include-base-44 与 include-lite-44 两个数据集卡（均 apache-2.0）。Qwen 在 Qwen3.8-Flash-Next 发布博客（2026-08-03）的 Base Model Performance 表里报了 INCLUDE 78.40。本站账本 qwen3-7-max 的 86.2% 所引 qwen.ai/blog?id=qwen3.7 现已重定向到无关文档，该数字本站未二次核验。",
+  "official_sources": [
+    { "kind": "paper", "url": "https://arxiv.org/abs/2411.19799" },
+    { "kind": "site", "url": "https://qwen.ai/blog?id=qwen3.7" },
+    { "kind": "site", "url": "https://qwen.ai/blog?id=qwen3.8-flash-next" }
+  ],
+  "related_benchmarks": ["mmlu", "mgsm"],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-13",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "INCLUDE: Evaluating Multilingual Language Understanding with Regional Knowledge（arXiv:2411.19799v1，2024-11-29）",
+        "url": "https://arxiv.org/abs/2411.19799",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "dataset-base",
+        "kind": "dataset",
+        "title": "CohereLabs/include-base-44（Hugging Face 数据集卡）",
+        "url": "https://huggingface.co/datasets/CohereLabs/include-base-44",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "dataset-lite",
+        "kind": "dataset",
+        "title": "CohereLabs/include-lite-44（Hugging Face 数据集卡）",
+        "url": "https://huggingface.co/datasets/CohereLabs/include-lite-44",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "qwen-blog",
+        "kind": "blog",
+        "title": "Qwen3.8-Flash-Next: A New Architecture, Towards Ultimate Cost-Efficiency（Qwen 官方博客，2026-08-03）",
+        "url": "https://qwen.ai/blog?id=qwen3.8-flash-next",
+        "accessed": "2026-11-13"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "EPFL、Cohere For AI、Cohere For AI Community、ETH Zurich、Swiss AI Initiative",
+        "cite": ["paper@作者署名"]
+      },
+      "first_release": {
+        "v": "2024-11-29（arXiv v1）",
+        "cite": ["paper"]
+      }
+    },
+    "cites": {
+      "summary": ["paper@Abstract", "paper@§3.1", "dataset-base"],
+      "interpretation": ["paper@Abstract", "paper@§5.1", "dataset-base"]
+    },
+    "problem": {
+      "text": "主流多语种基准要么只覆盖少数高资源语言，要么把区域知识当成需要抹掉的噪声。INCLUDE 改用「模型会被真正部署的语言环境里的本地考试原卷」来测多语种 LLM 的知识与推理，尤其是那些离开英语就明显退化的区域知识。",
+      "cite": ["paper@Abstract", "paper@§1"]
+    },
+    "ladder": [
+      {
+        "label": "随机猜测基线",
+        "value": "25%",
+        "note": "四选一单选题，理论随机水平 25%（本站按选项数推算；论文未单独报告该基线）。",
+        "cite": ["paper@§4.1"]
+      },
+      {
+        "label": "论文发布时最好",
+        "value": "约 77.1%（GPT-4o）",
+        "note": "论文对 BASE 全语种的总结数字。Table 1 里 GPT-4o 5-shot：LITE/IL 77.1、BASE/IL 77.3、BASE/英文提示 76.3；zero-shot CoT 的 BASE/IL 为 79.0。按高层主题看最高是 Licenses 82.1 与 Humanities 79.0，最低是 Professional 70.1（Table 2）。",
+        "cite": ["paper@§5.1", "paper@Table 1", "paper@Table 2"]
+      },
+      {
+        "label": "数据集卡 Harness-eval 榜最高",
+        "value": "70.9%（Llama3.1-70B-Instruct）",
+        "note": "HF include-base-44 卡片用 Harness-eval 框架重跑：英文提示列 70.9、题面语言提示列 70.6，比论文自带脚本低约 6 个百分点——换框架要重新对齐，不能混排。",
+        "cite": ["dataset-base"]
+      },
+      {
+        "label": "厂商自报最高",
+        "value": "78.40%（Qwen3.8-Flash-Next-Base）",
+        "note": "Qwen 2026-08-03 发布博客 Base Model Performance 表中的数字（该表为 markdown 表格，未做逐字摘录）；同表 Qwen3.8-27B-Base 74.37、Qwen3.7-Plus-Base 78.90。博客未注明用的子集与提示口径，与论文数字不能直接比。",
+        "cite": ["qwen-blog@Base Model Performance", "qwen-blog"]
+      },
+      {
+        "label": "数据污染参考线",
+        "value": "0.02%–0.29%（INCLUDE-BASE）",
+        "note": "论文对四个模型的污染率估计：Aya-expanse-8B 0.02、XGLM-7B 0.17、Qwen-2.5-7B 0.13、LLaMA-3.1-8B 0.29；新收集子集上为 0.01–0.25。高于这条线不代表没被污染，只说明这种检测没发现。",
+        "cite": ["paper@Table 7"]
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 LITE 和 BASE 当成两套不同难度的题。论文实测各模型在两者上差异在 1% 以内，LITE 只是为快速评估抽的小子集。",
+        "cite": ["paper@§5.1"]
+      },
+      {
+        "text": "以为 44 个语种采到了差不多多的题。BASE 每语种上限 550、LITE 上限 250，实际语种间样本量与资源等级差得很远：Chinese 12,977 题（High），Czech 只有 50 题。",
+        "cite": ["paper@§4.1", "paper@Table 8"]
+      },
+      {
+        "text": "跨设置直接比分。提示语言、Regional 前缀、5-shot/CoT、生成长度上限都会改变分数；论文报告多数设置间差异在 1% 内，但个别语种能差十几个百分点（如生成长度放到 512，Uzbek +17.2%）。",
+        "cite": ["paper@§4.2", "paper@§5.1", "paper@§5.4"]
+      },
+      {
+        "text": "看到「区域知识」就以为题目都靠本地常识。34.4% 的题目被标为 region-agnostic，标为 cultural 的只有 16.4%，纯靠区域知识的题是少数。",
+        "cite": ["paper@§3.2"]
+      },
+      {
+        "text": "以为分数高就没污染。论文给四个模型估了 0.02%–0.29% 的污染率，并因此扣住全集、只分批释放。",
+        "cite": ["paper@Table 7", "paper@附录 A.9"]
+      },
+      {
+        "text": "把论文自带脚本的分数和 HF 卡上的 Harness-eval 榜排在一起。同一模型两套框架能差约 6 个百分点。",
+        "cite": ["paper@Table 1", "dataset-base"]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "EPFL、Cohere For AI、Cohere For AI Community、ETH Zurich、Swiss AI Initiative（论文署名机构）；数据托管在 Hugging Face 的 CohereLabs 组织下。",
+        "cite": ["paper@作者署名", "dataset-base"]
+      },
+      {
+        "k": "论文",
+        "v": "arXiv:2411.19799v1 [cs.CL]，2024-11-29 首发，标题《INCLUDE: Evaluating Multilingual Language Understanding with Regional Knowledge》。论文页未给出代码仓库链接。",
+        "cite": ["paper"]
+      },
+      {
+        "k": "数据与许可",
+        "v": "Hugging Face 两个数据集卡 include-base-44 与 include-lite-44，许可均为 apache-2.0。论文 v1 的复现声明写「接收后公开两个子集与处理/评测代码」，实际已放出两个子集，全集仍未完整公开。",
+        "cite": ["paper@复现声明", "dataset-base", "dataset-lite"]
+      },
+      {
+        "k": "评测成本",
+        "v": "论文脚注：用 GPT-4o 以 5-shot 评完整套 INCLUDE 花费超过 1,000 美元。附录给的计算条件是单卡 A100 80GB、decoding temperature 0，BASE 平均约 4 小时。",
+        "cite": ["paper@§4.1", "paper@附录 A.5"]
+      },
+      {
+        "k": "论文结论",
+        "v": "共评 15 个模型，作者认为模型仍有相当大的提升空间；BASE 上各提示设置之间差异通常不超过 1 个百分点。",
+        "cite": ["paper@§7 结论", "paper@§5.1"]
+      },
+      {
+        "k": "本站收录原因",
+        "v": "Qwen 在 Qwen3.8-Flash-Next 发布博客的 Base Model Performance 表里报了 INCLUDE 78.40（同表 Qwen3.8-27B-Base 74.37、Qwen3.7-Plus-Base 78.90）。",
+        "cite": ["qwen-blog@Base Model Performance"]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-13",
+        "columns": ["来源", "模型", "准确率", "口径"],
+        "rows": [
+          ["论文 Table 1", "GPT-4o", "77.3%", "BASE，题面语言提示，5-shot"],
+          ["论文 Table 1", "GPT-4o", "76.3%", "BASE，英文提示，5-shot"],
+          ["论文 Table 1", "GPT-4o", "79.0%", "BASE，题面语言提示，zero-shot CoT"],
+          ["论文 Table 1", "GPT-4o", "77.1%", "LITE，题面语言提示，5-shot"],
+          ["论文 Table 1", "Llama-3.1-70B-Instruct", "70.6%", "BASE，题面语言提示，5-shot"],
+          ["论文 Table 1", "Llama-3.1-70B-Instruct", "56.0%", "BASE，英文提示，zero-shot CoT"],
+          ["论文 Table 1", "Aya-expanse-32B", "52.4%", "BASE，题面语言提示，5-shot（仅 23 语种）"],
+          ["论文 Table 1", "Aya-expanse-32B", "60.0%", "BASE，Regional+英文提示，5-shot（仅 23 语种）"],
+          ["论文 Table 1", "Qwen2.5-14B", "61.4%", "BASE，题面语言提示，5-shot（仅 22 语种）"],
+          ["论文 Table 1", "Qwen2.5-14B", "47.3%", "BASE，题面语言提示，zero-shot CoT（仅 22 语种）"],
+          ["论文 Table 1", "Gemma-7B", "54.5%", "BASE，题面语言提示，5-shot"],
+          ["论文 Table 2", "GPT-4o", "79.0%", "BASE，题面语言提示，5-shot，Humanities 类"],
+          ["论文 Table 2", "GPT-4o", "74.2%", "BASE，题面语言提示，5-shot，STEM 类"],
+          ["论文 Table 2", "GPT-4o", "76.8%", "BASE，题面语言提示，5-shot，Domain-Specific 类"],
+          ["论文 Table 2", "GPT-4o", "70.1%", "BASE，题面语言提示，5-shot，Professional 类"],
+          ["论文 Table 2", "GPT-4o", "82.1%", "BASE，题面语言提示，5-shot，Licenses 类"],
+          ["论文 Table 4", "Llama3.1-70B-Instruct", "70.6%", "Harness-Eval 框架，BASE，题面语言提示"],
+          ["HF include-base-44 卡", "Llama3.1-70B-Instruct", "70.6%", "Harness-eval 榜，题面语言提示"],
+          ["HF include-base-44 卡", "Llama3.1-70B-Instruct", "70.9%", "Harness-eval 榜，英文提示"],
+          ["HF include-lite-44 卡", "Llama3.1-70B-Instruct", "70.3%", "Harness-eval 榜，题面语言提示"],
+          ["Qwen 博客 2026-08-03", "Qwen3.8-Flash-Next-Base", "78.40%", "厂商自报，子集与提示口径未注明"],
+          ["Qwen 博客 2026-08-03", "Qwen3.8-27B-Base", "74.37%", "同上"],
+          ["Qwen 博客 2026-08-03", "Qwen3.7-Plus-Base", "78.90%", "同上"]
+        ]
+      },
+      "cite": ["paper@Table 1", "paper@Table 2", "dataset-base", "dataset-lite", "qwen-blog@Base Model Performance"]
+    }
+  }
 }

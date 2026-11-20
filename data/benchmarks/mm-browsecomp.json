@@ -1,36 +1,419 @@
 {
   "id": "mm-browsecomp",
   "name": "MM-BrowseComp",
-  "full_name": null,
+  "full_name": "MM-BrowseComp: A Comprehensive Benchmark for Multimodal Browsing Agents",
   "aliases": [],
-  "status": null,
+  "status": "active",
   "categories": [
     "agent",
     "multimodal"
   ],
-  "summary": "多模态网页浏览深度搜索任务（BrowseComp 多模态版）",
-  "interpretation": "400 道人工多模态深度搜索题（需从网页图片/视频中取证），准确率口径；GPT-5-High 带工具仅 24.25%——低分是设计预期，读分即「多模态浏览取证的真实成功率」。",
-  "measures": [],
-  "does_not_measure": [],
-  "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
-  },
-  "metrics": [],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [],
-  "notes": "字节 Seed 引用；OpenAI 系多模态浏览评测",
-  "official_sources": [
+  "summary": "MM-BrowseComp 是一个多模态深度搜索基准：400 道人工构造的网页难题，解题关键证据只存在于网页里的图片或视频中（前端类比：答案藏在页面截图里，HTML 源码里没有），考的是浏览智能体「看懂视觉内容 → 提出检索假设 → 跨网页交叉验证」的能力。论文报告的最好成绩是 GPT-5-High 带网页搜索工具的 24.25%（Pass@1），8 名 AI 硕士生的人类基线为 59.50%。",
+  "interpretation": "高分说明智能体能在真实网页上完成多模态取证：从图片或视频出发定位网页、跨来源交叉验证，并给出可客观核对的短答案；它不衡量开放域问答、长文写作或代码能力。读分注意三点：① 论文把「无工具 VLM」「带工具 VLM」「开源 Agent」分成三组分别报告，无工具组全部不超过 10%，跨组不能直接比；② OA 只看最终答案，SA 还要求该题的推理 checklist 全部完成，GPT-5-High 的 SA 是 20.25%（OA 24.25%），两者的差距就是「答对但没走对路」的部分；③ 人类标注者 10 分钟限时下也只有 59.50% OA，低分主要是题目设计使然。",
+  "measures": [
     {
-      "kind": "site",
-      "url": "https://seed.bytedance.com/en/blog/official-release-of-seed1-8-a-generalized-agentic-model"
+      "area": "Media（媒体）",
+      "focus": "影视与游戏类多模态检索：影片剧集推理、时效性媒体识别与推理、教程视频推理、游戏流程与画面问答",
+      "share": "110 题",
+      "format": "6 个子任务：Film & TV Reasoning、Time-sensitive Media Reasoning、Time-sensitive Media Recognition、Tutorial Video Reasoning、Video Game Walkthroughs、Visual Game Q&A",
+      "cite": ["paper@Table 4", "paper@§3.3"]
+    },
+    {
+      "area": "Technology（技术）",
+      "focus": "电子设备与车辆的细节识别、故障诊断",
+      "share": "103 题",
+      "format": "6 个子任务：Electronics Detail Q&A、Electronics Identification、Equipment Fault Diagnosis、Vehicle Detail Q&A、Vehicle Identification、Visual Fault Diagnosis",
+      "cite": ["paper@Table 4", "paper@§3.3"]
+    },
+    {
+      "area": "Geography（地理）",
+      "focus": "地图推理、历史档案、视觉地理定位与导航",
+      "share": "76 题",
+      "format": "4 个子任务：Geographic Map Reasoning、Historical Archive Reasoning、Visual Geolocalization & Reasoning、Visual Navigation",
+      "cite": ["paper@Table 4", "paper@§3.3"]
+    },
+    {
+      "area": "Academics（学术）",
+      "focus": "学术图表与论文问答、生物图像推理",
+      "share": "60 题",
+      "format": "3 个子任务：Academic Chart Q&A、Academic Paper Q&A、Biological Image Reasoning",
+      "cite": ["paper@Table 4", "paper@§3.3"]
+    },
+    {
+      "area": "Society（社会）",
+      "focus": "文化推理与金融图表分析",
+      "share": "51 题",
+      "format": "3 个子任务：Cultural Reasoning、Financial Analysis、Financial Chart Analysis",
+      "cite": ["paper@Table 4", "paper@§3.3"]
     }
   ],
-  "related_benchmarks": [],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "does_not_measure": [
+    {
+      "text": "纯文字网页检索：按构建标准，解题关键信息必须主要在视觉模态且任何文本来源都找不到，文本捷径在建题阶段就被显式排除；纯文字检索请用 BrowseComp。",
+      "cite": ["paper@§3.1.1"]
+    },
+    {
+      "text": "开放式生成能力：答案被要求是简短、可客观核对的短语（名称、数字、属性），不考长文写作或多轮对话。",
+      "cite": ["paper@§3.1.2"]
+    },
+    {
+      "text": "新兴多模态浏览场景：只有 5 大主题 22 个子任务，论文明确说随着新场景出现，覆盖范围可能需要扩展。",
+      "cite": ["paper@§6 Limitations"]
+    }
+  ],
+  "dataset": {
+    "sample_count": 400,
+    "splits": ["单一评测集，论文未划分公开 train / val / test；附录 D 说明发布完整数据集"],
+    "languages": ["en"],
+    "source_type": "人工构造：AI 研究人员手工出题，从已知事实倒推，再经多阶段人工校验",
+    "public_sample": true,
+    "totals": "400 题 · 5 大类别 22 个子任务 · 共 1,237 条 checklist 条目，其中纯文本 534 条（43.17%）、图片 510 条（41.23%）、视频 193 条（15.60%）· 答案为可核对的短答案",
+    "cite": ["paper@§3.3", "paper@Table 4", "paper@附录 D"],
+    "construction": [
+      {
+        "k": "出题团队",
+        "text": "由 20 多名硕士与博士学历的 AI 研究人员人工构造；每位标注者分到 2–3 个与其领域知识最匹配的子任务，每个子任务由多人分别出题，并配有金标准示例。",
+        "cite": ["paper@§3"]
+      },
+      {
+        "k": "多模态硬门槛",
+        "text": "解题关键信息必须主要嵌在视觉模态里，且任何文本来源都找不到，从源头排除文本捷径；校验阶段再用搜索引擎和带网页的 VLM 交叉确认这一点。",
+        "cite": ["paper@§3.1.1"]
+      },
+      {
+        "k": "难度双检",
+        "text": "每题必须让 Gemini-2.5-Pro 和 GPT-4o 在带网页搜索的单次尝试中都答不出，同时让不熟悉该题的二级标注者主动搜索 5 分钟后仍解不出。",
+        "cite": ["paper@§3.1.2"]
+      },
+      {
+        "k": "倒推构造保唯一答案",
+        "text": "沿用 BrowseComp 的倒推构造：先有已知事实，再反推出把答案隔离成唯一解的问题；标注者还会用 Deep Research 等辅助工具主动搜索备选答案，发现多解就收紧约束迭代修订。",
+        "cite": ["paper@§3.1.2"]
+      },
+      {
+        "k": "三阶段校验漏斗",
+        "text": "试点校准 → 全量构造与二级复审 → 工具依赖检查与事实核验；550 个候选实例中 263 个（47.8%）直接接受、137 个（24.9%）需修改、150 个（27.3%）被丢弃，最终留下 400 题。",
+        "cite": ["paper@§3.2"]
+      },
+      {
+        "k": "配套 checklist",
+        "text": "每题额外附一条细粒度推理 checklist，用来把「真推理」和「蒙对」区分开。",
+        "cite": ["paper@§3.1.1"]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "name": "Overall Accuracy（OA，总体准确率）",
+      "direction": "越高越好",
+      "description": "只看最终答案是否正确的题目占比，是最常用的主指标。",
+      "cite": ["paper@§4.1"]
+    },
+    {
+      "name": "Strict Accuracy（SA，严格准确率）",
+      "direction": "越高越好",
+      "description": "最终答案正确且该题 checklist 每一项都完成的题目占比，用来区分真推理和蒙对。",
+      "cite": ["paper@§4.1"]
+    },
+    {
+      "name": "Average Checklist Score（AVG CS，平均 checklist 完成率）",
+      "direction": "越高越好",
+      "description": "所有题目 checklist 条目的平均完成率，反映推理路径的完整程度。",
+      "cite": ["paper@§4.1"]
+    }
+  ],
+  "default_protocol": {
+    "raw": "无工具组直接调官方 API 生成，温度设为 1.0；带工具组用各家官方工具（OpenAI 系用 web_search，Gemini 系用 google_search 与 url_context）；开源 Agent 以 Gemini-2.5-Flash / GPT-4o / Qwen2.5-VL-72B-Instruct 为主干模型，其中 Agent-R1 走 ReAct 工作流并接 Bright Data SERP API、网页浏览器和图像 / 视频 / PDF 分析器，OWL 用官方 GAIA 评测脚本（温度 0），DeerFlow 限制 3 轮规划与 10 步执行。每个 query 先要求模型给出 problem-solving roadmap 再执行，最终只按最终答案判定；论文第 4 节全部结果由 GPT-4o-2024-11-20 统一判定答案等价性。",
+    "cite": ["paper@§4.1", "paper@附录 B.2"],
+    "variants": [
+      {
+        "text": "三组口径分开报告：无工具 VLM（17 个模型，OA 全部不超过 10%）、带工具 VLM（最好为 GPT-5-High 的 24.25%）、开源 Agent（最好 5.75%），跨组比较没有意义。",
+        "cite": ["paper@§4.1", "paper@§4.2", "paper@Table 2"]
+      },
+      {
+        "text": "换裁判：附录 B.3 改用 Gemini-2.5-Flash 当裁判重测，分数整体略高但排序不变（GPT-5-High 带工具 OA 25.50%、无工具 9.00%）。",
+        "cite": ["paper@附录 C"]
+      },
+      {
+        "text": "测试时扩展：每题生成 16 条独立轨迹，配合多数投票 / 加权投票 / Best-of-N；Gemini-3-Pro 的 OA 与 SA 都显著提升，Agent-R1 的 SA 停滞，论文据此判断它的答对多半是蒙的。",
+        "cite": ["paper@§4.4"]
+      },
+      {
+        "text": "人类基线口径：8 名 AI 硕士生、10 分钟限时、允许标准网页浏览但禁用 AI 助手，平均每题 8.1 分钟。",
+        "cite": ["paper@附录 C"]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "date": "2025-08-14",
+      "label": "arXiv v1 首发（Hugging Face 数据集卡指向 v1，对应 224 行数据）",
+      "cite": ["arxiv-abs@Submission history", "hf-dataset@Dataset card"]
+    },
+    {
+      "date": "2025-08-20",
+      "label": "官方仓库发布完整评测代码，可自行评测模型或 Agent",
+      "cite": ["repo@Latest News"]
+    },
+    {
+      "date": "2026-01-02",
+      "label": "数据集扩充到 400 题（data/MMBrowseComp_400.jsonl）",
+      "cite": ["repo@Latest News"]
+    },
+    {
+      "date": "2026-08-31",
+      "label": "arXiv v2（EMNLP 2026 版，20 页，400 题；本档案核对所用版本）",
+      "cite": ["arxiv-abs@Submission history", "arxiv-abs@Comments"]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "官方仓库 README 与论文版本不同步",
+      "impact": "README 的 Overview 仍写 224 题，并称最强模型 OpenAI o3 的准确率不超过 30%；论文 v2 与仓库 Latest News 都是 400 题、最好成绩 GPT-5-High 带工具 24.25%。直接引用 README 数字会把成绩说高。",
+      "severity": "高",
+      "response": "仓库 Latest News 已公告扩充到 400 题，README Overview 文本未同步更新。",
+      "reader": "以论文 v2 与 Latest News 为准，不要引用 README Overview 的数字。",
+      "cite": ["repo@README", "repo@Latest News", "paper@§1"]
+    },
+    {
+      "issue": "Hugging Face 数据集卡落后于仓库公告",
+      "impact": "仓库 2026-01-02 宣布扩充到 400 题，但 HF 数据集卡仍是 default / train 各 224 行、大小标注 < 1K，且卡片只给 arXiv v1 链接。",
+      "severity": "中",
+      "response": "未见官方说明 HF 卡片何时同步到 400 题。",
+      "reader": "需要 400 题请用仓库 data/MMBrowseComp_400.jsonl，不要用 HF 行数当题量。",
+      "cite": ["hf-dataset@Dataset Viewer", "repo@Latest News", "hf-dataset@Dataset card"]
+    },
+    {
+      "issue": "数据泄露与污染风险",
+      "impact": "论文明确说即使经过校验和加密，标注者主观性和发布后的数据暴露仍可能导致泄露或捷径；题目一旦外泄，高分就不再可信。",
+      "severity": "中",
+      "response": "重要内容默认加密并内置 canary 字符串，且要求不要在网上分享明文示例；论文版 canary（mmbrowsecomp:cc5cae3f-…）与仓库 / HF 版（mmbrowsecomp:26b5c67b-…）并不一致，说明仓库与论文未同步更新。",
+      "reader": "看到异常高分先怀疑污染；比较两个来源时注意 canary 不同。",
+      "cite": ["paper@§6 Limitations", "paper@附录 D", "repo@README"]
+    },
+    {
+      "issue": "裁判模型会影响绝对分数",
+      "impact": "附录 B.3 换 Gemini-2.5-Flash 当裁判后分数整体略高（GPT-5-High 带工具 OA 25.50% 对 24.25%），排序虽不变，跨论文比较时绝对分无法直接对齐。",
+      "severity": "中",
+      "response": "论文给出 Gemini-as-a-judge 结果说明排序稳健，并把差异归为正常评测方差。",
+      "reader": "跨论文比较前先对齐裁判模型与判分口径。",
+      "cite": ["paper@附录 C"]
+    },
+    {
+      "issue": "覆盖面有限",
+      "impact": "只有 5 大主题 22 个子任务，论文说随着新多模态浏览场景出现，范围可能需要扩展。",
+      "severity": "低",
+      "response": "论文计划周期性更新基准，并引入自动合成技术扩大规模。",
+      "reader": "不要把结论外推到未覆盖的垂直场景。",
+      "cite": ["paper@§6 Limitations"]
+    },
+    {
+      "issue": "依赖人工标注限制规模",
+      "impact": "质量保证靠人类专家标注，限制了数据规模。",
+      "severity": "低",
+      "response": "论文计划周期性更新并引入自动合成技术。",
+      "reader": "类别级题量不大（如 Society 51 题），单个类别的分数波动会明显大于总体分数。",
+      "cite": ["paper@§6 Limitations"]
+    },
+    {
+      "issue": "仓库 BibTeX 作者与论文 v2 署名不一致",
+      "impact": "仓库 citation 里的 BibTeX 列有 Wangchunshu Zhou、Ruizhe Ding 等名字，但论文 v2 的作者列表中没有这两个人。",
+      "severity": "低",
+      "response": "未见官方说明。",
+      "reader": "引用时以论文 v2 的作者列表为准。",
+      "cite": ["repo@README", "arxiv-abs@Authors"]
+    }
+  ],
+  "notes": "官方仓库 README 与 HF 数据集卡的题量（224 题）落后于论文 v2 与仓库 Latest News（400 题）；数据集重要内容默认加密。",
+  "official_sources": [
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2508.13186"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/MMBrowseComp/MM-BrowseComp"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/mmbrowsecomp/MMBrowseComp"
+    }
+  ],
+  "related_benchmarks": [
+    "browsecomp",
+    "browsecomp-zh",
+    "xbench-deepsearch",
+    "deepsearchqa",
+    "gaia",
+    "mind2web"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "MM-BrowseComp: A Comprehensive Benchmark for Multimodal Browsing Agents（arXiv v2 全文 PDF）",
+        "url": "https://arxiv.org/pdf/2508.13186",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "arxiv-abs",
+        "kind": "paper",
+        "title": "arXiv 摘要页（摘要 / 作者与机构 / 提交历史）",
+        "url": "https://arxiv.org/abs/2508.13186",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "GitHub: MMBrowseComp/MM-BrowseComp（官方代码与数据）",
+        "url": "https://github.com/MMBrowseComp/MM-BrowseComp",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "hf-dataset",
+        "kind": "dataset",
+        "title": "Hugging Face: mmbrowsecomp/MMBrowseComp（官方数据集卡）",
+        "url": "https://huggingface.co/datasets/mmbrowsecomp/MMBrowseComp",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "ByteDance（第一署名机构）；合作机构包括南京大学、M-A-P、CASIA、浙江大学、哈尔滨工业大学、香港中文大学",
+        "cite": ["arxiv-abs@Authors"]
+      },
+      "first_release": {
+        "v": "2025-08-14 arXiv v1；本档案核对版本为 2026-08-31 的 v2（EMNLP 2026）",
+        "cite": ["arxiv-abs@Submission history", "arxiv-abs@Comments"]
+      }
+    },
+    "cites": {
+      "summary": ["arxiv-abs@Abstract", "paper@§3.1.1", "paper@Table 2", "paper@附录 C"],
+      "interpretation": ["paper@§4.1", "paper@§4.2", "paper@Table 2", "paper@附录 C"]
+    },
+    "problem": {
+      "text": "BrowseComp 这类深度搜索基准只用文字提问，漏掉了两件事：查询本身可能是图片或视频，以及关键知识往往只存在于多模态网页内容里。MM-BrowseComp 把这两件事变成硬门槛，要求智能体先「看懂」网页中的视觉内容，再据此推理和检索。",
+      "cite": ["paper@§1"]
+    },
+    "ladder": [
+      {
+        "label": "无工具 VLM 上限（论文口径）",
+        "value": "10.00%",
+        "note": "无工具组 17 个模型的 OA 全部不超过 10%，最高为 Gemini-3-Pro 的 10.00%；这一组用来反映模型固有知识，不能与带工具成绩同榜比较。",
+        "cite": ["paper@§4.1", "paper@§4.2", "paper@Table 2"]
+      },
+      {
+        "label": "开源 Agent 最好成绩（论文口径）",
+        "value": "5.75%",
+        "note": "Agent-R1 + Gemini-2.5-Flash，Pass@1 OA；论文说所有受评开源 Agent 都没超过 10%。",
+        "cite": ["paper@§4.2", "paper@Table 2"]
+      },
+      {
+        "label": "论文发布时最好成绩（带工具）",
+        "value": "24.25%",
+        "note": "GPT-5-High（reasoning_effort=high）配官方网页搜索工具，Pass@1 OA；SA 20.25%，AVG CS 36.95%。",
+        "cite": ["paper@§1", "arxiv-abs@Abstract", "paper@Table 2"]
+      },
+      {
+        "label": "人类基线（论文口径）",
+        "value": "59.50% OA / 49.75% SA",
+        "note": "8 名 AI 硕士生、10 分钟限时、允许标准网页浏览但禁用 AI 助手，平均每题 8.1 分钟；AVG CS 63.28%。",
+        "cite": ["paper@附录 C", "paper@Table 7"]
+      },
+      {
+        "label": "纯文本 vs 图片 / 视频模态差距（参考线）",
+        "value": "AVG CS 44.94% vs 33.14%",
+        "note": "GPT-5-High 带工具：文本模态的 checklist 完成率明显高于图片与视频模态，说明视觉取证仍是主要短板。",
+        "cite": ["paper@Table 3", "paper@§4.3"]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 24.25% 读成「模型不行」——题目的构建标准就是必须在带网页搜索的单次尝试中难倒 Gemini-2.5-Pro 和 GPT-4o，低分是设计预期。",
+        "cite": ["paper@§3.1.2", "paper@§1"]
+      },
+      {
+        "text": "把带工具和不带工具的分数排进同一个榜——无工具组全部不超过 10%，带工具组在 18.50%–24.25% 之间，两组不可比。",
+        "cite": ["paper@§4.2", "paper@Table 2"]
+      },
+      {
+        "text": "把 OA 当成「推理正确」——OA 只看最终答案，SA 要求 checklist 全对，GPT-5-High 的 SA 只有 20.25%；论文还用测试时扩展说明部分答对来自猜测。",
+        "cite": ["paper@§4.1", "paper@§4.4", "paper@Table 2"]
+      },
+      {
+        "text": "照抄仓库 README 的「224 题 / o3 不超过 30%」——那是扩充到 400 题之前的旧文本，Latest News 已公告扩充。",
+        "cite": ["repo@README", "repo@Latest News"]
+      },
+      {
+        "text": "以为数据集是明文公开的——重要内容默认加密并内置 canary，官方要求不要在网上分享明文示例。",
+        "cite": ["repo@README", "paper@附录 D"]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "ByteDance 领衔，合作机构包括南京大学、M-A-P、CASIA、浙江大学、哈尔滨工业大学、香港中文大学。",
+        "cite": ["arxiv-abs@Authors"]
+      },
+      {
+        "k": "作者与发表状态",
+        "v": "共同一作 Shilong Li 与 Xingyuan Bu（论文标注前两位作者贡献相同，并设通讯作者）；EMNLP 2026 接收；arXiv v2（2026-08-31），20 页。",
+        "cite": ["arxiv-abs@Comments", "arxiv-abs@Authors"]
+      },
+      {
+        "k": "代码与数据",
+        "v": "GitHub MMBrowseComp/MM-BrowseComp：默认加密全部重要数据集内容，仓库提供解密说明与评测脚本（裁判模型默认 openai/gpt-4o-2024-11-20），MIT 许可。",
+        "cite": ["repo@README"]
+      },
+      {
+        "k": "Hugging Face 数据集",
+        "v": "mmbrowsecomp/MMBrowseComp：default / train 各 224 行，许可证 mit，卡片指向 arXiv v1，并说明具体评测方法见 GitHub 仓库。",
+        "cite": ["hf-dataset@Dataset Viewer", "hf-dataset@Dataset card"]
+      },
+      {
+        "k": "时间线",
+        "v": "2025-08-14 arXiv v1 → 2025-08-20 完整代码发布 → 2026-01-02 扩充到 400 题 → 2026-08-31 arXiv v2（EMNLP 2026）。",
+        "cite": ["arxiv-abs@Submission history", "repo@Latest News"]
+      },
+      {
+        "k": "与其他基准对比",
+        "v": "论文 Table 1 的题量对比：BrowseComp 1,266 题 / 10 类、BrowseComp-VL 399 题 / 17 类，MM-BrowseComp 为 400 题 / 22 个子任务。",
+        "cite": ["paper@Table 1"]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-14",
+        "columns": ["来源", "模型 / Agent", "OA (%)", "SA (%)", "AVG CS (%)", "口径"],
+        "rows": [
+          ["论文 Table 7", "人类基线（8 名 AI 硕士生）", "59.50", "49.75", "63.28", "10 分钟限时；禁用 AI 助手"],
+          ["论文 Table 2", "GPT-5-High（带工具）", "24.25", "20.25", "36.95", "Pass@1；裁判 GPT-4o-2024-11-20"],
+          ["论文 Table 2", "o3（带工具）", "22.75", "17.25", "30.33", "Pass@1；裁判同上"],
+          ["论文 Table 2", "Gemini-3-Pro（带工具）", "18.75", "17.25", "35.15", "Pass@1；裁判同上"],
+          ["论文 Table 2", "Gemini-3-Flash（带工具）", "18.50", "15.00", "32.37", "Pass@1；裁判同上"],
+          ["论文 Table 2", "Gemini-2.5-Pro（带工具）", "6.00", "4.75", "18.67", "Pass@1；裁判同上"],
+          ["论文 Table 2", "Gemini-2.5-Flash（带工具）", "5.75", "5.00", "19.75", "Pass@1；裁判同上"],
+          ["论文 Table 2", "GPT-5-High（无工具）", "7.75", "5.25", "20.46", "Pass@1；温度 1.0"],
+          ["论文 Table 2", "Gemini-3-Pro（无工具）", "10.00", "8.00", "20.11", "Pass@1；温度 1.0"],
+          ["论文 Table 2", "GPT-4o（无工具）", "1.00", "0.25", "5.19", "Pass@1；温度 1.0"],
+          ["论文 Table 2", "Agent-R1 + Gemini-2.5-Flash", "5.75", "4.00", "11.73", "开源 Agent；Pass@1"],
+          ["论文 Table 2", "OWL + Gemini-2.5-Flash", "5.25", "1.25", "7.68", "开源 Agent；Pass@1"],
+          ["论文 Table 2", "DeerFlow + Gemini-2.5-Flash", "2.00", "1.25", "2.92", "开源 Agent；Pass@1"],
+          ["论文 Table 2", "WebDancer + Gemini-2.5-Flash", "2.00", "1.25", "5.08", "开源 Agent；Pass@1"],
+          ["论文 Table 2", "Agent-R1 + GPT-4o", "4.00", "3.25", "6.84", "开源 Agent；Pass@1"],
+          ["论文 Table 2", "WebDancer-32B", "2.00", "0.75", "3.62", "开源 Agent；Pass@1"]
+        ]
+      },
+      "cite": ["paper@Table 2", "paper@Table 7"]
+    }
+  }
 }

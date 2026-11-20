@@ -1,40 +1,744 @@
 {
-  "id": "prbench-finance",
-  "name": "PRBench-Finance",
-  "full_name": null,
-  "aliases": [],
-  "status": null,
-  "categories": [
-    "knowledge",
-    "agent"
-  ],
-  "summary": "Scale 高风险金融专业推理评测",
-  "interpretation": "Scale AI 专家出题的高风险金融专业推理评测，得分率（%）计分并附置信区间；官方榜单榜首约 55%，未饱和、区分度高。",
-  "measures": [],
-  "does_not_measure": [],
-  "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
+ "id": "prbench-finance",
+ "name": "PRBench-Finance",
+ "full_name": "Professional Reasoning Bench（PRBench）· Finance 金融子集",
+ "aliases": [
+  "PRBench Finance",
+  "Professional Reasoning Benchmark - Finance",
+  "Scale PRBench 金融子集"
+ ],
+ "status": "active",
+ "categories": [
+  "knowledge",
+  "reasoning"
+ ],
+ "summary": "Scale AI 出的开放式高风险金融专业推理评测：182 位持证专家按真实客户工作出题，每题配 10–30 条带权重（-10 到 +10）的评分细则，由 LLM 裁判逐条二值判分，题目得分裁剪到 0–1 后取平均。",
+ "interpretation": "分数是「专家细则的加权命中率」，不是答题正确率：负权重细则会扣分，题目得分先裁剪到 [0,1] 再对全部题目平均。论文发布时全量 600 题最好 0.51、Hard 子集最好 0.39；Scale 官方榜（百分制口径）当前榜首 59.54 ± 1.66。高分只代表在这批专家 rubric 下拿到了该拿的分，不代表能替人做投资决策——论文自己的结论是模型经常用不完整、不透明的推理过程撞上正确结论。",
+ "measures": [
+  {
+   "area": "金融任务场景（13 个主题）",
+   "focus": "开放式金融问题，覆盖公司金融、市场微观结构与交易流动性、风险管理与压力测试等 13 个主题；论文示例题：「存货税务申报该选 LIFO 还是 FIFO？」「跨币种组合 VaR 该怎么度量？」",
+   "share": "600 题（Hard 子集 300 题）",
+   "format": "开放式问答，约 30% 为多轮对话；用户轮英文",
+   "cite": [
+    "paper@Table 1",
+    "dataset",
+    "leaderboard-finance@Data Summary",
+    "paper@Table 11"
+   ]
   },
-  "metrics": [],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [],
-  "notes": "Qwen3.8 引用；Scale AI PRBench 系",
-  "official_sources": [
-    {
-      "kind": "site",
-      "url": "https://labs.scale.com/leaderboard"
-    },
-    {
-      "kind": "site",
-      "url": "https://qwen.ai/blog?id=qwen3.8"
-    }
+  {
+   "area": "决策类型与经济路径标注",
+   "focus": "每题另标注「决策类型」（49 类）与「经济路径」（24 类），用于回答「模型在哪些高风险决策上失分」；论文示例：「该按当前价格对冲商品敞口吗？」「该按今天的利率发长期债券吗？」",
+   "share": "600 题全量标注",
+   "format": "随数据集发布的分类标注字段",
+   "cite": [
+    "dataset",
+    "paper@§5.1 Inside the Conversations",
+    "paper@Table 12"
+   ]
+  },
+  {
+   "area": "Financial Accuracy（金融准确性）",
+   "focus": "结论、数值与准则适用是否正确；论文把金融与法律的准确性并列为主类别",
+   "share": "未披露（论文只给类别分布图，未给各类别的细则条数）",
+   "format": "二值判定细则",
+   "cite": [
+    "paper@§3.2 Creating Rubrics",
+    "leaderboard-finance@Methodology and Core Metrics",
+    "paper@§4.1 Results"
+   ]
+  },
+  {
+   "area": "Process Transparency & Auditability（过程透明与可审计）",
+   "focus": "是否把推理路径、假设与依据写清楚，让第三方能复核",
+   "share": "未披露",
+   "format": "二值判定细则",
+   "cite": [
+    "paper@§3.2 Creating Rubrics",
+    "leaderboard-finance@Methodology and Core Metrics"
+   ]
+  },
+  {
+   "area": "Risk & Regulatory Disclosure（风险与监管披露）",
+   "focus": "是否主动揭示风险、利益冲突与合规要求",
+   "share": "未披露",
+   "format": "二值判定细则",
+   "cite": [
+    "paper@§3.2 Creating Rubrics",
+    "leaderboard-finance@Methodology and Core Metrics"
+   ]
+  },
+  {
+   "area": "Handling Uncertainty（不确定性处理）",
+   "focus": "信息不足时是否说明前提、给出条件结论，而不是硬答",
+   "share": "未披露",
+   "format": "二值判定细则",
+   "cite": [
+    "paper@§3.2 Creating Rubrics",
+    "paper@§4.1 Results"
+   ]
+  },
+  {
+   "area": "Practical Utility（实用性）",
+   "focus": "回答能否直接用于工作：可执行、结构化、有下一步",
+   "share": "未披露",
+   "format": "二值判定细则",
+   "cite": [
+    "paper@§3.2 Creating Rubrics",
+    "paper@§4.1 Results"
+   ]
+  },
+  {
+   "area": "Supplemental Insight（补充洞见）",
+   "focus": "是否给出提问者没想到的相关风险或替代方案",
+   "share": "未披露",
+   "format": "二值判定细则",
+   "cite": [
+    "paper@§3.2 Creating Rubrics",
+    "leaderboard-finance@Methodology and Core Metrics"
+   ]
+  },
+  {
+   "area": "Instruction Following（指令遵循）",
+   "focus": "是否按题目要求的形式、范围与约束作答",
+   "share": "未披露",
+   "format": "二值判定细则",
+   "cite": [
+    "paper@§3.2 Creating Rubrics",
+    "leaderboard-finance@Methodology and Core Metrics"
+   ]
+  }
+ ],
+ "does_not_measure": [
+  {
+   "text": "不测开放式 agent 能力：论文只做了「开/关网页搜索与代码解释器」的消融，没有多步工具调用、长程任务或环境交互评测。",
+   "cite": [
+    "paper@附录 A",
+    "paper@§4.1 Results"
+   ]
+  },
+  {
+   "text": "不测法律域：法律部分是另一个 500 题基准（PRBench-Legal），两域分开出榜、分开报告，本档案的分数只对应 Finance 600 题。",
+   "cite": [
+    "paper@Abstract",
+    "labs-leaderboard"
+   ]
+  },
+  {
+   "text": "不测多语言与多模态：所有用户轮由人类专家用英文书写，助手轮采样自英文开源模型，没有图片、表格或音频输入。",
+   "cite": [
+    "paper@Table 1"
+   ]
+  },
+  {
+   "text": "不测速度、成本与延迟：论文只设 60 分钟超时、每题最多 5 次尝试，不报告 token 用量、耗时或费用。",
+   "cite": [
+    "paper@§4.1 Results"
+   ]
+  },
+  {
+   "text": "不测人类绝对水平：论文没有报告人类专家在这些题上的得分，只报告人机/人人一致率（80.2% / 79.6%）。",
+   "cite": [
+    "leaderboard-finance@Methodology and Core Metrics"
+   ]
+  },
+  {
+   "text": "不测污染本身：公开集上的分数无法自证未被污染，论文只保留私有 held-out 集用于监测未来发布。",
+   "cite": [
+    "paper@Table 1"
+   ]
+  }
+ ],
+ "dataset": {
+  "sample_count": 600,
+  "splits": [
+   "全量 600 题（Finance）",
+   "Hard 子集 Finance-300（按全体模型平均分挑出的最难 300 题）"
   ],
-  "related_benchmarks": [],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "languages": [
+   "en"
+  ],
+  "source_type": "expert-authored：182 位持证专业人士按真实客户工作原创，同时覆盖专家用户与非专家用户两种提问视角",
+  "public_sample": true,
+  "totals": "公开 600 题（Hard 子集 300 题）· 10,264 条评分细则（每题 10–30 条，中位数 16 条）· 用户视角 74% 专家 / 26% 非专家 · 约 30% 多轮 · 13 个金融主题 · 数据许可 cc-by-4.0；另保留不公开的 held-out 集用于监测污染",
+  "cite": [
+   "leaderboard-finance@Data Summary",
+   "dataset",
+   "paper@Table 1",
+   "leaderboard-finance@Dataset Design"
+  ],
+  "construction": [
+   {
+    "k": "持证专家招募",
+    "text": "182 位专业人士通过简历审核与内部资格考核后入选；金融子集要求硕士、CFA 或 6 年以上从业经验（法律子集要求 JD 或同等国际学历）。",
+    "cite": [
+     "paper@Table 1",
+     "paper@§3 Data Collection",
+     "leaderboard-finance@Dataset Design"
+    ]
+   },
+   {
+    "k": "按真实工作出题",
+    "text": "题目来自专家自己或同行真正关心的问题、以及客户实际提出的请求；论文明确不鼓励考试式、纯理论、或与真实生活无关的题目。",
+    "cite": [
+     "paper@§3.1 Building Conversations",
+     "scale-research",
+     "leaderboard-finance@Overview"
+    ]
+   },
+   {
+    "k": "双重视角与多轮",
+    "text": "同一基准同时覆盖专家用户与非专家用户（金融子集约 74% / 26%），约 30% 的对话是多轮、逐步补上下文，模拟真实专业协作。",
+    "cite": [
+     "leaderboard-finance@Data Summary",
+     "paper@Table 1",
+     "leaderboard-finance@Dataset Design"
+    ]
+   },
+   {
+    "k": "加权 rubric",
+    "text": "每题配 10–30 条二值判定细则，权重取 -10 到 +10 的整数（不含 0）；写细则时先按六级重要性档位（Critically Important 到 Critically Detrimental）再定权重，细则要求互斥、完备、原子、自包含、客观。",
+    "cite": [
+     "paper@§3.2 Creating Rubrics",
+     "leaderboard-finance@Dataset Design",
+     "paper@Table 2"
+    ]
+   },
+   {
+    "k": "rubric 质检",
+    "text": "数据收集结束后由独立专家对最终 rubric 逐条标 agree/disagree，评估清晰度与有效性，专家间一致率 93.9%。",
+    "cite": [
+     "paper@§3.2 Creating Rubrics",
+     "leaderboard-finance@Methodology and Core Metrics"
+    ]
+   },
+   {
+    "k": "裁判选型与防污染",
+    "text": "论文先用 101 个任务测候选裁判与专家的一致性，再按查询成本选定 o4-mini；公开集之外保留私有 held-out 集，用于监测未来模型的污染。",
+    "cite": [
+     "paper@§4.2 Evaluating LLM Judge",
+     "paper@Table 1"
+    ]
+   }
+  ]
+ },
+ "metrics": [
+  {
+   "id": "mean-clipped",
+   "name": "mean_clipped（裁剪后加权命中率）",
+   "direction": "越高越好",
+   "description": "LLM 裁判对每条细则做二值判定，按权重求和得到题目原始分（负权重细则会扣分），裁剪到 [0,1] 后对全部题目取平均；每题至少有一条正权重细则，因此分母恒大于 0。",
+   "range": [
+    0,
+    1
+   ],
+   "unit": "ratio",
+   "cite": [
+    "paper@附录 D.1",
+    "leaderboard-finance@Methodology and Core Metrics"
+   ]
+  },
+  {
+   "id": "min-normalized",
+   "name": "Min-Normalized Score（最小分归一化）",
+   "direction": "越高越好",
+   "description": "把题目得分减去该题可能的最低分再归一化。用于按 rubric 类别比较：当某样本某类别全是负权重细则时，默认算法无法区分模型，这个指标才有效。",
+   "range": [
+    0,
+    1
+   ],
+   "unit": "ratio",
+   "cite": [
+    "paper@附录 D.2"
+   ]
+  },
+  {
+   "id": "ci-rank-ub",
+   "name": "95% 置信区间与 Rank (UB)",
+   "direction": "区间越窄、名次越靠前越好",
+   "description": "每次评测重复三次，报告均值与 95% 置信区间；榜单另给 Rank (UB)：1 加上「下界高于该模型上界」的模型数，即该模型名次的下界。",
+   "cite": [
+    "paper@Figure 5",
+    "leaderboard-finance@Legend"
+   ]
+  }
+ ],
+ "default_protocol": {
+  "raw": "被测模型按仓库默认配置对整段对话作答（默认从 response_model_names 列表里采样生成回答，也可直接用预置 final response）；随后由 LLM 裁判 o4-mini 逐条读取该题 rubric、对每条细则做二值判定，按权重求和得到题目得分，裁剪到 [0,1] 后对全部题目取平均，即 mean_clipped。超时 60 分钟、每题最多 5 次尝试，最后一次把推理强度从 high 降到 low；每次评测重复三次并报告均值与 95% 置信区间。",
+  "cite": [
+   "repo",
+   "paper@附录 D.1",
+   "leaderboard-finance@Methodology and Core Metrics",
+   "paper@§4.1 Results",
+   "paper@Figure 5"
+  ],
+  "variants": [
+   {
+    "text": "全量 600 题 vs Hard 子集 300 题：Hard 是按全体模型平均分挑出的最难 300 题，两个口径不能直接比——论文全量集最好 0.51，Hard 子集最好 0.39。",
+    "cite": [
+     "paper@§2 Overview",
+     "paper@§4.1 Results"
+    ]
+   },
+   {
+    "text": "开工具 vs 关工具：论文附录 A 的消融显示开网页搜索对 Grok 和 O3 有用、对其他模型反而掉分（主因是过度依赖外部来源），代码解释器除个别情况外没有额外增益；开/关两种口径不要混排。",
+    "cite": [
+     "paper@附录 A",
+     "paper@§4.1 Results",
+     "leaderboard-finance@Key Results and Insights"
+    ]
+   },
+   {
+    "text": "论文量纲 vs 榜单量纲：论文报 0–1 的 mean_clipped，Scale 官方榜报百分制（如 59.54 ± 1.66）；两者是不同批次、不同呈现，不能把 59.54 直接当成 0.5954 去对齐论文的 0.51。",
+    "cite": [
+     "leaderboard-finance@Performance Comparison",
+     "paper@§4.1 Results"
+    ]
+   },
+   {
+    "text": "整卷分 vs 类别分：按 rubric 类别比较时论文改用最小分归一化，类别分数与整卷 mean_clipped 不是同一量纲。",
+    "cite": [
+     "paper@附录 D.2"
+    ]
+   },
+   {
+    "text": "回答长度未固定：论文专门控制了响应长度后发现，分数相近的模型回答长度可能差很多；跨模型比较时建议同时看响应长度。",
+    "cite": [
+     "paper@§4.1 Results"
+    ]
+   }
+  ]
+ },
+ "versions": [
+  {
+   "id": "scale-research-page",
+   "date": "2025-11-13",
+   "label": "Scale 研究页上线《Professional Reasoning Bench》论文页（页面标注 11/13/2025），同步公开数据集与评测代码",
+   "cite": [
+    "scale-research",
+    "repo"
+   ]
+  },
+  {
+   "id": "arxiv-v1",
+   "date": "2025-11-14",
+   "label": "arXiv:2511.11562v1 发布，报告 20 个对话模型的全量集与 Hard 子集结果",
+   "cite": [
+    "paper",
+    "paper@§4.1 Results"
+   ]
+  },
+  {
+   "id": "leaderboard-2026-11",
+   "date": "2026-11-14",
+   "label": "Scale 官方 PRBench-Finance 榜收录 42 个模型，榜首 Muse Spark 1.3（59.54 ± 1.66），末位 llama4-maverick-instruct-basic（22.36 ± 0.42）",
+   "cite": [
+    "leaderboard-finance@Performance Comparison"
+   ]
+  }
+ ],
+ "limitations": [
+  {
+   "issue": "公开集分数无法自证未被污染",
+   "impact": "模型可能见过公开的 600 题，使分数偏高；论文只保留私有 held-out 集监测未来发布，没有公开集的污染审计数字。",
+   "severity": "高",
+   "response": "Scale 用私有 held-out 集做污染监测；榜单另有「首次接触题目才可上榜」的诚信要求。",
+   "reader": "把公开集分数当上界参考；对宣称的跳升要等 held-out 或第三方复现。",
+   "cite": [
+    "paper@Table 1",
+    "labs-leaderboard"
+   ]
+  },
+  {
+   "issue": "裁判本身有误差",
+   "impact": "整卷分数由 o4-mini 逐条判定，裁判与专家一致率 80.2%、与两位人类专家之间的 79.6% 相当；判错会直接变成分数误差。",
+   "severity": "中",
+   "response": "论文先测 101 个任务的一致性再选裁判，并对每次评测重复三次、报告置信区间。",
+   "reader": "看分数时同时看置信区间；差距落在区间内的模型不要排名次。",
+   "cite": [
+    "leaderboard-finance@Methodology and Core Metrics",
+    "paper@§4.2 Evaluating LLM Judge",
+    "paper@Figure 5"
+   ]
+  },
+  {
+   "issue": "rubric 由出题人自定，口径不完全公开",
+   "impact": "细则与权重由专家撰写；论文称金融侧 7 条轴，同时列出 5 个两域共有类别与 3 个金融专属类别（5+3=8，与「7」对不上），逐条归类论文未给出。换个 rubric 可能得出不同排序。",
+   "severity": "中",
+   "response": "论文给出细则撰写原则（互斥、完备、原子、自包含、客观）与权重档位表，并公开全部 1,100 题的 rubric。",
+   "reader": "把它当成「Scale 专家标准下的得分」，不是唯一正确的专业能力度量。",
+   "cite": [
+    "paper@§3.2 Creating Rubrics",
+    "leaderboard-finance@Methodology and Core Metrics"
+   ]
+  },
+  {
+   "issue": "单次运行、每题最多 5 次尝试",
+   "impact": "论文对每题最多试 5 次、最后一次降低推理强度，取的是这一次运行的结果；不同脚手架（工具、重试、推理档位）会显著改变分数。",
+   "severity": "中",
+   "response": "论文固定超时与尝试次数并重复三次；官方榜按同一脚手架出榜。",
+   "reader": "跨模型比较前先确认脚手架一致；厂商自报值与官方榜值不要混排。",
+   "cite": [
+    "paper@§4.1 Results",
+    "leaderboard-finance@Performance Comparison"
+   ]
+  },
+  {
+   "issue": "只覆盖金融，且只到「一次性回答」",
+   "impact": "法律域在另一个 500 题基准；没有多步任务、没有工具链、没有人工复核回路，因此不能外推到真实工作流。",
+   "severity": "中",
+   "response": "Scale 另出 PRBench-Legal 榜；论文用附录 A 的消融说明工具的影响。",
+   "reader": "把分数当作专业推理能力的下界参考，而不是「能否上岗」的结论。",
+   "cite": [
+    "labs-leaderboard",
+    "paper@附录 A",
+    "paper@Abstract"
+   ]
+  }
+ ],
+ "notes": "本站账本另有一条厂商自报成绩：Qwen3.8-Max 于 2026-08-03 自称 PRBench-Finance 58.3（来源通义发布博客，该页当前无法抓取、不可核验）；当前 Scale 官方榜的 42 个模型中没有该模型，故本档案不收录该数值。",
+ "official_sources": [
+  {
+   "kind": "paper",
+   "url": "https://arxiv.org/abs/2511.11562"
+  },
+  {
+   "kind": "site",
+   "url": "https://scale.com/research/prbench"
+  },
+  {
+   "kind": "leaderboard",
+   "url": "https://scale.com/leaderboard/prbench-finance"
+  },
+  {
+   "kind": "repo",
+   "url": "https://github.com/scaleapi/PRBench"
+  },
+  {
+   "kind": "dataset",
+   "url": "https://huggingface.co/datasets/ScaleAI/PRBench"
+  }
+ ],
+ "related_benchmarks": [
+  "prbench-legal",
+  "gdpval-rubrics",
+  "researchrubrics",
+  "frontierfinance",
+  "finben",
+  "legalbench"
+ ],
+ "content_status": "reviewed",
+ "last_verified_at": "2026-11-14",
+ "profile": {
+  "template": "benchmark-profile/v2",
+  "verified_at": "2026-11-14",
+  "sources": [
+   {
+    "id": "paper",
+    "kind": "paper",
+    "title": "PRBench: Large-Scale Expert Rubrics for Evaluating High-Stakes Professional Reasoning（arXiv:2511.11562v1）",
+    "url": "https://arxiv.org/abs/2511.11562",
+    "accessed": "2026-11-14"
+   },
+   {
+    "id": "scale-research",
+    "kind": "site",
+    "title": "Scale AI — Professional Reasoning Bench 论文页",
+    "url": "https://scale.com/research/prbench",
+    "accessed": "2026-11-14"
+   },
+   {
+    "id": "leaderboard-finance",
+    "kind": "leaderboard",
+    "title": "Scale Labs Leaderboard — Professional Reasoning Benchmark - Finance",
+    "url": "https://scale.com/leaderboard/prbench-finance",
+    "accessed": "2026-11-14"
+   },
+   {
+    "id": "labs-leaderboard",
+    "kind": "site",
+    "title": "Scale Labs — AI Model Leaderboards & Benchmarks",
+    "url": "https://labs.scale.com/leaderboard",
+    "accessed": "2026-11-14"
+   },
+   {
+    "id": "repo",
+    "kind": "repo",
+    "title": "GitHub — scaleapi/PRBench（评测代码）",
+    "url": "https://github.com/scaleapi/PRBench",
+    "accessed": "2026-11-14"
+   },
+   {
+    "id": "dataset",
+    "kind": "dataset",
+    "title": "Hugging Face — ScaleAI/PRBench",
+    "url": "https://huggingface.co/datasets/ScaleAI/PRBench",
+    "accessed": "2026-11-14"
+   }
+  ],
+  "header": {
+   "publisher": {
+    "v": "Scale AI（Scale Labs）",
+    "cite": [
+     "paper@作者署名",
+     "leaderboard-finance@Overview"
+    ]
+   },
+   "first_release": {
+    "v": "2025-11-13（Scale 研究页标注 11/13/2025；arXiv v1 为 2025-11-14）",
+    "cite": [
+     "scale-research",
+     "paper"
+    ]
+   }
+  },
+  "cites": {
+   "summary": [
+    "paper@Abstract",
+    "leaderboard-finance@Data Summary",
+    "paper@§3.2 Creating Rubrics"
+   ],
+   "interpretation": [
+    "paper@附录 D.1",
+    "leaderboard-finance@Methodology and Core Metrics",
+    "paper@§4.1 Results",
+    "leaderboard-finance@Performance Comparison",
+    "leaderboard-finance@Key Results and Insights"
+   ]
+  },
+  "problem": {
+   "text": "MMLU、GPQA 这类学术基准是通用推理的事实标准，但看不到模型在真实专业场景里能不能用：金融与法律判断需要领域知识、细微取舍和上下文理解，且错误有直接经济后果。PRBench 想补上这块——用真实客户工作里的问题，配上专家写的评分细则来量化「靠不靠谱」。",
+   "cite": [
+    "leaderboard-finance@Overview",
+    "paper@§1 Introduction",
+    "scale-research"
+   ]
+  },
+  "ladder": [
+   {
+    "label": "论文发布时 · 全量 600 题最好",
+    "value": "0.51",
+    "note": "Finance 全量集（论文 Figure 5）；同期 Legal 全量集最好 0.50。",
+    "cite": [
+     "paper@§4.1 Results"
+    ]
+   },
+   {
+    "label": "论文发布时 · Hard 子集最好",
+    "value": "0.39",
+    "note": "Finance-300；GPT-5 与 GPT-5 Pro 轮流领先，其后是 Grok 4 Fast Reasoning。同期 Legal Hard 最好 0.37。",
+    "cite": [
+     "paper@§4.1 Results",
+     "paper@Abstract"
+    ]
+   },
+   {
+    "label": "附录 A 消融 · Hard 子集开工具最好",
+    "value": "0.382",
+    "note": "Hard 300 题、o4-mini 裁判、单次运行；「开」= 网页搜索 + 代码解释器。同表 GPT-5 (high) 关工具 0.394，Gemini 2.5 Pro 0.207 / 0.266，o3 (high) 0.347 / 0.336，Sonnet 4.5 0.290 / 0.323，Grok 4 Fast Reasoning 0.333 / 0.314。这是消融口径，不要和主表混排。",
+    "cite": [
+     "paper@附录 A"
+    ]
+   },
+   {
+    "label": "Scale 官方榜当前榜首",
+    "value": "59.54 ± 1.66",
+    "note": "Muse Spark 1.3（NEW）；榜单共 42 个模型，第 42 名 llama4-maverick-instruct-basic 22.36 ± 0.42。百分制口径。",
+    "cite": [
+     "leaderboard-finance@Performance Comparison"
+    ]
+   },
+   {
+    "label": "本站账本当前最高",
+    "auto": "ledger-top"
+   }
+  ],
+  "misreadings": [
+   {
+    "text": "把榜单百分制当成「答对了 59.54% 的题」。分数是专家 rubric 的加权命中率：负权重细则会扣分，题目得分还要裁剪到 [0,1] 再平均。它衡量的是「在专家标准下拿到了该拿的分」，不是答题正确率。",
+    "cite": [
+     "paper@附录 D.1",
+     "leaderboard-finance@Methodology and Core Metrics"
+    ]
+   },
+   {
+    "text": "把厂商自报的 PRBench-Finance 分数和官方榜并列。Scale 明确要求模型只能在某组织首次接触题目时上榜；厂商自报的提示词、工具、推理档位与重试设置未必与榜单一致。本站账本里就有一条厂商自报成绩不在当前官方榜的 42 个模型里。",
+    "cite": [
+     "labs-leaderboard",
+     "leaderboard-finance@Performance Comparison"
+    ]
+   },
+   {
+    "text": "看到 0.39 就认为前沿模型已接近上限。0.39 只是论文 Hard 子集的口径；同批模型在全量集上能到 0.51，而当前官方榜榜首已是 59.54（百分制），分数随新模型持续上移。",
+    "cite": [
+     "paper@§4.1 Results",
+     "leaderboard-finance@Performance Comparison"
+    ]
+   },
+   {
+    "text": "把高分成因归给「答对了」。论文的结论正相反：模型经常用不完整或不透明的推理过程撞上正确结论，这让它们在高风险场景里仍不可靠；总分相近的模型在单项能力上也可能差很多。",
+    "cite": [
+     "leaderboard-finance@Key Results and Insights",
+     "paper@Abstract"
+    ]
+   }
+  ],
+  "background": [
+   {
+    "k": "发布方",
+    "v": "Scale AI（Scale Labs）",
+    "cite": [
+     "paper@作者署名",
+     "leaderboard-finance@Overview"
+    ]
+   },
+   {
+    "k": "论文",
+    "v": "《PRBench: Large-Scale Expert Rubrics for Evaluating High-Stakes Professional Reasoning》，arXiv:2511.11562v1 [cs.CL]，2025-11-14",
+    "cite": [
+     "paper@标题",
+     "paper"
+    ]
+   },
+   {
+    "k": "同源评测",
+    "v": "PRBench-Legal（500 题）为姊妹基准，与 Finance 分开出榜；论文同时开源两域",
+    "cite": [
+     "labs-leaderboard",
+     "paper@Abstract"
+    ]
+   },
+   {
+    "k": "数据与代码",
+    "v": "数据集在 Hugging Face（ScaleAI/PRBench，许可 cc-by-4.0），含 13 个金融主题与决策类型 / 经济路径标注；评测代码在 GitHub scaleapi/PRBench，入口 evals.py，负责生成回答、LLM 裁判打分、缓存重试与出报告，论文报的是 mean_clipped",
+    "cite": [
+     "dataset",
+     "repo"
+    ]
+   },
+   {
+    "k": "方法来源",
+    "v": "评分框架沿用 Arora et al. 的 rubric-based 评测（Hard 子集也按同一方法划分），并新增 Min-Normalized Scoring 用于类别比较",
+    "cite": [
+     "paper@§2 Overview",
+     "paper@附录 D.2"
+    ]
+   },
+   {
+    "k": "裁判一致性",
+    "v": "o4-mini 裁判与专家一致率 80.2%，与两位人类专家之间的 79.6% 相当；论文另测 101 个任务的一致性并按查询成本选裁判",
+    "cite": [
+     "leaderboard-finance@Methodology and Core Metrics",
+     "paper@§4.2 Evaluating LLM Judge"
+    ]
+   },
+   {
+    "k": "rubric 类别口径",
+    "v": "论文称金融侧共 7 条轴、法律侧 8 条，同时列出 5 个两域共有类别（Practical Utility / Handling Uncertainty / Supplemental Insight / Instruction Following）与 3 个金融专属类别（Financial Accuracy / Process Transparency & Auditability / Risk & Regulatory Disclosure）；5+3 与「7」对不上，逐条归类论文未给出",
+    "cite": [
+     "paper@§3.2 Creating Rubrics",
+     "leaderboard-finance@Methodology and Core Metrics"
+    ]
+   },
+   {
+    "k": "官网说法",
+    "v": "Scale 自称 PRBench 是首个评测 LLM 高风险专业推理（金融与法律）的基准，也是迄今最大的公开 rubric-based 法律与金融基准",
+    "cite": [
+     "scale-research",
+     "leaderboard-finance@Overview"
+    ]
+   }
+  ],
+  "official_results": {
+   "table": {
+    "as_of": "2026-11-14",
+    "columns": [
+     "来源",
+     "模型",
+     "分数",
+     "口径"
+    ],
+    "rows": [
+     [
+      "Scale 官方榜",
+      "Muse Spark 1.3",
+      "59.54 ± 1.66",
+      "百分制，42 模型在录，榜首"
+     ],
+     [
+      "Scale 官方榜",
+      "Muse Wonder 1.0",
+      "58.67 ± 1.69",
+      "百分制，第 2 名"
+     ],
+     [
+      "Scale 官方榜",
+      "Muse Spark 1.1",
+      "55.01 ± 0.14",
+      "百分制，第 3 名"
+     ],
+     [
+      "Scale 官方榜",
+      "claude-fable 5",
+      "53.86 ± 0.14",
+      "百分制，第 4 名"
+     ],
+     [
+      "Scale 官方榜",
+      "gpt-5",
+      "51.32 ± 0.17",
+      "百分制，第 7 名"
+     ],
+     [
+      "Scale 官方榜",
+      "gpt-5-pro",
+      "51.06 ± 0.59",
+      "百分制，第 8 名"
+     ],
+     [
+      "Scale 官方榜",
+      "o3",
+      "47.69 ± 0.45",
+      "百分制，第 15 名"
+     ],
+     [
+      "Scale 官方榜",
+      "o4-mini",
+      "39.22 ± 0.51",
+      "百分制，第 31 名（也是本榜裁判）"
+     ],
+     [
+      "Scale 官方榜",
+      "llama4-maverick-instruct-basic",
+      "22.36 ± 0.42",
+      "百分制，第 42 名（榜末）"
+     ],
+     [
+      "论文 Figure 5",
+      "未点名（20 个对话模型中最好）",
+      "0.51",
+      "Finance 全量 600 题，0–1"
+     ],
+     [
+      "论文 Figure 1 / §4.1",
+      "GPT-5 与 GPT-5 Pro 轮流领先",
+      "0.39",
+      "Hard 子集 300 题，0–1"
+     ],
+     [
+      "论文附录 A",
+      "GPT-5 (high)",
+      "0.382",
+      "Hard 300 题，开工具，单次运行消融"
+     ]
+    ]
+   },
+   "cite": [
+    "leaderboard-finance@Performance Comparison",
+    "paper@§4.1 Results",
+    "paper@附录 A"
+   ]
+  }
+ }
 }

@@ -1,28 +1,299 @@
 {
   "id": "longvideobench",
   "name": "LongVideoBench",
-  "full_name": null,
+  "full_name": "LongVideoBench: A Benchmark for Long-context Interleaved Video-Language Understanding（长上下文交错视频-语言理解基准）",
   "aliases": [],
-  "status": null,
+  "status": "active",
   "categories": [
     "multimodal"
   ],
-  "summary": "长视频多模态理解问答（插入帧检索设计）",
-  "interpretation": "3,763 个视频、6,678 道人工多选题（视频最长约 1 小时），准确率口径；核心是「指代推理」——先按指代定位再推理，读分时注意可处理帧数直接决定成绩上限，低帧率模型的低分不代表理解力上限。",
-  "measures": [],
-  "does_not_measure": [],
+  "summary": "LongVideoBench 是一个长视频问答基准：给模型一段最长约 1 小时的视频，同时按时间顺序把字幕文本插到对应画面之间（像开了字幕的播放器），最后从 4-5 个选项里选一个。它专测「指代推理」（referring reasoning）——题干先用一段话描述要看哪一时刻的画面或字幕，再问这段里的某个细节，模型必须先定位到正确片段才可能答对。",
+  "interpretation": "高分说明模型能在长视频里先定位、再答对细节，而且论文的核心发现是成绩随可处理输入帧数上升；但它不代表模型「看懂」了整段视频——只喂字幕不喂帧，GPT-4o 也能拿到 44.6%，分数里有一部分来自文本。同时帧数直接卡住成绩上限，低帧率下的低分不等于理解力差。",
+  "measures": [
+    {
+      "area": "(L1) 感知类指代推理（Perception）",
+      "focus": "指代查询只指向单个时刻，问这一时刻里出现什么对象、属性或事件；示例（T2A）：字幕说到「really in depth car videos like those」时，驾驶座里穿蓝牛仔、扎高马尾的女性上衣是什么颜色",
+      "share": "3,204 题（论文 Table 2 标注的层级合计）",
+      "format": "4-5 选 1 的多选题（1 个正确选项 + 3-4 个干扰项）",
+      "cite": [
+        "paper@Table 2",
+        "paper@Figure 2",
+        "paper@§3.3"
+      ]
+    },
+    {
+      "area": "(L2) 关系类指代推理（Relation）",
+      "focus": "指代上下文横跨多个时刻，要比较先后顺序、属性变化或跟踪同一对象；示例（SOS）：蓝天白云下有起伏的山，天上有一架尾部拖黑烟的飞机，问这架飞机之前出现在下列哪个场景",
+      "share": "3,474 题（论文 Table 2 标注的层级合计）",
+      "format": "4-5 选 1 的多选题；SSS 类的干扰项是正确顺序的排列",
+      "cite": [
+        "paper@Table 2",
+        "paper@Figure 2",
+        "paper@Figure 2 脚注"
+      ]
+    },
+    {
+      "area": "最难子类：场景序列（SSS）",
+      "focus": "判断多个（>3）场景的先后顺序，是论文报告的所有模型都最差的一类",
+      "share": "398 题",
+      "format": "干扰项为正确序列的排列组合",
+      "cite": [
+        "paper@Table 2",
+        "paper@§4.3",
+        "paper@Figure 2 脚注"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "摘要式或全局概述类问题——论文明确说任务聚焦对象、事件、属性等颗粒度细节，而不是 summary 或 topic overview",
+      "cite": [
+        "paper@§2"
+      ]
+    },
+    {
+      "text": "音频模态——论文附录 C 说现阶段只包含视觉和语言两个模态，尚未纳入音频",
+      "cite": [
+        "paper@附录 C"
+      ]
+    },
+    {
+      "text": "超过 1 小时的视频——附录 C 说没有把时长超过 1 小时的视频纳入评测范围",
+      "cite": [
+        "paper@附录 C"
+      ]
+    },
+    {
+      "text": "开放式 / 自由生成回答——全部题目都是可比对选项字母的多选题，官方不引入额外裁判模型",
+      "cite": [
+        "paper@附录 A.2",
+        "paper@§3.3"
+      ]
+    },
+    {
+      "text": "训练用途——Hugging Face 数据集卡明确写不建议把这个数据集用于训练",
+      "cite": [
+        "dataset"
+      ]
+    }
+  ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
+    "sample_count": 6678,
+    "splits": [
+      "验证集：752 个视频 / 1,337 题（答案公开，用于调参分析）",
+      "测试集：3,011 个视频 / 5,341 题（答案隐藏，官方榜单口径）"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "web-collected（119 个网页频道下载的视频 + 人工标注问答）",
+    "public_sample": true,
+    "totals": "3,763 个网页视频（最长约 1 小时，平均 473 秒）· 6,678 道人工标注多选题（4-5 个选项）· 17 个细粒度类别，(L1) 感知类 3,204 题、(L2) 关系类 3,474 题 · 字幕为英文，平台没给转写字幕的视频用 Whisper-V3-Large 生成",
+    "cite": [
+      "paper@Abstract",
+      "paper@§4.1",
+      "paper@Table 1",
+      "paper@Table 2",
+      "paper@§3.2",
+      "paper@§3.1",
+      "dataset"
+    ],
+    "construction": [
+      {
+        "k": "下载与筛选视频",
+        "text": "从 119 个频道下载所有 ≥720P 的视频；平台提供转写字幕的，剔除没有转写字幕或非英文字幕的；其余用 Whisper-V3-Large 生成字幕；再用 Q-Align 打分，剔除低质量视频（保留分数 > 0.25，范围 [0,1]），最后由标注员手工筛到 3,763 个。",
+        "cite": [
+          "paper@§3.2"
+        ]
+      },
+      {
+        "k": "交错输入格式",
+        "text": "字幕块插在它起始与结束时间戳中间位置的前后两帧之间，形成时间对齐的「帧-字幕」交错序列，喂给支持交错输入的 LMM。",
+        "cite": [
+          "paper@§3.2"
+        ]
+      },
+      {
+        "k": "出题规则",
+        "text": "每个视频按时长出 1-3 题（超过 60 秒 1 题、(180s,600s] 2 题、(900s,3600s] 3 题）；标注前必须先完整看一遍视频，之后可以拖回任意时间点；每题还要另写 3-4 个与题目和视频相关的干扰项。",
+        "cite": [
+          "paper@§3.3"
+        ]
+      },
+      {
+        "k": "三人质控",
+        "text": "每个视频经过三名标注者：主标注（同时过滤不适合标注的视频）、检查员（核对类别与规范）、修订员（改掉检查员判错的标注）；检查与修订共发现并修改了 20% 的标注。",
+        "cite": [
+          "paper@§3.3"
+        ]
+      },
+      {
+        "k": "标注成本",
+        "text": "雇佣有经验的标注员，日薪 90 美元、每天 3 小时（时薪 30 美元）；含检查与修订共 1,500 小时，总支出 45,000 美元。",
+        "cite": [
+          "paper@附录 E.2"
+        ]
+      },
+      {
+        "k": "许可与访问",
+        "text": "数据集以 CC-BY-NC-SA 4.0 发布、禁止商用，托管在 Hugging Face；HF 页面要求先同意「共享 Hugging Face 信息」的条款才能下载文件。",
+        "cite": [
+          "paper@附录 H",
+          "dataset"
+        ]
+      }
+    ]
   },
-  "metrics": [],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [],
-  "notes": "字节 Seed/Kimi 引用；NeurIPS 2024",
+  "default_protocol": {
+    "raw": "输入是按时间对齐交错的视频帧与字幕，末尾接问题和全部选项，提示词要求模型直接回答选项字母（「Answer with the option's letter from the given choices directly.」）；lmms-eval 的实现用 temperature 0、max_new_tokens 32，从输出里解析出选项字母后与 correct_choice 比对，指标为 lvb_acc（越高越好）。论文对每个模型取它能达到最佳表现时的 max_frames 报告测试集成绩；开源图像模型固定抽 8 帧，开源视频模型按其默认设置取帧。",
+    "cite": [
+      "paper@附录 A.2",
+      "eval-config",
+      "eval-code",
+      "paper@Table 7"
+    ],
+    "variants": [
+      {
+        "text": "max_frames（输入帧数）从 1 到 256 不等，同一模型不同帧数成绩差很多：对超过 180 秒的视频，GPT-4o 与 Gemini-1.5-Pro 把输入从 16 帧加到 256 帧能提升超过 10 个百分点；官网榜单把最佳帧数写在模型名后面（如 GPT-4o (0513) (256)），跨模型比较必须核对。",
+        "cite": [
+          "paper@§4.2",
+          "site"
+        ]
+      },
+      {
+        "text": "模态组合：只给字幕不给帧、只给帧不给字幕、两者都给，三种口径成绩差异明显（GPT-4o 分别 44.6 / 60.6 / 66.7），厂商自报常只写其中一种。",
+        "cite": [
+          "paper@Table 6"
+        ]
+      },
+      {
+        "text": "验证集 vs 测试集：论文的帧数、模态消融在 1,337 题的验证集上做，官方榜单报 5,341 题的测试集，两套数字不能混用。",
+        "cite": [
+          "paper@§4.1"
+        ]
+      },
+      {
+        "text": "三类模型取帧规则不同：长上下文 LMM 自由交叠帧与字幕，开源图像 LMM 固定 8 帧，开源视频 LMM 按其默认设置（PLLaVA / VideoChat2 / VideoLLaVA / ShareGPT4Video 用 16 帧，LLaVA-Next-Video 34B 与 M7B 用 32 帧），榜单把三类分列。",
+        "cite": [
+          "paper@附录 A.2",
+          "paper@§4.3"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "accuracy",
+      "name": "准确率（lvb_acc）",
+      "direction": "越高越好",
+      "description": "模型输出的选项字母与标准答案（correct_choice）一致的题目占比；不用 LLM 裁判，直接比对选项字母",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "eval-config",
+        "eval-code",
+        "paper@Table 7"
+      ]
+    }
+  ],
+  "versions": [
+    {
+      "id": "arxiv-v1",
+      "date": "2024-07-22",
+      "label": "arXiv v1 首发（cs.CV），3,763 视频 / 6,678 题；至今只有一个版本",
+      "cite": [
+        "paper",
+        "dataset"
+      ]
+    },
+    {
+      "id": "leaderboard-cutoff",
+      "date": "2024-10-14",
+      "label": "Hugging Face 数据集卡的榜单标题写「Leaderboard (until Oct. 14, 2024)」，但表内已含 Aria、LLaVA-Video-72B-Qwen2 等更晚模型；官网榜单同样收录这些模型",
+      "cite": [
+        "dataset",
+        "site"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "输入帧数直接决定成绩上限",
+      "impact": "同一模型换帧数成绩差异极大：对超过 180 秒的视频，GPT-4o 与 Gemini-1.5-Pro 从 16 帧加到 256 帧能提升超过 10 个百分点；反过来 Idefics2、Mantis-Idefics2 在 64 帧时总分反而从约 49.7 / 47.0 掉到 30.9 / 30.2。厂商自报往往只写对自己有利的帧数。",
+      "severity": "高",
+      "response": "论文在表 7 注明「max_frames set according to Tab. 5」，官网榜单把最佳帧数写在模型名后面，并说明该数字是模型达到最佳表现时（或厂商推荐 / 受限）的输入帧数；附录 A.2 说明三类模型的取帧规则。",
+      "reader": "比较两个模型前先对齐帧数、模态和子集；帧数不同的分数不能直接排。",
+      "cite": [
+        "paper@§4.2",
+        "paper@Table 5",
+        "site",
+        "paper@附录 A.2"
+      ]
+    },
+    {
+      "issue": "只喂字幕也能拿不少分（文本捷径）",
+      "impact": "去掉视频帧、只给字幕，GPT-4o 仍有 44.6% 准确率（论文未给随机基线，选项为 4-5 个），Gemini-1.5-Pro 43.0、GPT-4-Turbo 45.2；说明相当一部分题可以只靠字幕文本答出，把总分直接当成「视觉理解」会高估。",
+      "severity": "中",
+      "response": "论文在表 6 主动报告「无帧 / 无字幕 / 两者都有」三种组合，并据此得出「视觉模态是基础」的结论；未见针对字幕捷径的题目层修正。",
+      "reader": "看清分数是「帧+字幕」还是「仅字幕」；宣传页只给一个总分时先问口径。",
+      "cite": [
+        "paper@Table 6",
+        "paper@§4.2"
+      ]
+    },
+    {
+      "issue": "测试集答案隐藏、两处官方榜单范围不一致",
+      "impact": "测试集 5,341 题的答案不公开，外部只能在 1,337 题验证集上自行复现；Hugging Face 数据集卡的榜单标题写截止 2024-10-14，表内却已含 Aria、LLaVA-Video-72B-Qwen2、Qwen2-VL-7B、MiniCPM-V-2.6 等模型，与官网榜单一致但和标题自述的范围矛盾。",
+      "severity": "中",
+      "response": "官网与数据集卡都给出提交榜单的联系方式，榜单按 Test Total 排名；未见官方解释标题截止日与表内模型的差异。",
+      "reader": "引用分数时注明来自官网还是数据集卡、以及表内是否含目标模型。",
+      "cite": [
+        "dataset",
+        "site",
+        "paper@§4.1"
+      ]
+    },
+    {
+      "issue": "评测范围受限",
+      "impact": "只覆盖视觉 + 语言两个模态，没有音频；最长只到 1 小时；视频主题限定 10 类（电影回顾、旅游指南、生活 vlog、烹饪、新闻节目、艺术、历史、地理、STEM、计算机科学），来自 119 个网页频道。",
+      "severity": "中",
+      "response": "论文附录 C 明确写出前两条限制并表示会扩展；数据集卡声明不建议用于训练。",
+      "reader": "不要把 LongVideoBench 分数当作通用多模态能力；带音频、超长视频或其它主题的任务它测不到。",
+      "cite": [
+        "paper@附录 C",
+        "paper@§3.1",
+        "dataset"
+      ]
+    },
+    {
+      "issue": "版权与许可限制",
+      "impact": "数据集只提供网页视频链接，内容版权归各频道所有，遵守平台条款是使用方责任；CC-BY-NC-SA 4.0 禁止商用；HF 下载需先同意共享联系信息。",
+      "severity": "低",
+      "response": "论文附录 G 由作者声明对版权与隐私侵权负责，附录 H 说明托管在 Hugging Face 并维持 CC-BY-NC-SA-4.0；HF 页面写明权利归属。",
+      "reader": "商用场景不能直接用这个数据集复现结果。",
+      "cite": [
+        "paper@附录 G",
+        "paper@附录 H",
+        "dataset"
+      ]
+    },
+    {
+      "issue": "论文表格数字与总量对不上",
+      "impact": "表 2 标注 (L1) 感知类共 3,204 题、(L2) 关系类共 3,474 题，但按表内 17 个类别的题数相加，(L1) 八类合计 3,197 题、全表合计 6,671 题，与摘要和拆分的 6,678 题差 7 题；表 3 四个时长组的视频数相加为 3,761 个，与总量 3,763 个差 2 个。",
+      "severity": "低",
+      "response": "未见官方回应。",
+      "reader": "引用类别级题量用表内数字，引用总量用 6,678 题 / 3,763 个视频，并知道两者有 2-7 的小差额。",
+      "cite": [
+        "paper@Table 2",
+        "paper@Table 3",
+        "paper@Abstract"
+      ]
+    }
+  ],
+  "notes": "NeurIPS 2024 Datasets & Benchmarks Track 收录；数据集卡声明每年至少复审两次，更新发布在 GitHub 与 Hugging Face",
   "official_sources": [
     {
       "kind": "site",
@@ -33,15 +304,374 @@
       "url": "https://arxiv.org/abs/2407.15754"
     },
     {
-      "kind": "site",
-      "url": "https://seed.bytedance.com/en/blog/official-release-of-seed1-8-a-generalized-agentic-model"
+      "kind": "repo",
+      "url": "https://github.com/longvideobench/LongVideoBench"
     },
     {
-      "kind": "site",
-      "url": "https://www.kimi.ai/blog/kimi-k2-5"
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/longvideobench/LongVideoBench"
     }
   ],
-  "related_benchmarks": [],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "related_benchmarks": [
+    "egoschema",
+    "mvbench",
+    "lvbench",
+    "mlvu"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-13",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "LongVideoBench: A Benchmark for Long-context Interleaved Video-Language Understanding（arXiv:2407.15754v1，2024-07-22，PDF 全文）",
+        "url": "https://arxiv.org/abs/2407.15754",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "site",
+        "kind": "site",
+        "title": "longvideobench.github.io 官网（含官方榜单）",
+        "url": "https://longvideobench.github.io/",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "longvideobench/LongVideoBench（GitHub，README）",
+        "url": "https://github.com/longvideobench/LongVideoBench",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "dataset",
+        "kind": "dataset",
+        "title": "longvideobench/LongVideoBench（Hugging Face 数据集卡，需同意条款）",
+        "url": "https://huggingface.co/datasets/longvideobench/LongVideoBench",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "eval-config",
+        "kind": "docs",
+        "title": "lmms-eval 的 LongVideoBench 任务配置（longvideobench_val_v.yaml）",
+        "url": "https://github.com/EvolvingLMMs-Lab/lmms-eval/blob/main/lmms_eval/tasks/longvideobench/longvideobench_val_v.yaml",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "eval-code",
+        "kind": "repo",
+        "title": "lmms-eval 的 LongVideoBench 打分实现（tasks/longvideobench/utils.py）",
+        "url": "https://github.com/EvolvingLMMs-Lab/lmms-eval/blob/main/lmms_eval/tasks/longvideobench/utils.py",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "proceedings",
+        "kind": "site",
+        "title": "NeurIPS 2024 Proceedings 条目（Advances in NeurIPS 37，Datasets and Benchmarks Track，DOI 10.52202/079017-0907）",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/329ad516cf7a6ac306f29882e9c77558-Abstract-Datasets_and_Benchmarks_Track.html",
+        "accessed": "2026-11-13"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "LongVideoBench 团队：论文署名 Haoning Wu、Dongxu Li、Bei Chen、Junnan Li。论文与 NeurIPS 会议页都未列作者机构，数据集卡写「资助方将在最终版披露」（We will reveal the funding association in the final version.）",
+        "cite": [
+          "proceedings",
+          "paper@附录 I 数据集卡"
+        ]
+      },
+      "first_release": {
+        "v": "2024-07-22（arXiv v1 提交；后被 NeurIPS 2024 Datasets and Benchmarks Track 收录）",
+        "cite": [
+          "paper",
+          "proceedings"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "paper@Abstract",
+        "paper@§2",
+        "paper@Table 2"
+      ],
+      "interpretation": [
+        "paper@§4.2",
+        "paper@Table 6",
+        "paper@Abstract"
+      ]
+    },
+    "problem": {
+      "text": "当时的视频基准有强烈的「单帧偏差」：模型能处理的帧数变多，成绩也不涨，论文称这一直是视频理解评测的老问题；长上下文文本基准已经不少，长多模态基准却缺位，GPT-4o 当时只在约 3 分钟的视频上被评、Gemini-1.5-Pro 只用内部基准。LongVideoBench 想让成绩随输入帧数上升，从而真正测出长上下文多模态能力。",
+      "cite": [
+        "paper@§1",
+        "paper@§5",
+        "paper@附录 I 数据集卡"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机猜测基线",
+        "value": "论文未给出",
+        "note": "每题 1 个正确选项 + 3-4 个干扰项（共 4-5 个选项），论文没有报告整卷随机基线，本站也不推算。",
+        "cite": [
+          "paper@§3.3",
+          "eval-code"
+        ]
+      },
+      {
+        "label": "人类基线",
+        "value": "论文未给出",
+        "note": "论文只评测 LMM，没有报告人类在该基准上的准确率。",
+        "cite": [
+          "paper@§4.1"
+        ]
+      },
+      {
+        "label": "论文测试集最好",
+        "value": "66.7%",
+        "note": "GPT-4o (0513)，256 帧；同期开源最好 PLLaVA-34B 53.5%，最低 VideoChat2 (Vicuna 7B) 35.1%。",
+        "cite": [
+          "paper@Table 7"
+        ]
+      },
+      {
+        "label": "官网榜单最高",
+        "value": "66.7%",
+        "note": "GPT-4o (0513) (256)，Test Total 5,341 题；开源最高 LLaVA-Video-72B-Qwen2 (128) 64.9%。",
+        "cite": [
+          "site"
+        ]
+      },
+      {
+        "label": "帧数口径下限参考",
+        "value": "GPT-4o 1 帧 41.7%（验证集）",
+        "note": "同一模型在 1 帧与 256 帧之间相差约 25 个百分点，是读这份榜单时最该先对齐的口径差。",
+        "cite": [
+          "paper@Table 5"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把不同输入帧数的分数排在一起比——官网榜单把最佳帧数写在模型名后面，跨模型比较必须先对齐帧数、模态和子集。",
+        "cite": [
+          "site",
+          "paper@§4.2"
+        ]
+      },
+      {
+        "text": "把 LongVideoBench 高分等同于「视频理解能力强」——只喂字幕不喂帧，GPT-4o 也有 44.6%，分数里有一部分来自文本而非画面。",
+        "cite": [
+          "paper@Table 6"
+        ]
+      },
+      {
+        "text": "把验证集和测试集数字混用——论文的帧数、模态消融在 1,337 题验证集上做，官方榜单报 5,341 题测试集。",
+        "cite": [
+          "paper@§4.1"
+        ]
+      },
+      {
+        "text": "以为输入帧数越多一定越好——Idefics2、Mantis-Idefics2 在 64 帧时总分反而从约 49.7 / 47.0 掉到 30.9 / 30.2，Phi-3-Vision-Instruct 和 Mantis-BakLLaVA 在 64 帧直接超出上下文长度。",
+        "cite": [
+          "paper@Table 5",
+          "paper@附录 A.1"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "作者与机构",
+        "v": "Haoning Wu、Dongxu Li、Bei Chen、Junnan Li；论文、NeurIPS 会议页均未列机构，数据集卡称资助方将在最终版披露",
+        "cite": [
+          "proceedings",
+          "paper@附录 I 数据集卡"
+        ]
+      },
+      {
+        "k": "发表情况",
+        "v": "NeurIPS 2024 Datasets and Benchmarks Track（Advances in NeurIPS 37，DOI 10.52202/079017-0907）；arXiv:2407.15754v1 于 2024-07-22 提交，arXiv 上至今只有一个版本",
+        "cite": [
+          "proceedings",
+          "paper"
+        ]
+      },
+      {
+        "k": "视频来源",
+        "v": "119 个网页频道（横屏 99 个、竖屏 20 个），10 个内容类别：电影回顾、旅游指南、生活 vlog、烹饪/菜谱、新闻节目，以及艺术、历史、地理、STEM、计算机科学五类知识内容",
+        "cite": [
+          "paper@§3.1",
+          "paper@附录 I 数据集卡"
+        ]
+      },
+      {
+        "k": "时长分布",
+        "v": "四个渐进时长组：8-15s（884 个）、15-60s（925 个）、180-600s（986 个）、900-3600s（966 个），最长约 1 小时，全库平均 473 秒",
+        "cite": [
+          "paper@Table 3",
+          "paper@Table 1"
+        ]
+      },
+      {
+        "k": "标注投入",
+        "v": "共 1,500 小时（含检查与修订）、45,000 美元；日薪 90 美元、每天 3 小时（时薪 30 美元）；论文数据集卡说明已有人体研究 IRB 审批",
+        "cite": [
+          "paper@附录 E.2",
+          "paper@附录 I 数据集卡"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "数据集在 Hugging Face（longvideobench/LongVideoBench，需同意条款，CC-BY-NC-SA 4.0）；评测代码在 GitHub；已接入 lmms-eval（任务 longvideobench_val_i / longvideobench_val_v）；官方榜单在 Hugging Face Space 与官网",
+        "cite": [
+          "dataset",
+          "repo",
+          "eval-config"
+        ]
+      },
+      {
+        "k": "维护承诺",
+        "v": "数据集卡写每年至少复审两次，更新会发布在 GitHub 与 Hugging Face 主页；联系人为第一作者 Haoning Wu",
+        "cite": [
+          "paper@附录 I 数据集卡"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-13",
+        "columns": [
+          "排名",
+          "模型",
+          "输入帧数",
+          "Test Total (5341)",
+          "Val Total (1337)",
+          "开源"
+        ],
+        "rows": [
+          [
+            "1",
+            "GPT-4o (0513)",
+            "256",
+            "66.7",
+            "66.7",
+            "否"
+          ],
+          [
+            "2",
+            "Aria",
+            "256",
+            "65.0",
+            "64.2",
+            "是"
+          ],
+          [
+            "3",
+            "LLaVA-Video-72B-Qwen2",
+            "128",
+            "64.9",
+            "63.9",
+            "是"
+          ],
+          [
+            "4",
+            "Gemini-1.5-Pro (0514)",
+            "256",
+            "64.4",
+            "64.0",
+            "否"
+          ],
+          [
+            "5",
+            "LLaVA-OneVision-QWen2-72B-OV",
+            "32",
+            "63.2",
+            "61.3",
+            "是"
+          ],
+          [
+            "6",
+            "LLaVA-Video-7B-Qwen2",
+            "128",
+            "62.7",
+            "61.1",
+            "是"
+          ],
+          [
+            "7",
+            "Gemini-1.5-Flash (0514)",
+            "256",
+            "62.4",
+            "61.6",
+            "否"
+          ],
+          [
+            "8",
+            "GPT-4-Turbo (0409)",
+            "256",
+            "60.7",
+            "59.1",
+            "否"
+          ],
+          [
+            "9",
+            "InternVL2-40B",
+            "16",
+            "60.6",
+            "59.3",
+            "是"
+          ],
+          [
+            "10",
+            "mPLUG-Owl3-7B",
+            "128",
+            "60.1",
+            "59.8",
+            "是"
+          ],
+          [
+            "11",
+            "TimeMarker",
+            "128",
+            "59.6",
+            "56.3",
+            "是"
+          ],
+          [
+            "12",
+            "GPT-4o-mini",
+            "250",
+            "58.8",
+            "56.5",
+            "否"
+          ],
+          [
+            "34",
+            "VideoLLaVA",
+            "8",
+            "37.6",
+            "39.1",
+            "是"
+          ],
+          [
+            "35",
+            "VideoChat2 (Vicuna 7B)",
+            "16",
+            "35.1",
+            "36.0",
+            "是"
+          ]
+        ]
+      },
+      "cite": [
+        "site"
+      ]
+    }
+  }
 }

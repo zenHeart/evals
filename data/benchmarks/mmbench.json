@@ -1,32 +1,399 @@
 {
   "id": "mmbench",
   "name": "MMBench",
-  "full_name": null,
+  "full_name": "MMBench: Is Your Multi-modal Model an All-around Player?（你的的是多模态模型全能选手吗）",
   "aliases": [],
   "status": null,
   "categories": [
     "multimodal"
   ],
-  "summary": "多模态综合能力选择题评测（v1.1 EN 常用）",
-  "interpretation": "中英双语多模态多选基准（常用 v1.1 EN 口径），CircularEval 判分——模型需在选项循环排列下稳定选中才算对，准确率口径越高越好；与 MMBench-CN 成对读可看双语差距。",
-  "measures": [],
-  "does_not_measure": [],
+  "summary": "MMBench 是上海人工智能实验室与 OpenCompass 社区发布的中英双语多模态选择题基准：给视觉语言模型（VLM，指能看图答题的大模型）出 3,217 道单选题，按 20 种细粒度能力分别打分，并用 CircularEval 判分——同一题把选项循环移位后连考 N 次，全部答对才算对，用来压住「蒙答案」和「偏爱某个选项位置」带来的虚高。",
+  "interpretation": "高分只说明模型在有图选择题上、选项被循环打乱后仍能稳定选对，不等于开放式问答、多步推理或真实任务能力；论文没有给人类基线，也不评估生成内容质量。MMBench-test 的答案保密，分数要提交预测到官方服务器才能拿到，因此不同批次的榜单成绩不完全可比。",
+  "measures": [
+    {
+      "area": "粗粒度感知（Coarse Perception, CP）",
+      "focus": "判断图像整体属性，含 5 个 L-3 子能力：Image Style（照片、油画、素描、CT 扫描等）、Image Scene（室内外、森林、城市、水岸等）、Image Emotion（图像传达的主观情绪）、Image Quality（模糊、明暗、对比度）、Image Topic（风景、人像、物体特写、文字等）。",
+      "share": "未披露（论文只约束每个 L-3 能力至少 125 题）",
+      "format": "配图单选题，2–4 个选项",
+      "cite": [
+        "arxiv-2307-06281@附录 A.1",
+        "arxiv-2307-06281@§3.3"
+      ]
+    },
+    {
+      "area": "细粒度单实例感知（Fine-grained Perception single-instance, FP-S）",
+      "focus": "针对图中单个对象或区域判断，含 4 个 L-3 子能力：Object Localization（对象在图中的位置）、Attribute Recognition（纹理、形状、外观、情绪）、Celebrity Recognition（名人、地标、知名物体）、OCR（识别图中文字、公式与表格）。",
+      "share": "未披露（论文只约束每个 L-3 能力至少 125 题）",
+      "format": "配图单选题，2–4 个选项",
+      "cite": [
+        "arxiv-2307-06281@附录 A.1"
+      ]
+    },
+    {
+      "area": "细粒度跨实例感知（Fine-grained Perception cross-instance, FP-C）",
+      "focus": "比较图中多个对象，含 3 个 L-3 子能力：Spatial Relationship（对象的相对位置）、Attribute Comparison（不同对象的形状、颜色等属性对比）、Action Recognition（人体动作、姿势运动、人物与物体交互）。",
+      "share": "未披露（论文只约束每个 L-3 能力至少 125 题）",
+      "format": "配图单选题，2–4 个选项",
+      "cite": [
+        "arxiv-2307-06281@附录 A.1"
+      ]
+    },
+    {
+      "area": "属性推理（Attribute Reasoning, AR）",
+      "focus": "由外观反推属性，含 3 个 L-3 子能力：Physical Property Reasoning（预测物体物理属性）、Function Reasoning（预测物体功能）、Identity Reasoning（判断人物身份）。",
+      "share": "未披露（论文只约束每个 L-3 能力至少 125 题）",
+      "format": "配图单选题，2–4 个选项",
+      "cite": [
+        "arxiv-2307-06281@附录 A.1"
+      ]
+    },
+    {
+      "area": "关系推理（Relation Reasoning, RR）",
+      "focus": "判断对象之间的关系，含 3 个 L-3 子能力：Social Relation（父子、夫妻、朋友、敌对等人际关系）、Physical Relation（物理世界中的关系，含 3D 空间关系与物体连接）、Nature Relation（捕食、共生、共存等抽象自然关系）。",
+      "share": "未披露（论文只约束每个 L-3 能力至少 125 题）",
+      "format": "配图单选题，2–4 个选项",
+      "cite": [
+        "arxiv-2307-06281@附录 A.1"
+      ]
+    },
+    {
+      "area": "逻辑推理（Logic Reasoning, LR）",
+      "focus": "结构化理解与预测，含 2 个 L-3 子能力：Structuralized Image-Text Understanding（解析图表内容与趋势、理解图中代码）、Future Prediction（预测接下来会发生什么，如打雷之后会下雨）。",
+      "share": "未披露（论文只约束每个 L-3 能力至少 125 题）",
+      "format": "配图单选题，2–4 个选项",
+      "cite": [
+        "arxiv-2307-06281@附录 A.1"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "不衡量纯文本问答能力：健全性检查中只用文本输入推理 GPT-4-Turbo，总体 CircularEval 准确率仅 2.9%，与随机同量级。",
+      "cite": [
+        "arxiv-2307-06281@Table 3",
+        "arxiv-2307-06281@§5.2"
+      ]
+    },
+    {
+      "text": "不评估开放式生成质量：所有题目都是选择题，模型的自由文本输出只被用来抽取选项标签，不评估事实性、完整性与表达。",
+      "cite": [
+        "arxiv-2307-06281@§4.2"
+      ]
+    },
+    {
+      "text": "不覆盖视频、时序与音频模态：题目是「一张图像 + 一个问题 + 2–4 个选项」的静态图文单选。",
+      "cite": [
+        "arxiv-2307-06281@§3.2"
+      ]
+    },
+    {
+      "text": "不覆盖中英以外的语言：只有英文版 MMBench 与中文翻译版 MMBench-CN 两个语种。",
+      "cite": [
+        "arxiv-2307-06281@§3.2"
+      ]
+    }
+  ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
+    "sample_count": 3217,
+    "splits": [
+      "dev（公开题面与全部标注答案）",
+      "test（只公开题面，答案保密，需提交预测到评测服务器）",
+      "MMBench-CN（中文翻译版，与英文版成对比较）"
+    ],
+    "languages": [
+      "en",
+      "zh"
+    ],
+    "source_type": "公开数据集验证集 + 互联网人工采集的图文四元组",
+    "public_sample": true,
+    "multiple_choice_share": "全部为单选题（每题 2–4 个选项）",
+    "multimodal_share": "每题配一张图像",
+    "totals": "论文 v1.1 口径共 3,217 题，覆盖 2 个 L-1、6 个 L-2、20 个 L-3 能力；按 4:6 划成 dev 与 test，每个 L-3 能力至少 125 题。",
+    "cite": [
+      "arxiv-2307-06281@§3.3",
+      "mmbench-repo@README"
+    ],
+    "construction": [
+      {
+        "k": "能力体系设计",
+        "text": "先定 2 个 L-1 能力（Perception 感知、Reasoning 推理），再细分为 6 个 L-2 与 20 个 L-3 叶子能力，全部题目按 L-3 能力出题。",
+        "cite": [
+          "arxiv-2307-06281@§3.1"
+        ]
+      },
+      {
+        "k": "出题与人工采集",
+        "text": "每题是「问题 + 2–4 个选项 + 图像 + 答案」四元组，由来自不同学科的本科生与研究生志愿者从公开数据集和互联网人工采集；每个 L-3 能力先做 10–20 道示例题，再按能力定义扩展。",
+        "cite": [
+          "arxiv-2307-06281@§3.2"
+        ]
+      },
+      {
+        "k": "纯文本可答过滤",
+        "text": "用 GPT-4、Gemini-Pro、Qwen-Max 三个 LLM 以纯文本输入在 CircularEval 下作答，超过两个答对的题进入人工复核，不合格则删除。",
+        "cite": [
+          "arxiv-2307-06281@附录 B"
+        ]
+      },
+      {
+        "k": "错题过滤",
+        "text": "用 3 个闭源 VLM（GPT-4v、Gemini-Pro-V、Qwen-VL-Max）加 2 个开源 VLM（InternLM-XComposer2、LLaVA-v1.5-13B）推理全部题目，若所有 VLM 在 CircularEval 下都答错，则该题被判为潜在有问题并人工复核删除。",
+        "cite": [
+          "arxiv-2307-06281@§3.2",
+          "arxiv-2307-06281@附录 B"
+        ]
+      },
+      {
+        "k": "中文版构建",
+        "text": "MMBench-CN 由 GPT-4 翻译题目与选项（专有名词、符号、代码保留英文），全部译文再经人工校验。",
+        "cite": [
+          "arxiv-2307-06281@§3.2"
+        ]
+      },
+      {
+        "k": "图像来源构成",
+        "text": "互联网来源 2,590 题（80.5%），其余来自公开数据集验证集：COCO 179 题（5.6%）、ScienceQA 156 题（4.8%）、ARAS 76 题（2.4%）、Places 59 题（1.8%）、KonIQ-10k 32 题（1.0%）、CLEVR 14 题（0.4%），另有 LLaVA、PISC、ShapeWorld、TextVQA、VSR、W3C School 各十余至二十题。",
+        "cite": [
+          "arxiv-2307-06281@附录 A.2"
+        ]
+      }
+    ]
   },
-  "metrics": [],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [],
+  "metrics": [
+    {
+      "id": "circular-top1",
+      "name": "CircularEval Top-1 准确率",
+      "direction": "越高越好",
+      "description": "主指标：同一题按选项循环移位推理 N 次（N 为选项数），只有 N 次全部选对才计为正确的总体准确率。论文主表与官方榜单都用这个口径。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2307-06281@§4.3",
+        "arxiv-2307-06281@Table 3"
+      ]
+    },
+    {
+      "id": "l2-subaccuracy",
+      "name": "L-2 子能力准确率",
+      "direction": "越高越好",
+      "description": "按 6 个 L-2 能力分别报的 CircularEval 准确率，用于定位模型在感知还是推理、粗粒度还是细粒度上的短板。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2307-06281@Table 3"
+      ]
+    },
+    {
+      "id": "vanilla-top1",
+      "name": "VanillaEval Top-1 准确率（单轮）",
+      "direction": "越高越好",
+      "description": "每题只推理一次的单轮准确率，比 CircularEval 宽松，多数 VLM 会高出 10–20 个百分点；论文用它做对照，不当作主口径。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2307-06281@Table 2",
+        "mmbench-repo@README"
+      ]
+    }
+  ],
+  "default_protocol": {
+    "raw": "零样本、同一提示词、开放生成：让 VLM 直接生成答案文本，再用 gpt-4-0125 把自由文本对齐到给定选项并输出标签（对不上时返回伪选项 Z）；判分用 CircularEval，同一题按选项循环移位推理 N 次，全部答对才算该题正确，实践中某轮答错即停止，因此成本低于 N 倍推理。测试集需把预测文件提交到官方评测服务器获取分数。",
+    "cite": [
+      "arxiv-2307-06281@§5.1",
+      "arxiv-2307-06281@§4.3",
+      "arxiv-2307-06281@§3.3"
+    ],
+    "variants": [
+      {
+        "text": "判分口径：VanillaEval 只推理一次，比 CircularEval 宽松得多——OpenFlamingo v2 从 36.7% 掉到 2.6%，多数 VLM 掉 10–20 个百分点，两者不能混在同一张表里比。",
+        "cite": [
+          "arxiv-2307-06281@Table 2",
+          "mmbench-repo@README"
+        ]
+      },
+      {
+        "text": "裁判模型：论文测过 GPT-4 (0125)、GPT-3.5-Turbo (0613 与 0125)、InternLM2-7B 四种抽取器，VisualGLM 波动最大约 1.4%，GPT-4v 等头部闭源 VLM 不超过 0.3%；复现时应固定 gpt-4-0125。",
+        "cite": [
+          "arxiv-2307-06281@附录 C",
+          "arxiv-2307-06281@§4.2"
+        ]
+      },
+      {
+        "text": "子集与子榜：MMBench-dev 与 MMBench-test 分开报分，仓库另设 CCBench（510 题，中国文化域）子榜，2023-12-26 还更新过去噪版本，跨版本成绩不可直接相比。",
+        "cite": [
+          "arxiv-2307-06281@§3.3",
+          "mmbench-repo@README",
+          "mmbench-repo@News"
+        ]
+      },
+      {
+        "text": "语言版本：MMBench 与 MMBench-CN 分开报分，多数模型中文掉分，70%+ 准确率模型中最大的英中差距约 2%，InternLM-XComposer2 掉分不到 1%。",
+        "cite": [
+          "arxiv-2307-06281@§5.2"
+        ]
+      },
+      {
+        "text": "提示策略：论文默认只用零样本；也试过 few-shot 与 chain-of-thought，但未见积极结果，因此官方不给这两种口径的参考分。",
+        "cite": [
+          "arxiv-2307-06281@附录 D.1"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "mmbench-cn-2023-10-03",
+      "date": "2023-10-03",
+      "label": "仓库上线经人工校验的中文翻译版 MMBench（MMBench-CN）",
+      "cite": [
+        "mmbench-repo@News"
+      ]
+    },
+    {
+      "id": "ccbench-2023-10-23",
+      "date": "2023-10-23",
+      "label": "新增 CCBench 子榜（多模态中国文化域，510 题）",
+      "cite": [
+        "mmbench-repo@News",
+        "mmbench-repo@README"
+      ]
+    },
+    {
+      "id": "vlmevalkit-2023-12-10",
+      "date": "2023-12-10",
+      "label": "发布评测工具 VLMEvalKit，MMBench 的评测代码并入其中",
+      "cite": [
+        "mmbench-repo@News",
+        "arxiv-2307-06281@摘要"
+      ]
+    },
+    {
+      "id": "ccbench-update-2023-12-26",
+      "date": "2023-12-26",
+      "label": "CCBench 更新并移除噪声测试样本，榜单同步更新",
+      "cite": [
+        "mmbench-repo@News"
+      ]
+    },
+    {
+      "id": "paper-v1-1-2024-04",
+      "date": "2024-04",
+      "label": "论文发布修订版，描述数据质量改进后的 MMBench v1.1（仓库与 HF 卡片仍为旧口径题量）",
+      "cite": [
+        "arxiv-2307-06281@脚注 1"
+      ]
+    },
+    {
+      "id": "arxiv-v5-2024-08-20",
+      "date": "2024-08-20",
+      "label": "论文更新至 arXiv v5（当前档案依据的版本）",
+      "cite": [
+        "arxiv-2307-06281@摘要页",
+        "arxiv-2307-06281@脚注 1"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "CircularEval 分数显著低于单轮口径，跨基准直接对比会失真",
+      "impact": "同一模型换判分口径可差 10–20 个百分点，极端如 OpenFlamingo v2 从 36.7% 掉到 2.6%；把 MMBench 分数和单轮口径的基准并列会严重低估模型。",
+      "severity": "高",
+      "response": "论文把 CircularEval 定为默认范式，并在附录同时给出单轮对照结果。",
+      "reader": "比较时先确认对方用的是 CircularEval 还是单轮；榜单未注明口径的成绩不要直接采信。",
+      "cite": [
+        "arxiv-2307-06281@Table 2",
+        "mmbench-repo@README"
+      ]
+    },
+    {
+      "issue": "判分依赖 LLM 抽取选项标签",
+      "impact": "指令跟随弱的 VLM 输出自由文本，需要 GPT-4 抽取；抽取结果与人工一致率 91.5%，换裁判会让个别模型波动（VisualGLM 约 1.4%）。",
+      "severity": "中",
+      "response": "论文用约 420 条难例做人工抽检，并公布四种抽取器的对照表；官方默认 gpt-4-0125。",
+      "reader": "复现时固定 gpt-4-0125，并在报告里写明裁判版本。",
+      "cite": [
+        "arxiv-2307-06281@§4.2",
+        "arxiv-2307-06281@附录 C"
+      ]
+    },
+    {
+      "issue": "题量在论文与官方仓库之间不一致",
+      "impact": "论文 v1.1 记 3,217 题，仓库 README 记 2,974 题（dev 1,164 + test 1,784，合计 2,948），Hugging Face 数据集卡为空；引用题量时不说明口径会给出互相矛盾的数字。",
+      "severity": "中",
+      "response": "未见官方回应；仓库提供 VLMEvalKit 与 Legacy 两种下载格式，可自行核对实际条数。",
+      "reader": "以论文 3,217 为准并标注版本；看到 2,974 时按仓库下载包口径理解。",
+      "cite": [
+        "arxiv-2307-06281@§3.3",
+        "mmbench-repo@README",
+        "mmbench-dataset@数据集卡"
+      ]
+    },
+    {
+      "issue": "测试集答案保密，无法本地复测",
+      "impact": "只能提交预测到官方服务器拿 test 分数，榜单更新时点与提交批次不可控，历史成绩难以逐位复现。",
+      "severity": "中",
+      "response": "官方提供提交入口与 VLMEvalKit 提交格式说明。",
+      "reader": "对比榜单成绩时记录提交时间与所用代码版本。",
+      "cite": [
+        "arxiv-2307-06281@§3.3",
+        "mmbench-repo@README"
+      ]
+    },
+    {
+      "issue": "选项数量不等（2–4 个），随机基线不统一",
+      "impact": "4 选项题随机约 25%，2 选项题随机约 50%，绝对分数不能直接当作能力读数。",
+      "severity": "中",
+      "response": "CircularEval 要求全部轮次一致，压缩了猜测空间；论文用纯文本 GPT-4 的 2.9% 作为健全性检查。",
+      "reader": "看相对排名与子能力剖面，不要盯绝对分。",
+      "cite": [
+        "arxiv-2307-06281@§4.3",
+        "arxiv-2307-06281@Table 3"
+      ]
+    },
+    {
+      "issue": "闭源 VLM 的内容审核会拒答，压低分数",
+      "impact": "GPT-4v、Gemini-Pro-V、Qwen-VL-Max 分别在 1.8%、1.6%、0.1% 的 CircularEval 轮次拒答；按「拒答全部答对」重算，对 test 准确率影响最高 2.4%，其中 74% 的 GPT-4v 拒答与名人识别相关。",
+      "severity": "低",
+      "response": "论文给出上界估计表，说明该影响不改变结论量级。",
+      "reader": "跨厂商比较时同时看拒答率，别把拒答当成能力缺失。",
+      "cite": [
+        "arxiv-2307-06281@§5.3"
+      ]
+    },
+    {
+      "issue": "图像以互联网抓取为主，存在时效与授权风险",
+      "impact": "80.5% 的图像来自互联网，原始链接可能失效或变更，长期复现有断链风险。",
+      "severity": "低",
+      "response": "仓库提供打包下载（VLMEvalKit 精简格式与 Legacy 全副本格式），可离线固化。",
+      "reader": "使用打包副本而非远程链接，并记录下载日期。",
+      "cite": [
+        "arxiv-2307-06281@附录 A.2",
+        "mmbench-repo@README"
+      ]
+    }
+  ],
   "notes": "字节 Seed 引用；上海 AI Lab 发布",
   "official_sources": [
     {
       "kind": "paper",
       "url": "https://arxiv.org/abs/2307.06281"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/open-compass/MMBench"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/opencompass/MMBench"
     },
     {
       "kind": "site",
@@ -37,6 +404,470 @@
     "mmmu",
     "mmvet"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-13",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      {
+        "id": "arxiv-2307-06281",
+        "kind": "paper",
+        "title": "MMBench: Is Your Multi-modal Model an All-around Player?（arXiv:2307.06281v5，2024-08-20）",
+        "url": "https://arxiv.org/abs/2307.06281",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "mmbench-repo",
+        "kind": "repo",
+        "title": "open-compass/MMBench 官方仓库 README",
+        "url": "https://github.com/open-compass/MMBench",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "mmbench-dataset",
+        "kind": "dataset",
+        "title": "opencompass/MMBench Hugging Face 数据集卡",
+        "url": "https://huggingface.co/datasets/opencompass/MMBench",
+        "accessed": "2026-11-13"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "上海人工智能实验室（Shanghai AI Laboratory）牵头，OpenCompass 社区维护官方仓库；论文合作单位含南洋理工大学、香港中文大学、新加坡国立大学、浙江大学",
+        "cite": [
+          "arxiv-2307-06281@作者署名"
+        ]
+      },
+      "first_release": {
+        "v": "2023 年 8 月（论文脚注：MMBench v1.1 的上一版于 2023 年 8 月发布；仓库 2023-10-03 上线中文版）",
+        "cite": [
+          "arxiv-2307-06281@脚注 1",
+          "mmbench-repo@News"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "arxiv-2307-06281@摘要",
+        "arxiv-2307-06281@§3.3",
+        "arxiv-2307-06281@§4.3"
+      ],
+      "interpretation": [
+        "arxiv-2307-06281@§3.3",
+        "arxiv-2307-06281@§5.2",
+        "arxiv-2307-06281@§4.3"
+      ]
+    },
+    "problem": {
+      "text": "旧基准两条路都不够用。VQAv2、COCO Caption 这类客观基准只给单一任务的量化分数，缺乏细粒度能力评估，指标也吃不住 VLM 输出整句话的情况；OwlEval 这类主观基准靠人工评估，不可扩展且可能有明显偏差。MMBench 用 20 个 L-3 能力的选择题加一套可复现的自动判分来同时解决这两点。",
+      "cite": [
+        "arxiv-2307-06281@摘要",
+        "arxiv-2307-06281@§1"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机猜测基线（4 选项题）",
+        "value": "约 25%",
+        "note": "论文指出 4 选 1 随机约 25% Top-1；2–3 选项题随机基线更高，且 CircularEval 要求全轮一致，实际随机成功率远低于此。",
+        "cite": [
+          "arxiv-2307-06281@§4.3"
+        ]
+      },
+      {
+        "label": "纯文本 LLM 健全性检查（不给图）",
+        "value": "2.9%",
+        "note": "GPT-4-Turbo (0125) 仅用文本输入在 MMBench-test 的总体 CircularEval 准确率，与随机同量级，说明题目确实需要视觉信息。",
+        "cite": [
+          "arxiv-2307-06281@Table 3",
+          "arxiv-2307-06281@§5.2"
+        ]
+      },
+      {
+        "label": "论文开源最好成绩（MMBench-test，CircularEval）",
+        "value": "78.1%",
+        "note": "InternLM-XComposer2（含自有数据训练）；纯开源数据训练的 LLaVA-InternLM2-20B 为 72.3%。",
+        "cite": [
+          "arxiv-2307-06281@Table 3"
+        ]
+      },
+      {
+        "label": "论文闭源最好成绩（MMBench-test，CircularEval）",
+        "value": "75.4%",
+        "note": "Qwen-VL-Max；GPT-4v 为 74.3%，Gemini-Pro-V 为 70.2%。",
+        "cite": [
+          "arxiv-2307-06281@Table 3"
+        ]
+      },
+      {
+        "label": "最难 L-3 能力的全场最高分（Amax）",
+        "value": "61.5%",
+        "note": "Amax 最低的 4 个 L-3 能力：Image Quality 61.5%、Structralized Image-Text Understanding 61.3%、Physical Relation Reasoning 64.0%、Spatial Relationship 68.0%——即使用最强 VLM 也远未饱和。",
+        "cite": [
+          "arxiv-2307-06281@Figure 10"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "「MMBench 已经饱和」——最难的能力上，所有被测 VLM 的最高分只有 61.5%（Image Quality），结构化图文理解也只有 61.3%，基准远未饱和。",
+        "cite": [
+          "arxiv-2307-06281@Figure 10"
+        ]
+      },
+      {
+        "text": "「78.1% 说明模型快到人类水平」——论文没有给出人类基线，也没有把分数解释成人类对等能力；它只是 VLM 之间的相对排序工具。",
+        "cite": [
+          "arxiv-2307-06281@Table 3",
+          "arxiv-2307-06281@§5.2"
+        ]
+      },
+      {
+        "text": "「分数是 GPT-4 判的，所以不可信」——裁判只负责把模型的自由文本对齐到给定选项，人工抽检一致率 91.5%，且换裁判对头部闭源 VLM 的影响不超过 0.3%。",
+        "cite": [
+          "arxiv-2307-06281@§4.2",
+          "arxiv-2307-06281@附录 C"
+        ]
+      },
+      {
+        "text": "「CircularEval 分数低是基准有问题」——分数低是设计目标：选项循环移位后必须全部轮次一致，专门用来压住选项位置偏置与猜测，多数 VLM 会比单轮掉 10–20 个百分点。",
+        "cite": [
+          "arxiv-2307-06281@§4.3",
+          "arxiv-2307-06281@Table 2"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "上海人工智能实验室（论文第一署名单位）；官方仓库由 OpenCompass 社区维护，评测代码并入 VLMEvalKit。",
+        "cite": [
+          "arxiv-2307-06281@作者署名",
+          "mmbench-repo@README"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "Yuan Liu、Haodong Duan（项目负责人）、Yuanhan Zhang、Bo Li、Songyang Zhang 为共同第一作者；通讯作者为 Ziwei Liu、Kai Chen、Dahua Lin。",
+        "cite": [
+          "arxiv-2307-06281@作者署名"
+        ]
+      },
+      {
+        "k": "论文发表",
+        "v": "European Conference on Computer Vision（ECCV）2024，页码 216–233；仓库 BibTeX 即如此标注，论文正文未另写口头报告信息。",
+        "cite": [
+          "mmbench-repo@Citation"
+        ]
+      },
+      {
+        "k": "评测工具",
+        "v": "VLMEvalKit，2023-12-10 上线，是 MMBench 榜单使用的官方代码。",
+        "cite": [
+          "mmbench-repo@News",
+          "mmbench-repo@README"
+        ]
+      },
+      {
+        "k": "数据下载",
+        "v": "VLMEvalKit 格式只为 CircularEval 的多个轮次保留一份图像副本以缩小体积；Legacy 格式为 N 选项题保留 N 份副本，两种格式内容一致。",
+        "cite": [
+          "mmbench-repo@README"
+        ]
+      },
+      {
+        "k": "子榜与配套",
+        "v": "CCBench（510 题，多模态中国文化域）2023-10-23 上线、2023-12-26 更新去噪；MMBench-CN 为中文翻译版，与英文版成对比较。",
+        "cite": [
+          "mmbench-repo@README",
+          "mmbench-repo@News"
+        ]
+      },
+      {
+        "k": "开源许可",
+        "v": "仓库代码为 Apache-2.0；Hugging Face 数据集卡标注 cc-by-4.0，但卡片正文为空。",
+        "cite": [
+          "mmbench-repo@README",
+          "mmbench-dataset@数据集卡"
+        ]
+      },
+      {
+        "k": "题量口径差异",
+        "v": "论文 3,217 题（v1.1）；仓库 README 2,974 题（dev 1,164 / test 1,784）；Hugging Face 卡片无数据。",
+        "cite": [
+          "arxiv-2307-06281@§3.3",
+          "mmbench-repo@README",
+          "mmbench-dataset@数据集卡"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2024-08-20",
+        "columns": [
+          "模型",
+          "类型",
+          "总体",
+          "CP",
+          "FP-S",
+          "FP-C",
+          "AR",
+          "LR",
+          "RR"
+        ],
+        "rows": [
+          [
+            "GPT-4-Turbo (0125)",
+            "纯文本 LLM（不给图）",
+            "2.9%",
+            "0.6%",
+            "1.2%",
+            "4.1%",
+            "3.7%",
+            "4.9%",
+            "7.4%"
+          ],
+          [
+            "OpenFlamingo v2",
+            "开源 VLM",
+            "2.3%",
+            "1.1%",
+            "3.5%",
+            "1.5%",
+            "5.3%",
+            "0.0%",
+            "2.7%"
+          ],
+          [
+            "MiniGPT4-7B",
+            "开源 VLM",
+            "30.5%",
+            "37.0%",
+            "31.8%",
+            "17.2%",
+            "49.8%",
+            "9.2%",
+            "25.6%"
+          ],
+          [
+            "IDEFICS-9B-Instruct",
+            "开源 VLM",
+            "35.2%",
+            "48.3%",
+            "31.3%",
+            "29.6%",
+            "47.8%",
+            "11.4%",
+            "25.2%"
+          ],
+          [
+            "VisualGLM-6B",
+            "开源 VLM",
+            "35.4%",
+            "40.2%",
+            "38.5%",
+            "26.2%",
+            "47.8%",
+            "19.6%",
+            "29.5%"
+          ],
+          [
+            "InstructBLIP-7B",
+            "开源 VLM",
+            "38.3%",
+            "46.7%",
+            "39.0%",
+            "31.8%",
+            "55.5%",
+            "8.7%",
+            "31.0%"
+          ],
+          [
+            "MiniGPT4-13B",
+            "开源 VLM",
+            "38.8%",
+            "44.6%",
+            "42.9%",
+            "23.2%",
+            "64.9%",
+            "8.2%",
+            "32.9%"
+          ],
+          [
+            "InstructBLIP-13B",
+            "开源 VLM",
+            "39.8%",
+            "47.2%",
+            "42.9%",
+            "21.0%",
+            "60.4%",
+            "12.5%",
+            "38.8%"
+          ],
+          [
+            "Qwen-VL-Chat",
+            "开源 VLM（含自有训练数据）",
+            "60.9%",
+            "68.5%",
+            "67.7%",
+            "50.2%",
+            "78.0%",
+            "37.0%",
+            "45.7%"
+          ],
+          [
+            "MiniCPM-V",
+            "开源 VLM",
+            "61.4%",
+            "65.6%",
+            "69.4%",
+            "51.3%",
+            "70.6%",
+            "35.3%",
+            "59.7%"
+          ],
+          [
+            "LLaVA-v1.5-7B",
+            "开源 VLM",
+            "63.4%",
+            "70.0%",
+            "68.0%",
+            "57.7%",
+            "77.6%",
+            "33.2%",
+            "56.2%"
+          ],
+          [
+            "mPLUG-Owl2",
+            "开源 VLM",
+            "63.5%",
+            "68.1%",
+            "69.1%",
+            "55.8%",
+            "78.4%",
+            "37.0%",
+            "57.0%"
+          ],
+          [
+            "CogVLM-Chat-17B",
+            "开源 VLM",
+            "63.6%",
+            "72.8%",
+            "66.6%",
+            "55.4%",
+            "71.4%",
+            "33.7%",
+            "62.0%"
+          ],
+          [
+            "Yi-VL-6B",
+            "开源 VLM（含自有训练数据）",
+            "65.5%",
+            "72.8%",
+            "72.9%",
+            "56.2%",
+            "75.5%",
+            "41.3%",
+            "55.4%"
+          ],
+          [
+            "LLaVA-v1.5-13B",
+            "开源 VLM",
+            "66.9%",
+            "73.1%",
+            "72.4%",
+            "60.3%",
+            "75.5%",
+            "35.9%",
+            "65.5%"
+          ],
+          [
+            "Yi-VL-34B",
+            "开源 VLM（含自有训练数据）",
+            "68.4%",
+            "72.0%",
+            "78.0%",
+            "54.7%",
+            "81.2%",
+            "38.6%",
+            "68.2%"
+          ],
+          [
+            "LLaVA-InternLM2-20B",
+            "开源 VLM",
+            "72.3%",
+            "78.3%",
+            "76.6%",
+            "68.2%",
+            "78.4%",
+            "46.2%",
+            "69.4%"
+          ],
+          [
+            "InternLM-XComposer2",
+            "开源 VLM（含自有训练数据）",
+            "78.1%",
+            "80.4%",
+            "83.5%",
+            "73.0%",
+            "83.7%",
+            "63.6%",
+            "74.4%"
+          ],
+          [
+            "Qwen-VL-Plus",
+            "闭源 VLM",
+            "64.6%",
+            "66.5%",
+            "79.1%",
+            "50.2%",
+            "73.9%",
+            "42.9%",
+            "57.8%"
+          ],
+          [
+            "Gemini-Pro-V",
+            "闭源 VLM",
+            "70.2%",
+            "70.0%",
+            "78.9%",
+            "65.9%",
+            "82.9%",
+            "46.2%",
+            "65.9%"
+          ],
+          [
+            "GPT-4v",
+            "闭源 VLM",
+            "74.3%",
+            "77.6%",
+            "73.8%",
+            "71.5%",
+            "85.3%",
+            "63.6%",
+            "68.6%"
+          ],
+          [
+            "Qwen-VL-Max",
+            "闭源 VLM",
+            "75.4%",
+            "74.8%",
+            "87.2%",
+            "67.0%",
+            "85.3%",
+            "54.9%",
+            "70.5%"
+          ]
+        ]
+      },
+      "cite": [
+        "arxiv-2307-06281@Table 3"
+      ]
+    }
+  }
 }

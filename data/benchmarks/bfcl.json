@@ -1,29 +1,307 @@
 {
   "id": "bfcl",
   "name": "BFCL v3",
-  "full_name": null,
+  "full_name": "Berkeley Function Calling Leaderboard (BFCL)",
   "aliases": [],
   "status": null,
-  "categories": [
-    "agent"
+  "categories": ["agent"],
+  "summary": "BFCL（Berkeley Function Calling Leaderboard）只考一件事：模型能不能准确调用函数（工具）。单轮看是否选对函数、传对参数、并行/多重调用；多轮看多步对话里能否边澄清边调用并在系统状态里留下正确结果；V4 起加入 Agentic 场景——联网多跳搜索（Web Search）与记忆读写（Memory Management），以及提示格式敏感性（Format Sensitivity）。官方把榜单定位为「evaluates the LLM's ability to call functions (aka tools) accurately」，用真实数据搭建并持续更新；论文题名为《The Berkeley Function Calling Leaderboard (BFCL): From Tool Use to Agentic Evaluation of Large Language Models》。注意：本实体 name 字段仍写作「BFCL v3」，但当前榜单版本是 V4。",
+  "interpretation": "BFCL 分数高，说明模型在「把自然语言请求翻译成一次正确的函数调用」这件事上可靠，这是 Agent 的地基。但它不考通用推理、代码质量或任务最终是否达成。读分先分清四件事：(1) FC（原生函数调用）还是 Prompt（用模型普通文本生成能力绕过去）；(2) 单轮还是多轮；(3) Live（社区/企业贡献的真实函数）还是 Non-Live（专家编写）；(4) 是否只跑了一部分类目——汇总列会把没跑的类目按 0 计。另外 Overall Score 的合成口径在官方页面之间不一致（见「可信度与局限」第一条），跨版本分数不要直接相减。",
+  "measures": [
+    {
+      "area": "Agentic（Web Search + Memory）",
+      "focus": "V4 新增：联网多跳搜索用人写与自动生成的多跳题，记忆管理用 5 个领域、3 种记忆后端的多轮读写场景",
+      "share": "40%",
+      "format": "多选题之外无选项：Web Search 用归一化后的标准答案短语精确匹配；Memory 由后端落库状态与检索结果对照标准答案",
+      "cite": ["v4web@Scoring Methodology", "v4web@About the Benchmark", "v4web@Evaluation Metric", "v4mem@Memory Dataset", "v4mem@Memory Backend Implementation"]
+    },
+    {
+      "area": "Multi-Turn",
+      "focus": "多轮多步函数调用：基础多轮 + 缺参数 / 缺函数 / 长上下文 / 组合四类增强，V3 引入并改用状态校验",
+      "share": "30%",
+      "format": "每轮结束跑状态校验与响应校验，两者都过且所有轮都过才算对；响应校验用子集匹配",
+      "cite": ["v3blog@Multi-turn Evaluation Metrics", "v3blog@Newly Introduced Categories", "v4web@Scoring Methodology"]
+    },
+    {
+      "area": "Live（AST）",
+      "focus": "社区与企业贡献的真实函数，来自 Hugging Face 数据集，含 Simple / Multiple / Parallel / Parallel Multiple 四种形态",
+      "share": "10%",
+      "format": "按各子类目实际题量比例加权；AST 匹配",
+      "cite": ["v4web@Scoring Methodology", "repo@Latest Updates", "v4web@Quick Links"]
+    },
+    {
+      "area": "Non-Live（AST）",
+      "focus": "专家编写的函数集（含 Python / Java / JavaScript 三种语言形态），V1 起沿用，V3 仍保留",
+      "share": "10%",
+      "format": "子类目等权平均；AST 匹配 + 可执行函数评测",
+      "cite": ["v4web@Scoring Methodology", "v3blog@Introduction", "v3blog@Single-turn Evaluation Metrics"]
+    },
+    {
+      "area": "Hallucination Measurement",
+      "focus": "相关性检测（Relevance：该调用时调用）与无关函数检测（Irrelevance：不该调用时不调用）",
+      "share": "10%",
+      "format": "子类目等权平均；V4 起 Irrelevance/Relevance 不再计入 Live Acc 与 Non-Live Acc 的计算",
+      "cite": ["v4web@Scoring Methodology", "changelog@[Jul 17, 2025] BFCL V4 release", "gorilla-leaderboard-html@榜单说明"]
+    },
+    {
+      "area": "Format Sensitivity",
+      "focus": "同一 query 叠加 26 种提示变体，看模型输出是否稳定；只支持 Prompt（非 FC）模式",
+      "share": "不计入 Overall Score（V4 公式中无此项）",
+      "format": "从 BFCL V2 专家编写与 Live 的 simple/multiple/parallel/multiple parallel 四类里各选 200 条单轮用例",
+      "cite": ["v4fmt2@Introduction", "v4fmt2@Prompt variation construction", "v4fmt2@Test Entry Selection", "gorilla-leaderboard-html@榜单说明"]
+    }
   ],
-  "summary": "函数调用能力专项（单/并行/嵌套/多轮）",
-  "interpretation": "专门考“会不会调用函数”：选对工具、传对参数、该并行就并行。Agent 时代的基础驾照考试。",
-  "measures": [],
-  "does_not_measure": [],
+  "does_not_measure": [
+    {
+      "text": "通用推理、知识问答或代码质量——只判函数调用本身（选哪个函数、传什么参数、何时并行）是否正确，不判任务最终是否达成。",
+      "cite": ["gorilla-leaderboard-html@导语", "bfclreadme@Introduction"]
+    },
+    {
+      "text": "多轮中模型是否真的调用了那些不改变系统状态的函数：官方明确说纯状态校验无法判断 get_zipcode_by_city 这类无副作用调用是否发生。",
+      "cite": ["v3blog@Multi-turn Evaluation Metrics"]
+    },
+    {
+      "text": "开放式问答的表达能力：Web Search 用归一化后的标准答案短语精确匹配，答法不同但意思对也算错。",
+      "cite": ["v4web@Evaluation Metric"]
+    },
+    {
+      "text": "模型是否真的依赖外部搜索：官方另做关工具的对照实验来确认这一点，它不是计分项。",
+      "cite": ["v4web@Are the Models Actually Searching?"]
+    }
+  ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
+    "sample_count": 5088,
+    "splits": [
+      "计分集：Overall Score Percentage Weighted Average 5,088 条（Agentic 665 + Multi-Turn 800 + Live 1,351 + Non-Live 1,150 + Hallucination 1,122）",
+      "不计分集：Non-Scoring No Score Impact 5,218 条",
+      "Format Sensitivity：26 种配置 × 200 条 = 5,200 条，仅 Prompt 模式"
+    ],
+    "languages": ["未披露"],
+    "source_type": "expert-curated + community/enterprise-contributed（Live）+ 官方合成并人工标注",
+    "public_sample": true,
+    "totals": "计分 5,088 条 = Agentic 665（Web Search 200 + Memory 465）+ Multi-Turn 800（Base 200 + 四类增强各 200）+ Live 1,351（Simple 258 / Multiple 1,053 / Parallel 16 / Parallel Multiple 24）+ Non-Live 1,150（Simple 550 + Multiple 200 + Parallel 200 + Parallel Multiple 200）+ Hallucination 1,122（Irrelevance；另有 Relevance 18）；另有 Non-Scoring 5,218 条与 Format Sensitivity 5,200 条不计入 Overall Score",
+    "cite": ["v4web@Full Leaderboard Score Composition", "gorilla-leaderboard-html@榜单说明", "v4fmt2@Test Entry Selection"],
+    "construction": [
+      {
+        "k": "API 代码库",
+        "text": "从真实常见 API 取材自建 API 代码库，官方称覆盖八个领域（四主四辅），表示实际使用场景",
+        "cite": ["v3blog@API Codebase Creation"]
+      },
+      {
+        "k": "构图",
+        "text": "人工整理 API 之间的上下游关系，用 Graph 表示，为多轮轨迹提供结构",
+        "cite": ["v3blog@Data Curation Methodology"]
+      },
+      {
+        "k": "任务生成",
+        "text": "基于图生成多轮任务，并由人工标注 ground truth 轨迹；官方认为纯合成数据不够、人工标注必不可少",
+        "cite": ["v3blog@Data Curation Methodology"]
+      },
+      {
+        "k": "数据过滤",
+        "text": "官方称做过 11 轮数据过滤，并说明其重要性",
+        "cite": ["v3blog@Data Curation Methodology"]
+      },
+      {
+        "k": "校验流程",
+        "text": "数据集要经过多项检查，保证一致、可执行，并与真实多轮函数调用场景对齐",
+        "cite": ["v3blog@Validation Process"]
+      },
+      {
+        "k": "Live 贡献",
+        "text": "V2 起引入社区爱好者与企业贡献的函数与真实场景，榜单页面称其包含企业贡献函数",
+        "cite": ["repo@Latest Updates", "gorilla-leaderboard-html@榜单说明"]
+      }
+    ]
   },
-  "metrics": [],
   "default_protocol": {
-    "raw": "AST 匹配 + 执行验证"
+    "raw": "单轮：AST 匹配 + 可执行函数评测 + 相关性检测（与 V1/V2 相同）。多轮：每轮结束跑状态校验（对照 API 系统实际状态）与响应校验（对照标准答案路径），两者都过且所有轮都过才算对；响应校验用子集匹配——模型执行路径包含标准答案的最简可行路径即为正确。Web Search：归一化后的标准答案短语与回答精确匹配。Memory：响应对照标准答案，验证模型是否通过记忆工具存取了相关信息。",
+    "cite": ["v3blog@Single-turn Evaluation Metrics", "v3blog@Multi-turn Evaluation Metrics", "v4web@Evaluation Metric", "v4mem@Memory Pipeline Flow"],
+    "variants": [
+      {
+        "text": "FC = 原生函数/工具调用支持；Prompt = 用模型普通文本生成能力绕过去。Format Sensitivity 只支持 Prompt（非 FC）模型，FC 模型在该项为 N/A。",
+        "cite": ["gorilla-leaderboard-html@榜单说明"]
+      },
+      {
+        "text": "Live 各类按题量比例加权；Non-Live 与 Agentic 子类等权平均；V4 博客另称 Multi-Turn 用等权平均，与 Live 的加权口径不同。",
+        "cite": ["v4web@Scoring Methodology", "v4web@Full Leaderboard Score Composition"]
+      },
+      {
+        "text": "复现口径：榜单注明用 commit f7cf735 评测，或安装 PyPI 包 bfcl-eval==2025.12.17。",
+        "cite": ["gorilla-leaderboard-html@榜单说明"]
+      },
+      {
+        "text": "只跑部分类目时，Overall Acc 等汇总列会把未评测类目按 0 计算，分数会低于全集评测；可用 --partial-eval 只看已评测子集，但结果与官方榜单不一致。",
+        "cite": ["bfclreadme@Evaluating Generated Responses"]
+      }
+    ]
   },
-  "versions": [],
-  "limitations": [],
+  "metrics": [
+    {
+      "id": "overall-acc",
+      "name": "Overall Acc（总体准确率）",
+      "direction": "越高越好",
+      "description": "V4 博客口径为五大类目按固定百分比加权平均（Agentic 40% / Multi-Turn 30% / Live 10% / Non-Live 10% / Hallucination 10%）；榜单页脚注另称 Overall Accuracy 是各子类的不加权平均并指向 V3 博客（该博客已自标过时）。两种官方说法都无法从公开子分数复现榜首行总分，差异未见官方解释。",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["v4web@Scoring Methodology", "gorilla-leaderboard-html@榜单说明", "v3blog@Full Leaderboard Score Composition"]
+    },
+    {
+      "id": "ast-acc",
+      "name": "AST Acc（Non-Live / Live 单轮）",
+      "direction": "越高越好",
+      "description": "单轮函数调用的 AST 匹配准确率；Live 为社区/企业贡献的真实函数，Non-Live 为专家编写函数集。V4 起这两类的计算已排除 Irrelevance/Relevance 类目分数。",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["v3blog@Single-turn Evaluation Metrics", "changelog@[Jul 17, 2025] BFCL V4 release", "v3blog@Introduction"]
+    },
+    {
+      "id": "multi-turn-acc",
+      "name": "Multi-Turn Acc",
+      "direction": "越高越好",
+      "description": "多轮多步函数调用准确率：每轮结束跑状态校验与响应校验，两者都过且所有轮都过才算对；响应校验为子集匹配，容忍额外调用与不同轨迹。",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["v3blog@Multi-turn Evaluation Metrics"]
+    },
+    {
+      "id": "web-search-acc",
+      "name": "Web Search Acc",
+      "direction": "越高越好",
+      "description": "联网多跳搜索准确率：答案与归一化后的标准答案短语精确匹配，官方称与 V1 AST 类目的字符串匹配逻辑类似。",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["v4web@Evaluation Metric", "v4web@About the Benchmark"]
+    },
+    {
+      "id": "memory-acc",
+      "name": "Memory Acc",
+      "direction": "越高越好",
+      "description": "记忆读写准确率：模型必须显式查询记忆后端而非依赖对话上下文，响应对照标准答案判定。按 Key Value Store / Vector Store / Recursive Summarization 三种后端分别计分。",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["v4mem@Memory Pipeline Flow", "v4mem@Memory Backend Implementation"]
+    },
+    {
+      "id": "hallucination-acc",
+      "name": "Relevance / Irrelevance Acc",
+      "direction": "越高越好",
+      "description": "幻觉检测两类：Relevance 判该调用时是否调用，Irrelevance 判不该调用时是否不调用；官方称 Irrelevance 类目的题量最大（1,122 条）。",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["v4web@Full Leaderboard Score Composition", "v4web@Scoring Methodology"]
+    },
+    {
+      "id": "cost",
+      "name": "Cost（美元）",
+      "direction": "越低越好",
+      "description": "跑完整个基准的估算费用，单位美元；榜单自 V2 后引入。",
+      "unit": "usd",
+      "cite": ["gorilla-leaderboard-html@榜单说明", "repo@Latest Updates"]
+    },
+    {
+      "id": "latency",
+      "name": "Latency（秒）",
+      "direction": "越低越好",
+      "description": "延迟，单位秒，榜单给 Mean / SD / P95 三列。",
+      "unit": "second",
+      "cite": ["gorilla-leaderboard-html@榜单说明", "repo@Latest Updates"]
+    }
+  ],
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2024-02-26",
+      "label": "Berkeley Function Calling Leaderboard 上线：Simple / Parallel / Multiple Function Call，AST 评测",
+      "cite": ["repo@Latest Updates", "bfclreadme@Introduction"]
+    },
+    {
+      "id": "cost-latency",
+      "date": "2024-04-01",
+      "label": "榜单引入 cost 与 latency 指标",
+      "cite": ["repo@Latest Updates"]
+    },
+    {
+      "id": "v2",
+      "date": "2024-08-20",
+      "label": "BFCL V2 • Live：引入社区与企业贡献的函数与真实场景",
+      "cite": ["repo@Latest Updates"]
+    },
+    {
+      "id": "v3",
+      "date": "2024-09-19",
+      "label": "BFCL V3：多轮多步函数调用；不再用 AST 拆解参数对，改为校验 API 系统实际状态 + 子集匹配的响应校验",
+      "cite": ["v3blog@发布日期", "v3blog@Introduction", "repo@Latest Updates"]
+    },
+    {
+      "id": "v4",
+      "date": "2025-07-17",
+      "label": "BFCL V4 Agentic：新增 Web Search 与 Memory Management 两个 Agentic 类目；因单轮任务趋于饱和，权重向复杂多步任务倾斜；Live/Non-Live Acc 计算排除 Irrelevance/Relevance",
+      "cite": ["changelog@[Jul 17, 2025] BFCL V4 release", "v4web@发布日期", "v4mem@发布日期", "repo@Latest Updates"]
+    },
+    {
+      "id": "v4-format-sensitivity",
+      "date": "2025-07-20",
+      "label": "BFCL V4 第三部分 Format Sensitivity 更新（26 种提示变体，200 条单轮用例，评测 39 个模型）",
+      "cite": ["v4fmt2@发布日期", "v4fmt2@Introduction"]
+    },
+    {
+      "id": "leaderboard-snapshot",
+      "date": "2026-04-12",
+      "label": "本页核对的榜单快照：Last Updated 2026-04-12，评测 commit f7cf735 / bfcl-eval==2025.12.17",
+      "cite": ["gorilla-leaderboard-html@榜单说明", "gorilla-leaderboard-html"]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "Overall Score 的合成口径在官方页面之间不一致",
+      "impact": "V4 博客给出百分比加权公式（Agentic 40% / Multi-Turn 30% / Live 10% / Non-Live 10% / Hallucination 10%），榜单页脚注却称 Overall Accuracy 是各子类的不权平均并指向 V3 博客，而 V3 博客已自标「This leaderboard composition is now outdated」。用任一官方公式加上榜单公开的子分数都算不出榜首行的 Overall Acc（77.47），官方未解释差异。",
+      "severity": "高",
+      "response": "本页只转述两种官方说法并列出原始子分数，不做推算；读者应以同一快照的同一条口径为准。",
+      "reader": "比较模型时固定用同一快照的 Overall Acc 或同一子分数列，不要把不同版本、不同口径的分数相减。",
+      "cite": ["v4web@Scoring Methodology", "gorilla-leaderboard-html@榜单说明", "v3blog@Full Leaderboard Score Composition", "gorilla-leaderboard-html"]
+    },
+    {
+      "issue": "Web Search 题目可能已被训练数据覆盖",
+      "impact": "官方明确说设计这类基准难在「state-of-the-art language models are trained extensively on web content」；知识截止更晚的模型可能凭参数化知识答对部分题目。",
+      "severity": "中",
+      "response": "官方计划定期更新题目集，并用关工具的对照实验验证模型是否真的在搜索。",
+      "reader": "看 Web Search 分数时留意模型知识截止日期；这条线会随时间失效，官方自己也这么说。",
+      "cite": ["v4web@Web Search Data Generation", "v4web@Are the Models Actually Searching?"]
+    },
+    {
+      "issue": "多轮状态校验存在盲区",
+      "impact": "官方举例 get_zipcode_by_city 这类无副作用函数：仅靠状态校验无法判断模型是否真的调用了它，模型可能直接猜对结果。",
+      "severity": "中",
+      "response": "官方用子集匹配的响应校验补充，并称其能提供额外洞察；V3 起 V1/V2 的纯响应匹配（要求完全一致）已不再使用。",
+      "reader": "多轮分数高不代表模型每一步都按规矩调用了工具。",
+      "cite": ["v3blog@Multi-turn Evaluation Metrics"]
+    },
+    {
+      "issue": "Format Sensitivity 覆盖面窄且不计入总分",
+      "impact": "官方称格式敏感性只支持 prompt（非 FC）模型；26 种变体 × 200 条单轮用例取自 BFCL V2 专家编写与 Live 的四个单轮类目，多轮与幻觉类目未纳入。",
+      "severity": "低",
+      "response": "作为独立诊断项随 V4 发布，不进 Overall Score 公式。",
+      "reader": "格式敏感性是诊断信号而非能力总分的一部分；FC 模型在这项上恒为 N/A。",
+      "cite": ["gorilla-leaderboard-html@榜单说明", "v4fmt2@Test Entry Selection", "v4fmt2@Introduction"]
+    },
+    {
+      "issue": "只跑部分类目会被判 0",
+      "impact": "README 明确说 Overall Acc 等汇总列会把未评测类目按 0 计算；自评分数若只跑子集会显著低于官方榜单。",
+      "severity": "低",
+      "response": "可用 --partial-eval 只评已评测子集，但 README 提示分数可能与官方榜单不一致。",
+      "reader": "自测分数异常低时，先确认是不是少跑了类目，而不是模型退化。",
+      "cite": ["bfclreadme@Evaluating Generated Responses"]
+    },
+    {
+      "issue": "榜单会淘汰旧模型",
+      "impact": "V4 changelog 明确写着「Retires several deprecated models from the leaderboard.」，历史分数不保证仍在页面上。",
+      "severity": "低",
+      "response": "官方页面只保留当前在榜模型，历史排名需查版本快照。",
+      "reader": "引用榜单数字时注明 Last Updated 日期。",
+      "cite": ["changelog@[Jul 17, 2025] BFCL V4 release", "gorilla-leaderboard-html@榜单说明"]
+    }
+  ],
   "notes": null,
   "official_sources": [
     {
@@ -31,18 +309,193 @@
       "url": "https://gorilla.cs.berkeley.edu/leaderboard.html"
     },
     {
-      "kind": "paper",
-      "url": "https://arxiv.org/abs/2403.12881"
+      "kind": "repo",
+      "url": "https://github.com/ShishirPatil/gorilla"
     }
   ],
-  "related_benchmarks": [
-    "terminalbench",
-    "tau-bench",
-    "webarena",
-    "osworld",
-    "gaia",
-    "mlebench"
-  ],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-28"
+  "related_benchmarks": ["terminalbench", "tau-bench", "webarena", "osworld", "gaia", "mlebench"],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-19",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-19",
+    "sources": [
+      {
+        "id": "gorilla-leaderboard-html",
+        "kind": "leaderboard",
+        "title": "Berkeley Function Calling Leaderboard (BFCL) 官方榜单页",
+        "url": "https://gorilla.cs.berkeley.edu/leaderboard.html",
+        "accessed": "2026-11-19"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "ShishirPatil/gorilla — Berkeley Function Calling Leaderboard 代码仓库",
+        "url": "https://github.com/ShishirPatil/gorilla",
+        "accessed": "2026-11-19"
+      },
+      {
+        "id": "changelog",
+        "kind": "docs",
+        "title": "BFCL CHANGELOG.md",
+        "url": "https://raw.githubusercontent.com/ShishirPatil/gorilla/main/berkeley-function-call-leaderboard/CHANGELOG.md",
+        "accessed": "2026-11-19"
+      },
+      {
+        "id": "v3blog",
+        "kind": "announcement",
+        "title": "BFCL V3: Multi-Turn & Multi-Step Function Call Evaluation 官方博客",
+        "url": "https://gorilla.cs.berkeley.edu/blogs/13_bfcl_v3_multi_turn.html",
+        "accessed": "2026-11-19"
+      },
+      {
+        "id": "v4web",
+        "kind": "announcement",
+        "title": "BFCL V4 Agentic Part 1: Web Search 官方博客",
+        "url": "https://gorilla.cs.berkeley.edu/blogs/15_bfcl_v4_web_search.html",
+        "accessed": "2026-11-19"
+      },
+      {
+        "id": "v4mem",
+        "kind": "announcement",
+        "title": "BFCL V4 Agentic Part 2: Memory 官方博客",
+        "url": "https://gorilla.cs.berkeley.edu/blogs/16_bfcl_v4_memory.html",
+        "accessed": "2026-11-19"
+      },
+      {
+        "id": "v4fmt2",
+        "kind": "announcement",
+        "title": "BFCL V4 Agentic Part 3: Prompt Variation / Format Sensitivity 官方博客",
+        "url": "https://gorilla.cs.berkeley.edu/blogs/17_bfcl_v4_prompt_variation.html",
+        "accessed": "2026-11-19"
+      },
+      {
+        "id": "bfclreadme",
+        "kind": "docs",
+        "title": "berkeley-function-call-leaderboard README.md",
+        "url": "https://raw.githubusercontent.com/ShishirPatil/gorilla/main/berkeley-function-call-leaderboard/README.md",
+        "accessed": "2026-11-19"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Gorilla LLM Team（UC Berkeley，榜单页署名）",
+        "cite": ["gorilla-leaderboard-html@页眉"]
+      },
+      "first_release": {
+        "v": "2024-02-26（榜单上线）",
+        "cite": ["repo@Latest Updates"]
+      }
+    },
+    "cites": {
+      "summary": ["gorilla-leaderboard-html@导语", "gorilla-leaderboard-html@Citation", "repo@Latest Updates"],
+      "interpretation": ["gorilla-leaderboard-html@榜单说明", "bfclreadme@Evaluating Generated Responses", "v4web@Scoring Methodology"]
+    },
+    "problem": {
+      "text": "早期函数调用评测只看单轮、静态、专家编写的函数集，也不管调用是否真的可执行；真实 Agent 需要多轮交互、社区/企业贡献的函数和可持续扩充的数据。BFCL 想用一个可执行验证、可持续扩充的基准把「会不会用工具」量化出来。",
+      "cite": ["gorilla-leaderboard-html@导语", "bfclreadme@Introduction", "repo@Latest Updates", "gorilla-leaderboard-html@榜单说明"]
+    },
+    "ladder": [
+      {
+        "label": "V4 Overall Score 权重",
+        "value": "Agentic 40% / Multi-Turn 30% / Live 10% / Non-Live 10% / Hallucination 10%",
+        "note": "V4 博客的公式；V4 起权重向复杂多步任务倾斜，Live 与 Non-Live 各从 33% 降到 10%，Irrelevance/Relevance 从 0% 升到 10%。",
+        "cite": ["v4web@Scoring Methodology", "changelog@[Jul 17, 2025] BFCL V4 release"]
+      },
+      {
+        "label": "V3 旧口径（已过时）",
+        "value": "各子类不加权平均",
+        "note": "榜单脚注仍写着 Overall Accuracy 是各子类的不加权平均并指向 V3 博客；V3 博客自己标注该组成已过时。",
+        "cite": ["gorilla-leaderboard-html@榜单说明", "v3blog@Full Leaderboard Score Composition"]
+      },
+      {
+        "label": "计分入口数",
+        "value": "Overall Score 5,088 条",
+        "note": "另有 Non-Scoring 5,218 条不计入总分，以及仅 Prompt 模式的 Format Sensitivity 26 配置 × 200 条。",
+        "cite": ["v4web@Full Leaderboard Score Composition", "gorilla-leaderboard-html@榜单说明"]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 FC 和 Prompt 两种口径的分数排在一起直接比——原生函数调用与用文本生成绕过去是两条路，且 Format Sensitivity 只支持 Prompt 模式。",
+        "cite": ["gorilla-leaderboard-html@榜单说明"]
+      },
+      {
+        "text": "自测分数异常低就以为模型退化——README 说明汇总列会把没跑的类目按 0 计算。",
+        "cite": ["bfclreadme@Evaluating Generated Responses"]
+      },
+      {
+        "text": "把 Web Search 高分等同于「会联网查资料」——官方做了关工具的对照实验才确认多数模型确实需要外部搜索，少数模型凭参数化知识也能答对。",
+        "cite": ["v4web@Are the Models Actually Searching?", "v4web@Web Search Data Generation"]
+      },
+      {
+        "text": "把多轮高分等同于「每一步都正确调用工具」——纯状态校验看不出无副作用函数是否被调用。",
+        "cite": ["v3blog@Multi-turn Evaluation Metrics"]
+      },
+      {
+        "text": "把 V3 的分数组成套到 V4 上——V4 新增 Agentic 域并把权重改成百分比加权，V3 博客的组成图已自标过时。",
+        "cite": ["v3blog@Full Leaderboard Score Composition", "changelog@[Jul 17, 2025] BFCL V4 release"]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "Gorilla LLM Team（UC Berkeley）",
+        "cite": ["gorilla-leaderboard-html@页眉"]
+      },
+      {
+        "k": "核心作者",
+        "v": "Patil, Shishir G.；Mao, Huanzhi；Cheng-Jie Ji, Charlie；Yan, Fanjia；Suresh, Vishnu；Stoica, Ion；E. Gonzalez, Joseph",
+        "cite": ["gorilla-leaderboard-html@Citation"]
+      },
+      {
+        "k": "正式发表",
+        "v": "ICML 2025（Forty-second International Conference on Machine Learning），论文题名《The Berkeley Function Calling Leaderboard (BFCL): From Tool Use to Agentic Evaluation of Large Language Models》",
+        "cite": ["gorilla-leaderboard-html@Citation"]
+      },
+      {
+        "k": "版本线",
+        "v": "V1（2024-02-26 上线，AST）→ 2024-04-01 引入 cost/latency → V2 Live（2024-08-20，社区与企业贡献函数）→ V3（2024-09-19，多轮多步 + 状态校验）→ V4 Agentic（2025-07-17，Web Search + Memory + Format Sensitivity）",
+        "cite": ["repo@Latest Updates", "v3blog@发布日期", "v4web@发布日期", "v4mem@发布日期", "v4fmt2@发布日期"]
+      },
+      {
+        "k": "数据与代码",
+        "v": "数据集在 Hugging Face，评测代码在 GitHub ShishirPatil/gorilla；榜单注明用 commit f7cf735 或 PyPI 包 bfcl-eval==2025.12.17 复现",
+        "cite": ["v4web@Quick Links", "gorilla-leaderboard-html@榜单说明"]
+      },
+      {
+        "k": "数据构造",
+        "v": "自建 API 代码库（官方称覆盖八个领域、四主四辅）→ 构图 → 任务生成 → 人工标注多轮轨迹 → 11 轮数据过滤 → 一致性/可执行性校验",
+        "cite": ["v3blog@API Codebase Creation", "v3blog@Data Curation Methodology", "v3blog@Validation Process"]
+      },
+      {
+        "k": "记忆后端",
+        "v": "三种架构：Key Value Store、Vector Store、Recursive Summarization；数据集覆盖 5 个领域（customer support、healthcare、student advising、finance、personal productivity）",
+        "cite": ["v4mem@Memory Backend Implementation", "v4mem@Memory Dataset"]
+      },
+      {
+        "k": "搜索后端",
+        "v": "Web Search 后端由两个函数构成，题目含 100 道人写多跳题与 100 道自动生成题；自动生成题的每个子问题答案都经过人工核验并记录来源",
+        "cite": ["v4web@The DuckDuckGo Search API", "v4web@About the Benchmark", "v4web@Web Search Data Generation"]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-04-12",
+        "columns": ["排名", "模型", "Overall Acc", "Cost ($)", "Agentic", "Multi-Turn", "Non-Live (AST)", "Live (AST)", "Relevance", "Irrelevance", "Latency Mean (s)", "组织"],
+        "rows": [
+          ["1", "Claude-Opus-4-5-20251101 (FC)", "77.47", "86.55", "84.5", "68.38", "88.58", "79.79", "62.5", "84.72", "4.38", "Anthropic"],
+          ["2", "Claude-Sonnet-4-5-20250929 (FC)", "73.24", "43.73", "81", "61.37", "88.65", "81.13", "68.75", "86.61", "4.31", "Anthropic"],
+          ["3", "Gemini-3-Pro-Preview (Prompt)", "72.51", "298.47", "80", "60.75", "90.65", "83.12", "68.75", "85.59", "12.08", "Google"],
+          ["4", "GLM-4.6 (FC thinking)", "72.38", "4.64", "77.5", "68", "87.56", "80.9", "75", "84.96", "4.34", "Zhipu AI"],
+          ["5", "Grok-4-1-fast-reasoning (FC)", "69.57", "17.26", "82.5", "58.87", "88.27", "78.46", "81.25", "79.43", "6.74", "xAI"]
+        ]
+      },
+      "cite": ["gorilla-leaderboard-html"]
+    }
+  }
 }

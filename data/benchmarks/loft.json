@@ -1,32 +1,438 @@
 {
   "id": "loft",
   "name": "LoFT",
-  "full_name": null,
+  "full_name": "Long-Context Frontiers（长上下文前沿）",
   "aliases": [],
   "status": null,
   "categories": [
     "longctx"
   ],
-  "summary": "Google 长上下文 RAG 检索评测",
-  "interpretation": "Google 长上下文检索评测（上下文至百万 token），按检索/问答/SQL 类任务的 EM 与 F1 计分（越高越好）；读法是与专用检索器、RAG 系统对比——长上下文模型能打平检索系统，但 SQL 类组合推理仍明显偏弱。",
-  "measures": [],
-  "does_not_measure": [],
+  "summary": "LOFT 是 Google DeepMind 2024 年做的长上下文评测：不再像 RAG 那样先检索再生成，而是把整个候选资料库（文档、图片、音频、数据库表）一次性塞进模型上下文，让模型自己找答案。共 6 类任务、35 个数据集、4 种模态，上下文分 32k / 128k / 1M 三档，最大 100 万 token。",
+  "interpretation": "高分说明模型能在几十万到上百万 token 的上下文里直接定位并利用信息，不需要外部检索器——论文里 Gemini 1.5 Pro 的文本检索平均 0.77，与专用双编码器 Gecko 的 0.76 基本打平。但高分不等于全面强：SQL 类组合推理明显落后专用流水线（0.38 对 0.65），金标文档越靠后分数越低，换提示词也会明显掉分。",
+  "measures": [
+    {
+      "area": "文本检索",
+      "focus": "从几百到几千条候选段落里找出能反驳主张、验证事实或回答查询的段落 ID；例：ArguANA 给出 531 条候选陈述，要求找出所有能反驳该主张的陈述",
+      "share": "13 / 35 个数据集",
+      "format": "输出文档 ID",
+      "cite": [
+        "arxiv-2406-13121@Table 1",
+        "arxiv-2406-13121@附录 C Table 5"
+      ]
+    },
+    {
+      "area": "视觉检索",
+      "focus": "给一句文本找出最相关图片（Flickr30k、MS COCO），给一张图加问题找出对应 Wikipedia 条目（OVEN），或给一句文本找出最相关视频（MSR-VTT）",
+      "share": "4 / 35 个数据集",
+      "format": "输出图像 / 视频 ID",
+      "cite": [
+        "arxiv-2406-13121@Table 1",
+        "arxiv-2406-13121@附录 C Table 5"
+      ]
+    },
+    {
+      "area": "音频检索",
+      "focus": "英语、西班牙语、法语、印地语、中文五种语言的语音检索，找出与语音对应的内容",
+      "share": "5 / 35 个数据集",
+      "format": "输出音频 ID",
+      "cite": [
+        "arxiv-2406-13121@Table 1",
+        "arxiv-2406-13121@附录 A.1"
+      ]
+    },
+    {
+      "area": "RAG 问答",
+      "focus": "语料库整体在上下文里，直接生成答案；HotPotQA 与 MuSiQue 需要组合多篇文档才能回答",
+      "share": "6 / 35 个数据集",
+      "format": "短答案（子串精确匹配）",
+      "cite": [
+        "arxiv-2406-13121@Table 1",
+        "arxiv-2406-13121@§4.4"
+      ]
+    },
+    {
+      "area": "SQL 类组合推理",
+      "focus": "把数据库表序列化成 CSV，连同自然语言问题一起给模型，让它生成 SQL 并由解释器执行；论文的误差分析显示「求平均」最难、「计数」相对容易",
+      "share": "2 / 35 个数据集",
+      "format": "SQL 查询（执行准确率）",
+      "cite": [
+        "arxiv-2406-13121@Table 1",
+        "arxiv-2406-13121@附录 A.1",
+        "arxiv-2406-13121@§4.5"
+      ]
+    },
+    {
+      "area": "多示例上下文学习（ICL）",
+      "focus": "把最多 150 个示例直接放在上下文里当「训练样本」做分类；BBH 的四个子任务因为全文能装进 32k，只有 32k 档",
+      "share": "5 / 35 个数据集",
+      "format": "分类标签（分类准确率）",
+      "cite": [
+        "arxiv-2406-13121@Table 1",
+        "arxiv-2406-13121@§4.6",
+        "arxiv-2406-13121@附录 A.1"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "不测开放式生成：六类任务的输出都是文档 ID、短答案、SQL 查询或分类标签，没有摘要、翻译、代码生成这类长文本产出。",
+      "cite": [
+        "arxiv-2406-13121@Table 2"
+      ]
+    },
+    {
+      "text": "不测「闭卷」知识：论文用去掉语料库的消融实验证明性能显著下降，说明它测的是上下文利用能力，而不是模型凭参数记住的知识。",
+      "cite": [
+        "arxiv-2406-13121@§5",
+        "arxiv-2406-13121@Table 3"
+      ]
+    },
+    {
+      "text": "不测效率：论文明确说只评估长上下文模型的质量，把推理速度、算力开销这类效率问题留给未来工作。",
+      "cite": [
+        "arxiv-2406-13121@Limitations"
+      ]
+    },
+    {
+      "text": "不测真实规模：检索与 RAG 任务的上限是 100 万 token，与真实应用可能涉及几百万甚至几十亿文档相比仍有明显差距。",
+      "cite": [
+        "arxiv-2406-13121@Limitations",
+        "arxiv-2406-13121@§2"
+      ]
+    }
+  ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
+    "sample_count": 3394,
+    "splits": [
+      "few-shot：每数据集 5 条查询（SQL 两类为 1 条）",
+      "development：每数据集 10 条查询",
+      "test：每数据集最多 100 条查询（Touché-2020 为 34 条，BBH 四类各 90 条，LIB-dialogue 为 100 条）"
+    ],
+    "languages": [
+      "en（文本检索、RAG、SQL、ICL）",
+      "es / fr / hi / zh（仅 FLEURS 音频检索）"
+    ],
+    "source_type": "复用公开数据集重新打包（ArguAna、MS MARCO、Spider、BBH、FLEURS 等），候选语料库由 LOFT 自行采样生成",
+    "public_sample": true,
+    "totals": "6 类任务、35 个数据集、4 种模态；test 查询合计 3,394 条；上下文长度 32k / 128k / 1M，语料库规模取到目标上下文的 0.9 倍",
+    "cite": [
+      "arxiv-2406-13121@Table 1",
+      "arxiv-2406-13121@§2",
+      "arxiv-2406-13121@附录 C Table 5"
+    ],
+    "construction": [
+      {
+        "k": "选任务与数据集",
+        "text": "论文汇总为 6 类任务、4 个模态、共 35 个数据集；模态指文本、图片、视频、音频。",
+        "cite": [
+          "arxiv-2406-13121@Table 1"
+        ]
+      },
+      {
+        "k": "采样候选语料库",
+        "text": "先放入 few-shot、development 和 test 查询的金标文档，再均匀随机采样其他文档直到达到目标上下文大小，最后把金标文档与随机文档打乱，避免位置偏差。",
+        "cite": [
+          "arxiv-2406-13121@§2"
+        ]
+      },
+      {
+        "k": "上下文分档",
+        "text": "最大上下文长度 N 取 32k、128k、1M，语料库规模取到 0.9N——既兼容不同 tokenizer 的差异，也给指令和格式留出空间；论文称当前支持 100 万 token，方法上可扩展到更大规模。",
+        "cite": [
+          "arxiv-2406-13121@§2"
+        ]
+      },
+      {
+        "k": "Corpus-in-Context（CiC）提示",
+        "text": "把整个语料库作为前缀放进上下文、查询放在最后，从而兼容自回归模型的前缀缓存，语料只需编码一次；文档 ID 在段落前后各放一次，用来缓解 decoder-only 模型因果注意力带来的影响。",
+        "cite": [
+          "arxiv-2406-13121@§3.1",
+          "arxiv-2406-13121@§3.3"
+        ]
+      },
+      {
+        "k": "少样本示例",
+        "text": "每个数据集采 5 条 few-shot 查询（SQL 两类为 1 条），示例与测试查询共用同一个语料库，让模型也学到这个语料库的细节；每条示例附带 Chain-of-Thought 推理；原始候选 ID 不直接使用，因为会泄露金标文档。",
+        "cite": [
+          "arxiv-2406-13121@§2",
+          "arxiv-2406-13121@§3.1"
+        ]
+      },
+      {
+        "k": "查询量",
+        "text": "所有任务的每个数据集最多采 100 条测试查询、5 条 few-shot 查询和 10 条 development 查询；实际数量见附录 Table 5，Touché-2020 只有 34 条测试查询，BBH 四类各 90 条。",
+        "cite": [
+          "arxiv-2406-13121@§2",
+          "arxiv-2406-13121@附录 C Table 5"
+        ]
+      }
+    ]
   },
-  "metrics": [],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [],
+  "metrics": [
+    {
+      "id": "recall-at-1",
+      "name": "Recall@1（单文档检索）",
+      "direction": "越高越好",
+      "description": "只有一个金标文档时，模型给出的文档 ID 是否命中；文本、视觉、音频三类检索都用这个指标。",
+      "range": [
+        0,
+        1
+      ],
+      "unit": "ratio",
+      "cite": [
+        "arxiv-2406-13121@Table 2",
+        "arxiv-2406-13121@附录 A.1"
+      ]
+    },
+    {
+      "id": "mrecall-at-k",
+      "name": "MRecall@k（多金标检索）",
+      "direction": "越高越好",
+      "description": "一个查询有多个金标文档时，前 k 个结果是否全部命中；HotPotQA、MuSiQue、QAMPARI、QUEST 分别取 k = 2、5、5、3，全部命中记 1.0，否则 0.0。",
+      "range": [
+        0,
+        1
+      ],
+      "unit": "ratio",
+      "cite": [
+        "arxiv-2406-13121@Table 2",
+        "arxiv-2406-13121@附录 A.1"
+      ]
+    },
+    {
+      "id": "subspan-em",
+      "name": "子串精确匹配（subspan EM）",
+      "direction": "越高越好",
+      "description": "RAG 任务：把模型抽取出的答案与标准答案做子串精确匹配，所有 RAG 数据集统一使用。",
+      "range": [
+        0,
+        1
+      ],
+      "unit": "ratio",
+      "cite": [
+        "arxiv-2406-13121@Table 2",
+        "arxiv-2406-13121@附录 A.1"
+      ]
+    },
+    {
+      "id": "sql-execution-accuracy",
+      "name": "SQL 执行准确率",
+      "direction": "越高越好",
+      "description": "SQL 任务：模型生成的 SQL 执行结果与金标 SQL 的执行结果比对，一致才算答对。",
+      "range": [
+        0,
+        1
+      ],
+      "unit": "ratio",
+      "cite": [
+        "arxiv-2406-13121@Table 2",
+        "arxiv-2406-13121@附录 A.1"
+      ]
+    },
+    {
+      "id": "classification-accuracy",
+      "name": "分类准确率",
+      "direction": "越高越好",
+      "description": "多示例 ICL 任务：把上下文里的示例当训练样本，输出分类标签并统计正确率。",
+      "range": [
+        0,
+        1
+      ],
+      "unit": "ratio",
+      "cite": [
+        "arxiv-2406-13121@Table 2",
+        "arxiv-2406-13121@附录 A.1"
+      ]
+    }
+  ],
+  "default_protocol": {
+    "raw": "把整个语料库（文档、图片、音频或序列化成 CSV 的数据库表）按 Corpus-in-Context 方式作为前缀放进模型上下文，查询放在最后；少样本示例与测试查询共用同一语料库并附带 Chain-of-Thought 推理；模型走官方 API，提示词按 development 集表现选定；因安全过滤等原因被拦住的 API 调用按答错计。",
+    "cite": [
+      "arxiv-2406-13121@§3.1",
+      "arxiv-2406-13121@§4",
+      "arxiv-2406-13121@§3.2"
+    ],
+    "variants": [
+      {
+        "text": "上下文长度 32k / 128k / 1M：论文强烈建议每一档只用该档里的语料库和示例，并建议评模型能容纳的最大档位、不截断语料；跨档位的数字不能混在一起比。",
+        "cite": [
+          "arxiv-2406-13121@§3.2"
+        ]
+      },
+      {
+        "text": "零样本 vs 5-shot：检索任务从零样本的 0.76 提升到 5-shot 的 0.81，两种口径不可混比。",
+        "cite": [
+          "arxiv-2406-13121@§5"
+        ]
+      },
+      {
+        "text": "带任务指令与 CoT vs 不带：去掉任务指令（通用指令）或去掉 Chain-of-Thought 都会让性能变差；论文还发现 GPT-4o 不用 CoT 反而更好，因此表中 GPT-4o 的结果没有使用 CoT。",
+        "cite": [
+          "arxiv-2406-13121@§5",
+          "arxiv-2406-13121@附录 D.2"
+        ]
+      },
+      {
+        "text": "单调数字 ID vs 随机字母数字 ID：把文档 ID 换成随机的字母数字组合，在多数数据集上会掉分。",
+        "cite": [
+          "arxiv-2406-13121@§5"
+        ]
+      },
+      {
+        "text": "查询放结尾 vs 放开头：把查询移到提示开头会导致跨任务、跨模型的显著且一致的性能下降。",
+        "cite": [
+          "arxiv-2406-13121@§5"
+        ]
+      },
+      {
+        "text": "厂商自报口径：xAI 的 Grok 3 公告把 LOFT (128k) 报成 83.3%，并注明是 12 个不同任务的平均；这与论文按任务类别分别报告的指标不是同一个口径。",
+        "cite": [
+          "x-news-grok-3"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2024-06-19",
+      "label": "arXiv v1 发布（2406.13121v1，cs.CL）：6 类任务、35 个数据集，支持 32k / 128k / 1M",
+      "cite": [
+        "arxiv-2406-13121"
+      ]
+    },
+    {
+      "id": "repo-text-data",
+      "date": "2024-06-20",
+      "label": "官方仓库首发：提供多数 LOFT 文本数据集的下载链接",
+      "cite": [
+        "loft-repo@README Past & Upcoming Releases"
+      ]
+    },
+    {
+      "id": "repo-text-eval",
+      "date": "2024-06-29",
+      "label": "文本任务的评测代码，以及部分 LOFT 数据集的重建代码",
+      "cite": [
+        "loft-repo@README Past & Upcoming Releases"
+      ]
+    },
+    {
+      "id": "repo-icl-visual",
+      "date": "2024-08-30",
+      "label": "ICL 与部分视觉检索数据集的评测代码",
+      "cite": [
+        "loft-repo@README Past & Upcoming Releases"
+      ]
+    },
+    {
+      "id": "repo-retrieval-inference",
+      "date": "2024-10-25",
+      "label": "检索任务的推理代码与提示词",
+      "cite": [
+        "loft-repo@README Past & Upcoming Releases"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "复现成本极高",
+      "impact": "128k 全量 test 集约 35 个数据集 × 100 条提示 × 128k token ≈ 4.48 亿输入 token；按论文写作时的价格，Gemini 1.5 Pro 约 1,568 美元、GPT-4o 约 2,240 美元、Claude 3 Opus 约 6,720 美元。",
+      "severity": "高",
+      "response": "官方同时发布小 10 倍的 development 集，用 Gemini 1.5 Pro 或 GPT-4o 约 200 美元即可评估；官方仓库另建议在 3 个数据集构成的 LOFT-Hard 子集上快速迭代。",
+      "reader": "自己复现时优先用 development 集或 LOFT-Hard；不同预算下跑出的分数不要直接相比。",
+      "cite": [
+        "arxiv-2406-13121@Limitations",
+        "loft-repo@README LOFT-Hard Subset"
+      ]
+    },
+    {
+      "issue": "上下文规模上限只有 100 万 token",
+      "impact": "检索与 RAG 任务最多到 1M token，与真实应用可能涉及几百万甚至几十亿文档相比仍有很大差距；论文在结论里也把这一点列为局限。",
+      "severity": "高",
+      "response": "论文称方法可以扩展到更大的上下文长度（例如 10 亿 token），但没有发布对应版本。",
+      "reader": "把 LOFT 成绩当作「百万级上下文」的证据，不要外推到更长的文档规模。",
+      "cite": [
+        "arxiv-2406-13121@Limitations",
+        "arxiv-2406-13121@§2"
+      ]
+    },
+    {
+      "issue": "厂商自报口径与论文口径不可比",
+      "impact": "xAI 在 Grok 3 公告的表格里把 LOFT (128k) 报成 83.3%，正文说明是 12 个不同任务的平均；论文 Table 2 对同类长上下文模型是按任务类别分别报告的（Gemini 1.5 Pro：文本检索 0.77、RAG 0.53、SQL 0.38）。两个数字不是同一个指标，直接放在一起会高估或低估模型。",
+      "severity": "高",
+      "response": "未见官方统一两种口径。",
+      "reader": "跨厂商比较 LOFT 前，先确认对方报的是哪个任务类别、哪种平均方式；单一的「LOFT 83.3%」不能与论文的分任务数字对比。",
+      "cite": [
+        "x-news-grok-3",
+        "arxiv-2406-13121@Table 2"
+      ]
+    },
+    {
+      "issue": "位置偏差：金标文档越靠后越难找",
+      "impact": "论文的实验显示，把测试查询的金标文档往语料库后部移动，性能会下降，说明模型对提示后段注意力更弱。",
+      "severity": "中",
+      "response": "论文给出缓解手段：文档 ID 在段落前后各放一次、查询放在提示结尾、金标与随机文档混洗。",
+      "reader": "同一模型在不同实现下可能差几个点，比较时要把提示格式一起看清。",
+      "cite": [
+        "arxiv-2406-13121@§4.1",
+        "arxiv-2406-13121@§3.1",
+        "arxiv-2406-13121@§5"
+      ]
+    },
+    {
+      "issue": "对提示词与少样本数量高度敏感",
+      "impact": "去掉任务指令或去掉 Chain-of-Thought 都会掉分；查询放开头会显著且一致地掉分；把单调数字 ID 换成随机字母数字 ID 在多数数据集上掉分；少样本从 0 个增加到 5 个，检索从 0.76 升到 0.81。",
+      "severity": "中",
+      "response": "论文公开了提示词与检索推理代码，并建议以 development 集的表现来选定提示词。",
+      "reader": "换提示词带来的波动可能与模型换代带来的差距同量级，看到涨幅先问口径。",
+      "cite": [
+        "arxiv-2406-13121@§5"
+      ]
+    },
+    {
+      "issue": "API 侧噪声按答错计",
+      "impact": "少量 API 调用因安全过滤等原因被拦住，论文把这些样例按答错处理；附录也说明仍有调用拒绝作答，同样按答错计入。",
+      "severity": "中",
+      "response": "论文如实披露并统一按答错计，未给出重试或拒答率的统计。",
+      "reader": "接近的高分差距不要过度解读。",
+      "cite": [
+        "arxiv-2406-13121@§4",
+        "arxiv-2406-13121@附录 B"
+      ]
+    },
+    {
+      "issue": "延迟与成本未纳入评估",
+      "impact": "不使用缓存时，Gemini 1.5 Pro API 的中位延迟约为 32k 输入 4 秒、128k 输入 12 秒、100 万 token 输入 100 秒。",
+      "severity": "中",
+      "response": "论文说明只评估质量、效率留给未来工作；同时指出 CiC 把语料作为前缀可以命中前缀缓存，把语料编码次数降到一次。",
+      "reader": "生产环境要把延迟和成本与分数放在一起权衡。",
+      "cite": [
+        "arxiv-2406-13121@Limitations",
+        "arxiv-2406-13121@§3.3"
+      ]
+    },
+    {
+      "issue": "多模态覆盖不全，表内空格不是 0 分",
+      "impact": "评测时 GPT-4o 与 Claude 3 Opus 不支持音频输入；Claude 3 Opus 的视觉检索受每次请求最多 20 张图片的限制无法评测，Table 2 的相应格子为空。",
+      "severity": "低",
+      "response": "论文在表中留空并说明了原因。",
+      "reader": "看到 Table 2 的空格要知道那是接口或能力限制，不要读成 0 分。",
+      "cite": [
+        "arxiv-2406-13121@§4.2",
+        "arxiv-2406-13121@§4.3"
+      ]
+    }
+  ],
   "notes": "xAI Grok 3 引用（128k 档）",
   "official_sources": [
     {
       "kind": "paper",
       "url": "https://arxiv.org/abs/2406.13121"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/google-deepmind/loft"
     },
     {
       "kind": "site",
@@ -37,6 +443,267 @@
     "niah",
     "ruler"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-13",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      {
+        "id": "arxiv-2406-13121",
+        "kind": "paper",
+        "title": "Can Long-Context Language Models Subsume Retrieval, RAG, SQL, and More?（arXiv:2406.13121v1，2024-06-19）",
+        "url": "https://arxiv.org/abs/2406.13121",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "loft-repo",
+        "kind": "repo",
+        "title": "google-deepmind/loft（官方仓库 README：数据集、评测与推理代码、发布记录）",
+        "url": "https://github.com/google-deepmind/loft",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "x-news-grok-3",
+        "kind": "site",
+        "title": "xAI：Grok 3 Beta — The Age of Reasoning Agents（2025-02-19）",
+        "url": "https://x.ai/news/grok-3",
+        "accessed": "2026-11-13"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Google DeepMind",
+        "cite": [
+          "arxiv-2406-13121@作者署名"
+        ]
+      },
+      "first_release": {
+        "v": "2024-06-19（arXiv v1）",
+        "cite": [
+          "arxiv-2406-13121"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "arxiv-2406-13121@Abstract",
+        "arxiv-2406-13121@§1",
+        "arxiv-2406-13121@Table 1"
+      ],
+      "interpretation": [
+        "arxiv-2406-13121@§4.1",
+        "arxiv-2406-13121@§4.4",
+        "arxiv-2406-13121@§4.5",
+        "arxiv-2406-13121@§5"
+      ]
+    },
+    "problem": {
+      "text": "当时的长上下文基准要么是 needle-in-haystack 这类合成检索任务，要么是固定长度数据集，跟不上「长上下文」定义的变化，也测不出真实任务上的差距。LOFT 改用真实的检索、RAG、SQL 和多示例学习任务，把候选语料整体放进上下文，用 Corpus-in-Context 提示把长上下文模型（LCLM）逼到极限。",
+      "cite": [
+        "arxiv-2406-13121@§1",
+        "arxiv-2406-13121@Abstract"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机基线",
+        "value": "论文未给出",
+        "note": "随机命中一个文档 ID 的概率取决于候选数量（如 MS MARCO 有 1,174 个候选），论文没有报告统一的随机基线，本站也不推算。",
+        "cite": [
+          "arxiv-2406-13121@Table 1"
+        ]
+      },
+      {
+        "label": "论文发布时长上下文模型最好（128k 平均）",
+        "value": "文本检索 0.77 / RAG 0.53 / SQL 0.38",
+        "note": "Gemini 1.5 Pro；同期 GPT-4o 为 0.67 / 0.48 / 0.13，Claude 3 Opus 为 0.65 / 0.47 / 0.20。",
+        "cite": [
+          "arxiv-2406-13121@Table 2"
+        ]
+      },
+      {
+        "label": "论文发布时专用系统（128k 平均）",
+        "value": "文本检索 0.76 / RAG 0.52 / SQL 0.65",
+        "note": "专用系统分别是 Gecke 双编码器、Gecko 检索 + Gemini 1.5 Pro 阅读的 RAG 流水线、把 LLM 换成 Gemini 1.5 Pro 的 DAIL-SQL；音频（PaLM 2 DE 0.94）和视觉（CLIP-L/14 0.71）另见附录 B 表格。",
+        "cite": [
+          "arxiv-2406-13121@Table 2"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      },
+      {
+        "label": "闭卷落差参考线",
+        "value": "NQ：0.60（dev）→ 0.37（test）",
+        "note": "同一批 RAG 题目不给语料库时的 Gemini 1.5 Pro 成绩，括号内是相对带语料库的落差；这条线说明 LOFT 的分数主要来自上下文利用，而不是模型背下来的知识。",
+        "cite": [
+          "arxiv-2406-13121@Table 3"
+        ]
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把厂商表格里的「LOFT (128k) 83.3%」当成论文口径的最高分。xAI 自己注明这是 12 个不同任务的平均，而论文 Table 2 是按任务类别分别报告的——同一个 Gemini 1.5 Pro，RAG 只有 0.53。",
+        "cite": [
+          "x-news-grok-3",
+          "arxiv-2406-13121@Table 2"
+        ]
+      },
+      {
+        "text": "看到「长上下文模型能打平检索系统」就认为可以扔掉 RAG。论文的这个结论有前提：到 1M token 时，长上下文模型的优势会随文本检索性能一起下滑；SQL 类任务则始终明显落后专用流水线。",
+        "cite": [
+          "arxiv-2406-13121@§4.4",
+          "arxiv-2406-13121@§4.5"
+        ]
+      },
+      {
+        "text": "把不同上下文档位的分数放在一起比。论文强烈建议每一档只用该档的语料库和示例，并建议评模型能容纳的最大档位、不截断语料。",
+        "cite": [
+          "arxiv-2406-13121@§3.2"
+        ]
+      },
+      {
+        "text": "以为换提示词不影响结果。去掉任务指令或 CoT、把查询放开头、把 ID 换成随机字母数字，都会让分数明显变化；GPT-4o 的结果甚至没有使用 CoT。",
+        "cite": [
+          "arxiv-2406-13121@§5",
+          "arxiv-2406-13121@附录 D.2"
+        ]
+      },
+      {
+        "text": "把 Table 2 里的空格读成 0 分。空格表示该模型当时不支持对应输入（音频）或受接口限制无法评测（Claude 3 Opus 的视觉检索每次请求最多 20 张图）。",
+        "cite": [
+          "arxiv-2406-13121@§4.2",
+          "arxiv-2406-13121@§4.3"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "Google DeepMind",
+        "cite": [
+          "arxiv-2406-13121@作者署名"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "共同一作 Jinhyuk Lee、Anthony Chen、Zhuyun Dai；其余作者包括 Dheeru Dua、Devendra Singh Sachan、Michael Boratko、Yi Luan、Sébastien M. R. Arnold、Vincent Perot、Siddharth Dalmia、Hexiang Hu、Xudong Lin、Panupong Pasupat、Aida Amini、Jeremy R. Cole、Sebastian Riedel、Iftekhar Naim、Ming-Wei Chang、Kelvin Guu",
+        "cite": [
+          "arxiv-2406-13121@作者署名"
+        ]
+      },
+      {
+        "k": "论文标题",
+        "v": "Can Long-Context Language Models Subsume Retrieval, RAG, SQL, and More?",
+        "cite": [
+          "arxiv-2406-13121"
+        ]
+      },
+      {
+        "k": "关键概念：Corpus-in-Context 提示",
+        "v": "把整个语料库作为前缀放进上下文、查询放在最后，从而兼容前缀缓存、语料只需编码一次；论文把它称为长上下文提示这条新研究方向的起点。",
+        "cite": [
+          "arxiv-2406-13121@§3.1",
+          "arxiv-2406-13121@§3.3"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2024-06-19 arXiv v1 → 2024-06-20 仓库首发文本数据 → 2024-06-29 文本评测代码 → 2024-08-30 ICL 与部分视觉检索评测代码 → 2024-10-25 检索推理代码与提示词",
+        "cite": [
+          "arxiv-2406-13121",
+          "loft-repo@README Past & Upcoming Releases"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "官方仓库 google-deepmind/loft 提供数据集、评测与推理代码、提示词示例（PROMPT_EXAMPLE.txt，演示文本检索任务怎么做 CiC 提示）；仓库仍列有未发布项：剩余多模态数据与推理、提示转换代码（数据 → 提示）。",
+        "cite": [
+          "loft-repo@README"
+        ]
+      },
+      {
+        "k": "LOFT-Hard 子集",
+        "v": "论文实验显示 Gemini 1.5 在不少 LOFT 数据集上已经不错，但在另一些上还有提升空间；官方据此建议先在 3 个数据集上迭代，并称完整数据集与推理在当前开源版本中可用。",
+        "cite": [
+          "loft-repo@README LOFT-Hard Subset"
+        ]
+      },
+      {
+        "k": "本站收录的发布成绩",
+        "v": "xAI Grok 3 Beta 在 128k 档自报 83.3%，Grok 3 mini Beta 83.1%；同一表格里 Gemini 2.0 为 75.6%、DeepSeek-V3 未列、GPT-4o 78.0%、Claude 3.5 Sonnet 69.9%。xAI 另称 Grok 3 的上下文窗口为 100 万 token。",
+        "cite": [
+          "x-news-grok-3"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-13",
+        "columns": [
+          "来源",
+          "任务类别",
+          "Gemini 1.5 Pro",
+          "GPT-4o",
+          "Claude 3 Opus",
+          "专用系统"
+        ],
+        "rows": [
+          [
+            "论文 Table 2",
+            "文本检索（13 数据集）",
+            "0.77",
+            "0.67",
+            "0.65",
+            "0.76（Gecke）"
+          ],
+          [
+            "论文 Table 2",
+            "视觉检索（4 数据集）",
+            "0.83",
+            "0.68",
+            "—",
+            "0.71（CLIP-L/14）"
+          ],
+          [
+            "论文 Table 2",
+            "音频检索（5 数据集）",
+            "1.00",
+            "—",
+            "—",
+            "0.94（PaLM 2 DE）"
+          ],
+          [
+            "论文 Table 2",
+            "RAG（6 数据集）",
+            "0.53",
+            "0.48",
+            "0.47",
+            "0.52（Gecko 检索 + Gemini 1.5 Pro 阅读）"
+          ],
+          [
+            "论文 Table 2",
+            "SQL（2 数据集）",
+            "0.38",
+            "0.13",
+            "0.20",
+            "0.65（DAIL-SQL，LLM 换成 Gemini 1.5 Pro）"
+          ],
+          [
+            "论文 Table 2",
+            "多示例 ICL（5 数据集，BBH 类仅 32k 档）",
+            "0.68",
+            "0.70",
+            "0.74",
+            "—"
+          ]
+        ]
+      },
+      "cite": [
+        "arxiv-2406-13121@Table 2"
+      ]
+    }
+  }
 }

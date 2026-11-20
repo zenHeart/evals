@@ -1,72 +1,399 @@
 {
   "id": "hr-bench",
   "name": "HR-Bench",
-  "full_name": null,
-  "aliases": [
-    "HR-Bench 4K",
-    "HR-Bench 8K",
-    "HRBench"
-  ],
-  "status": null,
-  "categories": [
-    "multimodal"
-  ],
-  "summary": "高分辨率图像感知基准：4K/8K 两档真实高分辨率图像，考细粒度单实例感知（FSP）与跨实例感知（FCP）",
-  "interpretation": "多选题准确率口径；低分多反映视觉编码分辨率与切图策略的瓶颈而非推理缺陷，读分时注意输入分辨率与视觉 token 预算配置。Step 3.7 Flash 页引用 4K 89.13 / 8K 86.34（其对照 Gemini 3 Flash 94.50 / 94.80、Kimi K2.6 91.25*）。",
+  "full_name": "Divide, Conquer and Combine: A Training-Free Framework for High-Resolution Image Perception in Multimodal Large Language Models（论文全名；基准本体名为 HR-Bench）",
+  "aliases": ["HR-Bench 4K", "HR-Bench 8K", "HRBench"],
+  "status": "active",
+  "categories": ["multimodal"],
+  "summary": "HR-Bench 是第一个专门用 4K/8K 超高清图像考多模态大模型（MLLM，能同时看图和人话的模型）细粒度感知的基准：200 道题分成两个子任务——细粒度单实例感知（FSP，认出图中某个对象的颜色、材质、图上文字）和细粒度跨实例感知（FCP，比较图中两个对象的位置、做地图与图表分析）。论文摘要报告：最强的 MLLM 只有 63% 正确率，人类是 87%；同一篇论文还给出免训练的画块拼回框架 DC²，在 HR-Bench 上相对提升约 6%。",
+  "interpretation": "高分说明模型在高分辨率图上的细粒度感知接近人类：论文口径下 4K 最好 71.0%、8K 最好 62.8%，人类分别是 82.0% 与 86.8%，28 个模型的 FSP / FCP 平均只有 42.4% / 38.8%。读这类榜必须同时看清两件事——分 4K 与 8K 两档，以及带不带工具：本站账本收录的 Step 3.7 Flash（4K 89.13% / 8K 86.34%）是带 Python 工具（裁剪、放大、画框）的口径，与论文的免工具主表不可直接比。另外，论文摘要指出单纯把高分辨率图缩小就会丢视觉信息、文本等互补模态能补回一部分，所以低分里有一部分只是「图被压小了」，不完全等于模型看不懂图。",
   "measures": [
-    "高分辨率下的细粒度单实例感知",
-    "高分辨率下的跨实例感知"
+    {
+      "area": "细粒度单实例感知（FSP）",
+      "focus": "在图里认出某个具体对象的细节：颜色/形状/材质等属性、图上文字（OCR）、以及视觉提示圈出的区域",
+      "share": "100 题，占全基准 50%",
+      "format": "选择题（轮换选项顺序后取平均）",
+      "cite": ["arxiv-2408-15556@HR-Bench", "arxiv-2408-15556@Table 5", "repo-hr-bench@Introduction"]
+    },
+    {
+      "area": "细粒度跨实例感知（FCP）",
+      "focus": "比较图里两个对象：地图上两点是否属于同一国家、图表读数、两个物体的相对空间关系",
+      "share": "100 题，占全基准 50%",
+      "format": "选择题（同上）",
+      "cite": ["arxiv-2408-15556@HR-Bench", "arxiv-2408-15556@Table 5", "repo-hr-bench@Introduction"]
+    },
+    {
+      "area": "分辨率档位（4K / 8K）",
+      "focus": "同一批题出两版：8K 原图与绕问题对象从 8K 图裁出的 4K 图，用来把「分辨率」和「任务难度」两个变量分开",
+      "share": "200 题 × 2 档，成绩表通常并列报 4K / 8K / 平均三列",
+      "format": "同上",
+      "cite": ["arxiv-2408-15556@HR-Bench", "repo-hr-bench@Introduction", "arxiv-2408-15556@Table 10"]
+    }
   ],
   "does_not_measure": [
-    "视频理解",
-    "文本推理"
+    {
+      "text": "世界知识与推理：题目只要求感知图上细节，不考数学、代码或百科知识；论文把 DC² 在通用多模态基准上的增益单独验证",
+      "cite": ["arxiv-2408-15556@Experiments", "arxiv-2408-15556@Table 5"]
+    },
+    {
+      "text": "开放式生成与回答质量：题目是选择题，模型只需给出选项，评不了解释写得对不对、长回答好不好",
+      "cite": ["arxiv-2408-15556@附录 A Benchmark Evaluation"]
+    },
+    {
+      "text": "视频、时序与音频：每题只有一张静态高分辨率图像，没有连续帧",
+      "cite": ["arxiv-2408-15556@Table 5"]
+    },
+    {
+      "text": "真实部署开销：论文主表全部是免工具设置，测不到裁剪、放大、画框这类 agent 动作带来的额外延迟与失败率",
+      "cite": ["arxiv-2408-15556@Experiments", "stepfun-blog@Visual Perception with Python Tool"]
+    }
   ],
   "dataset": {
-    "sample_count": null,
-    "splits": [
-      "HR-Bench 4K",
-      "HR-Bench 8K"
-    ],
-    "languages": [
-      "en"
-    ],
-    "source_type": "real-world（DIV8K 与网络高分辨率图像）",
-    "public_sample": true
+    "sample_count": 200,
+    "splits": ["HR-Bench 8K（8K 原图）", "HR-Bench 4K（绕问题对象从 8K 图裁出）"],
+    "languages": ["en"],
+    "source_type": "real-world（DIV8K 与互联网高分辨率图像）",
+    "public_sample": true,
+    "multiple_choice_share": "100%（每题都配了多个选项，只选一个）",
+    "multimodal_share": "100%（每题都配一张高分辨率图像）",
+    "totals": "FSP 100 题 + FCP 100 题 = 200 道 image queries；同一批题另出 8K 与 4K 两版，所以成绩表常见 4K / 8K / 平均三列",
+    "cite": ["arxiv-2408-15556@HR-Bench", "arxiv-2408-15556@附录 A Curation Procedure", "repo-hr-bench@Introduction"],
+    "construction": [
+      {
+        "k": "选图",
+        "text": "从 DIV8K 和互联网收集 200 张 8K 分辨率真实图像，专挑细节多、信息密度高的场景，用来补齐此前基准最高只到 2K 的空档。",
+        "cite": ["arxiv-2408-15556@HR-Bench", "arxiv-2408-15556@Table 5"]
+      },
+      {
+        "k": "人工标框",
+        "text": "先人工标注图像中与问题相关的对象边界框，再按边界框把 8K 图裁成 4K 图，保证两档考的是同一批对象。",
+        "cite": ["arxiv-2408-15556@附录 A Curation Procedure", "repo-hr-bench@Introduction"]
+      },
+      {
+        "k": "生成问答对",
+        "text": "在边界框内用 GPT-4o 生成 query 与 answer pair，再请人工专家逐条复核，删掉不正确或有歧义的题。",
+        "cite": ["arxiv-2408-15556@附录 A Curation Procedure"]
+      },
+      {
+        "k": "题型构成",
+        "text": "FSP 覆盖属性识别、OCR、视觉提示；FCP 覆盖地图分析、图表分析、空间关系判断，共六个任务类型。",
+        "cite": ["arxiv-2408-15556@附录 A Benchmark Statistics", "arxiv-2408-15556@Table 5"]
+      },
+      {
+        "k": "三阶段定稿",
+        "text": "整套流程走完后固定为 200 道 image queries，论文称这一步显著提升了标注的准确率与可靠性。",
+        "cite": ["arxiv-2408-15556@附录 A Curation Procedure"]
+      }
+    ]
   },
   "metrics": [
     {
       "id": "accuracy",
-      "name": "Accuracy",
-      "range": [
-        0,
-        100
-      ],
+      "name": "准确率（Accuracy）",
+      "direction": "越高越好",
+      "description": "选项轮换后多次作答的平均正确率；论文 Table 10 单列 Random Guess 一行作地板，读榜时先和这条线比",
+      "range": [0, 100],
       "unit": "percent",
-      "direction": "higher",
-      "aggregation": "mean"
-    }
-  ],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [
-    "多选题形式，感知任务与推理能力耦合有限"
-  ],
-  "notes": "arXiv 2408.15556（Divide, Conquer and Combine 论文提出）；证据账本 2 行（阶跃 Step 3.7 Flash 视觉表）",
-  "official_sources": [
-    {
-      "kind": "paper",
-      "url": "https://arxiv.org/abs/2408.15556"
+      "cite": ["arxiv-2408-15556@附录 A Benchmark Evaluation", "arxiv-2408-15556@Table 10"]
     },
     {
-      "kind": "github",
-      "url": "https://github.com/DreamMr/HR-Bench"
+      "id": "uncertainty-score",
+      "name": "不确定性分数（Uncertainty Score）",
+      "direction": "越低越好",
+      "description": "pilot 实验用的辅助指标，度量模型生成下一个 token 时的置信度；分数越高说明模型越没把握、输出越可能错",
+      "cite": ["arxiv-2408-15556@Pilot Experiments"]
+    },
+    {
+      "id": "mg-ml",
+      "name": "多模态增益 / 多模态泄漏（MG / ML）",
+      "direction": "MG 越高越好、ML 越低越好",
+      "description": "附录 A 的派生指标：MG 衡量多模态训练带来的真实提升，ML 量化数据泄漏程度；论文报告 HR-Bench 8K 的泄漏程度较低，为 3.6",
+      "cite": ["arxiv-2408-15556@附录 A Multi-modal Gain & Multi-modal Leakage"]
     }
   ],
-  "related_benchmarks": [
-    "vstar",
-    "blink",
-    "realworldqa"
+  "default_protocol": {
+    "raw": "每题被喂给模型 N 次（N = 选项个数），每次把选项顺序循环移位一次，最后取 N 次的平均正确率，论文附录给出 ACC = (ACC₁ + … + ACCₙ) / n 的公式。推理跑在改自 VLMEvalKit 的同一套代码里，每个实验重复 5 次以压低方差，温度设 0.2，DC² 的检索阈值取 θ = 0.1、α = 0.3。",
+    "cite": ["arxiv-2408-15556@附录 A Benchmark Evaluation", "arxiv-2408-15556@附录 C Experiment Settings", "arxiv-2408-15556@HR-Bench"],
+    "variants": [
+      {
+        "text": "4K 档 vs 8K 档：同一批题裁成两种分辨率，成绩必须分档报；论文 Table 10 同时列出两档各自的 FSP / FCP / 平均。",
+        "cite": ["arxiv-2408-15556@HR-Bench", "arxiv-2408-15556@Table 10"]
+      },
+      {
+        "text": "免工具 vs 带工具：论文主表全部免工具；带 Python 工具（裁剪、放大、画框）的口径会明显更高，两者不能放在一起比。",
+        "cite": ["arxiv-2408-15556@Experiments", "stepfun-blog@Visual Perception with Python Tool"]
+      },
+      {
+        "text": "带 DC² vs 不带 DC²：DC² 是同一篇论文提出的免训练框架，论文 Table 1 用 ∆ 行报增益，引用时要说清是哪个设置。",
+        "cite": ["arxiv-2408-15556@Experiments", "arxiv-2408-15556@Table 1"]
+      },
+      {
+        "text": "论文口径 vs 仓库榜单口径：仓库 mini-leaderboard 里的 GPT-4o 一行由第三方（Ailin Huang）提供，与论文 Table 10 的 59.0 / 55.5 不一致，引用时要注明取哪个。",
+        "cite": ["repo-hr-bench@Acknowledgement", "arxiv-2408-15556@Table 10"]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "hf-dataset-and-dc2",
+      "date": "2024-08-23",
+      "label": "Huggingface 数据集与 DC² 代码开放下载（仓库 News 最早一条）",
+      "cite": ["repo-hr-bench@News"]
+    },
+    {
+      "id": "arxiv-v1",
+      "date": "2024-08-28",
+      "label": "arXiv v1 提交；此后未再出新版，本档案数字均取 v1",
+      "cite": ["arxiv-2408-15556@arXiv 提交页"]
+    },
+    {
+      "id": "vlmevalkit",
+      "date": "2024-09-09",
+      "label": "进入 VLMEvalKit，可用其统一框架复现",
+      "cite": ["repo-hr-bench@News"]
+    },
+    {
+      "id": "aaai-2025",
+      "date": "2024-12-10",
+      "label": "被 AAAI 2025 接收（正式发表）",
+      "cite": ["repo-hr-bench@News"]
+    },
+    {
+      "id": "lmms-eval",
+      "date": "2025-02-08",
+      "label": "进入 lmms-eval 仓库",
+      "cite": ["repo-hr-bench@News"]
+    },
+    {
+      "id": "readme-leaderboard-snapshot",
+      "date": "2026-11-13",
+      "label": "档案核验日快照：仓库 mini-leaderboard 已收录 2025 年后的模型（Taichu4.0-VL、Qwen3-VL、MiMo-VL 等），最高 8K 81.6% 已远超论文 Table 10 的 62.8%",
+      "cite": ["repo-hr-bench@Mini-Leaderboard"]
+    }
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-09-01"
+  "limitations": [
+    {
+      "issue": "论文自身数字不一致",
+      "impact": "V* 的分辨率正文写 2246 × 1582、Table 6 里读作另一个数；Table 6 标题写 22 个基准，正文与表格实际是 21 个；arXiv 提交页列 7 位作者，仓库 BibTeX 列 8 位（多 Wei Yu）。",
+      "severity": "低",
+      "response": "本档案以正文叙述为准、同时标注表格值；作者数以 arXiv 提交页的 7 人为准，BibTeX 的 8 人另行注明。",
+      "reader": "引用具体数字时回原表核对，不要只抄摘要或标题。",
+      "cite": ["arxiv-2408-15556@HR-Bench", "arxiv-2408-15556@Table 6", "repo-hr-bench@Citation", "arxiv-2408-15556@arXiv 提交页"]
+    },
+    {
+      "issue": "仓库榜单与论文成绩不一致（GPT-4o 一行）",
+      "impact": "README 的 GPT-4o 是 4K 68.0 / 8K 63.9，论文 Table 10 是 4K 59.0 / 8K 55.5，差 6–9 个百分点；README 说明这一行由 Ailin Huang 提供，属第三方复现，不是同一批实验。",
+      "severity": "中",
+      "response": "引用时写清取论文 Table 10 还是仓库榜单；本档案在附录 B 两个口径都列，并标注来源。",
+      "reader": "看到 GPT-4o 的 HR-Bench 分数先问出处，别把两个口径画进同一张对比图。",
+      "cite": ["repo-hr-bench@Acknowledgement", "arxiv-2408-15556@Table 10", "repo-hr-bench@Mini-Leaderboard"]
+    },
+    {
+      "issue": "题库由 GPT-4o 生成后再人工复核",
+      "impact": "问答对并非纯人工撰写，GPT-4o 的生成偏好可能残留（问法偏封闭、选项风格趋同）；论文只称三阶段流程提升了可靠度，没有给出复核前后的错误率对比。",
+      "severity": "中",
+      "response": "人工逐条复核并删除不正确或有歧义的题；题目与图像公开可下载，可自行审计。",
+      "reader": "把 HR-Bench 当感知探针用，不要当成严格人工标注的金标准；要复现结论先看题。",
+      "cite": ["arxiv-2408-15556@附录 A Curation Procedure", "arxiv-2408-15556@Table 5"]
+    },
+    {
+      "issue": "循环置换让推理成本翻倍",
+      "impact": "每题要跑 N 次（N = 选项数）再取平均，单模型评测的算力开销约为普通选择题基准的 N 倍；成本高也意味着独立复现门槛高。",
+      "severity": "中",
+      "response": "官方代码已并入 VLMEvalKit 与 lmms-eval 可直接复用；论文用温度 0.2、每实验 5 次来压低方差。",
+      "reader": "对比别处的 HR-Bench 分数时，先确认对方是否真的做了选项轮换。",
+      "cite": ["arxiv-2408-15556@附录 A Benchmark Evaluation", "arxiv-2408-15556@附录 C Experiment Settings"]
+    },
+    {
+      "issue": "数据污染无法完全排除",
+      "impact": "200 张图来自 DIV8K 与互联网，图与题面可能已进入训练集；论文附录用多模态泄漏（ML）量化，报告 HR-Bench 8K 泄漏程度较低（3.6），但 3.6 是相对值，不等于零污染。",
+      "severity": "中",
+      "response": "论文提供 MG / ML 两个派生指标供交叉判断；题量只有 200，一旦污染对分数影响明显。",
+      "reader": "对异常高的分数保持怀疑，尤其是训练数据覆盖度本来就高的模型。",
+      "cite": ["arxiv-2408-15556@附录 A Multi-modal Gain & Multi-modal Leakage"]
+    }
+  ],
+  "notes": "基准与配套框架 DC²（免训练）通常一起被引用；仓库榜单是唯一能看到 80% 以上成绩的地方，论文 Table 10 仍停在 2024-08 的快照。",
+  "official_sources": [
+    { "kind": "paper", "url": "https://arxiv.org/abs/2408.15556" },
+    { "kind": "repo", "url": "https://github.com/DreamMr/HR-Bench" }
+  ],
+  "related_benchmarks": ["vstar", "blink", "realworldqa"],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-13",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      {
+        "id": "arxiv-2408-15556",
+        "kind": "paper",
+        "title": "Divide, Conquer and Combine: A Training-Free Framework for High-Resolution Image Perception in Multimodal Large Language Models（arXiv:2408.15556 v1，AAAI 2025）",
+        "url": "https://arxiv.org/abs/2408.15556",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "repo-hr-bench",
+        "kind": "repo",
+        "title": "DreamMr/HR-Bench 官方仓库 README（含 mini-leaderboard 与 BibTeX）",
+        "url": "https://github.com/DreamMr/HR-Bench",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "stepfun-blog",
+        "kind": "blog",
+        "title": "Step 3.7 Flash 技术博客 · Visual Perception with Python Tool 一节",
+        "url": "https://static.stepfun.com/blog/step-3.7-flash/",
+        "accessed": "2026-11-13"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Wenbin Wang 等（arXiv 提交页列 7 位作者：Wenbin Wang、Liang Ding、Minyan Zeng、Xiabin Zhou、Li Shen、Yong Luo、Dacheng Tao；仓库 BibTeX 另列 Wei Yu，共 8 位）",
+        "cite": ["arxiv-2408-15556@arXiv 提交页", "repo-hr-bench@Citation"]
+      },
+      "first_release": {
+        "v": "2024-08-28（arXiv v1 提交；数据集与 DC² 代码早 5 天于 2024-08-23 开放）",
+        "cite": ["arxiv-2408-15556@arXiv 提交页", "repo-hr-bench@News"]
+      }
+    },
+    "cites": {
+      "summary": ["arxiv-2408-15556@摘要", "arxiv-2408-15556@HR-Bench", "repo-hr-bench@Introduction"],
+      "interpretation": ["arxiv-2408-15556@附录 C Fully Experiment Results on HR-Bench", "arxiv-2408-15556@Table 10", "stepfun-blog@Visual Perception with Python Tool", "arxiv-2408-15556@摘要"]
+    },
+    "problem": {
+      "text": "主流 MLLM 号称能吃 4K 图，但此前的基准最高只到 2K——21 个常用多模态基准平均只有 530 × 518，最高的 V* 也只有 2246 × 1582，模型在真正高分辨率图上的感知能力基本没被测过；而现有的增强方法又要昂贵的视觉指令微调。HR-Bench 专门用 4K/8K 图把这件事测出来，并给出一个免训练的替代方案。",
+      "cite": ["arxiv-2408-15556@摘要", "arxiv-2408-15556@HR-Bench"]
+    },
+    "ladder": [
+      {
+        "label": "随机猜测地板",
+        "value": "25.0%",
+        "note": "论文 Table 10 单列 Random Guess 一行；HR-Bench 是选择题，随机水平约在四分之一附近，读榜先确认模型没掉到这条线。",
+        "cite": ["arxiv-2408-15556@Table 10"]
+      },
+      {
+        "label": "论文发布时最好（8K）",
+        "value": "62.8%",
+        "note": "Gemini 1.5 Flash（Table 10：8K FSP 69.2 / FCP 56.7）；同期人类 86.8%，差 24 个百分点。",
+        "cite": ["arxiv-2408-15556@Table 10", "arxiv-2408-15556@Experiments"]
+      },
+      {
+        "label": "论文发布时最好（4K）",
+        "value": "71.0%",
+        "note": "InternVL-2-llama3-76B（Table 10：4K FSP 82.0 / FCP 60.0）；同期人类 82.0%，差 11 个百分点。",
+        "cite": ["arxiv-2408-15556@Table 10"]
+      },
+      {
+        "label": "28 个模型的平均感知水平",
+        "value": "FSP 42.4% / FCP 38.8%",
+        "note": "论文附录 C 对 28 个模型取平均；图表类子任务最好也只有 50%（GPT4o），其余模型接近随机猜测。",
+        "cite": ["arxiv-2408-15556@附录 C Fully Experiment Results on HR-Bench"]
+      },
+      {
+        "label": "人类基线",
+        "value": "4K 82.0% / 8K 86.8%",
+        "note": "论文 Table 10 的 Human 行；仓库榜单把人类平均记作 84.4%，核验日仍是榜单最高的一行。",
+        "cite": ["arxiv-2408-15556@Table 10", "repo-hr-bench@Mini-Leaderboard"]
+      },
+      {
+        "label": "仓库榜单当前最好（核验日）",
+        "value": "Qwen3-VL 32B：4K 84.6% / 8K 81.6% / 平均 83.0%",
+        "note": "仍低于人类平均 84.4%，Taichu4.0-VL 的 83.5 次之；这两行是仓库榜单口径，与论文 Table 10 不是同一批实验。",
+        "cite": ["repo-hr-bench@Mini-Leaderboard"]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      },
+      {
+        "label": "带工具口径参考",
+        "value": "Step 3.7 Flash：4K 89.13% / 8K 86.34%",
+        "note": "官方博客该节成绩表的口径是 with Python tool（裁剪、放大、画框），与论文免工具主表不可直接比；4K 已越过人类 4K 基线 82.0%，8K 86.34% 逼近人类 8K 基线 86.8%，说明工具化能补上大部分细粒度感知差距。",
+        "cite": ["stepfun-blog@Visual Perception with Python Tool", "arxiv-2408-15556@Table 10"]
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 4K 和 8K 分数当同一个数：Table 10 里同一个模型两档普遍差 4–10 个百分点，报成绩必须带档位。",
+        "cite": ["arxiv-2408-15556@Table 10", "arxiv-2408-15556@HR-Bench"]
+      },
+      {
+        "text": "把带工具成绩和论文免工具成绩排在一起：官方博客的 HR-Bench 成绩带 Python 工具（裁剪、放大、画框），比免工具口径高出一截。",
+        "cite": ["stepfun-blog@Visual Perception with Python Tool"]
+      },
+      {
+        "text": "看到「8K 基准」就以为所有图都是 8K：4K 版是绕问题对象从同一张 8K 图裁出来的，两版考的是同一批对象，只是分辨率不同。",
+        "cite": ["arxiv-2408-15556@HR-Bench", "repo-hr-bench@Introduction"]
+      },
+      {
+        "text": "以为分数低全怪模型不行：论文摘要指出单纯缩小高分辨率图就会丢视觉信息，而文本等互补模态能补回一部分，HR-Bench 的高分辨率正是为了把这类损失测出来。",
+        "cite": ["arxiv-2408-15556@摘要"]
+      },
+      {
+        "text": "把仓库榜单第一理解成「已经超过人类」：核验日仓库最高是 Qwen3-VL 32B 平均 83.0%，人类基线 84.4% 仍排在它上面。",
+        "cite": ["repo-hr-bench@Mini-Leaderboard"]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "Wenbin Wang 等 8 位作者（arXiv 提交页列 7 人，仓库 BibTeX 多列 Wei Yu）；仓库给出的联系邮箱是 wangwenbin97@whu.edu.cn。",
+        "cite": ["arxiv-2408-15556@arXiv 提交页", "repo-hr-bench@Citation"]
+      },
+      {
+        "k": "论文与发表",
+        "v": "arXiv:2408.15556（cs.CV，2024-08-28 提交 v1，此后再无新版）；正式发表于 AAAI 2025，仓库 BibTeX 收录了完整题录。",
+        "cite": ["arxiv-2408-15556@arXiv 提交页", "repo-hr-bench@News", "repo-hr-bench@Citation"]
+      },
+      {
+        "k": "时间线",
+        "v": "2024-08-23 数据集与 DC² 代码开放 → 2024-08-28 arXiv 论文 → 2024-09-09 进 VLMEvalKit → 2024-12-10 被 AAAI 2025 接收 → 2025-02-08 进 lmms-eval。",
+        "cite": ["repo-hr-bench@News"]
+      },
+      {
+        "k": "数据与代码",
+        "v": "Huggingface 数据集与 DC² 代码随论文发布，仓库内分 hrbench 与 dc2_code 两个目录，都挂在同一个 GitHub 仓库下。",
+        "cite": ["repo-hr-bench@News", "repo-hr-bench@Introduction"]
+      },
+      {
+        "k": "生态依赖",
+        "v": "基准代码基于 VLMEvalKit 构建，论文全部实验也在改自 VLMEvalKit 的同一套代码里完成；README 明确致谢 VLMEvalKit，并感谢 Ailin Huang 提供 GPT-4o 的成绩。",
+        "cite": ["repo-hr-bench@Acknowledgement", "arxiv-2408-15556@附录 C Experiment Settings"]
+      },
+      {
+        "k": "配套框架 DC²",
+        "v": "同篇论文提出免训练框架 Divide, Conquer and Combine：把高分辨率图递归切成视觉编码器分辨率的小块并合并相似块，再用 MLLM 给每块生成文字描述，最后按用户问题检索相关小块拼回整体理解。",
+        "cite": ["arxiv-2408-15556@Methodology", "repo-hr-bench@Divide, Conquer and Combine", "repo-hr-bench@Highlights"]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-13",
+        "columns": ["来源", "模型", "4K", "8K", "平均", "口径"],
+        "rows": [
+          ["论文 Table 10", "Human（人类基线）", "82.0", "86.8", "84.4", "8K 拆分为 FSP 94.0 / FCP 79.5"],
+          ["论文 Table 10", "Random Guess", "25.0", "25.0", "25.0", "地板线"],
+          ["论文 Table 10", "InternVL-2-llama3-76B", "71.0", "61.4", "66.2", "开源最强（论文口径）"],
+          ["论文 Table 10", "LLaVA-HR-X-13B", "53.6", "46.9", "50.3", "专做高分辨率的代表作"],
+          ["论文 Table 10", "LLaVA-HR-X-7B", "52.0", "41.6", "46.8", "同上，7B 版"],
+          ["论文 Table 10", "Xcomposer2-4kHD-7B", "57.8", "51.3", "54.6", "开源"],
+          ["论文 Table 10", "LLaVA-1.6-34B", "52.9", "47.4", "50.2", "开源"],
+          ["论文 Table 10", "Gemini 1.5 Flash", "66.8", "62.8", "64.8", "论文口径 8K SOTA"],
+          ["论文 Table 10", "GPT4o", "59.0", "55.5", "57.3", "论文口径（仓库榜单同一行是 68.0 / 63.9）"],
+          ["论文 Table 10", "QWen-VL-max", "58.5", "52.5", "55.5", "商业接口"],
+          ["论文 Table 10", "QWen-VL-plus", "53.0", "46.5", "49.8", "商业接口"],
+          ["仓库榜单", "Taichu4.0-VL", "85.5", "81.5", "83.5", "榜单口径"],
+          ["仓库榜单", "Qwen3-VL 32B (instruct)", "84.6", "81.6", "83.0", "榜单口径；核验日最高，仍低于人类 84.4"],
+          ["仓库榜单", "Qwen3-VL 30B-A3B (instruct)", "82.5", "79.3", "80.9", "榜单口径"],
+          ["仓库榜单", "MiMo-VL-SFT 7B", "69.4", "67.8", "68.6", "榜单口径"],
+          ["仓库榜单", "InternVL-2-llama3-76B w/ DC²", "70.4", "63.3", "66.9", "带论文的 DC²"],
+          ["仓库榜单", "InternVL-1.5-26B w/ DC²", "63.4", "61.3", "62.3", "带论文的 DC²"],
+          ["仓库榜单", "GPT4o (gpt-4o-2024-05-13)", "68.0", "63.9", "66.0", "第三方（Ailin Huang）提供，与论文 Table 10 不一致"],
+          ["Step 3.7 Flash 博客", "Step 3.7 Flash", "89.13", "86.34", "87.7", "with Python tool（裁剪/放大/画框），不可与免工具口径同表比较"]
+        ]
+      },
+      "cite": ["arxiv-2408-15556@Table 10", "repo-hr-bench@Mini-Leaderboard", "stepfun-blog@Visual Perception with Python Tool", "repo-hr-bench@Acknowledgement"]
+    }
+  }
 }

@@ -3,46 +3,335 @@
   "name": "LingoQA",
   "full_name": "LingoQA: Visual Question Answering for Autonomous Driving",
   "aliases": [],
-  "status": null,
+  "status": "active",
   "categories": [
     "multimodal"
   ],
-  "summary": "Wayve 的自动驾驶 VQA 基准：28K 段伦敦驾驶短视频 + 41.9 万条标注，Lingo-Judge 裁判与人类评审相关系数 0.95",
-  "interpretation": "考『用语言解释驾驶场景』：GPT-4V 时代仅 59.6% 而人类 96.6%，差距说明感知易、解释难。旗舰已到 77-85 分段（Qwen3.8-Max 84.8），裁判模型的准确性是解读分数的前提。",
+  "summary": "Wayve 出的自动驾驶视频问答基准：28K 段 4 秒短视频场景、41.9 万条问答标注，用与人类评分高度相关的真值分类器 Lingo-Judge 判分；论文发布时 GPT-4V 只答对 59.6%，人类参考线是 96.6%。",
+  "interpretation": "分数衡量模型能不能用自由文本如实回答驾驶场景问题，不是驾驶决策的好坏。人类看视频 96.6%、只看单帧掉到 81.8%，论文 7B 基线 60.8%，GPT-4V 59.6%——感知门槛不高，时序和「说清为什么」才是差距所在。读分数前先接受一个前提：Lingo-Judge 只看文本、不看视频，而且是照着 LingoQA 自己的答案风格调过的。",
   "measures": [
-    "驾驶场景的视频问答与解释生成"
+    {
+      "area": "驾驶行为与理由（action）",
+      "focus": "车在做什么、为什么这么做：减速、加速、变道、窄空隙、转弯等显著事件的动作描述与理由",
+      "share": "训练集 24.5k 段场景 / 267.8k 条问答（约 10.9 条每段）",
+      "format": "自由文本问答，无选项",
+      "cite": [
+        "arxiv-2312-14115@Table 3",
+        "arxiv-2312-14115@§3.2 Action dataset"
+      ]
+    },
+    {
+      "area": "场景感知（scenery）",
+      "focus": "细粒度感知：描述、定位、识别、计数，以及道路/交通要素、天气、建筑等环境信息",
+      "share": "训练集 3.5k 段场景 / 152.5k 条问答（约 43.6 条每段）",
+      "format": "自由文本问答",
+      "cite": [
+        "arxiv-2312-14115@Table 3",
+        "arxiv-2312-14115@§3.2 Scenery dataset"
+      ]
+    },
+    {
+      "area": "九类驾驶能力",
+      "focus": "描述、计数、定位、预期、注意力、动作理由等 9 类 competency，评测集按这些能力出题",
+      "share": "论文只给了 Figure 2 的题量图示，未披露每类占比",
+      "format": "自由文本问答",
+      "cite": [
+        "arxiv-2312-14115@§3.2 Datasets",
+        "arxiv-2312-14115@§3.2 Evaluation dataset"
+      ]
+    },
+    {
+      "area": "正式评测子集",
+      "focus": "500 个人工撰写的问题，每题配两个不同但都正确的答案，覆盖上面九类能力",
+      "share": "100 段视频 / 1,000 条答案",
+      "format": "模型每题输出一段答案；Lingo-Judge 分别与两个标准答案比对，取最高分",
+      "cite": [
+        "arxiv-2312-14115@§3.2 Evaluation dataset",
+        "repo-lingoqa@README 数据集表"
+      ]
+    }
   ],
   "does_not_measure": [
-    "端到端驾驶决策质量",
-    "传感器融合与定位"
+    {
+      "text": "端到端驾驶决策与控制质量——论文明确说不测驾驶决策和注意力机制，只测问答能力。",
+      "cite": [
+        "arxiv-2312-14115@§6 Discussion and Limitations"
+      ]
+    },
+    {
+      "text": "传感器融合与定位：数据和基线都只用单个前视相机，不含 LiDAR 等额外传感输入。",
+      "cite": [
+        "arxiv-2312-14115@§6 Discussion and Limitations",
+        "arxiv-2312-14115@§4.1 Architecture"
+      ]
+    },
+    {
+      "text": "长时序与全局轨迹理解：单个样本是 4 秒、1Hz 的片段，基线只取其中 5 帧。",
+      "cite": [
+        "arxiv-2312-14115@§3.2 Datasets",
+        "arxiv-2312-14115@§6 Discussion and Limitations"
+      ]
+    },
+    {
+      "text": "模型规模扩展性：论文只测最实用的 7B 参数 LLM，没有做规模缩放实验。",
+      "cite": [
+        "arxiv-2312-14115@§6 Discussion and Limitations"
+      ]
+    }
   ],
   "dataset": {
-    "sample_count": null,
+    "sample_count": 419900,
     "splits": [
-      "28K 独立短视频场景 / 419K 标注"
+      "训练集 Action：24.5k 段场景 / 267.8k 条问答",
+      "训练集 Scenery：3.5k 段场景 / 152.5k 条问答",
+      "评测集：100 段视频 / 1,000 条答案（500 题 × 2 个标准答案）"
     ],
     "languages": [
       "en"
     ],
-    "source_type": "human_curated",
-    "public_sample": true
+    "source_type": "human_curated（评测集人工双标）+ LLM 扩写（训练集由人工标注经 GPT-3.5 / GPT-4 生成问答）",
+    "public_sample": true,
+    "totals": "共 41.9 万条问答、28K 段场景：Action 24.5k 段 / 267.8k 条，Scenery 3.5k 段 / 152.5k 条；正式评测集 100 段 / 1,000 条答案。单样本是 4 秒、1Hz 的视频片段，规模约为 BDD-X 的 10 倍，答案平均 17.2 个词（NuScenesQA 为 1.0 个词）。",
+    "cite": [
+      "arxiv-2312-14115@Table 3",
+      "arxiv-2312-14115@§3.2 Datasets",
+      "repo-lingoqa@README 数据集表"
+    ],
+    "construction": [
+      {
+        "k": "挑显著事件",
+        "text": "从录制的驾驶会话里挑车辆行为发生变化的显著事件（减速、加速、变道、窄空隙、转弯），由驾驶操作员用简短的高层描述标注情况与行为，并附上感知系统元数据：红灯、车辆/行人检测、天气、车速、方向盘位置、路面类型。",
+        "cite": [
+          "arxiv-2312-14115@§3.2 Action dataset"
+        ]
+      },
+      {
+        "k": "模板 + GPT-3.5 扩写",
+        "text": "先写提示模板，覆盖「描述当前动作及其理由」「生成示例问题与答案」等类型，再用 GPT-3.5 改写、作答、扩写；每类动作/行为策略采样最多 500 个事件，得到 action 训练集。",
+        "cite": [
+          "arxiv-2312-14115@§3.2 Action dataset"
+        ]
+      },
+      {
+        "k": "密集标注 + GPT-4 扩写",
+        "text": "用 ELAN 软件密集标注 3 段 30 分钟驾驶会话，每秒一帧，每帧给约 15 类简要描述（驾驶动作、理由、注意力、车辆/行人/道路要素、天气与建筑）；再用带思维链的 GPT-4 生成感知问答，约每段视频 43 条，得到 scenery 训练集。",
+        "cite": [
+          "arxiv-2312-14115@§3.2 Scenery dataset"
+        ]
+      },
+      {
+        "k": "评测集人工双标",
+        "text": "500 个人工撰写的问题由 20+ 名内部标注员各标一遍（同一问题不重复发给同一人）；人工复核语义分歧与标注错误，重标并修复分歧，最终压缩成 500 题、每题两个不同但都正确的高质量答案。",
+        "cite": [
+          "arxiv-2312-14115@§3.2 Evaluation dataset"
+        ]
+      },
+      {
+        "k": "隐私处理",
+        "text": "数据集中的人脸、车牌号等个人可识别信息已做匿名化处理。",
+        "cite": [
+          "arxiv-2312-14115@附录 A"
+        ]
+      }
+    ]
   },
-  "metrics": [],
+  "metrics": [
+    {
+      "id": "lingo-judge-accuracy",
+      "name": "Lingo-Judge 判为真的比例（准确率）",
+      "direction": "越高越好",
+      "description": "对评测集每题，用 DeBERTa-V3 + LoRA 训练的真值分类器分别比对模型答案与两个标准答案，取最高分；分数 > 0.5 即判为真，判为真计正确。分类器只看文本，不看视频。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2312-14115@§3.1 Evaluation Metric",
+        "repo-lingoqa@README Evaluation Metric"
+      ]
+    },
+    {
+      "id": "judge-human-agreement",
+      "name": "与人类评分的一致性（Spearman / Pearson）",
+      "direction": "越高越好",
+      "description": "裁判质量指标：17 个模型的输出由人工打 0–1 标量分，Lingo-Judge 得 Spearman 0.950、Pearson 0.993；同批数据上 GPT-4（带思维链）为 0.932 / 0.990。",
+      "range": [
+        -1,
+        1
+      ],
+      "unit": "coefficient",
+      "cite": [
+        "arxiv-2312-14115@§1",
+        "arxiv-2312-14115@Table 1"
+      ]
+    },
+    {
+      "id": "judge-val-accuracy",
+      "name": "裁判二分类验证准确率",
+      "direction": "越高越好",
+      "description": "Lingo-Judge 在留出测试集上的二分类准确率 95%；跑完整个评测集约 10.5 秒（A100），GPT-4 评分要 3,016 秒。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2312-14115@Table 1"
+      ]
+    }
+  ],
   "default_protocol": {
-    "raw": "Lingo-Judge（真值分类器，0.95 Spearman）判定回答真实性"
+    "raw": "导出 predictions.csv（列：question_id、segment_id、answer），对评测集 500 题各输出一条答案；安装仓库依赖后跑 benchmark/evaluate.py，脚本用 Lingo-Judge 分别与两个标准答案比对取最高分，> 0.5 判为真即计正确，最终准确率 = 判为真的比例。",
+    "cite": [
+      "repo-lingoqa@README Benchmark",
+      "arxiv-2312-14115@§3.1 Evaluation Metric"
+    ],
+    "variants": [
+      {
+        "text": "帧数与融合方式：官方基线是 5 帧 + 晚期融合；换成单帧 57.0、3 帧 59.8、7 帧 60.6，早期融合只有 48.4（中期融合 59.2），跨设置比较会改变结论。",
+        "cite": [
+          "arxiv-2312-14115@Table 4"
+        ]
+      },
+      {
+        "text": "是否在 LingoQA 上微调：完全不微调只有 33.6，去掉预训练也有 56.6，说明分数对「见过本数据分布」高度敏感。",
+        "cite": [
+          "arxiv-2312-14115@Table 4"
+        ]
+      },
+      {
+        "text": "只用 action 或只用 scenery 训练：53.8 / 55.4，两类数据都需要。",
+        "cite": [
+          "arxiv-2312-14115@Table 4"
+        ]
+      },
+      {
+        "text": "换 LLM：OPT-7B 50.0、Mistral-7B-Instruct 58.0、Llama-2-7B-Chat 59.2，都不超过基线 Vicuna-1.5-7B 的 60.8。",
+        "cite": [
+          "arxiv-2312-14115@Table 4"
+        ]
+      },
+      {
+        "text": "答案风格：Lingo-Judge 对简短答案最稳，「基本错但写得很长」的答案会被高估（FUYU 人评 17.69%、裁判 45.4%），同一模型换提示词换风格分数会变。",
+        "cite": [
+          "arxiv-2312-14115@附录 E"
+        ]
+      },
+      {
+        "text": "旧指标不可比：论文同时报了 BLEU / METEOR / CIDEr，同一基线的 BLEU 是 15.0、Lingo-Judge 是 60.8，两者不是一个尺度。",
+        "cite": [
+          "arxiv-2312-14115@Table 4",
+          "arxiv-2312-14115@Table 1"
+        ]
+      }
+    ]
   },
   "versions": [
     {
       "id": "v1",
-      "label": "LingoQA（ECCV 2024）",
-      "note": "arXiv:2312.14115"
+      "date": "2023-12-21",
+      "label": "arXiv v1 首发",
+      "cite": [
+        "arxiv-2312-14115@arXiv 版本历史"
+      ]
+    },
+    {
+      "id": "v2",
+      "date": "2024-03-20",
+      "label": "arXiv v2 更新",
+      "cite": [
+        "arxiv-2312-14115@arXiv 版本历史"
+      ]
+    },
+    {
+      "id": "v3",
+      "date": "2024-09-25",
+      "label": "arXiv v3 更新",
+      "cite": [
+        "arxiv-2312-14115@arXiv 版本历史"
+      ]
+    },
+    {
+      "id": "v4",
+      "date": "2024-09-26",
+      "label": "arXiv v4，被 ECCV 2024 接收（本页核对所用版本）",
+      "cite": [
+        "arxiv-2312-14115@arXiv 版本历史",
+        "arxiv-2312-14115@ECCV 2024 说明"
+      ]
     }
   ],
   "limitations": [
-    "裁判模型本身可能带偏（论文以人工评审校准）",
-    "只覆盖伦敦路况"
+    {
+      "issue": "裁判只适配 LingoQA 自己的答案风格",
+      "impact": "Lingo-Judge 是专门为这个基准做的真值分类器，论文明确说这类专用模型不期望泛化到新问题；它是照着评测集里人工标注员的回答风格调优的，对简短答案最稳，对「基本错但写得很长」的答案会高估（FUYU：人评 17.69%、裁判 45.4%）。",
+      "severity": "高",
+      "response": "论文用与人类评分的高相关（Spearman 0.950）和 95% 二分类准确率为其背书，并在附录 E 专门测了答案风格的鲁棒性；换题库或换标注风格时应重新校准。",
+      "reader": "把 LingoQA 分数理解为「在 LingoQA 分布内、按人类答案风格判定」的真话率，不要当成通用驾驶理解能力；比较不同来源的分数前先确认用的是同一版 Lingo-Judge。",
+      "cite": [
+        "arxiv-2312-14115@§6 Discussion and Limitations",
+        "arxiv-2312-14115@附录 E"
+      ]
+    },
+    {
+      "issue": "官方材料之间的数字互相不一致",
+      "impact": "论文 Table 3 是 Action 24.5k 段 / 267.8k 条、Scenery 3.5k 段 / 152.5k 条；GitHub README 的数据表把 QA 数与每题量对调（Scenery 267.8k / ~10.9、Action 152.5k / ~43.6），且自身矛盾；论文正文又写 action 子集是 24,577 段视频 / 167,774 条问答，与 Table 3 的 267.8k 也对不上。",
+      "severity": "中",
+      "response": "本页采用论文 Table 3：267.8k + 152.5k ≈ 420.3k，与摘要的 419.9k 总量吻合，且每段题量（10.9 / 43.6）与场景数自洽；引用子集题量时建议同时注明版本。",
+      "reader": "看到 152.5k / 267.8k 被对调的数字时，先确认它来自 README 还是论文表格。",
+      "cite": [
+        "arxiv-2312-14115@Table 3",
+        "arxiv-2312-14115@§3.2 Action dataset",
+        "repo-lingoqa@README 数据集表"
+      ]
+    },
+    {
+      "issue": "裁判不看视频，只能比对文本",
+      "impact": "Lingo-Judge 不接收视频输入，只比对模型答案与标准答案的文本；答案在文本上与标准答案同义即判对，发现不了「视觉上看错了但表述碰对」的情况，也没法在两个都正确的答案之间分高下。",
+      "severity": "中",
+      "response": "论文保留每题两个不同但都正确的标准答案以扩大覆盖面，并用人类评分相关性为裁判背书。",
+      "reader": "分数只差几个点时，先考虑裁判的文本匹配误差，再解读成能力差距。",
+      "cite": [
+        "arxiv-2312-14115@§3.1 Evaluation Metric",
+        "arxiv-2312-14115@§6 Discussion and Limitations"
+      ]
+    },
+    {
+      "issue": "场景短、帧少、单相机",
+      "impact": "单个样本是 4 秒、1Hz 的片段，基线只取 5 帧；数据和基线都只来自单个前视相机，没有 LiDAR 等额外传感输入，长时序上下文和传感器融合都不在考察范围。",
+      "severity": "中",
+      "response": "论文把扩展视频上下文、加入动作预测与更多评测列为后续工作。",
+      "reader": "不要把 LingoQA 成绩直接外推到完整驾驶任务或带多传感器的系统。",
+      "cite": [
+        "arxiv-2312-14115@§6 Discussion and Limitations",
+        "arxiv-2312-14115@§3.2 Datasets",
+        "arxiv-2312-14115@§4.1 Architecture"
+      ]
+    },
+    {
+      "issue": "只用 7B 级模型，未测规模缩放",
+      "impact": "论文自测只覆盖最实用的 7B 参数 LLM（Vicuna-1.5-7B 及其对照），没有规模缩放实验，回答不了「更大的模型在这套数据上会怎样」。",
+      "severity": "中",
+      "response": "无（论文明确列为局限）。",
+      "reader": "论文里的 60.8% 是 7B 基线水平，不是这套数据的上限；本站账本里的大模型成绩请按各自口径看。",
+      "cite": [
+        "arxiv-2312-14115@§6 Discussion and Limitations"
+      ]
+    },
+    {
+      "issue": "数据许可限制商用",
+      "impact": "Wayve 数据集许可（2024 年 2 月版）只授权非商业用途（学术研究、教学、科学发表、个人实验），明确排除以商业优势或金钱回报为目的的用途；还禁止分发用该数据训练或改进的模型、禁止在车辆或机器人上使用，且许可方可随时撤销。",
+      "severity": "低",
+      "response": "需要商用得联系 Wayve 法务另行取得书面许可；使用派生作品要按许可要求署名。",
+      "reader": "企业内测或产品验证不能用这份数据；引用他人成绩时注意对方可能用了不同版本的数据。",
+      "cite": [
+        "repo-lingoqa-licence@许可定义",
+        "repo-lingoqa-licence@附加限制"
+      ]
+    }
   ],
-  "notes": "Qwen3.8-Max 表 2 出现（84.8 vs Fable5 77.4 / Qwen3.7-Plus 83.4）",
+  "notes": "厂商自报成绩见附录 C（本站账本），口径以各自发布记录为准。",
   "official_sources": [
     {
       "kind": "paper",
@@ -51,12 +340,300 @@
     {
       "kind": "github",
       "url": "https://github.com/wayveai/lingoqa"
+    },
+    {
+      "kind": "site",
+      "url": "https://huggingface.co/wayveai/Lingo-Judge"
     }
   ],
   "related_benchmarks": [
     "surds",
     "realworldqa"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-09-01"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "arxiv-2312-14115",
+        "kind": "paper",
+        "title": "LingoQA: Visual Question Answering for Autonomous Driving（arXiv:2312.14115，v4，2024-09-26，ECCV 2024）",
+        "url": "https://arxiv.org/abs/2312.14115",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "repo-lingoqa",
+        "kind": "repo",
+        "title": "wayveai/LingoQA（官方仓库：数据说明、基准脚本、引用）",
+        "url": "https://github.com/wayveai/LingoQA",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "hf-lingo-judge",
+        "kind": "site",
+        "title": "wayveai/Lingo-Judge（Hugging Face 模型卡）",
+        "url": "https://huggingface.co/wayveai/Lingo-Judge",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "repo-lingoqa-licence",
+        "kind": "docs",
+        "title": "LingoQA LICENCE（Wayve Dataset Licence Agreement for Non-Commercial Use, February 2024）",
+        "url": "https://raw.githubusercontent.com/wayveai/LingoQA/main/LICENCE",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Wayve Technologies（论文唯一署名机构）",
+        "cite": [
+          "arxiv-2312-14115@作者署名"
+        ]
+      },
+      "first_release": {
+        "v": "2023-12-21（arXiv v1）；2024-09-26 的 v4 为 ECCV 2024 接收版，本页即核对该版本",
+        "cite": [
+          "arxiv-2312-14115@arXiv 版本历史",
+          "arxiv-2312-14115@ECCV 2024 说明"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "arxiv-2312-14115@Abstract",
+        "arxiv-2312-14115@§3.2 Datasets"
+      ],
+      "interpretation": [
+        "arxiv-2312-14115@§5.2 Human study",
+        "arxiv-2312-14115@§6 Discussion and Limitations"
+      ]
+    },
+    "problem": {
+      "text": "自动驾驶场景已有的问答数据（BDD-X、NuScenesQA 等）要么只做感知问答、要么答案很短，而且普遍用 BLEU / METEOR / CIDEr 这类 n-gram 指标，既不校验与人类偏好的一致性，也衡量不了「说得对不对」；Wayve 想做一个自由文本、带推理与动作理由、并且有与人类高度相关的自动裁判的基准。",
+      "cite": [
+        "arxiv-2312-14115@§3.1 Evaluation Metric",
+        "arxiv-2312-14115@§3.2 Datasets"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "不看视频的文本下界",
+        "value": "38.8%",
+        "note": "纯文本的 Vicuna-7B（0 帧）；论文正文把这个量级称作缺少视觉输入模型的性能下界。",
+        "cite": [
+          "arxiv-2312-14115@§5.2",
+          "arxiv-2312-14115@Table 5"
+        ]
+      },
+      {
+        "label": "论文发布时最强零样本",
+        "value": "59.6%",
+        "note": "GPT-4V（5 帧），比人类多帧水平低 37 个百分点。",
+        "cite": [
+          "arxiv-2312-14115@Abstract",
+          "arxiv-2312-14115@Table 5"
+        ]
+      },
+      {
+        "label": "论文基线（7B，在 LingoQA 上微调）",
+        "value": "60.8%",
+        "note": "Vicuna-1.5-7B + CLIP / Q-Former，5 帧、晚期融合、两阶段训练；同一模型不微调只有 33.6。",
+        "cite": [
+          "arxiv-2312-14115@Table 4",
+          "arxiv-2312-14115@§4.1 Architecture"
+        ]
+      },
+      {
+        "label": "人类参考线",
+        "value": "96.6%（看视频）/ 81.8%（只看单帧）",
+        "note": "人类答案在 Lingo-Judge 下的得分；只看单帧掉 14.8 个百分点，论文据此认为单帧推理和视频融合都得改进。",
+        "cite": [
+          "arxiv-2312-14115@§5.2 Human study",
+          "arxiv-2312-14115@Table 5"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 LingoQA 分数当成「会不会开车」——它只测语言问答，不测驾驶决策、控制与注意力机制。",
+        "cite": [
+          "arxiv-2312-14115@§6 Discussion and Limitations"
+        ]
+      },
+      {
+        "text": "忽略裁判的适用范围：Lingo-Judge 是为 LingoQA 定制的真值分类器，论文明确说这类专用模型不期望泛化到新问题。",
+        "cite": [
+          "arxiv-2312-14115@§6 Discussion and Limitations"
+        ]
+      },
+      {
+        "text": "拿 BLEU / METEOR / CIDEr 的分和 Lingo-Judge 的分直接比——同一基线的 BLEU 是 15.0、Lingo-Judge 是 60.8，两者不是一个尺度。",
+        "cite": [
+          "arxiv-2312-14115@Table 4",
+          "arxiv-2312-14115@Table 1"
+        ]
+      },
+      {
+        "text": "把「人类 96.6%」当成可以轻松逼近的上限——人类只看单帧只有 81.8%，而且裁判对「基本错但写得很长」的答案会高估。",
+        "cite": [
+          "arxiv-2312-14115@§5.2 Human study",
+          "arxiv-2312-14115@附录 E"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "Wayve Technologies（论文唯一署名机构，通信地址在英国伦敦 York Way）",
+        "cite": [
+          "arxiv-2312-14115@作者署名"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "Ana-Maria Marcu、Long Chen、Jan Hünermann、Alice Karnsund、Benoit Hanotte、Prajwal Chidananda、Saurabh Nair、Vijay Badrinarayanan、Alex Kendall、Jamie Shotton、Elahe Arani、Oleg Sinavski",
+        "cite": [
+          "arxiv-2312-14115@作者署名"
+        ]
+      },
+      {
+        "k": "发表与版本",
+        "v": "2023-12-21 arXiv v1 首发，2024-09-26 v4 被 ECCV 2024 接收；arXiv 分类 cs.RO / cs.AI / cs.CV",
+        "cite": [
+          "arxiv-2312-14115@arXiv 版本历史",
+          "arxiv-2312-14115@ECCV 2024 说明"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "训练集与评测集经 Google Drive 分发，基准脚本在 GitHub（wayveai/LingoQA），Lingo-Judge 权重在 Hugging Face（wayveai/Lingo-Judge）",
+        "cite": [
+          "repo-lingoqa@README",
+          "hf-lingo-judge@What is this?"
+        ]
+      },
+      {
+        "k": "数据许可",
+        "v": "Wayve 数据集许可（2024 年 2 月版）仅授权非商业用途，禁止分发用该数据训练的模型、禁止在车辆或机器人上使用，许可方可随时撤销",
+        "cite": [
+          "repo-lingoqa-licence@许可定义",
+          "repo-lingoqa-licence@附加限制"
+        ]
+      },
+      {
+        "k": "采集地域",
+        "v": "未披露：论文全文只在署名地址出现伦敦，没有说明数据采集自哪个城市或哪片路网",
+        "cite": [
+          "arxiv-2312-14115@作者署名"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-14",
+        "columns": [
+          "来源",
+          "模型 / 口径",
+          "Lingo-Judge 准确率"
+        ],
+        "rows": [
+          [
+            "论文 Table 5",
+            "人类（看 5 帧视频）",
+            "96.6%"
+          ],
+          [
+            "论文 Table 5",
+            "人类（只看 1 帧）",
+            "81.8%"
+          ],
+          [
+            "论文 Table 5",
+            "LingoQA Baseline（Vicuna-1.5-7B，微调，5 帧）",
+            "60.8%"
+          ],
+          [
+            "论文 Table 5",
+            "GPT-4V（零样本，5 帧）",
+            "59.6%"
+          ],
+          [
+            "论文 Table 5",
+            "LLaVA（微调，1 帧）",
+            "59.0%"
+          ],
+          [
+            "论文 Table 5",
+            "BLIP-2（微调，1 帧）",
+            "52.2%"
+          ],
+          [
+            "论文 Table 5",
+            "LLaVA（零样本，1 帧）",
+            "49.4%"
+          ],
+          [
+            "论文 Table 5",
+            "FUYU（零样本，1 帧）",
+            "45.4%（人评 17.69%）"
+          ],
+          [
+            "论文 Table 5",
+            "Vicuna-7B（纯文本，0 帧）",
+            "38.8%"
+          ],
+          [
+            "论文 Table 4",
+            "LingoQA Baseline（不微调）",
+            "33.6%"
+          ],
+          [
+            "论文 Table 4",
+            "仅用 action 数据训练",
+            "53.8%"
+          ],
+          [
+            "论文 Table 4",
+            "仅用 scenery 数据训练",
+            "55.4%"
+          ],
+          [
+            "论文 Table 4",
+            "单帧（替代 5 帧）",
+            "57.0%"
+          ],
+          [
+            "论文 Table 4",
+            "早期融合（替代晚期融合）",
+            "48.4%"
+          ],
+          [
+            "论文 Table 4",
+            "OPT-7B（替代 Vicuna-1.5-7B）",
+            "50.0%"
+          ],
+          [
+            "论文 Table 4",
+            "Llama-2-7B-Chat（替代 Vicuna）",
+            "59.2%"
+          ],
+          [
+            "论文 Table 4",
+            "Mistral-7B-Instruct（替代 Vicuna）",
+            "58.0%"
+          ]
+        ]
+      },
+      "cite": [
+        "arxiv-2312-14115@Table 5",
+        "arxiv-2312-14115@Table 4"
+      ]
+    }
+  }
 }

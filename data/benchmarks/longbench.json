@@ -1,44 +1,704 @@
 {
   "id": "longbench",
   "name": "LongBench",
-  "full_name": null,
+  "full_name": "LongBench: A Bilingual, Multitask Benchmark for Long Context Understanding（长上下文理解双语多任务基准）",
   "aliases": [],
-  "status": null,
+  "status": "active",
   "categories": [
     "longctx"
   ],
-  "summary": "中英双语 21 任务长文理解",
-  "interpretation": "中英双语 21 种长文理解任务，比 NIAH 全面。",
-  "measures": [],
-  "does_not_measure": [],
-  "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
-  },
-  "metrics": [],
-  "default_protocol": {
-    "raw": "F1/ROUGE 混合"
-  },
-  "versions": [],
-  "limitations": [],
-  "notes": null,
-  "official_sources": [
+  "summary": "LongBench 是首个中英双语、覆盖 21 个任务的长上下文理解基准：6 大类任务、共 4,750 条测试样本，英文平均 6,711 词、中文平均 13,386 字，全部标准化成统一格式以便自动评测。论文强调它的定位是「首个双语多任务的长上下文理解基准」，用来更严格地评估模型的长上下文能力。同组后续另发了 LongBench v2（503 道多选题、8k–2M 词），是另一套基准，分数不可与 v1 混比。",
+  "interpretation": "LongBench 分数衡量的是「有长上下文时能答对多少」，不是「模型记住了多少」：论文专门做了抽掉上下文的对照实验，HotpotQA / 2WikiMultihopQA / Musique 上 GPT-3.5-Turbo-16k 的无上下文成绩分别为 31.7 / 28.9 / 15.0，说明这几个源自 Wikipedia 的任务里有相当一部分分数来自记忆。分数还与指令跟随能力耦合——论文明说主要目标是评估长上下文建模而不管指令跟随，输出格式跑偏会被 F1 / ROUGE-L 直接判低分。另外 ROUGE-L、F1 这类 n-gram 指标本身可能不可靠，Overall 更适合当排序信号而不是绝对质量分。",
+  "measures": [
     {
-      "kind": "site",
-      "url": "https://longbench.github.io/"
+      "area": "单文档问答（Single-Doc QA）",
+      "focus": "NarrativeQA（文学与影视）、Qasper（NLP 科学论文，从业者提问并作答）、MultiFieldQA-en / MultiFieldQA-zh（约 10 类来源的长文：LaTeX 论文、司法文书、政府工作报告、Google 索引的 PDF）",
+      "share": "750 题（Figure 1）",
+      "format": "F1；MultiFieldQA 系列为人工提问 + 人工答案",
+      "cite": [
+        "arxiv-2308-14508@Figure 1",
+        "arxiv-2308-14508@Table 1",
+        "dataset@Task description",
+        "dataset@Task construction"
+      ]
     },
+    {
+      "area": "多文档问答（Multi-Doc QA）",
+      "focus": "HotpotQA、2WikiMultihopQA、Musique（Wikipedia 多跳问答）与 DuReader（百度搜索衍生的中文问答）",
+      "share": "800 题（Figure 1）",
+      "format": "F1；DuReader 为 ROUGE-L",
+      "cite": [
+        "arxiv-2308-14508@Figure 1",
+        "arxiv-2308-14508@Table 1",
+        "dataset@Task statistics"
+      ]
+    },
+    {
+      "area": "摘要（Summarization）",
+      "focus": "GovReport（美国政府工作报告）、QMSum 与 VCSUM（会议记录）、MultiNews（多文档新闻）",
+      "share": "Figure 1 标 600 题，Table 1 四个数据集各 200 条合计 800 条（两处不一致，见 limitations）",
+      "format": "ROUGE-L",
+      "cite": [
+        "arxiv-2308-14508@Figure 1",
+        "arxiv-2308-14508@Table 1",
+        "dataset@Task description"
+      ]
+    },
+    {
+      "area": "少样本学习（Few-shot）",
+      "focus": "TREC（英文问题分类，50 类）、TriviaQA、SAMSum（对话摘要）、LSHT（中文新闻分类，24 类）；few-shot 示例作为长上下文的一部分给出",
+      "share": "800 题（Figure 1）",
+      "format": "TREC / LSHT 为 Accuracy (CLS)，TriviaQA 为 F1，SAMSum 为 ROUGE-L",
+      "cite": [
+        "arxiv-2308-14508@Figure 1",
+        "arxiv-2308-14508@Table 1",
+        "arxiv-2308-14508@§4.1",
+        "dataset@Task description"
+      ]
+    },
+    {
+      "area": "合成任务（Synthetic）",
+      "focus": "PassageCount（数出一篇重复文章里共有多少不同段落）、PassageRetrieval-en / PassageRetrieval-zh（给定 30 个英文维基段落，判断给定摘要对应哪一段）",
+      "share": "600 题（Figure 1）",
+      "format": "Accuracy (EM) 精确匹配",
+      "cite": [
+        "arxiv-2308-14508@Figure 1",
+        "arxiv-2308-14508@Table 1",
+        "dataset@Task description"
+      ]
+    },
+    {
+      "area": "代码补全（Code）",
+      "focus": "LCC 与 RepoBench-P：GitHub 仓库内跨文件依赖场景下预测下一行代码，覆盖 Python / Java / C#",
+      "share": "1,000 题（Figure 1）",
+      "format": "Edit Sim（编辑相似度）",
+      "cite": [
+        "arxiv-2308-14508@Figure 1",
+        "arxiv-2308-14508@Table 1",
+        "dataset@Task description"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "纯记忆能力——「抽掉长上下文只留问题」在论文里是对照实验（w/o context），用来衡量任务对记忆的依赖程度，不是基准要测的能力本身",
+      "cite": [
+        "arxiv-2308-14508@§4.3"
+      ]
+    },
+    {
+      "text": "指令跟随能力——论文明确说主要目标是评估模型的长上下文建模能力，不管其指令跟随能力；两者在 v1 中没有解耦",
+      "cite": [
+        "arxiv-2308-14508@§6"
+      ]
+    },
+    {
+      "text": "超出数万 token 的长度——论文说数据长度从数千 token 延伸到数万 token；8k–2M 词量级属于 2024-12-20 发布的 LongBench v2，不在 v1 覆盖范围内",
+      "cite": [
+        "arxiv-2308-14508@§5",
+        "repo@Updates"
+      ]
+    },
+    {
+      "text": "回复本身的质量（可读性、事实性、是否有依据）——主指标是 F1 / ROUGE-L / Edit Sim 等 n-gram 或字符级重合度，不评估内容质量",
+      "cite": [
+        "arxiv-2308-14508@§6",
+        "arxiv-2308-14508@§4.1"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 4750,
+    "splits": [
+      "LongBench 测试集 4,750 条（21 个任务）",
+      "LongBench-E：从 13 个英文数据集按词数在 0-4k / 4k-8k / 8k+ 三个区间均匀采样得到的重采样版本，各区间的数据量相当"
+    ],
+    "languages": [
+      "en",
+      "zh"
+    ],
+    "source_type": "混合：6 个数据集直接取自前人研究、10 个在原数据集上加工以适配长上下文评测、5 个由作者自行创建并标注；另有 2 个代码任务",
+    "public_sample": true,
+    "totals": "4,750 条测试样本（LongBench-E 为重采样子集，非新增题目）：14 个英文任务、5 个中文任务、2 个代码任务；英文与代码数据集按词数计平均长度，中文数据集按字符数计；从原数据集的测试集取样以避免测试泄漏（VCSUM 因测试集数据不足除外）",
+    "cite": [
+      "arxiv-2308-14508@§1",
+      "arxiv-2308-14508@Table 1",
+      "dataset@Introduction",
+      "dataset@Task statistics"
+    ],
+    "construction": [
+      {
+        "k": "任务来源与拆分",
+        "text": "21 个数据集全部标准化为统一格式，其中 6 个直接采用前人提供的原始数据集、10 个基于原始数据集加工以适配长上下文评测、5 个由作者自行创建并标注。",
+        "cite": [
+          "arxiv-2308-14508@§1",
+          "arxiv-2308-14508@摘要"
+        ]
+      },
+      {
+        "k": "防测试泄漏",
+        "text": "由于模型可能已在部分公开数据集的训练集上训练过，统一从这些公开数据集的测试集取样，只有 VCSUM 因其测试集数据不足而例外。",
+        "cite": [
+          "arxiv-2308-14508@§3.2"
+        ]
+      },
+      {
+        "k": "人工标注",
+        "text": "MultiFieldQA-zh / MultiFieldQA-en 由约 10 类来源的长文构成，邀请多名博士与硕士生基于长文提问并给出正确答案；平均每题标注约 5 分钟，标注者交叉验证显示答案准确率 100%。",
+        "cite": [
+          "dataset@Task construction",
+          "arxiv-2308-14508@附录 A"
+        ]
+      },
+      {
+        "k": "证据位置随机化",
+        "text": "标注时确保答案可以从文档中推断，并让证据的摆放位置尽量随机，避免答案相关语句总是出现在开头或结尾而带来偏差。",
+        "cite": [
+          "arxiv-2308-14508@§3.2"
+        ]
+      },
+      {
+        "k": "LongBench-E 构造",
+        "text": "选出 13 个英文数据集（Qasper、MultiFieldQA-en、HotpotQA、2WikiMultihopQA、GovReport、Multi-news、TREC、TriviaQA、SAMSum、PassageCount、PassageRetrieval-en、LCC、RepoBench-P）以获得更宽的长度覆盖，再按词数在 0-4k / 4k-8k / 8k+ 三个区间做均匀采样。",
+        "cite": [
+          "arxiv-2308-14508@§3.2",
+          "dataset@Introduction"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "f1",
+      "name": "F1",
+      "direction": "越高越好",
+      "description": "词级 n-gram 重叠的 F1，问答类任务的主指标（论文称其为 QA 与摘要任务中广泛采用的两种 n-gram 指标之一）",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2308-14508@§4.1",
+        "arxiv-2308-14508@Table 1"
+      ]
+    },
+    {
+      "id": "rouge-l",
+      "name": "ROUGE-L",
+      "direction": "越高越好",
+      "description": "基于最长公共子序列的重合度，摘要类任务与 DuReader、SAMSum 的主指标",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2308-14508@§4.1",
+        "arxiv-2308-14508@Table 1"
+      ]
+    },
+    {
+      "id": "edit-sim",
+      "name": "Edit Sim（编辑相似度）",
+      "direction": "越高越好",
+      "description": "基于 Levenshtein 距离的相似度，代码生成评测常用，LCC 与 RepoBench-P 的主指标",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2308-14508@§4.1",
+        "arxiv-2308-14508@Table 1"
+      ]
+    },
+    {
+      "id": "accuracy-cls",
+      "name": "Accuracy (CLS) 分类准确率",
+      "direction": "越高越好",
+      "description": "TREC 与 LSHT 的分类准确率",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2308-14508@Table 1 注",
+        "arxiv-2308-14508@Table 1"
+      ]
+    },
+    {
+      "id": "accuracy-em",
+      "name": "Accuracy (EM) 精确匹配准确率",
+      "direction": "越高越好",
+      "description": "PassageCount 与 PassageRetrieval-en / -zh 的精确匹配准确率",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2308-14508@Table 1 注",
+        "arxiv-2308-14508@Table 1"
+      ]
+    },
+    {
+      "id": "overall",
+      "name": "Overall（宏平均）",
+      "direction": "越高越好",
+      "description": "各主要任务类别 Avg 的宏平均（对类别的 Avg 取等权均值），分 EN / ZH / All 三个口径报告；代码任务同时计入两种语言",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2308-14508@Table 3 注",
+        "arxiv-2308-14508@Table 3"
+      ]
+    }
+  ],
+  "default_protocol": {
+    "raw": "零样本评测（少样本学习任务把 few-shot 示例作为长上下文的一部分提供）；输入长度超过模型最大上下文长度时从序列中部截断；生成使用贪心解码以保证可复现；按数据集分别用 F1 / ROUGE-L / Edit Sim / Accuracy 自动评分，Overall 为各大类 Avg 的宏平均。",
+    "cite": [
+      "arxiv-2308-14508@§4.1",
+      "arxiv-2308-14508@Table 3 注"
+    ],
+    "variants": [
+      {
+        "text": "上下文窗口截断：输入长度 L 超过模型最大上下文长度 M 时，从序列中部截断，因为序列首尾可能包含指令或问题等关键信息。",
+        "cite": [
+          "arxiv-2308-14508@§4.1"
+        ]
+      },
+      {
+        "text": "对话式提示词：参评聊天模型通常带有诱导对话式回复的提示词，但少样本学习与代码补全任务刻意不加这类提示词，因为这两类任务要求补全式而非对话式输出。",
+        "cite": [
+          "arxiv-2308-14508@§4.1"
+        ]
+      },
+      {
+        "text": "上下文压缩（检索式 / 摘要式）：论文测试了先切块再按查询检索或摘要的压缩方法，结果只在 VCSUM 上提升 3–4 分，因为 VCSUM 的数据比其他三个受测数据集更长。",
+        "cite": [
+          "arxiv-2308-14508@§4.2"
+        ]
+      },
+      {
+        "text": "无上下文对照（w/o context）：只向模型提出问题、不给长上下文，用来衡量任务对记忆的依赖；HotpotQA / 2WikiMultihopQA / Musique 上该口径分数相对较高。",
+        "cite": [
+          "arxiv-2308-14508@§4.3",
+          "arxiv-2308-14508@Table 6"
+        ]
+      },
+      {
+        "text": "LongBench-E 子集：从 13 个英文数据集在 0-4k / 4k-8k / 8k+ 三个长度区间均匀采样，用于分析模型在不同输入长度下的性能变化。",
+        "cite": [
+          "arxiv-2308-14508@§3.2",
+          "dataset@Introduction"
+        ]
+      },
+      {
+        "text": "LongBench v2 口径（另一套基准）：全部改为多选题格式，官方脚本提供 --cot（思维链）、--no_context（无上下文纯记忆）与 --rag N（取 top-N 检索上下文）三个开关。",
+        "cite": [
+          "repo@How to evaluate on LongBench v2",
+          "repo@Data Format"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2023-08-28",
+      "label": "arXiv v1 提交，21 个任务 / 4,750 条测试样本的首个公开版本",
+      "cite": [
+        "arxiv-2308-14508@arXiv 提交记录"
+      ]
+    },
+    {
+      "id": "leaderboard-2024-01",
+      "date": "2024-01-15",
+      "label": "README 更新日志记录榜单新增 Gemini-Exp-1206、Gemini-2.0-Flash、DeepSeek-V3、MiniMax-Text-01（这几个模型的公开时间都晚于该日期，README 原文如此，见 limitations）",
+      "cite": [
+        "repo@Updates"
+      ]
+    },
+    {
+      "id": "v2-paper",
+      "date": "2024-06-19",
+      "label": "arXiv v2 修订，即 ACL 2024 正式发表版（本档案核对所用版本）",
+      "cite": [
+        "arxiv-2308-14508@arXiv 提交记录",
+        "arxiv-2308-14508@Comments"
+      ]
+    },
+    {
+      "id": "v2-release",
+      "date": "2024-12-20",
+      "label": "发布 LongBench v2：503 道多选题、上下文 8k–2M 词（多数在 128k 以内）、六大类任务；人类专家 15 分钟限时 53.7%，最佳模型直答 50.1%，o1-preview 57.7%",
+      "cite": [
+        "repo@Updates"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "自动指标可能不可靠",
+      "impact": "ROUGE-L 与 F1 这类 n-gram 重合指标不一定能反映回复质量：表述不同但正确的答案会被判错，表面重合的错误答案反而可能得分。论文在 Limitations 中把「 potentially unreliable automatic metrics」列为首条。",
+      "severity": "高",
+      "response": "论文明确披露了这一点，但 v1 没有提供替代的人工或模型裁判口径；v2 改为全多选题格式以缓解该问题。",
+      "reader": "把 Overall 当排序信号而不是绝对质量分；跨论文比较前先确认双方用的是同一套自动指标。",
+      "cite": [
+        "arxiv-2308-14508@§6"
+      ]
+    },
+    {
+      "issue": "与指令跟随能力耦合",
+      "impact": "长上下文建模能力和「会不会按要求的格式作答」混在一起：格式跑偏会被 F1 / ROUGE-L 直接判低分，把能力问题误记成格式问题。",
+      "severity": "中",
+      "response": "论文在评测时对少样本学习与代码补全任务刻意去掉对话式提示词以减少干扰，但整体口径没有把两者解耦。",
+      "reader": "某个模型 Overall 明显低于同量级模型时，先抽查它的原始输出是不是格式问题，再下结论。",
+      "cite": [
+        "arxiv-2308-14508@§6",
+        "arxiv-2308-14508@§4.1"
+      ]
+    },
+    {
+      "issue": "部分任务的分数来自记忆而非长上下文",
+      "impact": "抽掉上下文后 GPT-3.5-Turbo-16k 在 HotpotQA / 2WikiMultihopQA / Musique 上仍有 31.7 / 28.9 / 15.0 分；论文推测这是因为这些数据集源自 Wikipedia，而 Wikipedia 是主流大模型的常见训练语料。",
+      "severity": "中",
+      "response": "论文提供 w/o context 对照口径，但没有剔除或重新加权这些任务。",
+      "reader": "比较模型时优先看「有上下文 − 无上下文」的增量，不要只看原始 Overall。",
+      "cite": [
+        "arxiv-2308-14508@§4.3",
+        "arxiv-2308-14508@Table 6"
+      ]
+    },
+    {
+      "issue": "类别题量的两处口径不一致",
+      "impact": "Figure 1 把摘要类标为 600 题，Table 1 里四个摘要数据集各 200 条合计 800 条；Figure 1 的六类标注相加为 4,550，与全文声明的 4,750 条差 200 条。按 Table 1 逐数据集相加则正好是 4,750。",
+      "severity": "低",
+      "response": "论文与官方仓库均未就此发布更正；本档案以 Table 1 的逐数据集条数为准记录摘要类题量。",
+      "reader": "引用类别题量时用 Table 1 的逐数据集条数，不要直接用 Figure 1 的类别标注。",
+      "cite": [
+        "arxiv-2308-14508@Figure 1",
+        "arxiv-2308-14508@Table 1"
+      ]
+    },
+    {
+      "issue": "README 更新日志日期与所列模型不符",
+      "impact": "仓库 README 的 Updates 里，[2024/01/15] 一条列出的 Gemini-2.0-Flash、DeepSeek-V3、MiniMax-Text-01 的公开时间都晚于该日期，读者若按这条时间线推断模型可用性会出错。",
+      "severity": "低",
+      "response": "仓库未更正该日期；本档案按 README 原文记录该条目的日期与内容。",
+      "reader": "把这条当榜单内容更新记录，不要当模型发布时间线用。",
+      "cite": [
+        "repo@Updates"
+      ]
+    },
+    {
+      "issue": "长度覆盖止于数万 token",
+      "impact": "v1 的数据长度从数千 token 到数万 token，超出这一范围的表现不在覆盖内，无法用来判断模型在 128k 以上的长上下文能力。",
+      "severity": "低",
+      "response": "同组于 2024-12-20 发布 LongBench v2，上下文扩展到 8k–2M 词，但题型改为多选题，与 v1 不可比。",
+      "reader": "要评超长上下文看 LongBench v2 的结果，不要用 v1 分数外推。",
+      "cite": [
+        "arxiv-2308-14508@§5",
+        "repo@Updates"
+      ]
+    }
+  ],
+  "notes": "两代基准并存：v1 = 4,750 条 21 任务生成式评测；v2（2024-12-20）= 503 道多选题、8k–2M 词。官方仓库 README 已把 v1 相关文件移到 LongBench/ 子目录",
+  "official_sources": [
     {
       "kind": "paper",
       "url": "https://arxiv.org/abs/2308.14508"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/THUDM/LongBench"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/THUDM/LongBench"
     }
   ],
   "related_benchmarks": [
     "niah",
-    "ruler"
+    "ruler",
+    "zeroscrolls-quality",
+    "infinitebench-en-mc",
+    "mmlongbench"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-28"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-13",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      {
+        "id": "arxiv-2308-14508",
+        "kind": "paper",
+        "title": "LongBench: A Bilingual, Multitask Benchmark for Long Context Understanding（arXiv:2308.14508，v2，2024-06-19，ACL 2024）",
+        "url": "https://arxiv.org/abs/2308.14508",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "THUDM/LongBench（GitHub：README、Updates、评测开关）",
+        "url": "https://github.com/THUDM/LongBench",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "dataset",
+        "kind": "dataset",
+        "title": "THUDM/LongBench（Hugging Face 数据集卡片）",
+        "url": "https://huggingface.co/datasets/THUDM/LongBench",
+        "accessed": "2026-11-13"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "清华大学、智谱 AI（Zhipu.AI）与中科院自动化所（论文署名机构）",
+        "cite": [
+          "arxiv-2308-14508@作者署名"
+        ]
+      },
+      "first_release": {
+        "v": "2023-08-28（arXiv v1 提交）",
+        "cite": [
+          "arxiv-2308-14508@arXiv 提交记录"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "arxiv-2308-14508@摘要",
+        "arxiv-2308-14508@§1",
+        "dataset@Introduction"
+      ],
+      "interpretation": [
+        "arxiv-2308-14508@§4.3",
+        "arxiv-2308-14508@Table 6",
+        "arxiv-2308-14508@§6"
+      ]
+    },
+    "problem": {
+      "text": "长上下文评测此前是割裂的：一部分工作只在摘要等少数真实任务上做，另一部分用「大海捞针」式受控合成任务测检索，各自为政、长度与指标口径不统一，难以横向比较。论文直言「针对长上下文理解的综合基准仍然缺乏」，并列举 ZeroSCROLLS 与 L-Eval 等同期工作作为背景。LongBench 要把多种真实任务、中英双语、统一格式和自动评测放进同一个基准。",
+      "cite": [
+        "arxiv-2308-14508@§1",
+        "arxiv-2308-14508@§2"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "无上下文纯记忆（对照基线）",
+        "value": "GPT-3.5-Turbo-16k：HotpotQA 31.7 / 2WikiMultihopQA 28.9 / Musique 15.0",
+        "note": "Table 6 的 w/o context 口径，抽掉长上下文只留问题。说明这几个 Wikipedia 系任务有一部分靠记忆就能答，不是纯长上下文能力。",
+        "cite": [
+          "arxiv-2308-14508@Table 6",
+          "arxiv-2308-14508@§4.3"
+        ]
+      },
+      {
+        "label": "论文报告的最好成绩",
+        "value": "GPT-3.5-Turbo-16k Overall 44.7（EN 44.0 / ZH 44.5）",
+        "note": "Table 3 的宏平均口径；同期开源的 LongChat-v1.5-7B-32k 为 31.6、Vicuna-v1.5-7B-16k 为 30.5、Llama2-7B-chat-4k 为 26.8。论文同时指出长度续训与位置编码缩放有效：ChatGLM2-6B-32k 与 LongChat-v1.5-7B-32k 相对提升 62% 和 19%。",
+        "cite": [
+          "arxiv-2308-14508@Table 3",
+          "arxiv-2308-14508@§4.1"
+        ]
+      },
+      {
+        "label": "长输入鲁棒性参考",
+        "value": "ChatGLM2-6B-32k 从 0-4k 到 8k+ 相对下降 4%（LongChat-v1.5-7B-32k 为 7%）",
+        "note": "论文用 Table 3 的 0-4k / 4k-8k / 8k+ 分区间结果说明：经过长上下文续训的模型在长输入上更稳，而普通模型仍随长度增加明显退化。",
+        "cite": [
+          "arxiv-2308-14508@§4.1"
+        ]
+      },
+      {
+        "label": "LongBench v2（另一套基准，不可与上面比）",
+        "value": "o1-preview 57.7% vs 人类专家 53.7%",
+        "note": "v2 是 503 道多选题、上下文 8k–2M 词；最佳模型直接作答 50.1%，带更长推理的 o1-preview 57.7%，比人类基线高 4%。",
+        "cite": [
+          "repo@Updates"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 Overall 当成「模型懂长文」的绝对分——它同时混入了指令跟随能力，论文明确说主要目标是评估长上下文建模而不管指令跟随。",
+        "cite": [
+          "arxiv-2308-14508@§6"
+        ]
+      },
+      {
+        "text": "看到 HotpotQA / 2WikiMultihopQA / Musique 上的高分就认定是长上下文能力——抽掉上下文后这些任务就有 15–32 分，论文推测源于 Wikipedia 训练语料污染。",
+        "cite": [
+          "arxiv-2308-14508@§4.3",
+          "arxiv-2308-14508@Table 6"
+        ]
+      },
+      {
+        "text": "用 v1 的 4,750 题成绩描述 v2——v2 是 503 道多选题、8k–2M 词、人类限时 53.7% 的另一套基准，官方仓库已把 v1 文件移到 LongBench/ 子目录。",
+        "cite": [
+          "repo@Updates"
+        ]
+      },
+      {
+        "text": "直接按 Figure 1 的类别标注引用题量——摘要类 Figure 1 标 600，Table 1 四个数据集合计 800，且 Figure 1 六类相加只有 4,550。",
+        "cite": [
+          "arxiv-2308-14508@Figure 1",
+          "arxiv-2308-14508@Table 1"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "清华大学、智谱 AI（Zhipu.AI）、中科院自动化所；论文为 ACL 2024 长文（Proceedings of the 62nd Annual Meeting of the ACL, Volume 1: Long Papers，页 3119–3137）",
+        "cite": [
+          "arxiv-2308-14508@作者署名",
+          "arxiv-2308-14508@Comments",
+          "repo@Citation"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "Yushi Bai、Xin Lv、Jiajie Zhang、Hongchang Lyu、Jiankai Tang、Zhidian Huang、Zhengxiao Du、Xiao Liu、Aohan Zeng、Lei Hou、Yuxiao Dong、Jie Tang、Juanzi Li",
+        "cite": [
+          "arxiv-2308-14508@作者署名"
+        ]
+      },
+      {
+        "k": "任务构成",
+        "v": "6 大类 21 个任务：14 个英文任务、5 个中文任务、2 个代码任务；多数任务的平均长度在 5k–15k 之间",
+        "cite": [
+          "dataset@Introduction",
+          "arxiv-2308-14508@摘要"
+        ]
+      },
+      {
+        "k": "两代基准",
+        "v": "v1 为 4,750 条生成式任务；v2（2024-12-20）为 503 道多选题，上下文 8k–2M 词、多数在 128k 以内，覆盖单文档 QA、多文档 QA、长上下文学习、长对话历史、代码仓库理解与长结构化数据理解六类",
+        "cite": [
+          "repo@Updates",
+          "arxiv-2308-14508@§1"
+        ]
+      },
+      {
+        "k": "v2 出题与人类基线",
+        "v": "数据来自近 100 名高学历、专业背景多样的标注者；人类专家在 15 分钟限时下只有 53.7% 准确率",
+        "cite": [
+          "repo@Updates"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "数据集在 Hugging Face（THUDM/LongBench，仅提供下载，自动评测需到 GitHub 仓库）；v2 的评测开关（--cot / --no_context / --rag N）也在仓库 README",
+        "cite": [
+          "dataset@Loading Data",
+          "repo@How to evaluate on LongBench v2"
+        ]
+      },
+      {
+        "k": "长度分布",
+        "v": "LongBench-E 按 0-4k / 4k-8k / 8k+ 三个区间均匀采样，用来分析模型在不同输入长度下的性能变化；多数任务在该子集上三个区间各 100 条，MultiFieldQA-en 为 67/70/13、Qasper 为 100/100/24、MultiNews 为 100/100/94",
+        "cite": [
+          "dataset@LongBench-E statistics",
+          "arxiv-2308-14508@§3.2"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-13",
+        "columns": [
+          "来源",
+          "模型",
+          "Overall (All)",
+          "Overall (EN)",
+          "Overall (ZH)",
+          "口径"
+        ],
+        "rows": [
+          [
+            "论文 Table 3",
+            "GPT-3.5-Turbo-16k",
+            "44.7",
+            "44.0",
+            "44.5",
+            "零样本；输入超长时从中部截断；贪心解码"
+          ],
+          [
+            "论文 Table 3",
+            "ChatGLM2-6B-32k",
+            "41.4",
+            "40.9",
+            "41.7",
+            "同上"
+          ],
+          [
+            "论文 Table 3",
+            "LongChat-v1.5-7B-32k",
+            "31.6",
+            "34.3",
+            "23.9",
+            "同上"
+          ],
+          [
+            "论文 Table 3",
+            "Vicuna-v1.5-7B-16k",
+            "30.5",
+            "31.9",
+            "26.4",
+            "同上"
+          ],
+          [
+            "论文 Table 3",
+            "Llama2-7B-chat-4k",
+            "26.8",
+            "31.0",
+            "14.3",
+            "同上"
+          ],
+          [
+            "论文 Table 3",
+            "XGen-7B-8k",
+            "25.0",
+            "28.3",
+            "15.1",
+            "同上"
+          ],
+          [
+            "论文 Table 3",
+            "ChatGLM2-6B",
+            "25.7",
+            "26.6",
+            "22.9",
+            "同上"
+          ],
+          [
+            "论文 Table 3",
+            "InternLM-7B-8k",
+            "22.6",
+            "24.2",
+            "18.3",
+            "同上"
+          ]
+        ]
+      },
+      "cite": [
+        "arxiv-2308-14508@Table 3",
+        "arxiv-2308-14508@Table 3 注",
+        "arxiv-2308-14508@§4.1"
+      ]
+    }
+  }
 }

@@ -1,36 +1,322 @@
 {
   "id": "collie",
   "name": "COLLIE",
-  "full_name": null,
+  "full_name": "COLLIE: Systematic Construction of Constrained Text Generation Tasks（受约束文本生成任务的系统构建）",
   "aliases": [
     "CollIE-Hard"
   ],
-  "status": null,
+  "status": "near-saturation",
   "categories": [
     "reasoning"
   ],
-  "summary": "语法化组合约束的受控文本生成评测",
-  "interpretation": "把写一句符合 5 条约束的话变成形式语法判定，机器可验证，考约束组合爆炸下的精确执行；CollIE-Hard 为加强版。",
-  "measures": [],
-  "does_not_measure": [],
+  "summary": "用形式语法定义「一段文本必须同时满足哪些约束」的受控文本生成评测：约束目标值从真实语料自动抽取，满足与否由解析器判定",
+  "interpretation": "COLLIE 把「按一堆约束写作文」变成机器可判定的形式语法题。每条提示词携带若干条约束（字数、指定词出现在第几句第几个位置、某些词必须出现或必须缺席等），模型输出交给解析器逐条判定 True/False，最后报平均约束满足率。它考的不是知识储备，而是组合约束下的精确执行与跨句规划——13 种约束结构里有 8 种是跨层组合。",
+  "measures": [
+    {
+      "area": "词级约束（word01–word03）",
+      "focus": "生成单个词：至少 N 个字母、第 i 个字母是指定字母、词中包含指定字母。考字符计数与位置精确性，是全部结构里最浅的一层。",
+      "share": "3/13 种结构",
+      "format": "提示词渲染成一句自然语言指令（如「Generate a word with at least 15 letters.」），期望输出为一个词",
+      "cite": [
+        "paper@§4.1",
+        "paper@Table 1"
+      ]
+    },
+    {
+      "area": "句级约束（sent01–sent04）",
+      "focus": "生成一个句子：以指定词开头/结尾、包含指定词集合、以指定词开头且以指定词结尾。考词序与句内位置约束。",
+      "share": "4/13 种结构",
+      "format": "句子级；论文用 nltk 分句器把段落切成句子后逐条判定",
+      "cite": [
+        "paper@§4.1",
+        "paper@§5.1"
+      ]
+    },
+    {
+      "area": "段级约束（para01–para05）",
+      "focus": "生成一个段落：每句都以指定词开头、包含指定词集合、指定词出现在指定句子的指定位置等。考多句之间的协调与跨句计数。",
+      "share": "5/13 种结构",
+      "format": "段落级；与句级共用分句与解析器，但约束要跨多个句子同时成立",
+      "cite": [
+        "paper@§4.1",
+        "paper@§5.1"
+      ]
+    },
+    {
+      "area": "篇章级约束（pass01）",
+      "focus": "生成一个多段 passage，同时满足词级、句级、段级约束的组合；论文认为这类任务需要高层语义规划才能产出连贯篇章。",
+      "share": "1/13 种结构",
+      "format": "passage 级；段落数与长度本身也是约束的一部分",
+      "cite": [
+        "paper@§4.1",
+        "paper@§3"
+      ]
+    },
+    {
+      "area": "约束的跨层组合（真正的难点）",
+      "focus": "13 种结构里 5 种是单层、8 种是跨层组合，把计数与位置两类挑战叠在不同层级上（如 word02/word03/sent02/para05/pass01）；论文称这一类「概念上最吃紧」。",
+      "share": "8/13 种结构为跨层",
+      "format": "单条提示词同时携带多条基础约束，解析器逐条判定后取平均",
+      "cite": [
+        "paper@§4.1",
+        "paper@§3"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "内容质量、事实性与文风。每题只有一个由解析器判定的布尔结果，不评价写得对不对、好不好；流畅度只是与语料「groundtruth」文本对比的可选附带分析，不是主指标。",
+      "cite": [
+        "paper@§3"
+      ]
+    },
+    {
+      "text": "对约束指令的理解能力。作者试过 one-shot，GPT 成绩与 zero-shot 接近，据此认为任务难点在「受限生成」而不在「靠示例理解约束」。",
+      "cite": [
+        "paper@§5 脚注",
+        "paper@附录 C.1"
+      ]
+    },
+    {
+      "text": "词有效性等细粒度方面。除整体布尔满足率外，只在附录做了小规模补充评估（词表不完整，作者另补了 8 个不常见但合法的英语单词）。",
+      "cite": [
+        "paper@附录 C.3"
+      ]
+    },
+    {
+      "text": "知识广度与通用智能。约束模板本身不要求事实知识，题目文本只是承载约束的容器。",
+      "cite": [
+        "paper@§3",
+        "paper@§4.1"
+      ]
+    }
+  ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
+    "sample_count": 2080,
+    "splits": [
+      "论文未划分训练/验证/测试集；COLLIE-v1 是单一评测集，按「约束结构 × 数据源」组织"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "corpus-extracted（约束目标值从公开英文语料中自动抽取，非人工撰写）",
+    "public_sample": true,
+    "totals": "2,080 个约束实例 · 13 种约束结构 · 1,435 条不重复约束提示词 · 3 个英文数据源（Wiki / CC-News / Guten）",
+    "cite": [
+      "paper@§4",
+      "paper@Abstract",
+      "site@Abstract"
+    ],
+    "construction": [
+      {
+        "k": "① 指定约束结构",
+        "text": "研究者用框架里的语法类（TargetLevel / Count / Relation 等）写出一条约束结构，目标值用占位符表示，可附带取值范围（如 5 ≤ x ≤ 10）。这是全流程唯一需要人工投入的阶段。",
+        "cite": [
+          "paper@§3",
+          "repo@README"
+        ]
+      },
+      {
+        "k": "② 从语料抽取目标值",
+        "text": "自动抽取算法遍历语料，找出符合该结构且值在允许范围内的字符串（例如返回 5–10 个词的句子并附词数）。因为目标取自自然语料，每条约束至少有一个「天生合法」的解。",
+        "cite": [
+          "paper@§3",
+          "paper@§4.1"
+        ]
+      },
+      {
+        "k": "③ 规则化渲染成指令",
+        "text": "把约束结构和具体目标值按规则翻译成一句自然语言指令（规则式翻译，非人工撰写），直接作为提示词给语言模型。",
+        "cite": [
+          "paper@§3",
+          "paper@Table 1"
+        ]
+      },
+      {
+        "k": "④ 语料清洗与后处理",
+        "text": "抽出的字符串按数据源分别做过滤（去图注、去 URL、去无句文本、CC-News 另去版权符号与 copyright 开头）与后处理（去 Markdown、去引用脚注、去节标题）。这一阶段全部自动。",
+        "cite": [
+          "paper@§4.2",
+          "paper@附录 B.4"
+        ]
+      },
+      {
+        "k": "⑤ 抽样与人工复核",
+        "text": "每个约束结构在每个数据源上最多取 100 个目标值，随机抽 5 个做定性核查；para02 / para03 / pass01 另由作者人工过滤，以保证段落与篇章干净、长度合适。",
+        "cite": [
+          "paper@§4.3"
+        ]
+      },
+      {
+        "k": "⑥ 解析器判定",
+        "text": "模型生成结果交给解析器，对照约束规格逐条得出 True/False；主指标为平均 Success Rate。作者明确说只有第①步需要人工投入。",
+        "cite": [
+          "paper@§3"
+        ]
+      }
+    ]
   },
   "metrics": [
-    "success_rate"
+    {
+      "id": "avg-success-rate",
+      "name": "平均约束满足率（Success Rate）",
+      "direction": "越高越好",
+      "description": "模型生成的文本经解析器逐条判定后，满足的基础约束占比按约束实例取平均；论文主指标，范围 0–100%。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§3",
+        "paper@§1"
+      ]
+    },
+    {
+      "id": "pass-at-k",
+      "name": "pass@k（附带口径）",
+      "direction": "越高越好",
+      "description": "多次采样中至少 k 次满足约束的比例，用来衡量单次成绩的稳定性；论文报告 GPT-4 的 pass@20 平均超过 63%，GPT-3.5 为 32%。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§5.1"
+      ]
+    }
   ],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [],
-  "notes": "字节 Seed/OpenAI GPT-5 引用",
+  "default_protocol": {
+    "raw": "零样本：把渲染出的自然语言指令直接给模型，不附任何示例；采样温度 0.7，多次采样取平均（GPT / PaLM 20 次，Alpaca / Vicuna 5 次）；全部实验运行于 2023 年 7 月；对比 gpt-3.5-turbo、gpt-4、PaLM-2 (text-bison-001)、Alpaca-7B、Vicuna-7B 五个指令微调模型。",
+    "cite": [
+      "paper@§5",
+      "paper@§5 脚注"
+    ],
+    "variants": [
+      {
+        "text": "0-shot vs 1-shot：论文表 2 同时给出两种结果。1-shot 那组用的是「当前 COLLIE-v1 之前的一个内部版本数据集」，每条约束配一个固定示例输入输出对，与 0-shot 口径不可直接混比；作者试过 one-shot，GPT 成绩与 zero-shot 接近，结论主要按 zero-shot 读。",
+        "cite": [
+          "paper@Table 2",
+          "paper@附录 C.1",
+          "paper@§5 脚注"
+        ]
+      },
+      {
+        "text": "反馈式（feedback）是另一套口径：第 1 轮零样本，第 2–4 轮回喂「哪些基础约束满足/未满足」的自然语言反馈。GPT-4 在第 2 轮后提升约 20%，但再三轮仍停在 66%，与 pass@5 相当。",
+        "cite": [
+          "paper@§5.2"
+        ]
+      },
+      {
+        "text": "PaLM-2 的分母与其它模型不完全一致：1,132 条约束里有 2 条提示词被 PaLM-2 API 以 guardrailing 理由拦下。",
+        "cite": [
+          "paper@附录 C"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2023-07-17",
+      "label": "arXiv v1 发布 COLLIE-v1（2,080 实例 / 13 约束结构 / 1,435 条不重复提示词）",
+      "cite": [
+        "paper",
+        "paper@Abstract"
+      ]
+    },
+    {
+      "id": "iclr2024",
+      "date": "未披露",
+      "label": "论文被 ICLR 2024 接收（代码仓库标题标注 [ICLR 2024]；论文与官网均未给出接收日期，后续未见官方 v2 数据集）",
+      "cite": [
+        "repo@README"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "论文内部规模数字不一致",
+      "impact": "摘要、§1、§4 均写 2,080 个实例、1,435 条不重复提示词，但 §6 结论写「1,132 constraints」，附录 C 也写「out of 1132 constraints」；引用数据集规模时容易对不上。",
+      "severity": "中",
+      "response": "本站以摘要与 §4 的 2,080 / 1,435 为准，把 1,132 记为论文结论段与附录 C 的另一口径，并在「常见误读」中显式提示。",
+      "reader": "看到 1,132 不要当成另一个数据集，先确认引用的是哪一段。",
+      "cite": [
+        "paper@§6",
+        "paper@附录 C",
+        "paper@§4"
+      ]
+    },
+    {
+      "issue": "无随机基线、无人类基线、无污染分析",
+      "impact": "论文只对比了 5 个指令微调模型，没有随机或平凡基线、没有人类上限、也没有数据污染讨论；无法判断 50.9% 距离「结构上可达」还有多远。",
+      "severity": "中",
+      "response": "作者把框架本身定位为可扩展工具，README 明确鼓励社区用它构造更新/定制/更难的约束，而不是把它当作固定榜单。",
+      "reader": "不要把 50.9% 解读成「任务上限的一半」。",
+      "cite": [
+        "paper@§5",
+        "repo@README"
+      ]
+    },
+    {
+      "issue": "自动抽取与自动清洗不完美",
+      "impact": "目标值由自动过滤与后处理从语料抽取，作者承认这类自动化「从不完美」，会影响下游约束质量；词有效性评估还因词表不完整需人工补 8 个合法单词。",
+      "severity": "中",
+      "response": "作者计划引入语法检查器与解析器等工具继续缓解，并在发现问题时改过滤器后重跑抽取。",
+      "reader": "个别题目的目标值可能本身不自然或难以满足，高分模型的失败案例要先看题目。",
+      "cite": [
+        "paper@§6 Limitations",
+        "paper@附录 C.3",
+        "paper@§4.3"
+      ]
+    },
+    {
+      "issue": "约束覆盖面有限",
+      "impact": "13 种结构是作者为覆盖多样化受限生成挑战而选的代表，作者明确说它们无法捕捉模型能力的全部维度与细节。",
+      "severity": "中",
+      "response": "语法设计成可扩展，作者称可较容易地加入新的基础约束类型（如词性、情感），但列为未来工作。",
+      "reader": "COLLIE 分数高不代表所有形式的指令遵循都好。",
+      "cite": [
+        "paper@§6 Limitations",
+        "paper@§3"
+      ]
+    },
+    {
+      "issue": "结果时效",
+      "impact": "全部实验运行于 2023 年 7 月，对比的是当时的 gpt-3.5-turbo / gpt-4 / PaLM-2 / Alpaca-7B / Vicuna-7B；论文数字不代表当前前沿水平。",
+      "severity": "低",
+      "response": "厂商后续自报成绩单列在站点账本（附录 C），与论文口径分开呈现，不做合并排名。",
+      "reader": "论文里的 50.9% 是 2023 年的数字。",
+      "cite": [
+        "paper@§5"
+      ]
+    },
+    {
+      "issue": "跨模型比较存在小额口径差",
+      "impact": "1,132 条约束中 2 条被 PaLM-2 API 拦下，PaLM-2 的平均分母与其它模型略不同；另有 5 种单层 / 8 种跨层的结构分布，使「平均满足率」对结构组合方式敏感。",
+      "severity": "低",
+      "response": "论文在附录 C 披露该差异，并给出分任务结果供按结构核对。",
+      "reader": "几个百分点的跨模型差距先按约束结构拆开看。",
+      "cite": [
+        "paper@附录 C",
+        "paper@§4.1"
+      ]
+    }
+  ],
+  "notes": "厂商引用（均为自报、未披露协议与变体，站点账本按只读图表分录收录，evidence_type=figure）：字节 Seed 1.8（2025-12-18 发布）Complex Instruction Following 表列 Collie-Hard 一行，seed-1-8 记 72.6，同表 GPT-5-high 99.0*、Claude-Sonnet-4.5 77.6、Gemini-2.5-pro 69.5、Gemini-3-pro 95.5；OpenAI GPT-5 发布页 COLLIE 图表：GPT-5 with thinking 99、o3 98.4、GPT-5 不带思考 70.5。「Collie-Hard」是字节对该评测加强变体的称法，不是 COLLIE 官方发布的版本，作为别名保留只为便于检索。",
   "official_sources": [
     {
       "kind": "paper",
       "url": "https://arxiv.org/abs/2307.08689"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/princeton-nlp/Collie"
+    },
+    {
+      "kind": "site",
+      "url": "https://collie-benchmark.github.io/"
     },
     {
       "kind": "site",
@@ -44,6 +330,187 @@
   "related_benchmarks": [
     "ifeval"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-19",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-19",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "COLLIE: Systematic Construction of Constrained Text Generation Tasks（arXiv:2307.08689v1，2023-07-17）",
+        "url": "https://arxiv.org/abs/2307.08689",
+        "accessed": "2026-11-19"
+      },
+      {
+        "id": "site",
+        "kind": "site",
+        "title": "COLLIE 项目官网 collie-benchmark.github.io",
+        "url": "https://collie-benchmark.github.io/",
+        "accessed": "2026-11-19"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "GitHub princeton-nlp/Collie（README 标注 [ICLR 2024]）",
+        "url": "https://github.com/princeton-nlp/Collie",
+        "accessed": "2026-11-19"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "普林斯顿大学计算机系（arXiv 预印本；代码仓库标注 ICLR 2024 接收）",
+        "cite": [
+          "paper@作者署名",
+          "repo@README"
+        ]
+      },
+      "first_release": {
+        "v": "2023-07-17（arXiv v1）",
+        "cite": [
+          "paper"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "paper@Abstract",
+        "site@Abstract",
+        "repo@README"
+      ],
+      "interpretation": [
+        "paper@§3",
+        "paper@§1"
+      ]
+    },
+    "problem": {
+      "text": "此前的受限生成基准大多只固定一种约束类型（例如「句子里必须出现某几个词」），需要定制流水线采数据，而且已经被 GPT-4 这类模型做穿。COLLIE 用一套语法把「约束结构」参数化：指定结构 → 从语料自动抽目标值 → 规则化渲染成指令 → 解析器判定，从而能低成本量产组合式、跨层级、机器可验的约束题，并给出细粒度的能力画像。",
+      "cite": [
+        "paper@Abstract",
+        "paper@§1",
+        "paper@§3"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "论文最好水平（2023-07，zero-shot）",
+        "value": "50.9%",
+        "note": "GPT-4 的平均约束满足率；论文称它「相对最好，但仍只有 50.9%」，同期非 GPT 模型不到它的一半。",
+        "cite": [
+          "paper@§1"
+        ]
+      },
+      {
+        "label": "多轮反馈天花板",
+        "value": "66%",
+        "note": "GPT-4 在第 2 轮约束反馈后提升约 20%，但再追加三轮仍停在 66%，与 pass@5 相当——靠反馈推不满。",
+        "cite": [
+          "paper@§5.2"
+        ]
+      },
+      {
+        "label": "多次采样稳定性参考",
+        "value": "63%+（pass@20）",
+        "note": "GPT-4 的 pass@20 平均超过 63%，GPT-3.5 为 32%；单次成绩与 20 次里最好一次的差距很大。",
+        "cite": [
+          "paper@§5.1"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top",
+        "note": "取本站收录的厂商自报成绩（附录 C）。目前最高为 OpenAI GPT-5（with thinking）99，同源页 o3 98.4、GPT-5 不带思考 70.5；字节 Seed 表的 Collie-Hard 行另有 GPT-5-high 99.0*。两处均未披露协议与变体，不能直接当作同一口径下的当前 SOTA。"
+      },
+      {
+        "label": "随机 / 平凡基线",
+        "value": "论文未给出",
+        "note": "论文没有报告随机基线或人类上限；由于满足与否由解析器逐条判定，随机文本通常远低于 50.9%，但本站不推算具体数值。",
+        "cite": [
+          "paper@§3",
+          "paper@§5"
+        ]
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把厂商自报的接近满分成绩和论文的 50.9% 排在一起比。论文固定了 zero-shot、温度 0.7、多次采样平均的口径，而厂商页面只给图表数字，不披露协议与变体；本站把这类成绩单列在附录 C。",
+        "cite": [
+          "paper@§5",
+          "paper@§1"
+        ]
+      },
+      {
+        "text": "把「平均满足率 50.9%」理解成模型做对了一半约束。这是按约束实例平均的单次满足率，而同一次生成要同时满足多条基础约束；GPT-4 的 pass@20 平均超过 63%，说明单次采样波动很大。",
+        "cite": [
+          "paper@§1",
+          "paper@§5.1"
+        ]
+      },
+      {
+        "text": "把 COLLIE 当成考知识或考智商的榜单。13 种约束全是字数、词序、指定词出现/缺席这类形式要求，题目文本只是承载约束的容器，不要求事实知识。",
+        "cite": [
+          "paper@§3",
+          "paper@§4.1"
+        ]
+      },
+      {
+        "text": "把 2,080 当成「2,080 道互不相同的题」。实际是 2,080 个约束实例、1,435 条不重复约束提示词；论文结论段另写「1,132 constraints」，附录 C 同样写 1132，三个数字在论文内部并不一致。",
+        "cite": [
+          "paper@§4",
+          "paper@§6",
+          "paper@附录 C"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "普林斯顿大学计算机系；论文以 arXiv 预印本形式于 2023-07-17 发布，代码仓库标注 ICLR 2024 接收",
+        "cite": [
+          "paper@作者署名",
+          "paper",
+          "repo@README"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "Shunyu Yao、Howard Chen、Austin W. Hanjie、Runzhe Yang、Karthik Narasimhan；官网标注前四人为共同一作",
+        "cite": [
+          "paper@作者署名",
+          "site@首页"
+        ]
+      },
+      {
+        "k": "代码与数据获取",
+        "v": "github.com/princeton-nlp/Collie；代码 MIT 许可（含数据抽取代码），数据可从 PyPI 包 collie-bench 获取，每个数据源保留各自许可；模型结果在仓库 logs/ 目录",
+        "cite": [
+          "repo@README",
+          "paper@附录 B.4"
+        ]
+      },
+      {
+        "k": "数据来源",
+        "v": "三个英文数据源：Wikipedia（20220301.en train split，6,000 万+ 英文条目）、Common Crawl News（2017-01 至 2019-12 共 708,241 篇英文新闻）、Project Gutenberg（50,000+ 公共领域文档）；每个源各取 300 篇随机文档抽取约束",
+        "cite": [
+          "paper@§4.2",
+          "paper@§4.3"
+        ]
+      },
+      {
+        "k": "数据许可与隐私",
+        "v": "Wiki 为 CC BY-SA 3.0 与 GNU 自由文档许可；Guten 文档在美国属公共领域；作者称「据其所知，所用数据集均不含 PII」",
+        "cite": [
+          "paper@附录 B.4"
+        ]
+      },
+      {
+        "k": "框架复用方式",
+        "v": "README 给出两条用法：直接用 COLLIE-v1 数据集跑自己的方法并和论文结果对比；或用 COLLIE 框架构造新的/定制的/更难的约束（提供 Constraint / TargetLevel / Count / Relation 等类与 ConstraintRenderer）",
+        "cite": [
+          "repo@README"
+        ]
+      }
+    ]
+  }
 }

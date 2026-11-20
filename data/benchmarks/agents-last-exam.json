@@ -1,71 +1,443 @@
 {
   "id": "agents-last-exam",
   "name": "Agents' Last Exam",
-  "full_name": null,
+  "full_name": "Agents' Last Exam（智能体的最后一场考试）",
   "aliases": ["ALE", "Agents Last Exam"],
-  "status": null,
-  "categories": [
-    "agent"
-  ],
-  "summary": "UC Berkeley 出品的长程真实工作 Agent 基准：约 1500 道 55 职业 / 13 行业的专家实操任务，rubric 判分",
-  "interpretation": "官方口径：最难档前沿模型平均不足 1 分；领域差异大（计算数学/农业近 60 分，视觉媒体/教育低于 30 分）——分数分布由任务域主导，跨域均值意义有限。",
+  "status": "rolling",
+  "categories": ["agent"],
+  "summary": "ALE 是 UC Berkeley RDI 出的智能体基准：960 条行业专家投稿的真实工作流（共 1,490 个任务实例）覆盖 55 个 SOC/O*NET 职业、13 个行业簇，其中只有约 10% 公开；智能体在远程虚拟机里完整做完一件专家原本要花几天到几周的专业活，评分以确定性脚本为主（93.2%），整条工作流拿到满分才算通过。",
+  "interpretation": "高分说明这个智能体能端到端完成一整件真实、有经济价值的专业工作——有明确交付物、可自动核验，ALE 把它解释为该职业的「胜任门槛」。但论文没有人类专家基线，而且分数对 harness（外壳）极度敏感：固定 OpenClaw 换骨干模型的整体通过率极差 16.8 个百分点，固定模型换 harness 只有 5–6 个百分点，所以跨 harness 的分数不能直接当成模型强弱排序。",
   "measures": [
-    "长程端到端职业任务完成度",
-    "跨 13 行业 55 职业的任务覆盖",
-    "rubric 细粒度的产出质量评分"
+    {
+      "area": "工程与建筑",
+      "focus": "机械、电气、土木、机器人与自主系统等工程岗位的真实项目，是任务实例最多的一域",
+      "share": "约 25%（368 / 1,490）",
+      "format": "工程交付物：设计文件、代码、仿真与配置结果",
+      "cite": ["paper@Figure 2", "paper@附录 C.3.7"]
+    },
+    {
+      "area": "计算与数学科学",
+      "focus": "计算数学、数学与运筹、量化金融与交易、精算与风险建模",
+      "share": "约 16%（237 / 1,490）",
+      "format": "数值结果、模型与代码",
+      "cite": ["paper@Figure 2", "paper@附录 C.3.7"]
+    },
+    {
+      "area": "视觉与媒体艺术",
+      "focus": "游戏、3D 与渲染、平面与音视频制作",
+      "share": "约 15%（226 / 1,490）",
+      "format": "媒体成品：游戏、渲染场景、图像与音视频（论文举例 video clip / game screenshot / rendered scene）",
+      "cite": ["paper@Figure 2", "paper@附录 C.3.7", "paper@§3.3"]
+    },
+    {
+      "area": "商业与金融",
+      "focus": "财务建模、投研、商业计划与运营类工作流",
+      "share": "约 13%（189 / 1,490）",
+      "format": "财务模型、报告与商业文档",
+      "cite": ["paper@Figure 2", "paper@附录 C.3.7"]
+    },
+    {
+      "area": "健康与医学",
+      "focus": "临床研究与试验运营、治疗与肿瘤学、医学信息",
+      "share": "约 10%（155 / 1,490）",
+      "format": "医学数据集、文档与分析结论",
+      "cite": ["paper@Figure 2", "paper@附录 C.3.7"]
+    },
+    {
+      "area": "生命科学",
+      "focus": "细胞与成像生物学、基因组学与序列分析、化学与材料计算",
+      "share": "约 7%（111 / 1,490）",
+      "format": "实验数据、生信流程与分析产物",
+      "cite": ["paper@Figure 2", "paper@附录 C.3.7"]
+    },
+    {
+      "area": "自然科学与运输",
+      "focus": "物理科学、地球与大气科学、农业与环境、运输与安全",
+      "share": "约 7%（100 / 1,490）",
+      "format": "仿真输出、环境模型与运行分析",
+      "cite": ["paper@Figure 2", "paper@附录 C.3.7"]
+    },
+    {
+      "area": "人文社科、教育与法律",
+      "focus": "心理学与神经科学、社会科学、教育与信息、法律及其它",
+      "share": "约 7%（104 / 1,490）",
+      "format": "研究材料、教学设计、诉讼文书等文档类交付物",
+      "cite": ["paper@Figure 2", "paper@附录 C.3.7"]
+    }
   ],
   "does_not_measure": [
-    "单轮知识问答",
-    "模型推理过程本身",
-    "非英文任务"
+    {
+      "text": "需要体力或线下操作的工作：ALE 只覆盖核心工作可以在电脑上完成的非实体行业，论文明确排除无法数字化的工作。",
+      "cite": ["paper@§2.2", "paper@Abstract"]
+    },
+    {
+      "text": "和人类专家比：论文 Table 1 只报告智能体系统与基础模型，没有人类基线，「相当于百分之多少人类专家」没有数据可答。",
+      "cite": ["paper@Table 1", "paper@§1"]
+    },
+    {
+      "text": "开放式、没有可核验产出的工作：论文刻意避免 LLM-as-judge，唯一可行的打分路径是「问模型像不像对的」的工作流会在 QC 阶段被要求改造成有可检查产物的形式。",
+      "cite": ["paper@§3.3"]
+    }
   ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "source_type": "expert-sourced（从业者真实完成过的项目，250+ 专家参与）",
+    "sample_count": 1490,
+    "splits": [
+      "公开集（论文 §2.3 口径 150 题；§4.1 与榜单 API 为 152 题）",
+      "Near-Term（67 题）",
+      "Full-Spectrum（55 题）",
+      "Last-Exam（38 题）",
+      "ALE-CLI（Linux-only 子集，论文 105 题）",
+      "v1.1 活跃集（122 题）"
+    ],
     "languages": ["en"],
-    "public_sample": null
+    "source_type": "expert-sourced（专家上传自己过去花数天到数周完成过的真实项目）",
+    "public_sample": false,
+    "totals": "当前发布 960 条任务工作流 / 1,490 个任务实例，只公开约 10%（论文两处口径为 150 与 152 题），其余留在私有池滚动轮换；v1.1 起保留 122 个活跃公开任务。难度分三档：Near-Term 67 / Full-Spectrum 55 / Last-Exam 38；另有一个 Linux-only 的 ALE-CLI 子集。",
+    "cite": ["paper@附录 C.3.7", "paper@§2.3", "paper@§4.1", "repo"],
+    "construction": [
+      {
+        "k": "职业体系怎么定",
+        "text": "从 SOC 2018（23 个大类、98 个中类、459 个宽职业、867 个细职业）出发，用固定提示词的 GPT-4o mini 在 temperature 0 下筛 O*NET 30.2 的 1,016 个职业条目，得到 51 个 SOC 锚定子域，再加 4 个前沿子域和 7 个扩展，合计 55 个子域、13 个行业簇。",
+        "cite": ["paper@附录 B.1.1", "paper@§2.2"]
+      },
+      {
+        "k": "题目从哪来",
+        "text": "专家上传自己过去花数天到数周完成的项目；1,490 个实例里 960 个来自外部投稿，530 个为内部委托构建。",
+        "cite": ["paper@附录 B.2", "paper@Figure 5"]
+      },
+      {
+        "k": "审核关卡",
+        "text": "五道关卡：专家征集 → 任务提交与编辑 → 一审 → 任务实现 → 终审 QC。一审给会议式决定（major / minor revision、borderline accept、accept、strong accept）；终审检查参考答案是否正确、评测上下界是否校准、题面信息是否充分。",
+        "cite": ["paper@附录 B.2"]
+      },
+      {
+        "k": "运行环境",
+        "text": "远程虚拟机，四目录工作区：input/（只读素材）、software/（预装应用）、output/（唯一可写）、reference/（对智能体隐藏、只给评分用）。默认 GCP c4-standard-4（4 vCPU / 16 GB），需要 GPU 的任务用 g2-standard-8 + NVIDIA L4。",
+        "cite": ["paper@§3.1", "paper@附录 C.1"]
+      },
+      {
+        "k": "参考实现与数据",
+        "text": "ALE 团队自己把每个任务做一遍并开源：GitHub 仓库提供全部 55 个子域的任务实现与 ale_run 评测框架，Hugging Face 提供任务卡元数据。",
+        "cite": ["repo", "dataset"]
+      },
+      {
+        "k": "公开与防污染",
+        "text": "只公开约 10% 的任务实例，私有实例定期轮换进公开集、退役的公开任务被替换；论文核验公开子集与全池难度高度相关（Pearson r=0.89, p<0.001）。",
+        "cite": ["paper@§2.3", "paper@附录 D.1"]
+      }
+    ]
   },
   "metrics": [
     {
-      "id": "rubric-score",
-      "name": "Rubric-weighted score",
+      "id": "pass-rate",
+      "name": "全通过率（Pass rate）",
+      "direction": "越高越好",
+      "description": "整条工作流拿到满分的任务占比；论文 Table 1 的 Overall 列按三档去重后的任务计算",
       "range": [0, 100],
       "unit": "percent",
-      "direction": "higher",
-      "aggregation": "mean"
+      "cite": ["paper@Table 1"]
+    },
+    {
+      "id": "mean-score",
+      "name": "平均分（Score）",
+      "direction": "越高越好",
+      "description": "evaluate() 返回的 [0,1] 归一化任务分按任务取平均后折算到百分制",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["paper@附录 C.1"]
+    },
+    {
+      "id": "cost",
+      "name": "API 成本",
+      "direction": "越低越好",
+      "description": "该配置跑完一个难度档（或整个子集）的总 API 花费，单位美元",
+      "range": null,
+      "unit": "usd",
+      "cite": ["paper@Table 1"]
+    },
+    {
+      "id": "wall-clock",
+      "name": "总耗时",
+      "direction": "越低越好",
+      "description": "该配置跑完一个难度档（或整个子集）的累计墙上时间",
+      "range": null,
+      "unit": "hour",
+      "cite": ["paper@Table 1"]
     }
   ],
+  "default_protocol": {
+    "raw": "评测对象是「harness + 基础模型」的组合（论文称 GCUA 配置，默认 GUI-as-Tool）。智能体在远程虚拟机上跑任务：工作区是 input/（只读）、software/（预装应用）、output/（唯一可写）、reference/（对智能体隐藏）四目录，main.py 暴露 load() / start() / evaluate() 三个生命周期函数驱动一轮运行，智能体通过截图、shell 输出、文件内容观察环境并执行动作，直到自行终止。单次运行上限 5 小时，整体超时率 3.8%。评分由确定性脚本（93.2%）或窄的 yes/no 探针式 LLM 裁判（6.8%）给出 [0,1] 归一化分，整条工作流满分才算通过。",
+    "cite": ["paper@§3.1", "paper@附录 C.1", "paper@附录 C.3.5", "paper@Table 4", "paper@§4.1"],
+    "variants": [
+      {
+        "text": "GUI-as-Tool（默认口径，测视觉推理与动作的一体化）vs GUI-as-SubAgent（只用于没有原生视觉输入的模型，如 DeepSeek V4）：两种口径不要混比。",
+        "cite": ["paper@§3.2"]
+      },
+      {
+        "text": "不同 harness × 骨干：固定 OpenClaw 换骨干的整体通过率极差 16.8 个百分点（Grok 4.3 4.3% → GPT-5.5 21.1%），固定模型换 harness 只有 5–6 个百分点。比较前先确认是不是同一 harness。",
+        "cite": ["paper@附录 D.4", "harness-matters"]
+      },
+      {
+        "text": "三档难度（67 / 55 / 38 题）、公开全集（论文 150 或 152 题）和 ALE-CLI（105 题 Linux-only）是不同子集，ALE-CLI 的分数不能和主榜直接比。",
+        "cite": ["paper@§4.1", "paper@§2.3"]
+      },
+      {
+        "text": "v1 → v1.1：v1.1 退役 30 题、只保留 122 个活跃任务（其中 57 题需要重跑），用 v1.1 的任务代码、环境镜像与数据跑出的结果不能和 v1 直接比。",
+        "cite": ["release-v11", "repo", "dataset"]
+      }
+    ]
+  },
   "versions": [
     {
       "id": "v1",
-      "label": "Agents' Last Exam（2026-06）",
-      "note": "arXiv:2606.05405；滚动（living benchmark）设计"
+      "date": "2026-06-03",
+      "label": "arXiv v1 首发，官网与榜单同步上线",
+      "cite": ["arxiv-abs"]
+    },
+    {
+      "id": "v2",
+      "date": "2026-06-11",
+      "label": "arXiv v2",
+      "cite": ["arxiv-abs"]
+    },
+    {
+      "id": "v3",
+      "date": "2026-10-09",
+      "label": "arXiv v3",
+      "cite": ["arxiv-abs"]
+    },
+    {
+      "id": "v4",
+      "date": "2026-10-25",
+      "label": "arXiv v4（本页核验所用版本）",
+      "cite": ["arxiv-abs", "paper"]
+    },
+    {
+      "id": "release-v11",
+      "date": "2026-10",
+      "label": "ALE v1.1：退役 30 题后保留 122 个活跃任务（57 题重跑 / 65 题保留），6 个原授权任务改为开源 Linux 工作流",
+      "cite": ["release-v11", "repo", "dataset", "demo"]
     }
   ],
   "limitations": [
-    "评分依赖 rubric 与判分模型，主观项占比高",
-    "最难档接近 0 分，区分度集中在低端任务",
-    "滚动更新导致跨期分数不可直接比"
-  ],
-  "notes": "证据账本中 8 次引用；与 GDPval 同为『真实工作』叙事但任务更偏 Agent 执行",
-  "official_sources": [
     {
-      "kind": "paper",
-      "url": "https://arxiv.org/abs/2606.05405"
+      "issue": "判分可被绕过（刷分）",
+      "impact": "Epoch AI 复核 122 个公开 v1.1 任务中的 50 个，发现 22 个可以在不做预期工作的情况下拿到 100% 分：9 个答案公开可查、8 个判分过松、5 个可以篡改判分器。已跑的历史轨迹里只有 3 / 1,617（0.19%）真的走了被标记的路子。",
+      "severity": "高",
+      "response": "PR #136 强制任务卡里的网络设置，网络关闭的任务跑在没有公网地址的虚拟机上。",
+      "reader": "看到接近满分的成绩，先看是不是来自被标记的任务；被标记任务上模型间仍有区分度（22 个里 15 个任务的最好/最差模型族均分差 ≥0.5）。",
+      "cite": ["verifier-check"]
     },
     {
-      "kind": "site",
-      "url": "https://rdi.berkeley.edu/blog/agents-last-exam/"
+      "issue": "harness 差异大于模型差异",
+      "impact": "固定 OpenClaw 时换骨干模型有 16.8–18.0 个百分点的差距，固定模型换 harness 只有 5–6 个百分点；harness 的选择经常比模型更能改变排名。",
+      "severity": "高",
+      "response": "官方要求同时报告 harness、骨干与变体，榜单按（分档, harness, 模型, 变体）分行。",
+      "reader": "不要把不同 harness 的分数排在一张榜上比；ALE 测的是「harness + 基础模型」这个系统，不是裸模型。",
+      "cite": ["paper@附录 D.4", "harness-matters", "paper@Table 1"]
+    },
+    {
+      "issue": "公开集小、滚动替换",
+      "impact": "只公开约 10% 的任务实例，单次运行 $3–10，跑完公开集很贵；滚动轮换意味着不同时间点的分数来自不同题目。",
+      "severity": "中",
+      "response": "私有实例定期轮换进公开集、退役的公开任务被替换，以维持无污染面。",
+      "reader": "跨时间对比要先看清题目版本（v1 / v1.1）和分档口径。",
+      "cite": ["paper@§2.3", "paper@§4.1"]
+    },
+    {
+      "issue": "没有人类基线",
+      "impact": "Table 1 只报告智能体系统与基础模型，没有人类专家的通过率，「接近胜任这份工作」缺少参照点。",
+      "severity": "中",
+      "response": "论文未披露；ALE-CLI 只把人类完成时间（小时到周）作为横向对照。",
+      "reader": "不要把 ALE 分数换算成「相当于百分之多少人类专家」。",
+      "cite": ["paper@Table 1", "blog"]
+    },
+    {
+      "issue": "最难档区分度低",
+      "impact": "Last-Exam 档上多数智能体 0% 通过，摘要口径是主流配置平均全通过率低于 1%，官方博客记为 2.6%；该档上多数配置并列，拉不开差距。",
+      "severity": "中",
+      "response": "论文把 Last-Exam 定位为长期头部空间锚点，不用于当期模型排序。",
+      "reader": "最难档接近 0 分不代表模型之间没差别，但在这个档上比高低意义有限。",
+      "cite": ["paper@Abstract", "paper@§4.1", "harness-matters"]
+    },
+    {
+      "issue": "成本与时长",
+      "impact": "单次运行 $3–10、几十分钟到几小时；跑到 5 小时上限的运行占 3.8%，这些超时运行的平均分明显更低（20.7 vs 33.2）。",
+      "severity": "低",
+      "response": "单次运行硬上限 5 小时；轻量 harness 超时率约 1%，OpenClaw 为 5.7%。",
+      "reader": "比较总分时留意有没有把超时运行算进去。",
+      "cite": ["paper@§4.1", "paper@附录 D.2"]
+    },
+    {
+      "issue": "语言与适用范围",
+      "impact": "数据集语言只有英文，题面、判分与参考答案均为英文；只覆盖非实体行业。",
+      "severity": "低",
+      "response": "论文未披露多语言或线下任务的扩展计划。",
+      "reader": "非英文场景、需要体力或线下操作的工作没有数据。",
+      "cite": ["dataset", "paper@§2.2"]
     }
   ],
-  "related_benchmarks": [
-    "gdpval",
-    "gaia",
-    "tau-bench",
-    "healthbench",
-    "terminalbench"
+  "notes": "评测对象是 harness + 基础模型的组合；公开集只占约 10%，跨版本比较要先对齐题目集与分档口径。",
+  "official_sources": [
+    { "kind": "site", "url": "https://agents-last-exam.org/" },
+    { "kind": "paper", "url": "https://arxiv.org/abs/2606.05405" },
+    { "kind": "repo", "url": "https://github.com/rdi-berkeley/agents-last-exam" },
+    { "kind": "dataset", "url": "https://huggingface.co/datasets/agents-last-exam/agents-last-exam" }
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "related_benchmarks": ["gdpval", "gaia", "tau-bench", "healthbench", "terminalbench"],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-19",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-19",
+    "sources": [
+      { "id": "paper", "kind": "paper", "title": "Agents' Last Exam 论文全文（arXiv:2606.05405 v4，2026-10-25，PDF）", "url": "https://arxiv.org/pdf/2606.05405", "accessed": "2026-11-19" },
+      { "id": "arxiv-abs", "kind": "paper", "title": "arXiv 摘要页与版本历史（arXiv:2606.05405）", "url": "https://arxiv.org/abs/2606.05405", "accessed": "2026-11-19" },
+      { "id": "site", "kind": "site", "title": "Agents' Last Exam 官网首页", "url": "https://agents-last-exam.org/", "accessed": "2026-11-19" },
+      { "id": "demo", "kind": "site", "title": "官网 Demo 页（任务浏览与分档）", "url": "https://agents-last-exam.org/demo", "accessed": "2026-11-19" },
+      { "id": "leaderboard-api", "kind": "leaderboard", "title": "官网榜单 API（/api/demo/leaderboard）", "url": "https://agents-last-exam.org/api/demo/leaderboard", "accessed": "2026-11-19" },
+      { "id": "repo", "kind": "repo", "title": "GitHub：rdi-berkeley/agents-last-exam（README 与 v1.1 任务清单）", "url": "https://github.com/rdi-berkeley/agents-last-exam", "accessed": "2026-11-19" },
+      { "id": "dataset", "kind": "dataset", "title": "Hugging Face：agents-last-exam/agents-last-exam 数据集卡", "url": "https://huggingface.co/datasets/agents-last-exam/agents-last-exam", "accessed": "2026-11-19" },
+      { "id": "release-v11", "kind": "docs", "title": "GitHub：docs/releases/v1.1.md（ALE v1.1 发布说明）", "url": "https://raw.githubusercontent.com/rdi-berkeley/agents-last-exam/main/docs/releases/v1.1.md", "accessed": "2026-11-19" },
+      { "id": "verifier-check", "kind": "blog", "title": "官方博客：Verifier Check（判分器可绕过性复核）", "url": "https://agents-last-exam.org/blogs/verifier-check", "accessed": "2026-11-19" },
+      { "id": "harness-matters", "kind": "blog", "title": "官方博客：Harness Matters（harness 与骨干的影响）", "url": "https://agents-last-exam.org/blogs/harness-matters", "accessed": "2026-11-19" },
+      { "id": "blog", "kind": "blog", "title": "Berkeley RDI 博客：Agents' Last Exam（2026-06）", "url": "https://rdi.berkeley.edu/blog/agents-last-exam/", "accessed": "2026-11-19" }
+    ],
+    "header": {
+      "publisher": {
+        "v": "UC Berkeley RDI（Center for Responsible, Decentralized Intelligence）；论文署名机构为 University of California, Berkeley",
+        "cite": ["paper@作者署名", "site", "blog"]
+      },
+      "first_release": {
+        "v": "2026-06-03（arXiv v1）",
+        "cite": ["arxiv-abs"]
+      }
+    },
+    "cites": {
+      "summary": ["paper@Abstract", "paper@附录 C.3.7", "paper@§2.3"],
+      "interpretation": ["paper@§1", "paper@附录 D.4", "harness-matters"]
+    },
+    "problem": {
+      "text": "热门智能体基准正在被前沿系统快速刷满；GDPval 和 RLI 这类测「有经济价值的工作」的基准又只覆盖 55 个行业里的 16 和 14 个，还依赖昂贵的人工评审。ALE 想用「真实项目 + 可自动核验的交付物」把「能否胜任一份职业工作」变成可量化、可复现的指标，并做成一个随任务池持续生长的活基准。",
+      "cite": ["paper@§1", "paper@§5", "paper@Abstract"]
+    },
+    "ladder": [
+      {
+        "label": "最难档（Last-Exam）平均全通过率",
+        "value": "低于 1%",
+        "note": "论文摘要口径：主流 harness × 骨干配置的平均全通过率；官方博客把最难档平均全通过率记为 2.6%，同期多数配置在该档为 0%。",
+        "cite": ["paper@Abstract", "harness-matters", "paper@§4.1"]
+      },
+      {
+        "label": "论文 Table 1 最高整体通过率",
+        "value": "24.0%",
+        "note": "Codex (GPT-5.5)，GUI-as-Tool；同表 ALE-Claw (GPT-5.5) 23.0%、Claude Code (Fable 5) 22.0%、Grok CLI (Grok 4.3) 6.6%。",
+        "cite": ["paper@Table 1"]
+      },
+      {
+        "label": "官网榜单当前最高（full 档，152 题）",
+        "value": "38.2%",
+        "note": "Claude Code + claude-opus-5-5 (thinking-max)，150 次运行，平均分 63.2%，总 API 成本 $1,340.16；分档为 near-term 53.7% / full-spectrum 32.7% / last-exam 15.8%。这是 2026-11-19 抓取的 API 快照，题目集是 v1.1，与论文表 1 不同。",
+        "cite": ["leaderboard-api"]
+      },
+      {
+        "label": "人类专家基线",
+        "value": "论文未披露",
+        "note": "Table 1 只报告智能体系统与基础模型；ALE-CLI 只给了人类完成时间（小时到周）作横向对照。",
+        "cite": ["paper@Table 1", "blog"]
+      },
+      { "label": "本站账本当前最高", "auto": "ledger-top" }
+    ],
+    "misreadings": [
+      {
+        "text": "把「最难档平均不足 1%」读成「所有任务都不到 1%」——那是主流配置在 Last-Exam 档的平均值；同期 Near-Term 档最高通过率已接近 40%，官网榜单上公开集整体通过率已达 38.2%。",
+        "cite": ["paper@Abstract", "paper@§4.1", "leaderboard-api"]
+      },
+      {
+        "text": "把不同 harness 的分数排在一张榜上比——固定 harness 换骨干有 16.8–18.0 个百分点的差距，固定模型换 harness 只有 5–6 个百分点，harness 差异经常大于模型差异。",
+        "cite": ["paper@附录 D.4", "harness-matters"]
+      },
+      {
+        "text": "把 ALE-CLI 的分数和 Terminal-Bench / SWE-bench-Pro 直接比——ALE-CLI 覆盖 40 个子域（对方分别只有 6 和 5）、人类完成时间从小时到周；论文里 Codex (GPT-5.5) 在 ALE-CLI 上只有 23.3%，而它在 Terminal-Bench 上是 82%。",
+        "cite": ["paper@§4.1", "blog"]
+      },
+      {
+        "text": "把域间分数差当成模型强弱排序——同一模型在不同域的表现差异很大，55 个职业平均后很多模型挤在一起；官方明确说「平均分不是故事主线」。",
+        "cite": ["paper@§4.2", "blog"]
+      },
+      {
+        "text": "把「1,500+ 题」当成当前可评测题量——官网说已收集 1,500+ 题、目标 5,000 题；论文当前发布是 960 条工作流 / 1,490 个任务实例，公开的只有 150 个左右。",
+        "cite": ["site", "paper@附录 C.3.7", "paper@§2.3"]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "UC Berkeley RDI（Center for Responsible, Decentralized Intelligence），论文署名机构为 University of California, Berkeley；GitHub 仓库标注由 UC Berkeley RDI × RDI Foundation 主导。",
+        "cite": ["paper@作者署名", "site", "repo"]
+      },
+      {
+        "k": "作者规模",
+        "v": "arXiv 摘要页显示论文由 Yiyou Sun 等 379 位作者署名。",
+        "cite": ["arxiv-abs"]
+      },
+      {
+        "k": "专家来源",
+        "v": "摘要口径为 250+ 行业专家；官网与博客称 300+ 专家、来自 100+ 机构。",
+        "cite": ["paper@Abstract", "site", "blog"]
+      },
+      {
+        "k": "职业体系",
+        "v": "55 个子域归入 13 个行业簇，锚定 SOC 2018 与 O*NET 30.2；用固定提示词的 GPT-4o mini（temperature 0）筛 O*NET 的 1,016 个职业条目得到 51 个 SOC 锚定子域，再加 4 个前沿子域和 7 个扩展。",
+        "cite": ["paper@附录 B.1.1", "paper@§2.2", "paper@Table 2"]
+      },
+      {
+        "k": "任务来源",
+        "v": "专家上传自己过去花数天到数周完成的项目；1,490 个实例里 960 个来自外部投稿、530 个为内部委托构建。",
+        "cite": ["paper@附录 B.2", "paper@Figure 5"]
+      },
+      {
+        "k": "构建流程",
+        "v": "五道关卡（专家征集、任务提交与编辑、一审、任务实现、终审 QC）+ 会议式一审决定（major/minor revision、borderline accept、accept、strong accept）。",
+        "cite": ["paper@附录 B.2"]
+      },
+      {
+        "k": "版本时间线",
+        "v": "2026-06-03 arXiv v1 → 06-11 v2 → 10-09 v3 → 10-25 v4 → 2026-10 ALE v1.1（122 个活跃任务）。",
+        "cite": ["arxiv-abs", "demo", "release-v11"]
+      },
+      {
+        "k": "数据与代码",
+        "v": "Hugging Face 数据集提供任务卡元数据（CC BY 4.0，语言 en，122 个活跃任务）；GitHub 仓库是开源评测框架 ale_run（Apache-2.0），含全部 55 个子域的任务实现与 v1.1 的 122 题清单。",
+        "cite": ["dataset", "repo", "site"]
+      },
+      {
+        "k": "资助方",
+        "v": "TCCI（Tianqiao & Chrissy Chen Institute）、Snorkel AI、UniPat AI 提供资金与算力支持。",
+        "cite": ["paper@致谢"]
+      },
+      {
+        "k": "口径差异（官方自身不一致）",
+        "v": "公开集题量论文有 150（§2.3）与 152（§4.1）两种写法，榜单 API 的 full 档标注 152 题、实际有运行的 150 题；难度三档合计 160 题，与公开集对不上；ALE-CLI 论文记 105 题（其分档 47/42/20 合计 109），v1.1 仓库清单是 86 题；ALE-CLI 最好成绩论文记 23.3%、博客记 25.2%；最难档平均全通过率摘要记「低于 1%」、博客记 2.6%。引用时要注明出处。",
+        "cite": ["paper@§2.3", "paper@§4.1", "leaderboard-api", "repo", "blog", "harness-matters"]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-19",
+        "columns": ["来源", "配置", "Near-Term（通过率% / 平均分）", "Full-Spectrum（通过率% / 平均分）", "Last-Exam（通过率% / 平均分）", "Overall 通过率%"],
+        "rows": [
+          ["论文 Table 1", "Codex (GPT-5.5)", "38.1 / 64.7±2", "22.7 / 36.0±3", "0.0 / 11.2±2", "24.0"],
+          ["论文 Table 1", "ALE-Claw (GPT-5.5)", "32.8 / 67.4", "23.6 / 41.1", "2.6 / 12.8", "23.0"],
+          ["论文 Table 1", "Claude Code (Fable 5)", "34.3 / 63.4", "20.9 / 34.1±1", "0.0 / 5.2", "22.0"],
+          ["论文 Table 1", "Grok CLI (Grok 4.3)", "9.0 / 30.4", "7.3 / 17.0", "0.0 / 2.3", "6.6"],
+          ["论文 Table 1 · ALE-CLI 105 题（分档 47/42/20）", "Codex (GPT-5.5)∗", "37.2 / 68.3±3", "19.0 / 32.2±2", "0.0 / 13.1±3", "23.3"],
+          ["论文附录 D.4 · 固定 OpenClaw 扫骨干", "Grok 4.3 → GPT-5.5", "未列出", "未列出", "未列出", "4.3 → 21.1"],
+          ["官网榜单 API（2026-11-19 抓取）", "Claude Code + claude-opus-5-5 (thinking-max)", "53.7 / 83.9", "32.7 / 58.4", "15.8 / 33.9", "38.2"],
+          ["官网榜单 API（2026-11-19 抓取）", "Codex + gpt-6-astra (reasoning-max)", "50.7 / 81.2", "30.9 / 51.8", "未列出", "34.2 / 59.3"]
+        ]
+      },
+      "cite": ["paper@Table 1", "paper@附录 D.4", "leaderboard-api"]
+    }
+  }
 }

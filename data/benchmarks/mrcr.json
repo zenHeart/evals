@@ -1,73 +1,674 @@
 {
   "id": "mrcr",
   "name": "MRCR",
-  "full_name": "Multi-Round Co-reference Resolution (OpenAI MRCR)",
-  "aliases": ["Multi-Round Co-reference Resolution", "openai-mrcr"],
-  "status": null,
+  "full_name": "Multi-Round Co-reference Resolution（多轮共指消解）",
+  "aliases": [
+    "Multi-Round Co-reference Resolution",
+    "OpenAI-MRCR",
+    "openai-mrcr",
+    "openai/mrcr",
+    "MRCR-V2",
+    "mrcr-1m"
+  ],
+  "status": "active",
   "categories": [
     "longctx"
   ],
-  "summary": "OpenAI 出品的长上下文多针区分基准：上下文中埋多段相似内容，要求按序号取回指定 needle，2/4/8 针多档",
-  "interpretation": "OpenAI 多针区分：长对话里埋 2/4/8 段相似写作并要求按序号取回指定段，按 SequenceMatcher 相似度计分（0-100，越高越好）；针越多、上下文越长分越低，对比必须带「针数 + 上下文档位」。",
+  "summary": "MRCR 是长上下文「多针区分」基准：在一段多轮合成对话里埋进 2、4 或 8 次完全相同的写作请求，模型必须按序号取回指定那一次的结果，输出与标准答案按 SequenceMatcher 相似度打分。Google DeepMind 于 2024 年在 Michelangelo 论文里提出原版；OpenAI 于 2025 年开源了 2,400 行的可复现实现 openai/mrcr；Google 内部另有更难的 8 针版 MRCR-V2，结果发布在 Gemini 2.5 技术报告中。",
+  "interpretation": "高分说明模型能在高度相似的干扰项里按顺序定位并完整复现目标文本，而不只是「找到相关信息」。但跨模型数字直接比较前必须先对齐三件事：针数（2 / 4 / 8）、上下文档位（8 个 token 档从 4K 到 1M，原版按 32k / 128k / 1M 三个子集报告，Gemini 2.5 报告区分「最高 128K 平均」与「恰好 1M 点值」）、以及是否要求答案前缀随机串（未带前缀直接记 0 分）。",
   "measures": [
-    "区分长上下文中多段高度相似内容",
-    "按位置/序号精确取回指定 needle",
-    "needle 数与上下文长度双增下的鲁棒性"
+    {
+      "area": "多针区分与序号定位",
+      "focus": "对话里埋了 2、4 或 8 次完全相同的写作请求，模型要返回第 i 次的那一份；序号越大越难",
+      "share": "全 2,400 行（每种针数各占 1/3，即 800 行）",
+      "format": "多轮长对话 + 一条「取回第 i 次」的指令",
+      "cite": [
+        "hf-mrcr@任务描述 针数",
+        "hf-mrcr@为什么难 难度",
+        "hf-mrcr@为什么难 顺序"
+      ]
+    },
+    {
+      "area": "同分布干扰下的取回",
+      "focus": "针与干扰项同分布：话题相同文体不同（关于鸭嘴兽的诗 vs 短故事），或文体相同话题不同（鸭嘴兽 vs 青蛙），细微差别就足以带偏模型",
+      "share": "全 2,400 行（438 个实体 × 10 种文体）",
+      "format": "合成对话，assistant 回复由 GPT-4o 生成",
+      "cite": [
+        "gpt41@为什么难",
+        "hf-mrcr@实现细节 实体",
+        "hf-mrcr@为什么难 生成方式"
+      ]
+    },
+    {
+      "area": "长文本完整复现",
+      "focus": "不是答一个短事实，而是把指定那一次的多段写作完整复现出来，原版要求片段最长约 512 token",
+      "share": "全 2,400 行",
+      "format": "答案须前缀随机串 / 字母数字 hash，缺前缀记 0 分",
+      "cite": [
+        "arxiv-2409-12640@§3.3",
+        "hf-mrcr@实现细节 前缀"
+      ]
+    },
+    {
+      "area": "上下文档位扫描",
+      "focus": "同一配置下覆盖 8 个 token 档，观察性能随上下文长度如何衰减；长度越长越难",
+      "share": "8 个 token 档，每档 100 行",
+      "format": "按 prompt + answer 合计 token 数分 bin",
+      "cite": [
+        "hf-mrcr@实现细节 bin 边界",
+        "hf-mrcr@实现细节 分 bin",
+        "hf-mrcr@为什么难 难度"
+      ]
+    }
   ],
   "does_not_measure": [
-    "跨文档多跳推理",
-    "真实任务语料（内容为合成的诗/动物列表）",
-    "生成质量与指令遵循"
+    {
+      "text": "真实长文档任务能力（合同、代码库、判例）：题目全部是合成多轮对话，针与干扰项同分布且由 GPT-4o 生成",
+      "cite": [
+        "hf-mrcr@任务描述",
+        "hf-mrcr@为什么难 生成方式"
+      ]
+    },
+    {
+      "text": "单针检索：原版论文明确把它定位为 Needle-in-a-Haystack 的「超越检索」扩展，考点是多个针之间的顺序关系",
+      "cite": [
+        "arxiv-2409-12640@§3.1.2"
+      ]
+    },
+    {
+      "text": "语义理解与改写：判分是字符串相似度，同义改写把意思说对也可能被压分；反过来抄对位置但缺前缀也拿不到分",
+      "cite": [
+        "hf-mrcr@实现细节 指标",
+        "hf-mrcr@实现细节 前缀",
+        "arxiv-2409-12640@§2.2 计分"
+      ]
+    }
   ],
   "dataset": {
-    "sample_count": null,
-    "splits": ["2-needle", "4-needle", "8-needle"],
+    "sample_count": 2400,
+    "splits": [
+      "2-needle",
+      "4-needle",
+      "8-needle"
+    ],
+    "languages": [
+      "en"
+    ],
     "source_type": "synthetic",
-    "languages": ["en"],
-    "public_sample": true
+    "public_sample": true,
+    "totals": "OpenAI 开源版共 2,400 行 = 3 种针数 × 8 个 token 档 × 每档 100 行；438 个实体、10 种文体，assistant 回复由 GPT-4o 生成。原版论文另提供 32k / 128k / 1M 三个子集分布；MRCR-V2（8 针）只有 Gemini 2.5 报告中的内部结果，未公开数据。",
+    "cite": [
+      "hf-mrcr@数据规模",
+      "hf-mrcr@实现细节 分 bin",
+      "hf-mrcr@实现细节 bin 边界",
+      "hf-mrcr@实现细节 实体",
+      "hf-mrcr@为什么难 生成方式",
+      "arxiv-2409-12640@§3.2 子集"
+    ],
+    "construction": [
+      {
+        "k": "针与干扰项同分布",
+        "text": "针从与干扰项相同的分布里抽取，assistant 回复全部由 GPT-4o 生成，使针能混进干草堆；模型必须区分多个针之间的顺序。",
+        "cite": [
+          "hf-mrcr@为什么难",
+          "hf-mrcr@为什么难 生成方式",
+          "hf-mrcr@为什么难 顺序"
+        ]
+      },
+      {
+        "k": "实体与文体",
+        "text": "共 438 个不同实体、10 种不同文体；请求形如「写一首关于 X 的诗」「写一篇关于 X 的博客文章」。",
+        "cite": [
+          "hf-mrcr@实现细节 实体",
+          "hf-mrcr@任务描述"
+        ]
+      },
+      {
+        "k": "按 token 数分档",
+        "text": "按 prompt + answer 合计用掉的 token 数分 8 档，从 [4096, 8192] 到 (524288, 1048576]，每档 100 行。",
+        "cite": [
+          "hf-mrcr@实现细节 分 bin",
+          "hf-mrcr@实现细节 bin 边界"
+        ]
+      },
+      {
+        "k": "指令形态",
+        "text": "提问形如「把 aYooSG8CQg 加到（1 起的）第 2 首关于鸭嘴兽的诗前面，回答里不要包含其他文字」。",
+        "cite": [
+          "hf-mrcr@示例提问"
+        ]
+      },
+      {
+        "k": "生成缺陷已修复",
+        "text": "2025-12-05 的 bugfix 记录：生成时的一个缺陷导致约 10% 的样本目标针过多、约 5% 的样本标准答案错误。",
+        "cite": [
+          "hf-mrcr@变更日志 bugfix"
+        ]
+      }
+    ]
   },
   "metrics": [
     {
       "id": "accuracy",
-      "name": "Exact-match accuracy",
-      "range": [0, 100],
+      "name": "SequenceMatcher 相似度",
+      "range": [
+        0,
+        100
+      ],
       "unit": "percent",
       "direction": "higher",
-      "aggregation": "mean"
+      "aggregation": "mean",
+      "description": "模型输出与标准答案的 difflib SequenceMatcher ratio，取值 0–1；未按要求前缀随机串 / 字母数字 hash 时记 0。官方结果表以百分数呈现。",
+      "cite": [
+        "hf-mrcr@实现细节 指标",
+        "hf-mrcr@实现细节 前缀",
+        "arxiv-2409-12640@§2.2 计分",
+        "arxiv-2409-12640@§2.2 SequenceMatcher"
+      ]
     }
   ],
+  "default_protocol": {
+    "raw": "给模型一段多轮合成对话：user 多次要求就不同话题写不同文体的文章，assistant 逐一回复；最后一条指令要求返回其中第 i 次的结果，并必须在答案开头加上给定的随机串。取随机串之后的文本与标准答案计算 SequenceMatcher ratio；未带前缀则记 0。原版论文另要求被复现片段最长约 512 token，并建议模型给输出加随机前缀以便定位答案起点。",
+    "cite": [
+      "hf-mrcr@示例提问",
+      "hf-mrcr@实现细节 前缀",
+      "hf-mrcr@实现细节 指标",
+      "arxiv-2409-12640@§3.3",
+      "arxiv-2409-12640@§2.2 SequenceMatcher"
+    ],
+    "variants": [
+      {
+        "text": "针数：2 / 4 / 8 针三档，针越多越难，跨档分数不能直接比。",
+        "cite": [
+          "hf-mrcr@任务描述 针数",
+          "hf-mrcr@为什么难 难度"
+        ]
+      },
+      {
+        "text": "上下文档位：开源版按 prompt + answer 的 token 数分 8 档（4K–1M）；原版论文按 32k / 128k / 1M 三个子集分布报告；Gemini 2.5 报告则区分「最高 128K 的平均」与「恰好 1M 的点值」两种口径。",
+        "cite": [
+          "hf-mrcr@实现细节 bin 边界",
+          "arxiv-2409-12640@§3.2 子集",
+          "gemini25@Table 3 注 128k"
+        ]
+      },
+      {
+        "text": "前缀要求：原版要求模型在输出前加一个随机串，OpenAI 开源版要求加字母数字 hash；缺前缀即记 0 分。",
+        "cite": [
+          "arxiv-2409-12640@§3.3",
+          "hf-mrcr@实现细节 前缀"
+        ]
+      }
+    ]
+  },
   "versions": [
     {
-      "id": "v1",
-      "label": "MRCR（2025-03，随 GPT-4.1 长上下文评测开源）"
+      "id": "arxiv-v1",
+      "date": "2024-09-19",
+      "label": "arXiv v1：Google DeepMind 提出 MRCR，与 Latent List、IDK 并列为三个「超越检索」的最小任务",
+      "cite": [
+        "arxiv-2409-12640@arXiv 版本戳",
+        "arxiv-2409-12640@摘要"
+      ]
     },
     {
-      "id": "v2",
-      "label": "MRCR v2",
-      "note": "8-needle 等更难档，被第三方长上下文榜单广泛采用"
+      "id": "arxiv-v2",
+      "date": "2024-09-20",
+      "label": "arXiv v2：当前被广泛引用的版本（OpenAI 数据集卡即引用 v2）",
+      "cite": [
+        "arxiv-2409-12640@arXiv 版本戳",
+        "hf-mrcr@与 Gemini 的关系"
+      ]
+    },
+    {
+      "id": "openai-mrcr-initial",
+      "date": "2025-04-12",
+      "label": "OpenAI 在 Hugging Face 开源 openai/mrcr：2,400 行，随 GPT-4.1 的长上下文评测一起发布",
+      "cite": [
+        "hf-mrcr@变更日志",
+        "hf-mrcr@数据规模",
+        "gpt41@开源发布"
+      ]
+    },
+    {
+      "id": "mrcr-v2-gemini25",
+      "date": "2025-07-07",
+      "label": "Gemini 2.5 技术报告 arXiv v1：引入更难的内部版 MRCR-V2（8 针），按 128k 与 1M 两种口径报告",
+      "cite": [
+        "gemini25@arXiv 版本戳",
+        "gemini25@§3.1",
+        "gemini25@Table 3 注"
+      ]
+    },
+    {
+      "id": "openai-mrcr-bugfix",
+      "date": "2025-12-05",
+      "label": "openai/mrcr bugfix：修复约 10% 样本目标针过多、约 5% 样本标准答案错误的生成缺陷",
+      "cite": [
+        "hf-mrcr@变更日志 bugfix"
+      ]
+    },
+    {
+      "id": "gemini25-v6",
+      "date": "2025-12-19",
+      "label": "Gemini 2.5 技术报告修订至 v6（本页 MRCR-V2 数据所用版本）",
+      "cite": [
+        "gemini25@arXiv 版本戳"
+      ]
     }
   ],
   "limitations": [
-    "合成内容、任务模式单一，分数好不等于真实长文档能力强",
-    "needle 数与长度档位不同则分数不可直接比"
+    {
+      "issue": "合成数据，与真实长文档任务有差距",
+      "impact": "题目全部是合成多轮对话，针与干扰项同分布且由 GPT-4o 生成；在这种分布上的高分不能直接外推到法律合同、代码库等真实长上下文任务。",
+      "severity": "高",
+      "response": "原版论文把它定位为 Needle-in-a-Haystack 的结构化扩展而非真实任务代理，并称其适合作为该评测的默认替代；跨场景结论需要另测。",
+      "reader": "把它当成「长上下文行为体检」而不是「长文档能力证明」。",
+      "cite": [
+        "hf-mrcr@任务描述",
+        "hf-mrcr@为什么难 生成方式",
+        "arxiv-2409-12640@§5.2 推荐"
+      ]
+    },
+    {
+      "issue": "口径随版本变化：针数、长度档、前缀要求都不同",
+      "impact": "同一个「MRCR 分数」可能来自 2 针 128k 的开源版，也可能来自内部 8 针版 MRCR-V2；开源版按 8 个 token 档报告，Gemini 2.5 报告用 128k 平均与 1M 点值两种口径，MRCR-V2 的数据与官方复现均未公开。",
+      "severity": "高",
+      "response": "本页在分数阶梯与官方结果表里逐行标注针数、长度档与来源；OpenAI 在数据集卡公布了生成缺陷的修复记录。",
+      "reader": "看到 MRCR 数字先问三件事：几针、多长、谁测的；不同口径不要放进同一张图。",
+      "cite": [
+        "hf-mrcr@任务描述 针数",
+        "hf-mrcr@实现细节 bin 边界",
+        "gemini25@Table 3 注 128k",
+        "gemini25@附录 8.1 Table 11"
+      ]
+    },
+    {
+      "issue": "字符串相似度判分，语义等价会被压分",
+      "impact": "判分只看 SequenceMatcher ratio，模型用同义改写把意思说对也可能拿低分；反过来抄对位置但缺前缀直接 0 分。",
+      "severity": "中",
+      "response": "原版论文明确说 MRCR 的优势正是指标简单、对提示词选择更稳健；前缀要求是刻意设计，用来确定模型真正开始作答的位置。",
+      "reader": "这个分数是「复现保真度」不是「理解分」；换提示词模板时分数波动会更大。",
+      "cite": [
+        "hf-mrcr@实现细节 指标",
+        "hf-mrcr@实现细节 前缀",
+        "arxiv-2409-12640@§5.2 简单指标"
+      ]
+    },
+    {
+      "issue": "公开集曾有生成缺陷，且可被下载后用于训练",
+      "impact": "2025-12-05 之前下载的 2,400 行中约 10% 目标针过多、约 5% 标准答案错误；公开数据也可能被混入训练集或针对性调优。",
+      "severity": "中",
+      "response": "官方已发布 bugfix 版本并把缺陷写进数据集变更日志；复现时应固定数据集版本。",
+      "reader": "复现别人的数字前先确认用的是 bugfix 前还是后的版本。",
+      "cite": [
+        "hf-mrcr@变更日志 bugfix",
+        "hf-mrcr@数据规模"
+      ]
+    },
+    {
+      "issue": "随机基线靠估算，且随假设明显变化",
+      "impact": "论文附录给出 4%（严格）与 9%（较宽松）两档随机基线，按复杂度层级平均约 12.2%；这些估计只针对原版 MRCR 分布，OpenAI 开源版与 MRCR-V2 都没有公布对应基线。",
+      "severity": "低",
+      "response": "论文用直方图逐例给出基线分布，并说明更宽松的假设下基线更高。",
+      "reader": "低分模型可能仍在基线附近；10% 出头的分数不要直接当成「显著高于随机」。",
+      "cite": [
+        "arxiv-2409-12640@附录 B.1.1 4%",
+        "arxiv-2409-12640@附录 B.1.1 9%",
+        "arxiv-2409-12640@附录 B.1.1 12.2%"
+      ]
+    }
   ],
-  "notes": "证据账本中 mrcr（11 次）与 mrcr-v2 / mrcr-1m 为同一评测的版本/档位变体",
+  "notes": "MRCR 是家族而不是单个数据集：原版 MRCR（Google DeepMind，arXiv:2409.12640）、OpenAI 开源复现 openai/mrcr（2,400 行）、Google 内部 8 针版 MRCR-V2（Gemini 2.5 报告）三者的题面与口径都不同。证据账本里的 mrcr / mrcr-v2 / mrcr-1m 记录，需先按针数与长度档归一到对应版本再比较。",
   "official_sources": [
     {
-      "kind": "site",
+      "kind": "dataset",
       "url": "https://huggingface.co/datasets/openai/mrcr"
     },
     {
       "kind": "paper",
       "url": "https://arxiv.org/abs/2409.12640"
+    },
+    {
+      "kind": "announcement",
+      "url": "https://openai.com/index/gpt-4-1/"
+    },
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2507.06261"
     }
   ],
   "related_benchmarks": [
     "graphwalks",
     "ruler",
     "niah",
-    "longbench"
+    "longbench",
+    "loft"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-15",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-15",
+    "sources": [
+      {
+        "id": "arxiv-2409-12640",
+        "kind": "paper",
+        "title": "Michelangelo: Long Context Evaluations Beyond Haystacks via Latent Structure Queries（arXiv:2409.12640，v2，2024-09-20）",
+        "url": "https://arxiv.org/abs/2409.12640",
+        "accessed": "2026-11-15"
+      },
+      {
+        "id": "hf-mrcr",
+        "kind": "dataset",
+        "title": "openai/mrcr（Hugging Face 数据集卡，含变更日志、实现细节与 schema）",
+        "url": "https://huggingface.co/datasets/openai/mrcr",
+        "accessed": "2026-11-15"
+      },
+      {
+        "id": "gpt41",
+        "kind": "announcement",
+        "title": "OpenAI：Introducing GPT-4.1（Long context 节开源 OpenAI-MRCR 并给出结果表）",
+        "url": "https://openai.com/index/gpt-4-1/",
+        "accessed": "2026-11-15"
+      },
+      {
+        "id": "gemini25",
+        "kind": "paper",
+        "title": "Gemini 2.5: Pushing the Frontier with Advanced Reasoning, Multimodality, Long Context, and Next Generation Agentic Capabilities（arXiv:2507.06261，v6，2025-12-19）",
+        "url": "https://arxiv.org/abs/2507.06261",
+        "accessed": "2026-11-15"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Google DeepMind / Google Research（原版 MRCR）；OpenAI（开源实现 openai/mrcr）",
+        "cite": [
+          "arxiv-2409-12640@作者署名",
+          "hf-mrcr@数据集卡开头"
+        ]
+      },
+      "first_release": {
+        "v": "2024-09-19（arXiv v1，Google DeepMind 原版）",
+        "cite": [
+          "arxiv-2409-12640@arXiv 版本戳"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "arxiv-2409-12640@§2.2",
+        "hf-mrcr@任务描述 针数",
+        "hf-mrcr@数据规模",
+        "gemini25@§3.1"
+      ],
+      "interpretation": [
+        "hf-mrcr@实现细节 前缀",
+        "hf-mrcr@实现细节 bin 边界",
+        "gemini25@Table 3 注 128k",
+        "gpt41@结果结论"
+      ]
+    },
+    "problem": {
+      "text": "长上下文模型早就不是「找不到那一根针」的问题：OpenAI 在 GPT-4.1 里说，真实任务往往需要同时取回并关联多段信息，而单个显眼针的检索已经饱和；Google DeepMind 则把 MRCR 设计成 Needle-in-a-Haystack 的「超越检索」扩展，要求模型利用多个针之间的顺序关系作答。",
+      "cite": [
+        "gpt41@长上下文定位",
+        "gpt41@Long context 节",
+        "arxiv-2409-12640@§3.1.2"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "原版随机基线（严格口径）",
+        "value": "4%",
+        "note": "假设模型从对话历史里所有可能输出中随机挑一个。这两个基线只针对原版 MRCR 分布，OpenAI 开源版与 MRCR-V2 都没公布对应基线。",
+        "cite": [
+          "arxiv-2409-12640@附录 B.1.1 4%"
+        ]
+      },
+      {
+        "label": "原版随机基线（宽松口径）",
+        "value": "9%",
+        "note": "只要输出命中目标主题或目标文体之一即算命中；论文明确说这个数更大。按复杂度层级取直方图平均约 12.2%。",
+        "cite": [
+          "arxiv-2409-12640@附录 B.1.1 9%",
+          "arxiv-2409-12640@附录 B.1.1 12.2%"
+        ]
+      },
+      {
+        "label": "OpenAI-MRCR · GPT-4o（2 针 128k）",
+        "value": "31.9%",
+        "note": "GPT-4o (2024-11-20)，OpenAI-MRCR 2 needle 128k 档；同档 GPT-4.5 38.5%、o1 (high) 22.1%、o3-mini (high) 18.7%。",
+        "cite": [
+          "gpt41@Long context 节"
+        ]
+      },
+      {
+        "label": "OpenAI-MRCR · GPT-4.1 mini（2 针 128k）",
+        "value": "47.2%",
+        "note": "同档 GPT-4.1 nano 36.6%；这一档仍明显低于 GPT-4.1。",
+        "cite": [
+          "gpt41@Long context 节"
+        ]
+      },
+      {
+        "label": "OpenAI-MRCR · GPT-4.1（2 针 128k）",
+        "value": "57.2%",
+        "note": "OpenAI 官方结果表中该档最高；同表 2 needle 1M 档为 GPT-4.1 46.3%、mini 33.3%、nano 12.0%。这是开源版口径，与 Gemini 2.5 报告的 8 针 MRCR-V2 不可直接比。",
+        "cite": [
+          "gpt41@Long context 节",
+          "gpt41@结果结论"
+        ]
+      },
+      {
+        "label": "内部 MRCR-V2（8 针）· Gemini 2.5 Pro（≤128k）",
+        "value": "58.0%",
+        "note": "Gemini 2.5 技术报告 Table 3，8 针版、最高 128K 平均口径；同表 Gemini 2.5 Flash 54.3%、Gemini 1.5 Pro 26.2%。该口径与上面的开源版分数不同源。",
+        "cite": [
+          "gemini25@Table 3",
+          "gemini25@Table 3 表头",
+          "gemini25@Table 3 注 128k"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把不同针数的 MRCR 分数排在一起——2 针、4 针、8 针是三个难度档，OpenAI 自己就说针越多越难。",
+        "cite": [
+          "hf-mrcr@为什么难 难度",
+          "hf-mrcr@任务描述 针数"
+        ]
+      },
+      {
+        "text": "把 Gemini 2.5 报告里的 MRCR-V2 数字和 OpenAI 开源版数字直接比——前者是 Google 内部 8 针版，且 128k 口径是「最高 128K 的平均」、1M 口径是「恰好 1M 的点值」。",
+        "cite": [
+          "gemini25@附录 8.1 Table 11",
+          "gemini25@Table 3 注 128k"
+        ]
+      },
+      {
+        "text": "以为分数高就是「读懂了」——判分是字符串相似度，缺前缀直接 0 分，同义改写也可能被压分。",
+        "cite": [
+          "hf-mrcr@实现细节 前缀",
+          "hf-mrcr@实现细节 指标"
+        ]
+      },
+      {
+        "text": "以为 MRCR 只是单针检索的加强版——原版论文明确说它是超越检索的任务，考点是多个针之间的顺序关系。",
+        "cite": [
+          "arxiv-2409-12640@§3.1.2"
+        ]
+      },
+      {
+        "text": "把 Gemini 2.5 报告里 Gemini 的领先读成「在开源版上的领先」——该表评的是内部 MRCR-V2，且同一张表里 Gemini 是唯一支持 1M+ 上下文的模型。",
+        "cite": [
+          "gemini25@§3.1 SoTA"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方与作者",
+        "v": "原版 MRCR 出自 Google DeepMind 与 Google Research，Michelangelo 论文通讯作者 Kiran Vodrahalli；开源实现由 OpenAI 发布。",
+        "cite": [
+          "arxiv-2409-12640@作者署名",
+          "arxiv-2409-12640@Contributions",
+          "hf-mrcr@数据集卡开头"
+        ]
+      },
+      {
+        "k": "三个版本的关系",
+        "v": "OpenAI 在数据集卡里说明该评测受 Gemini 的 MRCR 启发，并扩大了任务难度、提供可复现的开源数据。",
+        "cite": [
+          "hf-mrcr@与 Gemini 的关系"
+        ]
+      },
+      {
+        "k": "在原版框架里的位置",
+        "v": "MRCR 是 Latent List、MRCR、IDK 三个「超越检索」最小任务之一，其潜在数据结构是按主题与文体索引的嵌套字典。",
+        "cite": [
+          "arxiv-2409-12640@摘要",
+          "arxiv-2409-12640@§3.1.2 隐结构"
+        ]
+      },
+      {
+        "k": "原版实测观察",
+        "v": "128k 处 Gemini 系斜率 profile 与 GPT、Claude 明显不同，且到 1M 才呈现非退化表现；所有模型在 32k 之前就已显著下滑。",
+        "cite": [
+          "arxiv-2409-12640@Figure 3 注",
+          "arxiv-2409-12640@Figure 6 注",
+          "arxiv-2409-12640@Figure 1 注"
+        ]
+      },
+      {
+        "k": "接入成本",
+        "v": "原版论文称该评测在后训练阶段对所有试过的模型上都开箱即用，无需调参。",
+        "cite": [
+          "arxiv-2409-12640@§3.3 开箱即用"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "openai/mrcr 在 Hugging Face 公开 2,400 行；原版论文与 Gemini 2.5 技术报告在 arXiv。",
+        "cite": [
+          "hf-mrcr@数据规模",
+          "arxiv-2409-12640@arXiv 版本戳",
+          "gemini25@arXiv 版本戳"
+        ]
+      }
+    ],
+    "official_results": {
+      "cite": [
+        "gpt41@Long context 节",
+        "gemini25@Table 3"
+      ],
+      "table": {
+        "as_of": "2026-11-15",
+        "columns": [
+          "来源",
+          "口径",
+          "模型",
+          "得分",
+          "备注"
+        ],
+        "rows": [
+          [
+            "GPT-4.1 公告表",
+            "OpenAI-MRCR · 2 针 · 128k",
+            "GPT-4.1",
+            "57.2%",
+            "该档最高"
+          ],
+          [
+            "GPT-4.1 公告表",
+            "OpenAI-MRCR · 2 针 · 128k",
+            "GPT-4.1 mini",
+            "47.2%",
+            ""
+          ],
+          [
+            "GPT-4.1 公告表",
+            "OpenAI-MRCR · 2 针 · 128k",
+            "GPT-4.1 nano",
+            "36.6%",
+            ""
+          ],
+          [
+            "GPT-4.1 公告表",
+            "OpenAI-MRCR · 2 针 · 128k",
+            "GPT-4.5",
+            "38.5%",
+            ""
+          ],
+          [
+            "GPT-4.1 公告表",
+            "OpenAI-MRCR · 2 针 · 128k",
+            "GPT-4o (2024-11-20)",
+            "31.9%",
+            ""
+          ],
+          [
+            "GPT-4.1 公告表",
+            "OpenAI-MRCR · 2 针 · 128k",
+            "GPT-4o mini",
+            "24.5%",
+            ""
+          ],
+          [
+            "GPT-4.1 公告表",
+            "OpenAI-MRCR · 2 针 · 128k",
+            "o1 (high)",
+            "22.1%",
+            ""
+          ],
+          [
+            "GPT-4.1 公告表",
+            "OpenAI-MRCR · 2 针 · 128k",
+            "o3-mini (high)",
+            "18.7%",
+            ""
+          ],
+          [
+            "GPT-4.1 公告表",
+            "OpenAI-MRCR · 2 针 · 1M",
+            "GPT-4.1",
+            "46.3%",
+            "该档最高"
+          ],
+          [
+            "GPT-4.1 公告表",
+            "OpenAI-MRCR · 2 针 · 1M",
+            "GPT-4.1 mini",
+            "33.3%",
+            ""
+          ],
+          [
+            "GPT-4.1 公告表",
+            "OpenAI-MRCR · 2 针 · 1M",
+            "GPT-4.1 nano",
+            "12.0%",
+            ""
+          ],
+          [
+            "Gemini 2.5 报告 Table 3",
+            "内部 MRCR-V2 · 8 针 · ≤128k 平均",
+            "Gemini 2.5 Pro",
+            "58.0%",
+            "同表 Gemini 2.5 Flash 54.3%、Gemini 1.5 Pro 26.2%"
+          ],
+          [
+            "Gemini 2.5 报告 Table 3",
+            "内部 MRCR-V2 · 8 针 · 1M 点值",
+            "Gemini 2.5 Pro",
+            "16.4%",
+            "同表 Gemini 2.5 Flash 21.0%"
+          ]
+        ]
+      }
+    }
+  }
 }

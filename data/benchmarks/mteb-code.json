@@ -1,73 +1,688 @@
 {
   "id": "mteb-code",
   "name": "MTEB Code",
-  "full_name": "Massive Text Embedding Benchmark - Code Subset",
+  "full_name": "MTEB(Code, v1) — Massive Text Embedding Benchmark 代码检索子基准",
   "aliases": [
     "MTEB Code",
+    "MTEB(code)",
     "Massive Text Embedding Benchmark Code"
   ],
-  "status": null,
+  "status": "active",
   "categories": [
     "coding"
   ],
-  "summary": "MTEB (Massive Text Embedding Benchmark) 的代码评测子集，评估嵌入模型在多语言代码检索、代码克隆检测与语义匹配上的表现",
-  "interpretation": "分数越高代表嵌入向量在代码搜索、函数检索与语义相似度聚类上的判别能力越强；70+ 分即属于高精度轻量级代码嵌入水平。",
+  "summary": "MTEB(Code, v1)（别名 MTEB(code)）是 MTEB（Massive Text Embedding Benchmark，大规模文本嵌入基准）里的代码赛道：把 12 个公开代码检索数据集打包成一类，统一用 NDCG@10 衡量「给一句自然语言描述或代码审查意见，能不能把对应的代码片段排到前面」。它由 MMTEB 论文引入，任务定义集中在 embeddings-benchmark/mteb 仓库，覆盖英语加 9 种编程/查询语言，合计约 258.9 万个样本。",
+  "interpretation": "分数是 NDCG@10（0–100）按 Mean(Task) 聚合的结果，越高说明模型把正确代码排进前 10 名的能力越强。参照系：MMTEB 论文表 19 里最好 73.6、最差 28.8；EmbeddingGemma 2 模型卡自报 78.68，比其前代 68.76 高约 14%。同一个模型只把向量从 768d 截到 128d，分数就掉到 71.41——所以 70 分上下的差距很可能来自维度或精度口径，而不是模型能力。",
   "measures": [
-    "代码片段的向量化质量与跨语言代码检索召回率",
-    "语义代码搜索与代码重构相似度匹配"
+    {
+      "area": "代码检索（code search）",
+      "focus": "自然语言查询 → 代码片段排序。以 CodeSearchNetRetrieval 为例：查询来自 Husain 等 2019 收集的真实搜索语句，候选库是同一批函数片段，取前 10 名算 NDCG@10；同属这一类的还有 CosQA、StackOverflowQA、AppsRetrieval、CodeTransOcean 两个子任务与 COIR 的 CodeSearchNet 版本。",
+      "share": "未披露（官方描述只按 code search / text-to-SQL / code feedback 三类概括，未给各类占比）",
+      "format": "检索排序，任务类型 t2t、模态 text",
+      "cite": [
+        "docs-benchmarks@MTEB(Code, v1)",
+        "codesearchnet-task@任务定义",
+        "benchmarks-py@MTEB_code"
+      ]
+    },
+    {
+      "area": "文本转 SQL（text-to-SQL）",
+      "focus": "SyntheticText2SQL：查询语言为 eng 与 sql 两种，把自然语言问题对应的 SQL 查询作为检索目标；论文表 17 记录的规模是 5851 条查询对 105851 篇文档。",
+      "share": "未披露",
+      "format": "检索排序（NDCG@10）",
+      "cite": [
+        "docs-benchmarks@MTEB(Code, v1)",
+        "mmteb-paper@Table 17"
+      ]
+    },
+    {
+      "area": "代码反馈（code feedback）",
+      "focus": "CodeFeedbackMT / CodeFeedbackST：用代码审查评论去检索被评论的代码片段，衡量审查意见与代码的对应关系；论文表 17 中这两个任务都只列 eng 一种语言。",
+      "share": "未披露",
+      "format": "检索排序（NDCG@10）",
+      "cite": [
+        "docs-benchmarks@MTEB(Code, v1)",
+        "mmteb-paper@Table 17"
+      ]
+    },
+    {
+      "area": "代码编辑检索（code-edit search）",
+      "focus": "CodeEditSearchRetrieval：输入一条描述「要改什么」的短指令，从统一 diff 里检索对应改动；数据集源自 CommitPackFT，查询取 instruction、文档取 commit 对应的 diff。",
+      "share": "未披露",
+      "format": "检索排序（NDCG@10），任务子类型标注为 Code retrieval",
+      "cite": [
+        "code-edit-search-task@数据集描述",
+        "code-edit-search-task@任务定义"
+      ]
+    }
   ],
   "does_not_measure": [
-    "代码生成能力",
-    "代码执行与缺陷修复率",
-    "复杂控制流逻辑推理"
+    {
+      "text": "代码生成与代码执行：模型只输出向量、不生成代码，本基准无法区分「检索到了正确片段」和「能写出可运行实现」。",
+      "cite": [
+        "mmteb-paper@Table 19 题注",
+        "benchmarks-py@MTEB_code"
+      ]
+    },
+    {
+      "text": "MTEB 的其他任务类型：12 个任务全部是检索，不含分类、聚类、语义文本相似度（STS）或重排，论文表 19 也因此省略了按类别给出的指标。",
+      "cite": [
+        "mmteb-paper@Table 19 题注"
+      ]
+    },
+    {
+      "text": "多语言文本理解：语言范围只覆盖英语加各编程语言与 SQL，不等于 MMTEB 整体的 250+ 语言覆盖。",
+      "cite": [
+        "mmteb-paper@摘要",
+        "mmteb-paper@Table 17"
+      ]
+    }
   ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "source_type": "MTEB benchmark suite",
+    "sample_count": 2589339,
+    "splits": [
+      "各任务自行设定（论文未统一说明；仓库中 CodeSearchNetRetrieval 用 test、CodeEditSearchRetrieval 用 train）"
+    ],
     "languages": [
+      "eng",
       "python",
       "javascript",
-      "java",
       "go",
-      "cpp"
+      "java",
+      "php",
+      "c",
+      "c++",
+      "ruby",
+      "sql"
     ],
-    "public_sample": null
+    "source_type": "found + derived（论文表 17 的 Sample creation 列全部为 found、Annotations creators 列全部为 derived）",
+    "public_sample": true,
+    "totals": "12 个检索任务合计约 258.9 万个样本（论文表 17 以「查询数 - 文档数」给出各任务规模，本站按同一口径求和；最大两个任务是 CodeSearchNetCCRetrieval 约 105.8 万与 COIRCodeSearchNetRetrieval 约 105.6 万，最小的是 CodeTransOceanDL 180 条查询对 816 篇文档）",
+    "cite": [
+      "mmteb-paper@Table 17",
+      "benchmarks-py@MTEB_code"
+    ],
+    "construction": [
+      {
+        "k": "整合既有公开数据集",
+        "text": "MMTEB 没有为 MTEB(Code) 新造数据，而是把已发布的代码检索基准整合成一类：论文 §2.4 明说 MMTEB 也集成了 CoIR 这类面向代码检索的领域基准。",
+        "cite": [
+          "mmteb-paper@§2.4"
+        ]
+      },
+      {
+        "k": "任务定义集中在单一仓库",
+        "text": "12 个任务名集中在 mteb/benchmarks/benchmarks/benchmarks.py 的 MTEB_code 定义里，用 get_tasks 逐个挂到 Benchmark 对象上；每个任务的数据集路径、拆分、语言与 main_score 在同仓库 mteb/tasks/retrieval/code/ 下的任务文件里。",
+        "cite": [
+          "benchmarks-py@MTEB_code",
+          "code-edit-search-task@任务定义"
+        ]
+      },
+      {
+        "k": "数据来自真实代码库",
+        "text": "论文表 17 对 12 个任务的 Sample creation 全部标为 found、Annotations creators 全部标为 derived——查询与代码来自已存在的仓库和审查记录，标注是派生的，不是人工新造的题目。",
+        "cite": [
+          "mmteb-paper@Table 17"
+        ]
+      },
+      {
+        "k": "按语言切分并截断",
+        "text": "以 CodeEditSearchRetrieval 为例：任务定义按 13 种语言分别加载 cassanof/CodeEditSearch，每种语言只取前 1000 条，因此查询与文档各 13000。",
+        "cite": [
+          "code-edit-search-task@任务定义",
+          "mmteb-paper@Table 17"
+        ]
+      },
+      {
+        "k": "许可与时间跨度不统一",
+        "text": "各任务 license 不同（CodeSearchNetRetrieval 为 mit，CodeEditSearchRetrieval 为 not specified），date 区间也不同（CodeSearchNet 覆盖 2019 全年，CodeEditSearch 覆盖 2011-02 至 2016-01）。",
+        "cite": [
+          "codesearchnet-task@任务定义",
+          "code-edit-search-task@任务定义"
+        ]
+      }
+    ]
   },
   "metrics": [
     {
       "id": "ndcg_at_10",
       "name": "NDCG@10",
+      "direction": "越高越好",
+      "description": "检索排序指标：取相似度前 10 名的结果，按相关文档的排序位置加权折算成 0–100 的分。两个代码任务的定义里都写明 main_score 是它，模型卡汇报本基准时用的也是它。",
       "range": [
         0,
         100
       ],
       "unit": "percent",
-      "direction": "higher",
-      "aggregation": "mean"
+      "cite": [
+        "codesearchnet-task@main_score",
+        "code-edit-search-task@main_score",
+        "eg2-modelcard@评测结果表"
+      ]
+    },
+    {
+      "id": "mean_task_ndcg_at_10",
+      "name": "Mean(Task) 聚合的 NDCG@10",
+      "direction": "越高越好",
+      "description": "跨任务聚合口径：把各任务分数取平均。EmbeddingGemma 2 模型卡在 MTEB(code, v1) 一列用的就是它；论文表 19 则说明所有 code 任务都是检索任务，因此没有再按类别给指标。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "eg2-modelcard@评测结果表",
+        "mmteb-paper@Table 19 题注"
+      ]
     }
   ],
+  "default_protocol": {
+    "raw": "12 个任务都是检索任务：每个任务给出查询集、候选文档集与「查询 → 相关文档」的映射，模型把两边都编码成向量后按相似度排序，取前 10 名算 NDCG@10，再按 Mean(Task) 聚合成一个总分。EmbeddingGemma 2 模型卡汇报 MTEB(code, v1) 时用的就是这个口径，并声明所有结果取自 full-precision checkpoint。",
+    "cite": [
+      "mmteb-paper@Table 19 题注",
+      "eg2-modelcard@评测结果表",
+      "eg2-modelcard@评测说明",
+      "codesearchnet-task@main_score",
+      "code-edit-search-task@main_score"
+    ],
+    "variants": [
+      {
+        "text": "向量维度截断（MRL）：把 768d 表示截到 512d / 256d / 128d 后，本基准分数从 78.68 变为 77.24 / 76.18 / 71.41；模型卡称截断最高可省 6 倍向量存储。不同维度的分数不能直接比。",
+        "cite": [
+          "eg2-modelcard@MRL 截断",
+          "eg2-modelcard@模型概览"
+        ]
+      },
+      {
+        "text": "任务指令前缀：模型卡说明 EmbeddingGemma 2 用轻量文本指令前缀来针对搜索、分类、聚类、语义相似度等不同任务优化表示；加不加前缀、加哪一条，都会改变本基准分数。",
+        "cite": [
+          "eg2-modelcard@模型概览"
+        ]
+      },
+      {
+        "text": "拆分与语言子集：同一条流水线里 CodeSearchNetRetrieval 用 test 拆分、CodeEditSearchRetrieval 用 train 拆分；论文表 17 与仓库任务定义列出的语言集合也不一致（详见 limitations）。",
+        "cite": [
+          "codesearchnet-task@任务定义",
+          "code-edit-search-task@任务定义",
+          "mmteb-paper@Table 17"
+        ]
+      },
+      {
+        "text": "上下文窗口：模型卡标注 8,192 token 的上下文窗口，长文件在被截断后进入检索，与短片段样本不在同一难度上。",
+        "cite": [
+          "eg2-modelcard@模型概览"
+        ]
+      }
+    ]
+  },
   "versions": [
     {
       "id": "v1",
-      "label": "MTEB Code",
-      "note": "MTEB 官方代码基准子集"
+      "date": "2025-02-19",
+      "label": "MTEB(Code, v1) 随 MMTEB 论文 arXiv v1（2025-02-19 提交）进入 MTEB 基准体系，论文表 17 列出 12 个任务及其语言与规模",
+      "cite": [
+        "mmteb-paper@arXiv 提交记录",
+        "mmteb-paper@Table 17"
+      ]
+    },
+    {
+      "id": "v4",
+      "date": "2025-11-13",
+      "label": "MMTEB 论文修订到 v4（本页核对所用版本，ICLR 2025 发表版）",
+      "cite": [
+        "mmteb-paper@arXiv 提交记录"
+      ]
+    },
+    {
+      "id": "repo-snapshot",
+      "date": "2026-11-14",
+      "label": "仓库 main 上的 MTEB_code 定义：仍是 12 个任务、citation 指向 MMTEB、reference 为 None（本页核对的仓库快照；论文未给 MTEB(Code) 单独的发布日期）",
+      "cite": [
+        "benchmarks-py@MTEB_code"
+      ]
     }
   ],
   "limitations": [
-    "只衡量代码表示向量的几何相似度，无法评估模型生成可执行代码的能力",
-    "长文件全局依赖在受限嵌入窗口下可能被截断"
+    {
+      "issue": "公开数据存在进入训练集的风险，且论文未给去污染说明",
+      "impact": "12 个任务的代码与查询全部来自公开仓库（表 17 的 Sample creation 全为 found），CodeSearchNet 自 2019 年即可下载，存在被纳入代码模型预训练或指令微调数据的可能；论文没有针对 MTEB(Code) 的去污染说明。",
+      "severity": "高",
+      "response": "未见官方回应。",
+      "reader": "把本基准分数当成检索能力的参考下界，不要当成干净的新题；看到异常高分时先问数据是否见过。",
+      "cite": [
+        "mmteb-paper@Table 17",
+        "codesearchnet-task@任务定义"
+      ]
+    },
+    {
+      "issue": "论文表与仓库任务定义的语言集合不一致",
+      "impact": "MMTEB 表 17 给 CodeEditSearchRetrieval 列 4 种语言（c、c++、go、java）、给 CodeSearchNetRetrieval 列 4 种（go、java、javascript、php）；而仓库里这两个任务当前分别定义 13 种与 6 种语言。两边跑出来的分数不可直接比。",
+      "severity": "中",
+      "response": "论文未就此说明；仓库任务定义是滚动更新的，MMTEB 表格停留在 2025-02 的 v1。",
+      "reader": "比较分数前先确认对方用的是论文口径还是仓库当前口径，重点看 CodeEditSearch 的语言子集。",
+      "cite": [
+        "mmteb-paper@Table 17",
+        "code-edit-search-task@任务定义",
+        "codesearchnet-task@任务定义"
+      ]
+    },
+    {
+      "issue": "维度、精度与指令前缀都会移动分数",
+      "impact": "同一模型把向量从 768d 截到 128d，本基准分数从 78.68 掉到 71.41（差 7.27 分）；Mean(Task) 聚合又掩盖了单个任务上的差异，论文表 19 因全部是检索任务而省略了按类别的指标。",
+      "severity": "中",
+      "response": "模型卡明确所有结果用 full-precision checkpoint，并给出 MRL 截断表与指令前缀说明。",
+      "reader": "看分数时同时记住维度、是否 full-precision、有没有加任务指令前缀；单任务表现需要另外查。",
+      "cite": [
+        "eg2-modelcard@MRL 截断",
+        "eg2-modelcard@评测说明",
+        "eg2-modelcard@模型概览",
+        "mmteb-paper@Table 19 题注"
+      ]
+    },
+    {
+      "issue": "原始 MTEB 明确不含代码数据，本基准是后补的",
+      "impact": "MTEB 原始论文在 limitations 里写明 MTEB does not contain any code datasets，并把 CodeSearchNet 列为容易补上的扩展方向。也就是说 MTEB(Code) 与 MTEB 主体不是同期设计的，2022 年那篇论文的榜单完全不覆盖代码能力。",
+      "severity": "中",
+      "response": "MTEB 论文建议用 CodeSearchNet 等数据集扩展；MMTEB §2.4 说明它把 CoIR 这类代码检索基准整合了进来。",
+      "reader": "不要把早期 MTEB 论文的榜单当成代码能力的证据。",
+      "cite": [
+        "paper@§6 Limitations",
+        "mmteb-paper@§2.4"
+      ]
+    },
+    {
+      "issue": "长文件与跨文件依赖不在评测范围内",
+      "impact": "检索按「查询 - 文档」对计分，每对都是独立样本；模型卡标注 8,192 token 上下文窗口，更长的文件会被截断后参与检索，仓库级理解与跨文件依赖没有被单独测量。",
+      "severity": "低",
+      "response": "未见官方回应。",
+      "reader": "本基准高分不等于能处理整个仓库的检索；需要仓库级场景时另找基准。",
+      "cite": [
+        "mmteb-paper@Table 17",
+        "eg2-modelcard@模型概览"
+      ]
+    },
+    {
+      "issue": "官方实时榜单分数本次无法核验",
+      "impact": "MTEB Leaderboard 这个 Hugging Face Space 是 JS 渲染的交互页面，本次核验只拿到页面框架（页面文字仍是 Fetching metadata from the HF Docker repository...），没有可引用的结构化分数。",
+      "severity": "低",
+      "response": "未见官方回应（属访问方式限制，不是基准本身缺陷）。",
+      "reader": "需要当前排名时自行打开 Leaderboard 页面查看；本页的阶梯只列论文与模型卡里的可引用数值。",
+      "cite": [
+        "huggingface-spaces-mteb-leaderboard@页面",
+        "repo@README"
+      ]
+    }
   ],
-  "notes": "new-benchmark: 由 Google EmbeddingGemma 2 官方发布博客首度引用并引入本站",
+  "notes": "v2 深度档案（2026-11-14）：逐条核对 MMTEB 论文、mteb 仓库任务定义与 EmbeddingGemma 2 模型卡；官方 Leaderboard 实时分数因页面 JS 渲染未取得，相关栏位写「未披露」。",
   "official_sources": [
     {
       "kind": "site",
       "url": "https://huggingface.co/spaces/mteb/leaderboard"
+    },
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2502.13595"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/embeddings-benchmark/mteb"
     }
   ],
   "related_benchmarks": [
     "humaneval"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-10-06"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "MTEB: Massive Text Embedding Benchmark（arXiv:2210.07316，EACL 2023）",
+        "url": "https://arxiv.org/abs/2210.07316",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "mmteb-paper",
+        "kind": "paper",
+        "title": "MMTEB: Massive Multilingual Text Embedding Benchmark（arXiv:2502.13595v4，ICLR 2025）",
+        "url": "https://arxiv.org/abs/2502.13595",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "embeddings-benchmark/mteb（MTEB 官方仓库 README）",
+        "url": "https://github.com/embeddings-benchmark/mteb",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "benchmarks-py",
+        "kind": "repo",
+        "title": "mteb/benchmarks/benchmarks/benchmarks.py（MTEB(Code, v1) 的 Benchmark 定义）",
+        "url": "https://raw.githubusercontent.com/embeddings-benchmark/mteb/main/mteb/benchmarks/benchmarks/benchmarks.py",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "docs-benchmarks",
+        "kind": "docs",
+        "title": "MTEB 官方文档：可用基准列表（available benchmarks）",
+        "url": "https://embeddings-benchmark.github.io/mteb/overview/available_benchmarks/",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "eg2-modelcard",
+        "kind": "site",
+        "title": "google/embeddinggemma-2 模型卡（含 MTEB(code, v1) 成绩与 MRL 截断表）",
+        "url": "https://huggingface.co/google/embeddinggemma-2",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "code-edit-search-task",
+        "kind": "repo",
+        "title": "CodeEditSearchRetrieval 任务定义（mteb/tasks/retrieval/code/）",
+        "url": "https://raw.githubusercontent.com/embeddings-benchmark/mteb/main/mteb/tasks/retrieval/code/code_edit_search_retrieval.py",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "codesearchnet-task",
+        "kind": "repo",
+        "title": "CodeSearchNetRetrieval 任务定义（mteb/tasks/retrieval/code/）",
+        "url": "https://raw.githubusercontent.com/embeddings-benchmark/mteb/main/mteb/tasks/retrieval/code/code_search_net_retrieval.py",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "huggingface-spaces-mteb-leaderboard",
+        "kind": "leaderboard",
+        "title": "MTEB Leaderboard（Hugging Face Space，交互式榜单入口）",
+        "url": "https://huggingface.co/spaces/mteb/leaderboard",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "embeddings-benchmark / mteb 开源社区；MTEB(Code, v1) 由 MMTEB 论文引入并维护在该仓库，citation 字段直接指向 MMTEB",
+        "cite": [
+          "benchmarks-py@MTEB_code",
+          "mmteb-paper@作者署名"
+        ]
+      },
+      "first_release": {
+        "v": "2025-02-19（MMTEB arXiv v1 提交日；论文未给 MTEB(Code) 单独的发布日期）",
+        "cite": [
+          "mmteb-paper@arXiv 提交记录",
+          "mmteb-paper@Table 17"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "mmteb-paper@摘要",
+        "mmteb-paper@Table 17",
+        "benchmarks-py@MTEB_code",
+        "docs-benchmarks@MTEB(Code, v1)"
+      ],
+      "interpretation": [
+        "mmteb-paper@Table 19",
+        "eg2-modelcard@评测结果表",
+        "eg2-modelcard@模型简介",
+        "eg2-modelcard@MRL 截断"
+      ]
+    },
+    "problem": {
+      "text": "MTEB 原始论文自己在 limitations 里承认整套基准不含任何代码数据集，并把 CodeSearchNet 列为容易补上的扩展方向。在 MTEB 主体逐渐饱和、而应用侧普遍需要代码检索能力之后，MMTEB 把 CoIR 等已发布的代码检索基准整合成 MTEB(Code, v1)，让「代码嵌入质量」第一次有统一的横向比较口径。",
+      "cite": [
+        "paper@§6 Limitations",
+        "mmteb-paper@§2.4"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "原始 MTEB 论文的代码覆盖",
+        "value": "论文未给出（原始 MTEB 明确不含代码数据集）",
+        "note": "MTEB 论文 limitations 原话：MTEB does not contain any code datasets；因此 2022 年那篇论文的榜单里没有任何代码分数可作基线。",
+        "cite": [
+          "paper@§6 Limitations"
+        ]
+      },
+      {
+        "label": "MMTEB 论文发布时最好（2025-02）",
+        "value": "73.6（GritLM-7B，Borda 计数排名第 1）",
+        "note": "论文表 19 的 MTEB(Code) 平均分；同表最低是 LaBSE 28.8，e5-mistral-7b-instruct 69.2 居第二。",
+        "cite": [
+          "mmteb-paper@Table 19"
+        ]
+      },
+      {
+        "label": "EmbeddingGemma 1（前代对照）",
+        "value": "68.76",
+        "note": "EmbeddingGemma 2 模型卡同一张表里的前代列，Mean(Task) 聚合的 NDCG@10，full-precision。",
+        "cite": [
+          "eg2-modelcard@评测结果表"
+        ]
+      },
+      {
+        "label": "EmbeddingGemma 2（模型卡自报）",
+        "value": "78.68",
+        "note": "同一张表的当前列，也是本页能引用到的最高值；模型卡另称其在代码任务上比前代提升约 14%。",
+        "cite": [
+          "eg2-modelcard@评测结果表",
+          "eg2-modelcard@模型简介"
+        ]
+      },
+      {
+        "label": "同一模型截断到 128d",
+        "value": "71.41",
+        "note": "MRL 截断表：768d 78.68 → 512d 77.24 → 256d 76.18 → 128d 71.41。说明维度口径本身就能造成约 7 分差距。",
+        "cite": [
+          "eg2-modelcard@MRL 截断"
+        ]
+      },
+      {
+        "label": "官方榜单当前最高",
+        "value": "未披露",
+        "note": "MTEB Leaderboard 是 JS 渲染的交互页面，本次核验只拿到页面框架、没有可引用的结构化分数。",
+        "cite": [
+          "huggingface-spaces-mteb-leaderboard@页面",
+          "repo@README"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 MTEB(Code) 的分数当成「模型会不会写代码」——它只测检索排序，模型不需要生成或执行任何代码。",
+        "cite": [
+          "mmteb-paper@Table 19 题注",
+          "benchmarks-py@MTEB_code"
+        ]
+      },
+      {
+        "text": "把不同维度的分数排在一起比。同一个模型 768d 是 78.68、128d 是 71.41，差 7.27 分；不注明维度的排名没有意义。",
+        "cite": [
+          "eg2-modelcard@MRL 截断",
+          "eg2-modelcard@模型概览"
+        ]
+      },
+      {
+        "text": "把 2022 年 MTEB 论文的榜单当成代码能力证据——那篇论文明确说自己不含代码数据集，代码赛道是 MMTEB 后来补的。",
+        "cite": [
+          "paper@§6 Limitations",
+          "mmteb-paper@§2.4"
+        ]
+      },
+      {
+        "text": "以为论文表 17 的语言列表就是当前口径——仓库任务定义已经扩展到更多语言（CodeEditSearch 13 种、CodeSearchNet 6 种），两边数字不可直接比。",
+        "cite": [
+          "mmteb-paper@Table 17",
+          "code-edit-search-task@任务定义",
+          "codesearchnet-task@任务定义"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "embeddings-benchmark / mteb 开源社区；MTEB(Code, v1) 的 Benchmark 定义在官方仓库里，citation 字段直接指向 MMTEB 论文，reference 为 None",
+        "cite": [
+          "benchmarks-py@MTEB_code"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "MMTEB 由 Kenneth Enevoldsen（Aarhus University）领衔，作者列表一百多位贡献者，Niklas Muennighoff 署名末尾；MTEB 原始论文作者是 Niklas Muennighoff、Nouamane Tazi、Loïc Magne、Nils Reimers",
+        "cite": [
+          "mmteb-paper@作者署名",
+          "paper@摘要"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2022-10 MTEB 原始论文（8 任务 / 58 数据集 / 112 语言，不含代码）→ 2025-02-19 MMTEB arXiv v1 引入 MTEB(Code, v1) → 2025-11-13 MMTEB 修订到 v4（ICLR 2025）",
+        "cite": [
+          "paper@摘要",
+          "mmteb-paper@arXiv 提交记录",
+          "mmteb-paper@Table 17"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "任务定义与 Benchmark 注册在 GitHub 的 embeddings-benchmark/mteb；官方文档有可用基准列表；各任务的数据集托管在 Hugging Face（如 mteb/CodeSearchNetRetrieval、cassanof/CodeEditSearch）；交互式榜单是 Hugging Face Space",
+        "cite": [
+          "repo@README",
+          "docs-benchmarks@MTEB(Code, v1)",
+          "codesearchnet-task@任务定义",
+          "code-edit-search-task@任务定义"
+        ]
+      },
+      {
+        "k": "引用要求",
+        "v": "仓库 README 明确建议：使用 mteb 时同时引用 MTEB 与 MMTEB 两篇论文",
+        "cite": [
+          "repo@README"
+        ]
+      },
+      {
+        "k": "本基准在整体中的位置",
+        "v": "MMTEB 覆盖 500 多个受控评测任务、250+ 语言，MTEB(Code) 是其中一个领域子基准；MMTEB §2.4 说明它同时集成了 CoIR（代码检索）与 LongEmbed（长文档检索）等领域基准",
+        "cite": [
+          "mmteb-paper@摘要",
+          "mmteb-paper@§2.4"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-14",
+        "columns": [
+          "来源",
+          "模型 / 口径",
+          "NDCG@10",
+          "备注"
+        ],
+        "rows": [
+          [
+            "MMTEB 论文表 19",
+            "GritLM-7B",
+            "73.6",
+            "Borda 计数排名 1"
+          ],
+          [
+            "MMTEB 论文表 19",
+            "e5-mistral-7b-instruct",
+            "69.2",
+            "排名 2"
+          ],
+          [
+            "MMTEB 论文表 19",
+            "multilingual-e5-large-instruct",
+            "65.0",
+            "排名 3"
+          ],
+          [
+            "MMTEB 论文表 19",
+            "multilingual-e5-large",
+            "61.7",
+            "排名 4"
+          ],
+          [
+            "MMTEB 论文表 19",
+            "multilingual-e5-base",
+            "57.5",
+            "排名 5"
+          ],
+          [
+            "MMTEB 论文表 19",
+            "multilingual-e5-small",
+            "58.4",
+            "排名 6"
+          ],
+          [
+            "MMTEB 论文表 19",
+            "all-mpnet-base-v2",
+            "56.4",
+            "排名 7"
+          ],
+          [
+            "MMTEB 论文表 19",
+            "all-MiniLM-L6-v2",
+            "52.7",
+            "排名 8"
+          ],
+          [
+            "MMTEB 论文表 19",
+            "all-MiniLM-L12-v2",
+            "50.2",
+            "排名 9"
+          ],
+          [
+            "MMTEB 论文表 19",
+            "LaBSE",
+            "28.8",
+            "排名 10"
+          ],
+          [
+            "EmbeddingGemma 2 模型卡",
+            "EmbeddingGemma 2（768d 满精度）",
+            "78.68",
+            "Mean(Task) 聚合；模型卡自报当前列"
+          ],
+          [
+            "EmbeddingGemma 2 模型卡",
+            "EmbeddingGemma 1（前代）",
+            "68.76",
+            "同表对照列"
+          ],
+          [
+            "EmbeddingGemma 2 模型卡",
+            "EmbeddingGemma 2（512d）",
+            "77.24",
+            "MRL 截断"
+          ],
+          [
+            "EmbeddingGemma 2 模型卡",
+            "EmbeddingGemma 2（256d）",
+            "76.18",
+            "MRL 截断"
+          ],
+          [
+            "EmbeddingGemma 2 模型卡",
+            "EmbeddingGemma 2（128d）",
+            "71.41",
+            "MRL 截断"
+          ]
+        ]
+      },
+      "cite": [
+        "mmteb-paper@Table 19",
+        "eg2-modelcard@评测结果表",
+        "eg2-modelcard@MRL 截断"
+      ]
+    }
+  }
 }

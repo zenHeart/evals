@@ -1,45 +1,883 @@
 {
   "id": "mbct",
   "name": "MBCT",
-  "full_name": null,
-  "aliases": [],
-  "status": null,
+  "full_name": "Molecular Biology Capabilities Test（分子生物学能力测试）",
+  "aliases": [
+    "Molecular Biology Test"
+  ],
+  "status": "active",
   "categories": [
     "safety"
   ],
-  "summary": "Meta 自建评测，公开资料有限：Muse 系模型卡/报告安全节的 chem/bio 准备度基准之一，缩写全称与题集未公开",
-  "interpretation": "厂商自报口径，主要用于代际纵向对比，跨厂商可比性未知。Meta 页读数：Muse Glimmer-30B 41.5 → Muse Spark 1.1 53.2；同表对照（Meta 转引）Kimi K3 58.9、Gemma4-31B 50.6、Qwen3.6-27B 45.9。",
-  "measures": [],
-  "does_not_measure": [],
-  "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": "vendor_internal",
-    "public_sample": null
-  },
-  "metrics": [],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [
-    "全称与任务构成未公开，仅见于 Muse 模型卡安全评测表"
+  "summary": "MBCT（Molecular Biology Capabilities Test）是 SecureBio 开发的纯文本生物安全基准：200 道题加一套私下留存的 holdout 集，考日常分子生物学实验方法的操作与排错知识（细菌转化、限制酶酶切、western blotting、实验排错等）。主题型是 multiple-response——每题 4–10 个选项，可选其中任意个数；每题另附 10 个互斥选项的单选题版本作替代格式。题库不公开，但有 14 名博士级专家作答形成的人类基线（SecureBio 卡上写 34.2%，同卡另一段写 32.5%）。",
+  "interpretation": "分数读作「模型在日常分子实验方法上靠不靠谱」。SecureBio 自己的口径下 GPT-5.6 Sol 已达 60.0%，且超过所有完成评测的受试专家（100 分位），所以 MBCT 对最强模型已经越过人类专家基线这条线，分辨力有限；更适合看中低分段、代际纵向对比，以及「有没有超过专家」这个二元判断。跨厂商横比要格外小心：各家用的 harness、推理 effort、拒答处理都不同，题库不公开也没有独立论文，外部无法独立复现。",
+  "measures": [
+    {
+      "area": "日常分子生物学方法",
+      "focus": "细菌转化、限制酶酶切（病毒与细菌）、western blotting、实验排错；SecureBio 明确说考的是常规研究里用得上的方法，不是武器相关工作。",
+      "share": "未披露（SecureBio 未公布 200 题的主题分布）",
+      "format": "multiple-response：每题 4–10 个选项，可选其中任意个数",
+      "cite": [
+        "securebio-details@Topic coverage",
+        "securebio-details@MBCT 定位",
+        "securebio-details@At a glance"
+      ]
+    },
+    {
+      "area": "隐性操作知识（tacit knowledge）",
+      "focus": "题目聚焦「在多数方法中取得成功所必需」的隐性知识，而不是能背诵的概念定义。",
+      "share": "未披露",
+      "format": "同上（multiple-response）",
+      "cite": [
+        "securebio-details@Question format"
+      ]
+    },
+    {
+      "area": "替代格式：单选题",
+      "focus": "每题另附 10 个互斥选项的 multiple-choice 版本，供需要单选口径的对比使用；第三方论文也确认用的是 multi-response 格式。",
+      "share": "未披露",
+      "format": "multiple-choice：10 个互斥选项选 1 个",
+      "cite": [
+        "securebio-details@At a glance",
+        "arxiv-worst-case-open-weight@附录"
+      ]
+    }
   ],
-  "notes": "与 WMDP、HPCT、VCT、Lab Bench (ProtocolQA) 同节出现",
+  "does_not_measure": [
+    {
+      "text": "武器相关的生物工作：SecureBio 明确说 MBCT 针对常规研究而非 weapons-relevant work。",
+      "cite": [
+        "securebio-details@MBCT 定位"
+      ]
+    },
+    {
+      "text": "特定人类病原体的操作知识（归 HPCT）与湿实验室病毒实验排错（归 VCT），这三者只是同族不同范围。",
+      "cite": [
+        "ai-static-resource-muse-spa@§2.1.1.1 定位"
+      ]
+    },
+    {
+      "text": "开放式、rubric 评分问答：MBCT 全是选项式；同站的 WCB 才是 rubric-graded open-ended。",
+      "cite": [
+        "securebio-details@Question format"
+      ]
+    },
+    {
+      "text": "多模态能力：题库是纯文本的。",
+      "cite": [
+        "securebio-details@Description"
+      ]
+    },
+    {
+      "text": "agentic 多步任务执行（那是 ABC-Bench 一类基准的范围）。",
+      "cite": [
+        "securebio-benchmarks@BCI Methodology"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 200,
+    "splits": [
+      "200 道纯文本题（题面不公开）",
+      "SecureBio 私下持有的 holdout 集（题量未披露）"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "expert-curated（专家组认定为任何分子生物学实验室必备的方法）",
+    "public_sample": false,
+    "totals": "200 道纯文本题 + SecureBio 私下持有的 holdout 集（题量未披露）· 主口径 multiple-response（4–10 选项）· 每题另附 10 个互斥选项的单选题版本 · 题库不公开",
+    "cite": [
+      "securebio-details@At a glance",
+      "securebio-details@Dataset availability",
+      "arxiv-worst-case-open-weight@附录"
+    ],
+    "construction": [
+      {
+        "k": "选题来源",
+        "text": "题目覆盖的方法由一个专家组（panel of experts）认定为任何分子生物学实验室的必备项。",
+        "cite": [
+          "securebio-details@Description 范围"
+        ]
+      },
+      {
+        "k": "题型设计",
+        "text": "主口径用 multiple-response，SecureBio 说这样相比单选题显著降低猜中概率；每题另附 10 个互斥选项的单选版本作为替代格式。",
+        "cite": [
+          "securebio-details@Question format",
+          "securebio-details@At a glance"
+        ]
+      },
+      {
+        "k": "人类基线怎么测",
+        "text": "14 名博士级专家作答为其专业定制的 ≥10 题子集，最多 30 分钟，可用任何资料但不许用 AI 模型或问同事；卡上「Human expert baseline」栏写他们是病毒学家、平均 34.2%，Baselining 段写他们是分子生物学家、平均 32.5%。",
+        "cite": [
+          "securebio-details@Baselining 方法",
+          "securebio-details@Human expert baseline",
+          "securebio-details@专家基线 32.5%"
+        ]
+      },
+      {
+        "k": "可用性",
+        "text": "题库不公开：SecureBio 卡上 Dataset availability 一栏直接写 Not publicly available。",
+        "cite": [
+          "securebio-details@Dataset availability"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "accuracy",
+      "name": "准确率",
+      "direction": "越高越好",
+      "description": "答对题数占总题数的比例。SecureBio 附录 A.1.2 的表头把这一列写作 Refusal-Corrected Accuracy ± SEM（先按拒答率校正再求均值，± 后是标准误）；OpenAI 系统卡转引的则是 n=10 次运行的均值 ± 标准差。两种误差含义不同，± 后的数字不能混读。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "securebio-gpt56-sol@§2.2 口径",
+        "openai-gpt5-system-card@Table 15"
+      ]
+    },
+    {
+      "id": "refusal_rate",
+      "name": "拒答率",
+      "direction": "越低越好",
+      "description": "模型在 MBCT 上拒绝作答的比例。拒答会直接压低原始分，也会让结果不可得——Meta 就因为 Claude 拒答率高而干脆不报它在含 Chem/Bio 基准上的成绩。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "ai-static-resource-muse-spa@§2.1.1 Claude 缺测",
+        "securebio-gpt56-sol@§2.2 注"
+      ]
+    }
+  ],
+  "default_protocol": {
+    "raw": "纯文本作答。主口径是 multiple-response：每题 4–10 个选项，模型可选其中任意个数，SecureBio 说这样相比单选题显著降低猜中概率；每题另附 10 个互斥选项的 multiple-choice 版本作为替代格式。SecureBio 自己跑 MBCT 时每样本至少 10 个 epoch（见图 2.2.1 说明），并同时给出带 Codex harness 与不带 harness 两种口径；OpenAI 系统卡转引的成绩是 n=10 次运行的均值 ± 标准差。",
+    "cite": [
+      "securebio-details@Question format",
+      "securebio-details@At a glance",
+      "securebio-gpt56-sol@§2.2 口径",
+      "openai-gpt5-system-card@Table 15"
+    ],
+    "variants": [
+      {
+        "text": "带 Codex harness vs 不带：GPT-5.6 Sol 在 MBCT 上两种口径差 1.6 个百分点（58.4% vs 60.0%），而 SecureBio 总结说 Codex 在知识类基准上没有一致增益——有的题小幅提升、有的没差别甚至略降。",
+        "cite": [
+          "securebio-gpt56-sol@§2.2 三种口径",
+          "securebio-gpt56-sol@§2 前言 Codex 无一致增益"
+        ]
+      },
+      {
+        "text": "multiple-response vs multiple-choice：卡上写主口径是 multiple-response，每题另附 10 个互斥选项的单选版本；Meta 报告说他们按推荐配置跑 multiple-response multiple-choice。两种口径不能混着比。",
+        "cite": [
+          "securebio-details@At a glance",
+          "ai-static-resource-muse-spa@§2.1.1.1 定位"
+        ]
+      },
+      {
+        "text": "推理 effort 分档：SecureBio 附录表按 [max] / [xhigh] / [high] 标注每个模型的推理档位，横比时要先对齐；图 2.2.1 也说明成绩是每样本 ≥10 个 epoch 的结果。",
+        "cite": [
+          "securebio-gpt56-sol@§2.2 口径"
+        ]
+      },
+      {
+        "text": "helpful-only 变体：Meta 报告里 Muse Spark 1.1 的能力结果全部使用 helpful-only 变体，因此它的成绩与 OpenAI 的 helpful-only 数字口径一致，与带缓解（mitigated）模型的数字不可比。",
+        "cite": [
+          "ai-static-resource-muse-spa@§2.1.1 helpful-only"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "third-party-first-use",
+      "date": "2025-08-05",
+      "label": "可核验的最早第三方使用：arXiv:2508.03153 v1（OpenAI 与 SecureBio 合作的外评论文）在附录把 MBCT 列为评测基准之一，描述为 200 题、multi-response 格式。SecureBio 本人未公开 MBCT 的版本号与改版记录。",
+      "cite": [
+        "arxiv-worst-case-open-weight@附录",
+        "arxiv-worst-case-open-weight@External evaluations"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "题库不公开",
+      "impact": "MBCT 题目与 holdout 集都不公开，外部无法独立复现或做训练污染审计；SecureBio 卡上 Dataset availability 一栏直接写 Not publicly available。",
+      "severity": "高",
+      "response": "本站所有 MBCT 数字都标注出处与口径，不做任何推算；本档案的第一手来源全部是 SecureBio 或厂商自己发布的报告。",
+      "reader": "看到 MBCT 分数先确认是谁跑的、用什么 harness；不要把它当成可自由复现的公开基准。",
+      "cite": [
+        "securebio-details@Dataset availability"
+      ]
+    },
+    {
+      "issue": "专家基线三个数互相不一致",
+      "impact": "同一张 SecureBio 卡的「Human expert baseline」栏写 34.2%（14 名病毒学家），同卡 Baselining 段写 32.5%（14 名分子生物学家），OpenAI 系统卡转引的 Table 15 写 32.4%。差异约 2 个百分点，足以影响「模型超过专家多少」的判断。",
+      "severity": "中",
+      "response": "本站把三个数分别列在「怎么读这个分数」里并各自标注来源，不取平均、也不挑一个当权威。",
+      "reader": "引用人类基线时说明取自哪一栏；算「超过专家多少」时用同一来源的基线。",
+      "cite": [
+        "securebio-details@Human expert baseline",
+        "securebio-details@专家基线 32.5%",
+        "openai-gpt5-system-card@Table 15"
+      ]
+    },
+    {
+      "issue": "专家只答定制子集，不是整卷",
+      "impact": "SecureBio 明确说 SME 通常只被分配到一部分题目、不完成整个评测，SME 与模型的比较只基于这些子集；因此「100 分位」指的是超过完成评测的 SME，不是超过专家整体水平。",
+      "severity": "中",
+      "response": "本站在引用分位时同时说明子集口径。",
+      "reader": "把「超过所有受试专家」理解成「在这批子集上」，不要外推成「超过生物学家人群」。",
+      "cite": [
+        "securebio-gpt56-sol@§2 前言 SME 口径",
+        "securebio-gpt56-sol@§2.2 分位"
+      ]
+    },
+    {
+      "issue": "没有独立论文与版本记录",
+      "impact": "MBCT 没有专文、没有版本号，题目构成与改版历史不可考；Meta 报告的参考文献只引了 SecureBio 官网这一条。",
+      "severity": "中",
+      "response": "本站 first_release 记「未披露」，版本表只记录可核验的第三方使用。",
+      "reader": "不要把 MBCT 当成有固定版本、可按学术惯例引用的基准；它更像一套持续演进的内部题库。",
+      "cite": [
+        "ai-static-resource-muse-spa@参考文献",
+        "arxiv-worst-case-open-weight@附录"
+      ]
+    },
+    {
+      "issue": "口径差异大，横比需谨慎",
+      "impact": "同一模型带不带 Codex harness 会差 1–2 个百分点，SecureBio 自己说 Codex 在知识类基准上没有一致增益；OpenAI 用 n=10 均值±标准差，SecureBio 附录用校正拒答后的准确率±标准误，Meta 用 helpful-only 变体。",
+      "severity": "中",
+      "response": "本站在附录 B 的每一行都标注来源、推理 effort 与 harness 口径。",
+      "reader": "跨报告横比前先对齐口径；只看同一来源内的相对排序更稳。",
+      "cite": [
+        "securebio-gpt56-sol@§2.2 三种口径",
+        "securebio-gpt56-sol@§2 前言 Codex 无一致增益",
+        "openai-gpt5-system-card@§6.1.1.6 口径"
+      ]
+    },
+    {
+      "issue": "拒答会扭曲跨厂商对比",
+      "impact": "Claude Opus 4.8 在 SecureBio 的评测里拒答率超过两成（见附录 B），Meta 因此干脆不报它在含 Chem/Bio 基准上的结果；直接用原始分会系统性低估这类模型。",
+      "severity": "中",
+      "response": "SecureBio 同时给出校正拒答后的准确率与拒答率两列，本站附录 B 照录。",
+      "reader": "看到某个模型缺 MBCT 分数，先查是不是拒答导致的，不要当成能力缺失。",
+      "cite": [
+        "ai-static-resource-muse-spa@§2.1.1 Claude 缺测",
+        "ai-static-resource-muse-spa@Table 1 注"
+      ]
+    },
+    {
+      "issue": "对最强模型分辨力有限",
+      "impact": "SecureBio 口径下 GPT-5.6 Sol 已达 100 分位、超过所有受试专家，MBCT 在顶部区间拉不开差距；SecureBio 的总体结论也是领先模型在多数生物基准上已达到或超过人类专家水平。",
+      "severity": "低",
+      "response": "顶部区间改看拒答率、harness 差异，以及同族更难的基准（VCT、HPCT、WCB）。",
+      "reader": "高分不等于更有用；MBCT 高分只说明日常方法知识已经过关。",
+      "cite": [
+        "securebio-gpt56-sol@§2.2 分位",
+        "securebio-gpt56-sol@§2.2 最高分",
+        "securebio-benchmarks@Key findings"
+      ]
+    }
+  ],
+  "notes": "与 VCT / HPCT / WCB / ABC-Bench 同族；SecureBio 的 BCI 把 MBCT 算进 13 个生物基准之一。本站账本目前只收了 Meta 两个模型的成绩，本档案附录 B 更全。",
   "official_sources": [
+    {
+      "kind": "site",
+      "url": "https://securebio.org/benchmarks/details/"
+    },
+    {
+      "kind": "site",
+      "url": "https://securebio.org/resources/gpt-5-6-sol-assessment.pdf"
+    },
+    {
+      "kind": "site",
+      "url": "https://deploymentsafety.openai.com/gpt-5"
+    },
+    {
+      "kind": "site",
+      "url": "https://ai.meta.com/static-resource/muse-spark-1-1-evaluation-report/"
+    },
     {
       "kind": "site",
       "url": "https://huggingface.co/meta-models/Muse-Glimmer-30B"
     },
     {
-      "kind": "site",
-      "url": "https://ai.meta.com/static-resource/muse-spark-1-1-evaluation-report/"
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2508.03153"
     }
   ],
   "related_benchmarks": [
-    "wmdp",
+    "vct",
     "hpct",
-    "vct"
+    "wmdp",
+    "lab-bench"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-09-01"
+  "content_status": "verified",
+  "last_verified_at": "2026-11-13",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      {
+        "id": "securebio-details",
+        "kind": "site",
+        "title": "SecureBio · Benchmarks 详情页（MBCT 评测卡）",
+        "url": "https://securebio.org/benchmarks/details/",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "securebio-benchmarks",
+        "kind": "site",
+        "title": "SecureBio · Benchmarks 总览（BCI 方法与总体趋势）",
+        "url": "https://securebio.org/benchmarks/",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "securebio-models",
+        "kind": "site",
+        "title": "SecureBio · Benchmarks 模型页（厂商报告收录清单）",
+        "url": "https://securebio.org/benchmarks/models/",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "securebio-gpt56-sol",
+        "kind": "paper",
+        "title": "SecureBio《GPT-5.6 Sol 评估报告》（PDF，含附录 A.1.2 MBCT 结果表）",
+        "url": "https://securebio.org/resources/gpt-5-6-sol-assessment.pdf",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "huggingface-meta-models-muse-glimmer",
+        "kind": "site",
+        "title": "Hugging Face · meta-models/Muse-Glimmer-30B 模型卡",
+        "url": "https://huggingface.co/meta-models/Muse-Glimmer-30B",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "ai-static-resource-muse-spa",
+        "kind": "site",
+        "title": "Meta《Muse Spark 1.1 Evaluation Report》",
+        "url": "https://ai.meta.com/static-resource/muse-spark-1-1-evaluation-report/",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "arxiv-worst-case-open-weight",
+        "kind": "paper",
+        "title": "arXiv:2508.03153《Estimating Worst-Case Frontier Risks of Open-Weight LLMs》",
+        "url": "https://arxiv.org/abs/2508.03153",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "openai-gpt5-system-card",
+        "kind": "site",
+        "title": "OpenAI《GPT-5 System Card》· External evaluations by SecureBio（Table 15）",
+        "url": "https://deploymentsafety.openai.com/gpt-5",
+        "accessed": "2026-11-13"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "SecureBio（非营利）；MBCT 与 VCT、HPCT 同属 SecureBio 与 Center for AI Safety 的一套生物能力评测",
+        "cite": [
+          "securebio-details@Description",
+          "ai-static-resource-muse-spa@§2.1.1.1",
+          "arxiv-worst-case-open-weight@External evaluations"
+        ]
+      },
+      "first_release": {
+        "v": "未披露（SecureBio 未发布 MBCT 专文或版本号，Meta 报告的参考文献只引了 SecureBio 官网；可核验的早期第三方使用是 2025-08-05 的 arXiv:2508.03153）",
+        "cite": [
+          "ai-static-resource-muse-spa@参考文献",
+          "arxiv-worst-case-open-weight@附录"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "securebio-details@Description",
+        "securebio-details@At a glance",
+        "securebio-details@Question format",
+        "securebio-details@Topic coverage",
+        "securebio-details@Dataset availability",
+        "securebio-details@Human expert baseline"
+      ],
+      "interpretation": [
+        "securebio-gpt56-sol@§2.2 最高分",
+        "securebio-gpt56-sol@§2.2 分位",
+        "securebio-benchmarks@Key findings",
+        "openai-gpt5-system-card@§6.1.1.6 口径",
+        "securebio-details@Dataset availability"
+      ]
+    },
+    "problem": {
+      "text": "MBCT 要回答的是一个很具体的问题：模型能不能在日常分子生物学实验方法上给出可靠协助。SecureBio 让专家组挑出「任何分子生物学实验室都必备」的方法，只收这类常规研究方法、明确排除武器相关工作，再用 multiple-response 题型把靠猜拿分的概率压下去，并用为专家专业定制的子集建立人类基线——这样模型的分数才有可解释的标尺。",
+      "cite": [
+        "securebio-details@Description",
+        "securebio-details@Description 范围",
+        "securebio-details@MBCT 定位",
+        "securebio-details@Question format"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机猜测基线",
+        "value": "未披露",
+        "note": "主口径是 4–10 个选项的 multiple-response（可选任意个数），每题另有 10 选 1 的单选版本；SecureBio 没有给整卷随机基线，本站也不推算。",
+        "cite": [
+          "securebio-details@At a glance"
+        ]
+      },
+      {
+        "label": "人类专家基线（SecureBio 卡「Human expert baseline」栏）",
+        "value": "34.2%",
+        "note": "14 名博士级病毒学家作答为其专业定制的子集后的平均分。",
+        "cite": [
+          "securebio-details@Human expert baseline"
+        ]
+      },
+      {
+        "label": "人类专家基线（同卡 Baselining 段）",
+        "value": "32.5%",
+        "note": "同一张卡的另一段把基线写成 14 名博士级分子生物学家、平均 32.5%；两处不一致，引用时要说明取自哪一栏。",
+        "cite": [
+          "securebio-details@专家基线 32.5%",
+          "securebio-details@Baselining 方法"
+        ]
+      },
+      {
+        "label": "人类专家基线（OpenAI GPT-5 系统卡转引）",
+        "value": "32.4%",
+        "note": "系统卡 Table 15 的「Human experts, assigned individually tailored subsets」行；表格数值，见附录 B。",
+        "cite": [
+          "openai-gpt5-system-card@Table 15"
+        ]
+      },
+      {
+        "label": "SecureBio 测过的最高分",
+        "value": "60.0%",
+        "note": "GPT-5.6 Sol [max]，无 Codex harness，成绩为校正拒答后准确率、±0.5% 是标准误；同模型带 Codex harness 是 58.4%。",
+        "cite": [
+          "securebio-gpt56-sol@§2.2 最高分",
+          "securebio-gpt56-sol@§2.2 三种口径"
+        ]
+      },
+      {
+        "label": "超过人类专家的位置",
+        "value": "100 分位",
+        "note": "GPT-5.6 Sol 与 railfree 变体都超过所有完成评测的受试 SME；注意 SME 只答定制子集，不是整卷。",
+        "cite": [
+          "securebio-gpt56-sol@§2.2 分位",
+          "securebio-gpt56-sol@§2 前言 SME 口径"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把「Claude Opus 4.8 在 MBCT 上没有分数」读成它做得差。Meta 明确说含 Chemical & Biological Risks 的若干基准不报 Claude 的结果，原因是拒答率高；在 SecureBio 的评测里它其实拿到了 56.4%，只是拒答率超过两成（见附录 B）。",
+        "cite": [
+          "ai-static-resource-muse-spa@Table 1 注",
+          "ai-static-resource-muse-spa@§2.1.1 Claude 缺测"
+        ]
+      },
+      {
+        "text": "把 MBCT 和 VCT / HPCT 当成一回事。三者同属 SecureBio 的生物能力评测族，但 MBCT 只考日常分子生物学方法并明确排除武器相关工作；病原体操作归 HPCT，湿实验室病毒实验排错归 VCT。",
+        "cite": [
+          "securebio-details@MBCT 定位",
+          "ai-static-resource-muse-spa@§2.1.1.1 定位"
+        ]
+      },
+      {
+        "text": "拿不同报告的 MBCT 分数直接横比。OpenAI 系统卡是 n=10 的均值±标准差，SecureBio 附录是校正拒答后的准确率±标准误（每样本至少 10 epoch），Meta 用 helpful-only 变体跑在推荐的 multiple-response 配置上；带不带 Codex harness 还能让同一模型差 1–2 个百分点。",
+        "cite": [
+          "openai-gpt5-system-card@Table 15",
+          "securebio-gpt56-sol@§2.2 口径",
+          "securebio-gpt56-sol@§2 前言 Codex 无一致增益",
+          "ai-static-resource-muse-spa@§2.1.1 helpful-only"
+        ]
+      },
+      {
+        "text": "把 34.2% / 32.5% / 32.4% 三个专家基线当成同一个数换着用。它们分别来自 SecureBio 卡的「Human expert baseline」栏、同卡 Baselining 段、OpenAI 系统卡转引的 Table 15；而且专家只答了为其专业定制的子集，不是整卷。",
+        "cite": [
+          "securebio-details@Human expert baseline",
+          "securebio-details@专家基线 32.5%",
+          "securebio-gpt56-sol@§2 前言 SME 口径"
+        ]
+      },
+      {
+        "text": "看到「超过人类专家」就认为模型能独立做实验。MBCT 是纯文本选项题，测的是方法和排错知识，不测动手操作、也不测 agentic 多步任务。",
+        "cite": [
+          "securebio-details@Description",
+          "securebio-details@MBCT 定位"
+        ]
+      },
+      {
+        "text": "把 Codex harness 当成稳定加成。SecureBio 的结论是 Codex 在知识类基准上没有一致增益：有的题小幅提升、有的没差别甚至略降，MBCT 上 GPT-5.6 Sol 反而是不带 harness 更高。",
+        "cite": [
+          "securebio-gpt56-sol@§2 前言 Codex 无一致增益",
+          "securebio-gpt56-sol@§2.2 三种口径"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "开发方",
+        "v": "SecureBio（非营利，专注生物安全评测）。MBCT 与 VCT、HPCT 同属 SecureBio 与 Center for AI Safety 的一套生物能力评测；题库与 holdout 集都不公开。",
+        "cite": [
+          "securebio-details@Description",
+          "ai-static-resource-muse-spa@§2.1.1.1",
+          "securebio-details@Dataset availability"
+        ]
+      },
+      {
+        "k": "设计原型",
+        "v": "MBCT 明确写成 modelled after VCT：先让专家组挑出任何分子生物学实验室必备的方法，再用 multiple-response 题型降低猜中概率。",
+        "cite": [
+          "securebio-details@Description",
+          "securebio-details@Question format"
+        ]
+      },
+      {
+        "k": "在 SecureBio BCI 中的位置",
+        "v": "Bio Capabilities Index 收了 13 个生物安全相关基准（VCT、HPCT、MBCT、WCB、ABC-Bench、ABLE、LB-CloningScenarios、LB-LitQA2、LB-ProtocolQA、GPQA-Bio、MMLU-Bio、PubMedQA、WMDP-Bio），模型至少在 4 个基准上有分数才能得到 BCI 分。",
+        "cite": [
+          "securebio-benchmarks@BCI Methodology"
+        ]
+      },
+      {
+        "k": "总体水位",
+        "v": "SecureBio 的结论：在已测量过的大多数生物学任务上，领先 AI 模型已达到或超过人类专家水平，且自 2024 年以来在多数生物基准上如此。",
+        "cite": [
+          "securebio-benchmarks@Key findings"
+        ]
+      },
+      {
+        "k": "被哪些厂商报告采用",
+        "v": "OpenAI 在 GPT-5 系统卡里把 SecureBio 的外部评测（含 MBCT）单列一节；OpenAI 与 SecureBio 合作的 arXiv:2508.03153 也跑了 MBCT；Meta 在 Muse Spark 1.1 报告里用 MBCT 做 Chem/Bio 能力横向对比。",
+        "cite": [
+          "securebio-models@GPT-5 system card",
+          "securebio-models@GPT-5 外部评测列表",
+          "openai-gpt5-system-card@§6.1.1.6",
+          "arxiv-worst-case-open-weight@External evaluations",
+          "ai-static-resource-muse-spa@Figure 1"
+        ]
+      },
+      {
+        "k": "开源模型上的用法",
+        "v": "Meta 用 MBCT 等基准给 Muse Glimmer-30B 做 chem/bio 准备度评估，模型卡上的结论是它的能力与同量级模型大致相当、明显弱于更大的开源权重模型，chem/bio 风险定为 Moderate or lower。",
+        "cite": [
+          "huggingface-meta-models-muse-glimmer@表格说明",
+          "huggingface-meta-models-muse-glimmer@Preparedness 结论",
+          "huggingface-meta-models-muse-glimmer@Chem/Bio 风险"
+        ]
+      },
+      {
+        "k": "第三方怎么描述它",
+        "v": "OpenAI 系统卡说 SecureBio 的静态评测里 gpt-5-thinking 与 OpenAI o3 接近、在 multiple-response 类基准上略弱，五个受测模型都明显强于多数人类专家基线者、拒答罕见；arXiv:2508.03153 则把 MBCT 描述为 200 题、multi-response 格式的纯文本基准，并把专家定义为有相关生物学科博士且至少一年湿实验经验。",
+        "cite": [
+          "openai-gpt5-system-card@§6.1.1.6",
+          "openai-gpt5-system-card@§6.1.1.6 专家对比",
+          "arxiv-worst-case-open-weight@附录",
+          "arxiv-worst-case-open-weight@专家定义"
+        ]
+      },
+      {
+        "k": "有没有专文",
+        "v": "没有。Meta 报告的参考文献只引了「Securebio. https://securebio.org/ , 2025.」这一条，没有 MBCT 专文或版本号。",
+        "cite": [
+          "ai-static-resource-muse-spa@参考文献"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-13",
+        "columns": [
+          "来源",
+          "模型",
+          "MBCT 成绩",
+          "口径",
+          "拒答率",
+          "备注"
+        ],
+        "rows": [
+          [
+            "SecureBio《GPT-5.6 Sol 评估》附录 A.1.2",
+            "GPT-5.6 Sol (Railfree) [max]",
+            "59.0% ± 0.4%",
+            "Codex harness",
+            "0.0%",
+            "railfree 变体（不拒答危险请求）"
+          ],
+          [
+            "SecureBio《GPT-5.6 Sol 评估》附录 A.1.2",
+            "GPT-5.6 Sol [max]",
+            "58.4% ± 0.1%",
+            "Codex harness",
+            "0.0%",
+            ""
+          ],
+          [
+            "SecureBio《GPT-5.6 Sol 评估》附录 A.1.2",
+            "GPT-5.6 Sol [max]",
+            "60.0% ± 0.5%",
+            "无 Codex harness",
+            "0.0%",
+            "SecureBio 测过的最高分"
+          ],
+          [
+            "SecureBio《GPT-5.6 Sol 评估》附录 A.1.2",
+            "Early GPT-5.6 Checkpoint 1 [xhigh]",
+            "57.5% ± 1.5%",
+            "Codex harness",
+            "0.0%",
+            "早期非代表性检查点"
+          ],
+          [
+            "SecureBio《GPT-5.6 Sol 评估》附录 A.1.2",
+            "Early GPT-5.6 Checkpoint 2 [xhigh]",
+            "59.9% ± 0.4%",
+            "Codex harness",
+            "0.0%",
+            "早期非代表性检查点"
+          ],
+          [
+            "SecureBio《GPT-5.6 Sol 评估》附录 A.1.2",
+            "Early GPT-5.6 Checkpoint 2 [xhigh]",
+            "59.0% ± 0.6%",
+            "无 Codex harness",
+            "0.0%",
+            "早期非代表性检查点"
+          ],
+          [
+            "SecureBio《GPT-5.6 Sol 评估》附录 A.1.2",
+            "GPT-5.5 Pro [xhigh]",
+            "55.7% ± 0.4%",
+            "无 Codex harness",
+            "0.0%",
+            ""
+          ],
+          [
+            "SecureBio《GPT-5.6 Sol 评估》附录 A.1.2",
+            "GPT-5.5 Pro (Codex) [xhigh]",
+            "57.0% ± 0.5%",
+            "Codex harness",
+            "0.0%",
+            ""
+          ],
+          [
+            "SecureBio《GPT-5.6 Sol 评估》附录 A.1.2",
+            "GPT-5.5 [xhigh]",
+            "57.1% ± 0.4%",
+            "无 Codex harness",
+            "7.6%",
+            ""
+          ],
+          [
+            "SecureBio《GPT-5.6 Sol 评估》附录 A.1.2",
+            "Claude Opus 4.8 [max]",
+            "56.4% ± 0.4%",
+            "无 Codex harness",
+            "22.4%",
+            "拒答率最高的一项"
+          ],
+          [
+            "SecureBio《GPT-5.6 Sol 评估》附录 A.1.2",
+            "Gemini 3.1 Pro Preview [high]",
+            "47.4% ± 0.2%",
+            "未标注 harness",
+            "0.0%",
+            ""
+          ],
+          [
+            "SecureBio《GPT-5.6 Sol 评估》附录 A.1.2",
+            "Gemini 3.5 Flash [high]",
+            "45.0% ± 0.4%",
+            "未标注 harness",
+            "0.0%",
+            ""
+          ],
+          [
+            "SecureBio《GPT-5.6 Sol 评估》附录 A.1.2",
+            "GLM-5",
+            "48.0% ± 0.4%",
+            "未标注 harness",
+            "0.2%",
+            ""
+          ],
+          [
+            "SecureBio《GPT-5.6 Sol 评估》附录 A.1.2",
+            "Qwen3.7-Max",
+            "51.8% ± 0.6%",
+            "未标注 harness",
+            "0.1%",
+            ""
+          ],
+          [
+            "SecureBio《GPT-5.6 Sol 评估》附录 A.1.2",
+            "DeepSeek V4-pro",
+            "33.6% ± 0.4%",
+            "未标注 harness",
+            "0.0%",
+            ""
+          ],
+          [
+            "SecureBio《GPT-5.6 Sol 评估》附录 A.1.2",
+            "Kimi K2.6",
+            "46.7% ± 0.5%",
+            "未标注 harness",
+            "7.3%",
+            ""
+          ],
+          [
+            "OpenAI《GPT-5 System Card》Table 15",
+            "gpt-5-thinking（2025-07-13 快照）",
+            "48.0 ± 1.3%",
+            "n=10 次均值 ± 标准差",
+            "未报告",
+            ""
+          ],
+          [
+            "OpenAI《GPT-5 System Card》Table 15",
+            "gpt-5-thinking-helpful-only（2025-07-26 快照）",
+            "48.2 ± 1.9%",
+            "n=10 次均值 ± 标准差",
+            "未报告",
+            ""
+          ],
+          [
+            "OpenAI《GPT-5 System Card》Table 15",
+            "OpenAI o3",
+            "49.2 ± 2.1%",
+            "n=10 次均值 ± 标准差",
+            "未报告",
+            ""
+          ],
+          [
+            "OpenAI《GPT-5 System Card》Table 15",
+            "OpenAI o3-helpful-only-2025-04-03",
+            "41.1 ± 1.3%",
+            "n=10 次均值 ± 标准差",
+            "未报告",
+            ""
+          ],
+          [
+            "OpenAI《GPT-5 System Card》Table 15",
+            "Grok 4",
+            "51.7 ± 1.7%",
+            "n=10 次均值 ± 标准差",
+            "未报告",
+            ""
+          ],
+          [
+            "OpenAI《GPT-5 System Card》Table 15",
+            "Human experts, assigned individually tailored subsets",
+            "32.4%",
+            "专家只答定制子集",
+            "未报告",
+            "人类基线"
+          ],
+          [
+            "Meta《Muse Spark 1.1 评估报告》Table 1",
+            "Muse Spark 1.1",
+            "53.2",
+            "multiple-response 配置，helpful-only 变体",
+            "未报告",
+            ""
+          ],
+          [
+            "Meta《Muse Spark 1.1 评估报告》Table 1",
+            "Muse Spark 1.0",
+            "54.4",
+            "multiple-response 配置，helpful-only 变体",
+            "未报告",
+            ""
+          ],
+          [
+            "Meta《Muse Spark 1.1 评估报告》Table 1",
+            "GPT-5.5",
+            "56.0",
+            "multiple-response 配置，helpful-only 变体",
+            "未报告",
+            ""
+          ],
+          [
+            "Meta《Muse Spark 1.1 评估报告》Table 1",
+            "Claude Opus 4.8",
+            "未报告",
+            "multiple-response 配置，helpful-only 变体",
+            "未报告",
+            "Meta 以拒答率高为由不报结果"
+          ],
+          [
+            "Meta《Muse Spark 1.1 评估报告》Table 1",
+            "Gemini 3.1 Pro",
+            "46.2",
+            "multiple-response 配置，helpful-only 变体",
+            "未报告",
+            ""
+          ],
+          [
+            "Meta《Muse Spark 1.1 评估报告》Figure 1",
+            "Kimi K2.5",
+            "45.1",
+            "multiple-response 配置，helpful-only 变体",
+            "未报告",
+            "图 1 数值，Table 1 未列该模型"
+          ],
+          [
+            "Hugging Face · Muse-Glimmer-30B 模型卡",
+            "Muse Glimmer-30B",
+            "41.5%",
+            "模型卡 chem/bio 表，未标注 harness 与题型",
+            "未报告",
+            ""
+          ],
+          [
+            "Hugging Face · Muse-Glimmer-30B 模型卡",
+            "Gemma4-31B",
+            "50.6%",
+            "模型卡 chem/bio 表，未标注 harness 与题型",
+            "未报告",
+            ""
+          ],
+          [
+            "Hugging Face · Muse-Glimmer-30B 模型卡",
+            "Qwen3.6-27B",
+            "45.9%",
+            "模型卡 chem/bio 表，未标注 harness 与题型",
+            "未报告",
+            ""
+          ],
+          [
+            "Hugging Face · Muse-Glimmer-30B 模型卡",
+            "Kimi K3",
+            "58.9%",
+            "模型卡 chem/bio 表，未标注 harness 与题型",
+            "未报告",
+            "模型卡注明仅作参照"
+          ]
+        ]
+      },
+      "cite": [
+        "securebio-gpt56-sol@§2.2 三种口径",
+        "securebio-gpt56-sol@§2.2 口径",
+        "openai-gpt5-system-card@Table 15",
+        "ai-static-resource-muse-spa@Table 1 注",
+        "ai-static-resource-muse-spa@Figure 1",
+        "huggingface-meta-models-muse-glimmer@表格说明"
+      ]
+    }
+  }
 }

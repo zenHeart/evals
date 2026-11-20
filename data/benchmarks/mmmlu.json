@@ -1,74 +1,352 @@
 {
   "id": "mmmlu",
   "name": "MMMLU",
-  "full_name": "Multilingual Massive Multitask Language Understanding (MMMLU)",
+  "full_name": "Multilingual Massive Multitask Language Understanding（多语种大规模多任务语言理解）",
   "aliases": ["Multilingual MMLU", "MMLU multilingual", "Global MMLU（社区衍生名）"],
   "status": null,
   "categories": [
     "chinese",
     "knowledge"
   ],
-  "summary": "OpenAI 用专业人工译者把 MMLU 测试集译成 14 种语言（含简体中文）的多语种知识基准",
-  "interpretation": "OpenAI 用专业人工译者把 MMLU 测试集译成 14 语种，4 选项准确率（随机基线 25%）；国内厂商引用的「多语言/中文能力」常指其 ZH_CN 子集，读分前先确认具体语种口径。",
+  "summary": "OpenAI 用专业人工译者把英文 MMLU 测试集译成 14 种语言（含简体中文）得到的多语种知识基准：57 个学科、每题 4 选 1，每种语言 14,042 题，14 语种合计 196,588 题。官方评测脚本用零样本思维链提示，按「从回答里抽出的答案字母与标准答案完全一致」计准确率。",
+  "interpretation": "14 语种平均准确率高，说明模型在这 14 种语言的学科知识选择题上答对得多；但它不说明模型理解当地文化（题目只是美式 MMLU 的人工翻译），也不覆盖这 14 个 locale 以外的语言。国内厂商自报的「多语言/中文能力」常只给 ZH_CN 一个子集，读分前先确认是单语种还是 14 语种平均。",
   "measures": [
-    "14 语种下的学科知识迁移",
-    "低资源语言（斯瓦希里语/约鲁巴语）表现",
-    "人工翻译保证的跨语言可比性"
+    {
+      "area": "学科知识（57 个学科）",
+      "focus": "题目直接来自 MMLU 测试集，从初等数学到专业法律、医学的学科知识问答；简体中文示例（ZH_CN 首题）：求域扩张 Q(√2, √3, √18) 在 Q 上的次数",
+      "share": "57 个学科（官方卡未给各学科题量占比；MMLU 论文称每学科至少 100 道测试题）",
+      "format": "4 选 1 选择题，选项标记为 A/B/C/D",
+      "cite": [
+        "dataset@README",
+        "paper@§3",
+        "prompt-code@QUERY_TEMPLATE_MULTICHOICE"
+      ]
+    },
+    {
+      "area": "低资源语言",
+      "focus": "斯瓦希里语（SW_KE）与约鲁巴语（YO_NG）；官方称依赖人工译者「提高对翻译准确度的信心，尤其是约鲁巴语这类低资源语言」",
+      "share": "14 个 locale 中的 2 个",
+      "format": "同为 4 选 1 选择题",
+      "cite": [
+        "dataset@README",
+        "dataset@Locales"
+      ]
+    },
+    {
+      "area": "跨语言一致性",
+      "focus": "同一模型在 14 种语言上的分数差；官方结果表把 14 个语种与 Average 行列在同一张表，用于比较高资源语言与低资源语言的差距",
+      "share": "14 语种 + 1 个平均行（官方结果表口径）",
+      "format": "每语种一个准确率，另给 14 语种平均",
+      "cite": [
+        "results@表格"
+      ]
+    },
+    {
+      "area": "英文原版对照",
+      "focus": "官方评测脚本同时评测 EN-US（英文原版 MMLU）与 13 个非英语 locale，可对比同一模型在英文原文与人工译文上的差距；EN-US 不在 Hugging Face 数据集卡内",
+      "share": "1 个英文 locale（EN-US，仅官方脚本）",
+      "format": "同 4 选 1，同一套提示模板",
+      "cite": [
+        "eval-code@__init__",
+        "prompt-code@QUERY_TEMPLATE_MULTICHOICE"
+      ]
+    }
   ],
   "does_not_measure": [
-    "14 语种之外的语言能力",
-    "文化本地化知识（题源仍是美式 MMLU）",
-    "生成式任务"
+    {
+      "text": "这 14 个 locale 以外的语言能力（数据集卡只列 14 个 locale）",
+      "cite": [
+        "dataset@Locales"
+      ]
+    },
+    {
+      "text": "文化本地化知识：题目仍是美式 MMLU 的人工翻译；第三方研究估计 MMLU 约 28% 的题目需要文化敏感知识，并指出这种偏差在广泛使用的翻译版里被保留下来",
+      "cite": [
+        "global-mmlu@§6 Conclusion"
+      ]
+    },
+    {
+      "text": "生成式与开放式问答：全部走 4 选 1 选择题路径，用抽字母与标准答案比对判分",
+      "cite": [
+        "eval-code@score"
+      ]
+    }
   ],
   "dataset": {
-    "sample_count": null,
+    "sample_count": 196588,
     "splits": [
-      "AR_XY",
-      "BN_BD",
-      "DE_DE",
-      "ES_LA",
-      "FR_FR",
-      "HI_IN",
-      "ID_ID",
-      "IT_IT",
-      "JA_JP",
-      "KO_KR",
-      "PT_BR",
-      "SW_KE",
-      "YO_NG",
-      "ZH_CN"
+      "test：每个 locale 一份 mmlu_<locale>.csv（官方卡只提供 test 拆分，没有 dev / few-shot 集）",
+      "default：Hugging Face 把 14 个 locale 合并成的 config，196,588 行"
     ],
-    "source_type": "human-translated benchmark（专业译者，非机器翻译）",
-    "languages": ["ar", "bn", "de", "es", "fr", "hi", "id", "it", "ja", "ko", "pt", "sw", "yo", "zh"],
-    "public_sample": true
+    "languages": [
+      "AR_XY（阿拉伯语）",
+      "BN_BD（孟加拉语）",
+      "DE_DE（德语）",
+      "ES_LA（西班牙语，拉美变体）",
+      "FR_FR（法语）",
+      "HI_IN（印地语）",
+      "ID_ID（印尼语）",
+      "IT_IT（意大利语）",
+      "JA_JP（日语）",
+      "KO_KR（韩语）",
+      "PT_BR（葡萄牙语，巴西变体）",
+      "SW_KE（斯瓦希里语）",
+      "YO_NG（约鲁巴语）",
+      "ZH_CN（简体中文）"
+    ],
+    "source_type": "human-translated benchmark（专业人工译者翻译 MMLU 测试集，非机器翻译）",
+    "public_sample": true,
+    "multiple_choice_share": "4 选 1（官方评测脚本只实现多选题路径，模板固定渲染 A)–D) 四个选项）",
+    "totals": "14 语种 × 14,042 题 = 196,588 题（口径：Hugging Face datasets-server /size 的 default config 行数；该接口在 dataset 级另报 393,176 行，是 default 与 14 个 locale config 的重复计数）· 全部为 4 选 1 选择题 · 57 个学科 · 仅 test 拆分，无 dev / few-shot 集 · 许可 MIT",
+    "cite": [
+      "dataset@README",
+      "dataset@configs",
+      "hf-size@configs",
+      "hf-size@dataset",
+      "eval-code@__init__"
+    ],
+    "construction": [
+      {
+        "k": "题源",
+        "text": "直接取 MMLU 的测试集。MMLU 论文写「共收集 15,908 题，测试集 14,079 题」，而官方实际发布的翻译文件每语种 14,042 题，两个数字不一致（见局限）。",
+        "cite": [
+          "paper@§3",
+          "hf-size@configs"
+        ]
+      },
+      {
+        "k": "翻译",
+        "text": "由专业人工译者把 MMLU 测试集译成 14 种语言；官方称这提高对翻译准确度的信心，尤其是约鲁巴语这类低资源语言，并同时公开人工译文与运行评测的代码。",
+        "cite": [
+          "dataset@README",
+          "results@README"
+        ]
+      },
+      {
+        "k": "发布形态",
+        "text": "Hugging Face 数据集按 locale 分成 14 个 config，每个 config 只有 test 拆分；字段为 Question / A / B / C / D / Answer / Subject，许可为 MIT。",
+        "cite": [
+          "dataset@configs",
+          "dataset@README"
+        ]
+      },
+      {
+        "k": "评测代码",
+        "text": "simple-evals 提供 MMLUEval：按 locale 从 openaipublic 拉对应的 mmlu_<locale>.csv（英文为 mmlu.csv），用同一套多选题模板与各语言「Answer:」正则抽取答案。",
+        "cite": [
+          "eval-code@__init__",
+          "prompt-code@QUERY_TEMPLATE_MULTICHOICE",
+          "prompt-code@MULTILINGUAL_ANSWER_REGEXES"
+        ]
+      },
+      {
+        "k": "学科聚合",
+        "text": "脚本把 57 个 Subject 映射到 stem / humanities / social_sciences / other 四类分别统计，再汇总成总体分数。",
+        "cite": [
+          "eval-code@subject2category"
+        ]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "零样本、思维链：提示词固定为「Answer the following multiple choice question. The last line of your response should be of the following format: 'Answer: $LETTER' (without quotes) where LETTER is one of ABCD. Think step by step before answering.」，后接题目与 A)–D) 四个选项。判分用各语言写法的「Answer:」正则从模型回答里抽字母（阿拉伯语、孟加拉语、日语等用本地字母，脚本统一归一成 A–D），与 CSV 的 Answer 列完全相等记 1 分、否则 0 分；结果按四个学科类别分别平均后汇总。",
+    "cite": [
+      "prompt-code@QUERY_TEMPLATE_MULTICHOICE",
+      "prompt-code@MULTILINGUAL_ANSWER_REGEXES",
+      "eval-code@score",
+      "eval-code@subject2category"
+    ],
+    "variants": [
+      {
+        "text": "单语种分数 vs 14 语种平均：官方结果表同时给出每个语种和 Average 行，两者差好几个点，不能混着比；厂商常只报 ZH_CN。",
+        "cite": [
+          "results@表格"
+        ]
+      },
+      {
+        "text": "零样本思维链（simple-evals 口径）vs MMLU 原论文的 few-shot 口径：论文明确说「只在零样本和少样本设置下评测模型」，simple-evals 则声明采用零样本、思维链提示，两套数字不可直接比。",
+        "cite": [
+          "repo@README",
+          "paper@§1"
+        ]
+      },
+      {
+        "text": "推理档位：官方结果表把 o3-high / o3 / o3-low 等不同 reasoning effort 分行列出，同一模型不同档位在约鲁巴语上能差 0.1 以上。",
+        "cite": [
+          "results@表格"
+        ]
+      },
+      {
+        "text": "是否含英文基线：官方脚本同时评测 EN-US（英文原版 MMLU），Hugging Face 数据集卡里没有这个 locale；只报非英语子集的结果无法与英文分数对照。",
+        "cite": [
+          "eval-code@__init__"
+        ]
+      }
+    ]
   },
   "metrics": [
     {
       "id": "accuracy",
-      "name": "Accuracy",
+      "name": "准确率（acc）",
+      "direction": "越高越好",
+      "description": "从回答中抽出的答案字母与标准答案一致的题目占比（每题 0/1 判分后取平均）；官方结果表用 0–1 小数表示，0.888 即 88.8%",
       "range": [0, 100],
       "unit": "percent",
-      "direction": "higher",
-      "aggregation": "mean"
+      "cite": [
+        "eval-code@score",
+        "paper@§4.1"
+      ]
+    },
+    {
+      "id": "category-accuracy",
+      "name": "四类学科准确率",
+      "direction": "越高越好",
+      "description": "按 stem / humanities / social_sciences / other 四类分别统计的准确率，由 Subject 列映射得到，用于看模型偏科",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": [
+        "eval-code@subject2category"
+      ]
     }
   ],
   "versions": [
     {
-      "id": "v1",
-      "label": "MMMLU（2024，随 GPT-4o 多语言工作发布）",
-      "note": "MMLU test set × 14 locale；每语言约 1.4 万题"
+      "id": "repo-init",
+      "date": "2024-09-13",
+      "label": "Hugging Face 数据集仓库建立并上传 14 个翻译 CSV（initial commit / Upload 14 files）",
+      "cite": [
+        "hf-commits@2024-09-13"
+      ]
+    },
+    {
+      "id": "repro-code",
+      "date": "2024-09-11",
+      "label": "simple-evals 提交多语种 MMLU 复现代码与结果表（早于数据集公开发布）",
+      "cite": [
+        "results-commits@2024-09-11"
+      ]
+    },
+    {
+      "id": "public-release",
+      "date": "2024-09-23",
+      "label": "数据集卡补充语言标签并更新许可，同日 MarkTechPost 报道 OpenAI 在 Hugging Face 公开发布 MMMLU",
+      "cite": [
+        "hf-commits@2024-09-23",
+        "marktechpost@发布时间"
+      ]
+    },
+    {
+      "id": "test-split",
+      "date": "2024-10-03",
+      "label": "把所有子集标记为 test 拆分并禁止爬取",
+      "cite": [
+        "hf-commits@2024-10-03"
+      ]
+    },
+    {
+      "id": "zh-cn-fix",
+      "date": "2024-10-16",
+      "label": "修正 locale 拼写 ZH_CH → ZH_CN",
+      "cite": [
+        "hf-commits@2024-10-16"
+      ]
+    },
+    {
+      "id": "results-2025-04",
+      "date": "2025-04-21",
+      "label": "官方结果表更新 gpt-4.1 / o3 / o4-mini（本页核对所依据的版本）",
+      "cite": [
+        "results-commits@2025-04-21",
+        "repo-commits@2025-04-21"
+      ]
+    },
+    {
+      "id": "deprecation",
+      "date": "2025-07-09",
+      "label": "simple-evals 加入弃更声明：2025 年 7 月起不再为新模型或基准结果更新，仅保留参考实现",
+      "cite": [
+        "repo-commits@2025-07-09",
+        "repo@README"
+      ]
     }
   ],
   "limitations": [
-    "翻译不改变题目文化背景，分数仍受英语中心知识影响",
-    "57 学科广度覆盖但单学科深度有限",
-    "与 MMLU 同源，训练污染风险继承"
+    {
+      "issue": "题目只是翻译，文化背景未本地化",
+      "impact": "MMLU 原题多为美国中心的知识。Global MMLU 的作者估计 MMLU 约 28% 的题目需要文化敏感知识，并指出这种偏差在广泛用于多语种评测的翻译版里被保留下来，会削弱它作为全球基准的有效性。",
+      "severity": "高",
+      "response": "未见 OpenAI 回应；第三方以 Global MMLU（42 语种，区分文化敏感 / 文化无关子集）作为替代路线，并把 MMMLU 的 14 语种人工翻译并入其金标准集。",
+      "reader": "把 MMMLU 分数读成「翻译后的学科知识」，不要读成「当地文化能力」。",
+      "cite": [
+        "global-mmlu@§6 Conclusion",
+        "global-mmlu@§5.1"
+      ]
+    },
+    {
+      "issue": "题量与论文数字不一致、标签噪声",
+      "impact": "MMLU 论文写测试集 14,079 题，官方实际发布的翻译文件每语种 14,042 题；MMLU-Pro 的作者指出 MMLU 有一部分题目无法作答或标注错误，这类噪声会把前沿模型的分数压到一个更低的上限。",
+      "severity": "中",
+      "response": "OpenAI 未就题量差异或标签错误发布修订说明；MMLU-Pro 用两轮专家评审清理噪声并把选项扩到 10 个。",
+      "reader": "跨论文比较题量时以官方文件实测数为准；接近饱和的分数要留出错题余量。",
+      "cite": [
+        "paper@§3",
+        "hf-size@configs",
+        "mmlu-pro@§1"
+      ]
+    },
+    {
+      "issue": "4 选 1 的猜测空间与饱和",
+      "impact": "MMLU-Pro 的作者认为 MMLU 每题只有 3 个干扰项，模型可能靠捷径答对从而高估真实水平；官方结果表里 o3-high 的 14 语种平均已达 0.888，单语种最高 0.912（意大利语），继续拉差距的空間很小。",
+      "severity": "中",
+      "response": "未见 OpenAI 回应；MMLU-Pro 等衍生基准把选项扩到 10 个以提高区分度。",
+      "reader": "随机基线是 25%，0.888 已接近饱和；模型间差距要按小数点后第二位读，不要过度解读。",
+      "cite": [
+        "mmlu-pro@§1",
+        "results@表格"
+      ]
+    },
+    {
+      "issue": "污染与刷榜风险",
+      "impact": "题目与 MMLU 测试集同源且公开可下载，可能进入训练数据或被针对性调优。MMLU 论文附录 B.2 的低熵分析只能说明「论文发布时」这些题没有被记住，不能排除后续污染。",
+      "severity": "中",
+      "response": "MMLU 论文用「准确率与题目熵不正相关」回应精确题目污染，并提示会提供题目来源清单；OpenAI 未对 MMMLU 单设不公开留存集。",
+      "reader": "跨年份比较时留意模型是否见过这套题；优先看同期、同口径的复现结果。",
+      "cite": [
+        "paper@附录 B.2"
+      ]
+    },
+    {
+      "issue": "locale 覆盖与方言代表有限",
+      "impact": "14 个 locale 里西语取拉美变体（ES_LA）、葡语取巴西变体（PT_BR），其余语言也只取一个地区变体；同一种语言内部的方言差异没有被覆盖。",
+      "severity": "低",
+      "response": "未见 OpenAI 回应；Global MMLU 扩到 42 语种，同时承认属于同一母语的大量方言仍未被纳入。",
+      "reader": "把「西班牙语分数」读成「拉美西班牙语」，不要推广到所有西语使用者。",
+      "cite": [
+        "dataset@Locales",
+        "global-mmlu@§7 Limitations"
+      ]
+    },
+    {
+      "issue": "官方结果表停更",
+      "impact": "simple-evals 自 2025 年 7 月起不再为新模型或基准结果更新，MMMLU 的官方分数停留在 2025-04-21 更新的 o3 / o4-mini / gpt-4.1 一代，更晚的模型没有官方口径可依。",
+      "severity": "低",
+      "response": "仓库声明保留 MMLU 等参考实现与既有结果表，但不再补新模型行。",
+      "reader": "看到 2025 年中以后的 MMMLU 分数，先确认是谁跑的、用什么提示与抽取规则。",
+      "cite": [
+        "repo@README",
+        "repo-commits@2025-07-09"
+      ]
+    }
   ],
-  "notes": "证据账本中 7 次引用；国内厂商的『多语言/中文能力』引用常指向其 ZH_CN 子集",
+  "notes": "本站提示：厂商自报的「多语言/中文能力」常只给 ZH_CN 一个子集，需与 14 语种平均分开读",
   "official_sources": [
     {
-      "kind": "site",
+      "kind": "dataset",
       "url": "https://huggingface.co/datasets/openai/MMMLU"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/openai/simple-evals"
     },
     {
       "kind": "paper",
@@ -82,6 +360,299 @@
     "ceval",
     "mmlu-pro"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-11",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-11",
+    "sources": [
+      {
+        "id": "dataset",
+        "kind": "dataset",
+        "title": "openai/MMMLU 数据集卡（Hugging Face，README 原文，MIT）",
+        "url": "https://huggingface.co/datasets/openai/MMMLU/raw/main/README.md",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "openai/simple-evals README（含弃更声明与评测口径说明）",
+        "url": "https://raw.githubusercontent.com/openai/simple-evals/main/README.md",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "results",
+        "kind": "repo",
+        "title": "simple-evals: multilingual_mmlu_benchmark_results.md（官方多语种结果表）",
+        "url": "https://raw.githubusercontent.com/openai/simple-evals/main/multilingual_mmlu_benchmark_results.md",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "eval-code",
+        "kind": "repo",
+        "title": "simple-evals: mmlu_eval.py（MMLUEval 判分与学科映射实现）",
+        "url": "https://raw.githubusercontent.com/openai/simple-evals/main/mmlu_eval.py",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "prompt-code",
+        "kind": "repo",
+        "title": "simple-evals: common.py（多选题提示模板与多语言答案正则）",
+        "url": "https://raw.githubusercontent.com/openai/simple-evals/main/common.py",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "Measuring Massive Multitask Language Understanding（arXiv:2009.03300v3，ICLR 2021）",
+        "url": "https://arxiv.org/abs/2009.03300",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "hf-commits",
+        "kind": "dataset",
+        "title": "openai/MMMLU 提交历史（Hugging Face API）",
+        "url": "https://huggingface.co/api/datasets/openai/MMMLU/commits/main",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "hf-size",
+        "kind": "dataset",
+        "title": "openai/MMMLU 行数统计（Hugging Face datasets-server /size）",
+        "url": "https://datasets-server.huggingface.co/size?dataset=openai/MMMLU",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "mmlu-pro",
+        "kind": "paper",
+        "title": "MMLU-Pro: A More Robust and Challenging Multi-Task Language Understanding Benchmark（arXiv:2406.01574）",
+        "url": "https://arxiv.org/abs/2406.01574",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "global-mmlu",
+        "kind": "paper",
+        "title": "Global MMLU: Understanding and Addressing Cultural and Linguistic Biases in Multilingual Evaluation（arXiv:2412.03304，ACL 2025）",
+        "url": "https://arxiv.org/abs/2412.03304",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "marktechpost",
+        "kind": "blog",
+        "title": "MarkTechPost：OpenAI Releases MMLLU Dataset on Hugging Face（2024-09-23）",
+        "url": "https://www.marktechpost.com/2024/09/23/openai-releases-multilingual-massive-multitask-language-understanding-mmmlu-dataset-on-hugging-face-to-easily-evaluate-multilingual-llms/",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "repo-commits",
+        "kind": "repo",
+        "title": "openai/simple-evals README 提交历史（GitHub API）",
+        "url": "https://api.github.com/repos/openai/simple-evals/commits?path=README.md",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "results-commits",
+        "kind": "repo",
+        "title": "multilingual_mmlu_benchmark_results.md 提交历史（GitHub API）",
+        "url": "https://api.github.com/repos/openai/simple-evals/commits?path=multilingual_mmlu_benchmark_results.md",
+        "accessed": "2026-11-11"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "OpenAI（数据集与评测代码均以 OpenAI 名义发布）",
+        "cite": [
+          "dataset@README",
+          "repo@Evals"
+        ]
+      },
+      "first_release": {
+        "v": "2024-09-23（Hugging Face 公开发布；数据集仓库初始 commit 为 2024-09-13）",
+        "cite": [
+          "hf-commits@2024-09-13",
+          "hf-commits@2024-09-23",
+          "marktechpost@发布时间"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "dataset@README",
+        "results@README",
+        "eval-code@__init__"
+      ],
+      "interpretation": [
+        "global-mmlu@§6 Conclusion",
+        "eval-code@score",
+        "results@表格"
+      ]
+    },
+    "problem": {
+      "text": "MMLU 只有英文；此前的常见做法是用 ChatGPT 把英文题机器翻译成多语种，翻译质量在不同语言间差异大、在低资源语言上不可靠。OpenAI 想用专业人工翻译得到一套跨语言可比、又能覆盖斯瓦希里语和约鲁巴语这类低资源语言的知识基准，并同时公开复现评测所用的代码。",
+      "cite": [
+        "global-mmlu@§5.1",
+        "dataset@README",
+        "results@README"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机猜测基线",
+        "value": "25%",
+        "note": "4 选 1；MMLU 论文 Table 1 的 Random Baseline 为 25.0（四个学科类别均为 25.0）",
+        "cite": [
+          "paper@Table 1"
+        ]
+      },
+      {
+        "label": "底层 MMLU 论文发布时最好成绩",
+        "value": "43.9%",
+        "note": "GPT-3 X-Large（few-shot），英文 MMLU 平均；MMMLU 本身 2024 年才发布，论文里没有它的成绩",
+        "cite": [
+          "paper@Table 1"
+        ]
+      },
+      {
+        "label": "人类水平参考",
+        "value": "约 89.8%（专家估计）/ 34.5%（非专业标注者）",
+        "note": "MMLU 论文对专家级准确率的估计，以及 Amazon Mechanical Turk 非专业标注者的实测准确率；这是英文 MMLU 的数字",
+        "cite": [
+          "paper@§3"
+        ]
+      },
+      {
+        "label": "官方结果表最高（14 语种平均）",
+        "value": "0.888（o3-high）",
+        "note": "simple-evals 多语种结果表 Average 行；同表单语种最高为意大利语 0.912（o3-high）",
+        "cite": [
+          "results@表格"
+        ]
+      },
+      {
+        "label": "官方结果表最低（单语种）",
+        "value": "0.455（约鲁巴语，gpt-4o-mini-2024-07-18）",
+        "note": "同一模型在约鲁巴语上比在法语上低约 0.28，是表内最大的语种差之一",
+        "cite": [
+          "results@表格"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 14 语种平均分和单个语种（尤其 ZH_CN）的分数混着比——官方表里两者都列，数值差好几个点。",
+        "cite": [
+          "results@表格"
+        ]
+      },
+      {
+        "text": "把 MMMLU 分数读成「模型懂当地文化」——题目只是美式 MMLU 的人工翻译，文化偏差被原样保留。",
+        "cite": [
+          "global-mmlu@§6 Conclusion"
+        ]
+      },
+      {
+        "text": "把 MMMLU 和 Global MMLU（CohereForAI，42 语种）当成同一个基准——后者是另一个数据集，只是把 MMMLU 的 14 语种人工翻译并入了自己的金标准集。",
+        "cite": [
+          "global-mmlu@§5.1",
+          "global-mmlu@附录 MMMLU Translations"
+        ]
+      },
+      {
+        "text": "以为数据集自带 few-shot / dev 集——Hugging Face 上每个 locale 只有 test 拆分；few-shot 开发集是英文 MMLU 那边的设计（每学科 5 题）。",
+        "cite": [
+          "dataset@configs",
+          "paper@§3"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "OpenAI；数据集在 Hugging Face（openai/MMMLU），评测代码在 GitHub（openai/simple-evals）",
+        "cite": [
+          "dataset@README",
+          "repo@Evals"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "未披露（数据集卡与 simple-evals 仓库均未列出译者或作者姓名；论文署名只属于底层 MMLU）",
+        "cite": [
+          "dataset@README",
+          "repo@Evals"
+        ]
+      },
+      {
+        "k": "译者",
+        "v": "专业人工译者（官方未披露译者数量、遴选方式与质量控制流程）",
+        "cite": [
+          "dataset@README"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2024-09-11 simple-evals 提交复现代码与结果表 → 2024-09-13 HF 仓库建立 → 2024-09-23 公开发布 → 2024-10-03 统一为 test 拆分 → 2024-10-16 修正 ZH_CN 拼写 → 2025-04-21 结果表最后一次更新 → 2025-07-09 simple-evals 宣布停更",
+        "cite": [
+          "results-commits@2024-09-11",
+          "hf-commits@2024-09-13",
+          "hf-commits@2024-10-03",
+          "hf-commits@2024-10-16",
+          "repo-commits@2025-07-09"
+        ]
+      },
+      {
+        "k": "底层基准",
+        "v": "MMLU（Hendrycks, Burns, Kadavath, Arora, Basart, Tang, Song, Steinhardt，ICLR 2021，arXiv:2009.03300），57 个学科、测试集为 4 选 1",
+        "cite": [
+          "paper@Abstract",
+          "dataset@README"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "数据在 Hugging Face（openai/MMMLU，MIT）；评测代码在 simple-evals，CSV 实际从 openaipublic.blob.core.windows.net 拉取",
+        "cite": [
+          "dataset@README",
+          "eval-code@__init__"
+        ]
+      },
+      {
+        "k": "第三方采用",
+        "v": "Global MMLU 把 MMMLU 的 14 语种人工翻译并入金标准集，因与自有金标准集重叠，只用了其中 10 种语言（孟加拉语、中文、德语、印尼语、意大利语、日语、韩语、葡萄牙语、斯瓦希里语、约鲁巴语）",
+        "cite": [
+          "global-mmlu@附录 MMMLU Translations"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-11",
+        "columns": [
+          "语种",
+          "o3-high",
+          "o1",
+          "o4-mini-high",
+          "o3-mini-high",
+          "gpt-4o-2024-11-20",
+          "gpt-4o-mini-2024-07-18"
+        ],
+        "rows": [
+          ["Arabic", "0.904", "0.890", "0.861", "0.819", "0.831", "0.709"],
+          ["Chinese (Simplified)", "0.893", "0.889", "0.869", "0.836", "0.842", "0.731"],
+          ["French", "0.906", "0.893", "0.874", "0.837", "0.846", "0.766"],
+          ["Italian", "0.912", "0.897", "0.877", "0.838", "0.845", "0.734"],
+          ["Swahili", "0.860", "0.854", "0.813", "0.738", "0.779", "0.619"],
+          ["Yoruba", "0.780", "0.754", "0.708", "0.637", "0.621", "0.455"],
+          ["Average", "0.888", "0.877", "0.852", "0.807", "0.814", "0.705"]
+        ]
+      },
+      "cite": [
+        "results@表格"
+      ]
+    }
+  }
 }

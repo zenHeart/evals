@@ -1,66 +1,447 @@
 {
   "id": "mcp-atlas",
   "name": "MCP-Atlas",
-  "full_name": "MCP-Atlas: A Large-Scale Benchmark for Tool-Use Competency with Real MCP Servers",
-  "aliases": ["MCP Atlas", "mcp-atlas"],
-  "status": null,
+  "full_name": "MCP-Atlas: A Large-Scale Benchmark for Tool-Use Competency with Real MCP Servers（真实 MCP 服务器上的工具使用能力基准）",
+  "aliases": [
+    "MCP Atlas",
+    "mcp_atlas",
+    "MCPAtlas"
+  ],
+  "status": "active",
   "categories": [
     "agent"
   ],
-  "summary": "Scale AI 出品的 MCP 工具能力基准：1000 道人写任务横跨 36 个真实 MCP 服务器与 220 个工具，claim 级评分",
-  "interpretation": "0.75 claim 覆盖阈值下旗舰最高 82.2 分；63.3% 的诊断失败是认知性（综合/提前停止）而非工具调用本身——分数低不等于不会调工具。",
+  "summary": "MCP-Atlas 是 Scale AI 出的 MCP 工具使用基准：1,000 道由人类专家撰写并核验的单轮自然语言任务，跑在 36 个真实生产 MCP 服务器暴露的 220 个工具上；提示里不写服务器、工具或参数名，模型得自己在语义相近的干扰工具里找出需要的 2–8 个，串成跨服务器多步工作流，最终答案按原子 claim 逐条打分，覆盖率 ≥ 0.75 记通过。",
+  "interpretation": "高分说明模型能在真实 MCP 服务器上完成多步、跨服务器、带干扰工具的工具使用任务，而不只是会拼一次函数调用；论文的诊断显示 63.3% 的失败是认知类（误解任务、综合错误、提前停止），低分往往不是「不会调工具」。但它不测 GUI/浏览器操作、非英文场景和多轮澄清，也不代表可以安全上线；而且分数高度依赖口径——裁判模型、覆盖阈值、工具调用预算、公开集/私有集都会平移绝对分，官方榜单页面自身还留着多段旧版结论。",
   "measures": [
-    "跨服务器多步 MCP 工作流编排",
-    "在语义相近的干扰工具中发现正确工具与参数",
-    "基于工具输出的 claim 级事实评分（答案中心）"
+    {
+      "area": "跨服务器编排（全基准共通行能）",
+      "focus": "附录 D.5 的示例题：取 Jane Castleman 2024 年一篇广告控制效果论文的摘要，再在 Notion 广告数据库里查 2015–2023 年间互动率最高的投放活动的开始日期与地域，需要 arxiv_search_papers 与 notion_API-post-search / post-database-query 跨服务器串联",
+      "share": "98.6% 的任务需要两个及以上服务器的工具（均值 2.55 个）；51.7% 需两个、38.2% 需三个、8.7% 需四个及以上",
+      "format": "单轮自然语言提示，答案为一组原子事实 claim",
+      "cite": [
+        "paper@3.2 Task Structure",
+        "paper@附录 D.5"
+      ]
+    },
+    {
+      "area": "干扰工具下的工具发现",
+      "focus": "每题暴露的工具集里只有 2–8 个是正确解法所需，其余是来自语义相近类别的干扰工具；附录 D.5 示例题的 15 个启用工具中有 11 个标注为干扰工具",
+      "share": "每题 6–37 个工具（均值 15.2），必需 2–8 个（均值 4.1），干扰工具均值 11.1 个",
+      "format": "per-task allow-list 工具集",
+      "cite": [
+        "paper@3.2 Task Structure",
+        "paper@附录 D.5"
+      ]
+    },
+    {
+      "area": "ENV-BASIC（搜索 / 地图 / 天气 / 百科）",
+      "focus": "代表服务器 brave_search、exa、weather、maps、wikipedia；论文列出的典型陷阱是查询语句构造与分页处理",
+      "share": "32%（论文 Table 2 给的是 30–35% 区间）",
+      "format": "工具调用 + 事实 claim",
+      "cite": [
+        "paper@Table 2",
+        "paper@附录 B"
+      ]
+    },
+    {
+      "area": "ENV-PRODUCTIVITY（文件 / 笔记 / 协作 / 文献）",
+      "focus": "代表服务器 filesystem、notion、slack、arxiv；典型陷阱是路径作用域与限流",
+      "share": "22%（论文 Table 2 给的是 20–25% 区间）",
+      "format": "工具调用 + 事实 claim",
+      "cite": [
+        "paper@Table 2",
+        "paper@附录 B"
+      ]
+    },
+    {
+      "area": "ENV-CODING（版本库 / 代码执行 / 命令行）",
+      "focus": "代表服务器 git、github、code-executor、cli；典型陷阱是有状态操作与 diff 范围",
+      "share": "22%（论文 Table 2 给的是 20–25% 区间）",
+      "format": "工具调用 + 事实 claim",
+      "cite": [
+        "paper@Table 2",
+        "paper@附录 B"
+      ]
+    },
+    {
+      "area": "ENV-ANALYTICS（结构化数据查询与聚合）",
+      "focus": "代表服务器 airtable、mongodb；典型陷阱是 schema 对齐与类型处理",
+      "share": "12%（论文 Table 2 给的是 10–15% 区间）",
+      "format": "工具调用 + 事实 claim",
+      "cite": [
+        "paper@Table 2",
+        "paper@附录 B"
+      ]
+    },
+    {
+      "area": "ENV-FINANCIAL（金融数据）",
+      "focus": "代表服务器 twelvedata、alchemy；典型陷阱是时间窗口对齐与代码符号",
+      "share": "12%（论文 Table 2 给的是 10–15% 区间）",
+      "format": "工具调用 + 事实 claim",
+      "cite": [
+        "paper@Table 2",
+        "paper@附录 B"
+      ]
+    }
   ],
   "does_not_measure": [
-    "无 MCP 环境的纯对话能力",
-    "GUI / 浏览器操作",
-    "小时级长周期任务"
+    {
+      "text": "非英文工具使用、脚本处理与本地化失败——1,000 题全部用英文撰写，面向英文服务器响应，论文把这类失败明确排除在当前范围外",
+      "cite": [
+        "paper@附录 A"
+      ]
+    },
+    {
+      "text": "多轮澄清与交互式对齐——论文把「加入多轮澄清」列为未来工作，当前协议是单轮提示",
+      "cite": [
+        "paper@5 Discussion",
+        "paper@3.2 Task Structure"
+      ]
+    },
+    {
+      "text": "是否遵循某条特定工具调用轨迹——参考轨迹只用于可解性检查、工具依赖校验与失败诊断，判分只对照 claim 列表看最终答案",
+      "cite": [
+        "paper@3.2 Task Structure",
+        "paper@附录 H"
+      ]
+    },
+    {
+      "text": "智能体安全性——论文明确说它应作为可靠性与失败分析的诊断基准，不构成对智能体在安全关键、隐私敏感或高风险场景可部署的认证",
+      "cite": [
+        "paper@附录 A"
+      ]
+    }
   ],
   "dataset": {
     "sample_count": 1000,
-    "splits": ["public 500 题", "private 500 题"],
-    "source_type": "expert-authored（真实生产 MCP 服务器）",
-    "languages": ["en"],
-    "public_sample": true
+    "splits": [
+      "公开集 500 题（Hugging Face ScaleAI/MCP-Atlas，train split，单 parquet 文件 15.6 MB）",
+      "私有集 500 题（不发布，用于污染监测与榜单完整性）"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "expert-authored（人类专家撰写并核验，对真实生产 MCP 服务器，非 mock）",
+    "public_sample": true,
+    "totals": "全量 1,000 题，随机 500/500 拆为公开集与私有集；36 个生产 MCP 服务器、220 个工具、五个环境域；每题单轮自然语言提示，暴露 6–37 个工具（均值 15.2）其中 2–8 个必需（均值 4.1）；98.6% 需要跨两个及以上服务器；每题 1–23 条原子 claim（均值 4.7）；题面全部为英文。",
+    "cite": [
+      "paper@Abstract",
+      "paper@3 Benchmark Design",
+      "paper@3.2 Task Structure",
+      "paper@附录 A",
+      "dataset"
+    ],
+    "construction": [
+      {
+        "k": "服务器与工具环境",
+        "text": "选用 36 个生产 MCP 服务器（社区或厂商实现），全部容器化、钉住镜像 digest、任务间重启以防跨任务状态泄漏；选题标准是有稳定的文档完备实现、功能类别分散、每个服务器有多个相关工具可供构造干扰项、能支撑真实多步工作流。",
+        "cite": [
+          "paper@3.1 Server Ecosystem",
+          "paper@附录 B"
+        ]
+      },
+      {
+        "k": "任务撰写要求",
+        "text": "标注员按内部手册出题：必须依赖外部数据且在研究窗口内稳定、提示不能有主观表述也不能泄露系统机制或解法路径、鼓励多步跨源推理；平均每题 4.6 小时专家工时，标注员按合同取酬，未使用无偿志愿劳动。",
+        "cite": [
+          "paper@附录 D",
+          "paper@附录 D.1"
+        ]
+      },
+      {
+        "k": "工具环境构造",
+        "text": "每题单独配置工具集：充分性（解出提示所需最小证据集）、干扰项整合（加入合理但不相关的工具测试选择能力）、多源复杂度（要求跨工具族组合证据）。",
+        "cite": [
+          "paper@附录 D.2"
+        ]
+      },
+      {
+        "k": "交付物",
+        "text": "除环境配置外，标注员还要产出 Reference Trajectory（带理由的黄金调用序列）与 Grounded Final Answer（严格由工具输出支撑的精确回答，即 claim 列表）。",
+        "cite": [
+          "paper@附录 D.4"
+        ]
+      },
+      {
+        "k": "五层质量保证",
+        "text": "专家对配置好的 MCP 环境跑一遍参考轨迹；领域专家评审正确性与可解性；二审检查提示是否泄露工具或服务器名；自动化 LLM 校验 claim 完备性与轨迹一致性；随机抽样人工审计。",
+        "cite": [
+          "paper@3.4 Quality Assurance"
+        ]
+      },
+      {
+        "k": "拆分与许可",
+        "text": "任务随机 500/500 拆分，公开集用于可复现性，私有集用于污染监测；数据集（提示、claim、轨迹、干扰项选择）以 CC-BY-4.0 发布，harness 与 claim 评估器代码以 Apache-2.0 发布，第三方 MCP 服务器保留上游许可。",
+        "cite": [
+          "paper@3 Benchmark Design",
+          "paper@附录 H",
+          "dataset"
+        ]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "模型以默认配置接收单轮用户提示与该题 allow-list 工具集，不注入任何行为塑造型系统提示，各厂商用其推荐的原生工具调用适配器，但不加模型专属示例、重试策略或脚手架。评分上裁判对每条 claim 独立判定 fulfilled(1.0) / partially_fulfilled(0.5) / not_fulfilled(0.0)，任务覆盖率取 claim 得分均值，主分析以覆盖率 ≥ 0.75 记通过；论文用三个 LLM 裁判（Gemini 3.1 Pro Preview 为主，GPT-5.4 与 Claude Opus 4.6 为辅）独立打分，通过率的 95% 置信区间用非参数 bootstrap（10,000 次重采样）。覆盖率低于阈值的失败任务再由裁判按 11 类失败模式给出诊断标签，诊断只做事后分析、不参与判分。",
+    "cite": [
+      "paper@3.3 Evaluation and Diagnostics",
+      "paper@3.2 Task Structure",
+      "paper@附录 C",
+      "paper@附录 C.1",
+      "paper@附录 E",
+      "leaderboard"
+    ],
+    "variants": [
+      {
+        "text": "覆盖阈值 0.50 / 0.75 / 0.90：阈值抬高会平移绝对分，头部降约 7.4 个百分点（Muse Spark 89.6→82.2）、尾部降约 15.6 个百分点（Claude Haiku 4.5 55.8→40.2），排名大体保留（Spearman ρ=0.965）。",
+        "cite": [
+          "paper@Table 8",
+          "paper@附录 G"
+        ]
+      },
+      {
+        "text": "裁判模型与版本：论文主榜用 Gemini 3.1 Pro Preview，官方榜单页面写的裁判是 Gemini-2.5-Pro（temperature 0.0），并说明 2026 年 4 月升级过裁判；三个裁判之间每个模型差 2.1–4.6 个百分点，均通过率从 65.4%（最宽容）到 62.3%（最严）。",
+        "cite": [
+          "leaderboard",
+          "paper@Table 9",
+          "paper@4.4 Cross-Judge Agreement",
+          "paper@附录 A"
+        ]
+      },
+      {
+        "text": "工具调用预算：现行 harness 与论文固定每题 100 次调用，官方榜单页面说明 2026 年 4 月前用的是 20 轮上限，并已按新口径重新打分全部模型。",
+        "cite": [
+          "paper@附录 A",
+          "leaderboard",
+          "repo@README"
+        ]
+      },
+      {
+        "text": "子集：全集 1,000 题 vs 公开 500 题 vs 私有 500 题。公开集分数系统性偏高，各厂商差距 +3.8 至 +8.4 个百分点（仅 Kimi K2.5 私有集更高，−0.8 pp）。",
+        "cite": [
+          "paper@4.5 Public-Private Split Sensitivity",
+          "leaderboard"
+        ]
+      },
+      {
+        "text": "推理档位：论文 Table 9 显示各模型推理配置不一致（GPT-5.x 多为 reasoning=xhigh，Claude Opus 4.7/4.6 为 effort=max，而 o3 Pro、GLM-5.1、GLM-4.7、Kimi K2.5 用默认无推理档位），换档位会改变分数。",
+        "cite": [
+          "paper@Table 9"
+        ]
+      }
+    ]
   },
   "metrics": [
     {
       "id": "pass-rate",
-      "name": "Claim-level pass rate",
-      "range": [0, 100],
+      "name": "通过率（pass rate @ coverage ≥ 0.75）",
+      "direction": "越高越好",
+      "description": "最终答案的 claim 覆盖率达到 0.75 及以上的任务占比，也是官方榜单的排名指标",
+      "range": [
+        0,
+        100
+      ],
       "unit": "percent",
-      "direction": "higher",
-      "aggregation": "mean"
+      "cite": [
+        "paper@3.2 Task Structure",
+        "paper@4.1 Overall Performance",
+        "leaderboard"
+      ]
+    },
+    {
+      "id": "mean-coverage",
+      "name": "平均覆盖率（mean coverage）",
+      "direction": "越高越好",
+      "description": "全部任务上 per-task claim 得分均值的平均，含失败任务，用于区分「差一点通过」和「差得很远」的模型",
+      "range": [
+        0,
+        1
+      ],
+      "unit": "ratio",
+      "cite": [
+        "paper@Table 8",
+        "leaderboard"
+      ]
+    },
+    {
+      "id": "tool-failure-share",
+      "name": "工具类失败占比（Tool%）",
+      "direction": "越低越好",
+      "description": "诊断出的失败中归入工具调用族（参数错误、选错工具、不调工具、错误恢复失败）的比例，其余为认知类失败；全量聚合计为 36.7%",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@Table 3",
+        "paper@4.2 Failure Mode Analysis"
+      ]
+    },
+    {
+      "id": "wall-clock-time",
+      "name": "每任务平均轨迹墙钟时间",
+      "direction": "越低越好",
+      "description": "完成一个任务的平均墙钟耗时（含工具往返），论文用它画效率帕累托前沿；观测范围 27–194 秒",
+      "range": [
+        27,
+        194
+      ],
+      "unit": "seconds",
+      "cite": [
+        "paper@4.3 Efficiency Frontier"
+      ]
     }
   ],
   "versions": [
     {
-      "id": "v1",
-      "label": "MCP-Atlas v1（2026-01）",
-      "note": "arXiv:2602.00933（2026-05 修订至 v3）；另发布 11 类失败诊断分类"
+      "id": "leaderboard-first",
+      "date": "2025-09-19",
+      "label": "Scale 博客首发 MCP-Atlas 榜单：1,000 题、40+ 服务器、300+ 工具，11 个模型，仅私有榜单；公开数据集、开源 harness 与论文当时都还列为后续计划",
+      "cite": [
+        "announcement"
+      ]
+    },
+    {
+      "id": "arxiv-v1",
+      "date": "2026-01-31",
+      "label": "arXiv v1 发表（cs.SE，765 KB）",
+      "cite": [
+        "abs@Submission history"
+      ]
+    },
+    {
+      "id": "arxiv-v2",
+      "date": "2026-05-04",
+      "label": "arXiv v2（765 KB）",
+      "cite": [
+        "abs@Submission history"
+      ]
+    },
+    {
+      "id": "arxiv-v3",
+      "date": "2026-05-19",
+      "label": "arXiv v3（2,773 KB，本档案核对所用版本）：36 服务器 / 220 工具、三个 LLM 裁判、11 类失败模式诊断、公开 500 题与私有 500 题",
+      "cite": [
+        "abs@Submission history",
+        "paper@Abstract"
+      ]
     }
   ],
   "limitations": [
-    "MCP 服务器生态演进快，环境与工具集需持续维护",
-    "private split 不公开，社区无法完整自评",
-    "claim 覆盖阈值的选择会平移分数"
+    {
+      "issue": "官方榜单页面自身前后不一致",
+      "impact": "同页头部卡写「83.6% Top Pass Rate」，结果表最高却是 Muse Spark 82.2%；「Key Findings」段仍写「Top performer: Claude Opus 4.5 with 62.3% pass rate」，与同页结果表差约 20 个百分点；「Failure Analysis」表写工具类失败占失败的 ~47.5%–68.5%，而论文 v3 的聚合计是 36.7%；工具暴露写「10–25 tools exposed per task, typically 3-7 required」，论文是 6–37（均值 15.2）与 2–8（均值 4.1）。",
+      "severity": "高",
+      "response": "页面注明 2026 年 4 月更新过裁判、加入瞬时工具错误重试、把 20 轮上限改成每题 100 次调用预算，并声称已按新口径重新打分全部模型；但 Findings 与 Failure Analysis 两段没有同步更新，页面也未说明 83.6% 与 82.2% 的口径差异。",
+      "reader": "以论文 v3 与页面结果表为准；不要把页面 Findings / Failure Analysis 的数字和论文数字混在同一次比较里。",
+      "cite": [
+        "leaderboard",
+        "paper@Table 3",
+        "paper@3.2 Task Structure",
+        "paper@4.2 Failure Mode Analysis"
+      ]
+    },
+    {
+      "issue": "裁判模型与版本会平移绝对分数",
+      "impact": "三个 LLM 裁判之间每个模型差 2.1–4.6 个百分点，均通过率从 65.4%（最宽容的 Gemini 3.1 Pro Preview）到 62.3%（最严的 GPT-5.4）；换裁判或换裁判版本都会移动绝对分，排名在密集的头部集群里甚至会互换。",
+      "severity": "高",
+      "response": "论文用三个独立裁判并公开附录 F 全表，同时要求始终报告所用裁判并钉住裁判版本；官方榜单页面声明 2026 年 4 月升级过裁判，但页面正文写的仍是 Gemini-2.5-Pro。",
+      "reader": "比较两个分数前先确认裁判模型、裁判版本与覆盖阈值三项口径。",
+      "cite": [
+        "paper@4.4 Cross-Judge Agreement",
+        "paper@附录 A",
+        "leaderboard"
+      ]
+    },
+    {
+      "issue": "活服务器快照会漂移",
+      "impact": "排行榜反映的是 2026 年 5 月的服务器行为快照；上游限流策略、认证方式与 schema 版本会在无通知的情况下变化，少量任务可能随时间变得不可解或过于可解，单任务轨迹级可复现性受上游稳定性限制。",
+      "severity": "中",
+      "response": "服务器容器钉住镜像 digest 并在任务间重启；论文称检测到上游漂移时会发布重新打分运行，但这依赖持续维护。",
+      "reader": "跨时间比较分数时要给服务器漂移留余地；关注是否有重新打分的运行。",
+      "cite": [
+        "paper@附录 A",
+        "paper@3.1 Server Ecosystem"
+      ]
+    },
+    {
+      "issue": "公开集与私有集存在系统性差距",
+      "impact": "公开集包含提示、工具集、claim 与参考轨迹，多数模型在公开集上更高（−0.8 至 +9.6 pp），且按厂商聚类：OpenAI +8.4 pp、Google +5.2 pp、Anthropic +4.8 pp、开源模型 +3.8 pp。",
+      "severity": "中",
+      "response": "保留 500 题私有集用于暴露监测与榜单完整性，并把拆分差距作为审计统计量与总分一起报告；论文明确说这应读作拆分敏感性与暴露监测信号，不是记忆化的直接证据。",
+      "reader": "只拿到公开集分数时，按数个百分点的量级留余地，并分清分数来自公开 500、私有 500 还是全集 1,000。",
+      "cite": [
+        "paper@4.5 Public-Private Split Sensitivity",
+        "paper@3 Benchmark Design",
+        "leaderboard"
+      ]
+    },
+    {
+      "issue": "各厂商 harness 不完全一致",
+      "impact": "凡厂商推荐原生工具调用策略（如 anthropic-native、openai-responses-api）就采用该策略，因此 harness 并非跨厂商完全一致，一部分分数差异可能来自适配层而非模型能力。",
+      "severity": "中",
+      "response": "论文遵循各厂商发布的最佳实践并如实披露该不对称；未见进一步标准化方案。",
+      "reader": "跨厂商比较时把这部分差异计入噪声，不要把它当成纯能力差。",
+      "cite": [
+        "paper@附录 A"
+      ]
+    },
+    {
+      "issue": "第三方复现口径分歧",
+      "impact": "EvalScope 的适配器默认只跑当前启用服务器可覆盖的 89 题（全集 500 题），并自称不与 Scale 榜单等价；智谱 GLM-5 技术报告则在 500 题公开集上重新评测全部模型、把每任务超时从 4 分钟放宽到 10 分钟、裁判换成 Gemini 3 Pro。",
+      "severity": "中",
+      "response": "未见 Scale 对第三方复现差异的官方回应；官方只提供 harness、数据与依赖钉住。",
+      "reader": "看厂商自报的 MCP-Atlas 分数时，先核对其子集（公开 500 还是全集）、超时、工具调用预算与裁判模型。",
+      "cite": [
+        "docs",
+        "blog"
+      ]
+    },
+    {
+      "issue": "claim 列表残留噪声",
+      "impact": "原子 claim 由专家撰写加自动候选生成再人工复核得到，残留噪声会让即使完美智能体也无法达到 100%，因为部分 claim 只在提示的歧义解释下才可恢复。",
+      "severity": "低",
+      "response": "论文在附录 A 中披露该误差带，并把 claim 抽取列为已知限制；未见量化的 claim 错误率。",
+      "reader": "不要把接近头部集群的几个点差距当成稳健的能力差。",
+      "cite": [
+        "paper@附录 A",
+        "paper@5 Discussion"
+      ]
+    },
+    {
+      "issue": "100 次工具调用预算与英文单轮的边界",
+      "impact": "少量失败源于每题 100 次调用上限而非能力不足，尤其是需要从真实工具错误中重试恢复的长程任务；放开预算预期会抬高绝对分。同时 1,000 题全为英文，非英文工具使用不在范围内。",
+      "severity": "低",
+      "response": "论文披露放宽预算在内部测试中未改变相对排名，并称多轮澄清与干扰项消融是未来工作。",
+      "reader": "看到低分时区分是撞到预算上限还是能力不足；跨语言场景不要套用这个分数。",
+      "cite": [
+        "paper@附录 A",
+        "paper@5 Discussion"
+      ]
+    }
   ],
-  "notes": "证据账本中 18 次引用，是 MCP 工具叙事的高频锚点",
+  "notes": "arXiv:2602.00933 v3（2026-05-19）为本档案核对所用版本；Scale 早在 2025-09-19 就发过只含私有榜单的首发公告。",
   "official_sources": [
     {
       "kind": "paper",
       "url": "https://arxiv.org/abs/2602.00933"
     },
     {
-      "kind": "github",
+      "kind": "repo",
       "url": "https://github.com/scaleapi/mcp-atlas"
     },
     {
       "kind": "site",
       "url": "https://labs.scale.com/leaderboard/mcp_atlas"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/ScaleAI/MCP-Atlas"
+    },
+    {
+      "kind": "site",
+      "url": "https://scale.com/blog/mcp-atlas"
     }
   ],
   "related_benchmarks": [
@@ -70,6 +451,451 @@
     "toolathlon",
     "agentbench"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-10",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-10",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "MCP-Atlas: A Large-Scale Benchmark for Tool-Use Competency with Real MCP Servers（arXiv:2602.00933v3，2026-05-19）",
+        "url": "https://arxiv.org/abs/2602.00933",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "abs",
+        "kind": "paper",
+        "title": "arXiv abs 页（提交历史：v1 2026-01-31 / v2 2026-05-04 / v3 2026-05-19）",
+        "url": "https://arxiv.org/abs/2602.00933",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "scaleapi/mcp-atlas README（运行方式、公开集规模、harness 版本）",
+        "url": "https://github.com/scaleapi/mcp-atlas",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "leaderboard",
+        "kind": "leaderboard",
+        "title": "Scale Labs 官方榜单 MCP Atlas（含 2026-04 口径更新说明与结果表）",
+        "url": "https://labs.scale.com/leaderboard/mcp_atlas",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "dataset",
+        "kind": "dataset",
+        "title": "ScaleAI/MCP-Atlas（Hugging Face，500 题公开集，CC-BY-4.0）",
+        "url": "https://huggingface.co/datasets/ScaleAI/MCP-Atlas",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "announcement",
+        "kind": "announcement",
+        "title": "Scale AI 博客：Actions, Not Words: MCP-Atlas Raises the Bar for Agentic Evaluation（2025-09-19）",
+        "url": "https://scale.com/blog/mcp-atlas",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "inventory",
+        "kind": "repo",
+        "title": "README 链接的服务器/工具清单 gist（36 servers, 307 total tools）",
+        "url": "https://gist.github.com/geobio/d0272d41ea395376233f1617a3988860",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "docs",
+        "kind": "docs",
+        "title": "EvalScope 文档：MCP-Atlas 适配器（第三方复现口径）",
+        "url": "https://evalscope.readthedocs.io/en/latest/benchmarks/mcp_atlas.html",
+        "accessed": "2026-11-10"
+      },
+      {
+        "id": "blog",
+        "kind": "blog",
+        "title": "智谱 GLM-5 技术报告转载（MCP-Atlas 复现口径：公开 500 题、超时 4→10 分钟、裁判 Gemini 3 Pro）",
+        "url": "https://cloud.tencent.com/developer/article/2637114",
+        "accessed": "2026-11-10"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Scale AI（论文署名 Scale AI 与新加坡国立大学）",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      "first_release": {
+        "v": "2025-09-19（Scale 博客首发 MCP-Atlas 私有榜单）",
+        "cite": [
+          "announcement"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "paper@Abstract",
+        "paper@3.2 Task Structure",
+        "repo@README"
+      ],
+      "interpretation": [
+        "paper@4.2 Failure Mode Analysis",
+        "paper@Table 8",
+        "paper@附录 A",
+        "leaderboard"
+      ]
+    },
+    "problem": {
+      "text": "现有 MCP 评测总有一条轴不达标：要么缺少带分支与跨服务器编排的真实多步工作流，要么广度停留在 mock 而非真实服务器，要么评分要么做轨迹匹配（惩罚同样有效的替代解法）、要么用整体 LLM-as-judge（冗长回答与简洁回答得分不同，可复现性差）；而做得严格的基准又受限于人工出题与定制验证脚本，规模普遍在 250 题以下，做不出统计上稳健的模型对比。MCP-Atlas 想用 1,000 题 × 36 个真实生产服务器 × claim 级评分同时拿到规模、真实性与可复现性。",
+      "cite": [
+        "paper@Abstract",
+        "paper@1 Introduction",
+        "paper@2.2 MCP-Based Evaluation"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "首发公告时最好成绩（2025-09，私有榜单集）",
+        "value": "44.5%",
+        "note": "GPT-5，445/1000；同批 11 个模型的中位数是 Kimi-K2 的 23.9%，一半模型落在 8%–38.3% 通过率。该数字来自旧口径，不能与现行榜单分数直接比。",
+        "cite": [
+          "announcement"
+        ]
+      },
+      {
+        "label": "论文 v3 报告的最好成绩",
+        "value": "82.2%",
+        "note": "Muse Spark（Meta），全集 1,000 题，主裁判 Gemini 3.1 Pro Preview，coverage ≥ 0.75；前三名 78.2%–82.2% 的置信区间重叠，开源 GLM-5.1 为 75.6%。",
+        "cite": [
+          "paper@Figure 1",
+          "paper@4.1 Overall Performance"
+        ]
+      },
+      {
+        "label": "官方榜单结果表当前最高",
+        "value": "82.2%（Muse Spark，全集 1000）",
+        "note": "与论文一致；同页头部卡另写「83.6% Top Pass Rate」，两者不一致且页面未说明口径差异。",
+        "cite": [
+          "leaderboard"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      },
+      {
+        "label": "榜单页面残留的旧版最高（已被同页新表覆盖）",
+        "value": "62.3%",
+        "note": "页面 Key Findings 段仍写 Claude Opus 4.5 62.3% 通过率 / 78.5% 平均覆盖率，与同页结果表最高 82.2% 差约 20 个百分点；引用时不要采用这组数字。",
+        "cite": [
+          "leaderboard"
+        ]
+      },
+      {
+        "label": "更严阈值参考线",
+        "value": "Pass@0.90 最高 71.2%（Muse Spark）",
+        "note": "阈值从 0.75 提到 0.90，头部分数降约 7.4 个百分点、尾部降约 15.6 个百分点；排名大体保留（Spearman ρ=0.965）。",
+        "cite": [
+          "paper@Table 8",
+          "paper@附录 G"
+        ]
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把榜单页面 Findings / Failure Analysis 的数字当成当前结果——那两段是旧版残留（最高 62.3%、工具类失败占 47.5%–68.5%），与同页结果表和论文 v3 的 36.7% 不一致。",
+        "cite": [
+          "leaderboard",
+          "paper@Table 3"
+        ]
+      },
+      {
+        "text": "把不同覆盖阈值下的通过率排在一起比：0.50 / 0.75 / 0.90 三个阈值在头部差约 7.4 个百分点、尾部差约 15.6 个百分点。",
+        "cite": [
+          "paper@Table 8",
+          "paper@附录 G"
+        ]
+      },
+      {
+        "text": "把公开集分数和全集分数混用：公开 500 题系统性偏高，各厂商差距 +3.8 至 +8.4 个百分点。",
+        "cite": [
+          "paper@4.5 Public-Private Split Sensitivity",
+          "leaderboard"
+        ]
+      },
+      {
+        "text": "以为 claim 级评分是在比对工具调用轨迹——论文明确参考轨迹只用于可解性检查、工具依赖校验与失败诊断，从不用于判分，替代轨迹拿满分。",
+        "cite": [
+          "paper@3.2 Task Structure",
+          "paper@附录 H"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "Scale AI（Scale AI Research；论文署名机构为 Scale AI 与新加坡国立大学）",
+        "cite": [
+          "paper@作者署名",
+          "announcement"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "共同一作 Chaithanya Bandi（新加坡国立大学）与 Razvan-Gabriel Dumitru（Scale AI），另有 Ben Hertzberg、Divyansh Agarwal、Geobio Boo、Vipul Gupta、Bing Liu 等共 23 位作者；arXiv 提交人为 Razvan-Gabriel Dumitru",
+        "cite": [
+          "paper@作者署名",
+          "abs@Authors",
+          "abs@Submission history"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2025-09-19 Scale 博客首发私有榜单 → 2026-01-31 arXiv v1 → 2026-04 官方榜单更新裁判、加入工具错误重试、把 20 轮上限改为每题 100 次调用预算并重新打分 → 2026-05-19 arXiv v3（本档案核对版本）",
+        "cite": [
+          "announcement",
+          "abs@Submission history",
+          "leaderboard"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "公开 500 题在 Hugging Face（ScaleAI/MCP-Atlas，CC-BY-4.0，字段 TASK / ENABLED_TOOLS / PROMPT / GTFA_CLAIMS / TRAJECTORY）；harness、评分与诊断管线在 GitHub（Apache-2.0，agent harness v2.0.0 起为 TypeScript）；36 个服务器与 307 个工具的完整清单在 README 链接的 gist",
+        "cite": [
+          "dataset",
+          "repo@README",
+          "inventory"
+        ]
+      },
+      {
+        "k": "题目制作成本",
+        "v": "平均每题 4.6 小时专家工时用于撰写、核验与整理交付物；标注员按合同获得报酬，未使用无偿志愿劳动",
+        "cite": [
+          "paper@附录 D"
+        ]
+      },
+      {
+        "k": "复现榜单的算力开销",
+        "v": "20 模型 × 1,000 题 = 20,000 条轨迹；因裁判按 claim 调用（均值 4.7 条/题），主榜单约 94,000 次裁判调用，三裁判敏感性研究约 282,000 次；单模型 1,000 题在 8–12 并发客户端上耗时 2–18 墙钟小时，主裁判跑完一个模型约 2 小时",
+        "cite": [
+          "paper@附录 H"
+        ]
+      },
+      {
+        "k": "规模口径不一致",
+        "v": "论文、官方榜单与 Hugging Face 卡片都写 36 个服务器 / 220 个工具；GitHub README 与其链接的 gist 写 36 个服务器 / 307 个工具；2025-09 首发公告写 40+ 服务器 / 300+ 工具",
+        "cite": [
+          "paper@Abstract",
+          "leaderboard",
+          "dataset",
+          "repo@README",
+          "inventory",
+          "announcement"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-10",
+        "columns": [
+          "来源",
+          "模型",
+          "Pass@0.75 全集 1000（%）",
+          "Mean coverage",
+          "Pass@0.50（%）",
+          "Pass@0.90（%）",
+          "公开 500 题通过率（%）"
+        ],
+        "rows": [
+          [
+            "论文 Table 8 + 官方榜单结果表",
+            "Muse Spark",
+            "82.2",
+            "0.862",
+            "89.6",
+            "71.2",
+            "82.4"
+          ],
+          [
+            "论文 Table 8 + 官方榜单结果表",
+            "Claude Opus 4.7",
+            "79.1",
+            "0.838",
+            "89.5",
+            "63.2",
+            "80.8"
+          ],
+          [
+            "论文 Table 8 + 官方榜单结果表",
+            "Gemini 3.1 Pro Preview",
+            "78.2",
+            "0.839",
+            "90.6",
+            "61.8",
+            "80.6"
+          ],
+          [
+            "论文 Table 8 + 官方榜单结果表",
+            "Claude Opus 4.6",
+            "76.8",
+            "0.827",
+            "88.6",
+            "61.1",
+            "79.0"
+          ],
+          [
+            "论文 Table 8 + 官方榜单结果表",
+            "GLM-5.1",
+            "75.6",
+            "0.818",
+            "88.5",
+            "59.0",
+            "78.6"
+          ],
+          [
+            "论文 Table 8 + 官方榜单结果表",
+            "GPT-5.5",
+            "75.3",
+            "0.821",
+            "90.2",
+            "56.4",
+            "79.4"
+          ],
+          [
+            "论文 Table 8 + 官方榜单结果表",
+            "GPT-5.4",
+            "70.6",
+            "0.785",
+            "87.2",
+            "48.9",
+            "75.4"
+          ],
+          [
+            "论文 Table 8 + 官方榜单结果表",
+            "Gemini 3 Pro Preview",
+            "70.3",
+            "0.790",
+            "85.9",
+            "52.7",
+            "73.0"
+          ],
+          [
+            "论文 Table 8 + 官方榜单结果表",
+            "Claude Opus 4.5",
+            "69.8",
+            "0.769",
+            "82.4",
+            "53.9",
+            "73.4"
+          ],
+          [
+            "论文 Table 8 + 官方榜单结果表",
+            "Claude Sonnet 4.6",
+            "69.5",
+            "0.780",
+            "84.1",
+            "55.0",
+            "72.8"
+          ],
+          [
+            "论文 Table 8 + 官方榜单结果表",
+            "GPT-5.2",
+            "67.6",
+            "0.755",
+            "81.4",
+            "50.6",
+            "71.8"
+          ],
+          [
+            "论文 Table 8 + 官方榜单结果表",
+            "Kimi K2.5",
+            "64.4",
+            "0.725",
+            "78.6",
+            "47.9",
+            "64.0"
+          ],
+          [
+            "论文 Table 8 + 官方榜单结果表",
+            "Gemini 3 Flash Preview",
+            "62.0",
+            "0.720",
+            "78.2",
+            "47.5",
+            "64.0"
+          ],
+          [
+            "论文 Table 8 + 官方榜单结果表",
+            "Claude Sonnet 4.5",
+            "59.5",
+            "0.697",
+            "75.7",
+            "45.0",
+            "62.0"
+          ],
+          [
+            "论文 Table 8 + 官方榜单结果表",
+            "GLM-4.7",
+            "58.1",
+            "0.685",
+            "74.1",
+            "43.7",
+            "61.2"
+          ],
+          [
+            "论文 Table 8 + 官方榜单结果表",
+            "Gemini 3.1 Flash Lite Preview",
+            "57.1",
+            "0.686",
+            "75.1",
+            "40.2",
+            "60.4"
+          ],
+          [
+            "论文 Table 8 + 官方榜单结果表",
+            "GPT-5.4 Mini",
+            "56.7",
+            "0.682",
+            "76.8",
+            "36.4",
+            "61.0"
+          ],
+          [
+            "论文 Table 8 + 官方榜单结果表",
+            "GPT-5.1",
+            "50.1",
+            "0.615",
+            "66.6",
+            "35.3",
+            "53.6"
+          ],
+          [
+            "论文 Table 8 + 官方榜单结果表",
+            "o3 Pro",
+            "44.5",
+            "0.542",
+            "58.4",
+            "31.6",
+            "48.8"
+          ],
+          [
+            "论文 Table 8 + 官方榜单结果表",
+            "Claude Haiku 4.5",
+            "40.2",
+            "0.517",
+            "55.8",
+            "27.1",
+            "41.2"
+          ]
+        ]
+      },
+      "cite": [
+        "paper@Table 8",
+        "leaderboard"
+      ]
+    }
+  }
 }
