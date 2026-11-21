@@ -1,75 +1,411 @@
 {
   "id": "multichallenge",
   "name": "MultiChallenge",
-  "full_name": "MultiChallenge: A Realistic Multi-Turn Conversation Evaluation Benchmark Inheriting Multi-Faceted Challenges",
+  "full_name": "MultiChallenge: A Realistic Multi-Turn Conversation Evaluation Benchmark Challenging to Frontier LLMs",
   "aliases": ["Multi-Challenge"],
-  "status": null,
-  "categories": [
-    "preference"
-  ],
-  "summary": "Scale AI 出品的多轮对话基准：四类真实对话难点——指令保持、用户信息推理、对话自洽、拒绝不合理请求",
-  "interpretation": "发布时所有模型低于 50 分——多轮真实对话是显著短板；单轮强不代表多轮稳。",
+  "status": "active",
+  "categories": ["preference"],
+  "summary": "Scale AI 出的多轮对话基准：273 段最长 10 轮的真实对话，每段都以一个最终用户请求收尾，要求模型在四类常见对话难点上不翻车——守住第一轮说过的指令、接住散落在前文里的用户信息、把旧稿改对、前后说法不自相矛盾。发布时所有前沿模型的平均准确率都不到 50%，最高的 Claude 3.5 Sonnet 也只有 41.4%。",
+  "interpretation": "高分说明模型在几十轮来回里守得住指令、连得上前文、改得动旧稿、前后一个说法；它直接测量多轮对话行为，不测量知识广度或写作质量。读分数时有三件事要先对齐：判分用每个实例一条只能回答 yes/no 的问题加 LLM 裁判，与资深人工标注的一致率约 93%，远高于直接把原始对话丢给模型当裁判的 36%；榜单每行带置信区间，排名按「有多少模型的下界超过它的上界」计算；裁判模型和题目会更新（2026-02-03 起换成 Gemini 2.5 Pro），跨期比较前先确认这两项没变。",
   "measures": [
-    "跨轮指令保持（instruction retention）",
-    "对话中用户信息的记忆与推理",
-    "对不合理/无效请求的拒绝（refusal）"
+    {
+      "area": "指令保持（Instruction Retention）",
+      "focus": "第一轮用户给出的约束（大小写、格式、字数、角色等）能否在后续每一轮继续生效；论文的观察是前沿模型单轮守得住、多轮守不住",
+      "share": "25.3%（69/273，按 Table 1 计数换算）",
+      "format": "开放式回答，用一条 yes/no 实例问题判定",
+      "cite": ["arxiv-2501-17399@§3.1.1", "arxiv-2501-17399@§1", "arxiv-2501-17399@Table 1"]
+    },
+    {
+      "area": "用户信息推理（Inference Memory of User Information）",
+      "focus": "前几轮零散提到的偏好、约束与事实，模型能否在最终请求里主动调用并关联起来，而不是只答最后一句",
+      "share": "41.4%（113/273，按 Table 1 计数换算）",
+      "format": "开放式回答，用一条 yes/no 实例问题判定",
+      "cite": ["arxiv-2501-17399@§3.1.2", "arxiv-2501-17399@§1", "arxiv-2501-17399@Table 1"]
+    },
+    {
+      "area": "可靠版本化编辑（Reliable Versioned Editing）",
+      "focus": "在已有材料（行程、邮件、代码、文案）上反复迭代：本轮改对、不丢旧要求、不回退已确认的内容",
+      "share": "15.0%（41/273，按 Table 1 计数换算）",
+      "format": "开放式回答，用一条 yes/no 实例问题判定",
+      "cite": ["arxiv-2501-17399@§3.1.3", "arxiv-2501-17399@§1", "arxiv-2501-17399@Table 1"]
+    },
+    {
+      "area": "自我一致（Self-Coherence）",
+      "focus": "模型前后说法是否自洽，以及会不会为了迎合用户而放弃自己此前给出的正确回答",
+      "share": "18.3%（50/273，按 Table 1 计数换算）",
+      "format": "开放式回答，用一条 yes/no 实例问题判定",
+      "cite": ["arxiv-2501-17399@§3.1.4", "arxiv-2501-17399@§1", "arxiv-2501-17399@Table 1"]
+    }
   ],
   "does_not_measure": [
-    "工具调用与 Agent 执行",
-    "开放写作的主观偏好质量",
-    "安全红队攻击面"
+    {
+      "text": "工具调用、代码执行与 Agent 任务闭环——题库是纯文本多轮对话（HF 卡片标注 Modalities: Text），没有工具接口",
+      "cite": ["hf-dataset@数据集信息", "arxiv-2501-17399@§1"]
+    },
+    {
+      "text": "开放式写作与通用偏好质量——判分是每个实例一条二元问题，不是成对比较，也不是人工打分",
+      "cite": ["arxiv-2501-17399@§3.2"]
+    },
+    {
+      "text": "知识广度与事实正确性（对话中已给出的信息之外）——考的是对话中的行为，不是问答",
+      "cite": ["arxiv-2501-17399@§1"]
+    },
+    {
+      "text": "安全红队与拒答策略——四类难点里没有一类以拒答为对象；自我一致关心的是模型别为了迎合用户推翻自己",
+      "cite": ["arxiv-2501-17399@§1", "arxiv-2501-17399@§3.1.4"]
+    },
+    {
+      "text": "多语言能力——公开副本标注语言为英文，论文未报告其他语言",
+      "cite": ["hf-dataset@数据集信息"]
+    }
   ],
   "dataset": {
-    "sample_count": null,
-    "splits": [
-      "instruction-retention",
-      "inference-memory",
-      "self-coherence",
-      "refusal-handling"
-    ],
-    "source_type": "authored",
+    "sample_count": 273,
+    "splits": ["instruction-retention", "inference-memory", "reliable-versioned-editing", "self-coherence"],
     "languages": ["en"],
-    "public_sample": null
+    "source_type": "authored（合成生成 + 人工审校：MMSE 产出后由受训标注员编辑）",
+    "public_sample": true,
+    "totals": "273 段测试对话 · 平均每段 5 轮、1231.7 词 · 四类占比：用户信息推理 41.4%（113）／指令保持 25.3%（69）／可靠版本化编辑 15.0%（41）／自我一致 18.3%（50）· 语言英文 · HF 公开副本 266 行（比论文少 7 行，官方未说明），num_turns 字段范围 3–19，按对话中的消息条数计，与论文「最多 10 轮对话史」不是同一计数口径",
+    "cite": ["arxiv-2501-17399@Table 1", "arxiv-2501-17399@§1", "hf-dataset@数据集信息"],
+    "construction": [
+      {
+        "k": "合成引擎",
+        "text": "用多智能体系统 MMSE 生成：Planner 负责生成并持续更新对话蓝图，检测到失败条件就终止并保存，User 生成具体用户轮，Responder 从 6 个前沿模型中随机抽一个充当，避免生成侧偏向某个被测模型",
+        "cite": ["arxiv-2501-17399@§4.1"]
+      },
+      {
+        "k": "输入配置",
+        "text": "MMSE 的三个输入是层级化主题种子、从 HuggingFace PersonaHub 抽取的用户人格种子、以及包含类目名／类目定义／通过条件／失败条件／失败示例的五件套类目配置",
+        "cite": ["arxiv-2501-17399@§4.1"]
+      },
+      {
+        "k": "人工审校",
+        "text": "招募并训练人工标注员审校 MMSE 产出；只保留能让 6 个前沿模型中至少 3 个失败的样本，保证难度的代表性",
+        "cite": ["arxiv-2501-17399@§4.2"]
+      },
+      {
+        "k": "复核层",
+        "text": "标注员提交后再过 2 层复核，复核者与初审标注员完全分开；只有通过两层复核的样本才进入题库",
+        "cite": ["arxiv-2501-17399@§4.2"]
+      },
+      {
+        "k": "人效与人改幅度",
+        "text": "从合成稿改起平均 73.6 分钟完成一段，从零写要 154.4 分钟；合成稿与最终稿的平均字符串相似度 74.5%，即约四分之一的差异来自人工编辑",
+        "cite": ["arxiv-2501-17399@§5.2"]
+      }
+    ]
   },
   "metrics": [
     {
       "id": "accuracy",
-      "name": "Accuracy（LLM grader + 人工校准）",
+      "name": "准确率（Overall Score）",
+      "direction": "越高越好",
+      "description": "通过实例级二元问题的对话占比；官方仓库定义为「至少一次尝试达标的对话占比」",
       "range": [0, 100],
       "unit": "percent",
-      "direction": "higher",
-      "aggregation": "mean"
+      "cite": ["repo@README", "arxiv-2501-17399@§3.2"]
+    },
+    {
+      "id": "axis-score",
+      "name": "分轴得分",
+      "direction": "越高越好",
+      "description": "按四类难点分别统计的通过率，用于定位模型在哪一类对话行为上掉链子",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["repo@README", "arxiv-2501-17399@Table 3"]
+    },
+    {
+      "id": "judge-alignment",
+      "name": "裁判与人工一致率",
+      "direction": "越高越好",
+      "description": "LLM 裁判判定与资深人工标注的一致比例；论文报告约 93%，直接拿原始对话让模型当裁判只有约 36%",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["arxiv-2501-17399@Table 4", "arxiv-2501-17399@§5.2"]
     }
   ],
+  "default_protocol": {
+    "raw": "每段对话以最终用户轮的一条实例级二元问题（只能回答 yes 或 no）判定是否通过，通过即得分；论文用 GPT-4o 作基础裁判，并报告与资深人工标注约 93% 的一致率；官方仓库默认每段对话只生成 1 次回答，Overall Score 就是「至少一次尝试达标」的对话占比。",
+    "cite": ["arxiv-2501-17399@§3.2", "arxiv-2501-17399@§5.1", "repo@README"],
+    "variants": [
+      {
+        "text": "裁判可换：论文试过用 Claude 当裁判，结论与 GPT-4o 一致；Scale 榜单自 2026-02-03 起把裁判换成 Gemini 2.5 Pro，并调整了 54 道题的表述。",
+        "cite": ["arxiv-2501-17399@§5.1", "labs-leaderboard-multichallen@更新日志"]
+      },
+      {
+        "text": "尝试次数可调：官方脚本 --attempts 默认 1；设成 3 时每段生成 3 个回答，任一通过即算成功，因此 attempts=1 与 attempts=3 的分数不可直接比。",
+        "cite": ["repo@README"]
+      },
+      {
+        "text": "人工与自动两套口径：论文 Table 2 是人工判分，Table 3 是自动判分，同一模型两表数字不同（如 Claude 3.5 Sonnet 41.42 对 42.75）。",
+        "cite": ["arxiv-2501-17399@Table 2", "arxiv-2501-17399@Table 3"]
+      },
+      {
+        "text": "榜单另分大语言模型与小语言模型两个页签，排名按 Rank (Upper Bound)：1 + 下界超过本模型上界的模型数量。",
+        "cite": ["labs-leaderboard-multichallen@Methodology", "labs-leaderboard-multichallen@榜单"]
+      }
+    ]
+  },
   "versions": [
     {
       "id": "v1",
-      "label": "MultiChallenge（2025-01，ACL 2025 Findings）",
-      "note": "arXiv:2501.17399；后续有 Audio MultiChallenge 语音扩展（独立工作）"
+      "date": "2025-01-29",
+      "label": "arXiv v1 首发",
+      "cite": ["arxiv-2501-17399@提交历史"]
+    },
+    {
+      "id": "v2",
+      "date": "2025-03-06",
+      "label": "arXiv v2（本页核对所用版本；摘要写 Claude 3.5 Sonnet (June 2024)）",
+      "cite": ["arxiv-2501-17399@提交历史", "arxiv-2501-17399@Abstract"]
+    },
+    {
+      "id": "acl-findings",
+      "date": "2025-07",
+      "label": "Findings of ACL 2025 正式发表（2025.findings-acl.958，pp. 18632–18702；摘要写 (October 2024)，与 arXiv v2 不一致）",
+      "cite": ["anthology@元数据", "anthology@摘要"]
+    },
+    {
+      "id": "leaderboard-judge",
+      "date": "2026-02-03",
+      "label": "Scale 榜单更新：裁判换成 Gemini 2.5 Pro，54 道题表述调整",
+      "cite": ["labs-leaderboard-multichallen@更新日志"]
     }
   ],
   "limitations": [
-    "判分依赖 LLM grader，grader 更新会影响跨期可比性",
-    "题集私有化托管在 Scale 榜单，社区自评受限"
-  ],
-  "notes": "证据账本中 9 次引用；『多轮对话能力』叙事的锚点",
-  "official_sources": [
     {
-      "kind": "paper",
-      "url": "https://arxiv.org/abs/2501.17399"
+      "issue": "难度被裁判能力封顶",
+      "impact": "为了保证 LLM 裁判可信，不能收入「连实例级二元问题都超出当前前沿模型能力」的样本，题库难度存在上限；更难的那批样本被留在私有集里，要等自动评测可行后才公开。",
+      "severity": "高",
+      "response": "作者在 Limitations 明确记录该约束，并称困难样本暂不公开。",
+      "reader": "分数高不等于题目已经难到头——有一部分题目因为没法可靠判分而根本没进题库。",
+      "cite": ["arxiv-2501-17399@Limitations"]
     },
     {
-      "kind": "site",
-      "url": "https://labs.scale.com/leaderboard/multichallenge"
+      "issue": "对 6 个前沿模型有筛选偏差",
+      "impact": "样本按「6 个前沿模型共同失败」挑选，这 6 个模型的分数被人为压低；未参与筛选的模型既可能占到便宜也可能吃亏。",
+      "severity": "中",
+      "response": "作者明确记录该偏差；生成侧让 Responder 从 6 个模型中随机抽取，以降低生成偏向。",
+      "reader": "别把某个模型 20% 和另一个 40% 直接理解为同等难度下的能力差。",
+      "cite": ["arxiv-2501-17399@Limitations", "arxiv-2501-17399@§4.1"]
+    },
+    {
+      "issue": "判分依赖 LLM 裁判，跨期可比性受限",
+      "impact": "裁判升级或题目表述调整都会改变分数；论文自身也存在正文与表格不一致（§5.1 正文 38.3／34.6／19.1，Table 2 为 41.42／37.23／19.96）。",
+      "severity": "中",
+      "response": "论文公开实例级二元问题与裁判设置；榜单在更新日志注明裁判与题目变更。",
+      "reader": "比较两个时间点的分数前，先确认裁判模型和题目版本是否相同。",
+      "cite": ["arxiv-2501-17399@§5.1", "arxiv-2501-17399@Table 2", "labs-leaderboard-multichallen@更新日志"]
+    },
+    {
+      "issue": "公开副本与论文题量不一致",
+      "impact": "论文 273 段，HF 公开副本 266 行（少 7 行），num_turns 字段范围 3–19 与论文「最多 10 轮对话史」的计数口径不同；官方未说明差异原因。",
+      "severity": "低",
+      "response": "暂无公开说明。",
+      "reader": "引用题量时说明用的是论文口径还是 HF 副本口径。",
+      "cite": ["arxiv-2501-17399@Table 1", "hf-dataset@数据集信息"]
+    },
+    {
+      "issue": "只覆盖四类对话行为",
+      "impact": "总分只反映这四类跨轮行为；模型在其他对话能力上的短板不会体现在分数里，也无法从总分反推。",
+      "severity": "低",
+      "response": "官方仓库按四轴分别报告分数，便于定位短板。",
+      "reader": "把四轴分数一起看，不要只盯总分。",
+      "cite": ["repo@README", "arxiv-2501-17399@Table 3"]
     }
   ],
-  "related_benchmarks": [
-    "mtbench",
-    "arenahard",
-    "wildbench",
-    "alpacaeval",
-    "tau2-bench"
+  "notes": "证据账本中 10 次引用；『多轮对话能力』叙事的锚点",
+  "official_sources": [
+    { "kind": "paper", "url": "https://arxiv.org/abs/2501.17399" },
+    { "kind": "site", "url": "https://labs.scale.com/leaderboard/multichallenge" },
+    { "kind": "dataset", "url": "https://huggingface.co/datasets/ScaleAI/MultiChallenge" },
+    { "kind": "repo", "url": "https://github.com/ekwinox117/multi-challenge" }
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "related_benchmarks": ["mtbench", "arenahard", "wildbench", "alpacaeval", "tau2-bench"],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-19",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-19",
+    "sources": [
+      {
+        "id": "arxiv-2501-17399",
+        "kind": "paper",
+        "title": "MultiChallenge（arXiv:2501.17399，v2，2025-03-06）",
+        "url": "https://arxiv.org/abs/2501.17399",
+        "accessed": "2026-11-19"
+      },
+      {
+        "id": "labs-leaderboard-multichallen",
+        "kind": "leaderboard",
+        "title": "Scale AI Labs 榜单：MultiChallenge（含 Methodology 与更新日志）",
+        "url": "https://labs.scale.com/leaderboard/multichallenge",
+        "accessed": "2026-11-19"
+      },
+      {
+        "id": "hf-dataset",
+        "kind": "dataset",
+        "title": "ScaleAI/MultiChallenge（Hugging Face 公开副本）",
+        "url": "https://huggingface.co/datasets/ScaleAI/MultiChallenge",
+        "accessed": "2026-11-19"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "ekwinox117/multi-challenge（官方评测代码）",
+        "url": "https://github.com/ekwinox117/multi-challenge",
+        "accessed": "2026-11-19"
+      },
+      {
+        "id": "anthology",
+        "kind": "paper",
+        "title": "Findings of ACL 2025 版（2025.findings-acl.958，pp. 18632–18702）",
+        "url": "https://aclanthology.org/2025.findings-acl.958/",
+        "accessed": "2026-11-19"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Scale AI",
+        "cite": ["arxiv-2501-17399@标题", "arxiv-2501-17399@作者署名"]
+      },
+      "first_release": {
+        "v": "2025-01-29（arXiv v1；2025-03-06 更新至 v2）",
+        "cite": ["arxiv-2501-17399@提交历史"]
+      }
+    },
+    "cites": {
+      "summary": ["arxiv-2501-17399@Abstract", "arxiv-2501-17399@§1", "arxiv-2501-17399@Table 1"],
+      "interpretation": ["arxiv-2501-17399@§3.2", "arxiv-2501-17399@Table 4", "labs-leaderboard-multichallen@Methodology", "labs-leaderboard-multichallen@更新日志"]
+    },
+    "problem": {
+      "text": "当时的流行基准已经拉不开差距：MT-Bench、MT-Eval 一类多轮基准被前沿模型做到接近满分，另一批工作只测多轮显式指令遵循，没覆盖真实对话里「守指令 + 分配上下文注意力 + 上下文推理」的混合能力。作者想做一批常见、真实、且当时所有前沿模型都会失败的多轮对话，把差距重新测出来。",
+      "cite": ["arxiv-2501-17399@§2", "arxiv-2501-17399@Abstract"]
+    },
+    "ladder": [
+      {
+        "label": "论文发布时最好（人工判分）",
+        "value": "41.4%",
+        "note": "Claude 3.5 Sonnet (June 2024)；摘要与 §1 均称所有前沿模型低于 50%。",
+        "cite": ["arxiv-2501-17399@Abstract", "arxiv-2501-17399@Table 2"]
+      },
+      {
+        "label": "论文发布时最好（自动判分）",
+        "value": "42.8%",
+        "note": "同一模型在 Table 3 自动判分下为 42.75%；两表口径不同，不要混用。",
+        "cite": ["arxiv-2501-17399@Table 3"]
+      },
+      {
+        "label": "论文内开源模型最好（自动判分）",
+        "value": "23.2%",
+        "note": "Llama-3.3-70B-Instruct 23.19%；开源与当时最强闭源相差约一倍。",
+        "cite": ["arxiv-2501-17399@Table 5"]
+      },
+      {
+        "label": "Scale 榜单当前最好",
+        "value": "81.95 ± 4.16",
+        "note": "gpt 6.1 Sol，Rank (Upper Bound) 口径，页面更新至 2026-02-03；题目集与裁判都已更换，不能与论文发布时的分数直接对比。",
+        "cite": ["labs-leaderboard-multichallen@榜单", "labs-leaderboard-multichallen@更新日志"]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      },
+      {
+        "label": "判分方式参考线（不是模型分数）",
+        "value": "一致率约 93%（实例级二元问题）对约 36%（直接让模型当裁判）",
+        "note": "衡量的是判分方法本身的可信度：换判分方式对结论的影响大于换一批模型。",
+        "cite": ["arxiv-2501-17399@Table 4", "arxiv-2501-17399@§5.2"]
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 41.4% 和 81.95 放在一起比：前者是 2025 年论文题集，后者是 2026 年榜单题集加 Gemini 2.5 Pro 裁判，题目和裁判都换过。",
+        "cite": ["arxiv-2501-17399@Abstract", "labs-leaderboard-multichallen@更新日志"]
+      },
+      {
+        "text": "以为第四类难点是「拒绝不合理请求」：论文的四类是指令保持、用户信息推理、可靠版本化编辑、自我一致，没有拒答这一类。",
+        "cite": ["arxiv-2501-17399@§1", "arxiv-2501-17399@§3.1.4"]
+      },
+      {
+        "text": "把 HF 上的 266 行当成论文题量：论文是 273 段，公开副本少 7 行；num_turns 按消息条数计（3–19），与「最多 10 轮对话史」不是同一口径。",
+        "cite": ["arxiv-2501-17399@Table 1", "hf-dataset@数据集信息"]
+      },
+      {
+        "text": "把 attempts=3 的分数和 attempts=1 的分数混着比：仓库默认只生成 1 次回答，任一尝试通过即算成功，尝试次数越多分数越高。",
+        "cite": ["repo@README"]
+      },
+      {
+        "text": "把 §5.1 正文的 38.3% 当成最好成绩：同节表格里 Claude 3.5 Sonnet 是 41.42%，正文与表格不一致，本页以表格为准。",
+        "cite": ["arxiv-2501-17399@§5.1", "arxiv-2501-17399@Table 2"]
+      },
+      {
+        "text": "以为分数低等于模型听不懂最后那句话：四类难点考的是跨轮行为，同样的问题单轮重问，前沿模型通常答得对。",
+        "cite": ["arxiv-2501-17399@§3.1.1"]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "Scale AI；论文共 10 位作者（Ved Sirdeshmukh、Kaustubh Deshpande、Johannes Mols、Lifeng Jin、Ed-Yeremai Cardona、Dean Lee、Jeremy Kritz、Willow Primack、Summer Yue、Chen Xing），并标注有同等贡献",
+        "cite": ["arxiv-2501-17399@作者署名", "arxiv-2501-17399@标题"]
+      },
+      {
+        "k": "发表轨迹",
+        "v": "2025-01-29 arXiv v1 → 2025-03-06 v2 → 2025-07 Findings of ACL 2025（2025.findings-acl.958，pp. 18632–18702）",
+        "cite": ["arxiv-2501-17399@提交历史", "anthology@元数据"]
+      },
+      {
+        "k": "与既有基准的关系",
+        "v": "定位是替代已接近饱和的 MT-Bench、MT-Eval 一类多轮基准；作者同时把它与只测多轮显式指令遵循的工作区分开",
+        "cite": ["arxiv-2501-17399@§2"]
+      },
+      {
+        "k": "筛选用的 6 个模型",
+        "v": "o1-preview、GPT-4o (August 2024)、Gemini 1.5 Pro (August 27, 2024)、Claude 3.5 Sonnet、Mistral Large 2、Llama 3.1 405B Instruct（榜单页列名；论文摘要与正文另标 (June 2024)）",
+        "cite": ["labs-leaderboard-multichallen@数据构造", "arxiv-2501-17399@Abstract"]
+      },
+      {
+        "k": "数据与代码",
+        "v": "数据集在 Hugging Face（ScaleAI/MultiChallenge，266 行，cc-by-4.0）；评测代码在 GitHub（ekwinox117/multi-challenge），运行需配置 OPENAI_API_KEY",
+        "cite": ["hf-dataset@数据集信息", "repo@README"]
+      },
+      {
+        "k": "公开承认的局限",
+        "v": "作者明说两条：rubric 受裁判能力上限约束导致难度封顶；题库对那 6 个前沿模型有偏差",
+        "cite": ["arxiv-2501-17399@Limitations"]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-19",
+        "columns": ["来源", "模型", "指令保持", "推理记忆", "版本化编辑", "自我一致", "平均", "口径"],
+        "rows": [
+          ["论文 Table 2", "GPT-4o (August 2024)", "14.29", "5.08", "17.07", "13.64", "12.52", "人工判分"],
+          ["论文 Table 2", "Llama 3.1 405B Instruct", "12.86", "16.95", "4.88", "25.0", "14.92", "人工判分"],
+          ["论文 Table 2", "Mistral Large", "21.43", "9.32", "7.32", "20.45", "14.63", "人工判分"],
+          ["论文 Table 2", "Claude 3.5 Sonnet (June 2024)", "58.57", "37.29", "24.39", "45.45", "41.42", "人工判分"],
+          ["论文 Table 2", "Gemini 1.5 Pro (August 27 2024)", "31.43", "15.25", "19.51", "13.64", "19.96", "人工判分"],
+          ["论文 Table 2", "o1-preview", "34.29", "41.53", "39.02", "34.09", "37.23", "人工判分"],
+          ["论文 Table 3", "GPT-4o (August 2024)", "12.86", "5.93", "14.63", "18.18", "12.9", "自动判分（实例级二元问题 + GPT-4o 裁判）"],
+          ["论文 Table 3", "Llama 3.1 405B Instruct", "14.29", "16.95", "9.76", "25.0", "16.5", "自动判分（实例级二元问题 + GPT-4o 裁判）"],
+          ["论文 Table 3", "Mistral Large", "18.57", "6.78", "9.76", "18.18", "13.32", "自动判分（实例级二元问题 + GPT-4o 裁判）"],
+          ["论文 Table 3", "Claude 3.5 Sonnet (June 2024)", "61.43", "37.29", "26.83", "45.45", "42.75", "自动判分（实例级二元问题 + GPT-4o 裁判）"],
+          ["论文 Table 3", "Gemini 1.5 Pro (August 27 2024)", "31.43", "16.1", "19.51", "18.18", "21.3", "自动判分（实例级二元问题 + GPT-4o 裁判）"],
+          ["论文 Table 3", "o1-preview", "28.57", "38.98", "39.02", "36.36", "35.73", "自动判分（实例级二元问题 + GPT-4o 裁判）"],
+          ["论文 Table 5", "Llama-3.2-3B-Instruct", "15.94", "8.85", "36.59", "6.0", "16.85", "开源模型，自动判分"],
+          ["论文 Table 5", "Llama-3.3-70B-Instruct", "33.33", "15.04", "24.39", "20.0", "23.19", "开源模型，自动判分"],
+          ["论文 Table 5", "Qwen2-72B-Instruct", "27.54", "7.96", "26.83", "20.0", "20.58", "开源模型，自动判分"],
+          ["论文 Table 5", "Qwen2.5-14B-Instruct", "15.94", "15.93", "24.39", "12.0", "17.07", "开源模型，自动判分"],
+          ["论文 Table 5", "Qwen2.5-72B-Instruct", "21.74", "17.70", "12.20", "16.0", "16.91", "开源模型，自动判分"],
+          ["论文 Table 5", "Mixtral-8x7B-Instruct-v0.1", "13.04", "7.08", "12.20", "12.0", "11.08", "开源模型，自动判分"],
+          ["论文 Table 5", "Mixtral-8x22B-Instruct-v0.1", "15.94", "3.54", "15.94", "8.00", "14.18", "开源模型，自动判分"],
+          ["Scale 榜单", "gpt 6.1 Sol", "未列出", "未列出", "未列出", "未列出", "81.95 ± 4.16", "Gemini 2.5 Pro 裁判；Rank (Upper Bound)"],
+          ["Scale 榜单", "Gemini 4 Argon", "未列出", "未列出", "未列出", "未列出", "78.70 ± 5.30", "同上"],
+          ["Scale 榜单", "Muse Spark", "未列出", "未列出", "未列出", "未列出", "75.52 ± 4.05", "同上"]
+        ]
+      },
+      "cite": ["arxiv-2501-17399@Table 2", "arxiv-2501-17399@Table 3", "arxiv-2501-17399@Table 5", "labs-leaderboard-multichallen@榜单"]
+    }
+  }
 }
