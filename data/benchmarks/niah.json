@@ -1,40 +1,529 @@
 {
   "id": "niah",
   "name": "Needle-in-a-Haystack",
-  "full_name": null,
+  "full_name": "Needle-in-a-Haystack（大海捞针：长上下文检索测试）",
   "aliases": [],
   "status": null,
   "categories": [
     "longctx"
   ],
-  "summary": "长文检索单针测试——营销常用但只测检索一维",
-  "interpretation": "在超长文档里找一句藏起来的话。“99% 找到”的宣传很好看，但它只测检索这一种能力。",
-  "measures": [],
-  "does_not_measure": [],
+  "summary": "把一句话（“针”）藏进一篇长文（“草堆”）的某个深度，再问模型这句话是什么，看它在不同上下文长度、不同插入深度下能不能找出来。前端类比：像在一条超长日志里定位某一行的 requestId，只不过模型是读完再答，不能真的 grep。",
+  "interpretation": "高分说明在该长度下模型能从上下文里定位并复述这句被藏起来的话；它不说明模型能综合比较多条信息、能做多跳推理，也不说明它在真实长文档任务（长文问答、代码库检索）上可靠。",
+  "measures": [
+    {
+      "area": "单针检索（v1 原始任务 / v2 的 single）",
+      "focus": "把一句事实按指定深度插入草堆，提问后要求模型复述该事实；v1 用 15 个上下文长度 × 15 个深度逐格测同一句话",
+      "share": "未披露",
+      "format": "一句 needle + 一句提问 → 模型自由回答，与 needle 比对",
+      "cite": [
+        "repo-llmtest-needleinahaystack@README",
+        "readme-v1@README",
+        "code-v1@main.py"
+      ]
+    },
+    {
+      "area": "多针检索（v2 的 multi）",
+      "focus": "N 句事实由 EvenSpreadInserter 从起始深度起均匀散布到全文，统计模型回忆出多少句",
+      "share": "未披露",
+      "format": "多句 needle + 提问 → fractional score（按回忆比例给分）",
+      "cite": [
+        "repo-llmtest-needleinahaystack@README"
+      ]
+    },
+    {
+      "area": "UUID 检索与 UUID 链（v2 的 uuid / uuid_chain）",
+      "focus": "uuid 要求模型原样重复一个随机 UUID；uuid_chain 把 A → B → C … 的链散布全文，只问“A 对应的值是什么”，不提示链结构",
+      "share": "未披露",
+      "format": "UUID 字符串 → 精确匹配；多跳链按跳对数量给分",
+      "cite": [
+        "repo-llmtest-needleinahaystack@README"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "多跳与聚合：RULER 作者指出 NIAH 只反映检索能力，无法衡量其他形式的长上下文理解",
+      "cite": [
+        "ruler@§1"
+      ]
+    },
+    {
+      "text": "真实长文档任务：针是随机插进既有文集的合成句，与真实长文档的组织方式不同，RULER 也把“缺乏易评估的真实长上下文任务”列为自己的局限",
+      "cite": [
+        "ruler@§8",
+        "ruler@Table 1"
+      ]
+    },
+    {
+      "text": "参数化知识（闭卷问答）：答案全部在给定上下文里，模型不需要靠记忆回答；RULER 的对比表把 NIAH 归为 synthetic、且不考察知识维度",
+      "cite": [
+        "ruler@Table 1"
+      ]
+    }
+  ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
+    "sample_count": 225,
+    "splits": [
+      "无固定划分（合成任务，按长度 × 深度逐格评测）"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "synthetic（一句针插入既有文集草堆；RULER 对比表归类为 synthetic）",
+    "public_sample": true,
+    "totals": "无固定题库：v1 原始运行每模型 15 个上下文长度 × 15 个插入深度 = 225 格（1K–128K 等距，深度 0–100%）；v2 起网格完全由 YAML 配置决定（README 示例为 8 个长度 × 11 个深度 × 3 个种子）",
+    "cite": [
+      "code-v1@main.py",
+      "readme-v1@README",
+      "repo-llmtest-needleinahaystack@README"
+    ],
+    "construction": [
+      {
+        "k": "草堆",
+        "text": "读取 Paul Graham 文集（v1 读 paulgrahamessays/*.txt，v2 内置 PaulGrahamEssays），用 tiktoken 截到目标上下文长度。",
+        "cite": [
+          "code-v1@main.py",
+          "repo-llmtest-needleinahaystack@README"
+        ]
+      },
+      {
+        "k": "针",
+        "text": "v1 固定一句事实：“The best thing to do in San Francisco is eat a sandwich and sit in Dolores Park on a sunny day.”；v2 的 single 任务放一句事实，uuid 任务放一个随机 UUID。",
+        "cite": [
+          "code-v1@main.py",
+          "repo-llmtest-needleinahaystack@README"
+        ]
+      },
+      {
+        "k": "插入",
+        "text": "按深度百分比把针插到句号边界处；多针时 EvenSpreadInserter 把第一根放在起始深度，其余按 (100 − depth_percent) / N 的间隔均匀分布到 100%。",
+        "cite": [
+          "code-v1@main.py",
+          "repo-llmtest-needleinahaystack@README"
+        ]
+      },
+      {
+        "k": "提问与判分",
+        "text": "v1 用固定系统提示加一句提问让模型回答，再由 GPT-4（temperature=0）按 1–10 的准确性 rubric 打分；v2 的 single / uuid 用 exact-match，multi 用 fractional score。",
+        "cite": [
+          "code-v1@main.py",
+          "repo-llmtest-needleinahaystack@README"
+        ]
+      },
+      {
+        "k": "记录与复现",
+        "text": "每个格子写一行结果；v2 每行只存 recipe（草堆、插入器、针落点、期望答案、问题、得分、用量），可用 niah reconstruct 还原模型当时看到的上下文。",
+        "cite": [
+          "repo-llmtest-needleinahaystack@README"
+        ]
+      }
+    ]
   },
-  "metrics": [],
+  "metrics": [
+    {
+      "id": "llm-judge-score",
+      "name": "裁判得分（v1：GPT-4 打 1–10 分）",
+      "direction": "越高越好",
+      "description": "v1 用 GPT-4 当裁判，按 1–10 的准确性 rubric 评价模型回答与 needle 的一致程度，每个格子记一个分数",
+      "range": [
+        1,
+        10
+      ],
+      "unit": "score",
+      "cite": [
+        "code-v1@main.py"
+      ]
+    },
+    {
+      "id": "retrieval-accuracy",
+      "name": "检索准确率（v2：exact-match / fractional）",
+      "direction": "越高越好",
+      "description": "v2 的 single 与 uuid 任务按精确匹配判对错，multi 任务按回忆出的针比例给分",
+      "range": [
+        0,
+        1
+      ],
+      "unit": "ratio",
+      "cite": [
+        "repo-llmtest-needleinahaystack@README"
+      ]
+    }
+  ],
   "default_protocol": {
-    "raw": "多深度×多长度热力图"
+    "raw": "把一句针按指定深度插入草堆 → 用固定系统提示问模型 → v1 由 GPT-4（temperature=0）按 1–10 rubric 打分，v2 由任务自带的 scorer 判 exact-match 或 fractional；默认扫 (上下文长度 × 针深度) 的网格，一个格子一行结果。",
+    "cite": [
+      "code-v1@main.py",
+      "repo-llmtest-needleinahaystack@README",
+      "readme-v1@README"
+    ],
+    "variants": [
+      {
+        "text": "判分方式：v1 是 GPT-4 裁判 1–10 分，v2 是 exact-match / fractional，两种分数不可比。",
+        "cite": [
+          "code-v1@main.py",
+          "repo-llmtest-needleinahaystack@README"
+        ]
+      },
+      {
+        "text": "网格自选：v1 原始是 15 个等距长度（1K–128K）× 15 个深度；v2 完全由 YAML 决定（README 示例为 8 个长度 × 11 个深度 × 3 个种子，深度用 sigmoid 分布）。",
+        "cite": [
+          "readme-v1@README",
+          "repo-llmtest-needleinahaystack@README"
+        ]
+      },
+      {
+        "text": "针与草堆自选：v1 固定旧金山那句 + Paul Graham 文集；v2 可换 needle / haystack / inserter，RULER 复现时换成 word-number 键值对并加干扰项，结果随之变化。",
+        "cite": [
+          "code-v1@main.py",
+          "repo-llmtest-needleinahaystack@README",
+          "ruler@Figure 2"
+        ]
+      },
+      {
+        "text": "多针深度口径：v2 修复了 v1 多针深度上报偏差，跨版本的多针结果不能直接比较。",
+        "cite": [
+          "repo-releases@body",
+          "repo-llmtest-needleinahaystack@README"
+        ]
+      }
+    ]
   },
-  "versions": [],
-  "limitations": [],
-  "notes": null,
+  "versions": [
+    {
+      "id": "original-gpt4-128k",
+      "date": "2023-11-08",
+      "label": "GPT-4-128K 首轮原始运行（README 标注 Run 11/8/2023）",
+      "cite": [
+        "repo-llmtest-needleinahaystack@README"
+      ]
+    },
+    {
+      "id": "v1",
+      "date": "2023-11-11",
+      "label": "仓库创建并开源 v1「Pressure Testing GPT-4-128K」：单针 + Paul Graham 文集草堆 + GPT-4 裁判 1–10 分",
+      "cite": [
+        "repo-meta@created_at",
+        "readme-v1@README",
+        "code-v1@main.py"
+      ]
+    },
+    {
+      "id": "original-claude-21",
+      "date": "2023-11-21",
+      "label": "Claude 2.1 复跑原始测试（README 标注 Run 11/21/2023）",
+      "cite": [
+        "repo-llmtest-needleinahaystack@README"
+      ]
+    },
+    {
+      "id": "v2.0.0",
+      "date": "2026-05-30",
+      "label": "v2.0.0「Clean refactor」：从零重写，CLI 改为 niah，新增 single / multi / uuid / uuid_chain 四类任务与两个 YAML 配置，修复多针深度上报 bug",
+      "cite": [
+        "repo-releases@v2.0.0",
+        "repo-releases@body",
+        "repo-llmtest-needleinahaystack@README"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "只测检索一维",
+      "impact": "NIAH 是合成检索任务，RULER 作者称它只反映 superficial 形式的长上下文理解；即使模型在 vanilla NIAH 上接近满分，长度一长大部分模型仍大幅下滑。",
+      "severity": "高",
+      "response": "未见官方回应（这是第三方论文的结论）。v2 自己新增了 uuid_chain 多跳任务作为扩展。",
+      "reader": "看到“大海捞针接近全对”时，读成“定位一句话的能力”，不要读成长文档任务能力。",
+      "cite": [
+        "ruler@Abstract",
+        "ruler@§1",
+        "repo-llmtest-needleinahaystack@README"
+      ]
+    },
+    {
+      "issue": "无固定题库、口径不可比",
+      "impact": "网格、针类型、草堆、随机种子、判分方式全部由运行者自选，RULER 作者指出该测试在各项工作里用法不一致；不同团队报出的“NIAH 分数”常常不是同一件事。",
+      "severity": "高",
+      "response": "v2 用两个 YAML（模型 + 运行）加 JSONL recipe 固定每次运行的确切上下文，可用 niah reconstruct 复现；但运行参数仍由用户决定。",
+      "reader": "比较两个模型的 NIAH 分数前，先核对长度网格、深度分布、针类型和判分方式。",
+      "cite": [
+        "ruler@§1",
+        "repo-llmtest-needleinahaystack@README"
+      ]
+    },
+    {
+      "issue": "位置偏差（lost in the middle）",
+      "impact": "相关句出现在草堆开头或结尾时模型明显更强，落在中间显著变差；只报一个平均分会把这条曲线压平。",
+      "severity": "中",
+      "response": "未见官方回应。RULER 把“缺乏位置控制”列为自己的局限，并说明深度级表现正是由 NIAH 这类测试评估的。",
+      "reader": "看热力图要按深度看，不要只看总平均分。",
+      "cite": [
+        "lost-middle@Abstract",
+        "ruler@§8"
+      ]
+    },
+    {
+      "issue": "对针类型与干扰项敏感",
+      "impact": "换成 UUID、数字或增加干扰项会明显改变结果：RULER 在 Yi-34B 上观察到换针类型就退化、干扰项越多越差。",
+      "severity": "中",
+      "response": "未见官方回应。v2 把 UUID / UUID 链做成独立任务类型，便于区分针类型。",
+      "reader": "注意分数用的是哪种针（句子 / 数字 / UUID）以及干扰项数量。",
+      "cite": [
+        "ruler@Figure 2",
+        "repo-llmtest-needleinahaystack@README"
+      ]
+    },
+    {
+      "issue": "v1 与 v2 结果不可直接比较",
+      "impact": "v2 修复了 v1 多针深度上报偏差（早插入的针会把 token 数撑大，导致后续针的深度报错），且 v1 原始结果文件的 schema 与新工具不匹配、无法直接加载。",
+      "severity": "中",
+      "response": "v2 release notes 明确记录该 bug 修复；v1 原始结果文件保留在 original_results/。",
+      "reader": "跨版本比较时先确认分数是哪一版工具跑出来的。",
+      "cite": [
+        "repo-releases@body",
+        "repo-llmtest-needleinahaystack@README"
+      ]
+    }
+  ],
+  "notes": "v1 的代码支撑了一条推文而出圈；两轮 2023 年原始运行的结果只以热力图图片和 Google Slides 形式发布，README 未给数值。",
   "official_sources": [
     {
       "kind": "site",
       "url": "https://github.com/gkamradt/LLMTest_NeedleInAHaystack"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/gkamradt/needle-in-a-haystack"
     }
   ],
   "related_benchmarks": [
     "ruler",
     "longbench"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-28"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-13",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      {
+        "id": "repo-llmtest-needleinahaystack",
+        "kind": "repo",
+        "title": "gkamradt/needle-in-a-haystack（官方仓库 README，v2；原地址 LLMTest_NeedleInAHaystack 重定向至此）",
+        "url": "https://github.com/gkamradt/LLMTest_NeedleInAHaystack",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "readme-v1",
+        "kind": "repo",
+        "title": "v1 首个提交的 README.md（原始测试定义）",
+        "url": "https://raw.githubusercontent.com/gkamradt/needle-in-a-haystack/63362a5361f88818a174f3b2c04543f56439d12e/README.md",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "code-v1",
+        "kind": "repo",
+        "title": "v1 首个提交的 main.py（针、草堆、深度网格与裁判实现）",
+        "url": "https://raw.githubusercontent.com/gkamradt/needle-in-a-haystack/63362a5361f88818a174f3b2c04543f56439d12e/main.py",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "repo-meta",
+        "kind": "repo",
+        "title": "GitHub API：gkamradt/needle-in-a-haystack 仓库元数据",
+        "url": "https://api.github.com/repos/gkamradt/needle-in-a-haystack",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "repo-releases",
+        "kind": "announcement",
+        "title": "GitHub Releases：v2.0.0 — Clean refactor",
+        "url": "https://api.github.com/repos/gkamradt/needle-in-a-haystack/releases",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "ruler",
+        "kind": "paper",
+        "title": "RULER: What's the Real Context Size of Your Long-Context Language Models?（arXiv:2404.06654v3，COLM 2024）",
+        "url": "https://arxiv.org/pdf/2404.06654v3",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "lost-middle",
+        "kind": "paper",
+        "title": "Lost in the Middle: How Language Models Use Long Contexts（arXiv:2307.03172v3）",
+        "url": "https://arxiv.org/pdf/2307.03172",
+        "accessed": "2026-11-13"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Greg Kamradt（个人项目，GitHub 账号 gkamradt；RULER 论文中以 Kamradt, 2023 引用）",
+        "cite": [
+          "repo-meta@owner.login",
+          "ruler@§3.1"
+        ]
+      },
+      "first_release": {
+        "v": "2023-11-11（仓库创建；GPT-4-128K 首轮运行标注为 2023-11-08）",
+        "cite": [
+          "repo-meta@created_at",
+          "repo-llmtest-needleinahaystack@README"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "repo-llmtest-needleinahaystack@README",
+        "readme-v1@README",
+        "code-v1@main.py"
+      ],
+      "interpretation": [
+        "ruler@Abstract",
+        "lost-middle@Abstract"
+      ]
+    },
+    "problem": {
+      "text": "2023 年前后厂商开始宣传 128K 级上下文窗口，外部缺少一个能自己跑的探针来检验“窗口变大以后模型是否真的用得上”。NIAH 的做法是把同一句话塞进不同长度、不同深度的草堆里反复提问，把“宣称的上下文长度”变成一张可复现的检索成功率网格。",
+      "cite": [
+        "readme-v1@README",
+        "repo-llmtest-needleinahaystack@README"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机 / 人类基线",
+        "value": "论文未给出",
+        "note": "仓库用 GPT-4 当裁判打 1–10 分，没有报告随机基线或人类基线，本站也不推算。",
+        "cite": [
+          "code-v1@main.py"
+        ]
+      },
+      {
+        "label": "原始运行的最好成绩",
+        "value": "未披露",
+        "note": "2023 年两轮原始运行的结果以热力图图片、推文和 Google Slides 发布，README 未给数值；原始结果文件因 schema 不匹配也无法用 v2 工具加载。",
+        "cite": [
+          "repo-llmtest-needleinahaystack@README"
+        ]
+      },
+      {
+        "label": "RULER 对同类测试的复核参考线",
+        "value": "宣称 ≥32K 的模型中只有约一半在 32K 长度仍保持满意表现",
+        "note": "RULER（NVIDIA，COLM 2024）用 13 个任务测 17 个长上下文模型：即使 vanilla NIAH 接近满分，长度增加后大部分模型大幅下滑。这是第三方复核的参考线，不是官方上限。",
+        "cite": [
+          "ruler@Abstract"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把热力图上的“几乎全绿”当成长上下文能力达标——RULER 作者认为 NIAH 只反映检索这一维，接近满分也可能在长度增加时大幅下滑。",
+        "cite": [
+          "ruler@Abstract"
+        ]
+      },
+      {
+        "text": "忽略针插入的深度：同一模型在草堆开头或结尾往往比在中间强，只报一个平均分会把这条 U 形曲线压平。",
+        "cite": [
+          "lost-middle@Figure 1"
+        ]
+      },
+      {
+        "text": "把不同版本的分数直接对比：v1 与 v2 的多针深度口径不同（v2 修了 v1 的深度上报 bug），且草堆、针类型、判分方式都可以自选。",
+        "cite": [
+          "repo-releases@body",
+          "repo-llmtest-needleinahaystack@README"
+        ]
+      },
+      {
+        "text": "以为它有固定题库：NIAH 没有题库，网格、针、草堆、随机种子都写在配置里，两个团队跑出来的“NIAH 分数”常常不是同一件事。",
+        "cite": [
+          "ruler@§1",
+          "repo-llmtest-needleinahaystack@README"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "个人项目：Greg Kamradt（GitHub gkamradt），MIT 许可并要求署名",
+        "cite": [
+          "repo-meta@owner.login",
+          "repo-llmtest-needleinahaystack@README"
+        ]
+      },
+      {
+        "k": "学术引用形态",
+        "v": "RULER 论文（NVIDIA，COLM 2024）在 §3.1 复现该测试，并把它作为对比基线，引用为 (Kamradt, 2023)",
+        "cite": [
+          "ruler@§3.1"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2023-11-08 GPT-4-128K 首轮运行 → 2023-11-11 仓库创建 → 2023-11-21 Claude 2.1 复跑 → 2026-05-30 发布 v2.0.0 重写",
+        "cite": [
+          "repo-llmtest-needleinahaystack@README",
+          "repo-meta@created_at",
+          "repo-releases@v2.0.0"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "v1 主脚本 main.py 与 README 仍可按首个提交 SHA 读取；v2 代码在 needlehaystack 包（niah CLI，Python 3.12+），v1 原始结果文件保留在 original_results/",
+        "cite": [
+          "code-v1@main.py",
+          "repo-llmtest-needleinahaystack@README"
+        ]
+      },
+      {
+        "k": "仓库热度",
+        "v": "2,406 star / 247 fork（GitHub API，2026-11-11 抓取）",
+        "cite": [
+          "repo-meta@stargazers_count",
+          "repo-meta@forks_count"
+        ]
+      },
+      {
+        "k": "仓库描述",
+        "v": "Doing simple retrieval from LLM models at various context lengths to measure accuracy",
+        "cite": [
+          "repo-meta@description"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-13",
+        "columns": [
+          "模型",
+          "运行日期",
+          "得分",
+          "口径"
+        ],
+        "rows": [
+          [
+            "GPT-4-128K",
+            "2023-11-08（README 标注 Run 11/8/2023）",
+            "未披露（结果以热力图图片、推文与 Google Slides 发布）",
+            "v1 仓库脚本：gpt-4-1106-preview，15 个长度 × 15 个深度"
+          ],
+          [
+            "Claude 2.1",
+            "2023-11-21（README 标注 Run 11/21/2023）",
+            "未披露（同上）",
+            "未披露（README 只列出运行名称与日期）"
+          ]
+        ]
+      },
+      "cite": [
+        "repo-llmtest-needleinahaystack@README",
+        "readme-v1@README"
+      ]
+    }
+  }
 }
