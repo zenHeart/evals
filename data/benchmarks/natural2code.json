@@ -4,32 +4,320 @@
   "full_name": null,
   "aliases": [],
   "status": null,
-  "categories": [
-    "coding"
+  "categories": ["coding"],
+  "summary": "Natural2Code 是 Google 内部的 held-out 代码生成评测集：题目由作者原创写成、刻意不用网页来源，题型与 HumanEval 相同但题目和测试全部另出，用来在公开基准被污染之后仍然测出真实的 Python 函数补全能力。",
+  "interpretation": "分数（pass rate）高，说明模型在网上搜不到、训练数据里大概也没有的原创 Python 题上更能写对函数。但它只有 Google 自己报分、题面不公开，所以只能做同口径的代际纵向对比，不能和 HumanEval、MBPP 等公开基准的分数横向比较。",
+  "measures": [
+    {
+      "area": "Python 函数补全",
+      "focus": "给出函数签名与说明文档，让模型补全函数体，再用隐藏单元测试判定是否通过；题型格式与 HumanEval 一致，但题目和测试是另一套。",
+      "share": "全部题目（各领域占比未披露）",
+      "format": "代码补全 + 隐藏单元测试（0-shot，chat preamble）",
+      "cite": ["gemini15-report@§6.1.3", "gemini15-report@附录 12.13.10"]
+    }
   ],
-  "summary": "Google 内部 held-out 代码生成评测",
-  "interpretation": "Google 内部 held-out Python 代码生成评测（HumanEval 同格式、刻意避开网页泄漏），pass@1 口径；分数为厂商自报且题面不公开，仅用于 Gemini 系代际纵向对比。",
-  "measures": [],
-  "does_not_measure": [],
+  "does_not_measure": [
+    {
+      "text": "公开基准的横向对比——题目由作者原创生成、不用网页来源，与 HumanEval 不是同一套题，分数不能互换比较",
+      "cite": ["gemini-launch-blog", "gemini15-report@§6.1.3"]
+    },
+    {
+      "text": "Python 之外的工程能力（仓库级编辑、Agent 编程、多语言项目）；官方报告只把它描述为 Python 代码生成任务",
+      "cite": ["gemini10-report@Table 1", "gemini10-report"]
+    }
+  ],
   "dataset": {
-    "sample_count": null,
+    "sample_count": 0,
     "splits": [],
-    "languages": [],
+    "languages": ["python"],
     "source_type": "vendor_internal",
-    "public_sample": null
+    "public_sample": false,
+    "totals": "题量、题目领域分布与题型占比均未披露——Google 没有公开题面与测试；已披露的只有「内部 held-out、作者原创生成、无网页泄漏」这三条性质。",
+    "cite": ["gemini-launch-blog", "gemini10-report"],
+    "construction": [
+      {
+        "k": "题目来源",
+        "text": "题目与测试由作者原创生成，不用网页上的信息；Gemini 1.0 报告把它归入「内部从非网页来源生成」的新 held-out 评测集。",
+        "cite": ["gemini-launch-blog", "gemini10-report"]
+      },
+      {
+        "k": "与 HumanEval 的关系",
+        "text": "格式与 HumanEval 完全一致，但换成另一套 prompt 和测试；建造动机是 HumanEval 的网页与开源仓库泄漏难以控干净。",
+        "cite": ["gemini15-report@§6.1.3"]
+      },
+      {
+        "k": "防泄漏口径",
+        "text": "Gemini 1.0 报告的表格注写明这是「无网页泄漏的新 held-out 集」，并把 Ultra 的 74.9% 列为该基准上报告的最高分。",
+        "cite": ["gemini10-report@Table 1"]
+      },
+      {
+        "k": "可见性",
+        "text": "与 PhysicsFinals、HiddenMath 并列，属于 Gemini 1.5 起随报告发布的非公开内部评测，只公开分数。",
+        "cite": ["gemini15-report@§6.1"]
+      }
+    ]
   },
-  "metrics": [],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [],
-  "notes": "厂商内部/未公开——Gemini 技术报告自述 held-out 权威网页问题集",
+  "metrics": [
+    {
+      "id": "pass-rate",
+      "name": "通过率（pass rate）",
+      "direction": "越高越好",
+      "description": "隐藏单元测试在沙箱环境里执行，全部通过的题目占比",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["gemini15-report@Table 11", "gemini15-report@附录 12.13.10"]
+    }
+  ],
+  "default_protocol": {
+    "raw": "0-shot：用「Write the following function:」加代码块包裹原题提示，要求模型补全函数；后处理只取完整的代码块，再把隐藏单元测试接在该代码块后面，于沙箱环境内执行，以最终通过率计分。",
+    "cite": ["gemini15-report@附录 12.13.10", "gemini15-report@Table 11"],
+    "variants": [
+      {
+        "text": "带 chat preamble：官方表格注明使用 chat preamble*（通用 Agent 的系统提示词），后处理也相应改为期望完整代码块；不做这层修改时，模型常会先反问问清楚需求。",
+        "cite": ["gemini15-report@附录 12.13.10", "gemini15-report@Table 11"]
+      },
+      {
+        "text": "统一 0-shot：Gemini 1.0 报告表与 Gemini 1.5 报告表 11 都标注 0-shot，跨代际比较时口径一致。",
+        "cite": ["gemini10-report@Table 1", "gemini15-report@Table 11"]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "announce",
+      "date": "2023-12-06",
+      "label": "随 Gemini 1.0 发布博客首次公开，称其为「我们的内部 held-out 数据集」",
+      "cite": ["gemini-launch-blog"]
+    },
+    {
+      "id": "gemini-10",
+      "date": "2023-12-19",
+      "label": "Gemini 1.0 技术报告（arXiv:2312.11805）首次给出分数：Ultra 74.9%、Pro 69.6%",
+      "cite": ["gemini10-report"]
+    },
+    {
+      "id": "gemini-15",
+      "date": "2024-03-08",
+      "label": "Gemini 1.5 技术报告（arXiv:2403.05530）沿用并更新：1.5 Pro 82.6%、1.5 Flash 77.2%、Flash-8B 67.6%",
+      "cite": ["gemini15-report"]
+    },
+    {
+      "id": "gemini-25",
+      "date": "2025-07-07",
+      "label": "Gemini 2.5 技术报告的编程对比项已不含 Natural2Code，改为 LiveCodeBench / Aider Polyglot / SWE-bench Verified",
+      "cite": ["gemini25-report@§3.2"]
+    },
+    {
+      "id": "gemma3",
+      "date": "2025-08-14",
+      "label": "Gemma 3 模型卡报告 IT 1B / 4B / 12B / 27B：56.0 / 70.3 / 80.7 / 84.5",
+      "cite": ["gemma3-card"]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "题面与测试不公开，无法独立复现",
+      "impact": "分数只由 Google 在技术报告和模型卡中自报；外部拿不到题目，无法更换 harness 重跑，也无法核验测试是否被无意泄漏。",
+      "severity": "高",
+      "response": "官方说明题目由作者原创生成、不用网页来源，并按 0-shot + chat preamble 的固定口径报告；本页只收录这些自报值。",
+      "reader": "把它当作厂商自报的参考值，不要当作可复现的第三方测量结果。",
+      "cite": ["gemini-launch-blog", "gemini15-report@§6.1.3"]
+    },
+    {
+      "issue": "题量与题目构成未披露",
+      "impact": "没有任何来源说明 Natural2Code 有多少题、覆盖哪些领域，因此无法估计分数的置信区间，也无法按题数与其他基准加权比较。",
+      "severity": "中",
+      "response": "本页题量一栏如实标注为未披露，不做任何推算。",
+      "reader": "看到百分比时不要反推题数，也不要把几个百分点的差异当作显著差距。",
+      "cite": ["gemini10-report@Table 1", "gemini10-report"]
+    },
+    {
+      "issue": "「无网页泄漏」不等于零污染",
+      "impact": "官方承诺的是题目原创、来源不是网页；这不排除训练数据经其他渠道间接接触同类函数或测试的可能，官方也没有公布针对 Natural2Code 本身的泄漏分析。",
+      "severity": "中",
+      "response": "Gemini 1.0 报告说明训练后做过系统性的泄漏数据分析并在表格注中标注该集无网页泄漏；Gemini 1.5 报告建议研究者自留小规模 in-house 测试函数作为补充。",
+      "reader": "把它当作泄漏风险更低的基准，而不是零污染基准。",
+      "cite": ["gemini10-report@Table 1", "gemini15-report@§6.1.3"]
+    },
+    {
+      "issue": "代际口径变化：Gemini 主线报告已停用",
+      "impact": "Gemini 2.5 技术报告第 3.2 节列举的编程任务是 LiveCodeBench、Aider Polyglot 与 SWE-bench Verified，其中没有 Natural2Code，该基准在 Gemini 主线报告里不再更新。",
+      "severity": "低",
+      "response": "Gemma 3 模型卡（2025-08-14 更新）仍在报告该基准，本页同时收录两条线的最新读数。",
+      "reader": "比较时先看清来源代际：Gemini 1.0 / 1.5 技术报告与 Gemma 3 模型卡属于两套不同的模型线。",
+      "cite": ["gemini25-report@§3.2", "gemma3-card"]
+    }
+  ],
+  "notes": "厂商内部/未公开——题面与测试均不公开，分数由 Google 在技术报告与模型卡中自报（详见本页 profile 来源）",
   "official_sources": [
+    {
+      "kind": "site",
+      "url": "https://blog.google/technology/ai/google-gemini-ai/"
+    },
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2312.11805"
+    },
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2403.05530"
+    },
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2507.06261"
+    },
+    {
+      "kind": "docs",
+      "url": "https://ai.google.dev/gemma/docs/core/model_card_3"
+    },
     {
       "kind": "site",
       "url": "https://blog.google/technology/google-deepmind/google-gemini-ai-update-december-2024/"
     }
   ],
-  "related_benchmarks": [],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "related_benchmarks": ["humaneval", "mbpp", "bigcodebench"],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "gemini-launch-blog",
+        "kind": "site",
+        "title": "Introducing Gemini（Google 官方博客，2023-12-06）",
+        "url": "https://blog.google/technology/ai/google-gemini-ai/",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "gemini10-report",
+        "kind": "paper",
+        "title": "Gemini: A Family of Highly Capable Multimodal Models（arXiv:2312.11805，v1 2023-12-19，本页核对 v5）",
+        "url": "https://arxiv.org/pdf/2312.11805",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "gemini15-report",
+        "kind": "paper",
+        "title": "Gemini 1.5: Unlocking multimodal understanding across millions of tokens of context（arXiv:2403.05530，v1 2024-03-08，本页核对 v5）",
+        "url": "https://arxiv.org/pdf/2403.05530",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "gemini25-report",
+        "kind": "paper",
+        "title": "Gemini 2.5: Pushing the Frontier with Advanced Reasoning, Multimodality, Long Context, and Next Generation Agentic Capabilities（arXiv:2507.06261，v1 2025-07-07，本页核对 v6）",
+        "url": "https://arxiv.org/pdf/2507.06261",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "gemma3-card",
+        "kind": "docs",
+        "title": "Gemma 3 模型卡（ai.google.dev，页面标注 Last updated 2025-08-14 UTC）",
+        "url": "https://ai.google.dev/gemma/docs/core/model_card_3",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Google / Google DeepMind（Gemini 团队）",
+        "cite": ["gemini-launch-blog"]
+      },
+      "first_release": {
+        "v": "2023-12-06（随 Gemini 1.0 发布博客公开）",
+        "cite": ["gemini-launch-blog"]
+      }
+    },
+    "cites": {
+      "summary": ["gemini-launch-blog", "gemini10-report", "gemini15-report@§6.1.3"],
+      "interpretation": ["gemini15-report@§6.1.3", "gemini15-report@附录 12.13.10", "gemini10-report@Table 1"]
+    },
+    "problem": {
+      "text": "HumanEval 这类公开编程基准的题面和测试散落在网页与开源仓库里，厂商很难证明模型没有背过——Gemini 1.0 Ultra 只把 HumanEval 测试集多训练一个 epoch，分数就从 74.4% 涨到 89.0%。Google 因此做了一套格式相同、题目原创且不来自网页的 held-out 集，让同代际模型之间的代码能力对比重新可信。",
+      "cite": ["gemini15-report@§6.1.3", "gemini10-report"]
+    },
+    "ladder": [
+      {
+        "label": "首发时官方最好（Gemini 1.0 Ultra）",
+        "value": "74.9%",
+        "note": "0-shot；同一张表里 Gemini 1.0 Pro 69.6%。",
+        "cite": ["gemini10-report@Table 1"]
+      },
+      {
+        "label": "Gemini 1.5 Pro",
+        "value": "82.6%",
+        "note": "0-shot，chat preamble；同一张表里 1.5 Flash 77.2%、1.0 Ultra 74.9%。",
+        "cite": ["gemini15-report@Table 11"]
+      },
+      {
+        "label": "Gemma 3 27B IT",
+        "value": "84.5%",
+        "note": "Gemma 3 模型卡 0-shot 读数；四个规格为 56.0 / 70.3 / 80.7 / 84.5。",
+        "cite": ["gemma3-card"]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 Natural2Code 的分数和 HumanEval、MBPP 的分数排在一起比——题型格式相同，但题目和测试全部另出，且只有 Google 自报分，跨基准横比没有意义。",
+        "cite": ["gemini15-report@§6.1.3", "gemini-launch-blog"]
+      },
+      {
+        "text": "以为「无网页泄漏」等于完全不受训练数据污染——官方只承诺题目原创、来源不是网页，并不排除其他渠道的间接接触。",
+        "cite": ["gemini-launch-blog", "gemini10-report@Table 1"]
+      },
+      {
+        "text": "把 74.4% → 89.0% 的涨幅当成 Natural2Code 的成绩——那是 HumanEval 的泄漏实验：仅把 HumanEval 测试集继续预训练一个 epoch。",
+        "cite": ["gemini15-report@§6.1.3"]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "Google / Google DeepMind，发布博客由 Demis Hassabis 代表 Gemini 团队署名",
+        "cite": ["gemini-launch-blog"]
+      },
+      {
+        "k": "首次公开",
+        "v": "2023-12-06 随 Gemini 1.0 发布博客公开，与 HumanEval 并列为 Gemini Ultra 擅长的编程基准",
+        "cite": ["gemini-launch-blog"]
+      },
+      {
+        "k": "建造动机",
+        "v": "HumanEval 是行业标准开源基准，但控泄漏很难：Gemini 1.0 Ultra 仅多训练一个 epoch 的 HumanEval 测试集，分数就从 74.4% 涨到 89.0%",
+        "cite": ["gemini15-report@§6.1.3"]
+      },
+      {
+        "k": "同批内部基准",
+        "v": "与 PhysicsFinals、HiddenMath 并列，属于 Gemini 1.5 起报告的非公开内部评测",
+        "cite": ["gemini15-report@§6.1"]
+      },
+      {
+        "k": "后续沿用",
+        "v": "Gemini 2.5 技术报告第 3.2 节列举的编程任务是 LiveCodeBench、Aider Polyglot 与 SWE-bench Verified，其中没有 Natural2Code；Gemma 3 模型卡仍在报告",
+        "cite": ["gemini25-report@§3.2", "gemma3-card"]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-14",
+        "columns": ["来源", "模型", "通过率", "口径"],
+        "rows": [
+          ["Gemini 1.0 技术报告 Table 1", "Gemini 1.0 Ultra", "74.9%", "0-shot"],
+          ["Gemini 1.0 技术报告 Table 1", "Gemini 1.0 Pro", "69.6%", "0-shot"],
+          ["Gemini 1.5 技术报告 Table 11", "Gemini 1.5 Pro", "82.6%", "0-shot，chat preamble"],
+          ["Gemini 1.5 技术报告 Table 11", "Gemini 1.5 Flash", "77.2%", "0-shot，chat preamble"],
+          ["Gemini 1.5 技术报告 Table 22", "Gemini 1.5 Flash-8B", "67.6%", "0-shot，chat preamble"],
+          ["Gemma 3 模型卡", "Gemma 3 27B IT", "84.5%", "0-shot"],
+          ["Gemma 3 模型卡", "Gemma 3 12B IT", "80.7%", "0-shot"],
+          ["Gemma 3 模型卡", "Gemma 3 4B IT", "70.3%", "0-shot"],
+          ["Gemma 3 模型卡", "Gemma 3 1B IT", "56.0%", "0-shot"]
+        ]
+      },
+      "cite": ["gemini10-report@Table 1", "gemini15-report@Table 11", "gemini15-report@Table 22", "gemma3-card"]
+    }
+  }
 }
