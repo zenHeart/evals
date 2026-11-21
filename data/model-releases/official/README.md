@@ -4616,3 +4616,59 @@ Gemini Robotics 2.5 的 DeepMind 官方 RSS `pubDate` 为 `Mon, 09 Nov 2026 19:5
 - **门禁**：`node scripts/reconcile-coverage.mjs`（exit 0）、`node --test tests/*.test.mjs`（**140 项全通过**，含「本批官方归档文件与 manifest 哈希一致」「覆盖对账幂等」「slug 回填按 id 参数寻址」等回归项）、`node scripts/validate-data.mjs`（**PASS** — taxonomy 9 类 / vendors 18 / benchmarks 511 / releases 251（official 237）/ evidence edges 4234）、`npm run build`（**exit 0**，含 `sync:skills:check`、`validate:data`、`validate`、`build:epub:official`、`build:web`、`validate:site` 全部通过；构建产出 511 个实体页 + 286 个自动证据页，站点结构门禁「全部通过」）。本批未改动 `.claude/skills/` 与 `.agent/skills/`，技能镜像零漂移。
 - **分支与合并顺序**：本批分支 `model-release-daily-20261120T232206Z`，**基线是 PR #89（第七十二批）的分支头 `3c2051b`，不是 origin/main**。原因与第七十二批同：① README 批次序号必须连续——主干当前止于第六十八批，PR #86/#87/#88/#89 分别承载第六十九/七十/七十一/七十二批，本批若从 origin/main 开出会把「第七十三批」插到「第六十八批」之后造成序号倒挂；② Inkling 2 Mini 的官方归档与 Gemini 4 Neon 的账本建档只存在于 PR #88/#89，从 origin/main 开出无法在不重复归档（违反「不重复建档」红线）的前提下引用它们。合并顺序为 **#86 → #87 → #88 → #89 → 本批**。
 - **批次序号提示**：本批为**第七十三批**。主干当前止于**第六十八批**；PR #86（第六十九批）、PR #87（第七十批）、PR #88（第七十一批）与 PR #89（第七十二批）**尚未合并**，人工合并时请按 #86 → #87 → #88 → #89 → 本批顺序合入，以免 README 批次序号倒挂。
+
+## 第七十四批（2026-11-22 CST / 2026-11-21 UTC 增量窗口 2026-11-06 ~ 2026-11-21：新增 1 个官方发布 OpenAI Astra for Law 6.2（GPT‑6.2 Astra 的法律专用模型配置，11 条 evidence）并归档 6 张官方图表）
+
+- **窗口**：增量窗口 2026-11-06 ~ 2026-11-21（检查点锚点 `last_max_release_date=2026-11-20` 回退 14 天重叠）。检查点回写 `last_scan_at=2026-11-21`（UTC），`last_max_release_date` **保持 2026-11-20**（本批入库的最大官方发布日为 2026-11-17，小于锚点，按 `checkpoint.mjs commit --max-release-date 2026-11-17` 的口径锚点不前进）。官方 release 总数 237 → **238**。
+- **执行方式与执行器互斥**：本批由 **MiniMax Code App（cwr 主机 / CHENGLE）** 在隔离 worktree `model-release-daily-20261121T232126Z` 内执行。原 OpenClaw 定时声明 `workflow:daily-model-releases-and-provider-refresh`（cron id `db2e30ef-541a-49e2-af4a-bcdff12831e9`，cron `15 7 * * *` Asia/Shanghai，agent `walle`）**开工前原生回读确认 `enabled=false`**（`openclaw cron list --all --json` 全量回读：共 4 条声明，仅此一条与本 cycle 相关且为禁用态）→ **两个执行器不会跑同一 cycle**。本批不修改私有 workflow 配置，也不触发私有 provider 刷新阶段。
+- **窗口结论**：窗口内发现 **1 个未建档的新官方模型发布** —— OpenAI **Astra for Law 6.2**（2026-11-17，GPT‑6.2 Astra 的法律专用模型配置）。其余 17 个厂商窗口内均无未建档新模型发布。
+- **本批建档情况：新增 release `data/model-releases/official/openai/gpt-6-2-astra-law.json`（11 条 evidence，全部 verified）+ 归档 `models/2026-11-17-gpt-6-2-astra-law/`**
+  - **为什么单独建档而不是并入 GPT-6.2 Astra/Sol**：官方原文「Astra for Law is a model configuration of GPT‑6.2 Astra」——它是独立的模型配置，有独立的官方发布文、独立的产品标识（`gpt-6.2-astra-law`）与申请制可用性（Trusted Access Program），评测口径与基座模型完全不同（法律 agentic / 法律研究）。GPT‑6.2 Astra/Sol 的发布档由 **PR #87** 持有，本分支不含该文件，并入会造成重复建档与合并冲突（红线）。**PR #87 未被本批触碰。**
+  - **规格**：官方页面未印参数量 / 上下文窗口 / API 定价 / 模态 → `params` / `context_window` / `pricing` / `modalities` 一律 `null`；官方只说「coming soon through our Frontier Company engagements」与「every ChatGPT Enterprise customer can request access」，未公开价目。
+  - **11 条 evidence 全部取自官方发布文正文明文数字（非位图读图、非 OCR）**，故一律 `verified`、`evidence_type=text`：
+    - Harvey **LAB-AA v1.1**（Artificial Analysis 版，120 assignments / 24 个法律领域，all-pass 计分）：全通过率 **20.8%**（同句竞品列 GPT‑6.2 Astra 15.0%、Muse Wonder Full 13.1% 按口径进 notes）；每题平均输出 **约 64,000 token**（Muse Wonder Full 139,000，官方称少 54% 输出）；每题**重大幻觉 0.03 次**（同口径 minor 0.06 次、普通 GPT‑6.2 Astra 重大幻觉 0.06 次）。
+    - **Vals AI 法律研究基准**（2026-11-16 评测，208 题）：**全对率 53.8%**（112 / 208 题全对；2026-09 同口径约 46%，两个月 +约 8 个百分点）与**全部题目可得分点合计 90.9%**（含部分得分）——两口径分行登记，不可互相替代。
+    - **Harvey 自有 LAB 留出集**：全通过率 **16.2%**（官方称比 GPT‑6.2 Astra 的 14.6% 多完成 11%）。
+    - **4 条 `comparison_cited` 竞品明文引用行**：Muse Wonder Full 13.1%（LAB-AA 全通过率）、Claude Opus 5.5 重大幻觉 0.59 / 轻微幻觉 0.51（LAB-AA 同次评测）、GPT‑6.2 Astra 14.6% 与 GPT‑6 Astra 4.6%（Harvey 自测集）。**竞品两种口径本批显式区分**：同一句排序陈述里的竞品列只写 notes；厂商用独立句子单独陈述的竞品分数才单列 `comparison_cited` 行。
+  - **口径隔离（重要）**：LAB-AA v1.1（Artificial Analysis 版）与 Harvey 自有 LAB 留出集**不是同一任务集**——原文明示「This test comes from Harvey's own LAB (separate from the previously discussed LAB-AA)」，两组数值不可直接比较。本批用 `benchmark_variant` 显式区分并写进每行 notes。
+  - **协议字段**：页面未明示 reasoning effort / temperature / top_p / harness / 工具 / shots / 分母细节 → `protocol` 12 键一律 `null`；所有行 `comparison_scope=only_same_protocol`。
+  - **基准 id 决定（不新铸 id）**：Vals AI 法律研究基准沿用账本既有 id **`vals-legal-research-bench`**（第六十四批 Gemini 4 Hydrogen 建档时已铸；本批建档后 `data/generated/auto-benchmark-ids.json` 的 evidenceCount 由 2 增至 4）。**仓内另有独立 id `legal-research-bench`**（Thinking Machines Inkling 2 Small 的第三方转述行所用），二者是两个不同 id，本批不合并、不改写既有行——该重复 id 属存量待清理项，需人工判定后再走 `revisions[]` 口径处理。
+  - **归档**：`models/2026-11-17-gpt-6-2-astra-law/`（`page.html` 475,290 B + 6 张官方图表 `images/01-06.webp`，取自官方自有 CDN `images.ctfassets.net`，原样下载供人工读图复核 + `index.md` 全文转录 + `manifest.json` 八文件 sha256）。**本批未读图转录任何图表数值**，账本数值一律取自正文散文。
+  - **不建行的官方数字**：Harvey 负责人被引述的「法律意见书成对评审偏好约 90%」（无可定位的评测名称与版本口径）、官方称两个月「+8 个百分点」、AT&T / Woven by Toyota / Alaska Airlines 三家客户案例数值（官方明示为 customer-specific evaluations）、法律检索索引规模（逾 3.1 亿 URL）、Trusted Access Program 流程——均只进 notes 与归档 `index.md`，不建 evidence 行。
+- **逐厂商巡检（窗口 2026-11-06 ~ 2026-11-21，本轮原生回读，18/18 厂商）**
+  - **OpenAI**：官方 `news/rss.xml`（1421 条，窗口内 55 条）逐条复核。窗口内模型发布两条：11-17「Introducing GPT‑6.2 Astra and Sol」（**PR #87 建档**）、11-17「Astra for Law leads in legal intelligence」（**本批建档**）；11-20「Combatting adversarial distillation」与「Introducing MedChemBench」已由**第七十三批**处理（明文分值回填 + MedChemBench 实体）；11-11 ~ 11-21 其余条目为研究 / 工程 / 客户故事 / 产品公告类，无新模型发布。
+  - **Anthropic**：`/news` 窗口内条目为 IPO 定价 / 路演 / 上市交割公告与 11-09「Introducing Claude Fable 5.2 and Claude Mythos 5.2」（已建档）；`platform.claude.com/docs/en/models/overview` 与 release notes 页无新模型登记。
+  - **Google**：官方 RSS 三通道（`deepmind.google/blog/rss.xml` 100 条 / `blog.google/rss/` 20 条 / `blog.google/technology/ai/rss/` 20 条）复核——窗口内 8 条 DeepMind 发布文（Gemini 4 Neon / Genie 4 上线 / Gemini 4 Hydrogen / AlphaGenome 2 / Gemini 4 Carbon 上线 / AlphaProof Code / 天气模型数据集开放 / Gemini Robotics 2.5）**全部已建档**；blog.google 侧条目均为产品 / 工具公告。
+  - **Microsoft**：官方 `model-sitemap.xml`（8 个模型页）+ `/blog/`（Ignite 2026 共 7 篇）复核。`mai-realtime-1` / `mai-image-2-7` / `mai-code-2` / `mai-cyber-2-flash` **由 PR #87 建档**；新增的第 8 个模型页 `models/custom-models/`（lastmod 2026-11-19T22:22:58）对应「MAI Licensed Weights」授权部署页，**非新模型**。
+  - **腾讯**：官方 `api.hunyuan.tencent.com/api/blog/publicList`（totalNum=12）复核——窗口内唯一条目 id=100145「Introducing Hy4 flash」（2026-11-16，**PR #87 建档**）；「Hyra 2.0」为研究脚手架公告，非模型发布。
+  - **Mistral**：官方 RSS 94 条，窗口内无任何条目（最新条目 2026-11-05 落在窗口外）。
+  - **Kimi**：官方 blog 索引最新发布文 2026-10-24；HF `moonshotai` 的 Kimi-K3 / Kimi-K2.5 lastModified 2026-11-20 属**仓库更新**（createdAt 均在窗口外），窗口内无新模型仓。
+  - **DeepSeek**：官方 updates 页窗口内唯一条目 2026-11-13「Open Markdown」为应用能力开放，非新模型发布。
+  - **MiniMax**：官方 release notes 与 `/news` 窗口内无新发布；HF `MiniMaxAI` 的 H3 / H3-Image / H3-Image-PE 仓均为**既有模型**，账本已建档 `minimax-h3` 与 `minimax-h3-image`。
+  - **豆包 ByteDance**：官方 sitemap 窗口内两条——11-16「Seed STEM 计划·分子逆合成挑战赛启动」（博文，非模型发布）、11-09「Introducing Seedream 5.5」（**账本已建档 `doubao/seedream-5-5`**）。
+  - **智谱 GLM**：`z.ai/blog/` 仍 404，改走 HF `zai-org`（最新仓 lastModified 2026-10-15），窗口内无新模型仓。
+  - **Qwen**：`qwen.ai` 仍只出 SPA 壳；HF `Qwen` 窗口内 lastModified 更新全部落在**既有模型仓**（Qwen3.8-27B / Qwen3.6-27B 等），createdAt 均在窗口外。
+  - **xAI**：`x.ai/news/` 仍 403，改走官方文档——`https://docs.x.ai/docs/models` 现 301 到 `https://docs.x.ai/developers/models`（页面标题 Grok Models & Pricing），窗口内无新模型发布。
+  - **Meta**：`ai.meta.com/blog/` 与 `research.facebook.com` 仍 400，改走 `research.meta.ai/blog`（页面最新发布文 2026-04-08），窗口内无新发布。
+  - **小米 MiMo**：`mimo.xiaomi.com/blog` 页面最新发布文 2025-12-16，窗口内无新发布文。
+  - **StepFun**：`stepfun.ai/research/` 仍重定向到白名单外主机；改走 `platform.stepfun.com/docs/zh/guides/models/list`（静态 GET 200，页面 `dateModified=2026-11-20T07:20:09Z` 属**文档站整站重建**），模型清单仍为 Step-1o Turbo Vision / step-3.5-flash / step-3.7-flash / step-5-preview，均为既有条目。
+  - **Particle**：`/blog/` 索引路由 404，改走单篇发布文 `/blog/introducing-particle-1`（页面最新日期 2026-10-28），窗口内无变更。
+  - **Thinking Machines**：官方 news 最新仍为 11-20「Introducing Inkling 2 Mini」（**第七十三批建档**），11-21 无新发布文；HF `thinkingmachines` 的 Inkling-2-Mini lastModified 2026-11-21 属仓库更新。
+- **跳过清单**
+  - **Microsoft「MAI Licensed Weights」（2026-11-17）**——微软把 MAI 前沿模型的**权重授权与自有 Azure 部署形态**开放给企业（"coming soon through our Frontier Company engagements"），**不是新模型发布**，页面亦无公开 benchmark 口径，只进覆盖通道记录与归档 notes。
+  - **Microsoft Ignite 2026 MAI keynote transcript（2026-11-17）**——只有**相对性价比陈述**（「MAI Code 2 gives you 98% of the performance of GPT 6.1 Sol at just 40% of the cost」「matches 6 Luna and Haiku 5.5 at 65% and 20% of the price」「ahead of GPT 6 Astra on CyberGym-E2E at less than 2% of the cost per task」），无绝对基准分，按口径不建行；相关 MAI 模型档由 PR #87 持有。
+  - **Microsoft MAI Image 2.7 / Realtime 1 / Code 2 / Code 2 Flash / Cyber 2 Flash（均 2026-11-17）**——**已由 PR #87 建档**，本批不重复建档。
+  - **OpenAI「Introducing GPT‑6.2 Astra and Sol」（2026-11-17）**——**已由 PR #87 建档**，本批不重复建档。
+  - **腾讯 Hy4 flash（2026-11-16）**——**已由 PR #87 建档**。
+  - **Google 窗口内 8 条 DeepMind 发布文**——全部已建档。
+  - **豆包 Seedream 5.5（2026-11-09）**——账本已建档 `doubao/seedream-5-5`。
+  - **Anthropic IPO 相关三条公告（11-10 / 11-18 / 11-20）**、**OpenAI 客户案例与研究 / 工程类文章**、**腾讯 Hyra 2.0 研究脚手架公告**、**各厂商官方 HF 仓 lastModified 变化**——均非新模型发布。
+- **待人工核验**
+  - **Harvey 负责人被引述的「Astra for Law 6.2 法律意见书被成对评审偏好约 90%」**：无可定位的评测名称与版本口径，本批未建 evidence 行，只记在 release notes 与归档 `index.md`，需人工判定是否值得单列。
+  - **重复基准 id 待清理**：`legal-research-bench`（Inkling 2 Small 第三方转述行）与 `vals-legal-research-bench`（Gemini 4 Hydrogen + 本批 OpenAI 两行）疑似指向同一评测家族但已分属两个 id；本批按红线**未改写任何既有行**，需人工判定后按 `revisions[]` 口径合并。
+  - **Harvey 自有 LAB 留出集口径**：官方只给了 4.6% / 14.6% / 16.2% 三个数字，题量、判分面板与 harness 均未印，与 LAB-AA 的 120 题集不可比。
+- **门禁**：`node scripts/reconcile-coverage.mjs`（exit 0）、`node --test tests/*.test.mjs`（**140 项全通过**，含「本批官方归档文件与 manifest 哈希一致」「覆盖对账幂等」「slug 回填按 id 参数寻址」等回归项）、`node scripts/validate-data.mjs`（**PASS** — taxonomy 9 类 / vendors 18 / benchmarks 511 / releases 252（official 238）/ evidence edges 4245）、`scripts/compare-audit.mjs`（**orphans 0 / undecided 0 / stranded 0**，8 个用途域 gate 全部通过）、`npm run build`（**exit 0**，含 `sync:skills:check`、`validate:data`、`validate`、`build:epub:official`、`build:web`、`validate:site` 全部通过；构建产出 511 个实体页 + 286 个自动证据页，sitemap 807 个 URL，站点结构门禁「全部通过」）。本批未改动 `.claude/skills/` 与 `.agent/skills/`，技能镜像零漂移。
+  - **执行环境说明（非账本问题）**：`scripts/compare-audit.mjs` 的主入口用 `import.meta.url === 'file://' + process.argv[1]` 做守卫，在 Windows 下必然不相等（`file:///C:/...` vs `file://C:\...`），因此本机 `npm run audit:compare` 会**静默空跑（exit 0 但不执行任何检查）**。本批改为直接调用其导出的 `auditCompare()` 实跑核对，上表的 orphans 0 / undecided 0 / stranded 0 才是真实结论。**该守卫写法建议后续单独修**（属构建代码，不在本批可写路径内）。
+  - **依赖环境说明**：本机 `evals` 主 checkout 的 `node_modules/` 为空目录，worktree 的 junction 因此无法解析 `jszip`，首轮 `npm run build` 在 `build:epub:official` 阶段失败（`ERR_MODULE_NOT_FOUND: jszip`）；按 `package-lock.json` 完全一致、依赖集合同为 `jszip@^3.10.1` 的事实，在主 checkout 执行 `npm ci --ignore-scripts --no-audit --prefer-offline` 补齐依赖（`node_modules/` 已被 .gitignore 忽略，不入库），重跑 `npm run build` 即 exit 0。
+- **分支与合并顺序**：本批分支 `model-release-daily-20261121T232126Z`，**基线是 PR #90（第七十三批）的分支头 `d975acd`，不是 origin/main**。原因与前几批同：① README 批次序号必须连续——主干当前止于第六十八批，PR #86 ~ #90 分别承载第六十九 ~ 七十三批，本批若从 origin/main 开出会把「第七十四批」插到「第六十八批」之后造成序号倒挂；② `models/2026-11-20-inkling-2-mini/` 与 Gemini 4 Neon 的账本建档只存在于 PR #88 ~ #90，从 origin/main 开出会重复归档（违反「不重复建档」红线）。合并顺序为 **#86 → #87 → #88 → #89 → #90 → 本批**。
+- **批次序号提示**：本批为**第七十四批**。主干当前止于**第六十八批**；PR #86（第六十九批）、PR #87（第七十批）、PR #88（第七十一批）、PR #89（第七十二批）与 PR #90（第七十三批）**尚未合并**，人工合并时请按 #86 → #87 → #88 → #89 → #90 → 本批顺序合入，以免 README 批次序号倒挂。
