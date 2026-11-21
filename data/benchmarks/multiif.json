@@ -1,41 +1,527 @@
 {
   "id": "multiif",
   "name": "Multi-IF",
-  "full_name": null,
+  "full_name": "Multi-IF: Benchmarking LLMs on Multi-Turn and Multilingual Instructions（多轮多语言指令跟随基准）",
   "aliases": [],
   "status": null,
   "categories": [
     "preference"
   ],
-  "summary": "多轮多语言指令跟随评测（扩展 IFEval）",
-  "interpretation": "多轮多语言指令跟随（扩展 IFEval）：8 语种 4,501 组对话、每组 3 轮，准确率口径；论文实测 o1-preview 从第 1 轮 0.877 降到第 3 轮 0.707，读分看轮次衰减与非拉丁文字语言的额外落差。",
-  "measures": [],
-  "does_not_measure": [],
+  "summary": "Meta GenAI 发布的多轮 + 多语言指令跟随基准：以 IFEval 的英文单轮可验证指令题为种子，扩写成 3 轮对话并翻成 8 种语言，共 4,501 组对话；主指标是指令级/对话级 × 严格/宽松四项准确率的平均分，按轮次和语言分别报告。",
+  "interpretation": "高分说明模型在多轮对话里既记得住前面定下的规则，又能跨语言稳定执行。低分通常来自两类退化：轮次增加后忘记已执行的指令（论文实测 o1-preview 从第 1 轮 0.877 降到第 3 轮 0.707），以及非英语语言上的额外落差（非拉丁文字的印地、俄、中错误率更高）。它只评「可程序化校验的指令是否被遵守」，不评回答内容是否正确、有用或安全。",
+  "measures": [
+    {
+      "area": "多轮指令跟随",
+      "focus": "同一会话第 2/3 轮仍要遵守第 1 轮定下的格式规则。真实样例（HF 数据集卡）：第 1 轮要求「用全大写词突出关键能力、全大写词少于 10 次、整段用双引号包裹」写一份简历，第 3 轮追加「恰好 6 段、段落用 *** 分隔」。",
+      "share": "4,501 组对话 × 每组 3 轮",
+      "format": "程序化校验指令（每条指令 pass/fail）",
+      "cite": [
+        "hf-dataset@README",
+        "arxiv-2410-15553@§3.5",
+        "arxiv-2410-15553@§4.1"
+      ]
+    },
+    {
+      "area": "多语言指令跟随",
+      "focus": "同一指令的 8 个语言版本（英、法、俄、印地、意、葡、西、中），按语言分别报告准确率",
+      "share": "8 语种；各语种题量占比未披露（论文 Figure 5 的分布在本次核对所用文本中无法可靠读取）",
+      "format": "按语言分别报告的四项准确率平均分",
+      "cite": [
+        "arxiv-2410-15553@§3.3",
+        "arxiv-2410-15553@§5.4",
+        "arxiv-2410-15553@Table 1"
+      ]
+    },
+    {
+      "area": "指令遗忘（分析项）",
+      "focus": "第 1 轮已遵守的指令，到第 2/3 轮是否仍被遵守（IFR，Instruction Forgetting Ratio）",
+      "share": "未披露汇总值（论文以图 7 展示，正文未给数字）",
+      "format": "分析性比率，非主指标",
+      "cite": [
+        "arxiv-2410-15553@§5.2"
+      ]
+    },
+    {
+      "area": "错误纠正（分析项）",
+      "focus": "前面轮次没遵守的指令，后续轮次是否被纠正（ECR，Error Correction Ratio）",
+      "share": "o1-preview / o1-mini 最高，约 25% 的未遵守指令在后续轮次被纠正",
+      "format": "分析性比率，非主指标",
+      "cite": [
+        "arxiv-2410-15553@§5.3"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "不评回答内容的事实正确性或有用性：判定只关心指令是否被遵守，不关心答得好不好。",
+      "cite": [
+        "arxiv-2410-15553@§4.1"
+      ]
+    },
+    {
+      "text": "不测开放式生成质量、风格或安全对齐；全程无需裁判模型，靠规则脚本逐条判定。",
+      "cite": [
+        "github-repo@README",
+        "arxiv-2410-15553@§4.1"
+      ]
+    },
+    {
+      "text": "不覆盖图片/音频/代码执行等多模态或工具场景：数据集卡的模态标注只有表格与文本，格式为 csv。",
+      "cite": [
+        "hf-dataset@README"
+      ]
+    },
+    {
+      "text": "不给人类参考分：论文只做 14 个模型之间的横向比较，没有人类基线。",
+      "cite": [
+        "arxiv-2410-15553@§4.2"
+      ]
+    }
+  ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
+    "sample_count": 4501,
+    "splits": [
+      "test：4,501 组对话（HF 数据集卡标注为 test split，无 train/validation）"
+    ],
+    "languages": [
+      "en",
+      "fr",
+      "ru",
+      "hi",
+      "it",
+      "pt",
+      "es",
+      "zh"
+    ],
+    "source_type": "synthetic + human-verified（以 IFEval 英文单轮题为种子，用 Llama 3.1 405B 扩写与翻译，母语标注者与人工审核把关）",
+    "public_sample": true,
+    "totals": "4,501 组三段式对话（test split），覆盖 8 种语言；HF 数据集卡记录约 7.41 MB、模态为表格+文本、格式 csv；指令取自 IFEval 预定义指令类型，逐条程序化校验。",
+    "cite": [
+      "hf-dataset@README",
+      "arxiv-2410-15553@§3.5"
+    ],
+    "construction": [
+      {
+        "k": "种子与多轮扩展",
+        "text": "以 IFEval 的英文单轮可验证指令题为种子，默认把第 1 个用户提示随机扩写成 2 个后续用户提示，形成 3 轮对话；每轮指令从 IFEval 的 30 种预定义指令类型中取一种或多种（例：「All Uppercase」扩写成「Make sure your entire response is in English, and in all capital letters」）。",
+        "cite": [
+          "arxiv-2410-15553@§3.1"
+        ]
+      },
+      {
+        "k": "跨轮冲突删除",
+        "text": "先用 Llama 3.1 405B 扫描多轮提示、标出跨轮冲突的指令（例：第 1 轮要简短摘要、第 2 轮要求至少 800 词），再由人工审核过滤，保证留下的对话指令互不矛盾。",
+        "cite": [
+          "arxiv-2410-15553@§3.2"
+        ]
+      },
+      {
+        "k": "多语言翻译与复核",
+        "text": "用 Llama 3.1 405B 把英文黄金集翻成法、俄、印地、意、葡、西、中 7 种语言；母语标注者按「忠于原英文提示」和「符合母语者风格」两条标准复核，平均约 15% 的译文被改写。",
+        "cite": [
+          "arxiv-2410-15553@§3.3"
+        ]
+      },
+      {
+        "k": "敏感提示剔除",
+        "text": "本地化翻译会产生敏感内容：先用 LLM 标记涉及政治、宗教敏感性、人际关系的潜在敏感提示，再由人工确认并删除真正含敏感内容的提示。",
+        "cite": [
+          "arxiv-2410-15553@§3.4"
+        ]
+      },
+      {
+        "k": "规模与语种偏斜",
+        "text": "最终 4,501 组对话、每组 3 轮；英文题量多于其他语言，原因有二——部分指令只适用于西方语言因此只翻了一部分，以及多语言提示在敏感内容剔除时额外掉落。",
+        "cite": [
+          "arxiv-2410-15553@§3.5"
+        ]
+      }
+    ]
   },
-  "metrics": [],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [],
-  "notes": "Qwen 引用；Meta 发布",
+  "metrics": [
+    {
+      "id": "accuracy",
+      "name": "平均准确率（四项准确率的平均）",
+      "direction": "越高越好",
+      "description": "指令级严格、对话级严格、指令级宽松、对话级宽松四项准确率的算术平均；按每个模型、每一轮、每种语言分别报告，取值 0–1。指令级看单条指令是否被遵守，对话级看整段对话到当前轮为止每条指令是否都被遵守。",
+      "range": [
+        0,
+        1
+      ],
+      "unit": "ratio",
+      "cite": [
+        "arxiv-2410-15553@§4.1"
+      ]
+    },
+    {
+      "id": "ifr",
+      "name": "指令遗忘率（IFR）",
+      "direction": "越低越好",
+      "description": "此前轮次已遵守、但后续轮次不再遵守的指令占此前已遵守指令数的比例，用于量化多轮中的指令遗忘。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2410-15553@§5.2"
+      ]
+    },
+    {
+      "id": "ecr",
+      "name": "错误纠正率（ECR）",
+      "direction": "越高越好",
+      "description": "此前轮次未遵守、后续轮次被纠正过来的指令占此前未遵守指令数的比例，用于量化多轮中的错误恢复能力。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2410-15553@§5.3"
+      ]
+    }
+  ],
+  "default_protocol": {
+    "raw": "无需裁判模型：把此前各轮的提示与回答按顺序拼成累计输入字符串交给被测模型生成本轮回答，再用规则脚本逐条判定该轮指令是否被遵守（宽松口径会先剥离开场白句再判，例如「Certainly, here is the revised version...」这类句子常常本身违反「全大写」类指令）。除 o1-preview / o1-mini 外的模型统一 temperature 0.6、top-p 0.9、最多生成 1,024 个新 token；o1 系列的 temperature 与 top-p 固定为 1 且不可调，按 OpenAI 建议放宽到 25,000 个新 token。所有模型使用官方默认系统提示词。",
+    "cite": [
+      "arxiv-2410-15553@§4.1",
+      "arxiv-2410-15553@附录 A"
+    ],
+    "variants": [
+      {
+        "text": "轮次口径：论文按第 1/2/3 轮分别给分，跨轮分数不可混用；同一模型掉分很常见（o1-preview 0.877→0.707）。",
+        "cite": [
+          "arxiv-2410-15553@Table 1",
+          "hf-dataset@README"
+        ]
+      },
+      {
+        "text": "o1 系列的 temperature/top-p 固定为 1 且不可调，与其他模型的 0.6/0.9 不同；o1 的单轮生成上限 25,000 token，约为其他模型 1,024 的 24 倍。",
+        "cite": [
+          "arxiv-2410-15553@附录 A"
+        ]
+      },
+      {
+        "text": "误拒处理口径：附录 C 用 o1-preview 从 4,501 条回答中检出 357 条误拒，并给出剔除后的复跑结果（表 4），与表 1 不是同一口径。",
+        "cite": [
+          "arxiv-2410-15553@附录 C"
+        ]
+      },
+      {
+        "text": "第三方引用口径：Qwen3 技术报告把 Multi-IF 报成 0–100 的单值汇总分，与论文的 0–1 每轮均分不可直接对齐。",
+        "cite": [
+          "qwen3-tech-report@Table 11",
+          "qwen3-tech-report@Table 12"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2024-10-21",
+      "label": "arXiv v1 提交",
+      "cite": [
+        "arxiv-2410-15553@首页"
+      ]
+    },
+    {
+      "id": "v2",
+      "date": "2024-11-13",
+      "label": "arXiv v2 修订（本页核对所用版本）",
+      "cite": [
+        "arxiv-2410-15553@首页"
+      ]
+    },
+    {
+      "id": "repo-archived",
+      "date": "2025-12-01",
+      "label": "官方 GitHub 仓库被作者归档为只读，代码与数据入口不再更新",
+      "cite": [
+        "github-repo@README"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "合成指令，非真实用户流量",
+      "impact": "提示由 Llama 3.1 405B 从 IFEval 种子扩写和翻译生成，与真实用户提问分布有差距；论文在示例图注里明确标注「指令是合成生成的，不是真实用户数据」。",
+      "severity": "中",
+      "response": "论文完整公开了构建流程、数据与评测代码；未发布真实用户流量版本。",
+      "reader": "把分数读成「合成多轮指令上的程序化合规率」，不要直接外推到生产对话分布。",
+      "cite": [
+        "arxiv-2410-15553@Figure 4",
+        "arxiv-2410-15553@§3.1"
+      ]
+    },
+    {
+      "issue": "非英语语言系统性掉分",
+      "impact": "所有受测模型在非英语语言上都不如英语，非拉丁文字（印地、俄、中）错误率更高；o1-preview 第 3 轮俄语 0.531，比同轮英语 0.773 低约 0.24。",
+      "severity": "中",
+      "response": "论文把这一点列为多语言指令跟随的改进机会，并在数据构建中加入母语标注者复核译文。",
+      "reader": "跨语言比较时分语言看，不要只读 8 语种平均分。",
+      "cite": [
+        "arxiv-2410-15553@§5.4",
+        "hf-dataset@README",
+        "arxiv-2410-15553@Table 1"
+      ]
+    },
+    {
+      "issue": "误拒污染结果",
+      "impact": "附录 C 用 o1-preview 从 4,501 条回答中检出 357 条误拒（模型以安全为由拒绝执行合法指令）；Gemini 系列遗忘率偏高「部分而非主要」源于误拒。",
+      "severity": "中",
+      "response": "论文剔除误拒后在表 4 复跑并公布更新结果。",
+      "reader": "看到 Gemini 系列遗忘率或低分时，先确认是否由误拒导致。",
+      "cite": [
+        "arxiv-2410-15553@附录 C",
+        "arxiv-2410-15553@§5.2"
+      ]
+    },
+    {
+      "issue": "仅 3 轮、仅文本、无人类基线",
+      "impact": "每会话固定 3 轮，而论文自己指出真实交互常见 10 轮以上；无图片与工具场景；论文未给人类参考分，只有模型间横向比较。",
+      "severity": "低",
+      "response": "论文在引言把长对话列为动机，但基准本身仍固定为 3 轮；未见后续加轮次版本。",
+      "reader": "不要用它推断几十轮长会话或带工具场景下的指令跟随能力。",
+      "cite": [
+        "arxiv-2410-15553@§1",
+        "arxiv-2410-15553@§3.1",
+        "arxiv-2410-15553@§4.2"
+      ]
+    },
+    {
+      "issue": "仓库归档、数据集非商业许可",
+      "impact": "官方 GitHub 仓库自 2025-12-01 起只读；HF 数据集许可为 cc-by-nc-2.0（仅非商业），商用需另找授权；仓库代码为 Apache-2.0。",
+      "severity": "低",
+      "response": "仓库与数据仍可下载，README 保留了 API 与本地 GPU 两种评测脚本用法。",
+      "reader": "商用复现前先确认数据许可范围。",
+      "cite": [
+        "github-repo@README",
+        "hf-dataset@README"
+      ]
+    }
+  ],
+  "notes": "Meta GenAI 2024-10 发布，官方仓库已归档（2025-12-01）；Qwen3 技术报告等多份第三方模型卡把 Multi-IF 用作多语言指令跟随项，故本站保留该基准档案。",
   "official_sources": [
     {
       "kind": "paper",
       "url": "https://arxiv.org/abs/2410.15553"
     },
     {
-      "kind": "site",
-      "url": "https://qwenlm.github.io/blog/qwen3/"
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/facebook/Multi-IF"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/facebookresearch/Multi-IF"
     }
   ],
   "related_benchmarks": [
     "ifeval"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-13",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      {
+        "id": "arxiv-2410-15553",
+        "kind": "paper",
+        "title": "Multi-IF: Benchmarking LLMs on Multi-Turn and Multilingual Instructions（arXiv:2410.15553 v2，2024-11-13）",
+        "url": "https://arxiv.org/abs/2410.15553",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "hf-dataset",
+        "kind": "dataset",
+        "title": "facebook/Multi-IF（Hugging Face 数据集卡，cc-by-nc-2.0）",
+        "url": "https://huggingface.co/datasets/facebook/Multi-IF",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "github-repo",
+        "kind": "repo",
+        "title": "facebookresearch/Multi-IF（官方评测代码，Apache-2.0，已归档）",
+        "url": "https://github.com/facebookresearch/Multi-IF",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "qwen3-tech-report",
+        "kind": "paper",
+        "title": "Qwen3 Technical Report（arXiv:2505.09388，第三方模型卡中的 Multi-IF 引用）",
+        "url": "https://arxiv.org/abs/2505.09388",
+        "accessed": "2026-11-13"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Meta GenAI（共同一作 Yun He、Di Jin、Chaoqi Wang、Chloe Bi，通讯 Yun He）",
+        "cite": [
+          "arxiv-2410-15553@作者署名"
+        ]
+      },
+      "first_release": {
+        "v": "2024-10-21（arXiv v1；v2 为 2024-11-13）",
+        "cite": [
+          "arxiv-2410-15553@首页"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "arxiv-2410-15553@§1",
+        "arxiv-2410-15553@§3.5",
+        "arxiv-2410-15553@§4.1"
+      ],
+      "interpretation": [
+        "arxiv-2410-15553@§4.2",
+        "arxiv-2410-15553@§5.4",
+        "hf-dataset@README"
+      ]
+    },
+    "problem": {
+      "text": "IFEval 这类指令跟随基准只有英文单轮提示，而论文指出真实用户与 AI 的交互大多是长多轮形式（常见 10 轮以上），且服务对象遍布多语言用户；单轮/单语基准测不出「轮次一多就忘指令」「换语言就掉分」这两类退化。Multi-IF 把 IFEval 扩成 3 轮、8 语种，专门暴露它们。",
+      "cite": [
+        "arxiv-2410-15553@§1",
+        "arxiv-2410-15553@§3.1"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机/无约束基线",
+        "value": "论文未给出",
+        "note": "指令是可程序化校验的 pass/fail，论文既未报告随机作答基线，也未报告人类基线，本站不做推算。",
+        "cite": [
+          "arxiv-2410-15553@§4.1",
+          "arxiv-2410-15553@§4.2"
+        ]
+      },
+      {
+        "label": "论文发布时最好（第 3 轮均分）",
+        "value": "0.707",
+        "note": "o1-preview 与 Llama 3.1 405B 并列最高，o1-mini 0.681、Llama 3.1 70B 0.668 紧随；第 1 轮同两款分别为 0.877 / 0.854。",
+        "cite": [
+          "arxiv-2410-15553@§4.2",
+          "arxiv-2410-15553@Table 1"
+        ]
+      },
+      {
+        "label": "第三方模型自报（Qwen3 技术报告）",
+        "value": "71.9 / 70.2（0–100 分）",
+        "note": "Qwen3-235B-A22B 思考档 71.9、非思考档 70.2；该表另有更高分数的列，但本页不对其他列做型号归属。这是 0–100 汇总口径，与论文 0–1 每轮均分不可直接比较。",
+        "cite": [
+          "qwen3-tech-report@Table 11",
+          "qwen3-tech-report@Table 12"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 4,501 当成「题目数」：它是对话数，每组 3 轮，实际用户提示约 1.35 万条；HF 数据集卡的 4,501 examples 指的也是一行一组对话。",
+        "cite": [
+          "arxiv-2410-15553@§3.5",
+          "hf-dataset@README"
+        ]
+      },
+      {
+        "text": "把第 1 轮分数和第 3 轮分数混在一张榜里排模型：同一模型跨轮掉分很常见（o1-preview 0.877→0.707），混比会得出相反结论。",
+        "cite": [
+          "arxiv-2410-15553@Table 1",
+          "hf-dataset@README"
+        ]
+      },
+      {
+        "text": "看到「宽松口径」就以为标准更松：宽松只先剥离开场白句再判，仍要求指令被遵守；四项平均后的主指标也不含任何内容质量判断。",
+        "cite": [
+          "arxiv-2410-15553@§4.1"
+        ]
+      },
+      {
+        "text": "把 Multi-IF 分数和 IFEval 分数直接对比：Multi-IF 是 IFEval 的多轮多语言扩展，论文称其显著更难，两者不是同一量纲。",
+        "cite": [
+          "arxiv-2410-15553@§1"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "Meta GenAI",
+        "cite": [
+          "arxiv-2410-15553@作者署名"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "共同一作 Yun He、Di Jin、Chaoqi Wang、Chloe Bi；其他署名作者含 Karishma Mandyam、Hejia Zhang、Chen Zhu、Ning Li 等；通讯 Yun He（yunhe2019@meta.com）",
+        "cite": [
+          "arxiv-2410-15553@作者署名"
+        ]
+      },
+      {
+        "k": "数据与代码位置",
+        "v": "数据在 Hugging Face facebook/Multi-IF（cc-by-nc-2.0，test split 4,501 行、约 7.41 MB）；评测代码在 GitHub facebookresearch/Multi-IF（Apache-2.0，2025-12-01 起归档只读），提供 API 与本地 vLLM 两种脚本。",
+        "cite": [
+          "hf-dataset@README",
+          "github-repo@README"
+        ]
+      },
+      {
+        "k": "第三方采用",
+        "v": "Qwen3 技术报告把 Multi-IF 列为多语言任务评测项之一（8 语种），并公布 Qwen3-235B-A22B 思考档 71.9、非思考档 70.2。",
+        "cite": [
+          "qwen3-tech-report@§4.6",
+          "qwen3-tech-report@Table 11",
+          "qwen3-tech-report@Table 12"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2024-10-21 arXiv v1 → 2024-11-13 arXiv v2 → 数据快照 multiIF_20241018.csv → 2025-12-01 官方仓库归档只读。",
+        "cite": [
+          "arxiv-2410-15553@首页",
+          "github-repo@README"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-13",
+        "columns": [
+          "模型",
+          "第1轮均分",
+          "第2轮均分",
+          "第3轮均分",
+          "第3轮英语",
+          "第3轮俄语",
+          "第3轮中文"
+        ],
+        "rows": [
+          ["o1-preview", "0.877", "0.783", "0.707", "0.773", "0.531", "0.703"],
+          ["o1-mini", "0.853", "0.772", "0.681", "0.742", "0.576", "0.627"],
+          ["GPT-4o", "0.843", "0.724", "0.631", "0.701", "0.501", "0.631"],
+          ["GPT-4", "0.815", "0.705", "0.609", "0.678", "0.490", "0.608"],
+          ["Llama 3.1 405B", "0.854", "0.782", "0.707", "0.786", "0.587", "0.670"],
+          ["Llama 3.1 70B", "0.826", "0.742", "0.668", "0.749", "0.519", "0.622"],
+          ["Llama 3.1 8B", "0.688", "0.615", "0.542", "0.641", "0.384", "0.495"],
+          ["Gemini-1.5 pro", "0.758", "0.624", "0.540", "0.641", "0.467", "0.540"],
+          ["Gemini-1.5 flash", "0.725", "0.570", "0.496", "0.563", "0.346", "0.522"],
+          ["Claude-3.5 Sonnet", "0.817", "0.705", "0.634", "0.725", "0.529", "0.630"],
+          ["Claude-3-Sonnet", "0.782", "0.680", "0.596", "0.678", "0.491", "0.532"],
+          ["Claude-3-Haiku", "0.729", "0.632", "0.542", "0.612", "0.485", "0.504"],
+          ["Qwen-2.5 72B", "0.837", "0.715", "0.609", "0.672", "0.527", "0.608"],
+          ["Mistral Large 2", "0.805", "0.669", "0.548", "0.638", "0.458", "0.552"]
+        ]
+      },
+      "cite": [
+        "arxiv-2410-15553@Table 1"
+      ]
+    }
+  }
 }
