@@ -4501,3 +4501,33 @@ Gemini Robotics 2.5 的 DeepMind 官方 RSS `pubDate` 为 `Mon, 09 Nov 2026 19:5
 - **新增厂商**：无
 - **候选数**：702 → **706**（入口扫描 +3，均按非模型发布排除；另主动登记 1 条已核验的 LifeVal 基准发布文）；general/vertical 未决候选 **0**
 - **检查点**：`last_scan_at=2026-11-15`；`last_max_release_date=2026-11-12`（**锚点只前进不回退**——本批最大发布日 2025-12-11 早于既有锚点，故不覆盖）；覆盖页窗口同步为 `2026-10-29 ~ 2026-11-15`
+
+## 第七十一批（2026-11-19 CST / 2026-11-18 UTC 增量窗口 2026-10-29 ~ 2026-11-18：发现 1 个新官方发布 Gemini 4 Neon，已归档原文与官方图片；本轮未完成账本建档，留待下一批）
+
+- **窗口**：增量窗口 2026-10-29 ~ 2026-11-18（检查点锚点 `last_max_release_date=2026-11-12` 回退 14 天重叠）。检查点回写 `last_scan_at=2026-11-18`（UTC）、`last_max_release_date` **维持 2026-11-12**（本批未新增 release 条目，锚点不前进也不回退）。
+- **执行方式与执行器互斥**：本批由 **MiniMax Code App（cwr 主机 / CHENGLE）** 在隔离 worktree `model-release-daily-20261118T232112Z`（自 `origin/main` = `6ea247e` 开出）内执行，与既有 `model-release-daily-<UTC时间戳>` 批次同一约定。原 OpenClaw 定时声明 `workflow:daily-model-releases-and-provider-refresh`（cron id `db2e30ef-541a-49e2-af4a-bcdff12831e9`，cron `15 7 * * *` Asia/Shanghai，agent `walle`）**开工前原生回读确认 `enabled=false`**（`openclaw cron get db2e30ef-541a-49e2-af4a-bcdff12831e9`），全机 `openclaw cron list --all --json` 共 6 条声明、其中唯一涉及本 cycle 的旧声明处于停用态 → **两个执行器不会跑同一 cycle**。本批不修改私有 workflow 配置，也不触发私有 provider 刷新阶段。
+- **窗口结论**：窗口内**发现 1 个新的官方模型发布**——**Google Gemini 4 Neon**（2026-11-18，官方发布文已归档）。另有 1 条已建档模型的官方补充发布文与若干非发布文，均未建档。
+- **本批建档情况**：**本批未新建 release 条目**。原因：Gemini 4 Neon 的官方发布文含 **9 张评测图表位图**（主评测表 / AA Index 成本 / AutoBaxBench / WebExploitBench / SEC-bench Pro / ExploitGym / CWE-bench v2 / Gray Swan / Gemini 4 系列对比），按账本纪律「图表图片行永不自动翻 verified」「读图不做视觉转写」，其账本建档须逐图核对并拆分 pending/verified 行；本轮执行预算（调度 `timeout_seconds: 2700`）不足以在完成逐图取证的同时跑完全部门禁，因此**本批只做归档、不做建档**，把 Gemini 4 Neon 明确登记为**下一批的首要待建档条目**，避免在门禁未跑完的情况下产出半成品账本行。
+- **新增归档目录**：`models/2026-11-18-gemini-4-neon/`——官方发布文服务端渲染 HTML（`page.html`）+ 官方图片 66 张（`images/`）+ `manifest.json`（逐文件 sha256）。**归档即转写与复核的唯一依据，下一批据此建档，无需重抓。**
+- **Gemini 4 Neon 官方一手事实（供下一批直接取用，均为发布文正文/图表原文）**
+  - 发布日 2026-11-18（页面印刷日 `Nov 18, 2026`、JSON-LD `datePublished=2026-11-18T21:00:00+00:00`、blog.google 官方 RSS `pubDate` 2026-11-18，三源互证）。
+  - 规格：上下文窗口 **1,000,000 tokens**；价格 **输入 $3 / 百万 tokens、缓存输入 $0.15 / 百万 tokens（95% 折扣）、输出 $15 / 百万 tokens**；可综合输入含电子表格、PDF、图表、音频、视频。
+  - 正文明文绝对分值（DOM 可机读，非读图）：Vals Index **70.9%**（第 2 名）、Chartography **73.5%**、Agents' Last Exam v1.1 **75.8%**、Zapier AutomationBench **56.3%**、Terminal-Bench Science **70.5%**、RiemannBench **84.0%**、HLE-Diamond **71.3%**、Artificial Analysis Coding Agent Index **58.6**、Terminal-Bench 4.1 **65.2%**、FrontierCode 2.0 **46.2%**（默认 high 档）、SWE-sweep **12.8%**（mini-SWE harness）/ **39.0%**（Antigravity harness）、AutoBaxBench 困难档 **76%**、WebExploitBench v1.2 **51.26%**、SEC-bench Pro **90.5%**、CWE-bench v2 **70.7%**（Collinear）、Gray Swan 攻击成功率 **0.0%**、Artificial Analysis Intelligence Index **61**（xhigh 档、第 3 名）、Agent Arena Index **1336**（全球第 2）。
+  - 正文点名但无数值（下一批按 `score_status: not_extracted` 记）：Legal Research Bench、Tax Agent Bench（均第 1 名）、Surge AI 多数分项第 1 名、Andon Labs Vending-Bench 2（$16,843 为金额不是分值）。
+  - 相对论断与成本比（**不建行**，只进 notes）：比 Carbon 低 32% 每任务成本、Vals/Agent Arena Pareto 前沿 50%–80% 更低成本、xhigh 档仍比同级便宜 36%+、CWE-bench v2 比 Carbon 提升 3.4%、拒答率 Terminal-Bench 4.0 1.98% / Terminal-Bench-Science 0%、编码作弊率 0.0% / 走捷径 2.45%、agentic safety 误配动作率 0.09%、agent honesty 99.2%、under-service 降 43%–56%、overreach 降 15%–35%。
+  - 协议缺口（下一批留 null）：发布文未给 harness / shots / temperature / top_p / token budget / run count 的明示数值；官方另有评测方法 PDF 通道 `deepmind.google/models/evals-methodology/<model>/`，下一批应据此补 `protocol`。
+- **逐厂商巡检（窗口 2026-10-29 ~ 2026-11-18）**
+  - **Google**：官方 `deepmind.google/blog/rss.xml`（100 条）+ `blog.google/rss/`（20 条）。窗口内模型发布 = **Gemini 4 Neon**（11-18，**已归档待建档**）；另有 **Genie 4 is now available**（11-18，为已建档 `google/genie-4`（2026-10-27，0 条 evidence）的官方补充发布文，下一批据其补 evidence 或按产品公告排除）、**Read the EmbeddingGemma 2 technical report**（11-17，已建档模型的技术报告文章）、**See what 5 builders are making with Gemini 4 Carbon**（11-17，客户/生态内容）、Gemini 4 Carbon 演示与 EmbeddingGemma 2 已建档条目。其余为产品与公司公告。
+  - **OpenAI**：官方 `news/rss.xml` 窗口内逐条复核（11-15 ~ 11-18 共 22 条），其中 **Introducing GPT-6.2 Astra and Sol**（11-17）与 **Astra for Law**（11-17）**已由 PR #87（第七十批）建档**，本批不重复建档；其余为合作公告、客户案例、科研文章与政策声明（The Silent Consensus / Inside the Codex sandbox / Managing frontier AI risk / Advancing chip design with OpenAI models / Broadening access to AI for scientists / Our first phase of embedded assessments 等），无独立模型发布、无可录绝对分值。
+  - **Microsoft**：官方 HF 组织窗口内新建 `microsoft/Aion-1.0-Instruct-2.3B`（11-18，附 ONNX-WebGPU 衍生件）——**无官方发布文与评测数值**，按「研究产物/衍生权重、非独立模型发布」暂不建档，留待下批核验官方落地页。
+  - **腾讯**：官方 HF 组织窗口内 3 个新仓 `tencent/Hy4-flash` / `-FP8` / `-base`（11-17）**已由 PR #87 建档**（量化/基础衍生件不另建档）；官方 `Tencent-Hunyuan/hyra-results` README 的「## News」节窗口内最新为 11-03 与 11-04（已建档）。
+  - **Meta / Mistral / DeepSeek / MiniMax / Kimi / 豆包 / 小米 MiMo / 智谱 GLM / StepFun / Qwen / Anthropic / Thinking Machines / Particle**：本轮官方通道窗口内**无未建档的新发布**——Mistral 官方 RSS 94 条与 changelog 最新为 2026-10-29（Mistral Large 4 推理档位更新，非模型发布）；DeepSeek `/updates` 最新为 11-13（既有模型开放应用 API，非模型发布）；MiniMax 官方模型日志最新仍为 M3.1 Flash；Kimi 博客最新为已建档 Kimi K3.1 Pro（10-24）；豆包 sitemap 窗口内无新发布文；小米 MiMo 博客窗口内 0 篇；StepFun 官方 HF 组织 0 新仓；Qwen 官方 HF 组织 0 新仓；xAI 官方模型总表旗舰仍为 grok-4.7（已建档）。
+- **跳过清单**
+  - **Genie 4 is now available**（Google，11-18）——已建档 `google/genie-4`（2026-10-27）的**可用性/产品公告**，本批未复核其是否含新的评测分值，下一批按「已建档模型的官方补充发布文」处理（补 evidence 或按 product 排除），本批不越窗改既有 release 文件。
+  - **microsoft/Aion-1.0-Instruct-2.3B**（11-18）——官方 HF 权重仓，**无官方发布文与评测数值**，按研究产物/衍生权重处理，不建 release。
+  - **OpenAI 窗口内其余 20 条**（合作 / 客户案例 / 政策 / 博客栏目上线 / 数据集开放 / 研究资助）——无独立模型发布或可录绝对分值。
+  - **Google 窗口内产品与生态条目**（Gemini app 低内存 Android 适配、Google Wallet iOS、AI Mode 临时话题、Play 商店年度榜单等）——产品更新，非模型发布。
+- **待人工核验**：遗留 pending 行未动（Kimi K3.1 Pro 官方图片评测表 28 行、Hy-Nomas-Bench 4 行等），按纪律**不做视觉转写**、不填数值。Gemini 4 Neon 的 9 张评测图表位图**尚未读图**，本批不建行、不转写，留在下一批逐图核对。
+- **门禁**：见本批提交记录（`reconcile-coverage` / `validate-data` / `node --test` / `npm run build`）。
+- **分支**：`model-release-daily-20261118T232112Z`（自 `origin/main` = `6ea247e` 开出）。
+- **批次序号提示**：本批为**第七十一批**。主干当前止于**第六十八批**；PR #86（第六十九批）与 PR #87（第七十批）**尚未合并**，人工合并时请按 #86 → #87 → 本批顺序合入，以免 README 批次序号倒挂。
