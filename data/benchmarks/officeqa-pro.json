@@ -3,57 +3,264 @@
   "name": "OfficeQA Pro",
   "full_name": "OfficeQA Pro: An Enterprise Benchmark for End-to-End Grounded Reasoning",
   "aliases": ["OfficeQA"],
-  "status": null,
+  "status": "active",
   "categories": [
     "agent",
     "longctx"
   ],
-  "summary": "Databricks 出品的企业级文档推理基准：1939–2025 年美国财政公报约 9 万页语料上的 133 道多文档 grounding 推理题",
-  "interpretation": "Databricks 企业级文档推理：约 9 万页美国财政公报语料上的 133 道多文档题，准确率口径；仅靠参数知识不足 5%、加联网不足 12%、直接给语料后前沿 agent 平均 34.1%——分数必须连同检索/工具配置一起读。",
+  "summary": "Databricks 出品的企业级文档推理基准：把 1939–2025 年的 697 期美国财政公报（约 8.9 万页、2,600 万个数值）当作企业档案，出 133 道必须跨文档检索、解析密集财务表格并做数值分析才能答对的题，每题只有一个可自动判分的答案。",
+  "interpretation": "分数高说明智能体能在陌生的大型财务档案里走通「找对页面 → 把表格读对 → 算对」整条链路，三段缺一段就答错——判分是精确匹配，差一点都不算对。论文里最强的前沿 agent 在完整语料上只拿到 48.1%，换成解析后的文档能到 54.1%；30 题子集上人类标注员比 agent 慢约 4 倍、准确率还低约 28%。因此看到 60% 以上的分数，先怀疑评测口径（是否给了答题页面、是否预解析、容许误差是多少），而不是直接当成企业可用性证明。",
   "measures": [
-    "大规模异构语料中的跨文档检索与引用",
-    "密集财务表格与扫描文档的解析推理",
-    "答案对语料的可溯源 grounding"
+    {
+      "area": "跨文档检索与证据定位",
+      "focus": "多数题的证据不在同一份文件里：单题可能需要 1 到 20 页以上，论文统计 11% 的题需要三份以上公报，官方博客说平均牵涉约 2 份不同公报；22% 的题还要联网查外部数值（如历史汇率）。",
+      "share": "11%（需 ≥3 份公报）",
+      "format": "数值或简短文本答案，需在语料中可溯源",
+      "cite": ["arxiv-2603-08655@§2.2", "blog-introducing"]
+    },
+    {
+      "area": "密集财务表格与扫描件解析",
+      "focus": "公报表格有多层嵌套层级、单位随年代变化、大量脚注；1939–1982 月刊、之后转季刊，每期 100–200 页；1996 年前是纸质扫描件、之后是数字原生 PDF，官方还把 PDF 内嵌文本层移除以公平考察文档解读能力。",
+      "share": "未披露（论文按能力维度统计，未给解析单一占比）",
+      "format": "含表格、图表的 PDF 原文",
+      "cite": ["arxiv-2603-08655@§2.2", "blog-introducing"]
+    },
+    {
+      "area": "超越基本算术的数值分析",
+      "focus": "不止查数：62% 的题需要在取到的数值上做超出基本算术的数据分析（论文举例线性回归）；官方博客强调没有一题需要高中以上的数学运算。",
+      "share": "62%",
+      "format": "数值答案，99% 的题为数值",
+      "cite": ["arxiv-2603-08655@§2.2", "arxiv-2603-08655@§2.4", "blog-introducing"]
+    },
+    {
+      "area": "图表视觉推理",
+      "focus": "少数题需要对图表、曲线做视觉理解才能取到数值，无法只靠文本层。",
+      "share": "3%",
+      "format": "图 / 表截图型题目",
+      "cite": ["arxiv-2603-08655@§2.2"]
+    },
+    {
+      "area": "时间序列修订核对",
+      "focus": "公报会在后续月份和年份里修订同一指标，agent 常停在第一个数值上看似合理的版本；论文把「检索到修订后数值」单列为一类失败模式。",
+      "share": "未披露（论文列为失败模式，未给题目占比）",
+      "format": "需要纵向比对的多年期数值",
+      "cite": ["arxiv-2603-08655@§5.1"]
+    }
   ],
   "does_not_measure": [
-    "单篇短文档 QA",
-    "文风与生成质量",
-    "多语言文档"
+    {
+      "text": "不测开放式生成质量：每题只有一个无歧义答案，用精确匹配判分，答案的表述、文风、引用格式都不计分，也不做人工专家评分。",
+      "cite": ["arxiv-2603-08655@§2.4", "arxiv-2603-08655@§1"]
+    },
+    {
+      "text": "不测多语言：语料是美国财政公报，题目为英文，没有跨语言文档推理。",
+      "cite": ["hf-officeqa"]
+    },
+    {
+      "text": "不测通用领域泛化：语料集中在金融与政府报告域，Hugging Face 卡片明确写了这一限制，结论不能直接外推到其他行业的文档。",
+      "cite": ["hf-officeqa@Limitations"]
+    },
+    {
+      "text": "不测无检索的对话式问答：需要外部文档才能发挥性能，脱离检索语料单独对话不在设计目标内。",
+      "cite": ["hf-officeqa@Limitations"]
+    },
+    {
+      "text": "不测音视频、数据库等非文档模态，也不测长文本续写、代码生成等通用能力。",
+      "cite": ["arxiv-2603-08655@§1"]
+    }
   ],
   "dataset": {
     "sample_count": 133,
-    "splits": ["Pro 133 题（全 hard）", "Full 246 题（含 113 easy）"],
-    "source_type": "real-world（美国财政部公报，约 90 万页级语料中的 9 万页解析文本）",
+    "splits": [
+      "OfficeQA Pro：133 题，全部为 hard（2026-03 技术报告主集合）",
+      "OfficeQA Full：246 题，含 113 道 easy + 133 道 hard",
+      "OfficeQA Pro V2：90 题，另一套语料（1,435 份 1793–2024 年美国联邦收支报表 PDF）"
+    ],
+    "source_type": "real-world（美国财政部 U.S. Treasury Bulletins，697 期，1939–2025）",
     "languages": ["en"],
-    "public_sample": true
+    "public_sample": true,
+    "multiple_choice_share": "0%（99% 的答案为数值，其余用容忍格式差异的模糊文本匹配）",
+    "multimodal_share": "3%（题目涉及图表需视觉推理）",
+    "totals": "OfficeQA Pro 133 题（全 hard）· 配套 OfficeQA Full 246 题（113 easy + 133 hard）· 另有一套换语料的 OfficeQA Pro V2 90 题 · 语料为 697 期美国财政公报（1939–2025）、约 8.9 万页、超过 2,600 万个数值 · 题目语言英文 · 数据集在 Hugging Face 上为 gated，需同意使用条款后访问 · 占比为论文按能力维度统计的标签，各维度可重叠，不是互斥分区",
+    "cite": ["arxiv-2603-08655@Abstract", "arxiv-2603-08655@§2.2", "repo-officeqa", "hf-officeqa", "hf-officeqa-pro-v2"],
+    "construction": [
+      {
+        "k": "语料准备",
+        "text": "美国财政公报 1939–1982 月刊、之后按季刊发行，每期 100–200 页，含文字分析、数值表格与图表；官方把 PDF 内嵌的文本层整体移除，以免模型绕过解读直接读取。",
+        "cite": ["arxiv-2603-08655@§2.2", "blog-introducing"]
+      },
+      {
+        "k": "出题与扩展",
+        "text": "Databricks 先写一批种子题，再与标注合作方 SuperAnnotate、Turing 规模化出题；标注员参照语料生成新题，并被要求避开无依据的冷题式提问、明确区分财年与日历年、明确名义与实际美元口径，USAFacts 参与评审以保证题目贴近真实分析师会问的问题。",
+        "cite": ["arxiv-2603-08655@§2.3", "blog-introducing"]
+      },
+      {
+        "k": "答案可复现校验",
+        "text": "由一位新标注员用出题时所用的同一批 PDF 页面重新作答，答案不一致就交给第三位标注员裁决，确保标准答案不是出题人一人的判断。",
+        "cite": ["arxiv-2603-08655@§2.3"]
+      },
+      {
+        "k": "两轮端到端质检",
+        "text": "跑 AI agent 产生冲突答案，人工逐条判定是 agent 失败、题目表述有歧义、还是标准答案本身错了，后两种情况分别改写题目或修正答案。",
+        "cite": ["arxiv-2603-08655@§2.3"]
+      },
+      {
+        "k": "参数知识过滤与难度分级",
+        "text": "先过滤掉仅靠模型参数知识就能答对的题（构建时用的是 Claude Opus 4.5 与 GPT-5.1），246 题留存；再用当时最强的 agent 复测，两个 agent 都答对的 113 题标为 Easy 只留在 Full 集，剩下 133 题成为 OfficeQA Pro。",
+        "cite": ["arxiv-2603-08655@§2.3", "arxiv-2603-08655@§2.3 脚注"]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "每题只有一个无歧义答案，用官方仓库里的 reward.py 做确定性判分：数值答案按容许绝对相对误差与标准答案比较（默认 0.0%，即精确匹配），非数值答案用容忍格式差异的模糊文本匹配；标点、数学符号和常见缩写在比较前先归一化。除非另作说明，论文与官方结果表报的都是 0.0% 阈值下的准确率。",
+    "cite": ["arxiv-2603-08655@§2.4", "repo-officeqa@reward.py"],
+    "variants": [
+      {
+        "text": "容许绝对相对误差阈值有四档：0.0%（精确匹配）/ 0.1% / 1.0% / 5.0%。放宽容许误差会显著抬高分数——论文里 prompt-only 设置从不足 3% 涨到 17–24%，所以跨论文比较必须先对齐阈值。",
+        "cite": ["repo-officeqa@reward.py", "arxiv-2603-08655@§3.1"]
+      },
+      {
+        "text": "完整语料 vs Oracle 页面：官方同时报两种口径。Oracle 口径直接给出答题所需页面，衡量解析与推理上限，比完整语料高 13–21 个百分点，两者不能混排成一个排行榜。",
+        "cite": ["arxiv-2603-08655@§3.2"]
+      },
+      {
+        "text": "原始 PDF vs ai_parse_document 预解析文档：官方默认同时报两种。预解析通常更高（Full 语料上高 6.0–20.3 个百分点）、更快（4–9 倍），引用分数时必须说明用的是哪种语料形态。",
+        "cite": ["arxiv-2603-08655@§3.2"]
+      },
+      {
+        "text": "Pro（133）/ Full（246）/ Pro V2（90）三个集合题量与语料都不同，reward.py 虽然被设计成语料无关、同一套脚本通吃，但分数不可跨集合比较。",
+        "cite": ["repo-officeqa"]
+      }
+    ]
   },
   "metrics": [
     {
       "id": "accuracy",
-      "name": "Accuracy",
+      "name": "准确率（0.0% 容许绝对相对误差）",
       "range": [0, 100],
       "unit": "percent",
-      "direction": "higher",
-      "aggregation": "mean"
+      "direction": "越高越好",
+      "aggregation": "mean",
+      "description": "在指定容许绝对相对误差阈值下判为正确的题目占比。除非另作说明，论文与官方结果都用 0.0% 阈值，即答案必须与标准答案在归一化后完全一致。",
+      "cite": ["arxiv-2603-08655@§2.4", "repo-officeqa@reward.py"]
+    },
+    {
+      "id": "latency",
+      "name": "平均时延",
+      "unit": "minute",
+      "direction": "越低越好",
+      "aggregation": "mean",
+      "description": "每题平均耗时。论文测得完整 PDF 语料下前沿 agent 平均 23.6 分钟，即使用最先进的文档解析也要 3.9 分钟；预解析能把时延压到原来的 1/4–1/9。",
+      "cite": ["arxiv-2603-08655@§7", "arxiv-2603-08655@§3.2"]
+    },
+    {
+      "id": "cost",
+      "name": "单题平均成本",
+      "unit": "USD",
+      "direction": "越低越好",
+      "aggregation": "mean",
+      "description": "每题的 API 花费。官方结果表同时报这一列：Full 语料上从 $1.26 到 $6.21 不等，Oracle 页面能便宜 74–88%。",
+      "cite": ["arxiv-2603-08655@§3.2"]
     }
   ],
   "versions": [
     {
+      "id": "officeqa-v1",
+      "date": "2025-12-09",
+      "label": "Databricks 博客首发 OfficeQA：246 题、两级难度，语料为美国财政公报",
+      "cite": ["blog-introducing"]
+    },
+    {
       "id": "pro-v1",
-      "label": "OfficeQA Pro（2026-03）",
-      "note": "arXiv:2603.08655；133 题"
+      "date": "2026-03-09",
+      "label": "arXiv 技术报告发布，从中抽出最难的 133 题为 OfficeQA Pro，并公布首批 agent 结果",
+      "cite": ["arxiv-2603-08655@作者署名"]
+    },
+    {
+      "id": "results-2026-04-21",
+      "date": "2026-04-21",
+      "label": "仓库结果更新，加入 Claude Opus 4.7",
+      "cite": ["repo-officeqa"]
+    },
+    {
+      "id": "results-2026-07-20",
+      "date": "2026-07-20",
+      "label": "仓库结果更新，加入 GPT-5.5、GPT-5.6 Sol、Claude Opus 4.8 与 Claude Fable 5",
+      "cite": ["repo-officeqa"]
+    },
+    {
+      "id": "results-2026-08-02",
+      "date": "2026-08-02",
+      "label": "仓库结果更新，加入 Claude Opus 5 与 Antigravity Gemini 3.1 Pro",
+      "cite": ["repo-officeqa"]
     },
     {
       "id": "pro-v2",
-      "label": "OfficeQA Pro V2",
-      "note": "约 12 万页未见语料重构，测 unseen 泛化"
+      "date": "未披露",
+      "label": "OfficeQA Pro V2：90 题，换用 1,435 份 1793–2024 年美国联邦收支报表 PDF 作为语料",
+      "note": "官方未公布具体发布日期；GitHub README 的结果更新记录止于 2026-08-02，可作为时间上界参考。",
+      "cite": ["repo-officeqa", "hf-officeqa-pro-v2"]
     }
   ],
   "limitations": [
-    "语料域单一（财政公报），领域泛化结论有限",
-    "题量小（133），单题权重高"
+    {
+      "issue": "评分脚本会拒掉正确答案",
+      "impact": "第三方复现发现 reward.py 的数值抽取逻辑会因为答案里多出数字（即使是重复或解释性数字）而拒掉本来正确的回答，答案超过 250 字符也会被拒；Prime Intellect 因此弃用官方脚本，改用参考答案裁判。",
+      "severity": "高",
+      "response": "Prime Intellect 开源了自己的修复版（PI OfficeQA Pro v2）；官方仓库未公布对应修复，也未见对 reward.py 的修订记录。",
+      "reader": "看到第三方跑出的低分，先分清是模型答错还是被判分脚本拒掉。",
+      "cite": ["audit-primeintellect"]
+    },
+    {
+      "issue": "默认口径可联网，存在答案泄漏风险",
+      "impact": "官方 agent 口径默认带 web 搜索，第三方观测到模型会从 Hugging Face 页面直接检索到答案；默认提示词还要求模型展开推理，可能触发 Anthropic 模型的内容过滤而拿不到成绩。",
+      "severity": "高",
+      "response": "两个 Hugging Face 数据集都设成 gated，需同意「不拿答案键训练被测模型、不刷分」条款；Prime Intellect 的复现改为完全离线。",
+      "reader": "对比分数前先确认是否联网、语料是否公开可见。",
+      "cite": ["audit-primeintellect", "repo-officeqa"]
+    },
+    {
+      "issue": "hard 标签随时间失效",
+      "impact": "构建时用 Claude Opus 4.5 与 GPT-5.1 过滤参数知识，论文脚注明确说更新的 Opus 4.6 / GPT-5.4 已能靠参数知识答对其中一些题；133 题的 hard 只对当时的模型成立。",
+      "severity": "中",
+      "response": "官方另推换语料的 Pro V2 作为泛化测试；论文未公布重过滤后的题量。",
+      "reader": "不要把 133 题当成永久不可记忆的集合。",
+      "cite": ["arxiv-2603-08655@§2.3 脚注"]
+    },
+    {
+      "issue": "解析质量主导分数",
+      "impact": "论文测得用原始 PDF 的 agent 有 40–50% 的失败可归因于解析错误；换解析器能让准确率差 19 个百分点以上（ai_parse_document 平均 50.4%，unstructured.io 31.1%）。",
+      "severity": "中",
+      "response": "官方默认同时报原始 PDF 与预解析两种口径，并开源 reward.py。",
+      "reader": "分数同时取决于模型和它的文档解析管线，同名模型不同管线的分数不可直接比较。",
+      "cite": ["arxiv-2603-08655@§5.2", "arxiv-2603-08655@§4.2"]
+    },
+    {
+      "issue": "题量小、语料域单一",
+      "impact": "只有 133 题，单题权重约 0.75 个百分点，噪声大；语料只有美国财政公报，跨行业结论有限。",
+      "severity": "中",
+      "response": "官方另放 246 题的 Full 集与 90 题的 Pro V2；Hugging Face 卡片明确写了基准面向金融与政府报告域。",
+      "reader": "小样本上几个点的差距不要当作稳定排序。",
+      "cite": ["arxiv-2603-08655@§2.2", "hf-officeqa@Limitations"]
+    },
+    {
+      "issue": "答案修订与题目歧义",
+      "impact": "财政公报会多次修订同一指标，agent 常过早收敛在第一个看似合理的数值上；论文单列了这一失败模式，第三方也发现部分任务本身有歧义、能得出不同但都成立的答案。",
+      "severity": "中",
+      "response": "官方在提示词里要求使用最新修订值；Prime Intellect 因此剔除了部分任务。",
+      "reader": "答错不一定是检索不到，也可能是取了旧版数值。",
+      "cite": ["arxiv-2603-08655@§5.1", "audit-primeintellect"]
+    },
+    {
+      "issue": "官方数字自身口径不一致",
+      "impact": "同一篇论文里三个口径对不上：摘要说 ai_parse_document 带来 16.1% 的平均相对提升，§3.2 在 Full 语料上报的是 6.0–20.3 个百分点（相对 12.5–62.4%），讨论节又说预解析把成绩提到 56.4%（Table 1 中 Full 语料最高为 54.14%，66.92% 是 Oracle 页面口径）。",
+      "severity": "中",
+      "response": "本档案按各处原文分别引用，不做调和；引用提升幅度时需带上是哪一节的口径。",
+      "reader": "看到「提升 16.1%」和「提升 12.5–62.4%」时，确认比较的基线和集合是否相同。",
+      "cite": ["arxiv-2603-08655@Abstract", "arxiv-2603-08655@§3.2", "arxiv-2603-08655@§7"]
+    }
   ],
-  "notes": "证据账本中 9 次引用；『企业级真实文档』叙事的锚点",
+  "notes": "证据账本中 9 次引用；『企业级真实文档』叙事的锚点。官方结果图是 PNG，仓库 README 无法提供逐条数值，本档案的官方结果表取自论文 Table 1。",
   "official_sources": [
     {
       "kind": "paper",
@@ -71,6 +278,200 @@
     "gaia",
     "longbench"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-19",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-19",
+    "sources": [
+      {
+        "id": "arxiv-2603-08655",
+        "kind": "paper",
+        "title": "OfficeQA Pro: An Enterprise Benchmark for End-to-End Grounded Reasoning（arXiv:2603.08655，2026-03-09 提交）",
+        "url": "https://arxiv.org/abs/2603.08655",
+        "accessed": "2026-11-19"
+      },
+      {
+        "id": "repo-officeqa",
+        "kind": "repo",
+        "title": "databricks/officeqa（GitHub 仓库：数据集说明、reward.py 与结果更新记录）",
+        "url": "https://github.com/databricks/officeqa",
+        "accessed": "2026-11-19"
+      },
+      {
+        "id": "hf-officeqa",
+        "kind": "dataset",
+        "title": "Hugging Face 数据集 databricks/officeqa（OfficeQA Pro 与 OfficeQA Full）",
+        "url": "https://huggingface.co/datasets/databricks/officeqa",
+        "accessed": "2026-11-19"
+      },
+      {
+        "id": "hf-officeqa-pro-v2",
+        "kind": "dataset",
+        "title": "Hugging Face 数据集 databricks/officeqa-pro-v2",
+        "url": "https://huggingface.co/datasets/databricks/officeqa-pro-v2",
+        "accessed": "2026-11-19"
+      },
+      {
+        "id": "blog-introducing",
+        "kind": "announcement",
+        "title": "Databricks 博客：Introducing OfficeQA: A Benchmark for End-to-End Grounded Reasoning（2025-12-09）",
+        "url": "https://www.databricks.com/blog/introducing-officeqa-benchmark-end-to-end-grounded-reasoning",
+        "accessed": "2026-11-19"
+      },
+      {
+        "id": "audit-primeintellect",
+        "kind": "blog",
+        "title": "Prime Intellect 博客：Learnings from Auditing Public Evaluations（2026-11-03）",
+        "url": "https://www.primeintellect.ai/blog/auditing-public-evaluations",
+        "accessed": "2026-11-19"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Databricks（Databricks AI Research）",
+        "cite": ["arxiv-2603-08655@作者署名", "blog-introducing"]
+      },
+      "first_release": {
+        "v": "2025-12-09（Databricks 博客首发 OfficeQA）",
+        "cite": ["blog-introducing"]
+      }
+    },
+    "cites": {
+      "summary": ["arxiv-2603-08655@Abstract", "arxiv-2603-08655@§2.2", "repo-officeqa"],
+      "interpretation": ["arxiv-2603-08655@Table 1", "arxiv-2603-08655@§7", "arxiv-2603-08655@附录 C"]
+    },
+    "problem": {
+      "text": "HLE、ARC-AGI-2 这类基准考的是抽象学术能力，与企业里真正的工作脱节；GDPval 往前迈了一步，但它把任务所需的少量材料直接塞进提示词，测不到在大规模企业档案里忠实检索的能力，而且靠人工专家评分成本很高。OfficeQA Pro 想用一个免费可得的真实档案，把「文档解析 → 信息检索 → 数值分析」这条企业日常链路做成可自动判分的基准。",
+      "cite": ["arxiv-2603-08655@§1", "arxiv-2603-08655@§2.1"]
+    },
+    "ladder": [
+      {
+        "label": "仅靠参数知识（无文档、无工具）",
+        "value": "< 5%",
+        "note": "论文摘要口径；§3.1 的 prompt-only 设置在 0.0% 阈值下实际不足 3%。",
+        "cite": ["arxiv-2603-08655@Abstract", "arxiv-2603-08655@§3.1"]
+      },
+      {
+        "label": "单次调用 + 联网搜索",
+        "value": "< 12%",
+        "note": "论文摘要口径；其中 GPT-5.4 为 11.3%，Opus 4.6 约 80% 的题因耗尽生成 token 给不出最终答案。",
+        "cite": ["arxiv-2603-08655@Abstract", "arxiv-2603-08655@§3.1"]
+      },
+      {
+        "label": "直接给答题所需页面 + 联网（Oracle 口径）",
+        "value": "36–57%（原始 PDF）→ 最高 65.4%（预解析）",
+        "note": "LLM 单次调用口径，衡量解析与推理上限，不代表检索能力。",
+        "cite": ["arxiv-2603-08655@§3.1"]
+      },
+      {
+        "label": "前沿 agent + 完整 PDF 语料（论文主口径）",
+        "value": "48.1%",
+        "note": "Claude Opus 4.6；三家 agent 平均 34.1%，无一过半。",
+        "cite": ["arxiv-2603-08655@Table 1", "arxiv-2603-08655@Abstract"]
+      },
+      {
+        "label": "前沿 agent + 预解析完整语料",
+        "value": "54.1%",
+        "note": "同一模型换 ai_parse_document 预解析语料后的分数；官方 2026-08-02 起更新的 Opus 5 等更高分只以结果图形式发布，无数值可引。",
+        "cite": ["arxiv-2603-08655@Table 1", "repo-officeqa"]
+      },
+      {
+        "label": "换语料的 OfficeQA Pro V2（90 题）",
+        "value": "54.4%（最强 agent harness）",
+        "note": "另一套 1793–2024 联邦收支报表语料；Gemini Antigravity harness 不足 15%。",
+        "cite": ["repo-officeqa"]
+      },
+      {
+        "label": "人类标注员参考线（30 题子集）",
+        "value": "51.1%（Oracle 页面）/ 34.6%（完整语料）",
+        "note": "3 名标注员；同期 agent 分别 71.1% / 50.0%，人类比 agent 慢约 4 倍、准确率低约 28%。",
+        "cite": ["arxiv-2603-08655@附录 C"]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把「agent 48.1%」当成模型上限。这个数是在完整 8.9 万页 PDF 语料上端到端跑出来的，检索占了很大一块；换成直接给页面的 Oracle 口径，同一个模型能到 66.9%。",
+        "cite": ["arxiv-2603-08655@Table 1", "arxiv-2603-08655@§3.2"]
+      },
+      {
+        "text": "把 0.0% 阈值和 5% 阈值的分数放在一起比。放宽容许误差会让 prompt-only 从不足 3% 涨到 17–24%，官方结果表默认都是 0.0%。",
+        "cite": ["arxiv-2603-08655@§2.4", "repo-officeqa@reward.py"]
+      },
+      {
+        "text": "把 Pro（133）、Full（246）、Pro V2（90）的分数混排。三者题量与语料都不同，V2 是另一套 1793–2024 的联邦收支报表。",
+        "cite": ["repo-officeqa", "hf-officeqa-pro-v2"]
+      },
+      {
+        "text": "以为预解析一定意味着分数可比。原始 PDF 与预解析差 6–21 个百分点、时延差 4–9 倍、单题成本差可达 82%，不同管线跑出的同名模型分数不可直接比较。",
+        "cite": ["arxiv-2603-08655@§3.2"]
+      },
+      {
+        "text": "把博客里 GPT-5.1 约 70% 的数字和论文里的 agent 分数混为一谈。论文脚注说明两者差异来自更新的 agent 架构、Pro 与 Full 集合不同，以及一部分题目被修订过。",
+        "cite": ["arxiv-2603-08655@§2.3 脚注", "blog-introducing"]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "Databricks AI Research；论文作者以 Krista Opsahl-Ong、Arnav Singhvi 等 13 人署名。",
+        "cite": ["arxiv-2603-08655@作者署名"]
+      },
+      {
+        "k": "语料来源",
+        "v": "美国财政公报（U.S. Treasury Bulletins），697 期、1939–2025，PDF 与解析文本托管在 Hugging Face；2026 年 5 月起大文件从 GitHub 仓库迁到 Hugging Face。",
+        "cite": ["arxiv-2603-08655@§2.2", "repo-officeqa", "hf-officeqa"]
+      },
+      {
+        "k": "合作方",
+        "v": "SuperAnnotate 与 Turing 负责规模化出题，USAFacts 参与题目与语料评审；论文附录另请 3 名标注员做人类基线。",
+        "cite": ["arxiv-2603-08655@§2.3", "arxiv-2603-08655@附录 C"]
+      },
+      {
+        "k": "许可与获取",
+        "v": "数据集 CC-BY-SA 4.0、代码与脚本 Apache 2.0；两个 Hugging Face 数据集都设了 gated，需同意「不拿答案键训练被测模型、不刷分」条款后才能访问。",
+        "cite": ["repo-officeqa", "hf-officeqa"]
+      },
+      {
+        "k": "配套活动",
+        "v": "Databricks 在首发博客宣布 2026 年春季举办 Grounded Reasoning Cup，让 AI agent 与人类团队同场竞技。",
+        "cite": ["blog-introducing"]
+      },
+      {
+        "k": "结果更新节奏",
+        "v": "README 的结果图按模型分批更新：2026-03-09 技术报告、04-21 Opus 4.7、07-20 GPT-5.5 / GPT-5.6 Sol / Opus 4.8 / Claude Fable 5、08-02 Opus 5 与 Antigravity Gemini 3.1 Pro。",
+        "cite": ["repo-officeqa"]
+      },
+      {
+        "k": "第三方审计",
+        "v": "Prime Intellect 于 2026-11-03 发布公开评测复盘，指出 OfficeQA Pro v2 的评分脚本误拒、可联网检索到答案、默认提示词触发内容过滤等问题，并开源了自己的修复版。",
+        "cite": ["audit-primeintellect"]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-19",
+        "columns": ["模型", "语料口径", "文档形态", "准确率（%）", "平均时延（分钟）", "平均工具调用", "单题成本（USD）"],
+        "rows": [
+          ["Claude Opus 4.6", "完整语料", "原始 PDF", "48.12", "31.2", "82.4", "4.55"],
+          ["Claude Opus 4.6", "完整语料", "ai_parse_document 预解析", "54.14", "5.3", "68.5", "5.93"],
+          ["Claude Opus 4.6", "Oracle 页面", "原始 PDF", "60.90", "7.3", "26.5", "1.19"],
+          ["Claude Opus 4.6", "Oracle 页面", "ai_parse_document 预解析", "66.92", "3.5", "24.5", "2.76"],
+          ["GPT-5.4", "完整语料", "原始 PDF", "36.09", "13.1", "57.0", "1.79"],
+          ["GPT-5.4", "完整语料", "ai_parse_document 预解析", "56.39", "3.6", "34.5", "1.26"],
+          ["GPT-5.4", "Oracle 页面", "原始 PDF", "54.89", "4.4", "31.6", "0.44"],
+          ["GPT-5.4", "Oracle 页面", "ai_parse_document 预解析", "65.41", "2.2", "20.7", "0.33"],
+          ["Gemini 3.1 Pro Preview", "完整语料", "原始 PDF", "18.05", "26.4", "75.2", "6.21"],
+          ["Gemini 3.1 Pro Preview", "完整语料", "ai_parse_document 预解析", "29.32", "2.9", "12.8", "1.61"],
+          ["Gemini 3.1 Pro Preview", "Oracle 页面", "原始 PDF", "39.10", "4.2", "28.4", "0.76"],
+          ["Gemini 3.1 Pro Preview", "Oracle 页面", "ai_parse_document 预解析", "46.62", "2.6", "11.4", "0.23"]
+        ]
+      },
+      "cite": ["arxiv-2603-08655@Table 1"]
+    }
+  }
 }
