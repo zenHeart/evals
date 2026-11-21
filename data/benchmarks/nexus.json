@@ -1,41 +1,580 @@
 {
   "id": "nexus",
   "name": "Nexus（NexusRaven）",
-  "full_name": null,
-  "aliases": [],
+  "full_name": "NexusRaven API Evaluation（Nexusflow.ai 开源函数调用评测集；Llama 3 论文中记作 Nexus）",
+  "aliases": [
+    "NexusRaven_API_evaluation",
+    "NexusRaven",
+    "Nexus"
+  ],
   "status": null,
   "categories": [
     "agent"
   ],
-  "summary": "Nexusflow NexusRaven 函数调用评测",
-  "interpretation": "Nexusflow 函数调用评测（cve_cpe/emailrep/virustotal/toolalpaca/toolllm 五个 API 数据集），单轮 0-shot 调用准确率口径，越高越好；个别子集样本量小（ToolLLM 仅 21 例），分数波动 ±5% 属正常。",
-  "measures": [],
-  "does_not_measure": [],
+  "summary": "Nexusflow.ai 开源函数调用模型 NexusRaven-13B 的配套评测集，Hugging Face 上叫 NexusRaven_API_evaluation：cve_cpe / emailrep / virustotal / toolalpaca / toolllm 五个子集，前三个是网络安全工具调用，后两个来自 ToolAlpaca 与 ToolLLM 的通用域数据，统一用单轮 0-shot 函数调用这一种协议横向比较开源与闭源模型。",
+  "interpretation": "看 Nexus 的分数必须分两套口径。Nexusflow 自述 NexusRaven-13B 在自带演示检索系统下，对 CVE/CPE Search 与 VirusTotal 的成功率约 95%（同页给出 prompting GPT-4 为 64%）；第三方 Llama 3 论文用统一提示评测 11 个模型，Nexus 列落在 24.7–58.7（GPT-4 50.3 ±4.2、Llama 3 405B 58.7 ±4.1）。两套数字覆盖的子集、是否外接检索器、误差报告方式都不同，不能直接对比。另外 ToolLLM 子集经作者整理后只剩 21 题，官方说跨运行最多差 1 题，折算约 5% 的准确率波动。",
+  "measures": [
+    {
+      "area": "漏洞情报检索（cve_cpe）",
+      "focus": "示例：查询带 CERT/CC 说明的漏洞、按 CWE 编号查相关漏洞、按产品名（如 cpe:/a:microsoft:office_365）查 CPE 列表，落到 searchCVE() / searchCPE() 两个函数",
+      "share": "未披露",
+      "format": "自然语言查询 → Python 函数调用（含参数）",
+      "cite": [
+        "repo-nexusraven@Evaluation",
+        "hf-dataset-nexusraven@Dataset Viewer"
+      ]
+    },
+    {
+      "area": "威胁情报上报与查询（virustotal）",
+      "focus": "示例：把域名/URL/IP 的投票、评论、DNS 解析、关联对象提交或查询到 VirusTotal，落到 vt_* 系列函数",
+      "share": "未披露",
+      "format": "自然语言查询 → Python 函数调用（含参数）",
+      "cite": [
+        "repo-nexusraven@Evaluation",
+        "hf-dataset-nexusraven@Dataset Viewer"
+      ]
+    },
+    {
+      "area": "邮箱信誉查询（emailrep）",
+      "focus": "示例：举报一个疑似钓鱼邮箱、查询某邮箱是否被列入黑名单，落到 emailrep_report() / emailrep_post()",
+      "share": "未披露",
+      "format": "自然语言查询 → Python 函数调用（含参数）",
+      "cite": [
+        "repo-nexusraven@Evaluation",
+        "hf-dataset-nexusraven@Dataset Viewer"
+      ]
+    },
+    {
+      "area": "通用工具调用（toolalpaca）",
+      "focus": "来自 ToolAlpaca 论文的通用域函数调用，覆盖随机图片、角色列表、天气等日常 API",
+      "share": "未披露",
+      "format": "自然语言查询 → Python 函数调用（含参数）",
+      "cite": [
+        "repo-nexusraven@License",
+        "repo-nexusraven@Evaluation"
+      ]
+    },
+    {
+      "area": "通用工具调用（toolllm）",
+      "focus": "ToolLLM 数据经作者自行整理后的样本；该数据原本没有标准答案，作者称已尽力筛选与后处理",
+      "share": "21 个样本",
+      "format": "自然语言查询 → Python 函数调用（含参数）",
+      "cite": [
+        "repo-nexusraven@Evaluation"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "多轮 / 交互式工具使用：官方把 NexusRaven 的强项定义为单轮 0-shot，并明确说 ToolLLM、ToolAlpaca 用的是多轮 react，而 react 在时间与金钱上都更贵",
+      "cite": [
+        "repo-nexusraven@Evaluation"
+      ]
+    },
+    {
+      "text": "函数数量远超上下文容量时的裸 prompt 表现：官方明说函数太多会饱和上下文窗口，必须外接检索器，所以「不给检索器直接塞全部函数」这一类场景不在本评测覆盖范围内",
+      "cite": [
+        "repo-nexusraven@NexusRaven model limitations"
+      ]
+    },
+    {
+      "text": "参数级部分得分规则（选对函数但填错参数算不算半分）：原文没有披露逐题判等实现，只说明用函数调用准确率这一口径",
+      "cite": [
+        "repo-nexusraven@Evaluation",
+        "llama3-paper@Table 22"
+      ]
+    }
+  ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
+    "sample_count": 1070,
+    "splits": [
+      "train（Hugging Face 数据集卡只列出一个 split）"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "官方自建（自有可商用数据 + ToolAlpaca / ToolLLM 通用域数据改写）",
+    "public_sample": true,
+    "totals": "Hugging Face 数据集卡统计共 1,070 行，分在 4 个 subset 上：outputs_in_toolllm_format 348 行、raw_queries 339 行、standardized_api_list 65 行、standardized_queries 318 行（合计 1,070，即同一个集合的不同视图，不是四份独立题目）。仓库侧口径是 5 个评测子集，其中只有 toolllm 明确写了 21 个样本；cve_cpe / emailrep / virustotal / toolalpaca 各自的题目量在可读到的原文里均未披露。题目语言官方未单独声明，数据集样例中的查询均为英文。",
+    "cite": [
+      "hf-dataset-nexusraven@数据集卡",
+      "hf-dataset-nexusraven@Subset (4)",
+      "repo-nexusraven@Evaluation"
+    ],
+    "construction": [
+      {
+        "k": "数据来源",
+        "text": "以 Nexusflow 自有的、只用开源可商用数据整理的评测数据为主，另并入 ToolLLM 与 ToolAlpaca 两篇论文的通用域数据。",
+        "cite": [
+          "repo-nexusraven@License"
+        ]
+      },
+      {
+        "k": "格式标准化",
+        "text": "仓库给出从原始 ToolAlpaca 数据到最终评测集的复现流程：先处理原始 ToolAlpaca 数据，再依次上传 raw_queries、standardized_api_list、standardized_queries 三类子集，把不同来源的 API 清单与查询统一成同一套 schema。",
+        "cite": [
+          "repo-nexusraven@Evaluation dataset curation"
+        ]
+      },
+      {
+        "k": "ToolLLM 子集处理",
+        "text": "ToolLLM 评测数据原本没有标准答案，作者自行整理、筛选、后处理，作者自述成果只有 21 个样本，并说明还会继续迭代。",
+        "cite": [
+          "repo-nexusraven@Evaluation",
+          "repo-nexusraven@Future releases"
+        ]
+      },
+      {
+        "k": "许可边界",
+        "text": "自有数据可商用，但 ToolLLM 与 ToolAlpaca 的生成内容来自 OpenAI 的 GPT 模型，因此整份评测数据按 CC-BY-NC-4.0 只允许非商用；仓库代码按 Apache 2.0。",
+        "cite": [
+          "repo-nexusraven@License"
+        ]
+      }
+    ]
   },
-  "metrics": [],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [],
-  "notes": "Meta Llama 3.1 引用（prompt + GPT-4 评判）",
+  "metrics": [
+    {
+      "id": "function-calling-accuracy",
+      "name": "函数调用准确率（function calling accuracy）",
+      "direction": "越高越好",
+      "description": "单轮 0-shot 下生成的函数调用与标准答案一致的比例；第三方论文以百分比报告并附 ± 区间",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "llama3-paper@Table 22",
+        "llama3-paper@Table 2"
+      ]
+    },
+    {
+      "id": "tool-call-success-rate",
+      "name": "工具调用成功率（Nexusflow 演示口径）",
+      "direction": "越高越好",
+      "description": "Nexusflow 在自带演示检索系统下对网络安全工具（CVE/CPE Search、VirusTotal）报出的 success rate；原文未给计算公式，也未给逐子集拆分",
+      "range": "未披露",
+      "unit": "percent",
+      "cite": [
+        "repo-nexusraven@Introducing NexusRaven-13B",
+        "hf-model-nexusraven@Introducing NexusRaven-13B"
+      ]
+    }
+  ],
+  "default_protocol": {
+    "raw": "单轮 0-shot：提示词里给出若干候选 Python 函数（函数签名 + docstring）和一条用户查询，模型挑出函数并填好参数，官方给出的提示词模板要求「从上面的选项里挑一个最能回答用户查询的函数并填好参数」。官方要求在 [\"\\nReflection:\"] 处停止生成，只把 Initial Call 当作最终调用执行；候选函数很多时官方建议外接检索器。判分口径上，第三方论文把 Nexus 报成 function calling accuracy 并给出 ± 区间，仓库本身没有公开逐题比对是否要求参数完全一致。",
+    "cite": [
+      "hf-model-nexusraven@Introducing NexusRaven-13B",
+      "repo-nexusraven@NexusRaven model limitations",
+      "repo-nexusraven@Evaluation",
+      "llama3-paper@Table 22"
+    ],
+    "variants": [
+      {
+        "text": "是否外接检索器：官方 95% 的数字来自自带演示检索系统，同页对不带检索器的描述只是「与 GPT-3.5 相当」，两种设置不可比。",
+        "cite": [
+          "repo-nexusraven@Introducing NexusRaven-13B"
+        ]
+      },
+      {
+        "text": "子集规模差异：ToolLLM 子集只有 21 题，官方说跨运行最多差 1 题、折算约 5% 波动，其他子集题量未披露，加权平均时权重实际不明。",
+        "cite": [
+          "repo-nexusraven@Evaluation"
+        ]
+      },
+      {
+        "text": "第三方统一口径：Llama 3 论文用同一套提示与评测流程跑 11 个模型，Nexus 列带 ±4.x 区间；这套数字与 Nexusflow 自述的 95%/64% 不是同一套协议。",
+        "cite": [
+          "llama3-paper@§5.2.7 Tool Use Performance",
+          "llama3-paper@Table 22"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "initial-model",
+      "date": "2023-09-28",
+      "label": "NexusRaven-13B 模型卡在 Hugging Face 创建，Nexusflow.ai 首次公开模型与评测集",
+      "cite": [
+        "hf-model-nexusraven@模型元数据",
+        "hf-dataset-nexusraven@Citation"
+      ]
+    },
+    {
+      "id": "dataset-release",
+      "date": "2023-09-29",
+      "label": "NexusRaven GitHub 仓库提交评测集整理与运行说明（含 5 个子集清单与模型对比清单）",
+      "cite": [
+        "repo-nexusraven@Evaluation",
+        "repo-nexusraven@Evaluation dataset curation"
+      ]
+    },
+    {
+      "id": "llama3-adoption",
+      "date": "2024-07-23",
+      "label": "Meta 发布 Llama 3.1；Llama 3 论文把 Nexus 与 API-Bank、API-Bench、BFCL 并列为零样本工具使用基准（Table 2 与 Table 22 的 Nexus 列）",
+      "cite": [
+        "ai-blog-meta-llama-3-1@标题",
+        "llama3-paper@§5.2.7 Tool Use Performance"
+      ]
+    },
+    {
+      "id": "dataset-current",
+      "date": "2026-11-13",
+      "label": "本次核对时 Hugging Face 数据集卡的状态：4 个 subset 共 1,070 行，官方未发布新的子集或修订说明",
+      "cite": [
+        "hf-dataset-nexusraven@数据集卡"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "官方自报口径与第三方口径差一倍以上",
+      "impact": "Nexusflow 自述 95% 成功率（自带演示检索系统、只覆盖网络安全工具子集），Llama 3 论文 Table 22 的 Nexus 列整体落在 24.7–58.7（GPT-4 50.3 ±4.2）。两套数字的子集与协议都不同，混用会把 NexusRaven 的实力夸大近一倍。",
+      "severity": "高",
+      "response": "未见官方对第三方口径的回应或校准；可读到的官方材料只有自带检索系统的 95% 与「与 GPT-3.5 相当」两处描述。",
+      "reader": "看到 95% 先问三个问题：哪个子集、是否带检索器、和谁比。三个问题答不齐就不要引用这个数字。",
+      "cite": [
+        "repo-nexusraven@Introducing NexusRaven-13B",
+        "llama3-paper@Table 22"
+      ]
+    },
+    {
+      "issue": "ToolLLM 子集只剩 21 题，噪声接近信号",
+      "impact": "该子集原本没有标准答案，经作者整理后只剩 21 个样本；官方说跨运行最多差 1 题，折算约 5% 的准确率摆动。子集间的平均分因此被一个小样本子集扭曲。",
+      "severity": "高",
+      "response": "官方把「换成更高质量的通用域函数调用评测集」列在 Future releases，并说明会继续迭代这批数据。",
+      "reader": "只在 5 个子集的加权或平均分上比较模型时，把 ToolLLM 那 21 题单独拆出来看，别让它替其他子集发言。",
+      "cite": [
+        "repo-nexusraven@Evaluation",
+        "repo-nexusraven@Future releases"
+      ]
+    },
+    {
+      "issue": "复现材料不完整，逐子集分数无法从文本来源核验",
+      "impact": "ToolAlpaca 端到端复现代码官方标注为尚未发布，ToolAlpaca 与 ToolLLM 数据的转换代码也没有给出；官方成绩表在仓库与模型卡里都是图片，可读文本里没有任何逐子集分数。",
+      "severity": "中",
+      "response": "官方把 ToolAlpaca 端到端复现代码、数据转换代码、ToolLLM 数据映射三项都列进 Future releases。",
+      "reader": "引用 Nexus 的逐子集成绩时，可读文本来源给不出数字，只能整体引用或标注未披露，不要凭图片目测。",
+      "cite": [
+        "repo-nexusraven@Future releases",
+        "repo-nexusraven@Evaluation dataset curation"
+      ]
+    },
+    {
+      "issue": "评测数据非商用，商用产品无法直接复用",
+      "impact": "ToolLLM 与 ToolAlpaca 的生成内容来自 OpenAI 的 GPT 模型，整份评测数据按 CC-BY-NC-4.0 只允许非商用，只有仓库代码是 Apache 2.0。",
+      "severity": "中",
+      "response": "官方明确拆开授权：代码 Apache 2.0，数据 CC-BY-NC-4.0，并在许可证一节解释原因。",
+      "reader": "把这份评测集用于商业产品或对外榜单前先确认许可边界；要商用只能自建等价题目。",
+      "cite": [
+        "repo-nexusraven@License"
+      ]
+    },
+    {
+      "issue": "模型自身局限会直接压分数",
+      "impact": "官方提示模型会先生成答案再反思，而反思往往不改进答案；函数太多会饱和上下文窗口；模型还可能生成错误调用。换提示词、换版本或去掉 Initial Call 口径都会让分数偏低。",
+      "severity": "低",
+      "response": "官方给出三条具体建议：在 [\"\\nReflection:\"] 停止生成、只执行 Initial Call、函数多时外接检索器并加 guardrails。",
+      "reader": "自己跑分时先复现这三条建议，否则拿到的数字和公开口径不可比。",
+      "cite": [
+        "repo-nexusraven@NexusRaven model limitations"
+      ]
+    }
+  ],
+  "notes": "被 Llama 3 论文列为零样本工具使用基准之一（与 API-Bank、API-Bench、BFCL 并列）；Llama 3.1 发布博客只讲模型本身，未逐项列出 Nexus 分数（成绩表为图片）。",
   "official_sources": [
     {
-      "kind": "github",
+      "kind": "repo",
       "url": "https://github.com/nexusflowai/NexusRaven"
     },
     {
-      "kind": "site",
-      "url": "https://ai.meta.com/blog/meta-Llama-3-1/"
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/Nexusflow/NexusRaven_API_evaluation"
+    },
+    {
+      "kind": "docs",
+      "url": "https://huggingface.co/Nexusflow/NexusRaven-13B"
     }
   ],
   "related_benchmarks": [
     "bfcl"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-13",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      {
+        "id": "repo-nexusraven",
+        "kind": "repo",
+        "title": "nexusflowai/NexusRaven — GitHub 仓库（README / Evaluation / Limitations / License）",
+        "url": "https://github.com/nexusflowai/NexusRaven",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "hf-model-nexusraven",
+        "kind": "docs",
+        "title": "Nexusflow/NexusRaven-13B — Hugging Face 模型卡",
+        "url": "https://huggingface.co/Nexusflow/NexusRaven-13B",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "hf-dataset-nexusraven",
+        "kind": "dataset",
+        "title": "Nexusflow/NexusRaven_API_evaluation — Hugging Face 数据集卡",
+        "url": "https://huggingface.co/datasets/Nexusflow/NexusRaven_API_evaluation",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "llama3-paper",
+        "kind": "paper",
+        "title": "The Llama 3 Herd of Models（arXiv:2407.21783）— Table 2 与 Table 22 的 Nexus 列",
+        "url": "https://arxiv.org/abs/2407.21783",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "ai-blog-meta-llama-3-1",
+        "kind": "site",
+        "title": "Introducing Llama 3.1: Our most capable models to date — Meta AI Blog",
+        "url": "https://ai.meta.com/blog/meta-Llama-3-1/",
+        "accessed": "2026-11-13"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Nexusflow.ai（模型、数据集与论文均署名 Nexusflow.ai team）",
+        "cite": [
+          "hf-dataset-nexusraven@Citation",
+          "hf-model-nexusraven@模型元数据"
+        ]
+      },
+      "first_release": {
+        "v": "2023-09-28（NexusRaven-13B 模型卡在 Hugging Face 创建）",
+        "cite": [
+          "hf-model-nexusraven@模型元数据"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "repo-nexusraven@Introducing NexusRaven-13B",
+        "repo-nexusraven@Evaluation",
+        "hf-dataset-nexusraven@数据集卡"
+      ],
+      "interpretation": [
+        "repo-nexusraven@Introducing NexusRaven-13B",
+        "llama3-paper@Table 22",
+        "repo-nexusraven@Evaluation"
+      ]
+    },
+    "problem": {
+      "text": "2023 年前后的开源函数调用模型明显落后于 GPT 系列，而衡量「模型对训练时没见过的工具是否也能正确调用」的公开材料又常常和专有模型生成的数据绑在一起、许可不清。Nexusflow 的做法是把模型和评测集一起开源：NexusRaven-13B 只用开源可商用数据微调（不掺 GPT-4 生成内容），评测集覆盖训练时没见过的工具，并用单轮 0-shot 这一种协议横向比较 NexusRaven、GPT-3.5/3.5 Instruct、GPT-4、ToolLLM、ToolAlpaca 与 CodeLlama 13B Instruct。",
+      "cite": [
+        "repo-nexusraven@Introducing NexusRaven-13B",
+        "repo-nexusraven@Evaluation"
+      ]
+    },
+    "misreadings": [
+      {
+        "text": "把 95% 当成 NexusRaven 在整个 Nexus 评测集上的成绩：那是自带演示检索系统下、只覆盖 CVE/CPE Search 与 VirusTotal 的自述数字；同一页对不带检索器的描述只是「与 GPT-3.5 相当」。",
+        "cite": [
+          "repo-nexusraven@Introducing NexusRaven-13B"
+        ]
+      },
+      {
+        "text": "把 Llama 3 论文 Table 22 的 Nexus 分数与 Nexusflow 自述的 95%/64% 直接对比：两者子集、是否外接检索器、误差报告方式都不同，Table 22 是第三方统一口径。",
+        "cite": [
+          "llama3-paper@Table 22",
+          "llama3-paper@§5.2.7 Tool Use Performance"
+        ]
+      },
+      {
+        "text": "把 Nexus 当成独立第三方机构发布的基准：它是 Nexusflow 自家模型 NexusRaven-13B 的配套评测集（NexusRaven_API_evaluation），Llama 3 论文等只是引用方。",
+        "cite": [
+          "hf-dataset-nexusraven@Citation",
+          "llama3-paper@References"
+        ]
+      },
+      {
+        "text": "把 5 个子集当成同等规模：ToolLLM 经整理后只剩 21 题，其他四个子集的题目量在可读原文里均未披露，平均分的权重实际不明。",
+        "cite": [
+          "repo-nexusraven@Evaluation",
+          "hf-dataset-nexusraven@Subset (4)"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方与论文",
+        "v": "Nexusflow.ai；论文《NexusRaven: a commercially-permissible language model for function calling》发表在 NeurIPS 2023 Foundation Models for Decision Making Workshop（workshop 论文）。",
+        "cite": [
+          "hf-dataset-nexusraven@Citation",
+          "llama3-paper@References"
+        ]
+      },
+      {
+        "k": "作者名单",
+        "v": "Venkat Krishna Srinivasan、Zhen Dong、Banghua Zhu、Brian Yu、Damon Mosk-Aoyama、Kurt Keutzer、Jiantao Jiao、Jian Zhang（据 Llama 3 论文参考文献条目）。",
+        "cite": [
+          "llama3-paper@References"
+        ]
+      },
+      {
+        "k": "被评测的模型",
+        "v": "NexusRaven-13B，是 codellama/CodeLlama-13b-Instruct-hf 的微调版；训练不涉及 GPT-4 等专有模型生成的数据。",
+        "cite": [
+          "hf-model-nexusraven@Introducing NexusRaven-13B",
+          "repo-nexusraven@Introducing NexusRaven-13B"
+        ]
+      },
+      {
+        "k": "参与对比的模型",
+        "v": "仓库给出的对比清单：NexusRaven、GPT-3.5、GPT-3.5 Instruct、GPT-4、ToolLLM、ToolAlpaca、CodeLlama 13B Instruct。",
+        "cite": [
+          "repo-nexusraven@Evaluation"
+        ]
+      },
+      {
+        "k": "运行条件",
+        "v": "NexusRaven 用 Hugging Face Inference Endpoint（GPU xlarge、1×A100 40GB、无量化）跑；ToolLLM 一侧需要单张 40GB A100；OpenAI 一侧需要 API key。",
+        "cite": [
+          "repo-nexusraven@Evaluation",
+          "repo-nexusraven@Evaluation dataset curation"
+        ]
+      },
+      {
+        "k": "许可",
+        "v": "仓库代码（模型运行、评测框架、数据处理）Apache 2.0；评测数据 CC-BY-NC-4.0，只允许非商用；模型卡标注 license: llama2。",
+        "cite": [
+          "repo-nexusraven@License",
+          "hf-model-nexusraven@模型元数据"
+        ]
+      },
+      {
+        "k": "采用情况",
+        "v": "Llama 3 论文把 Nexus 与 API-Bank、API-Bench、BFCL 并列为零样本工具使用基准，并在 Table 2 与 Table 22 报告 Nexus 列。",
+        "cite": [
+          "llama3-paper@§5.2.7 Tool Use Performance",
+          "llama3-paper@Table 22"
+        ]
+      },
+      {
+        "k": "提示词形态",
+        "v": "函数以 Python 签名 + docstring 形式给出，官方模板要求模型从候选中挑一个函数并填参数；模型与 langchain 兼容。",
+        "cite": [
+          "hf-model-nexusraven@Introducing NexusRaven-13B",
+          "repo-nexusraven@NexusRaven model usage"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-13",
+        "columns": [
+          "模型",
+          "Nexus（0-shot 函数调用准确率）"
+        ],
+        "rows": [
+          [
+            "Llama 3 8B",
+            "38.5 ±4.1"
+          ],
+          [
+            "Gemma 2 9B",
+            "–"
+          ],
+          [
+            "Mistral 7B",
+            "24.7 ±3.6"
+          ],
+          [
+            "Llama 3 70B",
+            "56.7 ±4.2"
+          ],
+          [
+            "Mixtral 8×22B",
+            "48.5 ±4.2"
+          ],
+          [
+            "GPT-3.5 Turbo",
+            "37.2 ±4.1"
+          ],
+          [
+            "Llama 3 405B",
+            "58.7 ±4.1"
+          ],
+          [
+            "GPT-4",
+            "50.3 ±4.2"
+          ],
+          [
+            "GPT-4o",
+            "56.1 ±4.2"
+          ],
+          [
+            "Claude 3.5 Sonnet",
+            "45.7 ±4.2"
+          ],
+          [
+            "Nemotron 4 340B",
+            "–"
+          ]
+        ]
+      },
+      "cite": [
+        "llama3-paper@Table 22"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "官方自述最高（自带演示检索系统）",
+        "value": "约 95%",
+        "note": "Nexusflow 报的是 CVE/CPE Search 与 VirusTotal 上的 success rate，同页给出 prompting GPT-4 为 64%；未给逐子集拆分。",
+        "cite": [
+          "repo-nexusraven@Introducing NexusRaven-13B"
+        ]
+      },
+      {
+        "label": "第三方统一口径最高",
+        "value": "58.7%（Llama 3 405B，±4.1）",
+        "note": "Llama 3 论文 Table 22 的 Nexus 列最高值；同期 GPT-4 50.3 ±4.2、GPT-4o 56.1 ±4.2、Claude 3.5 Sonnet 45.7 ±4.2。",
+        "cite": [
+          "llama3-paper@Table 22"
+        ]
+      },
+      {
+        "label": "官方自述的不带检索器水平",
+        "value": "与 GPT-3.5 相当（未给数字）",
+        "note": "官方称 NexusRaven-13B 在 0-shot 下对训练时没见过的工具的泛化与 GPT-3.5 相当，并显著超过同量级其他开源模型。",
+        "cite": [
+          "repo-nexusraven@Introducing NexusRaven-13B"
+        ]
+      },
+      {
+        "label": "噪声参考线",
+        "value": "约 5%（ToolLLM 子集 1 题）",
+        "note": "ToolLLM 子集只有 21 题，官方说跨运行最多差 1 题，折算约 5%；该子集上几个点的差距没有意义。",
+        "cite": [
+          "repo-nexusraven@Evaluation"
+        ]
+      },
+      {
+        "label": "随机 / 未训练基线",
+        "value": "论文与仓库均未给出",
+        "note": "Nexusflow 仓库和 Llama 3 论文都没有报告 Nexus 上的随机基线，本站不推算。",
+        "cite": [
+          "repo-nexusraven@Evaluation",
+          "llama3-paper@Table 22"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ]
+  }
 }
