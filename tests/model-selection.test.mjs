@@ -74,7 +74,7 @@ test('slug 回填按 id 参数寻址，通用末段不误挂到同站别的模�
 });
 test('本批官方归档文件与 manifest 哈希一致',async()=>{
  const fs=await import('node:fs'),crypto=await import('node:crypto');
- const dirs=['2026-04-02-gemma-4','2026-07-31-seedance-2-5','2026-09-11-kimi-k2-8-preview','2026-09-18-grok-voice-transcribe-2','2026-09-20-qwen-image-2-1','2026-09-22-claude-opus-5-5','2026-09-28-minimax-m3-1-flash-preview','2026-10-06-embeddinggemma-2','2026-10-06-mistral-large-4','2026-10-07-claude-haiku-5-5'];
+ const dirs=['2026-04-02-gemma-4','2026-07-31-seedance-2-5','2026-09-11-kimi-k2-8-preview','2026-09-18-grok-voice-transcribe-2','2026-09-20-qwen-image-2-1','2026-09-22-claude-opus-5-5','2026-09-28-minimax-m3-1-flash-preview','2026-10-06-embeddinggemma-2','2026-10-06-mistral-large-4','2026-10-07-claude-haiku-5-5','2026-11-17-gpt-6-2','2026-11-17-mai-code-2','2026-11-17-mai-cyber-2-flash','2026-11-17-mai-realtime-1','2026-11-17-mai-licensed-weights','2026-11-17-mai-image-2-7','2026-11-17-microsoft-ignite-2026','2026-11-17-microsoft-ignite-2026-keynote','2026-11-18-gemini-4-neon','2026-11-20-inkling-2-mini','2026-11-20-medchembench','2026-11-20-tml-d24-varloop','2026-11-23-shirudo'];
  for(const dir of dirs){const root='models/'+dir;const manifest=JSON.parse(fs.readFileSync(root+'/manifest.json'));assert.ok(manifest.files.some(f=>f.path==='index.md'));for(const f of manifest.files){assert.ok(!f.path.startsWith('/')&&!f.path.includes('..'));assert.equal(crypto.createHash('sha256').update(fs.readFileSync(root+'/'+f.path)).digest('hex'),f.sha256,root+'/'+f.path);}}
 });
 

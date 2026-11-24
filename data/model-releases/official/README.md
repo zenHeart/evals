@@ -5101,3 +5101,160 @@ StepFun 的官方模型页此前在发现通道里长期挂着 5 条「回填缺
 ### 分支与合并顺序
 
 本批分支 `model-release-daily-20261126T010051Z`，**基线是 `origin/main` = `b107dc5`（第七十八批合并后的主干）**，与主干 README 的批次序号连续（上一批为第七十八批），无序号倒挂问题，也无与其他未合并批次重叠的 release / 归档。**远端分支一律保留**（不 `git branch -D`、不 `git push --delete`）。
+
+<!-- 并行批次（grok t83 线，2026-11-24 窗口，与主线第六十九~七十九批并行入库，2026-11-26 拉回合入） -->
+## 第六十九批（2026-11-25 CST / 2026-11-24 UTC 增量窗口 2026-10-29 ~ 2026-11-24：补偿窗口内 11 个 release 建档 509 条 evidence + 补齐 Ignite 2026 七模型对账与 MedChemBench 图表漏项）
+
+### 本批窗口与前置
+
+- **增量窗口**：开工时检查点 `last_scan_at = 2026-11-15`、`last_max_release_date = 2026-11-12`，按技能的重叠 14 天回退 → `window_since = 2026-10-29`、`window_until = 2026-11-24`（**执行日本身**，不是窗口上限的推断值）。本批是补偿批：第六十八批之后窗口一直推进到执行日，故本批必须覆盖完整 27 天窗口，不允许只补一个日期。
+- **基线**：分支 `t83-integ` @ `fc56a57`；本批在该 worktree 内作业，未切分支、未 push、未触发 CI。
+- **检查点推进**（由 `checkpoint.mjs` 维护，勿手改）：`last_scan_at 2026-11-15 → 2026-11-24`；`last_max_release_date 2026-11-12 → 2026-11-20`（锚点只前进不回退，本批最大发布日 2026-11-20 高于旧锚点，故覆盖）。
+- **前置声明**：本批不含任何部署动作。作业期间发布链路处于停发状态（`STOP_PUBLISH`），全部产物只落本地提交，交本地 agent 决定部署时机。
+
+### 入口复扫（Step 1）
+
+对 18 家在册厂商的官方域名入口逐一实扫，失败与动态页照落 `data/model-coverage.json`，不静默跳过。候选 706 → **731**（+25），其中：
+
+- **23 条**为 `discovered_at = 2026-11-24` 的入口扫描新候选；
+- **2 条**为本批主动登记的合成候选（`release-decision-1-1`、`release-medchembench`），原因是这两个 release 的公开出处此前没有对应候选行，不登记会被后续批次重复发现。
+
+23 条扫描候选的处置：**14 条解析到 release**（11 个 release 文件——多个候选可指向同一 release），**9 条按「非独立模型发布」排除**，每条都写了排除理由，无静默丢弃：
+
+| 候选 | 厂商 | 排除理由（摘要） |
+|---|---|---|
+| `anthropic-e621a2a9dfa1` | Anthropic | IPO 交割公告（含超额配售权全额行使与同步私募），公司融资/证券法务公告，页面无模型规格与评测表 |
+| `kimi-10ef78a4602c` | Kimi | HF 仓库讨论串（`Kimi-K3` #199，`encoding_k3.py` 明文本合并），权重仓库代码维护记录 |
+| `kimi-2ce1fd877531` | Kimi | HF 仓库讨论串（`Kimi-K2.5` #132，`new_version` 指针指向 Kimi-K2.6），元数据指针更新 |
+| `kimi-cd51b7d4b555` | Kimi | Kimi Code 开发者文档「About feedback collection」，产品文档 |
+| `kimi-cd8fbff3ad8a` | Kimi | HF 仓库讨论串（`Kimi-K3` #198，`new_version` 指针指向 Kimi-K3.1-Pro） |
+| `microsoft-e724d5d4fc0b` | Microsoft | Ignite 2026 MAI 主题演讲**文字转录页**（独立 URL，见下节） |
+| `openai-9342dbf934e4` | OpenAI | 「How OpenAI Performance Factory keeps ChatGPT fast」，产品/平台方案更新 |
+| `openai-a1de396d3910` | OpenAI | Le Groupe Figaro 与 OpenAI 合作公告，商业合作 |
+| `openai-b0689cf87ab5` | OpenAI | OpenAI × Cisco 联合安全产品 Shirudo，非独立模型发布（已归档登记） |
+
+### 本批新建档（11 个 release）
+
+| release | 厂商 | 发布日 | evidence |
+|---|---|---|---|
+| `microsoft/mai-code-2` | Microsoft | 2026-11-17 | **9** = 1 verified + 8 pending |
+| `microsoft/mai-cyber-2-flash` | Microsoft | 2026-11-17 | **2** = 2 verified + 0 pending |
+| `microsoft/mai-image-2-7-flash` | Microsoft | 2026-11-17 | **1** = 1 verified + 0 pending |
+| `microsoft/mai-realtime-1` | Microsoft | 2026-11-17 | **2** = 0 verified + 2 pending |
+| `microsoft/mai-licensed-weights` | Microsoft | 2026-11-17 | **0**（不建行，理由见下） |
+| `microsoft/decision-1-1` | Microsoft | 2026-11-17 | **0**（不建行，理由见下） |
+| `google/gemini-4-neon` | Google | 2026-11-18 | **29** = 26 verified + 3 pending |
+| `openai/gpt-6-2-astra-sol` | OpenAI | 2026-11-17 | **142** = 142 verified + 0 pending |
+| `openai/medchembench` | OpenAI | 2026-11-20 | **5** = 5 verified + 0 pending |
+| `thinking-machines/inkling-2-mini` | Thinking Machines | 2026-11-20 | **54** = 54 verified + 0 pending |
+| `thinking-machines/tml-d24-varloop-research` | Thinking Machines | 2026-11-20 | **265** = 265 verified + 0 pending |
+
+合计 **509 条 evidence = 496 verified + 13 pending**，全库 evidence 边 4116 → **4625**（verified 4314 / pending 311）。
+
+#### 多变体完整性校验：Ignite 2026 七模型对账
+
+Microsoft Ignite 2026 总发布页一次公布七项模型。逐项对账 `microsoft` 目录后发现 **Decision 1.1 此前无任何 release 实体**，属「官方一页公布多个变体而账本漏项」，本批补建。七项对账表已写入归档页 `models/2026-11-17-microsoft-ignite-2026/index.md`，其中第六项 Dragon Copilot Transcribe 是构建在 `mai-transcribe-2` 之上的产品（底座早已入账），不计新模型；另有 Maia 200 加速器属硬件，不入模型账本。
+
+#### 两个独立 URL 不得混为一页
+
+`https://microsoft.ai/news/microsoft-ignite-2026-mai-keynote/` 与 `https://microsoft.ai/news/microsoft-ignite-2026/` 是**两个独立页面**，不是同一 URL 的两种形态：canonical / og:url 各自指向自身，`datePublished` 分别 `2026-11-17T18:14:55+00:00` 与 `18:16:05+00:00`（相隔 1 分 10 秒），抓取字节数 202,234 与 452,062。前者是主题演讲文字转录，本身不是任何一个模型的发布文，故单独归档为 `models/2026-11-17-microsoft-ignite-2026-keynote/` 并**不产生 release 记录**，其逐句对账表与「与总发布页的口径差异」表作为演讲口径的独立佐证。
+
+该对账表暴露的真实差异（已逐条记录，取数时以各 release 的独立发布文页为准）：演讲页只说 "against Opus 5.5 it's an incredible 5% of that cost"，**少给「96% 性能」这一半**；演讲页的 Image 2.7 竞品只写 "the competition" 未点名，不能据其补竞品列；演讲页的 Decision 1.1 未给 50x/79x/4,000 客户。反向约束同样记录：演讲页只说 "four widely used benchmarks" 未列基准名，**不得**把总发布页的四个基准名（DeepSWE 1.1 / Terminal Bench 2.1 / SWE-Atlas / FrontierCode v1.1）回填为转录页引用。
+
+#### 两个 notes-only release（0 行）的判定
+
+- `decision-1-1`：页面只有名次先后（Artificial Analysis Decision Index 上领先 Jev/Google/OpenAI，不印各方分数）、相对倍数（50x faster / 79x cheaper，不给被比较的绝对延迟与单价）、商业采用（4,000 customers），三条都无法落到 `benchmark_id + reported_score` 结构，记空数组（validator 允许，仓内先例 40 余个）。
+- `mai-licensed-weights`：交付形态（自带权重的 Azure 内部署），页面无任何评测读数，同例记空数组。
+
+#### MedChemBench 图表漏项
+
+`openai/medchembench` 此前只被当作基准介绍处理，漏掉了同页公布的 GPT‑6.2 Astra 总榜 5 档成绩（low 78.37 / medium 80.01 / high 82.99 / xhigh 84.51 / max 85.60，99 题平均）。5 档分值中只有 xhigh 的 84.5% 印在散文句里，其余四档仅存在于内嵌 vega-lite 图表数据中，本批按字符级反转义 + 括号配对截取机读 RSC 载荷补齐。
+
+同时做实了**指代消歧**：页面三处 "Astra"（95.4% / 83.3% / 83.8%）指上一代 GPT‑6 Astra，与分项图、总榜图逐一吻合，且分项图根本不含 GPT‑6.2 Astra，故这三值**不**作为 GPT‑6.2 Astra 的读数建行，只在 notes 登记。
+
+#### TML-d24-varloop-research 与 Inkling 2 Mini 共用同一张对比表
+
+两个 Thinking Machines 模型共用同一张 DOM 对比表，此前只收了 Inkling 2 Mini 一列。本批补齐可变循环姊妹模型的 **265 行**（53 个评测行 × 1/2/3/4/5 passes，全部 DOM 机读，Inkling 2 Mini 作为对照列入各行 notes）。
+
+### 新建 benchmark id（18 个，均未建实体，兜底页由账本自动生成）
+
+| id | 出处 | 为什么不建实体 |
+|---|---|---|
+| `aa-analystagent` | OpenAI GPT‑6.2 Astra/Sol 发布页 + Inkling 2 Mini 发布页 | Artificial Analysis 的金融分析智能体榜，题集与判分口径未公开，跨厂商不可比 |
+| `agent-arena-index` | Google Gemini 4 Neon 发布页 | arena.ai 的 Agent 榜 steerability 分项，页面只印名次与指数值，未给题集、判分与协议 |
+| `autobaxbench` | Google Gemini 4 Neon 发布页 | BaxBench 的 AutoBaxBuilder 安全代码生成评测，页面只印 hard 档一值，未给题集与判分口径 |
+| `big-bench-audio` | Microsoft MAI Realtime 1 发布页 | 语音评测，页面只给相对口径，未给题集与判分 |
+| `blind-visual-coding-preference` | Microsoft MAI Code 2 发布页 | 厂商自有盲测的 side-by-side 人工偏好率（258 名标注者），是偏好读数而非任务正确率 |
+| `bvb` | Thinking Machines 两个发布文榜单行「BVB」 | 页面只给行名与分值，未给题集、判分与协议；本次只有单一厂商一列读数 |
+| `cybergym-e2e` | Microsoft MAI Cyber 2 Flash 发布页 | 页面只给相对成本口径，未给题集划分与判分流程 |
+| `deepbinary` | OpenAI GPT‑6.2 Astra/Sol 发布页 | 二进制分析评测，页面未给题集与判分口径 |
+| `google-agent-honesty-eval` | Google Gemini 4 Neon 发布页 | Google 内部诚实性评测，题集未公开 |
+| `google-agentic-safety-suite` | Google Gemini 4 Neon 发布页 | Google 内部安全套件，题集与判分未公开 |
+| `google-coding-cheating-eval` | Google Gemini 4 Neon 发布页 | Google 内部作弊检测评测，题集未公开 |
+| `higgsfield-3d-generation-one-shot` | OpenAI GPT‑6.2 Astra/Sol 发布页 | 3D 生成一次性设定，题集与判分口径未公开 |
+| `intelligence-per-watt` | Thinking Machines Inkling 2 Mini 发布页 | 能效读数（分/瓦），页面未给测量协议 |
+| `openai-improper-actions-workplace` | OpenAI GPT‑6.2 Astra/Sol 发布页 | OpenAI 内部不当动作评测，题集未公开 |
+| `openai-patchbench` | OpenAI GPT‑6.2 Astra/Sol 发布页 | OpenAI 内部补丁评测，题集未公开 |
+| `openai-secureswe` | OpenAI GPT‑6.2 Astra/Sol 发布页 | OpenAI 内部安全 SWE 评测，题集未公开 |
+| `vals-science-index` | OpenAI GPT‑6.2 Astra/Sol 发布页 | Vals 科学分项指数，页面只印指数值 |
+| `webexploitbench` | Google Gemini 4 Neon + Microsoft MAI Cyber 2 Flash 发布页 | Web 漏洞利用评测，题集与判分口径未公开 |
+
+- 18 个 id **均无 `data/benchmarks/` 实体**（实体数 510 不变，本批新建实体 0 个），页面由账本自动生成兜底页；`data/generated/auto-benchmark-ids.json` 的 id 数 275 → **293**（+18）。
+- 18 个 id 已在 `data/compare-rules.json` 的 `unmapped_ids` 逐条写明「为何不进对照」，`tests/compare-audit.test.mjs` 的 **undecided / stranded / orphans 三项均为 0**。
+- 本批另补 **1 条既有 id 的口径决定**：`riemannbench` 此前只被 `gemini-4-carbon` 以 `pending` / `not_extracted` 引用（无官方数值，故不需要决定），本批 `gemini-4-neon` 产出 verified 84.0% 后必须给决定，登记为不进对照（第三方指数榜，题集与判分未公开）。`unmapped_ids` 总数 211 → **230**（+19）。
+- `reviewed_metric_mismatch` 新增 2 项：`terminalbench`（拒答率/作弊率是同族设置下的安全读数，量纲不同于解决率）、`terminal-bench-science`（拒答率不参与 Accuracy 计分）。
+
+### 本批审核中发现并修掉的三处数据缺陷
+
+1. **`microsoft-e724d5d4fc0b` 指向的转录页此前未归档**——候选记录 `archive_status: not_archived` 但 URL 是一个独立可归档页面。已建 `models/2026-11-17-microsoft-ignite-2026-keynote/`（`index.md` + `page.html` + `manifest.json`，逐文件 sha256），候选改为 `archived` 并写 524 字排除理由，说明它不产生 release、覆盖哪 6 个 release、Realtime 1 在口播稿中缺席、Decision 1.1 的出处是总发布页而非转录页。
+2. **`openai-b0689cf87ab5`（Shirudo）已归档但未关联**——`archive_status: not_archived` 而目录 `models/2026-11-23-shirudo/` 实际存在。已补 `archive_path` 与排除理由尾注，避免下次复扫重新推导该结论。
+3. **`release-medchembench` 的 `official_urls` 同一 URL 重复两次**——根因是 release 的 `primary_sources` 把同一个博客 URL 同时标成 `official_release_blog` 与 `official_benchmark_paper`（后者不成立：该页不是论文，且 notes 已说明题集与 rubric 未公开）。已从 release 删除该重复项，并把 `scripts/reconcile-coverage.mjs` 合成候选的 URL 列表改为去重（`[...new Set(...)]`），使该缺陷无法经 reconcile 再生。
+
+### 覆盖对账与未决候选清零
+
+- 候选总数 706 → **731**；`need_reverify = 1` 的候选 **0 条**；既无 `release_id` 又无 `exclusion_reason` 的未决候选 **0 条**（general 110 / vertical 117 / product 246 / unknown 258）。
+- `scripts/reconcile-coverage.mjs` 幂等：连跑两次候选记录零变化（唯一变化是 `release-decision-1-1` 的 `archive_path` 由 null 回填为 `models/2026-11-17-microsoft-ignite-2026`，`archive_status` 由 `not_archived` 改 `archived`——该页正是 Decision 1.1 的唯一公开出处，此前记录为未归档是错的）。
+- 归档 frontmatter 的 `release:` 是 reconcile 用来把归档目录回填到候选的唯一索引键（`scripts/reconcile-coverage.mjs` 唯一读者）。`models/2026-11-17-microsoft-ignite-2026/` 原记 `release: microsoft-ignite-2026`（不存在该 release，索引键落空），已改为 `decision-1-1` 并在页面正文说明这不表示本页只服务一个 release。
+- 本批新增归档目录 **13 个**，均有 `index.md` + `manifest.json`（逐文件 sha256 与字节数）。
+
+### 待人工核验
+
+本批 **13 条 pending 行全部是「页面只给相对/汇总口径、不印本基准单独分值」的散文句**，均记 `value: null` / `score_status: "not_extracted"`，不从平均值反推单基准分：
+
+| release | benchmark | model | 页面口径 |
+|---|---|---|---|
+| `gemini-4-neon` | `legal-research-bench` / `tax-agent-bench` / `exploitgym` | `gemini-4-neon` | 页面只给相对或名次口径，未给绝对分 |
+| `mai-code-2` | `deepswe` / `terminalbench` / `swe-atlas` / `frontier-code` | `mai-code-2` | 页面只给四基准**平均值**（"98% of the performance of GPT-6.1 Sol at 40% of the cost"），不印单基准分 |
+| `mai-code-2` | `deepswe` / `terminalbench` / `swe-atlas` / `frontier-code` | `mai-code-2-flash` | 页面只说「across three coding benchmarks」且**未逐一点名**，与 MAI Code 2 的四个基准不是同一集合，故不把本行对应到具名基准 |
+| `mai-realtime-1` | `big-bench-audio` / `tau-voice` | `mai-realtime-1` | 页面只写 "outperforms GPT Realtime 2.1 on quality, speed, and price across public benchmarks"，无绝对分 |
+
+需要人工补的**非数值**缺口（不影响 evidence 状态）：
+
+1. **18 个新铸 benchmark id 的实体档案**——待官方公开题集与判分口径后补建；`data/benchmark-profile-backlog.json` 的棘轮机制要求新建实体必须带合规 profile，写不出有来源的档案就先让证据兜底页顶着。
+2. **`gemini-4-neon` 三个 pending 行的绝对分**——待 Google 或第三方公布单基准数值后回填。
+3. **`mai-code-2` 四基准的单基准分**——待 Microsoft 或 Artificial Analysis（FrontierCode 1.1 的取值来源）公布。
+
+本批没有需要人工读图才能确认的行：所有 verified 行均来自可机读 DOM 表格、JSON-LD 或 RSC 载荷内的图表数据，`evidence_type` 逐行标注。
+
+### 门禁
+
+| 门禁 | 结果 |
+|---|---|
+| `node scripts/reconcile-coverage.mjs` | ✓ exit 0；连跑两次零变化，幂等 |
+| `node scripts/validate-model-coverage.mjs` | ✓ exit 0 |
+| `node scripts/validate-data.mjs` | ✓ PASS — taxonomy 9 类 / vendors 18 / **benchmarks 510** / **releases 260（official 246）** / **evidence edges 4625**；profile 模板档案 330 个通过校验，待升级存量 180 个（backlog 只减不增） |
+| `node --test tests/*.test.mjs` | ✓ **全绿 187/187**（含对照审计 undecided / stranded / orphans 三项均为 0、归档哈希一致性用例 23 个目录） |
+| `node --test tests/release-ingest.test.mjs` | ✓ 12/12（增量窗口锚点、检查点单调、候选去重可重复执行） |
+| `npm run build` | ✓ exit 0 — 书校验 + EPUB + 全站构建 + validate-site 全绿（1142 个 HTML / 45888 个内部引用链接检查、314 个时间轴 / 2490 个事件卡片时序单调性、330 个评测页档案模板渲染检查） |
+| `npm run sync:skills:check` | ✓ 零漂移（`.agent/skills/` 与 `.claude/skills/` 一致） |
+
+### 汇总
+
+- **新增 release**：11 个 = Microsoft 6（`mai-code-2` / `mai-cyber-2-flash` / `mai-image-2-7-flash` / `mai-realtime-1` / `mai-licensed-weights` / `decision-1-1`）+ Google 1（`gemini-4-neon`）+ OpenAI 2（`gpt-6-2-astra-sol` / `medchembench`）+ Thinking Machines 2（`inkling-2-mini` / `tml-d24-varloop-research`）
+- **新增 evidence**：509 条 = **496 verified + 13 pending**；13 条 pending 全部是页面只给汇总/相对口径的散文句，已逐行写明口径与为什么不反推
+- **新增 benchmark id**：18 个（均未建实体，兜底页已生成）；`auto-benchmark-ids` 275 → 293；`unmapped_ids` 211 → 230（含 1 条既有 id 因本批首次出现 verified 值而补决定）；`reviewed_metric_mismatch` +2
+- **新增 benchmark 实体**：**0 个**（实体数 510 不变）
+- **新增归档目录**：13 个，均有 `index.md` + `manifest.json`
+- **新增厂商**：无（仍为 18 家）
+- **候选数**：706 → **731**（入口扫描 +23，另主动登记 2 条合成候选）；`need_reverify = 1` 为 0；未决候选 0
+- **检查点**：`last_scan_at=2026-11-24`；`last_max_release_date=2026-11-20`

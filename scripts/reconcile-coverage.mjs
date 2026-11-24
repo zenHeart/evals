@@ -19,7 +19,7 @@ export function reconcileCoverage(data,releases,archives){
  const out={...data,candidates:data.candidates.map(c=>({...c}))};
  for(const r of releases){
   if(!r.primary_sources?.length)continue;
-  if(!out.candidates.some(c=>c.release_id===r.id||c.official_urls.some(u=>known.get(canonicalURL(u))?.id===r.id)))out.candidates.push({id:'release-'+r.id,vendor_id:r.vendor_id,family:r.models.map(m=>m.name||m.id).join(' / ')||r.release_title,classification:'unknown',official_urls:r.primary_sources.map(s=>s.url),discovery_status:'discovered',official_source_verified:false,release_id:r.id,archive_status:'not_archived',evidence_status:'not_extracted',exclusion_reason:null,next_backfill_at:null});
+  if(!out.candidates.some(c=>c.release_id===r.id||c.official_urls.some(u=>known.get(canonicalURL(u))?.id===r.id)))out.candidates.push({id:'release-'+r.id,vendor_id:r.vendor_id,family:r.models.map(m=>m.name||m.id).join(' / ')||r.release_title,classification:'unknown',official_urls:[...new Set(r.primary_sources.map(s=>s.url))],discovery_status:'discovered',official_source_verified:false,release_id:r.id,archive_status:'not_archived',evidence_status:'not_extracted',exclusion_reason:null,next_backfill_at:null});
  }
   for(const c of out.candidates){
    if(c.release_match === "manual") continue;
