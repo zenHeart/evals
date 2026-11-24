@@ -89,7 +89,6 @@ jobs:
     timeout-minutes: 10
     permissions:
       contents: read
-      actions: read
       pages: write
       id-token: write
     environment:
@@ -128,22 +127,57 @@ jobs:
           path: _site
 
       - name: Wait for Pages artifact visibility
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
-          # upload-pages-artifact 落盘后，artifact 列表 API 有秒级传播延迟；
-          # deploy-pages 立刻按名查询会得到 "No artifacts named github-pages were found"。
-          # 这里等到真的能查到再部署，避免整次部署因传播延迟而失败。
-          for i in $(seq 1 30); do
-            if gh api "repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts" \
-                 --jq '.artifacts[] | select(.name == "github-pages" and .expired == false) | .id' \
-                 | grep -q .; then
-              echo "github-pages artifact visible after $((i * 3))s"
+          # actions/deploy-pages@v4 查 artifact 不读 REST 的 run artifacts 接口，而是直接请求
+          # Twirp ArtifactService.ListArtifacts：POST ${ACTIONS_RESULTS_URL 的 origin}/
+          # twirp/github.actions.results.api.v1.ArtifactService/ListArtifacts，带
+          # Bearer ACTIONS_RUNTIME_TOKEN，请求体为 workflow_run_backend_id /
+          # workflow_job_run_backend_id（由该令牌 scp 里的 Actions.Results scope 解析，
+          # 见 @actions/artifact 的 getBackendIdsFromToken / internalArtifactTwirpClient），
+          # 再按 name === "github-pages" 过滤，0 个就让整次部署失败。
+          # 该后端与 REST 列表各自独立传播：REST 能查到不等于它能查到。实测 run 45367368858
+          # REST 查到后 0.4 s，它仍只返回 2 个 artifact（缺 github-pages）。因此这里改走同一条
+          # 通道轮询，直到 deploy-pages 真正能查到唯一一个 github-pages；查不到就失败，
+          # 不掩盖问题。构建门禁、needs 与分支限定均未改动。
+          set -uo pipefail
+          ORIGIN="$(node -e 'process.stdout.write(new URL(process.env.ACTIONS_RESULTS_URL).origin)')"
+          BODY="$(node -e '
+            const seg = process.env.ACTIONS_RUNTIME_TOKEN.split(".")[1];
+            const scp = JSON.parse(Buffer.from(seg, "base64url")).scp;
+            const p = scp.split(" ").map(s => s.split(":")).find(x => x[0] === "Actions.Results" && x.length === 3);
+            if (!p) throw new Error("no Actions.Results scope in ACTIONS_RUNTIME_TOKEN");
+            process.stdout.write(JSON.stringify({
+              workflow_run_backend_id: p[1],
+              workflow_job_run_backend_id: p[2],
+            }));
+          ')"
+          URL="$ORIGIN/twirp/github.actions.results.api.v1.ArtifactService/ListArtifacts"
+          for i in $(seq 1 40); do
+            resp="$(curl -sS --max-time 20 -X POST "$URL" \
+                     -H "authorization: Bearer $ACTIONS_RUNTIME_TOKEN" \
+                     -H 'content-type: application/json' \
+                     -d "$BODY" 2>/dev/null || true)"
+            n="$(printf '%s' "$resp" | node -e '
+              let s = "";
+              process.stdin.on("data", d => s += d).on("end", () => {
+                try {
+                  process.stdout.write(String((JSON.parse(s).artifacts || [])
+                    .filter(a => a.name === "github-pages").length));
+                } catch { process.stdout.write("err"); }
+              });
+            ')"
+            if [ "$n" = "1" ]; then
+              echo "github-pages visible on the artifact service after $((i * 3))s"
               exit 0
             fi
+            if [ "$n" != "err" ] && [ -n "$n" ] && [ "$n" -gt 1 ]; then
+              echo "::error::found $n github-pages artifacts on the artifact service; deploy-pages requires exactly one"
+              exit 1
+            fi
+            echo "attempt $i: artifact service reports ${n:-no-response} github-pages artifact(s)"
             sleep 3
           done
-          echo "::error::github-pages artifact never became listable"
+          echo "::error::github-pages never became visible on the artifact service that deploy-pages reads"
           exit 1
 
       - name: Deploy to GitHub Pages
