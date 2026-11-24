@@ -1,52 +1,794 @@
 {
   "id": "spreadsheetbench",
   "name": "SpreadsheetBench",
-  "full_name": null,
+  "full_name": "SpreadsheetBench: Towards Challenging Real World Spreadsheet Manipulation with Large Language Models（电子表格操作基准）",
   "aliases": [],
-  "status": null,
+  "status": "active",
   "categories": [
     "coding",
     "agent"
   ],
-  "summary": "真实电子表格指令执行评测（912 任务）",
-  "interpretation": "给真实 Excel 文件加指令，要求改对表格，考办公软件里动手的能力，是 Office 自动化方向代表榜。",
-  "measures": [],
-  "does_not_measure": [],
+  "summary": "912 条从真实 Excel 论坛搬来的表格操作指令，每条配 3 个测试表格，用「在线判题」式评分考模型能不能把表格改对——软件无关，只比最终结果。",
+  "interpretation": "分数是 Pass@1 准确率：soft 口径按一条指令下通过的测试用例比例给部分分（IOI 式），hard 口径要求全部通过才算对（ICPC 式）。论文里 GPT-4o 单轮 18.35%（soft）/ 15.02%（hard），Excel 专家在 50 条子集上 71.33% / 62.00%——这榜测的是「办公软件里动手改表格」的能力，不是知识问答。",
+  "measures": [
+    {
+      "area": "单元格级操作（cell-level）",
+      "focus": "只改动个别单元格，指令必须给出精确单元格位置（如 D2:D6）；论文把它与工作表级操作分开统计。",
+      "share": "论文未给出两类占比",
+      "format": "输入一个 XLSX + 一条英文指令，输出改好的表格文件",
+      "cite": [
+        "paper-arxiv@§2.1",
+        "paper-arxiv@§2.2 Data Formatting"
+      ]
+    },
+    {
+      "area": "工作表级操作（sheet-level）",
+      "focus": "改动整张表的结构或全部相关单元格，往往伴随多表、非标准关系表等真实混乱结构。",
+      "share": "论文未给出两类占比",
+      "format": "同上，按 sheet 粒度比对结果",
+      "cite": [
+        "paper-arxiv@§2.1"
+      ]
+    },
+    {
+      "area": "10 类操作类型",
+      "focus": "find、extract、sum、highlight、remove、modify、count、delete、calculate、display，覆盖从定位取数到格式化呈现的完整动线。",
+      "share": "10 类合计 912 条指令，论文未公布各类占比",
+      "format": "自然语言指令 → 代码/工具执行 → 表格文件",
+      "cite": [
+        "paper-arxiv@§2.3 Data Statistics"
+      ]
+    },
+    {
+      "area": "真实表格结构",
+      "focus": "35.7% 的表格含多个表，42.7% 为非标准关系表，另有大量非文本元素；80% 的行数在 1–49、列数在 1–13，也有超过 100 列、2 万行的大表。",
+      "share": "全部 912 条指令来自真实提问",
+      "format": "XLSX 文件，非 CSV/JSON 合成表",
+      "cite": [
+        "paper-arxiv@§2.3 Data Statistics",
+        "site-home@Key Features"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "不测通用表格问答（TableQA）：TaPEx、TaPas 这类为 QA 设计的模型在本基准全项为 0，因为任务输入是表格文件操作，而不是 CSV/JSON 上的问答。",
+      "cite": [
+        "paper-arxiv@§3.2 Overall Performance",
+        "paper-arxiv@§2.3 Comparison"
+      ]
+    },
+    {
+      "text": "不考特定软件的熟练度：论文明确以「软件无关」为目标，模型可以用 Python 代码等任意方式改表，只比对最终结果，因此 Excel 菜单、公式、VBA 的掌握程度不在评测范围内。",
+      "cite": [
+        "paper-arxiv@§2.2 Software Independence",
+        "paper-arxiv@§2.2 Data Filtering"
+      ]
+    },
+    {
+      "text": "不测多轮澄清与指令协商：单轮口径下每条指令只推理一次，考的是把一句话一次性变成可执行方案；多轮口径虽有 ReAct + 执行反馈，但上限 5 轮。",
+      "cite": [
+        "paper-arxiv@§2.4 Evaluation Metrics",
+        "paper-arxiv@§3.2 Inference Setting"
+      ]
+    },
+    {
+      "text": "不测多模态输入：题目全部是 XLSX 表格文件，没有图片、扫描件或版式理解成分；论文的人类基线也只用公式或 VBA 完成，不直接填答案。",
+      "cite": [
+        "paper-arxiv@§2.2 Software Independence",
+        "paper-arxiv@§3.2 Human Performance"
+      ]
+    }
+  ],
   "dataset": {
     "sample_count": 912,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
+    "splits": [
+      "公开全集 912 条指令（all_data_912.tar.gz，912 个 JSON 数据点）",
+      "示例子集 sample_data_200.tar.gz",
+      "人类基线子集 50 条指令 × 3 个测试用例（仅论文人类评估使用）",
+      "后续版本另立：SpreadsheetBench Verified 400 条（2025-12）、SpreadsheetBench 2 共 321 条"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "真实用户提问（Excel 论坛原帖经 GPT-4 改写 + 人工修订，非合成）",
+    "public_sample": true,
+    "totals": "912 条指令 / 2,729 个测试用例（平均 3 个/指令）/ 2,729 个 XLSX 表格文件 · 全英文 · CC BY-SA 4.0 · 另有 400 条专家标注的 SpreadsheetBench Verified 与 321 条的 SpreadsheetBench 2 两个后续子集",
+    "cite": [
+      "paper-arxiv@§2.3 Data Statistics",
+      "site-home@Evaluation Metrics",
+      "repo-spreadsheetbench@Data Statistics and Comparison",
+      "dataset-hf@Data Statistics",
+      "dataset-hf@Dataset Introduction"
+    ],
+    "construction": [
+      {
+        "k": "四阶段流水线",
+        "text": "论文把构建分为 data sourcing → data filtering → data formatting → test case construction 四步，再额外做防数据泄漏的扰动。",
+        "cite": [
+          "paper-arxiv@§2.2 Data Sourcing"
+        ]
+      },
+      {
+        "k": "选题来源",
+        "text": "用 Google Search、论坛搜索引擎 Feedspot.com 和 Excel 学习平台 Deskbright.com 定位四个常更新的论坛与博客：ExcelForum、Chandoo、MrExcel、ExcelGuru，只取 General Questions、Formula、VBA & Macros、Formatting、Pivot Table、Power Query 等与表格操作相关的版块。",
+        "cite": [
+          "paper-arxiv@§2.2 Data Sourcing"
+        ]
+      },
+      {
+        "k": "筛选标准",
+        "text": "四条标准：已有被认可的答案、只涉及表格操作、可行且可测试、有代表性；再用 input boxes / buttons / forms 等关键词剔除软件特定问题并人工复查。",
+        "cite": [
+          "paper-arxiv@§2.2 Data Filtering",
+          "paper-arxiv@附录 A.1"
+        ]
+      },
+      {
+        "k": "指令改写",
+        "text": "先用 GPT-4 把原帖改写成一条连贯指令，再人工修订；单元格级操作必须标注精确单元格位置（如 D2:D6）。",
+        "cite": [
+          "paper-arxiv@§2.2 Data Formatting"
+        ]
+      },
+      {
+        "k": "测试用例与质检",
+        "text": "标注员把原表数据改两遍得到两个变体，加上原始那一份，一条指令配 3 个测试用例；20 人 Excel 标注团队 + 2 名有学士学位的校验员做第一轮质检。",
+        "cite": [
+          "paper-arxiv@§2.2 Test Case Construction",
+          "paper-arxiv@§2.2 Annotation Team"
+        ]
+      },
+      {
+        "k": "防泄漏扰动",
+        "text": "三类扰动：GPT-4 + 人工改写指令、修改原始表格、改变表格数据与答案的位置，避免模型靠记住论坛原帖通过。",
+        "cite": [
+          "paper-arxiv@§2.2 Against Data Leakage"
+        ]
+      }
+    ]
   },
   "metrics": [
-    "instruction_accuracy"
+    {
+      "id": "soft-accuracy",
+      "name": "Soft Restriction 准确率",
+      "direction": "越高越好",
+      "description": "IOI 式部分分：一条指令的多个测试用例按通过比例计分，再对全部指令取平均；官网把 Overall (Pass@1) 定义为 912 道题、2,729 个表格上的总体准确率。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper-arxiv@§2.4 Evaluation Metrics",
+        "site-home@Evaluation Metrics"
+      ]
+    },
+    {
+      "id": "hard-accuracy",
+      "name": "Hard Restriction 准确率",
+      "direction": "越高越好",
+      "description": "ICPC 式全对才给分：一条指令下的所有测试用例全部通过才算这条对，没有部分分；同一模型通常比 soft 口径低 2–3 个百分点。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper-arxiv@§2.4 Evaluation Metrics",
+        "paper-arxiv@Table 2"
+      ]
+    },
+    {
+      "id": "v2-modif",
+      "name": "V2 Modif.（单元格修改率）",
+      "direction": "越高越好",
+      "description": "SpreadsheetBench 2 的指标：计算值与标准文件一致的目标单元格的平均占比；配套的 Acc. 要求每个输出单元格都对（可视化题改为专家评分项的通过率）。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "site-home@V2 Table 1 注",
+        "site-home@V2 Evaluation Metrics"
+      ]
+    }
   ],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [],
-  "notes": "Kimi/MiniMax/Qwen 引用；MSRA 发布，NeurIPS 2024",
+  "default_protocol": {
+    "raw": "给模型一个 XLSX 文件和一条英文指令，要求交出改好的表格文件（官方实现里模型生成 Python 代码并执行）。评测前先跑 open_spreadsheet.py 打开所有表格强制重算公式，让 openpyxl 能读到缓存值，再与标准答案逐格比对。单轮口径下每条指令只推理一次、提示里只给表格前几行；多轮口径追加 ReAct 与代码执行反馈，最多 5 轮。",
+    "cite": [
+      "paper-arxiv@§2.4 Evaluation Metrics",
+      "paper-arxiv@§3.2 Inference Setting",
+      "repo-spreadsheetbench@Environment Setup",
+      "repo-spreadsheetbench@Experiments"
+    ],
+    "variants": [
+      {
+        "text": "单轮（Single Round）vs 多轮（Multi-Round）：单轮只推理一次；多轮加 ReAct 与代码执行反馈、上限 5 轮。多数开源模型多轮接近翻倍，GPT-4o 反而从 18.35% 降到 16.96%。",
+        "cite": [
+          "paper-arxiv@§3.2 Inference Setting",
+          "paper-arxiv@Table 2"
+        ]
+      },
+      {
+        "text": "soft vs hard 限制：soft 按通过的测试用例比例给部分分，hard 要求全部通过；GPT-4o 单轮两个口径为 18.35% 与 15.02%，不能混着比。",
+        "cite": [
+          "paper-arxiv@§2.4 Evaluation Metrics",
+          "paper-arxiv@Table 2"
+        ]
+      },
+      {
+        "text": "Cell-Level vs Sheet-Level：论文分开报告两种操作的平均分，Sheet-Level 明显更难（GPT-4o 单轮 23.65% vs 15.03%）。",
+        "cite": [
+          "paper-arxiv@§2.1",
+          "paper-arxiv@Table 2"
+        ]
+      },
+      {
+        "text": "V1（912）vs V1-Verified（400）vs V2（321）：官网榜单分成 V2 - Full / V1 - Full (912) / V1 - Verified (400) 三个标签页，题量、任务形态与评分方式都不同，分数不能互相比。",
+        "cite": [
+          "site-home@Leaderboard",
+          "repo-spreadsheetbench@News",
+          "site-home@V2 Task Categories"
+        ]
+      },
+      {
+        "text": "人类基线口径特殊：只用 50 条指令 × 3 个测试用例，由 4 名 Excel 专家写公式或 VBA 完成，不等于在全集 912 条上的人体成绩。",
+        "cite": [
+          "paper-arxiv@§3.2 Human Performance"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "arxiv-v1",
+      "date": "2024-06-21",
+      "label": "arXiv v1 上线（HF 数据集卡标注 Published Jun 21, 2024）；同月仓库放出推理与评测代码、示例数据（News 记 [2024/06]）",
+      "cite": [
+        "dataset-hf@Paper",
+        "repo-spreadsheetbench@News"
+      ]
+    },
+    {
+      "id": "arxiv-v2",
+      "date": "2024-10-17",
+      "label": "arXiv v2 更新（页眉 arXiv:2406.14991v2 [cs.CL] 17 Oct 2024），论文正文与 Table 2 以这一版为准",
+      "cite": [
+        "paper-arxiv@arXiv 页眉"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "版本割裂，分数不可比",
+      "impact": "官方现有三套题：V1 全集 912 条、SpreadsheetBench Verified 400 条专家标注子集（2025-12，与 Shortcut.AI 合作）、SpreadsheetBench 2 共 321 条端到端工作流任务；官网榜单也按这三套分标签页。厂商与论文引用的往往只是其中一套。",
+      "severity": "高",
+      "response": "本档案的题量、协议与附录 B 快照都对应 V1 全集；引用时必须写清是哪一套、题量与评分口径。",
+      "reader": "看到「SpreadsheetBench」先确认是 912、400 还是 321；论文里 GPT-4o 的 18.35% 不能和 V2 榜单分数放在一起排名。",
+      "cite": [
+        "repo-spreadsheetbench@News",
+        "site-home@Leaderboard",
+        "site-home@V2 Task Categories"
+      ]
+    },
+    {
+      "issue": "人类基线只在子集上测",
+      "impact": "论文的 71.33%（soft）人类成绩来自 50 条指令 × 3 个测试用例、4 名 Excel 专家，而模型分数来自全集 912 条，两者并非同一批题目。",
+      "severity": "中",
+      "response": "论文明确写出子集规模与专家人数；引用人类基线时应同时带上「50 条子集」。",
+      "reader": "人类 71.33% 与 GPT-4o 18.35% 的差距是量级参考，不是同一批题上的精确比较。",
+      "cite": [
+        "paper-arxiv@§3.2 Human Performance"
+      ]
+    },
+    {
+      "issue": "复现依赖公式重算",
+      "impact": "评分前必须用 open_spreadsheet.py 打开每个表格强制重算公式（非 Windows 默认走 LibreOffice 7.5+，Windows 走 win32com/Excel），否则读到的是缓存值，自测分数会偏低或判错。",
+      "severity": "中",
+      "response": "仓库给出环境搭建步骤与各平台依赖说明。",
+      "reader": "自测结果和官方不一致时，先检查公式重算这一步是否真的跑了。",
+      "cite": [
+        "repo-spreadsheetbench@Environment Setup"
+      ]
+    },
+    {
+      "issue": "边界用例未系统覆盖",
+      "impact": "论文承认没有为每题精心设计边角场景，只保证原始场景可解可测；污染面主要来自论坛原帖本身。",
+      "severity": "中",
+      "response": "用指令改写、改原始表格、改答案位置三类扰动降低记忆收益，并剔除没有 accepted 答案或难以形式化的帖子。",
+      "reader": "高分不等于覆盖了所有边界，低分也可能来自题目表述歧义。",
+      "cite": [
+        "paper-arxiv@附录 A.1",
+        "paper-arxiv@§2.2 Against Data Leakage"
+      ]
+    },
+    {
+      "issue": "榜单含内部评测的「已验证」成绩",
+      "impact": "官网榜单的 Verified 结果由各机构自己提供 API 做内部评测，Unverified 结果由第三方外部评测，两种状态的口径与可信度不同。",
+      "severity": "低",
+      "response": "官网用星号标记并在脚注说明两种状态的评测方式。",
+      "reader": "比较榜单名次时看清 Verified / Unverified 标记。",
+      "cite": [
+        "site-home@Leaderboard"
+      ]
+    },
+    {
+      "issue": "站点自身数字不一致",
+      "impact": "V2 概览页统计卡写「34.89% Top Score (OVERALL)」，而榜单 V2 标签页排名第一的 arito 是 54.51%（2026-09-13）；V1 统计卡则是 70.48%。站点不同位置的刷新节奏不同。",
+      "severity": "低",
+      "response": "引用时写清取自统计卡还是榜单表格，并记录访问日期。",
+      "reader": "不要把统计卡的 34.89% 和榜单的 54.51% 混用，也不要把 V1 的 70.48% 当成 V2 成绩。",
+      "cite": [
+        "site-home@V2 Benchmark Statistics",
+        "site-home@Leaderboard",
+        "site-home@Benchmark Statistics"
+      ]
+    }
+  ],
+  "notes": "v1 档案原写「MSRA 发布」有误：论文署名是中国人民大学、清华大学与智谱 AI，项目由 RUC KBReasoning 小组长期维护，与微软亚洲研究院无关。原写「Kimi/MiniMax/Qwen 引用」也不准确：三家发布博客里只有 Kimi K3 提到本基准（且指的是 SpreadsheetBench 2，成绩放在图片表格中，无法逐字取证），MiniMax M3 与 Qwen3.7 的发布博客全文未提及。官网另有两个后续版本：SpreadsheetBench Verified（400 条专家标注）与 SpreadsheetBench 2（321 条工作流任务），引用时须区分。",
   "official_sources": [
+    {
+      "kind": "site",
+      "url": "https://spreadsheetbench.github.io/"
+    },
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2406.14991"
+    },
     {
       "kind": "github",
       "url": "https://github.com/RUCKBReasoning/SpreadsheetBench"
     },
     {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/KAKA22/SpreadsheetBench"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/KAKA22/SpreadsheetBench-v2"
+    },
+    {
       "kind": "site",
       "url": "https://www.kimi.ai/blog/kimi-k3"
-    },
-    {
-      "kind": "site",
-      "url": "https://www.minimax.io/blog/minimax-m3"
-    },
-    {
-      "kind": "site",
-      "url": "https://qwen.ai/blog?id=qwen3.7"
     }
   ],
   "related_benchmarks": [
-    "osworld"
+    "osworld",
+    "ai-office-bench",
+    "officeqa-pro"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-13",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      {
+        "id": "paper-arxiv",
+        "kind": "paper",
+        "title": "SpreadsheetBench: Towards Challenging Real World Spreadsheet Manipulation with Large Language Models（arXiv:2406.14991v2）",
+        "url": "https://arxiv.org/abs/2406.14991",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "site-home",
+        "kind": "site",
+        "title": "SpreadsheetBench 官网（V1 / V2 概览、榜单、任务类别与贡献者）",
+        "url": "https://spreadsheetbench.github.io/",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "repo-spreadsheetbench",
+        "kind": "repo",
+        "title": "RUCKBReasoning/SpreadsheetBench GitHub 仓库（News、环境搭建、实验设置、许可）",
+        "url": "https://github.com/RUCKBReasoning/SpreadsheetBench",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "dataset-hf",
+        "kind": "dataset",
+        "title": "Hugging Face 数据集卡 KAKA22/SpreadsheetBench",
+        "url": "https://huggingface.co/datasets/KAKA22/SpreadsheetBench",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "kimi-blog-kimi-k3",
+        "kind": "blog",
+        "title": "Kimi K3 发布博客（脚注提及 SpreadsheetBench 2 与所用 harness）",
+        "url": "https://www.kimi.ai/blog/kimi-k3",
+        "accessed": "2026-11-13"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "中国人民大学、清华大学、智谱 AI；由 RUC KBReasoning 小组长期维护",
+        "cite": [
+          "paper-arxiv@作者署名",
+          "paper-arxiv@附录 A.4"
+        ]
+      },
+      "first_release": {
+        "v": "2024-06-21（arXiv v1；同月放出推理与评测代码）",
+        "cite": [
+          "dataset-hf@Paper",
+          "repo-spreadsheetbench@News"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "dataset-hf@Abstract",
+        "paper-arxiv@摘要",
+        "paper-arxiv@§2.3 Data Statistics"
+      ],
+      "interpretation": [
+        "paper-arxiv@§2.4 Evaluation Metrics",
+        "paper-arxiv@Table 2",
+        "paper-arxiv@§3.2 Human Performance"
+      ]
+    },
+    "problem": {
+      "text": "真实办公里的表格操作不是「问一句答一句」：用户丢来一个结构混乱的 XLSX（多表、非标准关系表、公式缓存、非文本元素），要求把它改成另一个样子。SpreadsheetBench 要测的就是「给定文件 + 一句指令 → 交出改好的文件」这种端到端动手能力，并用在线判题式的多测试用例评分替代单点答案匹配，从而惩罚只对着一份数据碰巧生效的解法。",
+      "cite": [
+        "dataset-hf@Abstract",
+        "paper-arxiv@摘要",
+        "site-home@Key Features"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "TableQA 专用模型（TaPEx / TaPas）",
+        "value": "全项 0%（论文未列入表中）",
+        "note": "为表格问答设计的模型在这里完全无效，说明任务性质与 TableQA 不同。",
+        "cite": [
+          "paper-arxiv@§3.2 Overall Performance"
+        ]
+      },
+      {
+        "label": "开源代码模型最好（DeepseekCoder 33B，单轮）",
+        "value": "2.60% soft / 2.20% hard",
+        "note": "开源模型整体远低于闭源 SOTA。",
+        "cite": [
+          "paper-arxiv@Table 2"
+        ]
+      },
+      {
+        "label": "论文报告的闭源 SOTA（GPT-4o，单轮）",
+        "value": "18.35% soft / 15.02% hard",
+        "note": "多轮反而降到 16.96% / 13.27%。",
+        "cite": [
+          "paper-arxiv@Table 2",
+          "paper-arxiv@§3.2 Overall Performance"
+        ]
+      },
+      {
+        "label": "商用表格产品（Copilot in Excel）",
+        "value": "约 20% soft（5% 抽样、人工评测）",
+        "note": "论文只报告 soft，未给 hard 口径。",
+        "cite": [
+          "paper-arxiv@§3.2 Overall Performance",
+          "paper-arxiv@Table 2"
+        ]
+      },
+      {
+        "label": "HF 数据集卡引用的 ChatGPT Agent",
+        "value": "45.5%",
+        "note": "数据集卡口径，未说明是 soft 还是 hard、是否全集。",
+        "cite": [
+          "dataset-hf@Evaluation Results"
+        ]
+      },
+      {
+        "label": "Excel 专家（50 条子集）",
+        "value": "71.33% soft / 62.00% hard",
+        "note": "4 名 Excel 专家、每条指令 3 个测试用例，只写公式或 VBA。",
+        "cite": [
+          "paper-arxiv@§3.2 Human Performance",
+          "paper-arxiv@Table 2"
+        ]
+      },
+      {
+        "label": "官网 V1 统计卡最高分",
+        "value": "70.48%",
+        "note": "站点 Benchmark Statistics 卡，未注明模型与评测口径；与榜单表格是两处不同来源。",
+        "cite": [
+          "site-home@Benchmark Statistics"
+        ]
+      },
+      {
+        "label": "本站账本当前最高（V1）",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "「SpreadsheetBench 已经 65%+」这类说法通常不是论文 912 条全集的成绩。官网统计卡写 70.48%、HF 数据集卡写 ChatGPT Agent 45.5%，两者都没说清口径，而论文 Table 2 里 GPT-4o 只有 18.35%。",
+        "cite": [
+          "site-home@Benchmark Statistics",
+          "dataset-hf@Evaluation Results",
+          "paper-arxiv@Table 2"
+        ]
+      },
+      {
+        "text": "多轮不一定更好：GPT-4o 从单轮 18.35% 掉到多轮 16.96%，而多数开源模型靠多轮接近翻倍。「套上 agent 循环就更强」在这个基准上不成立。",
+        "cite": [
+          "paper-arxiv@Table 2",
+          "paper-arxiv@§3.2 Inference Setting"
+        ]
+      },
+      {
+        "text": "soft 和 hard 不是同一个分数：soft 按通过的测试用例比例给部分分（IOI 式），hard 要求一条指令下全部通过（ICPC 式），同模型差 2–3 个百分点。跨论文比较时必须先对齐口径。",
+        "cite": [
+          "paper-arxiv@§2.4 Evaluation Metrics",
+          "paper-arxiv@Table 2"
+        ]
+      },
+      {
+        "text": "它不是表格问答基准，也不考 Excel 操作熟练度：TaPEx/TaPas 全项为 0，任务输入是 XLSX、输出是改好的文件，模型用 Python 代码而非 Excel 公式也算合规。",
+        "cite": [
+          "paper-arxiv@§3.2 Overall Performance",
+          "paper-arxiv@§2.2 Software Independence",
+          "paper-arxiv@§2.2 Data Filtering"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "论文署名中国人民大学、清华大学、智谱 AI；项目由 RUC KBReasoning 小组长期维护，与微软亚洲研究院无关。",
+        "cite": [
+          "paper-arxiv@作者署名",
+          "paper-arxiv@附录 A.4"
+        ]
+      },
+      {
+        "k": "论文接收",
+        "v": "NeurIPS 2024 Datasets & Benchmarks Track spotlight；仓库 News 记 [2024/07] arXiv 上线、[2024/06] 放出代码与示例数据、[2024/09] 被接收为 spotlight。",
+        "cite": [
+          "paper-arxiv@NeurIPS 脚注",
+          "repo-spreadsheetbench@News"
+        ]
+      },
+      {
+        "k": "题目来源",
+        "v": "用 Google Search、Feedspot.com、Deskbright.com 定位四个常更新的论坛与博客：ExcelForum、Chandoo、MrExcel、ExcelGuru，只取与表格操作相关的版块。",
+        "cite": [
+          "paper-arxiv@§2.2 Data Sourcing"
+        ]
+      },
+      {
+        "k": "数据形态",
+        "v": "912 条指令、2,729 个测试用例（平均 3 个/指令）；35.7% 的表格含多个表，42.7% 为非标准关系表；80% 的行数在 1–49、列数在 1–13，也有超过 100 列、2 万行的大表。",
+        "cite": [
+          "paper-arxiv@§2.3 Data Statistics",
+          "repo-spreadsheetbench@Data Statistics and Comparison"
+        ]
+      },
+      {
+        "k": "指令长度",
+        "v": "论文称其他表格基准的指令平均词数只有 9.8，而本基准为 85.7，指令明显更长、更贴近真实提问。",
+        "cite": [
+          "paper-arxiv@§2.3 Comparison"
+        ]
+      },
+      {
+        "k": "SpreadsheetBench Verified",
+        "v": "2025-12 与 Shortcut.AI（Fundamental Research Labs）合作发布的 400 条专家标注子集，官网榜单单列 V1 - Verified (400) 标签页。",
+        "cite": [
+          "repo-spreadsheetbench@News",
+          "site-home@Leaderboard"
+        ]
+      },
+      {
+        "k": "SpreadsheetBench 2（V2）",
+        "v": "321 条端到端业务表格工作流任务，分 Financial Modeling/Template、Debugging、Visualization 三类，由中国人民大学与 Aptura.AI、AfterQuery、Shortcut.AI 贡献者共建；指标为 Modif.（目标单元格值一致的平均占比）与 Acc.（整题全对，可视化题按评分项通过率）；官网统计卡另给平均 11.8 个 sheet、平均修改 593.5 个单元格。",
+        "cite": [
+          "site-home@V2 Task Categories",
+          "site-home@V2 Table 1 注",
+          "site-home@V2 Benchmark Statistics",
+          "site-home@V2 Contributors",
+          "site-home@V2 News"
+        ]
+      },
+      {
+        "k": "厂商采用",
+        "v": "Kimi K3 发布博客的脚注把 SpreadsheetBench 2 与 OfficeQA Pro 并列，并说明 Kimi K3、GLM-5.2、Claude Opus 4.8、Claude Fable 5 用 Claude Code harness，GPT 5.5 与 GPT 5.6 Sol 用 Codex harness；具体成绩放在图片表格中，无法逐字取证。",
+        "cite": [
+          "kimi-blog-kimi-k3@脚注"
+        ]
+      },
+      {
+        "k": "许可与分发",
+        "v": "CC BY-SA 4.0（论文附录、仓库与 HF 卡片三处一致）；数据以 all_data_912.tar.gz 分发，含 912 个 JSON 数据点，另提供 sample_data_200.tar.gz 示例。",
+        "cite": [
+          "paper-arxiv@附录 A.4",
+          "repo-spreadsheetbench@License",
+          "dataset-hf@License",
+          "dataset-hf@Dataset Introduction"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2024-10-17",
+        "columns": [
+          "模型",
+          "推理设置",
+          "Cell-Level (soft)",
+          "Sheet-Level (soft)",
+          "Overall (soft)",
+          "Cell-Level (hard)",
+          "Sheet-Level (hard)",
+          "Overall (hard)"
+        ],
+        "rows": [
+          [
+            "Binder (GPT-3.5)",
+            "单轮",
+            "1.58",
+            "0.05",
+            "1.17",
+            "0.00",
+            "0.00",
+            "0.00"
+          ],
+          [
+            "CodeQwen (7B)",
+            "单轮",
+            "0.36",
+            "0.76",
+            "0.51",
+            "0.36",
+            "0.29",
+            "0.33"
+          ],
+          [
+            "CodeQwen (7B)",
+            "多轮",
+            "1.49",
+            "7.14",
+            "3.66",
+            "0.89",
+            "6.29",
+            "2.97"
+          ],
+          [
+            "DeepseekCoder (33B)",
+            "单轮",
+            "0.59",
+            "5.81",
+            "2.60",
+            "0.36",
+            "5.14",
+            "2.20"
+          ],
+          [
+            "DeepseekCoder (33B)",
+            "多轮",
+            "3.15",
+            "8.76",
+            "5.31",
+            "1.96",
+            "6.86",
+            "3.85"
+          ],
+          [
+            "Mixtral-8x7B",
+            "单轮",
+            "2.97",
+            "3.33",
+            "3.11",
+            "2.32",
+            "2.57",
+            "2.42"
+          ],
+          [
+            "Mixtral-8x7B",
+            "多轮",
+            "3.39",
+            "4.67",
+            "3.88",
+            "2.32",
+            "3.71",
+            "2.85"
+          ],
+          [
+            "Llama-3 (70B)",
+            "单轮",
+            "0.18",
+            "3.14",
+            "1.32",
+            "0.00",
+            "2.86",
+            "1.10"
+          ],
+          [
+            "Llama-3 (70B)",
+            "多轮",
+            "1.13",
+            "7.90",
+            "3.74",
+            "0.71",
+            "7.14",
+            "3.18"
+          ],
+          [
+            "GPT-3.5",
+            "单轮",
+            "1.31",
+            "3.99",
+            "2.34",
+            "0.71",
+            "3.13",
+            "1.64"
+          ],
+          [
+            "GPT-3.5",
+            "多轮",
+            "3.33",
+            "13.11",
+            "7.09",
+            "2.50",
+            "9.97",
+            "5.37"
+          ],
+          [
+            "GPT-4o",
+            "单轮",
+            "15.03",
+            "23.65",
+            "18.35",
+            "11.94",
+            "19.94",
+            "15.02"
+          ],
+          [
+            "GPT-4o",
+            "多轮",
+            "13.49",
+            "22.51",
+            "16.96",
+            "10.52",
+            "17.66",
+            "13.27"
+          ],
+          [
+            "SheetCopilot (GPT-4)*",
+            "单轮",
+            "16.67",
+            "10.00",
+            "14.00",
+            null,
+            null,
+            null
+          ],
+          [
+            "Copilot in Excel*",
+            "单轮",
+            "23.33",
+            "15.00",
+            "20.00",
+            null,
+            null,
+            null
+          ],
+          [
+            "Human Performance",
+            "单轮",
+            "75.56",
+            "65.00",
+            "71.33",
+            "66.67",
+            "55.00",
+            "62.00"
+          ]
+        ]
+      },
+      "cite": [
+        "paper-arxiv@Table 2"
+      ]
+    }
+  }
 }

@@ -1,31 +1,286 @@
 {
   "id": "video-mmmu",
   "name": "Video-MMMU",
-  "full_name": null,
+  "full_name": "Video-MMMU: Evaluating Knowledge Acquisition from Multidisciplinary Professional Videos（多学科专业视频中的知识获取能力评测）",
   "aliases": [],
   "status": null,
   "categories": [
     "multimodal",
     "knowledge"
   ],
-  "summary": "从专业视频获取知识的跨学科评测（300 视频 900 题）",
-  "interpretation": "看课程或讲座视频再答题，考以视频为教材学习的知识获取能力，而非单纯看懂画面。",
-  "measures": [],
-  "does_not_measure": [],
+  "summary": "Video-MMMU 把 300 段大学水平的讲座视频当教材，配 900 道人工标注的选择题，考大型多模态模型（LMM，能同时处理视频与文字的模型）能不能从视频里学到新知识并用出来；它覆盖艺术、商业、科学、医学、人文、工程 6 个学科的 30 个方向，每段视频配 3 道题，分别对应感知、理解、适配三个由浅入深的认知阶段。",
+  "interpretation": "高分说明模型不只是看懂画面，而是能把视频里的概念和方法迁到没见过的题上。单看绝对准确率会把「本来就会」和「看视频学会」混在一起，所以核心读数是 Δknowledge：先用只含题目图片的 2 秒短视频测基线，再看完整讲座视频重答同一道适配题，按归一化公式算增益。人类 Δknowledge 为 33.1%，论文发布时表现最好的 GPT-4o 只有 15.6%。",
+  "measures": [
+    {
+      "area": "感知（Perception）",
+      "focus": "从画面里读出关键信息。示例题（艺术方向）：视频讲到 Painting 时问「下列哪一项没有出现在视频画面中」，10 个选项含 Intense, warm colors、Strong contrasts of light and dark、Abstraction 等，答案为 D. Abstraction。官网把这类题归为 OCR（读公式、数据、图表、手写内容）与 ASR（转写语音）两类。",
+      "share": "300 题（每段视频 1 题）",
+      "format": "多选题；主要用 MAMC（multiple-answer multiple-choice）格式，每题给出 4–10 条关于视频内容的陈述、可有多条正确，每题另标 10 个选项",
+      "cite": [
+        "arxiv-2501-13826@§3.2.1",
+        "arxiv-2501-13826@§3.2.2",
+        "videommmu@Examples - Art",
+        "videommmu@Statistics"
+      ]
+    },
+    {
+      "area": "理解（Comprehension）",
+      "focus": "理解视频讲授的概念本身，不做迁移。示例题（艺术方向）：看完巴洛克绘画视频后判断「关于 Baroque painting 的哪些陈述正确」，其中 Statement 2 为「巴洛克画家用强烈的明暗对比突出关键人物」。官网把这类题归为概念理解（CC）与解题策略理解（PSC）两类。",
+      "share": "300 题（每段视频 1 题）",
+      "format": "多选题；MAMC 为主，另有把视频例题换成不同数值后的变体题",
+      "cite": [
+        "arxiv-2501-13826@§3.2.1",
+        "arxiv-2501-13826@§3.2.2",
+        "videommmu@Examples - Art",
+        "videommmu@Statistics"
+      ]
+    },
+    {
+      "area": "适配（Adaptation）",
+      "focus": "把视频里学到的方法迁到新题上：同一道例题换一组输入数值重新算，或把概念套进一个没见过的新场景。专家会核对题目考的确是视频讲过的同一知识点，但用了新场景、新公式或相似的解题策略。",
+      "share": "300 题（每段视频 1 题）",
+      "format": "多选题；MAMC 为主，官网归类为案例分析（CSA）与解题策略适配（PSA）；输入时在视频末尾追加题目原图",
+      "cite": [
+        "arxiv-2501-13826@§3.2.1",
+        "arxiv-2501-13826@§3.2.2",
+        "arxiv-2501-13826@§4.1",
+        "videommmu@Statistics"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "不测纯文本推理：三道题都以视频为主要输入，脱离视频无法作答（适配题甚至把题目原图追加到视频末尾），分数不能被读成通用文本能力。",
+      "cite": [
+        "arxiv-2501-13826@§4.1"
+      ]
+    },
+    {
+      "text": "不测时序定位或事件检索：官网列出的题型只有 OCR/ASR（感知）、概念理解与解题策略理解（理解）、案例分析与解题策略适配（适配），没有时序 grounding 类题目。",
+      "cite": [
+        "videommmu@Statistics"
+      ]
+    },
+    {
+      "text": "不测开放式生成：全部是选择题（含 MAMC），判分靠正则从回答里抽选项字母和数值，抽不到有效答案即记错。",
+      "cite": [
+        "arxiv-2501-13826@§3.2.1",
+        "arxiv-2501-13826@§4.1"
+      ]
+    }
+  ],
   "dataset": {
     "sample_count": 900,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
+    "splits": [
+      "perception",
+      "comprehension",
+      "adaptation"
+    ],
+    "languages": [
+      "未披露"
+    ],
+    "source_type": "人工标注的大学水平讲座视频（网络视频外链）与人工标注问答对；视频版权归原作者，官方不拥有链接内容权利",
+    "public_sample": "官网按 6 个学科各给出 QA 样例；Hugging Face 数据集 lmms-eval/VideoMMMU 需同意共享账户信息后才能访问，总体积约 13.5 GB",
+    "totals": "300 段大学水平讲座视频 × 每段 3 道人工标注问答对 = 900 题，覆盖 6 个学科 30 个方向；视频平均时长 506.2 秒，题目平均 75.7 词。",
+    "cite": [
+      "arxiv-2501-13826@§3.3",
+      "repo@README",
+      "dataset"
+    ],
+    "construction": [
+      {
+        "k": "选题",
+        "text": "领域专家系统分析 30 个方向的大学课程，建立 450 个基础评估主题池。",
+        "cite": [
+          "arxiv-2501-13826@§3.1"
+        ]
+      },
+      {
+        "k": "视频筛选",
+        "text": "用 GPT-4o 为每个主题生成 10 条检索词去检索视频；数据集分两类，其中概念讲解类视频系统讲解事实性知识，包含基本概念与理论。",
+        "cite": [
+          "arxiv-2501-13826@§3.1"
+        ]
+      },
+      {
+        "k": "质量把关",
+        "text": "三层复核：先由标注员交叉检查，剔除音画质量差或内容不相关的视频；再用 GPT-4o 分析每段视频抽样的 10 帧以评估技术深度；最后由领域专家核对与大学课程标准的对齐度，并确认知识深度合适。",
+        "cite": [
+          "arxiv-2501-13826@§3.1"
+        ]
+      },
+      {
+        "k": "命题",
+        "text": "标注员通读每段视频，按 QA 分类体系出 3 道题，分别对应感知、理解、适配三个认知赛道；为提升严谨度，每道多选题标注 10 个选项。",
+        "cite": [
+          "arxiv-2501-13826@§3.2.2"
+        ]
+      },
+      {
+        "k": "适配题来源",
+        "text": "科学、工程、医学、商业四个方向的适配题直接取自已公开的 MMMU 与 MMMU-Pro 大学考题，由专家核对考的是视频讲过的同一知识点但换到新场景；例题讲解类视频则用同一道题换不同输入数值来考。",
+        "cite": [
+          "arxiv-2501-13826@§3.2.2",
+          "arxiv-2501-13826@§3.2.1"
+        ]
+      },
+      {
+        "k": "音频必要性标注",
+        "text": "最后用 Gemini 1.5 Pro 分析每个视频-问题对，判断音频是否有助于解题。",
+        "cite": [
+          "arxiv-2501-13826@§3.2.2"
+        ]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "视频与问题一起输入：感知、理解两个赛道直接给完整视频；适配赛道在视频末尾追加题目原图，并加提示说明题目图片出现在最后一帧。判分用自动化的规则管线，用正则表达式抽取选项字母与数值等关键元素，抽不到有效答案的回答记为错误；指标为微平均准确率，评测在 LMMs-Eval 框架中实现。",
+    "cite": [
+      "arxiv-2501-13826@§4.1",
+      "repo@README"
+    ],
+    "variants": [
+      {
+        "text": "算 Δknowledge 必须额外跑一轮 question_only 基线：用只含适配题图片的 2 秒短视频，让模型在看不到讲座内容的情况下先答一遍，再看增益。",
+        "cite": [
+          "repo@README"
+        ]
+      },
+      {
+        "text": "各模型采样帧数不统一：论文给被测模型设的帧数从 10（Llama-3.2）到 64（LLaVA-Video / LongVA / Aria）不等，帧数不同的分数不能直接比。",
+        "cite": [
+          "arxiv-2501-13826@§4.1"
+        ]
+      },
+      {
+        "text": "是否追加音频转写会改变成绩：论文用 OpenAI Whisper 生成音频转写并追加到输入提示，各赛道成绩随之变化，理解赛道提升最明显。",
+        "cite": [
+          "arxiv-2501-13826@§4.3"
+        ]
+      },
+      {
+        "text": "第三方自报口径与官方不同：MiniMax 在自家博客里按 1 FPS、最多 512 帧、单帧长边 672–1008 像素、LLM-as-a-Judge 判分的配置跑 VideoMMMU，与官方正则判分不是同一套。",
+        "cite": [
+          "minimax-blog-minimax-m3"
+        ]
+      }
+    ]
   },
   "metrics": [
-    "accuracy"
+    {
+      "id": "accuracy",
+      "name": "微平均准确率（Micro-averaged Accuracy）",
+      "direction": "越高越好",
+      "description": "对所有题目的选项级判定取微平均。MAMC 题按正则抽取到的选项字母与数值判对错，回答里抽不到有效答案即记错。这是本站头部卡的主指标。",
+      "range": "0–100%",
+      "unit": "%",
+      "cite": [
+        "arxiv-2501-13826@§4.1"
+      ]
+    },
+    {
+      "id": "delta_knowledge",
+      "name": "知识增益 Δknowledge",
+      "direction": "越高越好",
+      "description": "适配赛道上，看完视频后的准确率相对看视频前的归一化增益：Δknowledge = (Acc_after_video − Acc_before_video) / (100% − Acc_before_video) × 100%。归一化掉了基线难度差异，从 90% 提到 95% 算 50%，从 0% 提到 5% 只算 5%。",
+      "range": "论文未给出理论上界（实测出现负值）",
+      "unit": "%",
+      "cite": [
+        "arxiv-2501-13826@§5.1",
+        "videommmu@Overview"
+      ]
+    },
+    {
+      "id": "right_to_wrong_rate",
+      "name": "右转错率（Right-to-Wrong Rate）",
+      "direction": "越低越好",
+      "description": "模型看完视频后把原本答对的题改错的比例。论文用它解释为什么有些模型的 Δknowledge 被抵消：它们处理新视频信息时守不住原来的正确答案。",
+      "range": "0–100%",
+      "unit": "%",
+      "cite": [
+        "arxiv-2501-13826@§5.2"
+      ]
+    }
   ],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [],
-  "notes": "Google/Kimi/MiniMax/OpenAI 引用",
+  "versions": [
+    {
+      "id": "v1-arxiv",
+      "date": "2025-01-23",
+      "label": "arXiv v1（arXiv:2501.13826v1 [cs.CV]）首次公开，Hugging Face 数据集同日发布",
+      "cite": [
+        "arxiv-2501-13826",
+        "dataset"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "三个来源的榜单是三个时间点的不同子集，最高分不可直接比",
+      "impact": "官网榜单已收录 GPT-5-thinking（Overall 84.6）、Gemini-2.5-Pro（83.6）、OpenAI O3（83.3）等新模型且未公布各赛道细分；Hugging Face 数据集卡上的榜单停留在 2025-02-07；论文 Table 2 只到 Claude-3.5-Sonnet 65.78。",
+      "severity": "高",
+      "response": "未见官方回应",
+      "reader": "比较模型前先确认出处与快照日期；跨来源的 Overall 差值不能当作能力差距。",
+      "cite": [
+        "videommmu@Leaderboard",
+        "dataset",
+        "arxiv-2501-13826@Table 2"
+      ]
+    },
+    {
+      "issue": "看视频不保证涨分，可能反而丢分",
+      "impact": "部分模型 Δknowledge 为负（如 InternVL2-8B 为 -8.5%、Gemini 1.5 Flash 为 -3.3%）；论文归因于右转错率偏高（LongVA 达 55.0%），即模型处理新视频信息时守不住原有正确答案。",
+      "severity": "高",
+      "response": "论文在 §5.2、§5.3 给出错误分类与 100 个抽样错误案例，未提出解法。",
+      "reader": "只报 Overall 会掩盖「看视频学不到东西」这件事；必须同时看 Δknowledge。",
+      "cite": [
+        "arxiv-2501-13826@§5.2",
+        "dataset"
+      ]
+    },
+    {
+      "issue": "适配题大量复用已公开的 MMMU / MMMU-Pro 考题",
+      "impact": "科学、工程、医学、商业四个方向的适配题直接取自 MMMU 与 MMMU-Pro 这两套已公开的大学考题，对在这两个题库上训练过的模型存在潜在优势。",
+      "severity": "中",
+      "response": "未见官方回应（论文未给出污染审计）",
+      "reader": "遇到 MMMU 系高分模型，其适配赛道成绩要打折看。",
+      "cite": [
+        "arxiv-2501-13826@§3.2.2"
+      ]
+    },
+    {
+      "issue": "成绩对抽帧数与音频配置敏感",
+      "impact": "追加 Whisper 音频转写会改变各赛道成绩（理解赛道提升最明显）；论文给各模型设的采样帧数从 10 到 64 不等，未统一。",
+      "severity": "中",
+      "response": "论文如实披露了帧数配置与音频实验，但未统一口径。",
+      "reader": "复现或对比时必须固定帧数与音频设置，否则数字不可比。",
+      "cite": [
+        "arxiv-2501-13826@§4.1",
+        "arxiv-2501-13826@§4.3"
+      ]
+    },
+    {
+      "issue": "数据获取有门槛，且视频版权不在作者手中",
+      "impact": "Hugging Face 数据集需同意共享账户信息才能访问，总体积约 13.5 GB；数据集只存外链，官方声明不拥有链接内容权利，合规责任在使用方。",
+      "severity": "低",
+      "response": "官方在数据集卡写明了版权归属与用户自查责任。",
+      "reader": "下载前需接受门禁；二次分发视频链接有合规风险。",
+      "cite": [
+        "dataset"
+      ]
+    },
+    {
+      "issue": "标题与作者署名在两个正式版本间不一致",
+      "impact": "arXiv v1 标题为 …from Multi-Discipline Professional Videos，ACL 2026 版为 …from Multidisciplinary Professional Videos；两个版本的作者顺序也不同（Yuanhan Zhang 与 Xiang Yue 的位置互换）。",
+      "severity": "低",
+      "response": "未见官方回应",
+      "reader": "引用时以 ACL Anthology 条目为准，并注明所用版本。",
+      "cite": [
+        "arxiv-2501-13826",
+        "anthology"
+      ]
+    }
+  ],
+  "notes": "一站档案：300 段讲座视频 × 3 题 = 900 题，覆盖 6 学科 30 方向；核心指标 Δknowledge（人类 33.1%）。ACL 2026 Main；Google Gemini 3 与 MiniMax M3 官方博客引用。",
   "official_sources": [
     {
       "kind": "site",
@@ -46,11 +301,401 @@
     {
       "kind": "site",
       "url": "https://www.minimax.io/blog/minimax-m3"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/EvolvingLMMs-Lab/VideoMMMU"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/lmms-eval/VideoMMMU"
     }
   ],
   "related_benchmarks": [
-    "mmmu"
+    "mmmu",
+    "mmmu-pro",
+    "video-mme",
+    "mvbench",
+    "tempcompass"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-20",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-20",
+    "sources": [
+      {
+        "id": "arxiv-2501-13826",
+        "kind": "paper",
+        "title": "Video-MMMU: Evaluating Knowledge Acquisition from Multi-Discipline Professional Videos（arXiv v1）",
+        "url": "https://arxiv.org/abs/2501.13826",
+        "accessed": "2026-11-20"
+      },
+      {
+        "id": "anthology",
+        "kind": "paper",
+        "title": "Video-MMMU: Evaluating Knowledge Acquisition from Multidisciplinary Professional Videos（ACL Anthology, ACL 2026 Main）",
+        "url": "https://aclanthology.org/2026.acl-long.1281/",
+        "accessed": "2026-11-20"
+      },
+      {
+        "id": "videommmu",
+        "kind": "site",
+        "title": "Video-MMMU 项目主页（含榜单、题型统计与各学科 QA 样例）",
+        "url": "https://videommmu.github.io/",
+        "accessed": "2026-11-20"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "EvolvingLMMs-Lab/VideoMMMU（官方代码仓库 README）",
+        "url": "https://github.com/EvolvingLMMs-Lab/VideoMMMU",
+        "accessed": "2026-11-20"
+      },
+      {
+        "id": "dataset",
+        "kind": "dataset",
+        "title": "lmms-eval/VideoMMMU（Hugging Face 数据集卡，含榜单快照）",
+        "url": "https://huggingface.co/datasets/lmms-eval/VideoMMMU",
+        "accessed": "2026-11-20"
+      },
+      {
+        "id": "blog-products-and-platforms-p",
+        "kind": "blog",
+        "title": "Introducing Gemini 3（Google 官方博客，第三方自报 Video-MMMU 成绩）",
+        "url": "https://blog.google/products-and-platforms/products/gemini/gemini-3/",
+        "accessed": "2026-11-20"
+      },
+      {
+        "id": "minimax-blog-minimax-m3",
+        "kind": "blog",
+        "title": "MiniMax M3 技术博客（第三方自报 VideoMMMU 测试配置）",
+        "url": "https://www.minimax.io/blog/minimax-m3",
+        "accessed": "2026-11-20"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "南洋理工大学 S-Lab 与卡内基梅隆大学（论文署名机构）；ACL 2026 主会发表，出版方 Association for Computational Linguistics",
+        "cite": [
+          "videommmu",
+          "anthology"
+        ]
+      },
+      "first_release": {
+        "v": "2025-01-23（arXiv v1:2501.13826 首次公开，Hugging Face 数据集同日发布）",
+        "cite": [
+          "arxiv-2501-13826",
+          "dataset"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "videommmu@Overview",
+        "arxiv-2501-13826@§3.2.1"
+      ],
+      "interpretation": [
+        "videommmu@Overview",
+        "arxiv-2501-13826@§5.1",
+        "arxiv-2501-13826@§5.2",
+        "repo@README"
+      ]
+    },
+    "problem": {
+      "text": "论文发布时的视频基准（Video-MME、MMBench-Video、Video-Bench、TempCompass、MVBench）题目短、知识密度低，只回答「看得懂画面吗」；Video-MMMU 用专业教学视频加三段式提问，把「从视频里学到东西」从「本来就会」里分离出来，并且直接用更长的知识驱动型题目来拉开差距。",
+      "cite": [
+        "arxiv-2501-13826@§1",
+        "arxiv-2501-13826@§3.3"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机猜测（Random Choice）",
+        "value": "14.00",
+        "note": "论文 Table 2 的 Overall 基线",
+        "cite": [
+          "arxiv-2501-13826@Table 2"
+        ]
+      },
+      {
+        "label": "人类专家（高年级本科生）",
+        "value": "74.44",
+        "note": "论文 Table 2 Overall；同批人类 Δknowledge 为 33.1%",
+        "cite": [
+          "arxiv-2501-13826@Table 2",
+          "arxiv-2501-13826@§5.2"
+        ]
+      },
+      {
+        "label": "论文发布时最强模型",
+        "value": "65.78",
+        "note": "Claude-3.5-Sonnet Overall，仍低于人类专家",
+        "cite": [
+          "arxiv-2501-13826@Table 2",
+          "arxiv-2501-13826@§4.2.1"
+        ]
+      },
+      {
+        "label": "官方榜单当前最高",
+        "value": "84.6",
+        "note": "官网榜单 GPT-5-thinking Overall；该行未公布各赛道细分与 Δknowledge",
+        "cite": [
+          "videommmu@Leaderboard"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "「Video-MMMU 就是考看懂视频」——不对。核心读数是 Δknowledge，即看完视频后相对看视频前的归一化增益；Overall 高不等于从视频里学到了东西。",
+        "cite": [
+          "arxiv-2501-13826@§5.1",
+          "arxiv-2501-13826@§5.2"
+        ]
+      },
+      {
+        "text": "「不同来源的 Overall 可以直接比大小」——官网榜单、Hugging Face 数据集卡（2025-02-07 快照）和论文 Table 2 是三个时间点的不同子集，帧数与是否追加音频转写也可能不同。",
+        "cite": [
+          "videommmu@Leaderboard",
+          "dataset",
+          "arxiv-2501-13826@§4.1"
+        ]
+      },
+      {
+        "text": "「分数低等于感知能力差」——模型在感知赛道相对最好，成绩随认知要求上升而下降，适配赛道多数模型不到 50%；低分主要来自知识迁移失败，不是看不清画面。",
+        "cite": [
+          "videommmu@Overview",
+          "arxiv-2501-13826@§4.2.1"
+        ]
+      },
+      {
+        "text": "「题目全部来自全新题库」——科学、工程、医学、商业四个方向的适配题直接取自已公开的 MMMU 与 MMMU-Pro 大学考题。",
+        "cite": [
+          "arxiv-2501-13826@§3.2.2"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "核心作者",
+        "v": "Kairui Hu、Penghao Wu、Fanyi Pu、Wang Xiao、Xiang Yue、Bo Li、Yuanhan Zhang、Ziwei Liu。",
+        "cite": [
+          "videommmu",
+          "anthology"
+        ]
+      },
+      {
+        "k": "发表时间线",
+        "v": "2025-01-23 arXiv v1 公开；2026 年 7 月收录于 ACL 2026 主会（Proceedings of the 64th Annual Meeting of the ACL, Volume 1: Long Papers），页码 27798–27828，DOI 10.18653/v1/2026.acl-long.1281。",
+        "cite": [
+          "arxiv-2501-13826",
+          "anthology"
+        ]
+      },
+      {
+        "k": "数据与代码位置",
+        "v": "数据集在 Hugging Face lmms-eval/VideoMMMU；官方代码仓库 EvolvingLMMs-Lab/VideoMMMU。",
+        "cite": [
+          "dataset",
+          "repo@README"
+        ]
+      },
+      {
+        "k": "评测框架与任务名",
+        "v": "评测并入 LMMs-Eval，任务名为 video_mmmu、video_mmmu_perception、video_mmmu_comprehension、video_mmmu_adaptation，以及用于 Δknowledge 基线的 video_mmmu_adaptation_question_only。",
+        "cite": [
+          "repo@README"
+        ]
+      },
+      {
+        "k": "视频来源与版权",
+        "v": "视频为网络讲座外链，版权归原作者与频道所有者；数据集卡声明官方不拥有链接内容权利。",
+        "cite": [
+          "dataset"
+        ]
+      },
+      {
+        "k": "结果提交方式",
+        "v": "官网与仓库都要求把结果发邮件到 videommmu2025@gmail.com，没有公开的在线提交入口。",
+        "cite": [
+          "videommmu@Leaderboard",
+          "repo@README"
+        ]
+      },
+      {
+        "k": "第三方引用",
+        "v": "Google 在 Gemini 3 公告中报出 Video-MMMU 87.6%（未说明测试口径，也未进入官方榜单）；MiniMax 在 M3 博客中给出自报的帧率与判分配置。",
+        "cite": [
+          "blog-products-and-platforms-p",
+          "minimax-blog-minimax-m3"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2025-02-07",
+        "columns": [
+          "模型",
+          "Overall",
+          "Perception",
+          "Comprehension",
+          "Adaptation",
+          "Δknowledge"
+        ],
+        "rows": [
+          [
+            "Human Expert",
+            "74.44",
+            "84.33",
+            "78.67",
+            "60.33",
+            "+33.1"
+          ],
+          [
+            "Claude-3.5-Sonnet",
+            "65.78",
+            "72.00",
+            "69.67",
+            "55.67",
+            "+11.4"
+          ],
+          [
+            "GPT-4o",
+            "61.22",
+            "66.00",
+            "62.00",
+            "55.67",
+            "+15.6"
+          ],
+          [
+            "Qwen-2.5-VL-72B",
+            "60.22",
+            "69.33",
+            "61.00",
+            "50.33",
+            "+9.7"
+          ],
+          [
+            "Gemini 1.5 Pro",
+            "53.89",
+            "59.00",
+            "53.33",
+            "49.33",
+            "+8.7"
+          ],
+          [
+            "Aria",
+            "50.78",
+            "65.67",
+            "46.67",
+            "40.00",
+            "+3.2"
+          ],
+          [
+            "Gemini 1.5 Flash",
+            "49.78",
+            "57.33",
+            "49.00",
+            "43.00",
+            "-3.3"
+          ],
+          [
+            "LLaVA-Video-72B",
+            "49.67",
+            "59.67",
+            "46.00",
+            "43.33",
+            "+7.1"
+          ],
+          [
+            "LLaVA-OneVision-72B",
+            "48.33",
+            "59.67",
+            "42.33",
+            "43.00",
+            "+6.6"
+          ],
+          [
+            "Qwen-2.5-VL-7B",
+            "47.44",
+            "58.33",
+            "44.33",
+            "39.67",
+            "+2.2"
+          ],
+          [
+            "mPLUG-Owl3-7B",
+            "42.00",
+            "49.33",
+            "38.67",
+            "38.00",
+            "+7.5"
+          ],
+          [
+            "MAmmoTH-VL-8B",
+            "41.78",
+            "51.67",
+            "40.00",
+            "33.67",
+            "+1.5"
+          ],
+          [
+            "InternVL2-8B",
+            "37.44",
+            "47.33",
+            "33.33",
+            "31.67",
+            "-8.5"
+          ],
+          [
+            "LLaVA-Video-7B",
+            "36.11",
+            "41.67",
+            "33.33",
+            "33.33",
+            "-5.3"
+          ],
+          [
+            "VILA1.5-40B",
+            "34.00",
+            "38.67",
+            "30.67",
+            "32.67",
+            "+9.4"
+          ],
+          [
+            "Llama-3.2-11B",
+            "30.00",
+            "35.67",
+            "32.33",
+            "22.00",
+            null
+          ],
+          [
+            "LongVA-7B",
+            "23.98",
+            "24.00",
+            "24.33",
+            "23.67",
+            "-7.0"
+          ],
+          [
+            "VILA1.5-8B",
+            "20.89",
+            "20.33",
+            "17.33",
+            "25.00",
+            "+5.9"
+          ]
+        ]
+      },
+      "cite": [
+        "dataset"
+      ]
+    }
+  }
 }

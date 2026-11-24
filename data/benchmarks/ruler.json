@@ -1,30 +1,314 @@
 {
   "id": "ruler",
   "name": "RULER",
-  "full_name": null,
+  "full_name": "RULER: What's the Real Context Size of Your Long-Context Language Models?",
   "aliases": [],
-  "status": null,
+  "status": "active",
   "categories": [
     "longctx"
   ],
-  "summary": "13 任务长上下文有效长度（检索/聚合/多跳），比 NIAH 严格",
-  "interpretation": "NIAH 的严格版：13 种长文任务（聚合/多跳/推理）。很多宣称 128k 的模型在这里 32k 就露馅。",
-  "measures": [],
-  "does_not_measure": [],
+  "summary": "RULER 是 NVIDIA 2024 年开源的合成长上下文基准：把「在一大段干扰文本里找出指定信息」（NIAH）这件测试扩展成 13 个任务，分成检索、多跳追踪、聚合、问答四类，在 4K–128K 六个长度档上各跑 500 个样本，回答一个问题——模型宣称自己能读多长，真正好用的是多长。",
+  "interpretation": "高分说明模型在受控合成长文本里既找得到、又数得准、还追得住变量链；它不说明真实长文档任务（摘要、跨文档推理）也能做好——论文明确说它不该被置于 NoCHA 等更真实设定之上。核心用法是拿 Llama2-7B 在 4K 的 85.6% 当及格线，看模型在哪个长度档跌破它，这个长度叫「有效上下文长度」，通常远低于厂商宣称值。",
+  "measures": [
+    {
+      "area": "检索（NIAH 扩展，8/13 项配置）",
+      "focus": "从长干扰文本里按查询找出键值对：键可为单词、7 位数字或 32 位 UUID，值可为数字或 UUID；干扰文本用 Paul Graham 散文或重复噪声句。难度沿三个方向加：更多干扰针（MK-NIAH）、同一键多个值（MV-NIAH）、多个查询（MQ-NIAH），另含全文都是干扰针的行检索与 KV 检索。示例查询形如 \"What is the special magic number for long-context mentioned in the provided text?\"",
+      "share": "论文未给出类别占比；按论文表 5 清点，13 项配置中检索占 8 项",
+      "format": "精确匹配（目标输出出现在回答里即算对）",
+      "cite": [
+        "paper@§3.1",
+        "paper@附录 B"
+      ]
+    },
+    {
+      "area": "多跳追踪（VT，1/13）",
+      "focus": "变量追踪：X1 初始化一个值 V，随后是一条 X2=X1、X3=X2 这样的绑定语句链散落在长文各处，要求返回所有指向同一个值的变量名；主表配置为 1 条链、4 次跳转，共需返回 5 个变量名",
+      "share": "1/13（按论文表 5 清点）",
+      "format": "精确匹配（变量名集合）",
+      "cite": [
+        "paper@§3.2",
+        "paper@附录 B"
+      ]
+    },
+    {
+      "area": "聚合（CWE / FWE，2/13）",
+      "focus": "在合成词表文本里数词频：CWE 从离散均匀分布取词，返回 10 个高频词（每个出现 30 次，非高频词各 3 次）；FWE 按 Zeta 分布（α=2.0）取词，返回词频前 3",
+      "share": "2/13（按论文表 5 清点）",
+      "format": "精确匹配（词集合）",
+      "cite": [
+        "paper@§3.3",
+        "paper@附录 B"
+      ]
+    },
+    {
+      "area": "问答（QA，2/13）",
+      "focus": "把含答案的金标段落插进从同一数据集随机抽取的干扰段落里，文档数量随目标上下文长度增长；论文称这是 NIAH 的真实场景改编版，问题即查询、金标段落即针、干扰段落即 haystack",
+      "share": "2/13（按论文表 5 清点）",
+      "format": "精确匹配 + 召回式判定",
+      "cite": [
+        "paper@§3.4",
+        "paper@附录 B"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "真实长文档任务（摘要、跨文档推理、指令跟随）。VT 与 FWE 只是代理任务，论文承认无法验证这些代理的有效性，并明确说 RULER 不应当被置于 NoCHA 等更真实设定之上",
+      "cite": [
+        "paper@§8",
+        "repo@README Limitations"
+      ]
+    },
+    {
+      "text": "短上下文能力。任务选的都是 4K 下多数模型还能做好的，论文提醒这不能被误读成「4K 时能力完美」",
+      "cite": [
+        "paper@§8"
+      ]
+    },
+    {
+      "text": "关键信息在文中位置带来的性能差异（lost-in-the-middle）。当前每个长度只报一个总分，不报深度维度",
+      "cite": [
+        "paper@§8"
+      ]
+    },
+    {
+      "text": "提示格式与超参鲁棒性。论文只做了早期阶段的初步测试，没有做系统研究",
+      "cite": [
+        "paper@§8"
+      ]
+    }
+  ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
+    "sample_count": 500,
+    "splits": [
+      "按目标上下文长度分 6 档：4K / 8K / 16K / 32K / 64K / 128K，每档、每任务 500 个样本",
+      "论文未披露独立的 train / val / test 划分"
+    ],
+    "languages": [
+      "en（干扰文本为 Paul Graham 英文散文；QA 用英文数据集 SQuAD / HotpotQA；论文未设语言字段）"
+    ],
+    "source_type": "synthetic（按目标序列长度与任务复杂度现场生成的合成样本，不依赖固定语料库）",
+    "public_sample": true,
+    "totals": "13 个任务配置 × 6 个长度档 × 500 例 = 39,000 例/模型（4K–128K）；其中检索 8 项、多跳追踪 1 项、聚合 2 项、问答 2 项（按论文表 5 清点）",
+    "cite": [
+      "paper@§4",
+      "paper@附录 B"
+    ],
+    "construction": [
+      {
+        "k": "先定任务族",
+        "text": "四类任务：检索（扩展 NIAH）、多跳追踪、聚合、问答；论文用相关性研究从候选配置里聚类筛掉冗余，保留 13 个代表性配置",
+        "cite": [
+          "paper@附录 B"
+        ]
+      },
+      {
+        "k": "造干扰文本",
+        "text": "haystack 用 Paul Graham 散文或重复噪声句（\"The grass is green. The sky is blue. The sun is yellow. Here we go. There and back again.\"），长度随目标上下文档位伸缩",
+        "cite": [
+          "paper@§3.1"
+        ]
+      },
+      {
+        "k": "造针",
+        "text": "针是键值对；查询放在序列末尾，作为匹配键、取回值的线索",
+        "cite": [
+          "paper@§3.1"
+        ]
+      },
+      {
+        "k": "加多跳与聚合难度",
+        "text": "VT 把 X2=X1、X3=X2 这类绑定语句插到输入各处；CWE / FWE 从预定义合成词表按均匀 / Zeta 分布取词，靠词频差异制造聚合难度",
+        "cite": [
+          "paper@§3.2",
+          "paper@§3.3"
+        ]
+      },
+      {
+        "k": "问答注入",
+        "text": "把含答案的金标段落插入从同一数据集随机抽取的干扰段落中，文档数量随长度增加",
+        "cite": [
+          "paper@§3.4"
+        ]
+      },
+      {
+        "k": "按模型 tokenizer 生成",
+        "text": "论文口径：每个任务、每个长度用该模型自己的 tokenizer 生成 500 个样本，并套用各模型必要的 chat template；RULERv2 分支同样要求按模型 tokenizer 生成数据",
+        "cite": [
+          "paper@§4",
+          "repo-ruler-v2@README"
+        ]
+      }
+    ]
   },
-  "metrics": [],
   "default_protocol": {
-    "raw": "声称 128k 的模型常在 32k 就掉分"
+    "raw": "用 vLLM 推理，BFloat16、8×NVIDIA A100、greedy decoding；每个任务每个长度 500 个样本，套各模型自己的 chat template；在任务输入末尾追加 answer prefix，防止模型拒答或展开解释；判定用召回式准确率——目标输出出现在模型回答里即算对。",
+    "cite": [
+      "paper@§4"
+    ],
+    "variants": [
+      {
+        "text": "仓库排行榜混入其他论文作者自报的结果（Jamba-1.5-large、FILM-7B、Qwen2.5-1M、Qwen3、EXAONE 4.0），口径与 NVIDIA 自己跑的分数不一定一致；榜首 Jamba-1.5-large 的 96.0 即来自 AI21 的报告",
+        "cite": [
+          "repo@README Notes",
+          "repo@README"
+        ]
+      },
+      {
+        "text": "评测流水线已迁到 NeMo-Skills：官方提示 RULERv1 走 rulerv1-ns 分支、RULERv2 走 rulerv2-ns 分支，README 里的 docker 流程已标注 deprecated，与论文主分支不是同一套",
+        "cite": [
+          "repo@README Updates",
+          "repo-ruler-v2@README"
+        ]
+      },
+      {
+        "text": "论文主表只覆盖 17 个模型、最长 128K；仓库榜新增了 1M 级模型，两者的有效长度结论不能直接对齐",
+        "cite": [
+          "paper@§4",
+          "repo@README"
+        ]
+      },
+      {
+        "text": "RULERv2 分支要求 tokens_to_generate=16384、temperature=0.0、top_p=1.0，并由 vLLM / SGLang / TensorRT-LLM 之一提供服务，与论文的 8×A100 设置不同",
+        "cite": [
+          "repo-ruler-v2@README"
+        ]
+      }
+    ]
   },
-  "versions": [],
-  "limitations": [],
-  "notes": "思想被长上下文评测吸收，但无厂商点名引用——回避原因：易暴露有效长度短板",
+  "metrics": [
+    {
+      "id": "accuracy",
+      "name": "准确率（13 任务平均）",
+      "direction": "越高越好",
+      "description": "每个长度档下 13 个任务的平均正确率；用召回式判定，目标输出出现在模型回答里即算对",
+      "range": "0–100",
+      "unit": "percent（%）",
+      "cite": [
+        "paper@Table 3",
+        "paper@§4"
+      ]
+    },
+    {
+      "id": "effective-length",
+      "name": "有效上下文长度",
+      "direction": "越高越好",
+      "description": "分数不低于 Llama2-7B 在 4K 的 85.6% 的最大长度档；以长度档（4K–128K）而不是分数计",
+      "range": "4K–128K",
+      "unit": "长度档",
+      "cite": [
+        "paper@§4",
+        "paper@Table 3"
+      ]
+    },
+    {
+      "id": "wavg-inc",
+      "name": "加权平均 wAvg. (inc)",
+      "direction": "越高越好",
+      "description": "跨所有长度档的加权平均分，权重随序列长度线性上升，模拟偏长输入的真实使用分布",
+      "range": "0–100",
+      "unit": "percent（%）",
+      "cite": [
+        "paper@§4"
+      ]
+    },
+    {
+      "id": "wavg-dec",
+      "name": "加权平均 wAvg. (dec)",
+      "direction": "越高越好",
+      "description": "同上但权重随序列长度线性下降，模拟偏短输入的使用分布",
+      "range": "0–100",
+      "unit": "percent（%）",
+      "cite": [
+        "paper@§4"
+      ]
+    }
+  ],
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2024-04-09",
+      "label": "arXiv v1 首次提交",
+      "cite": [
+        "paper@Submission history"
+      ]
+    },
+    {
+      "id": "v3",
+      "date": "2024-08-06",
+      "label": "arXiv v3，COLM 2024 会议版（本档案核对所用版本）",
+      "cite": [
+        "paper@Submission history"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "合成任务与真实长文档脱节",
+      "impact": "VT / FWE 是摘要、指代消解的代理任务，论文承认无法验证这些代理的有效性，并明确说 RULER 不应当被置于 NoCHA 等更真实设定之上；README 也说它「绝不是全面到能替代更受偏好的真实任务」",
+      "severity": "高",
+      "response": "论文与 README 都主动声明这一边界，并欢迎社区贡献新任务或新任务类别；未见官方发布真实任务版本",
+      "reader": "把 RULER 当长上下文行为体检，不要当成长文档理解的总评",
+      "cite": [
+        "paper@§8",
+        "repo@README Limitations"
+      ]
+    },
+    {
+      "issue": "有效长度阈值依赖单一基线",
+      "impact": "及格线固定在 Llama2-7B 在 4K 的 85.6%；换基线会让所有模型的有效长度结论整体移动，而 85.6% 这个选择没有给出敏感性分析",
+      "severity": "中",
+      "response": "论文同时给出 wAvg. (inc) / (dec) 两套加权平均补细粒度比较；未见对阈值敏感性的分析",
+      "reader": "跨论文比较有效长度前，先确认对方用的是不是同一条 85.6% 及格线",
+      "cite": [
+        "paper@§4",
+        "paper@Table 3"
+      ]
+    },
+    {
+      "issue": "榜单混用第三方自报结果",
+      "impact": "Jamba-1.5-large、FILM-7B、Qwen2.5-1M、Qwen3、EXAONE 4.0 的结果由其他论文作者提供，例如 FILM-7B 在超过 32K 的长度用 YaRN 且 CWE 不用 one-shot 示例，与 NVIDIA 自跑口径可能不一致；当前榜首 96.0 即来自 AI21 的报告",
+      "severity": "中",
+      "response": "README 的 Notes 逐条标注这些结果的出处；未见统一重跑",
+      "reader": "看榜时区分星号条目与 NVIDIA 自跑条目，不要跨口径直接排名",
+      "cite": [
+        "repo@README Notes",
+        "repo@README"
+      ]
+    },
+    {
+      "issue": "公开语料可能带来污染",
+      "impact": "干扰文本用公开可下载的 Paul Graham 散文，问答用公开的 SQuAD / HotpotQA；论文没有报告去污流程，也没有设留存集，因此不能排除 haystack 或题目已进入训练数据",
+      "severity": "中",
+      "response": "论文强调合成任务按需生成、针是随机插入的；未见针对污染的专门处理",
+      "reader": "宣称 128K 有效的闭源模型若未披露去污，分数要留余地",
+      "cite": [
+        "paper@§3.1",
+        "paper@§3.4"
+      ]
+    },
+    {
+      "issue": "无位置 / 深度维度",
+      "impact": "每个长度只报一个总分，报不出 lost-in-the-middle 这类随针位置变化的性能曲线",
+      "severity": "中",
+      "response": "论文称计划在代码库里支持关键信息的位置控制；未见发布",
+      "reader": "有效长度合格不代表模型在长文中段同样可靠",
+      "cite": [
+        "paper@§8"
+      ]
+    },
+    {
+      "issue": "提示词与超参鲁棒性未验证",
+      "impact": "论文只做了早期阶段的初步测试，未系统研究提示格式敏感性；VT 变量名长度、CWE / FWE 词表大小等固定超参也没有充分实验",
+      "severity": "低",
+      "response": "论文在 Limitations 中如实列出；未见后续补充",
+      "reader": "换一套提示词复现时，分数可能整体移动",
+      "cite": [
+        "paper@§8"
+      ]
+    }
+  ],
+  "notes": "README 自述「benchmark 17 open-source models」，与论文「17 个长上下文 LLM（含 15 个开源 + 2 个闭源：Gemini-1.5-Pro 与 GPT-4）」口径不一致；仓库表格实际列出的模型远多于 17 个。另需注意 README 声明本项目「不是 NVIDIA 的官方产品」，尽管仓库位于 NVIDIA 组织下。",
   "official_sources": [
     {
       "kind": "site",
@@ -39,6 +323,390 @@
     "niah",
     "longbench"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-28"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-24",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-24",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "RULER: What's the Real Context Size of Your Long-Context Language Models?（arXiv:2404.06654v3，COLM 2024）",
+        "url": "https://arxiv.org/abs/2404.06654",
+        "accessed": "2026-11-24"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "NVIDIA/RULER 仓库 README（含结果榜单与 Notes）",
+        "url": "https://github.com/NVIDIA/RULER",
+        "accessed": "2026-11-24"
+      },
+      {
+        "id": "repo-ruler-v2",
+        "kind": "repo",
+        "title": "NVIDIA/RULER 仓库 rulerv2-ns 分支 README（RULERv2 NeMo-Skills 评测）",
+        "url": "https://raw.githubusercontent.com/NVIDIA/RULER/rulerv2-ns/README.md",
+        "accessed": "2026-11-24"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "NVIDIA",
+        "cite": [
+          "paper@标题页"
+        ]
+      },
+      "first_release": {
+        "v": "2024-04-09（arXiv v1）",
+        "cite": [
+          "paper@Submission history"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "paper@Abstract",
+        "repo@README"
+      ],
+      "interpretation": [
+        "paper@§4",
+        "paper@§8"
+      ]
+    },
+    "problem": {
+      "text": "vanilla NIAH 只测「一条针、一个查询」的单点检索，模型刷到接近满分也说明不了长文本理解；真实长文档基准又没法自由控制长度与难度。RULER 用纯合成任务把针的数量、类型、分布和序列长度都变成可调参数，从而在已知上界的行为体检里定位模型的真实有效长度。",
+      "cite": [
+        "paper@§1",
+        "paper@Abstract"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机 / 人类基线",
+        "value": "论文未给出",
+        "note": "RULER 为合成任务，论文未报告人类表现或随机基线",
+        "cite": [
+          "paper@§4"
+        ]
+      },
+      {
+        "label": "及格线（有效长度阈值）",
+        "value": "85.6",
+        "note": "Llama2-7B 在 4K 的分数；低于它的长度不计入有效上下文长度",
+        "cite": [
+          "paper@§4"
+        ]
+      },
+      {
+        "label": "论文发布时最好成绩",
+        "value": "95.5（wAvg. inc）/ 96.1（wAvg. dec）",
+        "note": "Gemini-1.5-Pro，论文表 3 中两套加权平均均列第 1；GPT-4 为第 2",
+        "cite": [
+          "paper@Table 3"
+        ]
+      },
+      {
+        "label": "官方榜单当前最高 Avg.",
+        "value": "96.0",
+        "note": "Jamba-1.5-large*（AI21 自报），2026-11-24 抓取的 README 榜单",
+        "cite": [
+          "repo@README"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "「宣称 128K 就能用到 128K」。论文表 3 里 17 个模型只有 Gemini-1.5-Pro 的有效长度超过 128K，多数模型在 32K–64K 就跌破及格线",
+        "cite": [
+          "paper@Table 3",
+          "paper@§1"
+        ]
+      },
+      {
+        "text": "「NIAH 满分等于长上下文没问题」。摘要与 README 都指出：vanilla NIAH 接近满分，RULER 上仍随长度大幅退化",
+        "cite": [
+          "repo@README",
+          "paper@Abstract"
+        ]
+      },
+      {
+        "text": "「4K 分数高说明 4K 能力完美」。论文明确说任务选的是 4K 下多数模型还能做好的，不能反推短上下文能力",
+        "cite": [
+          "paper@§8"
+        ]
+      },
+      {
+        "text": "「仓库榜单第一就是当前最强」。榜首 Jamba-1.5-large 的分数由 AI21 自己报告，且榜单含多家厂商自报结果，口径不统一",
+        "cite": [
+          "repo@README Notes"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "核心作者",
+        "v": "Cheng-Ping Hsieh、Simeng Sun、Samuel Kriman、Shantanu Acharya、Dima Rekesh、Fei Jia、Yang Zhang、Boris Ginsburg",
+        "cite": [
+          "repo@README Citation"
+        ]
+      },
+      {
+        "k": "发表位置",
+        "v": "COLM 2024 会议论文；arXiv:2404.06654，v3 为 2024-08-06 修订的 camera-ready",
+        "cite": [
+          "paper@Submission history"
+        ]
+      },
+      {
+        "k": "代码与数据位置",
+        "v": "github.com/NVIDIA/RULER（主分支含旧 docker 流程，README 已标 deprecated）；RULERv1 / RULERv2 评测分别迁至 rulerv1-ns 与 rulerv2-ns 分支，经 NeMo-Skills 运行",
+        "cite": [
+          "repo@README Updates",
+          "repo-ruler-v2@README"
+        ]
+      },
+      {
+        "k": "与 NIAH 的关系",
+        "v": "RULER 保留 vanilla NIAH 作为其中一类检索任务，并把针的类型、数量、分布变成可调参数；README 明确说多数模型在 NIAH 上接近满分，在 RULER 上随长度大幅退化",
+        "cite": [
+          "repo@README",
+          "paper@§3.1"
+        ]
+      },
+      {
+        "k": "后续基准",
+        "v": "官方已把评测迁到 RULERv2（NeMo-Skills，rulerv2-ns 分支），可用 vLLM / SGLang / TensorRT-LLM 推理",
+        "cite": [
+          "repo-ruler-v2@README"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-24",
+        "columns": [
+          "模型",
+          "宣称长度",
+          "有效长度",
+          "4K",
+          "8K",
+          "16K",
+          "32K",
+          "64K",
+          "128K",
+          "Avg.",
+          "wAvg. (inc)",
+          "wAvg. (dec)",
+          "来源"
+        ],
+        "rows": [
+          [
+            "Llama2 (7B)",
+            "4K",
+            "",
+            "85.6",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "README 榜单首行（及格线参照）"
+          ],
+          [
+            "Jamba-1.5-large* (94B/398B)",
+            "256k",
+            ">128k",
+            "96.7",
+            "96.6",
+            "96.4",
+            "96.0",
+            "95.4",
+            "95.1",
+            "96.0",
+            "95.7 (1st)",
+            "96.3 (1st)",
+            "AI21 报告自报（README Notes）"
+          ],
+          [
+            "Gemini-1.5-pro",
+            "1M",
+            ">128K",
+            "96.7",
+            "95.8",
+            "96.0",
+            "95.9",
+            "95.9",
+            "94.4",
+            "95.8",
+            "95.5 (2nd)",
+            "96.1 (2nd)",
+            "README 榜单"
+          ],
+          [
+            "Qwen2.5-14B-Instruct-1M* (14B)",
+            "1M",
+            ">128K",
+            "97.5",
+            "97.1",
+            "94.6",
+            "94.9",
+            "94.9",
+            "92.2",
+            "95.7",
+            "TBD",
+            "TBD",
+            "Qwen2.5-1M 论文自报（README Notes）"
+          ],
+          [
+            "Qwen3-235B-A22B* (235B)",
+            "128K",
+            ">128K",
+            "97.7",
+            "97.2",
+            "96.4",
+            "95.1",
+            "93.3",
+            "90.6",
+            "95.0",
+            "TBD",
+            "TBD",
+            "Qwen3 论文自报（README Notes）"
+          ],
+          [
+            "Qwen3-14B* (14B)",
+            "128K",
+            ">128K",
+            "98.0",
+            "97.8",
+            "96.4",
+            "96.1",
+            "94.0",
+            "85.1",
+            "94.6",
+            "TBD",
+            "TBD",
+            "Qwen3 论文自报（README Notes）"
+          ],
+          [
+            "Jamba-1.5-mini (12B/52B)",
+            "256K",
+            ">128K",
+            "95.6",
+            "95.6",
+            "94.8",
+            "94.6",
+            "92.8",
+            "90.0",
+            "93.9",
+            "93.1 (3rd)",
+            "94.8 (3rd)",
+            "README 榜单"
+          ],
+          [
+            "Qwen3-32B* (32B)",
+            "128K",
+            ">128K",
+            "98.4",
+            "96.0",
+            "96.2",
+            "94.4",
+            "91.8",
+            "85.6",
+            "93.7",
+            "TBD",
+            "TBD",
+            "Qwen3 论文自报（README Notes）"
+          ],
+          [
+            "EXAONE-4.0-32B* (32B)",
+            "128K",
+            ">128K",
+            "96.3",
+            "94.9",
+            "93.9",
+            "93.6",
+            "91.7",
+            "88.2",
+            "93.1",
+            "TBD",
+            "TBD",
+            "EXAONE 4.0 论文自报（README Notes）"
+          ],
+          [
+            "Qwen2.5-7B-Instruct-1M* (7B)",
+            "1M",
+            ">128K",
+            "96.8",
+            "95.3",
+            "93.0",
+            "91.1",
+            "90.4",
+            "84.4",
+            "91.8",
+            "TBD",
+            "TBD",
+            "Qwen2.5-1M 论文自报（README Notes）"
+          ],
+          [
+            "Qwen3-30B-A3B* (30B)",
+            "128K",
+            "64K",
+            "96.5",
+            "97.0",
+            "95.3",
+            "92.4",
+            "89.1",
+            "79.2",
+            "91.6",
+            "TBD",
+            "TBD",
+            "Qwen3 论文自报（README Notes）"
+          ],
+          [
+            "GPT-4-1106-preview",
+            "128K",
+            "64K",
+            "96.6",
+            "96.3",
+            "95.2",
+            "93.2",
+            "87.0",
+            "81.2",
+            "91.6",
+            "89.0 (4th)",
+            "94.1 (4th)",
+            "README 榜单"
+          ],
+          [
+            "Llama3.1 (70B)",
+            "128K",
+            "64K",
+            "96.5",
+            "95.8",
+            "95.4",
+            "94.8",
+            "88.4",
+            "66.6",
+            "89.6",
+            "85.5 (10th)",
+            "93.7 (5th)",
+            "README 榜单"
+          ]
+        ]
+      },
+      "cite": [
+        "repo@README",
+        "paper@Table 3"
+      ]
+    }
+  }
 }

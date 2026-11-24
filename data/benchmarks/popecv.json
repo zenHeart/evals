@@ -1,33 +1,361 @@
 {
   "id": "popecv",
   "name": "POPE",
-  "full_name": null,
-  "aliases": [],
+  "full_name": "Polling-based Object Probing Evaluation for Object Hallucination",
+  "aliases": [
+    "Polling-based Object Probing Evaluation"
+  ],
   "status": null,
   "categories": [
     "multimodal"
   ],
-  "summary": "视觉幻觉检测（图中无物问有）",
-  "interpretation": "问模型“图里有没有 X”（其实没有）。答“有”就是视觉幻觉。简单但致命的照妖镜。",
-  "measures": [],
-  "does_not_measure": [],
+  "summary": "POPE 把「模型有没有凭空看出一个物体」变成几千道封闭式是否题：给一张图，用模板问「图里有某个物体吗」，问图里真有物体的题答案是 Yes，问图里没有的物体的题答案是 No，两类按 1:1 配平，模型只答 Yes/No。论文用它测了 5 个当时的视觉语言模型，发现它们的物体幻觉比更小的视觉模型还严重。",
+  "interpretation": "F1 越高，说明模型越少把不存在的物体说成有。但必须和 Yes ratio 一起读：正负样本 1:1 时，任何问题都答「有」的平凡解 F1 就是 66.7（论文表 3 里 MultiModal-GPT 几乎正落在这条线上：Yes ratio 100.00、F1 66.67），所以「F1 不低 + Yes ratio 接近 100%」不等于看得准，反而说明它几乎对每个问题都回答「有」。",
+  "measures": [
+    {
+      "area": "Random 负采样（基础档）",
+      "focus": "负样本物体从图中不存在的物体里随机抽取，衡量模型基础的存在性判断",
+      "share": "三种设定之一",
+      "format": "Yes/No 封闭题",
+      "cite": [
+        "paper@§5.1 Overview of POPE"
+      ]
+    },
+    {
+      "area": "Popular 负采样（常见物体）",
+      "focus": "负样本取整个数据集中出现频次最高的 k=2l 个图中不存在的物体，专测「偏爱常见物体」的偏见",
+      "share": "三种设定之一",
+      "format": "Yes/No 封闭题",
+      "cite": [
+        "paper@§5.1 Overview of POPE"
+      ]
+    },
+    {
+      "area": "Adversarial 负采样（共现物体）",
+      "focus": "负样本取与图中真实物体共现频次最高的物体，是三档里最难的一档",
+      "share": "三种设定之一",
+      "format": "Yes/No 封闭题",
+      "cite": [
+        "paper@§5.1 Overview of POPE"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "属性、数量、位置等细粒度幻觉——论文明确只研究粗粒度的物体级幻觉",
+      "cite": [
+        "paper@§2.2 Object Hallucination"
+      ]
+    },
+    {
+      "text": "开放式生成质量与视觉问答能力——POPE 只判 Yes/No 是否答对；论文说本任务衡量不了 LVLM 的整体表现，且幻觉程度与 VQA 表现并不总一致",
+      "cite": [
+        "paper@§7 Limitations",
+        "paper@§5.4 Impact of Hallucination on Vision Tasks"
+      ]
+    }
+  ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
+    "sample_count": 3000,
+    "splits": [
+      "POPE 题库：MSCOCO 验证集抽 500 张图，每张 6 个是否题（Random / Popular / Adversarial 三种负采样各建一套）",
+      "caption / CHAIR 对比用图：论文从 MSCOCO 验证集随机抽 2,000 张带物体标注与人工 caption 的图"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "MSCOCO 验证集的人工物体标注（另提供 SEEM 自动分割标注）",
+    "public_sample": true,
+    "totals": "500 张 MSCOCO 验证集图像 × 每张 6 个是否题 = 3,000 题 · 真实物体与不存在物体按 1:1 配平 · 负样本分 Random / Popular / Adversarial 三种抽法各建一套",
+    "cite": [
+      "paper@§5.2 Evaluation on MSCOCO",
+      "paper@§5.1 Overview of POPE",
+      "repo-pope@Build POPE"
+    ],
+    "construction": [
+      {
+        "k": "题目模板",
+        "text": "每个问题都由模板「Is there a {} in the image?」实例化：图中真实物体填进模板得到答案为 Yes 的题，负样本物体得到答案为 No 的题。",
+        "cite": [
+          "repo-pope@Build POPE",
+          "paper@§5.1 Overview of POPE"
+        ]
+      },
+      {
+        "k": "选图",
+        "text": "从 MSCOCO 验证集随机抽 500 张图，要求每张在图注里至少有 3 个真实物体。",
+        "cite": [
+          "paper@§5.2 Evaluation on MSCOCO"
+        ]
+      },
+      {
+        "k": "每图题量",
+        "text": "每张图构造 6 个问题（论文记作 l = 6）。",
+        "cite": [
+          "paper@§5.2 Evaluation on MSCOCO"
+        ]
+      },
+      {
+        "k": "标签平衡",
+        "text": "真实物体与不存在物体的比例设为 1:1，用于标签平衡。",
+        "cite": [
+          "paper@§5.1 Overview of POPE"
+        ]
+      },
+      {
+        "k": "负采样三档",
+        "text": "Random：随机抽图中不存在的物体；Popular：抽整个数据集中出现频次 top-k 的图中不存在物体，k = 2l；Adversarial：先按与真实物体的共现频次排序，再取 top-k 个图中不存在的。",
+        "cite": [
+          "paper@§5.1 Overview of POPE"
+        ]
+      },
+      {
+        "k": "无标注数据集",
+        "text": "物体清单也可以来自自动分割工具（论文用 SEEM）而不是人工标注，从而把 POPE 建到任意数据集上；仓库随附 COCO 2014 验证集的分割标注结果。",
+        "cite": [
+          "paper@§5.3 Advantages of POPE",
+          "repo-pope@Collect ground-truth objects"
+        ]
+      }
+    ]
   },
-  "metrics": [],
+  "metrics": [
+    {
+      "id": "f1",
+      "name": "F1",
+      "direction": "越高越好",
+      "description": "Precision 与 Recall 的调和平均，论文选它作为主要指标；正负样本 1:1 时「无脑全答有」的平凡基线约为 66.7",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§5.1 Overview of POPE",
+        "paper@Table 3"
+      ]
+    },
+    {
+      "id": "accuracy",
+      "name": "准确率",
+      "direction": "越高越好",
+      "description": "答对的问题占比",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§5.1 Overview of POPE"
+      ]
+    },
+    {
+      "id": "precision",
+      "name": "Precision",
+      "direction": "越高越好",
+      "description": "论文定义：答案是 Yes 的问题中答对的比例（与常见用法相反，见「常见误读」）",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§5.1 Overview of POPE"
+      ]
+    },
+    {
+      "id": "recall",
+      "name": "Recall",
+      "direction": "越高越好",
+      "description": "论文定义：答案是 No 的问题中答对的比例（与常见用法相反）",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§5.1 Overview of POPE"
+      ]
+    },
+    {
+      "id": "yes-ratio",
+      "name": "Yes ratio",
+      "direction": "不单独看好坏，须与 F1 同读",
+      "description": "模型答 Yes 的比例；接近 100% 说明几乎有问必答「有」，是幻觉倾向的直接信号",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§5.1 Overview of POPE",
+        "paper@Table 3"
+      ]
+    }
+  ],
   "default_protocol": {
-    "raw": "是/否三采样设置，F1/ACC"
+    "raw": "给模型一张图和一个由模板实例化的问题（仓库默认模板「Is there a {} in the image?」），只要求答 Yes/No；论文说明 POPE 用匹配法判断模型是否答了 Yes 或 No，官方评测脚本最后输出 Accuracy、Precision、Recall、F1 Score 和 Yes ratio。",
+    "cite": [
+      "repo-pope@Build POPE",
+      "repo-pope@Evaluation",
+      "paper@§5.1 Overview of POPE"
+    ],
+    "variants": [
+      {
+        "text": "三种负采样设定（Random / Popular / Adversarial）：同一批图在三种抽法下各建一套题，难度依次上升，论文里同一模型 F1 一路下降，跨档分数不能直接比。",
+        "cite": [
+          "paper@§5.2 Evaluation on MSCOCO",
+          "paper@§5.1 Overview of POPE"
+        ]
+      },
+      {
+        "text": "标注来源：用人工物体标注建题，或用 SEEM 自动分割结果建题；论文报告两种口径下模型排序一致，分割版可扩展到没有物体标注的数据集。",
+        "cite": [
+          "paper@§5.3 Advantages of POPE",
+          "repo-pope@Collect ground-truth objects"
+        ]
+      },
+      {
+        "text": "问法：论文用 4 种英文问法各跑一遍验证稳定性（Is there / Does the image contain / Have you noticed / Can you see），F1 只波动 ±0.78；仓库默认模板是第一种。",
+        "cite": [
+          "paper@Table 4",
+          "repo-pope@Build POPE"
+        ]
+      }
+    ]
   },
-  "versions": [],
-  "limitations": [],
-  "notes": null,
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2023-05-17",
+      "label": "arXiv v1 首发",
+      "cite": [
+        "paper@arXiv 提交历史"
+      ]
+    },
+    {
+      "id": "v2",
+      "date": "2023-05-23",
+      "label": "arXiv v2 修订",
+      "cite": [
+        "paper@arXiv 提交历史"
+      ]
+    },
+    {
+      "id": "code",
+      "date": "2023-06-01",
+      "label": "仓库发布 POPE 代码（更新日志记 [6/1]，未写年份）",
+      "cite": [
+        "repo-pope@Update"
+      ]
+    },
+    {
+      "id": "seem",
+      "date": "2023-06-03",
+      "label": "仓库加入用 SEEM 处理无标注数据集的代码（更新日志 [6/3]）",
+      "cite": [
+        "repo-pope@Update"
+      ]
+    },
+    {
+      "id": "caption-data",
+      "date": "2023-06-25",
+      "label": "仓库上传论文表格用的 caption 结果（更新日志 [6/25]）",
+      "cite": [
+        "repo-pope@Update"
+      ]
+    },
+    {
+      "id": "emnlp",
+      "date": "2023-10-08",
+      "label": "仓库宣布被 EMNLP 2023 接收（更新日志 [10/8]）",
+      "cite": [
+        "repo-pope@Update",
+        "paper@arXiv 提交历史"
+      ]
+    },
+    {
+      "id": "v3",
+      "date": "2023-10-26",
+      "label": "arXiv v3 修订，评论栏标注 Accepted to EMNLP 2023（本页核对所用版本）",
+      "cite": [
+        "paper@arXiv 提交历史"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "只测物体幻觉，不代表整体能力",
+      "impact": "论文明确说只关注 LVLM 的物体幻觉问题，不考虑其他能力；在本评测得分更高，不代表整体能力更强。",
+      "severity": "高",
+      "response": "论文在 §7 主动声明这一点；同时 §5.4 的实验显示幻觉程度与 VQA 表现并不总一致，建议两类评测一起看。",
+      "reader": "把 POPE 当「物体幻觉」单项指标，不要当综合榜。",
+      "cite": [
+        "paper@§7 Limitations",
+        "paper@§5.4 Impact of Hallucination on Vision Tasks"
+      ]
+    },
+    {
+      "issue": "训练数据污染未见官方讨论",
+      "impact": "POPE 题库和构建脚本公开可下载，论文没有报告污染检测、留存集或去污染处理；这是本站对论文与仓库的核对结果，不是论文的自我声明。",
+      "severity": "中",
+      "response": "论文未披露对应措施；官方仓库只发布了数据与评测代码。",
+      "reader": "跨时间比较模型时，先确认对比各方用的是同一批图和同一档负采样，并对绝对分数保留余地。",
+      "cite": [
+        "repo-pope@Build POPE",
+        "paper@§7 Limitations"
+      ]
+    },
+    {
+      "issue": "Yes/No 匹配判分可能漏判",
+      "impact": "POPE 用匹配法判断模型是否答了 Yes 或 No，而模型偶尔不会明确输出这两个词，论文说这可能导致评分不准。",
+      "severity": "中",
+      "response": "论文在 §7 声明该问题；官方评测脚本按匹配实现，仓库未提供缓解机制。",
+      "reader": "复现时注意模型的回答格式；不习惯输出封闭答案的模型更容易触发漏判。",
+      "cite": [
+        "paper@§7 Limitations",
+        "repo-pope@Evaluation"
+      ]
+    },
+    {
+      "issue": "自动分割标注与人工标注不一致",
+      "impact": "用 SEEM 等自动分割工具建题时，物体清单来自工具的标签体系，可能与人工标注不一致，造成评测结果偏差；论文实测分割版与标注版之间存在差距。",
+      "severity": "中",
+      "response": "论文在 §7 声明该问题，并用 SEEM 在 MSCOCO / A-OKVQA / GQA 上做了扩展实验，报告模型排序与标注版一致。",
+      "reader": "看清分数是用人工标注还是分割结果建的题，两种口径不要混比。",
+      "cite": [
+        "paper@§7 Limitations",
+        "paper@§5.3 Advantages of POPE",
+        "repo-pope@Collect ground-truth objects"
+      ]
+    },
+    {
+      "issue": "只在部分验证集上评测",
+      "impact": "受算力限制，每个数据集只在验证集的一部分上评测，论文说结果可能受相应数据分布影响。",
+      "severity": "中",
+      "response": "论文称已仔细设置实验；未给出更大规模的复测。",
+      "reader": "论文口径是 500 张图、每张 6 题；别家和这个口径不同时，分数不能直接比。",
+      "cite": [
+        "paper@§7 Limitations",
+        "paper@§5.2 Evaluation on MSCOCO"
+      ]
+    },
+    {
+      "issue": "论文只覆盖 2023 年的 5 个模型",
+      "impact": "论文只评测了 5 个当时的 LVLM，未包含后来发布或闭源的模型；论文把评测更多模型列为未来工作。",
+      "severity": "低",
+      "response": "论文自陈为 future work；本站未逐条核验后续第三方结果，故不代收。",
+      "reader": "论文表里的绝对分数只代表 2023 年那批模型，不代表今天的水平。",
+      "cite": [
+        "paper@§7 Limitations",
+        "paper@§5.2 Evaluation on MSCOCO"
+      ]
+    }
+  ],
+  "notes": "论文只覆盖 2023 年的 5 个 LVLM；后续第三方结果本站未逐条核验，故不收录。",
   "official_sources": [
     {
-      "kind": "site",
+      "kind": "repo",
       "url": "https://github.com/RUCAIBox/POPE"
     },
     {
@@ -36,13 +364,211 @@
     }
   ],
   "related_benchmarks": [
-    "mmmu",
-    "mathvista",
-    "chartqa",
-    "docvqa",
-    "mmvet",
-    "vizwiz"
+    "hallusionbench",
+    "vlmsareblind",
+    "vlmsarebiased",
+    "mmstar"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-28"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-24",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-24",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "Evaluating Object Hallucination in Large Vision-Language Models（arXiv:2305.10355v3，2023-10-26）",
+        "url": "https://arxiv.org/abs/2305.10355",
+        "accessed": "2026-11-24"
+      },
+      {
+        "id": "repo-pope",
+        "kind": "repo",
+        "title": "RUCAIBox/POPE（官方代码、数据与 README）",
+        "url": "https://github.com/RUCAIBox/POPE",
+        "accessed": "2026-11-24"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "中国人民大学高瓴人工智能学院 / 信息学院 × 美团集团（论文署名）",
+        "cite": [
+          "paper@作者单位"
+        ]
+      },
+      "first_release": {
+        "v": "2023-05-17（arXiv v1）；代码 2023-06-01 在 GitHub 发布",
+        "cite": [
+          "paper@arXiv 提交历史",
+          "repo-pope@Update"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "paper@Abstract",
+        "paper@§5.1 Overview of POPE",
+        "paper@§4 Influence of Instruction Data on Object Hallucination"
+      ],
+      "interpretation": [
+        "paper@§5.1 Overview of POPE",
+        "paper@Table 3"
+      ]
+    },
+    "problem": {
+      "text": "此前的 CHAIR 指标要模型先生成 caption 再数幻觉物体，对指令写法、生成长度敏感，还要人工设计解析规则，且仍会漏判或错判物体；POPE 改成直接问 Yes/No 来避开这些干扰。",
+      "cite": [
+        "paper@§3.1 Evaluation Settings",
+        "paper@§5.1 Overview of POPE"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "无脑全答「有」的平凡基线",
+        "value": "F1 ≈ 66.7",
+        "note": "正负样本 1:1 时，对任何问题都答 Yes，F1 就是 66.7；论文表 3 里 MultiModal-GPT 在 Popular / Adversarial 两档正是 Yes ratio 100.00、F1 66.67。",
+        "cite": [
+          "paper@Table 3",
+          "paper@§5.1 Overview of POPE"
+        ]
+      },
+      {
+        "label": "论文报告的最好成绩（2023）",
+        "value": "F1 89.29 / 83.45 / 78.45",
+        "note": "InstructBLIP，分别对应 Random / Popular / Adversarial 三档；同表 LLaVA、mPLUG-Owl、MultiModal-GPT 的 F1 都落在 66–69 区间。",
+        "cite": [
+          "paper@Table 3"
+        ]
+      },
+      {
+        "label": "换问法的波动（指标稳定性）",
+        "value": "POPE 67.43 ± 0.78 对 CHAIR_I 13.88 ± 3.22",
+        "note": "同一个 LLaVA 用 4 种问法各跑一遍：POPE 的标准差 0.78，CHAIR_I 3.22——这是论文论证 POPE 更稳的主要证据。",
+        "cite": [
+          "paper@Table 4"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 Yes ratio 高当成「模型看得准」——恰恰相反，接近 100% 说明它有问必答「有」；论文指出 mPLUG-Owl 等模型的 Yes ratio 接近 99%。",
+        "cite": [
+          "paper@Table 3"
+        ]
+      },
+      {
+        "text": "把三种负采样设定的分数混在一起比——Random / Popular / Adversarial 难度依次上升，同一模型 F1 一路下降。",
+        "cite": [
+          "paper@§5.2 Evaluation on MSCOCO"
+        ]
+      },
+      {
+        "text": "把论文的 Precision / Recall 按惯例理解——论文定义里 Precision 对应「答案是 Yes 的题」、Recall 对应「答案是 No 的题」，与常见用法相反。",
+        "cite": [
+          "paper@§5.1 Overview of POPE"
+        ]
+      },
+      {
+        "text": "把 POPE 高分当成模型整体更强——论文明确说本任务衡量不了 LVLM 的整体表现，且幻觉程度与 VQA 表现并不总一致。",
+        "cite": [
+          "paper@§7 Limitations",
+          "paper@§5.4 Impact of Hallucination on Vision Tasks"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "中国人民大学高瓴人工智能学院、信息学院与北京重点实验室，联合美团集团（论文署名单位）",
+        "cite": [
+          "paper@作者单位"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "Yifan Li、Yifan Du、Kun Zhou（三人标注共同一作）、Jinpeng Wang、Wayne Xin Zhao（通讯作者）、Ji-Rong Wen",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      {
+        "k": "名称",
+        "v": "POPE = Polling-based Object Probing Evaluation for Object Hallucination（仓库 README 标题）",
+        "cite": [
+          "repo-pope@README"
+        ]
+      },
+      {
+        "k": "发表场合",
+        "v": "EMNLP 2023（arXiv 评论栏与仓库更新日志均有标注）",
+        "cite": [
+          "paper@arXiv 提交历史",
+          "repo-pope@Update"
+        ]
+      },
+      {
+        "k": "要解决的问题",
+        "v": "CHAIR 依赖 caption 生成，对指令设计和生成长度敏感，还要人工设计解析规则；POPE 用封闭式 Yes/No 提问替代",
+        "cite": [
+          "paper@§3.1 Evaluation Settings",
+          "paper@§5.1 Overview of POPE"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "代码、POPE 构建脚本、COCO 2014 验证集分割标注在 GitHub（RUCAIBox/POPE）；论文同时公开了实验用的数据",
+        "cite": [
+          "repo-pope@README",
+          "repo-pope@Collect ground-truth objects"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2023-05-17 arXiv v1 → 2023-06-01 代码发布 → 2023-10-08 宣布 EMNLP 2023 接收 → 2023-10-26 arXiv v3（仓库更新日志只记月/日，年份按 arXiv 版本时间推定）",
+        "cite": [
+          "paper@arXiv 提交历史",
+          "repo-pope@Update"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-24",
+        "columns": [
+          "设定",
+          "模型",
+          "Accuracy",
+          "Precision",
+          "Recall",
+          "F1",
+          "Yes (%)"
+        ],
+        "rows": [
+          ["Random", "mPLUG-Owl", "53.30", "51.71", "99.53", "68.06", "96.23"],
+          ["Random", "LLaVA", "54.43", "52.32", "99.80", "68.65", "95.37"],
+          ["Random", "MultiModal-GPT", "50.03", "50.02", "100.00", "66.68", "99.97"],
+          ["Random", "MiniGPT-4", "77.83", "75.38", "82.67", "78.86", "54.83"],
+          ["Random", "InstructBLIP", "88.73", "85.08", "93.93", "89.29", "55.20"],
+          ["Popular", "mPLUG-Owl", "50.63", "50.32", "99.27", "66.79", "98.63"],
+          ["Popular", "LLaVA", "52.43", "51.25", "99.80", "67.72", "97.37"],
+          ["Popular", "MultiModal-GPT", "50.00", "50.00", "100.00", "66.67", "100.00"],
+          ["Popular", "MiniGPT-4", "68.30", "64.27", "82.40", "72.21", "64.10"],
+          ["Popular", "InstructBLIP", "81.37", "75.07", "93.93", "83.45", "62.57"],
+          ["Adversarial", "mPLUG-Owl", "50.67", "50.34", "99.33", "66.82", "98.67"],
+          ["Adversarial", "LLaVA", "50.77", "50.39", "99.87", "66.98", "99.10"],
+          ["Adversarial", "MultiModal-GPT", "50.00", "50.00", "100.00", "66.67", "100.00"],
+          ["Adversarial", "MiniGPT-4", "66.60", "62.45", "83.27", "71.37", "66.67"],
+          ["Adversarial", "InstructBLIP", "74.37", "67.67", "93.33", "78.45", "68.97"]
+        ]
+      },
+      "cite": [
+        "paper@Table 3"
+      ]
+    }
+  }
 }

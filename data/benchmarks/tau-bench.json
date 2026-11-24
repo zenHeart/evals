@@ -1,29 +1,375 @@
 {
   "id": "tau-bench",
   "name": "τ-bench",
-  "full_name": null,
-  "aliases": [],
-  "status": null,
+  "full_name": "τ-bench: A Benchmark for Tool-Agent-User Interaction in Real-World Domains（工具-智能体-用户交互基准）",
+  "aliases": [
+    "tau-bench",
+    "TAU (𝜏)-Bench"
+  ],
+  "status": "active",
   "categories": [
     "agent"
   ],
-  "summary": "客服场景多轮对话+工具调用，用户模拟器评分",
-  "interpretation": "模拟客服场景：多轮对话 + 调工具 + 不把用户惹毛。pass^k 要求连续 k 次都成功，是对稳定性的苛刻要求。",
-  "measures": [],
-  "does_not_measure": [],
+  "summary": "Sierra 出的客服场景智能体基准：让模型在模拟用户和领域 API 之间多轮对话，按域政策把事办成。它不只看平均成功率，还看同一件事重复做能不能每次都成。",
+  "interpretation": "分数是「按域政策把数据库改成唯一正确终态」的任务通过率。pass^1 高只说明这次运气好；pass^k 要求连续 k 次全成，才是可靠性。论文里 gpt-4o 零售 pass^1 超过 60%，pass^8 却跌到 25% 以下——这个落差就是本基准最想让人看见的东西。",
+  "measures": [
+    {
+      "area": "多轮对话与信息收集",
+      "focus": "能否在一来一往的对话中把改签、退款、换货所需的信息问全、问对，并记住前面轮次说过的事实",
+      "share": "全部任务",
+      "format": "多轮对话轨迹（用户由 LLM 模拟）",
+      "cite": [
+        "arxiv-2406-12045@Abstract",
+        "sierra-tau-bench-2024"
+      ]
+    },
+    {
+      "area": "工具（API）调用",
+      "focus": "能否正确调用领域 API 完成查询与状态变更：零售 7 个写 + 8 个非写，航空 6 个写 + 7 个非写",
+      "share": "全部任务",
+      "format": "函数调用（FC）/ Act / ReAct 文本动作",
+      "cite": [
+        "arxiv-2406-12045@Table 1",
+        "arxiv-2406-12045@Table 2"
+      ]
+    },
+    {
+      "area": "领域策略遵守",
+      "focus": "能否按域政策文档行动（退改签规则、会员补偿资格等），既不违规也不误拒",
+      "share": "全部任务",
+      "format": "策略文档入系统提示 + 数据库终态比对",
+      "cite": [
+        "sierra-tau-bench-2024",
+        "arxiv-2406-12045@§3"
+      ]
+    },
+    {
+      "area": "可靠性与一致性",
+      "focus": "同一任务重复 k 次是否每次都能成功，而不是只成功一次；这是本基准相对当时同类基准的主要增量",
+      "share": "全部任务（k 次重复试验）",
+      "format": "k 次独立重复试验的 pass^k",
+      "cite": [
+        "arxiv-2406-12045@§4.3",
+        "arxiv-2406-12045@§5.1"
+      ]
+    },
+    {
+      "area": "τ-retail 域",
+      "focus": "电商客服：退换货、退款、订单查询等零售场景",
+      "share": "115 题",
+      "format": "零售域数据库 + 工具 API",
+      "cite": [
+        "arxiv-2406-12045@Table 1"
+      ]
+    },
+    {
+      "area": "τ-airline 域",
+      "focus": "航空客服：改签、退票、升舱、积分等场景；论文称它是更难的一域，gpt-4o 在此只解出 35.2%",
+      "share": "50 题",
+      "format": "航空域数据库 + 工具 API",
+      "cite": [
+        "arxiv-2406-12045@Table 1",
+        "arxiv-2406-12045@§5.1"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "对话质量、语气与礼貌：评分只看数据库终态和回复里是否带了必要信息，不评价话说得好不好听；论文把「更细粒度的行为指标（如语气风格）」列为未来方向。",
+      "cite": [
+        "arxiv-2406-12045@§3",
+        "sierra-tau-bench-2024"
+      ]
+    },
+    {
+      "text": "真实用户的保真度：用户是 LLM 模拟的，虽然可以反复生成同一任务的多种说法，但它不等于真人客户的表达分布与耐心。",
+      "cite": [
+        "arxiv-2406-12045@§3",
+        "arxiv-2406-12045@§8"
+      ]
+    },
+    {
+      "text": "单轮知识问答与检索：所有信息都在域政策和数据库里，模型不需要外部知识。检索与知识库能力是 τ³-bench 才用 𝜏-Banking 域加进来的。",
+      "cite": [
+        "sierra-tau3-2026"
+      ]
+    },
+    {
+      "text": "语音交互：原版只有文本。全双工语音是 τ³-bench 的 𝜏-Voice 扩展，与文本成绩不可混比。",
+      "cite": [
+        "sierra-tau3-2026",
+        "tau2-bench-repo"
+      ]
+    }
+  ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
+    "sample_count": 165,
+    "splits": [
+      "τ-retail（115 题）",
+      "τ-airline（50 题）"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "人工设计 schema/API/政策 + LLM 辅助生成数据条目 + 人工撰写场景",
+    "public_sample": true,
+    "totals": "原版两域共 165 题。τ-retail：500 名用户、50 个商品、1,000 笔订单，7 个写 + 8 个非写工具；τ-airline：500 名用户、300 个航班、2,000 条预订，6 个写 + 7 个非写工具。τ²-bench 另加电信域 114 题（完整生成量 2,285 题）。",
+    "cite": [
+      "arxiv-2406-12045@Table 1",
+      "arxiv-2406-12045@§4",
+      "arxiv-2506-07982"
+    ],
+    "construction": [
+      {
+        "k": "阶段一：人工打底",
+        "text": "手工设计数据库 schema、API 与政策文档，取材于客服真实用例；两个域的选择标准是「数据好合成、政策好写、场景够多样」。",
+        "cite": [
+          "arxiv-2406-12045@§4",
+          "sierra-tau-bench-2024"
+        ]
+      },
+      {
+        "k": "阶段二：LLM 造数据",
+        "text": "schema 定好后用 LLM（GPT-4）写生成代码，按规模批量产出数据库条目。",
+        "cite": [
+          "arxiv-2406-12045@§4",
+          "sierra-tau-bench-2024"
+        ]
+      },
+      {
+        "k": "阶段三：人工写场景并核验",
+        "text": "为每个任务人工撰写用户模拟场景与目标终态，确认无误后才收录；任务指令若含错别字或歧义，由标注员检查修正。",
+        "cite": [
+          "arxiv-2406-12045@§4",
+          "arxiv-2406-12045@§8"
+        ]
+      },
+      {
+        "k": "发布后：社区修订",
+        "text": "发布后社区从标注错误到任务描述不清提了一大批问题。τ³ 前官方审计并修复 50+ 任务（航空 27 题、零售 26 题），多数修复来自 Amazon 的 τ-Bench Verified（SABER）审计，另有社区 PR（含 Anthropic 的若干项）。",
+        "cite": [
+          "tau3-task-fixes",
+          "sierra-tau3-2026"
+        ]
+      }
+    ]
   },
-  "metrics": [],
+  "metrics": [
+    {
+      "id": "pass-k",
+      "name": "pass^k",
+      "direction": "越高越好",
+      "description": "同一任务 k 次独立重复试验全部成功的概率，按任务平均；论文定义的核心指标，衡量的是可靠性而不是一次性运气。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2406-12045@§4.3"
+      ]
+    },
+    {
+      "id": "pass-1",
+      "name": "pass^1",
+      "direction": "越高越好",
+      "description": "k=1 的特例，即单次试验成功率；论文 Table 2 与 Figure 3 报的就是它，也是官方榜单最常出现的口径。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2406-12045@Table 2",
+        "arxiv-2406-12045@Figure 3"
+      ]
+    },
+    {
+      "id": "pass-at-k",
+      "name": "pass@k",
+      "direction": "越高越好",
+      "description": "社区既有指标：k 次试验中至少一次成功的概率。与 pass^k 方向相反，论文特意把它摆在一起对比，用来说明「能成一次」和「每次都能成」差多远。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2406-12045@§4.3"
+      ]
+    }
+  ],
   "default_protocol": {
-    "raw": "零售/航空域，pass^k（全部轨迹一致成功）"
+    "raw": "每个任务 = 一个客服场景 + 一份域政策文档 + 一个 LLM 模拟用户 + 一组领域 API。域政策进系统提示，智能体每轮自主决定「回复用户」还是「发工具调用」；单个任务最多 30 个智能体动作（工具调用或回复用户）。主结果每题至少跑 3 次试验，智能体温度 0.0、用户温度 1.0。成败判定为 r = r_action × r_output ∈ {0,1}：最终数据库必须与唯一期望终态一致，且智能体回复中要包含任务所需的全部信息。论文用 gpt-4-0613 模拟用户；官方仓库默认改用 gpt-4o + strategy llm。",
+    "cite": [
+      "arxiv-2406-12045@§5",
+      "arxiv-2406-12045@§3",
+      "repo-tau-bench"
+    ],
+    "variants": [
+      {
+        "text": "智能体策略：TC（函数调用，论文主口径）/ Act（只输出动作）/ ReAct（文本 Thought + Action，Llama-3 只能用这种）。三者不能直接横比。",
+        "cite": [
+          "arxiv-2406-12045@Table 2"
+        ]
+      },
+      {
+        "text": "用户模拟器：论文用 gpt-4-0613，官方仓库默认 gpt-4o + strategy llm。换模拟器会改变分数线。",
+        "cite": [
+          "arxiv-2406-12045@§3",
+          "repo-tau-bench"
+        ]
+      },
+      {
+        "text": "重复次数：论文主结果 ≥3 trials per task；τ³ 榜单用 4 trials per task；pass^k 的 k 可任取（论文画到 k=8）。",
+        "cite": [
+          "arxiv-2406-12045@§5",
+          "tau3-task-fixes"
+        ]
+      },
+      {
+        "text": "任务集版本：原版（115/50）→ τ² 新增电信 114 题 → τ³ 修复 50+ 任务并加 𝜏-Banking 与语音 → τ-bench 2.0 加 τ-i18n 六语言与 τ-Entity 外呼实体。官方 CHANGELOG 明说 2.0 成绩与 1.x 榜单不可比，1.0.1 之前的 banking_knowledge 成绩也不可比。",
+        "cite": [
+          "tau2-bench-repo",
+          "tau2-changelog",
+          "tau3-task-fixes"
+        ]
+      }
+    ]
   },
-  "versions": [],
-  "limitations": [],
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2024-06-17",
+      "label": "arXiv v1 发布：τ-retail（115 题）+ τ-airline（50 题）两域",
+      "cite": [
+        "arxiv-2406-12045@Abstract",
+        "sierra-tau-bench-2024"
+      ]
+    },
+    {
+      "id": "blog-2024",
+      "date": "2024-06-20",
+      "label": "Sierra 官方博客发布，同步公开代码与数据",
+      "cite": [
+        "sierra-tau-bench-2024"
+      ]
+    },
+    {
+      "id": "tau2",
+      "date": "2025-06-09",
+      "label": "τ²-bench：新增电信（Telecom）dual-control 域，用户也能调工具；论文 arXiv 2506.07982",
+      "cite": [
+        "arxiv-2506-07982"
+      ]
+    },
+    {
+      "id": "tau2-021",
+      "date": "2025-11-07",
+      "label": "tau2-bench 仓库 v0.2.1",
+      "cite": [
+        "tau2-changelog"
+      ]
+    },
+    {
+      "id": "tau3",
+      "date": "2026-03-18",
+      "label": "τ³-bench：新增 𝜏-Knowledge（𝜏-Banking 知识库域）与 𝜏-Voice 全双工语音；同批合入航空/零售 50+ 任务修复（修复说明单独发布于 2026-02，CHANGELOG 的 1.0.0 日期写作占位符 2026-MM-DD）",
+      "cite": [
+        "sierra-tau3-2026",
+        "tau3-task-fixes"
+      ]
+    },
+    {
+      "id": "tau3-101",
+      "date": "2026-07-15",
+      "label": "τ³-bench v1.0.1：修复 banking_knowledge 判分；该域此前成绩不可比",
+      "cite": [
+        "tau2-changelog"
+      ]
+    },
+    {
+      "id": "tau-bench-20",
+      "date": "2026-10-19",
+      "label": "τ-bench 2.0：新增 τ-i18n（六语言文本 + 全双工语音）与 τ-Entity 外呼实体域（200+ 任务）；1.x 榜单成绩与 2.0 不可比",
+      "cite": [
+        "tau2-changelog",
+        "tau2-bench-repo"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "任务集版本混用，跨年份分数不可比",
+      "impact": "原版 165 题 → τ² 加电信 114 题 → τ³ 修复 50+ 任务 → 2.0 换六语言与实体域。官方 CHANGELOG 直接写明 2.0 成绩与 1.x 榜单不可比，1.0.1 之前的 banking_knowledge 成绩也不可比。同一模型在不同版本上的数字经常被放在一张表里传播。",
+      "severity": "高",
+      "response": "官方 CHANGELOG 给出可比性指引：要跟 1.x 榜单比就跑 v1.0.1 tag；原 τ-bench 仓库首页也标注自己是过期版本，指向 τ³-bench。",
+      "reader": "看到任何 τ-bench 分数，先问是哪个版本的任务集、哪个仓库跑的。",
+      "cite": [
+        "tau2-changelog",
+        "tau2-bench-repo",
+        "repo-tau-bench"
+      ]
+    },
+    {
+      "issue": "原版任务存在标注错误与歧义，官方已修但旧数据仍在流传",
+      "impact": "官方审计出五类问题：期望动作与域政策矛盾、用户指令歧义、不可能满足的约束、缺少兜底行为、可被绕过的政策漏洞。典型如航空任务曾要求给普通经济舱乘客发延误补偿，而政策只允许银/金卡、投保或商务舱。修复后航空 pass^1 提升 +14.0～+20.0 分，零售仅 -0.4～+5.5 分。",
+      "severity": "高",
+      "response": "τ³-bench 合入 50+ 修复（航空 27 题、零售 26 题），多数来自 Amazon 的 τ-Bench Verified（SABER）审计；旧仓库与旧论文数字仍可获取但已过期。",
+      "reader": "论文和 2024 年的榜单数字系统性低估了模型——它们惩罚的是正确执行政策的智能体。",
+      "cite": [
+        "tau3-task-fixes",
+        "sierra-tau3-2026"
+      ]
+    },
+    {
+      "issue": "用户是 LLM 模拟的，不是真人",
+      "impact": "好处是可重复、可批量；代价是真实客户的措辞、耐心与纠葛程度没有被建模。论文自己把「提升用户模拟保真度」列为后续方向。",
+      "severity": "中",
+      "response": "支持为同一任务生成多种措辞变体；论文用重复试验来吸收这层随机性。",
+      "reader": "pass^k 已经包含了一部分「用户说得不一样」的影响，但不包含「用户根本不好好说话」。",
+      "cite": [
+        "arxiv-2406-12045@§3",
+        "arxiv-2406-12045@§8"
+      ]
+    },
+    {
+      "issue": "只看数据库终态，不看过程与对话质量",
+      "impact": "只要终态对、必要信息在，过程多绕几轮、语气多生硬都不扣分。这保证了客观可判，也意味着「把事办成」之外的客服能力不在射程内。",
+      "severity": "中",
+      "response": "论文把更细粒度的行为指标列为未来工作；官方仓库提供故障归因（用户 / 智能体 / 环境）与轨迹可视化辅助人工分析。",
+      "reader": "高 τ-bench 分不等于好的客服体验。",
+      "cite": [
+        "arxiv-2406-12045@§3",
+        "sierra-tau-bench-2024",
+        "repo-tau-bench"
+      ]
+    },
+    {
+      "issue": "域窄、题量小，单题影响被放大",
+      "impact": "原版两域共 165 题，航空只有 50 题；一题对错就是 2 个百分点。题目本身有争议时（见上），分数差异很容易被噪声吞掉。",
+      "severity": "中",
+      "response": "官方以修复降低题目噪声；τ² 起用程序化任务生成器把电信域扩到 2,285 题再子采样 114 题；τ³ 用 𝜏-Banking 扩知识库域。",
+      "reader": "几个百分点的排序差异不要当真，尤其在小样本域上。",
+      "cite": [
+        "arxiv-2406-12045@Table 1",
+        "arxiv-2506-07982",
+        "tau3-task-fixes"
+      ]
+    },
+    {
+      "issue": "零售任务数在不同一手来源间不一致",
+      "impact": "论文 Table 1 与 τ²-bench Table 1 都写 retail 115 题，而 τ³ 的任务修复说明写的是「原 retail（114 tasks）」。同一基准的任务量在两个官方页面口径不同。",
+      "severity": "低",
+      "response": "本站按论文 Table 1 记 115 题，并在此标注该分歧；官方未就此给出说明。",
+      "reader": "引用 τ-bench 题量时注明来源，不要只写一个数字。",
+      "cite": [
+        "arxiv-2406-12045@Table 1",
+        "arxiv-2506-07982",
+        "tau3-task-fixes"
+      ]
+    }
+  ],
   "notes": "Agent 叙事厂商的工具调用标配（5/11 家）",
   "official_sources": [
     {
@@ -33,6 +379,10 @@
     {
       "kind": "paper",
       "url": "https://arxiv.org/abs/2406.12045"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/sierra-research/tau2-bench"
     }
   ],
   "related_benchmarks": [
@@ -43,6 +393,328 @@
     "bfcl",
     "mlebench"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-28"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-19",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-19",
+    "sources": [
+      {
+        "id": "arxiv-2406-12045",
+        "kind": "paper",
+        "title": "τ-bench: A Benchmark for Tool-Agent-User Interaction in Real-World Domains（arXiv 2406.12045）",
+        "url": "https://arxiv.org/abs/2406.12045",
+        "accessed": "2026-11-19"
+      },
+      {
+        "id": "sierra-tau-bench-2024",
+        "kind": "blog",
+        "title": "𝜏-Bench: Benchmarking AI agents for the real-world（Sierra 官方博客，2024-06-20）",
+        "url": "https://sierra.ai/blog/benchmarking-ai-agents",
+        "accessed": "2026-11-19"
+      },
+      {
+        "id": "repo-tau-bench",
+        "kind": "repo",
+        "title": "sierra-research/tau-bench（原始仓库，已标记为过期版本）",
+        "url": "https://github.com/sierra-research/tau-bench",
+        "accessed": "2026-11-19"
+      },
+      {
+        "id": "arxiv-2506-07982",
+        "kind": "paper",
+        "title": "τ²-bench: Evaluating Conversational Agents in a Dual-Control Environment（arXiv 2506.07982）",
+        "url": "https://arxiv.org/abs/2506.07982",
+        "accessed": "2026-11-19"
+      },
+      {
+        "id": "tau3-task-fixes",
+        "kind": "blog",
+        "title": "τ³-Bench: Fixing Airline + Retail（taubench.com 工程说明，2026-02）",
+        "url": "https://taubench.com/blog/tau3-task-fixes.html",
+        "accessed": "2026-11-19"
+      },
+      {
+        "id": "sierra-tau3-2026",
+        "kind": "blog",
+        "title": "𝜏³-Bench: Advancing agent benchmarking to knowledge and voice（Sierra 官方博客，2026-03-18）",
+        "url": "https://sierra.ai/blog/bench-advancing-agent-benchmarking-to-knowledge-and-voice",
+        "accessed": "2026-11-19"
+      },
+      {
+        "id": "tau2-bench-repo",
+        "kind": "repo",
+        "title": "sierra-research/tau2-bench（τ³-bench / τ-bench 2.0 现行仓库）",
+        "url": "https://github.com/sierra-research/tau2-bench",
+        "accessed": "2026-11-19"
+      },
+      {
+        "id": "tau2-changelog",
+        "kind": "docs",
+        "title": "tau2-bench CHANGELOG.md",
+        "url": "https://raw.githubusercontent.com/sierra-research/tau2-bench/main/CHANGELOG.md",
+        "accessed": "2026-11-19"
+      },
+      {
+        "id": "arxiv-2512-07850",
+        "kind": "paper",
+        "title": "SABER: Small Actions, Big Errors — Safeguarding Mutating Steps in LLM Agents（arXiv 2512.07850）",
+        "url": "https://arxiv.org/abs/2512.07850",
+        "accessed": "2026-11-19"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Sierra（论文作者 Noah Shinn、Pedram Razavi、Karthik Narasimhan 所属机构）",
+        "cite": [
+          "arxiv-2406-12045@作者署名",
+          "sierra-tau-bench-2024"
+        ]
+      },
+      "first_release": {
+        "v": "2024-06-17（arXiv v1）；官方博客 2024-06-20",
+        "cite": [
+          "arxiv-2406-12045@Abstract",
+          "sierra-tau-bench-2024"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "arxiv-2406-12045@Abstract",
+        "sierra-tau-bench-2024",
+        "arxiv-2406-12045@§3"
+      ],
+      "interpretation": [
+        "arxiv-2406-12045@§4.3",
+        "arxiv-2406-12045@§5.1",
+        "sierra-tau-bench-2024"
+      ]
+    },
+    "problem": {
+      "text": "当时已有的智能体基准（WebArena、SWE-bench、AgentBench 等）大多只测单轮人机交互——所有必要信息一次交换完，而且只报平均成功率，没有可靠性或适应性度量。真实客服却是长程的：要在多轮动态对话里逐步收集信息、严格遵守公司政策、并且在上百万次交互中保持一致的输出。τ-bench 就是为这个缺口设计的。",
+      "cite": [
+        "sierra-tau-bench-2024",
+        "arxiv-2406-12045@Abstract"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "论文首发时最好",
+        "value": "pass^1 平均 48.2%",
+        "note": "gpt-4o + 函数调用（零售 61.2% / 航空 35.2%）；同一模型零售 pass^8 跌到 25% 以下。",
+        "cite": [
+          "arxiv-2406-12045@Table 2",
+          "arxiv-2406-12045@§5.1"
+        ]
+      },
+      {
+        "label": "原仓库榜单参考",
+        "value": "零售 pass^1 69.2%",
+        "note": "claude-3.5-sonnet-20241022 + TC 策略；该仓库已标记为过期版本，榜单停在原版任务集，仅供看当年口径。",
+        "cite": [
+          "repo-tau-bench@Leaderboard"
+        ]
+      },
+      {
+        "label": "任务集修复后最好",
+        "value": "航空 pass^4 72.0%",
+        "note": "GPT-5.2 (high)，τ³ 修复版任务集（修复前 50.0%）；航空 pass^1 提升 +14.0～+20.0 分，零售仅 -0.4～+5.5 分。",
+        "cite": [
+          "tau3-task-fixes"
+        ]
+      },
+      {
+        "label": "同期文本智能体参考线",
+        "value": "约 85%",
+        "note": "𝜏³ 博客口径的推理型文本智能体；语音智能体理想条件约 54%，加入真实音频与轮次争抢后降到 26–38%。",
+        "cite": [
+          "sierra-tau3-2026"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "「pass^k 就是 pass@k」——两者正好相反：pass^k 要求 k 次试验全部成功，pass@k 只要 k 次中有一次成功。论文特意把两个定义摆在一起写清楚。",
+        "cite": [
+          "arxiv-2406-12045@§4.3"
+        ]
+      },
+      {
+        "text": "「pass^1 高就说明智能体可靠」——论文里 gpt-4o 零售 pass^1 超过 60%，pass^8 却跌到 25% 以下；Sierra 博客把这称为约 60% 的断崖式下跌。平均分掩盖的正是同一任务的重复失败。",
+        "cite": [
+          "arxiv-2406-12045@§5.1",
+          "sierra-tau-bench-2024"
+        ]
+      },
+      {
+        "text": "「不同仓库、不同年份的 τ-bench 分数可以直接比」——官方 CHANGELOG 明说 2.0 与 1.x 榜单不可比、1.0.1 之前的 banking_knowledge 不可比；τ³ 的 50+ 任务修复也实质改变了分数线（航空最多 +20 分）。",
+        "cite": [
+          "tau2-changelog",
+          "tau2-bench-repo",
+          "tau3-task-fixes"
+        ]
+      },
+      {
+        "text": "「这个基准在评对话质量」——它只比数据库终态和回复是否带齐必要信息，不评价语气、礼貌或说服力；论文自己把这列为待补的细粒度指标。",
+        "cite": [
+          "arxiv-2406-12045@§3",
+          "sierra-tau-bench-2024"
+        ]
+      },
+      {
+        "text": "「τ-bench 就是零售加航空两个域」——τ² 加了电信域，τ³ 加了 𝜏-Banking 知识库域与全双工语音，τ-bench 2.0 又加了六语言 τ-i18n 和外呼实体域 τ-Entity。",
+        "cite": [
+          "arxiv-2506-07982",
+          "sierra-tau3-2026",
+          "tau2-bench-repo"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "Sierra；论文署名 Noah Shinn、Pedram Razavi、Karthik Narasimhan，机构为 Sierra。",
+        "cite": [
+          "arxiv-2406-12045@作者署名",
+          "sierra-tau-bench-2024"
+        ]
+      },
+      {
+        "k": "首次发布",
+        "v": "2024-06-17 arXiv v1；2024-06-20 Sierra 官方博客同步公开，代码与数据同时放出。",
+        "cite": [
+          "arxiv-2406-12045@Abstract",
+          "sierra-tau-bench-2024"
+        ]
+      },
+      {
+        "k": "设计动机",
+        "v": "从生产环境客服智能体反推三条硬要求：长程地同时与人打交道和调 API；准确遵守任务/域特有的复杂政策；在上百万次交互中保持一致可靠。当时的热门基准三条都不满足。",
+        "cite": [
+          "sierra-tau-bench-2024"
+        ]
+      },
+      {
+        "k": "评测思路",
+        "v": "把每个任务建成带真实数据库和工具 API 的客服场景，用户由 LLM 扮演；任务结束后把数据库终态与唯一期望终态做客观比对，从而不需要人工或 LLM 当裁判。",
+        "cite": [
+          "arxiv-2406-12045@§3",
+          "sierra-tau-bench-2024"
+        ]
+      },
+      {
+        "k": "后续演进",
+        "v": "τ²-bench（2025-06）让用户也能调工具，进入双控（Dec-POMDP）场景；τ³-bench（2026-03）加 𝜏-Banking 知识库域与 𝜏-Voice 全双工语音，并合入 50+ 任务修复；τ-bench 2.0（2026-10-19）加 τ-i18n 六语言与 τ-Entity 外呼实体域。",
+        "cite": [
+          "arxiv-2506-07982",
+          "sierra-tau3-2026",
+          "tau2-changelog"
+        ]
+      },
+      {
+        "k": "社区影响",
+        "v": "Sierra 称自 2024 年 6 月发布以来 𝜏-Bench 已成为研究者、模型厂商与企业的既成标准；外部审计（Amazon 的 τ-Bench Verified / SABER）与社区 PR 直接促成了官方任务修复。",
+        "cite": [
+          "sierra-tau3-2026",
+          "tau3-task-fixes"
+        ]
+      },
+      {
+        "k": "外部审计",
+        "v": "SABER 论文在 τ-Bench（Airline/Retail）与 SWE-Bench Verified 上把轨迹拆成变更型与非变更型步骤，发现变更型动作每多一次偏差，SoTA 模型成功率的几率最多下降 92%（航空）/ 96%（零售）。",
+        "cite": [
+          "arxiv-2512-07850"
+        ]
+      },
+      {
+        "k": "代码与数据",
+        "v": "原始 τ-bench 仓库首页已声明自己只包含过期版本的航空与零售任务，官方建议改用 τ³-bench 拿修复后的任务和新域。",
+        "cite": [
+          "repo-tau-bench"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-19",
+        "columns": [
+          "来源",
+          "模型",
+          "指标",
+          "数值",
+          "口径"
+        ],
+        "rows": [
+          [
+            "论文 Table 2（2024-06）",
+            "gpt-4o（函数调用）",
+            "pass^1",
+            "零售 61.2% / 航空 35.2% / 平均 48.2%",
+            "原版任务集；每题 ≥3 次试验；平均按域加权而非按题加权；智能体温度 0.0、用户温度 1.0"
+          ],
+          [
+            "论文 Table 2（2024-06）",
+            "gpt-4-turbo（ReAct）",
+            "pass^1",
+            "零售 57.7% / 航空 32.4% / 平均 45.1%",
+            "同上"
+          ],
+          [
+            "论文 Table 2（2024-06）",
+            "claude-3-opus（函数调用）",
+            "pass^1",
+            "零售 44.2% / 航空 34.7% / 平均 39.5%",
+            "同上"
+          ],
+          [
+            "论文 Table 2（2024-06）",
+            "gpt-3.5-turbo（函数调用）",
+            "pass^1",
+            "零售 20.0% / 航空 10.8% / 平均 15.4%",
+            "同上"
+          ],
+          [
+            "原仓库 Leaderboard",
+            "claude-3.5-sonnet-20241022（TC）",
+            "pass^1 / pass^4",
+            "航空 46.0% / 32.6%；零售 69.2% / 57.6%",
+            "TC = 论文中的函数调用策略；该仓库已标记为过期版本"
+          ],
+          [
+            "原仓库 Leaderboard",
+            "gpt-4o（TC）",
+            "pass^1 / pass^4",
+            "航空 42.0% / 27.3%；零售 60.4% / 49.1%",
+            "同上"
+          ],
+          [
+            "τ³ 任务修复后榜单（2026）",
+            "GPT-5.2 (high)",
+            "pass^4",
+            "航空 72.0%（修复前 50.0%）",
+            "修复版任务集；4 trials per task；航空 pass^1 提升 +14.0～+20.0 分"
+          ],
+          [
+            "τ²-bench 论文（2025-06）",
+            "claude-3.7-sonnet",
+            "pass^1",
+            "约 49%（电信新任务）",
+            "τ²-bench 电信域程序化生成任务，与原 τ-bench 任务集不同"
+          ]
+        ]
+      },
+      "cite": [
+        "arxiv-2406-12045@Table 2",
+        "arxiv-2406-12045@Figure 3",
+        "repo-tau-bench@Leaderboard",
+        "tau3-task-fixes",
+        "arxiv-2506-07982"
+      ]
+    }
+  }
 }

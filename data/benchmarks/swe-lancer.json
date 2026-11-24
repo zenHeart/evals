@@ -1,48 +1,413 @@
 {
   "id": "swe-lancer",
   "name": "SWE-Lancer",
-  "full_name": null,
+  "full_name": "SWE-Lancer: Can Frontier LLMs Earn $1 Million from Real-World Freelance Software Engineering?",
   "aliases": [],
-  "status": null,
-  "categories": [
-    "coding"
-  ],
-  "summary": "OpenAI 用 Upwork 真实外包任务定价衡量代码价值（美元计）",
-  "interpretation": "用 Upwork 真实外包任务给 AI 的代码定价：通过了就“挣到”对应的美元。AI 替代程序员的经济学测量。",
-  "measures": [],
-  "does_not_measure": [],
-  "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
-  },
-  "metrics": [],
-  "default_protocol": {
-    "raw": "通过即获得对应任务金额，总分=收入"
-  },
-  "versions": [],
-  "limitations": [],
-  "notes": null,
-  "official_sources": [
+  "status": "active",
+  "categories": ["coding"],
+  "summary": "OpenAI 把 Upwork 上的真实外包任务变成基准：1,488 道来自 Expensify 开源仓库的 freelance 任务共价值 100 万美元，模型通过端到端测试就「挣到」对应赏金——用美元而不是通过率来衡量代码能力。",
+  "interpretation": "分数读作「模型能挣到多少钱」：Diamond 公开集上最强的 Claude 3.5 Sonnet 挣到 50.08 万美元中的 20.8 万美元（IC SWE 26.2%、SWE Manager 44.9%），说明前沿模型还做不了大部分真实外包活；分数越高，越接近「能接单干活」。",
+  "measures": [
     {
-      "kind": "site",
-      "url": "https://github.com/openai/swelancer"
+      "area": "IC SWE 任务（独立工程）",
+      "focus": "764 道，共 $414,775。模型拿到 GitHub issue 的标题、描述与发帖时的代码库快照，自己定位并修改代码；提交的 patch 要用 Playwright 端到端测试全部通过才算解决。",
+      "share": "题量 51.3%（764 / 1,488）· 金额 41.5%（$414,775 / $1,000,000）",
+      "format": "代码补丁 + 端到端测试判定",
+      "cite": ["paper@§2", "paper@Table 1", "paper@§2.2"]
     },
     {
-      "kind": "paper",
-      "url": "https://openai.com/index/swe-lancer/"
+      "area": "SWE Manager 任务（管理决策）",
+      "focus": "724 道，共 $585,225。模型在当初工程师为该 issue 提交的多份技术实现方案里，选出实际中标的那一份；模型选择与 ground truth 比对，验证活动显示与原中标方案 99% 一致。",
+      "share": "题量 48.7%（724 / 1,488）· 金额 58.5%（$585,225 / $1,000,000）",
+      "format": "多选题，与中标方案匹配",
+      "cite": ["paper@§2", "paper@Table 1"]
+    },
+    {
+      "area": "任务类型与性质分布",
+      "focus": "Diamond 公开集里 74% 的 IC SWE 任务和 76% 的 SWE Manager 任务属于 Application Logic，17% / 18% 属于 UI/UX 开发；性质上 88% 的 IC SWE 任务和 94% 的 Manager 任务是 bug fix，新功能与维护占比很低。",
+      "share": "Application Logic 74%–76% · bug fix 88%–94%",
+      "format": "构成统计（非独立题型）",
+      "cite": ["paper@§3.2", "paper@Table 6", "paper@Table 7"]
+    },
+    {
+      "area": "赏金价格带",
+      "focus": "任务价格从 50 美元的 bug fix 到 32,000 美元的功能实现，全部是当初真实支付给 freelancer 的金额；全集 35% 的任务价值超过 $1,000，34% 在 $500–$1,000 之间。",
+      "share": "35% 的任务 > $1,000 · 34% 在 $500–$1,000",
+      "format": "构成统计（非独立题型）",
+      "cite": ["paper@Abstract", "paper@§1", "paper@Table 9"]
     }
   ],
-  "related_benchmarks": [
-    "humaneval",
-    "lcb",
-    "swebench",
-    "aider",
-    "humanevalplus",
-    "apps"
+  "does_not_measure": [
+    {
+      "text": "不测「从零到一」的新产品开发：所有任务都建立在 Expensify 这个已建成、持续维护的代码库上。",
+      "cite": ["paper@§4"]
+    },
+    {
+      "text": "不测基础设施 / DevOps 工作（Kubernetes 集群架构调优、pod 故障、节点崩溃、网络问题排查）：这类任务在 Expensify 发布的任务集里本身就少。",
+      "cite": ["paper@§4"]
+    },
+    {
+      "text": "不测多模态能力：任务与 issue 都是纯文本，模型没有图像或视频输入，issue 作者常附的屏幕录像用不上。",
+      "cite": ["paper@§4", "paper@附录 A5"]
+    },
+    {
+      "text": "不测与人类协作：模型不能像真实工程师那样追问澄清或后续提问。",
+      "cite": ["paper@§4"]
+    },
+    {
+      "text": "不测其他平台、仓库或技术栈：任务全部来自 Upwork 上的 Expensify 仓库，以 JavaScript / TypeScript 全栈 Web 为主。",
+      "cite": ["paper@§4", "paper@Table 5"]
+    }
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-28"
+  "dataset": {
+    "sample_count": 1488,
+    "splits": [
+      "SWE-Lancer Diamond（公开）502 题 / $500,800",
+      "SWE-Lancer Full（全集）1,488 题 / $1,000,000",
+      "私有 holdout $499,200（题量未披露）"
+    ],
+    "languages": ["javascript", "typescript"],
+    "source_type": "Upwork 真实外包任务（Expensify 开源仓库，当初已由付费贡献者解决）",
+    "public_sample": true,
+    "totals": "全集 1,488 题共 $1,000,000：IC SWE 764 题 / $414,775 + SWE Manager 724 题 / $585,225。公开 Diamond 集 502 题 / $500,800：IC SWE 237 题 / $236,300 + SWE Manager 265 题 / $264,500。另有 $499,200 私有留存集用于对抗污染与浏览。",
+    "cite": ["paper@§1", "paper@§2", "paper@Table 1", "paper@附录 A11"],
+    "construction": [
+      {
+        "k": "选仓库",
+        "text": "挑一个商业上重要、维护良好的开源仓库：Expensify 是市值约 3 亿美元、1,200 万用户的纳斯达克上市公司（EXFY），它在 Upwork 上发布带真实赏金的任务，适合作为有商业价值的软件工程任务来源。",
+        "cite": ["paper@§2.2"]
+      },
+      {
+        "k": "筛任务",
+        "text": "100 名专业软件工程师审查任务、提案与代码库的清晰度、特异性与可执行性；金额超过 $5,000 的高价值 IC SWE 任务另由 10 名资深工程师专门验证环境配置与测试覆盖；每个 IC SWE 任务由 3 名工程师复审、每个 SWE Manager 任务由 2 名复审。",
+        "cite": ["paper@§2.2"]
+      },
+      {
+        "k": "定入选标准",
+        "text": "issue 必须来自开源仓库、带具体赏金、已被真正修复（本地执行确认对应 PR 确实修好）；SWE Manager 任务还要求当初至少有 2 份定义良好的提案，最终每题至少经 3 名资深工程师筛查。",
+        "cite": ["paper@附录 A6"]
+      },
+      {
+        "k": "生成 IC SWE 任务",
+        "text": "从每个验证过的 GitHub issue 取标题、描述与发帖时的代码库快照，做成 IC SWE 任务；Manager 任务则把当初的多份提案作为选项。",
+        "cite": ["paper@§2.2", "paper@§2"]
+      },
+      {
+        "k": "写端到端测试",
+        "text": "为每个 IC SWE 任务写完整的 Playwright 端到端测试，模拟登录、复杂操作（如金融交易）等真实用户流程；测试经工程师三轮质量 / 覆盖 / 公平性验证，并由自动系统确保修复后通过、破损后失败。",
+        "cite": ["paper@§2.2", "paper@§3.2"]
+      },
+      {
+        "k": "加 user tool",
+        "text": "模型可调用 user tool：Playwright 脚本在本地应用里模拟真实用户执行任务相关动作，让模型像人类工程师那样边写边看；工具只把文本轨迹和一系列截图写到工作目录，不告诉模型动作是否成功。",
+        "cite": ["paper@§2.2"]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "pass-at-1",
+      "name": "pass@1（单次通过率）",
+      "direction": "越高越好",
+      "description": "单次尝试即通过全部 Playwright 端到端测试的任务占比，对应真实外包平台「一次机会」的约束。",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["paper@§2.1", "paper@§3.1"]
+    },
+    {
+      "id": "dollars-earned",
+      "name": "总收入（dollars earned）",
+      "direction": "越高越好",
+      "description": "通过任务对应的真实赏金累计；Diamond 集满分 $500,800，全集 $1,000,000。",
+      "unit": "usd",
+      "cite": ["paper@§2.1", "paper@Table 1"]
+    },
+    {
+      "id": "earn-rate",
+      "name": "earn rate（赏金转化率）",
+      "direction": "越高越好",
+      "description": "赚到金额 ÷ 该集合赏金总额，把不同价格带的任务分布折算成「每 1 美元赏金挣到几美分」。",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["paper@§2.1", "paper@§1"]
+    }
+  ],
+  "default_protocol": {
+    "raw": "模型在 Docker 容器里对每道任务单次尝试（pass@1）：容器内仓库已预配置、无 Internet 访问、GitHub remote 与后续 commit 已移除，模型只能用基础 scaffold 浏览本地代码库、修改文件、执行终端命令；每次 rollout 最多 100 次工具调用、3 小时内完成、温度 1.0。IC SWE 任务提交 patch 后跑全部 Playwright 端到端测试判定是否解决；SWE Manager 任务从多份技术方案中选出与 ground truth（当初中标方案）一致的那一份。",
+    "cite": ["paper@§3.1", "paper@§2", "paper@附录 A5"],
+    "variants": [
+      {
+        "text": "pass@k：允许 k 次独立尝试取最好一次，论文报告到 pass@8；o1 从 pass@1 到 pass@6 接近把解题率翻三倍，GPT-4o pass@6 与 o1 pass@1 同为 16.5%。",
+        "cite": ["paper@§3.3"]
+      },
+      {
+        "text": "推理强度：o1 的 reasoning effort 从 Low 到 High，IC SWE Diamond pass@1 从 9.3% 升到 16.5%，收入从 $16K 升到 $29K，earn rate 从 6.8% 升到 12.1%。",
+        "cite": ["paper@§3.4"]
+      },
+      {
+        "text": "去掉 user tool：IC SWE 任务 pass@1 只小幅下降，但强模型掉得更多；user tool 一次要跑 90–120 秒，GPT-4o 这类较弱模型容易直接放弃这个工具。",
+        "cite": ["paper@§3.5"]
+      },
+      {
+        "text": "模型 + 外包回退：模型先试、失败的任务交给人类 freelancer。pass@1 口径下比全外包便宜 8.84%（GPT-4o）/ 13.26%（o1）；给模型 5 次尝试后便宜 18.6% / 33.5%；GPT-4o 每 1 美元模型+外包成本赚 $0.10，o1 赚 $0.16。",
+        "cite": ["paper@§3.6"]
+      },
+      {
+        "text": "硬件与环境：每个 rollout 跑在 Azure Standard D2as v4（2 vCPU / 8GB RAM）虚拟机上，容器另有 64GB 共享内存与 192GB 最大内存可用。",
+        "cite": ["paper@附录 A5"]
+      },
+      {
+        "text": "数据集版本：2025-07-28 官方公告把数据与结果更新到 2025-07-17，新版数据集去掉执行期间的联网要求，减少模型表现的波动来源。",
+        "cite": ["openai-index-swe-lancer@更新说明"]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2025-02-17",
+      "label": "arXiv v1 发布",
+      "cite": ["paper@提交历史"]
+    },
+    {
+      "id": "v4-icml",
+      "date": "2025-05-29",
+      "label": "arXiv v4（ICML 2025 版，PMLR 267）",
+      "cite": ["paper@提交历史", "paper@作者署名"]
+    },
+    {
+      "id": "data-2025-07-17",
+      "date": "2025-07-28",
+      "label": "OpenAI 公告：数据集与结果更新至 2025-07-17，改在 github.com/openai/preparedness 与系统卡中提供，并去掉执行期间联网要求",
+      "cite": ["openai-index-swe-lancer@更新说明"]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "训练污染与联网作弊风险",
+      "impact": "Diamond 任务来自 2023–2024 年的公开 GitHub issue，模型可能见过原 issue 或修复 PR；论文因此要求禁用浏览或限制可访问站点，并做事后作弊过滤。",
+      "severity": "高",
+      "response": "作者保留 $499,200 私有留存集（其中 $178,475 的 IC SWE 任务由专业工程师以等价方式重新引入 bug）对抗污染与浏览；附录 A2 的 Table 4 显示对早于模型知识截止日的任务没有明确的性能提升，提示污染影响有限。",
+      "reader": "看到分数先确认是 Diamond 公开集还是私有集；公开集上的高分要打折扣看。",
+      "cite": ["paper@§4", "paper@附录 A11"]
+    },
+    {
+      "issue": "单一仓库、单一平台",
+      "impact": "任务全部来自 Upwork 上的 Expensify 仓库，JavaScript / TypeScript 全栈 Web 之外的技术栈覆盖不足，基础设施 / DevOps 类工作尤其稀缺。",
+      "severity": "中",
+      "response": "论文明确把这一点列为 scope 限制，未做跨仓库扩展。",
+      "reader": "不要把 SWE-Lancer 分数当成通用编程能力；换栈、换业务域的表现未知。",
+      "cite": ["paper@§4"]
+    },
+    {
+      "issue": "样本量小、单样本方差",
+      "impact": "Diamond IC SWE 只有 237 题，pass@1 是单样本，跑次之间可能有明显波动；论文脚注说明因限流，Claude 3.5 Sonnet 在全集上只跑了 pass@1。",
+      "severity": "中",
+      "response": "论文用脚注披露该限制，并按任务类型分别给出通过率。",
+      "reader": "两三个百分点的差距不要当真，尤其是细分任务类型的子集。",
+      "cite": ["paper@§3.1 脚注", "paper@Table 6"]
+    },
+    {
+      "issue": "任务形态偏自包含",
+      "impact": "freelance 任务比全职软件工程更自包含，缺少长期协作、代码评审与跨团队沟通；也不代表「从零到一」的新产品开发，因为所有任务都建立在已维护的代码库上。",
+      "severity": "中",
+      "response": "论文如实标注该局限。",
+      "reader": "它测的是「接单干活」，不是「在团队里长期演进一个系统」。",
+      "cite": ["paper@§4"]
+    },
+    {
+      "issue": "纯文本、无澄清",
+      "impact": "模型只能读 issue 文本，拿不到 issue 作者常附的屏幕录像，也不能像真实工程师那样追问澄清；论文未测试截图 / 视频能带来多少提升。",
+      "severity": "中",
+      "response": "论文把「截图与视频能提升多少」列为未测试方向。",
+      "reader": "信息不完整时模型只能猜，真实工程师会先问清楚。",
+      "cite": ["paper@§4", "paper@附录 A5"]
+    },
+    {
+      "issue": "赏金是历史价格",
+      "impact": "所有价格反映当初真实支付给 freelancer 的赏金，可能与当前市场价不同；作者在成本分析里明确提醒这一点。",
+      "severity": "低",
+      "response": "论文把它作为成本分析的前提声明。",
+      "reader": "把「挣到多少钱」当相对刻度，不要当当前用工成本估算。",
+      "cite": ["paper@§3.6"]
+    }
+  ],
+  "notes": "官方 2025-07-28 公告指向的 github.com/openai/preparedness 在本站核验时已重定向到 openai/frontier-evals；旧地址 github.com/openai/swelancer 为 404，已从 official_sources 移除。",
+  "official_sources": [
+    { "kind": "paper", "url": "https://arxiv.org/abs/2502.12115" },
+    { "kind": "site", "url": "https://openai.com/index/swe-lancer/" },
+    { "kind": "repo", "url": "https://github.com/openai/preparedness" }
+  ],
+  "related_benchmarks": ["humaneval", "lcb", "swebench", "aider", "humanevalplus", "apps"],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-13",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "SWE-Lancer: Can Frontier LLMs Earn $1 Million from Real-World Freelance Software Engineering?（arXiv:2502.12115，v4，2025-05-29；ICML 2025, PMLR 267）",
+        "url": "https://arxiv.org/abs/2502.12115",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "openai-index-swe-lancer",
+        "kind": "site",
+        "title": "OpenAI：SWE-Lancer（含 2025-07-28 更新说明）",
+        "url": "https://openai.com/index/swe-lancer/",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "github.com/openai/preparedness（评测代码；本站核验时该 URL 重定向到 openai/frontier-evals）",
+        "url": "https://github.com/openai/preparedness",
+        "accessed": "2026-11-13"
+      }
+    ],
+    "header": {
+      "publisher": { "v": "OpenAI", "cite": ["paper@作者署名"] },
+      "first_release": { "v": "2025-02-17（arXiv v1）；2025-05-29 v4（ICML 2025）", "cite": ["paper@提交历史"] }
+    },
+    "cites": {
+      "summary": ["paper@Abstract", "paper@§1", "openai-index-swe-lancer@摘要"],
+      "interpretation": ["paper@§1", "paper@§3.2"]
+    },
+    "problem": {
+      "text": "热门代码基准（HumanEval、SWE-bench 等）已被前沿模型刷到很高，也越来越容易被训练数据污染；SWE-Lancer 换了个度量——用 Upwork 上真实支付过赏金的外包任务来问一个更贴近经济后果的问题：模型到底能靠写代码挣到多少钱？",
+      "cite": ["paper@Abstract", "paper@§1", "openai-index-swe-lancer@摘要"]
+    },
+    "ladder": [
+      {
+        "label": "论文报告的最好成绩（Diamond 公开集）",
+        "value": "$208,050 / $500,800",
+        "note": "Claude 3.5 Sonnet：IC SWE 26.2%（237 题）、SWE Manager 44.9%（265 题），按题数加权约 36.1%；折合 earn rate 约 41.5%。",
+        "cite": ["paper@§1", "paper@Table 1"]
+      },
+      {
+        "label": "论文报告的最好成绩（全集）",
+        "value": "超过 $400,000 / $1,000,000",
+        "note": "Claude 3.5 Sonnet 在全集上赚到 40 万美元以上；论文脚注说明因限流，全集上只跑了 pass@1。",
+        "cite": ["paper@§1", "paper@§3.1 脚注"]
+      },
+      {
+        "label": "开源模型初测（附录 A15）",
+        "value": "合计 23.1%–23.5%（Diamond）",
+        "note": "Deepseek-R1 与 Llama 3.3 70B Instruct 在默认 scaffold、单 seed 下的初步结果；作者认为换更合适的 scaffold 会明显提高 IC SWE 表现。",
+        "cite": ["paper@附录 A15"]
+      },
+      { "label": "本站账本当前最高", "auto": "ledger-top" }
+    ],
+    "misreadings": [
+      {
+        "text": "把「挣到 20.8 万美元」理解成模型已接近人类 freelancer：Diamond 集上 IC SWE 只有 26.2%，earn rate 约 41.5% 里有一部分靠高赏金任务和管理任务拉起来。",
+        "cite": ["paper@§1"]
+      },
+      {
+        "text": "把 SWE Manager 任务当成写代码：模型只是在多份技术方案里选出当初中标的那一份，与 ground truth 比对，不写一行代码。",
+        "cite": ["paper@§2"]
+      },
+      {
+        "text": "以为通过 E2E 测试等于功能完全正确：测试由 100 名工程师编写并三轮验证，比少量选择性测试更难被钻空子，但仍不能覆盖所有边界。",
+        "cite": ["paper@§3.2", "paper@附录 A7"]
+      },
+      {
+        "text": "把 SWE-Lancer 当通用编程基准：任务全部来自 Upwork 上的 Expensify 一个仓库，价格是当初真实赏金，不代表当前市场价。",
+        "cite": ["paper@§4", "paper@§3.6"]
+      },
+      {
+        "text": "把 pass@1 提升几个点当成稳定进步：pass@1 是单样本，跑次之间方差不小，论文脚注明确提醒这一点。",
+        "cite": ["paper@§3.1 脚注"]
+      }
+    ],
+    "background": [
+      { "k": "发布方", "v": "OpenAI", "cite": ["paper@作者署名"] },
+      {
+        "k": "核心作者",
+        "v": "Samuel Miserendino、Michele Wang（共同一作）、Tejal Patwardhan、Johannes Heidecke；论文收录于 ICML 2025（PMLR 267，加拿大温哥华）。",
+        "cite": ["paper@作者署名"]
+      },
+      { "k": "首发时间", "v": "2025-02-17 arXiv v1；2025-05-29 v4（ICML 2025 版）", "cite": ["paper@提交历史"] },
+      {
+        "k": "任务来源",
+        "v": "Expensify（NASDAQ: EXFY）开源仓库在 Upwork 上发布的真实外包任务；Expensify 是市值约 3 亿美元、1,200 万用户的上市公司，其仓库任务多样、复杂且质量高。",
+        "cite": ["paper@§2.2"]
+      },
+      {
+        "k": "定位",
+        "v": "把模型表现直接映射到金额、同时纳入全栈任务与管理任务，并用工程师手写的执行式端到端测试评判——这是它与既有基准的主要差别。",
+        "cite": ["paper@Table 5"]
+      },
+      {
+        "k": "任务体量",
+        "v": "Diamond 集平均 26 天解决、47 条评论（含多份提案讨论）；IC SWE 平均改动 2 个文件、69 行代码，SWE Manager 任务平均在 4–5 份提案里选一个。",
+        "cite": ["paper@§3.2", "paper@Table 8", "paper@Table 10"]
+      },
+      {
+        "k": "价格分布",
+        "v": "全集 35% 的任务价值超过 $1,000，34% 在 $500–$1,000 之间；单题价格从 50 美元的 bug fix 到 32,000 美元的功能实现。",
+        "cite": ["paper@§1", "paper@Abstract", "paper@Table 9"]
+      },
+      {
+        "k": "抗作弊设计",
+        "v": "人工验证的端到端测试模拟真实工程师的工作流，而不是少数精选测试用例，因此 SWE-Lancer 天生更能抵抗作弊，也更能反映模型产出真实经济价值的能力。",
+        "cite": ["paper@附录 A7"]
+      },
+      {
+        "k": "成本视角",
+        "v": "API 成本相对外包赏金极小：GPT-4o 的 API 成本是外包成本的 0.08%、o1 是 0.7%；在已解决的任务上，GPT-4o 每 1 美元 API 成本赚 109 美元、o1 赚 20 美元。",
+        "cite": ["paper@附录 A14"]
+      },
+      {
+        "k": "代码与数据",
+        "v": "论文随开源 harness 发布统一 Docker 镜像与公开评测集；官方 2025-07-28 公告指向 github.com/openai/preparedness，其 README 自述为「Code for evals measuring frontier model capabilities.」并把 SWE-Lancer 列为「Real freelance software engineering tasks with end-to-end tests.」",
+        "cite": ["openai-index-swe-lancer@更新说明", "repo@README"]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2025-05-29",
+        "columns": ["口径", "模型", "推理档", "pass@1", "赚到 / 可赚", "earn rate"],
+        "rows": [
+          ["IC SWE（Diamond，$236k）", "GPT-4o", "N/A", "8.0%", "$14k / $236k", "6.0%"],
+          ["IC SWE（Diamond）", "o1", "Low", "9.3%", "$16k / $236k", "6.8%"],
+          ["IC SWE（Diamond）", "o1", "Medium", "15.6%", "$24k / $236k", "9.9%"],
+          ["IC SWE（Diamond）", "o1", "High", "16.5%", "$29k / $236k", "12.1%"],
+          ["IC SWE（Diamond）", "Claude 3.5 Sonnet", "N/A", "26.2%", "$58k / $236k", "24.5%"],
+          ["IC SWE（Diamond，无 user tool）", "GPT-4o", "N/A", "8.0%", "$17k / $236k", "7.2%"],
+          ["IC SWE（Diamond，无 user tool）", "o1", "High", "13.1%", "$23k / $236k", "9.7%"],
+          ["IC SWE（Full，$415k）", "GPT-4o", "N/A", "8.6%", "$29k / $415k", "6.9%"],
+          ["IC SWE（Full）", "o1", "High", "20.3%", "$78k / $415k", "18.9%"],
+          ["IC SWE（Full）", "Claude 3.5 Sonnet", "N/A", "21.1%", "$89k / $415k", "21.5%"],
+          ["SWE Manager（Diamond，$265k）", "GPT-4o", "N/A", "37.0%", "$125k / $265k", "47.1%"],
+          ["SWE Manager（Diamond）", "o1", "High", "41.5%", "$137k / $265k", "51.8%"],
+          ["SWE Manager（Diamond）", "Claude 3.5 Sonnet", "N/A", "44.9%", "$150k / $265k", "56.8%"],
+          ["SWE Manager（Full，$585k）", "GPT-4o", "N/A", "38.7%", "$275k / $585k", "47.0%"],
+          ["SWE Manager（Full）", "o1", "High", "46.3%", "$302k / $585k", "51.6%"],
+          ["SWE Manager（Full）", "Claude 3.5 Sonnet", "High", "47.0%", "$314k / $585k", "53.7%"],
+          ["合计（Diamond，$501k）", "GPT-4o", "N/A", "23.3%", "$139k / $501k", "27.7%"],
+          ["合计（Diamond）", "o1", "High", "29.7%", "$166k / $501k", "33.1%"],
+          ["合计（Diamond）", "Claude 3.5 Sonnet", "N/A", "36.1%", "$208k / $501k", "41.5%"],
+          ["合计（Full，$1M）", "GPT-4o", "N/A", "23.3%", "$304k / $1M", "30.4%"],
+          ["合计（Full）", "o1", "High", "32.9%", "$380k / $1M", "38.0%"],
+          ["合计（Full）", "Claude 3.5 Sonnet", "N/A", "33.7%", "$403k / $1M", "40.3%"],
+          ["附录 A15 初测 · IC SWE（Diamond）", "Deepseek-R1", "N/A", "3.8%", "$4k / $236k", "1.6%"],
+          ["附录 A15 初测 · IC SWE（Diamond）", "Llama 3.3 70B Instruct", "N/A", "4.6%", "$5k / $236k", "1.9%"],
+          ["附录 A15 初测 · IC SWE（Full）", "Deepseek-R1", "N/A", "5.2%", "$17k / $415k", "4.1%"],
+          ["附录 A15 初测 · IC SWE（Full）", "Llama 3.3 70B Instruct", "N/A", "5.9%", "$17k / $415k", "4.0%"],
+          ["附录 A15 初测 · SWE Manager（Diamond）", "Deepseek-R1", "N/A", "40.4%", "$121k / $265k", "45.6%"],
+          ["附录 A15 初测 · SWE Manager（Diamond）", "Llama 3.3 70B Instruct", "N/A", "40.4%", "$120k / $265k", "45.2%"],
+          ["附录 A15 初测 · SWE Manager（Full）", "Deepseek-R1", "N/A", "46.7%", "$276k / $585k", "47.2%"],
+          ["附录 A15 初测 · SWE Manager（Full）", "Llama 3.3 70B Instruct", "N/A", "44.1%", "$260k / $585k", "44.5%"],
+          ["附录 A15 初测 · 合计（Diamond）", "Deepseek-R1", "N/A", "23.1%", "$124k / $501k", "24.8%"],
+          ["附录 A15 初测 · 合计（Diamond）", "Llama 3.3 70B Instruct", "N/A", "23.5%", "$124k / $501k", "24.8%"],
+          ["附录 A15 初测 · 合计（Full）", "Deepseek-R1", "N/A", "25.4%", "$293k / $1M", "29.3%"],
+          ["附录 A15 初测 · 合计（Full）", "Llama 3.3 70B Instruct", "N/A", "24.5%", "$277k / $1M", "27.7%"]
+        ]
+      },
+      "cite": ["paper@Table 1", "paper@附录 A15"]
+    }
+  }
 }

@@ -1,30 +1,420 @@
 {
   "id": "video-mme",
   "name": "Video-MME",
-  "full_name": null,
-  "aliases": [],
-  "status": null,
+  "full_name": "Video-MME: The First-Ever Comprehensive Evaluation Benchmark of Multi-modal LLMs in Video Analysis（多模态大模型视频分析综合评测基准）",
+  "aliases": [
+    "VideoMME"
+  ],
+  "status": "active",
   "categories": [
     "multimodal"
   ],
-  "summary": "全谱系视频理解问答：900 视频 2700 题（短/中/长）",
-  "interpretation": "覆盖 11 秒到 1 小时的视频加多模态子题，考长视频记忆与时序推理，是视频理解方向的通用第一榜。",
-  "measures": [],
-  "does_not_measure": [],
+  "summary": "Video-MME 是 900 段 YouTube 视频配 2,700 道四选一多选题的视频理解基准：覆盖 6 大视觉领域、30 个细分类别，视频时长从 11 秒跨到 1 小时，字幕和音频是可选的附加输入。",
+  "interpretation": "高分说明模型能只靠抽帧（或再叠加字幕/音频）回答需要跨时间段记忆与推理的视频问题；它不代表开放问答、视频描述生成或实时流处理能力。分数高度依赖抽帧策略、是否给字幕、是否给音频，不同来源的 Video-MME 数字不能直接横比。",
+  "measures": [
+    {
+      "area": "短视频子集（< 2 分钟）",
+      "focus": "以感知类任务为主：动作识别、物体识别；论文统计短视频平均 82.5 秒",
+      "share": "300 视频 / 900 题",
+      "format": "四选一多选题（每题 4 个候选选项）",
+      "cite": [
+        "paper@Table 1",
+        "paper@§3.2 Dataset Statistics"
+      ]
+    },
+    {
+      "area": "中等时长子集（4–15 分钟）",
+      "focus": "感知与推理混合；论文统计中等视频平均 562.7 秒，中位证书长度 164.7 秒（答对所需观看的最少片段时长）",
+      "share": "300 视频 / 900 题",
+      "format": "四选一多选题",
+      "cite": [
+        "paper@Table 1",
+        "paper@Table 3"
+      ]
+    },
+    {
+      "area": "长视频子集（30–60 分钟）",
+      "focus": "以推理类任务为主，考长程时序理解；论文统计长视频平均 2,385.5 秒，中位证书长度 890.7 秒",
+      "share": "300 视频 / 900 题",
+      "format": "四选一多选题",
+      "cite": [
+        "paper@Table 1",
+        "paper@Table 3",
+        "paper@§3.2 Dataset Statistics"
+      ]
+    },
+    {
+      "area": "6 大视觉领域 / 30 个细分类别",
+      "focus": "Knowledge、Film & Television、Sports Competition、Artistic Performance、Life Record、Multilingual；细分类别示例有 technology、documentary、news report、esports、magic show、fashion。论文 §3.1 与官方仓库的特性列表都只列出 5 个领域，漏掉 Artistic Performance；表 5 的列头是 6 个领域的权威枚举",
+      "share": "论文未给出各领域题量占比（只有 Figure 2 的分布图）；官方数据集按题标注 domain，Hugging Face 列统计为 Knowledge 810 / Life Record 630 / Sports Competition 450 / Artistic Performance 360 / Film & Television 360 / Multilingual 90，合计 2,700",
+      "format": "四选一多选题",
+      "cite": [
+        "paper@§1",
+        "paper@Table 5",
+        "paper@§3.1 Dataset Construction",
+        "paper@Figure 2",
+        "repo@Overview",
+        "dataset-stats@domain"
+      ]
+    },
+    {
+      "area": "12 种任务类型",
+      "focus": "论文未逐一列出名称；官方数据集按题标注 task_type，共 12 类：Object Reasoning、Object Recognition、Information Synopsis、Action Recognition、Action Reasoning、Counting Problem、Attribute Perception、Temporal Reasoning、OCR Problems、Spatial Reasoning、Temporal Perception、Spatial Perception。论文只说明短视频偏感知、长视频偏推理",
+      "share": "论文未给出；官方数据集列统计为 Object Reasoning 454、Object Recognition 354、Information Synopsis 323、Action Recognition 313、Action Reasoning 285、Counting Problem 268、Attribute Perception 222、Temporal Reasoning 177、OCR Problems 139、Spatial Reasoning 56、Temporal Perception 55、Spatial Perception 54",
+      "format": "四选一多选题",
+      "cite": [
+        "paper@§3.1 Dataset Construction",
+        "paper@§3.2 Dataset Statistics",
+        "dataset-stats@task_type"
+      ]
+    },
+    {
+      "area": "多模态输入（字幕 / 音频）",
+      "focus": "900 段视频全部带音频，744 段带字幕；字幕只取与所抽帧时间戳对应的片段，音频作为可选的第三种输入",
+      "share": "744 视频带字幕（900 视频全部带音频）",
+      "format": "视频帧 + 可选字幕/音频 + 问题提示词",
+      "cite": [
+        "paper@§3.2 Dataset Statistics",
+        "repo@Dataset",
+        "paper@§7 Detailed Experimental Settings"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "纯文本捷径：题目被设计成不看视频就答不出——把只含问题的纯文本交给 Gemini 1.5 Pro 后准确率低于 15%，能凭文字答对的题被剔除或退回改写",
+      "cite": [
+        "paper@§3.1 Quality Review"
+      ]
+    },
+    {
+      "text": "开放式问答与生成式视频描述：2,700 题全部是四选一多选题，没有开放问答、时序定位或长文本生成任务",
+      "cite": [
+        "paper@§3.1 Dataset Construction",
+        "paper@Table 1"
+      ]
+    },
+    {
+      "text": "音频本身的独立理解：音频只是可选的附加输入，论文没有单独的音频理解评分，且多数开源模型不支持音频、音频对比被省略",
+      "cite": [
+        "paper@§3.2 Dataset Statistics",
+        "paper@§4.2 Quantitative Results"
+      ]
+    },
+    {
+      "text": "工具使用与多轮交互：评测是单轮多选题，用正则抽取答案后直接比对标准答案，不引入任何外部裁判或工具",
+      "cite": [
+        "paper@§7 Detailed Experimental Settings",
+        "repo@Evaluation Pipeline"
+      ]
+    }
+  ],
   "dataset": {
     "sample_count": 2700,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
+    "splits": [
+      "全集 2,700 题（900 视频 × 每段 3 题）",
+      "按时长拆成三个子集：短 / 中 / 长各 300 视频、900 题",
+      "按字幕设置拆成两种口径：w/o subs 与 w/ subs（同一批题跑两遍）"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "YouTube 视频全新人工采集 + 人工标注（官方明确说明不复用任何现有视频数据集）",
+    "public_sample": true,
+    "multiple_choice_share": "100%（2,700 题全部为四选一；官方数据集 options 列 min = max = 4）",
+    "multimodal_share": "744/900 视频带字幕，900/900 视频带音频",
+    "totals": "900 段视频共约 254 小时（论文 Table 1 记平均时长 1,017.9 秒/段），2,700 道四选一多选题（每段视频 3 题、每题 4 个选项）；744 段视频带字幕、全部 900 段带音频；题目与选项为英文，视频来自 YouTube。官方 Hugging Face 数据集按题给出 video_id、duration、domain、sub_category、task_type、question、options、answer、url、videoID 字段，可据此统计各领域与各任务类型题量。",
+    "cite": [
+      "paper@Table 1",
+      "paper@§3.1 Dataset Construction",
+      "paper@§3.2 Dataset Statistics",
+      "repo@Overview",
+      "repo@Dataset",
+      "dataset-stats@options"
+    ],
+    "construction": [
+      {
+        "k": "划定领域层级",
+        "text": "先从 YouTube 热门趋势确定领域层级：6 个关键领域，每个领域再细分标签（如体育下的足球、篮球），共 30 个细粒度视频类别；每个类别按短（< 2 分钟）、中（4–15 分钟）、长（30–60 分钟）三档采集视频，并尽量拿取对应字幕与音频。",
+        "cite": [
+          "paper@§3.1 Dataset Construction",
+          "repo@Overview"
+        ]
+      },
+      {
+        "k": "人工出题",
+        "text": "招募英语能力强、有视觉语言研究经验的标注员，每人完整看完整段视频后迭代式地出 3 道题，每题配 4 个候选选项，合计 2,700 题；题目被设计成必须参考视频内容才能答对。",
+        "cite": [
+          "paper@§3.1 Dataset Construction"
+        ]
+      },
+      {
+        "k": "换人质检",
+        "text": "每道题交给另一名标注员复核三件事：语言表达是否清晰准确、候选选项是否逻辑一致且可解、指定的正确答案是否恰当。",
+        "cite": [
+          "paper@§3.1 Quality Review"
+        ]
+      },
+      {
+        "k": "文本捷径过滤",
+        "text": "把只含问题的纯文本交给 Gemini 1.5 Pro，能仅凭文字答对的题被剔除或退回原标注员改写；该设置下 Gemini 1.5 Pro 准确率低于 15%，用来说明题目确实依赖视频内容。",
+        "cite": [
+          "paper@§3.1 Quality Review"
+        ]
+      },
+      {
+        "k": "分布与难度校验",
+        "text": "统计四个选项（A/B/C/D）的占比为 25.1/27.2/25.3/22.4%，接近均匀以避免位置偏置——官方数据集的 answer 列统计为 A 677 / B 735 / C 684 / D 604（合计 2,700），与论文比例一致；并引入证书长度（certificate length，答对该题所需观看的最少片段时长之和）衡量时序难度。",
+        "cite": [
+          "paper@§3.2 Dataset Statistics",
+          "dataset-stats@answer"
+        ]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "输入是「整段视频帧 + 可选完整字幕/音频 + 带提示词的问题」；优先使用模型自带的多选题提示词，没有就用官方标准化提示词（字幕列表 + 「只回复 A/B/C/D 字母」+ 问题 + 「The best answer is:」）。评分不引入任何第三方模型：用正则从模型输出里抽取答案，直接与标准答案比对得到准确率，并按短/中/长视频与总体分别报告。",
+    "cite": [
+      "paper@§7 Detailed Experimental Settings",
+      "repo@Evaluation Pipeline"
+    ],
+    "variants": [
+      {
+        "text": "有字幕 vs 无字幕：同一批题跑两遍，官网榜单默认按「带字幕」排序，论文表 4 同时给出两列；两者相差可达 10 个百分点，不能混比。",
+        "cite": [
+          "site@Leaderboard",
+          "paper@Table 4"
+        ]
+      },
+      {
+        "text": "抽帧策略：Gemini 1.5 Pro 对中短视频 1 fps、长视频 0.5 fps；GPT-4o 对短于 384 秒的视频 1 fps、更长的均匀抽 384 帧并缩放到 512×512；其他模型按各自官方配置抽固定帧数，论文记录为 4–64 帧，官网榜单另有 1,024 帧（AdaReTaKe）与 1,800 帧（JT-VL-Chat）的条目。帧数不同会显著改变长视频分数。",
+        "cite": [
+          "paper@§7 Detailed Experimental Settings",
+          "site@Leaderboard",
+          "site@Leaderboard 注"
+        ]
+      },
+      {
+        "text": "音频输入：只有 Gemini 1.5 Pro 做了音频对比，多数开源模型不支持音频、论文直接省略音频评测。",
+        "cite": [
+          "paper@§4.3 Analysis",
+          "paper@§4.2 Quantitative Results"
+        ]
+      },
+      {
+        "text": "厂商自报口径：官方仓库转述 Gemini 2.5 Pro「scoring 84.8% on the VideoMME benchmark」，但未说明是否带字幕与抽帧数，与论文表 4 中 Gemini 1.5 Pro 的 81.3% 不是同一口径。",
+        "cite": [
+          "repo@News",
+          "paper@Table 4"
+        ]
+      }
+    ]
   },
   "metrics": [
-    "accuracy"
+    {
+      "id": "accuracy",
+      "name": "准确率（Overall / Short / Medium / Long）",
+      "direction": "越高越好",
+      "description": "用正则从模型输出中抽取的答案与标准答案一致的题目占比；论文与官网按短、中、长视频与总体分别报告，并区分无字幕/带字幕两列",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§7 Detailed Experimental Settings",
+        "paper@Table 4"
+      ]
+    }
   ],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [],
-  "notes": "字节 Seed/MiniMax 引用；多家作视频能力主榜",
+  "versions": [
+    {
+      "id": "arxiv-v1",
+      "date": "2024-05-31",
+      "label": "arXiv v1 提交（首版摘要写「900 视频共 256 小时」）",
+      "cite": [
+        "arxiv@Submission history",
+        "v1@摘要"
+      ]
+    },
+    {
+      "id": "repo-launch",
+      "date": "2024-06-03",
+      "label": "官方仓库宣布上线 Video-MME",
+      "cite": [
+        "repo@News"
+      ]
+    },
+    {
+      "id": "refresh-2024-06-15",
+      "date": "2024-06-15",
+      "label": "官方刷新评测：替换失效与可能失效的视频链接并重新标注；GPT-4o 改为抽 384 帧 @512×512，总分升至 71.9%",
+      "cite": [
+        "repo@News"
+      ]
+    },
+    {
+      "id": "arxiv-v2",
+      "date": "2024-06-16",
+      "label": "arXiv v2",
+      "cite": [
+        "arxiv@Submission history"
+      ]
+    },
+    {
+      "id": "cvpr-2025",
+      "date": "2025-02-27",
+      "label": "被 CVPR 2025 接收",
+      "cite": [
+        "repo@News"
+      ]
+    },
+    {
+      "id": "arxiv-v3",
+      "date": "2025-05-30",
+      "label": "arXiv v3（本档案核对所用版本；v3 起正文不再给出总小时数）",
+      "cite": [
+        "arxiv@Submission history",
+        "paper"
+      ]
+    },
+    {
+      "id": "leaderboard-latest",
+      "date": "2025-09-28",
+      "label": "官网榜单可见的最新条目日期为 2025-09-28（video-SALMONN 2+，带字幕 81.6%）；页面未标注结果更新说明",
+      "cite": [
+        "site@Leaderboard"
+      ]
+    },
+    {
+      "id": "successor-videomme-v2",
+      "date": "2026-04-06",
+      "label": "同团队发布后继基准 Video-MME-v2（arXiv:2604.05015，800 视频 / 3,200 题，改用分组非线性评分；摘要称「现有基准正日趋饱和」）。这是独立实体，不与本档案的四选一准确率混比",
+      "cite": [
+        "v2@Submission history",
+        "v2@摘要"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "口径不可比（抽帧数 × 字幕 × 音频）",
+      "impact": "同一模型在不同抽帧数、是否给字幕/音频下分数差好几分甚至十几分：论文表 5 显示给 Gemini 1.5 Pro 加字幕在长视频上 +10.1%、多语种子类 +16.7%，加音频在长视频上 +6.2%。厂商自报常只写其中一种口径。",
+      "severity": "高",
+      "response": "论文表 4 同时公布无字幕/带字幕两列，附录 §7 逐模型列出抽帧数；官网榜单用脚注 1*–7* 标注各模型抽帧规则，并声明默认按带字幕排序。",
+      "reader": "比分数前先核对三件事：抽帧数、是否带字幕、是否带音频；看到单一数字先找它的口径标签。",
+      "cite": [
+        "paper@Table 5",
+        "paper@§7 Detailed Experimental Settings",
+        "site@Leaderboard"
+      ]
+    },
+    {
+      "issue": "语言先验可替代视觉输入（第三方诊断）",
+      "impact": "Cambrian-S（arXiv:2511.04670）把 VideoMME 归入「更依赖语言理解而非视觉线索」的一类：用文字描述替代视觉输入后，模型在 VideoMME 等基准上仍能超出随机水平 20 个百分点以上；视觉输入的重要性在 VideoMME 上明显弱于 VSI-Bench、Tomato、HourVideo。这意味着高分可能来自字幕/语言先验而非真的看懂画面。",
+      "severity": "高",
+      "response": "未见 Video-MME 官方回应；论文自身的应对是构建时用纯文本问题过滤（Gemini 1.5 Pro 文本-only 低于 15%），但那只能挡住「问题本身可答」，挡不住「字幕可答」。",
+      "reader": "看分数时分清输入里有没有字幕；跨基准比较优先看无字幕口径，并把它当作语言理解与视觉理解的混合分，不是纯视觉分。",
+      "cite": [
+        "cambrian@§2.1",
+        "paper@§3.1 Quality Review"
+      ]
+    },
+    {
+      "issue": "视频链接与许可风险",
+      "impact": "视频全部来自 YouTube 外链，链接可能失效；数据集只允许学术研究、禁止任何形式商用，视频版权归原视频所有者。",
+      "severity": "中",
+      "response": "2024-06-15 官方替换了失效与可能失效的视频链接并重新标注；仓库给出联系邮箱，承诺侵权即删。",
+      "reader": "下载后本地留存并记录获取日期；二次发布或商用前先看许可条款。",
+      "cite": [
+        "repo@News",
+        "repo@License"
+      ]
+    },
+    {
+      "issue": "饱和与后继基准",
+      "impact": "同团队 2026-04 发布 Video-MME-v2，摘要直接写「现有基准正日趋饱和，暴露出榜单高分与真实模型能力之间的严重脱节」，并改用分组非线性评分。原 Video-MME 的逐题准确率在前沿模型上已进入高位区间（官网榜单最高 81.6%），继续拉开的余地有限。",
+      "severity": "中",
+      "response": "官方以发布后继基准 Video-MME-v2 回应；原 Video-MME 官网与仓库仍在维护榜单。",
+      "reader": "把 Video-MME 分数当作长上下文视频理解的入门线而不是区分线；需要区分前沿模型时看后继基准或无字幕口径。",
+      "cite": [
+        "v2@摘要",
+        "site@Leaderboard"
+      ]
+    },
+    {
+      "issue": "缺少人类基线与不公开留存集",
+      "impact": "论文和官网都没有人类成绩，也没有留出不公开的留存集；题库公开可下载，存在被混进训练数据的风险，而论文全文未讨论污染问题。",
+      "severity": "中",
+      "response": "未见官方回应。",
+      "reader": "把公开集分数当作上限参考，留意模型是否见过这批题；跨代比较优先看同一口径下的变化。",
+      "cite": [
+        "paper@Table 4",
+        "site@Introduction"
+      ]
+    },
+    {
+      "issue": "论文未公布分类题量",
+      "impact": "论文只用 Figure 2 的分布图展示领域与任务类型占比，正文和表格都没有给数字，无法按领域加权，也无法判断某领域是否题量过少。",
+      "severity": "中",
+      "response": "论文未给出；但官方 Hugging Face 数据集按题带 domain / sub_category / task_type / duration 标签，查看器公布全量列统计（partial: false），可自行统计：领域 810/630/450/360/360/90，30 个细类各 90 题，12 种任务类型 54–454 题不等。",
+      "reader": "不要把单个领域的准确率当成整体水平的代表；论文表 5 只给了 Gemini 1.5 Pro 一家的分类成绩。 Multilingual 只有 90 题，该类别的百分比波动一格就是约 1.1 个百分点。",
+      "cite": [
+        "paper@Figure 2",
+        "paper@Table 5",
+        "dataset-stats@domain",
+        "dataset-stats@task_type"
+      ]
+    },
+    {
+      "issue": "领域枚举自相矛盾",
+      "impact": "论文 §3.1 与官方仓库的特性列表都只列出 5 个领域（漏掉 Artistic Performance），而摘要、官网与表 5 都是 6 个；按 5 个领域理解会少算一类。",
+      "severity": "低",
+      "response": "未见官方回应；论文表 5 的列头可作为 6 个领域的权威枚举。",
+      "reader": "以 6 个领域为准，领域名单见表 5 列头。",
+      "cite": [
+        "paper@§3.1 Dataset Construction",
+        "repo@Overview",
+        "paper@Table 5"
+      ]
+    },
+    {
+      "issue": "总小时数在不同版本间不一致",
+      "impact": "arXiv v1 摘要写「900 视频共 256 小时」，官网与官方仓库现行文案都写 254 小时，arXiv v3 正文则不再给出总小时数；按 256 或 254 计算的派生指标都会不同。",
+      "severity": "低",
+      "response": "未见官方回应；本档案采用官网与仓库现行的 254 小时。",
+      "reader": "引用总时长时注明来源与日期，不要混用 256 与 254 两个数字。",
+      "cite": [
+        "v1@摘要",
+        "site@Introduction",
+        "repo@Overview"
+      ]
+    },
+    {
+      "issue": "时长分桶之间留有空档",
+      "impact": "论文与官方仓库都把短定义为 < 2 分钟、中为 4–15 分钟、长为 30–60 分钟，2–4 分钟与 15–30 分钟的视频不在任何一桶内。",
+      "severity": "低",
+      "response": "未见官方回应。",
+      "reader": "看到「medium」只代表 4–15 分钟这一档，不要推广到所有中等长度视频。",
+      "cite": [
+        "paper@§3.1 Dataset Construction",
+        "repo@Overview"
+      ]
+    },
+    {
+      "issue": "论文内部两处平均时长不一致",
+      "impact": "论文表 1 记短视频平均 80.7 秒、中 515.9 秒、长 2,466.7 秒、全集 1,017.9 秒；表 3 记短 82.5 秒、中 562.7 秒、长 2,385.5 秒。两个表的平均视频时长互不相同，论文未说明差异来源（§3.2 只提到证书长度分析是每类随机抽 3 段视频的样本）。",
+      "severity": "低",
+      "response": "未见官方回应；本档案在 measures 里按表 3 引用分档平均时长，在 totals 里按表 1 引用全集平均时长，并在此记录差异。",
+      "reader": "引用平均时长时注明出自表 1 还是表 3，不要把两个数字混在同一段推导里。",
+      "cite": [
+        "paper@Table 1",
+        "paper@Table 3",
+        "paper@§3.2 Dataset Statistics"
+      ]
+    }
+  ],
+  "notes": "多家厂商把 Video-MME 作为视频/多模态长上下文主榜（GPT-4.1、Gemini 2.5 Pro、GPT-5、Gemini 3 Pro）；后续另有 Video-MME-v2 是不同实体",
   "official_sources": [
     {
       "kind": "site",
@@ -35,21 +425,408 @@
       "url": "https://arxiv.org/abs/2405.21075"
     },
     {
-      "kind": "site",
-      "url": "https://seed.bytedance.com/en/blog/official-release-of-seed1-8-a-generalized-agentic-model"
+      "kind": "repo",
+      "url": "https://github.com/MME-Benchmarks/Video-MME"
     },
     {
-      "kind": "site",
-      "url": "https://seed.bytedance.com/en/blog/seed2-1-officially-released-advancing-ai-productivity"
-    },
-    {
-      "kind": "site",
-      "url": "https://www.minimax.io/blog/minimax-m3"
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/lmms-lab/Video-MME"
     }
   ],
   "related_benchmarks": [
-    "mmmu"
+    "mmmu",
+    "mvbench",
+    "egoschema",
+    "tempcompass",
+    "longvideobench",
+    "mlvu",
+    "video-mmmu",
+    "video-mme-v2"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-13",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "Video-MME: The First-Ever Comprehensive Evaluation Benchmark of Multi-modal LLMs in Video Analysis（arXiv:2405.21075v3，2025-05-30，含附录）",
+        "url": "https://arxiv.org/abs/2405.21075",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "site",
+        "kind": "site",
+        "title": "Video-MME 官网首页与 Leaderboard（video-mme.github.io）",
+        "url": "https://video-mme.github.io/home_page.html",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "MME-Benchmarks/Video-MME（官方 GitHub 仓库：News、Overview、Dataset、Evaluation Pipeline、License）",
+        "url": "https://github.com/MME-Benchmarks/Video-MME",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "dataset",
+        "kind": "dataset",
+        "title": "lmms-lab/Video-MME（Hugging Face；lmms-lab 命名空间现已 301 跳转到 lmms-eval/Video-MME，页面为同一份数据）",
+        "url": "https://huggingface.co/datasets/lmms-lab/Video-MME",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "dataset-stats",
+        "kind": "dataset",
+        "title": "lmms-eval/Video-MME 列统计（Hugging Face datasets-server /statistics 接口，partial: false，覆盖全部 2,700 行）",
+        "url": "https://datasets-server.huggingface.co/statistics?dataset=lmms-eval/Video-MME&config=videomme&split=test",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "arxiv",
+        "kind": "paper",
+        "title": "arXiv:2405.21075 摘要页（Submission history：v1/v2/v3 提交日期）",
+        "url": "https://arxiv.org/abs/2405.21075",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "v1",
+        "kind": "paper",
+        "title": "arXiv:2405.21075v1 HTML 版（首版摘要，用于核对 256 小时表述）",
+        "url": "https://arxiv.org/html/2405.21075v1",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "v2",
+        "kind": "paper",
+        "title": "Video-MME-v2: Towards the Next Stage in Benchmarks for Comprehensive Video Understanding（arXiv:2604.05015 摘要页，同团队后继基准）",
+        "url": "https://arxiv.org/abs/2604.05015",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "cambrian",
+        "kind": "paper",
+        "title": "Cambrian-S: Towards Spatial Supersensing in Video（arXiv:2511.04670v1，2025-11-06，NYU / Stanford；第三方基准诊断，含对 VideoMME 的批评）",
+        "url": "https://arxiv.org/abs/2511.04670",
+        "accessed": "2026-11-13"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "南京大学（软件新技术全国重点实验室 / 智能科学与技术学院）、认知智能全国重点实验室、厦门大学（XMU）、香港大学（HKU）、北京大学（PKU）、香港中文大学（CUHK）、华东师范大学（ECNU）、中科院自动化所（CASIA）联合团队",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      "first_release": {
+        "v": "2024-05-31（arXiv v1 提交；官方仓库 2024-06-03 宣布上线）",
+        "cite": [
+          "arxiv@Submission history",
+          "repo@News"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "paper@Table 1",
+        "paper@§1",
+        "site@Introduction",
+        "repo@Overview",
+        "dataset-stats@domain"
+      ],
+      "interpretation": [
+        "paper@Table 4",
+        "paper@Table 5",
+        "paper@§4.3 Analysis",
+        "site@Leaderboard"
+      ]
+    },
+    "problem": {
+      "text": "此前的视频基准拉不开前沿模型的差距：视频类型单一、时间跨度覆盖不足、只用视频帧一种模态。Video-MME 把视觉领域（6 大类 30 小类）、时间跨度（11 秒到 1 小时）和数据模态（帧 + 字幕 + 音频）三个维度同时拉开，并配人工标注，用来重新测出模型在视频理解上的差距。",
+      "cite": [
+        "paper@§1",
+        "paper@Abstract",
+        "repo@Overview"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机猜测基线",
+        "value": "约 25%（四选一机会水平）",
+        "note": "论文未直接报告随机基线，只给出正确选项的位置占比 25.1/27.2/25.3/22.4%（A/B/C/D），接近均匀；官方数据集 answer 列统计为 A 677 / B 735 / C 684 / D 604，与论文比例一致。",
+        "cite": [
+          "paper@§3.2 Dataset Statistics",
+          "dataset-stats@answer"
+        ]
+      },
+      {
+        "label": "论文发布时最好成绩",
+        "value": "75.0%（无字幕）/ 81.3%（带字幕）",
+        "note": "Gemini 1.5 Pro（中短 1 fps、长视频 0.5 fps）。同期 GPT-4o 71.9% / 77.2%，GPT-4V 59.9% / 63.3%，Gemini 1.5 Flash 70.3% / 75.0%；最强开源 VILA-1.5（34B）59.0% / 59.4%，7B 里最好的是 VITA-1.5 56.1% / 58.7%，LLaVA-NeXT-Video（34B）52.0% / 54.9%；图像模型 InternVL-Chat-V1.5（20B）50.7% / 52.4%、Qwen-VL-Max 51.3% / 51.2%。",
+        "cite": [
+          "paper@Table 4",
+          "paper@§4.2 Quantitative Results"
+        ]
+      },
+      {
+        "label": "官网榜单当前最高（带字幕）",
+        "value": "81.6%",
+        "note": "video-SALMONN 2+（THU & ByteDance，72B，10 fps 上限 768 帧），榜单日期 2025-09-28；同榜 Gemini 1.5 Pro 为 81.3%。榜单默认按带字幕排序。",
+        "cite": [
+          "site@Leaderboard",
+          "site@Leaderboard 注"
+        ]
+      },
+      {
+        "label": "厂商自报（口径未注明）",
+        "value": "84.8%",
+        "note": "官方仓库 News 转述 Gemini 2.5 Pro「scoring 84.8% on the VideoMME benchmark」，未说明是否带字幕与抽帧数，与论文表 4 的 81.3% 不同口径。",
+        "cite": [
+          "repo@News"
+        ]
+      },
+      {
+        "label": "人类基线",
+        "value": "论文未给出",
+        "note": "论文与官网都没有报告人类在 Video-MME 上的成绩，本站也不推算。",
+        "cite": [
+          "paper@Table 4"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把带字幕和不带字幕的分数排在一起比——论文表 5 显示加字幕在长视频上能带来 +10.1% 的提升，两列差距可达 10 个百分点以上。",
+        "cite": [
+          "site@Leaderboard",
+          "paper@Table 5"
+        ]
+      },
+      {
+        "text": "忽略抽帧数直接横比模型分数——GPT-4o 抽 384 帧并缩放到 512×512，Gemini 1.5 Pro 用 1 fps / 0.5 fps，开源与图像模型按各自官方配置抽固定帧数（论文记录 4–64 帧，榜单另有 1,024、1,800 帧的条目）。",
+        "cite": [
+          "paper@§7 Detailed Experimental Settings",
+          "site@Leaderboard"
+        ]
+      },
+      {
+        "text": "以为 900 视频 / 2,700 题是一个单一测试集——它同时按时长（短/中/长各 300 视频）和字幕设置（w/o subs、w/ subs）拆成多个子口径，报分数时必须说明是哪一个。",
+        "cite": [
+          "paper@Table 1",
+          "site@Leaderboard"
+        ]
+      },
+      {
+        "text": "把 Video-MME 当成只能测视频模型——论文同步评测了把输入扩展成多帧图像的图像模型，Qwen-VL-Max 与 InternVL-Chat-V1.5 的准确率接近视频专用模型 LLaVA-NeXT-Video。",
+        "cite": [
+          "paper@§4.2 Quantitative Results",
+          "paper@Table 4"
+        ]
+      },
+      {
+        "text": "把高分当成「真的看懂了画面」——Cambrian-S 的诊断把 VideoMME 归入更依赖语言理解而非视觉线索的一类，用文字描述替代视觉输入仍能超出随机水平 20 个百分点以上。",
+        "cite": [
+          "cambrian@§2.1"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "南京大学（软件新技术全国重点实验室、智能科学与技术学院）、认知智能全国重点实验室、厦门大学（XMU）、香港大学（HKU）、北京大学（PKU）、香港中文大学（CUHK）、华东师范大学（ECNU）、中科院自动化所（CASIA）联合团队",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "一作兼项目负责人 Chaoyou Fu（南京大学）；共同作者 Yuhan Dai、Yongdong Luo、Lei Li、Shuhuai Ren、Renrui Zhang、Zihan Wang、Chenyu Zhou、Yunhang Shen、Mengdan Zhang、Peixian Chen、Yanwei Li、Shaohui Lin、Sirui Zhao、Ke Li、Tong Xu、Xiawu Zheng、Enhong Chen；通讯作者 Caifeng Shan、Ran He、Xing Sun",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2024-05-31 arXiv v1 → 2024-06-03 官方仓库上线 → 2024-06-15 刷新评测 → 2024-06-16 arXiv v2 → 2025-02-27 CVPR 2025 接收 → 2025-05-30 arXiv v3（本档案核对版本）→ 2025-09-28 官网榜单最新条目 → 2026-04-06 同团队发布后继基准 Video-MME-v2",
+        "cite": [
+          "arxiv@Submission history",
+          "repo@News",
+          "site@Leaderboard",
+          "v2@Submission history"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "数据与标注由 LMMS-Lab 提供，托管在 Hugging Face（lmms-lab/Video-MME，已跳转到 lmms-eval/Video-MME，页面显示约 2.7k 行、可在线预览样例题）；评测脚本在官方 GitHub 仓库，榜单提交到仓库给出的联系邮箱。数据集按题带 video_id、duration、domain、sub_category、task_type、question、options、answer、url、videoID 字段，查看器公布全量列统计。",
+        "cite": [
+          "repo@Dataset",
+          "repo@Evaluation Pipeline",
+          "dataset",
+          "dataset-stats"
+        ]
+      },
+      {
+        "k": "许可",
+        "v": "仅限学术研究，禁止任何形式的商业使用；视频版权归原视频所有者，未获事先批准不得分发、发布、复制、传播或修改；侵权可邮件要求立即下架",
+        "cite": [
+          "repo@License"
+        ]
+      },
+      {
+        "k": "被采用情况",
+        "v": "官方仓库 News 记录了 OpenAI GPT-4.1（2025-04-14，称之为多模态长上下文能力的「industry standard measure」）、Gemini 2.5 Pro（2025-05-06，自报 84.8%）、GPT-5（2025-08-07）、Gemini 3 Pro（2025-12-05）等把 Video-MME 作为视频/多模态长上下文基准",
+        "cite": [
+          "repo@News"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-13",
+        "columns": [
+          "来源",
+          "模型",
+          "无字幕 Overall",
+          "带字幕 Overall",
+          "短（无字幕/带字幕）",
+          "中（无字幕/带字幕）",
+          "长（无字幕/带字幕）",
+          "口径"
+        ],
+        "rows": [
+          [
+            "论文 Table 4",
+            "Gemini 1.5 Pro",
+            "75.0%",
+            "81.3%",
+            "81.7 / 84.5",
+            "74.3 / 81.0",
+            "67.4 / 77.4",
+            "中短 1 fps、长视频 0.5 fps"
+          ],
+          [
+            "论文 Table 4",
+            "GPT-4o",
+            "71.9%",
+            "77.2%",
+            "80.0 / 82.8",
+            "70.3 / 76.6",
+            "65.3 / 72.1",
+            "384 帧 @512×512"
+          ],
+          [
+            "论文 Table 4",
+            "Gemini 1.5 Flash",
+            "70.3%",
+            "75.0%",
+            "78.8 / 79.8",
+            "68.8 / 74.7",
+            "61.1 / 68.8",
+            "中短 1 fps、长视频 0.5 fps"
+          ],
+          [
+            "论文 Table 4",
+            "GPT-4V",
+            "59.9%",
+            "63.3%",
+            "70.5 / 73.2",
+            "55.8 / 59.7",
+            "53.5 / 56.9",
+            "10 帧"
+          ],
+          [
+            "论文 Table 4",
+            "VILA-1.5",
+            "59.0%",
+            "59.4%",
+            "68.1 / 68.9",
+            "58.1 / 57.4",
+            "50.8 / 52.0",
+            "34B，8 帧"
+          ],
+          [
+            "论文 Table 4",
+            "LLaVA-NeXT-Video",
+            "52.0%",
+            "54.9%",
+            "61.7 / 65.1",
+            "50.1 / 52.2",
+            "44.3 / 47.2",
+            "34B，32 帧"
+          ],
+          [
+            "论文 Table 4",
+            "InternVL-Chat-V1.5",
+            "50.7%",
+            "52.4%",
+            "60.2 / 61.7",
+            "46.4 / 49.1",
+            "45.6 / 46.6",
+            "20B 图像模型，10 帧"
+          ],
+          [
+            "论文 Table 4",
+            "Qwen-VL-Max",
+            "51.3%",
+            "51.2%",
+            "55.8 / 57.6",
+            "49.2 / 48.9",
+            "48.9 / 47.0",
+            "图像模型，4 帧"
+          ],
+          [
+            "官网榜单",
+            "video-SALMONN 2+",
+            "79.7%",
+            "81.6%",
+            "85.0 / 85.4",
+            "81.7 / 83.0",
+            "72.3 / 76.4",
+            "72B，10 fps 上限 768 帧；日期 2025-09-28"
+          ],
+          [
+            "官网榜单",
+            "Gemini 1.5 Pro",
+            "75.0%",
+            "81.3%",
+            "81.7 / 84.5",
+            "74.3 / 81.0",
+            "67.4 / 77.4",
+            "1/0.5 fps；日期 2024-06-15"
+          ],
+          [
+            "官网榜单",
+            "GPT-4o",
+            "71.9%",
+            "77.2%",
+            "80.0 / 82.8",
+            "70.3 / 76.6",
+            "65.3 / 72.1",
+            "384 帧；日期 2024-06-15"
+          ],
+          [
+            "官方仓库 News（厂商自报）",
+            "Gemini 2.5 Pro",
+            "未披露",
+            "84.8%",
+            "未披露",
+            "未披露",
+            "未披露",
+            "未说明是否带字幕与抽帧数"
+          ]
+        ]
+      },
+      "cite": [
+        "paper@Table 4",
+        "site@Leaderboard",
+        "repo@News"
+      ]
+    }
+  }
 }

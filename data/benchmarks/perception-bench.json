@@ -1,39 +1,368 @@
 {
   "id": "perception-bench",
   "name": "PerceptionBench",
-  "full_name": null,
+  "full_name": "PerceptionBench: Evaluating Atomic Visual Perception in Multimodal Large Language Models",
   "aliases": [],
-  "status": null,
-  "categories": [
-    "multimodal"
-  ],
-  "summary": "月之暗面原子视觉感知评测（3000 题）",
-  "interpretation": "3,000 道经人工核验的原子视觉感知题（10 项能力），开放式短答案由 GPT-oss-120B 判 0/1，准确率计分；发布时无模型达到 60%，感知相关幻觉是最弱项。",
-  "measures": [],
-  "does_not_measure": [],
-  "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
-  },
-  "metrics": [],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [],
-  "notes": "Kimi K3 引用；数据开源",
-  "official_sources": [
+  "status": "active",
+  "categories": ["multimodal"],
+  "summary": "PerceptionBench 是 Moonshot AI（Kimi Team）2026-07-27 发布的原子视觉感知评测：从 42 个来源基准的失败归因中归纳出 10 项原子感知能力，构建 3,000 道每题只考一种能力、靠「看」即可作答的验证题，并评测 16 个前沿 MLLM。评测显示无模型总体准确率达到 60%，感知相关幻觉是平均最弱的能力；总分接近的模型，感知剖面可以截然不同。全部题目为开放式短答案，由 GPT-oss-120B 按教师式评分提示逐题判 0/1，分数为准确率（%）。",
+  "interpretation": "这个基准的分不是「模型有多聪明」，而是「模型是否真的看见」：样本经过挑选、拆分与难度分层，难点被刻意压在感知一侧，不掺推理和外部知识。总分相同不代表感知结构相同——Gemini-3.1-Pro（56.2%）与 GPT-5.5（55.8%）总分接近，逐能力曲线明显分化；总体第一的 GPT-5.6-Sol（59.7%）在定位上拿到 76.7%，幻觉却只有 26.9%，是幻觉分最低的模型之一。所以应当把分数当「感知剖面」读，而不是当单一排名。另一个读数是稳定性：多次运行的聚合分很稳，单题行为却不稳，pass@4 与 pass4 的差距说明一部分准确率来自不稳定预测，而不是可靠感知。",
+  "measures": [
     {
-      "kind": "github",
-      "url": "https://github.com/MoonshotAI/PerceptionBench"
+      "area": "视觉定位（Visual Localization）",
+      "focus": "把图像元素映射回坐标/区域：读符号在表盘上的钟点位置（答案 6）、九宫格中哪个区域完全没有树（答案 B）",
+      "share": "330 题（11.00%）",
+      "format": "开放式短答案或四选一",
+      "cite": ["site-perceptionbench@The Dataset", "site-perceptionbench@Distribution of Tasks per Category"]
     },
     {
-      "kind": "site",
-      "url": "https://www.kimi.ai/blog/kimi-k3"
+      "area": "视觉属性（Visual Attribute）",
+      "focus": "读出并比较颜色、材质、图案、线条构成：从给定视角比较两个笔筒的粉/灰粉拼布与卡通图案、判断两个卡通形象是纯曲线还是直线加曲线",
+      "share": "330 题（11.00%）",
+      "format": "四选一",
+      "cite": ["site-perceptionbench@The Dataset", "site-perceptionbench@Distribution of Tasks per Category"]
+    },
+    {
+      "area": "视觉计数（Visual Counting）",
+      "focus": "数清并排除干扰项：红框内主体完全在框里的花朵数（答案 2）、图中盆栽总数且不含玻璃反射（答案 5 pots）",
+      "share": "330 题（11.00%）",
+      "format": "开放式短答案",
+      "cite": ["site-perceptionbench@The Dataset", "site-perceptionbench@Distribution of Tasks per Category"]
+    },
+    {
+      "area": "视觉关系（Visual Relation）",
+      "focus": "识别空间/拓扑关系：迷宫中红点沿现有路线最先到达哪个猫区、最长黑色斜线右端朝哪个方向延伸",
+      "share": "330 题（11.00%）",
+      "format": "四选一",
+      "cite": ["site-perceptionbench@The Dataset", "site-perceptionbench@Distribution of Tasks per Category"]
+    },
+    {
+      "area": "深度与三维感知（Depth & 3D Perception）",
+      "focus": "判断前后遮挡与立体计数：以更近为前时红衣人与黑色电风扇哪个更靠后、堆叠小立方体总数含看不见的（答案 26 cubes）",
+      "share": "330 题（11.00%）",
+      "format": "四选一或开放式短答案",
+      "cite": ["site-perceptionbench@The Dataset", "site-perceptionbench@Distribution of Tasks per Category"]
+    },
+    {
+      "area": "细粒度识别（Fine-Grained Recognition）",
+      "focus": "比对轮廓与细节差异：A–H 中哪个边缘轮廓能无缝嵌入缺口、中心人物与右侧人物的发色和服装是否相同",
+      "share": "290 题（9.67%）",
+      "format": "单选（A–H）或四选一",
+      "cite": ["site-perceptionbench@The Dataset", "site-perceptionbench@Distribution of Tasks per Category"]
+    },
+    {
+      "area": "视觉比较（Visual Comparison）",
+      "focus": "比较量级与程度：P/Q/M/N 四个圆中哪个最大、线段 AD 与 EM 谁更粗",
+      "share": "279 题（9.30%）",
+      "format": "四选一",
+      "cite": ["site-perceptionbench@The Dataset", "site-perceptionbench@Distribution of Tasks per Category"]
+    },
+    {
+      "area": "上下文整合（Context Integration）",
+      "focus": "跨子图/多图聚合信息：结合地图与第二张照片判断 ROAD NO.2 SUNRISE HOMES 两侧的建筑、比较图 1 与图 2 新增了哪个物件",
+      "share": "255 题（8.50%）",
+      "format": "四选一",
+      "cite": ["site-perceptionbench@The Dataset", "site-perceptionbench@Distribution of Tasks per Category"]
+    },
+    {
+      "area": "文字识别（OCR）",
+      "focus": "按字号、坐标区域、大小写与标点精确读字：读出字号最大的白色文字（答案 Marshall B. Clinard）、在归一化坐标区域 [0.697, 0.429, 0.875, 0.521] 内读字（答案 Tap Water）",
+      "share": "255 题（8.50%）",
+      "format": "开放式短答案",
+      "cite": ["site-perceptionbench@The Dataset", "site-perceptionbench@Distribution of Tasks per Category"]
+    },
+    {
+      "area": "感知相关幻觉（Hallucination）",
+      "focus": "对不存在的视觉内容保持克制：办公室里有几张白色桌子（答案 A. 0）、15 个图案中有几个带狗 logo（答案 0）",
+      "share": "271 题（9.03%）",
+      "format": "单选或开放式短答案",
+      "cite": ["site-perceptionbench@The Dataset", "site-perceptionbench@Distribution of Tasks per Category", "paper@Table 3"]
     }
   ],
+  "does_not_measure": [
+    {
+      "text": "推理与外部知识：样本经过挑选、拆分与难度分层，难点必须来自感知而非推理或外部知识；需要外部知识、无据假设或超出图像信息的问题被直接剔除",
+      "cite": ["site-perceptionbench@The Dataset", "paper@§2.2"]
+    },
+    {
+      "text": "端到端任务表现：基准刻意隔离感知，能力分不直接预测完整任务性能",
+      "cite": ["paper@Limitations"]
+    },
+    {
+      "text": "非感知类失败（推理类/知识类）：归纳出的其余错误类只用于构建期的失败归因，不计入 10 项能力分",
+      "cite": ["paper@§2.3"]
+    },
+    {
+      "text": "长文本生成质量与回答风格：参考答案短而唯一确定，判分只比对最终结果，不看过程优劣",
+      "cite": ["paper@§3.1", "paper@附录 E"]
+    }
+  ],
+  "dataset": {
+    "sample_count": 3000,
+    "splits": ["公开发布集：3,000 题（唯一发布版本）", "内部全量池：17,000+ 题（未发布，难度标定与代表性分析用）"],
+    "languages": ["en"],
+    "source_type": "混合来源：60% 拆解自 42 个来源基准的失败归因，40% 在补充图像上新撰写；图像来自公开来源，并按预训练语料相似度去重",
+    "public_sample": true,
+    "totals": "10 类原子感知能力 / 3,000 题；其中拆解题 1,800 题（60%）、新撰写题 1,200 题（40%）；来源基准 42 个；Hugging Face 数据集 train 分片 3,000 行",
+    "cite": ["paper@§2.3", "repo@README", "site-perceptionbench@The Dataset", "dataset-hf@Dataset card"],
+    "construction": [
+      {
+        "k": "失败归因与能力归纳",
+        "text": "用更强的分析模型对 42 个来源基准的失败做「最早错误步骤」归因，只保留感知错误类，其 10 种错误类型即 10 项原子感知能力",
+        "cite": ["paper@§2.1.1", "site-perceptionbench@The Dataset"]
+      },
+      {
+        "k": "样本挑选与原子化",
+        "text": "从来源基准挑出最有信息量的失败样本，拆成每题只考一种能力的原子子问题，并在补充图像上撰写新题",
+        "cite": ["paper@§2.1.2", "repo@README"]
+      },
+      {
+        "k": "污染与去重过滤",
+        "text": "候选图像与 LAION、Common Crawl 等大规模预训练语料比对 ISC 描述子余弦相似度，超过 0.95 视为近重复或泄漏并丢弃",
+        "cite": ["paper@§2.1.2"]
+      },
+      {
+        "k": "人工核验",
+        "text": "十余名有多模态评测经验的专业标注员完成拆分与标注，自动化核验后再独立复核每题：视觉证据是否充分、问题是否匹配目标感知挑战、参考答案是否无歧义",
+        "cite": ["paper@§2.1.2", "paper@§2.2"]
+      },
+      {
+        "k": "难度分层与抽样",
+        "text": "用四个前沿模型的集成剔除被全体模型稳定答对的饱和样本，剩余样本按难度分三层，最终按类别均衡与难度分层抽出 3,000 题",
+        "cite": ["paper@§2.1.2", "repo@README"]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "统一提示词 + 官方推理设置（有则用），每题取该模型可用的最高推理档位：GPT-5.5 用 xhigh，GPT-5.6-Sol / Claude-Fable-5 / Claude-Opus-4.8 / Kimi K3 用 max，Gemini 系列与 Seed-2.1-Pro 用 high effort，Gemma-4-31B 开 thinking 模式。全部题目为开放式自由作答、参考答案短且唯一确定，判分由 GPT-oss-120B 按论文教师式评分提示逐题比对，输出严格 0/1；官方评测脚本默认单次运行，MAX_TOKENS 65536、并发 16、判分温度 0.3。分数为准确率（%），总体分与逐能力分都按此计算。",
+    "cite": ["paper@§3.1", "repo@README"],
+    "variants": [
+      {
+        "text": "推理档位不一致：各模型用各自最高档（max / xhigh / high / thinking），横向比较混合了推理预算差异",
+        "cite": ["paper@§3.1"]
+      },
+      {
+        "text": "Claude-Fable-5 被安全过滤拒答时会回退到 Claude-Opus-4.8，其报告答案中 1.1% 由该模型产生",
+        "cite": ["paper@§3.1"]
+      },
+      {
+        "text": "发布集 vs 内部全量池：全量池对多数能力略难，逐能力难度与发布集强相关（Pearson r = 0.84），换集合分数会变",
+        "cite": ["paper@§3.4"]
+      },
+      {
+        "text": "稳定性协议：论文对代表性模型额外跑 4 次独立运行，报告均值/标准差与 pass@4、pass4；榜单只报单次均值",
+        "cite": ["paper@§3.5", "paper@Table 2"]
+      },
+      {
+        "text": "评测脚本参数可调：判分模型、并发、重试次数、最大生成长度、判分温度等均由环境变量覆盖，换设置会改变分数",
+        "cite": ["repo@README"]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "accuracy",
+      "name": "总体准确率（Overall Accuracy）",
+      "direction": "higher_better",
+      "description": "GPT-oss-120B 判 0/1 后的平均正确率，按题总体统计，也按 10 项能力分别统计；榜单主指标",
+      "range": "0–100",
+      "unit": "%",
+      "cite": ["repo@README", "paper@§3.2"]
+    },
+    {
+      "id": "pass@4",
+      "name": "pass@4",
+      "direction": "higher_better",
+      "description": "四次独立运行中至少一次答对的题目占比，刻画能力上界；仅对代表性模型报告，不是榜单分数",
+      "range": "0–100",
+      "unit": "%",
+      "cite": ["paper@§3.5", "paper@Table 2"]
+    },
+    {
+      "id": "pass4",
+      "name": "pass4",
+      "direction": "higher_better",
+      "description": "四次独立运行全部答对的题目占比，刻画行为一致性；仅对代表性模型报告，不是榜单分数",
+      "range": "0–100",
+      "unit": "%",
+      "cite": ["paper@§3.5", "paper@Table 2"]
+    }
+  ],
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2026-07-27",
+      "label": "arXiv v1 首发，同步发布 GitHub 评测代码与 Hugging Face 数据集（train 分片 3,000 题）",
+      "cite": ["paper@arXiv 水印", "repo@README", "dataset-hf@Dataset card"]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "能力分类由当前一代模型的失败归纳而来，不是感知的固定结构",
+      "impact": "分类与难度标定都绑定当前模型水平；模型进步后同一道题可能被归到别的类别，需要重新归纳与标定",
+      "severity": "高",
+      "response": "论文明确：模型改进后应重新归纳 taxonomy 并重新校准集成难度",
+      "reader": "不要把 10 类当成感知能力的标准分类体系，它是当前模型失败的快照",
+      "cite": ["paper@Limitations"]
+    },
+    {
+      "issue": "单题行为不稳定：聚合分稳，逐题不稳",
+      "impact": "pass@4 与 pass4 差距很大（GPT-5.6-Sol 72.9 vs 46.9；Kimi K3 73.9 vs 42.7），部分准确率来自不稳定预测而非可靠感知",
+      "severity": "高",
+      "response": "论文对代表性模型跑四次独立运行，报告标准差与 pass@4 / pass4",
+      "reader": "单题成败不能当能力证据；要看多次运行和逐能力剖面",
+      "cite": ["paper@§3.5", "paper@Table 2"]
+    },
+    {
+      "issue": "刻意隔离感知，不测端到端任务",
+      "impact": "能力分不能直接预测真实任务表现，也无法反映感知之外的失败",
+      "severity": "中",
+      "response": "论文建议与面向任务的评测集配合使用",
+      "reader": "别用这个总分替代 Agent / 长任务评测",
+      "cite": ["paper@Limitations"]
+    },
+    {
+      "issue": "归因依赖更强的分析模型，残差会传播到能力标签",
+      "impact": "每题能力标签继承自「最早错误步骤」归因，归因误差会进入标签，逐能力分的误差大于总分",
+      "severity": "中",
+      "response": "论文在 Limitations 中说明该依赖与残留归因误差",
+      "reader": "逐能力分适合看趋势，不适合做小幅差距的结论",
+      "cite": ["paper@Limitations"]
+    },
+    {
+      "issue": "跨模型推理预算不一致",
+      "impact": "各模型用各自最高推理档（max / xhigh / high / thinking），比较混合了推理预算与模型能力",
+      "severity": "中",
+      "response": "论文以「最高可用推理预算」作为统一口径，并在设置中逐模型列出",
+      "reader": "不要把档位差异读成感知能力差异",
+      "cite": ["paper@§3.1"]
+    },
+    {
+      "issue": "数据污染风险与许可证表述不一致",
+      "impact": "图像已按 ISC 相似度 0.95 对 LAION / Common Crawl 去重，但公开数据集仍可能进入后续训练；论文称自有标注与新撰写题采用 Apache-2.0，而 Hugging Face 数据集卡片标注 cc-by-nc-4.0，两者不一致",
+      "severity": "中",
+      "response": "污染过滤与来源许可证说明见论文附录 C；HF 卡片许可证需另行确认",
+      "reader": "商用前先确认许可证；随模型迭代分数可能被污染抬高",
+      "cite": ["paper@附录 C", "dataset-hf@License"]
+    },
+    {
+      "issue": "判分由单一 LLM judge 完成",
+      "impact": "GPT-oss-120B 在 300 条抽样上与人工一致率 99.7%，但开放式答案（数值、格式、多子问）仍可能被误判",
+      "severity": "低",
+      "response": "论文报告判分-人工一致率，并在附录 E 给出完整教师式评分提示词",
+      "reader": "接近边界的答案需人工复核",
+      "cite": ["paper@§3.1", "paper@附录 E"]
+    }
+  ],
+  "notes": "Kimi K3 引用；数据开源",
+  "official_sources": [
+    { "kind": "paper", "url": "https://arxiv.org/abs/2607.24957" },
+    { "kind": "site", "url": "https://www.kimi.com/blog/perception-bench" },
+    { "kind": "github", "url": "https://github.com/MoonshotAI/PerceptionBench" },
+    { "kind": "dataset", "url": "https://huggingface.co/datasets/moonshotai/PerceptionBench" }
+  ],
   "related_benchmarks": [],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-13",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      { "id": "paper", "kind": "paper", "title": "PerceptionBench: Evaluating Atomic Visual Perception in Multimodal Large Language Models（arXiv:2607.24957v1，2026-07-27）", "url": "https://arxiv.org/abs/2607.24957", "accessed": "2026-11-13" },
+      { "id": "site-perceptionbench", "kind": "site", "title": "Introducing PerceptionBench — Kimi（Moonshot AI）官方博客", "url": "https://www.kimi.com/blog/perception-bench", "accessed": "2026-11-13" },
+      { "id": "repo", "kind": "repo", "title": "MoonshotAI/PerceptionBench — 评测代码与数据集说明（Apache-2.0）", "url": "https://github.com/MoonshotAI/PerceptionBench", "accessed": "2026-11-13" },
+      { "id": "dataset-hf", "kind": "dataset", "title": "moonshotai/PerceptionBench — Hugging Face 数据集（train 3,000 行）", "url": "https://huggingface.co/datasets/moonshotai/PerceptionBench", "accessed": "2026-11-13" },
+      { "id": "kimi-blog-kimi-k3", "kind": "blog", "title": "Kimi K3 技术博客（脚注中引用 PerceptionBench）", "url": "https://www.kimi.ai/blog/kimi-k3", "accessed": "2026-11-13" }
+    ],
+    "header": {
+      "publisher": { "v": "Moonshot AI（Kimi Team）", "cite": ["paper@arXiv 水印", "site-perceptionbench@Overview"] },
+      "first_release": { "v": "2026-07-27（arXiv v1，同日发布评测代码与数据集）", "cite": ["paper@arXiv 水印", "repo@README"] }
+    },
+    "cites": {
+      "summary": ["paper@摘要", "site-perceptionbench@Overview", "repo@README"],
+      "interpretation": ["paper@§3.2", "paper@§3.5", "paper@Table 1"]
+    },
+    "problem": {
+      "text": "现有基准把感知与知识、推理耦在同一道题里，且每个来源基准只覆盖感知错误的一小片（42 个来源基准的错误类型分布两两加权 Jaccard 均值仅 0.20），于是「模型到底哪一环没看见」无法被回答；同时大量现存样本已被前沿模型稳定答对，失去诊断价值。",
+      "cite": ["site-perceptionbench@The Dataset", "paper@摘要"]
+    },
+    "ladder": [
+      {
+        "label": "随机/人类基线",
+        "value": "论文未给出",
+        "note": "论文只报告模型成绩，以及 300 条抽样上判分与人工的一致率（99.7%）和标注员独立人工校验，没有整卷随机基线或人类基线，本站也不推算。",
+        "cite": ["paper@§3.1"]
+      },
+      {
+        "label": "论文发布时最好",
+        "value": "59.7%（GPT-5.6-Sol，总体第一）",
+        "note": "总体准确率跨度 32.5%（GLM-4.6V）到 59.7%，离饱和很远；论文以「无模型达到 60%」作为未解决的表述。",
+        "cite": ["paper@§3.2", "paper@Table 1"]
+      },
+      {
+        "label": "官网结果表最高",
+        "value": "59.7%（GPT-5.6-Sol，与论文 Table 1 一致）",
+        "note": "GitHub README 榜单同为 16 个模型、十闭源六开源，口径为准确率。",
+        "cite": ["repo@README"]
+      },
+      {
+        "label": "「未解决」参考线",
+        "value": "60%（无模型达到）；最强模型也有能力低于 60%，每项能力均低于 80%",
+        "note": "这是论文给的量级判断，不是官方上限。",
+        "cite": ["site-perceptionbench@Overview", "paper@§3.2"]
+      },
+      { "label": "本站账本当前最高", "auto": "ledger-top" }
+    ],
+    "misreadings": [
+      {
+        "text": "把总分当「视觉能力总排名」：总分相同不代表感知结构相同，Gemini-3.1-Pro（56.2%）与 GPT-5.5（55.8%）总分接近但逐能力曲线明显分化。",
+        "cite": ["paper@§3.2"]
+      },
+      {
+        "text": "把高总分当「更少幻觉」：总体第一的 GPT-5.6-Sol 在定位上 76.7%，幻觉只有 26.9%，是榜单上幻觉分最低的之一；中游的 Gemini-3.5-Flash（52.0%）幻觉反而最高（50.6%）。",
+        "cite": ["paper@§3.2"]
+      },
+      {
+        "text": "把跨模型分差当感知能力差距：各模型推理档位不同，Claude-Fable-5 还有 1.1% 答案由回退模型产生。",
+        "cite": ["paper@§3.1"]
+      },
+      {
+        "text": "把稳定的聚合分当稳定的单题感知：聚合分标准差很小，但 pass@4 与 pass4 差距大，逐题行为并不稳。",
+        "cite": ["paper@§3.5"]
+      }
+    ],
+    "background": [
+      { "k": "发布方", "v": "Moonshot AI（Kimi Team）", "cite": ["paper@arXiv 水印", "site-perceptionbench@Overview"] },
+      { "k": "发布时间线", "v": "2026-07-27 arXiv v1 首发，官方博客、GitHub 评测代码与 Hugging Face 数据集同步发布", "cite": ["paper@arXiv 水印", "repo@README"] },
+      { "k": "构建规模", "v": "42 个来源基准、约 9,000 个有信息量的失败样本、17,000+ 题内部池，最终发布 3,000 题", "cite": ["paper@§2.1.2", "repo@README"] },
+      { "k": "标注与核验", "v": "十余名有多模态评测经验的专业标注员，自动化核验叠加独立人工校验", "cite": ["paper@§2.1.2", "paper@§2.2"] },
+      { "k": "代码与数据许可", "v": "GitHub 仓库为 Apache-2.0；论文称自有标注与新撰写题为 Apache-2.0，Hugging Face 数据集卡片标注 cc-by-nc-4.0", "cite": ["repo@License", "paper@附录 C", "dataset-hf@License"] },
+      { "k": "发布方自评引用", "v": "Kimi K3 技术博客把 PerceptionBench 列为该模型的视觉感知基准，描述其聚焦原子视觉感知能力", "cite": ["kimi-blog-kimi-k3@脚注 2"] }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-07-27",
+        "columns": ["模型", "分组", "总体", "VRel", "Count", "Attr", "Depth", "Loc", "Comp", "FGR", "Context", "OCR", "Hallu"],
+        "rows": [
+          ["GLM-5V-Turbo", "闭源", 39.6, 41.2, 40.0, 41.2, 41.2, 43.9, 45.2, 36.6, 32.9, 43.5, 28.0],
+          ["Grok-4.5", "闭源", 41.0, 47.0, 35.2, 39.4, 41.2, 39.7, 43.7, 36.2, 39.6, 43.9, 44.7],
+          ["Claude-Opus-4.8", "闭源", 47.2, 51.4, 44.2, 49.4, 40.6, 58.8, 48.4, 40.7, 44.7, 54.1, 38.7],
+          ["Qwen3.7-Plus", "闭源", 51.1, 59.1, 53.3, 55.8, 48.5, 52.7, 55.9, 46.8, 52.2, 54.5, 29.5],
+          ["Gemini-3.5-Flash", "闭源", 52.0, 53.6, 43.6, 54.5, 49.7, 50.6, 54.8, 51.7, 53.3, 59.6, 50.6],
+          ["Seed-2.1-Pro", "闭源", 55.0, 57.6, 51.2, 58.2, 43.6, 50.0, 59.5, 56.6, 60.4, 66.7, 49.8],
+          ["GPT-5.5", "闭源", 55.8, 61.9, 55.8, 60.9, 48.8, 65.8, 65.6, 47.2, 58.0, 56.5, 34.7],
+          ["Gemini-3.1-Pro", "闭源", 56.2, 58.8, 56.9, 61.8, 50.0, 52.7, 61.7, 54.8, 61.2, 64.3, 40.6],
+          ["Claude-Fable-5", "闭源", 57.2, 58.5, 52.9, 60.9, 51.5, 70.4, 56.1, 51.6, 59.8, 64.3, 45.0],
+          ["GPT-5.6-Sol", "闭源", 59.7, 69.7, 62.4, 62.1, 55.5, 76.7, 67.0, 55.9, 60.0, 54.9, 26.9],
+          ["GLM-4.6V", "开源", 32.5, 35.2, 31.8, 35.2, 29.1, 30.6, 34.8, 29.3, 33.7, 39.2, 26.9],
+          ["Minimax-M3", "开源", 33.1, 40.0, 30.3, 34.6, 36.7, 33.3, 31.2, 26.6, 31.0, 35.7, 29.9],
+          ["Gemma-4-31B", "开源", 40.7, 42.7, 33.9, 40.3, 39.1, 44.9, 43.7, 39.0, 45.9, 46.7, 32.1],
+          ["Kimi K2.6", "开源", 42.6, 50.9, 45.2, 43.6, 42.4, 45.2, 39.1, 34.5, 40.4, 40.8, 41.0],
+          ["Qwen3.5-397B-A17B", "开源", 47.5, 55.2, 49.1, 53.0, 44.6, 46.7, 49.8, 44.8, 50.2, 52.9, 26.9],
+          ["Kimi K3", "开源", 58.5, 68.2, 59.7, 59.4, 52.4, 70.3, 59.1, 55.9, 53.3, 61.2, 41.7]
+        ]
+      },
+      "cite": ["paper@Table 1", "repo@README"]
+    }
+  }
 }
