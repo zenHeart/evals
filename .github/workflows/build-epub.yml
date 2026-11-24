@@ -82,11 +82,14 @@ jobs:
   deploy:
     name: Deploy to GitHub Pages
     needs: build
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    # push 与 workflow_dispatch 都要能部署：非 push 事件（如手工重部署）此前被整段跳过，
+    # 造成主干已是 v2、线上仍是旧版而无人发现。分支仍限定 main，构建门禁不变。
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
       contents: read
+      actions: read
       pages: write
       id-token: write
     environment:
@@ -123,6 +126,25 @@ jobs:
         uses: actions/upload-pages-artifact@v3
         with:
           path: _site
+
+      - name: Wait for Pages artifact visibility
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # upload-pages-artifact 落盘后，artifact 列表 API 有秒级传播延迟；
+          # deploy-pages 立刻按名查询会得到 "No artifacts named github-pages were found"。
+          # 这里等到真的能查到再部署，避免整次部署因传播延迟而失败。
+          for i in $(seq 1 30); do
+            if gh api "repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts" \
+                 --jq '.artifacts[] | select(.name == "github-pages" and .expired == false) | .id' \
+                 | grep -q .; then
+              echo "github-pages artifact visible after $((i * 3))s"
+              exit 0
+            fi
+            sleep 3
+          done
+          echo "::error::github-pages artifact never became listable"
+          exit 1
 
       - name: Deploy to GitHub Pages
         id: deployment
