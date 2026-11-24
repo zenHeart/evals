@@ -1,76 +1,343 @@
 {
   "id": "realsi",
   "name": "RealSI",
-  "full_name": "Real-world Simultaneous Interpretation",
+  "full_name": "Real-world Simultaneous Interpretation（真实场景同声传译评测集，CLASI 技术报告提出）",
   "aliases": [],
   "status": null,
   "categories": [
     "multimodal"
   ],
-  "summary": "真实场景同传评测集 RealSI：分短音频（RealSI-Sentence）与长音频两个口径，长音频口径同时给翻译质量（GEMBA）与流式延迟（StreamLAAL）两个维度",
-  "interpretation": "RealSI 回答的是「同传模型在真实长音频上，翻译质量与延迟怎么取舍」。读数注意三点：① 横轴 StreamLAAL 是流式翻译滞后的秒数，**越低越好**，官方明确它**不等于**「首句语音输出的时间」；② 纵轴 GEMBA 是翻译质量分，**越高越好**；③ 短句口径 RealSI-Sentence 给的是纯质量分，长音频口径给的是质量-延迟配对，两者不是同一个读数维度，不要混着比。另外，官方发布页里的长音频结果只以散点图给出，绝对值需要读图，且厂商只印了「优于若干对手」这类相对结论。",
+  "summary": "RealSI 是字节跳动 Cross Language Agent 团队在 CLASI 技术报告（arXiv:2407.21646，2024-07-31 首发）里发布的中英双向同传评测集：每个领域取一段约 5 分钟的公开视频原声，说话人不做准备、口音自然，用来测「边听边译」在真实长音频上的翻译质量与延迟。当前最常被引用的口径来自腾讯混元 Hy-SimulMT 模型卡——长音频同时给翻译质量分（GEMBA，越高越好）与流式滞后（StreamLAAL，秒，越低越好），短音频口径 RealSI-Sentence 只给翻译质量分。",
+  "interpretation": "RealSI 回答的是「同传模型在真实长音频上，翻译质量与延迟怎么取舍」。读数注意五点：① 横轴 StreamLAAL 是流式翻译滞后的秒数，**越低越好**，官方明确它**不等于**「首句语音输出的时间」；② 纵轴 GEMBA 是翻译质量分，**越高越好**；③ 短句口径 RealSI-Sentence 只给质量分，长音频口径给的是质量-延迟配对，两者不是同一个读数维度，不要混着比；④ 官方长音频结果只以散点图发布，绝对值需要读图，Hy-SimulMT 自述其 StreamLAAL 约 3 秒、为图中最低，GEMBA 超过所对比开源模型与 5 个商用 API 中的 4 个；⑤ 论文口径的人工主指标是 VIP（语义片段有效率，%），与自动指标样本量不同（VIP 只抽 10 段中的 4 段）。",
   "measures": [
-    "短音频同传翻译质量分（RealSI-Sentence 口径，官方声明越高越好）",
-    "长音频同传翻译质量分（GEMBA，越高越好）",
-    "长音频流式翻译滞后（StreamLAAL，秒，越低越好）"
+    {
+      "area": "长音频 · 翻译质量（GEMBA）",
+      "focus": "一段约 5 分钟的公开视频原声，系统自行切分并流式输出译文，译文与人工参考译文比对后由 LLM 判分；Hy-SimulMT 自述其 GEMBA 超过所对比的开源模型与 5 个商用 API 中的 4 个。",
+      "share": "zh-en 10 段共 51:12 / 431 段语义片段，en-zh 10 段共 44:17 / 347 段语义片段（合计 20 段）",
+      "format": "GEMBA 质量分（官方未披露分数区间）",
+      "cite": [
+        "huggingface-tencent-hy-simulmt-30b-a@RealSI 长音频评测",
+        "arxiv-clasi-paper@表 2"
+      ]
+    },
+    {
+      "area": "长音频 · 流式滞后（StreamLAAL）",
+      "focus": "译文整体落后原话多少秒，用于质量-延迟取舍；官方明确它不等同于首次语音输出时间。Hy-SimulMT 自述其 StreamLAAL 约 3 秒，为对比图中最低。",
+      "share": "同长音频口径（zh-en 10 段 / en-zh 10 段）",
+      "format": "秒（越低越好）",
+      "cite": [
+        "huggingface-tencent-hy-simulmt-30b-a@StreamLAAL 说明"
+      ]
+    },
+    {
+      "area": "短音频 · 翻译质量（RealSI-Sentence）",
+      "focus": "按句子切分后的短音频同传翻译质量，与 FLEURS、CoVoST2、ACL6060 并列在同一张表里报告；Hy-SimulMT 得 84.7，为官方表内 9 个系统的最高分。",
+      "share": "未披露（官方模型卡未给出该口径题量）",
+      "format": "质量分（越高越好）",
+      "cite": [
+        "huggingface-tencent-hy-simulmt-30b-a@短音频基准表"
+      ]
+    },
+    {
+      "area": "人工语义片段有效率（VIP，CLASI 论文口径）",
+      "focus": "人工把长译文切成语义片段，逐段判定是否准确传达说话人原意，有效片段占比即 VIP；论文强调「只有 VIP 更高才算更好」。",
+      "share": "VIP 在 20 段中随机抽 4 段计算，自动指标跑满每方向 10 段",
+      "format": "百分比（越高越好）",
+      "cite": [
+        "arxiv-clasi-paper@附录 A.1",
+        "arxiv-clasi-paper@表 3 注"
+      ]
+    },
+    {
+      "area": "自动翻译指标（BLEU / BLEURT / COMET）",
+      "focus": "文档级把一段近 5 分钟译文当一个实例，句级按人工切分后的译文计算；论文认为自动指标不足以反映长语音同传质量，须与 VIP 并读。",
+      "share": "文档级 + 句级各一套数值（CLASI zh-en：BLEU 32.6/28.1、BLEURT 44.4/65.9、COMET 84.6/84.7）",
+      "format": "分数（越高越好）",
+      "cite": [
+        "arxiv-clasi-paper@表 3 注",
+        "arxiv-clasi-paper@限制与未来工作"
+      ]
+    }
   ],
-  "does_not_measure": [],
+  "does_not_measure": [
+    {
+      "text": "首句开口延迟：StreamLAAL 是流式翻译滞后的整体度量，官方明确它不等同于首次语音输出时间，不能用它读「多久开始说话」。",
+      "cite": [
+        "huggingface-tencent-hy-simulmt-30b-a@StreamLAAL 说明"
+      ]
+    },
+    {
+      "text": "语音质量与音色相似度：Hy-SimulMT 的人工对照测试只覆盖翻译质量与延迟对比，官方声明其结论不构成对语音质量、音色相似度等维度的全面评估。",
+      "cite": [
+        "huggingface-tencent-hy-simulmt-30b-a@人工对照测试"
+      ]
+    },
+    {
+      "text": "中英以外的语言对：论文只覆盖 Chinese-to-English 与 English-to-Chinese，更多语言被明确列为 future work。",
+      "cite": [
+        "arxiv-clasi-paper@限制与未来工作"
+      ]
+    },
+    {
+      "text": "训练/微调能力：官方只发布测试集与标注（不含可训练音频），不能用作训练数据；音频需从公开视频链接自行下载。",
+      "cite": [
+        "github-realsi-repo@DISCLAIMER"
+      ]
+    }
+  ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "source_type": "公开真实场景同传评测集（含短音频与长音频两个口径；官方发布页未披露题量与时长构成）",
+    "sample_count": 20,
+    "splits": [
+      "zh-en 长音频 10 段，合计 51:12，431 段语义片段",
+      "en-zh 长音频 10 段，合计 44:17，347 段语义片段",
+      "短音频口径 RealSI-Sentence：官方模型卡未披露题量与切分方式"
+    ],
     "languages": [
       "中文",
       "英文"
     ],
-    "public_sample": null
+    "source_type": "公开视频平台剪辑的真实场景演讲（每段近 5 分钟，说话人不做准备、自然口语、含口音），官方只发布标注与视频公开链接，不拥有视频版权",
+    "public_sample": true,
+    "totals": "共 20 段长音频：zh-en 10 段 51:12 / 431 段语义片段，en-zh 10 段 44:17 / 347 段语义片段；覆盖 10 个领域（technology、healthcare、education、finance、law、environment、entertainment、science、sports、art），每领域每方向 1 段；短音频口径 RealSI-Sentence 的题量未在官方模型卡披露",
+    "cite": [
+      "github-realsi-repo@Data Construction",
+      "arxiv-clasi-paper@表 2"
+    ],
+    "construction": [
+      {
+        "k": "选题源",
+        "text": "从公开视频收集音频，覆盖 2 种语言、10 个话题；论文口径为每领域每个方向从知名视频平台选 1 段。",
+        "cite": [
+          "github-realsi-repo@Data Construction",
+          "arxiv-clasi-paper@§4.1"
+        ]
+      },
+      {
+        "k": "切时长",
+        "text": "剪出 3-7 分钟的视频片段，实际每段近 5 分钟，用于模拟不做人工切分的同传场景。",
+        "cite": [
+          "github-realsi-repo@Data Construction",
+          "arxiv-clasi-paper@§4.1"
+        ]
+      },
+      {
+        "k": "标语音",
+        "text": "标注视频中语音的时间戳、转写与译文。",
+        "cite": [
+          "github-realsi-repo@Data Construction"
+        ]
+      },
+      {
+        "k": "分语义片段",
+        "text": "utterance 按语义片段分组，每个片段传达完整语义供翻译；人工评测时按此切分判定，同时提供句子级时间戳给不能吃长音频的系统。",
+        "cite": [
+          "github-realsi-repo@Structure Walkthrough",
+          "arxiv-clasi-paper@§4.1"
+        ]
+      },
+      {
+        "k": "标术语",
+        "text": "每条音频额外标注术语及其上下文译法（如 Round-robin → 轮询），术语指专名、地点、缩写与领域词。",
+        "cite": [
+          "github-realsi-repo@Structure Walkthrough",
+          "arxiv-clasi-paper@§3.4"
+        ]
+      },
+      {
+        "k": "定许可",
+        "text": "以 CC-BY-4.0 发布；官方不拥有视频版权，只发布标注与公开链接，被投诉会移除对应内容。",
+        "cite": [
+          "github-realsi-repo@License",
+          "github-realsi-repo@DISCLAIMER"
+        ]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "长音频口径下，系统自行对一段近 5 分钟的连续语音做切分并流式输出译文，不做人工预切分。质量侧：文档级自动指标把整段译文当一个实例，句级自动指标按人工切分后的译文计算；Hy-SimulMT 口径改用 GEMBA 由 LLM 依据参考译文打分。延迟侧：CLASI 论文用 AL / LAAL / FLAL，其中 FLAL 取「首个确定性译文的输出时刻」；Hy-SimulMT 口径改用 StreamLAAL。人工质量侧由人工把长译文切成语义片段后逐段判定，得 VIP。",
+    "cite": [
+      "arxiv-clasi-paper@表 3 注",
+      "arxiv-clasi-paper@§4.4",
+      "huggingface-tencent-hy-simulmt-30b-a@StreamLAAL 说明"
+    ],
+    "variants": [
+      {
+        "text": "长音频口径与短音频口径（RealSI-Sentence）不可比：前者给质量-延迟配对，后者只给质量分，官方未披露后者的题量与切分方式。",
+        "cite": [
+          "huggingface-tencent-hy-simulmt-30b-a@短音频基准表"
+        ]
+      },
+      {
+        "text": "文档级与句级自动指标不可比：论文两套都算，句级按人工切分后的译文计算，读表时必须看清是哪一列。",
+        "cite": [
+          "arxiv-clasi-paper@表 3 注"
+        ]
+      },
+      {
+        "text": "VIP 与自动指标样本量不同：受人工评测容量限制，VIP 只在 20 段中随机抽 4 段，自动指标跑满每方向 10 段。",
+        "cite": [
+          "arxiv-clasi-paper@表 3 注"
+        ]
+      },
+      {
+        "text": "延迟口径不同：CLASI 用 AL / LAAL / FLAL，Hy-SimulMT 用 StreamLAAL，且商用系统会先出临时译文再改写，论文只取其确定性译文的时刻，跨报告比较前须对齐定义。",
+        "cite": [
+          "arxiv-clasi-paper@§4.4",
+          "huggingface-tencent-hy-simulmt-30b-a@StreamLAAL 说明"
+        ]
+      }
+    ]
   },
   "metrics": [
     {
-      "id": "translation_quality",
-      "name": "Translation quality score",
-      "range": null,
-      "unit": "score",
-      "direction": "higher",
-      "aggregation": null
-    },
-    {
       "id": "gemba",
-      "name": "GEMBA translation quality score",
+      "name": "GEMBA 翻译质量分",
+      "direction": "越高越好",
+      "description": "长音频口径的主指标：LLM 依据参考译文对模型整段译文打的质量分，Hy-SimulMT 用它代表 RealSI long-form audio 的翻译质量。官方未披露分数区间与所用判分模型版本。",
       "range": null,
       "unit": "score",
-      "direction": "higher",
-      "aggregation": null
+      "cite": [
+        "huggingface-tencent-hy-simulmt-30b-a@RealSI 长音频评测"
+      ]
     },
     {
       "id": "streamlaal",
-      "name": "StreamLAAL streaming lag",
+      "name": "StreamLAAL 流式滞后",
+      "direction": "越低越好",
+      "description": "长音频口径的延迟指标：译文整体落后原话的秒数。官方明确它不是首次语音输出时间，因此不能读成「多久开口」。",
       "range": null,
       "unit": "seconds",
-      "direction": "lower",
-      "aggregation": null
+      "cite": [
+        "huggingface-tencent-hy-simulmt-30b-a@StreamLAAL 说明"
+      ]
+    },
+    {
+      "id": "vip",
+      "name": "VIP 人工语义片段有效率",
+      "direction": "越高越好",
+      "description": "CLASI 论文的人工主指标：人工把长译文切成语义片段，逐段判定是否准确传达说话人原意，有效片段占比即 VIP。论文强调只有 VIP 更高才算系统更好。",
+      "range": null,
+      "unit": "%",
+      "cite": [
+        "arxiv-clasi-paper@附录 A.1",
+        "arxiv-clasi-paper@§4.3"
+      ]
+    },
+    {
+      "id": "auto-mt",
+      "name": "BLEU / BLEURT / COMET（文档级与句级）",
+      "direction": "越高越好",
+      "description": "论文的自动翻译指标，文档级把一段近 5 分钟译文当一个实例，句级按人工切分后的译文计算。论文认为自动指标不考虑关键信息，不足以单独评判长语音同传。",
+      "range": null,
+      "unit": "score",
+      "cite": [
+        "arxiv-clasi-paper@表 3 注",
+        "arxiv-clasi-paper@限制与未来工作"
+      ]
+    },
+    {
+      "id": "lagging-al-laal-flal",
+      "name": "AL / LAAL / FLAL 延迟三元组",
+      "direction": "越低越好",
+      "description": "CLASI 论文的延迟口径：采用 Average Lagging 与 Length Adaptive Average Lagging，并新提 First Letter Appearance Lagging——系统输出首个确定性译文的时刻。论文认为 AL / LAAL 在长音频上会被显著夸大，FLAL 更稳定。",
+      "range": null,
+      "unit": "seconds",
+      "cite": [
+        "arxiv-clasi-paper@§4.4"
+      ]
     }
   ],
   "versions": [
     {
-      "id": "sentence",
-      "label": "RealSI-Sentence",
-      "note": "短音频口径，只给翻译质量分"
+      "id": "clasi-v1",
+      "date": "2024-07-31",
+      "label": "CLASI 技术报告 arXiv v1 首发，同时公开 RealSI 长音频测试集",
+      "cite": [
+        "arxiv-clasi-abs@提交历史"
+      ]
     },
     {
-      "id": "long-form-audio",
-      "label": "RealSI long-form audio",
-      "note": "长音频口径，给 GEMBA 质量分与 StreamLAAL 延迟的配对"
+      "id": "clasi-v2",
+      "date": "2024-08-30",
+      "label": "arXiv v2 修订（本页核对所用版本）",
+      "cite": [
+        "arxiv-clasi-abs@提交历史"
+      ]
+    },
+    {
+      "id": "sentence-split",
+      "date": "未披露",
+      "label": "短音频口径 RealSI-Sentence：官方模型卡把它与 FLEURS、CoVoST2、ACL6060 并列报告，但未给出独立发布日期、题量与构造说明，故不列精确日期",
+      "cite": [
+        "huggingface-tencent-hy-simulmt-30b-a@短音频基准表"
+      ]
     }
   ],
   "limitations": [
-    "官方发布页未披露题量、录音时长构成与 GEMBA 打分模型版本",
-    "长音频口径的绝对值只存在于官方散点图中，需要视觉转写，本仓按纪律只把读图结果写进 notes、不填进数值字段",
-    "评测协议（音频预处理、流式切分粒度、跑次数）官方未在发布页写明",
-    "基准自身的主页 / 数据集 URL 未随发布页给出，official_sources 暂以引用它的厂商模型卡代替"
+    {
+      "issue": "规模极小：每领域每方向只有 1 段",
+      "impact": "20 段长音频里单段的质量或延迟波动会显著影响均值；VIP 还只在 10 段中随机抽 4 段计算，与自动指标的 10 段样本量不一致。",
+      "severity": "高",
+      "response": "论文自称是 a preliminary attempt，并说明 VIP 抽样是受人工评测容量限制。",
+      "reader": "段级差异不要当成系统性差距；比较 VIP 与自动指标时先确认两者样本量不同。",
+      "cite": [
+        "arxiv-clasi-paper@§4.1",
+        "arxiv-clasi-paper@表 3 注"
+      ]
+    },
+    {
+      "issue": "口径漂移：质量与延迟指标都不统一",
+      "impact": "CLASI 论文用 VIP + BLEU/BLEURT/COMET + AL/LAAL/FLAL，Hy-SimulMT 用 GEMBA + StreamLAAL，两套定义不同且没有官方换算；商用系统还会先出临时译文再改写，论文只取其确定性译文的时刻，会同时影响质量与延迟读数。",
+      "severity": "高",
+      "response": "论文解释了 AL / LAAL 在长音频上不可靠并提出 FLAL；Hy-SimulMT 明确 StreamLAAL 不等同于首次语音输出时间。",
+      "reader": "跨报告比较前先对齐指标定义与被测系统的改写策略；不要把 StreamLAAL 读成开口延迟。",
+      "cite": [
+        "arxiv-clasi-paper@§4.4",
+        "huggingface-tencent-hy-simulmt-30b-a@StreamLAAL 说明"
+      ]
+    },
+    {
+      "issue": "长音频绝对值只以散点图发布",
+      "impact": "官方（Hy-SimulMT）只给出 StreamLAAL 约 3 秒、「GEMBA 超过所对比开源模型与 5 个商用 API 中的 4 个」这类相对结论与读图值，精确数值需要读图，跨系统比较依赖同一张图。",
+      "severity": "中",
+      "response": "未见官方回应（未公布表格化数值）。",
+      "reader": "不要把读图得到的近似值当成精确分数；比较时确认是否同一批系统、同一张图。",
+      "cite": [
+        "huggingface-tencent-hy-simulmt-30b-a@RealSI 长音频评测"
+      ]
+    },
+    {
+      "issue": "只覆盖中英一个语言对，且仅为测试集",
+      "impact": "更多语言被论文列为 future work；官方只发布测试集与标注（不含可训练音频），既不能训练也不能推断其他语言对的同传能力。",
+      "severity": "中",
+      "response": "论文把更多语言列为 future work；仓库以 CC-BY-4.0 发布标注与下载脚本。",
+      "reader": "其他语言对的同传能力不能用 RealSI 推断。",
+      "cite": [
+        "arxiv-clasi-paper@限制与未来工作",
+        "github-realsi-repo@License"
+      ]
+    },
+    {
+      "issue": "版权与内容风险",
+      "impact": "官方不拥有视频版权，只发布标注与公开视频链接；被认定侵权的内容会被移除，下游复现可能因此缺样本。",
+      "severity": "低",
+      "response": "README 的 DISCLAIMER 与 CC-BY-4.0 许可，声明仅限教育信息用途并接受投诉移除。",
+      "reader": "引用具体样本时回到原始视频链接核对。",
+      "cite": [
+        "github-realsi-repo@DISCLAIMER"
+      ]
+    }
   ],
-  "notes": "由腾讯混元 Hy-SimulMT 发布（2026-10-26）建档时新铸 id；短句口径 RealSI-Sentence 与长音频口径 RealSI long-form audio 为同一基准的两个版本，长音频口径的延迟维度另见 laal-latency。证据账本中 2 次引用。",
+  "notes": "由腾讯混元 Hy-SimulMT 发布（2026-10-26）建档时新铸 id，本次（2026-11-14）按 benchmark-profile/v2 补齐一手来源：RealSI 的真实出处是字节跳动 Cross Language Agent Team 的 CLASI 技术报告（arXiv:2407.21646，2024-07-31 首发）与官方仓库 byteresearchcla/RealSI（CC-BY-4.0），官方模型卡只是下游引用方。短句口径 RealSI-Sentence 与长音频口径 RealSI long-form audio 为同一基准的两个口径，长音频口径的延迟维度另见流式滞后相关条目。证据账本中 3 次引用。",
   "official_sources": [
+    {
+      "kind": "repo",
+      "url": "https://github.com/byteresearchcla/RealSI"
+    },
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2407.21646"
+    },
     {
       "kind": "site",
       "url": "https://huggingface.co/tencent/Hy-SimulMT-30B-A3B"
@@ -81,6 +348,289 @@
     "covost2",
     "fleurs"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-10-26"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-25",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-25",
+    "sources": [
+      {
+        "id": "arxiv-clasi-paper",
+        "kind": "paper",
+        "title": "Towards Achieving Human Parity on End-to-end Simultaneous Speech Translation via LLM Agent（CLASI 技术报告，arXiv:2407.21646 v2，ByteDance Research / Cross Language Agent Team）",
+        "url": "https://arxiv.org/pdf/2407.21646",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "arxiv-clasi-abs",
+        "kind": "paper",
+        "title": "arXiv:2407.21646 摘要页（含提交历史，用于确认首发与修订日期）",
+        "url": "https://arxiv.org/abs/2407.21646",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "github-realsi-repo",
+        "kind": "dataset",
+        "title": "byteresearchcla/RealSI：RealSI: Open Benchmark for Simultaneous Interpretation in Real-world Scenarios（CC-BY-4.0）",
+        "url": "https://github.com/byteresearchcla/RealSI",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "huggingface-tencent-hy-simulmt-30b-a",
+        "kind": "site",
+        "title": "Tencent Hunyuan Hy-SimulMT-30B-A3B 模型卡（引用 RealSI 长音频与 RealSI-Sentence 结果）",
+        "url": "https://huggingface.co/tencent/Hy-SimulMT-30B-A3B",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "ByteDance Research · Cross Language Agent Team",
+        "cite": [
+          "arxiv-clasi-paper@署名",
+          "github-realsi-repo@Introduction"
+        ]
+      },
+      "first_release": {
+        "v": "2024-07-31（arXiv v1，随 CLASI 技术报告公开 RealSI 测试集）",
+        "cite": [
+          "arxiv-clasi-abs@提交历史"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "arxiv-clasi-paper@§4.1",
+        "arxiv-clasi-abs@提交历史",
+        "huggingface-tencent-hy-simulmt-30b-a@RealSI 长音频评测",
+        "huggingface-tencent-hy-simulmt-30b-a@短音频基准表"
+      ],
+      "interpretation": [
+        "huggingface-tencent-hy-simulmt-30b-a@StreamLAAL 说明",
+        "arxiv-clasi-paper@表 3 注"
+      ]
+    },
+    "problem": {
+      "text": "MuST-C、FLEURS、CoVoST 等既有同传基准要么是志愿者录音，要么是准备充分的演讲与播客，并且直接给出人工切分好的句子——模型不需要自己切分，评测结果会高估真实同传系统的表现。RealSI 用未做准备的说话人、约 5 分钟不切分的长音频来缩小这个差距，让人工评测按语义片段判定译文是否传达说话人原意。",
+      "cite": [
+        "arxiv-clasi-paper@§4.1",
+        "arxiv-clasi-paper@§4.3"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "论文最好成绩（CLASI，人工 VIP）",
+        "value": "81.3%（zh-en）/ 78.0%（en-zh）",
+        "note": "同一表内商用系统最高仅 35.4%（zh-en）/ 41.6%（en-zh）；论文另报 CLASI 跑满 10 段时为 78.0% / 74.9%。",
+        "cite": [
+          "arxiv-clasi-paper@摘要",
+          "arxiv-clasi-paper@表 3 注"
+        ]
+      },
+      {
+        "label": "商用 / 开源系统人工 VIP 上限",
+        "value": "41.6%（en-zh，Commercial 4）/ 35.4%（zh-en，Commercial 4）",
+        "note": "SeamlessStreaming 在两个方向都最低（13.2% / 2.0%），但其 BLEU、COMET 并不垫底。",
+        "cite": [
+          "arxiv-clasi-paper@摘要"
+        ]
+      },
+      {
+        "label": "短音频 RealSI-Sentence 最高（官方表）",
+        "value": "84.7（Hy-SimulMT）",
+        "note": "官方表内 9 个系统的最高分；第二名 Qwen3.8-LiveTranslate 84.4，Gemini3.5-LiveTranslate 82.2。",
+        "cite": [
+          "huggingface-tencent-hy-simulmt-30b-a@短音频基准表"
+        ]
+      },
+      {
+        "label": "长音频 GEMBA / StreamLAAL（Hy-SimulMT，读图值）",
+        "value": "GEMBA 超过所对比开源模型与 5 个商用 API 中的 4 个；StreamLAAL 约 3 秒",
+        "note": "只以散点图发布，官方未给表格化数值；Hy-SimulMT 自述其 StreamLAAL 为图中最低。",
+        "cite": [
+          "huggingface-tencent-hy-simulmt-30b-a@RealSI 长音频评测"
+        ]
+      },
+      {
+        "label": "人类译员延迟参考线（EVS）",
+        "value": "3–6 秒",
+        "note": "论文引用的人类同传 Ear-Voice-Span 典型区间，用于判断延迟读数是否落在人工区间；论文据此认为延迟对用户体验的影响小于质量。",
+        "cite": [
+          "arxiv-clasi-paper@§4.4"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 StreamLAAL 当成首次开口延迟——官方明确说 StreamLAAL 不等同于首次语音输出时间，它是流式翻译滞后的整体度量。",
+        "cite": [
+          "huggingface-tencent-hy-simulmt-30b-a@StreamLAAL 说明"
+        ]
+      },
+      {
+        "text": "把 RealSI-Sentence 的质量分和长音频口径的 GEMBA / StreamLAAL 配对放在一起比——两者口径不同，前者只给质量分，官方也未披露其题量。",
+        "cite": [
+          "huggingface-tencent-hy-simulmt-30b-a@短音频基准表"
+        ]
+      },
+      {
+        "text": "看到 BLEU / BLEURT / COMET 更高就判系统更好——论文明确只有 VIP 更高才算更好，例：Commercial 1 的 BLEU 与 COMET 高于 SeamlessStreaming，但按 VIP 判 SeamlessStreaming 更好。",
+        "cite": [
+          "arxiv-clasi-paper@§4.3"
+        ]
+      },
+      {
+        "text": "把长音频上的小差距当成稳定结论——每个领域只取 1 段视频、每方向共 10 段，VIP 还只抽 4 段计算，单段波动足以改变排序。",
+        "cite": [
+          "arxiv-clasi-paper@§4.1",
+          "arxiv-clasi-paper@表 3 注"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "ByteDance Research · Cross Language Agent Team",
+        "cite": [
+          "arxiv-clasi-paper@署名",
+          "github-realsi-repo@Introduction"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "Shanbo Cheng、Zhichao Huang、Tom Ko、Hang Li、Ningxin Peng、Lu Xu、Qini Zhang（按姓氏字母序，均贡献相等）",
+        "cite": [
+          "arxiv-clasi-paper@署名"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "https://github.com/byteresearchcla/RealSI （CC-BY-4.0，pip3 install -r requirements.txt 后跑 toolkits/download_audio.py）",
+        "cite": [
+          "github-realsi-repo@License"
+        ]
+      },
+      {
+        "k": "论文",
+        "v": "arXiv:2407.21646《Towards Achieving Human Parity on End-to-end Simultaneous Speech Translation via LLM Agent》",
+        "cite": [
+          "arxiv-clasi-abs@提交历史"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2024-07-31 arXiv v1 首发 → 2024-08-30 arXiv v2 修订（本页核对版本）",
+        "cite": [
+          "arxiv-clasi-abs@提交历史"
+        ]
+      },
+      {
+        "k": "人工评测班底",
+        "v": "与资深同传译员合作制定人工评测准则；论文另收集 14 份用户调研，每人对 CLASI 至少使用 30 分钟，其中 1/14 认为延迟显著影响体验",
+        "cite": [
+          "arxiv-clasi-paper@§4.3",
+          "arxiv-clasi-paper@§4.4"
+        ]
+      },
+      {
+        "k": "短音频口径",
+        "v": "RealSI-Sentence：官方模型卡把它与 FLEURS、CoVoST2、ACL6060 并列报告，未给出独立发布日期与题量",
+        "cite": [
+          "huggingface-tencent-hy-simulmt-30b-a@短音频基准表"
+        ]
+      },
+      {
+        "k": "下游引用",
+        "v": "腾讯混元 Hy-SimulMT（2026-10-26）在长音频口径报告 GEMBA / StreamLAAL，并把 RealSI-Sentence 与 FLEURS、CoVoST2、ACL6060 并列做短音频对比",
+        "cite": [
+          "huggingface-tencent-hy-simulmt-30b-a@RealSI 长音频评测",
+          "huggingface-tencent-hy-simulmt-30b-a@短音频基准表"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-10-26",
+        "columns": [
+          "API / 模型",
+          "FLEURS",
+          "CoVoST2",
+          "ACL6060",
+          "RealSI-Sentence"
+        ],
+        "rows": [
+          [
+            "Qwen3.8-LiveTranslate",
+            "88.4",
+            "82.1",
+            "80.5",
+            "84.4"
+          ],
+          [
+            "Hy-SimulMT",
+            "90.3",
+            "75.5",
+            "81.2",
+            "84.7"
+          ],
+          [
+            "Gemini3.5-LiveTranslate",
+            "92.4",
+            "74.4",
+            "82.6",
+            "82.2"
+          ],
+          [
+            "Confucius4 R2T2 → T3PO",
+            "89.4",
+            "76.8",
+            "76.1",
+            "77.7"
+          ],
+          [
+            "Seed-LiveInterpret2.0",
+            "85.8",
+            "67.7",
+            "74.8",
+            "80.0"
+          ],
+          [
+            "SimulS2ST-Omni",
+            "78.6",
+            "66.6",
+            "73.1",
+            "77.4"
+          ],
+          [
+            "GPT-Realtime-Translate",
+            "77.7",
+            "50.8",
+            "76.4",
+            "76.7"
+          ],
+          [
+            "XunFei-Simult-Interpretation",
+            "73.4",
+            "57.0",
+            "57.5",
+            "70.9"
+          ],
+          [
+            "SeamlessStreaming",
+            "72.8",
+            "60.9",
+            "49.8",
+            "56.9"
+          ]
+        ]
+      },
+      "cite": [
+        "huggingface-tencent-hy-simulmt-30b-a@短音频基准表"
+      ]
+    }
+  }
 }

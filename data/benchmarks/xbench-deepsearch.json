@@ -1,39 +1,401 @@
 {
   "id": "xbench-deepsearch",
   "name": "xbench-DeepSearch",
-  "full_name": null,
-  "aliases": [],
-  "status": null,
-  "categories": [
-    "agent"
-  ],
-  "summary": "xbench 项目深度搜索专项评测",
-  "interpretation": "xbench 深度搜索专项（专家出题、博士交叉审校），0-100 分计分、按 5 分一档给置信区间，月更榜单并辅以内部闭源集防刷榜；榜首 ChatGPT-5-Pro 79 分，区分度高于 SimpleQA 类简单检索题。",
-  "measures": [],
-  "does_not_measure": [],
-  "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
-  },
-  "metrics": [],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [],
-  "notes": "DeepSeek 引用；xbench（上海算法创新研究院背景）发布",
-  "official_sources": [
+  "full_name": "xbench-DeepSearch（深度搜索专项评测）",
+  "aliases": ["DeepSearch-2510", "DeepSearch-2505"],
+  "status": "active",
+  "categories": ["agent"],
+  "summary": "红杉中国（HongShan）xbench 团队的 AGI Tracking 系列专项之一：用 100 道必须联网深挖才能答对的难题，考察 AI Agent「规划 → 搜索 → 推理 → 总结」的完整深度搜索能力；题库与榜单按月换新（长青评估），分数按 5 分一档的置信区间发布，避免把随机波动读成能力进步。",
+  "interpretation": "高分说明这个 Agent 能在真实网页里自己拆解问题、定位权威信源、交叉验证后再作答，而不是做单轮简单检索。2025-10-26 更新的 DeepSearch-2510 榜单上，ChatGPT-5-Pro 断档领先、SuperGrok 独列第二档，国内开发的 Agents 都挤在 30-40 分档且彼此没有明显差距；同档产品应视为同一水平，只有跨档差距才可解读为能力差异。旧版 2505 题库上多家产品已打到 70+、ChatGPT-5 Pro 达 80+，区分度耗尽正是这次整体换版的原因。",
+  "measures": [
     {
-      "kind": "site",
-      "url": "https://xbench.org/agi/aisearch"
+      "area": "规划与任务拆解",
+      "focus": "把复杂问题拆成若干步，明确每一步搜什么、去哪儿搜，并快速定位召回核心信源",
+      "share": "未按方向披露占比",
+      "format": "开放式问答，需给出可验证的最终答案",
+      "cite": ["hongshan@幻觉率降低", "evalcard@能力链路"]
     },
     {
-      "kind": "site",
-      "url": "https://api-docs.deepseek.com/zh-cn/news/news250821"
+      "area": "联网检索与信源获取",
+      "focus": "真实网页检索，含动态加载、输入筛选条件、调用地图服务等动态交互，以提升信源获取的广度与深度",
+      "share": "未按方向披露占比",
+      "format": "开放式问答，全部产品开启联网功能",
+      "cite": ["hongshan@高效使用工具", "hongshan@榜单口径"]
+    },
+    {
+      "area": "多步推理与交叉验证",
+      "focus": "多个信源冲突时交叉验证、识别最权威信源；数值题允许很小误差",
+      "share": "未按方向披露占比",
+      "format": "开放式问答，裁判抽取最终答案后与标准答案比对",
+      "cite": ["hongshan@幻觉率降低", "evalcard@JUDGE_PROMPT"]
+    },
+    {
+      "area": "多模态信息整合",
+      "focus": "先识别图片或视频中的内容再进行推理，才能得到正确答案",
+      "share": "10 道（DeepSearch-2510 共 100 题中）",
+      "format": "图片 / 视频 + 文本问答",
+      "cite": ["hongshan@评测集更新总结"]
+    },
+    {
+      "area": "动态交互工具使用",
+      "focus": "信息必须与网页动态交互才能取到，用于适配工具使用能力的进展",
+      "share": "20 多道（DeepSearch-2510 共 100 题中）",
+      "format": "需操作网页的问答",
+      "cite": ["hongshan@评测集更新总结"]
     }
   ],
-  "related_benchmarks": [],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "does_not_measure": [
+    {
+      "text": "不测无需联网的简单知识问答：官方把它定位在深度搜索场景，与 SimpleQA 这类单轮检索题分开",
+      "cite": ["evalcard@标题"]
+    },
+    {
+      "text": "不测检索与信息检索之外的能力：同仓库另开 ScienceQA 负责科学领域基础知识，DeepSearch 只管检索场景下的工具使用",
+      "cite": ["repo@DeepSearch 小节", "repo@README 简介"]
+    },
+    {
+      "text": "不覆盖未提供开放入口、有访问次数限制的模型和 Agent——这类产品暂不列入榜单",
+      "cite": ["hongshan@榜单口径"]
+    }
+  ],
+  "dataset": {
+    "sample_count": 100,
+    "splits": [
+      "DeepSearch-2505（2025-05 首发题库）",
+      "DeepSearch-2510（2025-10-26 更新的全新题库）"
+    ],
+    "languages": ["zh"],
+    "source_type": "专家人工构造的原创题；题库加密分发，以防搜索引擎抓取造成污染",
+    "public_sample": true,
+    "multimodal_share": "10 道（DeepSearch-2510）",
+    "totals": "DeepSearch-2510 共 100 题：含 10 道多模态题与 20 多道需动态交互的题，其余为必须联网深挖的开放式难题；HuggingFace 卡片显示中文、csv、100 行、规模小于 1K，数据以加密形式发布，官方明示基准数据不应以明文出现在线上。",
+    "cite": ["hongshan@题库更新", "hf-2510@数据集卡片", "hf-2510@数据查看器", "hf-2505@数据集卡片"],
+    "construction": [
+      {
+        "k": "出题方式",
+        "text": "xbench 团队人工构造 100 道需联网深度检索的难题；换版时整体重做而不是在旧题上打补丁，官方按「全面增加难度」的思路逐版更新。",
+        "cite": ["hongshan@题库更新", "hongshan@评测集更新总结"]
+      },
+      {
+        "k": "防污染设计",
+        "text": "题库加密分发（可用仓库自带解密代码取明文），官方同时要求不要把明文上传到网上；HuggingFace 数据查看器也明示基准数据不应以明文出现在线上。",
+        "cite": ["repo@Notes", "hf-2510@数据查看器"]
+      },
+      {
+        "k": "版本换新",
+        "text": "2505 题库上多家产品已达 70+、ChatGPT-5 Pro 达 80+，无法再检测后续能力提升，于是整体换成 DeepSearch-2510 全新 100 题，把主流厂商压到 40 分左右，为模型迭代预留分辨空间。",
+        "cite": ["hongshan@评测集更新总结"]
+      },
+      {
+        "k": "成本与时效约束",
+        "text": "每道搜索题的成本控制在 $0.25 以下、响应时间 8 分钟以内，官方认为这是大多数用户可以接受的区间。",
+        "cite": ["hongshan@用户体验甜区榜"]
+      },
+      {
+        "k": "题目编号",
+        "text": "题目编号形如 ASE-xxxxxx-ZH/EN-L1/L2/L3：ZH/EN 标注语种，L1/L2/L3 标注难度层级，编号中不含题目正文。",
+        "cite": ["evalcard@题目编号"]
+      },
+      {
+        "k": "开源范围",
+        "text": "仓库开源了 AGI Tracking 系列中 ScienceQA 与 DeepSearch 两个基准的数据集与评测代码；DeepSearch-2505 与 2510 两版题库同步上线 HuggingFace。",
+        "cite": ["repo@README 简介", "hongshan@题库更新"]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "参评产品全部开启联网功能，在 100 道题上作答；由 LLM-as-Judge 先从回答中抽取最终答案，再对照精确且无歧义的标准答案判定是否正确（数值题允许很小误差），榜单用置信区间表达并按 5 分一档简化呈现；未开放或有次数限制的产品不入榜，榜单同时给出每题成本与耗时。",
+    "cite": ["hongshan@榜单口径", "evalcard@JUDGE_PROMPT", "hongshan@备注"],
+    "variants": [
+      {
+        "text": "入口形态：榜单同时收录模型内置的深研入口（如 ChatGPT-5-Pro、Doubao Deep Research）与独立 Agent 产品（如 Fellou、Manus、Coze Space）；仓库复现走命令行 xbench_evals.py，用 --model / --dataset / --n-repeats 指定模型、题库与重复次数，需自备各家 API Key。",
+        "cite": ["repo@Running the evals", "repo@Setup"]
+      },
+      {
+        "text": "裁判模型：官方复现脚本默认用 gemini-2.0-flash 当裁判，需设置 GOOGLE_API_KEY；裁判 prompt 沿用 Humanity's Last Exam（Phan et al., 2025）的设计。",
+        "cite": ["repo@Setup", "evalcard@LLM as Judge"]
+      },
+      {
+        "text": "版本口径：2505 与 2510 是两套完全不同的题目，分数不可直接比较；同一批产品用旧题重测，分数变化极大。",
+        "cite": ["hongshan@题库更新", "hongshan@2505 分数对比"]
+      },
+      {
+        "text": "评测模式：由于多数 Agent 产品有多种模式，官方榜单会标明评测时在 UI 上选中的具体模式（如 Search、Deep Think、DeeperSearch、Deep Research）。",
+        "cite": ["hongshan@榜单口径"]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "accuracy",
+      "name": "正确率（档位）",
+      "direction": "越高越好",
+      "description": "100 道题中裁判判定为正确的比例，榜单按 5 分一档的置信区间呈现（如 75+、40+、35+）",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["hongshan@榜单口径", "repo@README 简介"]
+    },
+    {
+      "id": "cost",
+      "name": "每题平均成本（Cost）",
+      "direction": "越低越好",
+      "description": "完成每个任务的平均花费，榜单给近似值（如 ~$0.085、~$2、Free）",
+      "unit": "USD / 题",
+      "cite": ["hongshan@备注", "hongshan@用户体验甜区榜"]
+    },
+    {
+      "id": "time-cost",
+      "name": "每题平均耗时（Time Cost）",
+      "direction": "越低越好",
+      "description": "每个任务的耗时，榜单以区间给出（如 5-8 min、2-3 min）",
+      "unit": "分钟 / 题",
+      "cite": ["hongshan@备注", "hongshan@用户体验甜区榜"]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "分数只按 5 分一档的区间报告",
+      "impact": "同档内模型差异不可分辨，35+ 档挤了 8 个产品；把档位当精确分排名会过度解读",
+      "severity": "中",
+      "response": "官方用置信区间表达随机性，并说明同区间模型可近似认为同一水平；需要更细分时可用仓库 --n-repeats 多次重复自测",
+      "reader": "看到「75+」别读成 75.0 分，也别在同档内排先后",
+      "cite": ["hongshan@榜单口径", "repo@Running the evals"]
+    },
+    {
+      "issue": "题量只有 100 题且按月换新",
+      "impact": "单题权重 1%，抽样误差被放大；换版后历史分数不可比",
+      "severity": "高",
+      "response": "官方以长青机制月更题库与榜单保持区分度，并用区间报告抑制单次波动",
+      "reader": "跨月、跨版本的分数不要直接相减或排名",
+      "cite": ["hongshan@评测集更新总结", "hongshan@2505 分数对比"]
+    },
+    {
+      "issue": "只收录提供开放入口的产品",
+      "impact": "未开放或有次数限制的模型与 Agent 不入榜，榜单不等于全行业排名",
+      "severity": "中",
+      "response": "官方在榜单备注里明示这一口径",
+      "reader": "产品缺席不代表能力不足",
+      "cite": ["hongshan@榜单口径"]
+    },
+    {
+      "issue": "中文信源占比高",
+      "impact": "中文检索是短板的产品会被系统性压低，Gemini 即被官方点名「基本定位不到正确的信源」",
+      "severity": "中",
+      "response": "官方把它解释为端到端效果受国内信源搜索效果影响；数据集语言标注为中文",
+      "reader": "别把中文信源短板读成通用检索能力差",
+      "cite": ["hongshan@榜单分析", "hf-2510@数据集卡片"]
+    },
+    {
+      "issue": "裁判是 LLM（默认 gemini-2.0-flash）且 prompt 沿用 HLE",
+      "impact": "裁判自身的知识与检索盲区会成为分数上限；自测分数与官方榜单可能因裁判不同而不可比",
+      "severity": "中",
+      "response": "复现时固定裁判模型与 prompt，多跑几次取区间；模型与 API 端点映射可在 language_models.py 中自行维护",
+      "reader": "自测分数对不上官方榜单，先查裁判模型是否一致",
+      "cite": ["repo@Setup", "evalcard@LLM as Judge", "repo@Running the evals"]
+    },
+    {
+      "issue": "成本与耗时和能力对比混在一张榜里",
+      "impact": "推理投入保守、追求响应效率的产品（如 Doubao、Gemini）分数偏低，跨产品比较混入了资源投入差异",
+      "severity": "低",
+      "response": "榜单同时给出 Cost 与 Time Cost，官方另给「用户体验甜区」视角筛选产品",
+      "reader": "看分数时一并看成本与耗时两列",
+      "cite": ["hongshan@榜单分析", "hongshan@用户体验甜区榜"]
+    }
+  ],
+  "versions": [
+    {
+      "id": "deepsearch-2505",
+      "date": "2025-05",
+      "label": "DeepSearch-2505 首发：100 题中文题库上线 HuggingFace；仓库榜单 o3（Search）65+ 居首，o4-mini-high 60+，Doubao / Grok-3 / Gemini 2.5 Pro（preview）并列 50+",
+      "cite": ["repo@README 简介", "hf-2505@数据集卡片"]
+    },
+    {
+      "id": "deepsearch-2510",
+      "date": "2025-10-26",
+      "label": "DeepSearch-2510：红杉月报宣布换成全新 100 题并开源，ChatGPT-5-Pro 居首；仓库 README 中该榜单评测日期标注为 2025.08，与月报发布日不一致",
+      "cite": ["hongshan@题库更新", "repo@README 简介"]
+    }
+  ],
+  "notes": "红杉中国 xbench 月报驱动，题库按月换新；HF 数据集加密分发",
+  "official_sources": [
+    { "kind": "site", "url": "https://xbench.org/agi/aisearch" },
+    { "kind": "repo", "url": "https://github.com/xbench-ai/xbench-evals" },
+    { "kind": "dataset", "url": "https://huggingface.co/datasets/xbench/DeepSearch-2510" },
+    { "kind": "dataset", "url": "https://huggingface.co/datasets/xbench/DeepSearch" }
+  ],
+  "related_benchmarks": ["browsecomp", "simpleqa", "gaia"],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-13",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "xbench-ai/xbench-evals（官方仓库：定位、榜单快照、复现命令）",
+        "url": "https://github.com/xbench-ai/xbench-evals",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "evalcard",
+        "kind": "site",
+        "title": "Eval Card xbench-DeepSearch（官方评测卡，PDF）",
+        "url": "https://xbench.org/files/Eval%20Card%20xbench-DeepSearch.pdf",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "hongshan",
+        "kind": "blog",
+        "title": "DeepSearch 题库和榜单更新，最新题库已开源｜xbench 月报（红杉中国，2025-10-26）",
+        "url": "https://www.hongshan.com/?p=3206",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "hf-2510",
+        "kind": "dataset",
+        "title": "xbench/DeepSearch-2510（HuggingFace 数据集卡片与数据查看器）",
+        "url": "https://huggingface.co/datasets/xbench/DeepSearch-2510",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "hf-2505",
+        "kind": "dataset",
+        "title": "xbench/DeepSearch（HuggingFace 数据集卡片与数据查看器，2505 版题库）",
+        "url": "https://huggingface.co/datasets/xbench/DeepSearch",
+        "accessed": "2026-11-13"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "红杉中国（HongShan）xbench 团队",
+        "cite": ["repo@README 简介", "hongshan@题库更新"]
+      },
+      "first_release": {
+        "v": "2025-05（DeepSearch-2505 题库）",
+        "cite": ["repo@README 简介", "hf-2505@数据集卡片"]
+      }
+    },
+    "cites": {
+      "summary": ["repo@README 简介", "hongshan@题库更新", "hongshan@榜单口径"],
+      "interpretation": ["hongshan@榜单分析", "hongshan@评测集更新总结"]
+    },
+    "problem": {
+      "text": "简单检索题已经拉不开前沿模型的差距，xbench 要的是一套长青更新、抗污染、贴近真实使用的评测：衡量 Agent 在真实联网环境里「规划 → 搜索 → 推理 → 总结」的完整深度搜索能力，把信源定位、动态交互、交叉验证这些真实动作都纳入考察。",
+      "cite": ["evalcard@标题", "evalcard@能力链路", "repo@DeepSearch 小节"]
+    },
+    "ladder": [
+      {
+        "label": "随机猜测基线",
+        "value": "官方未给出",
+        "note": "题库是需联网深挖的开放式难题，没有可推的随机基线，本站也不代为推算",
+        "cite": ["evalcard@标题"]
+      },
+      {
+        "label": "DeepSearch-2505 首发榜首（2025-05）",
+        "value": "o3（Search）65+",
+        "note": "档位数值见附录 B 榜单快照；同年 10 月红杉用 2505 旧题重测时 ChatGPT-5 Pro 达 80+，那是另一次评测，不能与此并列",
+        "cite": ["repo@README 简介", "hongshan@2505 分数对比"]
+      },
+      {
+        "label": "DeepSearch-2510 榜首（2025-10-26 更新）",
+        "value": "ChatGPT-5-Pro 75+",
+        "note": "档位数值见附录 B 榜单快照；红杉月报称其优势显著、断档式领先，主流厂商在 40 分左右",
+        "cite": ["repo@README 简介", "hongshan@榜单分析"]
+      },
+      {
+        "label": "国内 Agent 产品主流区间",
+        "value": "30-40 分档",
+        "note": "红杉月报：国内开发的 Agents 都在 30-40 分档位内，没有明显差距",
+        "cite": ["hongshan@榜单分析"]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把「75+」当成精确分数：它是 5 分一档置信区间的下界，同档模型应视为同一水平",
+        "cite": ["hongshan@榜单口径"]
+      },
+      {
+        "text": "把 DeepSearch-2510 和 2505 的分数放在一起比：两版是完全不同的题目，官方也提示用旧题重测后分数变化极大",
+        "cite": ["hongshan@题库更新", "hongshan@2505 分数对比"]
+      },
+      {
+        "text": "把 10 月红杉月报里「ChatGPT-5 Pro 80+」当成 2510 榜单成绩：那是用 2505 旧题重测的结果，2510 榜首档位是 75+",
+        "cite": ["hongshan@评测集更新总结", "repo@README 简介"]
+      },
+      {
+        "text": "把仓库 README 里 2510 榜单的评测日期 2025.08 当成题库发布日期：2510 是 2025-10-26 才宣布更新并开源的",
+        "cite": ["hongshan@题库更新", "repo@README 简介"]
+      },
+      {
+        "text": "把榜单缺席理解成能力不行：未提供开放入口、有访问次数限制的模型和 Agents 暂不列入榜单",
+        "cite": ["hongshan@榜单口径"]
+      },
+      {
+        "text": "把 HuggingFace 上的数据集当成可直接阅读的明文样本：题库加密分发，官方明示基准数据不应以明文出现在线上",
+        "cite": ["repo@Notes", "hf-2510@数据查看器"]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "红杉中国（HongShan）xbench 团队；DeepSearch 是其 AGI Tracking 系列中专注检索场景工具使用的专项",
+        "cite": ["repo@DeepSearch 小节", "hongshan@题库更新"]
+      },
+      {
+        "k": "评估哲学",
+        "v": "定位为「长青、抗污染、真实世界、领域专项」的 AI 评估框架；采用长青评估机制，每月持续汇报最新模型的能力表现",
+        "cite": ["repo@README 简介", "hongshan@结尾"]
+      },
+      {
+        "k": "裁判设计",
+        "v": "LLM-as-Judge prompt 沿用 Humanity's Last Exam（Phan et al., 2025）：先抽取最终答案，再对照标准答案判定，数值题允许很小误差",
+        "cite": ["evalcard@LLM as Judge", "evalcard@JUDGE_PROMPT"]
+      },
+      {
+        "k": "开放数据与代码",
+        "v": "仓库开源 ScienceQA 与 DeepSearch 两个基准的数据集与评测代码；DeepSearch-2505 与 2510 题库均在 HuggingFace 开放（各 100 行、中文、csv），数据加密",
+        "cite": ["repo@README 简介", "hf-2505@数据集卡片", "hf-2510@数据集卡片"]
+      },
+      {
+        "k": "复现入口",
+        "v": "仓库 xbench_evals.py 支持 --model / --dataset / --n-repeats，默认裁判 gemini-2.0-flash；模型名与 API 端点映射在 language_models.py 中维护，可自行扩充",
+        "cite": ["repo@Running the evals", "repo@Setup"]
+      },
+      {
+        "k": "实时榜单与反馈渠道",
+        "v": "官方在 xbench.org 提供实时更新的 Leaderboard，并通过 team@xbench.org 收集参评与反馈",
+        "cite": ["hongshan@结尾"]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2025-10-26",
+        "columns": ["来源", "排名", "模型 / 产品", "厂商", "入口模式", "分数（档位）", "每题成本", "每题耗时", "评测日期"],
+        "rows": [
+          ["仓库 README · DeepSearch-2510 榜单", "1", "ChatGPT-5-Pro", "OpenAI", "未列出", "75+", "~$0.085", "5-8 min", "2025.08"],
+          ["仓库 README · DeepSearch-2510 榜单", "2", "SuperGrok Expert", "xAI", "未列出", "40+", "~$0.08", "3-5 min", "2025.08"],
+          ["仓库 README · DeepSearch-2510 榜单", "3", "Fellou", "Fellou", "未列出", "35+", "~$2", "5-8 min", "2025.08"],
+          ["仓库 README · DeepSearch-2510 榜单", "3", "Minimax Agent", "Minimax", "未列出", "35+", "~$1.1", "8-15 min", "2025.08"],
+          ["仓库 README · DeepSearch-2510 榜单", "3", "StepFun Research", "StepFun", "未列出", "35+", "Free", "8-15 min", "2025.08"],
+          ["仓库 README · DeepSearch-2510 榜单", "3", "Flowith", "Flowith", "未列出", "35+", "~$0.1", "8-15 min", "2025.08"],
+          ["仓库 README · DeepSearch-2510 榜单", "3", "Skywork", "Kunlun", "未列出", "35+", "~$0.55", "3-5 min", "2025.08"],
+          ["仓库 README · DeepSearch-2510 榜单", "3", "Manus Agent", "Manus", "未列出", "35+", "~$0.63", "3-5 min", "2025.08"],
+          ["仓库 README · DeepSearch-2510 榜单", "3", "Doubao Deep Research", "ByteDance", "未列出", "35+", "Free", "5-8 min", "2025.08"],
+          ["仓库 README · DeepSearch-2510 榜单", "10", "Genspark Super Agent", "MainFunc", "未列出", "30+", "~$0.15", "3-5 min", "2025.08"],
+          ["仓库 README · DeepSearch-2510 榜单", "10", "Coze Space", "ByteDance", "未列出", "30+", "Free", "2-3 min", "2025.08"],
+          ["仓库 README · DeepSearch-2505 榜单", "1", "o3", "OpenAI", "Search", "65+", "未列出", "未列出", "2025.05"],
+          ["仓库 README · DeepSearch-2505 榜单", "2", "o4-mini-high", "OpenAI", "Search", "60+", "未列出", "未列出", "2025.05"],
+          ["仓库 README · DeepSearch-2505 榜单", "3", "Doubao", "ByteDance", "Deep Think", "50+", "未列出", "未列出", "2025.05"],
+          ["仓库 README · DeepSearch-2505 榜单", "3", "Grok-3", "xAI", "DeeperSearch", "50+", "未列出", "未列出", "2025.05"],
+          ["仓库 README · DeepSearch-2505 榜单", "3", "Gemini 2.5 Pro (preview)", "Google", "Deep Research", "50+", "未列出", "未列出", "2025.05"]
+        ]
+      },
+      "cite": ["repo@README 简介", "hongshan@榜单口径"]
+    }
+  }
 }

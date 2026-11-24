@@ -2,27 +2,383 @@
   "id": "workspace-bench",
   "name": "Workspace-Bench",
   "full_name": "Workspace-Bench 1.0",
-  "aliases": [],
-  "status": null,
+  "aliases": [
+    "Workspace-Bench-Lite",
+    "Workspace Bench"
+  ],
+  "status": "active",
   "categories": [
     "agent"
   ],
-  "summary": "大规模文件依赖工作区任务智能体评测",
-  "interpretation": "388 个大规模文件依赖工作区任务（2 万+文件、每题独立依赖图），按 7,399 条 rubric 的达标率计分；最佳 agent 约 60% vs 人类 80.7%，全体均值仅 43.3%。",
-  "measures": [],
-  "does_not_measure": [],
+  "summary": "Workspace-Bench 1.0 把 5 个真实岗位的完整工作区（合计 20,476 个文件、74 种文件类型、16 种输出格式）当作考场，承载 388 个跨文件依赖任务；每题自带文件依赖图，并按 7,399 条细粒度 rubric 计分。它测的能力叫 Workspace Learning：智能体能否在真实工作区里识别、推理、利用并更新文件之间的显式与隐式依赖。",
+  "interpretation": "高分说明智能体能在万级文件、异构格式、带历史版本的目录里先摸清结构、再定位证据、跨文件推理，最后把合规交付物写回指定位置。当前公开最好成绩是 66.7%（榜单 Lite 口径，OpenClaw + Opus-4.7），论文中最佳约 60%、人类+工具基线 80.7%，全体均值只有 43.3%——距「可靠的工作区学习」仍有明显差距。低分主要来自找不到该用的文件、看不懂语义异构内容、追不出文件血缘这三类瓶颈。",
+  "measures": [
+    {
+      "area": "Workspace Exploration（工作区探索）",
+      "focus": "在定位证据之前先摸清目录结构与文件分布；论文称这是最常被要求的能力，智能体必须主动导航而不是靠扁平检索",
+      "share": "榜单 Full 278 题 / Lite 73 题（论文 §4.3 计 262 题，67.5%）",
+      "format": "rubric 达标率（Agent-as-a-Judge 二值判定）",
+      "cite": [
+        "site-leaderboard@Composition Analysis",
+        "arxiv-2605-03596@§4.3"
+      ]
+    },
+    {
+      "area": "Task-Providing File Utilization（任务提供文件利用）",
+      "focus": "读懂任务随附的文件并据此作答，而不是把信息全塞进 prompt",
+      "share": "榜单 Full 238 题 / Lite 58 题（论文计 61.3%）",
+      "format": "rubric 达标率",
+      "cite": [
+        "site-leaderboard@Composition Analysis"
+      ]
+    },
+    {
+      "area": "Result-Providing Files Utilization（结果提供文件利用）",
+      "focus": "把产出写回工作区里指定的文件与位置，考核文件名、格式、存储位置等基础合规",
+      "share": "榜单 Full 211 题 / Lite 49 题（论文计 54.4%）",
+      "format": "rubric 达标率",
+      "cite": [
+        "site-leaderboard@Composition Analysis",
+        "arxiv-2605-03596@§4.2"
+      ]
+    },
+    {
+      "area": "Semantic Content Relations Understanding（语义内容关系理解）",
+      "focus": "跨文件建立内容关联，例如讨论某篇论文的邮件、引用设计文档的会议纪要、由表格派生出的报告",
+      "share": "榜单 Full 170 题 / Lite 45 题（论文计 43.8%）",
+      "format": "rubric 达标率",
+      "cite": [
+        "site-leaderboard@Composition Analysis",
+        "arxiv-2605-03596@§4.3"
+      ]
+    },
+    {
+      "area": "Lineage Tracing（血缘追溯）",
+      "focus": "沿 v1 / v2 / final 等多版本历史追溯文件演化，判断哪一版才是当前有效内容",
+      "share": "榜单 Full 136 题 / Lite 30 题（论文计 35.1%）",
+      "format": "rubric 达标率",
+      "cite": [
+        "site-leaderboard@Composition Analysis",
+        "arxiv-2605-03596@§4.3"
+      ]
+    },
+    {
+      "area": "Heterogeneous File Understanding（异构文件理解）",
+      "focus": "跨 .docx / .pdf / .md / .xlsx / .csv / .pptx / .java / .py / .yaml / .json / .eml / .dat / .png 等类型读取并整合内容",
+      "share": "榜单 Full 109 题 / Lite 22 题（论文另计 Semantic Heterogeneous File Understanding 140 题，36.1%）",
+      "format": "rubric 达标率",
+      "cite": [
+        "site-leaderboard@Composition Analysis",
+        "arxiv-2605-03596@§4.3"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "开放式科研、通用对话与纯算法刷题都不在范围内：论文把自身限定为「真实工作区里跨文件依赖的 Workspace Learning」，交付物是工作区中的文件产物",
+      "cite": [
+        "repo-workspace-bench@README"
+      ]
+    },
+    {
+      "text": "不按岗位出分项分：5 个岗位（Operations Manager 122 题、Logistics Manager 115、Researcher 67、Backend Developer 43、Product Manager 41）只是题目来源分布，官方指标是统一的 rubric 达标率",
+      "cite": [
+        "arxiv-2605-03596@§4.1"
+      ]
+    },
+    {
+      "text": "不测「不给工作区、只靠模型内部知识」的纯闭卷问答：人类基线本身就是 20 名领域专家在只有任务说明与工作区文件、且允许把智能体当辅助工具的条件下测得的 80.7%",
+      "cite": [
+        "arxiv-2605-03596@§5.2"
+      ]
+    },
+    {
+      "text": "不把能力维度计数当作 388 题的划分：论文明确说一题可同时要求多种能力，计数是多标签赋值",
+      "cite": [
+        "arxiv-2605-03596@§4.3"
+      ]
+    }
+  ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
+    "sample_count": 388,
+    "splits": [
+      "Full：388 题，分布在 5 个岗位工作区（arXiv v4 口径）",
+      "Workspace-Bench-Lite：100 题子集（Hugging Face `lite` split，100 行、521 MB）"
+    ],
+    "languages": [
+      "en",
+      "cn"
+    ],
+    "source_type": "公开渠道采集的真实工作区文件 + LLM 基于采集文件合成的关联工件（邮件、会议纪要、报告），再经人类专家交叉校验",
+    "public_sample": true,
+    "totals": "Full 388 题 / 5 个工作区 / 20,476 个文件 / 3,299 个目录 / 7,399 条 rubric；平均每题 19.1 条 rubric（6–30 条）、需跨 4.7 个文件解 5.1 条依赖边；74 种文件类型、16 种输出格式；平均每工作区 4,095 个文件，最大 11,020 个，最大目录深度 8；专家标注每题平均 >3 小时。Lite 为 100 题、521 MB。任务元数据带 language 字段（en / cn），仓库已发布中文版 Full 数据集；HF Lite 当前查看器内 100 行的 language 取值均为 en",
+    "cite": [
+      "arxiv-2605-03596@Table 2",
+      "arxiv-2605-03596@§3.2",
+      "repo-workspace-bench@README",
+      "dataset-hf-lite@Dataset Card",
+      "dataset-hf-lite@Dataset Scale",
+      "repo-workspace-bench@News"
+    ],
+    "construction": [
+      {
+        "k": "工作区与文件",
+        "text": "为 5 个岗位各建一个大规模自包含数字环境，共 20,476 个文件、74 种类型；表格与文档占 37.5% 与 35.3%，代码与配置文件再贡献 12.7%，Backend Developer 工作区单独就有 43 种扩展名；部分文件带 v1 / v2 / final 历史版本用于血缘追溯，平均文件父深度 3.7、最大 8。",
+        "cite": [
+          "arxiv-2605-03596@§4.1",
+          "arxiv-2605-03596@§4.2"
+        ]
+      },
+      {
+        "k": "关联工件合成",
+        "text": "在采集到的真实文件之上，用 LLM 合成有内容关联的周边工件，例如讨论某篇论文的邮件、引用设计文档的会议纪要、由表格派生出的报告，以此制造显式与隐式的跨文件依赖。",
+        "cite": [
+          "arxiv-2605-03596@§3.2"
+        ]
+      },
+      {
+        "k": "依赖图与 rubric",
+        "text": "每题标注一份文件依赖图并配细粒度 rubric：平均需解 5.1 条依赖边、跨 4.7 个文件，按 19.1 条 rubric（6–30 条）评分；rubric 分三类——Result-oriented 54.8% 验最终产出的正确与完整，Foundation 25.0% 查文件名、格式、存储位置等基础合规，Process-oriented 20.2% 评推理与执行过程是否合理。",
+        "cite": [
+          "arxiv-2605-03596@§3.2",
+          "arxiv-2605-03596@§4.2"
+        ]
+      },
+      {
+        "k": "判据可验证化",
+        "text": "用辅助智能体流水线把「算得对吗」这类模糊标准转成数据 grounded 的断言（如「最终值是否等于某具体值」），再由人类专家对任务、依赖图、参考输出与 rubric 做交叉校验，最终得到 388 题。",
+        "cite": [
+          "arxiv-2605-03596@§3.2"
+        ]
+      },
+      {
+        "k": "Lite 子集",
+        "text": "Workspace-Bench-Lite 是从全集中选出的 100 题子集，宣称保持分布并把评测成本降低约 70%；HF 卡片称其「选自完整 Workspace-Bench 并维持分布保真」，选择标准未公开。",
+        "cite": [
+          "repo-workspace-bench@README",
+          "dataset-hf-lite@Dataset Card"
+        ]
+      }
+    ]
   },
-  "metrics": [],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [],
-  "notes": "字节 Seed/Qwen 引用；SJTU 与字节合作，arXiv 2605.03596",
+  "metrics": [
+    {
+      "id": "rubrics-pass-rate",
+      "name": "Rubrics Pass Rate（rubric 达标率）",
+      "direction": "越高越好",
+      "description": "Agent-as-a-Judge 对每条 rubric 做二值判定的通过比例，是论文与榜单的主指标；论文全体均值 43.3%，Lite 上 15 个配置均值 45.1%，榜单 45 个公开 Lite 行均值 45.5%、最高 66.7%",
+      "unit": "percent",
+      "cite": [
+        "arxiv-2605-03596@§4.4",
+        "arxiv-2605-03596@§4.5",
+        "site-leaderboard@Public Lite Rankings"
+      ]
+    },
+    {
+      "id": "tcr-80",
+      "name": "TCR@80（满足 80% rubric 的任务占比）",
+      "direction": "越高越好",
+      "description": "至少达标 80% rubric 的任务比例。榜单阈值视图：45 个公开 Lite 组合在该阈值下平均只通过 24.3 题，最好的系统通过 43 题",
+      "unit": "percent",
+      "cite": [
+        "arxiv-2605-03596@§4.4",
+        "site-leaderboard@Threshold Views"
+      ]
+    },
+    {
+      "id": "dependency-graph-f1",
+      "name": "Node / Edge F1（依赖图识别）",
+      "direction": "越高越好",
+      "description": "把智能体执行轨迹中动态抽取的文件依赖图与预定义 ground-truth 图在节点和边两层比 F1-Score；本档案未取得公开的逐项分数",
+      "cite": [
+        "arxiv-2605-03596@§4.4"
+      ]
+    },
+    {
+      "id": "cost-and-turns",
+      "name": "平均 token 消耗 / 平均任务轮次",
+      "direction": "越低越好（成本侧）",
+      "description": "论文报告的成本与交互轮次指标，用于解释达标率差异；本档案未取得公开数值",
+      "cite": [
+        "arxiv-2605-03596@§4.4"
+      ]
+    },
+    {
+      "id": "human-tool-baseline",
+      "name": "人类 + 工具基线",
+      "direction": "参照线",
+      "description": "20 名领域专家在只有任务说明与工作区文件、可把智能体当辅助工具的条件下取得 80.7%；按难度分档为 Easy 78.4% / Medium 81.2% / Hard 80.4%（论文 Figure 7 图内标注）",
+      "unit": "percent",
+      "cite": [
+        "arxiv-2605-03596@§5.2",
+        "arxiv-2605-03596@§5.3"
+      ]
+    }
+  ],
+  "default_protocol": {
+    "raw": "每题在一个全新 Docker 容器中运行，统一资源配额（默认 2 CPU、8 GiB 内存、512 PID、20 GiB 可写任务存储），任务结束即销毁容器；被测方经 harness 在分配好的工作区里完成任务。判分采用 Agent-as-a-Judge：判分器读取任务说明、智能体执行轨迹与工作区状态，输出二值正确性分数、置信度、详细理由与错误类型分类；论文全程以 Seed-2.0-Lite 作为判分 backbone，仓库要求 judge 端点与 Anthropic API 兼容（经 ClaudeCode harness 调用）。",
+    "cite": [
+      "repo-workspace-bench@Quick Start",
+      "arxiv-2605-03596@§4.5",
+      "arxiv-2605-03596@§5.1"
+    ],
+    "variants": [
+      {
+        "text": "Full 388 题 vs Lite 100 题：Lite 是保持分布的 100 题子集、成本约降 70%，两个口径的绝对分不能直接互相比。",
+        "cite": [
+          "repo-workspace-bench@README",
+          "dataset-hf-lite@Dataset Card"
+        ]
+      },
+      {
+        "text": "不同 harness × backbone 组合：论文摘要说评了 4 个 harness 与 7 个基础模型（27 个组合），§5.1 又说 comprehensively assess 3 个 harness 配 5 个基础模型，§5.2 的 15 个配置与 45.1% 均值对应 Lite；仓库 Quick Start 支持的 harness 取值为 codex、openclaw、deepagent、claudecode、deepseek-harness（别名 dsh）。",
+        "cite": [
+          "arxiv-2605-03596@Abstract",
+          "arxiv-2605-03596@§5.1",
+          "arxiv-2605-03596@§5.2",
+          "repo-workspace-bench@Quick Start"
+        ]
+      },
+      {
+        "text": "论文报告 / 维护者核验 vs 第三方自报：榜单把前者标为 Verified，其余为公开提交行，两者可信度不同。",
+        "cite": [
+          "site-leaderboard@Public Lite Rankings"
+        ]
+      },
+      {
+        "text": "泄漏修复前后：2026-08-17 修复 metadata.json 泄漏之前提交的成绩可能偏高，与此后的成绩不可直接比较。",
+        "cite": [
+          "repo-workspace-bench@News"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2026-05-05",
+      "label": "arXiv v1 提交（论文版本信息：Submitted on 5 May 2026）",
+      "cite": [
+        "arxiv-2605-03596@arXiv 版本信息"
+      ]
+    },
+    {
+      "id": "v4",
+      "date": "2026-05-14",
+      "label": "arXiv v4 修订，本档案核对所用版本（last revised 14 May 2026, this version, v4）",
+      "cite": [
+        "arxiv-2605-03596@arXiv 版本信息"
+      ]
+    },
+    {
+      "id": "repo-v1-full",
+      "date": "2025-05-07",
+      "label": "仓库 News 记「The full datasets of Version 1.0 are released」——该日期比 arXiv v1 早一年，仓库日期与论文版本不一致（见 limitations）",
+      "cite": [
+        "repo-workspace-bench@News"
+      ]
+    },
+    {
+      "id": "repo-v1-cn",
+      "date": "2025-06-23",
+      "label": "仓库 News 记「The Chinese Version full datasets of Version 1.0 are released」（中文版 Full 数据集）",
+      "cite": [
+        "repo-workspace-bench@News"
+      ]
+    },
+    {
+      "id": "leak-fix",
+      "date": "2026-08-17",
+      "label": "修复评测元数据泄漏（Issue #13）：此前被测智能体可读取工作目录外 metadata.json 中的任务 rubric",
+      "cite": [
+        "repo-workspace-bench@News"
+      ]
+    },
+    {
+      "id": "lite-metadata",
+      "date": "2026-08-31",
+      "label": "Lite 元数据更新：任务元数据与 CSV 增加 language 字段、替换损坏输入文件、细化选定 rubric",
+      "cite": [
+        "dataset-hf-lite@Changelog",
+        "repo-workspace-bench@News"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "论文自身口径不一致",
+      "impact": "摘要与 §5.2 说最佳「约 60%」，§7 结论说「近 70%」；难度衰减在 §5.3 / Figure 7 是 Avg 51.4%(Easy) → 46.0%(Medium) → 35.7%(Hard)，§6 又是 57.6%(Easy) → 40.5%(Hard)。引用单一句子会得到不同的「最强水平」与「难度衰减幅度」。",
+      "severity": "高",
+      "response": "本档案在正文同时保留两种表述并标注所在节，不取平均也不择一；榜单与论文分列在不同口径下。",
+      "reader": "看到「最佳约 60% / 近 70%」时先确认引的是摘要与 §5.2 还是 §7；看难度衰减时确认是 §5.3 还是 §6。",
+      "cite": [
+        "arxiv-2605-03596@Abstract",
+        "arxiv-2605-03596@§7",
+        "arxiv-2605-03596@§5.3",
+        "arxiv-2605-03596@§6"
+      ]
+    },
+    {
+      "issue": "历史成绩受元数据泄漏影响",
+      "impact": "2026-08-17 之前，被测智能体可以读到工作目录外 metadata.json 里的任务 rubric，等于开卷作答；此前的第三方分数可能系统性偏高。",
+      "severity": "高",
+      "response": "仓库已修复并记为 Issue #13，同时更新 Lite 元数据（language 字段、文件修复、细化 rubric）。",
+      "reader": "把 2026-08-17 前后提交的榜单行分开看，优先采信修复之后的成绩。",
+      "cite": [
+        "repo-workspace-bench@News",
+        "dataset-hf-lite@Changelog"
+      ]
+    },
+    {
+      "issue": "判分器与被测系统同源",
+      "impact": "论文全程用 Seed-2.0-Lite 作为 Agent-as-a-Judge 的 backbone，而 Seed 系列正是被测方之一（榜单第 11 名 ClaudeCode + Seed-2.0-Lite 53%），判分偏好可能有利于同源模型；论文未报告更换判分 backbone 的敏感性实验。",
+      "severity": "中",
+      "response": "论文说明判分会输出二值分数、置信度、详细理由与错误类型分类，可供人工抽查。",
+      "reader": "跨厂商比较时记住判分器来自字节 Seed；对 Seed 系模型的绝对分保留余地。",
+      "cite": [
+        "arxiv-2605-03596@§5.1",
+        "arxiv-2605-03596@§4.5",
+        "seed-en-blog-seed2-1-official@Seed 2.1 发布博客"
+      ]
+    },
+    {
+      "issue": "公开成绩集中在 Lite 且与论文配置不重叠",
+      "impact": "榜单 45 行全部是 Lite 口径（均值 45.5%），论文的 27 / 15 个配置是另一批 harness × 模型组合；榜单第一 OpenClaw + Opus-4.7（66.7%）不在论文评测配置内，无法与论文数字直接对齐。",
+      "severity": "中",
+      "response": "榜单区分 Verified（论文报告或维护者核验）与公开提交，并提供 Framework × Model 矩阵，空格表示该组合无数据。",
+      "reader": "比较前先看口径列：Lite / Full、Verified / 自报、论文 / 榜单。",
+      "cite": [
+        "site-leaderboard@Public Lite Rankings",
+        "site-leaderboard@Framework x Model Matrix",
+        "arxiv-2605-03596@§1"
+      ]
+    },
+    {
+      "issue": "构成数字在论文、仓库、榜单之间不一致",
+      "impact": "能力维度计数论文计 Workspace Exploration 262 题，榜单 Full 计 278；岗位名论文作 Product Manager、README 作 AI Product Manager；rubric 类型名论文作 Result-oriented / Foundation / Process-oriented，HF 数据集卡另用 Basic Evaluation / Outcome Evaluation / Process Evaluation。",
+      "severity": "中",
+      "response": "本档案以论文数字描述基准构成，仓库与榜单数字只用于版本事件与榜单快照，并在冲突处标注来源。",
+      "reader": "引用具体数字时注明来自论文、仓库还是榜单。",
+      "cite": [
+        "arxiv-2605-03596@§4.3",
+        "site-leaderboard@Composition Analysis",
+        "arxiv-2605-03596@§4.1"
+      ]
+    },
+    {
+      "issue": "题目级明细未完全公开",
+      "impact": "论文 Table 2 只给总量统计，没有公开逐题的完整 rubric 文本与依赖图 ground truth 的机器可读版本；Lite 的 100 题从全集按何种标准选出也未披露，外部难以独立复核分布保真性。",
+      "severity": "中",
+      "response": "数据集卡给出 Lite 规模（100 行、521 MB）与 language 字段说明，逐题明细需下载任务元数据。",
+      "reader": "复现前先确认拿到的是 Full 还是 Lite，以及 metadata.json 的版本（是否含 2026-08 的修复）。",
+      "cite": [
+        "arxiv-2605-03596@Table 2",
+        "dataset-hf-lite@Dataset Card",
+        "dataset-hf-lite@Dataset Scale"
+      ]
+    }
+  ],
+  "notes": "论文 SJTU + 字节 Seed + MIT + 清华合作；Seed 2.1 发布博客引用 Workspace Bench；Lite 榜单为当前主要公开口径",
   "official_sources": [
     {
       "kind": "github",
@@ -34,14 +390,396 @@
     },
     {
       "kind": "site",
-      "url": "https://seed.bytedance.com/en/blog/seed2-1-officially-released-advancing-ai-productivity"
+      "url": "https://workspace-bench.github.io/leaderboard.html"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/Workspace-Bench/Workspace-Bench-Lite"
     },
     {
       "kind": "site",
-      "url": "https://qwen.ai/blog?id=qwen3.8"
+      "url": "https://seed.bytedance.com/en/blog/seed2-1-officially-released-advancing-ai-productivity"
     }
   ],
-  "related_benchmarks": [],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "related_benchmarks": [
+    "agent-startup-bench",
+    "gdpval",
+    "gdpval-rubrics",
+    "coworkbench",
+    "spreadsheetbench",
+    "osworld"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-13",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      {
+        "id": "arxiv-2605-03596",
+        "kind": "paper",
+        "title": "Workspace-Bench 1.0: Benchmarking AI Agents on Workspace Tasks with Large-Scale File Dependencies（arXiv:2605.03596，v4，2026-05-14）",
+        "url": "https://arxiv.org/abs/2605.03596",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "repo-workspace-bench",
+        "kind": "repo",
+        "title": "OpenDataBox/Workspace-Bench（GitHub：README、News、Quick Start）",
+        "url": "https://github.com/OpenDataBox/Workspace-Bench",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "site-leaderboard",
+        "kind": "leaderboard",
+        "title": "Workspace-Bench Official Leaderboard（workspace-bench.github.io）",
+        "url": "https://workspace-bench.github.io/leaderboard.html",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "dataset-hf-lite",
+        "kind": "dataset",
+        "title": "Workspace-Bench/Workspace-Bench-Lite（Hugging Face 数据集卡与 Changelog）",
+        "url": "https://huggingface.co/datasets/Workspace-Bench/Workspace-Bench-Lite",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "seed-en-blog-seed2-1-official",
+        "kind": "blog",
+        "title": "Seed2.1 Officially Released: Advancing AI Productivity（字节 Seed 官方博客）",
+        "url": "https://seed.bytedance.com/en/blog/seed2-1-officially-released-advancing-ai-productivity",
+        "accessed": "2026-11-13"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "上海交通大学、字节跳动（Seed）、MIT、清华大学及独立研究者",
+        "cite": [
+          "arxiv-2605-03596@作者署名"
+        ]
+      },
+      "first_release": {
+        "v": "2026-05-05（arXiv v1；仓库 News 另记 2025-05-07 发布 v1.0 全量数据，两者不一致）",
+        "cite": [
+          "arxiv-2605-03596@arXiv 版本信息",
+          "repo-workspace-bench@News"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "arxiv-2605-03596@Abstract",
+        "arxiv-2605-03596@Table 2",
+        "arxiv-2605-03596@§3.2"
+      ],
+      "interpretation": [
+        "site-leaderboard@Public Lite Rankings",
+        "arxiv-2605-03596@§5.2",
+        "arxiv-2605-03596@§5.3"
+      ]
+    },
+    "problem": {
+      "text": "现有智能体基准要么把所需信息全塞进 prompt（Prompt-Driven，如 OneMillion-Bench、CL-Bench），要么完全不提供前置数据、只让智能体去调工具查网页或 API（Open-Source-Driven），两条路都绕开了日常办公真正的载体——一个几十上百个互相关联文件的杂乱工作区。于是「信息遗漏、逻辑不一致、事实错误」在这类任务上反复出现，却没有基准能系统地把这种能力测出来。",
+      "cite": [
+        "arxiv-2605-03596@§1"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "论文未报告随机基线",
+        "value": "未披露",
+        "note": "论文没有给出随机或空操作基线。可参考的底线来自榜单阈值视图：45 个公开 Lite 组合在「100% rubric 达标」下平均只通过 11.2 题，最好 24 题。",
+        "cite": [
+          "site-leaderboard@Threshold Views"
+        ]
+      },
+      {
+        "label": "全体均值",
+        "value": "43.3%",
+        "note": "论文摘要口径（跨 27 个 harness × 模型组合）。另两个均值来自不同批次：论文 Lite 上 15 个配置 45.1%，榜单 45 个公开 Lite 行 45.5%——三者不能混用。",
+        "cite": [
+          "arxiv-2605-03596@Abstract",
+          "arxiv-2605-03596@§1",
+          "arxiv-2605-03596@§5.2"
+        ]
+      },
+      {
+        "label": "论文最佳",
+        "value": "约 60%（§5.2）／近 70%（§7）",
+        "note": "同一版论文两处表述不同；§5.2 同时指出 Lite 上最高为 DeepAgent + GLM-5.1。",
+        "cite": [
+          "arxiv-2605-03596@§5.2",
+          "arxiv-2605-03596@§7"
+        ]
+      },
+      {
+        "label": "人类 + 工具基线",
+        "value": "80.7%",
+        "note": "20 名领域专家，只给任务说明与工作区文件、允许把智能体当辅助工具；按难度分档 Easy 78.4% / Medium 81.2% / Hard 80.4%。",
+        "cite": [
+          "arxiv-2605-03596@§5.2",
+          "arxiv-2605-03596@§5.3"
+        ]
+      },
+      {
+        "label": "公开榜单最高",
+        "value": "66.7%",
+        "note": "OpenClaw + Opus-4.7（Lite 口径：Easy 78.4% / Medium 66.9% / Hard 61.8%），该组合不在论文评测配置内。",
+        "cite": [
+          "site-leaderboard@Public Lite Rankings"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 Lite 的 45.5% 均值与论文的 43.3% 均值当成同一批成绩——前者是榜单 45 个公开 Lite 行，后者是论文 27 个组合的口径。",
+        "cite": [
+          "arxiv-2605-03596@§1",
+          "site-leaderboard@Public Lite Rankings"
+        ]
+      },
+      {
+        "text": "以为「近 70%」是新版论文的更新、「约 60%」是旧版残留——两句出现在同一版论文里（§7 结论 vs 摘要与 §5.2）。",
+        "cite": [
+          "arxiv-2605-03596@§7",
+          "arxiv-2605-03596@Abstract"
+        ]
+      },
+      {
+        "text": "把榜单第一的 66.7% 读成「已接近人类 80.7%」——该组合不在论文评测配置内，且人类基线本身允许使用智能体辅助工具。",
+        "cite": [
+          "site-leaderboard@Public Lite Rankings",
+          "arxiv-2605-03596@§5.2"
+        ]
+      },
+      {
+        "text": "把能力维度计数当成 388 题的划分——一题可同时要求多种能力，论文明确说这是多标签赋值。",
+        "cite": [
+          "arxiv-2605-03596@§4.3"
+        ]
+      },
+      {
+        "text": "跨时段比较榜单时忽略 2026-08-17 的元数据泄漏修复——修复前的成绩可能因读到 rubric 而偏高。",
+        "cite": [
+          "repo-workspace-bench@News"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布机构",
+        "v": "论文署名 5 家机构：上海交通大学、字节跳动、MIT、清华大学、独立研究者",
+        "cite": [
+          "arxiv-2605-03596@作者署名"
+        ]
+      },
+      {
+        "k": "论文版本",
+        "v": "arXiv:2605.03596，2026-05-05 提交、2026-05-14 修订为 v4（本档案核对版本）；题名《Workspace-Bench 1.0: Benchmarking AI Agents on Workspace Tasks with Large-Scale File Dependencies》",
+        "cite": [
+          "arxiv-2605-03596@arXiv 版本信息"
+        ]
+      },
+      {
+        "k": "岗位构成",
+        "v": "Operations Manager 122 题、Logistics Manager 115 题、Researcher 67 题、Backend Developer 43 题、Product Manager 41 题",
+        "cite": [
+          "arxiv-2605-03596@§4.1"
+        ]
+      },
+      {
+        "k": "工作区规模",
+        "v": "5 个工作区差异极大：Researcher 最大（11,020 个文件、2,059 个目录），AI Product Manager 最紧凑（1,379 个文件、309 个目录）",
+        "cite": [
+          "arxiv-2605-03596@§4.1"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "代码与 News 在 GitHub（OpenDataBox/Workspace-Bench），Lite 数据集在 Hugging Face（100 行、521 MB），项目页与榜单在 workspace-bench.github.io",
+        "cite": [
+          "repo-workspace-bench@README",
+          "dataset-hf-lite@Dataset Scale",
+          "site-leaderboard@概览"
+        ]
+      },
+      {
+        "k": "运行方式",
+        "v": "每题一个全新 Docker 容器，统一 2 CPU / 8 GiB / 512 PID / 20 GiB 可写存储，结束即销毁；judge 端点需与 Anthropic API 兼容",
+        "cite": [
+          "repo-workspace-bench@Quick Start"
+        ]
+      },
+      {
+        "k": "支持 harness",
+        "v": "codex、openclaw、deepagent、claudecode、deepseek-harness（别名 dsh）",
+        "cite": [
+          "repo-workspace-bench@Quick Start"
+        ]
+      },
+      {
+        "k": "厂商侧引用",
+        "v": "字节 Seed 2.1 发布博客把 Workspace Bench 与 Agent Startup Bench 并列为一致性基准，并称 Workspace Bench 考察复杂职场文档中的信息检索、上下文理解与结果生成；该博客未给出 Workspace-Bench 分数",
+        "cite": [
+          "seed-en-blog-seed2-1-official@Seed 2.1 发布博客"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-13",
+        "columns": [
+          "排名",
+          "框架",
+          "模型",
+          "Total",
+          "Easy",
+          "Medium",
+          "Hard",
+          "口径"
+        ],
+        "rows": [
+          [
+            "#1",
+            "OpenClaw",
+            "Opus-4.7",
+            "66.7%",
+            "78.4%",
+            "66.9%",
+            "61.8%",
+            "榜单 Public Lite Rankings"
+          ],
+          [
+            "#2",
+            "ClaudeCode",
+            "Opus-4.7",
+            "64.7%",
+            "77.1%",
+            "66.4%",
+            "56.9%",
+            "榜单 Public Lite Rankings"
+          ],
+          [
+            "#3",
+            "Hermes",
+            "Opus-4.7",
+            "64.5%",
+            "63.7%",
+            "65.6%",
+            "63.2%",
+            "榜单 Public Lite Rankings"
+          ],
+          [
+            "#4",
+            "DeepAgent",
+            "GLM-5.1",
+            "61%",
+            "59.2%",
+            "61.9%",
+            "60.5%",
+            "榜单 Public Lite Rankings（论文 §5.2 亦称其为 Lite 最高）"
+          ],
+          [
+            "#5",
+            "Hermes",
+            "GLM-5.1",
+            "57.7%",
+            "73.9%",
+            "57.3%",
+            "52.1%",
+            "榜单 Public Lite Rankings"
+          ],
+          [
+            "#6",
+            "OpenClaw",
+            "GLM-5.1",
+            "57.5%",
+            "65.7%",
+            "56.3%",
+            "56.3%",
+            "榜单 Public Lite Rankings"
+          ],
+          [
+            "#7",
+            "OpenClaw",
+            "Qwen-3.6-Plus",
+            "55.6%",
+            "62%",
+            "59.6%",
+            "46.3%",
+            "榜单 Public Lite Rankings"
+          ],
+          [
+            "#8",
+            "ClaudeCode",
+            "MiniMax-M2.7",
+            "54.6%",
+            "60.4%",
+            "56.6%",
+            "49%",
+            "榜单 Public Lite Rankings"
+          ],
+          [
+            "#9",
+            "DeepAgent",
+            "Opus-4.7",
+            "54.4%",
+            "58.8%",
+            "58.8%",
+            "45.6%",
+            "榜单 Public Lite Rankings"
+          ],
+          [
+            "#10",
+            "Codex",
+            "GLM-5.1",
+            "53.1%",
+            "52.7%",
+            "59.3%",
+            "42.7%",
+            "榜单 Public Lite Rankings"
+          ],
+          [
+            "#11",
+            "ClaudeCode",
+            "Seed-2.0-Lite",
+            "53%",
+            "67.8%",
+            "52.7%",
+            "47.5%",
+            "榜单 Public Lite Rankings（Seed-2.0-Lite 同时是论文判分 backbone）"
+          ],
+          [
+            "#12",
+            "ClaudeCode",
+            "GLM-5.1",
+            "52.6%",
+            "65.7%",
+            "56.1%",
+            "41.8%",
+            "榜单 Public Lite Rankings"
+          ],
+          [
+            "基线",
+            "—",
+            "20 名领域专家（human+tool）",
+            "80.7%",
+            "78.4%",
+            "81.2%",
+            "80.4%",
+            "论文 §5.2 / Figure 7，Lite 口径，允许使用智能体辅助工具"
+          ]
+        ]
+      },
+      "cite": [
+        "site-leaderboard@Public Lite Rankings",
+        "arxiv-2605-03596@§5.2",
+        "arxiv-2605-03596@§5.3"
+      ]
+    }
+  }
 }

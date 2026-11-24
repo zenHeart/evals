@@ -1,50 +1,666 @@
 {
   "id": "finworkbench",
   "name": "FinWorkBench",
-  "full_name": "FinWorkBench (Finch)",
-  "aliases": ["Finch", "FinWorkBench (Finch)", "FinWorkBench"],
-  "status": null,
-  "categories": ["agent", "knowledge"],
-  "summary": "面向金融与会计真实工作流的基准，重点考察电子表格的创建与编辑这类企业侧任务能否被正确完成（分数越高越好）。",
-  "interpretation": "读分要认准量纲：Finch 给的是**工作流任务完成正确率**（越高越好），不是金融知识题的正确率——它考的是模型能不能真的把金融/会计场景里的表格流程做对，所以 70 分上下对应的是「大部分真实表格流程能独立完成」，而不是「掌握了 70% 的金融知识」。当前水位（Mistral 2026-10-29 开源权重发布页口径）：Mistral Large 4 73.3%、Kimi K3 77.3%、DeepSeek-V4-Pro-0813 67.4%、GLM-5.3 65.1%，开源阵营里 Kimi K3 仍领先；该模型的公开预览版为 67.4%。官方未公开题量与判分细则，跨家比较只在同一口径下成立。",
+  "full_name": "Finch: Benchmarking Finance & Accounting across Spreadsheet-Centric Enterprise Workflows（FinWorkBench）",
+  "aliases": [
+    "Finch",
+    "FinWorkBench (Finch)",
+    "FinWorkBench"
+  ],
+  "status": "active",
+  "categories": [
+    "agent",
+    "knowledge"
+  ],
+  "summary": "FinWorkBench（论文里叫 Finch）是 172 个从 Enron 等真实企业语料整理出来的金融/会计工作流基准：每个工作流就是一份带自然语言指令的电子表格活（填公式、录入数据、跨表取数、校验、汇总、建模），模型交出改好或新建的工作簿才算完成。论文报告最强的产品级 agent GPT-5.1 Pro 平均每个工作流花 16.8 分钟，人工评估下也只通过 38.4%。",
+  "interpretation": "Finch 给的是工作流通过率（越高越好），不是金融知识问答正确率：一道题要做对，模型得同时读懂业务指令、跨表取到数、算对公式，还不能乱改表格。论文口径下 GPT-5.1 Pro 人工评估 38.4%、自动评估 41.9%，Claude Sonnet 4.5 为 25.0% / 29.1%，换成 API 单次生成口径的 GPT-5.1 只有 32.0%。厂商自测分数（Mistral 2026-10-29 开源权重发布页：自家模型 73.3%）未公开题量与判分细则，与论文口径不可直接比。所以看到 70 分上下，先确认是不是厂商自测；论文口径下 38% 这个量级对应的现实是「大部分真实表格流程还不能独立完成」。",
   "measures": [
-    "金融与会计工作流任务的操作正确率",
-    "电子表格创建与编辑等企业侧实操能力"
+    {
+      "area": "Calculation（计算）",
+      "focus": "填公式或算数值（如净值 net value）",
+      "share": "69.2%（119/172）",
+      "format": "生成或修订公式与计算结果",
+      "cite": [
+        "finch-paper@§2.2"
+      ]
+    },
+    {
+      "area": "Structuring & Formatting（结构化与格式化）",
+      "focus": "整理表格结构、统一格式",
+      "share": "50.0%（86/172）",
+      "format": "生成或修订单元格结构与格式",
+      "cite": [
+        "finch-paper@§2.2"
+      ]
+    },
+    {
+      "area": "Data Entry / Import（录入与导入）",
+      "focus": "把外部数据录入或导入表格",
+      "share": "25.6%（44/172）",
+      "format": "写入单元格值",
+      "cite": [
+        "finch-paper@§2.2"
+      ]
+    },
+    {
+      "area": "Validation & Review（校验与审查）",
+      "focus": "核对数据、找出并修正错误",
+      "share": "21.5%（37/172）",
+      "format": "修订错误单元格并给出结论",
+      "cite": [
+        "finch-paper@§2.2"
+      ]
+    },
+    {
+      "area": "Cross-sheet Retrieval（跨表检索）",
+      "focus": "跨工作表、跨表格定位并取数",
+      "share": "20.9%（36/172）",
+      "format": "定位目标区域并写入",
+      "cite": [
+        "finch-paper@§2.2"
+      ]
+    },
+    {
+      "area": "Summary & Visualization（汇总与可视化）",
+      "focus": "汇总数据、生成图表",
+      "share": "19.2%（33/172）",
+      "format": "生成汇总表或图表",
+      "cite": [
+        "finch-paper@§2.2"
+      ]
+    },
+    {
+      "area": "Financial Modeling（财务建模）",
+      "focus": "搭建财务模型",
+      "share": "8.7%（15/172）",
+      "format": "生成模型工作表",
+      "cite": [
+        "finch-paper@§2.2"
+      ]
+    },
+    {
+      "area": "Web Search（联网检索）",
+      "focus": "工作流中需要联网查证信息",
+      "share": "6.4%（11/172）",
+      "format": "检索结果写入表格",
+      "cite": [
+        "finch-paper@§2.2"
+      ]
+    },
+    {
+      "area": "Translation（翻译）",
+      "focus": "表格与报表内容翻译",
+      "share": "1.7%（3/172）",
+      "format": "生成译文单元格",
+      "cite": [
+        "finch-paper@§2.2"
+      ]
+    }
   ],
   "does_not_measure": [
-    "通用金融知识问答的准确率",
-    "语言翻译能力",
-    "推理与数学能力"
+    {
+      "text": "通用金融/会计知识问答：题目不是选择题也没有知识计分，考的是把表格活做完；rubric 四个维度全部围绕指令符合度、数值正确性、不过度编辑和可读性。",
+      "cite": [
+        "finch-paper@§2.3.2",
+        "finch-paper@§2.2"
+      ]
+    },
+    {
+      "text": "多人协作过程本身：邮件串里的来回沟通在标注时被归一成一条工作流指令，评测只看最终表格交付物。",
+      "cite": [
+        "finch-paper@§2.1.1"
+      ]
+    },
+    {
+      "text": "生成代码的工程质量：API 口径下代码只在沙箱里跑一次，跑不通即记失败，不评估可维护性或风格。",
+      "cite": [
+        "finch-paper@附录 B.1"
+      ]
+    },
+    {
+      "text": "英语以外的语言能力：语料以英文为主，只有少数工作流含中文或法文内容。",
+      "cite": [
+        "finch-paper@附录 E"
+      ]
+    }
   ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": null,
-    "source_type": null,
-    "public_sample": null
+    "sample_count": 172,
+    "splits": [
+      "公开集：172 个工作流（Hugging Face FinWorkBench/Finch，JSONL，约 175 MB，未设访问门槛）",
+      "未设训练/测试切分，也未提及留存集：论文与数据集卡都只发布一个集合"
+    ],
+    "languages": [
+      "en",
+      "zh",
+      "fr"
+    ],
+    "source_type": "真实企业邮件串、电子表格版本历史与最终交付物，经领域专家标注整理",
+    "public_sample": true,
+    "totals": "172 个工作流 / 384 个任务；1,710 个电子表格（956 个去重、301 个 Excel 文件）、17 个 PDF、12 张图片、3 个 Word 文档，另有 JSON / CSV / Markdown；合计约 2,700 万单元格。",
+    "cite": [
+      "finch-paper@§2.2",
+      "hf-dataset-card"
+    ],
+    "construction": [
+      {
+        "k": "① 企业邮件串挖工作流",
+        "text": "从 Enron 邮件语料出发，用 GPT-5 找出明确写了业务目标、且引用了附件表格的协作邮件，再把沟通意图归一成一条工作流指令。",
+        "cite": [
+          "finch-paper@§2.1.1"
+        ]
+      },
+      {
+        "k": "② 电子表格版本历史反推",
+        "text": "收集 Enron 与 EUSES 里的版本化工作簿家族，用 LLM 差分识别连续版本、推断底层工作流，再由人工专家校验筛选。",
+        "cite": [
+          "finch-paper@§2.1.2"
+        ]
+      },
+      {
+        "k": "③ 最终交付物反推",
+        "text": "从投资/证券公司、国际组织与政府（世界银行、加拿大与英国政府）的高质量报表出发，由领域专家撰写指令并构造输入文件与参考答案。",
+        "cite": [
+          "finch-paper@§2.1.3"
+        ]
+      },
+      {
+        "k": "④ 少量外部样本适配",
+        "text": "另从 WideSearch 适配 10 个金融案例做成联网检索类工作流，从 DABStep 取 3 例构造多源问答工作流。",
+        "cite": [
+          "finch-paper@§2.1.3"
+        ]
+      },
+      {
+        "k": "⑤ 统一 schema 与质检",
+        "text": "所有渠道的工作流统一成一套字段（自然语言指令、输入文件、参考答案）并打上任务类型与业务类型标签；5 名专家标注复核，累计超过 700 小时，约 40% 的工作流至少改过一轮。",
+        "cite": [
+          "finch-paper@§2.1",
+          "finch-paper@§2.1.4"
+        ]
+      }
+    ]
   },
   "metrics": [
     {
-      "id": "task_success_rate",
-      "name": "任务正确率",
-      "range": [0, 100],
-      "unit": "percent",
+      "id": "workflow_pass_rate",
+      "name": "工作流通过率（pass rate）",
       "direction": "higher",
-      "aggregation": null
+      "description": "以人工评估为金标准的二分判定：产出在内容与结构上都符合指令、且没有关键错误、遗漏或误改，才算通过；否则记失败。分母为 172 个工作流。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "finch-paper@§2.3.1"
+      ]
+    },
+    {
+      "id": "rubric_score",
+      "name": "Rubric 四维得分",
+      "direction": "higher",
+      "description": "LLM 自动评估下按 completeness / correctness / over-edit avoidance / readability 四维打分；当前 correctness 是主要瓶颈。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "finch-paper@§2.3.2",
+        "finch-paper@Table 4"
+      ]
+    },
+    {
+      "id": "judge_agreement",
+      "name": "裁判与人工一致率",
+      "direction": "higher",
+      "description": "LLM 裁判与人工标签的一致比例：GPT-5.1 Pro 82.1%、Claude Sonnet 4.5 90.2%；论文据此提示自动评估可能高估准确率。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "finch-paper@Table 5"
+      ]
     }
   ],
-  "default_protocol": null,
-  "versions": [],
+  "default_protocol": {
+    "raw": "每个工作流给模型一份自然语言指令和输入文件（表格为主，少量 PDF / 图片 / Word），模型产出改好或新建的工作簿。人工评估为金标准：只有内容与结构都符合指令、且没有关键错误、遗漏或误改，才算通过，否则记失败。LLM 自动评估用 GPT-5-mini 当裁判，按 modify / generate / QA 三类任务分别判定，rubric 四个维度：对指令的完整性、派生值与公式的数值和逻辑正确性、避免过度编辑（惩罚指令之外的多余改动）、格式与结构的可读性。",
+    "cite": [
+      "finch-paper@§2.3.1",
+      "finch-paper@§2.3.2"
+    ],
+    "variants": [
+      {
+        "text": "产品侧 agent 口径：模型以自带工具与 agent 形态跑完整工作流，论文同时报人工评估与 LLM 自动评估两套分数。",
+        "cite": [
+          "finch-paper@§3.2"
+        ]
+      },
+      {
+        "text": "API 口径：把任务框成代码生成——模型只准生成一次可执行 Python 脚本，脚本在隔离 Docker 容器里经 Jupyter Kernel Gateway 执行；跑不通（语法错误或运行时异常）直接记失败，不重试。",
+        "cite": [
+          "finch-paper@附录 B.1"
+        ]
+      },
+      {
+        "text": "厂商自测口径：Mistral 在自家开源权重发布页公布 Finch 分数，未公开题量与判分细则。",
+        "cite": [
+          "mistral-news-mistral-large-4-oss"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "date": "2025-12-15",
+      "label": "arXiv v1 首次公开",
+      "cite": [
+        "finch-paper@Submission history"
+      ]
+    },
+    {
+      "date": "2025-12-19",
+      "label": "arXiv v2",
+      "cite": [
+        "finch-paper@Submission history"
+      ]
+    },
+    {
+      "date": "2026-01-03",
+      "label": "arXiv v3",
+      "cite": [
+        "finch-paper@Submission history"
+      ]
+    },
+    {
+      "date": "2026-04-05",
+      "label": "arXiv v4",
+      "cite": [
+        "finch-paper@Submission history"
+      ]
+    },
+    {
+      "date": "2026-04-06",
+      "label": "被 ACL 2026 Findings 接收",
+      "cite": [
+        "hf-dataset-card"
+      ]
+    },
+    {
+      "date": "2026-04-15",
+      "label": "arXiv v5（当前档案对应版本）",
+      "cite": [
+        "finch-paper@Submission history"
+      ]
+    }
+  ],
   "limitations": [
-    "官方未公开题量、题集构成与判分细则",
-    "仅通过厂商发布文转述，评测方原始报告未在账本中单独归档",
-    "分数是工作流操作正确率，不能与通用知识类基准同框比较"
+    {
+      "issue": "厂商自测与论文口径不一致",
+      "impact": "Mistral 开源发布页的 73.3% 与论文里 GPT-5.1 Pro 的 38.4% 相差近一倍，直接横向排名会误导。",
+      "severity": "高",
+      "response": "论文公开了题量、判分细则与两套评估口径；厂商页未公开题量与判分细则。",
+      "reader": "看到 70 分上下先确认是不是厂商自测口径；跨厂商比较只在同一口径下成立。",
+      "cite": [
+        "mistral-news-mistral-large-4-oss",
+        "finch-paper@§3.2"
+      ]
+    },
+    {
+      "issue": "自动评估系统性高估",
+      "impact": "同一模型自动评估比人工评估高约 3 个百分点（41.9% vs 38.4%），论文据此提示自动评估可能高估若干百分点。",
+      "severity": "高",
+      "response": "论文同时报人工与自动两套结果，并给出裁判与人工的一致率（82.1% / 90.2%）。",
+      "reader": "读分先看是人工评估还是 LLM 裁判；引用时注明口径。",
+      "cite": [
+        "finch-paper@§3.2",
+        "finch-paper@Table 5"
+      ]
+    },
+    {
+      "issue": "规模小、单次运行方差大",
+      "impact": "总共只有 172 个工作流，一个工作流就占 0.58 个百分点；>2 任务的子集样本更少，23.5% 与 44.3% 的差距对应的绝对工作流数有限。",
+      "severity": "中",
+      "response": "论文按任务数分档报告，并给出可通过分档计数复核的结果。",
+      "reader": "把 Finch 当方向性证据，不要当精确排名；差距小于 3 个百分点时不要下结论。",
+      "cite": [
+        "finch-paper@§3.2",
+        "finch-paper@§2.2.1"
+      ]
+    },
+    {
+      "issue": "语料有历史性与来源偏差",
+      "impact": "主体是 2000-2025 年间 Enron / EUSES 语料和公开机构报表，业务形态偏北美传统企业财务，不代表其他地区、其他行业的表格实践。",
+      "severity": "中",
+      "response": "论文说明语料期间与来源，并称已剔除不必要的敏感字段、不新增个人可识别信息。",
+      "reader": "迁移到自己业务前，先看题目形态和自己的表格流程是否相近。",
+      "cite": [
+        "finch-paper@Abstract",
+        "finch-paper@附录 E"
+      ]
+    },
+    {
+      "issue": "Rubric 联合打分掩盖单点失败",
+      "impact": "四个维度合成一个通过/失败判定，公式算对但改坏了别处也会整体判失败；correctness 是当前主要瓶颈（Sonnet 4.5 仅 36.0%）。",
+      "severity": "中",
+      "response": "论文给出四维分项得分，可单独看短板。",
+      "reader": "想看短板就看分项得分，不要只看总通过率。",
+      "cite": [
+        "finch-paper@Table 4",
+        "finch-paper@§2.3.2"
+      ]
+    },
+    {
+      "issue": "污染风险",
+      "impact": "基准在 Hugging Face 公开可下载且未设访问门槛，存在进入训练语料的可能。",
+      "severity": "中",
+      "response": "数据集卡明确要求其标注不得进入训练语料。",
+      "reader": "对公开报告过 Finch 分数的模型，把高分往「见过题」的方向打折。",
+      "cite": [
+        "hf-dataset-card"
+      ]
+    },
+    {
+      "issue": "错误归因只取首个错误",
+      "impact": "失败工作流的错误分布只统计第一个明显错误，之后不再分析，因此各类错误的真实占比会被低估。",
+      "severity": "低",
+      "response": "论文在方法里明确说明了这一截止规则。",
+      "reader": "错误分布当量级看，不要当精确占比。",
+      "cite": [
+        "finch-paper@§3.3"
+      ]
+    }
   ],
-  "notes": "由 Mistral 2026-10-29 的开源权重发布文引用；官方称 Finch 分数升至 73.3%，在开源模型中仅次于 Kimi K3。",
+  "notes": "本档案按 benchmark-profile/v2 重建：原条目只有 Mistral 厂商自测口径，现补上论文（arXiv:2512.13168v5，ACL 2026 Findings）的题量、构成、判分与结果。「占比」一栏由论文 §2.2 给出的各任务类型工作流计数除以 172 换算得到，同一工作流可带多个任务类型，故各行之和大于 100%。本站账本中 mistral-large-4-oss 的 73.3% 为厂商自测口径，与论文的 38.4% 不可直接比较。",
   "official_sources": [
-    { "kind": "site", "url": "https://mistral.ai/news/mistral-large-4-oss/" }
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2512.13168"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/FinWorkBench/Finch"
+    },
+    {
+      "kind": "site",
+      "url": "https://mistral.ai/news/mistral-large-4-oss/"
+    }
   ],
-  "related_benchmarks": ["browsecomp", "frontierfinance"],
-  "content_status": "beta",
-  "last_verified_at": "2026-10-30"
+  "related_benchmarks": [
+    "browsecomp",
+    "frontierfinance"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-24",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-24",
+    "sources": [
+      {
+        "id": "finch-paper",
+        "kind": "paper",
+        "title": "Finch: Benchmarking Finance & Accounting across Spreadsheet-Centric Enterprise Workflows（arXiv:2512.13168v5）",
+        "url": "https://arxiv.org/abs/2512.13168",
+        "accessed": "2026-11-24"
+      },
+      {
+        "id": "mistral-news-mistral-large-4-oss",
+        "kind": "site",
+        "title": "Mistral Large 4 开源权重发布（Mistral AI 新闻）",
+        "url": "https://mistral.ai/news/mistral-large-4-oss/",
+        "accessed": "2026-11-24"
+      },
+      {
+        "id": "hf-dataset-card",
+        "kind": "dataset",
+        "title": "FinWorkBench/Finch 数据集卡",
+        "url": "https://huggingface.co/datasets/FinWorkBench/Finch",
+        "accessed": "2026-11-24"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "9 位作者所属机构联合发布：中国科学院大学（UCAS）、微软、中关村学院、华南理工大学、复旦大学、杜克大学、Hugging Face、Harvest Fund（arXiv 预印本，ACL 2026 Findings）",
+        "cite": [
+          "finch-paper@首页",
+          "finch-paper@附录 A"
+        ]
+      },
+      "first_release": {
+        "v": "2025-12-15（arXiv v1）",
+        "cite": [
+          "finch-paper@Submission history"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "finch-paper@Abstract",
+        "finch-paper@§1"
+      ],
+      "interpretation": [
+        "finch-paper@§3.2",
+        "finch-paper@Table 5",
+        "mistral-news-mistral-large-4-oss"
+      ]
+    },
+    "problem": {
+      "text": "现有 agent 基准多考单轮问答或单文件代码任务，而企业里金融/会计的活是「一沓历史表格 + 几封业务邮件 + 一份交付物」的长流程：数据脏、跨表、公式多，还容易多改。论文要量的就是这种 work IQ——模型能不能像熟练的财务/会计专家那样把活干对；报告称最强的 frontier agent 在 Finch 上通过率不足 50%。",
+      "cite": [
+        "finch-paper@§1",
+        "finch-paper@Abstract"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "参考线：GPT-5.1 Pro 在 >2 任务工作流上",
+        "value": "23.5%",
+        "note": "复合度越高分数越低；≤2 任务时为 44.3%",
+        "cite": [
+          "finch-paper@§3.2"
+        ]
+      },
+      {
+        "label": "Claude Sonnet 4.5（产品侧 agent，人工评估）",
+        "value": "25.0%",
+        "note": "同一模型自动评估口径为 29.1%",
+        "cite": [
+          "finch-paper@Table 5"
+        ]
+      },
+      {
+        "label": "GPT-5.1（API 单次生成，自动评估）",
+        "value": "32.0%",
+        "note": "只准生成一次 Python 脚本，失败不重试",
+        "cite": [
+          "finch-paper@§3.2"
+        ]
+      },
+      {
+        "label": "GPT-5.1 Pro（产品侧 agent，人工评估）",
+        "value": "38.4%",
+        "note": "论文报告的最强成绩；平均每个工作流 16.8 分钟",
+        "cite": [
+          "finch-paper@Abstract"
+        ]
+      },
+      {
+        "label": "GPT-5.1 Pro（产品侧 agent，自动评估）",
+        "value": "41.9%",
+        "note": "同一模型换成 LLM 裁判即高出约 3 个百分点",
+        "cite": [
+          "finch-paper@§3.2"
+        ]
+      },
+      {
+        "label": "Mistral Large 4（厂商自测）",
+        "value": "73.3%",
+        "note": "Mistral 2026-10-29 开源发布页口径，题量与判分细则未公开，与论文不可直接比",
+        "cite": [
+          "mistral-news-mistral-large-4-oss"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "「Finch 73.3%」和论文里的 38.4% 不是一回事：73.3% 是 Mistral 在自家开源权重发布页上给的产品自测值，题量与判分细则未公开；38.4% 是论文中 GPT-5.1 Pro 在人工评估下的通过率。两个口径不能直接比。",
+        "cite": [
+          "mistral-news-mistral-large-4-oss",
+          "finch-paper@§3.2"
+        ]
+      },
+      {
+        "text": "自动评估分数比人工评估高：同一模型换 LLM 裁判可高出约 3 个百分点（GPT-5.1 Pro 41.9% vs 38.4%），论文据此提示自动评估可能高估准确率。看到分数先问是人工还是自动。",
+        "cite": [
+          "finch-paper@§3.2",
+          "finch-paper@Table 5"
+        ]
+      },
+      {
+        "text": "任务数多不等于更难：论文专门指出任务计数本身不预测开销，两个都标了 Calculation 的工作流工具调用数能差近 2 倍，真正的难点在业务逻辑推理（符号约定、方法选择、跨表一致性）。",
+        "cite": [
+          "hf-dataset-card"
+        ]
+      },
+      {
+        "text": "错误分布不等于错误全貌：失败工作流只统计第一个明显错误就停止分析，因此 35% 公式推理、25% 数据检索、25% 代码生成这个分布是「首个错误」的分布，真实错误数更多。",
+        "cite": [
+          "finch-paper@§3.3"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "论文与题名",
+        "v": "arXiv:2512.13168v5（cs.AI，2026-04-15），题名《Finch: Benchmarking Finance & Accounting across Spreadsheet-Centric Enterprise Workflows》，已被 ACL 2026 Findings 接收。",
+        "cite": [
+          "finch-paper@首页",
+          "hf-dataset-card"
+        ]
+      },
+      {
+        "k": "上游语料",
+        "v": "主体是 Enron（约 15,000 个文件、50 万封邮件）与 EUSES 电子表格库，期间跨 2000-2025；另加投资/证券公司、国际组织与政府（世界银行、加拿大与英国政府）的报表。",
+        "cite": [
+          "finch-paper@Abstract",
+          "finch-paper@§2.1.3"
+        ]
+      },
+      {
+        "k": "占比口径",
+        "v": "本页「占比」= 论文 §2.2 给出的各任务类型工作流计数 ÷ 172（本站按论文原始计数换算）。同一工作流可带多个任务类型，因此各行占比之和大于 100%；论文的业务类型分布同理（reporting 48、operational management 36、trading and risk management 35 等，可多标）。",
+        "cite": [
+          "finch-paper@§2.2"
+        ]
+      },
+      {
+        "k": "脏数据程度",
+        "v": "86.6% 的工作流涉及多个文件（最多 14 个）；单元格数中位 15K、平均 157K、最大 370 万。数据集卡另称 92.4% 的工作流涉及多个输入/参考 sheet，平均 8 个、长尾到 91 个。",
+        "cite": [
+          "finch-paper@§2.2.2",
+          "hf-dataset-card"
+        ]
+      },
+      {
+        "k": "工具调用量",
+        "v": "论文对 20 个代表性工作流的案例分析给出中位 16 次工具调用（范围 6-107）；§2.2.1 排除两个 71 / 107 次的联网检索极端样本后，其余任务为 6-25 次（中位 14）。",
+        "cite": [
+          "finch-paper@§1",
+          "finch-paper@§2.2.1"
+        ]
+      },
+      {
+        "k": "耗时",
+        "v": "GPT-5.1 Pro 平均每个工作流花 16.8 分钟；按任务数分档，单任务平均 13.1 分钟、2 任务 17.4 分钟、3 任务 18.7 分钟。",
+        "cite": [
+          "finch-paper@Abstract",
+          "finch-paper@Table 2"
+        ]
+      },
+      {
+        "k": "数据集与许可",
+        "v": "以 JSONL 发布在 Hugging Face FinWorkBench 组织下（172 行、约 175 MB、未设访问门槛），许可 CC BY 3.0 US；数据集卡明确要求其标注不得进入训练语料。",
+        "cite": [
+          "hf-dataset-card",
+          "finch-paper@附录 E",
+          "finch-paper@首页"
+        ]
+      },
+      {
+        "k": "发布与收录时间线",
+        "v": "arXiv 版本从 v1（2025-12-15）迭代到 v5（2026-04-15）；2026-04-06 数据集卡记录 FinWorkBench 被 ACL 2026 Findings 接收。",
+        "cite": [
+          "finch-paper@Submission history",
+          "hf-dataset-card"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-24",
+        "columns": [
+          "受测对象",
+          "口径",
+          "通过率",
+          "备注"
+        ],
+        "rows": [
+          [
+            "GPT-5.1 Pro · 仅 >2 任务子集",
+            "人工评估",
+            "23.5%",
+            "复合度越高分数越低"
+          ],
+          [
+            "Claude Sonnet 4.5（产品侧 agent）",
+            "人工评估",
+            "25.0%（43/172）",
+            "自动评估口径为 29.1%"
+          ],
+          [
+            "GPT-5.1（API 单次生成）",
+            "自动评估",
+            "32.0%",
+            "只准生成一次 Python 脚本，失败不重试"
+          ],
+          [
+            "GPT-5.1 Pro（产品侧 agent）",
+            "人工评估",
+            "38.4%（66/172）",
+            "论文报告的最强成绩"
+          ],
+          [
+            "GPT-5.1 Pro（产品侧 agent）",
+            "自动评估",
+            "41.9%（72/172）",
+            "高于同一模型的人工评估"
+          ],
+          [
+            "GPT-5.1 Pro · 仅 ≤2 任务子集",
+            "人工评估",
+            "44.3%",
+            "简单子集上的上界参考"
+          ],
+          [
+            "GPT-5.1 Pro · 20 个非表格工作流",
+            "人工评估",
+            "35.0%（7/20）",
+            "低于其总体 38.4%"
+          ]
+        ]
+      },
+      "cite": [
+        "finch-paper@§3.2",
+        "finch-paper@Table 3",
+        "finch-paper@Table 5"
+      ]
+    }
+  }
 }

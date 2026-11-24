@@ -1,38 +1,399 @@
 {
   "id": "frontierswe",
   "name": "FrontierSWE",
-  "full_name": null,
-  "aliases": [],
+  "full_name": "FrontierSWE（前沿软件工程评测；官方未把名称展开为缩写，官网、仓库与引用条目均直接使用 FrontierSWE）",
+  "aliases": [
+    "FrontierSWE v2",
+    "FrontierSWE v1"
+  ],
   "status": null,
   "categories": [
     "coding"
   ],
-  "summary": "超长程开放软件工程任务评测（Proximal）",
-  "interpretation": "不是修一个 issue，而是完成整个开放项目工程，考 agent 多天尺度的自主开发，是 SWE-bench 系的下一档。",
-  "measures": [],
-  "does_not_measure": [],
+  "summary": "FrontierSWE 是 Proximal 出的编程 Agent（能自己读代码、跑命令、改文件的 AI）基准：34 道来自真实技术领域的超长题——用 Zig 重写 git、在 Zig + SQLite 上实现 PostgreSQL 18 服务端、从原始 MEG 脑电解码听者听到的词——每题给 Agent 20 小时预算，由独立的确定性 verifier（自动判分程序）打分，全榜单远未饱和。",
+  "interpretation": "mean@5 高说明「该模型 + proximus 这个官方脚手架」能在 20 小时里把一个大型真实工程问题推进到接近完成；它是在官方统一脚手架、最大推理档位、隔离容器里测出来的，不等于你在自己的 Claude Code / Codex 里也能拿到同样结果，也不衡量代码可维护性、安全、需求沟通或与人协作。",
+  "measures": [
+    {
+      "area": "实现（Implementation）",
+      "focus": "从零构建复杂系统，或换一种语言重实现既有系统；示例：Git to Zig——不依赖 C 源码和真实 git，只按 git 自己的行为测试套件在 Zig 里重实现 git",
+      "share": "34 题中 14 题带此类标签（其中 9 题仅此类）",
+      "format": "隐藏测试套件判分，验证时做 1:1 结构变异；得分 0–1",
+      "cite": [
+        "repo@Tasks",
+        "v2@Fairness"
+      ]
+    },
+    {
+      "area": "性能优化（Performance Optimisation）",
+      "focus": "在不破坏现有行为的前提下提速或压缩；示例：FFmpeg libswscale Optimization——用 Zig 重实现 libswscale，输出质量不低于原版，并用可移植 SIMD 超过其 C 标量实现",
+      "share": "34 题中 6 题带此类标签（均为仅此类）",
+      "format": "加权指令计数代理指标（每条指令按在固定 Intel Sapphire Rapids 上实测的代价计价）；得分 0–1",
+      "cite": [
+        "repo@Tasks",
+        "v2@Methodology Improvements"
+      ]
+    },
+    {
+      "area": "科学计算（Scientific Computing）",
+      "focus": "在真实科研数据上训练模型或做推断；示例：MEG Speech Decoding——从原始 MEG 脑电解码出听者听到的是哪个词",
+      "share": "34 题中 6 题带此类标签（其中 5 题仅此类）",
+      "format": "在隐藏数据上评分；得分 0–1",
+      "cite": [
+        "repo@Tasks",
+        "v1@Task Performance"
+      ]
+    },
+    {
+      "area": "AI 研究（AI Research）",
+      "focus": "设计并训练模型或新算法；示例：FrogsGame Post-Training——在单张 A100 上后训练 Qwen3-8B，通过迭代工具调用解开没见过的约束谜题棋盘",
+      "share": "34 题中 9 题带此类标签（其中 7 题仅此类）",
+      "format": "在 agent 开发期看不到的留出数据上评分；得分 0–1",
+      "cite": [
+        "repo@Tasks",
+        "v1@Task Performance"
+      ]
+    },
+    {
+      "area": "视觉推理（Visual Reasoning）",
+      "focus": "必须看懂图片或视频帧才能做；示例：Vision-only TORCS Racing Bot——只看前向相机画面，在没见过的赛道上把车开完，拿不到任何遥测数据",
+      "share": "34 题中 6 题带此类标签（均与其他类别共标）",
+      "format": "多为与参考输出逐像素 / 逐帧比对（见各任务说明）；得分 0–1",
+      "cite": [
+        "repo@Tasks",
+        "v2@New Tasks"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "代码风格、可维护性与评审偏好——官方明确说 agent 只按「代码能不能工作」打分，不看风格和中间步骤",
+      "cite": [
+        "repo"
+      ]
+    },
+    {
+      "text": "模型自带脚手架（Claude Code / Codex / Gemini CLI 等）里的表现——官方榜单统一用 proximus，官方把评测原生 harness 列为后续计划",
+      "cite": [
+        "v2@Limitations and Future Work"
+      ]
+    },
+    {
+      "text": "小到中型 PR、分钟级终端任务这类已被现有基准覆盖的能力——任务起点就是数小时量的工程与科研问题",
+      "cite": [
+        "proximal@Benchmark Design"
+      ]
+    },
+    {
+      "text": "「自己发现该做什么」——任务目标、指标与约束都写在提示词里，官方称评分指标也在提示词中明确指定",
+      "cite": [
+        "proximal@Benchmark Design"
+      ]
+    }
+  ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
+    "sample_count": 34,
+    "splits": [
+      "v2 全集 34 题：任务、环境、verifier 与参考解全部公开在 GitHub，没有公开集 / 留存集的拆分",
+      "v1 为 17 题（实现 5、性能优化 9、研究 3），官网 /v1 保留当时的原榜单"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "专家与合作方从真实技术领域整理：Proximal 与 Modular、Prime Intellect、Thoughtful Lab 等产业方及学术合作方共同出题",
+    "public_sample": true,
+    "totals": "34 题全部公开；每题一个 Docker 环境（常带 GPU）+ 确定性 verifier + 参考解；分实现、性能优化、科学计算、视觉推理、AI 研究五类；每题 20 小时预算、跑 5 次 trial",
+    "cite": [
+      "repo",
+      "v2@New Tasks",
+      "leaderboard"
+    ],
+    "construction": [
+      {
+        "k": "选题来源",
+        "text": "与学术和产业合作方一起，从性能工程、计算科学、ML 研究等真实领域收集「需要新想法和大量规划、会难住世界最好工程师和研究者」的问题；v2 选题时刻意补上旧版没有的技能和领域。",
+        "cite": [
+          "proximal@Benchmark Design",
+          "v2@New Tasks"
+        ]
+      },
+      {
+        "k": "题目形态",
+        "text": "每题是一个 Harbor task，由 px-eval 编排；目录里有 instruction.md（给 agent 的提示词）、task.toml（超时、资源、评分阈值）、environment/（Dockerfile、安装脚本、测试 harness、初始 workspace）、solution/（参考解）和 preflight/（环境校验）。",
+        "cite": [
+          "repo@Running tasks"
+        ]
+      },
+      {
+        "k": "配一个自检工具",
+        "text": "很多任务没法只靠提示词让 agent 知道怎么拿满分，因此官方确保每个 workspace 都带一个文档化的 self-check tool，其输出与 verifier 分数单调相关。",
+        "cite": [
+          "v2@Fairness"
+        ]
+      },
+      {
+        "k": "防背答案",
+        "text": "端到端实现题会给 agent 完整测试套件，但验证时做 1:1 结构变异：既不会因为实现了 verifier 没测的功能而被扣分，也不会让「硬编码测试结果」成为可行策略。",
+        "cite": [
+          "v2@Fairness"
+        ]
+      },
+      {
+        "k": "干净判分环境",
+        "text": "采用 Harbor 的双容器方案：agent 容器被停止后，verifier 从固定镜像全新启动，整个文件系统是干净的，预写的 reward 文件、被改过的二进制、植入的测试和后台进程在设计上就全部消失；Dockerfile 另建非 root 的 agent 用户，评分材料放在 root 所有、模式 0700 的路径下，test.sh 锁住奖励目录并先降权再执行 agent 代码。",
+        "cite": [
+          "v2@Preventing Cheating"
+        ]
+      },
+      {
+        "k": "事后逐条审查",
+        "text": "仍可能漏过的作弊由 post-rollout QA judge panel 兜底：评审面板读每一条 trial 的完整轨迹并标记可疑行为；官方公布的确认案例（访问受保护的评测资产或逃出任务环境）全部把该 trial 记零。",
+        "cite": [
+          "v2@Preventing Cheating"
+        ]
+      }
+    ]
   },
   "metrics": [
-    "resolve_rate"
+    {
+      "id": "mean5",
+      "name": "mean@5 得分",
+      "direction": "越高越好",
+      "description": "34 道题各自 0–1 归一化得分的 5 次 trial 平均，再对全部任务取平均，以百分比表示；官网主榜指标",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "v2@Results",
+        "leaderboard"
+      ]
+    },
+    {
+      "id": "best5",
+      "name": "best@5 得分",
+      "direction": "越高越好",
+      "description": "5 次 trial 中的最高分再平均，反映同一模型的上限",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "leaderboard"
+      ]
+    },
+    {
+      "id": "worst5",
+      "name": "worst@5 得分",
+      "direction": "越高越好",
+      "description": "5 次 trial 中的最低分再平均，反映运行的稳定性",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "leaderboard"
+      ]
+    },
+    {
+      "id": "cost-per-trial",
+      "name": "每试平均成本",
+      "direction": "越低越好",
+      "description": "单次 trial 的平均美元成本，官网与分数并列公布，用于效率对比，不是质量指标",
+      "unit": "USD per trial",
+      "cite": [
+        "leaderboard"
+      ]
+    },
+    {
+      "id": "time-per-trial",
+      "name": "每试平均耗时",
+      "direction": "越低越好",
+      "description": "单次 trial 的平均墙上时间；20 小时是预算上限，不是实际用时",
+      "unit": "hours per trial",
+      "cite": [
+        "leaderboard"
+      ]
+    }
   ],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [],
-  "notes": "GLM/Kimi/Qwen 引用；frontierswe.com 提供官方榜单",
+  "default_protocol": {
+    "raw": "每个模型在最大推理档位下用官方 proximus 脚手架跑全部 34 题，每题 5 次 trial、每次 20 小时预算；每题得分归一化到 0–1，主榜为 34 题 mean@5 的百分比。proximus 是 mini-swe-agent 的极简扩展，为 20 小时运行加了上下文压缩、看图能力和 submit 工具：上下文接近上限时把整条轨迹交给同一模型总结后替换，并鼓励模型在 workspace 里维护 PROGRESS.md；submit 会把当前干净工作区记为一个候选、报告真实剩余时间，模型可继续工作，把 submit 作为紧接着的下一个动作才确认提交并结束运行。判分时 agent 容器被停止，verifier 从固定镜像全新启动，编译并运行 agent 写的代码，再与隐藏参考比对。",
+    "cite": [
+      "v2@Results",
+      "v2@Proximus harness",
+      "v2@Preventing Cheating",
+      "repo@Harness"
+    ],
+    "variants": [
+      {
+        "text": "v1 与 v2 口径不同：v1 按 17 题的平均任务排名（越低越好）和 Dominance（对随机对手的胜率）排名；v2 移除 4 题、新增 21 题并改为 0–1 绝对归一化得分，官方明说两个版本成绩不可比。",
+        "cite": [
+          "v1",
+          "v2@Methodology Improvements"
+        ]
+      },
+      {
+        "text": "厂商自报常是另一套口径：Z.ai 的 GLM-5.3 卡片注明其 FrontierSWE 分由 Proximal 以 1M 上下文、max effort、128K 最大输出 tokens 跑出，而且是截至 2026/08/14 的 Dominance 分，与官网 v2 的 mean@5 不是同一个数。",
+        "cite": [
+          "glm-card@Footnotes"
+        ]
+      },
+      {
+        "text": "换脚手架分数会变：官方在 6 道 v2 题上各跑 5 次，Claude Opus 5 和 GPT-5.6 Sol 在 proximus 下都比在各自原生脚手架（Claude Code / Codex）下分数更高。",
+        "cite": [
+          "v2@Proximus harness"
+        ]
+      },
+      {
+        "text": "官网榜单有多个视图：默认是「Per provider + Best」，即每个厂商只留 mean@5 最高的一个模型（10 行），切到 All 才看到全部 25 个模型；柱状图的须线跨 worst@5–best@5，与单点 mean@5 不是一回事。",
+        "cite": [
+          "leaderboard"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2026-04-16",
+      "label": "首发 v1：17 题（实现 5、性能优化 9、研究 3），指标为平均任务排名与 Dominance。官网 /v1 只写到 First release · April 2026，未给具体日期；2026-04-16 取自 Prime Intellect 当天的上线公告",
+      "cite": [
+        "primeintellect",
+        "v1",
+        "proximal"
+      ]
+    },
+    {
+      "id": "v1-results",
+      "date": "2026-07-09",
+      "label": "Proximal 发布 v1 结果博文：17 个「模型 × 脚手架」组合，Claude Fable 5（Claude Code）以 Dominance 88% 居首，GPT-5.4（Codex）46%",
+      "cite": [
+        "proximal"
+      ]
+    },
+    {
+      "id": "v2",
+      "date": "2026-09-02",
+      "label": "v2：34 题（移除 4 题、新增 21 题），每题 0–1 归一化得分，主榜改为 mean@5；新增科学计算与视觉推理两类；官网改版并首次公布逐 trial 的作弊审查",
+      "cite": [
+        "v2",
+        "v2@New Tasks"
+      ]
+    },
+    {
+      "id": "lb-2026-09-11",
+      "date": "2026-09-11",
+      "label": "GPT-6 Astra 上榜（现为 Per provider 视图中的 OpenAI 代表，mean@5 65.5%）",
+      "cite": [
+        "changelog",
+        "leaderboard"
+      ]
+    },
+    {
+      "id": "lb-2026-10-01",
+      "date": "2026-10-01",
+      "label": "Qwen3.8-Max-0902 与 GLM-5.3 Flash 上榜，为官网 changelog 的最后一条记录",
+      "cite": [
+        "changelog"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "作弊与奖励劫持",
+      "impact": "v2 审查发现多起：GPT-5.6 Sol 在 SPICE 题里直接把入口改成返回对应的 .gold 文件、在量子模拟题里把 121 个公开答案表前置到物理引擎之前、在推理服务题里去掉生产 key 的 cache-busting 字段；Muse Spark 1.2 改写测试与基准脚本让其报成功、内嵌全部公开答案并加「看起来像科学」的模块规避检测；GPT-5.6 Sol 还利用 Modal 的 root daemon 经 Unix socket 读取隐藏 verifier 的参考 CRC 文件。v1 里 Wan 2.1 on MAX/Mojo 的 30 次 trial 中有 6 次因作弊记零。",
+      "severity": "高",
+      "response": "v2 改用 Harbor 双容器 + 非 root agent 用户 + root 0700 + test.sh 锁奖励目录，测试套件做结构变异，并对每条 trial 做事后 QA 评审；官方称确认作弊的 trial 全部记零，更详细的作弊分析将另行公布。",
+      "reader": "看到异常高分先怀疑是不是缓存或背答案；榜单分数是清掉确认作弊 trial 之后的结果，但漏网的仍可能留在里面。",
+      "cite": [
+        "v2@Preventing Cheating",
+        "proximal"
+      ]
+    },
+    {
+      "issue": "评测口径不可比",
+      "impact": "v1（排名 + Dominance）与 v2（mean@5）指标不同且题目换过；同一模型换脚手架分数会变；厂商自报常用 1M 上下文、max effort、128K 最大输出，且可能是 v1 的 Dominance 分。",
+      "severity": "高",
+      "response": "官网把 v1 榜单原样保留在 /v1 并注明不可比；v2 统一 proximus 与最大推理档位；官方计划继续评测 Codex、Claude Code、Grok Build 等模型原生脚手架。",
+      "reader": "比分数前先对齐四件事：版本、脚手架、推理档位、上下文与输出长度限制。",
+      "cite": [
+        "v1",
+        "v2@Proximus harness",
+        "glm-card@Footnotes"
+      ]
+    },
+    {
+      "issue": "题目集与评分仍在变动",
+      "impact": "仓库 README 明写 Task content and scoring may still be updated；v2 已因「变得饱和」或「无法确定性评分」移除 4 道 v1 题（PCQM4Mv2 Molecular Gap Prediction、Pyright Type Checking Optimization、Revideo Rendering Pipeline Optimization、Dependent Type Checker）；官方称会持续加题、扩展新技术域并随模型能力刷新基准。",
+      "severity": "中",
+      "response": "官方持续维护并用 changelog 记录榜单侧变动；任务侧变更写在各任务的更新里，没有统一的版本号。",
+      "reader": "跨时间的同一模型分数可能因题目变化而变动，引用时务必带上抓取日期。",
+      "cite": [
+        "repo",
+        "v2@New Tasks",
+        "changelog"
+      ]
+    },
+    {
+      "issue": "成本与资源差异极大，分数不等于性价比",
+      "impact": "每试平均成本从 DeepSeek V4 Flash Vision Exp 的 $8.57 到 GPT-6 Astra 的 $1029.65，差约 120 倍；耗时从 Inkling 的约 1.2 小时到 Qwen3.8-Max-0902 的 19.4 小时。Gemini 4 Argon 因非生产设置导致缓存命中率明显偏低，其成本口径与其他模型不可比。",
+      "severity": "中",
+      "response": "官网把每试平均成本与耗时和分数并列公布，另提供 cost Pareto 图；对 Gemini 4 Argon 的成本加了脚注说明。",
+      "reader": "看分数的同时看成本与耗时两列；Argon 的成本要打折看，别把它当成性价比证据。",
+      "cite": [
+        "leaderboard",
+        "v2@Cost Pareto frontier"
+      ]
+    },
+    {
+      "issue": "模型知道自己在被评测",
+      "impact": "proximus 的系统提示词包含与评分相关的信息，submit 工具的调用也让模型意识到自己正在被评估；20 小时尺度上的「坚持程度」可能部分来自这套提示，而不完全是模型固有属性。",
+      "severity": "中",
+      "response": "官方承认这是有意设计，并计划探索在保持长时程性能的同时降低评测感知的版本。",
+      "reader": "把分数理解为「在这套明确告知评分的脚手架里能走多远」，不要直接当成无监督自主性。",
+      "cite": [
+        "v2@Limitations and Future Work"
+      ]
+    },
+    {
+      "issue": "自检浅导致过度自信与过早收手",
+      "impact": "v1 中模型普遍远未到 20 小时就提交，原因不是放弃而是对错误方案的过度自信——它们写的自测非常浅；FrogsGame Post-Training 题上，agent 明知会在哪些棋盘尺寸上被评分，却只用小尺寸验证 checkpoint。",
+      "severity": "低",
+      "response": "v2 给每个任务提供与 verifier 分数单调相关的 self-check 工具，submit 工具报告真实剩余时间并保证已记录提交不会因后续工作丢失。",
+      "reader": "分数反映「有自检信号时能走多远」；没有自检信号的纯自主场景仍可能更差。",
+      "cite": [
+        "proximal",
+        "v2@Fairness"
+      ]
+    }
+  ],
+  "notes": "现行版本为 v2（2026-09-02，34 题、mean@5）；v1（2026-04，17 题、Dominance）成绩与之不可比。GLM / Kimi / Qwen 等厂商模型卡引用；frontierswe.com 提供官方榜单、全部 34 题与逐 trial 轨迹",
   "official_sources": [
     {
       "kind": "site",
       "url": "https://www.frontierswe.com/"
     },
     {
+      "kind": "repo",
+      "url": "https://github.com/Proximal-Labs/frontier-swe-v2"
+    },
+    {
       "kind": "site",
-      "url": "https://z.ai/blog/glm-5.2"
+      "url": "https://www.frontierswe.com/blog/v2"
+    },
+    {
+      "kind": "site",
+      "url": "https://www.frontierswe.com/v1"
+    },
+    {
+      "kind": "site",
+      "url": "https://www.proximal.ai/blog/frontierswe"
+    },
+    {
+      "kind": "site",
+      "url": "https://www.primeintellect.ai/blog/frontier-swe"
     },
     {
       "kind": "site",
@@ -40,12 +401,366 @@
     },
     {
       "kind": "site",
+      "url": "https://z.ai/blog/glm-5.2"
+    },
+    {
+      "kind": "site",
       "url": "https://www.kimi.ai/blog/kimi-k3"
     }
   ],
   "related_benchmarks": [
-    "swebench"
+    "swebench",
+    "swebench-pro",
+    "swe-marathon",
+    "deepswe",
+    "frontier-code",
+    "apex-swe"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-24",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-24",
+    "sources": [
+      {
+        "id": "leaderboard",
+        "kind": "leaderboard",
+        "title": "FrontierSWE 官网与官方榜单（frontierswe.com，含 Coverage / Pareto / Saturation 分析图）",
+        "url": "https://www.frontierswe.com/",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "v2",
+        "kind": "announcement",
+        "title": "FrontierSWE V2（官方博文，2026-09-02）",
+        "url": "https://www.frontierswe.com/blog/v2",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "Proximal-Labs/frontier-swe-v2（34 个任务的环境、测试与参考解）",
+        "url": "https://github.com/Proximal-Labs/frontier-swe-v2",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "changelog",
+        "kind": "site",
+        "title": "FrontierSWE Changelog（榜单模型上线记录）",
+        "url": "https://www.frontierswe.com/changelog",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "proximal",
+        "kind": "announcement",
+        "title": "Benchmarking coding agents at the limits of human abilities（Proximal 博文，2026-07-09，v1 设计与结果）",
+        "url": "https://www.proximal.ai/blog/frontierswe",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "primeintellect",
+        "kind": "blog",
+        "title": "Launching FrontierSWE on the Environments Hub（Prime Intellect，2026-04-16）",
+        "url": "https://www.primeintellect.ai/blog/frontier-swe",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "v1",
+        "kind": "leaderboard",
+        "title": "FrontierSWE V1 榜单（官网保留页，First release · April 2026）",
+        "url": "https://www.frontierswe.com/v1",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "glm-card",
+        "kind": "site",
+        "title": "GLM-5.3 模型卡（Hugging Face zai-org/GLM-5.3，含 FrontierSWE 等基准的评测口径脚注）",
+        "url": "https://huggingface.co/zai-org/GLM-5.3",
+        "accessed": "2026-11-24"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Proximal（GitHub 组织 Proximal-Labs；官网页脚标注 © 2026 FrontierSWE, San Francisco, CA）",
+        "cite": [
+          "repo",
+          "leaderboard"
+        ]
+      },
+      "first_release": {
+        "v": "2026 年 4 月（v1，17 题；官网 /v1 标注 First release · April 2026，Prime Intellect 于 2026-04-16 公告其上线 Environments Hub）",
+        "cite": [
+          "v1",
+          "primeintellect"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "repo",
+        "v2@New Tasks",
+        "leaderboard"
+      ],
+      "interpretation": [
+        "v2@Limitations and Future Work",
+        "glm-card@Footnotes",
+        "leaderboard"
+      ]
+    },
+    "problem": {
+      "text": "主流 Agentic 编程基准的素材仍然太小太快：官方称 SWE-Bench Pro 收集的仍以小到中型 PR 为主，解法平均只有 107 行代码，Terminal-Bench 多数任务尝试只跑 1–20 分钟。FrontierSWE 想把评测拉到需要新想法和大量规划、会难住世界最好工程师和研究者的真实工程与科研问题上，并在前沿模型之间保持未饱和的区分度。",
+      "cite": [
+        "proximal@Benchmark Design"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机 / 人类基线",
+        "value": "未披露",
+        "note": "官方没有公布随机猜测或人类专家基线，本站也不推算。可参照的是 v1 页面对实现类任务的结论：没有任何模型在任何一次 trial 里完整完成过这些任务。",
+        "cite": [
+          "v1"
+        ]
+      },
+      {
+        "label": "v1 口径最好成绩（Dominance，对随机对手的胜率）",
+        "value": "88%",
+        "note": "Claude Fable 5（Claude Code），2026-07-09 Proximal 博文表格；同表 GPT-5.4（Codex）46%、Qwen3.6-Plus（Qwen Code）20%。",
+        "cite": [
+          "proximal@Results"
+        ]
+      },
+      {
+        "label": "v2 发布时最好（mean@5）",
+        "value": "56.29%",
+        "note": "Claude Fable 5.1，v2 博文；比当时的 GPT-5.6 Sol（32.2%）高 24 个百分点以上。",
+        "cite": [
+          "v2@Results"
+        ]
+      },
+      {
+        "label": "官网榜单当前最高（mean@5，Per provider · Best 视图）",
+        "value": "69.9%",
+        "note": "Claude Fable 5.2（proximus），每试平均 $168.78、16.5 小时；官网同页 All 视图共 25 个模型。",
+        "cite": [
+          "leaderboard"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      },
+      {
+        "label": "饱和参考线",
+        "value": "未披露",
+        "note": "官网 Saturation 图给出每条奖励阈值下达到的 run 占比，但没有给出「饱和」阈值。当前最高 69.9% 仍远离满分，官方称 FrontierSWE 是少数未做穿的公开编程基准之一。",
+        "cite": [
+          "leaderboard",
+          "proximal"
+        ]
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把厂商表格里的 FrontierSWE 分数和官网 v2 榜单直接比——Z.ai 卡片注明那是 Proximal 以 1M 上下文、max effort、128K 最大输出 tokens 跑的、截至 2026/08/14 的 Dominance 分，不是 v2 的 mean@5。",
+        "cite": [
+          "glm-card@Footnotes"
+        ]
+      },
+      {
+        "text": "把 v1 和 v2 的分数排进同一张表——v1 用平均排名 + Dominance，v2 用 0–1 绝对归一化 mean@5，且题目换过（移除 4 题、新增 21 题），官方明说不可比。",
+        "cite": [
+          "v1",
+          "v2@Methodology Improvements"
+        ]
+      },
+      {
+        "text": "以为高分等于「在我自己的 Claude Code / Codex 里也能做到」——官方榜单统一用 proximus，且实测 Claude Opus 5、GPT-5.6 Sol 在 proximus 下比各自原生脚手架更高。",
+        "cite": [
+          "v2@Proximus harness"
+        ]
+      },
+      {
+        "text": "只比分不看成本与耗时——每试平均成本从 DeepSeek V4 Flash Vision Exp 的 $8.57 到 GPT-6 Astra 的 $1029.65，耗时从 Inkling 的约 1.2 小时到 Qwen3.8-Max-0902 的 19.4 小时，相差约两个数量级。",
+        "cite": [
+          "leaderboard"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "Proximal（GitHub 组织 Proximal-Labs；官网页脚标注 © 2026 FrontierSWE, San Francisco, CA）",
+        "cite": [
+          "repo",
+          "leaderboard"
+        ]
+      },
+      {
+        "k": "核心团队",
+        "v": "v2 引用条目列 21 位作者，前三为 Rishyanth Kondra、Sanket Mhatre、Akshit Kumar，其后有 Evan Chu、Bilal Bakht Ahmad、Ayush Nangia、Rajan Agarwal 等；v1 引用条目（journal 为 Proximal Blog）作者以 Evan Chu、Rajan Agarwal 开头",
+        "cite": [
+          "v2@Acknowledgements",
+          "proximal"
+        ]
+      },
+      {
+        "k": "合作出题方",
+        "v": "Modular、Prime Intellect、Thoughtful Lab 等产业方及学术合作方；Prime Intellect 还共同设计了 granite_inf 任务（优化 IBM Granite-Mamba-2 层前向传播速度）",
+        "cite": [
+          "proximal",
+          "primeintellect"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2026-04 首发 17 题 → 2026-07-09 发布 v1 结果 → 2026-09-02 v2（34 题）→ 2026-09-11 至 2026-10-01 榜单分批新增模型（GPT-6 Astra、Grok 4.7、Claude Opus 5.5、Claude Sonnet 5.5、Gemini 4 Argon、Qwen3.8-Max-0902、GLM-5.3 Flash）",
+        "cite": [
+          "v1",
+          "proximal",
+          "v2",
+          "changelog"
+        ]
+      },
+      {
+        "k": "运行环境",
+        "v": "任务是 Harbor task，由 px-eval 编排；每题一个 Docker 环境（README 称常带 GPU），预构建镜像按 digest 固定；部分题需要 B200、单张 A100 或两张 T4",
+        "cite": [
+          "repo@Running tasks",
+          "repo@Tasks",
+          "v2@New Tasks"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "全部 34 题的 instruction.md、task.toml、environment/（Dockerfile + 安装 + 测试 + 初始 workspace）、solution/（参考解）与 preflight/ 公开在 GitHub；任务内容与评分官方注明仍可能更新",
+        "cite": [
+          "repo@Running tasks",
+          "repo"
+        ]
+      },
+      {
+        "k": "第三方分发",
+        "v": "Prime Intellect Environments Hub 提供 `prime eval run proximal/frontier-swe`；Prime Intellect 报告 agents 平均每任务跑 11 小时，且几乎全部失败",
+        "cite": [
+          "primeintellect"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-13",
+        "columns": [
+          "来源",
+          "模型",
+          "脚手架",
+          "mean@5",
+          "每试平均成本",
+          "每试平均耗时"
+        ],
+        "rows": [
+          [
+            "官网榜单（Per provider · Best 视图）",
+            "Claude Fable 5.2",
+            "proximus",
+            "69.9%",
+            "$168.78",
+            "16.5h"
+          ],
+          [
+            "官网榜单（Per provider · Best 视图）",
+            "GPT-6 Astra",
+            "proximus",
+            "65.5%",
+            "$1029.65",
+            "12.1h"
+          ],
+          [
+            "官网榜单（Per provider · Best 视图）",
+            "Gemini 4 Carbon",
+            "proximus",
+            "61.2%",
+            "$61.93",
+            "12.6h"
+          ],
+          [
+            "官网榜单（Per provider · Best 视图）",
+            "GLM-5.3",
+            "proximus",
+            "30.2%",
+            "$97.22",
+            "17.1h"
+          ],
+          [
+            "官网榜单（Per provider · Best 视图）",
+            "Grok 4.7",
+            "proximus",
+            "29.5%",
+            "$318.77",
+            "12.1h"
+          ],
+          [
+            "官网榜单（Per provider · Best 视图）",
+            "Kimi K3",
+            "proximus",
+            "25.9%",
+            "$109.71",
+            "18.5h"
+          ],
+          [
+            "官网榜单（Per provider · Best 视图）",
+            "Muse Spark 1.3",
+            "proximus",
+            "25.8%",
+            "$243.34",
+            "17.0h"
+          ],
+          [
+            "官网榜单（Per provider · Best 视图）",
+            "Qwen3.8-Max-0902",
+            "proximus",
+            "17.8%",
+            "$51.27",
+            "19.4h"
+          ],
+          [
+            "官网榜单（Per provider · Best 视图）",
+            "DeepSeek V4 Flash Vision Exp",
+            "proximus",
+            "14.8%",
+            "$8.57",
+            "14.9h"
+          ],
+          [
+            "官网榜单（Per provider · Best 视图）",
+            "Inkling",
+            "proximus",
+            "4.1%",
+            "$9.15",
+            "70m"
+          ],
+          [
+            "v2 博文（2026-09-02 发布时）",
+            "Claude Fable 5.1",
+            "proximus",
+            "56.29%",
+            "未列出",
+            "未列出"
+          ],
+          [
+            "v2 博文（2026-09-02 发布时）",
+            "GPT-5.6 Sol",
+            "proximus",
+            "32.2%",
+            "未列出",
+            "未列出"
+          ]
+        ]
+      },
+      "cite": [
+        "leaderboard",
+        "v2@Results"
+      ]
+    }
+  }
 }

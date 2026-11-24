@@ -1,44 +1,520 @@
 {
   "id": "job-bench",
   "name": "Job Bench",
-  "full_name": null,
+  "full_name": "JobBench: Aligning Agent Work With Human Will（对齐智能体工作与人类意愿）",
   "aliases": [],
   "status": null,
   "categories": [
     "agent"
   ],
-  "summary": "Kimi K3 发布页 Agentic 组的职业任务评测行（页面仅打印 Job Bench）",
-  "interpretation": "Kimi 自报读分 52.9（同表竞品：Fable 5 57.4 / GPT-5.6 Sol 46.5 / Opus 4.8 48.4 / GPT-5.5 38.3 / GLM-5.2 43.4）；评测定义与题量未随发布公开。注意：本仓另有 jobbench 实体（arXiv 2605.26329，130 个职业委派工作流任务）——两者是否同指未确证，比分前需回溯各发布页脚注。",
-  "measures": [],
-  "does_not_measure": [],
-  "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
-  },
-  "metrics": [],
-  "versions": [],
-  "limitations": [
-    "Kimi 页仅打印名称，未附定义",
-    "与公开 JobBench（arXiv 2605.26329）的同指性未确证"
+  "summary": "130 个真实职业委派工作（35 类职业 / 10 个 SOC 大类），每题配多份参考文件与一条事实锚定的二元 rubric 链，按「加权通过率」读分。University of Washington 于 2026-05-25 发布，官方榜单当前最高 75.4（Claude Opus 5.5，统一 OpenCode v1.14.18 harness）。",
+  "interpretation": "高分意味着模型能在多文件、多约束、多步推理的专家级交付任务上逐条满足 rubric：rubric 块内任一条件不过，整块零分，所以「答案对但漏了阈值标记」同样不得分。2026 年论文最强配置 Claude Opus 4.7 + Claude Code 只有 45.9 分，官方榜单同一 OpenCode harness 下也仅 44.5，距满分仍有约 61 分空间，远未饱和。同时同一模型换 harness 会差 6.3 分（Sonnet 4.6：Claude Code 36.9 vs OpenClaw 30.6），裁判版本也换过（Grok 4.1 Fast 已下线 → Grok 4.3），因此跨厂商比分前必须先对齐 harness 与裁判口径。",
+  "measures": [
+    {
+      "area": "Business & Financial Operations（商业与金融运营）",
+      "focus": "Human Resources Specialists、Licensing Examiners and Inspectors、Management Analysts、Online Merchants、Personal Financial Advisors 等；论文 Figure 2 记该大类共 30 题",
+      "share": "30 题 · 23.1%",
+      "format": "参考文件工作目录 + 加权二元 rubric 链",
+      "cite": ["paper@Figure 2"]
+    },
+    {
+      "area": "Office & Administrative Support（办公与行政支持）",
+      "focus": "Bookkeeping, Accounting & Auditing Clerks、Court Clerks、Customer Service Representatives、Data Entry Keyers、Medical Secretaries、Police, Fire & Ambulance Dispatchers、Secretaries & Administrative Assistants",
+      "share": "24 题 · 18.5%",
+      "format": "参考文件工作目录 + 加权二元 rubric 链",
+      "cite": ["paper@Figure 2"]
+    },
+    {
+      "area": "Computer & Mathematical（计算机与数学）",
+      "focus": "Biostatisticians、Computer & Info. Research Scientists、Computer User Support Specialists、Statisticians、Web Administrators；例：Meridian Technologies 的 IT Director 需按 Q4 事件量与资产健康度做风险加权迁移计划（PRJ-2024-041）",
+      "share": "19 题 · 14.6%",
+      "format": "参考文件工作目录 + 加权二元 rubric 链",
+      "cite": ["paper@Figure 2", "hf-dataset"]
+    },
+    {
+      "area": "Architecture & Engineering（建筑与工程）",
+      "focus": "Civil Engineers、Mechanical Engineering Technicians、Mechanical Engineers、Petroleum Engineers；例：County Road 42 桥面更换的 engineer's estimate，需独立核对初级技术员 CSV 里的每个工程量",
+      "share": "15 题 · 11.5%",
+      "format": "参考文件工作目录 + 加权二元 rubric 链",
+      "cite": ["paper@Figure 2", "hf-dataset"]
+    },
+    {
+      "area": "Management（管理）",
+      "focus": "Computer & Info. Systems Managers、Training and Development Specialists、Medical & Health Services Managers、Purchasing Agents 等；论文 Figure 2 记该大类共 13 题",
+      "share": "13 题 · 10.0%",
+      "format": "参考文件工作目录 + 加权二元 rubric 链",
+      "cite": ["paper@Figure 2"]
+    },
+    {
+      "area": "Arts, Design, Entertainment & Media（艺术、设计、娱乐与媒体）",
+      "focus": "Producers、Reporters and Correspondents、Technical Writers；例：康涅狄格州饮水铅污染调查——州政府报告称 0% 受调查家庭发现水致铅危害，FOIA 数据却显示多个 Hartford 区域系统超过 15 ppb 联邦行动限值",
+      "share": "11 题 · 8.5%",
+      "format": "参考文件工作目录 + 加权二元 rubric 链",
+      "cite": ["paper@Figure 2", "site"]
+    },
+    {
+      "area": "Sales & Related（销售及相关）",
+      "focus": "Sales Agents, Securities & Commodities",
+      "share": "7 题 · 5.4%",
+      "format": "参考文件工作目录 + 加权二元 rubric 链",
+      "cite": ["paper@Figure 2"]
+    },
+    {
+      "area": "Legal（法律）",
+      "focus": "Lawyers",
+      "share": "3 题 · 2.3%",
+      "format": "参考文件工作目录 + 加权二元 rubric 链",
+      "cite": ["paper@Figure 2"]
+    },
+    {
+      "area": "Life, Physical & Social Science（生命、物理与社会科学）",
+      "focus": "Social Science Research Assistants",
+      "share": "4 题 · 3.1%",
+      "format": "参考文件工作目录 + 加权二元 rubric 链",
+      "cite": ["paper@Figure 2"]
+    },
+    {
+      "area": "Educational Instruction & Library（教育与图书馆）",
+      "focus": "Sociology Teachers, Postsecondary",
+      "share": "4 题 · 3.1%",
+      "format": "参考文件工作目录 + 加权二元 rubric 链",
+      "cite": ["paper@Figure 2"]
+    }
   ],
-  "default_protocol": {
-    "raw": "Kimi K3 发布页 Full Benchmark Table / Agentic 组；reasoning effort max，temperature 1，top_p 1"
+  "does_not_measure": [
+    {
+      "text": "不测纯知识问答或单点代码正确性：每道题都是一个 small dossier，要求在多份参考文件上产出完整交付物（报告、Excel、PPTX 等），没有开放式问答题型。",
+      "cite": ["site", "hf-dataset"]
+    },
+    {
+      "text": "不测 AI 能否替代员工：论文附录 B 明确该数据集「严格不推荐用于判断 AI 系统能否替代员工、做出专业判断，或在法律、医疗、金融、工程、公共部门等高风险场景中脱离人类监督运行」，定位是基准评测而非部署验证。",
+      "cite": ["paper@附录 B"]
+    },
+    {
+      "text": "不测无约束的自主检索上限：easy 集按设计不要求在完成过程中做 web search，且不含 files_required_to_search/；只有 main 集会用到需检索才能发现的地面真值材料。",
+      "cite": ["paper@§3.2", "hf-dataset"]
+    },
+    {
+      "text": "不测推理路径之外的自由度：所有 rubric 都是二元锚定条件，rubric 块内全部通过才拿满权重、否则零分，靠错误推理碰巧答对不得分。",
+      "cite": ["site", "eval-repo"]
+    }
+  ],
+  "dataset": {
+    "sample_count": 130,
+    "splits": [
+      {
+        "name": "main",
+        "count": 65,
+        "note": "完整版：多文件、多源冲突、需产出交付文件，官方 leaderboard 口径即取此集",
+        "cite": ["paper@§2.2", "eval-repo"]
+      },
+      {
+        "name": "easy",
+        "count": 63,
+        "note": "简化版：更短提示、去掉 files_required_to_search/、不要求 web search。论文写 65 题，HF 数据集卡与仓库 README 均写 63 题，口径不一致见 limitations",
+        "cite": ["hf-dataset", "eval-repo"]
+      }
+    ],
+    "languages": [
+      "英语"
+    ],
+    "source_type": "参考文件：main 集 51.7% 来自真实世界公开记录、其余为合成数据；easy 集参考文件全部来自真实世界。公开数据集为 parquet，字段含 prompt / reference_files / rubric_json / task_card",
+    "public_sample": "https://huggingface.co/datasets/JobBench/job-bench",
+    "totals": "130 题 · 35 类职业 · 10 个 SOC 大类 · 502 份参考文件 / 17 种格式 · 4,631 条二元判分点（平均 35.6 条/题，参考文件平均 3.9 份/题、最多 15 份）",
+    "cite": ["paper@§2.2", "hf-dataset", "eval-repo"],
+    "construction": [
+      {
+        "k": "职业与任务选题",
+        "text": "从 Workbank 出发：该调研给出 O*NET 各职业工作职责的众包 automation-desire 分（1–5 分制），标注员据此起草专家最想委派的任务草图，写明场景、推理难点、交付物与应执行的标准；草图再由 AI 协助扩写成「参考文件 + 自包含任务描述 + rubric 链」的工作区。",
+        "cite": ["paper@§2.3"]
+      },
+      {
+        "k": "参考文件工程",
+        "text": "每题配多份异构参考文件，全库共 502 份、17 种格式，平均 3.9 份/题（最多 15 份）；类型覆盖 SQLite、多年份 CSV、法规 PDF 与互相矛盾的披露文件，即专家最想交出去的预处理脏活。",
+        "cite": ["paper@§2.2", "site"]
+      },
+      {
+        "k": "判分 rubric",
+        "text": "每题一条事实锚定的加权二元 rubric 链，全库共 4,631 条判分点、平均 35.6 条/题；链上任一结点不过则该块零分，因此措辞流畅但悄悄漏掉方法学核对或阈值标记的答案会失败整条链。",
+        "cite": ["paper@§2.2", "paper@Abstract", "eval-repo"]
+      },
+      {
+        "k": "质量筛除",
+        "text": "任务草稿经三阶段质量检查流水线，最终放行 71%；被保留的草稿要求 job success rate 超过 90%（即至少一位智能体在一个样本上通过该任务全部判分点），入选基准的判分点合并通过率为 95.4%。",
+        "cite": ["paper@§2.3"]
+      },
+      {
+        "k": "难度分层",
+        "text": "在 main 集之外生成 easy 集：提示更短、去掉 files_required_to_search/，且不要求在完成过程中做 web search，用来把「找得到」与「做得对」分开——同配置在 easy 集上普遍高 26–31 分。",
+        "cite": ["hf-dataset", "paper@§3.2"]
+      }
+    ]
   },
-  "notes": "Moonshot AI Kimi K3 发布页登记行；社区另有 job-bench.github.io 站点线索，未核验",
+  "default_protocol": {
+    "raw": "官方榜单口径：所有模型跑同一 harness OpenCode v1.14.18 + 各模型对应 max reasoning effort，rubric 由 Grok 4.3 判定。论文口径：Claude Code v2.1.2 / Codex CLI v0.125.0 / OpenCode v1.14.18 / OpenClaw v2026.3.8 四种 agentic scaffold，取各模型与 scaffold 默认支持的最大 reasoning effort，非交互 headless 模式，每任务 60 分钟墙钟超时，默认裁判 x-ai/grok-4.1-fast。",
+    "cite": ["site", "paper@§3.1"],
+    "variants": [
+      {
+        "text": "harness 变体：论文同时测 Claude Code / Codex CLI / OpenCode / OpenClaw 四种 scaffold；同一基座模型换 scaffold 会让总分移动若干分（Sonnet 4.6：Claude Code 36.9 vs OpenClaw 30.6）。",
+        "cite": ["paper@§3.1", "paper@§3.2"]
+      },
+      {
+        "text": "裁判变体：论文出于成本默认用 x-ai/grok-4.1-fast（与参考模型 Opus-4.5 在 0.7% 方差内一致），官方榜单改用 Grok 4.3；官方提示 Grok 4.1 Fast 已被 xAI 下线，早期分数可能与此后略有差异。",
+        "cite": ["paper@§3.1", "site"]
+      },
+      {
+        "text": "reasoning effort 变体：GPT-5.4 在 Codex 下从 low 逐级提到 xhigh，main 集性能单调提升 +7.0 分。",
+        "cite": ["paper@§3.2"]
+      },
+      {
+        "text": "难度变体：easy 集相对 main 集分数普遍高 26–31 分，因为 easy 集推理难点更少、无多源文件冲突、无交付文件要求、且不需要 web search。",
+        "cite": ["paper@§3.2"]
+      },
+      {
+        "text": "厂商自报口径：Kimi K3 模型卡用各家 agentic harness 与 max effort，同表打印 Kimi K3 54.3 / Claude Fable 5 57.4 / GPT-5.6 Sol 45.4 / Claude Opus 4.8 48.4 / GPT-5.5 38.3 / GLM-5.2 43.4，与官方 OpenCode 榜单不可直接对齐。",
+        "cite": ["hf-kimi-k3", "kimi-blog-kimi-k3"]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "name": "加权通过率（weighted rubric score）",
+      "direction": "越高越好",
+      "description": "逐题计算：rubric 块内所有二元判分点全部通过才拿满该块权重，否则该块计零分；各题加权分取平均后 ×100。官方榜单头部卡「Weighted score」即此指标。",
+      "cite": ["eval-repo", "paper@§2.2"]
+    },
+    {
+      "name": "未加权 rubric 通过率（pass_rate）",
+      "direction": "越高越好",
+      "description": "忽略权重、只统计全部判分点的通过比例，作为单独诊断项；子集或存在缺失/失败判定的运行不构成完整 main 结果，报告最终分数前须先解决裁判错误。",
+      "cite": ["eval-repo"]
+    },
+    {
+      "name": "任务负载（workload）",
+      "direction": "越低越好",
+      "description": "每任务墙钟时间、工具调用次数与轨迹行数；相对 GDPval，JobBench 每任务墙钟 2.40×、工具调用 1.40×、轨迹行 1.40×。",
+      "cite": ["site"]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "easy 集题量三处不一致",
+      "impact": "论文写 65 题，HF 数据集卡与仓库 README 均写 63 题；总题量因此有 130 与 128 两种口径，引用具体 split 规模时会打架。",
+      "severity": "高",
+      "response": "本档案 sample_count 取论文的 130，splits 标注 main 65 / easy 63（公开数据实际行数），两处并列而不强行统一。",
+      "reader": "引用 JobBench 题量时说明取哪个来源；做 split 级复现时以 HF 数据集为准。",
+      "cite": ["paper@§2.2", "hf-dataset", "eval-repo"]
+    },
+    {
+      "issue": "harness 与裁判口径多次变更",
+      "impact": "论文用 4 种 scaffold + grok-4.1-fast 裁判，官方榜单统一 OpenCode v1.14.18 + Grok 4.3；同一模型 Claude Opus 4.7 因此有 45.9（论文 Table 3）与 44.5（官方榜单）两个数。",
+      "severity": "高",
+      "response": "比分前先确认该行来自论文 harness 还是官方榜单；厂商模型卡自报行（如 Kimi K3）又用各家 harness，需第三种口径。",
+      "reader": "不要跨口径直接排名，也不要混用三套数字做厂商对比表。",
+      "cite": ["paper@§3.1", "site@§02", "hf-kimi-k3"]
+    },
+    {
+      "issue": "全部分数由 LLM 裁判判定",
+      "impact": "裁判选择主要出于成本（Grok 4.1 Fast 单次全量评测约 $2，Grok 4.3 约 $20）；论文观测到任务歧义是不同裁判对同一答案分歧的主因。",
+      "severity": "中",
+      "response": "论文用更强的 Opus-4.5 做参考校验，两裁判在不同配置下分数方差在 0.7% 以内；未披露完整人工抽检比例。",
+      "reader": "分差在 1 分量级的排名不宜当作显著差异。",
+      "cite": ["paper@§3.1", "paper@§2.3", "site"]
+    },
+    {
+      "issue": "任务域偏窄",
+      "impact": "仅覆盖 35 个 O*NET 职业、10 个 SOC 大类，且限定美国中心、数字化、文书密集的专业任务；不含体力劳动、线下协作与长周期跨月项目。",
+      "severity": "中",
+      "response": "附录 B 明确该范围限定，并声明数据集面向基准评测而非部署验证。",
+      "reader": "不要外推到全部职业，更不要用于用工或替代决策。",
+      "cite": ["paper@附录 B"]
+    },
+    {
+      "issue": "污染边界未披露",
+      "impact": "main 集 51.7% 参考文件来自真实公开记录，存在被训练数据覆盖的可能；论文未披露去污染流程，只以 95.4% 的判分点合并通过率保证 rubric 区分度。",
+      "severity": "中",
+      "response": "main 集含 files_required_to_search/ 标出的需检索地面真值材料，可部分抑制纯记忆式作答；仍无官方污染报告。",
+      "reader": "高分成色需自行评估，尤其是公开文件与模型训练窗口重叠的题目。",
+      "cite": ["paper@§2.2", "paper@§2.3"]
+    },
+    {
+      "issue": "命名与归属易混",
+      "impact": "厂商发布页写作「Job Bench」，论文与官网写作「JobBench」；官网自证已被 Meta 的 Muse Spark 1.1、Moonshot 的 Kimi K3、阿里巴巴的 Qwen 3.8 Max 采用，同一基准的分数会在多个生态以不同 harness 出现。",
+      "severity": "低",
+      "response": "本档案以 arXiv:2605.26329 与 job-bench.github.io 为唯一身份锚点，厂商自报行单独标注口径。",
+      "reader": "看到 Job Bench / JobBench 先确认是否指本基准，再取分数。",
+      "cite": ["hf-kimi-k3", "site"]
+    }
+  ],
+  "versions": [
+    {
+      "date": "2026-05-25",
+      "label": "v1 · arXiv:2605.26329v1 首发（cs.AI）：130 题 / 35 职业 / 10 SOC 大类，4 种 agentic scaffold × 36 个模型配置，默认裁判 x-ai/grok-4.1-fast",
+      "cite": ["paper", "paper@§2.2"]
+    },
+    {
+      "date": "2026-11-14",
+      "label": "官方榜单当前口径（本档案核验日）：统一 OpenCode v1.14.18 + max reasoning effort + Grok 4.3 裁判，25 个模型入榜，榜首 Claude Opus 5.5 75.4",
+      "cite": ["site", "site@§02"]
+    }
+  ],
+  "notes": "身份：本实体即 University of Washington 的 JobBench（arXiv:2605.26329v1，2026-05-25），由官网自证——「JobBench has been adopted by Meta's Muse Spark 1.1, Moonshot's Kimi K3, and Alibaba's Qwen 3.8 Max」。本仓另有 jobbench.json（同一基准的 v1 未升级实体），两个 id 不合并，related_benchmarks 互指。来源沿革：本档案原为 Moonshot Kimi K3 发布页 Agentic 组「Job Bench」登记行。该行的数字只存在于发布页 <script> 内的 JSON 载荷（Kimi K3 52.9 / Fable 5 57.4 / GPT-5.6 Sol 46.5 / Opus 4.8 48.4 / GPT-5.5 38.3 / GLM-5.2 43.4），静态 HTML 与阅读模式均不渲染，无法归档取证，故一律不采用；Kimi K3 的 JobBench 成绩按 Moonshot 自家模型卡与官方榜单取 54.3。原实体 interpretation 中「GPT-5.6 Sol 46.5」与该两处不符（均为 45.4），已更正。",
   "official_sources": [
     {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2605.26329"
+    },
+    {
       "kind": "site",
+      "url": "https://job-bench.github.io/"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/Job-Bench/job-bench-eval"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/JobBench/job-bench"
+    },
+    {
+      "kind": "announcement",
+      "url": "https://huggingface.co/moonshotai/Kimi-K3"
+    },
+    {
+      "kind": "blog",
       "url": "https://www.kimi.ai/blog/kimi-k3"
     }
   ],
   "related_benchmarks": [
     "jobbench",
+    "gdpval",
     "tau-bench",
     "aa-briefcase"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-09-01"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "JobBench: Aligning Agent Work With Human Will（arXiv:2605.26329v1）",
+        "url": "https://arxiv.org/pdf/2605.26329",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "site",
+        "kind": "site",
+        "title": "JobBench — Aligning Agent Work with Human Will（官方网站 / 官方榜单）",
+        "url": "https://job-bench.github.io/",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "eval-repo",
+        "kind": "repo",
+        "title": "Job-Bench/job-bench-eval（评测仓库与 README）",
+        "url": "https://github.com/Job-Bench/job-bench-eval",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "hf-dataset",
+        "kind": "dataset",
+        "title": "Hugging Face 数据集 JobBench/job-bench",
+        "url": "https://huggingface.co/datasets/JobBench/job-bench",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "hf-kimi-k3",
+        "kind": "announcement",
+        "title": "Moonshot AI Kimi K3 模型卡（Agentic 组 JobBench 行）",
+        "url": "https://huggingface.co/moonshotai/Kimi-K3",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "kimi-blog-kimi-k3",
+        "kind": "blog",
+        "title": "Moonshot AI Kimi K3 发布博客（agentic harness 与采样口径说明）",
+        "url": "https://www.kimi.ai/blog/kimi-k3",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "University of Washington（与 UC Santa Barbara、Stanford University 合作）",
+        "cite": ["paper"]
+      },
+      "first_release": {
+        "v": "2026-05-25（arXiv:2605.26329v1）",
+        "cite": ["paper"]
+      }
+    },
+    "problem": {
+      "text": "现有职业任务基准以经济价值为选题标准——挑「能产出多少专业产出」的任务，代表者是 OpenAI 的 GDPval。JobBench 的出发点是另一个问题：这个岗位上的人自己想把哪些工作交给 AI？因此它把选题锚在 Workbank 的 automation-desire 调研上，并要求智能体处理真实职业工作里杂乱的信息流（多份异构参考文件、互相矛盾的披露、事实锚定的交付标准），而不是单点知识问答。",
+      "cite": ["site", "paper@§2.3"]
+    },
+    "cites": {
+      "summary": ["paper@Abstract", "paper@§2.2", "site@§02"],
+      "interpretation": ["paper@Abstract", "paper@§3.2", "site@§02", "eval-repo"]
+    },
+    "ladder": [
+      {
+        "label": "官方榜首 · Claude Opus 5.5（OpenCode）",
+        "value": "75.4",
+        "note": "2026-11-14 官方榜单第 1 名",
+        "cite": ["site@§02"]
+      },
+      {
+        "label": "头部前沿 · Muse Wonder Full / Claude Fable 5.1",
+        "value": "75.3 / 73.1",
+        "note": "官方榜单第 2–3 名",
+        "cite": ["site@§02"]
+      },
+      {
+        "label": "主流旗舰 · GPT-6 Astra / Claude Opus 5 / Muse Spark 1.3",
+        "value": "66.1 / 65.7 / 64.9",
+        "note": "官方榜单第 4–6 名",
+        "cite": ["site@§02"]
+      },
+      {
+        "label": "厂商模型卡自报 · Kimi K3（Moonshot）",
+        "value": "54.3",
+        "note": "Moonshot 模型卡 Agentic 组；同表 Fable 5 57.4 / GPT-5.6 Sol 45.4 / Opus 4.8 48.4 / GPT-5.5 38.3 / GLM-5.2 43.4，harness 口径见 limitations",
+        "cite": ["hf-kimi-k3"]
+      },
+      {
+        "label": "上一代旗舰 · Muse Spark 1.1 / Kimi K3 / Qwen 3.8 Max（官方 OpenCode 榜）",
+        "value": "54.7 / 54.3 / 52.7",
+        "note": "官方榜单第 10–12 名",
+        "cite": ["site@§02"]
+      },
+      {
+        "label": "上一代旗舰 · Claude Opus 4.8 / GPT-5.6 SOL / Claude Opus 4.7",
+        "value": "48.4 / 45.4 / 44.5",
+        "note": "官方榜单第 13–15 名",
+        "cite": ["site@§02"]
+      },
+      {
+        "label": "2026 年论文最强配置 · Claude Opus 4.7 + Claude Code（论文 harness）",
+        "value": "45.9",
+        "note": "论文 Table 3；同一模型在官方 OpenCode 榜单为 44.5",
+        "cite": ["paper@Table 3", "site@§02"]
+      },
+      {
+        "label": "中段模型 · Claude Sonnet 4.6 / GPT-5.4 / Gemini 3.5 Flash",
+        "value": "36.6 / 32.2 / 31.5",
+        "note": "官方榜单第 18–20 名",
+        "cite": ["site@§02"]
+      },
+      {
+        "label": "榜单末位 · Gemini 3.1 Pro",
+        "value": "15.9",
+        "note": "官方榜单第 25 名",
+        "cite": ["site@§02"]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 JobBench 当「通用 agent 榜」读。它只覆盖 35 个 O*NET 职业、10 个 SOC 大类，且附录 B 把范围限定在美国中心、数字化、文书密集的专业任务。",
+        "cite": ["paper@附录 B"]
+      },
+      {
+        "text": "看到 45.9 分就说「模型只能干一半活」。rubric 是二元链，漏一个条件整块零分，低分既可能是交付不完整，也可能只是漏掉某个阈值标记；必须配合未加权 pass_rate 与任务覆盖率一起读。",
+        "cite": ["paper@§2.2", "eval-repo"]
+      },
+      {
+        "text": "跨厂商直接比分。同一模型换 harness 差若干分（Sonnet 4.6：Claude Code 36.9 vs OpenClaw 30.6），裁判版本也换过（Grok 4.1 Fast 已下线 → Grok 4.3），官方已提示早期分数可能与此后略有差异。",
+        "cite": ["paper@§3.2", "site"]
+      },
+      {
+        "text": "把 main / easy 当成两套独立基准。两个 split 共享 35 个职业与 task1/task2/task3 命名，但同一题槽的内容可以不同；easy 集分数普遍高 26–31 分，是难度分层不是另一批题。",
+        "cite": ["hf-dataset", "paper@§3.2"]
+      },
+      {
+        "text": "把与 GDPval 的分差读成「更难的通用推理」。GDPval 已接近饱和（GPT-5.4 达 83.0），JobBench 仍有 61 分 headroom；两者的差距首先是饱和程度之差。",
+        "cite": ["paper@§3.2", "site"]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "University of Washington，合作机构 University of California, Santa Barbara 与 Stanford University",
+        "cite": ["paper"]
+      },
+      {
+        "k": "首发",
+        "v": "2026-05-25，arXiv:2605.26329v1（cs.AI）",
+        "cite": ["paper"]
+      },
+      {
+        "k": "许可与托管",
+        "v": "评测仓库 Apache-2.0；数据集托管 Hugging Face（parquet，含 Document Text 模态）",
+        "cite": ["eval-repo", "hf-dataset"]
+      },
+      {
+        "k": "支持的工具",
+        "v": "Claude Code、Codex CLI、OpenCode（仓库另支持读取保存的 Notebook 输出与 PPTX 表格，并共用同一 pinned LibreOffice runtime 处理受支持的 Excel 公式）",
+        "cite": ["eval-repo"]
+      },
+      {
+        "k": "官方链接",
+        "v": "Homepage https://job-bench.github.io/ · Hugging Face https://huggingface.co/datasets/JobBench/job-bench · GitHub https://github.com/Job-Bench/job-bench-eval",
+        "cite": ["paper"]
+      },
+      {
+        "k": "被采用情况",
+        "v": "官网称已被 Meta 的 Muse Spark 1.1、Moonshot 的 Kimi K3、阿里巴巴的 Qwen 3.8 Max 采用",
+        "cite": ["site"]
+      },
+      {
+        "k": "与 GDPval 的关系",
+        "v": "论文把 JobBench 定位为对 GDPval 饱和的回应：GDPval 上 GPT-5.4 已达 83.0，JobBench 同点仅 38.9，仍有 61 分 headroom",
+        "cite": ["paper@§3.2", "site"]
+      },
+      {
+        "k": "注意力与能力的相关性",
+        "v": "论文 §3.3 报告模型注意力与能力呈负相关（对论文 r = −0.15，对 YC r = −0.34）",
+        "cite": ["paper@§3.3"]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-14",
+        "columns": ["#", "Model", "Score", "Harness"],
+        "rows": [
+          ["1", "Claude Opus 5.5", "75.4", "OpenCode"],
+          ["2", "Muse Wonder Full", "75.3", "OpenCode"],
+          ["3", "Claude Fable 5.1", "73.1", "OpenCode"],
+          ["04", "GPT-6 Astra", "66.1", "OpenCode"],
+          ["05", "Claude Opus 5", "65.7", "OpenCode"],
+          ["06", "Muse Spark 1.3", "64.9", "OpenCode"],
+          ["07", "Muse Spark 1.2", "61.6", "OpenCode"],
+          ["08", "GLM-5.3", "61.4", "OpenCode"],
+          ["09", "Claude Fable 5", "57.4", "OpenCode"],
+          ["10", "Muse Spark 1.1", "54.7", "OpenCode"],
+          ["11", "Kimi K3", "54.3", "OpenCode"],
+          ["12", "Qwen 3.8 Max", "52.7", "OpenCode"],
+          ["13", "Claude Opus 4.8", "48.4", "OpenCode"],
+          ["14", "GPT-5.6 SOL", "45.4", "OpenCode"],
+          ["15", "Claude Opus 4.7", "44.5", "OpenCode"],
+          ["16", "GLM 5.2", "43.4", "OpenCode"],
+          ["17", "GPT-5.5", "38.3", "OpenCode"],
+          ["18", "Claude Sonnet 4.6", "36.6", "OpenCode"],
+          ["19", "GPT-5.4", "32.2", "OpenCode"],
+          ["20", "Gemini 3.5 Flash", "31.5", "OpenCode"],
+          ["21", "Inkling", "31.1", "OpenCode"],
+          ["22", "Nemotron 3 Ultra", "27.2", "OpenCode"],
+          ["23", "GPT-5.2", "26.6", "OpenCode"],
+          ["24", "Claude Sonnet 4.5", "20.7", "OpenCode"],
+          ["25", "Gemini 3.1 Pro", "15.9", "OpenCode"]
+        ]
+      },
+      "cite": ["site@§02"]
+    }
+  }
 }

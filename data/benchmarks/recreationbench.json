@@ -3,33 +3,341 @@
   "name": "RecreationBench",
   "full_name": null,
   "aliases": [],
-  "status": null,
-  "categories": [
-    "coding"
-  ],
-  "summary": "娱乐场景相关评测（身份待核）",
-  "interpretation": "引用出处单一（Qwen3.8-flash 发布页），公开题集、指标与协议未能核实；分数口径以厂商自报为准，跨厂商可比性未知。",
-  "measures": [],
-  "does_not_measure": [],
-  "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
-  },
-  "metrics": [],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [],
-  "notes": "Qwen3.8-flash 引用；公开出处未能核实",
-  "official_sources": [
+  "status": "active",
+  "categories": ["agent", "coding", "multimodal"],
+  "summary": "RecreationBench 是随 RecreationWorld 论文公开的留出评测套件：给智能体一个正在运行的参考应用和两类工具（GUI 控制 + 软件开发），让它边用边写，复刻出一个功能与观感一致的新应用，再由参考应用推导出的程序化断言和 VLM 评委打分。250 道题均分在 Ubuntu、macOS、Windows、Android、Web 五个平台，每平台 50 题。",
+  "interpretation": "Overall 高说明模型能把「探索界面 → 写代码实现 → 构建启动 → 目视核对」这条混合回路在五个平台上都走通，而且交付物真的能跑起来。但它远不等于完整复刻：领头模型也只有 2.8% 的任务拿满全部程序化断言，17.6% 的应用达到 90% 以上 Prog 分。读这个分数要把 Overall（断言覆盖率）和覆盖率分层（≥90% / =100%）分开看。",
+  "measures": [
     {
-      "kind": "site",
-      "url": "https://qwen.ai/blog?id=qwen3.8-flash-next"
+      "area": "跨平台混合复刻",
+      "focus": "GUI 探索、编码实现与自检验证交替进行的长程任务",
+      "share": "250 题，五平台各 50 题",
+      "format": "开放式任务，交付可构建源码或自包含页面",
+      "cite": ["paper@§4.1", "paper@§4.2"]
+    },
+    {
+      "area": "程序化功能（Prog）",
+      "focus": "由参考应用行为推导的隐藏断言，覆盖多级交互深度",
+      "share": "与 VLM 各占 Average 的一半",
+      "format": "参考落地断言，二元通过/失败",
+      "cite": ["paper@§4.4"]
+    },
+    {
+      "area": "视觉保真（VLM）",
+      "focus": "候选与参考截图的视觉一致性",
+      "share": "与 Prog 各占 Average 的一半",
+      "format": "共享 VLM 评委在温度 0 下给二元判定",
+      "cite": ["paper@§4.4"]
+    },
+    {
+      "area": "交互深度覆盖",
+      "focus": "Start / 1 hop / 2+ hops / Outcome 四级行为结果",
+      "share": "断言按深度分层统计",
+      "format": "多深度行为断言",
+      "cite": ["paper@§4.3"]
+    },
+    {
+      "area": "平台原生适配",
+      "focus": "各平台原生构建与自动化接口（AT-SPI、AXUIElement、UI Automation、UiAutomator、DOM/ARIA）",
+      "share": "平台内宏平均后跨五平台等权",
+      "format": "平台特定交付契约",
+      "cite": ["paper@§4.1"]
+    },
+    {
+      "area": "交互开销与成本",
+      "focus": "计算机使用调用、助手轮次、wall-clock 与估算 API 成本",
+      "share": "附加分析，不计入 Overall",
+      "format": "运行统计与成本估算",
+      "cite": ["paper@§6.1.4"]
     }
   ],
-  "related_benchmarks": [],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "does_not_measure": [
+    {
+      "text": "不测源码相似度：提交不必复刻参考的架构或源码结构，只按可观测行为判分。",
+      "cite": ["paper@§2.1"]
+    },
+    {
+      "text": "不测流程遵循度：任务只规定目标产物，不规定动作的顺序或模态，因此不评估是否走了某条既定流程。",
+      "cite": ["paper@§2.2"]
+    },
+    {
+      "text": "不测全状态等价：隐藏套件只抽样有限的视觉与行为结果，通过它们不能证明在所有状态和交互路径上等价。",
+      "cite": ["paper@§8"]
+    },
+    {
+      "text": "不测污染或记忆：不判断模型是否见过参考实现，源码重叠筛查也排除不了改名、重构等形式的复用。",
+      "cite": ["paper@§6.4"]
+    },
+    {
+      "text": "不测越界是否成功：记录的联网尝试只是匹配到探测器的执行操作，不构成成功访问或恶意意图的证据。",
+      "cite": ["paper@§6.1.3"]
+    }
+  ],
+  "dataset": {
+    "sample_count": 250,
+    "splits": ["test（250 题；HF 提供 all 与按平台两种配置）"],
+    "languages": ["en"],
+    "source_type": "开源应用与公开网站的冻结清单（参考实现取自上游发布版本）",
+    "public_sample": true,
+    "totals": "250 题 = Ubuntu 50 + macOS 50 + Windows 50 + Android 50 + Web 50；其中 Web 含 44 个基准自建合成站点与 6 个源自公开网站的站点；参考实现代码行中位数为 Ubuntu 49.3k、macOS 13.5k、Windows 6.7k、Android 15.0k。",
+    "cite": ["paper@§4.2", "hf-dataset"],
+    "construction": [
+      {
+        "k": "任务来源",
+        "text": "每平台 50 个应用或网站，从对应发布清单中冻结；三个桌面平台另记录上游仓库与修订版本。",
+        "cite": ["paper@§4.2"]
+      },
+      {
+        "k": "参考即 oracle",
+        "text": "把运行中的参考应用当作可执行 oracle，从中派生隐藏行为测试，转成与实现无关的监督信号。",
+        "cite": ["paper@Abstract"]
+      },
+      {
+        "k": "断言冻结",
+        "text": "程序化与视觉断言都先在参考实现上验证、再经人工评审，之后才冻结进自动评分套件。",
+        "cite": ["paper@Abstract"]
+      },
+      {
+        "k": "夹具规模",
+        "text": "81 个任务的夹具树共打包 393 个文件（按打包文件计，不是独立 authored 文件数）。",
+        "cite": ["paper@§4.3"]
+      },
+      {
+        "k": "许可证",
+        "text": "执行框架 MIT；44 个基准自建 .example 站点的实现代码为 MIT，其页面内容、任务元数据、ground truth 与评测文件为 CC-BY-4.0；上游应用与 bundled 资产保留各自条款。",
+        "cite": ["paper@附录 A.2", "hf-dataset"]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "average",
+      "name": "Average（Overall）",
+      "direction": "越高越好",
+      "description": "Prog 与 VLM 的未加权均值；平台内宏平均后跨五平台等权",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["repo", "paper@§5.1"]
+    },
+    {
+      "id": "prog",
+      "name": "Prog",
+      "direction": "越高越好",
+      "description": "参考落地程序化断言的通过比例，衡量可观测行为功能",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["paper@§4.4"]
+    },
+    {
+      "id": "vlm",
+      "name": "VLM",
+      "direction": "越高越好",
+      "description": "共享 VLM 评委对候选截图的视觉保真判定比例",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["paper@§4.4"]
+    },
+    {
+      "id": "prog-ge-90",
+      "name": "Prog ≥90% 覆盖率",
+      "direction": "越高越好",
+      "description": "Prog 分达到 90% 以上的应用占比，反映接近完整复刻的比例",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["site"]
+    },
+    {
+      "id": "prog-eq-100",
+      "name": "Prog =100% 覆盖率",
+      "direction": "越高越好",
+      "description": "拿满全部程序化断言的应用占比",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["site"]
+    },
+    {
+      "id": "cost",
+      "name": "估算成本（USD/任务）",
+      "direction": "越低越好",
+      "description": "按 90% 缓存读取估算的每任务 API 成本",
+      "unit": "usd",
+      "cite": ["repo"]
+    }
+  ],
+  "default_protocol": {
+    "raw": "每个任务给智能体一个高层复刻请求、对运行中参考应用的交互访问，以及 GUI 控制与软件开发两类工具；它自行决定何时探索、写码、构建启动、目视核对和修改，最后提交满足平台构建/启动契约的完整源码（桌面为带构建与启动入口的源码，Android 为产出 APK 的 Gradle 工程，Web 为 scaffold 出的自包含 index.html）。评分只看可观测行为：参考落地断言判程序化功能，共享 Qwen3.7-Plus 评委在温度 0 下对「候选截图 + 参考配对的自然语言断言」给二元视觉判定。断言在参考和候选两边都跑；缺例、崩溃或未到达即失败，无法构建或启动的提交直接计 0。",
+    "cite": ["paper@§4.4", "paper@§2.1", "paper@§4.1"],
+    "variants": [
+      {
+        "text": "源可见性差异：桌面与 Android 是 source-blind——智能体只能看可执行界面，实现产物被扣留；Web 无法同等隔离（静态站点的客户端本就是服务端下发的内容），改为保护 ground truth 与测试套件。",
+        "cite": ["paper@§4.1"]
+      },
+      {
+        "text": "评分汇总口径：平台内宏平均，再跨五平台等权；Average 是 Prog 与 VLM 的未加权均值；估算成本按 90% 缓存读取计。",
+        "cite": ["repo"]
+      },
+      {
+        "text": "投入档位：榜单按各模型自报 effort 记录（max / xhigh / high / enabled），跨档位横向比较要先对齐这一项。",
+        "cite": ["site"]
+      },
+      {
+        "text": "持久运行时实验：允许智能体在持久运行时里组合 GUI 操作，观察到任务质量相近而模型–工具交互大幅下降（计算机使用调用 −39.9%、助手轮次 −35.8%、wall-clock −26.1%、模型成本 −54.1%、输出 token +15.7%）；这是独立实验，不计入榜单分数。",
+        "cite": ["paper@§5.2"]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "blog-inhouse",
+      "date": "2026-08-03",
+      "label": "Qwen3.8-Flash-Next 发布页以表格公布 RecreationBench 成绩，脚注称其为内部长程应用复刻基准",
+      "cite": ["qwen-blog-id-qwen3-8-flash-ne"]
+    },
+    {
+      "id": "arxiv-v1",
+      "date": "2026-09-18",
+      "label": "arXiv v1 提交 RecreationWorld 论文，RecreationBench 随框架公开",
+      "cite": ["paper"]
+    },
+    {
+      "id": "arxiv-v2",
+      "date": "2026-09-21",
+      "label": "修订为 v2：应用集与评测器都调整过，本档案成绩对应修订版基准",
+      "cite": ["paper@附录 A.3"]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "隐藏套件只抽样有限结果",
+      "impact": "隐藏套件只抽样有限的视觉与行为结果，通过它们不能证明在所有状态和交互路径上等价，存在漏判空间。",
+      "severity": "高",
+      "response": "把 Overall 当作抽样覆盖率而非等价性证明；关键结论用自建断言交叉复跑。",
+      "reader": "看到高分不要推断「完全复刻」。",
+      "cite": ["paper@§8"]
+    },
+    {
+      "issue": "训练污染无法排除",
+      "impact": "公开参考实现可能已进入预训练数据，源码重叠筛查排除不了 prior memorization 或各类源码复用。",
+      "severity": "高",
+      "response": "对可疑提交做源码行级重叠筛查（各平台中位 0.014%–0.088%，最大值 <3.2%）并结合人工审查。",
+      "reader": "把榜单分理解为「在当前冻结套件上」的成绩。",
+      "cite": ["paper@§8", "paper@§6.4"]
+    },
+    {
+      "issue": "精确匹配查不到改名复用",
+      "impact": "文本重合度低不等于没有记忆：改名标识符、重构控制流、复用接口和短代码片段都逃过精确匹配。",
+      "severity": "中",
+      "response": "除重合度外再看行为等价与人工抽查，不把低重合度当原创证据。",
+      "reader": "低重合度不是「原创」的证据。",
+      "cite": ["paper@§6.4"]
+    },
+    {
+      "issue": "复刻产物系统性小于参考",
+      "impact": "89.4% 的复刻产出源码少于对应参考，中位 LOC 比为 16.9%；92.3% 的生产源文件更少，说明复刻偏简化和单体化。",
+      "severity": "中",
+      "response": "结合文件数与 LOC 比解读功能完整性，而不是只看能不能跑。",
+      "reader": "别把「能跑」读成「功能齐」。",
+      "cite": ["paper@§6.2"]
+    },
+    {
+      "issue": "完整重建仍然罕见",
+      "impact": "最高模型 Prog =100% 也只有 2.8%，90% 以上为 17.6%，任务整体难度仍在高位。",
+      "severity": "中",
+      "response": "用 ≥90% / =100% 分层覆盖率读分，不要只读 Overall。",
+      "reader": "把 Overall 和覆盖率分层分开看。",
+      "cite": ["paper@§6.3"]
+    },
+    {
+      "issue": "自建评测与厂商自报配置",
+      "impact": "评测由发布方维护，各模型 harness 与 effort 档位不同（如 Codex 运行版本 0.145.0、每次复刻 rollout 20 小时 wall-clock 预算），跨厂商可比性受限。",
+      "severity": "中",
+      "response": "比较前先对齐 effort 档位与 harness 配置。",
+      "reader": "比较前先看投入档位。",
+      "cite": ["site", "paper@附录 A.4"]
+    },
+    {
+      "issue": "Android 未证明包级出网过滤",
+      "impact": "Android 依赖离线依赖与剥离凭据，尚未证明包级 egress 过滤，完整性保障弱于桌面平台。",
+      "severity": "低",
+      "response": "该平台结果保持谨慎，结合失败隔离检查解读。",
+      "reader": "Android 子分更需要交叉验证。",
+      "cite": ["paper@§4.5"]
+    }
+  ],
+  "notes": "随 RecreationWorld 论文（arXiv:2609.22000）公开；早期内部版成绩见 Qwen 博客，与论文口径不可直接比较。",
+  "official_sources": [
+    { "kind": "paper", "url": "https://arxiv.org/abs/2609.22000" },
+    { "kind": "site", "url": "https://recreation-bench.cc" },
+    { "kind": "repo", "url": "https://github.com/QwenLM/RecreationWorld" },
+    { "kind": "dataset", "url": "https://huggingface.co/datasets/Qwen/RecreationBench" },
+    { "kind": "blog", "url": "https://qwen.ai/blog?id=qwen3.8-flash-next" }
+  ],
+  "related_benchmarks": ["osworld", "androidworld", "gaia", "swebench", "webarena"],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-13",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      { "id": "paper", "kind": "paper", "title": "RecreationWorld: Scalable and Verifiable Environments for Hybrid Computer-Use Agents（arXiv:2609.22000v2，2026-09-21）", "url": "https://arxiv.org/abs/2609.22000", "accessed": "2026-11-13" },
+      { "id": "repo", "kind": "repo", "title": "QwenLM/RecreationWorld（框架、任务索引与结果表）", "url": "https://github.com/QwenLM/RecreationWorld", "accessed": "2026-11-13" },
+      { "id": "site", "kind": "site", "title": "recreation-bench.cc 官网（含榜单与样例对比）", "url": "https://recreation-bench.cc", "accessed": "2026-11-13" },
+      { "id": "hf-dataset", "kind": "dataset", "title": "Qwen/RecreationBench（Hugging Face 任务包）", "url": "https://huggingface.co/datasets/Qwen/RecreationBench", "accessed": "2026-11-13" },
+      { "id": "qwen-blog-id-qwen3-8-flash-ne", "kind": "blog", "title": "Qwen3.8-Flash-Next 发布页（早期内部版 RecreationBench 成绩）", "url": "https://qwen.ai/blog?id=qwen3.8-flash-next", "accessed": "2026-11-13" }
+    ],
+    "header": {
+      "publisher": { "v": "阿里巴巴 Token Hub（Alibaba Group）", "cite": ["paper"] },
+      "first_release": { "v": "2026-08-03（Qwen 博客首次公布内部版）", "cite": ["qwen-blog-id-qwen3-8-flash-ne"] }
+    },
+    "cites": {
+      "summary": ["paper@Abstract", "hf-dataset", "repo"],
+      "interpretation": ["paper@§5.1", "paper@§6.3"]
+    },
+    "problem": {
+      "text": "computer-use 智能体长期沿两条路发展：一路透过图形界面操作应用，一路用代码和命令行构建软件，彼此看不见对方最擅长的事——GUI 智能体建不出界面背后的软件，终端智能体也看不到自己动作产生的界面。复刻任务把这两件事逼进同一个回路：规范只能从运行中的参考应用反推，交付物却是必须能编译运行的源码。",
+      "cite": ["paper@§2.2", "paper@Abstract"]
+    },
+    "ladder": [
+      { "label": "能跑起来但功能大面积缺失", "value": "Overall 约 9%–21%", "note": "Qwen3.7-Plus 9.15%、Gemini 3.7 Flash 21.12%；这一档交付物通常可启动，程序化断言覆盖率很低。", "cite": ["repo"] },
+      { "label": "部分平台可用", "value": "Overall 约 24%–37%", "note": "GLM-5.3 24.38%、Claude Opus 4.8 31.10%、Kimi K3 31.41%、Grok 4.6 36.73%。", "cite": ["repo"] },
+      { "label": "接近半数断言通过", "value": "Overall 约 42%–45%", "note": "GPT-5.6 Sol 42.06%、Claude Opus 5 44.16%。", "cite": ["paper@§5.1"] },
+      { "label": "当前公开最高", "value": "Overall 58.06%", "note": "GPT-6 Astra（max effort），Prog 58.19% / VLM 57.92%。", "cite": ["paper@§5.1"] },
+      { "label": "完整复刻（拿满全部程序化断言）", "value": "仅 2.8% 的任务", "note": "同一最高模型也只有 2.8% 的任务 Prog =100%；90% 以上为 17.6%。", "cite": ["paper@Abstract"] },
+      { "label": "本站账本当前最高", "auto": "ledger-top" }
+    ],
+    "misreadings": [
+      { "text": "把 Overall 58% 读成「模型能完整重建应用」。同一模型 Prog =100% 的任务只占 2.8%，高分主要来自断言覆盖率而非完整复刻。", "cite": ["paper@Abstract", "paper@§6.3"] },
+      { "text": "把聚合 Prog 均值当成「模型完整重建一个应用的概率」。论文明确说不能这样读。", "cite": ["paper@§6.3"] },
+      { "text": "把记录的联网尝试当成作弊或越界成功。该指标不建立成功访问、恶意意图或评测 awareness，也不意味着任何边界被绕过。", "cite": ["paper@§6.1.3"] },
+      { "text": "把 Qwen 博客里的 RecreationBench 分数和论文分数直接对比。应用集与评测器都换过，论文版本取代了早期内部版，两者不可直接比较。", "cite": ["paper@附录 A.3"] },
+      { "text": "用成本高低推断能力高低。记录的用量与成本并不跟随榜单排名（GLM-5.3 成本靠前而分数靠后）。", "cite": ["paper@§6.1.4"] }
+    ],
+    "background": [
+      { "k": "发布方", "v": "阿里巴巴 Token Hub（Alibaba Group），随 RecreationWorld 论文发布；论文 arXiv:2609.22000（v1 2026-09-18，v2 2026-09-21）。", "cite": ["paper"] },
+      { "k": "框架与套件", "v": "RecreationWorld 是五平台混合 computer-use 智能体框架，RecreationBench 是它的 250 题留出评测套件；任务包可从 Hugging Face 或 ModelScope 获取（HF 侧约 23.9 GB）。", "cite": ["hf-dataset", "repo"] },
+      { "k": "训练用途", "v": "作者用这些环境选出 35,000 条平衡轨迹（每平台 7,000）训练两个初始化，并在 5 个 OOD 基准上最高提升 17.9 个百分点。", "cite": ["paper@§3.2", "paper@§8"] },
+      { "k": "评测完整性度量", "v": "论文单独报告联网尝试、token 用量与成本：跨可用单元，模型–平台均值从 191 到 741 个助手轮次、2,300 万到 2.59 亿累计输入 token。", "cite": ["paper@§6.1.4"] },
+      { "k": "许可证", "v": "执行框架 MIT；上游应用与 bundled 资产保留各自条款；Web 任务另附基准自建代码（MIT）与基准自建内容（CC BY 4.0）说明。", "cite": ["hf-dataset"] },
+      { "k": "与博客版的关系", "v": "论文附录说明：应用集与评测器都变过，博客成绩与本文不可直接比较，论文所用版本取代早期内部版。", "cite": ["paper@附录 A.3"] }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-13",
+        "columns": ["模型", "投入档位", "Prog (%)", "VLM (%)", "Average (%)", "Prog ≥90% (%)", "Prog =100% (%)", "估算成本 (USD/任务)"],
+        "rows": [
+          ["GPT-6 Astra", "max effort", "58.19", "57.92", "58.06", "17.60", "2.80", "115.80"],
+          ["Claude Opus 5", "max effort", "45.99", "42.34", "44.16", "5.53", "0.80", "117.17"],
+          ["GPT-5.6 Sol", "max effort", "40.63", "43.49", "42.06", "5.20", "0.40", "25.46"],
+          ["Grok 4.6", "xhigh effort", "39.02", "34.45", "36.73", "1.60", "0.00", "12.58"],
+          ["Qwen3.8-Max-0902", "xhigh effort", "35.53", "34.07", "34.80", "2.00", "0.00", "38.76"],
+          ["Kimi K3", "max effort", "32.07", "30.74", "31.41", "2.00", "0.00", "63.10"],
+          ["Claude Opus 4.8", "max effort", "32.40", "29.81", "31.10", "1.60", "0.40", "69.16"],
+          ["GLM-5.3", "max effort", "26.30", "22.46", "24.38", "2.00", "0.00", "70.98"],
+          ["Gemini 3.7 Flash", "high effort", "24.91", "17.34", "21.12", "2.40", "0.00", "—"],
+          ["Qwen3.7-Plus", "enabled effort", "9.18", "9.12", "9.15", "0.00", "0.00", "1.23"]
+        ]
+      },
+      "cite": ["site", "repo"]
+    }
+  }
 }

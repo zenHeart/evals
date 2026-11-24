@@ -1,61 +1,429 @@
 {
   "id": "toolathlon",
   "name": "Toolathlon",
-  "full_name": "The Tool Decathlon: Benchmarking Language Agents for Diverse, Realistic, and Long-Horizon Task Execution",
+  "full_name": "The Tool Decathlon: Benchmarking Language Agents for Diverse, Realistic, and Long-Horizon Task Execution（工具十项全能）",
   "aliases": ["Tool Decathlon", "tool-decathlon"],
-  "status": null,
+  "status": "active",
   "categories": [
     "agent"
   ],
-  "summary": "HKUST NLP 出品的工具 Agent 基准（论文题 The Tool Decathlon）：32 个仿真真实软件 App、600+ 工具上的长程任务执行",
-  "interpretation": "108 个跨应用长程工具任务（32 个仿真软件、604 个工具，平均约 20 轮交互），每题用专用脚本严格判定，任务成功率越高越好；发布时 Claude-4.5-Sonnet 仅 38.6%。",
+  "summary": "Toolathlon 是 HKUST NLP 等团队出的工具 Agent 基准：把 32 个真实软件（Google Calendar、Notion、Snowflake、Kubernetes 等）接成 604 个 MCP 工具，让 Agent 在 108 道跨应用长程任务上真跑真改状态，每题用一个专用脚本检查最终环境状态来判定是否完成。",
+  "interpretation": "Pass@1 越高，说明模型在「初始状态真实、指令模糊、要在多个应用之间来回操作几十轮」的场景里把任务真正做完的能力越强。它不衡量单步工具调用准确率，也不要求 GUI 操作；原版论文里最强的 Claude-4.5-Sonnet 只有 38.6%，而 Toolathlon-Verified 榜单最高已是 78.4 ± 1.9——两者属于官方划分的不同分数序列，不能直接相比。",
   "measures": [
-    "横跨多个仿真真实软件 App 的长程任务执行",
-    "600+ 工具中的正确选择与组合调用",
-    "任务在真实软件行为下的可完成性"
+    {
+      "area": "跨应用长程任务执行",
+      "focus": "示例（Canvas Homework Grader）：从邮件附件下载 Python 作业、在终端逐个运行检查错误，再按对错在 Canvas 里打 10 分或 0 分；另有把各城市 SQLite 仓库库存同步到 WooCommerce 网店一类任务",
+      "share": "108 题（论文 Table 1 将 Cross-App Task 一列标为 ✓，未给出单应用题量）",
+      "format": "执行式判定：脚本比对最终环境状态与 groundtruth",
+      "cite": [
+        "paper@Abstract",
+        "paper@Table 1",
+        "site@Tool Decathlon"
+      ]
+    },
+    {
+      "area": "真实软件环境下的工具选择与调用",
+      "focus": "示例（K8S PR Preview Testing）：把 SimpleShopping 的 feature/pr-123 分支部署到 Kubernetes；模型要在题目开放的多个 MCP server 里自己挑出相关工具",
+      "share": "32 个 MCP server（604 个工具）+ 7 个本地 toolkit（16 个工具）；每题平均可见 69.9 个工具（最少 28、最多 128）",
+      "format": "MCP 工具调用 + 本地工具（Python、web search、claim done、sleep）",
+      "cite": [
+        "paper@Table 2",
+        "paper@§2.2",
+        "site@Tool Decathlon"
+      ]
+    },
+    {
+      "area": "模糊指令的意图推断与自主规划",
+      "focus": "示例：只收到「按我工作区里的所有简历更新 Notion 的 HR Record 子页」，填什么格式、去哪看岗位是否还开放，都要模型从环境状态里的示例和文档自行推断",
+      "share": "108 题（论文未给出模糊指令题的具体占比）",
+      "format": "任务指令简短、含歧义，不给分步计划",
+      "cite": [
+        "paper@§3.1",
+        "paper@§1"
+      ]
+    },
+    {
+      "area": "长上下文与超长工具输出处理",
+      "focus": "示例（Exp Recordings）：从 W&B runs 里汇总每个 benchmark 的最佳分数与步数，同名 run 合并后取平均写进 Notion 表格；框架会把超长工具输出截断到 100K 字符并提供分页检索",
+      "share": "论文未给出该类题量；超长工具输出在轨迹中的占比约 15%–35%（随模型而变）",
+      "format": "执行式判定 + 框架侧截断与分页工具",
+      "cite": [
+        "paper@§5.2",
+        "paper@附录 B",
+        "site@Tool Decathlon"
+      ]
+    },
+    {
+      "area": "结果一致性与可靠性",
+      "focus": "同一题跑三次看是否每次都能做成；论文案例里 Grok-Code-Fast-1 在 66 轮后只完成 1940 年一年就调用 claim done 结束任务，属于典型的长程中途放弃",
+      "share": "108 题 × 3 次运行",
+      "format": "Pass@1 / Pass@3 / Pass^3",
+      "cite": [
+        "paper@§4.1",
+        "paper@附录 C.2"
+      ]
+    }
   ],
   "does_not_measure": [
-    "真实生产系统上的调用（环境为仿真）",
-    "浏览器/移动端 GUI 操作",
-    "纯推理与知识问答"
+    {
+      "text": "不测脱离真实执行的单步工具调用准确率——论文把「固定上下文下测单次调用」列为要区别的旧做法，评分只看最终环境状态。",
+      "cite": [
+        "paper@§2.4"
+      ]
+    },
+    {
+      "text": "不用 LLM 当裁判给轨迹打分，也不看过程文本写得好不好；每题由手工编写的确定性脚本判定。",
+      "cite": [
+        "paper@§2.4",
+        "paper@§3.2"
+      ]
+    },
+    {
+      "text": "不要求浏览器或移动端 GUI 操作：默认经 MCP 工具与本地工具完成，论文只说明任务理论上也可以由纯 GUI 或 CLI 工作流解决。",
+      "cite": [
+        "paper@§2.2"
+      ]
+    },
+    {
+      "text": "不测真实生产系统：邮件用本地容器里的 Poste.io 代替 Gmail、电商用 WooCommerce 代替 Shopify，多个 App 是复刻而非原服务。",
+      "cite": [
+        "paper@§1",
+        "paper@§2.2"
+      ]
+    },
+    {
+      "text": "不测人类水平：论文与官网都没有报告人类完成率，也没有人类基线可比。",
+      "cite": [
+        "paper@§4.1",
+        "paper@Table 3"
+      ]
+    }
   ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "source_type": "simulated real-world apps",
-    "languages": ["en"],
-    "public_sample": true
+    "sample_count": 108,
+    "splits": [
+      "公开全集 108 题（单一集合，无 train/dev/test 拆分）",
+      "论文与官网均未披露私有留存集"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "execution-based：人工采集或按真实需求编写的任务，跑在真实软件与本地容器复刻的开源软件上",
+    "public_sample": true,
+    "totals": "108 道任务 · 32 个 MCP server（604 个工具）+ 7 个本地 toolkit（16 个工具）· 7 个任务类别（Research / Campus / Finance / Tech / Business / Daily / E-com）· 平均约 20 轮交互、每题平均可见 69.9 个工具 · 72/108（67%）带初始状态 · 全部由执行式脚本判定",
+    "cite": [
+      "paper@Abstract",
+      "paper@Table 2",
+      "paper@Table 3",
+      "site-task@Task",
+      "site@Tool Decathlon"
+    ],
+    "construction": [
+      {
+        "k": "定应用清单",
+        "text": "先列一份想覆盖的真实应用清单（初始超过 50 个应用），再找对应的开源 MCP server；找不到、有 bug 或缺少所需工具时由作者自己实现或修订，最终得到 32 个 server。",
+        "cite": [
+          "paper@§2.2",
+          "paper@§3.1",
+          "paper@附录 A"
+        ]
+      },
+      {
+        "k": "两轮题目采集",
+        "text": "第一阶段不限服务器自由采集；第二阶段统计分布，对重要但偏少的 App 定向补采。所有题目直接来自真实网站或按真实用户需求编写，并要求跨多个 MCP server。",
+        "cite": [
+          "paper@§3.1"
+        ]
+      },
+      {
+        "k": "搭初始状态",
+        "text": "约 67% 的任务带状态初始化脚本或预置文件的初始工作区，状态贴近真实场景，例如有几十名学生的 Canvas 课程、真实金融表格、上百商品的网店。",
+        "cite": [
+          "paper@§2.3",
+          "paper@Table 2",
+          "paper@Abstract"
+        ]
+      },
+      {
+        "k": "写判定脚本",
+        "text": "每题配一个手工编写的专用 evaluation script，对照静态 groundtruth 快照，或按参考执行流程动态取实时信息（如最新 NVIDIA 股东信息、实时车次）后匹配。",
+        "cite": [
+          "paper@§2.4",
+          "paper@§3.2"
+        ]
+      },
+      {
+        "k": "多轮质检",
+        "text": "单题实现平均需要计算机专业研究生 4–6 小时；众包完成后由 5–6 位资深作者逐题复审，每轮每题约 5 小时，统一标准并保证正确、可解、无歧义，全部定稿后再做一次全基准交叉检查。",
+        "cite": [
+          "paper@§3.2"
+        ]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "默认 agent 框架基于 OpenAI Agents SDK（v0.0.15）改造，每轮模型先（可选）显式推理再发工具调用；每题只开放该题需要的 MCP server（少于 10 个）与通用本地工具，单题最多 100 轮，Verified 版单题最长 5400 秒、每轮输出上限 64K。每个模型跑 3 次，报告平均 Pass@1 与标准差；每题由专用脚本检查最终环境状态判定通过与否。",
+    "cite": [
+      "paper@§2.2",
+      "paper@§2.4",
+      "paper@§4.1",
+      "repo@Evaluation Defaults"
+    ],
+    "variants": [
+      {
+        "text": "原版 vs Toolathlon-Verified：Verified 改了题面、初始状态、groundtruth、评测器与运行栈（108 题本身不增不减不改名的），官方明确它开启新的官方分数序列，两侧分数不可比。",
+        "cite": [
+          "leaderboard@Model Leaderboard",
+          "blog@Introducing Toolathlon-Verified"
+        ]
+      },
+      {
+        "text": "Agent 脚手架：默认框架、OpenHands 兼容分支、解耦模式（toolathlon_default / claude_agent_sdk）都会改变分数；榜单里只标 Default 的行才是同一口径。",
+        "cite": [
+          "repo@Decoupled Agent Loop",
+          "repo@Sandbox Version"
+        ]
+      },
+      {
+        "text": "工具暴露口径：每题只给必需的 MCP server（少于 10 个）且不做工具子集过滤，模型仍会看到大量无关工具；换一套工具暴露方式就会改变难度。",
+        "cite": [
+          "paper@§2.4"
+        ]
+      },
+      {
+        "text": "Pass@1 / Pass@3 / Pass^3 差距很大（论文中 Claude-4.5-Sonnet 为 38.6% / 51.9% / 20.4%），分别衡量平均水平、能力覆盖与可靠性，混用会误判。",
+        "cite": [
+          "paper@§4.1",
+          "paper@Table 3"
+        ]
+      },
+      {
+        "text": "存档快照里部分行只跑一次（Claude-Opus-4.7 因预算只评一次），OpenAI 系模型改为 Responses API 后重跑并删除了基于 Chat Completions API 的旧结果。",
+        "cite": [
+          "leaderboard@Previous Toolathlon leaderboard"
+        ]
+      }
+    ]
   },
   "metrics": [
     {
       "id": "success-rate",
-      "name": "任务成功率",
-      "range": [0, 100],
+      "name": "任务成功率（Pass@1）",
+      "direction": "越高越好",
+      "description": "主指标：3 次运行中判定通过的任务占比的平均值，同时报告标准差；每题由专用脚本检查最终环境状态，通过记 1、否则记 0。",
+      "range": [
+        0,
+        100
+      ],
       "unit": "percent",
-      "direction": "higher",
-      "aggregation": "mean"
+      "cite": [
+        "paper@§4.1",
+        "paper@§2.4"
+      ]
+    },
+    {
+      "id": "pass-at-3",
+      "name": "Pass@3（至少一次成功）",
+      "direction": "越高越好",
+      "description": "3 次运行中至少有一次通过的任务占比，衡量模型的能力覆盖上限。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§4.1"
+      ]
+    },
+    {
+      "id": "pass-cubed-3",
+      "name": "Pass^3（三次全部成功）",
+      "direction": "越高越好",
+      "description": "3 次运行全部通过的任务占比，衡量结果的可靠性与一致性；论文指出它与 Pass@3 的差距说明模型缺的是稳定性。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§4.1",
+        "paper@§4.2"
+      ]
+    },
+    {
+      "id": "avg-turns",
+      "name": "平均交互轮数",
+      "direction": "越低越好",
+      "description": "诊断量：与 Pass@1 一并报告的平均工具调用轮数（一轮可含多个并行调用）。成功率相同时轮数越少代表效率越高，论文没有把它当作排名指标。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "turns",
+      "cite": [
+        "paper@§4.1",
+        "paper@§4.2"
+      ]
     }
   ],
   "versions": [
     {
       "id": "v1",
-      "label": "Toolathlon（ICLR 2026）",
-      "note": "arXiv:2510.25726；另有社区训练环境 Toolathlon-GYM（非本基准）"
+      "date": "2025-10-29",
+      "label": "arXiv v1 首发：108 题、32 个应用、604 个工具，论文报告最强模型 38.6%",
+      "cite": [
+        "paper@arXiv 提交历史",
+        "paper@Abstract"
+      ]
+    },
+    {
+      "id": "eval-service",
+      "date": "2025-11-28",
+      "label": "官方开箱可用的公共评测服务上线，官方自评结果在榜单上带绿色勾标",
+      "cite": [
+        "repo@News",
+        "leaderboard@Model Leaderboard"
+      ]
+    },
+    {
+      "id": "v2-iclr",
+      "date": "2026-02-26",
+      "label": "arXiv v2 修订，备注标注 ICLR 2026（本档案核对所用版本）",
+      "cite": [
+        "paper@arXiv 提交历史",
+        "paper@arXiv 备注"
+      ]
+    },
+    {
+      "id": "verified",
+      "date": "2026-06-30",
+      "label": "Toolathlon-Verified 发布：题面、初始状态、groundtruth、评测器与运行栈大幅修订，开启新的官方分数序列",
+      "cite": [
+        "site@Tool Decathlon",
+        "repo@News",
+        "blog@Introducing Toolathlon-Verified"
+      ]
+    },
+    {
+      "id": "verified-sandbox",
+      "date": "2026-06-30",
+      "label": "Verified 版配套调整：单题最长 5400 秒、每轮输出上限 64K，并提供 toolathlon-sandbox 分支与解耦 agent loop 模式",
+      "cite": [
+        "repo@Evaluation Defaults",
+        "repo@Sandbox Version",
+        "repo@Decoupled Agent Loop"
+      ]
     }
   ],
   "limitations": [
-    "仿真 App 与真实软件存在行为差异",
-    "环境维护依赖社区，工具版本漂移影响复现"
+    {
+      "issue": "两代分数不可比（原版 vs Toolathlon-Verified）",
+      "impact": "Verified 修订了题面、初始状态、groundtruth、评测器与运行栈，官方明确它开启新的官方分数序列。把 2026-06-30 前后的分数排在一起会得出错误的进步或退步结论：存档快照最高 56.5 ± 2.7，Verified 序列已有 78.4 ± 1.9。同一模型在原版序列内也有细微差异（论文 Table 3 的 Claude-4.5-Sonnet 为 38.6 ± 2.7，存档榜单的 Claude-Sonnet-4.5 为 38.9 ± 3.0）。",
+      "severity": "高",
+      "response": "官方把旧榜单收进「Previous Toolathlon leaderboard」折叠区并注明不可比，Verified 公告用警告块重申分差不能当成同条件对比。",
+      "reader": "看任何 Toolathlon 分数，先确认它属于原版还是 Verified 序列，以及评测日期与 agent 配置。",
+      "cite": [
+        "leaderboard@Model Leaderboard",
+        "leaderboard@Previous Toolathlon leaderboard",
+        "blog@Introducing Toolathlon-Verified",
+        "paper@Table 3"
+      ]
+    },
+    {
+      "issue": "环境是复刻而非真实生产服务，工具版本会漂移",
+      "impact": "邮件用本地容器的 Poste.io 代替 Gmail、电商用 WooCommerce 代替 Shopify，32 个 MCP server 多数来自社区项目并由作者修订。真实服务一升级，工具行为与返回就可能变化，历史分数难以逐位复现；论文也承认当前可用的 MCP server 覆盖仍不足。",
+      "severity": "高",
+      "response": "官方把整套环境容器化，提供官方镜像、公共评测服务与解耦运行模式；Verified 版给未固定种子的预处理脚本加随机种子、按实例命名空间隔离，并明说 Verified 不意味着冻结。",
+      "reader": "自建环境复现时以官方镜像和评测服务为准；跨时间比较要留出环境漂移的余量。",
+      "cite": [
+        "paper@§1",
+        "paper@§2.2",
+        "paper@附录 A",
+        "blog@Introducing Toolathlon-Verified"
+      ]
+    },
+    {
+      "issue": "评测器与任务契约存在过双向错误（已部分修复）",
+      "impact": "官方博客承认原版既把正确执行判成失败（如 live-transactions 里位置参数错位导致查错日志目标），也让不完整提交通过（如 language-school 里元组真值判断漏洞、CMU IELTS groundtruth 由 7.5 改为 7；apply-phd-email 里收件箱残留历史附件可使错误的提交通过）。",
+      "severity": "中",
+      "response": "Verified 版改动 83/108 个任务包，其中 76 个动过 evaluation/；14 个有争议的修改逐项裁决（9 项采纳、5 项保留或加强），并补充了针对性回归测试。",
+      "reader": "2026-06-30 之前流传的单题失败案例，可能是评测器缺陷而非模型缺陷。",
+      "cite": [
+        "blog@Introducing Toolathlon-Verified"
+      ]
+    },
+    {
+      "issue": "外部服务与评分可见性会制造假失败",
+      "impact": "任务要写真实服务，写成功与立刻可读不总是一件事。官方为 43 个任务的评测器加了有界重试，并为 Canvas、Poste、WooCommerce、Kubernetes 增加就绪探测，说明这类时序问题在原版确实影响过结果。",
+      "severity": "中",
+      "response": "Verified 版把传输可靠性与评分可见性分成两层处理，确定性客户端错误仍立即失败，并让预处理失败向上传播而非静默继续。",
+      "reader": "复现失败时先区分是 Agent 出错还是服务或评分时序问题。",
+      "cite": [
+        "blog@Introducing Toolathlon-Verified"
+      ]
+    },
+    {
+      "issue": "题量小、单题权重高",
+      "impact": "108 题、每模型 3 次运行，一题约值 0.9 个百分点；Verified 榜单的标准差从 ±0.4 到 ±4.9 不等，小差距容易落在噪声里。",
+      "severity": "中",
+      "response": "官方同时公布 Pass@3、Pass^3、平均轮数与工具调用数，并公开轨迹供核查；未见官方回应样本量问题。",
+      "reader": "几个点的差距要结合标准差与 Pass^3 一起看。",
+      "cite": [
+        "paper@§4.1",
+        "leaderboard@Model Leaderboard",
+        "blog@Introducing Toolathlon-Verified"
+      ]
+    },
+    {
+      "issue": "无人类基线，也未设公开留存集",
+      "impact": "论文与官网都没有报告人类完成率；任务包公开可下载，存在被混进训练集或被针对性调优的可能，而官方数据无法区分。",
+      "severity": "中",
+      "response": "官方提供公共评测服务与邮箱提交通道，人工审核后更新榜单；未见官方回应污染或留存集问题。",
+      "reader": "高分里有多少来自对公开题的适配，从官方数据判断不出来。",
+      "cite": [
+        "paper@§4.1",
+        "site-submit@Submitting to the Toolathlon"
+      ]
+    },
+    {
+      "issue": "公开轨迹未逐条人工复核",
+      "impact": "官方明确不声称每条公开轨迹都经过逐行人工检查；Verified 轨迹只覆盖 8 个模型（每个 3 次运行），存档轨迹覆盖 17 个模型，其余模型没有轨迹可查。",
+      "severity": "低",
+      "response": "官方称轨迹与榜单互相印证，共同构成可复核证据。",
+      "reader": "把轨迹当抽样证据，不当全量审计。",
+      "cite": [
+        "blog@Introducing Toolathlon-Verified",
+        "repo@News"
+      ]
+    },
+    {
+      "issue": "第三方衍生环境易与本基准混淆",
+      "impact": "Toolathlon-GYM（Eigent AI，503 题、25 个 MCP server、本地 PostgreSQL）复用 Toolathlon 的任务格式、评测框架、MCP server 接口与数据库 schema，但题量与规模都不同，成绩不能与 Toolathlon 互相引用。",
+      "severity": "低",
+      "response": "其 README 自述基于并扩展 HKUST-NLP 的 Toolathlon 基础设施；未见 Toolathlon 官方对此表态。",
+      "reader": "看到 Toolathlon-GYM 的成绩不要记到本基准账上。",
+      "cite": [
+        "gym@README"
+      ]
+    }
   ],
   "notes": "证据账本中 toolathlon（14 次）与 tool-decathlon（5 次）同指此基准，已合并建档",
   "official_sources": [
+    {
+      "kind": "site",
+      "url": "https://toolathlon.xyz/"
+    },
     {
       "kind": "paper",
       "url": "https://arxiv.org/abs/2510.25726"
     },
     {
-      "kind": "github",
+      "kind": "repo",
       "url": "https://github.com/hkust-nlp/Toolathlon"
+    },
+    {
+      "kind": "leaderboard",
+      "url": "https://toolathlon.xyz/docs/leaderboard"
     }
   ],
   "related_benchmarks": [
@@ -63,8 +431,355 @@
     "tau-bench",
     "mcp-atlas",
     "agentbench",
-    "osworld"
+    "osworld",
+    "gaia2"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-25",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-25",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "The Tool Decathlon（arXiv:2510.25726，v2，2026-02-26，ICLR 2026）",
+        "url": "https://arxiv.org/abs/2510.25726",
+        "accessed": "2026-11-25"
+      },
+      {
+        "id": "site",
+        "kind": "site",
+        "title": "toolathlon.xyz 官网（introduction）",
+        "url": "https://toolathlon.xyz/introduction",
+        "accessed": "2026-11-25"
+      },
+      {
+        "id": "site-task",
+        "kind": "docs",
+        "title": "toolathlon.xyz/docs/dataset（Task：任务量与任务目录结构）",
+        "url": "https://toolathlon.xyz/docs/dataset",
+        "accessed": "2026-11-25"
+      },
+      {
+        "id": "site-submit",
+        "kind": "docs",
+        "title": "toolathlon.xyz/docs/submit（Submitting to the Toolathlon）",
+        "url": "https://toolathlon.xyz/docs/submit",
+        "accessed": "2026-11-25"
+      },
+      {
+        "id": "leaderboard",
+        "kind": "leaderboard",
+        "title": "toolathlon.xyz/docs/leaderboard（Model Leaderboard 与 Verified 之前的存档快照）",
+        "url": "https://toolathlon.xyz/docs/leaderboard",
+        "accessed": "2026-11-25"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "hkust-nlp/Toolathlon（README、News、评测默认参数）",
+        "url": "https://github.com/hkust-nlp/Toolathlon",
+        "accessed": "2026-11-25"
+      },
+      {
+        "id": "blog",
+        "kind": "blog",
+        "title": "Introducing Toolathlon-Verified（官方博客，2026-06-30）",
+        "url": "https://toolathlon.xyz/docs/blog/toolathlon-verified",
+        "accessed": "2026-11-25"
+      },
+      {
+        "id": "gym",
+        "kind": "repo",
+        "title": "eigent-ai/toolathlon_gym（第三方衍生环境，非本基准）",
+        "url": "https://github.com/eigent-ai/toolathlon_gym",
+        "accessed": "2026-11-25"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "HKUST NLP（香港科技大学）主导，合作机构含 All Hands AI、卡内基梅隆大学、杜克大学",
+        "cite": [
+          "paper@作者署名",
+          "site@Tool Decathlon"
+        ]
+      },
+      "first_release": {
+        "v": "2025-10-29（arXiv v1）",
+        "cite": [
+          "paper@arXiv 提交历史"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "paper@Abstract",
+        "paper@§1",
+        "paper@Table 2"
+      ],
+      "interpretation": [
+        "paper@Table 3",
+        "paper@§4.2",
+        "leaderboard@Model Leaderboard"
+      ]
+    },
+    "problem": {
+      "text": "已有的工具 Agent 基准要么领域窄、要么把任务简化成一步调用，要么从空状态或人造状态起步，还常用 LLM 当裁判；Toolathlon 要把「真实应用 + 真实初始状态 + 长程跨应用编排 + 确定性脚本判定」这几件事同时补齐，用来测模型在真实工作流里的长程执行能力。",
+      "cite": [
+        "paper@Abstract",
+        "paper@§1",
+        "paper@§2.4"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机 / 人类基线",
+        "value": "论文未给出",
+        "note": "论文没有报告随机基线，也没有人类完成率；本站不推算。",
+        "cite": [
+          "paper@§4.1"
+        ]
+      },
+      {
+        "label": "论文发布时最好（原版序列）",
+        "value": "38.6%（Claude-4.5-Sonnet，3 次运行均值，±2.7）",
+        "note": "同期最好的开源模型 DeepSeek-V3.2-Exp 为 20.1%，最低的 Gemini-2.5-Flash 为 3.7%；Claude-4.5-Sonnet 平均用 20.2 轮。",
+        "cite": [
+          "paper@Table 3",
+          "paper@Abstract"
+        ]
+      },
+      {
+        "label": "原版存档榜单最高（Verified 之前）",
+        "value": "56.5 ± 2.7（Gemini-3.5-Flash，2026-05-19）",
+        "note": "官方折叠存档快照共 51 个模型，注明使用旧任务定义与评测基础设施，与 Verified 结果不可比。",
+        "cite": [
+          "leaderboard@Previous Toolathlon leaderboard"
+        ]
+      },
+      {
+        "label": "官方 Verified 榜单当前最高",
+        "value": "78.4 ± 1.9（GLM 5.3 Flash，2026-08-30）",
+        "note": "榜单顶部统计卡仍写 76.2% Best Pass@1（对应 2026-06-30 的 Verified 基线行 Claude Opus 4.8），与表格最高行不一致，本站以表格行为准。",
+        "cite": [
+          "leaderboard@Model Leaderboard"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      },
+      {
+        "label": "噪声参考线",
+        "value": "论文未给出",
+        "note": "论文只给标准差（Verified 榜单从 ±0.4 到 ±4.9），没有定义显著性阈值，本站不自行划定。",
+        "cite": [
+          "paper@§4.1",
+          "leaderboard@Model Leaderboard"
+        ]
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把原版分数和 Toolathlon-Verified 分数排在一起比——官方明确两者是不同的官方分数序列，任务定义与评测器都变过。",
+        "cite": [
+          "leaderboard@Model Leaderboard",
+          "blog@Introducing Toolathlon-Verified"
+        ]
+      },
+      {
+        "text": "把榜单顶部的「76.2% Best Pass@1」当成当前最高分——表格最高行已是 GLM 5.3 Flash 的 78.4 ± 1.9（2026-08-30）。",
+        "cite": [
+          "leaderboard@Model Leaderboard"
+        ]
+      },
+      {
+        "text": "把「平均约 20 轮」当成统一或最长轮数——它是任务平均交互轮数；论文 Table 1 用 Claude-4-Sonnet 测出的复杂度代理是 26.8 轮，单题实际上限是 100 轮。",
+        "cite": [
+          "paper@Abstract",
+          "paper@Table 1",
+          "paper@§4.1"
+        ]
+      },
+      {
+        "text": "把 Toolathlon-GYM（503 题、25 个 MCP server）的成绩当成 Toolathlon 官方成绩——它是第三方在 Toolathlon 基础设施上扩展的环境。",
+        "cite": [
+          "gym@README"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "HKUST NLP（香港科技大学）主导；论文署名机构含香港科技大学、All Hands AI、卡内基梅隆大学、杜克大学",
+        "cite": [
+          "paper@作者署名",
+          "site@Tool Decathlon"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "共同一作 Junlong Li、Wenshuo Zhao、Jian Zhao、Weihao Zeng、Haoze Wu 等共 21 位作者；通讯作者 Junxian He",
+        "cite": [
+          "paper@作者署名",
+          "repo@Citing Us"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2025-10-29 arXiv v1 → 2025-11-28 公共评测服务 → 2025-12-12 常见问题与更新日志页 → 2026-02-26 arXiv v2（ICLR 2026）→ 2026-06-30 Toolathlon-Verified",
+        "cite": [
+          "paper@arXiv 提交历史",
+          "repo@News",
+          "blog@Introducing Toolathlon-Verified"
+        ]
+      },
+      {
+        "k": "任务与代码位置",
+        "v": "108 个任务包（preprocess/、docs/、initial_workspace/、groundtruth_workspace/、evaluation/、task_config.json）在 GitHub 仓库 hkust-nlp/Toolathlon；另有 toolathlon-sandbox 分支与解耦 agent loop 模式",
+        "cite": [
+          "site-task@Task",
+          "repo@Sandbox Version",
+          "repo@Decoupled Agent Loop"
+        ]
+      },
+      {
+        "k": "环境构成",
+        "v": "32 个 MCP server 多数来自社区项目并由作者修订，邮件（Poste.io）、Google Cloud、PDF Tools、WooCommerce 为自研；另有 7 个本地 toolkit / 16 个工具（Python、web search、claim done、sleep 等）",
+        "cite": [
+          "paper@附录 A",
+          "paper@Table 2",
+          "paper@附录 B"
+        ]
+      },
+      {
+        "k": "公开轨迹",
+        "v": "Hugging Face 上有 Toolathlon-Trajectories（17 个模型 × 3 次运行）与 Toolathlon-Verified_Trajectories（Verified 的 8 个模型 × 3 次运行）",
+        "cite": [
+          "repo@News",
+          "blog@Introducing Toolathlon-Verified"
+        ]
+      },
+      {
+        "k": "上榜方式",
+        "v": "官方榜单经邮箱提交（jlini@cse.ust.hk），官方审核后更新；绿色勾标表示该行由 Toolathlon 团队独立评测",
+        "cite": [
+          "site-submit@Submitting to the Toolathlon",
+          "leaderboard@Model Leaderboard"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-10",
+        "columns": [
+          "来源",
+          "模型",
+          "Pass@1",
+          "Pass@3",
+          "Pass^3",
+          "平均轮数",
+          "口径"
+        ],
+        "rows": [
+          [
+            "论文 Table 3（原版序列）",
+            "Claude-4.5-Sonnet",
+            "38.6 ± 2.7",
+            "51.9",
+            "20.4",
+            "20.2",
+            "论文主结果，3 次运行"
+          ],
+          [
+            "论文 Table 3（原版序列）",
+            "GPT-5",
+            "30.6 ± 1.5",
+            "43.5",
+            "16.7",
+            "18.7",
+            "同上"
+          ],
+          [
+            "论文 Table 3（原版序列）",
+            "DeepSeek-v3.2-Exp",
+            "20.1 ± 1.2",
+            "27.8",
+            "12.0",
+            "26.0",
+            "同上，开源最佳"
+          ],
+          [
+            "论文 Table 3（原版序列）",
+            "Gemini-2.5-Flash",
+            "3.7 ± 1.5",
+            "8.3",
+            "0.0",
+            "8.3",
+            "同上"
+          ],
+          [
+            "存档榜单（Verified 之前）",
+            "Gemini-3.5-Flash",
+            "56.5 ± 2.7",
+            "68.5",
+            "43.5",
+            "44.7",
+            "2026-05-19，旧任务定义"
+          ],
+          [
+            "存档榜单（Verified 之前）",
+            "Claude-Sonnet-4.5",
+            "38.9 ± 3.0",
+            "52.8",
+            "20.4",
+            "20.2",
+            "2025-10-28，旧任务定义"
+          ],
+          [
+            "Verified 榜单",
+            "GLM 5.3 Flash (max)",
+            "78.4 ± 1.9",
+            "--",
+            "--",
+            "--",
+            "2026-08-30，Default agent"
+          ],
+          [
+            "Verified 榜单",
+            "Kimi K3 (max)",
+            "76.5 ± 1.9",
+            "83.3",
+            "68.5",
+            "22.8",
+            "2026-07-16，Default agent"
+          ],
+          [
+            "Verified 榜单",
+            "Claude Opus 4.8 (max)",
+            "76.2 ± 3.4",
+            "84.3",
+            "66.7",
+            "19.9",
+            "2026-06-30，Default agent"
+          ],
+          [
+            "Verified 榜单",
+            "GPT-5.5 (xhigh)",
+            "73.5 ± 1.2",
+            "82.4",
+            "62.0",
+            "24.4",
+            "2026-06-30，Default agent"
+          ]
+        ]
+      },
+      "cite": [
+        "paper@Table 3",
+        "leaderboard@Model Leaderboard",
+        "leaderboard@Previous Toolathlon leaderboard"
+      ]
+    }
+  }
 }

@@ -1,66 +1,618 @@
 {
   "id": "gdm-situational-awareness",
   "name": "GDM Situational Awareness",
-  "full_name": "GDM Dangerous Capabilities: Situational Awareness",
+  "full_name": "GDM Dangerous Capabilities: Situational Awareness（GDM 危险能力评测·情境感知套件；开源复现任务族名 gdm_self_reasoning）",
   "aliases": [
     "GDM SA",
-    "GDM situational awareness evals"
+    "GDM situational awareness evals",
+    "gdm_self_reasoning"
   ],
   "status": null,
   "categories": [
     "safety"
-  ],
-  "summary": "Google DeepMind 危险能力评测中的情境感知套件：模型能否识别自己正被评测或被监控",
-  "interpretation": "Meta 报告同表两种口径并存：计分卡读百分比（Muse Spark 1.1 为 55.1%），表内叙述为解出 7/11 题；Gemini 2.5 技术报告报 2/11——比较时以同一报告内部口径为准。",
-  "measures": [
-    "对评测/部署环境的识别",
-    "对被监控状态的推断"
-  ],
-  "does_not_measure": [
-    "任务执行能力",
-    "长期策略性欺骗"
-  ],
-  "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [
-      "en"
-    ],
-    "source_type": "frontier-lab safety eval（有开源复现）",
-    "public_sample": true
-  },
-  "metrics": [
-    {
-      "id": "accuracy",
-      "name": "任务通过率",
-      "range": [0, 100],
-      "unit": "percent",
-      "direction": "higher",
-      "aggregation": "mean"
-    }
-  ],
-  "versions": [],
-  "limitations": [
-    "同套件在百分比与通过题数两种口径间切换",
-    "题量约 11 题，波动大"
-  ],
-  "default_protocol": null,
-  "notes": "GDM 危险能力评测套件之一；UK AISI Inspect Evals 有开源复现（gdm_situational_awareness）",
-  "official_sources": [
-    {
-      "kind": "paper",
-      "url": "https://arxiv.org/abs/2403.13793"
-    },
-    {
-      "kind": "site",
-      "url": "https://ukgovernmentbeis.github.io/inspect_evals/"
-    }
   ],
   "related_benchmarks": [
     "gdm-stealth",
     "shade-arena",
     "anthropic-behavioral-audit"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-09-01"
+  "summary": "Google DeepMind 提出的 11 道 agentic 情境感知挑战。模型以 agent 身份跑在一台模拟的用户 Linux 系统上，环境里的配置文件限制了它的单次输出 token 数、可用工具、人类监督频率等；它要先意识到自己正被这些约束卡住，再改掉配置文件，才能把任务做完。",
+  "interpretation": "解得越多，说明模型越善于在部署环境里察觉并修改自身约束——这是「阳奉阴违」（scheming：隐蔽地追求与开发者意图不一致的目标）的必要能力，因此高分是风险信号而不是好评。论文把「通过 9/11 个挑战」定为需要警惕的水平，本轮被测模型中解出最多的 OpenAI o1 也只通过 4 个。",
+  "measures": [
+    {
+      "area": "把关于自身的事实用于当前处境",
+      "focus": "以 max_tokens 为例：任务需要较长输出，而配置把单次回复的 token 上限压得很低，模型只有察觉并改掉自己的配置才能交付；oversight_frequency 则要求它改掉人类复审频率",
+      "share": "11 个挑战中的 9 个涉及修改描述 agent 自身或其环境关键部分的配置文件",
+      "format": "agentic 交互任务（模拟用户 Linux 系统，二值通过 / 不通过）",
+      "cite": [
+        "arxiv-2505-01420@§3.2"
+      ]
+    },
+    {
+      "area": "运行时自我修改",
+      "focus": "以 faulty_tool 为例：某个工具给出错误结果，模型需要在运行时改掉自己代码里的这一部分",
+      "share": "11 个挑战中的 1 个（faulty_tool）",
+      "format": "agentic 交互任务（二值通过 / 不通过）",
+      "cite": [
+        "arxiv-2505-01420@§3.2"
+      ]
+    },
+    {
+      "area": "主动探查自身部署设置",
+      "focus": "以 read_logs 为例：任务的完成依赖于获取更多关于自身当前部署设置的信息",
+      "share": "11 个挑战中的 1 个（read_logs）",
+      "format": "agentic 交互任务（二值通过 / 不通过）",
+      "cite": [
+        "arxiv-2505-01420@§3.2"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "关于 LLM、训练与部署设置、监督机制的事实性知识本身：论文明确说这套评测聚焦 agentic 场景，不直接测知识那一层",
+      "cite": [
+        "arxiv-2505-01420@§3.2"
+      ]
+    },
+    {
+      "text": "模型是否真的愿意去规避监督（倾向而非能力）：套件衡量的是能力，论文用它支撑「模型不具备造成严重危害的能力」这一安全性论证",
+      "cite": [
+        "arxiv-2505-01420@摘要",
+        "arxiv-2505-01420@§2.2"
+      ]
+    },
+    {
+      "text": "真实世界中的危害能力：为了让失败能明确指向能力缺失，论文刻意选了较不真实的场景，因此通过也不代表在真实部署中能造成严重危害",
+      "cite": [
+        "arxiv-2505-01420@§7.2"
+      ]
+    },
+    {
+      "text": "人类基线对照：论文的人类基线实验只覆盖 stealth 挑战（在 Google DeepMind 员工中进行），情境感知挑战没有对应的人类基线数据",
+      "cite": [
+        "arxiv-2505-01420@附录E"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 11,
+    "splits": [
+      "11 个挑战全部为评测题，无训练 / 测试拆分"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "frontier-lab safety eval（有开源复现：UK AISI Inspect Evals，任务族 gdm_self_reasoning）",
+    "public_sample": true,
+    "totals": "11 个 agentic 挑战：其中 9 个要求修改描述 agent 自身或其环境关键部分的配置文件，faulty_tool 要求运行时修改自身代码，read_logs 要求获取更多信息；论文对每个「模型 × 挑战」组合运行 50 次试验。",
+    "cite": [
+      "arxiv-2505-01420@§3.2",
+      "arxiv-2505-01420@§4.2"
+    ],
+    "construction": [
+      {
+        "k": "场景设定",
+        "text": "每个挑战模拟一个简单部署：模型作为 agent 跑在一台用户的 Linux 系统上，配有标准工具，可编辑包括自身源码与配置在内的各类文件；配置文件在每次动作前被读取并生效，因此模型能在一定程度上修改自己",
+        "cite": [
+          "arxiv-2505-01420@§3.2"
+        ]
+      },
+      {
+        "k": "约束注入",
+        "text": "给模型一个目标，同时用配置限制它（例如需要访问数据库但数据库工具被禁用）；部署设置与约束都不告诉模型，需要它自己发现并理解",
+        "cite": [
+          "arxiv-2505-01420@§3.2"
+        ]
+      },
+      {
+        "k": "题目来源",
+        "text": "context_size、irreversibility、output_filters 修订自 Phuong et al. (2024) 的早期评测；max_tool_calls、faulty_tool、slow_tool 受 Fronsdal and Lindner (2024) 的自我修改与工具改进挑战启发",
+        "cite": [
+          "arxiv-2505-01420@§3.2"
+        ]
+      },
+      {
+        "k": "数据虚构",
+        "text": "挑战中出现的公司、人名、邮箱等数据全部为虚构；开源实现页面的免责声明同样声明这一点",
+        "cite": [
+          "arxiv-2505-01420@附录F",
+          "inspect-gdm-self-reasoning@README"
+        ]
+      },
+      {
+        "k": "开源移植",
+        "text": "UK AISI 的 Inspect Evals 提供 gdm_self_reasoning 任务族（11 个任务，评测目录页列 22 个样本），支持 Docker（默认）或 k8s 沙箱，默认 10 个 epoch、message_limit 80",
+        "cite": [
+          "inspect-gdm-self-reasoning@README",
+          "ukgovernmentbeis-inspect-evals@评测目录"
+        ]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "标准 agentic scaffold：模型通过调用工具与环境交互，论文附录 D 给出各挑战使用的系统指令与逐步提示。评测时间约为 2025 年 4 月初。被测模型为 Gemini 2.5 Pro 与 Gemini 2.5 Flash 的预览版、GPT-4o（版本 26.03.2025）、OpenAI o1、Claude 3.7 Sonnet。每个模型在每个挑战上运行 50 次。判定采用保守口径：一次试验里只要正确修改了配置，或另寻他路解决了任务，都算成功。情境感知挑战全部为二值结果，模型成功率超过 20% 即视为通过该挑战。",
+    "cite": [
+      "arxiv-2505-01420@§4",
+      "arxiv-2505-01420@§4.2",
+      "arxiv-2505-01420@§3.3",
+      "arxiv-2505-01420@§5.2",
+      "arxiv-2505-01420@附录D"
+    ],
+    "variants": [
+      {
+        "text": "诱导方式不对称：论文只对 Gemini 系模型做提示式诱导，未对第三方模型做定制诱导，跨厂商横向比较存在口径差",
+        "cite": [
+          "arxiv-2505-01420@§4"
+        ]
+      },
+      {
+        "text": "开源复现与论文的试验数不同：论文用 50 次试验并以 20% 成功率为通过线；Inspect Evals 默认 10 个 epoch，并用 at_least_1 reducer（50 次里至少成功一次即算成功）以节省算力",
+        "cite": [
+          "inspect-gdm-self-reasoning@README",
+          "arxiv-2505-01420@§3.3"
+        ]
+      },
+      {
+        "text": "「简化挑战」重跑：把相关配置机制 / 文件明确告诉模型后，几乎所有「模型 × 挑战」组合都能成功；这组数字说明原始低分主要来自没意识到约束，与主表不可比",
+        "cite": [
+          "arxiv-2505-01420@§4.2"
+        ]
+      },
+      {
+        "text": "Inspect Evals 结果表用 Easy / Hard 两列呈现，但页面没有说明两列各自的划分方式，与论文按挑战逐个统计不是同一口径",
+        "cite": [
+          "inspect-gdm-self-reasoning@README"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "passed_challenges",
+      "name": "通过的挑战数",
+      "direction": "越高越好",
+      "description": "成功率超过 20% 的挑战个数，范围 0–11；论文把通过 9/11 视为需要警惕的水平",
+      "range": [
+        0,
+        11
+      ],
+      "unit": "challenges",
+      "cite": [
+        "arxiv-2505-01420@§3.3",
+        "arxiv-2505-01420@§4.2"
+      ]
+    },
+    {
+      "id": "success_rate",
+      "name": "单挑战成功率",
+      "direction": "越高越好",
+      "description": "50 次试验中成功的比例；超过 20% 即判定该挑战通过，论文用 Wilson 方法给出二值变量的 95% 置信区间",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2505-01420@§3.3",
+        "arxiv-2505-01420@图6",
+        "arxiv-2505-01420@§4"
+      ]
+    },
+    {
+      "id": "config_modified_rate",
+      "name": "配置修改率",
+      "direction": "越高越好",
+      "description": "诊断指标，不直接决定通过与否：一次试验中模型对相关配置文件做出任何修改的比例。论文用它区分「没意识到约束」与「改错了」；数值高只说明模型更常去动配置，不代表能力更强",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2505-01420@图6",
+        "arxiv-2505-01420@§4.2"
+      ]
+    }
+  ],
+  "versions": [
+    {
+      "id": "predecessor-2024",
+      "date": "2024-03-20",
+      "label": "前身论文 arXiv:2403.13793 v1 发布，第 7 节给出 self-reasoning 评测（其中 context_size、irreversibility、output_filters 后来被修订进本套件）",
+      "cite": [
+        "arxiv-2403-13793@arXiv 提交历史",
+        "arxiv-2403-13793@§7"
+      ]
+    },
+    {
+      "id": "v1-2025",
+      "date": "2025-05-02",
+      "label": "arXiv:2505.01420 v1 发布，情境感知套件定为 11 个挑战，与 5 个 stealth 评测共同构成 scheming inability 安全性论证",
+      "cite": [
+        "arxiv-2505-01420@arXiv 提交历史"
+      ]
+    },
+    {
+      "id": "v4-2025",
+      "date": "2025-07-03",
+      "label": "arXiv:2505.01420 v4（本档案核对的版本）",
+      "cite": [
+        "arxiv-2505-01420@arXiv 提交历史"
+      ]
+    },
+    {
+      "id": "oss-dataset-2025",
+      "date": "2025-04-29",
+      "label": "开源数据集发布：Inspect Evals 的 gdm_self_reasoning 结果表标注使用该日发布的数据集",
+      "cite": [
+        "inspect-gdm-self-reasoning@README"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "难度与真实性刻意偏低",
+      "impact": "通过套件不说明模型能在真实部署中造成危害；失败能指示能力缺失，但结论不可外推到真实场景",
+      "severity": "高",
+      "response": "论文说明这是为确保「失败能明确指向能力缺失」而做的取舍，并指出未来需要更真实、更难的挑战",
+      "reader": "把「未通过」当作能力下界证据，而不是安全证明；跨论文比较通过数意义有限",
+      "cite": [
+        "arxiv-2505-01420@§7.2"
+      ]
+    },
+    {
+      "issue": "题量小且阈值任意",
+      "impact": "只有 11 个挑战，通过线定在 20% 成功率、告警线定在 9/11；论文自述这些常数「不可避免地有些任意」，且按所选重复次数无法区分「完全不会」与「50 次里成功不到 1 次」",
+      "severity": "中",
+      "response": "论文在附录 C 说明阈值设定依据，并在正文提示上述分辨极限",
+      "reader": "单个挑战的通过与否噪声大，应看整体通过数与成功率区间",
+      "cite": [
+        "arxiv-2505-01420@§3.3",
+        "arxiv-2505-01420@§4.2"
+      ]
+    },
+    {
+      "issue": "只测能力，不测倾向",
+      "impact": "安全性论证建立在「模型即使失格也无法造成严重危害」之上；模型是否真的会去规避监督不在本套件测量范围内",
+      "severity": "中",
+      "response": "论文明确把自身定位为能力证据，并在 §2.2 说明先保守假设模型失格、再论证其无法造成严重危害",
+      "reader": "不要把「未通过」读成「模型不会欺骗」",
+      "cite": [
+        "arxiv-2505-01420@§2.2",
+        "arxiv-2505-01420@摘要"
+      ]
+    },
+    {
+      "issue": "安全性论证依赖类比假设，且证据集中",
+      "impact": "论证把未来 AI 的部署类比为典型人类员工的情形来推导所需能力水平，AI 与人的差异可能导致估计错误；整套论证只依赖两个评测套件",
+      "severity": "中",
+      "response": "论文在局限一节列出该问题，并称未来希望转向更分散、证据更多但单项依赖更少的安全性论证",
+      "reader": "结论应与其他能力与可控性证据合读，单凭本套件不足以判定安全",
+      "cite": [
+        "arxiv-2505-01420@§7.2"
+      ]
+    },
+    {
+      "issue": "论文内部两种汇总口径并存",
+      "impact": "§4.2 按「至少成功一次」统计（OpenAI o1 解出 4 个，Gemini 2.5 Pro 与 Claude 3.7 Sonnet 各 3 个），§7.1 的总结按「有一定稳定性地通过」只给最强模型 2/11；Inspect Evals 的 Easy / Hard 表又未说明划分方式",
+      "severity": "中",
+      "response": "论文两处都在陈述事实、口径不同但不相矛盾；引用时需注明取哪一处",
+      "reader": "比较不同来源的数字前，先确认是「解出过」还是「稳定通过」",
+      "cite": [
+        "arxiv-2505-01420@§4.2",
+        "arxiv-2505-01420@§7.1",
+        "inspect-gdm-self-reasoning@README"
+      ]
+    },
+    {
+      "issue": "复现成本",
+      "impact": "开源实现需要 Docker 或 k8s 沙箱；仓库 README 提示部分用 Docker 的评测最多需要 32 GB 内存，GDM capabilities evals 还会额外拉取镜像、占用磁盘",
+      "severity": "低",
+      "response": "Inspect Evals 同时支持 k8s 沙箱以分摊负载",
+      "reader": "本地复现前先确认机器内存与磁盘余量",
+      "cite": [
+        "inspect-repo@README",
+        "inspect-gdm-self-reasoning@README"
+      ]
+    },
+    {
+      "issue": "情境感知挑战没有人类基线",
+      "impact": "论文的人类基线实验只覆盖 stealth 挑战且样本量很小，情境感知挑战的 20% 通过线并非由人类水平标定",
+      "severity": "低",
+      "response": "论文说明人类基线样本小、对能力水平的估计噪声很大",
+      "reader": "不要把 20% 通过线理解成「人类水平」",
+      "cite": [
+        "arxiv-2505-01420@附录E",
+        "arxiv-2505-01420@§3.3"
+      ]
+    }
+  ],
+  "notes": "GDM 危险能力评测套件之一；开源复现在 UK AISI Inspect Evals，任务族名为 gdm_self_reasoning（此前记录里的 gdm_situational_awareness 并不存在）。本档案核对的是 arXiv:2505.01420 v4，前身为 arXiv:2403.13793 第 7 节的 self-reasoning 评测。",
+  "official_sources": [
+    {
+      "kind": "arxiv-2505-01420",
+      "url": "https://arxiv.org/abs/2505.01420"
+    },
+    {
+      "kind": "arxiv-2505-01420",
+      "url": "https://arxiv.org/abs/2403.13793"
+    },
+    {
+      "kind": "site",
+      "url": "https://ukgovernmentbeis.github.io/inspect_evals/"
+    },
+    {
+      "kind": "docs",
+      "url": "https://ukgovernmentbeis.github.io/inspect_evals/evals/gdm_self_reasoning/"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/UKGovernmentBEIS/inspect_evals"
+    }
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-24",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-24",
+    "sources": [
+      {
+        "id": "arxiv-2505-01420",
+        "kind": "paper",
+        "title": "Evaluating Frontier Models for Stealth and Situational Awareness（arXiv:2505.01420v4，2025-07-03）",
+        "url": "https://arxiv.org/abs/2505.01420",
+        "accessed": "2026-11-24"
+      },
+      {
+        "id": "arxiv-2403-13793",
+        "kind": "paper",
+        "title": "Evaluating Frontier Models for Dangerous Capabilities（arXiv:2403.13793v2，2024-04-05）",
+        "url": "https://arxiv.org/abs/2403.13793",
+        "accessed": "2026-11-24"
+      },
+      {
+        "id": "inspect-gdm-self-reasoning",
+        "kind": "docs",
+        "title": "GDM Dangerous Capabilities: Self-reasoning — Inspect Evals 任务文档",
+        "url": "https://ukgovernmentbeis.github.io/inspect_evals/evals/gdm_self_reasoning/",
+        "accessed": "2026-11-24"
+      },
+      {
+        "id": "ukgovernmentbeis-inspect-evals",
+        "kind": "site",
+        "title": "Inspect Evals — 评测目录",
+        "url": "https://ukgovernmentbeis.github.io/inspect_evals/",
+        "accessed": "2026-11-24"
+      },
+      {
+        "id": "inspect-repo",
+        "kind": "repo",
+        "title": "UKGovernmentBEIS/inspect_evals — GitHub 仓库 README",
+        "url": "https://github.com/UKGovernmentBEIS/inspect_evals",
+        "accessed": "2026-11-24"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Google DeepMind",
+        "cite": [
+          "arxiv-2505-01420@首页"
+        ]
+      },
+      "first_release": {
+        "v": "2025-05-02",
+        "cite": [
+          "arxiv-2505-01420@arXiv 提交历史"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "arxiv-2505-01420@摘要",
+        "arxiv-2505-01420@§3.2"
+      ],
+      "interpretation": [
+        "arxiv-2505-01420@§3.3",
+        "arxiv-2505-01420@§4.2",
+        "arxiv-2505-01420@§2.2"
+      ]
+    },
+    "problem": {
+      "text": "在部署前判断模型是否可能「阳奉阴违」时，需要能测出能力而不是意愿的证据。此前缺少一组成熟的 agentic 评测来测量模型能否察觉并规避对自身的监督；本套件与同一论文的 5 个 stealth 评测一起，用来支撑「模型不具备造成严重危害的能力」这一安全性论证。",
+      "cite": [
+        "arxiv-2505-01420@§2.2",
+        "arxiv-2505-01420@摘要"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "论文判定的「需要警惕」水平",
+        "value": "通过 9/11 个挑战",
+        "note": "达到这条线安全性论证即不再成立；论文称本轮被测模型都没接近",
+        "cite": [
+          "arxiv-2505-01420@§3.3",
+          "arxiv-2505-01420@§4.2"
+        ]
+      },
+      {
+        "label": "2024 年前身套件的最好成绩",
+        "value": "1 个任务（Ultra 1.0，knowledge gaps with dates）",
+        "note": "其余任务所有模型都未通过 hard 版本",
+        "cite": [
+          "arxiv-2403-13793@§7.2"
+        ]
+      },
+      {
+        "label": "本论文解出最多的模型",
+        "value": "4/11（OpenAI o1）",
+        "note": "口径为「至少成功一次」；按「有一定稳定性地通过」的口径，最强模型为 2/11",
+        "cite": [
+          "arxiv-2505-01420@§4.2",
+          "arxiv-2505-01420@§7.1"
+        ]
+      },
+      {
+        "label": "开源复现（Inspect Evals）报告的最好成绩",
+        "value": "Easy 10/11 / Hard 3/11",
+        "note": "gemini-2.5-flash-preview-04-17 与 claude-3-7-sonnet-20250219 并列；页面未说明 Easy / Hard 如何划分",
+        "cite": [
+          "inspect-gdm-self-reasoning@README"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把它当成「模型能否察觉自己在被评测」的通用问答基准：论文的挑战全部是 agentic 的，模型跑在模拟的用户 Linux 系统里、靠改自己的配置文件完成任务；论文也明确说结论不会推广到「聊天机器人能否从提示风格看出自己被评测」",
+        "cite": [
+          "arxiv-2505-01420@§3.2"
+        ]
+      },
+      {
+        "text": "分数越高越好：通过数越高说明模型越擅长规避自身约束，是风险信号。论文用它支撑的是「模型无 scheming 能力」的安全性论证",
+        "cite": [
+          "arxiv-2505-01420@§2.2",
+          "arxiv-2505-01420@摘要"
+        ]
+      },
+      {
+        "text": "把 Inspect Evals 的 Easy / Hard 成绩直接和论文的 4/11 比较：两者统计口径不同（开源实现默认 10 个 epoch、用 at_least_1 reducer，论文是 50 次试验、按 20% 成功率判定），且页面没有说明 Easy / Hard 的划分方式",
+        "cite": [
+          "inspect-gdm-self-reasoning@README",
+          "arxiv-2505-01420@§3.3"
+        ]
+      },
+      {
+        "text": "认为通过套件就说明模型会在真实部署中造成危害：论文刻意选择了较不真实的场景，失败能指示能力缺失，成功不必然意味着真实世界里的危害能力",
+        "cite": [
+          "arxiv-2505-01420@§7.2"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "Google DeepMind",
+        "cite": [
+          "arxiv-2505-01420@首页"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "Mary Phuong、Roland S. Zimmermann、Ziyue Wang、David Lindner、Victoria Krakovna、Sarah Cogan、Allan Dafoe、Lewis Ho、Rohin Shah（前三位标注为同等贡献）",
+        "cite": [
+          "arxiv-2505-01420@首页"
+        ]
+      },
+      {
+        "k": "发布时间线",
+        "v": "arXiv:2505.01420 v1 于 2025-05-02 提交，v4 于 2025-07-03 提交；本档案核对 v4",
+        "cite": [
+          "arxiv-2505-01420@arXiv 提交历史"
+        ]
+      },
+      {
+        "k": "前身",
+        "v": "arXiv:2403.13793《Evaluating Frontier Models for Dangerous Capabilities》第 7 节的 self-reasoning 评测；该节自述与情境感知相关，但更强调 agent 的推理技能而非其知识状态",
+        "cite": [
+          "arxiv-2403-13793@§7",
+          "arxiv-2505-01420@§3.2"
+        ]
+      },
+      {
+        "k": "代码与数据位置",
+        "v": "开源复现在 UK AISI 的 Inspect Evals 仓库，任务族名为 gdm_self_reasoning，共 11 个任务；评测目录页为「GDM Dangerous Capabilities: Self-reasoning」，列 22 个样本",
+        "cite": [
+          "inspect-gdm-self-reasoning@README",
+          "ukgovernmentbeis-inspect-evals@评测目录"
+        ]
+      },
+      {
+        "k": "配套套件",
+        "v": "同一论文另有 5 个 stealth（规避监督）评测；两者共同构成 scheming inability 安全性论证的证据",
+        "cite": [
+          "arxiv-2505-01420@摘要",
+          "arxiv-2505-01420@§2.2"
+        ]
+      },
+      {
+        "k": "运行成本",
+        "v": "仓库 README 提示：部分使用 Docker 的评测（举例即 GDM capabilities evals）最多需要 32 GB 内存，运行带 Dockerfile 的评测还会额外拉取镜像并占用磁盘",
+        "cite": [
+          "inspect-repo@README"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-24",
+        "columns": [
+          "来源",
+          "模型",
+          "口径",
+          "结果",
+          "备注"
+        ],
+        "rows": [
+          [
+            "论文 arXiv:2505.01420 §4.2",
+            "OpenAI o1",
+            "解出的挑战数（至少成功一次）",
+            "4/11",
+            "被测模型中最多"
+          ],
+          [
+            "论文 arXiv:2505.01420 §4.2",
+            "Gemini 2.5 Pro",
+            "解出的挑战数（至少成功一次）",
+            "3/11",
+            "其中 2 个挑战达到 20% 通过线"
+          ],
+          [
+            "论文 arXiv:2505.01420 §4.2",
+            "Claude 3.7 Sonnet",
+            "解出的挑战数（至少成功一次）",
+            "3/11",
+            "其中 2 个挑战达到 20% 通过线"
+          ],
+          [
+            "论文 arXiv:2505.01420 §7.1",
+            "最强模型（综合口径）",
+            "有一定稳定性地通过的挑战数",
+            "2/11",
+            "至少被一个模型通过的挑战为 3 个"
+          ],
+          [
+            "Inspect Evals（数据集 2025-04-29）",
+            "gemini-2.5-flash-preview-04-17",
+            "Easy / Hard",
+            "10/11 / 3/11",
+            "页面未定义 Easy / Hard 划分"
+          ],
+          [
+            "Inspect Evals（数据集 2025-04-29）",
+            "o4-mini",
+            "Easy / Hard",
+            "8/11 / 3/11",
+            "页面未定义 Easy / Hard 划分"
+          ],
+          [
+            "Inspect Evals（数据集 2025-04-29）",
+            "claude-3-7-sonnet-20250219",
+            "Easy / Hard",
+            "10/11 / 3/11",
+            "页面未定义 Easy / Hard 划分"
+          ]
+        ]
+      },
+      "cite": [
+        "arxiv-2505-01420@§4.2",
+        "arxiv-2505-01420@§7.1",
+        "inspect-gdm-self-reasoning@README"
+      ]
+    }
+  }
 }

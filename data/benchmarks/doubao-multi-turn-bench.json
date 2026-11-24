@@ -1,35 +1,466 @@
 {
   "id": "doubao-multi-turn-bench",
   "name": "Doubao Multi-Turn Bench",
-  "full_name": null,
+  "full_name": "Doubao Multi-Turn Bench（豆包多轮对话基准）",
   "aliases": [],
-  "status": null,
+  "status": "active",
   "categories": [
-    "chinese"
+    "chinese",
+    "preference"
   ],
-  "summary": "豆包自研多轮对话上下文与指令评测",
-  "interpretation": "豆包自研多轮对话评测：考察日常生活咨询等场景下多轮上下文与指令的响应质量（Seed2.1 页以「稳」描述表现）；题集与判分未公开，分数为厂商自报，跨厂商可比性未知。",
-  "measures": [],
-  "does_not_measure": [],
-  "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": "vendor_internal",
-    "public_sample": null
-  },
-  "metrics": [],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [],
-  "notes": "厂商内部/未公开——Seed2.1 发布页披露",
-  "official_sources": [
+  "summary": "豆包（Seed）自研的多轮对话评测：题目取自线上用户与豆包模型的真实对话，专挑「用户对回复不满意」的轮次，让模型基于历史对话重答，再用评分细则（rubric）打分；官方只公布 Pass@1 总分，题集与判分细则未公开。",
+  "interpretation": "高分说明模型在真实多轮咨询里更接得住用户意图、维持上下文并给出可用建议。但它只覆盖日常生活咨询这一类场景，题集和判分细则都不公开，分数是厂商自报，跨厂商只能在同一张官方表内相对着看。",
+  "measures": [
     {
-      "kind": "site",
-      "url": "https://seed.bytedance.com/en/blog/seed2-1-officially-released-advancing-ai-productivity"
+      "area": "多轮上下文与指令一致性",
+      "focus": "在延长对话里维持指令一致、追踪用户意图并随上下文演化调整（模型卡引用的公开多轮评测共识）",
+      "share": "未披露",
+      "format": "以历史对话为上下文，生成用户不满意那一轮的回复",
+      "cite": [
+        "seed2-1-modelcard-pdf@§2.3",
+        "seed2-1-modelcard-pdf@§2.3.1 Doubao Multi-Turn Bench"
+      ]
+    },
+    {
+      "area": "用户偏好对齐",
+      "focus": "筛出用户对 AI 回复不满意的轮次，考察回复是否贴合真实需求与用户偏好",
+      "share": "未披露",
+      "format": "同上：单轮重答 + rubric 评分",
+      "cite": [
+        "seed2-1-modelcard-pdf@§2.3.1 Doubao Multi-Turn Bench"
+      ]
+    },
+    {
+      "area": "复杂日常咨询的实用建议",
+      "focus": "不是简单问答：背景、过往记录、行业报告散在文档、PDF、图片里，要综合推理、判断并给出可执行推荐",
+      "share": "未披露",
+      "format": "开放式长回复，按 rubric 多维打分",
+      "cite": [
+        "seed-en-blog-seed2-1-official@正文",
+        "seed2-1-modelcard-pdf@§2.3"
+      ]
     }
   ],
-  "related_benchmarks": [],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "does_not_measure": [
+    {
+      "text": "工具调用与长程任务执行（模型卡把这类能力交给 MCP-Atlas、Toolathlon、SkillsBench 与 SeedClawBench）",
+      "cite": [
+        "seed2-1-modelcard-pdf@§2.3.1"
+      ]
+    },
+    {
+      "text": "知识与学科推理（官网模型卡网页版另有一张 KINA、SuperGPQA、BeyondAIME 等基准的成绩表，与本基准不是一回事）",
+      "cite": [
+        "seed2-1-modelcard@Evaluation Results"
+      ]
+    },
+    {
+      "text": "多模态与代码工程（题源是线上对话，模型卡未提及图片、视频或仓库级代码任务）",
+      "cite": [
+        "seed2-1-modelcard-pdf@§2.3.1 Doubao Multi-Turn Bench"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 0,
+    "splits": [
+      "未披露（模型卡未说明是否有固定测试集、是否动态更新）"
+    ],
+    "languages": [
+      "未披露"
+    ],
+    "source_type": "vendor_internal（Seed 自研，题集未公开）",
+    "public_sample": false,
+    "totals": "题量未披露（头部卡的 0 表示未公开，不是 0 题）· 语言、划分、公开样例均未说明 · 题源为线上用户与豆包模型的真实对话，只保留其中用户不满意的一小部分",
+    "cite": [
+      "seed2-1-modelcard-pdf@§2.3.1 Doubao Multi-Turn Bench"
+    ],
+    "construction": [
+      {
+        "k": "题源",
+        "text": "从线上用户与豆包模型的大规模真实交互中取材，不是人工出题。",
+        "cite": [
+          "seed2-1-modelcard-pdf@§2.3.1 Doubao Multi-Turn Bench"
+        ]
+      },
+      {
+        "k": "为什么要筛",
+        "text": "原始线上对话里闲聊、单轮提问和简单查询占多数，只有一小部分适合评多轮对话质量与用户偏好对齐。",
+        "cite": [
+          "seed2-1-modelcard-pdf@§2.3.1 Doubao Multi-Turn Bench"
+        ]
+      },
+      {
+        "k": "入选条件",
+        "text": "专门设计了筛选流水线，找出「用户对某条 AI 回复不满意」且「对话本身反映真实用户需求」的样本。",
+        "cite": [
+          "seed2-1-modelcard-pdf@§2.3.1 Doubao Multi-Turn Bench"
+        ]
+      },
+      {
+        "k": "作答形式",
+        "text": "把历史对话作为上下文，让模型回答用户不满意的那一轮；官方未说明是否限制输出长度或格式。",
+        "cite": [
+          "seed2-1-modelcard-pdf@§2.3.1 Doubao Multi-Turn Bench"
+        ]
+      },
+      {
+        "k": "判分",
+        "text": "用基于评分细则（rubric）的标准评这一轮回复；细则、裁判模型与汇总方式均未公开。",
+        "cite": [
+          "seed2-1-modelcard-pdf@§2.3.1 Doubao Multi-Turn Bench"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "pass-at-1",
+      "name": "Pass@1",
+      "direction": "越高越好",
+      "description": "Table 2 报告的唯一指标：一次生成按 rubric 打分后的成绩，以 0–100 的数表示（如 62.5、52.5）；点数如何由细则汇总官方未说明",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "seed2-1-modelcard-pdf@Table 2",
+        "seed2-1-modelcard-pdf@§2.3.1 Doubao Multi-Turn Bench"
+      ]
+    }
+  ],
+  "default_protocol": {
+    "raw": "官方口径只有一条：自动评测、Pass@1。把历史对话交给模型，只生成「用户不满意那一轮」的回复，再用 rubric 评分细则判分；裁判模型、提示词、细目和题目都不公开。",
+    "cite": [
+      "seed2-1-modelcard-pdf@Table 2",
+      "seed2-1-modelcard-pdf@§2.3.1 Doubao Multi-Turn Bench"
+    ],
+    "variants": [
+      {
+        "text": "模型卡没有分「带工具 / 无工具」或推理档位，Table 2 全表同一个口径；引用 Seed2.1 分数时要讲清是 Turbo（49.0）还是 Pro（52.5）。",
+        "cite": [
+          "seed2-1-modelcard-pdf@Table 2"
+        ]
+      },
+      {
+        "text": "同一张表里各基准的判法并不相同（例如 SeedClawBench 用 Agent-as-Judge 读执行轨迹再逐条打分），跨基准比大小要谨慎。",
+        "cite": [
+          "seed2-1-modelcard-pdf@§2.3.1"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "first-disclosed",
+      "date": "2026-06-23",
+      "label": "随 Seed2.1 发布首次公开披露：中英文发布博客只给定性描述（「表现稳定」），没有分数",
+      "cite": [
+        "seed-zh-blog-seed2-1@正文",
+        "seed-en-blog-seed2-1-official@正文"
+      ]
+    },
+    {
+      "id": "modelcard",
+      "date": "2026-06-23",
+      "label": "Seed2.1 模型卡 PDF §2.3.1 给出构建方式，Table 2 首次列出 Pass@1 分数（PDF 正文未标日期，与发布博客同日）",
+      "cite": [
+        "seed2-1-modelcard-pdf@§2.3.1 Doubao Multi-Turn Bench",
+        "seed2-1-modelcard-pdf@Table 2"
+      ]
+    },
+    {
+      "id": "verified-2026-11-24",
+      "date": "2026-11-24",
+      "label": "本次核验：官方未发布新版本，题集与判分仍未公开；网页版模型卡成绩表仍未列出本基准",
+      "cite": [
+        "seed2-1-modelcard@Evaluation Results"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "题集与判分细则不公开",
+      "impact": "外部无法复现也无法核验分数；同一批对话换一套 rubric，结论可能不同，官方也没有公布题目规模。",
+      "severity": "高",
+      "response": "模型卡只描述构建与判分方法，未发布数据集、细目或评测代码。",
+      "reader": "把分数当作厂商自报的过程指标，不要当作可复现的排行榜成绩。",
+      "cite": [
+        "seed2-1-modelcard-pdf@§2.3.1 Doubao Multi-Turn Bench"
+      ]
+    },
+    {
+      "issue": "题目分布偏向负反馈难例",
+      "impact": "入选条件要求「用户不满意」且「反映真实需求」，题目因此集中在困难轮次，不等于日常对话的平均水平。",
+      "severity": "中",
+      "response": "模型卡说明了筛选条件，但未给出筛选比例或题量。",
+      "reader": "把它读成「真实负反馈子集」上的成绩，不要外推成整体对话能力。",
+      "cite": [
+        "seed2-1-modelcard-pdf@§2.3.1 Doubao Multi-Turn Bench"
+      ]
+    },
+    {
+      "issue": "官网两处披露不一致",
+      "impact": "网页版模型卡的 Evaluation Results 表列出 xDailyBench 等基准，却没有列出本基准；本基准的分数只出现在 PDF 版模型卡的 Table 2。",
+      "severity": "中",
+      "response": "未见官方说明差异原因。",
+      "reader": "引用时以 PDF 版模型卡 Table 2 为准，并写清出处，避免被当成官网成绩表里的数。",
+      "cite": [
+        "seed2-1-modelcard@Evaluation Results",
+        "seed2-1-modelcard-pdf@Table 2"
+      ]
+    },
+    {
+      "issue": "横向比较受口径与实现影响",
+      "impact": "同一张表里混了 GPT-5.5、Claude-4.7-Opus、Gemini-3.1-Pro 等外部模型的结果，各列的脚手架、提示词与推理档位是否一致官方未说明。",
+      "severity": "中",
+      "response": "模型卡未逐列说明实现细节。",
+      "reader": "只看同一张表内的相对位置，不跨表、跨口径比大小。",
+      "cite": [
+        "seed2-1-modelcard-pdf@Table 2"
+      ]
+    }
+  ],
+  "notes": "Seed 自研，题集未公开；构建方式与 Pass@1 分数见 Seed2.1 模型卡 PDF §2.3.1 与 Table 2",
+  "official_sources": [
+    {
+      "kind": "paper",
+      "url": "https://lf3-static.bytednsdoc.com/obj/eden-cn/lapzild-tss/ljhwZthlaukjlkulzlp/seed2.1/Seed2_1_Model_Card.pdf"
+    },
+    {
+      "kind": "site",
+      "url": "https://seed.bytedance.com/seed2_1"
+    },
+    {
+      "kind": "blog",
+      "url": "https://seed.bytedance.com/en/blog/seed2-1-officially-released-advancing-ai-productivity"
+    },
+    {
+      "kind": "blog",
+      "url": "https://seed.bytedance.com/zh/blog/seed2-1-officially-released-advancing-ai-productivity"
+    }
+  ],
+  "related_benchmarks": [
+    "xdailybench",
+    "clawbench",
+    "mcp-atlas",
+    "toolathlon",
+    "skillsbench"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-24",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-24",
+    "sources": [
+      {
+        "id": "seed2-1-modelcard-pdf",
+        "kind": "paper",
+        "title": "Seed2.1 Model Card: Agentic Intelligence for Productivity（ByteDance Seed，73 页 PDF）",
+        "url": "https://lf3-static.bytednsdoc.com/obj/eden-cn/lapzild-tss/ljhwZthlaukjlkulzlp/seed2.1/Seed2_1_Model_Card.pdf",
+        "accessed": "2026-11-24"
+      },
+      {
+        "id": "seed2-1-modelcard",
+        "kind": "site",
+        "title": "Seed2.1 模型卡网页版（seed.bytedance.com/seed2_1，含 Evaluation Results 表）",
+        "url": "https://seed.bytedance.com/seed2_1",
+        "accessed": "2026-11-24"
+      },
+      {
+        "id": "seed-en-blog-seed2-1-official",
+        "kind": "blog",
+        "title": "Seed2.1 Officially Released: Advancing AI Productivity（2026-06-23）",
+        "url": "https://seed.bytedance.com/en/blog/seed2-1-officially-released-advancing-ai-productivity",
+        "accessed": "2026-11-24"
+      },
+      {
+        "id": "seed-zh-blog-seed2-1",
+        "kind": "blog",
+        "title": "Seed2.1 正式发布，深入 AI 生产力（2026-06-23）",
+        "url": "https://seed.bytedance.com/zh/blog/seed2-1-officially-released-advancing-ai-productivity",
+        "accessed": "2026-11-24"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "字节跳动 Seed（Bytedance Seed）",
+        "cite": [
+          "seed2-1-modelcard-pdf@标题"
+        ]
+      },
+      "first_release": {
+        "v": "2026-06-23（随 Seed2.1 发布首次公开披露；题集与细则至今未公开）",
+        "cite": [
+          "seed-zh-blog-seed2-1@正文",
+          "seed-en-blog-seed2-1-official@正文"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "seed2-1-modelcard-pdf@§2.3.1 Doubao Multi-Turn Bench"
+      ],
+      "interpretation": [
+        "seed2-1-modelcard-pdf@Table 2",
+        "seed2-1-modelcard-pdf@§2.3.1"
+      ]
+    },
+    "problem": {
+      "text": "线上用户的问题很少是简单问答：咨询背景、过往记录、行业报告散在文档、PDF、图片等不同格式里，要综合推理、判断并给出建议；官方称因此更看重真实工作流里的表现，而不是静态基准分数。",
+      "cite": [
+        "seed-en-blog-seed2-1-official@正文",
+        "seed-zh-blog-seed2-1@正文"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "官方表内最低",
+        "value": "49.0",
+        "note": "Seed2.1-Turbo；同表 Claude-4.7-Opus 49.8。官方未给随机基线与人类基线。",
+        "cite": [
+          "seed2-1-modelcard-pdf@Table 2"
+        ]
+      },
+      {
+        "label": "Seed2.1-Pro（发布方主推档）",
+        "value": "52.5",
+        "note": "模型卡称它「匹配或超过表中所列 Gemini-3.1-Pro 与 Claude-4.7-Opus 的结果」。",
+        "cite": [
+          "seed2-1-modelcard-pdf@§2.3.2"
+        ]
+      },
+      {
+        "label": "官方表内最高",
+        "value": "62.5",
+        "note": "GPT-5.5。本基准没有可对照的公开基线，高低只在这张表内部有意义。",
+        "cite": [
+          "seed2-1-modelcard-pdf@Table 2"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 52.5 理解成「超过 GPT-5.5」——同表最高是 GPT-5.5 的 62.5，官方只声称匹配或超过所列的 Gemini-3.1-Pro 与 Claude-4.7-Opus。",
+        "cite": [
+          "seed2-1-modelcard-pdf@§2.3.2",
+          "seed2-1-modelcard-pdf@Table 2"
+        ]
+      },
+      {
+        "text": "把发布博客里的「表现稳定」读成分数高——博客只给定性描述，具体分数在模型卡 PDF 的 Table 2 里，且最高分不是 Seed 自家模型。",
+        "cite": [
+          "seed-zh-blog-seed2-1@正文",
+          "seed2-1-modelcard-pdf@Table 2"
+        ]
+      },
+      {
+        "text": "拿本基准 Seed2.1-Pro 的 52.5 和它在 xDailyBench 上的 61.0 直接比大小——两个基准测的东西不同（从真实负反馈轮次重答 vs 覆盖日常、学习、白领等 30 多个垂直场景的开放咨询），官方也没说是否同口径。",
+        "cite": [
+          "seed2-1-modelcard-pdf@§2.3.2",
+          "seed2-1-modelcard-pdf@§2.3.1",
+          "seed2-1-modelcard-pdf@Table 2"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "字节跳动 Seed（Bytedance Seed）",
+        "cite": [
+          "seed2-1-modelcard-pdf@标题"
+        ]
+      },
+      {
+        "k": "首次公开",
+        "v": "2026-06-23 随 Seed2.1 发布在中英文博客披露；构建方式与 Pass@1 分数见模型卡 PDF §2.3.1 与 Table 2",
+        "cite": [
+          "seed-en-blog-seed2-1-official@正文",
+          "seed2-1-modelcard-pdf@§2.3.1 Doubao Multi-Turn Bench"
+        ]
+      },
+      {
+        "k": "评测范围",
+        "v": "模型卡把「复杂日常生活咨询」拆成两块：对话式日常咨询（xDailyBench 与本基准）与工具增强协助（MCP-Atlas、Toolathlon、SkillsBench、SeedClawBench）",
+        "cite": [
+          "seed2-1-modelcard-pdf@§2.3.1"
+        ]
+      },
+      {
+        "k": "同类自研基准的披露程度",
+        "v": "同一节里的 xDailyBench 说明覆盖 30 多个垂直场景并采用 rubric 多维评分，SeedClawBench 说明为 100 题、用 Agent-as-Judge；两者都给了规模，本基准没有",
+        "cite": [
+          "seed2-1-modelcard-pdf@§2.3.1"
+        ]
+      },
+      {
+        "k": "官网两处不一致",
+        "v": "网页版模型卡的 Evaluation Results 表未列出本基准（列了 xDailyBench 等），分数只出现在 PDF 版模型卡的 Table 2",
+        "cite": [
+          "seed2-1-modelcard@Evaluation Results",
+          "seed2-1-modelcard-pdf@Table 2"
+        ]
+      },
+      {
+        "k": "命名差异",
+        "v": "英文发布博客写作 Toolathlon and ClawBench，中文博客与模型卡均作 SeedClawBench；本页统一用 SeedClawBench",
+        "cite": [
+          "seed-en-blog-seed2-1-official@正文",
+          "seed-zh-blog-seed2-1@正文",
+          "seed2-1-modelcard-pdf@§2.3.1"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-24",
+        "columns": [
+          "来源",
+          "模型",
+          "Pass@1",
+          "口径"
+        ],
+        "rows": [
+          [
+            "模型卡 PDF Table 2",
+            "GPT-5.5",
+            "62.5",
+            "自动评测，Pass@1"
+          ],
+          [
+            "模型卡 PDF Table 2",
+            "Gemini-3.1-Pro",
+            "52.0",
+            "同上"
+          ],
+          [
+            "模型卡 PDF Table 2",
+            "Seed2.1-Pro",
+            "52.5",
+            "同上"
+          ],
+          [
+            "模型卡 PDF Table 2",
+            "Claude-4.7-Opus",
+            "49.8",
+            "同上"
+          ],
+          [
+            "模型卡 PDF Table 2",
+            "Seed2.1-Turbo",
+            "49.0",
+            "同上"
+          ]
+        ]
+      },
+      "cite": [
+        "seed2-1-modelcard-pdf@Table 2"
+      ]
+    }
+  }
 }

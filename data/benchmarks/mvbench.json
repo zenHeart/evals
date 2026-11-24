@@ -1,39 +1,657 @@
 {
   "id": "mvbench",
   "name": "MVBench",
-  "full_name": null,
+  "full_name": "MVBench: A Comprehensive Multi-modal Video Understanding Benchmark（多模态视频理解综合基准）",
   "aliases": [],
-  "status": null,
+  "status": "active",
   "categories": [
     "multimodal"
   ],
-  "summary": "OpenGVLab 20 项时序视频任务基准",
-  "interpretation": "20 项时序视频任务的多选基准（单帧答不了），准确率口径；专测时间理解，历史模型在此明显低于其图像榜成绩，读分时与图像能力分开设。",
-  "measures": [],
-  "does_not_measure": [],
+  "summary": "MVBench 是上海人工智能实验室 OpenGVLab 团队做的视频理解基准：先把以往基准里的 9 类空间任务（单张截图就能答）用「静态任务 + 动态目标」的写法改写成 20 类时序任务（必须看整段视频才能答），每类 200 道单选题，共 4,000 题，只按准确率打分。前端类比：相当于把「这张截图里有什么」的单元测试，换成「这段录像里事情按什么顺序发生」的集成测试。",
+  "interpretation": "高分说明模型能顺着时间轴组织信息（动作先后、数量变化、场景切换、反事实推理），而不是只会描述关键帧。论文给了一条关键对照线：VideoChat2text 喂的是空视频、只靠语言能力猜，也有 34.7%，所以低于它的分数基本等于没有真正用上视频。反过来，这个基准只考时序理解，不考长视频摘要、视频对话和生成，附录 A 的实验还表明它主要依赖时序理解而非空间理解能力，不能拿它当通用视频能力总分。",
+  "measures": [
+    {
+      "area": "动作理解（Action）",
+      "focus": "动作先后、下一步预测、反义词动作、细粒度动作、意外动作 5 项；示例题（Action Sequence，源自 STAR）：「What happened after the person took the food?」",
+      "share": "5 项任务 / 1,000 题（每项 200 题）",
+      "format": "单选题，3–5 个选项，选项用括号包在问题里",
+      "cite": [
+        "arxiv-2311-17005@Table 1",
+        "arxiv-2311-17005@§3.1",
+        "arxiv-2311-17005@§3.2"
+      ]
+    },
+    {
+      "area": "物体理解（Object）",
+      "focus": "物体是否存在、物体交互、物体位置重排 3 项；示例题（Object Existence，源自 CLEVRER）：「Are there any moving green objects when the video ends?」选项含 not sure / yes / no",
+      "share": "3 项任务 / 600 题（每项 200 题）",
+      "format": "单选题，3–5 个选项，选项用括号包在问题里",
+      "cite": [
+        "arxiv-2311-17005@Table 1",
+        "arxiv-2311-17005@§3.2"
+      ]
+    },
+    {
+      "area": "位置与轨迹（Position）",
+      "focus": "物体移动方向、动作发生在视频哪一段 2 项；示例题（Moving Direction，源自 CLEVRER）：「What direction is the cyan sphere moving within the video?」",
+      "share": "2 项任务 / 400 题（每项 200 题）",
+      "format": "单选题，3–5 个选项，选项用括号包在问题里",
+      "cite": [
+        "arxiv-2311-17005@Table 1",
+        "arxiv-2311-17005@附录 E"
+      ]
+    },
+    {
+      "area": "场景切换（Scene）",
+      "focus": "判断视频中场景从一处转到另一处；示例题（Scene Transition，源自 MoVQA）：「What's the right option for how the scenes in the video change?」",
+      "share": "1 项任务 / 200 题",
+      "format": "单选题，3–5 个选项，选项用括号包在问题里",
+      "cite": [
+        "arxiv-2311-17005@Table 1",
+        "arxiv-2311-17005@§3.2"
+      ]
+    },
+    {
+      "area": "计数（Count）",
+      "focus": "数动作发生次数、数离场物体数 2 项；示例题（Action Count，源自 Perception Test）：「How many times did the person launch objects on the table?」",
+      "share": "2 项任务 / 400 题（每项 200 题）",
+      "format": "单选题，3–5 个选项，选项用括号包在问题里",
+      "cite": [
+        "arxiv-2311-17005@Table 1",
+        "arxiv-2311-17005@附录 E"
+      ]
+    },
+    {
+      "area": "属性变化（Attribute）",
+      "focus": "运动物体的属性、设备状态是否改变 2 项；示例题（State Change，源自 Perception Test）：「Is the lighting device on at any point?」",
+      "share": "2 项任务 / 400 题（每项 200 题）",
+      "format": "单选题，3–5 个选项，选项用括号包在问题里",
+      "cite": [
+        "arxiv-2311-17005@Table 1",
+        "arxiv-2311-17005@§3.2"
+      ]
+    },
+    {
+      "area": "姿态（Pose）",
+      "focus": "识别人体做的具体动作姿态；示例题（Fine-grained Pose，源自 NTU RGB+D）：「What is the pose performed by the person in the video?」",
+      "share": "1 项任务 / 200 题",
+      "format": "单选题，3–5 个选项，选项用括号包在问题里",
+      "cite": [
+        "arxiv-2311-17005@Table 1"
+      ]
+    },
+    {
+      "area": "角色顺序（Character）",
+      "focus": "记住并排序视频中出现的角色；示例题（Character Order，源自 Perception Test）：「What letter did the person write first on the paper?」",
+      "share": "1 项任务 / 200 题",
+      "format": "单选题，3–5 个选项，选项用括号包在问题里",
+      "cite": [
+        "arxiv-2311-17005@Table 1",
+        "arxiv-2311-17005@§3.2"
+      ]
+    },
+    {
+      "area": "认知推理（Cognition）",
+      "focus": "第一人称导航下一步、剧集式动机推理、反事实推断 3 项；示例题（Counterfactual Inference，源自 CLEVRER）：「Which of the following will happen if the cylinder is removed?」",
+      "share": "3 项任务 / 600 题（每项 200 题）",
+      "format": "单选题，3–5 个选项，选项用括号包在问题里",
+      "cite": [
+        "arxiv-2311-17005@Table 1",
+        "arxiv-2311-17005@§3.1"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "开放式生成与视频描述：论文明确选用选择题而不是开放式问答，理由是判分可复现和公平，因此这个基准不衡量视频 captioning 或对话生成质量。",
+      "cite": [
+        "arxiv-2311-17005@§3.2",
+        "arxiv-2311-17005@§3.3"
+      ]
+    },
+    {
+      "text": "细粒度空间识别：附录 A 的实验显示把测试分辨率从 224 提到 384 反而掉分（49.9，↓0.7），加帧数才涨分，作者据此认为 MVBench 主要依赖时序理解而非空间理解能力。",
+      "cite": [
+        "arxiv-2311-17005@附录 A",
+        "arxiv-2311-17005@Table 12"
+      ]
+    },
+    {
+      "text": "语音与字幕信息：附录 E 显示 TVQA 推理任务在加入语音字幕后成绩明显提升，官方据此提示仅靠视觉信息可能不够；MVBench 本身不含音轨。",
+      "cite": [
+        "arxiv-2311-17005@附录 E"
+      ]
+    }
+  ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
+    "sample_count": 4000,
+    "splits": [
+      "train（唯一 split，20 个子集各 200 行）"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "public-annotation-derived（11 个公开视频基准的既有标注自动转换）",
+    "public_sample": true,
+    "totals": "4,000 道单选题 = 20 个时序任务 × 200 题 · 每题 3–5 个选项 · 单一 train split · 英文 · 视频文件需按原数据集许可另下（HF 显示约 17.3 GB）",
+    "cite": [
+      "hf-dataset",
+      "arxiv-2311-17005@§3.2",
+      "arxiv-2311-17005@Table 1"
+    ],
+    "construction": [
+      {
+        "k": "选源数据",
+        "text": "从 11 个公开视频基准里挑视频（STAR、PAXION、Moments in Time V1、FunQA、CLEVRER、Perception Test、Charades-STA、MoVQA、NTU RGB+D、VLN-CE、TVQA），覆盖第一/第三人称、室内/室外等不同场景，时长集中在 5s–35s 的中间档。",
+        "cite": [
+          "arxiv-2311-17005@§3.2",
+          "arxiv-2311-17005@Table 1"
+        ]
+      },
+      {
+        "k": "静态任务改动态目标",
+        "text": "先把以往基准里的 9 类空间理解任务归纳出来，再用「静态任务配动态目标」的简洁写法把它们改写成 20 类时序任务，使这些题无法靠单帧作答。",
+        "cite": [
+          "arxiv-2311-17005@§3.1",
+          "arxiv-2311-17005@Abstract"
+        ]
+      },
+      {
+        "k": "LLM 生成问题",
+        "text": "用 ChatGPT 按任务定义为每个视频生成问题，并把视频既有的标注自动转换成选择题格式，人工干预很少。",
+        "cite": [
+          "arxiv-2311-17005@§3.2"
+        ]
+      },
+      {
+        "k": "选项与长度控制",
+        "text": "每个时序任务产出 200 道题；从候选答案里随机抽 3–5 个选项并打乱顺序，再用 LLM 保证同一题各选项长度相近、合理。",
+        "cite": [
+          "arxiv-2311-17005@§3.2"
+        ]
+      },
+      {
+        "k": "为什么用选择题",
+        "text": "论文选用选择题而非开放式问答，目的是判分可复现、评测公平；这些源基准自带标准答案，因此不需要让大模型当裁判。",
+        "cite": [
+          "arxiv-2311-17005@§3.2",
+          "arxiv-2311-17005@§1"
+        ]
+      }
+    ]
   },
-  "metrics": [],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [],
-  "notes": "GLM 引用；CVPR 2024",
+  "metrics": [
+    {
+      "id": "accuracy",
+      "name": "准确率（Accuracy）",
+      "direction": "越高越好",
+      "description": "选中选项与标准答案一致的题目占比；论文表 2 的 Avg 列是 20 个时序任务的汇总准确率，本页分数阶梯都引用这一列",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2311-17005@Table 2"
+      ]
+    },
+    {
+      "id": "option-extraction-rate",
+      "name": "选项抽取命中率",
+      "direction": "越高越好",
+      "description": "判分脚本能从模型回答里按规则抽出选项的比例，衡量评测环节自身的可靠性；论文用固定答题提示词把这项做到 100%",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2311-17005@§3.3",
+        "arxiv-2311-17005@Table 9"
+      ]
+    }
+  ],
+  "default_protocol": {
+    "raw": "把选项用括号包进问题里，并用固定答题提示词「Best Option: (」让模型直接续出选项字母，判分脚本按这个格式抽选项（论文称选项抽取率 100%），全程不需要模型当裁判。默认评测输入 16 帧视频。",
+    "cite": [
+      "arxiv-2311-17005@§3.3",
+      "arxiv-2311-17005@§5 实现细节"
+    ],
+    "variants": [
+      {
+        "text": "答题提示词不同则分数不可比：直接从回答里匹配选项（论文记作 ∅）时 VideoChat 命中率只有 78.2%、平均 22.8；换成「Best option: (」后命中率 100%、平均 35.5（↑12.7）。",
+        "cite": [
+          "arxiv-2311-17005@Table 9"
+        ]
+      },
+      {
+        "text": "帧数与分辨率不同则分数不可比：同样按 8×224×224 训练，测试用 8×384×384 得 49.9（↓0.7），加到 32×224×224 得 51.1（↑0.5），64 帧回落到 51.0；论文结论是提分辨率有害、加帧数更好。",
+        "cite": [
+          "arxiv-2311-17005@Table 12",
+          "arxiv-2311-17005@附录 A"
+        ]
+      },
+      {
+        "text": "是否加思维链：在提示词里加「Let's think step by step. Only give the best option.」会把 VideoChat2 从 51.1 拉到 50.5（↓0.6），论文明确说这类策略有负面效果。",
+        "cite": [
+          "arxiv-2311-17005@Table 14"
+        ]
+      },
+      {
+        "text": "模型输入帧数不统一：论文表 2 里图像类模型取 4 帧，视频类模型取 16 帧（VideoChatGPT 用 100 帧），GPT-4V 用 16 帧且分辨率 512×512，其余为 224×224。",
+        "cite": [
+          "arxiv-2311-17005@Table 2 注"
+        ]
+      },
+      {
+        "text": "题库自身有过一次小修订：官方在发布后替换了约 30 道重复 QA，官方称对结果影响约 0.5%，2023-11 之后复现的分数可能与论文表 2 有这点差异。",
+        "cite": [
+          "github-ask-anything@News"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2023-11-28",
+      "label": "论文与数据集公开（HF 论文条目标注 Published Nov 28, 2023；arXiv 编号 2311.17005）",
+      "cite": [
+        "hf-dataset",
+        "arxiv-2311-17005"
+      ]
+    },
+    {
+      "id": "repo-release",
+      "date": "2023-11-29",
+      "label": "官方仓库 News：VideoChat2 与 MVBench 发布，2M 指令数据一并放出",
+      "cite": [
+        "github-ask-anything@News",
+        "github-ask-anything@README"
+      ]
+    },
+    {
+      "id": "cvpr-2024",
+      "date": "2024-02-27",
+      "label": "官方仓库 News：MVBench 被 CVPR 2024 接收",
+      "cite": [
+        "github-ask-anything@News"
+      ]
+    },
+    {
+      "id": "highlight",
+      "date": "2024-04-05",
+      "label": "官方仓库 News：MVBench 入选 Poster (Highlight)",
+      "cite": [
+        "github-ask-anything@News"
+      ]
+    },
+    {
+      "id": "mistral",
+      "date": "2024-05-22",
+      "label": "官方仓库 News：发布 VideoChat2_mistral，MVBench 60.4%（论文表 2 最好成绩）",
+      "cite": [
+        "github-ask-anything@News",
+        "arxiv-2311-17005@Table 2"
+      ]
+    },
+    {
+      "id": "v4",
+      "date": "2024-05-23",
+      "label": "arXiv v4（本页核对所用版本）",
+      "cite": [
+        "arxiv-2311-17005@v4 首页"
+      ]
+    },
+    {
+      "id": "hf-update",
+      "date": "2024-10-18",
+      "label": "HF 数据集卡 Important Update：因 NTU RGB+D 许可，320 个视频需手动下载",
+      "cite": [
+        "hf-dataset@Important Update"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "与训练数据同源（污染风险）",
+      "impact": "论文附录 B 承认指令数据与 MVBench 之间存在 source gap：CLEVRER 同时出现在指令数据和 MVBench 的 Moving Attribute / Counterfactual Inference 任务里，Action Antonym 的视频来自 SthSthV2。表 13 显示去掉 CLEVRER 后 VideoChat2 平均分从 51.1 掉到 49.3（↓1.8），去掉 SthSthV2 只掉 0.1。",
+      "severity": "高",
+      "response": "作者用「去掉对应数据重训」的方式量化了影响，并称整体 gap 很小；未发布严格 out-domain 的版本。",
+      "reader": "看到 51.1 要记得它含约 1.8 分的同源收益；跨论文比较时优先看去掉污染数据的版本或自己的复现。",
+      "cite": [
+        "arxiv-2311-17005@附录 B",
+        "arxiv-2311-17005@Table 13"
+      ]
+    },
+    {
+      "issue": "任务间难度极不均衡",
+      "impact": "附录 E 指出位置类任务 (i)(j) 上所有模型都不及格、表现接近随机猜测；VideoChat2 也只在 15 个任务上排名第一，平均分因此被位置、计数、角色类任务拉低。",
+      "severity": "中",
+      "response": "论文按任务给出分项榜单（附录 E 表 20，截至 2023/11/28），并提示看分项而非只看平均。",
+      "reader": "平均分会掩盖位置类任务接近随机的事实，比较模型时看分项。",
+      "cite": [
+        "arxiv-2311-17005@附录 E"
+      ]
+    },
+    {
+      "issue": "官方榜单不可用",
+      "impact": "论文表 2 注把完整结果指向 Hugging Face Space OpenGVLab/MVBench_Leaderboard，但 HF 数据集卡写明 Online leaderboard is under construction 且 standings 为空；该 Space 是动态页面，本次核验未取得可引用的静态内容，因此本站无法给出官方当前最高分。",
+      "severity": "中",
+      "response": "未见官方回应；论文附录 E 的表 20 只到 2023/11/28。",
+      "reader": "不要引用「MVBench 官方榜首」这类说法；要比就指定论文版本或自建复现，并写清帧数、分辨率与提示词。",
+      "cite": [
+        "arxiv-2311-17005@Table 2 注",
+        "hf-dataset@Dataset card",
+        "arxiv-2311-17005@附录 E"
+      ]
+    },
+    {
+      "issue": "题库自身有过修订",
+      "impact": "官方在发布后替换了约 30 道重复 QA，官方称对结果影响约 0.5%；不同时间点拿到的题库不完全一致。",
+      "severity": "低",
+      "response": "已在官方仓库 News 中说明替换规模与影响估计。",
+      "reader": "复现结果与论文表 2 有约 0.5 分差异时，先核对下载时间与题库版本。",
+      "cite": [
+        "github-ask-anything@News"
+      ]
+    },
+    {
+      "issue": "视觉信息可能不足",
+      "impact": "附录 E 显示 TVQA 推理任务在加入语音字幕后成绩明显提升，官方据此提示仅靠视觉信息可能不够；纯视觉模型在该类任务上的低分不一定代表时序推理差。",
+      "severity": "低",
+      "response": "未见官方回应；MVBench 本身不含音轨。",
+      "reader": "解读 TVQA 类任务的低分时，把「缺音频信息」和「时序推理弱」分开看。",
+      "cite": [
+        "arxiv-2311-17005@附录 E"
+      ]
+    }
+  ],
+  "notes": "视频时序理解常用基准；CVPR 2024 Highlight",
   "official_sources": [
     {
       "kind": "paper",
       "url": "https://arxiv.org/abs/2311.17005"
     },
     {
-      "kind": "site",
-      "url": "https://z.ai/blog/glm-5.3-flash"
+      "kind": "repo",
+      "url": "https://github.com/OpenGVLab/Ask-Anything"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/OpenGVLab/MVBench"
     }
   ],
-  "related_benchmarks": [],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "related_benchmarks": [
+    "tempcompass",
+    "video-mme",
+    "perception-bench",
+    "egoschema",
+    "mlvu",
+    "longvideobench"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-25",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-25",
+    "sources": [
+      {
+        "id": "arxiv-2311-17005",
+        "kind": "paper",
+        "title": "MVBench: A Comprehensive Multi-modal Video Understanding Benchmark（arXiv:2311.17005，v4，2024-05-23）",
+        "url": "https://arxiv.org/abs/2311.17005",
+        "accessed": "2026-11-25"
+      },
+      {
+        "id": "github-ask-anything",
+        "kind": "repo",
+        "title": "OpenGVLab/Ask-Anything（VideoChat2 与 MVBench 代码、README 与 News）",
+        "url": "https://github.com/OpenGVLab/Ask-Anything",
+        "accessed": "2026-11-25"
+      },
+      {
+        "id": "hf-dataset",
+        "kind": "dataset",
+        "title": "OpenGVLab/MVBench（Hugging Face 数据集卡）",
+        "url": "https://huggingface.co/datasets/OpenGVLab/MVBench",
+        "accessed": "2026-11-25"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "OpenGVLab / 上海人工智能实验室（论文署名机构还包括中科院深圳先进技术研究院、香港大学、复旦大学、南京大学等）",
+        "cite": [
+          "arxiv-2311-17005@作者署名",
+          "arxiv-2311-17005@Abstract"
+        ]
+      },
+      "first_release": {
+        "v": "2023-11-28（HF 论文条目 Published Nov 28, 2023；官方仓库次日发布）",
+        "cite": [
+          "hf-dataset",
+          "github-ask-anything@News"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "arxiv-2311-17005@§3.1",
+        "arxiv-2311-17005@§3.2",
+        "hf-dataset"
+      ],
+      "interpretation": [
+        "arxiv-2311-17005@Table 2 注",
+        "arxiv-2311-17005@Abstract",
+        "arxiv-2311-17005@附录 A"
+      ]
+    },
+    "problem": {
+      "text": "此前的视频基准多偏重检索式问答和对话生成，且常用大模型当裁判打分，评分会被裁判自身的偏好带偏；MVBench 想复用公开数据集里已带标准答案的视频标注，用「静态任务改动态目标」的办法把时序理解从视频描述能力里单独拆出来，做成可自动判分的量化基准。",
+      "cite": [
+        "arxiv-2311-17005@§1",
+        "arxiv-2311-17005@§3.1",
+        "arxiv-2311-17005@§3.2"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机猜测基线",
+        "value": "27.3%",
+        "note": "论文表 2 的 Random 行；各任务选项数 3–5 个不等，随机基线落在 20.0%–33.3% 之间。",
+        "cite": [
+          "arxiv-2311-17005@Table 2",
+          "arxiv-2311-17005@Table 2 注",
+          "arxiv-2311-17005@§3.2"
+        ]
+      },
+      {
+        "label": "不看视频、只靠语言能力",
+        "value": "34.7%",
+        "note": "VideoChat2text：喂空视频、不做 LoRA 微调，仅靠 LLM 的应答能力；低于这条线的成绩基本等于没有真正使用视频信息。",
+        "cite": [
+          "arxiv-2311-17005@Table 2 注",
+          "arxiv-2311-17005@§5.1"
+        ]
+      },
+      {
+        "label": "论文发布时最好",
+        "value": "60.4%",
+        "note": "VideoChat2（Mistral-7B）；同期 GPT-4V 43.5、VideoChat（Vicuna-7B）35.5、LLaVA 36.0，论文称自家基线超出领先模型 15% 以上、比 GPT-4V 高 16.9%。",
+        "cite": [
+          "arxiv-2311-17005@Table 2",
+          "arxiv-2311-17005@§1"
+        ]
+      },
+      {
+        "label": "官方榜单当前最高",
+        "value": "论文未给出",
+        "note": "论文表 2 注指向 Hugging Face Space OpenGVLab/MVBench_Leaderboard，但 HF 数据集卡写明 Online leaderboard is under construction、standings 为空；该 Space 为动态页面，本次核验未取得可引用内容，本站不推算。",
+        "cite": [
+          "arxiv-2311-17005@Table 2 注",
+          "hf-dataset@Dataset card"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      },
+      {
+        "label": "与训练数据同源的参考线",
+        "value": "49.3%（去掉 CLEVRER 指令数据后，↓1.8）",
+        "note": "这条线衡量「同源数据」能带来多少收益，不是分数上限；去掉 SthSthV2 只掉 0.1（51.0）。",
+        "cite": [
+          "arxiv-2311-17005@Table 13",
+          "arxiv-2311-17005@附录 B"
+        ]
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 MVBench 平均分当成通用视频能力总分——附录 A 的实验表明提分辨率反而掉分、加帧数才涨分，作者据此认为它主要依赖时序理解而非空间理解能力。",
+        "cite": [
+          "arxiv-2311-17005@附录 A",
+          "arxiv-2311-17005@Table 12"
+        ]
+      },
+      {
+        "text": "把 51.1 当成干净分数——指令数据里的 CLEVRER 与 MVBench 的 Moving Attribute / Counterfactual Inference 任务同源，去掉后平均分掉 1.8。",
+        "cite": [
+          "arxiv-2311-17005@附录 B",
+          "arxiv-2311-17005@Table 13"
+        ]
+      },
+      {
+        "text": "看到分数高于 34.7 就断定模型「看懂视频」——34.7 是喂空视频、只靠语言能力的对照线，低于它才基本等于没用视频信息。",
+        "cite": [
+          "arxiv-2311-17005@Table 2 注",
+          "arxiv-2311-17005@§5.1"
+        ]
+      },
+      {
+        "text": "把带「Let's think step by step」的分数和论文 51.1 直接比——同一配置下这句话会让成绩掉 0.6（50.5）。",
+        "cite": [
+          "arxiv-2311-17005@Table 14"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "OpenGVLab / 上海人工智能实验室；论文署名机构还包括中科院深圳先进技术研究院、中国科学院大学、香港大学、复旦大学、南京大学软件新技术国家重点实验室",
+        "cite": [
+          "arxiv-2311-17005@作者署名"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "Kunchang Li、Yali Wang、Yinan He、Yizhuo Li、Yi Wang、Yi Liu、Zun Wang、Jilan Xu、Guo Chen、Ping Luo、Limin Wang、Yu Qiao",
+        "cite": [
+          "arxiv-2311-17005@作者署名"
+        ]
+      },
+      {
+        "k": "发表场合",
+        "v": "CVPR 2024，Poster (Highlight)",
+        "cite": [
+          "github-ask-anything@News"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2023-11-28 论文与数据集公开 → 2023-11-29 仓库发布 → 2024-02-27 CVPR 接收 → 2024-04-05 入选 Highlight → 2024-05-22 Mistral 版 60.4% → 2024-05-23 arXiv v4 → 2024-10-18 HF 数据集更新（320 个 NTU RGB+D 视频需手动下载）",
+        "cite": [
+          "hf-dataset",
+          "github-ask-anything@News",
+          "arxiv-2311-17005@v4 首页",
+          "hf-dataset@Important Update"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "数据集在 Hugging Face（OpenGVLab/MVBench，4,000 行，约 17.3 GB，20 个子集各 200 行，单一 train split），代码与评测笔记本在 GitHub（OpenGVLab/Ask-Anything），完整结果榜指向 Hugging Face Space OpenGVLab/MVBench_Leaderboard",
+        "cite": [
+          "hf-dataset",
+          "github-ask-anything@README",
+          "arxiv-2311-17005@Table 2 注"
+        ]
+      },
+      {
+        "k": "配套基线与指令数据",
+        "v": "论文同时发布 VideoChat2 基线（Vicuna-7B / Mistral-7B）；其指令数据共 2M 样本、来自 34 个数据集、6 个类别，这部分数据也是污染讨论的对象",
+        "cite": [
+          "arxiv-2311-17005@Figure 3",
+          "github-ask-anything@README",
+          "arxiv-2311-17005@附录 B"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-25",
+        "columns": [
+          "来源",
+          "模型",
+          "LLM",
+          "输入口径",
+          "Avg 准确率"
+        ],
+        "rows": [
+          [
+            "论文 Table 2",
+            "Random",
+            null,
+            "随机猜测",
+            "27.3"
+          ],
+          [
+            "论文 Table 2",
+            "VideoChat2text",
+            "Vicuna-7B",
+            "空视频，无 LoRA 微调",
+            "34.7"
+          ],
+          [
+            "论文 Table 2",
+            "VideoChat",
+            "Vicuna-7B",
+            "16 帧，224×224",
+            "35.5"
+          ],
+          [
+            "论文 Table 2",
+            "LLaVA",
+            "Vicuna-7B",
+            "4 帧（图像类模型口径）",
+            "36.0"
+          ],
+          [
+            "论文 Table 2",
+            "GPT-4V",
+            "GPT-4",
+            "16 帧，512×512",
+            "43.5"
+          ],
+          [
+            "论文 Table 2",
+            "VideoChat2",
+            "Vicuna-7B",
+            "16 帧，224×224",
+            "51.1"
+          ],
+          [
+            "论文 Table 2",
+            "VideoChat2",
+            "Mistral-7B",
+            "16 帧，224×224",
+            "60.4"
+          ]
+        ]
+      },
+      "cite": [
+        "arxiv-2311-17005@Table 2",
+        "arxiv-2311-17005@Table 2 注"
+      ]
+    }
+  }
 }

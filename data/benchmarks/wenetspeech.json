@@ -4,81 +4,661 @@
   "full_name": "WenetSpeech: A 10000+ Hours Multi-domain Mandarin Corpus for Speech Recognition",
   "aliases": [
     "WenetSpeech test-net",
-    "WenetSpeech test-meeting"
+    "WenetSpeech test-meeting",
+    "SLR121"
   ],
-  "status": null,
+  "status": "active",
   "categories": [
     "multimodal",
     "chinese"
   ],
-  "summary": "10,000+ 小时高质量标注 + 2,400+ 小时弱标注的多域普通话语音语料（YouTube/播客），test-net / test-meeting 是中文 ASR 常用 WER 基线",
-  "interpretation": "中文 ASR 的『规模基准』：多域真实场景（含网络视频与会议），WER 越低越好。Seed 2.0 页 ASR 组 Lite 版 test-net 4.47 / test-meeting 5.31，同表 Gemini-3.1-Pro 9.52 / 12.80。",
+  "summary": "WenetSpeech 是一个 22435 小时的多域普通话语料：10005 小时强标签（置信度 ≥ 0.95）、2478 小时弱标签（0.60–0.95）、9952 小时无标签（< 0.60）。音频全部来自 YouTube 与播客，YouTube 用 OCR 字幕管线转写、播客用第三方商用 ASR 转写，再经过一个端到端标签错误检测方法过滤；另配 DEV 20 h / TEST_NET 23 h / TEST_MEETING 15 h 三个由专业标注人工核查过的评测集。",
+  "interpretation": "它补的是「开源中文语音数据规模与域多样性都不足」这个缺口：论文用 Kaldi / ESPNet / WeNet 三个工具包在训练子集 L 上报基线，DEV 8.88%–9.70%、TEST_NET 8.90%–12.83%、TEST_MEETING 15.59%–24.72%（MER%），而在安静朗读式的 AIShell-1 上只有 3.90%–5.41%。读这三个数要注意三件事：论文口径是 MER（中文字符和英文单词都算作编辑距离的 token），不是只数中文字符的 CER；这些数字只是各工具包的参考基线，作者明说可能不代表最先进水平；TEST_NET 是与训练数据匹配的互联网测试集，TEST_MEETING 是远场自发会议的不匹配集，两者不能横向比。",
   "measures": [
-    "多域普通话语音识别（词错率）",
-    "真实场景（网络视频、会议）鲁棒性"
+    {
+      "area": "DEV（训练内交叉验证集）",
+      "focus": "20 小时互联网语音，专门给训练流程里需要交叉验证集的语音工具用",
+      "share": "20 h",
+      "format": "音频 + 人工转写文本（三个评测集均经专业标注核查）",
+      "cite": [
+        "arxiv-2110-03370@Table 4",
+        "repo-wenetspeech@Evaluation Sets DEV/TEST_NET"
+      ]
+    },
+    {
+      "area": "TEST_NET（匹配测试集）",
+      "focus": "23 小时互联网语音，与训练数据同源匹配；刻意覆盖游戏解说、直播带货等流行且困难的域",
+      "share": "23 h",
+      "format": "音频 + 人工转写文本",
+      "cite": [
+        "arxiv-2110-03370@§3.4",
+        "arxiv-2110-03370@Table 4",
+        "repo-wenetspeech@Evaluation Sets DEV/TEST_NET"
+      ]
+    },
+    {
+      "area": "TEST_MEETING（不匹配测试集）",
+      "focus": "15 小时真实会议录音：远场、对话式、自发语音，采自 197 场不同房间的真实会议",
+      "share": "15 h",
+      "format": "音频 + 人工转写文本",
+      "cite": [
+        "arxiv-2110-03370@§3.4",
+        "arxiv-2110-03370@Table 4",
+        "repo-wenetspeech@Evaluation Sets TEST_MEETING"
+      ]
+    },
+    {
+      "area": "AIShell-1（外部对照集）",
+      "focus": "论文同时在 AIShell-1 上报告结果，作者用它说明 WenetSpeech 训练出的模型具备多样性与可靠性",
+      "share": "外部对照，不计入本语料",
+      "format": "音频 + 转写文本",
+      "cite": [
+        "arxiv-2110-03370@§4.4",
+        "arxiv-2110-03370@Table 5"
+      ]
+    }
   ],
   "does_not_measure": [
-    "多语言（非普通话）识别",
-    "说话人分离/语音合成"
+    {
+      "text": "英文或多语种识别：论文的建模单元是 5535 个汉字加 26 个英文字母，英文只以词级 token 出现在中文转写里，不能当英文 ASR 基准用",
+      "cite": [
+        "arxiv-2110-03370@§4.2"
+      ]
+    },
+    {
+      "text": "说话人分离、情感识别、语音翻译等下游任务：每条音频只提供本地路径、原始公开 URL、域标签、MD5 与分段信息，没有说话人标签或平行译文",
+      "cite": [
+        "arxiv-2110-03370@§3.1"
+      ]
+    },
+    {
+      "text": "弱标签与无标签子集上的训练效果：论文只报告强标签子集 L/M/S 的基线（Table 5/6），2478 h 弱标签与 9952 h 无标签没有对应结果",
+      "cite": [
+        "arxiv-2110-03370@§3.2",
+        "arxiv-2110-03370@Table 6 题注"
+      ]
+    },
+    {
+      "text": "各工具包的最先进水平：作者声明表 5/6 的结果只是为了给每个工具包提供一个基线系统",
+      "cite": [
+        "arxiv-2110-03370@§4.4"
+      ]
+    }
   ],
   "dataset": {
-    "sample_count": null,
+    "sample_count": 22435,
     "splits": [
-      "test-net（网络视频）",
-      "test-meeting（会议）",
-      "dev"
+      "DEV 20 h（互联网，训练用交叉验证）",
+      "TEST_NET 23 h（互联网，匹配测试）",
+      "TEST_MEETING 15 h（真实会议，不匹配测试）",
+      "训练子集 L 10005 h / M 1000 h / S 100 h（置信度门槛各不相同）"
     ],
     "languages": [
-      "zh"
+      "zh（普通话；建模单元另含 26 个英文字母）"
     ],
     "source_type": "corpus",
-    "public_sample": true
+    "public_sample": true,
+    "totals": "总 22435 小时原始音频 = 强标签 10005 h（置信度 ≥ 0.95）+ 弱标签 2478 h（0.60–0.95）+ 无标签 9952 h（< 0.60）；OpenSLR 页面按 10000+ / 2400+ / ~10000 / 22400+ 小时四舍五入记录。论文与 GitHub 仓库只披露时长，未披露切片条数；每条音频的元数据见下方「构建」各行。",
+    "cite": [
+      "arxiv-2110-03370@§3.2",
+      "arxiv-2110-03370@Abstract",
+      "repo-wenetspeech@Categories 表",
+      "openslr-121@分层说明"
+    ],
+    "construction": [
+      {
+        "k": "域划分",
+        "text": "人工把语料按说话风格与口语场景分成 10 类：有声书、解说、纪录片、剧集、访谈、朗读、谈话、综艺，外加 others；强标签数据即按这 10 组归类。",
+        "cite": [
+          "arxiv-2110-03370@§2.1",
+          "repo-wenetspeech@High Label Data"
+        ]
+      },
+      {
+        "k": "YouTube：OCR 字幕管线",
+        "text": "从视频内嵌字幕生成候选音文对，经文本检测、字幕校验、字幕变化检测、CRNN-CTC 文本识别等步骤；随机抽取 5000 条不同主题的字幕由专业人员人工标注，作为文本识别模块的测试基准；相邻视频片段持续合并，直到音频超过 8 秒。",
+        "cite": [
+          "arxiv-2110-03370@§2.2.1"
+        ]
+      },
+      {
+        "k": "播客：第三方商用 ASR",
+        "text": "播客音频全部交给一个第三方商用 ASR 系统转写，论文称该系统在公开基准平台上属最好之列；新闻、朗读、谈话、对话、教育、游戏、电视、剧集等多数测试场景的准确率超过 95%。",
+        "cite": [
+          "arxiv-2110-03370@§2.2.2"
+        ]
+      },
+      {
+        "k": "标签错误检测（端到端强制对齐）",
+        "text": "提出基于 CTC 的端到端强制对齐方法来检测转写错误：允许任意位置的删除（<del> 标签，惩罚 p1）与任意插入/替换（<gbg> 标签，惩罚 p2）；与 LibriSpeech 使用的传统混合校验相比是纯端到端方案。管线中 p1 设为 2.3、p2 设为 4.6。",
+        "cite": [
+          "arxiv-2110-03370@§2.3.1",
+          "arxiv-2110-03370@§2.3.2"
+        ]
+      },
+      {
+        "k": "置信度与三层分层",
+        "text": "按参考转写（ref）与强制解码假设（hyp）之间的编辑距离给每个候选打置信度；≥ 0.95 为强标签、0.60–0.95 为弱标签、< 0.60 为无标签。",
+        "cite": [
+          "arxiv-2110-03370@§2.3.2",
+          "arxiv-2110-03370@§3.2"
+        ]
+      },
+      {
+        "k": "音频与元数据格式",
+        "text": "原始音频下载后统一转换为 16k 采样率、单声道、16-bit 有符号整数，再用 Opus 以 32 kbps 输出比特率压缩；每条音频提供本地路径、原始公开 URL、域标签、MD5 与分段信息。",
+        "cite": [
+          "arxiv-2110-03370@§3.1"
+        ]
+      }
+    ]
   },
   "metrics": [
     {
-      "id": "wer",
-      "name": "WER",
+      "id": "mer",
+      "name": "混合错误率 MER",
+      "direction": "越低越好",
+      "description": "论文 Table 5/6 的报告口径：把中文字符和英文单词都当作编辑距离的 token 来计算错误率，因此英文按词计错；不等同于只数中文字符的 CER。",
       "range": [
         0,
         100
       ],
       "unit": "percent",
-      "direction": "lower",
-      "aggregation": null
+      "cite": [
+        "arxiv-2110-03370@§4.4",
+        "arxiv-2110-03370@Table 5 题注"
+      ]
     }
   ],
   "default_protocol": {
-    "raw": "词错率 WER（中文按字错率 CER 口径），越低越好"
+    "raw": "论文口径：把音频输入各工具包训练出的 ASR 系统，在 DEV / TEST_NET / TEST_MEETING / AIShell-1 上报告混合错误率 MER（%）——中文字符与英文单词都计入编辑距离。训练数据取强标签子集 L / M / S 之一，工具包为 Kaldi（经典 chain 模型）、ESPNet 或 WeNet。",
+    "cite": [
+      "arxiv-2110-03370@§4.4",
+      "arxiv-2110-03370@§4.1",
+      "arxiv-2110-03370@Table 5 题注"
+    ],
+    "variants": [
+      {
+        "text": "训练子集规模：L（置信度 [0.95, 1.0]，10005 h）、M（1.0，1000 h）、S（1.0，100 h）。论文 Table 5 统一用 L，Table 6 是 Kaldi 在 L/M/S 上的对比；三者的置信度门槛与数据量都不同，不能当成同一模型的不同配置来横比。",
+        "cite": [
+          "arxiv-2110-03370@Table 3",
+          "arxiv-2110-03370@Table 6 题注",
+          "repo-wenetspeech@Training Subsets 表"
+        ]
+      },
+      {
+        "text": "工具包：Kaldi 实现的是经典 chain 模型，ESPNet 与 WeNet 是端到端；作者声明表中的结果只是为了给每个工具包提供一个基线系统，可能不反映各自的最先进水平。",
+        "cite": [
+          "arxiv-2110-03370@§4.1",
+          "arxiv-2110-03370@§4.4"
+        ]
+      },
+      {
+        "text": "数字口径：论文与 GitHub 仓库给精确值（总量 22435 h），OpenSLR 页面四舍五入为 22400+ h、弱标签记作 2400+ h、无标签记作 ~10000 h；跨源引用时不要混用。",
+        "cite": [
+          "openslr-121@分层说明",
+          "arxiv-2110-03370@§3.2"
+        ]
+      },
+      {
+        "text": "下载门槛：需先在项目主页填 Google Form 申请密码，GitHub 仓库提供下载工具；不能像普通公开数据集那样直接拉取。",
+        "cite": [
+          "wenetspeech-site@DOWNLOAD",
+          "repo-wenetspeech@Download",
+          "openslr-121@Download"
+        ]
+      }
+    ]
   },
   "versions": [
     {
       "id": "v1",
-      "label": "WenetSpeech（2021）",
-      "note": "arXiv:2110.03370；OpenSLR SLR121"
+      "date": "2021-10-07",
+      "label": "arXiv v1 提交（论文首发）",
+      "cite": [
+        "arxiv-2110-03370@arXiv 提交历史"
+      ]
+    },
+    {
+      "id": "site-online",
+      "date": "2021-10-08",
+      "label": "项目主页上线论文；10-25 开放数据下载，11-11 发布用 WenetSpeech 训练的多个 ASR 模型",
+      "cite": [
+        "wenetspeech-site@Schedule"
+      ]
+    },
+    {
+      "id": "v5-icassp",
+      "date": "2022-02-23",
+      "label": "arXiv v5（本页核对所用版本）；论文发表于 ICASSP 2022（IEEE）",
+      "cite": [
+        "arxiv-2110-03370@arXiv 版本行",
+        "openslr-121@BibTeX venue"
+      ]
+    },
+    {
+      "id": "test-net-erratum",
+      "date": "2026-01-09",
+      "label": "README 公告：TEST_NET 测试集存在少量标签错误，可按说明手动修正（明细见 issue #63）",
+      "cite": [
+        "repo-wenetspeech@News",
+        "repo-issue63@修正清单说明"
+      ]
     }
   ],
   "limitations": [
-    "低 WER 需配合领域细分解读（net 与 meeting 难度不同）",
-    "仅覆盖普通话，方言需看后续变体（如 WenetSpeech-Chuan）"
+    {
+      "issue": "TEST_NET 测试集标签错误（官方已披露勘误）",
+      "impact": "该测试集中一部分音频与其标注文本产生了错位，直接在该集上测出的 MER 会偏离真实水平；官方 2026-01-09 在 README 承认存在少量标签错误，并把修正明细放在 issue #63。",
+      "severity": "高",
+      "response": "按 issue #63 给出的 JSONL 清单手动修正 meta 文件里的文本标注（提交者称遵循最小改动原则，仍在排查更多案例）。",
+      "reader": "比较 TEST_NET 分数前，先确认是否应用了修正清单；用未修正数据跑出的旧结果会偏高。",
+      "cite": [
+        "repo-wenetspeech@News",
+        "repo-issue63@问题描述",
+        "repo-issue63@解决方案",
+        "repo-issue63@修正清单说明"
+      ]
+    },
+    {
+      "issue": "域分布高度不均",
+      "impact": "强标签 10005 小时里 drama 一类就占 4338.2 小时（OpenSLR 记 43.36%），reading 11.1%、interview 9.38%、news 8.68%；在 drama 上表现好不代表全域均衡。",
+      "severity": "中",
+      "response": "论文 Table 2 与仓库域分布表都给出 10 类的绝对时长，可以按域筛选或加权；官方没有做重采样。",
+      "reader": "看分域结果或按目标域挑子集，不要只拿总时长下结论。",
+      "cite": [
+        "repo-wenetspeech@域分布表",
+        "openslr-121@Diversity",
+        "arxiv-2110-03370@§3.3"
+      ]
+    },
+    {
+      "issue": "论文基线不是最先进水平",
+      "impact": "Table 5/6 的数字来自 Kaldi/ESPNet/WeNet 三个工具包的参考实现，作者明说可能不反映各自的最先进水平；用它衡量当代前沿模型意义有限。",
+      "severity": "中",
+      "response": "论文同时在 AIShell-1 上报告对照结果，用来说明语料的多样性与可靠性；更现代的对比需要自行复现。",
+      "reader": "把论文数字当基线，别当排行榜；跨代模型比较要另找同口径结果。",
+      "cite": [
+        "arxiv-2110-03370@§4.4",
+        "arxiv-2110-03370@Table 5 题注"
+      ]
+    },
+    {
+      "issue": "音频为有损压缩，且版权不归数据集方",
+      "impact": "统一转 16 kHz / 16-bit 后用 Opus 32 kbps 存储，压缩损失已经进入数据；CC BY 4.0 只约束数据集本身，WenetSpeech 不拥有音频版权，版权仍归原视频/音频权利人。",
+      "severity": "中",
+      "response": "官方提供每条音频的原始公开 URL，便于回溯授权；GitHub 仓库代码另按 Apache-2.0 许可发布。",
+      "reader": "商用前逐条确认原始视频的许可，不要把 CC BY 4.0 当成音频版权许可。",
+      "cite": [
+        "arxiv-2110-03370@§3.1",
+        "wenetspeech-site@License",
+        "openslr-121@License",
+        "repo-wenetspeech@许可证"
+      ]
+    },
+    {
+      "issue": "评测集规模小",
+      "impact": "三个评测集合计 58 小时（20/23/15），其中 TEST_MEETING 只有 15 小时；在这个量级上，几十个词的错误就能改变一个百分点。",
+      "severity": "中",
+      "response": "TEST_MEETING 采自 197 场不同房间的真实会议以保证场景多样，三个评测集都经专业标注人工核查转写质量。",
+      "reader": "1–2 个百分点的小幅差距不要过度解读，优先看 TEST_NET 与 TEST_MEETING 上的排序是否一致。",
+      "cite": [
+        "arxiv-2110-03370@Table 4",
+        "arxiv-2110-03370@§3.4"
+      ]
+    },
+    {
+      "issue": "下载需人工申请",
+      "impact": "必须先在项目主页填 Google Form 拿到密码才能下载，无法用脚本直接拉取，复现流程多一步人工环节。",
+      "severity": "低",
+      "response": "主页提供表单与备用联系邮箱（binbzha@gmail.com），GitHub 仓库提供下载工具。",
+      "reader": "批量复现前先申请密码；收不到邮件时用备用邮箱联系。",
+      "cite": [
+        "wenetspeech-site@DOWNLOAD",
+        "openslr-121@Download",
+        "repo-wenetspeech@Download"
+      ]
+    }
   ],
-  "notes": "Seed 2.0 页 ASR 组出现（Lite test-net 4.47 / test-meeting 5.31 vs Gemini-3.1-Pro 9.52 / 12.80；页注 ASR 行用 WER/CER，越低越好）",
+  "notes": "论文 Table 5 与 GitHub README 的 Benchmark 表数字一致；本页核对该论文的 arXiv v5（2022-02-23）。OpenSLR 编号 SLR121。",
   "official_sources": [
     {
       "kind": "paper",
       "url": "https://arxiv.org/abs/2110.03370"
     },
     {
-      "kind": "site",
+      "kind": "repo",
+      "url": "https://github.com/wenet-e2e/WenetSpeech"
+    },
+    {
+      "kind": "dataset",
       "url": "https://www.openslr.org/121/"
     },
     {
-      "kind": "github",
-      "url": "https://github.com/wenet-e2e/WenetSpeech"
+      "kind": "site",
+      "url": "https://wenet-e2e.github.io/WenetSpeech/"
     }
   ],
   "related_benchmarks": [
     "librispeech"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-09-01"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "arxiv-2110-03370",
+        "kind": "paper",
+        "title": "WenetSpeech 论文（arXiv:2110.03370，v5，2022-02-23；ICASSP 2022）",
+        "url": "https://arxiv.org/abs/2110.03370",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "repo-wenetspeech",
+        "kind": "repo",
+        "title": "wenet-e2e/WenetSpeech（GitHub README：News、域分布、训练子集、评测集、Benchmark 表）",
+        "url": "https://github.com/wenet-e2e/WenetSpeech",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "openslr-121",
+        "kind": "dataset",
+        "title": "Open Speech and Language Resources：WenetSpeech（SLR121）",
+        "url": "https://www.openslr.org/121/",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "wenetspeech-site",
+        "kind": "site",
+        "title": "WenetSpeech 项目主页（wenet-e2e 组织站点：许可、下载、时间线、致谢）",
+        "url": "https://wenet-e2e.github.io/WenetSpeech/",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "repo-issue63",
+        "kind": "repo",
+        "title": "wenet-e2e/WenetSpeech issue #63：TEST_NET 标签错位与 JSONL 修正清单",
+        "url": "https://github.com/wenet-e2e/WenetSpeech/issues/63",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "ASLP@NPU（西北工业大学计算机学院音频、语音与语言处理组）、Mobvoi Inc.、Beijing Shell Shell Technology Co., Ltd.、WeNet 开源社区（论文署名四家机构）",
+        "cite": [
+          "arxiv-2110-03370@作者机构",
+          "arxiv-2110-03370@机构"
+        ]
+      },
+      "first_release": {
+        "v": "2021-10-07（arXiv v1 提交；2021-10-08 项目主页上线论文，2021-10-25 开放数据下载）",
+        "cite": [
+          "arxiv-2110-03370@arXiv 提交历史",
+          "wenetspeech-site@Schedule"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "arxiv-2110-03370@Abstract",
+        "arxiv-2110-03370@§3.2",
+        "repo-wenetspeech@Categories 表",
+        "openslr-121@分层说明"
+      ],
+      "interpretation": [
+        "arxiv-2110-03370@§4.4",
+        "arxiv-2110-03370@Table 5 题注",
+        "arxiv-2110-03370@§3.4"
+      ]
+    },
+    "problem": {
+      "text": "文献里多数开源 ASR 基准语料规模小且缺乏域多样性：常用的英文 LibriSpeech 只有约 1000 小时有声书朗读，test-clean 的 WER 已降到 1.9%，论文原话是「太简单，难以继续做研究，基于它开发的系统在复杂真实场景下容易性能退化」；当时最大的开源中文数据 AIShell-2 只有 1000 小时安静环境录音（最优 CER 5.35%），而英文侧 GigaSpeech 有 10000 小时转写语音、wav2vec 2.0 与 XLSR-53 用 50000 小时以上英文数据训练——开源中英语料都养不出一个泛化好的预训练模型。WenetSpeech 要补这个缺口。",
+      "cite": [
+        "arxiv-2110-03370@§1"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "论文基线最难场景",
+        "value": "TEST_MEETING 24.72% MER（Kaldi，子集 L）",
+        "note": "远场自发会议；换最小训练子集 S 后同条件升到 37.27%。",
+        "cite": [
+          "arxiv-2110-03370@Table 5 题注",
+          "arxiv-2110-03370@Table 6 题注",
+          "arxiv-2110-03370@Table 6"
+        ]
+      },
+      {
+        "label": "论文基线最好（单集单工具包）",
+        "value": "TEST_NET 8.90% MER（ESPNet，子集 L）",
+        "note": "同表 WeNet 9.70%、Kaldi 12.83%；这是论文口径的参考基线，不是排行榜。",
+        "cite": [
+          "arxiv-2110-03370@Table 5 题注",
+          "arxiv-2110-03370@Table 5"
+        ]
+      },
+      {
+        "label": "外部对照集 AIShell-1",
+        "value": "3.90%–5.41% MER",
+        "note": "三个工具包在安静朗读式的 AIShell-1 上都低于 6%；作者用它说明 WenetSpeech 的多样性与可靠性。",
+        "cite": [
+          "arxiv-2110-03370@§4.4",
+          "arxiv-2110-03370@Table 5"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把论文的 MER 当成纯中文字符错误率（CER）——论文口径把中文字符和英文单词都算作编辑距离的 token，英文按词计错，两个数值不可混用。",
+        "cite": [
+          "arxiv-2110-03370@§4.4",
+          "arxiv-2110-03370@Table 5 题注"
+        ]
+      },
+      {
+        "text": "把「10000+ 小时」当成数据集体量——它只指强标签子集；加上弱标签与无标签一共 22435 小时，其中 9952 小时没有转写。",
+        "cite": [
+          "arxiv-2110-03370@Abstract",
+          "arxiv-2110-03370@§3.2",
+          "repo-wenetspeech@Categories 表"
+        ]
+      },
+      {
+        "text": "把 TEST_NET 和 TEST_MEETING 的分数直接横比——前者是与训练数据匹配的互联网测试集，后者是远场自发会议的不匹配集；同为子集 L 时两者能差 6 到 12 个百分点（Kaldi 上 12.83% 对 24.72%）。",
+        "cite": [
+          "arxiv-2110-03370@§3.4",
+          "arxiv-2110-03370@Table 5"
+        ]
+      },
+      {
+        "text": "把 Table 5/6 当成各工具包的最先进水平——作者明确声明这些结果只是为了给每个工具包提供一个基线系统。",
+        "cite": [
+          "arxiv-2110-03370@§4.4"
+        ]
+      },
+      {
+        "text": "拿 L/M/S 三个子集的分数比模型强弱——三者的置信度门槛和数据量都不同（10005 / 1000 / 100 小时），Table 6 的差距主要来自数据量。",
+        "cite": [
+          "arxiv-2110-03370@Table 3",
+          "arxiv-2110-03370@Table 6 题注"
+        ]
+      },
+      {
+        "text": "以为 TEST_NET 的标注完全可靠——官方 2026-01-09 已公告该测试集存在少量标签错误，并给出 JSONL 修正清单。",
+        "cite": [
+          "repo-wenetspeech@News",
+          "repo-issue63@修正清单说明"
+        ]
+      },
+      {
+        "text": "把 CC BY 4.0 当成音频版权许可——WenetSpeech 不拥有音频版权，版权仍归原视频/音频权利人，只有数据集本身按 CC BY 4.0 提供。",
+        "cite": [
+          "wenetspeech-site@License",
+          "openslr-121@License"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "ASLP@NPU（西北工业大学计算机学院音频、语音与语言处理组）、Mobvoi Inc.、Beijing Shell Shell Technology Co., Ltd.、WeNet 开源社区",
+        "cite": [
+          "arxiv-2110-03370@作者机构",
+          "arxiv-2110-03370@机构"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "Binbin Zhang、Hang Lv（论文标注为共同一作）、Pengcheng Guo、Qijie Shao、Chao Yang、Lei Xie（通信作者）、Xin Xu、Hui Bu、Xiaoyu Chen、Chenchen Zeng、Di Wu、Zhendong Peng；项目主页另给出 Binbin Zhang 与 Hang Lv 的联系邮箱",
+        "cite": [
+          "arxiv-2110-03370@arXiv abs 页作者",
+          "arxiv-2110-03370@标题页脚注",
+          "arxiv-2110-03370@标题页作者行",
+          "wenetspeech-site@联系方式"
+        ]
+      },
+      {
+        "k": "发表与收录",
+        "v": "ICASSP 2022（IEEE）；OpenSLR 编号 SLR121，提供可引用的 BibTeX 条目",
+        "cite": [
+          "openslr-121@BibTeX venue",
+          "openslr-121@BibTeX"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2021-10-07 arXiv v1 → 2021-10-08 项目主页上线论文 → 2021-10-25 开放数据 → 2021-11-11 发布用 WenetSpeech 训练的多个 ASR 模型 → 2022-02-23 arXiv v5（本页核对版本）",
+        "cite": [
+          "arxiv-2110-03370@arXiv 提交历史",
+          "wenetspeech-site@Schedule",
+          "arxiv-2110-03370@arXiv 版本行"
+        ]
+      },
+      {
+        "k": "数据来源",
+        "v": "全部来自 YouTube 与 Podcast：YouTube 用 OCR 字幕管线转写，Podcast 用第三方商用 ASR 转写，再用端到端标签错误检测进一步校验与过滤",
+        "cite": [
+          "repo-wenetspeech@Creation",
+          "arxiv-2110-03370@§2.2.1",
+          "arxiv-2110-03370@§2.2.2"
+        ]
+      },
+      {
+        "k": "强标签域分布",
+        "v": "drama 43.36%、reading 11.1%、interview 9.38%、news 8.68%、variety 8.27%、documentary 4.77%、talk 2.94%、audiobook 2.51%、commentary 2.48%、others 6.51%（OpenSLR 口径；论文 Table 2 与仓库域分布表给绝对时长，YouTube 6113 h / Podcast 3892 h）",
+        "cite": [
+          "openslr-121@Diversity",
+          "repo-wenetspeech@域分布表",
+          "arxiv-2110-03370@Table 2"
+        ]
+      },
+      {
+        "k": "许可",
+        "v": "数据集按 CC BY 4.0 提供（官方页面注明面向非商业用途），音频版权归原权利人；GitHub 仓库代码为 Apache-2.0",
+        "cite": [
+          "openslr-121@License",
+          "wenetspeech-site@License",
+          "arxiv-2110-03370@§1",
+          "repo-wenetspeech@许可证"
+        ]
+      },
+      {
+        "k": "下载方式",
+        "v": "在项目主页填 Google Form 获取密码后按说明下载，GitHub 仓库提供下载工具",
+        "cite": [
+          "wenetspeech-site@DOWNLOAD",
+          "repo-wenetspeech@Download",
+          "openslr-121@Download"
+        ]
+      },
+      {
+        "k": "与 GigaSpeech 的关系",
+        "v": "官方致谢明确说 WenetSpeech 大量参考了 GigaSpeech 的工作，并感谢 Jiayu Du 与 Guoguo Chen 的建议",
+        "cite": [
+          "repo-wenetspeech@ACKNOWLEDGEMENTS",
+          "wenetspeech-site@ACKNOWLEDGEMENTS"
+        ]
+      },
+      {
+        "k": "后续计划",
+        "v": "项目主页称正在准备 WenetSpeech 2.0，将包含更多数据以及更丰富的数据类型（尚无发布日期）",
+        "cite": [
+          "wenetspeech-site@WenetSpeech 2.0"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-14",
+        "columns": [
+          "来源",
+          "工具包",
+          "训练子集",
+          "DEV",
+          "TEST_NET",
+          "TEST_MEETING",
+          "AIShell-1"
+        ],
+        "rows": [
+          [
+            "论文 Table 5",
+            "Kaldi",
+            "L",
+            "9.07",
+            "12.83",
+            "24.72",
+            "5.41"
+          ],
+          [
+            "论文 Table 5",
+            "ESPNet",
+            "L",
+            "9.70",
+            "8.90",
+            "15.90",
+            "3.90"
+          ],
+          [
+            "论文 Table 5",
+            "WeNet",
+            "L",
+            "8.88",
+            "9.70",
+            "15.59",
+            "4.61"
+          ],
+          [
+            "论文 Table 6",
+            "Kaldi",
+            "M",
+            "9.81",
+            "14.19",
+            "28.22",
+            "5.93"
+          ],
+          [
+            "论文 Table 6",
+            "Kaldi",
+            "S",
+            "11.70",
+            "17.47",
+            "37.27",
+            "7.66"
+          ]
+        ]
+      },
+      "cite": [
+        "arxiv-2110-03370@Table 5 题注",
+        "arxiv-2110-03370@Table 5",
+        "arxiv-2110-03370@Table 6 题注",
+        "arxiv-2110-03370@Table 6"
+      ]
+    }
+  }
 }

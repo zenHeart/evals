@@ -1,34 +1,418 @@
 {
   "id": "frontier-code",
   "name": "FrontierCode",
-  "full_name": null,
+  "full_name": "FrontierCode（Cognition 的代码可合并性基准）",
   "aliases": [
-    "FrontierCode"
+    "FrontierCode",
+    "FrontierCode 1.0",
+    "FrontierCode 1.1",
+    "FrontierCode 2.0"
   ],
-  "status": null,
+  "status": "active",
   "categories": [
     "coding"
   ],
-  "summary": "Cognition 编码基准：AI 代码能否达到可合并标准",
-  "interpretation": "分数为 score（rubric 加权得分率）与 pass rate 两口径（0-100%，越高越好），题面是「维护者会不会合并这个 PR」；Diamond（最难 50 题）Opus 4.8 仅 13.4%、Main 34.3%、Extended 51.8%——分数普遍很低属当前常态，远未饱和。",
-  "measures": [],
-  "does_not_measure": [],
+  "summary": "FrontierCode 是 Cognition 出的编程基准：让 coding agent 在真实开源仓库里动手改代码，再判断「维护者会不会合并这个 PR」。它报两个指标——pass rate（通过全部硬性否决项的比例）和 score（评分项加权得分率），都是 0–100% 且越高越好；任何一项硬性否决项没过，这次运行直接记 0 分。",
+  "interpretation": "高分说明模型产出的改写在正确性、测试质量、改动范围、代码风格和仓库规范上同时达到了开源维护者的合并标准，而不只是「测试跑通了」。但它不说明模型能理解需求、做架构设计、评审代码或长期维护系统；而且分数按版本（1.0 / 1.1 / 2.0）、子集（Diamond / Main / Extended）、推理档位和评测 harness 强烈变化，跨口径比较没有意义。",
+  "measures": [
+    {
+      "area": "行为正确性（Behavioral correctness）",
+      "focus": "补丁是否真正解决了题面描述的问题；判定方式是往仓库里注入测试文件、跑完再清理，全部注入测试通过才算过",
+      "share": "未披露",
+      "format": "classical（注入测试文件运行）",
+      "cite": [
+        "cognition@Beyond Unit Tests"
+      ]
+    },
+    {
+      "area": "回归安全（Regression safety）",
+      "focus": "改动是否破坏了代码库里已有的行为；判定方式是跑一条 shell 命令，退出码为 0 才算过",
+      "share": "未披露",
+      "format": "command（shell 命令，退出码 0）",
+      "cite": [
+        "cognition@Beyond Unit Tests"
+      ]
+    },
+    {
+      "area": "机械整洁度（Mechanical cleanliness）",
+      "focus": "是否通过项目自己的 build、lint 和 style 检查；与回归安全共用 command 判定",
+      "share": "未披露",
+      "format": "command（shell 命令，退出码 0）",
+      "cite": [
+        "cognition@Beyond Unit Tests"
+      ]
+    },
+    {
+      "area": "测试正确性（Test correctness）",
+      "focus": "agent 自己写的测试是否真的抓住了应有行为；判定方式是把这些测试拿到改动前的「坏」代码上跑，必须失败（reverse-classical）",
+      "share": "未披露",
+      "format": "reverse-classical（在 base commit 上必须失败）",
+      "cite": [
+        "cognition@Beyond Unit Tests",
+        "cognition@Novel Grading Methods"
+      ]
+    },
+    {
+      "area": "改动范围（Scope）",
+      "focus": "补丁是否只碰了该碰的文件、行数和文件数是否超标、语义上是否局限在应改的位置；用 files / size / semantic 三类约束自动检查",
+      "share": "未披露",
+      "format": "scope（文件边界 + diff 规模 + 语义局部性）",
+      "cite": [
+        "cognition@Beyond Unit Tests",
+        "cognition@Novel Grading Methods"
+      ]
+    },
+    {
+      "area": "代码质量（Code quality）",
+      "focus": "是否符合代码库惯例、是否遵循合理设计模式、协作者是否读得懂；由 LLM 按自然语言提示词审 diff，分数过阈值才算过",
+      "share": "未披露",
+      "format": "prompt（LLM 评审 diff，过阈值）",
+      "cite": [
+        "cognition@Beyond Unit Tests"
+      ]
+    },
+    {
+      "area": "复杂任务的行为正确性（自适应判定）",
+      "focus": "开放式任务有多种正解，静态单测太死；官方自研 mutagent 工具用 LLM 对测试环境或应用代码做外科式修补以对齐 agent 的实现细节，再跑确定性测试",
+      "share": "未披露",
+      "format": "adaptive classical grading（LLM 适配后跑测试）",
+      "cite": [
+        "cognition@Beyond Unit Tests",
+        "cognition@Novel Grading Methods"
+      ]
+    },
+    {
+      "area": "周全性（Thoroughness，2.0 起单列）",
+      "focus": "2.0 新增的重点簇：指令只说了一条路径的 bug，同源 bug 还在兄弟路径；或只提到一种输入类型，类似代码还支持别的类型。考的是 agent 能否从指令和代码库推断出没说出口的约束",
+      "share": "官方 blockers-by-category 图表：thoroughness 类 blocker 从 1.1 的 168 项增至 2.0 的 501 项，官方称增幅约 3 倍",
+      "format": "blocker（未过即整次运行记 0）",
+      "cite": [
+        "cognition-20@Evaluating thoroughness"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "理解需求、设计软件架构、评审代码、维护既有系统——第三方构念效度分析明确指出，一个主要考察「产出能过测试的高质量代码」的基准并不能证明这些能力",
+      "cite": [
+        "arxiv-validity@IV-A RQ1: Constructs and operationalization"
+      ]
+    },
+    {
+      "text": "agent 生成改动对代码库的长期影响（可维护性的长期效应）；论文认为这需要额外证据，静态分析本身也不能建立这种因果",
+      "cite": [
+        "arxiv-validity@IV-A RQ1: Constructs and operationalization"
+      ]
+    },
+    {
+      "text": "真实的合并决策本身：没有真人维护者真的去合并这些 PR，「可合并」是由维护者事先写成的评分项近似的，官方说法是满足这些标准的 PR「实际上会获得批准」",
+      "cite": [
+        "cognition@A Team of Open Source Maintainers"
+      ]
+    }
+  ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
+    "sample_count": 132,
+    "splits": [
+      "FrontierCode 2.0（当前版本）：132 题，Artificial Analysis 明确其独立实现运行全部 132 题；2.0 公告未再提 Main / Extended / Diamond 拆分",
+      "FrontierCode 1.1 / 1.0：Extended 150 题（全集）、Main 100 题（含 Diamond）、Diamond 50 题（最难；1.1 起弃用）"
+    ],
+    "languages": [
+      "官方只称表示语言数是 SWE-Bench Pro 的 3 倍，未给出完整语言清单",
+      "官方与第三方公开的示例任务覆盖 C++、JavaScript、Kotlin"
+    ],
+    "source_type": "真实开源仓库的 PR / issue，由仓库维护者亲自挑选并改写成任务（不是程序化抓取单个 PR）；任务私有，不公开下载",
+    "public_sample": false,
+    "totals": "当前版本 FrontierCode 2.0 共 132 题，全部来自真实开源仓库、由维护者出题；1.0 / 1.1 为 150 题（Extended），其中 Main 100 题、Diamond 50 题；每项判定要么是 blocker（不过就记 0）要么是非 blocker（质量信号）",
+    "cite": [
+      "cognition@Results",
+      "cognition-11@Deprecating FrontierCode Diamond",
+      "aa-20",
+      "aa-11"
+    ],
+    "construction": [
+      {
+        "k": "选题来源",
+        "text": "任务不是从单个 PR 程序化抓取，而是由仓库维护者从多个 PR 链和自由形式的需求里手工挑选；1.0 的 150 题来自 36 个旗舰开源仓库，2.0 的仓库数比 1.0 再多 55%。",
+        "cite": [
+          "cognition@Why we built FrontierCode",
+          "cognition@A Team of Open Source Maintainers",
+          "cognition-20@How we built FrontierCode 2.0"
+        ]
+      },
+      {
+        "k": "出题人与投入",
+        "text": "20 余位世界级开源开发者参与，每位在每个任务上投入 40 小时以上，与评测工程师和 Cognition 研究员多轮迭代；他们把自己仓库里「什么叫可合并」的判断写成具体评分项。",
+        "cite": [
+          "cognition@A Team of Open Source Maintainers",
+          "cognition-20@How we built FrontierCode 2.0"
+        ]
+      },
+      {
+        "k": "指令写法",
+        "text": "提示词只含两部分：任务描述，加上仓库通用的测试 / lint / 风格指南（类似 AGENTS.md）。任务描述刻意写得像人写的并且简短，长度约为 SWE-Bench Pro 的三分之一，要求 agent 自己推断维护者意图。",
+        "cite": [
+          "cognition@Why we built FrontierCode"
+        ]
+      },
+      {
+        "k": "评分项设计",
+        "text": "能确定性检查的（如正确性）优先用 classical 测试；复杂任务用对实现细节不敏感的行为测试；软性质量（地道写法、可读性、架构模式）用 LLM 评分。出题人要先人工审计每个评分项并写下理由。",
+        "cite": [
+          "cognition@Quality Control"
+        ]
+      },
+      {
+        "k": "对抗式加固",
+        "text": "为防止假阳性，出题人模仿懒惰或对抗型程序员，用故意错误 / 不完整的解法去骗高分；为防止假阴性，再写一个与标准解不同但完全合法的替代解，如果它没过就说明评分项太死。官方还让 Devin 自己去想破解评分项的新办法。",
+        "cite": [
+          "cognition@Quality Control"
+        ]
+      },
+      {
+        "k": "校准与多级评审",
+        "text": "出题人必须写 4 个目标分数从 0 到 100% 的不同解法来校准分辨率；每个贡献者属于一个 eval pod，pod lead 是第一道质量门，通过后由 Cognition 研究员做最终评审；随机子集还会由研究员自己解题验证指令清晰、评分公平。任何阶段都可以打回修改。",
+        "cite": [
+          "cognition@Quality Control"
+        ]
+      }
+    ]
   },
-  "metrics": [],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [],
-  "notes": "Google/xAI/Anthropic 引用；v1.1 Main/Extended 两档；与 Frontier-Bench、APEX-SWE 均不同",
+  "default_protocol": {
+    "raw": "每个模型在每一个可用推理档位（low / medium / high / xhigh / max）各跑 5 次；每个档位内对 5 次试验的指标取平均，然后报告该模型在表现最好的那个推理档位上的分数。判定用维护者定义的评分项（rubric）：每项是 blocker 或非 blocker，全部 blocker 通过才算 passing，其 score 是所通过评分项的加权聚合；任何 blocker 未过，该次运行 score 记 0。题面只给任务描述加仓库通用规范指南，agent 需自行推断维护者意图。",
+    "cite": [
+      "cognition@Results",
+      "cognition@Beyond Unit Tests",
+      "cognition@Why we built FrontierCode",
+      "cognition-20@How reasoning effort affects performance"
+    ],
+    "variants": [
+      {
+        "text": "基准版本：1.0、1.1、2.0 的绝对分不可比。1.1 放宽了 75 条过严的 blocker 并加入公平联网使用方法论；2.0 更换了任务套件（132 题）、提高合并标准并放宽 scope 标准。官方自己的对照表显示 Opus 5.5 从 1.1 的 54.6% 掉到 2.0 的 45.5%。",
+        "cite": [
+          "cognition-11@Refined blocker criteria",
+          "cognition-20@Results"
+        ]
+      },
+      {
+        "text": "子集：Diamond（50 题）/ Main（100 题）/ Extended（150 题）分数差异很大，且 Diamond 自 1.1 起已弃用不再报告，历史 Diamond 分数无法与后续版本对齐。",
+        "cite": [
+          "cognition@Results",
+          "cognition-11@Deprecating FrontierCode Diamond"
+        ]
+      },
+      {
+        "text": "推理档位：分数按模型各自最好的档位报告，但分数随档位非单调——实现类评分项的通过率随档位上升，scope 类评分项的通过率反而下降（模型越努力越倾向多写代码、多碰文件），厂商自报若不注明档位就无法复现。",
+        "cite": [
+          "cognition@Results",
+          "cognition-20@How reasoning effort affects performance"
+        ]
+      },
+      {
+        "text": "评测 harness 与运行次数：Cognition 用自己的 harness 跑 5 次；Artificial Analysis 独立用 Stirrup harness 每任务跑 3 次（1.1 上限 250 回合、2.0 上限 500 回合），并用 GPT-6 Luna (medium) 作 LLM 裁判。两套数字体系不同，不能混排。",
+        "cite": [
+          "cognition@Results",
+          "aa-11",
+          "aa-20"
+        ]
+      },
+      {
+        "text": "联网口径：1.0 不禁止联网但未专门约束；1.1 起允许「正当联网」（查文档、搜报错），用提示词划定边界并由程序化检测器识别引用源 PR / 上游补丁 / 带解法的镜像，被标记的运行记 0 分。",
+        "cite": [
+          "cognition-11@Getting Internet Use Right",
+          "leaderboard@Methodology"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "score",
+      "name": "加权得分率（score）",
+      "direction": "越高越好",
+      "description": "所通过评分项的加权聚合；未通过任何 blocker 的运行记 0 分，是官方主指标",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "cognition@Results",
+        "cognition@Beyond Unit Tests"
+      ]
+    },
+    {
+      "id": "pass-rate",
+      "name": "通过率（pass rate）",
+      "direction": "越高越好",
+      "description": "清除了全部 blocker 标准（即维护者在代码评审中会一票否决的硬性要求）的运行占比",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "cognition@Results",
+        "cognition@Beyond Unit Tests"
+      ]
+    },
+    {
+      "id": "flag-rate",
+      "name": "不公平联网标记率（flag rate）",
+      "direction": "越低越好",
+      "description": "官方榜单 2026-08-06 起新增的列，显示被判定为不正当联网（查阅带解法的来源）的运行占比，这类运行记 0 分",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "leaderboard@Changelog",
+        "cognition-11@Getting Internet Use Right"
+      ]
+    },
+    {
+      "id": "cost",
+      "name": "单次运行成本（cost）",
+      "direction": "越低越好",
+      "description": "按官方刊例价（含公开折扣）计算的每次 rollout 平均美元花费，用于与 score 一起看性价比",
+      "range": [
+        0,
+        null
+      ],
+      "unit": "usd",
+      "cite": [
+        "cognition-20@Results"
+      ]
+    }
+  ],
+  "versions": [
+    {
+      "id": "1.0",
+      "date": "2026-06-08",
+      "label": "首次发布：150 题（Extended），Main 100 题、Diamond 50 题三个嵌套子集；最好成绩 Claude Opus 4.8 Diamond 13.4% / Main 34.3% / Extended 51.8%",
+      "cite": [
+        "cognition@Results"
+      ]
+    },
+    {
+      "id": "1.1",
+      "date": "2026-07-07",
+      "label": "方法论修订：引入「公平联网使用」提示词 + 程序化检测；审计 1000+ 条评分项并放宽 75 条过严 blocker；停报 Diamond，只报 Main 与 Extended",
+      "cite": [
+        "cognition-11@Refined blocker criteria",
+        "cognition-11@Deprecating FrontierCode Diamond"
+      ]
+    },
+    {
+      "id": "leaderboard",
+      "date": "2026-07-17",
+      "label": "官方榜单上线，同时给出 FrontierCode 1.0 与 1.1 的结果",
+      "cite": [
+        "leaderboard@Changelog"
+      ]
+    },
+    {
+      "id": "2.0",
+      "date": "2026-10-27",
+      "label": "新一代 132 题套件：仓库数比 1.0 多 55%、blocking criteria 比 1.0 多 43%，参考解法相对 1.1 平均多改 67% 文件与 89% 行代码、代码库大 25%；公告时最好成绩 Claude Opus 5.5 45.5%",
+      "cite": [
+        "cognition-20@Results",
+        "cognition-20@How we built FrontierCode 2.0",
+        "leaderboard@Changelog"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "评分项主观，且相当一部分由 LLM 裁判判定",
+      "impact": "mergeability 的核心是「维护者的主观判断」，官方明确说 rubric 评分是主观的；代码质量一类标准直接由 LLM 按自然语言提示词审 diff 并比对阈值，第三方独立复现同样用 GPT-6 Luna (medium) 作裁判。裁判口径、提示词和阈值任一变化都会移动分数。",
+      "severity": "高",
+      "response": "官方建了完整 QC 流水线：出题人先人工审计每个评分项并记录理由，再作假阳性 / 假阴性对抗报告（并让 Devin 参与想破解办法），要求写 4 个覆盖 0–100% 分的解法校准分辨率，经 pod lead 与 Cognition 研究员多级评审，随机子集由研究员自己解题验证；官方称相比 SWE-Bench Pro 假阳性率低 81%。",
+      "reader": "把 score 当作「维护者标准的近似」而非客观真值；比较不同来源的分数前，先确认是否同一套 rubric 与同一个 LLM 裁判。",
+      "cite": [
+        "cognition@Quality Control",
+        "cognition@Raising the bar from correctness to quality",
+        "aa-11",
+        "aa-20"
+      ]
+    },
+    {
+      "issue": "版本更迭快，跨版本分数不可比",
+      "impact": "1.0 → 1.1 → 2.0 之间换过任务集、放宽过 blocker、改过 scope 标准。官方自己的对照表里 Opus 5.5 从 1.1 的 54.6% 掉到 2.0 的 45.5%，GPT-6 Astra 从 53.3% 掉到 42.8%；这种跌幅来自基准变难，不是模型退步。Diamond 子集已在 1.1 弃用，历史 Diamond 分数无处对齐。",
+      "severity": "高",
+      "response": "1.1 公告明确宣布不再报告 Diamond 并说明原因（该子集已不再代表最难的 50 题，且解题率过低导致噪声大）；2.0 公告直接给出 1.1 与 2.0 的同模型对照表；官方榜单把 1.0 / 1.1 的历史排名留在各自公告页。",
+      "reader": "看到任何 FrontierCode 分数，先确认版本号与子集；跨版本只能看同表对照，不能自行相减比较。",
+      "cite": [
+        "cognition-20@Results",
+        "cognition-11@Deprecating FrontierCode Diamond",
+        "leaderboard@Changelog"
+      ]
+    },
+    {
+      "issue": "任务与评分项不公开，外部无法独立审计",
+      "impact": "官方明确表示目前不打算公开任务以避免污染，只向模型创建者开放评测。第三方因此无法复核题目质量与评分公平性：一篇构念效度研究就因数据集不公开而把 FrontierCode 排除在其任务属性分析之外，并指出该基准的目标构造标签是从任务样本推断的、并非原文显式声明。",
+      "severity": "高",
+      "response": "官方称暂不公开任务是为避免污染，同时把评测开放给所有模型创建者；Artificial Analysis 等第三方在其自建 harness 下独立跑分并公开方法，可作为部分交叉验证。",
+      "reader": "区分「Cognition 自报」与「第三方独立运行」两套数字；对自报分数保留余地，优先看有方法说明的独立结果。",
+      "cite": [
+        "cognition@Conclusion",
+        "arxiv-validity@IV-B RQ2: Additional Aspects",
+        "arxiv-validity@IV-A RQ1: Constructs and operationalization",
+        "aa-11",
+        "aa-20"
+      ]
+    },
+    {
+      "issue": "scope blocker 的判定存在争议",
+      "impact": "1.0 的 scope 标准会让「超出指令但确实改进了代码」的解法失败，官方承认这类标准「有些争议」，并称在排查中确实看到过一些出乎意料合理地方案栽在 scope blocker 上。它还造成分数随推理档位非单调：模型越努力越倾向多碰文件，scope 通过率反而从 Opus 5 的 69.2% 掉到 51.1%。",
+      "severity": "中",
+      "response": "2.0 放宽了 scope 标准以容纳「出乎意料但可接受」的行为；按 effort 平均后 scope 类 blocker 失败率从 1.1 的 9.0% 降到 2.0 的 3.8%，官方称配合改进的审计后，其 effort–分数曲线反映的是高推理档位下的真实回退。",
+      "reader": "看到「提高推理档位分数反而下降」时，先想到 scope 标准，不要直接解读为模型能力回退。",
+      "cite": [
+        "cognition-20@How reasoning effort affects performance"
+      ]
+    },
+    {
+      "issue": "任务源自真实 PR，解法可能已存在于公开网络",
+      "impact": "任务取自真实开源仓库，解法可能已在上游仓库的更新版本、镜像乃至包注册表里（agent 有时只要装最新 release 就能拿到修复）。1.0 已发现少量 agent 找到上游代码库的案例，随着模型在线检索能力增强，官方预期不正当联网使用率会继续上升。",
+      "severity": "中",
+      "response": "1.1 起不停网，而是用「公平联网使用」提示词 + 程序化检测双保险：提示词明确允许查文档、禁止任何能 shortcut 任务的行为，检测器标记引用源 PR / 上游补丁 / 带解法镜像的运行并记 0 分；官方称加上提示词后每个受测模型的不公平联网率都降到 1% 以下。官方榜单另设 flag rate 列。",
+      "reader": "看分数时同时看 flag rate 列；对 1.0 及更早的分数，要考虑其中可能混有靠联网找到答案的运行。",
+      "cite": [
+        "cognition-11@Getting Internet Use Right",
+        "leaderboard@Changelog"
+      ]
+    },
+    {
+      "issue": "构念效度受第三方质疑",
+      "impact": "一篇 2026-11 的构念效度研究把 FrontierCode 的目标构造标为推论出的「coding capability」（原文未显式声明要测什么），并认为其聚合指标（pass rate 与加权 rubric 分数）只是宽泛概念的窄操作化；论文同时指出 rubric 类评分与非功能质量之间的相关性仍需验证。该基准首发形态是博客而非同行评审论文。",
+      "severity": "中",
+      "response": "未见 Cognition 对该效度分析的公开回应；官方在 2.0 中把评测目标明确写为「功能性正确 + 解读并扩展用户初始提示 + 做出合理的设计与范围选择」，可视为对构造表述的补充。",
+      "reader": "不要把 FrontierCode 高分读成「通用软件工程能力」；把它当作「在给定仓库里产出可合并改动」这一具体能力的证据。",
+      "cite": [
+        "arxiv-validity@IV-A RQ1: Constructs and operationalization",
+        "cognition-20@What FrontierCode measures"
+      ]
+    }
+  ],
+  "notes": "Cognition 自建自营；1.0/1.1 分 Diamond / Main / Extended 三档，1.1 起弃用 Diamond，2.0 改为 132 题单套件；任务私有不公开；与 Frontier-Bench、APEX-SWE、DeepSWE、SWE-Bench Pro 均是不同基准",
   "official_sources": [
     {
       "kind": "site",
       "url": "https://cognition.com/blog/frontier-code"
+    },
+    {
+      "kind": "site",
+      "url": "https://cognition.com/blog/frontier-code-1.1"
+    },
+    {
+      "kind": "site",
+      "url": "https://cognition.com/blog/frontier-code-2.0"
+    },
+    {
+      "kind": "leaderboard",
+      "url": "https://cognition.com/frontiercode"
     },
     {
       "kind": "site",
@@ -40,8 +424,438 @@
     }
   ],
   "related_benchmarks": [
-    "swebench"
+    "swebench",
+    "swebench-pro",
+    "deepswe",
+    "terminalbench",
+    "frontier-bench",
+    "apex-swe"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-24",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-24",
+    "sources": [
+      {
+        "id": "cognition",
+        "kind": "site",
+        "title": "Introducing FrontierCode（Cognition 官方博客，2026-06-08）",
+        "url": "https://cognition.com/blog/frontier-code",
+        "accessed": "2026-11-24"
+      },
+      {
+        "id": "cognition-11",
+        "kind": "site",
+        "title": "FrontierCode 1.1（Cognition 官方博客，2026-07-07）",
+        "url": "https://cognition.com/blog/frontier-code-1.1",
+        "accessed": "2026-11-24"
+      },
+      {
+        "id": "cognition-20",
+        "kind": "site",
+        "title": "FrontierCode 2.0（Cognition 官方博客，2026-10-27）",
+        "url": "https://cognition.com/blog/frontier-code-2.0",
+        "accessed": "2026-11-24"
+      },
+      {
+        "id": "leaderboard",
+        "kind": "leaderboard",
+        "title": "FrontierCode Leaderboard（Cognition 官方榜单，含更新日志）",
+        "url": "https://cognition.com/frontiercode",
+        "accessed": "2026-11-24"
+      },
+      {
+        "id": "aa-11",
+        "kind": "leaderboard",
+        "title": "FrontierCode 1.1 Benchmark（Artificial Analysis 独立实现）",
+        "url": "https://artificialanalysis.ai/evaluations/frontiercode",
+        "accessed": "2026-11-24"
+      },
+      {
+        "id": "aa-20",
+        "kind": "leaderboard",
+        "title": "FrontierCode 2.0 Benchmark（Artificial Analysis 独立实现，含示例任务）",
+        "url": "https://artificialanalysis.ai/evaluations/frontiercode-2-0",
+        "accessed": "2026-11-24"
+      },
+      {
+        "id": "arxiv-validity",
+        "kind": "paper",
+        "title": "Construct Validity of Coding Benchmarks for LLM-based Agentic Coding Tools（arXiv:2611.05665v1，2026-11-03）",
+        "url": "https://arxiv.org/abs/2611.05665",
+        "accessed": "2026-11-24"
+      },
+      {
+        "id": "google",
+        "kind": "blog",
+        "title": "Introducing Gemini 3.7 Flash（Google 官方博客，2026-08-13）",
+        "url": "https://blog.google/innovation-and-ai/models-and-research/gemini-models/introducing-gemini-3-7-flash/",
+        "accessed": "2026-11-24"
+      },
+      {
+        "id": "xai",
+        "kind": "blog",
+        "title": "Introducing Grok 4.6（xAI 官方新闻，2026-08-12）",
+        "url": "https://x.ai/news/grok-4-6",
+        "accessed": "2026-11-24"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Cognition（Devin 的开发方；每个任务都由 Cognition 研究员人工复审）",
+        "cite": [
+          "cognition@Quality Control"
+        ]
+      },
+      "first_release": {
+        "v": "2026-06-08（官方博客 Introducing FrontierCode）",
+        "cite": [
+          "cognition"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "cognition@Raising the bar from correctness to quality",
+        "cognition@Results"
+      ],
+      "interpretation": [
+        "cognition@Results",
+        "arxiv-validity@IV-A RQ1: Constructs and operationalization"
+      ]
+    },
+    "problem": {
+      "text": "SWE-Bench Verified / Pro 等第一代编程基准是为更弱的模型设计的，只测功能性正确、不测质量，而且容易被误分类（METR 的实验发现高分模型常产出真人维护者不会接受的补丁）；同时题目从单个 PR 程序化抓取，语言覆盖面窄、提示词给过细。FrontierCode 想把标准从「写得对」提到「写得合维护者的格」，并减少误分类。",
+      "cite": [
+        "cognition@Why we built FrontierCode",
+        "cognition@Raising the bar from correctness to quality",
+        "cognition@References"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机 / 人类基线",
+        "value": "论文未给出",
+        "note": "官方未报告随机猜测基线，也未报告人类维护者在该基准上的成绩；本站不推算。",
+        "cite": [
+          "cognition@Results"
+        ]
+      },
+      {
+        "label": "首发时最好成绩（1.0 Diamond，50 题）",
+        "value": "13.4%",
+        "note": "Claude Opus 4.8；同模型 Main 34.3%、Extended 51.8%。官方称 Diamond 远未饱和。",
+        "cite": [
+          "cognition@Results"
+        ]
+      },
+      {
+        "label": "首发时最好开源模型（1.0 Diamond）",
+        "value": "3.8%",
+        "note": "Kimi K2.6；同模型 Main 16%、Extended 37%。官方称开源模型与前沿差距明显。",
+        "cite": [
+          "cognition@Results"
+        ]
+      },
+      {
+        "label": "2.0 公告时最好成绩（Cognition 自报，132 题）",
+        "value": "45.5%",
+        "note": "Claude Opus 5.5；Artificial Analysis 独立跑出的 2.0 最高分是 Claude Fable 5.2 (High) 49.1%，两套数字来自不同 harness 与运行设置，不可直接互证。官方称 2.0 远未饱和。",
+        "cite": [
+          "cognition-20@Results",
+          "aa-20"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      },
+      {
+        "label": "饱和 / 噪声参考线",
+        "value": "论文未给出",
+        "note": "官方只表述「远未饱和」，未给出题目噪声上限或人类专家参考线，因此无法从分数反推可信区间。",
+        "cite": [
+          "cognition-20@Results"
+        ]
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把不同版本的 FrontierCode 分数排在一张表里比——1.1 到 2.0 同一模型掉 9 个百分点左右是基准变难，不是模型退步。",
+        "cite": [
+          "cognition-20@Results"
+        ]
+      },
+      {
+        "text": "把 score 和 pass rate 当成一回事——score 是评分项加权聚合，未过 blocker 记 0；pass rate 只看清不清完所有 blocker。两个数字官方都报，含义不同。",
+        "cite": [
+          "cognition@Results"
+        ]
+      },
+      {
+        "text": "以为 Diamond 分数还在更新——1.1 起官方已弃用 Diamond，只报 Main 与 Extended；2.0 连 Main / Extended 拆分也不再提及，改为 132 题单套件。",
+        "cite": [
+          "cognition-11@Deprecating FrontierCode Diamond",
+          "leaderboard@Changelog"
+        ]
+      },
+      {
+        "text": "以为推理档位拉满分数就高——实现类标准通过率随档位上升，scope 类标准通过率反而下降，模型会因此在高档位拿更低分。",
+        "cite": [
+          "cognition-20@How reasoning effort affects performance"
+        ]
+      },
+      {
+        "text": "把 Cognition 自报分数和 Artificial Analysis 的独立分数当成同一口径——后者用自己的 Stirrup harness、每任务 3 次、回合上限 250 / 500，并用 GPT-6 Luna (medium) 作 LLM 裁判。",
+        "cite": [
+          "aa-11",
+          "aa-20"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "Cognition（Devin 的开发商）；榜单、任务与评分标准均由其一手指控，未公开数据集",
+        "cite": [
+          "cognition@Quality Control",
+          "cognition@Conclusion"
+        ]
+      },
+      {
+        "k": "核心作者（1.0）",
+        "v": "Eric Lu、Ben Pan、Deniz Birlikci、Sam Lee、Ray Wang、Rohan Choudhury、Fermi Ma、TC Qin、Carlo Baronio、Silas Alberti 等",
+        "cite": [
+          "cognition"
+        ]
+      },
+      {
+        "k": "核心作者（1.1 / 2.0）",
+        "v": "1.1 增加 Alex Lombardi、Jacob Teo、Joon Hee Lee；2.0 公告以 The Cognition Team 署名，未再列研究作者名单",
+        "cite": [
+          "cognition-11",
+          "cognition-20"
+        ]
+      },
+      {
+        "k": "出题人",
+        "v": "20 余位世界级开源开发者，1.0 覆盖 36 个旗舰仓库；公开署名的外部贡献者包括 Celery 的 Tomer Nosrati、Budibase 的 Martin McKeaveney、uppy 的 Merlijn Vos、Mattermost 的 Claudio Costa",
+        "cite": [
+          "cognition@A Team of Open Source Maintainers",
+          "cognition@Acknowledgments"
+        ]
+      },
+      {
+        "k": "示例任务审阅者",
+        "v": "Andrew He（ecnerwala）：Codeforces 美国排名第二、两届 IOI 金牌、Cognition 创始工程师，亲自复核了模型在 C++ jsonschema 任务上的行为",
+        "cite": [
+          "cognition@Example Task"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2026-06-08 发布 1.0 → 2026-07-07 发布 1.1（弃 Diamond）→ 2026-07-17 官方榜单上线 → 2026-10-27 发布 2.0（132 题）→ 2026-10-28 榜单新增 Gemini 4 Carbon",
+        "cite": [
+          "cognition@Results",
+          "cognition-11@Deprecating FrontierCode Diamond",
+          "leaderboard@Changelog",
+          "cognition-20@Results"
+        ]
+      },
+      {
+        "k": "数据与代码位置",
+        "v": "任务与评分项不公开（官方称为避免污染），仅向模型创建者开放评测；公开渠道只有官方榜单 cognition.com/frontiercode，以及 Artificial Analysis 的独立实现与方法说明",
+        "cite": [
+          "cognition@Conclusion",
+          "leaderboard",
+          "aa-11",
+          "aa-20"
+        ]
+      },
+      {
+        "k": "方法论依据",
+        "v": "官方引用 METR 2026-03-10 的研究「Many SWE-bench-passing PRs would not be merged into main」作为第一代基准误分类问题的证据",
+        "cite": [
+          "cognition@References"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-24",
+        "columns": [
+          "来源",
+          "版本 / 子集",
+          "模型",
+          "score",
+          "口径 / 备注"
+        ],
+        "rows": [
+          [
+            "1.0 公告",
+            "1.0 Diamond（50 题）",
+            "Claude Opus 4.8",
+            "13.4%",
+            "首发最好成绩；每档位 5 次取平均后取最佳档位"
+          ],
+          [
+            "1.0 公告",
+            "1.0 Diamond",
+            "GPT-5.5",
+            "6.3%",
+            "同上"
+          ],
+          [
+            "1.0 公告",
+            "1.0 Diamond",
+            "Gemini 3.1 Pro",
+            "4.7%",
+            "同上"
+          ],
+          [
+            "1.0 公告",
+            "1.0 Diamond",
+            "Kimi K2.6（开源最好）",
+            "3.8%",
+            "同上"
+          ],
+          [
+            "1.0 公告",
+            "1.0 Main（100 题）",
+            "Claude Opus 4.8",
+            "34.3%",
+            "同上"
+          ],
+          [
+            "1.0 公告",
+            "1.0 Main",
+            "Kimi K2.6",
+            "16%",
+            "同上"
+          ],
+          [
+            "1.0 公告",
+            "1.0 Extended（150 题）",
+            "Claude Opus 4.8",
+            "51.8%",
+            "同上"
+          ],
+          [
+            "1.0 公告",
+            "1.0 Extended",
+            "Kimi K2.6",
+            "37%",
+            "同上"
+          ],
+          [
+            "2.0 公告对照表",
+            "1.1（表中未注明子集）",
+            "Claude Opus 5.5",
+            "54.6%",
+            "同表 2.0 为 45.5%"
+          ],
+          [
+            "2.0 公告对照表",
+            "1.1",
+            "GPT-6 Astra",
+            "53.3%",
+            "同表 2.0 为 42.8%"
+          ],
+          [
+            "2.0 公告对照表",
+            "1.1",
+            "SWE-2",
+            "50.0%",
+            "同表 2.0 为 23.9%"
+          ],
+          [
+            "2.0 公告对照表",
+            "1.1",
+            "Grok 4.7",
+            "47.6%",
+            "同表 2.0 为 28.6%"
+          ],
+          [
+            "2.0 公告对照表",
+            "1.1",
+            "Gemini 4 Argon",
+            "47.5%",
+            "同表 2.0 为 26.3%"
+          ],
+          [
+            "2.0 公告对照表",
+            "1.1",
+            "Muse Wonder 1.0",
+            "47.0%",
+            "同表 2.0 为 24.3%"
+          ],
+          [
+            "2.0 公告对照表",
+            "1.1",
+            "Kimi K3",
+            "44.2%",
+            "同表 2.0 为 17.7%"
+          ],
+          [
+            "2.0 公告对照表",
+            "1.1",
+            "DeepSeek V4.1 Flash",
+            "43.9%",
+            "同表 2.0 为 19.3%"
+          ],
+          [
+            "2.0 公告",
+            "2.0（132 题）",
+            "Claude Opus 5.5",
+            "45.5%",
+            "2.0 公告时最好成绩；官方称远未饱和"
+          ],
+          [
+            "Google 公告",
+            "1.1 Main",
+            "Gemini 3.7 Flash",
+            "43.6%",
+            "同句对比 3.6 Flash 34.4%"
+          ],
+          [
+            "xAI 公告",
+            "1.1 Extended",
+            "Grok 4.6 High",
+            "61.3%",
+            "xAI 自报，页面标注为 FrontierCode v1.1 (Extended)"
+          ],
+          [
+            "Artificial Analysis",
+            "1.1 Main",
+            "Claude Fable 5.2 (Medium)",
+            "64.0%",
+            "独立运行：每任务 3 次、Stirrup harness、250 回合上限、GPT-6 Luna (medium) 裁判"
+          ],
+          [
+            "Artificial Analysis",
+            "1.1 Main",
+            "Claude Opus 5.5 (Medium)",
+            "57.1%",
+            "同上"
+          ],
+          [
+            "Artificial Analysis",
+            "2.0（132 题）",
+            "Claude Fable 5.2 (High)",
+            "49.1%",
+            "独立运行：每任务 3 次、Stirrup harness、500 回合上限、GPT-6 Luna (medium) 裁判"
+          ]
+        ]
+      },
+      "cite": [
+        "cognition@Results",
+        "cognition-20@Results",
+        "google",
+        "xai",
+        "aa-11",
+        "aa-20"
+      ]
+    }
+  }
 }
