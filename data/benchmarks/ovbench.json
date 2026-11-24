@@ -1,28 +1,291 @@
 {
   "id": "ovbench",
   "name": "OVBench",
-  "full_name": null,
+  "full_name": "Online Video Understanding Benchmark（OVBench，在线视频理解基准）",
   "aliases": [],
   "status": null,
   "categories": [
     "multimodal"
   ],
-  "summary": "在线视频时空理解基准（过去/当下/未来 16 子任务）",
-  "interpretation": "在线视频理解问答基准，6 类核心任务按过去/当下/未来三时态组成 16 个子任务，问答准确率计分；与离线视频基准不同，模型需在流式时间点上仅凭已见帧作答。",
-  "measures": [],
-  "does_not_measure": [],
+  "summary": "OVBench 考的是「边看边答」：视频像直播一样一帧帧流进来，问题在任意时间点抛出，模型只能依据已经看过的帧作答。它把问题按过去/当前/未来三种时间上下文归成 6 类核心任务、共 16 个子任务，题型是带干扰项的多选题，用整体准确率计分。",
+  "interpretation": "高分说明模型在流式设定下能记住并利用过去帧里的时空细节（动作顺序、物体轨迹、物体是否还在画面里、接下来最可能发生什么）；它不说明模型能一次看完整个视频再回答，也不覆盖开放式自由生成、音频/字幕等其他模态信息。",
+  "measures": [
+    {
+      "area": "Temporal Perception（时间感知，TP）",
+      "focus": "刚发生过的动作顺序、进行中事件的持续时长、物体在过去帧中的存在状态；示例题「What is the sequence of actions the person in the scene has performed recently?」",
+      "share": "3 个子任务（AS / SL / OES）",
+      "format": "多选题，候选项含从同一视频其他时间戳取样的干扰项",
+      "cite": [
+        "arxiv-2501-00584@§3.1",
+        "arxiv-2501-00584@Table 1",
+        "site-videochat-online@任务图例"
+      ]
+    },
+    {
+      "area": "Spatio Perception（空间感知，SP）",
+      "focus": "当前帧里离散动作的识别与量化、物体位置与空间关系；示例题「Is the person in the [0.168, 0.193, 0.846, 0.996] location in the current frame performing walking?」",
+      "share": "2 个子任务（AL / OP）",
+      "format": "多选题，问题带边界框坐标",
+      "cite": [
+        "arxiv-2501-00584@§3.1",
+        "arxiv-2501-00584@Table 1",
+        "site-videochat-online@任务图例"
+      ]
+    },
+    {
+      "area": "Spatio-Temporal Perception（时空感知，STP）",
+      "focus": "单个或多个目标的运动轨迹描述、位移与相对位置；示例题「What is the trajectory of the object among car [0.482, 0.518, 0.485, 0.531], car [0.561, 0.51, 0.616, 0.577] in the past 5 seconds, which moves the shortest distance?」",
+      "share": "2 个子任务（AT / OT）",
+      "format": "多选题，问题带边界框坐标与时间窗",
+      "cite": [
+        "arxiv-2501-00584@§3.1",
+        "arxiv-2501-00584@Table 1",
+        "site-videochat-online@任务图例"
+      ]
+    },
+    {
+      "area": "Temporal Hallucination Verification（时间幻觉核查，THV）",
+      "focus": "判断过去看到的动作此刻是否仍在继续、核对已发生事件的状态、分析物体在过去与当前之间的位置变化——直接针对流式模型常见的「幻觉式续述」",
+      "share": "3 个子任务（AP / SV / OV）",
+      "format": "多选题",
+      "cite": [
+        "arxiv-2501-00584@§3.1",
+        "site-videochat-online@任务图例"
+      ]
+    },
+    {
+      "area": "Past Memory（过去记忆，PM）",
+      "focus": "回忆与给定动作相关的过去事件、取回持续时长或已达成目标、定位物体过去的位置与状态；示例题「Which step did the person perform for the longest duration in the last 60 seconds?」",
+      "share": "3 个子任务（AR / PR / TR）",
+      "format": "多选题，问题带时间窗",
+      "cite": [
+        "arxiv-2501-00584@§3.1",
+        "arxiv-2501-00584@Table 1",
+        "site-videochat-online@任务图例"
+      ]
+    },
+    {
+      "area": "Future Prediction（未来预测，FP）",
+      "focus": "依据已观察到的运动模式和当前时空配置推测接下来的动作；示例题「What action is the person currently in the [0.328, 0.211, 0.436, 0.809] location likely to do next?」",
+      "share": "3 个子任务（AA / GSP / MP）",
+      "format": "多选题，问题带边界框坐标",
+      "cite": [
+        "arxiv-2501-00584@§3.1",
+        "arxiv-2501-00584@Table 1",
+        "site-videochat-online@任务图例"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "离线视频理解能力：本基准按流式/滑窗口径评测，输入只到问题时间点为止，不测「先看完整视频再回答」的表现",
+      "cite": [
+        "arxiv-2501-00584@§5.1"
+      ]
+    },
+    {
+      "text": "开放式自由生成：所有题目都是带候选项的多选题，答案空间受限，不考长答案推理或表达质量",
+      "cite": [
+        "arxiv-2501-00584@§3.2",
+        "arxiv-2501-00584@Table 1"
+      ]
+    }
+  ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
+    "sample_count": 1463,
+    "splits": [
+      "train（HF 单 split，1.46k 行）"
+    ],
     "languages": [],
-    "source_type": null,
-    "public_sample": null
+    "source_type": "人工标注的多选题问答，底层视频取自 8 个已有视频数据集",
+    "public_sample": true,
+    "totals": "1,463 段视频（论文附录与 HF 数据集卡一致），每段视频挂多个问题、问题标注共约 7,000 条；HF 以 train 单 split 分发，JSON 格式，195 GB，MIT 许可；论文另说明底层视频只从这些数据集的 validation/test 部分选取以防泄漏。",
+    "cite": [
+      "arxiv-2501-00584@附录 §4.1",
+      "hf-mcg-nju-ovbench@Dataset card",
+      "arxiv-2501-00584@§1",
+      "arxiv-2501-00584@§3.2"
+    ],
+    "construction": [
+      {
+        "k": "选源",
+        "text": "从 8 个已有视频数据集里挑视频：AVA（Movie）、HiREST（Instructional）、COIN（Indoor Activities）、TAO（Road Scene）、HACS（Indoor Activities）、ArgoVerse（Outdoor Activities）、BDD（Open-Domain）、LaSOT，覆盖 6 个域，并只使用它们的 validation/test 部分以防数据泄漏。",
+        "cite": [
+          "arxiv-2501-00584@附录 Table 11",
+          "arxiv-2501-00584@§3.2"
+        ]
+      },
+      {
+        "k": "出题",
+        "text": "人工标注者基于具体时间戳和边界框标注生成问题与答案，共约 7,000 条，刻意强调时空细节；论文摘要称这些标注为 high-quality annotations。",
+        "cite": [
+          "arxiv-2501-00584@§1",
+          "arxiv-2501-00584@§3.2"
+        ]
+      },
+      {
+        "k": "造选项",
+        "text": "为适应流式场景设计多选题生成流程：干扰项从同一视频的不同时间戳取样，依据相似的问题、物体或该类问题的典型回答来构造，模拟真实的时间上下文漂移。",
+        "cite": [
+          "arxiv-2501-00584@§3.2"
+        ]
+      },
+      {
+        "k": "质检",
+        "text": "评估问题清晰度与选项歧义以避免误读，并由人工标注者核验标注准确性；附录 Table 11 另给出各任务的问题准则（如「Minimum 6 possible options available」「Step Duration ≤ 5s」）。",
+        "cite": [
+          "arxiv-2501-00584@§3.2",
+          "arxiv-2501-00584@附录 Table 11"
+        ]
+      },
+      {
+        "k": "规模",
+        "text": "合计 1,463 段视频；论文用视频长度与提问长度分布图描述数据形态。",
+        "cite": [
+          "arxiv-2501-00584@附录 §4.1"
+        ]
+      }
+    ]
   },
-  "metrics": [],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [],
-  "notes": "字节 Seed 引用",
+  "metrics": [
+    {
+      "id": "accuracy",
+      "name": "准确率（Accuracy）",
+      "direction": "越高越好",
+      "description": "多选题选中正确选项的比例；论文与官网榜单都按整体 AVG 与 6 类核心任务分别报告，官网榜单默认按整体准确率排序。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2501-00584@Table 2",
+        "site-videochat-online@Leaderboard"
+      ]
+    }
+  ],
+  "default_protocol": {
+    "raw": "论文给出两种口径：滑窗口径取问题时刻前 32 秒、按 2 fps 抽帧；流式口径从片段起点输入到问题时刻的全部帧、按 2 fps 采样。模型回答选项，按准确率计分，榜单默认按整体准确率排序。",
+    "cite": [
+      "arxiv-2501-00584@§5.1",
+      "site-videochat-online@Leaderboard"
+    ],
+    "variants": [
+      {
+        "text": "滑窗 vs 流式不可比：论文明确指出多数多模态大模型目前无法接收流式视频输入，因此对先进模型用滑窗、对流式模型才用流式；同一个 VideoChat-Online 4B 在两种口径下分别是 53.9（滑窗）与 54.9（流式），官网榜单用 ⭐ 标出流式输入。",
+        "cite": [
+          "arxiv-2501-00584@§5.1",
+          "arxiv-2501-00584@Table 2",
+          "site-videochat-online@榜单脚注"
+        ]
+      },
+      {
+        "text": "闭源模型配置未披露：论文未给出 Gemini-1.5-Flash 的抽帧参数、分辨率与提示词，其 50.7% 只能在「滑窗 32s / 2 fps」这个统一描述下解读，难以逐位复现。",
+        "cite": [
+          "arxiv-2501-00584@Table 2",
+          "arxiv-2501-00584@§5.1"
+        ]
+      },
+      {
+        "text": "复现路径：官方仓库提供基于 lmms_eval 的两个评测脚本（online_bench_sliding_window.sh 与 online_bench_stream.sh），分别对应上述两种口径。",
+        "cite": [
+          "repo-mcg-nju-videochat-online@README"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2024-12-31",
+      "label": "arXiv v1 提交",
+      "cite": [
+        "arxiv-2501-00584@提交历史"
+      ]
+    },
+    {
+      "id": "v2",
+      "date": "2025-04-17",
+      "label": "arXiv v2 修订，标注为 CVPR 2025 Camera Ready",
+      "cite": [
+        "arxiv-2501-00584@提交历史",
+        "arxiv-2501-00584@Comments"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "论文正文与结果表的涨幅数字自相矛盾",
+      "impact": "摘要与 §1 说论文模型超过离线模型 Qwen2-VL 7B 4.19%，但 Table 2 里 Qwen2-VL 7B 是 49.7、Gemini-1.5-Flash 是 50.7，而 VideoChat-Online 流式 54.9 与前两者相差分别是 5.2 与 4.2 个百分点；Table 2 题注写的「4.2% enhancement compared to advanced offline MLLMs」对应的是 Gemini-1.5-Flash。引用任何涨幅都必须说清对比对象是谁。",
+      "severity": "高",
+      "response": "未见官方回应",
+      "reader": "看到 +4.19% 先确认对比的是 Qwen2-VL 还是 Gemini-1.5-Flash；两者都不是同一个数。",
+      "cite": [
+        "arxiv-2501-00584@摘要",
+        "arxiv-2501-00584@§1",
+        "arxiv-2501-00584@Table 2"
+      ]
+    },
+    {
+      "issue": "榜首成绩来自作者自研模型，且多数对比模型跑在滑窗口径",
+      "impact": "Table 2 中 54.9% 与 53.9% 都是作者的 VideoChat-Online 4B；流式口径下只有 VideoLLM-Online、MovieChat、Flash-Vstream 三个基线，其余先进模型（Gemini-1.5-Flash、Qwen2-VL 等）只能吃滑窗。跨模型横向排序因此不是同条件比较。",
+      "severity": "高",
+      "response": "论文如实标注了每个模型的输入口径，并在题注中把对比拆成「对流式模型」与「对离线模型」两组。",
+      "reader": "比较两个模型前先看它们跑的是不是同一种口径。",
+      "cite": [
+        "arxiv-2501-00584@Table 2",
+        "arxiv-2501-00584@§5.1"
+      ]
+    },
+    {
+      "issue": "数据集构成的数量描述前后不一致",
+      "impact": "§1 说任务基于 seven datasets，§3.2 说 curated 8 datasets，附录 Table 11 实际列出 8 个来源数据集。域的数量两处都写 6 个域，与 Table 11 列出的 Movie / Instructional / Indoor Activities / Road Scene / Open-Domain / Outdoor Activities 一致。",
+      "severity": "中",
+      "response": "未见官方回应；以论文最新版 §3.2 与附录 Table 11 的 8 个数据集为准。",
+      "reader": "引用「几个数据集」时用 8，并知道 §1 的 seven 是旧表述。",
+      "cite": [
+        "arxiv-2501-00584@§1",
+        "arxiv-2501-00584@§3.2",
+        "arxiv-2501-00584@附录 Table 11"
+      ]
+    },
+    {
+      "issue": "「题量」有两种口径，容易被混为一谈",
+      "impact": "1,463 是视频数（附录 §4.1 与 HF 数据集卡的 Number of rows 一致），而问题标注约 7,000 条；HF 每行一段视频、questions 字段挂多个问题。另外论文说底层视频只取源数据集的 validation/test 部分，但公开版本在 HF 上只有一个 train split，没有按论文语义拆分的评测 split。",
+      "severity": "中",
+      "response": "未见官方回应",
+      "reader": "看到「1,463」要知道它是视频段数不是题目数；自己划分评测子集时注意这一点。",
+      "cite": [
+        "arxiv-2501-00584@附录 §4.1",
+        "arxiv-2501-00584@§1",
+        "hf-mcg-nju-ovbench@Dataset card",
+        "arxiv-2501-00584@§3.2"
+      ]
+    },
+    {
+      "issue": "部分在线模型在该基准上接近零分，低分可能源于格式不适配而非能力缺失",
+      "impact": "Table 2 中 VideoLLM-Online 7B 在多个子任务上为 0 或接近 0（整体 9.6），说明提示模板、输出格式或选项字母解析对该模型严重不适配；把它和其他模型排在一起会放大差距。",
+      "severity": "低",
+      "response": "论文提供了统一的 lmms_eval 脚本，建议提交方用该脚本重跑。",
+      "reader": "接近 0 的分数先怀疑格式与解析，不要直接当成能力结论。",
+      "cite": [
+        "arxiv-2501-00584@Table 2",
+        "repo-mcg-nju-videochat-online@README"
+      ]
+    },
+    {
+      "issue": "子任务分数极不均衡，整体准确率会掩盖弱项",
+      "impact": "Table 2 中同一模型在不同子任务上差距很大：VideoChat-Online 流式口径下 FP（未来预测）仅 16.6，而 TR（轨迹检索）达 70.6。整体 AVG 54.9 主要被记忆与检索类子任务拉高。",
+      "severity": "低",
+      "response": "论文按 6 类任务分别报告分数，官网榜单也提供按子任务排序。",
+      "reader": "关心实时预测能力时看 FP 三个子任务，不要只看 AVG。",
+      "cite": [
+        "arxiv-2501-00584@Table 2",
+        "site-videochat-online@Leaderboard"
+      ]
+    }
+  ],
+  "notes": "字节 Seed 引用（Seed 2.1 官方博客）；评测脚本与官方榜单入口在项目仓库",
   "official_sources": [
     {
       "kind": "paper",
@@ -30,10 +293,351 @@
     },
     {
       "kind": "site",
+      "url": "https://videochat-online.github.io/"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/MCG-NJU/VideoChat-Online"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/MCG-NJU/OVBench"
+    },
+    {
+      "kind": "blog",
       "url": "https://seed.bytedance.com/en/blog/seed2-1-officially-released-advancing-ai-productivity"
     }
   ],
-  "related_benchmarks": [],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "related_benchmarks": [
+    "video-mme",
+    "longvideobench",
+    "egoschema",
+    "mlvu",
+    "mvbench"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-15",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-15",
+    "sources": [
+      {
+        "id": "arxiv-2501-00584",
+        "kind": "paper",
+        "title": "Online Video Understanding: OVBench and VideoChat-Online（arXiv:2501.00584，v2，2025-04-17，CVPR 2025 Camera Ready）",
+        "url": "https://arxiv.org/abs/2501.00584",
+        "accessed": "2026-11-15"
+      },
+      {
+        "id": "site-videochat-online",
+        "kind": "site",
+        "title": "VideoChat-Online 项目主页（含 OVBench 任务图例与 Leaderboard）",
+        "url": "https://videochat-online.github.io/",
+        "accessed": "2026-11-15"
+      },
+      {
+        "id": "repo-mcg-nju-videochat-online",
+        "kind": "repo",
+        "title": "MCG-NJU/VideoChat-Online（官方仓库 README 与评测脚本）",
+        "url": "https://github.com/MCG-NJU/VideoChat-Online",
+        "accessed": "2026-11-15"
+      },
+      {
+        "id": "hf-mcg-nju-ovbench",
+        "kind": "dataset",
+        "title": "MCG-NJU/OVBench（Hugging Face 数据集卡）",
+        "url": "https://huggingface.co/datasets/MCG-NJU/OVBench",
+        "accessed": "2026-11-15"
+      },
+      {
+        "id": "seed-en-blog-seed2-1-official",
+        "kind": "blog",
+        "title": "字节 Seed 2.1 官方发布博客（二手来源，仅用于工业界引用佐证）",
+        "url": "https://seed.bytedance.com/en/blog/seed2-1-officially-released-advancing-ai-productivity",
+        "accessed": "2026-11-15"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "南京大学（State Key Laboratory for Novel Software Technology）× 中国移动研究院 × OpenGVLab / 上海人工智能实验室",
+        "cite": [
+          "arxiv-2501-00584@作者与机构",
+          "site-videochat-online@作者与机构"
+        ]
+      },
+      "first_release": {
+        "v": "2024-12-31（arXiv v1；v2 于 2025-04-17 修订）",
+        "cite": [
+          "arxiv-2501-00584@提交历史"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "arxiv-2501-00584@摘要",
+        "site-videochat-online@摘要"
+      ],
+      "interpretation": [
+        "arxiv-2501-00584@§5.1",
+        "site-videochat-online@榜单脚注"
+      ]
+    },
+    "problem": {
+      "text": "已有视频基准的主流做法是「给完整视频、再提问」的离线设定，反映不了自动驾驶、增强现实、监控这类场景里「帧持续流入、问题随时出现」的约束。OVBench 把评测改到流式时间点上：只给问题时刻之前的帧，考模型对已见帧的记忆、时空推理与即时判断。",
+      "cite": [
+        "arxiv-2501-00584@摘要",
+        "site-videochat-online@摘要"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机/多数类基线",
+        "value": "论文未给出",
+        "note": "论文未报告随机基线，本站不做推算；附录给出的 QA 示例为四个候选项的多选形式，Table 11 另注明候选项池至少 6 个。",
+        "cite": [
+          "arxiv-2501-00584@附录 Table 11"
+        ]
+      },
+      {
+        "label": "论文发布时最好成绩（流式口径）",
+        "value": "54.9%",
+        "note": "VideoChat-Online 4B，作者自研模型，流式 2 fps。",
+        "cite": [
+          "arxiv-2501-00584@Table 2"
+        ]
+      },
+      {
+        "label": "论文发布时最好成绩（滑窗口径）",
+        "value": "53.9%",
+        "note": "同为 VideoChat-Online 4B，滑窗 32s / 2 fps；同一模型换口径差 1.0 个百分点。",
+        "cite": [
+          "arxiv-2501-00584@Table 2"
+        ]
+      },
+      {
+        "label": "同期最强离线模型（滑窗口径）",
+        "value": "50.7%",
+        "note": "Gemini-1.5-Flash，参数量未披露；论文题注中「4.2% enhancement」的对比对象。",
+        "cite": [
+          "arxiv-2501-00584@Table 2"
+        ]
+      },
+      {
+        "label": "同期开源离线模型（滑窗口径）",
+        "value": "49.7%",
+        "note": "Qwen2-VL 7B；论文摘要与 §1 的「4.19%」对比对象。",
+        "cite": [
+          "arxiv-2501-00584@Table 2",
+          "arxiv-2501-00584@摘要"
+        ]
+      },
+      {
+        "label": "同期在线模型（流式口径）",
+        "value": "31.2%",
+        "note": "Flash-Vstream 7B；VideoLLM-Online 7B 仅 9.6%，多数子任务接近 0。",
+        "cite": [
+          "arxiv-2501-00584@Table 2"
+        ]
+      },
+      {
+        "label": "官网榜单最高",
+        "value": "54.9%",
+        "note": "VideoChat-Online 4B，榜单以 ⭐ 标出流式输入。",
+        "cite": [
+          "site-videochat-online@Leaderboard",
+          "site-videochat-online@榜单脚注"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 54.9% 理解成「在线视频理解已经堪用」——它只是多选题的整体准确率，且来自作者自研模型；同一模型在未来预测（FP）三个子任务上只有 16.6，强项集中在记忆与检索类子任务。",
+        "cite": [
+          "arxiv-2501-00584@Table 2"
+        ]
+      },
+      {
+        "text": "把滑窗分数和流式分数混在一个榜里比——官网用 ⭐ 标出流式输入，论文也明确多数模型只能跑滑窗，两种口径不同条件。",
+        "cite": [
+          "site-videochat-online@榜单脚注",
+          "arxiv-2501-00584@§5.1"
+        ]
+      },
+      {
+        "text": "以为模型看的是整段视频——两种口径的输入都截止到问题时刻，未来帧对模型不可见。",
+        "cite": [
+          "arxiv-2501-00584@§5.1"
+        ]
+      },
+      {
+        "text": "把「+4.19%」当成对所有离线模型的提升——该数字的对比对象是 Qwen2-VL 7B（49.7），对 Gemini-1.5-Flash（50.7）的差距按 Table 2 题注是 4.2%。",
+        "cite": [
+          "arxiv-2501-00584@摘要",
+          "arxiv-2501-00584@Table 2"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "南京大学 State Key Laboratory for Novel Software Technology、中国移动研究院、OpenGVLab（上海人工智能实验室）",
+        "cite": [
+          "arxiv-2501-00584@作者与机构"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "Zhenpeng Huang、Xinhao Li、Jiaqi Li、Jing Wang 等（论文署名列表）",
+        "cite": [
+          "arxiv-2501-00584@作者与机构"
+        ]
+      },
+      {
+        "k": "发表场合",
+        "v": "CVPR 2025 Camera Ready；预印本 arXiv:2501.00584，v1 提交于 2024-12-31，v2 修订于 2025-04-17",
+        "cite": [
+          "arxiv-2501-00584@Comments",
+          "arxiv-2501-00584@提交历史"
+        ]
+      },
+      {
+        "k": "配套模型",
+        "v": "同期发布 VideoChat-Online（4B，面向移动端部署），核心是 Pyramid Memory Bank（PMB），由 temporal memory、main memory、spatial memory 三个模块组成，用于在视频流中保留关键时空信息",
+        "cite": [
+          "arxiv-2501-00584@摘要",
+          "arxiv-2501-00584@§1",
+          "arxiv-2501-00584@附录 §1.1"
+        ]
+      },
+      {
+        "k": "训练范式",
+        "v": "offline-to-online learning：把离线视频数据与在线指令微调数据以交错对话格式混合；官方仓库称之为 Interleaved Dialogue Tuning",
+        "cite": [
+          "site-videochat-online@摘要",
+          "repo-mcg-nju-videochat-online@README"
+        ]
+      },
+      {
+        "k": "部署开销",
+        "v": "论文附录记录 OVBench 54.9% 时 VRAM 占用 8.71 GB",
+        "cite": [
+          "arxiv-2501-00584@附录 Table 7"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "数据集在 Hugging Face（MCG-NJU/OVBench，MIT，JSON，195 GB，train 单 split）；代码、榜单入口与 lmms_eval 评测脚本在 GitHub；成绩提交方式为发邮件给仓库维护者或在仓库开 issue",
+        "cite": [
+          "hf-mcg-nju-ovbench@Dataset card",
+          "repo-mcg-nju-videochat-online@README"
+        ]
+      },
+      {
+        "k": "工业界引用",
+        "v": "字节 Seed 2.1 官方博客称其流式视频能力升级、在 OVBench 上取得突出结果（二手来源，仅作佐证；本站账本中 seed-2-0-lite 63.2、seed-2-1 Pro 70.0 两条 OVBench 记录均引该博客）",
+        "cite": [
+          "seed-en-blog-seed2-1-official@正文"
+        ]
+      },
+      {
+        "k": "跨基准表现",
+        "v": "官方仓库另报 VideoChatOnline-4B 在长视频基准上的成绩：VideoMME 平均 54.4、MVBench 65.2、EgoSchema 54.7、MLVU 60.8、LongVideoBench 54.1",
+        "cite": [
+          "repo-mcg-nju-videochat-online@README"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-15",
+        "columns": [
+          "来源",
+          "模型",
+          "参数量",
+          "输入口径",
+          "整体准确率(%)"
+        ],
+        "rows": [
+          [
+            "论文 Table 2",
+            "VideoChat-Online (Ours)",
+            "4B",
+            "流式 2 fps",
+            "54.9"
+          ],
+          [
+            "官网榜单",
+            "VideoChat-Online（⭐ 流式）",
+            "4B",
+            "流式",
+            "54.9"
+          ],
+          [
+            "论文 Table 2",
+            "VideoChat-Online (Ours)",
+            "4B",
+            "滑窗 32s / 2 fps",
+            "53.9"
+          ],
+          [
+            "论文 Table 2",
+            "Gemini-1.5-Flash",
+            null,
+            "滑窗 32s / 2 fps",
+            "50.7"
+          ],
+          [
+            "论文 Table 2",
+            "Qwen2-VL",
+            "7B",
+            "滑窗 32s / 2 fps",
+            "49.7"
+          ],
+          [
+            "论文 Table 2",
+            "LLaVA-Onevision",
+            "7B",
+            "滑窗 32s / 2 fps",
+            "49.5"
+          ],
+          [
+            "论文 Table 2",
+            "InternVL2",
+            "7B",
+            "滑窗 32s / 2 fps",
+            "48.7"
+          ],
+          [
+            "论文 Table 2",
+            "InternVL2",
+            "4B",
+            "滑窗 32s / 2 fps",
+            "44.1"
+          ],
+          [
+            "论文 Table 2",
+            "Flash-Vstream",
+            "7B",
+            "流式 2 fps",
+            "31.2"
+          ],
+          [
+            "论文 Table 2",
+            "VideoLLM-Online",
+            "7B",
+            "流式 2 fps",
+            "9.6"
+          ]
+        ]
+      },
+      "cite": [
+        "arxiv-2501-00584@Table 2",
+        "site-videochat-online@Leaderboard"
+      ]
+    }
+  }
 }
