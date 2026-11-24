@@ -36,7 +36,22 @@ for (const name of ['good', 'degraded']) {
 }
 ```
 
-报告的 source locator 相对于所在样例目录；每份 `sources/` 包含此次使用的 manifest、prompt、cases、阈值和文档。`source_snapshot.sources[].sha256`、`run.prompt_hash` 与 `evidence.traces` 中的 hash 对应这些实际文件；`trace.implementation_hashes` 对应固定生产者的 `python/agent_core/` 文件。`run.model.revision` 还绑定故障模式，因此两份报告的 revision 不同。结构校验器本身不核对这些文件内容或 hash。
+报告的 source locator 相对于所在样例目录；每份 `sources/` 包含此次使用的 manifest、prompt、cases、阈值和文档。`source_snapshot.sources[].sha256`、`run.prompt_hash` 与 `evidence.traces` 中的 hash 对应这些实际文件；`trace.implementation_hashes` 对应固定生产者的 `python/agent_core/` 文件。`run.model.revision` 还绑定故障模式，因此两份报告的 revision 不同。结构校验器本身不核对这些文件内容或 hash；核对由下面的运行评估器完成。
+
+## 复算运行结论
+
+结构校验只证明报告可解析。要判断这一次运行的结果，需要重算来源字节、case 判定、指标分子分母、可靠性与阈值，再与记录值对账：
+
+```bash
+# 默认核对两份样例；退出码只表示对账是否一致，不表示运行是否成功
+npm run evaluate:learning-agent
+# 把质量结论变成门禁：正常样例退出 0，故障样例退出 1
+npm run evaluate:learning-agent -- --require-pass data/eval-specs/examples/learning-agent-local-v1/good
+# 机器可读的对账结果（直接调 node，避开 npm run 的输出前缀）
+node scripts/evaluate-learning-agent.mjs --json
+```
+
+评估器只读运行目录，不联网、不调用模型。它复算 7 项指标的分子分母（`claims` 无轨迹分解，按记录值参与阈值判定并显式标记，不补零）；Explain / Perform / Debug / Transfer / Retain 与 `cost_latency` 未测，不计入结论。任何一项无法判定（例如分母为 0）时，运行结论不得记为通过。
 
 ## 从固定生产者重新运行
 
