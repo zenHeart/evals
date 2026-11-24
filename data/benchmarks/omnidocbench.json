@@ -1,7 +1,7 @@
 {
   "id": "omnidocbench",
   "name": "OmniDocBench",
-  "full_name": null,
+  "full_name": "OmniDocBench: Benchmarking Diverse PDF Document Parsing with Comprehensive Annotations（多样化 PDF 文档解析基准）",
   "aliases": [
     "OmniDocBench v1.5"
   ],
@@ -9,30 +9,389 @@
   "categories": [
     "multimodal"
   ],
-  "summary": "文档解析评测：PDF/扫描件转 Markdown 的结构还原",
-  "interpretation": "考把乱版 PDF 还原成结构化 Markdown——文本、表格、公式、阅读顺序逐项比对，是文档解析方向的公认榜。",
-  "measures": [],
-  "does_not_measure": [],
+  "summary": "OmniDocBench 是文档解析评测集：把真实 PDF 页面（学术论文、报纸、手写笔记、扫描件等）交给模型，让它输出整页 Markdown，再和人工标注逐块比对文本、表格、公式与阅读顺序。",
+  "interpretation": "高分说明模型能把一页排版复杂的 PDF 还原成结构正确的 Markdown（段落、表格、公式、顺序都对）；它不说明模型读懂了文档内容——评分只比对解析出的 Markdown 与标注的结构和文本一致性。且 v1.5 起换过匹配算法、v1.6 又加了难例，跨版本分数不能直接比。",
+  "measures": [
+    {
+      "area": "端到端整页解析",
+      "focus": "模型输出整页 Markdown，与标注逐块匹配后综合文本、表格、公式三项得出 Overall",
+      "share": "未披露（论文按样本平均，未给题型占比）",
+      "format": "整页 Markdown",
+      "cite": [
+        "repo@README 端到端评测",
+        "paper@§4.3"
+      ]
+    },
+    {
+      "area": "文本块识别",
+      "focus": "段落级文本还原；论文统计超过 15,979 个文本段落标注框",
+      "share": "超过 15,979 个文本段落标注框（块级标注共 20,000+）",
+      "format": "Normalized Edit Distance",
+      "cite": [
+        "paper@§3.3",
+        "paper@§4.3"
+      ]
+    },
+    {
+      "area": "表格结构还原",
+      "focus": "表格先转 HTML 再比对结构；论文单独统计了合并单元格、含公式、竖排等难例",
+      "share": "428 个表格标注框，其中 142 个背景复杂、150 个含合并单元格、7 个竖排",
+      "format": "HTML + TEDS",
+      "cite": [
+        "paper@§4.3",
+        "paper@§3.3"
+      ]
+    },
+    {
+      "area": "公式识别",
+      "focus": "行间与行内公式的 LaTeX 还原；论文统计 4,009 个行内公式与 357 个脚注标记",
+      "share": "4,009 个行内公式标注",
+      "format": "LaTeX + CDM / BLEU",
+      "cite": [
+        "paper@§4.3",
+        "paper@§3.3"
+      ]
+    },
+    {
+      "area": "阅读顺序",
+      "focus": "多栏与图文混排下各块的先后关系；除页眉页脚外所有组件都标了顺序",
+      "share": "超过 16,000 条阅读顺序标注",
+      "format": "Normalized Edit Distance",
+      "cite": [
+        "paper@§3.3",
+        "paper@§4.3"
+      ]
+    },
+    {
+      "area": "版式与属性检测",
+      "focus": "定位 28 类块级与 4 类 span 级元素，并按页面 / 文本 / 表格属性分组看分项分数",
+      "share": "28 个块级类别 + 4 个 span 级类别；5 类页面属性、3 类文本属性、6 类表格属性",
+      "format": "COCODet（mAP / mAR）与分组分项分数",
+      "cite": [
+        "repo@README 引言",
+        "repo@README 指标列表"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "页眉、页脚、页码与脚注标记不计入评分——官方为避免各模型处理方式不同而统一忽略",
+      "cite": [
+        "paper@§4.2",
+        "paper@附录 V"
+      ]
+    },
+    {
+      "text": "文本评测目前只覆盖中文与英文文本",
+      "cite": [
+        "repo@Known Issues"
+      ]
+    },
+    {
+      "text": "不考察对文档内容的理解或问答——评测用模型输出的整页 Markdown 与标注做结构、文本一致性比对",
+      "cite": [
+        "repo@README 端到端评测"
+      ]
+    }
+  ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
+    "sample_count": 1651,
+    "splits": [
+      "单一评测集 1,651 页（官方未划分 train / test）",
+      "v1.6 起另有 296 页难例子集（难公式、难表格、难版式）"
+    ],
+    "languages": [
+      "english",
+      "simplified_chinese",
+      "en_ch_mixed",
+      "traditional_chinese",
+      "other"
+    ],
+    "source_type": "真实 PDF 页面渲染图（报纸与笔记类已升级到 200 DPI）",
+    "public_sample": true,
+    "totals": "1,651 个 PDF 页面 · 10 种文档类型 · 5 种版式 · 5 种语言 · 28 类块级 + 4 类 span 级标注 · 5 类页面属性、3 类文本属性、6 类表格属性",
+    "cite": [
+      "repo@README 引言",
+      "dataset@Updates",
+      "dataset@属性标签"
+    ],
+    "construction": [
+      {
+        "k": "来源采集",
+        "text": "从 Common Crawl、Google、百度搜索引擎和内部数据收集超过 20 万份初始 PDF 文档。",
+        "cite": [
+          "paper@§3.1"
+        ]
+      },
+      {
+        "k": "选样均衡",
+        "text": "用嵌入聚类从 10 个聚类中心挑出 6,000 个视觉多样的页面，再均衡取舍到 981 个样本作为 v1.0 最终数据集。",
+        "cite": [
+          "paper@§3.1"
+        ]
+      },
+      {
+        "k": "智能标注",
+        "text": "用微调的 LayoutLMv3 做版式检测标注，用 PaddleOCR、UniMERNet、GPT-4o 分别标注文本、公式和表格。",
+        "cite": [
+          "paper@§3.2.2"
+        ]
+      },
+      {
+        "k": "人工复核",
+        "text": "上述标注再由三名研究员审查和修正后定稿；仓库另称经过人工筛选、智能标注、人工标注与专家和大模型质检。",
+        "cite": [
+          "paper@§3.2.2",
+          "repo@README 引言"
+        ]
+      },
+      {
+        "k": "版本扩充",
+        "text": "v1.5 增加 374 页（25 中文、349 英文）、把报纸与笔记图升级到 200 DPI、修正部分标注；v1.6 再增加 296 页难例，覆盖复杂嵌套表格、密集公式排版与非常规版式。",
+        "cite": [
+          "dataset@Updates",
+          "repo@Updates"
+        ]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "端到端（end2end）口径：把整页 PDF 交给模型，取它输出的整页 Markdown 作为预测，用 OmniDocBench 的 JSON 标注做 Ground Truth，逐块匹配后计算文本编辑距离、表格 TEDS、公式 CDM 与阅读顺序编辑距离；官方主指标 Overall = ((1 − 文本编辑距离) × 100 + 表格 TEDS + 公式 CDM) / 3。匹配提供三种方法：no_split（直接匹配）、simple_match（按段落切分后匹配）、quick_match（在段落切分上加截断与合并，用 Adjacency Search Match 削弱切分差异的影响）；v1.5 起全面升级为 Hybrid Matching，允许公式与文本互相匹配。官方建议用 end2end 口径，因为它保留样本的类别与属性信息，可做特殊类别忽略和属性级结果输出；另提供 md2md 口径（以 Markdown 作 Ground Truth）以对齐既有评测方式。",
+    "cite": [
+      "repo@README 端到端评测",
+      "paper@§4.2",
+      "paper@§4.3"
+    ],
+    "variants": [
+      {
+        "text": "v1.0 → v1.5：匹配从 Adjacency Search Match 换成 Hybrid Matching，榜单去掉中英文分组改为全页平均，并引入 (1−文本编辑距离)×100 + TEDS + CDM 的 Overall 公式；v1.0 与 v1.5 的分数和现行口径不可直接比。",
+        "cite": [
+          "repo@Updates",
+          "repo@README 端到端评测"
+        ]
+      },
+      {
+        "text": "v1.5 → v1.6：改用 Multi-Granularity Adaptive Matching（MGAM），只在预测侧搜索最优切分粒度、保持 Ground Truth 不变，同时新增 296 页难例；评测代码与数据集主分支已切到 v1.6，复现 v1.0 / v1.5 需 checkout 对应分支。",
+        "cite": [
+          "repo@Updates"
+        ]
+      },
+      {
+        "text": "v1.6 → v1.7：新增 Qianfan-OCR 榜单，并支持 skills 方式评测。",
+        "cite": [
+          "repo@Updates"
+        ]
+      },
+      {
+        "text": "end2end vs md2md：前者以 JSON 标注为 Ground Truth，保留类别、属性与忽略逻辑；后者以 Markdown 为 Ground Truth，两者口径不同。",
+        "cite": [
+          "repo@README 端到端评测"
+        ]
+      },
+      {
+        "text": "厂商自报口径差异：Kimi K2.5 博客把 OmniDocBench Score 定义为 (1 − 归一化 Levenshtein 距离) × 100，只用文本一项，与官方三项平均的 Overall 不是同一个数。",
+        "cite": [
+          "kimi-blog@评测口径"
+        ]
+      },
+      {
+        "text": "厂商自报口径差异：MiniMax M3 在公开的 OmniDocBench v1.5 数据集上评测，图像长边上限 3,584 像素，并在官方提示词之上另加格式约束。",
+        "cite": [
+          "minimax-blog@评测口径"
+        ]
+      }
+    ]
   },
   "metrics": [
-    "edit_distance",
-    "teds",
-    "f1"
+    {
+      "id": "overall",
+      "name": "Overall（综合分）",
+      "direction": "越高越好",
+      "description": "端到端主指标：((1 − 文本编辑距离) × 100 + 表格 TEDS + 公式 CDM) / 3，v1.5 起启用",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "point",
+      "cite": [
+        "repo@README 端到端评测",
+        "repo@Updates"
+      ]
+    },
+    {
+      "id": "text-edit-distance",
+      "name": "文本编辑距离",
+      "direction": "越低越好",
+      "description": "纯文本按归一化编辑距离计算，再按样本平均；配置里可另选 BLEU、METEOR",
+      "unit": "normalized distance",
+      "cite": [
+        "paper@§4.3",
+        "repo@README 指标列表"
+      ]
+    },
+    {
+      "id": "table-teds",
+      "name": "表格 TEDS",
+      "direction": "越高越好",
+      "description": "表格先转 HTML，再算基于树编辑距离的相似度（另报归一化编辑距离）",
+      "cite": [
+        "paper@§4.3",
+        "repo@README 指标列表"
+      ]
+    },
+    {
+      "id": "formula-cdm",
+      "name": "公式 CDM",
+      "direction": "越高越好",
+      "description": "公式用 Character Detection Matching 计算，另报归一化编辑距离与 BLEU",
+      "cite": [
+        "paper@§4.3"
+      ]
+    },
+    {
+      "id": "reading-order-edit-distance",
+      "name": "阅读顺序编辑距离",
+      "direction": "越低越好",
+      "description": "阅读顺序按归一化编辑距离评估",
+      "cite": [
+        "paper@§4.3"
+      ]
+    },
+    {
+      "id": "layout-cocodet",
+      "name": "版式检测 COCODet",
+      "direction": "越高越好",
+      "description": "版式检测任务用 COCO 风格的 mAP / mAR 等指标",
+      "cite": [
+        "repo@README 指标列表"
+      ]
+    }
   ],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [],
-  "notes": "Kimi/Meta/MiniMax/OpenAI 引用；v1.5 为当前常用版本",
+  "versions": [
+    {
+      "id": "v1.0",
+      "date": "2024-12-04",
+      "label": "评测数据集首发（981 页、9 种文档类型）；arXiv v1 于 2024-12-10 提交",
+      "cite": [
+        "dataset@Updates",
+        "paper"
+      ]
+    },
+    {
+      "id": "cvpr2025",
+      "date": "2025-03-10",
+      "label": "论文被 CVPR 2025 接收",
+      "cite": [
+        "repo@Updates"
+      ]
+    },
+    {
+      "id": "v1.5",
+      "date": "2025-09-25",
+      "label": "v1.0 → v1.5：新增 374 页（25 中文 / 349 英文）、报纸与笔记图升到 200 DPI、混合匹配、Overall 公式启用、榜单去掉中英文分组",
+      "cite": [
+        "repo@Updates",
+        "dataset@Updates"
+      ]
+    },
+    {
+      "id": "v1.6",
+      "date": "2026-04-10",
+      "label": "v1.5 → v1.6：新增 296 页难例子集、修正部分标注、匹配改为 MGAM（数据集卡记录日期为 2026-04-09）",
+      "cite": [
+        "repo@Updates",
+        "dataset@Updates"
+      ]
+    },
+    {
+      "id": "v1.7",
+      "date": "2026-04-30",
+      "label": "v1.6 → v1.7：新增 Qianfan-OCR 榜单，支持 skills 方式评测",
+      "cite": [
+        "repo@Updates"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "复杂版式与报纸类页面掉分",
+      "impact": "论文观察到所有模型在多栏和复杂版式上准确率明显下降；报纸类页面上多数 VLM 基本无法识别，而 pipeline 工具明显更好。",
+      "severity": "高",
+      "response": "论文按属性分组报告结果并讨论成因（通用 VLM 靠更广训练数据在长尾场景更稳）；未见针对该短板的专门修复。",
+      "reader": "看模型在报纸、多栏、手写页上的分项分数，不要只看 Overall 总分。",
+      "cite": [
+        "paper@§5.1"
+      ]
+    },
+    {
+      "issue": "版本口径变更导致历史分数不可比",
+      "impact": "v1.5 换了匹配算法、启用新 Overall 公式并去掉中英文分组，v1.6 又换成 MGAM 并新增 296 页难例；榜单数字前后不可直接比较。",
+      "severity": "高",
+      "response": "仓库 Updates 逐条记录变更，并保留 v1.0 / v1.5 分支供复现旧口径。",
+      "reader": "比较前先确认版本号（v1.0 / v1.5 / v1.6_full）与匹配方法，见 default_protocol.variants。",
+      "cite": [
+        "repo@Updates"
+      ]
+    },
+    {
+      "issue": "论文与现行数据集规模不一致",
+      "impact": "论文（v1.0）报告 981 页、9 种文档类型、19 个版式类别、15 个属性标签；现行仓库与数据集卡是 1,651 页、10 种文档类型、28 个块级 + 4 个 span 级类别、5+3+6 类属性。用论文数字描述现行榜单会张冠李戴。",
+      "severity": "中",
+      "response": "数据集卡与 README 的 Updates 记录了扩充过程；论文正文未随数据扩充而修订。",
+      "reader": "引用规模时区分「论文口径」与「现行数据集口径」。",
+      "cite": [
+        "paper@§3.3",
+        "paper@附录 II",
+        "repo@README 引言",
+        "dataset@Updates"
+      ]
+    },
+    {
+      "issue": "非标准输出导致匹配失败",
+      "impact": "README 的 Known Issues 指出，有些模型偶尔输出非标准格式（把多栏文本识别成表格、把公式输出成 Unicode 文本），会造成匹配失败、从而低估分数。",
+      "severity": "中",
+      "response": "v1.5 的 Hybrid Matching 已针对「公式输出成 unicode」这一类错误做缓解；未见其他官方回应。",
+      "reader": "遇到异常低的单项分数，先检查输出格式，不要直接推断能力不行。",
+      "cite": [
+        "repo@Known Issues",
+        "repo@Updates"
+      ]
+    },
+    {
+      "issue": "语种覆盖有限",
+      "impact": "文本评测目前只包含中文与英文文本，其他语种不在评分范围内。",
+      "severity": "低",
+      "response": "未见官方回应。",
+      "reader": "不要用它衡量其他语种的文档解析能力。",
+      "cite": [
+        "repo@Known Issues"
+      ]
+    },
+    {
+      "issue": "仅限研究用途",
+      "impact": "数据集声明仅供研究使用、不用于商业用途；PDF 来自公开渠道与社区用户贡献，不允许分发的内容已被移除。",
+      "severity": "低",
+      "response": "仓库与数据集卡均明示该限制。",
+      "reader": "工业使用需另行取得授权，不要直接拿这份数据做商业训练。",
+      "cite": [
+        "repo@版权声明",
+        "dataset@版权声明"
+      ]
+    }
+  ],
+  "notes": "厂商发布（Kimi K2.5、MiniMax M3 等）常引用 OmniDocBench 作为文档解析成绩；v1.5 曾是厂商最常用口径，v1.6 起榜单与匹配方法均已变更，比较时先看版本。",
   "official_sources": [
     {
-      "kind": "github",
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2412.07626"
+    },
+    {
+      "kind": "repo",
       "url": "https://github.com/opendatalab/OmniDocBench"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/opendatalab/OmniDocBench"
     },
     {
       "kind": "site",
@@ -40,17 +399,282 @@
     },
     {
       "kind": "site",
-      "url": "https://huggingface.co/meta-models/Muse-Glimmer-30B"
+      "url": "https://www.minimax.io/blog/minimax-m3"
     },
     {
       "kind": "site",
-      "url": "https://www.minimax.io/blog/minimax-m3"
+      "url": "https://huggingface.co/meta-models/Muse-Glimmer-30B"
     }
   ],
   "related_benchmarks": [
     "docvqa",
     "mmmu"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-19",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-19",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "OmniDocBench: Benchmarking Diverse PDF Document Parsing with Comprehensive Annotations（arXiv:2412.07626v2，2025-03-25 修订）",
+        "url": "https://arxiv.org/abs/2412.07626",
+        "accessed": "2026-11-19"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "opendatalab/OmniDocBench（README、Updates、Known Issues、v1.6_full 榜单）",
+        "url": "https://github.com/opendatalab/OmniDocBench",
+        "accessed": "2026-11-19"
+      },
+      {
+        "id": "dataset",
+        "kind": "dataset",
+        "title": "opendatalab/OmniDocBench（Hugging Face 数据集卡，含 Updates 与属性标签）",
+        "url": "https://huggingface.co/datasets/opendatalab/OmniDocBench",
+        "accessed": "2026-11-19"
+      },
+      {
+        "id": "kimi-blog",
+        "kind": "blog",
+        "title": "Kimi K2.5 发布博客（引用 OmniDocBench 1.5 并说明自报口径）",
+        "url": "https://www.kimi.ai/blog/kimi-k2-5",
+        "accessed": "2026-11-19"
+      },
+      {
+        "id": "minimax-blog",
+        "kind": "blog",
+        "title": "MiniMax M3 发布博客（引用 OmniDocBench v1.5 并说明评测设置）",
+        "url": "https://www.minimax.io/blog/minimax-m3",
+        "accessed": "2026-11-19"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "上海人工智能实验室（Shanghai AI Laboratory）牵头，合作方 Abaka AI 与 2077AI；标注工作由 2077AI 支持",
+        "cite": [
+          "paper@作者署名",
+          "repo@致谢"
+        ]
+      },
+      "first_release": {
+        "v": "2024-12-04（Hugging Face 数据集首发）；arXiv 论文 v1 于 2024-12-10 提交",
+        "cite": [
+          "dataset@Updates",
+          "paper"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "repo@README 引言",
+        "paper@摘要",
+        "dataset@Updates"
+      ],
+      "interpretation": [
+        "repo@README 端到端评测",
+        "repo@Updates"
+      ]
+    },
+    "problem": {
+      "text": "论文指出现有文档解析基准有三个缺口：文档类型单一（主要集中在学术论文）、评测指标不统一（依赖通用文本相似度）、只报总分看不到具体短板；此外当时页级基准 GOT-OCR 总共只有 90 页中英文文档。OmniDocBench 用 9 类文档、多层级评测（端到端 / 单任务 / 属性级）和细粒度标注来补这些缺口。",
+      "cite": [
+        "paper@§1",
+        "paper@§2.2"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "论文发布时最好（v1.0 口径，2024-12）",
+        "value": "论文只分任务报编辑距离，未给 0–100 的 Overall",
+        "note": "论文 §5.1 的结论是 pipeline 工具（MinerU、Mathpix）在文本、公式、表格识别上都优于其他方法；0–100 的 Overall 口径到 v1.5 才启用。",
+        "cite": [
+          "paper@§5.1",
+          "repo@Updates"
+        ]
+      },
+      {
+        "label": "官方榜单当前最高（v1.6_full）",
+        "value": "97.03（OXR-1.0，1.3B）",
+        "note": "同榜参考：MinerU2.5-Pro 95.75、PaddleOCR-VL-1.5 94.93、Kimi K2.5 84.53（General VLMs，1T）、Marker 78.44（Pipeline Tools）。",
+        "cite": [
+          "repo@README 榜单"
+        ]
+      },
+      {
+        "label": "随机 / 空输出基线",
+        "value": "论文未给出",
+        "note": "论文没有报告随机或空输出基线，本站也不推算。",
+        "cite": [
+          "paper@§5.1"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把不同版本的 Overall 分数直接排在一起比——v1.5 引入 Overall 公式并更换匹配算法，v1.6 又换成 MGAM 并新增 296 页难例，跨版本不可比。",
+        "cite": [
+          "repo@Updates"
+        ]
+      },
+      {
+        "text": "把厂商博客里的 OmniDocBench Score 当成官方 Overall——Kimi K2.5 只用 (1 − 归一化 Levenshtein 距离) × 100 这一项文本指标。",
+        "cite": [
+          "kimi-blog@评测口径"
+        ]
+      },
+      {
+        "text": "把高分理解成模型读懂了文档——评分只比对解析出的 Markdown 与标注的结构和文本一致性，不考察内容理解。",
+        "cite": [
+          "repo@README 端到端评测"
+        ]
+      },
+      {
+        "text": "以为榜单里 1.3B 的专用模型就全面胜过 1T 的通用模型——两者跑同一套 v1.6_full，但厂商自报时的输入分辨率与提示词约束并不统一。",
+        "cite": [
+          "repo@README 榜单",
+          "minimax-blog@评测口径"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "上海人工智能实验室（Shanghai AI Laboratory），合作方 Abaka AI 与 2077AI；2077AI 支持了数据集标注",
+        "cite": [
+          "paper@作者署名",
+          "repo@致谢"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "共同一作 Linke Ouyang、Yuan Qu、Hongbin Zhou、Jiawei Zhu、Rui Zhang、Qunshu Lin、Bin Wang；通讯作者 Conghui He",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2024-12-04 数据集首发 → 2024-12-10 arXiv v1 → 2025-03-10 被 CVPR 2025 接收 → 2025-09-25 v1.0→v1.5 → 2026-04 v1.6（数据集卡 04-09 / 仓库 04-10）→ 2026-04-30 v1.7",
+        "cite": [
+          "dataset@Updates",
+          "paper",
+          "repo@Updates"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "数据集在 Hugging Face（opendatalab/OmniDocBench）与 OpenDataLab；评测代码、指标清单与榜单在 GitHub（opendatalab/OmniDocBench）",
+        "cite": [
+          "dataset",
+          "repo@README 指标列表"
+        ]
+      },
+      {
+        "k": "指标与匹配",
+        "v": "支持 Normalized Edit Distance、BLEU、METEOR、TEDS、COCODet（mAP / mAR）等指标；端到端匹配有 no_split / simple_match / quick_match 三种，v1.5 起为 Hybrid Matching，v1.6 起为 MGAM",
+        "cite": [
+          "repo@README 指标列表",
+          "repo@README 端到端评测",
+          "repo@Updates"
+        ]
+      },
+      {
+        "k": "论文版本",
+        "v": "arXiv:2412.07626v2（2025-03-25 修订，本页核对所用版本）",
+        "cite": [
+          "paper"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-19",
+        "columns": [
+          "模型",
+          "类型",
+          "参数规模",
+          "Overall ↑",
+          "Text Edit ↓",
+          "Formula CDM ↑",
+          "Table TEDS ↑",
+          "Table TEDS-S ↑",
+          "Read Order Edit ↓",
+          "口径"
+        ],
+        "rows": [
+          [
+            "OXR-1.0",
+            "Specialized VLMs",
+            "1.3B",
+            "97.03",
+            "0.0244",
+            "96.93",
+            "96.61",
+            "98.44",
+            "0.1216",
+            "v1.6_full 榜单"
+          ],
+          [
+            "MinerU2.5-Pro",
+            "Specialized VLMs",
+            "1.2B",
+            "95.75",
+            "0.036",
+            "97.45",
+            "93.42",
+            "95.92",
+            "0.120",
+            "v1.6_full 榜单"
+          ],
+          [
+            "PaddleOCR-VL-1.5",
+            "Specialized VLMs",
+            "0.9B",
+            "94.93",
+            "0.038",
+            "96.89",
+            "91.67",
+            "94.37",
+            "0.130",
+            "v1.6_full 榜单"
+          ],
+          [
+            "Kimi K2.5",
+            "General VLMs",
+            "1T",
+            "84.53",
+            "0.107",
+            "83.50",
+            "80.76",
+            "84.00",
+            "0.211",
+            "v1.6_full 榜单"
+          ],
+          [
+            "Marker",
+            "Pipeline Tools",
+            null,
+            "78.44",
+            "0.157",
+            "85.24",
+            "65.77",
+            "73.24",
+            "0.243",
+            "v1.6_full 榜单"
+          ]
+        ]
+      },
+      "cite": [
+        "repo@README 榜单"
+      ]
+    }
+  }
 }
