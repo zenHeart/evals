@@ -12,6 +12,17 @@
 - **下载 EPUB**：[https://evals.zenheart.site/evals.epub](https://evals.zenheart.site/evals.epub)
 - **源码**：[https://github.com/zenHeart/evals](https://github.com/zenHeart/evals)
 
+> ### 🔧 仓库维护 / 接手 agent 入口
+>
+> **[`docs/handoff/v2-upgrade-20261124-t83/README.md`](docs/handoff/v2-upgrade-20261124-t83/README.md)**
+> —— benchmark-profile/v2 存量升级与 2026-11-24 增量窗口的交接包。含：
+> 8 步门禁链的预期输出与已落库回显、引文账本与逐字核验方法（含干净 clone 实测记录）、
+> ingest-checkpoint 边界、23 候选逐项状态、发布台账与遗留项。
+>
+> **接手第一句**：先跑该文件的 §2 门禁链（8 步，预期全绿），
+> 再读 `AUDIT-REPORT.md` 看审核结论，最后按 `manifests/README.md` 的账目决定下一步。
+> **未部署、未推 `main`**——push 到 `main` 会触发 GitHub Pages 自动部署，需单独授权。
+
 ## 站点内容
 
 - **《大模型评估入门》**：32 章（chapter-00 术语速查 + 四大块：建立框架认知 / 方法论与标准流程 / 厂商发布评测全景 / 评估框架实战），提供在线阅读与 EPUB 下载。

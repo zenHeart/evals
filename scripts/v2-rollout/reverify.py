@@ -1,8 +1,14 @@
 #!/usr/bin/env python3
 """独立复核：重新抓取每个来源 URL，检查证据摘录是否逐字出现在新抓取的原文里。
-用法: reverify.py <out/id.json> ; 输出 JSON 汇总。缓存: /workspace/rollout/fresh/"""
+用法: reverify.py <out/id.json> ; 输出 JSON 汇总。
+环境变量: ROLLOUT_ROOT 扁平数据根（默认 <repo>/data），EVIDENCE_DIR / FRESH_DIR 可分别覆盖。
+   缓存: $FRESH_DIR/；证据账本: $EVIDENCE_DIR/<id>.evidence.json"""
 import json,sys,re,os,subprocess,hashlib,html,unicodedata
-R='/workspace/rollout'; os.makedirs(f'{R}/fresh',exist_ok=True)
+_HERE=os.path.dirname(os.path.abspath(__file__)); _REPO=os.environ.get('EVALS_REPO') or os.path.dirname(os.path.dirname(_HERE))
+R=os.environ.get('ROLLOUT_ROOT') or os.path.join(_REPO,'data')
+EVIDENCE_DIR=os.environ.get('EVIDENCE_DIR') or os.path.join(R,'evidence')
+FRESH_DIR=os.environ.get('FRESH_DIR') or os.path.join(R,'fresh')
+os.makedirs(FRESH_DIR,exist_ok=True)
 def norm(s):
     s=unicodedata.normalize('NFKC',s).lower()
     s=re.sub(r'[\u2018\u2019\u201c\u201d"\'`]','',s); s=re.sub(r'[\u2010-\u2015\u2212]','-',s)
@@ -34,7 +40,7 @@ def fetch(url):
     open(p,'w').write(txt); return txt
 b=json.load(open(sys.argv[1])); id_=b['id']
 src={s['id']:s for s in b['profile']['sources']}
-ev=json.load(open(f'{R}/evidence/{id_}.evidence.json'))
+ev=json.load(open(f'{EVIDENCE_DIR}/{id_}.evidence.json'))
 res={'id':id_,'found':0,'missing':0,'unverified':0,'unfetchable_sources':[],'missing_quotes':[]}
 def jina(url):
     h=hashlib.md5(('jina'+url).encode()).hexdigest(); p=f'{R}/fresh/{h}.txt'
