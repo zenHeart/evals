@@ -89,11 +89,12 @@ jobs:
     timeout-minutes: 10
     permissions:
       contents: read
+      actions: read
       pages: write
       id-token: write
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      url: ${{ steps.resolve_page_url.outputs.page_url }}
     steps:
       - name: Download EPUB artifact
         uses: actions/download-artifact@v4
@@ -127,59 +128,109 @@ jobs:
           path: _site
 
       - name: Wait for Pages artifact visibility
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          # actions/deploy-pages@v4 查 artifact 不读 REST 的 run artifacts 接口，而是直接请求
-          # Twirp ArtifactService.ListArtifacts：POST ${ACTIONS_RESULTS_URL 的 origin}/
-          # twirp/github.actions.results.api.v1.ArtifactService/ListArtifacts，带
-          # Bearer ACTIONS_RUNTIME_TOKEN，请求体为 workflow_run_backend_id /
-          # workflow_job_run_backend_id（由该令牌 scp 里的 Actions.Results scope 解析，
-          # 见 @actions/artifact 的 getBackendIdsFromToken / internalArtifactTwirpClient），
-          # 再按 name === "github-pages" 过滤，0 个就让整次部署失败。
-          # 该后端与 REST 列表各自独立传播：REST 能查到不等于它能查到。实测 run 45367368858
-          # REST 查到后 0.4 s，它仍只返回 2 个 artifact（缺 github-pages）。因此这里改走同一条
-          # 通道轮询，直到 deploy-pages 真正能查到唯一一个 github-pages；查不到就失败，
-          # 不掩盖问题。构建门禁、needs 与分支限定均未改动。
+          # deploy-pages@v4 读的不是 REST 的 artifact 列表，而是 artifact service 的索引：
+          # 它用 @actions/artifact 的 listArtifactsInternal() → POST
+          # {ACTIONS_RESULTS_URL origin}/twirp/github.actions.results.api.v1.ArtifactService/ListArtifacts，
+          # 请求体只有 workflow_run_backend_id / workflow_job_run_backend_id
+          # （从 ACTIONS_RUNTIME_TOKEN 的 scp 里 Actions.Results scope 解析），
+          # 按 name === "github-pages" 过滤，且只查一次、不重试（见 deployment.js 的 create()）。
+          # 该索引与 REST 的 run artifacts 列表各自独立传播，快慢不同：
+          #   run 45367368858 / 45373407473：REST 3 秒内就列出了 github-pages，
+          #   但 artifact service 此刻只返回 2 个 artifact（缺 github-pages）→ 整次部署被判失败；
+          #   run 45365815270：上传完成后隔了 6.5 秒才查，索引已跟上 → 部署成功。
+          # 所以"等 REST 可见"并不足以保证 deploy-pages 查得到，必须等同一条通道。
+          # 本步骤只观测、不阻断：成败由 deploy → 重试 → 断言三步决定。
+          # 此前 fc56a57 把这条等待做成硬闸门，而 run step 拿不到内部运行时变量
+          # （ACTIONS_RESULTS_URL 不会注入到 run step），于是它自己把部署连续判死 6 次。
           set -uo pipefail
-          ORIGIN="$(node -e 'process.stdout.write(new URL(process.env.ACTIONS_RESULTS_URL).origin)')"
-          BODY="$(node -e '
-            const seg = process.env.ACTIONS_RUNTIME_TOKEN.split(".")[1];
-            const scp = JSON.parse(Buffer.from(seg, "base64url")).scp;
-            const p = scp.split(" ").map(s => s.split(":")).find(x => x[0] === "Actions.Results" && x.length === 3);
-            if (!p) throw new Error("no Actions.Results scope in ACTIONS_RUNTIME_TOKEN");
-            process.stdout.write(JSON.stringify({
-              workflow_run_backend_id: p[1],
-              workflow_job_run_backend_id: p[2],
-            }));
-          ')"
-          URL="$ORIGIN/twirp/github.actions.results.api.v1.ArtifactService/ListArtifacts"
-          for i in $(seq 1 40); do
-            resp="$(curl -sS --max-time 20 -X POST "$URL" \
-                     -H "authorization: Bearer $ACTIONS_RUNTIME_TOKEN" \
-                     -H 'content-type: application/json' \
-                     -d "$BODY" 2>/dev/null || true)"
-            n="$(printf '%s' "$resp" | node -e '
-              let s = "";
-              process.stdin.on("data", d => s += d).on("end", () => {
-                try {
-                  process.stdout.write(String((JSON.parse(s).artifacts || [])
-                    .filter(a => a.name === "github-pages").length));
-                } catch { process.stdout.write("err"); }
-              });
-            ')"
-            if [ "$n" = "1" ]; then
-              echo "github-pages visible on the artifact service after $((i * 3))s"
+          echo "ACTIONS_* variables visible in this step: $(env | sed -n 's/^\(ACTIONS_[A-Z_]*\)=.*/\1/p' | tr '\n' ' ')"
+          ORIGIN=""
+          if [ -n "${ACTIONS_RESULTS_URL:-}" ]; then
+            ORIGIN="$(node -e 'process.stdout.write(new URL(process.env.ACTIONS_RESULTS_URL).origin)' 2>/dev/null || true)"
+          fi
+          if [ -n "$ORIGIN" ] && [ -n "${ACTIONS_RUNTIME_TOKEN:-}" ]; then
+            echo "polling the artifact service deploy-pages actually reads: $ORIGIN"
+            BODY="$(node -e '
+              const seg = process.env.ACTIONS_RUNTIME_TOKEN.split(".")[1];
+              const scp = JSON.parse(Buffer.from(seg, "base64url")).scp;
+              const p = scp.split(" ").map(s => s.split(":")).find(x => x[0] === "Actions.Results" && x.length === 3);
+              if (!p) throw new Error("no Actions.Results scope in ACTIONS_RUNTIME_TOKEN");
+              process.stdout.write(JSON.stringify({
+                workflow_run_backend_id: p[1],
+                workflow_job_run_backend_id: p[2],
+              }));
+            ' 2>/dev/null || true)"
+            if [ -n "$BODY" ]; then
+              URL="$ORIGIN/twirp/github.actions.results.api.v1.ArtifactService/ListArtifacts"
+              for i in $(seq 1 40); do
+                resp="$(curl -sS --max-time 20 -X POST "$URL" \
+                         -H "authorization: Bearer $ACTIONS_RUNTIME_TOKEN" \
+                         -H 'content-type: application/json' \
+                         -d "$BODY" 2>/dev/null || true)"
+                n="$(printf '%s' "$resp" | node -e '
+                  let s = "";
+                  process.stdin.on("data", d => s += d).on("end", () => {
+                    try {
+                      process.stdout.write(String((JSON.parse(s).artifacts || [])
+                        .filter(a => a.name === "github-pages").length));
+                    } catch { process.stdout.write("err"); }
+                  });
+                ')"
+                if [ "$n" = "1" ]; then
+                  echo "github-pages visible on the artifact service after $((i * 3))s"
+                  exit 0
+                fi
+                echo "attempt $i: artifact service reports ${n:-no-response} github-pages artifact(s)"
+                sleep 3
+              done
+              echo "::warning::artifact service did not list github-pages within 120s; still trying to deploy"
               exit 0
             fi
-            if [ "$n" != "err" ] && [ -n "$n" ] && [ "$n" -gt 1 ]; then
-              echo "::error::found $n github-pages artifacts on the artifact service; deploy-pages requires exactly one"
-              exit 1
+          fi
+          echo "artifact service is not reachable from this step; falling back to REST visibility + settle delay"
+          for i in $(seq 1 30); do
+            if gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts" \
+                 --jq '.artifacts[] | select(.name == "github-pages" and .expired == false) | .id' \
+                 | grep -q .; then
+              echo "github-pages visible via REST after $((i * 3))s"
+              break
             fi
-            echo "attempt $i: artifact service reports ${n:-no-response} github-pages artifact(s)"
             sleep 3
           done
-          echo "::error::github-pages never became visible on the artifact service that deploy-pages reads"
-          exit 1
+          # REST 可见 ≠ artifact service 索引已跟上，这里再留 90 秒沉降余量
+          # （实测需要的滞后约 6.5 秒，90 秒约为其 13 倍）。
+          echo "settling 90s so the artifact service index can catch up"
+          sleep 90
 
       - name: Deploy to GitHub Pages
         id: deployment
+        continue-on-error: true
         uses: actions/deploy-pages@v4
+
+      - name: Settle before retry
+        if: steps.deployment.outcome == 'failure'
+        run: sleep 30
+
+      - name: Deploy to GitHub Pages (retry)
+        id: deployment_retry
+        if: steps.deployment.outcome == 'failure'
+        continue-on-error: true
+        uses: actions/deploy-pages@v4
+
+      - name: Resolve page URL
+        id: resolve_page_url
+        run: |
+          url="${{ steps.deployment.outputs.page_url }}"
+          if [ -z "$url" ]; then url="${{ steps.deployment_retry.outputs.page_url }}"; fi
+          echo "page_url=$url" >> "$GITHUB_OUTPUT"
+
+      - name: Assert deployment
+        run: |
+          if [ -z "${{ steps.resolve_page_url.outputs.page_url }}" ]; then
+            echo "::error::Pages deployment produced no page_url; the live site is NOT updated"
+            exit 1
+          fi
+          echo "deployed to ${{ steps.resolve_page_url.outputs.page_url }}"
