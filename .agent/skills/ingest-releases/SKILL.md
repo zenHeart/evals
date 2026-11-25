@@ -117,6 +117,8 @@ npm run build                     # 书校验 + EPUB + 全站构建 + validate-s
 
 > **环境提示**：在 Windows PowerShell 下调试执行脚本时，避免在命令行直接拼接含反引号或复杂 JSON 的命令，建议写入临时 `.mjs` 或通过参数文件运行；系统维护时严禁使用广谱杀进程命令。
 
+> **本批合法回填可能让「真实数据回归」用例失效**（第七十七批实测：给两个模型回填同一基准 HFE 后，原本断言「没有共同评估」的用例变成 k=1，CI 直接红）。处置顺序：**① 先确认数据变化是有据的**（来源、口径、逐条可核），不是回填出错；② **保住原守卫覆盖**——另找一对仍满足该形状的真实模型对替换夹具（可用引擎本身扫候选对后按新断言筛选），别让「无共同评估/数据不足」这条分支失去真实数据覆盖；③ **新增**一条锁住新能力的用例；④ 用例名与注释写明「因 XX 回填，前提不再成立，换到 YY 对」。**禁止为了让 CI 变绿而删断言或直接把期望改成新结果。**
+
 然后本地起服务（如 `npx serve dist` 或既有预览方式）抽查：
 
 - `/releases/` 时间轴出现新结点，徽章为**真实厂商彩色 logo**且居中于脊线；
@@ -164,6 +166,7 @@ curl -sL -o /dev/null -w "%{http_code}\n" https://evals.zenheart.site/models/<�
    - 本批若还做了**存量补录**（把此前留空的绝对分值补齐），还要在 live 详情页 grep 具体数值，确认每个数值都出现——补录不上线 = 没做完。
    - **GitHub Pages 有 CDN 传播延迟**：CI 绿后站点可能还要 1~5 分钟才反映；此时 Last-Modified 与章节数仍是旧值，先等一会儿再判失败。
    - 本仓部署走 GitHub Pages 官方 action（`actions/deploy-pages`），**远端没有 `gh-pages` 分支**，不要去 fetch 它。
+   - **部署步骤的 artifact 可见性**：deploy-pages 读的是 artifact service 的索引，与 REST 列表各自传播（REST 可见 ≠ 索引已跟上），且它只查一次不重试。工作流现已把等待步骤改为「同通道轮询，取不到就 REST 可见 + 90s 沉降」、部署失败自动重试一次，并以「必须产出 page_url」的断言收口。**若 deploy job 仍失败**：先看等待步骤日志走了哪条通道（`ACTIONS_RESULTS_URL` 只注入 action、不注入 `run:` 步骤），再用 `gh workflow run build-epub.yml --ref main` 重投一次部署（workflow_dispatch 也走部署分支），不要改构建脚本。
 
 7. 向用户交付报告。
 
