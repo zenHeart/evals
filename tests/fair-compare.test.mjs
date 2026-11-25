@@ -135,13 +135,16 @@ test('真实数据回归：Fable 5.2 在 3 项共同评估全胜，不能因为 
   assert.equal(w.leader,'a');assert.equal(w.level,v.level);
 });
 
-test('真实数据回归：没有共同评估、且一方只有 1 项可对齐的评估时，不给间接方向（Opus 5.5 vs Astra · 知识与推理）',async()=>{
+// HFE（Humanity's First Exam，基准发布方 DeepMind 统一评测）回填之后，Opus 5.5 与 Astra
+// 已经有 1 项共同评估，"没有共同评估"这个前提在它们身上不再成立。
+// 这里改用仍然满足同一形状的模型对（Step 3.7 Flash vs Kimi K2.6）来守住同一条引擎分支。
+test('真实数据回归：没有共同评估、且一方只有 1 项可对齐的评估时，不给间接方向（Step 3.7 Flash vs Kimi K2.6 · 知识与推理）',async()=>{
   const {loadBenchData}=await import('../scripts/load-data.mjs');const {compareData}=await import('../scripts/build-model-pages.mjs');
   const d=compareData(loadBenchData());const u=d.useCases['knowledge-reasoning'];
   const k=s=>d.models.find(m=>m.key===s);
-  const A=k('claude-opus-5-5--claude-opus-5-5'),B=k('gpt-6-astra--gpt-6-astra');
+  const A=k('step-3-7-flash--step-3-7-flash'),B=k('kimi-k2-6--kimi-k2-6');
   const res=headToHead(u,A,B);
-  assert.equal(res.composite.winner,'b','旧口径判 Astra 领先，依据只是两边报告了不同的评估');
+  assert.equal(res.composite.winner,'b','旧口径判 Kimi 领先，依据只是两边报告了不同的评估');
   const v=fairVerdict(res,{sizes:d.sizes,est:u.est,A,B});
   assert.equal(v.k,0);assert.equal(v.leader,null);assert.equal(v.estimate.enough,false);
   assert.match(compareHTML(res,A,B,u,'../',{sizes:d.sizes}),/数据不足/);
@@ -193,11 +196,13 @@ test('渲染：只靠发布方自家表的 1 项数据时写「难分高下」�
   assert.ok(!/计 0|记 0|综合分|已核验|待核验|证据账本|窗口起点/.test(html));
 });
 
-test('真实数据回归：Opus 5.5 vs Astra（知识与推理）只靠 Anthropic 一页的一行 HLE → 难分高下',async()=>{
+// 同上：HFE 回填后 Opus 5.5 与 Astra 已有共同评估，"只靠自家发布页一行"的形状改用
+// Step 3.7 Flash vs Kimi K2.6 来守；HFE 带来的新形状由下面那条用例单独守住。
+test('真实数据回归：Step 3.7 Flash vs Kimi K2.6（知识与推理）只靠自家发布页的一行 HLE → 难分高下',async()=>{
   const {loadBenchData}=await import('../scripts/load-data.mjs');const {compareData}=await import('../scripts/build-model-pages.mjs');
   const d=compareData(loadBenchData());const u=d.useCases['knowledge-reasoning'];
   const k=s=>d.models.find(m=>m.key===s);
-  const A=k('claude-opus-5-5--claude-opus-5-5'),B=k('gpt-6-astra--gpt-6-astra');
+  const A=k('step-3-7-flash--step-3-7-flash'),B=k('kimi-k2-6--kimi-k2-6');
   const res=headToHead(u,A,B);
   const v=fairVerdict(res,{sizes:d.sizes,...domainCtx(u),A,B,tables:d.tables});
   assert.equal(v.k,0,'没有共同自报评估');
@@ -207,6 +212,32 @@ test('真实数据回归：Opus 5.5 vs Astra（知识与推理）只靠 Anthropi
   assert.equal(fairVerdict(headToHead(u,B,A),{sizes:d.sizes,...domainCtx(u),A:B,B:A,tables:d.tables}).leader,null,'交换对称');
   const html=compareHTML(res,A,B,u,'../',{sizes:d.sizes,tables:d.tables});
   assert.match(html,/难分高下<\/b>（只有发布方自家表格的 1 项数据，仅作参考）/);
+});
+
+test('真实数据回归：Opus 5.5 与 Astra 因 HFE 有了共同评估（基准发布方统一评测），可直接对照',async()=>{
+  const {loadBenchData}=await import('../scripts/load-data.mjs');const {compareData}=await import('../scripts/build-model-pages.mjs');
+  const d=compareData(loadBenchData());const u=d.useCases['knowledge-reasoning'];
+  const k=s=>d.models.find(m=>m.key===s);
+  const A=k('claude-opus-5-5--claude-opus-5-5'),B=k('gpt-6-astra--gpt-6-astra');
+  const res=headToHead(u,A,B);
+  const v=fairVerdict(res,{sizes:d.sizes,...domainCtx(u),A,B,tables:d.tables});
+  assert.equal(v.k,1,'HFE 是两模型唯一的共同评估');
+  const row=v.shared[0];
+  assert.equal(row.id,'humanitys-first-exam');
+  assert.equal(row.a.row.value,91.2,'Opus 5.5 在 HFE 的 pass@1');
+  assert.equal(row.b.row.value,96.8,'Astra 在 HFE 的 pass@1');
+  assert.equal(row.a.row.attribution,'benchmark_owner_reported','分数由基准发布方统一评测，不是各厂商自报');
+  assert.equal(row.a.row.metric,'pass@1');
+  assert.equal(row.gap.dir,-1,'HFE 上 Astra 高 5.6pp');
+  assert.equal(v.leader,'a','叠加自家表的一行 HLE 后仍判 Opus 5.5 略占优');
+  assert.equal(v.level,'lean');
+  assert.equal(v.confidence,'low','只有 1 项共同评估，置信度必须是低');
+  const w=fairVerdict(headToHead(u,B,A),{sizes:d.sizes,...domainCtx(u),A:B,B:A,tables:d.tables});
+  assert.equal(w.leader,'b','交换对称');
+  assert.equal(w.level,v.level);
+  const html=compareHTML(res,A,B,u,'../',{sizes:d.sizes,tables:d.tables});
+  assert.match(html,/Humanity&#39;s First Exam/);
+  assert.ok(html.includes('91.2')&&html.includes('96.8'),'HFE 两边的数值都要展示');
 });
 
 // ---------------- 全库估计「仅供参考」

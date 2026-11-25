@@ -1,0 +1,946 @@
+{
+  "id": "humanitys-first-exam",
+  "name": "Humanity's First Exam",
+  "full_name": "Humanity's First Exam: Measuring the Reliability Floor of LLMs（Google DeepMind 的「可靠性地板」基准，简称 HFE）",
+  "aliases": [
+    "HFE"
+  ],
+  "status": "active",
+  "categories": [
+    "reasoning",
+    "multimodal"
+  ],
+  "summary": "Google DeepMind 自建的 544 题「基础题」基准：136 个题族、每族 4 道题（1 道原题 + 3 道只改表述不加难度的变体），覆盖逻辑推理、视觉感知、基础算术与计数、约束遵循、错误前提提问五大类、23 个原子子能力。它测的不是「模型会不会做」而是「模型能不能每次都做对」——同一道题抽样 6 次，只要 16 次里错一次，整个题族就算失败。",
+  "interpretation": "读 HFE 的分数前先分清两件事。第一，HFE 的题目刻意做得「简单」：选题标准是绝大多数人不用专业知识就能做对，官方的人类基线是单次作答正确率 90.8%（494/544），中位作答时间 1 分钟。所以这里的低分不是「题目太难」，而是「这么简单的题模型居然也会错、而且会反复错」。第二，看板上最容易误读的是 pass@1 与 family pass^4 的落差：pass@1 是「抽一次答对多少」；family pass^4 是「同一族 4 道题的 16 次抽样必须全对才记成功」。两者定义完全不是一回事。官方 2026-11-24 的技术报告里，GPT-6.2 Astra 的 pass@1 是 97.8%、family pass@4 是 100%，但 family pass^4 只有 92.4%——差的这 7.6 个百分点就是「它能解决，但不稳定」。这个落差被官方定义为 Family Reliability Gap，也是 HFE 存在的理由：传统基准的 pass@1/pass@k 会把这种不稳定藏起来。第三，推理档位直接改分数，不能横比：同一个 GPT-6.2 Astra，xhigh 档 family pass^4 是 92.4%，low 档只有 74.3%；Claude Sonnet 5.5 是 67.6% → 35.3%。第四，所有分数都是 Google DeepMind 统一跑的，判分模型是 Gemini 3.1 Pro（temperature 0），不是各家自评；29 个模型里 18 个是当期模型、11 个标注为上一代仅供参考。第四点提醒：73% 的错答集中在视觉感知上，而测试期加推理对视觉题的提升远小于对文本与符号题，所以「多烧推理 token」并不能自动补上视觉短板。",
+  "measures": [
+    {
+      "area": "逻辑推理（Logical reasoning）",
+      "focus": "从社交媒体上真实的「前沿模型做错的基础题」里归纳出的原子子能力，例如识别错误前提、发现条件冲突",
+      "share": "五类之一（官方未给每类占比）",
+      "format": "闭卷单轮作答，答案由 Gemini 3.1 Pro 判分，二元 Yes/No",
+      "cite": [
+        "hfe-paper"
+      ]
+    },
+    {
+      "area": "视觉感知（Visual perception）",
+      "focus": "读图里的细节、位置、数量与文字，官方报告里 73% 的错答集中在这一类",
+      "share": "五类之一（官方未给每类占比）",
+      "format": "多模态题目按原始未裁剪图像字节输入；视觉子集 204 题，是四类分项里最大的一类",
+      "cite": [
+        "hfe-paper"
+      ]
+    },
+    {
+      "area": "基础算术与计数（Basic arithmetic and counting）",
+      "focus": "简单数数与算术，官方定义为「人轻易能做、模型却做错」的一类",
+      "share": "五类之一（官方未给每类占比）",
+      "format": "闭卷单轮作答，答案由 Gemini 3.1 Pro 判分，二元 Yes/No",
+      "cite": [
+        "hfe-paper"
+      ]
+    },
+    {
+      "area": "约束遵循（Constraint adherence）",
+      "focus": "严格按题面给出的格式与限制作答，例如只输出指定数量的词、只按指定分隔符输出",
+      "share": "五类之一（官方未给每类占比）",
+      "format": "闭卷单轮作答；rubric 型题目由判分模型按多准则逐条核对",
+      "cite": [
+        "hfe-paper"
+      ]
+    },
+    {
+      "area": "错误前提提问（False-premise questions）",
+      "focus": "题面前提本身有误时，模型应指出前提不成立，而不是顺着错误前提往下答",
+      "share": "五类之一（官方未给每类占比）",
+      "format": "闭卷单轮作答，答案由 Gemini 3.1 Pro 判分，二元 Yes/No",
+      "cite": [
+        "hfe-paper"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "不测高难度专业能力：官方明写前沿模型在数学、编程、科学上已突破级表现，HFE 刻意反向设计，测的是可靠性地板而不是能力天花板。",
+      "cite": [
+        "hfe-paper"
+      ]
+    },
+    {
+      "text": "不测工具使用与多轮迭代：零样本、单轮、无系统提示、无搜索与代码执行等外部工具。",
+      "cite": [
+        "hfe-paper"
+      ]
+    },
+    {
+      "text": "不测真实业务可靠性：题目是闭卷短问答，与长程 Agent、编码、科研工作流无直接关系；把 HFE 分数当成业务上线前的可靠性结论是误读。",
+      "cite": [
+        "hfe-paper",
+        "hfe-blog"
+      ]
+    },
+    {
+      "text": "不提供完整题库：官方只公开 20% 的分层抽样子集，完整 544 题未公开，外部无法完整复跑（Kaggle 上开放的是「社区补充题目」的比赛通道，不是复现通道）。",
+      "cite": [
+        "hfe-blog",
+        "hfe-paper"
+      ]
+    },
+    {
+      "text": "不测「模型有没有造假倾向」这类安全维度：HFE 是能力与一致性基准，答错与答对同样按二元判定计分，不做过程可信度打分。",
+      "cite": [
+        "hfe-paper"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 544,
+    "splits": [
+      "136 个题族 × 每族 4 道题（1 道原题 + 3 道变体）= 544 题",
+      "四个分项子集：数学 160 题、阅读推理 72 题、空间与位置 108 题、视觉 204 题",
+      "官方在 Kaggle 上公开 20% 的分层抽样题目子集，并举办三周社区补充赛（至 2026-12-15）"
+    ],
+    "languages": [
+      "英文（官方报告与公开样例均为英文；未见其他语言版本）"
+    ],
+    "source_type": "vendor_internal（Google DeepMind 自建自跑，题目从社交媒体上真实的模型失败案例出发改写，并经人工验证）",
+    "public_sample": true,
+    "totals": "544 题 / 136 个题族 / 20 个基础能力大类（拆成 23 个原子子能力）/ 每题 6 次抽样（每模型 3,264 次响应）/ 29 个模型 × 52 个「模型 × 推理档位」设置 / 58,752 次总响应。完整题集未公开，Kaggle 上公开 20% 分层抽样子集。",
+    "cite": [
+      "hfe-paper",
+      "hfe-blog"
+    ],
+    "construction": [
+      {
+        "k": "选题来源",
+        "text": "从社交媒体（X、Reddit）上发布前沿模型失败案例的帖子开始收集，覆盖五大类；再扩成 500 题的探索性试点（来自社交媒体、公开失败清单与基础级推理考试），标注并聚类出 23 个原子子能力。",
+        "cite": [
+          "hfe-paper"
+        ]
+      },
+      {
+        "k": "出题标准",
+        "text": "官方对种子题设三条硬标准：① 单子能力（一题只考一件事，好定位失败原因）；② 校准面板上必须能复现失败（在 Gemini 3.1 Flash-Lite / Gemini 3.1 Pro / Claude Opus 4.7 / Claude Sonnet 4.6 / GPT-5.5 四个采样上至少错一次）；③ 三个二元标签全通过——简单（能一句话讲清）、贴近生活（不需专业知识就能做）、反直觉（前沿模型在这里出错看起来荒谬）。",
+        "cite": [
+          "hfe-paper"
+        ]
+      },
+      {
+        "k": "题族构造",
+        "text": "每道种子题扩成 5 道题的题族（1 道种子 + 4 道变体），变体只改表述表面（换实体、调语序、改视觉布局），不改底层子能力、认知难度与任务逻辑；变体在七模型面板（前述五个 + Gemini 3.5 Flash + Claude Opus 4.8）上校准，每模型每题 4 次抽样，至少有一个模型错一次才留下。最后为保证每族恰好 4 题，逐族丢掉一个被 QA 标记的变体，或保留通过率最高的冗余变体。",
+        "cite": [
+          "hfe-paper"
+        ]
+      },
+      {
+        "k": "人类基线",
+        "text": "每个种子题由 4 名未参与出题与审题的人独立用纸笔作答（禁 LLM、搜索、计算器、代码与字数统计工具），逐题记录耗时；再由另一名审核者对照标准答案判分，区分人的错误与题目歧义。最终 136 个种子题上单次作答正确率 90.8%（494/544），50 次错答全部判为评分者失误而非题目歧义；中位作答时间 1.0 分钟。",
+        "cite": [
+          "hfe-paper"
+        ]
+      },
+      {
+        "k": "质量下采样",
+        "text": "三步过滤：① 人类简易度（每族至少 3/4 人做对，251 族 / 1,255 题）；② QA 审计（种子、变体、自动判分边界与模型标记项逐条审，剔除歧义、变体偏移与错答案的整族，剩 136 族 / 680 题）；③ 变体标准化（每族恰好 4 题，最终 544 题）。",
+        "cite": [
+          "hfe-paper"
+        ]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "零样本、单轮、无系统提示、无外部工具（无搜索、无代码执行）；多模态题按原始未裁剪图像字节输入；544 题每题采样 n = 6 次（每模型 3,264 次响应），使用各厂商默认解码参数（如 temperature、top_p），按官方表格指定的 reasoning effort 档位运行，失败或空输出记 0 分。判分：确定性 LLM 判分模型 Gemini 3.1 Pro（temperature 0），剥除内部推理链与控制 token 后给出二元 Yes/No；空的可���输出记 0 分。95% 置信区间用 family-clustered percentile bootstrap。",
+    "cite": [
+      "hfe-paper"
+    ],
+    "variants": [
+      {
+        "text": "推理档位（reasoning effort）逐模型不同：OpenAI 系用 xhigh / low，Anthropic 系用 max / low，Gemini 系用 high / low（部分另有 minimal 档，0 thought tokens），跨档位分数不可直接比较。",
+        "cite": [
+          "hfe-paper"
+        ]
+      },
+      {
+        "text": "判分等价规则：选项题认字母、数值题认等价写法、时间量纲认等价换算、多准则 rubric 题按 rubric 判定，判分提示模板原文见论文附录。",
+        "cite": [
+          "hfe-paper"
+        ]
+      },
+      {
+        "text": "跨厂商一致性审计：官方用 Claude Fable 5.2 复审 Table 4 里全部 1,492 个「题 × 模型」失败对（覆盖 5,552 个错答抽样），只有 3% 被判为可能正确或可辩护（约占总 58,752 次抽样的 0.3%），说明判分假阴性率低。",
+        "cite": [
+          "hfe-paper"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "pass@1",
+      "name": "pass@1（单题单次）",
+      "direction": "越高越好",
+      "description": "单题口径：随机抽 1 次作答答对的概率（c/n，n = 6 次抽样）。官方称其为标准头条指标。",
+      "range": "0–100",
+      "unit": "percent",
+      "cite": [
+        "hfe-paper"
+      ]
+    },
+    {
+      "id": "pass@4",
+      "name": "pass@4（单题四次）",
+      "direction": "越高越好",
+      "description": "单题口径：4 次抽样里至少 1 次答对的概率，即能力天花板。",
+      "range": "0–100",
+      "unit": "percent",
+      "cite": [
+        "hfe-paper"
+      ]
+    },
+    {
+      "id": "pass4_rel4",
+      "name": "pass^4（Rel@4，单题四次全对）",
+      "direction": "越高越好",
+      "description": "单题口径：同一题的 4 次抽样全部答对的概率，测的是同题重跑的一致性。",
+      "range": "0–100",
+      "unit": "percent",
+      "cite": [
+        "hfe-paper"
+      ]
+    },
+    {
+      "id": "family_pass_at_4",
+      "name": "family pass@4（题族口径）",
+      "direction": "越高越好",
+      "description": "题族口径：同一族 4 道题的 16 次抽样里至少 1 次答对就算该族成功，测的是题族能力天花板。",
+      "range": "0–100",
+      "unit": "percent",
+      "cite": [
+        "hfe-paper"
+      ]
+    },
+    {
+      "id": "family_pass_4",
+      "name": "family pass^4（题族口径，官方主指标）",
+      "direction": "越高越好",
+      "description": "题族口径：同一族 4 道题的 16 次抽样必须全部答对，该族才算成功；官方称之为主要「地板」指标。",
+      "range": "0–100",
+      "unit": "percent",
+      "cite": [
+        "hfe-paper"
+      ]
+    },
+    {
+      "id": "family_reliability_gap",
+      "name": "Family Reliability Gap（天花板 − 地板）",
+      "direction": "越低越好",
+      "description": "family pass@4 减 family pass^4，单位是百分点（pp）：衡量「能做对却做不稳」的程度。官方给出当期模型的区间是 7.6 pp ~ 80.1 pp。",
+      "range": "0–100",
+      "unit": "percent",
+      "cite": [
+        "hfe-paper"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "题目刻意简单，与真实业务难度差距大",
+      "impact": "HFE 分数不能直接推断模型在长程、开放域任务上的可靠性；它只说明「基础题上的稳定性」",
+      "severity": "中",
+      "response": "把 HFE 当作可靠性地板的体检项，不当作业务上线结论；业务场景需另做自己的评测",
+      "reader": "别把 97.8% 读成「你的业务成功率 97.8%」",
+      "cite": [
+        "hfe-paper"
+      ]
+    },
+    {
+      "issue": "完整题集未公开，只公开 20% 分层抽样子集",
+      "impact": "外部无法完整复跑，也无法验证题目与答案质量；榜单值只能以官方报告为准",
+      "severity": "中",
+      "response": "引用时标注来源为 Google DeepMind 2026-11-24 技术报告，并保留其模型与设置口径",
+      "reader": "这个分数目前只能信官方报告，不能自己重跑",
+      "cite": [
+        "hfe-paper"
+      ]
+    },
+    {
+      "issue": "判分模型由 Google 自家模型担任（Gemini 3.1 Pro，temperature 0）",
+      "impact": "判分偏差理论上偏向与 Gemini 风格接近的答案；官方用 Claude Fable 5.2 复审错答，估计假阴性约 3%",
+      "severity": "低",
+      "response": "把官方复审结论一并引用；判分口径在解读时说明清楚",
+      "reader": "判分是另一个模型做的，不是人工",
+      "cite": [
+        "hfe-paper"
+      ]
+    },
+    {
+      "issue": "推理档位逐模型不同，且厂商默认解码参数不同",
+      "impact": "跨模型直接比数值会混入档位差异（例如同一模型 xhigh 与 low 的 family pass^4 可差 18 个百分点）",
+      "severity": "高",
+      "response": "每条记录都带 reasoning effort；跨模型比较时按档位分层看",
+      "reader": "看分数先看推理档位那一栏",
+      "cite": [
+        "hfe-paper"
+      ]
+    },
+    {
+      "issue": "错答高度集中在视觉感知（占错答 73%），测试期加推理对视觉题提升有限",
+      "impact": "整体分数被视觉短板拉低，且加推理预算并不能自动补上这一块",
+      "severity": "中",
+      "response": "分项子集（数学 / 阅读推理 / 空间位置 / 视觉）分数应一起看",
+      "reader": "总分低不代表文本推理弱，可能是视觉拖后腿",
+      "cite": [
+        "hfe-paper"
+      ]
+    }
+  ],
+  "versions": [
+    {
+      "date": "2026-11-24",
+      "label": "首次发布：544 题 / 136 题族，Kaggle 公开 20% 分层抽样子集与三周社区补充赛（至 2026-12-15），技术报告同步公开",
+      "cite": [
+        "hfe-blog",
+        "hfe-paper"
+      ]
+    }
+  ],
+  "official_sources": [
+    {
+      "kind": "site",
+      "url": "https://blog.google/innovation-and-ai/models-and-research/google-deepmind/humanitys-first-exam/"
+    },
+    {
+      "kind": "paper",
+      "url": "https://storage.googleapis.com/deepmind-media/papers/hfe_tech_paper.pdf"
+    },
+    {
+      "kind": "site",
+      "url": "https://www.kaggle.com/benchmarks/deepmind/hfe"
+    }
+  ],
+  "related_benchmarks": [
+    "hlehle",
+    "gpqa",
+    "mmlu",
+    "arc-agi"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-25",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-25",
+    "sources": [
+      {
+        "id": "hfe-blog",
+        "kind": "announcement",
+        "title": "We're launching Humanity's First Exam and a Kaggle hackathon to test LLM reliability.（Google 官方博客，2026-11-24 发布）",
+        "url": "https://blog.google/innovation-and-ai/models-and-research/google-deepmind/humanitys-first-exam/",
+        "accessed": "2026-11-25"
+      },
+      {
+        "id": "hfe-paper",
+        "kind": "paper",
+        "title": "Humanity's First Exam: Measuring the Reliability Floor of LLMs（Google DeepMind 技术报告 PDF，署期 2026-11-24）",
+        "url": "https://storage.googleapis.com/deepmind-media/papers/hfe_tech_paper.pdf",
+        "accessed": "2026-11-25"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Google DeepMind（论文作者 Oran Kelly、Anastasios Kementsietsidis、Chrysovalantis Anastasiou、Alex Yakubovich、Beat Weichsler、Natalie Ha、Ryan Burnell、Samuel Albanie、Orhan Firat，分属 Google DeepMind / Google Cloud / Google Research）",
+        "cite": [
+          "hfe-paper"
+        ]
+      },
+      "first_release": {
+        "v": "2026-11-24（官方博客与技术报告同日发布，Kaggle 基准与社区补充赛同步上线）",
+        "cite": [
+          "hfe-blog",
+          "hfe-paper"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "hfe-paper",
+        "hfe-blog"
+      ],
+      "interpretation": [
+        "hfe-paper"
+      ]
+    },
+    "problem": {
+      "text": "前沿模型在数学、编程、科学这些专业方向上已经跑出突破级成绩，传统基准又普遍用单次 pass@1 或多次 pass@k 去测「能力上限」，于是模型「时灵时不灵」这件事被系统性地藏起来了：同一个题换个说法、或者多跑几次，答案就不一样。现实部署要的却恰恰是后者——不是「它能不能做对」，而是「它能不能每次都做对」。HFE 的设计就落在这里：题目故意做得简单到人不用专业知识就能做对（人类单次正确率 90.8%、中位 1 分钟答完），再用「同一族 4 道题 × 每题 6 次抽样 = 16 次里错一次整族就算失败」的记法，把不稳定本身量化成一个可以排名的分数。",
+      "cite": [
+        "hfe-paper"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "官方公布的最高 family pass^4（可靠性地板）",
+        "value": "GPT-6.2 Astra 92.4%（xhigh 推理档，95% 区间 ±4.3），Family Reliability Gap 7.6 pp",
+        "cite": [
+          "hfe-paper"
+        ]
+      },
+      {
+        "label": "官方公布的最高 pass@1（能力上限）",
+        "value": "GPT-6.2 Astra 97.8%（xhigh，±1.5）；当期前五名模型的 pass@1 落在 96% ~ 98%",
+        "cite": [
+          "hfe-paper"
+        ]
+      },
+      {
+        "label": "人类基线（同一题库上的单次作答）",
+        "value": "单次作答正确率 90.8%（494/544），中位作答时间 1.0 分钟",
+        "cite": [
+          "hfe-paper"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 pass@1 当成「可靠性」：官方榜单刻意把「能做对」和「每次做对」分开，GPT-6.2 Astra 的 pass@1 97.8% 与 family pass^4 92.4% 差着 7.6 个百分点，后者才是可靠性读数。",
+        "cite": [
+          "hfe-paper"
+        ]
+      },
+      {
+        "text": "以为题目难：官方明写题目是「人轻易能做、前沿模型却做错」的基础题，人类单次正确率 90.8%；低分说明的是稳定性，不是能力上限。",
+        "cite": [
+          "hfe-paper"
+        ]
+      },
+      {
+        "text": "跨推理档位横比：同一个 GPT-6.2 Astra，xhigh 档 family pass^4 是 92.4%、low 档只有 74.3%；Claude Sonnet 5.5 是 67.6% → 35.3%。官方表里的每个模型都同时给「最高档」与「low 档」两行，就是为了让读者别混。",
+        "cite": [
+          "hfe-paper"
+        ]
+      },
+      {
+        "text": "把 family pass^4 当成普通准确率：它是「同族 16 次抽样全对才算成功」的复合读数，失败一次整族归零，与 pass@1 不是一个量纲，不能直接比大小。",
+        "cite": [
+          "hfe-paper"
+        ]
+      },
+      {
+        "text": "以为这是厂商自评榜单：所有分数都是 Google DeepMind 统一跑的，判分模型是 Gemini 3.1 Pro（temperature 0）；各厂商的模型是被测对象，不是自报方。",
+        "cite": [
+          "hfe-paper"
+        ]
+      },
+      {
+        "text": "以为公开了题库就能自己复跑：完整 544 题未公开，Kaggle 上只有 20% 分层抽样子集与社区补充赛通道。",
+        "cite": [
+          "hfe-blog",
+          "hfe-paper"
+        ]
+      },
+      {
+        "text": "把总分低等同于文本推理弱：73% 的错答集中在视觉感知子集（204 题），测试期加推理对视觉题提升远小于对文本与符号题。",
+        "cite": [
+          "hfe-paper"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "Google DeepMind；论文署期 2026-11-24，作者 Oran Kelly 等 9 人，分属 Google DeepMind / Google Cloud / Google Research。",
+        "cite": [
+          "hfe-paper"
+        ]
+      },
+      {
+        "k": "基准形态",
+        "v": "闭卷基础题基准：544 题 / 136 个四题族 / 23 个原子子能力 / 20 个基础能力大类，含文本题与多模态题。",
+        "cite": [
+          "hfe-paper"
+        ]
+      },
+      {
+        "k": "评测规模",
+        "v": "29 个模型 × 52 个「模型 × 推理档位」设置（其中当期模型 18 个、上一代参考 11 个），每模型每题 6 次抽样，合计 58,752 次响应。",
+        "cite": [
+          "hfe-paper"
+        ]
+      },
+      {
+        "k": "计分方式",
+        "v": "六个读数：pass@1、pass@4、pass^4（Rel@4）、family pass@4、family pass^4、Family Reliability Gap（family pass@4 − family pass^4）；95% 置信区间用 family-clustered percentile bootstrap。",
+        "cite": [
+          "hfe-paper"
+        ]
+      },
+      {
+        "k": "公开渠道",
+        "v": "2026-11-24 官方博客、技术报告 PDF（storage.googleapis.com/deepmind-media/papers/）、Kaggle 基准页与社区补充赛（至 2026-12-15）。",
+        "cite": [
+          "hfe-blog",
+          "hfe-paper"
+        ]
+      },
+      {
+        "k": "本站收录方式",
+        "v": "29 个模型各自取官方表里「最高评测 reasoning effort」那一行的 pass@1 与 family pass^4 两项读数，落进各模型自己的 release；完整表见下方官方结果快照。",
+        "cite": [
+          "hfe-paper"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-24",
+        "columns": [
+          "模型",
+          "推理档位",
+          "pass@1",
+          "pass@4",
+          "family pass@4",
+          "family pass^4",
+          "Family Reliability Gap",
+          "Avg Thought Tokens"
+        ],
+        "rows": [
+          [
+            "GPT-6.2 Astra",
+            "xhigh",
+            "97.8% (±1.5)",
+            "97.9% (±1.5)",
+            "100.0%",
+            "92.4% (±4.3)",
+            "7.6 pp",
+            "204"
+          ],
+          [
+            "GPT-6.2 Astra",
+            "low",
+            "94.9% (±1.9)",
+            "97.9% (±1.5)",
+            "100.0%",
+            "74.3% (±7.0)",
+            "25.7 pp",
+            "14"
+          ],
+          [
+            "GPT-6.2 Sol",
+            "xhigh",
+            "97.3% (±1.5)",
+            "98.4% (±1.2)",
+            "100.0%",
+            "86.9% (±5.2)",
+            "13.1 pp",
+            "274"
+          ],
+          [
+            "GPT-6.2 Sol",
+            "low",
+            "93.1% (±2.5)",
+            "96.8% (±1.9)",
+            "100.0%",
+            "68.7% (±7.1)",
+            "31.3 pp",
+            "15"
+          ],
+          [
+            "Gemini 4 Neon",
+            "xhigh",
+            "96.8% (±1.5)",
+            "97.9% (±1.3)",
+            "100.0%",
+            "85.8% (±5.8)",
+            "14.2 pp",
+            "9,852"
+          ],
+          [
+            "Gemini 4 Neon",
+            "low",
+            "96.9% (±1.7)",
+            "97.6% (±1.4)",
+            "100.0%",
+            "86.8% (±5.5)",
+            "13.2 pp",
+            "787"
+          ],
+          [
+            "GPT-6 Astra",
+            "xhigh",
+            "96.8% (±1.6)",
+            "98.0% (±1.4)",
+            "100.0%",
+            "83.4% (±5.8)",
+            "16.6 pp",
+            "382"
+          ],
+          [
+            "GPT-6 Astra",
+            "low",
+            "96.1% (±1.8)",
+            "97.9% (±1.5)",
+            "100.0%",
+            "80.9% (±6.3)",
+            "19.1 pp",
+            "65"
+          ],
+          [
+            "Gemini 4 Carbon",
+            "high",
+            "95.6% (±1.7)",
+            "97.0% (±1.3)",
+            "100.0%",
+            "80.5% (±6.4)",
+            "19.5 pp",
+            "6,616"
+          ],
+          [
+            "Gemini 4 Carbon",
+            "low",
+            "90.9% (±2.5)",
+            "95.6% (±1.8)",
+            "100.0%",
+            "63.1% (±7.7)",
+            "36.9 pp",
+            "29"
+          ],
+          [
+            "GPT-6.1 Sol",
+            "xhigh",
+            "96.1% (±1.7)",
+            "97.8% (±1.6)",
+            "100.0%",
+            "79.1% (±6.4)",
+            "20.9 pp",
+            "396"
+          ],
+          [
+            "GPT-6.1 Sol",
+            "low",
+            "94.0% (±2.0)",
+            "96.7% (±1.7)",
+            "100.0%",
+            "67.5% (±7.3)",
+            "32.5 pp",
+            "79"
+          ],
+          [
+            "Gemini 4 Argon",
+            "high",
+            "94.1% (±2.1)",
+            "96.4% (±1.6)",
+            "100.0%",
+            "76.6% (±6.8)",
+            "23.4 pp",
+            "1,838"
+          ],
+          [
+            "Gemini 4 Argon",
+            "low",
+            "88.7% (±2.9)",
+            "93.9% (±2.3)",
+            "99.8%",
+            "56.7% (±7.9)",
+            "43.0 pp",
+            "0"
+          ],
+          [
+            "GPT-6.1 Terra",
+            "xhigh",
+            "94.7% (±2.1)",
+            "96.6% (±1.9)",
+            "100.0%",
+            "76.4% (±6.9)",
+            "23.6 pp",
+            "622"
+          ],
+          [
+            "GPT-6.1 Terra",
+            "low",
+            "91.3% (±2.5)",
+            "95.2% (±2.1)",
+            "100.0%",
+            "62.1% (±7.7)",
+            "37.9 pp",
+            "89"
+          ],
+          [
+            "Claude Fable 5.2",
+            "max",
+            "93.4% (±2.2)",
+            "95.3% (±1.9)",
+            "100.0%",
+            "73.7% (±7.3)",
+            "26.3 pp",
+            "2,951"
+          ],
+          [
+            "Claude Fable 5.2",
+            "low",
+            "91.0% (±2.5)",
+            "93.7% (±2.2)",
+            "100.0%",
+            "65.5% (±7.7)",
+            "34.5 pp",
+            "125"
+          ],
+          [
+            "Gemini 4 Hydrogen",
+            "xhigh",
+            "92.5% (±2.4)",
+            "95.6% (±1.7)",
+            "100.0%",
+            "68.9% (±7.5)",
+            "31.1 pp",
+            "13,775"
+          ],
+          [
+            "Gemini 4 Hydrogen",
+            "low",
+            "92.9% (±2.3)",
+            "95.6% (±2.0)",
+            "100.0%",
+            "70.2% (±7.4)",
+            "29.8 pp",
+            "601"
+          ],
+          [
+            "Claude Sonnet 5.5",
+            "max",
+            "91.7% (±2.4)",
+            "94.5% (±1.9)",
+            "100.0%",
+            "67.6% (±7.7)",
+            "32.4 pp",
+            "6,340"
+          ],
+          [
+            "Claude Sonnet 5.5",
+            "low",
+            "79.3% (±3.9)",
+            "86.4% (±3.4)",
+            "99.3%",
+            "35.3% (±7.6)",
+            "63.9 pp",
+            "32"
+          ],
+          [
+            "Claude Opus 5.5",
+            "max",
+            "91.2% (±2.6)",
+            "94.2% (±2.3)",
+            "99.3%",
+            "63.0% (±7.6)",
+            "36.2 pp",
+            "5,162"
+          ],
+          [
+            "Claude Opus 5.5",
+            "low",
+            "89.3% (±3.0)",
+            "92.5% (±2.5)",
+            "99.8%",
+            "61.1% (±7.9)",
+            "38.7 pp",
+            "252"
+          ],
+          [
+            "Gemini 3.8 Flash",
+            "high",
+            "87.1% (±3.2)",
+            "91.9% (±2.6)",
+            "100.0%",
+            "56.8% (±8.1)",
+            "43.2 pp",
+            "8,150"
+          ],
+          [
+            "Claude Fable 5.1",
+            "max",
+            "85.7% (±3.1)",
+            "89.9% (±2.7)",
+            "100.0%",
+            "49.7% (±8.0)",
+            "50.3 pp",
+            "4,665"
+          ],
+          [
+            "Gemini 3.6 Flash",
+            "high",
+            "83.8% (±3.4)",
+            "90.9% (±2.7)",
+            "100.0%",
+            "44.7% (±8.0)",
+            "55.3 pp",
+            "3,473"
+          ],
+          [
+            "Gemini 3.6 Flash",
+            "minimal",
+            "55.0% (±4.8)",
+            "71.2% (±4.8)",
+            "93.7%",
+            "8.0% (±4.0)",
+            "85.8 pp",
+            "0"
+          ],
+          [
+            "Claude Haiku 5.5",
+            "max",
+            "83.6% (±3.3)",
+            "89.4% (±2.8)",
+            "99.8%",
+            "41.6% (±7.9)",
+            "58.1 pp",
+            "13,351"
+          ],
+          [
+            "GPT-6 Luna",
+            "xhigh",
+            "74.8% (±4.1)",
+            "85.4% (±3.7)",
+            "98.5%",
+            "25.6% (±6.7)",
+            "73.0 pp",
+            "1,545"
+          ],
+          [
+            "Gemini 3.5 Flash-Lite",
+            "high",
+            "68.7% (±4.4)",
+            "83.6% (±3.6)",
+            "98.8%",
+            "18.6% (±6.0)",
+            "80.1 pp",
+            "3,094"
+          ],
+          [
+            "Gemini 3.5 Flash-Lite",
+            "minimal",
+            "37.9% (±4.1)",
+            "56.9% (±4.8)",
+            "89.2%",
+            "0.9% (±1.2)",
+            "88.3 pp",
+            "0"
+          ],
+          [
+            "GPT-5.6 Sol",
+            "max",
+            "87.2% (±3.4)",
+            "91.5% (±3.0)",
+            "98.3%",
+            "54.2% (±7.9)",
+            "44.0 pp",
+            "1,653"
+          ],
+          [
+            "GPT-5.5",
+            "xhigh",
+            "84.5% (±3.6)",
+            "89.4% (±2.9)",
+            "99.9%",
+            "51.7% (±8.0)",
+            "48.2 pp",
+            "2,299"
+          ],
+          [
+            "Claude Opus 5",
+            "max",
+            "81.3% (±4.0)",
+            "85.8% (±3.6)",
+            "99.8%",
+            "47.3% (±8.1)",
+            "52.4 pp",
+            "2,326"
+          ],
+          [
+            "Gemini 3.1 Pro",
+            "high",
+            "83.6% (±3.5)",
+            "92.2% (±2.5)",
+            "100.0%",
+            "43.6% (±7.7)",
+            "56.4 pp",
+            "2,834"
+          ],
+          [
+            "GPT-5.6 Terra",
+            "max",
+            "81.6% (±3.7)",
+            "88.8% (±3.3)",
+            "99.2%",
+            "39.0% (±7.7)",
+            "60.2 pp",
+            "3,501"
+          ],
+          [
+            "Claude Opus 4.8",
+            "max",
+            "71.3% (±5.0)",
+            "80.0% (±4.2)",
+            "99.1%",
+            "36.9% (±7.9)",
+            "62.2 pp",
+            "4,613"
+          ],
+          [
+            "Claude Sonnet 5",
+            "max",
+            "66.6% (±5.5)",
+            "76.2% (±4.8)",
+            "97.7%",
+            "32.9% (±7.8)",
+            "64.8 pp",
+            "12,225"
+          ],
+          [
+            "Gemini 3 Flash",
+            "high",
+            "77.3% (±3.9)",
+            "88.5% (±3.0)",
+            "100.0%",
+            "31.7% (±7.3)",
+            "68.3 pp",
+            "4,071"
+          ],
+          [
+            "GPT-5.6 Luna",
+            "max",
+            "75.9% (±4.0)",
+            "85.4% (±3.5)",
+            "98.8%",
+            "28.6% (±7.2)",
+            "70.2 pp",
+            "4,198"
+          ],
+          [
+            "Claude Sonnet 4.6",
+            "max",
+            "60.0% (±5.7)",
+            "68.8% (±5.4)",
+            "92.9%",
+            "24.6% (±7.0)",
+            "68.3 pp",
+            "6,240"
+          ],
+          [
+            "Gemini 3.1 Flash-Lite",
+            "high",
+            "64.7% (±4.8)",
+            "79.0% (±4.3)",
+            "96.9%",
+            "18.3% (±6.1)",
+            "78.6 pp",
+            "3,381"
+          ]
+        ]
+      },
+      "cite": [
+        "hfe-paper"
+      ]
+    }
+  }
+}
