@@ -1,33 +1,352 @@
 {
   "id": "loca-bench",
   "name": "LOCA-bench",
-  "full_name": null,
-  "aliases": [],
-  "status": null,
+  "full_name": "LOCA-bench（LOng-Context Agents Benchmark，长上下文智能体基准）",
+  "aliases": [
+    "LOCA-Bench",
+    "LOng-Context Agents Benchmark"
+  ],
+  "status": "active",
   "categories": [
     "longctx",
     "agent"
   ],
-  "summary": "港科大长上下文智能体评测（256K 档）",
-  "interpretation": "长上下文 agent 评测：自动控制环境状态把上下文拉长（引用口径 256K 档），核心指标是任务成功率随上下文增长的衰减；单看一个档位分数意义有限，重点读「上下文越长、成功率掉多少」以及不同上下文管理策略的差。",
-  "measures": [],
-  "does_not_measure": [],
+  "summary": "LOCA-bench 是一个测「智能体在上下文越来越长时还能不能把活干完」的基准：它把任务本身固定不变，只按档位放大初始环境状态（8K 到 256K token），让模型在读不完的上下文里探索、找信息、按格式交付；每个任务结束后由脚本比对最终环境状态和标准状态，给出二元成败。",
+  "interpretation": "高分说明这个「模型 + 脚手架」组合能在长上下文里稳定地探索环境、遵循指令并交付正确结果；但它不说明模型会单步长文检索，也不说明它自带的上下文管理策略更好——论文测的是作者在框架里实现的策略版本。单看一个档位的分数意义有限：同一模型从 8K 到 256K 常常掉几十个百分点，真正有信息量的是衰减幅度，以及换策略 / 换脚手架后分数怎么动。",
+  "measures": [
+    {
+      "area": "复杂检索与推理",
+      "focus": "需要跨多个工具、多个来源拼证据再联合推理；论文示例（Figure 5）是从 Canvas 公告和邮件两处收集期末考试信息，再把每场考试对应回正确课程后写入 Excel，模型漏掉邮件里的考试信息导致课表不完整",
+      "share": "未披露（论文未按挑战类型给出题量占比）",
+      "format": "ReAct 多轮工具调用轨迹，二元状态比对",
+      "cite": [
+        "paper@摘要 挑战1",
+        "paper@Figure 5"
+      ]
+    },
+    {
+      "area": "指令遵循",
+      "focus": "任务带多条必须同时满足的约束，长上下文里模型容易忘掉早先的指令；论文示例（Figure 6）是指令明确要求「写进 record.csv 且不要改列名」，模型仍用了不同的列名",
+      "share": "未披露（论文未按挑战类型给出题量占比）",
+      "format": "带格式 / 模式约束的文件与数据库写入",
+      "cite": [
+        "paper@摘要 挑战2",
+        "paper@Figure 6"
+      ]
+    },
+    {
+      "area": "环境探索",
+      "focus": "模型要在不断变大的环境里主动翻完该翻的东西；论文示例（Figure 4）是商店有 200 多件商品，模型只取第一页 100 件就认定没有符合条件的商品，提前收工",
+      "share": "未披露（论文未按挑战类型给出题量占比）",
+      "format": "需要分页 / 遍历环境状态的任务",
+      "cite": [
+        "paper@摘要 挑战3",
+        "paper@Figure 4"
+      ]
+    },
+    {
+      "area": "幻觉与信息失真",
+      "focus": "已经读到的正确数字在后续推理或写文件时被改掉；论文示例（Figure 7）是模型先正确读到 2025-08-19 12:30 的振动值 1.61，处理同一数据时却写成 2.46",
+      "share": "未披露（论文未按挑战类型给出题量占比）",
+      "format": "数值 / 事实跨步骤搬运后与标准状态比对",
+      "cite": [
+        "paper@摘要 挑战4",
+        "paper@Figure 7"
+      ]
+    },
+    {
+      "area": "效率（辅助维度）",
+      "focus": "论文同时记录轨迹长度、工具调用次数和工具输出 token 数，用来说明「上下文变长后模型读得更少」：96K 之后这些指标增长基本停滞",
+      "share": "未披露（论文未给出分类题量或占比）",
+      "format": "非二元指标，与准确率并列报告",
+      "cite": [
+        "paper@§3.1 效率指标",
+        "paper@§3.3 平台化"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "单步检索式的长文本问答：论文明确把自己和「为给定问题检索相关事实」的既有长上下文基准区分开",
+      "cite": [
+        "paper@摘要 定位",
+        "paper@§2.1 设计原则"
+      ]
+    },
+    {
+      "text": "开放式、主观或没有可核对环境状态的任务：成败由脚本把最终环境状态和标准状态逐一比对给出，二元判定",
+      "cite": [
+        "paper@§2.1 可验证",
+        "paper@§3.1 状态比对"
+      ]
+    },
+    {
+      "text": "厂商自带的上下文管理策略：论文指出前沿模型未开源其策略，实验里用的是作者在同一框架内实现的版本",
+      "cite": [
+        "paper@§4.1 前沿策略未开源"
+      ]
+    }
+  ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
+    "sample_count": 525,
+    "splits": [
+      "7 个环境描述长度档位：8K / 16K / 32K / 64K / 96K / 128K / 256K token",
+      "每档 75 个样本 = 15 个种子任务 × 5 个随机种子（论文给出的配置随基准一起发布）"
+    ],
+    "languages": [
+      "en（论文示例任务提示为英文；论文未单独声明语言构成）"
+    ],
+    "source_type": "改编自开源智能体基准 Toolathlon 的 15 个种子任务 + 程序化生成的环境状态（手写模板 + 生成器）",
+    "public_sample": true,
+    "totals": "525 个样本 = 15 个种子任务 × 7 个环境描述长度档位（8K–256K）× 5 个随机种子；共 280 个工具、7 类本地模拟服务（Google Calendar、Canvas、Email、BigQuery、Google Sheets、Snowflake、WooCommerce）；每个样本按最终环境状态与标准状态的比对结果给出二元成败",
+    "cite": [
+      "paper@§3.1 525",
+      "paper@§3.1 题量",
+      "paper@§3.1 种子",
+      "paper@§3.1 配置发布",
+      "paper@§3.1 工具数",
+      "paper@§2.3 种子任务"
+    ],
+    "construction": [
+      {
+        "k": "选种子任务",
+        "text": "从 Toolathlon 里挑 15 个智能体任务改编，挑选理由是质量高、贴近真实、有挑战，且原生带可验证的初始环境状态。",
+        "cite": [
+          "paper@§2.3 种子任务"
+        ]
+      },
+      {
+        "k": "写模板与生成器",
+        "text": "每个任务配一套手写模板表示可能的环境状态，再用自定义生成器按环境配置把模板装配成具体状态；可以注入例外、无考试的课程和干扰信息，也可以指定信息在 Canvas 公告与邮件之间的分配比例。",
+        "cite": [
+          "paper@§2.2 可调环境",
+          "repo-loca-bench@README 环境生成"
+        ]
+      },
+      {
+        "k": "搭本地模拟服务",
+        "text": "用本地数据库支撑的 mock MCP server 模拟 7 类在线服务，工具集合、请求 schema 和返回格式与真实服务对齐，从而免掉认证并让环境可注入、可调控。",
+        "cite": [
+          "paper@§2.2 模拟服务"
+        ]
+      },
+      {
+        "k": "量化环境描述长度",
+        "text": "跑一遍脚本化工具调用，把智能体需要读的工具输出全部拼接起来，用 GPT-4 的 tokenizer 计数，这个 token 数就是该样本的环境描述长度（EDL）。",
+        "cite": [
+          "paper@§2.2 EDL",
+          "paper@§2.2 EDL tokenizer"
+        ]
+      },
+      {
+        "k": "按档位造样本",
+        "text": "把环境配置调到 7 个目标档位，每个档位用 5 个随机种子生成不同环境状态，得到每档 75 个样本、合计 525 个；这些配置文件随基准发布，保证可复现和可比。",
+        "cite": [
+          "paper@§3.1 题量",
+          "paper@§3.1 种子",
+          "paper@§3.1 配置发布",
+          "repo-256k-config"
+        ]
+      },
+      {
+        "k": "规则脚本判分",
+        "text": "每个任务人工实现稳健的评测脚本，把智能体跑完后的最终环境状态和标准环境状态逐一比对，成功记 1、失败记 0，再对全部样本取平均。",
+        "cite": [
+          "paper@§3.1 状态比对",
+          "paper@§3.1 评测协议"
+        ]
+      }
+    ]
   },
-  "metrics": [],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [],
-  "notes": "MiniMax 引用",
+  "default_protocol": {
+    "raw": "论文把「模型 + 脚手架」作为被测单元，默认用 ReAct 脚手架：每个任务只开放该任务需要的工具子集，用各模型自身支持的最大上下文长度，输入超出窗口时保留最近的一段 token；任务结束后由人工实现的规则脚本把最终环境状态与标准状态比对，二元判定 1/0，对全部样本取平均准确率。除成功率外还记录轨迹长度、工具调用次数和工具输出 token 数。",
+    "cite": [
+      "paper@§3.1 最大上下文",
+      "paper@§3.1 截断",
+      "paper@§3.1 评测协议",
+      "paper@§3.1 状态比对",
+      "paper@§3.1 效率指标"
+    ],
+    "variants": [
+      {
+        "text": "档位口径：论文按 7 个档位分别报告并给出平均，而厂商自报常只给单档（MiniMax 官方口径就是「官方代码库 + 官方 react 模式 + EDL = 256K」），单档分数与 7 档平均不能直接比。",
+        "cite": [
+          "minimax-blog-minimax-m3@Evaluation Methodology",
+          "paper@Table 1"
+        ]
+      },
+      {
+        "text": "上下文工程策略：tool-result clearing、thinking-block clearing、context compaction、context awareness、memory tool、programmatic tool calling 会大幅改变同一模型的分数，论文在 128K 档给出基线与各策略的对照表。",
+        "cite": [
+          "paper@Table 2",
+          "paper@§4.1 策略定义"
+        ]
+      },
+      {
+        "text": "脚手架：换脚手架也会变——Claude-4.5-Opus 原生跑 34.0%，改走 Claude Agent 框架降到 26.7%（同为 128K 档）。",
+        "cite": [
+          "paper@Table 3",
+          "paper@§4.3 脚手架"
+        ]
+      },
+      {
+        "text": "同一策略的不同实现不可比：128K 档 Anthropic 官方 programmatic tool calling 是 49.3%，作者自己的实现只有 40.0%。",
+        "cite": [
+          "paper@§4.2 PTC 实现差异"
+        ]
+      },
+      {
+        "text": "上下文窗口差异：各模型用自身最大窗口（论文实测覆盖 130K–1050K），超限即截断，跨模型比较时「有效上下文」并不相同。",
+        "cite": [
+          "paper@§3.1 各模型上限",
+          "paper@§3.1 截断"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "task-success-rate",
+      "name": "任务成功率（accuracy）",
+      "direction": "越高越好",
+      "description": "二元判定后取平均：最终环境状态与标准状态一致记 1，否则记 0；论文按 7 个环境描述长度档位分别报告，并给出 7 档平均",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§3.1 评测协议",
+        "paper@§3.1 状态比对"
+      ]
+    },
+    {
+      "id": "trajectory-length",
+      "name": "轨迹长度",
+      "direction": "越低越好",
+      "description": "完成任务所需的轨迹长度（token 数），论文作为效率指标记录；采用会删上下文的策略时，论文把被删掉的部分加回去再计长",
+      "unit": "token",
+      "cite": [
+        "paper@§3.1 效率指标",
+        "paper@§4.2 计长口径"
+      ]
+    },
+    {
+      "id": "tool-output-tokens",
+      "name": "工具输出 token 数",
+      "direction": "越高越好",
+      "description": "模型通过工具读入的输出总量；论文记录为效率指标，并观察到读入更多工具输出的模型往往准确率更高，把它当作探索充分性的代理量（不是官方设定的优化目标）",
+      "unit": "token",
+      "cite": [
+        "paper@§3.3 检索更多更好",
+        "paper@§3.1 效率指标"
+      ]
+    }
+  ],
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2026-02-08",
+      "label": "arXiv v1 发布（arXiv:2602.07962v1 [cs.AI] 8 Feb 2026）",
+      "cite": [
+        "paper"
+      ]
+    },
+    {
+      "id": "preprint",
+      "date": "2026-02-10",
+      "label": "论文首页标注 Preprint. February 10, 2026.",
+      "cite": [
+        "paper@Preprint"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "档位与策略口径混用",
+      "impact": "同一个模型在 8K 和 256K 可以差几十个百分点，换一种上下文工程策略也能差出十几个点（Claude-4.5-Opus 在 128K 档从 34.0% 到 49.3%）；厂商自报常只写对自己有利的单档口径。",
+      "severity": "高",
+      "response": "论文把 7 个档位的完整准确率和效率指标全部列出，并把策略、脚手架作为一等公民单独成节报告；未见官方统一厂商上报口径的说明。",
+      "reader": "比较前先对齐三件事：档位（或是否 7 档平均）、策略、脚手架；只写「LOCA-bench 分数」不写口径的数字不要直接比。",
+      "cite": [
+        "paper@Table 1",
+        "paper@Table 2",
+        "minimax-blog-minimax-m3@Evaluation Methodology"
+      ]
+    },
+    {
+      "issue": "论文表格与官网榜单数值不一致",
+      "impact": "Gemini-3-Flash 一行两处不同：论文 Table 1 记 64.0 / 57.3 / 40.0 / 36.0 / 32.0 / 21.3 / 17.3（平均 38.3%），官网榜单记 68.0 / 69.3 / 50.7 / 37.3 / 32.0 / 34.7 / 20.0（平均 44.6%）；论文 Table 1 的 Avg 列对 Claude-4.5-Opus 记 68.1%，而该行 7 档算术平均是 60.5%，官网榜单也记 60.5%。",
+      "severity": "中",
+      "response": "未见官方回应（榜单页面未标注更新日期，无法判断哪一版更晚）。",
+      "reader": "引用时注明取自论文 Table 1 还是官网榜单；同一次对比不要混用两处数字。",
+      "cite": [
+        "paper@Table 1",
+        "site@Main Accuracy"
+      ]
+    },
+    {
+      "issue": "只有 15 个种子任务",
+      "impact": "每档 75 个样本全部由 15 个任务 × 5 个种子实例化而来，任务多样性有限；论文没有给出重复运行的方差，单档上几个百分点的差可能落在噪声里。",
+      "severity": "中",
+      "response": "论文开源了数据合成工具包，允许用户扩展任务与档位；并说明 15 个种子任务相对传统长上下文基准（往往只有一两个任务）已是多样性提升。",
+      "reader": "把单档几个点的差距当作噪声量级，优先看跨档位的趋势和量级差。",
+      "cite": [
+        "paper@§3.1 525",
+        "paper@§3.1 种子",
+        "paper@§3.1 多样性",
+        "paper@§2.3 合成工具包"
+      ]
+    },
+    {
+      "issue": "窗口不一致导致隐性截断",
+      "impact": "各模型用自身最大上下文（论文实测 130K–1050K），超限时保留最近的一段 token；窗口小的模型在长档位上被截掉早期内容，只能靠反复调工具补回来，跨模型比较并不在同一有效上下文上进行。",
+      "severity": "中",
+      "response": "论文固定「每个模型用自身最大窗口」并在方法中写明截断规则；同时用工具调用次数等效率指标辅助解释截断带来的重复调用。",
+      "reader": "看到窗口小的模型工具调用数偏高、轨迹偏长时，要考虑这是截断的后果而不是更爱探索。",
+      "cite": [
+        "paper@§3.1 各模型上限",
+        "paper@§3.1 截断",
+        "paper@§3.3 平台化"
+      ]
+    },
+    {
+      "issue": "环境是本地模拟服务",
+      "impact": "7 类服务都是本地数据库支撑的 mock server，与真实在线服务在数据规模、接口演变和并发上仍有差距，结论外推到生产环境要留余地。",
+      "severity": "低",
+      "response": "论文说明 mock server 的工具集合、请求 schema 和返回格式都与真实服务对齐并经过人工核对，同时换来免认证、可注入、可控的后端。",
+      "reader": "把这里的读数当作「可控环境下的长上下文智能体能力」，不等于真实 SaaS 上的表现。",
+      "cite": [
+        "paper@§2.2 模拟服务"
+      ]
+    },
+    {
+      "issue": "README 档位表格漏了 256K 一档",
+      "impact": "仓库 README 的预置档位表格列到 final_128k_set_config.json（128K）为止，而 README 正文与论文都给出 8K–256K 共七档，照表格配置会漏掉最长档。",
+      "severity": "低",
+      "response": "未见官方修正；仓库 task-configs/ 下实际有 final_256k_set_config.json（本档案核对时确认存在）。",
+      "reader": "要跑 256K 档时以 task-configs/ 目录和论文的七档说明为准，不要只看 README 表格。",
+      "cite": [
+        "repo-loca-bench@README 预置档位",
+        "repo-loca-bench@README 预置档位表格",
+        "repo-256k-config",
+        "paper@§3.1 题量"
+      ]
+    }
+  ],
+  "notes": "HKUST 出品；种子任务改编自 Toolathlon；厂商常用 256K 单档自报",
   "official_sources": [
     {
-      "kind": "github",
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2602.07962"
+    },
+    {
+      "kind": "repo",
       "url": "https://github.com/hkust-nlp/LOCA-bench"
+    },
+    {
+      "kind": "site",
+      "url": "https://loca-bench.github.io/"
     },
     {
       "kind": "site",
@@ -35,8 +354,509 @@
     }
   ],
   "related_benchmarks": [
-    "ruler"
+    "ruler",
+    "longbench",
+    "mrcr",
+    "toolathlon"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-26",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-26",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "LOCA-bench: Benchmarking Language Agents Under Controllable and Extreme Context Growth（arXiv:2602.07962v1，2026-02-08）",
+        "url": "https://arxiv.org/abs/2602.07962",
+        "accessed": "2026-11-26"
+      },
+      {
+        "id": "site",
+        "kind": "leaderboard",
+        "title": "LOCA-bench 官网榜单（loca-bench.github.io，含 Main Accuracy 与 Context Management (128K) 两张表）",
+        "url": "https://loca-bench.github.io/",
+        "accessed": "2026-11-26"
+      },
+      {
+        "id": "repo-loca-bench",
+        "kind": "repo",
+        "title": "hkust-nlp/LOCA-bench（README、task-configs 预置档位、loca-sandbox 分支）",
+        "url": "https://github.com/hkust-nlp/LOCA-bench",
+        "accessed": "2026-11-26"
+      },
+      {
+        "id": "repo-256k-config",
+        "kind": "repo",
+        "title": "hkust-nlp/LOCA-bench task-configs/final_256k_set_config.json（256K 档配置原文）",
+        "url": "https://raw.githubusercontent.com/hkust-nlp/LOCA-bench/main/task-configs/final_256k_set_config.json",
+        "accessed": "2026-11-26"
+      },
+      {
+        "id": "minimax-blog-minimax-m3",
+        "kind": "blog",
+        "title": "MiniMax M3 发布博客的 Evaluation Methodology 一节（LOCA-Bench 256k 口径说明）",
+        "url": "https://www.minimax.io/blog/minimax-m3",
+        "accessed": "2026-11-26"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "HKUST（香港科技大学）",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      "first_release": {
+        "v": "2026-02-08（arXiv v1）",
+        "cite": [
+          "paper"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "paper@摘要",
+        "paper@§1",
+        "paper@§2.2 EDL",
+        "site@About",
+        "site@Citation"
+      ],
+      "interpretation": [
+        "paper@§3.2 主结果",
+        "paper@§3.2 差距",
+        "paper@§5 结论"
+      ]
+    },
+    "problem": {
+      "text": "既有长上下文基准大多是静态的单步设置：要么一次把相关信息全给模型，要么一次检索就能拿到，任务退化成「大海捞针」式的定位或零散事实的单步聚合。真实智能体场景是动态的——模型起初只知道任务描述，要靠工具边执行边探索，上下文持续增长。LOCA-bench 的做法是固定任务语义、只按档位放大初始环境状态，从而把「上下文长度」这一个变量单独拿出来测。",
+      "cite": [
+        "paper@摘要 定位",
+        "paper@§1",
+        "paper@§2.1 可控缩放"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机 / 人类基线",
+        "value": "论文未给出",
+        "note": "评测是二元的环境状态比对，论文没有报告随机基线，也没有报告人类在该环境下的表现；本站不做推算。",
+        "cite": [
+          "paper@§3.1 评测协议"
+        ]
+      },
+      {
+        "label": "论文发布时最好（8K 档）",
+        "value": "96.0%",
+        "note": "Claude-4.5-Opus 在 8K 档；论文同时指出短上下文下前沿模型与开源模型表现接近，多数模型 8K 档超过 70%。",
+        "cite": [
+          "paper@Table 1",
+          "paper@§3.2 Claude"
+        ]
+      },
+      {
+        "label": "论文发布时最好（7 档平均，按论文 Table 1 Avg 列）",
+        "value": "68.1%",
+        "note": "Claude-4.5-Opus；注意该行 7 个档位的算术平均是 60.5%，与 Avg 列的 68.1% 不一致（见局限第 2 条）。",
+        "cite": [
+          "paper@Table 1"
+        ]
+      },
+      {
+        "label": "官网榜单最高（7 档平均）",
+        "value": "60.5%",
+        "note": "Claude 4.5 Opus（官网榜单 Main Accuracy 表 Avg 列）。",
+        "cite": [
+          "site@Main Accuracy"
+        ]
+      },
+      {
+        "label": "官网榜单最高（256K 档）",
+        "value": "21.3%",
+        "note": "ChatGPT-5.2-medium；论文 Table 1 里报告的开源模型在 256K 档全部跌到 10% 以下（2.7%–6.7%）。",
+        "cite": [
+          "site@Main Accuracy",
+          "paper@Table 1"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      },
+      {
+        "label": "饱和 / 噪声参考线",
+        "value": "论文未给出",
+        "note": "论文没有报告重复实验方差、题目错误率或人类上限，无法给出「多少分算饱和」的参考线；可参考的量级是同一模型 8K 到 256K 的衰减幅度（论文报告前沿模型在长档位约为开源模型的 2–3 倍）。",
+        "cite": [
+          "paper@§3.2 差距"
+        ]
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 256K 单档分数和 7 档平均分数排在一起比——厂商自报常用单档（如 MiniMax 的 EDL = 256K 口径），论文给的是 7 档分别报告加平均。",
+        "cite": [
+          "minimax-blog-minimax-m3@Evaluation Methodology",
+          "paper@Table 1"
+        ]
+      },
+      {
+        "text": "把带上下文工程策略的分数当成模型原生能力——128K 档上策略能让 Claude-4.5-Opus 从 34.0% 升到 49.3%，而换 Claude Agent 脚手架反而降到 26.7%。",
+        "cite": [
+          "paper@Table 2",
+          "paper@Table 3"
+        ]
+      },
+      {
+        "text": "看到 8K 档 96% 就认为长上下文问题已经解决——同一个模型在 256K 档只有 14.7%，论文的结论是「上下文一长性能就急剧下滑」。",
+        "cite": [
+          "paper@Table 1",
+          "paper@§5 结论"
+        ]
+      },
+      {
+        "text": "把轨迹变长、工具调用变多解读成模型在更努力地探索——论文观察到 96K 之后轨迹长度和工具调用数的增长基本停滞，真正该看的是它有没有把该翻的环境翻完。",
+        "cite": [
+          "paper@§3.3 平台化",
+          "paper@Figure 4"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "HKUST（香港科技大学），论文署名机构只有这一家",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "Weihao Zeng、Yuzhen Huang（共同一作）、Junxian He；通讯地址为三人 @cse.ust.hk 邮箱",
+        "cite": [
+          "paper@作者署名",
+          "repo-loca-bench@Citation"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2026-02-08 arXiv v1 上线；论文首页标注 Preprint. February 10, 2026.；截至本次核对只有这一个版本",
+        "cite": [
+          "paper",
+          "paper@Preprint"
+        ]
+      },
+      {
+        "k": "种子任务来源",
+        "v": "Toolathlon（Li et al., 2025）的 15 个智能体任务，选它的理由是质量高、真实、有挑战且原生可验证",
+        "cite": [
+          "paper@§2.3 种子任务"
+        ]
+      },
+      {
+        "k": "实现底座",
+        "v": "基于 GEM（axon-rl/gem）实现，环境、模型与脚手架解耦",
+        "cite": [
+          "paper@§2.3 实现底座",
+          "repo-loca-bench@README 安装"
+        ]
+      },
+      {
+        "k": "规模",
+        "v": "525 个样本、15 个种子任务、280 个工具、7 类本地模拟服务、7 个环境描述长度档位",
+        "cite": [
+          "paper@§3.1 525",
+          "paper@§3.1 工具数",
+          "paper@§3.1 题量"
+        ]
+      },
+      {
+        "k": "代码与数据位置",
+        "v": "代码、task-configs 预置档位配置与 README 在 GitHub hkust-nlp/LOCA-bench（另有 loca-sandbox 分支，改成服务端–客户端框架并支持沙箱部署）；榜单在 loca-bench.github.io",
+        "cite": [
+          "repo-loca-bench@README 开源",
+          "repo-256k-config",
+          "site@About"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-26",
+        "columns": [
+          "来源",
+          "模型",
+          "8K",
+          "16K",
+          "32K",
+          "64K",
+          "96K",
+          "128K",
+          "256K",
+          "7 档平均"
+        ],
+        "rows": [
+          [
+            "论文 Table 1",
+            "Claude-4.5-Opus",
+            "96.0%",
+            "84.0%",
+            "84.0%",
+            "65.3%",
+            "45.3%",
+            "34.0%",
+            "14.7%",
+            "68.1%（各行算术平均为 60.5%）"
+          ],
+          [
+            "论文 Table 1",
+            "GPT-5.2-Medium",
+            "72.0%",
+            "70.7%",
+            "60.0%",
+            "52.0%",
+            "44.0%",
+            "38.7%",
+            "21.3%",
+            "51.2%"
+          ],
+          [
+            "论文 Table 1",
+            "Gemini-3-Flash",
+            "64.0%",
+            "57.3%",
+            "40.0%",
+            "36.0%",
+            "32.0%",
+            "21.3%",
+            "17.3%",
+            "38.3%"
+          ],
+          [
+            "论文 Table 1",
+            "DeepSeek-V3.2-Thinking",
+            "78.7%",
+            "80.0%",
+            "61.3%",
+            "45.3%",
+            "16.0%",
+            "10.7%",
+            "6.7%",
+            "42.7%"
+          ],
+          [
+            "论文 Table 1",
+            "MiniMax-M2.1",
+            "69.3%",
+            "62.7%",
+            "42.7%",
+            "28.0%",
+            "22.7%",
+            "20.0%",
+            "5.3%",
+            "35.8%"
+          ],
+          [
+            "论文 Table 1",
+            "GLM-4.7",
+            "76.0%",
+            "69.3%",
+            "42.7%",
+            "28.0%",
+            "14.7%",
+            "10.7%",
+            "5.3%",
+            "35.2%"
+          ],
+          [
+            "论文 Table 1",
+            "Kimi-K2-Thinking",
+            "74.7%",
+            "56.0%",
+            "38.7%",
+            "25.3%",
+            "13.3%",
+            "8.0%",
+            "2.7%",
+            "31.2%"
+          ],
+          [
+            "官网榜单 Main Accuracy",
+            "Claude 4.5 Opus",
+            "96.0%",
+            "84.0%",
+            "84.0%",
+            "65.3%",
+            "45.3%",
+            "34.0%",
+            "14.7%",
+            "60.5%"
+          ],
+          [
+            "官网榜单 Main Accuracy",
+            "ChatGPT-5.2-medium",
+            "72.0%",
+            "70.7%",
+            "60.0%",
+            "52.0%",
+            "44.0%",
+            "38.7%",
+            "21.3%",
+            "51.2%"
+          ],
+          [
+            "官网榜单 Main Accuracy",
+            "Gemini-3-Flash",
+            "68.0%",
+            "69.3%",
+            "50.7%",
+            "37.3%",
+            "32.0%",
+            "34.7%",
+            "20.0%",
+            "44.6%"
+          ],
+          [
+            "官网榜单 Main Accuracy",
+            "DeepSeek-V3.2-thinking",
+            "78.7%",
+            "80.0%",
+            "61.3%",
+            "45.3%",
+            "16.0%",
+            "10.7%",
+            "6.7%",
+            "42.7%"
+          ],
+          [
+            "官网榜单 Main Accuracy",
+            "MiniMax-M2.5",
+            "74.7%",
+            "69.3%",
+            "45.3%",
+            "34.7%",
+            "33.3%",
+            "21.3%",
+            "6.7%",
+            "40.8%"
+          ],
+          [
+            "官网榜单 Main Accuracy",
+            "MiniMax-M2.1",
+            "69.3%",
+            "62.7%",
+            "42.7%",
+            "28.0%",
+            "22.7%",
+            "20.0%",
+            "5.3%",
+            "35.8%"
+          ],
+          [
+            "官网榜单 Main Accuracy",
+            "GLM-4.7",
+            "76.0%",
+            "69.3%",
+            "42.7%",
+            "28.0%",
+            "14.7%",
+            "10.7%",
+            "5.3%",
+            "35.2%"
+          ],
+          [
+            "官网榜单 Main Accuracy",
+            "GLM-5",
+            "94.7%",
+            "86.7%",
+            "65.3%",
+            "52.0%",
+            "33.3%",
+            "25.3%",
+            "4.0%",
+            "51.6%"
+          ],
+          [
+            "官网榜单 Main Accuracy",
+            "Kimi-K2.5",
+            "81.3%",
+            "78.7%",
+            "65.3%",
+            "44.0%",
+            "30.7%",
+            "24.0%",
+            "4.0%",
+            "46.9%"
+          ],
+          [
+            "官网榜单 Main Accuracy",
+            "K2-thinking",
+            "74.7%",
+            "56.0%",
+            "38.7%",
+            "25.3%",
+            "13.3%",
+            "8.0%",
+            "2.7%",
+            "31.2%"
+          ],
+          [
+            "论文 Table 2（128K 档）",
+            "Claude-4.5-Opus 原生",
+            "—",
+            "—",
+            "—",
+            "—",
+            "—",
+            "34.0%",
+            "—",
+            "—"
+          ],
+          [
+            "论文 Table 2（128K 档）",
+            "Claude-4.5-Opus + Programmatic Tool Calling",
+            "—",
+            "—",
+            "—",
+            "—",
+            "—",
+            "40.0%",
+            "—",
+            "—"
+          ],
+          [
+            "论文 Table 3（128K 档）",
+            "Claude-4.5-Opus + Anthropic 官方 PTC",
+            "—",
+            "—",
+            "—",
+            "—",
+            "—",
+            "49.3%",
+            "—",
+            "—"
+          ],
+          [
+            "论文 Table 3（128K 档）",
+            "Claude-4.5-Opus + Claude Agent",
+            "—",
+            "—",
+            "—",
+            "—",
+            "—",
+            "26.7%",
+            "—",
+            "—"
+          ]
+        ]
+      },
+      "cite": [
+        "paper@Table 1",
+        "paper@Table 2",
+        "paper@Table 3",
+        "site@Main Accuracy"
+      ]
+    }
+  }
 }

@@ -1,39 +1,1031 @@
 {
   "id": "livesqlbench",
   "name": "LiveSQLBench",
-  "full_name": null,
+  "full_name": "LiveSQLBench（BIRD-SQL Pro v0.5；动态、防污染的文本到 SQL 评测）",
   "aliases": [],
   "status": null,
   "categories": [
     "coding"
   ],
-  "summary": "开源 SQL 评测（600 题/22 个 PostgreSQL 库）",
-  "interpretation": "LiveSQLBench-Base-Full v1：600 道文本到 SQL 任务、22 个真实复杂 PostgreSQL 库，按执行结果正确率计分（越高越好）；库与任务动态构建、免污染，主流引用口径即 Base-Full v1。",
-  "measures": [],
-  "does_not_measure": [],
+  "summary": "LiveSQLBench 是 BIRD 团队（香港大学）与 Google Cloud 做的文本到 SQL（text-to-SQL：用一句自然语言提问，让模型写出能跑对的 SQL）评测。主版本 LiveSQLBench-Base-Full v1 有 600 道题、22 个真实 PostgreSQL 库，题型不只 SELECT 查询，还包括 UPDATE、CREATE 等数据库管理操作；每题配好标准 SQL 和可自动判定的测试用例，按执行结果计分。",
+  "interpretation": "高分说明模型能在带噪声的真实库 schema、列含义说明和分层知识库（HKB）上下文里写出执行正确的 SQL，既包括数据查询也包括库内管理操作。它不测多轮人机交互式 text-to-SQL（那是同团队基于它做的 BIRD-Interact），也不测工业级大库（那是 LiveSQLBench-Large-v1）。榜单同一张表里混有「模型直连」和「Agent 带工具」两种口径，跨口径的分数不能直接比。",
+  "measures": [
+    {
+      "area": "SELECT 查询（Query，商务智能 / 数据检索）",
+      "focus": "一句口语化提问 → 一条执行结果正确的 SQL，需要把口语说法映射到库表、列含义和分层知识库上并做多跳推理；示例（solar_panel_1）：「太阳能电站 'solar plant west davidport'（忽略大小写匹配名称）在需要用的时候宕机的可能性有多大？给出它的系统不可用率分数，只要数字，保留四位小数」",
+      "share": "410 / 600 题",
+      "format": "自然语言 → SQL；按执行结果与 gold SQL 输出比对（Soft EX）",
+      "cite": [
+        "dataset@当前版本",
+        "dataset@数据样例",
+        "site@评估方法"
+      ]
+    },
+    {
+      "area": "数据库管理操作（Management，CRUD / DBA 任务）",
+      "focus": "不止查数据：UPDATE、CREATE 等库内写操作与管理操作，靠预置测试用例验证数据库最终状态是否符合预期",
+      "share": "190 / 600 题",
+      "format": "自然语言 → SQL；按定制化测试用例判定",
+      "cite": [
+        "dataset@当前版本",
+        "site@评估方法",
+        "repo@README"
+      ]
+    },
+    {
+      "area": "分层知识库（HKB）上下文 grounding",
+      "focus": "每个库都挂一份知识点之间带依赖关系的分层知识库，模型要先读懂知识定义再把提问映射到 schema；Base-Full v1 起提问更口语化、库的关系更复杂（含 N:N）、schema 与取值更噪",
+      "share": "未披露（数据集未按「是否依赖外部知识」给出题量）",
+      "format": "结构化 HKB-JSON + 列含义 + schema 作为上下文；仓库把非结构化 HKB-Document 标为 coming soon",
+      "cite": [
+        "site@特性",
+        "repo@README",
+        "dataset@当前版本"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "多轮人机交互式 text-to-SQL（与用户澄清需求、与数据库环境动态交互）——官方把这部分交给基于 LiveSQLBench 构建的 BIRD-Interact",
+      "cite": [
+        "dataset@数据集卡",
+        "site@相关论文"
+      ]
+    },
+    {
+      "text": "工业级规模数据库（约 1K 列、约 54 表）——那是 LiveSQLBench-Large-v1；Base-Full v1 是 22 个约 127 列的终端用户级库",
+      "cite": [
+        "site@版本列表",
+        "repo@README"
+      ]
+    },
+    {
+      "text": "SQL 文本层面的相似度或写法优劣——SELECT 题只比对执行结果，管理操作题只跑测试用例，不比较 SQL 字符串",
+      "cite": [
+        "site@评估方法",
+        "dataset@数据集卡"
+      ]
+    }
+  ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
+    "sample_count": 600,
+    "splits": [
+      "dev（Hugging Face 公开 600 行；sol_sql / test_cases / external_knowledge 三个字段被置空，完整标注需邮件申请）",
+      "隐藏测试集（官方设计为每版都设隐藏测试阶段、上一版隐藏集转为下一版公开开发集；Base-Full v1 隐藏集题量未披露）"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "BIRD 团队与 Google Cloud 策划的真实 PostgreSQL 库（从 CSV 数据集动态构建）+ 人工标注的用户提问与 gold SQL",
+    "public_sample": true,
+    "totals": "600 题（410 条 SELECT-only + 190 条管理操作）· 22 个终端用户级 PostgreSQL 库，共 244 张表、2,011 列，约 272 MB · 公开 jsonl 共 1.9 MB · 难度分 Simple / Moderate / Challenging 三档，各档题量未披露",
+    "cite": [
+      "dataset@当前版本",
+      "repo@数据库元数据",
+      "dataset@规模",
+      "dataset@字段说明"
+    ],
+    "construction": [
+      {
+        "k": "数据库与上下文",
+        "text": "每个库由 CSV 数据集动态构建为 PostgreSQL 库（官方给 Docker 模板），并附 schema、列含义说明和一份分层知识库（HKB）；Base-Full v1 的 22 个库合计 244 张表、2,011 列，约 272 MB。",
+        "cite": [
+          "repo@README",
+          "repo@数据库元数据",
+          "site@特性"
+        ]
+      },
+      {
+        "k": "任务标注",
+        "text": "每道题由一句无歧义的用户提问配一条标注好的 gold SQL，提问 grounding 在外部知识上，SQL 复杂度为中到难；Base-Full v1 起提问更口语化、隐含的库与知识映射更多，部分题需要更强推理。",
+        "cite": [
+          "site@特性",
+          "dataset@当前版本"
+        ]
+      },
+      {
+        "k": "题型扩展到完整 SQL 谱系",
+        "text": "官方称自己是第一个覆盖完整 SQL 谱系的基准：除 SELECT（商务智能）外还包括 CRUD（CREATE / READ / UPDATE / DELETE）等数据库管理操作，后者用定制化测试用例判定。",
+        "cite": [
+          "site@特性",
+          "repo@README"
+        ]
+      },
+      {
+        "k": "防泄漏设计",
+        "text": "公开 jsonl 剔除 sol_sql / test_cases / external_knowledge 字段，完整标注发邮件申请（官方称 30 分钟内自动回复）；PostgreSQL 转储与建库脚本放在 Google Drive。",
+        "cite": [
+          "repo@README",
+          "dataset@字段说明"
+        ]
+      },
+      {
+        "k": "滚动版本",
+        "text": "每版分公开开发与隐藏测试两个阶段，上一版的隐藏测试集直接转为下一版的公开开发集；知识里的业务规则也可能跨版本变化，官方用这点考「上下文跟随变化」的能力。",
+        "cite": [
+          "site@特性",
+          "dataset@数据集卡"
+        ]
+      },
+      {
+        "k": "发布后数据质量修订",
+        "text": "2026-06-13 经数据质量复核后，Base-Full v1 有 17 个实例的任务元数据、gold SQL 与测试用例被改写，GT / 测试用例文件随之更换。",
+        "cite": [
+          "dataset@Changelog 2026-06-13"
+        ]
+      }
+    ]
   },
-  "metrics": [],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [],
-  "notes": "MiniMax 引用（LiveSQLBench-Base-Full v1）",
+  "metrics": [
+    {
+      "id": "success-rate",
+      "name": "成功率（Success Rate）",
+      "direction": "越高越好",
+      "description": "通过测试用例的任务数占总任务数的比例；SELECT 题按执行结果与 gold SQL 输出比对（Soft EX），管理操作题按定制化测试用例验证数据库状态",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "site@指标定义",
+        "site@评估方法",
+        "dataset@数据集卡"
+      ]
+    },
+    {
+      "id": "cost-per-task",
+      "name": "每任务成本（Cost / Task）",
+      "direction": "越低越好",
+      "description": "榜单第二列：跑完一道题的模型调用成本（美元），不是成功率的计分项；只有所选全部版本都有成本数据时才显示",
+      "range": "未披露（榜单只给各条目实测值）",
+      "unit": "USD",
+      "cite": [
+        "site@榜单说明",
+        "site@成本讨论"
+      ]
+    }
+  ],
+  "default_protocol": {
+    "raw": "题库固定为所选版本的题目（Base-Full v1 为 600 题）。模型可以按 Model Base 口径由自然语言直接生成 SQL，也可以按 Agent 口径多步探索数据库后再提交 SQL（工具含 schema 探查、列含义、外部知识、SQL 执行，或整套 CLI 终端环境）。SELECT 题按执行结果与 gold SQL 输出比对（Soft EX），管理操作题按预置测试用例验证；榜单指标 Success Rate = 通过测试用例的任务数 / 总任务数。官方用 Docker 化的 PostgreSQL 模板跑评测，也单独提供 LiveSQLBench-Agent（Google ADK）与 LiveSQLBench-CLI（Harbor）两套运行框架。",
+    "cite": [
+      "site@指标定义",
+      "site@评估方法",
+      "site@模型类型",
+      "repo@README",
+      "site@新闻 2026-04-04"
+    ],
+    "variants": [
+      {
+        "text": "Model Base 与 Agent 是榜单并列的两类口径：前者直接生成 SQL，后者带数据库探索、预定义动作或 CLI 环境；同一模型两类分数不可混排。",
+        "cite": [
+          "site@模型类型"
+        ]
+      },
+      {
+        "text": "Agent 内部还分 Agent I / Agent II / Mini-Agent：Agent I 在提问前就把全部库上下文（schema、列含义、外部知识定义）给模型、限 20 步、只能提交一次 SQL；Agent II 不给初始上下文，要求模型自己拉取。两者成本差距很大（Claude 3.7 Sonnet 直连 0.0619 美元/题，Agent I 为 0.8936 美元/题）。",
+        "cite": [
+          "site@Agent 定义",
+          "site@成本讨论"
+        ]
+      },
+      {
+        "text": "厂商自报口径可以与官方 workflow 不同：MiniMax 在 M3 博客中说明其 LiveSQLBench 结果用 Claude Code 作 scaffolding、任务描述提示词覆盖默认系统提示词、每题独立沙箱预装 PostgreSQL、超时 25 分钟，并标注为内部测试。",
+        "cite": [
+          "minimax@评测说明"
+        ]
+      },
+      {
+        "text": "数据集有两个提问字段：榜单与官方评测用更口语化的 query，normal_query 是更简洁直接的参考版本；用哪个字段会改变任务难度。",
+        "cite": [
+          "dataset@字段说明"
+        ]
+      },
+      {
+        "text": "所选基准集与时间窗会改变 Success Rate：官方说明该值是所选基准集与日期窗口内按各数据集题量加权的 micro-average，且要求条目覆盖所选全部 Base 数据集；Base、Large、SQLite 三套榜独立比较。",
+        "cite": [
+          "site@榜单说明"
+        ]
+      },
+      {
+        "text": "推理档位差异：榜单同时存在同一模型的不同档位条目（GPT-5.5 (low) 33.50 与 GPT-5.5 (xhigh) 33.33）。",
+        "cite": [
+          "site@榜单"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "base-lite",
+      "date": "2025-05-28",
+      "label": "LiveSQLBench-Base-Lite 首发：18 个终端用户级库、270 任务（180 SELECT-only + 90 管理操作）；官网版本标签与仓库性能表记 2025-05-28，官网新闻与仓库 News 记 2025-05-30",
+      "cite": [
+        "site@版本标签",
+        "repo@README",
+        "site@新闻 2025-05-30"
+      ]
+    },
+    {
+      "id": "base-lite-sqlite",
+      "date": "2025-07-28",
+      "label": "LiveSQLBench-Base-Lite-SQLite：把 Base-Lite 从 PostgreSQL 扩展到 SQLite 方言",
+      "cite": [
+        "site@新闻 2025-07-28",
+        "site@版本标签"
+      ]
+    },
+    {
+      "id": "base-full-v1",
+      "date": "2025-09-04",
+      "label": "LiveSQLBench-Base-Full v1（本档案主版本）：22 个新库、600 新任务，提问更口语化、schema 与取值更噪更真实",
+      "cite": [
+        "site@新闻 2025-09-04",
+        "repo@Changelog",
+        "site@版本标签"
+      ]
+    },
+    {
+      "id": "large-v1",
+      "date": "2026-03-02",
+      "label": "LiveSQLBench-Large-v1：工业级对照版，18 个库（约 1K 列、约 54 表）、480 任务，约 84K 平均提示 token，引入 Business Rule Drift",
+      "cite": [
+        "site@新闻 2026-03-02",
+        "site@版本列表"
+      ]
+    },
+    {
+      "id": "agent-cli",
+      "date": "2026-04-04",
+      "label": "同日发布 LiveSQLBench-Agent（Google ADK 框架）与 LiveSQLBench-CLI（Harbor 框架，面向 OpenHands / Claude Code / Aider 等 CLI agent）",
+      "cite": [
+        "site@新闻 2026-04-04"
+      ]
+    },
+    {
+      "id": "gt-refresh",
+      "date": "2026-06-13",
+      "label": "Base-Full v1 数据集卡记录一次数据质量修订：17 个实例的元数据 / gold SQL / 测试用例被改写，GT 文件更换",
+      "cite": [
+        "dataset@Changelog 2026-06-13"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "评测口径不统一，跨条目比较无效",
+      "impact": "榜单同一张表里混有 Model Base（直连生成 SQL）与 Agent（带数据库探索 / CLI 环境）两类结果，Agent 内部又分 Agent I / Agent II；Success Rate 还是所选基准集与时间窗内按题量加权的 micro-average，并要求条目覆盖所选全部 Base 数据集。厂商自报还常换 scaffolding 与超时（MiniMax M3 用 Claude Code、每题 25 分钟超时）。",
+      "severity": "高",
+      "response": "官方把榜单按 Base / Large / SQLite 与 Model Base / Agent / Verified 分栏，并注明 micro-average 与覆盖要求；Verified 徽标需提交代码库做流水线评测。未见统一口径的官方复测。",
+      "reader": "比较前先确认四件事：基准集与版本、Model Base 还是 Agent、推理档位、以及分数是自报还是 Verified。",
+      "cite": [
+        "site@模型类型",
+        "site@榜单说明",
+        "site@Agent 定义",
+        "site@Verified",
+        "minimax@评测说明"
+      ]
+    },
+    {
+      "issue": "没有公开论文，方法细节分散且互相不一致",
+      "impact": "官网与数据集卡都把 Paper 标为「coming soon」，本次核验时拿不到可引用的技术报告；构建流程、评分实现与基线设置只能从 README 与数据集卡反推，且几处描述互相矛盾（HKB-Document 是否已提供、Base-Lite 首发日期、数据集许可）。",
+      "severity": "中",
+      "response": "未见官方回应；官网路线图称 LiveSQLBench 1.5 即将发布、2.0 在研。",
+      "reader": "引用具体数字时回到官网榜单或数据集卡原文，不要转引二手描述。",
+      "cite": [
+        "site@Paper",
+        "dataset@数据集卡",
+        "repo@README",
+        "site@路线图"
+      ]
+    },
+    {
+      "issue": "gold SQL 与测试用例不公开，独立复现门槛高",
+      "impact": "公开 jsonl 把 sol_sql / test_cases / external_knowledge 三个字段置空，完整标注要发邮件申请；PostgreSQL 转储与建库脚本放在 Google Drive。第三方在不申请的情况下无法复现榜单分数。",
+      "severity": "中",
+      "response": "官方说明此举是为防止自动爬取造成数据泄漏。",
+      "reader": "看到厂商自报的 LiveSQLBench 分数时，默认它未被独立复核，除非作者公开了复现细节。",
+      "cite": [
+        "repo@README",
+        "dataset@字段说明"
+      ]
+    },
+    {
+      "issue": "滚动版本与题目修订使跨时间比较失真",
+      "impact": "官方设计是「每版的隐藏测试集转为下一版的公开开发集」，库与题持续增加；2026-06-13 又单独修订了 Base-Full v1 里 17 个实例的 gold SQL 与测试用例；仓库 Changelog 还记录过 2025-06-06 的评分后处理改动（执行结果四舍五入到 2 位小数、有序 / 无序条件分别用列表 / 集合比较）。",
+      "severity": "中",
+      "response": "数据集卡列出被修订的实例清单与 GT 文件替换；仓库 Changelog 记录评分后处理改动。",
+      "reader": "比较不同日期的榜单条目时，留意 2026-06-13 前后的 GT 与评分后处理是否同一版。",
+      "cite": [
+        "dataset@Changelog 2026-06-13",
+        "repo@Changelog",
+        "site@特性"
+      ]
+    },
+    {
+      "issue": "「contamination-free」是设计目标而非可验证结论",
+      "impact": "官方靠滚动新库、隐藏测试集和 GT 邮件申请来降低污染，但没有公布任何污染检测结果；公开的开发集仍然可以自由下载（近一个月下载量 1,543 次）。",
+      "severity": "中",
+      "response": "未见官方公布污染测量。",
+      "reader": "把「免污染」当作机制描述，不要当作已验证的结论。",
+      "cite": [
+        "site@特性",
+        "dataset@规模"
+      ]
+    },
+    {
+      "issue": "榜单页面自身的时间标注不一致",
+      "impact": "榜单区块标注「Last Updated: 2026-03-02」，但同表条目的提交日期最晚到 2026-11-05；另有若干条目提交日期（2025-05-28、2025-06-09）早于 Base-Full v1 的发布日 2025-09-04，页面未解释这些条目的数据集归属。",
+      "severity": "低",
+      "response": "未见官方回应。",
+      "reader": "以条目自带的提交日期为准，「Last Updated」标签不要当作数据新鲜度证据。",
+      "cite": [
+        "site@榜单"
+      ]
+    },
+    {
+      "issue": "文档内部矛盾：HKB-Document 与 Base-Lite 首发日",
+      "impact": "官网与数据集卡都写「两种 HKB 格式均已提供（JSON + Document）」，仓库特性对比表却把 Base-Full 的 HKB-Document 标为 coming soon；Base-Lite 首发日官网版本标签与仓库性能表记 2025-05-28，官网新闻与仓库 News 记 2025-05-30；数据集卡正文写 cc-by-sa-4.0，Hugging Face 元数据标签写 cc-by-4.0。",
+      "severity": "低",
+      "response": "未见官方回应。",
+      "reader": "需要精确日期、格式或许可细节时，以仓库 README / 数据集卡最新版本为准，并保留日期歧义。",
+      "cite": [
+        "site@特性",
+        "repo@README",
+        "dataset@许可",
+        "site@版本标签",
+        "site@新闻 2025-05-30"
+      ]
+    }
+  ],
+  "notes": "题目语言未在官网 / 数据集卡中声明，本档按公开 query 字段的实际内容记为英文；主流引用口径是 Base-Full v1（MiniMax M3 等）。",
   "official_sources": [
     {
       "kind": "site",
       "url": "https://livesqlbench.ai/"
     },
     {
-      "kind": "site",
+      "kind": "repo",
+      "url": "https://github.com/bird-bench/livesqlbench"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/birdsql/livesqlbench-base-full-v1"
+    },
+    {
+      "kind": "blog",
       "url": "https://www.minimax.io/blog/minimax-m3"
     }
   ],
-  "related_benchmarks": [],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "related_benchmarks": [
+    "bird-sql",
+    "spider2"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-26",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-26",
+    "sources": [
+      {
+        "id": "site",
+        "kind": "site",
+        "title": "livesqlbench.ai 官网（含特性说明、版本时间轴、榜单与讨论）",
+        "url": "https://livesqlbench.ai/",
+        "accessed": "2026-11-26"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "bird-bench/livesqlbench（GitHub README、特性对比、Changelog、数据库元数据）",
+        "url": "https://github.com/bird-bench/livesqlbench",
+        "accessed": "2026-11-26"
+      },
+      {
+        "id": "dataset",
+        "kind": "dataset",
+        "title": "birdsql/livesqlbench-base-full-v1（Hugging Face 数据集卡）",
+        "url": "https://huggingface.co/datasets/birdsql/livesqlbench-base-full-v1",
+        "accessed": "2026-11-26"
+      },
+      {
+        "id": "minimax",
+        "kind": "blog",
+        "title": "MiniMax：MiniMax M3 发布博客（LiveSQLBench 自报口径说明）",
+        "url": "https://www.minimax.io/blog/minimax-m3",
+        "accessed": "2026-11-26"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "BIRD Team（香港大学）× Google Cloud",
+        "cite": [
+          "dataset@数据集卡",
+          "site@署名"
+        ]
+      },
+      "first_release": {
+        "v": "2025-05-28（LiveSQLBench-Base-Lite；官网新闻与仓库 News 记 2025-05-30）",
+        "cite": [
+          "site@版本标签",
+          "site@新闻 2025-05-30"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "site@标题",
+        "site@特性",
+        "dataset@当前版本"
+      ],
+      "interpretation": [
+        "site@模型类型",
+        "site@榜单说明",
+        "dataset@数据集卡"
+      ]
+    },
+    "problem": {
+      "text": "文本到 SQL 基准的题目与数据库一旦发布就基本固定，容易被爬取进入训练数据；LiveSQLBench 的对策是让基准本身持续滚动——每版换一批新库新题，上一版的隐藏测试集直接转为下一版的公开开发集，知识里的业务规则也可能跨版本变化。同时它把评测范围从 SELECT 查询扩展到 CRUD 等数据库管理操作，并要求模型结合每个库自带的分层知识库（HKB）做多跳推理；工业级规模另立 LiveSQLBench-Large-v1。",
+      "cite": [
+        "site@特性",
+        "site@版本列表"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "Base-Full v1 发布当天榜单最高（2025-09-04）",
+        "value": "28.67",
+        "note": "Gemini 2.5 Pro；同日还有 o1 25.17、Gemini 2.5 Flash 23.83、Llama 3.3 70B Instruct 12.17，GPT-5（2025-08-17）25.50。",
+        "cite": [
+          "site@榜单"
+        ]
+      },
+      {
+        "label": "官网榜单当前最高（Overall 视图，Base-Full v1）",
+        "value": "57.00",
+        "note": "AntQL 1.1 (Claude Opus 5.5)，AntHill AI，2026-10-12 提交，Cost / Task 约 0.3343 美元。",
+        "cite": [
+          "site@榜单"
+        ]
+      },
+      {
+        "label": "Base-Lite（另一题集，270 题）Model Base 最好成绩",
+        "value": "47.78",
+        "note": "o3-mini；Base-Lite 与 Base-Full v1 不是同一题集，两个数字不能直接比较。",
+        "cite": [
+          "repo@Base-Lite 结果",
+          "site@模型表现"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      },
+      {
+        "label": "随机 / 人类基线",
+        "value": "未披露",
+        "note": "官网与仓库均未给出随机基线或人类基线，LiveSQLBench 也没有公开论文；本站不推算。",
+        "cite": [
+          "site@榜单",
+          "site@Paper"
+        ]
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 Model Base 与 Agent 的分数排在一起比——前者直接生成 SQL，后者带数据库探索、预定义动作或整套 CLI 环境。",
+        "cite": [
+          "site@模型类型"
+        ]
+      },
+      {
+        "text": "把 Base-Lite / Base-Full v1 / Large-v1 / SQLite 的分数混着看——官方要求条目覆盖所选全部 Base 数据集，Success Rate 是 micro-average，不同基准集的数字不可互换。",
+        "cite": [
+          "site@榜单说明",
+          "site@版本列表"
+        ]
+      },
+      {
+        "text": "把「contamination-free」当成已验证的结论——它是滚动新库 + 隐藏测试集 + GT 邮件申请的机制描述，官方没有公布污染测量。",
+        "cite": [
+          "site@特性"
+        ]
+      },
+      {
+        "text": "把 Reported 条目当成官方验证——榜单的 Verified 徽标才代表 BIRD 团队做过流水线评测，Reported 只是提交方自报（如 MiniMax M3、MiniMax M2.7）。",
+        "cite": [
+          "site@Verified",
+          "site@榜单"
+        ]
+      },
+      {
+        "text": "用 normal_query 字段去复现榜单分数——榜单与官方评测用的是更口语化的 query 字段。",
+        "cite": [
+          "dataset@字段说明"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "BIRD Team（香港大学）× Google Cloud",
+        "cite": [
+          "dataset@数据集卡",
+          "site@署名"
+        ]
+      },
+      {
+        "k": "别名与前身",
+        "v": "官网与仓库都标注为 LiveSQLBench（BIRD-SQL Pro v0.5）；上游是 NeurIPS 2023 的 BIRD 基准（12,751 对 text-to-SQL、95 个库、33.4 GB、37 个专业领域）",
+        "cite": [
+          "site@特性",
+          "site@相关论文"
+        ]
+      },
+      {
+        "k": "维护与联系",
+        "v": "数据集卡标注「Maintained by the BIRD Team @ HKU & Google Cloud」，仓库署名「Created By: BIRD Team & Google Cloud」，公开联系邮箱为 bird.bench25@gmail.com",
+        "cite": [
+          "dataset@数据集卡",
+          "repo@README"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2025-05-28 Base-Lite（18 库 / 270 题）→ 2025-07-28 Base-Lite-SQLite → 2025-09-04 Base-Full v1（22 库 / 600 题）→ 2026-03-02 Large-v1（18 库 / 480 题）→ 2026-04-04 Agent 与 CLI 框架 → 2026-06-13 Base-Full v1 数据质量修订",
+        "cite": [
+          "site@版本标签",
+          "repo@Changelog",
+          "dataset@Changelog 2026-06-13"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "数据集在 Hugging Face（birdsql/livesqlbench-base-full-v1，公开 600 行、1.9 MB），完整 GT 与测试用例邮件申请，PostgreSQL 转储与建库脚本在 Google Drive；评测代码在 GitHub bird-bench/livesqlbench（MIT）",
+        "cite": [
+          "dataset@规模",
+          "dataset@字段说明",
+          "repo@README"
+        ]
+      },
+      {
+        "k": "许可",
+        "v": "数据集卡正文写 cc-by-sa-4.0，Hugging Face 元数据标签写 cc-by-4.0，两者不一致；仓库为 MIT",
+        "cite": [
+          "dataset@许可",
+          "repo@README"
+        ]
+      },
+      {
+        "k": "生态",
+        "v": "BIRD-Interact（ICLR 2026 Oral）以 LiveSQLBench 为基础设施；同团队另有 Data Intelligence Index（DII）v1.0 Muscle（2026-11-09，500 题 / 9 个基准，其中 300 题隐藏）",
+        "cite": [
+          "dataset@数据集卡",
+          "site@路线图"
+        ]
+      },
+      {
+        "k": "采用情况",
+        "v": "MiniMax 在 M3 发布博客中引用 LiveSQLBench-Base-Full v1（600 题 / 22 个 PostgreSQL 库）；榜单对应条目 MiniMax M3 (Claude Code) 40.17，2026-06-01，标注 Reported",
+        "cite": [
+          "minimax@评测说明",
+          "site@榜单"
+        ]
+      },
+      {
+        "k": "成本量级",
+        "v": "官网讨论记录：Claude 3.7 Sonnet 模型直连 0.0619 美元/题，Agent I 口径 0.8936 美元/题；榜单 Cost / Task 列从 0.0006 到 0.6731 美元不等",
+        "cite": [
+          "site@成本讨论",
+          "site@榜单"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-26",
+        "columns": [
+          "排名",
+          "提交日期",
+          "模型",
+          "机构",
+          "Success Rate",
+          "Cost / Task（USD）"
+        ],
+        "rows": [
+          [
+            "🥇 1",
+            "2026-10-12",
+            "AntQL 1.1 (Claude Opus 5.5)",
+            "AntHill AI",
+            "57.00",
+            "~ 0.3343"
+          ],
+          [
+            "🥈 2",
+            "2026-10-14",
+            "AskRUI",
+            "DiPEAK",
+            "50.33",
+            "0.0298"
+          ],
+          [
+            "🥉 3",
+            "2026-05-29",
+            "DIA (Data Intelligence Agents)",
+            "C3 AI",
+            "48.00",
+            null
+          ],
+          [
+            "4",
+            "2026-11-05",
+            "ShanHe 2.0",
+            "DiPEAK",
+            "42.83",
+            "~ 0.0119"
+          ],
+          [
+            "5",
+            "2026-09-26",
+            "Jitto Build (Claude Opus 5.5, high)",
+            "JamLabs",
+            "41.33",
+            "0.6731"
+          ],
+          [
+            "6",
+            "2026-06-01",
+            "MiniMax M3 (Claude Code) Reported",
+            "MiniMax",
+            "40.17",
+            null
+          ],
+          [
+            "7",
+            "2026-03-27",
+            "Claude Opus 4.6 (OpenHands CLI)",
+            "Anthropic",
+            "38.00",
+            null
+          ],
+          [
+            "8",
+            "2026-09-29",
+            "OpenCode-Grok4.7",
+            "Stone Henge",
+            "37.50",
+            "~ 0.0976"
+          ],
+          [
+            "9",
+            "2026-04-26",
+            "Gemini 3.1 Pro",
+            "Google",
+            "36.50",
+            "0.0507"
+          ],
+          [
+            "10",
+            "2026-03-02",
+            "Claude Opus 4.6",
+            "Anthropic",
+            "35.50",
+            "0.0979"
+          ],
+          [
+            "11",
+            "2026-03-27",
+            "Claude Sonnet 4.5 (OpenHands CLI)",
+            "Anthropic",
+            "35.20",
+            null
+          ],
+          [
+            "12",
+            "2026-04-25",
+            "GPT-5.5 (low)",
+            "OpenAI",
+            "33.50",
+            "0.0896"
+          ],
+          [
+            "13",
+            "2026-05-01",
+            "GPT-5.5 (xhigh)",
+            "OpenAI",
+            "33.33",
+            "0.2220"
+          ],
+          [
+            "14",
+            "2026-06-01",
+            "MiniMax M2.7 (Claude Code) Reported",
+            "MiniMax",
+            "33.17",
+            null
+          ],
+          [
+            "15",
+            "2026-03-27",
+            "Kimi 2.5 (OpenHands CLI)",
+            "Moonshot AI",
+            "32.20",
+            null
+          ],
+          [
+            "16",
+            "2026-05-01",
+            "GPT-5.4",
+            "OpenAI",
+            "31.00",
+            null
+          ],
+          [
+            "17",
+            "2026-03-02",
+            "GPT-5.3 Codex",
+            "OpenAI",
+            "30.00",
+            null
+          ],
+          [
+            "18",
+            "2026-05-01",
+            "Kimi K2.6",
+            "Moonshot AI",
+            "29.33",
+            "0.0364"
+          ],
+          [
+            "19",
+            "2026-05-01",
+            "GLM-5.1",
+            "Zhipu AI",
+            "29.00",
+            null
+          ],
+          [
+            "20",
+            "2026-03-27",
+            "MiniMax M2.1 (OpenHands CLI)",
+            "MiniMax",
+            "28.70",
+            null
+          ],
+          [
+            "21",
+            "2025-09-04",
+            "Gemini 2.5 Pro",
+            "Google",
+            "28.67",
+            "0.0468"
+          ],
+          [
+            "22",
+            "2026-03-27",
+            "Qwen3 Coder 480B (OpenHands CLI)",
+            "Alibaba",
+            "26.80",
+            null
+          ],
+          [
+            "23",
+            "2026-05-01",
+            "Qwen3.6 Max",
+            "Alibaba",
+            "26.50",
+            null
+          ],
+          [
+            "24",
+            "2025-08-17",
+            "GPT-5",
+            "OpenAI",
+            "25.50",
+            "0.0216"
+          ],
+          [
+            "25",
+            "2025-09-04",
+            "o1",
+            "OpenAI",
+            "25.17",
+            "0.2283"
+          ],
+          [
+            "26",
+            "2025-05-28",
+            "DeepSeek R1",
+            "DeepSeek",
+            "24.50",
+            "0.0142"
+          ],
+          [
+            "27",
+            "2025-05-28",
+            "o4-mini",
+            "OpenAI",
+            "24.17",
+            "0.0168"
+          ],
+          [
+            "28",
+            "2025-09-04",
+            "Gemini 2.5 Flash",
+            "Google",
+            "23.83",
+            "0.0055"
+          ],
+          [
+            "29",
+            "2026-03-02",
+            "Claude Sonnet 4.5",
+            "Anthropic",
+            "23.83",
+            "0.0598"
+          ],
+          [
+            "30",
+            "2025-05-28",
+            "o3-mini",
+            "OpenAI",
+            "23.67",
+            "0.0222"
+          ],
+          [
+            "31",
+            "2025-05-28",
+            "o3",
+            "OpenAI",
+            "23.67",
+            "0.1583"
+          ],
+          [
+            "32",
+            "2026-03-02",
+            "Kimi 2.5",
+            "Moonshot AI",
+            "23.00",
+            "0.0110"
+          ],
+          [
+            "33",
+            "2025-05-28",
+            "Qwen3-235B-A22B",
+            "Qwen",
+            "22.17",
+            "0.0044"
+          ],
+          [
+            "34",
+            "2025-05-28",
+            "Claude 3.7 Sonnet (Thinking)",
+            "Anthropic",
+            "21.67",
+            "0.1168"
+          ],
+          [
+            "35",
+            "2026-03-27",
+            "GLM 4.7 (OpenHands CLI)",
+            "Zhipu AI",
+            "20.30",
+            null
+          ],
+          [
+            "36",
+            "2025-05-28",
+            "Claude Sonnet 4",
+            "Anthropic",
+            "20.00",
+            "0.0591"
+          ],
+          [
+            "37",
+            "2025-05-28",
+            "DeepSeek V3",
+            "DeepSeek",
+            "19.83",
+            "0.0044"
+          ],
+          [
+            "38",
+            "2025-05-28",
+            "Claude 3.7 Sonnet",
+            "Anthropic",
+            "19.67",
+            "0.0591"
+          ],
+          [
+            "39",
+            "2026-03-02",
+            "Qwen3 Coder 480B",
+            "Alibaba",
+            "19.17",
+            "0.0038"
+          ],
+          [
+            "40",
+            "2025-05-28",
+            "Llama 4 Scout",
+            "Meta",
+            "18.90",
+            null
+          ],
+          [
+            "41",
+            "2026-03-02",
+            "MiniMax M2.1",
+            "MiniMax",
+            "18.83",
+            "0.0057"
+          ],
+          [
+            "42",
+            "2025-06-09",
+            "QwQ-32B",
+            "Qwen",
+            "18.17",
+            "0.0014"
+          ],
+          [
+            "43",
+            "2026-03-02",
+            "GLM 4.7",
+            "Zhipu AI",
+            "18.17",
+            "0.0061"
+          ],
+          [
+            "44",
+            "2025-05-28",
+            "GPT-4o",
+            "OpenAI",
+            "15.50",
+            "0.0386"
+          ],
+          [
+            "45",
+            "2025-05-28",
+            "Llama 4 Maverick",
+            "Meta",
+            "13.17",
+            "0.0029"
+          ],
+          [
+            "46",
+            "2025-06-09",
+            "Qwen2.5 Coder 32B",
+            "Qwen",
+            "12.50",
+            "0.0008"
+          ],
+          [
+            "47",
+            "2025-09-04",
+            "Llama 3.3 70B Instruct",
+            "Meta",
+            "12.17",
+            "0.0006"
+          ],
+          [
+            "48",
+            "2025-06-09",
+            "Codestral 22B",
+            "Mistral AI",
+            "8.67",
+            "0.0045"
+          ],
+          [
+            "49",
+            "2025-06-09",
+            "Qwen2.5 Coder 7B",
+            "Qwen",
+            "6.33",
+            "0.0018"
+          ],
+          [
+            "50",
+            "2025-06-09",
+            "Mistral 7B Instruct",
+            "Mistral AI",
+            "2.83",
+            "0.0026"
+          ],
+          [
+            "51",
+            "2025-06-09",
+            "Mixtral 8x7B Instruct",
+            "Mistral AI",
+            "2.33",
+            "0.0012"
+          ]
+        ]
+      },
+      "cite": [
+        "site@榜单"
+      ]
+    }
+  }
 }

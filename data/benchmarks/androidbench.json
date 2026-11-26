@@ -1,41 +1,921 @@
 {
   "id": "androidbench",
   "name": "Android Bench",
-  "full_name": null,
-  "aliases": [],
-  "status": null,
+  "full_name": "Android Bench（Android 开发 LLM 基准；2.0 论文全名 Android Bench: Measuring Frontier Coding Agents on Long-Horizon Mobile Engineering，即「在前沿编程智能体上测长时程移动工程」）",
+  "aliases": [
+    "Android LLM Benchmark"
+  ],
+  "status": "active",
   "categories": [
     "coding"
   ],
-  "summary": "Google 官方 Android 开发 LLM 基准（95 任务公开子集）",
-  "interpretation": "Google 官方 Android 开发基准：100 个真实开发任务、5 次运行的平均解决率，越高越好；头部约 92%（Opus 5 91.8），中尾模型散布在 40–75%——75–90 区间是当前平台专项的区分带。",
-  "measures": [],
-  "does_not_measure": [],
+  "summary": "Android Bench 是 Google 官方的 Android 开发评测：让编程智能体（能自己读代码、改代码、跑构建的 AI）在容器里的 Android 模拟器上完成真实工程任务，再用自动化测试加一个多模态裁判（Gemini 3.5 Flash 对比截图与无障碍树）打分。当前主线是 2.0：30 个人类要写数天的长时程任务，每题独立跑 5 次，主指标是通过率（一次运行拿满分的运行占比）。",
+  "interpretation": "高分说明「模型 + 智能体」这个组合能在真实 Android 工程里独立交付完整功能：编译通过、功能测试过、界面与参考设计一致、没有违反约束。但它不说明通用编码能力，也不说明效率——成本与延迟是另一套口径，且官方明确说失败率高的模型会显得更便宜。30 题的样本量只能稳定分辨 14 个百分点的通过率差距，前几名的名次差要当噪声看。",
+  "measures": [
+    {
+      "area": "迁移（Migrations）",
+      "focus": "把生产级开源应用升级到现代库与架构：Retrofit→Ktor、RxJava→Coroutines、Hilt→Koin、Navigation 2→3、XML→Compose、Java→Kotlin；示例：Signal 的 Java→Kotlin 改动 8,240 行、81 个文件",
+      "share": "13 / 30",
+      "format": "容器内 Android 虚拟设备上改代码 → 构建 → 插桩测试 + SQLite/Room 检查 + 视觉判定",
+      "cite": [
+        "paper@§3.1",
+        "paper@§3.2",
+        "bench-methodology-2@Taskset composition"
+      ]
+    },
+    {
+      "area": "应用创建（App creation）",
+      "focus": "从视觉设计稿新建一个多屏外卖应用 Food Vibes（私有代码库，零公开痕迹）；典型范围 1,200–5,500 行、20–70 个文件",
+      "share": "9 / 30（官网榜单的任务筛选器计为 10）",
+      "format": "同上；无既有测试可回归，权重偏向视觉与功能",
+      "cite": [
+        "paper@§3.1",
+        "bench-methodology-2@Taskset composition",
+        "bench@Long-horizon task results"
+      ]
+    },
+    {
+      "area": "新功能（New features）",
+      "focus": "在既有生产代码库里实现平台能力：Picture-in-Picture、Wear OS 伴随同步、主屏 widget、CameraX；示例：Now in Android 的新闻 widget",
+      "share": "6 / 30（官网榜单的任务筛选器计为 5）",
+      "format": "同上；仓库既有测试套件同时参与回归",
+      "cite": [
+        "paper@§3.1",
+        "bench-methodology-2@Taskset composition",
+        "bench@Long-horizon task results"
+      ]
+    },
+    {
+      "area": "跨平台转换（App conversions）",
+      "focus": "把 Flutter / React Native 应用转成原生 Jetpack Compose；官方结论是「至今没有模型完整通过一项转换」，最好运行的完成率接近 0.90",
+      "share": "2 / 30",
+      "format": "线性 UI walkthrough 逐屏截图 + 无障碍树判定，早期界面出错会连锁压低后续界面分数",
+      "cite": [
+        "paper@§3.1",
+        "bench-methodology-2@Taskset composition",
+        "bench-methodology-2@Where models stall"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "Android 之外的通用软件工程能力：官方把目标限定为「推动 Android 开发的模型改进、帮 Android 开发者选型、提升生态应用质量」，不宣称通用编码或 AGI 能力",
+      "cite": [
+        "bench-methodology-1@Goal",
+        "bench-methodology-2@Goals of the benchmark"
+      ]
+    },
+    {
+      "text": "真实硬件与真实网络：蓝牙配对、摄像头传感器、GPU compute shader 用软件 mock，后端跑在本地 mock server 上，不考察间歇网络故障、慢响应或后端错误",
+      "cite": [
+        "paper@§8",
+        "bench-methodology-2@Platform and evaluation boundaries"
+      ]
+    },
+    {
+      "text": "Wear OS 以外的设备形态：折叠屏、大屏、Android Auto 留待后续版本",
+      "cite": [
+        "paper@§8",
+        "bench-methodology-2@Platform and evaluation boundaries"
+      ]
+    },
+    {
+      "text": "实现的内部结构：测试只看结果（界面行为、数据库状态、出站 Intent 与 Wear OS 同步事件），不规定类结构或 DAO 组织方式",
+      "cite": [
+        "paper@§4.2",
+        "bench-methodology-2@Deterministic verification"
+      ]
+    },
+    {
+      "text": "归一化效率：榜单的成本与延迟是「整轮所有任务求和」，不是单位成功率的成本，跨通过率不同的模型比较会失真",
+      "cite": [
+        "bench-methodology-1@Bias toward incomplete runs"
+      ]
+    }
+  ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
+    "sample_count": 30,
+    "splits": [
+      "2.0 长时程任务集：30 题（当前主线，官网榜单与论文口径）",
+      "2.0 每任务两个变体：closed（测试隐藏）与 open（失败测试直接给智能体）",
+      "2.0 数据集不公开：官方称在评估「不造成污染」的发布方式",
+      "1.0 历史任务集：100 题（88 个来自 GitHub PR + 12 个专家手写），可在 Harbor Hub 下载"
+    ],
+    "languages": [
+      "Kotlin",
+      "Java",
+      "Dart",
+      "TypeScript",
+      "构建脚本（Gradle）"
+    ],
+    "source_type": "expert-authored（Android 工程师手工编写；1.0 另含 88 个来自 GitHub pull request 的任务）",
+    "public_sample": false,
+    "multiple_choice_share": "不适用（本基准没有选择题，全部是实现类任务）",
+    "multimodal_share": "2.0 未披露多模态任务占比；1.0 数据集卡写明 20 个任务带 UI 问题截图",
+    "totals": "当前主线 2.0 共 30 个长时程任务，分 4 类：迁移 13、应用创建 9、新功能 6、跨平台转换 2；人类解法中位数 2,336 行、42 个文件，最大单题 8,240 行；每题独立跑 5 次。2.0 数据集不公开。1.0 历史版为 100 题（88 个 GitHub PR + 12 个专家手写），公开可下载。",
+    "cite": [
+      "paper@§3.1",
+      "paper@§3.2",
+      "bench-methodology-2@Taskset composition",
+      "harbor-dataset@Dataset composition",
+      "bench-methodology-1@The Android Bench composition"
+    ],
+    "construction": [
+      {
+        "k": "手工出题",
+        "text": "Android 工程师逐个手写任务，确认任务真实、可解，并估算人类耗时；覆盖四类：从设计稿新建应用、开源库迁移、存量代码加功能、Flutter/React Native 转 Compose。",
+        "cite": [
+          "paper@§3.1",
+          "bench-methodology-2@Benchmark design and taskset"
+        ]
+      },
+      {
+        "k": "九轮轨迹评审",
+        "text": "评审者通读每份任务规格与测试套件，剔除两类失败模式：把答案结构写进指令的「过度规格化」，以及测试预期指令从未要求的行为的「规格不足」。每轮都用多个模型家族（Claude、GPT、Gemini）的解法跑一遍基准；模型写出能跑的代码却因测试过严而失败时，就把测试改成只查功能。",
+        "cite": [
+          "paper@§3.1",
+          "bench-methodology-2@Test design and review"
+        ]
+      },
+      {
+        "k": "防污染设计",
+        "text": "自研任务放在零公开痕迹的内部仓库（Food Vibes）；迁移任务瞄准 Navigation 3、Coil 3、Ktor 3 等刚稳定的新库，源仓库里没有现成迁移可抄；转换任务对应的 Flutter/React Native 应用从未有人做过原生实现。1.0 时代则在所有任务文件里放 BIG-BENCH canary 字符串，并人工审计成功轨迹，确认不是 reward hacking。",
+        "cite": [
+          "paper@§3.1",
+          "bench-methodology-2@Preventing contamination",
+          "bench-methodology-1@Safeguards against data contamination"
+        ]
+      },
+      {
+        "k": "容器化执行",
+        "text": "任务打包在 Harbor 框架的独立 Docker 容器里，启动 Android 虚拟设备；论文给出的容器最低配置是 16 CPU、72GB 内存、500GB 存储，宿主机需支持 KVM。",
+        "cite": [
+          "paper@§3.3",
+          "bench-methodology-2@The Harbor framework"
+        ]
+      },
+      {
+        "k": "1.0 的构建方式（历史）",
+        "text": "1.0 从 38,989 个 pull request 中筛出 100 题：仓库需含 Android 应用或库代码且不少于 500 favorites，PR 需已合并、修过已报告 issue、带单元或插桩测试，且只取最近 3 年的改动；候选再经质量保证评审与 Android 主题专家两轮人工审。缺测试或缺 issue 的候选由团队补写后再送审。",
+        "cite": [
+          "bench-methodology-1@The Android Bench composition",
+          "bench-methodology-1@Repository criteria",
+          "bench-methodology-1@Task sourcing and filtering",
+          "repo-tech-report@Dataset Construction"
+        ]
+      }
+    ]
   },
-  "metrics": [],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [],
-  "notes": "Qwen3.8 引用",
+  "default_protocol": {
+    "raw": "智能体在容器里的 Android 虚拟设备上工作：读任务说明、改代码、构建 APK、装机、驱动界面。判定分两路——确定性断言（Android 插桩测试、直接查 SQLite/Room 数据库、出站 Intent  extras 与 Wear OS 同步事件、仓库既有测试回归）加多模态裁判（Gemini 3.5 Flash 把截图对比基线参考图、解析 dumpsys accessibility 无障碍树，各返回 0.0–1.0 分与技术理由）。基础分是功能、回归、需求、视觉四类的归一化加权和，再乘惩罚系数（构建失败 0.0x、作弊 0.0x、混入 Flutter/Dart/JS 文件 0.0x、在 Compose 任务里用 findViewById 等遗留 API 0.5x）。主指标是 5 次独立运行的平均通过率（pass@1，满分 1.0 才算通过）；完成率是同一套打分的连续值，未通过的运行也计入。",
+    "cite": [
+      "paper@§4.2",
+      "paper@§4.3",
+      "paper@§5.2",
+      "bench-methodology-2@Multifaceted verification",
+      "bench-methodology-2@Multimodal verification",
+      "bench-methodology-2@Scoring methodology",
+      "bench-methodology-2@Runs per task"
+    ],
+    "variants": [
+      {
+        "text": "closed 变体 vs open 变体：closed 只给高层需求与验收标准、测试隐藏；open 把失败测试直接给智能体并能反复运行。论文里同一模型两个变体差 18.0–68.7 个百分点（claude-fable-5-1：22.7% → 84.0%）。官网榜单没有标注用的是哪个变体。",
+        "cite": [
+          "paper@§5.2"
+        ]
+      },
+      {
+        "text": "1.0 vs 2.0：1.0 是 100 个 GitHub PR 的局部修复、二值通过/失败、在终端里跑测试；2.0 换成长时程任务、部分分 + 多模态裁判、在模拟器上验证 UI。任务集、评分、harness 全变，两边分数不可比。",
+        "cite": [
+          "paper@§2.1",
+          "bench-methodology-2@Limitations of 1.0",
+          "bench-archive@March 5th, 2026"
+        ]
+      },
+      {
+        "text": "运行次数：2.0 每题跑 5 次；1.0 技术报告写「每个模型跑 10 次」并在附录写「最少 5 次」，实际运行次数表在 3–10 次之间。厂商自报还有第三种口径——Qwen3.8 博客用「95 题公开子集 + avg@3」。",
+        "cite": [
+          "bench-methodology-2@Runs per task",
+          "repo-tech-report@Experimental Methodology",
+          "repo-tech-report@Appendix: Metrics",
+          "qwen-blog@Full Benchmark Table"
+        ]
+      },
+      {
+        "text": "智能体 harness 与推理档位：2.0 起按 agent harness 分别出分（claude-code、codex、antigravity-sdk、kimi-code、muse-code、opencode、qwen-coder），同一模型换 harness 分数不同；2026-10-26 起榜单才展示推理档位（max / high / default）。",
+        "cite": [
+          "bench-methodology-2@Expanding beyond mini-swe-agent",
+          "bench-changelog@October 26th, 2026",
+          "bench@Android Bench 2.0"
+        ]
+      },
+      {
+        "text": "成本与延迟口径：按整轮所有任务的资源消耗求和后取 5 次运行的算术平均，延迟含到 API 端点的网络传输时间，成本按执行时的供应商定价折算。官方明说这套数字有「偏向未完成运行」的结构性偏差，只能在通过率可比的模型之间比较。",
+        "cite": [
+          "bench-methodology-1@Run-level average calculation",
+          "bench-methodology-1@Metrics sourcing and calculation",
+          "bench-methodology-1@Bias toward incomplete runs"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "pass-rate",
+      "name": "通过率（pass rate / pass@1）",
+      "direction": "越高越好",
+      "description": "5 次独立运行里拿到满分 1.0 的运行占比——要求全部功能测试通过、视觉完全合规、零约束违反，是一次完整可用的交付才算通过",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "bench-methodology-2@Pass rate",
+        "paper@§4.3",
+        "bench@Long-horizon task results"
+      ]
+    },
+    {
+      "id": "completion-rate",
+      "name": "完成率（completion rate / 部分分）",
+      "direction": "越高越好",
+      "description": "0.0–1.0 的连续分数：功能、回归、需求、视觉四类归一化加权基础分再乘惩罚系数；未通过的运行也计分，用来衡量「差多少」，是给模型开发者的爬坡信号",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "bench-methodology-2@Completion rate",
+        "paper@§4.3",
+        "paper@§5.2"
+      ]
+    },
+    {
+      "id": "avg-cost",
+      "name": "单次完整跑平均成本",
+      "direction": "越低越好",
+      "description": "跑完整个任务集的 API 花费，按 5 次运行取算术平均；官方提示失败率高的模型会显得更便宜，不代表效率高",
+      "range": [
+        0,
+        null
+      ],
+      "unit": "USD",
+      "cite": [
+        "bench-methodology-1@Metrics sourcing and calculation",
+        "bench-methodology-1@Bias toward incomplete runs",
+        "bench@Long-horizon task results"
+      ]
+    },
+    {
+      "id": "avg-latency",
+      "name": "单次完整跑平均耗时",
+      "direction": "越低越好",
+      "description": "跑完整个任务集的墙钟时间（小时）平均值，含到 API 端点的网络传输时间，不纯是模型推理速度",
+      "range": [
+        0,
+        null
+      ],
+      "unit": "hour",
+      "cite": [
+        "bench-methodology-1@Metrics sourcing and calculation",
+        "bench-methodology-1@Environmental variability in latency",
+        "bench@Long-horizon task results"
+      ]
+    }
+  ],
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2026-03-05",
+      "label": "首次发布 1.0：100 个 GitHub PR 任务、mini-swe-agent v1 harness、二值通过率；官方把 Gemini 2.5 Flash 的 16.1% 设为最低基线",
+      "cite": [
+        "bench-changelog@March 5th, 2026",
+        "bench-methodology-1@Our methodology",
+        "bench-archive@March 5th, 2026"
+      ]
+    },
+    {
+      "id": "v1-dimensions",
+      "date": "2026-05-18",
+      "label": "榜单新增延迟、token、成本三个维度；开始纳入开源权重模型",
+      "cite": [
+        "bench-changelog@May 18th, 2026"
+      ]
+    },
+    {
+      "id": "harbor",
+      "date": "2026-07-08",
+      "label": "迁移到 Harbor 框架并重跑全部模型（官方称计分有轻微位移），1.0 数据集上架 Harbor Hub；官方 GitHub 仓库同日归档为只读",
+      "cite": [
+        "bench-changelog@July 8th, 2026",
+        "announcement@Upgrading our methodology with the Harbor framework",
+        "repo@README"
+      ]
+    },
+    {
+      "id": "community",
+      "date": "2026-07-13",
+      "label": "开放社区贡献：community-dataset 收任务、community-results 收评测与讨论",
+      "cite": [
+        "bench-changelog@July 13th, 2026",
+        "community-dataset@README"
+      ]
+    },
+    {
+      "id": "v2",
+      "date": "2026-09-17",
+      "label": "发布 2.0 长时程任务集（30 题）与多 harness 对比，启用多模态视觉判定与连续完成率",
+      "cite": [
+        "bench-changelog@September 17th, 2026",
+        "bench-methodology-2@Benchmark design and taskset"
+      ]
+    },
+    {
+      "id": "reasoning-level",
+      "date": "2026-10-26",
+      "label": "榜单开始展示模型所用推理档位",
+      "cite": [
+        "bench-changelog@October 26th, 2026",
+        "bench@Android Bench 2.0"
+      ]
+    },
+    {
+      "id": "nov-18",
+      "date": "2026-11-18",
+      "label": "最新一轮更新：claude-code 的 Claude Fable 5.2 上榜并居首（40.0%）；2.0 论文（Ben Trengrove、Lynn Ou、Siva Velusamy）标注为 2026 年 11 月，未给精确日期",
+      "cite": [
+        "bench-changelog@November 18th, 2026",
+        "bench@Latest updates",
+        "paper@标题页"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "样本量小，统计分辨力有限",
+      "impact": "30 题 × 5 次运行的量级下，论文的功效分析说只能稳定分辨 14 个百分点的通过率差异和 0.07 的部分分差异，前几名之间无法区分。",
+      "severity": "高",
+      "response": "论文用多重比较校正把模型分成若干统计档，并明说「无法分开前几名，可能因为只有 30 题限制了统计功效」，建议增加任务量。",
+      "reader": "榜单前几名 40.0% / 40.0% / 37.3% / 29.3% 的差距要当噪声看，不要当成稳定排名。",
+      "cite": [
+        "paper@§7.3",
+        "paper@§7.1"
+      ]
+    },
+    {
+      "issue": "closed / open 口径未在官网榜单标注",
+      "impact": "论文显示同一模型两个变体差 18.0–68.7 个百分点（claude-fable-5-1：closed 22.7% / open 84.0%，3.7 倍）。榜单没有标注用的是哪个变体，第三方引用时极易混用。",
+      "severity": "高",
+      "response": "论文 §5.2 明确给出两个变体的定义与逐模型差距表；官网榜单与方法页均未标注变体，未见官方就此补充说明。",
+      "reader": "看到 80% 以上的 Android Bench 2.0 分数，先确认是不是 open 变体（测试可见）再下结论。",
+      "cite": [
+        "paper@§5.2",
+        "bench@Long-horizon task results"
+      ]
+    },
+    {
+      "issue": "版本断裂，跨版本分数不可比",
+      "impact": "1.0 与 2.0 的任务集、评分方式、harness 全变。官方 2.0 方法页称 1.0 已被前沿模型做到约 90% 通过率，而 1.0 归档榜单的最高分只有 84.5%（Claude Fable 5，2026-07-08，迁移 Harbor 后重跑）。",
+      "severity": "中",
+      "response": "官方保留历史榜单归档页；2026-07 迁移 Harbor 时重跑全部模型并明说「计分有轻微位移」；2.0 方法页把 1.0 的四条局限（饱和、范围窄、二值判分、无头测试）逐条列出。",
+      "reader": "比较前先确认是 1.0 还是 2.0；1.0 的饱和程度以归档榜单的 84.5% 为准，约 90% 是官方在 2.0 方法页里的概括说法。",
+      "cite": [
+        "bench-methodology-2@Limitations of 1.0",
+        "bench-archive@July 8th, 2026",
+        "announcement@Upgrading our methodology with the Harbor framework"
+      ]
+    },
+    {
+      "issue": "任务分类计数在来源之间不一致",
+      "impact": "论文 §3.1 与 2.0 方法页的任务构成表都是「应用创建 9、迁移 13、新功能 6、转换 2」；官网榜单的任务筛选器却计为「转换 2、应用创建 10、迁移 13、新功能 5」。两边合计都是 30，但两类各差 1 题。",
+      "severity": "中",
+      "response": "未见官方说明差异原因；本档案以论文与方法页的 9 / 6 为准，并在 measures 的占比字段里同时标出榜单计数。",
+      "reader": "引用分类占比时说明取自论文还是榜单，两类数字不要混用。",
+      "cite": [
+        "paper@§3.1",
+        "bench-methodology-2@Taskset composition",
+        "bench@Long-horizon task results"
+      ]
+    },
+    {
+      "issue": "成本与延迟口径偏向未完成的运行",
+      "impact": "成本与延迟按整轮所有任务的资源消耗求和，早失败的模型总成本与总耗时天然更低；延迟还含网络传输时间，成本按执行时点的供应商定价折算，跨时间记录的数值不可直接比。",
+      "severity": "中",
+      "response": "官方在 1.0 与 2.0 方法页都写了这条警告，并明确建议「只在完成率与通过率可比的模型之间比较资源指标」。",
+      "reader": "「低成本 + 低通过率」不代表效率高，可能是没跑完。",
+      "cite": [
+        "bench-methodology-1@Bias toward incomplete runs",
+        "bench-methodology-1@Pricing fluctuations",
+        "bench-methodology-2@Operational and leaderboard metrics caveats"
+      ]
+    },
+    {
+      "issue": "2.0 数据集不公开，外部无法独立复现",
+      "impact": "官方称数据集私有、正在评估如何在不造成污染的前提下发布；目前外部只能下载 1.0 的公开数据集，或自建任务提交社区仓库。",
+      "severity": "中",
+      "response": "官方开放 community-dataset 接收社区任务、Harbor Hub 托管社区评测结果，但明确「不保证社区任务会合入官方 Android Bench 数据集」。",
+      "reader": "引用 2.0 数字时只能引官方榜单或论文，无法自行复核；社区跑分不等于官方分数。",
+      "cite": [
+        "bench-methodology-2@Preventing contamination",
+        "community-dataset@README",
+        "harbor-dataset@Dataset composition"
+      ]
+    },
+    {
+      "issue": "评测环境边界明显",
+      "impact": "蓝牙配对、摄像头传感器、GPU compute shader 靠软件 mock；只覆盖 Wear OS 一个伴随形态；后端是本地 mock server；应用转换任务用手写线性 walkthrough，早期界面渲染不出按钮就会阻断后续所有界面，拿到极低的部分分。",
+      "severity": "中",
+      "response": "论文 limitations 逐条列出，并说明后续版本会扩展到折叠屏、Android Auto 等形态，网络故障注入与 agent 驱动的 walkthrough 也在计划中。",
+      "reader": "转换类任务的超低分可能来自 walkthrough 断链，不一定是应用做不出来。",
+      "cite": [
+        "paper@§8",
+        "bench-methodology-2@Platform and evaluation boundaries"
+      ]
+    }
+  ],
+  "notes": "1.0 → 2.0 版本断裂；第三方（Qwen3.8 博客）用「95 题公开子集 + avg@3」口径自报，与官方不可比",
   "official_sources": [
     {
       "kind": "site",
       "url": "https://developer.android.com/bench"
     },
     {
-      "kind": "site",
-      "url": "https://qwen.ai/blog?id=qwen3.8"
+      "kind": "paper",
+      "url": "https://storage.googleapis.com/gweb-research2023-media/pubtools/1050702.pdf"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://hub.harborframework.com/datasets/android-bench/android-bench/latest"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/android-bench/android-bench"
     }
   ],
   "related_benchmarks": [
-    "swebench"
+    "swebench",
+    "swebench-pro",
+    "deepswe",
+    "frontier-code",
+    "androidworld"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-26",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-26",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "Android Bench: Measuring Frontier Coding Agents on Long-Horizon Mobile Engineering（Google Research，论文首页标注 2026 年 11 月）",
+        "url": "https://storage.googleapis.com/gweb-research2023-media/pubtools/1050702.pdf",
+        "accessed": "2026-11-26"
+      },
+      {
+        "id": "bench",
+        "kind": "site",
+        "title": "developer.android.com/bench — Android Bench 官网榜单（2.0 长时程任务结果 + 1.0 任务结果；官方 Markdown 版）",
+        "url": "https://developer.android.com/bench.md.txt",
+        "accessed": "2026-11-26"
+      },
+      {
+        "id": "bench-methodology-1",
+        "kind": "site",
+        "title": "developer.android.com/bench/methodology — Android Bench methodology（1.0 口径，已按 Harbor 迁移刷新；官方 Markdown 版）",
+        "url": "https://developer.android.com/bench/methodology.md.txt",
+        "accessed": "2026-11-26"
+      },
+      {
+        "id": "bench-methodology-2",
+        "kind": "site",
+        "title": "developer.android.com/bench/methodology/2 — Android Bench 2.0 methodology（官方 Markdown 版）",
+        "url": "https://developer.android.com/bench/methodology/2.md.txt",
+        "accessed": "2026-11-26"
+      },
+      {
+        "id": "bench-archive",
+        "kind": "site",
+        "title": "developer.android.com/bench/archive — Leaderboard Archive（2026-03-05 至 2026-11-11 各版本榜单快照；官方 Markdown 版）",
+        "url": "https://developer.android.com/bench/archive.md.txt",
+        "accessed": "2026-11-26"
+      },
+      {
+        "id": "bench-changelog",
+        "kind": "site",
+        "title": "developer.android.com/bench/changelog — Changelog（版本与更新日期；官方 Markdown 版）",
+        "url": "https://developer.android.com/bench/changelog.md.txt",
+        "accessed": "2026-11-26"
+      },
+      {
+        "id": "harbor-dataset",
+        "kind": "dataset",
+        "title": "Harbor Hub — android-bench/android-bench 数据集卡（1.0 的 100 题公开数据集）",
+        "url": "https://hub.harborframework.com/datasets/android-bench/android-bench/latest",
+        "accessed": "2026-11-26"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "github.com/android-bench/android-bench — 评测框架与 1.0 数据集（2026-07-08 起归档只读，Apache-2.0）",
+        "url": "https://github.com/android-bench/android-bench",
+        "accessed": "2026-11-26"
+      },
+      {
+        "id": "repo-tech-report",
+        "kind": "repo",
+        "title": "Android Bench Technical Report（docs/tech_report.md，报告标注 2026-02-25，1.0 基线与统计方法）",
+        "url": "https://raw.githubusercontent.com/android-bench/android-bench/main/docs/tech_report.md",
+        "accessed": "2026-11-26"
+      },
+      {
+        "id": "announcement",
+        "kind": "announcement",
+        "title": "Android Developers Blog：Evolving how LLMs are measured for Android: the next era of Android Bench（2026-07-08，Zoe Lopez-Latorre）",
+        "url": "https://android-developers.googleblog.com/2026/07/android-bench-llm-measurement.html",
+        "accessed": "2026-11-26"
+      },
+      {
+        "id": "community-dataset",
+        "kind": "repo",
+        "title": "github.com/android-bench/community-dataset — 社区任务提交仓库",
+        "url": "https://github.com/android-bench/community-dataset",
+        "accessed": "2026-11-26"
+      },
+      {
+        "id": "qwen-blog",
+        "kind": "blog",
+        "title": "Qwen3.8-Max: A New Bar for Coding and Cowork（Qwen 官方博客，2026-08-03；含第三方自报 AndroidBench 口径）",
+        "url": "https://qwen.ai/blog?id=qwen3.8",
+        "accessed": "2026-11-26"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Google（Android 开发者关系团队；2.0 论文署名为 Ben Trengrove、Lynn Ou、Siva Velusamy）",
+        "cite": [
+          "paper@标题页",
+          "bench@Android Bench 2.0"
+        ]
+      },
+      "first_release": {
+        "v": "2026-03-05（官方更新日志标注 First release）",
+        "cite": [
+          "bench-changelog@March 5th, 2026"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "paper@Abstract",
+        "bench-methodology-2@Benchmark design and taskset",
+        "bench@Long-horizon task results"
+      ],
+      "interpretation": [
+        "paper@§6.1",
+        "paper@§7.3",
+        "bench-methodology-2@Scoring methodology"
+      ]
+    },
+    "problem": {
+      "text": "SWE-bench 这类仓库级基准让智能体改一两个文件、由既有测试在终端里判分，测不到移动端工程的主要难点：多模块 Gradle 依赖图与编译链、协程与生命周期带来的状态分离、以及「代码不报错但界面是错的」。Google 认为自己的 1.0（100 个 GitHub PR 的局部修复）也已被前沿模型做到接近饱和，于是 2.0 换成 30 个人类要写数天的长时程任务，并在真实模拟器上验证 UI，用连续完成率保住爬坡信号。",
+      "cite": [
+        "paper@§1",
+        "paper@§2.1",
+        "bench-methodology-2@Limitations of 1.0",
+        "bench-methodology-2@Goals of 2.0"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "1.0 首发时最好",
+        "value": "72.4%",
+        "note": "Gemini 3.1 Pro Preview（2026-03-05 归档榜单，100 题）；同榜 Gemini 2.5 Flash 16.1% 是官方设定的最低基线。",
+        "cite": [
+          "bench-archive@March 5th, 2026",
+          "bench-methodology-1@Our methodology"
+        ]
+      },
+      {
+        "label": "1.0 归档最高",
+        "value": "84.5%",
+        "note": "Claude Fable 5（2026-07-08 归档榜单，即迁移 Harbor 后重跑的那一版）；开源权重最高 GLM 5.2 的 72.2%。官方 2.0 方法页把 1.0 的饱和概括为「约 90% 通过率」。",
+        "cite": [
+          "bench-archive@July 8th, 2026",
+          "announcement@Expanding the leaderboard with 8 new models",
+          "bench-methodology-2@Limitations of 1.0"
+        ]
+      },
+      {
+        "label": "2.0 论文 closed 变体最高",
+        "value": "40.7%",
+        "note": "claude-sonnet-5-5（论文 §5.1 表，pass@1，平均部分分 0.854）；论文摘要按四舍五入写 41%。",
+        "cite": [
+          "paper@§5.1",
+          "paper@Abstract"
+        ]
+      },
+      {
+        "label": "2.0 论文 open 变体最高",
+        "value": "84.0%",
+        "note": "claude-fable-5-1（论文 §5.2 表）；同一模型 closed 只有 22.7%，相差 61.3 个百分点。",
+        "cite": [
+          "paper@§5.2"
+        ]
+      },
+      {
+        "label": "当前官网榜单最高",
+        "value": "40.0%",
+        "note": "Claude Fable 5.2（max）/ claude-code，完成率 87.7%，平均耗时 84.3 小时，平均成本 $2,989.6；页面标注「截至 11 月 18 日」。同分的 Claude Sonnet 5.5（max）完成率 80.9%。",
+        "cite": [
+          "bench@Long-horizon task results",
+          "bench@Latest updates"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      },
+      {
+        "label": "统计噪声参考线",
+        "value": "14 个百分点",
+        "note": "论文功效分析：30 题 × 5 跑的基准只能稳定分辨 14 个百分点的通过率差异（部分分 0.07）。低于这个幅度的排名差应视为噪声。这条线是本站照抄论文数字的参考，不是官方上限。",
+        "cite": [
+          "paper@§7.3"
+        ]
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 1.0 的分数和 2.0 的分数排在一起比。1.0 是 100 个 GitHub PR 的局部修复、二值判分；2.0 是 30 个长时程任务、部分分 + 多模态裁判，任务集与评分全变。",
+        "cite": [
+          "paper@§2.1",
+          "bench-methodology-2@Limitations of 1.0",
+          "bench-archive@March 5th, 2026"
+        ]
+      },
+      {
+        "text": "把 open 变体分数当成无辅助能力。open 变体会把失败测试直接交给智能体并允许反复运行，通过率能翻 3–6 倍；官网榜单没有标注变体。",
+        "cite": [
+          "paper@§5.2",
+          "bench@Long-horizon task results"
+        ]
+      },
+      {
+        "text": "把低通过率理解成「基本做不出来」。论文里前几名模型的部分分都在 0.8 以上，最常见的失败是「漏一个需求」而不是编译不过。",
+        "cite": [
+          "paper@§6.1",
+          "paper@Abstract",
+          "paper@§6.3"
+        ]
+      },
+      {
+        "text": "把低平均成本理解成更高效。官方明确说成本按整轮任务求和，早失败的模型天然更便宜，这套数字偏向未完成的运行。",
+        "cite": [
+          "bench-methodology-1@Bias toward incomplete runs",
+          "bench-methodology-2@Operational and leaderboard metrics caveats"
+        ]
+      },
+      {
+        "text": "把步数少理解成更快或更省。论文说明 codex 一步可以跑多条命令，claude-code 一步一条，跨 harness 的原始步数不可比。",
+        "cite": [
+          "paper@§6.5"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "Google；2.0 论文署名为 Google Research 的 Ben Trengrove、Lynn Ou、Siva Velusamy，Harbor 迁移公告由 Android 开发者关系工程师 Zoe Lopez-Latorre 发布",
+        "cite": [
+          "paper@标题页",
+          "announcement@Upgrading our methodology with the Harbor framework"
+        ]
+      },
+      {
+        "k": "致谢团队",
+        "v": "论文致谢列出 Android Bench 团队 Cody Smith、Isabella Fiterman、Jon Markoff、Juilee Joshi、Kasia Strzyż、Mary Chen、Naman Garg、Nikolai Viuginov、Prasanth Kommisetti、Priyadarshi Mukherjee、Tomáš Mlynarič、Vaibhav Gakhreja、Zoe Lopez-Latorre，以及任务贡献者若干",
+        "cite": [
+          "paper@致谢"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2026-03-05 首发 1.0 → 2026-05-18 加成本/延迟维度 → 2026-07-08 迁 Harbor 并重跑 → 2026-07-13 开放社区贡献 → 2026-09-17 发布 2.0 → 2026-10-26 展示推理档位 → 2026-11-18 最新更新；2.0 论文标注 2026 年 11 月（未给精确日期）",
+        "cite": [
+          "bench-changelog@March 5th, 2026",
+          "bench-changelog@September 17th, 2026",
+          "paper@标题页"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "1.0 数据集（100 题）在 Harbor Hub 与 GitHub（2026-07-08 起归档只读，Apache-2.0）；2.0 数据集不公开。评测框架基于 Harbor 与 mini-swe-agent v2，1.0 技术报告在仓库 docs/tech_report.md（标注 2026-02-25）",
+        "cite": [
+          "harbor-dataset@Dataset composition",
+          "repo@README",
+          "bench-methodology-2@Preventing contamination",
+          "repo-tech-report@Summary of Results"
+        ]
+      },
+      {
+        "k": "复现硬件门槛",
+        "v": "需要 KVM 虚拟化：Harbor 数据集卡要求 120GB 空闲磁盘、32GB 内存、8 核、x86_64；论文给出的容器最低配置是 16 CPU、72GB 内存、500GB 存储",
+        "cite": [
+          "harbor-dataset@System requirements",
+          "paper@§3.3"
+        ]
+      },
+      {
+        "k": "1.0 与同类基准的定位",
+        "v": "1.0 技术报告自称是「第一个 Android 开发标准基准」，结构照 SWE-bench；论文把 2.0 与 SWE-bench Pro（公开集 731 题）、DeepSWE 1.1（113 题）、Frontier Code（100 题）并列，2.0 的人类解法中位改动 2,336 行 / 42 文件，其余三者为 94–642 行 / 4–6 文件",
+        "cite": [
+          "repo-tech-report@Android Bench vs SWE-Bench",
+          "paper@§2.1"
+        ]
+      },
+      {
+        "k": "社区渠道",
+        "v": "社区任务提交在 github.com/android-bench/community-dataset，社区评测与讨论在 community-results，运行结果可发布到 Harbor Hub；官方明确不保证社区任务会合入官方数据集",
+        "cite": [
+          "community-dataset@README",
+          "bench-changelog@July 13th, 2026"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-26",
+        "columns": [
+          "来源",
+          "模型（Agent / 推理档位）",
+          "通过率",
+          "完成率 / 部分分",
+          "平均耗时",
+          "平均成本"
+        ],
+        "rows": [
+          [
+            "官网榜单（截至 2026-11-18）",
+            "Claude Fable 5.2（max）/ claude-code",
+            "40.0%",
+            "87.7%",
+            "84.3 h",
+            "$2,989.6"
+          ],
+          [
+            "官网榜单（截至 2026-11-18）",
+            "Claude Sonnet 5.5（max）/ claude-code",
+            "40.0%",
+            "80.9%",
+            "70.7 h",
+            "$1,574.9"
+          ],
+          [
+            "官网榜单（截至 2026-11-18）",
+            "Claude Opus 5.5（max）/ claude-code",
+            "37.3%",
+            "85.6%",
+            "56.6 h",
+            "$1,150.3"
+          ],
+          [
+            "官网榜单（截至 2026-11-18）",
+            "GPT 6.1 Sol（max）/ codex",
+            "29.3%",
+            "82.8%",
+            "26.6 h",
+            "$99.5"
+          ],
+          [
+            "官网榜单（截至 2026-11-18）",
+            "GPT 6.1 Terra（max）/ codex",
+            "28.7%",
+            "81.1%",
+            "18.7 h",
+            "$178.3"
+          ],
+          [
+            "官网榜单（截至 2026-11-18）",
+            "GPT 6 Astra（high）/ codex",
+            "28.0%",
+            "82.2%",
+            "7.9 h",
+            "$375.7"
+          ],
+          [
+            "官网榜单（截至 2026-11-18）",
+            "Kimi K3.1 Pro（max）/ kimi-code",
+            "24.0%",
+            "82.3%",
+            "27.4 h",
+            "$317.4"
+          ],
+          [
+            "官网榜单（截至 2026-11-18）",
+            "Gemini 4 Carbon（high）/ antigravity-sdk",
+            "23.3%",
+            "83.7%",
+            "31.0 h",
+            "$183.6"
+          ],
+          [
+            "官网榜单（截至 2026-11-18）",
+            "Qwen3.8 Max（default）/ qwen-coder",
+            "12.5%",
+            "75.0%",
+            "45.4 h",
+            "$258.4"
+          ],
+          [
+            "论文 §5.1 表（closed 变体）",
+            "claude-sonnet-5-5（claude-code）",
+            "40.7%",
+            "0.854",
+            "未列出",
+            "未列出"
+          ],
+          [
+            "论文 §5.1 表（closed 变体）",
+            "claude-opus-5-5（claude-code）",
+            "37.3%",
+            "0.874",
+            "未列出",
+            "未列出"
+          ],
+          [
+            "论文 §5.1 表（closed 变体）",
+            "gpt-6.1-sol（codex）",
+            "29.3%",
+            "0.833",
+            "未列出",
+            "未列出"
+          ],
+          [
+            "论文 §5.1 表（closed 变体）",
+            "qwen3.8-max（qwen-coder）",
+            "14.0%",
+            "0.743",
+            "未列出",
+            "未列出"
+          ],
+          [
+            "论文 §5.2 表（closed 变体）",
+            "claude-fable-5-1（claude-code）",
+            "22.7%",
+            "0.824",
+            "未列出",
+            "未列出"
+          ],
+          [
+            "论文 §5.2 表（open 变体）",
+            "claude-fable-5-1（claude-code）",
+            "84.0%",
+            "0.994",
+            "未列出",
+            "未列出"
+          ],
+          [
+            "论文 §5.2 表（closed 变体）",
+            "kimi-k3（kimi-code）",
+            "12.0%",
+            "0.733",
+            "未列出",
+            "未列出"
+          ],
+          [
+            "论文 §5.2 表（open 变体）",
+            "kimi-k3（kimi-code）",
+            "80.7%",
+            "0.935",
+            "未列出",
+            "未列出"
+          ],
+          [
+            "论文 §5.2 表（closed 变体）",
+            "gpt-6-astra（codex）",
+            "28.0%",
+            "0.833",
+            "未列出",
+            "未列出"
+          ],
+          [
+            "论文 §5.2 表（open 变体）",
+            "gpt-6-astra（codex）",
+            "73.3%",
+            "0.988",
+            "未列出",
+            "未列出"
+          ]
+        ]
+      },
+      "cite": [
+        "bench@Long-horizon task results",
+        "paper@§5.1",
+        "paper@§5.2"
+      ]
+    }
+  }
 }

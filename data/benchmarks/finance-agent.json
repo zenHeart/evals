@@ -1,54 +1,276 @@
 {
   "id": "finance-agent",
   "name": "Finance Agent Benchmark",
-  "full_name": "Finance Agent Benchmark: Benchmarking LLMs on Real-world Financial Research Tasks",
-  "aliases": ["Finance Agent", "FAB"],
-  "status": null,
-  "categories": [
-    "knowledge",
-    "agent"
-  ],
-  "summary": "Provident Group 出品的金融研究任务基准：真实投研工作流的多步分析（估值、筛选、财报数据提取与核对）",
-  "interpretation": "Provident 出品、vals.ai 承载的金融研究任务基准：537 道专家命题（9 类任务，基于近期 SEC 文件+搜索/EDGAR 工具），准确率越高越好；发布时最强 o3 也只有 46.8%——金融垂域智能体远未可靠。",
+  "full_name": "Finance Agent Benchmark: Benchmarking LLMs on Real-world Financial Research Tasks（金融智能体基准：在真实世界金融研究任务上基准测试大模型）",
+  "aliases": ["Finance Agent", "FAB", "Finance Agent v1"],
+  "status": "superseded",
+  "categories": ["knowledge", "agent"],
+  "summary": "Finance Agent Benchmark 是 Vals AI 2025 年 5 月发布的金融投研智能体基准：537 道由金融从业者出题、另一名专家互审的问答题，答案全部能在美国证监会（SEC）的 EDGAR 公开财报数据库里查到。被测模型在一个带 4 个工具的 ReAct 式外壳（harness，即「思考—调工具—看结果」的循环框架）里自己查资料，答案再由另一个大模型当裁判，按事先从专家答案里拆出来的检查项逐条打分。",
+  "interpretation": "高分说明模型能像初级金融分析师那样跨多份公开财报取数、按行业口径做规范化计算并给出数值精确的结论；论文发布时按 Class-Balanced 口径最强的 o3 也只有 46.8%，论文明说没有模型过半。但这个 537 题版本官方已宣布饱和归档，榜单停在 2026-02-10、最高 60.65%——46.8% 是 2025 年的历史读数，不代表当前水平；要知道家族现况得看 Finance Agent v2.1。",
   "measures": [
-    "多步金融分析的计算正确性",
-    "真实投研任务（估值/筛选/数据提取）完成度",
-    "表格数据处理与核对"
+    {
+      "area": "Quantitative Retrieval（定量检索）",
+      "focus": "从一份或多份文件直接抽取数字，检索后不需要再计算。例题：What was the quarterly revenue of Salesforce (NYSE:CRM) for the quarter ended December 31, 2024? 官网另给了一道公开样例题：What is the Total Number of Common Stock Shares Repurchased by Netflix (NASDAQ: NFLX) in Q4 2024?",
+      "share": "102 题（19%）",
+      "format": "开放式问答；论文称「$5,234,183」这类简单数值用直接比对即可",
+      "cite": ["paper@Table 1", "paper@Table 3", "paper@§2.2 Rubric-Based Evaluation", "site@Question Taxonomy", "site@Model Output Examples"]
+    },
+    {
+      "area": "Qualitative Retrieval（定性检索）",
+      "focus": "直接引用或概括非数字信息。例题：Describe the product offerings and business model of Microsoft (NASDAQ:MSFT)?",
+      "share": "97 题（18%）",
+      "format": "开放式问答，按评分细则逐条检查",
+      "cite": ["paper@Table 1", "paper@Table 3"]
+    },
+    {
+      "area": "Numerical Reasoning（数值推理）",
+      "focus": "对关键数字做计算或汇总得出答案。例题：What is % of revenue derived from AWS in each year and the 3 year CAGR from 2021-2024 of Amazon?",
+      "share": "83 题（15%）",
+      "format": "开放式问答，答案含计算过程与数值",
+      "cite": ["paper@Table 1", "paper@Table 3"]
+    },
+    {
+      "area": "Complex Retrieval（复杂检索）",
+      "focus": "需要综合多份文件才能完成的检索或内容概括。例题：Please briefly summarize the most recent capital raise conducted by Viking Therapeutics (NASDAQ:VKTX).",
+      "share": "29 题（6%）",
+      "format": "开放式问答，按评分细则逐条检查",
+      "cite": ["paper@Table 1", "paper@Table 3"]
+    },
+    {
+      "area": "Adjustments（调整项）",
+      "focus": "在 GAAP 与非 GAAP 财务指标之间搭桥的定量与定性分析。例题：What is Lemonade Insurance’s Adjusted EBITDA for the year ended December 31, 2024?",
+      "share": "43 题（8%）",
+      "format": "开放式问答，答案含数值与口径说明",
+      "cite": ["paper@Table 1", "paper@Table 3"]
+    },
+    {
+      "area": "Beat or Miss（超预期 / 低于预期）",
+      "focus": "把管理层前瞻指引与实际数逐季对比。例题：How did Lam Research’s revenue compare to management projections (at midpoint) on a quarterly basis in 2024? Format as % BEAT or MISS. Use guidance provided on a quarterly basis.",
+      "share": "69 题（13%）",
+      "format": "开放式问答，按季度输出 BEAT / MISS 百分比",
+      "cite": ["paper@Table 1", "paper@Table 3"]
+    },
+    {
+      "area": "Trends（趋势）",
+      "focus": "分析单一公司报告结构里的模式，或计算并语境化演进中的业绩、关键指标或业务构成。例题：Which Geographic Region has Airbnb (NASDAQ: ABNB) experienced the most revenue growth from 2022 to 2024?",
+      "share": "33 题（6%）",
+      "format": "开放式问答，按评分细则逐条检查",
+      "cite": ["paper@Table 1", "paper@Table 3"]
+    },
+    {
+      "area": "Financial Modeling（财务建模）",
+      "focus": "需要额外金融专业功底才能定义和评估的复杂数值推理。例题：How much M&A firepower does Amazon have as of FY2024 end including balance sheet cash, non-restricted cash and other short term investments, and up to 2x GAAP EBITDA leverage? Round to nearest billion.",
+      "share": "47 题（9%）",
+      "format": "开放式问答，答案含多步建模与取整要求",
+      "cite": ["paper@Table 1", "paper@Table 3"]
+    },
+    {
+      "area": "Market Analysis（市场分析）",
+      "focus": "对一家或多家公司的高级分析，需要规范化比较指标，或用因果推理语境化业务变化的驱动因素与竞争格局。例题：Compare the quarterly revenue growth of FAANG companies between 2022-2024.",
+      "share": "34 题（6%）",
+      "format": "开放式问答，按评分细则逐条检查",
+      "cite": ["paper@Table 1", "paper@Table 3"]
+    }
   ],
   "does_not_measure": [
-    "实时交易与市场执行",
-    "中文金融语料",
-    "长期策略回测"
+    {
+      "text": "结构化表格数据（电子表格、CSV）的综合与推理——论文在局限里明说当前题库偏向能用较短段落回答、或只关注复杂推理最终产出的问题，而专家工作流里大量与结构化表格交互的部分只放了少数几题。",
+      "cite": ["paper@附录 D.1"]
+    },
+    {
+      "text": "答案所引来源的准确性与可靠性——论文要求模型在末尾附 sources 字典，但明确写了没有评估这些来源的准确性与可靠性。",
+      "cite": ["paper@附录 D.1", "paper@附录 C.1 Instruction Prompt"]
+    },
+    {
+      "text": "商业级 RAG 系统与厂商自有智能体工具的能力——论文自承认 ReAct 式 harness 不足以代表 OpenAI、Google、xAI 等商业检索增强生成系统或专有智能体工具的全部复杂度。",
+      "cite": ["paper@附录 D.2"]
+    },
+    {
+      "text": "私有知识库与非公开文件——实验只给模型公开 SEC 文件的访问权，没有接入内部合同或专有数据库。",
+      "cite": ["paper@附录 D.2"]
+    },
+    {
+      "text": "人类专家的准确率基线——论文表 2 的 Expert 行两列准确率都是「-」，人类只被当作耗时与成本参照（16.8 分钟、$25.66/题）。",
+      "cite": ["paper@Table 2", "paper@§1"]
+    }
   ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "source_type": "expert-authored（金融从业者）",
+    "sample_count": 537,
+    "splits": [
+      "公开验证集 50 题（CC BY 4.0，随仓库公开）",
+      "私有验证集 150 题（研究者可申请授权）",
+      "私有测试集 337 题（永久保密，官网所有结果只在这一划分上计算）"
+    ],
     "languages": ["en"],
-    "public_sample": null
+    "source_type": "expert-authored（金融从业专家出题，另一名专家交叉互审）",
+    "public_sample": true,
+    "multiple_choice_share": "未披露（论文未提及选择题型，全部为开放式问答）",
+    "multimodal_share": "未披露",
+    "totals": "537 题 = 公开验证 50 + 私有验证 150 + 私有测试 337，论文报告的所有指标都在这 537 题全集上计算。按难度：Easy 282 题（定量检索 102 / 定性检索 97 / 数值推理 83）、Medium 141 题（复杂检索 29 / 调整项 43 / 超预期 69）、Hard 114 题（趋势 33 / 财务建模 47 / 市场分析 34）。题目只引用 2024 年及以后发布的公开文件。",
+    "cite": ["paper@§2.2 Dataset Split", "paper@Table 1", "paper@§2.1 Question Generation and Quality Control", "site@Question Taxonomy"],
+    "construction": [
+      {
+        "k": "与行业专家共建 taxonomy",
+        "text": "Vals AI 与银行、对冲基金、私募的金融从业专家（论文另一处写作 startups）合作，按真实投行场景里的复杂度与频率把任务分成九类，从基础检索到复杂市场分析；专家至少 2-3 年经验，来自 Goldman Sachs、J.P. Morgan 等 bulge bracket 机构。",
+        "cite": ["paper@§2.1 Expert Consultation and Taxonomy Development", "paper@§1"]
+      },
+      {
+        "k": "出题与来源时效控制",
+        "text": "专家按「必须跨多份金融文件才能回答」的要求出题，每题含问题、标准答案、所需源文件和逐步解法；题目限定用 2024 年及以后发布的文件（论文称在多数训练截止之后），并保证在开放互联网或公开财报之外不需要额外信息。",
+        "cite": ["paper@§2.1 Question Generation and Quality Control"]
+      },
+      {
+        "k": "交叉互审与终审",
+        "text": "每题由另一名专家互审，核验计算与内容有效性，有错的题要么改要么删；论文作者再做最终审核，统一格式并保证一致性。",
+        "cite": ["paper@§2.1 Rigorous Validation Process"]
+      },
+      {
+        "k": "评分细则生成",
+        "text": "用 GPT-4o 从专家的问题与答案自动抽取初始 rubric，每条检查对应专家答案里的一个关键点；随后由论文作者人工复核 rubric 是否准确捕捉要点，并额外加一条「矛盾检查」，判定生成答案是否有任何部分与专家答案冲突。",
+        "cite": ["paper@§2.2 Rubric Generation Process", "paper@§2.2 Contradiction Detection", "paper@§2.2 Rubric-Based Evaluation"]
+      },
+      {
+        "k": "三划分与访问控制",
+        "text": "分成公开验证 50 题（CC BY 4.0）、私有验证 150 题（可申请）、私有测试 337 题（完全保密以防未来过拟合与污染）；划分按题目类别与难度分布抽样，验证集与测试集成绩的 Pearson 相关 0.98、R² 0.97。",
+        "cite": ["paper@§2.2 Dataset Split", "paper@附录 B.2"]
+      },
+      {
+        "k": "发布物与许可",
+        "text": "数据集 CC BY 4.0、代码 MIT；公开验证集与智能体代码开在 GitHub，harness 另有 Zenodo DOI 10.5281/zenodo.15428823，数据集另有 Hugging Face DOI 10.57967/hf/5514；跑 Vals 平台需申请批准。",
+        "cite": ["paper@附录 B.1", "repo@README"]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "所有模型在同一套 ReAct 式 harness 里作答，带 4 个工具：GoogleSearch（通用网页搜索）、EdgarSearch（SEC EDGAR 财报检索）、ParseHTML（把网页内容存进键值库）、RetrieveInformation（从键值库取回内容交给模型，模型由此自管上下文）。统一指令提示词见论文附录 C.1，不用 system prompt，temperature 设为 0（不支持的模型用默认值），最大输出 16,384 token，实验跑在 AWS t2.2xlarge 上。评分是 LLM-as-judge：先用 GPT-4o 从专家答案抽出 rubric，再逐条检查生成答案是否包含各关键点，另加一条矛盾检查。",
+    "cite": ["paper@§3 Financial Agent Harness", "paper@§3.1 Tools Overview", "paper@§4.1 Experiments Setup", "paper@附录 C.1 Instruction Prompt", "paper@§2.2 Rubric-Based Evaluation"],
+    "variants": [
+      {
+        "text": "Class-Balanced 与 Naive 两种准确率不能混比：论文按九个类别等权平均为主指标，Naive 是不分类别的答对题占比；同一模型 o3 分别是 46.8% 与 51.4%，Claude 3.7 Sonnet (Thinking) 更是 45.9% 与 52.0%——后者在 Naive 口径下其实过半。",
+        "cite": ["paper@§4.1 Evaluation Metrics", "paper@§4.2 Results", "paper@Table 2"]
+      },
+      {
+        "text": "论文在 537 题全集上算指标，官网榜单只在 337 题私有测试集上算，分子分母都不同。",
+        "cite": ["paper@§2.2 Dataset Split", "paper@附录 B.2", "site@Dataset"]
+      },
+      {
+        "text": "官网 v1 榜单的指标列只写「Accuracy」，页面没说这是 Class-Balanced 还是 Naive；论文自己的表 2 才是口径明确的基准。",
+        "cite": ["site@Finance Agent leaderboard", "site@Methodology", "paper@§4.1 Evaluation Metrics"]
+      },
+      {
+        "text": "工具实现换过：论文写网页搜索经 SerpAPI 调 Google Search，官方仓库 README 现在写的是 Tavily；检索后端不同会影响取数结果与每题成本。",
+        "cite": ["paper@§3.1 Tools Overview", "repo@README"]
+      },
+      {
+        "text": "v1 的 4 个工具与 v2 起的 6 个工具（新增 calculator、price_history）不可比；v2 还把评分换成 dealbreaker 门控的 Partial Credit + All-Pass，v2.1 页面更直接写「Scores are not comparable with Finance Agent v2」。",
+        "cite": ["fabv2@Changes from v1.1", "v21@Changes from v2", "fabv2@Methodology"]
+      }
+    ]
   },
   "metrics": [
     {
       "id": "accuracy",
-      "name": "Accuracy",
+      "name": "准确率（Class-Balanced，主指标）",
+      "direction": "越高越好",
+      "description": "按九个任务类别分别算准确率后等权平均；论文称其比 Naive 更能代表模型的一般金融智能体能力，未另行说明时论文图表都用这个口径。论文同表还列出两列读数：不分类别的 Naive 准确率，以及每题耗时与每题成本这两项效率指标（本站把它们记在附录 B 的官方结果表与分数阶梯里，不并入 0–100 准确率）。",
       "range": [0, 100],
       "unit": "percent",
-      "direction": "higher",
-      "aggregation": "mean"
+      "cite": ["paper@§4.1 Evaluation Metrics", "paper@§4.2 Results", "paper@Table 2"]
     }
   ],
   "versions": [
     {
       "id": "v1",
-      "label": "Finance Agent Benchmark（2025-08）",
-      "note": "arXiv:2508.00828；后续榜单由 Vals AI 以 Finance Agent v2 承接"
+      "date": "2025-05-20",
+      "label": "arXiv:2508.00828v1 提交：537 题、4 个工具、Class-Balanced / Naive 双准确率、GPT-4o 抽 rubric 作裁判（本档案主体）",
+      "cite": ["paper", "paper@Abstract"]
+    },
+    {
+      "id": "v1-leaderboard-final",
+      "date": "2026-02-10",
+      "label": "官方 v1 榜单最后更新；同页宣布该版本已饱和、不再对新模型跑分",
+      "cite": ["site@头部"]
+    },
+    {
+      "id": "v2",
+      "date": "2026-10-29",
+      "label": "Finance Agent v2：题库扩到 927 题（公开 27 / 私有验证 450 / 测试 450）、工具加到 6 个、改用九类分析师工作流 taxonomy、评分换成 dealbreaker 门控的 Partial Credit + All-Pass、三模型评审团（另见 finance-agent-v2 档案）",
+      "cite": ["fabv2@头部", "fabv2@Changes from v1.1", "fabv2@Background", "fabv2@Dataset"]
+    },
+    {
+      "id": "v2.1",
+      "date": "2026-11-19",
+      "label": "Finance Agent v2.1：按专家复核修正题目与评分细则、换评审团、裁判提示词改为判负对冲答案；取代 v2 进入 Vals Index v2.2",
+      "cite": ["v21@头部", "v21@Changes from v2", "v21@Background"]
     }
   ],
   "limitations": [
-    "题目与参考流程由单一机构设计，可能偏向特定投研范式",
-    "金融数据时效性强，题集需滚动更新"
+    {
+      "issue": "该版本已饱和并归档",
+      "impact": "官方 v1 页面标注 Archived Benchmark，明说「Since performance on this benchmark has saturated, we no longer run this benchmark on new model releases」，榜单停在 2026-02-10；537 题已不足以区分当代前沿模型（榜首 60.65%）。",
+      "severity": "高",
+      "response": "官方把同一家族推进到 v2 / v2.1：927 题、更难的九类分析师工作流 taxonomy、dealbreaker 门控评分、每题两小时时限，并称 v2.1 的分数与 v2 不可比。",
+      "reader": "本页的 46.8% 是 2025 年的历史读数；比较当前模型请改用 Finance Agent v2.1 榜单。",
+      "cite": ["site@头部", "site@Finance Agent leaderboard", "fabv2@头部", "v21@Changes from v2"]
+    },
+    {
+      "issue": "官方榜单口径未标注",
+      "impact": "官网 v1 榜单的指标列只写「Accuracy」，页面没有说明是 Class-Balanced 还是 Naive；论文里同一模型这两个数最多差 6.1 个百分点（Claude 3.7 Sonnet (Thinking) 45.9% vs 52.0%），跨页比较容易错位。",
+      "severity": "高",
+      "response": "论文固定了两种准确率的定义并声明默认口径为 Class-Balanced；官网未见补充说明。",
+      "reader": "把官网 60.65% 和论文 46.8% 并列前先确认口径；论文表 2 才是口径明确、可复现的基准。",
+      "cite": ["site@Finance Agent leaderboard", "site@Methodology", "paper@§4.1 Evaluation Metrics", "paper@Table 2"]
+    },
+    {
+      "issue": "分母与划分不同",
+      "impact": "论文所有指标都在 537 题全集上算，官网所有结果只在 337 题私有测试集上算；分子分母都不同，两组数字不能直接对齐。",
+      "severity": "中",
+      "response": "论文给出验证集与测试集成绩的 Pearson 相关 0.98、R² 0.97 以支持划分可靠性；未见官方把两套数字换算到一起的说明。",
+      "reader": "看到「Finance Agent 准确率」先问是全量 537 题还是仅 337 题测试集。",
+      "cite": ["paper@§2.2 Dataset Split", "paper@附录 B.2", "site@Dataset"]
+    },
+    {
+      "issue": "题源时效与污染",
+      "impact": "题目只用 2024 年及以后发布的文件，为的是避开训练截止；但这些文件本身会随时间进入训练数据，而测试集 337 题永久保密只能缓解、不能消除。",
+      "severity": "中",
+      "response": "测试集保持私有、验证集需申请授权，论文明说目的是防止未来的过拟合与污染问题。",
+      "reader": "跨年份比较时留意题目所引文件是否已广为人知。",
+      "cite": ["paper@§2.1 Question Generation and Quality Control", "paper@§2.2 Dataset Split"]
+    },
+    {
+      "issue": "不评引用质量，也不覆盖结构化表格数据",
+      "impact": "论文要求模型给出 sources 但没有评估这些来源的准确性与可靠性；题库也偏向能用较短段落回答的问题，专家工作流里大量的电子表格 / CSV 交互只放了少数几题。",
+      "severity": "中",
+      "response": "论文把两者都列为未来工作方向，未见针对本版的补测。",
+      "reader": "高分不等于「答案有可靠出处」，也不等于能处理整表财务数据。",
+      "cite": ["paper@附录 D.1"]
+    },
+    {
+      "issue": "harness 简单，不代表商用系统",
+      "impact": "ReAct 式 harness 只有 4 个公开工具，没有私有知识库、没有用户反馈回路，论文自承认不足以代表 OpenAI、Google、xAI 等商业 RAG 或专有智能体工具的全部复杂度。",
+      "severity": "中",
+      "response": "论文建议后续研究测试更先进的系统；未见官方补测。",
+      "reader": "这是「带公开工具的智能体」分数，不是「厂商产品」分数。",
+      "cite": ["paper@附录 D.2", "paper@§3 Financial Agent Harness"]
+    },
+    {
+      "issue": "论文表格数字有印刷错误",
+      "impact": "附录 A 表 3 里 Qualitative Retrieval 的占比印成「97 (97%)」，与同表计数 97、表 1 的 18% 矛盾（97/537 约 18%）。",
+      "severity": "低",
+      "response": "论文未见更正；本站按表 1 的 18% 记录。",
+      "reader": "引用各类占比时用表 1，不要用表 3 的百分比列。",
+      "cite": ["paper@Table 1", "paper@Table 3"]
+    },
+    {
+      "issue": "发布方自评自榜",
+      "impact": "论文由 Vals AI 资助、榜单由 Vals AI 运营，出题专家、harness、裁判模型与榜单都出自同一方，基准定义里也内含「Google Search / EDGAR」这套自家 harness 能力。",
+      "severity": "低",
+      "response": "数据集与代码以 CC BY 4.0 / MIT 公开，测试集私有但划分与相关性有公开说明；运行平台需申请批准。",
+      "reader": "把榜单分数当作单一机构的测量结果，重要结论交叉参考第三方复现。",
+      "cite": ["paper@致谢与资助", "paper@附录 B.1", "repo@README"]
+    }
   ],
-  "notes": "证据账本中 10 次引用；金融垂域发布的高频引用",
+  "notes": "证据账本 92 条引用；本档案主体为 2025 论文版（537 题），家族现行为 Finance Agent v2.1（另见 finance-agent-v2 档案）",
   "official_sources": [
     {
       "kind": "paper",
@@ -56,13 +278,207 @@
     },
     {
       "kind": "site",
-      "url": "https://vals.ai/benchmarks/fabv2"
+      "url": "https://www.vals.ai/benchmarks/finance_agent_v1"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/vals-ai/finance-agent"
+    },
+    {
+      "kind": "site",
+      "url": "https://www.vals.ai/benchmarks/fabv2"
+    },
+    {
+      "kind": "site",
+      "url": "https://www.vals.ai/benchmarks/fabv2-1"
     }
   ],
-  "related_benchmarks": [
-    "finben",
-    "gdpval"
-  ],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "related_benchmarks": ["finance-agent-v2", "finben", "gdpval", "prbench-finance"],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-26",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-26",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "Finance Agent Benchmark: Benchmarking LLMs on Real-world Financial Research Tasks（arXiv:2508.00828v1，2025-05-20）",
+        "url": "https://arxiv.org/abs/2508.00828",
+        "accessed": "2026-11-26"
+      },
+      {
+        "id": "site",
+        "kind": "site",
+        "title": "vals.ai/benchmarks/finance_agent_v1 — Finance Agent v1 榜单与方法论（Archived Benchmark，Updated 2/10/2026）",
+        "url": "https://www.vals.ai/benchmarks/finance_agent_v1",
+        "accessed": "2026-11-26"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "vals-ai/finance-agent（公开 harness 与公开验证集，MIT）",
+        "url": "https://github.com/vals-ai/finance-agent",
+        "accessed": "2026-11-26"
+      },
+      {
+        "id": "fabv2",
+        "kind": "site",
+        "title": "vals.ai/benchmarks/fabv2 — Finance Agent v2（Archived，Updated 10/29/2026）",
+        "url": "https://www.vals.ai/benchmarks/fabv2",
+        "accessed": "2026-11-26"
+      },
+      {
+        "id": "v21",
+        "kind": "site",
+        "title": "vals.ai/benchmarks/fabv2-1 — Finance Agent v2.1（Updated 11/19/2026）",
+        "url": "https://www.vals.ai/benchmarks/fabv2-1",
+        "accessed": "2026-11-26"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Vals AI, Inc.（四位作者中 Antoine Bigeard、Rayan Krishnan、Langston Nashold 隶属 Vals AI，Shirley Wu 隶属斯坦福；论文致谢段自述由 Vals AI 资助）",
+        "cite": ["paper@作者署名", "paper@致谢与资助"]
+      },
+      "first_release": {
+        "v": "2025-05-20（arXiv:2508.00828v1 提交）",
+        "cite": ["paper"]
+      }
+    },
+    "cites": {
+      "summary": ["paper@Abstract", "paper@§1", "paper@§2.2 Dataset Split", "paper@§4.1 Experiments Setup"],
+      "interpretation": ["paper@§6 Conclusion", "paper@Table 2", "site@头部", "site@Finance Agent leaderboard"]
+    },
+    "problem": {
+      "text": "论文之前的金融 NLP 基准（FinQA、TAT-QA）是静态数据集，只考数值与混合推理，不支持智能体规划与工具使用；FailSafeQA 仍假设输入静态、没有自主规划。另一边的通用智能体基准（AgentBench、GAIA、WebVoyager）又很少包含新鲜、有时效的问题，很难判断模型是执行时检索到信息还是在预训练里背了下来。Finance Agent Benchmark 想同时补上这两点：接实时 EDGAR、由专家写当代题目、答案严格落在证据上。",
+      "cite": ["paper@§5 Related Work", "paper@Abstract"]
+    },
+    "ladder": [
+      {
+        "label": "论文发布时最好（2025-05）",
+        "value": "46.8%（Class-Balanced；Naive 51.4%）",
+        "note": "o3；同期最弱为 LLaMA 4 Maverick 的 3.1%（Class-Balanced）。论文明说没有模型超过 50%。",
+        "cite": ["paper@Table 2", "paper@§1"]
+      },
+      {
+        "label": "人类专家参照",
+        "value": "论文未给出（表 2 的 Expert 行准确率为空）",
+        "note": "论文只把人类当耗时与成本基准：1010.5s（16.8m）、$25.66/题，并注明这只计直接答题时间，不含出题与审题。",
+        "cite": ["paper@Table 2", "paper@§1"]
+      },
+      {
+        "label": "官方 v1 榜单最高（2026-02-10 最后更新）",
+        "value": "60.65%",
+        "note": "Claude Opus 4.6 (Thinking)，$1.46/题、4m11s；页面未说明该数是 Class-Balanced 还是 Naive。",
+        "cite": ["site@Finance Agent leaderboard", "site@头部"]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      },
+      {
+        "label": "官方饱和判定",
+        "value": "官方宣布饱和（未给出具体阈值）",
+        "note": "v1 页面标注 Archived Benchmark，明说该基准已饱和、不再对新模型跑分；这是停止维护的信号，不是一个数值上限。",
+        "cite": ["site@头部"]
+      },
+      {
+        "label": "家族当前最高（Finance Agent v2.1，2026-11-19）",
+        "value": "69.47%",
+        "note": "Claude Fable 5.2，$4.83/题；这是另一套题库与另一套评分口径（927 题、Partial Credit），不能与本页 537 题的分数直接比。",
+        "cite": ["v21@头部"]
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 46.8% 和 51.4% 当成两个模型的成绩——它们是同一模型 o3 在 Class-Balanced 与 Naive 两种口径下的分数；Claude 3.7 Sonnet (Thinking) 的 52.0% 也只是 Naive 口径。",
+        "cite": ["paper@§4.1 Evaluation Metrics", "paper@Table 2"]
+      },
+      {
+        "text": "把 2025 年的 46.8% 当成当前 SOTA——该 537 题版本已饱和归档，家族现行为 v2.1（榜首 69.47%），题库与评分都换了。",
+        "cite": ["site@头部", "v21@头部", "v21@Changes from v2"]
+      },
+      {
+        "text": "把「比人类快 5 倍、便宜近 7 倍」读成可以替代分析师——论文同时强调准确率仍不到 50%，效率优势是在低准确率前提下成立的。",
+        "cite": ["paper@§1", "paper@§6 Conclusion"]
+      },
+      {
+        "text": "把模型给出的 sources 当成已核验的引用——论文要求模型附来源，但明确没有评估这些来源的准确性与可靠性。",
+        "cite": ["paper@附录 D.1"]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "Vals AI, Inc.（官网自述与斯坦福研究者、一家全球系统重要性银行及行业专家合作；论文致谢段自述由 Vals AI 资助）",
+        "cite": ["site@Background", "paper@致谢与资助"]
+      },
+      {
+        "k": "核心作者",
+        "v": "Antoine Bigeard、Rayan Krishnan、Shirley Wu、Langston Nashold；官网另列致谢 Shirley Wu、Alfston Thomas、Andrew Schettino、Kathy Ye、Kyle Jung、Matthew Friday、Michael Xia、Nicholas Crawley-Brown",
+        "cite": ["paper@作者署名", "site@Acknowledgements"]
+      },
+      {
+        "k": "出题专家",
+        "v": "7 位来自银行、对冲基金、私募的金融从业专家，至少 2-3 年经验，来自 Goldman Sachs、J.P. Morgan 等 bulge bracket 机构；每题由另一名专家互审",
+        "cite": ["paper@§1", "paper@§2.1 Expert Consultation and Taxonomy Development"]
+      },
+      {
+        "k": "时间线",
+        "v": "2025-05-20 arXiv v1 → 2026-02-10 官方 v1 榜单最后更新并宣布饱和 → 2026-10-29 v2 → 2026-11-19 v2.1（现行，进 Vals Index v2.2）",
+        "cite": ["paper", "site", "site@头部", "fabv2@头部", "v21@头部"]
+      },
+      {
+        "k": "题源与时效",
+        "v": "题目只引用 2024 年及以后发布的公开文件（论文称在多数训练截止之后），答案可在开放互联网或公开财报内验证",
+        "cite": ["paper@§2.1 Question Generation and Quality Control"]
+      },
+      {
+        "k": "数据与代码",
+        "v": "公开验证集 50 题与智能体代码在 GitHub vals-ai/finance-agent；harness 另有 Zenodo DOI 10.5281/zenodo.15428823，数据集另有 Hugging Face DOI 10.57967/hf/5514；跑 Vals 平台需申请批准",
+        "cite": ["paper@附录 B.1", "repo@README"]
+      },
+      {
+        "k": "许可",
+        "v": "数据集 CC BY 4.0，代码 MIT",
+        "cite": ["paper@附录 B.1", "repo@README"]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-26",
+        "columns": ["来源", "模型", "Class-Balanced 准确率", "Naive 准确率", "每题耗时", "每题成本"],
+        "rows": [
+          ["论文 Table 2", "o3", "46.8 ± 2.2", "51.4 ± 2.2", "186.5s (3.1m)", "$3.7861"],
+          ["论文 Table 2", "Claude 3.7 Sonnet (Thinking)", "45.9 ± 2.2", "52.0 ± 2.2", "151.3s (2.5m)", "$1.0168"],
+          ["论文 Table 2", "Claude 3.7 Sonnet", "44.3 ± 2.2", "49.5 ± 2.2", "121.0s (2.0m)", "$0.9886"],
+          ["论文 Table 2", "o4 Mini", "37.3 ± 2.2", "40.6 ± 2.1", "164.4s (2.7m)", "$0.2863"],
+          ["论文 Table 2", "Grok 3 Mini Fast High Reasoning", "30.9 ± 1.9", "36.3 ± 2.1", "253.0s (4.2m)", "$0.1305"],
+          ["论文 Table 2", "Gemini 2.5 Pro Preview", "28.4 ± 2.0", "33.0 ± 2.0", "72.5s (1.2m)", "$0.1963"],
+          ["论文 Table 2", "GPT 4.1", "26.7 ± 2.0", "30.7 ± 2.0", "61.3s (1.0m)", "$0.2309"],
+          ["论文 Table 2", "Grok 3 Beta", "25.8 ± 1.9", "29.4 ± 2.0", "60.5s (1.0m)", "$0.4254"],
+          ["论文 Table 2", "o1", "21.4 ± 1.7", "25.9 ± 1.9", "426.5s (7.1m)", "$1.4398"],
+          ["论文 Table 2", "GPT 4.1 mini", "20.3 ± 1.7", "25.0 ± 1.9", "51.6s (0.9m)", "$0.0684"],
+          ["论文 Table 2", "GPT 4o (2024-08-06)", "20.0 ± 1.7", "24.6 ± 1.9", "40.9s (0.7m)", "$0.2575"],
+          ["论文 Table 2", "Grok 3 Mini Fast Low Reasoning", "17.6 ± 1.6", "21.4 ± 1.8", "80.5s (1.3m)", "$0.0667"],
+          ["论文 Table 2", "Gemini 2.0 Flash (001)", "14.4 ± 1.4", "18.2 ± 1.7", "23.6s (0.4m)", "$0.0115"],
+          ["论文 Table 2", "Claude 3.5 Haiku Latest", "13.1 ± 1.4", "17.1 ± 1.6", "46.8s (0.8m)", "$0.0665"],
+          ["论文 Table 2", "o3 Mini", "12.8 ± 1.4", "16.0 ± 1.6", "146.1s (2.4m)", "$0.0472"],
+          ["论文 Table 2", "GPT 4o Mini", "10.8 ± 1.2", "15.3 ± 1.6", "93.4s (1.6m)", "$0.0375"],
+          ["论文 Table 2", "Mistral Small 3.1 (03/2025)", "10.8 ± 1.3", "13.8 ± 1.5", "39.1s (0.7m)", "$0.0061"],
+          ["论文 Table 2", "LLaMA 4 Scout", "5.8 ± 1.0", "7.4 ± 1.1", "13.8s (0.2m)", "$0.0046"],
+          ["论文 Table 2", "Command A", "4.6 ± 0.9", "6.1 ± 1.0", "94.9s (1.6m)", "$0.5628"],
+          ["论文 Table 2", "LLaMA 4 Maverick", "3.1 ± 0.8", "3.7 ± 0.8", "11.8s (0.2m)", "$0.0023"],
+          ["论文 Table 2", "LLaMA 3.3 Instruct Turbo (70B)", "2.8 ± 0.8", "3.2 ± 0.8", "3.3s (0.1m)", "$0.0030"],
+          ["论文 Table 2", "GPT 4.1 nano", "2.4 ± 0.7", "2.8 ± 0.7", "65.5s (1.1m)", "$0.0032"],
+          ["论文 Table 2", "Expert（人类专家）", null, null, "1010.5s (16.8m)", "$25.66"],
+          ["官网 v1 榜单（2026-02-10）", "Claude Opus 4.6 (Thinking)", "60.65%（页面未标注口径）", "未披露", "4m11s", "$1.46"],
+          ["官网 v1 榜单（2026-02-10）", "GPT 5.1", "56.55%（页面未标注口径）", "未披露", "5m57s", "$0.44"],
+          ["官网 v1 榜单（2026-02-10）", "Claude Sonnet 4.5 (Thinking)", "55.32%（页面未标注口径）", "未披露", "2m21s", "$0.98"]
+        ]
+      },
+      "cite": ["paper@Table 2", "site@Finance Agent leaderboard"]
+    }
+  }
 }

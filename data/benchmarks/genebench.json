@@ -1,32 +1,404 @@
 {
   "id": "genebench",
   "name": "GeneBench",
-  "full_name": null,
+  "full_name": "GeneBench: Assessing AI Agents for Multi-Stage Inference Problems in Genomics and Quantitative Biology（基因学与定量生物学中多阶段推理问题的 AI 智能体评测）",
   "aliases": [],
-  "status": null,
+  "status": "active",
   "categories": [
     "agent",
     "knowledge"
   ],
-  "summary": "基因学多阶段数据分析智能体评测",
-  "interpretation": "让 agent 做真实组学数据的多步分析（清洗、统计、解释），考科研数据分析自动化。",
-  "measures": [],
-  "does_not_measure": [],
+  "summary": "GeneBench 是 OpenAI 研究者参与署名的生物科研智能体评测（bioRxiv 预印本，2026-04-23）：103 道题、10 个遗传学与定量生物学领域。每题把若干份「故意做得不干净」的组学或临床数据文件（前端类比：接口返回的脏 JSON，得先校验清洗才能用）和一句不透露解法的最小提示词交给 AI 智能体，让它自己完成清洗、质量控制（QC，即数据体检）、选统计模型、在看到诊断信号后回头改分析路径，最后按预定 JSON schema 报出可核对的数值答案。题目按「决策点」串联——每题 3–13 个（中位数 6），上游一步选错，下游全部作废。",
+  "interpretation": "高分说明智能体能把「看见问题」和「改分析路径」接上：不只是识别出批次效应、Hardy–Weinberg 不平衡或选择偏倚，而是据此换估计量、做重加权、补 QC，并一路改到最终答案。它不说明通用科研能力——论文明确说构造性模拟数据不复制真实研究的文档缺失、数据规模和研究特异性不规则；二分判分也把「七步对六步」和「第一步就错」记成同一档。",
+  "measures": [
+    {
+      "area": "统计遗传学（图 2 归入 Genetics core）",
+      "focus": "三个子卡：Association & correction（GWAS 随访、元 QC 与重叠修复、家系/混合与 HLA 感知关联、稀有变异/CNV/panel 关联、选择与 collider 与亚组富集校正）、Causal mapping（多信号精细定位、cis- 与 affinity-MR、coloc/TWAS）、Architecture & inheritance（LDSC 遗传力与重叠划分、家系/始祖/IBD 重建、相位与复合杂合效应估计、POE/亲缘/local-ancestry PGx）。示例题（补充表 1）：LDL GWAS follow-up——从有用药掩盖与选择性随访的两阶段队列估计对未治疗空腹 LDL-C 的 GWAS 效应，GPT-5.5 xhigh 通过率 42.4%。",
+      "share": "子卡 Association & correction n=12 · Causal mapping n=8 · Architecture & inheritance n=11（论文未给领域合计）",
+      "format": "数值估计；示例题的 graded quantities 为 lead variant index、per-allele effect (mg/dL)、invited-cohort mean untreated LDL-C (mg/dL)",
+      "cite": [
+        "paper@Figure 2",
+        "paper@Supplementary Table 1"
+      ]
+    },
+    {
+      "area": "群体遗传学（Genetics core）",
+      "focus": "三个子卡：Selection & mutation（sweep 扫描、等位基因年龄、mutator 单倍型、de novo 可调用性、mut-sel 平衡与 CpG 饱和）、Admixture & aDNA（ABBA-BABA 与渐渗、tract 长度混合、性别偏倚脉冲、aDNA 污染与选择）、History & genealogies（IBDNe 含亲缘过采样、inversion-aware LDNe、宏基因组菌株、ARG 热点/GC/群体史）。示例题：ARG-based recombination hotspot detection——从有格式不一致、单位错配和低支持度树的本地 ARG 片段定位重组热点并估计强度，GPT-5.5 xhigh 通过率 94.3%。",
+      "share": "子卡 Selection & mutation n=6 · Admixture & aDNA n=7 · History & genealogies n=6（论文未给领域合计）",
+      "format": "数值估计；示例题的 graded quantities 为 hotspot center (bp)、hotspot multiplier",
+      "cite": [
+        "paper@Figure 2",
+        "paper@Supplementary Table 1"
+      ]
+    },
+    {
+      "area": "数量遗传学（Genetics core）",
+      "focus": "近交衰退、nurture 与母体效应、社会遗传学、PGS 可移植性与传递畸变。示例题：Direct and genetic nurture PGS effects——在选型交配与不完整 trio 下，从传递/非传递等位基因分解直接效应与遗传 nurture 效应，GPT-5.5 xhigh 通过率 0.0%。",
+      "share": "n=10",
+      "format": "效应量估计；示例题的 graded quantities 为 direct PGS effect、genetic nurture effect",
+      "cite": [
+        "paper@Figure 2",
+        "paper@Supplementary Table 1"
+      ]
+    },
+    {
+      "area": "功能基因组学（图 2 归入 Molecular and other -omics layers）",
+      "focus": "三个子卡：Regulatory QTLs & ASE（latent-factor 与 state eQTL、单倍型/CN 感知 ASE、affinity pQTL、mQTL 中介、sc-eQTL 泄漏）、Perturbation screens（克隆与 guide 混杂的 CRISPR 筛选、base-edit 等位系列、CRISPRi/CasRx、Perturb-seq 修复）、Transcriptome structure（bulk RNA 解卷积、isoform 与 intron 保留痕迹、microexon、SV 掩蔽下的 Hi-C loop calling）。示例题：CRISPR screen fitness inference with guide confounding——从有 seed 毒性、拷贝数偏倚、GC 含量非线性效应、删失与失活 guide 的混合筛选推断基因级适应度效应，GPT-5.5 xhigh 通过率 0.0%。",
+      "share": "子卡 Regulatory QTLs & ASE n=11 · Perturbation screens n=5 · Transcriptome structure n=3（论文未给领域合计）",
+      "format": "基因名/排名与效应量；示例题的 graded quantities 为 top depleted gene、second gene、direct log2 depletion",
+      "cite": [
+        "paper@Figure 2",
+        "paper@Supplementary Table 1"
+      ]
+    },
+    {
+      "area": "空间转录组学（Molecular and other -omics layers）",
+      "focus": "spot-swap 空间 eQTL、配体-受体 GxE、CNA 感知空间 ASE。示例题：Spatial tumor cis-eQTL mapping——在有 spot 交换、邻域效应与 CN 痕迹的空间转录组数据里识别恶性细胞自主的 cis-eQTL，GPT-5.5 xhigh 通过率 2.3%。",
+      "share": "n=3",
+      "format": "基因名与效应量；示例题的 graded quantities 为 target gene、direct effect、context gene、artifact gene",
+      "cite": [
+        "paper@Figure 2",
+        "paper@Supplementary Table 1"
+      ]
+    },
+    {
+      "area": "表观基因组学（Molecular and other -omics layers）",
+      "focus": "状态特异 caQTL、带组成恢复的 Tn5 足迹、cfDNA 甲基化纯度。示例题：cfDNA methylation deconvolution——用配对白细胞与一份有偏参考图谱，从血浆 cfDNA 估计肿瘤分数与肿瘤特异甲基化谱，GPT-5.5 xhigh 通过率 0.0%。",
+      "share": "n=3",
+      "format": "比例与甲基化水平；示例题的 graded quantities 为 nonconversion rate、tumor fraction、tumor methylation at region R17",
+      "cite": [
+        "paper@Figure 2",
+        "paper@Supplementary Table 1"
+      ]
+    },
+    {
+      "area": "临床遗传学（图 2 归入 Translational and specialized settings）",
+      "focus": "时变与 local-ancestry 药物基因组学、剂量-反应错分、NIPT 胎儿分数、筛查家系外显率。示例题：Pharmacogenomic time-to-event MSM——从有时变治疗-混杂反馈的 EHR 数据估计基因型特异治疗风险比，GPT-5.5 xhigh 通过率 75.0%。",
+      "share": "n=6",
+      "format": "基因型标签与风险比；示例题的 graded quantities 为 responder genotype、HR noncarriers、HR carriers",
+      "cite": [
+        "paper@Figure 2",
+        "paper@Supplementary Table 1"
+      ]
+    },
+    {
+      "area": "癌症基因组学（Translational and specialized settings）",
+      "focus": "FFPE 与 kataegis 签名、cfDNA CH 片段组学、WGD 下的 HRD、多区域克隆性、新抗原负荷。示例题：APOBEC mutational signature attribution——去掉 FFPE 痕迹与 kataegic 簇后，估计基因型对 APOBEC 相关突变签名的影响，GPT-5.5 xhigh 通过率 63.0%。",
+      "share": "n=6",
+      "format": "效应量；示例题的 graded quantities 为 APOBEC logit effect",
+      "cite": [
+        "paper@Figure 2",
+        "paper@Supplementary Table 1"
+      ]
+    },
+    {
+      "area": "法医遗传学（Translational and specialized settings）",
+      "focus": "DNA 混合物解卷积与低模板家系 SNP 混合物。示例题：Low-template SNP mixture kinship inference——从带降解重复谱的低模板 SNP 混合物估计待测人混合物权重与「同胞 vs 无关」似然比，GPT-5.5 xhigh 通过率 0.0%。",
+      "share": "n=2",
+      "format": "比例与似然比；示例题的 graded quantities 为 POI mixture weight、kinship LR (sibling vs. unrelated)",
+      "cite": [
+        "paper@Figure 2",
+        "paper@Supplementary Table 1"
+      ]
+    },
+    {
+      "area": "蛋白质组学（Translational and specialized settings）",
+      "focus": "bridge-peptide 与 case-cohort pQTL、Olink hook/censor 校正、DIA 保留时间干扰。示例题：Cross-platform pQTL colocalization and conditional cis-MR——在三个检测平台与一个疾病 GWAS 之间拆开亲和性痕迹、平台特异结合效应与共享信号，GPT-5.5 xhigh 通过率 0.0%。",
+      "share": "n=4",
+      "format": "变异位点与效应量；示例题的 graded quantities 为 assay-specific variant、follow-up variant、log-OR per SD protein",
+      "cite": [
+        "paper@Figure 2",
+        "paper@Supplementary Table 1"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "不测知识检索、常规流水线执行或单一分析步骤——论文把这类能力归给现有生物学基准（如 GeneTuring 测基因组知识检索，LAB-Bench / LABBench2 / BixBench / SpatialBench / scBench / CompBioBench 测更真实但仍狭窄的分析），并称这类基准已日趋饱和、跟不上模型进步。",
+      "cite": [
+        "paper@Abstract",
+        "paper@Introduction"
+      ]
+    },
+    {
+      "text": "不给部分分、不测阶段级推理质量：判分只看预定目标字段是否全部满足约束，自由文本推理字段只做定性分析、不计分。",
+      "cite": [
+        "paper@Methods"
+      ]
+    },
+    {
+      "text": "不测真实研究数据的不规则程度：数据是构造性模拟的，论文明确说「不试图复现真实世界分析中的文档缺失、数据规模和研究特异性不规则」，因此真实科研里的一部分难点不在覆盖范围内。",
+      "cite": [
+        "paper@Discussion",
+        "paper@Construction, Validation, and Grading"
+      ]
+    },
+    {
+      "text": "不测多模态输入：论文未提及图像等多模态材料，示例题的暂存文件都是表格与基因型矩阵。",
+      "cite": [
+        "paper@Benchmark Setup"
+      ]
+    }
+  ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
+    "sample_count": 103,
+    "splits": [
+      "全集 103 题（论文按全集评测，未报告公开/私有拆分，也未设留出集）"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "constructively simulated（构造性模拟：按目标估计量反向模拟数据，不用历史真实数据集；论文明确说这能直接调决策点的数量与难度）",
+    "public_sample": false,
+    "multiple_choice_share": "不适用（论文未设选择题；补充表 1 列出的 graded quantities 全为数值、类别标签或文件索引）",
+    "multimodal_share": "未披露（论文未讨论多模态任务占比）",
+    "totals": "103 题 · 10 个领域，图 2 分三层：Genetics core（统计遗传学、群体遗传学、数量遗传学）、Molecular and other -omics layers（功能基因组学、空间转录组学、表观基因组学）、Translational and specialized settings（临床遗传学、癌症基因组学、法医遗传学、蛋白质组学）· 每题一个自包含多阶段分析：一句最小可行提示词 + 若干暂存数据文件 + 一个可验证的目标估计量 · 每题 3–13 个决策点（中位数 6）· 补充表 1 另列 23 道代表性题目及其 GPT-5.5 xhigh 通过率 · 论文给出的示例提示词为英文，未单独说明语言设置 · 论文未给出数据集、评测代码或公开样本的获取方式",
+    "cite": [
+      "paper@Abstract",
+      "paper@Benchmark Scope and Construction",
+      "paper@Benchmark Setup",
+      "paper@Figure 2",
+      "paper@Supplementary Table 1"
+    ],
+    "construction": [
+      {
+        "k": "从真实分析模式出发",
+        "text": "题目开发从一个真实世界的分析模式和一个目标估计量开始；这些模式由文献和内部专家经验合成，反映常见且有影响力的科学问题与工作流，并特意避开众所周知的教科书例题或论文，以降低「 benchmark 对着 memorized 解法考」的风险。",
+        "cite": [
+          "paper@Construction, Validation, and Grading"
+        ]
+      },
+      {
+        "k": "反向模拟数据",
+        "text": "随后模拟数据，使正确答案能从暂存文件恢复：正确方法得到的参数极大似然估计被当作评分用的 ground truth，而不是数据生成时所用的参数。这样可以直接调控数据生成过程的每个细节，把真实感、多阶段推理、效应量和诊断线索精确控制住。",
+        "cite": [
+          "paper@Construction, Validation, and Grading",
+          "paper@Table 1"
+        ]
+      },
+      {
+        "k": "最小可行提示词",
+        "text": "构造一份只包含「让正确答案可识别所必需的最少信息」的提示词：科学问题、被评估计量、约定与输出格式写清楚，但不提示方法、QC 路径或中间工作流。",
+        "cite": [
+          "paper@Construction, Validation, and Grading",
+          "paper@Table 1"
+        ]
+      },
+      {
+        "k": "级联设计与决策点计数",
+        "text": "题目被刻意做成「级联」结构：上游决定改变下游哪些分析仍然有效。决策点按固定量规计数——只有能被智能体可见证据解决、且一个合理的错误选择会导致实质不同下游分析或答案的分叉才计入；纯机械文件处理、通用 EDA 和固定方法内的小参数调整不计入， tightly coupled 的检查合并计为一个决策点。全库每题 3–13 个，中位数 6。",
+        "cite": [
+          "paper@Construction, Validation, and Grading",
+          "paper@Methods"
+        ]
+      },
+      {
+        "k": "消融、独立评审与多轮审计",
+        "text": "在各个推理阶段做出「合理但错误」决定的分析结果要经消融验证，与标准答案的差异必须足够大；科学性、方法稳健性与目标可识别性由独立评审把关；题目草稿再经多轮前沿模型试点与详细轨迹分析审计，排查非预期泄漏、通往正确答案的替代路径、提示词-评分器不匹配和稳健性问题。",
+        "cite": [
+          "paper@Construction, Validation, and Grading"
+        ]
+      },
+      {
+        "k": "判分方式",
+        "text": "采用针对可恢复目标的二值判分，容差经过校准以容纳数值与实现层面的差异；评测配置与包级判分协议写在 Methods。",
+        "cite": [
+          "paper@Construction, Validation, and Grading",
+          "paper@Methods"
+        ]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "智能体在一个隔离的 Docker 容器（Linux + Python + 标准科学计算库）里工作，按固定顺序收到四样东西：描述容器执行环境的系统消息、题目提示词、要求把最终答案按预定 JSON schema 返回（含数值估计和一段自由文本推理总结）的指令、以及所有相关数据文件的本地挂载位置。可用库只有 numpy、pandas、scipy、scikit-learn、statsmodels、lifelines、matplotlib、seaborn，没有生物信息学专用工具或包，容器无互联网访问——智能体只能靠提示词、暂存文件、已装软件和模型内部知识。判分由 Python 脚本按预先写好的题目特定目标字段、精确匹配规则和绝对数值容差自动完成，一次运行只有全部字段满足各自约束才算通过；自由文本推理字段只做定性分析、不计分。因容器或工具故障导致执行轨迹无效的运行（不到 1%）被剔除。harness 不另设统一墙钟预算。容差的具体量级可参考附录的 LDL GWAS 案例：该题评分的 ground truth 是 variant 42、9.96 mg/dL、123.09 mg/dL 三个值，容差分别为效应估计 ±0.40 mg/dL、均值 ±1.00 mg/dL。",
+    "cite": [
+      "paper@Methods",
+      "paper@Benchmark Setup",
+      "paper@Benchmark Scope and Construction",
+      "paper@Appendix: LDL GWAS Case Study"
+    ],
+    "variants": [
+      {
+        "text": "推理档位：GPT-5 从 none 到 high，GPT-5.2 / 5.4 / 5.5 从 none 到 xhigh。同一模型跨档位通过率可差一个数量级（GPT-5.5：none 1.9% → xhigh 25.0%）。厂商自报常只写最高档。",
+        "cite": [
+          "paper@Supplementary Table 2",
+          "paper@Results"
+        ]
+      },
+      {
+        "text": "Pro harness：GPT-5 / 5.2 / 5.4 / 5.5 Pro 跑在另一套 Pro harness 配置下，论文因此与主线性进度分开报告（GPT-5.5 Pro 33.2%）。两套数字不能放进同一张榜比较。",
+        "cite": [
+          "paper@Methods",
+          "paper@Abstract"
+        ]
+      },
+      {
+        "text": "外部基线的接入方式不同：MiMo、Kimi、Grok、Qwen、GLM 走 OpenRouter（统一 max_output_tokens=65536），Gemini 3.1 Pro 直连 Gemini API 且用 high 推理档位，GPT 家族走 OpenAI 内部接口。论文明确说 token 计数跨这两组不可比（OpenRouter 记账 vs 内部记账），Pro 运行干脆不报 token 总数。",
+        "cite": [
+          "paper@Methods",
+          "paper@Supplementary Table 2"
+        ]
+      },
+      {
+        "text": "重复运行数不固定：每个模型-题目收集的有效独立运行平均 28.7 次、范围 14–60。论文说这只影响精度（即置信区间宽度），不影响点估计。",
+        "cite": [
+          "paper@Results",
+          "paper@Methods"
+        ]
+      },
+      {
+        "text": "无工具口径：执行环境没有互联网访问，也没有生物信息学专用包，因此不存在「带搜索/带领域工具」的对照口径；所有 reported 分数都是同一套受限环境下的结果。",
+        "cite": [
+          "paper@Benchmark Setup",
+          "paper@Methods"
+        ]
+      }
+    ]
   },
   "metrics": [
-    "judge_score"
+    {
+      "id": "pass-rate",
+      "name": "通过率（pass rate）",
+      "direction": "越高越好",
+      "description": "单个模型设置在某个题目上多次重复运行中通过的比例；论文报告的总分是对 103 道题取「每题通过率的无权平均」（unweighted mean of per-problem pass rates），不是所有运行合并的通过率。一次运行通过 = 全部预定目标字段都满足各自的精确匹配规则或绝对数值容差。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@Methods",
+        "paper@Figure 4",
+        "paper@Supplementary Table 2"
+      ]
+    },
+    {
+      "id": "zero-share",
+      "name": "0% 通过率题目占比",
+      "direction": "越低越好",
+      "description": "重复运行全部失败的题目占比，衡量「完全做不出」的那一端；论文用它描述难度长尾随模型变强的迁移。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@Figure 4",
+        "paper@Supplementary Table 2"
+      ]
+    },
+    {
+      "id": "frequent-success-share",
+      "name": "≥50% 通过率题目占比",
+      "direction": "越高越好",
+      "description": "至少一半重复运行通过的题目占比，把「经常做对」和「偶尔做对」分开；与 0% 占比一起刻画分布的迁移。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@Figure 4",
+        "paper@Supplementary Table 2"
+      ]
+    }
   ],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [],
-  "notes": "OpenAI GPT-5.5 发布引用；OpenAI 研究者参与的 bioRxiv 预印本",
+  "versions": [
+    {
+      "id": "preprint-v1",
+      "date": "2026-04-23",
+      "label": "bioRxiv 首发预印本（本档案核验时仅此一个版本）：103 题 / 10 领域，报告 GPT-5、GPT-5.2、GPT-5.4、GPT-5.5 及四个 Pro harness 设置，外加 8 个外部基线",
+      "cite": [
+        "paper",
+        "biorxiv"
+      ]
+    },
+    {
+      "id": "genebench-pro",
+      "date": "2026-06-30",
+      "label": "OpenAI 发布后继版本 GeneBench-Pro：129 题 / 10 领域 / 21 子领域，82 题送外部领域专家评审，10 道代表题开源；官方公告称其为 GeneBench 的扩展",
+      "cite": [
+        "genebench-pro"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "二分判分抹平阶段级证据",
+      "impact": "论文自述这是「更深的局限」：一个跑对七分之六个决策点的运行和第一步就失败的运行被判成同一档，而阶段级证据恰恰是作者复审模型推理后认为最有诊断力的部分。",
+      "severity": "高",
+      "response": "论文说未来版本可能转向 rubric-based 与阶段级评分，并指出阶段级评分是长时程智能体 RL 做密集逐轮奖励与信用分配的前提；截至本档案核验日（2026-11-26）未见已发布的阶段级评分版本。",
+      "reader": "把通过率当成「端到端成功率」，不要当成「会不会做」；模型间几个百分点的差距要结合补充表 2 的置信区间看。",
+      "cite": [
+        "paper@Discussion"
+      ]
+    },
+    {
+      "issue": "发布方同时是被评模型的主要提供方，且无第三方复现",
+      "impact": "预印本两位作者的单位是 OpenAI 与 Herasight，模型结果以 GPT 家族为主线；论文明确「因服务条款限制不报告 Anthropic 模型的结果」，跨厂商对比因此不完整；本档案核验时也未检索到第三方在这 103 题上的独立复现结果。",
+      "severity": "高",
+      "response": "论文在 bioRxiv 页面披露了利益声明；后继版本 GeneBench-Pro 公告称 50 题将交 Artificial Analysis 做独立第三方基准测试，但那是 Pro 版本，且本档案核验时尚未看到结果。",
+      "reader": "把论文分数当发布方自报口径读；Anthropic 模型缺席不是「没测」，是服务条款限制。",
+      "cite": [
+        "biorxiv@Competing Interest Statement",
+        "paper@Results",
+        "genebench-pro@Evaluation and grading"
+      ]
+    },
+    {
+      "issue": "口径不可比：推理档位、Pro harness 与重复次数都改分数",
+      "impact": "同一模型从 none 到 xhigh 通过率可差一个数量级（GPT-5.5：1.9% → 25.0%）；Pro harness 单独报告（GPT-5.5 Pro 33.2%）与主线性不可直接比；每个模型-题目的有效重复运行数在 14–60 之间。",
+      "severity": "中",
+      "response": "论文分开报告 Pro harness，并在补充表 2 列出每行的推理档位、重复次数与 95% CI；OpenAI GPT-5.5 发布页注明其 GeneBench 评测在 reasoning effort = xhigh 下进行。",
+      "reader": "比较前先对齐三件事：推理档位、是否 Pro harness、重复运行数；厂商自报通常只给最高档。",
+      "cite": [
+        "paper@Results",
+        "paper@Methods",
+        "paper@Supplementary Table 2",
+        "gpt55@Evaluations"
+      ]
+    },
+    {
+      "issue": "构造性模拟数据与真实研究数据有差距",
+      "impact": "为保证答案唯一可识别，数据是按目标估计量反向模拟的；论文明确说「不试图复现真实世界分析中的文档缺失、数据规模和研究特异性不规则」，真实科研里的一部分难点不在覆盖范围内。",
+      "severity": "中",
+      "response": "论文把这一点写成设计权衡：换来的是 ground truth 可识别、判分可解释、错误路径可消融验证。",
+      "reader": "在这个基准上做对，不等于能处理手头那份没有文档、规模更大的真实队列数据。",
+      "cite": [
+        "paper@Discussion",
+        "paper@Construction, Validation, and Grading"
+      ]
+    },
+    {
+      "issue": "数据集与评测代码未公开",
+      "impact": "论文没有给出 103 题数据集、评测代码或公开样本的获取方式，外部无法复现判分与防泄漏检查，也没有公开留出集可供检测过拟合。",
+      "severity": "中",
+      "response": "论文未回应；后继版本 GeneBench-Pro 公告称开源 10 道代表题并计划交第三方评测，但那不是本版本的 103 题。",
+      "reader": "本档案核验时（2026-11-26）GeneBench（103 题）没有可下载的官方数据或代码入口，只有预印本页面与 PDF。",
+      "cite": [
+        "paper",
+        "biorxiv",
+        "genebench-pro@Evaluation and grading"
+      ]
+    },
+    {
+      "issue": "预印本未经同行评审",
+      "impact": "bioRxiv 页面与 PDF 页眉都标注「which was not certified by peer review」；题量、判分协议与结果都可能随正式版本调整。",
+      "severity": "低",
+      "response": "以 CC-BY-NC 4.0 International 许可公开；本档案核验时只有 2026-04-23 这一个版本。",
+      "reader": "引用时标明是预印本并带上版本日期。",
+      "cite": [
+        "paper",
+        "biorxiv"
+      ]
+    }
+  ],
+  "notes": "OpenAI 研究者署名的 bioRxiv 预印本（2026-04-23，CC-BY-NC 4.0，未经同行评审）；被 OpenAI GPT-5.5 发布页引用；2026-06-30 推出后继版本 GeneBench-Pro（129 题）；103 题数据集与评测代码未公开",
   "official_sources": [
+    {
+      "kind": "paper",
+      "url": "https://www.biorxiv.org/content/10.64898/2026.04.22.720113v1.full.pdf"
+    },
     {
       "kind": "site",
       "url": "https://www.biorxiv.org/content/10.64898/2026.04.22.720113"
@@ -34,9 +406,305 @@
     {
       "kind": "site",
       "url": "https://openai.com/index/introducing-gpt-5-5/"
+    },
+    {
+      "kind": "site",
+      "url": "https://openai.com/index/introducing-genebench-pro"
     }
   ],
-  "related_benchmarks": [],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "related_benchmarks": [
+    "hlehle",
+    "lab-bench",
+    "bixbench"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-26",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-26",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "GeneBench: Assessing AI Agents for Multi-Stage Inference Problems in Genomics and Quantitative Biology（bioRxiv 预印本，2026-04-23 posted，CC-BY-NC 4.0）",
+        "url": "https://www.biorxiv.org/content/10.64898/2026.04.22.720113v1.full.pdf",
+        "accessed": "2026-11-26"
+      },
+      {
+        "id": "biorxiv",
+        "kind": "site",
+        "title": "bioRxiv 摘要页（发布日期、DOI 与利益声明）",
+        "url": "https://www.biorxiv.org/content/10.64898/2026.04.22.720113",
+        "accessed": "2026-11-26"
+      },
+      {
+        "id": "gpt55",
+        "kind": "announcement",
+        "title": "OpenAI：Introducing GPT-5.5（2026-04-23；Scientific research 段与 Academic Eval 表引用 GeneBench）",
+        "url": "https://openai.com/index/introducing-gpt-5-5/",
+        "accessed": "2026-11-26"
+      },
+      {
+        "id": "genebench-pro",
+        "kind": "announcement",
+        "title": "OpenAI：Introducing GeneBench-Pro（2026-06-30；后继版本的构建、判分与结果）",
+        "url": "https://openai.com/index/introducing-genebench-pro",
+        "accessed": "2026-11-26"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "OpenAI 与 Herasight（预印本作者单位标注 1 OpenAI、2 Herasight）",
+        "cite": [
+          "paper"
+        ]
+      },
+      "first_release": {
+        "v": "2026-04-23（bioRxiv 预印本首发；本档案核验时该版本仍是唯一版本）",
+        "cite": [
+          "paper",
+          "biorxiv"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "paper@Abstract",
+        "paper@Benchmark Scope and Construction",
+        "paper@Benchmark Setup",
+        "gpt55@Scientific research"
+      ],
+      "interpretation": [
+        "paper@Discussion",
+        "paper@Methods"
+      ]
+    },
+    "problem": {
+      "text": "论文认为现有生物学基准大多只测知识检索、常规流水线执行或单一分析步骤（GeneTuring 测基因组知识检索；LAB-Bench / LABBench2 侧重文献推理与数据库导航；BixBench、BAISBench、SpatialBench、scBench、CompBioBench 测更真实但仍狭窄的计算生物学与组学分析），而且这类基准已日趋饱和、跟不上模型进步。与此同时，真实科研的主要形态是从「可能有错的原始数据」走到「能影响下游科学或转化决策的结论」的迭代多阶段过程：先判断数据能支持什么问题，再做 QC 与探索性分析，然后选模型与估计量、诊断失败、必要时推翻初始假设。难点不在执行分析流程，而在这些判断调用（论文称之为 research taste）。GeneBench 要补的正是这个缺口。",
+      "cite": [
+        "paper@Abstract",
+        "paper@Introduction",
+        "paper@Figure 1"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "论文报告的最低整体通过率",
+        "value": "1.6%",
+        "note": "MiMo V2 Pro（补充表 2，95% CI [0.3, 3.8]）；同表最低的 GPT 家族设置是 GPT-5.2 (none) 1.7%。",
+        "cite": [
+          "paper@Supplementary Table 2"
+        ]
+      },
+      {
+        "label": "论文最强外部基线",
+        "value": "11.2%",
+        "note": "Gemini 3.1 Pro（high 推理档位，95% CI [7.2, 15.7]），超过 GPT-5.2 (xhigh) 的 9.4% 与 GPT-5.2 Pro 的 10.8%；Anthropic 模型因服务条款限制未报告。",
+        "cite": [
+          "paper@Abstract",
+          "paper@Results",
+          "paper@Supplementary Table 2"
+        ]
+      },
+      {
+        "label": "论文主线性最好成绩",
+        "value": "25.0%",
+        "note": "GPT-5.5 在 xhigh 推理档位（95% CI [18.5, 31.9]）；同档位下 GPT-5.4 19.0%、GPT-5.2 9.4%，GPT-5 在其最高档 high 为 3.5%。",
+        "cite": [
+          "paper@Abstract",
+          "paper@Results",
+          "paper@Supplementary Table 2"
+        ]
+      },
+      {
+        "label": "论文 Pro harness 最好成绩",
+        "value": "33.2%",
+        "note": "GPT-5.5 Pro（95% CI [25.1, 41.5]），与主线性分开报告；即便如此，仍有 60.2% 的题目通过率低于 20%。",
+        "cite": [
+          "paper@Abstract",
+          "paper@Results",
+          "paper@Supplementary Table 2"
+        ]
+      },
+      {
+        "label": "人类基线",
+        "value": "论文未给出",
+        "note": "论文没有报告人类专家通过率，只给成本参照：一道题人类全流程约需 10–40 小时，按每小时 100–200 美元折算人工成本约数千美元/题；GeneBench-Pro 的问卷则请评审估计人类专家约需 20–40 小时/题（不同版本、不同问法）。",
+        "cite": [
+          "paper@Discussion",
+          "genebench-pro@Results"
+        ]
+      },
+      {
+        "label": "统计噪声参考线",
+        "value": "见 95% CI（GPT-5.5 xhigh [18.5, 31.9]；GPT-5.5 Pro [25.1, 41.5]）",
+        "note": "论文用 20,000 次分层自助重采样给出误差棒；低于置信区间宽度的模型差距不要当成稳定排名。这条线是本站照抄论文区间得到的参考，不是官方上限。",
+        "cite": [
+          "paper@Figure 4",
+          "paper@Supplementary Table 2"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 Pro harness 的分数和主线性分数排进同一张榜。GPT-5.5 Pro 的 33.2% 跑在另一套 Pro harness 配置下，论文因此单独报告，两者不可直接比。",
+        "cite": [
+          "paper@Methods",
+          "paper@Abstract"
+        ]
+      },
+      {
+        "text": "把不同推理档位的分数当同一口径。GPT-5.5 从 none 的 1.9% 到 xhigh 的 25.0% 差一个数量级；OpenAI 发布页只写 xhigh，并注明评测跑在研究环境而非生产 ChatGPT。",
+        "cite": [
+          "paper@Supplementary Table 2",
+          "gpt55@Evaluations"
+        ]
+      },
+      {
+        "text": "把通过率理解成「会 / 不会」的两分法能力。判分是二值的，七步对六步和第一步就错同记失败；论文把这点列为更深的局限，并说未来版本可能改成分阶段评分。",
+        "cite": [
+          "paper@Methods",
+          "paper@Discussion"
+        ]
+      },
+      {
+        "text": "以为智能体可以用生物信息学工具链。环境只给 numpy / pandas / scipy / scikit-learn / statsmodels / lifelines / matplotlib / seaborn，容器无互联网，没有领域专用工具。",
+        "cite": [
+          "paper@Benchmark Setup",
+          "paper@Methods"
+        ]
+      },
+      {
+        "text": "把 GeneBench（103 题）和 GeneBench-Pro（129 题）混为一谈。Pro 是 2026-06-30 发布的扩展版，题量、子领域数、评审规模与开源范围都不同，官方也把两者分开呈现。",
+        "cite": [
+          "genebench-pro@Dataset construction"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "OpenAI 与 Herasight（预印本标题页标注作者单位：1 OpenAI、2 Herasight）",
+        "cite": [
+          "paper"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "Jeremy Li（OpenAI / Herasight）与 Andrew Ho（OpenAI），两位共同一作兼通讯作者；通讯邮箱 h.jeremy.li@gmail.com、ajh@openai.com",
+        "cite": [
+          "paper"
+        ]
+      },
+      {
+        "k": "利益声明",
+        "v": "bioRxiv 页面 Competition Interest Statement：JHL 是 OpenAI 的承包商，AH 是 OpenAI 的员工兼股东",
+        "cite": [
+          "biorxiv@Competing Interest Statement"
+        ]
+      },
+      {
+        "k": "致谢",
+        "v": "Joseph Pickrell 与 Joy Jiao（对早期稿件提供讨论与反馈）",
+        "cite": [
+          "paper@Acknowledgements"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2026-04-23 bioRxiv 首发（103 题）→ 同日 OpenAI GPT-5.5 发布页引用 GeneBench 结果 → 2026-06-30 OpenAI 发布后继版 GeneBench-Pro（129 题）",
+        "cite": [
+          "biorxiv",
+          "gpt55",
+          "genebench-pro"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "未披露：论文与 bioRxiv 页面均未给出 103 题数据集、评测代码或公开样本的下载入口；GeneBench-Pro 公告只承诺开源 10 道代表题并计划交第三方评测",
+        "cite": [
+          "paper",
+          "genebench-pro@Evaluation and grading"
+        ]
+      },
+      {
+        "k": "版权与许可",
+        "v": "CC-BY-NC 4.0 International（PDF 页眉与 bioRxiv 页面标注；预印本「未经同行评审」）",
+        "cite": [
+          "paper",
+          "biorxiv"
+        ]
+      },
+      {
+        "k": "厂商交叉核对",
+        "v": "OpenAI GPT-5.5 发布页的 Academic Eval 表列 GeneBench：GPT-5.5 25.0%、GPT-5.4 19.0%、GPT-5.5 Pro 33.2%、GPT-5.4 Pro 25.6%，Claude Opus 4.7 与 Gemini 3.1 Pro 记为「-」；与论文一致。GeneBench-Pro 公告另称，开始搭建原版 GeneBench 时最好的前沿模型 GPT-5 通过率不足 5%——与论文补充表 2 中 GPT-5（high）3.5% 对得上。",
+        "cite": [
+          "gpt55@Academic",
+          "genebench-pro@Results"
+        ]
+      },
+      {
+        "k": "评测成本参照",
+        "v": "论文估算一道题人类专家全流程约需 10–40 小时；按每小时 100–200 美元，人工成本约数千美元/题，而单次模型尝试成本远低于 1 美元——比人类基线低三到四个数量级，除以实测通过率后仍低两到三个数量级（论文称这些数字仅作示意）",
+        "cite": [
+          "paper@Discussion"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-26",
+        "columns": [
+          "来源",
+          "模型设置",
+          "平均通过率",
+          "95% CI",
+          "0% 通过率题目占比",
+          "≥50% 通过率题目占比",
+          "平均 token",
+          "重复运行数（均 / 最小 / 最大）"
+        ],
+        "rows": [
+          ["论文补充表 2", "MiMo V2 Pro", "1.6%", "[0.3, 3.8]", "89.3%", "1.0%", "20.5k", "20.0 / 20 / 20"],
+          ["论文补充表 2", "Kimi K2.5", "1.8%", "[0.6, 3.8]", "84.5%", "1.0%", "35.5k", "20.0 / 20 / 20"],
+          ["论文补充表 2", "Grok 4.20（reasoning enabled）", "2.1%", "[0.6, 4.3]", "87.4%", "1.0%", "11.6k", "20.0 / 20 / 20"],
+          ["论文补充表 2", "Qwen 3.6 Plus", "2.7%", "[0.9, 5.3]", "81.6%", "1.9%", "57.6k", "20.0 / 20 / 20"],
+          ["论文补充表 2", "MiMo V2.5 Pro", "3.0%", "[1.3, 5.4]", "75.7%", "1.0%", "38.7k", "19.0 / 19 / 20"],
+          ["论文补充表 2", "GLM 5.1", "4.2%", "[2.1, 6.8]", "72.8%", "1.9%", "95.5k", "20.0 / 20 / 20"],
+          ["论文补充表 2", "Kimi K2.6", "7.4%", "[4.1, 11.4]", "65.0%", "4.9%", "74.8k", "20.0 / 20 / 20"],
+          ["论文补充表 2", "Gemini 3.1 Pro（high）", "11.2%", "[7.2, 15.7]", "55.3%", "8.7%", "23.5k", "40.0 / 40 / 40"],
+          ["论文补充表 2", "GPT-5（none）", "1.9%", "[0.5, 4.1]", "87.4%", "1.0%", "2.8k", "25.0 / 25 / 25"],
+          ["论文补充表 2", "GPT-5（low）", "1.8%", "[0.6, 3.4]", "79.6%", "1.0%", "5.6k", "36.6 / 24 / 53"],
+          ["论文补充表 2", "GPT-5（medium）", "2.5%", "[1.1, 4.5]", "74.8%", "1.0%", "10.0k", "51.0 / 37 / 59"],
+          ["论文补充表 2", "GPT-5（high）", "3.5%", "[1.6, 6.0]", "73.8%", "1.9%", "15.9k", "25.0 / 24 / 25"],
+          ["论文补充表 2", "GPT-5.2（none）", "1.7%", "[0.3, 4.1]", "90.3%", "1.0%", "1.0k", "25.0 / 24 / 25"],
+          ["论文补充表 2", "GPT-5.2（low）", "2.3%", "[0.6, 4.7]", "85.4%", "1.0%", "4.9k", "25.0 / 24 / 25"],
+          ["论文补充表 2", "GPT-5.2（medium）", "4.0%", "[1.7, 7.0]", "78.6%", "1.9%", "12.0k", "25.0 / 24 / 25"],
+          ["论文补充表 2", "GPT-5.2（high）", "5.8%", "[3.1, 9.1]", "66.0%", "1.9%", "15.5k", "39.7 / 32 / 40"],
+          ["论文补充表 2", "GPT-5.2（xhigh）", "9.4%", "[5.8, 13.6]", "55.3%", "6.8%", "37.6k", "20.4 / 14 / 25"],
+          ["论文补充表 2", "GPT-5.4（none）", "2.0%", "[0.5, 4.4]", "88.3%", "1.0%", "1.6k", "25.0 / 24 / 25"],
+          ["论文补充表 2", "GPT-5.4（low）", "4.3%", "[2.3, 6.6]", "70.9%", "1.0%", "9.8k", "25.0 / 24 / 25"],
+          ["论文补充表 2", "GPT-5.4（medium）", "8.9%", "[6.1, 12.2]", "47.6%", "2.9%", "19.4k", "49.9 / 48 / 50"],
+          ["论文补充表 2", "GPT-5.4（high）", "16.0%", "[11.1, 21.6]", "50.5%", "12.6%", "21.2k", "25.0 / 24 / 25"],
+          ["论文补充表 2", "GPT-5.4（xhigh）", "19.0%", "[13.3, 25.0]", "49.5%", "15.5%", "36.4k", "24.9 / 24 / 25"],
+          ["论文补充表 2", "GPT-5.5（none）", "1.9%", "[0.5, 4.2]", "90.3%", "1.0%", "0.6k", "25.0 / 24 / 25"],
+          ["论文补充表 2", "GPT-5.5（low）", "3.2%", "[1.1, 6.0]", "85.4%", "1.9%", "5.3k", "24.9 / 24 / 25"],
+          ["论文补充表 2", "GPT-5.5（medium）", "9.2%", "[5.7, 13.2]", "59.2%", "6.8%", "13.7k", "25.0 / 24 / 25"],
+          ["论文补充表 2", "GPT-5.5（high）", "22.2%", "[16.1, 28.6]", "40.8%", "21.4%", "17.7k", "48.1 / 29 / 59"],
+          ["论文补充表 2", "GPT-5.5（xhigh）", "25.0%", "[18.5, 31.9]", "41.7%", "24.3%", "24.8k", "54.3 / 39 / 60"],
+          ["论文补充表 2", "GPT-5 Pro", "4.0%", "[1.7, 7.0]", "68.0%", "2.9%", "–", "39.2 / 25 / 40"],
+          ["论文补充表 2", "GPT-5.2 Pro", "10.8%", "[6.4, 15.6]", "60.2%", "8.7%", "–", "31.4 / 16 / 42"],
+          ["论文补充表 2", "GPT-5.4 Pro", "25.6%", "[18.6, 32.8]", "51.5%", "26.2%", "–", "20.0 / 20 / 20"],
+          ["论文补充表 2", "GPT-5.5 Pro", "33.2%", "[25.1, 41.5]", "49.5%", "33.0%", "–", "19.6 / 16 / 20"]
+        ]
+      },
+      "cite": [
+        "paper@Supplementary Table 2"
+      ]
+    }
+  }
 }
