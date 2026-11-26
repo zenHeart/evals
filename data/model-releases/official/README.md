@@ -5022,3 +5022,82 @@ StepFun 的官方模型页此前在发现通道里长期挂着 5 条「回填缺
 ### 分支与合并顺序
 
 本批分支 `model-release-daily-20261125T231952Z`，**基线是 `origin/main` = `3940a72`（第七十七批合并后的主干）**，与主干 README 的批次序号连续（上一批为第七十七批），无序号倒挂问题，也无与其他未合并批次重叠的 release/归档。**按归属 Issue 的约定，本批只开 PR 交人工评审，不自动合并、不自动发布**；远端分支一律保留。
+
+## 第七十九批（2026-11-26 CST / 2026-11-26 UTC 增量窗口 2026-11-10 ~ 2026-11-26：新增 1 个腾讯官方开源发布 OmniEVIE-4B（77 条 evidence）+ 4 条存量回填）
+
+- **窗口**：增量窗口 2026-11-10 ~ 2026-11-26（检查点锚点 `last_max_release_date=2026-11-24` 回退 14 天重叠）。检查点回写 `last_scan_at=2026-11-26`（UTC），`last_max_release_date` **保持 2026-11-24**（本批入库的最大官方发布日就是 2026-11-24，与既有锚点持平，按「锚点只前进不回退」口径不变）。官方 release 总数 270 → **271**（official 256 → **257**）；evidence edges 4592 → **4673**（+81 = 77 新建 + 4 回填）；benchmarks 513 → **515**（新建实体 2 个）。
+- **开工前收口（情况 A）**：开工时存在 OPEN PR #97（`model-release-daily-20261125T231952Z`，第七十八批，腾讯 Hy-MT3 / WePM 1.0 / WeMM-Video / WeVisForensics 四款发布 + 78 条 evidence）。按 SKILL Step 0 的 A 情况处置：**先**确认该 PR 的 "Build & Publish" CI 为绿（`Build EPUB & Web` = SUCCESS；`Deploy to GitHub Pages` 在 PR 事件下为 SKIPPED，属工作流设计），**再** squash 合并（merge commit `b107dc5`，远端分支一律保留不删除），**然后**才从更新后的 `origin/main` 开本轮新分支 `model-release-daily-20261126T010051Z`——**未重跑第七十八批、未改动其任何产物**。
+- **入口复扫（Step 1）**：`node .claude/skills/ingest-releases/scripts/scan.mjs --write` 对 18 家在册厂商的官方域名入口逐一实扫并刷新 `data/model-coverage.json`；另按 `references/discovery-channels.md` 的渠道表**逐通道定点复核**：OpenAI news RSS（1,430 条，窗口内 57 条**逐条打印标题**判读）、DeepMind RSS（100 条）、blog.google 根 RSS + AI RSS、Mistral RSS（94 条）、腾讯混元官方接口 `publicList`、豆包 sitemap（带 lastmod）、Microsoft `new-sitemap.xml`（46 条新闻 + 逐页取 JSON-LD `datePublished`）与 `model-sitemap.xml`、MiniMax 平台 release notes、DeepSeek `/updates`、Anthropic 平台模型总表（`releasedOn` 逐条抽取）、xAI docs 模型总表 + 8 个候选 slug 探测、Meta 研究博客、Kimi 博客、Qwen / StepFun / 小米 / GLM / Thinking Machines / Particle 官方页，以及 Hugging Face 9 个官方组织仓 API（mistralai / tencent / Qwen / zai-org / MiniMaxAI / moonshotai / thinkingmachines / meta-llama / microsoft）。
+- **窗口结论：1 组未建档的新官方发布（腾讯 OmniEVIE-4B），另从两篇 OpenAI 官方文章里捞出 4 条此前未抽取的明文绝对分值**；其余 17 家在册厂商经官方渠道与 Hugging Face 组织 API 巡检**均无未建档的新模型发布**。
+
+### 本批建档情况
+
+| 项目 | 数量 | 说明 |
+|---|---|---|
+| 新建 release 文件 | **1** | `tencent/omnievie-4b.json` |
+| 新增 evidence 行 | **81** | **81 verified + 0 pending**（新建 77 + 回填 4） |
+| 存量回填 | **4 条** | `openai/gpt-6-astra.json` 追加 3 条（48 → 51）、`openai/gpt-6-2-astra-and-sol.json` 追加 1 条（133 → 134） |
+| 新建归档目录 | **3** | `models/2026-11-24-omnievie-4b/`（官方模型卡 + 官方代码仓 README + 官方 8 张原图 + 转录表 + 哈希清单）、`models/2026-11-20-openai-adversarial-distillation/`、`models/2026-11-16-openai-computer-use-healthcare/` |
+| 新建 benchmark 实体 | **2** | `data/benchmarks/mmeb.json`、`data/benchmarks/vidore-v3.json`（均 `benchmark-profile/v1`，含 summary / interpretation / measures / does_not_measure / dataset / metrics / limitations 与逐条来源引用） |
+| 新铸 benchmark id（登记 `unmapped_ids`） | **3** | `qvhilights`、`protected-reasoning-extraction`、`ehr-inbox-physician-assessment`；`data/compare-rules.json` 的 `unmapped_ids` 已逐条写明「为何不进对照」，`tests/compare-audit.test.mjs` 的 **undecided / stranded / orphans 三项均为 0** |
+| 候选处置 | 2 条 | 均判定为**非模型发布**并补 `exclusion_reason`：`openai/introducing-shirudo`（开源 Linux 安全运行时）、`kimi/code feedback 反馈表单页`；reconcile 后**真正悬空候选 = 0**（此前 737 条历史候选均已带 `exclusion_reason` 或已挂载） |
+
+#### 逐条发布与取数口径
+
+- **OmniEVIE-4B**（发布日证据：官方模型仓 `tencent/OmniEVIE-4B` 的 `createdAt` = **2026-11-24T03:16:57Z**；官方技术报告 arXiv:2611.32203《OmniEVIE: Evidence-Vector-Informed Embedding for Multi-modal Retrieval》的 `published` = **2026-11-24T08:49:38Z**；官方模型卡转录的 TIGER-Lab/MMEB-Leaderboard 官方榜单快照日期印为 **2026-11-24**，三处互证）
+  - **本条无官方博客发布文**，逐渠道核查结果已写进 release notes：腾讯混元官方接口 `publicList` 最新一条为 `id=100145`（Hy4 flash，2026-11-18），**全站无 OmniEVIE 公告**；`cloud.tencent.com/developer/techpedia/OmniEVIE` 404；`www.tencent.com` 无对应通稿。故走「官方模型仓 + 官方代码仓 + 官方技术报告」三件套的一级来源路径，**发布日期取模型仓创建日并与论文提交时间互证**。
+  - 77 条 evidence **全部 verified**，全部取自官方模型卡与官方代码仓的 **Markdown 真表逐格机读**（非位图读图、非 OCR）：**MMEB-V3（190 任务）48 条**（12 个赛道 × 三种索引压缩档，8 帧档只在数值确有差异的 All 列单独建行）+ **MMEB-V2（78 任务）10 条**（4 个赛道 × 三档，8 帧档只在 All 与 Video 两列单独建行）+ **ViDoRe V3（48 任务）27 条**（Mean + 8 个领域 × 三种索引表示）+ **QVHighlights 长视频时刻定位 2 条**（取自官方技术报告摘要的散文明文，与模型卡图注互证）。
+  - **口径要点**：① 竞品列（Qwen3-VL-Embedding 2B/8B、WeMM-Embedding 2B/4B/9B、Nemotron-ColEmbed-V2-8B 等）按口径只写进各行 notes，未拆成独立行；② 官方粗体规则是「自家整行加粗 + 各列最高分另加粗」，逐列核对后 **MMEB-V3 的 T-RR / GUI / Memory 三列最高分并不属于自家**（分别属 WeMM-Embedding-9B / WeMM-Embedding-9B / WeMM-Embedding-4B），已在对应行 notes 标出；③ 同一模型三种索引配置（Full Sequence d=2048 / K128×d64 int8 / K32×d64 int8）的分数差是存储与延迟换来的工程取舍，按 `model_variant` **分行记录、不合并**，跨模型比较须对齐同一压缩档位；④ 官方技术报告摘要引用的 MMEB-V2 成绩 **77.96 是 K128 压缩档**，与模型卡表的 Full 档 **78.56** 不是同一档，两处口径**原样保留、不调和**。
+  - **归因口径**：MMEB 两张表在官方模型卡里明确标注为「Official TIGER-Lab/MMEB-Leaderboard snapshot (2026-11-24)」——即基准方发布的官方榜单快照，故 `attribution_type` 记 `benchmark_owner_reported`（不记厂商自报）；ViDoRe V3 与 QVHighlights 两组是腾讯自测并写进自家官方模型卡与官方技术报告的结果，记 `vendor_reported`。
+  - **未建行项**：① 单线程 CPU 检索延迟表（100K/1M/5M 毫秒数与加速比）属工程指标而非评测分，只写入归档 `index.md`；② 官方代码仓「Reproducing MMEB」的逐任务 Recorded/maxsim/index 复现表（13 个任务）官方未给指标名与榜单换算关系，不另建 benchmark 行；③ ViDoRe V3 各领域任务数与缩写全称（官方只印缩写）不自行补写。
+  - 协议侧：官方未印 temperature / top_p / 运行次数 / 判分方式 / 上下文长度等键，`protocol` 全部 null、`context_window` 与 `pricing` 留 null；权重与代码 Apache-2.0 开源。
+- **存量回填 · 推理护取攻击成功率**（OpenAI 官网研究文章《Combatting adversarial distillation》，2026-11-20，正文「Resistance to reasoning extraction」一节的**明文散文绝对分值**）
+  - 官方原句：「The average attack success rate fell from **54.0% against GPT‑6 Astra with its original safeguards** to **0.2% against GPT‑6.2 Astra with its updated safeguards**.」
+  - 追加 2 条：`gpt-6-astra` 一条（54.0%）、`gpt-6-2-astra-and-sol` 一条（0.2%，模型 `gpt-6-2-astra`）。官方这一句本身就是**防护升级前后的对照**，两行须成对阅读，**不并进同一行**。
+  - ⚠️ 该主指标是**越低越好**（防护越强、攻击成功率越低）的量纲，与站内多数「越高越好」的准确率类指标方向相反，已在 metric 名称与 notes 里双重标明；协议为 OpenAI 内部自适应评测 + 强力自动红队，题集与判分细则官方未公开，`comparison_scope` 记 `only_same_protocol`。
+  - 同页 ExploitBench 图表（官方 RSC vega 载荷可机读，32 个数据点）度量的是**攻击方蒸馏出的学生模型**而非任何已发布模型，无法挂到自家模型列，故**不建行**。
+- **存量回填 · 医疗 computer-use 医生评分**（OpenAI 官网产品文章《Advancing computer-use agents for healthcare teams》，2026-11-16，正文「Evaluating helpfulness, safety, and cost」一节）
+  - 追加 2 条到 `gpt-6-astra`：**临床安全 99%**（分母 325 条被复核任务）与**医生评价「非常有帮助/极其有帮助」93%**（分母 646 次医生评分）。两者**量纲不同，不可互相换算或合并**，故按两个 metric 分列两行。
+  - 官方正文明文与页面内嵌 vega-lite 图表载荷（`score` 0.99 / 0.93）**逐点互证**，非位图读图，故记 verified；官方图表副标题明示评测档位为 **GPT‑6 Astra · Maximum reasoning effort**，已写入 `protocol.reasoning_effort`。
+  - 该评测是 OpenAI 自建的内部评测（任务由医生参与设计），与同页的 **HealthAdminBench**（Stanford 自建公开基准，其 94.3% / 91.8% **已在第六十九批入账**）**不是同一评测**，本批不重复入账、也不混用两个 id。
+- **存量回填 · 新建 benchmark 实体**：为 MMEB 与 ViDoRe V3 建了**带 `benchmark-profile/v1` 完整档案**的实体（不是兜底页）。档案的每条事实都 `cite` 指向本批**实际打开过**的一手来源：MMEB 的 arXiv:2410.05160（V1）/ 2507.04590（V2）/ 2604.23321（V3）、`TIGER-Lab/MMEB-V2` 数据集卡与 `TIGER-Lab/MMEB-Leaderboard` 榜单 Space；ViDoRe V3 的 arXiv:2601.08620（V3）/ 2505.17166（V2），以及官方模型卡与技术报告。`interpretation` 写明「MMEB 的『非音频榜第一』与含音频总分不是同一口径」「ViDoRe V3 的 Mean 只覆盖检索侧、不含论文关注的生成侧」等读数陷阱。
+
+### 跳过清单
+
+- **OpenAI**：窗口内 57 条 RSS 条目逐条判读，**无一为独立模型发布**——11-24「Searching for distant planets with Astra」（天文科普案例，图表为系外行星累计发现数与光变曲线）、11-23「OpenAI and Cisco introduce Shirudo」（**开源 Linux 安全运行时工具**，非模型发布）、11-22「Perplexity and Intelligence」（内部模型困惑度研究）、11-20「Combatting adversarial distillation」「Can AI help scientists identify promising drug candidates?」（后者的 MedChemBench 已在第七十三批建档）、11-19 起的 Performance Factory / PR 扫描 / Daybreak 系列、11-18「The Silent Consensus」「Research acceleration」「Inside the Codex sandbox」「Managing frontier AI risk」、11-17「Introducing GPT‑6.2 Astra and Sol」「Astra for Law」「Introducing ChatGPT for Sales」「Introducing OpenAI for Chile」、11-16 起的客户案例与合作公告，均为研究 / 观点 / 产品 / 合作公告。已建档项不再重复：GPT‑6.2 Astra/Sol（第七十批）、Astra for Law（第七十四批）、蛋白质设计与芯片设计两条研究文（第七十六批）、MedChemBench（第七十三批）、Humanity's First Exam（第七十七批）。
+- **OpenAI · 特别说明两处「有图无数」误判已规避**：`science-at-the-frontier` 的 3 张图表是**科学家使用行为调查**（各学科领域占比、职业年限分布），不是模型评测；`strengthening-online-child-safety` 的 48% / 72% / 90% 分属「减少送审图量」的相对量与 fal / SafetyKit 各自数据集的第三方复核结果，**OpenAI 未发布任何模型 id、规格与发布日期**，故按非模型发布记入跳过清单、不建 release。
+- **Anthropic**：平台模型总表逐条抽取 `releasedOn`，**最新一条是 2026-11-09 的 Fable 5.2**（早于窗口起点、已建档），窗口内无新模型发布；news 侧为 IPO 文件、定价与 Safety 类文章。
+- **Google / DeepMind**：Genie 4（**11-18「Genie 4 is now available」是产品上线公告、无任何评测分值**，已建档的 `google/genie-4` 不动）、Gemini 4 Neon / Hydrogen / Carbon、AlphaGenome 2、AlphaProof Code、Humanity's First Exam 全部已建档；窗口内其余为「Tool Retrieval / file slicing」等 Gemini API 功能更新与量子算法研究文章。
+- **Microsoft**：11-17 的 MAI Code 2 / MAI Cyber 2 Flash / MAI Realtime 1 / MAI Image 2.7 此前批次已建档；11-23「RL infrastructure at Microsoft AI」是**基础设施文章**、非模型发布；11-17「Introducing MAI Licensed Weights」是**在自家 Azure 环境部署微软模型的许可与产品方案**，未发布新模型 id，不建档。
+- **DeepSeek**：2026-11-13「Releasing the full suite of application APIs」是 **API 功能发布**、非模型发布；官方仓最新模型仍是窗口外的既有型号。
+- **豆包**：官方 sitemap 在窗口内仅 1 条带 lastmod 的条目（`seedance-enterprise` 企业版页面）；Seedream 5.5 / Seedance 2.5 / Seed Audio 等此前批次已建档。
+- **Mistral**：官方 RSS（94 条）窗口内 **0 条**；官方 HF 组织 `mistralai` 最新仓为 2026-10-15，窗口内无新仓。**MiniMax**：平台 release notes 最新仍是 11-10 的 MiniMax H3 Image（已建档），其后无新条目。**xAI**：docs 模型总表仍标 Grok 4.7 为最新，8 个候选 slug（grok-4-8 / grok-5 / grok-voice-3-1 等）探测**全部 404**，release notes 无窗口内新条目。**Meta**：研究博客最新为 11-09 的 Muse Ember（已建档）与 11-06 的文章，均早于窗口起点。**Kimi / Qwen / StepFun / 小米 / GLM / Thinking Machines / Particle**：官方渠道与 Hugging Face 组织 API 巡检均无窗口内新模型发布。
+- **腾讯已建档与同族非发布项**：Hy4 flash / Hy4 / Hy4 preview / WeMM-Ecom / Hy-MT3 / WePM 1.0 / WeMM-Video / WeVisForensics 此前批次已建档；`tencent/TiMiHOKGameTranslator` 是**游戏本地化翻译与 LQA 开源工程（工具链，不是模型发布）**，不建档；WeMM-Ecom / WeMM-Video / Hy-MT3 的 FP8 / AWQ / GGUF / NVFP4 与 MLX 量化仓是同一权重的部署格式，不另建行；`tencent/Hy4-base` / `Hy4-FP8` 是已建档 Hy4 的基座与量化形态，不另建 release；`tencent/OmniEVIE-2B` 与 `tencent/OmniEVIE` 在 HF 上**未公开发布**（仓库不存在），官方代码仓的 License 段虽提及这两个名字，但**本批只对已公开的 OmniEVIE-4B 建档**。
+
+### 待人工核验
+
+1. **MMEB-V3 的 T-RR / T-IF / T-LC / T-MC / T-GR / Tool / GUI / Memory / MCMR 子项缩写**：官方表只印缩写、未给全称，本批逐列照录官方写法并在 metric 里注明「官方表只印缩写，未给全称」，**未自行补写展开**；若官方后续补出子项全称，可回填解读。
+2. **MMEB-V3 各赛道的任务数明细**：官方只给「All 190 / Text 53 / Agent 47」三个总数，未给子项任务数，本批按此口径记录。
+3. **ViDoRe V3 各领域任务数与缩写全称**：官方表只印 8 个领域缩写与 nDCG@10 口径，未给各领域任务数（Mean 分母 48 = 8 领域 × 6 语言由官方技术报告摘要给出），未自行补写。
+4. **官方模型卡表与技术报告摘要的 MMEB-V2 口径差**（78.56 Full vs 77.96 K128 压缩档）：两处均原样保留，需官方澄清「对外引用应取哪一档」后再决定是否在解读中收敛。
+5. **OpenAI 医疗 computer-use 与蒸馏防御两篇的内部评测**：题集、合成病历样本与判分细则官方均未公开，无法独立复跑；本批已按「内部评测 + 自定义协议」结构化记录，若官方后续公开模型卡可再补协议字段。
+
+### 门禁
+
+| 门禁 | 结果 |
+|---|---|
+| `node scripts/reconcile-coverage.mjs` | ✓ exit 0；**连跑两次 diff 为空**（幂等）；reconcile 后**真正悬空候选 = 0**、pending 候选 = 0 |
+| `node scripts/compare-audit.mjs` | ✓ undecided **0** / stranded **0** / orphans **0**（3 个新铸 id 已逐条登记 `unmapped_ids`） |
+| `node scripts/validate-data.mjs` | ✓ **PASS** — taxonomy 9 类 / vendors 18 / **benchmarks 515** / **releases 271（official 257）** / **evidence edges 4673**；模板档案 335 个通过校验，待升级存量 180 个（backlog 只减不增） |
+| `node --test tests/*.test.mjs` | ✓ **176 / 176 通过** |
+| `npm run sync:skills:check` | ✓ 技能镜像零漂移（`.agent/skills/` 与 `.claude/skills/` 一致）；本批未改动技能定义 |
+| `npm run validate` | ✓ 32 章全部通过 |
+| `npm run build:epub:official` | ✓ evals.epub 32 章 / 486 KB |
+| `npm run build:web` | ✓ 32 章页面 + **515 档案页** + **375 自动证据页** + sitemap **830 URL** |
+| `npm run validate:site` | ✓ **全部通过**（链接检查 1241 个 HTML / 48093 个内部引用；时序单调性 324 个时间轴 / 2556 个事件卡片；统一档案模板渲染检查 335 个评测页） |
+
+- **本地抽查（`dist/` 起静态服务）**：`/releases/` 出现新结点「OmniEVIE-4B」，徽章为**真实腾讯彩色 logo**（`/assets/logos/tencent.png`）且居中于脊线；结点的 77 个评测 chip 全部可点击，分别落到 `../benchmarks/mmeb/`（48 个）、`../benchmarks/vidore-v3/`（27 个）与 `../benchmarks/qvhilights/`（2 个）正确详情页；`/models/gpt-6-astra/` 详情页「厂商采用记录」出现新增行（54.0% / 99% / 93%）；新页面无「已核验 / 待核验 / 待补」类内部术语（`证据账本` 字样是全站模板既有文案，`healthbench` / `terminalbench` / `mmlu` 等存量档案页同样出现，非本批引入）。
+
+### 分支与合并顺序
+
+本批分支 `model-release-daily-20261126T010051Z`，**基线是 `origin/main` = `b107dc5`（第七十八批合并后的主干）**，与主干 README 的批次序号连续（上一批为第七十八批），无序号倒挂问题，也无与其他未合并批次重叠的 release / 归档。**远端分支一律保留**（不 `git branch -D`、不 `git push --delete`）。
