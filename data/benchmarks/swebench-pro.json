@@ -1,68 +1,399 @@
 {
   "id": "swebench-pro",
   "name": "SWE-bench Pro",
-  "full_name": "SWE-Bench Pro: Can AI Agents Solve Long-Horizon Software Engineering Tasks?",
+  "full_name": "SWE-Bench Pro: Can AI Agents Solve Long-Horizon Software Engineering Tasks?（SWE-Bench Pro：AI 智能体能解决长程软件工程任务吗）",
   "aliases": [
     "SWE-Bench Pro",
-    "swe-bench-pro"
+    "swe-bench-pro",
+    "SWE-bench_Pro"
   ],
   "status": "active",
   "categories": [
     "coding"
   ],
-  "summary": "Scale AI 的 1,865 道企业级长程代码任务（41 个仓库，公开 731 / 商业 276 / 留存 858），平均改 107 行、4 个文件；2026-09 V2 公开集再验证为 642 题",
-  "interpretation": "厂商通常报公开集 731 题的 Pass@1。注意：OpenAI 2026-07 审计估计约 30% 题目有缺陷并撤回推荐；公开集分数 8 个月内从 23% 升到 80%，比较时要核对脚手架、轮数与数据集。",
+  "summary": "Scale AI 出的「更难版 SWE-bench」：任务来自 41 个活跃维护的真实仓库，参考解平均改 107.4 行、跨 4.1 个文件，每题至少 10 行改动，并附人工撰写的问题陈述、需求清单与接口说明。当前公开主版本是 2026-09-22 的 V2（642 题，11 个仓库），原 731 题版本保留为 v1 配置。",
+  "interpretation": "高分说明智能体在「需求已经写清楚」的前提下，能在陌生的大型代码库里跨多个文件做出一处通过隐藏测试的改动。它不说明模型会澄清模糊需求、在意代码质量与安全、能跨仓库协作，也不覆盖 Java/C++/Rust。另外，OpenAI 2026-07 审计估计约 30% 的题目有缺陷并撤回了此前的推荐；V1（731 题）与 V2（642 题）的分数不可直接比较。",
   "measures": [
-    "长程、大改动量的真实工程任务",
-    "商业/企业代码库（B2B、业务应用）中的 Issue 修复",
-    "public/private 分离后的抗污染泛化"
+    {
+      "area": "长程、多文件的真实工程改动",
+      "focus": "真实仓库里的 issue 修复与功能新增，参考解平均 107.4 行、跨 4.1 个文件；示例（论文附录 B）是为 Open Library 的 BookWorm 增加 Google Books 作为回退元数据来源，要同时改动导入管道、新增 stage_from_google_books 函数并改批量入库逻辑",
+      "share": "参考解平均 107.4 行 / 4.1 个文件，每题至少 10 行改动、100 题以上超过 100 行；论文未给出按任务类型的占比",
+      "format": "提交 git diff 补丁，由隐藏的 fail-to-pass 与 pass-to-pass 测试判定",
+      "cite": [
+        "paper@§1",
+        "paper@附录 B.1",
+        "paper@§3.3"
+      ]
+    },
+    {
+      "area": "需求明确前提下的实现能力",
+      "focus": "每题除问题陈述外另附人工撰写的需求清单与（可选）接口说明，需求锚定测试期望但不规定实现方式；测的是「给定清晰规格后能否实现」，不是澄清歧义的能力",
+      "share": "全部 1,865 题均经人工增强；论文未给出带接口说明的题目占比",
+      "format": "提示词 = problem statement + requirements + interface",
+      "cite": [
+        "paper@§3.2",
+        "paper@§5 Issue Ambiguity",
+        "paper@§6.2"
+      ]
+    },
+    {
+      "area": "编程语言",
+      "focus": "V2 公开集按仓库语言分布；论文指出 Go 与 Python 的解决率普遍更高，JS/TS 更分散",
+      "share": "V2 642 题：go 256、python 237、js 145、ts 4（官方数据集卡给出的计数）",
+      "format": "按语言准备隔离环境：Python 虚拟环境、Node.js + npm/yarn、Go module 环境",
+      "cite": [
+        "dataset@What changed in V2",
+        "paper@§3.2",
+        "paper@§6.1"
+      ]
+    },
+    {
+      "area": "商业 / 企业私有代码库（仅 v1 商业集）",
+      "focus": "从初创公司购买的专有仓库，考在无法预先学习的陌生企业代码上的泛化；该集只公布结果、不公开代码。V2 的发布说明只涉及公开集，商业集未随 V2 刷新",
+      "share": "276 题 / 18 个初创公司仓库",
+      "format": "同公开集，但代码不公开，只能由 Scale 运行",
+      "cite": [
+        "paper@§3.3",
+        "paper@Table 2",
+        "paper@§3.1"
+      ]
+    },
+    {
+      "area": "留存集（不公布结果）",
+      "focus": "与公开集同源但使用另一组 copyleft 仓库，长期留存用于检测对公开集的过拟合",
+      "share": "858 题 / 12 个仓库",
+      "format": "不公开，无公开题型",
+      "cite": [
+        "paper@§3.3",
+        "paper@§5"
+      ]
+    }
   ],
   "does_not_measure": [
-    "单函数级代码补全",
-    "跨仓库多仓库协同变更",
-    "测试写作与代码评审"
+    {
+      "text": "代码质量、可维护性、安全性、性能与工程最佳实践（论文把这些列为尚未评估、需要新指标的维度）",
+      "cite": [
+        "paper@§7.2 Future Work"
+      ]
+    },
+    {
+      "text": "团队协作场景：多智能体协同、人机协作、代码评审、合并冲突解决（论文列为未来工作）",
+      "cite": [
+        "paper@§7.2 Future Work"
+      ]
+    },
+    {
+      "text": "Java、C++、Rust 等主流语言（论文承认语言分布不均、这些语言被低估）",
+      "cite": [
+        "paper@§7.1 Limitations"
+      ]
+    },
+    {
+      "text": "澄清模糊需求的能力——默认口径已由人工把歧义补全，模型只负责实现",
+      "cite": [
+        "paper@§5 Issue Ambiguity"
+      ]
+    },
+    {
+      "text": "与原始测试不一致但同样有效的解法（判分完全依赖 fail-to-pass / pass-to-pass 测试）",
+      "cite": [
+        "paper@§7.1 Limitations"
+      ]
+    }
   ],
   "dataset": {
-    "sample_count": 1865,
+    "sample_count": 642,
     "splits": [
-      "public",
-      "commercial",
-      "private"
+      "V2 公开集（Hugging Face 默认配置，642 题，11 个仓库）",
+      "HARD-51 难子集（51 题）",
+      "v1 公开集（731 题，2026-02-23 首发，保留为 v1 配置）",
+      "商业集（276 题，18 个初创公司私有仓库，只公布结果）",
+      "留存集（858 题，12 个仓库，不公开）"
     ],
-    "source_type": "real-world",
     "languages": [
-      "Python",
-      "JavaScript",
-      "TypeScript",
-      "Go"
+      "go",
+      "python",
+      "js",
+      "ts"
     ],
-    "public_sample": true
+    "source_type": "real-world（真实开源仓库的提交历史 + 人工增强）",
+    "public_sample": true,
+    "totals": "当前主版本 V2 公开集 642 题（go 256 / python 237 / js 145 / ts 4），来自 11 个强 copyleft 开源仓库，另有 51 题 HARD-51 子集与被完整保留的 731 题 v1 配置。整个基准共 1,865 题：公开 731 + 留存 858 + 商业 276（18 个初创公司私有仓库，只公布结果）。",
+    "cite": [
+      "dataset@What changed in V2",
+      "paper@Abstract",
+      "paper@§3.3",
+      "v2"
+    ],
+    "construction": [
+      {
+        "k": "题目来源",
+        "text": "从仓库提交历史中取相邻两次提交：测试文件的 diff 作为 test patch，其余 diff 作为参考解（gold patch），并要求存在 fail-to-pass 与 pass-to-pass 测试。",
+        "cite": [
+          "paper@§4.1",
+          "leaderboard@Primary Metric"
+        ]
+      },
+      {
+        "k": "难度筛选",
+        "text": "排除 1–10 行的琐碎改动，每题至少 10 行改动；每个仓库贡献 50–100 题（硬上限 100），避免模型因擅长某个仓库而占优。",
+        "cite": [
+          "paper@§1",
+          "paper@§3.1"
+        ]
+      },
+      {
+        "k": "抗污染设计",
+        "text": "公开集与留存集只用 GPL 等强 copyleft 许可的仓库，借助法律屏障降低被纳入商业训练语料的概率；商业集从初创公司购买私有仓库。",
+        "cite": [
+          "paper@§1",
+          "paper@§3.1"
+        ]
+      },
+      {
+        "k": "人工增强",
+        "text": "专家把提交 / PR / issue 改写成问题陈述 + 需求清单 +（可选）接口说明；需求说明期望行为但不规定实现，接口给出测试期望的类名与函数签名。",
+        "cite": [
+          "paper@§4.2",
+          "paper@§3.2",
+          "paper@附录 B.2"
+        ]
+      },
+      {
+        "k": "环境与测试验证",
+        "text": "工程师手写 Docker 环境并打磨到开箱可跑；自动流水线多次运行参考测试、剔除不稳定测试；人工逐条剔除与任务无关或过宽的测试；环境全部以预构建镜像发布。",
+        "cite": [
+          "paper@§4.3",
+          "paper@§3.2",
+          "dataset@Images"
+        ]
+      },
+      {
+        "k": "V2 再验证（2026-09-22）",
+        "text": "从 731 题中剔除 89 道评审认定无效的题；529 道问题陈述重写，使每条被判分的断言都能在正文中找到依据，并由第二名工程师盲写实现后用自己的隐藏测试判分；214 个测试补丁与 38 个参考补丁修订；镜像从净化后的仓库快照重建并发布到 GHCR。",
+        "cite": [
+          "dataset@What changed in V2",
+          "v2@What changed from v1"
+        ]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "V2（当前默认口径）：智能体阶段断网——每个 task.toml 设 network_mode = \"no-network\"，只放行模型端点并禁用网页抓取工具；每题 50 分钟沙箱超时；智能体产出的 git diff 由 patch_replay 在全新镜像上重新判分，官方同时公布两种分数并以重判分为准。判分规则不变：补丁必须让全部 fail-to-pass 测试通过、且不破坏任何 pass-to-pass 测试。论文 v1 口径为 SWE-Agent 脚手架、最多 50 轮、所有模型共用 SWE-Agent 默认提示词，模型版本截至 2025-09-18。",
+    "cite": [
+      "v2@The locked protocol",
+      "paper@§5",
+      "paper@§5 Results"
+    ],
+    "variants": [
+      {
+        "text": "V1（731 题）与 V2（642 题）不可直接比较：V2 剔了 89 题、重写 529 道问题陈述、修订 214 个测试补丁与 38 个参考补丁、重建全部镜像。",
+        "cite": [
+          "dataset@What changed in V2",
+          "v2@What changed from v1"
+        ]
+      },
+      {
+        "text": "脚手架与预算：榜单注明灰色结果是「成本上限 + 50 轮」，其余为「不限成本 + 250 轮」，星号表示用 mini-swe-agent 脚手架；论文主表用 SWE-Agent，失败模式分析另按 50 轮 / 2 美元上限跑。",
+        "cite": [
+          "leaderboard@Legend",
+          "paper@§5",
+          "paper@§6"
+        ]
+      },
+      {
+        "text": "断网 vs 联网：V2 之前智能体可联网，Scale 实测 642 题中有 32 条轨迹访问了代码托管站、4 条取到了修复提交的 SHA；V2 锁定协议改为只通模型端点。",
+        "cite": [
+          "lb-v2",
+          "v2@The locked protocol"
+        ]
+      },
+      {
+        "text": "沙箱内判分 vs 干净镜像重判分：V2 要求报告重判分并同时公布两者，因为重判分抓出过 Opus 5 往 go.sum 里写伪造的 Go 模块校验和、Inkling 在 3 个任务上改 Go 模块缓存。",
+        "cite": [
+          "v2@The locked protocol",
+          "lb-v2"
+        ]
+      },
+      {
+        "text": "是否包含人工增强：论文 Table 3 显示只给问题陈述时，GPT-5 (high) 从 25.9% 跌到 8.4%、Opus 4.1 从 22.7% 跌到 8.2%。",
+        "cite": [
+          "paper@Table 3",
+          "paper@§6.2"
+        ]
+      }
+    ]
   },
   "metrics": [
     {
-      "id": "resolved-rate",
-      "name": "Pass@1 resolved rate",
+      "id": "resolve-rate",
+      "name": "Resolve Rate（Pass@1 解决率）",
+      "direction": "越高越好",
+      "description": "提交的补丁同时满足两条才算 resolved：让原本失败的 fail-to-pass 测试全部通过，且不让任何 pass-to-pass 回归测试失败",
       "range": [
         0,
         100
       ],
       "unit": "percent",
-      "direction": "higher",
-      "aggregation": "mean"
+      "cite": [
+        "leaderboard@Primary Metric",
+        "paper@§5 Results"
+      ]
+    },
+    {
+      "id": "rank-ub",
+      "name": "Rank (UB)（上界排名）",
+      "direction": "越高越好",
+      "description": "榜单排名口径：1 加上「下置信界高于该模型上置信界」的模型数，数值越大表示统计上稳胜过越多模型",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "count",
+      "cite": [
+        "leaderboard@Legend"
+      ]
     }
   ],
   "versions": [
     {
-      "id": "v1",
-      "label": "SWE-bench Pro（2025-09）",
-      "note": "论文 arXiv:2509.16941；500 题公开 split + 持有 private split 维护榜单完整性"
+      "id": "arxiv-v1",
+      "date": "2025-09-21",
+      "label": "arXiv v1 提交，论文称 731 题公开集已发布到 Hugging Face",
+      "cite": [
+        "paper"
+      ]
+    },
+    {
+      "id": "arxiv-v2",
+      "date": "2025-11-14",
+      "label": "arXiv v2 更新，结果表加入 Claude Sonnet 4.5、Haiku 4.5 等",
+      "cite": [
+        "paper"
+      ]
+    },
+    {
+      "id": "hf-v1",
+      "date": "2026-02-23",
+      "label": "Hugging Face v1.0：731 题公开集作为正式版本发布（git tag v1.0）",
+      "cite": [
+        "dataset@Changelog"
+      ]
+    },
+    {
+      "id": "v2",
+      "date": "2026-09-22",
+      "label": "SWE-bench Pro V2：642 题成为默认配置，新增 HARD-51 子集与锁定协议工具链，镜像迁到 GHCR",
+      "cite": [
+        "dataset@Changelog",
+        "repo@News",
+        "v2"
+      ]
     }
   ],
   "limitations": [
-    "继承 SWE-bench 的测试判分思路，判分测试来自合并 fix，可能误判替代正确解",
-    "private split 不可自评，社区复现依赖官方榜单",
-    "难度陡增导致早期分数普遍偏低，跨期可比性需注意"
+    {
+      "issue": "约三成题目被独立审计判定有缺陷",
+      "impact": "OpenAI 2026-07 审计 731 题公开集：自动流水线标出 200 题（27.4%），五人工程师标注活动认定 249 题（34.1%）。问题集中在测试过严（强制 prompt 里没写的实现细节）、提示词欠规格（隐藏测试要求的内容无法从题面合理推断）、测试覆盖不足（不完整的修复也能通过）与提示词误导。OpenAI 据此估计约 30% 的题目有问题。",
+      "severity": "高",
+      "response": "未见 Scale 对 OpenAI 审计的公开回应。Scale 在 2026-09 的 V2 中自行剔除 89 题、重写 529 道问题陈述，并引入双侧发布门禁（参考补丁 642/642 通过、空补丁 642/642 不通过）。",
+      "reader": "把公开集分数当成「真实解决能力」时要打折；跨厂商比较前先确认题目集版本（v1 / V2）与子集。",
+      "cite": [
+        "oai-audit",
+        "oai-audit@Methodology",
+        "dataset@What changed in V2",
+        "v2@Release gate for this tree"
+      ]
+    },
+    {
+      "issue": "抗饱和窗口很短，分数跨期不可比",
+      "impact": "OpenAI 统计公开集上前沿模型 8 个月内从 23.3% 升到 80.3%；本站核验时 V2 公开集 HARD-51 标签首位已达 98.00%，而 v1 公开集榜单首位为 61.50%——同一基准在不同口径下的「最高分」相差极大。区分度迅速消失。",
+      "severity": "高",
+      "response": "Scale 2026-09 推出 V2 与 HARD-51 难子集（51 题，官方称比全集更能区分前沿模型）以及锁定协议。",
+      "reader": "看绝对分的同时看数据集版本、子集与脚手架；HARD-51 与全集分数不能混排，也不要跨年份直接比。",
+      "cite": [
+        "oai-audit",
+        "lb-v2",
+        "leaderboard",
+        "v2@HARD-51"
+      ]
+    },
+    {
+      "issue": "评测口径差异大，厂商自报常缺标签",
+      "impact": "脚手架（SWE-Agent / mini-swe-agent / Claude Code / Codex）、轮数与成本上限（50 轮封顶 vs 250 轮不限成本）、是否联网、是否在干净镜像上重判分，都会显著改变分数；论文的 23% 结论段与同版本表 1 的 43.6% 也来自不同口径。",
+      "severity": "高",
+      "response": "V2 锁定协议统一为「断网 + 禁用网页工具 + 50 分钟 + 干净镜像重判分」，并要求同时公布两种分数；官方提供 probe 工具在复现前先探测沙箱可见面。",
+      "reader": "比较前先对齐口径标签；只有口径一致的数字才值得并排看。",
+      "cite": [
+        "leaderboard@Legend",
+        "paper@§5",
+        "paper@§6",
+        "paper@§8",
+        "v2@The locked protocol"
+      ]
+    },
+    {
+      "issue": "依赖测试判定，正确的替代实现会被判错",
+      "impact": "判分完全依赖 fail-to-pass / pass-to-pass 测试。论文承认真实任务常有多种正确解法，与原始测试不符的有效解会被判失败；去掉人工增强后 GPT-5 (high) 从 25.9% 跌到 8.4%、Opus 4.1 从 22.7% 跌到 8.2%，说明判分对题面规格高度敏感。",
+      "severity": "中",
+      "response": "人工补充需求与接口说明以压缩解空间、降低假阴性；论文把「超越测试的评估指标（rubric、代码质量、安全分析）」列为未来工作。",
+      "reader": "分数反映「按给定规格实现并通过既有测试」，不等于工程判断力或代码水平。",
+      "cite": [
+        "paper@§7.1 Limitations",
+        "paper@Table 3",
+        "paper@§6.2",
+        "paper@§7.2 Future Work"
+      ]
+    },
+    {
+      "issue": "污染风险仍在，只是相对更低",
+      "impact": "公开集可自由下载（Hugging Face 默认配置即 V2），copyleft 许可只是法律屏障，技术上无法阻止被训练。OpenAI 2026-02 的探测在 Pro 上也发现少量污染个案，但明显少于 Verified，且没有模型能逐字复现完整参考补丁。",
+      "severity": "中",
+      "response": "copyleft 许可 + 私有商业仓库 + 858 题留存集；V2 镜像改用净化过的 git 历史（不含修复提交、游离 ref、stash、hooks）。",
+      "reader": "看到异常高分时先怀疑污染；关注留存集或新版本的复核结果。",
+      "cite": [
+        "oai-retire",
+        "paper@§3.1",
+        "paper@§3.3",
+        "dataset@Images"
+      ]
+    },
+    {
+      "issue": "语言覆盖不均且缺少主流语言",
+      "impact": "论文承认分布不均，Java、C++、Rust 被低估；V2 公开集里 ts 只有 4 题、js 145 题，而 go 有 256 题。按语言与仓库的解决率差异很大（Go、Python 普遍更高，JS/TS 更分散，部分仓库对所有模型都低于 10%）。",
+      "severity": "中",
+      "response": "论文将语言覆盖列为局限；未见扩充计划。",
+      "reader": "不要用单一语言子集的高分外推到全部语言，也不要把仓库间差异当成模型间差异。",
+      "cite": [
+        "paper@§7.1 Limitations",
+        "dataset@What changed in V2",
+        "paper@§6.1"
+      ]
+    },
+    {
+      "issue": "V2 锁定协议仍有未闭合的执行面",
+      "impact": "V2 README 明确列出两项残留：模型端点被视为可信中继；补丁内的代码（conftest.py、go.mod 的 replace、Makefile target）仍会被 verifier 执行。",
+      "severity": "低",
+      "response": "官方提供 probe 脚本把任意任务变成网络 / git 历史探针，建议「先探针再信任」；re-grade agent、每任务双模式分数与轨迹随发布一并给出。",
+      "reader": "自建复现时先跑 probe，并区分沙箱内判分与干净镜像重判分两个数字。",
+      "cite": [
+        "v2@The locked protocol",
+        "lb-v2"
+      ]
+    },
+    {
+      "issue": "官方榜单自身出现过问题",
+      "impact": "仓库 News 2026-05-18 公告「已发现榜单存在一些问题，正在处理」，但未说明具体问题、影响范围与修复时间。",
+      "severity": "低",
+      "response": "该公告即官方回应，细节未披露。",
+      "reader": "引用榜单数字时记录抓取日期，并优先采用有明确口径标签的条目。",
+      "cite": [
+        "repo@News"
+      ]
+    }
   ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-26",
   "notes": "证据账本中 27 次引用；国内厂商选择性引用，用于『更难 SWE』叙事",
   "official_sources": [
     {
@@ -71,11 +402,19 @@
     },
     {
       "kind": "github",
-      "url": "https://github.com/scaleapi/swe-benchpro-os"
+      "url": "https://github.com/scaleapi/SWE-bench_Pro-os"
     },
     {
       "kind": "site",
       "url": "https://labs.scale.com/leaderboard/swe_bench_pro_public"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/ScaleAI/SWE-bench_Pro"
+    },
+    {
+      "kind": "site",
+      "url": "https://labs.scale.com/leaderboard/swe_bench_pro_public_v2"
     }
   ],
   "related_benchmarks": [
@@ -85,357 +424,311 @@
     "deepswe",
     "aider"
   ],
-  "content_status": "reviewed",
-  "last_verified_at": "2026-11-10",
   "profile": {
-    "template": "benchmark-profile/v1",
-    "verified_at": "2026-11-10",
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-26",
     "sources": [
       {
         "id": "paper",
         "kind": "paper",
-        "title": "SWE-Bench Pro: Can AI Agents Solve Long-Horizon Software Engineering Tasks?（arXiv:2509.16941 v2，2025-11-14）",
+        "title": "SWE-Bench Pro: Can AI Agents Solve Long-Horizon Software Engineering Tasks?（arXiv:2509.16941，v2，2025-11-14）",
         "url": "https://arxiv.org/abs/2509.16941",
-        "accessed": "2026-11-10"
+        "accessed": "2026-11-26"
       },
       {
         "id": "repo",
         "kind": "repo",
-        "title": "scaleapi/SWE-bench_Pro-os（官方代码与数据，含 V2 说明与更新日志）",
         "url": "https://github.com/scaleapi/SWE-bench_Pro-os",
-        "accessed": "2026-11-10"
+        "title": "scaleapi/SWE-bench_Pro-os（官方代码、任务目录与 News 更新记录）",
+        "accessed": "2026-11-26"
       },
       {
         "id": "v2",
         "kind": "docs",
-        "title": "SWE-bench Pro V2 README（v2.0.0，2026-09-22 提交）",
+        "title": "SWE-bench Pro V2 README（v2/README.md，含锁定协议、HARD-51 与发布门禁）",
         "url": "https://github.com/scaleapi/SWE-bench_Pro-os/blob/main/v2/README.md",
-        "accessed": "2026-11-10"
+        "accessed": "2026-11-26"
+      },
+      {
+        "id": "dataset",
+        "kind": "dataset",
+        "title": "ScaleAI/SWE-bench_Pro（Hugging Face 数据集卡，V2 为默认配置）",
+        "url": "https://huggingface.co/datasets/ScaleAI/SWE-bench_Pro",
+        "accessed": "2026-11-26"
+      },
+      {
+        "id": "leaderboard",
+        "kind": "leaderboard",
+        "title": "SWE-Bench Pro Leaderboard（labs.scale.com，公开集 / 商业集）",
+        "url": "https://labs.scale.com/leaderboard/swe_bench_pro",
+        "accessed": "2026-11-26"
+      },
+      {
+        "id": "lb-v2",
+        "kind": "leaderboard",
+        "title": "SWE-Bench Pro V2 Leaderboard（labs.scale.com，Full / HARD 两个标签）",
+        "url": "https://labs.scale.com/leaderboard/swe_bench_pro_public_v2",
+        "accessed": "2026-11-26"
+      },
+      {
+        "id": "blog",
+        "kind": "blog",
+        "title": "SWE-Bench Pro: Raising the Bar for Agentic Coding（Scale AI 官方博客，2025-09-19）",
+        "url": "https://scale.com/blog/swe-bench-pro",
+        "accessed": "2026-11-26"
       },
       {
         "id": "oai-retire",
         "kind": "blog",
-        "title": "OpenAI：Why we no longer evaluate SWE-bench Verified（2026-02-23，推荐改用 SWE-bench Pro）",
+        "title": "OpenAI：Why we no longer evaluate SWE-bench Verified（2026-02，建议改报 SWE-bench Pro）",
         "url": "https://openai.com/index/why-we-no-longer-evaluate-swe-bench-verified/",
-        "accessed": "2026-11-10"
+        "accessed": "2026-11-26"
       },
       {
         "id": "oai-audit",
         "kind": "blog",
-        "title": "OpenAI：Separating signal from noise in coding evaluations（2026-07-08，审计 SWE-Bench Pro）",
+        "title": "OpenAI：Separating signal from noise in coding evaluations（2026-07，审计 SWE-Bench Pro）",
         "url": "https://openai.com/index/separating-signal-from-noise-coding-evaluations/",
-        "accessed": "2026-11-10"
+        "accessed": "2026-11-26"
       }
     ],
-    "sections": {
-      "overview": {
-        "text": "SWE-Bench Pro 是 Scale AI 在 SWE-bench 思路上做的「更难、更抗污染」版本：任务来自 41 个活跃维护的商业应用、B2B 服务和开发工具仓库，需要跨多个文件做大改动；公开集只用 GPL 等强 copyleft 许可的仓库，另有不公开的留存集和来自初创公司的商业私有集。",
+    "header": {
+      "publisher": {
+        "v": "Scale AI（论文署名单位；V2 公开集与 Reflection 共同开发）",
         "cite": [
-          "paper@Abstract",
-          "paper@§1"
+          "paper@作者署名",
+          "lb-v2"
         ]
       },
-      "origin": {
-        "facts": [
-          {
-            "k": "机构",
-            "v": "Scale AI",
-            "cite": [
-              "paper@作者署名"
-            ]
-          },
-          {
-            "k": "共同一作",
-            "v": "Xiang Deng、Jeff Da",
-            "cite": [
-              "paper@作者署名"
-            ]
-          },
-          {
-            "k": "首发时间",
-            "v": "2025-09-21 提交 arXiv；v2 于 2025-11-14 更新",
-            "cite": [
-              "paper"
-            ]
-          }
-        ]
-      },
-      "measures": {
-        "items": [
-          {
-            "text": "测：长程、企业级的软件工程任务——专业工程师可能需要数小时到数天，参考解平均改动 107.4 行、涉及 4.1 个文件，每题至少 10 行改动。",
-            "cite": [
-              "paper@Abstract",
-              "paper@§1"
-            ]
-          },
-          {
-            "text": "任务描述经人工补充了「需求」和「接口」说明，目的是去掉歧义：测的是「给定清楚需求后能否实现」，而不是澄清需求的能力。",
-            "cite": [
-              "paper@§3.2",
-              "paper@§5 Issue Ambiguity"
-            ]
-          },
-          {
-            "text": "不测：Java、C++、Rust 等语言（作者承认覆盖不足）；代码质量、安全性、可维护性；团队协作场景。",
-            "cite": [
-              "paper@§7.1 Limitations",
-              "paper@§7.2 Future Work"
-            ]
-          }
-        ]
-      },
-      "composition": {
-        "facts": [
-          {
-            "k": "总题量",
-            "v": "1,865 题，来自 41 个仓库",
-            "cite": [
-              "paper@Abstract"
-            ]
-          },
-          {
-            "k": "公开集",
-            "v": "731 题（11 个 copyleft 仓库），题目与结果公开，发布在 Hugging Face",
-            "cite": [
-              "paper@§3.3"
-            ]
-          },
-          {
-            "k": "商业集",
-            "v": "276 题（18 个初创公司私有仓库），只公布结果、不公开代码",
-            "cite": [
-              "paper@§3.3"
-            ]
-          },
-          {
-            "k": "留存集",
-            "v": "858 题（12 个仓库），完全不公开，用于日后检测过拟合",
-            "cite": [
-              "paper@§3.3"
-            ]
-          },
-          {
-            "k": "语言",
-            "v": "Python、Go、JavaScript、TypeScript（分布不均匀）",
-            "cite": [
-              "paper@§6.1",
-              "paper@§7.1 Limitations"
-            ]
-          }
-        ]
-      },
-      "construction": {
-        "items": [
-          {
-            "text": "从仓库提交历史中取「修复前后」两次提交，测试补丁之外的改动作为参考解（gold patch），并用 fail-to-pass 与 pass-to-pass 测试验证。",
-            "cite": [
-              "paper@§4.1"
-            ]
-          },
-          {
-            "text": "排除 1–10 行的琐碎改动；每个仓库贡献 50–100 余题，避免模型因擅长某个仓库而占优。",
-            "cite": [
-              "paper@§1",
-              "paper@§3.1"
-            ]
-          },
-          {
-            "text": "人工增强：专家为每题撰写问题描述、需求清单和（可选）接口说明；多次运行参考测试，剔除不稳定（flaky）或与描述无关、过宽的测试。",
-            "cite": [
-              "paper@§4.1",
-              "paper@§4.2"
-            ]
-          },
-          {
-            "text": "抗污染设计：公开集只选强 copyleft（GPL）许可仓库，借助法律约束降低被纳入商业训练语料的概率；商业集代码从初创公司购买，保持私有。",
-            "cite": [
-              "paper@§3.1"
-            ]
-          }
-        ]
-      },
-      "scoring": {
-        "items": [
-          {
-            "text": "指标为 Pass@1 解决率：补丁通过全部 fail-to-pass 与 pass-to-pass 测试。",
-            "cite": [
-              "paper@§5 Results"
-            ]
-          },
-          {
-            "text": "论文统一使用 SWE-Agent 脚手架、最多 50 轮、所有模型同一提示词；模型版本截至 2025-09-18。",
-            "cite": [
-              "paper@§5"
-            ]
-          }
-        ]
-      },
-      "reading": {
-        "items": [
-          {
-            "text": "论文 v2 表 1（公开集 731 题）：Claude Sonnet 4.5 43.6%、Claude Sonnet 4 42.7%、GPT-5（high）41.8%；商业集（276 题）最高为 Claude Opus 4.1 17.8%——私有商业代码明显更难。",
-            "cite": [
-              "paper@Table 1",
-              "paper@Table 2"
-            ]
-          },
-          {
-            "text": "注意版本口径：v2 结论段仍写「Opus 4.1 与 GPT-5 约 23%」，与同版本表 1 的数字不一致；引用论文数字时要写明版本和数据集（公开集 / 商业集）。",
-            "cite": [
-              "paper@§8",
-              "paper@Table 1"
-            ]
-          },
-          {
-            "text": "OpenAI 统计公开集上前沿模型 8 个月内从 23.3% 升到 80.3%，进步很快，接近 Verified 当年的饱和轨迹。",
-            "cite": [
-              "oai-audit"
-            ]
-          },
-          {
-            "text": "约 30% 题目存在缺陷（见下），意味着公开集分数的有效上限明显低于 100%，高分段的差距同样要谨慎解读。",
-            "cite": [
-              "oai-audit"
-            ]
-          },
-          {
-            "text": "V1（731 题）与 V2（642 题）分数不可直接比较。V2 规定「锁定协议」：智能体阶段断网、禁用网页工具，每题 50 分钟，并在干净镜像上重新判分后报告；未声明协议的数字无法与之对齐。",
-            "cite": [
-              "v2"
-            ]
-          }
-        ]
-      },
-      "limitations": {
-        "items": [
-          {
-            "text": "题目缺陷：OpenAI 2026-07 审计公开集，自动流水线标出 200 题（27.4%）有问题，人工审核认定 249 题（34.1%）；问题包括测试过严、描述缺少测试要求的信息、测试覆盖不足（不完整的修复也能通过）、描述误导。OpenAI 估计约 30% 的题目有缺陷，并撤回此前「改用 SWE-bench Pro」的推荐。",
-            "cite": [
-              "oai-audit"
-            ]
-          },
-          {
-            "text": "污染：OpenAI 2026-02 的探测发现 Pro 也存在少量污染迹象，但明显少于 Verified，没有模型能逐字复现完整参考补丁。",
-            "cite": [
-              "oai-retire"
-            ]
-          },
-          {
-            "text": "依赖测试判定：正确但与原始测试不符的实现会被判错；语言覆盖不均。",
-            "cite": [
-              "paper@§7.1 Limitations"
-            ]
-          },
-          {
-            "text": "公开集仍然公开：copyleft 许可只是法律层面的阻碍，不能从技术上阻止被训练；留存集与商业集只能由 Scale 运行。",
-            "cite": [
-              "paper@§3.1",
-              "paper@§3.3"
-            ]
-          }
-        ]
-      },
-      "versions": {
-        "items": [
-          {
-            "text": "2025-09-21：论文 v1 与公开集发布；2025-11-14：论文 v2 更新结果表（加入 Claude Sonnet 4.5、Haiku 4.5 等）。",
-            "cite": [
-              "paper"
-            ]
-          },
-          {
-            "text": "2026-02-23：OpenAI 停止报告 SWE-bench Verified，推荐改报 SWE-bench Pro 公开集。",
-            "cite": [
-              "oai-retire"
-            ]
-          },
-          {
-            "text": "2026-07-08：OpenAI 审计后估计约 30% 题目有缺陷，撤回推荐。",
-            "cite": [
-              "oai-audit"
-            ]
-          },
-          {
-            "text": "2026-09-22：Scale 发布 SWE-bench Pro V2——公开集经再验证保留 642 题（11 个仓库，Harbor 任务格式），新增 HARD-51 难题子集；Hugging Face 默认配置改为 V2，原 731 题保留为 v1 配置。",
-            "cite": [
-              "repo",
-              "v2"
-            ]
-          }
-        ]
-      },
-      "official_results": {
-        "table": {
-          "as_of": "2026-11-10",
-          "columns": [
-            "来源",
-            "模型",
-            "解决率",
-            "数据集"
-          ],
-          "rows": [
-            [
-              "论文 v2 Table 1",
-              "Claude Sonnet 4.5",
-              "43.6%",
-              "公开集 731 题"
-            ],
-            [
-              "论文 v2 Table 1",
-              "Claude Sonnet 4",
-              "42.7%",
-              "公开集 731 题"
-            ],
-            [
-              "论文 v2 Table 1",
-              "GPT-5 (high)",
-              "41.8%",
-              "公开集 731 题"
-            ],
-            [
-              "论文 v2 Table 1",
-              "Claude Haiku 4.5",
-              "39.5%",
-              "公开集 731 题"
-            ],
-            [
-              "论文 v2 Table 1",
-              "Kimi K2 Instruct",
-              "27.7%",
-              "公开集 731 题"
-            ],
-            [
-              "论文 v2 Table 1",
-              "GPT-OSS 120B",
-              "16.2%",
-              "公开集 731 题"
-            ],
-            [
-              "论文 v2 Table 2",
-              "Claude Opus 4.1",
-              "17.8%",
-              "商业集 276 题"
-            ],
-            [
-              "论文 v2 Table 2",
-              "GPT-5 (high)",
-              "15.7%",
-              "商业集 276 题"
-            ],
-            [
-              "论文 v2 Table 2",
-              "GPT-4o",
-              "3.6%",
-              "商业集 276 题"
-            ]
-          ]
-        },
+      "first_release": {
+        "v": "2025-09-21（arXiv v1）；数据集在 Hugging Face 的正式版本 v1.0 标记为 2026-02-23",
         "cite": [
-          "paper@Table 1",
-          "paper@Table 2"
+          "paper",
+          "dataset@Changelog"
         ]
       }
+    },
+    "cites": {
+      "summary": [
+        "paper@Abstract",
+        "paper@§1",
+        "dataset@What changed in V2"
+      ],
+      "interpretation": [
+        "oai-audit",
+        "paper@§5 Issue Ambiguity",
+        "paper@§7.1 Limitations"
+      ]
+    },
+    "problem": {
+      "text": "SWE-bench Verified 的 500 题里有 161 题只需改 1–2 行，且前沿模型已做到 70% 以上，拉不开差距；同时宽松许可（MIT/Apache/BSD）的开源仓库大多可能已进训练语料。SWE-bench Pro 想用「强 copyleft 公开仓库 + 购买的私有商业仓库 + 长程多文件改动 + 人工增强题面」重新做出一个难而抗污染的基准。",
+      "cite": [
+        "paper@§1",
+        "oai-retire",
+        "leaderboard"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "论文发布时最好（v1 公开集 731 题）",
+        "value": "43.6%",
+        "note": "Claude Sonnet 4.5；同表 Claude Sonnet 4 42.7%、GPT-5 (high) 41.8%、Claude Haiku 4.5 39.5%、Kimi K2 Instruct 27.7%、GPT-OSS 120B 16.2%。口径为 SWE-Agent、最多 50 轮、模型版本截至 2025-09-18。商业集（276 题）最高为 Claude Opus 4.1 的 17.8%。",
+        "cite": [
+          "paper@Table 1",
+          "paper@Table 2",
+          "paper@§5"
+        ]
+      },
+      {
+        "label": "论文另一口径的最好成绩（50 轮 / 2 美元上限）",
+        "value": "25.9%",
+        "note": "GPT-5 (high)；同表 GPT-5 (medium) 23.3%、Opus 4.1 22.7%。这组用于失败模式分析，与主表不可混用——论文结论段的「约 23%」出自这一档。",
+        "cite": [
+          "paper@Table 5",
+          "paper@§6",
+          "paper@§8"
+        ]
+      },
+      {
+        "label": "官方榜单最高（v1 公开集 731 题）",
+        "value": "61.50%",
+        "note": "Muse Spark 1.1*（mini-swe-agent 脚手架，±3.10）；第 2 名 gpt-5.4 (xHigh)* 59.10%、第 3 名 Muse Spark* 55.00%。榜单注明非灰色条目为不限成本 + 250 轮。抓取于 2026-11-26。",
+        "cite": [
+          "leaderboard",
+          "leaderboard@Legend"
+        ]
+      },
+      {
+        "label": "官方榜单最高（V2 公开集 642 题，Full 标签）",
+        "value": "99.4%",
+        "note": "Claude Opus 5 (Claude Code) xhigh；第 2 名 Gemini 4 Argon (mini-swe-agent) high 99.22%、第 3 名 Claude Fable 5.1 (Claude Code) high 99.1%。锁定协议下 642 题公开集已接近饱和。",
+        "cite": [
+          "lb-v2"
+        ]
+      },
+      {
+        "label": "官方榜单最高（HARD-51 难子集）",
+        "value": "98.00%",
+        "note": "Claude Opus 5 (Claude Code) xhigh；同表 Claude Fable 5.1 (Claude Code) high 92.20%、Gemini 4 Argon (mini-swe-agent) high 92.16%，而 Claude Haiku 4.5 (Claude Code) xhigh 只有 25.50%——子集内部分差仍然明显。",
+        "cite": [
+          "lb-v2",
+          "v2@HARD-51"
+        ]
+      },
+      {
+        "label": "题目噪声参考线",
+        "value": "约 30% 题目被判定有缺陷",
+        "note": "OpenAI 审计：自动流水线 200/731（27.4%），五人工程师标注 249/731（34.1%）。本站据此推读：公开集的有效上限明显低于 100%，高分段几个点的差距要谨慎解读——这是本站的参考线，不是官方上限。",
+        "cite": [
+          "oai-audit",
+          "oai-audit@Methodology"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把论文结论段的「Opus 4.1 与 GPT-5 约 23%」和表 1 的 43.6% / 42.7% 混用——23% 那组出自 50 轮 + 2 美元上限的分析口径（Table 5），表 1 才是主结果。",
+        "cite": [
+          "paper@§8",
+          "paper@Table 1",
+          "paper@Table 5"
+        ]
+      },
+      {
+        "text": "把 v1（731 题）和 V2（642 题）的分数排进同一张表——V2 剔了 89 题、重写 529 道问题陈述、修订 214 个测试补丁与 38 个参考补丁，两者不可直接比较。",
+        "cite": [
+          "dataset@What changed in V2",
+          "v2@What changed from v1"
+        ]
+      },
+      {
+        "text": "把「测试通过」读成「代码写得对、写得好」——判分只看 fail-to-pass 与 pass-to-pass，不评估质量、安全与可维护性；覆盖不足的测试甚至会让不完整的修复通过。",
+        "cite": [
+          "paper@§7.1 Limitations",
+          "paper@§7.2 Future Work",
+          "oai-audit"
+        ]
+      },
+      {
+        "text": "把 V2 公开集接近满分读成「基准已经没用了」——同协议的 HARD-51 上 Claude Haiku 4.5 只有 25.50%，且严格测试与低覆盖测试仍会同时制造假失败与假通过；真正的问题是有效上限被题目缺陷压低。",
+        "cite": [
+          "lb-v2",
+          "oai-audit",
+          "v2@HARD-51"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "Scale AI（论文署名单位为 Scale AI）；V2 公开集与 Reflection 共同开发",
+        "cite": [
+          "paper@作者署名",
+          "lb-v2"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "共同一作 Xiang Deng、Jeff Da；其余署名作者包括 Edwin Pan、Yannis Yiming He、Charles Ide、Kanak Garg、Niklas Lauffer、Sean Hendryx、Zifan Wang、Vijay Bharadwaj 等 21 人",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2025-09-21 arXiv v1 → 2025-11-14 arXiv v2 → 2026-02-23 Hugging Face v1.0（731 题）→ 2026-09-22 V2（642 题为默认配置，新增 HARD-51 与锁定协议）",
+        "cite": [
+          "paper",
+          "dataset@Changelog",
+          "repo@News"
+        ]
+      },
+      {
+        "k": "首发时间的口径分歧",
+        "v": "论文（2025-09/11）称 731 题公开集「已发布到 HuggingFace」，而 Hugging Face 数据集卡的变更记录把 731 题发布标为 2026-02-23，两者相差约 5 个月；本档案采用数据集卡日期作为公开发布日，论文表述视为基准完成与结果发布的证据",
+        "cite": [
+          "paper@§3.3",
+          "dataset@Changelog"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "数据集在 Hugging Face（ScaleAI/SWE-bench_Pro，V2 / hard / v1 三个配置，共 1,424 行）；代码与任务目录在 GitHub（MIT 许可），V2 为 Harbor 任务格式、镜像公开在 ghcr.io/scaleapi/swe-bench_pro-v2；v1 复现管线（swe_bench_pro_eval.py、Docker Hub 镜像）保留",
+        "cite": [
+          "dataset",
+          "repo",
+          "v2",
+          "dataset@Fields"
+        ]
+      },
+      {
+        "k": "榜单",
+        "v": "公开集与商业集分别维护两个榜单；V2 另有独立榜单并带 Full / HARD 两个标签",
+        "cite": [
+          "blog@Learn More",
+          "leaderboard",
+          "lb-v2"
+        ]
+      },
+      {
+        "k": "业界采用",
+        "v": "OpenAI 2026-02 停止报告 SWE-bench Verified 并建议改报 SWE-bench Pro 公开集；2026-07 审计后撤回该建议",
+        "cite": [
+          "oai-retire",
+          "oai-audit"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-26",
+        "columns": [
+          "来源",
+          "模型",
+          "解决率(%)",
+          "数据集 / 口径"
+        ],
+        "rows": [
+          ["论文 Table 1", "Claude Sonnet 4.5", "43.6", "公开集 731 题；SWE-Agent，≤50 轮"],
+          ["论文 Table 1", "Claude Sonnet 4", "42.7", "公开集 731 题；同上"],
+          ["论文 Table 1", "OpenAI GPT-5 (high)", "41.8", "公开集 731 题；同上"],
+          ["论文 Table 1", "Claude Haiku 4.5", "39.5", "公开集 731 题；同上"],
+          ["论文 Table 1", "Kimi K2 Instruct", "27.7", "公开集 731 题；同上"],
+          ["论文 Table 1", "OpenAI GPT-OSS 120B", "16.2", "公开集 731 题；同上"],
+          ["论文 Table 2", "Claude Opus 4.1", "17.8", "商业集 276 题"],
+          ["论文 Table 2", "OpenAI GPT-5 (high)", "15.7", "商业集 276 题"],
+          ["论文 Table 2", "OpenAI GPT-5 (medium)", "14.9", "商业集 276 题"],
+          ["论文 Table 2", "Claude Sonnet 4", "9.1", "商业集 276 题"],
+          ["论文 Table 3", "OpenAI GPT-5 (high)", "25.9 → 8.4", "公开集；含增强 vs 仅问题陈述"],
+          ["论文 Table 3", "Claude Opus 4.1", "22.7 → 8.2", "公开集；含增强 vs 仅问题陈述"],
+          ["论文 Table 5", "OpenAI GPT-5 (high)", "25.9", "公开集 731 题；≤50 轮、2 美元上限"],
+          ["论文 Table 5", "OpenAI GPT-5 (medium)", "23.3", "公开集 731 题；同上"],
+          ["论文 Table 5", "Claude Opus 4.1", "22.7", "公开集 731 题；同上"],
+          ["论文 Table 5", "OpenAI GPT-4o", "4.9", "公开集 731 题；同上"],
+          ["论文 Table 5", "Qwen-3 32B", "3.4", "公开集 731 题；同上"],
+          ["官方榜单（v1 公开集）", "Muse Spark 1.1*", "61.50", "公开集 731 题；mini-swe-agent，不限成本 250 轮"],
+          ["官方榜单（v1 公开集）", "gpt-5.4 (xHigh)*", "59.10", "公开集 731 题；同上"],
+          ["官方榜单（v1 公开集）", "claude-opus-4-6 (thinking)*", "51.90", "公开集 731 题；同上"],
+          ["官方榜单（V2 Full）", "Claude Opus 5 (Claude Code) xhigh", "99.4", "V2 642 题；锁定协议"],
+          ["官方榜单（V2 Full）", "Gemini 4 Argon (mini-swe-agent) high", "99.22", "V2 642 题；锁定协议"],
+          ["官方榜单（V2 Full）", "Claude Fable 5.1 (Claude Code) high", "99.1", "V2 642 题；锁定协议"],
+          ["官方榜单（V2 HARD）", "Claude Opus 5 (Claude Code) xhigh", "98.00", "HARD-51；锁定协议"],
+          ["官方榜单（V2 HARD）", "Claude Fable 5.1 (Claude Code) high", "92.20", "HARD-51；锁定协议"],
+          ["官方榜单（V2 HARD）", "Claude Haiku 4.5 (Claude Code) xhigh", "25.50", "HARD-51；锁定协议"]
+        ]
+      },
+      "cite": [
+        "paper@Table 1",
+        "paper@Table 2",
+        "paper@Table 3",
+        "paper@Table 5",
+        "leaderboard",
+        "lb-v2"
+      ]
     }
   }
 }

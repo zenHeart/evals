@@ -1,40 +1,671 @@
 {
   "id": "biomysterybench",
   "name": "BioMysteryBench",
-  "full_name": null,
+  "full_name": "BioMysteryBench（生物信息学解谜基准）",
   "aliases": [],
   "status": null,
   "categories": [
     "knowledge",
     "reasoning"
   ],
-  "summary": "Anthropic 生信科研分析评测：真实数据集解谜",
-  "interpretation": "Anthropic 自研生信解谜评测：99 题来自真实测序数据、答案由实验/临床事实锚定（其中 76 题人类专家可解、23 题专家组未能解出），准确率越高越好；官方称当前模型已与人类专家相当，在人类难解集上最高解出约 30%。",
-  "measures": [],
-  "does_not_measure": [],
+  "summary": "BioMysteryBench 是 Anthropic 的生信「解谜」评测：把真实测序/质谱数据剥掉元数据后交给智能体，让它用命令行工具、Python/R 和公开生物数据库反推出一个客观事实（比如「这份 scRNA-seq 来自哪个器官」），只按最终答案判分，不规定分析路径。",
+  "interpretation": "高分说明模型能在真实、杂乱、无标注的生物数据上自主完成多步分析并得出可验证的客观结论；但它不说明模型会选对科研问题，也不说明难题上的答对是稳定的——同一模型在人类可解集上 77.4%，在 5 名专家都解不出的题上只有 23.5%，且难解集上近一半的「答对」只偶然复现一两次。",
+  "measures": [
+    {
+      "area": "DNA / RNA 测序（WGS、scRNA-seq、RNA-seq、ATAC-seq、Hi-C）",
+      "focus": "示例：从 WGS 序列判断样本 X 的父母分别是谁；判断这份 scRNA-seq 数据集来自哪个器官；实验组相比对照组敲除了哪个基因",
+      "share": "未披露（原文只说以测序数据为主，未给各类数量）",
+      "format": "简短客观答案（器官名、基因符号、样本编号、参考基因组版本等），由裁判按 answer_rubric 判定",
+      "cite": [
+        "site@Example questions",
+        "dataset-full@Problems in this set"
+      ]
+    },
+    {
+      "area": "表观遗传（甲基化、ChIP-seq）",
+      "focus": "示例：给出未知细胞类型的 H3K27ac ChIP-seq peaks，从候选里识别细胞类型；判断哪些 bigWig 文件来自 ChIP 样本、哪些来自 input 对照",
+      "share": "未披露",
+      "format": "简短客观答案（细胞类型、组蛋白修饰名、文件分组）",
+      "cite": [
+        "site@Example questions",
+        "dataset-full@Problems in this set"
+      ]
+    },
+    {
+      "area": "宏基因组 / 微生物组",
+      "focus": "示例：这条测序数据里是什么细菌（要求给出科学名）；样本里被特意掺入了哪种细菌基因组",
+      "share": "未披露",
+      "format": "简短客观答案（属名/种名）",
+      "cite": [
+        "dataset-full@Problems in this set"
+      ]
+    },
+    {
+      "area": "蛋白质组 / 代谢组",
+      "focus": "示例：根据洗脱曲线计算纯化蛋白的观测分子量；根据非靶向质谱数据判断患者用过哪种母体药物",
+      "share": "未披露（原文称 also included several questions，未给数量）",
+      "format": "简短客观答案（数值或药物名）",
+      "cite": [
+        "site@Example questions",
+        "dataset-full@Problems in this set"
+      ]
+    },
+    {
+      "area": "其他真实数据类型（晶体结构、微阵列、基因型数据等；本站按数据集卡归类的残余类）",
+      "focus": "示例：这个晶体结构属于哪个生物（要求二名法）；Affymetrix 小鼠基因组 430 2.0 微阵列数据的表达签名来自哪种组织；把 60 个个体的基因型数据聚类成 5 个群体",
+      "share": "未披露",
+      "format": "简短客观答案（物种名、组织名、聚类编号）",
+      "cite": [
+        "dataset@Problems in this preview",
+        "dataset-full@Problems in this set"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "分析路径与科研方法的质量：官方明确只按最终答案判分，不按模型走过的分析路径打分",
+      "cite": [
+        "site@Benchmarking models on verifiable biological tasks with BioMysteryBench"
+      ]
+    },
+    {
+      "text": "开放式科研结论与主观判断：出题规则要求答案来自数据的可控客观属性或经正交验证的元数据，而不是科学家的结论",
+      "cite": [
+        "site@Benchmarking models on verifiable biological tasks with BioMysteryBench"
+      ]
+    },
+    {
+      "text": "湿实验与长时程科研流程：任务在容器里跑命令行工具和数据库查询，不涉及实验操作，第三方运行还设了 200 个 agent turn 与 4 小时墙钟上限",
+      "cite": [
+        "vals@Methodology"
+      ]
+    },
+    {
+      "text": "模型是否知道自己不会：指标只有准确率，失败时是「自信地答错」还是表达不确定，要靠第三方用裁判额外分析才看得见",
+      "cite": [
+        "vals@Model behavior"
+      ]
+    }
+  ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
+    "sample_count": 90,
+    "splits": [
+      "human-solvable：73 题（v11，2026-07-06）",
+      "human-difficult：17 题（v11，2026-07-06）",
+      "公开预览集：5 题（Hugging Face BioMysteryBench-preview）"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "expert-authored（领域专家基于真实公开数据构造；数据文件经匿名化并剥除 accession-ID）",
+    "public_sample": true,
+    "totals": "现行 v11 共 90 题 = 73 题人类可解 + 17 题人类困难；首发 v8 为 99 题（76 + 23）。题目为英文，答案由 answer_rubric 规定；完整 90 题需在 Hugging Face 申请（仅限评测），公开可下载的只有 5 题预览。",
+    "cite": [
+      "changelog@v11",
+      "dataset-full",
+      "dataset"
+    ],
+    "construction": [
+      {
+        "k": "出题原则",
+        "text": "每位出题专家先取一个真实数据集，再围绕该数据的「可控、客观属性」出题，而不是出不可验证的科学结论；官方称这样可以在不要求题目人类可解的前提下造题。",
+        "cite": [
+          "site@Benchmarking models on verifiable biological tasks with BioMysteryBench"
+        ]
+      },
+      {
+        "k": "数据匿名化",
+        "text": "题目只提供剥掉元数据的生物数据文件（样本来源等信息被隐去），源码数据集无法被直接查到时即视为通过；v8 发布时还专门清掉了 16 题预置数据里泄漏的 accession-ID。",
+        "cite": [
+          "dataset-full",
+          "changelog@v8"
+        ]
+      },
+      {
+        "k": "信号验证",
+        "text": "每位出题人必须提交一个验证笔记本，证明要问的信号确实存在于数据里（哪怕从零找到它很难）。",
+        "cite": [
+          "site@Example questions"
+        ]
+      },
+      {
+        "k": "人类基线",
+        "text": "每题交给至多 5 名领域专家从零作答；只要有一人答对就标为 human-solvable，没人答对标为 human-difficult。",
+        "cite": [
+          "site@Human baselining",
+          "dataset-full@Contents"
+        ]
+      },
+      {
+        "k": "质检与剔除",
+        "text": "首发时剔除了 4 道「题目本身有问题」的题；2026 年 6 月的答案键审计又请生信专家和多轮模型重跑每一题，剔除 9 题、修订 24 题，题目数从 99 降到 90。",
+        "cite": [
+          "site@Human-difficult",
+          "changelog@v11"
+        ]
+      },
+      {
+        "k": "反作弊与判分",
+        "text": "禁止通过 GEO/SRA/ENA/BioProject accession 反查原始数据集；v11 起每题的 answer_rubric 都带一句 all-or-nothing 判分：作弊或答错都记 0。",
+        "cite": [
+          "dataset-full@Rules",
+          "changelog@v11"
+        ]
+      }
+    ]
   },
-  "metrics": [],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [],
-  "notes": "Anthropic 自研并公开发布方法页；Fable 5 引用",
+  "default_protocol": {
+    "raw": "模型拿到题目后被放进一个容器：预装少量规范生信工具，可以用 pip/conda 再装工具，并被允许访问 NCBI、Ensembl 等数据库下载参考基因组等资源；只对最终提交的答案判分，不规定分析路径。官方结果图按每题 5 次尝试取平均，误差棒用题目内 bootstrap 采样。",
+    "cite": [
+      "site@Benchmarking models on verifiable biological tasks with BioMysteryBench",
+      "site@Human-solvable",
+      "site@Human-difficult"
+    ],
+    "variants": [
+      {
+        "text": "题集版本：v8 首发 99 题 vs v11 现行 90 题（剔除 9 题、修订 24 题，rubric 判分也改写），两个版本的分数不能直接比。",
+        "cite": [
+          "changelog@v11"
+        ]
+      },
+      {
+        "text": "子集：human-solvable（73）与 human-difficult（17）分开报；官方自己就显示同一模型从 77.4% 掉到 23.5%，合并成一个总分会掩盖这个塌陷。",
+        "cite": [
+          "site@Claude's take on AI for science"
+        ]
+      },
+      {
+        "text": "尝试次数与裁判：官方按每题 5 次尝试平均；Vals AI 用 Terminus 2 harness + openai/gpt-5.6-terra 裁判、按 3 次完整运行取均值，并把被生物内容过滤器拒答的任务计为失败。",
+        "cite": [
+          "vals@Methodology",
+          "vals@Evaluation"
+        ]
+      },
+      {
+        "text": "harness 与预算：第三方会固定一个中性 harness 并限预算（Vals AI：Terminus 2，环境限 200 个 agent turn、4 小时墙钟时间）；换 harness 或放宽预算都会改变分数。",
+        "cite": [
+          "vals@Methodology"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "accuracy",
+      "name": "准确率",
+      "direction": "越高越好",
+      "description": "每题由裁判按 answer_rubric 判定：完全接受记 1，答错 / 拒答 / 运行失败记 0，再在题目集上取平均。官方发布图按每题 5 次尝试平均，误差棒用 bootstrap。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "site@Human-solvable",
+        "site@Human-difficult",
+        "changelog@v11",
+        "vals@Methodology"
+      ]
+    },
+    {
+      "id": "solve-consistency",
+      "name": "稳定解出率（5 次里至少对 4 次）",
+      "direction": "越高越好",
+      "description": "在模型解出的题目里，5 次尝试中至少对 4 次的题目占比，用来区分「真的会」和「碰巧走对一次」。官方复盘给出 Opus 4.6 在人类可解集上为 86%，在人类困难集上降到 44%。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "site@Claude's take on AI for science"
+      ]
+    }
+  ],
+  "versions": [
+    {
+      "id": "v8",
+      "date": "2026-04-28",
+      "label": "初始公开发布：99 题（76 人类可解 + 23 人类困难）；预置数据清掉 16 题的 accession-ID 泄漏，判分规则改写",
+      "cite": [
+        "changelog@v8",
+        "site@Human-solvable",
+        "site@Human-difficult"
+      ]
+    },
+    {
+      "id": "post",
+      "date": "2026-04-29",
+      "label": "Anthropic 发布方法页与首批结果（Opus 4.6 / Sonnet 4.6 / Mythos Preview）",
+      "cite": [
+        "site"
+      ]
+    },
+    {
+      "id": "v11",
+      "date": "2026-07-06",
+      "label": "答案键审计后 99 → 90 题（73 人类可解 + 17 人类困难）：剔除 9 题、修订 24 题，answer_rubric 改为 all-or-nothing 判分",
+      "cite": [
+        "changelog@v11",
+        "dataset-full"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "答案键错误（已实证并修正）",
+      "impact": "2026 年 6 月的审计用专家重跑 + 多轮模型重跑 + 对照底层数据，发现多道题的答案键与数据矛盾：hb004（数据拼出完整狗线粒体基因组、零条人源线粒体读段）、hb011（R1 与 R2 读长分布相同，「110/112」是把众数和中位数混在一起算出来的）、hb014（键写单倍群 L0，所有复跑都得 H5b）、hb036（真菌 ITS 数据里不可能有所问的细菌）、hb040（宿主角膜转录组没有病毒读段，无法认定 SARS-CoV-2）、hb027（173/217 的病例对照划分无法从未标注数据恢复）。共剔除 9 题、修订 24 题。",
+      "severity": "高",
+      "response": "官方做完全量审计后在 CHANGELOG 逐条写明剔除理由与修订内容，数据集卡标注 v11；未披露参与审计的专家人数。",
+      "reader": "看到 2026-07 之前的 BioMysteryBench 分数，先确认是 99 题口径还是 90 题口径，两者不能直接比。",
+      "cite": [
+        "changelog@v11",
+        "dataset-full"
+      ]
+    },
+    {
+      "issue": "评测口径不统一（版本 / 子集 / harness / 裁判 / 尝试次数）",
+      "impact": "官方按每题 5 次尝试平均、分两个子集报；Vals AI 用 Terminus 2 harness + openai/gpt-5.6-terra 裁判、按 3 次完整运行取均值，并把被生物内容过滤器拒答的任务计为失败；厂商自报的分数各自带推理档位与工具配置（DataLearner 榜单逐行标注「思考水平」与「工具」）。同一模型在不同口径下会差出好几个点。",
+      "severity": "高",
+      "response": "Vals AI 公开了方法学（harness、环境工具、200 turn / 4 小时上限、裁判模型、计分规则）；Anthropic 在方法页分别给出两个子集的图与误差棒。",
+      "reader": "比较两个分数前先对齐四件事：题集版本、子集、harness 与裁判、尝试次数。",
+      "cite": [
+        "vals@Methodology",
+        "vals@Evaluation",
+        "site@Claude's take on AI for science",
+        "datalearner"
+      ]
+    },
+    {
+      "issue": "人类困难集的「不可判定性」",
+      "impact": "对人和模型都没解出的题，永远无法区分「不可能」和「极难」；验证笔记本只保证信号存在于数据中，不保证能从零推导出答案。v8 时这类题有 23 道，v11 审计后仍有 17 道。",
+      "severity": "中",
+      "response": "官方在方法页明确写出这一局限，并要求出题人提交验证笔记本；对「题目本身坏了」的题（v8 的 4 道）直接剔除。",
+      "reader": "难解集上的低分既可能说明模型不行，也可能说明题不可解；反过来，30% 的解出率也不等于「接近解决」。",
+      "cite": [
+        "site@Knowing when you don't know",
+        "changelog@v11"
+      ]
+    },
+    {
+      "issue": "难解集上的「答对」不稳定",
+      "impact": "官方复盘：Opus 4.6 在人类可解集上解出的题有 86% 能 5 次里至少对 4 次，在人类困难集上降到 44%，「只对 1–2 次」的脆弱胜利从 9% 升到 44%；Sonnet 4.6 同向变化更陡（75% → 22%；9% → 56%）。",
+      "severity": "中",
+      "response": "官方把这部分分析交给 Claude Mythos Preview 自己做并采信其结论，写成方法页的一节。",
+      "reader": "难解集上的单个准确率数字要打折看；看 ≥4/5 稳定解出率比看平均值更接近「会没会」。",
+      "cite": [
+        "site@Claude's take on AI for science"
+      ]
+    },
+    {
+      "issue": "生物内容过滤器造成的任务失败",
+      "impact": "第三方榜单记录：被生物内容过滤器拒答的任务按失败计分；Claude Opus 5 的失败尝试里有 9% 是 refusal/filter。这把安全策略的影响混进了能力分数。",
+      "severity": "中",
+      "response": "Vals AI 在方法学中明示该计分规则并单列 refusal/filter 一栏；Anthropic 方法页未讨论这一点。",
+      "reader": "比较不同厂商的分数时，注意拒答是否计零，以及各厂过滤强度不同。",
+      "cite": [
+        "vals@Evaluation",
+        "vals@Model behavior"
+      ]
+    },
+    {
+      "issue": "完整题集不可自由获取，第三方难以完整复现",
+      "impact": "完整 90 题需在 Hugging Face 申请，且条款禁止用题目与 rubric 训练、微调、蒸馏；公开可下载的只有 5 题预览。复现实验只能依赖第三方运行或厂商自报。",
+      "severity": "低",
+      "response": "任务材料以 CC BY 4.0 发布，数据文件仍受原仓库数据使用政策约束；预览集公开 5 题。",
+      "reader": "引用具体分数时注明运行方（Anthropic / Vals AI / 厂商自报）与题集版本。",
+      "cite": [
+        "dataset-full",
+        "dataset"
+      ]
+    }
+  ],
+  "notes": "Anthropic 自研并公开发布方法页；完整题集需在 Hugging Face 申请（仅限评测用途），公开预览 5 题",
   "official_sources": [
     {
       "kind": "site",
       "url": "https://www.anthropic.com/research/Evaluating-Claude-For-Bioinformatics-With-BioMysteryBench"
     },
     {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/Anthropic/BioMysteryBench-full"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/Anthropic/BioMysteryBench-preview"
+    },
+    {
       "kind": "site",
       "url": "https://www.anthropic.com/news/claude-fable-5-mythos-5"
     }
   ],
-  "related_benchmarks": [],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "related_benchmarks": [
+    "gpqa",
+    "lab-bench",
+    "bixbench",
+    "terminal-bench-science",
+    "hlehle",
+    "biobasicsbench"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-26",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-26",
+    "sources": [
+      {
+        "id": "site",
+        "kind": "site",
+        "title": "Evaluating Claude with BioMysteryBench — Anthropic（2026-04-29）",
+        "url": "https://www.anthropic.com/research/Evaluating-Claude-For-Bioinformatics-With-BioMysteryBench",
+        "accessed": "2026-11-26"
+      },
+      {
+        "id": "dataset",
+        "kind": "dataset",
+        "title": "Anthropic/BioMysteryBench-preview — Hugging Face 数据集卡（公开 5 题预览）",
+        "url": "https://huggingface.co/datasets/Anthropic/BioMysteryBench-preview",
+        "accessed": "2026-11-26"
+      },
+      {
+        "id": "dataset-full",
+        "kind": "dataset",
+        "title": "Anthropic/BioMysteryBench-full — Hugging Face 数据集卡（完整 90 题，需申请）",
+        "url": "https://huggingface.co/datasets/Anthropic/BioMysteryBench-full",
+        "accessed": "2026-11-26"
+      },
+      {
+        "id": "changelog",
+        "kind": "docs",
+        "title": "BioMysteryBench CHANGELOG.md（v8 / v11）",
+        "url": "https://huggingface.co/datasets/Anthropic/BioMysteryBench-preview/resolve/main/CHANGELOG.md",
+        "accessed": "2026-11-26"
+      },
+      {
+        "id": "vals",
+        "kind": "leaderboard",
+        "title": "Vals AI — BioMysteryBench Leaderboard and Methodology（更新至 2026-11-19）",
+        "url": "https://www.vals.ai/benchmarks/biomysterybench",
+        "accessed": "2026-11-26"
+      },
+      {
+        "id": "datalearner",
+        "kind": "blog",
+        "title": "DataLearnerAI — BioMysteryBench 评测基准（2026-11-19 更新）",
+        "url": "https://www.datalearner.com/benchmarks/biomysterybench",
+        "accessed": "2026-11-26"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Anthropic",
+        "cite": [
+          "site"
+        ]
+      },
+      "first_release": {
+        "v": "2026-04-29（方法页发布；数据集 v8 标注 2026-04-28）",
+        "cite": [
+          "site",
+          "changelog@v8"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "site@Benchmarking models on verifiable biological tasks with BioMysteryBench",
+        "dataset-full"
+      ],
+      "interpretation": [
+        "site@Claude's take on AI for science",
+        "site@Knowing when you don't know"
+      ]
+    },
+    "problem": {
+      "text": "MMLU-Pro、GPQA、LAB-Bench 考的是脱离工具的知识与推理；BLADE、BixBench、SciGym 虽然用上了生物数据，但要么只比对分析步骤是否像科学家，要么依赖模拟器里的受控噪声。官方认为还没有一个「智能体式科学基准」达到 SWE-bench 在软件工程那样的地位，而生物数据嘈杂、研究决策主观、又有大量人类还没解出的问题，这三件事让基准特别难做。BioMysteryBench 的做法是：用真实杂乱数据，但把答案锚在数据的客观属性上，从而既能自由发挥分析方法，又能自动核分。",
+      "cite": [
+        "site@Science is challenging, and so is evaluating it",
+        "site@Benchmarking models on verifiable biological tasks with BioMysteryBench"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机 / 无依据基线",
+        "value": "论文未给出",
+        "note": "答案是自由形式的短答案（物种名、基因符号、样本编号等），没有选项集；论文与数据集卡都没有给随机基线，本站也不推算。",
+        "cite": [
+          "dataset-full@Contents"
+        ]
+      },
+      {
+        "label": "人类专家基线",
+        "value": "73/90 题至少一名专家解出（v11；首发时为 76/99）",
+        "note": "官方只用「至多 5 名领域专家中至少一人答对」给题目打 human-solvable 标签，没有给出专家的聚合准确率，也没有 5 人全错时的人类上限。",
+        "cite": [
+          "site@Human baselining",
+          "changelog@v11"
+        ]
+      },
+      {
+        "label": "论文发布时最好",
+        "value": "77.4%（Claude Opus 4.6，人类可解集）",
+        "note": "方法页的复盘段落在讲 Opus 4.6 时写出「the 77.4%→23.5% headline drop」，即人类可解集 77.4%、人类困难集 23.5%；官方图按每题 5 次尝试平均。方法页另称 Claude Mythos Preview 在人类困难集上的解出率上限定为 30%。",
+        "cite": [
+          "site@Claude's take on AI for science",
+          "site@Human-difficult"
+        ]
+      },
+      {
+        "label": "Anthropic 官方榜单",
+        "value": "未披露（官方只发方法页与图，未维护公开榜单）",
+        "note": "方法页的结果以图形式给出，没有可引用的数值表，也没有持续更新的官方榜单页。",
+        "cite": [
+          "site@Human-solvable"
+        ]
+      },
+      {
+        "label": "第三方榜单最高",
+        "value": "83.70%（Claude Fable 5.2，Vals AI，2026-11-19）",
+        "note": "Vals AI 口径：Terminus 2 harness、openai/gpt-5.6-terra 裁判、3 次完整运行均值、200 turn / 4 小时上限。DataLearner 另收录 Qwen4-Max 85.00（2026-11-16）位列其榜首，两个榜口径不同，不要混排。",
+        "cite": [
+          "vals",
+          "datalearner"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      },
+      {
+        "label": "题目噪声参考线",
+        "value": "约 9%（v11 审计从 99 题里剔掉 9 题）",
+        "note": "这是本站按 v11 审计结果整理的参考线，不是官方上限：它只说明答案键本身会带来约一成题量的偏差，小于这个量级的分数差要先排除题目因素。",
+        "cite": [
+          "changelog@v11"
+        ]
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 99 题时代的分数和 90 题时代的分数排在一起比——v11 剔了 9 题、改了 24 题，rubric 判分也改了。",
+        "cite": [
+          "changelog@v11"
+        ]
+      },
+      {
+        "text": "把 human-solvable 和 human-difficult 合成一个总分——官方自己就显示 Opus 4.6 从 77.4% 掉到 23.5%。",
+        "cite": [
+          "site@Claude's take on AI for science"
+        ]
+      },
+      {
+        "text": "把「30% 解出率」读成模型已接近解决人类难题——这是 5 次尝试的平均解出率，且难解集上近一半的胜利只偶然复现一两次。",
+        "cite": [
+          "site@Human-difficult",
+          "site@Claude's take on AI for science"
+        ]
+      },
+      {
+        "text": "把「超过人类专家组」读成「超过人类专家」——人类基线的定义是至多 5 名专家中至少一人答对。",
+        "cite": [
+          "site@Human baselining",
+          "site@Continuing to benchmark AI for science"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "Anthropic（方法页归入 Science 团队，文中署名为 discovery 团队）",
+        "cite": [
+          "site"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "方法页只署名 Brianna（discovery 团队研究员），未给出完整姓名与作者名单",
+        "cite": [
+          "site"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2026-04-28 数据集 v8（99 题）→ 2026-04-29 方法页发布 → 2026-07-06 v11（90 题）→ 2026-11-19 Vals AI 榜单更新",
+        "cite": [
+          "changelog@v8",
+          "site",
+          "changelog@v11",
+          "vals"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "完整题集在 Hugging Face（Anthropic/BioMysteryBench-full，需申请、仅限评测）；公开预览 Anthropic/BioMysteryBench-preview（5 题）；方法页未给出官方评测代码仓库",
+        "cite": [
+          "dataset-full",
+          "dataset"
+        ]
+      },
+      {
+        "k": "许可与使用限制",
+        "v": "题目、rubric 与任务表述以 CC BY 4.0 发布，但访问条件要求不用于训练、微调或蒸馏；数据文件是公开存档提交件的匿名化派生件，仍受原仓库政策约束",
+        "cite": [
+          "dataset-full@License and terms of use"
+        ]
+      },
+      {
+        "k": "反作弊规则",
+        "v": "禁止查 GEO/SRA/ENA/BioProject accession 反查原始数据集；基因 ID 查询、序列注释、参考基因组下载、BLAST 等常规生信数据库使用是允许的",
+        "cite": [
+          "dataset-full@Rules"
+        ]
+      },
+      {
+        "k": "第三方跟踪",
+        "v": "Vals AI 维护榜单与方法学（Terminus 2 harness）；DataLearner 收录厂商自报分数并给出题量与指标卡",
+        "cite": [
+          "vals",
+          "datalearner"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-19",
+        "columns": [
+          "排名",
+          "模型",
+          "准确率",
+          "成本/次",
+          "Token/次",
+          "时长/次"
+        ],
+        "rows": [
+          [
+            "1",
+            "Claude Fable 5.2",
+            "83.70%",
+            "$1.68",
+            "930.78k",
+            "4m08s"
+          ],
+          [
+            "2",
+            "Claude Sonnet 5.5",
+            "81.11%",
+            "$2.95",
+            "8.30m",
+            "18m06s"
+          ],
+          [
+            "3",
+            "GPT-6.2 Astra",
+            "80.74%",
+            "$1.49",
+            "584.80k",
+            "8m30s"
+          ],
+          [
+            "4",
+            "Gemini 4 Neon",
+            "80.00%",
+            "$4.41",
+            "5.89m",
+            "18m24s"
+          ],
+          [
+            "5",
+            "GPT-6.1 Sol",
+            "79.63%",
+            "$0.37",
+            "567.87k",
+            "8m51s"
+          ],
+          [
+            "6",
+            "GPT-6 Astra",
+            "79.26%",
+            "$1.72",
+            "459.19k",
+            "4m46s"
+          ],
+          [
+            "7",
+            "Claude Opus 5.5",
+            "79.26%",
+            "$2.95",
+            "4.06m",
+            "12m19s"
+          ],
+          [
+            "8",
+            "Claude Opus 5",
+            "79.26%",
+            "$3.29",
+            null,
+            "36m36s"
+          ],
+          [
+            "9",
+            "GPT-6.2 Sol",
+            "77.78%",
+            "$0.34",
+            "454.10k",
+            "7m02s"
+          ],
+          [
+            "10",
+            "Gemini 4 Argon",
+            "76.30%",
+            "$5.71",
+            "2.27m",
+            "39m57s"
+          ]
+        ]
+      },
+      "cite": [
+        "vals"
+      ]
+    }
+  }
 }

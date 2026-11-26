@@ -1,41 +1,825 @@
 {
   "id": "swe-atlas-codebase-qna",
   "name": "SWE Atlas — Codebase QnA",
-  "full_name": null,
+  "full_name": "SWE Atlas · Codebase QnA（SWE Atlas 代码库问答子赛道）",
   "aliases": [],
-  "status": null,
+  "status": "active",
   "categories": [
     "coding"
   ],
-  "summary": "Scale AI SWE Atlas 代码库问答子赛道",
-  "interpretation": "SWE Atlas 的代码库问答子赛道（124 题），程序化检查 + rubric 混合评分、准确率附置信区间；Scale 官方榜单榜首 Opus 5 约 63.2%。",
-  "measures": [],
-  "does_not_measure": [],
+  "summary": "SWE Atlas 套件里第一条发布的赛道：124 道从 11 个生产级开源仓库（Go / Python / C / TypeScript）抽出来的代码库问答任务。agent 被关进挂着目标仓库的 Docker 容器，只拿到一句自然语言提问，得自己探索代码、把软件构建并运行起来做运行时分析，再交出详细答案；评分由 LLM 裁判对照专家写的 rubric 清单逐条判定，全部条目通过才算解决。",
+  "interpretation": "高分说明模型具备「先探索、再把程序跑起来验证、最后合成成答案」的深度代码理解能力，而不是只做静态阅读；论文的失败归因显示，最强模型的主要失分点是漏掉运行时证据、没覆盖全部子问题。但它只覆盖单轮问答这一种形态（不让改代码，改了直接判负），不测修 bug、写测试或重构，也不能外推到完整软件工程或当作投产认证。",
+  "measures": [
+    {
+      "area": "架构与系统设计（Architecture & system design）",
+      "focus": "示例（maddy 邮件服务器）：把 max_tries 调到很小并指向一个不响应的 SMTP 目标，连接尝试的确切顺序是什么、每次超时多久、哪些日志条目标记了重试与最终退信决定",
+      "share": "44 题（论文 Figure 1a；榜单标 35%）",
+      "format": "自然语言详细答案；程序化检查 + rubric 清单全过",
+      "cite": [
+        "paper@Figure 1a",
+        "leaderboard@Methodology 分类",
+        "leaderboard@Methodology 示例"
+      ]
+    },
+    {
+      "area": "根因分析（Root-cause analysis）",
+      "focus": "示例（Scapy）：用 sr1 向不同网关发探测包，一个网关的响应被匹配到发给另一个网关的探测上，而 tcpdump 确认线上报文是对的——要模型解释为什么",
+      "share": "37 题（论文 Figure 1a；榜单标 30%）",
+      "format": "自然语言详细答案；程序化检查 + rubric 清单全过",
+      "cite": [
+        "paper@Figure 1a",
+        "leaderboard@Methodology 分类",
+        "leaderboard@Methodology 示例"
+      ]
+    },
+    {
+      "area": "代码上手（Code Onboarding）",
+      "focus": "示例（Scapy）：新人想搞清运行时环境——构造一个基础 ICMP ping 包时，那个包对象的真实结构是什么、涉及哪些层类型、彼此什么关系",
+      "share": "28 题（论文 Figure 1a；榜单标 23%）",
+      "format": "自然语言详细答案；程序化检查 + rubric 清单全过",
+      "cite": [
+        "paper@Figure 1a",
+        "leaderboard@Methodology 分类",
+        "leaderboard@Methodology 示例"
+      ]
+    },
+    {
+      "area": "安全（Security）",
+      "focus": "示例（TruffleHog）：有人提交一个指向内网地址或云元数据端点的检测器配置，实际存在哪些安全边界",
+      "share": "11 题（论文 Figure 1a；榜单标 9%）",
+      "format": "自然语言详细答案；程序化检查 + rubric 清单全过",
+      "cite": [
+        "paper@Figure 1a",
+        "paper@附录 F",
+        "leaderboard@Methodology 分类"
+      ]
+    },
+    {
+      "area": "API 与库使用（API & library integration）",
+      "focus": "示例（Scapy）：造一个不设 checksum 的 IP/TCP 包并调 bytes()，改一个 payload 字节后再调 bytes()——拿到的是新 checksum 还是上次缓存的同一份",
+      "share": "4 题（论文 Figure 1a；榜单标 3%）",
+      "format": "自然语言详细答案；程序化检查 + rubric 清单全过",
+      "cite": [
+        "paper@Figure 1a",
+        "paper@附录 F",
+        "leaderboard@Methodology 分类"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "不测静态阅读就能答的仓库问答：论文把它和 CoReQA 这类用 GitHub issue–answer 对的静态仓库问答明确区分开，要求 agent 自己搭建并运行应用、在答案里给出运行时证据",
+      "cite": [
+        "paper@§5 Related Work",
+        "paper@§2.1.1 Codebase Q&A"
+      ]
+    },
+    {
+      "text": "不测代码修改能力：任务要求不碰仓库源码，程序化检查会把「提交后仓库里出现代码改动」的任务直接判负",
+      "cite": [
+        "leaderboard@Eval Metric 改码判负"
+      ]
+    },
+    {
+      "text": "不测多轮交互（澄清需求、按评审意见迭代、人在回路里纠偏），全部任务都是单轮",
+      "cite": [
+        "paper@附录 A Limitations"
+      ]
+    },
+    {
+      "text": "不覆盖 DevOps、基础设施、网络、安全工程等领域，论文把这些列为未来工作（QnA 里的 Security 子类是「回答关于安全属性的问题」，不是做安全工程）",
+      "cite": [
+        "paper@附录 A Limitations"
+      ]
+    },
+    {
+      "text": "不构成生产部署认证：论文原话是「一批精选单轮工程任务上的能力信号」，不是安全关键、安全敏感或合规受限场景的投产凭证",
+      "cite": [
+        "paper@附录 A Limitations"
+      ]
+    }
+  ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
+    "sample_count": 124,
+    "splits": [
+      "单一公开评测集（数据集卡只登记一个 test 拆分）；官方未提供训练/验证划分"
+    ],
+    "languages": [
+      "Go",
+      "Python",
+      "C",
+      "TypeScript"
+    ],
+    "source_type": "expert-authored（有编码与 agent 经验的专业工程师从真实生产仓库撰写问题、参考答案与评分清单）",
+    "public_sample": true,
+    "totals": "124 题 · 11 个生产级开源仓库 · Go / Python / C / TypeScript 四种语言 · 每题一个固定 commit 的 Docker 镜像 + 专家参考答案 + rubric 清单（论文称 Q&A 平均 10.5 条/题，官方榜单写作平均 12.3 条/题，差异见局限）",
+    "cite": [
+      "paper@Abstract",
+      "leaderboard@Codebase QnA 规模",
+      "dataset",
+      "dataset@拆分",
+      "paper@§2.1"
+    ],
+    "construction": [
+      {
+        "k": "选题",
+        "text": "仓库选自 SWE-Bench Pro，是大型、活跃维护、采用强 copyleft 许可（如 GPL）的真实代码库——邮件服务器、终端模拟器、对象存储系统、可观测性平台、秘密扫描器等；官方称这样选也让它们不太可能进入专有模型的训练集。",
+        "cite": [
+          "leaderboard@Methodology 选题",
+          "paper@附录 D"
+        ]
+      },
+      {
+        "k": "环境固定",
+        "text": "每个仓库构建一个固定 commit、预装全部依赖的可复现 Docker 镜像，保证软件能构建、能运行、能测试。",
+        "cite": [
+          "leaderboard@Methodology 环境"
+        ]
+      },
+      {
+        "k": "出题",
+        "text": "有丰富编码与 agent 经验的专业工程师撰写需要跨文件多步推理的问题，出题前先花时间熟悉仓库的功能、实现与边界情况；问题用自然语言写成，并且刻意欠规范（underspecified），考验 agent 的自主探索。",
+        "cite": [
+          "leaderboard@Methodology 出题",
+          "leaderboard@Methodology 出题者"
+        ]
+      },
+      {
+        "k": "评分清单",
+        "text": "每题由专家定义一份结构化 rubric：每条是「正确答案必须包含的、可验证的事实声明」，要求具体、原子、能脱离外部知识判定；类型为 Answer Comprehensiveness 与 Negative Rubrics，全部是 must-have，通过条件是所有条目都过。",
+        "cite": [
+          "leaderboard@Methodology",
+          "paper@§2.1.1",
+          "dataset@rubric 类型"
+        ]
+      },
+      {
+        "k": "质检",
+        "text": "专家工作时由 LLM agent 在同一任务环境里监控数据质量；之后人工复审两次、再经 Scale 质检团队复审；rubric 由三位专家共识评审，被多数票否决的条目剔除，评估覆盖不足的任务整体过滤掉。",
+        "cite": [
+          "leaderboard@Methodology 质检",
+          "leaderboard@Methodology 共识评审",
+          "paper@§2.2 Quality Control"
+        ]
+      },
+      {
+        "k": "自检配置",
+        "text": "论文附录 D.1 说明任务镜像基于 Debian/Alpine、仓库固定在指定 commit；官方仓库另提供两个自检配置——oracle 应用参考解后该题应得 reward 1.0，nop 什么都不做应得 0。",
+        "cite": [
+          "paper@附录 D.1",
+          "repo@README oracle",
+          "repo@README nop"
+        ]
+      }
+    ]
   },
-  "metrics": [],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [],
-  "notes": "MiniMax M3 引用；Scale 官方榜单子页",
+  "metrics": [
+    {
+      "id": "task-resolve-rate",
+      "name": "Task Resolve Rate（任务解决率）",
+      "direction": "越高越好",
+      "description": "该题全部 rubric 条目都通过（综合分 1.0）的任务占比；每条 rubric 由 LLM 裁判独立做二值判定后聚合，另有程序化检查把「提交后仓库有代码改动」的任务直接判负",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "leaderboard@Eval Metric: Task Resolve Rate",
+        "leaderboard@Eval Metric 裁判",
+        "leaderboard@Eval Metric 改码判负",
+        "dataset@指标",
+        "dataset@裁判",
+        "repo@README reward"
+      ]
+    },
+    {
+      "id": "pass1",
+      "name": "pass@1（论文口径）",
+      "direction": "越高越好",
+      "description": "论文表 1 按赛道报的 Pass@1：每题跑 3 次尝试、每次记 0/1，取平均，95% 置信区间用 Wilson 在尝试层级计算；论文另在总榜报 pass3（同一题三次全过的任务占比）衡量稳定性，但不按 QnA 单列",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@Table 1",
+        "paper@§3"
+      ]
+    }
+  ],
+  "default_protocol": {
+    "raw": "单轮任务：提示词说「/app 下有一个代码仓库，请回答这个问题」，并给出五步指引（探索仓库结构 → 读相关代码 → 必要时执行脚本或追踪代码路径收集证据 → 合成结论 → 把完整答案写进 /logs/agent/answer.txt 并用 <<FINAL_ANSWER>> 包裹），同时要求不得修改仓库内任何文件。agent 在挂载目标仓库的沙箱 Docker 容器里用标准 shell 工具（bash、grep、find 等）把软件构建并运行起来，产出最终答案。判分两层：程序化检查抓代码改动；LLM 裁判对照每条专家 rubric 独立判 met / not met，全过才记 1.0。论文口径的裁判是 claude-opus-4-5-2025110，容器 16 CPU / 16GB、跑在 Modal sandbox 上、单题 6 小时超时；v1.1 起裁判换成 openai/gpt-6.1-sol（高推理档、3 票多数）并禁网。",
+    "cite": [
+      "paper@附录 K.1",
+      "leaderboard@Eval Metric 环境",
+      "leaderboard@Eval Metric 裁判",
+      "paper@附录 J",
+      "repo@README 裁判",
+      "repo@README 网络",
+      "repo@README reward",
+      "repo@README 超时"
+    ],
+    "variants": [
+      {
+        "text": "版本口径：v1.0 与 v1.1 题量相同（都是 124 题），但 v1.1 换了裁判（claude-opus-4-5 → openai/gpt-6.1-sol，3 票多数）、收紧评分标准并禁网，官方明确两者不可直接比较。",
+        "cite": [
+          "repo@README"
+        ]
+      },
+      {
+        "text": "harness 口径：论文把前沿模型跑在各家第一方 harness 上（OpenAI 用 Codex CLI、Anthropic 用 Claude Code、Google 用 Gemini CLI），同时用只给 bash 的 mini-SWE-agent 做同脚手架对照；同一模型两种 harness 能差 4–5 个百分点（GPT 5.4：Codex 40.80 vs mini-SWE 36.30；Opus 4.7：Claude Code 40.30 vs mini-SWE 36.02）。",
+        "cite": [
+          "paper@§3 Experimental Results",
+          "paper@Table 1",
+          "repo@README 配置"
+        ]
+      },
+      {
+        "text": "推理档位：论文表 8 逐模型列出思考档位（GPT-5.4 / GPT-5.3 Codex / Claude Opus 4.7 为 xHigh，Claude Sonnet 4.6 为 High，Gemini 3.1 Pro 为 High 等），榜单条目名也带 xHigh / high / max 后缀，不同档位不能放在一起比。",
+        "cite": [
+          "paper@Table 8",
+          "leaderboard@entries"
+        ]
+      },
+      {
+        "text": "尝试次数：论文每题 3 次取平均报 pass@1，官方 v1.1 运行配置同样固定每题 3 次尝试（web tools off）。",
+        "cite": [
+          "paper@§3",
+          "repo@README 尝试次数"
+        ]
+      },
+      {
+        "text": "步数上限：榜单注明 2026-07-28 起把 mini-swe-agent 的步数从 250 提到 500，给 Muse Spark、GLM 5.2 等新模型更多探索空间；跨这次更新比较 mini-SWE 口径的分数要留意。",
+        "cite": [
+          "leaderboard@Update July 28, 2026"
+        ]
+      },
+      {
+        "text": "第三方自跑口径：MiniMax 博客称其 SWE Atlas-Codebase QNA 分数在内部基础设施（4C8G 沙箱、3 小时超时）上用 Mini-SWE-Agent 脚手架测得，而官方口径是 16C16G、6 小时超时的 Modal sandbox，两者不可直接对照。",
+        "cite": [
+          "minimax@QNA 口径",
+          "paper@附录 J"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "qna-lane-live",
+      "date": "2026-02-25",
+      "label": "QnA 分榜最早条目入库（GPT 5.4 xHigh / mini-SWE-Agent 36.3、Opus 4.6 / Claude Code 33.3）；此时套件只发布 Codebase QnA 一条赛道",
+      "cite": [
+        "leaderboard@entries",
+        "leaderboard@Overview"
+      ]
+    },
+    {
+      "id": "hf-dataset-harbor",
+      "date": "2026-03-30",
+      "label": "HF 数据集卡更新：数据改为以 harbor 格式放在官方 GitHub 仓库发布，并建议用 harbor + Modal sandbox 作为官方跑法",
+      "cite": [
+        "dataset@更新"
+      ]
+    },
+    {
+      "id": "v1.0",
+      "date": "2026-05-08",
+      "label": "arXiv v1 发布完整套件（QnA 124 + 测试编写 90 + 重构 70 = 284 题），论文口径裁判 claude-opus-4-5-2025110；论文表 1 的 QnA 最高为 GPT 5.4（Codex CLI）40.80",
+      "cite": [
+        "paper",
+        "paper@Table 1"
+      ]
+    },
+    {
+      "id": "lb-2026-07-28",
+      "date": "2026-07-28",
+      "label": "QnA 榜单更新：mini-swe-agent 步数上限从 250 提到 500",
+      "cite": [
+        "leaderboard@Update July 28, 2026"
+      ]
+    },
+    {
+      "id": "v1.1",
+      "date": "2026-11-06",
+      "label": "仓库发布 v1.1（提交信息「SWE Atlas release: 284 tasks, hardened graders, run.sh + configs」）：三条赛道合并为单一总榜、仍是同一批 284 题，裁判换 openai/gpt-6.1-sol（高推理、3 票多数）、收紧评分标准并禁网；v1.1 的 QnA 榜首为 Claude Fable 5.2（Claude Code）83.87 ± 6.56",
+      "cite": [
+        "commits",
+        "commits@提交说明",
+        "commits@任务量",
+        "commits@裁判",
+        "repo@README",
+        "sweatlas@entries"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "v1.0 与 v1.1 分数不可比",
+      "impact": "同 124 题，但 v1.1 换了裁判、收紧评分标准并禁网；QnA 榜首从 v1.0 分榜的 63.17 变成 v1.1 的 83.87，中间没有一把不变的尺子，直接相减会得出「涨了约 20 个百分点」的错误结论。",
+      "severity": "高",
+      "response": "官方在仓库 README 的更新说明里写明 v1.1 分数不能直接与 v1.0 比较。",
+      "reader": "只比较同一版本内的相对排名；引用任何分数都要带上版本号与裁判。",
+      "cite": [
+        "repo@README",
+        "leaderboard@entries",
+        "sweatlas@entries"
+      ]
+    },
+    {
+      "issue": "工程质量由 LLM 裁判判定",
+      "impact": "每条 rubric 由 LLM 裁判独立二值判定，裁判的偏好、鲁棒性与波动直接进入分数；v1.1 起还叠加 3 票多数。",
+      "severity": "高",
+      "response": "论文给出校准证据：1,306 条 rubric 判定上三个裁判模型两两一致性高；30 条 QnA 回答重复评 5 次、510 条判定中 99.2% 一致；人机一致 Cohen's κ 0.78–0.88。论文并建议模型方固定裁判版本后再比分数。",
+      "reader": "把分数理解为「带裁判噪声的近似」；只采信差距远大于裁判噪声的结论。",
+      "cite": [
+        "paper@附录 A LLM 裁判",
+        "paper@附录 H",
+        "repo@README 裁判"
+      ]
+    },
+    {
+      "issue": "拒答被记 0，压低部分模型分数",
+      "impact": "榜单脚注说明：Fable-5 与 GPT-5.6-Sol 在该基准上出现 elevated refusal rate（触发安全相关过滤），这些失败被记 0；官方称这些是良性查询，这样记「反映用户真实体验」。也就是说这两个模型的分数里混入了与代码理解无关的拒答惩罚，且幅度无法从榜单读出。",
+      "severity": "中",
+      "response": "官方在榜单脚注披露了该现象，未给出剔除拒答后的分数。",
+      "reader": "看这两个模型（以及同页带星号条目）的分数时，记得其中含拒答记 0 的成分。",
+      "cite": [
+        "leaderboard@Performance Comparison 脚注"
+      ]
+    },
+    {
+      "issue": "榜单页面文字与表格脱节",
+      "impact": "QnA 分榜的 Overview 仍写「Top models achieve a 30% pass rate」、Results 仍写「even the most frontier models score 35%」，但同一页表格里榜首已是 63.17；只读文字的读者会低估当前水平约 30 个百分点。",
+      "severity": "中",
+      "response": "页面标注 Update July 28, 2026；未见官方修正这段文字。",
+      "reader": "以表格数字为准，并记住页面访问日期。",
+      "cite": [
+        "leaderboard@Overview",
+        "leaderboard@Results 过时结论",
+        "leaderboard@entries"
+      ]
+    },
+    {
+      "issue": "仓库与题型选择偏差",
+      "impact": "11 个仓库全部选自 SWE-Bench Pro，是大型、强 copyleft 许可的生产代码库（邮件服务器、终端模拟器、对象存储、可观测性平台、秘密扫描器）；在这类仓库上的理解能力不能外推到其他类型与规模的项目。",
+      "severity": "中",
+      "response": "官方称选 copyleft 仓库是为降低污染概率；未见针对选择偏差的修正。",
+      "reader": "把它读成「大型 Go/Python/C/TS 生产仓库上的代码理解信号」。",
+      "cite": [
+        "leaderboard@Methodology 选题",
+        "paper@附录 D"
+      ]
+    },
+    {
+      "issue": "公开题库可被针对性优化",
+      "impact": "任务、运行配置与裁判提示词全部开源（Apache-2.0），rubric 措辞与仓库集合也公开；v1.1 还有若干 QnA rubric 措辞来自 Artificial Analysis 的公开数据集，等于把部分评分标准直接公开。",
+      "severity": "中",
+      "response": "论文呼吁社区与模型方把它当作 held-out 的进步信号而不是要最大化的评测集；仓库是 copyleft，不太可能进专有模型训练集，但不能排除。",
+      "reader": "对「明显冲着 SWE Atlas 调过」的分数保留余地；优先看新版本、新裁判下的复测。",
+      "cite": [
+        "paper@附录 A",
+        "repo@README 许可",
+        "repo@README 致谢",
+        "paper@附录 D"
+      ]
+    },
+    {
+      "issue": "污染筛查不覆盖 QnA",
+      "impact": "论文附录 I 的记忆化筛查只做在重构与测试编写两条赛道上（那里的解法是具体 diff，能算补丁相似度）；QnA 的答案是自由文本，没有对应的量化筛查。论文另记录：210 次尝试中有 4 次检索了 raw.githubusercontent.com，但这些尝试仍未通过。",
+      "severity": "中",
+      "response": "论文说后续版本应在禁网条件下运行，v1.1 已落实禁网。",
+      "reader": "QnA 的污染风险缺少官方量化证据，只能靠版本更新间接观察。",
+      "cite": [
+        "paper@附录 I",
+        "repo@README 网络"
+      ]
+    },
+    {
+      "issue": "两处数字口径不一致",
+      "impact": "rubric 条数：论文写 Q&A 平均 10.5 条/题，官方榜单写平均 12.3 条/题；同一模型 Opus 4.7（Claude Code）的 QnA 分，论文表 1 记 40.30、榜单条目记 40.32。",
+      "severity": "低",
+      "response": "未见官方解释；v1.1 的评分标准经过细化且有第三方数据集参与措辞，可能是差异来源。",
+      "reader": "引用条数或小数时注明出处，不要把两个来源的数字混用。",
+      "cite": [
+        "paper@§2.1",
+        "leaderboard@Methodology",
+        "paper@Table 1",
+        "leaderboard@entries",
+        "repo@README 致谢"
+      ]
+    },
+    {
+      "issue": "主要失败模式是「没有运行时证据」",
+      "impact": "论文用 Opus 4.6 把最强模型的失败 rubric 归成 4 类：GPT 系主要漏在「信息缺失/不完整」，Claude 系 46% 的失败源于「没有运行时证据」——题目明确要求运行时分析，模型却在解释代码。",
+      "severity": "低",
+      "response": "题目设计上要求 agent 自行搭建并运行应用、追踪数据流。",
+      "reader": "把低分读作「缺少把程序跑起来验证的习惯」，不是编码能力缺失。",
+      "cite": [
+        "paper@§4.2.1 失败归因",
+        "paper@§4.2.1 运行时证据",
+        "paper@§2.1.1 Codebase Q&A",
+        "paper@§4.2.1"
+      ]
+    }
+  ],
+  "notes": "Scale AI SWE Atlas 三条赛道之一，也是第一条发布的赛道；套件母条目见 swe-atlas，同套件另有 swe-atlas-test-writing 与 swe-atlas-refactoring。v1.0 与 v1.1 换过裁判，分数不可比。",
   "official_sources": [
     {
-      "kind": "site",
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2605.08366"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/scaleapi/SWE-Atlas"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/ScaleAI/SWE-Atlas-QnA"
+    },
+    {
+      "kind": "leaderboard",
       "url": "https://labs.scale.com/leaderboard/sweatlas-qna"
     },
     {
-      "kind": "site",
+      "kind": "leaderboard",
+      "url": "https://labs.scale.com/leaderboard/swe-atlas"
+    },
+    {
+      "kind": "blog",
       "url": "https://www.minimax.io/blog/minimax-m3"
     }
   ],
   "related_benchmarks": [
-    "swebench"
+    "swebench",
+    "swe-atlas",
+    "swe-atlas-test-writing",
+    "swe-atlas-refactoring",
+    "swebench-pro"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-26",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-26",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "SWE Atlas: Benchmarking Coding Agents Beyond Issue Resolution（arXiv:2605.08366v1，2026-05-08）",
+        "url": "https://arxiv.org/abs/2605.08366",
+        "accessed": "2026-11-26"
+      },
+      {
+        "id": "leaderboard",
+        "kind": "leaderboard",
+        "title": "Scale AI Labs — SWE Atlas · Codebase QnA 榜单（页面标注 Update July 28, 2026，v1.0 口径）",
+        "url": "https://labs.scale.com/leaderboard/sweatlas-qna",
+        "accessed": "2026-11-26"
+      },
+      {
+        "id": "sweatlas",
+        "kind": "leaderboard",
+        "title": "SWE Atlas 合并榜单 v1.1（Overall / QnA / Test Writing / Refactoring）",
+        "url": "https://labs.scale.com/leaderboard/swe-atlas",
+        "accessed": "2026-11-26"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "scaleapi/SWE-Atlas（任务数据、运行配置与裁判设置，Apache-2.0）",
+        "url": "https://github.com/scaleapi/SWE-Atlas",
+        "accessed": "2026-11-26"
+      },
+      {
+        "id": "dataset",
+        "kind": "dataset",
+        "title": "ScaleAI/SWE-Atlas-QnA（Hugging Face 数据集卡）",
+        "url": "https://huggingface.co/datasets/ScaleAI/SWE-Atlas-QnA",
+        "accessed": "2026-11-26"
+      },
+      {
+        "id": "commits",
+        "kind": "repo",
+        "title": "scaleapi/SWE-Atlas 提交历史（GitHub API，用于确认 v1.1 发布提交与日期）",
+        "url": "https://api.github.com/repos/scaleapi/SWE-Atlas/commits",
+        "accessed": "2026-11-26"
+      },
+      {
+        "id": "minimax",
+        "kind": "blog",
+        "title": "MiniMax 博客：MiniMax-M3（第三方自跑口径说明，仅用于口径差异）",
+        "url": "https://www.minimax.io/blog/minimax-m3",
+        "accessed": "2026-11-26"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Scale AI",
+        "cite": [
+          "paper@首页署名"
+        ]
+      },
+      "first_release": {
+        "v": "2026-02-25（QnA 分榜最早条目）→ 2026-03-30（HF 数据集卡更新）→ 2026-05-08（arXiv v1）",
+        "cite": [
+          "leaderboard@entries",
+          "dataset@更新",
+          "paper"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "paper@Abstract",
+        "paper@§2.1.1 Codebase Q&A",
+        "leaderboard@Codebase QnA",
+        "leaderboard@Eval Metric: Task Resolve Rate"
+      ],
+      "interpretation": [
+        "paper@§4.2.1 运行时证据",
+        "paper@附录 A Limitations",
+        "paper@§5 Related Work"
+      ]
+    },
+    "problem": {
+      "text": "此前的仓库级评测几乎都在测同一件事：给一个 GitHub issue，看补丁能不能让测试通过。论文把这类「功能修复」称为 Functional Resolution，并指出只测它会把 agent 训练成好的「补丁手」而不是「工程师」——而读懂代码库是任何代码改动之前的上游能力。在问答这一环，已有的基准（如 CoReQA 用 GitHub issue–answer 对）靠静态阅读就能答；真实场景里的新人提问、架构审视、运行时异常排查却都要求把软件跑起来、拿运行时证据说话。SWE Atlas QnA 要补的正是这块。",
+      "cite": [
+        "paper@§1 Introduction",
+        "paper@§5 Related Work",
+        "paper@§2.1.1 Codebase Q&A"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "官方下限自检（nop：什么都不做）",
+        "value": "0",
+        "note": "官方仓库提供的下限配置，每条赛道都应得 0",
+        "cite": [
+          "repo@README nop"
+        ]
+      },
+      {
+        "label": "论文发布时最好（v1.0 口径）",
+        "value": "40.80",
+        "note": "GPT 5.4（Codex CLI）；同脚手架下 Opus 4.7（Claude Code）40.30，mini-SWE-agent 上 Opus 4.7 36.02、GPT 5.4 36.30",
+        "cite": [
+          "paper@Table 1"
+        ]
+      },
+      {
+        "label": "官方 QnA 分榜最高（v1.0 口径）",
+        "value": "63.17 ± 5.01",
+        "note": "Opus 5（Claude Code）xHigh；该页面标注 Update July 28, 2026，Overview 文字尚未同步",
+        "cite": [
+          "leaderboard@entries"
+        ]
+      },
+      {
+        "label": "官方 v1.1 合并榜 QnA 最高",
+        "value": "83.87 ± 6.56",
+        "note": "Claude Fable 5.2（Claude Code）max；已换裁判并禁网，与 v1.0 不可比",
+        "cite": [
+          "sweatlas@entries",
+          "repo@README"
+        ]
+      },
+      {
+        "label": "官方 v1.1 合并榜 QnA 最低",
+        "value": "10.48 ± 5.47",
+        "note": "gpt-oss-120b（mini-swe-agent）high；开源与闭源前沿差距明显",
+        "cite": [
+          "sweatlas@entries"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 v1.0 的 63.17 和 v1.1 的 83.87 当成同一把尺子下的进步。v1.1 换了裁判（GPT-6.1 Sol、3 票多数）、收紧评分标准并禁网，官方明确说两者不可直接比较。",
+        "cite": [
+          "repo@README"
+        ]
+      },
+      {
+        "text": "把榜单 Overview 的「Top models achieve a 30% pass rate」当作当前水平。同一页表格里榜首已是 63.17，这段文字没有跟着更新。",
+        "cite": [
+          "leaderboard@Overview",
+          "leaderboard@entries"
+        ]
+      },
+      {
+        "text": "把 QnA 高分理解成「会修 bug、能改代码」。这条赛道是单轮问答，且明确要求不修改仓库，程序化检查会把有代码改动的提交直接判负。",
+        "cite": [
+          "leaderboard@Eval Metric 改码判负",
+          "paper@§5 Related Work"
+        ]
+      },
+      {
+        "text": "以为静态读代码就能拿分。题目要求把软件跑起来拿运行时证据；论文归因显示 Claude 系模型 46% 的失败正是「没有运行时证据」。",
+        "cite": [
+          "paper@§4.2.1 运行时证据",
+          "paper@§2.1.1 Codebase Q&A"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "Scale AI（论文署名机构为 Scale AI；榜单与代码仓库同属官方）",
+        "cite": [
+          "paper@首页署名",
+          "leaderboard@Overview"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "Mohit Raghavendra、Soham Dan、Miguel Romero Calvo（后两位标注 equal contribution）等 15 人",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      {
+        "k": "在套件里的位置",
+        "v": "SWE Atlas 三条赛道之一，也是第一条发布的赛道（另两条：测试编写 90 题、重构 70 题，合计 284 题）",
+        "cite": [
+          "leaderboard@Overview",
+          "paper@Abstract"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2026-02-25 QnA 分榜最早条目 → 2026-03-30 HF 数据集卡改为 harbor 格式 → 2026-05-08 arXiv v1 → 2026-07-28 榜单步数更新 → 2026-11-06 v1.1 合并榜",
+        "cite": [
+          "leaderboard@entries",
+          "dataset@更新",
+          "paper",
+          "leaderboard@Update July 28, 2026",
+          "commits"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "Hugging Face ScaleAI/SWE-Atlas-QnA（124 行，字段含 prompt / reference_answer / rubric / docker_image）；任务与运行配置在 GitHub scaleapi/SWE-Atlas 的 data/qa（Apache-2.0）",
+        "cite": [
+          "dataset",
+          "dataset@schema",
+          "repo@README Lane 表",
+          "repo@README 许可"
+        ]
+      },
+      {
+        "k": "任务环境",
+        "v": "每题一个公开且按 digest 固定的 Docker 镜像；论文口径容器 16 CPU / 16GB，跑在 Modal sandbox 上，单题 6 小时超时；开源模型经 Fireworks AI API 推理",
+        "cite": [
+          "paper@附录 J",
+          "repo@README 目录结构"
+        ]
+      },
+      {
+        "k": "裁判",
+        "v": "论文 v1.0 用 claude-opus-4-5-2025110；v1.1 起 openai/gpt-6.1-sol，高推理档、3 票多数",
+        "cite": [
+          "paper@附录 J",
+          "repo@README 裁判",
+          "commits@裁判"
+        ]
+      },
+      {
+        "k": "评分清单",
+        "v": "类型为 Answer Comprehensiveness 与 Negative Rubrics，全部 must-have，通过条件是全部条目通过；论文称 Q&A 平均 10.5 条/题，官方榜单写作 12.3 条/题",
+        "cite": [
+          "paper@§2.1.1",
+          "paper@§2.1",
+          "leaderboard@Methodology"
+        ]
+      },
+      {
+        "k": "子类构成",
+        "v": "架构与系统设计 44、根因分析 37、代码上手 28、安全 11、API 与库使用 4（论文 Figure 1a；榜单按 35% / 30% / 23% / 9% / 3% 给出同一分布）",
+        "cite": [
+          "paper@Figure 1a",
+          "paper@附录 F",
+          "leaderboard@Methodology 分类"
+        ]
+      },
+      {
+        "k": "多代理行为",
+        "v": "论文案例研究：QnA 是最吃子代理委派的赛道——Opus 4.6 与 Sonnet 4.6 在 96% / 99% 的尝试里至少派出一个子代理，Opus 4.6 平均每轮 2.6 个；Gemini 3.1 Pro 只有约 1%",
+        "cite": [
+          "paper@§4.5"
+        ]
+      },
+      {
+        "k": "第三方贡献",
+        "v": "v1.1 有若干 Codebase QnA rubric 措辞来自 Artificial Analysis 的 SWE-Atlas-QnA-AA 数据集；Inductive ML 的 reward-hacking 反馈用于加固任务环境",
+        "cite": [
+          "repo@README 致谢"
+        ]
+      },
+      {
+        "k": "引用方式",
+        "v": "官方 BibTeX：SWE Atlas: Benchmarking Coding Agents Beyond Issue Resolution，eprint 2605.08366，primary class cs.LG",
+        "cite": [
+          "repo@README 引用",
+          "paper"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-26",
+        "columns": [
+          "来源",
+          "排名",
+          "模型",
+          "Task Resolve Rate",
+          "95% CI",
+          "口径"
+        ],
+        "rows": [
+          [
+            "QnA 分榜（v1.0）",
+            "1",
+            "Opus 5 (Claude Code) xHigh",
+            "63.17",
+            "± 5.01",
+            "页面标注 Update July 28, 2026"
+          ],
+          [
+            "QnA 分榜（v1.0）",
+            "2",
+            "Fable-5.1 (Claude Code) xHigh",
+            "59.95",
+            "± 4.85",
+            "同上"
+          ],
+          [
+            "QnA 分榜（v1.0）",
+            "3",
+            "GPT 6 Astra (Codex) xHigh",
+            "59.14",
+            "± 4.88",
+            "同上"
+          ],
+          [
+            "QnA 分榜（v1.0）",
+            "13",
+            "GPT 5.4 xHigh (Mini-SWE-Agent)",
+            "36.30",
+            "± 4.90",
+            "同上"
+          ],
+          [
+            "QnA 分榜（v1.0）",
+            "23",
+            "MiniMax M2.5 (Mini-SWE-Agent)",
+            "10.30",
+            "± 3.50",
+            "同上"
+          ],
+          [
+            "v1.1 合并榜 · QnA",
+            "1",
+            "Claude Fable 5.2 (Claude Code) max",
+            "83.87",
+            "± 6.56",
+            "换裁判 + 禁网，与 v1.0 不可比"
+          ],
+          [
+            "v1.1 合并榜 · QnA",
+            "2",
+            "Qwen 3.8 Max (mini-swe-agent) max",
+            "81.45",
+            "± 6.94",
+            "同上"
+          ],
+          [
+            "v1.1 合并榜 · QnA",
+            "28",
+            "MiniMax M3 (mini-swe-agent) max",
+            "49.19",
+            "± 8.92",
+            "同上"
+          ],
+          [
+            "v1.1 合并榜 · QnA",
+            "33",
+            "gpt-oss-120b (mini-swe-agent) high",
+            "10.48",
+            "± 5.47",
+            "同上"
+          ]
+        ]
+      },
+      "cite": [
+        "leaderboard@entries",
+        "sweatlas@entries"
+      ]
+    }
+  }
 }

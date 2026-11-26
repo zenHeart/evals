@@ -1,7 +1,7 @@
 {
   "id": "lifeval",
   "name": "LifeVal",
-  "full_name": "LifeVal: Measuring AI progress on the tasks that matter in everyday life",
+  "full_name": "LifeVal: Evaluating AI Model Performance on Personalized Agentic Consumer Tasks（个性化代理型消费者任务评测）",
   "aliases": [
     "LifeVal evaluation",
     "LifeVal everyday tasks"
@@ -10,71 +10,579 @@
   "categories": [
     "agent"
   ],
-  "summary": "OpenAI 2026-11-02 发布的日常生活任务评测：用美国时间使用调查（ATUS）与跨国时间使用研究（MTUS）归纳出家庭照护、健康、教育、家庭事务管理、个人财务、购物、政务办理等真实生活任务，用代表性调研（3,995 名受访者）筛出用户最需要 AI 帮助的任务域，再以模型完成整条工作流的平均 reward 打分。",
-  "interpretation": "分值是 0–1 的平均 reward（官方称 Average reward (unweighted)，即各任务完成度的未加权平均），官方在同一张图里还提供按 reasoning effort（low/medium/high/xhigh/max）分档的点，以及同一批任务的平均生成 token 数、平均延迟与估算 API 成本三个可切换视图——所以读分时必须先看 reasoning effort 档位，低档与高档之间差 10–20 个百分点是常态，不同 effort 之间不可直接比。官方给出的整体水位：GPT-5.2 约 49%、GPT-5.4 约 73%、GPT-5.5 约 77%、GPT-5.6 约 80%、GPT-6 Astra 约 81%（最高档 effort）；相邻代际之间提升 3–5 个百分点，边际收益明显小于 GPT-5.2 → GPT-5.4 的跃升，说明任务型 agentic 能力在该时间窗内接近平台期。该评测测的是「端到端把日常事务办完」而不是知识问答，因此知识型基准的高分不等于这里的高分。",
+  "summary": "LifeVal 是 OpenAI 于 2026-11-02 发布的日常生活任务评测：先用美国时间使用调查（ATUS，一份记录人们把时间花在什么事上的官方调查）与跨国时间使用研究（MTUS）列出人们真实会做的事，再用一份新做的「愿意为数字超级助手付多少钱」调研排出 148 类高价值生活任务，由通过专业性门槛的任务撰写者基于本人真实的 ChatGPT 对话与记忆写出 169 道长程任务（找房、报名幼儿园、组织社区防洪等），考模型能不能在给定个人上下文的情况下把整件事办完。分数不是知识问答正确率，而是 GPT-5.6 自动评分器按每题自带评分细则（rubric）逐条打出来的平均 reward。",
+  "interpretation": "高分说明模型在「带个人上下文、要在电脑上真正动手办完」的日常事务上更接近任务撰写者认可的结局；它不说明学科知识，也不说明能独立做科研。读分有三个前提：一是只评了 OpenAI 自家 5 个模型（GPT-5.2 / 5.4 / 5.5 / 5.6 / GPT-6 Astra），不是中立榜单；二是判分器与被评模型同代同源（主评分器为 GPT-5.6 Sol，xhigh reasoning），与人工的一致性只在 30 个 rollout 上抽查过（Pearson r=0.864）；三是任务集、rubric 与评分代码均未公开，外部无法复算。官网只公开了 5 个示例任务的成绩（90.4%–100%），整体水位以图表呈现，论文正文没有给出任何模型的具体分值。",
   "measures": [
-    "模型在真实生活长程任务上的端到端完成质量（平均 reward，0–1）",
-    "同一任务集在不同 reasoning effort 档位下的表现差异",
-    "完成同一批任务所需的生成 token 数、平均延迟与估算 API 成本"
+    {
+      "area": "照护（caregiving）",
+      "focus": "表 1 中「Caring for and helping others」美国年 WTP $329B；示例 Tier 3 活动含在家教育子女、把照护成年人当作主要活动；官网公开示例「帮刚确诊糖尿病的家人做照护与备餐计划」得 90.4%",
+      "share": "$329B（表 1 原文值；15 类合计 $1,746B）",
+      "format": "长程 agentic 任务：读个人上下文 + 浏览器/电脑操作 + rubric 逐条给分",
+      "cite": [
+        "paper@Table 1",
+        "site@Individual task examples"
+      ]
+    },
+    {
+      "area": "健康（health）",
+      "focus": "论文与官网把它列为七大域之一；表 1 没有同名类别，最接近的「Personal care」示例 Tier 3 含「在家外使用健康与护理服务」，但范畴大于健康域",
+      "share": "未披露（表 1 未单列健康类）",
+      "format": "长程 agentic 任务：读个人上下文 + 浏览器/电脑操作 + rubric 逐条给分",
+      "cite": [
+        "paper@§3.1",
+        "paper@Table 1"
+      ]
+    },
+    {
+      "area": "教育（education）",
+      "focus": "表 1「Education」美国年 WTP $190B；示例 Tier 3 含为学位课程做研究/作业；官网公开示例「搬家后比较并报名合适的幼儿园」得 93.1%",
+      "share": "$190B（表 1 原文值）",
+      "format": "长程 agentic 任务：读个人上下文 + 浏览器/电脑操作 + rubric 逐条给分",
+      "cite": [
+        "paper@Table 1",
+        "site@Individual task examples"
+      ]
+    },
+    {
+      "area": "家庭事务管理（household administration）",
+      "focus": "表 1「Household activities and Financial management」美国年 WTP $505B，为 15 类中最高；示例 Tier 3 含房屋维护/装修/建造服务、外部维修与改造；官网公开示例「在 Luzerne County 按预算、独立居住单元与通勤时长找房，并把 deed 加入购物车待复核」得 100%",
+      "share": "$505B（表 1 原文值）",
+      "format": "长程 agentic 任务：读个人上下文 + 浏览器/电脑操作 + rubric 逐条给分",
+      "cite": [
+        "paper@Table 1",
+        "site@Individual task examples"
+      ]
+    },
+    {
+      "area": "个人财务（personal finances）",
+      "focus": "表 1 把财务管理与家庭事务合并为同一类（$505B），未单列；该类示例 Tier 3 含 Financial management",
+      "share": "未披露（表 1 未单列财务管理）",
+      "format": "长程 agentic 任务：读个人上下文 + 浏览器/电脑操作 + rubric 逐条给分",
+      "cite": [
+        "paper@Table 1"
+      ]
+    },
+    {
+      "area": "购物（shopping）",
+      "focus": "表 1「Consumer purchases」美国年 WTP $81B；示例 Tier 3 含食品杂货采购、比价购物",
+      "share": "$81B（表 1 原文值）",
+      "format": "长程 agentic 任务：读个人上下文 + 浏览器/电脑操作 + rubric 逐条给分",
+      "cite": [
+        "paper@Table 1"
+      ]
+    },
+    {
+      "area": "政务办理（government services）",
+      "focus": "表 1「Government services and civic obligations」美国年 WTP $46B；示例 Tier 3 含办理执照、缴纳罚款/费用/税款、使用社会服务；官网公开示例「为四位需要防洪改造的邻居组织社区防洪志愿者」得 98.0%",
+      "share": "$46B（表 1 原文值）",
+      "format": "长程 agentic 任务：读个人上下文 + 浏览器/电脑操作 + rubric 逐条给分",
+      "cite": [
+        "paper@Table 1",
+        "site@Individual task examples"
+      ]
+    }
   ],
   "does_not_measure": [
-    "学科知识与应试能力（知识型基准需另看）",
-    "单次问答的指令遵循细节",
-    "安全性、有害性与事实性",
-    "多语言与中文任务表现（官方任务与调研以英文 / 美国生活场景为主）"
+    {
+      "text": "学科知识与应试能力：官网明确说 LifeVal 要「going beyond academic assessments of model knowledge」，测的是能不能把事办完",
+      "cite": [
+        "site@Why this matters"
+      ]
+    },
+    {
+      "text": "只给建议、不动手的聊天式回答：官网说用户需要的「more than advice or a chat response」",
+      "cite": [
+        "site"
+      ]
+    },
+    {
+      "text": "体力劳动：调研设定的数字超级助手「could not perform physical work」，只能给建议和执行数字任务",
+      "cite": [
+        "paper@§3.1"
+      ]
+    },
+    {
+      "text": "跨厂商模型排名：论文只评了 GPT-5.2 / 5.4 / 5.5 / 5.6 与 GPT-6 Astra 五个 OpenAI 自家模型",
+      "cite": [
+        "paper@§4"
+      ]
+    }
   ],
   "dataset": {
-    "sample_count": null,
+    "sample_count": 169,
     "splits": [
-      "caregiving 照护",
-      "health 健康",
-      "education 教育",
-      "household administration 家庭事务管理",
-      "personal finances 个人财务",
-      "shopping 购物",
-      "government services 政务办理"
+      "论文未给出命名拆分（只写通过三轮人工质控的任务进入 final evaluation sets）"
     ],
-    "source_type": "vendor-authored everyday-task suite（任务域取自 ATUS / MTUS，任务筛选取自 OpenAI 自建 3,995 人代表性调研）",
     "languages": [
       "en"
     ],
-    "public_sample": null
+    "source_type": "vendor-authored（OpenAI 自建：任务由通过专业性门槛的 task creators 基于本人真实 ChatGPT 对话与记忆撰写，PII 替换为合成数据）",
+    "public_sample": null,
+    "totals": "评测集 169 题（论文 §4）；任务池按 148 个 ATUS 活动类别、目标 800 题分配后对应 702 个任务（附录 A.2），两者相差 533 个，论文未说明关系。任务域七类：照护、健康、教育、家庭事务管理、个人财务、购物、政务办理。每题由 Request(Prompt)、Personalized Context（ChatGPT 对话与记忆、参考文件、附加任务上下文）、Rubric、强化学习环境（RLE）与 Starting State 组成；语言为英文，无公开样例下载。",
+    "cite": [
+      "paper@§4",
+      "paper@A.2",
+      "paper@§3.3",
+      "paper@§3.1"
+    ],
+    "construction": [
+      {
+        "k": "任务域来源",
+        "text": "从 ATUS（2024；n=7,700）与 MTUS（2020；n=8,782）取时间使用分类，按附录 A.1 的规则清洗（合并相关子类、合并相近任务、剔除工作类与「未另行分类」的长尾类），得到 148 个活动类别。",
+        "cite": [
+          "paper@§3.1",
+          "paper@A.1"
+        ]
+      },
+      {
+        "k": "价值权重",
+        "text": "补做一份意愿付费调研：按美国人口分布（年龄、性别、族裔、收入）招募，3,837 人完成、1,826 人通过五项理解与注意力筛查；每人评估随机至多 30 个活动类别，为「完美的数字超级助手」报 2025 全年最多愿意付多少钱；每个活动用 95 分位 winsorized 均值估计年 WTP，全部类别合计约 $1.7 万亿。",
+        "cite": [
+          "paper@§3.1",
+          "paper@A.2"
+        ]
+      },
+      {
+        "k": "任务分配",
+        "text": "把每个活动的 WTP 占比乘以 800 题的目标并向下取整；取整后 148 个活动类别都拿到正配额，对应 702 个任务。",
+        "cite": [
+          "paper@A.2"
+        ]
+      },
+      {
+        "k": "任务撰写",
+        "text": "通过专业性门槛的任务撰写者（本人多次完成该任务、并在真实生活中跟进一年以上）基于自己的 ChatGPT 数据写任务：把 PII 换成合成数据，并同意共享经过去标识化处理的 ChatGPT 数据；每题配 prompt、个性化上下文、rubric、RLE 环境与起始状态。",
+        "cite": [
+          "paper@§3.2",
+          "paper@§3.3",
+          "paper@摘要"
+        ]
+      },
+      {
+        "k": "三轮人工质控",
+        "text": "每题至少过三轮人工评审：同领域任务撰写者互评、受训评审者按活动标准评难度与公平性、第三位专家签字放行；同时并行一轮模型质控（模型试做 → 另一个模型把失败归类为 rubric/提示词与环境/模型问题 → 人决定是否采纳修改）。",
+        "cite": [
+          "paper@§3.4.1",
+          "paper@§3.4.2"
+        ]
+      },
+      {
+        "k": "评测集",
+        "text": "论文用 169 道任务构成评测集，评 GPT-5.2、5.4、5.5、5.6 与 GPT-6 Astra。",
+        "cite": [
+          "paper@§4"
+        ]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "模型拿到一个任务的 prompt 与个性化上下文（本人 ChatGPT 对话与记忆的完整转储、参考文件、附加任务上下文），在任务自带的强化学习环境（RLE）里执行动作，并配一个搜索离线版网页的浏览器工具；每次 rollout 8 小时超时。判分由两个都用 GPT-5.6 的自动评分器完成：主评分器逐条独立评 rubric 项、只依据给定证据给分，并核验模型声称创建的文件是否真的存在、把后端状态变化纳入考量；另一个 hack 评分器检测模型是否访问内部 RLE 接口，一旦判定为 hacking，该样本记 0 分。论文结果的主评分器为 GPT-5.6 Sol（xhigh reasoning），误差为对自动评分分数做 bootstrap 重采样得到的 95% 置信区间。",
+    "cite": [
+      "paper@§3.3",
+      "paper@§3.5",
+      "paper@A.3",
+      "paper@Figure 5",
+      "paper@§4"
+    ],
+    "variants": [
+      {
+        "text": "推理档位：附录 B 的个性化消融实验写明「同一模型、变化 reasoning effort」，附录 A.3 说明主结果用 GPT-5.6 Sol + xhigh reasoning；同模型不同档位的结果不可直接比。",
+        "cite": [
+          "paper@B",
+          "paper@A.3"
+        ]
+      },
+      {
+        "text": "个性化上下文四种条件：baseline、去掉过去对话与记忆、去掉附加任务上下文、把附加上下文合成插入过去对话；论文报告跨条件差异明显，四种条件的分数不能混在一起比。",
+        "cite": [
+          "paper@B"
+        ]
+      },
+      {
+        "text": "参评模型范围：只评 OpenAI 自家 5 个模型（GPT-5.2 / 5.4 / 5.5 / 5.6 / GPT-6 Astra），未纳入其他厂商模型，结果不构成跨厂商排名。",
+        "cite": [
+          "paper@§4"
+        ]
+      }
+    ]
   },
   "metrics": [
     {
-      "id": "average-reward",
-      "name": "Average reward (unweighted)",
-      "range": [
-        0,
-        1
-      ],
-      "unit": "percent",
-      "direction": "higher",
-      "aggregation": "unweighted mean of per-task reward"
+      "id": "mean-reward",
+      "name": "Mean reward（平均 reward）",
+      "direction": "越高越好",
+      "description": "每个模型设置在 169 个任务上的平均 reward；论文 Figure 5 说明每个点是该模型设置下的 mean reward、每次 rollout 8 小时超时，并说明 hacking 样本记 0 分；论文未给出取值范围，正文与表格也未列出任何模型的具体数值。",
+      "range": null,
+      "unit": "reward",
+      "cite": [
+        "paper@Figure 5",
+        "paper@§4"
+      ]
+    },
+    {
+      "id": "failure-rate",
+      "name": "失败率（1 − reward 的均值）",
+      "direction": "越低越好",
+      "description": "论文 Figure 6 的失败模式剖面：每条总高是该模型的整体失败率，按已评测样本上 1 − reward 的平均值计算。论文 §4.1 补充：跨模型最稳定的失败模式是「Incorrect information or recommendation」，且模型经常漏掉个人对话里的关键信息。",
+      "range": null,
+      "unit": "reward",
+      "cite": [
+        "paper@Figure 6",
+        "paper@§4.1"
+      ]
+    },
+    {
+      "id": "efficiency",
+      "name": "效率侧指标（平均 token / 墙钟时间 / 工具调用 / API 成本）",
+      "direction": "越低越好",
+      "description": "论文 Figure 5 把成绩与平均 rollout 墙钟时间、每次 rollout 平均工具调用数、平均 API 成本、平均 token 并列展示；这是成本与耗时口径，不与分数同向解读。",
+      "range": null,
+      "unit": "混合（token / 分钟 / 次 / USD）",
+      "cite": [
+        "paper@Figure 5"
+      ]
     }
   ],
   "versions": [
     {
-      "id": "2026-11-02",
-      "label": "LifeVal 首版（2026-11-02 发布）",
-      "note": "首版即含 5 个 OpenAI 模型 × 4–5 档 reasoning effort 的官方分值；后续任务集或打分口径变更需另记版本"
+      "id": "site-2026-11-02",
+      "date": "2026-11-02",
+      "label": "OpenAI 官网发布 LifeVal（RSS 条目时间 2026-11-02 09:00 GMT）",
+      "cite": [
+        "site",
+        "rss"
+      ]
+    },
+    {
+      "id": "arxiv-v1",
+      "date": "2026-11-04",
+      "label": "arXiv v1 提交（arXiv:2611.06687v1，论文版本日期 2026-11-05）；截至本次核验只有 v1",
+      "cite": [
+        "paper"
+      ]
     }
   ],
   "limitations": [
-    "官方自建任务集，任务内容与打分细则由 OpenAI 单方定义，外部无法复现验证",
-    "任务场景以美国日常生活为主（含 ATUS / MTUS 的美国口径与 Luzerne County、Texas SNAP 等具体场景），跨文化与中文场景的代表性有限",
-    "任务集与调研样本未公开，样本量、评分器与奖励函数细节均未公开",
-    "同一模型不同 reasoning effort 之间分数不可直接比，跨模型比必须对齐 effort 档位",
-    "本仓未收录 GPT-5.2 的独立 release 记录，其 49.3% 的官方分值暂无对应证据行"
+    {
+      "issue": "任务集与评分细节未公开，外部无法复现",
+      "impact": "169 道题、rubric、RLE 环境与评分代码均未提供公开下载，外部无法复算分数，也无法核对判分一致性。媒体报道同样指出 LifeVal 目前仍主要是 OpenAI 的内部评估，外界尚未获得完整任务集、评分代码、误差范围或可独立复现的排行榜。",
+      "severity": "高",
+      "response": "未见官方回应：论文与发布文均未给出数据集、代码仓库或榜单链接。",
+      "reader": "看到任何「复现了 LifeVal 分数」的说法先追问数据来源；官方公开前只引用官方公布值。",
+      "cite": [
+        "blog",
+        "paper@§4"
+      ]
+    },
+    {
+      "issue": "厂商自建自评，且只评自家模型",
+      "impact": "任务、个人上下文与 rubric 均由 OpenAI 单方定义，参评的 5 个模型全是 OpenAI 自家模型；结果不能外推成与其他厂商模型的位次。",
+      "severity": "高",
+      "response": "未见官方回应：论文未说明是否会纳入第三方模型或第三方评审。",
+      "reader": "把它当作 OpenAI 的自报进展，不是中立榜单；引用时写清「OpenAI 自评、仅含自家模型」。",
+      "cite": [
+        "paper@§4",
+        "paper@§3.2"
+      ]
+    },
+    {
+      "issue": "评分器与被评模型同源",
+      "impact": "两个自动评分器都用 GPT-5.6，主评分器为 GPT-5.6 Sol（xhigh reasoning），由它给 GPT-5.x 与 GPT-6 系列的任务完成度打分；判分口径与被评模型能力同代，可能存在同源偏好。",
+      "severity": "中",
+      "response": "官方做了人工对齐抽查：17 名训练师在 n=30 子集上对 GPT-5.5 的 rollout 按 rubric 打分，人工平均 83.61%、GPT-5.6 评分器 84.20%，Pearson r=0.864。",
+      "reader": "判分一致性只在 30 个 rollout 上验证过；看到「自动评分完全可靠」的说法要打折扣。",
+      "cite": [
+        "paper@§3.5",
+        "paper@A.3"
+      ]
+    },
+    {
+      "issue": "题量与调研样本存在口径不一致",
+      "impact": "论文 §4 说建了 169 道题的评测集，附录 A.2 说 148 个活动类别对应 702 个任务，两者相差 533 个，论文未说明 702 与 169 的关系；调研样本上，官网写 3,995 名受访者，论文写 3,837 人完成、其中 1,826 人通过五项筛查（2,011 人被排除），官网数字论文未提。",
+      "severity": "中",
+      "response": "未见官方回应：论文与发布文未就两个口径的差别作说明。",
+      "reader": "引用题量时写清是「评测集 169 题」还是「任务池 702 个」；引用样本量时优先用论文的 3,837 / 1,826。",
+      "cite": [
+        "paper@§4",
+        "paper@A.2",
+        "site@Background"
+      ]
+    },
+    {
+      "issue": "任务域与调研以美国为中心",
+      "impact": "任务域来自 ATUS 与 MTUS，两者的数据都截至 2021，可能漏掉历史时间使用调查里没有的新任务；意愿付费调研在美国招募、用英文进行，可能低估美国以外或问卷面板中代表性不足的群体常见的任务。",
+      "severity": "中",
+      "response": "论文在 Limitations 中明确写出这两点，未给出修正方案。",
+      "reader": "跨文化与中文场景的表现不能用这套分数推断。",
+      "cite": [
+        "paper@§5"
+      ]
+    },
+    {
+      "issue": "价值权重只是代理指标，且网页缓存不冻结",
+      "impact": "意愿付费是自报数据，受问卷框架与受访者对「数字超级助手」的想象影响；与 BLS 消费支出、O*NET 工资、ATUS 幸福感等外部指标的相关性只有 R²≈0.4。另外依赖时效信息或浏览的任务会命中未冻结的网页缓存，跨次运行分数可能变化。",
+      "severity": "低",
+      "response": "论文称已用 BLS 消费支出等外部指标做交叉核对，并把多数网页交互导向自建 RLE 以减少变动，但明确说「not fully removed」。",
+      "reader": "把 WTP 权重当「消费者自评价值」读，不当市场成交价；对依赖浏览的任务，分数要留运行间波动余地。",
+      "cite": [
+        "paper@§5",
+        "paper@A.2.1"
+      ]
+    }
   ],
-  "notes": "证据账本中 18 次引用（全部为官方发布文内嵌 vega-lite data.values 机读值）。官方同页「average_reward」汇总图另给出 5 个模型的 release_date 与代表值：GPT-5.2 2025-12-11 49.26%；GPT-5.4 2026-03-05 73.05%；GPT-5.5 2026-04-23 77.45%；GPT-5.6 2026-07-09 79.98%；GPT-6 Astra 2026-09-03 80.58%。其中 GPT-5.2（2025-12-11）在本仓无对应 release 记录，本批不新建 release、不建证据行，其 4 档 effort 分值（low 27.69% / medium 37.18% / high 45.19% / xhigh 49.26%）仅留档于本实体说明与批次报告。",
   "official_sources": [
     {
       "kind": "site",
       "url": "https://openai.com/index/lifeval/"
+    },
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2611.06687"
     }
   ],
   "related_benchmarks": [],
-  "content_status": "beta",
-  "last_verified_at": "2026-11-02"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-26",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-26",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "LifeVal: Evaluating AI Model Performance on Personalized Agentic Consumer Tasks（arXiv:2611.06687v1，2026-11-04 提交）",
+        "url": "https://arxiv.org/abs/2611.06687",
+        "accessed": "2026-11-26"
+      },
+      {
+        "id": "site",
+        "kind": "site",
+        "title": "OpenAI 发布文 LifeVal（2026-11-02）",
+        "url": "https://openai.com/index/lifeval/",
+        "accessed": "2026-11-26"
+      },
+      {
+        "id": "rss",
+        "kind": "announcement",
+        "title": "OpenAI News RSS（LifeVal 条目，pubDate 2026-11-02 09:00 GMT）",
+        "url": "https://openai.com/news/rss.xml",
+        "accessed": "2026-11-26"
+      },
+      {
+        "id": "blog",
+        "kind": "blog",
+        "title": "IT之家：OpenAI 发布 LifeVal 基准：从选幼儿园到报税，测试 AI 的「人间烟火」技能（2026-11-03）",
+        "url": "https://www.ithome.com/1/021/336.htm",
+        "accessed": "2026-11-26"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "OpenAI",
+        "cite": [
+          "paper@标题页",
+          "site"
+        ]
+      },
+      "first_release": {
+        "v": "2026-11-02（官网发布文；OpenAI News RSS 条目 2026-11-02 09:00 GMT）",
+        "cite": [
+          "site",
+          "rss"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "paper@摘要",
+        "paper@§3.1",
+        "paper@§3.5",
+        "paper@§4"
+      ],
+      "interpretation": [
+        "paper@§3.5",
+        "paper@A.3",
+        "paper@§4",
+        "site@Individual task examples",
+        "site@Why this matters",
+        "blog"
+      ]
+    },
+    "problem": {
+      "text": "使用量数据只反映用户已经想到去问的事，跟不上新能力，也漏掉用户根本想不到能交给 AI 的任务；学术型基准测的是知识，不测「能不能替我把事办了」。LifeVal 想把评测拉到消费者真正看重、且同时需要个人上下文与电脑操作的长程任务上。",
+      "cite": [
+        "paper@§1",
+        "site@Why this matters"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机 / 人类基线",
+        "value": "论文未给出",
+        "note": "论文只在 Figure 5 给出各模型设置的 mean reward，没有报告随机基线，也没有报告人类在 169 道任务上的完成成绩；本站不推算。",
+        "cite": [
+          "paper@Figure 5",
+          "paper@§4"
+        ]
+      },
+      {
+        "label": "官方公开的示例任务成绩",
+        "value": "90.4%–100%（5 个示例任务）",
+        "note": "官网公开 5 个示例任务的成绩：搬家后报名幼儿园 93.1%、洪水前组织志愿者 98.0%、在 Luzerne County 找房 100%、远程陪奶奶看比赛 96.3%、为确诊糖尿病的家人备餐 90.4%；页面表述为「how our current models perform」，未标注模型与推理档位。这是单任务样例，不是整体均分。",
+        "cite": [
+          "site@Individual task examples",
+          "site@Task results"
+        ]
+      },
+      {
+        "label": "人工—自动评分一致性参考线",
+        "value": "人工 83.61% / GPT-5.6 评分器 84.20%（Pearson r=0.864，n=30）",
+        "note": "这是判分一致性，不是模型任务成绩；样本只有 30 个 GPT-5.5 rollout，用来衡量自动评分器与人工的偏差量级。",
+        "cite": [
+          "paper@A.3"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 LifeVal 高分读成「知识问答能力强」——官网明确说它要 beyond academic assessments of model knowledge，测的是能不能把事办完。",
+        "cite": [
+          "site@Why this matters"
+        ]
+      },
+      {
+        "text": "把官网示例任务 90%+ 的成绩当成整体水位——官方只说「Our latest models score very highly on many LifeVal tasks」，公开的只是样例；论文正文没有给出任何模型的平均 reward 数值。",
+        "cite": [
+          "site@Task results",
+          "paper@§4"
+        ]
+      },
+      {
+        "text": "把它当中立榜单或可复现基准——任务集、rubric 与评分代码未公开，且只评了 OpenAI 自家 5 个模型。",
+        "cite": [
+          "blog",
+          "paper@§4"
+        ]
+      },
+      {
+        "text": "忽略推理档位直接比分——论文的个性化消融实验变化 reasoning effort，主结果用 xhigh 档；不同档位之间不可直接比。",
+        "cite": [
+          "paper@B",
+          "paper@A.3"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "OpenAI",
+        "cite": [
+          "paper@标题页",
+          "site"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "Jenny Yang、Elizabeth Proehl、Anjan Bharadwaj、Emily Fan、Charlotte Cole、James Kim、Noam Brown、Phoebe Thacker、Amelia Glaese、Tejal Patwardhan（均属 OpenAI）",
+        "cite": [
+          "paper@标题页"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2026-11-02 官网发布 → 2026-11-03 起中文科技媒体报道 → 2026-11-04 arXiv v1 提交（论文版本日期 2026-11-05）",
+        "cite": [
+          "site",
+          "rss",
+          "blog",
+          "paper"
+        ]
+      },
+      {
+        "k": "任务域来源",
+        "v": "ATUS（2024；n=7,700）与 MTUS（2020；n=8,782）；MTUS 汇总 25 个国家的可比时间使用调查；清洗规则见附录 A.1",
+        "cite": [
+          "paper@§3.1",
+          "paper@A.1"
+        ]
+      },
+      {
+        "k": "价值权重来源",
+        "v": "新做的意愿付费调研：按美国人口分布招募，3,837 人完成、1,826 人通过五项筛查；每人评估随机至多 30 个活动类别；每个活动用 95 分位 winsorized 均值估计年 WTP，全部类别合计约 $1.7 万亿",
+        "cite": [
+          "paper@§3.1",
+          "paper@A.2"
+        ]
+      },
+      {
+        "k": "任务撰写者",
+        "v": "从通用任务撰写者库招募、对冷门类目做定向外推的专业人士；参与自愿、可随时退出，按专业合同收费；撰写者须通过专业性门槛（本人多次完成该任务，并在真实生活中跟进一年以上）",
+        "cite": [
+          "paper@B.1",
+          "paper@§3.2"
+        ]
+      },
+      {
+        "k": "任务组件",
+        "v": "每题含 Request(Prompt)、Personalized Context（ChatGPT 对话与记忆、参考文件、附加任务上下文）、Rubric、RLE 环境与 Starting State",
+        "cite": [
+          "paper@§3.3"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "论文在 arXiv（2611.06687）；官网发布文含示例任务与成绩；数据集、评测代码与榜单均未公开",
+        "cite": [
+          "paper",
+          "site",
+          "blog"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-26",
+        "columns": [
+          "任务（官网示例）",
+          "公开成绩",
+          "口径"
+        ],
+        "rows": [
+          [
+            "Enroll in the right kindergarten after moving（搬家后报名合适的幼儿园）",
+            "93.1%",
+            "官网示例任务；页面称 how our current models perform，未标注模型与推理档位"
+          ],
+          [
+            "Manage volunteers ahead of a flood（洪水前组织社区志愿者）",
+            "98.0%",
+            "同上"
+          ],
+          [
+            "Find a new home for my family（给家人找新家）",
+            "100%",
+            "同上"
+          ],
+          [
+            "Watch a game with grandma from far away（远程陪奶奶看比赛）",
+            "96.3%",
+            "同上"
+          ],
+          [
+            "Meal prep for a parent adjusting to a new diabetes diagnosis（为刚确诊糖尿病的家人备餐）",
+            "90.4%",
+            "同上"
+          ]
+        ]
+      },
+      "cite": [
+        "site@Individual task examples",
+        "site@Task results"
+      ]
+    }
+  }
 }

@@ -1,35 +1,654 @@
 {
   "id": "plawbench",
   "name": "PLawBench",
-  "full_name": null,
+  "full_name": "PLawBench（Practical Law Benchmark，实务法律基准）",
   "aliases": [],
-  "status": null,
+  "status": "active",
   "categories": [
     "knowledge"
   ],
-  "summary": "真实法律实践评测（850 题 rubric 评分）",
-  "interpretation": "850 道真实法律实践题，按 rubric 细粒度评分、分越高越好（Qwen3.8 发布页口径）；公开题集与榜单有限，目前仅见于阿里引用，跨厂商可比性未知。",
-  "measures": [],
-  "does_not_measure": [],
-  "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
-  },
-  "metrics": [],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [],
-  "notes": "Qwen3.8 引用；GitHub 归属待核",
-  "official_sources": [
+  "summary": "PLawBench 是阿里巴巴集团、通义千问团队与 Skylenage 等联合发布的法律实务评测：850 道改编自中国裁判文书网判决书与律所案例的题目，覆盖公共法律咨询、实务案例分析、法律文书生成三类任务，每题都配法律专家撰写的细粒度评分细则（rubric，即逐条打分点），全库约 12,500 个评分点，由与人类专家判断对齐的 LLM 裁判逐点判分。",
+  "interpretation": "高分说明模型更接近执业律师的工作方式：能从模糊、情绪化、故意隐瞒关键事实的用户叙述里问出决定性事实，能按法律三段论（大前提法条 → 小前提事实 → 结论）一步步推理，也能写出程序与实体上都站得住的起诉状或答辩状。但它不说明模型具备通用法律智能——全部场景只用中文、只覆盖中国大陆法律体系；而且分数是「得分率」而不是答对率，换裁判或换任务口径就不可比。",
+  "measures": [
     {
-      "kind": "site",
-      "url": "https://qwen.ai/blog?id=qwen3.8"
+      "area": "Task 1 · 公共法律咨询（PLC）",
+      "focus": "从模糊、情绪化、隐瞒关键事实的用户叙述中主动追问，挖出决定法律定性或权利义务分配的事实。示例评分点（+3 分，属「决定性事实」）：2018 年向刘明所借 5 万元的那张借条/合同上是否有李芳的本人签字。",
+      "share": "60 题",
+      "format": "开放式追问列表（系统提示要求一次至少 25 个编号问题）；按 rubric 加分/扣分，含「无害」「公平」「诚实」等扣分项",
+      "cite": [
+        "paper@§3.1.1",
+        "paper@附录 C.1",
+        "paper@Table 2"
+      ]
+    },
+    {
+      "area": "Task 2 · 实务案例分析（PCA）",
+      "focus": "按「结论 → 事实 → 推理 → 法条」四段结构分析真实纠纷，其中推理必须按指定顺序推进。示例（Figure 4 下图）：被告用爬虫批量抓取文学平台全文用于模型训练，问是否侵害原告著作权——第 1 步必须先判断涉案小说文本是否构成《著作权法》保护的「作品」，第 2 步再看是否落入专有权利范围，第 3 步才谈合理使用抗辩。",
+      "share": "750 题",
+      "format": "结构化四段长文；顺序推理题按步给分（每步 10 分，乱序不得分），非顺序题逐点给分",
+      "cite": [
+        "paper@§3.1.2",
+        "paper@附录 C.2",
+        "paper@Figure 4",
+        "paper@Table 2"
+      ]
+    },
+    {
+      "area": "Task 3 · 法律文书生成（LDG）",
+      "focus": "把凌乱的客户叙述转成正式法律文书（起诉状或答辩状），需自行判断文书类型、审查管辖与主体适格、准确计算金额、组织证据清单。原告侧（起诉状）得分明显低于被告侧（答辩状）。",
+      "share": "40 题（原告 / 被告分侧评分）",
+      "format": "2,500–3,000 字符正式法律文书；格式分权重压到 10% 以下，重点考实质内容",
+      "cite": [
+        "paper@§3.1.3",
+        "paper@§4.3",
+        "paper@附录 C.3",
+        "paper@附录 E.2.3"
+      ]
+    },
+    {
+      "area": "六大评分维度（rubric 维度）",
+      "focus": "所有题的评分点归入六个统一维度：法律问题与事实识别、法律推理、法律知识应用、程序与策略意识、请求与结果构建、职业规范与合规；不同任务再映射到各自的扣分规则。",
+      "share": "6 个维度",
+      "format": "逐点评分（加分项 + 扣分项，扣分可累积扣到该题总分归零）",
+      "cite": [
+        "paper@§3.1"
+      ]
     }
   ],
-  "related_benchmarks": [],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "does_not_measure": [
+    {
+      "text": "多智能体 / agent 框架协作——论文明确只评单模型 LLM Agent，没有覆盖复杂多智能体系统。",
+      "cite": [
+        "paper@§7"
+      ]
+    },
+    {
+      "text": "中国大陆法律体系以外的法律实务（论文举的例子是法律备忘录写作）——全部场景以中文构建、根植中国法律体系。",
+      "cite": [
+        "paper@§7",
+        "paper@附录 C.1"
+      ]
+    },
+    {
+      "text": "模型训练与改进本身——论文定位是评测，把 PLawBench 用于后训练与对齐列为未来工作。",
+      "cite": [
+        "paper@§7"
+      ]
+    },
+    {
+      "text": "答案对错式的法律知识记忆——评分按 rubric 逐点给分，论文明确说它不像传统法律问答那样只强调答案正确性。",
+      "cite": [
+        "paper@§3.1.1"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 850,
+    "splits": [
+      "Task 1 公共法律咨询：60 题",
+      "Task 2 实务案例分析：750 题",
+      "Task 3 法律文书生成：40 题（原告 / 被告分侧评分）",
+      "GitHub 开源子集：280 题（案例分析 250 + 咨询 18 + 文书 12）"
+    ],
+    "languages": [
+      "zh"
+    ],
+    "source_type": "expert-authored（法律专家改编自中国裁判文书网专家编辑判决书、个人咨询记录与头部律所复杂案例，人工脱敏）",
+    "public_sample": true,
+    "totals": "850 题 · 约 12,500 个 rubric 评分点（Task 1 约 550 + Task 2 约 11,000 + Task 3 约 900）· 平均提示长度 Task 1 1,171 字符 / Task 2 692 字符 / Task 3 2,574 字符 · 15 个子任务 · 全中文 · GitHub 开源 280 题",
+    "cite": [
+      "paper@Table 2",
+      "paper@§3.2.1",
+      "paper@附录 B.3",
+      "repo@README"
+    ],
+    "construction": [
+      {
+        "k": "取材",
+        "text": "从中国裁判文书网的专家编辑判决书、个人咨询记录、头部律所复杂案例三类来源取材；论文称这些开放式案例的纠纷复杂度超过标准化考试题。",
+        "cite": [
+          "paper@§3.2.1"
+        ]
+      },
+      {
+        "k": "改编加噪",
+        "text": "法律专家把真实案例改写成模拟场景，故意保留并放大认知挑战：模糊描述、遗漏关键事实、误导性子情节、情绪化叙述、多方主体与责任边界不清、新旧法并存的场景。",
+        "cite": [
+          "paper@§3.1.3",
+          "paper@附录 C.1"
+        ]
+      },
+      {
+        "k": "专家标注",
+        "text": "招募 39 名通过国家统一法律职业资格考试的法学专家（律所执业者与顶尖高校博士生）撰写问题与参考答案，其中 17 名高级标注员主导校验；平均每题约 3 小时，每题人工成本超过 100 元人民币。",
+        "cite": [
+          "paper@§3.2.1",
+          "paper@附录 B.1"
+        ]
+      },
+      {
+        "k": "草稿-评审-验证与脱敏",
+        "text": "每案走「草稿—评审—验证」：主标注员起草事实场景与参考答案，二专家盲审查逻辑不一致，剩余争议升级资深专家；同时做全面人工脱敏，系统移除个人标识与敏感信息。",
+        "cite": [
+          "paper@附录 B.2",
+          "paper@§5"
+        ]
+      },
+      {
+        "k": "成库后复审",
+        "text": "全库完成后随机抽 20% 案例，提交清华大学与上海交通大学的教授做二次审计。",
+        "cite": [
+          "paper@附录 B.2"
+        ]
+      },
+      {
+        "k": "逐题定制 rubric",
+        "text": "每题单独设计评分细则：Task 1 约 550 个评分点、Task 2 约 11,000 个、Task 3 约 900 个；Task 2 的 rubric 再分为顺序推理与非顺序推理两类。",
+        "cite": [
+          "paper@Table 2",
+          "paper@附录 C.2"
+        ]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "三个任务各配专用系统提示词：Task 1 要求模型以资深律师身份一次输出至少 25 个编号追问；Task 2 强制「结论优先」，再依次给事实、推理、法条；Task 3 要求自行判定文书类型（起诉状或答辩状）并输出 2,500–3,000 字符。参评模型全部走 API 调用、用默认超参数，只把 max_token 调到 16k/32k 以保证回答完整。判分由 Gemini-3.0-Pro-Preview 担任裁判，对照专家写的参考答案与逐点 rubric 做「提到即给分、漏了就扣」的字面匹配，允许酌情给部分分；因为 LL 容易算错，最终用正则从裁判输出里抽出原始分再程序化求和。",
+    "cite": [
+      "paper@§4.1",
+      "paper@附录 E.1",
+      "paper@§4.2",
+      "paper@附录 E.2.3",
+      "paper@附录 F.2"
+    ],
+    "variants": [
+      {
+        "text": "裁判模型：候选裁判 Gemini-3.0-Pro-Preview / GPT-5.1-1113-Global / Qwen3-Max 与人类专家的一致性差异明显（Table 4），换裁判分数不可比。",
+        "cite": [
+          "paper@Table 4"
+        ]
+      },
+      {
+        "text": "顺序推理口径：Task 2 中要求按步骤顺序推进的题，在严格顺序约束下推理维度最高掉 6–8%；GPT-4o 只掉 0.2%，但论文归因于其低分地板效应（基线 42.00）。",
+        "cite": [
+          "paper@§4.4.2"
+        ]
+      },
+      {
+        "text": "参评模型数口径：摘要与附录 D 称评了 10 个 SOTA 模型，正文与 Table 3 实列 24 个（多出 Qwen 4B/8B/30B、Ernie、GLM、Doubao、Grok 等）。",
+        "cite": [
+          "abs@Abstract",
+          "paper@§4.1"
+        ]
+      },
+      {
+        "text": "公开子集口径：GitHub 只开源 280 题（250 + 18 + 12），与论文所述 850 题不是同一集合，复现与自测只能用子集。",
+        "cite": [
+          "repo@README"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "scoring-rate",
+      "name": "得分率（Scoring Rate）",
+      "direction": "越高越好",
+      "description": "实得分除以该题 rubric 总分（Σsi / Σmi）；因为不同题难度与评分点数量不同，用它把各题的分归一到同一尺度。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§4.3"
+      ]
+    },
+    {
+      "id": "overall",
+      "name": "Overall 加权总分",
+      "direction": "越高越好",
+      "description": "Task 1、Task 2、Task 3 的得分率按题量加权（权重 2:5:3）后的加权平均。它是加权得分率而不是答对率，也不能读成通过率。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@Table 3"
+      ]
+    },
+    {
+      "id": "judge-alignment",
+      "name": "裁判-人类一致性（Pearson / Spearman）",
+      "direction": "越高越好",
+      "description": "裁判模型分数与三名人类法律专家均分的相关性，只在裁判选型阶段报告，不是模型成绩。",
+      "range": null,
+      "unit": "correlation",
+      "cite": [
+        "paper@§4.2",
+        "paper@Table 4"
+      ]
+    }
+  ],
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2026-01-23",
+      "label": "arXiv v1 提交",
+      "cite": [
+        "abs@Submission history"
+      ]
+    },
+    {
+      "id": "v2",
+      "date": "2026-01-28",
+      "label": "arXiv v2 修订（本页论文口径的事实与数值依据此版）",
+      "cite": [
+        "abs@Submission history"
+      ]
+    },
+    {
+      "id": "acl2026",
+      "date": "2026-07",
+      "label": "ACL 2026 正式发表（Volume 1: Long Papers，页码 10067–10116；Anthology 标注 2026/7，未给出具体日）",
+      "cite": [
+        "acl",
+        "acl@Volume"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "法律体系单一（仅中国大陆、全中文）",
+      "impact": "全部场景以中文构建、根植中国法律体系；论文自述这是为真实性与实用性做的取舍，代价是通用性——其他法域常见的法律备忘录写作等任务不在覆盖范围内。",
+      "severity": "高",
+      "response": "论文称未来将与其他国家的法律 AI 研究者合作，把基准扩展到更多法律体系、探索跨法域法律 agent 能力。",
+      "reader": "不要把它读成「通用法律能力」分数；换法域需要另找基准。",
+      "cite": [
+        "paper@§7",
+        "paper@附录 C.1"
+      ]
+    },
+    {
+      "issue": "LLM 裁判一致性有限",
+      "impact": "判分依赖单一裁判 Gemini-3.0-Pro-Preview。三名人类法律专家各自对照三人均分的 Pearson 相关性也只有 0.8391–0.8841、MAE 5.1937–7.9817；候选裁判里 GPT-5.1-1113-Global 在咨询任务上 Pearson 仅 0.469。越接近高分段，几分差距越可能落在判分噪声内。",
+      "severity": "高",
+      "response": "论文用每法域至少 10% 抽样做裁判选型、每份回答至少三名人类专家打分建立 ground truth，并用正则提取原始分后程序化求和以减少计算误差；未见针对裁判偏差的专门修正。",
+      "reader": "把高分段（90% 上下）的几分差距当作接近裁判噪声量级来看，不要当成能力差异。",
+      "cite": [
+        "paper@§4.2",
+        "paper@Table 4",
+        "paper@附录 F.1",
+        "paper@附录 F.2"
+      ]
+    },
+    {
+      "issue": "论文内部规模数字不一致",
+      "impact": "摘要与附录 D 说评了 10 个 SOTA 模型，正文与 Table 3 实列 24 个（多出 Qwen 4B/8B/30B、Ernie-5.0、GLM-4.6、Doubao、Grok 等）；Task 1 的 rubric 平均数在 Table 2 记 21、在附录 C.1 记 8.7；场景粒度也不一致——摘要与结论称覆盖 13 个实务场景，附录 B.3 称包含 15 个具体子任务。二手转述「PLawBench 评了 N 个模型」时口径容易错。",
+      "severity": "中",
+      "response": "未见官方回应。",
+      "reader": "引用参评模型数时回到 Table 3 逐行核对，不要直接采信摘要的「10 个」；场景数与子任务数也要分开注明出自摘要还是附录 B.3。",
+      "cite": [
+        "abs@Abstract",
+        "paper@§4.1",
+        "paper@Table 2",
+        "paper@附录 C.1",
+        "paper@附录 B.3"
+      ]
+    },
+    {
+      "issue": "公开规模远小于全库，且在线平台不可用",
+      "impact": "850 题里 GitHub 只开源 280 题（案例分析 250 + 咨询 18 + 文书 12）；ACL 版摘要给出的数据链接仍是匿名链接，与 arXiv 版指向的 GitHub 仓库不一致。论文承诺上线的持续评测在线平台，在论文与仓库里都没有给出可读取的入口，仓库 README 只有一张与论文 Table 3 一致的 Ranking 表。",
+      "severity": "中",
+      "response": "论文称计划上线持续 benchmark 官方模型的在线平台并更新结果；ACL 版的匿名数据链接也未随仓库公开。",
+      "reader": "复现与自测只能用 280 题子集；看到「PLawBench 850 题可下载」的说法要核实实际拿到多少。",
+      "cite": [
+        "repo@README",
+        "paper@§7",
+        "acl@Abstract"
+      ]
+    },
+    {
+      "issue": "只评单模型，不含多智能体",
+      "impact": "论文明确只评单模型 LLM Agent，没有覆盖多智能体框架；作者认为复杂 agent 框架的运营复杂度与高 token 消耗使其不适合日常法律实务，因此不纳入本轮评测。",
+      "severity": "中",
+      "response": "论文把多智能体列为未覆盖方向，未见官方补充实验。",
+      "reader": "不要把这里的分数当成「法律 agent 系统」的上限。",
+      "cite": [
+        "paper@§7"
+      ]
+    }
+  ],
+  "notes": "arXiv v2（2026-01-28）+ ACL 2026 正式发表版 + GitHub 仓库三处交叉核对；摘要称评 10 个模型、正文 Table 3 实列 24 个（见 limitations）。",
+  "official_sources": [
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2601.16669"
+    },
+    {
+      "kind": "paper",
+      "url": "https://aclanthology.org/2026.acl-long.458/"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/SKYLENAGE-AI/PLawBench"
+    }
+  ],
+  "related_benchmarks": [
+    "legalbench",
+    "legal-agent-benchmark",
+    "prbench-legal"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-26",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-26",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "PLawBench: A Rubric-Based Benchmark for Evaluating LLMs in Real-World Legal Practice（arXiv:2601.16669v2 全文 PDF，pdftotext 文本）",
+        "url": "https://arxiv.org/pdf/2601.16669",
+        "accessed": "2026-11-26"
+      },
+      {
+        "id": "abs",
+        "kind": "paper",
+        "title": "arXiv:2601.16669 摘要页（含 submission history 与作者列表）",
+        "url": "https://arxiv.org/abs/2601.16669",
+        "accessed": "2026-11-26"
+      },
+      {
+        "id": "acl",
+        "kind": "paper",
+        "title": "ACL Anthology 2026.acl-long.458（ACL 2026 Volume 1: Long Papers，页码 10067–10116）",
+        "url": "https://aclanthology.org/2026.acl-long.458/",
+        "accessed": "2026-11-26"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "SKYLENAGE-AI/PLawBench（GitHub README：开源子集说明与 Ranking 表）",
+        "url": "https://github.com/SKYLENAGE-AI/PLawBench",
+        "accessed": "2026-11-26"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "阿里巴巴集团 × 通义千问团队（Qwen Team）× Skylenage；合作院校含上海交通大学、清华大学、滑铁卢大学、匹兹堡大学、博洛尼亚大学",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      "first_release": {
+        "v": "2026-01-23（arXiv v1；v2 于 2026-01-28）",
+        "cite": [
+          "abs@Submission history"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "abs@Abstract",
+        "paper@§3.2.1",
+        "paper@Table 2"
+      ],
+      "interpretation": [
+        "paper@§7",
+        "paper@Table 3",
+        "paper@§4.4.2"
+      ]
+    },
+    "problem": {
+      "text": "既有法律基准多取自司法考试题或判决书，任务高度标准化，只测最终答案对错，用的是粗糙单一的指标（结论是否正确、是否引用法条、是否遵循三段论结构），抓不住真实法律实践里的歧义、复杂性与推理要求。PLawBench 想把评测搬到真实执业流程里：用户叙述是模糊、不完整、带情绪甚至被刻意框架化的，模型必须先问出关键事实，再按法律三段论推理，最后产出合规文书。",
+      "cite": [
+        "paper@§1",
+        "abs@Abstract"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机 / 人类基线",
+        "value": "论文未给出",
+        "note": "评分是「得分率」而非对错率，rubric 点必须逐条命中才给分；论文没有报告随机追问或人类律师的参考分，本站也不推算。",
+        "cite": [
+          "paper@§4.3"
+        ]
+      },
+      {
+        "label": "论文发布时最好（Table 3）",
+        "value": "GPT-5.2-1211-global Overall 69.67",
+        "note": "同期最低为 GPT-4o-20240806 的 35.76。分项最好：Task 2 平均 Claude-opus-4-5 68.00、结论 Gemini-3.0-pro-preview 72.03、事实 Qwen3-235b-a22b-instruct 91.90、推理 Claude-opus-4-5 65.49、法条 Claude-opus-4-5 53.61、Task 3 原告 Gemini-3.0-pro-preview 63.84。",
+        "cite": [
+          "paper@Table 3"
+        ]
+      },
+      {
+        "label": "官方仓库榜单最高",
+        "value": "同为 GPT-5.2-1211-global Overall 69.67",
+        "note": "GitHub README 的 Ranking 表与论文 Table 3 数值一致（本次逐格核对），仓库未列出论文之外的新模型成绩。",
+        "cite": [
+          "repo@README"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      },
+      {
+        "label": "裁判噪声参考线",
+        "value": "人类专家间 Pearson 0.8391–0.8841，MAE 5.1937–7.9817",
+        "note": "三名人类法律专家各自与三人均分的相关性也只有这个量级，因此接近高分段时几分差距可能落在判分噪声内。这条线是本站按裁判一致性给出的参考，不是官方上限。",
+        "cite": [
+          "paper@附录 F.1"
+        ]
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 Overall 69.67 读成「答对率 69.67%」——它是 Task 1/2/3 按 2:5:3 加权的得分率，判分按 rubric 逐点给分，还包含扣分项。",
+        "cite": [
+          "paper@Table 3",
+          "paper@§4.3"
+        ]
+      },
+      {
+        "text": "把 Task 2「事实」维度的高分当成法律推理强——事实维度最高 91.90，而推理维度最高只有 65.49、法条最高 53.61；论文明确指出 Statute 与 Reasoning 的得分率持续低于平均。",
+        "cite": [
+          "paper@Table 3",
+          "paper@§4.4.2"
+        ]
+      },
+      {
+        "text": "以为 850 题都能下载——GitHub 只开源 280 题（案例分析 250 + 咨询 18 + 文书 12）。",
+        "cite": [
+          "repo@README"
+        ]
+      },
+      {
+        "text": "把不同裁判口径下的分数排在一起比——候选裁判与人类一致性差异明显，GPT-5.1-1113-Global 在咨询任务上 Pearson 仅 0.469。",
+        "cite": [
+          "paper@Table 4"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "阿里巴巴集团、通义千问团队（Qwen Team）、Skylenage；合作院校含上海交通大学、清华大学、滑铁卢大学、匹兹堡大学、博洛尼亚大学",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "共同一作 Yuzhen Shi、Huanghai Liu、Yiran Hu；通讯作者 Bing Zhao、Hu Wei；通义团队作者含 An Yang、Bowen Yu、Dayiheng Liu、Junyang Lin",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2026-01-23 arXiv v1 → 2026-01-28 arXiv v2 → 2026-07 ACL 2026 发表（Anthology ID 2026.acl-long.458，页码 10067–10116）",
+        "cite": [
+          "abs@Submission history",
+          "acl@Anthology ID",
+          "acl@Volume"
+        ]
+      },
+      {
+        "k": "标注者",
+        "v": "39 名通过国家统一法律职业资格考试的法学专家（律所执业者与顶尖高校博士生），其中 17 名高级标注员主导校验",
+        "cite": [
+          "paper@§3.2.1",
+          "paper@附录 B.1"
+        ]
+      },
+      {
+        "k": "标注成本",
+        "v": "平均每题约 3 小时，每题人工成本超过 100 元人民币",
+        "cite": [
+          "paper@附录 B.1"
+        ]
+      },
+      {
+        "k": "数据来源",
+        "v": "中国裁判文书网的专家编辑判决书、个人咨询记录、头部律所复杂案例；全部经人工脱敏，并通过法律专家的伦理审查",
+        "cite": [
+          "paper@§3.2.1",
+          "paper@附录 B.2",
+          "paper@§5"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "GitHub SKYLENAGE-AI/PLawBench 开源 280 题（案例分析 250 + 咨询 18 + 文书 12），含问题、参考答案、评分细则与评分表；arXiv 版摘要的数据链接指向该仓库，ACL 版摘要仍给匿名链接，两版不一致",
+        "cite": [
+          "repo@README",
+          "abs@Abstract",
+          "acl@Abstract"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-26",
+        "columns": [
+          "来源",
+          "模型",
+          "Overall",
+          "Task 1 咨询",
+          "Task 2 平均",
+          "Task 2 结论",
+          "Task 2 事实",
+          "Task 2 推理",
+          "Task 2 法条",
+          "Task 3 平均"
+        ],
+        "rows": [
+          [
+            "论文 Table 3",
+            "GPT-5.2-1211-global",
+            "69.67",
+            "79.57",
+            "66.37",
+            "69.93",
+            "88.26",
+            "60.38",
+            "48.59",
+            "68.58"
+          ],
+          [
+            "论文 Table 3",
+            "GPT-5-0807-global",
+            "67.76",
+            "78.71",
+            "62.92",
+            "66.77",
+            "86.21",
+            "60.27",
+            "34.18",
+            "68.54"
+          ],
+          [
+            "论文 Table 3",
+            "Claude-opus-4-5-20251101",
+            "66.47",
+            "68.92",
+            "68.00",
+            "69.82",
+            "83.61",
+            "65.49",
+            "53.61",
+            "62.27"
+          ],
+          [
+            "论文 Table 3",
+            "Gemini-3.0-pro-preview",
+            "66.35",
+            "70.17",
+            "64.95",
+            "72.03",
+            "77.79",
+            "65.00",
+            "46.42",
+            "66.13"
+          ],
+          [
+            "论文 Table 3",
+            "Qwen3-max",
+            "64.75",
+            "75.76",
+            "67.17",
+            "67.52",
+            "90.97",
+            "62.75",
+            "45.10",
+            "53.38"
+          ],
+          [
+            "论文 Table 3",
+            "DeepSeek-V3.2-thinking-inner",
+            "63.23",
+            "72.09",
+            "64.11",
+            "63.91",
+            "86.35",
+            "60.24",
+            "44.19",
+            "55.87"
+          ],
+          [
+            "论文 Table 3",
+            "Qwen3-235b-a22b-instruct-2507",
+            "63.08",
+            "67.79",
+            "65.57",
+            "64.34",
+            "91.90",
+            "60.07",
+            "42.52",
+            "55.78"
+          ],
+          [
+            "论文 Table 3",
+            "GPT-4o-20240806",
+            "35.76",
+            "47.86",
+            "41.66",
+            "54.79",
+            "67.90",
+            "34.46",
+            "15.82",
+            "17.86"
+          ]
+        ]
+      },
+      "cite": [
+        "paper@Table 3",
+        "repo@README"
+      ]
+    }
+  }
 }
