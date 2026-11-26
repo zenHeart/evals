@@ -4933,3 +4933,92 @@ StepFun 的官方模型页此前在发现通道里长期挂着 5 条「回填缺
 - **跳过清单**：OpenAI「Searching for distant planets with Astra」（2026-11-24，天文科普案例；页内两份 vega 载荷经解出后确认是「系外行星累计发现数」与「KIC 5689121 光变曲线」，**不是评测数据**）；OpenAI「OpenAI and Cisco introduce Shirudo」（开源 Linux 运行时工具）；OpenAI「Combatting adversarial distillation」「Perplexity and Intelligence」「The Silent Consensus」「Research acceleration: The jagged frontier」「Our new blog for science」（研究/观点/公告文章，非模型发布）；Google「Humanity's First Exam」博客页本身（**基准发布公告，非模型发布**——其技术报告的分值已按上条回填进各模型 release，故本条登记为候选并注明分值去向，不另建 release）；DeepMind「Finding faster quantum algorithms with agents and formal verification」「Genie 4 is now available」（研究文章 / 已建档模型的可用性公告）；Google「Introducing Tool Retrieval in the Gemini API」「Introducing file slicing controls in the Gemini API」「Try Tabletop」等（开发者功能与产品更新）。
 - **待人工核验**：本批新增 29 条 evidence 全部为官方文本层表格逐格机读，**无 pending 行**；上一轮遗留的位图 pending 行（OpenAI 芯片设计 4 张 RISC-V 图、微软 Aion 安全基准柱状图、腾讯 WeMM-Ecom 逐基准成绩表）状态不变，仍待人工读图。
 - **门禁**：`node scripts/reconcile-coverage.mjs` ✓（连跑两次 diff 为空）/ `node scripts/validate-data.mjs` ✓（taxonomy 9 类 / vendors 18 / benchmarks 512 / releases 266（official 252）/ evidence edges 4514）/ `node --test tests/*.test.mjs` ✓ / `npm run build` ✓（含 validate-site）。
+
+## 第七十八批（2026-11-26 CST / 2026-11-25 UTC 增量窗口 2026-11-10 ~ 2026-11-25：新增 4 个腾讯官方开源发布 Hy-MT3 / WePM 1.0 / WeMM-Video / WeVisForensics，共 78 条 evidence）
+
+- **窗口**：增量窗口 2026-11-10 ~ 2026-11-25（检查点锚点 `last_max_release_date=2026-11-24` 回退 14 天重叠）。检查点回写 `last_scan_at=2026-11-25`（UTC），`last_max_release_date` **保持 2026-11-24**（本批入库的最大官方发布日就是 2026-11-24，与既有锚点持平，按「锚点只前进不回退」口径不变）。官方 release 总数 266 → **270**（official 252 → **256**）；evidence edges 4514 → **4592**（+78 = 39 verified + 39 pending）；benchmarks 512 → **513**（新建实体 1 个）。
+- **执行方式与执行器互斥**：本批由 **MiniMax Code App（cwr 主机 / CHENGLE）** 在隔离 worktree `model-release-daily-20261125T231952Z`（自 `origin/main` = `3940a72` 开出）内执行。原 OpenClaw 定时声明 `workflow:daily-model-releases-and-provider-refresh`（cron id `db2e30ef-541a-49e2-af4a-bcdff12831e9`，cron `15 7 * * *` Asia/Shanghai，agent `walle`）开工前已用**原生 `openclaw cron get <id> --json` 单条回读**确认 `enabled=false`（不是只看列表项），`openclaw cron status` 显示调度器本身 `enabled=true / triggersEnabled=true` 但该声明已停用 → **两个执行器不会跑同一 cycle**。本批不修改私有 workflow 配置，**私有 provider 刷新阶段保持为独立受控环节、本批不触发**。
+- **入口复扫（Step 1）**：`node .claude/skills/ingest-releases/scripts/scan.mjs --write` 对 18 家在册厂商的官方域名入口逐一实扫并刷新 `data/model-coverage.json`（`last_scan_at=2026-11-25T23:20:56Z`）；另按 `references/discovery-channels.md` 的渠道表**逐通道定点复核**：OpenAI news RSS、DeepMind RSS、blog.google RSS、Mistral RSS、豆包 sitemap（带 lastmod）、MiniMax 平台 release notes、DeepSeek updates、Anthropic news 与平台模型总表、xAI 文档模型页、Meta 研究博客、Kimi 博客、Qwen / Tencent / StepFun / Microsoft / 小米 / GLM / Thinking Machines / Particle 官方页，以及 Hugging Face 10 个官方组织仓 API（mistralai / tencent / Qwen / stepfun-ai / microsoft / zai-org / deepseek-ai / moonshotai / MiniMaxAI / meta-llama）。
+- **窗口结论：4 组未建档的新官方发布，全部来自腾讯官方开源仓库**（其余 17 家在册厂商经官方渠道与 Hugging Face 组织 API 巡检**均无未建档的新模型发布**）：
+  1. **Hy-MT3**（2026-11-24）——腾讯混元 Hy 家族第三代多语翻译模型，1.8B / 7B / 30B-A3B 三档，随发布开源 rubric 型翻译自动评测套件 TransRubric。
+  2. **WePM 1.0**（2026-11-23）——腾讯端侧统一多模态模型家族，2B / 4B 两档，一个共享视觉-语言主干同时做嵌入 / 生成 / 带类型决策三类任务。
+  3. **WeMM-Video**（2026-11-20）——腾讯微信视觉团队的全模态视频理解与推理家族，2B / 4B / 9B / 35B-A3B 四档。
+  4. **WeVisForensics**（2026-11-16）——腾讯开源的 AI 生成视频检测多智能体，Qwen3.5-4B 基座 + 5 个 rank-64 LoRA 适配器。
+
+### 本批建档情况
+
+| 项目 | 数量 | 说明 |
+|---|---|---|
+| 新建 release 文件 | **4** | `tencent/hy-mt3.json`、`tencent/wepocketmodel-1-0.json`、`tencent/wemm-video.json`、`tencent/wevisforensics.json` |
+| 新增 evidence 行 | **78** | **39 verified + 39 pending** |
+| 新建归档目录 | **4** | `models/2026-11-24-hy-mt3/`、`models/2026-11-23-wepocketmodel-1-0/`、`models/2026-11-20-wemm-video/`、`models/2026-11-16-wevisforensics/`（官方模型卡 / 官方仓 README 原样存档 + 官方结果图 PNG + `index.md` 转录表 + `manifest.json` 哈希） |
+| 新建 benchmark 实体 | **1** | `data/benchmarks/transrubric.json`（`benchmark-profile/v1`，含 summary / interpretation / measures / does_not_measure / dataset / metrics / limitations 与逐条来源引用） |
+| 新铸 benchmark id（登记 `unmapped_ids`） | **33** | 见下表；`data/compare-rules.json` 的 `unmapped_ids` 已逐条写明「为何不进对照」，`tests/compare-audit.test.mjs` 的 **undecided / stranded / orphans 三项均为 0** |
+| 候选处置 | 5 条 | 新建档 4 条（`release-hy-mt3` / `release-wepocketmodel-1-0` / `release-wemm-video` / `release-wevisforensics`，均已置 `official_source_verified: true` 并回填 `archive_path`）+ 1 条非发布项（`kimi-9167fe2b14c3`） |
+
+#### 逐条发布与取数口径
+
+- **Hy-MT3**（发布日证据：官方 Hugging Face 模型卡 News 段印刷「2026.11.24 We open-sourced Hy-MT3-1.8B/Hy-MT3-7B/Hy-MT3-30B-A3B on HuggingFace and ModelScope, and released TransRubric on GitHub.」；官方 GitHub 仓 `Tencent-Hunyuan/Hy-MT3` 的 News 段同印 2026.11.24；官方模型仓 `lastModified=2026-11-24T07:02:57Z`，三处互证。技术报告 arXiv 2611.27673 的 v1 提交为 2026-11-20、官方模型仓 `createdAt` 为 2026-11-17，均属发布前预置，**发布日取官方模型卡与官方仓的印刷日期，不取论文日**）
+  - 12 条 evidence = **9 条 pending（官方结果图柱标签）+ 3 条 verified（官方散文明文）**。
+  - 9 条 pending 覆盖 General Translation（FLORES-200 / FLORES-200 低资源 / WMT26 / 普通话⇄少数民族语言 的官方聚合）/ WildMTBench-202611 / IFMTBench × 三个参数档，数值来自 `imgs/main_result.png` 的柱状标签**人工视觉转写**，按「图表图片行永不自动翻 verified」口径一律 `value: null` + `score_status: not_extracted`，数值只写进 notes 与 display。
+  - 3 条 verified 是官方正文与 arXiv 摘要同段的**相对改进幅度**（有误译样本占比 −43%、漏译/增译占比 −74%、指令遵循错误 −40%，均相对 Hy-MT2），metric 已明确标注「非绝对分」；原文只写「on real-world scenario data」未点名基准，故单列 `hy-mt3-realworld-scenario`，不并入 WildMTBench。
+  - 协议：官方模型卡印 `max_context: 8192` → `context_window` 记 8K；官方结果图注明确「all other models, including Hy-MT3, are run in non-thinking mode」→ `protocol.reasoning_effort` 记 non-thinking mode；General Translation 与 WildMTBench-202611 由 **TransRubric** 打分 → `protocol.judge` 填 TransRubric，IFMTBench 官方未说明 judge 故留 null；官方未印 temperature / top_p / 运行次数，其余 protocol 键一律 null。
+- **WePM 1.0**（发布日证据：官方 GitHub 仓 `Tencent/WePocketModel` 的 News 段印刷「**2026-11-23** · **WePM 1.0 is now open source.**」；官方模型仓 `lastModified=2026-11-23T11:23:08Z` 同日互证。arXiv 2611.27365 的 v1 提交为 2026-11-20、官方模型仓 `createdAt` 为 2026-11-17，均属发布前预置，**发布日取官方仓印刷日期**）
+  - 6 条 evidence **全部 verified**，全部取自官方散文明文：30 项嵌入基准平均分 **72.86**、39 项生成基准平均分 **62.41**、7 项带类型决策（JEV）基准平均分 **61.11**、五组联合评测 Joint 分数 **52.74**（同设定对照基线 38.15 属竞品列，按口径只进 notes），以及官方代码仓 HCD 章节的 **HCD 0.244**（配 65.1% 调和性能、约 8 GB BF16 权重显存）与**调和性能 65.1%**。
+  - 口径要点：前三行与 Joint 分数是**多项基准的均值/汇总口径**，不是单一基准绝对分；HCD 是官方自定义复合指数（分母含常驻推理显存），随部署显存变化。官方代码仓另给「相对六个独立三模型组合 HCD 高约 2.7–5.4 倍」，arXiv 摘要另给「相对 HCD 最高的独立模型栈少 61.9% 常驻权重显存、HCD 高 2.64 倍」，两处出自同一发布的不同段落、差异源于对照集合不同，**本仓按各自出处如实记录、不做调和**。
+  - 官方 30/39/7 项基准的逐基准成绩与 HCD 对比图均为位图（`assert/wepm_single_results.png` 等），**本批不做读图转写**；官方未印上下文长度（`context_window` 留 null）与推理协议键。
+- **WeMM-Video**（发布日证据：官方 GitHub 仓 `Tencent/WeMM-Video` README 印刷「The model license covers the WeMM-Video collection as of **November 20, 2026**.」；官方 Hugging Face papers 页对 arXiv 2611.26409 标注「Published on Nov 19」、arXiv v1 提交 2026-11-19T16:58:15Z、官方模型仓 `createdAt` 2026-11-17（发布前预置），三个候选日期同处窗口内，**取官方 README 印刷日 2026-11-20**）
+  - 30 条 evidence **全部 pending**：`wemm-video-benchmarks.png` 的 20 项音视频理解/推理基准（Video-MME / Video-MME-v2 / Daily-Omni / WorldSense / AVUT Human / AV-SpeakerBench / OmniCompass-AV / Video-Holmes / OmniVideoBench / OmniReasoningBench / LVBench / LVOmniBench / MMOU (test-mini) / CrossVid / AVHBench / TimeLens / OmniCap-IF ISR / DVD-Bench (En) / OmniVChat / O-IN-Bench）× 35B-A3B，加 `wemm_index_audio.png` 的 5 项通用音频与音乐理解基准（MMAU-Pro / MMAR / MMSU / RUL-MuchoMusic / MusTBench）× 35B-A3B 与 9B 两档，共 30 行柱标签人工视觉转写。
+  - 因 30 行全为图表读数、**无一条可翻 verified**，本 release 的 `status` 记 `pending`（与 `google/alphaproof-code.json` 等占位发布同口径）。
+  - 官方模型卡未印上下文长度——vLLM 部署示例里的 `--max-model-len 8192` 属**部署建议不是模型规格声明**，故 `context_window` 留 null；4B 与 2B 两档在官方结果图中未单独给出成绩，本批未为其建行。
+- **WeVisForensics**（发布日证据：官方 Hugging Face papers 页对 arXiv 2611.21373 印刷「Published on **Nov 16**」与 arXiv v1 提交 2026-11-16T16:36:14Z；官方 GitHub 仓 README 的 News 段只印到月（`[2026-11]`）；官方模型仓与代码仓 `createdAt` 均为 2026-11-14（发布前预置），四处同处窗口内互证，**取 2026-11-16**）
+  - 30 条 evidence **全部 verified**，全部取自官方 GitHub 仓 README 的 Markdown / HTML **真表格逐格机读**（非位图读图、非 OCR）：5 条官方「Performance at a Glance」汇总行（GenBuster-Bench **97.7** / GenBuster-Bench++ **97.5** / MintVid General **88.0** / AgenticCue **97.8** / Average **95.2**，取 WeVisForensics 列）+ 22 条完整结果表的分生成器（6 个视频生成器）与分能力（5 个切分）行（DTPO 与 SFT 两档各 11 条）+ 3 条 SFT 档汇总行。
+  - 竞品列按口径只写进 notes：同行最强基线 **94.3 / 91.4 / 82.2 / 79.3 / 86.2**（官方 Best Baseline 列）；官方另称该档平均准确率比最强既有检测器高 9.0 个百分点（95.2 vs 86.2），与表内数字自洽。
+  - 已知不一致：官方 README 的 TODO 区仍列有「Model weights on Hugging Face」与「AgenticCue benchmark」未完成项，而官方模型仓与 arXiv 条目均已上线；**本仓按已上线的一手来源建档，并在 release notes 与归档 `index.md` 记录该差异**。
+  - 官方未印上下文长度与推理协议键，`context_window` 留 null、protocol 各键一律 null。
+
+#### 新铸 benchmark id（33 个，均标 `new-benchmark`，不建实体）
+
+`general-translation`、`wildmtbench`、`ifmtbench`、`hy-mt3-realworld-scenario`、`wepm-embedding-average`、`wepm-generation-average`、`wepm-decision-average`、`wepm-joint-score`、`wepm-hcd`、`wepm-harmonic-performance`、`genbuster-bench`、`genbuster-bench-plus-plus`、`mintvid-general`、`agenticcue`、`wevisforensics-average`、`daily-omni`、`avut-human`、`av-speakerbench`、`omnicompass-av`、`video-holmes`、`omnireasoningbench`、`lvomnibench`、`mmou`、`avhbench`、`timelens`、`omnicap-if-isr`、`dvd-bench`、`omnivchat`、`o-in-bench`、`mmau-pro`、`mmar`、`rul-muchomusic`、`mustbench`。
+
+按仓库口径「写不出权威解读就不建实体」，这些 id 先由自动兜底详情页承载（仅 `transrubric` 因官方同时给出了完整定义、WMT26-QE 成绩与人工对齐数据而建了实体）；33 个 id 同时登记进 `data/compare-rules.json` 的 `unmapped_ids` 并逐条写明不进对照的理由。
+
+### 跳过清单
+
+- **OpenAI**：窗口内 news RSS 条目逐条判读，**无一为独立模型发布**——11-24「Searching for distant planets with Astra」（天文科普案例，图表为光变曲线）、11-23「OpenAI and Cisco introduce Shirudo」（开源 Linux 运行时工具）、11-22「Perplexity and Intelligence」、11-20「Combatting adversarial distillation」「Can AI help scientists identify promising drug candidates?」、11-19 起的 Performance Factory / PR 扫描 / Daybreak 系列、11-18「The Silent Consensus」「Research acceleration: The jagged frontier」「Inside the Codex sandbox」「Managing frontier AI risk」、11-17「Introducing GPT‑6.2 Astra and Sol」「Astra for Law」「Introducing ChatGPT for Sales」「Introducing OpenAI for Chile」、11-16 起的客户案例与产品公告，均为研究 / 观点 / 产品 / 合作公告。11-24 的「Advancing chip design with OpenAI models」已在此前批次建档（`openai/gpt-6-chip-design`）。
+- **Anthropic**：平台模型总表与 news 页窗口内**无新模型发布**——Opus 5.5 / Sonnet 5.5 / Haiku 5.5 / Fable & Mythos 5.2 全部已建档；窗口内为 IPO 文件与定价、政府与机构合作、Safety 与蒸馏防御类文章。
+- **Google / DeepMind**：Genie 4、Gemini 4 Neon、Gemini 4 Hydrogen、Gemini 4 Carbon、AlphaGenome 2、AlphaProof Code、Humanity's First Exam 全部已建档；窗口内其余为「Tool Retrieval / file slicing」等 Gemini API 功能更新与量子算法研究文章。
+- **Microsoft**：11-23「RL infrastructure at Microsoft AI」是**基础设施文章**、非模型发布；11-17 的 MAI Code 2 / MAI Cyber 2 Flash / MAI Realtime 1 / MAI Image 2.7 等此前批次已建档。
+- **DeepSeek**：2026-11-13「Releasing the full suite of application APIs」是**API 功能发布**、非模型发布；官方仓最新模型仍是 window 外的既有型号。
+- **豆包**：官方 sitemap 在窗口内仅 1 条带 lastmod 的条目（2026-11-16 分子逆向合成挑战赛，赛事公告）；Seedream 5.5 / Seedance 2.5 / Seed Audio 等此前批次已建档。
+- **Mistral**：官方 RSS 窗口内 **0 条**；**MiniMax**：平台 release notes 最新仍是 window 外的 M3.1 Flash（10-19），窗口内仅 11-10 的 MiniMax H3 Image（已建档）；**xAI / Meta / Kimi / Qwen / StepFun / 小米 / GLM / Thinking Machines / Particle**：官方渠道与 Hugging Face 组织 API 巡检均无窗口内新模型发布。
+- **腾讯已建档项**：Hy4 flash / Hy4 / Hy4 preview / WeMM-Ecom 等此前批次已建档；`tencent/TiMiHOKGameTranslator` 是**工具脚本不是模型发布**，不建档；Hy-MT3 / WePM / WeMM-Video 的 FP8 / AWQ / GGUF / NVFP4 等量化格式是同一权重的部署格式，不另建行。
+- **扫描器误报处置**：`kimi-9167fe2b14c3`（Hugging Face `moonshotai/Kimi-K3.1-Pro` 下的**社区讨论帖**，编码器分词对齐的合并请求）由入口扫描自动收进候选，本批核实为**非模型发布**，已把 `classification` 改 `unknown`、补 `exclusion_reason` 并清空 `next_backfill_at`。
+
+### 待人工核验
+
+1. **Hy-MT3 官方结果图 9 行**（General Translation / WildMTBench-202611 / IFMTBench × 1.8B / 7B / 30B-A3B）：位图已存档，视觉转写值写在各行 notes 与 display，读图确认后方可翻 verified。
+2. **WeMM-Video 两张结果图 30 行**：同上，`pending` + `not_extracted`；官方称跨 120+ 基准评测，本批只录入图中带标签的 30 行，未做全量读图转写。
+3. **WePM 逐基准成绩（30 / 39 / 7 项）与 HCD 对比图**：位图未读图；若后续需要逐基准对照，须先读图并按官方口径建行。
+4. **WeVisForensics 官方 README 的 TODO 未完成项**（模型权重 / AgenticCue 基准）与已上线的一手来源不一致，需官方澄清后决定是否补建 AgenticCue 基准档案。
+5. **Hy-MT3 官方「real-world scenario data」与 WildMTBench-202611 的关系**官方未明示，本批把相对改进幅度单列为 `hy-mt3-realworld-scenario`、不并入 WildMTBench，需官方澄清后再决定是否合并。
+
+### 门禁
+
+| 门禁 | 结果 |
+|---|---|
+| `node scripts/reconcile-coverage.mjs` | ✓ exit 0；**连跑两次 diff 为空**（幂等） |
+| `node scripts/validate-model-coverage.mjs` | ✓ exit 0 |
+| `node scripts/validate-data.mjs` | ✓ **PASS** — taxonomy 9 类 / vendors 18 / **benchmarks 513** / **releases 270（official 256）** / **evidence edges 4592**；模板档案 333 个通过校验 |
+| `node --test tests/*.test.mjs` | **175 / 176 通过**（详见下方执行环境说明） |
+| `npm run sync:skills:check` | ✓ 技能镜像零漂移（`.agent/skills/` 与 `.claude/skills/` 一致）；本批未改动技能定义 |
+| `npm run validate` | ✓ 32 章全部通过 |
+| `npm run build:epub:official` | ✓ evals.epub 32 章 / 486 KB |
+| `npm run build:web` | ✓ 32 章页面 + 513 档案页 + 372 自动证据页 + sitemap **827 URL** |
+| `npm run validate:site` | ✓ **全部通过**（链接检查 1234 个 HTML / 47647 个内部引用；时序单调性 323 个时间轴 / 2553 个事件卡片；统一档案模板渲染检查 333 个评测页） |
+
+- **执行环境说明（非账本问题，与本批数据无关）**：`tests/learning-agent-run-eval.test.mjs` 的「importing the evaluator produces no CLI output or process exit」一项在 **Windows 主机上必然失败**——该用例用 `await import(<绝对路径>)` 直接 import `scripts/evaluate-learning-agent.mjs`，Windows 下绝对路径不是合法 ESM URL（须为 `file:///` URL），POSIX 下绝对路径可被 ESM 加载器直接接受。本批已用 `node --input-type=module -e "await import('C:/.../scripts/evaluate-learning-agent.mjs')"` **单独复现同一 `ERR_UNSUPPORTED_ESM_URL_SCHEME`**，与本批改动无关；该用例涉及的文件本批**未改动**（`git status` 可证）。Linux CI 上该用例应通过。**该守卫写法建议后续单独修**（属构建代码，不在本批可写路径内）。
+
+### 分支与合并顺序
+
+本批分支 `model-release-daily-20261125T231952Z`，**基线是 `origin/main` = `3940a72`（第七十七批合并后的主干）**，与主干 README 的批次序号连续（上一批为第七十七批），无序号倒挂问题，也无与其他未合并批次重叠的 release/归档。**按归属 Issue 的约定，本批只开 PR 交人工评审，不自动合并、不自动发布**；远端分支一律保留。
