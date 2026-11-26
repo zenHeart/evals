@@ -1,39 +1,302 @@
 {
   "id": "measurebench",
   "name": "MeasureBench",
-  "full_name": null,
-  "aliases": [],
-  "status": null,
-  "categories": [
-    "multimodal"
-  ],
-  "summary": "VLM 读仪表数值评测（真实+合成 2442 图）",
-  "interpretation": "仪表读数视觉评测（真实照片加程序合成仪表），读数准确率口径，越高越好；论文实测最强前沿 VLM 也普遍挣扎，低分反映细粒度空间定位短板而非知识缺陷。",
-  "measures": [],
-  "does_not_measure": [],
-  "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
-  },
-  "metrics": [],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [],
-  "notes": "字节 Seed 引用；BAAI 发布",
-  "official_sources": [
+  "full_name": "Do Vision-Language Models Measure Up? Benchmarking Visual Measurement Reading with MeasureBench（视觉语言模型测得准吗：用 MeasureBench 评测视觉测量读数）",
+  "aliases": ["MB", "仪表读数评测"],
+  "status": "active",
+  "categories": ["multimodal"],
+  "summary": "MeasureBench 用 2,442 道「看图报仪表数值」题考 VLM：同一张图既要读对数值，也要报对单位，按区间匹配+单位匹配算分。真实照片约 52%、程序合成图约 48%，覆盖 26 类仪表和 4 种读数设计。",
+  "interpretation": "分数越高，说明模型越能把指针位置、刻度对应成正确数值。论文实测最强模型 Gemini-2.5-Pro 也只有 30.2%（真实集）/26.3%（合成集），而单位识别普遍超过 90%——瓶颈不在认单位，而在把视觉位置换算成数字，属于细粒度空间定位短板，不是缺少仪表知识。",
+  "measures": [
     {
-      "kind": "paper",
-      "url": "https://arxiv.org/abs/2510.26865"
+      "area": "刻度盘类（Dial）",
+      "focus": "模拟指针仪表：单针的电流表、压力表，以及双针/三针的时钟；论文把主要精力放在这一类",
+      "share": "真实集 711 题 / 合成集 750 题（Table 1）",
+      "format": "提问「What is the reading of the instrument?」，按数值区间+单位同时判对才算完全正确",
+      "cite": ["paper@§2.1", "paper@Table 1"]
     },
     {
-      "kind": "site",
-      "url": "https://seed.bytedance.com/en/blog/seed2-1-officially-released-advancing-ai-productivity"
+      "area": "线性刻度类（Linear）",
+      "focus": "无指针的线性标尺：直尺（单刻度）、游标卡尺（主尺+游标）",
+      "share": "真实集 361 题 / 合成集 300 题（Table 1）",
+      "format": "同上，需要数格、估读最小刻度",
+      "cite": ["paper@§2.1", "paper@Table 1"]
+    },
+    {
+      "area": "数字显示类（Digital）",
+      "focus": "电子或机械数字表头：脉搏血氧仪、机电式电能表；论文刻意压低占比，因为这类主要考 OCR",
+      "share": "真实集 96 题 / 合成集 60 题（Table 1）",
+      "format": "同上；论文实测这一类明显更容易",
+      "cite": ["paper@§2.1", "paper@§3.1", "paper@Table 1"]
+    },
+    {
+      "area": "复合类（Composite）",
+      "focus": "同时含多种读数设计：游标卡尺（组合式）、复杂水表；需要分别读各部再做数值换算",
+      "share": "真实集 104 题 / 合成集 60 题（Table 1）",
+      "format": "同上；论文实测这一类最难",
+      "cite": ["paper@§2.1", "paper@§3.1", "paper@Table 1"]
     }
   ],
-  "related_benchmarks": [],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "does_not_measure": [
+    {
+      "text": "不单独考单位识别能力——单位识别已超过 90%，论文把它当作已解决的前置能力，报告它只为拆解误差来源",
+      "cite": ["paper@§3.1"]
+    },
+    {
+      "text": "不考「为什么这样读」的推理质量——只按最终答案判分，论文自己指出这会让「答案对但推理错」的误差互相抵消、抬高准确率",
+      "cite": ["paper@§3.4"]
+    },
+    {
+      "text": "不测工具调用、多轮交互或长文档推理：每张图只问一个读数问题，默认单轮无示例无工具",
+      "cite": ["paper@§2.2"]
+    },
+    {
+      "text": "不测开放集泛化——真实集固定 26 类仪表、合成集固定 16 类/39 外观，论文未给出新增仪表或开放集口径",
+      "cite": ["paper@§2.1"]
+    }
+  ],
+  "dataset": {
+    "sample_count": 2442,
+    "splits": ["real_world（真实照片，人工标注）1,272 题", "synthetic_test（程序合成图）1,170 题"],
+    "languages": ["en"],
+    "source_type": "混合来源：真实照片（网络图站限定可授权图片、团队私拍、第三方厂商采购）+ 程序合成图（2D 程序化渲染 + 3D Blender 物理渲染）",
+    "public_sample": true,
+    "totals": "共 2,442 题 = 真实 1,272 题（约 52%，覆盖 26 类仪表）+ 合成 1,170 题（约 48%，16 类仪表/39 种外观）；四种读数设计真实集为刻度盘 711 / 线性 361 / 数字 96 / 复合 104，合成集为 750 / 300 / 60 / 60。数据在 Hugging Face 公开（CC BY-SA 4.0，453 MB），评测与合成代码在 GitHub。",
+    "cite": ["paper@§1", "paper@Table 1", "dataset@Data card"],
+    "construction": [
+      {
+        "k": "真实图来源",
+        "text": "三个渠道：Google Image Search（限定可授权图片）、团队成员私拍、第三方厂商采购；剔除模糊、低分辨率、被遮挡的图。单张图的来源归属记录在 HF 数据集的 meta_info 字段。",
+        "cite": ["paper@§2.3", "dataset@Data card"]
+      },
+      {
+        "k": "标注流程",
+        "text": "招募 10 名标注员、按专业背景分配任务，每人独立标注、另一人复核，分歧交第三人仲裁；之后再做一轮独立复审，核对数值区间与单位。",
+        "cite": ["paper@§2.3"]
+      },
+      {
+        "k": "合成管线",
+        "text": "每种仪表注册成一个 generator：随机化刻度类型与数量、读数数字、量程与单位、材质、光照、背景和相机位姿。2D 后端用提示词模板让 LLM 起草代码、人工核验后入库；3D 后端用 Blender (v4.2) 配 BlenderKit/Sketchfab 资产生成照片级图像。",
+        "cite": ["paper@§2.4", "paper@附录 C"]
+      },
+      {
+        "k": "合成题量",
+        "text": "实现 16 类仪表上的 39 种外观，最终生成 1,170 张合成测试图；另按 39 类各 100 张生成 3,900 对样本，专门用于强化微调训练，不进测试集。",
+        "cite": ["paper@§2.4", "paper@§4"]
+      },
+      {
+        "k": "许可与工程",
+        "text": "HF 数据集标注 CC BY-SA 4.0；仓库用 pre-commit + Ruff 做基础检查，评测入口为 evaluation/evaluate.py，3D 素材（.blend）另放 HF philokey/MeasureBench。",
+        "cite": ["dataset@Data card", "repo@README"]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "overall-accuracy",
+      "name": "总体准确率（fully-correct）",
+      "direction": "越高越好",
+      "description": "数值落在任一候选区间内且单位同时判对的题目占比；论文 Table 2 与官网榜单的 Ovr 列",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["paper@§2.2", "paper@§3.1"]
+    },
+    {
+      "id": "value-accuracy",
+      "name": "数值准确率",
+      "direction": "越高越好",
+      "description": "只判数值：从模型回答解析出的数落在候选区间内即算对，不看单位（Val 列）",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["paper@§2.2"]
+    },
+    {
+      "id": "unit-accuracy",
+      "name": "单位准确率",
+      "direction": "越高越好",
+      "description": "只判单位：回答中任一单位字符串能匹配候选单位的子串即算对（Unit 列）；论文实测普遍 >90%",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["paper@§2.2", "paper@§3.1"]
+    },
+    {
+      "id": "readout-type-accuracy",
+      "name": "分读数设计准确率",
+      "direction": "越高越好",
+      "description": "按刻度盘 / 数字 / 线性 / 复合四种读数设计分别统计的总体准确率（Dial/Dig/Lin/Com 列）",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["paper@§3.1", "paper@Table 2"]
+    }
+  ],
+  "default_protocol": {
+    "raw": "默认用最简提问「What is the reading of the instrument?」（不点名仪表类型），单轮、无示例、无工具。从模型输出中「Answer:」标记或 \\boxed{} 内抽取最终答案；出现多个数时取最右侧标量，时间读数按 hh:mm[:ss] 换算成秒。数值对标准闭区间判定、单位对可接受子串判定，两者都对才算完全正确。",
+    "cite": ["paper@§2.2", "paper@§3.3"],
+    "variants": [
+      {
+        "text": "思考 vs 不思考：reasoning tokens 设为 0 或上限 10,240，覆盖 InternVL3.5-8B/38B、Qwen3-VL-8B/235B、Claude 4.1 Opus、Gemini 2.5 Flash 六个混合推理模型；论文实测扩展文本推理基本无效。",
+        "cite": ["paper@§3.2"]
+      },
+      {
+        "text": "具体提问 vs 通用提问：具体提问点名仪表类型（如「What is the reading of this ammeter?」），通用提问用统一问句；再加「Provide an answer as precise as possible」后缀。论文实测点名仪表类型只对单位准确率有中等正向影响、对总准确率没有实质差别，因此主榜保留原始简提示词。",
+        "cite": ["paper@§3.3"]
+      },
+      {
+        "text": "真实子集 vs 合成子集：两个 split 分开报告。差距不大但方向一致——多数模型在合成图上更低（如 Gemini-2.5-Pro 30.2→26.3，GPT-5 19.8→16.9）。",
+        "cite": ["paper@§3.1"]
+      },
+      {
+        "text": "详细教学式提示词：按读数设计给通用规则、按仪表给专门指导。Gemini-2.5-Pro 仅从 30.2% 提升到 31.8%，GPT-5 与 Qwen2.5-VL-7B 几乎不动。",
+        "cite": ["paper@§3.5"]
+      },
+      {
+        "text": "合成数据训练变体：用 3,900 对合成样本对 Qwen2.5-VL-3B/7B 做 GRPO 强化微调（奖励 = 0.9×读数正确 + 格式奖励，verl 框架、8×H100、15 epoch），另有 SFT 对照。",
+        "cite": ["paper@§4", "paper@§4.1", "paper@附录 A.1"]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2025-10-30",
+      "label": "arXiv v1 首发（cs.CV）：2,442 题、2D/3D 合成管线、18 个模型主榜",
+      "cite": ["paper"]
+    },
+    {
+      "id": "v2",
+      "date": "2026-03-24",
+      "label": "arXiv v2 修订，本档案核对所用版本；标题页署名 BAAI FlagEval Team",
+      "cite": ["paper", "paper@作者署名"]
+    },
+    {
+      "id": "cvpr-2026",
+      "date": "2026-03-24",
+      "label": "arXiv v2 修订（2026-03-24），本档案核对所用版本；同版仓库公告「MeasureBench is accepted by CVPR 2026」、项目页 BibTeX 收录进 CVPR 论文集（year=2026），具体录用日期未披露",
+      "cite": ["repo@README", "project-page@BibTeX"]
+    },
+    {
+      "id": "leaderboard-23",
+      "date": "2026-11-25",
+      "label": "项目页榜单扩展至 23 个 VLM（页面未标注更新日期，本条按本次核验日期记录）",
+      "cite": ["project-page@Leaderboard"]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "误差互相抵消，只按最终答案打分会抬高准确率",
+      "impact": "多数错误来自指针位置、相邻刻度、液面边缘这类细粒度误判；论文明确观察到「推理错但答案碰巧对」的误差抵消现象，单看最终答案的准确率因此偏乐观。",
+      "severity": "高",
+      "response": "论文用区间匹配容忍读数误差，并公布按读数设计拆分的准确率；未对误差抵消做单独修正。",
+      "reader": "看总分时同时看分读数设计的列：刻度盘/复合类常常只有几个百分点，总分容易被数字显示类拉高。",
+      "cite": ["paper@§3.4", "paper@§3.1"]
+    },
+    {
+      "issue": "「10:10」语言先验与十的整数倍尖峰",
+      "impact": "Qwen2.5-VL-72B 在 73% 的真实时钟图上答「10:10」；InternVL3.5 与 Qwen2.5-VL 系列的输出分布在十的整数倍处出现明显尖峰，思考模式无法缓解。",
+      "severity": "中",
+      "response": "采集时刻意避开「10:10」图像、合成时对时刻均匀采样；GRPO 强化微调后 Qwen2.5-VL-7B 答「10:10」的比例从 23.73% 降到 3.39%。",
+      "reader": "时钟类题目的低分要先排除先验偏置；换模型或换版本时这一项波动很大。",
+      "cite": ["paper@§3.1", "paper@附录 E", "paper@附录 F"]
+    },
+    {
+      "issue": "真实图来源与授权复杂",
+      "impact": "真实集来自网络图站（限定可授权许可）、团队私拍和第三方采购，不同来源的画质、噪声、水印分布不一致，单张图的归属记录在 meta_info 里。",
+      "severity": "中",
+      "response": "数据集卡给出 CC BY-SA 4.0 许可与逐行来源归属；论文剔除了模糊、低分辨率、被遮挡的图。",
+      "reader": "复现或商用前先看 HF 数据集卡的许可条款和每行的来源归属。",
+      "cite": ["paper@§2.3", "dataset@Data card"]
+    },
+    {
+      "issue": "没有人类基线，也没有随机猜测基线",
+      "impact": "论文未报告人类读数对照实验，也未给随机基线，无法据此判断 30% 距离「人类水平」还有多远。",
+      "severity": "中",
+      "response": "论文用更早的专用读数系统作对照（Table 7）：Reitsma et al. (2024) 真实集总体 8.5%，Shu et al. (2023) 在所有样本上失败（记 N/A），均明显低于当时的 VLM。",
+      "reader": "不要把 30% 理解成「人类只能读对三成」；本条是本站记录的信息缺失，不是论文结论。",
+      "cite": ["paper@Table 7", "paper@§3.1"]
+    },
+    {
+      "issue": "跨来源数字口径不一致",
+      "impact": "论文与项目页榜单写最强模型 30.2%（真实）/26.3%（合成），而 Hugging Face 数据集卡的同一句话写 30.3%/26.1%；项目页榜单又把最好成绩推到 41.7%/39.2%（Doubao-Seed-2.0-Pro）。",
+      "severity": "低",
+      "response": "引用论文结论时以 arXiv Table 2 为准；数据集卡与官网榜单是不同时间、不同模型集合的快照。",
+      "reader": "引用任何数字时写清出处（论文 Table 2 / 项目页榜单 / 数据集卡）和口径。",
+      "cite": ["paper@§3.1", "dataset@Evaluation Findings", "project-page@Leaderboard"]
+    }
+  ],
+  "notes": "字节 Seed 发布博客把 MeasureBench 列为 Seed2.1 Pro 的最高分基准之一；BAAI FlagEval 发布，CVPR 2026 论文。",
+  "official_sources": [
+    { "kind": "paper", "url": "https://arxiv.org/abs/2510.26865" },
+    { "kind": "site", "url": "https://flageval-baai.github.io/MeasureBenchPage/" },
+    { "kind": "repo", "url": "https://github.com/flageval-baai/MeasureBench" },
+    { "kind": "dataset", "url": "https://huggingface.co/datasets/FlagEval/MeasureBench" },
+    { "kind": "announcement", "url": "https://seed.bytedance.com/en/blog/seed2-1-officially-released-advancing-ai-productivity" }
+  ],
+  "related_benchmarks": ["vlmsareblind", "hle-vl", "mmmu", "mathvista", "mmstar", "realworldqa"],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-25",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-25",
+    "sources": [
+      { "id": "paper", "kind": "paper", "title": "Do Vision-Language Models Measure Up? Benchmarking Visual Measurement Reading with MeasureBench（arXiv:2510.26865v2，2026-03-24）", "url": "https://arxiv.org/abs/2510.26865", "accessed": "2026-11-25" },
+      { "id": "project-page", "kind": "site", "title": "MeasureBench 项目页（23 模型榜单 + CVPR 2026 BibTeX）", "url": "https://flageval-baai.github.io/MeasureBenchPage/", "accessed": "2026-11-25" },
+      { "id": "repo", "kind": "repo", "title": "flageval-baai/MeasureBench（评测与合成代码）", "url": "https://github.com/flageval-baai/MeasureBench", "accessed": "2026-11-25" },
+      { "id": "dataset", "kind": "dataset", "title": "FlagEval/MeasureBench（Hugging Face，CC BY-SA 4.0）", "url": "https://huggingface.co/datasets/FlagEval/MeasureBench", "accessed": "2026-11-25" },
+      { "id": "seed-en-blog-seed2-1-official", "kind": "announcement", "title": "Seed2.1 正式发布：推进 AI 生产力（字节跳动 Seed 官方博客）", "url": "https://seed.bytedance.com/en/blog/seed2-1-officially-released-advancing-ai-productivity", "accessed": "2026-11-25" }
+    ],
+    "header": {
+      "publisher": { "v": "北京智源人工智能研究院（BAAI）FlagEval 团队", "cite": ["paper@作者署名", "project-page@作者署名"] },
+      "first_release": { "v": "2025-10-30（arXiv v1）", "cite": ["paper"] }
+    },
+    "cites": {
+      "summary": ["paper@§1", "paper@Table 1", "project-page@Introduction"],
+      "interpretation": ["paper@§3.1", "paper@§3.4", "paper@§6"]
+    },
+    "problem": {
+      "text": "现有评测碎片化：覆盖的设备种类有限，重「类别对不对」而轻校准后的数值误差，也几乎不管单位归一化、容差带和带误差读数。仪表读数这种细粒度视觉任务一直缺一个横跨多种仪表、判得了数值的基准。",
+      "cite": ["paper@§5", "project-page@Introduction"]
+    },
+    "ladder": [
+      { "label": "随机猜测基线", "value": "论文未给出", "note": "答案是连续区间+单位，论文没有报告随机基线，本站也不推算。", "cite": ["paper@§2.2"] },
+      { "label": "人类读数基线", "value": "论文未给出", "note": "论文未做人类对照实验，无法据此定义「人类水平」。", "cite": ["paper@§3.1"] },
+      { "label": "更早的专用读数系统", "value": "8.5%（真实集总体）", "note": "Reitsma et al. (2024) 在 Table 7 中的成绩；同表 Shu et al. (2023) 在所有样本上失败（记 N/A）。", "cite": ["paper@Table 7"] },
+      { "label": "论文发布时最好", "value": "30.2% / 26.3%", "note": "Gemini-2.5-Pro，真实集 / 合成集总体准确率（论文 Table 2）。", "cite": ["paper@§3.1"] },
+      { "label": "项目页榜单当前最高", "value": "41.7% / 39.2%", "note": "Doubao-Seed-2.0-Pro，真实集 / 合成集总体准确率；榜单共 23 个 VLM。", "cite": ["project-page@Leaderboard"] },
+      { "label": "本站账本当前最高", "auto": "ledger-top" }
+    ],
+    "misreadings": [
+      { "text": "把单位准确率当成仪表读数能力——单位识别超过 90%，真正难的是把刻度映射成数值。", "cite": ["paper@§3.1"] },
+      { "text": "把 30% 理解成「模型只会三成仪表」——分数强烈受读数设计影响：Gemini-2.5-Pro 在数字显示类能到 80.2%，复合类只有 3.8%。", "cite": ["paper@§3.1"] },
+      { "text": "以为模型越大越准——论文里 GPT-5-Mini 略胜 GPT-5，Qwen2.5-VL-7B 与 72B 持平并超过 32B。", "cite": ["paper@§3.1"] },
+      { "text": "把合成集和真实集分数混在一起比——多数模型在合成图上更低，两个 split 必须分开看。", "cite": ["paper@§3.1"] }
+    ],
+    "background": [
+      { "k": "发布方", "v": "北京智源人工智能研究院（BAAI）FlagEval 团队；项目页署名 Beijing Academy of Artificial Intelligence，CVPR 2026 论文", "cite": ["paper@作者署名", "project-page@作者署名", "repo@README"] },
+      { "k": "核心作者", "v": "Fenfen Lin、Yesheng Liu、Haiyu Xu、Chen Yue、Zheqi He、Mingxuan Zhao、Miguel Hu Chen、Jiakang Liu、JG Yao、Xi Yang（repo BibTeX 署名）", "cite": ["repo@Citation"] },
+      { "k": "评测框架", "v": "论文中的 18 个模型（8 个专有 + 10 个开源权重）用 FlagEvalMM 框架统一评测；项目页后续扩展到 23 个 VLM", "cite": ["paper@§3.1", "project-page@Leaderboard"] },
+      { "k": "合成训练数据", "v": "39 类仪表各 100 张共 3,900 对，用于对 Qwen2.5-VL-3B/7B 做 GRPO：verl 框架、8×H100、15 epoch、全局 batch 128、奖励 α=0.9 加格式奖励", "cite": ["paper@§4", "paper@§4.1", "paper@附录 A.1"] },
+      { "k": "数据与代码", "v": "数据在 Hugging Face FlagEval/MeasureBench（CC BY-SA 4.0，2,442 行 / 453 MB，英文）；评测与合成代码在 GitHub；3D 素材在 HF philokey/MeasureBench", "cite": ["dataset@Data card", "repo@README"] },
+      { "k": "发布引用", "v": "字节跳动 Seed2.1 Pro 发布博客（2026-06-23）称其在 CharXiv-RQ 与 MeasureBench 等多个基准上取得最高分", "cite": ["seed-en-blog-seed2-1-official"] }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-25",
+        "columns": ["来源", "模型", "真实集·总体", "合成集·总体", "单位（真实）", "口径"],
+        "rows": [
+          ["论文 Table 2", "Gemini-2.5-Pro", "30.2%", "26.3%", "96.2%", "论文主榜，默认简提示词"],
+          ["论文 Table 2", "Qwen3-VL-235B", "22.6%", "19.0%", "95.7%", "同上"],
+          ["论文 Table 2", "GPT-5-Mini", "22.0%", "17.9%", "95.2%", "同上"],
+          ["论文 Table 2", "GPT-5", "19.8%", "16.9%", "96.0%", "同上"],
+          ["论文 Table 2", "Qwen2.5-VL-7B", "14.6%", "10.9%", "93.4%", "同上"],
+          ["论文 Table 2", "Grok-4", "7.5%", "6.2%", "80.5%", "同上"],
+          ["论文 Table 8", "Qwen2.5-VL-7B + GRPO", "19.7%", "35.2%", "92.3%", "合成数据 RFT"],
+          ["项目页榜单", "Doubao-Seed-2.0-Pro", "41.7%", "39.2%", "97.1%", "项目页榜单，共 23 个 VLM"],
+          ["项目页榜单", "Gemini-3.1-Pro", "36.1%", "33.2%", "88.3%", "同上"],
+          ["项目页榜单", "GPT-5.4", "32.9%", "38.4%", "96.7%", "同上"],
+          ["项目页榜单", "Claude-Sonnet-4.6", "20.1%", "18.5%", "97.9%", "同上"]
+        ]
+      },
+      "cite": ["paper@Table 2", "paper@Table 8", "project-page@Leaderboard"]
+    }
+  }
 }

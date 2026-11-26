@@ -3,58 +3,358 @@
   "name": "ResearchRubrics",
   "full_name": "ResearchRubrics: A Benchmark of Prompts and Rubrics For Evaluating Deep Research Agents",
   "aliases": [],
-  "status": null,
+  "status": "active",
   "categories": [
     "agent"
   ],
-  "summary": "Scale AI 出品的深度研究 agent 基准：真实开放研究提示配 2,500 余条专家细粒度 rubric，用 LLM judge 按条目评估研究报告质量",
-  "interpretation": "得分是 rubric 条目命中口径，衡量开放多源推理质量而非单一事实对错；Step 3.7 Flash 页印 (score) 71.7、Step 3.5 Flash 65.3、Seed2.0 Lite 59.2，均为厂商自报，judge 版本与阈值未统一，跨页可比性有限。",
+  "summary": "ResearchRubrics 是 101 道开放式 Deep Research 提示词配 2,593 条专家手写细粒度 rubric 的基准：每题 20–43 条标准，全部人工撰写、无 LLM 生成，覆盖显式/隐式要求、信息综合、引用使用、沟通质量、指令遵循六个维度，并按重要度加权（|权重|≥4 为必答、≤3 为选答）。评测用 LLM-as-judge 逐条判定后算出加权符合度；论文报告最好的 Deep Research 系统也只有 67.7%（三元判定）。",
+  "interpretation": "分数是「按专家 rubric 逐条符合的加权比例」，不是事实正确率——引用数量和引用准确率在论文里是单独统计的旁证。三个读数要留意：一是失败集中在隐式要求与信息综合（两者合计占全部失败 45–50%），短板在推理而非检索；二是输出越长分越高（r≈0.24–0.28），可以靠堆长度刷分；三是论文和官方仓库都没有排行榜，厂商自报分的裁判模型、二元/三元口径、是否在 rubric 里内联具体例子都不同，不能直接横向比。",
   "measures": [
-    "开放多源 web 研究的过程质量",
-    "细粒度 rubric 条目的覆盖度"
+    {
+      "area": "显式要求（Explicit Requirements）",
+      "focus": "答案是否覆盖并正确回答了提示里明确要求的每一点；论文示例：要求「比较 X 和 Y 并推荐一个」时，是否真的逐项比较并给出明确推荐。",
+      "share": "27.7%",
+      "format": "每条 rubric 由 LLM judge 判定 Satisfied / Partially Satisfied / Not Satisfied（官方仓库当前实现只输出 Satisfied / Not Satisfied）",
+      "cite": [
+        "arxiv-2511-07685@Table 3",
+        "arxiv-2511-07685@Figure 4",
+        "arxiv-2511-07685@§3.4"
+      ]
+    },
+    {
+      "area": "隐式要求（Implicit Requirements）",
+      "focus": "知识完备的人会预期到、但用户没明说的点；论文示例：解释医疗方案时主动提及副作用或费用。论文与附录都指出这一类占了失败与裁判错判的大多数，是当前系统的主要失分来源。",
+      "share": "39.4%",
+      "format": "同上（逐条三值判定，官方仓库当前为二值）",
+      "cite": [
+        "arxiv-2511-07685@Table 3",
+        "arxiv-2511-07685@Figure 4",
+        "arxiv-2511-07685@§4.2",
+        "arxiv-2511-07685@附录 B.4"
+      ]
+    },
+    {
+      "area": "信息综合（Synthesis of Information）",
+      "focus": "是否跨多个来源或子问题建立联系并得出结论，而不是罗列事实；论文示例：综述多篇可再生能源研究时指出总体趋势。按类别规模归一化后，这一类与引用质量的裁判分歧略高于其他类。",
+      "share": "7.8%",
+      "format": "同上（逐条三值判定，官方仓库当前为二值）",
+      "cite": [
+        "arxiv-2511-07685@Table 3",
+        "arxiv-2511-07685@Figure 4",
+        "arxiv-2511-07685@附录 B.4"
+      ]
+    },
+    {
+      "area": "引用使用（Use of References）",
+      "focus": "该引证据的地方是否引了、引用是否具体相关且真的支撑论断；论文示例：综述大模型时引用关键论文（如「Attention is All You Need」）并把论断链接到来源。图 4(b) 的标签写作 References & Citation Quality。",
+      "share": "3.5%",
+      "format": "同上（逐条三值判定，官方仓库当前为二值）",
+      "cite": [
+        "arxiv-2511-07685@Table 3",
+        "arxiv-2511-07685@Figure 4"
+      ]
+    },
+    {
+      "area": "沟通质量（Communication Quality）",
+      "focus": "清晰度、组织与语气是否匹配受众——事实正确但结构混乱或不合受众仍然不合格；论文示例：给大众写博客时逻辑清楚、简洁、不过度堆术语。",
+      "share": "15.8%",
+      "format": "同上（逐条三值判定，官方仓库当前为二值）",
+      "cite": [
+        "arxiv-2511-07685@Table 3",
+        "arxiv-2511-07685@Figure 4"
+      ]
+    },
+    {
+      "area": "指令遵循（Instruction Following）",
+      "focus": "是否遵守明确的格式、语气、排除项等约束；论文示例：要求「总结但不要提到主题 Z」时确实不提 Z。",
+      "share": "5.8%",
+      "format": "同上（逐条三值判定，官方仓库当前为二值）",
+      "cite": [
+        "arxiv-2511-07685@Table 3",
+        "arxiv-2511-07685@Figure 4"
+      ]
+    }
   ],
   "does_not_measure": [
-    "封闭式事实问答准确率",
-    "代码与数学求解"
+    {
+      "text": "事实正确率与检索过程：基准不核对事实，也不测信息是怎么找到的，只按 rubric 判最终报告；引用数量与引用准确率是论文单独统计的旁证（Gemini DR 111 次引用 81% 准确，Perplexity 31 次 90%）。",
+      "cite": [
+        "arxiv-2511-07685@§4.2"
+      ]
+    },
+    {
+      "text": "多轮交互与工具调用轨迹：101 题全是 single-turn，是否联网搜索由被测系统自行决定，基准不记录中间步骤，也不评工具选择。",
+      "cite": [
+        "arxiv-2511-07685@§3"
+      ]
+    },
+    {
+      "text": "训练集/测试集划分与过拟合检测：Hugging Face 上的 default 与 train 两个 split 都是同一批 101 题，论文未设私有留存集。",
+      "cite": [
+        "hf-researchrubrics@Hugging Face"
+      ]
+    }
   ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [
-      "en"
+    "sample_count": 101,
+    "splits": [
+      "default（101 行）",
+      "train（101 行，与 default 为同一批题）"
     ],
-    "source_type": "real-world（研究提示 + 专家 rubric，2,500+ 条标准）",
-    "public_sample": true
+    "source_type": "expert-authored（专家人工撰写并迭代打磨，明确不用 LLM 播种或生成；三位专家流水线：起草 → 反馈迭代 → 独立终审）",
+    "public_sample": true,
+    "totals": "101 道单轮开放式提示词，共 2,593 条人工撰写 rubric（每题 20–43 条，论文另处报均值约 25.7）；六个评估轴；每条标准带 [−5, 5] 权重，|权重| ≥ 4 为必答、|权重| ≤ 3 为选答，负权重专罚事实错误、跑题等常见失败模式；被测系统输出为长报告。Hugging Face 上 default 与 train 各 101 行，许可 MIT，总大小 868 kB。",
+    "cite": [
+      "arxiv-2511-07685@§3",
+      "arxiv-2511-07685@§3.3",
+      "arxiv-2511-07685@§4.5",
+      "arxiv-2511-07685@附录 B.1",
+      "hf-researchrubrics@Hugging Face"
+    ],
+    "construction": [
+      {
+        "k": "提示词来源",
+        "text": "为保证真实感与多样性，初始提示词想法取自用户论坛、问答站点与头脑风暴，再改写成深度推理 agent 会收到的研究式问题；论文强调要模拟真实用户提问，而非学术化短答案。",
+        "cite": [
+          "arxiv-2511-07685@§3.1",
+          "arxiv-2511-07685@§3"
+        ]
+      },
+      {
+        "k": "领域筛选",
+        "text": "按「九个宽类」筛选提示词以最大化多样性，范围从技术文档、历史分析、创意写作到时事；但附录与数据集字段都显示实际是十个领域，论文自身表述不一致。",
+        "cite": [
+          "arxiv-2511-07685@§3.1",
+          "arxiv-2511-07685@附录 Table 10",
+          "hf-researchrubrics@Hugging Face"
+        ]
+      },
+      {
+        "k": "三位专家流水线",
+        "text": "Expert 1 提出提示词与一套 rubric → 交给 Expert 2 评审，两人反馈迭代到通过 → Expert 3 做最终独立复审。论文定义的「专家」是有扎实 STEM 训练且擅长任务设计与评测的人，不是每个题目领域的专家；参与者只选自己熟悉的领域。",
+        "cite": [
+          "arxiv-2511-07685@§3.1"
+        ]
+      },
+      {
+        "k": "全人工、无 LLM 生成",
+        "text": "每条提示词与标准都由专家撰写并迭代打磨，没有用 LLM 播种或生成；论文把这一点作为与已有 rubric 基准（用 LLM 生成 rubric、只做人工复审）的主要区别。",
+        "cite": [
+          "arxiv-2511-07685@§3",
+          "arxiv-2511-07685@§2"
+        ]
+      },
+      {
+        "k": "复杂度三维标注",
+        "text": "每题按 Conceptual Breadth / Logical Nesting Depth / Exploration 三个正交维度标注，用于分析 agent 在哪个维度上更容易失手；论文另有一处把同一三元组称作 (Breadth, Depth, Ambiguity)。",
+        "cite": [
+          "arxiv-2511-07685@§3.2",
+          "arxiv-2511-07685@Table 2"
+        ]
+      },
+      {
+        "k": "权重与必答/选答",
+        "text": "每条标准带 [−5, 5] 权重：|权重| ≥ 4 为必答（答案充分性的底线），|权重| ≤ 3 为选答（把「好」和「仅仅合格」区分开的加分项）；正权重奖励有价值的属性，负权重专罚事实错误、跑题、内容冗余等常见失败模式；权重对标 Table 4 的六级人类偏好刻度。",
+        "cite": [
+          "arxiv-2511-07685@§3.3",
+          "arxiv-2511-07685@§3.3 Table 4"
+        ]
+      },
+      {
+        "k": "人工投入",
+        "text": "整个基准的构建累计投入超过 2,800 小时人工。",
+        "cite": [
+          "arxiv-2511-07685@Abstract"
+        ]
+      }
+    ]
   },
   "metrics": [
     {
-      "id": "rubric-score",
-      "name": "Rubric score",
+      "id": "rubric-compliance-score",
+      "name": "Rubric 符合度（Compliance Score）",
+      "direction": "越高越好",
+      "description": "对每条 rubric 按「权重 × 判定结果」求和，再除以正权重之和（即模型可拿到的满分）；负权重会把得分压到 0 以下，因此理论范围是 −100% 到 100%。",
+      "range": [
+        -100,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "repo-researchrubrics@README",
+        "arxiv-2511-07685@§3.4"
+      ]
+    },
+    {
+      "id": "macro-f1-human-alignment",
+      "name": "人机一致性 Macro F1",
+      "direction": "越高越好",
+      "description": "LLM judge 的逐条判定与专家标注之间的 Macro F1，用来验证「用模型当裁判替人打分」是否可行；论文用 9 名专家对 303 份回复的人工标注作 ground truth。",
       "range": [
         0,
         100
       ],
       "unit": "percent",
-      "direction": "higher",
-      "aggregation": "mean"
+      "cite": [
+        "arxiv-2511-07685@§3.4",
+        "arxiv-2511-07685@§4.1",
+        "arxiv-2511-07685@§4.3"
+      ]
     }
   ],
   "default_protocol": {
-    "raw": "LLM judge 依 rubric 条目逐条判分；发布方页以 (score) 口径印出"
+    "raw": "被测 Deep Research 系统各自产出结构化 PDF 报告，论文将其转成 markdown 后交给 LLM-as-a-judge，按该题专属的 20–43 条 rubric 逐条判定（论文同时报二元 met/not-met 与三元 fully/partially/not satisfied 两套），再按权重算出 Compliance Score。官方仓库的当前实现只做二值判定（Satisfied 记 1.0、Not Satisfied 记 0.0），默认裁判是 litellm_proxy/gemini/gemini-2.5-pro-preview-06-05；超长文档自动按 8000 token 分块、逐块判定后再汇总，批处理并发 20、单请求最多重试 3 次。",
+    "cite": [
+      "arxiv-2511-07685@§4.1",
+      "arxiv-2511-07685@§3.4",
+      "repo-researchrubrics@README"
+    ],
+    "variants": [
+      {
+        "text": "二元 vs 三元判定：论文两套都报，二元把 Partially Satisfied 并入 Not Satisfied，同一系统的三元分数通常高出约 20 个百分点的人机一致性差异；官方仓库当前只实现二元，论文的三元分数无法用现成代码复现。",
+        "cite": [
+          "arxiv-2511-07685@§4.1",
+          "arxiv-2511-07685@§4.3",
+          "repo-researchrubrics@README"
+        ]
+      },
+      {
+        "text": "裁判模型：论文用 GPT-5、Claude-Sonnet-4.5、Gemini-2.5-Pro 三个裁判，官方仓库默认只用 Gemini-2.5-Pro；同一系统换裁判，人机一致性 Macro F1 会差几个点。",
+        "cite": [
+          "arxiv-2511-07685@§4.1",
+          "arxiv-2511-07685@§4.3 Table 6",
+          "repo-researchrubrics@README"
+        ]
+      },
+      {
+        "text": "rubric 是否内联具体例子：论文实测在标准里加具体例子能把对齐度提高 3–4%（二元）/ 2–3%（三元），而用 LLM 自动扩写 rubric 会让对齐度掉 15–20%——同一套题换 rubric 写法分数就会变。",
+        "cite": [
+          "arxiv-2511-07685@§4.4"
+        ]
+      }
+    ]
   },
-  "versions": [],
-  "limitations": [
-    "依赖 LLM judge，判分版本差异会迁移到分数"
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2025-11-10",
+      "label": "arXiv v1（arXiv:2511.07685v1 [cs.AI] 10 Nov 2025）与 Scale Labs 公告页同日发布，Hugging Face 数据集同框上线",
+      "cite": [
+        "arxiv-2511-07685@作者署名",
+        "site-researchrubrics@Announcement",
+        "hf-researchrubrics@Hugging Face"
+      ]
+    },
+    {
+      "id": "hf-collection",
+      "date": "2025-11-16",
+      "label": "Hugging Face 侧 ResearchRubrics Collection 更新（1 item），本页核对时仍为 v1 论文",
+      "cite": [
+        "hf-researchrubrics@Hugging Face"
+      ]
+    }
   ],
-  "notes": "arXiv 2511.07685（2025-11，Scale AI）；证据账本 3 行（字节/阶跃）",
+  "limitations": [
+    {
+      "issue": "无官方榜单、无统一提交口径",
+      "impact": "论文只报了自家测的三个 Deep Research 系统，仓库只提供评测代码、不提供排行榜或提交入口；此后厂商自报的分（裁判模型、二元/三元、是否内联例子、提示词都不同）无法与论文的 67.7% 直接横向比。",
+      "severity": "中",
+      "response": "论文公开了裁判提示词位置与完整评测代码，可自行按 §4.1 口径复现；论文未设私有留存集。",
+      "reader": "看到厂商自报分先问三件事：裁判是哪个模型、二元还是三元、rubric 里有没有内联例子。",
+      "cite": [
+        "arxiv-2511-07685@§4.1",
+        "arxiv-2511-07685@§4.2",
+        "repo-researchrubrics@README",
+        "hf-researchrubrics@Hugging Face"
+      ]
+    },
+    {
+      "issue": "强依赖裁判模型与判分制",
+      "impact": "换裁判或换二元/三元，分数和系统排序都会变：论文 Table 6 里 Gemini DR 的人机一致性在三个裁判下为 0.732 / 0.741 / 0.760，二元与三元之间差约 20 个百分点；即使最好的裁判（Gemini-2.5-Pro，二元 0.76）距最佳人类一致仍差 12–17 个百分点。",
+      "severity": "高",
+      "response": "论文固定裁判集合并同时报告三个裁判与两套判分制；官方仓库把默认裁判写在配置里。",
+      "reader": "比较任何两个 ResearchRubrics 分数前，先对齐裁判模型和判分制，否则差值可能全来自口径。",
+      "cite": [
+        "arxiv-2511-07685@§4.3",
+        "arxiv-2511-07685@§4.3 Table 6",
+        "repo-researchrubrics@README"
+      ]
+    },
+    {
+      "issue": "长度与分数正相关",
+      "impact": "论文实测输出长度与得分的相关性为 r≈0.24–0.28（Gemini / ChatGPT），即写得越长分越高；只报告符合度而不看长度，可能奖励堆内容而不是提升研究质量。",
+      "severity": "中",
+      "response": "论文给出相关性分析并分解失败类别，但没有做长度归一化，也没有把长度列为扣分项。",
+      "reader": "把输出长度当协变量一起看；两个系统分差不大时，先比长度。",
+      "cite": [
+        "arxiv-2511-07685@§4.2"
+      ]
+    },
+    {
+      "issue": "论文口径与官方实现不一致",
+      "impact": "论文同时评三元与二元、用三个裁判；官方仓库当前实现只支持二值判定且默认单个裁判，论文表 5 / 表 6 的三元结果无法用仓库现成命令复现。",
+      "severity": "中",
+      "response": "仓库在 Evaluation Mode 一节明确标注「Binary Grading (Current Implementation)」；三元需要自行改代码。",
+      "reader": "要复现论文三元分数前先读仓库的 Evaluation Mode 一节，否则会拿到不同的数。",
+      "cite": [
+        "repo-researchrubrics@README",
+        "arxiv-2511-07685@§4.1"
+      ]
+    },
+    {
+      "issue": "论文内部口径不一致",
+      "impact": "§3.1 说提示词按「九个宽类」筛选，附录与 Hugging Face 数据集的 domain 字段却都是十个领域；§3.2 一处把复杂度三元组称作 (Breadth, Depth, Ambiguity)，同节正文又叫 Conceptual Breadth / Logical Nesting Depth / Exploration；§4.1 用 Explicit Criteria / Implicit Criteria / References，Table 3 用 Explicit Requirements / Implicit Requirements / Use of References。",
+      "severity": "低",
+      "response": "以 Table 3 的六轴命名、Table 10 的十个领域和 Hugging Face 数据字段为准；论文未发布勘误。",
+      "reader": "引用类别数量或轴名时说明取自哪张表，避免把「九个宽类」和「十个领域」混为一谈。",
+      "cite": [
+        "arxiv-2511-07685@§3.1",
+        "arxiv-2511-07685@附录 Table 10",
+        "arxiv-2511-07685@§3.2",
+        "arxiv-2511-07685@§4.1",
+        "hf-researchrubrics@Hugging Face"
+      ]
+    },
+    {
+      "issue": "题量小且公开，易被针对性调优",
+      "impact": "全集只有 101 题且可直接下载，单题对总分影响约一个百分点，厂商可以针对这批题调优；论文未设不公开的留存集来检测这种过拟合。",
+      "severity": "中",
+      "response": "论文未提供留存集或防污染机制；Hugging Face 数据集以 MIT 许可开放。",
+      "reader": "把 101 题上的几个点差距当作噪声区间看，优先信同一口径下的相对排序。",
+      "cite": [
+        "arxiv-2511-07685@§3",
+        "hf-researchrubrics@Hugging Face"
+      ]
+    },
+    {
+      "issue": "最高复杂度子集上所有系统一起崩塌",
+      "impact": "超过 4 步顺序推理、或超过 35 分钟人类等效时间的任务上，三个被测系统全面崩盘，基准在这类任务上拉不开差距；另一方面也说明题目对当前前沿仍留有余量。",
+      "severity": "低",
+      "response": "论文提供三维复杂度标注，允许按 Logical Nesting Depth 等维度筛子集分析。",
+      "reader": "看总分之外，也看按复杂度分层的表现，否则会低估高难度子集上的真实差距。",
+      "cite": [
+        "arxiv-2511-07685@§4.5",
+        "arxiv-2511-07685@§3.2"
+      ]
+    }
+  ],
+  "notes": "Scale AI 出品，配套 ICLR 2026 官方评测代码",
   "official_sources": [
     {
       "kind": "paper",
       "url": "https://arxiv.org/abs/2511.07685"
     },
     {
-      "kind": "github",
+      "kind": "site",
+      "url": "https://scale.com/research/researchrubrics"
+    },
+    {
+      "kind": "repo",
       "url": "https://github.com/scaleapi/researchrubrics"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/ScaleAI/researchrubrics"
     }
   ],
   "related_benchmarks": [
@@ -64,6 +364,269 @@
     "widesearch",
     "gaia"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-09-01"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-13",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      {
+        "id": "arxiv-2511-07685",
+        "kind": "paper",
+        "title": "ResearchRubrics: A Benchmark of Prompts and Rubrics For Evaluating Deep Research Agents（arXiv:2511.07685v1 [cs.AI]，2025-11-10）",
+        "url": "https://arxiv.org/abs/2511.07685",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "site-researchrubrics",
+        "kind": "site",
+        "title": "Scale Labs 公告页：ResearchRubrics（2025-11-10）",
+        "url": "https://scale.com/research/researchrubrics",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "repo-researchrubrics",
+        "kind": "repo",
+        "title": "scaleapi/researchrubrics（官方评测代码，标注 ICLR 2026）",
+        "url": "https://github.com/scaleapi/researchrubrics",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "hf-researchrubrics",
+        "kind": "dataset",
+        "title": "ScaleAI/researchrubrics（Hugging Face 数据集，101 行，MIT）",
+        "url": "https://huggingface.co/datasets/ScaleAI/researchrubrics",
+        "accessed": "2026-11-13"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Scale AI（第一署名机构；另有马里兰大学、芝加哥大学、圣路易斯华盛顿大学、麦吉尔大学、加州大学伯克利分校）",
+        "cite": [
+          "arxiv-2511-07685@作者署名"
+        ]
+      },
+      "first_release": {
+        "v": "2025-11-10（arXiv v1 与 Scale Labs 公告同日）",
+        "cite": [
+          "arxiv-2511-07685@作者署名",
+          "site-researchrubrics@Announcement"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "arxiv-2511-07685@Abstract",
+        "arxiv-2511-07685@§3",
+        "arxiv-2511-07685@§3.3",
+        "arxiv-2511-07685@§4.2"
+      ],
+      "interpretation": [
+        "arxiv-2511-07685@§4.2",
+        "arxiv-2511-07685@§4.3",
+        "repo-researchrubrics@README"
+      ]
+    },
+    "problem": {
+      "text": "Deep Research 回答长、来源多、答案不唯一，还依赖会变的动态信息源，粗粒度指标看不出失败模式；已有的 rubric 基准多用 LLM 生成 rubric、只做人工复审，可能引入锚定偏差。ResearchRubrics 想用全人工撰写的细粒度 rubric，把「研究质量」拆成可逐条判定的条目。",
+      "cite": [
+        "arxiv-2511-07685@Abstract",
+        "arxiv-2511-07685@§1",
+        "arxiv-2511-07685@§2"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机 / 空回答基线",
+        "value": "论文未给出",
+        "note": "论文没有报告空系统或随机基线；按判定逻辑，空回答会让绝大多数标准落到 Not Satisfied，符合度趋近 0，但本站不代为推算。",
+        "cite": [
+          "arxiv-2511-07685@§3.4",
+          "repo-researchrubrics@README"
+        ]
+      },
+      {
+        "label": "论文报告的最好成绩",
+        "value": "67.7%（三元）/ 61.5%（二元）",
+        "note": "Gemini DR；同期 OpenAI DR 为 66.4% / 59.7%，Perplexity DR 为 56.6% / 48.7%，没有任何系统超过 70%。",
+        "cite": [
+          "arxiv-2511-07685@§4.2",
+          "arxiv-2511-07685@§4.2 Table 5"
+        ]
+      },
+      {
+        "label": "论文报告的系统区间",
+        "value": "48.7% – 67.7%",
+        "note": "三个被测 Deep Research 系统在二元与三元下的全部结果；跨度接近 19 个百分点，是当前可比的公开区间。",
+        "cite": [
+          "arxiv-2511-07685@§4.2 Table 5"
+        ]
+      },
+      {
+        "label": "官方榜单最高",
+        "value": "论文未给出（无官方榜单）",
+        "note": "论文与官方仓库都没有排行榜或提交入口，只有论文表 5 的三个自家评测结果；厂商自报分因裁判与口径不同不进入本级。",
+        "cite": [
+          "arxiv-2511-07685@§4.1",
+          "repo-researchrubrics@README"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      },
+      {
+        "label": "自动评测自身的天花板参考线",
+        "value": "人机一致性 Macro F1 0.76（二元，Gemini-2.5-Pro）",
+        "note": "这是「模型当裁判」与专家标注的一致度上限参考，不是系统得分上限；最好的裁判距最佳人类一致仍差 12–17 个百分点，三元下更降到 0.53–0.57。",
+        "cite": [
+          "arxiv-2511-07685@§4.3",
+          "arxiv-2511-07685@§4.3 Table 6"
+        ]
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 67.7% 当成「答对率」——它是按专家 rubric 逐条符合的加权比例，不是事实正确率；引用数量与引用准确率是论文另外统计的（Gemini DR 111 次引用 81% 准确，Perplexity 31 次 90%）。",
+        "cite": [
+          "arxiv-2511-07685@§4.2"
+        ]
+      },
+      {
+        "text": "把厂商自报分和论文的 67.7% 排在同一张表里比——裁判模型、二元/三元、rubric 是否内联例子都不同，差值可能全来自口径。",
+        "cite": [
+          "arxiv-2511-07685@§4.1",
+          "arxiv-2511-07685@§4.4",
+          "repo-researchrubrics@README"
+        ]
+      },
+      {
+        "text": "看到「2,500+ rubrics」以为每题有几千条标准——实际是 101 题合计 2,593 条，每题 20–43 条（均值约 25.7）。",
+        "cite": [
+          "arxiv-2511-07685@Abstract",
+          "arxiv-2511-07685@§3",
+          "arxiv-2511-07685@附录 B.1"
+        ]
+      },
+      {
+        "text": "把论文的三元分数当成跑一遍官方仓库就能复现——仓库当前只实现二值判定，默认裁判也只有 Gemini-2.5-Pro 一个。",
+        "cite": [
+          "repo-researchrubrics@README",
+          "arxiv-2511-07685@§4.1"
+        ]
+      },
+      {
+        "text": "把「expert-written」理解成每个题目都由该领域的专家写——论文定义的专家是有扎实 STEM 训练、擅长任务设计与评测的人，且参与者只选自己熟悉的领域。",
+        "cite": [
+          "arxiv-2511-07685@§3.1"
+        ]
+      },
+      {
+        "text": "把六轴在论文里的两种命名当成两套体系——Table 3 用 Explicit / Implicit Requirements 与 Use of References，§4.1 与附录用 Explicit / Implicit Criteria 与 References，指的是同一批轴。",
+        "cite": [
+          "arxiv-2511-07685@Table 3",
+          "arxiv-2511-07685@§4.1"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "Scale AI（论文第一署名机构），共 16 位作者，来自 Scale AI 与 5 所高校",
+        "cite": [
+          "arxiv-2511-07685@作者署名"
+        ]
+      },
+      {
+        "k": "首发渠道",
+        "v": "2025-11-10 arXiv v1 与 Scale Labs 公告页同日发布，Hugging Face 数据集同步上线（default / train 各 101 行）",
+        "cite": [
+          "arxiv-2511-07685@作者署名",
+          "site-researchrubrics@Announcement",
+          "hf-researchrubrics@Hugging Face"
+        ]
+      },
+      {
+        "k": "后续动态",
+        "v": "Hugging Face 侧 ResearchRubrics Collection 于 2025-11-16 更新；官方仓库标注为 ICLR 2026 论文配套代码，本页核对时论文仍为 v1",
+        "cite": [
+          "hf-researchrubrics@Hugging Face",
+          "repo-researchrubrics@README",
+          "arxiv-2511-07685@作者署名"
+        ]
+      },
+      {
+        "k": "题目领域",
+        "v": "十个领域，分布较均匀，AI/ML 与历史分析占比最高，其余包括技术文档、商业规划与研究、大众消费研究、STEM、创意写作、假设与哲学、时事等",
+        "cite": [
+          "arxiv-2511-07685@§3.1 Figure 3",
+          "arxiv-2511-07685@附录 Table 10",
+          "hf-researchrubrics@Hugging Face"
+        ]
+      },
+      {
+        "k": "人工投入",
+        "v": "构建累计超过 2,800 小时人工；人工标注另用 9 名专家对 303 份回复打 ground truth",
+        "cite": [
+          "arxiv-2511-07685@Abstract",
+          "arxiv-2511-07685@§4.1"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "数据集在 Hugging Face（ScaleAI/researchrubrics，101 行，MIT，868 kB），下载命令为 huggingface-cli download ScaleAI/researchrubrics processed_data.jsonl；评测代码在 GitHub（scaleapi/researchrubrics，MIT）",
+        "cite": [
+          "hf-researchrubrics@Hugging Face",
+          "repo-researchrubrics@README"
+        ]
+      },
+      {
+        "k": "数据字段",
+        "v": "每行含 prompt、sample_id、domain、conceptual_breadth、logical_nesting、exploration，以及 rubrics 数组（每条含 criterion、weight、axis）",
+        "cite": [
+          "repo-researchrubrics@README"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-13",
+        "columns": [
+          "来源",
+          "系统",
+          "三元符合度",
+          "二元符合度",
+          "口径"
+        ],
+        "rows": [
+          [
+            "论文 Table 5",
+            "Gemini DR",
+            "67.7%",
+            "61.5%",
+            "PDF 报告转 markdown；裁判 GPT-5 / Claude-Sonnet-4.5 / Gemini-2.5-Pro"
+          ],
+          [
+            "论文 Table 5",
+            "OpenAI DR",
+            "66.4%",
+            "59.7%",
+            "同上"
+          ],
+          [
+            "论文 Table 5",
+            "Perplexity DR",
+            "56.6%",
+            "48.7%",
+            "同上"
+          ]
+        ]
+      },
+      "cite": [
+        "arxiv-2511-07685@§4.2",
+        "arxiv-2511-07685@§4.2 Table 5",
+        "arxiv-2511-07685@§4.1"
+      ]
+    }
+  }
 }

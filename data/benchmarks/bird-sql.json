@@ -1,45 +1,534 @@
 {
   "id": "bird-sql",
   "name": "BIRD-SQL",
-  "full_name": null,
-  "aliases": [],
-  "status": null,
+  "full_name": "BIRD（Can LLM Already Serve as A Database Interface? A BIg Bench for LaRge-scale Database Grounded Text-to-SQLs）",
+  "aliases": [
+    "BIRD",
+    "BIRD-SQL 2023",
+    "bird"
+  ],
+  "status": "active",
   "categories": [
     "coding"
   ],
-  "summary": "大规模真实数据库文本转 SQL 评测",
-  "interpretation": "大规模真实数据库文本转 SQL：按执行结果正确率计分（Dev 集为常用口径），越高越好；人类基准（数据工程师+DB 学生）92.96，顶级系统约 78–82、裸模型 60 上下——离人类还有约 10 个点的硬差距。",
-  "measures": [],
-  "does_not_measure": [],
+  "summary": "BIRD-SQL 把 95 个真实业务数据库（合计 33.4 GB、37 个专业领域）和 12,751 个自然语言问题配成「问题 → SQL」对：模型要写出能在这些库上执行的 SQL，判分不看 SQL 文本，只看执行结果与标注是否一致（执行准确率 EX）。它刻意不把表里的脏取值直接喂给模型，逼模型自己读懂数据库内容。",
+  "interpretation": "高分说明模型在「schema 名含糊、取值脏乱、需要外部知识」的真实库上能稳定写出正确 SQL；它不说明 SQL 写得快（效率由 VES 单独衡量），也不说明能泛化到没见过的库——官方测试集隐藏，只能邮件提交、等官方跑分。参照系：论文里 GPT-4 测试集 54.89、人类 92.96（均带 Oracle Knowledge）；官网 Overall 榜当前最高 83.40，单模型榜最高 80.04。",
+  "measures": [
+    {
+      "area": "基础型 · 匹配查询（Match-based）",
+      "focus": "按列名与条件取值筛选，论文定义为「不需要数据库取值理解就能回答」的一类",
+      "share": "83.9%",
+      "format": "单条 SQL",
+      "cite": ["paper@§4"]
+    },
+    {
+      "area": "基础型 · 排序（Ranking）",
+      "focus": "按某指标排序取前 N；官网 2023-07-14 更新说明 ORDER BY LIMIT 1 造成的并列结果已被纳入考虑",
+      "share": "20.3%",
+      "format": "单条 SQL",
+      "cite": ["paper@§4", "site@新闻 2023-07-14"]
+    },
+    {
+      "area": "基础型 · 比较（Comparison）",
+      "focus": "两个对象之间的指标比较",
+      "share": "16.7%",
+      "format": "单条 SQL",
+      "cite": ["paper@§4"]
+    },
+    {
+      "area": "基础型 · 计数（Counting）",
+      "focus": "带条件的计数",
+      "share": "30.4%",
+      "format": "单条 SQL",
+      "cite": ["paper@§4"]
+    },
+    {
+      "area": "基础型 · 聚合（Aggregation）",
+      "focus": "求和、均值等聚合运算",
+      "share": "15.7%",
+      "format": "单条 SQL",
+      "cite": ["paper@§4"]
+    },
+    {
+      "area": "推理型 · 取值示例（Value Illustration）",
+      "focus": "问题用自然语言描述库里的取值，模型必须读懂真实数据才知道对应什么条件；示例（Dev 集 california_schools）：「洛杉矶县免费餐率低于 0.18% 的非特许学校，给出每所学校的入学人数、免费餐人数、精确免费餐率、县内排名，以及该县有多少学校属于这一低免费餐类别」",
+      "share": "70.1%",
+      "format": "单条 SQL",
+      "cite": ["paper@§4", "hf-dev@数据集卡"]
+    },
+    {
+      "area": "推理型 · 数值计算（Numeric Computing）",
+      "focus": "要先算比值、百分比再作为条件或结果；论文给出 8 种基础运算（含减、加、除、乘）及其组合",
+      "share": "24.5%",
+      "format": "单条 SQL",
+      "cite": ["paper@§4", "paper@§3.3"]
+    },
+    {
+      "area": "推理型 · 领域知识（Domain Knowledge）",
+      "focus": "需要金融、医疗等领域常识才能把问题映射到列或取值（论文举例：银行分析师要知道投资回报率、净利润这类金融指标）",
+      "share": "23.6%",
+      "format": "单条 SQL",
+      "cite": ["paper@§4", "paper@§3.3"]
+    },
+    {
+      "area": "推理型 · 同义改写（Synonym）",
+      "focus": "问题用词与数据库列名/取值不同名同义",
+      "share": "7.2%",
+      "format": "单条 SQL",
+      "cite": ["paper@§4", "paper@§3.3"]
+    },
+    {
+      "area": "SQL 执行效率",
+      "focus": "在结果正确的前提下，比较预测 SQL 与标注 SQL 的执行快慢",
+      "share": "未披露（论文只用 VES 单独衡量，未给出这类问题的占比）",
+      "format": "VES / R-VES 计分",
+      "cite": ["paper@摘要", "paper@§5"]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "SQL 文本本身的规范与美观：判分只看执行结果，语义等价的两条 SQL 都算对。",
+      "cite": ["paper@§5"]
+    },
+    {
+      "text": "多轮交互与 agent 能力：主表是单轮 text-to-SQL；交互式考察在 BIRD-Interact，SQL 调试考察在 BIRD-CRITIC/SWE-SQL 等独立基准里。",
+      "cite": ["site@新闻 2025-11-13", "site@新闻 2026-03-23"]
+    },
+    {
+      "text": "MySQL / PostgreSQL 方言：2023 版以 SQLite 为主，论文把多方言版本列为未来工作；方言覆盖在 Mini-Dev 与后续基准里。",
+      "cite": ["paper@§8", "site@新闻 2024-06-27"]
+    },
+    {
+      "text": "模型服务侧的延迟、吞吐与成本：只衡量 SQL 在数据库里的执行效率，不衡量推理服务性能。",
+      "cite": ["paper@§5"]
+    }
+  ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
+    "sample_count": 12751,
+    "splits": [
+      "训练 9,428",
+      "开发 1,534",
+      "隐藏测试 1,789"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "真实开源数据库（Kaggle、CTU Prague 关系学习仓库等）+ 众包标注的问题与 SQL",
+    "public_sample": true,
+    "totals": "12,751 个问题-SQL 对 / 95 个数据库 / 33.4 GB / 37 个专业领域；训练 9,428、开发 1,534、隐藏测试 1,789。开发集在 Hugging Face 公开（birdsql/bird_sql_dev_20251106，json、英文）。",
+    "cite": ["paper@摘要", "paper@附录 A", "site@关于 BIRD", "hf-dev@数据集卡"],
+    "construction": [
+      {
+        "k": "数据库来源",
+        "text": "32% 来自 Kaggle，48% 来自 CTU Prague Relational Learning Repository，其余 20% 由公开表格加工、合成并标准化 schema 后构建；共 95 个库，按训练/开发/测试分为 69 / 11 / 15 个。",
+        "cite": ["paper@§3.2"]
+      },
+      {
+        "k": "防数据泄漏",
+        "text": "训练与开发使用 80 个改写过的开源关系数据库，另单独策划 15 个数据库作为隐藏测试集。",
+        "cite": ["paper@§1"]
+      },
+      {
+        "k": "辅助文件",
+        "text": "每个库配 Database Description File（完整 schema 名 + 取值描述）；外部知识证据分四类：数值推理知识、领域知识、同义知识、取值示例。",
+        "cite": ["paper@§3.3"]
+      },
+      {
+        "k": "双盲标注",
+        "text": "两名独立标注员对同一问题分别写 SQL，执行结果一致才收录，否则交专家达成共识；之后由专家做两维审查——SQL 有效性，以及文本-知识-SQL 对齐。",
+        "cite": ["paper@§3.4"]
+      },
+      {
+        "k": "人力与周期",
+        "text": "11 名英语母语者出题，数据库工程师与 DB 学生写 SQL，4 名博士生与 2 名硕士生搭建描述文件；采集期 2022-09 至 2023-03，总花费 97,654 USD。",
+        "cite": ["paper@附录 A"]
+      },
+      {
+        "k": "持续清洗",
+        "text": "2023-09-25 发布清洗后的 Dev 集；2025-09-19 放出 6,601/9,428（约 70%）的过滤训练子集；2025-11-13 放出更干净的开发拆分 bird-sql-dev-1106，榜单可标记该口径。",
+        "cite": ["site@新闻 2023-09-25", "site@新闻 2025-09-19", "site@新闻 2025-11-13"]
+      }
+    ]
   },
-  "metrics": [],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [],
-  "notes": "Google/Qwen 引用；Dev 集为常用口径",
+  "metrics": [
+    {
+      "id": "ex",
+      "name": "执行准确率（Execution Accuracy, EX）",
+      "direction": "越高越好",
+      "description": "执行结果与标注 SQL 完全一致的题目占比；不比较 SQL 文本",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["paper@§5"]
+    },
+    {
+      "id": "ves",
+      "name": "有效效率分数（Valid Efficiency Score, VES）",
+      "direction": "越高越好",
+      "description": "只有结果正确的 SQL 才计分，再乘上相对标注 SQL 的执行效率；论文用开平方抑制异常快/慢的随机波动，论文 Table 3 给出各模型 VES（人类 90.27）",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["paper@§5", "paper@Table 3"]
+    },
+    {
+      "id": "r-ves",
+      "name": "奖励型有效效率分数（Reward-based VES, R-VES）",
+      "direction": "越高越好",
+      "description": "2024-08-04 起用于后续测试提交的效率指标，公式放在 Mini-Dev 仓库；官网 R-VES 榜另有人类参照 83.26",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["site@新闻 2024-08-04", "site@R-VES 榜"]
+    },
+    {
+      "id": "soft-f1",
+      "name": "Soft-F1（仅 Mini-Dev）",
+      "direction": "越高越好",
+      "description": "Mini-Dev 的 500 题开发集上用 Soft-F1 与 R-VES 计分，覆盖 SQLite / MySQL / PostgreSQL 三种方言",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": ["site@新闻 2024-06-27"]
+    }
+  ],
+  "default_protocol": {
+    "raw": "提交方把预测 SQL 发到 bird.bench23@gmail.com，由官方在隐藏测试库上执行，与标注 SQL 的执行结果逐行比对，一致记 1 分，除以题目数得到 EX；Dev 集可自行下载复现。官方称通常 10 天内返回结果。",
+    "cite": ["paper@§5", "site@提交说明", "repo@README"],
+    "variants": [
+      {
+        "text": "Oracle Knowledge 开关：给不给模型外部知识证据。论文 Table 2 中同一模型两栏相差约 5–20 个点（GPT-4 测试集 34.88 → 54.89）。",
+        "cite": ["paper@Table 2"]
+      },
+      {
+        "text": "Dev 集版本：原始版、2023-09-25 清洗版、2025-11-13 的 bird-sql-dev-1106。同模型跨版本不可直接比（ChatGPT 37.22 → 42.24）。",
+        "cite": ["site@新闻 2023-09-25", "site@新闻 2025-11-13"]
+      },
+      {
+        "text": "自一致性档位：官网单模型榜按 empty / few（1–7 候选）/ many（8–32）/ scale（>32）四档标注，档位之间不可比。",
+        "cite": ["site@新闻 2025-05-22"]
+      },
+      {
+        "text": "VES 执行口径：官方测试把超时放大到 3 s/例、重复 5 次取最高；论文脚注则写每条 SQL 跑 100 次取平均并丢弃离群值。",
+        "cite": ["repo@README", "paper@§5"]
+      },
+      {
+        "text": "Mini-Dev 口径：500 题、三种方言、Soft-F1 与 R-VES 计分，与主表 EX 不同尺。",
+        "cite": ["site@新闻 2024-06-27", "site@Mini-Dev 榜"]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2023-05-04",
+      "label": "arXiv v1 提交（Datasheet：数据采集期 2022-09 至 2023-03）",
+      "cite": ["paper@arXiv 提交信息", "paper@附录 A"]
+    },
+    {
+      "id": "neurips2023",
+      "date": "2023-09-21",
+      "label": "被 NeurIPS 2023 Datasets and Benchmarks 接收为 spotlight",
+      "cite": ["site@新闻 2023-09-21", "paper@NeurIPS 2023"]
+    },
+    {
+      "id": "v3",
+      "date": "2023-11-15",
+      "label": "arXiv v3（当前被引版本）",
+      "cite": ["paper@arXiv 提交信息"]
+    },
+    {
+      "id": "license-change",
+      "date": "2024-04-27",
+      "label": "数据许可由论文声明的 CC BY-NC 4.0 改为 CC BY-SA 4.0",
+      "cite": ["site@新闻 2024-04-27", "repo@README", "paper@附录 A"]
+    },
+    {
+      "id": "mini-dev",
+      "date": "2024-06-27",
+      "label": "发布 Mini-Dev：500 题，SQLite / MySQL / PostgreSQL，Soft-F1 + R-VES",
+      "cite": ["site@新闻 2024-06-27"]
+    },
+    {
+      "id": "r-ves",
+      "date": "2024-08-04",
+      "label": "R-VES 成为后续测试提交的效率指标",
+      "cite": ["site@新闻 2024-08-04"]
+    },
+    {
+      "id": "self-consistency",
+      "date": "2025-05-22",
+      "label": "单模型榜增加自一致性四档标注",
+      "cite": ["site@新闻 2025-05-22"]
+    },
+    {
+      "id": "train-filtered",
+      "date": "2025-09-19",
+      "label": "发布 bird23-train-filtered（6,601/9,428，约 70%）",
+      "cite": ["site@新闻 2025-09-19"]
+    },
+    {
+      "id": "dev-1106",
+      "date": "2025-11-13",
+      "label": "发布 bird-sql-dev-1106 更干净的开发拆分，榜单可标记该口径",
+      "cite": ["site@新闻 2025-11-13"]
+    },
+    {
+      "id": "mini-dev-2026",
+      "date": "2026-10-28",
+      "label": "Mini-Dev 2026 更新：人工复核后修正标注并替换部分实例",
+      "cite": ["site@新闻 2026-10-28"]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "Dev 集被官方清洗过，跨版本分数不可直接比",
+      "impact": "2023-09-25 清洗后 ChatGPT EX 从 37.22 升到 42.24、GPT-4 从 46.35 升到 49.15；2025-11-13 又发布 bird-sql-dev-1106，榜单需标记口径。",
+      "severity": "高",
+      "response": "官方在榜单上标注 new dev，并要求提交时说明所用的开发拆分。",
+      "reader": "引用 Dev 分数必须写清版本；论文里的 Dev 数字对应清洗前口径。",
+      "cite": ["site@新闻 2023-09-25", "site@新闻 2025-11-13", "paper@Table 2"]
+    },
+    {
+      "issue": "Oracle Knowledge 与自一致性开关让榜单配置不一致",
+      "impact": "同一模型带知识比不带知识高约 5–20 个点；单模型榜按 empty / few / many / scale 分档，官网另设 Single Trained Model Track 做单一模型能力的公平比较。",
+      "severity": "高",
+      "response": "官方用 Oracle Knowledge 勾选列与自一致性列区分口径。",
+      "reader": "比较前先看这两列；Overall 榜第一（83.40）不是单模型成绩，单模型第一是 80.04。",
+      "cite": ["paper@Table 2", "site@新闻 2025-05-22", "site@Overall 榜", "site@Single-Model 榜"]
+    },
+    {
+      "issue": "测试集隐藏，只能提交后等官方跑分",
+      "impact": "外部无法本地复现测试集分数，也无法审计官方执行环境与超时设置。",
+      "severity": "中",
+      "response": "邮件提交，官方称通常 10 天内返回结果。",
+      "reader": "把测试集分数视为官方托管结果，注意其时间戳与口径标注。",
+      "cite": ["site@提交说明"]
+    },
+    {
+      "issue": "人类基线是带知识口径",
+      "impact": "92.96 是带 Oracle Knowledge 的测试集成绩，不带知识为 72.37；论文称 BIRD 是首个采集人类表现的 text-to-SQL 基准。",
+      "severity": "中",
+      "response": "论文 Table 2 同时给出两个口径。",
+      "reader": "说「人类 92.96」时要点明是带 Oracle Knowledge 的口径。",
+      "cite": ["paper@Table 2", "paper@附录 A"]
+    },
+    {
+      "issue": "2023 版以 SQLite 为唯一主方言",
+      "impact": "跨方言泛化未在主表考察，论文把 PostgreSQL / MySQL 版本列为未来工作。",
+      "severity": "中",
+      "response": "Mini-Dev 与后续基准覆盖多方言。",
+      "reader": "SQLite 上的高分不等于在 MySQL / PostgreSQL 上同样成立。",
+      "cite": ["paper@§8", "site@新闻 2024-06-27"]
+    },
+    {
+      "issue": "许可与论文声明不一致",
+      "impact": "论文 Datasheet 声明 CC BY-NC 4.0，仓库与官网自 2024-04-27 起改为 CC BY-SA 4.0，HF 数据集卡亦标 cc-by-sa-4.0。",
+      "severity": "中",
+      "response": "官方以请求量大为由修改许可，并声明不为数据的滥用负责。",
+      "reader": "商用前以仓库/官网当前许可为准，不要沿用论文里的旧许可。",
+      "cite": ["paper@附录 A", "repo@README", "site@新闻 2024-04-27", "hf-dev@数据集卡"]
+    },
+    {
+      "issue": "标注噪声",
+      "impact": "作者自评投入约 700 小时评估与打磨后，仍承认可能存在错误与歧义。",
+      "severity": "低",
+      "response": "开放 GitHub issue 与邮箱反馈，并承诺周期性修订。",
+      "reader": "个别题目的对错不要过度解读。",
+      "cite": ["repo@README"]
+    }
+  ],
+  "notes": "Dev 集为常用口径，但 2023-09 与 2025-11 两次清洗过，跨版本分数不可直接比；Google、Qwen 等厂商报告曾引用该基准。",
   "official_sources": [
     {
       "kind": "site",
       "url": "https://bird-bench.github.io/"
     },
     {
-      "kind": "site",
-      "url": "https://blog.google/technology/google-deepmind/google-gemini-ai-update-december-2024/"
+      "kind": "repo",
+      "url": "https://github.com/AlibabaResearch/DAMO-ConvAI/tree/main/bird"
     },
     {
-      "kind": "site",
-      "url": "https://qwenlm.github.io/blog/qwen2.5/"
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/birdsql/bird_sql_dev_20251106"
     }
   ],
   "related_benchmarks": [
+    "spider",
+    "livesqlbench",
     "lcb"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-24",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-24",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "Can LLM Already Serve as A Database Interface? A BIg Bench for LaRge-scale Database Grounded Text-to-SQLs（arXiv:2305.03111v3）",
+        "url": "https://arxiv.org/abs/2305.03111",
+        "accessed": "2026-11-24"
+      },
+      {
+        "id": "site",
+        "kind": "site",
+        "title": "BIRD 官网与榜单（bird-bench.github.io）",
+        "url": "https://bird-bench.github.io/",
+        "accessed": "2026-11-24"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "官方代码与数据仓库 README（AlibabaResearch/DAMO-ConvAI/tree/main/bird）",
+        "url": "https://github.com/AlibabaResearch/DAMO-ConvAI/tree/main/bird",
+        "accessed": "2026-11-24"
+      },
+      {
+        "id": "hf-dev",
+        "kind": "dataset",
+        "title": "Hugging Face 数据集卡 birdsql/bird_sql_dev_20251106",
+        "url": "https://huggingface.co/datasets/birdsql/bird_sql_dev_20251106",
+        "accessed": "2026-11-24"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "香港大学（HKU）与阿里巴巴达摩院（DAMO Academy, Alibaba Group）",
+        "cite": ["paper@作者署名", "paper@附录 A"]
+      },
+      "first_release": {
+        "v": "2023-05-04（arXiv v1 提交；v3 于 2023-11-15 修订）",
+        "cite": ["paper@arXiv 提交信息"]
+      }
+    },
+    "cites": {
+      "summary": ["paper@摘要", "paper@标题", "site@关于 BIRD"],
+      "interpretation": ["paper@Table 2", "paper@§5", "site@Overall 榜", "site@Single-Model 榜", "site@提交说明"]
+    },
+    "problem": {
+      "text": "Spider、WikiSQL 这类基准的数据库只有少量且干净的取值，模型靠 schema 名就能猜个大概，与真实业务差距明显（论文 Table 1：Spider 平均每库 2K 行，BIRD 平均每库 549K 行）。BIRD-SQL 把数据库放大到 GB 级、保留脏乱取值，要求模型补上外部知识才能写对 SQL，并首次把执行效率纳入考察。",
+      "cite": ["paper@摘要", "paper@§1", "paper@Table 1"]
+    },
+    "ladder": [
+      {
+        "label": "论文最低基线（T5-Base，不带知识）",
+        "value": "7.06（测试集 EX）",
+        "note": "论文 Table 2 的微调基线；同模型带 Oracle Knowledge 为 12.89。",
+        "cite": ["paper@Table 2"]
+      },
+      {
+        "label": "论文发布时最强系统（GPT-4 + DIN-SQL，带知识）",
+        "value": "55.90（测试集 EX）",
+        "note": "论文 Table 2 报告的最好成绩；GPT-4 单体为 54.89。",
+        "cite": ["paper@Table 2"]
+      },
+      {
+        "label": "论文人类基线（带 Oracle Knowledge）",
+        "value": "92.96（测试集 EX）",
+        "note": "数据工程师 + DB 学生；不带知识为 72.37。",
+        "cite": ["paper@Table 2", "site@Overall 榜"]
+      },
+      {
+        "label": "官网 Overall 榜当前最高",
+        "value": "83.40（测试集 EX）",
+        "note": "AskData（AT&T CDO - DSAIR，2026-10-22），带 Oracle Knowledge、规模未标注；官网另设单模型榜做单一模型能力的公平比较。",
+        "cite": ["site@Overall 榜", "site@Single-Model 榜"]
+      },
+      {
+        "label": "官网单模型榜当前最高",
+        "value": "80.04（测试集 EX）",
+        "note": "Gemini-SQL2（Google Research & Cloud，2026-06-03），自一致性 many；单模型榜不设 Oracle Knowledge 列。",
+        "cite": ["site@Single-Model 榜"]
+      },
+      {
+        "label": "官网 R-VES 榜当前最高",
+        "value": "84.10（测试集 R-VES）",
+        "note": "GrainSQL（2026-09-26），高于同口径人类 83.26。",
+        "cite": ["site@R-VES 榜"]
+      },
+      {
+        "label": "Mini-Dev 经验上界",
+        "value": "96.80（Overall）",
+        "note": "500 题轻量开发集上的人工构造上界：SQLite 99.60 / MySQL 93.80 / PostgreSQL 97.00；当前最高模型 87.27（GPT-6.1 Sol，2026-10-28）。",
+        "cite": ["site@Mini-Dev 榜"]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 92.96 当作人类的「裸水平」：那是带 Oracle Knowledge 的测试集成绩，不带知识只有 72.37。",
+        "cite": ["paper@Table 2"]
+      },
+      {
+        "text": "把 Overall 榜第一当成单模型能力：官网另设 Single Trained Model Track 做单一模型能力的公平比较（当前最高 80.04）。",
+        "cite": ["site@Overall 榜", "site@Single-Model 榜"]
+      },
+      {
+        "text": "把不同版本的 Dev 分数排在一起：2023-09 清洗与 2025-11 的 dev-1106 都会改变分数，榜单上以 new dev 标记。",
+        "cite": ["site@新闻 2023-09-25", "site@新闻 2025-11-13"]
+      },
+      {
+        "text": "把 VES 高当成「SQL 写得快」：VES 只给结果正确的 SQL 计分，快但错不得分；超时与重复次数口径也会影响数值。",
+        "cite": ["paper@§5", "repo@README"]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "香港大学与阿里巴巴达摩院；论文作者来自 HKU、达摩院、清华大学、上海人工智能实验室、MIT CSAIL、香港中文大学（深圳）、UIUC。",
+        "cite": ["paper@作者署名", "paper@附录 A"]
+      },
+      {
+        "k": "首发与版本",
+        "v": "2023-05-04 提交 arXiv，2023-11-15 更新到 v3；NeurIPS 2023 Datasets and Benchmarks spotlight。",
+        "cite": ["paper@arXiv 提交信息", "site@新闻 2023-09-21"]
+      },
+      {
+        "k": "数据与代码",
+        "v": "官方仓库 AlibabaResearch/DAMO-ConvAI/tree/main/bird；开发集数据集卡 birdsql/bird_sql_dev_20251106（json、英文、1K–10K 规模、CC BY-SA 4.0）。",
+        "cite": ["repo@README", "hf-dev@数据集卡"]
+      },
+      {
+        "k": "维护方",
+        "v": "HKU STAR Lab 与 Alibaba DAMO Academy；联系邮箱 bird.bench23@gmail.com。",
+        "cite": ["paper@附录 A", "site@提交说明"]
+      },
+      {
+        "k": "提交与榜单",
+        "v": "测试集隐藏，邮件提交，官方称通常 10 天内返回结果；官网分 Overall / 单模型 / R-VES / Mini-Dev 四类榜。",
+        "cite": ["site@提交说明", "site@Overall 榜"]
+      },
+      {
+        "k": "生态与后续",
+        "v": "Mini-Dev（500 题三方言）、BIRD-Interact（ICLR 2026 oral）、BIRD-CRITIC / SWE-SQL（NeurIPS 2025 主会）、LiveSQLBench、Data Intelligence Index（2026-03-06）。",
+        "cite": ["site@新闻 2024-06-27", "site@新闻 2025-11-30", "site@新闻 2026-03-06", "site@新闻 2026-04-22", "site@新闻 2026-10-28"]
+      },
+      {
+        "k": "当前许可",
+        "v": "CC BY-SA 4.0（2024-04-27 起；论文 Datasheet 仍写 CC BY-NC 4.0）。",
+        "cite": ["site@新闻 2024-04-27", "repo@README", "paper@附录 A"]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-24",
+        "columns": ["来源", "模型", "Dev EX（不带知识）", "Dev EX（带知识）", "Test EX（不带知识）", "Test EX（带知识）"],
+        "rows": [
+          ["论文 Table 2", "T5-Base", "6.32", "11.54", "7.06", "12.89"],
+          ["论文 Table 2", "T5-Large", "9.71", "19.75", "10.38", "20.94"],
+          ["论文 Table 2", "T5-3B", "10.37", "23.34", "11.17", "24.05"],
+          ["论文 Table 2", "PaLM-2", "18.77", "27.38", "24.71", "33.04"],
+          ["论文 Table 2", "Codex", "25.42", "34.35", "24.86", "36.47"],
+          ["论文 Table 2", "ChatGPT", "24.05", "37.22", "26.77", "39.30"],
+          ["论文 Table 2", "ChatGPT + COT", "25.88", "36.64", "28.95", "40.08"],
+          ["论文 Table 2", "Claude-2", "28.29", "42.70", "34.60", "49.02"],
+          ["论文 Table 2", "GPT-4", "30.90", "46.35", "34.88", "54.89"],
+          ["论文 Table 2", "GPT-4 + DIN-SQL", null, "50.72", null, "55.90"],
+          ["论文 Table 2", "人类（数据工程师 + DB 学生）", null, null, "72.37", "92.96"]
+        ]
+      },
+      "cite": ["paper@Table 2"]
+    }
+  }
 }

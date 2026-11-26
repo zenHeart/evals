@@ -1,46 +1,763 @@
 {
   "id": "webdev-arena",
   "name": "WebDev Arena",
-  "full_name": null,
-  "aliases": [],
-  "status": null,
+  "full_name": "WebDev Arena: A Live LLM Leaderboard for Web App Development",
+  "aliases": [
+    "WebDev Leaderboard",
+    "Code Arena: WebDev"
+  ],
+  "status": "active",
   "categories": [
     "preference",
     "coding"
   ],
-  "summary": "前端开发人类偏好对战榜（arena.ai Elo）",
-  "interpretation": "arena.ai 前端开发人类盲测对战榜，用户对两模型生成的网页投票并按 Elo 计分，数值随对战池动态变化；只能横向排名，不能与准确率类基准混读。",
-  "measures": [],
-  "does_not_measure": [],
+  "summary": "WebDev Arena 是 arena.ai 的网页开发人类偏好对战榜：用户提交一句前端需求，两个匿名模型各生成一个网页应用，访客投票选出更好的那个，再用 Bradley-Terry 模型把成对比较换算成 Elo 分排名。",
+  "interpretation": "Elo 分只表示「在这批真实投票里，多少人更偏好这个模型的产出」，可以与同期模型横向排名，但它不是准确率，也不能和 HumanEval、SWE-bench 这类有标准答案的基准混读。分数随对战池、投票量与方法学改动持续变动，2025-11-12 起榜单已整体切到 Code Arena 口径。",
+  "measures": [
+    {
+      "area": "网页设计 / UI 还原",
+      "focus": "从一句 prompt 生成可直接交互的网页，考设计感、布局与可用性",
+      "share": "15.3%（最大类）",
+      "format": "匿名双模型对战 + 人类投票",
+      "cite": [
+        "arena-webdev-blog@Topic Modeling",
+        "arena-webdev-blog"
+      ]
+    },
+    {
+      "area": "游戏开发",
+      "focus": "生成可玩的小游戏（前端类比：一句话到能跑的贪吃蛇）",
+      "share": "12.1%",
+      "format": "同上",
+      "cite": [
+        "arena-webdev-blog@Topic Modeling"
+      ]
+    },
+    {
+      "area": "复刻现有产品",
+      "focus": "按描述复刻知名站点或组件的布局与交互",
+      "share": "11.6%",
+      "format": "同上",
+      "cite": [
+        "arena-webdev-blog@Topic Modeling"
+      ]
+    },
+    {
+      "area": "其余 8 类",
+      "focus": "官方只披露前三大类的名称与占比，其余类别的名称与占比未逐一列出",
+      "share": "约 61%（由 11 类总量倒算，非官方直接给出）",
+      "format": "同上",
+      "cite": [
+        "arena-webdev-blog@Topic Modeling"
+      ]
+    },
+    {
+      "area": "多模态输入",
+      "focus": "用户可上传设计稿或截图，让模型照着生成页面；官方披露其评测套件中目前有 7 个生产模型支持 vision 输入",
+      "share": "未披露",
+      "format": "同上",
+      "cite": [
+        "arena-webdev-blog@Vision Support"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "函数级代码生成与仓库级 issue 修复——官方明确把它与 HumanEval、CodeXGLUE、SWE-bench 区分开",
+      "cite": [
+        "arena-webdev-blog@HumanEval"
+      ]
+    },
+    {
+      "text": "Next.js / React 之外的框架，以及全栈、后端与非 Web 领域（官方把全栈与非 Web 领域列为未来工作）",
+      "cite": [
+        "arena-webdev-blog@Limitations",
+        "arena-webdev-blog@未来工作"
+      ]
+    },
+    {
+      "text": "代码的客观对错——只记录人类更偏好哪一个，不判定正确性",
+      "cite": [
+        "arena-webdev-blog@Bradley-Terry",
+        "arena-webdev-blog@both bad"
+      ]
+    }
+  ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
+    "sample_count": 80000,
+    "splits": [
+      "无训练 / 测试划分：每场对战都是用户新提交的 prompt",
+      "官方口径（2025-03-10）：上线以来累计逾 80,000 张社区投票",
+      "当前累计票数、prompt 数与 battle 数：未披露"
+    ],
+    "languages": [
+      "未披露（提示词语言分布未公布）"
+    ],
+    "source_type": "organic prompts（用户自由提交的真实前端需求）",
+    "public_sample": true,
+    "totals": "官方在 2025-03-10 的博文中称「自 2024 年 12 月上线以来收集了超过 80,000 张社区投票」，本页题量取 80,000；截至本次核验（2026-11-13），arena.ai 未披露当前累计票数。同一篇博文的去重分析又写到投票从 103,096 降到 61,473，两个数字口径不同，差异见「来源与背景」。",
+    "cite": [
+      "arena-webdev-blog@累计投票",
+      "arena-webdev-blog@去重分析"
+    ],
+    "construction": [
+      {
+        "k": "prompt 来源",
+        "text": "用户在前端提交一句需求，两个匿名模型各自生成一个网页应用，社区投票选出更好的那个。",
+        "cite": [
+          "arena-webdev-blog@上线与投票"
+        ]
+      },
+      {
+        "k": "生成与运行环境",
+        "text": "生成的页面跑在 E2B 提供的 Amazon Firecracker microVM 里，隔离执行后实时预览。",
+        "cite": [
+          "arena-webdev-blog@生成环境"
+        ]
+      },
+      {
+        "k": "技术栈限定",
+        "text": "官方明确当前只支持 Next.js（Vercel 的 React 框架）应用，把生态限定在单一框架内以保证可比性。",
+        "cite": [
+          "arena-webdev-blog@Next.js",
+          "arena-webdev-blog@Limitations"
+        ]
+      },
+      {
+        "k": "系统提示词",
+        "text": "所有模型收到同一份系统提示词，把自己定位成「具备强 UI/UX 能力的资深前端工程师」，避免提示词差异被当成模型差异。",
+        "cite": [
+          "arena-webdev-blog@系统提示词"
+        ]
+      },
+      {
+        "k": "去重与身份泄露过滤",
+        "text": "2025-07-14 起对高频 prompt 做哈希去重（约过滤 10% 的投票），并用 LLM 分类器剔除试图套出模型身份的对话。",
+        "cite": [
+          "arena-leaderboard-changelog@2025-07-14"
+        ]
+      },
+      {
+        "k": "数据公开",
+        "text": "公开数据包含 prompt 文本、投票结果与模型配对，可在 Arena Explorer 或 Hugging Face 上取用。",
+        "cite": [
+          "arena-faq@数据开放"
+        ]
+      }
+    ]
   },
-  "metrics": [],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [],
-  "notes": "Google 引用；Gemini 3 报 1487 Elo",
+  "metrics": [
+    {
+      "id": "arena-score",
+      "name": "Arena Score（Elo 分）",
+      "direction": "越高越好",
+      "description": "由成对人类投票经 Bradley-Terry 模型估计出的实力分（前端类比：把 Elo 当成对战胜率的连续化）；重加权保证无论抽样概率怎么设，分数都无偏。",
+      "unit": "elo",
+      "cite": [
+        "arena-webdev-blog@Bradley-Terry",
+        "arena-policy@重加权"
+      ]
+    },
+    {
+      "id": "confidence-interval",
+      "name": "置信区间",
+      "direction": "越窄越好",
+      "description": "用中心极限定理（CLT）对 m-estimator 闭式计算置信区间，2025-07-23 起取代 bootstrap；重加权会放大方差，区间因此变宽。",
+      "unit": "elo",
+      "cite": [
+        "arena-leaderboard-changelog@2025-07-23",
+        "arena-leaderboard-changelog@2025-07-23 重加权"
+      ]
+    },
+    {
+      "id": "average-win-rate",
+      "name": "平均胜率",
+      "direction": "越高越好",
+      "description": "模型在已记录对战中的胜率比例，官方博文用它描述当时排名第一的模型。",
+      "unit": "percent",
+      "cite": [
+        "arena-webdev-blog@Key Takeaways"
+      ]
+    }
+  ],
+  "default_protocol": {
+    "raw": "默认口径是 battle 模式：访客拿到两个匿名模型从同一句 prompt 生成的网页，二选一投票（也可判平局），只有模型匿名状态下投的票才计入官方排名；分数用 Bradley-Terry 模型从成对比较中估计，再经重加权消除抽样概率带来的偏差。",
+    "cite": [
+      "arena-how-it-works",
+      "arena-faq@匿名计票",
+      "arena-webdev-blog@Bradley-Terry",
+      "arena-policy@重加权"
+    ],
+    "variants": [
+      {
+        "text": "Side-by-Side 模式（访客自己指定两个模型对比）不计入公开榜单排名。",
+        "cite": [
+          "arena-faq@Side-by-Side"
+        ]
+      },
+      {
+        "text": "2025-11-12 起 WebDev 榜单整体切换到 Code Arena 体验口径，切换前后的分数不能直接连起来看。",
+        "cite": [
+          "arena-leaderboard-changelog@2025-11-12"
+        ]
+      },
+      {
+        "text": "2026-02-26 起 WebDev 榜单按生成环境拆成 HTML（单文档 standalone HTML/CSS/JS）与 React（多文件应用）两类，分别排名。",
+        "cite": [
+          "arena-leaderboard-changelog@2026-02-26",
+          "arena-leaderboard-changelog@2026-02-26 HTML",
+          "arena-leaderboard-changelog@2026-02-26 React"
+        ]
+      },
+      {
+        "text": "模型需累计至少 1,000 票、且 API 对 Arena 可用至少 30 天才参与排名；每场对战至少一方是公开可用模型，且至少 20% 的对战双方都公开可用。",
+        "cite": [
+          "arena-policy@上架门槛",
+          "arena-policy@API 可用期",
+          "arena-policy@抽样"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "launch",
+      "date": "2024-12",
+      "label": "WebDev Arena 上线（官方博文称 2024 年 12 月）",
+      "cite": [
+        "arena-webdev-blog@累计投票"
+      ]
+    },
+    {
+      "id": "blog",
+      "date": "2025-03-10",
+      "label": "官方博文《WebDev Arena: A Live LLM Leaderboard for Web App Development》发布（页面标注 2025-06-13 最后更新）",
+      "cite": [
+        "arena-webdev-blog"
+      ]
+    },
+    {
+      "id": "gemini-25-pro",
+      "date": "2025-05-20",
+      "label": "Google I/O 2025 更新公告：称 2.5 Pro 以 ELO 1415 领先 WebDev Arena",
+      "cite": [
+        "blog-gemini-io-2025"
+      ]
+    },
+    {
+      "id": "dedup",
+      "date": "2025-07-14",
+      "label": "数据处理升级：高频 prompt 哈希去重（约 10% 投票）+ 身份泄露检测",
+      "cite": [
+        "arena-leaderboard-changelog@2025-07-14"
+      ]
+    },
+    {
+      "id": "clt-ci",
+      "date": "2025-07-23",
+      "label": "置信区间从 bootstrap 改为 CLT 闭式解；重加权导致区间变宽",
+      "cite": [
+        "arena-leaderboard-changelog@2025-07-23",
+        "arena-leaderboard-changelog@2025-07-23 重加权"
+      ]
+    },
+    {
+      "id": "code-arena",
+      "date": "2025-11-12",
+      "label": "WebDev 榜单切换到 Code Arena 体验",
+      "cite": [
+        "arena-leaderboard-changelog@2025-11-12"
+      ]
+    },
+    {
+      "id": "gemini-3",
+      "date": "2025-11-18",
+      "label": "Google 发布 Gemini 3，称其以 1487 Elo 登顶 WebDev Arena",
+      "cite": [
+        "blog-products-and-platforms-p"
+      ]
+    },
+    {
+      "id": "gpt-51",
+      "date": "2025-11-21",
+      "label": "gpt-5.1 / gpt-5.1-medium / gpt-5.1-codex / gpt-5.1-codex-mini 上架新 WebDev 榜单",
+      "cite": [
+        "arena-leaderboard-changelog@2025-11-21"
+      ]
+    },
+    {
+      "id": "glm-47",
+      "date": "2025-12-22",
+      "label": "glm-4.7 上架由新 Code Arena 驱动的 WebDev Arena 榜单",
+      "cite": [
+        "arena-leaderboard-changelog@2025-12-22"
+      ]
+    },
+    {
+      "id": "html-react-split",
+      "date": "2026-02-26",
+      "label": "WebDev 榜单按生成环境拆分为 HTML 与 React 两类",
+      "cite": [
+        "arena-leaderboard-changelog@2026-02-26",
+        "arena-leaderboard-changelog@2026-02-26 HTML",
+        "arena-leaderboard-changelog@2026-02-26 React"
+      ]
+    },
+    {
+      "id": "fullstack",
+      "date": "2026-07-28",
+      "label": "Code Arena Fullstack 榜单上线（多步推理、工具调用、端到端应用生成）",
+      "cite": [
+        "arena-leaderboard-changelog@2026-07-28"
+      ]
+    },
+    {
+      "id": "gemini-37-flash",
+      "date": "2026-08-13",
+      "label": "Google 发布 Gemini 3.7 Flash，称其 WebDev Arena Elo 1588 对 3.6 Flash 的 1538",
+      "cite": [
+        "blog-innovation-and-ai-models"
+      ]
+    },
+    {
+      "id": "gemini-4-hydrogen",
+      "date": "2026-11-12",
+      "label": "Gemini 4 Hydrogen (High) 上架 Code Arena: WebDev 榜单（本次核验时变更日志最新一条）",
+      "cite": [
+        "arena-leaderboard-changelog@2026-11-12"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "口径随方法学与榜单形态多次变更",
+      "impact": "2025-07-14 去重与身份泄露过滤、2025-07-23 置信区间方法变更、2025-11-12 切换到 Code Arena、2026-02-26 拆分 HTML / React，任一变更前后的分数都不在同一标尺上。",
+      "severity": "高",
+      "response": "官方把方法学变更集中记录在 Leaderboard Changelog，并从 2025 年 7 月起承诺在此登记所有方法学更新。",
+      "reader": "跨时间比较先看变更日志落在哪个区间；核对厂商公告里的 Elo 时要连公告日期一起看。",
+      "cite": [
+        "arena-leaderboard-changelog@2025-07-14",
+        "arena-leaderboard-changelog@2025-11-12",
+        "arena-leaderboard-changelog@2026-02-26",
+        "arena-policy@变更日志"
+      ]
+    },
+    {
+      "issue": "投票噪声大：平局与「两个都差」占比高",
+      "impact": "官方统计 WebDev Arena 的平局率 26%（Chatbot Arena 为 35%），另有约 18% 的投票属于「两个输出都不行」，这部分票不携带有效的质量信号。",
+      "severity": "高",
+      "response": "官方用 Bradley-Terry 与重加权抑制抽样偏差，并用 bootstrap / CLT 给出区间；未见针对平局与 both-bad 的专门修正。",
+      "reader": "把几个 Elo 点的差距当噪声读，只有明显拉开的分差才值得解读。",
+      "cite": [
+        "arena-webdev-blog@平局与失败",
+        "arena-webdev-blog@both bad",
+        "arena-policy@重加权"
+      ]
+    },
+    {
+      "issue": "生成格式显著影响得分",
+      "impact": "官方消融实验显示，对结构化输出做约束后 Arena Score 提升从 +12.98 到 +88.76 不等，说明分数里有一部分来自输出形态而非真实能力。",
+      "severity": "中",
+      "response": "官方在博文中公开该消融结果，并对所有模型统一系统提示词。",
+      "reader": "看到某个模型 Elo 突然跃升时，先确认是否伴随输出格式或协议变化。",
+      "cite": [
+        "arena-webdev-blog@结构化输出消融",
+        "arena-webdev-blog@系统提示词"
+      ]
+    },
+    {
+      "issue": "对战池与模型池动态变化",
+      "impact": "分数是对战池内的相对比较结果，池中加入或移除模型会改变所有模型的分数；模型需累计至少 1,000 票才允许上架，说明低票量模型的估计不稳定。",
+      "severity": "中",
+      "response": "官方设 1,000 票上架门槛与 30 天 API 可用期，并要求每场对战至少一方是公开可用模型。",
+      "reader": "只与同一时间快照内的模型横向比，不要把不同日期的 Elo 直接相减。",
+      "cite": [
+        "arena-policy@上架门槛",
+        "arena-policy@API 可用期",
+        "arena-policy@抽样"
+      ]
+    },
+    {
+      "issue": "技术栈与任务范围受限",
+      "impact": "官方明确当前只支持 Next.js / React 应用，不覆盖其他框架、后端、数据库与部署等真实工程环节；全栈与非 Web 领域被列为未来工作。",
+      "severity": "中",
+      "response": "官方把范围扩展列为未来工作，并于 2026-07-28 另行上线 Code Arena Fullstack 榜单承接多步与端到端任务。",
+      "reader": "需要覆盖全栈或后端能力时改看 Fullstack 榜单，不要把 WebDev 分数当全栈能力。",
+      "cite": [
+        "arena-webdev-blog@Limitations",
+        "arena-webdev-blog@未来工作",
+        "arena-leaderboard-changelog@2026-07-28"
+      ]
+    },
+    {
+      "issue": "票量数字在同一页面内不自洽",
+      "impact": "官方博文正文称「超过 80,000 张社区投票」（截至 2025-03-10），同页去重分析又写到投票从 103,096 降到 61,473，两者相差约 40%，官方未解释差异来源。",
+      "severity": "中",
+      "response": "未见官方说明；本页在「来源与背景」中并列两个数字并标注各自口径。",
+      "reader": "引用票量时先说明取哪个数字与截止日期，不要混用。",
+      "cite": [
+        "arena-webdev-blog@累计投票",
+        "arena-webdev-blog@去重分析"
+      ]
+    },
+    {
+      "issue": "厂商自报成绩缺少同期官方榜单快照",
+      "impact": "本页三个 Elo 数（1415 / 1487 / 1588）均来自 Google 公告自述，本次核验未取到同日的官方榜单快照；官方分数随投票持续变动，公告数字只代表公告当日口径。",
+      "severity": "中",
+      "response": "官方另提供开源的 Arena-Rank 评测与排名流水线，以及含 prompt、投票结果与模型配对的公开数据，可自行复算。",
+      "reader": "把公告里的 Elo 当作「官方口径的自述」；需要精确排名时用公开数据自行复算。",
+      "cite": [
+        "blog-gemini-io-2025",
+        "blog-products-and-platforms-p",
+        "blog-innovation-and-ai-models",
+        "arena-policy",
+        "arena-faq@数据开放"
+      ]
+    }
+  ],
+  "notes": "Google 三篇公告各给一个 Elo（1415 / 1487 / 1588）。本次核验时 arena.ai 的实时榜单页被 Cloudflare 人机验证拦住，未能读取同期官方快照；1415（2025-05-20）与 1487（2025-11-18）之间没有本次可核验的官方榜单记录。",
   "official_sources": [
     {
       "kind": "site",
-      "url": "https://arena.ai/leaderboard/code"
+      "url": "https://arena.ai/blog/webdev-arena"
     },
     {
       "kind": "site",
-      "url": "https://blog.google/innovation-and-ai/models-and-research/gemini-models/introducing-gemini-3-7-flash/"
+      "url": "https://arena.ai/company/leaderboard-changelog"
     },
     {
       "kind": "site",
+      "url": "https://arena.ai/blog/policy/"
+    },
+    {
+      "kind": "blog",
+      "url": "https://blog.google/technology/google-deepmind/google-gemini-updates-io-2025/"
+    },
+    {
+      "kind": "blog",
       "url": "https://blog.google/products-and-platforms/products/gemini/gemini-3/"
+    },
+    {
+      "kind": "blog",
+      "url": "https://blog.google/innovation-and-ai/models-and-research/gemini-models/introducing-gemini-3-7-flash/"
     }
   ],
   "related_benchmarks": [
-    "arena"
+    "arena",
+    "terminalbench",
+    "swebench"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-13",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      {
+        "id": "arena-webdev-blog",
+        "kind": "blog",
+        "title": "WebDev Arena: A Live LLM Leaderboard for Web App Development（arena.ai 官方博文，2025-03-10 发布，2025-06-13 最后更新）",
+        "url": "https://arena.ai/blog/webdev-arena",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "arena-leaderboard-changelog",
+        "kind": "site",
+        "title": "Leaderboard Changelog | Arena Blog（榜单与方法学变更日志）",
+        "url": "https://arena.ai/company/leaderboard-changelog",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "arena-policy",
+        "kind": "site",
+        "title": "Arena Leaderboard Policy（上榜规则与方法学承诺）",
+        "url": "https://arena.ai/blog/policy/",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "arena-faq",
+        "kind": "site",
+        "title": "Arena FAQ | AI Leaderboards, Benchmarks, and Arena Explained",
+        "url": "https://arena.ai/faq",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "arena-how-it-works",
+        "kind": "site",
+        "title": "How Arena Works | AI Model Evaluation & Benchmarking",
+        "url": "https://arena.ai/how-it-works",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "arena-about",
+        "kind": "site",
+        "title": "About Us - Arena.ai（机构沿革与融资）",
+        "url": "https://arena.ai/company/about",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "blog-gemini-io-2025",
+        "kind": "blog",
+        "title": "Google I/O 2025: Updates to Gemini 2.5 from Google DeepMind（2025-05-20）",
+        "url": "https://blog.google/technology/google-deepmind/google-gemini-updates-io-2025/",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "blog-products-and-platforms-p",
+        "kind": "blog",
+        "title": "Gemini 3: Introducing the latest Gemini AI model from Google（2025-11-18）",
+        "url": "https://blog.google/products-and-platforms/products/gemini/gemini-3/",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "blog-innovation-and-ai-models",
+        "kind": "blog",
+        "title": "Gemini 3.7 Flash: our most intelligent workhorse model（2026-08-13）",
+        "url": "https://blog.google/innovation-and-ai/models-and-research/gemini-models/introducing-gemini-3-7-flash/",
+        "accessed": "2026-11-13"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Arena Intelligence Inc.（原 LMArena，由加州大学伯克利分校研究者创建）",
+        "cite": [
+          "arena-about@公司沿革",
+          "arena-about"
+        ]
+      },
+      "first_release": {
+        "v": "2024-12（官方博文称 2024 年 12 月上线）",
+        "cite": [
+          "arena-webdev-blog@累计投票"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "arena-webdev-blog",
+        "arena-webdev-blog@上线与投票",
+        "arena-webdev-blog@Bradley-Terry"
+      ],
+      "interpretation": [
+        "arena-webdev-blog@HumanEval",
+        "arena-webdev-blog@Bradley-Terry",
+        "arena-leaderboard-changelog@2025-11-12"
+      ]
+    },
+    "problem": {
+      "text": "HumanEval、CodeXGLUE 这类基准停在函数级代码生成，SWE-bench 评的是开源仓库里的 issue 修复，都回答不了「哪个模型做出来的网页更好用」；WebDev Arena 用真实用户的一句需求加人类投票来补这一段。",
+      "cite": [
+        "arena-webdev-blog@HumanEval",
+        "arena-webdev-blog@上线与投票"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "官方博文快照的第一名",
+        "value": "Claude 3.7 Sonnet，平均胜率 76%",
+        "note": "2025-03-10 博文的 Key Takeaways，页面标注 2025-06-13 最后更新；不代表当前排名。",
+        "cite": [
+          "arena-webdev-blog@Key Takeaways"
+        ]
+      },
+      {
+        "label": "Google 公告自述居首（2025-05-20）",
+        "value": "ELO 1415（Gemini 2.5 Pro）",
+        "note": "Google I/O 2025 更新公告口径。",
+        "cite": [
+          "blog-gemini-io-2025"
+        ]
+      },
+      {
+        "label": "Google 公告自述居首（2025-11-18）",
+        "value": "1487 Elo（Gemini 3）",
+        "note": "Gemini 3 发布公告口径。",
+        "cite": [
+          "blog-products-and-platforms-p"
+        ]
+      },
+      {
+        "label": "Google 公告自述同代对比（2026-08-13）",
+        "value": "1588 对 1538（Gemini 3.7 Flash 对 3.6 Flash）",
+        "note": "同代两模型相差 50 Elo。",
+        "cite": [
+          "blog-innovation-and-ai-models"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      },
+      {
+        "label": "有效分辨率参考线",
+        "value": "平局率 26%；约 18% 属「两个都差」",
+        "note": "这两条比例说明 Elo 的有效分辨率有限，小差距应按噪声读。",
+        "cite": [
+          "arena-webdev-blog@平局与失败",
+          "arena-webdev-blog@both bad"
+        ]
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 Elo 当准确率读，或与 HumanEval / SWE-bench 这类有标准答案的基准排进同一张表——官方明确把它们区分开。",
+        "cite": [
+          "arena-webdev-blog@HumanEval",
+          "arena-webdev-blog@Bradley-Terry"
+        ]
+      },
+      {
+        "text": "把不同日期的 Elo 直接相减算「进步了多少」——2025-11-12 榜单切到 Code Arena、2026-02-26 又拆成 HTML / React，标尺已经变过。",
+        "cite": [
+          "arena-leaderboard-changelog@2025-11-12",
+          "arena-leaderboard-changelog@2026-02-26"
+        ]
+      },
+      {
+        "text": "以为匿名投票就天然无偏——官方专门加了身份泄露过滤，说明投票里确实存在可识别模型的线索。",
+        "cite": [
+          "arena-leaderboard-changelog@2025-07-14"
+        ]
+      },
+      {
+        "text": "把 Side-by-Side 模式自己指定模型的投票当成榜单分数——该模式不计入公开排名。",
+        "cite": [
+          "arena-faq@Side-by-Side"
+        ]
+      },
+      {
+        "text": "把厂商公告的 Elo 当成实时榜单名次——模型需累计至少 1,000 票才允许上架，分数随投票量持续变动，公告数字只代表公告当日。",
+        "cite": [
+          "arena-policy@上架门槛",
+          "blog-products-and-platforms-p"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "Arena Intelligence Inc.，2025 年成立；前身 LMArena，由加州大学伯克利分校研究者创建",
+        "cite": [
+          "arena-about@公司沿革",
+          "arena-about"
+        ]
+      },
+      {
+        "k": "融资",
+        "v": "2.5 亿美元风险投资（a16z、加州大学等）",
+        "cite": [
+          "arena-about@融资"
+        ]
+      },
+      {
+        "k": "平台历史",
+        "v": "Arena 自 2024 年 3 月起用于测试各实验室模型，自称开源了全球最大的有机人类偏好数据集",
+        "cite": [
+          "arena-how-it-works@平台历史",
+          "arena-how-it-works@开放数据"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "Aryan Vichare、Anastasios N. Angelopoulos、Wei-Lin Chiang、Kelly Tang、Luca Manolache",
+        "cite": [
+          "arena-webdev-blog@贡献者"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2024-12 上线 → 2025-03-10 官方博文 → 2025-07 数据处理与方法学两次升级 → 2025-11-12 并入 Code Arena → 2026-02-26 拆分 HTML / React → 2026-07-28 Fullstack 榜单上线",
+        "cite": [
+          "arena-webdev-blog",
+          "arena-leaderboard-changelog@2026-07-28"
+        ]
+      },
+      {
+        "k": "榜单收录范围",
+        "v": "只收录第一方基础模型且对全球公众普遍可用；每场对战至少一方是公开可用模型，至少 20% 的对战双方都公开可用",
+        "cite": [
+          "arena-policy@上榜范围",
+          "arena-policy@抽样"
+        ]
+      },
+      {
+        "k": "下架透明度",
+        "v": "已从 battle 模式下架的模型记录在公开清单中",
+        "cite": [
+          "arena-policy@下架透明"
+        ]
+      },
+      {
+        "k": "票量口径",
+        "v": "正文口径「超过 80,000 票」（截至 2025-03-10）；同页去重分析口径「103,096 → 61,473」，官方未解释两者差异",
+        "cite": [
+          "arena-webdev-blog@累计投票",
+          "arena-webdev-blog@去重分析"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "评测与排名流水线开源在 Arena-Rank 仓库；公开数据含 prompt 文本、投票结果与模型配对，可在 Arena Explorer 或 Hugging Face 取用",
+        "cite": [
+          "arena-policy",
+          "arena-faq@数据开放"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-13",
+        "columns": [
+          "来源",
+          "日期",
+          "模型",
+          "WebDev Arena Elo",
+          "口径说明"
+        ],
+        "rows": [
+          [
+            "官方博文 Key Takeaways",
+            "2025-03-10",
+            "Claude 3.7 Sonnet",
+            "未给出 Elo",
+            "博文称当时排名第一，平均胜率 76%"
+          ],
+          [
+            "Google I/O 2025 公告",
+            "2025-05-20",
+            "Gemini 2.5 Pro",
+            "1415",
+            "公告称领先 WebDev Arena"
+          ],
+          [
+            "Gemini 3 发布公告",
+            "2025-11-18",
+            "Gemini 3",
+            "1487",
+            "公告称登顶 WebDev Arena"
+          ],
+          [
+            "Gemini 3.7 Flash 公告",
+            "2026-08-13",
+            "Gemini 3.7 Flash",
+            "1588",
+            "公告称优于 3.6 Flash"
+          ],
+          [
+            "Gemini 3.7 Flash 公告",
+            "2026-08-13",
+            "Gemini 3.6 Flash",
+            "1538",
+            "同代对照组"
+          ]
+        ]
+      },
+      "cite": [
+        "arena-webdev-blog@Key Takeaways",
+        "blog-gemini-io-2025",
+        "blog-products-and-platforms-p",
+        "blog-innovation-and-ai-models"
+      ]
+    }
+  }
 }

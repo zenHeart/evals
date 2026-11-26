@@ -10,58 +10,348 @@
     "multimodal",
     "safety"
   ],
-  "summary": "视频事实性基准（AAAI 2026）：2,030 道以视频内容为事实依据的短问答，87% 需时序推理，考视频大模型的可验证 grounding",
-  "interpretation": "准确率口径，定位是视频版事实性评测（OpenAI SimpleQA 的视频延伸）——短事实问答、答案可验证；字节 Seed2.0 页读数 Lite 71.7 / Mini 67.7，为厂商自报。",
+  "summary": "Video SimpleQA 用 1,079 个知识密集型视频配 1,504 道人工标注的多跳短问答，专考视频大模型的「事实对不对」：答案必须唯一、无歧义、不随时间变化，且要跨多个时间片段才能答出。论文用 o3 当裁判打 F-score，评的 33 个前沿模型里最好的 o3 只有 66.3%，人类开卷 90.6%。",
+  "interpretation": "高分说明模型看过视频后，能把视频里没明说、要靠外部知识补齐的事实答对，而且答得克制；低分大多不是看不懂画面，而是缺知识、爱硬答。分数还要看有没有配检索——同样条件下给 Claude Sonnet 4 接上 RAG，F-score 从 35.6 提到 58.8（+23.2）。",
   "measures": [
-    "视频内显式事实的提取与验证",
-    "时序定位与推理"
+    {
+      "area": "外部知识补全",
+      "focus": "视频叙事之外的知识才能答的事实查找题；论文把它列为第一条选题标准，也是与一般视频问答基准的主要区别",
+      "share": "全部 1,504 题",
+      "format": "短问答（平均问题 15.64 词、答案 1.28 词）",
+      "cite": [
+        "arxiv-2503-18923@Dataset Statistics",
+        "arxiv-2503-18923@引言六条选题标准",
+        "arxiv-2503-18923@QA Annotations"
+      ]
+    },
+    {
+      "area": "多跳事实链",
+      "focus": "题目由多个可独立核验的事实串联而成，论文同时给出每跳的单事实子题，便于定位错在哪一跳",
+      "share": "2/3/4 跳 = 928/469/107 题",
+      "format": "多跳短问答 + 每跳子题",
+      "cite": [
+        "repo@README",
+        "arxiv-2503-18923@Table 4"
+      ]
+    },
+    {
+      "area": "时序定位跨度",
+      "focus": "按答对一题需要参照的时间跨度分三档：短期与中期合计 82.6%，长期档分数明显更低",
+      "share": "短期 50.5% / 中期 32.1% / 长期 17.4%",
+      "format": "需跨多个时间片段，不能只看单帧",
+      "cite": [
+        "arxiv-2503-18923@Table 7",
+        "arxiv-2503-18923@Temporal scope analysis"
+      ]
+    },
+    {
+      "area": "四个一级类别",
+      "focus": "工程、自然、科学、社会与文化；论文报告各类别 F-score，未给各类占比",
+      "share": "4 / 15 / 84 类（类别占比未披露）",
+      "format": "短问答",
+      "cite": [
+        "arxiv-2503-18923@Dataset Statistics",
+        "arxiv-2503-18923@Table 2 脚注"
+      ]
+    }
   ],
   "does_not_measure": [
-    "开放式主观描述质量",
-    "音频-视觉联合推理"
+    {
+      "text": "开放式描述、摘要或叙述质量：题目全是短事实问答，答案平均 1.28 个词，不评结构、文风与完整性。",
+      "cite": [
+        "arxiv-2503-18923@Dataset Statistics",
+        "repo@README"
+      ]
+    },
+    {
+      "text": "计算类与纯视觉推理：论文明确把事实 grounding 与数学计算类推理区分开，本基准只测前者。",
+      "cite": [
+        "arxiv-2503-18923@Figure 1",
+        "arxiv-2503-18923@引言六条选题标准"
+      ]
+    },
+    {
+      "text": "主观推测与假设性提问：出题要求事实 grounded，明确排除 hypothetical 与主观推断，只保留客观事实。",
+      "cite": [
+        "arxiv-2503-18923@QA Annotations",
+        "repo@README"
+      ]
+    }
   ],
   "dataset": {
-    "sample_count": 2030,
+    "sample_count": 1504,
     "splits": [
-      "四个一级类别",
-      "87% 题目需时序推理"
+      "Hugging Face 单 split（train，1.5k 行）"
     ],
     "languages": [
       "en"
     ],
-    "source_type": "real-world（视频 + 人工标注事实问答）",
-    "public_sample": true
+    "source_type": "real-world（Wikimedia Commons「Media of the Day」知识密集型视频 + 人工标注事实问答）",
+    "public_sample": true,
+    "totals": "1,079 个视频 · 1,504 道人工标注问答（2/3/4 跳 = 928/469/107；平均问题 15.64 词、答案 1.28 词）· 4 个一级、15 个二级、84 个三级类别 · 全英文短问答",
+    "cite": [
+      "arxiv-2503-18923@Dataset Statistics",
+      "repo@README",
+      "dataset@Dataset card"
+    ],
+    "construction": [
+      {
+        "k": "视频来源",
+        "text": "从 Wikimedia Commons 的「Media of the Day」页挑知识密集型视频，配自带的简短描述或科学插图；这些文件是自由许可的，规避版权问题。",
+        "cite": [
+          "arxiv-2503-18923@Video & Encyclopedia Collection",
+          "arxiv-2503-18923@Copyright clarifications"
+        ]
+      },
+      {
+        "k": "标注者",
+        "text": "标注者来自 2026 年 QS 全球排名前 500 的高校；定稿数据集另由六位专业安全审计员复核。",
+        "cite": [
+          "arxiv-2503-18923@Biographies of annotators",
+          "arxiv-2503-18923@Copyright clarifications"
+        ]
+      },
+      {
+        "k": "题目生成",
+        "text": "两阶段流程：GPT-4o 驱动的自动迭代生成，加人工介入的核验修订；生成器与评审器都实现为 GPT-4o，最多迭代三轮，仍不合格的输出在末轮后丢弃。",
+        "cite": [
+          "arxiv-2503-18923@LLM-based Iterative Generation"
+        ]
+      },
+      {
+        "k": "出题标准",
+        "text": "问题必须事实 grounded、不含假设性内容；每题拆成单事实子题，子题依次依赖前一跳答案，形成逐步的事实链。",
+        "cite": [
+          "arxiv-2503-18923@QA Annotations",
+          "arxiv-2503-18923@引言六条选题标准"
+        ]
+      },
+      {
+        "k": "难度过滤",
+        "text": "GPT-4o、Claude Sonnet 4、Gemini 2.5 Pro、Qwen-VL-Max 四个模型都能答对的题被判为不够难，直接剔除出 benchmark。",
+        "cite": [
+          "arxiv-2503-18923@Difficulty Filtering"
+        ]
+      },
+      {
+        "k": "人工交叉核验",
+        "text": "每题由两名标注者独立按预设标准审核，任一人判为不合格即丢弃。",
+        "cite": [
+          "arxiv-2503-18923@Human Cross-verification"
+        ]
+      },
+      {
+        "k": "许可与分发",
+        "text": "项目以 CC BY-NC-SA 4.0 发布；Hugging Face 上为单个 train split、1.5k 行、约 902 kB。",
+        "cite": [
+          "repo@License",
+          "dataset@Dataset card"
+        ]
+      }
+    ]
   },
   "metrics": [
     {
-      "id": "accuracy",
-      "name": "Accuracy",
+      "id": "f-score",
+      "name": "F-score",
+      "direction": "越高越好",
+      "description": "Correct 与 Correct given Attempted 的调和平均；论文主指标，项目页榜单也按它排序。",
       "range": [
         0,
         100
       ],
       "unit": "percent",
-      "direction": "higher",
-      "aggregation": "mean"
+      "cite": [
+        "arxiv-2503-18923@Evaluation Metrics",
+        "videosimpleqa@Leaderboard"
+      ]
+    },
+    {
+      "id": "correct",
+      "name": "Correct（正确率）",
+      "direction": "越高越好",
+      "description": "预测答案完整包含标准答案的全部关键信息、且不含矛盾内容的题目占比。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2503-18923@Evaluation Metrics"
+      ]
+    },
+    {
+      "id": "cga",
+      "name": "Correct given Attempted（有条件正确率）",
+      "direction": "越高越好",
+      "description": "论文脚注：cga = correct given attempted，即只统计模型尝试作答的题目时的判对比例。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2503-18923@Table 2 脚注"
+      ]
+    },
+    {
+      "id": "na",
+      "name": "Not Attempted（弃答率）",
+      "direction": "越低越好",
+      "description": "论文在错误分析中把 NA 解释为 non-attempted responses，即模型选择不尝试作答的题目占比。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2503-18923@Experimental Findings",
+        "arxiv-2503-18923@Table 2 脚注"
+      ]
+    },
+    {
+      "id": "in",
+      "name": "Incorrect（错误率）",
+      "direction": "越低越好",
+      "description": "论文在错误分析中把 IN 解释为 incorrect predictions，即答错或答得不完整的题目占比。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2503-18923@Experimental Findings",
+        "arxiv-2503-18923@Table 2 脚注"
+      ]
     }
   ],
-  "default_protocol": null,
+  "default_protocol": {
+    "raw": "模型输入视频帧与问题，按各模型上下文窗口尽量多喂帧，用官方默认设置生成回答；temperature 1.0、最长输出 1,024 token，每题重复三次以保证可复现性与统计可靠性，全部实验可在 8×A100 工作站上复现。判分走 LLM-as-a-Judge：用 o3 作裁判，抽取答案关键信息并对照唯一标准答案判对错，再汇总为五个指标。",
+    "cite": [
+      "arxiv-2503-18923@Evaluated Models",
+      "arxiv-2503-18923@Experimental configurations",
+      "arxiv-2503-18923@Evaluation Metrics"
+    ],
+    "variants": [
+      {
+        "text": "有无检索（RAG）：论文用 LlamaIndex 作 RAG 方法、以 Google 与 Bing 的搜索结果作数据源做对比，RAG 相对原味（vanilla）模型一致提升 F-score；两种设置不能混着比。",
+        "cite": [
+          "arxiv-2503-18923@QA Annotations",
+          "arxiv-2503-18923@Table 3"
+        ]
+      },
+      {
+        "text": "人类开卷 vs 闭卷：抽 200 题、招募 5 人独立作答，允许查互联网与教材时 F-score 90.6，不允许时 66.5；模型成绩更适合和闭卷人类比。",
+        "cite": [
+          "arxiv-2503-18923@Table 2"
+        ]
+      },
+      {
+        "text": "多跳总题 vs 每跳子题：论文同时报最终多跳题与各跳单事实子题的分数，用来定位瓶颈在哪一跳；两者不是同一口径。",
+        "cite": [
+          "arxiv-2503-18923@Table 4",
+          "arxiv-2503-18923@引言六条选题标准"
+        ]
+      },
+      {
+        "text": "闭源 vs 开源分组：论文 Table 2 把闭源与开源模型分开列，最好闭源 o3 66.3，最好开源 Qwen2.5-VL-72B 39.5，差约 26.8 个百分点。",
+        "cite": [
+          "arxiv-2503-18923@Table 2"
+        ]
+      }
+    ]
+  },
   "versions": [
     {
       "id": "v1",
-      "label": "Video SimpleQA（2025-03）",
-      "note": "arXiv:2503.18923，AAAI 2026"
+      "date": "2025-03-24",
+      "label": "arXiv v1 发布（8,645 KB）",
+      "cite": [
+        "arxiv-2503-18923@Submission history"
+      ]
     },
     {
       "id": "v2",
-      "label": "VideoSimpleQA-v2",
-      "note": "字节 Seed2.0 表引用的变体，另建档 videosimpleqa-v2"
+      "date": "2025-08-13",
+      "label": "arXiv v2 修订（本页核对所用版本；论文与项目页均未披露发表会议）",
+      "cite": [
+        "arxiv-2503-18923@Submission history"
+      ]
     }
   ],
   "limitations": [
-    "短事实问答形式，不覆盖长程叙事理解"
+    {
+      "issue": "样本量与领域覆盖",
+      "impact": "1,504 题、1,079 个视频，全部来自 Wikimedia Commons「Media of the Day」这类知识类媒体；论文只给了 4/15/84 类的类目数，未给各类占比，领域平衡无从判断。",
+      "severity": "中",
+      "response": "论文与项目页均未公布扩充计划；本页以 arXiv v2 与官方仓库统计为准。",
+      "reader": "把分数当成「视频事实性」的一次抽样，不是全貌；换领域可能掉得厉害。",
+      "cite": [
+        "arxiv-2503-18923@Dataset Statistics",
+        "arxiv-2503-18923@Video & Encyclopedia Collection"
+      ]
+    },
+    {
+      "issue": "答案唯一性靠人工标准",
+      "impact": "每题要求单一、无歧义、时间不变的答案，由两名标注者独立按预设标准审核，任一人判不合格即丢弃；标准本身仍有主观空间。",
+      "severity": "中",
+      "response": "定稿数据集另由六位专业安全审计员复核。",
+      "reader": "个别题的答案边界可能仍有争议，争议题回到原文看参考答案更稳。",
+      "cite": [
+        "arxiv-2503-18923@QA Annotations",
+        "arxiv-2503-18923@Human Cross-verification",
+        "arxiv-2503-18923@Copyright clarifications"
+      ]
+    },
+    {
+      "issue": "裁判模型单一",
+      "impact": "判分由 o3 作为 LLM-as-a-Judge 完成；论文的人类实验是另抽 200 题测人类开卷/闭卷基线，本页未检索到裁判与人类判定一致率的报告，裁判偏差会直接进入所有分数。",
+      "severity": "中",
+      "response": "论文给出 Correct / CGA / NA / IN / F-score 五指标拆分，供交叉判断。",
+      "reader": "看多个指标是否互相印证，别只盯 F-score 一个数。",
+      "cite": [
+        "arxiv-2503-18923@Evaluation Metrics",
+        "arxiv-2503-18923@Table 2 脚注",
+        "arxiv-2503-18923@Table 2"
+      ]
+    },
+    {
+      "issue": "模型覆盖与运行设置",
+      "impact": "共评 33 个模型（含 12 个闭源），输入帧数按各模型上下文窗口尽量最大化，temperature 1.0、最长 1,024 token、每题三次；框架与版本差异会混进分数。",
+      "severity": "中",
+      "response": "论文 Table 5 记录各模型的版本与输入帧配置。",
+      "reader": "跨论文比分数前，先对齐模型版本、输入帧数与推理设置。",
+      "cite": [
+        "arxiv-2503-18923@Evaluated Models",
+        "arxiv-2503-18923@Experimental configurations",
+        "arxiv-2503-18923@Table 5"
+      ]
+    },
+    {
+      "issue": "时序跨度只到分钟级",
+      "impact": "三档跨度分别是 <10 秒、10 秒–1 分钟、>1 分钟；长期档只占 17.4%，且分数明显低于另两档（o3 分别 59.7 / 51.8 / 46.8），长程时序建模仍是短板。",
+      "severity": "低",
+      "response": "论文据此指出长上下文时序建模的重要性。",
+      "reader": "别把本基准当成超长视频理解测试，它考的是分钟级以内的时序参照。",
+      "cite": [
+        "arxiv-2503-18923@Table 7",
+        "arxiv-2503-18923@Temporal scope analysis"
+      ]
+    },
+    {
+      "issue": "许可限制商用",
+      "impact": "项目以 CC BY-NC-SA 4.0 发布，禁止商用；视频本身虽来自自由许可的 Wikimedia Commons，数据集整体仍受同一许可约束。",
+      "severity": "低",
+      "response": "GitHub 仓库与 Hugging Face 数据集页均标注该许可。",
+      "reader": "商用或二次分发前先确认许可条款。",
+      "cite": [
+        "repo@License",
+        "dataset@Dataset card",
+        "arxiv-2503-18923@Copyright clarifications"
+      ]
+    }
   ],
-  "notes": "项目页 videosimpleqa.github.io；证据账本 2 行（字节 Seed2.0 Lite/Mini 列）",
+  "notes": "本站证据账本 2 行：字节 Seed2.0-Lite 71.7 / Seed2.0-Mini 67.7（口径 Video Knowledge、厂商自报；账本把指标记作 accuracy，而本基准官方主指标是 F-score，不可直接与论文表相比）",
   "official_sources": [
     {
       "kind": "paper",
@@ -77,6 +367,333 @@
     "simpleqa",
     "video-mme"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-09-01"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "arxiv-2503-18923",
+        "kind": "paper",
+        "title": "Video SimpleQA: Towards Factuality Evaluation in Large Video Language Models（arXiv:2503.18923，v2，2025-08-13）",
+        "url": "https://arxiv.org/abs/2503.18923",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "videosimpleqa",
+        "kind": "site",
+        "title": "Video SimpleQA 项目页（含榜单）",
+        "url": "https://videosimpleqa.github.io/",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "VideoSimpleQA/VideoSimpleQA（评测代码、数据统计与许可）",
+        "url": "https://github.com/VideoSimpleQA/VideoSimpleQA",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "dataset",
+        "kind": "dataset",
+        "title": "VideoSimpleQA/VideoSimpleQA（Hugging Face 数据集）",
+        "url": "https://huggingface.co/datasets/VideoSimpleQA/VideoSimpleQA",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "MBZUAI × 淘宝天猫集团 × 北京大学 × MAP × 中山大学（arXiv v2 作者署名）",
+        "cite": [
+          "arxiv-2503-18923@作者署名"
+        ]
+      },
+      "first_release": {
+        "v": "2025-03-24（arXiv v1；v2 2025-08-13）",
+        "cite": [
+          "arxiv-2503-18923@Submission history"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "arxiv-2503-18923@Abstract",
+        "arxiv-2503-18923@Dataset Statistics",
+        "arxiv-2503-18923@Table 2",
+        "repo@README"
+      ],
+      "interpretation": [
+        "arxiv-2503-18923@Table 2",
+        "arxiv-2503-18923@Table 3",
+        "arxiv-2503-18923@Figure 7",
+        "arxiv-2503-18923@Experimental Findings"
+      ]
+    },
+    "problem": {
+      "text": "视频问答基准大多停在描述与叙事理解，「它说的事实到底对不对」一直缺少一个像 SimpleQA 那样干净、可自动核对的视频基准。Video SimpleQA 把评测收窄到四条硬标准：需要视频叙事之外的外部知识；多跳事实查找，题目由多个可独立核验的事实串成、不许假设和主观推断；短而无歧义、不随时间与视角变化的答案；以及必须跨多个时间片段而非单帧作答。",
+      "cite": [
+        "arxiv-2503-18923@Abstract",
+        "arxiv-2503-18923@引言六条选题标准",
+        "arxiv-2503-18923@Temporal scope analysis",
+        "repo@README"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "人类开卷（可查外部资料）",
+        "value": "90.6",
+        "note": "抽 200 题、5 人独立作答，允许查互联网与教材。这是全 benchmark 的上限参照，不是模型成绩。",
+        "cite": [
+          "arxiv-2503-18923@Table 2"
+        ]
+      },
+      {
+        "label": "人类闭卷",
+        "value": "66.5",
+        "note": "同样 200 题、5 人，不许查外部资料；论文中最好的 o3（66.3）仍略低于人类闭卷。",
+        "cite": [
+          "arxiv-2503-18923@Table 2"
+        ]
+      },
+      {
+        "label": "论文中最好闭源模型",
+        "value": "66.3",
+        "note": "o3；论文共评 33 个前沿模型，其中 12 个闭源。",
+        "cite": [
+          "arxiv-2503-18923@Table 2",
+          "arxiv-2503-18923@Evaluated Models"
+        ]
+      },
+      {
+        "label": "论文中最好开源模型",
+        "value": "39.5",
+        "note": "Qwen2.5-VL-72B，与闭源最好成绩差约 26.8 个百分点。",
+        "cite": [
+          "arxiv-2503-18923@Table 2"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把「F-score 66.3」读成「o3 答对了三分之二」。F-score 是 Correct 与 Correct given Attempted 的调和平均，要连同弃答率一起看：o3 的 Correct 66.3、Not Attempted 只有 0.1，说明它几乎不弃答。",
+        "cite": [
+          "arxiv-2503-18923@Evaluation Metrics",
+          "arxiv-2503-18923@Table 2"
+        ]
+      },
+      {
+        "text": "跨口径直接比分数。有无 RAG、人类开卷/闭卷、多跳总题与每跳子题，都是不同设置；不同口径的数字排在一起没有意义。",
+        "cite": [
+          "arxiv-2503-18923@Table 3",
+          "arxiv-2503-18923@Table 2",
+          "arxiv-2503-18923@Table 4"
+        ]
+      },
+      {
+        "text": "以为分数低就是「看不懂视频」。论文的逐跳分析显示，最终多跳题分数远低于多数单跳子题，第一跳的物体/事件识别才是主要瓶颈，知识缺失也占大头。",
+        "cite": [
+          "arxiv-2503-18923@Table 4"
+        ]
+      },
+      {
+        "text": "把时序跨度和视频长度混为一谈。短/中/长三档指的是答对一题需要参照的时间跨度（<10 秒、10 秒–1 分钟、>1 分钟），不是视频本身有多长。",
+        "cite": [
+          "arxiv-2503-18923@Temporal scope analysis"
+        ]
+      },
+      {
+        "text": "看模型自报置信度下结论。除 o3 外各模型普遍落在完美校准线以下，即自信程度系统性超过真实准确率。",
+        "cite": [
+          "arxiv-2503-18923@Figure 7"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "MBZUAI、淘宝天猫集团、北京大学、MAP、中山大学（arXiv v2 署名）",
+        "cite": [
+          "arxiv-2503-18923@作者署名"
+        ]
+      },
+      {
+        "k": "论文与版本",
+        "v": "arXiv:2503.18923，v1 2025-03-24、v2 2025-08-13，本页按 v2 核对；论文与项目页均未披露发表会议。",
+        "cite": [
+          "arxiv-2503-18923@Submission history"
+        ]
+      },
+      {
+        "k": "评测规模",
+        "v": "33 个前沿视频大模型，其中 12 个闭源；全部实验可在 8×A100 工作站复现。",
+        "cite": [
+          "arxiv-2503-18923@Evaluated Models",
+          "arxiv-2503-18923@Experimental configurations"
+        ]
+      },
+      {
+        "k": "数据集",
+        "v": "Hugging Face VideoSimpleQA/VideoSimpleQA：单 train split、1.5k 行、约 902 kB，CC BY-NC-SA 4.0，英文。",
+        "cite": [
+          "dataset@Dataset card",
+          "repo@License"
+        ]
+      },
+      {
+        "k": "代码与榜单",
+        "v": "GitHub VideoSimpleQA/VideoSimpleQA 提供评测代码与数据统计；项目页榜单按 F-score 排序。",
+        "cite": [
+          "repo@README",
+          "videosimpleqa@Leaderboard"
+        ]
+      },
+      {
+        "k": "自我定位",
+        "v": "作者把它定位为视频事实性评估的基石基准，目标是让视频大模型面向可验证的 grounding。",
+        "cite": [
+          "videosimpleqa@Introduction"
+        ]
+      },
+      {
+        "k": "数据审核",
+        "v": "视频取自 Wikipedia「Media of the Day」，自由许可；定稿数据集经六位专业安全审计员复核。",
+        "cite": [
+          "arxiv-2503-18923@Copyright clarifications"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-14",
+        "columns": [
+          "来源",
+          "模型",
+          "Correct",
+          "Incorrect↓",
+          "Not Attempted↓",
+          "CGA",
+          "F-score",
+          "工程",
+          "自然",
+          "科学",
+          "社会与文化"
+        ],
+        "rows": [
+          [
+            "论文 Table 2",
+            "Human Open-book（人类开卷）",
+            "87.0",
+            "5.0",
+            "8.0",
+            "94.6",
+            "90.6",
+            "85.2",
+            "83.7",
+            "89.1",
+            "96.8"
+          ],
+          [
+            "论文 Table 2",
+            "Human Closed-book（人类闭卷）",
+            "59.0",
+            "18.5",
+            "22.5",
+            "76.1",
+            "66.5",
+            "58.4",
+            "52.8",
+            "54.2",
+            "80.6"
+          ],
+          [
+            "论文 Table 2",
+            "o3",
+            "66.3",
+            "33.6",
+            "0.1",
+            "66.4",
+            "66.3",
+            "63.0",
+            "71.3",
+            "63.5",
+            "68.8"
+          ],
+          [
+            "论文 Table 2",
+            "Gemini 2.5 Pro",
+            "61.2",
+            "34.3",
+            "4.5",
+            "64.1",
+            "62.6",
+            "53.5",
+            "65.8",
+            "67.1",
+            "61.5"
+          ],
+          [
+            "论文 Table 2",
+            "GPT-4.5",
+            "52.9",
+            "42.5",
+            "4.6",
+            "55.4",
+            "54.1",
+            "49.5",
+            "57.5",
+            "57.9",
+            "51.4"
+          ],
+          [
+            "论文 Table 2",
+            "o4-mini",
+            "53.7",
+            "45.3",
+            "0.9",
+            "54.2",
+            "54.0",
+            "44.3",
+            "59.4",
+            "56.8",
+            "54.0"
+          ],
+          [
+            "论文 Table 2",
+            "GPT-4o",
+            "47.7",
+            "45.9",
+            "6.4",
+            "51.0",
+            "49.3",
+            "45.1",
+            "57.1",
+            "52.7",
+            "45.4"
+          ],
+          [
+            "论文 Table 2",
+            "Claude Sonnet 4",
+            "32.8",
+            "51.2",
+            "16.0",
+            "39.0",
+            "35.6",
+            "33.0",
+            "34.3",
+            "37.9",
+            "35.0"
+          ]
+        ]
+      },
+      "cite": [
+        "arxiv-2503-18923@Table 2",
+        "arxiv-2503-18923@Table 2 脚注"
+      ]
+    }
+  }
 }

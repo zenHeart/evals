@@ -3,60 +3,304 @@
   "name": "LAB-Bench 2",
   "full_name": "LABBench2: An Improved Benchmark for AI Systems Performing Biology Research",
   "aliases": [
-    "LABBench2"
+    "LABBench2",
+    "LB2"
   ],
-  "status": null,
+  "status": "active",
   "categories": [
     "knowledge",
     "agent"
   ],
-  "summary": "FutureHouse 生物研究任务评测第二代：近 1,900 个任务，覆盖文献推理、数据库检索、图表/表格解读与协议理解（一代为 2,400+ 道多选题）",
-  "interpretation": "一代 LAB-Bench 的多选题形式被前沿模型打满，二代把『检索真实信息』纳入任务本身（FigQA/TableQA 也要求先查资料），朝真实科研工作流靠拢。Gemini 3.7 Flash 表口径 82.1% 居同表首位。",
+  "summary": "LABBench2 是 Edison Scientific 与 FutureHouse 联合发布的生物学研究能力评测第二代，Table 1 逐格相加共 1,912 个任务，分属文献理解与检索、数据访问、协议排错、分子生物学辅助、实验规划五大类。它把一代 LAB-Bench 的能力域搬到更真实的上下文里：任务以开放式作答为主，很多子任务要求模型先自己找到并解析原始材料（论文全文、专利、临床试验、数据库条目、补充材料），再给出答案。",
+  "interpretation": "高分意味着模型能在真实科研工作流中完成「找到并读懂原始材料」这一环，而不只是记住知识。官方论文报告里最强的一次运行：GPT 5.2 Pro 在 TrialQA 0.933、PatentQA 0.909、LitQA3 0.851；但同一模型在 SuppQA2 只有 0.368，Gemini 3 Pro 在 DbQA2 只有 0.453。论文同时给出跨代对照：从 LAB-Bench 换到 LABBench2，各模型准确率一致下降 26%–46%。",
   "measures": [
-    "真实生物科研任务执行：文献/数据库/图表/表格/协议",
-    "agentic 信息检索与整合"
+    {
+      "area": "LitQA3",
+      "focus": "检索到特定研究论文并通读全文后才能答对的开放式文献问答（部分题由 LitQA2 改写而来）",
+      "share": "168 / 1,912（8.8%）",
+      "format": "开放式问答",
+      "cite": ["arxiv-2604-09554@Table 1", "arxiv-2604-09554@§2.1 Literature understanding"]
+    },
+    {
+      "area": "PatentQA",
+      "focus": "从专利全文中检索特定信息；部分题还需读专利内的表格或图，属多模态",
+      "share": "121 / 1,912（6.3%）",
+      "format": "开放式问答",
+      "cite": ["arxiv-2604-09554@Table 1", "arxiv-2604-09554@§2.1 Literature understanding"]
+    },
+    {
+      "area": "TrialQA",
+      "focus": "从临床试验记录中检索特定信息，目标数据源须能被无歧义识别",
+      "share": "120 / 1,912（6.3%）",
+      "format": "开放式问答",
+      "cite": ["arxiv-2604-09554@Table 1", "arxiv-2604-09554@§2.1 Literature understanding"]
+    },
+    {
+      "area": "SourceQuality",
+      "focus": "科学判断力：系统综述的专家小组为何排除某项研究，要求模型独立给出最关键的排除理由",
+      "share": "150 / 1,912（7.8%）",
+      "format": "开放式问答",
+      "cite": ["arxiv-2604-09554@Table 1", "arxiv-2604-09554@§2.1 Literature understanding"]
+    },
+    {
+      "area": "DbQA2",
+      "focus": "真正访问特定生物数据库条目并给出精确字段值，刻意选择更冷门的字段以避免训练知识污染",
+      "share": "86 / 1,912（4.5%）",
+      "format": "开放式问答（recall 判分）",
+      "cite": ["arxiv-2604-09554@Table 1", "arxiv-2604-09554@§2.2 Data access"]
+    },
+    {
+      "area": "SuppQA2",
+      "focus": "从论文补充材料（SI）中提取文本、图、表、数据与方法细节；SI 格式高度不统一",
+      "share": "125 / 1,912（6.5%）",
+      "format": "开放式问答（精确匹配）",
+      "cite": ["arxiv-2604-09554@Table 1", "arxiv-2604-09554@§2.1 Literature understanding"]
+    },
+    {
+      "area": "ProtocolQA2",
+      "focus": "在被植入错误的实验协议中定位错误并给出修正；刻意使用更长更复杂的协议，有时要求直接从 PDF 中识别植入的错误",
+      "share": "125 / 1,912（6.5%）",
+      "format": "开放式问答",
+      "cite": ["arxiv-2604-09554@Table 1", "arxiv-2604-09554@§2.4 Protocol troubleshooting"]
+    },
+    {
+      "area": "SeqQA2",
+      "focus": "序列设计与分析，20 类子任务（如引物设计、CDS 查找）各扩展 20 个变体题，可用设计序列或真实基因序列",
+      "share": "400 / 1,912（20.9%）",
+      "format": "程序生成题 + 自定义校验器",
+      "cite": ["arxiv-2604-09554@Table 1", "arxiv-2604-09554@§2.3 Molecular biology"]
+    },
+    {
+      "area": "CloningQA",
+      "focus": "端到端设计分子克隆方案：设计或选择 DNA/酶试剂并给出全部实验步骤，覆盖限制性连接、Gibson 组装与 Golden Gate 组装",
+      "share": "14 / 1,912（0.7%）",
+      "format": "自定义 reward function",
+      "cite": ["arxiv-2604-09554@Table 1", "arxiv-2604-09554@§2.5 Experiment planning"]
+    },
+    {
+      "area": "FigQA2",
+      "focus": "解读论文中的科学图。三种模式：直接给图、给整篇论文 PDF、或只给题干要求模型自己检索原文",
+      "share": "303 / 1,912（15.8%，101 × 3 模式）",
+      "format": "开放式问答 + 数值精确匹配",
+      "cite": ["arxiv-2604-09554@Table 1", "arxiv-2604-09554@§2.1 Literature understanding"]
+    },
+    {
+      "area": "TableQA2",
+      "focus": "解读论文中的表格，三种投递模式与 FigQA2 相同",
+      "share": "300 / 1,912（15.7%，100 × 3 模式）",
+      "format": "开放式问答 + 数值精确匹配",
+      "cite": ["arxiv-2604-09554@Table 1", "arxiv-2604-09554@§2.1 Literature understanding"]
+    }
   ],
   "does_not_measure": [
-    "教科书式生物知识记忆",
-    "湿实验物理操作"
+    {
+      "text": "静态的教科书式知识问答——论文明确把自己与「capture rote knowledge rather than the applied workflow」的那类静态基准区分开",
+      "cite": ["arxiv-2604-09554@§1.1 Related Work"]
+    },
+    {
+      "text": "LAB-Bench 一代的多选猜测收益——LABBench2 主要子任务已改为开放式作答（LitQA3 全部为 open-response）",
+      "cite": ["arxiv-2604-09554@§2.1 Literature understanding"]
+    },
+    {
+      "text": "湿实验物理执行、目标本身含糊、以及跨天或跨周的长周期迭代",
+      "cite": ["arxiv-2604-09554@§4.3 Limitations"]
+    },
+    {
+      "text": "生物学研究能力的全面覆盖——论文明说「does not succeed at or attempt to comprehensively cover all of biological research capabilities」",
+      "cite": ["arxiv-2604-09554@§4.3 Limitations"]
+    }
   ],
   "dataset": {
-    "sample_count": null,
-    "splits": [
-      "文献 / 数据库 / 图表 / 表格 / 协议等五大类"
-    ],
-    "languages": [
-      "en"
-    ],
+    "sample_count": 1912,
+    "splits": ["论文未披露 train/test 划分；Hugging Face 卡片标注为需接受条件才能下载的 gated 数据集"],
+    "languages": ["en"],
     "source_type": "human_curated",
-    "public_sample": false
+    "public_sample": false,
+    "totals": "1,912 个任务 / 11 个任务族；Table 1 逐格计数相加恰为 1,912",
+    "cite": ["arxiv-2604-09554@Table 1"],
+    "construction": [
+      {
+        "k": "文献类任务（LitQA3 / PatentQA / TrialQA / SuppQA2 / FigQA2 / TableQA2）",
+        "text": "除 SourceQualQA 外由签约领域专家撰写——他们是已获得或正在攻读生物学及相关学科博士的专家；每题经同一批签约专家与内部专家多轮评审修订，且被要求确保「只能靠对应原始材料答出」，包括同一篇文档的其他部分也不能泄题",
+        "cite": ["arxiv-2604-09554@§2.1.1 Literature task construction"]
+      },
+      {
+        "k": "SourceQuality",
+        "text": "从 100 篇开放获取的系统综述出发，每篇围绕一个聚焦的循证医学问题；作者人工核查最终题集，确保每道题只靠研究问题与研究设计就能由领域专家回答",
+        "cite": ["arxiv-2604-09554@§2.1 Literature understanding"]
+      },
+      {
+        "k": "DbQA2",
+        "text": "用 LLM 分析 1,000 篇近期投在 biorXiv 的论文，看它们的输入/输出数据从哪里来或上传到哪里；取代表性比例最高的数据源再人工筛选，最终得到 43 个数据源",
+        "cite": ["arxiv-2604-09554@§2.2.1 DbQA2 construction"]
+      },
+      {
+        "k": "SeqQA2",
+        "text": "基本程序化生成：20 类子任务各由内部生物学家先写一个题目模板，再公式化扩展成 20 个变体题，使用替代输入序列或数据（设计的或真实基因序列）",
+        "cite": ["arxiv-2604-09554@§2.3 Molecular biology"]
+      },
+      {
+        "k": "ProtocolQA2",
+        "text": "沿用 LAB-Bench 一代做法，在已发表协议中植入一个会导致明确阴性结果的错误（例如改掉孵育温度）；二代刻意加重协议长度与复杂度，并有时要求直接从 PDF 形态的协议中识别植入的错误",
+        "cite": ["arxiv-2604-09554@§2.4 Protocol troubleshooting"]
+      },
+      {
+        "k": "CloningQA",
+        "text": "取自 LAB-Bench 的 CloningScenarios 场景，二代要求完整的端到端克隆方案设计；场景难度有梯度，分布在限制性连接、Gibson 组装与 Golden Gate 克隆之间",
+        "cite": ["arxiv-2604-09554@§2.5 Experiment planning"]
+      },
+      {
+        "k": "FigQA2 / TableQA2 的三种模式",
+        "text": "（i）Image：直接给图或表图片；（ii）Paper：给整篇论文 PDF，模型必须从全文干扰中解析出正确的图或表；（iii）Retrieval：类似 LitQA3 不给任何上下文，模型须自己检索到正确的源论文并定位信息",
+        "cite": ["arxiv-2604-09554@§2.1 Literature understanding"]
+      }
+    ]
   },
   "metrics": [
     {
       "id": "accuracy",
-      "name": "Accuracy",
-      "range": [
-        0,
-        100
-      ],
-      "unit": "percent",
-      "direction": "higher",
-      "aggregation": "mean"
+      "name": "平均准确率（HybridEvaluator 平均分，0–1）",
+      "direction": "越高越好",
+      "description": "官方报告 summary.average_scores.HybridEvaluator，即 HybridEvaluator 在全部已完成题目上的平均得分；判为 correct 记 1.0，incorrect 与 unsure 均记 0.0。",
+      "range": [0, 1],
+      "unit": "ratio",
+      "cite": ["labbench2-report-litqa3", "labbench2-evals-evaluators"]
+    },
+    {
+      "id": "recall",
+      "name": "Recall（DbQA2 判分中间量）",
+      "direction": "越高越好",
+      "description": "DbQA2 走 recall 型 LLM judge：Recall = 命中的预期要素数 / 预期要素总数；Recall ≥ 0.95 记 correct，< 0.95 记 incorrect，无法判定或答不出记 unsure。",
+      "range": [0, 1],
+      "unit": "ratio",
+      "cite": ["labbench2-evals-prompts"]
     }
   ],
-  "default_protocol": null,
+  "default_protocol": {
+    "raw": "各任务族由官方 harness 的 HybridEvaluator 统一判分：CloningQA 与 SeqQA2 直接调用 reward function / 自定义校验器（如用模型设计的引物做 in silico PCR）；DbQA2 走基于 recall 的 LLM judge；FigQA2 / TableQA2 / SuppQA2 走数值精确匹配（绝对或相对差 < 1e-6）；其余任务族走 LLM judge。judge 默认 anthropic:claude-sonnet-4-5、temperature 0.0、超时 120 秒，输出必须是 correct / incorrect / unsure 三者之一，correct 记 1.0，incorrect 与 unsure 均记 0.0。",
+    "cite": ["labbench2-evals-evaluators", "labbench2-evals-prompts", "labbench2-evals-llm-configs"],
+    "variants": [
+      {
+        "text": "文件投递 --mode file（默认）：通过 API 上传文件并智能路由；PDF 与图片始终进上下文，其他文件在 runner 支持时才进文件系统",
+        "cite": ["labbench2-repo@README"]
+      },
+      {
+        "text": "--mode inject：把文本文件内容直接拼接进提示词",
+        "cite": ["labbench2-repo@README"]
+      },
+      {
+        "text": "--mode retrieve：不给任何材料，指示 agent 自行去外部来源检索",
+        "cite": ["labbench2-repo@README"]
+      },
+      {
+        "text": "工具与推理强度通过 agent 串指定，形如 provider:model[@flags]：@tools = WebSearch + CodeExecution + WebFetch，另有 @search、@code、@high；官方论文报告用 native:provider:model 形式的原生 SDK runner",
+        "cite": ["labbench2-evals-llm-configs", "labbench2-repo@README"]
+      },
+      {
+        "text": "官方 harness 运行参数：超时 3600 秒、单次最大输出 64000 token、默认 30 个并行 worker",
+        "cite": ["labbench2-evals-llm-configs", "labbench2-repo@README"]
+      }
+    ]
+  },
   "versions": [
     {
+      "id": "labbench",
+      "date": "2024-07-16",
+      "label": "LAB-Bench（一代）发布：2,457 题 / 8 大类，以多选题为主；放出 80%，保留 20% 私有测试集用于监测训练污染",
+      "cite": ["futurehouse-research-lab-bench-measu"]
+    },
+    {
+      "id": "v1",
+      "date": "2026-02-04",
+      "label": "LABBench2 arXiv v1 提交",
+      "cite": ["arxiv-2604-09554@arXiv abs 页"]
+    },
+    {
+      "id": "dataset-20260313",
+      "date": "2026-03-13",
+      "label": "数据集修订：修正 sourcequality 的数据问题，整体换成全新 150 题并入库，已发布结果同步更新",
+      "cite": ["labbench2-dataset@Changelog"]
+    },
+    {
       "id": "v2",
-      "label": "LABBench2（2026-04）",
-      "note": "arXiv:2604.09554；前代 LAB-Bench arXiv:2407.10362"
+      "date": "2026-05-05",
+      "label": "arXiv v2 修订（本档案对应版本）；PDF 首页标注 Preprint. May 7, 2026.",
+      "cite": ["arxiv-2604-09554@arXiv abs 页"]
+    },
+    {
+      "id": "dataset-20261008",
+      "date": "2026-10-08",
+      "label": "数据集修订：修正 tableqa2 任务 ac4dee87-fa10-40bb-a393-4d985779e63f 的错误理想答案",
+      "cite": ["labbench2-dataset@Changelog"]
     }
   ],
   "limitations": [
-    "数据集 gated，第三方复现受限",
-    "多选题痕迹仍在部分子集上，判分对扰动敏感"
+    {
+      "issue": "数据访问与补充材料读取是最短木板",
+      "impact": "DbQA2 官方最佳 0.453、SuppQA2 0.368；论文明确指出即便有了最新工具，模型访问特定数据源的能力仍有重大局限",
+      "severity": "高",
+      "response": "读 DbQA2 / SuppQA2 分数时按「能否可靠拿到原始数据」解读，不要与文献问答分混为一谈",
+      "reader": "想评估 agent 数据获取与长上下文解析能力的读者",
+      "cite": ["labbench2-report-dbqa2", "labbench2-report-suppqa2", "arxiv-2604-09554@§3.2"]
+    },
+    {
+      "issue": "分数依赖 LLM judge 与自定义校验器的可靠性",
+      "impact": "开放式答案的语义等价判断不可完全复现；论文承认评测「necessarily depends on the reliability of verifiers and grading」",
+      "severity": "高",
+      "response": "官方把 judge 温度设为 0 并要求只输出三选一；复现时须固定 judge 模型与提示词版本",
+      "reader": "要复现结果或做模型间严格对比的读者",
+      "cite": ["arxiv-2604-09554@§4.3 Limitations", "labbench2-evals-prompts", "labbench2-evals-evaluators"]
+    },
+    {
+      "issue": "同一任务族在不同运行口径下分数差异极大",
+      "impact": "模型、工具开关、投递模式、推理强度任一变化都会显著改变分数；论文明确报告检索型变体表现非常差，并指出模型即便有了最新工具也难以从数据源里取出特定信息",
+      "severity": "中",
+      "response": "横向对比必须同时固定 tag / mode / agent 三元组；本档案附录 B 只收录 assets/reports_paper/ 下对应报告文件里的一次运行",
+      "reader": "做模型或模式横向比较的读者",
+      "cite": ["arxiv-2604-09554@§3.2", "labbench2-report-seqqa2", "labbench2-repo@README"]
+    },
+    {
+      "issue": "数据集 gated，第三方复现有门槛",
+      "impact": "需先在接受条件后才能下载，独立审计与外部复现受限；卡片显示总文件大小约 1.14 MB",
+      "severity": "中",
+      "response": "先在 Hugging Face 数据集页接受条件再下载，引用时注明访问日期",
+      "reader": "想自行跑评测的读者",
+      "cite": ["labbench2-dataset@Changelog"]
+    },
+    {
+      "issue": "仍显著简化了真实科研",
+      "impact": "不含湿实验执行、目标含糊、跨天/跨周迭代；也未穷尽生物学研究能力",
+      "severity": "中",
+      "response": "把分数当作科研工作流中若干环节的能力代理指标，而非完整科研能力",
+      "reader": "所有读者",
+      "cite": ["arxiv-2604-09554@§4.3 Limitations"]
+    },
+    {
+      "issue": "GPT 5.2 Pro 的 file 模式被 API 能力人为压低",
+      "impact": "论文 Figure 4 注：GPT 5.2 Pro 不接受 Response API 的相应文件类型，file 模式表现被 artificially deflating",
+      "severity": "中",
+      "response": "涉及 GPT 5.2 Pro 的 file / inject 消融要按论文注释打折看待",
+      "reader": "关注文件投递方式消融的读者",
+      "cite": ["arxiv-2604-09554@Figure 4"]
+    },
+    {
+      "issue": "数据集在发布后仍被修订",
+      "impact": "2026-03-13 sourcequality 因数据问题被整体换成 150 道新题；2026-10-08 又修正了 tableqa2 一道题的理想答案",
+      "severity": "低",
+      "response": "以 2026-11-25 访问到的数据集卡为准，跨时间比较须注明批次",
+      "reader": "做时间序列对比的读者",
+      "cite": ["labbench2-dataset@Changelog"]
+    },
+    {
+      "issue": "LABBench2 论文未给出人类基线与随机基线",
+      "impact": "无法像一代 LAB-Bench 那样判断「是否超过人类」，只能看模型间相对差距与跨代降幅",
+      "severity": "低",
+      "response": "本档案分数阶梯的对应位置标注「论文未给出」；一代的人类基线还被作者提示对训练有素的分子生物学家可能偏低",
+      "reader": "想把绝对分翻译成人类水平的读者",
+      "cite": ["arxiv-2604-09554", "futurehouse-research-lab-bench-measu"]
+    }
   ],
-  "notes": "Gemini 3.7 Flash 发布表出现（82.1% vs Claude Sonnet 5 80.1% / GPT-5.6 Terra 81.2%，Gemini 3.6 Flash 76.1%）；混元与 Anthropic 系统卡亦引用",
+  "notes": "题量、判分口径与官方分数均取自 arXiv 论文、官方 harness 源码（evals/ 目录）与仓库 assets/reports_paper/ 下的官方报告 JSON，核验日期 2026-11-25。第三方厂商发布页曾引用 LABBench2 成绩，本档案未收录，需另建证据账本。",
   "official_sources": [
     {
       "kind": "paper",
@@ -65,6 +309,14 @@
     {
       "kind": "site",
       "url": "https://www.futurehouse.org/research/lab-bench-measuring-capabilities-of-language-models-for-biology-research"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/EdisonScientific/labbench2"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/EdisonScientific/labbench2"
     }
   ],
   "related_benchmarks": [
@@ -73,6 +325,166 @@
     "bixbench",
     "harvey-lab"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-09-01"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-25",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-25",
+    "sources": [
+      { "id": "arxiv-2604-09554", "kind": "paper", "title": "LABBench2: An Improved Benchmark for AI Systems Performing Biology Research（arXiv:2604.09554v2）", "url": "https://arxiv.org/abs/2604.09554", "accessed": "2026-11-25" },
+      { "id": "futurehouse-research-lab-bench-measu", "kind": "site", "title": "LAB-Bench: Measuring Capabilities of Language Models for Biology Research（FutureHouse，一代）", "url": "https://www.futurehouse.org/research/lab-bench-measuring-capabilities-of-language-models-for-biology-research", "accessed": "2026-11-25" },
+      { "id": "labbench2-repo", "kind": "repo", "title": "EdisonScientific/labbench2 仓库 README", "url": "https://github.com/EdisonScientific/labbench2", "accessed": "2026-11-25" },
+      { "id": "labbench2-dataset", "kind": "dataset", "title": "EdisonScientific/labbench2 Hugging Face 数据集卡", "url": "https://huggingface.co/datasets/EdisonScientific/labbench2", "accessed": "2026-11-25" },
+      { "id": "labbench2-evals-evaluators", "kind": "repo", "title": "labbench2/evals/evaluators.py（判分器实现）", "url": "https://raw.githubusercontent.com/EdisonScientific/labbench2/main/evals/evaluators.py", "accessed": "2026-11-25" },
+      { "id": "labbench2-evals-prompts", "kind": "repo", "title": "labbench2/evals/prompts.py（LLM judge 提示词）", "url": "https://raw.githubusercontent.com/EdisonScientific/labbench2/main/evals/prompts.py", "accessed": "2026-11-25" },
+      { "id": "labbench2-evals-llm-configs", "kind": "repo", "title": "labbench2/evals/llm_configs.py（工具集与运行参数）", "url": "https://raw.githubusercontent.com/EdisonScientific/labbench2/main/evals/llm_configs.py", "accessed": "2026-11-25" },
+      { "id": "labbench2-report-litqa3", "kind": "repo", "title": "论文报告：labbench2_litqa3（native:openai:gpt-5.2-pro@tools,high）", "url": "https://raw.githubusercontent.com/EdisonScientific/labbench2/main/assets/reports_paper/litqa3/inject/gpt-5-2-pro@tools,high.json", "accessed": "2026-11-25" },
+      { "id": "labbench2-report-patentqa", "kind": "repo", "title": "论文报告：labbench2_patentqa（native:openai:gpt-5.2-pro@tools,high）", "url": "https://raw.githubusercontent.com/EdisonScientific/labbench2/main/assets/reports_paper/patentqa/inject/gpt-5-2-pro@tools,high.json", "accessed": "2026-11-25" },
+      { "id": "labbench2-report-trialqa", "kind": "repo", "title": "论文报告：labbench2_trialqa（native:openai:gpt-5.2-pro@tools,high）", "url": "https://raw.githubusercontent.com/EdisonScientific/labbench2/main/assets/reports_paper/trialqa/inject/gpt-5-2-pro@tools,high.json", "accessed": "2026-11-25" },
+      { "id": "labbench2-report-sourcequality", "kind": "repo", "title": "论文报告：labbench2_sourcequality（native:google-vertex:gemini-3-pro-preview@code,high）", "url": "https://raw.githubusercontent.com/EdisonScientific/labbench2/main/assets/reports_paper/sourcequality/file/gemini-3-pro-preview@code,high.json", "accessed": "2026-11-25" },
+      { "id": "labbench2-report-dbqa2", "kind": "repo", "title": "论文报告：labbench2_dbqa2（native:google-vertex:gemini-3-pro-preview@tools,high）", "url": "https://raw.githubusercontent.com/EdisonScientific/labbench2/main/assets/reports_paper/dbqa2/inject/gemini-3-pro-preview@tools,high.json", "accessed": "2026-11-25" },
+      { "id": "labbench2-report-suppqa2", "kind": "repo", "title": "论文报告：labbench2_suppqa2（native:openai:gpt-5.2-pro@tools,high）", "url": "https://raw.githubusercontent.com/EdisonScientific/labbench2/main/assets/reports_paper/suppqa2/inject/gpt-5-2-pro@tools,high.json", "accessed": "2026-11-25" },
+      { "id": "labbench2-report-protocolqa2", "kind": "repo", "title": "论文报告：labbench2_protocolqa2（native:google-vertex:gemini-3-pro-preview@tools,high）", "url": "https://raw.githubusercontent.com/EdisonScientific/labbench2/main/assets/reports_paper/protocolqa2/file/gemini-3-pro-preview@tools,high.json", "accessed": "2026-11-25" },
+      { "id": "labbench2-report-seqqa2", "kind": "repo", "title": "论文报告：labbench2_seqqa2（native:google-vertex:gemini-3-pro-preview@tools,high）", "url": "https://raw.githubusercontent.com/EdisonScientific/labbench2/main/assets/reports_paper/seqqa2/inject/gemini-3-pro-preview@tools,high.json", "accessed": "2026-11-25" },
+      { "id": "labbench2-report-cloning", "kind": "repo", "title": "论文报告：labbench2_cloning（native:google-vertex:gemini-3-pro-preview@tools,high）", "url": "https://raw.githubusercontent.com/EdisonScientific/labbench2/main/assets/reports_paper/cloning/file/gemini-3-pro-preview@tools,high.json", "accessed": "2026-11-25" },
+      { "id": "labbench2-report-figqa2", "kind": "repo", "title": "论文报告：labbench2_figqa2（native:openai:gpt-5.2@tools,high）", "url": "https://raw.githubusercontent.com/EdisonScientific/labbench2/main/assets/reports_paper/figqa2/inject/gpt-5-2@tools,high.json", "accessed": "2026-11-25" },
+      { "id": "labbench2-report-tableqa2", "kind": "repo", "title": "论文报告：labbench2_tableqa2（native:openai:gpt-5.2-pro@tools,high）", "url": "https://raw.githubusercontent.com/EdisonScientific/labbench2/main/assets/reports_paper/tableqa2/inject/gpt-5-2-pro@tools,high.json", "accessed": "2026-11-25" }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Edison Scientific（通讯作者 Jon M Laurent、Andrew D White、Samuel G Rodriques）与 FutureHouse，作者含 Broad Institute 成员",
+        "cite": ["arxiv-2604-09554@arXiv abs 页"]
+      },
+      "first_release": {
+        "v": "2026-02-04（arXiv v1）；当前版本 v2，2026-05-05 修订",
+        "cite": ["arxiv-2604-09554@arXiv abs 页"]
+      }
+    },
+    "cites": {
+      "summary": ["arxiv-2604-09554@abstract", "arxiv-2604-09554@Table 1", "labbench2-repo@README"],
+      "interpretation": ["arxiv-2604-09554@abstract", "labbench2-report-trialqa", "labbench2-report-patentqa", "labbench2-report-litqa3", "labbench2-report-suppqa2", "labbench2-report-dbqa2"]
+    },
+    "problem": {
+      "text": "一代 LAB-Bench 为便于判分大量使用多选题，DNA 序列也只以内联方式给出，任务形态偏离真实科研，并在多个子类上接近饱和甚至超过人类；同时主流科学基准多停留在「capture rote knowledge」的静态问答。LABBench2 要把同一套能力域搬到更真实的上下文里：要求先检索并解析论文全文、专利、临床试验、数据库条目或补充材料，再作答。",
+      "cite": ["arxiv-2604-09554@§1 Introduction", "arxiv-2604-09554@§1.1 Related Work", "arxiv-2604-09554@abstract"]
+    },
+    "ladder": [
+      {
+        "label": "LAB-Bench 一代同能力域（跨代对照）",
+        "value": "论文未给出逐模型对照表",
+        "note": "论文只给出模型特定的 −26% 至 −46% 降幅区间，并称「Absolute scores are expectedly lower relative to LAB-Bench」",
+        "cite": ["arxiv-2604-09554@§3.1"]
+      },
+      {
+        "label": "随机 / 多数类基线",
+        "value": "论文未给出",
+        "note": "LABBench2 以开放式作答为主，论文未提供随机基线",
+        "cite": ["arxiv-2604-09554"]
+      },
+      {
+        "label": "人类基线",
+        "value": "论文未给出",
+        "note": "LABBench2 论文未报告人类基线；一代 LAB-Bench 的人类基线还被作者提示「may be unreasonably low for trained molecular biologists」",
+        "cite": ["arxiv-2604-09554", "futurehouse-research-lab-bench-measu"]
+      },
+      {
+        "label": "官方论文报告中最强的一次运行",
+        "value": "0.933（TrialQA，openai:gpt-5.2-pro@tools,high）",
+        "note": "见附录 B；跨任务族之间不可直接比较",
+        "cite": ["labbench2-report-trialqa"]
+      },
+      {
+        "label": "同一模型的最弱任务族",
+        "value": "0.368（SuppQA2，openai:gpt-5.2-pro@tools,high）",
+        "note": "DbQA2（Gemini 3 Pro）0.453 同属最短板，说明数据访问远未解决",
+        "cite": ["labbench2-report-suppqa2", "labbench2-report-dbqa2"]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "「近 1,900 题」不等于固定 1,900 题：Table 1 逐格相加为 1,912，FigQA2 / TableQA2 又各有 image / pdf / retrieve 三种模式，其中只有 retrieve 是基础 tag；数据集在 2026-03-13 与 2026-10-08 还做过修订。",
+        "cite": ["arxiv-2604-09554@Table 1", "labbench2-dataset@Changelog"]
+      },
+      {
+        "text": "论文摘要写「more than 1,900 tasks」，而 arXiv 摘要页与仓库 README 写「nearly 1,900」；权威数字以 Table 1 的 1,912 为准。",
+        "cite": ["arxiv-2604-09554@abstract", "labbench2-repo@README"]
+      },
+      {
+        "text": "数据集地址的组织名有两个：论文摘要给 huggingface.co/datasets/futurehouse/labbench2，仓库 README 与 Hugging Face 卡片给 EdisonScientific/labbench2；本档案按实际访问到的数据集卡记录为后者。",
+        "cite": ["arxiv-2604-09554@abstract", "labbench2-repo@README", "labbench2-dataset@Changelog"]
+      },
+      {
+        "text": "unsure 不等于送分：judge 输出 unsure 时同样记 0.0，所以模型弃答或答不出不会抬高分数。",
+        "cite": ["labbench2-evals-evaluators"]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "Edison Scientific 与 FutureHouse（均在旧金山），部分作者来自 Broad Institute；论文为预印本（arXiv:2604.09554v2 [cs.AI]）",
+        "cite": ["arxiv-2604-09554@arXiv abs 页"]
+      },
+      {
+        "k": "前代 LAB-Bench",
+        "v": "2024-07-16 由 FutureHouse 发布，共 2,457 题、8 大类，以多选题为主；保留 20% 私有测试集用于监测训练污染",
+        "cite": ["futurehouse-research-lab-bench-measu"]
+      },
+      {
+        "k": "评测 harness",
+        "v": "官方开源仓库 EdisonScientific/labbench2 提供 run_evals CLI 与 15 个 tag；论文所用报告放在 assets/reports_paper/，使用原生 SDK runner",
+        "cite": ["labbench2-repo@README"]
+      },
+      {
+        "k": "数据集",
+        "v": "Hugging Face 上的 gated 数据集，需接受条件后才能下载；卡片显示总文件大小约 1.14 MB、许可 cc-by-sa-4.0",
+        "cite": ["labbench2-dataset@Changelog"]
+      },
+      {
+        "k": "许可与引用",
+        "v": "仓库与数据集均为 CC-BY-SA-4.0；官方 BibTeX 键为 laurent2026labbench2",
+        "cite": ["labbench2-repo@README", "labbench2-dataset@Changelog"]
+      },
+      {
+        "k": "官方结果的形态",
+        "v": "论文正文的结果图是图片，可核验的数值来自 assets/reports_paper/ 下的 JSON 报告（summary.average_scores.HybridEvaluator）",
+        "cite": ["labbench2-repo@README", "labbench2-report-litqa3"]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-25",
+        "columns": ["任务族（tag）", "题量", "论文报告平均分", "模型（native SDK）", "投递模式"],
+        "rows": [
+          ["LitQA3", "168", "0.851", "openai:gpt-5.2-pro（@tools,high）", "inject"],
+          ["PatentQA", "121", "0.909", "openai:gpt-5.2-pro（@tools,high）", "inject"],
+          ["TrialQA", "120", "0.933", "openai:gpt-5.2-pro（@tools,high）", "inject"],
+          ["SourceQuality", "150", "0.900", "google-vertex:gemini-3-pro-preview（@code,high）", "file"],
+          ["DbQA2", "86", "0.453", "google-vertex:gemini-3-pro-preview（@tools,high）", "inject"],
+          ["SuppQA2", "125（完成 121，4 次失败）", "0.368", "openai:gpt-5.2-pro（@tools,high）", "inject"],
+          ["ProtocolQA2", "125", "0.616", "google-vertex:gemini-3-pro-preview（@tools,high）", "file"],
+          ["SeqQA2", "400", "0.525", "google-vertex:gemini-3-pro-preview（@tools,high）", "inject"],
+          ["CloningQA", "14", "0.429", "google-vertex:gemini-3-pro-preview（@tools,high）", "file"],
+          ["FigQA2（retrieve）", "101", "0.426", "openai:gpt-5.2（@tools,high）", "inject"],
+          ["TableQA2（retrieve）", "100", "0.700", "openai:gpt-5.2-pro（@tools,high）", "inject"]
+        ]
+      },
+      "cite": [
+        "labbench2-report-litqa3",
+        "labbench2-report-patentqa",
+        "labbench2-report-trialqa",
+        "labbench2-report-sourcequality",
+        "labbench2-report-dbqa2",
+        "labbench2-report-suppqa2",
+        "labbench2-report-protocolqa2",
+        "labbench2-report-seqqa2",
+        "labbench2-report-cloning",
+        "labbench2-report-figqa2",
+        "labbench2-report-tableqa2"
+      ]
+    }
+  }
 }

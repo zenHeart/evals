@@ -9,61 +9,465 @@
   "categories": [
     "knowledge"
   ],
-  "summary": "Vals AI 出品的跨行业经济价值指数：按各行业占美国 GDP 的比重把模型表现加权合成",
-  "interpretation": "Vals Index 把模型在金融、编码、法律、税务等关键经济部门的表现合成一个加权指数，权重按各行业占美国 GDP 的比重——它回答的是「这个模型在国民经济层面到底值多少」，而不是「在某个榜单上排第几」。因此厂商发布文里常见「在某指数上领先」的说法，但往往不印绝对数值（本账本里 Gemini 4 Argon 的 Vals Index 行就是有名无分，记 not_extracted）。版本会调整成分与权重，v2.2 与早期版本不可直接比较。",
+  "summary": "Vals AI 出品的第三方经济价值综合指数：把模型在金融、编码、法律、税务四类真实工作任务上的表现，按各行业占美国 GDP 的比重加权成一个百分数。当前版本 v2.2 聚合 6 个私有基准和 2 个公有基准，榜单数据更新至 2026-11-11。",
+  "interpretation": "Vals Index 回答的是「这个模型在国民经济层面大概值多少」：它以各行业占美国 GDP 的比重为权重，把模型在四类工作任务上的准确率合成一个分数。它既不是通用智力或知识考试，也不是任何单一组件基准的排名——同一个模型在不同组件上的强弱会被权重放大或稀释。版本之间会更换组件与权重，跨版本比较无效；引用时必须带版本号。",
   "measures": [
-    "金融、编码、法律、税务等经济部门表现按 GDP 权重加权后的综合指数"
+    {
+      "area": "金融（Finance）",
+      "focus": "多步金融推理任务（Finance Agent v2.1）与在电子表格中搭建、修改财务模型（Excel Modeling Benchmark v1.1）",
+      "share": "8.0（金融与保险业占美国 GDP 约 8.0%）",
+      "format": "智能体任务，按 rubric 判分",
+      "cite": ["vals-index-lb@Methodology"]
+    },
+    {
+      "area": "编码（Coding）",
+      "focus": "命令行界面解题（Terminal-Bench 4.0）、端到端应用搭建（Vibe Code Bench v1.1）、把项目移植到另一种语言含 COBOL 现代化（Code Migration v1.1）",
+      "share": "5.6（用信息产业占美国 GDP 约 5.6% 作为软件工作的代理）",
+      "format": "智能体任务，测试通过率",
+      "cite": ["vals-index-lb@Methodology"]
+    },
+    {
+      "area": "法律（Legal）",
+      "focus": "带引用的判例与法条检索（Legal Research Bench）与长周期法律工作成果产出（HLAB-Vals-1.1）",
+      "share": "1.2（法律服务占美国 GDP 约 1.2%）",
+      "format": "智能体任务，all-pass 与加权通过率",
+      "cite": ["vals-index-lb@Methodology"]
+    },
+    {
+      "area": "税务（Tax）",
+      "focus": "研究级美国公司税问题，答案须附可解析到权威文件的引据（Tax Agent Bench）",
+      "share": "0.5（会计与税务准备服务 NAICS 5412 占美国 GDP 约 0.5%）",
+      "format": "智能体任务，all-pass × 引据质量",
+      "cite": ["vals-index-lb@Methodology"]
+    }
   ],
   "does_not_measure": [
-    "单项技术能力",
-    "可复现的标准测试集成绩"
+    {
+      "text": "通用知识问答与学科考试：8 个组件全是金融、编码、法律、税务领域的工作任务，不含通识或学科测验",
+      "cite": ["vals-index-lb@Methodology"]
+    },
+    {
+      "text": "任何单一组件基准的排名：指数列是先按行业平均再按 GDP 权重合成的结果，与组件自己的榜单不是同一个数",
+      "cite": ["vals-index-lb@Component Scores"]
+    },
+    {
+      "text": "能力随时间增长的严格可比序列：v2.1 起编码桶换成 Terminal-Bench 4.0，官方明确说明换桶后指数分数低于 v2",
+      "cite": ["vals-index-lb@Updates"]
+    }
   ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": "third-party composite index",
-    "public_sample": null
+    "sample_count": 720,
+    "splits": [
+      "各组件多为三段：Public（1–5 题开源样本）、Private Validation（可授权）、Test（私有计分集）",
+      "指数只跑 Test 段；Code Migration 与 Vibe Code Bench 在指数内另跑固定子集"
+    ],
+    "construction": [
+      {
+        "k": "行业口径与权重",
+        "text": "指数覆盖金融、编码、法律、税务四个行业，权重取各行业占美国 GDP 的比重，数据源为美国经济分析局（BEA）的行业增加值（经 FRED 发布）：金融与保险业约 8.0%，信息产业约 5.6%（作为软件工作的 GDP 代理），法律服务约 1.2%，会计与税务准备服务（NAICS 5412）约 0.5%。",
+        "cite": ["vals-index-lb@Methodology"]
+      },
+      {
+        "k": "组件构成",
+        "text": "每个行业挂 2 个组件（税务 1 个）：金融为 Finance Agent v2.1 与 Excel Modeling Benchmark v1.1，编码为 Terminal-Bench 4.0、Vibe Code Bench v1.1 与 Code Migration v1.1，法律为 Legal Research Bench 与 HLAB-Vals-1.1，税务为 Tax Agent Bench；共 8 个组件，其中 6 个私有、2 个公有。",
+        "cite": ["vals-index-lb@Methodology", "vals-index-lb@Motivation"]
+      },
+      {
+        "k": "合成公式",
+        "text": "先对每个行业内的组件取平均，再加权求和并除以权重和：Vals_Index = (8.0 × Finance + 5.6 × Coding + 1.2 × Legal + 0.5 × Tax) / 15.3，其中 15.3 为四个行业权重之和。",
+        "cite": ["vals-index-lb@Methodology"]
+      },
+      {
+        "k": "指数内计分口径",
+        "text": "指数里每个组件列直接采用该组件自己榜单公布的独立分数（同方法、同数值）；唯一例外是 Code Migration v1.1，指数只跑其公布结果中的固定子集——120 个 CLI 迁移任务中取 50 个，加全部 10 个 COBOL 任务，按 75% CLI 与 25% COBOL 加权，该子集由蒙特卡洛搜索选出并对完整 120 任务榜单校验。",
+        "cite": ["vals-index-lb@Component Scores"]
+      }
+    ],
+    "languages": [
+      "未披露"
+    ],
+    "source_type": "第三方私有评测集合成指数（6 个私有基准 + 2 个公有基准）",
+    "public_sample": "各组件公开 1–5 题：EMB v1.1 公开 1 题、Legal Research Bench 公开 5 题、Tax Agent Bench 公开 5 题；Terminal-Bench 4.0 与 HLAB 另有公开集",
+    "totals": "指数实际计分的题目合计 720 题（本站按已公布题量的组件加总，非官方公布的总题量）：EMB v1.1 测试集 51 + Terminal-Bench 4.0 66 + Code Migration v1.1 指数子集 60（120 个 CLI 任务取 50，加 10 个 COBOL）+ Legal Research Bench 测试集 208 + HLAB-Vals-1.1 120 + Tax Agent Bench 测试集 193 + Vibe Code Bench v1.1 指数子集 22。Finance Agent v2.1 的题量未披露。注意组件单独榜单的题量与指数不同：Code Migration 完整榜单为 30 个仓库 × 4 种目标语言共 120 个 CLI 迁移，加 10 个 COBOL，合计 130。",
+    "cite": [
+      "vals-index-lb@Component Scores",
+      "emb-v1-1",
+      "terminal-bench-4",
+      "code-migration-v1-1",
+      "legal-research",
+      "hlab",
+      "tax-agent-bench"
+    ]
+  },
+  "default_protocol": {
+    "raw": "每个模型跑完整套 8 个组件基准；指数中每个组件列显示该组件自己榜单上公布的独立准确率，同一方法、同一数值，再按行业平均与 GDP 权重公式合成。题库私有，题面、评分细则与裁判配置均不公开。",
+    "cite": ["vals-index-lb@Component Scores", "vals-index-lb@Methodology", "vals-about"],
+    "variants": [
+      {
+        "text": "推理档位：官方按每个模型三个推理档位报告准确率，档位命名沿用各厂商自有设置，不是跨厂商统一的档位名",
+        "cite": ["vals-index-lb@Reasoning Effort"]
+      },
+      {
+        "text": "榜单只展示每个实验室的最优模型，因此指数榜不是全模型横榜",
+        "cite": ["vals-index-lb@Rankings"]
+      },
+      {
+        "text": "成本口径：指数成本包含 Code Migration；图中误差棒为 ±1 标准误",
+        "cite": ["vals-index-lb@Reasoning Effort"]
+      },
+      {
+        "text": "Code Migration v1.1 例外口径：指数只跑固定子集——120 个 CLI 迁移任务中的 50 个加全部 10 个 COBOL 任务，按 75% CLI 与 25% COBOL 加权；该子集由蒙特卡洛搜索选出并对完整 120 任务榜单校验",
+        "cite": ["vals-index-lb@Component Scores"]
+      },
+      {
+        "text": "组件脚手架不同：Terminal-Bench 4.0 用 mini-swe-agent 且分数为 avg@3（跑满三次取平均），Code Migration v1.1 改用 Pi 脚手架，与 v1 不可直接比较",
+        "cite": ["terminal-bench-4", "code-migration-v1-1"]
+      },
+      {
+        "text": "判分大量依赖 LLM 裁判：Legal Research Bench 与 Tax Agent Bench 的全部作答都由 GPT 5.4 按各题细则判分",
+        "cite": ["legal-research", "tax-agent-bench"]
+      }
+    ]
   },
   "metrics": [
     {
-      "id": "composite-index",
       "name": "Vals Index 综合分",
-      "range": [
-        0,
-        100
-      ],
-      "unit": "points",
       "direction": "higher",
-      "aggregation": "GDP 权重加权"
+      "description": "GDP 加权综合准确率（百分数），由 8 个组件的准确率按行业权重公式合成，是榜单排序依据",
+      "cite": ["vals-index-lb@Methodology"]
+    },
+    {
+      "name": "单次测试成本（Cost / Test）",
+      "direction": "lower",
+      "description": "跑完指数全部组件一次的成本（美元），官方注明含 Code Migration，用于与准确率做成本-收益权衡",
+      "cite": ["vals-index-lb@Reasoning Effort"]
+    },
+    {
+      "name": "每测试 token 数（Tokens / Test）",
+      "direction": "lower",
+      "description": "跑完指数全部组件一次消耗的 token 数",
+      "cite": ["vals-index-lb@Rankings"]
+    },
+    {
+      "name": "每测试时长（Duration / Test）",
+      "direction": "lower",
+      "description": "跑完指数全部组件一次的墙钟时长",
+      "cite": ["vals-index-lb@Rankings"]
     }
   ],
-  "default_protocol": {
-    "raw": "按各行业占美国 GDP 的比重加权；分值来自 Vals AI 官方指数"
-  },
   "versions": [
     {
-      "id": "v2.2",
-      "label": "Vals Index v2.2（2026-10）",
-      "note": "官方评测方法说明写明 Gemini 4 Carbon 使用 v2.2"
+      "date": "2026-05-04",
+      "label": "v1：编码桶加入 Vibe Code Bench，改为 SWE-Bench Verified 0.25 / Terminal-Bench 2.0 0.25 / Vibe Code Bench 0.5 的加权平均（VCB 跑 22 题覆盖性子集）；移除 Law 行业（CaseLaw 已饱和），分母由 3.7 改为 3.4",
+      "cite": ["vals-index-lb@Updates"]
+    },
+    {
+      "date": "2026-05-13",
+      "label": "v1.1：Finance Agent 换成 v2，金融改用 Finance Agent v2 的指数子集，每模型跑三次取平均",
+      "cite": ["vals-index-lb@Updates"]
+    },
+    {
+      "date": "2026-05-27",
+      "label": "v1.2：编码桶换成 Terminal-Bench 2.1，编码权重仍为 0.25",
+      "cite": ["vals-index-lb@Updates"]
+    },
+    {
+      "date": "2026-08-13",
+      "label": "v2：用 Excel Modeling Benchmark 替换 CorpFin；编码桶加入 Code Migration；法律行业回归并加入 Legal Research Bench 与 HLAB；移除已饱和的 SWE-Bench Verified，编码改为 Terminal-Bench 2.1、Vibe Code Bench、Code Migration 三项等权平均",
+      "cite": ["vals-index-lb@Updates"]
+    },
+    {
+      "date": "2026-09-25",
+      "label": "v2.1：新增税务行业，Tax Agent Bench 作为独立行业以 0.5 权重进入，分母由 14.8 改为 15.3；编码桶换成 Terminal-Bench 4.0（官方说明其明显更难，指数分数低于 v2）",
+      "cite": ["vals-index-lb@Updates"]
+    },
+    {
+      "date": "2026-10-19",
+      "label": "v2.2：Finance Agent 升到 v2.1、EMB 升到 v1.1、Code Migration 升到 v1.1、HLAB 换成 HLAB-Vals-1.1；Tax Agent Bench 改用 all-pass 准确率",
+      "cite": ["vals-index-lb@Updates"]
     }
   ],
   "limitations": [
-    "成分与权重随版本调整，跨版本不可比",
-    "官方发布文常只给名次不给绝对值，账本内多为 not_extracted"
+    {
+      "issue": "GDP 权重是对经济影响的过度简化",
+      "impact": "权重把「某行业任务上的准确率」直接当作「该行业 GDP 的影响」加权，官方自称是对 AI 经济影响的大幅简化；真实的自动化影响取决于任务在企业内的占比、错误代价与人工复核成本，这些都没有进入指数",
+      "severity": "高",
+      "response": "官方在方法论中明确这是有用代理，并公开权重、组件与公式供复算",
+      "reader": "把指数读成「经济重要性的代理指标」，不要读成「经济价值的实测」",
+      "cite": ["vals-index-lb@Methodology"]
+    },
+    {
+      "issue": "私有题库无法独立复现",
+      "impact": "6 个私有组件的题面、评分细则与裁判配置都不公开，第三方无法重跑或审计判分；官方理由是公开题库会被吸收进预训练语料而使基于它的结果失效",
+      "severity": "高",
+      "response": "公开少量题库样本（EMB 1 题、Legal Research 5 题、Tax Agent 5 题），并开源运行基础设施 Valkyrie 与 model library",
+      "reader": "接受「单一机构评测」这个前提；把它当作厂商自报之外的横比参考，而不是可复现测量",
+      "cite": ["vals-about"]
+    },
+    {
+      "issue": "判分依赖 LLM 裁判",
+      "impact": "Legal Research Bench、Tax Agent Bench 等组件由 GPT 5.4 按细则判分，裁判与被测模型同源时存在系统性偏差风险，且裁判版本会随官方选择变化",
+      "severity": "中",
+      "response": "官方公布裁判与人类多数投票的一致率：Legal Research Bench 中 GPT 5.4 为 87.4%，人类评审之间的平均基线一致率为 83.4%",
+      "reader": "引用前先看组件页 Methodology 一节确认当期裁判与一致率",
+      "cite": ["legal-research"]
+    },
+    {
+      "issue": "脚手架与推理档位由各厂商自选",
+      "impact": "榜单按每个厂商自有设置标注三档推理结果，并只展示每实验室的最优模型；不同模型的 agent 脚手架不同（Terminal-Bench 4.0 用 mini-swe-agent，Code Migration v1.1 用 Pi），横比有噪声",
+      "severity": "中",
+      "response": "榜单注记明写档位命名沿用各厂商自有设置，并说明只展示每实验室最优模型",
+      "reader": "比较前看组件页的 harness 说明；不要把指数差直接当成模型能力差",
+      "cite": ["vals-index-lb@Reasoning Effort"]
+    },
+    {
+      "issue": "指数与组件榜单的分数口径不同",
+      "impact": "Code Migration v1.1 在指数里只跑 50/120 CLI 加 10 个 COBOL 的固定子集，与组件榜单的 130 题全量不是同一个数；官方称该子集对完整结果的相关为 Spearman 0.99、平均绝对误差 0.8 至 1.4 分",
+      "severity": "中",
+      "response": "子集由蒙特卡洛搜索选出并对完整 120 任务榜单校验，官方公布相关性与误差",
+      "reader": "引用组件分数时用组件页，引用指数时用指数页，不要混用",
+      "cite": ["vals-index-lb@Component Scores"]
+    },
+    {
+      "issue": "跨版本不可比",
+      "impact": "2026-05 至 2026-10 间六次改版换过组件（移除 SWE-Bench Verified 与 CaseLaw，加入 EMB、Code Migration、HLAB、Legal Research Bench、Tax Agent Bench）并调整分母（3.7 → 3.4 → 14.8 → 15.3），同模型在不同版本的指数分不可直接相减",
+      "severity": "中",
+      "response": "每次改版都在 Updates 记录变更内容与分母变化",
+      "reader": "只在同版本内比较；引用时带版本号（如 v2.2）",
+      "cite": ["vals-index-lb@Updates"]
+    }
   ],
-  "notes": "证据账本中 2 次引用（gemini-4-argon 无分值、gemini-4-carbon 配图行 70.4%）；第三方指数，非厂商自报",
+  "notes": "证据账本中 2 次引用（gemini-4-argon 无分值、gemini-4-carbon 配图行 70.4%）；第三方指数，非厂商自报。版本日期一律取官方 Updates 发布日志，冻结版本页的 Updated 日期是该版本最后一次数据刷新时间。sample_count 720 是本站按已公布题量的组件在指数中实际计分题目加总，不是官方公布的总题量；Finance Agent v2.1 与 Vibe Code Bench 的题量官方未披露。",
   "official_sources": [
     {
       "kind": "site",
-      "url": "https://vals.ai/"
+      "url": "https://www.vals.ai/benchmarks/vals_index"
     },
     {
       "kind": "site",
+      "url": "https://www.vals.ai/about"
+    },
+    {
+      "kind": "blog",
       "url": "https://blog.google/innovation-and-ai/models-and-research/gemini-models/introducing-gemini-4-carbon/"
     }
   ],
-  "related_benchmarks": [],
-  "content_status": "beta",
-  "last_verified_at": "2026-10-28"
+  "related_benchmarks": [
+    "terminalbench",
+    "vibe-code-bench",
+    "finance-agent-v2",
+    "legal-agent-benchmark"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "header": {
+      "publisher": {
+        "v": "Vals AI",
+        "cite": ["vals-about"]
+      },
+      "first_release": {
+        "v": "2026-05-04（Vals Index v1）",
+        "cite": ["vals-index-lb@Updates"]
+      }
+    },
+    "cites": {
+      "summary": ["vals-index-lb@Overview", "vals-index-lb@Motivation"],
+      "interpretation": ["vals-index-lb@Methodology"]
+    },
+    "problem": {
+      "text": "AI 投入巨大而独立测量不足：公开题库几个月内就被吸收进预训练语料而失效，厂商自评又常与挑出来的示例一起出现。Vals AI 以独立评测机构身份，用私有题库加统一脚手架给出一个可跨厂商横比的经济价值度量。",
+      "cite": ["vals-about", "vals-index-lb@Motivation"]
+    },
+    "ladder": [
+      {
+        "label": "HLAB-Vals-1.1 组件榜首（Gemini 4 Argon）",
+        "value": "27.08%",
+        "note": "长周期法律工作成果产出，是全场分数最低的组件，可作为难度下限的参考",
+        "cite": ["hlab"]
+      },
+      {
+        "label": "v2.2 指数榜末位（Inkling Small）",
+        "value": "27.59%",
+        "note": "2026-11-11 榜单 37 个模型中的最低分",
+        "cite": ["vals-index-lb@Rankings"]
+      },
+      {
+        "label": "Tax Agent Bench 组件榜首（Gemini 4 Hydrogen）",
+        "value": "52.30%",
+        "note": "税务组件单独榜单的第一名；税务只占 0.5 权重，组件分低不等于模型弱",
+        "cite": ["tax-agent-bench"]
+      },
+      {
+        "label": "v2.2 指数榜首（Claude Fable 5.2）",
+        "value": "71.31%",
+        "note": "2026-11-11 数据；同页 Accuracy by Benchmark 给出其 8 个组件分：69.5 / 77.4 / 65.2 / 93.8 / 85.8 / 46.2 / 5.0 / 32.1，总分 71.3",
+        "cite": ["vals-index-lb@Rankings", "vals-index-lb@Accuracy by Benchmark"]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "Vals Index 不是通用智力或知识考试分数，而是四类经济工作任务上按 GDP 权重合成的准确率；模型在单一组件上的强弱会被权重放大或稀释",
+        "cite": ["vals-index-lb@Methodology"]
+      },
+      {
+        "text": "指数列不是 8 个组件分数的简单平均：先按行业取平均，再按 GDP 权重加权，权重之间相差 16 倍（金融 8.0 对税务 0.5）",
+        "cite": ["vals-index-lb@Methodology"]
+      },
+      {
+        "text": "不同版本的指数分数不能直接比较：v2.1 把编码桶换成 Terminal-Bench 4.0，官方明确说明其明显更难、指数分数低于 v2；引用时必须带版本号",
+        "cite": ["vals-index-lb@Updates"]
+      },
+      {
+        "text": "「私有题库」不等于「无法核验」：Vals AI 开源了运行这些评测的基础设施（Valkyrie 分布式智能体基准运行系统与 model library），保密的只是题库本身，目的是防止针对测试集训练",
+        "cite": ["vals-about"]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "Vals AI，自称「人工智能的独立评测机构」，自建衡量律师、银行家、工程师、医生工作能力的基准与评测基础设施",
+        "cite": ["vals-about"]
+      },
+      {
+        "k": "为什么题库保密",
+        "v": "官方理由是公开题库会被吸收进预训练语料， quietly invalidates 基于它的结果；私有题库可防止针对测试集训练，这是它与开源基准的核心差异",
+        "cite": ["vals-about"]
+      },
+      {
+        "k": "开源的部分",
+        "v": "运行环境开源：Valkyrie（分布式智能体基准运行系统）与 model library（免费标准模型调用 API），均在 GitHub 上",
+        "cite": ["vals-about"]
+      },
+      {
+        "k": "指数构成",
+        "v": "6 个私有基准加 2 个公有基准（Terminal-Bench 4.0 与 Harvey 的 HLAB），覆盖金融、编码、法律、税务四个行业，官方称目的是给出能力、时延与成本之间的真实权衡信号",
+        "cite": ["vals-index-lb@Motivation"]
+      },
+      {
+        "k": "当前版本",
+        "v": "v2.2，榜单数据更新至 2026-11-11，榜首为 Claude Fable 5.2（71.31%），次席 Claude Sonnet 5.5（70.85%）与 Gemini 4 Carbon（70.45%）",
+        "cite": ["vals-index-lb@Overview"]
+      },
+      {
+        "k": "版本页日期口径",
+        "v": "冻结版本页的「Updated」日期是该版本最后一次数据刷新的时间，不是发布时间：v1.2 页面标 8/11/2026 而发布日志记 5/27/2026，v2 页面标 9/27/2026 而发布日志记 8/13/2026，v2.1 页面标 10/18/2026 而发布日志记 9/25/2026。本档案的版本日期一律取 Updates 发布日志",
+        "cite": ["vals-index-lb@Updates", "vals-index-v2", "vals-index-v2-1"]
+      },
+      {
+        "k": "厂商侧引用",
+        "v": "Google 的 Gemini 4 Carbon 发布文（2026-10-28）正文只宣称模型能力，未给出 Vals Index 数值；本档案的指数数值全部取自 Vals AI 官方榜单",
+        "cite": ["blog-innovation-and-ai-models"]
+      },
+      {
+        "k": "Tax Agent Bench 的归类",
+        "v": "Tax Agent Bench 在站内导航挂在 Finance 下，但在指数里是独立的税务行业（权重 0.5）；官方说明 BEA 把会计与税务准备服务（NAICS 5412）归在专业服务而非金融与保险业下",
+        "cite": ["vals-index-lb@Updates", "tax-agent-bench"]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-11",
+        "columns": ["排名", "模型", "Vals Index", "单次测试成本", "每测试 token 数", "每测试时长"],
+        "rows": [
+          ["1", "Claude Fable 5.2", "71.31%", "$17.94", "31.31m", "43m42s"],
+          ["2", "Claude Sonnet 5.5", "70.85%", "$16.18", "78.59m", "1h26m"],
+          ["3", "Gemini 4 Carbon", "70.45%", "$10.51", "18.29m", "47m45s"],
+          ["4", "Claude Opus 5.5", "70.14%", "$24.77", "59.46m", "1h25m"],
+          ["5", "Gemini 4 Argon", "69.39%", "$13.37", "23.31m", "44m58s"],
+          ["6", "Gemini 4 Hydrogen", "68.49%", "$9.84", "41.19m", "32m05s"],
+          ["7", "Wonder Full", "66.79%", "$6.81", "18.37m", "59m19s"],
+          ["8", "GPT-6 Astra", "65.02%", "$21.28", "8.15m", "33m39s"],
+          ["9", "Wonder", "64.88%", "$10.65", "33.19m", "35m24s"],
+          ["10", "GPT-6.1 Sol", "63.94%", "$3.61", "9.40m", "44m24s"]
+        ]
+      },
+      "cite": ["vals-index-lb@Rankings"]
+    },
+    "sources": [
+      {
+        "id": "vals-index-lb",
+        "kind": "site",
+        "title": "Vals Index Leaderboard and Methodology（Vals AI）",
+        "url": "https://www.vals.ai/benchmarks/vals_index",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "vals-about",
+        "kind": "site",
+        "title": "About Vals AI",
+        "url": "https://www.vals.ai/about",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "vals-index-v2",
+        "kind": "leaderboard",
+        "title": "Vals Index v2（冻结版本页）",
+        "url": "https://www.vals.ai/benchmarks/vals_index_v2",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "vals-index-v2-1",
+        "kind": "leaderboard",
+        "title": "Vals Index v2.1（冻结版本页）",
+        "url": "https://www.vals.ai/benchmarks/vals_index_v2_1",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "emb-v1-1",
+        "kind": "leaderboard",
+        "title": "Excel Modeling Benchmark v1.1 Leaderboard and Methodology",
+        "url": "https://www.vals.ai/benchmarks/emb-v1-1",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "terminal-bench-4",
+        "kind": "leaderboard",
+        "title": "Terminal-Bench 4.0 Leaderboard and Methodology",
+        "url": "https://www.vals.ai/benchmarks/terminal-bench-4",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "code-migration-v1-1",
+        "kind": "leaderboard",
+        "title": "Code Migration v1.1 Leaderboard and Methodology",
+        "url": "https://www.vals.ai/benchmarks/code-migration-v1-1",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "legal-research",
+        "kind": "leaderboard",
+        "title": "Legal Research Bench Leaderboard and Methodology",
+        "url": "https://www.vals.ai/benchmarks/legal_research",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "hlab",
+        "kind": "leaderboard",
+        "title": "HLAB-Vals-1.1 Leaderboard and Methodology",
+        "url": "https://www.vals.ai/benchmarks/hlab",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "tax-agent-bench",
+        "kind": "leaderboard",
+        "title": "Tax Agent Bench Leaderboard and Methodology",
+        "url": "https://www.vals.ai/benchmarks/tax_agent_bench",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "blog-innovation-and-ai-models",
+        "kind": "blog",
+        "title": "Introducing Gemini 4 Carbon（Google）",
+        "url": "https://blog.google/innovation-and-ai/models-and-research/gemini-models/introducing-gemini-4-carbon/",
+        "accessed": "2026-11-14"
+      }
+    ]
+  }
 }

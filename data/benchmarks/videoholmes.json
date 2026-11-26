@@ -2,69 +2,418 @@
   "id": "videoholmes",
   "name": "Video-Holmes",
   "full_name": "Video-Holmes: Can MLLM Think Like Holmes for Complex Video Reasoning?",
-  "aliases": [
-    "VideoHolmes"
-  ],
+  "aliases": ["VideoHolmes", "video-holmes"],
   "status": null,
-  "categories": [
-    "multimodal",
-    "reasoning"
-  ],
-  "summary": "悬疑短片视频推理基准（ECCV 2026）：270 部人工标注悬疑短片、1,837 题、六类任务，要求跨多个时间点整合线索",
-  "interpretation": "准确率口径；题目刻意防止依赖单一局部区域取巧，官方结论是模型在悬疑推理类任务上显著低于人类；Seed2.0 页读数 Lite 67.4 / Pro 67.4 / Mini 58.6，为厂商自报。",
+  "categories": ["multimodal", "reasoning"],
+  "summary": "悬疑短片视频推理基准：270 部人工标注悬疑短片（1–5 分钟）产出 1,837 道六选一单选题，覆盖社会关系、意图与动机链、时间因果、时间线、多模态线索、物理异常、核心主题七类任务，核心考法是跨多个时间点主动寻找并整合线索。论文报告的最好成绩（无音频口径）为 45.0%，多数模型低于 40%。",
+  "interpretation": "Accuracy 口径，越高代表越能跨时间点整合线索。分数对音频输入高度敏感：Gemini-2.5-Pro 开音频从 45.0 升到 51.3。论文未报告人类基线，因此「与人类差距多大」没有论文数值支撑；论文的实际结论是模型普遍擅长视觉感知，但在整合信息、不漏关键线索上仍有明显困难。",
   "measures": [
-    "多线索跨时刻整合推理",
-    "事件关系与悬疑推理"
+    {
+      "area": "社会关系推理（SR）",
+      "focus": "推断人物之间的社会关系，需要跨时间点认出同一人（如青年与老年是同一男子）",
+      "share": "292 题 · 15.6%",
+      "format": "六选一单选题",
+      "cite": ["arxiv-2505-21374@§3", "arxiv-2505-21374@Table 6"]
+    },
+    {
+      "area": "意图与动机链（IMC）",
+      "focus": "观察人物动作与环境线索，把表层行为与真实意图拆开",
+      "share": "276 题 · 15.0%",
+      "format": "六选一单选题",
+      "cite": ["arxiv-2505-21374@§3", "arxiv-2505-21374@Table 6"]
+    },
+    {
+      "area": "时间因果推断（TCI）",
+      "focus": "借助电影语言与多模态线索，推断跨时空事件之间的因果机制",
+      "share": "273 题 · 14.9%",
+      "format": "六选一单选题",
+      "cite": ["arxiv-2505-21374@§3", "arxiv-2505-21374@Table 6"]
+    },
+    {
+      "area": "时间线分析（TA）",
+      "focus": "整合零散事件并重建影片的叙事时间线",
+      "share": "200 题 · 10.9%",
+      "format": "六选一单选题",
+      "cite": ["arxiv-2505-21374@§3", "arxiv-2505-21374@Table 6"]
+    },
+    {
+      "area": "多模态线索推理（MHR）",
+      "focus": "从镜头运动、物体位置渐变、对白等多模态线索中读出含义",
+      "share": "332 题 · 18.1%",
+      "format": "六选一单选题",
+      "cite": ["arxiv-2505-21374@§3", "arxiv-2505-21374@Table 6"]
+    },
+    {
+      "area": "物理异常推理（PAR）",
+      "focus": "找出偏离现实常规的画面，并推断其中隐含的规则或意义",
+      "share": "194 题 · 10.4%",
+      "format": "六选一单选题",
+      "cite": ["arxiv-2505-21374@§3", "arxiv-2505-21374@Table 6"]
+    },
+    {
+      "area": "核心主题推断（CTI）",
+      "focus": "综合剧情、对白与象征元素，提炼影片的核心主题",
+      "share": "270 题 · 14.7%",
+      "format": "六选一单选题",
+      "cite": ["arxiv-2505-21374@§3", "arxiv-2505-21374@Table 6"]
+    }
   ],
   "does_not_measure": [
-    "字幕/语音依赖型问答",
-    "视频生成"
+    {
+      "text": "线索已给定型的问答：既有基准多是「问题 + 已给线索」，本基准考的是主动寻找线索的过程，两者不通用",
+      "cite": ["repo-video-holmes@Question Types", "site-homepage@Question Types"]
+    },
+    {
+      "text": "1–5 分钟以外的视频：全部样本都是 1–5 分钟的悬疑短片，长视频表现论文未报告",
+      "cite": ["arxiv-2505-21374@§3"]
+    },
+    {
+      "text": "悬疑题材之外的泛化能力：样本集中在惊悚、恐怖、超自然等子类型（恐怖类占 32.6%），换题材的表现论文未报告",
+      "cite": ["arxiv-2505-21374@Table 6"]
+    },
+    {
+      "text": "开放式问答与自由生成：全部题目都是六选一单选题，答案是客观唯一的",
+      "cite": ["arxiv-2505-21374@附录 B"]
+    }
   ],
   "dataset": {
     "sample_count": 1837,
-    "splits": [
-      "六类任务"
-    ],
-    "languages": [
-      "en"
-    ],
-    "source_type": "real-world（悬疑短片）",
-    "public_sample": true
+    "splits": ["train", "test"],
+    "languages": ["en"],
+    "source_type": "real-world（YouTube 悬疑短片，1–5 分钟，人工标注）",
+    "public_sample": true,
+    "totals": "270 部悬疑短片共 1,837 题；题目平均 17.4 词，解析平均 31.3 词；恐怖类 88 部（32.6%）。另发布 233 部视频、1,551 题的训练集",
+    "cite": ["arxiv-2505-21374@Table 6", "repo-video-holmes@Training"],
+    "construction": [
+      {
+        "k": "选题源",
+        "text": "以关键词「suspense short films」在 YouTube 搜索时长 1–5 分钟的影片，并用 Anim、Comic、Detective、Future、Horror、Social、Supernatural、Thriller 九个子关键词保证题材多样性",
+        "cite": ["arxiv-2505-21374@§3", "arxiv-2505-21374@Table 6"]
+      },
+      {
+        "k": "人工标注",
+        "text": "从初池中挑选 270 部高质量悬疑短片做人工标注，标出关键事件与因果联系",
+        "cite": ["repo-video-holmes@Construction Pipeline"]
+      },
+      {
+        "k": "任务设计",
+        "text": "设计七类任务：社会关系、意图与动机链、时间因果、时间线、多模态线索、物理异常、核心主题",
+        "cite": ["repo-video-holmes@Construction Pipeline"]
+      },
+      {
+        "k": "出题",
+        "text": "用 DeepSeek 生成题目，每题严格依据所给信息，并做人工抽样检查质量与相关性",
+        "cite": ["arxiv-2505-21374@§3", "site-homepage@Construction"]
+      },
+      {
+        "k": "定稿",
+        "text": "校验与标注后得到 270 部视频、1,837 道问答对；选题源与题量统计见论文附录 C",
+        "cite": ["arxiv-2505-21374@§3", "arxiv-2505-21374@附录 C"]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "题目为六选一单选题，正确选项须客观唯一，干扰项不得与正确项意思相近。官方推理 prompt 要求先输出推理过程再给最终答案：推理放在 <think> 与 </think> 之间，最终答案放在 <answer> 与 </answer> 之间。对没有原生视频输入能力的模型（如 GPT-4o），统一从视频抽帧并附时间戳，以多图方式输入评测。",
+    "cite": ["arxiv-2505-21374@§4.1", "arxiv-2505-21374@附录 B"],
+    "variants": [
+      {
+        "text": "音频开关：论文主表为无音频输入；开启音频后 Gemini-2.5-Pro 从 45.0 升到 51.3，Gemini-1.5-Pro 从 41.2 升到 45.7",
+        "cite": ["arxiv-2505-21374@Table 5(b)"]
+      },
+      {
+        "text": "思维链开关：强闭源模型加 CoT 得分更高，弱开源模型反而更低，收益取决于模型自身能力",
+        "cite": ["arxiv-2505-21374@Table 5(c)"]
+      },
+      {
+        "text": "抽帧数量：增加输入帧数总体提升表现，但幅度有限",
+        "cite": ["arxiv-2505-21374@Table 5(a)"]
+      },
+      {
+        "text": "输入模态：可改用帧级描述或视频级描述（纯文本）替代视频本体，该口径下分数大幅抬高",
+        "cite": ["arxiv-2505-21374@Table 5(d)"]
+      },
+      {
+        "text": "帧数口径不统一：多数开源模型按 32 帧评测，Claude 3.5 / 3.7 Sonnet 按 20 帧，Gemini 系列未抽帧，跨模型比较时输入条件并不一致",
+        "cite": ["arxiv-2505-21374@Table 2"]
+      }
+    ]
   },
   "metrics": [
     {
       "id": "accuracy",
       "name": "Accuracy",
-      "range": [
-        0,
-        100
-      ],
       "unit": "percent",
-      "direction": "higher",
-      "aggregation": "mean"
+      "range": [0, 100],
+      "direction": "越高越好",
+      "aggregation": "mean",
+      "description": "六选一单选题的答对比例；按七类任务分别报告，并给出总体均值（Overall）",
+      "cite": ["arxiv-2505-21374@Table 2"]
     }
   ],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [
-    "悬疑题材分布与通用视频分布不同"
-  ],
-  "notes": "arXiv 2505.21374，TencentARC；证据账本 2 行（字节）",
-  "official_sources": [
+  "versions": [
     {
-      "kind": "paper",
-      "url": "https://arxiv.org/abs/2505.21374"
+      "date": "2025-05-27",
+      "label": "arXiv 提交 v1（cs.CV），论文与 Hugging Face 数据集卡片同日上线",
+      "cite": ["arxiv-2505-21374@首页", "dataset-hf@数据集卡"]
     },
     {
-      "kind": "github",
-      "url": "https://github.com/TencentARC/Video-Holmes"
+      "date": "2025-05-28",
+      "label": "发布 Video-Holmes 基准与对应评测代码",
+      "cite": ["repo-video-holmes@News"]
+    },
+    {
+      "date": "2025-05-29",
+      "label": "发布训练集：233 部视频、1,551 题，并给出用本基准做 RL 后训练的结果",
+      "cite": ["repo-video-holmes@News", "repo-video-holmes@Training"]
     }
   ],
-  "related_benchmarks": [
-    "videoreasonbench",
-    "minerva",
-    "video-mme"
+  "limitations": [
+    {
+      "issue": "音频输入显著改变分数",
+      "impact": "Gemini-2.5-Pro 从 45.0 升到 51.3（+6.3），Gemini-1.5-Pro 从 41.2 升到 45.7（+4.5）；论文同时指出对话线索对社会关系推理很关键",
+      "severity": "高",
+      "response": "论文在 Table 5(b) 同时给出开/关音频两套结果，官网榜单也单列 Audio 列",
+      "reader": "比较任何两个分数前先确认音频口径；官网榜单最高分 51.3 是含音频值",
+      "cite": ["arxiv-2505-21374@Table 5(b)"]
+    },
+    {
+      "issue": "题目由 DeepSeek 生成，只做人工抽样检查",
+      "impact": "题目质量依赖生成模型与抽样检查，全量人工校验的程度论文未披露",
+      "severity": "高",
+      "response": "论文称每题严格依据所给信息生成，并做人工抽样检查质量与相关性",
+      "reader": "把题目当作半自动产物读；引用具体题目时宜回看原题",
+      "cite": ["arxiv-2505-21374@§3"]
+    },
+    {
+      "issue": "用文本替代视频时分数大幅抬高",
+      "impact": "改用人工标注后 DeepSeek-R1 达 92.0、OpenAI o3 达 89.7，而同一条件下读帧级描述只有 31.2 / 25.4",
+      "severity": "中",
+      "response": "论文把差距归因于人工标注补上了关键视觉线索之间的逻辑连接",
+      "reader": "92.0 / 89.7 是「人替模型看完视频并写好结论」的上限，不是模型看视频的水平",
+      "cite": ["arxiv-2505-21374@Table 5(d)"]
+    },
+    {
+      "issue": "抽帧数与输入方式不统一",
+      "impact": "多数开源模型 32 帧、Claude 3.5 / 3.7 Sonnet 20 帧、Gemini 系列未抽帧、GPT-4o 需抽帧，横向比较的输入条件不一致",
+      "severity": "中",
+      "response": "论文在 Table 2 的 Frames 列标注每个模型所用帧数",
+      "reader": "跨模型比较时把 Frames 列一起读",
+      "cite": ["arxiv-2505-21374@Table 2"]
+    },
+    {
+      "issue": "视频来自互联网，许可限学术用途",
+      "impact": "数据集以 Apache-2.0 发布但仅限学术用途，视频版权归原作者，权利人可要求删除",
+      "severity": "中",
+      "response": "仓库声明视频来自互联网、版权归原所有者，并给出删除联系方式",
+      "reader": "商用前需自行确认授权；数据集可能因下架请求而变化",
+      "cite": ["repo-video-holmes@License"]
+    },
+    {
+      "issue": "没有人类基线",
+      "impact": "论文未报告人类成绩，「模型离人类还有多远」无法从论文直接得出",
+      "severity": "中",
+      "response": "论文未披露；只在摘要中以「接近人类专家」作为动机提问",
+      "reader": "看到「远低于人类」这类说法时，注明它没有论文数值支撑",
+      "cite": ["arxiv-2505-21374@Abstract"]
+    },
+    {
+      "issue": "Hugging Face 数据集查看器报错",
+      "impact": "页面提示 DatasetGenerationCastError，称数据文件列名不一致（部分文件多 5 列、少 7 列），只显示部分行预览",
+      "severity": "低",
+      "response": "Hugging Face 侧数据集生成失败，仓库与论文未回应",
+      "reader": "浏览样本请用 GitHub 下载或页面预览，不要据此判定数据本身损坏",
+      "cite": ["dataset-hf@数据集卡"]
+    },
+    {
+      "issue": "题材含惊悚恐怖内容",
+      "impact": "论文在 Broader Impact 中说明悬疑短片可能含恐怖或惊悚元素，对部分受众不宜",
+      "severity": "低",
+      "response": "论文在附录 E 提示使用者注意",
+      "reader": "用于公开演示或教学前先筛片",
+      "cite": ["arxiv-2505-21374@附录 E"]
+    }
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-09-01"
+  "official_sources": [
+    { "kind": "paper", "url": "https://arxiv.org/abs/2505.21374" },
+    { "kind": "repo", "url": "https://github.com/TencentARC/Video-Holmes" },
+    { "kind": "site", "url": "https://video-holmes.github.io/Page.github.io/" },
+    { "kind": "dataset", "url": "https://huggingface.co/datasets/TencentARC/Video-Holmes" }
+  ],
+  "related_benchmarks": ["videoreasonbench", "minerva", "video-mme"],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "notes": "arXiv 仅 v1（2025-05-27，cs.CV），暂无修订版；摘录与核验记录见 $EVIDENCE_DIR/videoholmes.evidence.json。",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "arxiv-2505-21374",
+        "kind": "paper",
+        "title": "Video-Holmes: Can MLLM Think Like Holmes for Complex Video Reasoning?（arXiv:2505.21374v1）",
+        "url": "https://arxiv.org/abs/2505.21374",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "repo-video-holmes",
+        "kind": "repo",
+        "title": "TencentARC/Video-Holmes · GitHub 仓库与榜单",
+        "url": "https://github.com/TencentARC/Video-Holmes",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "site-homepage",
+        "kind": "site",
+        "title": "Video-Holmes 项目主页（含官方 Leaderboard）",
+        "url": "https://video-holmes.github.io/Page.github.io/",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "dataset-hf",
+        "kind": "dataset",
+        "title": "TencentARC/Video-Holmes · Hugging Face Datasets",
+        "url": "https://huggingface.co/datasets/TencentARC/Video-Holmes",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "ARC Lab, Tencent PCG 与 City University of Hong Kong",
+        "cite": ["arxiv-2505-21374@首页", "repo-video-holmes@README"]
+      },
+      "first_release": {
+        "v": "2025-05-27（arXiv v1）",
+        "cite": ["arxiv-2505-21374@首页", "dataset-hf@数据集卡"]
+      }
+    },
+    "cites": {
+      "summary": ["repo-video-holmes@README", "arxiv-2505-21374@Abstract"],
+      "interpretation": ["arxiv-2505-21374@Table 2", "arxiv-2505-21374@Table 5(b)", "arxiv-2505-21374@Abstract"]
+    },
+    "problem": {
+      "text": "既有视频基准主要考视觉感知与定位，问题可以靠显式提示或孤立视觉线索答对（例如「女士穿什么」）；而人在真实推理中必须主动搜索、整合并分析多个线索才能下结论。这一类「线索要自己找」的能力缺少能把它与感知能力分开的基准。",
+      "cite": ["arxiv-2505-21374@§1", "repo-video-holmes@Question Types"]
+    },
+    "ladder": [
+      {
+        "label": "论文中最弱模型",
+        "value": "16.4 分",
+        "note": "Qwen2.5-Omni-7B，无音频口径",
+        "cite": ["arxiv-2505-21374@Table 2"]
+      },
+      {
+        "label": "论文中最好成绩（无音频口径）",
+        "value": "45.0 分",
+        "note": "Gemini-2.5-Pro，论文 Table 2 Overall；多数模型低于 40%",
+        "cite": ["arxiv-2505-21374@Table 2", "arxiv-2505-21374@§4.2"]
+      },
+      {
+        "label": "官方榜单最高分（含音频口径）",
+        "value": "51.3 分",
+        "note": "Gemini-2.5-Pro，官网 Leaderboard Audio 行，与上一行相差 6.3 分",
+        "cite": ["site-homepage@Leaderboard", "arxiv-2505-21374@Table 5(b)"]
+      },
+      {
+        "label": "人类表现",
+        "value": "论文未给出",
+        "note": "论文未报告人类基线，只在摘要中以「接近人类专家」作为动机提问",
+        "cite": ["arxiv-2505-21374@Abstract"]
+      },
+      {
+        "label": "人工标注替代看片时的上限（纯文本输入）",
+        "value": "92.0 分",
+        "note": "DeepSeek-R1 读人工标注；同条件 OpenAI o3 为 89.7，读帧级描述则只有 31.2 / 25.4",
+        "cite": ["arxiv-2505-21374@Table 5(d)"]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把官网榜单的 51.3 当成论文最好成绩。51.3 是开启音频后的结果；论文主表（无音频）最好成绩是 45.0，两者相差 6.3 分。",
+        "cite": ["arxiv-2505-21374@Table 5(b)", "site-homepage@Leaderboard"]
+      },
+      {
+        "text": "把「模型找不到线索」读成「模型不会推理」。论文的分析是：约 35% 的错误来自遗漏关键视觉信息；而在有人工标注补上线索逻辑连接时，同一批模型能到 90 分左右。瓶颈在找线索，不在给足线索后的推理。",
+        "cite": ["arxiv-2505-21374@§4.3", "arxiv-2505-21374@Table 5(d)"]
+      },
+      {
+        "text": "以为加思维链一定更好。论文 Table 5(c) 显示强闭源模型加 CoT 更高分，弱开源模型反而更低。",
+        "cite": ["arxiv-2505-21374@Table 5(c)"]
+      },
+      {
+        "text": "跨模型直接比总分。帧数口径不同（多数开源 32 帧、Claude 3.5 / 3.7 Sonnet 20 帧、Gemini 系列未抽帧），且部分模型需要抽帧，输入条件并不一致。",
+        "cite": ["arxiv-2505-21374@Table 2"]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "ARC Lab, Tencent PCG 与 City University of Hong Kong",
+        "cite": ["arxiv-2505-21374@首页"]
+      },
+      {
+        "k": "核心作者",
+        "v": "Junhao Cheng、Yuying Ge、Teng Wang、Yixiao Ge、Jing Liao、Jing Liao 与 Ying Shan",
+        "cite": ["repo-video-holmes@README"]
+      },
+      {
+        "k": "录用状态（来源间存在差异）",
+        "v": "仓库 README 标题标注 [ECCV 2026]，而论文首页侧栏仍写 Preprint. Under review.；两处表述各自保留，未合并",
+        "cite": ["repo-video-holmes@README", "arxiv-2505-21374@首页"]
+      },
+      {
+        "k": "定位",
+        "v": "作者希望它成为多模态推理的 Holmes-test：考「像侦探一样主动找线索」，而不是「线索已给」的感知定位",
+        "cite": ["repo-video-holmes@Question Types", "arxiv-2505-21374@§1"]
+      },
+      {
+        "k": "数据获取",
+        "v": "Hugging Face 总大小 4.28 GB，含 train / test 两个 split，语言为英文；页面数据集查看器当前报 DatasetGenerationCastError，只显示部分行预览",
+        "cite": ["dataset-hf@数据集卡"]
+      },
+      {
+        "k": "许可",
+        "v": "Apache-2.0，仅限学术用途；视频来自互联网，版权归原作者",
+        "cite": ["repo-video-holmes@License"]
+      },
+      {
+        "k": "训练集与后训练",
+        "v": "2025-05-29 追加发布 233 部视频、1,551 题；用本基准做 RL 后训练后 Qwen2.5-VL-7B-GRPO-CARE* 均分 40.7",
+        "cite": ["repo-video-holmes@Training"]
+      },
+      {
+        "k": "样例形态",
+        "v": "每题给出问题与 A–F 六个选项，部分题目标注具体时间点（如 00:45），答案需从整段短片中整合线索得出",
+        "cite": ["dataset-hf@预览", "arxiv-2505-21374@附录 B"]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-14",
+        "columns": ["模型", "帧数", "SR", "IMC", "TCI", "TA", "MHR", "PAR", "CTI", "总体"],
+        "rows": [
+          ["InternVL2.5-8B", "32", "28.0", "32.2", "21.5", "7.7", "25.7", "23.8", "22.6", "23.8"],
+          ["InternVL3-8B", "32", "29.5", "40.7", "37.9", "35.1", "24.6", "38.9", "24.1", "32.3"],
+          ["Qwen2.5-Omni-7B", "32", "27.1", "19.9", "13.9", "7.5", "14.8", "14.9", "13.7", "16.4"],
+          ["Qwen2.5-VL-7B", "32", "38.4", "34.8", "17.6", "30.0", "27.1", "18.6", "25.2", "27.8"],
+          ["Qwen2.5-VL-32B", "32", "43.2", "44.2", "31.5", "51.0", "36.4", "31.4", "32.2", "38.4"],
+          ["SEED-Bench-R1", "32", "42.8", "35.1", "25.6", "40.5", "29.2", "29.9", "32.6", "33.5"],
+          ["VideoChat-R1", "32", "42.1", "38.8", "24.5", "39.5", "29.5", "27.8", "29.3", "33.0"],
+          ["Video-R1", "32", "48.6", "41.7", "28.9", "34.5", "31.0", "33.5", "35.9", "36.5"],
+          ["OpenAI o4-mini", "32", "36.3", "31.2", "20.5", "34.0", "30.1", "30.9", "27.4", "29.9"],
+          ["GPT-4o", "32", "50.0", "49.6", "38.8", "30.0", "44.0", "39.2", "37.0", "42.0"],
+          ["Claud 3.5 Sonnet", "20", "48.6", "43.5", "30.8", "41.0", "39.8", "36.6", "33.7", "39.3"],
+          ["Claud 3.7 Sonnet", "20", "45.9", "48.2", "33.7", "39.5", "40.7", "39.7", "38.1", "41.0"],
+          ["Gemini-1.5-Pro", "未抽帧", "52.1", "48.2", "34.4", "26.0", "39.2", "46.4", "38.9", "41.2"],
+          ["Gemini-2.0-Flash", "未抽帧", "41.8", "33.7", "23.1", "20.5", "30.1", "26.8", "33.7", "30.6"],
+          ["Gemini-2.0-Flash-Thinking", "未抽帧", "43.4", "46.9", "43.1", "51.0", "37.9", "43.6", "39.3", "43.1"],
+          ["Gemini-2.5-Pro", "未抽帧", "46.6", "49.3", "46.9", "53.0", "40.1", "44.3", "37.4", "45.0"]
+        ]
+      },
+      "cite": ["arxiv-2505-21374@Table 2", "arxiv-2505-21374@§4.2"]
+    }
+  }
 }

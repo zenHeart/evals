@@ -4,12 +4,12 @@
 [{"cite":"paper@§3.2","quote":"..."}, {"cite":"repo@README","quote":"..."}]
 Q
 （也接受每行一个 JSON 对象；或 addquote.py <id> '<cite>' '<quote>' 单条）
-规则与 check-one.mjs / reverify.py 相同：规范化后逐字（可用 … 分段，每段 ≥8 字符）出现在 evidence/<id>/<sid>.txt。
-通过的追加进 evidence/<id>.evidence.json（自动去重），失败的给出原文附近片段提示，不写入。
+规则与 check-one.mjs / reverify.py 相同：规范化后逐字（可用 … 分段，每段 ≥8 字符）出现在 $EVIDENCE_DIR/<id>/<sid>.txt。
+通过的追加进 $EVIDENCE_DIR/<id>.evidence.json（自动去重），失败的给出原文附近片段提示，不写入。
 来源若不是用 srcfetch.py 抓的，会警告：验收会重新抓原网页，非原样保存的文本大概率被驳回。"""
 import sys, os, json, re
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from _rv import R, norm, hit
+from _rv import EVIDENCE_DIR, VIEW_DIR, norm, hit
 def load_items(a):
     if len(a) == 3: return [{'cite': a[1], 'quote': a[2]}]
     raw = sys.stdin.read().strip()
@@ -34,14 +34,14 @@ def main():
     a = sys.argv[1:]
     if not a or a[0] in ('-h', '--help'): print(__doc__); sys.exit(2)
     bid = a[0]; items = load_items(a)
-    evf = f'{R}/evidence/{bid}.evidence.json'
+    evf = f'{EVIDENCE_DIR}/{bid}.evidence.json'
     ev = json.load(open(evf)) if os.path.exists(evf) else {'id': bid, 'quotes': []}
     have = {(q['cite'], q['quote']) for q in ev['quotes']}
-    man_p = f'{R}/view/{bid}/manifest.json'; man = json.load(open(man_p)) if os.path.exists(man_p) else {}
+    man_p = f'{VIEW_DIR}/{bid}/manifest.json'; man = json.load(open(man_p)) if os.path.exists(man_p) else {}
     cache = {}; ok = bad = 0
     for it in items:
         c, q = str(it.get('cite', '')), str(it.get('quote', ''))
-        sid = c.split('@')[0]; p = f'{R}/evidence/{bid}/{sid}.txt'
+        sid = c.split('@')[0]; p = f'{EVIDENCE_DIR}/{bid}/{sid}.txt'
         if sid not in cache: cache[sid] = norm(open(p, errors='ignore').read()) if os.path.exists(p) else None
         t = cache[sid]
         if t is None: bad += 1; print(f'FAIL [{c}] 证据原文不存在: {p}（先 srcfetch.py {bid} {sid} <url>）'); continue

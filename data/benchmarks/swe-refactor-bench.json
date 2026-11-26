@@ -1,65 +1,404 @@
 {
   "id": "swe-refactor-bench",
   "name": "SWE Refactor Bench",
-  "full_name": null,
-  "aliases": [
-    "SWE-Refactor-Bench"
-  ],
-  "status": null,
-  "categories": [
-    "coding"
-  ],
-  "summary": "真实项目代码重构评测集：在既有代码库上做大范围重构，测模型改造存量代码而非从零写新代码的能力",
-  "interpretation": "分数是百分比（越高越好），与 SWE-bench 那类「修一个 bug」不同——这里考的是跨文件、跨模块的重构，改动面往往比解题本身大得多。2026-10 公开水位（MiniMax 官方页评测总表视觉转写）：MiniMax M3.1 Flash 23.0%、GPT-5.6 Sol 28.5%、Claude Opus 5 31.0%、DeepSeek-V4.1-Flash 11.8%。头部也只有 30% 上下，说明存量代码重构远未被攻破。",
+  "full_name": "SWE Refactor Bench: Can Coding Agents Complete a Long-Horizon, Whole-Repository Stack Migration?",
+  "aliases": ["SWE-Refactor-Bench"],
+  "status": "active",
+  "categories": ["coding"],
+  "summary": "20 个整库换栈迁移任务（语言重写 7、框架重写 7、平台移植 3、构建工具链重写 3），取自 SQLite、zlib、libsodium、GraphHopper 等真实开源项目的冻结发布。每题给 agent 6–30 小时离线自主工作，要求公开 API、发布产物与可观测行为全部不变、旧技术栈从代码树中消失。评分走三阶段：Migration Audit（模型裁决迁移是否真的发生）→ Behavioural Tests（130,118 条固定行为检查，全对才进下一阶段）→ Agentic Verification（6 个验证模型各用一小时构造反例）。8 个前沿模型、26 个推理档位、520 次计分运行里，只有 28 次（5.4%）通过全部三个阶段，20 个任务中有 13 个没有任何模型解出；最高分 claude-opus-5（xhigh）47.0/100。",
+  "interpretation": "分数是 0–100 的复合分，越高代表「换栈成功且行为不变」越有把握。它和 SWE-bench 那类「修一个 bug、测试由红转绿」的基准不是一回事：迁移任务在 agent 动手前测试本来就是全绿的，把原仓库原样交回去也能在任何行为测试集上拿满分——论文把这个现象称为 blindness（盲区）。因此迁移是否真的发生必须由独立的 Migration Audit 单独裁决，并以乘法而非加法计入总分。520 次运行的均值只有 13.44/100，而能走到第三阶段的 88 次运行均值 79.43，说明难点在于根本走不到那一步。即便固定行为检查一个没错，88 次里仍有 60 次（68.2%）在一小时内被验证模型找到反例，平均只扛住 6 个验证模型中的 3.94 个。所以这个分数不该读成「模型能写多少代码」，而该读成「在没人告诉它该关心什么的情况下，模型能不能把一个库原样搬到另一套技术上」。",
   "measures": [
-    "在既有代码库上完成大规模重构的正确性",
-    "跨文件、跨模块的一致性改造能力"
+    {
+      "area": "语言重写（Language rewrite）",
+      "focus": "替换实现语言但保持产物外形：原语言的实现细节随源码一起删掉，外部行为要精确复现，而新语言不会自动做出同样的选择。示例：cmark 0.31.1 从 C 重写为 Rust 且不用外部 crate；sqlparse 0.5.3 从 Python（4,024 行）迁到一个只闭包标准库的 Go 模块。",
+      "share": "7/20（35%）",
+      "format": "整库迁移 + 三阶段判定",
+      "cite": ["paper@§2.2", "repo-swe-refactor-bench@Tasks", "paper@Table 1"]
+    },
+    {
+      "area": "框架重写（Framework rewrite）",
+      "focus": "保留语言、替换应用组织所依赖的框架：要复现的多半不是应用自己写的代码，而是框架代它做的事——错误怎么表示、参数怎么强转、内容怎么协商。示例：httpbin 0.10.2 从 Flask/Werkzeug + gunicorn-gevent 迁到 Starlette + uvicorn，HTTP 契约不变。",
+      "share": "7/20（35%）",
+      "format": "整库迁移 + 三阶段判定",
+      "cite": ["paper@§2.2", "repo-swe-refactor-bench@Tasks", "paper@Table 4"]
+    },
+    {
+      "area": "平台移植（Platform port）",
+      "focus": "替换代码假定的宿主：从 POSIX 到 wasm32-wasi，进程控制、文件系统命名空间和内存映射都被收回，只剩宿主显式授予的部分。示例：SQLite 从 POSIX 迁到 WASI。",
+      "share": "3/20（15%）",
+      "format": "整库迁移 + 三阶段判定",
+      "cite": ["paper@§2.2", "paper@Table 1"]
+    },
+    {
+      "area": "构建工具链重写（Build-toolchain rewrite）",
+      "focus": "换掉生产产物那一侧而不是运行那一侧：比较的不只是程序运行时做什么，还包括它被打包成什么。示例：libsodium 1.0.20 从 GNU Autotools 迁到 CMake，要求同一 ABI、同一发布产物、同一套加固。",
+      "share": "3/20（15%）",
+      "format": "整库迁移 + 三阶段判定",
+      "cite": ["paper@§2.2", "repo-swe-refactor-bench@Tasks", "paper@Table 1"]
+    }
   ],
   "does_not_measure": [
-    "从零写新功能的代码生成能力",
-    "单点缺陷修复（那是 SWE-bench 系）"
+    {
+      "text": "从零设计新功能：本基准全程不需要设计任何新功能，State A 已经做了 State B 必须做的一切，难点只在于在另一套技术上精确重建这些行为。",
+      "cite": ["paper@§2.1"]
+    },
+    {
+      "text": "「测试由红转绿」这类信号：迁移任务起始时代码就是全绿的，固定测试集的通过率无法区分「迁移完成」和「什么都没做」。",
+      "cite": ["paper@Table 7", "homepage@A passing suite cannot see this work"]
+    },
+    {
+      "text": "迁移是否被证明正确：一次 accepted 只代表扛住了官方能派出的最强对抗者；形式化验证这条路对跨语言整库重写并不开放。",
+      "cite": ["paper@§3.4.3", "paper@§4 Related Work"]
+    },
+    {
+      "text": "所有迁移项目的内在难度排序：论文明确说这些结论不构成对全部迁移项目难度的排名。",
+      "cite": ["paper@§1"]
+    }
   ],
   "dataset": {
-    "sample_count": null,
+    "sample_count": 20,
     "splits": [],
-    "languages": [],
-    "source_type": "真实项目重构任务（开源）",
-    "public_sample": true
+    "languages": ["C", "Rust", "Java", "Go", "Python", "JavaScript", "TypeScript", "C++", "C#", "Zig"],
+    "source_type": "真实开源仓库的整库换栈迁移（每个任务以一个冻结发布作为 State A）",
+    "public_sample": true,
+    "totals": "20 个任务 / 20 个上游项目 · 代码量合计 867,062 行（各类 0.8k–358.0k 行）· 时间预算合计 262 小时（每题 6–30 小时）· Stage I 迁移判据 136 条（每题 5–10 条）· Stage II 独立测试模块 264 个 · 固定行为检查 130,118 条（平均每题六千多条）",
+    "cite": ["paper@Table 1", "repo-swe-refactor-bench@How it is graded", "paper@§2.3", "repo-swe-refactor-bench@Tasks"],
+    "construction": [
+      {
+        "k": "先定债务，再找仓库",
+        "text": "作者不是先挑仓库再发明改动，而是反过来：先定下一个维护者会说是「早就该做」的迁移，再去找一个这个迁移就是全部工作的项目。",
+        "cite": ["paper@§2.2"]
+      },
+      {
+        "k": "State A / State B",
+        "text": "每个任务从一个真实的、已冻结的开源发布（State A）出发，要求交付同一套技术上的同样产品（State B）：公开 API、发布产物、可观测行为都不变，旧技术栈从代码树里消失。",
+        "cite": ["repo-swe-refactor-bench", "repo-swe-refactor-bench@What it is"]
+      },
+      {
+        "k": "行为期望从原仓库录制",
+        "text": "固定测试集不是凭空写的：同一批调用先在原仓库上跑一遍，把记录下来的输出当作期望答案，因此同样的输入之后必须产生同样的输出和同样的退出码。",
+        "cite": ["paper@§2.3"]
+      },
+      {
+        "k": "评估侧对 agent 隐身",
+        "text": "Migration Audit 判据、Behavioural Tests 的期望、以及六个验证模型的额外检查，全部放在一个从不挂载进 agent 容器的独立镜像里——那些测试对 agent 不只是「没读过」，而是不存在。",
+        "cite": ["paper@§2.2"]
+      },
+      {
+        "k": "反例必须可复现",
+        "text": "第三阶段交进来的不能是报告，只能是可执行测试用例：在原仓库上通过、在提交上失败、先对参考实现变绿再复现三次，坏测试和抖动测试都赢不了。",
+        "cite": ["paper@§2.3", "repo-swe-refactor-bench@How it is graded"]
+      },
+      {
+        "k": "许可与溯源",
+        "text": "仓库自身的工作（共享 grader、二十个任务定义、文档）是 Apache-2.0；NOTICE 在每次测试运行时从归档重新生成，任务不加或不重新钉版本就会出现在里面。",
+        "cite": ["repo-swe-refactor-bench@Licensing"]
+      }
+    ]
   },
   "metrics": [
     {
-      "id": "pass-rate",
-      "name": "通过率",
-      "range": [
-        0,
-        100
-      ],
-      "unit": "percent",
-      "direction": "higher",
-      "aggregation": "mean"
-    }
-  ],
-  "versions": [],
-  "limitations": [
-    "题集规模与任务构成未在引用页披露，跨厂商对比需以官方报告为准",
-    "重构任务的成功判定依赖测试用例，覆盖不到的风格类改动不计分"
-  ],
-  "default_protocol": null,
-  "notes": "证据账本中 1 次引用；由 MiniMax M3.1 Flash 官方页评测总表引入，数值来自位图视觉转写（未人工确认）",
-  "official_sources": [
-    {
-      "kind": "github",
-      "url": "https://github.com/Einsia/SWE-Refactor-Bench"
+      "id": "composite",
+      "name": "复合分（0–100）",
+      "direction": "越高越好",
+      "description": "S_task = 1[Stage I 通过] × (40 × 1[Stage II 全对] + 60 × 1[Stage II 全对] × 扛住的验证模型数 / 6)。Stage I 不过记 0；可达取值为 0、40、50、60、70、80、90、100，即「要么没做完，要么做完了再按扛住的程度量」。",
+      "range": [0, 100],
+      "unit": "point",
+      "cite": ["repo-swe-refactor-bench@How it is graded", "paper@§3.1"]
     },
     {
-      "kind": "site",
-      "url": "https://www.minimax.io/blog/minimax-m31f"
+      "id": "accepted",
+      "name": "Accepted 次数",
+      "direction": "越高越好",
+      "description": "迁移完成、固定检查全过、且扛住全部六个验证模型的运行数；每任务上限 1，20 个任务上限 20。",
+      "range": [0, 20],
+      "unit": "count",
+      "cite": ["paper@§3.1", "leaderboard@The board"]
+    },
+    {
+      "id": "blindness",
+      "name": "Blindness 计数",
+      "direction": "越低越好",
+      "description": "固定行为检查全过、却在 Stage I 被判「没有真的迁移」而一票否决的运行数——纯行为口径会把这些运行记成干净通过。",
+      "range": [0, 520],
+      "unit": "count",
+      "cite": ["paper@§3.1", "leaderboard@Pooled by model"]
     }
   ],
-  "related_benchmarks": [
-    "swebench",
-    "nl2repo"
+  "default_protocol": {
+    "raw": "模型拿到一个仓库、一条指令和一个离线镜像，在 6–30 小时预算内自主完成换栈。评分分三阶段：Stage I「Migration Audit」由裁判模型读 State A 和提交（不执行任何一方），判断新实现是否在默认路径上、旧实现是否已从源码、依赖和发布闭包中消失，136 条判据每种的三个样本投票，挂一条该次运行记 0；Stage II「Behavioural Tests」用模块化规则测试同时构建两边并比对产物、端点、安装布局和上游测试语料，期望值在镜像构建时冻结，全对才进入下一阶段，值 40 分且不容错；Stage III「Agentic Verification」给六个验证模型各一小时和两棵都构建安装好的树，只给一条指令——构造一个两边行为不一致的输入，交上来的反例必须在原仓库通过、在提交失败并复现三次。每阶段独立镜像：Stage I 没有构建系统、常常没有编译器，Stage II 有新工具链并断言旧工具链不存在，Stage III 是唯一能驱动两种构建的镜像。",
+    "cite": ["repo-swe-refactor-bench@How it is graded", "repo-swe-refactor-bench@Running it", "paper@§2.2"],
+    "variants": [
+      {
+        "text": "单配置 vs 按模型汇总：榜单「The board」一行是一个模型在一个推理档位上的 26 个配置，「Pooled by model」把该模型全部配置合并，两者分母不同、不可直接比（claude-opus-5 单配置最高 47.0，按模型汇总 32.30）。",
+        "cite": ["leaderboard@Pooled by model"]
+      },
+      {
+        "text": "客户端 harness：GPT 系列模型用 Codex，其余用 Claude Code；同一模型换 harness 的结果不构成同口径对比。",
+        "cite": ["paper@Table 3"]
+      },
+      {
+        "text": "只用固定测试集这一口径：118 个提交会并列第一，其中包含从未迁移任何东西的提交——这个口径本身不可用。",
+        "cite": ["paper@§3.2"]
+      },
+      {
+        "text": "Stage I 多数表决：三个样本里只要有一个持异议，该判据即不过；不采用多数表决而让任何单个异议计数，通过 Stage I 的运行会从 340 降到 305。",
+        "cite": ["paper@§3.4.1"]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2026-08-24",
+      "label": "arXiv v1（arXiv:2608.23564v1 [cs.CL] 24 Aug 2026，论文脚注日期 2026-08-25）：20 个任务、520 次计分运行、六验证模型面板；配套仓库 README、官网与官方榜单为本档案的另外三个来源",
+      "cite": ["paper", "repo-swe-refactor-bench", "homepage", "leaderboard"]
+    }
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-10-19"
+  "limitations": [
+    {
+      "issue": "Accepted 不等于迁移被证明正确",
+      "impact": "88 个固定检查全过的提交里只有 28 个扛住全部六个验证模型，另外 60 个（68.2%）在一小时内被找到反例；平均只扛住 3.94/6 个。两个 claude-opus-5 验证槽位各自能破 55.7% 和 53.4% 的提交，其余四个在 21.6%–26.1%；撤掉最强的两个，剩下四个会接受 46 个提交而不是 28 个。",
+      "severity": "高",
+      "response": "论文把 accepted 定义为「扛住了我们能派出的最强对抗者」，并明确提示模型变强后同一批 20 个任务会被打得更严。",
+      "reader": "不要把 accepted 读成「正确」；它是「没被这套固定验证面板破掉」。",
+      "cite": ["paper@§3.3.2", "paper@§3.4.3", "leaderboard@What the verifiers caught"]
+    },
+    {
+      "issue": "Stage I 由 LLM 裁判裁决，且裁判与被测模型同族",
+      "impact": "裁判是 gpt-5.6-sol，每条判据取三个独立样本的多数。3,536 条判据裁决中 3,405 条（96.3%）三者一致，但 340 个通过 Stage I 的运行里有 35 个（10.3%）至少有一条判据是 2:1 过的；裁判对自家 GPT 系列 240 个提交的通过率是 57.1%，对另外 280 个提交是 72.5%。",
+      "severity": "中",
+      "response": "论文做了人类对照：两名不相关的软件工程研究者对 156 次运行独立判断，与裁判一致率 89.7%（140/156，κ = 0.795），且 16 处分歧里 14 处是裁判更严。",
+      "reader": "Stage I 通过率带有裁判模型的偏好，跨厂商比较时把这个折扣算进去。",
+      "cite": ["paper@§3.4.1"]
+    },
+    {
+      "issue": "Stage II 固定测试集只覆盖作者预先想到的用例",
+      "impact": "Stage II 问的是任务作者事先能想到的情况；作者当时不知道的实现细节（如 Gin 对 Content-Type 的截断规则）只有 Stage III 才可能被发现。固定检查全对不代表迁移完成。",
+      "severity": "中",
+      "response": "用六个验证模型各一小时主动构造反例补上这一类；论文强调两类检查互相不能替代。",
+      "reader": "看到「固定检查全过」时，默认还有一半以上的提交会在下一阶段被破。",
+      "cite": ["paper@§3.4.2", "paper@§3.3.2"]
+    },
+    {
+      "issue": "题量小且每配置只跑一次",
+      "impact": "20 个任务，每个配置在全部任务上只运行一次，共 520 次计分运行；单个任务的难度波动会直接进入总分，模型间几个百分点的差距不宜过度解读。",
+      "severity": "中",
+      "response": "官方按模型 × 推理档位扫出 26 个配置，并在榜单同时给出单配置与按模型汇总两套分母供交叉核对。",
+      "reader": "看模型排序时优先看按模型汇总的口径；两个模型差 1–2 分基本读不出差别。",
+      "cite": ["paper@§1", "leaderboard@Pooled by model"]
+    },
+    {
+      "issue": "污染与泄漏未做逐题审计",
+      "impact": "论文在相关工作中提到这个现象「很诱人读成 reward hacking」，并指出 SWE-bench 本身是被逐题审过泄漏和污染的，但对本基准没有给出同等级的逐题污染审计。",
+      "severity": "低",
+      "response": "暂未披露，需以官方后续报告为准。",
+      "reader": "引用绝对分数时标注这是 2026-08 首版结果，并说明污染状况未审计。",
+      "cite": ["paper@§4 Related Work"]
+    },
+    {
+      "issue": "无人类基线，跨基准分数不可比",
+      "impact": "论文只报告模型成绩，没有人类专家在同一任务上的基线；20 个任务里有 13 个没有任何模型解出，因此也无法从「人类能否完成」反推难度。",
+      "severity": "低",
+      "response": "暂未披露。",
+      "reader": "不要把这里的分数和 SWE-bench 那类通过率放在同一根轴上比。",
+      "cite": ["paper@§3.2"]
+    }
+  ],
+  "notes": "证据账本中 1 条 benchmark_evidence 边（来自 MiniMax M3.1 Flash 官方页评测总表，数值为位图视觉转写、未经人工确认）；本档案的全部事实与分数以论文、官方仓库、官网、官方榜单四个一手来源为准，未采用该位图转写数值，故 minimax-blog-minimax-m31f 未列入 profile.sources。",
+  "official_sources": [
+    { "kind": "github", "url": "https://github.com/Einsia/SWE-Refactor-Bench" },
+    { "kind": "site", "url": "https://lab.einsia.ai/swe-refactor-bench/" },
+    { "kind": "leaderboard", "url": "https://lab.einsia.ai/swe-refactor-bench/leaderboard/" }
+  ],
+  "related_benchmarks": ["swebench", "nl2repo"],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-15",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-15",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "SWE Refactor Bench: Can Coding Agents Complete a Long-Horizon, Whole-Repository Stack Migration?（arXiv:2608.23564v1，2026-08-24）",
+        "url": "https://arxiv.org/abs/2608.23564",
+        "accessed": "2026-11-15"
+      },
+      {
+        "id": "repo-swe-refactor-bench",
+        "kind": "repo",
+        "title": "SWE Refactor Bench 官方仓库（README：任务定义、三阶段判分、复现方式）",
+        "url": "https://github.com/Einsia/SWE-Refactor-Bench",
+        "accessed": "2026-11-15"
+      },
+      {
+        "id": "homepage",
+        "kind": "site",
+        "title": "SWE Refactor Bench 官网",
+        "url": "https://lab.einsia.ai/swe-refactor-bench/",
+        "accessed": "2026-11-15"
+      },
+      {
+        "id": "leaderboard",
+        "kind": "leaderboard",
+        "title": "SWE Refactor Bench 官方榜单",
+        "url": "https://lab.einsia.ai/swe-refactor-bench/leaderboard/",
+        "accessed": "2026-11-15"
+      }
+    ],
+    "header": {
+      "publisher": { "v": "Navers Lab（Einsia.AI）× 清华大学", "cite": ["paper@作者署名"] },
+      "first_release": { "v": "2026-08-24（arXiv:2608.23564v1）", "cite": ["paper"] }
+    },
+    "cites": {
+      "summary": ["paper@摘要", "paper@§1", "repo-swe-refactor-bench@How it is graded", "paper@Table 1"],
+      "interpretation": ["paper@§3.2", "paper@§3.3.2", "paper@§3.4.3", "homepage@A passing suite cannot see this work"]
+    },
+    "problem": {
+      "text": "修 bug 类基准的判据是「测试由红转绿」；而整库迁移在 agent 动手前测试本来就是全绿的，把原仓库原样交回去就能在任何行为测试集上拿满分——行为测试在这类任务上存在结构性盲区。SWE Refactor Bench 要把「换栈成功」和「行为不变」拆成两个必须同时满足的条件，并用能主动构造反例的验证阶段补上固定测试覆盖不到的部分。",
+      "cite": ["paper@§2.1", "paper@Table 7", "homepage@A passing suite cannot see this work"]
+    },
+    "ladder": [
+      {
+        "label": "纯行为口径的理论上限",
+        "value": "100/100",
+        "note": "只跑固定行为测试、不验证迁移时，把原仓库原样交回去就能满分——行为类基准能给出的最高分落在这里。",
+        "cite": ["paper@§2.1", "homepage@A passing suite cannot see this work"]
+      },
+      {
+        "label": "复合分可达取值",
+        "value": "0 / 40 / 50 / 60 / 70 / 80 / 90 / 100",
+        "note": "Stage I 不过记 0；通过则拿 40 分基础，另外 60 分按扛住验证模型的比例给（每扛住一个 10 分）。",
+        "cite": ["repo-swe-refactor-bench@How it is graded"]
+      },
+      {
+        "label": "人类专家基线",
+        "value": "未披露",
+        "note": "论文只报告模型成绩，没有人类专家在同一任务上的基线，本站也不推算。",
+        "cite": ["paper@§3.2"]
+      },
+      {
+        "label": "进入 Stage III 的 88 次运行均值",
+        "value": "79.43/100",
+        "note": "固定检查全过的运行平均已经很高，说明分数低不是因为行为复现差，而是大量运行根本走不到这一阶段。",
+        "cite": ["paper@§3.2"]
+      },
+      {
+        "label": "全部 520 次运行均值",
+        "value": "13.44/100",
+        "note": "含 Stage I 就被记 0 的运行；官方榜单头部卡同样把这个数作为 Mean composite。",
+        "cite": ["paper@§3.2"]
+      },
+      {
+        "label": "官方榜单：单配置最高",
+        "value": "47.0/100",
+        "note": "claude-opus-5 在 xhigh 档，每任务花 $74.9；官方形容它「离一次完成的迁移比离条形图底部更远」。",
+        "cite": ["leaderboard@The board", "paper@§3.2", "homepage@The leaderboard"]
+      },
+      {
+        "label": "官方榜单：按模型汇总最高",
+        "value": "32.30/100",
+        "note": "claude-opus-5 全部 5 个配置合并（100 次运行）；与上一行分母不同，不可直接比。",
+        "cite": ["leaderboard@Pooled by model"]
+      },
+      {
+        "label": "按技术债类别汇总（最好 → 最差）",
+        "value": "31.4 / 17.2 / 12.0 / 5.6",
+        "note": "依次是构建工具链重写、平台移植、框架重写、语言重写；官网给到两位小数（31.41 / 17.18 / 11.98 / 5.60）。",
+        "cite": ["paper@§3.3.3", "paper@Table 4"]
+      },
+      { "label": "本站账本当前最高", "auto": "ledger-top" }
+    ],
+    "misreadings": [
+      {
+        "text": "把 47.0 读成「差 53 分就满分」：剩下的分数不是「再努力一点」就能补的量变缺口——Stage I 一票否决、Stage II 不容错、Stage III 一小时反例，每一层都是质变。",
+        "cite": ["homepage@The leaderboard", "paper@§3.1"]
+      },
+      {
+        "text": "把榜单的单配置分数和「Pooled by model」的汇总分数排在一起比：两者分母不同，官方明确说不可比。",
+        "cite": ["leaderboard@Pooled by model"]
+      },
+      {
+        "text": "把固定行为测试的通过率当成迁移能力：340 个通过 Migration Audit 的运行里，58% 能跑到固定检查的 99%，但只有 26% 能到 100%——而原仓库原样交回去就是 100%。",
+        "cite": ["paper@摘要"]
+      },
+      {
+        "text": "把类别分读成任务难度排名：论文明确说这些结果不构成对所有迁移项目内在难度的排序；类别之间的差距同时混着任务构成与样本量。",
+        "cite": ["paper@§1", "paper@Table 4"]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方与作者",
+        "v": "Navers Lab（Einsia.AI）与清华大学；论文署名 Navers Lab, Einsia.AI · Tsinghua University，官网标注 Navers lab · Einsia.AI · 2026。",
+        "cite": ["paper@作者署名"]
+      },
+      {
+        "k": "首发时间",
+        "v": "arXiv:2608.23564v1，2026-08-24（论文脚注日期 2026-08-25）。仓库 README、官网与官方榜单的上线日期未单独披露。",
+        "cite": ["paper"]
+      },
+      {
+        "k": "为什么做这个基准",
+        "v": "修 bug 类基准的判据是「由红转绿」，而迁移起始就是全绿；作者要一个能测出「换栈同时行为不变」这一长程能力的基准，并量化行为测试在这类任务上的盲区。",
+        "cite": ["paper@§2.1", "homepage@A passing suite cannot see this work"]
+      },
+      {
+        "k": "任务出处",
+        "v": "20 个真实开源项目的冻结发布，包括 cmark 0.31.1、zlib 1.3.1、SQLite、libsodium 1.0.20、GraphHopper、jsonnet 0.20.0、go-yaml v3.0.1、sqlparse 0.5.3 等；每个任务按 docs/SCHEMA.md 的 schema 定义。",
+        "cite": ["homepage@Four kinds of debt", "repo-swe-refactor-bench@Tasks"]
+      },
+      {
+        "k": "代码量口径的跨源差异",
+        "v": "README 给的是逻辑行数（go-yaml 7,609、jsonnet 14,958），官网给的是约整数（go-yaml 12k、cmark 23k、JSONata 9k），且 JSONata 版本官网记 2.0.6、README 记 2.2.2。本档案的代码量以论文 Table 1 与 README 为准。",
+        "cite": ["repo-swe-refactor-bench@Tasks", "paper@Table 1"]
+      },
+      {
+        "k": "怎么复现",
+        "v": "仓库提供两个适配器复现被测时的固定 harness；agent 阶段用独立的 Apache-2.0 runner Harbor，每个计分阶段也可以手动跑。",
+        "cite": ["repo-swe-refactor-bench@Running it"]
+      },
+      {
+        "k": "发布了什么",
+        "v": "每次计分运行的门禁结论、通过的检查数、扛住的验证模型数、复合分、token 与时长；每次运行的全部工具调用（覆盖两套 harness）；State A、指令、离线镜像、判据和冻结测试集。",
+        "cite": ["homepage@What we release"]
+      },
+      {
+        "k": "任务难度分布",
+        "v": "20 个任务分三段且中间没有过渡：7 个被彻底解出，6 个最好运行到达验证阶段后被破，7 个没有任何运行得分。",
+        "cite": ["leaderboard@Task × model"]
+      },
+      {
+        "k": "各类别的通过结构",
+        "v": "构建工具链最容易过 Stage I（80.8%）却在 Stage III 掉得最狠（存活 17.6%）；框架重写贡献 28 个 accepted 中的 14 个，Stage III 存活率最高（56.0%），但 Stage II 通过率只有 18.9%。",
+        "cite": ["paper@Table 4", "paper@§3.3.3"]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-15",
+        "columns": ["来源", "口径", "模型", "Accepted", "复合分", "每任务成本"],
+        "rows": [
+          ["论文 Table 3 + 榜单 The board", "单配置（26 档扫描中该模型最高分）", "claude-opus-5（xhigh）", "5", "47.0", "$74.9"],
+          ["论文 Table 3 + 榜单 The board", "单配置（26 档扫描中该模型最高分）", "gpt-5.6-sol（max）", "4", "28.5", "$143.5"],
+          ["论文 Table 3 + 榜单 The board", "单配置（26 档扫描中该模型最高分）", "kimi-k3（max）", "2", "19.5", "$28.9"],
+          ["论文 Table 3 + 榜单 The board", "单配置（26 档扫描中该模型最高分）", "claude-sonnet-5（medium）", "1", "15.0", "$11.9"],
+          ["论文 Table 3 + 榜单 The board", "单配置（26 档扫描中该模型最高分）", "qwen3.8-max（max）", "2", "10.0", "$14.5"],
+          ["论文 Table 3 + 榜单 The board", "单配置（26 档扫描中该模型最高分）", "gpt-5.6-luna（max）", "0", "10.5", "$2.8"],
+          ["论文 Table 3 + 榜单 The board", "单配置（26 档扫描中该模型最高分）", "dsv4-flash（max）", "0", "7.0", "$4.3"],
+          ["论文 Table 3 + 榜单 The board", "单配置（26 档扫描中该模型最高分）", "glm-5.2（max）", "0", "6.5", "$17.5"],
+          ["榜单 Pooled by model", "按模型汇总（该模型全部配置合并）", "claude-opus-5", "16", "32.30", "未披露"],
+          ["榜单 Pooled by model", "按模型汇总（该模型全部配置合并）", "gpt-5.6-sol", "5", "12.42", "未披露"],
+          ["榜单 Pooled by model", "按模型汇总（该模型全部配置合并）", "claude-sonnet-5", "3", "8.50", "未披露"],
+          ["榜单 Pooled by model", "按模型汇总（该模型全部配置合并）", "gpt-5.6-luna", "0", "4.67", "未披露"],
+          ["榜单 Pooled by model", "按模型汇总（该模型全部配置合并）", "kimi-k3", "2", "19.50", "未披露"],
+          ["榜单 Pooled by model", "按模型汇总（该模型全部配置合并）", "qwen3.8-max", "2", "10.00", "未披露"],
+          ["榜单 Pooled by model", "按模型汇总（该模型全部配置合并）", "dsv4-flash", "0", "7.00", "未披露"],
+          ["榜单 Pooled by model", "按模型汇总（该模型全部配置合并）", "glm-5.2", "0", "6.50", "未披露"]
+        ]
+      },
+      "cite": ["paper@Table 3", "paper@§3.2", "leaderboard@The board", "leaderboard@Pooled by model"]
+    }
+  }
 }

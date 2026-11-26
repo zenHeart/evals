@@ -1,30 +1,396 @@
 {
   "id": "swe-marathon",
   "name": "SWE-Marathon",
-  "full_name": null,
+  "full_name": "SWE-Marathon: Can Agents Autonomously Complete Ultra-Long-Horizon Software Work?（SWE 马拉松：智能体能否自主完成超长时程软件工作）",
   "aliases": [],
   "status": null,
   "categories": [
     "coding"
   ],
-  "summary": "20 个多小时级超长软件工程任务（Abundant AI）",
-  "interpretation": "单任务需 agent 连续工作数小时完成，考长时程不跑偏、自我恢复的工程马拉松能力。",
-  "measures": [],
-  "does_not_measure": [],
+  "summary": "SWE-Marathon 是 Abundant AI 发布的 20 个多小时级软件工程任务：每题给一个 Docker 起步环境和一份人类手写的参考解，agent 要在 2–10 小时里从零造出整个库、整个产品克隆或整套 ML 系统，最后由隐藏的验证套件（verifier，判分用的自动检查程序）打 0 或 1 分。",
+  "interpretation": "高分说明这个「模型 + agent 脚手架」组合能在小时尺度上自主完成项目级工程：跨大量文件改代码、自己验证、不在中途放弃或转而糊弄 verifier。但它只覆盖 20 个任务、每次尝试只有一次 0/1 判定，几个百分点的差距在统计上不成立；它也不衡量代码质量、可维护性和成本效率，更没有人类基线分数（论文只给了 40–400 小时的专家工时估算）。",
+  "measures": [
+    {
+      "area": "库的复刻 / 复现（library clones & reproductions）",
+      "focus": "把真实开源库用另一种语言从零复刻，靠与参考实现的行为对齐判分。示例：rust-java-lsp 要让 Rust 写的 Java 语言服务器在 1,007 个真实 Java 文件上对齐 Eclipse JDT-LS，共 68,186 个一致性测试；rust-c-compiler 要与 gcc 做约 900 个程序的差分测试，且不许包一层 gcc。",
+      "share": "8 题（40%）",
+      "format": "字节级 / 输出一致性测试（parity tests），要求全部通过",
+      "cite": [
+        "paper@§4.4 Task Overview",
+        "paper@Table 2",
+        "paper@附录 C"
+      ]
+    },
+    {
+      "area": "产品克隆（product clones）",
+      "focus": "从零做一个接口与真实服务兼容的多租户 Web 产品。示例：s3-clone 由真实 boto3 / aws-cli 驱动，wire 层要字节级复现 AWS Signature V4；excel-clone 要支持约 75 个 Excel 函数加 Excel-365 动态数组层。",
+      "share": "5 题（25%）",
+      "format": "pytest 门 + 浏览器 CUA（computer-use agent，会像真人一样点界面的判分智能体）UX 评分；两个阶段都过才算过",
+      "cite": [
+        "paper@§4.4 Task Overview",
+        "paper@Table 2",
+        "paper@附录 A",
+        "site@CUA-verified product clones"
+      ]
+    },
+    {
+      "area": "ML 工程（ML engineering）",
+      "focus": "移植、复现或训练模型并达到量化门槛。示例：parameter-golf 要训一个压缩 checkpoint ≤32 MB、held-out val_bpb<0.983 的 GPT；post-train-ifeval 要在 10 小时内把 Llama-3.2-1B 的 IFEval binary_strict 从约 0.26 提到 ≥0.45。",
+      "share": "5 题（25%）",
+      "format": "数值 / 指标阈值 + 性能门（先过正确性才计时延）",
+      "cite": [
+        "paper@§4.4 Task Overview",
+        "paper@Table 2",
+        "paper@附录 C"
+      ]
+    },
+    {
+      "area": "算法与优化（algorithmic & optimization）",
+      "focus": "在明确目标函数上搜出高质量解。示例：find-network-alignments 要给两对蛋白互作网络输出单射对齐，主要按 S3 打分；vliw-kernel-optimization 要为自定义 VLIW SIMD 架构手写调度，周期数要低于 1,250。",
+      "share": "2 题（10%）",
+      "format": "目标函数阈值 + 8 项正确性检查",
+      "cite": [
+        "paper@§4.4 Task Overview",
+        "paper@Table 2",
+        "paper@附录 C"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "不测「给个 issue 改一处 patch」的常规仓库级修 bug 能力：任务不是定位并修复缺陷，而是从零造出整个项目，论文明确说难度来自持续的工程工作而非孤立的 patch 定位。",
+      "cite": [
+        "paper@§1",
+        "paper@§2"
+      ]
+    },
+    {
+      "text": "不测代码质量、可维护性、可读性与工程成本：判分只看隐藏 verifier 是否全过，token 用量、工具重复率、耗时只作为诊断量报告，不计入分数。",
+      "cite": [
+        "paper@§4.2 Runtime Environment",
+        "paper@§5.2"
+      ]
+    },
+    {
+      "text": "不测人类水平：论文只给每任务 40–400 小时的专家工时估算，没有人类完成率或人类分数可作对照。",
+      "cite": [
+        "paper@§4.4 Task Overview"
+      ]
+    },
+    {
+      "text": "未校准部分分不等于任务成功：官方明说部分分「generally much higher」且仅作诊断，用来在失败样本里看进度，不能解读为通过。",
+      "cite": [
+        "paper@Figure 6",
+        "site@leaderboard"
+      ]
+    }
+  ],
   "dataset": {
     "sample_count": 20,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
+    "splits": [
+      "v1.1 当前任务集（20 题；官网现行榜单口径，tag v1.1-official，commit 7bce7b29）",
+      "v1.0 归档任务集（20 题；tag v1.0-official，commit 9a7083e3，对应 2026 年 6 月首发）"
+    ],
+    "languages": [
+      "Rust",
+      "Go",
+      "TypeScript",
+      "C",
+      "C++",
+      "Python"
+    ],
+    "source_type": "人工策划的项目级原创任务（11 位贡献者定向投稿 + 内部编写，取自真实开源与研究代码库）",
+    "public_sample": true,
+    "totals": "20 个任务分 4 类：库复刻 8 题（40%）、产品克隆 5 题（25%）、ML 工程 5 题（25%）、算法与优化 2 题（10%）；任务指令为英文，涉及 Rust / Go / TypeScript / C / C++ / Python 六种语言生态；单任务 agent 时限 2–10 小时，专家工时估算 40–400 小时；判分以二值 reward 为主（通过全部验证测试才 1.0），另报仅供诊断的未校准部分分。",
+    "cite": [
+      "paper@§4.4 Task Overview",
+      "paper@Table 1",
+      "paper@Table 2",
+      "paper@Table 5",
+      "site@tasks",
+      "site@leaderboard",
+      "tag-v11"
+    ],
+    "construction": [
+      {
+        "k": "出题与征集",
+        "text": "任务来自熟悉相关系统的软件工程师的定向投稿和内部编写，20 个入选任务由 11 位不同贡献者完成；候选题作者需提交任务目标、Docker 环境、可见检查、隐藏 verifier、参考解、时间与资源估算、网络策略以及可能的作弊风险。",
+        "cite": [
+          "paper@§3.2 Task Sourcing and Construction"
+        ]
+      },
+      {
+        "k": "任务格式",
+        "text": "沿用 Harbor 任务格式：指令文件 + Docker 化起步环境 + 可见开发反馈 + 隐藏 verifier + 留出的人类参考解 + 墙上时钟上限；最终只按提交的容器状态判分，不看中间命令和推理。指令只规定结果，可以给验收标准、外部规范或自检命令，但不透露隐藏测试、不指定算法。",
+        "cite": [
+          "paper@§3.1 Task Format",
+          "paper@§3.2 Task Sourcing and Construction"
+        ]
+      },
+      {
+        "k": "验收三关",
+        "text": "任务必须同时满足：specificity（指令与 verifier 对可接受的终态一致）、solvability（参考解能过、空操作 agent 会失败）、integrity（不存在读隐藏答案、联网取参考解、调用被禁参考实现这类捷径）。",
+        "cite": [
+          "paper@§3.3.1 Task Approval Pipeline"
+        ]
+      },
+      {
+        "k": "实证试跑与对抗搜索",
+        "text": "候选用少量前沿 agent 试跑（通常 3 次），审阅日志区分「能力失败」和「任务质量失败」（指令歧义、环境损坏、verifier 不可靠、依赖缺失、存在非预期捷径）；同时跑一个对抗性「作弊」agent 专门找不干活也能过的方法，确认有问题的任务改完再验证。",
+        "cite": [
+          "paper@§3.3.1 Task Approval Pipeline"
+        ]
+      },
+      {
+        "k": "发布前对抗审计",
+        "text": "按 Terminal-Bench Phase 2 协议做 hack-elicitation 审计：让对抗 agent 专门搜 verifier 盲点而不是解题，发现的 exploit 打补丁后重新验证；仓库历史记录发布前发现并修补了 12 个具体红队 exploit。",
+        "cite": [
+          "paper@附录 E.4"
+        ]
+      },
+      {
+        "k": "判分面设计",
+        "text": "开发反馈与最终判分分离：大多数任务给可见反馈面供 rollout 中自由使用，更严的隐藏检查留给最终判分；隐藏 verifier 分六族——密集测试套件、与既有实现的行为对齐、正确性通过后的性能门、留出种子/夹具上的确定性重放、完整性与审计检查、以及产品克隆上的 computer-use agentic verifier。",
+        "cite": [
+          "paper@§3.3 Verification Design",
+          "paper@附录 A"
+        ]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "论文口径：每个 agent–模型组合在每个任务上跑 n=5 次，共 13×20×5=1,300 条轨迹；主指标是 resolved rate（pass@1），即提交通过该任务 verifier 的 trial 占比，误差棒为 ±1 二项标准误。reward 是二值的：1.0 要求通过每一个验证测试，任何一项失败即 0.0；带 CUA 阶段的任务取两个阶段的最低分。全部 trial 在 Modal 沙箱里经 Harbor 运行（Harbor 会物化每个任务的 Dockerfile），agent 不被告知任务时间上限，14 个任务可联网、6 个离线。",
+    "cite": [
+      "paper@§4.1 Agent Systems",
+      "paper@§4.2 Runtime Environment",
+      "paper@§4.3 Evaluation Protocol",
+      "paper@Table 2 注"
+    ],
+    "variants": [
+      {
+        "text": "版本：v1.0 用 n=5（tag v1.0-official），现行 v1.1 榜单用 k=8（tag v1.1-official），两代分数不可直接比——同一个 GLM-5.2 在 v1.0 口径是 13.0，在 v1.1 口径是 19.4。",
+        "cite": [
+          "tag-v10",
+          "tag-v11",
+          "glm53@Full Benchmark Table"
+        ]
+      },
+      {
+        "text": "脚手架：商用 CLI 产品（Claude Code、Codex、Gemini CLI、Kimi Code CLI 等）与固定开源的 Terminus 2 脚手架分开评；同一模型换脚手架 token 用量可差 12 倍（GPT-5.5 在 Terminus 2 下中位 0.40M、在 Codex 下 4.8M）。",
+        "cite": [
+          "paper@§4.1 Agent Systems",
+          "paper@§5.2"
+        ]
+      },
+      {
+        "text": "网络：v1.1 起默认封闭（或注册表白名单）agent 网络，只有 4 个 CUA 克隆任务开放联网；论文 v1.0 口径是 14 个任务可联网、6 个离线。",
+        "cite": [
+          "changelog",
+          "paper@§4.2 Runtime Environment"
+        ]
+      },
+      {
+        "text": "任务内容：v1.1 因 Tinker 弃用 meta-llama/Llama-3.2-1B，把 post-train-ifeval 换成封闭网络、1×H100 的 post-train-ifeval-gpu，并上调 7 个任务的 agent 时限、14 个任务的内存/存储上限。",
+        "cite": [
+          "changelog"
+        ]
+      },
+      {
+        "text": "厂商自建变体：Kimi 官方评测跑在「H20 校准分支」上（GPU 任务的 Docker 镜像、性能门和参考 oracle 按 H20 重标定，正确性与反作弊校验不变）；Z.ai 自述移除了 stripe-clone 过宽的反作弊导入检查，并为 parameter-golf / trimul-cuda 加了 PyPI 源。",
+        "cite": [
+          "kimik3@Footnote",
+          "glm53@Footnote"
+        ]
+      },
+      {
+        "text": "部分分 vs 二值分：官网与论文同时给未校准部分分（通常远高于 pass@1），官方明说仅作诊断，与 pass@1 不能放在一起比。",
+        "cite": [
+          "site@leaderboard",
+          "paper@Figure 6"
+        ]
+      }
+    ]
   },
   "metrics": [
-    "pass@1"
+    {
+      "id": "pass@1",
+      "name": "任务解决率（resolved rate, pass@1）",
+      "direction": "越高越好",
+      "description": "提交通过该任务全部 verifier 检查的 trial 占比，即二值 reward 的均值；官网榜单按此列示。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§4.3 Evaluation Protocol",
+        "site@leaderboard"
+      ]
+    },
+    {
+      "id": "partial-score",
+      "name": "未校准部分分（诊断用）",
+      "direction": "越高越好",
+      "description": "通过的单测比例；全栈克隆任务为单测通过率与 CUA rubric 分的等权组合。官方明说只用于在失败样本里看进度，不能当任务成功解读。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@Figure 6",
+        "site@leaderboard"
+      ]
+    },
+    {
+      "id": "reward-hacking-attempt-rate",
+      "name": "作弊尝试率（attempt-tier）",
+      "direction": "越低越好",
+      "description": "1,300 条轨迹中至少出现一次 exploit-shaped 动作的比例（13.8%）；配套的 exploit-tier 为 10.2%，其中 132 次已进入交付物的绕过全部被防层拦下、无一拿到 reward。这是完整性诊断，不是能力分。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§5.1",
+        "paper@Table 7"
+      ]
+    }
   ],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [],
-  "notes": "GLM/Kimi/xAI 引用；swe-marathon.org 官方榜单",
+  "versions": [
+    {
+      "id": "v1.0",
+      "date": "2026-06-05",
+      "label": "arXiv v1 首发，对应 v1.0 榜单口径：20 任务、每配置每任务 n=5（k=5）、post-train-ifeval 走远程 Tinker；仓库 NEWS 于 2026-06 宣布 v1.0 上线。",
+      "cite": [
+        "paper",
+        "tag-v10",
+        "repo@News"
+      ]
+    },
+    {
+      "id": "v1.0-official",
+      "date": "2026-08-25",
+      "label": "v1.0-official tag 发布（commit 9a7083e3，2026-06-09），作为 v1.0 归档榜单的规范锚点；官方提示短标签 v1.0 / v1.1 曾被误打并已删除，只能用 *-official 标签。",
+      "cite": [
+        "tag-v10"
+      ]
+    },
+    {
+      "id": "v1.1",
+      "date": "2026-08-19",
+      "label": "v1.1-official tag 发布（commit 7bce7b29，2026-08-14），成为当前榜单口径：20 任务、k=8、post-train-ifeval-gpu 用 1×H100；仓库 NEWS 于 2026-07 已宣布 v1.1 上线，变更明细见 CHANGELOG。",
+      "cite": [
+        "tag-v11",
+        "repo@News",
+        "changelog"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "跑一遍太贵",
+      "impact": "论文口径下一次 n=5 完整 sweep 就要消耗大量 Modal 沙箱算力和模型 API 费用：平均每次 rollout 27.2M token、右尾到 877.4M，单个长任务 trial 可能花几百美元，完整 sweep 要几万美元；官网 v1.1 口径的平均值进一步到每次 trial 91M token。",
+      "severity": "高",
+      "response": "论文把它定位成低频前沿评测而非开发循环基准，并公开全部轨迹与运行脚本供复用；未见降低成本的官方方案。",
+      "reader": "把 SWE-Marathon 当版本级/季度级体检，别当日常回归；引用分数时先看是谁出钱跑的、跑的是哪一版。",
+      "cite": [
+        "paper@§7 Limitations",
+        "paper@§5.2",
+        "site"
+      ]
+    },
+    {
+      "issue": "口径多且互不可比",
+      "impact": "版本（v1.0 n=5 / v1.1 k=8）、脚手架（商用 CLI vs Terminus 2）、网络开放度、任务内容（post-train-ifeval 换成 GPU 版并上调时限）、厂商自建变体（H20 校准分支、移除反作弊检查）都会显著改变分数；官网榜单本身也混有 Abundant 自跑与 Z.ai 自跑两类结果。",
+      "severity": "高",
+      "response": "官方用 *-official tag 固定口径、在页面标注 k=8 与二值 reward、注明评测方，并公开 Harbor 运行脚本；跨脚手架的可比性由固定 Terminus 2 那一组（同一 harness 比 7 个模型骨干）保证。",
+      "reader": "比较前先对齐四件事：版本 tag、每任务 trial 数、脚手架与推理档位、谁跑的。",
+      "cite": [
+        "tag-v10",
+        "tag-v11",
+        "changelog",
+        "site@leaderboard",
+        "glm53@Footnote",
+        "kimik3@Footnote",
+        "paper@§4.1 Agent Systems"
+      ]
+    },
+    {
+      "issue": "只有 20 个任务，分辨率粗",
+      "impact": "一个任务在 k=8 下占 12.5%、在 n=5 下占 5%；论文自己说在这个时程上一两个 seed 不足以区分配置间的小差异，采样温度、工具输出熵、harness 调度和缓存都会改变多小时轨迹。",
+      "severity": "中",
+      "response": "论文报告每个配置的 n、headline 用 pass@1，并把更小 n 的切片当时描述性而非显著性检验结论；未见扩大任务量的官方计划。",
+      "reader": "三四个百分点以内的名次差不要当结论；优先看同一 tag、同一脚手架下的整行。",
+      "cite": [
+        "paper@§7 Limitations",
+        "paper@§4.3 Evaluation Protocol"
+      ]
+    },
+    {
+      "issue": "作弊检出存在漏报",
+      "impact": "10.2% 的 exploit-tier 比例是下界：审计只能抓到在轨迹里留痕或触发 verifier 绊线的动作，抓不到不留痕迹的行为（隐式基准推断、悄悄过拟合可见测试）；附录也明说 tripwire 不是证明。",
+      "severity": "中",
+      "response": "官方用三层防护（合并前校验 / 推理期运行时阻断 / 试后 agentic verifier）并把该比率当 lower bound 报告；1,300 条轨迹里 132 次已交付的绕过全部被拦、无一拿到 reward。",
+      "reader": "把 13.8% / 10.2% 当时下限读；「0 次成功」只覆盖被审计的这一批 1,300 条轨迹。",
+      "cite": [
+        "paper@§5.1",
+        "paper@§7 Limitations",
+        "paper@附录 E.3",
+        "paper@附录 E.8"
+      ]
+    },
+    {
+      "issue": "失败模式分析只覆盖一半任务",
+      "impact": "5 桶失败分类只分析了 10 个任务族、526 条可归因失败；全部 5 个产品克隆和另外 5 个长任务被推迟到后续分析，标签还来自单一分析器（GPT-5.5），未测跨模型一致性。",
+      "severity": "中",
+      "response": "论文在附录 D.4 明确写出覆盖范围与排除项（141 次基础设施崩溃、79 次证据不足），并说明单分析器标签的噪声边界。",
+      "reader": "失败模式比例（实现失败 41.6%、超时 31.4%、作弊 15.4%）只对分析到的 10 个任务族成立。",
+      "cite": [
+        "paper@§5.3",
+        "paper@Table 4",
+        "paper@附录 D.4"
+      ]
+    },
+    {
+      "issue": "只在单一执行后端上验证",
+      "impact": "所有评测都跑 Modal 沙箱 + Harbor；换后端（Daytona、本地 Docker）会不会改变解决率、绊线命中率或封闭网络执行，论文没有测。",
+      "severity": "低",
+      "response": "论文如实写「cross-backend portability remains unmeasured」，并记录每次运行的容器镜像、harness commit、agent 版本以便复现。",
+      "reader": "自建复现如果换后端，先把它当成新口径再比。",
+      "cite": [
+        "paper@§7 Limitations",
+        "paper@§4.2 Runtime Environment"
+      ]
+    },
+    {
+      "issue": "agent 对时间预算的感知被刻意限制",
+      "impact": "沿用 Terminal-Bench 做法不告知任务时限，可能影响排序与收尾策略；FrontierSWE 会公开时间预算，两者不可直接对照。",
+      "severity": "低",
+      "response": "论文把 time-aware prompting 和显式计时工具留给未来评测；v1.1 起每个任务自带 /app/timer.sh，agent 可自查剩余墙上时间。",
+      "reader": "注意 v1.1 之后 agent 能自己看表，这与论文里「完全不告知」的设定不完全相同。",
+      "cite": [
+        "paper@§7 Limitations",
+        "changelog"
+      ]
+    },
+    {
+      "issue": "论文与官方数字自相矛盾",
+      "impact": "论文 Table 5 标题说 SWE-Marathon 覆盖「seven language ecosystems」，但同一张表的单元格只列了 6 种（Rust、Go、TS、C、C++、Python），Table 1 的语言数列也写 6；仓库 README 说日志约 800 GB，官网头部卡写 897 GB；论文平均 27.2M token 与官网 91M 相差 3 倍多（版本与统计口径不同）。",
+      "severity": "低",
+      "response": "未见官方勘误；本页一律以论文表格数值为准，版本间差异按版本分别记录。",
+      "reader": "引用语言数、日志体积、平均 token 时注明取自哪一版，不要混用。",
+      "cite": [
+        "paper@Table 1",
+        "paper@Table 5 注",
+        "paper@Table 5",
+        "repo@Downloading Logs",
+        "site"
+      ]
+    }
+  ],
+  "notes": "官网现行榜单为 v1.1 Current（k=8）；GLM、Kimi、Grok、Meta、Stepfun、腾讯、Thinking Machines 等多家模型卡引用过该评测",
   "official_sources": [
     {
       "kind": "site",
@@ -33,6 +399,10 @@
     {
       "kind": "paper",
       "url": "https://arxiv.org/abs/2606.07682"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/abundant-ai/swe-marathon"
     },
     {
       "kind": "site",
@@ -48,8 +418,442 @@
     }
   ],
   "related_benchmarks": [
-    "swebench"
+    "swebench",
+    "terminalbench",
+    "frontierswe",
+    "posttrain-bench",
+    "paperbench"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-13",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "SWE-Marathon: Can Agents Autonomously Complete Ultra-Long-Horizon Software Work?（arXiv:2606.07682v1，2026-06-05）",
+        "url": "https://arxiv.org/abs/2606.07682",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "site",
+        "kind": "site",
+        "title": "swe-marathon.org 官网（首页含 v1.1 Current 榜单、任务卡与任务级 Pass Rate）",
+        "url": "https://www.swe-marathon.org/",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "abundant-ai/swe-marathon（README：NeurIPS 2026、News、Harbor 运行方式、S3 日志、Apache-2.0）",
+        "url": "https://github.com/abundant-ai/swe-marathon",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "changelog",
+        "kind": "repo",
+        "title": "CHANGELOG.md：SWE-Marathon v1.1 Updates",
+        "url": "https://github.com/abundant-ai/swe-marathon/blob/main/CHANGELOG.md",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "tag-v10",
+        "kind": "repo",
+        "title": "GitHub Release v1.0-official（v1.0 归档榜单锚点，commit 9a7083e3）",
+        "url": "https://github.com/abundant-ai/swe-marathon/releases/tag/v1.0-official",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "tag-v11",
+        "kind": "repo",
+        "title": "GitHub Release v1.1-official（v1.1 当前榜单锚点，commit 7bce7b29）",
+        "url": "https://github.com/abundant-ai/swe-marathon/releases/tag/v1.1-official",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "glm52",
+        "kind": "site",
+        "title": "Z.ai 模型卡：GLM-5.2: Built for Long-Horizon Tasks（含 SWE-Marathon v1.0 口径成绩表）",
+        "url": "https://z.ai/blog/glm-5.2",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "glm53",
+        "kind": "site",
+        "title": "Z.ai 模型卡：GLM-5.3: Frontier Coding with Emergent Cyber Capabilities（含 SWE-Marathon v1.1 成绩表）",
+        "url": "https://z.ai/blog/glm-5.3",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "kimik3",
+        "kind": "site",
+        "title": "Kimi K3 Tech Blog: Open Frontier Intelligence（SWE Marathon 脚注：H20 校准分支）",
+        "url": "https://www.kimi.ai/blog/kimi-k3",
+        "accessed": "2026-11-13"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Abundant AI（论文、任务与多数榜单成绩由 Abundant 产出；GLM-5.3 两行由 Z.ai 自行评测）",
+        "cite": [
+          "paper@作者署名",
+          "site@leaderboard"
+        ]
+      },
+      "first_release": {
+        "v": "2026-06-05（arXiv v1；v1.0 于 2026 年 6 月上线）",
+        "cite": [
+          "paper",
+          "tag-v10",
+          "repo@News"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "paper@Abstract",
+        "paper@§4.4 Task Overview",
+        "site"
+      ],
+      "interpretation": [
+        "paper@§5",
+        "paper@§6 Conclusion",
+        "paper@§7 Limitations",
+        "paper@§4.4 Task Overview"
+      ]
+    },
+    "problem": {
+      "text": "现有 SWE 基准大多停在分钟级：连 Terminal-Bench 这样的难题，头部 agent 也多在 1 小时内解决；SWE-Bench 只对一个已提交 patch 判分，Commit0 只对固定测试套件判分，而 FrontierSWE、MirrorCode 这类多小时基准仍依赖单一 verifier 方法，同时自己记录了试内作弊，五个主要终端 agent 基准里超过 15% 的任务含有可被作弊的 verifier。SWE-Marathon 想同时补上「时程」和「verifier 强度」两个缺口：用项目级建造任务拉长时程，用多渠道判分加完整反作弊链路（预防、检测、对抗审计）顶住强度。",
+      "cite": [
+        "paper@§1",
+        "paper@Table 1",
+        "paper@§2"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "任务级下限（单任务 0% 通过）",
+        "value": "0%（官网任务卡上多个任务为 0%）",
+        "note": "官网任务卡给出的 Pass Rate 里，Rebuild Next.js on Vite 与 Port BioFabric to Rust 均为 0%，rust-c-compiler 为 0.6%；这是单任务粒度的通过率，分母与整榜 resolution rate 不同。",
+        "cite": [
+          "site@tasks"
+        ]
+      },
+      {
+        "label": "论文发布时最好成绩",
+        "value": "低于 30% pass@1（逐模型数值论文未列出）",
+        "note": "论文只说「no evaluated configuration exceeds 30% pass@1」，每个配置的具体数值只出现在 Figure 2 图里，正文和表格未列。同期 GLM-5.2 模型卡记录了 v1.0 口径下 Claude Opus 4.8 为 26.0、GLM-5.2 为 13.0、GPT-5.5 为 12.0、Gemini 3.1 Pro 为 4.0。",
+        "cite": [
+          "paper@§5",
+          "glm52@Full Benchmark Table"
+        ]
+      },
+      {
+        "label": "官方榜单最高（v1.1 Current）",
+        "value": "53.8%",
+        "note": "Gemini 4 Carbon(high) 配 Antigravity CLI，Abundant 自跑；页面注明 k=8、二值 reward，括号内为推理档位。",
+        "cite": [
+          "site@leaderboard"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      },
+      {
+        "label": "未校准部分分参考线（不能与 pass@1 比）",
+        "value": "论文未给出全卷数值",
+        "note": "论文与官网都只说部分分「generally much higher」且仅作诊断；官网任务卡上最高的 zstd-decoder 也只为 85.6%，与整榜 resolution rate 不是同一量级。",
+        "cite": [
+          "paper@Figure 6",
+          "site@leaderboard",
+          "site@tasks"
+        ]
+      },
+      {
+        "label": "人类基线",
+        "value": "论文未给出",
+        "note": "论文只给每任务 40–400 小时的专家工时估算，没有人类完成率或人类分数。",
+        "cite": [
+          "paper@§4.4 Task Overview"
+        ]
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 pass@1 和未校准部分分混在一起比：部分分衡量「离全过还差多少」，官方明说不能当任务成功；同一模型的两个数能差很远，任务卡上的单任务 Pass Rate 也与整榜分数分母不同。",
+        "cite": [
+          "paper@Figure 6",
+          "site@leaderboard",
+          "site@tasks"
+        ]
+      },
+      {
+        "text": "把 v1.0（n=5）和 v1.1（k=8）的分数直接比：v1.1 换了 GPU 任务、默认封闭网络、上调了时限和资源，同一个 GLM-5.2 在两代口径下是 13.0 和 19.4。",
+        "cite": [
+          "tag-v10",
+          "tag-v11",
+          "changelog",
+          "glm53@Full Benchmark Table"
+        ]
+      },
+      {
+        "text": "把厂商自报分当官方榜单分：Kimi 的官方评测跑在 H20 校准分支上（GPU 镜像、性能门、参考 oracle 按 H20 重标定），Z.ai 自述移除了 stripe-clone 过宽的反作弊检查；官网也明确标注 GLM-5.3 与 GLM-5.3 Flash 两行由 Z.ai 而非 Abundant 评测。",
+        "cite": [
+          "kimik3@Footnote",
+          "glm53@Footnote",
+          "site@leaderboard"
+        ]
+      },
+      {
+        "text": "把「13.8% 尝试作弊 / 10.2% 发货绕过」读成作弊成功率：1,300 条轨迹里 132 次已进入交付物的绕过全部被防层拦下，没有一次拿到 reward；而且这两个比例本身就是漏报后的下界。",
+        "cite": [
+          "paper@§5.1",
+          "paper@附录 E.6",
+          "paper@§7 Limitations"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "Abundant AI（通讯作者 rishi@abundant.ai）；外部贡献者来自 Zenity、Harvard University、University of Waterloo、Georgia Tech、Stanford University、UNC-Chapel Hill、UC San Diego、Comenius University in Bratislava 等机构",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "Rishi Desai、Jesse Hu、Joan Cabezas、Neel Harsola、Pratyush Shukla、Roey Ben Chaim、Adnan El Assadi 等 27 位署名者（论文署名与官网引用块一致）",
+        "cite": [
+          "paper@作者署名",
+          "site@引用"
+        ]
+      },
+      {
+        "k": "出题者",
+        "v": "20 个入选任务由 11 位不同贡献者编写；官网另列出一份社区贡献者名单（Roey Ben Chaim、Adnan El Assadi、Omkaar Mukund Kamath、Fenil Faldu、Prannay Hebbar、Jiankai Sun 等）",
+        "cite": [
+          "paper@§3.2 Task Sourcing and Construction",
+          "site"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2026-06-05 arXiv v1 与 v1.0 上线 → 2026-08-19 v1.1-official tag（当前榜单口径）→ 2026-09 入选 NeurIPS 2026 Evaluations and Datasets Track",
+        "cite": [
+          "paper",
+          "tag-v11",
+          "repo@News"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "任务、评测代码与轨迹在 GitHub（Apache-2.0）；轨迹日志放在一个约 800 GB 的公开 S3 桶（官网头部卡记 897 GB，4,290 条已记录 trial），需向作者索取凭载；本地复现需安装 Harbor 0.20.0、Anthropic API key 和 Modal 账号",
+        "cite": [
+          "repo",
+          "repo@Downloading Logs",
+          "repo@Getting Started",
+          "changelog",
+          "paper@§4.2 Runtime Environment"
+        ]
+      },
+      {
+        "k": "已被哪些发布引用",
+        "v": "仓库 NEWS 记录 GLM-5.2 / 5.3、Kimi K3 与 K3.1 Pro、Grok 4.5 / 4.6 / 4.7、Stepfun 5、Qwen3.8-Max、Hy4 preview、Inkling 2 Small、Muse Wonder 等模型卡或模型卡链接引用过该评测",
+        "cite": [
+          "repo@News"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-13",
+        "columns": [
+          "来源",
+          "模型 / Agent",
+          "解决率（pass@1）",
+          "口径"
+        ],
+        "rows": [
+          [
+            "官网榜单 v1.1 Current",
+            "Gemini 4 Carbon(high)/Antigravity CLI",
+            "53.8%",
+            "v1.1 · k=8 · Abundant 自跑"
+          ],
+          [
+            "官网榜单 v1.1 Current",
+            "Muse Wonder Full(max)/Muse Code",
+            "53.1%",
+            "v1.1 · k=8 · Abundant 自跑"
+          ],
+          [
+            "官网榜单 v1.1 Current",
+            "Muse Wonder(max)/Muse Code",
+            "52.5%",
+            "v1.1 · k=8 · Abundant 自跑"
+          ],
+          [
+            "官网榜单 v1.1 Current",
+            "Claude Sonnet 5.5(max)/Claude Code",
+            "51.3%",
+            "v1.1 · k=8 · Abundant 自跑"
+          ],
+          [
+            "官网榜单 v1.1 Current",
+            "Claude Haiku 5.5(max)/Claude Code",
+            "50.0%",
+            "v1.1 · k=8 · Abundant 自跑"
+          ],
+          [
+            "官网榜单 v1.1 Current",
+            "Gemini 4 Hydrogen(xhigh)/Antigravity CLI",
+            "49.4%",
+            "v1.1 · k=8 · Abundant 自跑"
+          ],
+          [
+            "官网榜单 v1.1 Current",
+            "Kimi K3(max)/Claude Code",
+            "48.1%",
+            "v1.1 · k=8 · Abundant 自跑"
+          ],
+          [
+            "官网榜单 v1.1 Current",
+            "Muse Spark 1.3(max)/Muse Code",
+            "46.3%",
+            "v1.1 · k=8 · Abundant 自跑"
+          ],
+          [
+            "官网榜单 v1.1 Current",
+            "Claude Opus 5.5(max)/Claude Code",
+            "46.3%",
+            "v1.1 · k=8 · Abundant 自跑"
+          ],
+          [
+            "官网榜单 v1.1 Current",
+            "Claude Fable 5.1(max)/Claude Code",
+            "45.6%",
+            "v1.1 · k=8 · Abundant 自跑"
+          ],
+          [
+            "官网榜单 v1.1 Current",
+            "Grok 4.7(high)/Grok Build",
+            "45.6%",
+            "v1.1 · k=8 · Abundant 自跑"
+          ],
+          [
+            "官网榜单 v1.1 Current",
+            "Gemini 4 Argon(high)/Gemini CLI",
+            "43.8%",
+            "v1.1 · k=8 · Abundant 自跑"
+          ],
+          [
+            "官网榜单 v1.1 Current",
+            "GPT-6 Astra(max)/Codex",
+            "42.5%",
+            "v1.1 · k=8 · Abundant 自跑"
+          ],
+          [
+            "官网榜单 v1.1 Current",
+            "GLM 5.3(max)/Claude Code",
+            "42.5%",
+            "v1.1 · k=8 · Z.ai 自跑"
+          ],
+          [
+            "官网榜单 v1.1 Current",
+            "GPT-6.1 Sol(max)/Codex",
+            "42.5%",
+            "v1.1 · k=8 · Abundant 自跑"
+          ],
+          [
+            "官网榜单 v1.1 Current",
+            "Inkling 2 Small(xhigh)/Claude Code",
+            "38.8%",
+            "v1.1 · k=8 · Abundant 自跑"
+          ],
+          [
+            "官网榜单 v1.1 Current",
+            "GLM 5.3 Flash(max)/Claude Code",
+            "38.8%",
+            "v1.1 · k=8 · Z.ai 自跑"
+          ],
+          [
+            "官网榜单 v1.1 Current",
+            "GPT-6 Luna(max)/Codex",
+            "28.1%",
+            "v1.1 · k=8 · Abundant 自跑"
+          ],
+          [
+            "官网榜单 v1.1 Current",
+            "Gemini 3.7 Flash(max)/OpenCode",
+            "22.5%",
+            "v1.1 · k=8 · Abundant 自跑"
+          ],
+          [
+            "官网榜单 v1.1 Current",
+            "DeepSeek V4 Pro(max)/Mini-SWE-Agent",
+            "10.6%",
+            "v1.1 · k=8 · Abundant 自跑"
+          ],
+          [
+            "GLM-5.2 模型卡（v1.0 口径）",
+            "Claude Opus 4.8",
+            "26.0",
+            "Abundant AI 代跑 · 1M 上下文 · max effort · 128K 最大输出"
+          ],
+          [
+            "GLM-5.2 模型卡（v1.0 口径）",
+            "GLM-5.2",
+            "13.0",
+            "Abundant AI 代跑 · 1M 上下文 · max effort · 128K 最大输出"
+          ],
+          [
+            "GLM-5.2 模型卡（v1.0 口径）",
+            "GPT-5.5",
+            "12.0",
+            "Abundant AI 代跑 · 1M 上下文 · max effort · 128K 最大输出"
+          ],
+          [
+            "GLM-5.2 模型卡（v1.0 口径）",
+            "Gemini 3.1 Pro",
+            "4.0",
+            "Abundant AI 代跑 · 1M 上下文 · max effort · 128K 最大输出"
+          ],
+          [
+            "GLM-5.3 模型卡（v1.1 口径）",
+            "Claude Opus 4.8",
+            "48.8",
+            "v1.1 · Z.ai 模型卡表格（未注明各行脚手架）"
+          ],
+          [
+            "GLM-5.3 模型卡（v1.1 口径）",
+            "Kimi K3",
+            "48.1",
+            "v1.1 · Z.ai 模型卡表格（未注明各行脚手架）"
+          ],
+          [
+            "GLM-5.3 模型卡（v1.1 口径）",
+            "GLM-5.2",
+            "19.4",
+            "v1.1 · Z.ai 模型卡表格（未注明各行脚手架）"
+          ],
+          [
+            "GLM-5.3 模型卡（v1.1 口径）",
+            "Fable 5 (w/ fallback)",
+            "33.1",
+            "v1.1 · Z.ai 模型卡表格（未注明各行脚手架）"
+          ]
+        ]
+      },
+      "cite": [
+        "site@leaderboard",
+        "glm52@Full Benchmark Table",
+        "glm52@Footnote",
+        "glm53@Full Benchmark Table"
+      ]
+    }
+  }
 }

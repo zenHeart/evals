@@ -1,7 +1,7 @@
 {
   "id": "medxpertqa-mm",
   "name": "MedXpertQA",
-  "full_name": "MedXpertQA: Benchmarking Expert-Level Medical Reasoning and Understanding",
+  "full_name": "MedXpertQA: Benchmarking Expert-Level Medical Reasoning and Understanding（专家级医学推理与理解基准）· MM 多模态子集",
   "aliases": [
     "MedXpertQA-MM",
     "MedXpertQA MM"
@@ -11,48 +11,366 @@
     "multimodal",
     "knowledge"
   ],
-  "summary": "专家级医学推理与理解基准（ICML 2025）：4,460 题、17 专科、11 系统部位；本条目对应 MM 多模态子集（图像 + 真实临床场景）",
-  "interpretation": "MM 子集准确率口径，难度显著高于既有医学多选基准；字节 Seed2.0 引用 79.6、Qwen3.8 引用 80.4（其对照列 GPT5.6-Sol 81.5 / Gemini3.1-Pro 80.7 / Opus4.8 71.7），均为厂商自报。",
+  "summary": "MedXpertQA MM 是 2,000 道英文医学多选题（另加 5 道示例题）的多模态子集：题干由专家级医学考试题改写而来，带着完整的临床资料（病史、检验结果、表格），还要同时看懂病理切片、X 光/CT/MRI 等 10 类图像，每题平均 1.43 张图、5 个选项。论文用它测了 18 个前沿模型，回答「模型离专家级看病还有多远」。",
+  "interpretation": "高分说明模型在「读临床资料 + 看医学图像 + 做鉴别诊断」这条链上接近或超过论文给出的人类基线——但那个基线叫 Expert (Pre-Licensed)，是备考美国执业考试的高年级医学生/实习生的作答分布，不是执业医生。高分也不等于能看病：论文在伦理声明里明确写下基准成绩不代表临床可用性。再看分数前先认清口径：官方榜单自 2025-02 收录的 9 个模型最高 56.28，而字节 Seed2.0 发布页自报 Seed2.0 Lite（0428）在 MedXpertQA-MM 上 79.6（同表还列出 Gemini 3.1 Pro high 80.2、GPT-5.4 high 76.9 等），两边评测设置都没对齐，不能排在一张表里比。",
   "measures": [
-    "专家级临床推理",
-    "医学影像与临床资料的多模态理解"
+    {
+      "area": "多模态医学推理（Reasoning）",
+      "focus": "示例：30 岁男性数月乏力气短、一年前去过南美，依据心脏活检图像判断最可能的病因（论文附录 G.1.2 原题）",
+      "share": "未披露（论文只说 Text 与 MM 中多数题属于 Reasoning，未给比例）",
+      "format": "5 选 1 单选题（A–E）+ 需解读题目图像",
+      "cite": [
+        "paper@§3.3",
+        "paper@附录 G.1.2"
+      ]
+    },
+    {
+      "area": "多模态医学理解（Understanding）",
+      "focus": "示例：病理科医生在脑干横切片上定位星号标注的结构，判断穿过该结构的纤维功能（官网示例题）",
+      "share": "未披露",
+      "format": "5 选 1 单选题 + 图像结构识别",
+      "cite": [
+        "paper@§3.3",
+        "site"
+      ]
+    },
+    {
+      "area": "图像类型覆盖",
+      "focus": "Radiology（X 光/CT/MRI/PET/超声等）、Pathology、Medical Optical Imaging、Photos、Vital Signs（心电图、血压）、Diagrams、Documents、Charts、Tables、Others",
+      "share": "10 类图像（论文 Table 2 # Image Types）",
+      "format": "每题平均 1.43 张图（论文 Table 2 # Rate）",
+      "cite": [
+        "paper@§3.1",
+        "paper@Table 2"
+      ]
+    },
+    {
+      "area": "临床信息密度",
+      "focus": "题干带患者记录与检验结果，以表格形式结构化给出（数据集卡字段与示例 MM-26）",
+      "share": "题干平均 149.35 字符（论文 Table 2 # Avg Lens）",
+      "format": "文本 + 图像 + 表格化临床资料的混合输入",
+      "cite": [
+        "paper@Table 2",
+        "dataset"
+      ]
+    },
+    {
+      "area": "专科与人体系统覆盖",
+      "focus": "题目来自 17 个美国专科委员会考试，覆盖全部 11 个人体系统；示例题 MM-26 标注为 Lymphatic 系统的 Diagnosis 题",
+      "share": "17 专科 / 11 人体系统（论文 §3.1）",
+      "format": "按 body_system 字段标注，论文未按子集给出各系统题量",
+      "cite": [
+        "paper@§3.1",
+        "repo",
+        "dataset"
+      ]
+    },
+    {
+      "area": "医学任务类别",
+      "focus": "诊断、治疗、基础医学三大类，由 gpt-4o-2024-11-20 标注 medical_task 字段",
+      "share": "Diagnosis 50.54% / Treatment 26.83% / Basic Medicine 22.63%（论文 Figure 3，全集口径，未按 Text/MM 拆分）",
+      "format": "medical_task 三分类（数据集卡）",
+      "cite": [
+        "paper@Figure 3",
+        "dataset"
+      ]
+    }
   ],
   "does_not_measure": [
-    "真实诊疗决策安全性",
-    "医患沟通能力"
+    {
+      "text": "开放式问诊、长文本生成与医患沟通：MM 全部题目是 5 选 1 单选题，没有自由作答环节",
+      "cite": [
+        "dataset"
+      ]
+    },
+    {
+      "text": "真实临床决策安全性：论文在伦理声明里写明基准成绩不代表临床可用性，MedXpertQA 仍是合成评测框架",
+      "cite": [
+        "paper@附录 B.1"
+      ]
+    },
+    {
+      "text": "模型是否在训练数据里见过原题：论文只量化了数据合成前后的泄漏风险（困惑度、ROUGE-L、编辑距离），不是污染免疫证明",
+      "cite": [
+        "paper@§5.1"
+      ]
+    },
+    {
+      "text": "纯文本医学能力：本条目只覆盖 MM 多模态子集，MedXpertQA Text 是另一个子集（2,450 题测试集）",
+      "cite": [
+        "paper@§3.1",
+        "hf-size"
+      ]
+    }
   ],
   "dataset": {
-    "sample_count": 4460,
+    "sample_count": 2000,
     "splits": [
-      "Text",
-      "MM"
+      "MM test：2,000 题（正式评测集）",
+      "MM dev：5 题（few-shot 示例集）"
     ],
     "languages": [
       "en"
     ],
-    "source_type": "exam（医学考试题 + 真实临床场景重构）",
-    "public_sample": true
+    "source_type": "exam（美国执业/专科委员会考试与 NEJM Image Challenge 等来源，经题干改写与选项增强）",
+    "public_sample": true,
+    "totals": "MM 子集测试集 2,000 题（含 5 题 few-shot 开发集共 2,005 题）、2,852 张图，平均每题 1.43 张图、题干平均 149.35 字符，全部为英文 5 选 1 单选题；全集 MedXpertQA 共 4,460 题（Text 2,455 + MM 2,005）。",
+    "cite": [
+      "paper@Table 2",
+      "paper@§3.1",
+      "paper@Table 1",
+      "hf-size",
+      "dataset"
+    ],
+    "construction": [
+      {
+        "k": "题库来源",
+        "text": "从 USMLE、COMLEX-USA 两个美国执业考试、17 个美国专科委员会考试，以及 ACR DXIT/TXIT、EDiR、NEJM Image Challenge 等图像丰富来源收集，最初共 37,543 题，同时收集人类作答分布、解释与难度标注。",
+        "cite": [
+          "paper@§3.2"
+        ]
+      },
+      {
+        "k": "AI 专家过滤",
+        "text": "8 个模型分基础/高级两档当「AI 专家」投票：每题采样 4 次，任何专家全部答对即判为过易剔除，全部答错的题保留。",
+        "cite": [
+          "paper@§3.2"
+        ]
+      },
+      {
+        "k": "人类专家过滤",
+        "text": "用人类作答分布算 Brier 分数，结合专家难度标注分 3 层设自适应阈值抽样；约 16.78% 的题缺少人类标注，不进入这一步。",
+        "cite": [
+          "paper@§3.2"
+        ]
+      },
+      {
+        "k": "相似度过滤",
+        "text": "用 MedCPT-Query-Encoder 计算题目两两余弦相似度，按 IQR 找离群对，删掉难度较低的那一题，避免近重复题让模型钻模板空子。",
+        "cite": [
+          "paper@§3.2"
+        ]
+      },
+      {
+        "k": "改写与选项增强",
+        "text": "用 gpt-4o-2024-11-20 与 claude-3-5-sonnet-20241022 改写题干、剔除低人类选择率的干扰项并生成新干扰项；多模态题的选项常依赖图像、无法扩充，因此 MM 固定为 5 个选项（Text 为 10 个）。",
+        "cite": [
+          "paper@§3.2"
+        ]
+      },
+      {
+        "k": "多轮专家评审",
+        "text": "持执业医师资格的专家按统一指南逐题审阅，多数问题直接修正而非删除；MM 子集在评审中识别并修正 100 道题干格式错误、53 道泄漏题目来源信息、70 道叙述不一致、217 道信息不一致。",
+        "cite": [
+          "paper@§3.2",
+          "paper@附录 E"
+        ]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "零样本思维链（zero-shot CoT）提示：系统提示为「You are a helpful medical assistant.」，用户消息给出题目与选项后接「A: Let's think step by step.」，第二轮再问「Therefore, among A through J, the answer is」（MM 为 A–E）。答案清洗沿用 Kojima et al. (2022) 的脚本，可用时采用贪心解码；官方用 eval.ipynb 分别计算 Text 与 MM 两个子集的准确率。",
+    "cite": [
+      "paper@§4.1",
+      "paper@附录 G.3",
+      "repo"
+    ],
+    "variants": [
+      {
+        "text": "抽样 vs 全量：论文因成本未能评测 o1 与 o3-mini 的全量数据，改为从 Reasoning 与 Understanding 子集各抽 10%（seed 42），论文表格中用 ‡ 标注；抽样结果与全量结果不能直接比。",
+        "cite": [
+          "paper@§4.1",
+          "paper@Table 4"
+        ]
+      },
+      {
+        "text": "模型各自的提示差异：o1 与 DeepSeek-R1 按推荐指南去掉系统提示，DeepSeek-R1 额外要求把最终答案放进 \\boxed{}，QVQ-72B-Preview 只支持单轮对话因而去掉第二轮 CoT 并改答案抽取脚本。",
+        "cite": [
+          "paper@附录 C.2"
+        ]
+      },
+      {
+        "text": "Text 与 MM 之间不可比：两者选项数（10 vs 5）与过滤强度不同，论文明确说直接比较两个子集的成绩不提供信息。",
+        "cite": [
+          "paper@§4.3"
+        ]
+      },
+      {
+        "text": "厂商自报口径缺失：字节 Seed2.0 的发布页只给 MedXpertQA-MM 一列分数，未说明评测子集、提示词、推理档位与是否抽样，仓库也提醒各报告的评测设置可能不同。",
+        "cite": [
+          "seed2",
+          "repo"
+        ]
+      }
+    ]
   },
   "metrics": [
     {
       "id": "accuracy",
-      "name": "Accuracy",
+      "name": "准确率（Accuracy）",
+      "direction": "越高越好",
+      "description": "模型最终选项与标准答案一致的题目占比；官方另按 Reasoning / Understanding 两个子集分别报告并给出平均",
       "range": [
         0,
         100
       ],
       "unit": "percent",
-      "direction": "higher",
-      "aggregation": "mean"
+      "cite": [
+        "repo",
+        "paper@Table 4",
+        "site"
+      ]
+    },
+    {
+      "id": "mm-reasoning-accuracy",
+      "name": "MM Reasoning 子集准确率",
+      "direction": "越高越好",
+      "description": "仅在标注为 Reasoning 的 MM 题目上的准确率，官方榜单与论文表格都单列此列",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@Table 4",
+        "site"
+      ]
     }
   ],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [
-    "多选题形式",
-    "考试题分布与真实临床任务分布不完全一致"
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2025-01-30",
+      "label": "arXiv v1 首发（摘要即 4,460 题 / 17 专科 / 11 人体系统）",
+      "cite": [
+        "abs",
+        "paper@Abstract"
+      ]
+    },
+    {
+      "id": "dataset",
+      "date": "2025-02-09",
+      "label": "Hugging Face 发布 TsinghuaC3I/MedXpertQA 数据集",
+      "cite": [
+        "repo"
+      ]
+    },
+    {
+      "id": "v2",
+      "date": "2025-02-20",
+      "label": "arXiv v2 修订；同日官方榜单上线，收录 o3-mini、DeepSeek-R1、o1 等结果",
+      "cite": [
+        "abs",
+        "repo"
+      ]
+    },
+    {
+      "id": "eval-code",
+      "date": "2025-02-28",
+      "label": "发布评测代码（GitHub eval 目录与 eval.ipynb）",
+      "cite": [
+        "repo"
+      ]
+    },
+    {
+      "id": "icml",
+      "date": "2025-05-06",
+      "label": "论文被 ICML 2025 接收",
+      "cite": [
+        "repo",
+        "site"
+      ]
+    },
+    {
+      "id": "v3",
+      "date": "2025-06-06",
+      "label": "arXiv v3（本档案核对所用版本）",
+      "cite": [
+        "abs",
+        "paper"
+      ]
+    }
   ],
-  "notes": "arXiv 2501.18362，清华 C3I；证据账本 2 行（字节/通义）",
+  "limitations": [
+    {
+      "issue": "官方榜单停更，厂商自报口径不明",
+      "impact": "medxpertqa.github.io 的 MM 榜单最高仍是 o1 的 56.28，收录的 9 个模型发布日期都在 2024-07 至 2025-01；同期字节 Seed2.0 发布页自报 Seed2.0 Lite（0428）在 MedXpertQA-MM 上 79.6，同表还列出 Gemini 3.1 Pro high 80.2、GPT-5.4 high 76.9 等成绩。两边的数字不能直接相减理解为能力差距。",
+      "severity": "高",
+      "response": "未见官方回应；仓库只在 Adoption 表下提示「各报告的评测设置与被测子集可能不同，请查阅原始来源」。",
+      "reader": "看到 79 这类数字时，先找它出自哪个厂商页、用什么子集和提示词；只有同一口径下的分数才可比。",
+      "cite": [
+        "site",
+        "seed2",
+        "repo"
+      ]
+    },
+    {
+      "issue": "单题答案质量争议（MM 子集）",
+      "impact": "GitHub issue #12（2026-03-03 提出，页面状态仍为 open，未见任何评论）质疑 MM-14 的答案：报告人认为哥伦比亚移民的查加斯心肌病更符合图像曲线，而心脏结节病在拉丁美洲罕见。MM 只有 2,000 题，个别答案争议对总分的具体冲击无法从总分里拆出来。",
+      "severity": "高",
+      "response": "未见官方回应（issue 保持 open，页面未见评论）。",
+      "reader": "官方榜单的 56.28 与厂商自报的 79.6 之间隔着口径差异，单看总分无法区分其中有多少来自个别题目的答案争议。",
+      "cite": [
+        "issue12"
+      ]
+    },
+    {
+      "issue": "人类基线不是执业医生",
+      "impact": "论文的人类基线 Expert (Pre-Licensed) 取自备考 USMLE 等执业考试的高年级医学生/实习生的作答分布，MM 平均 45.53%；模型分数超过它不等于超过执业医生。",
+      "severity": "中",
+      "response": "论文说明了该基线的构造方式与来源，并指出题干/选项增强保留了全部核心临床内容，对人类准确率影响很小。",
+      "reader": "把 45.53% 当作「准执照前人群」的参照，不要读成「医生水平」。",
+      "cite": [
+        "paper@§4.3"
+      ]
+    },
+    {
+      "issue": "多选题 + 数据来源不公开，独立复核受限",
+      "impact": "MM 每题 5 个选项，猜测空间大于开放题；同时论文明确不公开数据来源、并要求不要在线分享任何示例，外部难以逐题复核答案质量。",
+      "severity": "中",
+      "response": "论文在附录 A 给出防泄漏声明：数据仅供模型或人类医学评测，禁止用于训练；题目经过改写与选项打乱。",
+      "reader": "把 MM 分数理解为「在固定 5 选项下的鉴别诊断准确率」，并接受它难以被第三方独立审计。",
+      "cite": [
+        "dataset",
+        "paper@附录 A"
+      ]
+    },
+    {
+      "issue": "子集与版本口径不可比",
+      "impact": "Text 与 MM 的选项数、过滤强度不同，论文明说直接比较两个子集不提供信息；o1、o3-mini 的论文成绩来自 10% 抽样子集，与全量成绩也不能直接比。",
+      "severity": "中",
+      "response": "论文用 ‡ 标注抽样结果，并在正文说明子集差异；官方榜单按子集分表。",
+      "reader": "比较前先确认子集（Text / MM）、是否抽样、以及是否同一版数据。",
+      "cite": [
+        "paper@§4.3",
+        "paper@§4.1"
+      ]
+    },
+    {
+      "issue": "来源内部数字不一致",
+      "impact": "论文 §3.1 写 MM 共 2,005 题、2,839 张图，Table 2 写 MM 2,000 题、2,852 张图；摘要与引言说评测 18 个模型，仓库 README 写 17 个。图片数在两个口径下甚至出现总数小于测试集的反差。",
+      "severity": "低",
+      "response": "未见官方回应（论文 v3 与仓库 README 均维持原样）。",
+      "reader": "引用图片数时注明口径（测试集 Table 2 的 2,852 张，或含开发集的 2,839 张）。",
+      "cite": [
+        "paper@§3.1",
+        "paper@Table 2",
+        "paper@§1",
+        "repo"
+      ]
+    },
+    {
+      "issue": "Reasoning / Understanding 标签由模型自动生成",
+      "impact": "子集标签用 gpt-4o 标注，专家只抽检 10%（Text 490 题、MM 400 题），发现 28 题与 11 题标错，错误率约 4.3%；子集分数会受标签噪声影响。",
+      "severity": "低",
+      "response": "论文报告了抽检规模与错误率，并称提示词经专家撰写、强调推理复杂度与一般难度的区别。",
+      "reader": "Reasoning / Understanding 两列的差距要留出几个点的标签误差余量。",
+      "cite": [
+        "paper@§3.3"
+      ]
+    }
+  ],
+  "notes": "arXiv 2501.18362v3（ICML 2025）；本条目只覆盖 MM 多模态子集，MedXpertQA Text 未单独立条；证据账本含字节 Seed2.0 一条厂商自报。",
   "official_sources": [
     {
       "kind": "paper",
@@ -61,13 +379,347 @@
     {
       "kind": "github",
       "url": "https://github.com/TsinghuaC3I/MedXpertQA"
+    },
+    {
+      "kind": "site",
+      "url": "https://medxpertqa.github.io"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/TsinghuaC3I/MedXpertQA"
     }
   ],
   "related_benchmarks": [
     "medqa",
     "mmmu",
-    "gpqa"
+    "gpqa",
+    "mmmu-pro",
+    "slake",
+    "pmc-vqa",
+    "mmlu"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-09-01"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-25",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-25",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "MedXpertQA: Benchmarking Expert-Level Medical Reasoning and Understanding（arXiv:2501.18362v3，2025-06-06，ICML 2025）",
+        "url": "https://arxiv.org/pdf/2501.18362",
+        "accessed": "2026-11-25"
+      },
+      {
+        "id": "abs",
+        "kind": "paper",
+        "title": "arXiv:2501.18362 摘要页（含投稿历史）",
+        "url": "https://arxiv.org/abs/2501.18362",
+        "accessed": "2026-11-25"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "TsinghuaC3I/MedXpertQA（README、News、Adoption、Usage）",
+        "url": "https://github.com/TsinghuaC3I/MedXpertQA",
+        "accessed": "2026-11-25"
+      },
+      {
+        "id": "dataset",
+        "kind": "dataset",
+        "title": "TsinghuaC3I/MedXpertQA（Hugging Face 数据集卡，MIT）",
+        "url": "https://huggingface.co/datasets/TsinghuaC3I/MedXpertQA",
+        "accessed": "2026-11-25"
+      },
+      {
+        "id": "hf-size",
+        "kind": "dataset",
+        "title": "Hugging Face datasets-server size API（TsinghuaC3I/MedXpertQA 行数）",
+        "url": "https://datasets-server.huggingface.co/size?dataset=TsinghuaC3I/MedXpertQA",
+        "accessed": "2026-11-25"
+      },
+      {
+        "id": "site",
+        "kind": "leaderboard",
+        "title": "medxpertqa.github.io 官方榜单与示例题",
+        "url": "https://medxpertqa.github.io/",
+        "accessed": "2026-11-25"
+      },
+      {
+        "id": "seed2",
+        "kind": "announcement",
+        "title": "ByteDance Seed2.0 发布页（MedXpertQA-MM 图表与成绩表）",
+        "url": "https://seed.bytedance.com/en/seed2",
+        "accessed": "2026-11-25"
+      },
+      {
+        "id": "issue12",
+        "kind": "repo",
+        "title": "GitHub issue #12：MM-14 答案质疑（open，未见评论）",
+        "url": "https://github.com/TsinghuaC3I/MedXpertQA/issues/12",
+        "accessed": "2026-11-25"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "清华大学（Tsinghua University）× 上海人工智能实验室（Shanghai AI Laboratory）",
+        "cite": [
+          "paper@作者署名",
+          "site"
+        ]
+      },
+      "first_release": {
+        "v": "2025-01-30（arXiv v1）",
+        "cite": [
+          "abs",
+          "repo"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "paper@Abstract",
+        "paper@§3.1",
+        "dataset"
+      ],
+      "interpretation": [
+        "paper@§4.3",
+        "paper@附录 B.1",
+        "site",
+        "seed2"
+      ]
+    },
+    "problem": {
+      "text": "既有医学多模态基准（VQA-RAD、Slake、PMC-VQA、OmniMedVQA）多是自动生成的图文简单问答：图像类型单一、图文比低、没有临床信息；MMLU/MedQA 等文本基准又被前沿模型刷高（论文举 o1-preview 在 MedQA-USMLE 96%、MMLU 医学遗传学 99%）。MedXpertQA 想用专家级考试题加真实临床资料，把差距重新拉开。",
+      "cite": [
+        "paper@§1",
+        "paper@Table 2"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "人类基线（Expert, Pre-Licensed）",
+        "value": "45.53%（MM 平均）",
+        "note": "论文 Table 4：该基线来自备考 USMLE 等执业考试的高年级医学生/实习生的作答分布，不是执业医生；随机基线论文未给出（MM 为 5 选 1）。",
+        "cite": [
+          "paper@Table 4",
+          "paper@§4.3",
+          "dataset"
+        ]
+      },
+      {
+        "label": "论文发布时最好",
+        "value": "56.28%（o1，MM 平均）",
+        "note": "论文 Table 4：o1 与 o3-mini 因成本只在 10% 抽样子集上评测（seed 42，Reasoning/Understanding 各抽 10%），表内以 ‡ 标注。",
+        "cite": [
+          "paper@Table 4",
+          "paper@§4.1"
+        ]
+      },
+      {
+        "label": "官方榜单最高",
+        "value": "56.28%（o1）",
+        "note": "medxpertqa.github.io 的 MM 榜单最高仍是 o1（2024-12），收录的 9 个模型日期在 2024-07 至 2025-01；页面未标注结果更新日期。",
+        "cite": [
+          "site"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      },
+      {
+        "label": "厂商自报参考线（口径未披露，不可与上面三项直接比）",
+        "value": "Seed2.0 Lite（0428）79.6",
+        "note": "该页只给 MedXpertQA-MM 一列分数，未说明评测子集、提示词、推理档位与是否抽样；同表 Gemini 3.1 Pro high 80.2、GPT-5.4 high 76.9。",
+        "cite": [
+          "seed2"
+        ]
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把官方榜单 56.28 和厂商自报的 79.6 排在一起比：两边评测设置都没对齐，榜单本身也停在 2025-02。",
+        "cite": [
+          "site",
+          "seed2"
+        ]
+      },
+      {
+        "text": "把 Text 与 MM 的分数直接比：选项数（10 vs 5）与过滤强度不同，论文明说这样比不提供信息。",
+        "cite": [
+          "paper@§4.3"
+        ]
+      },
+      {
+        "text": "把 Expert (Pre-Licensed) 的 45.53% 当成医生水平：它取自备考执业考试的高年级医学生/实习生的作答分布。",
+        "cite": [
+          "paper@§4.3"
+        ]
+      },
+      {
+        "text": "把 o1 的 56.28 当成全量测试集成绩：论文中 o1 与 o3-mini 只在 10% 抽样子集上评测。",
+        "cite": [
+          "paper@§4.1"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "清华大学与上海人工智能实验室（论文署名 1 Tsinghua University, 2 Shanghai AI Laboratory）",
+        "cite": [
+          "paper@作者署名",
+          "site"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "共同一作 Yuxin Zuo、Shang Qu；Yifei Li、Zhangren Chen、Xuekai Zhu、Ermo Hua、Kaiyan Zhang；通讯作者 Ning Ding、Bowen Zhou",
+        "cite": [
+          "abs"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2025-01-30 arXiv v1 → 2025-02-09 数据集上线 → 2025-02-20 榜单上线 → 2025-05-06 ICML 2025 接收 → 2025-06-06 arXiv v3",
+        "cite": [
+          "abs",
+          "repo",
+          "site"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "数据集在 Hugging Face（TsinghuaC3I/MedXpertQA，MIT，Text/MM 各含 dev 与 test）；评测代码在 GitHub；官方榜单 medxpertqa.github.io",
+        "cite": [
+          "repo",
+          "dataset",
+          "site"
+        ]
+      },
+      {
+        "k": "官方采用",
+        "v": "仓库 Adoption 表列出 Google DeepMind、Meta Superintelligence Labs、ByteDance Seed、Alibaba Qwen 等基础模型发布，以及 MedGemma、Lingshu、MedXIAOHE 等医学专用模型的评测结果",
+        "cite": [
+          "repo"
+        ]
+      },
+      {
+        "k": "题库构成",
+        "v": "USMLE、COMLEX-USA、17 个美国专科委员会考试，以及 ACR DXIT/TXIT、EDiR、NEJM Image Challenge 等图像丰富来源",
+        "cite": [
+          "paper@§3.2"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-25",
+        "columns": [
+          "来源",
+          "模型",
+          "MM Reasoning",
+          "MM Understanding",
+          "MM 平均",
+          "口径"
+        ],
+        "rows": [
+          [
+            "论文 Table 4",
+            "Expert (Pre-Licensed)",
+            "45.76",
+            "44.97",
+            "45.53",
+            "人类基线（备考执业考试的医学生/实习生作答分布）"
+          ],
+          [
+            "论文 Table 4",
+            "o1（‡）",
+            "52.78",
+            "65.45",
+            "56.28",
+            "10% 抽样子集"
+          ],
+          [
+            "论文 Table 4",
+            "QVQ-72B-Preview",
+            "33.54",
+            "33.57",
+            "33.55",
+            "全量测试集"
+          ],
+          [
+            "论文 Table 4",
+            "GPT-4o",
+            "40.73",
+            "48.19",
+            "42.80",
+            "全量测试集"
+          ],
+          [
+            "论文 Table 4",
+            "Claude-3.5-Sonnet",
+            "33.33",
+            "32.85",
+            "33.20",
+            "全量测试集"
+          ],
+          [
+            "论文 Table 4",
+            "Gemini-1.5-Pro",
+            "32.85",
+            "37.36",
+            "34.10",
+            "全量测试集"
+          ],
+          [
+            "论文 Table 4",
+            "GPT-4o-mini",
+            "28.22",
+            "27.62",
+            "28.05",
+            "全量测试集"
+          ],
+          [
+            "论文 Table 4",
+            "Gemini-2.0-Flash",
+            "35.48",
+            "41.70",
+            "37.20",
+            "全量测试集"
+          ],
+          [
+            "论文 Table 4",
+            "Qwen2.5-VL-72B",
+            "29.53",
+            "31.05",
+            "29.95",
+            "全量测试集"
+          ],
+          [
+            "论文 Table 4",
+            "Qwen2-VL-72B",
+            "25.86",
+            "34.84",
+            "28.35",
+            "全量测试集"
+          ],
+          [
+            "官方榜单（2026-11-25 抓取）",
+            "o1",
+            "52.78",
+            "65.45",
+            "56.28",
+            "榜单未标注口径与更新日期"
+          ]
+        ]
+      },
+      "cite": [
+        "paper@Table 4",
+        "site"
+      ]
+    }
+  }
 }

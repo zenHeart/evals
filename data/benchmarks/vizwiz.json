@@ -9,30 +9,310 @@
   "categories": [
     "multimodal"
   ],
-  "summary": "盲人拍摄真实图像问答（3.3 万视觉问题，10 答案/题）",
-  "interpretation": "自由文本视觉问答准确率（VQA 口径：10 选 9 标注组平均，答案需 ≥3 名标注者一致才计满分），越高越好。图像由盲人用户手机拍摄，模糊、欠曝、构图差和「无法回答」题占比高，考的是真实辅助场景下的鲁棒读图与问答能力，不等于干净数据上的图表/文档读图水平。",
-  "measures": [],
-  "does_not_measure": [],
+  "summary": "盲人用户用手机拍图并语音提问的真实场景视觉问答基准：每题配 10 条众包答案，官方新版共 32,842 题（train 20,523 / validation 4,319 / test 8,000），任务一是预测答案，任务二是判断这个问题根本答不了。",
+  "interpretation": "分数是 VQA 口径的准确率：把每题 10 条人工答案分成 10 组各留 1 条，用其余 9 条评分，预测命中某条标注时记 min(1, 提供该答案的人数 − 1)，再对 10 choose 9 全部标注组取平均，越高越好。论文发布时最好模型只有 0.475、人类约 0.75。它考的是盲人真实拍摄的低质量图像（模糊、欠曝、构图差、遮挡，且 28.63% 的题按多数答案判定不可答），不等于干净图像上的通用读图问答水平。",
+  "measures": [
+    {
+      "area": "自由文本答案预测（Task 1）",
+      "focus": "给定盲人拍摄的图像和语音转写的问题，预测答案；答案以 1–2 个词的短词为主（1 词 67.32%、2 词 20.74%）",
+      "share": "test 8,000 题全量提交",
+      "format": "短答案（yes/no 4.80%、number 1.69%、other 58.91%、unanswerable 34.6%）",
+      "cite": [
+        "vizwiz-tasks-and-leaderboards-v@Task 1",
+        "arxiv-1802-08218@§4.3",
+        "arxiv-1802-08218@§5.1"
+      ]
+    },
+    {
+      "area": "可答性判断（Task 2）",
+      "focus": "判断该视觉问题是否无法回答（图像质量太差、目标被遮挡、画面里没有所需信息等），并给出 answerable 的 0–1 置信度",
+      "share": "test 8,000 题全量提交",
+      "format": "二分类 + 连续置信度，按平均精度计分",
+      "cite": [
+        "vizwiz-tasks-and-leaderboards-v@Task 2",
+        "vizwiz-tasks-and-leaderboards-v@Overview"
+      ]
+    },
+    {
+      "area": "图像不适用情形",
+      "focus": "部分图像被多名标注者标为「unsuitable image」（论文报告 28% 的图像至少有 2 人这样标），模型需要在答案里直接说出这一点",
+      "share": "论文未给出该维度占比",
+      "format": "并入答案类型统计，不单独计分",
+      "cite": [
+        "arxiv-1802-08218@§4.2"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "不测通用视觉问答能力：题目来自盲人辅助场景，图像普遍低质量、问题口语化；VizWiz 的 top 3,000 答案里只有 824 个出现在 VQA 2.0 的 top 3,000 答案中。",
+      "cite": [
+        "arxiv-1802-08218@§4.3",
+        "arxiv-1802-08218@§1"
+      ]
+    },
+    {
+      "text": "不测多语言与生成质量：答案由美国 AMT 工人给出，指标只看答案是否匹配和可答性判断准不准，不评测表述流畅度或推理过程。",
+      "cite": [
+        "arxiv-1802-08218@§5.1",
+        "arxiv-1802-08218@§3.3",
+        "vizwiz-tasks-and-leaderboards-v@Task 1"
+      ]
+    },
+    {
+      "text": "不测跨数据集泛化：论文显示在 VizWiz 上训练后迁到 VQA 2.0，准确率只有 0.218–0.318。",
+      "cite": [
+        "arxiv-1802-08218@§5.1"
+      ]
+    },
+    {
+      "text": "不覆盖图表、文档、数学等通用视觉推理，也不评测长回答或工具使用。",
+      "cite": [
+        "vizwiz-tasks-and-leaderboards-v@Overview"
+      ]
+    }
+  ],
   "dataset": {
     "sample_count": 32842,
     "splits": [
-      "train 20,523 题",
-      "validation 4,319 题",
-      "test 8,000 题（标注不公开，官方服务器评测）"
+      "train 20,523 题（205,230 条答案/置信度对）",
+      "validation 4,319 题（43,190 条答案/置信度对）",
+      "test 8,000 题（标注自 2026-04 起公开供自评，官方评测服务器已弃用）"
     ],
-    "source_type": "natural（盲人用户手机拍照 + 语音提问，每题 10 条众包答案）",
+    "source_type": "natural（盲人用户用 VizWiz 手机应用拍照 + 语音提问；每题 10 条美国 AMT 众包答案）",
     "languages": [
       "en"
     ],
-    "public_sample": true
+    "public_sample": true,
+    "totals": "新版共 32,842 题 = train 20,523 + validation 4,319 + test 8,000（32,842 为本站按官网列出的三个分片相加）；答案对 train 205,230、validation 43,190，即每题 10 条；论文 2018 年发布时为旧版 31,173 题（20,000 / 3,173 / 8,000）",
+    "cite": [
+      "vizwiz-tasks-and-leaderboards-v@Dataset",
+      "arxiv-1802-08218@§3.3",
+      "arxiv-1802-08218@§5"
+    ],
+    "construction": [
+      {
+        "k": "采集来源",
+        "text": "题目来自 2011 年 5 月上线的 VizWiz 手机应用，四年间 11,045 名用户提交了 72,205 个视觉问题；其中 48,169 题由同意匿名共享答案与图像的用户提出，进入后续筛选。",
+        "cite": [
+          "arxiv-1802-08218@§3.1",
+          "arxiv-1802-08218@§3"
+        ]
+      },
+      {
+        "k": "筛选与清洗",
+        "text": "众包工人与内部领域专家迭代审核，共剔除约 31%（14,796 题）候选问题；其中 7,477 题因问题少于两个词被移除。录音先去除人声再由 AMT 工人转写，图像统一无损重存以剥离位置等元数据。",
+        "cite": [
+          "arxiv-1802-08218@§3.2"
+        ]
+      },
+      {
+        "k": "答案标注",
+        "text": "最终 31,173 题每题收集 10 条答案，由美国 AMT 工人给出「简短短语而不是完整句子」；答案类型分 yes/no、number、other 与 unanswerable 四类。",
+        "cite": [
+          "arxiv-1802-08218@§3.3",
+          "arxiv-1802-08218@§5.1"
+        ]
+      },
+      {
+        "k": "隐私处理",
+        "text": "新版对含私人信息的图像用 ImageNet 均值做遮挡（obfuscation），相关问题也不再询问这些私人信息。",
+        "cite": [
+          "vizwiz-tasks-and-leaderboards-v@Dataset"
+        ]
+      },
+      {
+        "k": "措辞改写",
+        "text": "2023-01-10 起官方把答案里的「unsuitable / unsuitable image」统一改写为「unanswerable」，让可答性口径一致。",
+        "cite": [
+          "vizwiz-tasks-and-leaderboards-v@Dataset"
+        ]
+      }
+    ]
   },
-  "metrics": [],
   "default_protocol": {
-    "raw": "VQA accuracy（10 选 9 标注组平均，test 8,000 题）"
+    "raw": "Task 1 用 VQA 准确率：把每题 10 条人工答案分成 10 组「留 1 条」，用其余 9 条评分，预测答案与某条标注一致时记 min(1, 提供该答案的人数 − 1)，再对 10 choose 9 全部标注组取平均；提交完整 8,000 题 test 集。Task 2 用 Python 的平均精度，模型输出 answerable 的 0–1 置信度。",
+    "cite": [
+      "vizwiz-tasks-and-leaderboards-v@Task 1",
+      "vizwiz-tasks-and-leaderboards-v@Task 2",
+      "arxiv-1802-08218@§5"
+    ],
+    "variants": [
+      {
+        "text": "test-dev（4,000 题，全年开放，每队每天最多 10 次提交）用于验证提交流程；test-standard（8,000 题，全年开放）结果可公开到排行榜；test-challenge（8,000 题）只在 CVPR 挑战赛窗口开放，决定挑战赛名次。",
+        "cite": [
+          "vizwiz-tasks-and-leaderboards-v@Evaluation servers"
+        ]
+      },
+      {
+        "text": "2019-12-31 前的旧版数据（train 20,000 / validation 3,173 / test 8,000，答案对 200,000 / 31,730）与 2020-01-01 起的新版不能混算；论文 Table 3 的全部结果都基于旧版 test 集。",
+        "cite": [
+          "vizwiz-tasks-and-leaderboards-v@Dataset",
+          "arxiv-1802-08218@§5"
+        ]
+      },
+      {
+        "text": "官方规则允许使用外部数据训练，唯一例外是不允许使用 test 集的任何标注。",
+        "cite": [
+          "vizwiz-tasks-and-leaderboards-v@Rules"
+        ]
+      }
+    ]
   },
-  "versions": [],
-  "limitations": [],
-  "notes": "2026-09-02 身份归正：v1 迁移时本实体正文误载 AI2D（AllenAI 图表理解集）内容，AI2D 已拆分为独立实体 ai2d；本实体按 vizwiz.org 官方口径重写（数字为 2020-01-01 起的新版数据集）。",
+  "metrics": [
+    {
+      "id": "vqa-accuracy",
+      "name": "VQA 准确率（Task 1）",
+      "direction": "越高越好",
+      "description": "10 选 9 标注组平均的答案匹配率；论文报告人类约 0.75、发布时最好模型 0.475",
+      "cite": [
+        "vizwiz-tasks-and-leaderboards-v@Task 1",
+        "arxiv-1802-08218@§5"
+      ]
+    },
+    {
+      "id": "average-precision",
+      "name": "平均精度 AP（Task 2）",
+      "direction": "越高越好",
+      "description": "可答性判断按置信度排序后的加权平均精度（Python average_precision），衡量模型会不会说「这题答不了」",
+      "cite": [
+        "vizwiz-tasks-and-leaderboards-v@Task 2"
+      ]
+    },
+    {
+      "id": "cider",
+      "name": "CIDEr / BLEU4 / METEOR",
+      "direction": "越高越好",
+      "description": "论文与 Table 3 同时报告的文本相似度指标，用于对齐 VQA 常用口径；挑战赛名次只按 Task 1 准确率",
+      "cite": [
+        "arxiv-1802-08218@§5.1",
+        "arxiv-1802-08218@Table 3",
+        "vizwiz-tasks-and-leaderboards-v@Task 1"
+      ]
+    }
+  ],
+  "versions": [
+    {
+      "id": "app-launch",
+      "date": "2011-05",
+      "label": "VizWiz 手机应用上线，开始采集盲人用户的真实视觉问题（论文只写到月份）",
+      "cite": [
+        "arxiv-1802-08218@§3.1"
+      ]
+    },
+    {
+      "id": "cvpr2018",
+      "date": "2018-05-09",
+      "label": "CVPR 2018 论文发布（arXiv:1802.08218v4），数据集 31,173 题：train 20,000 / validation 3,173 / test 8,000",
+      "cite": [
+        "arxiv-1802-08218@v4 页眉",
+        "arxiv-1802-08218@§5",
+        "vizwiz-tasks-and-leaderboards-v@Publications"
+      ]
+    },
+    {
+      "id": "deprecated-2019",
+      "date": "2019-12-31",
+      "label": "官方标记旧版数据集为 deprecated（train 20,000 / validation 3,173 / test 8,000，答案对 200,000 / 31,730）",
+      "cite": [
+        "vizwiz-tasks-and-leaderboards-v@Dataset"
+      ]
+    },
+    {
+      "id": "new-2020",
+      "date": "2020-01-01",
+      "label": "新版数据集上线：train 20,523 / validation 4,319 / test 8,000，答案对 205,230 / 43,190；含私人信息的图像用 ImageNet 均值遮挡",
+      "cite": [
+        "vizwiz-tasks-and-leaderboards-v@Dataset"
+      ]
+    },
+    {
+      "id": "unanswerable-2023",
+      "date": "2023-01-10",
+      "label": "答案中「unsuitable / unsuitable image」统一改写为「unanswerable」",
+      "cite": [
+        "vizwiz-tasks-and-leaderboards-v@Dataset"
+      ]
+    },
+    {
+      "id": "evalai-deprecated",
+      "date": "2026-04",
+      "label": "官方宣布 VizWiz-VQA EvalAI 评测服务器弃用并不再维护，改为公开标注 JSON 供自行评测（页面只写到月份）",
+      "cite": [
+        "vizwiz-tasks-and-leaderboards-v@April 2026 update"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "官方榜单与评测服务器已停更",
+      "impact": "2026-04 起 EvalAI 评测服务器弃用且不再维护，2020–2025 各届挑战赛均标记为 deprecated，官网不再提供可读取的最新成绩；论文 Table 3 的结果基于 2018 旧版 test 集，与新版不同口径。",
+      "severity": "高",
+      "response": "官方改为公开 test 标注 JSON 文件供参赛者自行评测；本档案只收录论文口径的结果，不引用第三方转述的分数。",
+      "reader": "看到任何 VizWiz 分数，先问三件事：来自旧版还是新版 test？是官方服务器结果还是自评？用的是哪个分片（test-dev / test-challenge / test-standard）？",
+      "cite": [
+        "vizwiz-tasks-and-leaderboards-v@April 2026 update",
+        "vizwiz-tasks-and-leaderboards-v@Evaluation servers"
+      ]
+    },
+    {
+      "issue": "数据集版本差异",
+      "impact": "论文的 31,173 题与官方 2020 新版的 32,842 题在题量、文件名位数和答案措辞（unsuitable → unanswerable）上都有差异，跨版本比较会失真。",
+      "severity": "高",
+      "response": "官网 Dataset 一节明确列出两个版本的分片数量与答案对数，并宣布旧版 deprecated；Publications 一节说明 deprecated 版本只对应 2018 年那篇论文。",
+      "reader": "引用数字前核对版本日期；本档案默认采用 2020-01-01 新版口径，论文结果单独标注为旧版。",
+      "cite": [
+        "vizwiz-tasks-and-leaderboards-v@Dataset",
+        "vizwiz-tasks-and-leaderboards-v@Publications"
+      ]
+    },
+    {
+      "issue": "题目噪声与不可答比例高",
+      "impact": "论文报告 28.63% 的视觉问题不可答，28% 的图像至少被 2 名工人标为 unsuitable image；67.32% 的答案只有 1 个词，标注歧义天然存在。",
+      "severity": "中",
+      "response": "论文按答案类型分组报告准确率（Table 4），并单独设 Task 2 让模型显式判断可答性。",
+      "reader": "低分不能简单等同于模型弱，先看是否把大量不可答题算错；Task 1 与 Task 2 要分开解读。",
+      "cite": [
+        "arxiv-1802-08218@§4.2",
+        "arxiv-1802-08218@§5.1"
+      ]
+    },
+    {
+      "issue": "评分口径特殊",
+      "impact": "准确率按 min(1, 人数 − 1) 计分并对 10 choose 9 标注组平均，短答案容易撞对；论文未给出该函数的随机基线。",
+      "severity": "中",
+      "response": "论文同时报告 CIDEr / BLEU4 / METEOR 作为补充口径。",
+      "reader": "跨论文比较时确认是否用了同一评分函数和同一种标注组抽样方式。",
+      "cite": [
+        "vizwiz-tasks-and-leaderboards-v@Task 1",
+        "arxiv-1802-08218@§5.1",
+        "arxiv-1802-08218@Table 3"
+      ]
+    },
+    {
+      "issue": "数据可能进入训练集",
+      "impact": "train / validation 标注自 2018 年起公开，test 标注也于 2026-04 公开供自评，存在被混入训练数据的风险；论文未给出污染检测。",
+      "severity": "中",
+      "response": "官方规则明确不允许使用 test 集标注训练，但无法强制执行。",
+      "reader": "公开集上的高分可能包含记忆成分，宜要求自评口径与人工复核。",
+      "cite": [
+        "vizwiz-tasks-and-leaderboards-v@Rules",
+        "vizwiz-tasks-and-leaderboards-v@April 2026 update"
+      ]
+    },
+    {
+      "issue": "场景与语言覆盖面窄",
+      "impact": "只有英文、单一辅助场景，不覆盖图表、文档、数学等通用视觉推理，样本量也只有 3 万余题。",
+      "severity": "低",
+      "response": "官方挑战赛限定这两个任务，其他能力由其他基准覆盖。",
+      "reader": "不要把 VizWiz 分数当成通用多模态能力的代表。",
+      "cite": [
+        "vizwiz-tasks-and-leaderboards-v@Overview",
+        "arxiv-1802-08218@§1"
+      ]
+    }
+  ],
+  "notes": "2026-09-02 身份归正：v1 迁移时本实体正文误载 AI2D（AllenAI 图表理解集）内容，AI2D 已拆分为独立实体 ai2d；本实体按 vizwiz.org 官方口径重写（数字为 2020-01-01 起的新版数据集）。2026-11-14 升级为 benchmark-profile/v2：全部数字逐条对照 CVPR 2018 论文与官网 Tasks and Leaderboards 页面；论文 Table 3 结果属 2018 旧版 test 口径，已在 versions / limitations 中标明；官网未给出可读取的当前排行榜最高分（EvalAI 服务器 2026-04 弃用），相应条目写「未披露」。2026-11-24 复核：统一 cite 前缀为来源 id（arxiv-1802-08218 / vizwiz-tasks-and-leaderboards-v），「Dataset versions」定位改为官网真实存在的 Dataset 一节；修正附录 B 方法列（原写「Q+I+A（+ 答案嵌入）」与论文不符，论文说 [24] 加的是注意力，且 §5.1 正文与 Table 3 的基线编号对应关系本身不一致，本表按 Table 3 行标签原样抄录）；论文与官网只写到月份的版本日期改为月精度；语言一项论文未直接声明，languages 依美国 AMT 英文标注的事实保留 en。",
   "official_sources": [
     {
       "kind": "site",
@@ -51,6 +331,288 @@
     "docvqa",
     "mmvet"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-09-02"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-24",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-24",
+    "sources": [
+      {
+        "id": "arxiv-1802-08218",
+        "kind": "paper",
+        "title": "VizWiz Grand Challenge: Answering Visual Questions from Blind People（CVPR 2018，arXiv:1802.08218v4）",
+        "url": "https://arxiv.org/abs/1802.08218",
+        "accessed": "2026-11-24"
+      },
+      {
+        "id": "vizwiz-tasks-and-leaderboards-v",
+        "kind": "site",
+        "title": "VizWiz — Tasks and Leaderboards（VQA）",
+        "url": "https://vizwiz.org/tasks-and-leaderboards/vqa/",
+        "accessed": "2026-11-24"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "论文作者团队：Danna Gurari、Qing Li、Abigale J. Stangl、Anhong Guo、Chi Lin、Kristen Grauman、Jiebo Luo、Jeffrey P. Bigham；署名机构含德克萨斯大学奥斯汀分校、中国科学技术大学、科罗拉多大学博尔德分校、卡内基梅隆大学、罗切斯特大学。挑战赛与数据集由 VizWiz 团队维护",
+        "cite": [
+          "arxiv-1802-08218@作者署名"
+        ]
+      },
+      "first_release": {
+        "v": "2018-05-09（arXiv v4；CVPR 2018 发表）",
+        "cite": [
+          "arxiv-1802-08218@v4 页眉",
+          "vizwiz-tasks-and-leaderboards-v@Publications"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "arxiv-1802-08218@Abstract",
+        "vizwiz-tasks-and-leaderboards-v@Dataset",
+        "vizwiz-tasks-and-leaderboards-v@Overview"
+      ],
+      "interpretation": [
+        "vizwiz-tasks-and-leaderboards-v@Task 1",
+        "arxiv-1802-08218@§5",
+        "arxiv-1802-08218@§4.2"
+      ]
+    },
+    "problem": {
+      "text": "盲人独自拍照并用语音提问时，图像常常模糊、欠曝、构图差，还有相当比例的问题根本答不了；而论文指出此前的 VQA 数据集的视觉问题都是人工构造的（图像取自已有数据集或人工合成）。VizWiz 用盲人用户自然产生的视觉问题来测模型在这种条件下的鲁棒性，并把「判断这个问题答不了」列成与「答出答案」并列的第二个任务。",
+      "cite": [
+        "arxiv-1802-08218@Abstract",
+        "arxiv-1802-08218@§1",
+        "vizwiz-tasks-and-leaderboards-v@Overview"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "论文中仅用问题 + 图像的现成模型",
+        "value": "0.137 准确率（三个基线 0.134–0.145）",
+        "note": "论文 Table 3 前 3 行：Q+I 0.137、Q+I+A 0.145、Q+I+BUA 0.134，论文原文概括为「0.14 accuracy for all algorithms」。",
+        "cite": [
+          "arxiv-1802-08218@§5",
+          "arxiv-1802-08218@Table 3"
+        ]
+      },
+      {
+        "label": "论文发布时最好（旧版 test）",
+        "value": "0.475 准确率",
+        "note": "Table 3 第 6 行（微调基线）的 0.475 / CIDEr 0.713；同表第 7–9 行是在 VizWiz 上从零训练的模型。",
+        "cite": [
+          "arxiv-1802-08218@Table 3",
+          "arxiv-1802-08218@§5"
+        ]
+      },
+      {
+        "label": "人类参考线",
+        "value": "0.75 准确率",
+        "note": "论文报告人类表现为 0.75 准确率；另有人工答案一致性数据：97.7% 的问题至少两人答案一致，72.83% 超过三人一致。",
+        "cite": [
+          "arxiv-1802-08218@§5",
+          "arxiv-1802-08218@§4.3"
+        ]
+      },
+      {
+        "label": "官网结果表最高",
+        "value": "未披露",
+        "note": "EvalAI 评测服务器 2026-04 起弃用，2020–2025 各届挑战赛均标记 deprecated，官网不再提供可读取的最新排行榜；本档案不引用第三方转述的分数。",
+        "cite": [
+          "vizwiz-tasks-and-leaderboards-v@April 2026 update",
+          "vizwiz-tasks-and-leaderboards-v@Evaluation servers"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      },
+      {
+        "label": "Task 2 可答性 AP 提升（补充参考）",
+        "value": "30.6 → 71.7",
+        "note": "论文报告：相比 status quo 方法（AP 30.6），加入图像与问题后 AP 达 71.7，仅用图像为 64，整体提升 25%–41%。这是 Task 2 口径，不能与 Task 1 准确率并排比。",
+        "cite": [
+          "arxiv-1802-08218@§5.2"
+        ]
+      },
+      {
+        "label": "跨数据集迁移参考",
+        "value": "0.218–0.318 准确率",
+        "note": "论文报告在 VizWiz 上训练的模型迁到 VQA 2.0 的准确率区间，说明本基准与通用 VQA 不同域。",
+        "cite": [
+          "arxiv-1802-08218@§5.1"
+        ]
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 0.475 当作当前水平——它是 2018 年旧版 test 集上论文报告的最好成绩，官方评测服务器此后已弃用，没有可查的官方更新。",
+        "cite": [
+          "arxiv-1802-08218@Table 3",
+          "vizwiz-tasks-and-leaderboards-v@April 2026 update"
+        ]
+      },
+      {
+        "text": "把「答不出」当成模型失败——28.63% 的题按多数答案判定不可答，模型需要先判断能不能答；Task 1（答出来）和 Task 2（判断答不了）要分开看。",
+        "cite": [
+          "arxiv-1802-08218@§4.2",
+          "vizwiz-tasks-and-leaderboards-v@Overview"
+        ]
+      },
+      {
+        "text": "用 VizWiz 分数代表通用视觉问答能力——它的 top 3,000 答案只有 824 个与 VQA 2.0 重合，迁到 VQA 2.0 只有 0.218–0.318 准确率。",
+        "cite": [
+          "arxiv-1802-08218@§4.3",
+          "arxiv-1802-08218@§5.1"
+        ]
+      },
+      {
+        "text": "忽略 10 选 9 平均口径，直接和其他基准的准确率并排比——VizWiz 的计分函数与标注组抽样方式特殊，跨基准数值不可直接相减。",
+        "cite": [
+          "vizwiz-tasks-and-leaderboards-v@Task 1"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方与作者",
+        "v": "论文共同一作团队 Danna Gurari、Qing Li、Abigale J. Stangl、Anhong Guo、Chi Lin、Kristen Grauman、Jiebo Luo、Jeffrey P. Bigham；署名机构含德克萨斯大学奥斯汀分校、中国科学技术大学、科罗拉多大学博尔德分校、卡内基梅隆大学、罗切斯特大学。",
+        "cite": [
+          "arxiv-1802-08218@作者署名"
+        ]
+      },
+      {
+        "k": "发表场合",
+        "v": "IEEE Conference on Computer Vision and Pattern Recognition（CVPR）2018；官网 Publications 一节说明新版数据集由该论文描述，deprecated 版本只对应这一篇，并另列 VizWiz-Priv（CVPR 2019，私人视觉信息识别）。",
+        "cite": [
+          "vizwiz-tasks-and-leaderboards-v@Publications",
+          "arxiv-1802-08218@v4 页眉"
+        ]
+      },
+      {
+        "k": "数据来源应用",
+        "v": "题目来自 2011 年 5 月上线的 VizWiz 手机应用，四年间 11,045 名用户提交 72,205 个视觉问题，其中 48,169 题同意匿名公开。",
+        "cite": [
+          "arxiv-1802-08218@§3.1",
+          "arxiv-1802-08218@§3"
+        ]
+      },
+      {
+        "k": "答案标注",
+        "v": "每题 10 条答案，由美国 AMT 工人按「简短短语而不是完整句子」的要求给出；问题为语音提问。",
+        "cite": [
+          "arxiv-1802-08218@§3.3"
+        ]
+      },
+      {
+        "k": "Table 3 行构成",
+        "v": "论文 Table 3 共 9 行：前 3 行是仅用问题 + 图像的预测模型（0.134–0.145），第 4–6 行是微调模型，第 7–9 行是在 VizWiz 上从零训练的模型，最好 0.475。",
+        "cite": [
+          "arxiv-1802-08218@§5",
+          "arxiv-1802-08218@Table 3"
+        ]
+      },
+      {
+        "k": "许可与获取",
+        "v": "官网页面声明采用 CC BY 4.0；数据按 train / validation / test 三个 JSON 文件分发，含 API 示例代码，test 标注自 2026-04 起公开供自评。",
+        "cite": [
+          "vizwiz-tasks-and-leaderboards-v@页脚许可",
+          "vizwiz-tasks-and-leaderboards-v@Task 1",
+          "vizwiz-tasks-and-leaderboards-v@April 2026 update"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-24",
+        "columns": [
+          "来源",
+          "方法",
+          "准确率",
+          "CIDEr",
+          "BLEU-4",
+          "METEOR"
+        ],
+        "rows": [
+          [
+            "论文 Table 3（旧版 test）",
+            "Q+I [18]（仅图像 + 问题）",
+            "0.137",
+            "0.224",
+            "0.000",
+            "0.078"
+          ],
+          [
+            "论文 Table 3（旧版 test）",
+            "Q+I+A [24]（加注意力指定图像区域）",
+            "0.145",
+            "0.237",
+            "0.000",
+            "0.082"
+          ],
+          [
+            "论文 Table 3（旧版 test）",
+            "Q+I+BUA [6]（自下而上 + 自上而下注意力）",
+            "0.134",
+            "0.226",
+            "0.000",
+            "0.077"
+          ],
+          [
+            "论文 Table 3（旧版 test）",
+            "FT [18]（VQA 2.0 预训练后微调）",
+            "0.466",
+            "0.675",
+            "0.314",
+            "0.297"
+          ],
+          [
+            "论文 Table 3（旧版 test）",
+            "FT [24]（VQA 2.0 预训练后微调）",
+            "0.469",
+            "0.691",
+            "0.351",
+            "0.299"
+          ],
+          [
+            "论文 Table 3（旧版 test）",
+            "FT [6]（VQA 2.0 预训练后微调）",
+            "0.475",
+            "0.713",
+            "0.359",
+            "0.309"
+          ],
+          [
+            "论文 Table 3（旧版 test）",
+            "VizWiz [18]（只用 VizWiz 数据从零训练）",
+            "0.465",
+            "0.654",
+            "0.353",
+            "0.298"
+          ],
+          [
+            "论文 Table 3（旧版 test）",
+            "VizWiz [24]（只用 VizWiz 数据从零训练）",
+            "0.469",
+            "0.661",
+            "0.356",
+            "0.302"
+          ],
+          [
+            "论文 Table 3（旧版 test）",
+            "VizWiz [6]（只用 VizWiz 数据从零训练）",
+            "0.469",
+            "0.675",
+            "0.396",
+            "0.306"
+          ]
+        ]
+      },
+      "cite": [
+        "arxiv-1802-08218@Table 3",
+        "arxiv-1802-08218@§5.1"
+      ]
+    }
+  }
 }

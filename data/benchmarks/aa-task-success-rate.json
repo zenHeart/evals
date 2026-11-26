@@ -2,60 +2,438 @@
   "id": "aa-task-success-rate",
   "name": "AA Task Success Rate",
   "full_name": "Artificial Analysis Task Success Rate (Speech)",
-  "aliases": [
-    "Task Success Rate",
-    "AA Task Success Rate"
-  ],
+  "aliases": ["Task Success Rate", "AA Task Success Rate"],
   "status": null,
-  "categories": [
-    "agent"
-  ],
-  "summary": "Artificial Analysis 语音任务成功率：语音智能体在真实客服通话里把诉求办成的比例，是 AA Speech-to-Speech Index 的任务完成分项",
-  "interpretation": "分数是任务完成百分比（越高越好），比 τ-Voice 更偏「办事成没成」而非「对话顺不顺」。它是 AA Speech-to-Speech Index 的第四个分项，不要和综合指数混读。2026-10 公开水位：Grok Voice 3.0 94.8%、Grok Voice 2.0 94.6%、Gemini 3.8 Live 89.1%、GPT-Live-1 (Astra) 87.4%——头部语音模型在这项上已经贴得很近，拉分主要靠索引与偏好项。",
+  "categories": ["agent", "preference"],
+  "summary": "Artificial Analysis 的语音任务成功率：真人在 Speech Agent Arena 里带工具调用办事，模型把客户诉求办成的比例；它是 AA Speech-to-Speech Index 的四个分项之一，占 25%",
+  "interpretation": "分数是「合格通话里做对必需最终工具调用的比例」，0–100%，越高越好。它只评带工具调用的 15 个智能体场景，和同榜的真人偏好 Elo 是两套独立统计——偏好第一的模型不一定办事第一。头部已经贴得很近：Grok Voice 3.0 94.8%（95% CI 91.6%–96.8%）与 Grok Voice 2.0 94.6%（91.4%–96.7%）的区间大幅重叠，0.2 个百分点不构成结论。它是 AA Speech-to-Speech Index 的 25% 分项，别把这一项和指数分混读。",
   "measures": [
-    "语音智能体在客服通话中完成客户任务的比例"
+    {
+      "area": "智能体场景（带工具调用）",
+      "focus": "模型拿到场景目标、系统提示与一套工具 schema，在真实通话中通过工具把事办成。示例：为新患者预约牙科检查（周二 9:30，若已满则约当天最早时段）；或订购两份不同披萨加一份小菜外送、含配送费总额不超过 45 美元。只有这类通话进入任务成功率统计。",
+      "share": "15/35 个场景",
+      "format": "音频进 / 音频出 + 工具调用轨迹",
+      "cite": [
+        "aa-speech-methodology@Speech Agent Arena · Dataset / Evaluation Setup",
+        "aa-arena-overview@Two scenario types",
+        "aa-arena-overview@What models receive"
+      ]
+    },
+    {
+      "area": "非智能体场景（不带工具调用）",
+      "focus": "模型只用系统提示里给的信息把对话进行完，不能调用工具。示例：询问周日泳池开放时间、家庭入场票价、是否提供毛巾；或瑜伽课的价格。这类通话只参与真人偏好统计，不进任务成功率分母。",
+      "share": "20/35 个场景",
+      "format": "音频进 / 音频出，无工具",
+      "cite": [
+        "aa-speech-methodology@Speech Agent Arena · Dataset / Evaluation Setup",
+        "aa-arena-overview@Two scenario types",
+        "aa-arena-overview@Checking Task Success Tool Calls"
+      ]
+    }
   ],
   "does_not_measure": [
-    "语音推理正确率",
-    "主观偏好排名"
+    {
+      "text": "真人偏好——同一批通话另算 Preference Elo（Bradley–Terry 拟合），偏好第一不等于办事第一：Elo 1111 的 Cartesia Managed Agents 任务成功率 91.7%，低于 Grok Voice 3.0 的 94.8%",
+      "cite": [
+        "aa-speech-methodology@Speech Agent Arena · Metrics",
+        "aa-speech-agent-arena@Task Success Rate 列"
+      ]
+    },
+    {
+      "text": "语音推理与知识问答——由 Big Bench Audio 单独测，任务成功率不涉及答题正确率",
+      "cite": [
+        "aa-speech-methodology@Speech Reasoning Overview"
+      ]
+    },
+    {
+      "text": "客服场景的端到端问题解决率——那是 τ-Voice 的 pass@1（模拟顾客 + 终局数据库比对），与 Arena 的真人通话口径、题集都不同",
+      "cite": [
+        "aa-speech-methodology@Agentic Performance (τ-Voice)"
+      ]
+    },
+    {
+      "text": "成本、延迟与对话动态（停顿、轮次切换、用户打断）——榜单与方法论另有分项，不进任务成功率",
+      "cite": [
+        "aa-speech-methodology@Conversational Dynamics",
+        "aa-speech-methodology@Price 与 Speed"
+      ]
+    }
   ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
+    "sample_count": 35,
+    "splits": [
+      "智能体场景（15 个，带工具调用，进入任务成功率统计）",
+      "非智能体场景（20 个，不带工具调用，只参与偏好统计）"
+    ],
     "languages": [],
-    "source_type": "客服通话模拟（第三方评测方组织）",
-    "public_sample": false
+    "source_type": "第三方评测方组织的真人盲测通话（Speech Agent Arena）",
+    "public_sample": false,
+    "totals": "Speech Agent Arena 共 35 个场景：15 个带工具调用的智能体场景 + 20 个不带工具的非智能体场景。每个模型的成绩来自数百到近千次真人通话（榜单 Samples 列 293–990 次）。参与者录音与转写不公开；概述页展示的示例录音不计入榜单结果。",
+    "cite": [
+      "aa-speech-methodology@Speech Agent Arena · Dataset / Evaluation Setup",
+      "aa-speech-methodology@Speech Agent Arena · Publication rules",
+      "aa-arena-overview@Example conversations",
+      "aa-speech-agent-arena@Task Success Rate 列"
+    ],
+    "construction": [
+      {
+        "k": "场景与两模型对战",
+        "text": "35 个场景（15 个智能体 + 20 个非智能体）。每轮一位参与者拿到一个场景，分别与两个隐藏模型完成通话，然后记录强制总体偏好并回答附加诊断问题。",
+        "cite": [
+          "aa-speech-methodology@Speech Agent Arena · Dataset / Evaluation Setup",
+          "aa-arena-overview@How the Speech Agent Arena works"
+        ]
+      },
+      {
+        "k": "模型侧输入",
+        "text": "每个模型收到描述其角色、场景上下文与指派细节的系统提示；智能体场景另附工具 schema。参与者为付费、经筛选的第三方人员。",
+        "cite": [
+          "aa-arena-overview@What models receive",
+          "aa-arena-overview@How the Speech Agent Arena works"
+        ]
+      },
+      {
+        "k": "第一步裁判：参与者资格",
+        "text": "Judge 1 收到场景、转写与必需最终调用定义，检查参与者是否尝试了指派任务、是否基本留在场景内、是否给出可评估的最终请求、是否给了模型合理的行动机会；只有合格通话进入第二步。",
+        "cite": [
+          "aa-speech-methodology@Speech Agent Arena · Task Success Rate",
+          "aa-arena-overview@Checking Task Success Tool Calls"
+        ]
+      },
+      {
+        "k": "第二步裁判：必需最终工具调用",
+        "text": "Judge 2 收到必需最终调用与完整时序工具轨迹，检查每个必需最终调用的工具、次数与参数是否正确、有无多余最终动作；支持性调用与 end_call 不计为任务完成，语义等价措辞与无害转写差异允许通过。",
+        "cite": [
+          "aa-speech-methodology@Speech Agent Arena · Task Success Rate"
+        ]
+      },
+      {
+        "k": "汇总与区间",
+        "text": "分子为成功通话数，分母 n = 成功 + 模型失败（参与者偏差与不可核实通话在计算前剔除），按 Wilson score interval 报 95% 置信区间。",
+        "cite": [
+          "aa-speech-methodology@Speech Agent Arena · Metrics",
+          "aa-speech-methodology@Speech Agent Arena · Publication rules"
+        ]
+      },
+      {
+        "k": "发布门槛与数据可得性",
+        "text": "整体结果要求至少 100 次出场且 95% 置信区间半宽不超过 75 才发布；参与者录音与转写不公开，因此外部无法逐条复核单次通话的判定。",
+        "cite": [
+          "aa-speech-methodology@Speech Agent Arena · Publication rules"
+        ]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "参评对象是支持原生音频输入/输出的语音模型（厂商的标准级联管线单列）。每轮由一位真人参与者持一个场景分别与两个匿名模型通话；任务成功率只评带工具调用的智能体场景：先用 Judge 1 判定参与者资格（是否尝试了指派任务、是否留在场景内、是否给出可评估的最终请求、是否给模型合理行动机会），合格通话再交 Judge 2 按场景规定的「必需最终工具调用」核对工具、调用次数与参数，支持性调用与 end_call 不计为完成。分子为成功通话数，分母 n = 成功 + 模型失败（参与者偏差与不可核实通话已剔除），按 Wilson score interval 报 95% 置信区间；整体结果需至少 100 次出场且 CI 半宽不超过 75 才发布。",
+    "cite": [
+      "aa-speech-methodology@Speech Agent Arena · Task Success Rate",
+      "aa-speech-methodology@Speech Agent Arena · Publication rules",
+      "aa-arena-overview@Checking Task Success Tool Calls",
+      "aa-speech-agent-arena@Default Cascaded System"
+    ],
+    "variants": [
+      {
+        "text": "原生模型 vs 级联系统（Default Cascaded System，即厂商自有的「语音转文本 + LLM + 文本转语音」管线）：榜单把级联系统单列，不与原生模型混排，工具注册方式可能不同。",
+        "cite": [
+          "aa-speech-agent-arena@Default Cascaded System"
+        ]
+      },
+      {
+        "text": "偏好 Elo 按全部场景、智能体场景、非智能体场景三套分别拟合；任务成功率只走智能体场景，两处参评的通话集不同。",
+        "cite": [
+          "aa-speech-methodology@Speech Agent Arena · Metrics",
+          "aa-arena-overview@Checking Task Success Tool Calls"
+        ]
+      },
+      {
+        "text": "厂商页引用的是自己的快照：xAI 发布页（标注 Source: Artificial Analysis, October 13, 2026）给 Grok Voice 3.0 / Grok Voice 2.0 / GPT-Live-1 (Astra, Medium) / Gemini 3.8 Live (Ext. Thinking, High) 的任务成功率为 94.8% / 94.6% / 87.4% / 89.1%，Elo 为 1070 / 1011 / 1048 / 990；2026-11-25 抓取的 AA 榜单上对应行是 94.8% / 94.6% / 87.4% / 89.1%，Elo 为 1059 / 991 / 1027 / 966——任务成功率一致，Elo 不同（Elo 随投票滚动）。",
+        "cite": [
+          "x-news-grok-voice-3@Speech-to-speech benchmark comparison",
+          "aa-speech-agent-arena@Task Success Rate 列"
+        ]
+      },
+      {
+        "text": "同一模型名在榜单上可能有多行：Gemini 3.8 Live 主行任务成功率 93.2%，Gemini 3.8 Live Extended Thinking (High) 行 89.1%；引用时不写档位就会串行。",
+        "cite": [
+          "aa-speech-agent-arena@Task Success Rate 列"
+        ]
+      }
+    ]
   },
   "metrics": [
     {
       "id": "task-success-rate",
-      "name": "任务成功率",
-      "range": [
-        0,
-        100
-      ],
+      "name": "任务成功率（Task Success Rate）",
+      "direction": "越高越好",
+      "description": "合格通话中模型做出全部必需最终任务完成型工具调用（工具、次数、参数正确且无多余最终动作）的比例；支持性调用与 end_call 不计为完成，附 Wilson score interval 的 95% 置信区间",
+      "range": [0, 100],
       "unit": "percent",
-      "direction": "higher",
-      "aggregation": "mean"
-    }
-  ],
-  "versions": [],
-  "limitations": [
-    "与 τ-Voice 同属语音任务完成类指标，两者口径与题集不同，数值不可互换",
-    "由第三方组织评测，各厂商自报行的运行协议可能不同"
-  ],
-  "default_protocol": null,
-  "notes": "证据账本中 1 次引用；由 xAI Grok Voice 3.0 页引入，是 AA Speech-to-Speech Index 的任务完成分项",
-  "official_sources": [
+      "cite": [
+        "aa-speech-methodology@Speech Agent Arena · Metrics",
+        "aa-speech-methodology@Speech Agent Arena · Task Success Rate",
+        "aa-speech-methodology@Speech Agent Arena · Publication rules"
+      ]
+    },
     {
-      "kind": "site",
-      "url": "https://x.ai/news/grok-voice-3"
+      "id": "tsr-95-ci",
+      "name": "任务成功率的 95% 置信区间（Wilson score interval）",
+      "direction": "区间越窄越好",
+      "description": "以 n = 成功 + 模型失败计算的 Wilson 区间，榜单以「下限/上限」两个百分比列出；宽度随出场次数变化，比较两个模型前先看区间是否重叠",
+      "range": [0, 100],
+      "unit": "percent",
+      "cite": [
+        "aa-speech-methodology@Speech Agent Arena · Publication rules",
+        "aa-speech-agent-arena@Task Success Rate 列"
+      ]
     }
   ],
-  "related_benchmarks": [
-    "aa-speech-to-speech",
-    "tau-voice"
+  "versions": [
+    {
+      "id": "arena-into-index-v1.1",
+      "date": "2026-08",
+      "label": "AA Speech to Speech Index v1.1 把 Speech Agent Arena 纳入指数，改为四项等权（各 25%）：语音推理、对话动态、智能体任务完成、Speech Agent Arena",
+      "cite": ["aa-speech-methodology@Version History"]
+    },
+    {
+      "id": "index-v2.0-tsr",
+      "date": "2026-08",
+      "label": "Index v2.0 用 Task Success Rate 替换 Conversational Dynamics（Full Duplex Bench）成为指数第四项；当前四项为语音推理（Big Bench Audio）、智能体任务完成（τ-Voice）、Arena 偏好（Arena Score）、任务成功率，各 25%",
+      "cite": ["aa-speech-methodology@Version History", "aa-speech-methodology@Artificial Analysis Speech to Speech Index"]
+    }
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-10-19"
+  "limitations": [
+    {
+      "issue": "头部差距落在置信区间内，名次不稳定",
+      "impact": "Grok Voice 3.0 94.8%（668 次，95% CI 91.6%–96.8%）与 Grok Voice 2.0 94.6%（669 次，91.4%–96.7%）区间大幅重叠；榜单 30 行的任务成功率从 29.1% 到 94.8%，但前列 1–3 个百分点的排序随时可能互换。",
+      "severity": "中",
+      "response": "AA 为每个模型同时公布出场次数与 Wilson 95% CI，并设发布门槛（至少 100 次出场、CI 半宽不超过 75）。",
+      "reader": "比较两个模型先看 CI 是否重叠；把 1–2 个百分点的差当成结论属于过度解读。",
+      "cite": ["aa-speech-agent-arena@Task Success Rate 列", "aa-speech-methodology@Speech Agent Arena · Publication rules"]
+    },
+    {
+      "issue": "裁判是 LLM，且裁判模型身份未披露",
+      "impact": "两步判定都由 LLM 完成：Judge 1 判参与者资格，Judge 2 核必需最终调用与参数。方法论只给出两步的完整提示词（含 JSON 输出格式），未说明用哪个模型；方法论提到的 GPT-4.1 属 τ-Voice，Claude Sonnet 4.6 / 3.5 属 Big Bench Audio，都不是本指标的裁判。",
+      "severity": "中",
+      "response": "AA 公开两步提示词全文，并注明模型系统提示、工具 schema 与评估提示词可能变动。",
+      "reader": "外部无法用同一裁判复现；把这个分数当作 AA 口径下的单点测量，不要当作可移植的绝对正确率。",
+      "cite": ["aa-speech-methodology@Speech Agent Arena · Task Success Rate", "aa-arena-overview@Example conversations"]
+    },
+    {
+      "issue": "场景集小且任务类型集中",
+      "impact": "进入统计的只有 15 个智能体场景，示例集中在牙科预约、披萨外送这类「查资料 + 下单/预约」的工具调用；20 个非智能体场景（泳池时间、瑜伽课价格）不进统计。",
+      "severity": "中",
+      "response": "方法论未披露场景筛选标准，也未给出扩样计划。",
+      "reader": "别把 94.8% 外推成任意领域、任意工具集的任务成功率。",
+      "cite": ["aa-speech-methodology@Speech Agent Arena · Dataset / Evaluation Setup", "aa-arena-overview@Two scenario types"]
+    },
+    {
+      "issue": "只核最终工具调用，不评过程与对话质量",
+      "impact": "必需最终调用全部正确即算成功：支持性调用出错不扣分，失败后恢复也算过；反过来，多余的成功最终动作算失败。通话拖沓、答非所问、被用户打断都不影响这个分数。",
+      "severity": "低",
+      "response": "方法论明确该判定规则；对话质量另由真人偏好 Elo 与对话动态分项覆盖。",
+      "reader": "任务成功率高不等于通话体验好，两个分项要一起看。",
+      "cite": ["aa-speech-methodology@Speech Agent Arena · Task Success Rate", "aa-speech-methodology@Conversational Dynamics"]
+    },
+    {
+      "issue": "榜单不标数据日期，快照口径易混",
+      "impact": "Speech Agent Arena 榜单页没有数据日期，只能以抓取日为准；厂商页引用的快照另有日期（xAI 页标注 2026-10-13），两处的 Elo 并不相同。",
+      "severity": "低",
+      "response": "本档案所有榜单读数以 2026-11-25 抓取为准，xAI 快照单独标注日期。",
+      "reader": "引用时写清抓取日期或快照日期，不要把不同日期的 Elo 排在一张表里。",
+      "cite": ["aa-speech-agent-arena@Task Success Rate 列", "x-news-grok-voice-3@Speech-to-speech benchmark comparison"]
+    }
+  ],
+  "notes": "证据账本中 4 个来源交叉印证：AA 方法论页、Speech Agent Arena 概述页、Speech Agent Arena 榜单与 xAI Grok Voice 3.0 发布页。xAI 页引用的 2026-10-13 快照与 2026-11-25 抓取的榜单在任务成功率上完全一致（94.8% / 94.6% / 87.4% / 89.1%），Elo 不同（1070 / 1011 / 1048 / 990 对 1059 / 991 / 1027 / 966）；且 xAI 引用的 Gemini 行是 Extended Thinking (High) 档位（89.1%），与榜单主行 Gemini 3.8 Live（93.2%）不是同一行。",
+  "official_sources": [
+    { "kind": "leaderboard", "url": "https://artificialanalysis.ai/speech-to-speech/arena" },
+    { "kind": "site", "url": "https://artificialanalysis.ai/speech-to-speech/arena/overview" },
+    { "kind": "site", "url": "https://artificialanalysis.ai/methodology/speech-to-speech-benchmarking" },
+    { "kind": "announcement", "url": "https://x.ai/news/grok-voice-3" }
+  ],
+  "related_benchmarks": ["aa-speech-to-speech", "tau-voice"],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-25",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-25",
+    "sources": [
+      {
+        "id": "aa-speech-methodology",
+        "kind": "site",
+        "title": "Artificial Analysis · Speech to Speech Benchmarking Methodology",
+        "url": "https://artificialanalysis.ai/methodology/speech-to-speech-benchmarking",
+        "accessed": "2026-11-25"
+      },
+      {
+        "id": "aa-arena-overview",
+        "kind": "site",
+        "title": "Artificial Analysis · Speech Agent Arena Overview & Examples",
+        "url": "https://artificialanalysis.ai/speech-to-speech/arena/overview",
+        "accessed": "2026-11-25"
+      },
+      {
+        "id": "aa-speech-agent-arena",
+        "kind": "leaderboard",
+        "title": "Artificial Analysis · Speech Agent Arena Leaderboard",
+        "url": "https://artificialanalysis.ai/speech-to-speech/arena",
+        "accessed": "2026-11-25"
+      },
+      {
+        "id": "x-news-grok-voice-3",
+        "kind": "announcement",
+        "title": "xAI · Introducing Grok Voice 3.0（2026-10-14）",
+        "url": "https://x.ai/news/grok-voice-3",
+        "accessed": "2026-11-25"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Artificial Analysis（第三方 AI 评测机构）",
+        "cite": ["aa-speech-methodology@Speech Agent Arena · Overview"]
+      },
+      "first_release": {
+        "v": "2026-08（Speech Agent Arena 随 AA Speech to Speech Index v1.1 进入指数）；Arena 独立上线日期与任务成功率首次公布日期未披露",
+        "cite": ["aa-speech-methodology@Version History"]
+      }
+    },
+    "cites": {
+      "summary": [
+        "aa-speech-methodology@Speech Agent Arena · Metrics",
+        "aa-speech-methodology@Artificial Analysis Speech to Speech Index"
+      ],
+      "interpretation": [
+        "aa-speech-methodology@Speech Agent Arena · Metrics",
+        "aa-speech-methodology@Speech Agent Arena · Publication rules",
+        "aa-speech-agent-arena@Task Success Rate 列"
+      ]
+    },
+    "problem": {
+      "text": "语音模型「聊得好」和「把事办成」是两件事：Speech Agent Arena 记录的是真人盲测偏好，回答不了「预约到底订上没有」。AA 在同一批真人通话上加了一道客观核查——按场景规定的「必需最终工具调用」逐一核对工具轨迹，把「办成了吗」变成可计算的百分比，并用它替换指数里的对话动态分项。",
+      "cite": [
+        "aa-speech-methodology@Speech Agent Arena · Overview",
+        "aa-arena-overview@Checking Task Success Tool Calls",
+        "aa-speech-methodology@Version History"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "全场最低",
+        "value": "29.1%",
+        "note": "Qwen3.5 Omni Flash Realtime（969 次出场，95% CI 24.0%–34.8%），为榜单最低；30 行的任务成功率从 29.1% 到 94.8%，说明该指标仍能分开模型档次。",
+        "cite": ["aa-speech-agent-arena@Task Success Rate 列"]
+      },
+      {
+        "label": "Elo 锚点模型",
+        "value": "85.1%",
+        "note": "GPT-Realtime-1.5，Elo 固定为 1000 作为本榜 Elo 标尺的参照点；921 次出场，95% CI 80.8%–88.6%。",
+        "cite": ["aa-speech-agent-arena@GPT-Realtime-1.5 锚点行"]
+      },
+      {
+        "label": "偏好榜首的任务成功率",
+        "value": "91.7%",
+        "note": "Cartesia Managed Agents：Elo 1111 为全场最高，任务成功率 91.7%（685 次，95% CI 88.3%–94.3%），仍低于 Grok Voice 3.0——偏好第一不等于办事第一。",
+        "cite": ["aa-speech-agent-arena@Task Success Rate 列"]
+      },
+      {
+        "label": "当前榜单最高",
+        "value": "94.8%",
+        "note": "Grok Voice 3.0（668 次出场，95% CI 91.6%–96.8%）；AA Speech Agent Arena 榜单读数，抓取日 2026-11-25（榜单页未标注数据日期）。",
+        "cite": ["aa-speech-agent-arena@Task Success Rate 列"]
+      },
+      {
+        "label": "随机 / 人类基线",
+        "value": "未披露",
+        "note": "AA 未给出随机或人类基线：分子要求场景规定的必需最终工具调用全部正确，方法论只提供模型间横向比较，没有对照水平。",
+        "cite": ["aa-speech-methodology@Speech Agent Arena · Metrics"]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把任务成功率和真人偏好 Elo 混为一谈。两者分开统计：Elo 1111 排第 1 的 Cartesia Managed Agents 任务成功率 91.7%，低于 Grok Voice 3.0 的 94.8%；一个模型可以更受偏好却更容易办砸事。",
+        "cite": ["aa-speech-agent-arena@Task Success Rate 列", "aa-speech-methodology@Speech Agent Arena · Metrics"]
+      },
+      {
+        "text": "把厂商页的模型名直接对上榜单行。xAI 发布页写的是 Gemini 3.8 Live (Ext. Thinking, High) 89.1%，AA 榜单上 Gemini 3.8 Live 主行是 93.2%，Gemini 3.8 Live Extended Thinking (High) 行才是 89.1%——同名不同档位是两行。",
+        "cite": ["x-news-grok-voice-3@Speech-to-speech benchmark comparison", "aa-speech-agent-arena@Task Success Rate 列"]
+      },
+      {
+        "text": "把 1–2 个百分点的差当结论。Grok Voice 3.0 94.8% 与 Grok Voice 2.0 94.6% 的 95% 区间分别是 91.6%–96.8% 与 91.4%–96.7%，大幅重叠。",
+        "cite": ["aa-speech-agent-arena@Task Success Rate 列", "aa-speech-methodology@Speech Agent Arena · Publication rules"]
+      },
+      {
+        "text": "以为所有通话都进分母。参与者偏离场景、未给出可评估最终请求或无法核实的通话先被 Judge 1 剔除，只有合格通话进分母；20 个非智能体场景也不走这套评估。",
+        "cite": ["aa-speech-methodology@Speech Agent Arena · Metrics", "aa-arena-overview@Checking Task Success Tool Calls"]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "Artificial Analysis，第三方 AI 评测机构；同时维护 Text to Speech Arena 与 Speech Agent Arena",
+        "cite": ["aa-speech-methodology@Speech Agent Arena · Overview", "aa-speech-agent-arena@榜单表头"]
+      },
+      {
+        "k": "评测形态",
+        "v": "真人盲测：付费、经筛选的第三方参与者每轮持一个场景，分别与两个隐藏模型通话后记录强制总体偏好；同一批通话另跑任务成功率评估",
+        "cite": ["aa-arena-overview@How the Speech Agent Arena works", "aa-speech-methodology@Speech Agent Arena · Overview"]
+      },
+      {
+        "k": "参评对象",
+        "v": "支持原生音频输入/输出的模型；厂商的标准级联系统（Default Cascaded System）单列，不与原生模型混排",
+        "cite": ["aa-speech-agent-arena@Default Cascaded System"]
+      },
+      {
+        "k": "场景与规模",
+        "v": "35 个场景（15 个智能体 + 20 个非智能体）；每个模型 293–990 次出场，榜单共 30 行",
+        "cite": ["aa-speech-methodology@Speech Agent Arena · Dataset / Evaluation Setup", "aa-speech-agent-arena@Task Success Rate 列"]
+      },
+      {
+        "k": "在指数中的位置",
+        "v": "任务成功率占 AA Speech to Speech Index 的 25%，与语音推理（Big Bench Audio）、智能体任务完成（τ-Voice）、Arena 偏好（Arena Score）并列；缺任一分项即无指数分",
+        "cite": ["aa-speech-methodology@Artificial Analysis Speech to Speech Index"]
+      },
+      {
+        "k": "数据与代码位置",
+        "v": "参与者录音与转写不公开；概述页的示例录音不计入榜单；场景卡、系统提示、工具 schema 与两步评估提示词在方法论/概述页公开，且注明可能变动",
+        "cite": ["aa-speech-methodology@Speech Agent Arena · Publication rules", "aa-arena-overview@Example conversations"]
+      },
+      {
+        "k": "厂商引用",
+        "v": "xAI 在 Grok Voice 3.0 发布页引用该指标（94.8%），并称其在独立测试中位列 Speech-to-Speech Index 第一（86.9），来源标注 Artificial Analysis, October 13, 2026",
+        "cite": ["x-news-grok-voice-3@The Most Accurate Voice Model", "x-news-grok-voice-3@Speech-to-speech benchmark comparison"]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-25",
+        "columns": ["来源", "模型", "Arena Elo", "出场次数", "任务成功率", "TSR 95% CI"],
+        "rows": [
+          ["AA 榜单", "Grok Voice 3.0", "1059", "668", "94.8%", "91.6%–96.8%"],
+          ["AA 榜单", "Phonic 1 (High)", "1012", "683", "92.3%", "88.9%–94.7%"],
+          ["AA 榜单", "ElevenLabs Agents (Default Cascaded System)", "985", "893", "90.5%", "86.7%–93.4%"],
+          ["AA 榜单", "Grok Voice 2.0", "991", "669", "94.6%", "91.4%–96.7%"],
+          ["AA 榜单", "Gemini 3.8 Live", "1074", "606", "93.2%", "89.0%–95.8%"],
+          ["AA 榜单", "Gemini 3.8 Live Extended Thinking (High)", "966", "773", "89.1%", "84.7%–92.4%"],
+          ["AA 榜单", "GPT-Live-1 (Astra, medium)", "1027", "736", "87.4%", "82.9%–90.8%"],
+          ["AA 榜单", "GPT-Realtime-1.5", "1000（锚点）", "921", "85.1%", "80.8%–88.6%"],
+          ["AA 榜单", "Cartesia Managed Agents", "1111", "685", "91.7%", "88.3%–94.3%"],
+          ["AA 榜单", "Gemini 3.1 Flash Live Minimal", "1089", "990", "74.6%", "69.4%–79.2%"],
+          ["AA 榜单", "Gemini 3.1 Flash Live High", "1062", "957", "71.8%", "66.4%–76.7%"],
+          ["AA 榜单", "Qwen3.5 Omni Flash Realtime", "832", "969", "29.1%", "24.0%–34.8%"],
+          ["xAI 快照（2026-10-13）", "Grok Voice 3.0", "1070", "—", "94.8%", "—"],
+          ["xAI 快照（2026-10-13）", "Grok Voice 2.0", "1011", "—", "94.6%", "—"],
+          ["xAI 快照（2026-10-13）", "GPT-Live-1 (Astra, Medium)", "1048", "—", "87.4%", "—"],
+          ["xAI 快照（2026-10-13）", "Gemini 3.8 Live (Ext. Thinking, High)", "990", "—", "89.1%", "—"]
+        ]
+      },
+      "cite": [
+        "aa-speech-agent-arena@Task Success Rate 列",
+        "x-news-grok-voice-3@Speech-to-speech benchmark comparison"
+      ]
+    }
+  }
 }

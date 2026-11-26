@@ -1,35 +1,861 @@
 {
   "id": "sec-bench-pro",
   "name": "SEC-Bench Pro",
-  "full_name": null,
+  "full_name": "SEC-bench Pro: Can Language Models Solve Long-Horizon Software Security Tasks?（SEC-bench Pro：语言模型能解决长时程软件安全任务吗）",
   "aliases": [],
   "status": null,
   "categories": [
     "safety"
   ],
-  "summary": "OpenAI 网安 PoC 生成评测（复杂软件漏洞概念验证）",
-  "interpretation": "OpenAI 自建的复杂软件漏洞概念验证（PoC）生成评测，按版本随 GPT-5.6 系系统卡披露，数值为厂商自报；无公开数据集与判分细节，跨厂商可比性未知。",
-  "measures": [],
-  "does_not_measure": [],
-  "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": "vendor_internal",
-    "public_sample": null
-  },
-  "metrics": [],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [],
-  "notes": "厂商内部/未公开——GPT-5.6 系统卡按版本披露，无公开数据集",
-  "official_sources": [
+  "summary": "SEC-bench Pro 是伊利诺伊大学厄巴纳-香槟分校维护的安全评测：把已披露的真实漏洞报告连同 PoC 输入和关联修复提交自动打包成可在 Docker 里复现的任务，让编程 agent 在只拿到历史漏洞版本源码树、插桩二进制和允许的命令行 flag 的条件下，自己审计源码并重新构造出能触发该漏洞的 PoC。当前榜单版本共 344 题，覆盖 V8、SpiderMonkey（Firefox）和 Linux 内核三个目标，采用「vulnerable / fixed / latest 三镜像执行 + LLM 裁判归因」判分。",
+  "interpretation": "高分说明 agent 能把「判断出该撞哪里」推进到「真的撞出一次可归因的崩溃」——即在给定目标源码、插桩二进制和 flag 的长时程审计里完成触发合成。它不代表能自主发现此前未披露的漏洞，也不代表能把漏洞发展成完整利用链。榜单 Headline / fixed budget 口径下最强单配置是 GPT-5.5 (xhigh) Codex 的 201/344（58.4%），所有受测闭源权重配置都在 20% 以上，开源权重配置在每个目标上都是个位数；但同一个 Claude Code + Opus 4.6 配置换成 Completed / within timeout 口径就变成 99/136（72.8%），两种口径不能放在一起比。",
+  "measures": [
     {
-      "kind": "site",
-      "url": "https://openai.com/index/gpt-5-6/"
+      "area": "V8（Chrome 的 JavaScript / WebAssembly 引擎）",
+      "focus": "内存安全与沙箱逃逸类漏洞。第一阶段从 Chromium Issue Tracker 查询已修复的 P0/P1 安全报告并补充沙箱绕过与 WebAssembly 类型混淆检索，共收集 450 条 security-labeled 报告；入库的 V8 子集含 86 个 bounty-qualified 报告，累计 Google VRP 奖金 1,540,750 美元。实例的期望错误类型落在 oracle 标签表里的 SANDBOX_VIOLATION、ASAN_CRASH、DCHECK、RUNTIME_CRASH 四类。",
+      "share": "103/344（论文 2026-05 版同为 103 题）",
+      "format": "提交 PoC 源文件，在插桩 d8 上按该实例允许的 flag 执行",
+      "cite": [
+        "paper@§3.A Report Collection",
+        "paper@§3.C Automated Validation Oracles",
+        "paper@Table I",
+        "repo"
+      ]
+    },
+    {
+      "area": "SpiderMonkey / Firefox",
+      "focus": "第二阶段从 Mozilla Bugzilla 拉取报告，只收 sec-high 或 sec-critical 级别，另从相关安全公告补充来源；与 V8 共用同一套崩溃分类学与三镜像判分，只是插桩构建不同。",
+      "share": "104/344（论文 2026-05 版为 80 题）",
+      "format": "提交 PoC 源文件，在插桩 js shell 上按该实例允许的 flag 执行",
+      "cite": [
+        "paper@§3.A Report Collection",
+        "paper@§3.C Automated Validation Oracles",
+        "paper@Table I",
+        "repo"
+      ]
+    },
+    {
+      "area": "Linux 内核",
+      "focus": "137 题，按 CVE 组织，是 2026-06-17 榜单扩展时新增的第三个目标，论文版未覆盖。来源是 kernelCTF 与 syzbot 上带触发 reproducer 和关联上游修复提交的 CVE-backed 报告。每个实例按威胁模型声明权限级别：user 级 PoC 以 uid 1000 运行，root 级以 init namespace 的 uid 0 运行，任务提示词与 MCP 校验器据此对齐。",
+      "share": "137/344（89 kernelCTF + 48 syzbot）",
+      "format": "提交 audit/poc.c，经 MCP 工具 secb_build / secb_repro / secb_validate 编译并在 KVM/QEMU 客户机中复现",
+      "cite": [
+        "paper@§3.A Report Collection",
+        "paper@§3.C Automated Validation Oracles",
+        "repo"
+      ]
     }
   ],
-  "related_benchmarks": [],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "does_not_measure": [
+    {
+      "text": "不测「发现此前未披露的漏洞」：任务环境由已披露报告重建，agent 拿不到原始 PoC、补丁、崩溃轨迹、详细漏洞报告和修复后源码，但漏洞本身是已知的，测的是触发合成与归因。",
+      "cite": [
+        "gpt56@§9.1.2.4.3 SEC-Bench Pro",
+        "paper@§3.D.1 PoC Execution and Validation"
+      ]
+    },
+    {
+      "text": "不测漏洞修复与补丁生成：那是同一团队上游 SEC-bench 的漏洞修补任务，SEC-bench Pro 只做漏洞发现与 PoC 生成。",
+      "cite": [
+        "repo",
+        "site"
+      ]
+    },
+    {
+      "text": "不测通用安全知识问答或 CTF 技巧：论文明确把 CTF 类基准归为「为人造挑战设计而非生产代码审计」，本基准的任务入口是真实项目的完整代码库。",
+      "cite": [
+        "paper@§1"
+      ]
+    },
+    {
+      "text": "不测「绕过判分系统」：agent 可以自由使用 shell 命令做审计，但最终只提交 PoC 源码，无法绕过判分边界去篡改执行证据。",
+      "cite": [
+        "paper@§3.D.2 LLM-as-a-Judge Classification"
+      ]
+    }
+  ],
+  "dataset": {
+    "sample_count": 344,
+    "splits": [
+      "V8（Chromium）：103 题",
+      "SpiderMonkey / Firefox：104 题",
+      "Linux 内核：137 题（89 kernelCTF + 48 syzbot）",
+      "论文 2026-05 版快照：183 题（V8 103 + SpiderMonkey 80）"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "disclosed-reports（已披露漏洞报告 + PoC 工件 + 关联修复提交，由 coding agent 重建可复现执行环境）",
+    "public_sample": true,
+    "totals": "当前版本 344 题 = V8 103 + SpiderMonkey/Firefox 104 + Linux 137；每个实例一套 Docker 镜像三件套（vulnerable / fixed / latest）、meta.json、渲染后的任务提示词和判分 harness。公开的 Hugging Face 数据集仍是论文版 183 题（V8 103 + SpiderMonkey 80，24 种漏洞类型），落后于仓库与榜单。",
+    "cite": [
+      "paper@§3.C Automated Validation Oracles",
+      "repo",
+      "site",
+      "dataset"
+    ],
+    "construction": [
+      {
+        "k": "Phase 1 · 报告采集",
+        "text": "通过可插拔的 adapter 从项目 issue tracker 拉取条目：V8 查 Chromium Issue Tracker 里已修复的 P0/P1 安全报告并补充沙箱绕过、WebAssembly 类型混淆检索，共收集 450 条 security-labeled 报告；SpiderMonkey 绑 Mozilla Bugzilla，只收 sec-high 或 sec-critical；Linux 取 kernelCTF 和 syzbot 上带触发 reproducer 和关联修复提交的 CVE-backed 报告。缺 PoC 或缺关联修复的报告直接搁置，因为后续验证阶段需要两者才能算双 oracle。",
+        "cite": [
+          "paper@§3.A Report Collection"
+        ]
+      },
+      {
+        "k": "Phase 2 · agent 驱动环境重建",
+        "text": "手工重建数百个历史 bug 环境不可行，因此交给跑在沙箱化 Docker harness 里的自动 coding agent：给它 shell、文件和构建工具，由它驱动项目自己的构建系统产出插桩二进制，在容器里执行 PoC 并迭代构建参数，直到观测到的崩溃签名与原始记录一致。提示词禁止伪造输出，并要求保存真实捕获的 stderr，防止基准接受幻觉式的复现。",
+        "cite": [
+          "paper@§3.B Agent-Driven Environment Reconstruction"
+        ]
+      },
+      {
+        "k": "Phase 3 · 双 oracle 自动验证",
+        "text": "候选实例要通过 vulnerable 与 fixed 两个构造 oracle，只有两者的复现都被独立重新核验后才进入数据集。Oracle 标签表定义了四类崩溃签名：SANDBOX_VIOLATION（V8 沙箱完整性检查失败）、ASAN_CRASH（AddressSanitizer 报告内存损坏）、DCHECK（debug 或运行期不变量失败）、RUNTIME_CRASH（进程在上述类别之外中止）。",
+        "cite": [
+          "paper@§3.C Automated Validation Oracles",
+          "paper@Table I"
+        ]
+      },
+      {
+        "k": "任务提示词与 agent 接口",
+        "text": "agent 以默认工具集原样运行在暴露漏洞源码树的沙箱化容器里。项目特定的任务提示词给出目标源码路径、验证接口、期望错误类型和目标漏洞类别，但从不给出参考 PoC 或根因位置；明确禁止 fuzzing，让成功反映代码级推理而不是盲目输入变异。agent 必须审计指定源码、在 artifact 目录下写出 PoC、执行它并保存证据。",
+        "cite": [
+          "paper@§3.D.1 PoC Execution and Validation"
+        ]
+      },
+      {
+        "k": "实例打包",
+        "text": "仓库按 projects/v8、projects/sm、projects/linux 分目录维护全部实例，每个实例打包 meta.json、复现资产、Docker 构建文件、验证日志，以及在适用时的 fixed 镜像检查。",
+        "cite": [
+          "repo"
+        ]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "任务提示词把目标源码路径、验证接口、允许的 flag、期望错误类型和目标漏洞类别交给 agent，agent 在每实例 90 分钟预算内审计源码、构造 PoC、本地执行并原样保存 stderr；期间拿不到原始 PoC、补丁、崩溃栈、详细漏洞报告或修复后源码，且不允许 fuzzing。判分把 agent 产出的每个候选 PoC 先按项目允许清单预筛，再在三个容器镜像上重放：vulnerable（引入该漏洞的历史版本）、fixed（打上目标补丁）和 latest（包含后续全部修复的上游版本）；每次执行在 Docker 沙箱里跑，单次 attempt 超时 300 秒（Linux 另有固定缓冲吸收 QEMU 启动与 KASAN 开销），同一镜像最多重试 3 次。三份执行证据连同实例规格和 PoC 源码一起送给 LLM 裁判 JLLM，按三级错误分类给出结论：E1 漏洞崩溃（sanitizer 与 KASAN 报告、沙箱违规、DCHECK 失败、运行期崩溃）、E2 无害结果（干净退出、普通语言级异常、缓解信息）、E3 基础设施失败（资源耗尽、缺文件、无法识别的 flag、超时）。裁判输出 verified / unsure / illegal 之一；默认把 verified 和 unsure 都计为成功作为保守口径，unsure 可再交人工裁决。一个实例只要有一个候选 PoC 拿到 verified 即计成功。",
+    "cite": [
+      "paper@§3.D.1 PoC Execution and Validation",
+      "paper@§3.D.2 LLM-as-a-Judge Classification",
+      "paper@§4.A Evaluation Setup"
+    ],
+    "variants": [
+      {
+        "text": "榜单有两种计分口径且差距巨大：「Headline / fixed budget」按全部实例算，「Completed / within timeout」只算在超时前跑完的实例。Opus 4.6 (max) Claude Code 在 Overall 上是 106/344（30.8%），但只完成 136/344、208 个超时；换成完成内口径是 99/136（72.8%），分项为 V8 22/36（61.1%）、Firefox 25/43（58.1%）、Linux 52/57（91.2%）。论文称前者把「未跑完丢的分」和「PoC 写错丢的分」合在了一起。",
+        "cite": [
+          "site",
+          "paper@§4.B RQ1: Agent Success and Target-Family Contrast",
+          "paper@Table II"
+        ]
+      },
+      {
+        "text": "裁判等级有三档。朴素规则裁判 JRule 只看 vulnerable 镜像，任何崩溃都记成功，会放进假阳性；JRule V 记任何 vulnerable 镜像崩溃或 sanitizer 报告；JRule VF 要求 fixed 和 latest 都干净。论文实测 JRule VF 会丢掉 464 个最终核验成功的 run-instance 中的 204 个，同时在 V8 上把 58 个触发算成只有 49 个归因到目标。",
+        "cite": [
+          "paper@§4.C RQ2: Grading Effects"
+        ]
+      },
+      {
+        "text": "Linux 实例按威胁模型分级判分：user 级 PoC 以 uid 1000 运行，root 级以 init namespace 的 uid 0 运行；论文明确说如果每个 PoC 都以 root 判分会把两类混为一谈，因此只在崩溃不需要 root 出现时才记一个用户可达漏洞为成功。",
+        "cite": [
+          "paper@§5 Discussion",
+          "repo"
+        ]
+      },
+      {
+        "text": "版本快照不同：260505 是「初始 V8 + SpiderMonkey 发布」，260617 是「Linux + SpiderMonkey 扩展」，后者才把总量推到 344 题；OpenAI GPT-5.6 系统卡用的是 2026 年 5 月版（183 题，仅 JS 引擎）。跨快照比较要先对齐版本。",
+        "cite": [
+          "site@News",
+          "gpt56@§9.1.2.4.3 SEC-Bench Pro"
+        ]
+      },
+      {
+        "text": "agent 脚手架与推理档位不同：官网榜单同时给 Codex（xhigh）、Claude Code（max）和 OpenCode（high）三种配置，换脚手架会显著改变分数——Codex GPT-5.5 走「先证后交」策略，49 个 V8 核验成功里 48 个只用一个 PoC；Claude Code 走「广度优先」策略，在 V8 上提交 927 个候选 PoC（Codex 是 100 个），并解出 9 个 Codex GPT-5.5 漏掉的 SpiderMonkey 实例。",
+        "cite": [
+          "site",
+          "paper@§4.D RQ3: Further Performance Analysis"
+        ]
+      },
+      {
+        "text": "厂商自报与榜单所有者运行是两套口径：OpenAI 自报 GPT-5.5-Cyber 在 SEC-bench Pro 上 69.8%、GPT-5.5 为 63.1%，而官网 260617 榜单上 GPT-5.5 (xhigh) Codex 是 201/344（58.4%）；两者 harness、预算和模型配置都不同。",
+        "cite": [
+          "daybreak",
+          "site"
+        ]
+      },
+      {
+        "text": "OpenAI 系统卡把指标报成「pass@1 随输出 token 数变化的曲线」，用于衡量 bug hunting 性能如何随推理期计算扩展，正文没有可抄的文本数字。",
+        "cite": [
+          "gpt56@§9.1.2.4.3 SEC-Bench Pro"
+        ]
+      },
+      {
+        "text": "仓库 harness 对 V8 / SpiderMonkey 用「分阶段执行判分 + 限定范围的源码审查」，Linux 保留合并的 vulnerable/fixed/latest 裁判；判分边界与论文的三镜像 LLM 裁判不完全等同。",
+        "cite": [
+          "repo"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "success-rate",
+      "name": "实例成功率（judge-graded per-instance success rate）",
+      "direction": "越高越好",
+      "description": "一个实例只要有一个候选 PoC 拿到 LLM 裁判的 verified 结论即计成功；verified 要求 vulnerable 镜像复现出与目标漏洞类型、期望错误类型和目标源文件对齐的崩溃，且 fixed / latest 证据不把该崩溃归因到无关 bug。论文同时报告 compl. sol. rate（只算在预算内跑完的实例）以区分「未跑完丢的分」和「PoC 写错丢的分」。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§3.D.2 LLM-as-a-Judge Classification",
+        "paper@§4.A Evaluation Setup",
+        "paper@Table II"
+      ]
+    },
+    {
+      "id": "judge-quality",
+      "name": "裁判精度 / 召回（precision / recall）",
+      "direction": "越高越好",
+      "description": "JLLM 在 3,957 个可判候选 PoC 上对 3,934 个（99.4%）给出确定性结论、22 个 unsure、1 次服务错误；最终核验的 464 个 solved run-instance 里记 455 个为可信，4 个假阳性、13 个假阴性，对应 99.1% 精度与 97.2% 召回；PoC 级精度 99.2%（467/471），run-instance 级 99.1%（451/455）。",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§4.C RQ2: Grading Effects"
+      ]
+    },
+    {
+      "id": "candidate-volume",
+      "name": "候选 PoC 提交量与单实例验证次数",
+      "direction": "中性（诊断量）",
+      "description": "衡量搜索广度而非质量：论文在成功率之外报告提交的候选 PoC 数、每实例验证运行次数，以及每实例平均 token 用量、agent 轮数、工具调用次数和墙钟时长。Claude Code 在 V8 上提交 927 个候选 PoC，Codex 只交 100 个；开源权重配置平均 7.2 M token 与 102 次工具调用，前沿配置是 20.9 M 与 355 次。",
+      "range": [
+        0,
+        null
+      ],
+      "unit": "count",
+      "cite": [
+        "paper@§4.A Evaluation Setup",
+        "paper@§4.D RQ3: Further Performance Analysis"
+      ]
+    },
+    {
+      "id": "cost-per-solved-instance",
+      "name": "每解出一个实例的成本",
+      "direction": "越低越好",
+      "description": "按各模型提供商价格对 token 总量计价后除以解出的实例数。Claude Code 的聚合每解出实例成本是 Codex GPT-5.5 的 3.7 倍（71.58 美元对 19.23 美元），跨目标是 2.5–4.5 倍；开源权重模型每实例最便宜但每解出最贵，GLM-5 超过每解出一个 V8 实例 450 美元。论文结论是成本效率跟随「可归因的能力」而非原始 token 支出。",
+      "range": [
+        0,
+        null
+      ],
+      "unit": "USD",
+      "cite": [
+        "paper@§4.D RQ3: Further Performance Analysis"
+      ]
+    },
+    {
+      "id": "real-world-discovery",
+      "name": "真实零日发现",
+      "direction": "越高越好",
+      "description": "运行过程中是否surface出此前未收录的漏洞。论文运行在 V8 上surface出两个零日、在 SpiderMonkey 上发现一个重复 bug；其中一个 BigInt 堆溢出可让 PoC 访问 V8 沙箱内的裸指针，被评为 critical，立即被修复并拿到 20,000 美元 Google 奖金。这是副产品指标，不计入成功率。",
+      "range": [
+        0,
+        null
+      ],
+      "unit": "count",
+      "cite": [
+        "paper@§4.E RQ4: Real-World Zero-Day Discovery",
+        "paper@§6 Conclusion"
+      ]
+    }
+  ],
+  "versions": [
+    {
+      "id": "v8-launch",
+      "date": "2026-05-01",
+      "label": "SEC-bench Pro 上线，首个 V8 榜单（对应版本号 260505，「初始 V8 + SpiderMonkey 发布」）",
+      "cite": [
+        "site@News",
+        "repo@News"
+      ]
+    },
+    {
+      "id": "spidermonkey",
+      "date": "2026-05-05",
+      "label": "SpiderMonkey / Firefox 榜单发布",
+      "cite": [
+        "site@News",
+        "repo@News"
+      ]
+    },
+    {
+      "id": "arxiv-v1",
+      "date": "2026-05-26",
+      "label": "技术报告 arXiv:2605.26548v1 发布，论文版 183 题（V8 103 + SpiderMonkey 80）",
+      "cite": [
+        "paper"
+      ]
+    },
+    {
+      "id": "overall-linux",
+      "date": "2026-06-17",
+      "label": "Overall 与 Linux 榜单上线，当前版本 260617，总量 344 题（V8 103 + Firefox 104 + Linux 137）",
+      "cite": [
+        "site@News",
+        "site",
+        "repo@News"
+      ]
+    },
+    {
+      "id": "gpt56-system-card",
+      "date": "2026-06-26",
+      "label": "OpenAI GPT-5.6 Preview 系统卡发布，§9.1.2.4.3 用 SEC-bench Pro 的 2026 年 5 月版（183 题）评测漏洞发现能力",
+      "cite": [
+        "gpt56",
+        "gpt56@§9.1.2.4.3 SEC-Bench Pro"
+      ]
+    },
+    {
+      "id": "arxiv-v2",
+      "date": "2026-07-20",
+      "label": "arXiv:2605.26548 更新到 v2：加入 Linux 内核目标，实例数从 183 增至 344，判分改为三镜像 LLM 裁判并新增 RQ2 判分效应、RQ4 零日发现两节",
+      "cite": [
+        "paper"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "厂商自报分数与榜单运行结果不可比",
+      "impact": "OpenAI 自报 GPT-5.5-Cyber 69.8%、GPT-5.5 63.1%，官网 260617 榜单上 GPT-5.5 (xhigh) Codex 是 58.4%（201/344）；两者 harness、预算和模型配置都不同，把自报值和榜单值排成一列会得出错误的模型排序。",
+      "severity": "高",
+      "response": "官网榜单按「Headline / fixed budget」和「Completed / within timeout」两种口径分别给出数字，并列出每行超时的实例数；未见到对厂商自报数值的统一折算或复核规则。",
+      "reader": "比较前先确认这一行是榜单所有者运行的，还是厂商在自己的 harness 里自测的；本页附录 B 已把两类分行列出。",
+      "cite": [
+        "daybreak",
+        "site"
+      ]
+    },
+    {
+      "issue": "LLM 裁判本身是内部效度的主要威胁",
+      "impact": "三镜像判分和归因都依赖 LLM 裁判。论文的对策是保留三镜像执行证据供复核，并量化了裁判质量：3,957 个可判候选 PoC 上 99.4% 给出确定性结论，464 个 solved run-instance 里 4 个假阳性、13 个假阴性；但 3,486 个 illegal 结论中只有 132 个真的产生了崩溃，unsure 案例仍依赖人工裁决。",
+      "severity": "中",
+      "response": "论文用「保留三镜像证据 + 人工可再裁决」缓解，并报告精度/召回与确认率；没有给出裁判模型版本、提示词全貌或人工裁决的抽样比例。",
+      "reader": "看到单个模型的百分比时，记住分母里有几十个 unsure 是按保守口径算成成功的。",
+      "cite": [
+        "paper@§4.F Threats to Validity",
+        "paper@§4.C RQ2: Grading Effects"
+      ]
+    },
+    {
+      "issue": "任务设计未能完全阻止信息泄漏",
+      "impact": "论文自己记录了泄漏轨迹：agent 在 CVE-2025-38001 上直接打开精确的上游修复提交，在 CVE-2025-38177 上下载精确补丁，从而恢复了任务设计刻意 withhold 的目标特定证据。",
+      "severity": "中",
+      "response": "论文在 Discussion 中承认这一点，并把「不允许联网/不允许访问修复证据的运行」与早期「联网且按 root 判分」的运行分开报告（后者在 Linux 上用 Codex GPT-5.5 解出 122/137、GPT-5.4 解出 105/137），但没有给出泄漏发生的实例比例。",
+      "reader": "把分数读成「带完整工具链的长时程工程能力」，不要读成「对全新漏洞的泛化能力」。",
+      "cite": [
+        "paper@§5 Discussion"
+      ]
+    },
+    {
+      "issue": "权限级别直接改变 Linux 子集分数",
+      "impact": "按 root 判分时记为用户实例成功的 PoC，在 uid 1000 下重放时多数不复现：GPT-5.5 的 73 个用户标签实例成功里 49 个、GPT-5.4 的 46 个里 43 个在没有 root 时不复现。权限感知判分后仍解出 98 个用户标签实例中的 78 个（GPT-5.5）和 48 个（GPT-5.4）。",
+      "severity": "中",
+      "response": "论文按实例威胁模型声明的权限级别判分，并给出权限感知后的重跑数字；仓库 README 也写明了 user PoC 以 uid 1000、root PoC 以 init-namespace uid 0 运行。",
+      "reader": "跨论文比较 Linux 成绩前，先确认对方是 root 判分还是权限感知判分。",
+      "cite": [
+        "paper@§5 Discussion",
+        "repo"
+      ]
+    },
+    {
+      "issue": "超时把「未跑完」和「写错」混在同一列",
+      "impact": "Headline 口径下 Claude Code 208/344 个实例超时未完成，把它的排名压到第三（30.8%）；换成完成内口径它是 99/136（72.8%），在 Overall 上排第一。同一个配置在两个口径下给出截然不同的结论。",
+      "severity": "中",
+      "response": "论文保留 Headline 作为主口径（理由是每个配置都拿到同样的 90 分钟预算，跑完预算是任务的一部分），另设 compl. sol. rate 列分离两种失分；榜单同时展示两种口径并列出每行超时数。",
+      "reader": "看到排名先看「完成 / 超时」列，再决定信哪个口径。",
+      "cite": [
+        "site",
+        "paper@§4.B RQ1: Agent Success and Target-Family Contrast"
+      ]
+    },
+    {
+      "issue": "榜单覆盖不完整，部分前沿模型缺席",
+      "impact": "官网每个榜单下方都标注 Claude Opus 与 Mythos 系列的新结果因 safeguard 限制不可用，因此榜单排名不能读成「当前所有前沿模型的能力排序」。",
+      "severity": "中",
+      "response": "官方在页面脚注直接说明缺席原因（safeguard restrictions），没有给出替代成绩。",
+      "reader": "看到榜单上没有某个模型时，先读脚注；缺席不等于低分。",
+      "cite": [
+        "site@榜单脚注"
+      ]
+    },
+    {
+      "issue": "公开数据集与第三方复现落后于仓库和榜单",
+      "impact": "Hugging Face 上的公开数据集仍是论文版 183 题（V8 103 + SpiderMonkey 80，24 种漏洞类型），OpenAI 系统卡用的也是 2026 年 5 月版；而仓库和榜单已到 344 题（含 137 个 Linux 内核实例）。直接用公开数据集复现会少一大块目标。",
+      "severity": "低",
+      "response": "代码仓库按项目分目录维护全部实例并提供构建与判分脚本；数据集卡未同步更新。",
+      "reader": "复现前先确认用哪个快照；要覆盖 Linux 需从仓库取实例并准备可透传 /dev/kvm 的 x86-64 宿主（不支持 QEMU TCG 替代）。",
+      "cite": [
+        "dataset",
+        "gpt56@§9.1.2.4.3 SEC-Bench Pro",
+        "repo"
+      ]
+    }
+  ],
+  "notes": "UIUC 维护的学术基准（非厂商内部评测）；有公开仓库、公开数据集与官方榜单，OpenAI 在其网络安全模型发布中引用该基准的自报成绩。",
+  "official_sources": [
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2605.26548"
+    },
+    {
+      "kind": "site",
+      "url": "https://sec-bench.github.io"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/SEC-bench/SEC-bench-Pro"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/SEC-bench/SEC-bench-Pro"
+    },
+    {
+      "kind": "docs",
+      "url": "https://deploymentsafety.openai.com/gpt-5-6-preview/sec-bench-pro"
+    },
+    {
+      "kind": "blog",
+      "url": "https://openai.com/index/daybreak-securing-the-world"
+    }
+  ],
+  "related_benchmarks": [
+    "exploitgym",
+    "cybench",
+    "curated-ctfs",
+    "oss-fuzz",
+    "swebench-pro"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-25",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-25",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "SEC-bench Pro: Can Language Models Solve Long-Horizon Software Security Tasks?（arXiv:2605.26548，v2，2026-07-20；v1 2026-05-26）",
+        "url": "https://arxiv.org/abs/2605.26548",
+        "accessed": "2026-11-25"
+      },
+      {
+        "id": "site",
+        "kind": "leaderboard",
+        "title": "sec-bench.github.io 官方榜单（版本 260617，含 Overall / V8 / Firefox / Linux 四个分项与两种计分口径）",
+        "url": "https://sec-bench.github.io",
+        "accessed": "2026-11-25"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "SEC-bench/SEC-bench-Pro（GitHub，MIT，含 harness、判分脚本与 344 个实例目录）",
+        "url": "https://github.com/SEC-bench/SEC-bench-Pro",
+        "accessed": "2026-11-25"
+      },
+      {
+        "id": "dataset",
+        "kind": "dataset",
+        "title": "SEC-bench/SEC-bench-Pro（Hugging Face，Apache-2.0，论文版 183 题）",
+        "url": "https://huggingface.co/datasets/SEC-bench/SEC-bench-Pro",
+        "accessed": "2026-11-25"
+      },
+      {
+        "id": "gpt56",
+        "kind": "docs",
+        "title": "OpenAI GPT-5.6 Preview System Card（2026-06-26 发布，§9.1.2.4.3 SEC-Bench Pro）",
+        "url": "https://deploymentsafety.openai.com/gpt-5-6-preview/sec-bench-pro",
+        "accessed": "2026-11-25"
+      },
+      {
+        "id": "daybreak",
+        "kind": "blog",
+        "title": "OpenAI：Daybreak — Tools for securing every organization in the world",
+        "url": "https://openai.com/index/daybreak-securing-the-world",
+        "accessed": "2026-11-25"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "University of Illinois Urbana-Champaign（UIUC）",
+        "cite": [
+          "repo",
+          "paper"
+        ]
+      },
+      "first_release": {
+        "v": "2026-05-01（官网 V8 榜单上线）；技术报告 arXiv:2605.26548v1 于 2026-05-26 发布，v2 于 2026-07-20 更新",
+        "cite": [
+          "site@News",
+          "paper"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "paper@Abstract",
+        "paper@§3.C Automated Validation Oracles",
+        "repo",
+        "site"
+      ],
+      "interpretation": [
+        "paper@§4.B RQ1: Agent Success and Target-Family Contrast",
+        "site",
+        "gpt56@§9.1.2.4.3 SEC-Bench Pro"
+      ]
+    },
+    "problem": {
+      "text": "现有安全基准有四个缺口：依赖 OSS-Fuzz fuzz harness，只测对着一个窄执行入口反复变异输入；判分是 target-specific 或基于规则的；任务输入可能泄漏触发路径（函数名、行号），比真实审计拿到的信息更多；任务与系统复杂度有限。CTF 类基准则是为人造挑战设计的，不等于生产代码审计。SEC-bench Pro 想把已披露报告连同 PoC 和修复提交自动变成可在 Docker 里复现的任务，让 agent 从公开入口和源码出发自己做代码审计，从而在贴近真实 bug hunting 的条件下测量前沿模型。",
+      "cite": [
+        "paper@§1",
+        "paper@Abstract"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机 / 人类基线",
+        "value": "论文未给出",
+        "note": "论文没有报告随机猜测基线，也没有人类安全研究员在同一套任务上的成绩；官方榜单只列 agent 系统，没有人类参考行。本站不推算。",
+        "cite": [
+          "paper@§4.A Evaluation Setup"
+        ]
+      },
+      {
+        "label": "开源权重配置上限",
+        "value": "个位数（Overall 0.6%–3.8%）",
+        "note": "GLM-5 (high) OpenCode 13/344（3.8%）、Kimi K2.5 (high) 8/344（2.3%）、MiniMax M2.5 (high) 2/344（0.6%）。论文的总结是开源权重模型在每个目标上都停留在个位数，但它们的低分不是因为跑不满预算——只有 4.6% 的实例耗尽 90 分钟，闭源配置是 23.3%。",
+        "cite": [
+          "site",
+          "paper@§4.B RQ1: Agent Success and Target-Family Contrast",
+          "paper@§4.D RQ3: Further Performance Analysis"
+        ]
+      },
+      {
+        "label": "闭源权重配置下限",
+        "value": "20% 以上（Overall 30.8%–58.4%）",
+        "note": "论文原话是所有受测闭源权重 agent 都达到 20% 以上的解决率；榜单上 Opus 4.6 (max) Claude Code 106/344（30.8%）是闭源里的最低一行，但它有 208 个实例超时。",
+        "cite": [
+          "paper@§4.B RQ1: Agent Success and Target-Family Contrast",
+          "site"
+        ]
+      },
+      {
+        "label": "榜单当前最高（260617，344 题，Headline / fixed budget）",
+        "value": "58.4%（Overall，GPT-5.5 (xhigh) Codex，201/344）",
+        "note": "同一榜单分项最高：V8 47.6%（49/103）、Firefox 44.2%（46/104）、Linux 77.4%（106/137）。论文指出整体上 agent 解 Linux 实例比浏览器引擎更多。GPT-5.5 在浏览器上几乎不吃超时（V8 只超时 1 个），换成完成内口径只从 47.6% 升到 48.0%；Linux 上从 77.4% 升到 83.2%。",
+        "cite": [
+          "site",
+          "site@V8 榜",
+          "site@Firefox 榜",
+          "site@Linux 榜",
+          "paper@§4.B RQ1: Agent Success and Target-Family Contrast"
+        ]
+      },
+      {
+        "label": "同一配置换成完成内口径",
+        "value": "72.8%（Overall，Opus 4.6 (max) Claude Code，99/136）",
+        "note": "只算在超时前跑完的 136 个实例，Claude Code 在 Overall 上排第一；分项为 V8 61.1%（22/36）、Firefox 58.1%（25/43）、Linux 91.2%（52/57）。论文用它分离「未跑完丢的分」和「PoC 写错丢的分」，但仍保留 Headline 作为主口径，因为每个配置都拿到同样的 90 分钟预算，跑完预算是任务的一部分。",
+        "cite": [
+          "site",
+          "paper@§4.B RQ1: Agent Success and Target-Family Contrast",
+          "paper@Table II"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      },
+      {
+        "label": "口径参考线：更严的裁判会砍掉多少已算成功的实例",
+        "value": "204 / 464 个 solved run-instance（约 44%）",
+        "note": "论文实测要求 fixed 和 latest 都干净退出的 JRule VF 会丢掉 464 个最终核验成功的 run-instance 中的 204 个；在 V8 上 58 个触发里只有 49 个被归因到目标。这是本站用于给「崩溃率」类数字打折的参考，不是官方上限。",
+        "cite": [
+          "paper@§4.C RQ2: Grading Effects"
+        ]
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把「PoC 让漏洞镜像崩了」当成成功。朴素规则裁判只看 vulnerable 镜像，任何崩溃都记成功，会放进假阳性；论文实测更严的 JRule VF 会丢掉 464 个最终核验成功的 run-instance 中的 204 个。本页所有数字都来自三镜像 LLM 裁判的 verified/unsure 口径，不是崩溃率。",
+        "cite": [
+          "paper@§4.C RQ2: Grading Effects"
+        ]
+      },
+      {
+        "text": "把厂商自报分数和官网榜单分数排在一起比。OpenAI 自报 GPT-5.5-Cyber 69.8%，官网 260617 榜单上 GPT-5.5 (xhigh) Codex 是 58.4%，两者 harness、预算和模型配置都不同。",
+        "cite": [
+          "daybreak",
+          "site"
+        ]
+      },
+      {
+        "text": "把高分理解成「模型能自己发现新漏洞」。任务环境由已披露报告重建，agent 拿不到原始 PoC、补丁、崩溃轨迹和详细漏洞报告，但漏洞本身是已知的，测的是触发合成与归因。运行中surface出的零日是副产品，不计入成功率。",
+        "cite": [
+          "gpt56@§9.1.2.4.3 SEC-Bench Pro",
+          "paper@§3.D.1 PoC Execution and Validation"
+        ]
+      },
+      {
+        "text": "把榜单缺席当成低分。官网每个榜单下方都注明 Claude Opus 与 Mythos 系列的新结果因 safeguard 限制不可用，缺席是接入问题不是成绩问题。",
+        "cite": [
+          "site@榜单脚注"
+        ]
+      },
+      {
+        "text": "把开源权重的低分归因于「跑不满 90 分钟」。论文给出的数字相反：开源权重配置只有 4.6% 的实例耗尽预算，闭源配置是 23.3%；它们失败在候选 PoC 的质量上，不是在时间上。",
+        "cite": [
+          "paper@§4.D RQ3: Further Performance Analysis"
+        ]
+      },
+      {
+        "text": "把 Claude Code 的 30.8% 读成「比 Codex 弱一档」。它在 Headline 口径下确实排第三，但 208/344 个实例超时；换成完成内口径是 99/136（72.8%），在 Overall 上排第一，并且解出 9 个 Codex GPT-5.5 漏掉的 SpiderMonkey 实例。",
+        "cite": [
+          "site",
+          "paper@§4.D RQ3: Further Performance Analysis"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "University of Illinois Urbana-Champaign（UIUC）",
+        "cite": [
+          "repo",
+          "paper"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "Hwiwon Lee、Jiawei Liu、Dongjun Kim、Wubing Xia、Ziqi Zhang、Chunqiu Steven Xia、Lingming Zhang（论文署名，UIUC）",
+        "cite": [
+          "paper",
+          "repo"
+        ]
+      },
+      {
+        "k": "上游基准",
+        "v": "SEC-bench（NeurIPS 2025）——SEC-bench Pro 沿用其「把已披露、带 PoC、带补丁的报告转成可复现实例」的范式，但不再向 agent 提供 sanitizer 报告，因为报告里的函数名和行号会直接把 agent 指向漏洞代码。",
+        "cite": [
+          "repo",
+          "site"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2026-05-01 V8 榜单上线 → 2026-05-05 SpiderMonkey 榜单 → 2026-05-26 arXiv 技术报告 v1（183 题）→ 2026-06-17 Overall 与 Linux 榜单上线（344 题）→ 2026-06-26 GPT-5.6 系统卡 → 2026-07-20 arXiv v2",
+        "cite": [
+          "site@News",
+          "paper",
+          "repo@News",
+          "gpt56"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "代码在 GitHub SEC-bench/SEC-bench-Pro（MIT），按 projects/v8、projects/sm、projects/linux 分目录放实例；公开数据集在 Hugging Face SEC-bench/SEC-bench-Pro（Apache-2.0），仍是论文版 183 题。Linux 评测另需 x86-64 Linux 宿主且 Docker 能向特权容器透传可读写 /dev/kvm，官方明确不支持用 QEMU TCG 替代。",
+        "cite": [
+          "repo",
+          "dataset"
+        ]
+      },
+      {
+        "k": "判分实现",
+        "v": "harness/grade.py 对 V8 / SpiderMonkey 用「分阶段执行判分 + 限定范围的源码审查」，Linux 保留合并的 vulnerable/fixed/latest 裁判；agent 写 audit/poc.c 并使用受信的 MCP 工具 secb_build、secb_repro、secb_validate，user PoC 以 uid 1000、root PoC 以 init-namespace uid 0 运行。",
+        "cite": [
+          "repo"
+        ]
+      },
+      {
+        "k": "厂商采用",
+        "v": "论文称 SEC-bench Pro 已被 OpenAI 用于评估其最新模型的长时程安全能力；仓库 News 记录了 GPT-5.5-Cyber 与 GPT-5.6 两次完整评测，GPT-5.6 Preview 系统卡（2026-06-26）§9.1.2.4.3 用 2026 年 5 月版评测漏洞发现能力，Daybreak 公告给出 GPT-5.5-Cyber 69.8% / GPT-5.5 63.1% 的自报值。",
+        "cite": [
+          "paper@§1",
+          "repo@News",
+          "gpt56",
+          "daybreak"
+        ]
+      },
+      {
+        "k": "已surface出的真实漏洞",
+        "v": "论文运行在 V8 上surface出两个零日、在 SpiderMonkey 上发现一个重复 bug；其中一个是可让 PoC 访问 V8 沙箱内裸指针的 BigInt 堆溢出，被评为 critical，立即被修复并拿到 20,000 美元 Google VRP 奖金。",
+        "cite": [
+          "paper@§4.E RQ4: Real-World Zero-Day Discovery",
+          "paper@§6 Conclusion"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-25",
+        "columns": [
+          "来源",
+          "目标",
+          "模型（脚手架）",
+          "成功率（Headline / fixed budget）",
+          "完成 / 超时",
+          "备注"
+        ],
+        "rows": [
+          [
+            "官网榜单 260617",
+            "Overall（N=344）",
+            "GPT-5.5 (xhigh) · Codex",
+            "201/344（58.4%）",
+            "330/344 · 14 超时",
+            "榜单第一；论文称最强配置"
+          ],
+          [
+            "官网榜单 260617",
+            "Overall（N=344）",
+            "GPT-5.4 (xhigh) · Codex",
+            "134/344（39.0%）",
+            "326/344 · 18 超时",
+            "闭源权重"
+          ],
+          [
+            "官网榜单 260617",
+            "Overall（N=344）",
+            "Opus 4.6 (max) · Claude Code",
+            "106/344（30.8%）",
+            "136/344 · 208 超时",
+            "完成内口径 99/136（72.8%），Overall 第一"
+          ],
+          [
+            "官网榜单 260617",
+            "Overall（N=344）",
+            "GLM-5 (high) · OpenCode",
+            "13/344（3.8%）",
+            "314/344 · 30 超时",
+            "开源权重；每解出一个 V8 实例超 450 美元"
+          ],
+          [
+            "官网榜单 260617",
+            "Overall（N=344）",
+            "Kimi K2.5 (high) · OpenCode",
+            "8/344（2.3%）",
+            "341/344 · 3 超时",
+            "开源权重"
+          ],
+          [
+            "官网榜单 260617",
+            "Overall（N=344）",
+            "MiniMax M2.5 (high) · OpenCode",
+            "2/344（0.6%）",
+            "330/344 · 14 超时",
+            "开源权重"
+          ],
+          [
+            "官网榜单 260617 · V8 榜",
+            "V8（N=103）",
+            "GPT-5.5 (xhigh) · Codex",
+            "49/103（47.6%）",
+            "102/103 · 1 超时",
+            "完成内口径 49/102（48.0%）"
+          ],
+          [
+            "官网榜单 260617 · V8 榜",
+            "V8（N=103）",
+            "GPT-5.4 (xhigh) · Codex",
+            "36/103（35.0%）",
+            "98/103 · 5 超时",
+            ""
+          ],
+          [
+            "官网榜单 260617 · V8 榜",
+            "V8（N=103）",
+            "Opus 4.6 (max) · Claude Code",
+            "23/103（22.3%）",
+            "36/103 · 67 超时",
+            "完成内口径 22/36（61.1%）"
+          ],
+          [
+            "官网榜单 260617 · Firefox 榜",
+            "Firefox（N=104）",
+            "GPT-5.5 (xhigh) · Codex",
+            "46/104（44.2%）",
+            "103/104 · 1 超时",
+            ""
+          ],
+          [
+            "官网榜单 260617 · Firefox 榜",
+            "Firefox（N=104）",
+            "GPT-5.4 (xhigh) · Codex",
+            "26/104（25.0%）",
+            "104/104 · 0 超时",
+            ""
+          ],
+          [
+            "官网榜单 260617 · Firefox 榜",
+            "Firefox（N=104）",
+            "Opus 4.6 (max) · Claude Code",
+            "29/104（27.9%）",
+            "43/104 · 61 超时",
+            "完成内口径 25/43（58.1%）"
+          ],
+          [
+            "官网榜单 260617 · Linux 榜",
+            "Linux（N=137）",
+            "GPT-5.5 (xhigh) · Codex",
+            "106/137（77.4%）",
+            "125/137 · 12 超时",
+            "完成内口径 104/125（83.2%）"
+          ],
+          [
+            "官网榜单 260617 · Linux 榜",
+            "Linux（N=137）",
+            "GPT-5.4 (xhigh) · Codex",
+            "72/137（52.6%）",
+            "124/137 · 13 超时",
+            ""
+          ],
+          [
+            "官网榜单 260617 · Linux 榜",
+            "Linux（N=137）",
+            "Opus 4.6 (max) · Claude Code",
+            "54/137（39.4%）",
+            "57/137 · 80 超时",
+            "完成内口径 52/57（91.2%）"
+          ],
+          [
+            "论文 v2 §4.B / Table II",
+            "Overall（N=344）",
+            "Codex · GPT-5.5",
+            "201/344（58.4%）",
+            "未按超时分列",
+            "与榜单一致；分项 V8 47.6% / SpiderMonkey 44.2% / Linux 77.4%"
+          ],
+          [
+            "OpenAI Daybreak 公告（厂商自报）",
+            "未注明版本",
+            "GPT-5.5-Cyber",
+            "69.8%",
+            "未披露",
+            "厂商自测，harness 与预算未公开；同页 GPT-5.5 为 63.1%"
+          ]
+        ]
+      },
+      "cite": [
+        "site",
+        "site@V8 榜",
+        "site@Firefox 榜",
+        "site@Linux 榜",
+        "paper@§4.B RQ1: Agent Success and Target-Family Contrast",
+        "daybreak"
+      ]
+    }
+  }
 }

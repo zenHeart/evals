@@ -1,39 +1,794 @@
 {
   "id": "vending-bench",
   "name": "Vending-Bench",
-  "full_name": null,
+  "full_name": "Vending-Bench: A Benchmark for Long-Term Coherence of Autonomous Agents（智能体长程一致性基准）",
   "aliases": [],
-  "status": null,
+  "status": "deprecated",
   "categories": [
     "agent"
   ],
-  "summary": "Andon Labs 售货机长程经营模拟（v1，净值计分）",
-  "interpretation": "Andon Labs 售货机长程经营模拟，得分为 5 次运行的期末净值均值/最差值（美元），起始资金 $500、人类基线约 $844；Grok 4 Heavy 报均值 $4,694；该 v1 版已停用，由 Vending-Bench 2 接棒。",
-  "measures": [],
-  "does_not_measure": [],
+  "summary": "Vending-Bench 是 Andon Labs 2025 年 2 月发布的智能体评测：让模型在 AISI 的 inspect-ai 框架里经营一台模拟售货机——起始资金 500 美元、每天交 2 美元管理费，在最多 2,000 条消息的运营中持续记账、发邮件订货、定价，并把补货任务委派给子代理，最后按期末净值排名。记账、订货、定价单独看都很简单，它测的是这些动作在几百个模拟日里能不能持续做对。",
+  "interpretation": "高分（期末净值高）说明模型能在很长时间里稳定执行这类重复性经营动作，论文里 Claude 3.5 Sonnet 的均值甚至超过了人类基线；但它不代表通用智能——论文的结论是所有模型都难以保持长程一致性，净值最终都会停滞、工具调用随时间下降。分数是 5 次运行的均值，方差极大（论文明确指出均值与最小值差距很大，甚至有运行一件商品都没卖出去），单个分数不能当作稳定能力。",
+  "measures": [
+    {
+      "area": "库存与订货",
+      "focus": "跟踪每种商品余量、日均销量与畅销品，据此决定补货量；官方页面展示的 Claude 3.5 Sonnet 最成功运行里，模型在订单邮件中系统记录余量、日均销量和周末峰值，并据此向供应商改单",
+      "share": "未披露",
+      "format": "模拟环境里的工具调用（读写数据库、发邮件给供应商）",
+      "cite": [
+        "paper@§2.2 Task environment",
+        "andonlabs-evals-vending-bench@The eval"
+      ]
+    },
+    {
+      "area": "定价与经济决策",
+      "focus": "给 12 个货位定价；环境用价格弹性需求模拟每日顾客购买，价格设得过高销量就下降，考的是定价与销量之间的权衡",
+      "share": "未披露",
+      "format": "对商品标价 + 观察模拟出的每日销量",
+      "cite": [
+        "paper@§2.2.2 Simulating customer purchases",
+        "paper@§2.3 Environment configuration"
+      ]
+    },
+    {
+      "area": "供应商沟通",
+      "focus": "通过邮件向供应商下单、确认数量与交货日期；供应商邮件内容取决于用 Perplexity 拉到的真实供应商数据和代理的请求，交货日期被读错是论文记录的主要失败模式之一",
+      "share": "未披露",
+      "format": "文本邮件往来（代理发起，供应商回复由程序生成）",
+      "cite": [
+        "paper@§2.2.1 Simulating supplier communication",
+        "paper@§3.2.2 Trace analysis"
+      ]
+    },
+    {
+      "area": "子代理委派",
+      "focus": "主代理把补货等执行工作交给子代理，并可随时追问子代理刚才做了什么；三个工具分别是查看子代理规格、派发任务、追问执行情况",
+      "share": "未披露",
+      "format": "工具调用（run_sub_agent / chat_with_sub_agent / sub_agent_specs）",
+      "cite": [
+        "paper@§2.2 Task environment",
+        "repo@README"
+      ]
+    },
+    {
+      "area": "长程记忆管理",
+      "focus": "每轮只把最近 30,000 token 的历史交给模型，其余靠代理自己维护 scratchpad、键值存储和向量数据库；论文专门测过不同记忆容量，结论是记忆更大的代理反而表现更差",
+      "share": "未披露",
+      "format": "受滚动的有限上下文 + 代理自建的外部存储",
+      "cite": [
+        "paper@§2.1 Agent implementation",
+        "paper@§3.5.2 Agent memory"
+      ]
+    },
+    {
+      "area": "现金流与成本控制",
+      "focus": "起始资金 500 美元、每天扣 2 美元管理费，连续 10 天付不起即提前结束；论文把现金余额单列出来，因为把钱全押在库存上通常不是好经营",
+      "share": "未披露",
+      "format": "期末净值 / 现金余额 / 是否破产终止",
+      "cite": [
+        "paper@§2.3 Environment configuration",
+        "paper@§2.4 Scoring",
+        "paper@§3.2 Primary models"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "固定题集上的问答准确率——没有题目集，分数完全来自模拟经营结束时的净值",
+      "cite": [
+        "paper@§2.4 Scoring",
+        "paper@§4 Conclusion"
+      ]
+    },
+    {
+      "text": "多模态输入理解——论文未描述任何图片、语音等非文本输入，全部交互都是文本消息与工具调用",
+      "cite": [
+        "paper@§2.1 Agent implementation",
+        "paper@§2.2 Task environment"
+      ]
+    },
+    {
+      "text": "与真人做生意——供应商回复由真实数据加模型生成，顾客购买由价格弹性模型算出，都不是真人",
+      "cite": [
+        "paper@§2.2.1 Simulating supplier communication",
+        "paper@§2.2.2 Simulating customer purchases"
+      ]
+    }
+  ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
+    "sample_count": 5,
+    "splits": [
+      "论文未定义数据集拆分：环境是程序化模拟，论文给的样本量口径是「每个实验（模型或配置变体）跑 5 次」"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "simulated environment（程序化模拟的经营环境，不是人工标注题集）",
+    "public_sample": false,
+    "totals": "没有固定题集：环境是一台模拟售货机生意，论文给出的样本量口径是「每个实验（模型或配置变体）跑 5 次」，单次运行上限 2,000 条消息；论文 Table 1 逐行给出各模型的 5 次运行汇总，人类基线只有 1 个样本。环境本身不提供公开下载，官方页面让研究者邮件联系。",
+    "cite": [
+      "paper@§2.3 Environment configuration",
+      "paper@Table 1",
+      "andonlabs-evals-vending-bench@The eval"
+    ],
+    "construction": [
+      {
+        "k": "运行框架",
+        "text": "主代理实现于 AISI 的 inspect-ai 框架；作者另外实现并开源了一个 inspect-ai 扩展来提供子代理工具。",
+        "cite": [
+          "paper@§2.1 Agent implementation",
+          "paper@§2.2 Task environment",
+          "repo@README"
+        ]
+      },
+      {
+        "k": "环境设定",
+        "text": "售货机 4 行 × 3 槽，起始资金 500 美元、日费 2 美元；运行上限 2,000 条消息，连续 10 天付不起日费即提前终止。",
+        "cite": [
+          "paper@§2.3 Environment configuration"
+        ]
+      },
+      {
+        "k": "供应商模拟",
+        "text": "供应商邮件内容取决于用 Perplexity 拉到的真实供应商数据与代理的请求，不是固定剧本。",
+        "cite": [
+          "paper@§2.2.1 Simulating supplier communication"
+        ]
+      },
+      {
+        "k": "顾客与经济模型",
+        "text": "用价格弹性需求模拟每日顾客购买，定价过高则销量下降。",
+        "cite": [
+          "paper@§2.2.2 Simulating customer purchases"
+        ]
+      },
+      {
+        "k": "评分口径",
+        "text": "主分数是游戏结束时的净值，同时记录现金余额、售出件数和工具使用。",
+        "cite": [
+          "paper@§2.4 Scoring"
+        ]
+      },
+      {
+        "k": "人类基线与消融",
+        "text": "让一名不了解任务的人通过聊天界面操作 5 小时作为基线；另外改变起始资金、日费与记忆容量做配置变体，每个配置跑 5 次。",
+        "cite": [
+          "paper@§2.5 Human baseline",
+          "paper@§3.5.1 Environment configuration",
+          "paper@§3.5.2 Agent memory"
+        ]
+      }
+    ]
   },
-  "metrics": [],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [],
-  "notes": "xAI Grok 4 引用；Grok 4 Heavy 报净值 4694 美元；V2 为后续改版",
+  "metrics": [
+    {
+      "id": "net-worth",
+      "name": "期末净值",
+      "direction": "越高越好",
+      "description": "游戏结束时的净资产，论文明确的主成功指标；论文指出它没有定义上限，因此饱和点不是精确位置",
+      "range": [
+        0,
+        null
+      ],
+      "unit": "USD",
+      "cite": [
+        "paper@§2.4 Scoring",
+        "paper@§3.1 Overview",
+        "paper@§4 Conclusion"
+      ]
+    },
+    {
+      "id": "money-balance",
+      "name": "期末现金余额",
+      "direction": "越高越好",
+      "description": "手头现金；论文指出把钱全投在库存里通常不是好经营，因此单列这项",
+      "range": [
+        0,
+        null
+      ],
+      "unit": "USD",
+      "cite": [
+        "paper@§2.4 Scoring",
+        "paper@§3.2 Primary models"
+      ]
+    },
+    {
+      "id": "units-sold",
+      "name": "售出件数",
+      "direction": "越高越好",
+      "description": "整个运行期间卖出的商品件数；论文报告有运行一件都没卖出去",
+      "range": [
+        0,
+        null
+      ],
+      "unit": "件",
+      "cite": [
+        "paper@§2.4 Scoring",
+        "paper@§3.1 Overview"
+      ]
+    },
+    {
+      "id": "days-until-sales-stop",
+      "name": "停止销售前的运行天数",
+      "direction": "越高越好",
+      "description": "从开始到停止卖出商品经过的模拟日数，以及它占整个运行天数的比例，用来衡量能维持多久不停滞",
+      "range": [
+        0,
+        null
+      ],
+      "unit": "模拟日",
+      "cite": [
+        "paper@§3.1 Overview",
+        "paper@§3.2 Primary models"
+      ]
+    }
+  ],
+  "default_protocol": {
+    "raw": "主代理作为单一智能体在 inspect-ai 中运行，每轮把最近 30,000 token 的历史交给模型推理，并可读写 scratchpad、键值存储和向量数据库；它通过三个工具把任务委派给子代理（查看子代理规格、派发任务、追问子代理做了什么）。单次运行上限 2,000 条消息，货机 4 行 3 槽，起始资金 500 美元、日费 2 美元，连续 10 天付不起日费即终止；主分数是期末净值，另记现金余额、售出件数与工具使用。",
+    "cite": [
+      "paper@§2.1 Agent implementation",
+      "paper@§2.2 Task environment",
+      "paper@§2.3 Environment configuration",
+      "paper@§2.4 Scoring",
+      "repo@README"
+    ],
+    "variants": [
+      {
+        "text": "起始资金与每日管理费会变：论文用 GPT-4o mini 做过变体测试，每个配置跑 5 次；不同初始资金下的分数不能直接比。",
+        "cite": [
+          "paper@§3.5.1 Environment configuration"
+        ]
+      },
+      {
+        "text": "记忆容量会变：论文测过不同 token 记忆上限，结论是记忆更大的代理表现反而更差；跨记忆配置比较时要注意这一点。",
+        "cite": [
+          "paper@§3.5.2 Agent memory"
+        ]
+      },
+      {
+        "text": "人类基线与模型的最小值不可比：人类只有 1 个 5 小时样本，模型的最小值来自 5 次运行，遇到糟糕结果的机会天然更多，论文明确说因此无法比较方差。",
+        "cite": [
+          "paper@§3.1 Overview",
+          "paper@§3.4 Comparison to human baseline"
+        ]
+      },
+      {
+        "text": "官方榜单把不同世代的模型跑在同一套 v1 环境上（含 Gemini 3 Pro、GPT-5.1），这些是官方后续补跑，不在论文 Table 1 里，与论文数字要分开看。",
+        "cite": [
+          "andonlabs-evals-vending-bench@公告"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2025-02-20",
+      "label": "arXiv v1 发布（arXiv:2502.15840v1，cs.AI，2025 年 2 月）",
+      "cite": [
+        "paper@标题页"
+      ]
+    },
+    {
+      "id": "site-deprecated",
+      "date": "2025-11-18",
+      "label": "官方页面宣布 Vending-Bench 弃用、由 Vending-Bench 2 接棒；榜单仍在补跑新模型（GPT-5.1、Gemini 3 Pro）",
+      "cite": [
+        "andonlabs-evals-vending-bench@公告"
+      ]
+    },
+    {
+      "id": "repo-archived",
+      "date": "2026-11-05",
+      "label": "配套多代理仓库 andonlabs/multiagent-inspect 被作者归档为只读",
+      "cite": [
+        "repo@README"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "人类基线只有 1 个样本",
+      "impact": "论文明确说因此无法比较方差；人类在「最差一次运行」里反而领先，一部分是因为模型的最小值来自 5 次运行、遇到糟糕结果的机会更多。",
+      "severity": "高",
+      "response": "论文如实标注该限制；官方榜单用星号注明人类基线只有一个样本、模型是 5 个。",
+      "reader": "把人类基线当参考点而不是及格线，不要用它和模型均值做严格统计比较。",
+      "cite": [
+        "paper@§3.4 Comparison to human baseline",
+        "paper@§3.1 Overview",
+        "andonlabs-evals-vending-bench@Leaderboard"
+      ]
+    },
+    {
+      "issue": "运行间方差极大",
+      "impact": "同一模型 5 次运行的净值均值与最小值差距很大（论文 Table 1 中 Claude 3.5 Sonnet 均值 2,217.93 美元、最小值 476.00 美元），还有运行一件商品都没卖出去；单次高分或低分都不代表稳定能力。",
+      "severity": "高",
+      "response": "论文每个模型跑 5 次、按均值排名，同时报告最小值、±1 标准差与逐次运行曲线。",
+      "reader": "只看均值会高估可靠性；比较模型时把最小值一起看。",
+      "cite": [
+        "paper@§3.1 Overview",
+        "paper@§3.2 Primary models"
+      ]
+    },
+    {
+      "issue": "v1 已弃用，新旧结果仍混在同一页",
+      "impact": "官方页面 2025-11-18 宣布 Vending-Bench 弃用并转向 Vending-Bench 2，但同一榜单之后仍在补跑 Gemini 3 Pro、GPT-5.1 等新模型；不同时间、不同动机下跑出的数字口径未必一致。",
+      "severity": "中",
+      "response": "官方明确说明此后由 Vending-Bench 2 接棒，并把本页在导航中标记为 Deprecated。",
+      "reader": "跨模型比较前先确认成绩来自论文 Table 1 还是官方后续补跑；新模型优先看 Vending-Bench 2。",
+      "cite": [
+        "andonlabs-evals-vending-bench@公告",
+        "andonlabs-evals-vending-bench"
+      ]
+    },
+    {
+      "issue": "官方榜单的排名列与净值均值列不一致",
+      "impact": "榜单第 1 名 Gemini 3 Pro 的净值均值为 4,387.93 美元，第 2 名 Grok 4 为 4,694.15 美元；第 5 名 Claude Opus 4（2,077.41 美元）也低于第 6 名 Claude Sonnet 4.5（2,465.02 美元）。按榜单自己的主指标列，排序与净值均值对不上，排序依据官方未说明。",
+      "severity": "中",
+      "response": "未见官方回应（页面未解释排名规则）。",
+      "reader": "引用「第一」时以净值均值列为准，并注明排名列的差异。",
+      "cite": [
+        "andonlabs-evals-vending-bench@Leaderboard",
+        "x-news-grok-4@Grok 4"
+      ]
+    },
+    {
+      "issue": "环境是模拟的，不是真实商业交互",
+      "impact": "供应商回复由 Perplexity 真实数据加模型生成，顾客购买由价格弹性模型算出；模型面对的不是真人，成绩不能直接外推到真实经营。",
+      "severity": "中",
+      "response": "论文把这一点作为设计选择写明，用来获得可控、可重复的长程场景。",
+      "reader": "把它当作长程一致性的压力测试，而不是商业能力评测。",
+      "cite": [
+        "paper@§2.2.1 Simulating supplier communication",
+        "paper@§2.2.2 Simulating customer purchases"
+      ]
+    },
+    {
+      "issue": "分数没有上限，饱和点无法定义",
+      "impact": "论文自己指出净值没有定义上限，因此「什么时候算饱和」不是精确点；同时论文观察到所有模型的工具调用随时间下降、约 120 个模拟日后下降更明显，最终停止销售。",
+      "severity": "低",
+      "response": "论文用「停止销售前的天数」及其占运行天数的比例作为辅助停滞指标。",
+      "reader": "不要跨版本寻找统一的饱和分数线；看停滞指标更稳。",
+      "cite": [
+        "paper@§4 Conclusion",
+        "paper@§3.1 Overview",
+        "paper@§3.2 Primary models"
+      ]
+    }
+  ],
+  "notes": "官方页面已把本评测标记为 Deprecated 并由 Vending-Bench 2 接棒；xAI 的 Grok 4 公告称其在该基准上 dominates，与 Andon Labs 榜单把它排在第 2 名不一致（见 limitations）",
   "official_sources": [
     {
       "kind": "site",
       "url": "https://andonlabs.com/evals/vending-bench"
     },
     {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2502.15840"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/andonlabs/multiagent-inspect"
+    },
+    {
       "kind": "site",
       "url": "https://x.ai/news/grok-4"
     }
   ],
-  "related_benchmarks": [],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "related_benchmarks": [
+    "vending-bench-2",
+    "apex-agents",
+    "osworld",
+    "agentbench"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "Vending-Bench: A Benchmark for Long-Term Coherence of Autonomous Agents（arXiv:2502.15840v1，2025-02-20）",
+        "url": "https://arxiv.org/pdf/2502.15840",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "andonlabs-evals-vending-bench",
+        "kind": "site",
+        "title": "Andon Labs 官方评测页 Vending-Bench（含排行榜、弃用公告、成功运行示例与 BibTeX）",
+        "url": "https://andonlabs.com/evals/vending-bench",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "x-news-grok-4",
+        "kind": "announcement",
+        "title": "xAI 新闻稿 Grok 4（引用 Vending-Bench 成绩）",
+        "url": "https://x.ai/news/grok-4",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "andonlabs/multiagent-inspect（论文 [3] 的 inspect-ai 多代理扩展，Apache-2.0，2026-11-05 归档）",
+        "url": "https://github.com/andonlabs/multiagent-inspect",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Andon Labs（论文作者 Axel Backlund、Lukas Petersson）",
+        "cite": [
+          "paper@标题页"
+        ]
+      },
+      "first_release": {
+        "v": "2025-02-20（arXiv:2502.15840v1）",
+        "cite": [
+          "paper@标题页"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "paper@Abstract",
+        "paper@§2.3 Environment configuration",
+        "andonlabs-evals-vending-bench@The eval"
+      ],
+      "interpretation": [
+        "paper@§4 Conclusion",
+        "paper@§3.1 Overview",
+        "paper@§3.2 Primary models"
+      ]
+    },
+    "problem": {
+      "text": "此前的智能体基准多是孤立、短程或受限的场景，时间一长模型行为就越来越难预测。Vending-Bench 把「长程一致性」单独拎出来测：用一个几百个模拟日、每步只有简单决策的经营场景，看模型能不能在很长时间里保持记账、订货、定价不走样。",
+      "cite": [
+        "andonlabs-evals-vending-bench@The eval",
+        "paper@§1 Introduction"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "起始资金线",
+        "value": "$500",
+        "note": "论文设定的初始资金；期末净值低于这条线即为亏损。论文报告只有 1 次运行的现金余额高于起始值。",
+        "cite": [
+          "paper@§2.3 Environment configuration",
+          "paper@§3.2.1 Comparison of top models"
+        ]
+      },
+      {
+        "label": "人类基线",
+        "value": "$844.05",
+        "note": "一名不了解任务的人通过聊天界面操作 5 小时的结果，只有 1 个样本；模型的最小值来自 5 次运行，两者不可严格比较。",
+        "cite": [
+          "paper@§2.5 Human baseline",
+          "paper@Table 1",
+          "paper@§3.4 Comparison to human baseline"
+        ]
+      },
+      {
+        "label": "论文发布时最好（Table 1 均值）",
+        "value": "$2,217.93",
+        "note": "Claude 3.5 Sonnet，5 次运行均值；同表最小值仅 $476.00，售出件数均值 1,560、最小值 0。",
+        "cite": [
+          "paper@§3.1 Overview",
+          "paper@Table 1"
+        ]
+      },
+      {
+        "label": "官方榜单最高均值",
+        "value": "$4694.15",
+        "note": "Grok 4，官方页面榜单净值均值列最高；但该榜单的排名列把它排在第 2（第 1 为 Gemini 3 Pro 的 $4387.93），排序依据官方未说明。xAI 公告据此称其 dominates。",
+        "cite": [
+          "andonlabs-evals-vending-bench@Leaderboard",
+          "x-news-grok-4@Grok 4"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把官方榜单第 1 名当成净值最高——榜单第 1 名 Gemini 3 Pro 均值为 $4387.93，第 2 名 Grok 4 为 $4694.15，按主指标列后者更高。",
+        "cite": [
+          "andonlabs-evals-vending-bench@Leaderboard"
+        ]
+      },
+      {
+        "text": "把均值和最小值当成一回事——Table 1 里两者差距很大，甚至有运行一件商品都没卖出去。",
+        "cite": [
+          "paper@§3.1 Overview",
+          "paper@§3.2 Primary models"
+        ]
+      },
+      {
+        "text": "把人类基线当及格线——它只是 1 个 5 小时样本，论文明确说无法比较方差。",
+        "cite": [
+          "paper@§3.4 Comparison to human baseline",
+          "andonlabs-evals-vending-bench@Leaderboard"
+        ]
+      },
+      {
+        "text": "以为上下文窗口被填满就是失败原因——论文测得的相关系数只有 0.167，数据不支持这一解释。",
+        "cite": [
+          "paper@§3.6 Is the problem long input length?"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "Andon Labs",
+        "cite": [
+          "paper@标题页"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "Axel Backlund、Lukas Petersson（论文联系邮箱 founders@andonlabs.com）",
+        "cite": [
+          "paper@标题页"
+        ]
+      },
+      {
+        "k": "技术栈",
+        "v": "主代理跑在 AISI 的 inspect-ai 框架；子代理能力来自作者实现并开源的 inspect-ai 扩展 andonlabs/multiagent-inspect（Apache-2.0，pip install multiagent-inspect）",
+        "cite": [
+          "paper@§2.1 Agent implementation",
+          "repo@README"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2025-02-20 arXiv v1 → 2025-11-18 官方宣布弃用并转向 Vending-Bench 2 → 2026-11-05 配套仓库归档为只读",
+        "cite": [
+          "paper@标题页",
+          "andonlabs-evals-vending-bench@公告",
+          "repo@README"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "评测环境本身不公开下载，官方页面让研究者邮件联系；开源的是多代理框架扩展，不是售货机环境",
+        "cite": [
+          "andonlabs-evals-vending-bench@The eval",
+          "repo@README"
+        ]
+      },
+      {
+        "k": "引用格式",
+        "v": "backlund2025vendingbench（官方页面 BibTeX，eprint 2502.15840）",
+        "cite": [
+          "andonlabs-evals-vending-bench@Citation"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-14",
+        "columns": [
+          "来源",
+          "模型",
+          "净值（均值，美元）",
+          "净值（最小值，美元）",
+          "售出件数（均值）",
+          "售出件数（最小值）",
+          "停止销售前天数（均值）",
+          "占运行天数比例"
+        ],
+        "rows": [
+          [
+            "论文 Table 1",
+            "Claude 3.5 Sonnet",
+            "$2,217.93",
+            "$476.00",
+            "1,560",
+            "0",
+            "102",
+            "82.2%"
+          ],
+          [
+            "论文 Table 1",
+            "o3-mini",
+            "$906.86",
+            "$369.05",
+            "831",
+            "0",
+            "86",
+            "80.3%"
+          ],
+          [
+            "论文 Table 1",
+            "Human",
+            "$844.05",
+            "$844.05",
+            "344",
+            "344",
+            "67",
+            "100.0%"
+          ],
+          [
+            "论文 Table 1",
+            "Gemini 1.5 Pro",
+            "$594.02",
+            "$439.20",
+            "375",
+            "0",
+            "35",
+            "43.8%"
+          ],
+          [
+            "论文 Table 1",
+            "GPT-4o mini",
+            "$582.33",
+            "$420.50",
+            "473",
+            "65",
+            "71",
+            "73.2%"
+          ],
+          [
+            "论文 Table 1",
+            "Gemini 1.5 Flash",
+            "$571.85",
+            "$476.00",
+            "89",
+            "0",
+            "15",
+            "42.4%"
+          ],
+          [
+            "论文 Table 1",
+            "Claude 3.5 Haiku",
+            "$373.36",
+            "$264.00",
+            "23",
+            "0",
+            "8",
+            "12.9%"
+          ],
+          [
+            "论文 Table 1",
+            "Gemini 2.0 Flash",
+            "$338.08",
+            "$157.25",
+            "104",
+            "0",
+            "50",
+            "55.7%"
+          ],
+          [
+            "论文 Table 1",
+            "GPT-4o",
+            "$335.46",
+            "$265.65",
+            "258",
+            "108",
+            "65",
+            "50.3%"
+          ],
+          [
+            "论文 Table 1",
+            "Gemini 2.0 Pro",
+            "$273.70",
+            "$273.70",
+            "118",
+            "118",
+            "25",
+            "15.8%"
+          ],
+          [
+            "官方榜单",
+            "Gemini 3 Pro New",
+            "$4387.93",
+            "$3769.70",
+            "4199",
+            "3165",
+            "239",
+            "94.6%"
+          ],
+          [
+            "官方榜单",
+            "Grok 4",
+            "$4694.15",
+            "$3333.28",
+            "4569",
+            "3515",
+            "324",
+            "99.5%"
+          ],
+          [
+            "官方榜单",
+            "GPT-5",
+            "$3578.90",
+            "$2690.29",
+            "2471",
+            "1798",
+            "363",
+            "100%"
+          ],
+          [
+            "官方榜单",
+            "GPT-5.1 New",
+            "$2379.88",
+            "$1424.90",
+            "2104",
+            "1166",
+            "136",
+            "100%"
+          ],
+          [
+            "官方榜单",
+            "Claude Opus 4",
+            "$2077.41",
+            "$1249.56",
+            "1412",
+            "1218",
+            "132",
+            "99.5%"
+          ],
+          [
+            "官方榜单",
+            "Claude Sonnet 4.5",
+            "$2465.02",
+            "$1095.25",
+            "3099",
+            "1907",
+            "350",
+            "77.8%"
+          ],
+          [
+            "官方榜单",
+            "Human*",
+            "$844.05",
+            "$844.05",
+            "344",
+            "344",
+            "67",
+            "100%"
+          ],
+          [
+            "官方榜单",
+            "Gemini 2.5 Pro (preview-03-25)",
+            "$789.34",
+            "$691.68",
+            "356",
+            "313",
+            "68",
+            "89%"
+          ],
+          [
+            "官方榜单",
+            "o3",
+            "$1843.11",
+            "$569.00",
+            "1363",
+            "331",
+            "112",
+            "86.9%"
+          ],
+          [
+            "官方榜单",
+            "Claude 3.5 Sonnet",
+            "$2217.93",
+            "$476.00",
+            "1560",
+            "0",
+            "102",
+            "82.2%"
+          ]
+        ]
+      },
+      "cite": [
+        "paper@Table 1",
+        "andonlabs-evals-vending-bench@Leaderboard",
+        "x-news-grok-4@Grok 4"
+      ]
+    }
+  }
 }

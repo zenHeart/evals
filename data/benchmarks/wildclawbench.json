@@ -1,43 +1,1029 @@
 {
   "id": "wildclawbench",
   "name": "WildClawBench",
-  "full_name": null,
+  "full_name": "WildClawBench: A Benchmark for Real-World, Long-Horizon Agent Evaluation（真实世界长程智能体评测）",
   "aliases": [],
-  "status": null,
+  "status": "active",
   "categories": [
     "agent"
   ],
-  "summary": "OpenClaw 真实环境长程任务智能体评测（上海 AI Lab）",
-  "interpretation": "60 个手工构造的真实环境任务（6 类，在 OpenClaw 实例内执行），按分类指标 0-1 加权出总分（%），支持 OpenClaw/Claude Code/Codex/Hermes 四种 harness 同题对比；最佳 67.2%，远未饱和。",
-  "measures": [],
-  "does_not_measure": [],
+  "summary": "WildClawBench 把智能体丢进一个真实运行的 OpenClaw 实例里，让它在真实 bash、文件系统、浏览器、邮件和日历上完成 60 道人工原创的双语长程任务；不是对着 mock API 做题，判分也不只看最终答案。",
+  "interpretation": "高分说明模型能在有噪声的真实环境里长时间自主调工具并把活干完；它不代表能和人多轮协作，也不代表人类水平——论文和官网都没给人类基线。同一个模型换一个 harness 最多差 18 分，所以跨 harness、跨推理档位、跨预算的数字不能直接排在一起。",
+  "measures": [
+    {
+      "area": "Productivity Flow（生产力流）",
+      "focus": "信息合成与多源聚合：每日 arXiv 新论文摘要、50 篇 PDF 批量分类、从邮件指令排会议",
+      "share": "约 17%（10/60）",
+      "format": "真实工具链（浏览 + 文件 I/O + 结构化产物）",
+      "cite": [
+        "paper-arxiv@§3.1",
+        "leaderboard-site@首页"
+      ]
+    },
+    {
+      "area": "Code Intelligence（代码智能）",
+      "focus": "读懂没有文档的代码库并写出可运行程序：只凭源码给 SAM3 写推理脚本、像素级视觉拼图、复现 VLMEvalKit 配置的结果",
+      "share": "约 20%（12/60）",
+      "format": "真实工具链；这一类在本版全部是多模态题",
+      "cite": [
+        "paper-arxiv@§3.1",
+        "paper-arxiv@附录 C"
+      ]
+    },
+    {
+      "area": "Social Interaction（社交通讯）",
+      "focus": "多轮多方协调：通过邮件与聊天 API 和模拟同事往返，处理时区、隐藏冲突和权限敏感约束",
+      "share": "10%（6/60）",
+      "format": "instrumented 服务 + 审计日志判分；本版全部是纯文本题",
+      "cite": [
+        "paper-arxiv@§3.1",
+        "paper-arxiv@附录 C"
+      ]
+    },
+    {
+      "area": "Search & Retrieval（搜索检索）",
+      "focus": "在歧义和显式搜索预算下找信息、验证并调和矛盾；证据不足时必须停下报错而不是猜",
+      "share": "约 18%（11/60）",
+      "format": "真实搜索（需要 Brave Search API key）",
+      "cite": [
+        "paper-arxiv@§3.1",
+        "repo-wildclawbench@README"
+      ]
+    },
+    {
+      "area": "Creative Synthesis（创意合成）",
+      "focus": "跨模态生成与长视频产出：45 分钟球赛剪出进球集锦报告、按规格生成商品海报、英转中配音",
+      "share": "约 18%（11/60）",
+      "format": "LLM/VLM 裁判评叙事报告、图片与视频产物；本版全部是多模态题",
+      "cite": [
+        "paper-arxiv@§3.1",
+        "paper-arxiv@附录 C"
+      ]
+    },
+    {
+      "area": "Safety Alignment（安全对齐）",
+      "focus": "在正常工作流里埋对抗挑战：文档提示注入、git 历史里的凭据泄漏、恶意 skill 注入、危险 OS 命令、静默覆盖文件",
+      "share": "约 17%（10/60）",
+      "format": "规则检查 + 环境状态审计 + 裁判三重；本版全部是纯文本题",
+      "cite": [
+        "paper-arxiv@§3.1",
+        "paper-arxiv@附录 C"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "多轮交互——所有任务都是单轮指令，执行中用户补充、纠错、追加需求的场景不在范围内",
+      "cite": [
+        "paper-arxiv@附录 B"
+      ]
+    },
+    {
+      "text": "GUI 桌面控制与生物、金融、法律等专业工作流——论文自述这些域只是轻量覆盖，覆盖度相对真实部署仍然有限",
+      "cite": [
+        "paper-arxiv@附录 B"
+      ]
+    },
+    {
+      "text": "自我进化 / 跨任务学习——官网把「同一任务多次尝试能否迭代改进」列为开放方向，不是当前评测项",
+      "cite": [
+        "leaderboard-site@首页"
+      ]
+    },
+    {
+      "text": "上下文管理上限——官网把「几小时或几千次工具调用后上下文退化」列为待探索方向，本版时间预算只有 300–1200 秒",
+      "cite": [
+        "leaderboard-site@首页",
+        "paper-arxiv@§3.2"
+      ]
+    }
+  ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
+    "sample_count": 60,
+    "splits": [
+      "同一套 60 题全部公开，无 train / test / val 划分（论文与仓库均未给出划分）"
+    ],
+    "languages": [
+      "en",
+      "zh"
+    ],
+    "source_type": "expert-authored（8 名研究员耗时 2 周手工原创；不从既有基准改编、不用模板自动生成）",
+    "public_sample": true,
+    "multiple_choice_share": "未披露（任务为开放型产物评分，论文未按选择题 / 开放题统计）",
+    "multimodal_share": "约 43%（26/60 为多模态，34/60 为纯文本）",
+    "totals": "60 题：36 英文 + 24 中文；26 多模态 + 34 纯文本；单题时间预算 300–1200 秒（均值 881 秒）；Code Intelligence 与 Creative Synthesis 本版全为多模态，Social Interaction 与 Safety Alignment 全为纯文本；数据在 internlm/WildClawBench（MIT）",
+    "cite": [
+      "paper-arxiv@§3.2",
+      "paper-arxiv@附录 C",
+      "repo-wildclawbench@README",
+      "dataset-hf@数据集卡"
+    ],
+    "construction": [
+      {
+        "k": "出题",
+        "text": "8 名研究员耗时 2 周，逐题手工撰写任务说明、参考解与评分标准；不从既有基准改编，也不用模板自动生成。",
+        "cite": [
+          "paper-arxiv@§3.3",
+          "leaderboard-site@首页"
+        ]
+      },
+      {
+        "k": "评分函数与过滤",
+        "text": "每题配一个可执行评分函数，返回逐条指标分与聚合分；作者用 Δ_ij ≥ 0.2 的难度区分度筛题，保证同一模型能拉开差距。",
+        "cite": [
+          "paper-arxiv@§3.4",
+          "paper-arxiv@§3.3"
+        ]
+      },
+      {
+        "k": "运行时隔离与防泄漏",
+        "text": "每题在独立 Docker 容器里从固定工作区初始化；ground truth 与评分脚本在 agent 退出后才挂载，执行期不可见；同一套结果跨机器可复现。",
+        "cite": [
+          "paper-arxiv@§3.4",
+          "repo-wildclawbench@README"
+        ]
+      },
+      {
+        "k": "混合判分",
+        "text": "每题评分函数最多组合三类检查：确定性规则检查、环境状态审计（instrumented 服务的审计日志 + 安全任务的 transcript）、以及 LLM/VLM 裁判（默认 GPT 5.4）。",
+        "cite": [
+          "paper-arxiv@§3.4",
+          "paper-arxiv@§4.1"
+        ]
+      }
+    ]
   },
-  "metrics": [],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [],
-  "notes": "豆包 Seed/Meta Muse 引用；InternLM 开源",
+  "metrics": [
+    {
+      "id": "overall-score",
+      "name": "综合得分",
+      "direction": "越高越好",
+      "description": "多模态子集（26 题）与纯文本子集（34 题）按任务数加权后的总体得分，官方以百分数呈现；每题的单项指标在 0.00–1.00 之间打分",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper-arxiv@Table 2 注",
+        "repo-wildclawbench@README"
+      ]
+    },
+    {
+      "id": "multimodal-score",
+      "name": "多模态子集得分",
+      "direction": "越高越好",
+      "description": "仅 26 道多模态题的加权得分；同模型通常低于纯文本子集",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper-arxiv@Table 2",
+        "paper-arxiv@§1"
+      ]
+    },
+    {
+      "id": "pure-text-score",
+      "name": "纯文本子集得分",
+      "direction": "越高越好",
+      "description": "仅 34 道纯文本题的加权得分",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper-arxiv@Table 2",
+        "paper-arxiv@§1"
+      ]
+    },
+    {
+      "id": "time",
+      "name": "单题耗时",
+      "direction": "越低越好",
+      "description": "单题墙钟时间（分钟）。论文报每任务平均，官网与仓库榜单报 60 题总计；超时任务被终止并按已产出的工件评分",
+      "unit": "minutes",
+      "cite": [
+        "paper-arxiv@Table 2",
+        "paper-arxiv@§4.1",
+        "repo-wildclawbench@README"
+      ]
+    },
+    {
+      "id": "cost",
+      "name": "单题成本",
+      "direction": "越低越好",
+      "description": "单题 API 成本（USD），按 OpenRouter 计价；自托管或未披露计费数据的模型记为 N/A",
+      "unit": "USD",
+      "cite": [
+        "paper-arxiv@Table 2",
+        "repo-wildclawbench@README"
+      ]
+    },
+    {
+      "id": "timeout",
+      "name": "超时失败题数",
+      "direction": "越低越好",
+      "description": "超出时间预算被终止的任务数，在推理档位消融中报告",
+      "cite": [
+        "paper-arxiv@§4.1",
+        "paper-arxiv@§4.3"
+      ]
+    }
+  ],
+  "default_protocol": {
+    "raw": "每题在独立 Docker 容器内跑一种 CLI agent harness（默认 OpenClaw），模型统一走 OpenRouter 端点；同一 harness 内工具 schema、系统提示与上下文管理策略固定，容器镜像固定 OS、Python 工具链与预装二进制。每题时间预算 300–1200 秒，超时即终止并按已产出工件评分。判分由确定性规则检查、环境状态审计与 LLM/VLM 裁判（默认 GPT 5.4）混合给出，每项指标 0.00–1.00。",
+    "cite": [
+      "paper-arxiv@§4.1",
+      "paper-arxiv@§3.4",
+      "repo-wildclawbench@README"
+    ],
+    "variants": [
+      {
+        "text": "harness 变体：OpenClaw（默认）/ Claude Code / Codex / Hermes Agent 跑同一套 60 题、同一套评分，用来把模型能力和脚手架分开；跨 harness 的分数不能混比——同一模型换 scaffold 最多差 18 分。",
+        "cite": [
+          "paper-arxiv@§4.1",
+          "repo-wildclawbench@README",
+          "paper-arxiv@§4.2"
+        ]
+      },
+      {
+        "text": "推理档位：GPT 5.4 从 low 到 medium 只从 50.40% 涨到 52.63%，切到 high 反而降到 45.02%，超时失败从 6 题增到 15 题——给模型加内部推理算力不保证任务完成得更好。",
+        "cite": [
+          "paper-arxiv@§4.3"
+        ]
+      },
+      {
+        "text": "时间预算：预算减半分数陡降，翻倍只有温和收益且边际递减（GPT 5.4 从 50.3% 到 56.5%）。",
+        "cite": [
+          "paper-arxiv@§4.3"
+        ]
+      },
+      {
+        "text": "技能增强：GPT 5.4 挂上领域技能后总分 +5.2、Code Intelligence +22.4，同时平均耗时与成本下降；论文按 +Skill 相对 Base 行的有符号变化呈现，收益幅度取决于模型基线能力。",
+        "cite": [
+          "paper-arxiv@§4.3",
+          "paper-arxiv@Table 4"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2026-05-11",
+      "label": "arXiv v1 技术报告（60 题 / 6 类 / 19 个前沿模型 / 4 种 harness）",
+      "cite": [
+        "paper-arxiv",
+        "repo-wildclawbench@News"
+      ]
+    },
+    {
+      "id": "four-harness",
+      "date": "2026-05",
+      "label": "发布四 harness 版本：OpenClaw、Claude Code、Codex CLI、Hermes Agent 跑同一套 60 题（仓库 News 只标到月份，具体日期未披露）",
+      "cite": [
+        "repo-wildclawbench@News"
+      ]
+    },
+    {
+      "id": "hunyuan3-adoption",
+      "date": "2026-05",
+      "label": "腾讯 Hunyuan3 Preview 发布引用 WildClawBench（仓库 News 只标到月份）",
+      "cite": [
+        "repo-wildclawbench@News"
+      ]
+    },
+    {
+      "id": "seed21-adoption",
+      "date": "2026-06",
+      "label": "字节 Seed2.1 发布把 WildClawBench 纳入 agent 评测（仓库 News 只标到月份）",
+      "cite": [
+        "repo-wildclawbench@News"
+      ]
+    },
+    {
+      "id": "leaderboard-expand",
+      "date": "2026-07-20",
+      "label": "OpenClaw 榜单扩充至 34 个模型（页面标注 Updated 2026-07-20），加入 GPT-5.6 Sol、Claude Fable 5、Kimi K3 等",
+      "cite": [
+        "leaderboard-site@榜单卡",
+        "repo-wildclawbench@News"
+      ]
+    },
+    {
+      "id": "harbor-trajectories",
+      "date": "2026-08",
+      "label": "发布 WildClawBench-Harbor（Harbor 格式全套 60 题）与 WildClawBench-Trajectories（完整 agent 轨迹）（仓库 News 只标到月份）",
+      "cite": [
+        "repo-wildclawbench@News"
+      ]
+    },
+    {
+      "id": "muse-adoption",
+      "date": "2026-08",
+      "label": "Meta Muse Glimmer 发布在模型卡中报告 WildClawBench 成绩（仓库 News 只标到月份）",
+      "cite": [
+        "repo-wildclawbench@News",
+        "huggingface-meta-models-muse-glimmer@模型卡正文"
+      ]
+    },
+    {
+      "id": "mm-subset",
+      "date": "2026-09",
+      "label": "Qwen3.8-Omni-Flash 发布引用其多模态子集 WildClawBench-MM（仓库 News 只标到月份）",
+      "cite": [
+        "repo-wildclawbench@News"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "题量小、域覆盖有限",
+      "impact": "60 题 6 类足以拉开前沿模型与 harness 的差距，但作者自述相对真实部署覆盖仍然有限；GUI 桌面控制与生物、金融、法律等专业工作流只是轻量呈现。",
+      "severity": "高",
+      "response": "论文附录 B 明确列为局限；仓库另发布 Harbor 格式与完整轨迹，官网开放 Personal OpenClaw 榜单收集更多配置。",
+      "reader": "单模型一两个百分点的差异不要当真，看类别级趋势和跨 harness 排序更稳。",
+      "cite": [
+        "paper-arxiv@附录 B",
+        "repo-wildclawbench@News"
+      ]
+    },
+    {
+      "issue": "全单轮、无多轮交互",
+      "impact": "所有任务都是发一条初始指令后自主跑到完成或超时，不覆盖执行中用户澄清、纠错、追加需求——而这正是编码、研究、创作流程里的常见形态。",
+      "severity": "高",
+      "response": "论文附录 B 列为第一条局限；官网把长程任务与上下文管理列为下一步方向。",
+      "reader": "别把分数当成「能当长期协作助手」的证据。",
+      "cite": [
+        "paper-arxiv@附录 B",
+        "leaderboard-site@首页"
+      ]
+    },
+    {
+      "issue": "跨 harness、跨口径不可比",
+      "impact": "同一模型换 harness 最多差 18 分；推理档位、时间预算、是否挂技能都会显著改变分数，而厂商自报常只给一种口径。",
+      "severity": "中",
+      "response": "论文在同一 harness 内固定工具 schema 与系统提示，用同一套 60 题 + 同一套评分跑四种 harness，并把推理档位、预算、技能的消融单独成节。",
+      "reader": "比较前先对齐 harness、推理档位、时间预算与技能设置。",
+      "cite": [
+        "paper-arxiv@§4.2",
+        "paper-arxiv@§4.3",
+        "paper-arxiv@§4.1"
+      ]
+    },
+    {
+      "issue": "重复运行方差与裁判依赖",
+      "impact": "三次独立重复运行的标准差在小数点后一位量级（论文称总体很小），但语义类判分由 GPT 5.4 担任裁判，换裁判会动分数。",
+      "severity": "中",
+      "response": "论文报告重复运行方差；对 5 道需裁判的题做双人盲评对照，与 GPT-5.4 的偏差一般在 3 分以内。",
+      "reader": "语义与创意类分数看区间，不要逐分解读。",
+      "cite": [
+        "paper-arxiv@附录 G",
+        "paper-arxiv@附录 H",
+        "paper-arxiv@§4.1"
+      ]
+    },
+    {
+      "issue": "官网卡片与仓库榜单存在个别不一致",
+      "impact": "官网「Best Value」卡写 MiniMax M2.7 为 33.0% / $7.47，仓库 README 榜单与论文 Table 2 均为 33.8% / $7.20。",
+      "severity": "低",
+      "response": "本页以仓库 README 榜单与论文 Table 2 为准；站点卡片未注明统计口径，疑为旧快照。",
+      "reader": "看到两个数字时以论文 Table 2 和仓库榜单为基准。",
+      "cite": [
+        "leaderboard-site@首页",
+        "repo-wildclawbench@README",
+        "paper-arxiv@Table 2"
+      ]
+    },
+    {
+      "issue": "未给出人类基线与随机基线",
+      "impact": "论文和官网都没有人类完成率，也没有随机或平凡基线，无法判断 67.2% 距离「人类水平」有多远。",
+      "severity": "低",
+      "response": "未披露；本页不代为推算。",
+      "reader": "把分数当作模型间相对排序，不要当作绝对能力刻度。",
+      "cite": [
+        "paper-arxiv@Table 2",
+        "leaderboard-site@榜单卡"
+      ]
+    }
+  ],
+  "notes": "三家厂商（腾讯 Hunyuan3 Preview、字节 Seed2.1、Meta Muse Glimmer）发布即引用；InternLM 开源，MIT",
   "official_sources": [
     {
-      "kind": "github",
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2605.10912"
+    },
+    {
+      "kind": "repo",
       "url": "https://github.com/InternLM/WildClawBench"
     },
     {
       "kind": "site",
-      "url": "https://seed.bytedance.com/en/blog/seed2-1-officially-released-advancing-ai-productivity"
+      "url": "https://internlm.github.io/WildClawBench/"
     },
     {
-      "kind": "site",
-      "url": "https://huggingface.co/meta-models/Muse-Glimmer-30B"
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/internlm/WildClawBench"
     }
   ],
-  "related_benchmarks": [],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "related_benchmarks": [
+    "claw-eval"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-13",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      {
+        "id": "paper-arxiv",
+        "kind": "paper",
+        "title": "WildClawBench: A Benchmark for Real-World, Long-Horizon Agent Evaluation（arXiv:2605.10912v1，2026-05-11）",
+        "url": "https://arxiv.org/abs/2605.10912",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "repo-wildclawbench",
+        "kind": "repo",
+        "title": "InternLM/WildClawBench（README、News 时间线、模型榜单、harness 对比）",
+        "url": "https://github.com/InternLM/WildClawBench",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "leaderboard-site",
+        "kind": "site",
+        "title": "internlm.github.io/WildClawBench（榜单、类别分布、博客）",
+        "url": "https://internlm.github.io/WildClawBench/",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "dataset-hf",
+        "kind": "dataset",
+        "title": "internlm/WildClawBench（Hugging Face 数据集卡）",
+        "url": "https://huggingface.co/datasets/internlm/WildClawBench",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "huggingface-meta-models-muse-glimmer",
+        "kind": "blog",
+        "title": "meta-models/Muse-Glimmer-30B（Meta 模型卡，含 WildClawBench 对比）",
+        "url": "https://huggingface.co/meta-models/Muse-Glimmer-30B",
+        "accessed": "2026-11-13"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "上海 AI Laboratory 等（InternLM 托管代码与榜单）",
+        "cite": [
+          "paper-arxiv@作者单位",
+          "repo-wildclawbench@README"
+        ]
+      },
+      "first_release": {
+        "v": "2026-05-11（arXiv v1 技术报告）",
+        "cite": [
+          "paper-arxiv"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "repo-wildclawbench@README",
+        "leaderboard-site@首页"
+      ],
+      "interpretation": [
+        "paper-arxiv@摘要",
+        "paper-arxiv@§4.2",
+        "paper-arxiv@附录 B"
+      ]
+    },
+    "problem": {
+      "text": "主流评测只关心最终答案对不对，不关心运行时到底被怎么用——模型可以在 mock API 上拿到高分，一进真实环境（会报错的包、意外的搜索结果、要读 audit log 的邮件）就散架。WildClawBench 要把这块补齐。",
+      "cite": [
+        "paper-arxiv@§1",
+        "leaderboard-site@首页"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "论文发布时最好",
+        "value": "62.2%",
+        "note": "Claude Opus 4.7，OpenClaw harness，Overall 列；其余 18 个模型均低于 60%，全距 19.3%–62.2%。",
+        "cite": [
+          "paper-arxiv@摘要",
+          "paper-arxiv@Table 2"
+        ]
+      },
+      {
+        "label": "官方榜单当前最高",
+        "value": "67.2%",
+        "note": "GPT-5.6 Sol，OpenClaw harness；仓库 README 明确说技术报告快照是 62.2%，后续 audited OpenClaw 运行把最高分提到 67.2%。",
+        "cite": [
+          "repo-wildclawbench@README",
+          "leaderboard-site@榜单卡"
+        ]
+      },
+      {
+        "label": "官方「大多数前沿模型」区间",
+        "value": "< 0.55 / 1.0",
+        "note": "官网博客口径：被测的大多数前沿模型（GPT-5.4、Gemini 3.1 Pro、Grok 4.20、Kimi K2.5、Qwen 3.5）都在 0.55 以下；Claude Opus 4.8 为 64.7%。",
+        "cite": [
+          "leaderboard-site@首页"
+        ]
+      },
+      {
+        "label": "最快",
+        "value": "94 分钟（Grok 4.20 Beta，60 题）",
+        "note": "官网 Speed 卡；该模型总分 19.3%，是榜上最快也是最低分之一。",
+        "cite": [
+          "leaderboard-site@榜单卡"
+        ]
+      },
+      {
+        "label": "最便宜可用",
+        "value": "$2.13（Hy3，60 题总成本）",
+        "note": "官网 Cost Efficiency 卡；Hy3 总分 49.7%。",
+        "cite": [
+          "leaderboard-site@榜单卡"
+        ]
+      },
+      {
+        "label": "重复运行方差量级",
+        "value": "约 ±1 个百分点",
+        "note": "论文附录 G：三次独立重复运行的标准差，Claude Opus 4.6 为 51.6 ± 1.0、GPT 5.4 为 50.3 ± 1.9、Gemini 3.1 Pro 为 40.8 ± 0.7。",
+        "cite": [
+          "paper-arxiv@附录 G"
+        ]
+      },
+      {
+        "label": "人类基线",
+        "value": "论文未给出",
+        "note": "论文与官网均未报告人类完成率，本站不推算。",
+        "cite": [
+          "paper-arxiv@Table 2",
+          "leaderboard-site@榜单卡"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把不同 harness 的分数排在一起比——同一模型换 scaffold 最多差 18 分，论文专门用同一套题跑四种 harness 来暴露这一点。",
+        "cite": [
+          "paper-arxiv@§4.2",
+          "repo-wildclawbench@README"
+        ]
+      },
+      {
+        "text": "把多模态子集分和纯文本子集分当成两个榜——Overall 是 26/34 任务数加权，且同一模型的纯文本分通常更高（GPT 5.4：40.2% vs 58.0%）。",
+        "cite": [
+          "paper-arxiv@Table 2 注",
+          "paper-arxiv@§1"
+        ]
+      },
+      {
+        "text": "以为推理档位越高越好——GPT 5.4 切到 high thinking 反而从 50.40% 掉到 45.02%，超时失败从 6 题涨到 15 题。",
+        "cite": [
+          "paper-arxiv@§4.3"
+        ]
+      },
+      {
+        "text": "以为分数已经接近饱和——67.2% 意味着约三分之一的题还没做对，而且失败多数表现为产物错误或不完整，不是完全没输出。",
+        "cite": [
+          "repo-wildclawbench@README",
+          "paper-arxiv@附录 E"
+        ]
+      },
+      {
+        "text": "忽略低 effort 标注——官网用 † 注明 Gemini 3.1 Pro 是在 low-effort 模式下评测，分数未必反映峰值能力。",
+        "cite": [
+          "leaderboard-site@榜单卡"
+        ]
+      },
+      {
+        "text": "把厂商模型卡里的 WildClawBench 数字直接和官方榜单对齐——Meta 把 Muse Glimmer 放在 General Agentic 组里和 Gemma4-31B、Qwen3.6-27B 横向比，口径要单独看。",
+        "cite": [
+          "huggingface-meta-models-muse-glimmer@模型卡正文",
+          "repo-wildclawbench@README"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "上海 AI Laboratory（论文第一署名单位）等 9 家；代码与榜单由 InternLM 托管",
+        "cite": [
+          "paper-arxiv@作者单位",
+          "repo-wildclawbench@README"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "项目负责人 Shuangrui Ding（共同一作），共同一作 Xuanlang Dai、Long Xing；通讯作者 Yuhang Zang；合作单位含上海 AI Lab、香港中文大学、复旦大学、中国科学技术大学、上海交通大学、清华大学、上海创智学院、浙江大学、南洋理工大学",
+        "cite": [
+          "paper-arxiv@作者单位"
+        ]
+      },
+      {
+        "k": "运行环境",
+        "v": "每题的 Docker 镜像内置真实 bash、浏览器、文件系统、邮件与日历服务；Search & Retrieval 需要 Brave Search API key，裁判模型默认 openai/gpt-5.4",
+        "cite": [
+          "repo-wildclawbench@README",
+          "leaderboard-site@首页"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "任务数据 internlm/WildClawBench（MIT，约 57.7 GB，上月下载 11,201 次），另发布 -Harbor 与 -Trajectories；轨迹 train.parquet 每行是一个 (task, model) 的完整消息序列",
+        "cite": [
+          "dataset-hf@数据集卡",
+          "repo-wildclawbench@README"
+        ]
+      },
+      {
+        "k": "第三方采用",
+        "v": "腾讯 Hunyuan3 Preview、字节 Seed2.1、Meta Muse Glimmer、Qwen3.8-Omni-Flash 的发布都引用了 WildClawBench 成绩",
+        "cite": [
+          "repo-wildclawbench@News",
+          "huggingface-meta-models-muse-glimmer@模型卡正文"
+        ]
+      },
+      {
+        "k": "致谢",
+        "v": "构建在 OpenClaw 之上，方法论受 Claw-Eval 启发，任务设计理念受 PinchBench 影响",
+        "cite": [
+          "leaderboard-site@首页",
+          "repo-wildclawbench@README"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-13",
+        "columns": [
+          "来源",
+          "模型",
+          "机构",
+          "综合得分",
+          "60 题总耗时",
+          "60 题总成本",
+          "每任务耗时(分钟)",
+          "每任务成本(USD)"
+        ],
+        "rows": [
+          [
+            "仓库榜单 + 论文 Table 2",
+            "GPT-5.6 Sol",
+            "OpenAI",
+            "67.2%",
+            "222 min",
+            "$56.78",
+            "未披露",
+            "未披露"
+          ],
+          [
+            "仓库榜单",
+            "Claude Opus 4.8",
+            "Anthropic",
+            "64.7%",
+            "400 min",
+            "$95.95",
+            "未披露",
+            "未披露"
+          ],
+          [
+            "仓库榜单 + 论文 Table 2",
+            "Claude Opus 4.7",
+            "Anthropic",
+            "62.2%",
+            "328 min",
+            "$77.40",
+            "5.46",
+            "1.29"
+          ],
+          [
+            "仓库榜单",
+            "Claude Fable 5",
+            "Anthropic",
+            "62.0%",
+            "324 min",
+            "$87.71",
+            "未披露",
+            "未披露"
+          ],
+          [
+            "仓库榜单 + 论文 Table 2",
+            "GPT-5.5",
+            "OpenAI",
+            "58.2%",
+            "262 min",
+            "$37.80",
+            "4.37",
+            "0.63"
+          ],
+          [
+            "仓库榜单",
+            "Grok 4.5",
+            "xAI",
+            "57.5%",
+            "359 min",
+            "$28.43",
+            "未披露",
+            "未披露"
+          ],
+          [
+            "仓库榜单",
+            "Qwen3.8-Max",
+            "Alibaba Cloud",
+            "56.2%",
+            "708 min",
+            "$24.70",
+            "未披露",
+            "未披露"
+          ],
+          [
+            "仓库榜单",
+            "Muse Spark 1.1",
+            "Meta",
+            "54.8%",
+            "367 min",
+            "$23.59",
+            "未披露",
+            "未披露"
+          ],
+          [
+            "仓库榜单",
+            "Kimi K3",
+            "Moonshot AI",
+            "54.5%",
+            "488 min",
+            "$40.08",
+            "未披露",
+            "未披露"
+          ],
+          [
+            "仓库榜单",
+            "GLM 5.2",
+            "Zhipu AI",
+            "54.2%",
+            "442 min",
+            "$17.10",
+            "未披露",
+            "未披露"
+          ],
+          [
+            "仓库榜单 + 论文 Table 2",
+            "Claude Opus 4.6",
+            "Anthropic",
+            "51.6%",
+            "508 min",
+            "$81.00",
+            "8.47",
+            "1.35"
+          ],
+          [
+            "仓库榜单 + 论文 Table 2",
+            "GPT-5.4",
+            "OpenAI",
+            "50.3%",
+            "350 min",
+            "$19.80",
+            "5.83",
+            "0.33"
+          ],
+          [
+            "仓库榜单",
+            "Hy3",
+            "Tencent",
+            "49.7%",
+            "338 min",
+            "$2.13",
+            "未披露",
+            "未披露"
+          ],
+          [
+            "仓库榜单 + 论文 Table 2",
+            "GLM 5.1",
+            "Zhipu AI",
+            "48.2%",
+            "515 min",
+            "$34.80",
+            "8.58",
+            "0.58"
+          ],
+          [
+            "仓库榜单",
+            "Qwen3.8 27B",
+            "Alibaba Cloud",
+            "48.0%",
+            "516 min",
+            "N/A（自托管 vLLM，无计费数据）",
+            "未披露",
+            "未披露"
+          ],
+          [
+            "仓库榜单",
+            "Muse Glimmer 30B",
+            "Meta",
+            "47.6%",
+            "352 min",
+            "$6.06",
+            "未披露",
+            "未披露"
+          ],
+          [
+            "仓库榜单",
+            "Kimi K2.7 Code",
+            "Moonshot AI",
+            "46.9%",
+            "674 min",
+            "$72.31",
+            "未披露",
+            "未披露"
+          ],
+          [
+            "仓库榜单",
+            "Intern-S2 Preview 397B",
+            "InternLM",
+            "44.7%",
+            "541 min",
+            "Free",
+            "未披露",
+            "未披露"
+          ],
+          [
+            "仓库榜单 + 论文 Table 2",
+            "DeepSeek V4 Pro",
+            "DeepSeek",
+            "43.7%",
+            "605 min",
+            "$12.00",
+            "10.08",
+            "0.20"
+          ],
+          [
+            "仓库榜单",
+            "Qwen3.6 27B",
+            "Alibaba Cloud",
+            "43.2%",
+            "421 min",
+            "$20.91",
+            "未披露",
+            "未披露"
+          ],
+          [
+            "仓库榜单 + 论文 Table 2",
+            "MiMo V2.5 Pro",
+            "Xiaomi",
+            "43.0%",
+            "451 min",
+            "$12.60",
+            "7.51",
+            "0.21"
+          ],
+          [
+            "仓库榜单 + 论文 Table 2",
+            "GLM 5",
+            "Zhipu AI",
+            "42.6%",
+            "373 min",
+            "$11.40",
+            "6.22",
+            "0.19"
+          ],
+          [
+            "仓库榜单 + 论文 Table 2",
+            "Gemini 3.1 Pro",
+            "Google DeepMind",
+            "40.8%",
+            "240 min",
+            "$18.00",
+            "4.00",
+            "0.30"
+          ],
+          [
+            "仓库榜单 + 论文 Table 2",
+            "MiMo V2 Pro",
+            "Xiaomi",
+            "40.2%",
+            "458 min",
+            "$26.40",
+            "7.63",
+            "0.44"
+          ],
+          [
+            "仓库榜单",
+            "Gemma 4 31B IT",
+            "Google DeepMind",
+            "37.6%",
+            "384 min",
+            "$3.46",
+            "未披露",
+            "未披露"
+          ],
+          [
+            "仓库榜单 + 论文 Table 2",
+            "Qwen3.5 397B",
+            "Alibaba Cloud",
+            "34.5%",
+            "459 min",
+            "$22.20",
+            "7.65",
+            "0.37"
+          ],
+          [
+            "仓库榜单 + 论文 Table 2",
+            "DeepSeek V3.2",
+            "DeepSeek",
+            "34.0%",
+            "549 min",
+            "$11.40",
+            "9.15",
+            "0.19"
+          ],
+          [
+            "仓库榜单 + 论文 Table 2",
+            "GLM 5 Turbo",
+            "Zhipu AI",
+            "33.9%",
+            "499 min",
+            "$15.00",
+            "8.32",
+            "0.25"
+          ],
+          [
+            "仓库榜单 + 论文 Table 2",
+            "MiniMax M2.7",
+            "MiniMax",
+            "33.8%",
+            "551 min",
+            "$7.20",
+            "9.18",
+            "0.12"
+          ],
+          [
+            "仓库榜单 + 论文 Table 2",
+            "Kimi K2.5",
+            "Moonshot AI",
+            "30.8%",
+            "406 min",
+            "$6.60",
+            "6.77",
+            "0.11"
+          ],
+          [
+            "仓库榜单 + 论文 Table 2",
+            "MiMo V2 Flash",
+            "Xiaomi",
+            "30.8%",
+            "433 min",
+            "$10.20",
+            "7.22",
+            "0.17"
+          ],
+          [
+            "仓库榜单 + 论文 Table 2",
+            "MiniMax M2.5",
+            "MiniMax",
+            "27.1%",
+            "542 min",
+            "$9.60",
+            "9.03",
+            "0.16"
+          ],
+          [
+            "仓库榜单 + 论文 Table 2",
+            "Step 3.5 Flash",
+            "StepFun",
+            "26.7%",
+            "430 min",
+            "$6.60",
+            "7.17",
+            "0.11"
+          ],
+          [
+            "仓库榜单 + 论文 Table 2",
+            "Grok 4.20 Beta",
+            "xAI",
+            "19.3%",
+            "94 min",
+            "$9.60",
+            "1.57",
+            "0.16"
+          ]
+        ]
+      },
+      "cite": [
+        "repo-wildclawbench@README",
+        "paper-arxiv@Table 2",
+        "leaderboard-site@榜单卡"
+      ]
+    }
+  }
 }

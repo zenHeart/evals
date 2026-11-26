@@ -1,38 +1,408 @@
 {
   "id": "mmlu-redux",
   "name": "MMLU-Redux",
-  "full_name": null,
+  "full_name": "Are We Done with MMLU? / MMLU-Redux（MMLU 人工重标注子集）",
   "aliases": [],
-  "status": null,
+  "status": "active",
   "categories": [
     "knowledge"
   ],
-  "summary": "人工修订 MMLU 错标注子集，修复噪声标签",
-  "interpretation": "人工修正过标注错误的 MMLU 子集。修复了“题目本身是错的”这个尴尬。",
-  "measures": [],
-  "does_not_measure": [],
+  "summary": "MMLU-Redux 是流行知识考试基准 MMLU 的「人工校对版」：14 位专家按一套统一的错误分类协议逐题复核，覆盖全部 57 个科目各随机抽出的 100 题（共 5,700 题），并据此估计原 MMLU 约 6.49% 的题目存在标注或表述错误。",
+  "interpretation": "高分说明模型在一批已标出错误类型的多选题上答对得多，也说明错标答案对原 MMLU 分数的影响被量化出来了；但它不代表模型「理解」了题目——论文发现模型在错题上的表现有时不降反升，作者推测是预训练时见过这些题。它也不增加难度：题目与选项和原 MMLU 完全一致，污染与饱和风险和原版相同。比较分数前先确认口径：全部实例还是仅正确实例、1.0 版（30 科目）还是 2.0 版（57 科目 / 5,700 题）。",
+  "measures": [
+    {
+      "area": "学科覆盖（沿用 MMLU 57 个科目）",
+      "focus": "从 MMLU 测试集每个科目随机抽 100 题人工复核；示例（MMLU Virology）：「防止未来埃博拉爆发的最佳选项是什么？」MMLU 给出的答案是 D「与美欧军队一起快速介入西非」，论文把这一项作为错标答案的典型",
+      "share": "5,700 题（57 科目 × 每科 100 题）",
+      "format": "四选一选择题：question 为原题字符串，choices 为 4 个选项，answer 为 0–3 的索引",
+      "cite": [
+        "paper@Table 5",
+        "paper@§1",
+        "dataset@Dataset Details"
+      ]
+    },
+    {
+      "area": "标注正确（OK）",
+      "focus": "题目表述清楚、选项清楚、只有一个正确答案且与 MMLU 标签一致；示例：「印度尼西亚的首都是哪里？」选项 A. Berlin、B. Paris、C. Rome、D. Jakarta，标注 D，人工核对后判为正确",
+      "share": "93.51%",
+      "format": "逐题人工判定，error_type 记为 ok",
+      "cite": [
+        "paper@Table 5"
+      ]
+    },
+    {
+      "area": "题目表述不清（Bad Question Clarity，1a）",
+      "focus": "题目在清晰度、语法、信息充分性上有问题；示例：「第 21 题提到的那家公司总部在哪里？」——题目引用了别处的一道题，缺少上下文",
+      "share": "2.47%",
+      "format": "逐题人工判定",
+      "cite": [
+        "paper@Table 5",
+        "paper@§2.1"
+      ]
+    },
+    {
+      "area": "选项不清（Bad Options Clarity，1b）",
+      "focus": "选项含糊、重复或与题目无关，多来自原题库解析时把一个选项拆成两个；示例：「地球上最大的海洋是？」选项为 A. Atlantic、B. Ocean、C. Pacific Ocean、D. Arctic Ocean，其中 B 含糊到无法判定",
+      "share": "0.44%",
+      "format": "逐题人工判定",
+      "cite": [
+        "paper@Table 5",
+        "paper@§2.1"
+      ]
+    },
+    {
+      "area": "无正确答案（No Correct Answer，2a）",
+      "focus": "选项里没有一个能正确回答问题，常见原因是原题库为把 5 个选项压成 4 个而删掉了正确项",
+      "share": "0.62%",
+      "format": "逐题人工判定；标注者可在 correct_answer 列写建议答案",
+      "cite": [
+        "paper@Table 5",
+        "paper@§2.1"
+      ]
+    },
+    {
+      "area": "多个正确答案（Multiple Correct Answers，2b）",
+      "focus": "超过一个选项可算对，例如选项里含有标准答案的同义词；示例：「哪些国家同时位于欧洲和亚洲？」俄罗斯与土耳其都成立",
+      "share": "1.54%",
+      "format": "逐题人工判定",
+      "cite": [
+        "paper@Table 5",
+        "paper@§2.1"
+      ]
+    },
+    {
+      "area": "答案标错（Wrong Ground Truth，2c）",
+      "focus": "MMLU 给的答案与正确答案不一致，来自人工标注失误或原题库解析错位；示例：「突然出现并在全球传播的病毒叫什么？」MMLU 标 B（Endemic），应为 C（Pandemic）",
+      "share": "1.42%",
+      "format": "逐题人工判定；论文说明标注者建议的答案不用于替换 MMLU 原标签",
+      "cite": [
+        "paper@Table 5",
+        "paper@§2.1",
+        "paper@§3"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "模型是否真正理解题目：论文对比正确实例与错误实例的表现，发现模型在错题上有时持平甚至更高，作者把这解释为记忆而非能力的证据",
+      "cite": [
+        "paper@§3.1"
+      ]
+    },
+    {
+      "text": "全量 MMLU 的错误情况：只审了 57 个科目各 100 题，原 MMLU 测试集 14,042 题中还有 8,342 题未审，未审科目只能靠已审科目外推",
+      "cite": [
+        "paper@§6 Limitations",
+        "paper@Table 5"
+      ]
+    },
+    {
+      "text": "自动纠错能力：论文第 4 节专门测了让 LLM 自动挑错题，最好的组合（Claude 3 Opus + 检索增强）F2 也只有 41.92，作者结论是仍不足以产出高质量数据集",
+      "cite": [
+        "paper@§4.1"
+      ]
+    }
+  ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
+    "sample_count": 5700,
+    "splits": [
+      "57 个科目的 test split（Hugging Face 里每个科目是一个独立 config，各 100 题）",
+      "无 dev / validation 划分（论文与数据集卡均未提及）"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "人工重标注的 MMLU 子集：题目与选项取自 cais/mmlu 测试集，每科随机抽 100 题，由 14 位专家逐题标注错误类型",
+    "public_sample": true,
+    "multiple_choice_share": "100%（每题 4 个选项，answer 为 0–3 的索引）",
+    "multimodal_share": "未披露（论文与数据集卡均未提及图片输入）",
+    "totals": "5,700 题 = 57 个 MMLU 科目 × 每科随机抽取 100 题；全部为 MMLU 测试集里的四选一选择题，题目与选项保持原样未修改；人工分层抽样估计整体错误率约 6.49%，但科目之间极不均匀（病毒学 57%，管理学等科目为 0）",
+    "cite": [
+      "paper@Table 5",
+      "paper@附录 B",
+      "dataset@Dataset Details",
+      "dataset@Uses"
+    ],
+    "construction": [
+      {
+        "k": "抽样",
+        "text": "从 MMLU 测试集按科目随机抽 100 题，共 5,700 题交给标注者；论文附录 B 与数据集卡都写明是「随机抽取」。",
+        "cite": [
+          "paper@附录 B",
+          "dataset@Dataset Sources"
+        ]
+      },
+      {
+        "k": "分层标注协议",
+        "text": "先看题目表述是否清楚，再看选项是否清楚，然后看选项里有几个正确答案，最后看 MMLU 给的答案对不对；叶子节点共 6 类错误，另设 expert 表示需要更专业的人来判断。",
+        "cite": [
+          "paper@§2.1",
+          "paper@附录 B"
+        ]
+      },
+      {
+        "k": "溯源核对",
+        "text": "鼓励标注者用搜索引擎精确匹配原题与选项；找不到精确匹配就查政府网站、教科书、WHO 等可信来源；仍不确定才标 expert。",
+        "cite": [
+          "paper@附录 B"
+        ]
+      },
+      {
+        "k": "标注一致性检验",
+        "text": "3 名标注者在 5 个错误最多的科目上单独标一遍并计算 Cohen's Kappa；Binary Error Type 口径下从 Human Sexuality 的 0.64 到 Formal Logic 的 1.0，论文据此称协议高度有效。",
+        "cite": [
+          "paper@Table 1"
+        ]
+      },
+      {
+        "k": "错误率外推",
+        "text": "用分层抽样把已审科目的错误比例外推到全量 MMLU，得到 6.49% 的错误率估计；Table 5 的 Total 行百分比同样注明是分层抽样估计。",
+        "cite": [
+          "paper@§3.1",
+          "paper@Table 5"
+        ]
+      },
+      {
+        "k": "开放勘误",
+        "text": "数据集在 Hugging Face 与 Zenodo 双托管，论文附录 D.2 给出 [ADD] / [FIX] 贡献模板并承诺 48 小时内回应讨论；已实际发生两次社区指错后的修正。",
+        "cite": [
+          "paper@附录 D.2",
+          "dataset@News",
+          "discussions-2@#2"
+        ]
+      }
+    ]
   },
-  "metrics": [],
   "default_protocol": {
-    "raw": "仅取修正后可靠题"
+    "raw": "论文没有为 MMLU-Redux 单独定义答题口径：第 3.2 节的模型对比直接复用 HELM 排行榜 v1.3.0（2024-05-15 发布）的 MMLU 预测，按精确匹配（EM，即模型选中的选项字母与 MMLU 原标签一致）判分，并分别统计「全部实例」与「仅 correct 实例」两种口径；论文 Table 2 的写法是「全部实例 EM（HELM 排名）→ 仅 correct 实例 EM（重算后排名）」。另一套独立口径是第 4 节的错误检测实验：temperature 0.0、top_p 1、frequency_penalty 与 presence_penalty 为 0、max_tokens 600，把 not ok 当正类计算 Recall / F1 / F2。",
+    "cite": [
+      "paper@附录 B",
+      "paper@Table 2",
+      "paper@附录 G"
+    ],
+    "variants": [
+      {
+        "text": "全部实例 vs 仅 correct 实例：按 error_type 列过滤后重算，同一模型同一科目最多差 48 个百分点（GPT-4 (0613) 在 Human Sexuality 上从 0.91 掉到 0.43），排名也会变。",
+        "cite": [
+          "paper@Table 2"
+        ]
+      },
+      {
+        "text": "MMLU-Redux 1.0（30 个科目、每科 100 题）vs 2.0（全部 57 科目、共 5,700 题）：题量与科目范围都不同，两个版本的分数不能直接相比；论文附录 B 与 GitHub README 至今仍写着 1.0 的口径。",
+        "cite": [
+          "repo@Dataset Overview",
+          "paper@附录 B",
+          "paper@Abstract"
+        ]
+      },
+      {
+        "text": "答题评测 vs 错误检测是两套不同任务：前者复用 HELM 的 MMLU 预测算精确匹配，后者用固定超参让模型把题目分成 ok / not ok，指标与正类定义都不同，不能混在一张表里比。",
+        "cite": [
+          "paper@附录 B",
+          "paper@附录 G"
+        ]
+      }
+    ]
   },
-  "versions": [],
-  "limitations": [],
+  "metrics": [
+    {
+      "id": "accuracy",
+      "name": "精确匹配率（Accuracy / EM）",
+      "direction": "越高越好",
+      "description": "模型选中的选项字母与 MMLU 原标签一致的题目占比；论文第 3.2 节的数字直接取自 HELM 排行榜 v1.3.0 的 MMLU 运行结果",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@附录 B",
+        "paper@Table 2"
+      ]
+    },
+    {
+      "id": "error-rate",
+      "name": "题目错误率（MMLU 错误比例估计）",
+      "direction": "越低越好",
+      "description": "人工分层抽样估计的「MMLU 题目存在标注或表述错误」的比例；这是基准自身的质量指标，数值越低说明基准越可靠",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§3.1",
+        "paper@Table 5"
+      ]
+    },
+    {
+      "id": "error-detection-f2",
+      "name": "错误检测 F2",
+      "direction": "越高越好",
+      "description": "把题目分成 ok / not ok 的二分类任务里，以 not ok 为正类、召回权重高于精度计算的 F2 分数；论文用它衡量 LLM 能否自动找出错题",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§4.1"
+      ]
+    }
+  ],
+  "versions": [
+    {
+      "id": "arxiv-v1",
+      "date": "2024-06-06",
+      "label": "arXiv v1 首发：1.0 口径为 30 个 MMLU 科目、每科 100 题；该口径至今仍写在论文附录 B 与 GitHub README 里",
+      "cite": [
+        "paper@Submission history",
+        "repo@Dataset Overview"
+      ]
+    },
+    {
+      "id": "dataset-1.0",
+      "date": "2024-06-12",
+      "label": "Zenodo 存档 MMLU-Redux（doi 10.57967/hf/2507），标题不带 -2.0 后缀的早期存档",
+      "cite": [
+        "zenodo"
+      ]
+    },
+    {
+      "id": "dataset-2.0",
+      "date": "2024-11-07",
+      "label": "Zenodo 存档 MMLU-Redux-2.0（doi 10.57967/hf/3469），扩展到 5,700 题 / 全部 57 科目",
+      "cite": [
+        "zenodo2",
+        "paper@Abstract"
+      ]
+    },
+    {
+      "id": "arxiv-v3",
+      "date": "2025-01-10",
+      "label": "arXiv v3（本页核对所用版本）：摘要改为 5,700 题 / 全部 57 科目，数据集改名为 edinburgh-dawg/mmlu-redux-2.0",
+      "cite": [
+        "paper"
+      ]
+    },
+    {
+      "id": "naacl",
+      "date": "2025-01-23",
+      "label": "数据集卡宣布被 NAACL 2025 接收；论文 2025 年 4 月刊出于 NAACL 2025 Long Papers（第 5069–5096 页）",
+      "cite": [
+        "dataset@News",
+        "acl"
+      ]
+    },
+    {
+      "id": "fix-high-school-mathematics",
+      "date": "2025-02-08",
+      "label": "按 PlatinumBench 论文指出，修正 High School Mathematics 一题标注",
+      "cite": [
+        "dataset@News"
+      ]
+    },
+    {
+      "id": "fix-abstract-algebra",
+      "date": "2025-02-25",
+      "label": "按社区 Issue #2 指出，修正 Abstract Algebra 一题标注（该题被报告为无正确答案）",
+      "cite": [
+        "dataset@News",
+        "discussions-2@#2"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "只覆盖 MMLU 测试集的一部分",
+      "impact": "已审 5,700 题，原 MMLU 测试集共 14,042 题，剩余 8,342 题未审；论文自己说定量与定性分析的准确度可以靠补标提升。未审科目的错误率只能由已审科目外推，个别科目可能被显著低估或高估。",
+      "severity": "高",
+      "response": "开放社区补标（[ADD] 模板）并承诺 48 小时内回应讨论；数据集在 Hugging Face 与 Zenodo 双托管，旧版本按 git commit hash 保留。",
+      "reader": "把 6.49% 当成对全量 MMLU 的估计值，不是已审 5,700 题的实测值；看某个科目的错误率前，先确认它是否在已审的 57 个科目里。",
+      "cite": [
+        "paper@§6 Limitations",
+        "paper@Table 5",
+        "paper@附录 D.2"
+      ]
+    },
+    {
+      "issue": "MMLU-Redux 自身仍有未被标记的缺陷题",
+      "impact": "2026-07-02 仍有开放 issue 报告两处缺陷：college_physics 一题选项文本损坏（报告称应为 10 µm 的选项被存成 10:00 PM，当前标注为 ok），high_school_physics 一题答案标错（并联电阻下正确项应为 B，且该题不在抽样的 100 题内）。",
+      "severity": "中",
+      "response": "该报告（HF Discussions #3，作者 waqas137，2026-07-02）截至本页核对日仍出现在开放讨论列表中（列表页标注已闭合讨论数为 1，即已闭合的 #2），报告者把完整证据放在 GitHub aryopg/mmlu-redux 的 issue #6；另一条社区报告（#2，Abstract Algebra 一题无正确答案）已被维护者采纳，数据集卡 2025-02-25 记录该修正并把该讨论置为 closed。",
+      "reader": "用了 MMLU-Redux 也不等于零错误；对单个科目的极端分数，值得回原题抽查。",
+      "cite": [
+        "discussions-3@#3",
+        "discussions-2@#2",
+        "dataset@News",
+        "discussions"
+      ]
+    },
+    {
+      "issue": "标注一致性有限，协议可能带标注者偏见",
+      "impact": "5 个错误最多科目上 3 名标注者的 Cohen's Kappa，在 Binary Error Type 口径下从 Human Sexuality 的 0.64 到 Formal Logic 的 1.0；论文承认分类协议仍可能受标注者个人偏见影响。",
+      "severity": "中",
+      "response": "论文公开了 taxonomy，并把 error_type、correct_answer、potential_reason 逐题写入数据集，允许他人复核；未见针对标注者偏见本身的修正机制。",
+      "reader": "错误率是估计值；Human Sexuality、Virology 这类一致性偏低的科目，其错误比例要留余地。",
+      "cite": [
+        "paper@Table 1",
+        "paper@§6 Limitations"
+      ]
+    },
+    {
+      "issue": "不改题、不替换原答案，原 MMLU 的问题一个都没修",
+      "impact": "论文明确说标注者建议的答案不用于替换 MMLU 原标签，数据集卡也强调题目与选项和 MMLU 完全一致、未作修改。因此数据污染、基准饱和、选项偏置这些原 MMLU 的核心问题在 MMLU-Redux 上原样存在。",
+      "severity": "中",
+      "response": "论文把 MMLU-Redux 的两个目的写成「衡量 MMLU 中错误的普遍性与类型」和「探索用标注好的错误类型自动修 MMLU 的可行性」，定位是修正工具而非替代基准；未见针对污染与饱和的专门回应。",
+      "reader": "不要因为换成 MMLU-Redux 就认为污染和饱和风险下降；要高分数段排名仍需看 MMLU-Pro、GPQA 等更难或被门禁的基准。",
+      "cite": [
+        "paper@§3",
+        "dataset@Uses",
+        "paper@§5"
+      ]
+    },
+    {
+      "issue": "模型在错题上的表现不降反升，疑似记忆",
+      "impact": "论文对比正确实例与错误实例的精确匹配，发现 Professional Law 和 Formal Logic 上模型在错题上表现相似甚至更高；作者推测这些 MMLU 实例在预训练阶段就被学过了。MMLU-Redux 沿用同一批题，这个信号不会消失。",
+      "severity": "中",
+      "response": "论文把这作为「需要系统研究 MMLU」的论据；未见官方对污染问题的定量回应。",
+      "reader": "错题子集上的高分更像记忆而非能力；比较模型时留意是否有模型在错题上异常好。",
+      "cite": [
+        "paper@§3.1"
+      ]
+    },
+    {
+      "issue": "官方文档内部数字互相不一致",
+      "impact": "论文附录 B 与数据集卡都写 MMLU-Redux 由「thirty MMLU subsets」的测试 split 组成，与摘要的 57 科目矛盾（NAACL 正式版仍未改）；附录 B 给的 Zenodo 链接是 1.0 存档、附录 D.3 给的镜像是 2.0 存档；§3.1 正文写 Virology「30% 错标答案、15% 题目不清」，Figure 3 说明写 33% 与 14%；GitHub README 仍写 30 个科目、每科 100 题。",
+      "severity": "低",
+      "response": "数据集卡用 News 逐条记录修正；正文数字以论文最新版（arXiv v3 / NAACL 版）和 Table 5 为准。",
+      "reader": "引用具体数字时以 arXiv v3 与 Table 5 为准；看到 30 科目、每科 100 题或 edinburgh-dawg/mmlu-redux（无 -2.0 后缀）的描述，那是 1.0 版的遗留。",
+      "cite": [
+        "paper@附录 B",
+        "naacl@附录 B",
+        "dataset@Dataset Sources",
+        "repo@Dataset Overview",
+        "paper@Figure 3"
+      ]
+    }
+  ],
   "notes": null,
   "official_sources": [
     {
-      "kind": "site",
-      "url": "https://github.com/Felhof/MMLU-Redux"
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2406.04127"
     },
     {
-      "kind": "paper",
-      "url": "https://arxiv.org/abs/2406.04132"
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/edinburgh-dawg/mmlu-redux-2.0"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/aryopg/mmlu-redux"
+    },
+    {
+      "kind": "site",
+      "url": "https://aclanthology.org/2025.naacl-long.262/"
     }
   ],
   "related_benchmarks": [
@@ -43,6 +413,339 @@
     "drop",
     "gpqa-index"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-28"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-25",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "Are We Done with MMLU?（arXiv:2406.04127 v3，2025-01-10，本页核对所用版本）",
+        "url": "https://arxiv.org/abs/2406.04127",
+        "accessed": "2026-11-25"
+      },
+      {
+        "id": "naacl",
+        "kind": "paper",
+        "title": "Are We Done with MMLU?（NAACL 2025 正式版 PDF，2025.naacl-long.262）",
+        "url": "https://aclanthology.org/2025.naacl-long.262.pdf",
+        "accessed": "2026-11-25"
+      },
+      {
+        "id": "acl",
+        "kind": "paper",
+        "title": "ACL Anthology 记录页：2025.naacl-long.262（NAACL 2025 Long Papers，第 5069–5096 页）",
+        "url": "https://aclanthology.org/2025.naacl-long.262/",
+        "accessed": "2026-11-25"
+      },
+      {
+        "id": "dataset",
+        "kind": "dataset",
+        "title": "edinburgh-dawg/mmlu-redux-2.0 数据集卡（Hugging Face，CC-BY-4.0）",
+        "url": "https://huggingface.co/datasets/edinburgh-dawg/mmlu-redux-2.0",
+        "accessed": "2026-11-25"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "aryopg/mmlu-redux（论文评测代码与 LabelChaos 微调脚本）",
+        "url": "https://github.com/aryopg/mmlu-redux",
+        "accessed": "2026-11-25"
+      },
+      {
+        "id": "zenodo",
+        "kind": "dataset",
+        "title": "Zenodo 存档 MMLU-Redux（记录 11624987，doi 10.57967/hf/2507，2024-06-12）",
+        "url": "https://zenodo.org/records/11624987",
+        "accessed": "2026-11-25"
+      },
+      {
+        "id": "zenodo2",
+        "kind": "dataset",
+        "title": "Zenodo 存档 MMLU-Redux-2.0（记录 14051942，doi 10.57967/hf/3469，2024-11-07）",
+        "url": "https://zenodo.org/records/14051942",
+        "accessed": "2026-11-25"
+      },
+      {
+        "id": "discussions",
+        "kind": "dataset",
+        "title": "edinburgh-dawg/mmlu-redux-2.0 社区讨论列表（Hugging Face，含 #2 已闭合与 #3 开放中）",
+        "url": "https://huggingface.co/datasets/edinburgh-dawg/mmlu-redux-2.0/discussions",
+        "accessed": "2026-11-25"
+      },
+      {
+        "id": "discussions-2",
+        "kind": "dataset",
+        "title": "edinburgh-dawg/mmlu-redux-2.0 社区讨论 #2（Abstract Algebra 一题无正确答案，维护者已修正并闭合）",
+        "url": "https://huggingface.co/datasets/edinburgh-dawg/mmlu-redux-2.0/discussions/2",
+        "accessed": "2026-11-25"
+      },
+      {
+        "id": "discussions-3",
+        "kind": "dataset",
+        "title": "edinburgh-dawg/mmlu-redux-2.0 社区讨论 #3（两处物理缺陷题报告，截至核对日仍未闭合）",
+        "url": "https://huggingface.co/datasets/edinburgh-dawg/mmlu-redux-2.0/discussions/3",
+        "accessed": "2026-11-25"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "作者团队来自爱丁堡大学、罗马第一大学、巴里理工大学、伦敦大学学院、特伦托大学、AssemblyAI、英国卫生安全局与 Miniml.AI 共 8 家机构；数据集由 Hugging Face 组织 edinburgh-dawg（Edinburgh Dataset Analytics Working Group）维护",
+        "cite": [
+          "paper",
+          "discussions"
+        ]
+      },
+      "first_release": {
+        "v": "2024-06-06（arXiv v1；Zenodo 数据集存档 2024-06-12）",
+        "cite": [
+          "paper@Submission history",
+          "zenodo"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "paper@Abstract",
+        "paper@Table 5",
+        "dataset"
+      ],
+      "interpretation": [
+        "paper@Table 2",
+        "paper@§3.1",
+        "dataset@Uses",
+        "repo@Dataset Overview"
+      ]
+    },
+    "problem": {
+      "text": "MMLU 是被引用最多的知识基准之一，但它的标注错误会让模型对比和排名失真；在 MMLU-Redux 之前，只有零散视频和博客点名过个别错题，缺少按科目、按错误类型量化的一致性分析。MMLU-Redux 想给出一个带错误类型标签、可复现的人工审核子集，把「MMLU 到底有多少错题、错得有多不均匀」变成可测的数字，并检验这些错误对模型排名的实际影响。",
+      "cite": [
+        "paper@§3",
+        "paper@§3.1"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机猜测基线",
+        "value": "论文未给出",
+        "note": "全部为四选一选择题；论文没有报告 MMLU-Redux 上的随机基线，本站也不推算。",
+        "cite": [
+          "paper@附录 B"
+        ]
+      },
+      {
+        "label": "论文 Table 2 最好成绩",
+        "value": "1.00",
+        "note": "GPT-4 Turbo (2024-04-09) 在 Logical Fallacies 上、仅用 correct 实例的精确匹配率；同一格在全部实例口径下是 0.87。",
+        "cite": [
+          "paper@Table 2"
+        ]
+      },
+      {
+        "label": "论文 Table 2 最低成绩",
+        "value": "0.43",
+        "note": "GPT-4 (0613) 在 Human Sexuality 上、仅用 correct 实例的精确匹配率；同一格在全部实例口径下是 0.91，相差 48 个百分点，排名从第 5 掉到第 10。",
+        "cite": [
+          "paper@Table 2"
+        ]
+      },
+      {
+        "label": "题目噪声参考线",
+        "value": "约 6.49%（全量 MMLU 错误率估计）",
+        "note": "分层抽样估计的全量 MMLU 题目错误率；已审子集里观测到的错误比例更高（论文写 more than 9%），个别科目如 Virology 达 57%。分数越接近 100%，越难区分「模型答错」和「题目本身有错」。",
+        "cite": [
+          "paper@§3.1",
+          "paper@Figure 3"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 MMLU-Redux 当成「更难的 MMLU」——它不改题也不改选项，只重标错误类型，难度、题型和题面与原 MMLU 完全一致。",
+        "cite": [
+          "dataset@Uses",
+          "paper@§3"
+        ]
+      },
+      {
+        "text": "把「全部实例」和「仅 correct 实例」的分数排在一起比——Table 2 里同一模型同一科目最多差 48 个百分点，排名也会整体重排。",
+        "cite": [
+          "paper@Table 2"
+        ]
+      },
+      {
+        "text": "把 6.49% 当成「已审 5,700 题里有 6.49% 是错的」——它是对全量 MMLU 的分层抽样估计；已审子集里观测到的错误比例更高，论文写的是 more than 9%。",
+        "cite": [
+          "paper@§3.1",
+          "paper@Table 5"
+        ]
+      },
+      {
+        "text": "把 1.0 的「30 个科目、每科 100 题」和 2.0 的「全部 57 科目、共 5,700 题」混为一谈——题量与科目范围都不同，两者分数不可比；论文附录 B 和 GitHub README 至今仍写着 1.0 的口径。",
+        "cite": [
+          "repo@Dataset Overview",
+          "paper@附录 B",
+          "paper@Abstract"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "8 家机构的作者团队（爱丁堡大学、罗马第一大学、巴里理工大学、伦敦大学学院、特伦托大学、AssemblyAI、英国卫生安全局、Miniml.AI）；数据集由 Hugging Face 组织 edinburgh-dawg（Edinburgh Dataset Analytics Working Group）维护",
+        "cite": [
+          "paper",
+          "discussions"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "一作 Aryo Pradipta Gema，资深作者 Pasquale Minervini；数据集卡另列出 Joshua Ong Jun Leang、Giwon Hong、Rohit Saxena、Alessio Devoto 等共 16 人",
+        "cite": [
+          "dataset@Dataset Details"
+        ]
+      },
+      {
+        "k": "标注者",
+        "v": "14 位人类专家；论文未披露其学科背景、资历与招募方式，也未说明是否为付费众包",
+        "cite": [
+          "paper@§1"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2024-06-06 arXiv v1 → 2024-06-12 Zenodo 1.0 → 2024-11-07 Zenodo 2.0 → 2025-01-10 arXiv v3 → 2025-01-23 被 NAACL 2025 接收 → 2025-02 两次社区指错后的修正 → 2026-07 仍有开放缺陷报告",
+        "cite": [
+          "paper@Submission history",
+          "zenodo",
+          "zenodo2",
+          "paper",
+          "dataset@News",
+          "discussions-3@#3"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "数据：Hugging Face edinburgh-dawg/mmlu-redux-2.0（CC-BY-4.0，Croissant 格式），Zenodo 双镜像；代码：GitHub aryopg/mmlu-redux（错误检测评测脚本、LabelChaos 微调脚本）",
+        "cite": [
+          "paper@附录 B",
+          "dataset@Dataset Details",
+          "repo"
+        ]
+      },
+      {
+        "k": "与原基准的关系",
+        "v": "题目与选项取自 cais/mmlu 测试集（同时被 lm-eval-harness 使用），MMLU-Redux 只加错误类型标注，不改题目与选项；论文 Related Work 对比了 MMLU-Pro 与 Global MMLU 两条改进路线",
+        "cite": [
+          "paper@附录 B",
+          "dataset@Uses",
+          "paper@§5"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-13",
+        "columns": [
+          "模型（论文 Table 2）",
+          "Virology",
+          "Logical Fallacies",
+          "College Chemistry",
+          "Professional Law",
+          "Human Sexuality"
+        ],
+        "rows": [
+          [
+            "Claude 3.5 Sonnet (20240620)",
+            "0.60 (1) → 0.91 (5)",
+            "0.93 (1) → 0.96 (5)",
+            "0.59 (9) → 0.73 (4)",
+            "0.75 (1) → 0.77 (1)",
+            "0.94 (1) → 0.98 (1)"
+          ],
+          [
+            "Claude 3 Opus (20240229)",
+            "0.58 (12) → 0.88 (8)",
+            "0.90 (4) → 0.96 (5)",
+            "0.60 (5) → 0.72 (5)",
+            "0.72 (4) → 0.72 (3)",
+            "0.91 (5) → 0.96 (2)"
+          ],
+          [
+            "Llama 3.1 Instruct Turbo (405B)",
+            "0.57 (16) → 0.93 (1)",
+            "0.92 (2) → 0.96 (5)",
+            "0.60 (5) → 0.76 (1)",
+            "0.70 (6) → 0.72 (3)",
+            "0.86 (20) → 0.91 (9)"
+          ],
+          [
+            "GPT-4o (2024-05-13)",
+            "0.60 (3) → 0.91 (5)",
+            "0.88 (6) → 0.99 (2)",
+            "0.61 (4) → 0.71 (7)",
+            "0.72 (3) → 0.70 (5)",
+            "0.91 (5) → 0.96 (2)"
+          ],
+          [
+            "Gemini 1.5 Pro (001)",
+            "0.55 (28) → 0.91 (5)",
+            "0.90 (4) → 0.99 (2)",
+            "0.62 (2) → 0.72 (5)",
+            "0.67 (9) → 0.67 (7)",
+            "0.37 (55) → 0.94 (6)"
+          ],
+          [
+            "GPT-4 (0613)",
+            "0.60 (3) → 0.86 (10)",
+            "0.87 (11) → 0.99 (2)",
+            "0.55 (18) → 0.75 (3)",
+            "0.73 (2) → 0.68 (6)",
+            "0.91 (5) → 0.43 (10)"
+          ],
+          [
+            "Qwen2 Instruct (72B)",
+            "0.56 (24) → 0.88 (8)",
+            "0.91 (3) → 0.96 (5)",
+            "0.65 (1) → 0.68 (8)",
+            "0.66 (10) → 0.74 (2)",
+            "0.89 (11) → 0.94 (6)"
+          ],
+          [
+            "GPT-4 Turbo (2024-04-09)",
+            "0.60 (1) → 0.93 (1)",
+            "0.87 (11) → 1.00 (1)",
+            "0.53 (22) → 0.76 (1)",
+            "0.67 (8) → 0.63 (9)",
+            "0.90 (9) → 0.93 (8)"
+          ],
+          [
+            "Gemini 1.5 Pro (0409 preview)",
+            "0.58 (10) → 0.93 (1)",
+            "0.86 (18) → 0.92 (10)",
+            "0.58 (13) → 0.67 (9)",
+            "0.64 (13) → 0.61 (10)",
+            "0.40 (56) → 0.95 (5)"
+          ],
+          [
+            "Llama 3.1 Instruct Turbo (70B)",
+            "0.58 (12) → 0.93 (1)",
+            "0.84 (27) → 0.96 (5)",
+            "0.59 (9) → 0.64 (10)",
+            "0.67 (7) → 0.65 (8)",
+            "0.86 (20) → 0.96 (2)"
+          ]
+        ]
+      },
+      "cite": [
+        "paper@Table 2"
+      ]
+    }
+  }
 }

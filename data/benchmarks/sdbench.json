@@ -1,28 +1,114 @@
 {
   "id": "sdbench",
   "name": "SDBench",
-  "full_name": "SDBench (Sequential Diagnosis Benchmark)",
-  "aliases": ["SDBench", "Sequential Diagnosis Benchmark", "顺序诊断基准"],
-  "status": null,
+  "full_name": "SDBench（Sequential Diagnosis Benchmark，顺序诊断基准）",
+  "aliases": ["SDBench", "SD Bench", "Sequential Diagnosis Benchmark", "顺序诊断基准"],
+  "status": "active",
   "categories": ["agent", "knowledge"],
-  "summary": "评估「一步步问诊」能力的医疗诊断基准：模型和医生从有限的病例信息出发，自己决定接下来该问什么、该开哪项检查，随新证据到达不断修正判断，最后给出诊断。题目分两组——304 例取自《新英格兰医学杂志》病例记录的复杂病例，以及一组更常见的 MIMIC-IV-ED 急诊科病例。基准同时看三件事：最终诊断准不准、中途索取了多少证据、估算的检查成本是多少，因此评估的不只是答对，还包括「问得值不值」。",
-  "interpretation": "读分要认准量纲：这里记的是**诊断准确率**（最终诊断正确的病例占比，越高越好），不是医学考试的选择题正确率——执照考试那种题会一次性把信息全给你、只需单选一个答案，而 SDBench 要求模型像真实问诊那样自己一步步索取信息。所以分数直接对应「能不能在信息不全、还要自己决定查什么的情况下把病诊断对」。当前水位（微软 2026-10-22 官方发布文口径）：在 NEJM 复杂病例上 MAI-DxO 83%、同场医生基线 22%（无外部资料）与 36%（可用教科书与互联网），官方称约为其 2.3～3.7 倍；在 MIMIC-IV-ED 急诊病例上 MAI-DxO 80%、医生基线 47%，官方称高出 1.7 倍以上。八十上下说明在这类需要长程问诊推理的任务上已经越过医生基线，但这仍是**单一发布方在自己的基准上自测**的结果——官方未公开判分模型、跑次数与题面细节，只有部分 NEJM 病例连同基准、Gatekeeper、Judge 与成本估算代码开源，跨家比较只在同一口径下成立，不要把它当成统一的医学 AI 排名。",
+  "summary": "评估「一步步问诊」能力的医疗诊断基准：受测系统只拿到一段不泄露诊断的简短病史，自己决定接下来该问什么、该开哪项检查，随新证据到达不断修正判断，最后给出诊断。病例分两组——304 例取自《新英格兰医学杂志》临床病理讨论会（NEJM-CPC）的疑难病例，以及 488 例取自 MIMIC-IV 急诊后住院记录、更接近常规急诊的病例；仓库里另有 5 例全合成病例，只供开发自测。基准同时看两件事：最终诊断准不准、估算的检查成本是多少（前端类比：既看测试覆盖率，也看这次 CI 跑了多少分钟），所以它评估的不只是答对，还包括「问得值不值」。",
+  "interpretation": "读分要认准量纲：主指标是诊断准确率——最终诊断被 Judge 判为正确的病例占比（1–5 分里 ≥4 分才算对，前端类比：星级评分四星以上才算好评），越高越好；并列主指标是每例估算检查成本，越低越好。它测的不是医学考试那种「信息一次给全、只需单选」的选择题正确率，所以分数直接对应「能不能在信息不全、还要自己决定查什么的情况下把病诊断对」。当前水位（微软 2026-10-22 发表于 Science 的口径，来源：Science 摘要）：MAI-DxO 在 NEJM-CPC 上 83.2%、在 MIMIC-IV-ED 上 80.3%，同场一般科医生分别为 36.1% 与 46.8%；2025 年 arXiv 预印本口径（来源：arXiv v2 §4）o3 为 78.6%，MAI-DxO 最高 85.5%，21 名禁用搜索引擎与大模型的英美医生均值 19.9%。两个口径的病例集与模型代次都不同，不要混在一张表里比。八十上下说明在这类需要长程问诊推理的任务上已经越过医生基线，但这仍是单一发布方在自己的基准上自测的结果：本页核验日（2026-11-13）未见第三方复跑，两组临床病例都要授权才能拿到（NEJM 需许可、MIMIC 需 PhysioNet 凭证），官方也未逐例公布成绩明细，因此跨家比较只在同一 harness、同一数据集、同一 Judge 配置下成立，不要把它当成统一的医学 AI 排名。",
   "measures": [
-    "交互式问诊场景下的最终诊断准确率",
-    "诊断过程中索取证据的规模与估算检查成本",
-    "在信息有限、需自行决定下一步检查时的长程推理能力"
+    {
+      "area": "诊断准确率",
+      "focus": "最终诊断是否正确：Judge 按 1–5 分打分，≥4 分记为正确",
+      "share": "主指标",
+      "format": "百分比",
+      "cite": ["paper@§2", "repo@README"]
+    },
+    {
+      "area": "估算检查成本",
+      "focus": "问诊与检查按 CPT 计价折算成的每例费用，问诊和查体按固定 $300/次计",
+      "share": "并列主指标",
+      "format": "美元/例",
+      "cite": ["paper@§2"]
+    },
+    {
+      "area": "证据索取规模",
+      "focus": "中途问了多少个问题、开了多少项检查，用来解释成本从哪来",
+      "share": "辅助指标",
+      "format": "次数/例",
+      "cite": ["paper@§4"]
+    },
+    {
+      "area": "人机同场对照",
+      "focus": "21 名英美在职医生在同一 harness 上做题，作为人类基线",
+      "share": "辅助指标",
+      "format": "百分比 / 美元",
+      "cite": ["paper@§3.3", "science-abstract@摘要"]
+    }
   ],
   "does_not_measure": [
-    "医学知识选择题（如执照考试题）的答题正确率",
-    "通用问答或长上下文阅读能力",
-    "真实临床环境中的安全性与泛化能力（需要前瞻性研究才能回答）"
+    {
+      "text": "医学知识选择题（如执照考试题）的答题正确率——那类题一次给全信息、只需单选",
+      "cite": ["paper@摘要"]
+    },
+    {
+      "text": "把健康人或良性病排除掉的能力：病例集里没有这类案例，官方称因此无法测量假阳性率",
+      "cite": ["paper@§5.3"]
+    },
+    {
+      "text": "治疗安全性、长期管理与患者结局",
+      "cite": ["mimic-ds@使用说明"]
+    },
+    {
+      "text": "急诊全谱系人群的代表性：入选的是有明确诊断的住院病例，病例构成与患病率不代表所有急诊表现",
+      "cite": ["mimic-ds@使用说明"]
+    }
   ],
   "dataset": {
     "sample_count": 304,
-    "splits": ["NEJM 复杂病例（304 例）", "MIMIC-IV-ED 急诊常见病例（例数官方未印）"],
+    "totals": "NEJM-CPC 304 例（2017–2025 连续收录）+ MIMIC-IV-Ext-SDBench 488 例（163 训练 / 254 验证 / 71 测试）+ synthetic 5 例（仅供开发）",
+    "splits": [
+      "NEJM-CPC 304 例，其中最近的 56 例（2024–2025）留作隐藏测试集",
+      "MIMIC-IV-ED 488 例：训练 163 / 验证 254 / 测试 71",
+      "synthetic 5 例（仓库自带，默认数据集，只含训练split）"
+    ],
     "languages": "en",
-    "source_type": "real-world（NEJM 病例记录 + MIMIC-IV-ED 急诊病例，交互式问诊）",
-    "public_sample": "部分 NEJM 病例开源，含基准、Gatekeeper、Judge 与成本估算代码；MIMIC-IV-ED 病例集未开源"
+    "source_type": "real-world（NEJM 病例记录 + MIMIC-IV 急诊住院记录，交互式问诊）",
+    "public_sample": "harness、gatekeeper、judge 与成本估算代码开源；NEJM 病例需向 NEJM 许可，MIMIC 病例需 PhysioNet 凭证，仓库自带 5 例全合成病例可无门槛试跑",
+    "cite": ["paper@§2", "mimic-ds@摘要", "nejm-readme@README", "mimic-readme@README", "repo@README"],
+    "construction": [
+      {
+        "k": "病例来源",
+        "text": "NEJM 临床病理讨论会（CPC）病例，2025 年收录时取 2017–2025 连续 304 例；MIMIC 侧取急诊后住院的病例。",
+        "cite": ["paper@§2", "nejm-readme@README", "mimic-ds@摘要"]
+      },
+      {
+        "k": "病例转写",
+        "text": "每例转成交互式问诊模拟：先给一段不泄露诊断的简短病史，其余信息必须由受测方主动索取。",
+        "cite": ["paper@§2", "mimic-ds@方法", "site@Datasets"]
+      },
+      {
+        "k": "Gatekeeper（信息闸门）",
+        "text": "由语言模型（o4-mini）读取完整病例文本作答；原文本没有的检查项会合成病例自洽的伪结果，避免「没查就没有」这种隐含线索。",
+        "cite": ["paper@§2", "repo@README"]
+      },
+      {
+        "k": "闸门可信度",
+        "text": "508 条 Gatekeeper 回复交医生复核，仅 8 条被判可能有问题，群体裁定后无一被认定泄露诊断。",
+        "cite": ["paper@§2"]
+      },
+      {
+        "k": "Judge（判分）",
+        "text": "受测方提交诊断后由 Judge 按 1–5 分打分，≥4 分记正确；医生与 Judge 二值化后一致性 Cohen's κ = 0.70（MAI-Dx 组）与 0.87（人类组）。",
+        "cite": ["repo@README", "paper@§2"]
+      },
+      {
+        "k": "成本计价",
+        "text": "自由文本检查请求先由语言模型查表转成标准 CPT 编码，再匹配 2023 年一家大型美国医疗系统的价目表（依据 CMS 价格透明规则）；问诊与查体按固定 $300/次计入。",
+        "cite": ["paper@§2"]
+      },
+      {
+        "k": "MIMIC 病例集构建",
+        "text": "488 例急诊后住院病例（排除直入 ICU、每例只用一份病历），合成不含诊断的初始 vignette，测试 split 71 例全部经临床医生复核，13 例真值诊断在复核中被修正。",
+        "cite": ["mimic-ds@摘要", "mimic-ds@方法"]
+      },
+      {
+        "k": "合成默认集",
+        "text": "仓库自带 5 例全合成 NEJM 风格病例作默认数据集，让 harness 开箱即跑；它只含训练 split，明确不用于报告诊断成绩。",
+        "cite": ["repo@README", "site@Synthetic"]
+      }
+    ]
   },
   "metrics": [
     {
@@ -30,29 +116,197 @@
       "name": "诊断准确率",
       "range": [0, 100],
       "unit": "percent",
-      "direction": "higher",
-      "aggregation": "最终诊断正确的病例数 / 病例总数"
+      "direction": "越高越好",
+      "description": "最终诊断被 Judge 判为正确（1–5 分中 ≥4 分）的病例占比",
+      "aggregation": "判为正确的病例数 / 病例总数",
+      "cite": ["repo@README", "paper@§2"]
+    },
+    {
+      "id": "workup_cost",
+      "name": "每例检查成本（估算）",
+      "unit": "USD/例",
+      "direction": "越低越好",
+      "description": "问诊与检查按 CPT 计价折算出的每例费用，是用价目表估算的值，不是真实账单",
+      "cite": ["paper@§2", "paper@§5.3"]
     }
   ],
   "default_protocol": {
-    "raw": "交互式问诊协议：模型与/或医生从有限病例信息出发，自行选择下一步索取的问题或检查，随新证据到达更新判断；官方同时度量诊断准确率、索取的证据量与估算检查成本"
+    "raw": "交互式问诊协议：受测方从一段不泄露诊断的简短病史出发，自行选择下一步问什么问题或开什么检查，Gatekeeper 按病例全文作答（没有的信息合成合理伪结果），随新证据到达更新判断，最后提交诊断由 Judge 按 1–5 分判分；官方同时记录诊断准确率、索取的证据量与折算的每例检查成本。",
+    "cite": ["site@Datasets", "repo@README", "paper@§2"],
+    "variants": [
+      {
+        "text": "off-the-shelf：让单个模型直接当诊断 agent 自问自答，论文里 GPT-4o 49.3%、o3 78.6% 都是这个口径。",
+        "cite": ["paper@§4"]
+      },
+      {
+        "text": "MAI-DxO / DxO 编排：模拟一个医生面板、持续修订鉴别诊断并挑性价比高的检查，可配成本约束，也可用集成把准确率再推高（论文 85.5% 即集成口径）。",
+        "cite": ["science-abstract@摘要", "paper@§4"]
+      },
+      {
+        "text": "医生基线：21 名英美在职医生在同一 harness 上做题，且被明确要求不得使用搜索引擎、大模型等外部资源。",
+        "cite": ["paper@§3.3"]
+      },
+      {
+        "text": "数据集切换：nejm / mimic / synthetic 三种配置，两个临床数据集都需授权，仓库自带的 synthetic 只用于开发自测。",
+        "cite": ["repo@README", "nejm-readme@README", "mimic-readme@README"]
+      }
+    ]
   },
-  "versions": [],
-  "limitations": [
-    "基准由微软（发布方）自建并自测，尚无第三方复跑",
-    "官方未公开判分模型、跑次数、温度与聚合算法",
-    "仅部分 NEJM 病例开源，MIMIC-IV-ED 病例集未开源，外部无法完整复现",
-    "医生基线（22% / 36% / 47%）为人类对照值，不是模型成绩，不能与模型分数同框横比",
-    "官方称用更新一代模型重跑成绩持平或更好，但未公布具体分数"
-  ],
-  "notes": "由微软 2026-10-22《Building Medical Superintelligence》发布文引入，同文发布 MAI-DxO 诊断编排系统。",
-  "official_sources": [
+  "versions": [
     {
-      "kind": "site",
-      "url": "https://microsoft.ai/news/building-medical-superintelligence/"
+      "id": "arxiv-v1",
+      "date": "2025-06-27",
+      "label": "arXiv 预印本 v1 提交（SDBench，304 例 NEJM-CPC，o3 时代成绩）",
+      "cite": ["paper@提交历史"]
+    },
+    {
+      "id": "arxiv-v2",
+      "date": "2025-07-02",
+      "label": "arXiv v2 修订；同版声明正在送外部同行评审、并在探索把 SDBench 作为公开基准发布",
+      "cite": ["paper@提交历史", "paper@Code and data availability"]
+    },
+    {
+      "id": "science",
+      "date": "2026-10-22",
+      "label": "Science 正式版《Sequential diagnosis with language models》（394(6822):423-428），新增 MIMIC-IV-ED 病例，官方引用指向此文",
+      "cite": ["science-abstract@期刊信息", "repo@Citation"]
     }
   ],
+  "limitations": [
+    {
+      "issue": "病例集拿不到，外部无法完整复现",
+      "impact": "NEJM 病例需向 NEJM 单独许可，MIMIC 病例需 PhysioNet 凭证与数据使用协议；没有数据就跑不了临床口径的评测，只能跑仓库自带 5 例合成集。",
+      "severity": "高",
+      "response": "官方开源了 harness、gatekeeper、judge 与成本估算代码，并在 PhysioNet 上再分发 MIMIC-IV-Ext-SDBench（与原 MIMIC-IV 同条件）。",
+      "reader": "看到某个模型的 SDBench 分数时，先问一句它跑的是哪套数据、有没有授权；拿合成集跑出来的数字不能当成绩。",
+      "cite": ["nejm-readme@README", "mimic-readme@README", "repo@README"]
+    },
+    {
+      "issue": "成本是估算值，且对估计算子很敏感",
+      "impact": "成本由语言模型把检查请求转成 CPT 编码、再匹配 2023 年价目表得出，官方自称只是一阶近似；仓库实测 gpt-5-mini 的估算比文中口径高 40–50%， grounding 率低于 98% 时结果就不可靠。",
+      "severity": "高",
+      "response": "仓库提供 grounded 成本核算流程，并给出 98%+ 的预期 grounding 率作为自检线。",
+      "reader": "把美元数当成量级参考，不要当成真实账单；比较成本时确认双方用了同一套 grounded 估算。",
+      "cite": ["paper@§2", "paper@§5.3", "repo@README"]
+    },
+    {
+      "issue": "没有健康人与良性病病例",
+      "impact": "病例集里没有「其实没病」的案例，官方称因此无法测量假阳性率，也就看不出系统会不会把没病的人过度检查。",
+      "severity": "中",
+      "response": "未披露对应补救措施。",
+      "reader": "这个基准奖励「查出病」，不惩罚「没病也查」；别把高准确率读成低误诊率。",
+      "cite": ["paper@§5.3"]
+    },
+    {
+      "issue": "人类基线只覆盖全科医生",
+      "impact": "21 名受试者是初级保健医生与住院全科医生，官方明确说明只招了全科；专科医生、以及允许查资料时的表现都没有测。",
+      "severity": "中",
+      "response": "未披露对应补救措施。",
+      "reader": "「超过医生」这句话要带上限定：超过的是禁用外部资料的全科医生基线。",
+      "cite": ["paper@§3.3", "paper@§5.3"]
+    },
+    {
+      "issue": "两个版本口径不同，数字不可混排",
+      "impact": "2025 年 arXiv 口径只有 304 例 NEJM-CPC（医生均值 19.9%），2026 年 Science 口径新增 MIMIC-IV-ED 且模型代次不同（医生 36.1% / 46.8%）；同名「医生基线」在两个口径下不是一回事。",
+      "severity": "中",
+      "response": "本页在附录 A/B 按版本与数据集分列，不做跨口径平均。",
+      "reader": "引用任何 SDBench 数字时，连版本和数据集一起引用。",
+      "cite": ["paper@提交历史", "science-abstract@期刊信息", "science-abstract@摘要"]
+    },
+    {
+      "issue": "成绩均为发布方自测，缺第三方复跑",
+      "impact": "本页核验日（2026-11-13）只找到微软自测成绩，没有独立团队用同一 harness 复跑的结果；判分用的 gatekeeper/judge 虽已开源，但其配置与提示词版本由发布方固定。",
+      "severity": "中",
+      "response": "仓库以命名配置固定 gatekeeper/judge 模型与提示词版本，便于他人按同一口径复跑。",
+      "reader": "把它当成发布方的自报成绩，跨厂商横比只在口径一致时才有意义。",
+      "cite": ["repo@README", "paper@Code and data availability"]
+    }
+  ],
+  "notes": "由微软 2026-10-22 发表于 Science 的《Sequential diagnosis with language models》正式版引入，同文发布 MAI-DxO 诊断编排系统；2025 年的 arXiv 预印本口径见附录 A 版本历史。",
+  "official_sources": [
+    { "kind": "paper", "url": "https://doi.org/10.1126/science.aeh7930" },
+    { "kind": "repo", "url": "https://github.com/microsoft/sdbench" },
+    { "kind": "site", "url": "https://microsoft.github.io/sdbench" },
+    { "kind": "dataset", "url": "https://physionet.org/content/mimic-iv-ext-sdbench/1.0.0/" }
+  ],
   "related_benchmarks": ["medqa", "healthbench"],
-  "content_status": "beta",
-  "last_verified_at": "2026-10-30"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-13",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      { "id": "paper", "kind": "paper", "title": "SDBench: A Benchmark for Sequential Diagnosis（arXiv:2506.22405v2）", "url": "https://arxiv.org/abs/2506.22405", "accessed": "2026-11-13" },
+      { "id": "science-abstract", "kind": "paper", "title": "Sequential diagnosis with language models.（Science 394(6822):423-428，Europe PMC 书目记录）", "url": "https://europepmc.org/article/MED/42912144", "accessed": "2026-11-13" },
+      { "id": "path-to-msi", "kind": "announcement", "title": "The Path to Medical Superintelligence（Microsoft AI 官方博客）", "url": "https://microsoft.ai/new/the-path-to-medical-superintelligence/", "accessed": "2026-11-13" },
+      { "id": "repo", "kind": "repo", "title": "microsoft/sdbench 代码仓库 README", "url": "https://github.com/microsoft/sdbench", "accessed": "2026-11-13" },
+      { "id": "site", "kind": "site", "title": "SDBench 官方站点", "url": "https://microsoft.github.io/sdbench", "accessed": "2026-11-13" },
+      { "id": "mimic-ds", "kind": "dataset", "title": "MIMIC-IV-Ext-SDBench v1.0.0（PhysioNet 数据集说明）", "url": "https://physionet.org/content/mimic-iv-ext-sdbench/1.0.0/", "accessed": "2026-11-13" },
+      { "id": "nejm-readme", "kind": "docs", "title": "sdbench 仓库 NEJM 数据集说明", "url": "https://raw.githubusercontent.com/microsoft/sdbench/main/data/processed_case_data/nejm/README.md", "accessed": "2026-11-13" },
+      { "id": "mimic-readme", "kind": "docs", "title": "sdbench 仓库 MIMIC 数据集说明", "url": "https://raw.githubusercontent.com/microsoft/sdbench/main/data/processed_case_data/mimic/README.md", "accessed": "2026-11-13" }
+    ],
+    "header": {
+      "publisher": { "v": "Microsoft", "cite": ["science-abstract@作者信息"] },
+      "first_release": { "v": "2025-06-27（arXiv 预印本 v1）", "cite": ["paper@提交历史"] }
+    },
+    "cites": {
+      "summary": ["paper@摘要", "mimic-ds@摘要", "repo@README"],
+      "interpretation": ["science-abstract@摘要", "paper@§4", "nejm-readme@README", "mimic-readme@README"]
+    },
+    "problem": {
+      "text": "现有诊断 AI 评测几乎都把全部相关发现一次性摆在你面前——像一道信息完备的单选题；而真实问诊是医生边问边查、随证据更新判断、自己决定何时收尾的过程。SDBench 把诊断重构成一场交互式遭遇战：只给一段不泄露诊断的简短病史，剩下的信息必须由受测系统自己决定问什么、查什么，因此能同时度量诊断准确率和检查成本。",
+      "cite": ["mimic-ds@背景", "paper@摘要"]
+    },
+    "ladder": [
+      { "label": "人类医生基线（21 名英美在职医生，禁用外部资源）", "value": "19.9%，$2,963/例", "cite": ["paper@§4"] },
+      { "label": "同场准确率最高的医生", "value": "41%", "cite": ["paper@§4"] },
+      { "label": "GPT-4o（off-the-shelf）", "value": "49.3%，$2,745/例", "cite": ["paper@§4"] },
+      { "label": "o3（off-the-shelf）", "value": "78.6%，$7,850/例", "cite": ["paper@§4"] },
+      { "label": "MAI-DxO（o3 驱动）", "value": "81.9%，检查成本 $4,735/例", "cite": ["paper@§4"] },
+      { "label": "MAI-DxO（低成本配置）", "value": "79.9%，$2,396/例", "cite": ["paper@§4"] },
+      { "label": "MAI-DxO + o3（集成）", "value": "85.5%，$7,184/例", "cite": ["paper@§4"] },
+      { "label": "一般科医生（Science 口径）", "value": "NEJM 36.1% / MIMIC 46.8%", "cite": ["science-abstract@摘要"] },
+      { "label": "MAI-DxO（Science 口径）", "value": "NEJM 83.2% / MIMIC 80.3%", "cite": ["science-abstract@摘要"] },
+      { "label": "GPT-5 baseline（MIMIC-IV 验证+测试 325 例）", "value": "76.6%，约 US$4,240/例", "cite": ["mimic-ds@使用说明"] },
+      { "label": "DxO agent（同 325 例，无预算约束）", "value": "80.3%，约 US$4,980/例", "cite": ["mimic-ds@使用说明"] },
+      { "label": "本站账本当前最高", "auto": "ledger-top" }
+    ],
+    "misreadings": [
+      { "text": "把 304 当成基准全部题量——MIMIC-IV-Ext-SDBench 另有 488 例，仓库还带 5 例合成病例。", "cite": ["mimic-ds@摘要", "repo@README"] },
+      { "text": "把医生基线 19.9% 和 36.1% 混为一谈——前者是 arXiv 口径下 21 名医生在 56 例隐藏测试集上的均值，后者是 Science 口径下一般科医生在 NEJM 病例上的成绩，两者不是同一个数。", "cite": ["paper@§4", "science-abstract@摘要"] },
+      { "text": "把估算检查成本当成真实账单——它是 CPT 编码匹配 2023 年价目表得出的一阶近似，换一套估计算子就能差出 40% 以上。", "cite": ["paper@§2", "repo@README"] },
+      { "text": "拿仓库自带的 synthetic 5 例报告成绩——那只是开发自测集，官方明确说不用于报告诊断性能。", "cite": ["repo@README", "site@Synthetic"] },
+      { "text": "把「问了多少问题、开了多少检查」当成加分项——成本是越低越好的并列主指标，问得多不等于问得好。", "cite": ["site@Datasets", "paper@摘要"] }
+    ],
+    "background": [
+      { "k": "发布方", "v": "Microsoft（论文署名机构为 Microsoft, Redmond, WA, USA）", "cite": ["science-abstract@作者信息"] },
+      { "k": "论文", "v": "arXiv:2506.22405v2（2025-07-02）；正式版 Sequential diagnosis with language models，Science 394(6822):423-428，2026-10-22", "cite": ["paper@提交历史", "science-abstract@期刊信息"] },
+      { "k": "同期系统", "v": "同文发布模拟医生面板的诊断编排系统（论文称 MAI-DxO，数据集文档称 Diagnostic Orchestrator / DxO），持续修订鉴别诊断并挑性价比高的检查", "cite": ["science-abstract@摘要", "mimic-ds@使用说明"] },
+      { "k": "开源与授权", "v": "harness、gatekeeper、judge 与成本估算代码开源，命名配置固定判分模型与提示词版本；NEJM 病例需向 NEJM 许可，MIMIC 病例走 PhysioNet 凭证", "cite": ["repo@README", "nejm-readme@README", "mimic-readme@README"] },
+      { "k": "可用性变化", "v": "2025 年官方博客称 SD Bench 与 MAI-DxO 只是研究演示、暂不作为公开基准或编排器提供；2026 年仓库与数据集已公开可得", "cite": ["path-to-msi@正文", "repo@README"] },
+      { "k": "引用方式", "v": "官方站点与仓库都要求引用 Science 文章，而不是 2025 年的预印本", "cite": ["repo@Citation"] }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-13",
+        "columns": ["系统 / 设置", "数据集", "诊断准确率", "每例成本（估算）", "口径来源"],
+        "rows": [
+          ["人类医生（21 名，禁用外部资源）", "NEJM-CPC 隐藏测试集 56 例", "19.9%", "$2,963", "arXiv v2 §4"],
+          ["人类医生（同场准确率最高者）", "NEJM-CPC 隐藏测试集 56 例", "41%", "未逐例披露", "arXiv v2 §4"],
+          ["GPT-4o（off-the-shelf）", "NEJM-CPC", "49.3%", "$2,745", "arXiv v2 §4"],
+          ["o3（off-the-shelf）", "NEJM-CPC", "78.6%", "$7,850", "arXiv v2 §4"],
+          ["MAI-DxO（o3 驱动）", "NEJM-CPC", "81.9%", "检查成本 $4,735", "arXiv v2 §4"],
+          ["MAI-DxO（低成本配置）", "NEJM-CPC", "79.9%", "$2,396", "arXiv v2 §4"],
+          ["MAI-DxO + o3（集成）", "NEJM-CPC", "85.5%", "$7,184", "arXiv v2 §4"],
+          ["一般科医生（Science 口径）", "NEJM-CPC", "36.1%", "未披露", "Science 摘要"],
+          ["MAI-DxO（Science 口径）", "NEJM-CPC", "83.2%", "未披露", "Science 摘要"],
+          ["一般科医生（Science 口径）", "MIMIC-IV-ED", "46.8%", "未披露", "Science 摘要"],
+          ["MAI-DxO（Science 口径）", "MIMIC-IV-ED", "80.3%", "未披露", "Science 摘要"],
+          ["GPT-5 baseline", "MIMIC-IV 验证+测试 325 例", "76.6%", "约 US$4,240", "PhysioNet 数据集说明"],
+          ["DxO agent（无预算约束）", "MIMIC-IV 验证+测试 325 例", "80.3%", "约 US$4,980", "PhysioNet 数据集说明"]
+        ]
+      },
+      "cite": ["paper@§4", "science-abstract@摘要", "mimic-ds@使用说明"]
+    }
+  }
 }

@@ -1,64 +1,416 @@
 {
-  "id": "refadv-s",
-  "name": "Ref-Adv (S)",
-  "full_name": "Ref-Adv: Exploring MLLM Visual Reasoning in Referring Expression Tasks",
-  "aliases": [
-    "RefAdv-S",
-    "Ref-Adv"
-  ],
-  "status": null,
-  "categories": [
-    "multimodal"
-  ],
-  "summary": "Ref-Adv 指代表达理解评测（Qwen 表行名 RefAdv-S）：语言上不平凡的表述 + 难干扰物 + 否定等推理要素，压制 shortcut 解法",
-  "interpretation": "RefCOCO 系的高分主要靠短句 + 少干扰物的捷径；Ref-Adv 用真实图像 + 硬干扰物把分数重新拉开（Qwen3.8-Max 80.2 vs Opus4.8 61.7）。S 为表行后缀，公开材料未单独定义切分含义。",
-  "measures": [
-    "抗捷径的指代表达理解（含否定与推理要素）",
-    "难干扰物下的区域定位"
-  ],
-  "does_not_measure": [
-    "检测框密度类指标（COCO 负责）",
-    "计数（CountQA 负责）"
-  ],
-  "dataset": {
-    "sample_count": null,
-    "splits": [
-      "真实图像 + 难干扰物 + 推理要素标注"
-    ],
-    "languages": [
-      "en"
-    ],
-    "source_type": "human_curated",
-    "public_sample": true
+ "id": "refadv-s",
+ "name": "Ref-Adv-s",
+ "full_name": "Ref-Adv: Exploring MLLM Visual Reasoning in Referring Expression Tasks（Ref-Adv-s 为其公开子集，1,142 例）",
+ "aliases": [
+  "RefAdv-S",
+  "Ref-Adv",
+  "Ref-Adv subset"
+ ],
+ "status": "active",
+ "categories": [
+  "multimodal"
+ ],
+ "summary": "Ref-Adv 是指代表达理解（REC）基准：用平均 11.5 词的长表达、同类「硬干扰物」和 21.25% 的否定表达，把经典基准里靠短句与冗余线索就能答对的捷径堵上。Ref-Adv-s 是它公开的 1,142 例子集，附带评测代码与模型预测。在经典 REC 基准上准确率已接近上限（常超过 90%）的模型，在 Ref-Adv-s 上最高只到 68.0%（Acc@0.5），且 Acc@0.9 仅 34.2%。",
+ "interpretation": "Acc@0.5 高不等于框得准：Ref-Adv-s 上最高分模型（Qwen3.5-397B-A17B-FP8，带 CoT）的 Acc@0.75 为 55.6、Acc@0.9 只有 34.2，IoU 阈值一收紧就大幅下滑。论文的定性分析指出，模型经常把硬干扰物选成答案，说明这个基准同时压「深度理解表达」与「准确视觉感知」两件事，而不是单一的文字匹配能力。",
+ "measures": [
+  {
+   "area": "长表达的整句理解",
+   "focus": "平均 11.5 词的英文指代表达，含属性与关系描述，必须理解整句才能唯一确定目标",
+   "share": "全部 1,142 例",
+   "format": "图像 + 一条表达 → 一个目标框",
+   "cite": ["arxiv-2602-23898@Abstract", "repo-ref-adv@README-统计"]
   },
-  "metrics": [],
-  "default_protocol": null,
-  "versions": [
-    {
-      "id": "v1",
-      "label": "Ref-Adv（ICLR 2026）",
-      "note": "arXiv:2602.23898"
-    }
+  {
+   "area": "同类干扰物压力",
+   "focus": "每图平均 4.01 个同类不同实例作干扰物（每例至少 2 个），按 2–3 / 4–6 / ≥7 分组报告 Acc@0.5 及相对总体值的差",
+   "share": "按分组报告",
+   "format": "分组 Acc@0.5 + Δ",
+   "cite": ["arxiv-2602-23898@Table 6 注", "arxiv-2602-23898@§3.3"]
+  },
+  {
+   "area": "硬干扰物与捷径抑制",
+   "focus": "表达只保留「最小但充分」的判别属性，避免单个冗余线索可猜；显式否定比例 21.25%（全量 Ref-Adv 口径）",
+   "share": "否定表达约 21.25%",
+   "format": "否定表达占比（全量口径）",
+   "cite": ["arxiv-2602-23898@Table 1 注", "repo-ref-adv@README-统计"]
+  },
+  {
+   "area": "定位精度",
+   "focus": "IoU 阈值 0.5 / 0.75 / 0.9 三档准确率，衡量预测框与标注框的重合程度",
+   "share": "全部 1,142 例",
+   "format": "Acc@0.5 / Acc@0.75 / Acc@0.9",
+   "cite": ["arxiv-2602-23898@§3.2", "site-ref-adv@Results"]
+  }
+ ],
+ "does_not_measure": [
+  {
+   "text": "开放式生成与指令跟随：只判目标框是否命中，不评回答文本、输出格式遵循或拒答行为。",
+   "cite": ["arxiv-2602-23898@§3.2"]
+  },
+  {
+   "text": "多目标表达与掩码级分割：每题只有一个目标区域，不做实例分割或短语级定位评测。",
+   "cite": ["arxiv-2602-23898@§3.2"]
+  },
+  {
+   "text": "训练方法与数据增广的效果：论文只用现成 checkpoint 直接推理，不做额外训练或微调。",
+   "cite": ["arxiv-2602-23898@§3.3-offtheshelf"]
+  },
+  {
+   "text": "全量 Ref-Adv（5,000 例）上的成绩：本页只报告公开子集 Ref-Adv-s；全集分数见论文 Table 7，口径不同，不能与本页数字直接比较。",
+   "cite": ["arxiv-2602-23898@§3.3-s", "arxiv-2602-23898@Table 7 注"]
+  }
+ ],
+ "dataset": {
+  "sample_count": 1142,
+  "splits": [
+   "train"
   ],
-  "limitations": [
-    "『S』切分的确切定义未在公开材料中明确，跨表对比需谨慎",
-    "难干扰物样本构造依赖人工策展"
+  "languages": [
+   "en"
   ],
-  "notes": "Qwen3.8-Max 表 2 Visual Perception & Grounding 组出现（80.2 vs Gemini3.1-Pro 71.9 / Opus4.8 61.7）",
-  "official_sources": [
-    {
-      "kind": "paper",
-      "url": "https://arxiv.org/abs/2602.23898"
-    },
-    {
-      "kind": "github",
-      "url": "https://github.com/dddraxxx/Ref-Adv"
-    }
+  "source_type": "LLM 生成 + 人工核验",
+  "public_sample": true,
+  "totals": "公开子集 Ref-Adv-s 共 1,142 例（Hugging Face 上只有一个 default 子集、train split）；论文全量 Ref-Adv 为 2,833 张图像上的 5,000 个表达实例，全量数据未随子集一起开放。",
+  "cite": ["hf-ref-adv-s@Dataset Card", "arxiv-2602-23898@Table 1 统计", "repo-ref-adv@Results"],
+  "construction": [
+   {
+    "k": "图像与候选实例筛选",
+    "text": "从 COCO 验证/测试集与 OpenImages v7 采样，只保留至少有 3 个同类候选实例的图像。",
+    "cite": ["arxiv-2602-23898@§2.1", "arxiv-2602-23898@§2.3"]
+   },
+   {
+    "k": "数字标记（SoM）标注",
+    "text": "给候选实例打数字编号，做法类似 Set-of-Marks；因为已有实例标注，只需给候选实例加编号。",
+    "cite": ["arxiv-2602-23898@§2.3"]
+   },
+   {
+    "k": "四阶段生成流水线",
+    "text": "筛图打标 → GPT-4o 相似性判定并抽取组级/实例级判别属性 → 组合「最小但充分」的表达 → 人工核验。单阶段直接让 GPT-4o 写完整表达会产生大量冗余描述，反而形成捷径，因此改成两阶段。",
+    "cite": ["arxiv-2602-23898@§2.3-四阶段", "arxiv-2602-23898@§2.3-两阶段"]
+   },
+   {
+    "k": "人工核验与保留率",
+    "text": "人工核验表达准确性、无歧义性以及硬干扰物确实存在；候选对以随机顺序呈现给每位标注者，三人全部同意才保留，LLM 生成的表达保留率为 18.7%。",
+    "cite": ["arxiv-2602-23898@§2.3-人工核验", "arxiv-2602-23898@§2.3-保留率", "arxiv-2602-23898@§2.3-保留率-数值"]
+   },
+   {
+    "k": "公开子集",
+    "text": "Ref-Adv-s 是从 Ref-Adv 中挑出的 1,142 例，随评测代码与模型预测一起发布，数据托管在 Hugging Face（CC BY 4.0）。",
+    "cite": ["arxiv-2602-23898@§3.3-s", "hf-ref-adv-s@Dataset Card", "hf-ref-adv-s@License"]
+   }
+  ]
+ },
+ "default_protocol": {
+  "raw": "给模型一张图像和一条英文指代表达，输出目标区域的边界框——Qwen2.5-VL-72B 用绝对坐标 [x1, y1, x2, y2]，其他模型多用归一化坐标；预测框与标注框的 IoU 超过 0.5 即记为该题成功（Acc@0.5）。GPT-4o 与 Claude-3.5 原生定位能力有限，论文对二者采用 SoM + Semantic-SAM 口径；除 CogVLM-Grounding 外都同时评测带/不带 CoT 两种设置，并为每个模型采用其最佳实践 prompt。",
+  "cite": ["arxiv-2602-23898@§3.1", "arxiv-2602-23898@§3.1-Coordinate", "arxiv-2602-23898@§3.1-Prompt", "arxiv-2602-23898@§3.2"],
+  "variants": [
+   {
+    "text": "CoT 不是单调加分：Qwen2.5-VL-72B-Instruct 开 CoT 后 Acc@0.5 从 54.0 降到 52.4，而同族 32B 从 48.0 升到 50.6；论文的总体结论是 CoT 在 Ref-Adv 上多数情况有帮助，而在 RefCOCO(+/g) 这类短表达、少干扰物的基准上常常不必要甚至有害。",
+    "cite": ["arxiv-2602-23898@Table 6 注", "arxiv-2602-23898@§3.3-CoT", "arxiv-2602-23898@§3.3-CoTCaveat"]
+   },
+   {
+    "text": "口径不可混比：Ref-Adv-s 是 1,142 例公开子集，全量 Ref-Adv 为 5,000 例；全集最高是 GPT-4o（SoM + CoT）63.7，子集最高是 Qwen3.5-397B-A17B-FP8 68.0，模型集合与题目分布都不同。",
+    "cite": ["arxiv-2602-23898@Table 7 注", "arxiv-2602-23898@§3.3-s"]
+   },
+   {
+    "text": "输出格式依模型而异：Qwen2.5-VL-72B 输出绝对坐标，其他模型多用归一化坐标；为公平起见，论文对每个模型采用其最佳实践 prompt。",
+    "cite": ["arxiv-2602-23898@§3.1-Coordinate", "arxiv-2602-23898@§3.1-Prompt"]
+   }
+  ]
+ },
+ "metrics": [
+  {
+   "name": "Acc@0.5（IoU ≥ 0.5 准确率）",
+   "direction": "越高越好",
+   "description": "主指标。预测框与标注框 IoU 超过 0.5 即算定位成功；Ref-Adv-s 上已公开结果区间约 23.5%–68.0%。",
+   "cite": ["arxiv-2602-23898@§3.2", "site-ref-adv@Results"]
+  },
+  {
+   "name": "Acc@0.75 / Acc@0.9",
+   "direction": "越高越好",
+   "description": "更严的 IoU 阈值，衡量框的精细度；最高分模型从 68.0 掉到 55.6 和 34.2。",
+   "cite": ["arxiv-2602-23898@§3.2", "arxiv-2602-23898@Table 6 注"]
+  },
+  {
+   "name": "分组 Acc@0.5（2–3 / 4–6 / ≥7 同类干扰物）",
+   "direction": "越高越好",
+   "description": "按同类干扰物数量分组报告 Acc@0.5，并给出相对总体 Acc@0.5 的差值；论文的结论是干扰物越多准确率越低，最高分模型在 ≥7 组的 Acc@0.5 为 56.6、比总体低 11.4 个百分点（Table 6 该行）。",
+   "cite": ["arxiv-2602-23898@Table 6 注", "arxiv-2602-23898@§3.3", "arxiv-2602-23898@§3.3-趋势"]
+  },
+  {
+   "name": "mAcc（多 IoU 阈值均值）",
+   "direction": "越高越好",
+   "description": "论文只在全量 Ref-Adv（Table 7）报告 mAcc，Ref-Adv-s 的结果表不含这一列。",
+   "cite": ["arxiv-2602-23898@Table 7 注"]
+  }
+ ],
+ "versions": [
+  {
+   "id": "v1",
+   "date": "2026-02-27",
+   "label": "arXiv v1 提交（后作为 ICLR 2026 会议论文发表）",
+   "cite": ["arxiv-2602-23898@v1 日期"]
+  },
+  {
+   "id": "iclr2026",
+   "date": "2026-01",
+   "label": "被 ICLR 2026 接收；评测代码与模型预测发布",
+   "cite": ["repo-ref-adv@News"]
+  },
+  {
+   "id": "evalscope",
+   "date": "2026-08",
+   "label": "Ref-Adv-s 接入 EvalScope，可用 OpenAI 兼容端点评测",
+   "cite": ["repo-ref-adv@EvalScope"]
+  },
+  {
+   "id": "site-profile-v2",
+   "date": "2026-11-14",
+   "label": "本站按 benchmark-profile/v2 重建档案，重新核对论文、仓库、数据集卡与项目页",
+   "cite": ["arxiv-2602-23898@Abstract"]
+  }
+ ],
+ "limitations": [
+  {
+   "issue": "公开集只有 1,142 例，全量未开放",
+   "impact": "子集统计量的置信区间较宽，单题对错就会明显影响百分点；论文在全量上报告的 mAcc、分组差值等细分数无法在公开集上复现。",
+   "severity": "高",
+   "response": "论文承诺发布精确图像标识、最终表达、目标区域、标注 JSON schema 以及加载与评测脚本。",
+   "reader": "把 Ref-Adv-s 的分数当趋势看，别当绝对排名；比较模型时优先看同族同尺寸、同一 CoT 档位的差距。",
+   "cite": ["arxiv-2602-23898@Reproducibility", "arxiv-2602-23898@§3.3-s"]
+  },
+  {
+   "issue": "CoT 口径不统一且非单调",
+   "impact": "不同模型的 CoT 实现不同（thinking mode / think-first prompt / Qwen3.5 原生），开与不开的差距在不同尺寸上方向不一致。",
+   "severity": "中",
+   "response": "论文对每个模型采用其最佳实践 prompt，并同时报告两种设置；论文也观察到同尺寸下 thinking 变体明显强于 instruct 变体。",
+   "reader": "比较两个模型时固定同一档 CoT 设置；跨代对比时注意 thinking 与 instruct 的差别。",
+   "cite": ["arxiv-2602-23898@Table 6 注", "arxiv-2602-23898@§3.1-Prompt", "arxiv-2602-23898@§3.3-趋势"]
+  },
+  {
+   "issue": "人工专家基线只在随机子集上评测",
+   "impact": "90.3% / 80.6% 与模型分数不在同一批题目上，且评测规模未披露。",
+   "severity": "中",
+   "response": "项目页与仓库用脚注说明「人工专家结果在随机抽出的子集上评测」。",
+   "reader": "把人工分数当粗略参照，不要据此宣称「距人类还差多少个百分点」。",
+   "cite": ["site-ref-adv@Human 注", "repo-ref-adv@Human"]
+  },
+  {
+   "issue": "表达由 LLM 生成再人工筛选",
+   "impact": "表达风格与难度分布受 GPT-4o 影响；LLM 生成的表达保留率只有 18.7%，筛选后的分布未必代表自然语言表达分布。",
+   "severity": "中",
+   "response": "两阶段流程先抽判别属性再组合最小充分子集，并对每对表达做三人一致性判定与人工核验。",
+   "reader": "把它当成「抗捷径的受控评测集」，不要当成自然语言表达的分布样本。",
+   "cite": ["arxiv-2602-23898@§2.3-两阶段", "arxiv-2602-23898@§2.3-保留率"]
+  },
+  {
+   "issue": "图像与标注来自公开数据集",
+   "impact": "COCO val2017 / OpenImages 图像可自由下载，存在与其它同源基准重叠、以及模型训练数据污染的可能，论文未给出去重或污染分析。",
+   "severity": "中",
+   "response": "论文只发布表达、目标区域与数据集标识，不重新分发图像，并给出 discouraging 身份推断与敏感属性预测的使用指引。",
+   "reader": "跨基准比较时留意同源图像；对闭源模型的分数保持保守。",
+   "cite": ["arxiv-2602-23898@Ethics", "hf-ref-adv-s@Images"]
+  },
+  {
+   "issue": "描述性统计多为全量 Ref-Adv 口径",
+   "impact": "11.5 词、4.01 干扰物、21.25% 否定比等统计来自全量 5,000 例，公开子集是否同分布论文未说明。",
+   "severity": "低",
+   "response": "论文在 Table 1 报告全量统计。",
+   "reader": "引用这些统计时注明是全量口径，不要当成 Ref-Adv-s 的实测分布。",
+   "cite": ["repo-ref-adv@README-统计", "arxiv-2602-23898@Table 1 注"]
+  }
+ ],
+ "official_sources": [
+  {
+   "kind": "paper",
+   "url": "https://arxiv.org/abs/2602.23898"
+  },
+  {
+   "kind": "repo",
+   "url": "https://github.com/dddraxxx/Ref-Adv"
+  },
+  {
+   "kind": "dataset",
+   "url": "https://huggingface.co/datasets/dddraxxx/ref-adv-s"
+  },
+  {
+   "kind": "site",
+   "url": "https://ref-adv.github.io/"
+  }
+ ],
+ "related_benchmarks": [
+  "dense200",
+  "coco"
+ ],
+ "notes": "官方结果以 Qwen2.5-VL / Qwen3-VL / Qwen3.5 家族为主（论文 Table 6 与项目页一致）；仓库 News 记录 2026/01 发布评测代码与模型预测、2026/08 Ref-Adv-s 接入 EvalScope。厂商自报的榜单分数本站未收录。",
+ "content_status": "reviewed",
+ "last_verified_at": "2026-11-14",
+ "profile": {
+  "template": "benchmark-profile/v2",
+  "verified_at": "2026-11-14",
+  "sources": [
+   {
+    "id": "arxiv-2602-23898",
+    "kind": "paper",
+    "title": "Ref-Adv: Exploring MLLM Visual Reasoning in Referring Expression Tasks（arXiv:2602.23898，ICLR 2026）",
+    "url": "https://arxiv.org/abs/2602.23898",
+    "accessed": "2026-11-14"
+   },
+   {
+    "id": "repo-ref-adv",
+    "kind": "repo",
+    "title": "dddraxxx/Ref-Adv（官方代码、README 结果表与 News）",
+    "url": "https://github.com/dddraxxx/Ref-Adv",
+    "accessed": "2026-11-14"
+   },
+   {
+    "id": "hf-ref-adv-s",
+    "kind": "dataset",
+    "title": "dddraxxx/ref-adv-s（Hugging Face 数据集卡）",
+    "url": "https://huggingface.co/datasets/dddraxxx/ref-adv-s",
+    "accessed": "2026-11-14"
+   },
+   {
+    "id": "site-ref-adv",
+    "kind": "site",
+    "title": "ref-adv.github.io（项目页与 Ref-Adv-s 结果表）",
+    "url": "https://ref-adv.github.io/",
+    "accessed": "2026-11-14"
+   }
   ],
-  "related_benchmarks": [
-    "dense200",
-    "coco"
+  "header": {
+   "publisher": {
+    "v": "Northeastern University",
+    "cite": ["arxiv-2602-23898@机构署名"]
+   },
+   "first_release": {
+    "v": "2026-02-27（arXiv v1）；ICLR 2026 接收，评测代码与模型预测随仓库发布",
+    "cite": ["arxiv-2602-23898@v1 日期", "repo-ref-adv@News"]
+   }
+  },
+  "cites": {
+   "summary": ["arxiv-2602-23898@Abstract", "arxiv-2602-23898@Table 6 注", "arxiv-2602-23898@§4"],
+   "interpretation": ["arxiv-2602-23898@Table 6 注", "arxiv-2602-23898@§3.2", "arxiv-2602-23898@§3.3-定性"]
+  },
+  "problem": {
+   "text": "经典 REC 基准（RefCOCO/+/g）有捷径可走：RefCOCO 与 RefCOCO+ 的标注平均只有 3.6 词（RefCOCOg 为 8.4）、描述冗余，模型不真正「看」也能答对，词序打乱后 RefCOCOg 的分数常常不掉，准确率早已接近上限。Ref-Adv 用「只说刚够区分目标的信息 + 同类硬干扰物 + 显式否定」把这类捷径堵上，逼出真正的多步视觉推理与定位。",
+   "cite": ["arxiv-2602-23898@§4", "arxiv-2602-23898@§4-2", "arxiv-2602-23898@Table 1 统计"]
+  },
+  "ladder": [
+   {
+    "label": "Ref-Adv-s 已公开报告的最低分",
+    "value": "23.5%（Acc@0.5，Qwen3-VL-2B-Instruct，无 CoT）",
+    "note": "同尺寸对照：Qwen2.5-VL-3B-Instruct 无 CoT 为 23.8。",
+    "cite": ["arxiv-2602-23898@Table 6 注"]
+   },
+   {
+    "label": "Ref-Adv-s 已公开报告的最高分",
+    "value": "68.0%（Acc@0.5，Qwen3.5-397B-A17B-FP8，带 CoT）",
+    "note": "同一模型 Acc@0.75 为 55.6、Acc@0.9 为 34.2；阈值收紧后大幅下滑。",
+    "cite": ["arxiv-2602-23898@Table 6 注", "site-ref-adv@Results"]
+   },
+   {
+    "label": "人工专家参考线",
+    "value": "90.3%（High）/ 80.6%（Medium），Acc@0.5",
+    "note": "项目页与仓库注明人工专家只在随机抽出的子集上评测，规模未披露，不能当作全集上限。",
+    "cite": ["site-ref-adv@Results", "site-ref-adv@Human 注"]
+   },
+   {
+    "label": "全量 Ref-Adv 上的最高分（不同口径）",
+    "value": "63.7%（Acc@0.5，GPT-4o，SoM + CoT）",
+    "note": "全量 5,000 例，题目分布与模型集合都和 Ref-Adv-s 不同，不能与上面的 68.0 直接比较。",
+    "cite": ["arxiv-2602-23898@Table 7 注", "arxiv-2602-23898@§3.3-2"]
+   },
+   {
+    "label": "本站账本当前最高",
+    "auto": "ledger-top"
+   }
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-09-01"
+  "misreadings": [
+   {
+    "text": "Acc@0.5 高不等于「框得准」。Ref-Adv-s 上最高 68.0 的同一模型，Acc@0.75 只有 55.6、Acc@0.9 只有 34.2；只看单阈值分数会明显高估定位精度。",
+    "cite": ["arxiv-2602-23898@Table 6 注", "arxiv-2602-23898@§3.2"]
+   },
+   {
+    "text": "不能把 Ref-Adv-s 的分数和全量 Ref-Adv 的分数混着比。子集最高 68.0（Qwen3.5-397B），全集最高 63.7（GPT-4o），题量与分布都不同。",
+    "cite": ["arxiv-2602-23898@§3.3-s", "arxiv-2602-23898@Table 7 注"]
+   },
+   {
+    "text": "CoT 不是稳定加分项。Qwen2.5-VL-72B-Instruct 开 CoT 后 Acc@0.5 反而从 54.0 降到 52.4；论文也指出 RefCOCO(+/g) 多短表达、少干扰物，CoT 常常不必要甚至有害。",
+    "cite": ["arxiv-2602-23898@Table 6 注", "arxiv-2602-23898@§3.3-CoTCaveat"]
+   },
+   {
+    "text": "人工专家的 90.3% 不是这个基准的「人类上限」。项目页明确写了人工专家只在随机子集上评测，规模未披露，且与模型分数不在同一批题目上。",
+    "cite": ["site-ref-adv@Human 注", "repo-ref-adv@Human"]
+   },
+   {
+    "text": "Ref-Adv 的优势不是「干扰物更多」。Table 1 里 RefCOCO 的平均同类干扰物是 3.99、Ref-Adv 是 4.01，几乎一样；真正的差别在干扰物是否部分匹配（硬干扰物）、表达长度（3.6 → 11.5 词）和否定比例（0.99% → 21.25%）。",
+    "cite": ["arxiv-2602-23898@Table 1 统计", "arxiv-2602-23898@Table 1 注"]
+   }
+  ],
+  "background": [
+   {
+    "k": "发布方",
+    "v": "Northeastern University（论文署名机构）",
+    "cite": ["arxiv-2602-23898@机构署名"]
+   },
+   {
+    "k": "核心作者",
+    "v": "Qihua Dong、Kuo Yang、Lin Ju、Handong Zhao、Yitian Zhang、Yizhou Wang、Huimin Zeng、Jianglin Lu、Yun Fu",
+    "cite": ["arxiv-2602-23898@作者署名"]
+   },
+   {
+    "k": "论文与会议",
+    "v": "arXiv:2602.23898，v1 提交于 2026-02-27，已被 ICLR 2026 接收；仓库 News 记录 2026/01 接收并发布评测代码与模型预测。",
+    "cite": ["arxiv-2602-23898@v1 日期", "repo-ref-adv@News"]
+   },
+   {
+    "k": "为什么做这个基准",
+    "v": "RefCOCO/RefCOCO+ 的标注平均只有 3.6 词（RefCOCOg 为 8.4），模型 Acc@0.5 已接近上限（常 >90%），且打乱词序分数不掉，说明靠的是表层线索；Table 1 显示 Ref-Adv 平均表达 11.5 词、否定比例 21.25%，平均同类干扰物 4.01（RefCOCO 为 3.99，量级相当）。",
+    "cite": ["arxiv-2602-23898@§4", "arxiv-2602-23898@§4-2", "arxiv-2602-23898@Table 1 统计"]
+   },
+   {
+    "k": "数据来源与干扰物定义",
+    "v": "图像与实例标注取自 COCO val2017 与 OpenImages v7；干扰物指与目标同类但不同实例的对象，硬干扰物指部分匹配但不完全满足表达的对象。",
+    "cite": ["arxiv-2602-23898@§2.1", "arxiv-2602-23898@§1", "arxiv-2602-23898@§2.2", "hf-ref-adv-s@Images"]
+   },
+   {
+    "k": "数据构造",
+    "v": "四阶段流水线：筛出至少有 3 个同类候选实例的图像并打 SoM 数字标签 → GPT-4o 相似性判定并抽取组级/实例级判别属性 → 组合最小充分的表达 → 人工核验准确性与硬干扰物存在性。",
+    "cite": ["arxiv-2602-23898@§2.3-四阶段", "arxiv-2602-23898@§2.3-两阶段", "arxiv-2602-23898@§2.3-人工核验"]
+   },
+   {
+    "k": "许可",
+    "v": "代码 Apache 2.0；Ref-Adv-s 数据集 CC BY 4.0。论文只发布表达、目标区域与数据集标识，不重新分发图像。",
+    "cite": ["repo-ref-adv@License", "hf-ref-adv-s@License", "arxiv-2602-23898@Ethics"]
+   },
+   {
+    "k": "生态",
+    "v": "2026/08 起 EvalScope 支持 Ref-Adv-s，可用 OpenAI 兼容端点评测；仓库提供 report.py，可直接在已发布的模型预测上复现结果表。",
+    "cite": ["repo-ref-adv@EvalScope", "repo-ref-adv@Reproduce"]
+   }
+  ],
+  "official_results": {
+   "table": {
+    "as_of": "2026-11-14",
+    "columns": ["来源", "模型", "CoT", "Acc@0.5", "Acc@0.75", "Acc@0.9", "口径"],
+    "rows": [
+     ["项目页", "Human Expert (High)", "—", "90.3", "—", "—", "随机子集，规模未披露"],
+     ["项目页", "Human Expert (Medium)", "—", "80.6", "—", "—", "随机子集，规模未披露"],
+     ["论文 Table 6", "Qwen2.5-VL-3B-Instruct", "—", "23.8", "18.1", "8.8", "Ref-Adv-s（1,142 例）"],
+     ["论文 Table 6", "Qwen2.5-VL-3B-Instruct", "✓", "25.3", "19.1", "9.5", "Ref-Adv-s（1,142 例）"],
+     ["论文 Table 6", "Qwen2.5-VL-72B-Instruct", "—", "54.0", "40.1", "18.0", "Ref-Adv-s（1,142 例）"],
+     ["论文 Table 6", "Qwen2.5-VL-72B-Instruct", "✓", "52.4", "39.0", "18.3", "Ref-Adv-s（1,142 例）"],
+     ["论文 Table 6", "Qwen3-VL-2B-Instruct", "—", "23.5", "19.2", "11.0", "Ref-Adv-s（1,142 例）"],
+     ["论文 Table 6", "Qwen3-VL-8B-Thinking", "✓", "59.5", "48.2", "27.3", "Ref-Adv-s（1,142 例）"],
+     ["论文 Table 6", "Qwen3-VL-32B-Thinking", "✓", "65.6", "52.8", "31.6", "Ref-Adv-s（1,142 例）"],
+     ["论文 Table 6", "Qwen3-VL-235B-A22B-Thinking", "✓", "67.1", "53.6", "31.8", "Ref-Adv-s（1,142 例）"],
+     ["论文 Table 6", "Qwen3.5-27B", "✓", "67.3", "54.9", "32.7", "Ref-Adv-s（1,142 例）"],
+     ["论文 Table 6", "Qwen3.5-397B-A17B-FP8", "✓", "68.0", "55.6", "34.2", "Ref-Adv-s（1,142 例）"]
+    ]
+   },
+   "cite": ["site-ref-adv@Results", "arxiv-2602-23898@Table 6 注"]
+  }
+ }
 }

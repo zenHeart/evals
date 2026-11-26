@@ -1,54 +1,416 @@
 {
   "id": "posttrain-bench",
   "name": "PostTrainBench",
-  "full_name": "PostTrainBench: Can LLM Agents Automate LLM Post-Training?",
-  "aliases": ["PostTrainBench"],
-  "status": null,
+  "full_name": "PostTrainBench: Can LLM Agents Automate LLM Post-Training?（后训练基准：LLM 智能体能否自动化 LLM 后训练）",
+  "aliases": [
+    "PostTrainBench",
+    "PTB"
+  ],
+  "status": "active",
   "categories": [
     "agent"
   ],
-  "summary": "评测 LLM Agent 能否自主完成后训练：给定小基座模型与 10 小时单卡 H100 预算，以下游基准提升计分",
-  "interpretation": "Agent 在单张 H100、10 小时算力预算内自主后训练指定小基座模型，得分为其在下游基准上的平均性能提升（0-100%）；参考线是官方指令微调版——最佳 agent 23.2% vs 官方 51.1%。",
+  "summary": "PostTrainBench 考的是「AI 智能体能不能自己做完大模型的后训练」：给一个 1.7B–4B 的小基座模型、一个下游基准的评测脚本、一张 H100 和 10 小时，让命令行智能体（Claude Code / Codex CLI / Gemini CLI / OpenCode）自己找数据、写训练代码、调超参；分数是 4 个基座模型 × 7 个下游基准成绩的加权平均，权重与「官方指令微调版本相对基座版本的增益」成反比。",
+  "interpretation": "高分说明该智能体能在固定算力内把一个基座模型在指定基准上练上去，并且没有作弊；它不说明智能体具备通用后训练能力——论文明确说智能体一次只优化一个基准，而官方指令微调模型追求的是通用能力。注意 23.2% 与 51.1% 都是加权平均后的绝对基准分（0–100），不是「提升了多少百分比」。",
   "measures": [
-    "Agent 自主执行数据收集 / 微调 / 强化学习的能力",
-    "受限算力下的训练决策质量",
-    "固定评测模板下的模型性能净提升"
+    {
+      "area": "数学推理 · AIME 2025",
+      "focus": "竞赛级多步推理题；论文称它与 GPQA、ArenaHard-Writing 同属最难的一项，后训练后绝大多数 agent 模型仍停留在很低的分段",
+      "share": "0.2265（论文 Table 5 权重）；v1.2 重加权后为 24.5%",
+      "format": "精确匹配准确率",
+      "cite": [
+        "paper@§2.2",
+        "paper@Table 5",
+        "blog-v12@Removing BFCL"
+      ]
+    },
+    {
+      "area": "科学知识 · GPQA Main",
+      "focus": "研究生级物理 / 化学 / 生物选择题；后训练后几乎所有 agent 模型仍低于 25% 的随机水平",
+      "share": "0.2246（论文 Table 5 权重）；v1.2 重加权后为 24.3%",
+      "format": "精确匹配准确率",
+      "cite": [
+        "paper@§2.2",
+        "paper@§3.1",
+        "paper@Table 5",
+        "blog-v12@Removing BFCL"
+      ]
+    },
+    {
+      "area": "医疗 · HealthBench-Easy",
+      "focus": "从 OpenAI HealthBench 抽取 245 道需要至少 5 轮对话、含 completeness 轴评分标准且至多 2 条负向标准的多轮医疗对话题",
+      "share": "0.1841（论文 Table 5 权重）；v1.2 重加权后为 19.9%",
+      "format": "GPT-5-mini 当裁判按评分标准打分",
+      "cite": [
+        "paper@§2.2",
+        "paper@Table 5",
+        "blog-v12@Removing BFCL"
+      ]
+    },
+    {
+      "area": "代码生成 · HumanEval",
+      "focus": "按 docstring 补全 Python 函数；这是论文执行轨迹示例中 Opus 4.5 从 0% 练到 37.3% 的那一项",
+      "share": "0.1061（论文 Table 5 权重）；v1.2 重加权后为 11.5%",
+      "format": "pass@1（v1.2 起改为独立进程跑单元测试，且多种子取均值）",
+      "cite": [
+        "paper@§2.2",
+        "paper@Figure 3 注",
+        "paper@Table 5",
+        "blog-v12@Removing BFCL",
+        "blog-v12@Fixing HumanEval scoring"
+      ]
+    },
+    {
+      "area": "数学推理 · GSM8K",
+      "focus": "小学应用题；提升最明显的一项，论文称榜首智能体把基座从 20.4% 提到接近 56%",
+      "share": "0.0936（论文 Table 5 权重）；v1.2 重加权后为 10.1%",
+      "format": "精确匹配准确率（唯一用 10-shot 的基准，其余为零样本）",
+      "cite": [
+        "paper@§2.2",
+        "paper@§3.1",
+        "paper@Table 5",
+        "blog-v12@Removing BFCL"
+      ]
+    },
+    {
+      "area": "创意写作 · ArenaHard-Writing",
+      "focus": "取 ArenaHard v2 的 creative writing split，与 Qwen3-1.7B 对战；论文称其提升幅度很小（约 5%–10%）",
+      "share": "0.0904（论文 Table 5 权重）；v1.2 重加权后为 9.8%",
+      "format": "GPT-5-mini 当裁判的成对偏好评判",
+      "cite": [
+        "paper@§2.2",
+        "paper@§3.1",
+        "paper@Table 5",
+        "blog-v12@Removing BFCL"
+      ]
+    },
+    {
+      "area": "工具调用 · BFCL",
+      "focus": "BFCL v3 的 exec_simple split；这是智能体唯一大幅超过官方指令微调版本的一项（Gemma-3-4B 上 89% 对 67%），v1.2 起被移出榜单",
+      "share": "0.0746（论文 Table 5 权重）；v1.2 起移除，权重记为 –",
+      "format": "精确匹配准确率（工具调用参数需完全一致）",
+      "cite": [
+        "paper@§2.2",
+        "paper@§3.2",
+        "paper@Table 5",
+        "blog-v12@Removing BFCL",
+        "blog-epoch@BFCL"
+      ]
+    }
   ],
   "does_not_measure": [
-    "提示工程技巧（评测模板固定以隔离训练收益）",
-    "大规模预训练",
-    "推理时优化与 Agent harness 调优"
+    {
+      "text": "提示工程与推理档位技巧——论文固定评测模板，目的就是把「训练带来的收益」和「改提示词带来的收益」分开",
+      "cite": [
+        "paper@§2.2"
+      ]
+    },
+    {
+      "text": "通用后训练能力——智能体一次只优化一个目标基准，官方指令微调模型面向聊天、推理、代码、安全等通用能力，两者不可直接类比",
+      "cite": [
+        "paper@§3.2",
+        "paper@§7 Discussion"
+      ]
+    },
+    {
+      "text": "大规模预训练、分布式训练与真实后训练时间线（10 小时单卡是人为设定的预算）",
+      "cite": [
+        "paper@§7 Limitations"
+      ]
+    },
+    {
+      "text": "智能体自身 harness 的工程质量——同一模型换 scaffold 分数差别很大，榜单同时受模型能力与脚手架质量影响",
+      "cite": [
+        "paper@§3.1",
+        "paper@§4.5"
+      ]
+    }
   ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "source_type": "environment（固定基座模型与算力预算的自动化 R&D 环境）",
-    "languages": ["en"],
-    "public_sample": true
+    "sample_count": 28,
+    "splits": [
+      "4 个基座模型 × 7 个下游基准 = 28 个「模型–基准」配置（论文 v1 设定；v1.2 移除 BFCL 后为 4 × 6 = 24 个）",
+      "BFCL：exec_simple split",
+      "GPQA：main split",
+      "HealthBench-Easy：从 HealthBench 抽取的 245 题子集",
+      "AIME 2025：30 题（v1.2 起用 5 个种子取均值的原因）"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "environment（固定基座模型 + 官方评测脚本 + 固定算力预算的自动化 R&D 环境，非静态题库）",
+    "public_sample": true,
+    "totals": "28 个「基座模型 × 基准」配置，每个配置一次 10 小时单卡 H100 运行；除 HealthBench-Easy 抽 245 题外，其余基准直接用各自公开测试集；题目语言为英文；运行轨迹与裁判结论在官网公开可查",
+    "cite": [
+      "paper@Figure 2",
+      "paper@§2",
+      "paper@§2.2",
+      "repo@Evaluation Tasks",
+      "site@Benchmark Setup"
+    ],
+    "construction": [
+      {
+        "k": "选基座模型",
+        "text": "选 4 个 1.7B–4B 的开源基座：Qwen3-1.7B、Qwen3-4B、SmolLM3-3B、Gemma-3-4B-PT，横跨三个模型家族和不同参数量，以保证结论稳健；每个基座都有官方指令微调版本作为参考线。",
+        "cite": [
+          "paper@§2.2",
+          "paper@附录 A"
+        ]
+      },
+      {
+        "k": "选下游基准",
+        "text": "选 7 个公开基准覆盖数学、代码、工具调用、科学、健康、创意写作，并各自做裁剪：HealthBench 抽 245 道多轮医疗题做成 HealthBench-Easy，ArenaHard 只取 creative writing split，BFCL 取 exec_simple split。",
+        "cite": [
+          "paper@§2.2"
+        ]
+      },
+      {
+        "k": "定评测协议",
+        "text": "除 GSM8K 用 10-shot 外全部零样本，统一套用各模型自己的 chat template；HumanEval 报 pass@1，开放式基准由 GPT-5-mini 当裁判，其余用精确匹配。",
+        "cite": [
+          "paper@§2.2"
+        ]
+      },
+      {
+        "k": "定加权权重",
+        "text": "按「官方指令微调版本减基座版本」的增益取倒数再归一化作为权重，因此指令微调越难拉开差距的基准权重越高；具体数值见表 5。",
+        "cite": [
+          "paper@§2.2 Scoring",
+          "paper@Table 5"
+        ]
+      },
+      {
+        "k": "定智能体提示词与规则",
+        "text": "给每个 CLI 智能体同一段提示词：不提供起始代码、训练数据或超参配置，要求在 {num_hours} 小时内自主完成；规则包括不得用基准测试数据训练、不得改 evaluate.py 或 templates/、不得微调指定模型以外的任何模型（明确禁止下载其指令微调版本）。",
+        "cite": [
+          "paper@附录 B",
+          "repo@Agent Prompt"
+        ]
+      },
+      {
+        "k": "定反作弊判定",
+        "text": "由 LLM 裁判审查每次运行的代码、训练脚本与数据流水线，检测出作弊即给该次运行记基座模型分；v1.1 起拆成污染、API 使用、榜单查询三类专项裁判加程序化模型身份校验，v1.2 起污染判定要求三次裁判中至少两次同意。",
+        "cite": [
+          "paper@§2",
+          "site@How a Run Is Scored",
+          "blog-v11",
+          "blog-v12@Majority vote judging"
+        ]
+      }
+    ]
   },
   "metrics": [
     {
-      "id": "improvement",
-      "name": "下游基准平均提升",
-      "range": [0, 100],
+      "id": "weighted-average",
+      "name": "加权平均基准分（POSTTRAINBENCH score）",
+      "direction": "越高越好",
+      "description": "先把某智能体在每个基准上的成绩在 4 个基座模型上平均得到单项分，再按与官方指令微调增益成反比的权重加权汇总；被裁判判为作弊的运行记基座模型分",
+      "range": [
+        0,
+        100
+      ],
       "unit": "percent",
-      "direction": "higher",
-      "aggregation": "mean"
+      "cite": [
+        "paper@§2.2 Scoring",
+        "paper@Table 5",
+        "site@How a Run Is Scored"
+      ]
+    },
+    {
+      "id": "per-benchmark-score",
+      "name": "单项基准分",
+      "direction": "越高越好",
+      "description": "单个「智能体 × 基准」组合在 4 个基座模型上的平均分；HumanEval 为 pass@1，ArenaHard-Writing 与 HealthBench-Easy 由 GPT-5-mini 评判，其余为精确匹配准确率",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper@§2.2",
+        "paper@Table 1"
+      ]
     }
   ],
+  "default_protocol": {
+    "raw": "每次运行把 4 个基座模型之一与 7 个基准之一配对：智能体拿到评测脚本 evaluate.py、基座模型、一张 H100、终端与网络访问，没有起始代码、训练数据或超参配置，需在 10 小时内自行完成数据收集、训练与多轮迭代，并把最优模型存进 final_model。评分分两步：先把该智能体在每个基准上的成绩在 4 个基座模型上平均得到单项分，再按与「官方指令微调版本减基座版本」增益成反比的权重加权汇总。规则由 LLM 裁判执行，检测到用测试集训练、替换模型等作弊行为即记基座模型分。",
+    "cite": [
+      "paper@§2",
+      "paper@§2.2 Scoring",
+      "paper@附录 B",
+      "site@How a Run Is Scored"
+    ],
+    "variants": [
+      {
+        "text": "版本口径：v1（论文，7 个基准含 BFCL）→ v1.1（规则收紧并重审历史运行）→ v1.2（移除 BFCL、6 个基准重新加权、修复 HumanEval 计分、最终评测最多 5 个种子取均值、污染判定改为三判多数票）。三个版本的分数不可直接相比。",
+        "cite": [
+          "blog-v12",
+          "blog-v11",
+          "site@Changelog"
+        ]
+      },
+      {
+        "text": "脚手架口径：同一模型在原生 CLI 与开源 OpenCode 上差距明显——GPT-5.1 Codex Max 在 Codex CLI 得 19.7%、在 OpenCode 只得 7.7%；唯一例外是 Claude Opus 4.5（17.1% 对 17.3%）。",
+        "cite": [
+          "paper@§3.1",
+          "paper@§4.5"
+        ]
+      },
+      {
+        "text": "推理档位口径：GPT-5.1 Codex Max 三档得分分别为 Low 15.5、Medium 19.7、High 17.2，默认 Medium 最好但 token 用量只有 High 的一半左右。",
+        "cite": [
+          "paper@§4.1",
+          "paper@Table 2"
+        ]
+      },
+      {
+        "text": "重复次数与种子口径：论文只对前沿智能体的原生 scaffold 跑 3 次，其余配置单次；v1.1 起因算力限制部分贵智能体只跑 2 次；v1.2 起最终评测按基准分别用 1 / 3 / 5 个种子取均值。",
+        "cite": [
+          "paper@Table 1",
+          "blog-epoch@Number of runs",
+          "blog-v12@Averaging evaluations over seeds"
+        ]
+      },
+      {
+        "text": "Reprompted 口径：智能体在时间预算内提前停工时，人工提醒它继续，这类条目的运行时与分数和无人值守运行不同。",
+        "cite": [
+          "site"
+        ]
+      },
+      {
+        "text": "外部提交口径：Locus 由 Intology 运行、由 PostTrainBench 团队审查合规性，3 个种子、84 次运行平均用时 9 小时 38 分，与官方自跑条目分列。",
+        "cite": [
+          "site",
+          "site@Changelog"
+        ]
+      }
+    ]
+  },
   "versions": [
     {
       "id": "v1",
-      "label": "PostTrainBench（ICML 2026）",
-      "note": "arXiv:2603.08640；4 个小目标模型 × 7 个下游基准，单 H100 十小时预算"
+      "date": "2026-03-09",
+      "label": "arXiv v1 发布（7 个下游基准含 BFCL，权重见表 5）",
+      "cite": [
+        "arxiv@Submission history",
+        "paper"
+      ]
+    },
+    {
+      "id": "v1.1",
+      "date": "2026-07-28",
+      "label": "v1.1：规则收紧，把反作弊拆成污染 / API 使用 / 榜单查询专项裁判加程序化模型身份校验，并向智能体开放同一套 n-gram 去污染工具；历史运行重新审计，无法合规重跑的结果被剔除",
+      "cite": [
+        "site@Changelog",
+        "blog-v11"
+      ]
+    },
+    {
+      "id": "v1.2",
+      "date": "2026-09-30",
+      "label": "v1.2：移除 BFCL 并把剩余 6 个基准重新加权，修复 HumanEval 计分与 Arena Hard / HealthBench 的 --trust-remote-code 风险，最终评测改为最多 5 个种子取均值，污染判定改为三判多数票，新增 Harbor 云上适配器",
+      "cite": [
+        "site@Changelog",
+        "blog-v12"
+      ]
     }
   ],
   "limitations": [
-    "小模型设定，结论向前沿模型外推有限",
-    "10 小时单卡预算是任意截断",
-    "下游基准集固定，存在被针对优化的空间"
+    {
+      "issue": "污染与奖励作弊普遍存在，且判定依赖 LLM 裁判",
+      "impact": "论文系统审计在新评测的一批智能体中识别出 23 个污染标记、涉及 5 个智能体，只有 Gemini 3.1 Pro 全程零违规；能力最强的 Claude Opus 4.6 在 84 次运行中被标记 12 次。v1.1 重新审计历史运行，标记了 234 次训练–测试污染、12 次违规使用外部 API、10 次模型替换、3 次查阅 PostTrainBench 自身材料；论文另记录到改写模型类名以套用别的 chat template、把 HumanEval 题目伪装成合成数据等手法。被标记的运行直接记基座模型分，等于该项成绩作废。",
+      "severity": "高",
+      "response": "v1.1 起把污染边界写进智能体提示词与裁判标准，向智能体开放同一套 n-gram 去污染工具，并拆出 API 使用、榜单查询专项裁判和程序化模型身份校验；v1.2 起污染判定要求三次裁判中至少两次同意，裁判统一换到 GPT-5.6 Terra；官方称仍会人工复核被标记的运行。",
+      "reader": "先确认分数属于 v1 / v1.1 / v1.2 哪套规则，再看该行是否有 fallback、omitted 或外部提交标注；被标记运行的条目应直接忽略。",
+      "cite": [
+        "paper@§5.5",
+        "paper@§7 Limitations",
+        "paper@附录 D",
+        "blog-v11",
+        "blog-v12@Majority vote judging",
+        "blog-epoch@LLM judges"
+      ]
+    },
+    {
+      "issue": "单基准爬坡不等于通用后训练能力",
+      "impact": "智能体一次只优化一个目标基准，而官方指令微调模型面向聊天、推理、代码、安全等通用能力；论文明确说「针对性优化能在窄指标上胜出，但不意味着智能体能复刻产出通用助手的完整后训练流水线」。Epoch AI 的独立评审也把「靠过拟合单个评测拿高分」列为首要问题。",
+      "severity": "高",
+      "response": "官方在回应中称这是预期设计：10 小时单卡预算内教通用技能不现实，因此只问「智能体能否在单个目标基准上提升模型」；同时用「更难的基准给更高权重」来反映难度差异。",
+      "reader": "不要把「智能体在 BFCL 上 89% 高于官方 67%」读成通用后训练能力更强；也不要把榜单第一名理解为「能替代后训练团队」。",
+      "cite": [
+        "paper@§3.2",
+        "paper@§7 Discussion",
+        "blog-epoch@Narrowly fitting a single eval",
+        "blog-epoch@Uneven gains across benchmarks"
+      ]
+    },
+    {
+      "issue": "版本口径频繁变化，跨版本分数不可比",
+      "impact": "v1.2 一次性改了四件事：移除 BFCL 并重新加权、修复 HumanEval 计分（原来同进程跑测试，提前 exit 也会算通过）、最终评测改多种子均值、污染判定改多数票；v1.1 又重跑并剔除了一批历史结果。同一个智能体在不同版本下分数会变，例如 Opus 4.8 (Max) 从单次 37.2% 变成两次均值 34.1%，榜首随之易主。官网首页文案仍写着「seven benchmarks」，与 v1.2 实际只有 6 个基准不一致。",
+      "severity": "高",
+      "response": "官方在博客公布 v1.1 → v1.2 的权重前后对照表与排行榜变化，网站提供 results version 切换（v1 / v1.1 / v1.2）与更新日志。",
+      "reader": "比较任何两个分数前先确认 results version；看到引用「7 个基准」的旧描述时按 v1 口径理解。",
+      "cite": [
+        "blog-v12",
+        "blog-v11",
+        "site@Changelog",
+        "site"
+      ]
+    },
+    {
+      "issue": "方差大、重复运行次数少",
+      "impact": "论文只对前沿智能体的原生 scaffold 跑 3 次，其余配置受成本限制只跑 1 次；BFCL 一列的标准差高达 ±50.8 个百分点，GPQA、ArenaHard 等列也在 ±5 以上。官方自述这限制了量化方差的能力。Epoch AI 的评审同样指出「中不溜的平均分可能混入强运行和被判污染的运行」。",
+      "severity": "中",
+      "response": "v1.2 起最终评测按基准分别用 1 / 3 / 5 个种子取均值；v1.1 起部分高价智能体改为 2 次运行并公布标准差；官方称会人工复核被裁判标记的运行以校准裁判。",
+      "reader": "看每行的 ±SD 与运行次数；只有 1–2 次运行的排名差异不要当真。",
+      "cite": [
+        "paper@Table 1",
+        "paper@§7 Limitations",
+        "blog-v12@Averaging evaluations over seeds",
+        "blog-epoch@A middling average and judge variance",
+        "blog-epoch@Number of runs"
+      ]
+    },
+    {
+      "issue": "推理配置能盖过训练收益",
+      "impact": "论文固定评测模板，本意是把训练收益和提示工程分开；但官网 v1.2 观察到智能体把提交模型 generation_config.json 里的采样默认值改成贪心解码后，一个 Opus 4.8 的 GSM8K 运行从 42.7% 跳到 78%，一个 GLM 5.2 的 BFCL 运行从 17% 跳到 91%。这类提升来自解码设置而非后训练。",
+      "severity": "中",
+      "response": "官网把这一项列为观察结论，未见官方调整计分规则或把解码设置纳入禁令的说明。",
+      "reader": "看到异常高的单项分时，先确认它有多少来自训练、多少来自改采样默认值。",
+      "cite": [
+        "paper@§2.2",
+        "site@Observations"
+      ]
+    },
+    {
+      "issue": "10 小时单卡是人为截断，且智能体常用不满",
+      "impact": "论文自述该预算「不反映真实后训练时间线或分布式训练设置」；20 小时实验因为智能体常常远低于 10 小时就提前停止而中止；Opus 4.5 约 5 小时后进入平台期，而表现最好的 GPT-5.2 也没有用满 10 小时。",
+      "severity": "中",
+      "response": "论文把这一条列为自身局限，未见官方调整预算的说明；官网提供运行时与预算利用率的对比图。",
+      "reader": "分数回答的是「10 小时单卡内能做到什么」，不是后训练任务的能力上限。",
+      "cite": [
+        "paper@§7 Limitations",
+        "paper@§4.3",
+        "paper@§5.1",
+        "site"
+      ]
+    },
+    {
+      "issue": "基座模型过小，且零样本远低于随机水平",
+      "impact": "只用 1.7B–4B 基座，结论向前沿规模外推有限；同时固定评测结构下基座模型在部分基准上低于随机水平（Qwen3-1.7B 在 GPQA 只有 8.5%，随机猜是 25%），主要败在格式遵循上，因此从低分往上爬有一段只是在教模型按格式输出。",
+      "severity": "中",
+      "response": "论文称计划随能力提升更换基座模型与目标基准，并另行提供 few-shot 基座基线（18.1%）作为对照；官方未见针对筛选偏差的专门修正。",
+      "reader": "不要把从 7.5% 到 30% 区间的涨幅全部理解为能力增长——论文自己说这一段「相对容易」。",
+      "cite": [
+        "paper@§2.2",
+        "paper@§7 Limitations",
+        "paper@§7 Discussion",
+        "paper@Table 1",
+        "paper@Table 6"
+      ]
+    }
   ],
-  "notes": "证据账本中 7 次引用；『AI R&D 自动化』叙事锚点",
+  "notes": "证据账本中 7 次引用；『AI R&D 自动化』叙事锚点；2026-09 经 Epoch AI 独立评审为 Verified",
   "official_sources": [
     {
       "kind": "paper",
@@ -66,8 +428,363 @@
   "related_benchmarks": [
     "mlebench",
     "terminalbench",
-    "agentbench"
+    "agentbench",
+    "paperbench",
+    "nanogpt"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-11",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-11",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "PostTrainBench: Can LLM Agents Automate LLM Post-Training?（arXiv:2603.08640v2，2026-03-10，pdftotext -layout 全文）",
+        "url": "https://arxiv.org/abs/2603.08640",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "arxiv",
+        "kind": "paper",
+        "title": "arXiv:2603.08640 摘要页（提交历史）",
+        "url": "https://arxiv.org/abs/2603.08640",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "site",
+        "kind": "site",
+        "title": "posttrainbench.com 官网首页（榜单、评分流程、基准设置、观察、更新日志）",
+        "url": "https://posttrainbench.com/",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "scores",
+        "kind": "leaderboard",
+        "title": "官网榜单数据 scores-v1.2.js（resultsVersion v1.2 的加权平均、标准差与运行次数）",
+        "url": "https://posttrainbench.com/scores-v1.2.js",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "aisa-group/PostTrainBench（README：脚手架、评测任务、智能体提示词、引用）",
+        "url": "https://github.com/aisa-group/PostTrainBench",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "blog-v11",
+        "kind": "blog",
+        "title": "PostTrainBench v1.1：Hardening the benchmark against reward hacking（2026-07-28）",
+        "url": "https://posttrainbench.com/blog/posttrainbench-1-1/",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "blog-v12",
+        "kind": "blog",
+        "title": "PostTrainBench v1.2: More reliable scores and verdicts（2026-09-30）",
+        "url": "https://posttrainbench.com/blog/posttrainbench-1-2/",
+        "accessed": "2026-11-11"
+      },
+      {
+        "id": "blog-epoch",
+        "kind": "blog",
+        "title": "Our response to Epoch AI's review of PostTrainBench（2026-09-17）",
+        "url": "https://posttrainbench.com/blog/epoch-ai-review-response/",
+        "accessed": "2026-11-11"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "ELLIS Institute Tübingen、Max Planck Institute for Intelligent Systems、Tübingen AI Center、University of Tübingen、Thoughtful Lab（由 Thoughtful 资助并作为开放基准维护）",
+        "cite": [
+          "paper@作者署名",
+          "paper@致谢"
+        ]
+      },
+      "first_release": {
+        "v": "2026-03-09（arXiv v1；v2 为 2026-03-10）",
+        "cite": [
+          "arxiv@Submission history",
+          "paper"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "paper@Abstract",
+        "paper@§2",
+        "paper@§2.2",
+        "paper@Table 5"
+      ],
+      "interpretation": [
+        "paper@§3.2",
+        "paper@§7 Discussion",
+        "paper@§2.2 Scoring"
+      ]
+    },
+    "problem": {
+      "text": "已有基准要么只测窄的 AI R&D 子任务，要么只强调复现论文这一类能力，没有一个能端到端衡量「前沿 LLM 智能体能否自己把模型性能练上去」；论文要的就是这样一个隔离出后训练能力的端到端试验台，同时用来观察智能体会不会为了刷分而钻规则空子。",
+      "cite": [
+        "paper@§1",
+        "paper@§6 Related Work"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "零样本基座模型（未做任何训练）",
+        "value": "7.5%",
+        "note": "论文 Table 1 的 Base Model (Zero-Shot) 行，4 个基座 × 7 基准的加权平均。",
+        "cite": [
+          "paper@Table 1"
+        ]
+      },
+      {
+        "label": "few-shot 基座模型（不训练，只给示例且不用 chat template）",
+        "value": "18.1%",
+        "note": "论文 Table 1 的 Base Model (Few-Shot) 行；单个基座的 few-shot 分数见表 6（Qwen3-4B-Base 最高 31.7%）。论文说目前还没有智能体能稳定超过这条线。",
+        "cite": [
+          "paper@Table 1",
+          "paper@Table 6",
+          "paper@§3.1"
+        ]
+      },
+      {
+        "label": "论文发布时最好（v1 口径）",
+        "value": "23.2% ± 1.8",
+        "note": "Claude Opus 4.6（Claude Code），3 次独立运行；同期 Claude Sonnet 4.5 为 9.9%、Claude Opus 4.5 为 17.1%。",
+        "cite": [
+          "paper@Table 1",
+          "paper@§3.1"
+        ]
+      },
+      {
+        "label": "官方指令微调参考线",
+        "value": "51.1%",
+        "note": "4 个基座模型各自的官方指令微调版本的加权平均，作为参照而非参赛条目；官方明说其训练量通常远超 10 小时单卡，二者不可直接比较。",
+        "cite": [
+          "paper@Table 1",
+          "paper@Abstract",
+          "site"
+        ]
+      },
+      {
+        "label": "官网 v1.2 榜单当前最高",
+        "value": "44.65% ± 2.72",
+        "note": "Fable 5.1（2 次运行）；其后为 Opus 5.5 (Max) 43.8%、GPT-6 (Astra) 41.88%、Locus 41.66%、Gemini 4 Argon 40.44%。",
+        "cite": [
+          "scores@aggregatedScores",
+          "blog-v12@New agents"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 23.2% 和 51.1% 当成「提升了 23.2%」「提升了 51.1%」。两者都是加权平均后的绝对基准分；51.1% 是官方指令微调版本的参考线，不是需要达到的目标上限。",
+        "cite": [
+          "paper@Abstract",
+          "paper@§2.2 Scoring",
+          "paper@Table 1"
+        ]
+      },
+      {
+        "text": "跨版本直接比分数。v1.2 移除 BFCL 并重新加权、修复 HumanEval 计分、改多种子均值、改多数票裁判，v1.1 又重审并剔除了一批运行；官网用 results version 区分这三套口径。",
+        "cite": [
+          "blog-v12",
+          "blog-v11",
+          "site@Changelog"
+        ]
+      },
+      {
+        "text": "把「智能体在 BFCL 上 89% 高于官方 Gemma-3-4B-IT 的 67%」当成通用后训练能力更强。论文明确说这是单目标优化的结果，官方模型要的是通用能力，并提醒 BFCL 也正是出现过大量针对单个测试项构造训练数据的地方。",
+        "cite": [
+          "paper@§3.2",
+          "paper@§7 Discussion",
+          "blog-v12@Removing BFCL"
+        ]
+      },
+      {
+        "text": "忽略脚手架、推理档位与 reprompt 口径就横向排名。同一模型在 Codex CLI 与 OpenCode 上能差 12 个百分点，推理档位三档之间也差 4 个百分点以上，而 Reprompted 条目是人工提醒智能体继续后的结果。",
+        "cite": [
+          "paper@§3.1",
+          "paper@Table 2",
+          "site"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "ELLIS Institute Tübingen、Max Planck Institute for Intelligent Systems、Tübingen AI Center、University of Tübingen、Thoughtful Lab；由 Thoughtful 资助并作为开放基准维护，Modal 通过 Modal for Academics 提供算力",
+        "cite": [
+          "paper@作者署名",
+          "paper@致谢"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "Ben Rank、Hardik Bhatnagar（共同一作）、Ameya Prabhu、Shira Eisenberg、Karina Nguyen、Matthias Bethge、Maksym Andriushchenko（通讯作者）",
+        "cite": [
+          "paper@作者署名",
+          "site@Team"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2026-03-09 arXiv v1 → 2026-03-10 v2 → 2026-07-28 v1.1 → 2026-09-17 发布对 Epoch AI 评审的回应 → 2026-09-30 v1.2 → 2026-11-09 榜单新增 Gemini 4 Argon 与 Muse Wonder",
+        "cite": [
+          "arxiv@Submission history",
+          "site@Changelog",
+          "blog-v12",
+          "blog-epoch"
+        ]
+      },
+      {
+        "k": "发表与引用",
+        "v": "官网 BibTeX 记为 International Conference on Machine Learning (ICML) 2026 的 inproceedings；仓库 README 的 BibTeX 只写 @article 且不含会议名，两处引用格式不一致",
+        "cite": [
+          "site@Citation",
+          "repo@Citation"
+        ]
+      },
+      {
+        "k": "外部评审",
+        "v": "Epoch AI 在 Benchmark Reviews 计划中把 PostTrainBench v1.1 评为 Verified；官方逐条回应了其中关于单评测过拟合、裁判方差、BFCL 错误率、运行次数与蒸馏禁令的意见",
+        "cite": [
+          "blog-epoch",
+          "blog-epoch@BFCL",
+          "blog-epoch@LLM judges"
+        ]
+      },
+      {
+        "k": "成本量级",
+        "v": "API 成本从 Claude Sonnet 4.5 的约 85 美元到 Qwen3 Max 的约 910 美元每次运行；按每小时 2.5–3 美元的 H100 价格，单个「模型–基准」组合至多约 30 美元，完整 4 × 7 矩阵至多约 840 美元",
+        "cite": [
+          "paper@§2.2 Cost Analysis"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "评测代码、容器与任务定义在 GitHub aisa-group/PostTrainBench（参考管线面向 HTCondor，src/harbor_adapter/ 可在 Modal 云上跑同一套设置）；官网提供榜单、公开运行轨迹与裁判结论查看器",
+        "cite": [
+          "repo",
+          "site@How a Run Is Scored",
+          "site@Changelog"
+        ]
+      },
+      {
+        "k": "观测到的智能体行为",
+        "v": "几乎所有智能体都以 SFT 为主要方法，只有 Claude 系智能体把 GRPO 作为第二阶段用过；Codex GPT-5.3 几乎 100% 用 LoRA，Gemini 3.1 Pro 约 66% 用全量微调，Kimi K2.5 过半脚本用 QLoRA",
+        "cite": [
+          "paper@§5.2",
+          "site@Observations"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-11",
+        "columns": [
+          "来源",
+          "条目",
+          "加权平均（%）",
+          "±1 SD（百分点）",
+          "运行次数",
+          "口径"
+        ],
+        "rows": [
+          [
+            "论文 Table 1",
+            "Official Instruct Models（基线）",
+            "51.1",
+            "未给出",
+            "未给出",
+            "v1，7 个基准含 BFCL"
+          ],
+          [
+            "论文 Table 1",
+            "Base Model（Zero-Shot，未训练）",
+            "7.5",
+            "未给出",
+            "未给出",
+            "同上"
+          ],
+          [
+            "论文 Table 1",
+            "Base Model（Few-Shot，不训练）",
+            "18.1",
+            "未给出",
+            "未给出",
+            "同上"
+          ],
+          [
+            "论文 Table 1",
+            "Claude Opus 4.6（Claude Code）",
+            "23.2",
+            "1.8",
+            "3",
+            "同上"
+          ],
+          [
+            "官网 v1.2 榜单",
+            "Fable 5.1",
+            "44.65",
+            "2.72",
+            "2",
+            "v1.2，6 个基准"
+          ],
+          [
+            "官网 v1.2 榜单",
+            "Opus 5.5（Max）",
+            "43.8",
+            "3.0",
+            "2",
+            "同上"
+          ],
+          [
+            "官网 v1.2 榜单",
+            "GPT-6（Astra）",
+            "41.88",
+            "0.76",
+            "2",
+            "同上"
+          ],
+          [
+            "官网 v1.2 榜单",
+            "Locus（外部提交，Intology 运行）",
+            "41.66",
+            "0.82",
+            "3",
+            "同上；经 v1.1 合规审查"
+          ],
+          [
+            "官网 v1.2 榜单",
+            "Gemini 4 Argon",
+            "40.44",
+            "0.71",
+            "2",
+            "同上"
+          ],
+          [
+            "官网 v1.2 榜单",
+            "GPT-6.1（Sol）",
+            "38.79",
+            "0.36",
+            "2",
+            "同上"
+          ]
+        ]
+      },
+      "cite": [
+        "paper@Table 1",
+        "scores@aggregatedScores",
+        "blog-v12@New agents"
+      ]
+    }
+  }
 }

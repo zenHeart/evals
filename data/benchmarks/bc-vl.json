@@ -1,50 +1,259 @@
 {
   "id": "bc-vl",
   "name": "BC-VL",
-  "full_name": null,
+  "full_name": "BrowseComp-VL（BrowseComp 视觉版：图文混合深度检索基准）",
   "aliases": [
-    "BrowseComp-VL（可能）"
+    "BrowseComp-VL"
   ],
-  "status": null,
+  "status": "active",
   "categories": [
-    "multimodal"
+    "multimodal",
+    "agent"
   ],
-  "summary": "StepFun Step 3.7 Flash 发布页的视觉搜索浏览评测行（页面仅打印缩写 BC-VL）",
-  "interpretation": "带视觉搜索工具的 BrowseComp 式图文混合检索：Step 3.7 Flash 读 58.96（with Visual Search 泳道）。页内仅打印缩写，最可能对应 WebWatcher 团队提出的 BrowseComp-VL（arXiv 2508.05748，图文混合深度检索）——同指性未经 StepFun 官方确证。",
+  "summary": "BrowseComp-VL 是阿里通义实验室随视觉深研智能体 WebWatcher 一起发布的图文混合深检索基准：每道题配一张真实网络图片，答案要「先认出图里是谁、再去网页上多跳求证」才能找到，相当于把 OpenAI 的纯文本 BrowseComp 换成带图版本。全量 399 对图文问答，官方评测集只取 300 道（Level 1 一百道 + Level 2 两百道），论文里主流方法 pass@1 平均分大多低于 20%。",
+  "interpretation": "高分说明模型在「读图定位实体 + 跨网页拼接证据」这类任务上稳定，主表最高 27.0%（WebWatcher-32B 智能体口径，三次推理平均）。它不代表纯文本检索能力，也不代表能操作网页办成长程任务。比较前必须看清口径：论文分数出自 WebWatcher 自带搜索/访问/代码/OCR 工具链，厂商页数字（如 StepFun 58.96%）出自另一套 Visual Search 工具链且对照组标注为自测分，两套尺子不能直接对齐。",
   "measures": [
-    "图文混合信息的深度检索定位",
-    "视觉搜索工具链的使用"
+    {
+      "area": "Level 1 · 实体显式的多跳图文检索",
+      "focus": "示例题（论文 Figure 4 原文）：图中人物出生于一处「以遗产名录邮队和霍克斯伯里农学院（1891 年创办）闻名」的地方，并经常出现在 1950 年代电视剧 Captain Fortune Show 中，问「以他命名的那种蛇的通用名是什么」——需先认出图中人，再检索其生平与命名物种",
+      "share": "全量 199 对；评测集取 100 道",
+      "format": "图文 VQA，答案为短事实串",
+      "cite": [
+        "paper@§2.1 Data Overview",
+        "paper@Figure 4",
+        "paper@附录 D.4"
+      ]
+    },
+    {
+      "area": "Level 2 · 实体被抹糊的多跳图文检索",
+      "focus": "同一道题把具体年代、姓名、数量换成含糊描述（「1950 年代电视剧」替代剧名、不提人名），答案无法直接查到，必须先推理出实体再检索；论文示例为「一位著名动物学家生于图中所示之地，以野生动物科教成名，问以他命名的蛇的通用名」",
+      "share": "全量 200 对；评测集取 200 道",
+      "format": "图文 VQA，答案为短事实串",
+      "cite": [
+        "paper@§2.1 Data Overview",
+        "paper@Figure 4",
+        "paper@附录 D.4"
+      ]
+    },
+    {
+      "area": "领域覆盖（5 大领域 / 17 个子领域）",
+      "focus": "论文 Figure 3 给出领域树，附录 B 列出五类：自然与形式科学（化学、物理、生物医学、数学）、工程与计算机科学（工程、计算机科学与 AI）、社会科学与人文（社科、历史、政治、地理）、艺术/娱乐/体育（艺术、音乐、电视、游戏、体育）、其他（新兴或未分类话题）；该分类体系改编自 HLE 与 BrowseComp",
+      "share": "论文未给出各领域题量占比",
+      "format": "未披露",
+      "cite": [
+        "paper@§2.1 Data Overview",
+        "paper@附录 B"
+      ]
+    }
   ],
   "does_not_measure": [
-    "纯文本网页检索（BrowseComp 原版）",
-    "单图理解"
+    {
+      "text": "纯文本网页检索——每道题都必须先理解图片，原版纯文本 BrowseComp 的任务本站另有条目",
+      "cite": [
+        "paper@Abstract",
+        "paper@§2.2.2 QA-to-VQA Conversion"
+      ]
+    },
+    {
+      "text": "单图感知类任务（认出图中物体、读图上文字）——论文说图片只是检索锚点，且用的是严格真实的网络图片而非合成/拼接图，难点在跨模态多跳求证",
+      "cite": [
+        "paper@§2.2.2 QA-to-VQA Conversion",
+        "paper@§2.1 Data Overview"
+      ]
+    },
+    {
+      "text": "点击、填写、操作网页这类长程任务执行——论文明确说 BrowseComp-VL「更侧重信息寻求」，与需要浏览网页办成事的任务不同",
+      "cite": [
+        "paper@§4.3 Analysis"
+      ]
+    }
   ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
+    "sample_count": 300,
+    "splits": [
+      "官方评测集 300 道（Level 1 100 + Level 2 200，论文附录 D.4）",
+      "全量 399 对图文 VQA（Level 1 199 + Level 2 200，论文 §2.1）",
+      "BrowseComp-VL 训练集 110,000 Level-1 + 70,000 Level-2 问答对（论文 §4.1，用于训练 WebWatcher，与评测题集不是同一批数据）"
+    ],
     "languages": [],
-    "source_type": "web retrieval questions（身份未确证）",
-    "public_sample": null
+    "source_type": "半合成：从 arXiv / GitHub / Wikipedia 抓取的权威网页内容，由 GPT-4o 生成多跳问答对，再用 Google SerpApi 取真实网络图片转成 VQA",
+    "public_sample": false,
+    "totals": "全量 399 对图文 VQA（Level 1 199 + Level 2 200），官方评测集取 300 道（Level 1 100 + Level 2 200）· 每个实体配 K=2 张 Google SerpApi 真实网络图 · 5 大领域 17 个子领域 · 答案为短事实串 · 论文未披露题目语言（示例题为英文）",
+    "cite": [
+      "paper@§2.1 Data Overview",
+      "paper@§2.2.2 QA-to-VQA Conversion",
+      "paper@附录 B",
+      "paper@附录 D.4"
+    ],
+    "construction": [
+      {
+        "k": "Level 1 出题",
+        "text": "从 arXiv、GitHub、Wikipedia 等权威知识源取根 URL，递归遍历站内可访问超链接聚内容，再让 GPT-4o 从聚合内容合成问答对。",
+        "cite": [
+          "paper@§2.2.1 Generate QA"
+        ]
+      },
+      {
+        "k": "Level 2 出题",
+        "text": "沿用 WebSailor 的做法把实体抹糊：把精确指代换成部分、含糊或定性描述，使答案无法直接查到你得先做上下文推理与跨模态综合。",
+        "cite": [
+          "paper@§2.2.1 Generate QA"
+        ]
+      },
+      {
+        "k": "配图（QA 转 VQA）",
+        "text": "先滤掉缺乏视觉落脚点的目标实体（如纯时间指代），再用 Google SerpApi 给每个实体取 K=2 张真实网络图片，并把问题里的实体名换成「这个实体」「图中物体」这类视觉指代；每个文本问答对产出 K 个多模态样例。",
+        "cite": [
+          "paper@§2.2.2 QA-to-VQA Conversion"
+        ]
+      },
+      {
+        "k": "Selector + Examiner 过滤",
+        "text": "Selector 丢掉 masking 失败（问题与原文相同、实体名泄漏）以及图文相关性评分低的样本；Examiner 让 GPT-4o 只看图片及其说明回答图像查询，答不出即判为检索弱或图像查询不合格并丢弃。",
+        "cite": [
+          "paper@§2.3 Quality Control"
+        ]
+      },
+      {
+        "k": "评测集人工复核",
+        "text": "在上述质控之后，评测集 300 道又由 AI 方向的博士级专家逐题人工核验，以保证准确性和一致性。",
+        "cite": [
+          "paper@附录 D.4"
+        ]
+      }
+    ]
   },
   "metrics": [
     {
       "id": "accuracy",
-      "name": "Accuracy",
-      "range": [0, 100],
+      "name": "准确率（pass@1）",
+      "direction": "越高越好",
+      "description": "LLM 裁判判定答案正确的题目占比；论文重复采样 k 次计算 pass@k，主表报的是三次推理运行的平均分。",
+      "range": [
+        0,
+        100
+      ],
       "unit": "percent",
-      "direction": "higher",
-      "aggregation": "mean"
+      "cite": [
+        "paper@§4.1 Metric and Hyper-parameters",
+        "paper@Table 2 注"
+      ]
     }
   ],
-  "versions": [],
-  "limitations": [
-    "StepFun 页仅打印缩写，官方定义未给出",
-    "与 BrowseComp-VL 的同指性为推断"
-  ],
   "default_protocol": {
-    "raw": "with Visual Search（Step 3.7 Flash 发布页「Visual Recognition with Visual Search」表）"
+    "raw": "论文口径：智能体带 Web Image Search / Web Text Search / Visit / Code Interpreter / OCR 五类工具作答，答案正确性由 LLM-as-Judge 判定，采样温度 0.6、top-p 0.95，主表分数为三次推理运行的平均。",
+    "cite": [
+      "paper@§3.1.1 Multimodal Tools",
+      "paper@§4.1 Metric and Hyper-parameters",
+      "paper@Table 2 注"
+    ],
+    "variants": [
+      {
+        "text": "智能体 / RAG 工作流 / 直接推理三种范式不能混排：论文 Table 2 中直接推理平均分低于 10%，RAG 约 11%–13%，智能体最高 27.0%。",
+        "cite": [
+          "paper@Table 2",
+          "paper@§4.2 Main Results"
+        ]
+      },
+      {
+        "text": "Level 1 / Level 2 / 平均三列要分开看：Level 2 明显更难（GPT-4o 直接推理 Level 1 6.4、Level 2 4.0；WebWatcher-32B 28.4 / 25.0）。",
+        "cite": [
+          "paper@Table 2"
+        ]
+      },
+      {
+        "text": "厂商自测口径：StepFun 发布页的 58.96% 出自其自建 Visual Search 工具链，页面只给一个数、未说明子集与裁判，且对照组用星号标注为自测分。",
+        "cite": [
+          "site@Visual Recognition with Visual Search"
+        ]
+      },
+      {
+        "text": "399 对全量题集与 300 道评测集不是一回事；另有 110,000 + 70,000 对的训练集用于训练 WebWatcher，与评测题集不同批。",
+        "cite": [
+          "paper@§2.1 Data Overview",
+          "paper@附录 D.4",
+          "paper@§4.1 Setup"
+        ]
+      }
+    ]
   },
-  "notes": "StepFun 发布页登记行；对照组 competitor 单元为自测分（页脚注 *）",
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2025-08-07",
+      "label": "arXiv v1 提交（随 WebWatcher 论文一同发布 BrowseComp-VL）",
+      "cite": [
+        "paper"
+      ]
+    },
+    {
+      "id": "v3",
+      "date": "2025-09-01",
+      "label": "arXiv v3 最后修订（本页核对所用版本）",
+      "cite": [
+        "paper"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "无公开下载入口与官方榜单",
+      "impact": "论文正文与其给出的代码仓库 README 均未提供 BrowseComp-VL 数据集下载链接或官方排行榜（2026-11-24 核验），外部无法复现论文 Table 2 的 27.0%，也无法核对厂商自报分数用的是不是同一批题。",
+      "severity": "高",
+      "response": "未见官方回应。",
+      "reader": "看到任何 BC-VL 数字先问「题目从哪来、裁判是谁」；本站账本只登记有出处的数字。",
+      "cite": [
+        "repo-webagent@README",
+        "paper@Table 2"
+      ]
+    },
+    {
+      "issue": "评测口径不统一",
+      "impact": "论文 Table 2 的分数出自 WebWatcher 工具链（网页/图像搜索、访问、代码、OCR），厂商页数字出自另一套 Visual Search 工具链，且页面脚注标明对照组为自测分；两套数字相差可达 30 个百分点以上，但不能解读为同等幅度的能力差。",
+      "severity": "高",
+      "response": "论文公开了工具清单与采样超参；厂商页只标注星号，未给出题目子集与裁判细节。",
+      "reader": "比较前先确认工具链、Level 1 / Level 2 / 平均哪一列，以及是否为自测分。",
+      "cite": [
+        "paper@Table 2",
+        "site@Visual Recognition with Visual Search"
+      ]
+    },
+    {
+      "issue": "合成数据与同模型自动判分",
+      "impact": "题目由 GPT-4o 从抓取的网页内容生成，Selector / Examiner 过滤与最终 LLM-as-Judge 判分也都由 GPT-4o 承担，生成、筛题、判分全链路同一模型参与，可能存在系统性偏差；论文未量化该偏差。",
+      "severity": "中",
+      "response": "评测集在自动过滤之后另有博士级专家逐题人工核验；生成与判分偏差的影响论文未给出估计。",
+      "reader": "把不同来源分数之间的差距主要理解为口径差异，不要直接当成能力排序。",
+      "cite": [
+        "paper@§2.2.2 QA-to-VQA Conversion",
+        "paper@§2.3 Quality Control",
+        "paper@§4.1 Metric and Hyper-parameters",
+        "paper@附录 D.4"
+      ]
+    },
+    {
+      "issue": "官方仓库内容漂移",
+      "impact": "论文给出的代码地址 github.com/Alibaba-NLP/WebAgent 现在指向 Tongyi DeepResearch 仓库，其 README 列出的基准里没有 BrowseComp-VL，论文中的实现与评测脚本细节在当前页面上已不可见。",
+      "severity": "中",
+      "response": "仓库仍在维护（最新动态为 2025-09-17 发布 Tongyi-DeepResearch-30B-A3B），但未见针对 BrowseComp-VL 材料的说明。",
+      "reader": "引用基准细节以 arXiv v3 论文为准，不要用当前 README 反推。",
+      "cite": [
+        "repo-webagent@README"
+      ]
+    },
+    {
+      "issue": "题量小且为静态题集",
+      "impact": "评测集仅 300 道，一道题的对错就会明显改变总分；题目依赖公开网页内容，存在被训练数据吸收与网页漂移的风险，论文未提及 canary 或训练数据过滤措施。",
+      "severity": "低",
+      "response": "论文未给出对应回应。",
+      "reader": "几个百分点的波动可能只来自一两道题，不要过度解读名次变化。",
+      "cite": [
+        "paper@附录 D.4",
+        "paper@§2.1 Data Overview"
+      ]
+    }
+  ],
+  "notes": "原为 StepFun Step 3.7 Flash 发布页的登记行（页面只印缩写 BC-VL）；本次以 WebWatcher 论文 Figure 1 轴标签「BrowseComp-VL (BC-VL, Average)」确证二者同指，并把身份、题量、构建流程与判分协议补齐为 v2 档案。",
   "official_sources": [
     {
       "kind": "site",
@@ -53,14 +262,399 @@
     {
       "kind": "paper",
       "url": "https://arxiv.org/abs/2508.05748"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/Alibaba-NLP/WebAgent"
     }
   ],
   "related_benchmarks": [
     "browsecomp",
     "mm-browsecomp",
     "browsecomp-zh",
-    "deepsearchqa"
+    "deepsearchqa",
+    "simplevqa"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-09-01"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-24",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-24",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "WebWatcher: Breaking New Frontiers of Vision-Language Deep Research Agent（arXiv:2508.05748 v3，2025-09-01）",
+        "url": "https://arxiv.org/abs/2508.05748",
+        "accessed": "2026-11-24"
+      },
+      {
+        "id": "site",
+        "kind": "site",
+        "title": "StepFun Step 3.7 Flash 发布博客（2026-05-29，含 Visual Recognition with Visual Search 表）",
+        "url": "https://static.stepfun.com/blog/step-3.7-flash/",
+        "accessed": "2026-11-24"
+      },
+      {
+        "id": "repo-webagent",
+        "kind": "repo",
+        "title": "Alibaba-NLP/WebAgent（现 Alibaba-NLP/DeepResearch）README",
+        "url": "https://github.com/Alibaba-NLP/WebAgent",
+        "accessed": "2026-11-24"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "通义实验室（Tongyi Lab），阿里巴巴集团",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      "first_release": {
+        "v": "2025-08-07（arXiv v1，随 WebWatcher 论文发布）",
+        "cite": [
+          "paper"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "paper@Abstract",
+        "paper@§2.1 Data Overview",
+        "paper@附录 D.4",
+        "paper@Table 2"
+      ],
+      "interpretation": [
+        "paper@Table 2",
+        "paper@§4.2 Main Results",
+        "site@Visual Recognition with Visual Search"
+      ]
+    },
+    "problem": {
+      "text": "深度研究智能体的成绩当时几乎都在纯文本基准上比高低，而真实任务里答案常常要「看图 + 上网」一起才能定位；已有的 VQA 数据又多停留在单步感知，缺乏规划复杂度与推理深度。BrowseComp-VL 把 BrowseComp 式的难检索问题搬到图文混合场景，用来度量多模态智能体的检索与推理上限。",
+      "cite": [
+        "paper@Abstract",
+        "paper@§1",
+        "paper@§2.1 Data Overview"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "无依据基线",
+        "value": "论文未给出",
+        "note": "答案为短事实串，论文没有报告随机或多数类基线；只说明直接推理的模型平均分低于 10%。",
+        "cite": [
+          "paper@§4.2 Main Results"
+        ]
+      },
+      {
+        "label": "论文最强直接推理模型",
+        "value": "9.6%",
+        "note": "Gemini-2.5-flash 直接推理平均分（Level 1 11.6 / Level 2 6.0）；同口径 GPT-4o 为 5.5%。",
+        "cite": [
+          "paper@Table 2"
+        ]
+      },
+      {
+        "label": "论文 RAG 工作流最好",
+        "value": "13.4%",
+        "note": "GPT-4o + RAG 工作流平均分；同为 RAG 的 Gemini-2.5-flash 13.0%。",
+        "cite": [
+          "paper@Table 2"
+        ]
+      },
+      {
+        "label": "论文发布时最好（智能体口径）",
+        "value": "27.0%",
+        "note": "WebWatcher-32B，Level 1 28.4 / Level 2 25.0，三次推理运行平均；同门 WebWatcher-7B 为 21.2%，OmniSearch (GPT-4o) 16.3%。",
+        "cite": [
+          "paper@Table 2"
+        ]
+      },
+      {
+        "label": "厂商自报（另一套工具链）",
+        "value": "58.96%",
+        "note": "StepFun Step 3.7 Flash 发布页 with Visual Search 口径；对照组 Kimi K2.6 57.12%*、GLM 5V Turbo 51.90%*、GPT 5.5 65.68%* 均标注为自测分。",
+        "cite": [
+          "site@Visual Recognition with Visual Search"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      },
+      {
+        "label": "人类表现 / 饱和阈值",
+        "value": "论文未给出",
+        "note": "论文没有报告人类在 BrowseComp-VL 上的成绩，也没给出饱和线；作者只说基准「刻意做得很难」，多数基线低于 20%。",
+        "cite": [
+          "paper@§4.2 Main Results"
+        ]
+      },
+      {
+        "label": "工具使用结构参考",
+        "value": "Web Text Search 占 62% 的工具调用",
+        "note": "WebWatcher 在 BC-VL 上把 62% 的交互花在网页文本搜索上，图像搜索很少、代码解释器几乎不用——说明这个基准考的是检索而非感知。",
+        "cite": [
+          "paper@§4.3 Analysis"
+        ]
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 StepFun 的 58.96% 和论文的 27.0% 当同一把尺子——前者是厂商自建 Visual Search 工具链的自测分，后者是论文 WebWatcher 工具链下三次推理的平均，且页面未说明子集与裁判。",
+        "cite": [
+          "site@Visual Recognition with Visual Search",
+          "paper@Table 2"
+        ]
+      },
+      {
+        "text": "把 399 对当成题集大小——399 是全量图文问答对数，官方评测集只取 300 道（Level 1 100 + Level 2 200）。",
+        "cite": [
+          "paper@§2.1 Data Overview",
+          "paper@附录 D.4"
+        ]
+      },
+      {
+        "text": "看到 5 大领域 17 个子领域就以为有分开的领域分数——论文只按 Level 1 / Level 2 / 平均三列报分，没有领域维度得分。",
+        "cite": [
+          "paper@Table 2",
+          "paper@附录 B"
+        ]
+      },
+      {
+        "text": "以为必须会看图才能做题——论文说 BC-VL 考的是信息寻求，智能体 62% 的工具调用花在网页文本搜索上，图像搜索很少、代码解释器几乎不用。",
+        "cite": [
+          "paper@§4.3 Analysis"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "通义实验室（Tongyi Lab），阿里巴巴集团",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "Xinyu Geng、Peng Xia、Zhen Zhang（三人标注共同一作），Xinyu Wang、Qiuchen Wang、Ruixue Ding、Chenxi Wang、Jialong Wu、Yida Zhao、Kuan Li、Yong Jiang、Pengjun Xie、Fei Huang、Jingren Zhou",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      {
+        "k": "载体论文",
+        "v": "WebWatcher: Breaking New Frontiers of Vision-Language Deep Research Agent（arXiv:2508.05748），BrowseComp-VL 是该论文提出的评测基准，随文发布",
+        "cite": [
+          "paper@Abstract"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2025-08-07 arXiv v1 → 2025-09-01 arXiv v3（本页核对版本）→ 2026-05-29 StepFun 发布页把 BC-VL 列为 Step 3.7 Flash 的视觉搜索评测项",
+        "cite": [
+          "paper",
+          "site"
+        ]
+      },
+      {
+        "k": "同场发布的智能体",
+        "v": "WebWatcher-7B / 32B，在 Qwen2.5-VL-7B 与 32B 上做 SFT 冷启动再加 RL，训练数据里 BrowseComp-VL 占 5:3:2 配比中的 5 份",
+        "cite": [
+          "paper@§4.1 Setup",
+          "paper@§3.1.1 Multimodal Tools"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "论文给出的代码地址为 github.com/Alibaba-NLP/WebAgent；该仓库现为 Tongyi DeepResearch（自称「建立在此前 WebAgent 项目之上」），README 的基准列表里没有 BrowseComp-VL，只说明「提供多个数据集的评测脚本」",
+        "cite": [
+          "paper@作者署名",
+          "repo-webagent@README",
+          "repo-webagent@Benchmark Evaluation"
+        ]
+      },
+      {
+        "k": "评测质控",
+        "v": "Selector / Examiner 两阶段自动过滤之后，评测集 300 道再由 AI 方向博士级专家逐题人工核验",
+        "cite": [
+          "paper@§2.3 Quality Control",
+          "paper@附录 D.4"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-24",
+        "columns": [
+          "来源",
+          "模型",
+          "Level 1",
+          "Level 2",
+          "平均",
+          "口径"
+        ],
+        "rows": [
+          [
+            "论文 Table 2",
+            "GPT-4o",
+            "6.4",
+            "4.0",
+            "5.5",
+            "直接推理"
+          ],
+          [
+            "论文 Table 2",
+            "Gemini-2.5-flash",
+            "11.6",
+            "6.0",
+            "9.6",
+            "直接推理"
+          ],
+          [
+            "论文 Table 2",
+            "Claude-3.7-Sonnet",
+            "8.8",
+            "4.0",
+            "7.1",
+            "直接推理"
+          ],
+          [
+            "论文 Table 2",
+            "Qwen-2.5-VL-7B",
+            "0.8",
+            "0.0",
+            "0.5",
+            "直接推理"
+          ],
+          [
+            "论文 Table 2",
+            "Qwen-2.5-VL-32B",
+            "3.2",
+            "1.0",
+            "2.4",
+            "直接推理"
+          ],
+          [
+            "论文 Table 2",
+            "Qwen-2.5-VL-72B",
+            "9.2",
+            "3.0",
+            "7.1",
+            "直接推理"
+          ],
+          [
+            "论文 Table 2",
+            "GPT-4o",
+            "16.8",
+            "7.0",
+            "13.4",
+            "RAG 工作流"
+          ],
+          [
+            "论文 Table 2",
+            "Gemini-2.5-flash",
+            "15.2",
+            "9.0",
+            "13.0",
+            "RAG 工作流"
+          ],
+          [
+            "论文 Table 2",
+            "Claude-3.7-Sonnet",
+            "13.9",
+            "6.0",
+            "11.2",
+            "RAG 工作流"
+          ],
+          [
+            "论文 Table 2",
+            "Qwen-2.5-VL-7B",
+            "3.6",
+            "1.0",
+            "2.7",
+            "RAG 工作流"
+          ],
+          [
+            "论文 Table 2",
+            "Qwen-2.5-VL-32B",
+            "9.4",
+            "3.0",
+            "7.2",
+            "RAG 工作流"
+          ],
+          [
+            "论文 Table 2",
+            "Qwen-2.5-VL-72B",
+            "14.4",
+            "6.0",
+            "11.5",
+            "RAG 工作流"
+          ],
+          [
+            "论文 Table 2",
+            "OmniSearch (GPT-4o)",
+            "19.7",
+            "10.0",
+            "16.3",
+            "智能体"
+          ],
+          [
+            "论文 Table 2",
+            "WebWatcher-7B",
+            "23.6",
+            "17.0",
+            "21.2",
+            "智能体"
+          ],
+          [
+            "论文 Table 2",
+            "WebWatcher-32B",
+            "28.4",
+            "25.0",
+            "27.0",
+            "智能体"
+          ],
+          [
+            "StepFun 发布页",
+            "Step 3.7 Flash",
+            "未列出",
+            "未列出",
+            "58.96%",
+            "with Visual Search，厂商自建工具链"
+          ],
+          [
+            "StepFun 发布页",
+            "Kimi K2.6",
+            "未列出",
+            "未列出",
+            "57.12%*",
+            "同上，* 为自测分"
+          ],
+          [
+            "StepFun 发布页",
+            "GLM 5V Turbo",
+            "未列出",
+            "未列出",
+            "51.90%*",
+            "同上，* 为自测分"
+          ],
+          [
+            "StepFun 发布页",
+            "GPT 5.5",
+            "未列出",
+            "未列出",
+            "65.68%*",
+            "同上，* 为自测分"
+          ]
+        ]
+      },
+      "cite": [
+        "paper@Table 2",
+        "site@Visual Recognition with Visual Search"
+      ]
+    }
+  }
 }

@@ -1,39 +1,656 @@
 {
   "id": "beam128k",
   "name": "BEAM (128K)",
-  "full_name": null,
-  "aliases": [],
-  "status": null,
+  "full_name": "BEAM: Beyond a Million Tokens: Benchmarking and Enhancing Long-Term Memory in LLMs",
+  "aliases": [
+    "BEAM 128K",
+    "BEAM 100K",
+    "Beyond a Million Tokens"
+  ],
+  "status": "active",
   "categories": [
     "longctx"
   ],
-  "summary": "BEAM 长对话记忆基准 128K 档",
-  "interpretation": "BEAM 长对话记忆基准的 128K 档（该档 20 段对话；全集 100 段对话、2000 个探针问题，另有 500K/1M/10M 档），考察 10 类记忆能力、LLM-as-judge 打分越高越好；官方发现即使 1M 上下文模型随对话变长也明显吃力。",
-  "measures": [],
-  "does_not_measure": [],
+  "summary": "BEAM 用程序化管线生成 100 段单用户多领域长对话（128K–10M token）和 2,000 道人工校验的探针问题，把长期记忆拆成 10 类能力分别测量；本页只覆盖其中最小的 128K 档（20 段对话，每段 20 题）。论文自己的结论是：即使给到 1M token 上下文，模型也会随对话变长而明显吃力。",
+  "interpretation": "128K 档分数高，说明模型能把对话早期的具体事实、用户偏好和长期约束记住，并在需要时准确取用；它不代表能处理 10M token 的对话，也不测多模态、工具调用或智能体规划。论文表 1 中该档（论文标为 100K）4 个模型 × 3 种设置共 12 组的平均分只落在 0.239–0.358，而且这是按人工拆出的评分要点逐条打 0 / 0.5 / 1 再平均的结果，不等于「答对两成多题」。",
+  "measures": [
+    {
+      "area": "拒答（Abstention）",
+      "focus": "对话里没有证据时明确说没有，而不是硬编一个答案；示例（附录 B.6）：「Manuel 在 3 月 5 日投资者见面会上就物业管理公司给过什么具体建议？」——原文没有这条信息，理想答案直接说明无相关信息。",
+      "share": "10%（每段对话 2 题）",
+      "format": "开放式问答；LLM 裁判按人工拆出的评分要点逐条打 0 / 0.5 / 1 后平均",
+      "cite": [
+        "paper@§2.2",
+        "paper@§2.3",
+        "paper@附录 B.6"
+      ]
+    },
+    {
+      "area": "矛盾消解（Contradiction Resolution）",
+      "focus": "检测并消解相隔很远的轮次之间的不一致陈述，保持全局连贯；示例（附录 B.6）：「我参加过房地产线上讲座或投资者见面会吗？」——对话里两种相反说法都出现过，理想答案是指出矛盾并请用户确认哪句为准。",
+      "share": "10%（每段对话 2 题）",
+      "format": "开放式问答；LLM 裁判按人工拆出的评分要点逐条打 0 / 0.5 / 1 后平均",
+      "cite": [
+        "paper@§2.2",
+        "paper@§2.3",
+        "paper@附录 B.6"
+      ]
+    },
+    {
+      "area": "事件排序（Event Ordering）",
+      "focus": "识别并重建对话中信息的先后顺序；示例（附录 B.6）：「我对房产投资与管理各方面的关注是如何随对话逐步展开的？只列举十项。」——理想答案给出一条严格有序的清单。",
+      "share": "10%（每段对话 2 题）",
+      "format": "开放式问答，但不用要点分：先用 LLM 等价检测器把回答里的事件与要点事件对齐，再对对齐序列算 Kendall tau-b",
+      "cite": [
+        "paper@§2.2",
+        "paper@§2.3",
+        "paper@§2.4 Evaluation",
+        "paper@附录 B.6"
+      ]
+    },
+    {
+      "area": "信息抽取（Information Extraction）",
+      "focus": "回忆长历史里的实体与事实细节；示例（附录 B.6）：「我说过拿出多少作为投资本金？」——理想答案「$50,000」。",
+      "share": "10%（每段对话 2 题）",
+      "format": "开放式问答；LLM 裁判按人工拆出的评分要点逐条打 0 / 0.5 / 1 后平均",
+      "cite": [
+        "paper@§2.2",
+        "paper@§2.3",
+        "paper@附录 B.6"
+      ]
+    },
+    {
+      "area": "指令遵循（Instruction Following）",
+      "focus": "在长上下文里持续遵守用户早前设定的约束；示例（附录 B.6）：「下个季度资金怎么分配？」——用户此前要求做预算时必须给出逐项成本拆解，理想答案必须体现这个格式。",
+      "share": "10%（每段对话 2 题）",
+      "format": "开放式问答；LLM 裁判按人工拆出的评分要点逐条打 0 / 0.5 / 1 后平均",
+      "cite": [
+        "paper@§2.2",
+        "paper@§2.3",
+        "paper@附录 B.6"
+      ]
+    },
+    {
+      "area": "信息更新（Information Update）",
+      "focus": "新事实出现后改写已存事实，而不是抱住旧值；示例（附录 B.6）：「我后来给房地产投资分配了多少本金？」——理想答案给出更新后的数值（该题理想答案在原文中只有一行数字）。",
+      "share": "10%（每段对话 2 题）",
+      "format": "开放式问答；LLM 裁判按人工拆出的评分要点逐条打 0 / 0.5 / 1 后平均",
+      "cite": [
+        "paper@§2.2",
+        "paper@§2.3",
+        "paper@附录 B.6"
+      ]
+    },
+    {
+      "area": "多跳推理（Multi-hop Reasoning）",
+      "focus": "整合多个不相邻对话片段做推断；示例（附录 B.6）：「我考虑过几家银行的房贷方案？」——理想答案「两家：Halkbank 与 Ziraat Bank」。",
+      "share": "10%（每段对话 2 题）",
+      "format": "开放式问答；LLM 裁判按人工拆出的评分要点逐条打 0 / 0.5 / 1 后平均",
+      "cite": [
+        "paper@§2.2",
+        "paper@§2.3",
+        "paper@附录 B.6"
+      ]
+    },
+    {
+      "area": "偏好遵循（Preference Following）",
+      "focus": "随用户偏好变化给出个性化回答；示例（附录 B.6）：用户偏好「有条理、数据驱动的决策」，理想答案是结构化的分步对比流程，而不是泛泛而谈。",
+      "share": "10%（每段对话 2 题）",
+      "format": "开放式问答；LLM 裁判按人工拆出的评分要点逐条打 0 / 0.5 / 1 后平均",
+      "cite": [
+        "paper@§2.2",
+        "paper@§2.3",
+        "paper@附录 B.6"
+      ]
+    },
+    {
+      "area": "摘要（Summarization）",
+      "focus": "对对话内容做抽象与压缩；示例（附录 B.6）：「概括我围绕投资租赁房产的整个决策过程，包括预算、选址、管理和融资计划是怎么演变的。」——理想答案按时间线串起各阶段。",
+      "share": "10%（每段对话 2 题）",
+      "format": "开放式问答；LLM 裁判按人工拆出的评分要点逐条打 0 / 0.5 / 1 后平均",
+      "cite": [
+        "paper@§2.2",
+        "paper@§2.3",
+        "paper@附录 B.6"
+      ]
+    },
+    {
+      "area": "时间推理（Temporal Reasoning）",
+      "focus": "推断显式与隐式的时间关系、时长与时间线；示例（附录 B.6）：「我第一次和最后一次看房相隔几天？」——理想答案「2 天」（3 月 25 日与 3 月 27 日）。",
+      "share": "10%（每段对话 2 题）",
+      "format": "开放式问答；LLM 裁判按人工拆出的评分要点逐条打 0 / 0.5 / 1 后平均",
+      "cite": [
+        "paper@§2.2",
+        "paper@§2.3",
+        "paper@附录 B.6"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "超长上下文推理本身：10M 档有单独数据（Mohammadta/BEAM-10M），但四个被测模型都不支持该长度，只能取窗口能容纳的最近一段对话来评；本页不含 10M 档结论。",
+      "cite": [
+        "repo-beam@Hugging Face Links",
+        "paper@§4.1 Experimental Setup"
+      ]
+    },
+    {
+      "text": "多模态记忆：对话由 LLM 文本生成，探针问题与答案均为文本，不含图片、音频或视频输入。",
+      "cite": [
+        "paper@§2.2.1"
+      ]
+    },
+    {
+      "text": "工具调用与智能体规划：评分只看最终回答是否满足人工拆出的评分要点，不考察模型是否调用检索、代码或外部 API，也不考察多步任务规划。",
+      "cite": [
+        "paper@§2.4 Evaluation"
+      ]
+    },
+    {
+      "text": "写作风格与语言质量：人格与文体只在生成对话时作为约束条件，评分维度是内容要点，不含文风打分。",
+      "cite": [
+        "paper@§2.2.1",
+        "paper@§2.4 Evaluation"
+      ]
+    },
+    {
+      "text": "检索系统的端到端质量：RAG 基线的检索配置由论文固定（top-5 文档、BAAI/bge-small-en-v1.5 稠密检索、LangChain SemanticChunker 切分），不测检索器本身的选型优劣。",
+      "cite": [
+        "paper@§4.1 Experimental Setup"
+      ]
+    }
+  ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
+    "sample_count": 20,
+    "splits": [
+      "128K（论文另处标为 100K）：20 段对话，每段 20 题",
+      "500K：35 段对话",
+      "1M：35 段对话",
+      "10M：10 段对话（单独发布为 Mohammadta/BEAM-10M）"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "LLM 生成对话 + 人工校验的探针问题（GPT-4.1 生成对话计划、LLaMA-3.3-70B 生成叙事线、GPT-4.1-mini 生成候选问题，人工审校选题并拆评分要点）",
+    "public_sample": true,
+    "totals": "全集 100 段对话 / 2,000 道校验通过的探针问题；Hugging Face 公开 90 行（100K 20 + 500K 35 + 1M 35），10M 档 10 段单独发布；128K 档即 20 段对话 × 每段 20 题 = 400 题（推算）。128K 档平均每段 144 条用户消息、144 条助手消息、27 个助手提问被用户回答、216 个用户追问、107 个对话轮次。",
+    "cite": [
+      "paper@Abstract",
+      "repo-beam@Dataset Statistics",
+      "dataset@Dataset Structure",
+      "repo-beam@Hugging Face Links",
+      "paper@Table 3"
+    ],
+    "construction": [
+      {
+        "k": "对话计划",
+        "text": "人工指定领域，GPT-4.1 生成候选标题/主题/子话题；每段对话用开源 LLaMA-3.3-70B 生成 15-20 条叙事线，再合成含时间锚点的多级 sub-plan。128K / 500K / 1M 各生成一个计划，10M 用十个互锁计划，并用两阶段增强给每个 sub-plan 补三条针对性 bullet 以覆盖矛盾解决、信息更新、指令遵循。",
+        "cite": [
+          "paper@§2.2.1"
+        ]
+      },
+      {
+        "k": "用户话语",
+        "text": "把每个 sub-plan 的 bullet 按大小 K 分成连续批次，每批生成 I 个用户问题；K 与 I 按领域和目标长度手工设定以匹配 token 预算（128K：General 5 个 sub-plan / K=10 / I=2，Coding 3 / 23 / 1，Math 3 / 25 / 1）。",
+        "cite": [
+          "paper@§2.2.2",
+          "paper@Table 6"
+        ]
+      },
+      {
+        "k": "助手话语与双向互动",
+        "text": "两个 LLM 角色扮演生成助手回复，并用两个互动控制模块制造真实感：提问检测模块判断助手回复是否含需要用户回答的追问，追问检测模块判断用户是否会自然发起澄清或展开；两类循环各受阈值 δ1 = δ2 = 2 限制，避免无限循环。",
+        "cite": [
+          "paper@§2.2.3"
+        ]
+      },
+      {
+        "k": "探针问题",
+        "text": "GPT-4.1-mini 依能力从计划与对话中挑候选 bullet 生成问题、候选答案和答案所在消息的定位；人工审校后挑选有效题，每段对话每类能力选 2 题，共 20 题。",
+        "cite": [
+          "paper@§2.3"
+        ]
+      },
+      {
+        "k": "评分要点",
+        "text": "人工把每道有效题的理想答案拆成原子、自包含的评分要点（nugget），作为后续 LLM 裁判逐条打分的依据。",
+        "cite": [
+          "paper@§2.4 Evaluation"
+        ]
+      },
+      {
+        "k": "领域与规模",
+        "text": "100 段对话分布在 19 个领域；Hugging Face 卡片显示文本/parquet 格式、总大小 106 MB。",
+        "cite": [
+          "paper@附录 B.3.1",
+          "dataset@Dataset Statistics"
+        ]
+      }
+    ]
   },
-  "metrics": [],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [],
-  "notes": "Meta Muse 引用；128K 归属为推断，待核",
+  "metrics": [
+    {
+      "id": "nugget",
+      "name": "记忆能力要点得分（nugget score）",
+      "direction": "越高越好",
+      "description": "LLM 裁判把系统回答和人工拆出的原子评分要点逐条比对，按 0（未满足）/ 0.5（部分满足）/ 1（完全满足）打分，再在同一记忆能力内取平均；论文主表、附录表和本站分数阶梯都用这个 0–1 的分。该口径覆盖 10 类能力中的 9 类。",
+      "range": [
+        0,
+        1
+      ],
+      "unit": "score",
+      "cite": [
+        "paper@§2.4 Evaluation"
+      ]
+    },
+    {
+      "id": "kendall-tau-b",
+      "name": "Kendall tau-b（Event Ordering 专用）",
+      "direction": "越高越好",
+      "description": "先用 LLM 等价检测器把回答里的事件和评分要点里的事件对齐，再对对齐后的序列算 Kendall tau-b，同时反映「覆盖了多少事件」和「顺序对不对」；与 nugget 分不同量纲，不要混在同一根轴上比。",
+      "range": [
+        -1,
+        1
+      ],
+      "unit": "correlation",
+      "cite": [
+        "paper@§2.4 Evaluation"
+      ]
+    }
+  ],
+  "default_protocol": {
+    "raw": "把整段对话原文（或按各方法组织后的上下文）连同探针问题一起交给被测 LLM。推理用 Nucleus sampling、temperature 0；只有生成对话计划、用户轮、助手轮时用 temperature 0.1 以鼓励多样性，开源模型统一经 VLLM 部署。评分是 LLM-as-a-judge：人工先把理想答案拆成原子、自包含的评分要点，裁判对每个要点打 0 / 0.5 / 1 再平均；Event Ordering 例外，改用 LLM 等价检测器对齐事件后算 Kendall tau-b。论文未披露裁判具体用哪个模型（附录 H 只给出提示词）。",
+    "cite": [
+      "paper@§4.1 Experimental Setup",
+      "paper@§2.4 Evaluation"
+    ],
+    "variants": [
+      {
+        "text": "long-context / RAG / LIGHT 三套设置分别报告（论文表 1 的 Vanilla、RAG、Ours 三列），不能跨列比。Qwen2.5-32B-AWQ 在 long-context 下按 128K 窗口评，RAG 与 LIGHT 下按 32K 窗口评；GPT-4.1-nano 与 Gemini-2.0-flash 为 1M 上下文模型，Llama-4-Maverick-fp8 的 long-context 窗口论文未披露。",
+        "cite": [
+          "paper@§4.1 Experimental Setup"
+        ]
+      },
+      {
+        "text": "RAG 基线把每个用户–助手轮对当作一个文档，用 BAAI/bge-small-en-v1.5 稠密检索 + FAISS 索引，推理时取最相似的 5 个文档；LangChain 的 SemanticChunker 负责切分。",
+        "cite": [
+          "paper@§4.1 Experimental Setup"
+        ]
+      },
+      {
+        "text": "最小档命名不一致：论文表 1 / 表 7 / 表 8 与 §4 正文写作 100K，论文表 2 / 表 3 / 表 6 / 附录 B.6 与仓库 README、HF 数据集卡写作 128K，HF 的 split 名也叫 100K。引用他人分数前先确认指的是不是同一档（都是 20 段对话）。",
+        "cite": [
+          "paper@§4.2 Empirical Findings",
+          "paper@§2.2.1",
+          "repo-beam@README",
+          "dataset@Dataset Structure"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2025-10-31",
+      "label": "arXiv v1 发布；HF 数据集卡标注 Published Oct 31, 2025",
+      "cite": [
+        "dataset@论文卡片",
+        "paper@arXiv stamp"
+      ]
+    },
+    {
+      "id": "v2",
+      "date": "2026-02-21",
+      "label": "arXiv v2 [cs.CL] 更新，PDF 页眉标注 Published as a conference paper at ICLR 2026",
+      "cite": [
+        "paper@arXiv stamp",
+        "paper@页眉"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "档名与能力名在同一批来源里不一致：最小档在论文表 1 / 表 7 / 表 8 与 §4 正文标为 100K，在论文表 2 / 表 3 / 表 6 / 附录 B.6 与仓库 README、HF 数据集卡标为 128K（HF 的 split 名也是 100K）；同一能力在不同来源叫 Information Update（论文 §2.2、附录 B.6）/ Knowledge Update（论文表 1、表 2、仓库、HF）和 Multi-hop Reasoning（论文）/ Multi-Session Reasoning（仓库、HF）。",
+      "impact": "引用他人 BEAM 分数时极易张冠李戴：把 100K 当成另一档，或把 Multi-Session Reasoning 的结果归到 Multi-hop Reasoning 上。",
+      "severity": "高",
+      "response": "本页统一以仓库/HF 的 128K 为档名、以论文 §2.2 的十项能力名为准记录，并在口径一节标注两套别名。",
+      "reader": "看到「BEAM 100K」先确认是不是指这 20 段对话的最小档。",
+      "cite": [
+        "paper@§4.2 Empirical Findings",
+        "paper@§2.2.1",
+        "repo-beam@README",
+        "dataset@Dataset Structure",
+        "repo-beam@Probing Questions Types",
+        "dataset@Question Types"
+      ]
+    },
+    {
+      "issue": "口径不可直接横比：论文表 1 的 0–1 nugget 分和 Meta Muse Glimmer-30B 模型卡上的 Beam128K 65.1 不是同一把尺子——卡面只列了数值和同表另两个模型，没写题量、协议、裁判和是否用了记忆框架。",
+      "impact": "跨来源比较 BEAM 排名时会得出错误结论。",
+      "severity": "高",
+      "response": "本页把两者分列在分数阶梯和官方结果表，并注明厂商卡口径未披露。",
+      "reader": "比较前先确认分数来自论文表 1 还是厂商模型卡；65.1 与 0.358 之间不存在换算关系。",
+      "cite": [
+        "huggingface-meta-models-muse-glimmer@Benchmarks",
+        "paper@§2.4 Evaluation"
+      ]
+    },
+    {
+      "issue": "合成数据的真实性有上限：对话由 LLM 生成，人工只做校验、选题和评分要点拆分；128K 档人类评分为连贯性 4.4 / 真实性 4.55 / 复杂度 4.35（5 分制），全集平均 4.53 / 4.57 / 4.64，由两名有计算机科学背景的标注者评定，Cohen's κ 分别为 0.7044 / 0.7391 / 0.7849。",
+      "impact": "质量高但不是真人对话；模板化痕迹与分布偏差可能让模型比真实场景更容易，迁移到真实用户历史时分数会掉。",
+      "severity": "中",
+      "response": "论文用两阶段人工校验和要点拆分控制质量，并在附录 B.2 报告标注一致性；数据以 CC BY-SA 4.0 公开供第三方复查。",
+      "reader": "把 BEAM 128K 分当成长时记忆能力的参考值，不要当成真实场景表现。",
+      "cite": [
+        "paper@Table 4",
+        "paper@§4.2 Empirical Findings",
+        "paper@附录 B.2",
+        "dataset@License"
+      ]
+    },
+    {
+      "issue": "裁判模型未披露：论文只说用 LLM-as-a-judge、附录 H 给提示词，没有写裁判是哪个模型；仓库也只描述「用 LLM-as-a-judge 给每个答案打分」。",
+      "impact": "裁判选择会直接影响绝对分和跨论文可比性；换一个裁判重跑，数字可能明显不同。",
+      "severity": "中",
+      "response": "复现者需自行固定裁判并在报告中注明；本页只引用论文报告的绝对值。",
+      "reader": "看到别人报的 BEAM 分数，先问裁判是谁。",
+      "cite": [
+        "paper@§2.4 Evaluation",
+        "repo-beam@README"
+      ]
+    },
+    {
+      "issue": "拒答与矛盾解决是全行业短板：论文指出所有方法（含 LIGHT）都在 abstention 上最强、在 contradiction resolution 上最弱；附录 G 的主要失败模式是上下文里存在与所问「相似但不同」的实体/日期/概念时模型仍强行作答，以及上下文只出现矛盾一侧时无法识别冲突。",
+      "impact": "128K 档的 nugget 分低主要由这两类能力拖累，而不是信息抽取或摘要不行。",
+      "severity": "中",
+      "response": "论文建议用结构化记忆（LIGHT 的情景记忆 + 工作记忆 + 草稿本）部分缓解；拒答的模板化答案可加后处理约束。",
+      "reader": "不要把低分简单归因为「上下文不够长」；先看是哪些能力在掉。",
+      "cite": [
+        "paper@§4.2 Empirical Findings",
+        "paper@附录 G",
+        "repo-beam@LIGHT Framework"
+      ]
+    },
+    {
+      "issue": "10M 档没有模型能原生吃下：评测时四个被测模型都不支持该长度，只能取窗口能容纳的最近一段对话；唯一支持 10M 上下文的 Llama-4-Scout 因算力开销被排除。",
+      "impact": "10M 档的数字是「最近片段」口径而非全对话口径；本页虽只覆盖 128K 档，但转引 10M 结果时容易忽略这一点。",
+      "severity": "低",
+      "response": "论文在 §4.1 明确说明该处理方式；LIGHT 在 10M 档提升最大，恰恰因为它不依赖把全文塞进窗口。",
+      "reader": "看到 10M 档分数，先确认是「全对话」还是「最近片段」。",
+      "cite": [
+        "paper@§4.1 Experimental Setup"
+      ]
+    }
+  ],
+  "notes": "本页只覆盖 BEAM 的 128K 档；全集结论见论文表 1 其余行。Meta Muse Glimmer-30B 模型卡的 Beam128K = 65.1 是第三方口径，与论文 0–1 nugget 分不可比。",
   "official_sources": [
     {
-      "kind": "github",
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2510.27246"
+    },
+    {
+      "kind": "repo",
       "url": "https://github.com/mohammadtavakoli78/BEAM"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/Mohammadta/BEAM"
     },
     {
       "kind": "site",
       "url": "https://huggingface.co/meta-models/Muse-Glimmer-30B"
     }
   ],
-  "related_benchmarks": [],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "related_benchmarks": [
+    "longbench",
+    "ruler",
+    "mrcr",
+    "loft",
+    "corpusqa-1m",
+    "niah",
+    "multichallenge"
+  ],
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-14",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-14",
+    "sources": [
+      {
+        "id": "paper",
+        "kind": "paper",
+        "title": "BEAM: Beyond a Million Tokens: Benchmarking and Enhancing Long-Term Memory in LLMs（arXiv:2510.27246v2 [cs.CL] 2026-02-21，ICLR 2026）",
+        "url": "https://arxiv.org/pdf/2510.27246",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "repo-beam",
+        "kind": "repo",
+        "title": "GitHub · mohammadtavakoli78/BEAM（代码、评测脚本与本地数据集副本）",
+        "url": "https://github.com/mohammadtavakoli78/BEAM",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "dataset",
+        "kind": "dataset",
+        "title": "Hugging Face · Mohammadta/BEAM（数据集卡与 parquet 数据）",
+        "url": "https://huggingface.co/datasets/Mohammadta/BEAM",
+        "accessed": "2026-11-14"
+      },
+      {
+        "id": "huggingface-meta-models-muse-glimmer",
+        "kind": "site",
+        "title": "Hugging Face · meta-models/Muse-Glimmer-30B（第三方模型卡，自报 Beam128K 成绩）",
+        "url": "https://huggingface.co/meta-models/Muse-Glimmer-30B",
+        "accessed": "2026-11-14"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "University of Alberta × University of Massachusetts Amherst",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      "first_release": {
+        "v": "2025-10-31（arXiv v1；v2 于 2026-02-21 更新，ICLR 2026 会议论文）",
+        "cite": [
+          "dataset@论文卡片",
+          "paper@arXiv stamp",
+          "paper@页眉"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "paper@Abstract",
+        "paper@§1",
+        "repo-beam@README"
+      ],
+      "interpretation": [
+        "paper@§2.4 Evaluation",
+        "paper@Table 1",
+        "paper@§4.2 Empirical Findings"
+      ]
+    },
+    "problem": {
+      "text": "已有长时记忆基准要么只有几千 token 的闲聊、要么把多个独立会话直接拼接来伪装长上下文，域窄、依赖浅，也基本不测拒答、矛盾检测和事件顺序。BEAM 想用程序化管线生成真正连贯、单用户、题材多样的 128K–10M token 对话，把记忆能力拆成 10 类分别测量，并顺带验证结构化记忆框架 LIGHT 的收益。",
+      "cite": [
+        "paper@Abstract",
+        "paper@§1",
+        "repo-beam@README",
+        "repo-beam@Comparison with Existing Long-Term Memory Benchmarks",
+        "paper@Table 2"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "论文表 1 · 最小档最低平均",
+        "value": "0.239",
+        "note": "GPT-4.1-nano · Vanilla。同档 12 组平均分区间为 0.239–0.358，逐能力最低值低到 0.006（Gemini-2.0-flash 的 Contradiction Resolution）。",
+        "cite": [
+          "paper@Table 1"
+        ]
+      },
+      {
+        "label": "论文表 1 · 最小档最高平均",
+        "value": "0.358",
+        "note": "Llama-4-Maverick-fp8 + LIGHT（Ours）。同档其余组：Qwen2.5-32B-AWQ 0.311 / GPT-4.1-nano 0.345 / Llama-4-Maverick Vanilla 0.240 / RAG 0.323 / Gemini-2.0-flash 0.294。论文称在 100K 档相对 long-context 基线，LIGHT 给 Llama-4-Maverick 带来 +49.1%、给 GPT-4.1-nano 带来 +44.3%。",
+        "cite": [
+          "paper@Table 1",
+          "paper@§4.2 Empirical Findings"
+        ]
+      },
+      {
+        "label": "第三方模型卡自报",
+        "value": "65.1",
+        "note": "Meta Muse Glimmer-30B 模型卡 Benchmarks 表 Beam128K 行（同表 Gemma4-31B 58.2、Qwen3.6-27B 63.0）。卡面未说明题量、协议与裁判，与论文 0–1 nugget 分不同尺，不可直接比。",
+        "cite": [
+          "huggingface-meta-models-muse-glimmer@Benchmarks"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 0.3 上下的 nugget 分读成「答对三成题」——它是按人工拆出的评分要点逐条打 0 / 0.5 / 1 再平均，一道题可以只拿一半分。",
+        "cite": [
+          "paper@§2.4 Evaluation"
+        ]
+      },
+      {
+        "text": "把 Meta 模型卡的 65.1 和论文的 0.358 排在一起比——两者口径不同，卡面没写题量、协议和裁判。",
+        "cite": [
+          "huggingface-meta-models-muse-glimmer@Benchmarks"
+        ]
+      },
+      {
+        "text": "把「100K」和「128K」当成两档——论文不同表用两个名字指同一最小档（20 段对话）。",
+        "cite": [
+          "paper@§4.2 Empirical Findings",
+          "repo-beam@README",
+          "dataset@Dataset Structure"
+        ]
+      },
+      {
+        "text": "把 RAG / LIGHT 当成和 long-context 同窗口的对照——RAG 与 LIGHT 用 32K 窗口 + top-5 检索，只有 long-context 基线拿到全量历史（Qwen2.5-32B-AWQ 按 128K 窗口）。",
+        "cite": [
+          "paper@§4.1 Experimental Setup"
+        ]
+      },
+      {
+        "text": "把 10M 档分数当全对话口径——四个被测模型都不支持 10M，实际只评了窗口能容纳的最近一段对话。",
+        "cite": [
+          "paper@§4.1 Experimental Setup"
+        ]
+      },
+      {
+        "text": "把仓库 README 的 3.5%–12.7% 当成和论文不同的两套结论——论文摘要写 3.5%–12.69%，仓库是四舍五入到一位小数，两者是同一结果。",
+        "cite": [
+          "repo-beam@Evaluation Results",
+          "paper@Abstract"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "University of Alberta × University of Massachusetts Amherst",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "Mohammad Tavakoli、Alireza Salemi、Carrie Ye、Mohamed Abdalla、Hamed Zamani、J. Ross Mitchell",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      {
+        "k": "论文与发表状态",
+        "v": "arXiv:2510.27246，v2 于 2026-02-21 更新；PDF 页眉标注 Published as a conference paper at ICLR 2026",
+        "cite": [
+          "paper@arXiv stamp",
+          "paper@页眉"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "Hugging Face 公开 Mohammadta/BEAM（90 行：100K 20 + 500K 35 + 1M 35）与单独的 Mohammadta/BEAM-10M；仓库内置 /chats/ 本地副本和下载脚本，代码 MIT、数据 CC BY-SA 4.0",
+        "cite": [
+          "dataset@Dataset Structure",
+          "repo-beam@Hugging Face Links",
+          "repo-beam@License"
+        ]
+      },
+      {
+        "k": "领域覆盖",
+        "v": "100 段对话分布在 19 个领域，含 general、coding、mathematical topics；HF 卡片显示文本/parquet 格式、总大小 106 MB",
+        "cite": [
+          "paper@附录 B.3.1",
+          "repo-beam@README",
+          "dataset@Dataset Statistics"
+        ]
+      },
+      {
+        "k": "配套方法 LIGHT",
+        "v": "由情景记忆索引、工作记忆缓冲和草稿本三部分组成；论文称它在最强基线上平均提升 3.5%–12.69%，仓库 README 四舍五入为 3.5%–12.7%",
+        "cite": [
+          "repo-beam@LIGHT Framework",
+          "paper@Abstract",
+          "repo-beam@Evaluation Results"
+        ]
+      },
+      {
+        "k": "第三方采用",
+        "v": "Meta 的 Muse Glimmer-30B 模型卡在 General Capabilities and Reasoning 下列出 Beam128K = 65.1（同表 Gemma4-31B 58.2、Qwen3.6-27B 63.0），卡面未说明评测口径",
+        "cite": [
+          "huggingface-meta-models-muse-glimmer@Benchmarks"
+        ]
+      },
+      {
+        "k": "十项记忆能力",
+        "v": "七项来自已有基准，三项为本基准新引入——Instruction Following、Event Ordering、Contradiction Resolution",
+        "cite": [
+          "paper@§2.2"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-14",
+        "columns": [
+          "来源",
+          "模型 / 设置",
+          "平均 nugget 分",
+          "口径"
+        ],
+        "rows": [
+          ["论文 Table 1（最小档）", "Qwen2.5-32B-AWQ · Vanilla", "0.280", "全量历史，128K 窗口"],
+          ["论文 Table 1（最小档）", "Qwen2.5-32B-AWQ · RAG", "0.269", "top-5 检索，32K 窗口"],
+          ["论文 Table 1（最小档）", "Qwen2.5-32B-AWQ · LIGHT", "0.311", "32K 窗口"],
+          ["论文 Table 1（最小档）", "Llama-4-Maverick-fp8 · Vanilla", "0.240", "全量历史"],
+          ["论文 Table 1（最小档）", "Llama-4-Maverick-fp8 · RAG", "0.323", "top-5 检索，32K 窗口"],
+          ["论文 Table 1（最小档）", "Llama-4-Maverick-fp8 · LIGHT", "0.358", "32K 窗口"],
+          ["论文 Table 1（最小档）", "Gemini-2.0-flash · Vanilla", "0.242", "全量历史，1M 窗口"],
+          ["论文 Table 1（最小档）", "Gemini-2.0-flash · RAG", "0.280", "top-5 检索，32K 窗口"],
+          ["论文 Table 1（最小档）", "Gemini-2.0-flash · LIGHT", "0.294", "32K 窗口"],
+          ["论文 Table 1（最小档）", "GPT-4.1-nano · Vanilla", "0.239", "全量历史，1M 窗口"],
+          ["论文 Table 1（最小档）", "GPT-4.1-nano · RAG", "0.309", "top-5 检索，32K 窗口"],
+          ["论文 Table 1（最小档）", "GPT-4.1-nano · LIGHT", "0.345", "32K 窗口"],
+          ["Meta Muse Glimmer-30B 模型卡", "Muse Glimmer-30B", "65.1", "卡面未说明题量、协议与裁判"],
+          ["Meta Muse Glimmer-30B 模型卡", "Gemma4-31B", "58.2", "卡面未说明题量、协议与裁判"],
+          ["Meta Muse Glimmer-30B 模型卡", "Qwen3.6-27B", "63.0", "卡面未说明题量、协议与裁判"]
+        ]
+      },
+      "cite": [
+        "paper@Table 1",
+        "huggingface-meta-models-muse-glimmer@Benchmarks"
+      ]
+    }
+  }
 }

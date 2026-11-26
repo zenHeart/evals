@@ -1,41 +1,882 @@
 {
   "id": "tau3-bench",
   "name": "τ³-Bench",
-  "full_name": null,
-  "aliases": [],
-  "status": null,
+  "full_name": "τ³-Bench（Sierra τ-bench 第三代：全双工语音 + banking_knowledge 知识检索，v1.0.0）",
+  "aliases": [
+    "tau3-bench",
+    "τ³-bench",
+    "τ³-Banking",
+    "τ³-Voice"
+  ],
+  "status": "active",
   "categories": [
     "agent"
   ],
-  "summary": "Sierra τ-bench 家族第三代（含 banking 等域）",
-  "interpretation": "Sierra τ-bench 家族第三代（随 tau2-bench 仓库发布），在 airline/retail/telecom/banking_knowledge 等域模拟客服对话，按任务通过率计分，另有语音全双工形态；v1.0.1 修复了 banking 部分题目，此前成绩与之后不可直接比。",
-  "measures": [],
-  "does_not_measure": [],
+  "summary": "τ³-bench 是 Sierra 对 τ-bench / τ²-bench 做的第三代版本，v1.0.0 于 2026-03-18 随 sierra-research/tau2-bench 仓库发布：把 airline / retail / telecom 三个客服域的同一批 278 道任务搬进全双工语音，新增一个要边查 698 份制度文档边办业务的 banking_knowledge 域（97 题），并重审修过 airline / retail 的题目（75+ 处）。",
+  "interpretation": "文本域的高分说明 agent 能在多轮对话里调对工具、按政策办事并把数据库改到标准终态；但 τ³-bench 的分水岭在另外两处——同一批任务换成语音后，最好成绩从 GPT-5 的 85% 掉到 51%（干净音频）和 38%（真实音频），banking_knowledge 上最强模型也只有 25.52% pass^1、pass^4 跌到 13.40%。读分前必须先确认：哪个域、哪种音频条件、哪种检索配置，以及分数是 1.0.1 之前还是之后跑出来的。",
+  "measures": [
+    {
+      "area": "Airline 航空客服（文本 + 语音）",
+      "focus": "改签、退票、升舱、改预订，需要核对乘客信息与票价规则；v1.0.0 修过 27 道题（删错误期望动作、澄清歧义指令、修不可能约束、补政策漏洞与兜底行为）",
+      "share": "50 题 / 全量 375 题的 13%",
+      "format": "与模拟用户多轮对话 + 工具调用，最终比对数据库终态与 gold standard",
+      "cite": [
+        "paper-tau-voice@§4.1",
+        "release-v100@Task Quality"
+      ]
+    },
+    {
+      "area": "Retail 零售客服（文本 + 语音）",
+      "focus": "退货、换货、取消、改订单，且常在一次对话里组合出现；v1.0.0 修过 26 道题（删无效期望动作如不支持的 PayPal 退款、澄清歧义、修同一商品不可能换货、补兜底行为）",
+      "share": "114 题 / 全量 375 题的 30%",
+      "format": "同上",
+      "cite": [
+        "paper-tau-voice@§4.1",
+        "release-v100@Task Quality"
+      ]
+    },
+    {
+      "area": "Telecom 电信客服（文本 + 语音）",
+      "focus": "改套餐、账单查询、业务开通、账户变更，涉及身份鉴权与政策核对；τ²-bench 起的双控域——用户自己也有一套工具，agent 必须引导用户做只有用户能做的步骤",
+      "share": "114 题 / 全量 375 题的 30%",
+      "format": "同上；电信域只用断言函数判定任务成功",
+      "cite": [
+        "paper-tau-voice@§4.1",
+        "paper-tau2@§3",
+        "leaderboard-taubench@首页"
+      ]
+    },
+    {
+      "area": "banking_knowledge 银行知识库（仅文本）",
+      "focus": "账户管理、信用卡、争议、转账等 97 个任务，配套 698 份政策与流程文档，每道题只有少数几篇相关；要先把信息检索出来再办事",
+      "share": "97 题 / 全量 375 题的 26%",
+      "format": "检索 + 事务型工具调用一起测；12 种可配置检索策略（offline / embedding / agentic）",
+      "cite": [
+        "release-v100@Knowledge",
+        "paper-tau-knowledge@Table 1"
+      ]
+    },
+    {
+      "area": "语音交互质量（voice 模式附加，不单独占题量）",
+      "focus": "全双工下用户与 agent 同时说话，模拟用户会让步、打断或等待；分 Responsiveness / Latency / Interrupt / Selectivity 四类聚合分，并按 Clean / Realistic 两种音频条件分别报告",
+      "share": "与 airline / retail / telecom 的 278 题共用同一批任务",
+      "format": "音频特效管线叠加背景噪声、突发声响（汽车喇叭、狗叫）、电话信道压缩与丢帧",
+      "cite": [
+        "release-v100@Voice",
+        "paper-tau-voice@§4.5 Metrics",
+        "paper-tau-voice@§4.3 Conditions"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "不测「是否按固定脚本调工具」：走另一条正确的工具路径，或者在该拒绝时一个工具都不调，照样可以拿满分",
+      "cite": [
+        "docs-evaluation@Reward"
+      ]
+    },
+    {
+      "text": "不测纯检索能力：banking_knowledge 的差距说明它不能只靠检索解决，还要跨文档的政策推理和跟着变的数据库状态",
+      "cite": [
+        "paper-tau-knowledge@§1"
+      ]
+    },
+    {
+      "text": "不测非英文场景：v1.0 的 voice-v1 是英文语音榜的英文字框；多语言语音是后面 2.0 才补的",
+      "cite": [
+        "repo-tau2-bench@README"
+      ]
+    },
+    {
+      "text": "不测模拟器自身造成的失败：91 个失败样本的定性分析把 79–90% 归到 agent 行为，模拟器伪影不是被测对象",
+      "cite": [
+        "paper-tau-voice@§5.2",
+        "paper-tau-voice@§6.3"
+      ]
+    }
+  ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
+    "sample_count": 375,
+    "splits": [
+      "airline 50 题（文本 / 语音共用）",
+      "retail 114 题（文本 / 语音共用）",
+      "telecom 114 题（文本 / 语音共用）",
+      "banking_knowledge 97 题（仅文本）"
+    ],
+    "languages": [
+      "en"
+    ],
+    "source_type": "Sierra 人工编写 + 人工审计修订（airline / retail 源自 τ-bench，telecom 源自 τ²-bench，banking_knowledge 为 v1.0.0 新建）",
+    "public_sample": true,
+    "totals": "375 题 = 语音 / 文本共用的 278 题（airline 50 + retail 114 + telecom 114）+ banking_knowledge 97 题 · 知识库 698 份文档、71 个主题、21 个产品类目，约 20 万 token · 12 种检索配置 · 题目语言为英文",
+    "cite": [
+      "paper-tau-voice@§4.1",
+      "release-v100@Knowledge",
+      "paper-tau-knowledge@Table 1",
+      "repo-tau2-bench@README"
+    ],
+    "construction": [
+      {
+        "k": "沿用上游判定标准",
+        "text": "DB check 与 communication info check 和最初的 τ-bench 一致；任务成功可以由不同判据定义：DB check、状态断言、自然语言断言、通信信息检查、动作匹配。",
+        "cite": [
+          "paper-tau2@§3"
+        ]
+      },
+      {
+        "k": "电信域题目是拼出来的",
+        "text": "为 3 个由易到难的用户意图（service_issue、mobile_data_issue、mms_issue）做了 15 组原子子任务，按程序化方式组合成 2285 个任务；上榜单框只取其中 114 题。",
+        "cite": [
+          "paper-tau2@§3",
+          "paper-tau-voice@§4.1"
+        ]
+      },
+      {
+        "k": "重审老域的题目",
+        "text": "v1.0.0 之前，airline 域的数据不一致把成绩上限压在约 70%，retail 域的标注错误压到约 92%，还有 31/50 与 53/115 条指令细节不足；v1.0.0 逐题人工复审、改错、补全用户指令，airline 改 27 题、retail 改 26 题。",
+        "cite": [
+          "paper-tau-fixes@§5",
+          "release-v100@Task Quality"
+        ]
+      },
+      {
+        "k": "知识库是生成出来的",
+        "text": "banking_knowledge 的知识库最终约 700 份文档、约 20 万 token，覆盖 71 个主题、21 个产品类目；表格口径为 698 份文档。",
+        "cite": [
+          "paper-tau-knowledge@Stage 4",
+          "paper-tau-knowledge@Table 1"
+        ]
+      },
+      {
+        "k": "任务与黄金文档集双人独立审",
+        "text": "所有任务及其 gold 文档集由两名未参与出题的审稿人独立审计，逐题确认三件事：期望终态正确、gold 文档集完整且最小、只用 gold 文档和文档化工具就能完成任务。",
+        "cite": [
+          "paper-tau-knowledge@Stage 5"
+        ]
+      },
+      {
+        "k": "语音复用同一批任务",
+        "text": "voice-v1 是英文语音榜的英文字框，直接用 airline 50 / retail 114 / telecom 114 这 278 题，不另出题。",
+        "cite": [
+          "repo-tau2-bench@README"
+        ]
+      }
+    ]
   },
-  "metrics": [],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [],
-  "notes": "GLM-5.1/Meta Muse 引用；域含 airline/retail/telecom/banking；v1.0.0 起随 sierra-research/tau2-bench 仓库发布",
+  "default_protocol": {
+    "raw": "一次运行 = 模拟用户与 agent 在指定域里多轮对话并调用工具，结束后按任务判据打分：数据库终态与 gold standard 逐项比对（DB check）、必需信息是否传达（COMMUNICATE）、状态 / 自然语言断言、动作匹配；单次尝试记 pass@1，多次尝试另记 pass^k（k ≤ 4）。语音模式额外叠加全双工交互与 Clean / Realistic 音频条件；banking_knowledge 先按选定检索策略取文档再执行同样的事务判定。",
+    "cite": [
+      "paper-tau-voice@§4.5 Metrics",
+      "paper-tau-knowledge@§5 Metrics",
+      "docs-running@Scoring",
+      "release-v100@Voice"
+    ],
+    "variants": [
+      {
+        "text": "reward_basis 默认为 [\"DB\", \"COMMUNICATE\"]，任务可以显式指定别的组合，域与域之间判分成分可以不同。",
+        "cite": [
+          "docs-evaluation@Reward"
+        ]
+      },
+      {
+        "text": "banking_knowledge 有 12 种检索配置可换：offline（no_knowledge / full_kb / golden_retrieval / bm25 / bm25_grep / grep_only）、embedding（openai_embeddings / qwen_embeddings 及 reranker、grep 变体）、agentic（terminal_use / terminal_use_write，沙箱内 shell）；其中 terminal 配置把知识库导出成沙箱文件系统里的文件，只给 agent 一个能跑任意 Unix 命令的 shell 工具。不同配置之间不可直接比。",
+        "cite": [
+          "release-v100@Knowledge",
+          "paper-tau-knowledge@§5 Retrieval"
+        ]
+      },
+      {
+        "text": "语音分 Clean 与 Realistic 两种条件：Clean 是理想电话场景（清晰美式口音、无背景噪声、无用户打断），Realistic 叠加多样口音、环境噪声、信道劣化与自然轮替行为（打断、附和音、口癖、非指向性言语）。",
+        "cite": [
+          "paper-tau-voice@§4.3 Conditions"
+        ]
+      },
+      {
+        "text": "v1.0.1 改了 banking_knowledge 的算分方式，1.0.1 前后的该域分数不可比；其他域不受影响，旧结果文件可以用 tau2 evaluate-trajs --fresh-tasks 重新算分。",
+        "cite": [
+          "repo-changelog@1.0.1"
+        ]
+      },
+      {
+        "text": "2.0（2026-10-19）又改了通信检查、NL 断言裁判、工具参数查找与英文提示词，与 1.x 不可比；1.x 与 2.0 在榜单上是两个 tab，1.x 仍接收提交。",
+        "cite": [
+          "repo-changelog@2.0.0",
+          "repo-tau2-bench@README"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "pass-at-1",
+      "name": "pass@1（单次尝试任务完成率）",
+      "direction": "越高越好",
+      "description": "一次尝试就完成的任务占比；任务完成按终态与 gold standard 的确定性比对判定，不要求走同一条工具路径",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper-tau-voice@§4.5 Metrics",
+        "docs-evaluation@Reward"
+      ]
+    },
+    {
+      "id": "pass-caret-k",
+      "name": "pass^k（k 次独立尝试全部成功的概率）",
+      "direction": "越高越好",
+      "description": "同一任务 k 次独立运行每一次都成功的概率，衡量可靠性而非单次最好成绩；论文口径 k ≤ 4",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper-tau-knowledge@§5 Metrics",
+        "paper-tau2@§1"
+      ]
+    },
+    {
+      "id": "task-reward",
+      "name": "任务奖励（0/1）",
+      "direction": "越高越好",
+      "description": "每次调用按 reward_basis 取 0 或 1：数据库状态、必需动作、必需传达的信息、NL 断言",
+      "range": [
+        0,
+        1
+      ],
+      "unit": "binary",
+      "cite": [
+        "docs-running@Scoring"
+      ]
+    },
+    {
+      "id": "responsiveness",
+      "name": "Responsiveness = avg(RR, RY)",
+      "direction": "越高越好",
+      "description": "响应率 RR（用户轮次得到响应的比例）与让步率 RY（被打断后 2 秒内让出话语的比例）的均值，仅语音模式",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper-tau-voice@§4.5 Metrics"
+      ]
+    },
+    {
+      "id": "latency",
+      "name": "Latency = avg(LR, LY)",
+      "direction": "越低越好",
+      "description": "响应延迟 LR（用户话音结束到 agent 开口）与让步延迟 LY（被打断后停止说话所需时间）的均值，仅语音模式",
+      "range": null,
+      "unit": "second",
+      "cite": [
+        "paper-tau-voice@§4.5 Metrics"
+      ]
+    },
+    {
+      "id": "interrupt",
+      "name": "Interrupt = IA",
+      "direction": "越低越好",
+      "description": "agent 打断率 IA（用户没说完 agent 就开口的轮次比例）；超过 100% 表示平均每轮打断多次，仅语音模式",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper-tau-voice@§4.5 Metrics"
+      ]
+    },
+    {
+      "id": "selectivity",
+      "name": "Selectivity = avg(SBC, SVT, SND)",
+      "direction": "越高越好",
+      "description": "正确忽略附和音（SBC）、口癖（SVT）与非指向性言语（SND）的比例，仅语音模式",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper-tau-voice@§4.5 Metrics"
+      ]
+    }
+  ],
+  "versions": [
+    {
+      "id": "upstream-tau-bench",
+      "date": "2024-06",
+      "label": "上游 τ-bench 首发（airline / retail，工具-agent-用户交互 + 可验证数据库终态）",
+      "cite": [
+        "leaderboard-taubench@首页"
+      ]
+    },
+    {
+      "id": "upstream-tau2-bench",
+      "date": "2025-06",
+      "label": "上游 τ²-bench 加入双控 telecom 域，判定标准扩到状态断言 / NL 断言 / 动作匹配",
+      "cite": [
+        "leaderboard-taubench@首页",
+        "paper-tau2@§3"
+      ]
+    },
+    {
+      "id": "task-audit",
+      "date": "2026-02",
+      "label": "任务审计与修复（官网演进时间线记在 v1.0.0 之前）：airline / retail 审计并修 50+ 题",
+      "cite": [
+        "leaderboard-taubench@首页"
+      ]
+    },
+    {
+      "id": "v1.0.0",
+      "date": "2026-03-18",
+      "label": "τ³-bench v1.0.0 发布：全双工语音（voice-v1）+ banking_knowledge 域 + 75+ 题修复；同月官网挂出 τ-voice / τ-knowledge 两条论文与子榜",
+      "cite": [
+        "release-v100@发布日期",
+        "release-v100@By the Numbers",
+        "leaderboard-taubench@首页"
+      ]
+    },
+    {
+      "id": "v1.0.1",
+      "date": "2026-07-15",
+      "label": "v1.0.1：修 banking_knowledge 算分（含 task_074 的 gold 退款值），该域 1.0.1 前后不可比；其他域不受影响",
+      "cite": [
+        "repo-changelog@1.0.1"
+      ]
+    },
+    {
+      "id": "v2.0.0",
+      "date": "2026-10-19",
+      "label": "仓库发布 2.0.0（τ-bench 2.0：加 τ-i18n / τ-Entity，文本域每域改成 50 道冻结题）；通信检查、NL 断言裁判、工具参数查找与英文提示词全变，与 1.x 不可比，τ³-bench (v1.0) 在 README 里标为 Previous release",
+      "cite": [
+        "repo-changelog@2.0.0",
+        "repo-tau2-bench@README"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "banking_knowledge 算分在 1.0.1 变过",
+      "impact": "1.0.1 改了 banking_knowledge 的奖励计算，官方明确该域前后分数不可比；个别复现旧错误退款的轨迹在新版本下会直接判失败。跨版本比较会把算分变化误读成模型进步或退步。",
+      "severity": "高",
+      "response": "官方要求 1.0.1 前后该域分数不得互相比，并提供 tau2 evaluate-trajs --fresh-tasks 重算旧结果文件；复现 1.0.1 前行为需固定到 pre-v1.0.1 标签的提交。",
+      "reader": "看到 banking / banking_knowledge 分数先问是哪一版跑的；没有版本号的域分数不要跨版本排在一起。",
+      "cite": [
+        "repo-changelog@1.0.1"
+      ]
+    },
+    {
+      "issue": "1.x 与 2.0 的输入和判分都不同",
+      "impact": "2.0 换了通信检查（默认 LLM 语义判）、NL 断言裁判模型、工具参数查找规则和英文提示词，还替换了英文 retail / telecom 各 50 道任务；官方说明没有任何 flag 组合能精确复现 1.0.1 的输入。",
+      "severity": "高",
+      "response": "官方把 1.x 与 2.0 放上不同榜单 tab 并继续接收 1.x 提交；要比 1.x 榜单需跑 v1.0.1 标签。",
+      "reader": "本页是 τ³-bench（v1.0.x）的档案；2.0 的文本三域分数不要和这里混排。",
+      "cite": [
+        "repo-changelog@2.0.0",
+        "repo-tau2-bench@README"
+      ]
+    },
+    {
+      "issue": "老域题目本身压过成绩上限",
+      "impact": "airline 域数据不一致把可达成绩压在约 70%，retail 域标注错误压到约 92%，另有 31/50、53/115 条指令细节不足；不修题就没有区分度。",
+      "severity": "高",
+      "response": "v1.0.0 逐题人工复审并修订（airline 27 题、retail 26 题），官方称公开修订版是为更忠实地评估 agent 能力。",
+      "reader": "老论文里 airline / retail 的绝对分数和修订版不可直接比；看到 70% / 92% 附近的天花板要知道那是题目问题不是模型问题。",
+      "cite": [
+        "paper-tau-fixes@§5",
+        "release-v100@Task Quality"
+      ]
+    },
+    {
+      "issue": "榜单最高分与论文最高分口径不一致",
+      "impact": "τ³-Banking 榜第一是 55.2% pass^1（Qwen 3.8 Max），而 τ-Knowledge 论文报告的最好成绩是 25.52% pass^1（GPT-5.2，high reasoning）；官网首页不标注每一行用的是哪种检索配置，两者无法直接对齐。",
+      "severity": "中",
+      "response": "论文侧口径可核对：terminal 配置最好 25.52%，golden 检索配置最好 39.69%；榜单侧口径未披露，本站不替它推定。",
+      "reader": "引用 τ³-Banking 分数时同时写清模型与检索配置；拿 55.2% 和论文的 25.52% 直接比会得出错误结论。",
+      "cite": [
+        "leaderboard-taubench@首页预览表",
+        "paper-tau-knowledge@§1"
+      ]
+    },
+    {
+      "issue": "语音结果对音频条件极敏感",
+      "impact": "同一批任务，最好语音 provider 在 Clean 下 51%、Realistic 下 38%，与 GPT-5 文本 85% 差 34pp / 47pp；非标准口音、言语障碍或嘈杂环境下的用户可能被系统性服务不到。",
+      "severity": "中",
+      "response": "论文用 Clean / Realistic 两种条件分别报告，并把音频特效（噪声、突发声响、电话压缩、丢帧）做成可配置管线。",
+      "reader": "只报 Clean 分数会显著高估语音 agent 的真实可用性；比较时必须对齐音频条件。",
+      "cite": [
+        "paper-tau-voice@§5.1",
+        "paper-tau-voice@§6.2"
+      ]
+    },
+    {
+      "issue": "模拟用户行为会影响成败",
+      "impact": "第三方（GLM-5.1 评测）为所有域的用户模拟器加了一句额外提示，避免用户过早结束交互导致失败；用户模拟器用 GPT-5.2（reasoning_effort: low）、4 次试验，banking 用 terminal_use 检索。口径不写清就无法复现。",
+      "severity": "中",
+      "response": "仓库侧提供用户模拟器幻觉检测与重跑机制；官方文档给出默认 reward_basis 与聚合方式。",
+      "reader": "厂商自报的 τ³ 成绩要连用户模拟器型号、推理档、试验次数、检索配置一起看，少一项就不可比。",
+      "cite": [
+        "z-blog-glm-5-1@评测脚注",
+        "docs-running@Scoring"
+      ]
+    },
+    {
+      "issue": "仓库文档与代码默认指向 2.0",
+      "impact": "docs / CHANGELOG / README 的 main 分支已是 2.0，页面上的裁判配置（如 gpt-5.4-mini NL 断言裁判、语义通信检查）与 v1.0.0 的实际行为可能不一致。",
+      "severity": "中",
+      "response": "按 tag 取版本：复现 v1.0.x 行为应对应 v1.0.0 / v1.0.1 标签的文档与代码。",
+      "reader": "本档案的协议描述以 v1.0.x 的发布说明与论文为准，仓库 main 的文档只作补充。",
+      "cite": [
+        "repo-tau2-bench@README",
+        "repo-changelog@2.0.0"
+      ]
+    }
+  ],
+  "notes": "τ³-bench 在官网上以两个子榜呈现：τ³-Banking（文本·知识检索）与 τ³-Voice（实时语音），另有 τ²-bench 文本三域榜；三者共用 taubench.com。仓库 README 已把 τ³-bench (v1.0) 标为 Previous release，但 1.x 提交仍被接收并单列 tab。GLM-5.1 等第三方在文末评测脚注里引用过 banking / voice 成绩。",
   "official_sources": [
     {
-      "kind": "github",
+      "kind": "repo",
       "url": "https://github.com/sierra-research/tau2-bench"
     },
     {
-      "kind": "site",
-      "url": "https://z.ai/blog/glm-5.1"
+      "kind": "announcement",
+      "url": "https://github.com/sierra-research/tau2-bench/releases/tag/v1.0.0"
+    },
+    {
+      "kind": "docs",
+      "url": "https://raw.githubusercontent.com/sierra-research/tau2-bench/main/docs/evaluation.md"
+    },
+    {
+      "kind": "docs",
+      "url": "https://raw.githubusercontent.com/sierra-research/tau2-bench/main/docs/running-the-benchmark.md"
+    },
+    {
+      "kind": "repo",
+      "url": "https://raw.githubusercontent.com/sierra-research/tau2-bench/main/CHANGELOG.md"
+    },
+    {
+      "kind": "leaderboard",
+      "url": "https://taubench.com"
+    },
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2603.13686"
+    },
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2603.04370"
+    },
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2512.07850"
+    },
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2506.07982"
     }
   ],
   "related_benchmarks": [
-    "tau-bench"
+    "tau-bench",
+    "tau2-bench",
+    "tau-voice"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-13",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      {
+        "id": "repo-tau2-bench",
+        "kind": "repo",
+        "title": "sierra-research/tau2-bench README（main = 2.0，含 τ³-bench v1.0 段落与 voice 字框说明）",
+        "url": "https://github.com/sierra-research/tau2-bench",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "release-v100",
+        "kind": "announcement",
+        "title": "Release τ³-bench 1.0.0 — Voice, Knowledge, Task Quality",
+        "url": "https://github.com/sierra-research/tau2-bench/releases/tag/v1.0.0",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "repo-changelog",
+        "kind": "repo",
+        "title": "sierra-research/tau2-bench CHANGELOG（main）",
+        "url": "https://raw.githubusercontent.com/sierra-research/tau2-bench/main/CHANGELOG.md",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "paper-tau-voice",
+        "kind": "paper",
+        "title": "τ-Voice：全双工语音 + 可验证任务（arXiv:2603.13686）",
+        "url": "https://arxiv.org/abs/2603.13686",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "paper-tau-knowledge",
+        "kind": "paper",
+        "title": "τ-Knowledge / banking_knowledge（arXiv:2603.04370）",
+        "url": "https://arxiv.org/abs/2603.04370",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "paper-tau-fixes",
+        "kind": "paper",
+        "title": "τ-bench 数据集一致性与指令歧义修订（arXiv:2512.07850）",
+        "url": "https://arxiv.org/abs/2512.07850",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "paper-tau2",
+        "kind": "paper",
+        "title": "τ²-bench（arXiv:2506.07982）",
+        "url": "https://arxiv.org/abs/2506.07982",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "leaderboard-taubench",
+        "kind": "leaderboard",
+        "title": "taubench.com 官方榜单首页（τ³-Banking / τ³-Voice / τ²-bench 预览 + 演进时间线）",
+        "url": "https://taubench.com",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "z-blog-glm-5-1",
+        "kind": "blog",
+        "title": "z.ai GLM-5.1 博客（文末 τ³-bench 评测脚注）",
+        "url": "https://z.ai/blog/glm-5.1",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "docs-evaluation",
+        "kind": "docs",
+        "title": "tau2-bench docs/evaluation.md（main）",
+        "url": "https://raw.githubusercontent.com/sierra-research/tau2-bench/main/docs/evaluation.md",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "docs-running",
+        "kind": "docs",
+        "title": "tau2-bench docs/running-the-benchmark.md（main）",
+        "url": "https://raw.githubusercontent.com/sierra-research/tau2-bench/main/docs/running-the-benchmark.md",
+        "accessed": "2026-11-13"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Sierra（Sierra.ai，San Francisco）",
+        "cite": [
+          "paper-tau-voice@作者署名",
+          "leaderboard-taubench@首页"
+        ]
+      },
+      "first_release": {
+        "v": "2026-03-18（τ³-bench v1.0.0；上游 τ-bench 2024-06、τ²-bench 2025-06）",
+        "cite": [
+          "release-v100@发布日期",
+          "leaderboard-taubench@首页"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "release-v100@By the Numbers",
+        "paper-tau-voice@§6.3",
+        "repo-tau2-bench@README"
+      ],
+      "interpretation": [
+        "paper-tau-voice@§5.1",
+        "paper-tau-knowledge@§1",
+        "repo-changelog@1.0.1"
+      ]
+    },
+    "problem": {
+      "text": "此前的 τ-bench / τ²-bench 只测文本，而且题目本身不可靠：airline 域的数据不一致把可达成绩压在约 70%，retail 域的标注错误压到约 92%，还有三分之二的用户指令细节不足。真实客服既要听懂人声、又要在办业务前查制度文档，这两件事旧基准都没覆盖。",
+      "cite": [
+        "paper-tau-fixes@§5",
+        "release-v100@发布说明"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "τ³-bench 文本三域榜最高",
+        "value": "87.9% pass^1",
+        "note": "Qwen3.5-397B-A17B（Alibaba Cloud），官网 τ²-bench 榜（retail / airline / telecom）；同榜 Gemini 3.0 Pro 85.4%、Claude Opus 4.5 85.3%。",
+        "cite": [
+          "leaderboard-taubench@首页预览表"
+        ]
+      },
+      {
+        "label": "τ³-Banking（知识检索）榜最高",
+        "value": "55.2% pass^1",
+        "note": "Qwen 3.8 Max（Qwen）；同榜 Claude Opus 5 48.7%、Grok 4.5 47.9%。首页不标注各行检索配置，与论文口径不可直接对齐。",
+        "cite": [
+          "leaderboard-taubench@首页预览表"
+        ]
+      },
+      {
+        "label": "τ³-Voice 榜最高",
+        "value": "86.0% 任务完成率",
+        "note": "Ava Zero（Avartha），官网标注为「多语言 · 3 域」；同榜 phonic-1 83.2%、gpt-live-1 79.9%。",
+        "cite": [
+          "leaderboard-taubench@首页预览表"
+        ]
+      },
+      {
+        "label": "τ-Voice 论文：文本参照",
+        "value": "85% pass@1",
+        "note": "GPT-5（reasoning）在 278 题文本上的成绩，是语音成绩的对照基线。",
+        "cite": [
+          "paper-tau-voice@§5.1"
+        ]
+      },
+      {
+        "label": "τ-Voice 论文：最好语音 provider",
+        "value": "51%（Clean）/ 38%（Realistic）",
+        "note": "干净音频下已比 GPT-5 掉 34pp；真实音频再掉 12pp。对照非推理文本 GPT-4.1 的 54%，Clean 只差 3pp、Realistic 差 16pp。",
+        "cite": [
+          "paper-tau-voice@§5.1"
+        ]
+      },
+      {
+        "label": "τ-Knowledge 论文：最强模型",
+        "value": "25.52% pass^1",
+        "note": "GPT-5.2（high reasoning），跨全部检索配置的最好成绩；pass^4 最多 13.40%。golden 检索配置（直接把关键文档给 agent）下最强为 Claude-4.5-Opus 的 39.69%。",
+        "cite": [
+          "paper-tau-knowledge@§1"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 τ³-Banking 榜的 55.2% 和 τ-Knowledge 论文的 25.52% 直接比——榜单行不标检索配置，论文最好成绩限定在具体配置下，两个数不是同一把尺子。",
+        "cite": [
+          "leaderboard-taubench@首页预览表",
+          "paper-tau-knowledge@§1"
+        ]
+      },
+      {
+        "text": "把 1.0.1 前后的 banking_knowledge 分数排在一起——官方明确该域分数不可比。",
+        "cite": [
+          "repo-changelog@1.0.1"
+        ]
+      },
+      {
+        "text": "把 1.x 和 2.0 的分数排在一起——2.0 换了任务、提示词和判分，官方要求重跑而不是比较。",
+        "cite": [
+          "repo-changelog@2.0.0"
+        ]
+      },
+      {
+        "text": "把语音分当文本分读——同一批任务换成语音，最好成绩从 85% 掉到 51%/38%，这既是能力差距也是模态差距。",
+        "cite": [
+          "paper-tau-voice@§5.1"
+        ]
+      },
+      {
+        "text": "以为 agent 必须按某条固定脚本调工具才能得分——走别的正确路径、或在该拒绝时不调工具，都可以拿满分。",
+        "cite": [
+          "docs-evaluation@Reward"
+        ]
+      },
+      {
+        "text": "把 τ³-bench 的 75+ 题修复理解成「题目都修好了」——修的是 airline / retail 的部分题目，banking_knowledge 的算分在 1.0.1 又变过一次。",
+        "cite": [
+          "release-v100@Task Quality",
+          "repo-changelog@1.0.1"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "Sierra（Sierra.ai, San Francisco）；仓库 sierra-research/tau2-bench，官网 taubench.com",
+        "cite": [
+          "paper-tau-voice@作者署名",
+          "leaderboard-taubench@首页"
+        ]
+      },
+      {
+        "k": "在家族里的位置",
+        "v": "τ-bench（2024-06，airline / retail）→ τ²-bench（2025-06，加双控 telecom）→ τ³-bench（2026-03，全双工语音 + banking_knowledge + 题目修复）→ τ-bench 2.0（2026-10-19，τ-i18n / τ-Entity，文本域每域 50 道冻结题）",
+        "cite": [
+          "leaderboard-taubench@首页",
+          "repo-changelog@2.0.0",
+          "repo-tau2-bench@README"
+        ]
+      },
+      {
+        "k": "官网上的两个 τ³ 子榜",
+        "v": "τ³-Banking（文本 · 知识检索）与 τ³-Voice（实时语音，多语言 · 3 域），与 τ²-bench 文本三域榜并列",
+        "cite": [
+          "leaderboard-taubench@首页预览表"
+        ]
+      },
+      {
+        "k": "两条配套论文",
+        "v": "官网演进时间线把 τ-voice 与 τ-knowledge 都记在 2026 年 3 月、归属 τ³-bench，各自有论文与博客入口",
+        "cite": [
+          "leaderboard-taubench@首页"
+        ]
+      },
+      {
+        "k": "运行方式",
+        "v": "Python >=3.12, <3.14（v1.0.0 起改用 uv 安装）；语音可用 7 个实时语音 provider（OpenAI Realtime / xAI Grok Voice / Gemini Live 为完全支持）；banking_knowledge 走 12 种检索配置之一",
+        "cite": [
+          "release-v100@Breaking Changes",
+          "release-v100@Voice",
+          "release-v100@Knowledge"
+        ]
+      },
+      {
+        "k": "第三方引用样例",
+        "v": "GLM-5.1 博客评测脚注：用户模拟器 GPT-5.2（reasoning_effort: low）、4 次试验，banking 域用 terminal_use 检索，并为所有域的用户模拟器加了避免过早结束交互的提示",
+        "cite": [
+          "z-blog-glm-5-1@评测脚注"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-13",
+        "columns": [
+          "来源",
+          "榜单项 / 论文表",
+          "模型",
+          "分数",
+          "口径"
+        ],
+        "rows": [
+          [
+            "taubench.com 首页",
+            "τ²-bench 文本三域",
+            "Qwen3.5-397B-A17B（Alibaba Cloud）",
+            "87.9% pass^1",
+            "retail / airline / telecom"
+          ],
+          [
+            "taubench.com 首页",
+            "τ²-bench 文本三域",
+            "Gemini 3.0 Pro（Google）",
+            "85.4% pass^1",
+            "同上"
+          ],
+          [
+            "taubench.com 首页",
+            "τ²-bench 文本三域",
+            "Claude Opus 4.5（Anthropic）",
+            "85.3% pass^1",
+            "同上"
+          ],
+          [
+            "taubench.com 首页",
+            "τ³-Banking",
+            "Qwen 3.8 Max（Qwen）",
+            "55.2% pass^1",
+            "文本 · 知识检索；检索配置未标注"
+          ],
+          [
+            "taubench.com 首页",
+            "τ³-Banking",
+            "Claude Opus 5（Anthropic）",
+            "48.7% pass^1",
+            "同上"
+          ],
+          [
+            "taubench.com 首页",
+            "τ³-Banking",
+            "Grok 4.5（xAI）",
+            "47.9% pass^1",
+            "同上"
+          ],
+          [
+            "taubench.com 首页",
+            "τ³-Voice",
+            "Ava Zero（Avartha）",
+            "86.0% 任务完成率",
+            "多语言 · 3 域"
+          ],
+          [
+            "taubench.com 首页",
+            "τ³-Voice",
+            "phonic-1（Phonic）",
+            "83.2% 任务完成率",
+            "同上"
+          ],
+          [
+            "taubench.com 首页",
+            "τ³-Voice",
+            "gpt-live-1（OpenAI）",
+            "79.9% 任务完成率",
+            "同上"
+          ],
+          [
+            "τ-Voice 论文 §5.1",
+            "文本基线",
+            "GPT-5（reasoning）",
+            "85% pass@1",
+            "278 题，文本"
+          ],
+          [
+            "τ-Voice 论文 §5.1",
+            "文本基线",
+            "GPT-4.1（非推理）",
+            "54% pass@1",
+            "278 题，文本"
+          ],
+          [
+            "τ-Voice 论文 §5.1",
+            "最好语音 provider",
+            "未点名",
+            "51% pass@1",
+            "Clean：干净美式口音、无噪声无打断"
+          ],
+          [
+            "τ-Voice 论文 §5.1",
+            "最好语音 provider",
+            "未点名",
+            "38% pass@1",
+            "Realistic：噪声、多样口音、自然轮替"
+          ],
+          [
+            "τ-Knowledge 论文 §1",
+            "全部检索配置最好",
+            "GPT-5.2（high reasoning）",
+            "25.52% pass^1",
+            "跨 embedding 与 terminal 检索配置"
+          ],
+          [
+            "τ-Knowledge 论文 §1",
+            "可靠性",
+            "同上（全配置）",
+            "≤13.40% pass^4",
+            "k ≤ 4 次独立试验全部成功"
+          ],
+          [
+            "τ-Knowledge 论文 §1",
+            "golden 检索配置最好",
+            "Claude-4.5-Opus（high reasoning）",
+            "39.69% pass^1",
+            "直接把任务关键文档给 agent"
+          ]
+        ]
+      },
+      "cite": [
+        "leaderboard-taubench@首页预览表",
+        "paper-tau-voice@§5.1",
+        "paper-tau-knowledge@§1"
+      ]
+    }
+  }
 }

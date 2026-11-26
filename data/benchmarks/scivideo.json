@@ -1,64 +1,774 @@
 {
   "id": "scivideo",
   "name": "SciVideoBench",
-  "full_name": "SciVideoBench: Benchmarking Scientific Video Reasoning in Large Multimodal Models",
+  "full_name": "SciVideoBench: Benchmarking Scientific Video Reasoning in Large Multimodal Models（科学视频推理基准：用真实科研实验视频测多模态大模型的推理能力）",
   "aliases": [
     "SciVideo"
   ],
-  "status": null,
+  "status": "active",
   "categories": [
     "multimodal",
     "knowledge"
   ],
-  "summary": "科学视频推理基准：以小时级真实科学实验视频出题，考高阶认知与专业推理；字节 Seed2.0 评测表以「SciVideo」行列出",
-  "interpretation": "准确率口径，官方评测显示当前模型普遍低分（难度定位为研究生级科学视频推理）；Seed2.0 页读数 Lite 70.3 / Mini 35.3（同表 Gemini 3 Flash 对照 74.1），为厂商自报，标签 SciVideo 与 SciVideoBench 的对应关系为本仓判定。",
+  "summary": "SciVideoBench 是一个科学视频推理基准：1,000 道多选题全部来自 JoVE（Journal of Visualized Experiments，发表同行评审方法学视频的平台）上的 241 支研究级实验视频，平均每支 484 秒。它不考「画面里有什么」，而是看完一段真实实验后理解实验原理、推断某步操作失败的后果、并从视频里读出数字完成计算——对应 conceptual（概念）/ hypothetical（假设）/ quantitative（定量）三类推理。",
+  "interpretation": "指标是准确率（答对题数占比，0–100%）。三条参考线：随机猜 10.00%，论文招募的四个学科各 3 名研究生闭卷人类基线只有 17.4%（定量推理 14.29%），发布时最好的闭源模型 Gemini-2.5-Pro 为 64.30%。所以低分主要说明题目卡在研究生以上的科研推理，而不是题目有错；反过来，64.30% 也不说明模型「会做科研」——同一个较弱的 Gemini-1.5-Pro 加上链式思考（chain-of-thought，先写推理过程再给答案）就能从 27.50% 涨到 48.60%，分数对推理档位极其敏感。",
   "measures": [
-    "科学实验视频中的专业推理",
-    "长视频上的高阶认知（实验逻辑、假设验证）"
+    {
+      "area": "概念推理（Conceptual）",
+      "focus": "考实验背后的机制、步骤与科学原理，需要从画面里的操作细节反推。示例（Figure 5，生物化学概念题）：「02:31 开始的 overnight magnetic stirring 这一步的主要目的是什么？」选项从增强超声效果到浓缩乳液共 10 个",
+      "share": "370 题",
+      "format": "多选题；示例为 10 个选项（A–J）",
+      "cite": [
+        "arxiv-2510-08559@§2.3",
+        "arxiv-2510-08559@Figure 5"
+      ]
+    },
+    {
+      "area": "假设推理（Hypothetical）",
+      "focus": "考 what-if 与实验控制逻辑：某步操作失败会发生什么。示例（Figure 5，医学/化学工程假设题）：「03:20–03:25 展示的操作如果失败，可能发生什么？」",
+      "share": "385 题",
+      "format": "多选题；示例为 10 个选项（A–J）",
+      "cite": [
+        "arxiv-2510-08559@§2.3",
+        "arxiv-2510-08559@Figure 5"
+      ]
+    },
+    {
+      "area": "定量推理（Quantitative）",
+      "focus": "考从视频里读数字再做计算，且要求所有数值都来自视频本身。示例（Figure 5，化学定量题）：「视频中单次琼脂扩散实验里，施加到琼脂板上的合成离子液体的总质量是多少微克？」（选项 0.73–4.97 µg）",
+      "share": "245 题",
+      "format": "多选题；示例为 10 个选项（A–J）",
+      "cite": [
+        "arxiv-2510-08559@§2.3",
+        "arxiv-2510-08559@Figure 5"
+      ]
+    }
   ],
   "does_not_measure": [
-    "日常场景视频理解",
-    "纯文本学科知识"
+    {
+      "text": "通用/日常视频理解：VideoMME、Neptune 这类通用基准上前沿模型准确率已超过 85% 并趋于饱和，SciVideoBench 明确把自己定位在研究级科学场景，不与它们同题",
+      "cite": [
+        "arxiv-2510-08559@§1"
+      ]
+    },
+    {
+      "text": "不看视频也能答的学科知识：把视频输入去掉只留文字（盲测），GPT-4o 只剩 15.80% 总体、定量推理 11.84%，说明题目考的是画面里的视觉信息而不是可记忆的知识",
+      "cite": [
+        "arxiv-2510-08559@§3.4"
+      ]
+    },
+    {
+      "text": "开放式生成：全部题目都是带选项的多选题（论文 Table 1 标注 Multi-choice），不评测自由形式的实验设计、论文写作或口头解释",
+      "cite": [
+        "arxiv-2510-08559@Table 1"
+      ]
+    }
   ],
   "dataset": {
-    "sample_count": null,
+    "sample_count": 1000,
     "splits": [],
     "languages": [
       "en"
     ],
-    "source_type": "real-world（真实科学实验视频）",
-    "public_sample": true
+    "source_type": "real-world（JoVE 研究级实验视频 + 同行评审稿件 + 同步音频解说）",
+    "public_sample": true,
+    "totals": "1,000 题 · 241 支视频 · 平均每支 484 秒 · 三类推理 370 / 385 / 245 · 四个学科（生物、化学、医学、物理）· 题目语言英文",
+    "cite": [
+      "arxiv-2510-08559@§2.3",
+      "site@Statistics",
+      "repo@README"
+    ],
+    "construction": [
+      {
+        "k": "视频来源",
+        "text": "从 JoVE 收集 241 支研究级实验视频，每支都配有同行评审稿件与同步音频解说；音频用 Whisper 自动语音识别转成文本，稿件从 PDF 解析全文，三者一起作为出题输入。",
+        "cite": [
+          "arxiv-2510-08559@§2.1"
+        ]
+      },
+      {
+        "k": "人工打样",
+        "text": "四位专家（生物、化学、医学、物理各一位博士生）先各看一篇论文，人工标注少量示例问答，再用 GPT-4o 扩展成每类 12 个高质量示例，作为多智能体出题系统的提示。",
+        "cite": [
+          "arxiv-2510-08559@§2.2"
+        ]
+      },
+      {
+        "k": "多智能体出题",
+        "text": "QA Generator 从视频+转写+稿件生成初始问答；Evaluator 用同样输入作答并写出推理过程；Visual Comparer 检查推理是否真的落在画面可见的线索上；Refiner 保证问题必须靠看视频才能答并改进选项质量；最后由人工专家复核定稿。",
+        "cite": [
+          "arxiv-2510-08559@§2.2"
+        ]
+      },
+      {
+        "k": "干扰项设计",
+        "text": "概念题与假设题由模型生成 9 个看似合理但错误的干扰项，定量题的干扰项由在正确答案上加高斯噪声自动生成；论文还说明正确选项与干扰项平均长度接近，以降低标注偏差。",
+        "cite": [
+          "arxiv-2510-08559@§2.2",
+          "arxiv-2510-08559@§2.3"
+        ]
+      },
+      {
+        "k": "关键信息叠加",
+        "text": "如果质量、温度等关键数值只在解说里出现而画面看不到，专家会触发脚本把这些信息直接叠到相关视频帧上，保证题目可解。",
+        "cite": [
+          "arxiv-2510-08559@§2.2"
+        ]
+      },
+      {
+        "k": "定量题约束",
+        "text": "定量题要求所有数值都必须来自视频本身，逼模型先从视频里感知数值再做计算与推理。",
+        "cite": [
+          "arxiv-2510-08559@§2.3"
+        ]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "开源模型按各模型默认帧采样：Qwen-2.5-VL 768 帧、InternVideo2.5-Chat-8B 512 帧、LongVA 128 帧、InternVL2 16 帧、InternVL3 与 LLaVA-OneVision 32 帧；Gemini 系列按 1 FPS，GPT-4o 用 256 帧。温度固定为 0，全部评测使用 LMM-Eval 工具包，在 8 张 NVIDIA H100 GPU 上完成。",
+    "cite": [
+      "arxiv-2510-08559@§3.2"
+    ],
+    "variants": [
+      {
+        "text": "带 / 不带链式思考（CoT）：论文对 Gemini-1.5-Pro、Gemini-2.0-Flash、GPT-4o 和一批开源模型另给一档 CoT 结果，Gemini-1.5-Pro 因此从 27.50% 涨到 48.60%（+21.10），GPT-4o 定量推理从 11.84% 涨到 34.29%；两档分数不能直接比。",
+        "cite": [
+          "arxiv-2510-08559@§3.8",
+          "arxiv-2510-08559@Table 2"
+        ]
+      },
+      {
+        "text": "盲测（去掉视频只留文本）：GPT-4o 从 24.90% 掉到 15.80%，Qwen2.5 各规模最多到 18.90%，用来衡量题目有多依赖视觉信息；这是论文的辅助实验，不是主榜。",
+        "cite": [
+          "arxiv-2510-08559@§3.4"
+        ]
+      },
+      {
+        "text": "带音频：Gemini-2.5-Pro 与 Qwen2.5-Omni-7B 加入音频后分别只提升 2.70% 和 2.80%，论文据此认为视觉内容主导成绩；不带音频的分数与带音频的分数不可混排。",
+        "cite": [
+          "arxiv-2510-08559@§3.11"
+        ]
+      },
+      {
+        "text": "帧数与帧率不统一：不同开源模型用不同帧采样策略，Gemini 按 1 FPS、GPT-4o 固定 256 帧，帧数本身会显著影响长视频成绩，跨模型比较时这一项并不受控。",
+        "cite": [
+          "arxiv-2510-08559@§3.2"
+        ]
+      },
+      {
+        "text": "README 榜单口径：仓库 README 的榜单额外收录论文之外的 GPT-5（55.70%），并称自 2025-11-15 起已集成进 lmms-eval；用 lmms-eval 复现的结果与论文 8×H100 的设置不一定一致。",
+        "cite": [
+          "repo@README"
+        ]
+      }
+    ]
   },
   "metrics": [
     {
       "id": "accuracy",
-      "name": "Accuracy",
+      "name": "准确率",
+      "direction": "越高越好",
+      "description": "多选题中答对题数占比，另按概念/假设/定量三类推理和四个学科分别报告分项准确率",
       "range": [
         0,
         100
       ],
       "unit": "percent",
-      "direction": "higher",
-      "aggregation": "mean"
+      "cite": [
+        "arxiv-2510-08559@Table 2",
+        "arxiv-2510-08559@§3.2"
+      ]
     }
   ],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [
-    "难度高导致分数区分度集中在头部模型"
+  "versions": [
+    {
+      "id": "arxiv-v1",
+      "date": "2025-10-09",
+      "label": "arXiv v1 提交（cs.CV），论文首次公开，含 21 个模型的评测结果",
+      "cite": [
+        "arxiv-2510-08559",
+        "arxiv-2510-08559@§5"
+      ]
+    },
+    {
+      "id": "launch",
+      "date": "2025-10-10",
+      "label": "仓库宣布 SciVideoBench 上线，自称是首个科学视频推理基准",
+      "cite": [
+        "repo@README"
+      ]
+    },
+    {
+      "id": "qwen3vl",
+      "date": "2025-10-17",
+      "label": "仓库宣布已在榜单上评测 Qwen3-VL",
+      "cite": [
+        "repo@README"
+      ]
+    },
+    {
+      "id": "award",
+      "date": "2025-10-20",
+      "label": "获 ICCV 2025 KnowledgeMR Workshop 最佳论文奖（Benchmark Track）",
+      "cite": [
+        "repo@README"
+      ]
+    },
+    {
+      "id": "gpt5",
+      "date": "2025-10-25",
+      "label": "仓库宣布 GPT-5 取得 55.70% 总成绩，定量推理 55.10% 创新高（论文之外的新增条目）",
+      "cite": [
+        "repo@README"
+      ]
+    },
+    {
+      "id": "lmms-eval",
+      "date": "2025-11-15",
+      "label": "集成进 lmms-eval 评测框架",
+      "cite": [
+        "repo@README"
+      ]
+    }
   ],
-  "notes": "arXiv 2510.08559；证据账本 2 行（字节 Seed2.0 Lite/Mini 列）",
+  "limitations": [
+    {
+      "issue": "人类基线接近随机，题目对非专家几乎不可答",
+      "impact": "四个学科各 3 名研究生闭卷只有 17.4%（定量推理 14.29%），随机猜测是 10.00%。绝大多数模型的低分都落在「随机—人类」这段很窄的区间里，很难区分「完全不懂」和「差一点」；只有头部模型之间的差距有解释力。",
+      "severity": "高",
+      "response": "未见官方回应。论文把低人类基线当作难度定位的证据，而不是待修问题。",
+      "reader": "看排名时优先看头部几名；低于 20% 的模型之间不要逐分比较。",
+      "cite": [
+        "arxiv-2510-08559@§3.3",
+        "arxiv-2510-08559@Table 2"
+      ]
+    },
+    {
+      "issue": "数据需签协议才能获取，无法自由复现",
+      "impact": "仓库 README 写明仅限学术研究、禁止任何形式的商业使用，视频版权归原作者与 JoVE，且必须填写并签署 Dataset Access Agreement 之后才能使用。第三方无法像公开数据集那样直接下载复现榜单。",
+      "severity": "高",
+      "response": "官方提供 Google Form 签署访问协议，数据集托管在 Hugging Face（需同意条款）。",
+      "reader": "看到第三方自报的 SciVideoBench 分数时，先确认对方是否拿到数据、用的是不是同一版本。",
+      "cite": [
+        "repo@README"
+      ]
+    },
+    {
+      "issue": "口径不统一：CoT / 盲测 / 音频 / 帧采样都会改变分数",
+      "impact": "论文同时给出无 CoT、带 CoT、盲测、带音频四种设置，帧采样策略还按模型各不相同（768 / 512 / 128 / 32 / 16 帧、Gemini 1 FPS、GPT-4o 256 帧）。Gemini-1.5-Pro 加 CoT 后从 27.50% 涨到 48.60%，跨设置比较会得出相反结论。",
+      "severity": "高",
+      "response": "论文固定温度 0，统一使用 LMM-Eval 工具包与 8 张 H100；2025-11-15 起集成进 lmms-eval 以便复现。",
+      "reader": "比较任何两个分数前，先确认是否同为无 CoT 主榜、帧数是否一致。",
+      "cite": [
+        "arxiv-2510-08559@§3.2",
+        "arxiv-2510-08559@§3.8",
+        "repo@README"
+      ]
+    },
+    {
+      "issue": "论文 Table 2 与仓库 README 榜单对同一批模型的数值不一致",
+      "impact": "论文 Table 2 里 InternVL2-Llama3-76B 为 26.30 / 28.38 / 27.01 / 22.04 / 24.94 / 29.70 / 29.91 / 25.08，README 榜单同一行却是 26.30 / 29.70 / 29.91 / 25.08 / 24.94 / 27.01 / 29.91 / 28.38；LLaVA-NeXT-Video-32B 与 Qwen2.5-VL-72B 两行也只有总分对得上。README 还把 InternVL-3-78B（38.50%）列为开源最佳，论文的开源最佳是 InternVL-3-78B-Instruct（38.80%）。",
+      "severity": "中",
+      "response": "未见官方回应。",
+      "reader": "以论文 Table 2 为准；README 榜单额外收录论文之外的 GPT-5，用之前先核对口径。",
+      "cite": [
+        "arxiv-2510-08559@Table 2",
+        "repo@README"
+      ]
+    },
+    {
+      "issue": "官网榜单列序与论文相反，且模型行动态插入",
+      "impact": "官网榜单把四个学科列在三类推理之前（Physics / Chemistry / Biology / Medicine → Conceptual / Hypothetical / Quantitative），论文 Table 2 的顺序正好相反；官网静态 HTML 里只硬编码 Random Guess 与 Human 两行，模型成绩由 JavaScript 插入，直接保存网页可能得到不完整的榜单。",
+      "severity": "中",
+      "response": "未见官方回应。",
+      "reader": "引用官网表格时按列名取值，不要按位置取。",
+      "cite": [
+        "site@#leaderboard",
+        "arxiv-2510-08559@Table 2"
+      ]
+    },
+    {
+      "issue": "论文自身对学科数量的表述不一致",
+      "impact": "摘要、§2.3 与官网都说「超过 25 个学科」，结论 §5 写的是「超过 20 个学科」；附录 Table 5 按学科分组的列表可用来核对具体科目。",
+      "severity": "低",
+      "response": "未见官方回应。",
+      "reader": "引用学科数时用「超过 25 个」并注明出自摘要 / §2.3。",
+      "cite": [
+        "arxiv-2510-08559@§2.3",
+        "arxiv-2510-08559@§5",
+        "arxiv-2510-08559@Table 5"
+      ]
+    }
+  ],
+  "notes": "论文 + 官网 + 仓库 README 三处交叉核对；README 榜单与论文 Table 2 有三行数值不一致，官网作者块机构与论文不一致，均写入 limitations",
   "official_sources": [
     {
       "kind": "paper",
       "url": "https://arxiv.org/abs/2510.08559"
+    },
+    {
+      "kind": "site",
+      "url": "https://scivideobench.github.io"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/dengandong/SciVideoBench"
+    },
+    {
+      "kind": "dataset",
+      "url": "https://huggingface.co/datasets/groundmore/scivideobench"
     }
   ],
   "related_benchmarks": [
     "video-mme",
     "videoreasonbench",
-    "scicode"
+    "scicode",
+    "mmvu",
+    "video-mmmu",
+    "mlvu",
+    "mvbench",
+    "longvideobench",
+    "tempcompass"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-09-01"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-13",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      {
+        "id": "arxiv-2510-08559",
+        "kind": "paper",
+        "title": "SciVideoBench: Benchmarking Scientific Video Reasoning in Large Multimodal Models（arXiv:2510.08559v1，2025-10-09）",
+        "url": "https://arxiv.org/abs/2510.08559",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "site",
+        "kind": "site",
+        "title": "SciVideoBench 项目页（scivideobench.github.io）",
+        "url": "https://scivideobench.github.io",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "dengandong/SciVideoBench（GitHub README，含榜单与许可说明）",
+        "url": "https://github.com/dengandong/SciVideoBench",
+        "accessed": "2026-11-13"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "University of Central Florida、University of North Carolina at Chapel Hill、Stanford University（论文首页署名机构；官网另列 Amazon 为第 2 家机构，论文未列）",
+        "cite": [
+          "arxiv-2510-08559@首页",
+          "site@首页"
+        ]
+      },
+      "first_release": {
+        "v": "2025-10-09（arXiv v1）",
+        "cite": [
+          "arxiv-2510-08559"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "arxiv-2510-08559@Abstract",
+        "arxiv-2510-08559@§2.1",
+        "arxiv-2510-08559@§2.3",
+        "site@Statistics"
+      ],
+      "interpretation": [
+        "arxiv-2510-08559@Table 2",
+        "arxiv-2510-08559@§3.3",
+        "arxiv-2510-08559@§3.5",
+        "arxiv-2510-08559@§3.8"
+      ]
+    },
+    "problem": {
+      "text": "已有视频基准大多停在通用场景（电影、日常活动、教学视频），偏重视觉识别与常识推理，VideoMME、Neptune 上前沿模型准确率已超过 85% 并趋于饱和；即使涉及科学也停留在大学阶段，研究级实验场景被忽略。论文还点名 MMVU 有部分题目依赖与画面无关的假设，模型不看视频也能答。SciVideoBench 用 JoVE 上的研究级实验视频重新造一个能拉开差距的科学视频推理基准。",
+      "cite": [
+        "arxiv-2510-08559@§1",
+        "arxiv-2510-08559@Abstract"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机猜测基线",
+        "value": "10.00%",
+        "note": "论文 Table 2 中三类推理与四个学科全部为 10.00%；示例题为 10 个选项",
+        "cite": [
+          "arxiv-2510-08559@Table 2",
+          "arxiv-2510-08559@Figure 5"
+        ]
+      },
+      {
+        "label": "人类基线（研究生闭卷）",
+        "value": "17.40%",
+        "note": "四个学科各 3 名研究生闭卷作答；定量推理只有 14.29%",
+        "cite": [
+          "arxiv-2510-08559@§3.3",
+          "arxiv-2510-08559@Table 2"
+        ]
+      },
+      {
+        "label": "视觉盲测参考线",
+        "value": "15.80%",
+        "note": "去掉视频只留文本时 GPT-4o 的成绩（定量推理 11.84%），可用来判断一个分数有多少来自「不看视频也能答」",
+        "cite": [
+          "arxiv-2510-08559@§3.4",
+          "arxiv-2510-08559@Table 2"
+        ]
+      },
+      {
+        "label": "论文发布时最好（无 CoT 主榜）",
+        "value": "64.30%",
+        "note": "Gemini-2.5-Pro；开源最佳 InternVL-3-78B-Instruct 38.80%，专有模型平均 38.83% vs 开源平均 18.14%",
+        "cite": [
+          "arxiv-2510-08559@§3.5",
+          "arxiv-2510-08559@Table 2"
+        ]
+      },
+      {
+        "label": "论文内带链式思考最高",
+        "value": "48.60%",
+        "note": "Gemini-1.5-Pro + CoT（+21.10），仍低于不带 CoT 的 Gemini-2.5-Pro（64.30%）；GPT-4o + CoT 为 35.00%",
+        "cite": [
+          "arxiv-2510-08559@§3.8",
+          "arxiv-2510-08559@Table 2"
+        ]
+      },
+      {
+        "label": "仓库榜单最高（论文外新增）",
+        "value": "55.70%",
+        "note": "GPT-5，2025-10-25 由仓库 README 公布，定量推理 55.10%；README 未说明其评测口径",
+        "cite": [
+          "repo@README"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把「模型只有 20–30%」读成题目有问题或标注混乱——论文用研究生闭卷 17.4% 与随机 10.00% 说明这是研究级难度的预期表现，并逐项给出错误归因（错误视觉感知 70.68%、推理过程不准确 63.25%、领域知识不足 49.40%）。",
+        "cite": [
+          "arxiv-2510-08559@§3.3",
+          "arxiv-2510-08559@§3.12"
+        ]
+      },
+      {
+        "text": "把 Gemini-2.5-Pro 的 64.30% 读成「模型会做科研」——同一个较弱的 Gemini-1.5-Pro 加上链式思考就能从 27.50% 涨到 48.60%，说明分数对提示与推理档位极敏感；且题目全部是多选，不涉及开放式实验设计。",
+        "cite": [
+          "arxiv-2510-08559@§3.8",
+          "arxiv-2510-08559@Table 1"
+        ]
+      },
+      {
+        "text": "把开源模型的低分简单读成「规模不够」——论文明确说更大的模型能稳定提升概念/假设推理，但定量推理的提升很弱且非单调；InternVL2-Llama3-76B 的定量推理（22.04%）就高于 InternVL-3-78B-Instruct（9.39%）。",
+        "cite": [
+          "arxiv-2510-08559@§3.9",
+          "arxiv-2510-08559@Table 2"
+        ]
+      },
+      {
+        "text": "忽略音频与帧数差异后直接跨模型排名——音频输入只带来 2.70% / 2.80% 的提升，而帧采样策略按模型各不相同（768 / 512 / 128 / 32 / 16 帧、Gemini 1 FPS、GPT-4o 256 帧）。",
+        "cite": [
+          "arxiv-2510-08559@§3.11",
+          "arxiv-2510-08559@§3.2"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "论文首页署名机构为 University of Central Florida、University of North Carolina at Chapel Hill、Stanford University；官网把 Amazon 列为第 2 家机构（论文未列），两位作者的机构编号也与论文不一致",
+        "cite": [
+          "arxiv-2510-08559@首页",
+          "site@首页"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "Andong Deng、Taojiannan Yang、Shoubin Yu、Lincoln Spencer、Mohit Bansal、Chen Chen、Serena Yeung-Levy、Xiaohan Wang",
+        "cite": [
+          "arxiv-2510-08559@首页"
+        ]
+      },
+      {
+        "k": "视频来源",
+        "v": "JoVE（Journal of Visualized Experiments）上的 241 支研究级实验视频，每支配同行评审稿件与同步音频解说；视频版权归原作者与 JoVE",
+        "cite": [
+          "arxiv-2510-08559@§2.1",
+          "repo@README"
+        ]
+      },
+      {
+        "k": "出题方式",
+        "v": "人工标注少量示例 + GPT-4o 扩展 + 多智能体（QA Generator / Evaluator / Visual Comparer / Refiner）生成，人工专家最终复核定稿",
+        "cite": [
+          "arxiv-2510-08559@§2.2"
+        ]
+      },
+      {
+        "k": "学科覆盖",
+        "v": "生物、化学、医学、物理四个学科，超过 25 个专门方向；附录 Table 5 按学科列出具体科目（生物学含生物化学、生物工程、生物信息学、神经科学、蛋白质组学等）",
+        "cite": [
+          "arxiv-2510-08559@§2.3",
+          "arxiv-2510-08559@Table 5"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2025-10-09 arXiv v1 → 2025-10-10 上线 → 2025-10-17 评测 Qwen3-VL → 2025-10-20 获 ICCV 2025 KnowledgeMR Workshop 最佳论文奖（Benchmark Track）→ 2025-10-25 公布 GPT-5 成绩 → 2025-11-15 集成进 lmms-eval",
+        "cite": [
+          "arxiv-2510-08559",
+          "repo@README"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "数据集在 Hugging Face（groundmore/scivideobench，需签署 Dataset Access Agreement），项目页与代码在 GitHub，2025-11-15 起可在 lmms-eval 中直接评测",
+        "cite": [
+          "repo@README"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-13",
+        "columns": [
+          "来源",
+          "模型",
+          "口径",
+          "Overall",
+          "Conceptual",
+          "Hypothetical",
+          "Quantitative",
+          "Biology",
+          "Chemistry",
+          "Medicine",
+          "Physics"
+        ],
+        "rows": [
+          [
+            "论文 Table 2",
+            "随机猜测",
+            "参考线",
+            "10.00",
+            "10.00",
+            "10.00",
+            "10.00",
+            "10.00",
+            "10.00",
+            "10.00",
+            "10.00"
+          ],
+          [
+            "论文 Table 2",
+            "人类（研究生，闭卷）",
+            "参考线",
+            "17.40",
+            "18.11",
+            "18.70",
+            "14.29",
+            "15.88",
+            "16.06",
+            "21.19",
+            "18.88"
+          ],
+          [
+            "论文 Table 2",
+            "GPT-4o（盲测）",
+            "仅文本，无视频",
+            "15.80",
+            "14.05",
+            "20.00",
+            "11.84",
+            "17.53",
+            "13.95",
+            "16.13",
+            "14.33"
+          ],
+          [
+            "论文 Table 2",
+            "LLaVA-OneVision-0.5B",
+            "开源最弱",
+            "12.10",
+            "15.41",
+            "12.99",
+            "5.71",
+            "11.74",
+            "13.94",
+            "13.08",
+            "11.29"
+          ],
+          [
+            "论文 Table 2",
+            "Qwen2.5-VL-32B-Instruct",
+            "开源 26B–40B",
+            "21.50",
+            "24.86",
+            "24.68",
+            "11.43",
+            "22.49",
+            "16.36",
+            "20.56",
+            "23.20"
+          ],
+          [
+            "论文 Table 2",
+            "InternVL2-Llama3-76B",
+            "开源 >70B",
+            "26.30",
+            "28.38",
+            "27.01",
+            "22.04",
+            "24.94",
+            "29.70",
+            "29.91",
+            "25.08"
+          ],
+          [
+            "论文 Table 2",
+            "InternVL-3-78B-Instruct",
+            "开源最佳",
+            "38.80",
+            "57.30",
+            "39.74",
+            "9.39",
+            "37.90",
+            "39.39",
+            "46.73",
+            "36.99"
+          ],
+          [
+            "论文 Table 2",
+            "GPT-4o",
+            "闭源",
+            "24.90",
+            "30.27",
+            "28.05",
+            "11.84",
+            "21.52",
+            "29.70",
+            "31.78",
+            "24.45"
+          ],
+          [
+            "论文 Table 2",
+            "Gemini-2.0-Flash",
+            "闭源",
+            "25.70",
+            "28.38",
+            "24.94",
+            "22.86",
+            "24.69",
+            "26.06",
+            "22.43",
+            "27.90"
+          ],
+          [
+            "论文 Table 2",
+            "Gemini-1.5-Pro",
+            "闭源",
+            "27.50",
+            "27.84",
+            "28.31",
+            "25.71",
+            "27.38",
+            "26.06",
+            "27.10",
+            "28.53"
+          ],
+          [
+            "论文 Table 2",
+            "Gemini-1.5-Pro（CoT）",
+            "闭源 + 链式思考",
+            "48.60(+21.10)",
+            "47.03(+19.19)",
+            "48.57(+20.26)",
+            "51.02(+25.31)",
+            "52.60(+25.22)",
+            "44.19(+18.13)",
+            "54.84(+27.74)",
+            "44.78(+16.25)"
+          ],
+          [
+            "论文 Table 2",
+            "Gemini-2.0-Flash（CoT）",
+            "闭源 + 链式思考",
+            "39.70(+14.00)",
+            "39.19(+10.81)",
+            "39.74(+14.80)",
+            "40.41(+17.55)",
+            "41.56(+16.87)",
+            "40.70(+14.64)",
+            "35.48(+13.05)",
+            "37.01(+9.11)"
+          ],
+          [
+            "论文 Table 2",
+            "GPT-4o（CoT）",
+            "闭源 + 链式思考",
+            "35.00(+10.10)",
+            "37.84(+7.57)",
+            "32.73(+4.68)",
+            "34.29(+22.45)",
+            "31.78(+10.26)",
+            "37.58(+7.88)",
+            "36.45(+4.67)",
+            "37.30(+12.85)"
+          ],
+          [
+            "论文 Table 2",
+            "Gemini-2.5-Flash",
+            "闭源",
+            "46.40",
+            "50.81",
+            "44.16",
+            "43.27",
+            "44.01",
+            "49.70",
+            "55.14",
+            "44.83"
+          ],
+          [
+            "论文 Table 2",
+            "Gemini-2.5-Pro",
+            "闭源最佳",
+            "64.30",
+            "69.73",
+            "67.79",
+            "50.61",
+            "64.79",
+            "61.82",
+            "74.77",
+            "61.44"
+          ],
+          [
+            "仓库 README 榜单",
+            "GPT-5",
+            "论文外新增，README 未说明口径",
+            "55.70",
+            "61.35",
+            "50.65",
+            "55.10",
+            "57.12",
+            "52.73",
+            "58.88",
+            "54.23"
+          ]
+        ]
+      },
+      "cite": [
+        "arxiv-2510-08559@Table 2",
+        "repo@README"
+      ]
+    }
+  }
 }

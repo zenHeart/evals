@@ -1,32 +1,367 @@
 {
   "id": "swe-atlas",
   "name": "SWE Atlas",
-  "full_name": null,
-  "aliases": [],
-  "status": null,
+  "full_name": "SWE Atlas: Benchmarking Coding Agents Beyond Issue Resolution（SWE 全景：超越「照着 issue 修 bug」的编码代理评测）",
+  "aliases": [
+    "SWE-Atlas"
+  ],
+  "status": "active",
   "categories": [
     "coding"
   ],
-  "summary": "Scale AI 代码库任务评测（问答/测试/重构 284 任务）",
-  "interpretation": "Scale AI 的编码代理基准套件，284 个任务分三赛道（问答 124 / 测试编写 90 / 重构 70），程序化检查 + rubric 评分，除功能正确外还评工程质量；前沿闭源模型最强，开源模型差距明显。",
-  "measures": [],
-  "does_not_measure": [],
+  "summary": "Scale AI 出的编码代理评测套件：284 个从真实开源仓库抽出来的任务，分三件工程师天天在做的事——读懂代码库回答问题（124 题）、给没测住的代码补测试（90 题）、不改变行为地重构代码（70 题）。",
+  "interpretation": "高分说明模型能像资深工程师那样先把代码库探一遍、把程序跑起来做运行时验证，再按清单交付，而不是只求「功能跑通」；它同时看功能正确性与工程质量（测试完整性、可维护性、抽象是否可复用、代码卫生）。分数低通常不是不会写代码，而是漏掉细微边界、做不好复杂运行时分析、或不遵守工程规范。",
+  "measures": [
+    {
+      "area": "代码库问答（Codebase Q&A）",
+      "focus": "示例题：新人进入 grafana 仓库，要回答「告警评估已经落后、数据源又开始超时的情况下，一批告警规则变更会怎么被处理」——只读代码答不出来，得把服务跑起来观察",
+      "share": "124 / 284（论文原文数字）",
+      "format": "自然语言答案；程序化检查 + rubric 清单，由 LLM 裁判逐条判 YES/NO，全部必过",
+      "cite": [
+        "arxiv-2605-08366@Abstract",
+        "arxiv-2605-08366@§2",
+        "arxiv-2605-08366@§2.1.1"
+      ]
+    },
+    {
+      "area": "测试编写（Test Writing）",
+      "focus": "示例题：k6 压测工具的 sharedIterations 执行器需要更好的集成测试覆盖，代码本身能跑但缺用例——考的是对抗性心态（先想「怎么把它写崩」），而不是把现有检查跑绿",
+      "share": "90 / 284（论文原文数字）",
+      "format": "提交测试补丁 + 测试清单文件；变异测试（测试须在原实现上通过、把实现换掉后失败）+ rubric",
+      "cite": [
+        "arxiv-2605-08366@Abstract",
+        "arxiv-2605-08366@§2",
+        "arxiv-2605-08366@§2.1.2"
+      ]
+    },
+    {
+      "area": "重构（Refactoring）",
+      "focus": "示例题：expv2 云输出里的 insights 功能（请求元数据采集、flush、tracing 开关检查）与测试写死了，需要解开耦合；约 64% 的重构题另附一份重构后必须遵守的接口约定",
+      "share": "70 / 284（论文原文数字）",
+      "format": "提交重构补丁；行为保持检查（相关既有测试不得由过变失败、不得新增测试）+ rubric",
+      "cite": [
+        "arxiv-2605-08366@Abstract",
+        "arxiv-2605-08366@§2.1.3",
+        "arxiv-2605-08366@§2"
+      ]
+    }
+  ],
+  "does_not_measure": [
+    {
+      "text": "不测「照着 GitHub issue 修 bug」这类仓库级缺陷修复（那是 SWE-bench 的主场），也不测从零实现新功能",
+      "cite": [
+        "arxiv-2605-08366@§5",
+        "arxiv-2605-08366@§1"
+      ]
+    },
+    {
+      "text": "不测多轮交互：澄清需求、按评审意见迭代、人在回路里纠偏都不在范围内，全部任务都是单轮",
+      "cite": [
+        "arxiv-2605-08366@§2",
+        "leaderboard@Overview"
+      ]
+    },
+    {
+      "text": "不覆盖 DevOps、基础设施、网络、安全等工程领域，论文明确把这些留作未来工作",
+      "cite": [
+        "arxiv-2605-08366@附录 A"
+      ]
+    },
+    {
+      "text": "不构成生产部署认证：论文原话是「一批精选单轮工程任务上的信号」，不是安全关键、安全敏感或合规受限场景的投产凭证",
+      "cite": [
+        "arxiv-2605-08366@附录 A"
+      ]
+    }
+  ],
   "dataset": {
-    "sample_count": null,
-    "splits": [],
-    "languages": [],
-    "source_type": null,
-    "public_sample": null
+    "sample_count": 284,
+    "splits": [
+      "论文未给出训练/测试划分：284 题全部公开，作为同一套固定评测集",
+      "每条赛道各取 30 题的时序子集（论文附录 B 用它追踪 Claude Opus 4.1–4.7 家族 8 个月内的进步）"
+    ],
+    "languages": [
+      "Go",
+      "Python",
+      "JavaScript",
+      "TypeScript",
+      "C",
+      "C++"
+    ],
+    "source_type": "expert-authored（专家从活跃维护的开源仓库里撰写任务、参考解与评分清单）",
+    "public_sample": true,
+    "totals": "284 题 = 代码库问答 124 + 测试编写 90 + 重构 70；来自论文所述 18 个活跃开源仓库（官方榜单 v1.1 写作 15 个生产仓库，见局限）；覆盖 6 种语言；每题都配程序化检查与人工撰写的 rubric 清单",
+    "cite": [
+      "arxiv-2605-08366@Abstract",
+      "arxiv-2605-08366@§1",
+      "leaderboard@Overview"
+    ],
+    "construction": [
+      {
+        "k": "选题与出题",
+        "text": "由专家从 18 个活跃维护的开源仓库里撰写 284 道任务，三个赛道分别对应「回答代码库问题」「补上缺失的测试」「不改变行为地整理结构」三种被现有基准忽略的工作流。",
+        "cite": [
+          "arxiv-2605-08366@§1",
+          "arxiv-2605-08366@§2"
+        ]
+      },
+      {
+        "k": "环境固定",
+        "text": "每个任务一个 Docker 容器，镜像公开且按 digest 固定；仓库的 git 历史被删除并重新初始化，防止模型直接翻未来的提交。",
+        "cite": [
+          "arxiv-2605-08366@附录 D",
+          "repo@README"
+        ]
+      },
+      {
+        "k": "参考解与自检",
+        "text": "每题附参考解。官方提供两个自检配置：oracle 应用参考解后该题应得 reward 1.0，nop 什么都不做应得 0。",
+        "cite": [
+          "repo@README"
+        ]
+      },
+      {
+        "k": "评分清单与人工质检",
+        "text": "每题配专家撰写的 rubric 清单（代码库问答平均 10.5 条、测试编写 17.1 条、重构 17.4 条），独立质检团队复审，并由三位受信专家分别审计指令、验证 setup 与 rubric。",
+        "cite": [
+          "arxiv-2605-08366@§2.2"
+        ]
+      },
+      {
+        "k": "裁判与判分校准",
+        "text": "论文版（v1.0）的 rubric 判定用 claude-opus-4-5-2025110；1,306 条判定上三个裁判模型两两一致性高（Cohen's κ 与 macro-F1）。v1.1 换成 openai/gpt-6.1-sol，高推理档、3 票多数。",
+        "cite": [
+          "arxiv-2605-08366@附录 J",
+          "arxiv-2605-08366@附录 H",
+          "repo@README"
+        ]
+      },
+      {
+        "k": "污染筛查",
+        "text": "把每个通过的 agent 补丁与对应金标准补丁做相似度比对（重构与测试两条赛道最可能暴露记忆），未看到解决方案泄漏的迹象。",
+        "cite": [
+          "arxiv-2605-08366@§1",
+          "arxiv-2605-08366@附录 I"
+        ]
+      }
+    ]
   },
-  "metrics": [],
-  "default_protocol": null,
-  "versions": [],
-  "limitations": [],
-  "notes": "字节 Seed 引用；Scale AI 发布，含三个子赛道榜单",
+  "default_protocol": {
+    "raw": "单轮任务：提示词给出目标，具体方法留给 agent。每题跑 3 次，每次按 0/1 记 reward，3 次的平均即 pass@1（另报 pass3：同一题三次全过的任务占比）。除程序化检查外，rubric 由 LLM 裁判逐条判 YES/NO 并按权重聚合。",
+    "cite": [
+      "leaderboard@Overview",
+      "arxiv-2605-08366@§3",
+      "arxiv-2605-08366@Table 1",
+      "repo@README"
+    ],
+    "variants": [
+      {
+        "text": "版本口径：v1.0 与 v1.1 题量相同（都是 284 题）但换了裁判（claude-opus-4-5-2025110 → openai/gpt-6.1-sol，3 票多数）、收紧评分标准并禁网，官方明确两者不可直接比较。",
+        "cite": [
+          "repo@README",
+          "leaderboard@Update November 2026"
+        ]
+      },
+      {
+        "text": "harness 口径：论文把前沿模型跑在各家第一方 harness 上（OpenAI 用 Codex CLI、Anthropic 用 Claude Code、Google 用 Gemini CLI），同时用 mini-SWE-agent 这个只给 bash 的最小 harness 做对照；官方榜单配置同样锁定厂商 CLI 与推理档位。",
+        "cite": [
+          "arxiv-2605-08366@§3",
+          "repo@README"
+        ]
+      },
+      {
+        "text": "聚合口径：pass@1 与 pass3 差距很大——最好的配置从 pass@1 到 pass3 也掉 30–50 个百分点，附录 E 给出的落差是 2× 到 3×。",
+        "cite": [
+          "arxiv-2605-08366@§3",
+          "arxiv-2605-08366@附录 E"
+        ]
+      },
+      {
+        "text": "是否联网：v1.1 起禁网（claude-code 关掉 WebSearch/WebFetch，codex 关掉 web_search）；论文附录 I 建议后续版本都禁用互联网访问。",
+        "cite": [
+          "repo@README",
+          "arxiv-2605-08366@附录 I"
+        ]
+      },
+      {
+        "text": "尝试次数：官方运行配置固定每题 3 次尝试，取平均。",
+        "cite": [
+          "repo@README"
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "id": "pass1",
+      "name": "pass@1（单次尝试通过率）",
+      "direction": "越高越好",
+      "description": "每题 3 次尝试各得 0/1 的 reward，取平均；95% 置信区间（Wilson）在尝试层级计算",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2605-08366@Table 1",
+        "arxiv-2605-08366@§3"
+      ]
+    },
+    {
+      "id": "pass3",
+      "name": "pass3（三次全过比例）",
+      "direction": "越高越好",
+      "description": "同一题三次尝试全部通过的任务占比，衡量输出稳定性",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "arxiv-2605-08366@Table 1",
+        "arxiv-2605-08366@附录 E"
+      ]
+    },
+    {
+      "id": "reward",
+      "name": "reward（单题得分）",
+      "direction": "越高越好",
+      "description": "0 或 1，由程序化检查与 rubric 是否全过决定；超时按 agent 已完成的部分评分，拒答、空答案或裁判无法评分的提交记 0，基础设施出错的尝试不计入",
+      "range": [
+        0,
+        1
+      ],
+      "unit": "score",
+      "cite": [
+        "repo@README"
+      ]
+    }
+  ],
+  "versions": [
+    {
+      "id": "v1.0",
+      "date": "2026-05-08",
+      "label": "arXiv v1 发布：284 题，裁判 claude-opus-4-5-2025110；论文表 1 最高为 GPT 5.4（Codex CLI）43.49% ± 3.32",
+      "cite": [
+        "arxiv-2605-08366",
+        "arxiv-2605-08366@Table 1"
+      ]
+    },
+    {
+      "id": "v1.1",
+      "date": "2026-11",
+      "label": "v1.1：三条赛道合并为一个总榜，仍是同一批 284 题；换裁判 openai/gpt-6.1-sol（高推理、3 票多数）、收紧评分标准并禁网（官方只写到月份，未给具体日期）；榜单最高 Fable 5.2 80.50% ± 4.80",
+      "cite": [
+        "repo@README",
+        "leaderboard@Update November 2026",
+        "leaderboard@Performance Comparison"
+      ]
+    }
+  ],
+  "limitations": [
+    {
+      "issue": "v1.0 与 v1.1 分数不可比",
+      "impact": "换裁判、收紧评分标准并禁网之后，v1.0 的 43.49% 与 v1.1 的 80.50% 不是同一把尺子；直接相代会得出「模型暴涨约 37 个百分点」的错误结论",
+      "severity": "高",
+      "response": "官方在仓库 README 与榜单更新说明里都写明 v1.1 分数不能直接与 v1.0 比较",
+      "reader": "只看同一版本内的相对排名；引用任何分数都必须带上版本号与裁判",
+      "cite": [
+        "repo@README",
+        "leaderboard@Update November 2026"
+      ]
+    },
+    {
+      "issue": "工程质量部分依赖 LLM 当裁判",
+      "impact": "测试与重构两赛道里「测试写得好不好、重构得干不干净」由 LLM 按 rubric 逐条判 YES/NO，裁判的偏好、鲁棒性与波动会直接进入分数",
+      "severity": "高",
+      "response": "论文给出校准证据：1,306 条 rubric 判定上三个裁判模型两两一致性高；v1.1 进一步改成 3 票多数",
+      "reader": "把 rubric 分理解为「带裁判噪声的近似」；优先采信差距远大于裁判噪声的结论",
+      "cite": [
+        "arxiv-2605-08366@附录 A",
+        "arxiv-2605-08366@附录 H",
+        "repo@README"
+      ]
+    },
+    {
+      "issue": "「测试都跑过」会高估模型",
+      "impact": "如果只跑测试来评分，每个模型都能拿到 60-80% 的通过率；区分度主要来自变异杀死与 rubric，自建「只跑测试」的口径会把所有模型都抬得很高",
+      "severity": "中",
+      "response": "官方评分同时要求变异测试通过且 rubric 全过",
+      "reader": "用官方 pass@1，不要自建简化口径",
+      "cite": [
+        "arxiv-2605-08366@§4.1",
+        "arxiv-2605-08366@Figure 2"
+      ]
+    },
+    {
+      "issue": "任务类别与交互形态有限",
+      "impact": "只覆盖问答/测试/重构三类单轮任务；DevOps、基础设施、网络、安全不在其中，多轮澄清与迭代评审也未评测，分数不能外推到完整软件工程",
+      "severity": "中",
+      "response": "论文把这些明确列为未来工作",
+      "reader": "把它当作三类工作流的信号，不是通用工程能力总分",
+      "cite": [
+        "arxiv-2605-08366@附录 A",
+        "arxiv-2605-08366@§2"
+      ]
+    },
+    {
+      "issue": "公开题库可被针对性优化",
+      "impact": "任务、运行配置与裁判提示词全部开源，rubric 词表和仓库集合也是公开的，后续模型可能对这些用语或特定仓库过拟合",
+      "severity": "中",
+      "response": "论文呼吁社区与模型方把它当作 held-out 进步信号，而不是要最大化的评测集",
+      "reader": "对「明显冲着 SWE Atlas 调过」的分数保持警惕",
+      "cite": [
+        "arxiv-2605-08366@附录 A",
+        "arxiv-2605-08366@§1"
+      ]
+    },
+    {
+      "issue": "运行时证据缺失是主要失败模式",
+      "impact": "论文的失败归因显示，Claude 系模型 46% 的失败源于「没有运行时证据」；也就是说分数低 often 来自没把程序跑起来验证，而不是写不出代码",
+      "severity": "低",
+      "response": "题目设计上要求 agent 自行搭建并运行应用、追踪数据流",
+      "reader": "把低分读成「缺少运行时验证习惯」，而不是「编码能力缺失」",
+      "cite": [
+        "arxiv-2605-08366@§4.2.1",
+        "arxiv-2605-08366@§2.1.1"
+      ]
+    },
+    {
+      "issue": "裁判模型自己也上榜",
+      "impact": "v1.1 的裁判 openai/gpt-6.1-sol 同时作为被测模型排在第 8（65.90% ± 5.70）；官方未说明裁判偏向自身输出的风险如何控制",
+      "severity": "低",
+      "response": "未见官方回应",
+      "reader": "比较同一批分数时可以留意这一条，但不要据此推断存在偏袒",
+      "cite": [
+        "repo@README",
+        "leaderboard@Performance Comparison"
+      ]
+    },
+    {
+      "issue": "仓库数量两个口径不一致",
+      "impact": "论文写 18 个活跃维护的开源仓库，官方榜单 v1.1 的 Overview 写 15 个生产仓库；题量（284 题）两边一致，但「覆盖多少个仓库」对不上",
+      "severity": "低",
+      "response": "未见官方解释差异原因",
+      "reader": "引用仓库数时注明出处（论文 18 / 榜单 15）",
+      "cite": [
+        "arxiv-2605-08366@§1",
+        "leaderboard@Overview"
+      ]
+    }
+  ],
+  "notes": "Scale AI 出品；v1.1 起三条赛道合并为一个总榜；任务、运行配置与裁判提示词开源（Apache-2.0）",
   "official_sources": [
     {
       "kind": "paper",
       "url": "https://arxiv.org/abs/2605.08366"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/scaleapi/SWE-Atlas"
+    },
+    {
+      "kind": "leaderboard",
+      "url": "https://labs.scale.com/leaderboard/swe-atlas"
     },
     {
       "kind": "site",
@@ -34,8 +369,274 @@
     }
   ],
   "related_benchmarks": [
-    "swebench"
+    "swebench",
+    "swebench-pro",
+    "terminalbench"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-08-31"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-13",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-13",
+    "sources": [
+      {
+        "id": "arxiv-2605-08366",
+        "kind": "paper",
+        "title": "SWE Atlas: Benchmarking Coding Agents Beyond Issue Resolution（arXiv:2605.08366v1）",
+        "url": "https://arxiv.org/abs/2605.08366",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "scaleapi/SWE-Atlas（GitHub 仓库：任务、运行配置与裁判设置）",
+        "url": "https://github.com/scaleapi/SWE-Atlas",
+        "accessed": "2026-11-13"
+      },
+      {
+        "id": "leaderboard",
+        "kind": "leaderboard",
+        "title": "SWE Atlas 官方榜单（Scale AI labs）",
+        "url": "https://labs.scale.com/leaderboard/swe-atlas",
+        "accessed": "2026-11-13"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Scale AI",
+        "cite": [
+          "arxiv-2605-08366"
+        ]
+      },
+      "first_release": {
+        "v": "2026-05-08（arXiv v1；v1.1 于 2026 年 11 月上线）",
+        "cite": [
+          "arxiv-2605-08366",
+          "leaderboard@Update November 2026"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "arxiv-2605-08366@Abstract",
+        "arxiv-2605-08366@§1",
+        "repo@README"
+      ],
+      "interpretation": [
+        "arxiv-2605-08366@Abstract",
+        "arxiv-2605-08366@§4.1",
+        "arxiv-2605-08366@附录 A"
+      ]
+    },
+    "problem": {
+      "text": "此前的 SWE 基准几乎都在测同一件事：给一个 GitHub issue，看补丁能不能让测试通过。但工程师大量日常是另外三件事——读懂别人的代码库、给没测住的代码补测试、在不改变行为的前提下整理结构。这些工作需要的能力（探索代码、把程序跑起来验证、对抗性思维、守住行为不变）和修 bug 并不重合，论文用一组真实用户研究指出这些缺口在现有基准里没有被有效测量。",
+      "cite": [
+        "arxiv-2605-08366@§1",
+        "arxiv-2605-08366@§2",
+        "arxiv-2605-08366@§5"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "官方下限自检（nop，什么都不做）",
+        "value": "0",
+        "note": "官方提供的下限配置：一个不执行任何操作的 agent，每条赛道都应得 0",
+        "cite": [
+          "repo@README"
+        ]
+      },
+      {
+        "label": "官方上限自检（oracle，应用参考解）",
+        "value": "每题应得 1.0",
+        "note": "官方提供的上限配置：应用每题参考解后，该题应得 reward 1.0",
+        "cite": [
+          "repo@README"
+        ]
+      },
+      {
+        "label": "论文发布时最好（v1.0 口径）",
+        "value": "43.49% ± 3.32",
+        "note": "GPT 5.4（Codex CLI 原生 harness）；Opus 4.7（Claude Code）41.89% ± 3.31；同期最好的开源模型 GLM 5 明显落后",
+        "cite": [
+          "arxiv-2605-08366@Table 1",
+          "arxiv-2605-08366@§3"
+        ]
+      },
+      {
+        "label": "官方榜单当前最高（v1.1 口径）",
+        "value": "80.50% ± 4.80",
+        "note": "Fable 5.2；已换裁判并禁网，与 v1.0 不可比",
+        "cite": [
+          "leaderboard@Performance Comparison",
+          "leaderboard@Update November 2026"
+        ]
+      },
+      {
+        "label": "官方榜单当前最低（v1.1 口径）",
+        "value": "8.80% ± 3.20",
+        "note": "gpt-oss-120b；开源模型与闭源前沿之间仍有明显差距",
+        "cite": [
+          "leaderboard@Performance Comparison",
+          "arxiv-2605-08366@Abstract"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 v1.0 的 43.49% 和 v1.1 的 80.50% 当成同一把尺子下的进步。v1.1 换了裁判（GPT-6.1 Sol，3 票多数）、收紧评分标准并禁网，官方明确说两者不可直接比较。",
+        "cite": [
+          "repo@README",
+          "leaderboard@Update November 2026"
+        ]
+      },
+      {
+        "text": "「测试都跑过了」就等于「测试写得好」。只跑测试时每个模型都有 60-80% 的通过率，官方还要求变异杀死与 rubric 全过。",
+        "cite": [
+          "arxiv-2605-08366@§4.1",
+          "arxiv-2605-08366@Figure 2"
+        ]
+      },
+      {
+        "text": "284 题等于全部编码能力。它只覆盖问答/测试/重构三类单轮任务，不含 DevOps、安全与多轮协作，也不评生产部署安全性。",
+        "cite": [
+          "arxiv-2605-08366@附录 A"
+        ]
+      },
+      {
+        "text": "榜单高分可以直接投产。论文的定位是「一批精选单轮工程任务上的信号」，不是安全关键、安全敏感或合规受限场景的投产认证。",
+        "cite": [
+          "arxiv-2605-08366@附录 A"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "Scale AI（论文、官方榜单与代码仓库均由其发布）",
+        "cite": [
+          "arxiv-2605-08366",
+          "leaderboard@Overview"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "Mohit Raghavendra 等 15 人，署名机构为 Scale AI（含 Jay Bharadwaj、Andrew Park、Jeff Da、Mohammadhossein Rezaei、Bing Liu、Brad Kenstler、Yunzhong He）",
+        "cite": [
+          "arxiv-2605-08366"
+        ]
+      },
+      {
+        "k": "首次发布",
+        "v": "2026-05-08，arXiv:2605.08366v1（cs.LG）",
+        "cite": [
+          "arxiv-2605-08366"
+        ]
+      },
+      {
+        "k": "数据与代码位置",
+        "v": "GitHub scaleapi/SWE-Atlas（Apache-2.0）：data/qa、data/tw、data/rf 三个赛道各一个目录，configs/ 下是各模型与 oracle/nop 配置，入口为 ./run.sh",
+        "cite": [
+          "repo@README"
+        ]
+      },
+      {
+        "k": "运行环境",
+        "v": "每题一个 Docker 容器，镜像公开且按 digest 固定；git 历史被清掉并重新初始化，防止模型翻未来提交",
+        "cite": [
+          "arxiv-2605-08366@附录 D",
+          "repo@README"
+        ]
+      },
+      {
+        "k": "硬件与超时",
+        "v": "容器内 16 CPU / 16GB 内存，跑在 Modal sandbox 上，单题 6 小时超时",
+        "cite": [
+          "arxiv-2605-08366@附录 J"
+        ]
+      },
+      {
+        "k": "harness 差异",
+        "v": "论文里原生 scaffold 比 mini-SWE-agent 多调用约 1.5-2 倍的工具；前沿模型用各家第一方 CLI，开源模型多走 mini-SWE-agent",
+        "cite": [
+          "arxiv-2605-08366@附录 C",
+          "arxiv-2605-08366@§3"
+        ]
+      },
+      {
+        "k": "题目构成",
+        "v": "代码库问答子类：根因分析 37、代码上手 28、安全 11、API/库使用 4；重构子类：分解 29、接口演进 20、抽取 14、迁移 7；测试编写以集成测试为主（44 题）",
+        "cite": [
+          "arxiv-2605-08366@§2",
+          "arxiv-2605-08366@Figure 1a",
+          "arxiv-2605-08366@附录 F"
+        ]
+      },
+      {
+        "k": "语言与仓库分布",
+        "v": "论文按主语言统计任务数，并指出 C 与 C++ 任务明显难于主流语言；重构题的金标准补丁从 35 行到 2073 行不等",
+        "cite": [
+          "arxiv-2605-08366@Table 3",
+          "arxiv-2605-08366@§4.4"
+        ]
+      },
+      {
+        "k": "模型随时间进步",
+        "v": "在每条赛道 30 题的子集上追踪 Claude Opus 4.1–4.7 家族（约 8 个月窗口），三条赛道都随版本单调提升",
+        "cite": [
+          "arxiv-2605-08366@附录 B"
+        ]
+      },
+      {
+        "k": "成本参考",
+        "v": "论文附录（代码库问答 + 测试编写合计口径，每模型 642 次尝试）：Gemini 3 Flash 约 $0.35/题、约 15% 通过，GPT 5.3 Codex 约 $1.15/题、约 35%，GPT 5.4 约 $1.90/题、约 40%",
+        "cite": [
+          "arxiv-2605-08366@附录 G"
+        ]
+      },
+      {
+        "k": "第三方贡献",
+        "v": "v1.1 的 Codebase QnA 有若干 rubric 措辞来自 Artificial Analysis 的 SWE-Atlas-QnA-AA 数据集，Inductive ML 提供了 reward-hacking 反馈用于加固任务环境",
+        "cite": [
+          "leaderboard@Acknowledgements",
+          "repo@README"
+        ]
+      },
+      {
+        "k": "引用方式",
+        "v": "官方 BibTeX 条目标题为《SWE Atlas: Benchmarking Coding Agents Beyond Issue Resolution》，eprint 2605.08366，primary class cs.LG",
+        "cite": [
+          "repo@README",
+          "arxiv-2605-08366"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-13",
+        "columns": [
+          "排名",
+          "模型",
+          "得分",
+          "95% 置信区间",
+          "口径"
+        ],
+        "rows": [
+          ["1", "Fable 5.2", "80.50", "± 4.80", "v1.1 总榜"],
+          ["2", "Opus 5.5", "77.40", "± 5.00", "v1.1 总榜"],
+          ["3", "Fable 5.1", "76.40", "± 5.20", "v1.1 总榜"],
+          ["4", "Gemini 4 Carbon", "71.40", "± 5.50", "v1.1 总榜"],
+          ["5", "Gemini 4 Argon", "70.10", "± 5.50", "v1.1 总榜"],
+          ["8", "GPT-6.1 Sol", "65.90", "± 5.70", "v1.1 总榜（同时是 v1.1 裁判模型）"],
+          ["28", "gpt-oss-120b", "8.80", "± 3.20", "v1.1 总榜（榜末）"]
+        ]
+      },
+      "cite": [
+        "leaderboard@Performance Comparison"
+      ]
+    }
+  }
 }

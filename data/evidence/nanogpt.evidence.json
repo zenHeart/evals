@@ -1,0 +1,421 @@
+{
+ "id": "nanogpt",
+ "quotes": [
+  {
+   "cite": "repo",
+   "quote": "This repository hosts the *NanoGPT speedrun*, in which we (collaboratively|competitively) search for the fastest algorithm to use 8 NVIDIA H100 GPUs to train a language model that attains 3.28 cross-entropy loss"
+  },
+  {
+   "cite": "repo@纪录表",
+   "quote": "Train a neural network to ≤3.28 validation loss on FineWeb using 8x NVIDIA H100s."
+  },
+  {
+   "cite": "repo@纪录表",
+   "quote": "1 | 45 minutes | [llm.c baseline](https://github.com/karpathy/llm.c/discussions/481) | 05/28/24 | [log](records/track_1_short/2024-10-13_llmc/main.log) | @karpathy, llm.c contributors"
+  },
+  {
+   "cite": "repo@纪录表",
+   "quote": "2 | 31.4 minutes | [Tuned learning rate & rotary embeddings](https://x.com/kellerjordan0/status/1798863559243513937) | 06/06/24 | [log](records/track_1_short/2024-06-06_AdamW/f66d43d7-e449-4029-8adf-e8537bab49ea.log) | @kellerjordan0"
+  },
+  {
+   "cite": "repo@纪录表",
+   "quote": "3 | 24.9 minutes | [Introduced the Muon optimizer](https://x.com/kellerjordan0/status/1842300916864844014) | 10/04/24 | none | @kellerjordan0, @jxbz"
+  },
+  {
+   "cite": "repo@纪录表",
+   "quote": "21 | 2.933 minutes | [Reduced batch size](https://x.com/leloykun/status/1885640350368420160) | 01/26/25"
+  },
+  {
+   "cite": "repo@纪录表",
+   "quote": "21 | 2.997 minutes | 21st record with new timing | 02/01/25"
+  },
+  {
+   "cite": "repo@纪录表",
+   "quote": "21 | 3.014 minutes | 21st record with latest torch | 05/24/25"
+  },
+  {
+   "cite": "repo@纪录表",
+   "quote": "92 | 0.665 minutes | Sampled softmax over the early stages,  full FP8 MLP fwd+bwd, 84.6M-row hashed n-gram table, ANVIL optimizer stack, depth reduction + mixed-width QK attention, full CUDA-graph capture of the training step | 08/30/26"
+  },
+  {
+   "cite": "repo@开头",
+   "quote": "* Under 40 seconds on 8xH100 (the llm.c GPT-2 replication needed 45 minutes)"
+  },
+  {
+   "cite": "repo@开头",
+   "quote": "* under 330M tokens (the llm.c GPT-2 replication needed 10B)"
+  },
+  {
+   "cite": "repo@开头",
+   "quote": "where we try to minimize steps subject to fixed arch/data/bsz and with unlimited wallclock budget"
+  },
+  {
+   "cite": "repo@开头",
+   "quote": "GPT-2 replication in llm.c, which attains that loss after running for 45 minutes"
+  },
+  {
+   "cite": "repo@开头",
+   "quote": "* Hashed bigram + trigram embedding table (84.6M rows, 65B parameters) w/ sign trick, sharded across GPUs"
+  },
+  {
+   "cite": "repo@运行说明",
+   "quote": "Official records are timed on 8 NVIDIA H100 GPUs from https://app.primeintellect.ai/. PrimeIntellect has generously sponsored recent validation runs."
+  },
+  {
+   "cite": "repo@运行说明",
+   "quote": "**Note: torch.compile will add around 7 minutes of latency the first time you run the code.**"
+  },
+  {
+   "cite": "repo@规则",
+   "quote": "1. Not modify the train or validation data pipelines. (You can change the batch size, sequence length, attention structure etc.; just don't change the underlying streams of tokens.)"
+  },
+  {
+   "cite": "repo@规则",
+   "quote": "2. Attain ≤3.28 mean val loss. (Due to inter-run variance, submissions must provide enough run logs to attain a statistical significance level of p<0.01 that their mean val loss is ≤3.28."
+  },
+  {
+   "cite": "repo@规则",
+   "quote": "4. Run faster than the prior record when baselined on the same hardware."
+  },
+  {
+   "cite": "repo@规则",
+   "quote": "The current record is intentionally kept roughly 0.001-0.002 loss below 3.28 to make validation simpler."
+  },
+  {
+   "cite": "repo@目标指标说明",
+   "quote": "The target metric is *cross-entropy loss on the FineWeb val set*."
+  },
+  {
+   "cite": "repo@目标指标说明",
+   "quote": "we allow evaluation at any sequence length, so long as we still have a valid probability model of language"
+  },
+  {
+   "cite": "repo@计时变更",
+   "quote": "After the 21st record, we made two changes to the timing."
+  },
+  {
+   "cite": "repo@计时变更",
+   "quote": "there used to be an initial \"grace period\" of 10 untimed steps to allow kernel warmup. We replaced this with an explicit kernel-warmup section which is untimed and uses dummy data."
+  },
+  {
+   "cite": "repo@Track 2",
+   "quote": "The target loss for this track is lowered from 3.28 to 2.92, as per Andrej Karpathy's 350M-parameter llm.c baseline."
+  },
+  {
+   "cite": "repo@FAQ",
+   "quote": "A: Because it is a *competitive* benchmark."
+  },
+  {
+   "cite": "repo@FAQ",
+   "quote": "A: This is hard to refute, since \"at scale\" is an infinite category (what if the methods stop working only for >100T models?), making it impossible to fully prove."
+  },
+  {
+   "cite": "repo@FAQ",
+   "quote": "Also, I would agree that some of the methods used in the speedrun are unlikely to scale, particularly those which *impose additional structure* on the network, such as logit softcapping."
+  },
+  {
+   "cite": "repo@FAQ",
+   "quote": "Straightforwardly scaling up the speedrun (10/18/24 version) to 1.5B parameters yields a model with GPT-2 (1.5B)-level HellaSwag performance 2.5x more cheaply than"
+  },
+  {
+   "cite": "repo@Muon",
+   "quote": "For this training scenario, Muon has the following favorable properties:\n* Lower memory usage than Adam\n* ~1.5x better sample-efficiency\n* <2% wallclock overhead"
+  },
+  {
+   "cite": "repo@引用",
+   "quote": "modded-nanogpt: Speedrunning the NanoGPT baseline"
+  },
+  {
+   "cite": "repo@引用",
+   "quote": "author       = {Keller Jordan and Jeremy Bernstein and Brendan Rappazzo and"
+  },
+  {
+   "cite": "repo-meta",
+   "quote": "\"created_at\": \"2024-06-01T06:01:50Z\","
+  },
+  {
+   "cite": "repo-meta",
+   "quote": "\"description\": \"NanoGPT (124M) in 90 seconds\","
+  },
+  {
+   "cite": "repo-meta",
+   "quote": "\"stargazers_count\": 6030,"
+  },
+  {
+   "cite": "repo-meta",
+   "quote": "\"forks_count\": 927,"
+  },
+  {
+   "cite": "config",
+   "quote": "val_tokens: int = 10485760 # how many tokens of validation data? it's important to keep this fixed for consistent comparisons"
+  },
+  {
+   "cite": "config",
+   "quote": "val_files: str = os.path.join(data_path, \"data/fineweb10B/fineweb_val_*.bin\") # input .bin to eval validation loss on"
+  },
+  {
+   "cite": "config",
+   "quote": "train_files: str = os.path.join(data_path, \"data/fineweb10B/fineweb_train_*.bin\") # input .bin to train on"
+  },
+  {
+   "cite": "datascript",
+   "quote": "Download the GPT-2 tokens of Fineweb10B from huggingface."
+  },
+  {
+   "cite": "datascript",
+   "quote": "num_chunks = 103 # full fineweb10B. Each chunk is 100M tokens"
+  },
+  {
+   "cite": "datascript",
+   "quote": "get(\"fineweb_val_%06d.bin\" % 0)"
+  },
+  {
+   "cite": "fineweb",
+   "quote": "resulting in the largest publicly available clean LLM pretraining dataset, counting around 15 trillion tokens (gpt2 tokenizer)"
+  },
+  {
+   "cite": "fineweb10b",
+   "quote": "This repo contains the GPT-2 tokens for fineweb10B, just as would be generated by"
+  },
+  {
+   "cite": "llmc",
+   "quote": "reproducing this model on one 8X A100 80GB SXM node takes ~90 minutes"
+  },
+  {
+   "cite": "llmc",
+   "quote": "on Lambda this node goes for ~$14/hr, so the total cost of reproducing this model today is about $20"
+  },
+  {
+   "cite": "llmc",
+   "quote": "So here is the run, training the 12-layer, 12-headed, 768-dimension, 124M Transformer on 10 billion tokens of FineWeb:"
+  },
+  {
+   "cite": "llmc",
+   "quote": "By the end of the optimization we'll get to about 3.29, so it's as if we're guessing uniformly at random from exp(3.29) ~= 27 tokens at each time step."
+  },
+  {
+   "cite": "muon",
+   "quote": "switching from AdamW to Muon set a new NanoGPT training speed record on 10/15/24, where Muon improved the training speed by 35%"
+  },
+  {
+   "cite": "muon",
+   "quote": "Muon has persisted as the optimizer of choice through all 12 of the new NanoGPT speedrunning records since then, which have been set by 7 different researchers."
+  },
+  {
+   "cite": "muon",
+   "quote": "one finds that the most common culprit is bad baselines: Papers often don’t sufficiently tune their AdamW baseline before comparing it to a newly proposed optimizer."
+  },
+  {
+   "cite": "muon",
+   "quote": "First, the baseline in a competitive task is the prior record, which, if the task is popular, is likely to already be well-tuned."
+  },
+  {
+   "cite": "muon",
+   "quote": "For the current NanoGPT speedrunning record, the model dimension is $m=768$, and the number of tokens per batch is $B=524288$. Therefore, the overhead is $5*768/524288 = 0.7\\%$."
+  },
+  {
+   "cite": "track3",
+   "quote": "Because typically, these papers each use their own unique experimental setups, making it challenging to verify whether their baselines are well-tuned or to make comparisons between papers."
+  },
+  {
+   "cite": "track3",
+   "quote": "I typically do not reproduce new results myself before accepting. Therefore, there is a possibility of fake results being accepted, if there is a submitter"
+  },
+  {
+   "cite": "track3",
+   "quote": "the run(s) are required to pass a one-sided z-test assuming σ=0.0013 that achieves p<.001"
+  },
+  {
+   "cite": "track3",
+   "quote": "Per-run early-stopping based on val loss (or any other form of per-run decision based on val loss) is not allowed."
+  },
+  {
+   "cite": "track3",
+   "quote": "The baseline trains for 3550 * 524288 = ~2B tokens."
+  },
+  {
+   "cite": "primeintellect",
+   "quote": "we ran 153 autonomous runs on the nanoGPT optimizer speedrun across 18 frontier models, testing multiple seeds per model"
+  },
+  {
+   "cite": "primeintellect",
+   "quote": "runs lasting up to eight days, 8xH200s per run, and coverage of 18 models"
+  },
+  {
+   "cite": "primeintellect",
+   "quote": "The speedrun trains a 124M parameter GPT and counts how many steps it takes to reach validation loss 3.28."
+  },
+  {
+   "cite": "primeintellect",
+   "quote": "Our baseline is the leaderboard's tuned-baseline entry, accepted there at 3,250 steps; under our own verification bar it passes at 3,290, and that is the number the agents start from."
+  },
+  {
+   "cite": "primeintellect",
+   "quote": "The latest record claim sits in an open PR at 2,600 steps."
+  },
+  {
+   "cite": "primeintellect",
+   "quote": "A frozen `verify.py` accepts the claim if the eight-run mean beats 3.27859 instead of 3.28"
+  },
+  {
+   "cite": "primeintellect",
+   "quote": "Two runs of the same model and harness land about 54 steps apart at 24 \"agent-hours\", 43 apart at 100 experiments, and 40 apart at 300k output tokens."
+  },
+  {
+   "cite": "primeintellect",
+   "quote": "OpenAI reports using nanoGPT Track 1 with a single H100 for less than a day in the GPT-5.6 Sol system card."
+  },
+  {
+   "cite": "primeintellect",
+   "quote": "METR ran six agents on the wall-clock speedrun capped at five days and $10K each (GPU cost included) against a human cost baseline."
+  },
+  {
+   "cite": "primeintellect",
+   "quote": "Intology's NanoGPT-Bench gives agents about 2.7 days on one 8xH100 node with no internet, they find agents recover less than 10% of five months of human progress."
+  },
+  {
+   "cite": "primeintellect",
+   "quote": "None of the runs produced a fundamentally new method; the winning ingredients are all similar to existing ones in the literature."
+  },
+  {
+   "cite": "pi-leaderboard",
+   "quote": "We ran 153 autonomous runs across 18 frontier models on the nanoGPT optimizer speedrun."
+  },
+  {
+   "cite": "pi-leaderboard",
+   "quote": "All modelsBest validated result for each model"
+  },
+  {
+   "cite": "pi-leaderboard",
+   "quote": "Fable 5claude-code · highnote2,72681.7%"
+  },
+  {
+   "cite": "pi-leaderboard",
+   "quote": "ModelRecordHuman 2,600Baseline 3,290"
+  },
+  {
+   "cite": "repo@Track 2",
+   "quote": "2 | 29.3 minutes | [Initial record based on scaling up the GPT-2 small track speedrun](https://x.com/kellerjordan0/status/1881959719012847703) | 01/18/25"
+  },
+  {
+   "cite": "repo@纪录表",
+   "quote": "20 | 2.992 minutes | [Merged QKV weights, long-short attention, attention scale, lower Adam epsilon, batched Muon](https://x.com/leloykun/status/1880301753213809016) | 01/16/25"
+  },
+  {
+   "cite": "repo@计时变更",
+   "quote": "21 | 2.997 minutes | 21st record with new timing | 02/01/25"
+  },
+  {
+   "cite": "repo@开头",
+   "quote": "* Modernized architecture: Rotary embeddings, QK-Norm, and ReLU²"
+  },
+  {
+   "cite": "repo@开头",
+   "quote": "* Use FP8 for head, and asymmetric rescale and softcap logits"
+  },
+  {
+   "cite": "repo@开头",
+   "quote": "* FP8 for the MLP forward and backward passes and the QKV projections"
+  },
+  {
+   "cite": "repo@开头",
+   "quote": "* Flash Attention 3 with long-short sliding window attention pattern (inspired by Gemma 2) and window size warmup with YaRN"
+  },
+  {
+   "cite": "repo@开头",
+   "quote": "* Align training batch starts with EoS and set a max document length"
+  },
+  {
+   "cite": "repo@开头",
+   "quote": "* Skip connections from embedding to every block as well as from block 3 to 6"
+  },
+  {
+   "cite": "repo@开头",
+   "quote": "* Multi token prediction"
+  },
+  {
+   "cite": "repo@开头",
+   "quote": "* CUDA-graph capture of the training step, optimizer and FP8 weight refresh"
+  },
+  {
+   "cite": "repo@纪录表",
+   "quote": "23 | 2.979 minutes | [Overlap computation and gradient communication](https://x.com/kellerjordan0/status/1927460573098262616) | 05/25/25"
+  },
+  {
+   "cite": "repo@纪录表",
+   "quote": "24 | 2.966 minutes | Replace gradient all_reduce with reduce_scatter | 05/30/25"
+  },
+  {
+   "cite": "repo@纪录表",
+   "quote": "33 | 2.565 minutes | Asynchronously fetch and index data batches, extend final layer attention window for validation | 09/15/25"
+  },
+  {
+   "cite": "repo@运行说明",
+   "quote": "# downloads only the first 900M training tokens to save time"
+  },
+  {
+   "cite": "muon",
+   "quote": "Muon (MomentUm Orthogonalized by Newton-Schulz) optimizes 2D neural network parameters by taking the updates generated by SGD-momentum, and then applying a Newton-Schulz (NS) iteration as a post-processing step to each of them before applying them to the parameters."
+  },
+  {
+   "cite": "repo@Muon",
+   "quote": "Where NewtonSchulz5 is the following Newton-Schulz iteration [2, 3], which approximately replaces `G` with `U @ V.T` where `U, S, V = G.svd()`."
+  },
+  {
+   "cite": "repo",
+   "quote": "* To run experiments on fewer GPUs, simply modify `run.sh` to have a different `--nproc_per_node`. This should not change the behavior of the training."
+  },
+  {
+   "cite": "repo",
+   "quote": "* If you're running out of memory, you may need to reduce the sequence length for FlexAttention (which does change the training."
+  },
+  {
+   "cite": "fineweb",
+   "quote": "sample-10BT : a subset randomly sampled from the whole dataset of around 10B gpt2 tokens (27.6GB)"
+  },
+  {
+   "cite": "fineweb",
+   "quote": "License: Open Data Commons Attribution License (ODC-By) v1.0"
+  },
+  {
+   "cite": "llmc",
+   "quote": "Let's reproduce the GPT-2 (124M) in llm.c (~4,000 lines of C/CUDA) in 90 minutes for $20."
+  },
+  {
+   "cite": "muon",
+   "quote": "Improved the speed record for training to 3.28 val loss on FineWeb (a competitive task known as NanoGPT speedrunning) by a factor of 1.35x."
+  },
+  {
+   "cite": "track3",
+   "quote": "Unlike the main NanoGPT speedrun which seeks to minimize wallclock time by any means, here we aim to minimize step count by improving the optimization algorithm"
+  },
+  {
+   "cite": "track3",
+   "quote": "Muon with aux Adam, lr=.02 wd=.01"
+  },
+  {
+   "cite": "track3",
+   "quote": "Adam lr=0.0015 betas=(0.9, 0.95) warmup_steps=250 (note: this is most likely undertuned)"
+  },
+  {
+   "cite": "track3",
+   "quote": "Tuned baseline Muon + aux AdamW hyperparameters: Adam embed/proj/1D lr=.7/.004/.015 wd=0.001, Muon lr=.025 wd=.05"
+  },
+  {
+   "cite": "track3",
+   "quote": "Setup from #45, plus RowUpdateFloor per-output-row u/w-floor, and Cautious Weight Decay CWD=0.025"
+  },
+  {
+   "cite": "track3",
+   "quote": "The dataset, batch size, and architecture must be kept the same as the baseline."
+  },
+  {
+   "cite": "track3",
+   "quote": "The precise condition we require is (3.28 - avg_loss) * num_runs**0.5 >= 0.004"
+  },
+  {
+   "cite": "primeintellect",
+   "quote": "AUG 15TH, 2026 Elie Bakouch Prime Intellect"
+  }
+ ]
+}

@@ -10,45 +10,205 @@
     "reasoning",
     "chinese"
   ],
-  "summary": "小米出品的小学数学应用题评测：约 1.7k 题带精细标注，另设加入无关干扰信息的污染子集",
-  "interpretation": "中文小学数学应用题（含无关语境干扰子集）：Hunyuan-A13B base 表读 91.17——基准本身难度有限、头部趋近饱和，真正有区分度的是污染子集（干扰信息下的稳健性）。",
+  "summary": "小米 AI Lab 出品的中文小学数学应用题评测：1.7k 道题取自真实教辅与试卷，按年级等维度精细标注；另手工构造 60 例干扰子集，专测模型被无关信息带偏的程度。",
+  "interpretation": "CMATH 考的是中文小学 1–6 年级应用题的零样本求解能力，以及往题目里掺 1～5 条无关信息后还稳不稳。论文发布时（2023-06）只有 GPT-4 在全部六个年级达到 60% 以上准确率，ChatGPT 卡在五、六年级；干扰子集上除 GPT-4 外所有模型都随干扰条数增加大幅掉分。它是一道中文基础算术与应用题的下限门槛，不是竞赛级数学推理的能力证明。",
   "measures": [
-    "中文小学数学应用题求解",
-    "干扰信息下的稳健性（污染子集）"
+    {
+      "area": "小学 1–6 年级中文应用题求解",
+      "focus": "取自真实教辅与试卷的应用题，标注年级、答案、推理步数、数字位数；按年级分别报准确率",
+      "share": "主集 1689 题（Table 1；摘要口径 1.7k），其中首批开源 600 条作为 dev 集",
+      "format": "开放式问答：模型直接作答，脚本从回复中抽取数字与标准答案比对",
+      "cite": [
+        "arxiv-2306-16636@Abstract",
+        "arxiv-2306-16636@Table 1",
+        "repo-cmath@README"
+      ]
+    },
+    {
+      "area": "干扰信息下的稳健性",
+      "focus": "在原题中插入 1～5 条与主题相关但无用于解题的信息，看准确率是否随干扰条数崩塌",
+      "share": "60 例 × 6 题 = 360 题（每年级 10 例）",
+      "format": "同主集的开放式问答 + 数字匹配，按干扰条数分层报准确率",
+      "cite": [
+        "arxiv-2306-16636@§4.3 Robustness",
+        "repo-cmath@README"
+      ]
+    }
   ],
   "does_not_measure": [
-    "竞赛级数学推理",
-    "多步形式化证明"
+    {
+      "text": "竞赛级或高中/大学难度的数学推理——论文在相关工作里指出 AGI-Eval、C-Eval 等题库的题目从中等到大学难度、远难于 CMATH。",
+      "cite": [
+        "arxiv-2306-16636@§5 Related Work"
+      ]
+    },
+    {
+      "text": "解题过程与推理链——数据集只标注最终答案，不提供推理过程（定位为 test-only）。",
+      "cite": [
+        "arxiv-2306-16636@§2.3.2 Answer"
+      ]
+    }
   ],
   "dataset": {
-    "sample_count": null,
+    "sample_count": 1689,
     "splits": [
-      "dev",
-      "test",
-      "污染子集（加入无关语境）"
+      "cmath_dev：600 条（每年级 100 条，README 说明首次开源的样本可视为 dev 集）",
+      "test：README 说明剩余的样本（可视为 test 集）另行开源，未给出题量；本次核验时仓库 datasets/ 目录下只有 cmath_dev.jsonl 与 distractor.jsonl",
+      "distractor：60 例 × 6 题 = 360 题（每年级 10 例）"
     ],
     "languages": [
       "zh"
     ],
     "source_type": "curated school math word problems（开源）",
-    "public_sample": true
+    "public_sample": true,
+    "totals": "主集合计 1689 题，各年级分别为 254 / 353 / 337 / 220 / 227 / 298（Table 1；摘要口径为 1.7k）；另设 60 例干扰子集，每例 1 个原题加 5 个增广题。",
+    "cite": [
+      "arxiv-2306-16636@Table 1",
+      "repo-cmath@README",
+      "repo-tree@datasets"
+    ],
+    "construction": [
+      {
+        "k": "题目来源",
+        "text": "从网上免费公开的小学教辅与试卷里收集应用题；原始材料是 PDF 或 Word，随后（优先自动、否则由人工标注者）转成纯文本。",
+        "cite": [
+          "arxiv-2306-16636@§2.2 Data Collection"
+        ]
+      },
+      {
+        "k": "清洗与筛选",
+        "text": "只保留纯文本题，剔除原本带图形的题目；再过去重、清洗等标准预处理，并由作者本人做多轮人工校验。",
+        "cite": [
+          "arxiv-2306-16636@§2.2 Data Collection"
+        ]
+      },
+      {
+        "k": "标注字段",
+        "text": "每题标注年级、答案、推理步数、数字位数；答案是独立的整数、小数、分数或百分比；推理步数被作者用作推理复杂度的代理指标。",
+        "cite": [
+          "arxiv-2306-16636@§2.3 Data annotation",
+          "arxiv-2306-16636@§2.3.2 Answer",
+          "arxiv-2306-16636@§2.3.3 Number of Reasoning Steps"
+        ]
+      },
+      {
+        "k": "分批开源",
+        "text": "首批开源 600 条（每年级 100 条）作为 dev 集，README 说明剩余的样本（可以视为 test 集）将在年底开源；本次核验时仓库 datasets/ 目录只有 cmath_dev.jsonl 与 distractor.jsonl，未见 test 集文件。",
+        "cite": [
+          "repo-cmath@README",
+          "repo-tree@datasets"
+        ]
+      },
+      {
+        "k": "干扰子集",
+        "text": "手工构造 60 例（每年级 10 例），每例含 1 个原始题与 5 个插入 1～5 条无关信息的增广题；每条干扰信息必须恰好含一个数字、能自然嵌进原题表述。",
+        "cite": [
+          "arxiv-2306-16636@§4.3 Robustness"
+        ]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "全程零样本：把原题直接交给模型，不使用 few-shot 或思维链；官方用正则脚本从回复中抽取可能构成答案的数字，任一抽取数字与标准答案匹配即判对（自报 precision 96% / recall 98%）；eval.py 以 valid = sample_size - err 为分母计算 acc = hit / valid，即扣除标记为异常的回复。",
+    "cite": [
+      "arxiv-2306-16636@§3.2.1 Zero-shot Evaluation",
+      "arxiv-2306-16636@§3.2.2 Automated Evaluation",
+      "repo-eval@evaluate"
+    ],
+    "variants": [
+      {
+        "text": "主集按年级分别报准确率，论文用 ✓ / ✗ 逐年级标出每个模型是否达到 60% 门槛。",
+        "cite": [
+          "arxiv-2306-16636@§4.1 Main results",
+          "arxiv-2306-16636@Table 3"
+        ]
+      },
+      {
+        "text": "干扰子集按插入的无关信息条数（1～5）分别报准确率，观察曲线是否随干扰条数崩塌。",
+        "cite": [
+          "arxiv-2306-16636@§4.3 Robustness",
+          "arxiv-2306-16636@Figure 2"
+        ]
+      }
+    ]
   },
   "metrics": [
     {
       "id": "accuracy",
-      "name": "Accuracy",
-      "range": [0, 100],
+      "name": "准确率",
+      "direction": "越高越好",
+      "description": "抽取数字与标准答案匹配的题目占比；按年级、按干扰条数分层报告，分母为扣除异常回复后的有效样本数。",
+      "range": [
+        0,
+        100
+      ],
       "unit": "percent",
-      "direction": "higher",
-      "aggregation": "mean"
+      "aggregation": "mean",
+      "cite": [
+        "arxiv-2306-16636@§3.2.2 Automated Evaluation",
+        "repo-eval@evaluate",
+        "repo-utils@match_digits"
+      ]
     }
   ],
-  "versions": [],
-  "limitations": [
-    "难度上限低，头部趋近饱和"
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2023-06-29",
+      "label": "arXiv v1 首发论文与 CMATH 数据集（含 1.7k 主集与 60 例干扰子集）",
+      "cite": [
+        "arxiv-2306-16636@作者署名",
+        "repo-cmath@README"
+      ]
+    }
   ],
-  "default_protocol": null,
-  "notes": "Hunyuan-A13B base 模型表登记行 cmath",
+  "limitations": [
+    {
+      "issue": "难度上限低，与更难的数学基准不重叠",
+      "impact": "论文在相关工作里指出 AGI-Eval、C-Eval 等题库的题目从中等到大学难度、远难于 CMATH；在 LLM 能力普遍提升后更难分辨进展，CMATH 高分不能外推到竞赛级或高等数学。",
+      "severity": "高",
+      "response": "把它当作中文基础应用题与抗干扰的下限门槛，与 MATH、C-Eval 等更难的基准配合读；论文未提出后续修订版本。",
+      "reader": "不要用 CMATH 分数推断模型的高等数学或竞赛能力。",
+      "cite": [
+        "arxiv-2306-16636@§5 Related Work"
+      ]
+    },
+    {
+      "issue": "只有零样本口径，没有思维链参照",
+      "impact": "论文全程只采用零样本评测、刻意不使用 few-shot 或思维链，其分数与主流带 CoT 的报分不可直接并列。",
+      "severity": "中",
+      "response": "跨基准比较前先确认口径是否同为零样本、是否启用思维链；论文未提供 CoT 版本的结果。",
+      "reader": "CMATH 分数是「裸模型」成绩，不是加了思维链之后的成绩。",
+      "cite": [
+        "arxiv-2306-16636@§3.2.1 Zero-shot Evaluation"
+      ]
+    },
+    {
+      "issue": "答案匹配靠启发式正则，存在系统误差",
+      "impact": "官方在 200 题人工核验样本上自报 precision 96% / recall 98%，少量回答会被误判；utils.py 只取回复末尾两个数字候选，并把相对误差小于 1e-2 视为匹配。",
+      "severity": "中",
+      "response": "复现请使用官方仓库的 eval.py 与 utils.py；解读时对 2 个百分点左右的名次差异保留余地。",
+      "reader": "看到 CMATH 分数时确认它来自官方评测脚本，而不是自写的匹配逻辑。",
+      "cite": [
+        "arxiv-2306-16636@§3.2.2 Automated Evaluation",
+        "repo-utils@extract_digits_prediction",
+        "repo-utils@match_digits"
+      ]
+    },
+    {
+      "issue": "无官方维护的榜单，最新成绩缺一手来源",
+      "impact": "仓库只提供数据集与评测脚本，论文结果截至 2023 年 6 月初的 API 调用；未见官方 leaderboard，本档案不收录未经一手来源确认的现代 SOTA 数字。",
+      "severity": "中",
+      "response": "页面上的「当前最高」一律取自本站证据账本，不手写；需要最新 SOTA 时另找可核验的一手发布。",
+      "reader": "不要把页面上的当前最高分理解成官方榜单成绩。",
+      "cite": [
+        "repo-cmath@README",
+        "repo-tree@datasets",
+        "arxiv-2306-16636@§4.1 Main results"
+      ]
+    }
+  ],
+  "notes": "Hunyuan-A13B base 模型表登记行 cmath；本页按 benchmark-profile/v2 建档，主集题量 1689 由论文 Table 1 各年级数相加得出（摘要写 1.7k）。",
   "official_sources": [
     {
       "kind": "paper",
@@ -64,6 +224,238 @@
     "mgsm",
     "math500"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-09-01"
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-24",
+  "profile": {
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-24",
+    "sources": [
+      {
+        "id": "arxiv-2306-16636",
+        "kind": "paper",
+        "title": "CMATH: Can Your Language Model Pass Chinese Elementary School Math Test?（arXiv:2306.16636v1，2023-06-29）",
+        "url": "https://arxiv.org/abs/2306.16636",
+        "accessed": "2026-11-24"
+      },
+      {
+        "id": "repo-cmath",
+        "kind": "repo",
+        "title": "XiaoMi/cmath — 官方仓库 README（数据集说明、分批开源节奏与许可）",
+        "url": "https://github.com/XiaoMi/cmath",
+        "accessed": "2026-11-24"
+      },
+      {
+        "id": "repo-eval",
+        "kind": "repo",
+        "title": "XiaoMi/cmath — eval.py（官方评测脚本，准确率计算）",
+        "url": "https://raw.githubusercontent.com/XiaoMi/cmath/main/eval.py",
+        "accessed": "2026-11-24"
+      },
+      {
+        "id": "repo-utils",
+        "kind": "repo",
+        "title": "XiaoMi/cmath — utils.py（数字抽取、异常检测与近似匹配）",
+        "url": "https://raw.githubusercontent.com/XiaoMi/cmath/main/utils.py",
+        "accessed": "2026-11-24"
+      },
+      {
+        "id": "repo-tree",
+        "kind": "repo",
+        "title": "XiaoMi/cmath — GitHub API 文件树（仓库实际发布的文件清单）",
+        "url": "https://api.github.com/repos/XiaoMi/cmath/git/trees/main?recursive=1",
+        "accessed": "2026-11-24"
+      }
+    ],
+    "header": {
+      "publisher": {
+        "v": "Xiaomi AI Lab（小米人工智能实验室）",
+        "cite": [
+          "arxiv-2306-16636@作者署名"
+        ]
+      },
+      "first_release": {
+        "v": "2023-06-29（arXiv:2306.16636v1）",
+        "cite": [
+          "arxiv-2306-16636@作者署名"
+        ]
+      }
+    },
+    "cites": {
+      "summary": [
+        "arxiv-2306-16636@Abstract",
+        "repo-cmath@README"
+      ],
+      "interpretation": [
+        "arxiv-2306-16636@Abstract",
+        "arxiv-2306-16636@§4.1 Main results",
+        "arxiv-2306-16636@§4.3 Robustness"
+      ]
+    },
+    "problem": {
+      "text": "论文想回答一个外行也能读懂的问题：流行大模型的数学能力到底对应小学几年级？并把结果表述成「ChatGPT 在四年级数学考试里考了 70/100」这种直观形式，而不是 GSM8K 上那个 35.7 的抽象分数。",
+      "cite": [
+        "arxiv-2306-16636@§2.1 Motivation",
+        "arxiv-2306-16636@§1"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "随机/人类基线",
+        "value": "论文未给出",
+        "note": "论文只对比 LLM，未报告人类或随机基线；本站也不推算。",
+        "cite": [
+          "arxiv-2306-16636@§4.1 Main results"
+        ]
+      },
+      {
+        "label": "论文发布时最好（2023-06）",
+        "value": "GPT-4：唯一在全部六个年级达到 60% 以上准确率",
+        "note": "ChatGPT 在 1–4 年级达标、5 与 6 年级失手；论文用 ✓ / ✗ 逐年级标注。",
+        "cite": [
+          "arxiv-2306-16636@§4.1 Main results",
+          "arxiv-2306-16636@Table 3"
+        ]
+      },
+      {
+        "label": "抗干扰参考线",
+        "value": "除 GPT-4 外全部模型随干扰条数增加大幅掉分",
+        "note": "ChatGPT 仅加 2 条干扰信息就掉约 30%；GPT-4 只有轻微退化。",
+        "cite": [
+          "arxiv-2306-16636@§4.3 Robustness"
+        ]
+      },
+      {
+        "label": "官网/官方榜单最高",
+        "value": "未披露（仓库未维护 leaderboard）",
+        "note": "官方仓库只提供数据集与评测脚本，论文结果截至 2023 年 6 月初。",
+        "cite": [
+          "repo-cmath@README",
+          "repo-tree@datasets",
+          "arxiv-2306-16636@§4.1 Main results"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "「CMATH 一共 600 条」和「1.7k 与 1689 矛盾」都是误读：摘要写 1.7k，Table 1 六个年级题量相加正好 1689；首批开源 600 条作 dev 集，README 说明剩余样本作为 test 集另行开源，干扰子集另计 60 例。",
+        "cite": [
+          "arxiv-2306-16636@Table 1",
+          "repo-cmath@README",
+          "repo-tree@datasets"
+        ]
+      },
+      {
+        "text": "「加了干扰信息的题」不是「被污染的题」：干扰信息与题目主题相关但无用于解题，每条恰好含一个数字，用来测稳健性；例如 There are 3 kittens in the house 算 1 条，而 including 10 carp and 5 belt fish 算 2 条。",
+        "cite": [
+          "arxiv-2306-16636@Table 4 注",
+          "arxiv-2306-16636@§4.3 Robustness"
+        ]
+      },
+      {
+        "text": "零样本口径下的 CMATH 分数不能和带思维链的成绩并列比较——论文全程只采用零样本评测，刻意不用 few-shot 或 CoT。",
+        "cite": [
+          "arxiv-2306-16636@§3.2.1 Zero-shot Evaluation"
+        ]
+      },
+      {
+        "text": "官方准确率的分母不是全部题目：eval.py 用 valid = sample_size - err，扣掉了标记为异常的回复。",
+        "cite": [
+          "repo-eval@evaluate"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "Xiaomi AI Lab（小米人工智能实验室）",
+        "cite": [
+          "arxiv-2306-16636@作者署名"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "Tianwen Wei、Jian Luan、Wei Liu、Shuang Dong、Bin Wang",
+        "cite": [
+          "arxiv-2306-16636@作者署名"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2023-06-29 arXiv v1 首发论文与数据集；仓库分批开源 dev / test 集，论文此后未持续更新结果",
+        "cite": [
+          "arxiv-2306-16636@作者署名",
+          "repo-cmath@README"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "数据集与评测代码在 GitHub（XiaoMi/cmath）：eval.py 负责准确率统计，utils.py 负责数字抽取、异常检测与近似匹配（相对误差小于 1e-2 视为匹配，且只取回复末尾两个数字候选）",
+        "cite": [
+          "repo-eval@evaluate",
+          "repo-utils@extract_digits_prediction",
+          "repo-utils@extract_digits_from_line",
+          "repo-utils@match_digits",
+          "repo-utils@string2num",
+          "repo-utils@has_exception"
+        ]
+      },
+      {
+        "k": "许可",
+        "v": "代码 MIT license，数据集 CC BY 4.0",
+        "cite": [
+          "repo-cmath@README"
+        ]
+      },
+      {
+        "k": "论文中评测的模型范围",
+        "v": "论文在 Table 3 中给出 10 个模型的逐年级达标情况：GPT-4、ChatGPT、Chinese-Alpaca-33B、Chinese-Alpaca-13B、MOSS-16B、Ziya-LLaMA-13B、RWKV-7B、Baichuan-7B、ChatGLM-6B、ChatGLM2-6B；其中 API 类结果取自 2023 年 6 月初",
+        "cite": [
+          "arxiv-2306-16636@Table 3",
+          "arxiv-2306-16636@§4.1 Main results"
+        ]
+      },
+      {
+        "k": "仓库实际发布的文件",
+        "v": "datasets/ 目录只有 cmath_dev.jsonl（117774 字节）与 distractor.jsonl（140424 字节），另含 eval.py、utils.py 与两份许可文件；README 提到的 test 集未在仓库中出现",
+        "cite": [
+          "repo-tree@datasets",
+          "repo-cmath@README"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2023-06-29",
+        "columns": [
+          "模型",
+          "G1",
+          "G2",
+          "G3",
+          "G4",
+          "G5",
+          "G6"
+        ],
+        "rows": [
+          ["GPT-4", "✓", "✓", "✓", "✓", "✓", "✓"],
+          ["ChatGPT", "✓", "✓", "✓", "✓", "✗", "✗"],
+          ["Chinese-Alpaca-33B", "✗", "✗", "✗", "✗", "✗", "✗"],
+          ["Chinese-Alpaca-13B", "✗", "✗", "✗", "✗", "✗", "✗"],
+          ["MOSS-16B", "✗", "✗", "✗", "✗", "✗", "✗"],
+          ["Ziya-LLaMA-13B", "✓", "✓", "✗", "✗", "✗", "✗"],
+          ["RWKV-7B", "✗", "✗", "✗", "✗", "✗", "✗"],
+          ["Baichuan-7B", "✗", "✗", "✗", "✗", "✗", "✗"],
+          ["ChatGLM-6B", "✗", "✗", "✗", "✗", "✗", "✗"],
+          ["ChatGLM2-6B", "✓", "✓", "✗", "✗", "✗", "✗"]
+        ]
+      },
+      "cite": [
+        "arxiv-2306-16636@Table 3",
+        "arxiv-2306-16636@§4.1 Main results"
+      ]
+    }
+  }
 }
