@@ -5258,3 +5258,87 @@ Microsoft Ignite 2026 总发布页一次公布七项模型。逐项对账 `micro
 - **新增厂商**：无（仍为 18 家）
 - **候选数**：706 → **731**（入口扫描 +23，另主动登记 2 条合成候选）；`need_reverify = 1` 为 0；未决候选 0
 - **检查点**：`last_scan_at=2026-11-24`；`last_max_release_date=2026-11-20`
+
+## 第八十批（2026-11-27 CST / 2026-11-27 UTC 增量窗口 2026-11-10 ~ 2026-11-27：新增 2 个官方发布 — 腾讯混元 Refrain（28 条 evidence）+ Google Antigravity Mass Spec Skills（30 条 evidence））
+
+- **窗口**：增量窗口 2026-11-10 ~ 2026-11-27（开工时检查点锚点 `last_max_release_date=2026-11-24` 回退 14 天重叠）。收口时检查点回写 `last_scan_at=2026-11-27`（UTC），`last_max_release_date` 由 2026-11-24 **推进到 2026-11-25**（本批入库的最大官方发布日 = Mass Spec Skills 的发布日；锚点只前进不回退），覆盖页窗口随之由 2026-11-10 前移到 **2026-11-11**。官方 release 总数 263 → **265**；official evidence edges 5020 → **5078**（+58 = Refrain 28 + Mass Spec 30）；benchmarks 515 → **515**（新建实体 0 个）。
+- **开工前收口（情况 B）**：开工时 `gh pr list --state open` 为空，无待合并的上一批 PR；本地分支 `model-release-daily-20261126T010051Z` 的提交 `e7a20ad`（第七十九批）**不是** `origin/main` 的祖先，但 `origin/main` 上存在其 squash 版 `92a20f1 feat(releases): 增量入库第七十九批…` → 判定为**上一批已收口**，本批**未重跑第七十九批、未改动其任何产物**，直接从更新后的 `origin/main` 开本轮新分支 `model-release-daily-20261127T010035Z`。
+- **入口复扫（Step 1）**：`node .claude/skills/ingest-releases/scripts/scan.mjs --write` 对 18 家在册厂商的官方域名入口逐一实扫并刷新 `data/model-coverage.json`（757 候选）；另按 `references/discovery-channels.md` 的渠道表**逐通道定点复核**：OpenAI news RSS（1,430 条，窗口内 57 条逐条判读）、DeepMind RSS（100 条）、blog.google 根 RSS + AI RSS、Mistral RSS（94 条）、腾讯混元官方接口 `publicList`、豆包 sitemap（带 lastmod）、Microsoft `new-sitemap.xml` 与 `model-sitemap.xml`、MiniMax 平台 release notes、DeepSeek `/updates`、Anthropic 平台模型总表（`releasedOn` 逐条抽取）、xAI docs 模型总表、Meta 研究博客、Kimi 博客与 Code 文档、Qwen / StepFun / 小米 / GLM / Thinking Machines / Particle 官方页，以及 Hugging Face 9 个官方组织仓 API。
+- **窗口结论：2 组未建档的新官方发布**（均为官方一级来源）：① 腾讯混元开源 **Refrain**（多镜头一致视频生成模型，GitHub `Tencent-Hunyuan/Refrain` + arXiv:2611.27806，2026-11-20）；② Google DeepMind **Mass Spec Skills for Antigravity**（Antigravity 质谱解读技能发布，deepmind.google，页面印刷日 November 25, 2026）。
+
+### 本批建档情况
+
+| 项目 | 数量 | 说明 |
+|---|---|---|
+| 新建 release 文件 | **2** | `tencent/refrain.json`、`google/mass-spec-skills.json` |
+| 新增 evidence 行 | **58** | **40 verified + 18 pending**（Refrain 28 条全 verified；Mass Spec 12 verified + 18 pending） |
+| 新建归档目录 | **2** | `models/2026-11-20-refrain/`（官方仓 README 原文 + 4 张原图 + 全量转录表 + 哈希清单）、`models/2026-11-25-mass-spec-skills/`（官方文章页全文 + Figure 5a/5b 官方 SVG 原图 + 逐句转录 + 哈希清单） |
+| 新建 benchmark 实体 | **0** | 实体数 515 不变；4 个新铸 id 全部走兜底页（`data/generated/auto-benchmark-ids.json` 380 → **384**） |
+| 新铸 benchmark id | **4** | `refrain-benchmark`、`sdc-validation`、`mass-spec-exact-match` 三条已在 `data/compare-rules.json` 的 `unmapped_ids` 逐条写明「为何不进对照」（316 → **319**）；`mass-spec-token-cost` 的 12 条证据行**全为相对口径、无官方数值**（value 均为 null / not_extracted），不需要计分决定；`tests/compare-audit.test.mjs` 的 **undecided / stranded / orphans 三项均为 0** |
+| 候选处置 | 1 条 | 今日扫描新发现 `kimi-54a23169b27b`（Kimi Code CLI 的多 Agent 集成指南 / Kimi Agent Protocol 文档页）→ 判定**非模型发布**并补 `exclusion_reason`；reconcile 另自动补 2 条合成候选 `release-refrain` / `release-mass-spec-skills`，**未决候选 = 0** |
+
+#### 逐条发布与取数口径
+
+- **Refrain**（发布日证据：官方仓第 3 次提交「Release Refrain code, benchmark tooling and SDC evaluation」= **2026-11-20T11:23:30Z**；官方技术报告 arXiv:2611.27806 `published` = **2026-11-20T16:33:43Z**；仓库 `created_at` = 2026-11-13T03:55:17Z 仅建仓 → 取 **2026-11-20**，day）
+  - 28 条 evidence **全部 verified**，取自官方仓 README 的 **Markdown 真表逐格机读**（非位图读图、非 OCR）：Refrain Benchmark 24 条（SDC / 镜头时长 MAE / 跨镜头语义一致性等列 × 独立 / 共享 / 消融配置）+ SDC 指标自身验证 4 条。
+  - 口径要点：① 同一模型的多种消融配置按 `model_variant` **分行记录、不合并**，跨模型比较须对齐同一配置；② 竞品列（HunyuanVideo1.5 / Phantom / RefAlign / StoryMem / VACE / CLIP / ViCLIP / DINO）按口径只写进各行 notes，未拆成独立行；③ 官方表中 StoryMem 在 Inter-shot Scene 一列最优（0.531 vs Refrain 0.491）照录不掩饰；④ FLOPs / Params 两列是算力不是质量分，不建 evidence 行，只入归档转录表与 notes；⑤ 官方同时提出 **SDC（Shot-Debiased Consistency）** 指标，SDC 自身的检出率与人工研究 AUC 同模型生成分质**不可混读**，故拆成两个 benchmark id。
+  - **权重状态**：官方 DiT（8.49B，45k 步最终模型）、3D VAE 与初始化 DiT 三项权重均 **Not released**（官方 `docs/CHECKPOINTS.md` 明写），已写进 models[] / notes / manifest；官方仓未标许可证（GitHub API `license` 字段为空），照录不臆断。
+- **Mass Spec Skills for Antigravity**（发布日证据：官方页 JSON-LD `datePublished` = **2026-11-25T17:00:00+00:00** + 页面印刷日「November 25, 2026」；DeepMind RSS 同条 `pubDate` 为 Tue, 24 Nov 2026 13:07:53 +0000，与页面不同源 → 按页面口径取 **2026-11-25**）
+  - 本条**不是新模型发布**，而是 Antigravity 的**质谱解读技能发布**（类比先例 `google/gemini-decision-1`、`google/mka-benchmark`）；models[] 里的 Gemini 3.8 Flash / Gemini 4 Argon / Gemini 4 Carbon **均为此前已建档的既有模型**，本条只承载它们在本评测上的新证据，不新造模型条目。
+  - 30 条 evidence = **12 verified（正文明文）+ 18 pending（官方图表）**。评测协议官方明示：从 MoNA 收录的 Enamine REAL MS/MS collection 采样 **100 个化合物**（结构同时收录于 PubChem，剔除碎片不足的记录）；三种设置对照（无互联网无技能 / 仅用户许可的互联网访问 / 同样的互联网访问 + Mass Spec Skills）；每条谱图 **3 次尝试**；超 **1 小时**墙钟预算按 **0% 失败**计；剔除瞬时基础设施与配额错误；报 **mean + 95% 置信区间**；判分为 **exact match**。
+  - 口径要点：① 正文三组结论均为**跨三模型的合并口径**（below 4% / miss a quarter to a third / around 97%），按「一个 benchmark 行 = 一条 evidence，取自家模型列」落成每模型一行并在 notes 标明合并口径；② 「around 97%」按仓库既有 **about 约数惯例**记 value=97、display 保留原文措辞；③ 「below 4%」是上界、「miss a quarter to a third」是区间，一律 value=null + `score_status: not_extracted` + display 保留原文措辞；④ 漏检率与准确率互补，但官方两处都是约数/区间，**不互相折算**；⑤ token 成本三条原文措辞量纲不统一（Flash「降到近四分之一」、Argon「减半」、Carbon「削掉近五分之一」），不折算成单一数值。
+  - **图表纪律**：Figure 5a / 5b 的官方图片是 **SVG 且全部文字已转为 path 路径**（`<text>` 0 个、无 `aria-label`、无 title/desc），**数值不可机读**；按「图片/图表行必须 pending」的抽取口径，18 条图行一律 pending + value=null + not_extracted，人工读柱高的结果只写进 notes 供复核，**不自动翻 verified**。归档 SVG 渲染后人工读图与正文口径交叉自洽（Flash 约 1% / 24% / 97%、Argon 约 1% / 67% / 97%、Carbon 约 4% / 74% / 97%；token 相对基线 Flash 约 2.7× / 2.3× / 0.63×、Argon 约 2.6× / 1.0× / 0.50×、Carbon 约 4.2× / 1.55× / 1.25×）。
+  - **未建行项**：合作方引语「>90% in most of our evaluations」（Dr Xi Xing，Princeton University）、行业基线「spectral searches annotate on average only about 5% of measured spectra」、单例工作流参数（845 个同分异构体、97.7% summed fragment intensity、m/z 162.1037 / 232.0283）、10,000 名科学家免费 6 个月——均非模型评测分。
+
+### 跳过清单
+
+- **OpenAI**：窗口内 57 条 RSS 条目逐条判读，**无一为独立模型发布**；其中 IndQA 一文的页面印刷日期为 **November 3, 2025**（窗口外，且是基准介绍而非模型发布），其余为研究 / 观点 / 产品 / 合作公告；已建档项不重复入账。
+- **Microsoft**：`frontier-pre-training-at-microsoft-ai`（MAI Base 2）真实发布日为 **2026-10-15**（早于窗口起点，已建档）；`Aion-1.0-Instruct-2.3B` 已建档为 `aion-1-0-instruct`；sitemap 的 `lastmod` 是改版戳，真实发布日一律取文章页 JSON-LD `datePublished`。
+- **Google / DeepMind**：除 Mass Spec Skills 外，窗口内其余为量子算法研究文章（2026-11-23）等研究内容，非模型发布；Genie 4、Gemini 4 Neon / Hydrogen / Carbon、AlphaGenome 2 等已建档不重复。
+- **腾讯混元**：除 Refrain 外，`WePocketModel1.0-*-MLX`（量化分发仓）、`Hy4-base` / `Hy4-FP8`（已建档）、`TiMiHOKGameTranslator`（工具链）、`Tencent-Hunyuan/MovieRoll`（研究仓，第七十九批已归为非独立模型发布）均非本轮新发布。
+- **Thinking Machines**：`training-a-scalable-forecasting-agent`（2026-11-24）为客座研究文章，非模型发布且无绝对分；`Inkling-2-Mini`、`TML-d24-varloop-research` 已建档。
+- **豆包 / ByteDance**：`seedrealtime` 音视频全双工的**真实页面日期为 2026-08-05**（已建档），sitemap `lastmod=2026-11-26` 是改版戳，不作新发布。
+- **Qwen**：`Qwen-Live-*`、`FlashQLA` 属工具与内核库，非模型发布。
+- **xAI**：docs 模型总表窗口内无新模型发布。
+- **其余厂商**（Mistral / Meta / Anthropic / DeepSeek / MiniMax / Kimi / StepFun / 小米 / GLM / Particle）：官方渠道与 Hugging Face 组织 API 巡检后**窗口内无未建档的新模型发布**。
+
+### 待人工核验
+
+本批 **18 条 pending 行全部是官方图表（Figure 5a / 5b）行**，值一律 null + `not_extracted`，人工读柱高的结果写在 notes 里供复核：
+
+| release | benchmark | 模型 | 无技能 / 仅互联网 / 加技能 |
+|---|---|---|---|
+| mass-spec-skills | mass-spec-exact-match | Gemini 3.8 Flash | 约 1% / 约 24% / 约 97% |
+| mass-spec-skills | mass-spec-exact-match | Gemini 4 Argon | 约 1% / 约 67% / 约 97% |
+| mass-spec-skills | mass-spec-exact-match | Gemini 4 Carbon | 约 4% / 约 74% / 约 97% |
+| mass-spec-skills | mass-spec-token-cost | Gemini 3.8 Flash | 约 2.7× / 约 2.3× / 约 0.63× |
+| mass-spec-skills | mass-spec-token-cost | Gemini 4 Argon | 约 2.6× / 1.0×（基线） / 约 0.50× |
+| mass-spec-skills | mass-spec-token-cost | Gemini 4 Carbon | 约 4.2× / 约 1.55× / 约 1.25× |
+
+需要人工补的**非数值**缺口（不影响 evidence 状态）：
+
+1. **4 个新铸 benchmark id 的实体档案**——待官方公开题集与判分口径后补建；`data/benchmark-profile-backlog.json` 的棘轮机制要求新建实体必须带合规 profile，写不出有来源的档案就先让兜底页顶着。
+2. **Refrain 的可下载权重**——官方 DiT / 3D VAE / 初始化 DiT 权重仍为 Not released，等官方放出后才能复现。
+3. **Mass Spec Skills 的评测细节**——官方未披露 prompt、推理档位、temperature / top_p 与判分实现，也未公开 100 个化合物的采样与过滤细则。
+
+### 门禁
+
+| 门禁 | 结果 |
+|---|---|
+| `node scripts/reconcile-coverage.mjs` | ✓ exit 0；连跑两次候选记录零变化，幂等 |
+| `node scripts/validate-model-coverage.mjs` | ✓ exit 0 |
+| `node scripts/validate-data.mjs` | ✓ PASS — taxonomy 9 类 / vendors 18 / **benchmarks 515** / **releases 279（official 265）** / **evidence edges 5144**；模板档案 514 个通过校验，待升级存量 1 个（backlog 只减不增） |
+| `node --test tests/*.test.mjs` | ✓ **全绿 188/188**（含对照审计 undecided / stranded / orphans 三项均为 0） |
+| `npm run build` | ✓ exit 0 — 书校验 + EPUB（486 KB / 32 章）+ 全站构建 + validate-site 全绿（1258 个 HTML / 51002 个内部引用链接检查、331 个时间轴 / 2630 个事件卡片时序单调性、514 个评测页档案模板渲染检查） |
+| `npm run sync:skills:check` | ✓ 零漂移（本批未改 `.claude/skills/`） |
+
+### 汇总
+
+- **新增 release**：**2** 个 = 腾讯混元 1（`refrain`）+ Google 1（`mass-spec-skills`）
+- **新增 evidence**：**58** 条 = **40 verified + 18 pending**
+- **新增 benchmark id**：**4** 个（`refrain-benchmark` / `sdc-validation` / `mass-spec-exact-match` / `mass-spec-token-cost`），均未建实体，兜底页已生成；`auto-benchmark-ids` 380 → **384**；`unmapped_ids` 316 → **319**
+- **新增 benchmark 实体**：**0** 个（实体数 515 不变）
+- **新增归档目录**：**2** 个，均有 `index.md` + `manifest.json`（逐文件 sha256 与字节数）
+- **新增厂商**：无（仍为 18 家）
+- **候选数**：757 → **759**（+2 合成候选）；`need_reverify = 1` 为 0；未决候选 **0**
+- **检查点**：`last_scan_at=2026-11-27`；`last_max_release_date` 2026-11-24 → **2026-11-25**
