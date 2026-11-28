@@ -12,53 +12,338 @@
     "multimodal",
     "knowledge"
   ],
-  "summary": "多模态 RAG 基准：拿 10 个专业领域、约 2.6 万页含表格/图表/图片的视觉文档，配 3,099 条人工核验的多类型查询（每条都有 6 种语言版本），同时考「检索得对不对」「证据框得准不准」「基于这些证据生成的答案靠不靠得住」。",
-  "interpretation": "ViDoRe V3 的读数要分两层看：检索侧是 nDCG@10 一类的排序指标，分数越高说明「目标页排在越前面」；生成侧要看基于检索证据生成的答案是否正确且有出处。厂商模型卡上常见的是「视觉文档检索赛道平均分」（ViDoRe V3 的 Mean，8 个领域 × 6 种语言共 48 个任务），它只覆盖检索侧，不包含 RAG 生成质量；把 Mean 当成「ViDoRe V3 总分」会高估模型，因为它没有覆盖论文关注的生成侧与细粒度定位能力。跨模型比较时注意口径：同一模型换索引压缩档位（Full Sequence d=2048 / K128×d64 int8 / K32×d64 int8）Mean 会掉 1~3 分，这是工程取舍而非能力差异。",
+  "summary": "ViDoRe V3 是一套面向企业场景的多模态 RAG 基准：用 10 个专业领域的视觉文档（共约 26,000 页，含表格、图表、图片）配 3,099 条人工核验的查询（每条有 6 种语言版本），同时考三件事——检索能不能把相关页面排到前面、证据能不能框到页面里的具体区域、基于这些证据生成的答案对不对。RAG（检索增强生成）指「先从资料库检索、再让模型照着资料回答」的管线，ViDoRe V3 把这三个环节放在同一批文档上分别打分。",
+  "interpretation": "高分只说明「在视觉文档库里把相关页面排到前面」这件事做得好（nDCG@10，一种衡量排序位置的指标，按 0–100 计）；它不说明基于检索结果生成的答案可用——论文里最好非 oracle 管线在 hard 查询上的答案正确率只有 54.7%，离图像 oracle 上界 64.7% 还差约 10 个点，而「把答案框到页面具体位置」的 F1（定位区域与人工标注的重叠度，0–1）最好只有 0.089，远低于人工一致性的 0.602。论文还按「模型不看资料能否答对」把查询分成 easy / hard 两档（48.6% 为 easy），跨模型比较前要先看清这一层。",
   "measures": [
-    "多模态检索：能否从视觉文档库里把正确的页面排到前面（nDCG@10 等排序指标）",
-    "细粒度证据定位：能否把命中位置框到页面的具体区域（bounding box）",
-    "基于检索证据的生成质量：答案是否正确、是否有可核验的出处"
+    {
+      "area": "页面级视觉文档检索",
+      "focus": "把与查询相关的页面排在前面；示例查询（论文 Figure 1，工业维护语料）：\"Where is the S-3's single point receptacle located?\"，答案需跨页面的图表与正文才能定位",
+      "share": "10 个数据集（8 个公开 + 2 个私有留存）；论文未给统一的题目占比",
+      "format": "页面级排序，主指标 nDCG@10",
+      "cite": [
+        "paper-v3@Abstract",
+        "paper-v3@Table 1",
+        "paper-v3@Figure 1"
+      ]
+    },
+    {
+      "area": "细粒度证据定位（visual grounding）",
+      "focus": "在命中页面里框出支撑答案的具体区域（bounding box）而不是只给页码；论文只评了 Qwen3-VL-30B-A3B-Instruct 与 Gemini 3 Pro 两个模型",
+      "share": "未披露（论文单设一节评分，未给该子集的题量占比）",
+      "format": "答案内联 XML 框 <bboxes image=\"N\"> … </bboxes>，按与人工框的区域级 F1 评分",
+      "cite": [
+        "paper-v3@§4.3",
+        "paper-v3@附录 H"
+      ]
+    },
+    {
+      "area": "基于检索证据的答案生成",
+      "focus": "把查询与检索到的页面交给 LLM / VLM 生成答案，由裁判判对错；论文按检索管线、上下文模态（文本 / 图像 / 混合）与生成模型分别比较，并用 oracle 管线上界",
+      "share": "按 easy / hard 分层报告：48.6% 的查询为 easy（无上下文即可被 6 模型面板中至少一个答对）",
+      "format": "pass@1 二值正确性判定（GPT-5.2 裁判）",
+      "cite": [
+        "paper-v3@§4.2",
+        "paper-v3@附录 I"
+      ]
+    },
+    {
+      "area": "多语言 / 跨语言检索",
+      "focus": "同一批查询的 6 种语言版本对着英文、法文源文档，考查询语言与文档语言不一致时的检索；论文另给英文、法文单语言表",
+      "share": "每条查询 6 种语言版本（en / fr / es / de / it / pt）",
+      "format": "语言匹配（Table 9 / 10）与跨语言（Table 1）两套查询口径",
+      "cite": [
+        "paper-v3@§3.5",
+        "paper-v3@Table 12"
+      ]
+    }
   ],
   "does_not_measure": [
-    "纯文本语料上的检索能力（这是 MMEB 一类文本赛道覆盖的）",
-    "模型的通用推理深度与代码能力",
-    "端到端多轮 Agent 行为（不测规划、不测工具编排）"
+    {
+      "text": "不测企业私有库里的噪声短文档（邮件、支持工单、扫描手写笔记）——论文自陈语料只覆盖公开的长篇专业文档",
+      "cite": [
+        "paper-v3@Limitations"
+      ]
+    },
+    {
+      "text": "不覆盖英语、法语以外的源文档，也不含非拉丁语系查询——论文把这一点同时写进语言覆盖与语言/地域偏置两节",
+      "cite": [
+        "paper-v3@Limitations"
+      ]
+    },
+    {
+      "text": "不评页面内分块（chunking）或附加图像描述等更细的抽取口径——论文报告这两种处理未带来提升，因此只报最简管线",
+      "cite": [
+        "paper-v3@§4.1"
+      ]
+    }
   ],
   "dataset": {
     "sample_count": 3099,
     "splits": [
-      "query set（3,099 条人工核验查询，每条 6 种语言）"
+      "公开集：8 个数据集（论文 Table 6 逐语料列出，查询数不含翻译）",
+      "私有留存集：2 个数据集（英文核能监管文档、英文电信技术标准文档），由 MTEB 团队托管、不公开",
+      "每条查询的 6 个语言版本（en / fr / es / de / it / pt）",
+      "检索结果另按英文单语言（Table 9）、法文单语言（Table 10）、跨语言（Table 1）三种口径分别报告"
     ],
     "languages": [
       "en",
       "fr",
-      "de",
       "es",
+      "de",
       "it",
-      "zh"
+      "pt"
     ],
-    "source_type": "professionally-curated-document-corpus",
-    "public_sample": "https://hf.co/vidore"
+    "source_type": "professionally-curated-document-corpus（政府 / 教育 / 行业公开授权文档 + 12,000 小时人工标注）",
+    "public_sample": "8 个公开数据集在 Hugging Face 以 vidore/vidore_v3_* 发布；2 个私有留存集不公开",
+    "totals": "10 个数据集共约 26,000 页文档、3,099 条查询（论文标注的查询数不含翻译）；8 个公开语料的查询数合计 2,419（本站按 Table 6 各行相加，非论文原话）；查询分 7 类（extractive / open-ended / numerical / compare-contrast / enumerative / boolean / multi-hop）与 3 种格式（question / keyword / instruction），同一条查询可属多类。",
+    "cite": [
+      "paper-v3@Abstract",
+      "paper-v3@Table 6",
+      "paper-v3@§3.4"
+    ],
+    "construction": [
+      {
+        "k": "语料挑选",
+        "text": "从政府、教育与行业网站人工挑选开放许可的长篇文档，覆盖金融、计算机科学、制药、人力资源、工业维护、电信、核能、物理与能源等领域；英文语料 7 个、法文 3 个。",
+        "cite": [
+          "paper-v3@§3.1",
+          "paper-v3@Table 6"
+        ]
+      },
+      {
+        "k": "查询生成（人机混合）",
+        "text": "先用 Docling 抽取 PDF 文本与图像描述，按节用 Qwen3-235B-Instruct 生成摘要并聚类，再按平衡后的摘要子集用 Qwen3-235B 合成查询（随机抽查询类型与格式，属性含长度与难度），由同一 LLM 按信息量、领域相关性、清晰度、类型/格式遵从四条标准过滤，保留的查询一半再做改写；同时由人工标注员在只看到摘要或页面的情况下写查询，避免退化成简单的片段抽取。",
+        "cite": [
+          "paper-v3@§3.2"
+        ]
+      },
+      {
+        "k": "查询—页面关联",
+        "text": "Qwen2.5-VL-32B-Instruct 先高召回预筛候选页（召回 98%、精度 32%），答案跨超过 30 个候选页的查询被丢弃；再由人工按三级相关度（Not Relevant / Critically Relevant / Fully Relevant）标注，抽取型查询至少 1 名标注员加 1 名复核，非抽取型至少 2 名标注员加 1 名复核。",
+        "cite": [
+          "paper-v3@§3.3",
+          "paper-v3@附录 G"
+        ]
+      },
+      {
+        "k": "参考答案与定位框",
+        "text": "标注员在标记为相关的页面上写答案并框出支撑内容的区域，每个框再打上模态标签（Text / Table / Chart / Infographic / Image / Mixed / Other）；最终答案由 Qwen2.5-VL-32B-Instruct 基于人工答案聚合，论文用 GPT-5.2 裁判核验「聚合答案与至少一位标注员信息一致」的比例为 86.3%。",
+        "cite": [
+          "paper-v3@§3.3"
+        ]
+      },
+      {
+        "k": "翻译与拆分发布",
+        "text": "查询用 Qwen3-235B-Instruct 译成 6 种语言；8 个数据集公开、2 个留作私有留存集以缓解数据污染。",
+        "cite": [
+          "paper-v3@§3.5"
+        ]
+      },
+      {
+        "k": "人工规模",
+        "text": "标注由 76 名具备相关领域学位、领域经验与母语水平的标注员完成，13 名高级标注员做质控；论文报告总计 12,000 小时人工标注。",
+        "cite": [
+          "paper-v3@§3.3",
+          "paper-v3@附录 C"
+        ]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "分三条链路评：检索链路把页面图像（视觉检索器）或页面 Markdown 文本（文本检索器，经 NeMo Retriever 抽取）建索引后返回排序结果，按 nDCG@10 打分；生成链路把查询与检索到的页面（文本 / 图像 / 混合上下文）交给 LLM 或 VLM 生成答案，由 GPT-5.2 裁判判对错；定位链路要求模型在答案里以 XML 形式插入 <bboxes image=\"N\"> … </bboxes> 框，按与人工框的区域级 F1 评分。",
+    "cite": [
+      "paper-v3@§4.1",
+      "paper-v3@§4.2",
+      "paper-v3@§4.3"
+    ],
+    "variants": [
+      {
+        "text": "单检索器（MTEB 框架）与完整管线（官方 vidore-benchmark 的 pipeline 评测，可含检索 + 重排 + OCR + Agent）是两套榜单，分数不可直接比较；官方管线榜另按英文 split 报告，只覆盖公开数据集。",
+        "cite": [
+          "repo",
+          "leaderboard"
+        ]
+      },
+      {
+        "text": "跨语言查询（Table 1）比语言匹配的单语言查询（Table 9 / 10）低 2–3 分；官方博客早期的表述是 3–5 分，两个官方数字不一致，比较时应看清口径与日期。",
+        "cite": [
+          "paper-v3@§4.1",
+          "blog"
+        ]
+      },
+      {
+        "text": "检索 nDCG@10、答案正确率、定位 F1 是三套不同读数；论文评的是完整 RAG 管线，「检索器排名」与「最终答案质量」不可互换。",
+        "cite": [
+          "paper-v3@§4.1",
+          "paper-v3@§4.3"
+        ]
+      },
+      {
+        "text": "生成侧另按「无上下文能否答对」把查询分为 easy / hard（48.6% 为 easy），只看全局平均会把难题上的差距抹平。",
+        "cite": [
+          "paper-v3@§4.2"
+        ]
+      },
+      {
+        "text": "公开 8 集与私有 2 集的成绩分开管理，外部只能自行复现公开集的分数，私有集需经 MTEB 团队盲测。",
+        "cite": [
+          "paper-v3@§3.5",
+          "blog"
+        ]
+      }
+    ]
   },
   "metrics": [
-    "nDCG@10（检索排序主指标）",
-    "bounding box 定位质量",
-    "答案正确性与引用可核验性"
+    {
+      "id": "ndcg-at-10",
+      "name": "nDCG@10（检索排序）",
+      "direction": "越高越好",
+      "description": "在三级相关度标注下衡量前 10 个检索结果的位置质量；论文按 MTEB 惯例对各数据集取宏平均",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper-v3@Table 1",
+        "paper-v3@§4.1"
+      ]
+    },
+    {
+      "id": "answer-accuracy",
+      "name": "答案正确率（pass@1）",
+      "direction": "越高越好",
+      "description": "GPT-5.2（medium reasoning effort）作裁判，把生成答案与人工核验的参考答案逐题比对给出二值判定；论文按 easy / hard 与全局三档报告",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper-v3@附录 I",
+        "paper-v3@§4.2"
+      ]
+    },
+    {
+      "id": "grounding-f1",
+      "name": "证据定位 F1",
+      "direction": "越高越好",
+      "description": "模型生成的 bounding box 与人工标注区域的区域级 F1（Dice）；对每位标注者单独比对后取最高分，以吸收标注的主观性",
+      "range": [
+        0,
+        1
+      ],
+      "unit": "ratio",
+      "cite": [
+        "paper-v3@§4.3",
+        "paper-v3@附录 H"
+      ]
+    }
   ],
-  "default_protocol": {
-    "raw": "查询给定多类型指令（片段级、页面级、跨文档等），模型返回排序后的候选文档；官方按 nDCG@10 评估检索排序，并对证据框与参考答案做人工核验。"
-  },
   "versions": [
-    "ViDoRe V2（arXiv:2505.17166，2025-05-22 首发）：上一代视觉文档检索基准",
-    "ViDoRe V3（arXiv:2601.08620，2026-01-13 首发，2026-04 修订 v2）：扩展为多模态 RAG 基准，加入 6 语言查询与生成侧评测"
+    {
+      "id": "v3-blog",
+      "date": "2025-11-05",
+      "label": "官方博客首发 ViDoRe V3（8 个公开数据集 + 2 个私有留存集，附英文与多语言检索结果表）",
+      "cite": [
+        "blog"
+      ]
+    },
+    {
+      "id": "paper-v1",
+      "date": "2026-01-13",
+      "label": "arXiv v1（cs.AI）",
+      "cite": [
+        "paper-v3"
+      ]
+    },
+    {
+      "id": "paper-v2",
+      "date": "2026-04-21",
+      "label": "arXiv v2（本档案核对所用版本）",
+      "cite": [
+        "paper-v3"
+      ]
+    },
+    {
+      "id": "vidore-v2",
+      "date": "2025-05-22",
+      "label": "上一代 ViDoRe Benchmark V2（arXiv:2505.17166，v1；v2 修订于 2025-09-19）",
+      "cite": [
+        "paper-v2"
+      ]
+    }
   ],
   "limitations": [
-    "语料以专业领域文档为主，不覆盖日常网页与社交媒体等噪声场景",
-    "人工核验标注成本极高（论文报告 12,000 小时），扩展新领域或新语言的复现门槛很高",
-    "检索侧高分不代表 RAG 生成侧可用：论文明确指出现有模型在非文本元素、开放式查询与细粒度视觉定位上仍普遍吃力",
-    "查询的 6 个语言版本共享同一批答案标注，跨语言比较时会混入翻译与指令理解差异"
+    {
+      "issue": "三套读数口径分裂，且厂商常用口径只覆盖其中一套",
+      "impact": "论文同时报检索 nDCG@10、答案正确率与定位 F1；厂商模型卡上常见的「ViDoRe V3 Mean（48 tasks，8 领域 × 6 语言）」只覆盖 8 个公开领域的检索侧，与论文 Table 1 的 10 数据集跨语言宏平均不是同一个数。",
+      "severity": "高",
+      "response": "论文固定生成与裁判提示词并在附录公开；官方把单检索器结果导向 MTEB、把管线结果导向 vidore-benchmark 仓库与官方榜单，两套提交渠道分开。",
+      "reader": "比较前先确认是 48 任务检索均值、论文 Table 1 的跨语言宏平均，还是管线榜均分；三者不可混排。",
+      "cite": [
+        "omnievie-card",
+        "paper-v3@Table 1",
+        "repo",
+        "leaderboard"
+      ]
+    },
+    {
+      "issue": "定位标注主观，人类一致性本身不高",
+      "impact": "证据框的标注者间一致率为 IoU 0.497 / F1 0.602，论文把它当作该任务的人类上限；最好模型的 F1 只有 0.089（Qwen3-VL-30B-A3B-Instruct）与 0.065（Gemini 3 Pro），在人工标过框的页面上有 26–27% 完全没被模型标注。",
+      "severity": "高",
+      "response": "论文用「对每位标注者分别比对取最高 F1」的 best-match 策略吸收主观性，并另给高一致率子集（平均成对 IoU ≥ 0.7）上的参照分数；未见官方修订标注。",
+      "reader": "定位分数距满分很远，小差距不要当稳定差异；看清是全量还是高一致率子集。",
+      "cite": [
+        "paper-v3@§4.3",
+        "paper-v3@附录 H"
+      ]
+    },
+    {
+      "issue": "语料与语言分布偏置",
+      "impact": "源文档只有英文与法文，查询限 6 种西欧语言，且全部来自公开的长篇专业文档；不含邮件、工单、扫描手写件等企业私有库常见形态。",
+      "severity": "中",
+      "response": "论文在 Limitations 明确写出这两点，并称未来版本应扩展到更多语系与非拉丁文字；官方未发布修订版。",
+      "reader": "在噪声更多、语种更杂的真实库上，榜单分数大概率偏高。",
+      "cite": [
+        "paper-v3@Limitations",
+        "blog"
+      ]
+    },
+    {
+      "issue": "数据污染与私有集不可复现",
+      "impact": "8 个公开数据集可自由下载，可能进入训练数据；2 个私有留存集由 MTEB 团队托管，外部无法自行跑分，只能等官方或厂商上报。",
+      "severity": "中",
+      "response": "论文采用拆分发布策略，称私有集用于盲测以缓解过拟合；官方博客说明私有集由 MTEB 团队管理。",
+      "reader": "公开集分数偏高时，优先看是否有私有集或新版本的复核结果。",
+      "cite": [
+        "paper-v3@§3.5",
+        "blog"
+      ]
+    },
+    {
+      "issue": "跨语言掉分幅度两个官方来源不一致",
+      "impact": "论文 v2 称单语言比跨语言高 2–3 分，官方博客写 3–5 分；同一现象两个官方数字不同，引用时容易各取所需。",
+      "severity": "低",
+      "response": "未见官方统一说明；论文版本（2026-04-21）晚于博客（2025-11-05），本站以论文数字为准。",
+      "reader": "引用掉分幅度时注明来源与日期，不要混用。",
+      "cite": [
+        "paper-v3@§4.1",
+        "blog"
+      ]
+    },
+    {
+      "issue": "评测管线自身有方差",
+      "impact": "论文用 5 次独立运行测端到端稳定性，在最难的两个语料上平均 65.74%、标准差 0.94%（Krippendorff's α = 0.80）；裁判在固定输入上 5 次运行均值 72.09%、σ = 0.22%。",
+      "severity": "低",
+      "response": "论文公开裁判与生成提示词，并报告上述方差；未见进一步的误差棒惯例。",
+      "reader": "1 分以内的差距基本落在噪声范围内。",
+      "cite": [
+        "paper-v3@附录 I"
+      ]
+    }
   ],
-  "notes": "2026-11 起被腾讯 OmniEVIE-4B 官方模型卡引用（ViDoRe V3 的 48 个任务，nDCG@10 口径）。本仓收录的读数来自厂商官方模型卡转录，attribution_type 记为 vendor_reported；官方数据集托管在 Hugging Face（hf.co/vidore），采用商用友好许可。",
+  "notes": "2026-11 起被腾讯 OmniEVIE-4B 官方模型卡以「8 领域 × 6 语言 = 48 任务、nDCG@10」口径引用（Mean 64.34），本仓收录的读数来自厂商官方模型卡转录，attribution_type 记为 vendor_reported；该口径只覆盖 8 个公开领域的检索侧，与论文 Table 1 的 10 数据集跨语言宏平均不同。",
   "official_sources": [
     {
       "kind": "paper",
@@ -70,327 +355,375 @@
     },
     {
       "kind": "dataset",
-      "url": "https://hf.co/vidore"
+      "url": "https://huggingface.co/vidore"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/illuin-tech/vidore-benchmark"
+    },
+    {
+      "kind": "leaderboard",
+      "url": "https://huggingface.co/spaces/vidore/vidore-leaderboard"
     }
   ],
   "related_benchmarks": [
     "mmeb"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-11-26",
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-28",
   "profile": {
-    "template": "benchmark-profile/v1",
-    "verified_at": "2026-11-26",
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-28",
     "sources": [
       {
         "id": "paper-v3",
         "kind": "paper",
-        "title": "ViDoRe V3: A Comprehensive Evaluation of Retrieval Augmented Generation in Complex Real-World Scenarios（arXiv:2601.08620 v2，2026-01-13 首发）",
+        "title": "ViDoRe V3: A Comprehensive Evaluation of Retrieval Augmented Generation in Complex Real-World Scenarios（arXiv:2601.08620 v2，2026-04-21）",
         "url": "https://arxiv.org/abs/2601.08620",
-        "accessed": "2026-11-26"
+        "accessed": "2026-11-28"
       },
       {
         "id": "paper-v2",
         "kind": "paper",
-        "title": "ViDoRe Benchmark V2: Raising the Bar for Visual Retrieval（arXiv:2505.17166 v2，2025-05-22 首发）",
+        "title": "ViDoRe Benchmark V2: Raising the Bar for Visual Retrieval（arXiv:2505.17166 v2，2025-09-19）",
         "url": "https://arxiv.org/abs/2505.17166",
-        "accessed": "2026-11-26"
+        "accessed": "2026-11-28"
+      },
+      {
+        "id": "hf-vidore",
+        "kind": "site",
+        "title": "ViDoRe Hugging Face 组织页（含 ViDoRe V3 基准说明与官方链接）",
+        "url": "https://huggingface.co/vidore",
+        "accessed": "2026-11-28"
+      },
+      {
+        "id": "blog",
+        "kind": "blog",
+        "title": "ViDoRe V3: a comprehensive evaluation of retrieval for enterprise use-cases（官方博客，2025-11-05）",
+        "url": "https://huggingface.co/blog/QuentinJG/introducing-vidore-v3",
+        "accessed": "2026-11-28"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "illuin-tech/vidore-benchmark（官方评测框架、数据集清单与管线结果提交规范）",
+        "url": "https://github.com/illuin-tech/vidore-benchmark",
+        "accessed": "2026-11-28"
+      },
+      {
+        "id": "repo-v3gen",
+        "kind": "repo",
+        "title": "illuin-tech/vidore-v3-generation（官方合成查询生成管线）",
+        "url": "https://github.com/illuin-tech/vidore-v3-generation",
+        "accessed": "2026-11-28"
+      },
+      {
+        "id": "dataset-hr",
+        "kind": "dataset",
+        "title": "vidore/vidore_v3_hr（Hugging Face 公开数据集卡，含题量与许可）",
+        "url": "https://huggingface.co/datasets/vidore/vidore_v3_hr",
+        "accessed": "2026-11-28"
+      },
+      {
+        "id": "leaderboard",
+        "kind": "leaderboard",
+        "title": "ViDoRe 官方榜单（vidore/vidore-leaderboard，Gradio API info，默认指标 ndcg_at_10）",
+        "url": "https://vidore-vidore-leaderboard.hf.space/gradio_api/info",
+        "accessed": "2026-11-28"
       },
       {
         "id": "omnievie-card",
         "kind": "site",
-        "title": "tencent/OmniEVIE-4B 官方模型卡（ViDoRe V3 逐领域转录表）",
+        "title": "tencent/OmniEVIE-4B 官方模型卡（二手：厂商以 48 任务口径引用 ViDoRe V3）",
         "url": "https://huggingface.co/tencent/OmniEVIE-4B",
-        "accessed": "2026-11-26"
-      },
-      {
-        "id": "omnievie-paper",
-        "kind": "paper",
-        "title": "OmniEVIE: Evidence-Vector-Informed Embedding for Multi-modal Retrieval（arXiv:2611.32203 v1，2026-11-24）",
-        "url": "https://arxiv.org/abs/2611.32203",
-        "accessed": "2026-11-26"
+        "accessed": "2026-11-28"
       }
     ],
-    "sections": {
-      "overview": {
-        "text": "ViDoRe V3 是一套多模态 RAG 基准：拿专业领域里大量含表格、图表与图片的视觉文档当语料，配上人工核验的多类型查询，同时问三个问题——检索有没有把对的页面排在前面、证据能不能框到页面里的具体位置、基于这些证据生成的答案靠不靠得住。",
+    "header": {
+      "publisher": {
+        "v": "Illuin Technology（与 NVIDIA 合作）；论文署名机构含 CentraleSupélec, Paris-Saclay",
         "cite": [
-          "paper-v3@Abstract"
+          "paper-v3@作者署名",
+          "hf-vidore"
         ]
       },
-      "origin": {
-        "facts": [
-          {
-            "k": "机构与系列",
-            "v": "ViDoRe 系列由 illuin-tech / TIGER 生态推进，V3 以论文形式首发于 2026-01-13（arXiv:2601.08620，2026-04 修订为 v2）",
-            "cite": [
-              "paper-v3@Abstract"
-            ]
-          },
-          {
-            "k": "上一代",
-            "v": "ViDoRe Benchmark V2 首发于 2025-05-22（arXiv:2505.17166），定位为「把视觉检索的门槛再抬高」",
-            "cite": [
-              "paper-v2@Abstract"
-            ]
-          },
-          {
-            "k": "发布与许可",
-            "v": "官方以商用友好许可在 Hugging Face 发布（hf.co/vidore）",
-            "cite": [
-              "paper-v3@Abstract"
-            ]
-          }
-        ]
-      },
-      "measures": {
-        "items": [
-          {
-            "text": "测：多模态检索——在视觉文档语料里把正确页面排到前面，主指标是 nDCG@10（逐领域平均后得到 Mean）。",
-            "cite": [
-              "paper-v3@Abstract",
-              "omnievie-card@Evaluations & Benchmarks"
-            ]
-          },
-          {
-            "text": "测：细粒度证据定位——官方提供 bounding box 标注，要求模型把命中位置落到页面的具体区域，而不是只给出页码。",
-            "cite": [
-              "paper-v3@Abstract"
-            ]
-          },
-          {
-            "text": "测：基于检索证据的生成质量——答案是否正确、引用是否可核验；论文在评估 RAG 管线时同时比较了纯文本、混合与纯视觉上下文。",
-            "cite": [
-              "paper-v3@Abstract"
-            ]
-          },
-          {
-            "text": "不测：纯文本语料上的检索能力，也不测通用推理深度、代码能力与多轮 Agent 规划。",
-            "cite": [
-              "paper-v3@Abstract"
-            ]
-          }
-        ]
-      },
-      "composition": {
-        "facts": [
-          {
-            "k": "数据集数量",
-            "v": "10 个数据集，覆盖多个专业领域",
-            "cite": [
-              "paper-v3@Abstract"
-            ]
-          },
-          {
-            "k": "语料规模",
-            "v": "约 26,000 页文档",
-            "cite": [
-              "paper-v3@Abstract"
-            ]
-          },
-          {
-            "k": "查询规模",
-            "v": "3,099 条人工核验的查询，每条提供 6 种语言版本",
-            "cite": [
-              "paper-v3@Abstract"
-            ]
-          },
-          {
-            "k": "任务矩阵",
-            "v": "厂商模型卡口径为「8 个领域 × 6 种语言 = 48 个任务」，评分为 nDCG@10；论文口径为 10 个数据集（含生成侧评测）",
-            "cite": [
-              "omnievie-card@Evaluations & Benchmarks",
-              "omnievie-paper@Abstract",
-              "paper-v3@Abstract"
-            ]
-          }
-        ]
-      },
-      "construction": {
-        "items": [
-          {
-            "text": "语料选自多个专业领域的视觉文档（含表格、图表与图片等非纯文本元素），并为每页做人工标注。",
-            "cite": [
-              "paper-v3@Abstract"
-            ]
-          },
-          {
-            "text": "标注同时覆盖三类：检索相关性、bounding box 定位、以及人工核验的参考答案；论文报告总计投入 12,000 小时人工标注。",
-            "cite": [
-              "paper-v3@Abstract"
-            ]
-          },
-          {
-            "text": "查询按类型构造（片段级、页面级、跨文档等），并为每条查询人工核验参考答案，从而支持生成侧的自动评估。",
-            "cite": [
-              "paper-v3@Abstract"
-            ]
-          }
-        ]
-      },
-      "scoring": {
-        "items": [
-          {
-            "text": "检索侧用 nDCG@10：在多级相关度标注下，衡量目标页面在排序结果中的位置质量；厂商模型卡的 Mean 列即各领域 nDCG@10 的平均。",
-            "cite": [
-              "omnievie-card@Evaluations & Benchmarks"
-            ]
-          },
-          {
-            "text": "生成侧以人工核验的参考答案为基准评估答案正确性与引用可核验性。",
-            "cite": [
-              "paper-v3@Abstract"
-            ]
-          },
-          {
-            "text": "论文评估的是完整 RAG 管线而非单一检索器，因此同一篇论文里的「检索器排名」与「最终答案质量」是两套读数，不可互换。",
-            "cite": [
-              "paper-v3@Abstract"
-            ]
-          }
-        ]
-      },
-      "reading": {
-        "items": [
-          {
-            "text": "厂商模型卡上的常见读数是「视觉文档检索赛道平均分」（ViDoRe V3 Mean，48 个任务），它只覆盖检索侧；论文关注的 RAG 生成侧不在这个数里，把它当「ViDoRe V3 总分」会高估模型。",
-            "cite": [
-              "omnievie-card@Evaluations & Benchmarks",
-              "paper-v3@Abstract"
-            ]
-          },
-          {
-            "text": "Mean 是逐领域平均后的结果，掩盖了领域间的巨大差异：同一模型在法律（Fin）与能源（Energy）这类表格密集领域的得分可能相差十几个点，跨模型比较时应先看同领域分。",
-            "cite": [
-              "omnievie-card@Evaluations & Benchmarks"
-            ]
-          },
-          {
-            "text": "索引压缩档位会影响读数：Full Sequence d=2048 的 Mean 与 K128×d64 int8、K32×d64 int8 依次下降，属于存储与延迟换来的工程取舍，不是能力差异。",
-            "cite": [
-              "omnievie-card@Evaluations & Benchmarks",
-              "omnievie-paper@Abstract"
-            ]
-          },
-          {
-            "text": "论文的核心结论提醒读数边界：视觉检索器整体优于文本检索器，late-interaction 模型与文本重排能显著提升效果，混合或纯视觉上下文能提升生成质量；但现有模型在非文本元素、开放式查询与细粒度视觉定位上仍然吃力——高分不代表「RAG 已经能用」。",
-            "cite": [
-              "paper-v3@Abstract"
-            ]
-          }
-        ]
-      },
-      "limitations": {
-        "items": [
-          {
-            "text": "语料集中在专业领域文档，噪声更少的干净场景，结论不能直接外推到开放网页、长尾问答或用户上传资料。",
-            "cite": [
-              "paper-v3@Abstract"
-            ]
-          },
-          {
-            "text": "标注成本极高（12,000 小时人工标注），扩展新领域、新语言或复核既有标注的门槛很高，独立复现难度大。",
-            "cite": [
-              "paper-v3@Abstract"
-            ]
-          },
-          {
-            "text": "论文自陈的能力边界：现有模型在非文本元素、开放式查询与细粒度视觉定位上仍普遍吃力，这三类失败无法从 Mean 里看出。",
-            "cite": [
-              "paper-v3@Abstract"
-            ]
-          },
-          {
-            "text": "多语言查询共享同一批答案标注，跨语言读数会混入翻译质量与指令理解差异，不能当作纯模型能力差。",
-            "cite": [
-              "paper-v3@Abstract"
-            ]
-          }
-        ]
-      },
-      "versions": {
-        "items": [
-          {
-            "text": "ViDoRe V2（2025-05-22，arXiv:2505.17166）：面向视觉检索的上一代基准，V3 在其基础上把评测扩展为完整的多模态 RAG 场景。",
-            "cite": [
-              "paper-v2@Abstract",
-              "paper-v3@Abstract"
-            ]
-          },
-          {
-            "text": "ViDoRe V3（2026-01-13 首发 arXiv:2601.08620，2026-04 修订 v2）：10 个数据集、约 26,000 页文档、3,099 条 6 语言查询，加入 bounding box 定位与生成侧评测。",
-            "cite": [
-              "paper-v3@Abstract"
-            ]
-          },
-          {
-            "text": "2026-11 的厂商侧口径：腾讯 OmniEVIE-4B 官方模型卡与官方技术报告均以「ViDoRe V3（48 tasks）」引用，指标为 nDCG@10。",
-            "cite": [
-              "omnievie-card@Evaluations & Benchmarks",
-              "omnievie-paper@Abstract"
-            ]
-          }
-        ]
-      },
-      "official_results": {
-        "table": {
-          "as_of": "2026-11-24",
-          "columns": [
-            "来源",
-            "模型 / 索引表示",
-            "Mean",
-            "CS",
-            "Energy",
-            "备注"
-          ],
-          "rows": [
-            [
-              "腾讯 OmniEVIE-4B 官方模型卡转录（2026-11-24）",
-              "OmniEVIE-4B（Full Sequence d=2048）",
-              "64.34",
-              "79.89",
-              "71.25",
-              "Prefix-MRL 上界"
-            ],
-            [
-              "同上",
-              "Nemotron-ColEmbed-V2-8B",
-              "63.76",
-              "79.35",
-              "70.05",
-              "Full multi-vector，同榜竞品"
-            ],
-            [
-              "同上",
-              "OmniEVIE-4B（K128×d64 int8）",
-              "62.96",
-              "78.73",
-              "69.94",
-              "7.87 GiB / 1M 页"
-            ],
-            [
-              "同上",
-              "Qwen3-VL-Embedding-8B",
-              "59.00",
-              "75.86",
-              "64.47",
-              "Single-vector，同榜竞品"
-            ],
-            [
-              "同上",
-              "OmniEVIE-4B（K32×d64 int8）",
-              "61.16",
-              "78.13",
-              "68.61",
-              "2.15 GiB / 1M 页"
-            ]
-          ]
-        },
+      "first_release": {
+        "v": "2025-11-05（官方博客首发）；论文 arXiv v1 2026-01-13，v2 2026-04-21",
         "cite": [
-          "omnievie-card@Evaluations & Benchmarks",
-          "omnievie-paper@Abstract"
+          "blog",
+          "paper-v3"
         ]
       }
+    },
+    "cites": {
+      "summary": [
+        "paper-v3@Abstract",
+        "paper-v3@§3.5"
+      ],
+      "interpretation": [
+        "paper-v3@§4.2",
+        "paper-v3@§4.3"
+      ]
+    },
+    "problem": {
+      "text": "此前的视觉文档基准要么只做单页理解，要么只评检索不评生成，也缺少多语言与细粒度定位；上一代 ViDoRe V2 还大量依赖合成查询。ViDoRe V3 要把检索、生成、定位三件事放到同一批企业级视觉文档上端到端地评，并用拆分发布缓解污染。",
+      "cite": [
+        "paper-v3@Abstract",
+        "paper-v3@§1",
+        "paper-v3@§3.5"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "词法检索基线（BM25S）",
+        "value": "20.3",
+        "note": "论文 Table 1 的跨语言宏平均（10 个数据集）；同一模型在英文单语言表（Table 9）为 53.0。",
+        "cite": [
+          "paper-v3@Table 1",
+          "paper-v3@Table 9"
+        ]
+      },
+      {
+        "label": "论文发布时最好检索成绩",
+        "value": "59.8",
+        "note": "ColEmbed-3B-v2（llama-nemoretriever-colembed-3b-v2），Table 1 跨语言宏平均；英文单语言（Table 9）为 66.0。论文结论：同参数量下视觉检索器优于文本检索器、晚交互优于稠密。",
+        "cite": [
+          "paper-v3@Table 1",
+          "paper-v3@Table 9",
+          "paper-v3@§4.1"
+        ]
+      },
+      {
+        "label": "论文最好管线（检索 + 文本重排）",
+        "value": "63.6",
+        "note": "Jina-v4（文本）+ zerank-2，Table 2 跨语言宏平均，比不加重排高 13.2 分；同一设置换视觉重排器只高 0.2 分。",
+        "cite": [
+          "paper-v3@Table 2"
+        ]
+      },
+      {
+        "label": "官方 ViDoRe 榜单最高",
+        "value": "70.0",
+        "note": "官方 vidore-leaderboard 管线榜（ndcg_at_10，英文 split、8 个公开数据集）第一名 VisAgentRet（EVIE-4.5B + GLM-5.3-Flash）；这是管线级成绩，与上面的单检索器宏平均不同口径。",
+        "cite": [
+          "leaderboard"
+        ]
+      },
+      {
+        "label": "人类一致性上限（证据定位）",
+        "value": "F1 0.602",
+        "note": "标注者之间的区域级 F1（IoU 0.497），论文把它当作该任务的人类上限；同期最好模型只有 0.089 与 0.065。",
+        "cite": [
+          "paper-v3@§4.3",
+          "paper-v3@附录 H"
+        ]
+      },
+      {
+        "label": "生成侧参照（hard 查询）",
+        "value": "54.7%",
+        "note": "最好非 oracle 管线（Jina-v4 文本 + zerank-2 与 ColEmbed-3B-v2 混合检索，Gemini 3 Pro 生成）在 hard 查询上的答案正确率；图像 oracle 上界 64.7%。",
+        "cite": [
+          "paper-v3@§4.2",
+          "paper-v3@Table 3"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把厂商模型卡上的「ViDoRe V3 Mean（48 tasks，8 领域 × 6 语言，nDCG@10）」当成论文 Table 1 的同口径分数——前者只覆盖 8 个公开领域的检索侧，后者是 10 个数据集的跨语言宏平均。",
+        "cite": [
+          "omnievie-card",
+          "paper-v3@Table 1"
+        ]
+      },
+      {
+        "text": "把检索 nDCG@10 高直接读成「RAG 能用」——论文里同一批检索成绩对应的答案正确率在 hard 查询上只有 54.7%，离图像 oracle 上界还差约 10 个点。",
+        "cite": [
+          "paper-v3@§4.2"
+        ]
+      },
+      {
+        "text": "忽略 easy / hard 分层：48.6% 的查询在无上下文时就能被 6 模型面板中至少一个答对，全局平均会掩盖难题上的差距（论文称即使给 oracle 上下文，hard 与 easy 仍差 10 个点以上）。",
+        "cite": [
+          "paper-v3@§4.2"
+        ]
+      },
+      {
+        "text": "把跨语言与单语言成绩排在一起比——论文口径下两者差 2–3 分，官方博客口径是 3–5 分。",
+        "cite": [
+          "paper-v3@§4.1",
+          "blog"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "Illuin Technology（illuin-tech），与 NVIDIA 合作；论文署名机构为 Illuin Technology、NVIDIA 与 CentraleSupélec, Paris-Saclay",
+        "cite": [
+          "paper-v3@作者署名",
+          "hf-vidore"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "António Loison、Quentin Macé、Antoine Edy（共同一作）、Victor Xing、Tom Balough、Gabriel Moreira、Bo Liu、Manuel Faysse、Céline Hudelot、Gautier Viaud",
+        "cite": [
+          "paper-v3@作者署名"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2025-11-05 官方博客首发 → 2026-01-13 arXiv v1 → 2026-04-21 arXiv v2；论文称基准已接入 MTEB 生态与榜单",
+        "cite": [
+          "blog",
+          "paper-v3"
+        ]
+      },
+      {
+        "k": "标注规模",
+        "v": "12,000 小时人工标注；76 名领域标注员 + 13 名高级标注员；查询—页面一致性 Gwet's AC2 = 0.760（Krippendorff's α = 0.469）",
+        "cite": [
+          "paper-v3@Abstract",
+          "paper-v3@§3.3",
+          "paper-v3@附录 D"
+        ]
+      },
+      {
+        "k": "查询类型分布",
+        "v": "论文 Figure 9 给出各类型查询条数（同一条查询可属多类）：extractive 864、open-ended 735、numerical 509、compare-contrast 433、enumerative 367、boolean 272、multi-hop 203",
+        "cite": [
+          "paper-v3@Figure 9"
+        ]
+      },
+      {
+        "k": "公开数据集",
+        "v": "8 个：vidore/vidore_v3_{computer_science, energy, finance_en, finance_fr, hr, industrial, pharmaceuticals, physics}，与官方评测仓库列出的清单一致",
+        "cite": [
+          "repo",
+          "paper-v3@Table 6"
+        ]
+      },
+      {
+        "k": "私有留存集",
+        "v": "2 个，均为英文：核能监管文档与电信技术标准文档，由 MTEB 团队托管以缓解过拟合",
+        "cite": [
+          "blog"
+        ]
+      },
+      {
+        "k": "数据与代码",
+        "v": "数据集在 Hugging Face（标注与 qrels 为 CC BY 4.0）；评测代码在 illuin-tech/vidore-benchmark（管线评测与社区结果提交），合成查询管线在 illuin-tech/vidore-v3-generation；单检索器结果走 MTEB，管线结果走官方 vidore-leaderboard",
+        "cite": [
+          "dataset-hr",
+          "repo",
+          "repo-v3gen",
+          "leaderboard"
+        ]
+      },
+      {
+        "k": "厂商引用口径",
+        "v": "2026-11-24 腾讯 OmniEVIE-4B 模型卡以「8 Domains × 6 Languages, graded nDCG@10」的 48 任务口径引用本基准（Mean 64.34，Full Sequence d=2048）",
+        "cite": [
+          "omnievie-card"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-28",
+        "columns": [
+          "来源",
+          "模型 / 管线",
+          "口径",
+          "得分",
+          "备注"
+        ],
+        "rows": [
+          [
+            "论文 Table 1",
+            "ColEmbed-3B-v2",
+            "跨语言宏平均（10 数据集，nDCG@10）",
+            "59.8",
+            "论文当时最好的检索器"
+          ],
+          [
+            "论文 Table 1",
+            "Qwen3-8B（文本检索器）",
+            "同上",
+            "51.0",
+            "论文当时最好的文本检索器"
+          ],
+          [
+            "论文 Table 1",
+            "BM25S",
+            "同上",
+            "20.3",
+            "词法基线"
+          ],
+          [
+            "论文 Table 2",
+            "Jina-v4（文本）+ zerank-2",
+            "跨语言宏平均（nDCG@10）",
+            "63.6",
+            "比不加重排高 13.2 分"
+          ],
+          [
+            "论文 Table 3",
+            "Jina-v4 + zerank-2 & ColEmbed-3B-v2（混合检索）",
+            "hard 查询答案正确率",
+            "54.7%",
+            "最好非 oracle 管线，Gemini 3 Pro 生成"
+          ],
+          [
+            "论文 Table 3",
+            "Oracle（图像上下文）",
+            "hard 查询答案正确率",
+            "64.7%",
+            "上界"
+          ],
+          [
+            "论文 §4.3",
+            "Qwen3-VL-30B-A3B-Instruct",
+            "证据定位 F1（全量）",
+            "0.089",
+            "人工一致性 0.602"
+          ],
+          [
+            "论文 §4.3",
+            "Gemini 3 Pro",
+            "证据定位 F1（全量）",
+            "0.065",
+            "同上"
+          ],
+          [
+            "官方 vidore-leaderboard",
+            "VisAgentRet（EVIE-4.5B + GLM-5.3-Flash）",
+            "管线榜均分（ndcg_at_10，英文 split，8 公开集）",
+            "70.0",
+            "榜单第一名"
+          ],
+          [
+            "厂商模型卡（OmniEVIE-4B）",
+            "OmniEVIE-4B（Full Sequence d=2048）",
+            "48 任务 Mean（nDCG@10）",
+            "64.34",
+            "厂商自报，只覆盖检索侧"
+          ]
+        ]
+      },
+      "cite": [
+        "paper-v3@Table 1",
+        "paper-v3@Table 2",
+        "paper-v3@Table 3",
+        "paper-v3@§4.3",
+        "leaderboard",
+        "omnievie-card"
+      ]
     }
   }
 }

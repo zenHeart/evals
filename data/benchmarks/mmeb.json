@@ -1,8 +1,9 @@
 {
   "id": "mmeb",
   "name": "MMEB (Massive Multimodal Embedding Benchmark)",
-  "full_name": "MMEB: Massive Multimodal Embedding Benchmark（含 MMEB-V2 / MMEB-V3）",
+  "full_name": "MMEB: Massive Multimodal Embedding Benchmark（大规模多模态嵌入基准；当前主版本 MMEB-V3，190 个任务）",
   "aliases": [
+    "MMEB-V1",
     "MMEB-V2",
     "MMEB-V3",
     "Massive Multimodal Embedding Benchmark"
@@ -11,50 +12,421 @@
   "categories": [
     "multimodal"
   ],
-  "summary": "跨模态嵌入模型的统一评测集：把文本、图像、视频、音频与智能体场景的检索/理解任务放进同一个榜单，用同一套协议比较不同模型把「一句话」和「一张图/一段视频」编码到同一语义空间的能力。",
-  "interpretation": "MMEB 的分数是「多任务平均检索准确率」，越高越好；读数要连同版本和赛道一起看——MMEB-V3 的总分 60.68 是在 190 个任务上的平均值（其中文本赛道 53 个任务、Agent 赛道 47 个任务），而厂商常引用的「非音频榜第一」是把音频赛道整体排除后重排的结果，与含音频总分不是同一个口径。同一模型换索引压缩方式（Full Sequence d=2048 / K128×d64 int8 / K32×d64 int8）分数会掉 1~3 分，这是工程取舍不是能力差异；跨模型比较必须对齐同一版本、同一赛道、同一压缩档位。",
+  "summary": "MMEB 是多模态嵌入模型的统一评测集：把文本、图像、视频、音频、视觉文档与 Agent 场景下的检索任务改写成「一句指令 + 一个查询，从固定候选池里选出正确项」的排序题，用同一套协议比较不同模型能否把不同模态编码到同一个语义空间。当前主版本 MMEB-V3 共 190 个任务、16 个元任务。",
+  "interpretation": "分数是跨任务平均的检索得分（0–100），越高越好。读数必须连版本、赛道和索引配置一起看：All*（179 个任务）不含音频，All（190）把模型缺失的模态按 0 计入；厂商常引的「不含音频榜第一」与含音频总榜不是同一个口径；同一 checkpoint 换索引压缩档位（Full d=2048 / K128×d64 int8）或改视频抽样帧数，分数都会变。更关键的是，论文的核心结论是现有模型还不能可靠执行指令里的模态约束，因此榜单高分不等于模型具备可靠的模态感知检索能力。",
   "measures": [
-    "多模态嵌入在统一语义空间里的检索能力（文本↔图像、文本↔视频、文本↔视觉文档等）",
-    "同一模型在文本、图片、视频、音频与 Agent 场景各赛道上的相对强弱",
-    "模型能否按指令约束检索到「正确模态」的样本（OmniSET 的核心诊断）"
+    {
+      "area": "Agent 场景检索",
+      "focus": "工具检索（Tool-REX，35 个任务，候选池约 4.4 万个带结构化元数据的工具）、GUI 轨迹检索（GAE-Bench，8 个任务）与智能体记忆检索（KnowMeBench / REALTALK / PeerQA / DeepPlanning，4 个任务）；示例：按用户意图从工具库里检索该调用的 API 或代码函数",
+      "share": "47/190",
+      "format": "Hit@1",
+      "cite": [
+        "paper-v3@§3.1",
+        "paper-v3@附录 A.2",
+        "paper-v3@Table 3"
+      ]
+    },
+    {
+      "area": "文本检索",
+      "focus": "指令遵循（FollowIR、InfoSearch）、推理检索（BRIGHT、R2MD）、长上下文（LongEmb）、多条件匹配（MultiConIR）与通用检索（nanoBEIR）五类；示例：BRIGHT 中从约 130 万个候选段落里检索回答难题所需的定理",
+      "share": "53/190",
+      "format": "论文称 NDCG@5",
+      "cite": [
+        "paper-v3@§3.1",
+        "paper-v3@Table 1"
+      ]
+    },
+    {
+      "area": "图像任务",
+      "focus": "图像分类、视觉问答、图像检索与视觉定位（RefCOCO、RefCOCO-Matching、MSCOCO、Visual7W-Pointing 等）；示例：按指令「选出图中隔离出给定标签物体的部分」定位区域",
+      "share": "37/190",
+      "format": "Hit@1",
+      "cite": [
+        "paper-v3@Table 3",
+        "leaderboard-v3-script@modality2dataset"
+      ]
+    },
+    {
+      "area": "视觉文档检索",
+      "focus": "ViDoRe V1/V2、VisRAG、ViDoSeek、MMLongBench-Doc 的文档级与页级检索；示例：从多页 PDF 或幻灯片里检索含答案的那一页",
+      "share": "24/190",
+      "format": "论文 NDCG@5；官方脚本记 ndcg_linear@5",
+      "cite": [
+        "paper-v2@§2",
+        "leaderboard-v3-script@modality2metric"
+      ]
+    },
+    {
+      "area": "视频任务",
+      "focus": "视频检索、时刻检索、视频分类与视频问答；示例：MomentSeeker 中从约 10 个候选片段里定位与文本描述匹配的片段",
+      "share": "18/190",
+      "format": "Hit@1",
+      "cite": [
+        "paper-v3@Table 3",
+        "paper-v2@Table 1"
+      ]
+    },
+    {
+      "area": "音频任务",
+      "focus": "音频分类（ESC-50、UrbanSound8K、NSynth、SpeechCommands、CREMA-D）、跨模态音频检索（Clotho、SoundDescs、AVE、SpeechCOCO）与时序定位（TUT Sound Events 两个难度档取平均）",
+      "share": "11/190",
+      "format": "Hit@1",
+      "cite": [
+        "paper-v3@§3.1",
+        "paper-v3@Table 1"
+      ]
+    },
+    {
+      "area": "OmniSET 诊断集（不计入榜单）",
+      "focus": "100 条带人工核验难负例的查询，每条展开成 12 个跨模态方向任务，各方向共用同一个四模态混合候选池；用来把「语义相似」和「模态效应」拆开",
+      "share": "1.2K 次查询（Table 1）",
+      "format": "Hit@1 与 MRR（论文 Table 4）",
+      "cite": [
+        "paper-v3@附录 A.2",
+        "paper-v3@§3.1"
+      ]
+    }
   ],
   "does_not_measure": [
-    "生成质量与写作能力（只测嵌入，不测解码）",
-    "推理深度、多步数学或代码正确率",
-    "端到端 RAG 的答案质量（那是 ViDoRe 一类基准的测法）"
+    {
+      "text": "生成与写作质量：每个任务都以「从候选池中选出正确项」结束，模型只出嵌入与排序，没有解码和答案质量评分",
+      "cite": [
+        "paper-v1@§2.1"
+      ]
+    },
+    {
+      "text": "检索之后的下游表现：论文把 agent 场景里的检索定位成「工具调用、GUI 交互、记忆访问等下游动作的前提」，评的是这个前提，不是动作本身对不对",
+      "cite": [
+        "paper-v3@§1"
+      ]
+    },
+    {
+      "text": "MTEB 式的纯文本任务面（分类、聚类、语义相似度）：MMEB-V3 的 53 个文本任务全部是检索题型",
+      "cite": [
+        "paper-v3@§2",
+        "paper-v3@Table 3"
+      ]
+    }
   ],
   "dataset": {
-    "sample_count": null,
+    "sample_count": 190,
     "splits": [
-      "train（V1 含 20 个训练数据集）",
-      "evaluation（V1 含 16 个评测数据集）"
+      "MMEB-V3 评测任务 190 个：文本 53 / 图像 37 / 视觉文档 24 / Agent 47 / 视频 18 / 音频 11",
+      "MMEB-V3 诊断集 OmniSET：100 条查询 × 12 个跨模态方向，不计入榜单",
+      "MMEB-V2：78 个任务 = MMEB-V1 的 36 个数据集 + 42 个新增任务",
+      "MMEB-V1：36 个数据集 = 20 个同分布训练集 + 16 个跨分布评测集"
     ],
     "languages": [
-      "en"
+      "en",
+      "未披露"
     ],
-    "source_type": "public-benchmark",
-    "public_sample": "https://huggingface.co/datasets/TIGER-Lab/MMEB-V2"
+    "source_type": "public-benchmark（在既有公开数据集上重构的排序检索任务；OmniSET 另用生成模型补齐缺失模态）",
+    "public_sample": "https://huggingface.co/datasets/VLM2Vec/MMEB-V3",
+    "totals": "官方以「任务」为计量单位：当前主版本 MMEB-V3 共 190 个评测任务、16 个元任务（头部卡的「190 题」即这 190 个任务，不是查询条数）。论文 Table 1 只给出新增的音频 / 文本 / Agent 三类的题量（如 BRIGHT 12 个任务、1.4K 查询、约 130 万候选；Tool-REX 35 个任务、7.9K 查询、4.4 万候选），图像 / 视频 / 视觉文档的题量沿用 MMEB-V2 口径，官方未给全任务查询总数。数据体量：V3 数据仓 388 GB，V2 数据仓 157 GB。语言：V2 数据集卡标注 English，V3 卡未列语言字段，而官方榜单脚本的视觉文档清单含 3 个多语言子集，语言分布未披露。",
+    "cite": [
+      "dataset-v3",
+      "paper-v3@Table 1",
+      "paper-v3@Table 3",
+      "dataset-v2"
+    ],
+    "construction": [
+      {
+        "k": "任务化重构",
+        "text": "把既有公开数据集改写成「指令 + 查询 → 从固定候选池中选出正确项」的排序题；MMEB-V1 起每个任务的候选数定为 1,000，视觉问答与检索类题型是 1 个正例 + 999 个干扰项。",
+        "cite": [
+          "paper-v1@§2.1",
+          "paper-v1@§2.2"
+        ]
+      },
+      {
+        "k": "版本叠加",
+        "text": "MMEB-V2 在 V1 的 36 个数据集上加 42 个新任务（视频检索 5、时刻检索 3、视频分类 5、视频问答 5、视觉文档检索 24）到 78 个任务 / 9 个元任务；MMEB-V3 再加 111 个新任务（音频、复杂文本检索、Agent 三类）到 190 个任务。",
+        "cite": [
+          "paper-v2@Table 1",
+          "paper-v2@Figure 1",
+          "paper-v3@§3.1"
+        ]
+      },
+      {
+        "k": "数据分发",
+        "text": "V1 / V2 / V3 的评测资产统一到一个 MMEB-V3 根目录；下载下来是 `_tasks` 压缩目录，由 dataset_setup_v3.py 解包并校验成就绪的 `-tasks` 目录，脚本幂等且支持 --check-only。",
+        "cite": [
+          "dataset-v3@Guide to MMEB-V3 Data",
+          "dataset-v3@What's New"
+        ]
+      },
+      {
+        "k": "大规模集抽样",
+        "text": "对 NSynth、SpeechCommands、SoundDescs、SpeechCOCO 等大规模音频集最多抽 1,000 条查询、候选池不超过 10,000 条；视频任务在数据仓里以抽帧形式提供。",
+        "cite": [
+          "paper-v3@附录 A.2",
+          "dataset-v2@Dataset Structure"
+        ]
+      },
+      {
+        "k": "OmniSET 构建",
+        "text": "以 MSCOCO 为底：先筛掉禁止二次创作的授权，再按共享物体类别排序取 top 30 作候选难负例，抽约 100 张图作查询实例，人工剔除近重复后每条留 15–20 个难负例；视频用 Google Veo-3.1 从图像生成，音频用 Gemini-2.5-Flash-TTS 从字幕生成。",
+        "cite": [
+          "paper-v3@附录 A.2.1"
+        ]
+      },
+      {
+        "k": "榜单提交与汇总",
+        "text": "提交方按官方模板交 JSON：config 里写 model_dtype（torch.float16 / bfloat16 / 8bit / 4bit）、model_name、model_sha，results 里按 task_name 记 metric_name: score；官方脚本逐数据集读 *_score.json，按模态主指标求平均后汇总成报告。",
+        "cite": [
+          "leaderboard-readme",
+          "leaderboard-v3-script"
+        ]
+      }
+    ]
   },
   "metrics": [
-    "retrieval_accuracy（按任务不同取 Recall@K / nDCG / mAP 等）",
-    "All（全部任务平均）",
-    "赛道分（Text / Image / Video / VisDoc / Agent 等）"
+    {
+      "id": "all-190",
+      "name": "全任务平均分（All）",
+      "direction": "越高越好",
+      "description": "190 个任务的官方主指标平均；论文表注说明该列把所有模态平均计入，模型缺失的模态按 0 计",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper-v3@Table 3 注",
+        "leaderboard-v3-script"
+      ]
+    },
+    {
+      "id": "hit-at-1",
+      "name": "Hit@1",
+      "direction": "越高越好",
+      "description": "正确候选项排在第一位的查询占比；官方脚本对图像、视频、音频、文本、工具、GUI、记忆任务都取这个指标",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper-v3@§4.1",
+        "leaderboard-v3-script@modality2metric"
+      ]
+    },
+    {
+      "id": "ndcg-at-5",
+      "name": "NDCG@5",
+      "direction": "越高越好",
+      "description": "前 5 名的归一化折损累积增益；论文用于文本与视觉文档任务，视觉文档分是 24 个任务的 NDCG@5 平均",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper-v3@§4.1",
+        "paper-v2@§2"
+      ]
+    },
+    {
+      "id": "omniset-cross-modal",
+      "name": "OmniSET 跨模态 Hit@1 / MRR",
+      "direction": "越高越好",
+      "description": "OmniSET 上 12 个跨模态方向的检索指标，用于诊断模态约束遵循情况，不计入榜单",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "percent",
+      "cite": [
+        "paper-v3@§5.1",
+        "paper-v3@§3.1"
+      ]
+    }
   ],
   "default_protocol": {
-    "raw": "官方榜单由 TIGER-Lab 统一跑各模型并统一判分；提交方按官方要求提供模型名、权重 sha 与推理精度（fp16 / bf16 / 8bit / 4bit），官方在固定任务集上重跑后出分。"
+    "raw": "官方榜单口径：每个数据集按官方脚本规定的单一主指标取值——图像 / 视频 / 音频 / 文本 / 工具 / GUI / 记忆取 hit@1，视觉文档取 ndcg_linear@5，再按模态和全任务求平均；全任务 All 列把所有模态平均计入，模型缺失的模态按 0 计。评测入口是代码仓里的 eval.py（示例参数 --pooling mean --normalize true --per_device_eval_batch_size 8），OmniSET 用单独的 experiments/public/eval/eval_omniset.sh；对不支持音频的骨干网可设 SKIP_AUDIO_TASKS=true 或改用 cross_modality_no_audio.yaml。",
+    "cite": [
+      "leaderboard-v3-script",
+      "leaderboard-v3-script@modality2metric",
+      "paper-v3@§4.1",
+      "paper-v3@Table 3 注",
+      "repo@MMEB-V3 Evaluation"
+    ],
+    "variants": [
+      {
+        "text": "All（190）与 All*（179）：论文同时给出两列，All* 只在模型可用任务上平均，All 把缺失模态按 0 计入；不支持音频的模型在官方脚本里可跳过音频任务，两列不可混用。",
+        "cite": [
+          "paper-v3@Table 3 注",
+          "repo@MMEB-V3 Evaluation"
+        ]
+      },
+      {
+        "text": "含音频与不含音频：官方榜单快照可按 Audio-Overall = 0 排序得到「不含音频榜」，与含音频的 190 任务总榜不是同一个口径。",
+        "cite": [
+          "omnievie-card@Evaluations & Benchmarks"
+        ]
+      },
+      {
+        "text": "索引压缩档位与视频抽样帧数：同一 checkpoint 的 Full（d=2048）与 K128×d64 int8 在 MMEB-V3 All 上分别为 60.68 与 60.06，视频抽样 8 帧与 32 帧也会改分数（V3 All 59.76 与 60.06）。",
+        "cite": [
+          "omnievie-card@Evaluations & Benchmarks"
+        ]
+      },
+      {
+        "text": "版本：MMEB-V1（36 个数据集）/ V2（78 个任务）/ V3（190 个任务）任务集不同，跨版本分数不可比。",
+        "cite": [
+          "paper-v2@Figure 1",
+          "paper-v3@§3.1"
+        ]
+      }
+    ]
   },
   "versions": [
-    "MMEB-V1（2024-10-07 提交 arXiv:2410.05160）：4 个元任务（分类、视觉问答、多模态检索、视觉定位）、36 个数据集",
-    "MMEB-V2（2025-05 数据发布 / 2025-07 技术报告 arXiv:2507.04590）：新增 5 类任务，覆盖视觉文档检索与四类视频任务",
-    "MMEB-V3（2026-04-25 提交 arXiv:2604.23321，COLM 2026）：扩展到全模态（文本/图像/视频/音频 + Agent 场景），并新增 OmniSET 诊断集"
+    {
+      "id": "v1",
+      "date": "2024-10-07",
+      "label": "MMEB-V1 随 VLM2Vec 技术报告提交 arXiv:2410.05160：4 个元任务、36 个数据集（20 个同分布训练集 + 16 个跨分布评测集）",
+      "cite": [
+        "paper-v1"
+      ]
+    },
+    {
+      "id": "v1-paper-rev",
+      "date": "2025-01-02",
+      "label": "VLM2Vec 论文修订至 v3（本页引用的 V1 论文版本）",
+      "cite": [
+        "paper-v1"
+      ]
+    },
+    {
+      "id": "v2",
+      "date": "2025-07-07",
+      "label": "MMEB-V2 技术报告提交 arXiv:2507.04590：在 V1 的 36 个数据集上加 42 个新任务到 78 个任务 / 9 个元任务；数据集 2025-05 初版发布（官方只给到月份）",
+      "cite": [
+        "paper-v2",
+        "dataset-v2@What's New"
+      ]
+    },
+    {
+      "id": "v3",
+      "date": "2026-04-25",
+      "label": "MMEB-V3 报告提交 arXiv:2604.23321：再加 111 个新任务到 190 个，新增音频、复杂文本检索、Agent 三类任务与 OmniSET 诊断集",
+      "cite": [
+        "paper-v3",
+        "repo@News",
+        "dataset-v3@What's New"
+      ]
+    },
+    {
+      "id": "v3-rev2",
+      "date": "2026-07-29",
+      "label": "MMEB-V3 论文修订至 v2",
+      "cite": [
+        "paper-v3"
+      ]
+    },
+    {
+      "id": "v3-rev3",
+      "date": "2026-11-24",
+      "label": "MMEB-V3 论文修订至 v3（本页核对所用版本；arXiv 注释标注 Accepted at COLM 2026）",
+      "cite": [
+        "paper-v3"
+      ]
+    }
   ],
   "limitations": [
-    "MMEB-V3 引入音频赛道后，「总分第一」与「非音频榜第一」是两个不同口径，厂商引用时容易只给对自己有利的那个",
-    "不同模型跑在不同的权重精度（fp16 / bf16 / 8bit / 4bit）与索引压缩档位上，榜单行与行之间的工程条件并不完全对齐",
-    "MMEB-V3 论文的核心发现是「现有模型还做不到可靠地按指令约束模态」，说明榜单分数里混有大量与语义检索能力无关的模态归属错误",
-    "同一模型不同压缩档位的分数差是工程取舍，不应被解读为「模型能力差异」"
+    {
+      "issue": "模态约束失效是系统性的，不是边角噪声",
+      "impact": "论文在 OmniSET 上测得多个跨模态方向 Hit@1 接近 0（T→I、T→A、V→T 等），且 Top-10 主导模态与查询模态高度相关；这意味着榜单分数里混有大量「语义对但模态错」的失败，失分不一定代表语义理解差。",
+      "severity": "高",
+      "response": "官方把 OmniSET 作为诊断组件单独发布并明确不计入榜单，论文给出三条核心发现与按模型 / 方向的分析；未见对榜单分数本身的修正。",
+      "reader": "看分数时同时看赛道，并了解模型在该赛道的已知短板（无音频能力的模型在音频任务上按 0 计入 All），不要用单个 All 分下结论。",
+      "cite": [
+        "paper-v3@Abstract",
+        "paper-v3@§5.1",
+        "paper-v3@§3.1"
+      ]
+    },
+    {
+      "issue": "口径混用：All（190）、All*（179）与「不含音频榜」",
+      "impact": "论文 Table 2 / 3 同时给 All*（只在可用任务上平均）和 All（缺失模态按 0 计入）两列，官方快照又能按 Audio-Overall = 0 排出「不含音频榜」，三者不是同一个数。",
+      "severity": "高",
+      "response": "论文在表注中明确 All 列把缺失模态按 0 计入；官方脚本提供 SKIP_AUDIO_TASKS 与 cross_modality_no_audio.yaml 供无音频模型使用。",
+      "reader": "比较前先确认列名（All / All*）和是否排除音频。",
+      "cite": [
+        "paper-v3@Table 3 注",
+        "repo@MMEB-V3 Evaluation",
+        "omnievie-card@Evaluations & Benchmarks"
+      ]
+    },
+    {
+      "issue": "同一模型在论文表与官方榜单快照里分数不一致",
+      "impact": "Qwen3-VL-Embedding-8B 在论文 Table 3 的 All（190）为 49.9、Text（53）为 43.3，在官方榜单快照（经 OmniEVIE-4B 官方模型卡转录，2026-11-24）里为 53.50 与 42.50；两个数字都来自官方，差异原因未见说明。",
+      "severity": "中",
+      "response": "未见官方说明该差异。",
+      "reader": "引用时注明取自论文表还是榜单快照，并连同快照日期一起写。",
+      "cite": [
+        "paper-v3@Table 3",
+        "omnievie-card@Evaluations & Benchmarks"
+      ]
+    },
+    {
+      "issue": "工程条件不齐：索引压缩档位与视频抽样帧数",
+      "impact": "同一 checkpoint 的 Full（d=2048）与 K128×d64 int8 在 MMEB-V3 All 上差 0.62（60.68 对 60.06）；视频抽样 8 帧与 32 帧也改分数（V3 All 59.76 对 60.06，V2 All 77.24 对 77.96）。",
+      "severity": "中",
+      "response": "厂商模型卡把不同索引配置分行列出并说明是压缩与工程取舍；基准方未统一压缩档位。",
+      "reader": "只与同一索引配置、同一帧数的行比较。",
+      "cite": [
+        "omnievie-card@Evaluations & Benchmarks"
+      ]
+    },
+    {
+      "issue": "文本赛道指标口径在论文与官方脚本之间不一致",
+      "impact": "论文 §4.1 写文本任务用 NDCG@5，官方榜单脚本 modality2metric 把 text 映射为 hit@1；同一模型的文本赛道分可能不同源。",
+      "severity": "中",
+      "response": "未见官方说明该差异。",
+      "reader": "引用文本赛道分数时注明取自论文还是榜单脚本。",
+      "cite": [
+        "paper-v3@§4.1",
+        "leaderboard-v3-script@modality2metric"
+      ]
+    },
+    {
+      "issue": "OmniSET 的合成数据带来方向性偏差",
+      "impact": "视频由图像生成、音频由字幕生成，使图像–视频与文本–音频对的内在相似度偏高，I→V 与 A→T 的异常高分可能部分来自构建方式而非模型能力。",
+      "severity": "中",
+      "response": "论文附录 A.2.2 明确讨论该偏差，并说明用统一混合候选池、把源实例作为干扰项、排除同模态检索来缓解，建议后续引入人工标注多模态数据或做消融。",
+      "reader": "I→V / A→T 的高分要打折看。",
+      "cite": [
+        "paper-v3@附录 A.2.2",
+        "paper-v3@§5.1"
+      ]
+    },
+    {
+      "issue": "OmniSET 题量在论文内部表述不一致",
+      "impact": "附录 A.2 写「100 queries」，附录 A.2.1 写「approximately 200 high-quality query samples」并「sample approximately 100 images as query instances」；Table 1 的 #Query 记 1.2K，与 100 条查询 × 12 个方向一致。",
+      "severity": "低",
+      "response": "未见官方澄清。",
+      "reader": "引用 OmniSET 规模时用 Table 1 的 1.2K，并注明这是 12 个方向的展开值。",
+      "cite": [
+        "paper-v3@附录 A.2",
+        "paper-v3@附录 A.2.1",
+        "paper-v3@Table 1"
+      ]
+    },
+    {
+      "issue": "复现门槛：数据体量大且需按目录布局准备",
+      "impact": "MMEB-V3 数据仓 388 GB（V2 为 157 GB），要先下载压缩资产再用 dataset_setup_v3.py 解包成就绪目录；第三方复跑需自行对齐帧数、骨干适配与评测脚本版本。",
+      "severity": "低",
+      "response": "官方提供幂等的 dataset_setup_v3.py 与 --check-only 校验，并把 V1 / V2 / V3 资产统一到一个根目录。",
+      "reader": "复现结果与榜单不一致时，先核对帧数、索引档位与脚本版本。",
+      "cite": [
+        "dataset-v3",
+        "dataset-v2@Dataset Structure",
+        "repo"
+      ]
+    }
   ],
-  "notes": "2026-11 起被腾讯 OmniEVIE-4B 等厂商写入官方模型卡的评测表。本仓收录的读数来自厂商官方模型卡转录的 TIGER-Lab 官方榜单快照（2026-11-24），attribution_type 记为 benchmark_owner_reported。",
+  "notes": "本仓收录的读数来自腾讯 OmniEVIE-4B 官方模型卡转录的 TIGER-Lab 官方榜单快照（2026-11-24，按 Audio-Overall = 0 排序），attribution_type 记 benchmark_owner_reported。本页的版本、题量与协议数字另与三代论文、官方数据集卡、官方代码仓 README、官方榜单 Space 的 README 与官方汇总脚本逐一核对。",
   "official_sources": [
     {
       "kind": "paper",
@@ -70,7 +442,15 @@
     },
     {
       "kind": "dataset",
+      "url": "https://huggingface.co/datasets/VLM2Vec/MMEB-V3"
+    },
+    {
+      "kind": "dataset",
       "url": "https://huggingface.co/datasets/TIGER-Lab/MMEB-V2"
+    },
+    {
+      "kind": "repo",
+      "url": "https://github.com/TIGER-AI-Lab/VLM2Vec"
     },
     {
       "kind": "leaderboard",
@@ -78,368 +458,374 @@
     }
   ],
   "related_benchmarks": [
-    "vidore-v3"
+    "vidore-v3",
+    "mteb-code"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-11-26",
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-28",
   "profile": {
-    "template": "benchmark-profile/v1",
-    "verified_at": "2026-11-26",
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-28",
     "sources": [
       {
         "id": "paper-v1",
         "kind": "paper",
-        "title": "VLM2Vec: Training Vision-Language Models for Massive Multimodal Embedding Tasks（arXiv:2410.05160 v3，2024-10-07 首发）",
+        "title": "VLM2Vec: Training Vision-Language Models for Massive Multimodal Embedding Tasks（arXiv:2410.05160，v3，2025-01-02）",
         "url": "https://arxiv.org/abs/2410.05160",
-        "accessed": "2026-11-26"
+        "accessed": "2026-11-28"
       },
       {
         "id": "paper-v2",
         "kind": "paper",
-        "title": "VLM2Vec-V2: Advancing Multimodal Embedding for Videos, Images, and Visual Documents（arXiv:2507.04590 v1，2025-07-07）",
+        "title": "VLM2Vec-V2: Advancing Multimodal Embedding for Videos, Images, and Visual Documents（arXiv:2507.04590，v1，2025-07-07）",
         "url": "https://arxiv.org/abs/2507.04590",
-        "accessed": "2026-11-26"
+        "accessed": "2026-11-28"
       },
       {
         "id": "paper-v3",
         "kind": "paper",
-        "title": "MMEB-V3: Measuring the Performance Gaps of Omni-Modality Embedding Models（arXiv:2604.23321 v3，2026-04-25，COLM 2026）",
+        "title": "MMEB-V3: Measuring the Performance Gaps of Omni-Modality Embedding Models（arXiv:2604.23321，v3，2026-11-24，Accepted at COLM 2026）",
         "url": "https://arxiv.org/abs/2604.23321",
-        "accessed": "2026-11-26"
+        "accessed": "2026-11-28"
+      },
+      {
+        "id": "dataset-v3",
+        "kind": "dataset",
+        "title": "VLM2Vec/MMEB-V3（MMEB-V3 官方数据集卡，MIT）",
+        "url": "https://huggingface.co/datasets/VLM2Vec/MMEB-V3",
+        "accessed": "2026-11-28"
       },
       {
         "id": "dataset-v2",
         "kind": "dataset",
-        "title": "TIGER-Lab/MMEB-V2（Massive Multimodal Embedding Benchmark V2 数据集卡，Apache-2.0）",
+        "title": "TIGER-Lab/MMEB-V2（MMEB-V2 官方数据集卡，Apache-2.0）",
         "url": "https://huggingface.co/datasets/TIGER-Lab/MMEB-V2",
-        "accessed": "2026-11-26"
+        "accessed": "2026-11-28"
+      },
+      {
+        "id": "repo",
+        "kind": "repo",
+        "title": "TIGER-AI-Lab/VLM2Vec（官方代码仓，含 MMEB-V3 数据准备与评测说明）",
+        "url": "https://github.com/TIGER-AI-Lab/VLM2Vec",
+        "accessed": "2026-11-28"
       },
       {
         "id": "leaderboard",
         "kind": "leaderboard",
         "title": "TIGER-Lab/MMEB-Leaderboard（官方榜单 Space，Apache-2.0）",
         "url": "https://huggingface.co/spaces/TIGER-Lab/MMEB-Leaderboard",
-        "accessed": "2026-11-26"
+        "accessed": "2026-11-28"
+      },
+      {
+        "id": "leaderboard-readme",
+        "kind": "docs",
+        "title": "MMEB-Leaderboard README（提交结果文件格式与判分脚本位置）",
+        "url": "https://huggingface.co/spaces/TIGER-Lab/MMEB-Leaderboard/raw/main/README.md",
+        "accessed": "2026-11-28"
+      },
+      {
+        "id": "leaderboard-v3-script",
+        "kind": "docs",
+        "title": "report_score_v3.py（官方 MMEB-V3 榜单分数汇总脚本：模态—数据集清单与主指标映射）",
+        "url": "https://huggingface.co/spaces/TIGER-Lab/MMEB-Leaderboard/raw/main/report_score_v3.py",
+        "accessed": "2026-11-28"
       },
       {
         "id": "omnievie-card",
         "kind": "site",
-        "title": "tencent/OmniEVIE-4B 官方模型卡（转录 2026-11-24 的官方榜单快照）",
+        "title": "tencent/OmniEVIE-4B 官方模型卡（转录 2026-11-24 的 TIGER-Lab/MMEB-Leaderboard 快照）",
         "url": "https://huggingface.co/tencent/OmniEVIE-4B",
-        "accessed": "2026-11-26"
+        "accessed": "2026-11-28"
       }
     ],
-    "sections": {
-      "overview": {
-        "text": "MMEB 是一套跨模态嵌入模型的统一评测集：把文本、图像、视频、音频以及智能体场景下的检索与理解任务收进同一个榜单，用同一套协议比较不同模型能否把「一句话」和「一张图 / 一段视频 / 一份视觉文档」编码到同一个语义空间里，从而支持检索、聚类与 RAG。",
+    "header": {
+      "publisher": {
+        "v": "TIGER-Lab / TIGER-AI-Lab（项目主页 tiger-ai-lab.github.io/VLM2Vec，数据集与榜单托管在 Hugging Face TIGER-Lab 组织下，代码仓为 TIGER-AI-Lab/VLM2Vec）",
         "cite": [
-          "paper-v1@Abstract",
-          "paper-v3@Abstract"
+          "repo",
+          "dataset-v3"
         ]
       },
-      "origin": {
-        "facts": [
-          {
-            "k": "发起机构",
-            "v": "TIGER-Lab（TIGER-AI-Lab），榜单与数据集均托管在 Hugging Face 官方组织下",
-            "cite": [
-              "dataset-v2",
-              "leaderboard"
-            ]
-          },
-          {
-            "k": "首发",
-            "v": "2024-10-07 随 VLM2Vec 论文提交 arXiv:2410.05160 提出 MMEB，同篇论文给出 VLM2Vec 训练框架",
-            "cite": [
-              "paper-v1@Abstract"
-            ]
-          },
-          {
-            "k": "第二版",
-            "v": "MMEB-V2 数据于 2025-05 初版发布，技术报告 2025-07 提交 arXiv:2507.04590",
-            "cite": [
-              "paper-v2@Abstract",
-              "dataset-v2@What's New"
-            ]
-          },
-          {
-            "k": "第三版",
-            "v": "MMEB-V3 于 2026-04-25 提交 arXiv:2604.23321，已被 COLM 2026 接收",
-            "cite": [
-              "paper-v3@Abstract"
-            ]
-          }
-        ]
-      },
-      "measures": {
-        "items": [
-          {
-            "text": "测：多模态嵌入在统一语义空间里的检索能力——文本↔图像、文本↔视频、文本↔视觉文档等跨模态检索是核心题型。",
-            "cite": [
-              "paper-v1@Abstract",
-              "paper-v2@Abstract"
-            ]
-          },
-          {
-            "text": "测：同一个模型在文本、图片、视频、音频与 Agent 场景各赛道上的相对强弱，以及「跨模态检索是否对称」这一诊断维度。",
-            "cite": [
-              "paper-v3@Abstract"
-            ]
-          },
-          {
-            "text": "测：模型能否按指令约束检索到目标模态。MMEB-V3 配套构建了 OmniSET（Omni-modality Semantic Equivalence Tuples），用跨模态的语义等价样本把「语义相似」和「模态效应」拆开。",
-            "cite": [
-              "paper-v3@Abstract"
-            ]
-          },
-          {
-            "text": "不测：生成质量与写作能力——MMEB 只评嵌入，不评解码。",
-            "cite": [
-              "paper-v1@Abstract"
-            ]
-          },
-          {
-            "text": "不测：推理深度、多步数学或代码正确率；也不测端到端 RAG 的答案质量（后者由 ViDoRe 一类多模态 RAG 基准承担）。",
-            "cite": [
-              "paper-v3@Abstract"
-            ]
-          }
-        ]
-      },
-      "composition": {
-        "facts": [
-          {
-            "k": "V1 规模",
-            "v": "4 个元任务（分类、视觉问答、多模态检索、视觉定位），共 36 个数据集，其中 20 个训练集、16 个评测集，覆盖同分布与跨分布两类任务",
-            "cite": [
-              "paper-v1@Abstract"
-            ]
-          },
-          {
-            "k": "V2 新增任务",
-            "v": "新增 5 类任务：视觉文档检索、视频检索、时序定位、视频分类、视频问答；输入覆盖文本、图像、视频与视觉文档",
-            "cite": [
-              "paper-v2@Abstract"
-            ]
-          },
-          {
-            "k": "V3 赛道划分",
-            "v": "扩展到文本、图像、视频、音频与 Agent 场景；官方榜单按赛道分列，厂商模型卡引用时常见「全部任务平均 / 文本赛道 / Agent 赛道」三个口径",
-            "cite": [
-              "paper-v3@Abstract",
-              "omnievie-card@Evaluations & Benchmarks"
-            ]
-          },
-          {
-            "k": "V2 数据组织",
-            "v": "MMEB-V2 数据仓按元任务打包：video_cls / video_qa / video_ret / video_mret / mmeb_v1 / visdoc 六个压缩包；视频任务直接提供抽好的帧，图像任务提供原图",
-            "cite": [
-              "dataset-v2@Dataset Structure"
-            ]
-          }
-        ]
-      },
-      "construction": {
-        "items": [
-          {
-            "text": "评测集沿用 MTEB 的做法：每个任务是一个独立的数据集，测试文件在评测时从 Hugging Face 自动拉取，提交方只需要提交模型结果。",
-            "cite": [
-              "dataset-v2@Guide to All MMEB-V2 Data"
-            ]
-          },
-          {
-            "text": "视频任务在数据仓里以抽帧形式提供；官方另提供原始视频文件包 MMEB_Raw_Video，但文件极大，通常不需要下载。",
-            "cite": [
-              "dataset-v2@Guide to All MMEB-V2 Data"
-            ]
-          },
-          {
-            "text": "榜单的提交与判分由官方统一执行：提交结果文件包含模型精度（torch.float16 / bfloat16 / 8bit / 4bit）、模型名与权重 sha，官方在固定任务集上重跑后出分。",
-            "cite": [
-              "leaderboard@README"
-            ]
-          }
-        ]
-      },
-      "scoring": {
-        "items": [
-          {
-            "text": "各任务按题型取对应的检索指标（Recall@K / nDCG / mAP 等），最终榜单给的是跨任务的平均值与分赛道平均。",
-            "cite": [
-              "leaderboard@README"
-            ]
-          },
-          {
-            "text": "榜单结果文件的标准结构是 results{task_name: {metric_name: score}}，即每个任务记一个（或多个）指标值，官方再按任务聚合成赛道分与总分。",
-            "cite": [
-              "leaderboard@README"
-            ]
-          },
-          {
-            "text": "V3 额外引入 OmniSET 做诊断：同一语义在不同模态下的样本构成等价对，用来分离「语义相似」与「模态效应」，这部分的结论以论文的定性发现为主。",
-            "cite": [
-              "paper-v3@Abstract"
-            ]
-          }
-        ]
-      },
-      "reading": {
-        "items": [
-          {
-            "text": "分数是「多任务平均检索准确率」，越高越好；但必须连版本与赛道一起读：MMEB-V3 的总分是 190 个任务上的平均，文本赛道 53 个任务、Agent 赛道 47 个任务，单独引用某一个赛道分不能代表整体水平。",
-            "cite": [
-              "omnievie-card@Evaluations & Benchmarks"
-            ]
-          },
-          {
-            "text": "「非音频榜第一」是另一个口径：官方榜单可按 Audio-Overall 排序，厂商模型卡引用时若排除音频赛道，分数与含音频的总分不可混用。",
-            "cite": [
-              "omnievie-card@Evaluations & Benchmarks"
-            ]
-          },
-          {
-            "text": "同一模型换索引压缩档位分数会掉 1~3 分（Full Sequence d=2048 → K128×d64 int8 → K32×d64 int8）。这是存储与延迟换来的工程取舍，不应被读成「模型能力变差」。",
-            "cite": [
-              "omnievie-card@Evaluations & Benchmarks"
-            ]
-          },
-          {
-            "text": "论文给出的三条核心发现提示榜单分数的解读边界：模型经常检索不到指令指定的目标模态；跨模态检索高度不对称且受「查询模态偏置」主导；指令诱导的调整往往不足或与目标模态错位。因此榜单高分不等于模型具备可靠的模态感知检索能力。",
-            "cite": [
-              "paper-v3@Abstract"
-            ]
-          }
-        ]
-      },
-      "limitations": {
-        "items": [
-          {
-            "text": "口径混用风险：含音频总分与「非音频榜第一」是两条不同的排序线，厂商引用时往往只给对自己有利的那条，横向比较前必须确认口径一致。",
-            "cite": [
-              "omnievie-card@Evaluations & Benchmarks"
-            ]
-          },
-          {
-            "text": "工程条件不齐：榜单各行可能在不同权重精度（fp16 / bf16 / 8bit / 4bit）与不同索引压缩档位下产生，分数差里混有精度与压缩带来的损耗。",
-            "cite": [
-              "leaderboard@README",
-              "omnievie-card@Evaluations & Benchmarks"
-            ]
-          },
-          {
-            "text": "基准自身的能力边界：论文明确指出现有模型还不能可靠执行指令里的模态约束，因此榜单分数里混有大量「语义对但模态错」的失败，这类失分不代表语义理解差。",
-            "cite": [
-              "paper-v3@Abstract"
-            ]
-          },
-          {
-            "text": "复现门槛：视频任务需先下载帧包（体量大），官方提供的是固定协议与固定任务集，第三方复跑需要自行对齐模型精度与评测脚本版本。",
-            "cite": [
-              "dataset-v2@Guide to All MMEB-V2 Data",
-              "leaderboard@README"
-            ]
-          }
-        ]
-      },
-      "versions": {
-        "items": [
-          {
-            "text": "MMEB-V1（2024-10-07）：随 VLM2Vec 提出，4 个元任务 / 36 个数据集（20 训练 + 16 评测）。论文报告 VLM2Vec 在同分布与跨分布数据集上相对既有嵌入模型有 10%~20% 的绝对平均提升——这是这个基准最初被广泛引用的原因。",
-            "cite": [
-              "paper-v1@Abstract"
-            ]
-          },
-          {
-            "text": "MMEB-V2（2025-05 数据 / 2025-07 报告）：新增视觉文档检索与四类视频任务，数据仓按六个元任务压缩包分发。",
-            "cite": [
-              "paper-v2@Abstract",
-              "dataset-v2@What's New"
-            ]
-          },
-          {
-            "text": "MMEB-V3（2026-04-25，COLM 2026）：走向全模态（文本 / 图像 / 视频 / 音频 + Agent 场景），并新增 OmniSET 诊断集；官方榜单同期升级，厂商模型卡开始引用 190 任务的平均分与分赛道分。",
-            "cite": [
-              "paper-v3@Abstract",
-              "omnievie-card@Evaluations & Benchmarks"
-            ]
-          }
-        ]
-      },
-      "official_results": {
-        "table": {
-          "as_of": "2026-11-24",
-          "columns": [
-            "来源",
-            "模型",
-            "MMEB-V3 All (190)",
-            "Text (53)",
-            "Agent (47)",
-            "备注"
-          ],
-          "rows": [
-            [
-              "TIGER-Lab 官方榜单快照（2026-11-24，经腾讯 OmniEVIE-4B 官方模型卡转录）",
-              "OmniEVIE-4B（Full Sequence d=2048）",
-              "60.68",
-              "52.97",
-              "54.14",
-              "非音频榜第 1"
-            ],
-            [
-              "同上",
-              "OmniEVIE-4B（K128×d64 int8，32 帧）",
-              "60.06",
-              "51.77",
-              "54.03",
-              "压缩索引档，非音频榜第 2"
-            ],
-            [
-              "同上",
-              "WeMM-Embedding-9B",
-              "59.33",
-              "48.76",
-              "50.10",
-              "同榜竞品"
-            ],
-            [
-              "同上",
-              "WeMM-Embedding-4B",
-              "57.97",
-              "47.88",
-              "48.06",
-              "同榜竞品"
-            ],
-            [
-              "同上",
-              "WeMM-Embedding-2B",
-              "55.77",
-              "45.34",
-              "44.05",
-              "同榜竞品"
-            ],
-            [
-              "同上",
-              "Qwen3-VL-Embedding-8B",
-              "53.50",
-              "42.50",
-              "38.40",
-              "同榜竞品"
-            ],
-            [
-              "同上",
-              "Qwen3-VL-Embedding-2B",
-              "50.90",
-              "39.20",
-              "39.30",
-              "同榜竞品"
-            ]
-          ]
-        },
+      "first_release": {
+        "v": "2024-10-07（MMEB-V1 随 VLM2Vec 技术报告提交 arXiv:2410.05160）",
         "cite": [
-          "omnievie-card@Evaluations & Benchmarks",
-          "leaderboard"
+          "paper-v1"
         ]
       }
+    },
+    "cites": {
+      "summary": [
+        "paper-v3@§3.1",
+        "paper-v3@Abstract",
+        "dataset-v3@Introduction"
+      ],
+      "interpretation": [
+        "paper-v3@Abstract",
+        "paper-v3@Table 3 注",
+        "omnievie-card@Evaluations & Benchmarks"
+      ]
+    },
+    "problem": {
+      "text": "MMEB 之前的基准要么只覆盖自然图像（VLM2Vec、E5-V、GME），要么缺音频与 agent 场景（MMEB-V2、M-BEIR），也没有把「模态」当成指令里的显式约束来系统评测；MTEB 覆盖纯文本但没有多模态。论文的原话是这类基准「主要关注跨模态对齐（如文本—图像），缺乏对（1）全模态覆盖（尤其是音频和视觉文档）和（2）复杂检索场景中指令遵循行为的系统评测」。MMEB-V3 把全模态覆盖与指令条件下的模态约束遵循放进同一个榜单。",
+      "cite": [
+        "paper-v3@§1",
+        "paper-v3@§2"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "MMEB-V1 未微调基线（论文 Table 2）",
+        "value": "39.7",
+        "note": "OpenCLIP 在 36 个数据集上的平均 Precision@1；同期 E5-V 只有 13.3。",
+        "cite": [
+          "paper-v1@Table 2"
+        ]
+      },
+      {
+        "label": "V1 论文发布时最好",
+        "value": "62.9",
+        "note": "VLM2Vec（LLaVA-1.6 + LoRA，1344×1344 输入），比未微调最好基线高 18.2 个点，16 个跨分布任务零样本 57.1。",
+        "cite": [
+          "paper-v1@Table 2",
+          "paper-v1@§4.2"
+        ]
+      },
+      {
+        "label": "V2 论文发布时最好",
+        "value": "58.0",
+        "note": "VLM2Vec-V2（2B）在 78 个任务上的平均；ColPali v1.3 视觉文档更强（71.0）但总分只有 44.4。",
+        "cite": [
+          "paper-v2@Table 2",
+          "paper-v2@§4.2"
+        ]
+      },
+      {
+        "label": "V3 论文发布时最好",
+        "value": "49.9",
+        "note": "Qwen3-VL-Embedding-8B，All（190 任务）口径；其 All*（179，不含音频）为 53.0。同表里 Omni-Embed-Nemotron-3B 的音频（36.5）与 Agent（36.5）更强，论文的结论是没有单一模型在所有赛道都最优。",
+        "cite": [
+          "paper-v3@Table 3",
+          "paper-v3@§4.2"
+        ]
+      },
+      {
+        "label": "官方榜单快照最高（不含音频）",
+        "value": "60.68",
+        "note": "OmniEVIE-4B（Full · full-sequence d=2048），取自官方模型卡转录的 TIGER-Lab/MMEB-Leaderboard 快照（2026-11-24，按 Audio-Overall = 0 排序）；同一快照里该模型自述在全部 190 任务总榜列第 2。",
+        "cite": [
+          "omnievie-card@Evaluations & Benchmarks"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      },
+      {
+        "label": "饱和 / 噪声参考线",
+        "value": "论文未给出",
+        "note": "论文没有报告人类基线上限或题目错误率。作者的核心结论是分数里混有大量「语义对但模态错」的失败（OmniSET 上多个跨模态方向 Hit@1 接近 0），因此不能把榜单分读成语义检索能力的上界。",
+        "cite": [
+          "paper-v3@§5.1",
+          "paper-v3@附录 A.2.2"
+        ]
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把「不含音频榜第一」当成 190 任务总榜第一：官方快照按 Audio-Overall = 0 排序，OmniEVIE-4B 自述在非音频模型里排第 1、在全部 190 任务里排第 2。",
+        "cite": [
+          "omnievie-card@Evaluations & Benchmarks"
+        ]
+      },
+      {
+        "text": "把不同索引压缩档位的分数差读成模型能力差异：同一 checkpoint 的 Full（60.68）与 K128×d64 int8（60.06）差 0.62，视频抽样 8 帧与 32 帧也会改分数。",
+        "cite": [
+          "omnievie-card@Evaluations & Benchmarks"
+        ]
+      },
+      {
+        "text": "把 All*（179，不含音频）和 All（190）排在一起比：论文表注明确 All 列把缺失模态按 0 计入。",
+        "cite": [
+          "paper-v3@Table 3 注"
+        ]
+      },
+      {
+        "text": "把榜单高分读成「模型能按指令约束模态」：论文的三个核心发现正相反——模型经常检索不到指令指定的目标模态，跨模态检索高度不对称且被查询模态偏置主导，指令带来的表示偏移往往不足或与目标模态错位。",
+        "cite": [
+          "paper-v3@Abstract",
+          "paper-v3@§5.1"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "TIGER-Lab / TIGER-AI-Lab；项目主页 tiger-ai-lab.github.io/VLM2Vec，数据集与榜单托管在 Hugging Face 的 TIGER-Lab 组织下，代码仓为 TIGER-AI-Lab/VLM2Vec",
+        "cite": [
+          "repo",
+          "dataset-v3"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "V1（VLM2Vec）：Ziyan Jiang、Rui Meng、Xinyi Yang、Semih Yavuz、Yingbo Zhou、Wenhu Chen（University of Waterloo / Salesforce Research）；V2：Rui Meng、Ziyan Jiang、Ye Liu、Mingyi Su 等 13 人；V3（MMEB-V3）：Haohang Huang、Xuan Lu、Mingyi Su、Xuan Zhang、Ziyan Jiang、Ping Nie、Kai Zou、Tomas Pfister、Wenhu Chen、Wei Zhang、Xiaoyu Shen、Rui Meng（Eastern Institute of Technology / SJTU / Google / Waterloo / NUS / UCSB / Netmind.ai）",
+        "cite": [
+          "paper-v1@作者署名",
+          "paper-v2@作者署名",
+          "paper-v3@作者署名"
+        ]
+      },
+      {
+        "k": "时间线",
+        "v": "2024-10-07 VLM2Vec 报告提交（MMEB-V1，36 个数据集）→ 2024-12 官方榜单上线 → 2025-05 MMEB-V2 数据初版发布（78 个任务）→ 2025-07-07 V2 技术报告 → 2026-04-25 MMEB-V3 报告提交（190 个任务）→ 2026-11-24 arXiv v3",
+        "cite": [
+          "paper-v1",
+          "repo@News",
+          "dataset-v2@What's New",
+          "paper-v2",
+          "paper-v3"
+        ]
+      },
+      {
+        "k": "发表venue",
+        "v": "VLM2Vec / MMEB 被 ICLR 2025 接收，VLM2Vec-V2 / MMEB-V2 被 TMLR 2026 接收，MMEB-V3 被 COLM 2026 接收（arXiv 注释写 Accepted at COLM 2026）",
+        "cite": [
+          "repo",
+          "paper-v3"
+        ]
+      },
+      {
+        "k": "数据与代码位置",
+        "v": "评测数据 VLM2Vec/MMEB-V3（MIT，388 GB）；V2 数据 TIGER-Lab/MMEB-V2（Apache-2.0，157 GB，六个元任务压缩包）；V1 数据 TIGER-Lab/MMEB-eval；任务配置与评测脚本在 TIGER-AI-Lab/VLM2Vec；榜单 TIGER-Lab/MMEB-Leaderboard（Apache-2.0）",
+        "cite": [
+          "dataset-v3",
+          "dataset-v2",
+          "repo",
+          "leaderboard",
+          "leaderboard-readme"
+        ]
+      },
+      {
+        "k": "OmniSET 构成",
+        "v": "以 MSCOCO 为底，四模态（文本 / 图像 / 视频 / 音频）语义等价元组；视频由 Google Veo-3.1 从图像生成，音频由 Gemini-2.5-Flash-TTS 从字幕生成，每条查询配 15–20 个人工核验的难负例",
+        "cite": [
+          "paper-v3@附录 A.2.1"
+        ]
+      },
+      {
+        "k": "提交文件格式",
+        "v": "JSON，config 含 model_dtype（torch.float16 / bfloat16 / 8bit / 4bit）、model_name、model_sha，results 为 {task_name: {metric_name: score}}；请求文件由榜单工具自动生成",
+        "cite": [
+          "leaderboard-readme"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-24",
+        "columns": [
+          "来源",
+          "模型 / 索引配置",
+          "All (190)",
+          "Text (53)",
+          "Agent (47)",
+          "备注"
+        ],
+        "rows": [
+          [
+            "官方模型卡转录的 TIGER-Lab/MMEB-Leaderboard 快照（2026-11-24，按 Audio-Overall = 0 排序）",
+            "OmniEVIE-4B（Full · full-sequence d=2048）",
+            "60.68",
+            "52.97",
+            "54.14",
+            "官方表内该行加粗；卡片自述非音频榜第 1、190 任务总榜第 2"
+          ],
+          [
+            "同上",
+            "OmniEVIE-4B（Compressed · K128×d64 int8，32 帧）",
+            "60.06",
+            "51.77",
+            "54.03",
+            "压缩索引档"
+          ],
+          [
+            "同上",
+            "OmniEVIE-4B（Compressed · K128×d64 int8，8 帧）",
+            "59.76",
+            "51.77",
+            "54.03",
+            "压缩索引档，帧数更少"
+          ],
+          [
+            "同上",
+            "WeMM-Embedding-9B",
+            "59.33",
+            "48.76",
+            "50.10",
+            "同榜竞品"
+          ],
+          [
+            "同上",
+            "WeMM-Embedding-4B",
+            "57.97",
+            "47.88",
+            "48.06",
+            "同榜竞品"
+          ],
+          [
+            "同上",
+            "WeMM-Embedding-2B",
+            "55.77",
+            "45.34",
+            "44.05",
+            "同榜竞品"
+          ],
+          [
+            "同上",
+            "Qwen3-VL-Embedding-8B",
+            "53.50",
+            "42.50",
+            "38.40",
+            "同榜竞品；论文 Table 3 同模型为 49.9 / 43.3"
+          ],
+          [
+            "同上",
+            "Qwen3-VL-Embedding-2B",
+            "50.90",
+            "39.20",
+            "39.30",
+            "同榜竞品"
+          ],
+          [
+            "MMEB-V3 论文 Table 3",
+            "Qwen3-VL-Embedding-8B",
+            "49.9",
+            "43.3",
+            "38.4",
+            "论文口径；All*（179）为 53.0"
+          ],
+          [
+            "MMEB-V3 论文 Table 3",
+            "E5-Omni (7B)",
+            "47.1",
+            "27.4",
+            "36.7",
+            "论文口径"
+          ],
+          [
+            "MMEB-V3 论文 Table 3",
+            "Omni-Embed-Nemotron-3B",
+            "43.5",
+            "39.1",
+            "36.5",
+            "论文口径；音频 36.5 为该表最高"
+          ]
+        ]
+      },
+      "cite": [
+        "omnievie-card@Evaluations & Benchmarks",
+        "paper-v3@Table 3"
+      ]
     }
   }
 }
