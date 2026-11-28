@@ -1,78 +1,364 @@
 {
   "id": "transrubric",
   "name": "TransRubric",
-  "full_name": "TransRubric: A rubric-based automatic evaluation suite for machine translation（腾讯随 Hy-MT3 发布的翻译自动评测套件）",
+  "full_name": "TransRubric: Rubric-Based Automatic Evaluation for Translation（翻译的 rubric 式自动评测套件，腾讯混元随 Hy-MT3 开源）",
   "aliases": [],
   "status": null,
   "categories": [
     "knowledge"
   ],
-  "summary": "腾讯随 Hy-MT3 一并开源的 rubric 型机器翻译自动评测套件：用细粒度 rubric 对译文逐项打分，替代 WMT26 共享任务里的既有评测方案，并被官方用作 Hy-MT3 通用翻译与真实场景翻译两项基准的打分器",
-  "interpretation": "这是评测套件本身的档案，不是某个模型在某项基准上的得分。官方模型卡与 arXiv 2611.27673 给出的口径是：在 WMT26 共享任务「自动翻译质量评估」Task 2 上，TransRubric 取得最高的分段级 PDP 0.744 与 Avg Corr 0.832，官方称高于排名最高的官方提交；在 651 条中英互译样本上与 10 名专业标注者对比，TransRubric 10 次运行的单样本标准差为 3.31 分、远小于人工标注者的 15.57 分，成对准确率 59.91%、高于 10 人中的 7 人。分数是 rubric 命中口径的 0–100 分，跨评测方案的可比性取决于 rubric 构造方式，不能与模型在某项公开基准上的绝对分直接并列比较。",
+  "summary": "TransRubric 是腾讯混元随 Hy-MT3 一起开源的翻译质量自动评测套件：先把「好译文」拆成一条条可核对的检查项（rubric，即评分细则），再让大模型当裁判（LLM-as-a-judge）逐项核对，给出 0–100 分并标出每处问题的错误类型与严重程度。官方同时放出 FLORES-200、WMT26 GenMT、HardMTBench 四个测试集的逐题 rubric 和构造 / 裁判提示词。",
+  "interpretation": "高分说明候选译文在 rubric 列出的检查项上很少出问题，且裁判与人工判断更一致。但它不是翻译能力排名：分数取决于 rubric 怎么写、用哪个底层模型当裁判、有没有参考译文，不同口径之间不能直接并列。官方自报的关键数字是 WMT26 评测共享任务 Task 2 上分段级 PDP 0.744 与 Avg Corr 0.832（均为该设置下最高）；在 651 对中英互译上与 10 名专业标注者相比，10 次运行的单样本标准差为 3.31 分（人工 15.57 分），成对准确率 59.91%、高于 10 人中的 7 人。",
   "measures": [
-    "机器翻译质量的 rubric 命中打分（无参考译文时也可评）",
-    "翻译自动评测方案自身的稳定性（重复运行方差）",
-    "自动评测与人工专家标注的一致性"
+    {
+      "area": "FLORES-200 · 33 语言全向互译",
+      "focus": "33 种语言两两互译，共 1,056 个方向；示例 rubric 检查项包括指令遵循（只输出译文、不带解释）、语义完整（不漏译不增译关键信息）",
+      "share": "106,656 条样本（README 原表给样本数，未给占比）",
+      "format": "短句 + 参考译文 + 逐题 rubric 清单",
+      "cite": [
+        "tr-readme@Released Rubric Resources",
+        "tr-readme@Data Format"
+      ]
+    },
+    {
+      "area": "FLORES-200 · 64 个低资源语言（与中文或英语配对）",
+      "focus": "Hy-MT3 新增的 64 个低资源语言，分别与中文或英语配对，共 256 个方向",
+      "share": "25,856 条样本（README 原表给样本数，未给占比）",
+      "format": "短句 + 参考译文 + 逐题 rubric 清单",
+      "cite": [
+        "tr-readme@Released Rubric Resources"
+      ]
+    },
+    {
+      "area": "WMT26 GenMT",
+      "focus": "WMT26 通用机器翻译共享任务的 20 个语言对；已排除 English-to-Ligurian、English-to-Ladin、English-to-Northern-Sami 三对",
+      "share": "4,303 条样本（README 原表给样本数，未给占比）",
+      "format": "短句 + 参考译文 + 逐题 rubric 清单",
+      "cite": [
+        "tr-readme@Released Rubric Resources",
+        "paper@§3.1 Experimental Setup"
+      ]
+    },
+    {
+      "area": "HardMTBench",
+      "focus": "知识密集型、长文本的中英双向翻译，覆盖 12 个知识领域；发布文件保留领域、子领域、双语术语与难度等上游元数据",
+      "share": "20,000 条样本（README 原表给样本数，未给占比）",
+      "format": "长文本 + 参考译文 + 逐题 rubric 清单",
+      "cite": [
+        "tr-readme@Released Rubric Resources",
+        "tr-readme@Data Format"
+      ]
+    },
+    {
+      "area": "错误类型维度（跨全部测试集）",
+      "focus": "rubric 逐条识别四类问题：completeness（漏译 / 增译）、accuracy（误译）、terminology（术语）、instruction following（指令遵循），并标严重程度；论文用例：Hy-MT2 把人名「夏雨雨」误译为 summer rains",
+      "share": "未披露（论文只说明 rubric 会识别这些错误类型，未给各类的权重或题量）",
+      "format": "每类问题的命中标注 + 严重程度 + 0–100 逐点评分",
+      "cite": [
+        "paper@§2",
+        "paper@§3.6 Case Study"
+      ]
+    }
   ],
   "does_not_measure": [
-    "翻译模型本身的翻译能力（那是 Hy-MT3 等模型在 FLORES-200 / WMT26 等基准上的得分）",
-    "指令遵循能力（由 IFMTBench 单独衡量）"
+    {
+      "text": "不评被测模型的翻译能力本身——那是 FLORES-200 / WMT26 / HardMTBench 上被测模型的得分，TransRubric 只是打分器（本档案也不收录模型成绩行）",
+      "cite": [
+        "paper@§1",
+        "paper@§2"
+      ]
+    },
+    {
+      "text": "不评翻译指令遵循的独立基准口径——IFMTBench 用另一套官方规则与 GPT-OSS-120B 裁判打分，不走 TransRubric",
+      "cite": [
+        "paper@§3.1 Experimental Setup"
+      ]
+    },
+    {
+      "text": "不把 rubric 当参考答案——官方明确说 rubric 是核对清单，不是参考译文，也不构成「一定存在错误」的证据，等价且自然的译文应被接受",
+      "cite": [
+        "tr-readme@Translation Judge Prompt"
+      ]
+    }
   ],
   "dataset": {
-    "sample_count": 651,
-    "splits": [],
-    "languages": [
-      "zh",
-      "en"
+    "sample_count": 156815,
+    "splits": [
+      "FLORES-200 33 语言（1,056 个方向）",
+      "FLORES-200 64 个低资源语言（256 个方向）",
+      "WMT26 GenMT（20 个语言对）",
+      "HardMTBench（中英双向，12 个知识领域）"
     ],
-    "source_type": "real-world（651 条中英互译样本；10 名专业标注者的成对比较标注）",
-    "public_sample": false
+    "languages": [
+      "中文",
+      "英语",
+      "FLORES-200 33 种语言",
+      "FLORES-200 另 64 个低资源语言（与中文或英语配对）",
+      "WMT26 GenMT 20 个语言对所含语言"
+    ],
+    "source_type": "公开基准的译文评测资源：在 FLORES-200 / WMT26 GenMT / HardMTBench 的原文、参考译文、翻译指令与元数据之上，新增逐题 rubric 字段",
+    "public_sample": true,
+    "totals": "官方按四个测试集分别发布，逐条给出的样本数为 106,656 + 25,856 + 4,303 + 20,000 = 156,815 条（README 分表给出，未直接给合计；合计为本页把四个公开数字相加）· 题型为短句 / 长文本翻译，均带参考译文与逐题 rubric · 语言覆盖 FLORES-200 的 33 种语言与 64 个低资源语言、WMT26 GenMT 的 20 个语言对，以及 HardMTBench 的中英双向",
+    "cite": [
+      "tr-readme@Released Rubric Resources",
+      "tr-readme@README",
+      "tr-readme@Data Sources"
+    ],
+    "construction": [
+      {
+        "k": "取材自公开基准",
+        "text": "从 FLORES-200、WMT26 GenMT、HardMTBench 三个公开基准取源文本、参考译文、翻译指令与基准元数据，TransRubric 只新增逐题 rubric 字段和统一的发布 schema；上游引用需按官方要求一并标注。",
+        "cite": [
+          "tr-readme@README",
+          "tr-readme@Data Sources",
+          "tr-readme@References"
+        ]
+      },
+      {
+        "k": "rubric 三阶段生成",
+        "text": "RUBRIC_DRAFT_PROMPT 先生成扎根源文本的初始 rubric；RUBRIC_DELTA_PROMPT 从未标注的候选译文中找出有区分度但缺失的检查项；RUBRIC_MERGE_PROMPT 再保守地把有效新条目合并进 rubric。rubric 条目用简体中文写，定位是具体、可核对的检查，而不是死板的参考译文。",
+        "cite": [
+          "tr-readme@Rubric Construction Prompts"
+        ]
+      },
+      {
+        "k": "裁判逐点打分",
+        "text": "TRANSLATION_JUDGE_PROMPT 对一条候选译文做逐点评分：核对翻译任务与逐题 rubric，返回结构化问题列表、总体摘要、置信度，以及 0–100 的翻译质量分；提示词只负责构造消息，底层模型由使用方自选。",
+        "cite": [
+          "tr-readme@Translation Judge Prompt",
+          "tr-readme@README"
+        ]
+      },
+      {
+        "k": "双裁判取均值",
+        "text": "论文口径下每个 TransRubric 分数是 DeepSeek-V4.1-Flash 与 Qwen3.5-397B-A17B 两个裁判的算术平均；每个基准分数用固定的预期样本数作分母，空输出与未评分样本记 0 分，以保证跨模型可比。",
+        "cite": [
+          "paper@§2"
+        ]
+      },
+      {
+        "k": "元评估",
+        "text": "在 WMT26 自动翻译质量评估共享任务 Task 2（分段级质量分预测）的八个优先翻译方向上做元评估；这一实验里 TransRubric 以 reference-free 方式运行，底层裁判换成 Gemini 3.6 Flash。",
+        "cite": [
+          "paper@§2"
+        ]
+      },
+      {
+        "k": "问题标注的下游用途",
+        "text": "裁判输出的问题标注可直接用于错误分析：论文表 5 用它对比 Hy-MT2-30B-A3B 与 Hy-MT3-30B-A3B 在 5,000 条真实场景样本上四类错误的占比（各类不互斥）。",
+        "cite": [
+          "paper@Table 5"
+        ]
+      }
+    ]
+  },
+  "default_protocol": {
+    "raw": "输入为源文本、候选译文、翻译指令和可选的参考译文；裁判按逐题 rubric 逐项核对，列出每个问题的错误类别与严重程度，输出 0–100 的逐点评分。论文口径：每个分数是 DeepSeek-V4.1-Flash 与 Qwen3.5-397B-A17B 两个裁判的算术平均，分母固定为预期样本数（空输出与未评分样本记 0）。官方未印出 temperature / top_p 等推理参数，也未给出重复运行次数的通用规定（仅在与人工对比时固定跑 10 次）。",
+    "cite": [
+      "paper@§2",
+      "tr-readme@README",
+      "tr-readme@Translation Judge Prompt"
+    ],
+    "variants": [
+      {
+        "text": "有参考译文（reference-based，用于 FLORES-200、WMT26、Mandarin⇔Minority、HardMTBench）与无参考译文（reference-free，用于 WildMTBench-202611 和 WMT26 Task 2 元评估）是两种口径；WMT26 Task 2 上 0.744 / 0.832 这组数字来自无参考口径，与论文各基准表格的双裁判口径不是一回事。",
+        "cite": [
+          "paper@§2"
+        ]
+      },
+      {
+        "text": "底层裁判模型不同即分数不同：论文基准表格用 DeepSeek-V4.1-Flash + Qwen3.5-397B-A17B 双裁判，WMT26 Task 2 元评估用 Gemini 3.6 Flash，而官方提示词本身允许使用方换成任意多语言模型。",
+        "cite": [
+          "paper@§2",
+          "tr-readme@Translation Judge Prompt"
+        ]
+      },
+      {
+        "text": "分母口径：官方用固定预期样本数作分母，空输出、裁判侧失败与未评分样本都记 0；若改用有效样本均值，分数会偏高，两者不可比。",
+        "cite": [
+          "paper@§2",
+          "paper@Table 3 注"
+        ]
+      },
+      {
+        "text": "重复运行的抖动：与人工对比时每条样本固定跑 10 次，单样本标准差平均 3.31 分（0–100 分量纲）；单次运行的分数带有这个量级的波动，官方未给出其他场景的运行次数规定。",
+        "cite": [
+          "paper@§2"
+        ]
+      }
+    ]
   },
   "metrics": [
     {
+      "id": "transrubric-score",
+      "name": "TransRubric 翻译质量分",
+      "direction": "越高越好",
+      "description": "裁判按逐题 rubric 核对后给出的 0–100 逐点评分；论文口径为两个裁判的算术平均",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "point",
+      "cite": [
+        "paper@§2",
+        "tr-readme@README"
+      ]
+    },
+    {
       "id": "pdp",
-      "name": "Segment-level pairwise disagreement proportion（分段级 PDP）",
+      "name": "Segment-level PDP（分段级成对差异皮尔逊相关）",
+      "direction": "越高越好",
+      "description": "WMT26 Task 2 官方元评估指标之一：自动评测给出的分段级质量分与人工分的成对差异皮尔逊相关，按八个优先翻译方向等权平均",
       "range": [
         0,
         1
       ],
       "unit": "index",
-      "direction": "lower",
-      "aggregation": "mean"
+      "cite": [
+        "paper@§2"
+      ]
+    },
+    {
+      "id": "spa",
+      "name": "System-level SPA（系统级软成对准确率）",
+      "direction": "越高越好",
+      "description": "WMT26 Task 2 官方元评估指标之一：系统级的软成对准确率，同样按方向等权平均",
+      "range": [
+        0,
+        1
+      ],
+      "unit": "index",
+      "cite": [
+        "paper@§2"
+      ]
     },
     {
       "id": "avg-corr",
-      "name": "Average correlation（Avg Corr）",
+      "name": "Avg Corr（PDP 与 SPA 的算术平均）",
+      "direction": "越高越好",
+      "description": "WMT26 Task 2 上把分段级 PDP 与系统级 SPA 取算术平均后的综合相关性指标",
       "range": [
         0,
         1
       ],
       "unit": "index",
-      "direction": "higher",
-      "aggregation": "mean"
+      "cite": [
+        "paper@§2"
+      ]
     },
     {
       "id": "pairwise-accuracy",
-      "name": "Pairwise accuracy（成对准确率）",
+      "name": "成对准确率（与人工金标比）",
+      "direction": "越高越好",
+      "description": "对同一源文本的三条候选译文两两成对（共 651 对），判断评分者是否与金标偏好同一条译文",
       "range": [
         0,
         100
       ],
       "unit": "percent",
-      "direction": "higher",
-      "aggregation": "mean"
+      "cite": [
+        "paper@§2"
+      ]
+    },
+    {
+      "id": "per-sample-std",
+      "name": "单样本标准差（评分稳定性）",
+      "direction": "越低越好",
+      "description": "同一条译文的 10 次评分（或 10 名标注者各自 1 次）的标准差，衡量评分的可重复性；TransRubric 平均 3.31 分，人工平均 15.57 分",
+      "range": [
+        0,
+        100
+      ],
+      "unit": "point",
+      "cite": [
+        "paper@§2"
+      ]
     }
   ],
-  "default_protocol": {
-    "raw": "官方模型卡口径：rubric 逐项打分后汇总为 0–100 分；与人工标注者对比时取 10 次运行的单样本标准差与成对准确率；官方未印 temperature / top_p / 运行协议细节（除对比人工时的 10 次运行与 651 条样本外），protocol 对应键留 null"
-  },
-  "versions": [],
-  "limitations": [
-    "依赖 rubric 的构造方式，不同评测方案之间的分数不可直接横向比较",
-    "官方只给出与 10 名专业标注者的对比，未给出跨语言、跨领域的大规模人工对齐数据",
-    "官方模型卡与 arXiv 摘要的对应数值均为厂商自报，未经第三方复现"
+  "versions": [
+    {
+      "id": "arxiv-v1",
+      "date": "2026-11-20",
+      "label": "arXiv:2611.27673 v1 提交（Hy-MT3 技术报告，第 2 节为 TransRubric）",
+      "cite": [
+        "paper"
+      ]
+    },
+    {
+      "id": "arxiv-v2",
+      "date": "2026-11-23",
+      "label": "arXiv v2 修订（本页核对所用版本）",
+      "cite": [
+        "paper"
+      ]
+    },
+    {
+      "id": "github-release",
+      "date": "2026-11-24",
+      "label": "随 Hy-MT3 权重在 HuggingFace / ModelScope 与 GitHub 正式开源，TransRubric 的 rubric 测试集与提示词同步发布",
+      "cite": [
+        "hy-mt3-repo@News",
+        "hy-mt3-card@News"
+      ]
+    }
   ],
-  "notes": "arXiv 2611.27673（2026-11-20 v1 提交，腾讯）；官方 Hugging Face 模型卡 tencent/Hy-MT3-30B-A3B 与官方 GitHub 仓 Tencent-Hunyuan/Hy-MT3 的 News 段（2026.11.24 随 Hy-MT3 一并开源）。本页随 Hy-MT3 的官方发布一并建档，核验日期 2026-11-25。TransRubric 在 WMT26-QE Task 2 与人工一致性上的数值记在本页解读段落，未作为 Hy-MT3 的模型证据行（该组分数评的是评测套件本身，不是 Hy-MT3 的翻译绝对分）。",
+  "limitations": [
+    {
+      "issue": "关键成绩均为厂商自报，未见第三方复现",
+      "impact": "WMT26 Task 2 的 PDP 0.744 / Avg Corr 0.832、与人工的 3.31 分与 59.91% 都出自腾讯自己的技术报告与模型卡；论文表 1 里除 TransRubric 之外的对照系统取自 WMT26 findings 表 8，TransRubric 自身一行没有独立第三方复现。",
+      "severity": "中",
+      "response": "未见官方回应",
+      "reader": "把这些数字当厂商自报口径读；跨方案比较前先确认是否同一套 WMT26 Task 2 设置与同一批方向。",
+      "cite": [
+        "paper@§2",
+        "paper@Table 1 注",
+        "hy-mt3-card@TransRubric"
+      ]
+    },
+    {
+      "issue": "rubric 与提示词公开，但底层裁判模型不固定",
+      "impact": "官方公开了逐题 rubric、rubric 构造提示词和裁判提示词，分数却强依赖所选底层模型：论文基准表格用 DeepSeek-V4.1-Flash + Qwen3.5-397B-A17B，WMT26 元评估用 Gemini 3.6 Flash，官方提示词又允许使用方换成任意多语言模型。",
+      "severity": "中",
+      "response": "官方在报告里显式写出每处的裁判模型、参考译文口径与分母规则。",
+      "reader": "复现或对比前先固定裁判模型、reference-based / reference-free 与分母口径，再比分数。",
+      "cite": [
+        "paper@§2",
+        "tr-readme@Translation Judge Prompt"
+      ]
+    },
+    {
+      "issue": "人工对齐只覆盖中英互译的 651 对",
+      "impact": "与人工的对比是 217 个源文本 × 3 条候选译文的中英互译，共 651 对；其他语向、其他领域的人工对齐情况未披露，10 名标注者全部是英语专业方向。",
+      "severity": "中",
+      "response": "未见官方回应",
+      "reader": "不要把 59.91% 的成对准确率外推到其他语向或领域。",
+      "cite": [
+        "paper@§2"
+      ]
+    },
+    {
+      "issue": "人工对比的金标建立在标注者自己的分数上",
+      "impact": "论文明确说明金标由英文翻译专家修订 10 名标注者的分数后取平均得到，因此这个对比本身偏袒人类；TransRubric 在该偏袒口径下仍排第 4（高于 7 人、低于 3 人）。",
+      "severity": "低",
+      "response": "论文在正文里主动披露了这一偏差。",
+      "reader": "59.91% 应读作「在偏袒人类的口径下仍高于 10 人中的 7 人」，而不是「超过人类平均水平」。",
+      "cite": [
+        "paper@§2"
+      ]
+    },
+    {
+      "issue": "rubric 自身的质量审计未披露",
+      "impact": "官方没有公布 rubric 条目的错误率、覆盖度或标注者间一致性，也没有给出 rubric 生成三阶段各自的质检数字；可核对的只有发布文件本身。",
+      "severity": "低",
+      "response": "未见官方回应",
+      "reader": "高分不等于 rubric 无漏检；关键结论建议抽查若干条的 rubric 清单。",
+      "cite": [
+        "tr-readme@README",
+        "tr-readme@Rubric Construction Prompts"
+      ]
+    }
+  ],
+  "notes": "本页是评测套件自身的档案，不收录任何模型在该套件上的得分行。配套技术报告 arXiv:2611.27673 首版提交于 2026-11-20，本页核对时已更新到 2026-11-23 的 v2；上一版档案记的是 v1 日期，此处按最新版更正。",
   "official_sources": [
     {
       "kind": "paper",
@@ -92,157 +378,285 @@
     "fleurs",
     "mtbench"
   ],
-  "content_status": "beta",
-  "last_verified_at": "2026-11-25",
+  "content_status": "reviewed",
+  "last_verified_at": "2026-11-28",
   "profile": {
-    "template": "benchmark-profile/v1",
-    "verified_at": "2026-11-25",
+    "template": "benchmark-profile/v2",
+    "verified_at": "2026-11-28",
     "sources": [
       {
-        "id": "hy-mt3-paper",
+        "id": "paper",
         "kind": "paper",
-        "title": "Hy-MT3: More Accurate, Robust and Practical Multilingual Translation Models in the Wild（TransRubric 的官方技术报告，arXiv:2611.27673，v1 提交 2026-11-20）",
+        "title": "Hy-MT3: More Accurate, Robust and Practical Multilingual Translation Models in the Wild（arXiv:2611.27673，v1 2026-11-20 / v2 2026-11-23；第 2 节为 TransRubric 专节）",
         "url": "https://arxiv.org/abs/2611.27673",
-        "accessed": "2026-11-25"
+        "accessed": "2026-11-28"
+      },
+      {
+        "id": "tr-readme",
+        "kind": "repo",
+        "title": "TransRubric README（Tencent-Hunyuan/Hy-MT3 仓 TransRubric/ 目录：发布的 rubric 测试集、数据格式、构造与裁判提示词）",
+        "url": "https://github.com/Tencent-Hunyuan/Hy-MT3/blob/main/TransRubric/README.md",
+        "accessed": "2026-11-28"
       },
       {
         "id": "hy-mt3-card",
         "kind": "site",
-        "title": "腾讯官方 Hugging Face 模型卡 tencent/Hy-MT3-30B-A3B（含 TransRubric 的官方说明、WMT26 Task 2 成绩与人工一致性对比）",
+        "title": "腾讯官方 Hugging Face 模型卡 tencent/Hy-MT3-30B-A3B（News 段与 TransRubric 段）",
         "url": "https://huggingface.co/tencent/Hy-MT3-30B-A3B",
-        "accessed": "2026-11-25"
+        "accessed": "2026-11-28"
       },
       {
         "id": "hy-mt3-repo",
         "kind": "repo",
-        "title": "腾讯官方 GitHub 仓 Tencent-Hunyuan/Hy-MT3（News 段：2026.11.24 随 Hy-MT3 权重一并开源 TransRubric）",
+        "title": "Tencent-Hunyuan/Hy-MT3 官方仓库 README（Model Introduction 与 News 段）",
         "url": "https://github.com/Tencent-Hunyuan/Hy-MT3",
-        "accessed": "2026-11-25"
+        "accessed": "2026-11-28"
       }
     ],
-    "sections": {
-      "overview": {
-        "text": "TransRubric 是腾讯随 Hy-MT3 一并开源的 rubric 型机器翻译自动评测套件：用细粒度 rubric 对译文逐项打分，替代 WMT26 共享任务里的既有评测方案，并被官方用作 Hy-MT3 通用翻译与真实场景翻译两项基准的打分器。",
+    "header": {
+      "publisher": {
+        "v": "腾讯混元（Tencent Hunyuan Team）",
         "cite": [
-          "hy-mt3-card",
-          "hy-mt3-repo"
+          "paper@作者署名"
         ]
       },
-      "origin": {
-        "facts": [
-          {
-            "k": "开发方",
-            "v": "腾讯（Tencent）"
-          },
-          {
-            "k": "首次公开",
-            "v": "2026-11-24，随 Hy-MT3 权重一并开源"
-          },
-          {
-            "k": "开源位置",
-            "v": "官方 GitHub 仓 Tencent-Hunyuan/Hy-MT3"
-          },
-          {
-            "k": "配套技术报告",
-            "v": "arXiv:2611.27673（v1 提交 2026-11-20）"
-          }
-        ],
+      "first_release": {
+        "v": "2026-11-24（随 Hy-MT3 权重在 GitHub 开源）",
         "cite": [
-          "hy-mt3-repo",
-          "hy-mt3-paper"
+          "hy-mt3-repo@News"
         ]
-      },
-      "measures": {
-        "items": [
-          {
-            "text": "译文是否出现误译、漏译或增译等错误（rubric 逐项命中）"
-          },
-          {
-            "text": "自动评测方案自身的重复运行稳定性（单样本标准差）"
-          },
-          {
-            "text": "自动评测与专业人工标注的一致性（成对准确率）"
-          }
-        ],
-        "cite": [
-          "hy-mt3-card",
-          "hy-mt3-paper"
-        ]
-      },
-      "composition": {
-        "facts": [
-          {
-            "k": "人工对照样本量",
-            "v": "651 条中英互译译文"
-          },
-          {
-            "k": "人工标注者",
-            "v": "10 名专业标注者"
-          },
-          {
-            "k": "重复运行次数",
-            "v": "10 次（用于计算单样本标准差）"
-          }
-        ],
-        "cite": [
-          "hy-mt3-card"
-        ]
-      },
-      "construction": {
-        "text": "官方模型卡说明 TransRubric 以 rubric 条目对译文打分，并给出与 10 名专业标注者在 651 条中英互译样本上的成对比较；官方未公开 rubric 条目全文与打分模型细节。",
-        "cite": [
-          "hy-mt3-card"
-        ]
-      },
-      "scoring": {
-        "facts": [
-          {
-            "k": "WMT26-QE Task 2 分段级 PDP",
-            "v": "0.744（官方称最高分段级 PDP）"
-          },
-          {
-            "k": "WMT26-QE Task 2 Avg Corr",
-            "v": "0.832"
-          },
-          {
-            "k": "单样本标准差（10 次运行）",
-            "v": "3.31 分，同一批样本的人工标注者为 15.57 分"
-          },
-          {
-            "k": "与人工的成对准确率",
-            "v": "59.91%，高于 10 名标注者中的 7 名"
-          }
-        ],
-        "cite": [
-          "hy-mt3-card"
-        ]
-      },
-      "reading": {
-        "text": "这些是评测套件自身的成绩，不是某个模型在某项公开基准上的得分。0.744 与 0.832 是 0–1 量纲的相关性指标，越高说明与人工判断越一致；3.31 分与 15.57 分是同口径的波动幅度，越小越稳定。跨评测方案比较时可比性取决于 rubric 的构造方式，不能与模型在 FLORES-200、WMT26 等基准上的绝对分并列。",
-        "cite": [
-          "hy-mt3-card",
-          "hy-mt3-paper"
-        ]
-      },
-      "limitations": {
-        "items": [
-          {
-            "text": "官方未公开 rubric 条目全文与打分模型细节，第三方难以完全复现"
-          },
-          {
-            "text": "人工对照仅覆盖 651 条中英互译样本，跨语言与跨领域的对齐情况未知"
-          },
-          {
-            "text": "全部成绩为厂商自报，未经第三方复现"
-          }
-        ],
-        "cite": [
-          "hy-mt3-card"
-        ]
-      },
-      "versions": {
-        "missing": "官方未发布带版本号的 TransRubric 迭代记录；截至 2026-11-25 仅见随 Hy-MT3 首次开源的版本。"
       }
+    },
+    "cites": {
+      "summary": [
+        "paper@Abstract",
+        "tr-readme@README",
+        "paper@§2"
+      ],
+      "interpretation": [
+        "paper@§2",
+        "tr-readme@Translation Judge Prompt"
+      ]
+    },
+    "problem": {
+      "text": "强模型在标准翻译基准上趋于饱和，整体分和神经指标（COMET 一类）既拉不开最强模型之间的差距，也说不出译文具体错在哪；团队需要一个细粒度、可解释且与人工判断一致的评测方法，既能量化进展，也能直接指导模型开发。",
+      "cite": [
+        "paper@§1"
+      ]
+    },
+    "ladder": [
+      {
+        "label": "同一 WMT26 Task 2 设置下的传统自动指标",
+        "value": "chrF PDP 0.601 / spBLEU 0.566",
+        "note": "论文表 1 里的传统指标行，PDP 明显低于所有 LLM 评测方案（0.426–0.744）。",
+        "cite": [
+          "paper@Table 1"
+        ]
+      },
+      {
+        "label": "论文发布时最好（TransRubric 自身）",
+        "value": "PDP 0.744 / Avg Corr 0.832",
+        "note": "WMT26 Task 2 分段级质量分预测，reference-free 运行，底层裁判 Gemini 3.6 Flash；论文称高于排名最高的官方提交 Gemini-3.6-Flash（0.736 / 0.830），系统级 SPA 0.920 与最好系统（0.924）基本持平。",
+        "cite": [
+          "paper@§2",
+          "paper@Table 1"
+        ]
+      },
+      {
+        "label": "人工标注者参考线（成对准确率）",
+        "value": "TransRubric 59.91%，10 名标注者均值 54.7%、最高 61.29%",
+        "note": "651 对中英互译；金标由标注者自己的分数修订而来，口径偏袒人类。TransRubric 排第 4，高于 10 人中的 7 人。",
+        "cite": [
+          "paper@§2"
+        ]
+      },
+      {
+        "label": "评分稳定性参考线",
+        "value": "单样本标准差：TransRubric 3.31 分，人工 15.57 分",
+        "note": "0–100 分量纲；TransRubric 为 10 次重复运行，人工为 10 名标注者各评 1 次（平均方差 26.20 对 285.79）。",
+        "cite": [
+          "paper@§2"
+        ]
+      },
+      {
+        "label": "本站账本当前最高",
+        "auto": "ledger-top"
+      }
+    ],
+    "misreadings": [
+      {
+        "text": "把 TransRubric 的分数当成某个模型的翻译能力得分——它评的是译文质量；模型在 FLORES-200 / WMT26 / HardMTBench 上的分数是另一回事，本档案也不收录模型成绩行。",
+        "cite": [
+          "paper@§1",
+          "paper@§2"
+        ]
+      },
+      {
+        "text": "把 WMT26 Task 2 的 PDP 0.744 读成「74.4% 的正确率」——PDP 是分段级成对差异皮尔逊相关，量纲 0–1，不是百分比准确率。",
+        "cite": [
+          "paper@§2"
+        ]
+      },
+      {
+        "text": "把 59.91% 的成对准确率读成「已经超过人类」——论文明确说金标建立在标注者自己的分数上，这个对比偏袒人类；准确读法是「在偏袒人类的口径下仍高于 10 人中的 7 人、排第 4」。",
+        "cite": [
+          "paper@§2"
+        ]
+      },
+      {
+        "text": "把有参考译文与无参考译言的分数混在一起比——前者用于 FLORES-200、WMT26、Mandarin⇔Minority 与 HardMTBench，后者用于 WildMTBench-202611 和 WMT26 Task 2 元评估，两种口径不可直接并列。",
+        "cite": [
+          "paper@§2"
+        ]
+      }
+    ],
+    "background": [
+      {
+        "k": "发布方",
+        "v": "腾讯混元（Tencent Hunyuan Team）",
+        "cite": [
+          "paper@作者署名"
+        ]
+      },
+      {
+        "k": "核心作者",
+        "v": "核心贡献者 Mao Zheng、Zheng Li、Fangxu Liu、Tao Chen、Bingxin Qu、Bo Lv、Mingrui Sun（论文 Contributions 节）",
+        "cite": [
+          "paper@§5.1 Core Contributors"
+        ]
+      },
+      {
+        "k": "首次公开",
+        "v": "2026-11-24，随 Hy-MT3-1.8B / 7B / 30B-A3B 权重在 HuggingFace 与 ModelScope 开源，TransRubric 同步发布在 GitHub",
+        "cite": [
+          "hy-mt3-repo@News",
+          "hy-mt3-card@News"
+        ]
+      },
+      {
+        "k": "配套技术报告",
+        "v": "arXiv:2611.27673《Hy-MT3: More Accurate, Robust and Practical Multilingual Translation Models in the Wild》，v1 提交 2026-11-20，v2 修订 2026-11-23",
+        "cite": [
+          "paper"
+        ]
+      },
+      {
+        "k": "开源位置",
+        "v": "GitHub Tencent-Hunyuan/Hy-MT3 的 TransRubric/ 目录：README、transrubric_prompts.py 与 testsets/ 四个 jsonl 文件",
+        "cite": [
+          "tr-readme@Project Structure",
+          "paper@§2"
+        ]
+      },
+      {
+        "k": "数据来源",
+        "v": "FLORES-200、WMT26 GenMT、HardMTBench 三个公开基准；上游引用要求见 TransRubric README 的 References 节",
+        "cite": [
+          "tr-readme@Data Sources",
+          "tr-readme@References"
+        ]
+      },
+      {
+        "k": "上游基准规模",
+        "v": "FLORES-200 33 语言 106,656 条 + 64 个低资源语言 25,856 条 + WMT26 GenMT 4,303 条 + HardMTBench 20,000 条（README 分表给出，合计 156,815 条）",
+        "cite": [
+          "tr-readme@Released Rubric Resources"
+        ]
+      }
+    ],
+    "official_results": {
+      "table": {
+        "as_of": "2026-11-28",
+        "columns": [
+          "自动评测方案",
+          "底层模型",
+          "PDP",
+          "SPA",
+          "Avg Corr"
+        ],
+        "rows": [
+          [
+            "TransRubric (ours)∗",
+            "Gemini 3.6 Flash",
+            "0.744",
+            "0.920",
+            "0.832"
+          ],
+          [
+            "Gemini-3.6-Flash∗",
+            "Gemini 3.6 Flash",
+            "0.736",
+            "0.924",
+            "0.830"
+          ],
+          [
+            "GPT-5.6 Sol - Medium Reasoning∗",
+            "GPT-5.6 Sol",
+            "0.735",
+            "0.920",
+            "0.828"
+          ],
+          [
+            "bytepop pro10",
+            "EnsembleE2",
+            "0.733",
+            "0.918",
+            "0.826"
+          ],
+          [
+            "chrF",
+            "–",
+            "0.601",
+            "0.890",
+            "0.746"
+          ],
+          [
+            "COMET22",
+            "XLM-RoBERTa-large",
+            "0.610",
+            "0.862",
+            "0.736"
+          ],
+          [
+            "spBLEU",
+            "–",
+            "0.566",
+            "0.885",
+            "0.725"
+          ],
+          [
+            "gemba-poly∗",
+            "Llama 3.3 70B",
+            "0.510",
+            "0.884",
+            "0.697"
+          ],
+          [
+            "xCOMET XXL†",
+            "xCOMET-XXL",
+            "0.540",
+            "0.822",
+            "0.681"
+          ],
+          [
+            "BERTScore",
+            "XLM-RoBERTa-large",
+            "0.496",
+            "0.858",
+            "0.677"
+          ],
+          [
+            "COMETKiwi22∗",
+            "XLM-RoBERTa-large",
+            "0.426",
+            "0.724",
+            "0.575"
+          ]
+        ]
+      },
+      "cite": [
+        "paper@Table 1"
+      ]
     }
   }
 }
