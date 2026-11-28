@@ -5342,3 +5342,86 @@ Microsoft Ignite 2026 总发布页一次公布七项模型。逐项对账 `micro
 - **新增厂商**：无（仍为 18 家）
 - **候选数**：757 → **759**（+2 合成候选）；`need_reverify = 1` 为 0；未决候选 **0**
 - **检查点**：`last_scan_at=2026-11-27`；`last_max_release_date` 2026-11-24 → **2026-11-25**
+
+## 第八十一批（2026-11-28 CST / 2026-11-28 UTC 增量窗口 2026-11-11 ~ 2026-11-27：新增 1 个官方发布 — 智谱 GLM-5.4（5 条 evidence，全部 pending））
+
+- **窗口**：本轮开工于 2026-11-27 23:17 UTC（= 2026-11-28 07:17 CST），按检查点锚点 `last_max_release_date=2026-11-25` 回退 14 天重叠，算出的增量窗口为 **2026-11-11 ~ 2026-11-27**。收口时 UTC 已跨过零点，检查点回写 `last_scan_at=2026-11-28`（UTC），覆盖页窗口随之由 2026-11-27 前移到 **2026-11-28**；本批入库的最大官方发布日 = GLM-5.4 的 **2026-11-23**，**小于**原锚点 2026-11-25，按「锚点只前进不回退」规则 `last_max_release_date` **保持 2026-11-25 不变**。官方 release 总数 265 → **266**；official evidence edges 5144 → **5149**（+5）；benchmarks 515 → **515**（新建实体 0 个）。
+- **开工前收口（情况 B）**：开工时 `gh pr list --state open` 为空，无待合并的上一批 PR；`origin/main` 头为 `4c2ac2d`（第八十批 squash 提交，提交时间 2026-11-27T09:53:44+08:00 = 2026-11-27T01:53:44Z），判定上一批已收口 → 本批**未重跑第八十批、未改动其任何产物**，直接从更新后的 `origin/main` 开本轮新分支 `model-release-daily-20261127T232424Z`。
+- **执行方式与执行器互斥**：本批由 **MiniMax Code App（cwr 主机 / CHENGLE）** 在隔离 worktree `model-release-daily-20261127T232424Z`（自 `origin/main` = `4c2ac2d` 开出）内执行。原 OpenClaw 定时声明 `workflow:daily-model-releases-and-provider-refresh`（cron id `db2e30ef-541a-49e2-af4a-bcdff12831e9`，cron `15 7 * * *` Asia/Shanghai，agent `walle`，payload 指向 `model-release-cycle.py --evals C:\Users\cheng\code\github\evals`）开工前已用**原生 `openclaw cron get <id> --json` 单条回读**确认 `enabled=false`，本轮再**显式执行一次 `openclaw cron disable <id>`** 并回读确认（`updatedAtMs` 1795821813182 → 1795821848500，`enabled` 仍为 false）；`openclaw cron list --all --json` 全量回读 6 条声明，只有该条与 `nn-ai-feedback-daily` 为 `enabled=false`，其余 4 条（`heartbeat:tars` / `memory-core:memory-dreaming-promotion` / 两条 `skill-collection-review`）与本 cycle 无关 → **两个执行器不会跑同一 cycle**。Windows 任务计划程序侧只有 `Workflow.Schedule.evals-model-release-cwr`（Next Run 2026/11/29 7:15:00；本轮运行时状态 Running，即本批就是该原生计划任务拉起的那一次执行），无第二条跑同一 cycle 的计划任务。本批不修改私有 workflow 配置，**私有 provider 刷新阶段保持为独立受控环节、本批不触发**。
+- **入口复扫（Step 1）**：`node .claude/skills/ingest-releases/scripts/scan.mjs --write` 对 18 家在册厂商的官方域名入口逐一实扫并刷新 `data/model-coverage.json`；另按 `references/discovery-channels.md` 的渠道表**逐通道定点复核**：OpenAI news RSS（1,430 条，窗口内 49 条逐条判读）、DeepMind RSS（最新条目 2026-11-24）、Mistral RSS（最新条目 2026-11-05）、腾讯混元官方接口 `publicList` + GitHub `Tencent-Hunyuan` 组织仓、Hugging Face 14 个官方组织仓 API、Anthropic 平台模型总表 + newsroom、xAI docs 模型总表、Meta research blog、微软 `new-sitemap.xml` 与 Ignite 2026 汇总页、智谱 `docs.z.ai` release notes + `z.ai/blog` 文章打包文件、DeepSeek `/updates`、MiniMax 平台 release notes、Kimi 博客与 Code 文档、Qwen / StepFun / 小米 / 豆包 sitemap / Thinking Machines / Particle 官方页。
+- **窗口结论：1 组未建档的新官方发布**（官方一级来源）：智谱 **GLM-5.4**（Loop Transformer 架构旗舰模型，官方博客 `z.ai/blog/glm-5.4`，发布日 **2026-11-23**）。
+
+### 本批建档情况
+
+| 项目 | 数量 | 说明 |
+|---|---|---|
+| 新建 release 文件 | **1** | `glm/glm-5-4.json` |
+| 新增 evidence 行 | **5** | **0 verified + 5 pending**（5 行全部来自官方图表，value 一律 null + `not_extracted`） |
+| 新建归档目录 | **1** | `models/2026-11-23-glm-5-4/`（官方文章打包文件原件 + 还原正文 `page.html` + 2 张官方原图 + 全量转录表 + manifest） |
+| 新建 benchmark 实体 | **0** | 实体数 515 不变；5 个基准全部命中既有实体（`aime-25` / `gpqa` / `aa-lcr` / `mmlu-pro` / `ifbench`），无新铸 id，`auto-benchmark-ids` 的 id 集合不变（384 个，仅 `updated` 日期戳随本次构建刷新） |
+| 候选处置 | 1 条 | 新发现 `tencent-62c81c657e3b`（HF 空占位仓 `tencent/Hy-Embodied-Apexio-1.0`）→ 判定**非模型发布**并补 `exclusion_reason`；reconcile 另自动补 1 条合成候选 `release-glm-5-4`，**未决候选 = 0** |
+
+#### 逐条发布与取数口径
+
+- **GLM-5.4**（发布日证据：官方文章打包文件 `https://z.ai/blog/assets/glm-5.4-BMkt6-kI.js` 的元数据字段 `date: 2026-11-23`，与 OG 图资源名 `5.4-blog/20261123-173242.jpeg` 一致 → 取 **2026-11-23**，day）
+  - **渠道修正（本批最重要的发现）**：`references/discovery-channels.md` 此前把 z.ai/blog 记为「404 / nginx，已确认不可用」（见本文件第 3349 行的历史记录），这是**误判**——z.ai/blog 是客户端渲染的 Vue SPA，服务器端只返回 1,997 字节空壳 HTML，正文与发布日期都在**官方文章打包文件**里，入口是页面 `<script type="module" src="/blog/assets/<slug>-<hash>.js">` 指向的那个文件。**该渠道必须改用「文章打包文件」入口**（并从打包文件元数据取 `date` 字段作为发布日期），否则 GLM 系列会持续整档漏收。第七十七至八十批连续四轮「窗口内无新发布」的结论，正是被这条失效渠道误导；本批据此取到 GLM-5.4 正文。
+  - 官方 `docs.z.ai/release-notes/new-released.md`（厂商唯一带日期的官方模型日志）**尚未收录 GLM-5.4**（最新条目仍是 2026-08-26 的 GLM-5.3-Flash），故不采用该页作日期依据。
+  - 5 条 evidence **全部 pending**：官方未公布 GLM-5.4（750B）本体在任何基准上的读数，唯一公开的量化结果是**30B 规模的等参数 Loop 架构对照实验**（Baseline vs + Loop），数值全部位于图片 `images/img_v3_0217n_...png` 内 → 按「图表图片行永不自动翻 verified」一律 value=null + `not_extracted`，人工读图结果只写进 notes。
+  - **口径要点（关键）**：这 5 个数值是 **30B 对照模型**的成绩，**不是 GLM-5.4（750B）本体**的成绩；为此每行 `model_variant` 明写「30B 等参数对照模型（官方原文 On a 30B model with the exact same architecture as our 750B base；非 GLM-5.4 本体 750B 读数）」，`notes` 再强调一遍，防止被当成 GLM-5.4 的成绩横比。
+  - **未建行项**：推理吞吐（官方正文明文：离峰最高 200 tokens/s、峰值 70–80 tokens/s）属解码吞吐规格、不是基准评测，且各家硬件与上下文口径不可比，故不铸 benchmark id、不建 evidence 行，只写进归档转录表与 release notes；官方标注 API「Coming Soon」、开放权重「计划在完成安全加固后开放」，故 pricing 与可下载权重均为 null。
+  - **归档**：`models/2026-11-23-glm-5-4/` = `page.html`（由官方打包文件逐字解析还原）+ `article-bundle.js`（官方打包文件原件，供逐字复核）+ `images/`（2 张官方原图）+ `index.md`（全量转录表）+ `manifest.json`。页内 4 段演示视频合计约 424 MB，按仓库「只归档页面图片」惯例未纳入，其 URL 记录在 manifest 的 `omitted_media`。
+
+### 跳过清单
+
+- **OpenAI**：窗口内 RSS 49 条逐条判读，**无一为新的未建档模型发布**；唯一的模型发布「Introducing GPT-6.2 Astra and Sol」（2026-11-17）**已建档**（`openai/gpt-6-2-astra-and-sol.json`），24 Nov 的「GPT-6 models demonstrate intrinsic protein-design capabilities」已建档为 `openai/gpt-6-protein-design.json`，其余为研究 / 安全 / 合作 / 客户案例 / 产品条目；RSS `lastBuildDate` = Fri, 27 Nov 2026 23:44:11 GMT（抓取时刻前 20 分钟刚更新过），窗口内无遗漏。
+- **Anthropic**：newsroom 窗口内条目为 IPO 进展（11-10 路演、11-18 定价、11-20）与研究文章（11-17 黑洞物理、11-25 Messages API 迁移 Rust），**无模型发布**；页面顶部「November 28, 2026」是 newsroom 的「Latest news」日期标签、不是某篇发布稿的日期（已核对上下文无关联链接）；最新模型发布仍是 11-09 的 Fable 5.2 / Mythos 5.2（已建档为 `anthropic/claude-fable-5-2.json`）。
+- **Google / DeepMind**：RSS 最新条目仍是 2026-11-24 的 Mass Spec Skills（第八十批已建档），窗口内无新的模型发布；11-23 的「Finding faster quantum algorithms with agents and formal verification」为研究文章。
+- **腾讯混元**：官方博客接口 `publicList` 最新条目为 Hy4 flash / Hy4（均已建档）；GitHub `Tencent-Hunyuan` 组织按 pushed 排序前 30 个仓中最新建仓为 Refrain（11-13，第八十批已建档）；HF `tencent` 组织在 11-25 之后新增 3 个仓——`WePocketModel1.0-4B-MLX` / `WePocketModel1.0-2B-MLX`（量化分发仓，非独立发布）与 **`Hy-Embodied-Apexio-1.0`（空占位仓）**，后者已按候选登记并写明排除理由。
+- **Microsoft**：`microsoft-ignite-2026` 汇总页（2026-11-17，「seven new world-class models」）是**已建档模型的汇总公告**——其点名的 MAI Code 2 / MAI Code 2 Flash / MAI Cyber 2 Flash / MAI Realtime 1 / MAI Image 2.7 / MAI Decision 1.1 / MAI Licensed Weights 全部已有独立档案，不重复建档；`mai-licensed-weights` 与 `rl-infrastructure` 分别是权重授权说明与训练基础设施文章，非模型发布。
+- **智谱 / GLM**：除 GLM-5.4 外，`docs.z.ai/llms.txt` 导航串里的 `GLM-5.3-FlashX` / `GLM-5.3-FlashX-Legal` 对应文档页 404、`GLM-5-Turbo`（2026-03-15）与 `GLM-5V-Turbo`（2026-03-19）官方站有但账本无——后者是**已登记的存量缺口**（本文件第 3349 行），不在本增量窗口内，留待存量审计批次处理。
+- **豆包 / ByteDance**：`seedream-5.5`（2026-11-09）已建档；`seedream-5.5-pro` 无官方独立发布文，不建档。
+- **Thinking Machines**：`Inkling-2-Mini`（2026-11-20）已建档；`TML-d24-varloop-research` 已建档；无新模型发布。
+- **xAI**：docs 模型总表最新为 Grok 4.7（已建档），`grok-4.20` 已建档；窗口内无新模型发布。
+- **Meta**：`research.meta.ai/blog` 最新条目为 2026-11-09（窗口外），HF `meta-llama` 无新仓；`ai.meta.com` 入口返回 400（站点拒绝该 UA），已由 research 子站与 HF 组织仓交叉覆盖。
+- **其余厂商**（Mistral / DeepSeek / MiniMax / Kimi / Qwen / StepFun / 小米 / Particle）：官方渠道与 Hugging Face 组织 API 巡检后**窗口内无未建档的新模型发布**（Mistral RSS 最新条目为 2026-11-05 的产品文章；HF `mistralai` / `moonshotai` / `Qwen` / `stepfun-ai` / `zai-org` / `microsoft` / `MiniMaxAI` / `meta-llama` / `deepseek-ai` / `ByteDance-Seed` / `google` / `OpenGVLab` 在 11-25 之后均无新仓）。
+
+### 待人工核验
+
+本批 **5 条 pending 行全部是官方图表行**（Scaling Correctness 等参数对照实验表），值一律 null + `not_extracted`，人工读图的结果写在 notes 里供复核：
+
+| release | benchmark | 模型 | Baseline → +Loop | Improvement | 平均输出长度变化 |
+|---|---|---|---|---|---|
+| glm-5-4 | aime-25 | 30B 等参数对照模型（非 GLM-5.4 本体） | 19.17 → 30.42 | 11.3 | -635 tokens（-2%） |
+| glm-5-4 | gpqa | 30B 等参数对照模型（非 GLM-5.4 本体） | 47.58 → 56.26 | 8.7 | -2,473 tokens（-11.7%） |
+| glm-5-4 | aa-lcr | 30B 等参数对照模型（非 GLM-5.4 本体） | 40.33 → 47.67 | 7.3 | -539 tokens（-9.7%） |
+| glm-5-4 | mmlu-pro | 30B 等参数对照模型（非 GLM-5.4 本体） | 71.65 → 75.05 | 3.4 | -863 tokens（-14.9%） |
+| glm-5-4 | ifbench | 30B 等参数对照模型（非 GLM-5.4 本体） | 50.20 → 53.47 | 3.3 | -763 tokens（-13.0%） |
+
+需要人工补的**非数值**缺口（不影响 evidence 状态）：
+
+1. **GLM-5.4 本体的基准读数**——官方至今未公布 750B 模型的任何基准分数；等官方公布后应另起 evidence 行，届时本表 30B 对照行不得当作本体的成绩。
+2. **GLM-5.4 的可下载权重与 API**——官方标注权重「计划在完成安全加固后开放」、API「Coming Soon」，当前无法复现。
+3. **评测协议细节**——官方未披露 30B 对照实验的 prompt、采样温度、题目集版本、运行次数与判分实现。
+4. **`references/discovery-channels.md` 的渠道修正**——z.ai/blog 应改记为「Vue SPA，正文在 `/blog/assets/<slug>-<hash>.js` 文章打包文件里；发布日期取打包文件元数据 `date` 字段」，否则 GLM 系列会持续漏收。
+
+### 门禁
+
+| 门禁 | 结果 |
+|---|---|
+| `node scripts/reconcile-coverage.mjs` | ✓ exit 0；连跑两次候选记录零变化，幂等 |
+| `node scripts/validate-model-coverage.mjs` | ✓ exit 0 |
+| `node scripts/validate-data.mjs` | ✓ PASS — taxonomy 9 类 / vendors 18 / **benchmarks 515** / **releases 280（official 266）** / **evidence edges 5149**；模板档案 514 个通过校验，待升级存量 1 个（backlog 只减不增） |
+| `node --test tests/*.test.mjs` | ⚠️ **188 项中 187 项通过**；唯一失败项是 `tests/learning-agent-run-eval.test.mjs` 的「importing the evaluator produces no CLI output or process exit」——该用例把 Windows 盘符路径 `C:\...` 直接喂给 `await import()`，Node 抛 `ERR_UNSUPPORTED_ESM_URL_SCHEME`（POSIX 路径无盘符，故 Linux CI 不受影响）。已在**未含本批任何改动的 pristine `origin/main`（4c2ac2d）独立 worktree** 上复现同一失败 → **属存量环境问题，与本批改动无关**；本批不改动测试代码、不做掩盖。 |
+| `npm run build` | ⚠️ 在本 Windows 主机上**止步于第一步 `npm run test`**（同上存量失败）；其余各步单独执行全绿：`npm run sync:skills:check` ✓ / `npm run validate:data` ✓ / `npm run validate` ✓ / `npm run build:epub:official` ✓ / `npm run build:web` ✓ / `npm run validate:site` ✓。CI（Linux）不受影响。 |
+| `npm run sync:skills:check` | ✓ 零漂移（本批未改 `.claude/skills/`） |
+
+### 汇总
+
+- **新增 release**：**1** 个 = 智谱 1（`glm-5-4`）
+- **新增 evidence**：**5** 条 = **0 verified + 5 pending**
+- **新增 benchmark id**：**0** 个（5 个基准全部命中既有实体，`auto-benchmark-ids` 的 id 集合不变，384 个）
+- **新增 benchmark 实体**：**0** 个（实体数 515 不变）
+- **新增归档目录**：**1** 个（`models/2026-11-23-glm-5-4/`，含官方打包文件原件、还原正文、2 张官方原图、转录表与 manifest）
+- **新增厂商**：无（仍为 18 家）
+- **候选数**：759 → **762**（+1 入口扫描 +1 reconcile 合成候选 +1 本批排除候选）；`need_reverify = 0`；未决候选 **0**
+- **检查点**：`last_scan_at=2026-11-28`（本轮执行期间 UTC 跨零点）；`last_max_release_date` **保持 2026-11-25**（本批入库最大发布日 2026-11-23 小于原锚点，锚点只前进不回退）
